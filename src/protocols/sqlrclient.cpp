@@ -1856,10 +1856,22 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 			bv->value.stringval[bv->valuesize]='\0';
 			bv->isnull=cont->nonNullBindValue();
 			cont->raiseDebugMessageEvent("STRING");
-		} /*else if (bv->type==SQLRSERVERBINDVARTYPE_INTEGER) {
-			cont->raiseDebugMessageEvent("INTEGER");
+		} else if (bv->type==SQLRSERVERBINDVARTYPE_INTEGER) {
+
+			// get the bind value
+			ssize_t	result=clientsock->read(&(bv->value.integerval),
+							idleclienttimeout,0);
+			if (result!=sizeof(uint64_t)) {
+				const char	*info="get binds failed: "
+							"failed to get bind "
+							"value";
+				cont->raiseClientProtocolErrorEvent(
+							cursor,info,result);
+				return false;
+			}
 			bv->isnull=cont->nonNullBindValue();
-		} else if (bv->type==SQLRSERVERBINDVARTYPE_DOUBLE) {
+			cont->raiseDebugMessageEvent("INTEGER");
+		} /*else if (bv->type==SQLRSERVERBINDVARTYPE_DOUBLE) {
 			cont->raiseDebugMessageEvent("DOUBLE");
 			// these don't typically get set, but they get used
 			// when building debug strings, so we need to
@@ -2872,7 +2884,7 @@ void sqlrprotocol_sqlrclient::returnInputOutputBindValues(
 			clientsock->write(bv->valuesize);
 			clientsock->write(bv->value.stringval,bv->valuesize);
 
-		} /*else if (bv->type==SQLRSERVERBINDVARTYPE_INTEGER) {
+		} else if (bv->type==SQLRSERVERBINDVARTYPE_INTEGER) {
 
 			if (cont->logEnabled() ||
 				cont->notificationsEnabled()) {
@@ -2883,7 +2895,7 @@ void sqlrprotocol_sqlrclient::returnInputOutputBindValues(
 			clientsock->write((uint16_t)INTEGER_DATA);
 			clientsock->write((uint64_t)bv->value.integerval);
 
-		} else if (bv->type==SQLRSERVERBINDVARTYPE_DOUBLE) {
+		} /*else if (bv->type==SQLRSERVERBINDVARTYPE_DOUBLE) {
 
 			if (cont->logEnabled() ||
 				cont->notificationsEnabled()) {

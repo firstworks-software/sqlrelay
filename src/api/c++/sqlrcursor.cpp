@@ -1851,12 +1851,20 @@ void sqlrcursor::defineInputOutputBindString(const char *variable,
 							uint32_t length) {
 	defineInputOutputBindGeneric(variable,
 				SQLRCLIENTBINDVARTYPE_STRING,
-				value,length);
+				value,0,length);
+}
+
+void sqlrcursor::defineInputOutputBindInteger(const char *variable,
+							int64_t value) {
+	defineInputOutputBindGeneric(variable,
+				SQLRCLIENTBINDVARTYPE_INTEGER,
+				NULL,value,sizeof(int64_t));
 }
 
 void sqlrcursor::defineInputOutputBindGeneric(const char *variable,
 						sqlrclientbindvartype_t type,
-						const char *value,
+						const char *strvalue,
+						int64_t intvalue,
 						uint32_t valuesize) {
 
 	if (charstring::isNullOrEmpty(variable)) {
@@ -1891,12 +1899,15 @@ void sqlrcursor::defineInputOutputBindGeneric(const char *variable,
 	bv->type=type;
 	if (bv->type==SQLRCLIENTBINDVARTYPE_STRING) {
 		bv->value.stringval=new char[valuesize+1];
-		if (value) {
-			charstring::copy(bv->value.stringval,value,valuesize);
+		if (strvalue) {
+			charstring::copy(bv->value.stringval,
+						strvalue,valuesize);
 		} else {
 			bv->value.stringval[0]='\0';
 			bv->type=SQLRCLIENTBINDVARTYPE_NULL;
 		}
+	} else if (bv->type==SQLRCLIENTBINDVARTYPE_INTEGER) {
+		bv->value.integerval=intvalue;
 	} else if (bv->type==SQLRCLIENTBINDVARTYPE_BLOB ||
 				bv->type==SQLRCLIENTBINDVARTYPE_CLOB) {
 		// FIXME: initialize....
@@ -2067,6 +2078,36 @@ const char *sqlrcursor::getInputOutputBindString(const char *variable) {
 		}
 	}
 	return NULL;
+}
+
+uint32_t sqlrcursor::getInputOutputBindLength(const char *variable) {
+
+	if (variable) {
+		for (uint64_t i=0; i<pvt->_inoutbindvars->getLength(); i++) {
+			if (!charstring::compare(
+				(*pvt->_inoutbindvars)[i].variable,variable)) {
+				return (*pvt->_inoutbindvars)[i].
+							resultvaluesize;
+			}
+		}
+	}
+	return 0;
+}
+
+int64_t sqlrcursor::getInputOutputBindInteger(const char *variable) {
+
+	if (variable) {
+		for (uint64_t i=0; i<pvt->_inoutbindvars->getLength(); i++) {
+			if (!charstring::compare(
+				(*pvt->_inoutbindvars)[i].variable,variable) &&
+				(*pvt->_inoutbindvars)[i].type==
+						SQLRCLIENTBINDVARTYPE_INTEGER) {
+				return (*pvt->_inoutbindvars)[i].
+							value.integerval;
+			}
+		}
+	}
+	return -1;
 }
 
 bool sqlrcursor::outputBindCursorIdIsValid(const char *variable) {
@@ -2985,6 +3026,10 @@ void sqlrcursor::sendInputOutputBinds() {
 					(size_t)(*pvt->_inoutbindvars)[i].
 								valuesize);
 			}
+		} else if ((*pvt->_inoutbindvars)[i].type==
+					SQLRCLIENTBINDVARTYPE_INTEGER) {
+			pvt->_cs->write((uint64_t)(*pvt->_inoutbindvars)[i].
+							value.integerval);
 		}
 		// FIXME: long, double, date...
 
@@ -3036,6 +3081,14 @@ void sqlrcursor::sendInputOutputBinds() {
 				pvt->_sqlrc->debugPrint((int64_t)
 					(*pvt->_inoutbindvars)[i].valuesize);
 				pvt->_sqlrc->debugPrint(")");
+			} else if ((*pvt->_inoutbindvars)[i].type==
+						SQLRCLIENTBINDVARTYPE_INTEGER) {
+				pvt->_sqlrc->debugPrint("=");
+				pvt->_sqlrc->debugPrint(
+					(int64_t)(*pvt->_inoutbindvars)[i].
+							value.integerval);
+				pvt->_sqlrc->debugPrint("\n");
+				pvt->_sqlrc->debugPreEnd();
 			}
 			// FIXME: long, double, date...
 			pvt->_sqlrc->debugPrint("\n");

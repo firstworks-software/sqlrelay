@@ -139,6 +139,10 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 						char *value, 
 						uint32_t valuesize,
 						int16_t *isnull);
+		bool		inputOutputBind(const char *variable, 
+						uint16_t variablesize,
+						int64_t *value,
+						int16_t *isnull);
 		int16_t		nonNullBindValue();
 		int16_t		nullBindValue();
 		bool		bindValueIsNull(uint16_t isnull);
@@ -2034,7 +2038,7 @@ bool odbccursor::inputOutputBind(const char *variable,
 		return false;
 	}
 
-	//outdatebind[pos-1]=NULL;
+	//inoutdatebind[pos-1]=NULL;
 	inoutisnullptr[pos-1]=isnull;
 
 	inoutisnull[pos-1]=(*isnull==SQL_NULL_DATA)?
@@ -2049,6 +2053,35 @@ bool odbccursor::inputOutputBind(const char *variable,
 				0,
 				(SQLPOINTER)value,
 				valuesize,
+				&(inoutisnull[pos-1]));
+	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
+}
+
+bool odbccursor::inputOutputBind(const char *variable, 
+				uint16_t variablesize,
+				int64_t *value,
+				int16_t *isnull) {
+
+	uint16_t	pos=charstring::toInteger(variable+1);
+	if (!pos || pos>maxbindcount) {
+		return false;
+	}
+
+	//inoutdatebind[pos-1]=NULL;
+	inoutisnullptr[pos-1]=isnull;
+
+	inoutisnull[pos-1]=(*isnull==SQL_NULL_DATA)?
+				sqlnulldata:sizeof(int64_t);
+
+	erg=SQLBindParameter(stmt,
+				pos,
+				SQL_PARAM_INPUT_OUTPUT,
+				SQL_C_SBIGINT,
+				SQL_BIGINT,
+				0,
+				0,
+				value,
+				sizeof(int64_t),
 				&(inoutisnull[pos-1]));
 	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 }
@@ -2658,6 +2691,11 @@ void odbccursor::closeResultSet() {
 
 	for (uint16_t i=0; i<getOutputBindCount(); i++) {
 		delete outdatebind[i];
+	}
+	// FIXME: inefficient, but there appears to be a case where
+	// closeResultSet isn't called, and stale ptrs get left lingering
+	// around...
+	for (uint16_t i=0; i<maxbindcount; i++) {
 		outdatebind[i]=NULL;
 		outisnullptr[i]=NULL;
 		outisnull[i]=0;

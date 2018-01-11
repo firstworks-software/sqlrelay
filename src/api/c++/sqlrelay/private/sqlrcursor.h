@@ -195,12 +195,18 @@
 						const char *variable,
 						const char *value,
 						uint32_t length);
+		void		defineInputOutputBindInteger(
+						const char *variable,
+						int64_t value);
 		void		defineInputOutputBindGeneric(
 						const char *variable,
 						sqlrclientbindvartype_t type,
-						const char *value,
+						const char *strvalue,
+						int64_t intvalue,
 						uint32_t valuesize);
 		const char	*getInputOutputBindString(const char *variable);
+		uint32_t	getInputOutputBindLength(const char *variable);
+		int64_t		getInputOutputBindInteger(const char *variable);
 
 
 	friend class sqlrconnection;

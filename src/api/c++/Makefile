@@ -20,7 +20,7 @@ clean:
 	$(RMTREE) .libs
 
 lib$(SQLR)client.$(LIBEXT): $(SRCS) $(LOBJS)
-	$(LTLINK) $(LINK) $(OUT)$@ $(LOBJS) $(LDFLAGS) $(CLTLINKFLAGS) $(CPPLIBS) -lefence
+	$(LTLINK) $(LINK) $(OUT)$@ $(LOBJS) $(LDFLAGS) $(CLTLINKFLAGS) $(CPPLIBS)
 
 install: $(INSTALLLIB)
 	$(MKINSTALLDIRS) $(cachedir)

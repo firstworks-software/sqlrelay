@@ -3480,17 +3480,15 @@ bool sqlrservercontroller::handleBinds(sqlrservercursor *cursor) {
 					&bind->isnull)) {
 				return false;
 			}
-		}
-		// FIXME: implement this
-		/*else if (bind->type==SQLRSERVERBINDVARTYPE_INTEGER) {
-			if (!cursor->outputBind(
+		} else if (bind->type==SQLRSERVERBINDVARTYPE_INTEGER) {
+			if (!cursor->inputOutputBind(
 					bind->variable,
 					bind->variablesize,
 					&bind->value.integerval,
 					&bind->isnull)) {
 				return false;
 			}
-		} else if (bind->type==SQLRSERVERBINDVARTYPE_DOUBLE) {
+		} /*else if (bind->type==SQLRSERVERBINDVARTYPE_DOUBLE) {
 			if (!cursor->outputBind(
 					bind->variable,
 					bind->variablesize,

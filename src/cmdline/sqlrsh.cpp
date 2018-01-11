@@ -1088,11 +1088,11 @@ void sqlrsh::executeQuery(sqlrcursor *sqlrcur, sqlrshenv *env) {
 				sqlrcur->defineInputOutputBindString(name,
 						bv->stringval,
 						bv->outputstringbindlength);
+			} else if (bv->type==SQLRCLIENTBINDVARTYPE_INTEGER) {
+				sqlrcur->defineInputOutputBindInteger(name,
+						bv->integerval);
 			}
-			// FIXME: implement this
-			/*else if (bv->type==SQLRCLIENTBINDVARTYPE_INTEGER) {
-				sqlrcur->defineInputOutputBindInteger(name);
-			} else if (bv->type==SQLRCLIENTBINDVARTYPE_DOUBLE) {
+			/*else if (bv->type==SQLRCLIENTBINDVARTYPE_DOUBLE) {
 				sqlrcur->defineInputOutputBindDouble(name);
 			} else if (bv->type==SQLRCLIENTBINDVARTYPE_DATE) {
 				sqlrcur->defineInputOutputBindDate(name);
@@ -1147,16 +1147,15 @@ void sqlrsh::executeQuery(sqlrcursor *sqlrcur, sqlrshenv *env) {
 				delete[] bv->stringval;
 				bv->stringval=charstring::duplicate(
 				sqlrcur->getInputOutputBindString(name));
-			}
-			/* FIXME: implement this
-			else if (bv->type==SQLRCLIENTBINDVARTYPE_INTEGER) {
+			} else if (bv->type==SQLRCLIENTBINDVARTYPE_INTEGER) {
 				bv->integerval=
-					sqlrcur->getOutputBindInteger(name);
-			} else if (bv->type==SQLRCLIENTBINDVARTYPE_DOUBLE) {
+				sqlrcur->getInputOutputBindInteger(name);
+			}
+			/*else if (bv->type==SQLRCLIENTBINDVARTYPE_DOUBLE) {
 				bv->doubleval.value=
-					sqlrcur->getOutputBindDouble(name);
+				sqlrcur->getInputOutputBindDouble(name);
 			} else if (bv->type==SQLRCLIENTBINDVARTYPE_DATE) {
-				sqlrcur->getOutputBindDate(name,
+				sqlrcur->getInputOutputBindDate(name,
 						&(bv->dateval.year),
 						&(bv->dateval.month),
 						&(bv->dateval.day),
@@ -1831,10 +1830,11 @@ bool sqlrsh::inputoutputbind(sqlrcursor *sqlrcur,
 	char		**parts;
 	uint64_t	partcount;
 	charstring::split(command," ",true,&parts,&partcount);
+stdoutput.printf("partcount=%d\n",partcount);
 
 	// sanity check...
 	bool	sane=true;
-	if (partcount>3 && !charstring::compare(parts[0],"inputoutputbind")) {
+	if (partcount>=5 && !charstring::compare(parts[0],"inputoutputbind")) {
 
 		// if the bind variable is already defined, clear it...
 		sqlrshbindvalue	*bv=NULL;
@@ -1850,19 +1850,19 @@ bool sqlrsh::inputoutputbind(sqlrcursor *sqlrcur,
 
 		if (!charstring::compareIgnoringCase(
 						parts[2],"string") &&
-						partcount>=5) {
+						partcount==6) {
 			bv->type=SQLRCLIENTBINDVARTYPE_STRING;
 			bv->outputstringbindlength=
 				charstring::toInteger(parts[3]);
 			bv->stringval=charstring::unescape(value);
-		}
-		// FIXME: implement this
-		/*else if (!charstring::compareIgnoringCase(
-						parts[2],"integer") &&
-						partcount==3) {
-			bv->type=SQLRCLIENTBINDVARTYPE_INTEGER;
-			bv->integerval=0;
 		} else if (!charstring::compareIgnoringCase(
+						parts[2],"integer") &&
+						partcount==5) {
+stdoutput.printf("integer inout bind\n");
+			bv->type=SQLRCLIENTBINDVARTYPE_INTEGER;
+			bv->integerval=charstring::toInteger(value);
+		}
+		/*else if (!charstring::compareIgnoringCase(
 						parts[2],"double") &&
 						partcount==5) {
 			bv->type=SQLRCLIENTBINDVARTYPE_DOUBLE;
