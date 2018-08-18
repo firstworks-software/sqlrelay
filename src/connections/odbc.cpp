@@ -1548,7 +1548,8 @@ void odbcconnection::errorMessage(char *errorbuffer,
 	// set return values
 	*errorlength=errlength;
 	*errorcode=nativeerrnum;
-	*liveconnection=true;
+	*liveconnection=(bytestring::compare("08S01",state,5) &&
+				bytestring::compare("08003",state,5));
 }
 #endif
 
@@ -2318,7 +2319,8 @@ void odbccursor::errorMessage(char *errorbuffer,
 	// set return values
 	*errorlength=errlength;
 	*errorcode=nativeerrnum;
-	*liveconnection=true;
+	*liveconnection=(bytestring::compare("08S01",state,5) &&
+				bytestring::compare("08003",state,5));
 }
 
 uint64_t odbccursor::affectedRows() {

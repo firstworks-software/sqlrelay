@@ -526,7 +526,8 @@ bool sqlrtranslation_normalize::skipQuotedStrings(const char *ptr,
 
 			// if we found escaped quotes ('' or "")...
 			if (*ptr==quote && *(ptr+1)==quote) {
-				sb->write(*ptr)->write(*ptr);
+				sb->write(*ptr);
+				sb->write(*ptr);
 				ptr=ptr+2;
 
 			} else
@@ -574,7 +575,8 @@ bool sqlrtranslation_normalize::caseConvertDoubleQuotedStrings(
 
 			// if we found escaped quotes ("")...
 			if (*ptr=='"' && *(ptr+1)=='"') {
-				sb->write(*ptr)->write(*ptr);
+				sb->write(*ptr);
+				sb->write(*ptr);
 				ptr=ptr+2;
 
 			} else
