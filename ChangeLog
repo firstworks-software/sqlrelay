@@ -1,5 +1,7 @@
 1.5.1 - added php 7.3 compatibility
 	added mysql 8.0 compatibility
+	mysql sslmode=require/prefer + bad sslca/sslcapath generates warning
+		rather than error now (like the mysql cli)
 
 1.5.0 - spec file tweaks
 	odbc uses different begin tx queries for different db's now
