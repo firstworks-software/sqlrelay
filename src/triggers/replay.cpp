@@ -144,7 +144,7 @@ bool sqlrtrigger_replay::run(sqlrserverconnection *sqlrcon,
 		return true;
 	}
 
-	*success=(logQuery(sqlrcur) && replayLog(sqlrcur));
+	*success=(logQuery(sqlrcur) && replayLog(sqlrcur) && *success);
 	return *success;
 }
 
@@ -206,11 +206,11 @@ bool sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 	// log copied query and binds
 	log.append(qd);
 
-/*stdoutput.printf("-----------------------\n");
-for (linkedlistnode<querydetails *> *node=log.getFirst();
-				node; node=node->getNext()) {
-	stdoutput.printf("%s\n",node->getValue()->query);
-}*/
+	/*stdoutput.printf("-----------------------\n");
+	for (linkedlistnode<querydetails *> *node=log.getFirst();
+					node; node=node->getNext()) {
+		stdoutput.printf("%s\n",node->getValue()->query);
+	}*/
 	return true;
 }
 
