@@ -1,3 +1,6 @@
+1.6.1 - added NULL handoff socket workaround
+	improved shutdown/crash handlers for sqlr-listener/connection
+
 1.6.0 - added begin, commit, rollback events
 	fixed array_init() calls for php-7.3
 	integrated my_bool fix for mysql 8.0.1+
