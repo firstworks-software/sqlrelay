@@ -337,6 +337,12 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 			break;
 		} else
 
+		// handle bad commands
+		if (command>MAXCOMMAND) {
+			endsession=true;
+			break;
+		} else
+
 		// these commands are all handled at the connection level
 		if (command==AUTH) {
 			cont->incrementAuthCount();
@@ -535,6 +541,8 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 				sizeof(uint16_t)+
 				// executing new query
 				sizeof(uint16_t)+
+				// client info
+				sizeof(uint64_t)+maxclientinfolength+
 				// query size and query
 				sizeof(uint32_t)+maxquerysize+
 				// input bind var count
@@ -545,6 +553,11 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 				// output bind var count
 				sizeof(uint16_t)+
 				// output bind vars
+				maxbindcount*(2*sizeof(uint16_t)+
+						maxbindnamelength)+
+				// inputoutput bind var count
+				sizeof(uint16_t)+
+				// inputoutput bind vars
 				maxbindcount*(2*sizeof(uint16_t)+
 						maxbindnamelength)+
 				// get column info
@@ -697,7 +710,7 @@ void sqlrprotocol_sqlrclient::noAvailableCursors(uint16_t command) {
 	debugFunction();
 
 	// If no cursor was available, the client
-	// cound send an entire query and bind vars
+	// could send an entire query and bind vars
 	// before it reads the error and closes the
 	// socket.  We have to absorb all of that
 	// data.  We shouldn't just loop forever
@@ -705,6 +718,8 @@ void sqlrprotocol_sqlrclient::noAvailableCursors(uint16_t command) {
 	// for a DOS attack.  We'll read the maximum
 	// number of bytes that could be sent.
 	uint32_t	size=(
+				// client info
+				sizeof(uint64_t)+maxclientinfolength+
 				// query size and query
 				sizeof(uint32_t)+maxquerysize+
 				// input bind var count
@@ -715,6 +730,11 @@ void sqlrprotocol_sqlrclient::noAvailableCursors(uint16_t command) {
 				// output bind var count
 				sizeof(uint16_t)+
 				// output bind vars
+				maxbindcount*(2*sizeof(uint16_t)+
+						maxbindnamelength)+
+				// inputoutput bind var count
+				sizeof(uint16_t)+
+				// inputoutput bind vars
 				maxbindcount*(2*sizeof(uint16_t)+
 						maxbindnamelength)+
 				// get column info
