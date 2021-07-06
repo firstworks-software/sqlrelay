@@ -2040,16 +2040,6 @@ sqlrservercursor *sqlrservercontroller::getCursor() {
 			pvt->_cur[i]->setState(SQLRCURSORSTATE_BUSY);
 			incrementTimesNewCursorUsed();
 			return pvt->_cur[i];
-		} else {
-			pvt->_debugstr.clear();
-			uint32_t	querylen=pvt->_cur[i]->getQueryLength();
-			if (querylen>40) {
-				querylen=40;
-			}
-			pvt->_debugstr.append("cursor ")->
-				append(i)->append(": ")->
-				append(pvt->_cur[i]->getQueryBuffer(),querylen);
-			raiseDebugMessageEvent(pvt->_debugstr.getString());
 		}
 	}
 
