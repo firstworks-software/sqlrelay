@@ -339,6 +339,9 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 
 		// handle bad commands
 		if (command>MAXCOMMAND) {
+			debugstr.clear();
+			debugstr.append("bad command: ")->append(command);
+			cont->raiseDebugMessageEvent(debugstr.getString());
 			endsession=true;
 			break;
 		} else
@@ -530,7 +533,7 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 	// socket.  We have to absorb all of that data.  We shouldn't just loop
 	// forever though, that would provide a point of entry for a DOS attack.
 	// We'll read the maximum number of bytes that could be sent.
-	cont->closeClientConnection(
+	uint32_t	bytecount=
 				// sending auth
 				(sizeof(uint16_t)+
 				// user/password
@@ -566,7 +569,13 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 				2*sizeof(uint32_t)
 				// divide by two because we're
 				// reading 2 bytes at a time
-				)/2);
+				)/2;
+
+	debugstr.clear();
+	debugstr.append("absorbing ")->append(bytecount)->append(" bytes");
+	cont->raiseDebugMessageEvent(debugstr.getString());
+
+	cont->closeClientConnection(bytecount);
 
 	// end the session if necessary
 	if (endsession) {
@@ -741,12 +750,19 @@ void sqlrprotocol_sqlrclient::noAvailableCursors(uint16_t command) {
 				sizeof(uint16_t)+
 				// skip/fetch
 				2*sizeof(uint32_t));
+	debugstr.clear();
+	debugstr.append("absorbing ")->append(size)->append(" bytes");
+	cont->raiseDebugMessageEvent(debugstr.getString());
 
 	clientsock->useNonBlockingMode();
 	unsigned char	*dummy=new unsigned char[size];
-	clientsock->read(dummy,size,idleclienttimeout,0);
+	ssize_t	bytesread=clientsock->read(dummy,size,idleclienttimeout,0);
 	clientsock->useBlockingMode();
 	delete[] dummy;
+
+	debugstr.clear();
+	debugstr.append("absorbed ")->append(bytesread)->append(" bytes");
+	cont->raiseDebugMessageEvent(debugstr.getString());
 
 	// indicate that an error has occurred
 	clientsock->write((uint16_t)ERROR_OCCURRED);

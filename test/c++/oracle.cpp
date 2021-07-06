@@ -1139,6 +1139,25 @@ int	main(int argc, char **argv) {
 	cur->sendQuery("drop procedure testproc");
 	stdoutput.printf("\n");
 
+	// cursors
+	cur->closeResultSet();
+	stdoutput.printf("CURSORS: \n");
+	sqlrcursor	*curs[10];
+	for (uint16_t i=0; i<10; i++) {
+		curs[i]=new sqlrcursor(con);
+		stringbuffer	q;
+		q.append("select ")->append(i)->append(" from dual");
+		bool	success=curs[i]->sendQuery(q.getString());
+		if (i<5) {
+			checkSuccess(success,1);
+		} else {
+			checkSuccess(curs[i]->errorMessage(),
+				"No server-side cursors were "
+				"available to process the query.");
+		}
+	}
+	stdoutput.printf("\n");
+
 
 	// invalid queries...
 	stdoutput.printf("INVALID QUERIES: \n");
