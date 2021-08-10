@@ -232,6 +232,7 @@ class SQLRUTIL_DLLSPEC sqlrconfig {
 		virtual bool		getIgnoreSelectDatabase()=0;
 
 		virtual bool		getWaitForDownDatabase()=0;
+		virtual const char	*getPasswordPath()=0;
 
 		virtual linkedlist< char *>	*getSessionStartQueries()=0;
 		virtual linkedlist< char *>	*getSessionEndQueries()=0;

@@ -26,6 +26,7 @@
 #include <rudiments/inetsocketserver.h>
 #include <rudiments/listener.h>
 #include <rudiments/md5.h>
+#include <rudiments/sensitivevalue.h>
 
 #include <defines.h>
 #include <defaults.h>
@@ -4952,9 +4953,7 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 	success=cursor->executeQuery(query,querylen);
 
 	// set flag indicating that the query has been executed
-	if (success) {
-		cursor->setQueryHasBeenExecuted(true);
-	}
+	cursor->setQueryHasBeenExecuted(true);
 
 	// set the query end time
 	dt.getSystemDateAndTime();
@@ -8546,12 +8545,18 @@ const char *sqlrservercontroller::getConnectStringValue(const char *variable) {
 	const char	*peid=pvt->_constr->getPasswordEncryption();
 	if (pvt->_sqlrpe && charstring::length(peid) &&
 			!charstring::compare(variable,"password")) {
+
+		// handle password files
+		sensitivevalue	sv;
+		sv.setPath(pvt->_cfg->getPasswordPath());
+		sv.parse(pvt->_constr->getConnectStringValue(variable));
+
 		sqlrpwdenc	*pe=
 			pvt->_sqlrpe->getPasswordEncryptionById(peid);
 		if (!pe->oneWay()) {
 			delete[] pvt->_decrypteddbpassword;
-			pvt->_decrypteddbpassword=pe->decrypt(
-				pvt->_constr->getConnectStringValue(variable));
+			pvt->_decrypteddbpassword=
+					pe->decrypt(sv.getTextValue());
 			return pvt->_decrypteddbpassword;
 		}
 	}
