@@ -36198,7 +36198,7 @@ fi
 echo "******************************"
 
 
-SQLR_VERSION="1.9.1"
+SQLR_VERSION="1.9.2"
 
 
 cat >>confdefs.h <<_ACEOF
