@@ -4,6 +4,7 @@
 	fixed a subtle bug that could cause closeResultSet()/clearError() not
 		to be called between reexecutes if the previous execute resulted
 		in an error
+	backported support for password files in userlist auth modules
 
 1.9.1 - fixed some missing map clears in postgresql protocol module
 	fixed NULL-bind in the ODBC driver
