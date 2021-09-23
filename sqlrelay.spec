@@ -11,7 +11,7 @@ URL: http://sqlrelay.sourceforge.net
 Source0: http://downloads.sourceforge.net/%{name}/%{name}-%{version}.tar.gz
 
 %{?systemd_requires}
-BuildRequires: gcc-c++, rudiments-devel >= 1.4.0, systemd
+BuildRequires: gcc-c++, rudiments-devel >= 1.4.1, systemd
 
 %description
 SQL Relay is a persistent database connection pooling, proxying, throttling,
