@@ -14,7 +14,7 @@
 #include <rudiments/datetime.h>
 #include <rudiments/stdio.h>
 #include <rudiments/error.h>
-/*#ifdef _WIN32
+#ifdef _WIN32
 	#define DEBUG_MESSAGES 1
 	#define DEBUG_TO_FILE 1
 	#ifdef _WIN32
@@ -22,7 +22,7 @@
 	#else
 		static const char debugfile[]="/tmp/sqlrodbcdebug.txt";
 	#endif
-#endif*/
+#endif
 #include <rudiments/debugprint.h>
 
 // windows needs this (don't include for __CYGWIN__ though)
@@ -343,7 +343,12 @@ static SQLRETURN SQLR_SQLAllocHandle(SQLSMALLINT handletype,
 			CONN	*conn=(CONN *)inputhandle;
 			if (inputhandle==SQL_NULL_HANDLE ||
 						!conn || !conn->con) {
-				debugPrintf("  NULL conn handle\n");
+				if (!conn->con) {
+					debugPrintf("  NULL conn->con "
+								"handle\n");
+				} else {
+					debugPrintf("  NULL conn handle\n");
+				}
 				*outputhandle=SQL_NULL_HENV;
 				return SQL_INVALID_HANDLE;
 			}
@@ -688,7 +693,11 @@ static SQLRETURN SQLR_SQLCancelHandle(SQLSMALLINT handletype,
 	} else if (handletype==SQL_HANDLE_DBC) {
 		CONN	*conn=(CONN *)handle;
 		if (handle==SQL_NULL_HANDLE || !conn || !conn->con) {
-			debugPrintf("  NULL conn handle\n");
+			if (!conn->con) {
+				debugPrintf("  NULL conn->con handle\n");
+			} else {
+				debugPrintf("  NULL conn handle\n");
+			}
 			return SQL_INVALID_HANDLE;
 		}
 		SQLR_CONNSetError(conn,
@@ -2611,7 +2620,11 @@ SQLRETURN SQL_API SQLDisconnect(SQLHDBC connectionhandle) {
 
 	CONN	*conn=(CONN *)connectionhandle;
 	if (connectionhandle==SQL_NULL_HANDLE || !conn || !conn->con) {
-		debugPrintf("  NULL conn handle\n");
+		if (!conn->con) {
+			debugPrintf("  NULL conn->con handle\n");
+		} else {
+			debugPrintf("  NULL conn handle\n");
+		}
 		return SQL_INVALID_HANDLE;
 	}
 
@@ -2657,7 +2670,12 @@ static SQLRETURN SQLR_SQLEndTran(SQLSMALLINT handletype,
 
 			CONN	*conn=(CONN *)handle;
 			if (handle==SQL_NULL_HANDLE || !conn || !conn->con) {
-				debugPrintf("  NULL conn handle\n");
+				if (!conn->con) {
+					debugPrintf("  NULL conn->con "
+								"handle\n");
+				} else {
+					debugPrintf("  NULL conn handle\n");
+				}
 				return SQL_INVALID_HANDLE;
 			}
 
@@ -4023,7 +4041,12 @@ static SQLRETURN SQLR_SQLFreeHandle(SQLSMALLINT handletype, SQLHANDLE handle) {
 			debugPrintf("  handletype: SQL_HANDLE_DBC\n");
 			CONN	*conn=(CONN *)handle;
 			if (handle==SQL_NULL_HANDLE || !conn || !conn->con) {
-				debugPrintf("  NULL conn handle\n");
+				if (!conn->con) {
+					debugPrintf("  NULL conn->con "
+								"handle\n");
+				} else {
+					debugPrintf("  NULL conn handle\n");
+				}
 				return SQL_INVALID_HANDLE;
 			}
 			conn->env->connlist.removeAll(conn);
@@ -4105,7 +4128,11 @@ static SQLRETURN SQLR_SQLGetConnectAttr(SQLHDBC connectionhandle,
 
 	CONN	*conn=(CONN *)connectionhandle;
 	if (connectionhandle==SQL_NULL_HANDLE || !conn || !conn->con) {
-		debugPrintf("  NULL conn handle\n");
+		if (!conn->con) {
+			debugPrintf("  NULL conn->con handle\n");
+		} else {
+			debugPrintf("  NULL conn handle\n");
+		}
 		return SQL_INVALID_HANDLE;
 	}
 
@@ -5330,7 +5357,11 @@ static SQLRETURN SQLR_SQLGetFunctions(SQLHDBC connectionhandle,
 
 	CONN	*conn=(CONN *)connectionhandle;
 	if (connectionhandle==SQL_NULL_HANDLE || !conn || !conn->con) {
-		debugPrintf("  NULL conn handle\n");
+		if (!conn->con) {
+			debugPrintf("  NULL conn->con handle\n");
+		} else {
+			debugPrintf("  NULL conn handle\n");
+		}
 		return SQL_INVALID_HANDLE;
 	}
 
@@ -5941,7 +5972,11 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			infotype==SQL_ODBC_VER ||
 			infotype==SQL_DATABASE_NAME ||
 			infotype==SQL_USER_NAME)) {
-		debugPrintf("  NULL conn handle\n");
+		if (!conn->con) {
+			debugPrintf("  NULL conn->con handle\n");
+		} else {
+			debugPrintf("  NULL conn handle\n");
+		}
 		return SQL_INVALID_HANDLE;
 	}
 
@@ -8513,7 +8548,11 @@ static SQLRETURN SQLR_SQLSetConnectAttr(SQLHDBC connectionhandle,
 			(attribute==SQL_AUTOCOMMIT ||
 			attribute==SQL_ATTR_METADATA_ID)) {
 		debugPrintf("  attribute: %d\n",attribute);
-		debugPrintf("  NULL conn handle\n");
+		if (!conn->con) {
+			debugPrintf("  NULL conn->con handle\n");
+		} else {
+			debugPrintf("  NULL conn handle\n");
+		}
 		return SQL_INVALID_HANDLE;
 	}
 
