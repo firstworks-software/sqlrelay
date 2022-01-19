@@ -7602,6 +7602,22 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 					"SQL_DTC_TRANSITION_COST\n");
 			break;
 		#endif
+		#ifdef SQL_DRIVER_AWARE_POOLING_SUPPORTED
+		case SQL_DRIVER_AWARE_POOLING_SUPPORTED:
+			debugPrintf("  infotype: "
+					"SQL_DRIVER_AWARE_POOLING_SUPPORTED\n");
+			val.uintval=SQL_DRIVER_AWARE_POOLING_NOT_CAPABLE;
+			type=1;
+			break;
+		#endif
+		#ifdef SQL_ASYNC_NOTIFICATION
+		case SQL_ASYNC_NOTIFICATION:
+			debugPrintf("  infotype: "
+					"SQL_ASYNC_NOTIFICATION\n");
+			val.uintval=SQL_ASYNC_NOTIFICATION_NOT_CAPABLE;
+			type=1;
+			break;
+		#endif
 		default:
 			debugPrintf("  invalid infotype: %d\n",infotype);
 			SQLR_CONNSetError(conn,
