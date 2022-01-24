@@ -14,7 +14,7 @@
 #include <rudiments/datetime.h>
 #include <rudiments/stdio.h>
 #include <rudiments/error.h>
-#ifdef _WIN32
+/*#ifdef _WIN32
 	#define DEBUG_MESSAGES 1
 	#define DEBUG_TO_FILE 1
 	#ifdef _WIN32
@@ -22,7 +22,7 @@
 	#else
 		static const char debugfile[]="/tmp/sqlrodbcdebug.txt";
 	#endif
-#endif
+#endif*/
 #include <rudiments/debugprint.h>
 
 // windows needs this (don't include for __CYGWIN__ though)
@@ -137,6 +137,9 @@ struct CONN {
 
 	bool				attrmetadataid;
 	SQLSMALLINT			sqlerrorindex;
+
+	bool				setautocommiton;
+	bool				setautocommitoff;
 };
 
 struct rowdesc {
@@ -334,6 +337,8 @@ static SQLRETURN SQLR_SQLAllocHandle(SQLSMALLINT handletype,
 				SQLR_CONNClearError(conn);
 				env->connlist.append(conn);
 				conn->attrmetadataid=false;
+				conn->setautocommiton=false;
+				conn->setautocommitoff=false;
 			}
 			return SQL_SUCCESS;
 			}
@@ -2469,6 +2474,59 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 					conn->tries,
 					true);
 
+	SQLRETURN	success=SQL_SUCCESS;
+
+	// enable debug
+	if (charstring::isYes(conn->debug)) {
+		conn->con->debugOn();
+	} else if (!charstring::isNo(conn->debug) &&
+			!charstring::isNullOrEmpty(conn->debug)) {
+		conn->con->setDebugFile(conn->debug);
+		conn->con->debugOn();
+	}
+
+	#ifdef DEBUG_MESSAGES
+	conn->con->debugOn();
+	#endif
+
+	// set autocommit on/off
+	//
+	// The client may have called SQLSetConnectAttr(autoconf-on/off)
+	// after creating a connection handle, but before calling this
+	// function.  In that case, conn was valid, but conn->con was not
+	// and all we could do was set flags in the conn to enable/disable
+	// autoconf when conn->con becomes valid.
+	//
+	// At this point, conn->con has just become valid.  If either flag
+	// is set, then set autocommit here.
+	// 
+	// If fails, we don't want the entire connection to fail.  Just set
+	// the error and return SUCCESS_WITH_INFO.
+	if (conn->setautocommiton) {
+		if (conn->con->autoCommitOn()) {
+			debugPrintf("  Set Auto-Commit On: success\n");
+		} else {
+			SQLR_CONNSetError(conn,
+				conn->con->errorMessage(),
+				conn->con->errorNumber(),NULL);
+			debugPrintf("  Set Auto-Commit On: failed\n");
+			success=SQL_SUCCESS_WITH_INFO;
+		}
+		conn->setautocommiton=false;
+	}
+	if (conn->setautocommitoff) {
+		if (conn->con->autoCommitOff()) {
+			debugPrintf("  Set Auto-Commit Off: success\n");
+		} else {
+			SQLR_CONNSetError(conn,
+				conn->con->errorMessage(),
+				conn->con->errorNumber(),NULL);
+			debugPrintf("  Set Auto-Commit Off: failed\n");
+			success=SQL_SUCCESS_WITH_INFO;
+		}
+		conn->setautocommitoff=false;
+	}
+
 	// enable kerberos or tls
 	if (sqlrconnection::isYes(conn->krb)) {
 		conn->con->enableKerberos(conn->krbservice,
@@ -2484,31 +2542,35 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 						conn->tlsdepth);
 	}
 
-	// enable debug
-	if (charstring::isYes(conn->debug)) {
-		conn->con->debugOn();
-	} else if (!charstring::isNo(conn->debug) &&
-			!charstring::isNullOrEmpty(conn->debug)) {
-		conn->con->setDebugFile(conn->debug);
-		conn->con->debugOn();
-	}
-
-	#ifdef DEBUG_MESSAGES
-	conn->con->debugOn();
-	#endif
-
+	// set the bind variable delimiters
 	conn->con->setBindVariableDelimiters(conn->bindvariabledelimiters);
 
 	// if we're not doing lazy connects, then do something lightweight
 	// that will verify whether SQL Relay is available or not
-	if (!conn->lazyconnect && !conn->con->identify()) {
-		delete conn->con;
-		conn->con=NULL;
+	if (!conn->lazyconnect) {
+		if (!conn->con->identify()) {
+			SQLR_CONNSetError(conn,
+				conn->con->errorMessage(),
+				conn->con->errorNumber(),NULL);
+			delete conn->con;
+			conn->con=NULL;
+		}
 		return SQL_ERROR;
 	}
 
+	// select the database
+	// If fails, we don't want the entire connection to fail.  Just set
+	// the error and return SUCCESS_WITH_INFO.
 	if (!charstring::isNullOrEmpty(conn->db)) {
-		conn->con->selectDatabase(conn->db);
+		if (conn->con->selectDatabase(conn->db)) {
+			debugPrintf("  Select Database: success\n");
+		} else {
+			SQLR_CONNSetError(conn,
+				conn->con->errorMessage(),
+				conn->con->errorNumber(),NULL);
+			debugPrintf("  Select Database: failed\n");
+			success=SQL_SUCCESS_WITH_INFO;
+		}
 	}
 
 	// don't allow the result set buffer size to be set to "fetch all rows"
@@ -2516,7 +2578,7 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 		conn->resultsetbuffersize=1;
 	}
 
-	return SQL_SUCCESS;
+	return success;
 }
 
 SQLRETURN SQL_API SQLConnect(SQLHDBC connectionhandle,
@@ -8544,15 +8606,11 @@ static SQLRETURN SQLR_SQLSetConnectAttr(SQLHDBC connectionhandle,
 	debugFunction();
 
 	CONN	*conn=(CONN *)connectionhandle;
-	if ((connectionhandle==SQL_NULL_HANDLE || !conn || !conn->con) &&
+	if ((connectionhandle==SQL_NULL_HANDLE || !conn) &&
 			(attribute==SQL_AUTOCOMMIT ||
 			attribute==SQL_ATTR_METADATA_ID)) {
 		debugPrintf("  attribute: %d\n",attribute);
-		if (!conn->con) {
-			debugPrintf("  NULL conn->con handle\n");
-		} else {
-			debugPrintf("  NULL conn handle\n");
-		}
+		debugPrintf("  NULL conn handle\n");
 		return SQL_INVALID_HANDLE;
 	}
 
@@ -8564,29 +8622,44 @@ static SQLRETURN SQLR_SQLSetConnectAttr(SQLHDBC connectionhandle,
 		#ifdef SQL_AUTOCOMMIT
 		case SQL_AUTOCOMMIT:
 		{
+			// In both cases below, if the sqlrelay connection is
+			// valid then immediately set autoconf on/off.
+			//
+			// Otherwise set a flag in the CONN to that it will
+			// be set on/off when the sqlrelay connection becomes
+			// valid.
+
 			debugPrintf("  attribute: SQL_AUTOCOMMIT\n");
 			debugPrintf("  val: %lld\n",(uint64_t)val);
 			if (val==SQL_AUTOCOMMIT_ON) {
 				debugPrintf("  ON\n");
-				if (conn->con->autoCommitOn()) {
-					debugPrintf("  success\n");
-					return SQL_SUCCESS;
+				if (conn->con) {
+					if (conn->con->autoCommitOn()) {
+						debugPrintf("  success\n");
+						return SQL_SUCCESS;
+					}
+					SQLR_CONNSetError(conn,
+						conn->con->errorMessage(),
+						conn->con->errorNumber(),NULL);
+					debugPrintf("  failed\n");
+				} else {
+					conn->setautocommiton=true;
 				}
-				SQLR_CONNSetError(conn,
-					conn->con->errorMessage(),
-					conn->con->errorNumber(),NULL);
-				debugPrintf("  failed\n");
 				return SQL_ERROR;
 			} else if (val==SQL_AUTOCOMMIT_OFF) {
 				debugPrintf("  OFF\n");
-				if (conn->con->autoCommitOff()) {
-					debugPrintf("  success\n");
-					return SQL_SUCCESS;
+				if (conn->con) {
+					if (conn->con->autoCommitOff()) {
+						debugPrintf("  success\n");
+						return SQL_SUCCESS;
+					}
+					SQLR_CONNSetError(conn,
+						conn->con->errorMessage(),
+						conn->con->errorNumber(),NULL);
+					debugPrintf("  failed\n");
+				} else {
+					conn->setautocommitoff=true;
 				}
-				SQLR_CONNSetError(conn,
-					conn->con->errorMessage(),
-					conn->con->errorNumber(),NULL);
-				debugPrintf("  failed\n");
 				return SQL_ERROR;
 			}
 			debugPrintf("  unsupported val: %d "
