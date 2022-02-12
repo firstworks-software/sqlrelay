@@ -8642,10 +8642,11 @@ static SQLRETURN SQLR_SQLSetConnectAttr(SQLHDBC connectionhandle,
 						conn->con->errorMessage(),
 						conn->con->errorNumber(),NULL);
 					debugPrintf("  failed\n");
+					return SQL_ERROR;
 				} else {
 					conn->setautocommiton=true;
+					return SQL_SUCCESS;
 				}
-				return SQL_ERROR;
 			} else if (val==SQL_AUTOCOMMIT_OFF) {
 				debugPrintf("  OFF\n");
 				if (conn->con) {
@@ -8657,10 +8658,11 @@ static SQLRETURN SQLR_SQLSetConnectAttr(SQLHDBC connectionhandle,
 						conn->con->errorMessage(),
 						conn->con->errorNumber(),NULL);
 					debugPrintf("  failed\n");
+					return SQL_ERROR;
 				} else {
 					conn->setautocommitoff=true;
+					return SQL_SUCCESS;
 				}
-				return SQL_ERROR;
 			}
 			debugPrintf("  unsupported val: %d "
 					"(but returning success)\n",val);
