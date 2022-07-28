@@ -392,7 +392,7 @@ static bool loadLibraries(stringbuffer *errormessage) {
 	alreadyopen=true;
 
 	// build lib names
-	const char	**libnames=new const char *[11];
+	const char	**libnames=new const char *[30];
 	uint16_t	p=0;
 	stringbuffer	libdir;
 	const char	*oraclehome=environment::getValue("ORACLE_HOME");
@@ -400,6 +400,55 @@ static bool loadLibraries(stringbuffer *errormessage) {
 		libdir.append(oraclehome)->append("/lib/libclntsh.so");
 		libnames[p++]=libdir.getString();
 	}
+
+	libnames[p++]=
+	"/u01/app/oracle/product/19.3.0/client_1/libclntsh.so.19.1";
+	libnames[p++]=
+	"/u01/app/oracle/product/19.2.0/client_1/libclntsh.so.19.1";
+	libnames[p++]=
+	"/u01/app/oracle/product/19.1.0/client_1/libclntsh.so.19.1";
+	libnames[p++]=
+	"/u01/app/oracle/product/19.0.0/client_1/libclntsh.so.19.1";
+
+	if (sizeof(long)==8) {
+		libnames[p++]="/usr/lib/oracle/18.3/client64/lib/libclntsh.so";
+	} else {
+		libnames[p++]="/usr/lib/oracle/18.3/client/lib/libclntsh.so";
+	}
+	libnames[p++]="/opt/instantclient_18_3/libclntsh.so.18.1";
+	libnames[p++]="/usr/local/instantclient_18_3/libclntsh.so.18.1";
+
+	if (sizeof(long)==8) {
+		libnames[p++]="/usr/lib/oracle/18.2/client64/lib/libclntsh.so";
+	} else {
+		libnames[p++]="/usr/lib/oracle/18.2/client/lib/libclntsh.so";
+	}
+	libnames[p++]="/opt/instantclient_18_2/libclntsh.so.18.1";
+	libnames[p++]="/usr/local/instantclient_18_2/libclntsh.so.18.1";
+
+	if (sizeof(long)==8) {
+		libnames[p++]="/usr/lib/oracle/18.1/client64/lib/libclntsh.so";
+	} else {
+		libnames[p++]="/usr/lib/oracle/18.1/client/lib/libclntsh.so";
+	}
+	libnames[p++]="/opt/instantclient_18_1/libclntsh.so.18.1";
+	libnames[p++]="/usr/local/instantclient_18_1/libclntsh.so.18.1";
+
+	if (sizeof(long)==8) {
+		libnames[p++]="/usr/lib/oracle/12.3/client64/lib/libclntsh.so";
+	} else {
+		libnames[p++]="/usr/lib/oracle/12.3/client/lib/libclntsh.so";
+	}
+	libnames[p++]="/opt/instantclient_12_3/libclntsh.so.12.1";
+	libnames[p++]="/usr/local/instantclient_12_3/libclntsh.so.12.1";
+
+	if (sizeof(long)==8) {
+		libnames[p++]="/usr/lib/oracle/12.2/client64/lib/libclntsh.so";
+	} else {
+		libnames[p++]="/usr/lib/oracle/12.2/client/lib/libclntsh.so";
+	}
+	libnames[p++]="/opt/instantclient_12_2/libclntsh.so.12.1";
+	libnames[p++]="/usr/local/instantclient_12_2/libclntsh.so.12.1";
 
 	if (sizeof(long)==8) {
 		libnames[p++]="/usr/lib/oracle/12.1/client64/lib/libclntsh.so";

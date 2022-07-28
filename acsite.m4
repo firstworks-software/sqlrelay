@@ -1020,7 +1020,6 @@ AC_SUBST(RUDIMENTSLIBSPATH)
 
 
 
-
 AC_DEFUN([FW_CHECK_ORACLE],
 [
 if ( test -z "$ORACLEATRUNTIME" )
@@ -1067,6 +1066,8 @@ then
 			FW_CHECK_LIB([$ORACLE_HOME/lib/libcore10.a],[ORACLEVERSION=\"10g\"; ORACLELIBSPATH=\"$ORACLE_HOME/lib\"; ORACLELIBS=\"-L$ORACLE_HOME/lib -lclntsh $SYSLIBLIST\"])
 			FW_CHECK_LIB([$ORACLE_HOME/lib/libcore11.a],[ORACLEVERSION=\"11g\"; ORACLELIBSPATH=\"$ORACLE_HOME/lib\"; ORACLELIBS=\"-L$ORACLE_HOME/lib -lclntsh $SYSLIBLIST\"])
 			FW_CHECK_LIB([$ORACLE_HOME/lib/libcore12.a],[ORACLEVERSION=\"12c\"; ORACLELIBSPATH=\"$ORACLE_HOME/lib\"; ORACLELIBS=\"-L$ORACLE_HOME/lib -lclntsh $SYSLIBLIST\"])
+			FW_CHECK_LIB([$ORACLE_HOME/lib/libcore18.a],[ORACLEVERSION=\"18c\"; ORACLELIBSPATH=\"$ORACLE_HOME/lib\"; ORACLELIBS=\"-L$ORACLE_HOME/lib -lclntsh $SYSLIBLIST\"])
+			FW_CHECK_LIB([$ORACLE_HOME/lib/libcore19.a],[ORACLEVERSION=\"19c\"; ORACLELIBSPATH=\"$ORACLE_HOME/lib\"; ORACLELIBS=\"-L$ORACLE_HOME/lib -lclntsh $SYSLIBLIST\"])
 			FW_CHECK_LIB([$ORACLE_HOME/lib/libclntsh.a],[ORACLESTATIC=\"$STATICFLAG\"])
 		fi
 
@@ -1079,7 +1080,11 @@ then
 			dnl look in some common places
 			if ( test -z "$ORACLE_INSTANTCLIENT_PREFIX" )
 			then
-				for i in "/usr" "/usr/lib" "/usr/local" "/opt"
+				for i in \
+					"/usr" \
+					"/usr/lib" \
+					"/usr/local" \
+					"/opt"
 				do
 					INSTCLNT=`ls -d $i/instantclient* 2> /dev/null | tail -1`
 					if ( test -n "$INSTCLNT" )
@@ -1090,9 +1095,23 @@ then
 				done
 			fi
 
-			dnl For some reason libclntsh.so is not included in the
-			dnl non-RPM versions, so we have to look for and use
-			dnl the file with a version number tacked on to the end.
+			dnl check for 19c/21c-style instantclient
+			if ( test -z "$ORACLE_INSTANTCLIENT_PREFIX" )
+			then
+				for i in `ls -d /u*/app/*/product/*/client* 2> /dev/null`
+				do
+					if ( test -n "$i/instantclient" )
+					then
+						ORACLE_INSTANTCLIENT_PREFIX=$i
+						break
+					fi
+				done
+			fi
+
+			dnl For some reason libclntsh.so isn't always included
+			dnl in the non-RPM versions, so we have to look for and
+			dnl use the file with a version number tacked on to the
+			dnl end.
 			if ( test -n "$ORACLE_INSTANTCLIENT_PREFIX" -a -r "`ls $ORACLE_INSTANTCLIENT_PREFIX/libclntsh.$SOSUFFIX.* 2> /dev/null | tail -1`" -a -r "$ORACLE_INSTANTCLIENT_PREFIX/sdk/include/oci.h" )
 			then
 				ORACLEVERSION="10g"
@@ -1104,14 +1123,33 @@ then
 				then
 					ORACLEVERSION="12c"
 				fi
+				if ( test -n "`basename $ORACLE_INSTANTCLIENT_PREFIX | grep 18`" )
+				then
+					ORACLEVERSION="18c"
+				fi
+				if ( test -n "`echo $ORACLE_INSTANTCLIENT_PREFIX | grep 19`" )
+				then
+					ORACLEVERSION="19c"
+				fi
+				if ( test -n "`echo $ORACLE_INSTANTCLIENT_PREFIX | grep 21`" )
+				then
+					ORACLEVERSION="21c"
+				fi
 				ORACLELIBSPATH="$ORACLE_INSTANTCLIENT_PREFIX"
 				CLNTSH="`ls $ORACLE_INSTANTCLIENT_PREFIX/libclntsh.$SOSUFFIX.* 2> /dev/null | tail -1`"
 				NNZ=`basename $ORACLELIBSPATH/libnnz*.$SOSUFFIX | sed -e "s|lib||" -e "s|.$SOSUFFIX||"`
 				ORACLELIBS="-Wl,$CLNTSH -L$ORACLE_INSTANTCLIENT_PREFIX -l$NNZ"
 				if ( test "$ORACLEVERSION" = "12c" )
 				then
+					ORACLELIBS="$ORACLELIBS -lons -lclntshcore"
+				elif ( test "$ORACLEVERSION" = "18c" )
+				then
 					CLNTSHCORE="`ls $ORACLE_INSTANTCLIENT_PREFIX/libclntshcore.$SOSUFFIX.* 2> /dev/null | tail -1`"
-					ORACLELIBS="$ORACLELIBS -lons -Wl,$CLNTSHCORE"
+					ORACLELIBS="$ORACLELIBS -lons -Wl,$CLNTSHCORE -lmql1 -lipc1"
+				elif ( test "$ORACLEVERSION" = "19c" -o "$ORACLEVERSION" = "21c" )
+				then
+					CLNTSHCORE="`ls $ORACLE_INSTANTCLIENT_PREFIX/libclntshcore.$SOSUFFIX.* 2> /dev/null | tail -1`"
+					ORACLELIBS="$ORACLELIBS -Wl,$CLNTSHCORE -lmql1 -lipc1"
 				fi
 				ORACLEINCLUDES="-I$ORACLE_INSTANTCLIENT_PREFIX/sdk/include"
 			fi
@@ -1120,53 +1158,51 @@ then
 		dnl if we didn't find anything yet, look for RPM-based
 		dnl instantclient, which, oddly enough, does contain
 		dnl libclntsh.so
-		if ( test -z "$ORACLELIBS" )
+		if ( test -z "$ORACLELIBS" -a -d "/usr/lib/oracle" )
 		then
-			for version in `cd /usr/lib/oracle 2> /dev/null; ls -d * 2> /dev/null`
+			cd /usr/lib/oracle
+			for version in `ls -d * 2> /dev/null`
 			do
-				if ( test -r "/usr/lib/oracle/$version/client/lib/libclntsh.$SOSUFFIX" -a -r "/usr/include/oracle/$version/client/oci.h" )
+				ORACLEVERSION="10g"
+				if ( test -n "`echo $version | grep 11`" )
 				then
-					ORACLEVERSION="10g"
-					if ( test -n "`echo $version | grep 11`" )
-					then
-						ORACLEVERSION="11g"
-					fi
-					if ( test -n "`echo $version | grep 12`" )
-					then
-						ORACLEVERSION="12c"
-					fi
-					ORACLELIBSPATH="/usr/lib/oracle/$version/client/lib"
-					NNZ=`basename $ORACLELIBSPATH/libnnz*.$SOSUFFIX | sed -e "s|lib||" -e "s|.$SOSUFFIX||"`
-					ORACLELIBS="-L/usr/lib/oracle/$version/client/lib -lclntsh -l$NNZ"
-					if ( test "$ORACLEVERSION" = "12c" )
-					then
-						ORACLELIBS="$ORACLELIBS -lons -lclntshcore"
-					fi
-					ORACLEINCLUDES="-I/usr/include/oracle/$version/client"
+					ORACLEVERSION="11g"
+				fi
+				if ( test -n "`echo $version | grep 12`" )
+				then
+					ORACLEVERSION="12c"
+				fi
+				if ( test -n "`echo $version | grep 18`" )
+				then
+					ORACLEVERSION="18c"
 				fi
 
 				dnl x86_64 uses client64 rather than client
-				if ( test -r "/usr/lib/oracle/$version/client64/lib/libclntsh.$SOSUFFIX" -a -r "/usr/include/oracle/$version/client64/oci.h" )
+				OCLIENT=""
+				if ( test -r "/usr/lib/oracle/$version/client" )
 				then
-					ORACLEVERSION="10g"
-					if ( test -n "`echo $version | grep 11`" )
-					then
-						ORACLEVERSION="11g"
-					fi
-					if ( test -n "`echo $version | grep 12`" )
-					then
-						ORACLEVERSION="12c"
-					fi
-					ORACLELIBSPATH="/usr/lib/oracle/$version/client64/lib"
+					OCLIENT="client"
+				elif ( test -r "/usr/lib/oracle/$version/client64" )
+				then
+					OCLIENT="client64"
+				fi
+				if ( test -r "/usr/lib/oracle/$version/$OCLIENT/lib/libclntsh.$SOSUFFIX" -a -r "/usr/include/oracle/$version/$OCLIENT/oci.h" )
+				then
+					ORACLELIBSPATH="/usr/lib/oracle/$version/$OCLIENT/lib"
 					NNZ=`basename $ORACLELIBSPATH/libnnz*.$SOSUFFIX | sed -e "s|lib||" -e "s|.$SOSUFFIX||"`
-					ORACLELIBS="-L/usr/lib/oracle/$version/client64/lib -lclntsh -l$NNZ"
+					ORACLELIBS="-L/usr/lib/oracle/$version/$OCLIENT/lib -lclntsh -l$NNZ"
 					if ( test "$ORACLEVERSION" = "12c" )
 					then
 						ORACLELIBS="$ORACLELIBS -lons -lclntshcore"
+					elif ( test "$ORACLEVERSION" = "18c" )
+					then
+						CLNTSHCORE="`ls /usr/lib/oracle/$version/$OCLIENT/lib/libclntshcore.$SOSUFFIX.* 2> /dev/null | tail -1`"
+						ORACLELIBS="$ORACLELIBS -lons -Wl,$CLNTSHCORE -lmql1 -lipc1"
 					fi
-					ORACLEINCLUDES="-I/usr/include/oracle/$version/client64"
+					ORACLEINCLUDES="-I/usr/include/oracle/$version/$OCLIENT"
 				fi
 			done
+			cd -
 		fi
 		
 		if ( test -n "$ORACLEVERSION" )
@@ -1194,6 +1230,7 @@ then
 				FW_TRY_LINK([#ifdef __CYGWIN__
 	#define _int64 long long
 #endif
+#define OCIVER_ORACLE 1
 #include <oci.h>
 #include <stdlib.h>
 $GLIBC23HACKINCLUDE
@@ -1202,6 +1239,7 @@ $GLIBC23HACKCODE],[exit(0)],[$ORACLESTATIC $ORACLEINCLUDES],[$ORACLELIBS $SOCKET
 				FW_TRY_LINK([#ifdef __CYGWIN__
 	#define _int64 long long
 #endif
+#define OCIVER_ORACLE 1
 #include <oci.h>
 #include <stdlib.h>
 $GLIBC23HACKINCLUDE
@@ -1219,6 +1257,7 @@ $GLIBC23HACKCODE],[exit(0)],[$ORACLESTATIC $ORACLEINCLUDES],[$ORACLELIBS $SOCKET
 				FW_TRY_LINK([#ifdef __CYGWIN__
 	#define _int64 long long
 #endif
+#define OCIVER_ORACLE 1
 #include <oci.h>
 #include <stdlib.h>
 $GLIBC23HACKINCLUDE
@@ -1240,6 +1279,7 @@ $GLIBC23HACKCODE],[olog(NULL,NULL,"",-1,"",-1,"",-1,OCI_LM_DEF);],[$ORACLESTATIC
 					FW_TRY_LINK([#ifdef __CYGWIN__
 	#define _int64 long long
 #endif
+#define OCIVER_ORACLE 1
 #include <oci.h>
 #include <stdlib.h>
 $GLIBC23HACKINCLUDE
@@ -1264,6 +1304,7 @@ $GLIBC23HACKCODE],[olog(NULL,NULL,"",-1,"",-1,"",-1,OCI_LM_DEF);],[$ORACLESTATIC
 				FW_TRY_LINK([#ifdef __CYGWIN__
 	#define _int64 long long
 #endif
+#define OCIVER_ORACLE 1
 #include <oci.h>
 #include <stdlib.h>
 $GLIBC23HACKINCLUDE
@@ -1285,6 +1326,7 @@ $GLIBC23HACKCODE],[olog(NULL,NULL,NULL,-1,NULL,-1,NULL,-1,OCI_LM_DEF);],[$ORACLE
 					FW_TRY_LINK([#ifdef __CYGWIN__
 	#define _int64 long long
 #endif
+#define OCIVER_ORACLE 1
 #include <oci.h>
 #include <stdlib.h>
 $GLIBC23HACKINCLUDE
