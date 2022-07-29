@@ -6,6 +6,8 @@
 	backported a fix for NULL-binds in the ODBC driver
 	backported -fdeclspec configure test for ruby with clang
 	backported a postgresql isnull fix
+	bacckported patch from Kyle to use HH24 instead of HH in default
+		fakeinputbindvariablesdateformat string
 
 1.9.2 - ruby cursor constructor marks associated ruby connection object now
 	updated bad-command and no-cursor-available handling in sqlrclient
