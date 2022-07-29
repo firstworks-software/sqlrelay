@@ -863,7 +863,7 @@ bool postgresqlcursor::inputBind(const char *variable,
 		return true;
 	}
 
-	if (*isnull) {
+	if (*isnull==conn->nullBindValue()) {
 		bindvalues[pos]=NULL;
 		bindlengths[pos]=0;
 	} else {
@@ -941,7 +941,7 @@ bool postgresqlcursor::inputBindBlob(const char *variable,
 		return true;
 	}
 
-	if (*isnull) {
+	if (*isnull==conn->nullBindValue()) {
 		bindvalues[pos]=NULL;
 		bindlengths[pos]=0;
 	} else {
@@ -972,7 +972,7 @@ bool postgresqlcursor::inputBindClob(const char *variable,
 		return true;
 	}
 
-	if (*isnull) {
+	if (*isnull==conn->nullBindValue()) {
 		bindvalues[pos]=NULL;
 		bindlengths[pos]=0;
 	} else {

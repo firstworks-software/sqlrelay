@@ -676,6 +676,8 @@ then
 	CPPFLAGS="-fPIC $CPPFLAGS"
 fi
 
+FW_CHECK_FDECLSPEC
+
 echo "******************************"
 
 

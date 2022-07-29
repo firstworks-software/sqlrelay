@@ -3161,14 +3161,76 @@ then
 
 		pyext=""
 
-		for pyversion in "3.9" "3.8" "3.7" "3.6" "3.5" "3.4" "3.3" "3.2" "3.1" "3.0" "2.9" "2.8" "2.7" "2.6" "2.5" "2.4" "2.3" "2.2" "2.1"
+		for pyversion in \
+				"3.20" \
+				"3.19" \
+				"3.18" \
+				"3.17" \
+				"3.16" \
+				"3.15" \
+				"3.14" \
+				"3.13" \
+				"3.12" \
+				"3.11" \
+				"3.10" \
+				"3.9" \
+				"3.8" \
+				"3.7" \
+				"3.6" \
+				"3.5" \
+				"3.4" \
+				"3.3" \
+				"3.2" \
+				"3.1" \
+				"3.0" \
+				"2.9" \
+				"2.8" \
+				"2.7" \
+				"2.6" \
+				"2.5" \
+				"2.4" \
+				"2.3" \
+				"2.2" \
+				"2.1"
 		do
 
-			for pyprefix in "$PYTHONPATH" "/usr" "/usr/local" "/usr/pkg" "/usr/local/python$pyversion" "/opt/sfw" "/usr/sfw" "/opt/csw" "/sw" "/System/Library/Frameworks/Python.framework/Versions/Current" "/boot/common"
+			for pyprefix in \
+				"$PYTHONPATH" \
+				"/usr" \
+				"/usr/local" \
+				"/usr/pkg" \
+				"/usr/local/python$pyversion" \
+				"/opt/sfw" \
+				"/usr/sfw" \
+				"/opt/csw" \
+				"/sw" \
+				"/usr/freeware" \
+				"/System/Library/Frameworks/Python.framework/Versions/Current" \
+				"/boot/common"
 			do
 
 				if ( test -n "$pyprefix" )
 				then
+
+					for pyexe in \
+						"python$pyversion$pyext" \
+						"python$PYTHONVERSION$pyext" \
+						"python$pyversion" \
+						"python$PYTHONVERSION" "python"
+					do
+						if ( test -x "$pyprefix/bin/$pyexe" )
+						then
+							PYTHON="$pyprefix/bin/$pyexe"
+
+							dnl on mac os x with -bundle_loader, set PYTHONLIB
+							if ( test -n "$BUNDLE_LOADER" )
+							then
+								PYTHONLIB="-Wl,$BUNDLE_LOADER -Wl,$PYTHON"
+							fi
+
+							break
+						fi
+					done
 
 					PYTHONINCLUDES=""
 					for ext in "mu" "m" "u" ""
@@ -3177,32 +3239,43 @@ then
 						then
 							PYTHONINCLUDES="-I$pyprefix/include/python$pyversion$ext"
 							PYTHONVERSION=`echo $pyversion | sed -e "s|\.||"`
+							PYTHONMAJOR=`echo $pyversion | cut -d'.' -f1`
+							PYTHONMINOR=`echo $pyversion | cut -d'.' -f2`
 							pyext="$ext"
 							break;
 						fi
 					done
 
-					for pylibdir in "$pyprefix/lib64/python$pyversion" "$pyprefix/lib/python$pyversion"
+					for pylibdir in \
+						"$pyprefix/lib64/python$pyversion" \
+						"$pyprefix/lib/python$pyversion"
 					do
 
 						PYTHONDIR=""
-						for k in "config" "config-$MULTIARCHDIR" "config-$pyversion-$MULTIARCHDIR" "config-$pyversion" "config-${pyversion}mu-$MULTIARCHDIR" "config-${pyversion}mu" "config-${pyversion}m-$MULTIARCHDIR" "config-${pyversion}m" "config-${pyversion}u-$MULTIARCHDIR" "config-${pyversion}u"
+						for k in \
+							"config" \
+							"config-$MULTIARCHDIR" \
+							"config-$pyversion-$MULTIARCHDIR" \
+							"config-$pyversion" \
+							"config-${pyversion}mu-$MULTIARCHDIR" \
+							"config-${pyversion}mu" \
+							"config-${pyversion}m-$MULTIARCHDIR" \
+							"config-${pyversion}m" \
+							"config-${pyversion}u-$MULTIARCHDIR" \
+							"config-${pyversion}u"
 						do
 
 							if ( test -d "$pylibdir/$k" )
 							then
-								dnl for cygwin and mac os x
-								dnl add -lpython
+								PYTHONDIR="$pylibdir"
+
+								dnl for cygwin and early mac os x, add -lpython or similar
 								if ( test -n "$CYGWIN" -a -r "$pylibdir/$k/libpython$pyversion.dll.a" )
 								then
-									PYTHONDIR="$pylibdir"
 									PYTHONLIB="-L$PYTHONDIR/$k -lpython$pyversion"
-								elif ( test -n "$DARWIN" )
+								elif ( test -n "$DARWIN" -a -z "$BUNDLE_LOADER" -a -z "$UNDEFINED_DYNAMIC_LOOKUP" )
 								then
-									PYTHONDIR="$pylibdir"
-									PYTHONLIB="-lpython$pyversion"
-								else
-									PYTHONDIR="$pylibdir"
+									PYTHONLIB="-L$PYTHONDIR/$k -lpython$pyversion"
 								fi
 								if ( test -n "$PYTHONDIR" )
 								then
@@ -3212,15 +3285,6 @@ then
 						done
 						if ( test -n "$PYTHONDIR" )
 						then
-							break
-						fi
-					done
-
-					for pyexe in "python$pyversion$pyext" "python$PYTHONVERSION$pyext" "python$pyversion" "python$PYTHONVERSION" "python"
-					do
-						if ( test -x "$pyprefix/bin/$pyexe" )
-						then
-							PYTHON="$pyprefix/bin/$pyexe"
 							break
 						fi
 					done
@@ -3276,19 +3340,34 @@ then
 		fi
 	fi
 
+	dnl on mac os x, add -framework Python to the includes
+	if (test -n "$DARWIN" )
+	then
+		PYTHONINCLUDES="-framework Python $PYTHONINCLUDES"
+	fi
+
+	dnl on mac os x with -undefined dynamic_loader, add that to PYTHONLIB
+	if ( test -n "$UNDEFINED_DYNAMIC_LOOKUP" )
+	then
+		PYTHONLIB="$PYTHONLIB $UNDEFINED_DYNAMIC_LOOKUP"
+	fi
+
+	dnl Python 3.10+ requires PY_SSIZE_T_CLEAN to be defined before
+	dnl including Python.h, so we'll set a flag 
+	if ( test "$PYTHONMAJOR" -ge "3" )
+	then
+		if ( test "$PYTHONMAJOR" -gt "3" -o "$PYTHONMINOR" -ge "10" )
+		then
+			AC_DEFINE(SQLRELAY_NEED_PY_SSIZE_T_CLEAN, 1, Some systems have Python 3.10+)
+		fi
+        fi
+
 	FW_INCLUDES(python,[$PYTHONINCLUDES])
+	FW_LIBS(python,[$PYTHONLIB])
 
 	if ( test -n "$OVERRIDEPYTHONDIR" )
 	then
 		PYTHONDIR="$OVERRIDEPYTHONDIR"
-	fi
-
-	IMPORTEXCEPTIONS=""
-	EXCEPTIONSSTANDARDERROR="Exception"
-	if ( test "$PYTHONVERSION" = "2" )
-	then
-		IMPORTEXCEPTIONS="import exceptions"
-		EXCEPTIONSSTANDARDERROR="exceptions.StandardError"
 	fi
 
 	AC_SUBST(HAVE_PYTHON)
@@ -3297,8 +3376,20 @@ then
 	AC_SUBST(PYTHONSITEDIR)
 	AC_SUBST(PYTHONLIB)
 	AC_SUBST(PYTHON)
+	AC_SUBST(PYTHONFRAMEWORK)
+
+
+	dnl some flags for the python tests
+	IMPORTEXCEPTIONS=""
+	EXCEPTIONSSTANDARDERROR="Exception"
+	if ( test "$PYTHONMAJOR" = "2" )
+	then
+		IMPORTEXCEPTIONS="import exceptions"
+		EXCEPTIONSSTANDARDERROR="exceptions.StandardError"
+	fi
 	AC_SUBST(IMPORTEXCEPTIONS)
 	AC_SUBST(EXCEPTIONSSTANDARDERROR)
+
 
 	if ( test "$HAVE_PYTHON" = "" )
 	then
@@ -3328,58 +3419,96 @@ then
 
 		found="no"
 
-		for major in "" "1" "2"
+		for major in "" "1" "2" "3"
 		do
 
-			for minor in "" "9" "8" "7" "6" "5" "4" "3" "2" "1" "0"
+			for minor in \
+				"" \
+				"9" \
+				"8" \
+				"7" \
+				"6" \
+				"5" \
+				"4" \
+				"3" \
+				"2" \
+				"1" \
+				"0"
 			do
 
-				for patchlevel in "" "0" "1" "2" "3" "4" "5" "6" "7" "8" "9"
+				for patchlevel in \
+						"" \
+						"0" \
+						"1" \
+						"2" \
+						"3" \
+						"4" \
+						"5" \
+						"6" \
+						"7" \
+						"8" \
+						"9"
 				do
 
 					for separator in "" "."
 					do
 
-			ruby="ruby$major$separator$minor"
-			if ( test -n "$patchlevel" )
-			then
-				ruby="ruby$major$separator$minor$separator$patchlevel"
-			fi
+						ruby="ruby$major$separator$minor"
+						if ( test -n "$patchlevel" )
+						then
+							ruby="ruby$major$separator$minor$separator$patchlevel"
+						fi
 
-			HAVE_RUBY=""
-			RUBY=""
-			RUBYLIB=""
+						HAVE_RUBY=""
+						RUBY=""
+						RUBYLIB=""
 
-			if ( test -n "$RUBYPATH" )
-			then
-				FW_CHECK_FILE("$RUBYPATH/bin/$ruby",[RUBY=\"$RUBYPATH/bin/$ruby\"])
-			else
-				AC_CHECK_PROG(RUBY,"$ruby","$ruby")
-				if ( test -z "$RUBY" )
-				then
-					for i in "/usr/local/ruby/bin" "/usr/bin" "/usr/local/bin" "/usr/pkg/bin" "/opt/sfw/bin" "/usr/sfw/bin" "/opt/csw/bin" "/sw/bin" "/boot/common/bin" "/resources/index/bin"
-					do
-						FW_CHECK_FILE("$i/$ruby",[RUBY=\"$i/$ruby\"])
+						if ( test -n "$RUBYPATH" )
+						then
+							FW_CHECK_FILE("$RUBYPATH/bin/$ruby",[RUBY=\"$RUBYPATH/bin/$ruby\"])
+						else
+							AC_CHECK_PROG(RUBY,"$ruby","$ruby")
+							if ( test -z "$RUBY" )
+							then
+								for i in "/usr/local/ruby/bin" "/usr/bin" "/usr/local/bin" "/usr/pkg/bin" "/opt/sfw/bin" "/usr/sfw/bin" "/opt/csw/bin" "/sw/bin" "/usr/freeware/bin" "/boot/common/bin" "/resources/index/bin"
+								do
+									FW_CHECK_FILE("$i/$ruby",[RUBY=\"$i/$ruby\"])
+									if ( test -n "$RUBY" )
+									then
+										found="yes"
+										break
+									fi
+								done
+							fi
+						fi
+
 						if ( test -n "$RUBY" )
 						then
+							HAVE_RUBY="yes"
+
+							dnl for cygwin and early mac os x, add -lruby
+							if ( test -n "$CYGWIN" )
+							then
+								dnl FIXME: we really should include a -L option
+								RUBYLIB="-lruby"
+							elif ( test -n "$DARWIN" )
+							then
+								if ( test -n "$UNDEFINED_DYNAMIC_LOOKUP" )
+								then
+									RUBYLIB="$UNDEFINED_DYNAMIC_LOOKUP"
+								elif ( test -n "$BUNDLE_LOADER" )
+								then
+									RUBYLIB="-Wl,$BUNDLE_LOADER -Wl,$RUBY"
+								else
+									dnl FIXME: we really should include a -L option
+									RUBYLIB="-lruby"
+								fi
+							fi
+
 							found="yes"
 							break
 						fi
-					done
-				fi
-			fi
 
-			if ( test -n "$RUBY" )
-			then
-				HAVE_RUBY="yes"
-				dnl for cygwin and OSX include -lruby
-				if ( test -n "$CYGWIN" -o -n "$DARWIN" )
-				then
-					RUBYLIB="-lruby"
-				fi
-				found="yes"
-				break
-			fi
 						if ( test -z "$major" -o -z "$minor" -o -z "$patchlevel" )
 						then
 							break
@@ -3451,7 +3580,7 @@ END
 
 			AC_MSG_CHECKING(for ruby.h)
 			HAVE_RUBY_H=""
-			for dir in `eval $RUBY conftest.rb 2>/dev/null | sed -e "s|-x.* | |g" -e "s|-belf||g" -e "s|-mtune=.* | |g" | $MAKE -s -f - | grep -v Entering | grep -v Leaving`
+			for dir in `eval $RUBY conftest.rb 2>/dev/null | sed -e "s|-x.* | |g" -e "s|-belf||g" -e "s|-mtune=.* | |g" | $MAKE -s -f - 2> /dev/null | grep -v Entering | grep -v Leaving`
 			do
 				if ( test -r "$dir/ruby.h" )
 				then
@@ -3470,7 +3599,7 @@ END
 
 			AC_MSG_CHECKING(for ruby/thread.h)
 			HAVE_RUBY_THREAD_H=""
-			for dir in `eval $RUBY conftest.rb 2>/dev/null | sed -e "s|-x.* | |g" -e "s|-belf||g" -e "s|-mtune=.* | |g" | $MAKE -s -f - | grep -v Entering | grep -v Leaving`
+			for dir in `eval $RUBY conftest.rb 2>/dev/null | sed -e "s|-x.* | |g" -e "s|-belf||g" -e "s|-mtune=.* | |g" | $MAKE -s -f - 2> /dev/null | grep -v Entering | grep -v Leaving`
 			do
 				if ( test -r "$dir/ruby/thread.h" )
 				then
@@ -4576,4 +4705,20 @@ gethostbyname(NULL);],[$CPPFLAGS],[$i],[],[SOCKETLIBS="$i"; DONE="yes"],[])
 	fi
 
 	AC_SUBST(SOCKETLIBS)
+])
+
+dnl checks to see if -fdeclspec compiler option works or not
+dnl if it does, then it sets the variable FDECLSPEC="-fdeclspec"
+dnl if it does not , then it sets the variable FDECLSPEC=""
+AC_DEFUN([FW_CHECK_FDECLSPEC],
+[
+AC_MSG_CHECKING(for -fdeclspec option)
+FW_TRY_LINK([],[int a; a=1;],[-fdeclspec],[],[],[FDECLSPEC="-fdeclspec"],[FDECLSPEC=""])
+if ( test -n "$FDECLSPEC" )
+then
+	AC_MSG_RESULT(yes)
+else
+	AC_MSG_RESULT(no)
+fi
+AC_SUBST(FDECLSPEC)
 ])
