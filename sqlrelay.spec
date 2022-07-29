@@ -2,7 +2,7 @@
 %{!?tcl_sitearch: %global tcl_sitearch %{_libdir}/tcl%{tcl_version}}
 
 Name: sqlrelay
-Version: 1.9.2
+Version: 1.9.3
 Release: 1%{?dist}
 Summary: Database proxy
 
@@ -137,7 +137,7 @@ Requires: perl-%{name}%{?_isa} = %{version}-%{release}
 Perl DBI driver for SQL Relay.
 
 
-%if 0%{?fedora} || 0%{?rhel} > 7
+%if 0%{?fedora} || 0%{?rhel} > 6
 
 %package -n python3-%{name}
 License: ZPL 1.0 or MIT
@@ -669,7 +669,7 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_mandir}/*/DBD::SQLRelay.*
 
 
-%if 0%{?fedora} || 0%{?rhel} > 7
+%if 0%{?fedora} || 0%{?rhel} > 6
 
 %files -n python3-%{name}
 %dir %{python3_sitearch}/SQLRelay/__pycache__
@@ -795,6 +795,10 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_javadocdir}/%{name}
 
 %changelog
+* Fri Jul 29 2022 David Muse <david.muse@firstworks.com> - 1.9.3-1
+- Updated to version 1.9.3.
+- Updated to build python 3 packages for rhel > 6.
+
 * Mon Aug 09 2021 David Muse <david.muse@firstworks.com> - 1.9.2-1
 - Updated to version 1.9.2.
 

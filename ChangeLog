@@ -1,6 +1,9 @@
 1.9.3 - added some missing SQLGetInfo() attributes to the ODBC driver
 	backported fixes for PHP 8
 	backported support for Oracle 18 and 19
+	backported a fix for some missing map clears in postgresql protocol
+		module
+	backported a fix for NULL-binds in the ODBC driver
 
 1.9.2 - ruby cursor constructor marks associated ruby connection object now
 	updated bad-command and no-cursor-available handling in sqlrclient
