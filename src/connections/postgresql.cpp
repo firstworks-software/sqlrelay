@@ -14,7 +14,7 @@
 
 #include <libpq-fe.h>
 
-//#undef HAVE_POSTGRESQL_PQSENDQUERYPREPARED
+#undef HAVE_POSTGRESQL_PQSENDQUERYPREPARED
 
 class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 	friend class postgresqlcursor;
@@ -1503,7 +1503,39 @@ bool postgresqlcursor::noRowsToReturn() {
 	// if there are no columns, then there can't be any rows either
 	return (ncols)?false:true;
 #else
-	return (!nrows);
+	// Why test ncols below, if we can just test nrows?
+	//
+	// It's a bit of a kludge to improve performance, but also to
+	// work around an issue with the sqlrclient protocol.
+	//
+	// Queries which don't specify columns like "select from test"
+	// are apparently valid in postgresql.  For those queries,
+	// ncols will be set to 0 but nrows will be set to the correct
+	// row count.
+	//
+	// Unless we also check ncols here, then the server will end up
+	// spinning through all of the rows, returning nothing for each
+	// row.
+	//
+	// This is inefficient, so also checking for ncols=0 allows the
+	// server to immediately tell the client that there are no rows
+	// and proceed to closeResultSet().
+	//
+	// In addition, spinning through the rows, returning nothing
+	// also causes problems for the sqlrclient protocol when the
+	// result set buffer size is larger than the nrows.
+	// 
+	// For each row, the client sits there waiting for either a
+	// field type, or and end-of-result-set flag.  If there are no
+	// columns then the server sends nothing at all for the first
+	// set of rows, then waits for the client to tell it to send
+	// more rows.  So, both sides end up waiting on the other.
+	//
+	// Other protocols send a marker for each row, so it wouldn't
+	// be a problem for them, but since it generally improves
+	// performance and helps sqlrclient, we'll go ahead and test
+	// ncols here too.
+	return (!ncols || !nrows);
 #endif
 }
 
