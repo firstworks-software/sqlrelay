@@ -832,12 +832,12 @@ endif
 
 
 # tests
-TESTALLSUBDIRS = all-dropin all-c all-cpp all-java all-stress all-tcl
+TESTALLSUBDIRS = all-dropin all-c all-cpp all-java all-protocol all-stress all-tcl
 ifneq ($(HAVE_MONO),)
 	TESTALLSUBDIRS += all-cs
 endif
 
-CPPTESTCPPFLAGS = $(BASECPPFLAGS) -I$(includedir) $(RUDIMENTSINCLUDES)
+CPPTESTCPPFLAGS = $(BASECPPFLAGS) -I$(includedir) $(RUDIMENTSINCLUDES) -I${top_builddir}
 CPPTESTLIBS = -L$(libdir) -l$(SQLR)client $(RUDIMENTSLIBS) $(LIBEFENCE)
 
 CTESTCPPFLAGS = $(BASECPPFLAGS) -I$(includedir) $(RUDIMENTSINCLUDES)
