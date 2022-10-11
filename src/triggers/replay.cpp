@@ -529,11 +529,15 @@ void sqlrtrigger_replay::getColumns(const char *query,
 	charstring::stripSet(table,"\"'`[]");
 
 	// get all of the columns in the table
+#if 0
 	*allcolumns=colcache.getValue(table);
 	*autoinccolumn=autoinccolcache.getValue(table);
 	if (!(*allcolumns)) {
+#endif
 		getColumnsFromDb(table,allcolumns,autoinccolumn);
+#if 0
 	}
+#endif
 
 
 	// get the list of columns that we're actually inserting into
@@ -662,9 +666,11 @@ void sqlrtrigger_replay::getColumnsFromDb(char *table,
 	cont->close(gclcur);
 	cont->deleteCursor(gclcur);
 
+#if 0
 	// cache table -> columns/autoinccolumns mappings
 	colcache.setValue(table,*allcolumns);
 	autoinccolcache.setValue(table,*autoinccolumn);
+#endif
 }
 
 bool sqlrtrigger_replay::isMultiInsert(const char *ptr, const char *end) {
@@ -1411,6 +1417,7 @@ void sqlrtrigger_replay::endTransaction(bool commit) {
 	logpool.clear();
 	log.clearAndDelete();
 
+#if 0
 	// clear cache
 	for (linkedlistnode<dictionarynode<char *,linkedlist<char *> *> *>
 				*colcachenode=colcache.getList()->getFirst();
@@ -1420,6 +1427,7 @@ void sqlrtrigger_replay::endTransaction(bool commit) {
 	}
 	colcache.clearAndArrayDeleteKeysAndDeleteValues();
 	autoinccolcache.clear();
+#endif
 
 	wasintx=false;
 
