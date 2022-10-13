@@ -750,8 +750,6 @@ const char *mysqlconnection::setIsolationLevelQuery() {
 
 bool mysqlconnection::getLastInsertId(uint64_t *id) {
 	*id=mysql_insert_id(mysqlptr);
-stdoutput.printf("getLastInsertId(): %lld\n",*id);
-process::backtrace(&stdoutput);
 	return true;
 }
 
