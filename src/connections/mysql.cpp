@@ -5,6 +5,7 @@
 #include <rudiments/charstring.h>
 #include <rudiments/bytestring.h>
 #include <rudiments/regularexpression.h>
+#include <rudiments/process.h>
 
 #include <defines.h>
 #include <datatypes.h>
@@ -749,7 +750,8 @@ const char *mysqlconnection::setIsolationLevelQuery() {
 
 bool mysqlconnection::getLastInsertId(uint64_t *id) {
 	*id=mysql_insert_id(mysqlptr);
-stdoutput.printf("last insert id: %lld\n",*id);
+stdoutput.printf("getLastInsertId(): %lld\n",*id);
+process::backtrace(&stdoutput);
 	return true;
 }
 
