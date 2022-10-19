@@ -753,16 +753,15 @@ const char *mysqlconnection::setIsolationLevelQuery() {
 }
 
 bool mysqlconnection::getLastInsertId(uint64_t *id) {
-	// some versions of mariadb client (10.1) incorrectly reset the last
+	// Some versions of mariadb client (10.1) incorrectly reset the last
 	// insert id after each query instead of hanging on to it until another
-	// insert overrides it, or until end-of-session, so we'll enforce the
-	// correct behavior by caching the id, call getLastInsertId() after
-	// each execute, and returning the cached value if mysql_insert_id()
-	// returns 0
-	uint64_t	localid=mysql_insert_id(mysqlptr);
-	if (localid) {
-		lastinsertid=localid;
-	}
+	// insert overrides it, or until end-of-session.
+	//
+	// To enforce the correct behavior we'll:
+	// * keep our own last insert id
+	// * call mysql_insert_id() after each execute and update our last
+	//   insert id if it returns non-zero
+	// * reset our last insert id to 0 at end-of-session
 	*id=lastinsertid;
 	return true;
 }
@@ -1423,9 +1422,11 @@ bool mysqlcursor::executeQuery(const char *query, uint32_t length) {
 		// execute the query
 		queryresult=mysql_stmt_execute(stmt);
 
-		// see note inside of getLastInsertId() for why we call it here
-		uint64_t	id;
-		conn->getLastInsertId(&id);
+		// see note inside of getLastInsertId() for why we do this here
+		uint64_t	id=mysql_insert_id(mysqlconn->mysqlptr);
+		if (id) {
+			mysqlconn->lastinsertid=id;
+		}
 
 		if (queryresult) {
 			return false;
@@ -1449,9 +1450,11 @@ bool mysqlcursor::executeQuery(const char *query, uint32_t length) {
 		// execute the query
 		queryresult=mysql_real_query(mysqlconn->mysqlptr,query,length);
 
-		// see note inside of getLastInsertId() for why we call it here
-		uint64_t	id;
-		conn->getLastInsertId(&id);
+		// see note inside of getLastInsertId() for why we do this here
+		uint64_t	id=mysql_insert_id(mysqlconn->mysqlptr);
+		if (id) {
+			mysqlconn->lastinsertid=id;
+		}
 
 		if (queryresult) {
 			return false;
