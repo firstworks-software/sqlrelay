@@ -27,6 +27,7 @@ clean:
 
 override_dh_auto_configure:
 	dh_auto_configure -- \
+		--enable-debug \
 		--disable-static \
 		--enable-oracle-at-runtime \
 		--enable-sap-at-runtime \
