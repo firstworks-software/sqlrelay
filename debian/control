@@ -261,182 +261,182 @@ Depends: sqlrelay (= ${binary:Version}), ${misc:Depends}
 Description: Documentation for SQL Relay
  Documentation for SQL Relay.
 
-Package: sqlrelay-dbg
-Section: libs
-Architecture: any
-Depends: sqlrelay (= ${Source-Version})
-Description: Debug symbols for sqlrelay
+#Package: sqlrelay-dbg
+#Section: libs
+#Architecture: any
+#Depends: sqlrelay (= ${Source-Version})
+#Description: Debug symbols for sqlrelay
 
-Package: sqlrelay-clients-dbg
-Section: libdevel
-Architecture: any
-Depends: sqlrelay-clients (= ${Source-Version})
-Description: Debug symbols for sqlrelay-clients
+#Package: sqlrelay-clients-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: sqlrelay-clients (= ${Source-Version})
+#Description: Debug symbols for sqlrelay-clients
 
-Package: sqlrelay-cachemanager-dbg
-Section: libdevel
-Architecture: any
-Depends: sqlrelay-cachemanager (= ${Source-Version})
-Description: Debug symbols for sqlrelay-cachemanager
+#Package: sqlrelay-cachemanager-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: sqlrelay-cachemanager (= ${Source-Version})
+#Description: Debug symbols for sqlrelay-cachemanager
 
-Package: sqlrelay-common-dbg
-Section: libdevel
-Architecture: any
-Depends: sqlrelay-common (= ${Source-Version})
-Description: Debug symbols for sqlrelay-common
+#Package: sqlrelay-common-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: sqlrelay-common (= ${Source-Version})
+#Description: Debug symbols for sqlrelay-common
 
-Package: sqlrelay-c++-dbg
-Section: libdevel
-Architecture: any
-Depends: sqlrelay-c++ (= ${Source-Version})
-Description: Debug symbols for sqlrelay-c++
+#Package: sqlrelay-c++-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: sqlrelay-c++ (= ${Source-Version})
+#Description: Debug symbols for sqlrelay-c++
 
-Package: sqlrelay-c-dbg
-Section: libdevel
-Architecture: any
-Depends: sqlrelay-c (= ${Source-Version})
-Description: Debug symbols for sqlrelay-c
+#Package: sqlrelay-c-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: sqlrelay-c (= ${Source-Version})
+#Description: Debug symbols for sqlrelay-c
 
-Package: odbc-sqlrelay-dbg
-Section: libdevel
-Architecture: any
-Depends: odbc-sqlrelay (= ${Source-Version})
-Description: Debug symbols for odbc-sqlrelay
+#Package: odbc-sqlrelay-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: odbc-sqlrelay (= ${Source-Version})
+#Description: Debug symbols for odbc-sqlrelay
 
-Package: perl-sqlrelay-dbg
-Section: libdevel
-Architecture: any
-Depends: perl-sqlrelay (= ${Source-Version})
-Description: Debug symbols for perl-sqlrelay
+#Package: perl-sqlrelay-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: perl-sqlrelay (= ${Source-Version})
+#Description: Debug symbols for perl-sqlrelay
 
-Package: perl-dbd-sqlrelay-dbg
-Section: libdevel
-Architecture: any
-Depends: perl-dbd-sqlrelay (= ${Source-Version})
-Description: Debug symbols for perl-dbd-sqlrelay
+#Package: perl-dbd-sqlrelay-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: perl-dbd-sqlrelay (= ${Source-Version})
+#Description: Debug symbols for perl-dbd-sqlrelay
 
-Package: python3-sqlrelay-dbg
-Section: libdevel
-Architecture: any
-Depends: python3-sqlrelay (= ${Source-Version})
-Description: Debug symbols for python3-sqlrelay
+#Package: python3-sqlrelay-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: python3-sqlrelay (= ${Source-Version})
+#Description: Debug symbols for python3-sqlrelay
 
-Package: python3-db-sqlrelay-dbg
-Section: libdevel
-Architecture: any
-Depends: python-db-sqlrelay (= ${Source-Version})
-Description: Debug symbols for python3-db-sqlrelay
+#Package: python3-db-sqlrelay-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: python-db-sqlrelay (= ${Source-Version})
+#Description: Debug symbols for python3-db-sqlrelay
 
-Package: ruby-sqlrelay-dbg
-Section: libdevel
-Architecture: any
-Depends: ruby-sqlrelay (= ${Source-Version})
-Description: Debug symbols for ruby-sqlrelay
+#Package: ruby-sqlrelay-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: ruby-sqlrelay (= ${Source-Version})
+#Description: Debug symbols for ruby-sqlrelay
 
-Package: php-sqlrelay-dbg
-Section: libdevel
-Architecture: any
-Depends: php-sqlrelay (= ${Source-Version})
-Description: Debug symbols for php-sqlrelay
+#Package: php-sqlrelay-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: php-sqlrelay (= ${Source-Version})
+#Description: Debug symbols for php-sqlrelay
 
-Package: php-pdo-sqlrelay-dbg
-Section: libdevel
-Architecture: any
-Depends: php-pdo-sqlrelay (= ${Source-Version})
-Description: Debug symbols for php-pdo-sqlrelay
+#Package: php-pdo-sqlrelay-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: php-pdo-sqlrelay (= ${Source-Version})
+#Description: Debug symbols for php-pdo-sqlrelay
 
-Package: java-sqlrelay-dbg
-Section: libdevel
-Architecture: any
-Depends: java-sqlrelay (= ${Source-Version})
-Description: Debug symbols for java-sqlrelay
+#Package: java-sqlrelay-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: java-sqlrelay (= ${Source-Version})
+#Description: Debug symbols for java-sqlrelay
 
-Package: tcl-sqlrelay-dbg
-Section: libdevel
-Architecture: any
-Depends: tcl-sqlrelay (= ${Source-Version})
-Description: Debug symbols for tcl-sqlrelay
+#Package: tcl-sqlrelay-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: tcl-sqlrelay (= ${Source-Version})
+#Description: Debug symbols for tcl-sqlrelay
 
-Package: erlang-sqlrelay-dbg
-Section: libdevel
-Architecture: any
-Depends: erlang-sqlrelay (= ${Source-Version})
-Description: Debug symbols for erlang-sqlrelay
+#Package: erlang-sqlrelay-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: erlang-sqlrelay (= ${Source-Version})
+#Description: Debug symbols for erlang-sqlrelay
 
-Package: libmono-sqlrelay-dbg
-Section: libdevel
-Architecture: any
-Depends: libmono-sqlrelay (= ${Source-Version})
-Description: Debug symbols for libmono-sqlrelay
+#Package: libmono-sqlrelay-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: libmono-sqlrelay (= ${Source-Version})
+#Description: Debug symbols for libmono-sqlrelay
 
-Package: node-sqlrelay-dbg
-Section: libdevel
-Architecture: any
-Depends: node-sqlrelay (= ${Source-Version})
-Description: Debug symbols for node-sqlrelay
+#Package: node-sqlrelay-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: node-sqlrelay (= ${Source-Version})
+#Description: Debug symbols for node-sqlrelay
 
-Package: sqlrelay-oracle-dbg
-Section: libdevel
-Architecture: any
-Depends: sqlrelay-oracle (= ${Source-Version})
-Description: Debug symbols for sqlrelay-oracle
+#Package: sqlrelay-oracle-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: sqlrelay-oracle (= ${Source-Version})
+#Description: Debug symbols for sqlrelay-oracle
 
-Package: sqlrelay-mysql-dbg
-Section: libdevel
-Architecture: any
-Depends: sqlrelay-mysql (= ${Source-Version})
-Description: Debug symbols for sqlrelay-mysql
+#Package: sqlrelay-mysql-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: sqlrelay-mysql (= ${Source-Version})
+#Description: Debug symbols for sqlrelay-mysql
 
-Package: sqlrelay-postgresql-dbg
-Section: libdevel
-Architecture: any
-Depends: sqlrelay-postgresql (= ${Source-Version})
-Description: Debug symbols for sqlrelay-postgresql
+#Package: sqlrelay-postgresql-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: sqlrelay-postgresql (= ${Source-Version})
+#Description: Debug symbols for sqlrelay-postgresql
 
-Package: sqlrelay-sqlite-dbg
-Section: libdevel
-Architecture: any
-Depends: sqlrelay-sqlite (= ${Source-Version})
-Description: Debug symbols for sqlrelay-sqlite
+#Package: sqlrelay-sqlite-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: sqlrelay-sqlite (= ${Source-Version})
+#Description: Debug symbols for sqlrelay-sqlite
 
-Package: sqlrelay-freetds-dbg
-Section: libdevel
-Architecture: any
-Depends: sqlrelay-freetds (= ${Source-Version})
-Description: Debug symbols for sqlrelay-freetds
+#Package: sqlrelay-freetds-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: sqlrelay-freetds (= ${Source-Version})
+#Description: Debug symbols for sqlrelay-freetds
 
-Package: sqlrelay-odbc-dbg
-Section: libdevel
-Architecture: any
-Depends: sqlrelay-odbc (= ${Source-Version})
-Description: Debug symbols for sqlrelay-odbc
+#Package: sqlrelay-odbc-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: sqlrelay-odbc (= ${Source-Version})
+#Description: Debug symbols for sqlrelay-odbc
 
-Package: sqlrelay-db2-dbg
-Section: libdevel
-Architecture: any
-Depends: sqlrelay-db2 (= ${Source-Version})
-Description: Debug symbols for sqlrelay-db2
+#Package: sqlrelay-db2-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: sqlrelay-db2 (= ${Source-Version})
+#Description: Debug symbols for sqlrelay-db2
 
-Package: sqlrelay-firebird-dbg
-Section: libdevel
-Architecture: any
-Depends: sqlrelay-firebird (= ${Source-Version})
-Description: Debug symbols for sqlrelay-firebird
+#Package: sqlrelay-firebird-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: sqlrelay-firebird (= ${Source-Version})
+#Description: Debug symbols for sqlrelay-firebird
 
-Package: sqlrelay-mdbtools-dbg
-Section: libdevel
-Architecture: any
-Depends: sqlrelay-mdbtools (= ${Source-Version})
-Description: Debug symbols for sqlrelay-mdbtools
+#Package: sqlrelay-mdbtools-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: sqlrelay-mdbtools (= ${Source-Version})
+#Description: Debug symbols for sqlrelay-mdbtools
 
-Package: sqlrelay-informix-dbg
-Section: libdevel
-Architecture: any
-Depends: sqlrelay-informix (= ${Source-Version})
-Description: Debug symbols for sqlrelay-informix
+#Package: sqlrelay-informix-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: sqlrelay-informix (= ${Source-Version})
+#Description: Debug symbols for sqlrelay-informix
 
-Package: sqlrelay-router-dbg
-Section: libdevel
-Architecture: any
-Depends: sqlrelay-router (= ${Source-Version})
-Description: Debug symbols for sqlrelay-router
+#Package: sqlrelay-router-dbg
+#Section: libdevel
+#Architecture: any
+#Depends: sqlrelay-router (= ${Source-Version})
+#Description: Debug symbols for sqlrelay-router

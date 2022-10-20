@@ -38,3 +38,5 @@ override_dh_auto_configure:
 		--with-ruby-site-arch-dir=/usr/lib/$(DEB_HOST_MULTIARCH)/ruby/$(RUBY_VERSION) \
 		--with-default-runasuser=sqlrelay \
 		--with-default-runasgroup=sqlrelay
+
+override_dh_strip:
