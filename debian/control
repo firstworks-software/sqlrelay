@@ -318,7 +318,7 @@ Description: Debug symbols for perl-dbd-sqlrelay
 Package: python3-sqlrelay-dbg
 Section: libdevel
 Architecture: any
-Depends:p python3-sqlrelay (= ${Source-Version})
+Depends: python3-sqlrelay (= ${Source-Version})
 Description: Debug symbols for python3-sqlrelay
 
 Package: python3-db-sqlrelay-dbg
