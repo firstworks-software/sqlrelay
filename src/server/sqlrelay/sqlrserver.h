@@ -73,6 +73,7 @@ enum sqlrserverbindvartype_t {
 enum sqlrserverlistformat_t {
 	SQLRSERVERLISTFORMAT_NULL=0,
 	SQLRSERVERLISTFORMAT_MYSQL,
+	SQLRSERVERLISTFORMAT_POSTGRESQL,
 	SQLRSERVERLISTFORMAT_ODBC,
 	SQLRSERVERLISTFORMAT_JDBC
 };
@@ -917,6 +918,26 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		virtual bool		cacheDbHostInfo();
 
 		virtual bool		getListsByApiCalls();
+		virtual	sqlrserverlistformat_t
+					getDatabaseListFormat();
+		virtual	sqlrserverlistformat_t
+					getSchemaListFormat();
+		virtual	sqlrserverlistformat_t
+					getTableListFormat();
+		virtual	sqlrserverlistformat_t
+					getTableTypeListFormat();
+		virtual	sqlrserverlistformat_t
+					getColumnListFormat();
+		virtual	sqlrserverlistformat_t
+					getPrimaryKeyListFormat();
+		virtual	sqlrserverlistformat_t
+					getKeyAndIndexListFormat();
+		virtual	sqlrserverlistformat_t
+					getProcedureBindAndColumnListFormat();
+		virtual	sqlrserverlistformat_t
+					getTypeInfoListFormat();
+		virtual	sqlrserverlistformat_t
+					getProcedureListFormat();
 		virtual bool		getDatabaseList(
 						sqlrservercursor *cursor,
 						const char *wild);
@@ -1019,8 +1040,9 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		virtual	bool	open();
 		virtual	bool	close();
 
-		virtual sqlrquerytype_t	queryType(const char *query,
-							uint32_t length);
+		virtual sqlrquerytype_t	determineQueryType(
+						const char *query,
+						uint32_t length);
 		virtual	bool	isCustomQuery();
 		virtual	bool	prepareQuery(const char *query,
 							uint32_t length);
@@ -1791,33 +1813,6 @@ class SQLRSERVER_DLLSPEC sqlrauths {
 		void	endSession();
 
 	#include <sqlrelay/private/sqlrauths.h>
-};
-
-class SQLRSERVER_DLLSPEC sqlrpwdenc {
-	public:
-		sqlrpwdenc(domnode *parameters, bool debug);
-		virtual	~sqlrpwdenc();
-		virtual const char	*getId();
-		virtual	bool	oneWay();
-		virtual	char	*encrypt(const char *value);
-		virtual	char	*decrypt(const char *value);
-
-	protected:
-		domnode	*getParameters();
-		bool		getDebug();
-
-	#include <sqlrelay/private/sqlrpwdenc.h>
-};
-
-class SQLRSERVER_DLLSPEC sqlrpwdencs {
-	public:
-		sqlrpwdencs(sqlrpaths *sqlrpth, bool debug);
-		~sqlrpwdencs();
-
-		bool		load(domnode *parameters);
-		sqlrpwdenc	*getPasswordEncryptionById(const char *id);
-
-	#include <sqlrelay/private/sqlrpwdencs.h>
 };
 
 enum sqlrevent_t {
@@ -2689,8 +2684,9 @@ class SQLRSERVER_DLLSPEC sqlrquerycursor : public sqlrservercursor {
 					domnode *parameters,
 					uint16_t id);
 		virtual	~sqlrquerycursor();
-		virtual sqlrquerytype_t	queryType(const char *query,
-							uint32_t length);
+		virtual sqlrquerytype_t	determineQueryType(
+						const char *query,
+						uint32_t length);
 		bool	isCustomQuery();
 
 	protected:

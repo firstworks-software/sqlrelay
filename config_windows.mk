@@ -200,7 +200,7 @@ PYTHONPREFIX = @PYTHONPREFIX@
 PYTHONVERSION = @PYTHONVERSION@
 PYTHONINCLUDES = /I$(PYTHONPREFIX)\include
 PYTHONDIR = $(PYTHONPREFIX)\Lib
-PYTHONSITEDIR = site-packages
+PYTHONSITEDIR = $(PYTHONDIR)\site-packages
 PYTHONLIB = /LIBPATH:$(PYTHONPREFIX)\libs python$(PYTHONVERSION).lib
 PYTHONCPPFLAGS = /D HAVE_CONFIG $(BASECPPFLAGS) $(PYTHONINCLUDES) /I$(top_builddir)/src/common /I$(top_builddir)/src/api/c++ $(RUDIMENTSINCLUDES)
 PYTHONLIBS = $(PYTHONLIB) /LIBPATH:$(top_builddir)/src/api/c++ lib$(SQLR)client.lib $(RUDIMENTSLIBS)
@@ -362,7 +362,7 @@ CACHEMANAGERLIBS = /LIBPATH:$(top_builddir)\src\util lib$(SQLR)util.lib $(RUDIME
 PLUGINCPPFLAGS = $(BASECPPFLAGS) /I$(top_builddir) /I$(top_builddir)\src\util /I$(top_builddir)\src\server /I$(top_builddir)\src\api\c++ /I$(top_builddir)\src\common $(RUDIMENTSINCLUDES) /D SQLRSERVER_EXPORTS /D SQLRUTIL_EXPORTS
 PLUGINLIBS = /LIBPATH:$(top_builddir)\src\server lib$(SQLR)server.lib /LIBPATH:$(top_builddir)\src\util lib$(SQLR)util.lib $(RUDIMENTSLIBS) $(EXTRALIBS)
 ROUTERPLUGINLIBS = /LIBPATH:$(top_builddir)\src\api\c++ lib$(SQLR)client.lib /LIBPATH:$(top_builddir)\src\server lib$(SQLR)server.lib /LIBPATH:$(top_builddir)\src\util lib$(SQLR)util.lib $(RUDIMENTSLIBS) $(EXTRALIBS)
-CONFIGPLUGINLIBS = /LIBPATH:$(top_builddir)\src\util lib$(SQLR)util.lib $(RUDIMENTSLIBS) $(EXTRALIBS)
+UTILPLUGINLIBS = /LIBPATH:$(top_builddir)\src\util lib$(SQLR)util.lib $(RUDIMENTSLIBS) $(EXTRALIBS)
 
 AUTHCPPFLAGS = $(PLUGINCPPFLAGS) /I$(top_builddir)\src\api\c++
 SQLRAUTH_SQLRELAYLIBS = /LIBPATH:$(top_builddir)\src\api\c++ lib$(SQLR)client.lib

@@ -17327,8 +17327,7 @@ WNOOVERLOADEDVIRTUAL=""
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for -Wno-overloaded-virtual option" >&5
 $as_echo_n "checking for -Wno-overloaded-virtual option... " >&6; }
 
-# clang's -Wall includes -Woverloaded-virtual, which we don't want
-if ( test -n "`$CC --version 2> /dev/null | grep clang`" )
+if ( test -n "`$CC --version 2> /dev/null | grep clang`" -o -n "`$CC --version 2> /dev/null | grep gcc`" )
 then
 	WNOOVERLOADEDVIRTUAL="-Wno-overloaded-virtual"
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
@@ -37579,20 +37578,29 @@ CPPFLAGS="$SAVECPPFLAGS"
 		then
 			HAVE_PYTHON="yes"
 
-									if ( test -d "$PYTHONDIR/dist-packages" )
+																								PYTHONMAJDIR=`echo "$PYTHONDIR" | cut -d'.' -f1`
+
+									if ( test -d "$PYTHONMAJDIR/dist-packages" )
 			then
-				PYTHONSITEDIR="dist-packages"
+				PYTHONSITEDIR="$PYTHONMAJDIR/dist-packages"
+			elif ( test -d "$PYTHONMAJDIR/site-packages" )
+			then
+				PYTHONSITEDIR="$PYTHONMAJDIR/site-packages"
+			elif ( test -d "$PYTHONDIR/dist-packages" )
+			then
+				PYTHONSITEDIR="$PYTHONDIR/dist-packages"
 			elif ( test -d "$PYTHONDIR/site-packages" )
 			then
-				PYTHONSITEDIR="site-packages"
+				PYTHONSITEDIR="$PYTHONDIR/site-packages"
 			fi
-			if ( test -z "$PYTHONSITEDIR" )
+
+															if ( test -z "$PYTHONSITEDIR" )
 			then
 				if ( test -r "/etc/debian_version" )
 				then
-					PYTHONSITEDIR="dist-packages"
+					PYTHONSITEDIR="$PYTHONDIR/dist-packages"
 				else
-					PYTHONSITEDIR="site-packages"
+					PYTHONSITEDIR="$PYTHONDIR/site-packages"
 				fi
 			fi
 		fi
@@ -39559,12 +39567,17 @@ $as_echo "no" >&6; }
 	then
 		HAVE_NODEJS="yes"
 
-						{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for node major version" >&5
+								{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for node major version" >&5
 $as_echo_n "checking for node major version... " >&6; }
 		NODEMAJORVERSION=`$NODE --version 2> /dev/null | tr -d 'v' | cut -d'.' -f1`
 		if ( test "$NODEMAJORVERSION" -ge "6" )
 		then
-			NODEJSCXXFLAGS="-std=c++11"
+			if ( test "$NODEMAJORVERSION" -ge "16" )
+			then
+				NODEJSCXXFLAGS="-std=c++17"
+			else
+				NODEJSCXXFLAGS="-std=c++11"
+			fi
 		fi
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $NODEMAJORVERSION" >&5
 $as_echo "$NODEMAJORVERSION" >&6; }
@@ -39836,7 +39849,7 @@ else
 	then
 		echo "cross compiling"
 	else
-		# Extract the first word of "apr-1-mt-config", so it can be a program name with args.
+																				# Extract the first word of "apr-1-mt-config", so it can be a program name with args.
 set dummy apr-1-mt-config; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
@@ -39849,7 +39862,7 @@ else
   ;;
   *)
   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-as_dummy="/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:/usr/local/apache/bin:/usr/local/apache/sbin:/usr/pkg/bin:/usr/pkg/sbin:/boot/common/bin"
+as_dummy="/usr/bin:/usr/sbin:/bin:/sbin:/usr/local/bin:/usr/local/sbin:/usr/local/apache/bin:/usr/local/apache/sbin:/usr/pkg/bin:/usr/pkg/sbin:/boot/common/bin"
 for as_dir in $as_dummy
 do
   IFS=$as_save_IFS
@@ -39893,7 +39906,7 @@ else
   ;;
   *)
   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-as_dummy="/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:/usr/local/apache/bin:/usr/local/apache/sbin:/usr/pkg/bin:/usr/pkg/sbin:/boot/common/bin:/resources/index/bin"
+as_dummy="/usr/bin:/usr/sbin:/bin:/sbin:/usr/local/bin:/usr/local/sbin:/usr/local/apache/bin:/usr/local/apache/sbin:/usr/pkg/bin:/usr/pkg/sbin:/boot/common/bin:/resources/index/bin"
 for as_dir in $as_dummy
 do
   IFS=$as_save_IFS
@@ -39937,7 +39950,7 @@ else
   ;;
   *)
   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-as_dummy="/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:/usr/local/apache/bin:/usr/local/apache/sbin:/usr/pkg/bin:/usr/pkg/sbin:/boot/common/bin:/resources/index/bin"
+as_dummy="/usr/bin:/usr/sbin:/bin:/sbin:/usr/local/bin:/usr/local/sbin:/usr/local/apache/bin:/usr/local/apache/sbin:/usr/pkg/bin:/usr/pkg/sbin:/boot/common/bin:/resources/index/bin"
 for as_dir in $as_dummy
 do
   IFS=$as_save_IFS
@@ -40457,7 +40470,7 @@ if ( test -n "$MYSQLLIBS" ); then
 	if ( test -n "$MYSQLSTATIC" ); then
 		MYSQLBUILD="static    "
 	fi
-	TESTDBS="$TESTDBS mysql mysqlupsert"
+	TESTDBS="$TESTDBS mysql mysqlupsert mysqldeadlockreplay"
 fi
 if ( test -n "$POSTGRESQLLIBS" ); then
 	POSTGRESQLBUILD="dynamic   "
@@ -40567,7 +40580,7 @@ sed -e "s|^centos|co|" \
 
 
 
-MAKELIST="config.mk src/common/defines.h src/server/sqlrelay/private/sqlrshm.h bin/sqlrclient-config bin/sqlrclientwrapper-config bin/sqlrserver-config init/rc.sqlrelay init/rc.sqlrcachemanager init/com.firstworks.sqlrelay.plist init/com.firstworks.sqlrcachemanager.plist sqlrelay-c++.pc sqlrelay-c.pc test/testall.sh test/test.sh test/sqlrelay.conf.d/db2.conf test/sqlrelay.conf.d/firebird.conf test/sqlrelay.conf.d/freetds.conf test/sqlrelay.conf.d/informix.conf test/sqlrelay.conf.d/mssql.conf test/sqlrelay.conf.d/mysql.conf test/sqlrelay.conf.d/oracle.conf test/sqlrelay.conf.d/postgresql.conf test/sqlrelay.conf.d/router.conf test/sqlrelay.conf.d/sap.conf test/sqlrelay.conf.d/sqlite.conf test/sqlrelay.conf.d/tls.conf test/sqlrelay.conf.d/extensions.conf test/sqlrelay.conf.d/mysqlprotocol.conf test/sqlrelay.conf.d/oracleprotocol.conf test/sqlrelay.conf.d/postgresqlprotocol.conf test/sqlrelay.conf.d/firebirdprotocol.conf test/sqlrelay.conf.d/tdsprotocol.conf test/sqlrelay.conf.d/teradataprotocol.conf test/sqlrelay.conf.d/postgresqlupsert.conf test/sqlrelay.conf.d/mysqlupsert.conf doc/admin/installingpkg.wt"
+MAKELIST="config.mk src/common/defines.h src/server/sqlrelay/private/sqlrshm.h bin/sqlrclient-config bin/sqlrclientwrapper-config bin/sqlrserver-config init/rc.sqlrelay init/rc.sqlrcachemanager init/com.firstworks.sqlrelay.plist init/com.firstworks.sqlrcachemanager.plist sqlrelay-c++.pc sqlrelay-c.pc test/testall.sh test/test.sh test/sqlrelay.conf.d/db2.conf test/sqlrelay.conf.d/firebird.conf test/sqlrelay.conf.d/freetds.conf test/sqlrelay.conf.d/informix.conf test/sqlrelay.conf.d/mssql.conf test/sqlrelay.conf.d/mysql.conf test/sqlrelay.conf.d/oracle.conf test/sqlrelay.conf.d/postgresql.conf test/sqlrelay.conf.d/router.conf test/sqlrelay.conf.d/sap.conf test/sqlrelay.conf.d/sqlite.conf test/sqlrelay.conf.d/tls.conf test/sqlrelay.conf.d/extensions.conf test/sqlrelay.conf.d/mysqlprotocol.conf test/sqlrelay.conf.d/oracleprotocol.conf test/sqlrelay.conf.d/postgresqlprotocol.conf test/sqlrelay.conf.d/firebirdprotocol.conf test/sqlrelay.conf.d/tdsprotocol.conf test/sqlrelay.conf.d/teradataprotocol.conf test/sqlrelay.conf.d/postgresqlupsert.conf test/sqlrelay.conf.d/mysqlupsert.conf test/sqlrelay.conf.d/mysqldeadlockreplay.conf doc/admin/installingpkg.wt"
 ac_config_files="$ac_config_files $MAKELIST"
 
 cat >confcache <<\_ACEOF

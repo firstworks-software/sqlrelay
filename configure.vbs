@@ -959,7 +959,7 @@ if disableoracle=false then
 end if
 if disablemysql=false then
 	MYSQLBUILD="yes    "
-	TESTDBS=TESTDBs&"""mysql"",""mysqlupsert"","
+	TESTDBS=TESTDBs&"""mysql"",""mysqlupsert"",""mysqldeadlockreplay"","
 end if
 if disablepostgresql=false then
 	POSTGRESQLBUILD="yes    "
@@ -1022,6 +1022,7 @@ infiles=Array(_
 	"test\\sqlrelay.conf.d\\mysql.conf.in",_
 	"test\\sqlrelay.conf.d\\mysqlprotocol.conf.in",_
 	"test\\sqlrelay.conf.d\\mysqlupsert.conf.in",_
+	"test\\sqlrelay.conf.d\\mysqldeadlockreplay.conf.in",_
 	"test\\sqlrelay.conf.d\\oracle.conf.in",_
 	"test\\sqlrelay.conf.d\\oracleprotocol.conf.in",_
 	"test\\sqlrelay.conf.d\\postgresql.conf.in",_
@@ -1056,6 +1057,7 @@ outfiles=Array(_
 	"test\\sqlrelay.conf.d\\mysql.conf",_
 	"test\\sqlrelay.conf.d\\mysqlprotocol.conf",_
 	"test\\sqlrelay.conf.d\\mysqlupsert.conf",_
+	"test\\sqlrelay.conf.d\\mysqldeadlockreplay.conf",_
 	"test\\sqlrelay.conf.d\\oracle.conf",_
 	"test\\sqlrelay.conf.d\\oracleprotocol.conf",_
 	"test\\sqlrelay.conf.d\\postgresql.conf",_
