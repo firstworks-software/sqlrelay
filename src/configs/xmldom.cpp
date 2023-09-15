@@ -347,7 +347,8 @@ void sqlrconfig_xmldom::init() {
 	maxsessioncount=charstring::convertToInteger(DEFAULT_MAXSESSIONCOUNT);
 	endofsession=DEFAULT_ENDOFSESSION;
 	endofsessioncommit=!charstring::compare(endofsession,"commit");
-	sessiontimeout=charstring::convertToUnsignedInteger(DEFAULT_SESSIONTIMEOUT);
+	sessiontimeout=charstring::convertToUnsignedInteger(
+						DEFAULT_SESSIONTIMEOUT);
 	runasuser=DEFAULT_RUNASUSER;
 	runasgroup=DEFAULT_RUNASGROUP;
 	cursors=charstring::convertToInteger(DEFAULT_CURSORS);
@@ -391,19 +392,23 @@ void sqlrconfig_xmldom::init() {
 	debugrouters=hasDebug(debug,"routers");
 	debugqueries=hasDebug(debug,"queries");
 	debugmoduledatas=hasDebug(debug,"moduledatas");
-	maxclientinfolength=charstring::convertToInteger(DEFAULT_MAXCLIENTINFOLENGTH);
+	maxclientinfolength=charstring::convertToInteger(
+						DEFAULT_MAXCLIENTINFOLENGTH);
 	maxquerysize=charstring::convertToInteger(DEFAULT_MAXQUERYSIZE);
 	maxbindcount=charstring::convertToInteger(DEFAULT_MAXBINDCOUNT);
-	maxbindnamelength=charstring::convertToInteger(DEFAULT_MAXBINDNAMELENGTH);
+	maxbindnamelength=charstring::convertToInteger(
+						DEFAULT_MAXBINDNAMELENGTH);
 	maxstringbindvaluelength=charstring::convertToInteger(
 					DEFAULT_MAXSTRINGBINDVALUELENGTH);
 	maxlobbindvaluelength=charstring::convertToInteger(
 					DEFAULT_MAXLOBBINDVALUELENGTH);
 	maxerrorlength=charstring::convertToInteger(DEFAULT_MAXERRORLENGTH);
-	idleclienttimeout=charstring::convertToInteger(DEFAULT_IDLECLIENTTIMEOUT);
+	idleclienttimeout=charstring::convertToInteger(
+						DEFAULT_IDLECLIENTTIMEOUT);
 	metrictotal=0;
 	maxlisteners=charstring::convertToInteger(DEFAULT_MAXLISTENERS);
-	listenertimeout=charstring::convertToUnsignedInteger(DEFAULT_LISTENERTIMEOUT);
+	listenertimeout=charstring::convertToUnsignedInteger(
+						DEFAULT_LISTENERTIMEOUT);
 	reloginatstart=charstring::isYes(DEFAULT_RELOGINATSTART);
 	fakeinputbindvariables=charstring::isYes(
 					DEFAULT_FAKEINPUTBINDVARIABLES);
@@ -1467,13 +1472,13 @@ void sqlrconfig_xmldom::normalizeTree() {
 		auth->setName("auth");
 	}
 
-	// users -> auth_userlist
-	bool		addeduserlist=false;
+	// users -> sqlrclient_userlist
+	bool	addeduserlist=false;
 	domnode	*users=instance->getFirstTagChild("users");
 	if (!users->isNullNode()) {
 
 		domnode	*auth=auths->insertTag("auth",0);
-		auth->setAttributeValue("module","userlist");
+		auth->setAttributeValue("module","sqlrclient_userlist");
 
 		for (domnode *user=users->getFirstTagChild("user");
 				!user->isNullNode();
@@ -1535,7 +1540,19 @@ void sqlrconfig_xmldom::normalizeTree() {
 		}
 	}
 
-	// krb_userlist/tls_userlist -> userlist
+	// if there are no auths or users defined, then fall back to
+	// a connectstrings auth module
+	if (instance->getFirstTagChild("users")->isNullNode() &&
+						!auths->getChildCount()) {
+		auths->appendTag("auth")->
+			setAttributeValue("module","sqlrclient_connectstrings");
+	}
+
+	// krb_userlist/tls_userlist -> sqlrclient_userlist
+	// userlist -> sqlrclient_userlist
+	// database -> sqlrclient_database
+	// proxied -> sqlrclient_proxied
+	// sqlrelay -> sqlrclient_sqlrelay
 	for (domnode *auth=instance->getFirstTagChild("auths")->
 						getFirstTagChild("auth");
 				!auth->isNullNode();
@@ -1546,7 +1563,27 @@ void sqlrconfig_xmldom::normalizeTree() {
 			!charstring::compare(
 				auth->getAttributeValue("module"),
 				"tls_userlist")) {
-			auth->setAttributeValue("module","userlist");
+			auth->setAttributeValue("module","sqlrclient_userlist");
+		}
+		if (!charstring::compare(
+				auth->getAttributeValue("module"),
+				"userlist")) {
+			auth->setAttributeValue("module","sqlrclient_userlist");
+		}
+		if (!charstring::compare(
+				auth->getAttributeValue("module"),
+				"database")) {
+			auth->setAttributeValue("module","sqlrclient_database");
+		}
+		if (!charstring::compare(
+				auth->getAttributeValue("module"),
+				"proxied")) {
+			auth->setAttributeValue("module","sqlrclient_proxied");
+		}
+		if (!charstring::compare(
+				auth->getAttributeValue("module"),
+				"sqlrelay")) {
+			auth->setAttributeValue("module","sqlrclient_sqlrelay");
 		}
 	}
 
@@ -2179,14 +2216,38 @@ void sqlrconfig_xmldom::getTreeValues() {
 		connectstringlist.append(c);
 	}
 
-	// default user/password
-	domnode	*defaultusertag=instance->getFirstTagChild("auths")->							getFirstTagChild(
-						"auth","module","userlist")->
-						getFirstTagChild("user");
-	defaultuser=defaultusertag->getAttributeValue("user");
-	defaultpassword=defaultusertag->getAttributeValue("password");
-	defaultpasswordencryptionid=
-		defaultusertag->getAttributeValue("passwordencryptionid");
+	// get default user/password...
+
+	// if there's a sqlrclient_userlist auth module, then get the first
+	// credentials from the first user
+	domnode	*defaultusertag=instance->getFirstTagChild("auths")->
+				getFirstTagChild("auth","module",
+						"sqlrclient_userlist")->
+				getFirstTagChild("user");
+	if (!defaultusertag->isNullNode()) {
+		defaultuser=defaultusertag->
+				getAttributeValue("user");
+		defaultpassword=defaultusertag->
+				getAttributeValue("password");
+		defaultpasswordencryptionid=defaultusertag->
+				getAttributeValue("passwordencryptionid");
+	} else
+
+	// otherwise, if there's a connectstrings auth module then get the
+	// first credentials from the first connection
+	if (!instance->getFirstTagChild("auths")->
+			getFirstTagChild("auth","module",
+					"sqlrclient_connectstrings")->
+			isNullNode()) {
+		listnode< connectstringcontainer * >	*node=
+					getConnectStringList()->getFirst();
+		defaultuser=node->getValue()->
+				getConnectStringValue("user");
+		defaultpassword=node->getValue()->
+				getConnectStringValue("password");
+		defaultpasswordencryptionid=node->getValue()->
+						getPasswordEncryption();
+	}
 }
 
 routecontainer *sqlrconfig_xmldom::routeAlreadyExists(routecontainer *cur) {

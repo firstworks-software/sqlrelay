@@ -3,7 +3,7 @@
 
 	<instance id="oracletest" port="9000" socket="/tmp/test.socket" dbase="oracle">
 		<users>
-			<user user="test" password="test"/>
+			<user user="testuser" password="testpassword"/>
 		</users>
 		<connections>
                         <connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=@HOSTNAME@;password=testpassword"/>
@@ -12,7 +12,7 @@
 
 	<instance id="oracle12ctest" port="9000" socket="/tmp/test.socket" dbase="oracle">
 		<users>
-			<user user="test" password="test"/>
+			<user user="testuser" password="testpassword"/>
 		</users>
 		<connections>
                         <connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle12c)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=@HOSTNAME@;password=testpassword"/>
@@ -21,7 +21,7 @@
 
 	<instance id="oracle11gtest" port="9000" socket="/tmp/test.socket" dbase="oracle">
 		<users>
-			<user user="test" password="test"/>
+			<user user="testuser" password="testpassword"/>
 		</users>
 		<connections>
                         <connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle11g)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=@HOSTNAME@;password=testpassword"/>
@@ -30,7 +30,7 @@
 
 	<instance id="oracle10gtest" port="9000" socket="/tmp/test.socket" dbase="oracle">
 		<users>
-			<user user="test" password="test"/>
+			<user user="testuser" password="testpassword"/>
 		</users>
 		<connections>
                         <connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle10g)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=@HOSTNAME@;password=testpassword"/>
