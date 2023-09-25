@@ -2722,7 +2722,7 @@ http://www.gnu.org/software/src-highlite -->
 by Lorenzo Bettini
 http://www.lorenzobettini.it
 http://www.gnu.org/software/src-highlite -->
-<pre><tt>mysql <font color="#990000">--</font>host<font color="#990000">=</font><font color="#993399">127.0</font><font color="#990000">.</font><font color="#993399">0.1</font> <font color="#990000">--</font>port<font color="#990000">=</font><font color="#993399">3307</font> <font color="#990000">--</font>user<font color="#990000">=</font>mysqluser <font color="#990000">--</font>password<font color="#990000">=</font>mysqlpassword</tt></pre>
+<pre><tt>mysql <font color="#990000">--</font>host<font color="#990000">=</font><font color="#993399">127.0</font><font color="#990000">.</font><font color="#993399">0.1</font> <font color="#990000">--</font>user<font color="#990000">=</font>mysqluser <font color="#990000">--</font>password<font color="#990000">=</font>mysqlpassword <font color="#990000">--</font><b><font color="#0000FF">default</font></b><font color="#990000">-</font>auth<font color="#990000">=</font>mysql_clear_password</tt></pre>
 
 </blockquote>
 <p>...then SQL Relay doesn't need to log out and log back in.</p>
@@ -2734,7 +2734,7 @@ http://www.gnu.org/software/src-highlite -->
 by Lorenzo Bettini
 http://www.lorenzobettini.it
 http://www.gnu.org/software/src-highlite -->
-<pre><tt>mysql <font color="#990000">--</font>host<font color="#990000">=</font><font color="#993399">127.0</font><font color="#990000">.</font><font color="#993399">0.1</font> <font color="#990000">--</font>port<font color="#990000">=</font><font color="#993399">3307</font> <font color="#990000">--</font>user<font color="#990000">=</font>anotheruser <font color="#990000">--</font>password<font color="#990000">=</font>anotherpassword</tt></pre>
+<pre><tt>mysql <font color="#990000">--</font>host<font color="#990000">=</font><font color="#993399">127.0</font><font color="#990000">.</font><font color="#993399">0.1</font> <font color="#990000">--</font>user<font color="#990000">=</font>anotheruser <font color="#990000">--</font>password<font color="#990000">=</font>anotherpassword <font color="#990000">--</font><b><font color="#0000FF">default</font></b><font color="#990000">-</font>auth<font color="#990000">=</font>mysql_clear_password</tt></pre>
 
 </blockquote>
 <p>..then SQL Relay does need to log out and log back in.</p>
@@ -2745,20 +2745,10 @@ http://www.gnu.org/software/src-highlite -->
 
 <ul>
   <li>Logging in and out of the database over and over partially defeats SQL Relay's persistent connection pooling.</li>
-  <li>The mysql_database module requires that the MySQL/MariaDB client send it an unencrypted password.</li>
+  <li>The mysql_database module requires that the MySQL/MariaDB client send it an unencrypted password.  In the examples above, the --default-auth=mysql_clear_password option is used to send an unencrypted password from the mysql command line program.</li>
 </ul>
 
-<p>The second disadvantage may or may not be a problem, depending on how secure communications on your network need to be.  However, it may require reconfiguration (or modification) of your app to use the mysql_clear_password auth plugin.  For example, to send an unencrypted password from the mysql command line program:</p>
-
-<blockquote>
-<!-- Generator: GNU source-highlight 3.1.9
-by Lorenzo Bettini
-http://www.lorenzobettini.it
-http://www.gnu.org/software/src-highlite -->
-<pre><tt>mysql <font color="#990000">--</font>host<font color="#990000">=</font><font color="#993399">127.0</font><font color="#990000">.</font><font color="#993399">0.1</font> <font color="#990000">--</font>port<font color="#990000">=</font><font color="#993399">3307</font> <font color="#990000">--</font>user<font color="#990000">=</font>anotheruser <font color="#990000">--</font>password<font color="#990000">=</font>anotherpassword <font color="#990000">--</font><b><font color="#0000FF">default</font></b><font color="#990000">-</font>auth<font color="#990000">=</font>mysql_clear_password</tt></pre>
-
-</blockquote>
-<p>Another issue is that some MySQL and MariaDB distributions omit the necessary mysql_clear_password module.  For example, the distributions available in the default CentOS 6 and 7 repositories omit the module.  On these platforms, an alternative distribution of MySQL/MariaDB would have to be installed or built from source.</p>
+<p>The second disadvantage may or may not be a problem, depending on how secure communications on your network need to be.  Note that some MySQL and MariaDB distributions omit the necessary mysql_clear_password module.  For example, the distributions available in the default CentOS 6 and 7 repositories omit the module.  On these platforms, an alternative distribution of MySQL/MariaDB would have to be installed or built from source.</p>
 
 <a name="mysqltls"/><h3>TLS/SSL Encryption and Authentication</h3>
 

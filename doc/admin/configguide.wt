@@ -1892,7 +1892,7 @@ For example, if a client initially connects using:
 
 {{{#!blockquote
 {{{#!code
-mysql --host=127.0.0.1 --port=3307 --user=mysqluser --password=mysqlpassword
+mysql --host=127.0.0.1 --user=mysqluser --password=mysqlpassword --default-auth=mysql_clear_password
 }}}
 }}}
 
@@ -1902,7 +1902,7 @@ But if the client then tries to connect using:
 
 {{{#!blockquote
 {{{#!code
-mysql --host=127.0.0.1 --port=3307 --user=anotheruser --password=anotherpassword
+mysql --host=127.0.0.1 --user=anotheruser --password=anotherpassword --default-auth=mysql_clear_password
 }}}
 }}}
 
@@ -1913,17 +1913,9 @@ A subsequent connection using //anotheruser/anotherpassword// won't require a re
 Though this module is convenient, it has two disadvantages.
 
 * Logging in and out of the database over and over partially defeats SQL Relay's persistent connection pooling.
-* The mysql_database module requires that the !MySQL/MariaDB client send it an unencrypted password.
+* The mysql_database module requires that the !MySQL/MariaDB client send it an unencrypted password.  In the examples above, the --default-auth=mysql_clear_password option is used to send an unencrypted password from the mysql command line program.
 
-The second disadvantage may or may not be a problem, depending on how secure communications on your network need to be.  However, it may require reconfiguration (or modification) of your app to use the mysql_clear_password auth plugin.  For example, to send an unencrypted password from the mysql command line program:
-
-{{{#!blockquote
-{{{#!code
-mysql --host=127.0.0.1 --port=3307 --user=anotheruser --password=anotherpassword --default-auth=mysql_clear_password
-}}}
-}}}
-
-Another issue is that some !MySQL and !MariaDB distributions omit the necessary mysql_clear_password module.  For example, the distributions available in the default !CentOS 6 and 7 repositories omit the module.  On these platforms, an alternative distribution of !MySQL/MariaDB would have to be installed or built from source.
+The second disadvantage may or may not be a problem, depending on how secure communications on your network need to be.  Note that some !MySQL and !MariaDB distributions omit the necessary mysql_clear_password module.  For example, the distributions available in the default !CentOS 6 and 7 repositories omit the module.  On these platforms, an alternative distribution of !MySQL/MariaDB would have to be installed or built from source.
 
 [=#mysqltls]
 === TLS/SSL Encryption and Authentication ===
