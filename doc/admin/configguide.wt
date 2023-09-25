@@ -263,7 +263,7 @@ ORCL =
 }}}
 }}}
 
-(Note that the tnsnames.ora file must be readable by the user that the instance of SQL Relay runs as.)
+( '''NOTE:''' The tnsnames.ora file must be readable by the user that the instance of SQL Relay runs as.)
 
 If you are using Oracle Instant Client, then it's likely that you don't have an $ORACLE_HOME or a tnsnames.ora file.  In that case, the oracle_sid can be set directly to a tnsnames-style expression and the oracle_home option can be omitted.
 
@@ -319,7 +319,7 @@ UsageCount=1
 }}}
 }}}
 
-(Note that the odbc.ini and odbcinst.ini files must be readable by the user that the instance of SQL Relay runs as.)
+( '''NOTE:''' The odbc.ini and odbcinst.ini files must be readable by the user that the instance of SQL Relay runs as.)
 
 See the [configreference.html#odbc SQL Relay Configuration Reference] for other valid ODBC connect string options.
 
@@ -350,7 +350,7 @@ The server option refers to an entry in the freetds.conf file (usually /etc/free
 }}}
 }}}
 
-(Note that the freetds.conf file must be readable by the user that the instance of SQL Relay runs as.)
+( '''NOTE:''' The freetds.conf file must be readable by the user that the instance of SQL Relay runs as.)
 
 See the [configreference.html#freetds SQL Relay Configuration Reference] for other valid !FreeTDS connect string options.
 
@@ -385,7 +385,7 @@ SAPSERVER
 }}}
 }}}
 
-(Note that the interfaces file must be readable by the user that the instance of SQL Relay runs as.)
+( '''NOTE:''' The interfaces file must be readable by the user that the instance of SQL Relay runs as.)
 
 On Windows platforms, the server option refers to a similar entry created in an opaque location with the Open Client Directory Services Editor (dsedit).
 
@@ -419,7 +419,7 @@ The server option refers to an entry in the freetds.conf file (usually /etc/free
 }}}
 }}}
 
-(Note that the freetds.conf file must be readable by the user that the instance of SQL Relay runs as.)
+( '''NOTE:''' The freetds.conf file must be readable by the user that the instance of SQL Relay runs as.)
 
 See the [configreference.html#freetds SQL Relay Configuration Reference] for other valid !FreeTDS connect string options.
 
@@ -481,7 +481,7 @@ ol_informix1210 29756/tcp
 }}}
 }}}
 
-(Note that the sqlhosts and /etc/services files must be readable by the user that the instance of SQL Relay runs as.)
+( '''NOTE:''' The sqlhosts and /etc/services files must be readable by the user that the instance of SQL Relay runs as.)
 
 On Windows platforms, the servername option refers to a similar entry created in an opaque location with the Setnet32 program.
 
@@ -638,7 +638,7 @@ UseDateDataForTimeStampParams=0
 }}}
 }}}
 
-(Note that the odbc.ini file must be readable by the user that the instance of SQL Relay runs as.)
+( '''NOTE:''' The odbc.ini file must be readable by the user that the instance of SQL Relay runs as.)
 
 See the [configreference.html#odbc SQL Relay Configuration Reference] for other valid ODBC connect string options.
 
@@ -672,7 +672,7 @@ EXAPWD=exasol
 }}}
 }}}
 
-(Note that the odbc.ini file must be readable by the user that the instance of SQL Relay runs as.)
+( '''NOTE:''' The odbc.ini file must be readable by the user that the instance of SQL Relay runs as.)
 
 See the [configreference.html#odbc SQL Relay Configuration Reference] for other valid ODBC connect string options.
 
@@ -712,7 +712,7 @@ Port=10000
 }}}
 }}}
 
-(Note that the odbc.ini file must be readable by the user that the instance of SQL Relay runs as.)
+( '''NOTE:''' The odbc.ini file must be readable by the user that the instance of SQL Relay runs as.)
 
 See the [configreference.html#odbc SQL Relay Configuration Reference] for other valid ODBC connect string options.
 
@@ -775,7 +775,7 @@ Driver=/opt/cloudera/impalaodbc/lib/64/libclouderaimpalaodbc64.so
 }}}
 }}}
 
-(Note that the odbc.ini and odbcinst.ini files must be readable by the user that the instance of SQL Relay runs as.)
+( '''NOTE:''' The odbc.ini and odbcinst.ini files must be readable by the user that the instance of SQL Relay runs as.)
 
 See the [configreference.html#odbc SQL Relay Configuration Reference] for other valid ODBC connect string options.
 
@@ -824,7 +824,7 @@ Driver=/opt/amazon/redshiftodbc/lib/64/libamazonredshiftodbc64.so
 }}}
 }}}
 
-(Note that the odbc.ini and odbcinst.ini files must be readable by the user that the instance of SQL Relay runs as.)
+( '''NOTE:''' The odbc.ini and odbcinst.ini files must be readable by the user that the instance of SQL Relay runs as.)
 
 See the [configreference.html#odbc SQL Relay Configuration Reference] for other valid ODBC connect string options.
 
@@ -897,7 +897,7 @@ Driver=/opt/simba/athenaodbc/lib/64/libathenaodbc_sb64.so
 }}}
 }}}
 
-(Note that the odbc.ini and odbcinst.ini files must be readable by the user that the instance of SQL Relay runs as.)
+( '''NOTE:''' The odbc.ini and odbcinst.ini files must be readable by the user that the instance of SQL Relay runs as.)
 
 See the [configreference.html#odbc SQL Relay Configuration Reference] for other valid ODBC connect string options.
 
@@ -1033,7 +1033,7 @@ It can also be configured to listen on a unix socket...
 }}}
 }}}
 
-(Note that the user that SQL Relay runs as must be able to read and write to the path of the socket.)
+( '''NOTE:''' The user that SQL Relay runs as must be able to read and write to the path of the socket.)
 
 ...and accessed from the local server using:
 
@@ -1232,6 +1232,14 @@ sqlr-stop -id example
 }}}
 }}}
 
+Though it is not necessary, it is possible to explicitly configure SQL Relay to load the ///sqlrclient// protocol module as follows:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-explicit.conf@
+}}}
+}}}
+
 Since this instance speaks the SQLRClient client-server protocol, any client that wishes to use it must also speak the SQLRClient client-server protocol.  This means that software written using the SQL Relay native API, or written using a database abstraction layer which loads a driver for SQL Relay can access this instance.  However, it also means that client programs for other databases (eg. the mysql, psql, and sqlplus command line programs, !MySQL Workbench, Oracle SQL Developer, SQL Server Management Studio, etc.) cannot access this instance.
 
 [=#sqlrclientlistener]
@@ -1265,7 +1273,7 @@ It can also be configured to listen on a unix socket by adding a //socket// attr
 }}}
 }}}
 
-(Note that the user that SQL Relay runs as must be able to read and write to the path of the socket.)
+( '''NOTE:''' The user that SQL Relay runs as must be able to read and write to the path of the socket.)
 
 If the socket option is specified but the port option is not, then SQL Relay will only listen on the socket.  If port and socket options are both specified then it listens on both.
 
@@ -1367,9 +1375,11 @@ In this case, the path /usr/local/firstworks/etc will be searched for the files 
 
 Another popular authentication option is //database// auth.
 
-When database authentication is used, a user is authenticated against the database itself.  SQL Relay does this by checking the provided credentials against the credentials that are currently in use.  If they differ, then it logs out of the database and logs back in using the provided credentials.
+The //sqlrclient_database// module can be used to authentication users directly against the database itself.  This is useful when you want the credentials used to access SQL Relay to be the same as the credentials used to access the database, but it's inconvenient to maintain a duplicate list of users in the configuration file.
 
-To enable database auth, configure SQL Relay to load the //database// auth module as follows.
+SQL Relay authenticates users against the database by checking the provided credentials against the credentials that are currently in use, and then, if they differ, logging out of the database and back in using the provided credentials.
+
+To enable database auth, configure SQL Relay to load the //sqlrclient_database// auth module as follows.
 
 {{{#!blockquote
 {{{#!code
@@ -1379,16 +1389,40 @@ To enable database auth, configure SQL Relay to load the //database// auth modul
 
 {{{#!blockquote
 ( '''NOTE:''' Database authentication should not be used in an instance where dbase="router".  It's OK for the instances that the router routes to to use it, but the router instance itself should not.  If database authentication is used for that instance, then authentication will fail.)
-[[br]][[br]]
-( '''NOTE:''' Prior to version 0.65.0, the "database" authentication method defaulted to the behavior of the "proxied" authentication method and fell back to the current behavior if the proxied behavior was unsupported.  There was no way to force this behavior.  As of 0.65.0 the funcationality is split into two separate modules.)
 }}}
+
+In this configuration, SQL Relay initially logs in to the database as //scott/tiger// as specified in the connection tag.  But each time a client connects, SQL Relay logs out and attempts to log back in as the user specified by the client, unless the user/password are the same as the current user.
+
+For example, if a client initially connects using:
+
+{{{#!blockquote
+{{{#!code
+sqlrshl -host localhost -user scott -password tiger
+}}}
+}}}
+
+...then SQL Relay doesn't need to log out and log back in.
+
+But if the client then tries to connect using:
+
+{{{#!blockquote
+{{{#!code
+sqlrsh -host localhost -user anotheruser -password anotherpassword
+}}}
+}}}
+
+..then SQL Relay does need to log out and log back in.
+
+A subsequent connection using //anotheruser/anotherpassword// won't require a re-login, but a subsequent connection using any other user/password will.
+
+Though this module is convenient, it has the disadvantage that logging in and out of the database over and over partially defeats SQL Relay's persistent connection pooling.
 
 [=#sqlrclientproxiedauth]
 === Proxied Auth ===
 
 Another authentication option is //proxied// auth.
 
-When proxied authentication is used, a user is authenticated against the database itself, though in a different manner than datbase authentication described above.  SQL Relay logs into the database as a user with permissions to proxy other users.  For each client session, SQL Relay checks the provided credentials against the credentials that are currently in use.  If they differ, then it asks the proxy user to switch the user it's proxying to the provided user.
+When proxied authentication is used, a user is authenticated against the database itself, though in a different manner than database authentication described above.  SQL Relay logs into the database as a user with permissions to proxy other users.  For each client session, SQL Relay checks the provided credentials against the credentials that are currently in use.  If they differ, then it asks the proxy user to switch the user it's proxying to the provided user.
 
 This is currently only supported with Oracle (version 8i or higher) and requires database configuration.  See [oraclentier.html this document] for more information including instructions for configuring Oracle.
 
@@ -1679,7 +1713,13 @@ mysql --host=127.0.0.1 --port=3307 --user=sqlruser --password=sqlrpassword
 }}}
 }}}
 
+{{{#!blockquote
 ( '''NOTE:''' 127.0.0.1 is used instead of "localhost" because "localhost" instructs the mysql client to use a predefined unix socket.)
+}}}
+
+{{{#!blockquote
+( '''NOTE:''' By default, the user and password used to access SQL Relay are the same as the user and password that SQL Relay is configured to use to access the database. That is, they are the values of the user and password parameters of the string attribute of the connection tag. ) 
+}}}
 
 By default, SQL Relay listens on all available network interfaces, and can be accessed remotely by hostname.  For example, if the server running SQL Relay is named //sqlrserver// then it can be accessed from another system using:
 
@@ -1730,7 +1770,7 @@ It can also be configured to listen on a unix socket by adding a //socket// attr
 }}}
 }}}
 
-(Note that the user that SQL Relay runs as must be able to read and write to the path of the socket.)
+( '''NOTE:''' The user that SQL Relay runs as must be able to read and write to the path of the socket.)
 
 If the socket option is specified but the port option is not, then SQL Relay will only listen on the socket.  If port and socket options are both specified then it listens on both.
 
@@ -1832,7 +1872,13 @@ When using SQL Relay as a transparent proxy, it is desirable to define the same 
 [=#mysqldbauth]
 === Database Auth ===
 
-If the database has a lot of users, or users are added, deleted, or updated regularly, then it might be inconvenient to maintain a duplicate list of users in the configuration file.  In this case, the //mysql_database// module can be used to authentication users directly against the database.
+Another popular authentication option is //database// auth.
+
+The //mysql_database// module can be used to authentication users directly against the database itself.  This is useful when you want the credentials used to access SQL Relay to be the same as the credentials used to access the database, but it's inconvenient to maintain a duplicate list of users in the configuration file.
+
+SQL Relay authenticates users against the database by checking the provided credentials against the credentials that are currently in use, and then, if they differ, logging out of the database and back in using the provided credentials.
+
+To enable database auth, configure SQL Relay to load the //mysql_database// auth module as follows.
 
 {{{#!blockquote
 {{{#!code
@@ -2134,6 +2180,10 @@ psql -h localhost -p 5433 -U sqlruser
 }}}
 }}}
 
+{{{#!blockquote
+( '''NOTE:''' By default, the user and password used to access SQL Relay are the same as the user and password that SQL Relay is configured to use to access the database. That is, they are the values of the user and password parameters of the string attribute of the connection tag. ) 
+}}}
+
 By default, SQL Relay listens on all available network interfaces, and can be accessed remotely by hostname.  For example, if the server running SQL Relay is named //sqlrserver// then it can be accessed from another system using:
 
 {{{#!blockquote
@@ -2183,7 +2233,7 @@ It can also be configured to listen on a unix socket by adding a //socket// attr
 }}}
 }}}
 
-(Note that the user that SQL Relay runs as must be able to read and write to the path of the socket.)
+( '''NOTE:''' The user that SQL Relay runs as must be able to read and write to the path of the socket.)
 
 If the socket option is specified but the port option is not, then SQL Relay will only listen on the socket.  If port and socket options are both specified then it listens on both.
 
