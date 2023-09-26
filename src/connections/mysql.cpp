@@ -1128,7 +1128,7 @@ bool mysqlcursor::prepareQuery(const char *query, uint32_t length) {
 		err.append(" (")->append(maxcolumncount);
 		err.append('<')->append(ncols)->append(')');
 		conn->cont->setError(this,err.getString(),
-				SQLR_ERROR_MAXMAXCOLUMNCOUNTSMALL,true);
+				SQLR_ERROR_MAXCOLUMNCOUNTTOOSMALL,true);
 		return false;
 	}
 
