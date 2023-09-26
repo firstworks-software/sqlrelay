@@ -228,7 +228,7 @@
 
 <br/><a name="quick"/><h1>Quick Start</h1>
 
-<p>When SQL Relay is first installed, no configuration file exists.  You must create one in the appropriate location.  This location depends on the platform and on how you installed SQL Relay.</p>
+<p>In order to run, the SQL Relay server requires a configuration file.  However, When SQL Relay is first installed, no such configuration file exists.  You must create one in the appropriate location.  This location depends on the platform and on how you installed SQL Relay.</p>
 
 <ul>
   <li>Unix and Linux</li>
@@ -1691,7 +1691,7 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>sqlr<font color="#990000">-</font>stop <font color="#990000">-</font>id example</tt></pre>
 
 </blockquote>
-<p>Though it is not necessary, it is possible to explicitly configure SQL Relay to load the <i>/sqlrclient</i> protocol module as follows:</p>
+<p>Though it is not necessary, it is possible to explicitly configure SQL Relay to load the <i>sqlrclient</i> protocol module as follows:</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -6030,17 +6030,23 @@ http://www.gnu.org/software/src-highlite -->
 <ul>
   <li><b>datetimeformat</b> - Specifies the format to convert date/time fields to.  May be any combination of the following format characters.  Non-format characters will be inserted as-is.</li>
   <ul>
-    <li><b>DD</b> - day of the month</li>
-    <li><b>MM</b> - numeric month</li>
-    <li><b>MON</b> - 3-character text abbreviation for the month</li>
-    <li><b>Month</b> - full text month</li>
-    <li><b>YYYY</b> - year including century</li>
-    <li><b>YY</b> - year excluding century</li>
-    <li><b>HH24</b> - hour (0-23)</li>
-    <li><b>HH</b> - hour (1-12)</li>
-    <li><b>MI</b> - minute</li>
-    <li><b>SS</b> - second</li>
-    <li><b>FFF</b> - fraction of a second</li>
+    <li><b>DD</b> - 2 digit day, left padded with 0</li>
+    <li><b>D</b> - 1 or 2 digit day, not left padded with 0</li>
+    <li><b>MM</b> - 2 digit month, left padded with 0</li>
+    <li><b>MON</b> - uppercase, 3-character month abbreviation</li>
+    <li><b>Month</b> - mixed-case full name of the month</li>
+    <li><b>YYYY</b> - 4 digit year, left padded with 0</li>
+    <li><b>YY</b> - 2 digit year, left padded with 0</li>
+    <li><b>HH24</b> - 2 digit hour, in 24-hour format, left padded with 0</li>
+    <li><b>HH</b> - 2 digit hour, in 12-hour format, left padded with 0</li>
+    <li><b>MI</b> - 2 digit minute, left padded with 0</li>
+    <li><b>SS</b> - 2 digit second, left padded with 0</li>
+    <li><b>FFFFFF</b> -  6 digit fractional second, left padded with 0</li>
+    <li><b>FFFFF</b> -  5 digit fractional second, left padded with 0</li>
+    <li><b>FFFF</b> -  4 digit fractional second, left padded with 0</li>
+    <li><b>FFF</b> -  3 digit fractional second, left padded with 0</li>
+    <li><b>FF</b> -  2 digit fractional second, left padded with 0</li>
+    <li><b>F</b> -  1 digit fractional second</li>
     <li><b>AM</b> - AM or PM</li>
   </ul>
 

@@ -458,7 +458,7 @@
 		true/false indicating whether we're in a transaction or not
 	pushed processing of various connect-string parameters up to
 		sqlrserverconnection class
-	renamed maxselectlist and maxitembuffersize to maxcolumncount and
+	renamed maxselectlistsize and maxitembuffersize to maxcolumncount and
 		maxfieldlength (old parameter names still work though)
 	fetch-at-once, max column count, and max field length are now available
 		via server API

@@ -140,7 +140,7 @@
 [[br]][=#quick]
 = Quick Start =
 
-When SQL Relay is first installed, no configuration file exists.  You must create one in the appropriate location.  This location depends on the platform and on how you installed SQL Relay.
+In order to run, the SQL Relay server requires a configuration file.  However, When SQL Relay is first installed, no such configuration file exists.  You must create one in the appropriate location.  This location depends on the platform and on how you installed SQL Relay.
 
 * Unix and Linux
  * Built from source - '''/usr/local/firstworks/etc/sqlrelay.conf''' (unless you specified a non-standard --prefix or --sysconfdir during the build)
@@ -1232,7 +1232,7 @@ sqlr-stop -id example
 }}}
 }}}
 
-Though it is not necessary, it is possible to explicitly configure SQL Relay to load the ///sqlrclient// protocol module as follows:
+Though it is not necessary, it is possible to explicitly configure SQL Relay to load the //sqlrclient// protocol module as follows:
 
 {{{#!blockquote
 {{{#!code
@@ -3983,17 +3983,23 @@ The '''reformatdatetime''' module examines the field, decides if it's a date/tim
 The following attributes are currently supported:
 
 * '''datetimeformat''' - Specifies the format to convert date/time fields to.  May be any combination of the following format characters.  Non-format characters will be inserted as-is.
- * '''DD''' - day of the month
- * '''MM''' - numeric month
- * '''MON''' - 3-character text abbreviation for the month
- * '''Month''' - full text month
- * '''YYYY''' - year including century
- * '''YY''' - year excluding century
- * '''HH24''' - hour (0-23)
- * '''HH''' - hour (1-12)
- * '''MI''' - minute
- * '''SS''' - second
- * '''FFF''' - fraction of a second
+ * '''DD''' - 2 digit day, left padded with 0
+ * '''D''' - 1 or 2 digit day, not left padded with 0
+ * '''MM''' - 2 digit month, left padded with 0
+ * '''MON''' - uppercase, 3-character month abbreviation
+ * '''Month''' - mixed-case full name of the month
+ * '''YYYY''' - 4 digit year, left padded with 0
+ * '''YY''' - 2 digit year, left padded with 0
+ * '''HH24''' - 2 digit hour, in 24-hour format, left padded with 0
+ * '''HH''' - 2 digit hour, in 12-hour format, left padded with 0
+ * '''MI''' - 2 digit minute, left padded with 0
+ * '''SS''' - 2 digit second, left padded with 0
+ * '''FFFFFF''' -  6 digit fractional second, left padded with 0
+ * '''FFFFF''' -  5 digit fractional second, left padded with 0
+ * '''FFFF''' -  4 digit fractional second, left padded with 0
+ * '''FFF''' -  3 digit fractional second, left padded with 0
+ * '''FF''' -  2 digit fractional second, left padded with 0
+ * '''F''' -  1 digit fractional second
  * '''AM''' - AM or PM
 * '''dateformat''' - Similar to datetimeformat but if a date without the time component is detected, the supplied format will be used instead of the format supplied in the datetimeformat attribute.  Defaults to whatever value was supplied in the datetimeformat attribute.
 * '''timeformat''' - Similar to datetimeformat but if a time without the date component is detected, the supplied format will be used instead of the format supplied in the datetimeformat attribute.  Defaults to whatever value was supplied in the datetimeformat attribute.

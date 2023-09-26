@@ -1124,11 +1124,11 @@ bool mysqlcursor::prepareQuery(const char *query, uint32_t length) {
 		// So, bail with an error if we don't have enough
 		// columns.
 		stringbuffer	err;
-		err.append(SQLR_ERROR_MAXSELECTLISTSIZETOOSMALL_STRING);
+		err.append(SQLR_ERROR_MAXCOLUMNCOUNTTOOSMALL_STRING);
 		err.append(" (")->append(maxcolumncount);
 		err.append('<')->append(ncols)->append(')');
 		conn->cont->setError(this,err.getString(),
-				SQLR_ERROR_MAXSELECTLISTSIZETOOSMALL,true);
+				SQLR_ERROR_MAXMAXCOLUMNCOUNTSMALL,true);
 		return false;
 	}
 
@@ -1489,11 +1489,11 @@ bool mysqlcursor::executeQuery(const char *query, uint32_t length) {
 		uint32_t	maxcolumncount=conn->cont->getMaxColumnCount();
 		if (maxcolumncount && ncols>maxcolumncount) {
 			stringbuffer	err;
-			err.append(SQLR_ERROR_MAXSELECTLISTSIZETOOSMALL_STRING);
+			err.append(SQLR_ERROR_MAXCOLUMNCOUNTTOOSMALL_STRING);
 			err.append(" (")->append(maxcolumncount);
 			err.append('<')->append(ncols)->append(')');
 			conn->cont->setError(this,err.getString(),
-				SQLR_ERROR_MAXSELECTLISTSIZETOOSMALL,true);
+				SQLR_ERROR_MAXCOLUMNCOUNTTOOSMALL,true);
 			return false;
 		}
 

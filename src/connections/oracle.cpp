@@ -3587,12 +3587,12 @@ bool oraclecursor::executeQueryOrFetchFromBindCursor(const char *query,
 		uint32_t	maxcolumncount=conn->cont->getMaxColumnCount();
 		if (maxcolumncount && (uint32_t)ncols>maxcolumncount) {
 			stringbuffer	err;
-			err.append(SQLR_ERROR_MAXSELECTLIST_STRING);
+			err.append(SQLR_ERROR_MAXCOLUMNCOUNTEXCEEDED_STRING);
 			err.append(" (")->append(ncols)->append('>');
 			err.append(maxcolumncount);
 			err.append(')');
 			conn->cont->setError(this,err.getString(),
-						SQLR_ERROR_MAXSELECTLIST,true);
+					SQLR_ERROR_MAXCOLUMNCOUNTEXCEEDED,true);
 			return false;
 		}
 

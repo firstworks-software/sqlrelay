@@ -29,12 +29,13 @@ A fairly comprehensive example follows.
 
 * The '''instances''' tag is just the root tag.  Each configuration file should have only one of these tags surrounding all other tags.
  * Each '''instance''' tag defines an instance of SQL Relay.  You can define as many of these as you like in each configuration file.
- * The '''listener''' tag defines the listener configuration.
+ * The '''listeners''' tag surrounds the list of listener configurations used by the instance.
+ * The '''listener''' tag defines a listener configuration.  In most cases, there will be only one of these tags.  However, there could be more than one in cases where the instance is configured to listen on more than one port/socket/address combination, or more than one protocol.
  * The '''session''' tag surrounds a set of queries to be run at the start and end of each session.  The entire '''session''' block is optional.
   * The '''start''' tag surrounds a set of queries to be run at the the start of each session and the '''end''' tag surrounds a set of qeries to be run at the end of each session.  Both are optional.
    * The '''runquery''' tag surrounds a query to be run at the beginning or end of a session.  Any number (including 0) of these may be specified.
  * The '''connections''' tag surrounds the list of database connection configurations used by the instance.
-  * Each '''connection''' tag defines a database connection configuration.  In most cases, there will be only 1 of these tags.  In cases where clustered or replicated databases are used, there would likely be more than 1 line here.  See [loadbalfailover.html Load Balancing and Failover] for more information.
+  * Each '''connection''' tag defines a database connection configuration.  In most cases, there will be only one of these tags.  In cases where clustered or replicated databases are used, there would likely be more than one line here.  See [loadbalfailover.html Load Balancing and Failover] for more information.
 
 [=#attributes]
 == Attributes ==
@@ -72,30 +73,32 @@ Below is a description of the attributes for each tag.
  * '''listenertimeout''' - Sets the number of seconds that a listener will wait for an avaialable connection before giving up.  Defaults to 0, which means to wait forever.
  * '''reloginatstart''' - When SQL Relay starts up, it attempts to log into the database.  If this parameter is set to yes, then if the login fails, SQL Relay will fork off into the background and attempt to log in over and until it succeeds or until it is shut down.  If this parameter is set to no, then if the login fails, SQL Relay will print out an error and exit.  This parameter is useful in situations where it is difficult or impossible to guarantee that SQL Relay will start after the databases it needs to connect to are up.  Defaults to "no".
  * '''fakeinputbindvariables''' - Instead of binding variables using the native database API, SQL Relay can fake input bind variables by rewriting the query and substituting values directly into it.  Setting this parameter to "yes" enables this functionality.  This is useful if you are using an old version of a database that doesn't support bind variables natively or if your are using a modern version but your app was originally written when the database didn't support bind variables natively or when SQL Relay didn't support native bind variables with that database.  If enabled, bind variables must be specified in the query as a colon, followed by a name or number (eg.  :var1 or :1) unless the translatebindvariables parameter is also set to "yes".  Defaults to "no".
+ * '''fakeinputbindvariablesdateformat''' - Defines the date format to use when faking bind variables by rewriting the query and substituting values directly into it.  Defaults to "YYYY-MM-DD HH24:MI:SS"  Supports the following format strings:
+  * '''DD''' - 2 digit day, left padded with 0
+  * '''D''' - 1 or 2 digit day, not left padded with 0
+  * '''MM''' - 2 digit month, left padded with 0
+  * '''MON''' - uppercase, 3-character month abbreviation
+  * '''Month''' - mixed-case full name of the month
+  * '''YYYY''' - 4 digit year, left padded with 0
+  * '''YY''' - 2 digit year, left padded with 0
+  * '''HH24''' - 2 digit hour, in 24-hour format, left padded with 0
+  * '''HH''' - 2 digit hour, in 12-hour format, left padded with 0
+  * '''MI''' - 2 digit minute, left padded with 0
+  * '''SS''' - 2 digit second, left padded with 0
+  * '''FFFFFF''' -  6 digit fractional second, left padded with 0
+  * '''FFFFF''' -  5 digit fractional second, left padded with 0
+  * '''FFFF''' -  4 digit fractional second, left padded with 0
+  * '''FFF''' -  3 digit fractional second, left padded with 0
+  * '''FF''' -  2 digit fractional second, left padded with 0
+  * '''F''' -  1 digit fractional second
+  * '''AM''' - AM or PM
  * '''translatebindvariables''' - There is no standaradized format for bind variables across databases.  Some databases use question marks to identify bind variables, others use colon, dollar-sign or at-signs, followed by either names or numbers.  Setting this parameter to "yes" causes SQL Relay to remap the bind variables in a query to the native format for whatever database the query is being run against.  This is useful when migrating from one database to another or when using fake binds against a database that doesn't support colon-delimited bind variables.  Defaults to "no".
  * '''isolationlevel''' - Sets the transaction isolation level to the specified value.  At the end of each client session, the isolation level will be reset to this value as well.  If this is left blank or omitted entirely then nothing will be done to set or reset the isolation level at the beginning or end of each session.
  * '''ignoreselectdatabase''' - Instructs SQL Relay to ignore selectDatabase() calls from the client.  If you want to point an instance at a test database and a program at the instance but the program manually selects the database to use, effectively aiming itself back at production, this is useful in preventing it from doing so.  Defaults to "no".
  * '''waitfordowndatabase''' - If this is set to "yes" then, if the database goes down while a client is connected, the server will not return an error but rather wait until the database comes back up and then resume the client session.  If this is set to "no" and a down database is detected during a client session, then SQL Relay will return the native database error and if a new client connection is made and all databases are down then SQL Relay will generate an error and return it.  Defaults to "yes".
- * '''datetimeformat''' - Date/time formats vary widely between databases.  Some databases allow you to define what format to return the date/time in.  Others do not.  This can be be especially problematic when switching an app from using one database to using another.  If datetimeformat is set to some value, SQL Relay will attempt to detect a date/time field in the result set and reformat it into the supplied format.  SQL Relay can detect a wide variety of date formats but is admittedly imperfect.  Format strings can use any combination of the following format characters.  Non-format characters will be inserted as-is.
-  * '''DD''' - day of the month
-  * '''MM''' - numeric month
-  * '''MON''' - 3-character text abbreviation for the month
-  * '''Month''' - full text month
-  * '''YYYY''' - year including century
-  * '''YY''' - year excluding century
-  * '''HH24''' - hour (0-23)
-  * '''HH''' - hour (1-12)
-  * '''MI''' - minute
-  * '''SS''' - second
-  * '''FFF''' - fraction of a second
-  * '''AM''' - AM or PM
- * '''dateformat''' - Similar to datetimeformat but if a date without the time component is detected, the supplied format will be used instead of the format supplied in the datetimeformat parameter.  Defaults to whatever value was supplied in the datetimeformat parameter.
- * '''timeformat''' - Similar to datetimeformat but if a time without the date component is detected, the supplied format will be used instead of the format supplied in the datetimeformat parameter.  Defaults to whatever value was supplied in the datetimeformat parameter.
- * '''dateddmm''' and '''dateyyyyddmm''' - When date/time translation is enabled (one or more of datetimeformat, dateformat or timeformat are set), the server attempts to interpret each field in the result set as a date/time to determine whether it needs to be translated or not.  It can parse the native formats of all the databases that SQL Relay currently supports, but it cannot tell by examination whether a date like 02-05-2011 is in MM-DD-YYYY format or DD-MM-YYYY format.  By default, it assumes MMDD, but if you want it to assume DDMM instead, set '''dateddmm''' to "yes".  Another parameter allows you to specify different behaviors for dates that start with years, such as 2011-02-05.  If '''dateyyyyddmm''' is set to "yes" then that date would be interpreted as being in the YYYY-DD-MM format.  If it is set to "no" then that date would be interpreted as being in the YYYY-MM-DD format.  If it is not set, then it defaults to whatever '''dateddmm''' is set to.  If neither are set then dates are universally interpreted to be in MM/DD format.  There are very specific cases where these two parameters need to be set differently from one another.  You'll know if you need to.  Note: date/time translation in general is especially problematic with MS SQL Server.  See [../faq/#mssqldates the FAQ] for more info.
- * '''datedelimiters''' - When date/time translation is enabled (one or more of datetimeformat, dateformat or timeformat are set), the server attempts to interpret each field in the result set as a date/time to determine whether it needs to be translated or not.  Different cultures and systems delimit dates with different characteres, including slashes, dashes, colons and periods.  This parameter enables you to specify which of these to pay attention to.  For example, if your database contains both slash-delimited and dash-delimited dates, but also contains dot-delimited data that could be misinterpreted as a date, then you'd want to set this to "/-".  Defaults to "/-:."  Characters other than slash, dash, colon and dot are ignored.
- * '''ignorenondatetime''' - When date/time translation is enabled (one or more of datetimeformat, dateformat or timeformat are set), the server attempts to interpret each field in the result set as a date/time to determine whether it needs to be translated or not.  If this parameter is set to "yes" then fields with date/time datatypes will be examined.  Char, and varchar fields, for example, will be ignored.
 
 * '''listener'''
+ * '''protocol''' - The client-server protocol to expect on this port/socket/address.  Currently, supported protocols include sqlrclient (the native SQL Relay client-server protocol), mysql, and postgresql.  Defaults to sqlrclient.
  * '''port''' - The port to listen for client connections on (note, if multiple instances are configured with the same port or socket, they cannot be run at the same time).  Defaults to 9000.
  * '''socket''' - The unix socket (filename) to listen for client connections on (note, if multiple instances are configured with the same port or socket, they cannot be run at the same time).  Defaults to /tmp/sqlrelay.socket
  * '''addresses''' - A comma-delimited list of addresses that the instance should bind to.  If absent or set to 0.0.0.0, it will bind to all addresses.  Defaults to 0.0.0.0.
@@ -126,7 +129,7 @@ Below is a description of the attributes for each tag.
 === Connect String Options ===
 
 [=#oracle]
-For '''oracle''' databases, the connect string syntax is "user=USER;password=PASSWORD;oracle_sid=ORACLE_SID;oracle_home=ORACLE_HOME;nls_lang=NLS_LANG;autocommit=yes/no;fetchatonce=FETCHATONCE;maxselectlistsize=MAXSELECTLISTSIZE;maxitembuffersize=MAXITEMBUFFERSIZE;faketransactionblocks=yes/no;droptemptables=yes/no;globaltemptables=TABLELIST;lastinsertidfunction=LASTINSERTIDFUNCTION;stmtcachesize=0;rejectduplicatebinds=yes/no;disablekeylookup=yes/no;identity=ID"
+For '''oracle''' databases, the connect string syntax is "user=USER;password=PASSWORD;oracle_sid=ORACLE_SID;oracle_home=ORACLE_HOME;nls_lang=NLS_LANG;autocommit=yes/no;fetchatonce=FETCHATONCE;maxcolumncount=MAXCOLUMNCOUNT;maxfieldlength=MAXFIELDLENGTH;faketransactionblocks=yes/no;droptemptables=yes/no;globaltemptables=TABLELIST;lastinsertidfunction=LASTINSERTIDFUNCTION;stmtcachesize=0;rejectduplicatebinds=yes/no;disablekeylookup=yes/no;identity=ID"
 
 * '''user''': The username SQL Relay should use to log into the database.  Required.
 * '''password''': The password SQL Relay should use to log into the database.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See [configguide.html#pwdenc Password Encryption]
@@ -142,8 +145,8 @@ or a tnsnames-style expression such as:
 * '''nls_lang''': The NLS_LANG to use.  Optional if the NLS_LANG environment variable is set.  Overrides the NLS_LANG environment variable.
 * '''autocommit''': Whether to commit each insert, update or delete immediately or not.  Optional, defaults to no.
 * '''fetchatonce''': The number of rows that SQL Relay fetches from the database in each round trip.  Defaults to 10. (see [tuning.html#memoryusage here] for more info on this parameter)
-* '''maxselectlistsize''': The maximum number of columns that can be fetched in a query.  Defaults to 256.  Setting this parameter to -1 causes result set buffers to be dynamically allocated, allowing any number of columns to be fetched.  Using -1 is flexible and conserves memory but there is a performance penalty.  (see [tuning.html#memoryusage here] for more info on this parameter)
-* '''maxitembuffersize''': The maximum size of a non-lob field.  Non-lob fields longer than this will be truncated.  Defaults to 32768. (see [tuning.html#memoryusage here] for more info on this parameter)
+* '''maxcolumncount''': The maximum number of columns that can be fetched in a query.  Defaults to 256.  Setting this parameter to -1 causes result set buffers to be dynamically allocated, allowing any number of columns to be fetched.  Using -1 is flexible and conserves memory but there is a performance penalty.  (see [tuning.html#memoryusage here] for more info on this parameter)
+* '''maxfieldlength''': The maximum size of a non-lob field.  Non-lob fields longer than this will be truncated.  Defaults to 32768. (see [tuning.html#memoryusage here] for more info on this parameter)
 * '''faketransactionblocks''': Some databases are in autocommit mode until you explicitly start a transaction with a "start" or "begin" statement.  Oracle is always in a transaction though, unless autocommit is turned on.  Setting this parameter to "yes" causes SQL Relay to put the database in autocommit mode until a "start" or "begin" statement is issued, and then put it back in autocommit mode when a commit or rollback is issued.  In effect, emulating the behavior of databases which require an explicit "start" or "begin".
 * '''droptemptables''': In most databases, temporary tables are dropped at the end of the client session.  In Oracle however, the rows may be deleted but the table itself remains.  Setting this parameter to "yes" causes any temporary tables that were created during an SQL Relay client session, to be dropped when the session is over, in effect emulating the behavior or other databases.  Note that temporary tables created outside of the session will not be dropped.
 * '''globaltemptables''': Since SQL Relay doesn't log out of the database at the end of each client session, global temporary tables aren't automatically truncated by the database.  SQL Relay tracks the creation of global temporary tables and truncates any table created during the session, or drops them if droptemptables=yes is configured.  But, SQL Relay isn't aware of tables created outside of the current session, or outside of SQL Relay altogether.  To work around this issue, this parameter can be set to either a comma-separated list of global temporary tables that SQL Relay should truncate at the end of each session.  Alternatively, it can be set to % and SQL Relay will truncate all global temporary tables that it has access to at the end of each session.  If this parameter is omitted, only tables that were created during the session are truncated.  Providing a list of tables performs better but is less flexible than using %.
@@ -155,7 +158,7 @@ or a tnsnames-style expression such as:
 
 
 [=#freetds]
-For '''freetds''' databases, the connect string syntax is "sybase=SYBASE;user=USER;password=PASSWORD;server=SERVER;db=DATABASE;charset=CHARSET;language=LANGUAGE;hostname=HOSTNAME;packetsize=PACKETSIZE;maxselectlistsize=MAXSELECTLISTSIZE;maxitembuffersize=MAXITEMBUFFERSIZE;identity=ID"
+For '''freetds''' databases, the connect string syntax is "sybase=SYBASE;user=USER;password=PASSWORD;server=SERVER;db=DATABASE;charset=CHARSET;language=LANGUAGE;hostname=HOSTNAME;packetsize=PACKETSIZE;maxcolumncount=MAXCOLUMNCOUNT;maxfieldlength=MAXFIELDLENGTH;identity=ID"
 
 * '''sybase''': The directory containing the "freetds.conf" file.  Optional if the SYBASE environment variable is set.  Overrides the SYBASE environment variable.
 * '''user''': The username SQL Relay should use to log into the database.  Required.
@@ -166,13 +169,13 @@ For '''freetds''' databases, the connect string syntax is "sybase=SYBASE;user=US
 * '''language''': The language to use.  Optional.
 * '''hostname''': The host to connect to.  Optional, overrides the host in the "interfaces" or "freetds.conf" file.
 * '''packetsize''': The packetsize to use.  Optional.
-* '''maxselectlistsize''': The maximum number of columns that can be fetched in a query.  Defaults to 256.  Setting this parameter to -1 causes result set buffers to be dynamically allocated, allowing any number of columns to be fetched.  Using -1 is flexible and conserves memory but there is a performance penalty.  (see [tuning.html#memoryusage here] for more info on this parameter)
-* '''maxitembuffersize''': The maximum size of a non-lob field.  Non-lob fields longer than this will be truncated.  Defaults to 32768. (see [tuning.html#memoryusage here] for more info on this parameter)
+* '''maxcolumncount''': The maximum number of columns that can be fetched in a query.  Defaults to 256.  Setting this parameter to -1 causes result set buffers to be dynamically allocated, allowing any number of columns to be fetched.  Using -1 is flexible and conserves memory but there is a performance penalty.  (see [tuning.html#memoryusage here] for more info on this parameter)
+* '''maxfieldlength''': The maximum size of a non-lob field.  Non-lob fields longer than this will be truncated.  Defaults to 32768. (see [tuning.html#memoryusage here] for more info on this parameter)
 * '''identity''': Overrides the default value returned when a client request the database identity using the identify() method (or similar method/function).
 
 
 [=#sap]
-For '''sap''' (or '''sybase''') databases, the connect string syntax is "sybase=SYBASE;lang=LANG;user=USER;password=PASSWORD;server=SERVER;db=DATABASE;charset=CHARSET;language=LANGUAGE;hostname=HOSTNAME;packetsize=PACKETSIZE;fetchatonce=FETCHATONCE;maxselectlistsize=MAXSELECTLISTSIZE;maxitembuffersize=MAXITEMBUFFERSIZE;identity=ID"
+For '''sap''' (or '''sybase''') databases, the connect string syntax is "sybase=SYBASE;lang=LANG;user=USER;password=PASSWORD;server=SERVER;db=DATABASE;charset=CHARSET;language=LANGUAGE;hostname=HOSTNAME;packetsize=PACKETSIZE;fetchatonce=FETCHATONCE;maxcolumncount=MAXCOLUMNCOUNT;maxfieldlength=MAXFIELDLENGTH;identity=ID"
 
 * '''sybase''': The directory containing the "interfaces" file.  Optional if the SYBASE environment variable is set.  Overrides the SYBASE environment variable.  If SQL Relay was built to load the SAP/Sybase libraries at runtime, then the lib subdirectory of this directory will be searched for the SAP/Sybase client libraries.
 * '''user''': The username SQL Relay should use to log into the database.  Required.
@@ -184,13 +187,13 @@ For '''sap''' (or '''sybase''') databases, the connect string syntax is "sybase=
 * '''hostname''': The host to connect to.  Optional, overrides the host in the "interfaces" or "freetds.conf" file.
 * '''packetsize''': The packetsize to use.  Optional.
 * '''fetchatonce''': The number of rows that SQL Relay fetches from the database in each round trip.  Defaults to 10. (see [tuning.html#memoryusage here] for more info on this parameter)
-* '''maxselectlistsize''': The maximum number of columns that can be fetched in a query.  Defaults to 256.  Setting this parameter to -1 causes result set buffers to be dynamically allocated, allowing any number of columns to be fetched.  Using -1 is flexible and conserves memory but there is a performance penalty.  (see [tuning.html#memoryusage here] for more info on this parameter)
-* '''maxitembuffersize''': The maximum size of a non-lob field.  Non-lob fields longer than this will be truncated.  Defaults to 32768. (see [tuning.html#memoryusage here] for more info on this parameter)
+* '''maxcolumncount''': The maximum number of columns that can be fetched in a query.  Defaults to 256.  Setting this parameter to -1 causes result set buffers to be dynamically allocated, allowing any number of columns to be fetched.  Using -1 is flexible and conserves memory but there is a performance penalty.  (see [tuning.html#memoryusage here] for more info on this parameter)
+* '''maxfieldlength''': The maximum size of a non-lob field.  Non-lob fields longer than this will be truncated.  Defaults to 32768. (see [tuning.html#memoryusage here] for more info on this parameter)
 * '''identity''': Overrides the default value returned when a client request the database identity using the identify() method (or similar method/function).
 
 
 [=#db2]
-For '''db2''' databases, the connect string syntax is "user=USER;password=PASSWORD;db=DB;autocommit=yes/no;faketransactionblocks=yes/no;connecttimeout=CONNECTTIMEOUT;fetchatonce=FETCHATONCE;maxselectlistsize=MAXSELECTLISTSIZE;maxitembuffersize=MAXITEMBUFFERSIZE;maxoutlobbindsize=MAXOUTLOBBINDSIZE;identity=ID"
+For '''db2''' databases, the connect string syntax is "user=USER;password=PASSWORD;db=DB;autocommit=yes/no;faketransactionblocks=yes/no;connecttimeout=CONNECTTIMEOUT;fetchatonce=FETCHATONCE;maxcolumncount=MAXCOLUMNCOUNT;maxfieldlength=MAXFIELDLENGTH;maxoutlobbindsize=MAXOUTLOBBINDSIZE;identity=ID"
 
 * '''user''': The username SQL Relay should use to log into the database.  Required.
 * '''password''': The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See [configguide.html#pwdenc Password Encryption]
@@ -200,15 +203,15 @@ For '''db2''' databases, the connect string syntax is "user=USER;password=PASSWO
 * '''faketransactionblocks''': Some databases are in autocommit mode until you explicitly start a transaction with a "start" or "begin" statement.  DB2 is always in a transaction though, unless autocommit is turned on.  Setting this parameter to "yes" causes SQL Relay to put the database in autocommit mode until a "start" or "begin" statement is issued, and then put it back in autocommit mode when a commit or rollback is issued.  In effect, emulating the behavior of databases which require an explicit "start" or "begin".
 * '''connecttimeout''': Specifies the number of seconds to wait for a successful connection to the database.  Defaults to 5 seconds if omitted.  Setting a timeout of 0 means to wait forever.
 * '''fetchatonce''': The number of rows that SQL Relay fetches from the database in each round trip.  Defaults to 10. (see [tuning.html#memoryusage here] for more info on this parameter)
-* '''maxselectlistsize''': The maximum number of columns that can be fetched in a query.  Defaults to 256.  Setting this parameter to -1 causes result set buffers to be dynamically allocated, allowing any number of columns to be fetched.  Using -1 is flexible and conserves memory but there is a performance penalty.  (see [tuning.html#memoryusage here] for more info on this parameter)
-* '''maxitembuffersize''': The maximum size of a non-lob field.  Non-lob fields longer than this will be truncated.  Defaults to 32768. (see [tuning.html#memoryusage here] for more info on this parameter)
+* '''maxcolumncount''': The maximum number of columns that can be fetched in a query.  Defaults to 256.  Setting this parameter to -1 causes result set buffers to be dynamically allocated, allowing any number of columns to be fetched.  Using -1 is flexible and conserves memory but there is a performance penalty.  (see [tuning.html#memoryusage here] for more info on this parameter)
+* '''maxfieldlength''': The maximum size of a non-lob field.  Non-lob fields longer than this will be truncated.  Defaults to 32768. (see [tuning.html#memoryusage here] for more info on this parameter)
 * '''maxoutlobbindsize''': The maximum size of a lob output bind variable.  Defaults to 2 megabytes.  Has has no effect on lob columns.
 * '''identity''': Overrides the default value returned when a client request the database identity using the identify() method (or similar method/function).
 * '''db2''': The base directory of the DB2 installation.  Only used if SQL Relay was built to load the DB2 client libraries at runtime.  Then the lib, lib32, and lib64 subdirectories of this directory will be searched, as appropriate, for the client libraries.
 
 
 [=#informix]
-For '''informix''' databases, the connect string syntax is "user=USER;password=PASSWORD;informixdir=INFORMIXDIR;servername=SERVERNAME;db=DB;autocommit=yes/no;faketransactionblocks=yes/no;connecttimeout=CONNECTTIMEOUT;fetchatonce=FETCHATONCE;maxselectlistsize=MAXSELECTLISTSIZE;maxitembuffersize=MAXITEMBUFFERSIZE;maxoutlobbindsize=MAXOUTLOBBINDSIZE;identity=ID"
+For '''informix''' databases, the connect string syntax is "user=USER;password=PASSWORD;informixdir=INFORMIXDIR;servername=SERVERNAME;db=DB;autocommit=yes/no;faketransactionblocks=yes/no;connecttimeout=CONNECTTIMEOUT;fetchatonce=FETCHATONCE;maxcolumncount=MAXCOLUMNCOUNT;maxfieldlength=MAXFIELDLENGTH;maxoutlobbindsize=MAXOUTLOBBINDSIZE;identity=ID"
 
 * '''user''': The username SQL Relay should use to log into the database.  Required.
 * '''password''': The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See [configguide.html#pwdenc Password Encryption]
@@ -220,14 +223,14 @@ For '''informix''' databases, the connect string syntax is "user=USER;password=P
 * '''lang''': Sets/overrides the LANG environment variable and by extension, all locale-related variables.  Optional if the LANG environment variable is set.
 * '''faketransactionblocks''': Some databases are in autocommit mode until you explicitly start a transaction with a "start" or "begin" statement.  Informix is always in a transaction though, unless autocommit is turned on.  Setting this parameter to "yes" causes SQL Relay to put the database in autocommit mode until a "start" or "begin" statement is issued, and then put it back in autocommit mode when a commit or rollback is issued.  In effect, emulating the behavior of databases which require an explicit "start" or "begin".
 * '''connecttimeout''': Specifies the number of seconds to wait for a successful connection to the database.  Defaults to 5 seconds if omitted.  Setting a timeout of 0 means to wait forever.
-* '''maxselectlistsize''': The maximum number of columns that can be fetched in a query.  Defaults to 256.  Setting this parameter to -1 causes result set buffers to be dynamically allocated, allowing any number of columns to be fetched.  Using -1 is flexible and conserves memory but there is a performance penalty.  (see [tuning.html#memoryusage here] for more info on this parameter)
-* '''maxitembuffersize''': The maximum size of a non-lob field.  Non-lob fields longer than this will be truncated.  Defaults to 32768. (see [tuning.html#memoryusage here] for more info on this parameter)
+* '''maxcolumncount''': The maximum number of columns that can be fetched in a query.  Defaults to 256.  Setting this parameter to -1 causes result set buffers to be dynamically allocated, allowing any number of columns to be fetched.  Using -1 is flexible and conserves memory but there is a performance penalty.  (see [tuning.html#memoryusage here] for more info on this parameter)
+* '''maxfieldlength''': The maximum size of a non-lob field.  Non-lob fields longer than this will be truncated.  Defaults to 32768. (see [tuning.html#memoryusage here] for more info on this parameter)
 * '''maxoutlobbindsize''': The maximum size of a lob output bind variable.  Defaults to 2 megabytes.  Has has no effect on lob columns.
 * '''identity''': Overrides the default value returned when a client request the database identity using the identify() method (or similar method/function).
 
 
 [=#mysql]
-For '''mysql''' databases, the connect string syntax is "user=USER;password=PASSWORD;db=DB;host=HOST;port=PORT;socket=SOCKET;fakebinds=FAKEBINDS;maxselectlistsize=MAXSELECTLISTSIZE;maxitembuffersize=MAXITEMBUFFERSIZE;charset=CHARSET;sslmode=sslmode;tlsversion=tlsversion;sslkey=keyfile;sslcert=certfile;sslcipher=cipherlist;sslca=cafile;sslcapath=cafilepath;sslcrl=crlfile;sslcrlpath=crlfilepath;foundrows=yes/no;ignorespace=yes/no;identity=ID"
+For '''mysql''' databases, the connect string syntax is "user=USER;password=PASSWORD;db=DB;host=HOST;port=PORT;socket=SOCKET;fakebinds=FAKEBINDS;maxcolumncount=MAXCOLUMNCOUNT;maxfieldlength=MAXFIELDLENGTH;charset=CHARSET;sslmode=sslmode;tlsversion=tlsversion;sslkey=keyfile;sslcert=certfile;sslcipher=cipherlist;sslca=cafile;sslcapath=cafilepath;sslcrl=crlfile;sslcrlpath=crlfilepath;foundrows=yes/no;ignorespace=yes/no;identity=ID"
 
 * '''user''': The username SQL Relay should use to log into the database.  Required.
 * '''password''': The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See [configguide.html#pwdenc Password Encryption]
@@ -236,8 +239,8 @@ For '''mysql''' databases, the connect string syntax is "user=USER;password=PASS
 * '''port''': The port to connect to on a remote host.  Optional, defaults to 3306.
 * '''socket''': The unix socket to connect to.  Optional if host and/or port are specified.  Overrides host/port.  host and port are optional if socket is specified.
 * '''fakebinds''': !MySQL versions 4.1.2 and higher, and all versions of !MariaDB, support bind variables natively.  Older versions of !MySQL did not and SQL Relay had to substitute the values of bind variables into the query itself (fake binds).  As such, in modern !MySQL/MariaDB, bind variables are identified by ?'s in the query, while in old versions, bind variables are identified by :var1, :var2, :var3, etc.  Converting queries and code which was written to use the old syntax to use the modern syntax can be a lot of work, so this parameter is provided to make code which was written to run against old versions of !MySQL work against modern !MySQL/MariaDB  This parameter may be set to "yes" (meaning allow only old syntax and fake binds) or "no" (meaning only allow modern syntax and use native binds).
-* '''maxselectlistsize''': The maximum number of columns that can be fetched in a query.  Defaults to 256.  Setting this parameter to -1 causes result set buffers to be dynamically allocated, allowing any number of columns to be fetched.  Using -1 is flexible and conserves memory but there is a performance penalty.  (see [tuning.html#memoryusage here] for more info on this parameter)
-* '''maxitembuffersize''': The maximum size of a non-lob field.  Non-lob fields longer than this will be truncated.  Defaults to 32768. (see [tuning.html#memoryusage here] for more info on this parameter)
+* '''maxcolumncount''': The maximum number of columns that can be fetched in a query.  Defaults to 256.  Setting this parameter to -1 causes result set buffers to be dynamically allocated, allowing any number of columns to be fetched.  Using -1 is flexible and conserves memory but there is a performance penalty.  (see [tuning.html#memoryusage here] for more info on this parameter)
+* '''maxfieldlength''': The maximum size of a non-lob field.  Non-lob fields longer than this will be truncated.  Defaults to 32768. (see [tuning.html#memoryusage here] for more info on this parameter)
 * '''charset''': The character set to translate data coming out of the database into.  Excluding this parameter causes the data to be translated to whatever character set the !MySQL/MariaDB client library was configured to use at compile time, probably latin1.  Setting this to "binary" will cause the data not to be translated at all.  This parameter is only supported when SQL Relay is compiled against version 5.0.7 or newer of the !MySQL client library or any version of the !MariaDB client library.
 * '''sslmode''': The ssl mode of the connection.  Optional.  Valid values include disable, prefer, require, verify-ca (validate the server's certificate) and verify-full (validate the server's certificate and common name).  Defaults to prefer with modern versions of !MySQL and all versions of !MariaDB and disable with older versions.  Ignored when SQL Relay was compiled against !MySQL < 5.7.3.  Only necessary when [http://dev.mysql.com/doc/refman/5.7/en/using-secure-connections.html connecting to MySQL using SSL].
 * '''tlsversion''' - Sets the TLS version to use.  Valid values include TLSv1, TLSv1.1, TLSv1.2 or any more recent version of TLS, as supported by and enabled in the underlying !MySQL/MariaDB client/server.  Ignored when SQL Relay was compiled against !MySQL < 5.7.10.  In that case, or if the parameter is left blank or omitted, then the highest supported version will be negotiated.  Only necessary when [http://dev.mysql.com/doc/refman/5.7/en/using-secure-connections.html connecting to MySQL using SSL].
@@ -273,15 +276,15 @@ For '''postgresql''' databases, the connect string syntax is "user=USER;password
 
 
 [=#firebird]
-For '''firebird''' databases, the connect string syntax is "user=USER;password=PASSWORD;db=DATABASE;dialect=DIALECT;autocommit=yes/no;maxselectlistsize=MAXSELECTLISTSIZE;maxitembuffersize=MAXITEMBUFFERSIZE;charset=CHARSET;faketransactionblocks=yes/no;droptemptables=yes/no;globaltemptables=TABLELIST;lastinsertidfunction=LASTINSERTIDFUNCTION;identity=ID"
+For '''firebird''' databases, the connect string syntax is "user=USER;password=PASSWORD;db=DATABASE;dialect=DIALECT;autocommit=yes/no;maxcolumncount=MAXCOLUMNCOUNT;maxfieldlength=MAXFIELDLENGTH;charset=CHARSET;faketransactionblocks=yes/no;droptemptables=yes/no;globaltemptables=TABLELIST;lastinsertidfunction=LASTINSERTIDFUNCTION;identity=ID"
 
 * '''user''': The username SQL Relay should use to log into the database.  Required.
 * '''password''': The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See [configguide.html#pwdenc Password Encryption]
 * '''db''': The filename of the database open.  Required.
 * '''dialect''': The database dialect to use.  Optional, defaults to 3.
 * '''autocommit''': Whether to commit each insert, update or delete immediately or not.  Optional, defaults to no.
-* '''maxselectlistsize''': The maximum number of columns that can be fetched in a query.  Defaults to 256.  Setting this parameter to -1 causes result set buffers to be dynamically allocated, allowing any number of columns to be fetched.  Using -1 is flexible and conserves memory but there is a performance penalty.  (see [tuning.html#memoryusage here] for more info on this parameter)
-* '''maxitembuffersize''': The maximum size of a non-lob field.  Non-lob fields longer than this will be truncated.  Defaults to 32768. (see [tuning.html#memoryusage here] for more info on this parameter)
+* '''maxcolumncount''': The maximum number of columns that can be fetched in a query.  Defaults to 256.  Setting this parameter to -1 causes result set buffers to be dynamically allocated, allowing any number of columns to be fetched.  Using -1 is flexible and conserves memory but there is a performance penalty.  (see [tuning.html#memoryusage here] for more info on this parameter)
+* '''maxfieldlength''': The maximum size of a non-lob field.  Non-lob fields longer than this will be truncated.  Defaults to 32768. (see [tuning.html#memoryusage here] for more info on this parameter)
 * '''charset''': The character set to translate data coming out of the database into.  Optional.
 * '''faketransactionblocks''': Some databases are in autocommit mode until you explicitly start a transaction with a "start" or "begin" statement.  Firebird is always in a transaction though, unless autocommit is turned on.  Setting this parameter to "yes" causes SQL Relay to put the database in autocommit mode until a "start" or "begin" statement is issued, and then put it back in autocommit mode when a commit or rollback is issued.  In effect, emulating the behavior of databases which require an explicit "start" or "begin".
 * '''droptemptables''': In most databases, temporary tables are dropped at the end of the client session.  In Firebird however, the rows may be deleted but the table itself remains.  Setting this parameter to "yes" causes any temporary tables that were created during an SQL Relay client session, to be dropped when the session is over, in effect emulating the behavior or other databases.  Note that temporary tables created outside of the session will not be dropped.
@@ -298,7 +301,7 @@ For '''sqlite''' databases, the connect string syntax is "db=DB;identity=ID"
 
 
 [=#odbc]
-For '''odbc''' databases, the connect string syntax is "user=USER;password=PASSWORD;dsn=DSN;autocommit=yes/no;connecttimeout=CONNECTTIMEOUT;odbcversion=ODBCVERSION;ncharencoding=NCHARENCODING;maxselectlistsize=MAXSELECTLISTSIZE;maxitembuffersize=MAXITEMBUFFERSIZE;maxoutlobbindsize=MAXOUTLOBBINDSIZE;identity=ID;mars=yes/no;trace=yes/no/default;tracefile=TRACEFILE;detachbeforelogin=yes/no"
+For '''odbc''' databases, the connect string syntax is "user=USER;password=PASSWORD;dsn=DSN;autocommit=yes/no;connecttimeout=CONNECTTIMEOUT;odbcversion=ODBCVERSION;ncharencoding=NCHARENCODING;maxcolumncount=MAXCOLUMNCOUNT;maxfieldlength=MAXFIELDLENGTH;maxoutlobbindsize=MAXOUTLOBBINDSIZE;identity=ID;mars=yes/no;trace=yes/no/default;tracefile=TRACEFILE;detachbeforelogin=yes/no"
 
 * '''user''': The username SQL Relay should use to log into the database.  Required.
 * '''password''': The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See [configguide.html#pwdenc Password Encryption]
@@ -307,8 +310,8 @@ For '''odbc''' databases, the connect string syntax is "user=USER;password=PASSW
 * '''connecttimeout''': Specifies the number of seconds to wait for a successful connection to the database.  Defaults to 5 seconds if omitted.  Setting a timeout of 0 means to wait forever.
 * '''odbcversion''': Tells the driver to exhibit behavior from the specified version of ODBC.  Valid values include: 2, 3, and 3.8.  Defaults to 3.  It may be necessary to set this to 2 for some drivers that only support ODBC 2.
 * '''ncharencoding''': Whether to encode bind variables as UCS-2 or UTF-16 when inserting into a NCHAR/NVARCHAR field, and whether to interpret data from NCHAR/NVARCHAR fields as UCS-2 or UTF-16.  Defaults to UCS-2.
-* '''maxselectlistsize''': The maximum number of columns that can be fetched in a query.  Defaults to 256.  Setting this parameter to -1 causes result set buffers to be dynamically allocated, allowing any number of columns to be fetched.  Using -1 is flexible and conserves memory but there is a performance penalty.  (see [tuning.html#memoryusage here] for more info on this parameter)
-* '''maxitembuffersize''': The maximum size of a field.  Fields longer than this will be truncated.  Defaults to 32768. (see [tuning.html#memoryusage here] for more info on this parameter)
+* '''maxcolumncount''': The maximum number of columns that can be fetched in a query.  Defaults to 256.  Setting this parameter to -1 causes result set buffers to be dynamically allocated, allowing any number of columns to be fetched.  Using -1 is flexible and conserves memory but there is a performance penalty.  (see [tuning.html#memoryusage here] for more info on this parameter)
+* '''maxfieldlength''': The maximum size of a field.  Fields longer than this will be truncated.  Defaults to 32768. (see [tuning.html#memoryusage here] for more info on this parameter)
 * '''identity''': Overrides the default value returned when a client request the database identity using the identify() method (or similar method/function).
 * '''mars''': Whether to enable MS SQL Server MARS (Multiple Active Result Sets).  Set to yes to enable MARS with MS SQL Server.  Omit or set to no to disable MARS.  Omit when using an ODBC driver for a database other than MS SQL Server.  Optional, defaults to no.
 * '''trace''': Whether or not to enable ODBC tracing.  Set to yes to enable tracing.  Set to no to disable tracing.  Set to default to accept whatever is configured in the DSN.  Defaults to default.
