@@ -162,7 +162,7 @@
     </ul>
 
     <li><a href="#bindvariabletranslation">Bind Variable Translation</a></li>
-    <li><a href="#resultsetheaderranslation">Result Set Header Translation</a></li>
+    <li><a href="#resultsetheadertranslation">Result Set Header Translation</a></li>
     <li><a href="#resultsettranslation">Result Set Translation</a></li>
     <ul>
       <li><a href="#reformatdatetime">reformatdatetime</a></li>
@@ -171,6 +171,11 @@
     <li><a href="#resultsetrowtranslation">Result Set Row Translation</a></li>
     <li><a href="#resultsetrowtranslation">Result Set Row Block Translation</a></li>
     <li><a href="#errortranslation">Error Translation</a></li>
+    <ul>
+      <li><a href="#error-renumber">renumber</a></li>
+      <li><a href="#error-patterns">patterns</a></li>
+    </ul>
+
     <li><a href="#moduledata">Module Data</a></li>
   </ul>
 
@@ -2942,7 +2947,34 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>In this example, a MySQL frontend provides MySQL/MariaDB applications access to an Oracle backend database.</p>
 
-<p>When targeting a foreign backend, some queries may have to be modified to use the syntax of the foreign database and some code may need to be changed, but a full rewrite of the app should not be necessary.</p>
+<p>Depending on the backend, it might also be necessary to make some other configuration changes, as well, for example:</p>
+
+<ul>
+  <li>In the instance tag:</li>
+  <ul>
+    <li>set translatebindvariables="yes"</li>
+    <li>set the isolationlevel attribute</li>
+  </ul>
+
+  <li>In the string attribute of the connection tag:</li>
+  <ul>
+    <li>set autocommit=yes or autocommit=no</li>
+    <li>set faketransactionblocks=yes</li>
+    <li>implement a function that returns the last insert id and specify it using the lastinsertidfunction parameter</li>
+    <li>set the identity parameter to override the database type</li>
+    <li>set ignorespace=yes</li>
+    <li>set the overrideschema parameter</li>
+    <li>set the typemangling and/or tablemangling parameters</li>
+  </ul>
+
+  <li>use <a href="#querytranslation">Query Translation</a> modules</li>
+  <li>use <a href="#resultsettranslation">Result Set Translation</a> modules</li>
+  <li>use <a href="#errortranslation">Error Translation</a> modules</li>
+  <li>use <a href="#sessionqueries">Session Queries</a></li>
+  <li>use one of the Special-Purpose Options described below</li>
+</ul>
+
+<p>In your app, it might stil be necessary to modify some queries to use the syntax of the foreign database, or even update some code, but a full rewrite of the app should not be necessary.</p>
 
 <a name="mysqlspecialpurpose"/><h3>Special-Purpose Options</h3>
 
@@ -3045,16 +3077,6 @@ http://www.gnu.org/software/src-highlite -->
   <li>MYSQL_FIELD.org_name/org_name_length and MYSQL_FIELD.org_table/org_table_length are not supported.</li>
   <li>Kerberos authentication and encryption are not supported.</li>
 </ul>
-
-<p>Most of SQL Relay's core features are available when it is configured to speak the MySQL protocol, but there are a few incompatible configurations:</p>
-
-<ul>
-  <li>Since the listener tag is used to define which addresses, port, and socket to listen on, you should not configure any <i>addresses</i>, <i>port</i>, and <i>socket</i> attributes in the instance tag.</li>
-  <li>Since the auth and user tags are used to load the authentication module and define users, you should not configure a users tag at all.  Nor should you configure an <i>authtier</i> attribute in the instance tag.</li>
-  <li>As Kerberos authentication and encryption are not supported, you should not configure any attributes related to Kerberos in the instance tag.</li>
-</ul>
-
-<p>Otherwise, all other tags and attributes are compatbile.</p>
 
 <br/><a name="postgresqlprotocol"/><h2>PostgreSQL Protocol</h2>
 
@@ -3596,7 +3618,33 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>In this example, a PostgreSQL frontend provides PostgreSQL applications access to an Oracle backend database.</p>
 
-<p>When targeting a foreign backend, some queries may have to be modified to use the syntax of the foreign database and some code may need to be changed, but a full rewrite of the app should not be necessary.</p>
+<p>Depending on the backend, it might also be necessary to make some other configuration changes, as well, for example:</p>
+
+<ul>
+  <li>In the instance tag:</li>
+  <ul>
+    <li>set translatebindvariables="yes"</li>
+    <li>set the isolationlevel attribute</li>
+  </ul>
+
+  <li>In the string attribute of the connection tag:</li>
+  <ul>
+    <li>set autocommit=yes or autocommit=no</li>
+    <li>set faketransactionblocks=yes</li>
+    <li>implement a function that returns the last insert id and specify it using the lastinsertidfunction parameter</li>
+    <li>set the identity parameter to override the database type</li>
+    <li>set ignorespace=yes</li>
+    <li>set the overrideschema parameter</li>
+    <li>set the typemangling and/or tablemangling parameters</li>
+  </ul>
+
+  <li>use <a href="#querytranslation">Query Translation</a> modules</li>
+  <li>use <a href="#resultsettranslation">Result Set Translation</a> modules</li>
+  <li>use <a href="#errortranslation">Error Translation</a> modules</li>
+  <li>use <a href="#sessionqueries">Session Queries</a></li>
+</ul>
+
+<p>In your app, it might stil be necessary to modify some queries to use the syntax of the foreign database, or even update some code, but a full rewrite of the app should not be necessary.</p>
 
 <a name="postgresqllimitations"/><h3>Limitations</h3>
 
@@ -3606,17 +3654,6 @@ http://www.gnu.org/software/src-highlite -->
   <li>Kerberos authentication and encryption are not supported.</li>
   <li>Multi-statement queries are not supported.</li>
 </ul>
-
-<p>Most of SQL Relay's core features are available when it is configured to speak the PostgreSQL protocol, but there are a few incompatible configurations:</p>
-
-<ul>
-  <li>Since the listener tag is used to define which addresses, port, and socket to listen on, you should not configure any <i>addresses</i>, <i>port</i>, and <i>socket</i> attributes in the instance tag.</li>
-  <li>Since the auth and user tags are used to load the authentication module and define users, you should not configure a users tag at all.  Nor should you configure an <i>authtier</i> attribute in the instance tag.</li>
-  <li>Database-authentication (authenticating users directly against the database) is not currently supported.</li>
-  <li>As Kerberos authentication and encryption are not supported, you should not configure any attributes related to Kerberos in the instance tag.</li>
-</ul>
-
-<p>Otherwise, all other tags and attributes are compatbile.</p>
 
 <br/><a name="multipleprotocols"/><h2>Multiple Protocols</h2>
 
@@ -5939,7 +5976,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>Currently, no open source bind variable translation modules are available, however custom modules may be developed.  For more information, please contact <a href="mailto:dev@firstworks.com">dev@firstworks.com</a>. <a target="_blank" href="http://sqlrelay.sourceforge.net/images/us.png"><img src="http://sqlrelay.sourceforge.net/images/us.png"/></a> <a target="_blank" href="http://sqlrelay.sourceforge.net/images/br.png"><img src="http://sqlrelay.sourceforge.net/images/br.png"/></a></p>
 
-<br/><a name="resultsetheaderranslation"/><h2>Result Set Header Translation</h2>
+<br/><a name="resultsetheadertranslation"/><h2>Result Set Header Translation</h2>
 
 <p>Result set header translation enables the SQL Relay server to modify column information in the result set before returning it to the client.  Result set header translation is most often used in conjunction with result set translation.</p>
 
@@ -6153,6 +6190,94 @@ http://www.gnu.org/software/src-highlite -->
 <p>Currently, no open source result set row block translation modules are available, however custom modules may be developed.  For more information, please contact <a href="mailto:dev@firstworks.com">dev@firstworks.com</a>. <a target="_blank" href="http://sqlrelay.sourceforge.net/images/us.png"><img src="http://sqlrelay.sourceforge.net/images/us.png"/></a> <a target="_blank" href="http://sqlrelay.sourceforge.net/images/br.png"><img src="http://sqlrelay.sourceforge.net/images/br.png"/></a></p>
 
 <br/><a name="errortranslation"/><h2>Error Translation</h2>
+
+<p>Error translation enables the SQL Relay server to modify errors before passing them back to the client.</p>
+
+<p>Error translation is implemented by loadable modules. The errortranslations section of the configuration file indicates which error translation modules to load and what parameters to use when executing them.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	...
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;translations&gt;</font></b>
+			<b><font color="#0000FF">&lt;translation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"renumber"</font><b><font color="#0000FF">&gt;</font></b>
+				<i><font color="#9A1900">&lt;!-- table already exists --&gt;</font></i>
+				<b><font color="#0000FF">&lt;renumber</font></b> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"955"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"1050"</font><b><font color="#0000FF">/&gt;</font></b>
+				<i><font color="#9A1900">&lt;!-- table doesn't exist --&gt;</font></i>
+				<b><font color="#0000FF">&lt;renumber</font></b> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"942"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"1051"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;/translation&gt;</font></b>
+		<b><font color="#0000FF">&lt;/translations&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+	...
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+
+</tt></pre>
+
+</blockquote>
+<p>The <i>module</i> attribute specifies which module to load.</p>
+
+<p>Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.</p>
+
+<p>All translation modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
+
+<p>Error translation modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
+
+<p>At startup, the SQL Relay server creates instances of the specified error translations modules and initializes them.  When a query is run, the server passes the query to each module, in the order that they were specified in the config file.  If a module modifies the query, then that modified query is passed on to the next module.</p>
+
+<p>Currently, the following error translation modules are available in the standard SQL Relay distribution:</p>
+
+<ul>
+  <li><b>renumber</b></li>
+  <li><b>patterns</b></li>
+</ul>
+
+<p>Custom modules may also be developed.  For more information, please contact <a href="mailto:dev@firstworks.com">dev@firstworks.com</a>. <a target="_blank" href="http://sqlrelay.sourceforge.net/images/us.png"><img src="http://sqlrelay.sourceforge.net/images/us.png"/></a> <a target="_blank" href="http://sqlrelay.sourceforge.net/images/br.png"><img src="http://sqlrelay.sourceforge.net/images/br.png"/></a></p>
+
+<br/><a name="error-renumber"/><h3>renumber</h3>
+
+<p>The <b>renumber</b> module enables you to replace one error number with another.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	...
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;translations&gt;</font></b>
+			<b><font color="#0000FF">&lt;translation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"renumber"</font><b><font color="#0000FF">&gt;</font></b>
+				<i><font color="#9A1900">&lt;!-- table already exists --&gt;</font></i>
+				<b><font color="#0000FF">&lt;renumber</font></b> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"955"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"1050"</font><b><font color="#0000FF">/&gt;</font></b>
+				<i><font color="#9A1900">&lt;!-- table doesn't exist --&gt;</font></i>
+				<b><font color="#0000FF">&lt;renumber</font></b> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"942"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"1051"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;/translation&gt;</font></b>
+		<b><font color="#0000FF">&lt;/translations&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+	...
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+
+</tt></pre>
+
+</blockquote>
+<p>In this example:</p>
+
+<ul>
+  <li>Oracle error number 955 (ORA-00955: name is already used by an existing object) is replaced with MySQL error number 1050 (Table already exists)</li>
+  <li>Oracle error number 942 (ORA-00942: table or view does not exist) is replaced with MySQL error number 1051 (Unknown table)</li>
+</ul>
+
+<br/><br/><a name="error-patterns"/><h3>patterns</h3>
 
 <p>...</p>
 
