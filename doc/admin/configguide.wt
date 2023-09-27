@@ -105,6 +105,7 @@
   * [#reformatdatetime reformatdatetime]
  * [#resultsetrowtranslation Result Set Row Translation]
  * [#resultsetrowtranslation Result Set Row Block Translation]
+ * [#errortranslation Error Translation]
  * [#moduledata Module Data]
 * [#directives Query Directives]
  * [#custom_wf custom_wf]
@@ -4064,6 +4065,12 @@ This is useful for the same reasons as result set row translation, and tends to 
 }}}
 
 Currently, no open source result set row block translation modules are available, however custom modules may be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com]. [[Image(http://sqlrelay.sourceforge.net/images/us.png)]] [[Image(http://sqlrelay.sourceforge.net/images/br.png)]]
+
+
+[[br]][=#errortranslation]
+== Error Translation ==
+
+...
 
 
 [[br]][=#moduledata]
