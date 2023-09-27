@@ -4140,7 +4140,73 @@ In this example:
 [[br]][=#error-patterns]
 === patterns ===
 
-...
+The '''patterns''' module enables you to match the entire error string, or parts of it, against a pattern, and then replace the matching part.
+
+The module is highly configurable, and capable of doing some fairly complex substitutions.  For example:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-errortranslations-patterns.conf@
+}}}
+}}}
+
+In this example, several pattern-translations are defined, instructing the module to:
+
+* Convert the error string "ORA-00955: name is already in use by an existing object" to "Table already exists".
+* Convert the error string "ORA-00942: table or view does not exist" to "Unknown table".
+* Convert //old_tablename// to //new_tablename//, but only inside of quoted strings. (Some errors containg quoted table names)
+* Convert //Old_Tablename// to //new_tablename//, but only inside of quoted strings, and using case-insensitive matching. (Some errors contain quoted table names)
+* Convert ORA-00955: or ORA-00942: to ORA-99999:, but only outside of quoted strings.
+* Convert only the first instance of //ORA-// to //ora-//, but only outside of quoted strings.
+* Convert ORA- to ora- if the error string begins with ORA-.
+
+( '''NOTE:''' Some of the configurations above are nonsensical or redundant, but are included for the sake of illustration.)
+
+This example illustrates the use of several attributes of the pattern tag:
+
+* '''type''' - The type of matching to do.  Options include:
+ * //string// - basic string matching - the default
+ * //cistring// - case-insensitive string matching
+ * //regex// - regular-expression matching
+* '''from''' - The pattern to match.
+* '''to''' - The string to convert matching parts of the query to.
+* '''scope''' - Where to match and translate.  Options include:
+ * //anywhere// - anywhere in the query - the default
+ * //outsidequotes// - only outside of quoted strings
+ * //insidequotes// - only inside of quoted strings
+* '''global''' - Only valid when type="regex".  Options include:
+ * //yes// - find all matches - the default
+ * //no// - only find the first match
+
+Another powerful feature of the patterns translation module is nested matching:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-errortranslations-patterns-nested.conf@
+}}}
+}}}
+
+In this example...
+
+The first pattern-translation replaces "name is already in use by an existing object" with "Table already exists" but onle when the error begins with "ORA-00955:", resulting in: "ORA-00955: Table already exists".
+
+The second pattern-translation replaces "table or view does not exist" with "Unknown table" but onle when the error begins with "ORA-00942:", resulting in "ORA-00942: Unknown table".
+
+( '''NOTE:''' There are easier ways to perform this replacement, but this way is included for the sake of illustration.)
+
+Note that in these examples, the outer pattern tags have a match attribute rather than from/to attributes.  When doing nested matching, outer tags use the match attribute to grab pieces of the query, and pass them down to nested tags.
+
+The type, scope, and global attributes are valid for outer pattern tags, but the from and to attributes are ignored in any pattern tag with a match attribute.
+
+Note also that in these examples, the nested pattern tags use type="string", but type="regex" and type="cistring" are supported, as is the global attribute for type="regex".  However, the scope attribute is only valid at the top level and is ignored in nested pattern tags.
+
+Though more than 2 levels is rarely necessary, any level of nesting is supported:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-errortranslations-patterns-nested-multi.conf@
+}}}
+}}}
 
 
 
