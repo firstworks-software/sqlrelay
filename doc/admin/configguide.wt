@@ -121,6 +121,7 @@
  * [#sqlrcmdgstat sqlrcmdgstat]
 * [#triggers Triggers]
  * [#replay replay]
+ * [#upsert upsert]
 * [#logging Logging]
  * [#debug debug]
  * [#slowqueries slowqueries]
@@ -4905,6 +4906,7 @@ At startup, the SQL Relay server creates instances of the specified trigger modu
 Currently, the following trigger modules are available in the standard SQL Relay distribution:
 
 * '''replay'''
+* '''upsert'''
 
 Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com]. [[Image(http://sqlrelay.sourceforge.net/images/us.png)]] [[Image(http://sqlrelay.sourceforge.net/images/br.png)]]
 
@@ -5088,6 +5090,107 @@ There are some limitations to this.
 If any of those are detected, then the query log is cleared and the module is disabled until the beginning of the next transaction.  If a replay condition occurs, then the error is just returned as it would have been if the module were not in use.
 
 The module also has to do a bit of work to determine whether the insert contains an auto-increment column, including query the database for the last-insert-id, and potentially column info.  Column info is cached, but the cache isn't shared across sqlr-connection processes, and is (currently) cleared at the end of each transaction.  So, the module should be used with caution in performance-sensitive applications.
+
+
+[[br]][=#upsert]
+== upsert ==
+
+The upsert module enables an insert query to be transparently interpreted as an update query, if the insert failed.
+
+Both the set of errors that trigger the upsert, as well as the set of tables that can be upserted into are configurable.
+
+An example configuration:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-upsert.conf@
+}}}
+}}}
+
+In this example...
+
+The trigger is configured to run after the query has been executed. This is the only valid configuration for the upsert trigger. If when="before" or when="both" is set then the trigger will be ignored.
+
+If an insert into the table //students// results in an error string containing "ORA-00001" (an Oracle unique constraint violated), then the insert that generated the error will be converted to an update.
+
+The where clause of the update will only contain columns //FIRSTNAME// and //LASTNAME//.
+
+The trigger will also attempt to identify primary key and autoincrement columns and exclude them from the table update.
+
+For example, if the //students// table was created like:
+
+{{{#!blockquote
+{{{#!code
+create table students (
+	id int primary key,
+	firstname varchar2(128) not null,
+	lastname varchar2(128) not null,
+	major varchar2(128),
+	year int,
+	gpa number(2,1),
+	unique (firstname,lastname)
+)
+}}}
+}}}
+
+And two inserts are run like:
+
+{{{#!blockquote
+{{{#!code
+insert into students values (student_ids.nextval,'David','Muse','Mechanical Engineering',1,4.0);
+insert into students values (student_ids.nextval,'David','Muse','Computer Science',2,3.2);
+}}}
+}}}
+
+Then the first insert will succeed, but the second will fail because the values of 'David' and 'Muse' for the firstname and lastname columns violate the unique constraint.
+
+In this case, the second insert will throw an ORA-00001 error, and the trigger will be converted to the following update:
+
+{{{#!blockquote
+{{{#!code
+update students set firstname='David', lastname='Muse', major='Computer Science', year=2, gpa=3.2 where firstname='David' and lastname='Muse'
+}}}
+}}}
+
+Note that the primary key is omitted from the set clause of the update, and that the where clause only contains the firstname and lastname columns.
+
+Note also that, in the configuration, the columns are uppercased: FIRSTNAME and LASTNAME.  This is because, in this example, we're using an Oracle database and Oracle column names are uppercased by default.  For other databases, you should use lowercased column names.
+
+Also note that, in the configuration, the normalize translation is included.  This helps the trigger parse and rewrite queries more accurately.
+
+Other configuration options are also available.
+
+You can specify the error by number instead of by string:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-upsert-errorcode.conf@
+}}}
+}}}
+
+If, for some reason, the trigger is unable to identify the primary key of the table, you can manually specify the primary key:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-upsert-primarykey.conf@
+}}}
+}}}
+
+You can also specify multiple tables:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-upsert-multitable.conf@
+}}}
+}}}
+
+In the example configuration above, inserts into any of the students, processors, or courses tables, which fail with ORA-00001, will be converted to updates.
+
+There are some considerations that need to be taken into account when using the upsert trigger.
+
+* Currently, only single-row inserts are supported.  Multi-row inserts, select-into, and insert-select queries will not be converted to update queries, and will just fail.
+* If you don't specify any columns in the table tag, then the where clause of the generated update will be empty, and the update query will fail.
+* If the insert doesn't contain values for the columns specified in the table tag, then the conversion to update will fail.
 
 
 ----
