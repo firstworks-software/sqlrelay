@@ -80,6 +80,7 @@
   * [#backendenc-postgresql PostgreSQL]
  * [#runas Run-As User and Group]
  * [#deniedallowedips Denied/Allowed IP Addresses]
+ * [#pwdfiles Password Files]
  * [#pwdenc Password Encryption]
   * [#rot rot]
   * [#md5 md5]
@@ -1218,6 +1219,7 @@ sqlrsh -host localhost -user scott -password tiger
 
 {{{#!blockquote
 ( '''NOTE:''' By default, the user and password used to access SQL Relay are the same as the user and password that SQL Relay is configured to use to access the database.  That is, they are the values of the user and password parameters of the string attribute of the connection tag. )
+}}}
 
 By default, SQL Relay listens on all available network interfaces, on port 9000, and can be accessed remotely by hostname.  For example, if the server running SQL Relay is named //sqlrserver// then it can be accessed from another system using:
 
@@ -1325,53 +1327,6 @@ To enable user list auth, you must provide a list of user/password combinations,
 }}}
 }}}
 
-If you would prefer not to include passwords directly in the config file, then you can put them in external files, and enclose the full path of each file in square brackets as follows:
-
-{{{#!blockquote
-{{{#!code
-@parts/sqlrelay-auths-users-passwordfiles.conf@
-}}}
-}}}
-
-In this example...
-
-The contents of the file /usr/local/firsworks/etc/oneuser.pwd would be used to authenticate oneuser, and would contain the text:
-
-{{{#!blockquote
-{{{
-onepassword
-}}}
-}}}
-
-The contents of the file /usr/local/firsworks/etc/anotheruser.pwd would be used to authenticate anotheruser, and would contain the text:
-
-{{{#!blockquote
-{{{
-anotherpassword
-}}}
-}}}
-
-The contents of the file /usr/local/firsworks/etc/yetanotheruser.pwd would be used to authenticate yetanotheruser, and would contain the text:
-
-{{{#!blockquote
-{{{
-yetanotherpassword
-}}}
-}}}
-
-This approach is useful if you want to give the files containing the passwords more restrictive permissions than the config file itself, or possibly for other reasons.
-
-( '''NOTE:''' Trailing whitespace is ignored when passwords are stored in external files.)
-
-If you would prefer not to use full pathnames inside of each set of square brackets, then you can  specify a //passwordpath// attribute in the instance tag, as follows:
-
-{{{#!blockquote
-{{{#!code
-@parts/sqlrelay-auths-users-passwordfiles-passwordpath.conf@
-}}}
-}}}
-
-In this case, the path /usr/local/firstworks/etc will be searched for the files oneuser.pwd, anotheruser.pwd, and yetanotheruser.pwd.
 
 [=#sqlrclientdbauth]
 === Database Auth ===
@@ -1822,54 +1777,6 @@ To enable user list auth, you must provide a list of user/password combinations,
 }}}
 }}}
 
-If you would prefer not to include passwords directly in the config file, then you can put them in external files, and enclose the full path of each file in square brackets as follows:
-
-{{{#!blockquote
-{{{#!code
-@parts/sqlrelay-mysqlfeuserlistmultiple-passwordfiles.conf@
-}}}
-}}}
-
-In this example...
-
-The contents of the file /usr/local/firsworks/etc/oneuser.pwd would be used to authenticate oneuser, and would contain the text:
-
-{{{#!blockquote
-{{{
-onepassword
-}}}
-}}}
-
-The contents of the file /usr/local/firsworks/etc/anotheruser.pwd would be used to authenticate anotheruser, and would contain the text:
-
-{{{#!blockquote
-{{{
-anotherpassword
-}}}
-}}}
-
-The contents of the file /usr/local/firsworks/etc/yetanotheruser.pwd would be used to authenticate yetanotheruser, and would contain the text:
-
-{{{#!blockquote
-{{{
-yetanotherpassword
-}}}
-}}}
-
-This approach is useful if you want to give the files containing the passwords more restrictive permissions than the config file itself, or possibly for other reasons.
-
-( '''NOTE:''' Trailing whitespace is ignored when passwords are stored in external files.)
-
-If you would prefer not to use full pathnames inside of each set of square brackets, then you can  specify a //passwordpath// attribute in the instance tag, as follows:
-
-{{{#!blockquote
-{{{#!code
-@parts/sqlrelay-mysqlfeuserlistmultiple-passwordfiles-passwordpath.conf@
-}}}
-}}}
-
-In this case, the path /usr/local/firstworks/etc will be searched for the files oneuser.pwd, anotheruser.pwd, and yetanotheruser.pwd.
-
 When using SQL Relay as a transparent proxy, it is desirable to define the same set of users that are defined in the database itself.  While this may sound inconvenient, in practice, most apps use a single user to access the database, and it's not uncommon for multiple apps to share a user.  So, the list is typically short.
 
 [=#mysqldbauth]
@@ -2287,54 +2194,6 @@ To enable user list auth, you must provide a list of user/password combinations,
 @parts/sqlrelay-postgresqlfeuserlistmultiple.conf@
 }}}
 }}}
-
-If you would prefer not to include passwords directly in the config file, then you can put them in external files, and enclose the full path of each file in square brackets as follows:
-
-{{{#!blockquote
-{{{#!code
-@parts/sqlrelay-postgresqlfeuserlistmultiple-passwordfiles.conf@
-}}}
-}}}
-
-In this example...
-
-The contents of the file /usr/local/firsworks/etc/oneuser.pwd would be used to authenticate oneuser, and would contain the text:
-
-{{{#!blockquote
-{{{
-onepassword
-}}}
-}}}
-
-The contents of the file /usr/local/firsworks/etc/anotheruser.pwd would be used to authenticate anotheruser, and would contain the text:
-
-{{{#!blockquote
-{{{
-anotherpassword
-}}}
-}}}
-
-The contents of the file /usr/local/firsworks/etc/yetanotheruser.pwd would be used to authenticate yetanotheruser, and would contain the text:
-
-{{{#!blockquote
-{{{
-yetanotherpassword
-}}}
-}}}
-
-This approach is useful if you want to give the files containing the passwords more restrictive permissions than the config file itself, or possibly for other reasons.
-
-( '''NOTE:''' Trailing whitespace is ignored when passwords are stored in external files.)
-
-If you would prefer not to use full pathnames inside of each set of square brackets, then you can  specify a //passwordpath// attribute in the instance tag, as follows:
-
-{{{#!blockquote
-{{{#!code
-@parts/sqlrelay-postgresqlfeuserlistmultiple-passwordfiles-passwordpath.conf@
-}}}
-}}}
-
-In this case, the path /usr/local/firstworks/etc will be searched for the files oneuser.pwd, anotheruser.pwd, and yetanotheruser.pwd.
 
 When using SQL Relay as a transparent proxy, it is desirable to define the same set of users that are defined in the database itself.  While this may sound inconvenient, in practice, most apps use a single user to access the database, and it's not uncommon for multiple apps to share a user.  So, the list is typically short.
 
@@ -3145,6 +3004,88 @@ For example, to deny all clients except clients connecting from the 192.168.2.0 
 @parts/sqlrelay-deniedallowedips.conf@
 }}}
 }}}
+
+
+[[br]][=#pwdfiles]
+== Password Files ==
+
+Password files enable you to store passwords in external files, rather than directly in the config file.  Passwords can then be secured by setting a more restrictive set of permissions on the files containing the passwords than on the config file itself.
+
+{{{#!blockquote
+( '''NOTE:''' If [#runas runasuser/runasgroup] are used, then password files must be readable by the runasuser/runasgroup.  Otherwise various things will fail, most notably, dynamic scaling.)
+}}}
+
+Password files are supported by all userlist auth modules, including sqlrclient_userlist, mysql_userlist and postgresql_userlist, as well as in database connect strings. 
+
+To use password files, put each password in an external file, and enclose the full path of the file in square brackets as follows:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-passwordfiles.conf@
+}}}
+}}}
+
+In this example...
+
+The contents of the file /usr/local/firstworks/etc/oneuser.pwd would be used to authenticate oneuser, and could contain the text:
+
+{{{#!blockquote
+{{{
+onepassword
+}}}
+}}}
+
+The contents of the file /usr/local/firstworks/etc/anotheruser.pwd would be used to authenticate anotheruser, and could contain the text:
+
+{{{#!blockquote
+{{{
+anotherpassword
+}}}
+}}}
+
+The contents of the file /usr/local/firstworks/etc/yetanotheruser.pwd would be used to authenticate yetanotheruser, and could contain the text:
+
+{{{#!blockquote
+{{{
+yetanotherpassword
+}}}
+}}}
+
+The contents of the file /usr/local/firstworks/etc/ora1user.pwd would contain the password for ora1user, perhaps containing the text:
+
+{{{#!blockquote
+{{{
+ora1password
+}}}
+}}}
+
+The contents of the file /usr/local/firstworks/etc/ora2user.pwd would contain the password for ora2user, perhaps containing the text:
+
+{{{#!blockquote
+{{{
+ora2password
+}}}
+}}}
+
+The contents of the file /usr/local/firstworks/etc/ora3user.pwd would contain the password for ora3user, perhaps containing the text:
+
+{{{#!blockquote
+{{{
+ora3password
+}}}
+}}}
+
+( '''NOTE:''' Trailing whitespace is ignored when passwords are stored in external files.)
+
+If you would prefer not to use full pathnames inside of each set of square brackets, then you can  specify a //passwordpath// attribute in the instance tag, as follows:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-passwordfiles-passwordpath.conf@
+}}}
+}}}
+
+In this case, the path /usr/local/firstworks/etc will be searched for the files oneuser.pwd, anotheruser.pwd, yetanotheruser.pwd, ora1user.pwd, ora2user.pwd, and ora3user.pwd.
 
 
 [[br]][=#pwdenc]
