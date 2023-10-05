@@ -71,8 +71,8 @@
 // default tiers to debug on
 #define DEFAULT_DEBUG "none"
 
-// default max client info length
-#define DEFAULT_MAXCLIENTINFOLENGTH "512"
+// default max client info size
+#define DEFAULT_MAXCLIENTINFOSIZE "512"
 
 // default max query size
 #define DEFAULT_MAXQUERYSIZE "65536"
@@ -80,17 +80,17 @@
 // default max bind variable count
 #define DEFAULT_MAXBINDCOUNT "256"
 
-// default max bind variable length
-#define DEFAULT_MAXBINDNAMELENGTH "64"
+// default max bind variable size
+#define DEFAULT_MAXBINDNAMESIZE "64"
 
-// default max string bind value length
-#define DEFAULT_MAXSTRINGBINDVALUELENGTH "32768"
+// default max string bind value size
+#define DEFAULT_MAXSTRINGBINDVALUESIZE "32768"
 
-// default lob bind value length
-#define DEFAULT_MAXLOBBINDVALUELENGTH "71680"
+// default lob bind value size
+#define DEFAULT_MAXLOBBINDVALUESIZE "71680"
 
 // default error size
-#define DEFAULT_MAXERRORLENGTH "2048"
+#define DEFAULT_MAXERRORSIZE "2048"
 
 // default idle client timeout
 #define DEFAULT_IDLECLIENTTIMEOUT "-1"

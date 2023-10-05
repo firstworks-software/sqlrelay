@@ -232,12 +232,12 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		void		saveError();
 		void		saveErrorFromCursor(sqlrservercursor *cursor);
 		void		errorMessage(const char **errorbuffer,
-						uint32_t *errorlength,
+						uint32_t *errorsize,
 						int64_t *errorcode,
 						bool *liveconnection);
 		void		errorMessage(char *errorbuffer,
 						uint32_t errorbuffersize,
-						uint32_t *errorlength,
+						uint32_t *errorsize,
 						int64_t *errorcode,
 						bool *liveconnection);
 		void		clearError();
@@ -245,8 +245,8 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 					int64_t errn, bool liveconn);
 		char		*getErrorBuffer();
 		uint32_t	getErrorBufferSize();
-		uint32_t	getErrorLength();
-		void		setErrorLength(uint32_t errorlength);
+		uint32_t	getErrorSize();
+		void		setErrorSize(uint32_t errorsize);
 		uint32_t	getErrorNumber();
 		void		setErrorNumber(uint32_t errnum);
 		bool		getLiveConnection();
@@ -688,13 +688,13 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		void		saveError(sqlrservercursor *cursor);
 		void		errorMessage(sqlrservercursor *cursor,
 						const char **errorbuffer,
-						uint32_t *errorlength,
+						uint32_t *errorsize,
 						int64_t *errorcode,
 						bool *liveconnection);
 		void		errorMessage(sqlrservercursor *cursor,
 						char *errorbuffer,
 						uint32_t errorbuffersize,
-						uint32_t *errorlength,
+						uint32_t *errorsize,
 						int64_t *errorcode,
 						bool *liveconnection);
 		void		clearError(sqlrservercursor *cursor);
@@ -709,9 +709,9 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 						bool liveconn);
 		char		*getErrorBuffer(sqlrservercursor *cursor);
 		uint32_t	getErrorBufferSize(sqlrservercursor *cursor);
-		uint32_t	getErrorLength(sqlrservercursor *cursor);
-		void		setErrorLength(sqlrservercursor *cursor,
-							uint32_t errorlength);
+		uint32_t	getErrorSize(sqlrservercursor *cursor);
+		void		setErrorSize(sqlrservercursor *cursor,
+							uint32_t errorsize);
 		uint32_t	getErrorNumber(sqlrservercursor *cursor);
 		void		setErrorNumber(sqlrservercursor *cursor,
 							uint32_t errnum);
@@ -757,7 +757,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		void	bulkLoadError();
 		bool	bulkLoadStoreError(int64_t errorcode,
 						const char *error,
-						uint32_t errorlength,
+						uint32_t errorsize,
 						const char *errorfieldtable,
 						const char *errorrowtable);
 		bool	bulkLoadEnd();
@@ -886,7 +886,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 
 		virtual	void	errorMessage(char *errorbuffer,
 						uint32_t errorbuffersize,
-						uint32_t *errorlength,
+						uint32_t *errorsize,
 						int64_t *errorcode,
 						bool *liveconnection)=0;
 
@@ -1023,8 +1023,8 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 
 		char		*getErrorBuffer();
 		uint32_t	getErrorBufferSize();
-		uint32_t	getErrorLength();
-		void		setErrorLength(uint32_t errorlength);
+		uint32_t	getErrorSize();
+		void		setErrorSize(uint32_t errorsize);
 		uint32_t	getErrorNumber();
 		void		setErrorNumber(uint32_t errnum);
 		bool		getLiveConnection();
@@ -1205,7 +1205,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		virtual	bool	queryIsCommitOrRollback();
 		virtual	void	errorMessage(char *errorbuffer,
 						uint32_t errorbuffersize,
-						uint32_t *errorlength,
+						uint32_t *errorsize,
 						int64_t *errorcode,
 						bool *liveconnection);
 		virtual bool		knowsRowCount();
@@ -1343,8 +1343,8 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 
 		char		*getErrorBuffer();
 		uint32_t	getErrorBufferSize();
-		uint32_t	getErrorLength();
-		void		setErrorLength(uint32_t errorlength);
+		uint32_t	getErrorSize();
+		void		setErrorSize(uint32_t errorsize);
 		uint32_t	getErrorNumber();
 		void		setErrorNumber(uint32_t errnum);
 		bool		getLiveConnection();
@@ -2578,7 +2578,7 @@ class SQLRSERVER_DLLSPEC sqlrerrortranslation {
 					sqlrservercursor *sqlrcur,
 					int64_t errornumber,
 					const char *error,
-					uint32_t errorlength,
+					uint32_t errorsize,
 					int64_t *translatederrornumber,
 					stringbuffer *translatederror);
 
@@ -2604,7 +2604,7 @@ class SQLRSERVER_DLLSPEC sqlrerrortranslations {
 					sqlrservercursor *sqlrcur,
 					int64_t errornumber,
 					const char *error,
-					uint32_t errorlength,
+					uint32_t errorsize,
 					int64_t *translatederrornumber,
 					stringbuffer *translatederror);
 

@@ -622,7 +622,7 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, bool replaytx) {
 				stdoutput.printf(
 					"		"
 					"prepare error: %.*s\n",
-					sqlrcur->getErrorLength(),
+					sqlrcur->getErrorSize(),
 					sqlrcur->getErrorBuffer());
 				stdoutput.printf("	}\n");
 			}
@@ -722,7 +722,7 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, bool replaytx) {
 				stdoutput.printf(
 					"		"
 					"execute error: %.*s\n",
-					sqlrcur->getErrorLength(),
+					sqlrcur->getErrorSize(),
 					sqlrcur->getErrorBuffer());
 			}
 		}
@@ -840,7 +840,7 @@ bool sqlrtrigger_replay::replayCondition(sqlrservercursor *sqlrcur,
 						(indent)?"	":"",
 						val->error,
 						(indent)?"	":"",
-						sqlrcur->getErrorLength(),
+						sqlrcur->getErrorSize(),
 						sqlrcur->getErrorBuffer(),
 						(indent)?"	":"",
 						(*replaytx)?"true":"false",
@@ -907,32 +907,32 @@ void sqlrtrigger_replay::logReplayCondition(condition *cond) {
 					charstring::getLength(cond->query));
 		if (!success && debug) {
         		const char      *errorstring;
-        		uint32_t        errorlength;
+        		uint32_t        errorsize;
         		int64_t         errnum;
         		bool            liveconnection;
         		cont->errorMessage(logcur,&errorstring,
-							&errorlength,
+							&errorsize,
                                         		&errnum,
 							&liveconnection);
 			stdoutput.printf("failed to prepare log query:\n"
 						"%s\n%.*s\n",cond->query,
-						errorlength,errorstring);
+						errorsize,errorstring);
 		}
 	}
 	if (success) {
 		success=cont->executeQuery(logcur);
 		if (!success && debug) {
         		const char      *errorstring;
-        		uint32_t        errorlength;
+        		uint32_t        errorsize;
         		int64_t         errnum;
         		bool            liveconnection;
         		cont->errorMessage(logcur,&errorstring,
-							&errorlength,
+							&errorsize,
                                         		&errnum,
 							&liveconnection);
 			stdoutput.printf("failed to execute log query:\n"
 						"%s\n%.*s\n",cond->query,
-						errorlength,errorstring);
+						errorsize,errorstring);
 		}
 	}
 	if (success) {

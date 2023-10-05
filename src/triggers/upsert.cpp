@@ -107,7 +107,7 @@ bool sqlrtrigger_upsert::run(sqlrserverconnection *sqlrcon,
 			stdoutput.printf("	no matching error "
 					"found for:\n%d: %.*s}\n",
 					cont->getErrorNumber(icur),
-					cont->getErrorLength(icur),
+					cont->getErrorSize(icur),
 					cont->getErrorBuffer(icur));
 		}
 		return *success;
@@ -248,14 +248,14 @@ bool sqlrtrigger_upsert::run(sqlrserverconnection *sqlrcon,
 			// copy the error from the cursor used to run the
 			// update to the cursor used to run the original insert
         		const char      *errorstring;
-        		uint32_t        errorlength;
+        		uint32_t        errorsize;
         		int64_t         errnum;
         		bool            liveconnection;
         		cont->errorMessage(ucur,&errorstring,
-							&errorlength,
+							&errorsize,
                                         		&errnum,
 							&liveconnection);
-			cont->setError(icur,errorstring,errorlength,
+			cont->setError(icur,errorstring,errorsize,
 						errnum,liveconnection);
 		}
 	}
@@ -277,15 +277,15 @@ bool sqlrtrigger_upsert::run(sqlrserverconnection *sqlrcon,
 	if (debug) {
 		if (!*success) {
         		const char      *errorstring;
-        		uint32_t        errorlength;
+        		uint32_t        errorsize;
         		int64_t         errnum;
         		bool            liveconnection;
         		cont->errorMessage(icur,&errorstring,
-							&errorlength,
+							&errorsize,
                                         		&errnum,
 							&liveconnection);
 			stdoutput.printf("error: %d - %.*s\n",
-					errnum,errorlength,errorstring);
+					errnum,errorsize,errorstring);
 		}
 		stdoutput.printf("}\n");
 	}
@@ -307,7 +307,7 @@ bool sqlrtrigger_upsert::errorEncountered(sqlrservercursor *icur) {
 	// the error buffer may not be terminated, but contains() below
 	// needs a terminated string, so make a copy of it here
 	stringbuffer	err;
-	err.append(cont->getErrorBuffer(icur),cont->getErrorLength(icur));
+	err.append(cont->getErrorBuffer(icur),cont->getErrorSize(icur));
 
 	// look through the errors and see if we find
 	// one that matches the icur's error

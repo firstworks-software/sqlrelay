@@ -204,13 +204,13 @@ class SQLRUTIL_DLLSPEC sqlrconfig {
 		virtual bool		getDebugQueries()=0;
 		virtual bool		getDebugModuleDatas()=0;
 
-		virtual uint64_t	getMaxClientInfoLength()=0;
+		virtual uint64_t	getMaxClientInfoSize()=0;
 		virtual uint32_t	getMaxQuerySize()=0;
 		virtual uint16_t	getMaxBindCount()=0;
-		virtual uint16_t	getMaxBindNameLength()=0;
-		virtual uint32_t	getMaxStringBindValueLength()=0;
-		virtual uint32_t	getMaxLobBindValueLength()=0;
-		virtual uint32_t	getMaxErrorLength()=0;
+		virtual uint16_t	getMaxBindNameSize()=0;
+		virtual uint32_t	getMaxStringBindValueSize()=0;
+		virtual uint32_t	getMaxLobBindValueSize()=0;
+		virtual uint32_t	getMaxErrorSize()=0;
 
 		virtual int32_t		getIdleClientTimeout()=0;
 

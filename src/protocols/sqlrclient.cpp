@@ -214,20 +214,19 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 
 		int32_t		idleclienttimeout;
 
-		uint64_t	maxclientinfolength;
+		uint64_t	maxclientinfosize;
 		uint32_t	maxquerysize;
 		uint16_t	maxbindcount;
-		uint16_t	maxbindnamelength;
-		uint32_t	maxstringbindvaluelength;
-		uint32_t	maxlobbindvaluelength;
-		uint32_t	maxerrorlength;
+		uint16_t	maxbindnamesize;
+		uint32_t	maxstringbindvaluesize;
+		uint32_t	maxlobbindvaluesize;
 		bool		waitfordowndb;
 
 		char		userbuffer[USERSIZE];
 		char		passwordbuffer[USERSIZE];
 
 		char		*clientinfo;
-		uint64_t	clientinfolen;
+		uint64_t	clientinfosize;
 
 		uint64_t	skip;
 		uint64_t	fetch;
@@ -247,17 +246,16 @@ sqlrprotocol_sqlrclient::sqlrprotocol_sqlrclient(
 	debugFunction();
 
 	idleclienttimeout=cont->getConfig()->getIdleClientTimeout();
-	maxclientinfolength=cont->getConfig()->getMaxClientInfoLength();
+	maxclientinfosize=cont->getConfig()->getMaxClientInfoSize();
 	maxquerysize=cont->getConfig()->getMaxQuerySize();
 	maxbindcount=cont->getConfig()->getMaxBindCount();
-	maxbindnamelength=cont->getConfig()->getMaxBindNameLength();
-	maxstringbindvaluelength=
-			cont->getConfig()->getMaxStringBindValueLength();
-	maxlobbindvaluelength=cont->getConfig()->getMaxLobBindValueLength();
+	maxbindnamesize=cont->getConfig()->getMaxBindNameSize();
+	maxstringbindvaluesize=
+			cont->getConfig()->getMaxStringBindValueSize();
+	maxlobbindvaluesize=cont->getConfig()->getMaxLobBindValueSize();
 	lazyfetch=false;
-	maxerrorlength=cont->getConfig()->getMaxErrorLength();
 	waitfordowndb=cont->getConfig()->getWaitForDownDatabase();
-	clientinfo=new char[maxclientinfolength+1];
+	clientinfo=new char[maxclientinfosize+1];
 	clientsock=NULL;
 
 	if (useKrb()) {
@@ -552,24 +550,24 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 				// executing new query
 				sizeof(uint16_t)+
 				// client info
-				sizeof(uint64_t)+maxclientinfolength+
+				sizeof(uint64_t)+maxclientinfosize+
 				// query size and query
 				sizeof(uint32_t)+maxquerysize+
 				// input bind var count
 				sizeof(uint16_t)+
 				// input bind vars
 				maxbindcount*(2*sizeof(uint16_t)+
-						maxbindnamelength)+
+						maxbindnamesize)+
 				// output bind var count
 				sizeof(uint16_t)+
 				// output bind vars
 				maxbindcount*(2*sizeof(uint16_t)+
-						maxbindnamelength)+
+						maxbindnamesize)+
 				// inputoutput bind var count
 				sizeof(uint16_t)+
 				// inputoutput bind vars
 				maxbindcount*(2*sizeof(uint16_t)+
-						maxbindnamelength)+
+						maxbindnamesize)+
 				// get column info
 				sizeof(uint16_t)+
 				// skip/fetch
@@ -735,24 +733,24 @@ void sqlrprotocol_sqlrclient::noAvailableCursors(uint16_t command) {
 	// number of bytes that could be sent.
 	uint32_t	size=(
 				// client info
-				sizeof(uint64_t)+maxclientinfolength+
+				sizeof(uint64_t)+maxclientinfosize+
 				// query size and query
 				sizeof(uint32_t)+maxquerysize+
 				// input bind var count
 				sizeof(uint16_t)+
 				// input bind vars
 				maxbindcount*(2*sizeof(uint16_t)+
-						maxbindnamelength)+
+						maxbindnamesize)+
 				// output bind var count
 				sizeof(uint16_t)+
 				// output bind vars
 				maxbindcount*(2*sizeof(uint16_t)+
-						maxbindnamelength)+
+						maxbindnamesize)+
 				// inputoutput bind var count
 				sizeof(uint16_t)+
 				// inputoutput bind vars
 				maxbindcount*(2*sizeof(uint16_t)+
-						maxbindnamelength)+
+						maxbindnamesize)+
 				// get column info
 				sizeof(uint16_t)+
 				// skip/fetch
@@ -1497,10 +1495,10 @@ bool sqlrprotocol_sqlrclient::getClientInfo(sqlrservercursor *cursor) {
 
 	// init
 	clientinfo[0]='\0';
-	clientinfolen=0;
+	clientinfosize=0;
 
 	// get the length of the client info
-	ssize_t	result=clientsock->read(&clientinfolen);
+	ssize_t	result=clientsock->read(&clientinfosize);
 	if (result!=sizeof(uint64_t)) {
 		cont->raiseClientProtocolErrorEvent(cursor,
 				"get client info failed: "
@@ -1509,36 +1507,36 @@ bool sqlrprotocol_sqlrclient::getClientInfo(sqlrservercursor *cursor) {
 	}
 
 	// bounds checking
-	if (clientinfolen>maxclientinfolength) {
+	if (clientinfosize>maxclientinfosize) {
 
 		stringbuffer	err;
-		err.append(SQLR_ERROR_MAXCLIENTINFOLENGTH_STRING);
-		err.append(" (")->append(clientinfolen)->append('>');
-		err.append(maxclientinfolength)->append(')');
+		err.append(SQLR_ERROR_MAXCLIENTINFOSIZE_STRING);
+		err.append(" (")->append(clientinfosize)->append('>');
+		err.append(maxclientinfosize)->append(')');
 		cont->setError(cursor,err.getString(),
-				SQLR_ERROR_MAXCLIENTINFOLENGTH,true);
+				SQLR_ERROR_MAXCLIENTINFOSIZE,true);
 
 		debugstr.clear();
 		debugstr.append("get client info failed: "
 				"client sent bad client info size: ");
-		debugstr.append(clientinfolen);
+		debugstr.append(clientinfosize);
 		cont->raiseClientProtocolErrorEvent(cursor,debugstr.getString(),1);
 		return false;
 	}
 
 	// read the client info into the buffer
-	result=clientsock->read(clientinfo,clientinfolen);
-	if ((uint64_t)result!=clientinfolen) {
+	result=clientsock->read(clientinfo,clientinfosize);
+	if ((uint64_t)result!=clientinfosize) {
 		cont->raiseClientProtocolErrorEvent(cursor,
 				"get client info failed: "
 				"failed to get client info",result);
 		return false;
 	}
-	clientinfo[clientinfolen]='\0';
+	clientinfo[clientinfosize]='\0';
 
 	if (cont->logEnabled() || cont->notificationsEnabled()) {
 		debugstr.clear();
-		debugstr.append("clientinfolen: ")->append(clientinfolen);
+		debugstr.append("clientinfosize: ")->append(clientinfosize);
 		cont->raiseDebugMessageEvent(debugstr.getString());
 		debugstr.clear();
 		debugstr.append("clientinfo: ")->append(clientinfo);
@@ -1548,7 +1546,7 @@ bool sqlrprotocol_sqlrclient::getClientInfo(sqlrservercursor *cursor) {
 
 	// FIXME: push up?
 	// update the stats with the client info
-	cont->setClientInfo(clientinfo,clientinfolen);
+	cont->setClientInfo(clientinfo,clientinfosize);
 
 	return true;
 }
@@ -1559,34 +1557,34 @@ bool sqlrprotocol_sqlrclient::getQuery(sqlrservercursor *cursor) {
 	cont->raiseDebugMessageEvent("getting query...");
 
 	// init
-	uint32_t	querylength=0;
+	uint32_t	querysize=0;
 	char		*querybuffer=cont->getQueryBuffer(cursor);
 	querybuffer[0]='\0';
 	cont->setQueryLength(cursor,0);
 
-	// get the length of the query
-	ssize_t	result=clientsock->read(&querylength,idleclienttimeout,0);
+	// get the size of the query
+	ssize_t	result=clientsock->read(&querysize,idleclienttimeout,0);
 	if (result!=sizeof(uint32_t)) {
 		cont->raiseClientProtocolErrorEvent(cursor,
 				"get query failed: "
-				"failed to get query length",result);
+				"failed to get query size",result);
 		return false;
 	}
 
 	// bounds checking
-	if (querylength>maxquerysize) {
+	if (querysize>maxquerysize) {
 
 		stringbuffer	err;
-		err.append(SQLR_ERROR_MAXQUERYLENGTH_STRING);
-		err.append(" (")->append(querylength)->append('>');
+		err.append(SQLR_ERROR_MAXQUERYSIZE_STRING);
+		err.append(" (")->append(querysize)->append('>');
 		err.append(maxquerysize)->append(')');
 		cont->setError(cursor,err.getString(),
-				SQLR_ERROR_MAXQUERYLENGTH,true);
+				SQLR_ERROR_MAXQUERYSIZE,true);
 
 		debugstr.clear();
 		debugstr.append("get query failed: "
-				"client sent bad query length: ");
-		debugstr.append(querylength);
+				"client sent bad query size: ");
+		debugstr.append(querysize);
 		cont->raiseClientProtocolErrorEvent(cursor,
 						debugstr.getString(),1);
 
@@ -1594,8 +1592,8 @@ bool sqlrprotocol_sqlrclient::getQuery(sqlrservercursor *cursor) {
 	}
 
 	// read the query into the buffer
-	result=clientsock->read(querybuffer,querylength,idleclienttimeout,0);
-	if ((uint32_t)result!=querylength) {
+	result=clientsock->read(querybuffer,querysize,idleclienttimeout,0);
+	if ((uint32_t)result!=querysize) {
 
 		querybuffer[0]='\0';
 
@@ -1605,13 +1603,13 @@ bool sqlrprotocol_sqlrclient::getQuery(sqlrservercursor *cursor) {
 		return false;
 	}
 
-	// update query buffer and length
-	querybuffer[querylength]='\0';
-	cont->setQueryLength(cursor,querylength);
+	// update query buffer and size
+	querybuffer[querysize]='\0';
+	cont->setQueryLength(cursor,querysize);
 
 	if (cont->logEnabled() || cont->notificationsEnabled()) {
 		debugstr.clear();
-		debugstr.append("querylength: ")->append(querylength);
+		debugstr.append("querysize: ")->append(querysize);
 		cont->raiseDebugMessageEvent(debugstr.getString());
 		debugstr.clear();
 		debugstr.append("query: ")->append(querybuffer);
@@ -1621,7 +1619,7 @@ bool sqlrprotocol_sqlrclient::getQuery(sqlrservercursor *cursor) {
 
 	// FIXME: push up?
 	// update the stats with the current query
-	cont->setCurrentQuery(querybuffer,querylength);
+	cont->setCurrentQuery(querybuffer,querysize);
 
 	return true;
 }
@@ -1717,7 +1715,7 @@ bool sqlrprotocol_sqlrclient::getOutputBinds(sqlrservercursor *cursor) {
 		// get the size of the value
 		if (bv->type==SQLRSERVERBINDVARTYPE_STRING) {
 			bv->value.stringval=NULL;
-			if (!getBindSize(cursor,bv,&maxstringbindvaluelength)) {
+			if (!getBindSize(cursor,bv,&maxstringbindvaluesize)) {
 				return false;
 			}
 			// This must be a allocated and zeroed because oracle
@@ -1758,7 +1756,7 @@ bool sqlrprotocol_sqlrclient::getOutputBinds(sqlrservercursor *cursor) {
 					allocate(bv->value.dateval.buffersize);
 		} else if (bv->type==SQLRSERVERBINDVARTYPE_BLOB ||
 					bv->type==SQLRSERVERBINDVARTYPE_CLOB) {
-			if (!getBindSize(cursor,bv,&maxlobbindvaluelength)) {
+			if (!getBindSize(cursor,bv,&maxlobbindvaluesize)) {
 				return false;
 			}
 			if (bv->type==SQLRSERVERBINDVARTYPE_BLOB) {
@@ -1822,7 +1820,7 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 		if (bv->type==SQLRSERVERBINDVARTYPE_NULL) {
 			bv->type=SQLRSERVERBINDVARTYPE_STRING;
 			bv->value.stringval=NULL;
-			if (!getBindSize(cursor,bv,&maxstringbindvaluelength)) {
+			if (!getBindSize(cursor,bv,&maxstringbindvaluesize)) {
 				return false;
 			}
 			// This must be a allocated and zeroed because oracle
@@ -1837,7 +1835,7 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 			cont->raiseDebugMessageEvent("NULL");
 		} else if (bv->type==SQLRSERVERBINDVARTYPE_STRING) {
 			bv->value.stringval=NULL;
-			if (!getBindSize(cursor,bv,&maxstringbindvaluelength)) {
+			if (!getBindSize(cursor,bv,&maxstringbindvaluesize)) {
 				return false;
 			}
 			// This must be a allocated and zeroed because oracle
@@ -2066,7 +2064,7 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 			cont->raiseDebugMessageEvent("DATE");
 		} /*else if (bv->type==SQLRSERVERBINDVARTYPE_BLOB ||
 					bv->type==SQLRSERVERBINDVARTYPE_CLOB) {
-			if (!getBindSize(cursor,bv,&maxlobbindvaluelength)) {
+			if (!getBindSize(cursor,bv,&maxlobbindvaluesize)) {
 				return false;
 			}
 			if (bv->type==SQLRSERVERBINDVARTYPE_BLOB) {
@@ -2143,14 +2141,14 @@ bool sqlrprotocol_sqlrclient::getBindVarName(sqlrservercursor *cursor,
 	}
 
 	// bounds checking
-	if (bindnamesize>maxbindnamelength) {
+	if (bindnamesize>maxbindnamesize) {
 
 		stringbuffer	err;
-		err.append(SQLR_ERROR_MAXBINDNAMELENGTH_STRING);
+		err.append(SQLR_ERROR_MAXBINDNAMESIZE_STRING);
 		err.append(" (")->append(bindnamesize)->append('>');
-		err.append(maxbindnamelength)->append(')');
+		err.append(maxbindnamesize)->append(')');
 		cont->setError(cursor,err.getString(),
-					SQLR_ERROR_MAXBINDNAMELENGTH,true);
+					SQLR_ERROR_MAXBINDNAMESIZE,true);
 
 		debugstr.clear();
 		debugstr.append("get binds failed: bad variable name length: ");
@@ -2217,20 +2215,20 @@ bool sqlrprotocol_sqlrclient::getBindSize(sqlrservercursor *cursor,
 
 	// bounds checking
 	if (bv->valuesize>*maxsize) {
-		if (maxsize==&maxstringbindvaluelength) {
+		if (maxsize==&maxstringbindvaluesize) {
 			stringbuffer	err;
-			err.append(SQLR_ERROR_MAXSTRINGBINDVALUELENGTH_STRING);
+			err.append(SQLR_ERROR_MAXSTRINGBINDVALUESIZE_STRING);
 			err.append(" (")->append(bv->valuesize)->append('>');
 			err.append(*maxsize)->append(')');
 			cont->setError(cursor,err.getString(),
-				SQLR_ERROR_MAXSTRINGBINDVALUELENGTH,true);
+				SQLR_ERROR_MAXSTRINGBINDVALUESIZE,true);
 		} else {
 			stringbuffer	err;
-			err.append(SQLR_ERROR_MAXLOBBINDVALUELENGTH_STRING);
+			err.append(SQLR_ERROR_MAXLOBBINDVALUESIZE_STRING);
 			err.append(" (")->append(bv->valuesize)->append('>');
 			err.append(*maxsize)->append(')');
 			cont->setError(cursor,err.getString(),
-				SQLR_ERROR_MAXLOBBINDVALUELENGTH,true);
+				SQLR_ERROR_MAXLOBBINDVALUESIZE,true);
 		}
 		debugstr.clear();
 		debugstr.append("get binds failed: bad value length: ");
@@ -2266,7 +2264,7 @@ bool sqlrprotocol_sqlrclient::getStringBind(sqlrservercursor *cursor,
 	bv->value.stringval=NULL;
 
 	// get the size of the value
-	if (!getBindSize(cursor,bv,&maxstringbindvaluelength)) {
+	if (!getBindSize(cursor,bv,&maxstringbindvaluesize)) {
 		return false;
 	}
 
@@ -2521,7 +2519,7 @@ bool sqlrprotocol_sqlrclient::getLobBind(sqlrservercursor *cursor,
 	}
 
 	// get the size of the value
-	if (!getBindSize(cursor,bv,&maxlobbindvaluelength)) {
+	if (!getBindSize(cursor,bv,&maxlobbindvaluesize)) {
 		return false;
 	}
 

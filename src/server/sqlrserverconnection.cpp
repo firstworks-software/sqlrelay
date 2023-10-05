@@ -16,11 +16,11 @@ class sqlrserverconnectionprivate {
 	friend class sqlrserverconnection;
 
 		uint32_t	_maxquerysize;
-		uint32_t	_maxerrorlength;
+		uint32_t	_maxerrorsize;
 
 		char		*_errorbuffer;
 		uint32_t	_errorbuffersize;
-		uint32_t	_errorlength;
+		uint32_t	_errorsize;
 		int64_t		_errnum;
 		bool		_liveconnection;
 
@@ -40,11 +40,11 @@ sqlrserverconnection::sqlrserverconnection(sqlrservercontroller *cont) {
 	this->cont=cont;
 
 	pvt->_maxquerysize=cont->getConfig()->getMaxQuerySize();
-	pvt->_maxerrorlength=cont->getConfig()->getMaxErrorLength();
+	pvt->_maxerrorsize=cont->getConfig()->getMaxErrorSize();
 
-	pvt->_errorbuffersize=pvt->_maxerrorlength+1;
+	pvt->_errorbuffersize=pvt->_maxerrorsize+1;
 	pvt->_errorbuffer=new char[pvt->_errorbuffersize];
-	pvt->_errorlength=0;
+	pvt->_errorsize=0;
 	pvt->_errnum=0;
 	pvt->_liveconnection=false;
 
@@ -1033,12 +1033,12 @@ uint32_t sqlrserverconnection::getErrorBufferSize() {
 	return pvt->_errorbuffersize;
 }
 
-uint32_t sqlrserverconnection::getErrorLength() {
-	return pvt->_errorlength;
+uint32_t sqlrserverconnection::getErrorSize() {
+	return pvt->_errorsize;
 }
 
-void sqlrserverconnection::setErrorLength(uint32_t errorlength) {
-	pvt->_errorlength=errorlength;
+void sqlrserverconnection::setErrorSize(uint32_t errorsize) {
+	pvt->_errorsize=errorsize;
 }
 
 uint32_t sqlrserverconnection::getErrorNumber() {

@@ -208,7 +208,7 @@ class sqlrservercontrollerprivate {
 
 	uint32_t	_maxquerysize;
 	uint16_t	_maxbindcount;
-	uint32_t	_maxerrorlength;
+	uint32_t	_maxerrorsize;
 
 	uint32_t	_fetchatonce;
 	uint32_t	_maxcolumncount;
@@ -371,7 +371,7 @@ sqlrservercontroller::sqlrservercontroller() {
 
 	pvt->_maxquerysize=0;
 	pvt->_maxbindcount=0;
-	pvt->_maxerrorlength=0;
+	pvt->_maxerrorsize=0;
 	pvt->_idleclienttimeout=-1;
 
 	pvt->_fetchatonce=1;
@@ -592,7 +592,7 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 	// update various configurable parameters
 	pvt->_maxquerysize=pvt->_cfg->getMaxQuerySize();
 	pvt->_maxbindcount=pvt->_cfg->getMaxBindCount();
-	pvt->_maxerrorlength=pvt->_cfg->getMaxErrorLength();
+	pvt->_maxerrorsize=pvt->_cfg->getMaxErrorSize();
 	pvt->_idleclienttimeout=pvt->_cfg->getIdleClientTimeout();
 	pvt->_debugsql=pvt->_cfg->getDebugSql();
 	pvt->_debugbulkload=pvt->_cfg->getDebugBulkLoad();
@@ -2734,27 +2734,27 @@ const char *sqlrservercontroller::getProcedureListQuery(bool wild) {
 void sqlrservercontroller::saveError() {
 
 	// don't overwrite any message that's already been saved
-	if (pvt->_conn->getErrorLength()) {
+	if (pvt->_conn->getErrorSize()) {
 		return;
 	}
 
 	// fetch the error into the connection error buffers and flags
-	uint32_t	errorlength;
+	uint32_t	errorsize;
 	int64_t		errorcode;
 	bool		liveconnection;
 	pvt->_conn->errorMessage(pvt->_conn->getErrorBuffer(),
-				pvt->_cfg->getMaxErrorLength(),
-				&errorlength,
+				pvt->_cfg->getMaxErrorSize(),
+				&errorsize,
 				&errorcode,
 				&liveconnection);
-	pvt->_conn->setErrorLength(errorlength);
+	pvt->_conn->setErrorSize(errorsize);
 	pvt->_conn->setErrorNumber(errorcode);
 	pvt->_conn->setLiveConnection(liveconnection);
 
 	if (pvt->_debugsql) {
 		stdoutput.printf("%d:ERROR:\n%d:",
 				process::getProcessId(),errorcode);
-		stdoutput.write(pvt->_conn->getErrorBuffer(),errorlength);
+		stdoutput.write(pvt->_conn->getErrorBuffer(),errorsize);
 		stdoutput.write('\n');
 	}
 }
@@ -2762,32 +2762,32 @@ void sqlrservercontroller::saveError() {
 void sqlrservercontroller::saveErrorFromCursor(sqlrservercursor *cursor) {
 
 	// don't overwrite any message that's already been saved
-	if (pvt->_conn->getErrorLength()) {
+	if (pvt->_conn->getErrorSize()) {
 		return;
 	}
 
 	// fetch the error into the connection error buffers and flags
-	uint32_t	errorlength;
+	uint32_t	errorsize;
 	int64_t		errorcode;
 	bool		liveconnection;
 	errorMessage(cursor,pvt->_conn->getErrorBuffer(),
-				pvt->_cfg->getMaxErrorLength(),
-				&errorlength,
+				pvt->_cfg->getMaxErrorSize(),
+				&errorsize,
 				&errorcode,
 				&liveconnection);
-	pvt->_conn->setErrorLength(errorlength);
+	pvt->_conn->setErrorSize(errorsize);
 	pvt->_conn->setErrorNumber(errorcode);
 	pvt->_conn->setLiveConnection(liveconnection);
 }
 
 
 void sqlrservercontroller::errorMessage(const char **errorbuffer,
-						uint32_t *errorlength,
+						uint32_t *errorsize,
 						int64_t *errorcode,
 						bool *liveconnection) {
 	saveError();
 	*errorbuffer=pvt->_conn->getErrorBuffer();
-	*errorlength=pvt->_conn->getErrorLength();
+	*errorsize=pvt->_conn->getErrorSize();
 	*errorcode=pvt->_conn->getErrorNumber();
 	*liveconnection=pvt->_conn->getLiveConnection();
 
@@ -2797,7 +2797,7 @@ void sqlrservercontroller::errorMessage(const char **errorbuffer,
 		if (pvt->_sqlret->run(pvt->_conn,NULL,
 						*errorcode,
 						*errorbuffer,
-						*errorlength,
+						*errorsize,
 						&tec,
 						&translatederror)) {
 			*errorcode=tec;
@@ -2805,7 +2805,7 @@ void sqlrservercontroller::errorMessage(const char **errorbuffer,
 					pvt->_conn->getErrorBufferSize(),
 					translatederror.getString(),
 					translatederror.getStringLength());
-			*errorlength=translatederror.getStringLength();
+			*errorsize=translatederror.getStringLength();
 		}
 		// FIXME: report error if this fails?
 	}
@@ -2813,19 +2813,19 @@ void sqlrservercontroller::errorMessage(const char **errorbuffer,
 
 void sqlrservercontroller::errorMessage(char *errorbuffer,
 						uint32_t errorbuffersize,
-						uint32_t *errorlength,
+						uint32_t *errorsize,
 						int64_t *errorcode,
 						bool *liveconnection) {
 
 	// fetch the error
 	const char	*errorstring=NULL;
-	errorMessage(&errorstring,errorlength,errorcode,liveconnection);
+	errorMessage(&errorstring,errorsize,errorcode,liveconnection);
 
 	// copy the error out
 	charstring::safeCopy(errorbuffer,errorbuffersize,
-				errorstring,*errorlength);
-	if (*errorlength>errorbuffersize) {
-		*errorlength=errorbuffersize;
+				errorstring,*errorsize);
+	if (*errorsize>errorbuffersize) {
+		*errorsize=errorbuffersize;
 	}
 }
 
@@ -2838,15 +2838,15 @@ void sqlrservercontroller::setError(const char *err,
 					bool liveconn) {
 
 	char		*errorbuffer=pvt->_conn->getErrorBuffer();
-	uint32_t	errorlength=charstring::getLength(err);
-	if (errorlength>pvt->_maxerrorlength) {
-		errorlength=pvt->_maxerrorlength;
+	uint32_t	errorsize=charstring::getLength(err);
+	if (errorsize>pvt->_maxerrorsize) {
+		errorsize=pvt->_maxerrorsize;
 	}
-	charstring::safeCopy(errorbuffer,pvt->_maxerrorlength,err,errorlength);
-	if (errorlength<pvt->_maxerrorlength) {
-		errorbuffer[errorlength]='\0';
+	charstring::safeCopy(errorbuffer,pvt->_maxerrorsize,err,errorsize);
+	if (errorsize<pvt->_maxerrorsize) {
+		errorbuffer[errorsize]='\0';
 	}
-	pvt->_conn->setErrorLength(errorlength);
+	pvt->_conn->setErrorSize(errorsize);
 	pvt->_conn->setErrorNumber(errn);
 	pvt->_conn->setLiveConnection(liveconn);
 }
@@ -2859,12 +2859,12 @@ uint32_t sqlrservercontroller::getErrorBufferSize() {
 	return pvt->_conn->getErrorBufferSize();
 }
 
-uint32_t sqlrservercontroller::getErrorLength() {
-	return pvt->_conn->getErrorLength();
+uint32_t sqlrservercontroller::getErrorSize() {
+	return pvt->_conn->getErrorSize();
 }
 
-void sqlrservercontroller::setErrorLength(uint32_t errorlength) {
-	pvt->_conn->setErrorLength(errorlength);
+void sqlrservercontroller::setErrorSize(uint32_t errorsize) {
+	pvt->_conn->setErrorSize(errorsize);
 }
 
 uint32_t sqlrservercontroller::getErrorNumber() {
@@ -4861,7 +4861,7 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 		pvt->_debugstr.append("prepare failed: ");
 		pvt->_debugstr.append("\"");
 		pvt->_debugstr.append(
-			cursor->getErrorBuffer(),cursor->getErrorLength());
+			cursor->getErrorBuffer(),cursor->getErrorSize());
 		pvt->_debugstr.append("\"");
 		raiseDebugMessageEvent(pvt->_debugstr.getString());
 
@@ -5100,7 +5100,7 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 			pvt->_debugstr.append("\"");
 			pvt->_debugstr.append(
 				cursor->getErrorBuffer(),
-				cursor->getErrorLength());
+				cursor->getErrorSize());
 			pvt->_debugstr.append("\"");
 			raiseDebugMessageEvent(pvt->_debugstr.getString());
 
@@ -5143,7 +5143,7 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 			pvt->_debugstr.append("\"");
 			pvt->_debugstr.append(
 				cursor->getErrorBuffer(),
-				cursor->getErrorLength());
+				cursor->getErrorSize());
 			pvt->_debugstr.append("\"");
 			raiseDebugMessageEvent(pvt->_debugstr.getString());
 
@@ -5217,7 +5217,7 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 		pvt->_debugstr.append("execute failed: ");
 		pvt->_debugstr.append("\"");
 		pvt->_debugstr.append(cursor->getErrorBuffer(),
-					cursor->getErrorLength());
+					cursor->getErrorSize());
 		pvt->_debugstr.append("\"");
 		raiseDebugMessageEvent(pvt->_debugstr.getString());
 	}
@@ -8162,25 +8162,25 @@ void sqlrservercontroller::bulkLoadBindRow(const byte_t *data,
 void sqlrservercontroller::bulkLoadError() {
 
 	// get the error
-	uint32_t	errorlength;
+	uint32_t	errorsize;
 	int64_t		errnum;
 	bool		liveconnection;
 	errorMessage(pvt->_bulkcursor,
 			pvt->_bulkcursor->getErrorBuffer(),
-			pvt->_maxerrorlength,
-			&errorlength,&errnum,&liveconnection);
+			pvt->_maxerrorsize,
+			&errorsize,&errnum,&liveconnection);
 
 	if (pvt->_debugbulkload) {
 		stdoutput.printf("%d: bulk load error\n%d\n%.*s\n",
 					process::getProcessId(),
-					errnum,errorlength,
+					errnum,errorsize,
 					pvt->_bulkcursor->getErrorBuffer());
 	}
 
 	// store the error
 	if (!bulkLoadStoreError(errnum,
 				pvt->_bulkcursor->getErrorBuffer(),
-				errorlength,
+				errorsize,
 				pvt->_bulkerrorfieldtable,
 				pvt->_bulkerrorrowtable)) {
 		// FIXME: error...
@@ -8189,7 +8189,7 @@ void sqlrservercontroller::bulkLoadError() {
 
 bool sqlrservercontroller::bulkLoadStoreError(int64_t errorcode,
 						const char *error,
-						uint32_t errorlength,
+						uint32_t errorsize,
 						const char *bulkerrorfieldtable,
 						const char *bulkerrorrowtable) {
 
@@ -9460,14 +9460,14 @@ bool sqlrservercontroller::nextResultSet(sqlrservercursor *cursor,
 
 	// on failure get the error (unless it's already been set)
 	if (!success && !cursor->getErrorNumber()) {
-		uint32_t	errorlength;
+		uint32_t	errorsize;
 		int64_t		errnum;
 		bool		liveconnection;
 		errorMessage(cursor,
 				cursor->getErrorBuffer(),
-				pvt->_maxerrorlength,
-				&errorlength,&errnum,&liveconnection);
-		cursor->setErrorLength(errorlength);
+				pvt->_maxerrorsize,
+				&errorsize,&errnum,&liveconnection);
+		cursor->setErrorSize(errorsize);
 		cursor->setErrorNumber(errnum);
 		cursor->setLiveConnection(liveconnection);
 	}
@@ -9482,20 +9482,20 @@ bool sqlrservercontroller::nextResultSet(sqlrservercursor *cursor,
 void sqlrservercontroller::saveError(sqlrservercursor *cursor) {
 
 	// don't overwrite any message that's already been saved
-	if (cursor->getErrorLength()) {
+	if (cursor->getErrorSize()) {
 		return;
 	}
 
 	// fetch the error into the per-cursor error buffers and flags
-	uint32_t	errorlength;
+	uint32_t	errorsize;
 	int64_t		errorcode;
 	bool		liveconnection;
 	cursor->errorMessage(cursor->getErrorBuffer(),
-				pvt->_cfg->getMaxErrorLength(),
-				&errorlength,
+				pvt->_cfg->getMaxErrorSize(),
+				&errorsize,
 				&errorcode,
 				&liveconnection);
-	cursor->setErrorLength(errorlength);
+	cursor->setErrorSize(errorsize);
 	cursor->setErrorNumber(errorcode);
 	cursor->setLiveConnection(liveconnection);
 
@@ -9504,19 +9504,19 @@ void sqlrservercontroller::saveError(sqlrservercursor *cursor) {
 					process::getProcessId(),
 					cursor->getId(),
 					errorcode);
-		stdoutput.write(cursor->getErrorBuffer(),errorlength);
+		stdoutput.write(cursor->getErrorBuffer(),errorsize);
 		stdoutput.write('\n');
 	}
 }
 
 void sqlrservercontroller::errorMessage(sqlrservercursor *cursor,
 						const char **errorbuffer,
-						uint32_t *errorlength,
+						uint32_t *errorsize,
 						int64_t *errorcode,
 						bool *liveconnection) {
 	saveError(cursor);
 	*errorbuffer=cursor->getErrorBuffer();
-	*errorlength=cursor->getErrorLength();
+	*errorsize=cursor->getErrorSize();
 	*errorcode=cursor->getErrorNumber();
 	*liveconnection=cursor->getLiveConnection();
 
@@ -9526,7 +9526,7 @@ void sqlrservercontroller::errorMessage(sqlrservercursor *cursor,
 		if (pvt->_sqlret->run(pvt->_conn,cursor,
 						*errorcode,
 						*errorbuffer,
-						*errorlength,
+						*errorsize,
 						&tec,
 						&translatederror)) {
 			*errorcode=tec;
@@ -9534,7 +9534,7 @@ void sqlrservercontroller::errorMessage(sqlrservercursor *cursor,
 					cursor->getErrorBufferSize(),
 					translatederror.getString(),
 					translatederror.getStringLength());
-			*errorlength=translatederror.getStringLength();
+			*errorsize=translatederror.getStringLength();
 		}
 		// FIXME: report error if this fails?
 	}
@@ -9543,19 +9543,19 @@ void sqlrservercontroller::errorMessage(sqlrservercursor *cursor,
 void sqlrservercontroller::errorMessage(sqlrservercursor *cursor,
 						char *errorbuffer,
 						uint32_t errorbuffersize,
-						uint32_t *errorlength,
+						uint32_t *errorsize,
 						int64_t *errorcode,
 						bool *liveconnection) {
 
 	// fetch the error
 	const char	*errorstring=NULL;
-	errorMessage(cursor,&errorstring,errorlength,errorcode,liveconnection);
+	errorMessage(cursor,&errorstring,errorsize,errorcode,liveconnection);
 
 	// copy the error out
 	charstring::safeCopy(errorbuffer,errorbuffersize,
-				errorstring,*errorlength);
-	if (*errorlength>errorbuffersize) {
-		*errorlength=errorbuffersize;
+				errorstring,*errorsize);
+	if (*errorsize>errorbuffersize) {
+		*errorsize=errorbuffersize;
 	}
 }
 
@@ -10425,14 +10425,14 @@ void sqlrservercontroller::setError(sqlrservercursor *cursor,
 						bool liveconn) {
 
 	char		*errorbuffer=cursor->getErrorBuffer();
-	if (errlen>pvt->_maxerrorlength) {
-		errlen=pvt->_maxerrorlength;
+	if (errlen>pvt->_maxerrorsize) {
+		errlen=pvt->_maxerrorsize;
 	}
-	charstring::safeCopy(errorbuffer,pvt->_maxerrorlength,err,errlen);
-	if (errlen<pvt->_maxerrorlength) {
+	charstring::safeCopy(errorbuffer,pvt->_maxerrorsize,err,errlen);
+	if (errlen<pvt->_maxerrorsize) {
 		errorbuffer[errlen]='\0';
 	}
-	cursor->setErrorLength(errlen);
+	cursor->setErrorSize(errlen);
 	cursor->setErrorNumber(errn);
 	cursor->setLiveConnection(liveconn);
 }
@@ -10452,13 +10452,13 @@ uint32_t sqlrservercontroller::getErrorBufferSize(sqlrservercursor *cursor) {
 	return cursor->getErrorBufferSize();
 }
 
-uint32_t sqlrservercontroller::getErrorLength(sqlrservercursor *cursor) {
-	return cursor->getErrorLength();
+uint32_t sqlrservercontroller::getErrorSize(sqlrservercursor *cursor) {
+	return cursor->getErrorSize();
 }
 
-void sqlrservercontroller::setErrorLength(sqlrservercursor *cursor,
-						uint32_t errorlength) {
-	cursor->setErrorLength(errorlength);
+void sqlrservercontroller::setErrorSize(sqlrservercursor *cursor,
+						uint32_t errorsize) {
+	cursor->setErrorSize(errorsize);
 }
 
 uint32_t sqlrservercontroller::getErrorNumber(sqlrservercursor *cursor) {

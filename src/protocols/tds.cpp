@@ -815,7 +815,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 
 		uint32_t	maxquerysize;
 		uint16_t	maxbindcount;
-		uint32_t	maxerrorlength;
 
 		char		**bindvarnames;
 
@@ -858,7 +857,6 @@ sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
 
 	maxquerysize=cont->getConfig()->getMaxQuerySize();
 	maxbindcount=cont->getConfig()->getMaxBindCount();
-	maxerrorlength=cont->getConfig()->getMaxErrorLength();
 
 	bindvarnames=new char *[maxbindcount];
 	for (uint16_t i=0; i<maxbindcount; i++) {

@@ -116,24 +116,24 @@
 #define SQLR_ERROR_NOCURSORS 900000
 #define SQLR_ERROR_NOCURSORS_STRING \
 	"No server-side cursors were available to process the query."
-#define SQLR_ERROR_MAXCLIENTINFOLENGTH 900001
-#define SQLR_ERROR_MAXCLIENTINFOLENGTH_STRING \
-	"Maximum client info length exceeded."
-#define SQLR_ERROR_MAXQUERYLENGTH 900002
-#define SQLR_ERROR_MAXQUERYLENGTH_STRING \
-	"Maximum query length exceeded."
+#define SQLR_ERROR_MAXCLIENTINFOSIZE 900001
+#define SQLR_ERROR_MAXCLIENTINFOSIZE_STRING \
+	"Maximum client info size exceeded."
+#define SQLR_ERROR_MAXQUERYSIZE 900002
+#define SQLR_ERROR_MAXQUERYSIZE_STRING \
+	"Maximum query size exceeded."
 #define SQLR_ERROR_MAXBINDCOUNT 900003
 #define SQLR_ERROR_MAXBINDCOUNT_STRING \
 	"Maximum bind variable count exceeded."
-#define SQLR_ERROR_MAXBINDNAMELENGTH 900004
-#define SQLR_ERROR_MAXBINDNAMELENGTH_STRING \
-	"Maximum bind variable name length exceeded."
-#define SQLR_ERROR_MAXSTRINGBINDVALUELENGTH 900005
-#define SQLR_ERROR_MAXSTRINGBINDVALUELENGTH_STRING \
-	"Maximum string bind value length exceeded."
-#define SQLR_ERROR_MAXLOBBINDVALUELENGTH 900006
-#define SQLR_ERROR_MAXLOBBINDVALUELENGTH_STRING \
-	"Maximum lob bind value length exceeded."
+#define SQLR_ERROR_MAXBINDNAMESIZE 900004
+#define SQLR_ERROR_MAXBINDNAMESIZE_STRING \
+	"Maximum bind variable name size exceeded."
+#define SQLR_ERROR_MAXSTRINGBINDVALUESIZE 900005
+#define SQLR_ERROR_MAXSTRINGBINDVALUESIZE_STRING \
+	"Maximum string bind value size exceeded."
+#define SQLR_ERROR_MAXLOBBINDVALUESIZE 900006
+#define SQLR_ERROR_MAXLOBBINDVALUESIZE_STRING \
+	"Maximum lob bind value size exceeded."
 #define SQLR_ERROR_DUPLICATEBINDNAME 900007
 #define SQLR_ERROR_DUPLICATEBINDNAME_STRING \
 	"Duplicate bind variable name."

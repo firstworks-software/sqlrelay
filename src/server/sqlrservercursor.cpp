@@ -59,11 +59,11 @@ class sqlrservercursorprivate {
 		uint64_t	_fetchendusec;
 		uint64_t	_fetchusec;
 
-		uint32_t	_maxerrorlength;
+		uint32_t	_maxerrorsize;
 
 		char		*_errorbuffer;
 		uint32_t	_errorbuffersize;
-		uint32_t	_errorlength;
+		uint32_t	_errorsize;
 		int64_t		_errnum;
 		bool		_liveconnection;
 
@@ -123,7 +123,7 @@ sqlrservercursor::sqlrservercursor(sqlrserverconnection *conn, uint16_t id) {
 
 	this->conn=conn;
 
-	pvt->_maxerrorlength=conn->cont->getConfig()->getMaxErrorLength();
+	pvt->_maxerrorsize=conn->cont->getConfig()->getMaxErrorSize();
 
 	pvt->_bindmappings=new dictionary<char *, char *>();
 
@@ -167,9 +167,9 @@ sqlrservercursor::sqlrservercursor(sqlrserverconnection *conn, uint16_t id) {
 
 	setQueryTree(NULL);
 
-	pvt->_errorbuffersize=pvt->_maxerrorlength+1;
+	pvt->_errorbuffersize=pvt->_maxerrorsize+1;
 	pvt->_errorbuffer=new char[pvt->_errorbuffersize];
-	pvt->_errorlength=0;
+	pvt->_errorsize=0;
 	pvt->_errnum=0;
 	pvt->_liveconnection=true;
 
@@ -968,17 +968,17 @@ bool sqlrservercursor::queryIsCommitOrRollback() {
 
 void sqlrservercursor::errorMessage(char *errorbuffer,
 					uint32_t errorbuffersize,
-					uint32_t *errorlength,
+					uint32_t *errorsize,
 					int64_t *errorcode,
 					bool *liveconnection) {
 
 	// if the cursor happens to have an error, then return that
-	if (pvt->_errorlength) {
+	if (pvt->_errorsize) {
 		charstring::safeCopy(errorbuffer,errorbuffersize,
-					pvt->_errorbuffer,pvt->_errorlength);
-		*errorlength=pvt->_errorlength;
-		if (*errorlength>errorbuffersize) {
-			*errorlength=errorbuffersize;
+					pvt->_errorbuffer,pvt->_errorsize);
+		*errorsize=pvt->_errorsize;
+		if (*errorsize>errorbuffersize) {
+			*errorsize=errorbuffersize;
 		}
 		*errorcode=pvt->_errnum;
 		*liveconnection=pvt->_liveconnection;
@@ -986,7 +986,7 @@ void sqlrservercursor::errorMessage(char *errorbuffer,
 
 	// otherwise return the connection's error
 	conn->errorMessage(errorbuffer,errorbuffersize,
-				errorlength,errorcode,liveconnection);
+				errorsize,errorcode,liveconnection);
 }
 
 bool sqlrservercursor::knowsRowCount() {
@@ -1650,15 +1650,15 @@ char *sqlrservercursor::getErrorBuffer() {
 }
 
 uint32_t sqlrservercursor::getErrorBufferSize() {
-	return pvt->_maxerrorlength+1;
+	return pvt->_maxerrorsize+1;
 }
 
-uint32_t sqlrservercursor::getErrorLength() {
-	return pvt->_errorlength;
+uint32_t sqlrservercursor::getErrorSize() {
+	return pvt->_errorsize;
 }
 
-void sqlrservercursor::setErrorLength(uint32_t errorlength) {
-	pvt->_errorlength=errorlength;
+void sqlrservercursor::setErrorSize(uint32_t errorsize) {
+	pvt->_errorsize=errorsize;
 }
 
 uint32_t sqlrservercursor::getErrorNumber() {

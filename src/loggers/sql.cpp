@@ -130,7 +130,7 @@ bool sqlrlogger_sql::run(sqlrlistener *sqlrl,
 	if (event==SQLREVENT_QUERY) {
 		logentry.append(sqlrcon->cont->getQueryBuffer(sqlrcur));
 		logentry.append(";\n");
-		if (sqlrcon->cont->getErrorLength(sqlrcur)) {
+		if (sqlrcon->cont->getErrorSize(sqlrcur)) {
 			logentry.append("-- ERROR: ");
 			logentry.append(sqlrcon->cont->getErrorBuffer(sqlrcur));
 			logentry.append("\n");
@@ -143,7 +143,7 @@ bool sqlrlogger_sql::run(sqlrlistener *sqlrl,
 		} else if (event==SQLREVENT_COMMIT) {
 			logentry.append("commit;\n");
 		}
-		if (sqlrcon->cont->getErrorLength()) {
+		if (sqlrcon->cont->getErrorSize()) {
 			logentry.append("-- ERROR: ");
 			logentry.append(sqlrcon->cont->getErrorBuffer());
 			logentry.append("\n");
