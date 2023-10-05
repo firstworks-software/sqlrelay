@@ -1,7 +1,9 @@
 = SQL Relay Configuration Guide =
 
 * [#quick Quick Start]
+* [#modules Modules]
 * [#basic Basic Configuration]
+ * [#modules Modules]
  * [#database Database Configuration]
   * [#db-oracle Oracle]
   * [#db-mssql-odbc Microsoft SQL Server (via ODBC)]
@@ -222,13 +224,23 @@ sqlr-stop
 [[br]][=#basic]
 = Basic Configuration =
 
-The example above may be sufficient for many use cases, but SQL Relay has many options, and for a production deployment, odds are good that you'll want to configure it further.
+The example above may be sufficient for many use cases, but SQL Relay has many configuration options.  For a production deployment, you will alomst certainly want to configure it further.
+
+
+[[br]][=#modules]
+== Modules ==
+
+The SQL Relay server is highly modular.  Configuring it largely consists of telling it which modules to load, and which options to use for each module.  There are database connection modules, protocol modules, authentication modules, modules related to security, data translation modules, logging and notification modules, and others.
+
+The module that you'll most likely need to configure first is a database connection module.
 
 
 [[br]][=#database]
 == Database Configuration ==
 
-By default, SQL Relay assumes that it's connecting to an Oracle database, but many other databases are supported.  The dbase attribute of the instance tag specifies the database type and the connect string options (options in the string attribute of the connection tag) specify the parameters used to connect to the database.  The connect string options are different for each database.
+By default, SQL Relay assumes that it's connecting to an Oracle database, but database connection modules for many other databases are provided.
+
+The dbase attribute of the instance tag specifies which database connection module to load and the connect string options (options in the string attribute of the connection tag) specify which parameters to use when connecting to the database.  Connect string options are different for each database.
 
 Examples follow.
 
@@ -1968,7 +1980,7 @@ This is as simple as specifying a different database using the //dbase// attribu
 }}}
 }}}
 
-In this example, a !MySQL frontend provides !MySQL/MariaDB applications access to an Oracle backend database.
+In this example, a !MySQL front-end provides !MySQL/MariaDB applications access to an Oracle backend database.
 
 Depending on the backend, it might also be necessary to make some other configuration changes, as well, for example:
 
@@ -2000,7 +2012,7 @@ When targeting a foreign backend...
 
 Some backend databases, like Oracle, don't have integer types.  An integer type is really just a DECIMAL with a scale of 0.
 
-By default, the !MySQL frontend module maps zero-scale DECIMAL types to the !MySQL DECIMAL type.  Buy you might want to map them to the !MySQL BIGINT type instead.
+By default, the !MySQL protocol module maps zero-scale DECIMAL types to the !MySQL DECIMAL type.  Buy you might want to map them to the !MySQL BIGINT type instead.
 
 The //zeroscaledecimaltobigint// option instructs the module to do this mapping.
 
@@ -2016,7 +2028,7 @@ When targeting a foreign backend...
 
 Some backend databases, like Oracle, don't have separate DATE and DATETIME types.  Instead, they just have a DATE type, which can store date and time parts, and which parts are returned depend on a parameter like NLS_DATE_FORMAT.
 
-By default, the !MySQL frontend module maps the DATE type to the !MySQL DATE type.  But, if you are using DATE type fields to store date/times and have the database configured to return date and time parts, then you might want the DATE type mapped to the !MySQL DATETIME type.
+By default, the !MySQL protocol module maps the DATE type to the !MySQL DATE type.  But, if you are using DATE type fields to store date/times and have the database configured to return date and time parts, then you might want the DATE type mapped to the !MySQL DATETIME type.
 
 The //datetodatetime// option instructs the module to do this mapping.
 
@@ -2357,7 +2369,7 @@ This is as simple as specifying a different database using the //dbase// attribu
 }}}
 }}}
 
-In this example, a !PostgreSQL frontend provides !PostgreSQL applications access to an Oracle backend database.
+In this example, a !PostgreSQL front-end provides !PostgreSQL applications access to an Oracle backend database.
 
 Depending on the backend, it might also be necessary to make some other configuration changes, as well, for example:
 
@@ -2476,7 +2488,7 @@ sqlr-stop -id example
 
 Since this instance speaks the SQLRClient, !MySQL, and !PostgreSQL client-server protocols, clients that wish to use it may speak any of those client-server protocol.  This means that most software written using the SQL Relay, !MySQL, or !PostgreSQL APIs, or written using a database abstraction layer which loads a driver for SQL Relay, !MySQL, or !PostgreSQL can access this instance.  However, client programs for other databases (eg. the sqlplus command line programs, Oracle SQL Developer, SQL Server Management Studio, etc.) cannot access this instance.
 
-In this example, a frontend that supports !MySQL and !PostgreSQL protocols provides access to an Oracle backend database.  As such some queries may have to be modified from their native !MySQL and !PostgreSQL syntax to use the syntax of the Oracle database.
+In this example, a front-end that supports !MySQL and !PostgreSQL protocols provides access to an Oracle backend database.  As such some queries may have to be modified from their native !MySQL and !PostgreSQL syntax to use the syntax of the Oracle database.
 
 [=#multiprotocollistener]
 === Listener Options ===
@@ -2676,9 +2688,9 @@ SQL Relay offers several features to enhance security.
 [[br]][=#frontendencryption]
 == Front-End Encryption and Secure Authentication ==
 
-When configured to use the SQLRClient front-end protocol (the default), SQL Relay supports [#sqlrclientkrb Kerberos and Active Directory Encryption and Authentication] and [#sqlrclienttls TLS/SSL Encryption and Authentication] between the SQL Relay client and SQL Relay server.
+When configured to use the SQLRClient protocol (the default), SQL Relay supports [#sqlrclientkrb Kerberos and Active Directory Encryption and Authentication] and [#sqlrclienttls TLS/SSL Encryption and Authentication] between the SQL Relay client and SQL Relay server.
 
-When configured to use the !MySQL or !PostgreSQL front-end protocols, SQL Relay supports TLS/SSL encryption and authentication between the SQL Relay client and SQL Relay server.  See [#mysqltls MySQL TLS/SSL Encryption and Authentication] and [#postgresqltls PostgreSQL TLS/SSL Encryption and Authentication] for details.
+When configured to use the !MySQL or !PostgreSQL protocols, SQL Relay supports TLS/SSL encryption and authentication between the SQL Relay client and SQL Relay server.  See [#mysqltls MySQL TLS/SSL Encryption and Authentication] and [#postgresqltls PostgreSQL TLS/SSL Encryption and Authentication] for details.
 
 [[br]][=#backendencryption]
 == Back-End Encryption and Secure Authentication ==
