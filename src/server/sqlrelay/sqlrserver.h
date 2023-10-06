@@ -194,10 +194,10 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		// fetch info
 		void		setFetchAtOnce(uint32_t fethatonce);
 		void		setMaxColumnCount(uint32_t maxcolumncount);
-		void		setMaxFieldLength(uint32_t maxfieldlength);
+		void		setMaxFieldSize(uint32_t maxfieldsize);
 		uint32_t	getFetchAtOnce();
 		uint32_t	getMaxColumnCount();
-		uint32_t	getMaxFieldLength();
+		uint32_t	getMaxFieldSize();
 
 		// db selection
 		bool	selectDatabase(const char *db);
@@ -257,9 +257,9 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		enum sqlrconnectionstate_t	getState();
 
 		// current client info
-		void	setCurrentUser(const char *user, uint32_t userlen);
-		void	setCurrentQuery(const char *query, uint32_t querylen);
-		void	setClientInfo(const char *info, uint32_t infolen);
+		void	setCurrentUser(const char *user, uint32_t usersize);
+		void	setCurrentQuery(const char *query, uint32_t querysize);
+		void	setClientInfo(const char *info, uint32_t infosize);
 		const char	*getCurrentUser();
 		const char	*getCurrentQuery();
 		const char	*getClientInfo();
@@ -385,9 +385,9 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 
 		// query buffer
 		char		*getQueryBuffer(sqlrservercursor *cursor);
-		uint32_t 	getQueryLength(sqlrservercursor *cursor);
-		void		setQueryLength(sqlrservercursor *cursor,
-						uint32_t querylength);
+		uint32_t 	getQuerySize(sqlrservercursor *cursor);
+		void		setQuerySize(sqlrservercursor *cursor,
+						uint32_t querysize);
 
 		// query status
 		sqlrquerystatus_t	getQueryStatus(
@@ -400,10 +400,10 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		// running queries
 		bool	prepareQuery(sqlrservercursor *cursor,
 						const char *query,
-						uint32_t length);
+						uint32_t size);
 		bool	prepareQuery(sqlrservercursor *cursor,
 						const char *query,
-						uint32_t length,
+						uint32_t size,
 						bool enabledirectives,
 						bool enabletranslations,
 						bool enablefilters);
@@ -441,10 +441,10 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		uint16_t	getOutputBindCount(sqlrservercursor *cursor);
 		sqlrserverbindvar	*getOutputBinds(
 						sqlrservercursor *cursor);
-		bool		getLobOutputBindLength(
+		bool		getLobOutputBindSize(
 						sqlrservercursor *cursor,
 						uint16_t index,
-						uint64_t *length);
+						uint64_t *size);
 		bool		getLobOutputBindSegment(
 						sqlrservercursor *cursor,
 						uint16_t index,
@@ -464,10 +464,10 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 						sqlrservercursor *cursor);
 		sqlrserverbindvar	*getInputOutputBinds(
 						sqlrservercursor *cursor);
-		bool		getLobInputOutputBindLength(
+		bool		getLobInputOutputBindSize(
 						sqlrservercursor *cursor,
 						uint16_t index,
-						uint64_t *length);
+						uint64_t *size);
 		bool		getLobInputOutputBindSegment(
 						sqlrservercursor *cursor,
 						uint16_t index,
@@ -585,16 +585,16 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 					sqlrserverlistformat_t listformat);
 		const char	*getColumnName(sqlrservercursor *cursor,
 							uint32_t col);
-		uint16_t	getColumnNameLength(sqlrservercursor *cursor,
+		uint16_t	getColumnNameSize(sqlrservercursor *cursor,
 							uint32_t col);
 		uint16_t	getColumnType(sqlrservercursor *cursor,
 							uint32_t col);
 		const char	*getColumnTypeName(sqlrservercursor *cursor,
 							uint32_t col);
-		uint16_t	getColumnTypeNameLength(
+		uint16_t	getColumnTypeNameSize(
 						sqlrservercursor *cursor,
 							uint32_t col);
-		uint32_t	getColumnLength(sqlrservercursor *cursor,
+		uint32_t	getColumnSize(sqlrservercursor *cursor,
 							uint32_t col);
 		uint32_t	getColumnPrecision(sqlrservercursor *cursor,
 							uint32_t col);
@@ -619,7 +619,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 							uint32_t col);
 		const char	*getColumnTable(sqlrservercursor *cursor,
 							uint32_t col);
-		uint16_t	getColumnTableLength(sqlrservercursor *cursor,
+		uint16_t	getColumnTableSize(sqlrservercursor *cursor,
 							uint32_t col);
 		void		getColumnNameList(sqlrservercursor *cursor,
 							stringbuffer *output);
@@ -646,12 +646,12 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		bool	getField(sqlrservercursor *cursor,
 						uint32_t col,
 						const char **field,
-						uint64_t *fieldlength,
+						uint64_t *fieldsize,
 						bool *blob,
 						bool *null);
-		bool	getLobFieldLength(sqlrservercursor *cursor,
+		bool	getLobFieldSize(sqlrservercursor *cursor,
 						uint32_t col,
-						uint64_t *length);
+						uint64_t *size);
 		bool	getLobFieldSegment(sqlrservercursor *cursor,
 						uint32_t col,
 						char *buffer,
@@ -665,18 +665,18 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 						const char *name,
 						uint32_t index,
 						const char **field,
-						uint64_t *fieldlength);
+						uint64_t *fieldsize);
 		bool	reformatRow(sqlrservercursor *cursor,
 						uint32_t colcount,
 						const char * const *names,
 						const char ***fields,
-						uint64_t **fieldlengths);
+						uint64_t **fieldsizes);
 		bool	reformatDateTimes(sqlrservercursor *cursor,
 						uint32_t index,
 						const char *field,
-						uint64_t fieldlength,
+						uint64_t fieldsize,
 						const char **newfield,
-						uint64_t *newfieldlength,
+						uint64_t *newfieldsize,
 						bool ddmm, bool yyyyddmm,
 						bool ignorenondatetime,
 						const char *datedelimiters,
@@ -700,7 +700,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		void		clearError(sqlrservercursor *cursor);
 		void		setError(sqlrservercursor *cursor,
 						const char *err,
-						uint32_t errlen,
+						uint32_t errsize,
 						int64_t errn,
 						bool liveconn);
 		void		setError(sqlrservercursor *cursor,
@@ -727,33 +727,33 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 					bool droperrortables);
 		bool	bulkLoadCheckpoint(const char *id);
 		bool	bulkLoadPrepareQuery(const char *query,
-						uint64_t querylen,
+						uint64_t querysize,
 						uint16_t inbindcount,
 						sqlrserverbindvar *inbinds);
 		bool	bulkLoadCreateErrorTables(const char *query,
-						uint64_t querylen,
+						uint64_t querysize,
 						const char *errorfieldtable,
 						const char *errorrowtable);
 		bool	bulkLoadCreateErrorTable1(sqlrservercursor *cursor,
 						const char *query,
-						uint64_t querylen,
+						uint64_t querysize,
 						const char *errorfieldtable);
 		bool	bulkLoadCreateErrorTable2(sqlrservercursor *cursor,
 						const char *query,
-						uint64_t querylen,
+						uint64_t querysize,
 						const char *errorrowtable);
 		bool	bulkLoadJoin(const char *id);
 		bool	bulkLoadInputBind(const byte_t *data,
-						uint64_t datalen);
+						uint64_t datasize);
 		void	bulkLoadParseInsert(const char *query,
-						uint64_t querylen,
+						uint64_t querysize,
 						char **table,
                                                 linkedlist<char *> *cols,
                                                 linkedlist<char *> *binds);
 		bool	bulkLoadExecuteQuery();
 		void	bulkLoadInitBinds();
 		void	bulkLoadBindRow(const byte_t *data,
-						uint64_t datalen);
+						uint64_t datasize);
 		void	bulkLoadError();
 		bool	bulkLoadStoreError(int64_t errorcode,
 						const char *error,
@@ -805,9 +805,9 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		const char	*asciiToOctal(byte_t ch);
 
 		bool		hasBindVariables(const char *query,
-							uint32_t querylen);
+							uint32_t querysize);
 		uint16_t	countBindVariables(const char *query,
-							uint32_t querylen);
+							uint32_t querysize);
 		void		splitObjectName(const char *currentdb,
 						const char *currentschema,
 						const char *combinedobject,
@@ -815,7 +815,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 						const char **schema,
 						const char **object);
 		bool		parseInsert(const char *query,
-					uint32_t querylen,
+					uint32_t querysize,
 					sqlrquerytype_t *querytype,
 					char **table,
 					linkedlist<char *> **columns,
@@ -1045,12 +1045,12 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 
 		virtual sqlrquerytype_t	determineQueryType(
 						const char *query,
-						uint32_t length);
+						uint32_t size);
 		virtual	bool	isCustomQuery();
 		virtual	bool	prepareQuery(const char *query,
-							uint32_t length);
+							uint32_t size);
 		virtual	bool	supportsNativeBinds(const char *query,
-							uint32_t length);
+							uint32_t size);
 		virtual	bool	inputBind(const char *variable, 
 						uint16_t variablesize,
 						const char *value, 
@@ -1139,8 +1139,8 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		virtual	bool	outputBindCursor(const char *variable,
 						uint16_t variablesize,
 						sqlrservercursor *cursor);
-		virtual bool	getLobOutputBindLength(uint16_t index,
-							uint64_t *length);
+		virtual bool	getLobOutputBindSize(uint16_t index,
+							uint64_t *size);
 		virtual bool	getLobOutputBindSegment(uint16_t index,
 							char *buffer,
 							uint64_t buffersize,
@@ -1185,8 +1185,8 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 						uint16_t variablesize,
 						uint16_t index,
 						int16_t *isnull);
-		virtual bool	getLobInputOutputBindLength(uint16_t index,
-							uint64_t *length);
+		virtual bool	getLobInputOutputBindSize(uint16_t index,
+							uint64_t *size);
 		virtual bool	getLobInputOutputBindSegment(uint16_t index,
 							char *buffer,
 							uint64_t buffersize,
@@ -1195,10 +1195,10 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 							uint64_t *charsread);
 		virtual void	closeLobInputOutputBind(uint16_t index);
 		virtual void	checkForTempTable(const char *query,
-							uint32_t length);
+							uint32_t size);
 		virtual	const char	*truncateTableQuery();
 		virtual	bool		executeQuery(const char *query,
-							uint32_t length);
+							uint32_t size);
 		virtual bool	fetchFromBindCursor();
 		virtual	bool	nextResultSet(bool *nextresultsetavailable);
 		virtual	bool	queryIsNotSelect();
@@ -1215,11 +1215,11 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		virtual	uint32_t	colCount();
 		virtual uint16_t	columnTypeFormat();
 		virtual const char	*getColumnName(uint32_t col);
-		virtual uint16_t	getColumnNameLength(uint32_t col);
+		virtual uint16_t	getColumnNameSize(uint32_t col);
 		virtual uint16_t	getColumnType(uint32_t col);
 		virtual const char	*getColumnTypeName(uint32_t col);
-		virtual uint16_t	getColumnTypeNameLength(uint32_t col);
-		virtual uint32_t	getColumnLength(uint32_t col);
+		virtual uint16_t	getColumnTypeNameSize(uint32_t col);
+		virtual uint32_t	getColumnSize(uint32_t col);
 		virtual uint32_t	getColumnPrecision(uint32_t col);
 		virtual uint32_t	getColumnScale(uint32_t col);
 		virtual uint16_t	getColumnIsNullable(uint32_t col);
@@ -1231,7 +1231,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		virtual uint16_t	getColumnIsBinary(uint32_t col);
 		virtual uint16_t	getColumnIsAutoIncrement(uint32_t col);
 		virtual const char	*getColumnTable(uint32_t col);
-		virtual uint16_t	getColumnTableLength(uint32_t col);
+		virtual uint16_t	getColumnTableSize(uint32_t col);
 		virtual bool		ignoreDateDdMmParameter(uint32_t col,
 							const char *data,
 							uint32_t size);
@@ -1241,11 +1241,11 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		virtual	void	nextRow();
 		virtual void	getField(uint32_t col,
 						const char **field,
-						uint64_t *fieldlength,
+						uint64_t *fieldsize,
 						bool *blob,
 						bool *null);
-		virtual bool	getLobFieldLength(uint32_t col,
-						uint64_t *length);
+		virtual bool	getLobFieldSize(uint32_t col,
+						uint64_t *size);
 		virtual bool	getLobFieldSegment(uint32_t col,
 						char *buffer,
 						uint64_t buffersize,
@@ -1287,8 +1287,8 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		void	abort();
 
 		char		*getQueryBuffer();
-		uint32_t 	getQueryLength();
-		void		setQueryLength(uint32_t querylength);
+		uint32_t 	getQuerySize();
+		void		setQuerySize(uint32_t querysize);
 
 		void		setQueryStatus(sqlrquerystatus_t status);
 		sqlrquerystatus_t	getQueryStatus();
@@ -1387,11 +1387,11 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		void	allocateColumnPointers(uint32_t colcount);
 		void	deallocateColumnPointers();
 		void	getColumnPointers(const char ***columnnames,
-					uint16_t **columnnamelengths,
+					uint16_t **columnnamesizes,
 					uint16_t **columntypes,
 					const char ***columntypenames,
-					uint16_t **columntypenamelengths,
-					uint32_t **columnlengths,
+					uint16_t **columntypenamesizes,
+					uint32_t **columnsizes,
 					uint32_t **columnprecisions,
 					uint32_t **columnscales,
 					uint16_t **columnisnullables,
@@ -1403,13 +1403,13 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 					uint16_t **columnisbinarys,
 					uint16_t **columnisautoincrements,
 					const char ***columntables,
-					uint16_t **columntablelengths);
+					uint16_t **columntablesizes);
 		const char	*getColumnNameFromBuffer(uint32_t col);
-		uint16_t	getColumnNameLengthFromBuffer(uint32_t col);
+		uint16_t	getColumnNameSizeFromBuffer(uint32_t col);
 		uint16_t	getColumnTypeFromBuffer(uint32_t col);
 		const char	*getColumnTypeNameFromBuffer(uint32_t col);
-		uint16_t	getColumnTypeNameLengthFromBuffer(uint32_t col);
-		uint32_t	getColumnLengthFromBuffer(uint32_t col);
+		uint16_t	getColumnTypeNameSizeFromBuffer(uint32_t col);
+		uint32_t	getColumnSizeFromBuffer(uint32_t col);
 		uint32_t	getColumnPrecisionFromBuffer(uint32_t col);
 		uint32_t	getColumnScaleFromBuffer(uint32_t col);
 		uint16_t	getColumnIsNullableFromBuffer(uint32_t col);
@@ -1422,13 +1422,13 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		uint16_t	getColumnIsAutoIncrementFromBuffer(
 							uint32_t col);
 		const char	*getColumnTableFromBuffer(uint32_t col);
-		uint16_t	getColumnTableLengthFromBuffer(uint32_t col);
+		uint16_t	getColumnTableSizeFromBuffer(uint32_t col);
 
 		void	allocateFieldPointers(uint32_t colcount);
 		void	deallocateFieldPointers();
 		void	getFieldPointers(const char ***fieldnames,
 					const char ***fields,
-					uint64_t **fieldlengths,
+					uint64_t **fieldsizes,
 					bool **blob,
 					bool **null);
 
@@ -1503,15 +1503,15 @@ class SQLRSERVER_DLLSPEC sqlrprotocol {
 					const byte_t **rpout);
 		void	read(const byte_t *rp,
 					char *value,
-					size_t length,
+					size_t size,
 					const byte_t **rpout);
 		void	read(const byte_t *rp,
 					byte_t *value,
-					size_t length,
+					size_t size,
 					const byte_t **rpout);
 		void	read(const byte_t *rp,
 					ucs2_t *value,
-					size_t length,
+					size_t size,
 					const byte_t **rpout);
 		void	read(const byte_t *rp,
 					float *value,
@@ -1583,11 +1583,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol {
 		void	write(bytebuffer *buffer, byte_t value);
 		void	write(bytebuffer *buffer, const char *value);
 		void	write(bytebuffer *buffer, const char *value,
-								size_t length);
+								size_t size);
 		void	write(bytebuffer *buffer, const byte_t *value,
-								size_t length);
+								size_t size);
 		void	write(bytebuffer *buffer, const ucs2_t *str,
-								size_t length);
+								size_t size);
 		void	write(bytebuffer *buffer, float value);
 		void	write(bytebuffer *buffer, double value);
 		void	write(bytebuffer *buffer, uint16_t value);
@@ -1605,7 +1605,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol {
 						const char *string);
 		void	writeLenEncStr(bytebuffer *buffer,
 						const char *string,
-						uint64_t length);
+						uint64_t size);
 		void	writeTriplet(bytebuffer *buffer, uint32_t value);
 
 		uint16_t	toHost(uint16_t value);
@@ -1718,13 +1718,13 @@ class SQLRSERVER_DLLSPEC sqlrmysqlcredentials : public sqlrcredentials {
 
 		void	setUser(const char *user);
 		void	setPassword(const char *password);
-		void	setPasswordLength(uint64_t passwordlength);
+		void	setPasswordSize(uint64_t passwordsize);
 		void	setMethod(const char *method);
 		void	setExtra(const char *extra);
 
 		const char	*getUser();
 		const char	*getPassword();
-		uint64_t	getPasswordLength();
+		uint64_t	getPasswordSize();
 		const char	*getMethod();
 		const char	*getExtra();
 
@@ -1739,13 +1739,13 @@ class SQLRSERVER_DLLSPEC sqlrpostgresqlcredentials : public sqlrcredentials {
 
 		void	setUser(const char *user);
 		void	setPassword(const char *password);
-		void	setPasswordLength(uint64_t passwordlength);
+		void	setPasswordSize(uint64_t passwordsize);
 		void	setMethod(const char *method);
 		void	setSalt(uint32_t salt);
 
 		const char	*getUser();
 		const char	*getPassword();
-		uint64_t	getPasswordLength();
+		uint64_t	getPasswordSize();
 		const char	*getMethod();
 		uint32_t	getSalt();
 
@@ -1760,13 +1760,13 @@ class SQLRSERVER_DLLSPEC sqlroraclecredentials : public sqlrcredentials {
 
 		void	setUser(const char *user);
 		void	setPassword(const char *password);
-		void	setPasswordLength(uint64_t passwordlength);
+		void	setPasswordSize(uint64_t passwordsize);
 		void	setMethod(const char *method);
 		void	setExtra(const char *extra);
 
 		const char	*getUser();
 		const char	*getPassword();
-		uint64_t	getPasswordLength();
+		uint64_t	getPasswordSize();
 		const char	*getMethod();
 		const char	*getExtra();
 
@@ -2123,7 +2123,7 @@ class SQLRSERVER_DLLSPEC sqlrdirective {
 		domnode	*getParameters();
 		bool		getDirective(const char *line,
 						const char **directivestart,
-						uint32_t *directivelength,
+						uint32_t *directivesize,
 						const char **newline);
 
 	#include <sqlrelay/private/sqlrdirective.h>
@@ -2154,7 +2154,7 @@ class SQLRSERVER_DLLSPEC sqlrquerytranslation {
 		virtual bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					const char *query,
-					uint32_t querylength,
+					uint32_t querysize,
 					stringbuffer *translatedquery);
 
 		virtual bool	run(sqlrserverconnection *sqlrcon,
@@ -2183,7 +2183,7 @@ class SQLRSERVER_DLLSPEC sqlrquerytranslations {
 						sqlrservercursor *sqlrcur,
 						sqlrparser *sqlrp,
 						const char *query,
-						uint32_t querylength,
+						uint32_t querysize,
 						stringbuffer *translatedquery);
 
 		const char	*getError();
@@ -2327,7 +2327,7 @@ class SQLRSERVER_DLLSPEC sqlrresultsettranslation {
 					const char *fieldname,
 					uint32_t fieldindex,
 					const char **field,
-					uint64_t *fieldlength);
+					uint64_t *fieldsize);
 
 		virtual const char	*getError();
 
@@ -2352,7 +2352,7 @@ class SQLRSERVER_DLLSPEC sqlrresultsettranslations {
 						const char *fieldname,
 						uint32_t fieldindex,
 						const char **field,
-						uint64_t *fieldlength);
+						uint64_t *fieldsize);
 
 		const char	*getError();
 
@@ -2375,7 +2375,7 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowtranslation {
 					uint32_t colcount,
 					const char * const *fieldnames,
 					const char ***fields,
-					uint64_t **fieldlengths);
+					uint64_t **fieldsizes);
 
 		virtual const char	*getError();
 
@@ -2400,7 +2400,7 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowtranslations {
 						uint32_t colcount,
 						const char * const *fieldnames,
 						const char ***fields,
-						uint64_t **fieldlengths);
+						uint64_t **fieldsizes);
 
 		const char	*getError();
 
@@ -2423,7 +2423,7 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslation {
 					uint32_t colcount,
 					const char * const *fieldnames,
 					const char * const *fields,
-					uint64_t *fieldlengths,
+					uint64_t *fieldsizes,
 					bool *blobs,
 					bool *nulls);
 		virtual bool	run(sqlrserverconnection *sqlrcon,
@@ -2434,7 +2434,7 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslation {
 					sqlrservercursor *sqlrcur,
 					uint32_t colcount,
 					const char ***fields,
-					uint64_t **fieldlengths,
+					uint64_t **fieldsizes,
 					bool **blobs,
 					bool **nulls);
 
@@ -2465,7 +2465,7 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslations {
 					uint32_t colcount,
 					const char * const *fieldnames,
 					const char * const *fields,
-					uint64_t *fieldlengths,
+					uint64_t *fieldsizes,
 					bool *blobs,
 					bool *nulls);
 		bool	run(sqlrserverconnection *sqlrcon,
@@ -2476,7 +2476,7 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslations {
 					sqlrservercursor *sqlrcur,
 					uint32_t colcount,
 					const char ***fields,
-					uint64_t **fieldlengths,
+					uint64_t **fieldsizes,
 					bool **blobs,
 					bool **nulls);
 
@@ -2500,11 +2500,11 @@ class SQLRSERVER_DLLSPEC sqlrresultsetheadertranslation {
 					sqlrservercursor *sqlrcur,
 					uint32_t colcount,
 					const char ***columnnames,
-					uint16_t **columnnamelengths,
+					uint16_t **columnnamesizes,
 					uint16_t **columntypes,
 					const char ***columntypenames,
-					uint16_t **columntypenamelengths,
-					uint32_t **columnlengths,
+					uint16_t **columntypenamesizes,
+					uint32_t **columnsizes,
 					uint32_t **columnprecisions,
 					uint32_t **columnscales,
 					uint16_t **columnisnullables,
@@ -2516,7 +2516,7 @@ class SQLRSERVER_DLLSPEC sqlrresultsetheadertranslation {
 					uint16_t **columnisbinarys,
 					uint16_t **columnisautoincrements,
 					const char ***columntables,
-					uint16_t **columntablelengths);
+					uint16_t **columntablesizes);
 
 		virtual const char	*getError();
 
@@ -2541,11 +2541,11 @@ class SQLRSERVER_DLLSPEC sqlrresultsetheadertranslations {
 					sqlrservercursor *sqlrcur,
 					uint32_t colcount,
 					const char ***columnnames,
-					uint16_t **columnnamelengths,
+					uint16_t **columnnamesizes,
 					uint16_t **columntypes,
 					const char ***columntypenames,
-					uint16_t **columntypenamelengths,
-					uint32_t **columnlengths,
+					uint16_t **columntypenamesizes,
+					uint32_t **columnsizes,
 					uint32_t **columnprecisions,
 					uint32_t **columnscales,
 					uint16_t **columnisnullables,
@@ -2557,7 +2557,7 @@ class SQLRSERVER_DLLSPEC sqlrresultsetheadertranslations {
 					uint16_t **columnisbinarys,
 					uint16_t **columnisautoincrements,
 					const char ***columntables,
-					uint16_t **columntablelengths);
+					uint16_t **columntablesizes);
 
 		const char	*getError();
 
@@ -2664,7 +2664,7 @@ class SQLRSERVER_DLLSPEC sqlrquery {
 		virtual	~sqlrquery();
 
 		virtual bool	match(const char *querystring,
-						uint32_t querylength);
+						uint32_t querysize);
 		virtual sqlrquerycursor	*newCursor(	
 						sqlrserverconnection *sqlrcon,
 						uint16_t id);
@@ -2688,7 +2688,7 @@ class SQLRSERVER_DLLSPEC sqlrquerycursor : public sqlrservercursor {
 		virtual	~sqlrquerycursor();
 		virtual sqlrquerytype_t	determineQueryType(
 						const char *query,
-						uint32_t length);
+						uint32_t size);
 		bool	isCustomQuery();
 
 	protected:
@@ -2707,7 +2707,7 @@ class SQLRSERVER_DLLSPEC sqlrqueries {
 		bool		load(domnode *parameters);
 		sqlrquerycursor	*match(sqlrserverconnection *sqlrcon,
 						const char *querystring,
-						uint32_t querylength,
+						uint32_t querysize,
 						uint16_t id);
 
 		void	endTransaction(bool commit);

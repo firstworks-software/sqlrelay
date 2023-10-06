@@ -112,8 +112,8 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		bool		commit();
 		bool		rollback();
 		void		errorMessage(char *errorbuffer,
-						uint32_t errorbufferlength,
-						uint32_t *errorlength,
+						uint32_t errorbuffersize,
+						uint32_t *errorsize,
 						int64_t	*errorcode,
 						bool *liveconnection);
 		const char	*pingQuery();
@@ -195,7 +195,7 @@ class SQLRSERVER_DLLSPEC oraclecursor : public sqlrservercursor {
 		bool		open();
 		bool		close();
 		bool		prepareQuery(const char *query,
-						uint32_t length);
+						uint32_t size);
 		bool		inputBind(const char *variable, 
 						uint16_t variablesize,
 						const char *value, 
@@ -286,38 +286,38 @@ class SQLRSERVER_DLLSPEC oraclecursor : public sqlrservercursor {
 						uint16_t index,
 						int16_t *isnull,
 						ub2 type);
-		bool		getLobOutputBindLength(uint16_t index,
-							uint64_t *length);
+		bool		getLobOutputBindSize(uint16_t index,
+							uint64_t *size);
 		bool		getLobOutputBindSegment(uint16_t index,
 					char *buffer, uint64_t buffersize,
 					uint64_t offset, uint64_t charstoread,
 					uint64_t *charsread);
 		#endif
 		bool		executeQuery(const char *query,
-						uint32_t length);
+						uint32_t size);
 		bool		fetchFromBindCursor();
 		bool		executeQueryOrFetchFromBindCursor(
 						const char *query,
-						uint32_t length,
+						uint32_t size,
 						bool execute);
 		bool		validBinds();
 		#ifdef HAVE_ORACLE_8i
 		void		checkForTempTable(const char *query,
-							uint32_t length);
+							uint32_t size);
 		const char	*truncateTableQuery();
 		#endif
 		bool		queryIsNotSelect();
 		void		errorMessage(char *errorbuffer,
-						uint32_t errorbufferlength,
-						uint32_t *errorlength,
+						uint32_t errorbuffersize,
+						uint32_t *errorsize,
 						int64_t	*errorcode,
 						bool *liveconnection);
 		uint64_t	affectedRows();
 		uint32_t	colCount();
 		const char	*getColumnName(uint32_t col);
-		uint16_t	getColumnNameLength(uint32_t col);
+		uint16_t	getColumnNameSize(uint32_t col);
 		uint16_t	getColumnType(uint32_t col);
-		uint32_t	getColumnLength(uint32_t col);
+		uint32_t	getColumnSize(uint32_t col);
 		uint32_t	getColumnPrecision(uint32_t col);
 		uint32_t	getColumnScale(uint32_t col);
 		uint16_t	getColumnIsNullable(uint32_t col);
@@ -327,12 +327,11 @@ class SQLRSERVER_DLLSPEC oraclecursor : public sqlrservercursor {
 		bool		fetchRow(bool *error);
 		void		getField(uint32_t col,
 					const char **field,
-					uint64_t *fieldlength,
+					uint64_t *fieldsize,
 					bool *blob,
 					bool *null);
 		void		nextRow();
-		bool		getLobFieldLength(uint32_t col,
-							uint64_t *length);
+		bool		getLobFieldSize(uint32_t col, uint64_t *size);
 		bool		getLobFieldSegment(uint32_t col,
 					char *buffer, uint64_t buffersize,
 					uint64_t offset, uint64_t charstoread,
@@ -410,7 +409,7 @@ class SQLRSERVER_DLLSPEC oraclecursor : public sqlrservercursor {
 		uint64_t	totalrows;
 
 		char		*query;
-		uint32_t	length;
+		uint32_t	size;
 		bool		prepared;
 
 		bool		bound;
@@ -473,9 +472,9 @@ void oracleconnection::handleConnectString() {
 
 	nlslang=cont->getConnectStringValue("nls_lang");
 
-	// override max field length if it was set too small
-	if (cont->getMaxFieldLength()<MAX_BYTES_PER_CHAR) {
-		cont->setMaxFieldLength(MAX_BYTES_PER_CHAR);
+	// override max field size if it was set too small
+	if (cont->getMaxFieldSize()<MAX_BYTES_PER_CHAR) {
+		cont->setMaxFieldSize(MAX_BYTES_PER_CHAR);
 	}
 
 	// When using OCI from 8.0, if the fetch buffer is bigger than 32767,
@@ -483,8 +482,8 @@ void oracleconnection::handleConnectString() {
 	// ORA-01801: date format is too long for internal buffer
 	// at least with 8.0.5 on Redhat 5.2.
 	#ifndef HAVE_ORACLE_8i
-		if (cont->getMaxFieldLength()>32767) {
-			cont->setMaxFieldLength(32767);
+		if (cont->getMaxFieldSize()>32767) {
+			cont->setMaxFieldSize(32767);
 		}
 	#endif
 
@@ -1097,21 +1096,21 @@ bool oracleconnection::rollback() {
 }
 
 void oracleconnection::errorMessage(char *errorbuffer,
-					uint32_t errorbufferlength,
-					uint32_t *errorlength,
+					uint32_t errorbuffersize,
+					uint32_t *errorsize,
 					int64_t *errorcode,
 					bool *liveconnection) {
 
 	// get the message from oracle
-	bytestring::zero(errorbuffer,errorbufferlength);
+	bytestring::zero(errorbuffer,errorbuffersize);
 	sb4	errcode=0;
 	OCIErrorGet((dvoid *)err,1,(text *)0,&errcode,
-			(text *)errorbuffer,errorbufferlength,OCI_HTYPE_ERROR);
-	errorbuffer[errorbufferlength-1]='\0';
+			(text *)errorbuffer,errorbuffersize,OCI_HTYPE_ERROR);
+	errorbuffer[errorbuffersize-1]='\0';
 
 	// truncate the trailing \n
-	*errorlength=charstring::getLength((char *)errorbuffer);
-	char	*last=errorbuffer+(*errorlength)-1;
+	*errorsize=charstring::getLength((char *)errorbuffer);
+	char	*last=errorbuffer+(*errorsize)-1;
 	if (*last=='\n') {
 		*last='\0';
 	}
@@ -2454,7 +2453,7 @@ oraclecursor::oraclecursor(sqlrserverconnection *conn, uint16_t id) :
 	totalrows=0;
 
 	query=NULL;
-	length=0;
+	size=0;
 	prepared=false;
 	bound=false;
 
@@ -2527,13 +2526,13 @@ void oraclecursor::allocateResultSetBuffers(int32_t columncount) {
 		def_col_retlen=new ub2 *[columncount];
 		def_col_retcode=new ub2 *[columncount];
 		uint32_t	fetchatonce=getFetchAtOnce();
-		uint32_t	maxfieldlength=conn->cont->getMaxFieldLength();
+		uint32_t	maxfieldsize=conn->cont->getMaxFieldSize();
 		for (int32_t i=0; i<columncount; i++) {
 			def_lob[i]=new OCILobLocator *[fetchatonce];
 			for (uint32_t j=0; j<fetchatonce; j++) {
 				def_lob[i][j]=NULL;
 			}
-			def_buf[i]=new ub1[fetchatonce*maxfieldlength];
+			def_buf[i]=new ub1[fetchatonce*maxfieldsize];
 			def_indp[i]=new sb2[fetchatonce];
 			def_col_retlen[i]=new ub2[fetchatonce];
 			def_col_retcode[i]=new ub2[fetchatonce];
@@ -2610,15 +2609,15 @@ bool oraclecursor::close() {
 	return (OCIHandleFree(stmt,OCI_HTYPE_STMT)==OCI_SUCCESS);
 }
 
-bool oraclecursor::prepareQuery(const char *query, uint32_t length) {
+bool oraclecursor::prepareQuery(const char *query, uint32_t size) {
 
 	// initialize column count
 	ncols=0;
 
-	// keep a pointer to the query and length in case it needs to be 
+	// keep a pointer to the query and size in case it needs to be 
 	// reprepared later
 	this->query=(char *)query;
-	this->length=length;
+	this->size=size;
 
 	// if the query is being prepared then apparently this isn't an
 	// output bind cursor
@@ -2663,7 +2662,7 @@ bool oraclecursor::prepareQuery(const char *query, uint32_t length) {
 			// and report our findings
 			if (OCIStmtPrepare2(oracleconn->svc,&stmt,
 					oracleconn->err,
-					(text *)query,(ub4)length,
+					(text *)query,(ub4)size,
 					NULL,0,
 					(ub4)OCI_NTV_SYNTAX,
 					(ub4)OCI_PREP2_CACHE_SEARCHONLY)==
@@ -2684,7 +2683,7 @@ bool oraclecursor::prepareQuery(const char *query, uint32_t length) {
 			// prepare the query
 			if (OCIStmtPrepare2(oracleconn->svc,&stmt,
 					oracleconn->err,
-					(text *)query,(ub4)length,
+					(text *)query,(ub4)size,
 					NULL,0,
 					(ub4)OCI_NTV_SYNTAX,
 					(ub4)OCI_DEFAULT)!=OCI_SUCCESS) {
@@ -2708,7 +2707,7 @@ bool oraclecursor::prepareQuery(const char *query, uint32_t length) {
 
 	// prepare the query
 	return (OCIStmtPrepare(stmt,oracleconn->err,
-				(text *)query,(ub4)length,
+				(text *)query,(ub4)size,
 				(ub4)OCI_NTV_SYNTAX,
 				(ub4)OCI_DEFAULT)==OCI_SUCCESS);
 }
@@ -2727,7 +2726,7 @@ void oraclecursor::checkRePrepare() {
 	if (oracleconn->requiresreprepare && !prepared &&
 			stmttype && stmttype!=OCI_STMT_SELECT) {
 		closeResultSet();
-		prepareQuery(query,length);
+		prepareQuery(query,size);
 		prepared=true;
 	}
 }
@@ -3410,13 +3409,13 @@ bool oraclecursor::outputBindGenericLob(const char *variable,
 	return true;
 }
 
-bool oraclecursor::getLobOutputBindLength(uint16_t index, uint64_t *length) {
-	ub4	loblength=0;
+bool oraclecursor::getLobOutputBindSize(uint16_t index, uint64_t *size) {
+	ub4	lobsize=0;
 	bool	retval=(OCILobGetLength(oracleconn->svc,
 				oracleconn->err,
 				outbind_lob[index],
-				&loblength)==OCI_SUCCESS);
-	*length=loblength;
+				&lobsize)==OCI_SUCCESS);
+	*size=lobsize;
 	return retval;
 }
 
@@ -3451,7 +3450,7 @@ bool oraclecursor::getLobOutputBindSegment(uint16_t index,
 	return (result!=OCI_INVALID_HANDLE);
 }
 
-void oraclecursor::checkForTempTable(const char *query, uint32_t length) {
+void oraclecursor::checkForTempTable(const char *query, uint32_t size) {
 
 	// see if the query matches the pattern for a temporary query that
 	// creates a temporary table
@@ -3462,7 +3461,7 @@ void oraclecursor::checkForTempTable(const char *query, uint32_t length) {
 
 	// get the table name
 	stringbuffer	tablename;
-	const char	*endptr=query+length;
+	const char	*endptr=query+size;
 	while (ptr && *ptr && *ptr!=' ' &&
 		*ptr!='\n' && *ptr!='	' && ptr<endptr) {
 		tablename.append(*ptr);
@@ -3504,8 +3503,8 @@ const char *oraclecursor::truncateTableQuery() {
 }
 #endif
 
-bool oraclecursor::executeQuery(const char *query, uint32_t length) {
-	return executeQueryOrFetchFromBindCursor(query,length,true);
+bool oraclecursor::executeQuery(const char *query, uint32_t size) {
+	return executeQueryOrFetchFromBindCursor(query,size,true);
 }
 
 bool oraclecursor::fetchFromBindCursor() {
@@ -3513,7 +3512,7 @@ bool oraclecursor::fetchFromBindCursor() {
 }
 
 bool oraclecursor::executeQueryOrFetchFromBindCursor(const char *query,
-							uint32_t length,
+							uint32_t size,
 							bool execute) {
 
 	// initialize the row and column counters
@@ -3534,7 +3533,7 @@ bool oraclecursor::executeQueryOrFetchFromBindCursor(const char *query,
 		#ifdef HAVE_ORACLE_8i
 		// check for create temp table query
 		if (stmttype==OCI_STMT_CREATE) {
-			checkForTempTable(query,length);
+			checkForTempTable(query,size);
 		}
 		#endif
 
@@ -3716,7 +3715,7 @@ bool oraclecursor::executeQueryOrFetchFromBindCursor(const char *query,
 					oracleconn->err,
 					i+1,
 					(dvoid *)def_buf[i],
-					(sb4)conn->cont->getMaxFieldLength(),
+					(sb4)conn->cont->getMaxFieldSize(),
 					SQLT_STR,
 					(dvoid *)def_indp[i],
 					(ub2 *)def_col_retlen[i],
@@ -3845,20 +3844,20 @@ bool oraclecursor::queryIsNotSelect() {
 }
 
 void oraclecursor::errorMessage(char *errorbuffer,
-					uint32_t errorbufferlength,
-					uint32_t *errorlength,
+					uint32_t errorbuffersize,
+					uint32_t *errorsize,
 					int64_t *errorcode,
 					bool *liveconnection) {
 
 	if (bindformaterror) {
 
 		// handle bind format errors
-		*errorlength=charstring::getLength(
+		*errorsize=charstring::getLength(
 				SQLR_ERROR_INVALIDBINDVARIABLEFORMAT_STRING);
 		charstring::safeCopy(errorbuffer,
-				errorbufferlength,
+				errorbuffersize,
 				SQLR_ERROR_INVALIDBINDVARIABLEFORMAT_STRING,
-				*errorlength);
+				*errorsize);
 		*errorcode=SQLR_ERROR_INVALIDBINDVARIABLEFORMAT;
 		*liveconnection=true;
 
@@ -3866,8 +3865,8 @@ void oraclecursor::errorMessage(char *errorbuffer,
 
 		// otherwise fall back to default implementation
 		sqlrservercursor::errorMessage(errorbuffer,
-						errorbufferlength,
-						errorlength,
+						errorbuffersize,
+						errorsize,
 						errorcode,
 						liveconnection);
 	}
@@ -3901,7 +3900,7 @@ const char *oraclecursor::getColumnName(uint32_t col) {
 	return (const char *)desc[col].buf;
 }
 
-uint16_t oraclecursor::getColumnNameLength(uint32_t col) {
+uint16_t oraclecursor::getColumnNameSize(uint32_t col) {
 	return (uint16_t)desc[col].buflen;
 }
 
@@ -3936,7 +3935,7 @@ uint16_t oraclecursor::getColumnType(uint32_t col) {
 	}
 }
 
-uint32_t oraclecursor::getColumnLength(uint32_t col) {
+uint32_t oraclecursor::getColumnSize(uint32_t col) {
 	return (uint32_t)desc[col].dbsize;
 }
 
@@ -4004,7 +4003,7 @@ bool oraclecursor::fetchRow(bool *error) {
 }
 
 void oraclecursor::getField(uint32_t col,
-				const char **field, uint64_t *fieldlength,
+				const char **field, uint64_t *fieldsize,
 				bool *blob, bool *null) {
 
 	// handle NULLs
@@ -4022,21 +4021,21 @@ void oraclecursor::getField(uint32_t col,
 	}
 
 	// handle normal datatypes
-	*field=(const char *)&def_buf[col][row*conn->cont->getMaxFieldLength()];
-	*fieldlength=def_col_retlen[col][row];
+	*field=(const char *)&def_buf[col][row*conn->cont->getMaxFieldSize()];
+	*fieldsize=def_col_retlen[col][row];
 }
 
 void oraclecursor::nextRow() {
 	row++;
 }
 
-bool oraclecursor::getLobFieldLength(uint32_t col, uint64_t *length) {
-	ub4	loblength=0;
+bool oraclecursor::getLobFieldSize(uint32_t col, uint64_t *size) {
+	ub4	lobsize=0;
 	bool	retval=(OCILobGetLength(oracleconn->svc,
 				oracleconn->err,
 				def_lob[col][row],
-				&loblength)==OCI_SUCCESS);
-	*length=loblength;
+				&lobsize)==OCI_SUCCESS);
+	*size=lobsize;
 	return retval;
 }
 

@@ -179,7 +179,7 @@ bool sqlrresultsetrowtranslations::run(sqlrserverconnection *sqlrcon,
 						uint32_t colcount,
 						const char * const *fieldnames,
 						const char ***fields,
-						uint64_t **fieldlengths) {
+						uint64_t **fieldsizes) {
 	debugFunction();
 
 	pvt->_error=NULL;
@@ -194,7 +194,7 @@ bool sqlrresultsetrowtranslations::run(sqlrserverconnection *sqlrcon,
 
 		if (!node->getValue()->rstr->run(sqlrcon,sqlrcur,
 						colcount,fieldnames,
-						fields,fieldlengths)) {
+						fields,fieldsizes)) {
 			pvt->_error=node->getValue()->rstr->getError();
 			return false;
 		}

@@ -576,7 +576,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 
 		void	parseParcelHeader(const byte_t *parcel,
 					uint16_t *flavor,
-					uint32_t *datalength,
+					uint32_t *datasize,
 					const byte_t **parcelout);
 		bool	parseClientConfigParcel(const byte_t *parcel,
 					const byte_t **parcelout);
@@ -679,11 +679,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		bool	parseGenericParcel(const byte_t *parcel,
 					const byte_t **parcelout);
 		void	appendParcelHeader(uint16_t flavor,
-						uint32_t datalength);
+						uint32_t datasize);
 		void	appendLargeParcelHeader(uint16_t flavor,
-						uint32_t datalength);
+						uint32_t datasize);
 		void	appendSmallParcelHeader(uint16_t flavor,
-						uint32_t datalength);
+						uint32_t datasize);
 		void	appendParcelHeader(uint16_t flavor);
 		void	endParcel();
 		void	appendConfigResponseParcel();
@@ -740,19 +740,19 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		void	appendRecEndParcel();
 		void	appendField(uint16_t col, 
 					const char *field,
-					uint64_t fieldlength,
+					uint64_t fieldsize,
 					bool null);
 		void	appendRecordModeField(uint16_t col, 
 						const char *field,
-						uint64_t fieldlength,
+						uint64_t fieldsize,
 						bool null);
 		void	appendIndicatorModeField(uint16_t col, 
 						const char *field,
-						uint64_t fieldlength,
+						uint64_t fieldsize,
 						bool null);
 		void	appendRecordParcel();
 		void	appendFailureParcel(const char *errorstring,
-						uint16_t errorlength);
+						uint16_t errorsize);
 		void	appendErrorParcel(const char *errorstring);
 		void	appendEndStatementParcel();
 		void	appendEndStatementParcel(uint16_t statementnumber);
@@ -765,15 +765,15 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		uint16_t	getActivity();
 		bool		activityReturnsResults();
 		const char	*getColumnTypeName(uint16_t col);
-		uint16_t	getColumnTypeNameLength(uint16_t col);
+		uint16_t	getColumnTypeNameSize(uint16_t col);
 		uint16_t	getColumnType(uint16_t col);
 
 		void	debugParcelStart(const char *direction,
 						const char *flavorname,
 						uint16_t parcelflavor,
-						uint32_t parceldatalength);
+						uint32_t parceldatasize);
 		void	debugParcelEnd(const byte_t *parceldata,
-						uint32_t parceldatalength);
+						uint32_t parceldatasize);
 		void	debugParcelStart(const char *direction,
 						const char *flavorname,
 						uint16_t parcelflavor);
@@ -799,13 +799,13 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		memorypool	*clientreqmessagepool;
 		byte_t		*clientreqheader;
 		byte_t		*clientreqdata;
-		uint32_t	clientreqdatalength;
+		uint32_t	clientreqdatasize;
 
 		// passthrough buffers
 		memorypool	*backendreqmessagepool;
 		byte_t		*backendreqheader;
 		byte_t		*backendreqdata;
-		uint32_t	backendreqdatalength;
+		uint32_t	backendreqdatasize;
 
 		// response buffers
 		bytebuffer	respheader;
@@ -911,13 +911,13 @@ sqlrprotocol_teradata::sqlrprotocol_teradata(sqlrservercontroller *cont,
 	clientreqmessagepool=new memorypool(1024,1024,10240);
 	clientreqheader=NULL;
 	clientreqdata=NULL;
-	clientreqdatalength=0;
+	clientreqdatasize=0;
 
 	// backend buffers
 	backendreqmessagepool=new memorypool(1024,1024,10240);
 	backendreqheader=NULL;
 	backendreqdata=NULL;
-	backendreqdatalength=0;
+	backendreqdatasize=0;
 
 	// message
 	messagekind=0;
@@ -1323,11 +1323,11 @@ bool sqlrprotocol_teradata::copKindConnect() {
 	// always appears to be 664 bytes for jdbc
 	if (getDebug()) {
 		stdoutput.printf("	request {\n");
-		debugHexDump(clientreqdata,clientreqdatalength);
+		debugHexDump(clientreqdata,clientreqdatasize);
 		stdoutput.printf("	}\n");
 	}
 	bytebuffer	decdata;
-	decrypt(clientreqdata,clientreqdatalength,&decdata);
+	decrypt(clientreqdata,clientreqdatasize,&decdata);
 	if (getDebug()) {
 		stdoutput.printf("	decrypted request {\n");
 		debugHexDump(decdata.getBuffer(),decdata.getSize());
@@ -1753,25 +1753,25 @@ bool sqlrprotocol_teradata::copKindStart() {
 			for (;;) {
 				uint16_t	parcelflavor;
 				const byte_t	*parceldata;
-				uint32_t	parceldatalength;
+				uint32_t	parceldatasize;
 				parseParcelHeader(parcel,&parcelflavor,
-							&parceldatalength,
+							&parceldatasize,
 							&parceldata);
 
 				if (parcelflavor==3) {
 					if (!cont->bulkLoadInputBind(
 							parceldata,
-							parceldatalength)) {
+							parceldatasize)) {
 						appendConnectionErrorParcel();
 						goto end;
 					}
 				} else {
 					break;
 				}
-				parcel=parceldata+parceldatalength;
+				parcel=parceldata+parceldatasize;
 
 				debugParcelStart("recv","data",
-						parcelflavor,parceldatalength);
+						parcelflavor,parceldatasize);
 				debugParcelEnd();
 
 				req->activitycount++;
@@ -2113,10 +2113,10 @@ bool sqlrprotocol_teradata::recvRequestFromClient() {
 	// lan header fields
 	byte_t		version;
 	byte_t		messageclass;
-	uint16_t	highordermessagelength;
+	uint16_t	highordermessagesize;
 	byte_t		bytevar;
 	uint16_t	wordvar;
-	uint16_t	lowordermessagelength;
+	uint16_t	lowordermessagesize;
 	uint16_t 	resforexpan[3];
 	uint16_t	corrtag[2];
 	byte_t		spare[14];
@@ -2126,10 +2126,10 @@ bool sqlrprotocol_teradata::recvRequestFromClient() {
 	read(ptr,&version,&ptr);
 	read(ptr,&messageclass,&ptr);
 	read(ptr,&messagekind,&ptr);
-	readBE(ptr,&highordermessagelength,&ptr);
+	readBE(ptr,&highordermessagesize,&ptr);
 	read(ptr,&bytevar,&ptr);
 	readBE(ptr,&wordvar,&ptr);
-	readBE(ptr,&lowordermessagelength,&ptr);
+	readBE(ptr,&lowordermessagesize,&ptr);
 	// FIXME: net-to-host these?
 	read(ptr,(byte_t *)resforexpan,sizeof(resforexpan),&ptr);
 	// FIXME: net-to-host these?
@@ -2141,20 +2141,20 @@ bool sqlrprotocol_teradata::recvRequestFromClient() {
 	read(ptr,&hostcharset,&ptr);
 	read(ptr,(byte_t *)spare,sizeof(spare),&ptr);
 
-	clientreqdatalength=(((uint32_t)highordermessagelength)<<16)|
-					((uint32_t)lowordermessagelength);
+	clientreqdatasize=(((uint32_t)highordermessagesize)<<16)|
+					((uint32_t)lowordermessagesize);
 
 	if (getDebug()) {
 		debugStart("client recv header");
 		stdoutput.printf("	version: %d\n",(int)version);
 		stdoutput.printf("	class: %d\n",(int)messageclass);
 		stdoutput.printf("	kind: %d\n",(int)messagekind);
-		stdoutput.printf("	high order message length: %d\n",
-						(int)highordermessagelength);
+		stdoutput.printf("	high order message size: %d\n",
+						(int)highordermessagesize);
 		stdoutput.printf("	bytevar: %d\n",(int)bytevar);
 		stdoutput.printf("	wordvar: %d\n",(int)wordvar);
-		stdoutput.printf("	low order message length: %d\n",
-						(int)lowordermessagelength);
+		stdoutput.printf("	low order message size: %d\n",
+						(int)lowordermessagesize);
 		stdoutput.write("	res for expan: ");
 		stdoutput.safePrint((byte_t *)resforexpan,sizeof(resforexpan));
 		stdoutput.write('\n');
@@ -2187,8 +2187,8 @@ bool sqlrprotocol_teradata::recvRequestFromClient() {
 		stdoutput.printf("	request no: %d\n",(int)requestno);
 		stdoutput.printf("	gateway byte: %d\n",(int)gtwbyte);
 		stdoutput.printf("	host charset: %d\n",(int)hostcharset);
-		stdoutput.printf("	clientreqdatalength: %d\n",
-						(int)clientreqdatalength);
+		stdoutput.printf("	clientreqdatasize: %d\n",
+						(int)clientreqdatasize);
 		stdoutput.write('\n');
 		debugHexDump(clientreqheader,LAN_HEADER_SIZE);
 		debugEnd();
@@ -2196,9 +2196,9 @@ bool sqlrprotocol_teradata::recvRequestFromClient() {
 
 
 	// receive lan data
-	clientreqdata=clientreqmessagepool->allocate(clientreqdatalength);
-	if (clientsock->read(clientreqdata,clientreqdatalength)!=
-						(ssize_t)clientreqdatalength) {
+	clientreqdata=clientreqmessagepool->allocate(clientreqdatasize);
+	if (clientsock->read(clientreqdata,clientreqdatasize)!=
+						(ssize_t)clientreqdatasize) {
 		if (getDebug()) {
 			stdoutput.write("read data from client failed\n");
 		}
@@ -2207,7 +2207,7 @@ bool sqlrprotocol_teradata::recvRequestFromClient() {
 
 	if (getDebug()) {
 		debugStart("client recv data");
-		debugHexDump(clientreqdata,clientreqdatalength);
+		debugHexDump(clientreqdata,clientreqdatasize);
 		debugEnd();
 	}
 
@@ -2219,12 +2219,12 @@ bool sqlrprotocol_teradata::sendResponseToClient() {
 	// lan header fields
 	byte_t		version=3;
 	byte_t		messageclass=2;
-	uint32_t	messagelength=respdata.getSize();
-	uint16_t	highordermessagelength=(messagelength>>16);
+	uint32_t	messagesize=respdata.getSize();
+	uint16_t	highordermessagesize=(messagesize>>16);
 	// FIXME: There are cfg/assign cases where bytevar should be 8.
 	byte_t		bytevar=0;
 	uint16_t	wordvar=0;
-	uint16_t	lowordermessagelength=((messagelength<<16)>>16);
+	uint16_t	lowordermessagesize=((messagesize<<16)>>16);
 	uint16_t 	resforexpan[3]={0,0,0};
 	uint16_t	corrtag[2]={0,0};
 
@@ -2316,10 +2316,10 @@ bool sqlrprotocol_teradata::sendResponseToClient() {
 	write(&respheader,version);
 	write(&respheader,messageclass);
 	write(&respheader,messagekind);
-	writeBE(&respheader,highordermessagelength);
+	writeBE(&respheader,highordermessagesize);
 	write(&respheader,bytevar);
 	writeBE(&respheader,wordvar);
-	writeBE(&respheader,lowordermessagelength);
+	writeBE(&respheader,lowordermessagesize);
 	// FIXME: host-to-net this?
 	write(&respheader,(byte_t *)resforexpan,sizeof(resforexpan));
 	// FIXME: host-to-net this?
@@ -2338,12 +2338,12 @@ bool sqlrprotocol_teradata::sendResponseToClient() {
 		stdoutput.printf("	version: %d\n",(int)version);
 		stdoutput.printf("	class: %d\n",(int)messageclass);
 		stdoutput.printf("	kind: %d\n",(int)messagekind);
-		stdoutput.printf("	high order message length: %d\n",
-						(int)highordermessagelength);
+		stdoutput.printf("	high order message size: %d\n",
+						(int)highordermessagesize);
 		stdoutput.printf("	bytevar: %d\n",(int)bytevar);
 		stdoutput.printf("	wordvar: %d\n",(int)wordvar);
-		stdoutput.printf("	low order message length: %d\n",
-						(int)lowordermessagelength);
+		stdoutput.printf("	low order message size: %d\n",
+						(int)lowordermessagesize);
 		stdoutput.write("	res for expan: ");
 		stdoutput.safePrint((byte_t *)resforexpan,sizeof(resforexpan));
 		stdoutput.write('\n');
@@ -2376,8 +2376,8 @@ bool sqlrprotocol_teradata::sendResponseToClient() {
 		stdoutput.printf("	request no: %d\n",(int)requestno);
 		stdoutput.printf("	gateway byte: %d\n",(int)gtwbyte);
 		stdoutput.printf("	host charset: %d\n",(int)hostcharset);
-		stdoutput.printf("	messagelength: %d\n",
-						(int)messagelength);
+		stdoutput.printf("	messagesize: %d\n",
+						(int)messagesize);
 		stdoutput.write('\n');
 		debugHexDump(respheader.getBuffer(),respheader.getSize());
 		debugEnd();
@@ -2424,12 +2424,12 @@ bool sqlrprotocol_teradata::forwardClientRequestToBackend() {
 	// pass whatever we received from the client through to the backend
 	/*if (getDebug()) {
 		debugStart("backend send header");
-		stdoutput.printf("	length: %d\n",LAN_HEADER_SIZE);
+		stdoutput.printf("	size: %d\n",LAN_HEADER_SIZE);
 		debugHexDump(clientreqheader,LAN_HEADER_SIZE);
 		stdoutput.write("}\n");
 		stdoutput.write("backend send data {\n");
-		stdoutput.printf("	length: %d\n",clientreqdatalength);
-		debugHexDump(clientreqdata,clientreqdatalength);
+		stdoutput.printf("	size: %d\n",clientreqdatasize);
+		debugHexDump(clientreqdata,clientreqdatasize);
 		debugEnd();
 	}*/
 	if (!cont->send(clientreqheader,LAN_HEADER_SIZE)) {
@@ -2439,7 +2439,7 @@ bool sqlrprotocol_teradata::forwardClientRequestToBackend() {
 		}
 		return false;
 	}
-	if (!cont->send(clientreqdata,clientreqdatalength)) {
+	if (!cont->send(clientreqdata,clientreqdatasize)) {
 		if (getDebug()) {
 			stdoutput.write("send client data "
 					"to backend failed\n");
@@ -2466,10 +2466,10 @@ bool sqlrprotocol_teradata::recvResponseFromBackend() {
 	// lan header fields
 	byte_t		version;
 	byte_t		messageclass;
-	uint16_t	highordermessagelength;
+	uint16_t	highordermessagesize;
 	byte_t		bytevar;
 	uint16_t	wordvar;
-	uint16_t	lowordermessagelength;
+	uint16_t	lowordermessagesize;
 	uint16_t 	resforexpan[3];
 	uint16_t	corrtag[2];
 	uint32_t	sessionno;
@@ -2483,10 +2483,10 @@ bool sqlrprotocol_teradata::recvResponseFromBackend() {
 	read(ptr,&version,&ptr);
 	read(ptr,&messageclass,&ptr);
 	read(ptr,&messagekind,&ptr);
-	readBE(ptr,&highordermessagelength,&ptr);
+	readBE(ptr,&highordermessagesize,&ptr);
 	read(ptr,&bytevar,&ptr);
 	readBE(ptr,&wordvar,&ptr);
-	readBE(ptr,&lowordermessagelength,&ptr);
+	readBE(ptr,&lowordermessagesize,&ptr);
 	// FIXME: net-to-host this?
 	read(ptr,(byte_t *)resforexpan,sizeof(resforexpan),&ptr);
 	// FIXME: net-to-host this?
@@ -2498,20 +2498,20 @@ bool sqlrprotocol_teradata::recvResponseFromBackend() {
 	read(ptr,&behostcharset,&ptr);
 	read(ptr,(byte_t *)spare,sizeof(spare),&ptr);
 
-	backendreqdatalength=(((uint32_t)highordermessagelength)<<16)|
-				((uint32_t)lowordermessagelength);
+	backendreqdatasize=(((uint32_t)highordermessagesize)<<16)|
+				((uint32_t)lowordermessagesize);
 
 	if (getDebug()) {
 		debugStart("backend recv header");
 		stdoutput.printf("	version: %d\n",(int)version);
 		stdoutput.printf("	class: %d\n",(int)messageclass);
 		stdoutput.printf("	kind: %d\n",(int)messagekind);
-		stdoutput.printf("	high order message length: %d\n",
-						(int)highordermessagelength);
+		stdoutput.printf("	high order message size: %d\n",
+						(int)highordermessagesize);
 		stdoutput.printf("	bytevar: %d\n",(int)bytevar);
 		stdoutput.printf("	wordvar: %d\n",(int)wordvar);
-		stdoutput.printf("	low order message length: %d\n",
-						(int)lowordermessagelength);
+		stdoutput.printf("	low order message size: %d\n",
+						(int)lowordermessagesize);
 		stdoutput.write("	res for expan: ");
 		stdoutput.safePrint((byte_t *)resforexpan,sizeof(resforexpan));
 		stdoutput.write('\n');
@@ -2544,8 +2544,8 @@ bool sqlrprotocol_teradata::recvResponseFromBackend() {
 		stdoutput.printf("	request no: %d\n",(int)berequestno);
 		stdoutput.printf("	gateway byte: %d\n",(int)begtwbyte);
 		stdoutput.printf("	host charset: %d\n",(int)behostcharset);
-		stdoutput.printf("	backendreqdatalength: %d\n",
-						(int)backendreqdatalength);
+		stdoutput.printf("	backendreqdatasize: %d\n",
+						(int)backendreqdatasize);
 		stdoutput.write('\n');
 		debugHexDump(backendreqheader,LAN_HEADER_SIZE);
 		debugEnd();
@@ -2557,10 +2557,10 @@ bool sqlrprotocol_teradata::recvResponseFromBackend() {
 
 	if (getDebug()) {
 		debugStart("backend recv data");
-		debugHexDump(backendreqdata,backendreqdatalength);
+		debugHexDump(backendreqdata,backendreqdatasize);
 		if (messagekind!=COPKIND_CONNECT) {
 			parseGenericParcels(backendreqdata,
-					backendreqdata+backendreqdatalength);
+					backendreqdata+backendreqdatasize);
 		}
 		debugEnd();
 	}
@@ -2573,12 +2573,12 @@ bool sqlrprotocol_teradata::forwardBackendResponseToClient() {
 	// send whatever we received from the backend to the client
 	/*if (getDebug()) {
 		debugStart("client send header");
-		stdoutput.printf("	length: %d\n",LAN_HEADER_SIZE);
+		stdoutput.printf("	size: %d\n",LAN_HEADER_SIZE);
 		debugHexDump(backendreqheader,LAN_HEADER_SIZE);
 		stdoutput.write("}\n");
 		stdoutput.write("client send data {\n");
-		stdoutput.printf("	length: %d\n",backendreqdatalength);
-		debugHexDump(backendreqdata,backendreqdatalength);
+		stdoutput.printf("	size: %d\n",backendreqdatasize);
+		debugHexDump(backendreqdata,backendreqdatasize);
 		debugEnd();
 	}*/
 	if (clientsock->write(backendreqheader,
@@ -2588,8 +2588,8 @@ bool sqlrprotocol_teradata::forwardBackendResponseToClient() {
 		}
 		return false;
 	}
-	if (clientsock->write(backendreqdata,backendreqdatalength)!=
-						(ssize_t)backendreqdatalength) {
+	if (clientsock->write(backendreqdata,backendreqdatasize)!=
+						(ssize_t)backendreqdatasize) {
 		if (getDebug()) {
 			stdoutput.write("clientsock write failed\n");
 		}
@@ -2601,7 +2601,7 @@ bool sqlrprotocol_teradata::forwardBackendResponseToClient() {
 
 void sqlrprotocol_teradata::parseParcelHeader(const byte_t *parcel,
 					uint16_t *flavor,
-					uint32_t *datalength,
+					uint32_t *datasize,
 					const byte_t **parcelout) {
 	
 	// get the parcel flavor
@@ -2614,26 +2614,26 @@ void sqlrprotocol_teradata::parseParcelHeader(const byte_t *parcel,
 		read(parcel,flavor,&parcel);
 	}
 
-	// get the total parcel length...
+	// get the total parcel size...
 	// * if the leftmost bit of the flavor is 0,
-	//   then the length is stored in the 2 bytes following the flavor
+	//   then the size is stored in the 2 bytes following the flavor
 	// * if the leftmost bit of the flavor is 0,
-	//   then the length is stored in the 4 bytes following 2 unused bytes
+	//   then the size is stored in the 4 bytes following 2 unused bytes
 	//   after the flavor, and we need to remove the leftmost bit
-	// and subtract the length of the flavor and length-bytes themselves to
-	// get the length of the parcel data
-	*datalength=0;
+	// and subtract the size of the flavor and size-bytes themselves to
+	// get the size of the parcel data
+	*datasize=0;
 	if (*flavor&0x8000) {
 		*flavor&=0x7fff;
 		parcel+=sizeof(uint16_t);
-		read(parcel,datalength,&parcel);
-		*datalength=*datalength-sizeof(uint16_t)-
+		read(parcel,datasize,&parcel);
+		*datasize=*datasize-sizeof(uint16_t)-
 					sizeof(uint16_t)-
 					sizeof(uint32_t);
 	} else {
 		uint16_t	temp;
 		read(parcel,&temp,&parcel);
-		*datalength=temp-sizeof(uint16_t)-sizeof(uint16_t);
+		*datasize=temp-sizeof(uint16_t)-sizeof(uint16_t);
 	}
 
 	*parcelout=parcel;
@@ -2646,9 +2646,9 @@ bool sqlrprotocol_teradata::parseClientConfigParcel(
 	// parse parcel header
 	uint16_t	parcelflavor;
 	const byte_t	*parceldata;
-	uint32_t	parceldatalength;
+	uint32_t	parceldatasize;
 	parseParcelHeader(parcel,&parcelflavor,
-					&parceldatalength,
+					&parceldatasize,
 					&parceldata);
 	if (parcelflavor!=166) {
 		unexpectedParcel(parcelflavor);
@@ -2656,11 +2656,11 @@ bool sqlrprotocol_teradata::parseClientConfigParcel(
 		return false;
 	}
 
-	debugParcelStart("recv","client config",parcelflavor,parceldatalength);
+	debugParcelStart("recv","client config",parcelflavor,parceldatasize);
 
 	// parse parcel data
 	const byte_t	*ptr=parceldata;
-	const byte_t	*end=parceldata+parceldatalength;
+	const byte_t	*end=parceldata+parceldatasize;
 
 	uint32_t	unknown;
 	read(ptr,&unknown,&ptr);
@@ -2669,23 +2669,23 @@ bool sqlrprotocol_teradata::parseClientConfigParcel(
 	}
 	while (ptr!=end) {
 		uint16_t	field;
-		uint16_t	length;
+		uint16_t	size;
 		read(ptr,&field,&ptr);
-		read(ptr,&length,&ptr);
+		read(ptr,&size,&ptr);
 		if (getDebug()) {
 			stdoutput.printf("		field: %d\n",field);
-			stdoutput.printf("		length: %d\n",length);
+			stdoutput.printf("		size: %d\n",size);
 			stdoutput.printf("		data:\n");
-			debugHexDump(ptr,length,2);
+			debugHexDump(ptr,size,2);
 			stdoutput.write('\n');
 		}
-		ptr+=length;
+		ptr+=size;
 	}
 
 	// return next parcel
-	*parcelout=parceldata+parceldatalength;
+	*parcelout=parceldata+parceldatasize;
 
-	debugParcelEnd(parceldata,parceldatalength);
+	debugParcelEnd(parceldata,parceldatasize);
 
 	return true;
 }
@@ -2697,9 +2697,9 @@ bool sqlrprotocol_teradata::parseConfigParcel(
 	// parse parcel header
 	uint16_t	parcelflavor;
 	const byte_t	*parceldata;
-	uint32_t	parceldatalength;
+	uint32_t	parceldatasize;
 	parseParcelHeader(parcel,&parcelflavor,
-					&parceldatalength,
+					&parceldatasize,
 					&parceldata);
 	if (parcelflavor!=42) {
 		unexpectedParcel(parcelflavor);
@@ -2707,14 +2707,14 @@ bool sqlrprotocol_teradata::parseConfigParcel(
 		return false;
 	}
 
-	debugParcelStart("recv","config",parcelflavor,parceldatalength);
+	debugParcelStart("recv","config",parcelflavor,parceldatasize);
 
 	// no parcel data to parse (may not always be the case though)
 
 	// return next parcel
-	*parcelout=parceldata+parceldatalength;
+	*parcelout=parceldata+parceldatasize;
 
-	debugParcelEnd(parceldata,parceldatalength);
+	debugParcelEnd(parceldata,parceldatasize);
 
 	return true;
 }
@@ -2726,9 +2726,9 @@ bool sqlrprotocol_teradata::parseAssignParcel(
 	// parse parcel header
 	uint16_t	parcelflavor;
 	const byte_t	*parceldata;
-	uint32_t	parceldatalength;
+	uint32_t	parceldatasize;
 	parseParcelHeader(parcel,&parcelflavor,
-					&parceldatalength,
+					&parceldatasize,
 					&parceldata);
 	if (parcelflavor!=100) {
 		unexpectedParcel(parcelflavor);
@@ -2736,23 +2736,23 @@ bool sqlrprotocol_teradata::parseAssignParcel(
 		return false;
 	}
 
-	debugParcelStart("recv","assign",parcelflavor,parceldatalength);
+	debugParcelStart("recv","assign",parcelflavor,parceldatasize);
 
 	// parse parcel data
 	const char	*username=(const char *)parceldata;
-	uint32_t	usernamelength=parceldatalength;
+	uint32_t	usernamesize=parceldatasize;
 
 	// debug
 	if (getDebug()) {
 		stdoutput.printf("		username: %.*s\n\n",
-							usernamelength,
+							usernamesize,
 							username);
 	}
 
 	// return next parcel
-	*parcelout=parceldata+parceldatalength;
+	*parcelout=parceldata+parceldatasize;
 
-	debugParcelEnd(parceldata,parceldatalength);
+	debugParcelEnd(parceldata,parceldatasize);
 
 	return true;
 }
@@ -2764,9 +2764,9 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(
 	// parse parcel header
 	uint16_t	parcelflavor;
 	const byte_t	*parceldata;
-	uint32_t	parceldatalength;
+	uint32_t	parceldatasize;
 	parseParcelHeader(parcel,&parcelflavor,
-					&parceldatalength,
+					&parceldatasize,
 					&parceldata);
 	if (parcelflavor!=132) {
 		unexpectedParcel(parcelflavor);
@@ -2774,58 +2774,58 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(
 		return false;
 	}
 
-	debugParcelStart("recv","sso request",parcelflavor,parceldatalength);
+	debugParcelStart("recv","sso request",parcelflavor,parceldatasize);
 
 	// parse parcel data
 	const byte_t	*ptr=parceldata;
-	const byte_t	*end=parceldata+parceldatalength;
+	const byte_t	*end=parceldata+parceldatasize;
 
 	uint16_t	marker;
-	uint16_t	postmarkerlength;
+	uint16_t	postmarkersize;
 	const byte_t	*unknown1;
-	byte_t		bodylength;
+	byte_t		bodysize;
 	const byte_t	*unknown2;
 	const byte_t	*unknown3;
 	//const byte_t	*padding1;
-	byte_t		fieldslength;
+	byte_t		fieldssize;
 	//const byte_t	*padding2;
 	read(ptr,&marker,&ptr);
-	read(ptr,&postmarkerlength,&ptr);
+	read(ptr,&postmarkersize,&ptr);
 	unknown1=ptr;
 	ptr+=7;
-	read(ptr,&bodylength,&ptr);
+	read(ptr,&bodysize,&ptr);
 	unknown2=ptr;
 	ptr+=10;
 	unknown3=ptr;
 	ptr+=2;
 	//padding1=ptr;
 	ptr+=19;
-	read(ptr,&fieldslength,&ptr);
+	read(ptr,&fieldssize,&ptr);
 	//padding2=ptr;
 	ptr+=40;
 
-	// fudge lengths
-	bodylength+=8;
-	fieldslength--;
+	// fudge sizes
+	bodysize+=8;
+	fieldssize--;
 
 	if (getDebug()) {
 		stdoutput.printf("		marker: %d\n",marker);
-		stdoutput.printf("		post-marker length: %d\n",
-							postmarkerlength);
+		stdoutput.printf("		post-marker size: %d\n",
+							postmarkersize);
 		stdoutput.printf("		unknown1:\n");
 		debugHexDump(unknown1,7,2);
-		stdoutput.printf("		body length: %d\n",
-							bodylength);
+		stdoutput.printf("		body size: %d\n",
+							bodysize);
 		stdoutput.printf("		unknown2:\n");
 		debugHexDump(unknown2,10,2);
 		stdoutput.printf("		unknown3:\n");
 		debugHexDump(unknown3,2,2);
-		stdoutput.printf("		fields length: %d\n",
-							fieldslength);
+		stdoutput.printf("		fields size: %d\n",
+							fieldssize);
 	}
 
 	// parse supported algorithms...
-	const byte_t	*fieldsend=ptr+fieldslength;
+	const byte_t	*fieldsend=ptr+fieldssize;
 	while (ptr<fieldsend) {
 
 		// get supported algorithms field
@@ -2947,37 +2947,37 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(
 
 	// parse requested mech...
 	byte_t		reqmechfield;
-	byte_t		reqmechlength;
+	byte_t		reqmechsize;
 	const byte_t	*reqmech;
 	read(ptr,&reqmechfield,&ptr);
-	read(ptr,&reqmechlength,&ptr);
+	read(ptr,&reqmechsize,&ptr);
 	reqmech=ptr;
-	ptr+=reqmechlength;
+	ptr+=reqmechsize;
 	if (getDebug()) {
 		stdoutput.write("		requested mech:\n");
-		debugHexDump(reqmech,reqmechlength,2);
+		debugHexDump(reqmech,reqmechsize,2);
 	}
 
 	// negotiate mech
 	// (for now we only support TD2)
 	negotiatedmech=MECH_NONE;
-	if (reqmechlength==sizeof(td2mech) &&
+	if (reqmechsize==sizeof(td2mech) &&
 			!bytestring::compare(reqmech,
 				td2mech,sizeof(td2mech))) {
 		negotiatedmech=MECH_TD2;
-	} else if (reqmechlength==sizeof(tdnegomech) &&
+	} else if (reqmechsize==sizeof(tdnegomech) &&
 			!bytestring::compare(reqmech,
 				tdnegomech,sizeof(tdnegomech))) {
 		negotiatedmech=MECH_TDNEGO;
-	} else if (reqmechlength==sizeof(ldapmech) &&
+	} else if (reqmechsize==sizeof(ldapmech) &&
 			!bytestring::compare(reqmech,
 				ldapmech,sizeof(ldapmech))) {
 		negotiatedmech=MECH_LDAP;
-	} else if (reqmechlength==sizeof(krbmech) &&
+	} else if (reqmechsize==sizeof(krbmech) &&
 			!bytestring::compare(reqmech,
 				krbmech,sizeof(krbmech))) {
 		negotiatedmech=MECH_KRB;
-	} else if (reqmechlength==sizeof(krbcompatmech) &&
+	} else if (reqmechsize==sizeof(krbcompatmech) &&
 			!bytestring::compare(reqmech,
 				krbcompatmech,sizeof(krbcompatmech))) {
 		negotiatedmech=MECH_KRBCOMPAT;
@@ -3031,17 +3031,17 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(
 
 	// trailer...
 	const byte_t	*trailer=ptr;
-	uint16_t	trailerlength=end-trailer;
+	uint16_t	trailersize=end-trailer;
 	if (getDebug()) {
 		stdoutput.write("		trailer:\n");
-		debugHexDump(trailer,trailerlength);
+		debugHexDump(trailer,trailersize);
 		stdoutput.write('\n');
 	}
 
 	// return next parcel
-	*parcelout=parceldata+parceldatalength;
+	*parcelout=parceldata+parceldatasize;
 
-	debugParcelEnd(parceldata,parceldatalength);
+	debugParcelEnd(parceldata,parceldatasize);
 
 	return true;
 }
@@ -3177,9 +3177,9 @@ bool sqlrprotocol_teradata::parseSsoParcel(const byte_t *parcel,
 	// parse parcel header
 	uint16_t	parcelflavor;
 	const byte_t	*parceldata;
-	uint32_t	parceldatalength;
+	uint32_t	parceldatasize;
 	parseParcelHeader(parcel,&parcelflavor,
-					&parceldatalength,
+					&parceldatasize,
 					&parceldata);
 	if (parcelflavor!=132) {
 		unexpectedParcel(parcelflavor);
@@ -3187,11 +3187,11 @@ bool sqlrprotocol_teradata::parseSsoParcel(const byte_t *parcel,
 		return false;
 	}
 
-	debugParcelStart("recv","sso",parcelflavor,parceldatalength);
+	debugParcelStart("recv","sso",parcelflavor,parceldatasize);
 
 	// parse parcel data
 	const byte_t	*ptr=parceldata;
-	//const byte_t	*end=parceldata+parceldatalength;
+	//const byte_t	*end=parceldata+parceldatasize;
 
 	uint16_t	unknown1;
 	byte_t		unknown2;
@@ -3202,8 +3202,8 @@ bool sqlrprotocol_teradata::parseSsoParcel(const byte_t *parcel,
 	ptr+=17;
 
 	uint16_t	clientpubkeysize=sizeof(clientpubkey);
-	if (clientpubkeysize>parceldata+parceldatalength-ptr) {
-		clientpubkeysize=parceldata+parceldatalength-ptr;
+	if (clientpubkeysize>parceldata+parceldatasize-ptr) {
+		clientpubkeysize=parceldata+parceldatasize-ptr;
 	}
 	read(ptr,clientpubkey,clientpubkeysize,&ptr);
 
@@ -3226,9 +3226,9 @@ bool sqlrprotocol_teradata::parseSsoParcel(const byte_t *parcel,
 					"(shorter than expected)\n");
 		}
 		debugHexDump(clientpubkey,clientpubkeysize);
-		if (ptr!=parceldata+parceldatalength) {
+		if (ptr!=parceldata+parceldatasize) {
 			stdoutput.printf("		trailing bytes:\n");
-			debugHexDump(ptr,parceldata+parceldatalength-ptr);
+			debugHexDump(ptr,parceldata+parceldatasize-ptr);
 		}
 		if (passthroughmode!=PASSTHROUGHMODE_ENABLED) {
 			stdoutput.printf("		"
@@ -3241,9 +3241,9 @@ bool sqlrprotocol_teradata::parseSsoParcel(const byte_t *parcel,
 	}
 
 	// return next parcel
-	*parcelout=parceldata+parceldatalength;
+	*parcelout=parceldata+parceldatasize;
 
-	debugParcelEnd(parceldata,parceldatalength);
+	debugParcelEnd(parceldata,parceldatasize);
 
 	return true;
 }
@@ -3255,9 +3255,9 @@ bool sqlrprotocol_teradata::parseLogoffParcel(
 	// parse parcel header
 	uint16_t	parcelflavor;
 	const byte_t	*parceldata;
-	uint32_t	parceldatalength;
+	uint32_t	parceldatasize;
 	parseParcelHeader(parcel,&parcelflavor,
-					&parceldatalength,
+					&parceldatasize,
 					&parceldata);
 	if (parcelflavor!=37) {
 		unexpectedParcel(parcelflavor);
@@ -3265,14 +3265,14 @@ bool sqlrprotocol_teradata::parseLogoffParcel(
 		return false;
 	}
 
-	debugParcelStart("recv","logoff",parcelflavor,parceldatalength);
+	debugParcelStart("recv","logoff",parcelflavor,parceldatasize);
 
 	// no parcel data to parse
 
 	// return next parcel
-	*parcelout=parceldata+parceldatalength;
+	*parcelout=parceldata+parceldatasize;
 
-	debugParcelEnd(parceldata,parceldatalength);
+	debugParcelEnd(parceldata,parceldatasize);
 
 	return true;
 }
@@ -3284,9 +3284,9 @@ bool sqlrprotocol_teradata::parseOptionsParcel(
 	// parse parcel header
 	uint16_t	parcelflavor;
 	const byte_t	*parceldata;
-	uint32_t	parceldatalength;
+	uint32_t	parceldatasize;
 	parseParcelHeader(parcel,&parcelflavor,
-					&parceldatalength,
+					&parceldatasize,
 					&parceldata);
 	if (parcelflavor!=85) {
 		unexpectedParcel(parcelflavor);
@@ -3294,7 +3294,7 @@ bool sqlrprotocol_teradata::parseOptionsParcel(
 		return false;
 	}
 
-	debugParcelStart("recv","options",parcelflavor,parceldatalength);
+	debugParcelStart("recv","options",parcelflavor,parceldatasize);
 
 	// get a request
 	req=new request(cont->getConfig()->getMaxBindCount());
@@ -3325,28 +3325,28 @@ bool sqlrprotocol_teradata::parseOptionsParcel(
 	read(ptr,&req->maxdecprec,&ptr);
 	read(ptr,&req->identitycolumnretrieval,&ptr);
 	read(ptr,&req->dynamicresultsets,&ptr);
-	if (parceldatalength>10) {
+	if (parceldatasize>10) {
 		read(ptr,&req->spreturnresult,&ptr);
 	}
-	if (parceldatalength>11) {
+	if (parceldatasize>11) {
 		read(ptr,&req->periodstructon,&ptr);
 	}
-	if (parceldatalength>12) {
+	if (parceldatasize>12) {
 		read(ptr,&req->columninfo,&ptr);
 	}
-	if (parceldatalength>13) {
+	if (parceldatasize>13) {
 		read(ptr,&req->trustedsessions,&ptr);
 	}
-	if (parceldatalength>14) {
+	if (parceldatasize>14) {
 		read(ptr,&req->multistatementerrors,&ptr);
 	}
-	if (parceldatalength>15) {
+	if (parceldatasize>15) {
 		read(ptr,&req->arraytransformsoff,&ptr);
 	}
-	if (parceldatalength>16) {
+	if (parceldatasize>16) {
 		read(ptr,&req->xmlresponseformat,&ptr);
 	}
-	if (parceldatalength>17) {
+	if (parceldatasize>17) {
 		read(ptr,&req->tasmfastfailreq,&ptr);
 	}
 
@@ -3354,8 +3354,8 @@ bool sqlrprotocol_teradata::parseOptionsParcel(
 	if (getDebug()) {
 		stdoutput.printf("		flavor: %d\n",
 							parcelflavor);
-		stdoutput.printf("		data length: %d\n",
-							parceldatalength);
+		stdoutput.printf("		data size: %d\n",
+							parceldatasize);
 		stdoutput.printf("		cursor id: %d\n",
 							(req->cur)?
 							req->cur->getId():-1);
@@ -3426,9 +3426,9 @@ bool sqlrprotocol_teradata::parseOptionsParcel(
 	}
 
 	// return next parcel
-	*parcelout=parceldata+parceldatalength;
+	*parcelout=parceldata+parceldatasize;
 
-	debugParcelEnd(parceldata,parceldatalength);
+	debugParcelEnd(parceldata,parceldatasize);
 
 	return true;
 }
@@ -3440,9 +3440,9 @@ bool sqlrprotocol_teradata::parseGenericReqParcel(
 	// parse parcel header
 	uint16_t	parcelflavor;
 	const byte_t	*parceldata;
-	uint32_t	parceldatalength;
+	uint32_t	parceldatasize;
 	parseParcelHeader(parcel,&parcelflavor,
-					&parceldatalength,
+					&parceldatasize,
 					&parceldata);
 	if (parcelflavor!=1 && parcelflavor!=13 &&
 			parcelflavor!=69 && parcelflavor!=148) {
@@ -3455,15 +3455,15 @@ bool sqlrprotocol_teradata::parseGenericReqParcel(
 			((parcelflavor==1)?"req":
 			((parcelflavor==13)?"fmreq":
 			((parcelflavor==69)?"indicreq":"multipartrequest"))),
-			parcelflavor,parceldatalength);
+			parcelflavor,parceldatasize);
 
 	// parse parcel data
-	req->querylen=parceldatalength;
+	req->querylen=parceldatasize;
 	req->query=(char *)parceldata;
 
 	// debug
 	if (getDebug()) {
-		stdoutput.printf("		raw query length: %d\n",
+		stdoutput.printf("		raw query size: %d\n",
 							req->querylen);
 		stdoutput.printf("		raw query: (%d) %.*s\n",
 							process::getProcessId(),
@@ -3488,7 +3488,7 @@ if (req->querylen>11 && !charstring::compareIgnoringCase(
 
 	// debug
 	if (getDebug()) {
-		stdoutput.printf("		query length: %d\n",
+		stdoutput.printf("		query size: %d\n",
 							req->querylen);
 		stdoutput.printf("		query: %.*s\n",
 							req->querylen,
@@ -3496,9 +3496,9 @@ if (req->querylen>11 && !charstring::compareIgnoringCase(
 	}
 
 	// return next parcel
-	*parcelout=parceldata+parceldatalength;
+	*parcelout=parceldata+parceldatasize;
 
-	debugParcelEnd(parceldata,parceldatalength);
+	debugParcelEnd(parceldata,parceldatasize);
 
 	return true;
 }
@@ -3654,7 +3654,7 @@ void sqlrprotocol_teradata::parseUsing() {
 			inbind->type=SQLRSERVERBINDVARTYPE_NEWLINE;
 		}
 
-		// get length
+		// get size
 		if (*bv=='(') {
 
 			// skip (
@@ -3744,9 +3744,9 @@ bool sqlrprotocol_teradata::parseGenericRunStartupParcel(
 	// parse parcel header
 	uint16_t	parcelflavor;
 	const byte_t	*parceldata;
-	uint32_t	parceldatalength;
+	uint32_t	parceldatasize;
 	parseParcelHeader(parcel,&parcelflavor,
-					&parceldatalength,
+					&parceldatasize,
 					&parceldata);
 	if (parcelflavor!=2 && parcelflavor!=14) {
 		unexpectedParcel(parcelflavor);
@@ -3756,15 +3756,15 @@ bool sqlrprotocol_teradata::parseGenericRunStartupParcel(
 
 	debugParcelStart("recv",
 			(parcelflavor==2)?"runstartup":"fmrunstartup",
-			parcelflavor,parceldatalength);
+			parcelflavor,parceldatasize);
 
 	// no parcel data to parse
 	req->runstartup=true;
 
 	// return next parcel
-	*parcelout=parceldata+parceldatalength;
+	*parcelout=parceldata+parceldatasize;
 
-	debugParcelEnd(parceldata,parceldatalength);
+	debugParcelEnd(parceldata,parceldatasize);
 
 	return true;
 }
@@ -3776,9 +3776,9 @@ bool sqlrprotocol_teradata::parseGenericRespParcel(
 	// parse parcel header
 	uint16_t	parcelflavor;
 	const byte_t	*parceldata;
-	uint32_t	parceldatalength;
+	uint32_t	parceldatasize;
 	parseParcelHeader(parcel,&parcelflavor,
-					&parceldatalength,
+					&parceldatasize,
 					&parceldata);
 	if (parcelflavor!=4 && parcelflavor!=153 && parcelflavor!=154) {
 		unexpectedParcel(parcelflavor);
@@ -3789,7 +3789,7 @@ bool sqlrprotocol_teradata::parseGenericRespParcel(
 	debugParcelStart("recv",
 			(parcelflavor==4)?"resp":
 			((parcelflavor==153)?"bigpresp":"bigkeepresp"),
-			parcelflavor,parceldatalength);
+			parcelflavor,parceldatasize);
 
 	// parse parcel data...
 	if (parcelflavor==4) {
@@ -3805,9 +3805,9 @@ bool sqlrprotocol_teradata::parseGenericRespParcel(
 	}
 
 	// return next parcel
-	*parcelout=parceldata+parceldatalength;
+	*parcelout=parceldata+parceldatasize;
 
-	debugParcelEnd(parceldata,parceldatalength);
+	debugParcelEnd(parceldata,parceldatasize);
 
 	return true;
 }
@@ -3818,9 +3818,9 @@ bool sqlrprotocol_teradata::isBulkLoadData(const byte_t *parcel) {
 	// method is called) the message must be data for a bulk load
 	uint16_t	parcelflavor;
 	const byte_t	*parceldata;
-	uint32_t	parceldatalength;
+	uint32_t	parceldatasize;
 	parseParcelHeader(parcel,&parcelflavor,
-					&parceldatalength,
+					&parceldatasize,
 					&parceldata);
 	return (parcelflavor==3);
 }
@@ -3832,9 +3832,9 @@ bool sqlrprotocol_teradata::parseSetPositionParcel(
 	// parse parcel header
 	uint16_t	parcelflavor;
 	const byte_t	*parceldata;
-	uint32_t	parceldatalength;
+	uint32_t	parceldatasize;
 	parseParcelHeader(parcel,&parcelflavor,
-					&parceldatalength,
+					&parceldatasize,
 					&parceldata);
 	if (parcelflavor!=157) {
 		unexpectedParcel(parcelflavor);
@@ -3842,13 +3842,13 @@ bool sqlrprotocol_teradata::parseSetPositionParcel(
 		return false;
 	}
 
-	debugParcelStart("recv","setposition",parcelflavor,parceldatalength);
+	debugParcelStart("recv","setposition",parcelflavor,parceldatasize);
 
 	// we may want to set the position later
 	req->setposition=true;
 
 	// return next parcel
-	*parcelout=parceldata+parceldatalength;
+	*parcelout=parceldata+parceldatasize;
 
 	debugParcelEnd();
 
@@ -3862,9 +3862,9 @@ bool sqlrprotocol_teradata::parseDataParcel(
 	// parse parcel header
 	uint16_t	parcelflavor;
 	const byte_t	*parceldata;
-	uint32_t	parceldatalength;
+	uint32_t	parceldatasize;
 	parseParcelHeader(parcel,&parcelflavor,
-					&parceldatalength,
+					&parceldatasize,
 					&parceldata);
 	if (parcelflavor!=3) {
 		unexpectedParcel(parcelflavor);
@@ -3872,12 +3872,12 @@ bool sqlrprotocol_teradata::parseDataParcel(
 		return false;
 	}
 
-	debugParcelStart("recv","data",parcelflavor,parceldatalength);
+	debugParcelStart("recv","data",parcelflavor,parceldatasize);
 
 	if (passthroughmode==PASSTHROUGHMODE_ENABLED) {
-		debugHexDump(parceldata,parceldatalength);
+		debugHexDump(parceldata,parceldatasize);
 		debugParcelEnd();
-		*parcelout=parceldata+parceldatalength;
+		*parcelout=parceldata+parceldatasize;
 		return true;
 	}
 
@@ -4000,7 +4000,7 @@ bool sqlrprotocol_teradata::parseDataParcel(
 	req->bindvals=true;
 
 	// return next parcel
-	*parcelout=parceldata+parceldatalength;
+	*parcelout=parceldata+parceldatasize;
 
 	debugParcelEnd();
 
@@ -4294,9 +4294,9 @@ bool sqlrprotocol_teradata::parseStatementInfoParcel(
 	// parse parcel header
 	uint16_t	parcelflavor;
 	const byte_t	*parceldata;
-	uint32_t	parceldatalength;
+	uint32_t	parceldatasize;
 	parseParcelHeader(parcel,&parcelflavor,
-					&parceldatalength,
+					&parceldatasize,
 					&parceldata);
 	if (parcelflavor!=169) {
 		unexpectedParcel(parcelflavor);
@@ -4304,14 +4304,14 @@ bool sqlrprotocol_teradata::parseStatementInfoParcel(
 		return false;
 	}
 
-	debugParcelStart("recv","169",parcelflavor,parceldatalength);
+	debugParcelStart("recv","169",parcelflavor,parceldatasize);
 
-	parseStatementInfoExtensions(parceldata,parceldatalength);
+	parseStatementInfoExtensions(parceldata,parceldatasize);
 
 	// return next parcel
-	*parcelout=parceldata+parceldatalength;
+	*parcelout=parceldata+parceldatasize;
 
-	debugParcelEnd(parceldata,parceldatalength);
+	debugParcelEnd(parceldata,parceldatasize);
 
 	return true;
 }
@@ -4335,7 +4335,7 @@ bool sqlrprotocol_teradata::parseStatementInfoExtensions(
 
 		// PBTILOUT - layout
 		// PBTIID - extension
-		// PBTILEN - length
+		// PBTILEN - size
 		uint16_t	pbtilout;
 		uint16_t	pbtiid;
 		uint16_t	pbtilen;
@@ -4356,7 +4356,7 @@ bool sqlrprotocol_teradata::parseStatementInfoExtensions(
 			stdoutput.printf("			"
 					"extension: %d\n",pbtiid);
 			stdoutput.printf("			"
-					"length: %d\n",pbtilen);
+					"size: %d\n",pbtilen);
 			debugHexDump(ext,pbtilen);
 			debugEnd(2);
 		}
@@ -4379,7 +4379,7 @@ bool sqlrprotocol_teradata::parseParameterExtension(
 						uint32_t extlen,
 						uint16_t ibcount) {
 
-	// apparently one of these with a zero-length
+	// apparently one of these with a zero-size
 	// means that its the end of the parameters
 	if (!extlen) {
 		return true;
@@ -4547,9 +4547,9 @@ bool sqlrprotocol_teradata::parseStatementInfoEndParcel(
 	// parse parcel header
 	uint16_t	parcelflavor;
 	const byte_t	*parceldata;
-	uint32_t	parceldatalength;
+	uint32_t	parceldatasize;
 	parseParcelHeader(parcel,&parcelflavor,
-					&parceldatalength,
+					&parceldatasize,
 					&parceldata);
 	if (parcelflavor!=170) {
 		unexpectedParcel(parcelflavor);
@@ -4557,14 +4557,14 @@ bool sqlrprotocol_teradata::parseStatementInfoEndParcel(
 		return false;
 	}
 
-	debugParcelStart("recv","170",parcelflavor,parceldatalength);
+	debugParcelStart("recv","170",parcelflavor,parceldatasize);
 
 	// no parcel data to parse
 
 	// return next parcel
-	*parcelout=parceldata+parceldatalength;
+	*parcelout=parceldata+parceldatasize;
 
-	debugParcelEnd(parceldata,parceldatalength);
+	debugParcelEnd(parceldata,parceldatasize);
 
 	return true;
 }
@@ -4576,9 +4576,9 @@ bool sqlrprotocol_teradata::parseMultipartIndicDataParcel(
 	// parse parcel header
 	uint16_t	parcelflavor;
 	const byte_t	*parceldata;
-	uint32_t	parceldatalength;
+	uint32_t	parceldatasize;
 	parseParcelHeader(parcel,&parcelflavor,
-					&parceldatalength,
+					&parceldatasize,
 					&parceldata);
 	if (parcelflavor!=142) {
 		unexpectedParcel(parcelflavor);
@@ -4586,7 +4586,7 @@ bool sqlrprotocol_teradata::parseMultipartIndicDataParcel(
 		return false;
 	}
 
-	debugParcelStart("recv","142",parcelflavor,parceldatalength);
+	debugParcelStart("recv","142",parcelflavor,parceldatasize);
 
 	// parse parcel data...
 	const byte_t	*ptr=parceldata;
@@ -4701,9 +4701,9 @@ bool sqlrprotocol_teradata::parseMultipartIndicDataParcel(
 	req->bindvals=true;
 
 	// return next parcel
-	*parcelout=parceldata+parceldatalength;
+	*parcelout=parceldata+parceldatasize;
 
-	debugParcelEnd(parceldata,parceldatalength);
+	debugParcelEnd(parceldata,parceldatasize);
 
 	return true;
 }
@@ -4715,9 +4715,9 @@ bool sqlrprotocol_teradata::parseEndMultipartIndicDataParcel(
 	// parse parcel header
 	uint16_t	parcelflavor;
 	const byte_t	*parceldata;
-	uint32_t	parceldatalength;
+	uint32_t	parceldatasize;
 	parseParcelHeader(parcel,&parcelflavor,
-					&parceldatalength,
+					&parceldatasize,
 					&parceldata);
 	if (parcelflavor!=143) {
 		unexpectedParcel(parcelflavor);
@@ -4725,14 +4725,14 @@ bool sqlrprotocol_teradata::parseEndMultipartIndicDataParcel(
 		return false;
 	}
 
-	debugParcelStart("recv","143",parcelflavor,parceldatalength);
+	debugParcelStart("recv","143",parcelflavor,parceldatasize);
 
 	// no parcel data to parse
 
 	// return next parcel
-	*parcelout=parceldata+parceldatalength;
+	*parcelout=parceldata+parceldatasize;
 
-	debugParcelEnd(parceldata,parceldatalength);
+	debugParcelEnd(parceldata,parceldatasize);
 
 	return true;
 }
@@ -4743,9 +4743,9 @@ bool sqlrprotocol_teradata::parse215Parcel(const byte_t *parcel,
 	// parse parcel header
 	uint16_t	parcelflavor;
 	const byte_t	*parceldata;
-	uint32_t	parceldatalength;
+	uint32_t	parceldatasize;
 	parseParcelHeader(parcel,&parcelflavor,
-					&parceldatalength,
+					&parceldatasize,
 					&parceldata);
 	if (parcelflavor!=215) {
 		unexpectedParcel(parcelflavor);
@@ -4753,7 +4753,7 @@ bool sqlrprotocol_teradata::parse215Parcel(const byte_t *parcel,
 		return false;
 	}
 
-	debugParcelStart("recv","215",parcelflavor,parceldatalength);
+	debugParcelStart("recv","215",parcelflavor,parceldatasize);
 
 	// FIXME: parse parcel data
 	if (getDebug()) {
@@ -4761,9 +4761,9 @@ bool sqlrprotocol_teradata::parse215Parcel(const byte_t *parcel,
 	}
 
 	// return next parcel
-	*parcelout=parceldata+parceldatalength;
+	*parcelout=parceldata+parceldatasize;
 
-	debugParcelEnd(parceldata,parceldatalength);
+	debugParcelEnd(parceldata,parceldatasize);
 
 	return true;
 }
@@ -4866,9 +4866,9 @@ bool sqlrprotocol_teradata::parseCancelParcel(const byte_t *parcel,
 	// parse parcel header
 	uint16_t	parcelflavor;
 	const byte_t	*parceldata;
-	uint32_t	parceldatalength;
+	uint32_t	parceldatasize;
 	parseParcelHeader(parcel,&parcelflavor,
-					&parceldatalength,
+					&parceldatasize,
 					&parceldata);
 	if (parcelflavor!=7) {
 		unexpectedParcel(parcelflavor);
@@ -4876,12 +4876,12 @@ bool sqlrprotocol_teradata::parseCancelParcel(const byte_t *parcel,
 		return false;
 	}
 
-	debugParcelStart("recv","cancel",parcelflavor,parceldatalength);
+	debugParcelStart("recv","cancel",parcelflavor,parceldatasize);
 
 	// return next parcel
-	*parcelout=parceldata+parceldatalength;
+	*parcelout=parceldata+parceldatasize;
 
-	debugParcelEnd(parceldata,parceldatalength);
+	debugParcelEnd(parceldata,parceldatasize);
 
 	return true;
 }
@@ -4899,41 +4899,41 @@ bool sqlrprotocol_teradata::parseGenericParcel(const byte_t *parcel,
 	// parse parcel header
 	uint16_t	parcelflavor;
 	const byte_t	*parceldata;
-	uint32_t	parceldatalength;
+	uint32_t	parceldatasize;
 	parseParcelHeader(parcel,&parcelflavor,
-					&parceldatalength,
+					&parceldatasize,
 					&parceldata);
 
-	debugParcelStart("recv","generic",parcelflavor,parceldatalength);
+	debugParcelStart("recv","generic",parcelflavor,parceldatasize);
 
 	// return next parcel
-	*parcelout=parceldata+parceldatalength;
+	*parcelout=parceldata+parceldatasize;
 
-	debugParcelEnd(parceldata,parceldatalength);
+	debugParcelEnd(parceldata,parceldatasize);
 
 	return true;
 }
 
 void sqlrprotocol_teradata::appendParcelHeader(uint16_t flavor,
-						uint32_t datalength) {
-	if (datalength>=65536) {
-		appendLargeParcelHeader(flavor,datalength);
+						uint32_t datasize) {
+	if (datasize>=65536) {
+		appendLargeParcelHeader(flavor,datasize);
 	} else {
-		appendSmallParcelHeader(flavor,datalength);
+		appendSmallParcelHeader(flavor,datasize);
 	}
 }
 
 void sqlrprotocol_teradata::appendLargeParcelHeader(uint16_t flavor,
-							uint32_t datalength) {
+							uint32_t datasize) {
 	write(&respdata,(uint16_t)(flavor|0x8000));
 	write(&respdata,(uint16_t)0);
-	write(&respdata,(uint32_t)(2+2+4+datalength));
+	write(&respdata,(uint32_t)(2+2+4+datasize));
 }
 
 void sqlrprotocol_teradata::appendSmallParcelHeader(uint16_t flavor,
-							uint32_t datalength) {
+							uint32_t datasize) {
 	write(&respdata,flavor);
-	write(&respdata,(uint16_t)(2+2+datalength));
+	write(&respdata,(uint16_t)(2+2+datasize));
 }
 
 void sqlrprotocol_teradata::appendParcelHeader(uint16_t flavor) {
@@ -5987,7 +5987,7 @@ void sqlrprotocol_teradata::appendSsoResponseParcel() {
 	byte_t		marker[]={
 		0x00, 0x00, 0x01, 0x00
 	};
-	uint16_t	postmarkerlength=950;
+	uint16_t	postmarkersize=950;
 	byte_t		unknown[]={
 		0x03, 0x02, 0x01, 0x01, 0x00, 0x00, 0x03, 0xA6,
 		0x00, 0x00, 0x00, 0x15, 0x00, 0x00, 0x00, 0x00,
@@ -6007,7 +6007,7 @@ void sqlrprotocol_teradata::appendSsoResponseParcel() {
 #endif
 
 	write(&respdata,marker,sizeof(marker));
-	write(&respdata,postmarkerlength);
+	write(&respdata,postmarkersize);
 	write(&respdata,unknown,sizeof(unknown));
 	write(&respdata,dhp,sizeof(dhp));
 	write(&respdata,dhg,sizeof(dhg));
@@ -6176,8 +6176,8 @@ void sqlrprotocol_teradata::appendSuccessParcel() {
 	// activity type
 	uint16_t	activity=(req)?req->activity:0;
 
-	// warning length (always 0 as SQL Relay doesn't support warnings)
-	uint16_t	warninglength=0;
+	// warning size (always 0 as SQL Relay doesn't support warnings)
+	uint16_t	warningsize=0;
 
 	// warning message (always empty as SQL Relay doesn't support warnings)
 	const char	*warning="";
@@ -6194,10 +6194,10 @@ void sqlrprotocol_teradata::appendSuccessParcel() {
 							fieldcount);
 		stdoutput.printf("		activity: %d\n",
 							activity);
-		stdoutput.printf("		warning length: %d\n",
-							warninglength);
+		stdoutput.printf("		warning size: %d\n",
+							warningsize);
 		stdoutput.printf("		warning: %.*s\n",
-							warninglength,warning);
+							warningsize,warning);
 	}
 	debugParcelEnd();
 
@@ -6213,8 +6213,8 @@ void sqlrprotocol_teradata::appendSuccessParcel() {
 	write(&respdata,warningcode);
 	write(&respdata,fieldcount);
 	write(&respdata,activity);
-	write(&respdata,warninglength);
-	write(&respdata,warning,warninglength);
+	write(&respdata,warningsize);
+	write(&respdata,warning,warningsize);
 
 	// "slack" bytes
 	write(&respdata,(uint16_t)0);
@@ -6372,7 +6372,7 @@ void sqlrprotocol_teradata::appendFieldColumnParcels() {
 	for (uint16_t i=0; i<colcount; i++) {
 		appendFieldParcel(
 			cont->getColumnName(req->cur,i),
-			cont->getColumnNameLength(req->cur,i));
+			cont->getColumnNameSize(req->cur,i));
 	}
 	appendTitleEndParcel();
 
@@ -6387,10 +6387,10 @@ void sqlrprotocol_teradata::appendFieldColumnParcels() {
 	}
 	appendFormatEndParcel();
 
-	// column lengths...
+	// column sizes...
 	appendSizeStartParcel();
 	for (uint16_t i=0; i<colcount; i++) {
-		appendSizeParcel(cont->getColumnLength(req->cur,i));
+		appendSizeParcel(cont->getColumnSize(req->cur,i));
 	}
 	appendSizeEndParcel();
 }
@@ -6404,7 +6404,7 @@ void sqlrprotocol_teradata::getFieldFormat(bytebuffer *fieldformat,
 		!charstring::compare(type,"SMALLINT") ||
 		!charstring::compare(type,"INTEGER")) {
 		fieldformat->printf("-(%d)9",
-				cont->getColumnLength(req->cur,col));
+				cont->getColumnSize(req->cur,col));
 	} else if (!charstring::compare(type,"DECIMAL")) {
 		uint16_t	prec=cont->getColumnPrecision(req->cur,col);
 		uint16_t	scale=cont->getColumnScale(req->cur,col);
@@ -6433,7 +6433,7 @@ void sqlrprotocol_teradata::getFieldFormat(bytebuffer *fieldformat,
 	} else {
 		// fall back to char/varchar
 		fieldformat->printf("X(%d)",
-				cont->getColumnLength(req->cur,col));
+				cont->getColumnSize(req->cur,col));
 	}
 }
 
@@ -6465,16 +6465,16 @@ void sqlrprotocol_teradata::appendDataInfoParcel() {
 		uint16_t	type=getColumnType(i);
 		write(&respdata,type);
 
-		// length
-		uint16_t	length=cont->getColumnLength(req->cur,i);
-		write(&respdata,length);
+		// size
+		uint16_t	size=cont->getColumnSize(req->cur,i);
+		write(&respdata,size);
 
 		if (getDebug()) {
 			stdoutput.printf("		field %d {\n",i);
 			stdoutput.printf("		"
 					"	type: %d\n",type);
 			stdoutput.printf("		"
-					"	length: %d\n",length);
+					"	size: %d\n",size);
 			stdoutput.printf("		}\n");
 		}
 	}
@@ -6552,7 +6552,7 @@ void sqlrprotocol_teradata::appendQueryExtension(uint16_t col) {
 	// PBTIID - query
 	write(&respdata,(uint16_t)2);
 	// PBTILEN
-	size_t	lengthpos=respdata.getPosition();
+	size_t	sizepos=respdata.getPosition();
 	write(&respdata,(uint16_t)0);
 
 	// data...
@@ -6565,12 +6565,12 @@ void sqlrprotocol_teradata::appendQueryExtension(uint16_t col) {
 
 	// PBTIFTB
 	// table name
-	uint16_t	pbtiftblen=cont->getColumnTableLength(req->cur,col);
+	uint16_t	pbtiftblen=cont->getColumnTableSize(req->cur,col);
 	const char	*pbtiftb=cont->getColumnTable(req->cur,col);
 
 	// PBTIFCN
 	// column name
-	uint16_t	pbtifcnlen=cont->getColumnNameLength(req->cur,col);
+	uint16_t	pbtifcnlen=cont->getColumnNameSize(req->cur,col);
 	const char	*pbtifcn=cont->getColumnName(req->cur,col);
 
 	// PBTIFCP
@@ -6579,12 +6579,12 @@ void sqlrprotocol_teradata::appendQueryExtension(uint16_t col) {
 
 	// PBTIFAN
 	// alias (FIXME: we don't know this, as opposed to name)
-	uint16_t	pbtifanlen=cont->getColumnNameLength(req->cur,col);
+	uint16_t	pbtifanlen=cont->getColumnNameSize(req->cur,col);
 	const char	*pbtifan=cont->getColumnName(req->cur,col);
 
 	// PBTIFT
 	// column "title" (FIXME: we don't know this, as opposed to name)
-	uint16_t	pbtiftlen=cont->getColumnNameLength(req->cur,col);
+	uint16_t	pbtiftlen=cont->getColumnNameSize(req->cur,col);
 	const char	*pbtift=cont->getColumnName(req->cur,col);
 
 	// PBTIFF
@@ -6642,7 +6642,7 @@ void sqlrprotocol_teradata::appendQueryExtension(uint16_t col) {
 
 	// PBTIFTY
 	// type name
-	uint16_t	pbtiftylen=getColumnTypeNameLength(col);
+	uint16_t	pbtiftylen=getColumnTypeNameSize(col);
 	const char	*pbtifty=getColumnTypeName(col);
 
 	// PBTIFMI
@@ -6651,7 +6651,7 @@ void sqlrprotocol_teradata::appendQueryExtension(uint16_t col) {
 
 	// PBTIFMDL
 	// byte length
-	uint64_t	pbtifmdl=cont->getColumnLength(req->cur,col);
+	uint64_t	pbtifmdl=cont->getColumnSize(req->cur,col);
 
 	// PBTIFND
 	// precision
@@ -6694,7 +6694,7 @@ void sqlrprotocol_teradata::appendQueryExtension(uint16_t col) {
 				cont->isUnsignedType(type) ||
 				cont->isBinaryType(type) ||
 				cont->isDateTimeType(type))?
-				0:cont->getColumnLength(req->cur,col);
+				0:cont->getColumnSize(req->cur,col);
 
 	// PBTIFCS
 	// case sensitive (FIXME: we don't know this)
@@ -6908,7 +6908,7 @@ void sqlrprotocol_teradata::appendQueryExtension(uint16_t col) {
 
 	// backpatch length
 	size_t	endpos=respdata.getPosition();
-	respdata.setPositionRelativeToBeginning(lengthpos);
+	respdata.setPositionRelativeToBeginning(sizepos);
 	respdata.write(hostTo((uint16_t)(endpos-startpos)));
 	respdata.setPositionRelativeToBeginning(endpos);
 }
@@ -6957,24 +6957,24 @@ void sqlrprotocol_teradata::appendRowParcels(bool *eors) {
 		for (uint16_t i=0; i<colcount; i++) {
 
 			const char	*field=NULL;
-			uint64_t	fieldlength=0;
+			uint64_t	fieldsize=0;
 			bool		blob=false;
 			bool		null=false;
 			if (!cont->getField(req->cur,i,
-						&field,&fieldlength,
+						&field,&fieldsize,
 						&blob,&null)) {
 				// FIXME: handle error
 			}
 
 			// bail if appending this field would be too much
-			if (respdata.getSize()+fieldlength>maxmessagesize) {
+			if (respdata.getSize()+fieldsize>maxmessagesize) {
 				respdata.truncate(pos);
 				req->resendrow=true;
 				*eors=false;
 				return;
 			}
 
-			appendField(i,field,fieldlength,null);
+			appendField(i,field,fieldsize,null);
 		}
 
 		// FIXME: Somehow we have to know the total row count and send
@@ -7067,7 +7067,7 @@ void sqlrprotocol_teradata::appendRecEndParcel() {
 
 void sqlrprotocol_teradata::appendField(uint16_t col, 
 						const char *field,
-						uint64_t fieldlength,
+						uint64_t fieldsize,
 						bool null) {
 	if (!col) {
 		if (req->requestmode=='F') {
@@ -7081,14 +7081,14 @@ void sqlrprotocol_teradata::appendField(uint16_t col,
 
 	switch (req->requestmode) {
 		case 'F':
-			appendFieldParcel(field,fieldlength);
+			appendFieldParcel(field,fieldsize);
 			break;
 		case 'R':
-			appendRecordModeField(col,field,fieldlength,false);
+			appendRecordModeField(col,field,fieldsize,false);
 			break;
 		case 'I':
 		case 'M':
-			appendIndicatorModeField(col,field,fieldlength,null);
+			appendIndicatorModeField(col,field,fieldsize,null);
 			break;
 	}
 
@@ -7103,7 +7103,7 @@ void sqlrprotocol_teradata::appendField(uint16_t col,
 
 void sqlrprotocol_teradata::appendRecordModeField(uint16_t col, 
 							const char *field,
-							uint64_t fieldlength,
+							uint64_t fieldsize,
 							bool null) {
 
 	// get column type
@@ -7152,12 +7152,12 @@ void sqlrprotocol_teradata::appendRecordModeField(uint16_t col,
 			!charstring::compare(type,"BYTE")) {
 
 		if (null) {
-			uint32_t	len=cont->getColumnLength(req->cur,col);
+			uint32_t	len=cont->getColumnSize(req->cur,col);
 			for (uint32_t i=0; i<len; i++) {
 				write(&req->rowbuffer,' ');
 			}
 		} else {
-			write(&req->rowbuffer,field,fieldlength);
+			write(&req->rowbuffer,field,fieldsize);
 		}
 
 	} else if (!charstring::compare(type,"VARCHAR") ||
@@ -7166,8 +7166,8 @@ void sqlrprotocol_teradata::appendRecordModeField(uint16_t col,
 		if (null) {
 			write(&req->rowbuffer,(uint16_t)0);
 		} else {
-			write(&req->rowbuffer,(uint16_t)fieldlength);
-			write(&req->rowbuffer,field,fieldlength);
+			write(&req->rowbuffer,(uint16_t)fieldsize);
+			write(&req->rowbuffer,field,fieldsize);
 		}
 
 	} else if (!charstring::compare(type,"DECIMAL") ||
@@ -7186,7 +7186,7 @@ void sqlrprotocol_teradata::appendRecordModeField(uint16_t col,
 				write(&req->rowbuffer,(uint64_t)0);
 			}
 		} else {
-			char	*temp=charstring::duplicate(field,fieldlength);
+			char	*temp=charstring::duplicate(field,fieldsize);
 			charstring::bothTrim(temp);
 			charstring::strip(temp,'.');
 			int64_t		val=charstring::convertToInteger(temp);
@@ -7373,7 +7373,7 @@ void sqlrprotocol_teradata::appendRecordModeField(uint16_t col,
 
 void sqlrprotocol_teradata::appendIndicatorModeField(uint16_t col, 
 							const char *field,
-							uint64_t fieldlength,
+							uint64_t fieldsize,
 							bool null) {
 
 	// append to nibuffer
@@ -7387,7 +7387,7 @@ void sqlrprotocol_teradata::appendIndicatorModeField(uint16_t col,
 	req->nibuffer[req->currentfield/8]=ni;
 
 	// append to rowbuffer (also increments currentfield)
-	appendRecordModeField(col,field,fieldlength,null);
+	appendRecordModeField(col,field,fieldsize,null);
 }
 
 void sqlrprotocol_teradata::appendRecordParcel() {
@@ -7442,17 +7442,17 @@ void sqlrprotocol_teradata::appendRecordParcel() {
 }
 
 void sqlrprotocol_teradata::appendFailureParcel(const char *errorstring,
-						uint16_t errorlength) {
+						uint16_t errorsize) {
 
 	debugParcelStart("send","failure",9);
 	if (getDebug()) {
 		stdoutput.printf("		error: %.*s\n",
-						errorlength,errorstring);
+						errorsize,errorstring);
 	}
 	debugParcelEnd();
 
 	// failure parcel
-	appendParcelHeader(9,2+2+2+2+errorlength+2+3);
+	appendParcelHeader(9,2+2+2+2+errorsize+2+3);
 
 	// statement number (FIXME: see note in appendEndStatementParcel)
 	write(&respdata,(uint16_t)1);
@@ -7466,8 +7466,8 @@ void sqlrprotocol_teradata::appendFailureParcel(const char *errorstring,
 	};
 	write(&respdata,code,sizeof(code));
 
-	// length
-	write(&respdata,errorlength);
+	// size
+	write(&respdata,errorsize);
 
 	// msg
 	write(&respdata,errorstring);
@@ -7484,17 +7484,17 @@ void sqlrprotocol_teradata::appendFailureParcel(const char *errorstring,
 
 void sqlrprotocol_teradata::appendErrorParcel(const char *errorstring) {
 
-	uint16_t	errorlength=charstring::getLength(errorstring);
+	uint16_t	errorsize=charstring::getLength(errorstring);
 
 	debugParcelStart("send","error",49);
 	if (getDebug()) {
 		stdoutput.printf("		error: %.*s\n",
-						errorlength,errorstring);
+						errorsize,errorstring);
 	}
 	debugParcelEnd();
 
 	// error parcel...
-	appendParcelHeader(49,6+errorlength+2);
+	appendParcelHeader(49,6+errorsize+2);
 
 	// statement number (FIXME: see note in appendEndStatementParcel)
 	write(&respdata,(uint16_t)1);
@@ -7508,8 +7508,8 @@ void sqlrprotocol_teradata::appendErrorParcel(const char *errorstring) {
 	};
 	write(&respdata,code,sizeof(code));
 
-	// length
-	write(&respdata,errorlength);
+	// size
+	write(&respdata,errorsize);
 
 	// msg
 	write(&respdata,errorstring);
@@ -7552,28 +7552,28 @@ void sqlrprotocol_teradata::appendEndRequestParcel() {
 
 void sqlrprotocol_teradata::appendCursorErrorParcel() {
 	const char	*errorstring;
-	uint32_t	errorlength;
+	uint32_t	errorsize;
 	int64_t		errnum;
 	bool		liveconnection;
 	cont->errorMessage(req->cur,&errorstring,
-					&errorlength,
+					&errorsize,
 					&errnum,
 					&liveconnection);
 	respdata.clear();
-	appendFailureParcel(errorstring,errorlength);
+	appendFailureParcel(errorstring,errorsize);
 }
 
 void sqlrprotocol_teradata::appendConnectionErrorParcel() {
 	const char	*errorstring;
-	uint32_t	errorlength;
+	uint32_t	errorsize;
 	int64_t		errnum;
 	bool		liveconnection;
 	cont->errorMessage(&errorstring,
-				&errorlength,
+				&errorsize,
 				&errnum,
 				&liveconnection);
 	respdata.clear();
-	appendFailureParcel(errorstring,errorlength);
+	appendFailureParcel(errorstring,errorsize);
 }
 
 void sqlrprotocol_teradata::unexpectedParcel(uint16_t parcelflavor) {
@@ -7663,10 +7663,10 @@ const char *sqlrprotocol_teradata::getColumnTypeName(uint16_t col) {
 
 	// Some backends (ODBC) return DATETIME or TIMESTAMP for DATE,
 	// TIME, and TIMESTAMP types.  They are distinguishable by
-	// column length though.
+	// column size though.
 	if (!charstring::compare(type,"TIMESTAMP") ||
 			!charstring::compare(type,"DATETIME")) {
-		uint32_t	len=cont->getColumnLength(req->cur,col);
+		uint32_t	len=cont->getColumnSize(req->cur,col);
 		if (len==10) {
 			type="DATE";
 		} else if (len==15) {
@@ -7676,17 +7676,17 @@ const char *sqlrprotocol_teradata::getColumnTypeName(uint16_t col) {
 	return type;
 }
 
-uint16_t sqlrprotocol_teradata::getColumnTypeNameLength(uint16_t col) {
+uint16_t sqlrprotocol_teradata::getColumnTypeNameSize(uint16_t col) {
 
-	uint16_t	typelen=cont->getColumnTypeNameLength(req->cur,col);
+	uint16_t	typelen=cont->getColumnTypeNameSize(req->cur,col);
 
 	// Some backends (ODBC) return DATETIME or TIMESTAMP for DATE,
 	// TIME, and TIMESTAMP types.  They are distinguishable by
-	// column length though.
+	// column size though.
 	const char	*type=cont->getColumnTypeName(req->cur,col);
 	if (!charstring::compare(type,"TIMESTAMP") ||
 			!charstring::compare(type,"DATETIME")) {
-		uint32_t	len=cont->getColumnLength(req->cur,col);
+		uint32_t	len=cont->getColumnSize(req->cur,col);
 		if (len==10 || len==15) {
 			typelen=4;
 		}
@@ -7888,17 +7888,17 @@ uint16_t sqlrprotocol_teradata::getColumnType(uint16_t col) {
 void sqlrprotocol_teradata::debugParcelStart(const char *direction,
 						const char *flavorname,
 						uint16_t parcelflavor,
-						uint32_t parceldatalength) {
+						uint32_t parceldatasize) {
 	if (getDebug()) {
 		stdoutput.printf("	%s %s parcel - %d (%d) {\n",
-			direction,flavorname,parcelflavor,parceldatalength);
+			direction,flavorname,parcelflavor,parceldatasize);
 	}
 }
 
 void sqlrprotocol_teradata::debugParcelEnd(const byte_t *parceldata,
-						uint32_t parceldatalength) {
+						uint32_t parceldatasize) {
 	if (getDebug()) {
-		debugHexDump(parceldata,parceldatalength);
+		debugHexDump(parceldata,parceldatasize);
 		stdoutput.write("	}\n");
 	}
 }
@@ -7989,7 +7989,7 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 	//   * left x bits of sha256 hash
 	//   * pbkdf2
 	const byte_t	*key=sha2sharedsecret;
-	uint32_t	keylength=sizeof(sha2sharedsecret);
+	uint32_t	keysize=sizeof(sha2sharedsecret);
 	
 	// get the initialization vector
 	//
@@ -8038,9 +8038,9 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 stdoutput.printf("iv:\n");
 debugHexDump(iv,sizeof(iv));
 stdoutput.printf("block size: %d\n",EVP_CIPHER_CTX_block_size(ctx));
-stdoutput.printf("cipher key length: %d\n",EVP_CIPHER_CTX_key_length(ctx));
-stdoutput.printf("provided key length: %d\n",keylength);
-stdoutput.printf("cipher iv length: %d\n",EVP_CIPHER_CTX_iv_length(ctx));
+stdoutput.printf("cipher key size: %d\n",EVP_CIPHER_CTX_key_length(ctx));
+stdoutput.printf("provided key size: %d\n",keysize);
+stdoutput.printf("cipher iv size: %d\n",EVP_CIPHER_CTX_iv_length(ctx));
 stdoutput.printf("enc data size: %d\n",encdatasize);
 
 	// begin decrypting

@@ -40,8 +40,8 @@ const char *sqlrauth_oracle_database::auth(sqlrcredentials *cred) {
 
 	const char	*user=((sqlroraclecredentials *)cred)->getUser();
 	const char	*password=((sqlroraclecredentials *)cred)->getPassword();
-	uint64_t	passwordlength=((sqlroraclecredentials *)cred)->
-							getPasswordLength();
+	uint64_t	passwordsize=((sqlroraclecredentials *)cred)->
+							getPasswordSize();
 	const char	*method=((sqlroraclecredentials *)cred)->getMethod();
 	const char	*extra=((sqlroraclecredentials *)cred)->getExtra();
 
@@ -49,7 +49,7 @@ const char *sqlrauth_oracle_database::auth(sqlrcredentials *cred) {
 		stdoutput.printf("auth %s {\n",method);
 		stdoutput.printf("	user: \"%s\"\n",user);
 		stdoutput.printf("	password: \"");
-		stdoutput.safePrint(password,passwordlength);
+		stdoutput.safePrint(password,passwordsize);
 		stdoutput.printf("\"\n");
 		stdoutput.printf("	method: \"%s\"\n",method);
 		stdoutput.printf("	extra: \"%s\"\n",extra);

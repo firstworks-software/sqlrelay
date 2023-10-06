@@ -51,7 +51,7 @@
 		bool	getAConnection(uint32_t *connectionpid,
 					uint16_t *inetport,
 					char *unixportstr,
-					uint16_t *unixportstrlen,
+					uint16_t *unixportstrsize,
 					filedescriptor *sock,
 					thread *thr);
 		bool	findMatchingSocket(uint32_t connectionpid,

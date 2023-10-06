@@ -230,7 +230,7 @@ bool sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 
 	// get query type
 	const char		*query=sqlrcur->getQueryBuffer();
-	uint32_t		querylen=sqlrcur->getQueryLength();
+	uint32_t		querylen=sqlrcur->getQuerySize();
 	sqlrquerytype_t		querytype=SQLRQUERYTYPE_ETC;
 	linkedlist<char *>	*columns=NULL;
 	linkedlist<char *>	*allcolumns=NULL;
@@ -251,7 +251,7 @@ bool sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 	if (!includeselects && querytype==SQLRQUERYTYPE_SELECT) {
 		if (debug) {
 			stdoutput.printf("ignoring query:\n%.*s\n}\n",
-						sqlrcur->getQueryLength(),
+						sqlrcur->getQuerySize(),
 						sqlrcur->getQueryBuffer());
 		}
 		delete columns;
@@ -557,7 +557,8 @@ void sqlrtrigger_replay::copyBind(memorypool *pool,
 	} else if (source->type==SQLRSERVERBINDVARTYPE_DATE) {
 		dest->value.dateval.tz=
 			(char *)pool->allocate(
-				charstring::getLength(source->value.dateval.tz)+1);
+				charstring::getLength(
+					source->value.dateval.tz)+1);
 		charstring::copy(dest->value.dateval.tz,
 					source->value.dateval.tz);
 		dest->value.dateval.buffer=
@@ -580,7 +581,7 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, bool replaytx) {
 	if (debug) {
 		stdoutput.printf("replay {\n");
 		stdoutput.printf("	triggering query:\n%.*s\n",
-					sqlrcur->getQueryLength(),
+					sqlrcur->getQuerySize(),
 					sqlrcur->getQueryBuffer());
 	}
 
@@ -960,21 +961,21 @@ void sqlrtrigger_replay::logReplayCondition(condition *cond) {
 			for (uint32_t i=0; i<cont->colCount(logcur); i++) {
 
 				const char	*field;
-				uint64_t	fieldlength;
+				uint64_t	fieldsize;
 				bool		blob;
 				bool		null;
 				cont->getField(logcur,i,&field,
-						&fieldlength,&blob,&null);
+						&fieldsize,&blob,&null);
 
 				str.append(cont->getColumnName(logcur,i));
 				str.append(" : ");
-				if (fieldlength>
+				if (fieldsize>
 					(uint64_t)(80-
-					cont->getColumnNameLength(logcur,i)-
+					cont->getColumnNameSize(logcur,i)-
 					4)) {
 					str.append('\n');
 				}
-				str.append(field,fieldlength);
+				str.append(field,fieldsize);
 				str.append('\n');
 			}
 			str.append('\n');

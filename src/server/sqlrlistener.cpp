@@ -1563,7 +1563,7 @@ bool sqlrlistener::handOffOrProxyClient(filedescriptor *sock,
 	uint32_t		connectionpid;
 	uint16_t		inetport;
 	char 			unixportstr[MAXPATHLEN+1];
-	uint16_t		unixportstrlen;
+	uint16_t		unixportstrsize;
 	bool			retval=false;
 
 	// loop in case client doesn't get handed off successfully
@@ -1574,7 +1574,7 @@ bool sqlrlistener::handOffOrProxyClient(filedescriptor *sock,
 		}
 
 		if (!getAConnection(&connectionpid,&inetport,
-					unixportstr,&unixportstrlen,
+					unixportstr,&unixportstrsize,
 					sock,thr)) {
 			// fatal error occurred while getting a connection
 			retval=false;
@@ -1793,7 +1793,7 @@ void sqlrlistener::waitForConnectionToBeReadyForHandoff() {
 bool sqlrlistener::getAConnection(uint32_t *connectionpid,
 					uint16_t *inetport,
 					char *unixportstr,
-					uint16_t *unixportstrlen,
+					uint16_t *unixportstrsize,
 					filedescriptor *sock,
 					thread *thr) {
 

@@ -16,7 +16,7 @@ class SQLRSERVER_DLLSPEC sqlrauth_postgresql_connectstrings : public sqlrauth {
 						domnode *parameters);
 		const char	*auth(sqlrcredentials *cred);
 		bool		compare(const char *suppliedresponse,
-					uint64_t suppliedresponselength,
+					uint64_t suppliedresponsesize,
 					const char *user,
 					const char *validpassword,
 					const char *method,
@@ -95,8 +95,8 @@ const char *sqlrauth_postgresql_connectstrings::auth(sqlrcredentials *cred) {
 		((sqlrpostgresqlcredentials *)cred)->getUser();
 	const char	*password=
 		((sqlrpostgresqlcredentials *)cred)->getPassword();
-	uint64_t	passwordlength=
-		((sqlrpostgresqlcredentials *)cred)->getPasswordLength();
+	uint64_t	passwordsize=
+		((sqlrpostgresqlcredentials *)cred)->getPasswordSize();
 	const char	*method=
 		((sqlrpostgresqlcredentials *)cred)->getMethod();
 	uint32_t		salt=
@@ -106,7 +106,7 @@ const char *sqlrauth_postgresql_connectstrings::auth(sqlrcredentials *cred) {
 		stdoutput.printf("auth %s {\n",method);
 		stdoutput.printf("	user: \"%s\"\n",user);
 		stdoutput.printf("	password: \"");
-		stdoutput.safePrint(password,passwordlength);
+		stdoutput.safePrint(password,passwordsize);
 		stdoutput.printf("\"\n");
 		stdoutput.printf("	method: \"%s\"\n",method);
 		stdoutput.printf("	salt: \"%d\"\n",salt);
@@ -157,7 +157,7 @@ const char *sqlrauth_postgresql_connectstrings::auth(sqlrcredentials *cred) {
 					// compare it to the password
 					// that was passed in
 					retval=compare(password,
-							passwordlength,
+							passwordsize,
 							user,pwd,
 							method,salt);
 
@@ -173,7 +173,7 @@ const char *sqlrauth_postgresql_connectstrings::auth(sqlrcredentials *cred) {
 				// if password encryption isn't being used,
 				// return the user if the passwords match
 				return (compare(password,
-						passwordlength,
+						passwordsize,
 						user,passwords[i],
 						method,salt))?user:NULL;
 			}
@@ -183,7 +183,7 @@ const char *sqlrauth_postgresql_connectstrings::auth(sqlrcredentials *cred) {
 }
 
 bool sqlrauth_postgresql_connectstrings::compare(const char *suppliedresponse,
-						uint64_t suppliedresponselength,
+						uint64_t suppliedresponsesize,
 						const char *user,
 						const char *validpassword,
 						const char *method,
@@ -194,7 +194,7 @@ bool sqlrauth_postgresql_connectstrings::compare(const char *suppliedresponse,
 	// postgresql_cleartext is really simple
 	if (!charstring::compare(method,"postgresql_cleartext")) {
 		expectedresponse.append(suppliedresponse,
-					suppliedresponselength);
+					suppliedresponsesize);
 	} else
 
 	// postgresql_md5 is more complicated...
@@ -234,10 +234,10 @@ bool sqlrauth_postgresql_connectstrings::compare(const char *suppliedresponse,
 		result.append(md2str,charstring::getLength(md2str));
 		delete[] md2str;
 
-		return (result.getSize()==suppliedresponselength) &&
+		return (result.getSize()==suppliedresponsesize) &&
 			!charstring::compare(result.getString(),
 						suppliedresponse,
-						suppliedresponselength);
+						suppliedresponsesize);
 	} else {
 		return false;
 	}
@@ -250,16 +250,16 @@ bool sqlrauth_postgresql_connectstrings::compare(const char *suppliedresponse,
 		stdoutput.printf("\n");
 		stdoutput.printf("	supplied response: ");
 		stdoutput.safePrint(suppliedresponse,
-					suppliedresponselength);
+					suppliedresponsesize);
 		stdoutput.printf("\n");
 		stdoutput.printf("}\n");
 	}
 
 	// compare the expected and supplied response sizes and values
-	return (expectedresponse.getSize()==suppliedresponselength) &&
+	return (expectedresponse.getSize()==suppliedresponsesize) &&
 		!bytestring::compare(expectedresponse.getBuffer(),
 						suppliedresponse,
-						suppliedresponselength);
+						suppliedresponsesize);
 }
 
 extern "C" {

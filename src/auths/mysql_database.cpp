@@ -39,8 +39,8 @@ const char *sqlrauth_mysql_database::auth(sqlrcredentials *cred) {
 
 	const char	*user=((sqlrmysqlcredentials *)cred)->getUser();
 	const char	*password=((sqlrmysqlcredentials *)cred)->getPassword();
-	uint64_t	passwordlength=((sqlrmysqlcredentials *)cred)->
-							getPasswordLength();
+	uint64_t	passwordsize=((sqlrmysqlcredentials *)cred)->
+							getPasswordSize();
 	const char	*method=((sqlrmysqlcredentials *)cred)->getMethod();
 	const char	*extra=((sqlrmysqlcredentials *)cred)->getExtra();
 
@@ -48,7 +48,7 @@ const char *sqlrauth_mysql_database::auth(sqlrcredentials *cred) {
 		stdoutput.printf("auth %s {\n",method);
 		stdoutput.printf("	user: \"%s\"\n",user);
 		stdoutput.printf("	password: \"");
-		stdoutput.safePrint(password,passwordlength);
+		stdoutput.safePrint(password,passwordsize);
 		stdoutput.printf("\"\n");
 		stdoutput.printf("	method: \"%s\"\n",method);
 		stdoutput.printf("	extra: \"%s\"\n",extra);

@@ -62,8 +62,8 @@ class SQLRSERVER_DLLSPEC routerconnection : public sqlrserverconnection {
 		bool		commit();
 		bool		rollback();
 		void		errorMessage(char *errorbuffer,
-						uint32_t errorbufferlength,
-						uint32_t *errorlength,
+						uint32_t errorbuffersize,
+						uint32_t *errorsize,
 						int64_t	*errorcode,
 						bool *liveconnection);
 		const char	*identify();
@@ -130,10 +130,10 @@ class SQLRSERVER_DLLSPEC routercursor : public sqlrservercursor {
 				~routercursor();
 	private:
 		bool		prepareQuery(const char *query,
-						uint32_t length);
+						uint32_t size);
 		void		route(bool *routed, bool *err);
 		bool		supportsNativeBinds(const char *query,
-							uint32_t length);
+							uint32_t size);
 		bool		inputBind(const char *variable, 
 						uint16_t variablesize,
 						const char *value, 
@@ -211,8 +211,8 @@ class SQLRSERVER_DLLSPEC routercursor : public sqlrservercursor {
 		bool		outputBindCursor(const char *variable,
 						uint16_t variablesize,
 						sqlrservercursor *cursor);
-		bool		getLobOutputBindLength(uint16_t index,
-						uint64_t *length);
+		bool		getLobOutputBindSize(uint16_t index,
+						uint64_t *size);
 		bool		getLobOutputBindSegment(uint16_t index,
 						char *buffer,
 						uint64_t buffersize,
@@ -220,10 +220,10 @@ class SQLRSERVER_DLLSPEC routercursor : public sqlrservercursor {
 						uint64_t charstoread,
 						uint64_t *charsread);
 		bool		executeQuery(const char *query,
-						uint32_t length);
+						uint32_t size);
 		void		errorMessage(char *errorbuffer,
-						uint32_t errorbufferlength,
-						uint32_t *errorlength,
+						uint32_t errorbuffersize,
+						uint32_t *errorsize,
 						int64_t	*errorcode,
 						bool *liveconnection);
 		bool		knowsRowCount();
@@ -233,7 +233,7 @@ class SQLRSERVER_DLLSPEC routercursor : public sqlrservercursor {
 		uint16_t	columnTypeFormat();
 		const char	*getColumnName(uint32_t col);
 		const char	*getColumnTypeName(uint32_t col);
-		uint32_t	getColumnLength(uint32_t col);
+		uint32_t	getColumnSize(uint32_t col);
 		uint32_t	getColumnPrecision(uint32_t col);
 		uint32_t	getColumnScale(uint32_t col);
 		uint16_t	getColumnIsNullable(uint32_t col);
@@ -249,7 +249,7 @@ class SQLRSERVER_DLLSPEC routercursor : public sqlrservercursor {
 		bool		fetchRow(bool *error);
 		void		getField(uint32_t col,
 					const char **field,
-					uint64_t *fieldlength,
+					uint64_t *fieldsize,
 					bool *blob,
 					bool *null);
 		void		closeResultSet();
@@ -323,7 +323,7 @@ void routerconnection::handleConnectString() {
 	cont->setFetchAtOnce(fetchatonce);
 
 	cont->setMaxColumnCount(0);
-	cont->setMaxFieldLength(0);
+	cont->setMaxFieldSize(0);
 
 
 	// build the connections that we'll route to
@@ -729,17 +729,17 @@ bool routerconnection::rollback() {
 }
 
 void routerconnection::errorMessage(char *errorbuffer,
-					uint32_t errorbufferlength,
-					uint32_t *errorlength,
+					uint32_t errorbuffersize,
+					uint32_t *errorsize,
 					int64_t *errorcode,
 					bool *liveconnection) {
 
 	for (uint16_t index=0; index<concount; index++) {
 		const char	*errormessage=cons[index]->errorMessage();
 		if (!charstring::getLength(errormessage)) {
-			*errorlength=charstring::getLength(errormessage);
-			charstring::safeCopy(errorbuffer,errorbufferlength,
-						errormessage,*errorlength);
+			*errorsize=charstring::getLength(errormessage);
+			charstring::safeCopy(errorbuffer,errorbuffersize,
+						errormessage,*errorsize);
 			*errorcode=cons[index]->errorNumber();
 			break;
 		}
@@ -1199,7 +1199,7 @@ routercursor::~routercursor() {
 	routerconn->routercursors.remove(this);
 }
 
-bool routercursor::prepareQuery(const char *query, uint32_t length) {
+bool routercursor::prepareQuery(const char *query, uint32_t size) {
 
 	if (routerconn->debug) {
 		stdoutput.printf("prepareQuery {\n");
@@ -1208,9 +1208,9 @@ bool routercursor::prepareQuery(const char *query, uint32_t length) {
 	// FIXME: remove this and use a translation
 
 	// convert to lowercase and normalize whitespace, for regex matching
-	char	*nquery=new char[length+1];
+	char	*nquery=new char[size+1];
 	if (query) {
-		for (uint32_t i=0; i<length; ++i) {
+		for (uint32_t i=0; i<size; ++i) {
 			char	c=query[i];
 			if (character::isWhitespace(c)) {
 				nquery[i]=' ';
@@ -1219,7 +1219,7 @@ bool routercursor::prepareQuery(const char *query, uint32_t length) {
 			}
 		}
 	}
-	nquery[length]='\0';
+	nquery[size]='\0';
 
 	// reset bind cursor
 	if (isbindcur) {
@@ -1264,7 +1264,7 @@ bool routercursor::prepareQuery(const char *query, uint32_t length) {
 	// Did a module make the query empty?  If so, then we won't actually
 	// prepare/execute it, just return true.  The usedatabase module does
 	// this.
-	emptyquery=!getQueryLength();
+	emptyquery=!getQuerySize();
 	if (routerconn->debug) {
 		stdoutput.printf("%s",(emptyquery)?"	query set empty\n":"");
 	}
@@ -1273,9 +1273,9 @@ bool routercursor::prepareQuery(const char *query, uint32_t length) {
 	// connection turned out to be the right one
 	if (!emptyquery) {
 		if (routerconn->debug) {
-			stdoutput.printf("	query: %.*s\n",length,query);
+			stdoutput.printf("	query: %.*s\n",size,query);
 		}
-		currentcur->prepareQuery(query,length);
+		currentcur->prepareQuery(query,size);
 	}
 
 	if (routerconn->debug) {
@@ -1380,7 +1380,7 @@ void routercursor::route(bool *routed, bool *err) {
 	}
 }
 
-bool routercursor::supportsNativeBinds(const char *query, uint32_t length) {
+bool routercursor::supportsNativeBinds(const char *query, uint32_t size) {
 	return true;
 }
 
@@ -1555,8 +1555,8 @@ bool routercursor::outputBindCursor(const char *variable,
 	return true;
 }
 
-bool routercursor::getLobOutputBindLength(uint16_t index, uint64_t *length) {
-	*length=currentcur->getOutputBindLength(obv[index].variable);
+bool routercursor::getLobOutputBindSize(uint16_t index, uint64_t *size) {
+	*size=currentcur->getOutputBindLength(obv[index].variable);
 	return true;
 }
 
@@ -1569,22 +1569,22 @@ bool routercursor::getLobOutputBindSegment(uint16_t index,
 	if (!var) {
 		var=currentcur->getOutputBindBlob(varname);
 	}
-	uint32_t	length=currentcur->getOutputBindLength(varname);
-	if (offset+charstoread>length) {
-		charstoread=length-offset;
+	uint32_t	size=currentcur->getOutputBindLength(varname);
+	if (offset+charstoread>size) {
+		charstoread=size-offset;
 	}
 	bytestring::copy(buffer,var,charstoread);
 	*charsread=charstoread;
 	return true;
 }
 
-bool routercursor::executeQuery(const char *query, uint32_t length) {
+bool routercursor::executeQuery(const char *query, uint32_t size) {
 
 	// FIXME: if routing entire sessions, then compare and just do this for
 	// the appropriate connection
 
 	if (!currentcur) {
-		if (!prepareQuery(query,length)) {
+		if (!prepareQuery(query,size)) {
 			return false;
 		}
 	}
@@ -1657,15 +1657,15 @@ bool routercursor::executeQuery(const char *query, uint32_t length) {
 }
 
 void routercursor::errorMessage(char *errorbuffer,
-					uint32_t errorbufferlength,
-					uint32_t *errorlength,
+					uint32_t errorbuffersize,
+					uint32_t *errorsize,
 					int64_t *errorcode,
 					bool *liveconnection) {
 	const char	*errormessage=
 			(currentcur)?currentcur->errorMessage():"";
-	*errorlength=charstring::getLength(errormessage);
-	charstring::safeCopy(errorbuffer,errorbufferlength,
-					errormessage,*errorlength);
+	*errorsize=charstring::getLength(errormessage);
+	charstring::safeCopy(errorbuffer,errorbuffersize,
+					errormessage,*errorsize);
 	*errorcode=(currentcur)?currentcur->errorNumber():0;
 	*liveconnection=true;
 }
@@ -1698,7 +1698,7 @@ const char *routercursor::getColumnTypeName(uint32_t col) {
 	return (currentcur)?currentcur->getColumnType(col):NULL;
 }
 
-uint32_t routercursor::getColumnLength(uint32_t col) {
+uint32_t routercursor::getColumnSize(uint32_t col) {
 	return (currentcur)?currentcur->getColumnLength(col):0;
 }
 
@@ -1768,13 +1768,13 @@ bool routercursor::fetchRow(bool *error) {
 }
 
 void routercursor::getField(uint32_t col,
-				const char **field, uint64_t *fieldlength,
+				const char **field, uint64_t *fieldsize,
 				bool *blob, bool *null) {
 	const char	*fld=currentcur->getField(nextrow-1,col);
 	uint32_t	len=currentcur->getFieldLength(nextrow-1,col);
 	if (len) {
 		*field=fld;
-		*fieldlength=len;
+		*fieldsize=len;
 	} else {
 		*null=true;
 	}

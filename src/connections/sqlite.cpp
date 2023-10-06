@@ -68,8 +68,8 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 		bool		rollback();
 		#endif
 		void		errorMessage(char *errorbuffer,
-						uint32_t errorbufferlength,
-						uint32_t *errorlength,
+						uint32_t errorbuffersize,
+						uint32_t *errorsize,
 						int64_t	*errorcode,
 						bool *liveconnection);
 
@@ -100,11 +100,11 @@ class SQLRSERVER_DLLSPEC sqlitecursor : public sqlrservercursor {
 				~sqlitecursor();
 
 		bool		supportsNativeBinds(const char *query,
-							uint32_t length);
+							uint32_t size);
 
 		#ifdef HAVE_SQLITE3_STMT
 		bool		prepareQuery(const char *query,
-						uint32_t length);
+						uint32_t size);
 		int32_t		getBindVariableIndex(
 						const char *variable,
 						uint16_t variablesize);
@@ -128,7 +128,7 @@ class SQLRSERVER_DLLSPEC sqlitecursor : public sqlrservercursor {
 						int16_t *isnull);
 		#endif
 		bool		executeQuery(const char *query,
-						uint32_t length);
+						uint32_t size);
 		int		runQuery(const char *query);
 		void		selectLastInsertRowId();
 		bool		knowsRowCount();
@@ -145,7 +145,7 @@ class SQLRSERVER_DLLSPEC sqlitecursor : public sqlrservercursor {
 		bool		fetchRow(bool *error);
 		void		getField(uint32_t col,
 					const char **field,
-					uint64_t *fieldlength,
+					uint64_t *fieldsize,
 					bool *blob,
 					bool *null);
 		void		closeResultSet();
@@ -194,7 +194,7 @@ void sqliteconnection::handleConnectString() {
 
 	cont->setFetchAtOnce(1);
 	cont->setMaxColumnCount(0);
-	cont->setMaxFieldLength(0);
+	cont->setMaxFieldSize(0);
 }
 
 bool sqliteconnection::logIn(const char **error, const char **warning) {
@@ -402,14 +402,14 @@ bool sqliteconnection::rollback() {
 #endif
 
 void sqliteconnection::errorMessage(char *errorbuffer,
-					uint32_t errorbufferlength,
-					uint32_t *errorlength,
+					uint32_t errorbuffersize,
+					uint32_t *errorsize,
 					int64_t *errorcode,
 					bool *liveconnection) {
 	// set return values
-	*errorlength=charstring::getLength(errmesg);
-	charstring::safeCopy(errorbuffer,errorbufferlength,
-					errmesg,*errorlength);
+	*errorsize=charstring::getLength(errmesg);
+	charstring::safeCopy(errorbuffer,errorbuffersize,
+					errmesg,*errorsize);
 	*errorcode=errcode;
 	*liveconnection=true;
 	if (errmesg &&
@@ -493,7 +493,7 @@ sqlitecursor::~sqlitecursor() {
 	#endif
 }
 
-bool sqlitecursor::supportsNativeBinds(const char *query, uint32_t length) {
+bool sqlitecursor::supportsNativeBinds(const char *query, uint32_t size) {
 	#ifdef HAVE_SQLITE3_STMT
 	return true;
 	#else
@@ -502,7 +502,7 @@ bool sqlitecursor::supportsNativeBinds(const char *query, uint32_t length) {
 }
 
 #ifdef HAVE_SQLITE3_STMT
-bool sqlitecursor::prepareQuery(const char *query, uint32_t length) {
+bool sqlitecursor::prepareQuery(const char *query, uint32_t size) {
 
 	// reinit justexecuted flag
 	justexecuted=false;
@@ -530,7 +530,7 @@ bool sqlitecursor::prepareQuery(const char *query, uint32_t length) {
 		#else
 			res=sqlite3_prepare
 		#endif
-			(sqliteconn->sqliteptr,query,length,&stmt,NULL);
+			(sqliteconn->sqliteptr,query,size,&stmt,NULL);
 	}
 	if (res==SQLITE_OK) {
 		return true;
@@ -588,7 +588,7 @@ bool sqlitecursor::inputBindBlob(const char *variable,
 }
 #endif
 
-bool sqlitecursor::executeQuery(const char *query, uint32_t length) {
+bool sqlitecursor::executeQuery(const char *query, uint32_t size) {
 
 	// execute the query
 	int	success=0;
@@ -616,7 +616,7 @@ bool sqlitecursor::executeQuery(const char *query, uint32_t length) {
 			// This appears to be generally true, but with 
 			// version 3.6.20 it does.
 			#if defined(HAVE_SQLITE3_STMT)
-				if (!prepareQuery(query,length)) {
+				if (!prepareQuery(query,size)) {
 					break;
 				}
 			#endif
@@ -666,7 +666,7 @@ bool sqlitecursor::executeQuery(const char *query, uint32_t length) {
 	success=runQuery(query);
 #endif
 
-	checkForTempTable(query,length);
+	checkForTempTable(query,size);
 
 	// cache off the columns so they can be returned later if the result
 	// set is suspended/resumed
@@ -907,7 +907,7 @@ bool sqlitecursor::fetchRow(bool *error) {
 }
 
 void sqlitecursor::getField(uint32_t col,
-				const char **field, uint64_t *fieldlength,
+				const char **field, uint64_t *fieldsize,
 				bool *blob, bool *null) {
 
 #ifdef HAVE_SQLITE3_STMT
@@ -915,7 +915,7 @@ void sqlitecursor::getField(uint32_t col,
 	// handle lastinsertrowid specially
 	if (lastinsertrowid) {
 		*field=lastinsertrowidstr;
-		*fieldlength=charstring::getLength(*field);
+		*fieldsize=charstring::getLength(*field);
 		*blob=false;
 		*null=false;
 		return;
@@ -928,7 +928,7 @@ void sqlitecursor::getField(uint32_t col,
 	*field=(const char *)((dtype==SQLITE_BLOB)?
 				sqlite3_column_blob(stmt,col):
 				sqlite3_column_text(stmt,col));
-	*fieldlength=sqlite3_column_bytes(stmt,col);
+	*fieldsize=sqlite3_column_bytes(stmt,col);
 	*null=(*field==NULL);
 
 	// set the blob indiciator false, otherwise we'll have to implement
@@ -942,7 +942,7 @@ void sqlitecursor::getField(uint32_t col,
 	// track of which column you're on.
 	if (result[rowindex]) {
 		*field=result[rowindex];
-		*fieldlength=charstring::getLength(result[rowindex]);
+		*fieldsize=charstring::getLength(result[rowindex]);
 	} else {
 		*null=true;
 	}
@@ -977,10 +977,10 @@ char *sqliteconnection::duplicate(const char *str) {
 	if (!str) {
 		return NULL;
 	}
-	size_t	length=charstring::getLength(str);
-	char	*buffer=(char *)sqlite3_malloc(length+1);
-	charstring::copy(buffer,str,length);
-	buffer[length]='\0';
+	size_t	size=charstring::getLength(str);
+	char	*buffer=(char *)sqlite3_malloc(size+1);
+	charstring::copy(buffer,str,size);
+	buffer[size]='\0';
 	return buffer;
 }
 #endif

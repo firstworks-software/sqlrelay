@@ -148,8 +148,8 @@ const char *sqlrrouter_usedatabase::route(sqlrserverconnection *sqlrcon,
 	}
 
 	// the original "use database" query shouldn't actually be run now,
-	// so disable it by setting the length of the query to 0
-	sqlrcur->setQueryLength(0);
+	// so disable it by setting the size of the query to 0
+	sqlrcur->setQuerySize(0);
 
 	return retval;
 }

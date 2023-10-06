@@ -105,14 +105,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_postgresql : public sqlrprotocol {
 
 		bool	sendErrorResponse(const char *errorstring);
 		bool	sendErrorResponse(const char *errorstring,
-						uint16_t errorstringlength);
+						uint16_t errorstringsize);
 		bool	sendErrorResponse(const char *severity,
 						const char *sqlstate,
 						const char *errorstring);
 		bool	sendErrorResponse(const char *severity,
 						const char *sqlstate,
 						const char *errorstring,
-						uint16_t errorstringlength);
+						uint16_t errorstringsize);
 
 		bool	query();
 		void	getQuery(const char *query,
@@ -136,13 +136,13 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_postgresql : public sqlrprotocol {
 		bool	parse();
 		bool	bind();
 		void	bindTextParameter(const byte_t *rp,
-						uint32_t paramlength,
+						uint32_t paramsize,
 						memorypool *bindpool,
 						sqlrserverbindvar *bv,
 						const byte_t **rpout);
 		bool	bindBinaryParameter(const byte_t *rp,
 						uint32_t oid,
-						uint32_t paramlength,
+						uint32_t paramsize,
 						memorypool *bindpool,
 						sqlrserverbindvar *bv,
 						const byte_t **rpout);
@@ -893,7 +893,7 @@ bool sqlrprotocol_postgresql::authenticate() {
 	sqlrpostgresqlcredentials	cred;
 	cred.setUser(user);
 	cred.setPassword(password);
-	cred.setPasswordLength(charstring::getLength(password));
+	cred.setPasswordSize(charstring::getLength(password));
 	cred.setMethod(authmethod);
 	cred.setSalt(salt);
 
@@ -1038,7 +1038,7 @@ bool sqlrprotocol_postgresql::sendStartupParameterStatuses() {
 			uint16_t	i=0;
 			stringbuffer	q;
 			const char	*field;
-			uint64_t	fieldlength;
+			uint64_t	fieldsize;
 			bool		blob;
 			bool		null;
 			bool		error;
@@ -1053,14 +1053,14 @@ bool sqlrprotocol_postgresql::sendStartupParameterStatuses() {
 					!cont->fetchRow(cursor,&error) ||
 					!cont->getField(cursor,0,
 							&field,
-							&fieldlength,
+							&fieldsize,
 							&blob,
 							&null)) {
 					field="";
-					fieldlength=0;
+					fieldsize=0;
 				}
 				*vals[i]=charstring::duplicate(field,
-								fieldlength);
+								fieldsize);
 				i++;
 				q.clear();
 			}
@@ -1164,8 +1164,8 @@ bool sqlrprotocol_postgresql::sendErrorResponse(const char *errorstring) {
 }
 
 bool sqlrprotocol_postgresql::sendErrorResponse(const char *errorstring,
-						uint16_t errorstringlength) {
-	return sendErrorResponse("ERROR","",errorstring,errorstringlength);
+						uint16_t errorstringsize) {
+	return sendErrorResponse("ERROR","",errorstring,errorstringsize);
 }
 
 bool sqlrprotocol_postgresql::sendErrorResponse(const char *severity,
@@ -1179,7 +1179,7 @@ bool sqlrprotocol_postgresql::sendErrorResponse(const char *severity,
 bool sqlrprotocol_postgresql::sendErrorResponse(const char *severity,
 						const char *sqlstate,
 						const char *errorstring,
-						uint16_t errorstringlength) {
+						uint16_t errorstringsize) {
 
 	// respond with the error
 
@@ -1209,7 +1209,7 @@ bool sqlrprotocol_postgresql::sendErrorResponse(const char *severity,
 		stdoutput.printf("	field type: C\n");
 		stdoutput.printf("	string: %s\n",sqlstate);
 		stdoutput.printf("	field type: M\n");
-		stdoutput.printf("	string: %.*s\n",errorstringlength,
+		stdoutput.printf("	string: %.*s\n",errorstringsize,
 							errorstring);
 		stdoutput.printf("	field type: (null)\n");
 		debugEnd();
@@ -1227,7 +1227,7 @@ bool sqlrprotocol_postgresql::sendErrorResponse(const char *severity,
 	write(&resppacket,(byte_t)'\0');
 
 	write(&resppacket,(byte_t)FIELD_TYPE_MESSAGE);
-	write(&resppacket,errorstring,errorstringlength);
+	write(&resppacket,errorstring,errorstringsize);
 	write(&resppacket,(byte_t)'\0');
 
 	write(&resppacket,(byte_t)'\0');
@@ -1254,14 +1254,14 @@ bool sqlrprotocol_postgresql::query() {
 	const byte_t	*rp=reqpacket;
 
 	const char	*query=(const char *)rp;
-	uint32_t	querylength=reqpacketsize;
+	uint32_t	querysize=reqpacketsize;
 
 	// debug
 	if (getDebug()) {
 		debugStart("query");
 		stdoutput.printf("	cursor id: %d\n",cursor->getId());
-		stdoutput.printf("	query length: %d\n",querylength);
-		stdoutput.printf("	queries: %.*s\n",querylength,query);
+		stdoutput.printf("	query size: %d\n",querysize);
+		stdoutput.printf("	queries: %.*s\n",querysize,query);
 		debugEnd();
 	}
 
@@ -1281,7 +1281,7 @@ bool sqlrprotocol_postgresql::query() {
 		const char	*end=NULL;
 		getQuery(query,&start,&end);
 		query=start;
-		querylength=end-start;
+		querysize=end-start;
 
 		// if there's more than 1 query, then
 		// we may need to begin a transaction
@@ -1300,15 +1300,15 @@ bool sqlrprotocol_postgresql::query() {
 		if (getDebug()) {
 			debugStart("individual query");
 			stdoutput.printf("	query: %.*s\n",
-							querylength,query);
+							querysize,query);
 			debugEnd();
 		}
 
 		// prepare/execute the query...
-		if (!querylength) {
+		if (!querysize) {
 			result=sendEmptyQueryResponse();
 		} else {
-			if (cont->prepareQuery(cursor,query,querylength,
+			if (cont->prepareQuery(cursor,query,querysize,
 							true,true,true) &&
 				cont->executeQuery(cursor,
 							true,true,true,true)) {
@@ -1488,7 +1488,7 @@ bool sqlrprotocol_postgresql::sendRowDescription(sqlrservercursor *cursor,
 		writeBE(&resppacket,coltypeoid);
 
 		// data type size and modifier
-		uint16_t	datatypesize=cont->getColumnLength(cursor,i);
+		uint16_t	datatypesize=cont->getColumnSize(cursor,i);
 		uint32_t	datatypemodifier=(uint32_t)-1;
 		// For various types (I'm sure I'll discover others later),
 		// return -1 for the size and return the size in the modifier
@@ -1778,12 +1778,12 @@ bool sqlrprotocol_postgresql::sendDataRow(sqlrservercursor *cursor,
 	writeBE(&resppacket,colcount);
 
 	const char	*field;
-	uint64_t	fieldlength;
+	uint64_t	fieldsize;
 	bool		blob;
 	bool		null;
 	for (uint16_t i=0; i<colcount; i++) {
 
-		if (!cont->getField(cursor,i,&field,&fieldlength,&blob,&null)) {
+		if (!cont->getField(cursor,i,&field,&fieldsize,&blob,&null)) {
 			return false;
 		}
 
@@ -1798,8 +1798,8 @@ bool sqlrprotocol_postgresql::sendDataRow(sqlrservercursor *cursor,
 			// we should send binary if the client requested it
 			// (in the resultformatcodes???)
 
-			writeBE(&resppacket,(uint32_t)fieldlength);
-			write(&resppacket,field,fieldlength);
+			writeBE(&resppacket,(uint32_t)fieldsize);
+			write(&resppacket,field,fieldsize);
 		}
 
 		if (getDebug()) {
@@ -1808,7 +1808,7 @@ bool sqlrprotocol_postgresql::sendDataRow(sqlrservercursor *cursor,
 				stdoutput.printf("		(null)\n");
 			} else {
 				stdoutput.printf("		%d: %.*s\n",
-						fieldlength,fieldlength,field);
+						fieldsize,fieldsize,field);
 			}
 			debugEnd(1);
 		}
@@ -1964,7 +1964,7 @@ bool sqlrprotocol_postgresql::parse() {
 	if (rp==rpend) {
 		return sendErrorResponse("Invalid request");
 	}
-	uint32_t	querylength=((const char *)rp)-query;
+	uint32_t	querysize=((const char *)rp)-query;
 	rp++;
 	
 	// get param types
@@ -1985,8 +1985,8 @@ bool sqlrprotocol_postgresql::parse() {
 		debugStart("Parse");
 		stdoutput.printf("	stmt name: %s\n",stmtname);
 		stdoutput.printf("	cursor id: %d\n",cursor->getId());
-		stdoutput.printf("	query length: %d\n",querylength);
-		stdoutput.printf("	query: %.*s\n",querylength,query);
+		stdoutput.printf("	query size: %d\n",querysize);
+		stdoutput.printf("	query: %.*s\n",querysize,query);
 		stdoutput.printf("	param count: %d\n",paramcount);
 		for (uint16_t i=0; i<paramcount; i++) {
 			stdoutput.printf("	param %d type: %d\n",
@@ -1996,15 +1996,15 @@ bool sqlrprotocol_postgresql::parse() {
 	}
 
 	// bounds checking
-	if (querylength>maxquerysize) {
+	if (querysize>maxquerysize) {
 		return sendErrorResponse("Query is too large");
 	}
 
 	// copy the query into the cursor's query buffer
 	char	*querybuffer=cont->getQueryBuffer(cursor);
-	bytestring::copy(querybuffer,query,querylength);
-	querybuffer[querylength]='\0';
-	cont->setQueryLength(cursor,querylength);
+	bytestring::copy(querybuffer,query,querysize);
+	querybuffer[querysize]='\0';
+	cont->setQuerySize(cursor,querysize);
 
 	// clear binds
 	cont->getBindPool(cursor)->clear();
@@ -2012,7 +2012,7 @@ bool sqlrprotocol_postgresql::parse() {
 
 	// prepare the query
 	if (!cont->prepareQuery(cursor,cont->getQueryBuffer(cursor),
-					cont->getQueryLength(cursor),
+					cont->getQuerySize(cursor),
 					true,true,true)) {
 		return sendCursorError(cursor);
 	}
@@ -2045,7 +2045,7 @@ bool sqlrprotocol_postgresql::bind() {
 	//	uint16_t	param value count
 	//
 	//	// param values...
-	//	int32_t		value length (-1 = null)
+	//	int32_t		value size (-1 = null)
 	//	byte[]		parameter value
 	//
 	//	uint16_t	result format code count
@@ -2146,16 +2146,16 @@ bool sqlrprotocol_postgresql::bind() {
 							bv->variable);
 		}
 
-		// get length/null-indicator
-		uint32_t	paramlength;
-		readBE(rp,&paramlength,&rp);
+		// get size/null-indicator
+		uint32_t	paramsize;
+		readBE(rp,&paramsize,&rp);
 
 		if (getDebug()) {
 			stdoutput.printf("		"
-					"length: %d\n",paramlength);
+					"size: %d\n",paramsize);
 		}
 
-		if (paramlength==(uint32_t)-1) {
+		if (paramsize==(uint32_t)-1) {
 
 			// bind null
 			bv->type=SQLRSERVERBINDVARTYPE_NULL;
@@ -2171,14 +2171,14 @@ bool sqlrprotocol_postgresql::bind() {
 				stdoutput.printf("		"
 						"format: text\n");
 			}
-			bindTextParameter(rp,paramlength,bindpool,bv,&rp);
+			bindTextParameter(rp,paramsize,bindpool,bv,&rp);
 		} else {
 			if (getDebug()) {
 				stdoutput.printf("		"
 						"format: binary\n");
 			}
 			if (!bindBinaryParameter(rp,oids[i],
-						paramlength,bindpool,bv,&rp)) {
+						paramsize,bindpool,bv,&rp)) {
 				return false;
 			}
 		}
@@ -2232,14 +2232,14 @@ bool sqlrprotocol_postgresql::bind() {
 }
 
 void sqlrprotocol_postgresql::bindTextParameter(const byte_t *rp,
-						uint32_t paramlength,
+						uint32_t paramsize,
 						memorypool *bindpool,
 						sqlrserverbindvar *bv,
 						const byte_t **rpout) {
 
 	// bind string
 	bv->type=SQLRSERVERBINDVARTYPE_STRING;
-	bv->valuesize=paramlength;
+	bv->valuesize=paramsize;
 	bv->value.stringval=(char *)bindpool->allocate(bv->valuesize+1);
 	read(rp,bv->value.stringval,bv->valuesize,rpout);
 	bv->value.stringval[bv->valuesize]='\0';
@@ -2253,7 +2253,7 @@ void sqlrprotocol_postgresql::bindTextParameter(const byte_t *rp,
 
 bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 						uint32_t oid,
-						uint32_t paramlength,
+						uint32_t paramsize,
 						memorypool *bindpool,
 						sqlrserverbindvar *bv,
 						const byte_t **rpout) {
@@ -2363,13 +2363,13 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 		case 1015: //_varchar
 		case 1042: //bpchar
 		case 1043: //varchar
-			bindTextParameter(rp,paramlength,bindpool,bv,rpout);
+			bindTextParameter(rp,paramsize,bindpool,bv,rpout);
 			break;
 		case 25: //text
 		case 1009: //_text
 			{
 			bv->type=SQLRSERVERBINDVARTYPE_CLOB;
-			bv->valuesize=paramlength;
+			bv->valuesize=paramsize;
 			bv->value.stringval=
 				(char *)bindpool->allocate(bv->valuesize+1);
 			read(rp,bv->value.stringval,bv->valuesize,rpout);
@@ -2386,7 +2386,7 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 		case 1001: //_bytea
 			{
 			bv->type=SQLRSERVERBINDVARTYPE_BLOB;
-			bv->valuesize=paramlength;
+			bv->valuesize=paramsize;
 			bv->value.stringval=
 				(char *)bindpool->allocate(bv->valuesize);
 			read(rp,bv->value.stringval,bv->valuesize,rpout);
@@ -2788,17 +2788,17 @@ bool sqlrprotocol_postgresql::sendCursorError(sqlrservercursor *cursor) {
 
 	// get the cursor-level error
 	const char	*errorstring;
-	uint32_t	errorlength;
+	uint32_t	errorsize;
 	int64_t		errnum;
 	bool		liveconnection;
 	cont->errorMessage(cursor,
 				&errorstring,
-				&errorlength,
+				&errorsize,
 				&errnum,
 				&liveconnection);
 
 	// send an error response packet
-	return sendErrorResponse(errorstring,errorlength);
+	return sendErrorResponse(errorstring,errorsize);
 }
 
 bool sqlrprotocol_postgresql::sendNotImplementedError() {
