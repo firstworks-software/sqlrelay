@@ -801,8 +801,9 @@ bool sqlrservercursor::outputBindCursor(const char *variable,
 	return true;
 }
 
-bool sqlrservercursor::getLobOutputBindSize(uint16_t index, uint64_t *size) {
-	*size=0;
+bool sqlrservercursor::getLobOutputBindLength(uint16_t index,
+						uint64_t *length) {
+	*length=0;
 	return true;
 }
 
@@ -879,9 +880,9 @@ bool sqlrservercursor::inputOutputBindClob(const char *variable,
 	return true;
 }
 
-bool sqlrservercursor::getLobInputOutputBindSize(uint16_t index,
-							uint64_t *size) {
-	*size=0;
+bool sqlrservercursor::getLobInputOutputBindLength(uint16_t index,
+							uint64_t *length) {
+	*length=0;
 	return true;
 }
 
@@ -1117,8 +1118,8 @@ void sqlrservercursor::getField(uint32_t col,
 	*null=false;
 }
 
-bool sqlrservercursor::getLobFieldSize(uint32_t col, uint64_t *size) {
-	*size=0;
+bool sqlrservercursor::getLobFieldLength(uint32_t col, uint64_t *length) {
+	*length=0;
 	return true;
 }
 

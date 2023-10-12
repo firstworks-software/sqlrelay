@@ -136,8 +136,8 @@ class SQLRSERVER_DLLSPEC informixcursor : public sqlrservercursor {
 						uint16_t variablesize,
 						uint16_t index,
 						int16_t *isnull);
-		bool		getLobOutputBindSize(uint16_t index,
-							uint64_t *size);
+		bool		getLobOutputBindLength(uint16_t index,
+							uint64_t *length);
 		bool		getLobOutputBindSegment(uint16_t index,
 							char *buffer,
 							uint64_t buffersize,
@@ -174,7 +174,8 @@ class SQLRSERVER_DLLSPEC informixcursor : public sqlrservercursor {
 					bool *blob,
 					bool *null);
 		void		nextRow();
-		bool		getLobFieldSize(uint32_t col, uint64_t *size);
+		bool		getLobFieldLength(uint32_t col,
+							uint64_t *length);
 		bool		getLobFieldSegment(uint32_t col,
 					char *buffer, uint64_t buffersize,
 					uint64_t offset, uint64_t charstoread,
@@ -188,7 +189,7 @@ class SQLRSERVER_DLLSPEC informixcursor : public sqlrservercursor {
 
 		int32_t		columncount;
 		char		**field;
-		SQLLEN		**lobsize;
+		SQLLEN		**loblength;
 		SQLLEN		**indicator;
 		informixcolumn	*column;
 
@@ -821,13 +822,13 @@ void informixcursor::allocateResultSetBuffers(int32_t columncount) {
 	if (!columncount) {
 		this->columncount=0;
 		field=NULL;
-		lobsize=NULL;
+		loblength=NULL;
 		indicator=NULL;
 		column=NULL;
 	} else {
 		this->columncount=columncount;
 		field=new char *[columncount];
-		lobsize=new SQLLEN *[columncount];
+		loblength=new SQLLEN *[columncount];
 		indicator=new SQLLEN *[columncount];
 		column=new informixcolumn[columncount];
 		uint32_t	fetchatonce=getFetchAtOnce();
@@ -835,7 +836,7 @@ void informixcursor::allocateResultSetBuffers(int32_t columncount) {
 		for (int32_t i=0; i<columncount; i++) {
 			column[i].name=new char[4096];
 			field[i]=new char[fetchatonce*maxfieldsize];
-			lobsize[i]=new SQLLEN[fetchatonce];
+			loblength[i]=new SQLLEN[fetchatonce];
 			indicator[i]=new SQLLEN[fetchatonce];
 		}
 	}
@@ -846,12 +847,12 @@ void informixcursor::deallocateResultSetBuffers() {
 		for (int32_t i=0; i<columncount; i++) {
 			delete[] column[i].name;
 			delete[] field[i];
-			delete[] lobsize[i];
+			delete[] loblength[i];
 			delete[] indicator[i];
 		}
 		delete[] column;
 		delete[] field;
-		delete[] lobsize;
+		delete[] loblength;
 		delete[] indicator;
 		columncount=0;
 	}
@@ -1324,11 +1325,12 @@ bool informixcursor::outputBindClob(const char *variable,
 	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 }
 
-bool informixcursor::getLobOutputBindSize(uint16_t index, uint64_t *size) {
+bool informixcursor::getLobOutputBindLength(uint16_t index, uint64_t *length) {
+	// FIXME: this code assumes that the lob characters are 1 byte long
 	if (outlobbindlen[index]>informixconn->maxoutbindlobsize) {
 		outlobbindlen[index]=informixconn->maxoutbindlobsize;
 	}
-	*size=outlobbindlen[index];
+	*length=outlobbindlen[index];
 	return true;
 }
 
@@ -1336,6 +1338,7 @@ bool informixcursor::getLobOutputBindSegment(uint16_t index,
 					char *buffer, uint64_t buffersize,
 					uint64_t offset, uint64_t charstoread,
 					uint64_t *charsread) {
+	// FIXME: this code assumes that the lob characters are 1 byte long
 	uint64_t	len=outlobbindlen[index];
 	if (offset>len) {
 		return false;
@@ -1804,20 +1807,20 @@ void informixcursor::nextRow() {
 	rowgroupindex++;
 }
 
-bool informixcursor::getLobFieldSize(uint32_t col, uint64_t *size) {
+bool informixcursor::getLobFieldLength(uint32_t col, uint64_t *length) {
 
-	// get the size of the lob
+	// get the length of the lob
 
 	// a valid buffer must be provided, but it's ok to fetch 0 bytes into it
 	SQLCHAR	buffer[1];
 	erg=SQLGetData(stmt,col+1,SQL_C_BINARY,buffer,0,
-					&(lobsize[col][rowgroupindex]));
+					&(loblength[col][rowgroupindex]));
 	if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
 		return false;
 	}
 
-	// copy out the size
-	*size=lobsize[col][rowgroupindex];
+	// copy out the length
+	*length=loblength[col][rowgroupindex];
 
 	return true;
 }
@@ -1828,14 +1831,14 @@ bool informixcursor::getLobFieldSegment(uint32_t col,
 					uint64_t *charsread) {
 
 	// bail if we're attempting to start reading past the end
-	if (offset>(uint64_t)lobsize[col][rowgroupindex]) {
+	if (offset>(uint64_t)loblength[col][rowgroupindex]) {
 		return false;
 	}
 
 	// prevent attempts to read past the end
-	if (offset+charstoread>(uint64_t)lobsize[col][rowgroupindex]) {
+	if (offset+charstoread>(uint64_t)loblength[col][rowgroupindex]) {
 		charstoread=charstoread-
-			((offset+charstoread)-lobsize[col][rowgroupindex]);
+			((offset+charstoread)-loblength[col][rowgroupindex]);
 	}
 
 	// read a blob segment, at most MAX_LOB_CHUNK_SIZE bytes at a time

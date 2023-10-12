@@ -5031,16 +5031,16 @@ void sqlrprotocol_oracle::putField(const char *field,
 void sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 
 	// Get lob size.  If this fails, send a NULL field.
-	uint64_t	lobsize;
-	if (!cont->getLobFieldSize(cursor,col,&lobsize)) {
+	uint64_t	loblength;
+	if (!cont->getLobFieldLength(cursor,col,&loblength)) {
 		// send NULL as 0xfb
 		reqpacket.append((char)0xfb);
 		cont->closeLobField(cursor,col);
 		return;
 	}
 
-	// for lobs of 0 size
-	if (!lobsize) {
+	// for lobs of 0 length
+	if (!loblength) {
 		writeLenEncInt(&reqpacket,0);
 		cont->closeLobField(cursor,col);
 		return;
@@ -5074,7 +5074,7 @@ void sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 
 			// if we haven't started sending yet, then do that now
 			if (start) {
-				writeLenEncInt(&reqpacket,lobsize);
+				writeLenEncInt(&reqpacket,loblength);
 				start=false;
 			}
 

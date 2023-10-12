@@ -143,8 +143,8 @@ class SQLRSERVER_DLLSPEC db2cursor : public sqlrservercursor {
 						uint16_t variablesize,
 						uint16_t index,
 						int16_t *isnull);
-		bool		getLobOutputBindSize(uint16_t index,
-							uint64_t *size);
+		bool		getLobOutputBindLength(uint16_t index,
+							uint64_t *length);
 		bool		getLobOutputBindSegment(uint16_t index,
 							char *buffer,
 							uint64_t buffersize,
@@ -181,8 +181,8 @@ class SQLRSERVER_DLLSPEC db2cursor : public sqlrservercursor {
 					bool *blob,
 					bool *null);
 		void		nextRow();
-		bool		getLobFieldSize(uint32_t col,
-							uint64_t *size);
+		bool		getLobFieldLength(uint32_t col,
+							uint64_t *length);
 		bool		getLobFieldSegment(uint32_t col,
 					char *buffer, uint64_t buffersize,
 					uint64_t offset, uint64_t charstoread,
@@ -198,7 +198,7 @@ class SQLRSERVER_DLLSPEC db2cursor : public sqlrservercursor {
 		int32_t		columncount;
 		char		**field;
 		SQLINTEGER	**loblocator;
-		SQLINTEGER	**lobsize;
+		SQLINTEGER	**loblength;
 		SQLINTEGER	**indicator;
 		#if (DB2VERSION>7)
 		SQLUSMALLINT	*rowstat;
@@ -209,7 +209,7 @@ class SQLRSERVER_DLLSPEC db2cursor : public sqlrservercursor {
 		SQLINTEGER	*blobbindsize;
 		datebind	**outdatebind;
 		char		**outlobbind;
-		SQLINTEGER 	*outlobbindsize;
+		SQLINTEGER 	*outlobbindlen;
 		int16_t		**outisnullptr;
 		SQLINTEGER	*outisnull;
 		SQLINTEGER	sqlnulldata;
@@ -758,13 +758,13 @@ db2cursor::db2cursor(sqlrserverconnection *conn, uint16_t id) :
 	blobbindsize=new SQLINTEGER[maxbindcount];
 	outdatebind=new datebind *[maxbindcount];
 	outlobbind=new char *[maxbindcount];
-	outlobbindsize=new SQLINTEGER[maxbindcount];
+	outlobbindlen=new SQLINTEGER[maxbindcount];
 	outisnullptr=new int16_t *[maxbindcount];
 	outisnull=new SQLINTEGER[maxbindcount];
 	for (uint16_t i=0; i<maxbindcount; i++) {
 		outdatebind[i]=NULL;
 		outlobbind[i]=NULL;
-		outlobbindsize[i]=0;
+		outlobbindlen[i]=0;
 		outisnullptr[i]=NULL;
 		outisnull[i]=0;
 	}
@@ -777,7 +777,7 @@ db2cursor::~db2cursor() {
 	delete[] blobbindsize;
 	delete[] outdatebind;
 	delete[] outlobbind;
-	delete[] outlobbindsize;
+	delete[] outlobbindlen;
 	delete[] outisnullptr;
 	delete[] outisnull;
 	deallocateResultSetBuffers();
@@ -789,7 +789,7 @@ void db2cursor::allocateResultSetBuffers(int32_t columncount) {
 		this->columncount=0;
 		field=NULL;
 		loblocator=NULL;
-		lobsize=NULL;
+		loblength=NULL;
 		indicator=NULL;
 		#if (DB2VERSION>7)
 		rowstat=NULL;
@@ -799,7 +799,7 @@ void db2cursor::allocateResultSetBuffers(int32_t columncount) {
 		this->columncount=columncount;
 		field=new char *[columncount];
 		loblocator=new SQLINTEGER *[columncount];
-		lobsize=new SQLINTEGER *[columncount];
+		loblength=new SQLINTEGER *[columncount];
 		indicator=new SQLINTEGER *[columncount];
 		uint32_t	fetchatonce=getFetchAtOnce();
 		uint32_t	maxfieldsize=conn->cont->getMaxFieldSize();
@@ -811,7 +811,7 @@ void db2cursor::allocateResultSetBuffers(int32_t columncount) {
 			column[i].name=new char[4096];
 			field[i]=new char[fetchatonce*maxfieldsize];
 			loblocator[i]=new SQLINTEGER[fetchatonce];
-			lobsize[i]=new SQLINTEGER[fetchatonce];
+			loblength[i]=new SQLINTEGER[fetchatonce];
 			indicator[i]=new SQLINTEGER[fetchatonce];
 		}
 	}
@@ -823,13 +823,13 @@ void db2cursor::deallocateResultSetBuffers() {
 			delete[] column[i].name;
 			delete[] field[i];
 			delete[] loblocator[i];
-			delete[] lobsize[i];
+			delete[] loblength[i];
 			delete[] indicator[i];
 		}
 		delete[] column;
 		delete[] field;
 		delete[] loblocator;
-		delete[] lobsize;
+		delete[] loblength;
 		delete[] indicator;
 		#if (DB2VERSION>7)
 		delete[] rowstat;
@@ -1303,7 +1303,7 @@ bool db2cursor::outputBindBlob(const char *variable,
 				0,
 				outlobbind[index],
 				db2conn->maxoutbindlobsize,
-				&outlobbindsize[index]);
+				&outlobbindlen[index]);
 	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 }
 
@@ -1339,15 +1339,16 @@ bool db2cursor::outputBindClob(const char *variable,
 				0,
 				outlobbind[index],
 				db2conn->maxoutbindlobsize,
-				&outlobbindsize[index]);
+				&outlobbindlen[index]);
 	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 }
 
-bool db2cursor::getLobOutputBindSize(uint16_t index, uint64_t *size) {
-	if (outlobbindsize[index]>db2conn->maxoutbindlobsize) {
-		outlobbindsize[index]=db2conn->maxoutbindlobsize;
+bool db2cursor::getLobOutputBindLength(uint16_t index, uint64_t *length) {
+	// FIXME: this code assumes that the lob characters are 1 byte long
+	if (outlobbindlen[index]>db2conn->maxoutbindlobsize) {
+		outlobbindlen[index]=db2conn->maxoutbindlobsize;
 	}
-	*size=outlobbindsize[index];
+	*length=outlobbindlen[index];
 	return true;
 }
 
@@ -1355,12 +1356,13 @@ bool db2cursor::getLobOutputBindSegment(uint16_t index,
 					char *buffer, uint64_t buffersize,
 					uint64_t offset, uint64_t charstoread,
 					uint64_t *charsread) {
-	uint64_t	size=outlobbindsize[index];
-	if (offset>size) {
+	// FIXME: this code assumes that the lob characters are 1 byte long
+	uint64_t	length=outlobbindlen[index];
+	if (offset>length) {
 		return false;
 	}
-	if (offset+charstoread>size) {
-		charstoread=charstoread-((offset+charstoread)-size);
+	if (offset+charstoread>length) {
+		charstoread=charstoread-((offset+charstoread)-length);
 	}
 	bytestring::copy(buffer,outlobbind[index]+offset,charstoread);
 	*charsread=charstoread;
@@ -1799,22 +1801,22 @@ void db2cursor::nextRow() {
 	rowgroupindex++;
 }
 
-bool db2cursor::getLobFieldSize(uint32_t col, uint64_t *size) {
+bool db2cursor::getLobFieldLength(uint32_t col, uint64_t *length) {
 
-	// get the size of the lob
+	// get the length of the lob
 	SQLINTEGER	ind;
 	SQLSMALLINT	locatortype=(column[col].type==SQL_CLOB)?
 						SQL_C_CLOB_LOCATOR:
 						SQL_C_BLOB_LOCATOR;
 	erg=SQLGetLength(lobstmt,locatortype,
 				loblocator[col][rowgroupindex],
-				&lobsize[col][rowgroupindex],&ind);
+				&loblength[col][rowgroupindex],&ind);
 	if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
 		return false;
 	}
 
-	// copy out the size
-	*size=lobsize[col][rowgroupindex];
+	// copy out the length
+	*length=loblength[col][rowgroupindex];
 
 	return true;
 }
@@ -1832,14 +1834,14 @@ bool db2cursor::getLobFieldSegment(uint32_t col,
 	// detect attempts to read past the end ourselves.
 
 	// bail if we're attempting to start reading past the end
-	if (offset>(uint64_t)lobsize[col][rowgroupindex]) {
+	if (offset>(uint64_t)loblength[col][rowgroupindex]) {
 		return false;
 	}
 
 	// prevent attempts to read past the end
-	if (offset+charstoread>(uint64_t)lobsize[col][rowgroupindex]) {
+	if (offset+charstoread>(uint64_t)loblength[col][rowgroupindex]) {
 		charstoread=charstoread-
-			((offset+charstoread)-lobsize[col][rowgroupindex]);
+			((offset+charstoread)-loblength[col][rowgroupindex]);
 	}
 
 	// read a blob segment, at most MAX_LOB_CHUNK_SIZE bytes at a time
@@ -1900,7 +1902,7 @@ void db2cursor::closeResultSet() {
 		outdatebind[i]=NULL;
 		delete outlobbind[i];
 		outlobbind[i]=NULL;
-		outlobbindsize[i]=0;
+		outlobbindlen[i]=0;
 		outisnullptr[i]=NULL;
 		outisnull[i]=0;
 	}

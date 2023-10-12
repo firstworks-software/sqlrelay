@@ -138,7 +138,7 @@ class SQLRSERVER_DLLSPEC mysqlcursor : public sqlrservercursor {
 					bool *null);
 
 #ifdef HAVE_MYSQL_STMT_PREPARE
-		bool		getLobFieldSize(uint32_t col,
+		bool		getLobFieldLength(uint32_t col,
 						uint64_t *size);
 		bool		getLobFieldSegment(uint32_t col,
 						char *buffer,
@@ -181,7 +181,7 @@ class SQLRSERVER_DLLSPEC mysqlcursor : public sqlrservercursor {
 		unsigned long	*bindvaluesize;
 
 		MYSQL_BIND	lobfield;
-		unsigned long	lobfieldsize;
+		unsigned long	lobfieldlength;
 
 		bool		usestmtprepare;
 		bool		bindformaterror;
@@ -1998,7 +1998,7 @@ void mysqlcursor::getField(uint32_t col,
 }
 
 #ifdef HAVE_MYSQL_STMT_PREPARE
-bool mysqlcursor::getLobFieldSize(uint32_t col, uint64_t *size)  {
+bool mysqlcursor::getLobFieldLength(uint32_t col, uint64_t *length)  {
 
 	// lobfield needs to be zero'ed prior to each call to
 	// mysql_stmt_fetch_column() because mysql_stmt_fetch_column()
@@ -2007,10 +2007,10 @@ bool mysqlcursor::getLobFieldSize(uint32_t col, uint64_t *size)  {
 	bytestring::zero(&lobfield,sizeof(MYSQL_BIND));
 	lobfield.buffer_type=MYSQL_TYPE_STRING;
 	lobfield.buffer_length=fieldsize[col];
-	*size=lobfield.buffer_length;
+	*length=lobfield.buffer_length;
 
 	// mariadb-client-lgpl_2.0.0 crashes if the size pointer isn't set
-	lobfield.length=&lobfieldsize;
+	lobfield.length=&lobfieldlength;
 
 	return true;
 }

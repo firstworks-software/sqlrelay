@@ -441,10 +441,10 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		uint16_t	getOutputBindCount(sqlrservercursor *cursor);
 		sqlrserverbindvar	*getOutputBinds(
 						sqlrservercursor *cursor);
-		bool		getLobOutputBindSize(
+		bool		getLobOutputBindLength(
 						sqlrservercursor *cursor,
 						uint16_t index,
-						uint64_t *size);
+						uint64_t *length);
 		bool		getLobOutputBindSegment(
 						sqlrservercursor *cursor,
 						uint16_t index,
@@ -464,10 +464,10 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 						sqlrservercursor *cursor);
 		sqlrserverbindvar	*getInputOutputBinds(
 						sqlrservercursor *cursor);
-		bool		getLobInputOutputBindSize(
+		bool		getLobInputOutputBindLength(
 						sqlrservercursor *cursor,
 						uint16_t index,
-						uint64_t *size);
+						uint64_t *length);
 		bool		getLobInputOutputBindSegment(
 						sqlrservercursor *cursor,
 						uint16_t index,
@@ -649,9 +649,9 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 						uint64_t *fieldsize,
 						bool *blob,
 						bool *null);
-		bool	getLobFieldSize(sqlrservercursor *cursor,
+		bool	getLobFieldLength(sqlrservercursor *cursor,
 						uint32_t col,
-						uint64_t *size);
+						uint64_t *length);
 		bool	getLobFieldSegment(sqlrservercursor *cursor,
 						uint32_t col,
 						char *buffer,
@@ -1139,8 +1139,8 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		virtual	bool	outputBindCursor(const char *variable,
 						uint16_t variablesize,
 						sqlrservercursor *cursor);
-		virtual bool	getLobOutputBindSize(uint16_t index,
-							uint64_t *size);
+		virtual bool	getLobOutputBindLength(uint16_t index,
+							uint64_t *length);
 		virtual bool	getLobOutputBindSegment(uint16_t index,
 							char *buffer,
 							uint64_t buffersize,
@@ -1185,8 +1185,8 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 						uint16_t variablesize,
 						uint16_t index,
 						int16_t *isnull);
-		virtual bool	getLobInputOutputBindSize(uint16_t index,
-							uint64_t *size);
+		virtual bool	getLobInputOutputBindLength(uint16_t index,
+							uint64_t *length);
 		virtual bool	getLobInputOutputBindSegment(uint16_t index,
 							char *buffer,
 							uint64_t buffersize,
@@ -1244,8 +1244,8 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 						uint64_t *fieldsize,
 						bool *blob,
 						bool *null);
-		virtual bool	getLobFieldSize(uint32_t col,
-						uint64_t *size);
+		virtual bool	getLobFieldLength(uint32_t col,
+						uint64_t *length);
 		virtual bool	getLobFieldSegment(uint32_t col,
 						char *buffer,
 						uint64_t buffersize,

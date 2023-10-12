@@ -2978,14 +2978,14 @@ void sqlrprotocol_sqlrclient::sendLobOutputBind(sqlrservercursor *cursor,
 	debugFunction();
 
 	// Get lob size.  If this fails, send a NULL field.
-	uint64_t	lobsize;
-	if (!cont->getLobOutputBindSize(cursor,index,&lobsize)) {
+	uint64_t	loblength;
+	if (!cont->getLobOutputBindLength(cursor,index,&loblength)) {
 		sendNullField();
 		return;
 	}
 
 	// for lobs of 0 size
-	if (!lobsize) {
+	if (!loblength) {
 		startSendingLong(0);
 		sendLongSegment("",0);
 		endSendingLong();
@@ -3020,7 +3020,7 @@ void sqlrprotocol_sqlrclient::sendLobOutputBind(sqlrservercursor *cursor,
 
 			// if we haven't started sending yet, then do that now
 			if (start) {
-				startSendingLong(lobsize);
+				startSendingLong(loblength);
 				start=false;
 			}
 
@@ -3510,16 +3510,16 @@ void sqlrprotocol_sqlrclient::sendLobField(sqlrservercursor *cursor,
 							uint32_t col) {
 	debugFunction();
 
-	// Get lob size.  If this fails, send a NULL field.
-	uint64_t	lobsize;
-	if (!cont->getLobFieldSize(cursor,col,&lobsize)) {
+	// Get lob length.  If this fails, send a NULL field.
+	uint64_t	loblength;
+	if (!cont->getLobFieldLength(cursor,col,&loblength)) {
 		sendNullField();
 		cont->closeLobField(cursor,col);
 		return;
 	}
 
-	// for lobs of 0 size
-	if (!lobsize) {
+	// for lobs of 0 length
+	if (!loblength) {
 		startSendingLong(0);
 		sendLongSegment("",0);
 		endSendingLong();
@@ -3556,7 +3556,7 @@ void sqlrprotocol_sqlrclient::sendLobField(sqlrservercursor *cursor,
 
 			// if we haven't started sending yet, then do that now
 			if (start) {
-				startSendingLong(lobsize);
+				startSendingLong(loblength);
 				start=false;
 			}
 

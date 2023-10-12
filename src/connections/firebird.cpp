@@ -142,8 +142,8 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 						uint16_t variablesize,
 						uint16_t index,
 						int16_t *isnull);
-		bool		getLobOutputBindSize(uint16_t index,
-							uint64_t *size);
+		bool		getLobOutputBindLength(uint16_t index,
+							uint64_t *length);
 		bool		getLobOutputBindSegment(uint16_t index,
 							char *buffer,
 							uint64_t buffersize,
@@ -179,8 +179,8 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 					uint64_t *fieldsize,
 					bool *blob,
 					bool *null);
-		bool		getLobFieldSize(uint32_t col,
-						uint64_t *size);
+		bool		getLobFieldLength(uint32_t col,
+						uint64_t *length);
 		bool		getLobFieldSegment(uint32_t col,
 					char *buffer, uint64_t buffersize,
 					uint64_t offset, uint64_t charstoread,
@@ -1296,7 +1296,7 @@ bool firebirdcursor::outputBindClob(const char *variable,
 	return outputBindBlob(variable,variablesize,index,isnull);
 }
 
-bool firebirdcursor::getLobOutputBindSize(uint16_t index, uint64_t *size) {
+bool firebirdcursor::getLobOutputBindLength(uint16_t index, uint64_t *length) {
 
 	// open the blob
 	outbindblobhandle[index]=0;
@@ -1322,18 +1322,19 @@ bool firebirdcursor::getLobOutputBindSize(uint16_t index, uint64_t *size) {
 		retval=false;
 	}
 
-	// get the blob size from the result buffer
+	// get the blob length from the result buffer
 	for (const char *p=resultbuffer; *p!=isc_info_end;) {
 
 		// get the item type
 		char	itemtype=*p;
 		p++;
 
-		// get the item size
+		// get the item length
 		// (modern versions of isc_vax_integer take a const char *
 		// parameter, but old versions take char * and this cast works
 		// with both)
-		uint16_t	itemsize=(uint16_t)isc_vax_integer((char *)p,2);
+		uint16_t	itemlength=
+				(uint16_t)isc_vax_integer((char *)p,2);
 		p=p+2;
 
 		// get the lob length
@@ -1341,11 +1342,11 @@ bool firebirdcursor::getLobOutputBindSize(uint16_t index, uint64_t *size) {
 			// (modern versions of isc_vax_integer take a
 			// const char * parameter, but old versions take a
 			// char * and this cast works with both)
-			*size=isc_vax_integer((char *)p,itemsize);
+			*length=isc_vax_integer((char *)p,itemlength);
 		}
  
 		// move on
-		p=p+itemsize;
+		p=p+itemlength;
 	}
 				
 	// close the blob
@@ -2006,7 +2007,7 @@ void firebirdcursor::getField(uint32_t col,
 	}
 }
 
-bool firebirdcursor::getLobFieldSize(uint32_t col, uint64_t *size) {
+bool firebirdcursor::getLobFieldLength(uint32_t col, uint64_t *length) {
 
 	// ignore non-blobs
 	if (field[col].sqlrtype!=BLOB_DATATYPE) {
@@ -2037,30 +2038,31 @@ bool firebirdcursor::getLobFieldSize(uint32_t col, uint64_t *size) {
 		retval=false;
 	}
 
-	// get the blob size from the result buffer
+	// get the blob length from the result buffer
 	for (const char *p=resultbuffer; *p!=isc_info_end;) {
 
 		// get the item type
 		char	itemtype=*p;
 		p++;
 
-		// get the item size
+		// get the item length
 		// (modern versions of isc_vax_integer take a const char *
 		// parameter, but old versions take a char * and this cast
 		// works with both)
-		uint16_t	itemsize=(uint16_t)isc_vax_integer((char *)p,2);
+		uint16_t	itemlength=
+				(uint16_t)isc_vax_integer((char *)p,2);
 		p=p+2;
 
-		// get the lob size
+		// get the lob length
 		if (itemtype==isc_info_blob_total_length) {
 			// (modern versions of isc_vax_integer take a
 			// const char * parameter, but old versions take a
 			// char * and this cast works with both)
-			*size=isc_vax_integer((char *)p,itemsize);
+			*length=isc_vax_integer((char *)p,itemlength);
 		}
  
 		// move on
-		p=p+itemsize;
+		p=p+itemlength;
 	}
 
 	// close the blob

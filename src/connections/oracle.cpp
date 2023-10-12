@@ -286,8 +286,8 @@ class SQLRSERVER_DLLSPEC oraclecursor : public sqlrservercursor {
 						uint16_t index,
 						int16_t *isnull,
 						ub2 type);
-		bool		getLobOutputBindSize(uint16_t index,
-							uint64_t *size);
+		bool		getLobOutputBindLength(uint16_t index,
+							uint64_t *length);
 		bool		getLobOutputBindSegment(uint16_t index,
 					char *buffer, uint64_t buffersize,
 					uint64_t offset, uint64_t charstoread,
@@ -331,7 +331,8 @@ class SQLRSERVER_DLLSPEC oraclecursor : public sqlrservercursor {
 					bool *blob,
 					bool *null);
 		void		nextRow();
-		bool		getLobFieldSize(uint32_t col, uint64_t *size);
+		bool		getLobFieldLength(uint32_t col,
+							uint64_t *length);
 		bool		getLobFieldSegment(uint32_t col,
 					char *buffer, uint64_t buffersize,
 					uint64_t offset, uint64_t charstoread,
@@ -3409,13 +3410,13 @@ bool oraclecursor::outputBindGenericLob(const char *variable,
 	return true;
 }
 
-bool oraclecursor::getLobOutputBindSize(uint16_t index, uint64_t *size) {
-	ub4	lobsize=0;
+bool oraclecursor::getLobOutputBindLength(uint16_t index, uint64_t *length) {
+	ub4	loblength=0;
 	bool	retval=(OCILobGetLength(oracleconn->svc,
 				oracleconn->err,
 				outbind_lob[index],
-				&lobsize)==OCI_SUCCESS);
-	*size=lobsize;
+				&loblength)==OCI_SUCCESS);
+	*length=loblength;
 	return retval;
 }
 
@@ -4029,13 +4030,13 @@ void oraclecursor::nextRow() {
 	row++;
 }
 
-bool oraclecursor::getLobFieldSize(uint32_t col, uint64_t *size) {
-	ub4	lobsize=0;
+bool oraclecursor::getLobFieldLength(uint32_t col, uint64_t *length) {
+	ub4	loblength=0;
 	bool	retval=(OCILobGetLength(oracleconn->svc,
-				oracleconn->err,
-				def_lob[col][row],
-				&lobsize)==OCI_SUCCESS);
-	*size=lobsize;
+					oracleconn->err,
+					def_lob[col][row],
+					&loblength)==OCI_SUCCESS);
+	*length=loblength;
 	return retval;
 }
 

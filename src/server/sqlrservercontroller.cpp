@@ -10158,10 +10158,10 @@ bool sqlrservercontroller::getField(sqlrservercursor *cursor,
 					col,field,fieldsize);
 }
 
-bool sqlrservercontroller::getLobFieldSize(sqlrservercursor *cursor,
+bool sqlrservercontroller::getLobFieldLength(sqlrservercursor *cursor,
 							uint32_t col,
-							uint64_t *size) {
-	return cursor->getLobFieldSize(mapColumn(col),size);
+							uint64_t *length) {
+	return cursor->getLobFieldLength(mapColumn(col),length);
 }
 
 bool sqlrservercontroller::getLobFieldSegment(sqlrservercursor *cursor,
@@ -10243,10 +10243,10 @@ sqlrserverbindvar *sqlrservercontroller::getOutputBinds(
 	return cursor->getOutputBinds();
 }
 
-bool sqlrservercontroller::getLobOutputBindSize(sqlrservercursor *cursor,
+bool sqlrservercontroller::getLobOutputBindLength(sqlrservercursor *cursor,
 							uint16_t index,
-							uint64_t *size) {
-	return cursor->getLobOutputBindSize(index,size);
+							uint64_t *length) {
+	return cursor->getLobOutputBindLength(index,length);
 }
 
 bool sqlrservercontroller::getLobOutputBindSegment(sqlrservercursor *cursor,
@@ -10280,11 +10280,11 @@ sqlrserverbindvar *sqlrservercontroller::getInputOutputBinds(
 	return cursor->getInputOutputBinds();
 }
 
-bool sqlrservercontroller::getLobInputOutputBindSize(
+bool sqlrservercontroller::getLobInputOutputBindLength(
 						sqlrservercursor *cursor,
 						uint16_t index,
-						uint64_t *size) {
-	return cursor->getLobInputOutputBindSize(index,size);
+						uint64_t *length) {
+	return cursor->getLobInputOutputBindLength(index,length);
 }
 
 bool sqlrservercontroller::getLobInputOutputBindSegment(

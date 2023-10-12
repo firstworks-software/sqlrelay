@@ -215,7 +215,7 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 					uint64_t *fieldsize,
 					bool *blob,
 					bool *null);
-		bool		getLobFieldSize(uint32_t col, uint64_t *size);
+		bool		getLobFieldLength(uint32_t col, uint64_t *size);
 		bool		getLobFieldSegment(uint32_t col,
 					char *buffer, uint64_t buffersize,
 					uint64_t offset, uint64_t charstoread,
@@ -247,10 +247,10 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 		int32_t		columncount;
 		char		**field;
 		#ifdef SQLBINDCOL_SQLLEN
-		SQLLEN		*lobsize;
+		SQLLEN		*loblength;
 		SQLLEN		*indicator;
 		#else
-		SQLINTEGER	*lobsize;
+		SQLINTEGER	*loblength;
 		SQLINTEGER	*indicator;
 		#endif
 		odbccolumn 	*column;
@@ -2103,17 +2103,17 @@ void odbccursor::allocateResultSetBuffers(int32_t columncount) {
 	if (!columncount) {
 		this->columncount=0;
 		field=NULL;
-		lobsize=NULL;
+		loblength=NULL;
 		indicator=NULL;
 		column=NULL;
 	} else {
 		this->columncount=columncount;
 		field=new char *[columncount];
 		#ifdef SQLBINDCOL_SQLLEN
-		lobsize=new SQLLEN[columncount];
+		loblength=new SQLLEN[columncount];
 		indicator=new SQLLEN[columncount];
 		#else
-		lobsize=new SQLINTEGER[columncount];
+		loblength=new SQLINTEGER[columncount];
 		indicator=new SQLINTEGER[columncount];
 		#endif
 		uint32_t	maxfieldsize=conn->cont->getMaxFieldSize();
@@ -2131,7 +2131,7 @@ void odbccursor::deallocateResultSetBuffers() {
 		}
 		delete[] column;
 		delete[] field;
-		delete[] lobsize;
+		delete[] loblength;
 		delete[] indicator;
 		columncount=0;
 	}
@@ -3887,26 +3887,26 @@ void odbccursor::getField(uint32_t col,
 	*fldsize=indicator[col];
 }
 
-bool odbccursor::getLobFieldSize(uint32_t col, uint64_t *size) {
+bool odbccursor::getLobFieldLength(uint32_t col, uint64_t *length) {
 
-	// get the size of the lob
+	// get the length of the lob
 
 	// a valid buffer must be provided, but it's ok to fetch 0 bytes into it
 	SQLCHAR	buffer[1];
-	erg=SQLGetData(stmt,col+1,SQL_C_BINARY,buffer,0,&(lobsize[col]));
+	erg=SQLGetData(stmt,col+1,SQL_C_BINARY,buffer,0,&(loblength[col]));
 	if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
 		return false;
 	}
 
 	// FIXME: SQL Server XML types reliably return SQL_NO_TOTAL, so for now
 	// we aren't handling them as LOBs.  Is there some other way we can
-	// determine the size?
-	if (lobsize[col]==SQL_NO_TOTAL) {
+	// determine the length?
+	if (loblength[col]==SQL_NO_TOTAL) {
 		return false;
 	}
 
-	// copy out the size
-	*size=lobsize[col];
+	// copy out the length
+	*length=loblength[col];
 
 	return true;
 }
@@ -3917,13 +3917,13 @@ bool odbccursor::getLobFieldSegment(uint32_t col,
 					uint64_t *charsread) {
 
 	// bail if we're attempting to start reading past the end
-	if (offset>(uint64_t)lobsize[col]) {
+	if (offset>(uint64_t)loblength[col]) {
 		return false;
 	}
 
 	// prevent attempts to read past the end
-	if (offset+charstoread>(uint64_t)lobsize[col]) {
-		charstoread=charstoread-((offset+charstoread)-lobsize[col]);
+	if (offset+charstoread>(uint64_t)loblength[col]) {
+		charstoread=charstoread-((offset+charstoread)-loblength[col]);
 	}
 
 	// read a blob segment, at most MAX_LOB_CHUNK_SIZE bytes at a time

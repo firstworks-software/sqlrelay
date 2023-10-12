@@ -211,8 +211,8 @@ class SQLRSERVER_DLLSPEC routercursor : public sqlrservercursor {
 		bool		outputBindCursor(const char *variable,
 						uint16_t variablesize,
 						sqlrservercursor *cursor);
-		bool		getLobOutputBindSize(uint16_t index,
-						uint64_t *size);
+		bool		getLobOutputBindLength(uint16_t index,
+						uint64_t *length);
 		bool		getLobOutputBindSegment(uint16_t index,
 						char *buffer,
 						uint64_t buffersize,
@@ -1555,8 +1555,8 @@ bool routercursor::outputBindCursor(const char *variable,
 	return true;
 }
 
-bool routercursor::getLobOutputBindSize(uint16_t index, uint64_t *size) {
-	*size=currentcur->getOutputBindLength(obv[index].variable);
+bool routercursor::getLobOutputBindLength(uint16_t index, uint64_t *length) {
+	*length=currentcur->getOutputBindLength(obv[index].variable);
 	return true;
 }
 

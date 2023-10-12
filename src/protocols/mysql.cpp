@@ -3837,8 +3837,8 @@ bool sqlrprotocol_mysql::buildTextRow(sqlrservercursor *cursor,
 							uint32_t col) {
 
 	// Get lob size.  If this fails, send a NULL field.
-	uint64_t	lobsize=0;
-	if (!cont->getLobFieldSize(cursor,col,&lobsize)) {
+	uint64_t	loblength=0;
+	if (!cont->getLobFieldLEngth(cursor,col,&loblength)) {
 		// send NULL as 0xfb
 		write(&resppacket,(char)0xfb);
 		cont->closeLobField(cursor,col);
@@ -3846,11 +3846,11 @@ bool sqlrprotocol_mysql::buildTextRow(sqlrservercursor *cursor,
 	}
 
 	if (getDebug()) {
-		stdoutput.printf("		lob size: %lld\n",lobsize);
+		stdoutput.printf("		lob length: %lld\n",loblength);
 	}
 
-	// for lobs of 0 size
-	if (!lobsize) {
+	// for lobs of 0 length
+	if (!loblength) {
 		writeLenEncInt(&resppacket,0);
 		cont->closeLobField(cursor,col);
 		return;
@@ -3897,8 +3897,7 @@ bool sqlrprotocol_mysql::buildTextRow(sqlrservercursor *cursor,
 
 			// if we haven't started sending yet, then do that now
 			if (start) {
-				writeLenEncInt(
-						&resppacket,lobsize);
+				writeLenEncInt(&resppacket,loblength);
 				start=false;
 			}
 
@@ -3917,7 +3916,7 @@ void sqlrprotocol_mysql::buildLobField(sqlrservercursor *cursor,
 	// Read the lob into a temp buffer, then append that to resppacket.
 	// This isn't especially efficient.  However, the mysql protocol needs
 	// us to send the number of bytes that compose the lob, but for clobs,
-	// getLobFieldSize() may return the number of characters instead.  If
+	// getLobFieldLength() may return the number of characters instead.  If
 	// the lob contains multi-byte characters, then there will be more bytes
 	// than characters and the client will complain about a malformed
 	// packet, at best.  This is the only reliable way to get the actual
@@ -3944,8 +3943,8 @@ void sqlrprotocol_mysql::buildLobField(sqlrservercursor *cursor,
 
 	// FIXME: kludgy
 	// this is necessary to open the lob, at least with mysql
-	uint64_t	lobsize=0;
-	cont->getLobFieldSize(cursor,col,&lobsize);
+	uint64_t	loblength=0;
+	cont->getLobFieldLength(cursor,col,&loblength);
 
 	for (;;) {
 
