@@ -2458,7 +2458,7 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslations {
 
 		bool	load(domnode *parameters);
 
-		uint64_t	getRowBlockSize();
+		uint64_t	getRowBlockCount();
 
 		bool	setRow(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,

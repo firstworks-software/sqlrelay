@@ -9979,7 +9979,7 @@ bool sqlrservercontroller::fetchRow(sqlrservercursor *cursor, bool *error) {
 
 		// if we're on the first row of a block...
 		if (!(cursor->getTotalRowsFetched()%
-				pvt->_sqlrrsrbt->getRowBlockSize())) {
+				pvt->_sqlrrsrbt->getRowBlockCount())) {
 
 			if (pvt->_debugsqlrresultsetrowblocktranslation) {
 				stdoutput.printf("\n===================="
@@ -9992,7 +9992,7 @@ bool sqlrservercontroller::fetchRow(sqlrservercursor *cursor, bool *error) {
 
 			// for each row in the block...
 			for (uint32_t j=0;
-				j<pvt->_sqlrrsrbt->getRowBlockSize(); j++) {
+				j<pvt->_sqlrrsrbt->getRowBlockCount(); j++) {
 
 				// fetch the row, bail if fetch failed
 				if (!cursor->fetchRow(error)) {
