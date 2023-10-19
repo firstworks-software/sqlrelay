@@ -1,6 +1,18 @@
 // Copyright (c) 1999-2018 David Muse
 // See the file COPYING for more information
 
+class SQLRSERVER_DLLSPEC sqlrlistener {
+	public:
+		sqlrlistener();
+		~sqlrlistener();
+
+		bool	init(int argc, const char **argv);
+		bool	listen();
+
+		const char	*getId();
+		const char	*getLogDir();
+		const char	*getDebugDir();
+
 	private:
 		void	cleanUp();
 		void	setUserAndGroup();
@@ -91,3 +103,4 @@
 		static void	alarmHandler(int32_t signum);
 
 		sqlrlistenerprivate	*pvt;
+};

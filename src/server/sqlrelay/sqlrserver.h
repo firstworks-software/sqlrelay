@@ -6,20 +6,7 @@
 
 #include <sqlrelay/private/sqlrserverincludes.h>
 
-class SQLRSERVER_DLLSPEC sqlrlistener {
-	public:
-		sqlrlistener();
-		~sqlrlistener();
-
-		bool	init(int argc, const char **argv);
-		bool	listen();
-
-		const char	*getId();
-		const char	*getLogDir();
-		const char	*getDebugDir();
-
-		#include <sqlrelay/private/sqlrlistener.h>
-};
+#include <sqlrelay/private/sqlrlistener.h>
 
 enum sqlrcursorstate_t {
 	SQLRCURSORSTATE_AVAILABLE=0,
@@ -114,13 +101,6 @@ class SQLRSERVER_DLLSPEC sqlrserverbindvar {
 
 class SQLRSERVER_DLLSPEC sqlrservercontroller {
 	public:
-		sqlrservercontroller();
-		~sqlrservercontroller();
-
-		bool	init(int argc, const char **argv);
-		bool	listen();
-
-
 		// connection api...
 
 		// connect string 

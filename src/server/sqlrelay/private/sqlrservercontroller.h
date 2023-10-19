@@ -1,6 +1,13 @@
 // Copyright (c) 1999-2018 David Muse
 // See the file COPYING for more information
 
+	public:
+		sqlrservercontroller();
+		~sqlrservercontroller();
+
+		bool	init(int argc, const char **argv);
+		bool	listen();
+
 	private:
 		void	setUserAndGroup();
 
