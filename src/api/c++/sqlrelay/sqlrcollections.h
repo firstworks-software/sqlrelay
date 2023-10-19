@@ -6,6 +6,15 @@
 
 #include <sqlrelay/private/sqlrcollectionsincludes.h>
 
+/** The sqlrscalar class is a read-only implementation of the rudiments
+ *  scalarcollection<const char *> class.
+ *
+ *  After setting the cursor, row, and column, it provides read-only access to
+ *  the value of a single field in the result set.
+ *
+ *  The instance can be passed into any method that operates on a read-only
+ *  rudiments scalar<const char *>, or otherwise used in the same manner that a
+ *  read-only rudiments scaler<const char *> would be. */
 class SQLRCLIENT_DLLSPEC sqlrscalar : public scalarcollection<const char *> {
 	public:
 		/** Creates an empty instance of the sqlrscalar class. */
@@ -48,6 +57,15 @@ class SQLRCLIENT_DLLSPEC sqlrscalar : public scalarcollection<const char *> {
 		#include <sqlrelay/private/sqlrscalar.h>
 };
 
+/** The sqlrlistnode class is a read-only implementation of the rudiments
+ *  listnode<const char *> class.
+ *
+ *  Used with sqlrrowlist or sqlrresultsetlist, it provides read-only access to
+ *  the value of a single field in the result set.
+ *
+ *  The instance can be passed into any method that operates on a read-only
+ *  rudiments listnode<const char *>, or otherwise used in the same manner that
+ *  a read-only rudiments listnode<const char *> would be. */
 class SQLRCLIENT_DLLSPEC sqlrlistnode : public listnode<const char *> {
 	public:
 		/** Returns the value (field) stored in the node. */
@@ -68,6 +86,16 @@ class SQLRCLIENT_DLLSPEC sqlrlistnode : public listnode<const char *> {
 		#include <sqlrelay/private/sqlrlistnode.h>
 };
 
+/** The sqlrrowlist class is a read-only, block-based implementation of the
+ *  rudiments listcollection<const char *> class.
+ *
+ *  After setting the cursor and row, it provides read-only, block-based access
+ *  to the values of a single row in the result set.
+ *
+ *  The instance can be passed into any method that operates on a read-only,
+ *  block-based rudiments listcollection<const char *>, or otherwise used in
+ *  the same manner that a read-only, block-based rudiments
+ *  listcollection<const char *> would be. */
 class SQLRCLIENT_DLLSPEC sqlrrowlist : public listcollection<const char *> {
 	public:
 		/** Creates an empty instance of the sqlrrowlist class. */
@@ -126,6 +154,16 @@ class SQLRCLIENT_DLLSPEC sqlrrowlist : public listcollection<const char *> {
 		#include <sqlrelay/private/sqlrrowlist.h>
 };
 
+/** The sqlrrowdictionary class is a read-only implementation of the rudiments
+ *  dictionarycollection<const char *, const char *> class.
+ *
+ *  After setting the cursor and row, it provides read-only access to the
+ *  values of a single row in the result set, by column name.
+ *
+ *  The instance can be passed into any method that operates on a read-only
+ *  rudiments dictionarycollection<const char *, const char *>, or otherwise
+ *  used in the same manner that a read-only rudiments
+ *  dictionarycollection<const char *, const char *> would be. */
 class SQLRCLIENT_DLLSPEC sqlrrowdictionary :
 		public dictionarycollection<const char *, const char *> {
 	public:
@@ -192,6 +230,16 @@ class SQLRCLIENT_DLLSPEC sqlrrowdictionary :
 		#include <sqlrelay/private/sqlrrowdictionary.h>
 };
 
+/** The sqlrrowlist class is a read-only, block-based implementation of the
+ *  rudiments listcollection<const char *> class.
+ *
+ *  After setting the cursor and column, it provides read-only, block-based
+ *  access to the values in that column of each row in the result set.
+ *
+ *  The instance can be passed into any method that operates on a read-only,
+ *  block-based rudiments listcollection<const char *>, or otherwise used in
+ *  the same manner that a read-only, block-based rudiments
+ *  listcollection<const char *> would be. */
 class SQLRCLIENT_DLLSPEC sqlrresultsetlist :
 				public listcollection<const char *> {
 	public:
@@ -255,7 +303,16 @@ class SQLRCLIENT_DLLSPEC sqlrresultsetlist :
 		#include <sqlrelay/private/sqlrresultsetlist.h>
 };
 
-/** Read-only, block-based, sequential-access. */
+/** The sqlrrowlist class is a read-only, block-based, sequential
+ *  implementation of the rudiments tablecollection<const char *> class.
+ *
+ *  After setting the cursor, it provides read-only, block-based, sequential
+ *  access to the values of the fields in the result set.
+ *
+ *  The instance can be passed into any method that operates on a read-only,
+ *  block-based, sequential rudiments tablecollection<const char *>, or
+ *  otherwise used in the same manner that a read-only, block-based, sequential
+ *  rudiments tablecollection<const char *> would be. */
 class SQLRCLIENT_DLLSPEC sqlrresultsettable :
 				public tablecollection<const char *> {
 	public:
