@@ -3959,7 +3959,7 @@ void sqlrservercontroller::translateBindVariables(sqlrservercursor *cursor) {
 
 bool sqlrservercontroller::matchesNativeBindFormat(const char *bind) {
 
-	const char	*bindformat=pvt->_conn->bindFormat();
+	const char	*bindformat=pvt->_conn->getBindFormat();
 	size_t		bindformatsize=charstring::getLength(bindformat);
 
 	// the bind variable name matches the format if...
@@ -3988,7 +3988,7 @@ void sqlrservercontroller::translateBindVariableInStringAndMap(
 						stringbuffer *newquery) {
 
 	// get the bind format
-	const char	*bindformat=pvt->_conn->bindFormat();
+	const char	*bindformat=pvt->_conn->getBindFormat();
 
 	// replace the bind variable delimiter with whatever we would expect to
 	// find for this database
@@ -4070,7 +4070,7 @@ void sqlrservercontroller::mapBindVariable(sqlrservercursor *cursor,
 	charstring::copy(oldvariable,bindvariable,bindvariablesize);
 	oldvariable[bindvariablesize]='\0';
 
-	newvariable[0]=bindFormat()[0];
+	newvariable[0]=getBindFormat()[0];
 	charstring::copy(newvariable+1,tempnumber);
 	newvariable[tempnumbersize+1]='\0';
 
@@ -7882,7 +7882,7 @@ void sqlrservercontroller::bulkLoadParseInsert(const char *query,
 				// override whatever bind prefix was in the
 				// query with the correct one (in case a
 				// non-native bind format was used)
-				parts[i][0]=bindFormat()[0];
+				parts[i][0]=getBindFormat()[0];
 				binds->append(parts[i]);
 			}
 		}
@@ -8822,8 +8822,8 @@ bool sqlrservercontroller::getInitialAutoCommit() {
 	return pvt->_initialautocommit;
 }
 
-const char *sqlrservercontroller::bindFormat() {
-	return pvt->_conn->bindFormat();
+const char *sqlrservercontroller::getBindFormat() {
+	return pvt->_conn->getBindFormat();
 }
 
 int16_t sqlrservercontroller::nonNullBindValue() {

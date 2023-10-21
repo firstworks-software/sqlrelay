@@ -1065,7 +1065,7 @@ void sqlrprotocol_sqlrclient::bindFormatCommand() {
 	cont->raiseDebugMessageEvent("bind format");
 
 	// get the bind format
-	const char	*bf=cont->bindFormat();
+	const char	*bf=cont->getBindFormat();
 
 	// send it to the client
 	clientsock->write((uint16_t)NO_ERROR_OCCURRED);
@@ -2201,7 +2201,7 @@ bool sqlrprotocol_sqlrclient::getBindVarName(sqlrservercursor *cursor,
 	// get the variable name
 	bv->variablesize=bindnamesize+1;
 	bv->variable=(char *)bindpool->allocate(bindnamesize+2);
-	bv->variable[0]=cont->bindFormat()[0];
+	bv->variable[0]=cont->getBindFormat()[0];
 	result=clientsock->read(bv->variable+1,bindnamesize,
 					idleclienttimeout,0);
 	if (result!=bindnamesize) {

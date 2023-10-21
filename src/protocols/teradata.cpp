@@ -3553,7 +3553,7 @@ void sqlrprotocol_teradata::parseUsing() {
 		inbind->variablesize++;
 		inbind->variable=
 			(char *)bindpool->allocate(inbind->variablesize+1);
-		inbind->variable[0]=cont->bindFormat()[0];
+		inbind->variable[0]=cont->getBindFormat()[0];
 		charstring::copy(inbind->variable+1,ptr,inbind->variablesize);
 		inbind->variable[inbind->variablesize]='\0';
 		if (bv==queryend) {
@@ -4407,7 +4407,7 @@ bool sqlrprotocol_teradata::parseParameterExtension(
 	char	*var=charstring::parseNumber(ibcount+1);
 	inbind->variablesize=charstring::getLength(var)+1;
 	inbind->variable=(char *)bindpool->allocate(inbind->variablesize+1);
-	inbind->variable[0]=cont->bindFormat()[0];
+	inbind->variable[0]=cont->getBindFormat()[0];
 	charstring::copy(inbind->variable+1,var,inbind->variablesize);
 	inbind->variable[inbind->variablesize]='\0';
 	delete[] var;

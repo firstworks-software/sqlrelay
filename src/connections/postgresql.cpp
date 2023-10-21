@@ -50,7 +50,7 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 		bool		getLastInsertId(uint64_t *id);
 		const char	*getLastInsertIdQuery();
 		const char	*noopQuery();
-		const char	*bindFormat();
+		const char	*getBindFormat();
 		const char	*nextvalFormat();
 
 		dictionary< int32_t, char *>	datatypes;
@@ -726,14 +726,14 @@ const char *postgresqlconnection::noopQuery() {
 	return "do language plpgsql $$declare dummy int; begin end$$";
 }
 
-const char *postgresqlconnection::bindFormat() {
+const char *postgresqlconnection::getBindFormat() {
 #if (defined(HAVE_POSTGRESQL_PQPREPARE) && \
 		defined(HAVE_POSTGRESQL_PQEXECPREPARED)) || \
 		(defined(HAVE_POSTGRESQL_PQSENDQUERYPREPARED) && \
 		defined(HAVE_POSTGRESQL_PQSETSINGLEROWMODE))
 	return "$1";
 #else
-	return sqlrserverconnection::bindFormat();
+	return sqlrserverconnection::getBindFormat();
 #endif
 }
 

@@ -269,7 +269,7 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 		const char	*getLastInsertIdQuery();
 		const char	*setIsolationLevelQuery();
 		const char	*noopQuery();
-		const char	*bindFormat();
+		const char	*getBindFormat();
 		const char	*nextvalFormat();
 
 		SQLHENV		env;
@@ -721,7 +721,7 @@ const char *db2connection::getColumnListQuery(const char *table, bool wild) {
 		"	colno";
 }
 
-const char *db2connection::bindFormat() {
+const char *db2connection::getBindFormat() {
 	return "?";
 }
 

@@ -308,8 +308,21 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 
 
 
-		// bind variables
-		const char	*bindFormat();
+		// bind variables...
+
+		/** Returns a string representing the bind variable format used
+		 *  by the database.  For example:
+		 *
+		 *  ?  - database uses a ? to represent a bind variable
+		 *  @* - database uses a @ followed by any characters to
+		 *       represent a bind variable
+		 *  $1 - database uses a $ followed by a number to represent a
+		 *       bind variable
+		 *  :* - database uses a : followed by any characters to
+		 *       represent a bind variable
+		 */
+		const char	*getBindFormat();
+
 		int16_t		nonNullBindValue();
 		int16_t		nullBindValue();
 		bool		bindValueIsNull(int16_t isnull);
@@ -1042,17 +1055,30 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		virtual bool		setIsolationLevel(const char *isolevel);
 		virtual const char	*setIsolationLevelQuery();
 
+		/** Pings the database using the "ping query" defined by the
+		 *  database connection module.  Returns true if the ping
+		 *  succeeded and false if it failed. */
 		virtual bool		ping();
 		virtual const char	*pingQuery();
 
+		/** Returns the type of database: oracle, mysql, postgresql,
+		 *  odbc, etc. */
 		virtual const char	*getDbType()=0;
 
+		/** Returns the database version. */
 		virtual	const char	*getDbVersion()=0;
 
 		virtual const char	*getDbHostNameQuery();
 		virtual const char	*getDbIpAddressQuery();
+
+		/** Returns the host name of the server hosting the
+		 *  database. */
 		virtual const char	*getDbHostName();
+
+		/** Returns the IP address of the server hosting the
+		 *  database. */
 		virtual const char	*getDbIpAddress();
+
 		virtual bool		cacheDbHostInfo();
 
 		virtual bool		getListsByApiCalls();
@@ -1145,7 +1171,19 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		virtual void			deleteCursor(
 						sqlrservercursor *curs)=0;
 
-		virtual	const char	*bindFormat();
+		/** Returns a string representing the bind variable format used
+		 *  by the database.  For example:
+		 *
+		 *  ?  - database uses a ? to represent a bind variable
+		 *  @* - database uses a @ followed by any characters to
+		 *       represent a bind variable
+		 *  $1 - database uses a $ followed by a number to represent a
+		 *       bind variable
+		 *  :* - database uses a : followed by any characters to
+		 *       represent a bind variable
+		 */
+		virtual	const char	*getBindFormat();
+
 		virtual	int16_t		nonNullBindValue();
 		virtual	int16_t		nullBindValue();
 		virtual bool		bindValueIsNull(int16_t isnull);

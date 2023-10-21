@@ -258,7 +258,7 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 		const char	*getLastInsertIdQuery();
 		const char	*setIsolationLevelQuery();
 		const char	*noopQuery();
-		const char	*bindFormat();
+		const char	*getBindFormat();
 
 		SQLHENV		env;
 		SQLRETURN	erg;
@@ -757,7 +757,7 @@ const char *informixconnection::getColumnListQuery(
 		"	syscolumns.colno";
 }
 
-const char *informixconnection::bindFormat() {
+const char *informixconnection::getBindFormat() {
 	return "?";
 }
 

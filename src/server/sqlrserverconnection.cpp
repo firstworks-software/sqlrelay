@@ -996,7 +996,7 @@ const char *sqlrserverconnection::isSynonymQuery() {
 	return NULL;
 }
 
-const char *sqlrserverconnection::bindFormat() {
+const char *sqlrserverconnection::getBindFormat() {
 	return ":*";
 }
 

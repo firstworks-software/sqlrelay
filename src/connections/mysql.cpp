@@ -213,7 +213,7 @@ class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 		const char	*getDbVersion();
 		const char	*getDbHostName();
 #ifdef HAVE_MYSQL_STMT_PREPARE
-		const char	*bindFormat();
+		const char	*getBindFormat();
 #endif
 		const char	*nextvalFormat();
 		const char	*getDatabaseListQuery(bool wild);
@@ -664,7 +664,7 @@ const char *mysqlconnection::getDbHostName() {
 }
 
 #ifdef HAVE_MYSQL_STMT_PREPARE
-const char *mysqlconnection::bindFormat() {
+const char *mysqlconnection::getBindFormat() {
 	return "?";
 }
 #endif

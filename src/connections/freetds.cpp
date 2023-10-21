@@ -260,7 +260,7 @@ class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 		const char	*getCurrentDatabaseQuery();
 		const char	*getLastInsertIdQuery();
 		const char	*getNoopQuery();
-		const char	*bindFormat();
+		const char	*getBindFormat();
 		const char	*beginTransactionQuery();
 		const char	*tempTableDropPrefix();
 		bool		commit();
@@ -844,7 +844,7 @@ const char *freetdsconnection::getNoopQuery() {
 	return "waitfor delay '0:0'";
 }
 
-const char *freetdsconnection::bindFormat() {
+const char *freetdsconnection::getBindFormat() {
 	return "@*";
 }
 

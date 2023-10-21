@@ -373,7 +373,7 @@ bool sqlrtrigger_upsert::copyInputBinds(sqlrservercursor *ucur,
 		// it to the corresponding column
 		if (isBind(val)) {
 
-			if (cont->bindFormat()[0]=='?') {
+			if (cont->getBindFormat()[0]=='?') {
 
 				// we only support bind by position...
 
@@ -499,7 +499,7 @@ void sqlrtrigger_upsert::copyInputBind(memorypool *pool, bool where,
 	// We do need to rename the variable for the copy of the bind that
 	// we'll use in the where clause though....
 
-	if (charstring::contains(cont->bindFormat(),'*')) {
+	if (charstring::contains(cont->getBindFormat(),'*')) {
 
 		// if we support named binds, then prepend "where_"
 		// to the variable name
@@ -529,7 +529,7 @@ void sqlrtrigger_upsert::copyInputBind(memorypool *pool, bool where,
 					bindnumber);
 
 		// unless we only support bind-by-position...
-		if (cont->bindFormat()[0]!='?') {
+		if (cont->getBindFormat()[0]!='?') {
 
 			// map the set -> where bind variable name for
 			// easier lookup when building the update query

@@ -249,7 +249,7 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		const char	*getGlobalTempTableListQuery();
 		const char	*getColumnListQuery(
 						const char *table, bool wild);
-		const char	*bindFormat();
+		const char	*getBindFormat();
 		const char	*nextvalFormat();
 		const char	*getLastInsertIdQuery();
 		const char	*noopQuery();
@@ -746,7 +746,7 @@ const char *firebirdconnection::getColumnListQuery(
 		"	r.rdb$field_position";
 }
 
-const char *firebirdconnection::bindFormat() {
+const char *firebirdconnection::getBindFormat() {
 	return "?";
 }
 

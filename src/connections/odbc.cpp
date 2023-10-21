@@ -328,7 +328,7 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		bool		ping();
 		const char	*getDbType();
 		const char	*getDbVersion();
-		const char	*bindFormat();
+		const char	*getBindFormat();
 		const char	*nextvalFormat();
 		const char	*getLastInsertIdQuery();
 		bool		getListsByApiCalls();
@@ -1181,7 +1181,7 @@ const char *odbcconnection::getDbVersion() {
 	return dbversion;
 }
 
-const char *odbcconnection::bindFormat() {
+const char *odbcconnection::getBindFormat() {
 	// FIXME: not true for all db's
 	return "?";
 }
