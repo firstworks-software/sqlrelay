@@ -8,6 +8,8 @@
 		bool	init(int argc, const char **argv);
 		bool	listen();
 
+		void	reLogIn();
+
 	private:
 		void	setUserAndGroup();
 

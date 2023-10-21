@@ -103,43 +103,153 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 	public:
 		// connection api...
 
-		// connect string 
+
+
+		// connect string...
+
+		/** Returns the value of parameter "variable", of the string
+		 *  attribute, of the connection tag, in the config file. */
 		const char	*getConnectStringValue(const char *variable);
-		void		setConnectTimeout(uint64_t connecttimeout);
-		uint64_t	getConnectTimeout();
-		void		setQueryTimeout(uint64_t querytimeout);
-		uint64_t	getQueryTimeout();
-		void		setExecuteDirect(bool executedirect);
-		bool		getExecuteDirect();
 
-		// environment
-		const char	*getId();
-		const char	*getConnectionId();
-		const char	*getLogDir();
-		const char	*getDebugDir();
+		/** Sets the user that will be used to connect to the database
+		 *  to "user".
+		 * 
+		 *  During initialization of the sqlr-connection, this is set
+		 *  to the value of the "user" parameter, of the string
+		 *  attribute, of the connection tag, in the config file.
+		 *
+		 *  This method may be called by a module to override that. */
+		void	setUser(const char *user);
 
-		// passthrough
-		bool	send(byte_t *data, size_t size);
-		bool	recv(byte_t **data, size_t *size);
-
-		// re-login to the database
-		void	reLogIn();
-
-		// backend auth
-		void		setUser(const char *user);
-		void		setPassword(const char *password);
+		/** Returns the user that will be used to connect to the
+		 *  database.
+		 *
+		 *  Unless overridden by a call to setUser(), this will be the
+		 *  value of the "user" parameter, of the string attribute, of
+		 *  the connection tag, in the config file. */
 		const char	*getUser();
+
+		/** Sets the password that will be used to connect to the
+		 *  database to "password".
+		 * 
+		 *  During initialization of the sqlr-connection, this is set
+		 *  to the value of the "password" parameter, of the string
+		 *  attribute, of the connection tag, in the config file.
+		 *
+		 *  This method may be called by a module to override that. */
+		void	setPassword(const char *password);
+
+		/** Returns the password that will be used to connect to the
+		 *  database.
+		 *
+		 *  Unless overridden by a call to setPassword(), this will be
+		 *  the value of the "password" parameter, of the string
+		 *  attribute, of the connection tag, in the config file. */
 		const char	*getPassword();
 
-		// client auth
-		sqlrcredentials	*getCredentials(const char *user,
-						const char *password,
-						bool usegss,
-						bool usetls);
-		bool		auth(sqlrcredentials *cred);
-		bool		changeUser(const char *newuser,
+		/** Sets the connect timeout.
+		 * 
+		 *  During initialization of the sqlr-connection, this is set
+		 *  to the value of the "connecttimeout" parameter, of the
+		 *  string attribute, of the connection tag, in the config
+		 *  file.
+		 *
+		 *  This method may be called by a module to override that. */
+		void	setConnectTimeout(uint64_t connecttimeout);
+
+		/** Returns the connect timeout.
+		 *
+		 *  Unless overridden by a call to setConnectTimeout(), this
+		 *  will be the value of the "connecttimeout" parameter, of the
+		 *  string attribute, of the connection tag, in the config
+		 *  file. */
+		uint64_t	getConnectTimeout();
+
+		/** Sets the query timeout.
+		 * 
+		 *  During initialization of the sqlr-connection, this is set
+		 *  to the value of the "querytimeout" parameter, of the
+		 *  string attribute, of the connection tag, in the config
+		 *  file.
+		 *
+		 *  This method may be called by a module to override that. */
+		void	setQueryTimeout(uint64_t querytimeout);
+
+		/** Returns the query timeout.
+		 *
+		 *  Unless overridden by a call to setQueryTimeout(), this
+		 *  will be the value of the "querytimeout" attribute, of the
+		 *  string attribute, of the connection tag, in the config
+		 *  file. */
+		uint64_t	getQueryTimeout();
+
+		/** Sets whether or not to execute direct.
+		 * 
+		 *  During initialization of the sqlr-connection, this is set
+		 *  to the value of the "executedirect" parameter, of the
+		 *  string attribute, of the connection tag, in the config
+		 *  file.
+		 *
+		 *  This method may be called by a module to override that. */
+		void	setExecuteDirect(bool executedirect);
+
+		/** Returns whether or not to execute direct.
+		 *
+		 *  Unless overridden by a call to setExecuteDirect(), this
+		 *  will be the value of the "executedirect" parameter, of the
+		 *  string attribute, of the connection tag, in the config
+		 *  file. */
+		bool	getExecuteDirect();
+
+
+
+		// environment...
+
+		/** Returns the id of the connection - the value of the id
+		 *  attribute, of the instance tag, in the config file. */
+		const char	*getId();
+
+		/** Returns the connection id of the connection - the value
+ 		 *  of the connectionid attribute, of the connection tag,
+ 		 *  in the config file. */
+		const char	*getConnectionId();
+
+		/** Returns the directory that the connection logs to. */
+		const char	*getLogDir();
+
+		/** Returns the directory that the connection outputs debug
+		 *  to. */
+		const char	*getDebugDir();
+
+
+
+		// passthrough...
+
+		/** Sends "size" bytes of "data" to the database. */
+		bool	send(byte_t *data, size_t size);
+
+		/** Receives "size" bytes from the database into buffer
+ 		 *  "data". */
+		bool	recv(byte_t **data, size_t *size);
+
+
+
+		// client auth...
+
+		/** Authenticates "cred".  Returns true if authentication was
+		 *  successful and false otherwise. */
+		bool	auth(sqlrcredentials *cred);
+
+		/** Logs out of the database and back in as "newuser" using
+		 *  password "newpassword".  Returns true if login was
+		 *  successful and false otherwise. */
+		bool	changeUser(const char *newuser,
 						const char *newpassword);
-		bool		changeProxiedUser(const char *newuser,
+
+		/** Switches from the current proxied user to "newuser" using
+		 *  password "newpassword".  Returns true if successful and
+		 *  false otherwise. */
+		bool	changeProxiedUser(const char *newuser,
 						const char *newpassword);
 
 		// close client connection
@@ -839,7 +949,15 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		virtual bool	supportsAuthOnDatabase();
 		virtual	void	handleConnectString();
 
+
+
+		// passthrough...
+
+		/** Sends "size" bytes of "data" to the database. */
 		virtual	bool	send(byte_t *data, size_t size);
+
+		/** Receives "size" bytes from the database into buffer
+ 		 *  "data". */
 		virtual	bool	recv(byte_t **data, size_t *size);
 
 		virtual	bool	logIn(const char **error,

@@ -2185,52 +2185,6 @@ sqlrservercursor *sqlrservercontroller::getCursor() {
 	return pvt->_cur[firstnewcursor];
 }
 
-sqlrcredentials *sqlrservercontroller::getCredentials(const char *user,
-							const char *password,
-							bool usegss,
-							bool usetls) {
-
-	// try to use gss credentials
-	if (usegss) {
-
-		gsscontext	*ctx=getGssContext();
-		if (ctx) {
-			sqlrgsscredentials	*gsscred=
-					new sqlrgsscredentials();
-			gsscred->setInitiator(ctx->getInitiator());
-			return gsscred;
-		}
-		return NULL;
-	}
-
-	// try to use tls credentials
-	// (unless a user was passed in)
-	if (usetls && charstring::isNullOrEmpty(user)) {
-
-		tlscontext	*ctx=getTlsContext();
-		if (ctx) {
-			tlscertificate	*cert=ctx->getPeerCertificate();
-			if (cert) {
-				sqlrtlscredentials	*tlscred=
-					new sqlrtlscredentials();
-				tlscred->setSubjectAlternateNames(
-				cert->getSubjectAlternateNames());
-				tlscred->setCommonName(
-					cert->getCommonName());
-				return tlscred;
-			}
-		}
-		return NULL;
-	}
-
-	// use user/password credentials
-	sqlruserpasswordcredentials	*upcred=
-					new sqlruserpasswordcredentials();
-	upcred->setUser(user);
-	upcred->setPassword(password);
-	return upcred;
-}
-
 bool sqlrservercontroller::auth(sqlrcredentials *cred) {
 
 	raiseDebugMessageEvent("auth...");

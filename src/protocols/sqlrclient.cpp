@@ -796,9 +796,48 @@ bool sqlrprotocol_sqlrclient::authCommand() {
 	}
 
 	// build credentials...
-	sqlrcredentials	*cred=cont->getCredentials(
-					userbuffer,passwordbuffer,
-					useKrb(),useTls());
+	sqlrcredentials	*cred=NULL;
+
+	// try to use gss credentials
+	if (useKrb()) {
+
+		gsscontext	*ctx=getGssContext();
+		if (ctx) {
+			sqlrgsscredentials	*gsscred=
+						new sqlrgsscredentials();
+			gsscred->setInitiator(ctx->getInitiator());
+			cred=gsscred;
+		}
+
+	} else
+
+	// try to use tls credentials
+	// (unless a user was passed in)
+	if (useTls() && charstring::isNullOrEmpty(userbuffer)) {
+
+		tlscontext	*ctx=getTlsContext();
+		if (ctx) {
+			tlscertificate	*cert=ctx->getPeerCertificate();
+			if (cert) {
+				sqlrtlscredentials	*tlscred=
+						new sqlrtlscredentials();
+				tlscred->setSubjectAlternateNames(
+				cert->getSubjectAlternateNames());
+				tlscred->setCommonName(
+					cert->getCommonName());
+				cred=tlscred;
+			}
+		}
+
+	} else {
+
+		// use user/password credentials
+		sqlruserpasswordcredentials	*upcred=
+					new sqlruserpasswordcredentials();
+		upcred->setUser(userbuffer);
+		upcred->setPassword(passwordbuffer);
+		cred=upcred;
+	}
 
 	// auth
 	bool	success=cont->auth(cred);
