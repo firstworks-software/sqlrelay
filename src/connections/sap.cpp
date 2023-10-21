@@ -34,9 +34,9 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 		sqlrservercursor	*newCursor(uint16_t id);
 		void		deleteCursor(sqlrservercursor *curs);
 		void		logOut();
-		const char	*identify();
-		const char	*dbVersion();
-		const char	*dbHostNameQuery();
+		const char	*getDbType();
+		const char	*getDbVersion();
+		const char	*getDbHostNameQuery();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes);
@@ -70,7 +70,7 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 		const char	*hostname;
 		const char	*packetsize;
 
-		const char	*identity;
+		const char	*dbtype;
 
 		bool		dbused;
 
@@ -256,7 +256,7 @@ sapconnection::sapconnection(sqlrservercontroller *cont) :
 	dbused=false;
 	dbversion=NULL;
 
-	identity=NULL;
+	dbtype=NULL;
 }
 
 sapconnection::~sapconnection() {
@@ -282,7 +282,7 @@ void sapconnection::handleConnectString() {
 		cont->setMaxColumnCount(2);
 	}
 
-	identity=cont->getConnectStringValue("identity");
+	dbtype=cont->getConnectStringValue("identity");
 }
 
 bool sapconnection::logIn(const char **error, const char **warning) {
@@ -543,15 +543,15 @@ void sapconnection::logOut() {
 	cs_ctx_drop(context);
 }
 
-const char *sapconnection::identify() {
-	return (identity)?identity:"sap";
+const char *sapconnection::getDbType() {
+	return (dbtype)?dbtype:"sap";
 }
 
-const char *sapconnection::dbVersion() {
+const char *sapconnection::getDbVersion() {
 	return dbversion;
 }
 
-const char *sapconnection::dbHostNameQuery() {
+const char *sapconnection::getDbHostNameQuery() {
 	return "select asehostname()";
 }
 

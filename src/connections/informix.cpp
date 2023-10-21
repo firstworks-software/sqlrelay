@@ -245,9 +245,9 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 					const char *errorbuffer,
 					SQLSMALLINT errsize);
 		const char	*pingQuery();
-		const char	*identify();
-		const char	*dbVersion();
-		const char	*dbHostNameQuery();
+		const char	*getDbType();
+		const char	*getDbVersion();
+		const char	*getDbHostNameQuery();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes);
@@ -274,7 +274,7 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 
 		int32_t		maxoutbindlobsize;
 
-		const char	*identity;
+		const char	*dbtype;
 
 		char		dbversion[512];
 
@@ -285,7 +285,7 @@ informixconnection::informixconnection(sqlrservercontroller *cont) :
 					sqlrserverconnection(cont) {
 
 	maxoutbindlobsize=MAX_OUT_BIND_LOB_SIZE;
-	identity=NULL;
+	dbtype=NULL;
 }
 
 void informixconnection::handleConnectString() {
@@ -341,7 +341,7 @@ void informixconnection::handleConnectString() {
 	if (maxoutbindlobsize<1) {
 		maxoutbindlobsize=MAX_OUT_BIND_LOB_SIZE;
 	}
-	identity=cont->getConnectStringValue("identity");
+	dbtype=cont->getConnectStringValue("identity");
 }
 
 bool informixconnection::logIn(const char **error, const char **warning) {
@@ -533,15 +533,15 @@ const char *informixconnection::pingQuery() {
 	return "select 1 from sysmaster:sysdual";
 }
 
-const char *informixconnection::identify() {
-	return (identity)?identity:"informix";
+const char *informixconnection::getDbType() {
+	return (dbtype)?dbtype:"informix";
 }
 
-const char *informixconnection::dbVersion() {
+const char *informixconnection::getDbVersion() {
 	return dbversion;
 }
 
-const char *informixconnection::dbHostNameQuery() {
+const char *informixconnection::getDbHostNameQuery() {
 	return "select dbinfo('dbhostname') from sysmaster:sysdual";
 	//return "select os_nodename from sysmaster:sysmachineinfo";
 }

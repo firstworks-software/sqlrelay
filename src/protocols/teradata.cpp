@@ -880,7 +880,7 @@ sqlrprotocol_teradata::sqlrprotocol_teradata(sqlrservercontroller *cont,
 	if (getDebug()) {
 		stdoutput.write("passthrough mode - ");
 	}
-	if (charstring::compare(cont->identify(),"teradata")) {
+	if (charstring::compare(cont->getDbType(),"teradata")) {
 		passthroughmode=PASSTHROUGHMODE_DISABLED;
 		if (getDebug()) {
 			stdoutput.write("disabled...\n");

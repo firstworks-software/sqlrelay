@@ -256,9 +256,9 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 					const char *errorbuffer,
 					SQLSMALLINT errsize);
 		const char	*pingQuery();
-		const char	*identify();
-		const char	*dbVersion();
-		const char	*dbHostNameQuery();
+		const char	*getDbType();
+		const char	*getDbVersion();
+		const char	*getDbHostNameQuery();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes);
@@ -284,7 +284,7 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 
 		int32_t		maxoutbindlobsize;
 
-		const char	*identity;
+		const char	*dbtype;
 
 		char		dbversion[512];
 		uint16_t	dbmajorversion;
@@ -300,7 +300,7 @@ db2connection::db2connection(sqlrservercontroller *cont) :
 					sqlrserverconnection(cont) {
 
 	maxoutbindlobsize=MAX_OUT_BIND_LOB_SIZE;
-	identity=NULL;
+	dbtype=NULL;
 }
 
 void db2connection::handleConnectString() {
@@ -316,7 +316,7 @@ void db2connection::handleConnectString() {
 		server=tmp;
 	}
 
-	identity=cont->getConnectStringValue("identity");
+	dbtype=cont->getConnectStringValue("identity");
 
 	lang=cont->getConnectStringValue("lang");
 
@@ -647,15 +647,15 @@ const char *db2connection::pingQuery() {
 	return "values 1";
 }
 
-const char *db2connection::identify() {
-	return (identity)?identity:"db2";
+const char *db2connection::getDbType() {
+	return (dbtype)?dbtype:"db2";
 }
 
-const char *db2connection::dbVersion() {
+const char *db2connection::getDbVersion() {
 	return dbversion;
 }
 
-const char *db2connection::dbHostNameQuery() {
+const char *db2connection::getDbHostNameQuery() {
 	return dbhostnamequery;
 }
 

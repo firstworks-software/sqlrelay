@@ -846,12 +846,12 @@ sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
 		debugEnd();
 	}
 
-	srvname=cont->dbHostName();
+	srvname=cont->getDbHostName();
 
-	dbversion=cont->dbVersion();
+	dbversion=cont->getDbVersion();
 	getServerTdsVersion();
 
-	const char	*dbtype=cont->identify();
+	const char	*dbtype=cont->getDbType();
 	dbistds=(!charstring::compare(dbtype,"freetds") ||
 			!charstring::compare(dbtype,"sap"));
 

@@ -1111,7 +1111,7 @@ bool sqlrservercontroller::logIn(bool printerrors) {
 	if (pvt->_sqlrlg) {
 		// this will cause the db host name and ip address
 		// to be fetched from the db and stored locally
-		dbHostName();
+		getDbHostName();
 	}
 
 	pvt->_loggedin=true;
@@ -9301,28 +9301,28 @@ void sqlrservercontroller::alarmHandler(int32_t signum) {
 	alarmrang=1;
 }
 
-const char *sqlrservercontroller::dbHostName() {
+const char *sqlrservercontroller::getDbHostName() {
 	if (!pvt->_dbhostname || !pvt->_conn->cacheDbHostInfo()) {
-		pvt->_dbhostname=pvt->_conn->dbHostName();
-		pvt->_dbipaddress=pvt->_conn->dbIpAddress();
+		pvt->_dbhostname=pvt->_conn->getDbHostName();
+		pvt->_dbipaddress=pvt->_conn->getDbIpAddress();
 	}
 	return pvt->_dbhostname;
 }
 
-const char *sqlrservercontroller::dbIpAddress() {
+const char *sqlrservercontroller::getDbIpAddress() {
 	if (!pvt->_dbipaddress || !pvt->_conn->cacheDbHostInfo()) {
-		pvt->_dbhostname=pvt->_conn->dbHostName();
-		pvt->_dbipaddress=pvt->_conn->dbIpAddress();
+		pvt->_dbhostname=pvt->_conn->getDbHostName();
+		pvt->_dbipaddress=pvt->_conn->getDbIpAddress();
 	}
 	return pvt->_dbipaddress;
 }
 
-const char *sqlrservercontroller::identify() {
-	return pvt->_conn->identify();
+const char *sqlrservercontroller::getDbType() {
+	return pvt->_conn->getDbType();
 }
 
-const char *sqlrservercontroller::dbVersion() {
-	return pvt->_conn->dbVersion();
+const char *sqlrservercontroller::getDbVersion() {
+	return pvt->_conn->getDbVersion();
 }
 
 const char *sqlrservercontroller::translateTableName(const char *table) {

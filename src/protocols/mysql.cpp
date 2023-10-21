@@ -1429,7 +1429,7 @@ void sqlrprotocol_mysql::buildHandshake10() {
 
 	// set values to send
 	char		protocolversion=0x0a;
-	const char	*serverversion=cont->dbVersion();
+	const char	*serverversion=cont->getDbVersion();
 	uint32_t	connectionid=process::getProcessId();
 	serverauthpluginname="mysql_native_password";
 	generateChallenge();
@@ -1531,7 +1531,7 @@ void sqlrprotocol_mysql::buildHandshake9() {
 	// set values to send
 	char		protocolversion=0x09;
 	uint32_t	connectionid=process::getProcessId();
-	const char	*serverversion=cont->dbVersion();
+	const char	*serverversion=cont->getDbVersion();
 	serverauthpluginname="mysql_old_password";
 	generateChallenge();
 

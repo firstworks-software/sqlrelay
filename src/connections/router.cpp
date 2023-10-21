@@ -66,10 +66,10 @@ class SQLRSERVER_DLLSPEC routerconnection : public sqlrserverconnection {
 						uint32_t *errorsize,
 						int64_t	*errorcode,
 						bool *liveconnection);
-		const char	*identify();
-		const char	*dbVersion();
-		const char	*dbHostName();
-		const char	*dbIpAddress();
+		const char	*getDbType();
+		const char	*getDbVersion();
+		const char	*getDbHostName();
+		const char	*getDbIpAddress();
 		bool		cacheDbHostInfo();
 		bool		getListsByApiCalls();
 		bool		getDatabaseList(sqlrservercursor *cursor,
@@ -96,7 +96,7 @@ class SQLRSERVER_DLLSPEC routerconnection : public sqlrserverconnection {
 		void	beginQueryFailed(uint16_t index);
 		void	raiseIntegrityViolationEvent(const char *command,
 								uint16_t index);
-		const char	*identity;
+		const char	*dbtype;
 
 		const char	**conids;
 		sqlrconnection	**cons;
@@ -276,7 +276,7 @@ class SQLRSERVER_DLLSPEC routercursor : public sqlrservercursor {
 
 routerconnection::routerconnection(sqlrservercontroller *cont) :
 					sqlrserverconnection(cont) {
-	identity=NULL;
+	dbtype=NULL;
 
 	conids=NULL;
 	cons=NULL;
@@ -312,7 +312,7 @@ bool routerconnection::supportsAuthOnDatabase() {
 
 void routerconnection::handleConnectString() {
 
-	identity=cont->getConnectStringValue("identity");
+	dbtype=cont->getConnectStringValue("identity");
 
 	// re-get fetchatonce, defaulting to 10, and allowing it to be set to 0
 	uint32_t	fetchatonce=10;
@@ -747,15 +747,15 @@ void routerconnection::errorMessage(char *errorbuffer,
 	*liveconnection=true;
 }
 
-const char *routerconnection::identify() {
+const char *routerconnection::getDbType() {
 	// FIXME: maybe this should only return router if there's no currentcon
-	return (identity)?identity:"router";
+	return (dbtype)?dbtype:"router";
 }
 
-const char *routerconnection::dbVersion() {
+const char *routerconnection::getDbVersion() {
 
 	if (debug) {
-		stdoutput.printf("dbVersion {\n");
+		stdoutput.printf("getDbVersion {\n");
 	}
 
 	// route
@@ -799,10 +799,10 @@ const char *routerconnection::dbVersion() {
 	return retval;
 }
 
-const char *routerconnection::dbHostName() {
+const char *routerconnection::getDbHostName() {
 
 	if (debug) {
-		stdoutput.printf("dbHostName {\n");
+		stdoutput.printf("getDbHostName {\n");
 	}
 
 	// route
@@ -846,10 +846,10 @@ const char *routerconnection::dbHostName() {
 	return retval;
 }
 
-const char *routerconnection::dbIpAddress() {
+const char *routerconnection::getDbIpAddress() {
 
 	if (debug) {
-		stdoutput.printf("dbIpAddress {\n");
+		stdoutput.printf("getDbIpAddress {\n");
 	}
 
 	// route

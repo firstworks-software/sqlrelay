@@ -964,8 +964,8 @@ void sqlrprotocol_sqlrclient::identifyCommand() {
 
 	cont->raiseDebugMessageEvent("identify");
 
-	// get the identification
-	const char	*ident=cont->identify();
+	// get the database type
+	const char	*ident=cont->getDbType();
 
 	// send it to the client
 	clientsock->write((uint16_t)NO_ERROR_OCCURRED);
@@ -1049,7 +1049,7 @@ void sqlrprotocol_sqlrclient::dbVersionCommand() {
 	cont->raiseDebugMessageEvent("db version");
 
 	// get the db version
-	const char	*dbversion=cont->dbVersion();
+	const char	*dbversion=cont->getDbVersion();
 
 	// send it to the client
 	clientsock->write((uint16_t)NO_ERROR_OCCURRED);
@@ -1221,7 +1221,7 @@ void sqlrprotocol_sqlrclient::dbHostNameCommand() {
 
 	cont->raiseDebugMessageEvent("getting db host name");
 
-	const char	*hostname=cont->dbHostName();
+	const char	*hostname=cont->getDbHostName();
 	clientsock->write((uint16_t)NO_ERROR_OCCURRED);
 	uint16_t	hostnamesize=charstring::getLength(hostname);
 	clientsock->write(hostnamesize);
@@ -1234,7 +1234,7 @@ void sqlrprotocol_sqlrclient::dbIpAddressCommand() {
 
 	cont->raiseDebugMessageEvent("getting db host name");
 
-	const char	*ipaddress=cont->dbIpAddress();
+	const char	*ipaddress=cont->getDbIpAddress();
 	clientsock->write((uint16_t)NO_ERROR_OCCURRED);
 	uint16_t	ipaddresssize=charstring::getLength(ipaddress);
 	clientsock->write(ipaddresssize);

@@ -44,9 +44,9 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 		void		deleteCursor(sqlrservercursor *curs);
 		void		logOut();
 		bool		ping();
-		const char	*identify();
-		const char	*dbVersion();
-		const char	*dbHostName();
+		const char	*getDbType();
+		const char	*getDbVersion();
+		const char	*getDbHostName();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes);
@@ -79,7 +79,7 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 
 		char		*db;
 
-		const char	*identity;
+		const char	*dbtype;
 
 		#ifdef SQLITE3
 		sqlite3	*sqliteptr;
@@ -174,7 +174,7 @@ class SQLRSERVER_DLLSPEC sqlitecursor : public sqlrservercursor {
 
 sqliteconnection::sqliteconnection(sqlrservercontroller *cont) :
 					sqlrserverconnection(cont) {
-	identity=NULL;
+	dbtype=NULL;
 	sqliteptr=NULL;
 	errmesg=NULL;
 	errcode=0;
@@ -190,7 +190,7 @@ sqliteconnection::~sqliteconnection() {
 
 void sqliteconnection::handleConnectString() {
 	db=charstring::duplicate(cont->getConnectStringValue("db"));
-	identity=cont->getConnectStringValue("identity");
+	dbtype=cont->getConnectStringValue("identity");
 
 	cont->setFetchAtOnce(1);
 	cont->setMaxColumnCount(0);
@@ -240,11 +240,11 @@ bool sqliteconnection::ping() {
 	return true;
 }
 
-const char *sqliteconnection::identify() {
-	return (identity)?identity:"sqlite";
+const char *sqliteconnection::getDbType() {
+	return (dbtype)?dbtype:"sqlite";
 }
 
-const char *sqliteconnection::dbVersion() {
+const char *sqliteconnection::getDbVersion() {
 	#ifdef SQLITE_VERSION
 	return SQLITE_VERSION;
 	#else
@@ -252,7 +252,7 @@ const char *sqliteconnection::dbVersion() {
 	#endif
 }
 
-const char *sqliteconnection::dbHostName() {
+const char *sqliteconnection::getDbHostName() {
 	if (!hostname) {
 		hostname=sys::getHostName();
 	}

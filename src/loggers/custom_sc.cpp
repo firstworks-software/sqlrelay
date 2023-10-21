@@ -163,12 +163,12 @@ bool sqlrlogger_custom_sc::run(sqlrlistener *sqlrl,
 		case SQLREVENT_DB_LOGIN:
 			logbuffer.append(SQLRELAY);
 			logbuffer.append(" logged in to DB ");
-			logbuffer.append(sqlrcon->cont->dbIpAddress());
+			logbuffer.append(sqlrcon->cont->getDbIpAddress());
 			break;
 		case SQLREVENT_DB_LOGOUT:
 			logbuffer.append(SQLRELAY);
 			logbuffer.append(" logged out of DB ");
-			logbuffer.append(sqlrcon->cont->dbIpAddress());
+			logbuffer.append(sqlrcon->cont->getDbIpAddress());
 			break;
 		case SQLREVENT_DB_ERROR:
 		case SQLREVENT_DB_WARNING:

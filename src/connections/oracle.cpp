@@ -117,9 +117,9 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 						int64_t	*errorcode,
 						bool *liveconnection);
 		const char	*pingQuery();
-		const char	*identify();
-		const char	*dbVersion();
-		const char	*dbHostNameQuery();
+		const char	*getDbType();
+		const char	*getDbVersion();
+		const char	*getDbHostNameQuery();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getSchemaListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
@@ -179,7 +179,7 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		bool		rejectduplicatebinds;
 		bool		disablekeylookup;
 
-		const char	*identity;
+		const char	*dbtype;
 
 		stringbuffer	alltypeinfoquery;
 };
@@ -457,7 +457,7 @@ oracleconnection::oracleconnection(sqlrservercontroller *cont) :
 	#endif
 	rejectduplicatebinds=false;
 	disablekeylookup=false;
-	identity=NULL;
+	dbtype=NULL;
 }
 
 oracleconnection::~oracleconnection() {
@@ -520,7 +520,7 @@ void oracleconnection::handleConnectString() {
 		lastinsertidquery=liiquery.detachString();
 	}
 
-	identity=cont->getConnectStringValue("identity");
+	dbtype=cont->getConnectStringValue("identity");
 }
 
 #ifdef HAVE_ORACLE_8i
@@ -1146,11 +1146,11 @@ const char *oracleconnection::pingQuery() {
 	return "select 1 from dual";
 }
 
-const char *oracleconnection::identify() {
-	return (identity)?identity:"oracle";
+const char *oracleconnection::getDbType() {
+	return (dbtype)?dbtype:"oracle";
 }
 
-const char *oracleconnection::dbVersion() {
+const char *oracleconnection::getDbVersion() {
 	if (OCIServerVersion((dvoid *)svc,err,
 				(text *)versionbuf,sizeof(versionbuf),
 				OCI_HTYPE_SVCCTX)==OCI_SUCCESS) {
@@ -1159,7 +1159,7 @@ const char *oracleconnection::dbVersion() {
 	return NULL;
 }
 
-const char *oracleconnection::dbHostNameQuery() {
+const char *oracleconnection::getDbHostNameQuery() {
 	if (supportssyscontext) {
 		return "select sys_context('USERENV','SERVER_HOST') from dual";
 	}

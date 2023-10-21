@@ -985,8 +985,8 @@ bool sqlrprotocol_postgresql::sendStartupParameterStatuses() {
 	if (!sv.getSize()) {
 
 		// get the dbversion
-		const char	*dbtype=cont->identify();
-		const char	*dbversion=cont->dbVersion();
+		const char	*dbtype=cont->getDbType();
+		const char	*dbversion=cont->getDbVersion();
 		if (!charstring::compare(dbtype,"postgresql")) {
 
 			// massage the dbversion

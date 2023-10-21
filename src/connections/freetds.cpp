@@ -248,9 +248,9 @@ class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 		sqlrservercursor	*newCursor(uint16_t id);
 		void	deleteCursor(sqlrservercursor *curs);
 		void	logOut();
-		const char	*identify();
-		const char	*dbVersion();
-		const char	*dbHostNameQuery();
+		const char	*getDbType();
+		const char	*getDbVersion();
+		const char	*getDbHostNameQuery();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes);
@@ -285,7 +285,7 @@ class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 		const char	*hostname;
 		const char	*packetsize;
 
-		const char	*identity;
+		const char	*dbtype;
 
 		bool		dbused;
 
@@ -319,7 +319,7 @@ freetdsconnection::freetdsconnection(sqlrservercontroller *cont) :
 	dbversion=NULL;
 	sybasedb=true;
 
-	identity=NULL;
+	dbtype=NULL;
 }
 
 freetdsconnection::~freetdsconnection() {
@@ -349,7 +349,7 @@ void freetdsconnection::handleConnectString() {
 		cont->setMaxColumnCount(2);
 	}
 
-	identity=cont->getConnectStringValue("identity");
+	dbtype=cont->getConnectStringValue("identity");
 }
 
 bool freetdsconnection::logIn(const char **error, const char **warning) {
@@ -614,15 +614,15 @@ void freetdsconnection::logOut() {
 	cs_ctx_drop(context);
 }
 
-const char *freetdsconnection::identify() {
-	return (identity)?identity:"freetds";
+const char *freetdsconnection::getDbType() {
+	return (dbtype)?dbtype:"freetds";
 }
 
-const char *freetdsconnection::dbVersion() {
+const char *freetdsconnection::getDbVersion() {
 	return dbversion;
 }
 
-const char *freetdsconnection::dbHostNameQuery() {
+const char *freetdsconnection::getDbHostNameQuery() {
 	return "select asehostname()";
 }
 

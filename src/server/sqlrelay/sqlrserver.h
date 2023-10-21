@@ -252,23 +252,61 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		bool	changeProxiedUser(const char *newuser,
 						const char *newpassword);
 
-		// close client connection
+
+
+		// close client connection...
+
+		/** Attempts to read "bytes" bytes from the client, in
+		 *  non-blocking mode, before closing the connection to the
+		 *  client. */
 		void	closeClientConnection(uint32_t bytes);
 
-		// session management
+
+
+		// session management...
+
+		/** Begins a session with a client. */
 		void	beginSession();
+
+		/** Aborts all cursors that haven't already been suspended and
+		 *  opens a unix socket and inet port that the client can
+		 *  connect to to resume the session later.  Returns the
+		 *  unix socket in "unixsocket" and inet port in "inetport". */
 		void	suspendSession(const char **unixsocket,
 						uint16_t *inetport);
+
+		/** Ends the session with a client. */
 		void	endSession();
 
-		// ping
+
+
+		// ping...
+
+		/** Pings the database using the "ping query" defined by the
+		 *  database connection module.  Returns true if the ping
+		 *  succeeded and false if it failed. */
 		bool	ping();
 
-		// database info
-		const char	*identify();
-		const char	*dbVersion();
-		const char	*dbHostName();
-		const char	*dbIpAddress();
+
+
+		// database info...
+
+		/** Returns the type of database: oracle, mysql, postgresql,
+		 *  odbc, etc. */
+		const char	*getDbType();
+
+		/** Returns the database version. */
+		const char	*getDbVersion();
+
+		/** Returns the host name of the server hosting the
+		 *  database. */
+		const char	*getDbHostName();
+
+		/** Returns the IP address of the server hosting the
+		 *  database. */
+		const char	*getDbIpAddress();
+
+
 
 		// bind variables
 		const char	*bindFormat();
@@ -1007,14 +1045,14 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		virtual bool		ping();
 		virtual const char	*pingQuery();
 
-		virtual const char	*identify()=0;
+		virtual const char	*getDbType()=0;
 
-		virtual	const char	*dbVersion()=0;
+		virtual	const char	*getDbVersion()=0;
 
-		virtual const char	*dbHostNameQuery();
-		virtual const char	*dbIpAddressQuery();
-		virtual const char	*dbHostName();
-		virtual const char	*dbIpAddress();
+		virtual const char	*getDbHostNameQuery();
+		virtual const char	*getDbIpAddressQuery();
+		virtual const char	*getDbHostName();
+		virtual const char	*getDbIpAddress();
 		virtual bool		cacheDbHostInfo();
 
 		virtual bool		getListsByApiCalls();

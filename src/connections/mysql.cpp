@@ -209,9 +209,9 @@ class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 #ifdef HAVE_MYSQL_PING
 		bool		ping();
 #endif
-		const char	*identify();
-		const char	*dbVersion();
-		const char	*dbHostName();
+		const char	*getDbType();
+		const char	*getDbVersion();
+		const char	*getDbHostName();
 #ifdef HAVE_MYSQL_STMT_PREPARE
 		const char	*bindFormat();
 #endif
@@ -273,7 +273,7 @@ class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 		bool		foundrows;
 		bool		ignorespace;
 
-		const char	*identity;
+		const char	*dbtype;
 		bool		usestmtapi;
 
 		char	*dbversion;
@@ -313,7 +313,7 @@ mysqlconnection::mysqlconnection(sqlrservercontroller *cont) :
 	// the first query when we very first start up
 	firstquery=false;
 
-	identity=NULL;
+	dbtype=NULL;
 
 	mysqlptr=NULL;
 
@@ -388,7 +388,7 @@ void mysqlconnection::handleConnectString() {
 	foundrows=charstring::isYes(cont->getConnectStringValue("foundrows"));
 	ignorespace=charstring::isYes(
 			cont->getConnectStringValue("ignorespace"));
-	identity=cont->getConnectStringValue("identity");
+	dbtype=cont->getConnectStringValue("identity");
 
 	usestmtapi=charstring::compare(
 			cont->getConnectStringValue("api"),"classic");
@@ -649,17 +649,17 @@ bool mysqlconnection::ping() {
 }
 #endif
 
-const char *mysqlconnection::identify() {
-	return (identity)?identity:"mysql";
+const char *mysqlconnection::getDbType() {
+	return (dbtype)?dbtype:"mysql";
 }
 
-const char *mysqlconnection::dbVersion() {
+const char *mysqlconnection::getDbVersion() {
 	delete[] dbversion;
 	dbversion=charstring::duplicate(mysql_get_server_info(mysqlptr));
 	return dbversion;
 }
 
-const char *mysqlconnection::dbHostName() {
+const char *mysqlconnection::getDbHostName() {
 	return dbhostname;
 }
 

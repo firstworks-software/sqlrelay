@@ -240,9 +240,9 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 					bool *liveconnection);
 		bool		selectDatabase(const char *database);
 		char		*getCurrentDatabase();
-		const char	*identify();
-		const char	*dbVersion();
-		const char	*dbHostName();
+		const char	*getDbType();
+		const char	*getDbVersion();
+		const char	*getDbHostName();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes);
@@ -267,7 +267,7 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 
 		bool		droptemptables;
 
-		const char	*identity;
+		const char	*dbtype;
 
 		char		*dbversion;
 
@@ -293,7 +293,7 @@ firebirdconnection::firebirdconnection(sqlrservercontroller *cont) :
 	lastinsertidquery=NULL;
 	database=NULL;
 	host=NULL;
-	identity=NULL;
+	dbtype=NULL;
 }
 
 firebirdconnection::~firebirdconnection() {
@@ -344,7 +344,7 @@ void firebirdconnection::handleConnectString() {
 		lastinsertidquery=liiquery.detachString();
 	}
 
-	identity=cont->getConnectStringValue("identity");
+	dbtype=cont->getConnectStringValue("identity");
 
 	// firebird doesn't support multi-row fetches
 	cont->setFetchAtOnce(1);
@@ -564,11 +564,11 @@ char *firebirdconnection::getCurrentDatabase() {
 	return charstring::duplicate(database);
 }
 
-const char *firebirdconnection::identify() {
-	return (identity)?identity:"firebird";
+const char *firebirdconnection::getDbType() {
+	return (dbtype)?dbtype:"firebird";
 }
 
-const char *firebirdconnection::dbVersion() {
+const char *firebirdconnection::getDbVersion() {
 	ISC_STATUS	status[20];
 	char		dbitems[]={isc_info_version,
 					isc_info_end};
@@ -609,7 +609,7 @@ const char *firebirdconnection::dbVersion() {
 	return "";
 }
 
-const char *firebirdconnection::dbHostName() {
+const char *firebirdconnection::getDbHostName() {
 	return host;
 }
 

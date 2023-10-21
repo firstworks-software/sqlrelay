@@ -601,15 +601,15 @@ const char *sqlrserverconnection::pingQuery() {
 	return "select 1";
 }
 
-const char *sqlrserverconnection::dbHostNameQuery() {
+const char *sqlrserverconnection::getDbHostNameQuery() {
 	return NULL;
 }
 
-const char *sqlrserverconnection::dbIpAddressQuery() {
+const char *sqlrserverconnection::getDbIpAddressQuery() {
 	return NULL;
 }
 
-const char *sqlrserverconnection::dbHostName() {
+const char *sqlrserverconnection::getDbHostName() {
 
 	if (pvt->_dbhostname) {
 		return pvt->_dbhostname;
@@ -625,7 +625,7 @@ const char *sqlrserverconnection::dbHostName() {
 	// if we have a host name query then use it, otherwise get the
 	// ip address and convert it to a host name...
 
-	const char	*dbhnquery=dbHostNameQuery();
+	const char	*dbhnquery=getDbHostNameQuery();
 	if (dbhnquery) {
 
 		size_t		dbhnquerysize=charstring::getLength(dbhnquery);
@@ -653,7 +653,7 @@ const char *sqlrserverconnection::dbHostName() {
 
 	} else {
 
-		const char	*ipaddr=dbIpAddress();
+		const char	*ipaddr=getDbIpAddress();
 		char		ip[4];
 		for (uint8_t i=0; i<4; i++) {
 			ip[i]=charstring::convertToInteger(ipaddr);
@@ -668,7 +668,7 @@ const char *sqlrserverconnection::dbHostName() {
 	return pvt->_dbhostname;
 }
 
-const char *sqlrserverconnection::dbIpAddress() {
+const char *sqlrserverconnection::getDbIpAddress() {
 
 	if (pvt->_dbipaddress) {
 		return pvt->_dbipaddress;
@@ -684,7 +684,7 @@ const char *sqlrserverconnection::dbIpAddress() {
 	// if we have an ip address query then use it, otherwise get the
 	// host name and convert it to an ip address...
 
-	const char	*dbiaquery=dbIpAddressQuery();
+	const char	*dbiaquery=getDbIpAddressQuery();
 	if (dbiaquery) {
 
 		size_t		dbiaquerysize=charstring::getLength(dbiaquery);
@@ -711,7 +711,7 @@ const char *sqlrserverconnection::dbIpAddress() {
 		cont->deleteCursor(dbiacur);
 
 	} else {
-		pvt->_dbipaddress=hostentry::getAddressString(dbHostName());
+		pvt->_dbipaddress=hostentry::getAddressString(getDbHostName());
 	}
 	pvt->_dbhostiploop=0;
 	return pvt->_dbipaddress;

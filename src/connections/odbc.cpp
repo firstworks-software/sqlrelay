@@ -326,8 +326,8 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		#endif
 		bool		isLiveConnection(SQLCHAR *state);
 		bool		ping();
-		const char	*identify();
-		const char	*dbVersion();
+		const char	*getDbType();
+		const char	*getDbVersion();
 		const char	*bindFormat();
 		const char	*nextvalFormat();
 		const char	*getLastInsertIdQuery();
@@ -364,8 +364,8 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		char		*getCurrentDatabase();
 		char		*getCurrentSchema();
 		bool		setIsolationLevel(const char *isolevel);
-		const char	*dbHostNameQuery();
-		const char	*dbIpAddressQuery();
+		const char	*getDbHostNameQuery();
+		const char	*getDbIpAddressQuery();
 
 
 		SQLRETURN	erg;
@@ -379,7 +379,7 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		const char	*db;
 		const char	*trace;
 		const char	*tracefile;
-		const char	*identity;
+		const char	*dbtype;
 		const char	*odbcversion;
 		const char	*lastinsertidquery;
 		bool		mars;
@@ -613,7 +613,7 @@ odbcconnection::odbcconnection(sqlrservercontroller *cont) :
 	db=NULL;
 	trace=NULL;
 	tracefile=NULL;
-	identity=NULL;
+	dbtype=NULL;
 	odbcversion=NULL;
 	lastinsertidquery=NULL;
 	mars=false;
@@ -641,7 +641,7 @@ void odbcconnection::handleConnectString() {
 	trace=cont->getConnectStringValue("trace");
 	tracefile=cont->getConnectStringValue("tracefile");
 
-	identity=cont->getConnectStringValue("identity");
+	dbtype=cont->getConnectStringValue("identity");
 
 	odbcversion=cont->getConnectStringValue("odbcversion");
 
@@ -1168,11 +1168,11 @@ bool odbcconnection::ping() {
 	return true;
 }
 
-const char *odbcconnection::identify() {
-	return (identity)?identity:"odbc";
+const char *odbcconnection::getDbType() {
+	return (dbtype)?dbtype:"odbc";
 }
 
-const char *odbcconnection::dbVersion() {
+const char *odbcconnection::getDbVersion() {
 	SQLSMALLINT	dbversionlen;
 	SQLGetInfo(dbc,SQL_DBMS_VER,
 			(SQLPOINTER)dbversion,
@@ -2035,12 +2035,12 @@ bool odbcconnection::setIsolationLevel(const char *isolevel) {
 	return true;
 }
 
-const char *odbcconnection::dbHostNameQuery() {
+const char *odbcconnection::getDbHostNameQuery() {
 	// FIXME: only works with MS SQL Server
 	return "SELECT cast(@@SERVERNAME as varchar(64))";
 }
 
-const char *odbcconnection::dbIpAddressQuery() {
+const char *odbcconnection::getDbIpAddressQuery() {
 	// FIXME: only works with MS SQL Server
 	return "SELECT CAST(SERVERPROPERTY('ComputerNamePhysicalNetBIOS') as varchar(64))";
 }

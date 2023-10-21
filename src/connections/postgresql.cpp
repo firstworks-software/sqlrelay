@@ -34,11 +34,11 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 						uint32_t *errorsize,
 						int64_t	*errorcode,
 						bool *liveconnection);
-		const char	*identify();
-		const char	*dbVersion();
-		const char	*dbHostName();
-		const char	*dbIpAddressQuery();
-		const char	*dbIpAddress();
+		const char	*getDbType();
+		const char	*getDbVersion();
+		const char	*getDbHostName();
+		const char	*getDbIpAddressQuery();
+		const char	*getDbIpAddress();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes);
@@ -80,7 +80,7 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 #endif
 		char	*lastinsertidquery;
 
-		const char	*identity;
+		const char	*dbtype;
 
 #ifndef HAVE_POSTGRESQL_PQSETNOTICEPROCESSOR
 	private:
@@ -232,7 +232,7 @@ postgresqlconnection::postgresqlconnection(sqlrservercontroller *cont) :
 	currentoid=InvalidOid;
 #endif
 	lastinsertidquery=NULL;
-	identity=NULL;
+	dbtype=NULL;
 	hostname=NULL;
 
 	datatypes.setManageArrayValues(true);
@@ -280,7 +280,7 @@ void postgresqlconnection::handleConnectString() {
 		liiquery.append(lastinsertidfunc);
 		lastinsertidquery=liiquery.detachString();
 	}
-	identity=cont->getConnectStringValue("identity");
+	dbtype=cont->getConnectStringValue("identity");
 
 	// Re-process the fetchatonce parameter.  In the parent class, it ends
 	// up being set to 1 if it was configured to be 0.  However, with
@@ -483,11 +483,11 @@ void postgresqlconnection::errorMessage(char *errorbuffer,
 	*liveconnection=(PQstatus(pgconn)==CONNECTION_OK);
 }
 
-const char *postgresqlconnection::identify() {
-	return (identity)?identity:"postgresql";
+const char *postgresqlconnection::getDbType() {
+	return (dbtype)?dbtype:"postgresql";
 }
 
-const char *postgresqlconnection::dbVersion() {
+const char *postgresqlconnection::getDbVersion() {
 	delete[] dbversion;
 #if defined(HAVE_POSTGRESQL_PQSERVERVERSION)
 	dbversion=charstring::parseNumber((uint64_t)PQserverVersion(pgconn));
@@ -536,8 +536,8 @@ const char *postgresqlconnection::dbVersion() {
 	return dbversion;
 }
 
-const char *postgresqlconnection::dbHostName() {
-	const char	*dbhostname=sqlrserverconnection::dbHostName();
+const char *postgresqlconnection::getDbHostName() {
+	const char	*dbhostname=sqlrserverconnection::getDbHostName();
 	if (charstring::getLength(dbhostname)) {
 		return dbhostname;
 	}
@@ -547,12 +547,12 @@ const char *postgresqlconnection::dbHostName() {
 	return hostname;
 }
 
-const char *postgresqlconnection::dbIpAddressQuery() {
+const char *postgresqlconnection::getDbIpAddressQuery() {
 	return "select inet_server_addr()";
 }
 
-const char *postgresqlconnection::dbIpAddress() {
-	const char	*ipaddress=sqlrserverconnection::dbIpAddress();
+const char *postgresqlconnection::getDbIpAddress() {
+	const char	*ipaddress=sqlrserverconnection::getDbIpAddress();
 	return (charstring::getLength(ipaddress))?ipaddress:"127.0.0.1";
 }
 

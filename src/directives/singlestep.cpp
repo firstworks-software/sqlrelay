@@ -50,7 +50,7 @@ bool sqlrdirective_singlestep::run(sqlrserverconnection *sqlrcon,
 	}
 
 	// bail if not postgresql
-	if (charstring::compare(sqlrcon->identify(),"postgresql")) {
+	if (charstring::compare(sqlrcon->getDbType(),"postgresql")) {
 		return true;
 	}
 
