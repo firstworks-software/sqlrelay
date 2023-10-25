@@ -6,8 +6,6 @@
 
 #include <sqlrelay/private/sqlrserverincludes.h>
 
-#include <sqlrelay/private/sqlrlistener.h>
-
 enum sqlrcursorstate_t {
 	SQLRCURSORSTATE_AVAILABLE=0,
 	SQLRCURSORSTATE_BUSY,
@@ -97,6 +95,14 @@ class SQLRSERVER_DLLSPEC sqlrserverbindvar {
 		sqlrserverbindvartype_t	type;
 		byte_t			nativetype;
 		int16_t			isnull;
+};
+
+class SQLRSERVER_DLLSPEC sqlrlistener {
+	public:
+		const char	*getId();
+		sqlrpaths	*getPaths();
+
+	#include <sqlrelay/private/sqlrlistener.h>
 };
 
 class SQLRSERVER_DLLSPEC sqlrservercontroller {
@@ -214,13 +220,6 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
  		 *  in the config file. */
 		const char	*getConnectionId();
 
-		/** Returns the directory that the connection logs to. */
-		const char	*getLogDir();
-
-		/** Returns the directory that the connection outputs debug
-		 *  to. */
-		const char	*getDebugDir();
-
 
 
 		// passthrough...
@@ -320,82 +319,316 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		 *       bind variable
 		 *  :* - database uses a : followed by any characters to
 		 *       represent a bind variable
-		 */
+		 *
+		 *  Defaults to :* but may be overriden by a child class. */
 		const char	*getBindFormat();
 
-		int16_t		nonNullBindValue();
-		int16_t		nullBindValue();
-		bool		bindValueIsNull(int16_t isnull);
+		/** Returns the value that the database expects or returns in
+		 *  the "null indicator" for a non-null bind value.
+		 *
+		 *  Defaults to 0 but may be overriden by a child class of
+		 *  sqlrserverconnection. */
+		int16_t		getNonNullBindValue();
+
+		/** Returns the value that the database expects or returns in
+		 *  the "null indicator" for a null bind value.
+		 *
+		 *  Defaults to -1 but may be overriden by a child class of
+		 *  sqlrserverconnection. */
+		int16_t		getNullBindValue();
+
+		/** Returns true if "isnull" matches the value that the database
+		 *  expects or returns in the "null indicator" for a null bind
+		 *  value. */
+		bool	getBindValueIsNull(int16_t isnull);
+
+		/** If "fake" is true then the server will fake input binds by
+		 *  rewriting the query, rather than by using actual bind
+		 *  variables.  If "fake" is false then the server will use
+		 *  actual bind variables. */
 		void		setFakeInputBinds(bool fake);
+
+		/** Returns true if the server will fake input binds by
+		 *  rewriting the query, or false otherwise. */
 		bool		getFakeInputBinds();
 
-		// sequences
-		const char	*nextvalFormat();
 
-		// fetch info
-		void		setFetchAtOnce(uint32_t fethatonce);
-		void		setMaxColumnCount(uint32_t maxcolumncount);
-		void		setMaxFieldSize(uint32_t maxfieldsize);
+
+		// sequences...
+
+		/** Returns a string representing the format of the sequence
+		 *  nextval command used in the database.  The format will
+		 *  contain a %s in place of the sequence name.  For example:
+		 *
+		 *  (nextval for %s)
+		 *  next value for %s
+		 *  nextval('%s')
+		 *  %s.nextval
+		 *
+		 *  Returns an empty string if the database does not support
+		 *  sequences.
+		 *
+		 *  Defaults to %s.nextval but may be overriden by a child
+		 *  class. */
+		const char	*getNextvalFormat();
+
+
+
+		// fetch info...
+
+		/** Sets the number of rows to fetch at once to
+		 *  "fetchatonce". */
+		void	setFetchAtOnce(uint32_t fethatonce);
+
+		/** Returns the number of rows that will be fetched at once. */
 		uint32_t	getFetchAtOnce();
+
+		/** Sets the maximum number of columns that a result set can
+		 *  contain to "maxcolumncount".  Additional columns will be
+		 *  truncated. */
+		void	setMaxColumnCount(uint32_t maxcolumncount);
+
+		/** Returns the number of columns that a result set can
+		 *  contain. */
 		uint32_t	getMaxColumnCount();
+
+		/** Sets the maximum number of bytes that a non-LOB field can
+		 *  contain to "maxfieldsize".  Additional bytes will be
+		 *  truncated. */
+		void	setMaxFieldSize(uint32_t maxfieldsize);
+
+		/** Returns the maximum number of bytes that a non-LOB field
+		 *  can contain. */
 		uint32_t	getMaxFieldSize();
 
-		// db selection
+
+
+		// db selection...
+
+		/** Selects database "db".  Returns true if selection
+		 *  succeeded and false otherwise. */
 		bool	selectDatabase(const char *db);
-		void	dbHasChanged();
+
+		/** Returns the current database.
+		 *
+		 *  Note that this method allocates a buffer for the return
+		 *  value internally and returns it.  The calling method must
+		 *  deallocate this buffer. */
 		char	*getCurrentDatabase();
+
+		/** Returns the current database.
+		 *
+		 *  Note that this method allocates a buffer for the return
+		 *  value internally and returns it.  The calling method must
+		 *  deallocate this buffer. */
 		char	*getCurrentSchema();
 
-		// column names
-		bool	getColumnNames(const char *query, stringbuffer *output);
 
-		// last insert id
+
+		// last insert id...
+
+		/** Gets the last insert it and populates "id" with it.
+		 *
+		 *  Returns true on success and false on failure. */
 		bool	getLastInsertId(uint64_t *id);
 
-		// transactions
+
+
+		// transactions...
+
+		/** Begins a new transaction.  Returns true on success and
+		 *  false on failure. */
 		bool	begin();
+
+		/** Commits the current transaction.  Returns true on success
+		 *  and false on failure. */
 		bool	commit();
+
+		/** Rolls the current transaction back.  Returns true on success
+		 *  and false on failure. */
 		bool	rollback();
-		bool	autoCommitOn();
-		bool	autoCommitOff();
+
+		/** Set auto-commit on.  Returns true on success and false on
+		 *  failure. */
+		bool	setAutoCommitOn();
+
+		/** Set auto-commit off.  Returns true on success and false on
+		 *  failure. */
+		bool	setAutoCommitOff();
+
+		/** Sets a flag indicating whether a DML query has been run and
+		 *  thus whether a commit or rollback is needed under certain
+		 *  circumstances.
+		 *
+		 *  If the flag is set true...
+		 *
+		 *  During endSession(), for transactional databases, a commit
+		 *  or rollback is executed, depending on whether
+		 *  endofsession="commit" or endofsession="rollback" is set in
+		 *  the instance tag, in the config file.
+		 *
+		 *  After each query, for transactional databases that don't
+		 *  support transaction blocks or auto-commit, if we're faking
+		 *  auto-commit then a commit is executed. */
 		void	setNeedsCommitOrRollback(bool needed);
+
+		/** Returns whether a commit or rollback is needed, as set by
+		 *  setNeedsCommitOrRollback(). */
 		bool	getNeedsCommitOrRollback();
+
+		/** Sets the isolation level to "isolevel".  Returns true on
+		 *  success and false on failure. */
 		bool	setIsolationLevel(const char *isolevel);
+
+		/** If "ftb" is true then transaction blocks are faked by
+		 *  setting autocommit on and off as appropriate.  If "ftb" is
+		 *  false then begin and commit/rollback queries are run to
+		 *  begin/end transaction blocks. */
 		void	setFakeTransactionBlocks(bool ftb);
+
+		/** Returns whether transaction blocks are being faked, as set
+ 		 *  by setFakeTransactionBlocks(). */
 		bool	getFakeTransactionBlocks();
+
+		/** If "fac" is true then auto-commit is faked by executing a
+		 *  commit after each query.  If "fac" is false then native
+		 *  auto-commit is used.
+		 *
+		 *  See setNeedsCommitOrRollback() for caveats. */
 		void	setFakeAutoCommit(bool fac);
+
+		/** Returns whether auto-commit is being faked, as set by
+		 *  setFakeAutoCommit(). */
 		bool	getFakeAutoCommit();
+
+		/** If "iac" is true then the initial auto-commit behavior is
+		 *  set to auto-commit-on.  If "iac" is false then the initial
+		 *  auto-commit behavior is set to auto-commit-off.
+		 *
+		 *  During a session, auto-commit may be turned on or off.
+		 *  During endSession() and reLogIn(), the auto-commit behavior
+		 *  is reset to the initial auto-commit behavior as defined
+		 *  by this method. */
 		void	setInitialAutoCommit(bool iac);
+
+		/** Returns whether the initial auto-commit behavior is set to
+		 *  auto-commit-on as set by setInitialAutoCommit(). */
 		bool	getInitialAutoCommit();
+
+		/** Returns true if we're currently in a transaction and false
+		 *  otherwise. */
 		bool	inTransaction();
 
-		// errors
-		void		saveError();
-		void		saveErrorFromCursor(sqlrservercursor *cursor);
-		void		errorMessage(const char **errorbuffer,
+		// errors...
+
+		/** Fetches the current connection-level error into the
+		 *  connection's error buffer, unless there is already an
+		 *  error saved in the buffer. */
+		void	saveError();
+
+		/** Fetches the current cursor-level error into the
+		 *  cursor's error buffer, unless there is already an
+		 *  error saved in the buffer.
+		 *
+		 *  FIXME: how is this distinct from saveError(cursor)? */
+		void	saveErrorFromCursor(sqlrservercursor *cursor);
+
+		/** Returns the error message and code by:
+		 *
+		 *  Setting "errorbuffer" to the connection-level error buffer.
+		 *  Populating "errorsize" with the number of bytes in the
+		 *  error buffer.
+		 *  Populating "errorcode" with the connection-level numeric
+		 *  error code.
+		 *  Populating "liveconnection" with true if the connection to
+		 *  the database is still up.
+		 *  Populating "liveconnection" with true if the connection to
+		 *  the database is down. */
+		void	errorMessage(const char **errorbuffer,
 						uint32_t *errorsize,
 						int64_t *errorcode,
 						bool *liveconnection);
-		void		errorMessage(char *errorbuffer,
+
+		/** Returns the error message and code by:
+		 *
+		 *  Copying at most "errorbuffersize" bytes from the
+		 *  connection-level error buffer into "errorbuffer".
+		 *  Populating "errorsize" with the number of bytes in the
+		 *  error buffer.
+		 *  Populating "errorcode" with the connection-level numeric
+		 *  error code.
+		 *  Populating "liveconnection" with true if the connection to
+		 *  the database is still up.
+		 *  Populating "liveconnection" with true if the connection to
+		 *  the database is down. */
+		void	errorMessage(char *errorbuffer,
 						uint32_t errorbuffersize,
 						uint32_t *errorsize,
 						int64_t *errorcode,
 						bool *liveconnection);
-		void		clearError();
-		void		setError(const char *err,
-					int64_t errn, bool liveconn);
-		char		*getErrorBuffer();
-		uint32_t	getErrorBufferSize();
-		uint32_t	getErrorSize();
-		void		setErrorSize(uint32_t errorsize);
-		uint32_t	getErrorNumber();
-		void		setErrorNumber(uint32_t errnum);
-		bool		getLiveConnection();
-		void		setLiveConnection(bool liveconnection);
 
-		// connection state
+		/** Empties the connection-level error buffer and sets a flag
+		 *  indicating that the connection to the database is up. */
+		void	clearError();
+
+		/** Copies "errsize" bytes of "err" into the connection-level
+		 *  error buffer, sets the connection-level numeric error code
+		 *  to "errn" and sets a flag indicating that the connection to
+		 *  the database is up. */
+		void	setError(const char *err,
+					uint32_t errsize,
+					int64_t errn,
+					bool liveconn);
+
+		/** Copies "err" into the connection-level error buffer,
+		 *  sets the connection-level numeric error code to "errn" and
+		 *  sets a flag indicating that the connection to the database
+		 *  is up. */
+		void	setError(const char *err, int64_t errn, bool liveconn);
+
+		/** Returns a pointer to the connection-level error buffer. */
+		char	*getErrorBuffer();
+
+		/** Returns the size, in bytes, of the connection-level error
+		 *  buffer. */
+		uint32_t	getErrorBufferSize();
+
+		/** Sets the number of bytes currently stored in the
+		 *  connection-level error buffer to "errorsize". */
+		void	setErrorSize(uint32_t errorsize);
+
+		/** Returns the number of bytes currently stored in the
+		 *  connection-level error buffer, as set by setErrorSize(). */
+		uint32_t	getErrorSize();
+
+		/** Sets the connection-level numeric error code to "errnum". */
+		void	setErrorNumber(uint32_t errnum);
+
+		/** Returns the connection-level numeric error code as set by
+		 *  setErrorNumber(). */
+		uint32_t	getErrorNumber();
+
+		/** Sets a flag indicating whether the connection to the
+		 *  database is up to "liveconnection". */
+		void	setLiveConnection(bool liveconnection);
+
+		/** Returns the flag indicating whether the connection to the
+		 *  database is up, as set by setLiveConnection(). */
+		bool	getLiveConnection();
+
+
+
+		// connection state...
+
+		/** Sets the current state of the database connection to
+		 *  "state". */
 		void	setState(enum sqlrconnectionstate_t state);
+
+		/** Returns the database connection state as set by
+		 *  setState(). */
 		enum sqlrconnectionstate_t	getState();
+
+
 
 		// current client info
 		void	setCurrentUser(const char *user, uint32_t usersize);
@@ -406,9 +639,12 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		const char	*getClientInfo();
 		const char	*getClientAddr();
 
+
+
 		// instance state
 		void	setInstanceDisabled(bool disabled);
 		bool	getInstanceDisabled();
+
 
 
 		// statistics api...
@@ -454,6 +690,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		void	incrementNextResultSetCount();
 		void	incrementNextResultSetAvailableCount();
 		uint32_t	getStatisticsIndex();
+
 
 
 		// event api...
@@ -762,8 +999,24 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 							uint32_t col);
 		uint16_t	getColumnTableSize(sqlrservercursor *cursor,
 							uint32_t col);
-		void		getColumnNameList(sqlrservercursor *cursor,
+
+		/** Prepares and executes "query", but doesn't fetch any
+		 *  results, and appends a comma-separated list of the names of
+		 *  the columns in the result set to "output".
+		 *
+		 *  Returns false if "query" was null or an empty string and
+		 *  true otherwise.  If the query fails then nothing is
+		 *  appended to "output". */
+		bool	getColumnNames(const char *query, stringbuffer *output);
+
+
+		/** Appends a comma-separated list of the names of the columns
+		 *  in the current result of "cursor" to "output".  Nothing is
+		 *  appended to "output" if no query has been executed yet, or
+		 *  if the query has no result set. */
+		void	getColumnNames(sqlrservercursor *cursor,
 							stringbuffer *output);
+
 		bool		handleResultSetHeader(sqlrservercursor *cursor);
 
 		// result set navigation
@@ -825,40 +1078,108 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 						const char *dateformat,
 						const char *timeformat);
 
-		// errors
-		void		saveError(sqlrservercursor *cursor);
-		void		errorMessage(sqlrservercursor *cursor,
+
+
+		// errors...
+
+		/** Fetches the current cursor-level error into the
+		 *  cursor's error buffer, unless there is already an
+		 *  error saved in the buffer. */
+		void	saveError(sqlrservercursor *cursor);
+
+		/** Returns the error message and code by:
+		 *
+		 *  Setting "errorbuffer" to the cursor-level error buffer.
+		 *  Populating "errorsize" with the number of bytes in the
+		 *  error buffer.
+		 *  Populating "errorcode" with the cursor-level numeric
+		 *  error code.
+		 *  Populating "liveconnection" with true if the connection to
+		 *  the database is still up.
+		 *  Populating "liveconnection" with true if the connection to
+		 *  the database is down. */
+		void	errorMessage(sqlrservercursor *cursor,
 						const char **errorbuffer,
 						uint32_t *errorsize,
 						int64_t *errorcode,
 						bool *liveconnection);
-		void		errorMessage(sqlrservercursor *cursor,
+
+		/** Returns the error message and code by:
+		 *
+		 *  Copying at most "errorbuffersize" bytes from the
+		 *  cursor-level error buffer into "errorbuffer".
+		 *  Populating "errorsize" with the number of bytes in the
+		 *  error buffer.
+		 *  Populating "errorcode" with the cursor-level numeric
+		 *  error code.
+		 *  Populating "liveconnection" with true if the connection to
+		 *  the database is still up.
+		 *  Populating "liveconnection" with true if the connection to
+		 *  the database is down. */
+		void	errorMessage(sqlrservercursor *cursor,
 						char *errorbuffer,
 						uint32_t errorbuffersize,
 						uint32_t *errorsize,
 						int64_t *errorcode,
 						bool *liveconnection);
-		void		clearError(sqlrservercursor *cursor);
-		void		setError(sqlrservercursor *cursor,
+
+		/** Empties the cursor-level error buffer and sets a flag
+		 *  indicating that the connection to the database is up. */
+		void	clearError(sqlrservercursor *cursor);
+
+		/** Copies "errsize" bytes of "err" into the cursor-level
+		 *  error buffer, sets the cursor-level numeric error code
+		 *  to "errn" and sets a flag indicating that the connection to
+		 *  the database is up. */
+		void	setError(sqlrservercursor *cursor,
 						const char *err,
 						uint32_t errsize,
 						int64_t errn,
 						bool liveconn);
-		void		setError(sqlrservercursor *cursor,
+
+		/** Copies "err" into the cursor-level error buffer,
+		 *  sets the cursor-level numeric error code to "errn" and
+		 *  sets a flag indicating that the connection to the database
+		 *  is up. */
+		void	setError(sqlrservercursor *cursor,
 						const char *err,
 						int64_t errn,
 						bool liveconn);
-		char		*getErrorBuffer(sqlrservercursor *cursor);
+
+		/** Returns a pointer to the cursor-level error buffer. */
+		char	*getErrorBuffer(sqlrservercursor *cursor);
+
+		/** Returns the size, in bytes, of the cursor-level error
+		 *  buffer. */
 		uint32_t	getErrorBufferSize(sqlrservercursor *cursor);
-		uint32_t	getErrorSize(sqlrservercursor *cursor);
-		void		setErrorSize(sqlrservercursor *cursor,
+
+		/** Sets the number of bytes currently stored in the
+		 *  cursor-level error buffer to "errorsize". */
+		void	setErrorSize(sqlrservercursor *cursor,
 							uint32_t errorsize);
-		uint32_t	getErrorNumber(sqlrservercursor *cursor);
-		void		setErrorNumber(sqlrservercursor *cursor,
+
+		/** Returns the number of bytes currently stored in the
+		 *  cursor-level error buffer, as set by setErrorSize(). */
+		uint32_t	getErrorSize(sqlrservercursor *cursor);
+
+		/** Sets the cursor-level numeric error code to "errnum". */
+		void	setErrorNumber(sqlrservercursor *cursor,
 							uint32_t errnum);
-		bool		getLiveConnection(sqlrservercursor *cursor);
-		void		setLiveConnection(sqlrservercursor *cursor,
+
+		/** Returns the cursor-level numeric error code as set by
+		 *  setErrorNumber(). */
+		uint32_t	getErrorNumber(sqlrservercursor *cursor);
+
+		/** Sets a flag indicating whether the connection to the
+		 *  database is up to "liveconnection". */
+		void	setLiveConnection(sqlrservercursor *cursor,
 							bool liveconnection);
+
+		/** Returns the flag indicating whether the connection to the
+		 *  database is up, as set by setLiveConnection(). */
+		bool	getLiveConnection(sqlrservercursor *cursor);
+
+
 
 		// bulk load
 		bool	bulkLoadBegin(const char *id,
@@ -1020,31 +1341,83 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		virtual	bool	changeProxiedUser(const char *newuser,
 						const char *newpassword);
 
-		virtual bool	autoCommitOn();
-		virtual bool	autoCommitOff();
+		/** Set auto-commit on.  Returns true on success and false on
+		 *  failure. */
+		virtual bool	setAutoCommitOn();
 
+		/** Set auto-commit off.  Returns true on success and false on
+		 *  failure. */
+		virtual bool	setAutoCommitOff();
+
+		/** Returns true if the database is transactional and false
+		 *  otherwise.
+		 *
+		 *  Defaults to true but may be overridden by a child class. */
 		virtual bool	isTransactional();
+
+		/** Returns true if the database supports begin-commit/rollback
+		 *  transaction blocks (eg. the behavior of most databases) and
+		 *  false it a commit/rollback just begins another transaction
+		 *  (eg. the behavior of oracle databases).
+		 *
+		 *  Defaults to true but may be overridden by a child class. */
 		virtual bool	supportsTransactionBlocks();
+
+		/** Returns true if the database supports auto-commit and false
+		 *  if it does not.
+		 *
+		 *  Defaults to false but may be overridden by a child class. */
 		virtual bool	supportsAutoCommit();
 
-		virtual bool		begin();
+		/** Begins a new transaction.  Returns true on success and
+		 *  false on failure. */
+		virtual bool	begin();
 		virtual const char	*beginTransactionQuery();
 
+		/** Commits the current transaction.  Returns true on success
+		 *  and false on failure. */
 		virtual bool	commit();
+
+		/** Rolls the current transaction back.  Returns true on success
+		 *  and false on failure. */
 		virtual bool	rollback();
 
+		/** Returns the error message and code by:
+		 *
+		 *  Copying at most "errorbuffersize" bytes from the
+		 *  connection-level error buffer into "errorbuffer".
+		 *  Populating "errorsize" with the number of bytes in the
+		 *  error buffer.
+		 *  Populating "errorcode" with the connection-level numeric
+		 *  error code.
+		 *  Populating "liveconnection" with true if the connection to
+		 *  the database is still up.
+		 *  Populating "liveconnection" with true if the connection to
+		 *  the database is down. */
 		virtual	void	errorMessage(char *errorbuffer,
 						uint32_t errorbuffersize,
 						uint32_t *errorsize,
 						int64_t *errorcode,
 						bool *liveconnection)=0;
 
+		/** Selects database "db".  Returns true if selection
+		 *  succeeded and false otherwise. */
 		virtual bool		selectDatabase(const char *database);
 		virtual const char	*selectDatabaseQuery();
 
+		/** Returns the current database.
+		 *
+		 *  Note that this method allocates a buffer for the return
+		 *  value internally and returns it.  The calling method must
+		 *  deallocate this buffer. */
 		virtual char		*getCurrentDatabase();
 		virtual const char	*getCurrentDatabaseQuery();
 
+		/** Returns the current database.
+		 *
+		 *  Note that this method allocates a buffer for the return
+		 *  value internally and returns it.  The calling method must
+		 *  deallocate this buffer. */
 		virtual char		*getCurrentSchema();
 		virtual const char	*getCurrentSchemaQuery();
 
@@ -1181,28 +1554,79 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		 *       bind variable
 		 *  :* - database uses a : followed by any characters to
 		 *       represent a bind variable
-		 */
+		 *
+		 *  Defaults to :* but may be overriden by a child class of
+		 *  sqlrserverconnection. */
 		virtual	const char	*getBindFormat();
 
-		virtual	int16_t		nonNullBindValue();
-		virtual	int16_t		nullBindValue();
-		virtual bool		bindValueIsNull(int16_t isnull);
+		/** Returns the value that the database expects or returns in
+		 *  the "null indicator" for a non-null bind value.
+		 *
+		 *  Defaults to 0 but may be overriden by a child class. */
+		virtual	int16_t		getNonNullBindValue();
 
-		virtual const char	*nextvalFormat();
+		/** Returns the value that the database expects or returns in
+		 *  the "null indicator" for a null bind value.
+		 *
+		 *  Defaults to -1 but may be overriden by a child class of
+		 *  sqlrserverconnection. */
+		virtual	int16_t		getNullBindValue();
+
+		/** Returns true if "isnull" matches the value that the database
+		 *  expects or returns in the "null indicator" for a null bind
+		 *  value. */
+		virtual bool		getBindValueIsNull(int16_t isnull);
+
+		/** Returns a string representing the format of the sequence
+		 *  nextval command used in the database.  The format will
+		 *  contain a %s in place of the sequence name.  For example:
+		 *
+		 *  (nextval for %s)
+		 *  next value for %s
+		 *  nextval('%s')
+		 *  %s.nextval
+		 *
+		 *  Returns an empty string if the database does not support
+		 *  sequences.
+		 *
+		 *  Defaults to %s.nextval but may be overriden by a child
+		 *  class of sqlrserverconnection. */
+		virtual const char	*getNextvalFormat();
 
 		virtual const char	*tempTableDropPrefix();
 		virtual bool		tempTableTruncateBeforeDrop();
 
 		virtual void		endSession();
 
+		/** Returns a pointer to the connection-level error buffer. */
 		char		*getErrorBuffer();
+
+		/** Returns the size, in bytes, of the connection-level error
+		 *  buffer. */
 		uint32_t	getErrorBufferSize();
-		uint32_t	getErrorSize();
+
+		/** Sets the number of bytes currently stored in the
+		 *  connection-level error buffer to "errorsize". */
 		void		setErrorSize(uint32_t errorsize);
-		uint32_t	getErrorNumber();
+
+		/** Returns the number of bytes currently stored in the
+		 *  connection-level error buffer, as set by setErrorSize(). */
+		uint32_t	getErrorSize();
+
+		/** Sets the connection-level numeric error code to "errnum". */
 		void		setErrorNumber(uint32_t errnum);
-		bool		getLiveConnection();
+
+		/** Returns the connection-level numeric error code as set by
+		 *  setErrorNumber(). */
+		uint32_t	getErrorNumber();
+
+		/** Sets a flag indicating whether the connection to the
+		 *  database is up to "liveconnection". */
 		void		setLiveConnection(bool liveconnection);
+
+		/** Returns the flag indicating whether the connection to the
+		 *  database is up, as set by setLiveConnection(). */
+		bool		getLiveConnection();
 
 		sqlrservercontroller	*cont;
 
@@ -1377,11 +1801,25 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		virtual	bool	nextResultSet(bool *nextresultsetavailable);
 		virtual	bool	queryIsNotSelect();
 		virtual	bool	queryIsCommitOrRollback();
+
+		/** Returns the error message and code by:
+		 *
+		 *  Copying at most "errorbuffersize" bytes from the
+		 *  cursor-level error buffer into "errorbuffer".
+		 *  Populating "errorsize" with the number of bytes in the
+		 *  error buffer.
+		 *  Populating "errorcode" with the cursor-level numeric
+		 *  error code.
+		 *  Populating "liveconnection" with true if the connection to
+		 *  the database is still up.
+		 *  Populating "liveconnection" with true if the connection to
+		 *  the database is down. */
 		virtual	void	errorMessage(char *errorbuffer,
 						uint32_t errorbuffersize,
 						uint32_t *errorsize,
 						int64_t *errorcode,
 						bool *liveconnection);
+
 		virtual bool		knowsRowCount();
 		virtual uint64_t	rowCount();
 		virtual bool		knowsAffectedRows();
@@ -1515,14 +1953,35 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		void		setCurrentRowReformatted(bool crr);
 		bool		getCurrentRowReformatted();
 
+		/** Returns a pointer to the cursor-level error buffer. */
 		char		*getErrorBuffer();
+
+		/** Returns the size, in bytes, of the cursor-level error
+		 *  buffer. */
 		uint32_t	getErrorBufferSize();
-		uint32_t	getErrorSize();
+
+		/** Sets the number of bytes currently stored in the
+		 *  cursor-level error buffer to "errorsize". */
 		void		setErrorSize(uint32_t errorsize);
-		uint32_t	getErrorNumber();
+
+		/** Returns the number of bytes currently stored in the
+		 *  cursor-level error buffer, as set by setErrorSize(). */
+		uint32_t	getErrorSize();
+
+		/** Sets the cursor-level numeric error code to "errnum". */
 		void		setErrorNumber(uint32_t errnum);
-		bool		getLiveConnection();
+
+		/** Returns the cursor-level numeric error code as set by
+		 *  setErrorNumber(). */
+		uint32_t	getErrorNumber();
+
+		/** Sets a flag indicating whether the connection to the
+		 *  database is up to "liveconnection". */
 		void		setLiveConnection(bool liveconnection);
+
+		/** Returns the flag indicating whether the connection to the
+		 *  database is up, as set by setLiveConnection(). */
+		bool		getLiveConnection();
 
 		void		setCreateTempTablePattern(
 						const char *createtemp);
@@ -1612,7 +2071,12 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		bool		getExecuteDirect();
 		void		setExecuteRpc(bool executerpc);
 		bool		getExecuteRpc();
+
+		/** Sets the number of rows to fetch at once to
+		 *  "fetchatonce". */
 		void		setFetchAtOnce(uint32_t fetchatonce);
+
+		/** Returns the number of rows that will be fetched at once. */
 		uint32_t	getFetchAtOnce();
 
 		void		setResultSetHeaderHasBeenHandled(

@@ -65,7 +65,8 @@ bool sqlrlogger_custom_sc::init(sqlrlistener *sqlrl,
 	// get log path and name
 	const char	*path=getParameters()->getAttributeValue("path");
 	if (!charstring::getLength(path)) {
-		path=(sqlrcon)?sqlrcon->cont->getLogDir():sqlrl->getLogDir();
+		path=(sqlrcon)?sqlrcon->cont->getPaths()->getLogDir():
+					sqlrl->getPaths()->getLogDir();
 	}
 	const char	*name=getParameters()->getAttributeValue("name");
 	if (!charstring::getLength(name)) {

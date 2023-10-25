@@ -4948,7 +4948,7 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 			if (bv) {
 				bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
 				bv->valuesize=1;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				bv->value.integerval=val;
 			}
 
@@ -4971,7 +4971,7 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 			if (bv) {
 				bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
 				bv->valuesize=2;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				bv->value.integerval=val;
 			}
 	
@@ -4994,7 +4994,7 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 			if (bv) {
 				bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
 				bv->valuesize=4;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				bv->value.integerval=val;
 			}
 
@@ -5025,7 +5025,7 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 
 			if (bv) {
 				bv->type=SQLRSERVERBINDVARTYPE_DOUBLE;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				bv->value.doubleval.value=val;
 
 				// FIXME: kludgy
@@ -5085,7 +5085,7 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 
 			if (bv) {
 				bv->type=SQLRSERVERBINDVARTYPE_DOUBLE;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				bv->value.doubleval.value=val;
 
 				// FIXME: kludgy
@@ -5135,7 +5135,7 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 			if (bv) {
 				bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
 				bv->valuesize=8;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				bv->value.integerval=val;
 			}
 
@@ -5247,7 +5247,7 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 				bv->type=SQLRSERVERBINDVARTYPE_STRING;
 				bv->valuesize=size;
 				bv->value.stringval=(char *)rp;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 			}
 
 			if (getDebug() && bv) {

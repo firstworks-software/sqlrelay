@@ -55,8 +55,8 @@ class SQLRSERVER_DLLSPEC routerconnection : public sqlrserverconnection {
 		sqlrservercursor	*newCursor(uint16_t id);
 		void		deleteCursor(sqlrservercursor *curs);
 		void		logOut();
-		bool		autoCommitOn();
-		bool		autoCommitOff();
+		bool		setAutoCommitOn();
+		bool		setAutoCommitOff();
 		bool		supportsAutoCommit();
 		bool		begin();
 		bool		commit();
@@ -88,8 +88,8 @@ class SQLRSERVER_DLLSPEC routerconnection : public sqlrserverconnection {
 
 		void	route(bool *routed, bool *err);
 
-		void	autoCommitOnFailed(uint16_t index);
-		void	autoCommitOffFailed(uint16_t index);
+		void	setAutoCommitOnFailed(uint16_t index);
+		void	setAutoCommitOffFailed(uint16_t index);
 		void	beginFailed(uint16_t index);
 		void	commitFailed(uint16_t index);
 		void	rollbackFailed(uint16_t index);
@@ -286,8 +286,8 @@ routerconnection::routerconnection(sqlrservercontroller *cont) :
 	beginquery=NULL;
 	anymustbegin=false;
 	justloggedin=false;
-	nullbindvalue=nullBindValue();
-	nonnullbindvalue=nonNullBindValue();
+	nullbindvalue=getNullBindValue();
+	nonnullbindvalue=getNonNullBindValue();
 
 	sqlrr=NULL;
 	routeentiresession=false;
@@ -409,10 +409,10 @@ void routerconnection::deleteCursor(sqlrservercursor *curs) {
 void routerconnection::logOut() {
 }
 
-bool routerconnection::autoCommitOn() {
+bool routerconnection::setAutoCommitOn() {
 
 	if (debug) {
-		stdoutput.printf("autoCommitOn {\n");
+		stdoutput.printf("setAutoCommitOn {\n");
 	}
 
 	if (justloggedin) {
@@ -455,7 +455,7 @@ bool routerconnection::autoCommitOn() {
 			if (debug) {
 				stdoutput.printf("	failed\n");
 			}
-			autoCommitOnFailed(index);
+			setAutoCommitOnFailed(index);
 		}
 		// The connection class calls autoCommitOn or autoCommitOff
 		// immediately after logging in, which will cause the 
@@ -485,10 +485,10 @@ bool routerconnection::autoCommitOn() {
 	return result;
 }
 
-bool routerconnection::autoCommitOff() {
+bool routerconnection::setAutoCommitOff() {
 
 	if (debug) {
-		stdoutput.printf("autoCommitOff {\n");
+		stdoutput.printf("setAutoCommitOff {\n");
 	}
 
 	if (justloggedin) {
@@ -531,7 +531,7 @@ bool routerconnection::autoCommitOff() {
 			if (debug) {
 				stdoutput.printf("	failed\n");
 			}
-			autoCommitOffFailed(index);
+			setAutoCommitOffFailed(index);
 		}
 		// The connection class calls autoCommitOn or autoCommitOff
 		// immediately after logging in, which will cause the 
@@ -1125,11 +1125,11 @@ void routerconnection::route(bool *routed, bool *err) {
 	}
 }
 
-void routerconnection::autoCommitOnFailed(uint16_t index) {
+void routerconnection::setAutoCommitOnFailed(uint16_t index) {
 	raiseIntegrityViolationEvent("autocommit-on",index);
 }
 
-void routerconnection::autoCommitOffFailed(uint16_t index) {
+void routerconnection::setAutoCommitOffFailed(uint16_t index) {
 	raiseIntegrityViolationEvent("autocommit-off",index);
 }
 

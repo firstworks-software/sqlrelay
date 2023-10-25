@@ -710,7 +710,7 @@ bool sqlrservercursor::inputBind(const char *variable,
 	dateToString(buffer,buffersize,year,month,day,
 			hour,minute,second,microsecond,tz,isnegative);
 	if (buffer[0]=='\0') {
-		*isnull=conn->nullBindValue();
+		*isnull=conn->getNullBindValue();
 	}
 	return inputBind(variable,variablesize,buffer,buffersize,isnull);
 }

@@ -51,7 +51,7 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 		const char	*getLastInsertIdQuery();
 		const char	*noopQuery();
 		const char	*getBindFormat();
-		const char	*nextvalFormat();
+		const char	*getNextvalFormat();
 
 		dictionary< int32_t, char *>	datatypes;
 		dictionary< int32_t, char *>	tables;
@@ -737,7 +737,7 @@ const char *postgresqlconnection::getBindFormat() {
 #endif
 }
 
-const char *postgresqlconnection::nextvalFormat() {
+const char *postgresqlconnection::getNextvalFormat() {
 	return "nextval('%s')";
 }
 
@@ -881,7 +881,7 @@ bool postgresqlcursor::inputBind(const char *variable,
 		return true;
 	}
 
-	if (*isnull==conn->nullBindValue()) {
+	if (*isnull==conn->getNullBindValue()) {
 		bindvalues[pos]=NULL;
 		bindsizes[pos]=0;
 	} else {
@@ -962,7 +962,7 @@ bool postgresqlcursor::inputBindBlob(const char *variable,
 		return true;
 	}
 
-	if (*isnull==conn->nullBindValue()) {
+	if (*isnull==conn->getNullBindValue()) {
 		bindvalues[pos]=NULL;
 		bindsizes[pos]=0;
 	} else {
@@ -994,7 +994,7 @@ bool postgresqlcursor::inputBindClob(const char *variable,
 		return true;
 	}
 
-	if (*isnull==conn->nullBindValue()) {
+	if (*isnull==conn->getNullBindValue()) {
 		bindvalues[pos]=NULL;
 		bindsizes[pos]=0;
 	} else {

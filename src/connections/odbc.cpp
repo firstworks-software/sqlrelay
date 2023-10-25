@@ -182,9 +182,8 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 						char *buffer,
 						uint16_t buffersize,
 						int16_t *isnull);
-		int16_t		nonNullBindValue();
-		int16_t		nullBindValue();
-		bool		bindValueIsNull(uint16_t isnull);
+		int16_t		getNonNullBindValue();
+		int16_t		getNullBindValue();
 		bool		executeQuery(const char *query,
 						uint32_t size);
 		bool		handleColumns(bool getcolumninfo,
@@ -312,8 +311,8 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		void		deleteCursor(sqlrservercursor *curs);
 		void		logOut();
 		#if (ODBCVER>=0x0300)
-		bool		autoCommitOn();
-		bool		autoCommitOff();
+		bool		setAutoCommitOn();
+		bool		setAutoCommitOff();
 		bool		supportsAutoCommit();
 		const char	*beginTransactionQuery();
 		bool		commit();
@@ -329,7 +328,7 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getBindFormat();
-		const char	*nextvalFormat();
+		const char	*getNextvalFormat();
 		const char	*getLastInsertIdQuery();
 		bool		getListsByApiCalls();
 		bool		getDatabaseList(sqlrservercursor *cursor,
@@ -1186,7 +1185,7 @@ const char *odbcconnection::getBindFormat() {
 	return "?";
 }
 
-const char *odbcconnection::nextvalFormat() {
+const char *odbcconnection::getNextvalFormat() {
 	// FIXME: not true for all db's
 	return "";
 }
@@ -1963,7 +1962,7 @@ char *odbcconnection::getCurrentSchema() {
 }
 
 #if (ODBCVER >= 0x0300)
-bool odbcconnection::autoCommitOn() {
+bool odbcconnection::setAutoCommitOn() {
 	// FIXME: I'm not sure this is necessary for non-sqlserver/sap/sybase
 	cont->closeAllResultSets();
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
@@ -1972,7 +1971,7 @@ bool odbcconnection::autoCommitOn() {
 	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 }
 
-bool odbcconnection::autoCommitOff() {
+bool odbcconnection::setAutoCommitOff() {
 	// FIXME: I'm not sure this is necessary for non-sqlserver/sap/sybase
 	cont->closeAllResultSets();
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
@@ -3038,16 +3037,12 @@ bool odbccursor::inputOutputBind(const char *variable,
 	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 }
 
-int16_t odbccursor::nonNullBindValue() {
+int16_t odbccursor::getNonNullBindValue() {
 	return 0;
 }
 
-int16_t odbccursor::nullBindValue() {
+int16_t odbccursor::getNullBindValue() {
 	return SQL_NULL_DATA;
-}
-
-bool odbccursor::bindValueIsNull(uint16_t isnull) {
-	return ((int16_t)isnull==SQL_NULL_DATA);
 }
 
 bool odbccursor::executeQuery(const char *query, uint32_t size) {

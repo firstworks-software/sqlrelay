@@ -80,8 +80,9 @@ bool sqlrlogger_debug::init(sqlrlistener *sqlrl,
 
 	// set the debug file name
 	name=(sqlrl)?"listener":"connection";
-	const char	*debugdir=(sqlrcon)?sqlrcon->cont->getDebugDir():
-							sqlrl->getDebugDir();
+	const char	*debugdir=
+			(sqlrcon)?sqlrcon->cont->getPaths()->getDebugDir():
+					sqlrl->getPaths()->getDebugDir();
 	charstring::printf(&dbgfilename,"%s/sqlr-%s.%ld",
 				debugdir,name,(long)process::getProcessId());
 	return true;

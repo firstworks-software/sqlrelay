@@ -250,7 +250,7 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		const char	*getColumnListQuery(
 						const char *table, bool wild);
 		const char	*getBindFormat();
-		const char	*nextvalFormat();
+		const char	*getNextvalFormat();
 		const char	*getLastInsertIdQuery();
 		const char	*noopQuery();
 
@@ -750,7 +750,7 @@ const char *firebirdconnection::getBindFormat() {
 	return "?";
 }
 
-const char *firebirdconnection::nextvalFormat() {
+const char *firebirdconnection::getNextvalFormat() {
 	return "next value for %s";
 }
 

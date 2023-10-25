@@ -228,10 +228,9 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 		sqlrservercursor	*newCursor(uint16_t id);
 		void	deleteCursor(sqlrservercursor *curs);
 		void	logOut();
-		int16_t	nullBindValue();
-		bool	bindValueIsNull(int16_t isnull);
-		bool	autoCommitOn();
-		bool	autoCommitOff();
+		int16_t	getNullBindValue();
+		bool	setAutoCommitOn();
+		bool	setAutoCommitOff();
 		bool	supportsTransactionBlocks();
 		bool	supportsAutoCommit();
 		bool	commit();
@@ -460,24 +459,17 @@ void informixconnection::logOut() {
 	SQLFreeHandle(SQL_HANDLE_ENV,env);
 }
 
-int16_t informixconnection::nullBindValue() {
+int16_t informixconnection::getNullBindValue() {
 	return SQL_NULL_DATA;
 }
 
-bool informixconnection::bindValueIsNull(int16_t isnull) {
-	if (isnull==SQL_NULL_DATA) {
-		return true;
-	}
-	return false;
-}
-
-bool informixconnection::autoCommitOn() {
+bool informixconnection::setAutoCommitOn() {
 	return (SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
 				(SQLPOINTER)SQL_AUTOCOMMIT_ON,
 				sizeof(SQLINTEGER))==SQL_SUCCESS);
 }
 
-bool informixconnection::autoCommitOff() {
+bool informixconnection::setAutoCommitOff() {
 	return (SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
 				(SQLPOINTER)SQL_AUTOCOMMIT_OFF,
 				sizeof(SQLINTEGER))==SQL_SUCCESS);

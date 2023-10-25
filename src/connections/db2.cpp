@@ -239,10 +239,9 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 		sqlrservercursor	*newCursor(uint16_t id);
 		void	deleteCursor(sqlrservercursor *curs);
 		void	logOut();
-		int16_t	nullBindValue();
-		bool	bindValueIsNull(int16_t isnull);
-		bool	autoCommitOn();
-		bool	autoCommitOff();
+		int16_t	getNullBindValue();
+		bool	setAutoCommitOn();
+		bool	setAutoCommitOff();
 		bool	supportsTransactionBlocks();
 		bool	supportsAutoCommit();
 		bool	commit();
@@ -270,7 +269,7 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 		const char	*setIsolationLevelQuery();
 		const char	*noopQuery();
 		const char	*getBindFormat();
-		const char	*nextvalFormat();
+		const char	*getNextvalFormat();
 
 		SQLHENV		env;
 		SQLRETURN	erg;
@@ -549,24 +548,17 @@ void db2connection::logOut() {
 	SQLFreeHandle(SQL_HANDLE_ENV,env);
 }
 
-int16_t db2connection::nullBindValue() {
+int16_t db2connection::getNullBindValue() {
 	return SQL_NULL_DATA;
 }
 
-bool db2connection::bindValueIsNull(int16_t isnull) {
-	if (isnull==SQL_NULL_DATA) {
-		return true;
-	}
-	return false;
-}
-
-bool db2connection::autoCommitOn() {
+bool db2connection::setAutoCommitOn() {
 	return (SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
 				(SQLPOINTER)SQL_AUTOCOMMIT_ON,
 				sizeof(SQLINTEGER))==SQL_SUCCESS);
 }
 
-bool db2connection::autoCommitOff() {
+bool db2connection::setAutoCommitOff() {
 	return (SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
 				(SQLPOINTER)SQL_AUTOCOMMIT_OFF,
 				sizeof(SQLINTEGER))==SQL_SUCCESS);
@@ -725,7 +717,7 @@ const char *db2connection::getBindFormat() {
 	return "?";
 }
 
-const char *db2connection::nextvalFormat() {
+const char *db2connection::getNextvalFormat() {
 	return "(nextval for %s)";
 }
 

@@ -55,7 +55,8 @@ bool sqlrlogger_custom_nw::init(sqlrlistener *sqlrl,
 	}
 
 	const char	*logdir=
-			(sqlrcon)?sqlrcon->cont->getLogDir():sqlrl->getLogDir();
+			(sqlrcon)?sqlrcon->cont->getPaths()->getLogDir():
+						sqlrl->getPaths()->getLogDir();
 	const char	*id=
 			(sqlrcon)?sqlrcon->cont->getId():sqlrl->getId();
 

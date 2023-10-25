@@ -177,12 +177,12 @@ bool sqlrserverconnection::changeProxiedUser(const char *newuser,
 	return false;
 }
 
-bool sqlrserverconnection::autoCommitOn() {
+bool sqlrserverconnection::setAutoCommitOn() {
 	cont->setFakeAutoCommit(true);
 	return true;
 }
 
-bool sqlrserverconnection::autoCommitOff() {
+bool sqlrserverconnection::setAutoCommitOff() {
 	cont->setFakeAutoCommit(false);
 	return true;
 }
@@ -359,10 +359,6 @@ bool sqlrserverconnection::selectDatabase(const char *database) {
 		cont->executeQuery(sdcur,true,true,true,true)) {
 		cont->closeResultSet(sdcur);
 		retval=true;
-
-		// set a flag indicating that the db has been changed
-		// so it can be reset at the end of the session
-		cont->dbHasChanged();
 	} else {
 		// If there was an error, copy it out.  We'll be destroying the
 		// cursor in a moment and the error will be lost otherwise.
@@ -1000,19 +996,19 @@ const char *sqlrserverconnection::getBindFormat() {
 	return ":*";
 }
 
-int16_t sqlrserverconnection::nonNullBindValue() {
+int16_t sqlrserverconnection::getNonNullBindValue() {
 	return 0;
 }
 
-int16_t sqlrserverconnection::nullBindValue() {
+int16_t sqlrserverconnection::getNullBindValue() {
 	return -1;
 }
 
-bool sqlrserverconnection::bindValueIsNull(int16_t isnull) {
-	return (isnull==nullBindValue());
+bool sqlrserverconnection::getBindValueIsNull(int16_t isnull) {
+	return (isnull==getNullBindValue());
 }
 
-const char *sqlrserverconnection::nextvalFormat() {
+const char *sqlrserverconnection::getNextvalFormat() {
 	return "%s.nextval";
 }
 

@@ -75,7 +75,7 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 
 		void		clearErrors();
 
-		const char	*nextvalFormat();
+		const char	*getNextvalFormat();
 
 		char		*db;
 
@@ -431,7 +431,7 @@ void sqliteconnection::clearErrors() {
 	}
 }
 
-const char *sqliteconnection::nextvalFormat() {
+const char *sqliteconnection::getNextvalFormat() {
 	return "";
 }
 

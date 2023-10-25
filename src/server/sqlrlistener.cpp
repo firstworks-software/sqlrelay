@@ -2503,10 +2503,6 @@ const char *sqlrlistener::getId() {
 	return pvt->_cmdl->getId();
 }
 
-const char *sqlrlistener::getLogDir() {
-	return pvt->_sqlrpth->getLogDir();
-}
-
-const char *sqlrlistener::getDebugDir() {
-	return pvt->_sqlrpth->getDebugDir();
+sqlrpaths *sqlrlistener::getPaths() {
+	return pvt->_sqlrpth;
 }

@@ -107,8 +107,8 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		#endif
 		bool		supportsTransactionBlocks();
 		bool		supportsAutoCommit();
-		bool		autoCommitOn();
-		bool		autoCommitOff();
+		bool		setAutoCommitOn();
+		bool		setAutoCommitOff();
 		bool		commit();
 		bool		rollback();
 		void		errorMessage(char *errorbuffer,
@@ -1070,12 +1070,12 @@ bool oracleconnection::changeProxiedUser(const char *newuser,
 }
 #endif
 
-bool oracleconnection::autoCommitOn() {
+bool oracleconnection::setAutoCommitOn() {
 	stmtmode=OCI_COMMIT_ON_SUCCESS;
 	return true;
 }
 
-bool oracleconnection::autoCommitOff() {
+bool oracleconnection::setAutoCommitOff() {
 	stmtmode=OCI_DEFAULT;
 	return true;
 }

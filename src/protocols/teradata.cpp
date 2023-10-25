@@ -3912,7 +3912,7 @@ bool sqlrprotocol_teradata::parseDataParcel(
 		}
 
 		// get value from data
-		inbind->isnull=cont->nonNullBindValue();
+		inbind->isnull=cont->getNonNullBindValue();
 		if (!charstring::compareIgnoringCase(
 						inbindtype->type,
 						"TINYINT",
@@ -4611,8 +4611,8 @@ bool sqlrprotocol_teradata::parseMultipartIndicDataParcel(
 		// set the null indicator
 		sqlrserverbindvar	*inbind=&(inbinds[i]);
 		inbind->isnull=(ni&0x80)?
-				cont->nullBindValue():
-				cont->nonNullBindValue();
+				cont->getNullBindValue():
+				cont->getNonNullBindValue();
 
 		// move on
 		ni<<=1;
@@ -4690,7 +4690,7 @@ bool sqlrprotocol_teradata::parseMultipartIndicDataParcel(
 		// which is what gets called if
 		// inbind->type=SQLRSERVERBINDVARTYPE_NULL.
 		// So we'll go with that for now.
-		if (inbind->isnull==cont->nullBindValue()) {
+		if (inbind->isnull==cont->getNullBindValue()) {
 			inbind->type=SQLRSERVERBINDVARTYPE_NULL;
 		}
 	}

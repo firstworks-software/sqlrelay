@@ -4695,7 +4695,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 		byte_t	nullbitmapmask=(1<<(i%8));
 		if (nullbitmapindex&nullbitmapmask) {
 			bv->type=SQLRSERVERBINDVARTYPE_NULL;
-			bv->isnull=cont->nullBindValue();
+			bv->isnull=cont->getNullBindValue();
 			if (getDebug()) {
 				stdoutput.printf("		%d {\n",i);
 				stdoutput.printf("			"
@@ -4714,7 +4714,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 			case MYSQL_TYPE_TINY:
 				bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
 				bv->value.integerval=*((char *)rp);
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				rp+=sizeof(char);
 				break;
 			case MYSQL_TYPE_SHORT:
@@ -4723,7 +4723,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 				uint16_t	val;
 				readLE(rp,&val,&rp);
 				bv->value.integerval=(int16_t)val;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				}
 				break;
 			case MYSQL_TYPE_LONG:
@@ -4732,7 +4732,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 				uint32_t	val;
 				readLE(rp,&val,&rp);
 				bv->value.integerval=(int32_t)val;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				}
 				break;
 			case MYSQL_TYPE_LONGLONG:
@@ -4741,7 +4741,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 				uint64_t	val;
 				readLE(rp,&val,&rp);
 				bv->value.integerval=(int64_t)val;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				}
 				break;
 			case MYSQL_TYPE_FLOAT:
@@ -4752,7 +4752,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 				bv->value.doubleval.value=temp;
 				bv->value.doubleval.precision=0;
 				bv->value.doubleval.scale=0;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				}
 				break;
 			case MYSQL_TYPE_DOUBLE:
@@ -4760,7 +4760,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 				read(rp,&bv->value.doubleval.value,&rp);
 				bv->value.doubleval.precision=0;
 				bv->value.doubleval.scale=0;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				break;
 			case MYSQL_TYPE_TIME:
 				{
@@ -4774,7 +4774,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 				bv->value.dateval.microsecond=0;
 				bv->value.dateval.tz=NULL;
 				bv->value.dateval.isnegative=false;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				bv->value.dateval.buffersize=64;
 				bv->value.dateval.buffer=
 					(char *)bindpool->allocate(
@@ -4832,7 +4832,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 				bv->value.dateval.microsecond=-1;
 				bv->value.dateval.tz=NULL;
 				bv->value.dateval.isnegative=false;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				bv->value.dateval.buffersize=64;
 				bv->value.dateval.buffer=
 					(char *)bindpool->allocate(
@@ -4879,7 +4879,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 				bv->value.dateval.microsecond=0;
 				bv->value.dateval.tz=NULL;
 				bv->value.dateval.isnegative=false;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				bv->value.dateval.buffersize=64;
 				bv->value.dateval.buffer=
 					(char *)bindpool->allocate(
@@ -4942,7 +4942,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 							(const char *)rp,
 							bv->valuesize);
 				bv->value.stringval[bv->valuesize]='\0';
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				rp+=bv->valuesize;
 				break;
 			case MYSQL_TYPE_STRING:
@@ -4958,7 +4958,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 							(const char *)rp,
 							bv->valuesize);
 				bv->value.stringval[bv->valuesize]='\0';
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				rp+=bv->valuesize;
 				break;
 		}

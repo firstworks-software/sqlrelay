@@ -215,7 +215,7 @@ class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 #ifdef HAVE_MYSQL_STMT_PREPARE
 		const char	*getBindFormat();
 #endif
-		const char	*nextvalFormat();
+		const char	*getNextvalFormat();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getColumnListQuery(
 						const char *table, bool wild);
@@ -224,8 +224,8 @@ class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 		const char	*setIsolationLevelQuery();
 		bool		getLastInsertId(uint64_t *id);
 		const char	*noopQuery();
-		bool		autoCommitOn();
-		bool		autoCommitOff();
+		bool		setAutoCommitOn();
+		bool		setAutoCommitOff();
 		bool		supportsAutoCommit();
 		bool		commit();
 		bool		rollback();
@@ -235,8 +235,8 @@ class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 						int64_t	*errorcode,
 						bool *liveconnection);
 #ifdef HAVE_MYSQL_STMT_PREPARE
-		int16_t		nonNullBindValue();
-		int16_t		nullBindValue();
+		int16_t		getNonNullBindValue();
+		int16_t		getNullBindValue();
 #endif
 		void		endSession();
 
@@ -669,7 +669,7 @@ const char *mysqlconnection::getBindFormat() {
 }
 #endif
 
-const char *mysqlconnection::nextvalFormat() {
+const char *mysqlconnection::getNextvalFormat() {
 	return "";
 }
 
@@ -775,7 +775,7 @@ bool mysqlconnection::isTransactional() {
 	return true;
 }
 
-bool mysqlconnection::autoCommitOn() {
+bool mysqlconnection::setAutoCommitOn() {
 #ifdef HAVE_MYSQL_AUTOCOMMIT
 	return !mysql_autocommit(mysqlptr,true);
 #elif defined(MYSQL_VERSION_ID) && MYSQL_VERSION_ID>=40000
@@ -811,7 +811,7 @@ bool mysqlconnection::autoCommitOn() {
 #endif
 }
 
-bool mysqlconnection::autoCommitOff() {
+bool mysqlconnection::setAutoCommitOff() {
 #ifdef HAVE_MYSQL_AUTOCOMMIT
 	return !mysql_autocommit(mysqlptr,false);
 #elif defined(MYSQL_VERSION_ID) && MYSQL_VERSION_ID>=40000
@@ -897,11 +897,11 @@ void mysqlconnection::errorMessage(char *errorbuffer,
 }
 
 #ifdef HAVE_MYSQL_STMT_PREPARE
-int16_t mysqlconnection::nonNullBindValue() {
+int16_t mysqlconnection::getNonNullBindValue() {
 	return 0;
 }
 
-int16_t mysqlconnection::nullBindValue() {
+int16_t mysqlconnection::getNullBindValue() {
 	return 1;
 }
 #endif

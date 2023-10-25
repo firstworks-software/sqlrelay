@@ -59,7 +59,7 @@ bool sqlrlogger_sql::init(sqlrlistener *sqlrl,
 	delete[] querylogname;
 	charstring::printf(&querylogname,
 				"%s/sqlr-connection-%s-querylog.%ld",
-				sqlrcon->cont->getLogDir(),
+				sqlrcon->cont->getPaths()->getLogDir(),
 				sqlrcon->cont->getId(),(long)pid);
 
 	// remove any old log file

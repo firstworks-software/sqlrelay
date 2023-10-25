@@ -2159,7 +2159,7 @@ bool sqlrprotocol_postgresql::bind() {
 
 			// bind null
 			bv->type=SQLRSERVERBINDVARTYPE_NULL;
-			bv->isnull=cont->nullBindValue();
+			bv->isnull=cont->getNullBindValue();
 
 			if (getDebug()) {
 				stdoutput.printf("		"
@@ -2243,7 +2243,7 @@ void sqlrprotocol_postgresql::bindTextParameter(const byte_t *rp,
 	bv->value.stringval=(char *)bindpool->allocate(bv->valuesize+1);
 	read(rp,bv->value.stringval,bv->valuesize,rpout);
 	bv->value.stringval[bv->valuesize]='\0';
-	bv->isnull=cont->nonNullBindValue();
+	bv->isnull=cont->getNonNullBindValue();
 
 	if (getDebug()) {
 		stdoutput.printf("		"
@@ -2263,7 +2263,7 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 	}
 
 	bv->valuesize=0;
-	bv->isnull=cont->nonNullBindValue();
+	bv->isnull=cont->getNonNullBindValue();
 
 	switch (oid) {
 		case 16: //bool
@@ -2374,7 +2374,7 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 				(char *)bindpool->allocate(bv->valuesize+1);
 			read(rp,bv->value.stringval,bv->valuesize,rpout);
 			bv->value.stringval[bv->valuesize]='\0';
-			bv->isnull=cont->nonNullBindValue();
+			bv->isnull=cont->getNonNullBindValue();
 			if (getDebug()) {
 				stdoutput.printf("		"
 						"value: %s\n",
@@ -2390,7 +2390,7 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 			bv->value.stringval=
 				(char *)bindpool->allocate(bv->valuesize);
 			read(rp,bv->value.stringval,bv->valuesize,rpout);
-			bv->isnull=cont->nonNullBindValue();
+			bv->isnull=cont->getNonNullBindValue();
 			if (getDebug()) {
 				stdoutput.printf("		value: ");
 				stdoutput.safePrint(bv->value.stringval,
@@ -2432,7 +2432,7 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 						str.getString(),
 						str.getSize());
 			bv->value.stringval[str.getSize()]='\0';
-			bv->isnull=cont->nonNullBindValue();
+			bv->isnull=cont->getNonNullBindValue();
 
 			if (getDebug()) {
 				stdoutput.printf("		"

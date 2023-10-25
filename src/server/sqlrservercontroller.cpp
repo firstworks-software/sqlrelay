@@ -1169,13 +1169,13 @@ void sqlrservercontroller::logOut() {
 void sqlrservercontroller::setAutoCommit(bool ac) {
 	raiseDebugMessageEvent("setting autocommit...");
 	if (ac) {
-		if (!autoCommitOn()) {
+		if (!setAutoCommitOn()) {
 			raiseDebugMessageEvent("setting autocommit on failed");
 			stderror.printf("Couldn't set autocommit on.\n");
 			return;
 		}
 	} else {
-		if (!autoCommitOff()) {
+		if (!setAutoCommitOff()) {
 			raiseDebugMessageEvent("setting autocommit off failed");
 			stderror.printf("Couldn't set autocommit off.\n");
 			return;
@@ -1610,9 +1610,9 @@ void sqlrservercontroller::reLogIn() {
 
 	// restore initial autocommit behavior
 	if (pvt->_initialautocommit) {
-		pvt->_conn->autoCommitOn();
+		pvt->_conn->setAutoCommitOn();
 	} else {
-		pvt->_conn->autoCommitOff();
+		pvt->_conn->setAutoCommitOff();
 	}
 
 	// FIXME: restore the isolation level
@@ -2266,7 +2266,7 @@ void sqlrservercontroller::suspendSession(const char **unixsocket,
 	raiseDebugMessageEvent("done opening sockets to resume on");
 }
 
-bool sqlrservercontroller::autoCommitOn() {
+bool sqlrservercontroller::setAutoCommitOn() {
 
 	if (pvt->_debugsql) {
 		stdoutput.printf("\n===================="
@@ -2278,7 +2278,7 @@ bool sqlrservercontroller::autoCommitOn() {
 	}
 
 	pvt->_autocommitforthissession=true;
-	if (pvt->_conn->autoCommitOn()) {
+	if (pvt->_conn->setAutoCommitOn()) {
 		if (pvt->_intransaction) {
 			raiseCommitEvent();
 		}
@@ -2288,7 +2288,7 @@ bool sqlrservercontroller::autoCommitOn() {
 	return false;
 }
 
-bool sqlrservercontroller::autoCommitOff() {
+bool sqlrservercontroller::setAutoCommitOff() {
 
 	if (pvt->_debugsql) {
 		stdoutput.printf("\n===================="
@@ -2300,7 +2300,7 @@ bool sqlrservercontroller::autoCommitOff() {
 	}
 
 	pvt->_autocommitforthissession=false;
-	if (pvt->_conn->autoCommitOff()) {
+	if (pvt->_conn->setAutoCommitOff()) {
 		// if the db doesn't support transaction blocks (oracle,
 		// firebird, informix) then we are in a transaction here,
 		// otherwise we aren't
@@ -2350,7 +2350,7 @@ bool sqlrservercontroller::beginFakeTransactionBlock() {
 
 	// if autocommit is on, turn it off
 	if (pvt->_autocommitforthissession) {
-		if (!autoCommitOff()) {
+		if (!setAutoCommitOff()) {
 			return false;
 		}
 	}
@@ -2382,7 +2382,7 @@ bool sqlrservercontroller::endFakeTransactionBlock() {
 	// reset autocommit behavior
 	if (pvt->_faketransactionblocks &&
 		pvt->_faketransactionblocksautocommiton) {
-		if (!autoCommitOn()) {
+		if (!setAutoCommitOn()) {
 			return false;
 		}
 	}
@@ -2513,12 +2513,16 @@ bool sqlrservercontroller::rollback() {
 }
 
 bool sqlrservercontroller::selectDatabase(const char *db) {
-	return (pvt->_cfg->getIgnoreSelectDatabase())?
-			true:pvt->_conn->selectDatabase(db);
-}
-
-void sqlrservercontroller::dbHasChanged() {
-	pvt->_dbchanged=true;
+	if (pvt->_cfg->getIgnoreSelectDatabase()) {
+		return true;
+	}
+	if (pvt->_conn->selectDatabase(db)) {
+		// set a flag indicating that the db has been changed
+		// so it can be reset at the end of the session
+		pvt->_dbchanged=true;
+		return true;
+	}
+	return false;
 }
 
 char *sqlrservercontroller::getCurrentDatabase() {
@@ -2789,21 +2793,27 @@ void sqlrservercontroller::clearError() {
 }
 
 void sqlrservercontroller::setError(const char *err,
-					int64_t errn,
-					bool liveconn) {
+						uint32_t errsize,
+						int64_t errn,
+						bool liveconn) {
 
 	char		*errorbuffer=pvt->_conn->getErrorBuffer();
-	uint32_t	errorsize=charstring::getLength(err);
-	if (errorsize>pvt->_maxerrorsize) {
-		errorsize=pvt->_maxerrorsize;
+	if (errsize>pvt->_maxerrorsize) {
+		errsize=pvt->_maxerrorsize;
 	}
-	charstring::safeCopy(errorbuffer,pvt->_maxerrorsize,err,errorsize);
-	if (errorsize<pvt->_maxerrorsize) {
-		errorbuffer[errorsize]='\0';
+	charstring::safeCopy(errorbuffer,pvt->_maxerrorsize,err,errsize);
+	if (errsize<pvt->_maxerrorsize) {
+		errorbuffer[errsize]='\0';
 	}
-	pvt->_conn->setErrorSize(errorsize);
+	pvt->_conn->setErrorSize(errsize);
 	pvt->_conn->setErrorNumber(errn);
 	pvt->_conn->setLiveConnection(liveconn);
+}
+
+void sqlrservercontroller::setError(const char *err,
+					int64_t errn,
+					bool liveconn) {
+	setError(err,charstring::getLength(err),errn,liveconn);
 }
 
 char *sqlrservercontroller::getErrorBuffer() {
@@ -2935,7 +2945,7 @@ bool sqlrservercontroller::interceptQuery(sqlrservercursor *cursor) {
 			// FIXME: should we also handle
 			// SQLRQUERYTYPE_SET_INCLUDING_AUTOCOMMIT_ON
 			// somehow
-			retval=autoCommitOn();
+			retval=setAutoCommitOn();
 			break;
 		case SQLRQUERYTYPE_AUTOCOMMIT_OFF:
 			cursor->setQueryWasIntercepted(true);
@@ -2947,7 +2957,7 @@ bool sqlrservercontroller::interceptQuery(sqlrservercursor *cursor) {
 			// FIXME: should we also handle
 			// SQLRQUERYTYPE_SET_INCLUDING_AUTOCOMMIT_OFF
 			// somehow
-			retval=autoCommitOff();
+			retval=setAutoCommitOff();
 			break;
 		default:
 			break;
@@ -7975,7 +7985,7 @@ void sqlrservercontroller::bulkLoadBindRow(const byte_t *data,
 			case SQLRSERVERBINDVARTYPE_INTEGER:
 				inbind->value.integerval=
 					charstring::convertToInteger((char *)val);
-				inbind->isnull=nonNullBindValue();
+				inbind->isnull=getNonNullBindValue();
 				if (pvt->_debugbulkload) {
 					stdoutput.printf("%d\n",
 						inbind->value.integerval);
@@ -8096,9 +8106,9 @@ void sqlrservercontroller::bulkLoadBindRow(const byte_t *data,
 		}
 
 		if (type==SQLRSERVERBINDVARTYPE_NULL) {
-			inbind->isnull=nullBindValue();
+			inbind->isnull=getNullBindValue();
 		} else {
-			inbind->isnull=nonNullBindValue();
+			inbind->isnull=getNonNullBindValue();
 		}
 
 		// move on
@@ -8826,20 +8836,20 @@ const char *sqlrservercontroller::getBindFormat() {
 	return pvt->_conn->getBindFormat();
 }
 
-int16_t sqlrservercontroller::nonNullBindValue() {
-	return pvt->_conn->nonNullBindValue();
+int16_t sqlrservercontroller::getNonNullBindValue() {
+	return pvt->_conn->getNonNullBindValue();
 }
 
-int16_t sqlrservercontroller::nullBindValue() {
-	return pvt->_conn->nullBindValue();
+int16_t sqlrservercontroller::getNullBindValue() {
+	return pvt->_conn->getNullBindValue();
 }
 
-bool sqlrservercontroller::bindValueIsNull(int16_t isnull) {
-	return pvt->_conn->bindValueIsNull(isnull);
+bool sqlrservercontroller::getBindValueIsNull(int16_t isnull) {
+	return pvt->_conn->getBindValueIsNull(isnull);
 }
 
-const char *sqlrservercontroller::nextvalFormat() {
-	return pvt->_conn->nextvalFormat();
+const char *sqlrservercontroller::getNextvalFormat() {
+	return pvt->_conn->getNextvalFormat();
 }
 
 void sqlrservercontroller::setFakeInputBinds(bool fake) {
@@ -8872,29 +8882,6 @@ uint32_t sqlrservercontroller::getMaxColumnCount() {
 
 uint32_t sqlrservercontroller::getMaxFieldSize() {
 	return pvt->_maxfieldsize;
-}
-
-bool sqlrservercontroller::getColumnNames(const char *query,
-					stringbuffer *output) {
-
-	// sanity check on the query
-	if (!query) {
-		return false;
-	}
-
-	size_t	querysize=charstring::getLength(query);
-
-	sqlrservercursor	*gcncur=newCursor();
-	if (open(gcncur) &&
-		prepareQuery(gcncur,query,querysize) && executeQuery(gcncur)) {
-
-		// build column list...
-		getColumnNameList(gcncur,output);
-	}
-	closeResultSet(gcncur);
-	close(gcncur);
-	deleteCursor(gcncur);
-	return true;
 }
 
 void sqlrservercontroller::addSessionTempTableForDrop(const char *table) {
@@ -9364,14 +9351,6 @@ const char *sqlrservercontroller::getConnectionId() {
 	return pvt->_connectionid;
 }
 
-const char *sqlrservercontroller::getLogDir() {
-	return pvt->_pth->getLogDir();
-}
-
-const char *sqlrservercontroller::getDebugDir() {
-	return pvt->_pth->getDebugDir();
-}
-
 bool sqlrservercontroller::isCustomQuery(sqlrservercursor *cursor) {
 	return cursor->isCustomQuery();
 }
@@ -9763,7 +9742,30 @@ uint16_t sqlrservercontroller::getColumnTableSize(sqlrservercursor *cursor,
 	return cursor->getColumnTableSizeFromBuffer(mapColumn(col));
 }
 
-void sqlrservercontroller::getColumnNameList(sqlrservercursor *cursor,
+bool sqlrservercontroller::getColumnNames(const char *query,
+					stringbuffer *output) {
+
+	// sanity check on the query
+	if (charstring::isNullOrEmpty(query)) {
+		return false;
+	}
+
+	size_t	querysize=charstring::getLength(query);
+
+	sqlrservercursor	*gcncur=newCursor();
+	if (open(gcncur) &&
+		prepareQuery(gcncur,query,querysize) && executeQuery(gcncur)) {
+
+		// build column list...
+		getColumnNames(gcncur,output);
+	}
+	closeResultSet(gcncur);
+	close(gcncur);
+	deleteCursor(gcncur);
+	return true;
+}
+
+void sqlrservercontroller::getColumnNames(sqlrservercursor *cursor,
 							stringbuffer *output) {
 	// see comment in colCount()
 	if (!cursor->getColumnInfoIsValid()) {

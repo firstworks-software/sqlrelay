@@ -60,7 +60,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 		void	rollbackCommand();
 		void	dbVersionCommand();
 		void	bindFormatCommand();
-		void	nextvalFormatCommand();
+		void	getNextvalFormatCommand();
 		void	serverVersionCommand();
 		void	selectDatabaseCommand();
 		void	getCurrentDatabaseCommand();
@@ -399,7 +399,7 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 		} else if (command==NEXTVALFORMAT) {
 			// FIXME: add this
 			//cont->incrementNextvalFormatCount();
-			nextvalFormatCommand();
+			getNextvalFormatCommand();
 			continue;
 		} else if (command==SERVERVERSION) {
 			cont->incrementServerVersionCount();
@@ -989,10 +989,10 @@ void sqlrprotocol_sqlrclient::autoCommitCommand() {
 	bool	success=false;
 	if (on) {
 		cont->raiseDebugMessageEvent("autocommit on");
-		success=cont->autoCommitOn();
+		success=cont->setAutoCommitOn();
 	} else {
 		cont->raiseDebugMessageEvent("autocommit off");
-		success=cont->autoCommitOff();
+		success=cont->setAutoCommitOff();
 	}
 	if (success) {
 		cont->raiseDebugMessageEvent("succeeded");
@@ -1075,13 +1075,13 @@ void sqlrprotocol_sqlrclient::bindFormatCommand() {
 	clientsock->flushWriteBuffer(-1,-1);
 }
 
-void sqlrprotocol_sqlrclient::nextvalFormatCommand() {
+void sqlrprotocol_sqlrclient::getNextvalFormatCommand() {
 	debugFunction();
 
 	cont->raiseDebugMessageEvent("nextval format");
 
 	// get the nextval format
-	const char	*nf=cont->nextvalFormat();
+	const char	*nf=cont->getNextvalFormat();
 
 	// send it to the client
 	clientsock->write((uint16_t)NO_ERROR_OCCURRED);
@@ -1816,7 +1816,7 @@ bool sqlrprotocol_sqlrclient::getOutputBinds(sqlrservercursor *cursor) {
 		}
 
 		// init the null indicator
-		bv->isnull=cont->nonNullBindValue();
+		bv->isnull=cont->getNonNullBindValue();
 	}
 
 	cont->raiseDebugMessageEvent("done getting output binds");
@@ -1871,7 +1871,7 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 			bv->value.stringval=
 				(char *)bindpool->allocate(bv->valuesize+1);
 			bytestring::zero(bv->value.stringval,bv->valuesize+1);
-			bv->isnull=cont->nullBindValue();
+			bv->isnull=cont->getNullBindValue();
 			cont->raiseDebugMessageEvent("NULL");
 		} else if (bv->type==SQLRSERVERBINDVARTYPE_STRING) {
 			bv->value.stringval=NULL;
@@ -1901,7 +1901,7 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 				return false;
 			}
 			bv->value.stringval[bv->valuesize]='\0';
-			bv->isnull=cont->nonNullBindValue();
+			bv->isnull=cont->getNonNullBindValue();
 			cont->raiseDebugMessageEvent("STRING");
 		} else if (bv->type==SQLRSERVERBINDVARTYPE_INTEGER) {
 
@@ -1916,7 +1916,7 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 							cursor,info,result);
 				return false;
 			}
-			bv->isnull=cont->nonNullBindValue();
+			bv->isnull=cont->getNonNullBindValue();
 			cont->raiseDebugMessageEvent("INTEGER");
 		} else if (bv->type==SQLRSERVERBINDVARTYPE_DOUBLE) {
 
@@ -1959,7 +1959,7 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 				return false;
 			}
 
-			bv->isnull=cont->nonNullBindValue();
+			bv->isnull=cont->getNonNullBindValue();
 			cont->raiseDebugMessageEvent("DOUBLE");
 		} else if (bv->type==SQLRSERVERBINDVARTYPE_DATE) {
 
@@ -2100,7 +2100,7 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 				(char *)bindpool->allocate(
 						bv->value.dateval.buffersize);
 
-			bv->isnull=cont->nonNullBindValue();
+			bv->isnull=cont->getNonNullBindValue();
 			cont->raiseDebugMessageEvent("DATE");
 		} /*else if (bv->type==SQLRSERVERBINDVARTYPE_BLOB ||
 					bv->type==SQLRSERVERBINDVARTYPE_CLOB) {
@@ -2112,7 +2112,7 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 			} else if (bv->type==SQLRSERVERBINDVARTYPE_CLOB) {
 				cont->raiseDebugMessageEvent("CLOB");
 			}
-			bv->isnull=cont->nonNullBindValue();
+			bv->isnull=cont->getNonNullBindValue();
 		}*/
 	}
 
@@ -2290,7 +2290,7 @@ void sqlrprotocol_sqlrclient::getNullBind(sqlrserverbindvar *bv,
 	bv->value.stringval=(char *)bindpool->allocate(1);
 	bv->value.stringval[0]='\0';
 	bv->valuesize=0;
-	bv->isnull=cont->nullBindValue();
+	bv->isnull=cont->getNullBindValue();
 }
 
 bool sqlrprotocol_sqlrclient::getStringBind(sqlrservercursor *cursor,
@@ -2324,7 +2324,7 @@ bool sqlrprotocol_sqlrclient::getStringBind(sqlrservercursor *cursor,
 	}
 	bv->value.stringval[bv->valuesize]='\0';
 
-	bv->isnull=cont->nonNullBindValue();
+	bv->isnull=cont->getNonNullBindValue();
 
 	cont->raiseDebugMessageEvent(bv->value.stringval);
 
@@ -2524,7 +2524,7 @@ bool sqlrprotocol_sqlrclient::getDateBind(sqlrserverbindvar *bv,
 	bv->value.dateval.buffer=(char *)bindpool->
 					allocate(bv->value.dateval.buffersize);
 
-	bv->isnull=cont->nonNullBindValue();
+	bv->isnull=cont->getNonNullBindValue();
 
 	debugstr.clear();
 	debugstr.append(bv->value.dateval.year)->append('-');
@@ -2583,7 +2583,7 @@ bool sqlrprotocol_sqlrclient::getLobBind(sqlrservercursor *cursor,
 	// binding.
 	bv->value.stringval[bv->valuesize]='\0';
 
-	bv->isnull=cont->nonNullBindValue();
+	bv->isnull=cont->getNonNullBindValue();
 
 	return true;
 }
@@ -2861,7 +2861,7 @@ void sqlrprotocol_sqlrclient::returnOutputBindValues(sqlrservercursor *cursor) {
 			debugstr.append(":");
 		}
 
-		if (cont->bindValueIsNull(bv->isnull)) {
+		if (cont->getBindValueIsNull(bv->isnull)) {
 
 			if (cont->logEnabled() ||
 				cont->notificationsEnabled()) {
@@ -3102,7 +3102,7 @@ void sqlrprotocol_sqlrclient::returnInputOutputBindValues(
 			debugstr.append(":");
 		}
 
-		if (cont->bindValueIsNull(bv->isnull)) {
+		if (cont->getBindValueIsNull(bv->isnull)) {
 
 			if (cont->logEnabled() ||
 				cont->notificationsEnabled()) {

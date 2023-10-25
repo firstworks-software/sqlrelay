@@ -3695,7 +3695,7 @@ bool sqlrprotocol_oracle::bindParameters(sqlrservercursor *cursor,
 		// FIXME: handle nulls
 		if (false) {
 			bv->type=SQLRSERVERBINDVARTYPE_NULL;
-			bv->isnull=cont->nullBindValue();
+			bv->isnull=cont->getNullBindValue();
 			if (getDebug()) {
 				stdoutput.write("	type: NULL\n");
 				stdoutput.write("	isnull: true\n");
@@ -3709,7 +3709,7 @@ bool sqlrprotocol_oracle::bindParameters(sqlrservercursor *cursor,
 			/*case MYSQL_TYPE_TINY:
 				bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
 				bv->value.integerval=*((char *)rp);
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				rp+=sizeof(char);
 				break;
 			case MYSQL_TYPE_SHORT:
@@ -3719,7 +3719,7 @@ bool sqlrprotocol_oracle::bindParameters(sqlrservercursor *cursor,
 				bytestring::copy(&val,rp,sizeof(uint16_t));
 				val=leToHost((uint16_t)val);
 				bv->value.integerval=(int16_t)val;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				rp+=sizeof(int16_t);
 				}
 				break;
@@ -3730,7 +3730,7 @@ bool sqlrprotocol_oracle::bindParameters(sqlrservercursor *cursor,
 				bytestring::copy(&val,rp,sizeof(uint32_t));
 				val=leToHost((uint32_t)val);
 				bv->value.integerval=(int32_t)val;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				rp+=sizeof(int32_t);
 				}
 				break;
@@ -3741,7 +3741,7 @@ bool sqlrprotocol_oracle::bindParameters(sqlrservercursor *cursor,
 				bytestring::copy(&val,rp,sizeof(uint64_t));
 				val=leToHost((uint64_t)val);
 				bv->value.integerval=(int64_t)val;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				rp+=sizeof(int64_t);
 				}
 				break;
@@ -3751,7 +3751,7 @@ bool sqlrprotocol_oracle::bindParameters(sqlrservercursor *cursor,
 							rp,sizeof(float));
 				bv->value.doubleval.precision=0;
 				bv->value.doubleval.scale=0;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				rp+=sizeof(float);
 				break;
 			case MYSQL_TYPE_DOUBLE:
@@ -3760,7 +3760,7 @@ bool sqlrprotocol_oracle::bindParameters(sqlrservercursor *cursor,
 							rp,sizeof(double));
 				bv->value.doubleval.precision=0;
 				bv->value.doubleval.scale=0;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				rp+=sizeof(double);
 				break;
 			case MYSQL_TYPE_TIME:
@@ -3775,7 +3775,7 @@ bool sqlrprotocol_oracle::bindParameters(sqlrservercursor *cursor,
 				bv->value.dateval.microsecond=0;
 				bv->value.dateval.tz=NULL;
 				bv->value.dateval.isnegative=false;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				bv->value.dateval.buffersize=64;
 				bv->value.dateval.buffer=
 					new char[bv->value.dateval.buffersize];
@@ -3828,7 +3828,7 @@ bool sqlrprotocol_oracle::bindParameters(sqlrservercursor *cursor,
 				bv->value.dateval.microsecond=-1;
 				bv->value.dateval.tz=NULL;
 				bv->value.dateval.isnegative=false;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				bv->value.dateval.buffersize=64;
 				bv->value.dateval.buffer=
 					new char[bv->value.dateval.buffersize];
@@ -3871,7 +3871,7 @@ bool sqlrprotocol_oracle::bindParameters(sqlrservercursor *cursor,
 				bv->value.dateval.microsecond=0;
 				bv->value.dateval.tz=NULL;
 				bv->value.dateval.isnegative=false;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				bv->value.dateval.buffersize=64;
 				bv->value.dateval.buffer=
 					new char[bv->value.dateval.buffersize];
@@ -3922,7 +3922,7 @@ bool sqlrprotocol_oracle::bindParameters(sqlrservercursor *cursor,
 				bv->value.stringval=charstring::duplicate(
 							(const char *)rp,
 							bv->valuesize);
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				rp+=bv->valuesize;
 				break;
 			*/
@@ -3938,7 +3938,7 @@ bool sqlrprotocol_oracle::bindParameters(sqlrservercursor *cursor,
 				bv->value.stringval=charstring::duplicate(
 							(const char *)rp,
 							bv->valuesize);
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				rp+=bv->valuesize;
 				break;
 				}
