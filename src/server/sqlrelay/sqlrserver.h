@@ -630,66 +630,389 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 
 
 
-		// current client info
-		void	setCurrentUser(const char *user, uint32_t usersize);
-		void	setCurrentQuery(const char *query, uint32_t querysize);
-		void	setClientInfo(const char *info, uint32_t infosize);
-		const char	*getCurrentUser();
-		const char	*getCurrentQuery();
-		const char	*getClientInfo();
-		const char	*getClientAddr();
+		// instance state...
 
-
-
-		// instance state
+		/** If "disabled" is true then the instance is marked as
+		 *  disabled.  If "disabled" is false, then the instance is
+		 *  marked as enabled. */
 		void	setInstanceDisabled(bool disabled);
+
+		/** Returns whether the instance is disabled or enabled, as set
+		 *  by setInstanceDisabled(). */
 		bool	getInstanceDisabled();
 
 
 
 		// statistics api...
-		void	incrementOpenDatabaseConnections();
-		void	decrementOpenDatabaseConnections();
-		void	incrementOpenClientConnections();
-		void	decrementOpenClientConnections();
-		void	incrementOpenDatabaseCursors();
-		void	decrementOpenDatabaseCursors();
-		void	incrementTimesNewCursorUsed();
-		void	incrementTimesCursorReused();
-		void	incrementQueryCounts(sqlrquerytype_t querytype);
-		void	incrementTotalErrors();
-		void	incrementAuthCount();
-		void	incrementSuspendSessionCount();
-		void	incrementEndSessionCount();
-		void	incrementPingCount();
-		void	incrementIdentifyCount();
-		void	incrementAutocommitCount();
-		void	incrementBeginCount();
-		void	incrementCommitCount();
-		void	incrementRollbackCount();
-		void	incrementDbVersionCount();
-		void	incrementBindFormatCount();
-		void	incrementServerVersionCount();
-		void	incrementSelectDatabaseCount();
-		void	incrementGetCurrentDatabaseCount();
-		void	incrementGetLastInsertIdCount();
-		void	incrementDbHostNameCount();
-		void	incrementDbIpAddressCount();
-		void	incrementNewQueryCount();
-		void	incrementReexecuteQueryCount();
-		void	incrementFetchFromBindCursorCount();
-		void	incrementFetchResultSetCount();
-		void	incrementAbortResultSetCount();
-		void	incrementSuspendResultSetCount();
-		void	incrementResumeResultSetCount();
-		void	incrementGetDbListCount();
-		void	incrementGetTableListCount();
-		void	incrementGetColumnListCount();
-		void	incrementGetQueryTreeCount();
-		void	incrementReLogInCount();
-		void	incrementNextResultSetCount();
-		void	incrementNextResultSetAvailableCount();
+
+		/** Returns the current statistics index. */
 		uint32_t	getStatisticsIndex();
+
+		/** Returns the number of client connections that are currently
+		 *  open. */
+		uint32_t	getOpenClientConnections();
+
+		/** Returns the number of client connections that have been
+		 *  opened since the instance was started. */
+		uint32_t	getOpenedClientConnections();
+
+		/** Increments the number of client connection that are
+		 *  currently open as well as the number of client connections
+		 *  that have been opened since the instance was started. */
+		void	incrementOpenClientConnections();
+
+		/** Decrements the number of client connections that are
+		 *  currently open. */
+		void	decrementOpenClientConnections();
+
+		/** Returns the number of persistent database connections that
+		 *  are currently open. */
+		uint32_t	getOpenDatabaseConnections();
+
+		/** Returns the number of persistent database connections that
+		 *  have been opened since the instance was started. */
+		uint32_t	getOpenedDatabaseConnections();
+
+		/** Increments the number of persistent database connections
+		 *  that are currently open as well as the number of persistent
+		 *  database connections that have been opened since the
+		 *  instance was started. */
+		void	incrementOpenDatabaseConnections();
+
+		/** Decrements the number of persistent database connections
+		 *  that are currently open. */
+		void	decrementOpenDatabaseConnections();
+
+		/** Returns the number of database cursors that are currently
+		 *  open. */
+		uint32_t	getOpenDatabaseCursors();
+
+		/** Returns the number of database cursors that have been
+		 *  opened since the instance was started. */
+		uint32_t	getOpenedDatabaseCursors();
+
+		/** Increments the number of database cursors that are
+		 *  currently open as well as the number of database cursors
+		 *  that have been opened since the instance was started. */
+		void	incrementOpenDatabaseCursors();
+
+		/** Decrements the number of database cursors that are
+		 *  currently open. */
+		void	decrementOpenDatabaseCursors();
+
+		/** Returns the number of times a new cursor was opened and
+		 *  used, as opposed to reusing an existing cursor. */
+		uint32_t	getTimesNewCursorUsed();
+
+		/** Increments the number of times a new cursor was opened and
+		 *  used, as opposed to reusing an existing cursor. */
+		void	incrementTimesNewCursorUsed();
+
+		/** Returns the number of times a cursor was reused, as
+		 *  opposed to opening and using a new cursor. */
+		uint32_t	getTimesCursorReused();
+
+		/** Increments the number of times a cursor was reused, as
+		 *  opposed to opening and using a new cursor. */
+		void	incrementTimesCursorReused();
+
+		/** Returns the number of queries of type "querytype" that have
+		 *  been executed since the instance was started. */
+		uint32_t	getQueryCount(sqlrquerytype_t querytype);
+
+		/** Returns the total number of queries that have been executed
+		 *  since the instance was started. */
+		uint32_t	getTotalQueryCount();
+
+		/** Increments the number of queries of type "querytype" that
+		 *  have been executed since the instance was started, as well
+		 *  as the total number of queries that have been executed
+		 *  since the instance was started, */
+		void	incrementQueryCount(sqlrquerytype_t querytype);
+
+		/** Returns the number of errors that have occurred since the
+		 *  instance was started. */
+		uint32_t	getTotalErrors();
+
+		/** Increments the number of errors that have occurred since
+		 *  the instance was started. */
+		void	incrementTotalErrors();
+
+		/** Returns the number of authentications that have occurred
+		 *  since the instance was started. */
+		uint32_t	getAuthCount();
+
+		/** Increments the number of authentications that have occurred
+		 *  since the instance was started. */
+		void	incrementAuthCount();
+
+		/** Returns the number of sessions that have been suspeneded
+		 *  since the instance was started. */
+		uint32_t	getSuspendSessionCount();
+
+		/** Increments the number of sessions that have been suspeneded
+		 *  since the instance was started. */
+		void	incrementSuspendSessionCount();
+
+		/** Returns the number of sessions that have ended normally, as
+		 *  opposed to having been suspended, since the instance was
+		 *  started. */
+		uint32_t	getEndSessionCount();
+
+		/** Increments the number of sessions that have ended normally,
+		 *  as opposed to having been suspended, since the instance was
+		 *  started. */
+		void	incrementEndSessionCount();
+
+		/** Returns the number of pings that have occurred since the
+		 *  instance was started. */
+		uint32_t	getPingCount();
+
+		/** Increments the number of pings that have occurred since the
+		 *  instance was started. */
+		void	incrementPingCount();
+
+		/** Returns the number of get database type commands that
+		 *  have occurred since the instance was started. */
+		uint32_t	getIdentifyCount();
+
+		/** Increments the number of get database type commands that
+		 *  have occurred since the instance was started. */
+		void	incrementIdentifyCount();
+
+		/** Returns the number of autocommits that have occurred
+		 *  since the instance was started. */
+		uint32_t	getAutocommitCount();
+
+		/** Increments the number of autocommits that have occurred
+		 *  since the instance was started. */
+		void	incrementAutocommitCount();
+
+		/** Returns the number of begins that have occurred
+		 *  since the instance was started. */
+		uint32_t	getBeginCount();
+
+		/** Increments the number of begins that have occurred
+		 *  since the instance was started. */
+		void	incrementBeginCount();
+
+		/** Returns the number of commits that have occurred
+		 *  since the instance was started. */
+		uint32_t	getCommitCount();
+
+		/** Increments the number of commits that have occurred
+		 *  since the instance was started. */
+		void	incrementCommitCount();
+
+		/** Returns the number of rollbacks that have occurred
+		 *  since the instance was started. */
+		uint32_t	getRollbackCount();
+
+		/** Increments the number of rollbacks that have occurred
+		 *  since the instance was started. */
+		void	incrementRollbackCount();
+
+		/** Returns the number of get database version commands that
+		 *  have occurred since the instance was started. */
+		uint32_t	getDbVersionCount();
+
+		/** Increments the number of get database version commands that
+		 *  have occurred since the instance was started. */
+		void	incrementDbVersionCount();
+
+		/** Returns the number of get bind format commands that
+		 *  have occurred since the instance was started. */
+		uint32_t	getGetBindFormatCount();
+
+		/** Increments the number of get bind format commands that
+		 *  have occurred since the instance was started. */
+		void	incrementGetBindFormatCount();
+
+		/** Returns the number of get server version commands that
+		 *  have occurred since the instance was started. */
+		uint32_t	getGetServerVersionCount();
+
+		/** Increments the number of get server version commands that
+		 *  have occurred since the instance was started. */
+		void	incrementGetServerVersionCount();
+
+		/** Returns the number of select database commands that
+		 *  have occurred since the instance was started. */
+		uint32_t	getSelectDatabaseCount();
+
+		/** Increments the number of select database commands that
+		 *  have occurred since the instance was started. */
+		void	incrementSelectDatabaseCount();
+
+		/** Returns the number of get current database commands that
+		 *  have occurred since the instance was started. */
+		uint32_t	getGetCurrentDatabaseCount();
+
+		/** Increments the number of get current database commands that
+		 *  have occurred since the instance was started. */
+		void	incrementGetCurrentDatabaseCount();
+
+		/** Returns the number of get last insert id commands that
+		 *  have occurred since the instance was started. */
+		uint32_t	getGetLastInsertIdCount();
+
+		/** Increments the number of get last insert id commands that
+		 *  have occurred since the instance was started. */
+		void	incrementGetLastInsertIdCount();
+
+		/** Returns the number of get database host name commands
+		 *  that have occurred since the instance was started. */
+		uint32_t	getDbHostNameCount();
+
+		/** Increments the number of get database host name commands
+		 *  that have occurred since the instance was started. */
+		void	incrementDbHostNameCount();
+
+		/** Returns the number of get database ip address commands
+		 *  that have occurred since the instance was started. */
+		uint32_t	getDbIpAddressCount();
+
+		/** Increments the number of get database ip address commands
+		 *  that have occurred since the instance was started. */
+		void	incrementDbIpAddressCount();
+
+		/** Returns the number of new queries, as opposed to
+		 *  reexecuted queries, that have been run since the instance
+		 *  was started. */
+		uint32_t	getNewQueryCount();
+
+		/** Increments the number of new queries, as opposed to
+		 *  reexecuted queries, that have been run since the instance
+		 *  was started. */
+		void	incrementNewQueryCount();
+
+		/** Returns the number of reexecuted queries, as opposed to
+		 *  new queries, that have been run since the instance was
+		 *  started. */
+		uint32_t	getReexecuteQueryCount();
+
+		/** Increments the number of reexecuted queries, as opposed to
+		 *  new queries, that have been run since the instance was
+		 *  started. */
+		void	incrementReexecuteQueryCount();
+
+		/** Returns the number of fetch-from-bind-cursor commands
+ 		 *  that have been run since the instance was started. */
+		uint32_t	getFetchFromBindCursorCount();
+
+		/** Increments the number of fetch-from-bind-cursor commands
+		 *  that have been run since the instance was started. */
+		void	incrementFetchFromBindCursorCount();
+
+		/** Returns the number of result sets that have been fetched
+		 *  run since the instance was started. */
+		uint32_t	getFetchResultSetCount();
+
+		/** Increments the number of result sets that have been fetched
+		 *  run since the instance was started. */
+		void	incrementFetchResultSetCount();
+
+		/** Returns the number of result sets that have been aborted
+		 *  since the instance was started. */
+		uint32_t	getAbortResultSetCount();
+
+		/** Increments the number of result sets that have been aborted
+		 *  since the instance was started. */
+		void	incrementAbortResultSetCount();
+
+		/** Returns the number of result sets that have been
+		 *  suspended since the instance was started. */
+		uint32_t	getSuspendResultSetCount();
+
+		/** Increments the number of result sets that have been
+		 *  suspended since the instance was started. */
+		void	incrementSuspendResultSetCount();
+
+		/** Returns the number of result sets that have been
+		 *  resumed since the instance was started. */
+		uint32_t	getResumeResultSetCount();
+
+		/** Increments the number of result sets that have been
+		 *  resumed since the instance was started. */
+		void	incrementResumeResultSetCount();
+
+		/** Returns the number of get-database-list commands that
+ 		 *  have been run since the instance was started. */
+		uint32_t	getGetDbListCount();
+
+		/** Increments the number of get-database-list commands that
+ 		 *  have been run since the instance was started. */
+		void	incrementGetDbListCount();
+
+		/** Returns the number of get-table-list commands that
+ 		 *  have been run since the instance was started. */
+		uint32_t	getGetTableListCount();
+
+		/** Increments the number of get-table-list commands that
+ 		 *  have been run since the instance was started. */
+		void	incrementGetTableListCount();
+
+		/** Returns the number of get-column-list commands that
+ 		 *  have been run since the instance was started. */
+		uint32_t	getGetColumnListCount();
+
+		/** Increments the number of get-column-list commands that
+ 		 *  have been run since the instance was started. */
+		void	incrementGetColumnListCount();
+
+		/** Returns the number of get-query-tree commands that
+ 		 *  have been run since the instance was started. */
+		uint32_t	getGetQueryTreeCount();
+
+		/** Increments the number of get-query-tree commands that
+ 		 *  have been run since the instance was started. */
+		void	incrementGetQueryTreeCount();
+
+		/** Returns the number of re-logins that have occcurred
+ 		 *  since the instance was started. */
+		uint32_t	getReLogInCount();
+
+		/** Increments the number of re-logins that have occcurred
+ 		 *  since the instance was started. */
+		void	incrementReLogInCount();
+
+		/** Returns the number of get-next-result-set commands that
+		 *  have been run since the instance was started. */
+		uint32_t	getNextResultSetCount();
+
+		/** Increments the number of get-next-result-set commands that
+		 *  have been run since the instance was started. */
+		void	incrementNextResultSetCount();
+
+		/** Returns the number of get-next-result-set-available
+		 *  commands that have been run since the instance was
+		 *  started. */
+		uint32_t	getNextResultSetAvailableCount();
+
+		/** Increments the number of get-next-result-set-available
+		 *  commands that have been run since the instance was
+		 *  started. */
+		void	incrementNextResultSetAvailableCount();
+
+		/** Returns the current user. */
+		const char	*getCurrentUser();
+
+		/** Sets the current query by copying "querysize" bytes of
+		 *  "query" into the statistics buffer. */
+		void	setCurrentQuery(const char *query, uint32_t querysize);
+
+		/** Returns the current query. */
+		const char	*getCurrentQuery();
+
+		/** Sets the current client info by copying "infosize" bytes of
+		 *  "info" into the statistics buffer. */
+                void    setClientInfo(const char *info, uint32_t infosize);
+
+		/** Returns the current client info. */
+		const char	*getClientInfo();
+
+		/** Returns the address of the currently connected client. */
+		const char	*getClientAddr();
 
 
 

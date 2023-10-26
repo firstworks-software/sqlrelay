@@ -124,6 +124,7 @@
 		sqlrparser	*newParser();
 
 		void	setClientSessionStartTime();
+		void	setCurrentUser(const char *user, uint32_t usersize);
 		void	setClientAddr();
 
 

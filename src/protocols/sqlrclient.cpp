@@ -393,7 +393,7 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 			dbVersionCommand();
 			continue;
 		} else if (command==BINDFORMAT) {
-			cont->incrementBindFormatCount();
+			cont->incrementGetBindFormatCount();
 			bindFormatCommand();
 			continue;
 		} else if (command==NEXTVALFORMAT) {
@@ -402,7 +402,7 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 			getNextvalFormatCommand();
 			continue;
 		} else if (command==SERVERVERSION) {
-			cont->incrementServerVersionCount();
+			cont->incrementGetServerVersionCount();
 			serverVersionCommand();
 			continue;
 		} else if (command==SELECT_DATABASE) {

@@ -4818,7 +4818,7 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 		cursor->setQueryEnd(dt.getSecond(),dt.getMicrosecond());
 
 		// update query and error counts
-		incrementQueryCounts(cursor->getQueryType());
+		incrementQueryCount(cursor->getQueryType());
 		incrementTotalErrors();
 
 		// save the error
@@ -5056,7 +5056,7 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 			cursor->setQueryEnd(dt.getSecond(),dt.getMicrosecond());
 
 			// update query and error counts
-			incrementQueryCounts(cursor->getQueryType());
+			incrementQueryCount(cursor->getQueryType());
 			incrementTotalErrors();
 
 			// save the error
@@ -5099,7 +5099,7 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 			cursor->setQueryEnd(dt.getSecond(),dt.getMicrosecond());
 
 			// update query and error counts
-			incrementQueryCounts(cursor->getQueryType());
+			incrementQueryCount(cursor->getQueryType());
 			incrementTotalErrors();
 
 			// get the error
@@ -5192,7 +5192,7 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 	cursor->clearTotalRowsFetched();
 
 	// update query and error counts
-	incrementQueryCounts(cursor->getQueryType());
+	incrementQueryCount(cursor->getQueryType());
 	if (!success) {
 		incrementTotalErrors();
 	}
@@ -8319,22 +8319,6 @@ void sqlrservercontroller::setClientAddr() {
 	}
 }
 
-const char *sqlrservercontroller::getCurrentUser() {
-	return (pvt->_connstats)?pvt->_connstats->user:NULL;
-}
-
-const char *sqlrservercontroller::getCurrentQuery() {
-	return (pvt->_connstats)?pvt->_connstats->sqltext:NULL;
-}
-
-const char *sqlrservercontroller::getClientInfo() {
-	return (pvt->_connstats)?pvt->_connstats->clientinfo:NULL;
-}
-
-const char *sqlrservercontroller::getClientAddr() {
-	return (pvt->_connstats)?pvt->_connstats->clientaddr:NULL;
-}
-
 void sqlrservercontroller::setInstanceDisabled(bool disabled) {
 	pvt->_shm->disabled=disabled;
 }
@@ -8343,19 +8327,12 @@ bool sqlrservercontroller::getInstanceDisabled() {
 	return pvt->_shm->disabled;
 }
 
-void sqlrservercontroller::incrementOpenDatabaseConnections() {
-	pvt->_semset->waitWithUndo(9);
-	pvt->_shm->open_db_connections++;
-	pvt->_shm->opened_db_connections++;
-	pvt->_semset->signalWithUndo(9);
+uint32_t sqlrservercontroller::getOpenClientConnections() {
+	return pvt->_shm->open_cli_connections;
 }
 
-void sqlrservercontroller::decrementOpenDatabaseConnections() {
-	pvt->_semset->waitWithUndo(9);
-	if (pvt->_shm->open_db_connections) {
-		pvt->_shm->open_db_connections--;
-	}
-	pvt->_semset->signalWithUndo(9);
+uint32_t sqlrservercontroller::getOpenedClientConnections() {
+	return pvt->_shm->opened_cli_connections;
 }
 
 void sqlrservercontroller::incrementOpenClientConnections() {
@@ -8377,6 +8354,37 @@ void sqlrservercontroller::decrementOpenClientConnections() {
 	pvt->_semset->signalWithUndo(9);
 }
 
+uint32_t sqlrservercontroller::getOpenDatabaseConnections() {
+	return pvt->_shm->open_db_connections;
+}
+
+uint32_t sqlrservercontroller::getOpenedDatabaseConnections() {
+	return pvt->_shm->opened_db_connections;
+}
+
+void sqlrservercontroller::incrementOpenDatabaseConnections() {
+	pvt->_semset->waitWithUndo(9);
+	pvt->_shm->open_db_connections++;
+	pvt->_shm->opened_db_connections++;
+	pvt->_semset->signalWithUndo(9);
+}
+
+void sqlrservercontroller::decrementOpenDatabaseConnections() {
+	pvt->_semset->waitWithUndo(9);
+	if (pvt->_shm->open_db_connections) {
+		pvt->_shm->open_db_connections--;
+	}
+	pvt->_semset->signalWithUndo(9);
+}
+
+uint32_t sqlrservercontroller::getOpenDatabaseCursors() {
+	return pvt->_shm->open_db_cursors;
+}
+
+uint32_t sqlrservercontroller::getOpenedDatabaseCursors() {
+	return pvt->_shm->opened_db_cursors;
+}
+
 void sqlrservercontroller::incrementOpenDatabaseCursors() {
 	pvt->_semset->waitWithUndo(9);
 	pvt->_shm->open_db_cursors++;
@@ -8392,10 +8400,18 @@ void sqlrservercontroller::decrementOpenDatabaseCursors() {
 	pvt->_semset->signalWithUndo(9);
 }
 
+uint32_t sqlrservercontroller::getTimesNewCursorUsed() {
+	return pvt->_shm->times_new_cursor_used;
+}
+
 void sqlrservercontroller::incrementTimesNewCursorUsed() {
 	pvt->_semset->waitWithUndo(9);
 	pvt->_shm->times_new_cursor_used++;
 	pvt->_semset->signalWithUndo(9);
+}
+
+uint32_t sqlrservercontroller::getTimesCursorReused() {
+	return pvt->_shm->times_cursor_reused;
 }
 
 void sqlrservercontroller::incrementTimesCursorReused() {
@@ -8404,7 +8420,45 @@ void sqlrservercontroller::incrementTimesCursorReused() {
 	pvt->_semset->signalWithUndo(9);
 }
 
-void sqlrservercontroller::incrementQueryCounts(sqlrquerytype_t querytype) {
+uint32_t sqlrservercontroller::getQueryCount(sqlrquerytype_t querytype) {
+
+	datetime	dt;
+	dt.initFromSystemDateTime();
+	time_t	now=dt.getEpoch();
+	int	index=now%STATQPSKEEP;
+
+	switch (querytype) {
+		case SQLRQUERYTYPE_SELECT:
+			return pvt->_shm->qps_select[index];
+		case SQLRQUERYTYPE_INSERT:
+		case SQLRQUERYTYPE_INSERTSELECT:
+		case SQLRQUERYTYPE_SELECTINTO:
+		case SQLRQUERYTYPE_MULTIINSERT:
+			return pvt->_shm->qps_insert[index];
+		case SQLRQUERYTYPE_UPDATE:
+			return pvt->_shm->qps_update[index];
+		case SQLRQUERYTYPE_DELETE:
+			return pvt->_shm->qps_delete[index];
+		case SQLRQUERYTYPE_CREATE:
+			return pvt->_shm->qps_create[index];
+		case SQLRQUERYTYPE_DROP:
+			return pvt->_shm->qps_drop[index];
+		case SQLRQUERYTYPE_ALTER:
+			return pvt->_shm->qps_alter[index];
+		case SQLRQUERYTYPE_CUSTOM:
+			return pvt->_shm->qps_custom[index];
+		default:
+			// catches BEGIN, COMMIT, ROLLBACK, AUTOCOMMIT ON/OFF,
+			// SET INCLUDING AUTOCOMMIT ON/OFF, and ETC
+			return pvt->_shm->qps_etc[index];
+	}
+}
+
+uint32_t sqlrservercontroller::getTotalQueryCount() {
+	return pvt->_shm->total_queries;
+}
+
+void sqlrservercontroller::incrementQueryCount(sqlrquerytype_t querytype) {
 
 	pvt->_semset->waitWithUndo(9);
 
@@ -8479,10 +8533,18 @@ void sqlrservercontroller::incrementQueryCounts(sqlrquerytype_t querytype) {
 	}
 }
 
+uint32_t sqlrservercontroller::getTotalErrors() {
+	return pvt->_shm->total_errors;
+}
+
 void sqlrservercontroller::incrementTotalErrors() {
 	pvt->_semset->waitWithUndo(9);
 	pvt->_shm->total_errors++;
 	pvt->_semset->signalWithUndo(9);
+}
+
+uint32_t sqlrservercontroller::getAuthCount() {
+	return pvt->_connstats->nauth;
 }
 
 void sqlrservercontroller::incrementAuthCount() {
@@ -8492,11 +8554,19 @@ void sqlrservercontroller::incrementAuthCount() {
 	pvt->_connstats->nauth++;
 }
 
+uint32_t sqlrservercontroller::getSuspendSessionCount() {
+	return pvt->_connstats->nsuspend_session;
+}
+
 void sqlrservercontroller::incrementSuspendSessionCount() {
 	if (!pvt->_connstats) {
 		return;
 	}
 	pvt->_connstats->nsuspend_session++;
+}
+
+uint32_t sqlrservercontroller::getEndSessionCount() {
+	return pvt->_connstats->nend_session;
 }
 
 void sqlrservercontroller::incrementEndSessionCount() {
@@ -8506,11 +8576,19 @@ void sqlrservercontroller::incrementEndSessionCount() {
 	pvt->_connstats->nend_session++;
 }
 
+uint32_t sqlrservercontroller::getPingCount() {
+	return pvt->_connstats->nping;
+}
+
 void sqlrservercontroller::incrementPingCount() {
 	if (!pvt->_connstats) {
 		return;
 	}
 	pvt->_connstats->nping++;
+}
+
+uint32_t sqlrservercontroller::getIdentifyCount() {
+	return pvt->_connstats->nidentify;
 }
 
 void sqlrservercontroller::incrementIdentifyCount() {
@@ -8520,11 +8598,19 @@ void sqlrservercontroller::incrementIdentifyCount() {
 	pvt->_connstats->nidentify++;
 }
 
+uint32_t sqlrservercontroller::getAutocommitCount() {
+	return pvt->_connstats->nautocommit;
+}
+
 void sqlrservercontroller::incrementAutocommitCount() {
 	if (!pvt->_connstats) {
 		return;
 	}
 	pvt->_connstats->nautocommit++;
+}
+
+uint32_t sqlrservercontroller::getBeginCount() {
+	return pvt->_connstats->nbegin;
 }
 
 void sqlrservercontroller::incrementBeginCount() {
@@ -8534,11 +8620,19 @@ void sqlrservercontroller::incrementBeginCount() {
 	pvt->_connstats->nbegin++;
 }
 
+uint32_t sqlrservercontroller::getCommitCount() {
+	return pvt->_connstats->ncommit;
+}
+
 void sqlrservercontroller::incrementCommitCount() {
 	if (!pvt->_connstats) {
 		return;
 	}
 	pvt->_connstats->ncommit++;
+}
+
+uint32_t sqlrservercontroller::getRollbackCount() {
+	return pvt->_connstats->nrollback;
 }
 
 void sqlrservercontroller::incrementRollbackCount() {
@@ -8548,6 +8642,10 @@ void sqlrservercontroller::incrementRollbackCount() {
 	pvt->_connstats->nrollback++;
 }
 
+uint32_t sqlrservercontroller::getDbVersionCount() {
+	return pvt->_connstats->ndbversion;
+}
+
 void sqlrservercontroller::incrementDbVersionCount() {
 	if (!pvt->_connstats) {
 		return;
@@ -8555,18 +8653,30 @@ void sqlrservercontroller::incrementDbVersionCount() {
 	pvt->_connstats->ndbversion++;
 }
 
-void sqlrservercontroller::incrementBindFormatCount() {
+uint32_t sqlrservercontroller::getGetBindFormatCount() {
+	return pvt->_connstats->nbindformat;
+}
+
+void sqlrservercontroller::incrementGetBindFormatCount() {
 	if (!pvt->_connstats) {
 		return;
 	}
 	pvt->_connstats->nbindformat++;
 }
 
-void sqlrservercontroller::incrementServerVersionCount() {
+uint32_t sqlrservercontroller::getGetServerVersionCount() {
+	return pvt->_connstats->nserverversion;
+}
+
+void sqlrservercontroller::incrementGetServerVersionCount() {
 	if (!pvt->_connstats) {
 		return;
 	}
 	pvt->_connstats->nserverversion++;
+}
+
+uint32_t sqlrservercontroller::getSelectDatabaseCount() {
+	return pvt->_connstats->nselectdatabase;
 }
 
 void sqlrservercontroller::incrementSelectDatabaseCount() {
@@ -8576,11 +8686,19 @@ void sqlrservercontroller::incrementSelectDatabaseCount() {
 	pvt->_connstats->nselectdatabase++;
 }
 
+uint32_t sqlrservercontroller::getGetCurrentDatabaseCount() {
+	return pvt->_connstats->ngetcurrentdatabase;
+}
+
 void sqlrservercontroller::incrementGetCurrentDatabaseCount() {
 	if (!pvt->_connstats) {
 		return;
 	}
 	pvt->_connstats->ngetcurrentdatabase++;
+}
+
+uint32_t sqlrservercontroller::getGetLastInsertIdCount() {
+	return pvt->_connstats->ngetlastinsertid;
 }
 
 void sqlrservercontroller::incrementGetLastInsertIdCount() {
@@ -8590,11 +8708,19 @@ void sqlrservercontroller::incrementGetLastInsertIdCount() {
 	pvt->_connstats->ngetlastinsertid++;
 }
 
+uint32_t sqlrservercontroller::getDbHostNameCount() {
+	return pvt->_connstats->ndbhostname;
+}
+
 void sqlrservercontroller::incrementDbHostNameCount() {
 	if (!pvt->_connstats) {
 		return;
 	}
 	pvt->_connstats->ndbhostname++;
+}
+
+uint32_t sqlrservercontroller::getDbIpAddressCount() {
+	return pvt->_connstats->ndbipaddress;
 }
 
 void sqlrservercontroller::incrementDbIpAddressCount() {
@@ -8604,11 +8730,19 @@ void sqlrservercontroller::incrementDbIpAddressCount() {
 	pvt->_connstats->ndbipaddress++;
 }
 
+uint32_t sqlrservercontroller::getNewQueryCount() {
+	return pvt->_connstats->nnewquery;
+}
+
 void sqlrservercontroller::incrementNewQueryCount() {
 	if (!pvt->_connstats) {
 		return;
 	}
 	pvt->_connstats->nnewquery++;
+}
+
+uint32_t sqlrservercontroller::getReexecuteQueryCount() {
+	return pvt->_connstats->nreexecutequery;
 }
 
 void sqlrservercontroller::incrementReexecuteQueryCount() {
@@ -8618,11 +8752,19 @@ void sqlrservercontroller::incrementReexecuteQueryCount() {
 	pvt->_connstats->nreexecutequery++;
 }
 
+uint32_t sqlrservercontroller::getFetchFromBindCursorCount() {
+	return pvt->_connstats->nfetchfrombindcursor;
+}
+
 void sqlrservercontroller::incrementFetchFromBindCursorCount() {
 	if (!pvt->_connstats) {
 		return;
 	}
 	pvt->_connstats->nfetchfrombindcursor++;
+}
+
+uint32_t sqlrservercontroller::getFetchResultSetCount() {
+	return pvt->_connstats->nfetchresultset;
 }
 
 void sqlrservercontroller::incrementFetchResultSetCount() {
@@ -8632,11 +8774,19 @@ void sqlrservercontroller::incrementFetchResultSetCount() {
 	pvt->_connstats->nfetchresultset++;
 }
 
+uint32_t sqlrservercontroller::getAbortResultSetCount() {
+	return pvt->_connstats->nabortresultset;
+}
+
 void sqlrservercontroller::incrementAbortResultSetCount() {
 	if (!pvt->_connstats) {
 		return;
 	}
 	pvt->_connstats->nabortresultset++;
+}
+
+uint32_t sqlrservercontroller::getSuspendResultSetCount() {
+	return pvt->_connstats->nsuspendresultset;
 }
 
 void sqlrservercontroller::incrementSuspendResultSetCount() {
@@ -8646,11 +8796,19 @@ void sqlrservercontroller::incrementSuspendResultSetCount() {
 	pvt->_connstats->nsuspendresultset++;
 }
 
+uint32_t sqlrservercontroller::getResumeResultSetCount() {
+	return pvt->_connstats->nresumeresultset;
+}
+
 void sqlrservercontroller::incrementResumeResultSetCount() {
 	if (!pvt->_connstats) {
 		return;
 	}
 	pvt->_connstats->nresumeresultset++;
+}
+
+uint32_t sqlrservercontroller::getGetDbListCount() {
+	return pvt->_connstats->ngetdblist;
 }
 
 void sqlrservercontroller::incrementGetDbListCount() {
@@ -8660,11 +8818,19 @@ void sqlrservercontroller::incrementGetDbListCount() {
 	pvt->_connstats->ngetdblist++;
 }
 
+uint32_t sqlrservercontroller::getGetTableListCount() {
+	return pvt->_connstats->ngettablelist;
+}
+
 void sqlrservercontroller::incrementGetTableListCount() {
 	if (!pvt->_connstats) {
 		return;
 	}
 	pvt->_connstats->ngettablelist++;
+}
+
+uint32_t sqlrservercontroller::getGetColumnListCount() {
+	return pvt->_connstats->ngetcolumnlist;
 }
 
 void sqlrservercontroller::incrementGetColumnListCount() {
@@ -8674,11 +8840,19 @@ void sqlrservercontroller::incrementGetColumnListCount() {
 	pvt->_connstats->ngetcolumnlist++;
 }
 
+uint32_t sqlrservercontroller::getGetQueryTreeCount() {
+	return pvt->_connstats->ngetquerytree;
+}
+
 void sqlrservercontroller::incrementGetQueryTreeCount() {
 	if (!pvt->_connstats) {
 		return;
 	}
 	pvt->_connstats->ngetquerytree++;
+}
+
+uint32_t sqlrservercontroller::getReLogInCount() {
+	return pvt->_connstats->nrelogin;
 }
 
 void sqlrservercontroller::incrementReLogInCount() {
@@ -8688,6 +8862,10 @@ void sqlrservercontroller::incrementReLogInCount() {
 	pvt->_connstats->nrelogin++;
 }
 
+uint32_t sqlrservercontroller::getNextResultSetCount() {
+	return pvt->_connstats->nnextresultset;
+}
+
 void sqlrservercontroller::incrementNextResultSetCount() {
 	if (!pvt->_connstats) {
 		return;
@@ -8695,11 +8873,31 @@ void sqlrservercontroller::incrementNextResultSetCount() {
 	pvt->_connstats->nnextresultset++;
 }
 
+uint32_t sqlrservercontroller::getNextResultSetAvailableCount() {
+	return pvt->_connstats->nnextresultsetavailable;
+}
+
 void sqlrservercontroller::incrementNextResultSetAvailableCount() {
 	if (!pvt->_connstats) {
 		return;
 	}
 	pvt->_connstats->nnextresultsetavailable++;
+}
+
+const char *sqlrservercontroller::getCurrentUser() {
+	return (pvt->_connstats)?pvt->_connstats->user:NULL;
+}
+
+const char *sqlrservercontroller::getCurrentQuery() {
+	return (pvt->_connstats)?pvt->_connstats->sqltext:NULL;
+}
+
+const char *sqlrservercontroller::getClientInfo() {
+	return (pvt->_connstats)?pvt->_connstats->clientinfo:NULL;
+}
+
+const char *sqlrservercontroller::getClientAddr() {
+	return (pvt->_connstats)?pvt->_connstats->clientaddr:NULL;
 }
 
 uint32_t sqlrservercontroller::getStatisticsIndex() {
