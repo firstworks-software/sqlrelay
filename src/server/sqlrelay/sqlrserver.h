@@ -544,7 +544,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		 *  the database is still up.
 		 *  Populating "liveconnection" with true if the connection to
 		 *  the database is down. */
-		void	errorMessage(const char **errorbuffer,
+		void	getError(const char **errorbuffer,
 						uint32_t *errorsize,
 						int64_t *errorcode,
 						bool *liveconnection);
@@ -561,7 +561,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		 *  the database is still up.
 		 *  Populating "liveconnection" with true if the connection to
 		 *  the database is down. */
-		void	errorMessage(char *errorbuffer,
+		void	getError(char *errorbuffer,
 						uint32_t errorbuffersize,
 						uint32_t *errorsize,
 						int64_t *errorcode,
@@ -1098,7 +1098,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		 *  the database is still up.
 		 *  Populating "liveconnection" with true if the connection to
 		 *  the database is down. */
-		void	errorMessage(sqlrservercursor *cursor,
+		void	getError(sqlrservercursor *cursor,
 						const char **errorbuffer,
 						uint32_t *errorsize,
 						int64_t *errorcode,
@@ -1116,7 +1116,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		 *  the database is still up.
 		 *  Populating "liveconnection" with true if the connection to
 		 *  the database is down. */
-		void	errorMessage(sqlrservercursor *cursor,
+		void	getError(sqlrservercursor *cursor,
 						char *errorbuffer,
 						uint32_t errorbuffersize,
 						uint32_t *errorsize,
@@ -1394,7 +1394,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		 *  the database is still up.
 		 *  Populating "liveconnection" with true if the connection to
 		 *  the database is down. */
-		virtual	void	errorMessage(char *errorbuffer,
+		virtual	void	getError(char *errorbuffer,
 						uint32_t errorbuffersize,
 						uint32_t *errorsize,
 						int64_t *errorcode,
@@ -1814,7 +1814,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		 *  the database is still up.
 		 *  Populating "liveconnection" with true if the connection to
 		 *  the database is down. */
-		virtual	void	errorMessage(char *errorbuffer,
+		virtual	void	getError(char *errorbuffer,
 						uint32_t errorbuffersize,
 						uint32_t *errorsize,
 						int64_t *errorcode,

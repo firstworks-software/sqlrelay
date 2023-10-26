@@ -188,7 +188,7 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 						uint32_t size);
 		bool		handleColumns(bool getcolumninfo,
 						bool bindcolumns);
-		void		errorMessage(char *errorbuffer,
+		void		getError(char *errorbuffer,
 						uint32_t errorbuffersize,
 						uint32_t *errorsize,
 						int64_t	*errorcode,
@@ -317,7 +317,7 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		const char	*beginTransactionQuery();
 		bool		commit();
 		bool		rollback();
-		void		errorMessage(char *errorbuffer,
+		void		getError(char *errorbuffer,
 						uint32_t errorbuffersize,
 						uint32_t *errorsize,
 						int64_t	*errorcode,
@@ -2000,11 +2000,11 @@ bool odbcconnection::rollback() {
 	return (SQLEndTran(SQL_HANDLE_ENV,env,SQL_ROLLBACK)==SQL_SUCCESS);
 }
 
-void odbcconnection::errorMessage(char *errorbuffer,
-					uint32_t errorbuffersize,
-					uint32_t *errorsize,
-					int64_t *errorcode,
-					bool *liveconnection) {
+void odbcconnection::getError(char *errorbuffer,
+				uint32_t errorbuffersize,
+				uint32_t *errorsize,
+				int64_t *errorcode,
+				bool *liveconnection) {
 	SQLCHAR		state[SQL_SQLSTATE_SIZE+1];
 	SQLINTEGER	nativeerrnum;
 	SQLSMALLINT	errsize;
@@ -3621,11 +3621,11 @@ bool odbccursor::handleColumns(bool getcolumninfo, bool bindcolumns) {
 	return true;
 }
 
-void odbccursor::errorMessage(char *errorbuffer,
-					uint32_t errorbuffersize,
-					uint32_t *errorsize,
-					int64_t *errorcode,
-					bool *liveconnection) {
+void odbccursor::getError(char *errorbuffer,
+				uint32_t errorbuffersize,
+				uint32_t *errorsize,
+				int64_t *errorcode,
+				bool *liveconnection) {
 	if (bindformaterror) {
 		// handle bind format errors
 		*errorsize=charstring::getLength(

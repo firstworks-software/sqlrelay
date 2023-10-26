@@ -98,7 +98,7 @@ class SQLRSERVER_DLLSPEC mysqlcursor : public sqlrservercursor {
 #ifdef HAVE_MYSQL_COMMIT
 		bool		queryIsNotSelect();
 #endif
-		void		errorMessage(char *errorbuffer,
+		void		getError(char *errorbuffer,
 						uint32_t errorbuffersize,
 						uint32_t *errorsize,
 						int64_t	*errorcode,
@@ -229,7 +229,7 @@ class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 		bool		supportsAutoCommit();
 		bool		commit();
 		bool		rollback();
-		void		errorMessage(char *errorbuffer,
+		void		getError(char *errorbuffer,
 						uint32_t errorbuffersize,
 						uint32_t *errorsize,
 						int64_t	*errorcode,
@@ -875,7 +875,7 @@ bool mysqlconnection::rollback() {
 #endif
 }
 
-void mysqlconnection::errorMessage(char *errorbuffer,
+void mysqlconnection::getError(char *errorbuffer,
 					uint32_t errorbuffersize,
 					uint32_t *errorsize,
 					int64_t *errorcode,
@@ -1538,11 +1538,11 @@ bool mysqlcursor::queryIsNotSelect() {
 }
 #endif
 
-void mysqlcursor::errorMessage(char *errorbuffer,
-					uint32_t errorbuffersize,
-					uint32_t *errorsize,
-					int64_t *errorcode,
-					bool *liveconnection) {
+void mysqlcursor::getError(char *errorbuffer,
+				uint32_t errorbuffersize,
+				uint32_t *errorsize,
+				int64_t *errorcode,
+				bool *liveconnection) {
 
 	*liveconnection=true;
 

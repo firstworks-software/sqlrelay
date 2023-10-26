@@ -61,7 +61,7 @@ class SQLRSERVER_DLLSPEC routerconnection : public sqlrserverconnection {
 		bool		begin();
 		bool		commit();
 		bool		rollback();
-		void		errorMessage(char *errorbuffer,
+		void		getError(char *errorbuffer,
 						uint32_t errorbuffersize,
 						uint32_t *errorsize,
 						int64_t	*errorcode,
@@ -221,7 +221,7 @@ class SQLRSERVER_DLLSPEC routercursor : public sqlrservercursor {
 						uint64_t *charsread);
 		bool		executeQuery(const char *query,
 						uint32_t size);
-		void		errorMessage(char *errorbuffer,
+		void		getError(char *errorbuffer,
 						uint32_t errorbuffersize,
 						uint32_t *errorsize,
 						int64_t	*errorcode,
@@ -728,7 +728,7 @@ bool routerconnection::rollback() {
 	return result;
 }
 
-void routerconnection::errorMessage(char *errorbuffer,
+void routerconnection::getError(char *errorbuffer,
 					uint32_t errorbuffersize,
 					uint32_t *errorsize,
 					int64_t *errorcode,
@@ -1656,11 +1656,11 @@ bool routercursor::executeQuery(const char *query, uint32_t size) {
 	return true;
 }
 
-void routercursor::errorMessage(char *errorbuffer,
-					uint32_t errorbuffersize,
-					uint32_t *errorsize,
-					int64_t *errorcode,
-					bool *liveconnection) {
+void routercursor::getError(char *errorbuffer,
+				uint32_t errorbuffersize,
+				uint32_t *errorsize,
+				int64_t *errorcode,
+				bool *liveconnection) {
 	const char	*errormessage=
 			(currentcur)?currentcur->errorMessage():"";
 	*errorsize=charstring::getLength(errormessage);

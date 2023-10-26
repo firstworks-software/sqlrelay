@@ -2791,11 +2791,11 @@ bool sqlrprotocol_postgresql::sendCursorError(sqlrservercursor *cursor) {
 	uint32_t	errorsize;
 	int64_t		errnum;
 	bool		liveconnection;
-	cont->errorMessage(cursor,
-				&errorstring,
-				&errorsize,
-				&errnum,
-				&liveconnection);
+	cont->getError(cursor,
+			&errorstring,
+			&errorsize,
+			&errnum,
+			&liveconnection);
 
 	// send an error response packet
 	return sendErrorResponse(errorstring,errorsize);

@@ -67,7 +67,7 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 		bool		commit();
 		bool		rollback();
 		#endif
-		void		errorMessage(char *errorbuffer,
+		void		getError(char *errorbuffer,
 						uint32_t errorbuffersize,
 						uint32_t *errorsize,
 						int64_t	*errorcode,
@@ -401,7 +401,7 @@ bool sqliteconnection::rollback() {
 }
 #endif
 
-void sqliteconnection::errorMessage(char *errorbuffer,
+void sqliteconnection::getError(char *errorbuffer,
 					uint32_t errorbuffersize,
 					uint32_t *errorsize,
 					int64_t *errorcode,

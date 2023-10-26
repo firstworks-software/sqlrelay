@@ -7555,7 +7555,7 @@ void sqlrprotocol_teradata::appendCursorErrorParcel() {
 	uint32_t	errorsize;
 	int64_t		errnum;
 	bool		liveconnection;
-	cont->errorMessage(req->cur,&errorstring,
+	cont->getError(req->cur,&errorstring,
 					&errorsize,
 					&errnum,
 					&liveconnection);
@@ -7568,7 +7568,7 @@ void sqlrprotocol_teradata::appendConnectionErrorParcel() {
 	uint32_t	errorsize;
 	int64_t		errnum;
 	bool		liveconnection;
-	cont->errorMessage(&errorstring,
+	cont->getError(&errorstring,
 				&errorsize,
 				&errnum,
 				&liveconnection);

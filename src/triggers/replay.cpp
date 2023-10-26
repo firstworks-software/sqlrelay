@@ -911,10 +911,10 @@ void sqlrtrigger_replay::logReplayCondition(condition *cond) {
         		uint32_t        errorsize;
         		int64_t         errnum;
         		bool            liveconnection;
-        		cont->errorMessage(logcur,&errorstring,
-							&errorsize,
-                                        		&errnum,
-							&liveconnection);
+        		cont->getError(logcur,&errorstring,
+						&errorsize,
+                                        	&errnum,
+						&liveconnection);
 			stdoutput.printf("failed to prepare log query:\n"
 						"%s\n%.*s\n",cond->query,
 						errorsize,errorstring);
@@ -927,10 +927,10 @@ void sqlrtrigger_replay::logReplayCondition(condition *cond) {
         		uint32_t        errorsize;
         		int64_t         errnum;
         		bool            liveconnection;
-        		cont->errorMessage(logcur,&errorstring,
-							&errorsize,
-                                        		&errnum,
-							&liveconnection);
+        		cont->getError(logcur,&errorstring,
+						&errorsize,
+                                        	&errnum,
+						&liveconnection);
 			stdoutput.printf("failed to execute log query:\n"
 						"%s\n%.*s\n",cond->query,
 						errorsize,errorstring);

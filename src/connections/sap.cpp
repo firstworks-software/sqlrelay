@@ -51,7 +51,7 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 		const char	*tempTableDropPrefix();
 		bool		commit();
 		bool		rollback();
-		void		errorMessage(char *errorbuffer,
+		void		getError(char *errorbuffer,
 						uint32_t errorbuffersize,
 						uint32_t *errorsize,
 						int64_t	*errorcode,
@@ -798,7 +798,7 @@ bool sapcursor::open() {
 			uint32_t	errlen;
 			int64_t		errn;
 			bool		live;
-			errorMessage(err,sizeof(err),&errlen,&errn,&live);
+			getError(err,sizeof(err),&errlen,&errn,&live);
 			stderror.printf("%s\n",err);
 			retval=false;
 		} else {
@@ -1845,11 +1845,11 @@ bool sapconnection::rollback() {
 	return sqlrserverconnection::rollback();
 }
 
-void sapconnection::errorMessage(char *errorbuffer,
-					uint32_t errorbuffersize,
-					uint32_t *errorsize,
-					int64_t *errorcode,
-					bool *liveconnection) {
+void sapconnection::getError(char *errorbuffer,
+				uint32_t errorbuffersize,
+				uint32_t *errorsize,
+				int64_t *errorcode,
+				bool *liveconnection) {
 	*errorsize=this->errorstring.getStringLength();
 	charstring::safeCopy(errorbuffer,errorbuffersize,
 				this->errorstring.getString(),*errorsize);

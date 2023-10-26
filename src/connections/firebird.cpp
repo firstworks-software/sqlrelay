@@ -153,7 +153,7 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 		void		closeLobOutputBind(uint16_t index);
 		bool		executeQuery(const char *query,
 						uint32_t size);
-		void		errorMessage(char *errorbuffer,
+		void		getError(char *errorbuffer,
 						uint32_t errorbuffersize,
 						uint32_t *errorsize,
 						int64_t	*errorcode,
@@ -233,7 +233,7 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		bool	commit();
 		bool	rollback();
 		bool	ping();
-		void	errorMessage(char *errorbuffer,
+		void	getError(char *errorbuffer,
 					uint32_t errorbuffersize,
 					uint32_t *errorsize,
 					int64_t	*errorcode,
@@ -470,7 +470,7 @@ bool firebirdconnection::rollback() {
 	return (!isc_rollback_retaining(error,&tr));
 }
 
-void firebirdconnection::errorMessage(char *errorbuffer,
+void firebirdconnection::getError(char *errorbuffer,
 					uint32_t errorbuffersize,
 					uint32_t *errorsize,
 					int64_t *errorcode,
@@ -1625,11 +1625,11 @@ bool firebirdcursor::executeQuery(const char *query, uint32_t size) {
 							&stmt,1,inbindsqlda);
 }
 
-void firebirdcursor::errorMessage(char *errorbuffer,
-					uint32_t errorbuffersize,
-					uint32_t *errorsize,
-					int64_t *errorcode,
-					bool *liveconnection) {
+void firebirdcursor::getError(char *errorbuffer,
+				uint32_t errorbuffersize,
+				uint32_t *errorsize,
+				int64_t *errorcode,
+				bool *liveconnection) {
 
 	// handle bind format errors
 	if (bindformaterror) {
@@ -1645,7 +1645,7 @@ void firebirdcursor::errorMessage(char *errorbuffer,
 	}
 
 	// otherwise fall back to default implementation
-	sqlrservercursor::errorMessage(errorbuffer,
+	sqlrservercursor::getError(errorbuffer,
 					errorbuffersize,
 					errorsize,
 					errorcode,

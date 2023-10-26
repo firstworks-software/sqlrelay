@@ -146,7 +146,7 @@ class SQLRSERVER_DLLSPEC informixcursor : public sqlrservercursor {
 							uint64_t *charsread);
 		bool		executeQuery(const char *query,
 						uint32_t size);
-		void		errorMessage(char *errorbuffer,
+		void		getError(char *errorbuffer,
 						uint32_t errorbuffersize,
 						uint32_t *errorsize,
 						int64_t	*errorcode,
@@ -235,7 +235,7 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 		bool	supportsAutoCommit();
 		bool	commit();
 		bool	rollback();
-		void	errorMessage(char *errorbuffer,
+		void	getError(char *errorbuffer,
 					uint32_t errorbuffersize,
 					uint32_t *errorsize,
 					int64_t	*errorcode,
@@ -491,7 +491,7 @@ bool informixconnection::rollback() {
 	return (SQLEndTran(SQL_HANDLE_ENV,env,SQL_ROLLBACK)==SQL_SUCCESS);
 }
 
-void informixconnection::errorMessage(char *errorbuffer,
+void informixconnection::getError(char *errorbuffer,
 					uint32_t errorbuffersize,
 					uint32_t *errorsize,
 					int64_t *errorcode,
@@ -1518,11 +1518,11 @@ bool informixcursor::executeQuery(const char *query, uint32_t size) {
 	return true;
 }
 
-void informixcursor::errorMessage(char *errorbuffer,
-					uint32_t errorbuffersize,
-					uint32_t *errorsize,
-					int64_t *errorcode,
-					bool *liveconnection) {
+void informixcursor::getError(char *errorbuffer,
+				uint32_t errorbuffersize,
+				uint32_t *errorsize,
+				int64_t *errorcode,
+				bool *liveconnection) {
 	if (bindformaterror) {
 		// handle bind format errors
 		*errorsize=charstring::getLength(

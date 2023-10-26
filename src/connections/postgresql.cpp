@@ -29,7 +29,7 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 		sqlrservercursor	*newCursor(uint16_t id);
 		void		deleteCursor(sqlrservercursor *curs);
 		void		logOut();
-		void		errorMessage(char *errorbuffer,
+		void		getError(char *errorbuffer,
 						uint32_t errorbuffersize,
 						uint32_t *errorsize,
 						int64_t	*errorcode,
@@ -140,11 +140,11 @@ class SQLRSERVER_DLLSPEC postgresqlcursor : public sqlrservercursor {
 		defined(HAVE_POSTGRESQL_PQEXECPREPARED)) || \
 		(defined(HAVE_POSTGRESQL_PQSENDQUERYPREPARED) && \
 		defined(HAVE_POSTGRESQL_PQSETSINGLEROWMODE))
-		void		errorMessage(char *errorbuffer,
-					uint32_t errorbuffersize,
-					uint32_t *errorsize,
-					int64_t *errorcode,
-					bool *liveconnection);
+		void		getError(char *errorbuffer,
+						uint32_t errorbuffersize,
+						uint32_t *errorsize,
+						int64_t *errorcode,
+						bool *liveconnection);
 #endif
 		bool		knowsRowCount();
 		uint64_t	rowCount();
@@ -465,7 +465,7 @@ void postgresqlconnection::logOut() {
 	}
 }
 
-void postgresqlconnection::errorMessage(char *errorbuffer,
+void postgresqlconnection::getError(char *errorbuffer,
 					uint32_t errorbuffersize,
 					uint32_t *errorsize,
 					int64_t *errorcode,
@@ -686,9 +686,9 @@ bool postgresqlconnection::selectDatabase(const char *database) {
 
 		// Set the error, but don't use the error that was returned
 		// from logIn() because it will have a message prepended to it.
-		// Also, we can't get the message from PQerrorMessage, because
+		// Also, we can't get the message from PQgetError, because
 		// if PQconnect fails then pgconn will be NULL and
-		// PQerrorMessage will just return a message saying that it's
+		// PQgetError will just return a message saying that it's
 		// NULL.  So, we'll just return the generic SQL Relay error
 		// for these kinds of things.
 		cont->setError(SQLR_ERROR_DBNOTFOUND_STRING,
@@ -1187,7 +1187,7 @@ bool postgresqlcursor::executeQuery(const char *query, uint32_t size) {
 		defined(HAVE_POSTGRESQL_PQEXECPREPARED)) || \
 		(defined(HAVE_POSTGRESQL_PQSENDQUERYPREPARED) && \
 		defined(HAVE_POSTGRESQL_PQSETSINGLEROWMODE))
-void postgresqlcursor::errorMessage(char *errorbuffer,
+void postgresqlcursor::getError(char *errorbuffer,
 					uint32_t errorbuffersize,
 					uint32_t *errorsize,
 					int64_t *errorcode,

@@ -4284,10 +4284,10 @@ void sqlrprotocol_tds::sqlBatchError(sqlrservercursor *cursor) {
 	uint32_t	errorsize;
 	int64_t		errorcode;
 	bool		liveconnection;
-	cont->errorMessage(cursor,&errorstring,
-					&errorsize,
-					&errorcode,
-					&liveconnection);
+	cont->getError(cursor,&errorstring,
+				&errorsize,
+				&errorcode,
+				&liveconnection);
 	char	*errorbuffer=charstring::duplicate(errorstring,errorsize);
 	char	*errptr=errorbuffer;
 

@@ -153,7 +153,7 @@ class SQLRSERVER_DLLSPEC db2cursor : public sqlrservercursor {
 							uint64_t *charsread);
 		bool		executeQuery(const char *query,
 						uint32_t size);
-		void		errorMessage(char *errorbuffer,
+		void		getError(char *errorbuffer,
 						uint32_t errorbuffersize,
 						uint32_t *errorsize,
 						int64_t	*errorcode,
@@ -246,7 +246,7 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 		bool	supportsAutoCommit();
 		bool	commit();
 		bool	rollback();
-		void	errorMessage(char *errorbuffer,
+		void	getError(char *errorbuffer,
 					uint32_t errorbuffersize,
 					uint32_t *errorsize,
 					int64_t	*errorcode,
@@ -580,11 +580,11 @@ bool db2connection::rollback() {
 	return (SQLEndTran(SQL_HANDLE_ENV,env,SQL_ROLLBACK)==SQL_SUCCESS);
 }
 
-void db2connection::errorMessage(char *errorbuffer,
-					uint32_t errorbuffersize,
-					uint32_t *errorsize,
-					int64_t *errorcode,
-					bool *liveconnection) {
+void db2connection::getError(char *errorbuffer,
+				uint32_t errorbuffersize,
+				uint32_t *errorsize,
+				int64_t *errorcode,
+				bool *liveconnection) {
 	SQLCHAR		state[10];
 	SQLINTEGER	nativeerrnum;
 	SQLSMALLINT	errsize;
@@ -1544,11 +1544,11 @@ bool db2cursor::executeQuery(const char *query, uint32_t size) {
 	return true;
 }
 
-void db2cursor::errorMessage(char *errorbuffer,
-					uint32_t errorbuffersize,
-					uint32_t *errorsize,
-					int64_t *errorcode,
-					bool *liveconnection) {
+void db2cursor::getError(char *errorbuffer,
+				uint32_t errorbuffersize,
+				uint32_t *errorsize,
+				int64_t *errorcode,
+				bool *liveconnection) {
 	if (bindformaterror) {
 		// handle bind format errors
 		*errorsize=charstring::getLength(

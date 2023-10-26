@@ -966,7 +966,7 @@ bool sqlrservercursor::queryIsCommitOrRollback() {
 			!charstring::compareIgnoringCase(ptr,"rollback",8));
 }
 
-void sqlrservercursor::errorMessage(char *errorbuffer,
+void sqlrservercursor::getError(char *errorbuffer,
 					uint32_t errorbuffersize,
 					uint32_t *errorsize,
 					int64_t *errorcode,
@@ -985,7 +985,7 @@ void sqlrservercursor::errorMessage(char *errorbuffer,
 	}
 
 	// otherwise return the connection's error
-	conn->errorMessage(errorbuffer,errorbuffersize,
+	conn->getError(errorbuffer,errorbuffersize,
 				errorsize,errorcode,liveconnection);
 }
 

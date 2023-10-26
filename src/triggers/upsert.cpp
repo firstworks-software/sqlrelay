@@ -251,10 +251,10 @@ bool sqlrtrigger_upsert::run(sqlrserverconnection *sqlrcon,
         		uint32_t        errorsize;
         		int64_t         errnum;
         		bool            liveconnection;
-        		cont->errorMessage(ucur,&errorstring,
-							&errorsize,
-                                        		&errnum,
-							&liveconnection);
+        		cont->getError(ucur,&errorstring,
+						&errorsize,
+                                        	&errnum,
+						&liveconnection);
 			cont->setError(icur,errorstring,errorsize,
 						errnum,liveconnection);
 		}
@@ -280,10 +280,10 @@ bool sqlrtrigger_upsert::run(sqlrserverconnection *sqlrcon,
         		uint32_t        errorsize;
         		int64_t         errnum;
         		bool            liveconnection;
-        		cont->errorMessage(icur,&errorstring,
-							&errorsize,
-                                        		&errnum,
-							&liveconnection);
+        		cont->getError(icur,&errorstring,
+						&errorsize,
+                                        	&errnum,
+						&liveconnection);
 			stdoutput.printf("error: %d - %.*s\n",
 					errnum,errorsize,errorstring);
 		}

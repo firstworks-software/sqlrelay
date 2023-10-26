@@ -265,7 +265,7 @@ class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 		const char	*tempTableDropPrefix();
 		bool		commit();
 		bool		rollback();
-		void		errorMessage(char *errorbuffer,
+		void		getError(char *errorbuffer,
 					uint32_t errorbuffersize,
 					uint32_t *errorsize,
 					int64_t	*errorcode,
@@ -1019,7 +1019,7 @@ bool freetdscursor::open() {
 			uint32_t	errlen;
 			int64_t		errn;
 			bool		live;
-			errorMessage(err,sizeof(err),&errlen,&errn,&live);
+			getError(err,sizeof(err),&errlen,&errn,&live);
 			stderror.printf("%s\n",err);
 			retval=false;
 		} else {
@@ -2281,7 +2281,7 @@ bool freetdsconnection::rollback() {
 	return sqlrserverconnection::rollback();
 }
 
-void freetdsconnection::errorMessage(char *errorbuffer,
+void freetdsconnection::getError(char *errorbuffer,
 					uint32_t errorbuffersize,
 					uint32_t *errorsize,
 					int64_t *errorcode,

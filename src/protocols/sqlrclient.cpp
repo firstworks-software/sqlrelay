@@ -3466,7 +3466,7 @@ void sqlrprotocol_sqlrclient::returnFetchError(sqlrservercursor *cursor) {
 	uint32_t	errorsize;
 	int64_t		errnum;
 	bool		liveconnection;
-	cont->errorMessage(cursor,&errorstring,&errorsize,
+	cont->getError(cursor,&errorstring,&errorsize,
 					&errnum,&liveconnection);
 
 	// send the error status
@@ -3645,7 +3645,7 @@ void sqlrprotocol_sqlrclient::returnError(bool forcedisconnect) {
 	uint32_t	errorsize;
 	int64_t		errnum;
 	bool		liveconnection;
-	cont->errorMessage(&errorstring,&errorsize,&errnum,&liveconnection);
+	cont->getError(&errorstring,&errorsize,&errnum,&liveconnection);
 
 	// send the appropriate error status
 	if (forcedisconnect || !liveconnection) {
@@ -3677,7 +3677,7 @@ void sqlrprotocol_sqlrclient::returnError(sqlrservercursor *cursor,
 	uint32_t	errorsize;
 	int64_t		errnum;
 	bool		liveconnection;
-	cont->errorMessage(cursor,&errorstring,&errorsize,
+	cont->getError(cursor,&errorstring,&errorsize,
 					&errnum,&liveconnection);
 
 	// send the appropriate error status

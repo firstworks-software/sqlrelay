@@ -111,7 +111,7 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		bool		setAutoCommitOff();
 		bool		commit();
 		bool		rollback();
-		void		errorMessage(char *errorbuffer,
+		void		getError(char *errorbuffer,
 						uint32_t errorbuffersize,
 						uint32_t *errorsize,
 						int64_t	*errorcode,
@@ -307,7 +307,7 @@ class SQLRSERVER_DLLSPEC oraclecursor : public sqlrservercursor {
 		const char	*truncateTableQuery();
 		#endif
 		bool		queryIsNotSelect();
-		void		errorMessage(char *errorbuffer,
+		void		getError(char *errorbuffer,
 						uint32_t errorbuffersize,
 						uint32_t *errorsize,
 						int64_t	*errorcode,
@@ -1096,7 +1096,7 @@ bool oracleconnection::rollback() {
 	return (OCITransRollback(svc,err,OCI_DEFAULT)==OCI_SUCCESS);
 }
 
-void oracleconnection::errorMessage(char *errorbuffer,
+void oracleconnection::getError(char *errorbuffer,
 					uint32_t errorbuffersize,
 					uint32_t *errorsize,
 					int64_t *errorcode,
@@ -3844,11 +3844,11 @@ bool oraclecursor::queryIsNotSelect() {
 	return (stmttype!=OCI_STMT_SELECT);
 }
 
-void oraclecursor::errorMessage(char *errorbuffer,
-					uint32_t errorbuffersize,
-					uint32_t *errorsize,
-					int64_t *errorcode,
-					bool *liveconnection) {
+void oraclecursor::getError(char *errorbuffer,
+				uint32_t errorbuffersize,
+				uint32_t *errorsize,
+				int64_t *errorcode,
+				bool *liveconnection) {
 
 	if (bindformaterror) {
 
@@ -3865,7 +3865,7 @@ void oraclecursor::errorMessage(char *errorbuffer,
 	} else {
 
 		// otherwise fall back to default implementation
-		sqlrservercursor::errorMessage(errorbuffer,
+		sqlrservercursor::getError(errorbuffer,
 						errorbuffersize,
 						errorsize,
 						errorcode,

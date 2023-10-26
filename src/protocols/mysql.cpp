@@ -5187,10 +5187,10 @@ bool sqlrprotocol_mysql::sendError() {
 	uint32_t	errorsize;
 	int64_t		errnum;
 	bool		liveconnection;
-	cont->errorMessage(&errorstring,
-				&errorsize,
-				&errnum,
-				&liveconnection);
+	cont->getError(&errorstring,
+			&errorsize,
+			&errnum,
+			&liveconnection);
 
 	return sendErrPacket(errnum,errorstring,errorsize,"42000");
 }
@@ -5201,11 +5201,11 @@ bool sqlrprotocol_mysql::sendQueryError(sqlrservercursor *cursor) {
 	uint32_t	errorsize;
 	int64_t		errnum;
 	bool		liveconnection;
-	cont->errorMessage(cursor,
-				&errorstring,
-				&errorsize,
-				&errnum,
-				&liveconnection);
+	cont->getError(cursor,
+			&errorstring,
+			&errorsize,
+			&errnum,
+			&liveconnection);
 
 	return sendErrPacket(errnum,errorstring,errorsize,"42000");
 }
