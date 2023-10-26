@@ -1017,37 +1017,116 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 
 
 		// event api...
-		bool	logEnabled();
-		bool	notificationsEnabled();
+
+		/** Returns true if logging is enabled and false otherwise. */
+		bool	getLoggingEnabled();
+
+		/** Returns true if notifications are enabled and false
+		 *  otherwise. */
+		bool	getNotificationsEnabled();
+
+		/** Raises a debug-message event with information "info", which
+		 *  may be logged, or which may trigger a notification. */
 		void	raiseDebugMessageEvent(const char *info);
+
+		/** Raises a client-connected event, which may be logged, or
+		 *  which may trigger a notification. */
 		void	raiseClientConnectedEvent();
+
+		/** Raises a client-connection-refused event with information
+		 *  "info", which may be logged, or which may trigger a
+		 *  notification. */
 		void	raiseClientConnectionRefusedEvent(const char *info);
+
+		/** Raises a client-disconnected event with information "info",
+		 *  which may be logged, or which may trigger a notification. */
 		void	raiseClientDisconnectedEvent(const char *info);
+
+		/** Raises a client-protocol-error event on cursor "cursor",
+		 *  with information "info", and with result code "result"
+		 *  (one of 0, indicating a closed connection, RESULT_ERROR,
+		 *  RESULT_TIMEOUT, or RESULT_ABORT) which may be logged, or
+		 *  which may trigger a notification. */
 		void	raiseClientProtocolErrorEvent(sqlrservercursor *cursor,
 							const char *info,
 							ssize_t result);
+
+		/** Raises a database-login event, which may be logged, or
+		 *  which may trigger a notification. */
 		void	raiseDbLogInEvent();
+
+		/** Raises a database-logout event, which may be logged, or
+		 *  which may trigger a notification. */
 		void	raiseDbLogOutEvent();
+
+		/** Raises a database-error event on cursor "cursor", with
+		 *  information "info", which may be logged, or which may
+		 *  trigger a notification. */
 		void	raiseDbErrorEvent(sqlrservercursor *cursor,
 							const char *info);
+
+		/** Raises a database-warning event on cursor "cursor", with
+		 *  information "info", which may be logged, or which may
+		 *  trigger a notification. */
 		void	raiseDbWarningEvent(sqlrservercursor *cursor,
 							const char *info);
+
+		/** Raises a query event on cursor "cursor", which may be
+		 *  logged, or which may trigger a notification. */
 		void	raiseQueryEvent(sqlrservercursor *cursor);
+
+		/** Raises a filter-violation event on cursor "cursor", which
+		 *  may be logged, or which may trigger a notification. */
 		void	raiseFilterViolationEvent(sqlrservercursor *cursor);
+
+		/** Raises an internal-error event on cursor "cursor", with
+		 *  information "info", which may be logged, or which may
+		 *  trigger a notification. */
 		void	raiseInternalErrorEvent(sqlrservercursor *cursor,
 							const char *info);
+
+		/** Raises an internal-warning event on cursor "cursor", with
+		 *  information "info", which may be logged, or which may
+		 *  trigger a notification. */
 		void	raiseInternalWarningEvent(sqlrservercursor *cursor,
 							const char *info);
+
+		/** Raises a schedule-violation event, with information "info",
+		 *  which may be logged, or which may trigger a notification. */
 		void	raiseScheduleViolationEvent(const char *info);
+
+		/** Raises a integrity-violation event, with information "info",
+		 *  which may be logged, or which may trigger a notification. */
 		void	raiseIntegrityViolationEvent(const char *info);
+
+		/** Raises a translation-failure event, with information "info",
+		 *  which may be logged, or which may trigger a notification. */
 		void	raiseTranslationFailureEvent(sqlrservercursor *cursor,
 							const char *info);
+
+		/** Raises a parse-failure event, with information "info",
+		 *  which may be logged, or which may trigger a notification. */
 		void	raiseParseFailureEvent(sqlrservercursor *cursor,
 							const char *info);
+
+		/** Raises a cursor-open event, on cursor "cursor", which may
+		 *  be logged, or which may trigger a notification. */
 		void	raiseCursorOpenEvent(sqlrservercursor *cursor);
+
+		/** Raises a cursor-close event, on cursor "cursor", which may
+		 *  be logged, or which may trigger a notification. */
 		void	raiseCursorCloseEvent(sqlrservercursor *cursor);
+
+		/** Raises a begin-transaction event, on cursor "cursor", which
+		 *  may be logged, or which may trigger a notification. */
 		void	raiseBeginTransactionEvent();
+
+		/** Raises a commit event, on cursor "cursor", which
+		 *  may be logged, or which may trigger a notification. */
 		void	raiseCommitEvent();
+
+		/** Raises a rollback event, on cursor "cursor", which
+		 *  may be logged, or which may trigger a notification. */
 		void	raiseRollbackEvent();
 
 

@@ -1574,7 +1574,7 @@ bool sqlrprotocol_sqlrclient::getClientInfo(sqlrservercursor *cursor) {
 	}
 	clientinfo[clientinfosize]='\0';
 
-	if (cont->logEnabled() || cont->notificationsEnabled()) {
+	if (cont->getLogEnabled() || cont->getNotificationsEnabled()) {
 		debugstr.clear();
 		debugstr.append("clientinfosize: ")->append(clientinfosize);
 		cont->raiseDebugMessageEvent(debugstr.getString());
@@ -1647,7 +1647,7 @@ bool sqlrprotocol_sqlrclient::getQuery(sqlrservercursor *cursor) {
 	querybuffer[querysize]='\0';
 	cont->setQuerySize(cursor,querysize);
 
-	if (cont->logEnabled() || cont->notificationsEnabled()) {
+	if (cont->getLogEnabled() || cont->getNotificationsEnabled()) {
 		debugstr.clear();
 		debugstr.append("querysize: ")->append(querysize);
 		cont->raiseDebugMessageEvent(debugstr.getString());
@@ -2842,7 +2842,7 @@ void sqlrprotocol_sqlrclient::sendRowCounts(bool knowsactual,
 void sqlrprotocol_sqlrclient::returnOutputBindValues(sqlrservercursor *cursor) {
 	debugFunction();
 
-	if (cont->logEnabled() || cont->notificationsEnabled()) {
+	if (cont->getLogEnabled() || cont->getNotificationsEnabled()) {
 		debugstr.clear();
 		debugstr.append("returning ");
 		debugstr.append(cont->getOutputBindCount(cursor));
@@ -2855,7 +2855,7 @@ void sqlrprotocol_sqlrclient::returnOutputBindValues(sqlrservercursor *cursor) {
 
 		sqlrserverbindvar	*bv=&(cont->getOutputBinds(cursor)[i]);
 
-		if (cont->logEnabled() || cont->notificationsEnabled()) {
+		if (cont->getLogEnabled() || cont->getNotificationsEnabled()) {
 			debugstr.clear();
 			debugstr.append(i);
 			debugstr.append(":");
@@ -2863,8 +2863,8 @@ void sqlrprotocol_sqlrclient::returnOutputBindValues(sqlrservercursor *cursor) {
 
 		if (cont->getBindValueIsNull(bv->isnull)) {
 
-			if (cont->logEnabled() ||
-				cont->notificationsEnabled()) {
+			if (cont->getLogEnabled() ||
+				cont->getNotificationsEnabled()) {
 				debugstr.append("NULL");
 			}
 
@@ -2872,8 +2872,8 @@ void sqlrprotocol_sqlrclient::returnOutputBindValues(sqlrservercursor *cursor) {
 
 		} else if (bv->type==SQLRSERVERBINDVARTYPE_BLOB) {
 
-			if (cont->logEnabled() ||
-				cont->notificationsEnabled()) {
+			if (cont->getLogEnabled() ||
+				cont->getNotificationsEnabled()) {
 				debugstr.append("BLOB:");
 			}
 
@@ -2881,8 +2881,8 @@ void sqlrprotocol_sqlrclient::returnOutputBindValues(sqlrservercursor *cursor) {
 
 		} else if (bv->type==SQLRSERVERBINDVARTYPE_CLOB) {
 
-			if (cont->logEnabled() ||
-				cont->notificationsEnabled()) {
+			if (cont->getLogEnabled() ||
+				cont->getNotificationsEnabled()) {
 				debugstr.append("CLOB:");
 			}
 
@@ -2890,8 +2890,8 @@ void sqlrprotocol_sqlrclient::returnOutputBindValues(sqlrservercursor *cursor) {
 
 		} else if (bv->type==SQLRSERVERBINDVARTYPE_STRING) {
 
-			if (cont->logEnabled() ||
-				cont->notificationsEnabled()) {
+			if (cont->getLogEnabled() ||
+				cont->getNotificationsEnabled()) {
 				debugstr.append("STRING:");
 				debugstr.append(bv->value.stringval);
 			}
@@ -2904,8 +2904,8 @@ void sqlrprotocol_sqlrclient::returnOutputBindValues(sqlrservercursor *cursor) {
 
 		} else if (bv->type==SQLRSERVERBINDVARTYPE_INTEGER) {
 
-			if (cont->logEnabled() ||
-				cont->notificationsEnabled()) {
+			if (cont->getLogEnabled() ||
+				cont->getNotificationsEnabled()) {
 				debugstr.append("INTEGER:");
 				debugstr.append(bv->value.integerval);
 			}
@@ -2915,8 +2915,8 @@ void sqlrprotocol_sqlrclient::returnOutputBindValues(sqlrservercursor *cursor) {
 
 		} else if (bv->type==SQLRSERVERBINDVARTYPE_DOUBLE) {
 
-			if (cont->logEnabled() ||
-				cont->notificationsEnabled()) {
+			if (cont->getLogEnabled() ||
+				cont->getNotificationsEnabled()) {
 				debugstr.append("DOUBLE:");
 				debugstr.append(bv->value.doubleval.value);
 				debugstr.append("(");
@@ -2935,8 +2935,8 @@ void sqlrprotocol_sqlrclient::returnOutputBindValues(sqlrservercursor *cursor) {
 
 		} else if (bv->type==SQLRSERVERBINDVARTYPE_DATE) {
 
-			if (cont->logEnabled() ||
-				cont->notificationsEnabled()) {
+			if (cont->getLogEnabled() ||
+				cont->getNotificationsEnabled()) {
 				debugstr.append("DATE:");
 				debugstr.append(bv->value.dateval.year);
 				debugstr.append("-");
@@ -2975,8 +2975,8 @@ void sqlrprotocol_sqlrclient::returnOutputBindValues(sqlrservercursor *cursor) {
 
 		} else if (bv->type==SQLRSERVERBINDVARTYPE_CURSOR) {
 
-			if (cont->logEnabled() ||
-				cont->notificationsEnabled()) {
+			if (cont->getLogEnabled() ||
+				cont->getNotificationsEnabled()) {
 				debugstr.append("CURSOR:");
 				debugstr.append(bv->value.cursorid);
 			}
@@ -2985,7 +2985,7 @@ void sqlrprotocol_sqlrclient::returnOutputBindValues(sqlrservercursor *cursor) {
 			clientsock->write(bv->value.cursorid);
 		}
 
-		if (cont->logEnabled() || cont->notificationsEnabled()) {
+		if (cont->getLogEnabled() || cont->getNotificationsEnabled()) {
 			cont->raiseDebugMessageEvent(debugstr.getString());
 		}
 	}
@@ -3082,7 +3082,7 @@ void sqlrprotocol_sqlrclient::returnInputOutputBindValues(
 		return;
 	}
 
-	if (cont->logEnabled() || cont->notificationsEnabled()) {
+	if (cont->getLogEnabled() || cont->getNotificationsEnabled()) {
 		debugstr.clear();
 		debugstr.append("returning ");
 		debugstr.append(cont->getInputOutputBindCount(cursor));
@@ -3096,7 +3096,7 @@ void sqlrprotocol_sqlrclient::returnInputOutputBindValues(
 		sqlrserverbindvar	*bv=
 				&(cont->getInputOutputBinds(cursor)[i]);
 
-		if (cont->logEnabled() || cont->notificationsEnabled()) {
+		if (cont->getLogEnabled() || cont->getNotificationsEnabled()) {
 			debugstr.clear();
 			debugstr.append(i);
 			debugstr.append(":");
@@ -3104,8 +3104,8 @@ void sqlrprotocol_sqlrclient::returnInputOutputBindValues(
 
 		if (cont->getBindValueIsNull(bv->isnull)) {
 
-			if (cont->logEnabled() ||
-				cont->notificationsEnabled()) {
+			if (cont->getLogEnabled() ||
+				cont->getNotificationsEnabled()) {
 				debugstr.append("NULL");
 			}
 
@@ -3113,8 +3113,8 @@ void sqlrprotocol_sqlrclient::returnInputOutputBindValues(
 
 		} else /*if (bv->type==SQLRSERVERBINDVARTYPE_BLOB) {
 
-			if (cont->logEnabled() ||
-				cont->notificationsEnabled()) {
+			if (cont->getLogEnabled() ||
+				cont->getNotificationsEnabled()) {
 				debugstr.append("BLOB:");
 			}
 
@@ -3122,8 +3122,8 @@ void sqlrprotocol_sqlrclient::returnInputOutputBindValues(
 
 		} else if (bv->type==SQLRSERVERBINDVARTYPE_CLOB) {
 
-			if (cont->logEnabled() ||
-				cont->notificationsEnabled()) {
+			if (cont->getLogEnabled() ||
+				cont->getNotificationsEnabled()) {
 				debugstr.append("CLOB:");
 			}
 
@@ -3131,8 +3131,8 @@ void sqlrprotocol_sqlrclient::returnInputOutputBindValues(
 
 		} else*/ if (bv->type==SQLRSERVERBINDVARTYPE_STRING) {
 
-			if (cont->logEnabled() ||
-				cont->notificationsEnabled()) {
+			if (cont->getLogEnabled() ||
+				cont->getNotificationsEnabled()) {
 				debugstr.append("STRING:");
 				debugstr.append(bv->value.stringval);
 			}
@@ -3145,8 +3145,8 @@ void sqlrprotocol_sqlrclient::returnInputOutputBindValues(
 
 		} else if (bv->type==SQLRSERVERBINDVARTYPE_INTEGER) {
 
-			if (cont->logEnabled() ||
-				cont->notificationsEnabled()) {
+			if (cont->getLogEnabled() ||
+				cont->getNotificationsEnabled()) {
 				debugstr.append("INTEGER:");
 				debugstr.append(bv->value.integerval);
 			}
@@ -3156,8 +3156,8 @@ void sqlrprotocol_sqlrclient::returnInputOutputBindValues(
 
 		} else if (bv->type==SQLRSERVERBINDVARTYPE_DOUBLE) {
 
-			if (cont->logEnabled() ||
-				cont->notificationsEnabled()) {
+			if (cont->getLogEnabled() ||
+				cont->getNotificationsEnabled()) {
 				debugstr.append("DOUBLE:");
 				debugstr.append(bv->value.doubleval.value);
 				debugstr.append("(");
@@ -3176,8 +3176,8 @@ void sqlrprotocol_sqlrclient::returnInputOutputBindValues(
 
 		} else if (bv->type==SQLRSERVERBINDVARTYPE_DATE) {
 
-			if (cont->logEnabled() ||
-				cont->notificationsEnabled()) {
+			if (cont->getLogEnabled() ||
+				cont->getNotificationsEnabled()) {
 				debugstr.append("DATE:");
 				debugstr.append(bv->value.dateval.year);
 				debugstr.append("-");
@@ -3216,7 +3216,7 @@ void sqlrprotocol_sqlrclient::returnInputOutputBindValues(
 
 		}
 
-		if (cont->logEnabled() || cont->notificationsEnabled()) {
+		if (cont->getLogEnabled() || cont->getNotificationsEnabled()) {
 			cont->raiseDebugMessageEvent(debugstr.getString());
 		}
 	}
@@ -3246,7 +3246,7 @@ void sqlrprotocol_sqlrclient::sendColumnDefinition(
 						uint16_t tablesize) {
 	debugFunction();
 
-	if (cont->logEnabled() || cont->notificationsEnabled()) {
+	if (cont->getLogEnabled() || cont->getNotificationsEnabled()) {
 		debugstr.clear();
 		for (uint16_t i=0; i<namesize; i++) {
 			debugstr.append(name[i]);
@@ -3315,7 +3315,7 @@ void sqlrprotocol_sqlrclient::sendColumnDefinitionString(
 						uint16_t tablesize) {
 	debugFunction();
 
-	if (cont->logEnabled() || cont->notificationsEnabled()) {
+	if (cont->getLogEnabled() || cont->getNotificationsEnabled()) {
 		debugstr.clear();
 		for (uint16_t ni=0; ni<namesize; ni++) {
 			debugstr.append(name[ni]);
@@ -3422,7 +3422,7 @@ bool sqlrprotocol_sqlrclient::returnResultSetData(sqlrservercursor *cursor,
 			return true;
 		}
 
-		if (cont->logEnabled() || cont->notificationsEnabled()) {
+		if (cont->getLogEnabled() || cont->getNotificationsEnabled()) {
 			debugstr.clear();
 			debugstr.append("fetching ");
 			debugstr.append(fetch);
@@ -3489,7 +3489,7 @@ void sqlrprotocol_sqlrclient::returnFetchError(sqlrservercursor *cursor) {
 void sqlrprotocol_sqlrclient::returnRow(sqlrservercursor *cursor) {
 	debugFunction();
 
-	if (cont->logEnabled() || cont->notificationsEnabled()) {
+	if (cont->getLogEnabled() || cont->getNotificationsEnabled()) {
 		debugstr.clear();
 	}
 
@@ -3515,7 +3515,7 @@ void sqlrprotocol_sqlrclient::returnRow(sqlrservercursor *cursor) {
 		}
 	}
 
-	if (cont->logEnabled() || cont->notificationsEnabled()) {
+	if (cont->getLogEnabled() || cont->getNotificationsEnabled()) {
 		cont->raiseDebugMessageEvent(debugstr.getString());
 	}
 }
@@ -3523,7 +3523,7 @@ void sqlrprotocol_sqlrclient::returnRow(sqlrservercursor *cursor) {
 void sqlrprotocol_sqlrclient::sendField(const char *data, uint32_t size) {
 	debugFunction();
 
-	if (cont->logEnabled() || cont->notificationsEnabled()) {
+	if (cont->getLogEnabled() || cont->getNotificationsEnabled()) {
 		debugstr.append("\"");
 		debugstr.append(data,size);
 		debugstr.append("\",");
@@ -3537,7 +3537,7 @@ void sqlrprotocol_sqlrclient::sendField(const char *data, uint32_t size) {
 void sqlrprotocol_sqlrclient::sendNullField() {
 	debugFunction();
 
-	if (cont->logEnabled() || cont->notificationsEnabled()) {
+	if (cont->getLogEnabled() || cont->getNotificationsEnabled()) {
 		debugstr.append("NULL,");
 	}
 	clientsock->write((uint16_t)NULL_DATA);
@@ -3617,7 +3617,7 @@ void sqlrprotocol_sqlrclient::startSendingLong(uint64_t longsize) {
 void sqlrprotocol_sqlrclient::sendLongSegment(const char *data, uint32_t size) {
 	debugFunction();
 
-	if (cont->logEnabled() || cont->notificationsEnabled()) {
+	if (cont->getLogEnabled() || cont->getNotificationsEnabled()) {
 		debugstr.append(data,size);
 	}
 
@@ -3629,7 +3629,7 @@ void sqlrprotocol_sqlrclient::sendLongSegment(const char *data, uint32_t size) {
 void sqlrprotocol_sqlrclient::endSendingLong() {
 	debugFunction();
 
-	if (cont->logEnabled() || cont->notificationsEnabled()) {
+	if (cont->getLogEnabled() || cont->getNotificationsEnabled()) {
 		debugstr.append(",");
 	}
 

@@ -3783,7 +3783,7 @@ void sqlrservercontroller::translateBindVariables(sqlrservercursor *cursor) {
 		stdoutput.printf("translating bind variables...\n");
 		stdoutput.printf("original:\n%s\n",querybuffer);
 	}
-	if (logEnabled()) {
+	if (getLogEnabled()) {
 		raiseDebugMessageEvent("translating bind variables...");
 		raiseDebugMessageEvent("original:");
 		raiseDebugMessageEvent(querybuffer);
@@ -3961,7 +3961,7 @@ void sqlrservercontroller::translateBindVariables(sqlrservercursor *cursor) {
 	if (pvt->_debugbindtranslation) {
 		stdoutput.printf("\ntranslated:\n%s\n\n",querybuffer);
 	}
-	if (logEnabled()) {
+	if (getLogEnabled()) {
 		raiseDebugMessageEvent("translated:");
 		raiseDebugMessageEvent(querybuffer);
 	}
@@ -4121,7 +4121,7 @@ void sqlrservercontroller::translateBindVariablesFromMappings(
 		}
 		stdoutput.printf("\n");
 	}
-	if (logEnabled()) {
+	if (getLogEnabled()) {
 		raiseDebugMessageEvent("remapping bind variables...");
 		raiseDebugMessageEvent("input binds:");
 		for (i=0; i<cursor->getInputBindCount(); i++) {
@@ -4203,7 +4203,7 @@ void sqlrservercontroller::translateBindVariablesFromMappings(
 		}
 		stdoutput.printf("\n");
 	}
-	if (logEnabled()) {
+	if (getLogEnabled()) {
 		raiseDebugMessageEvent("remapped input binds:");
 		for (i=0; i<cursor->getInputBindCount(); i++) {
 			raiseDebugMessageEvent(
@@ -9116,11 +9116,11 @@ void sqlrservercontroller::addTransactionTempTableForTrunc(const char *table) {
 	pvt->_transtemptablesfortrunc.append(charstring::duplicate(table));
 }
 
-bool sqlrservercontroller::logEnabled() {
+bool sqlrservercontroller::getLogEnabled() {
 	return (pvt->_sqlrlg!=NULL);
 }
 
-bool sqlrservercontroller::notificationsEnabled() {
+bool sqlrservercontroller::getNotificationsEnabled() {
 	return (pvt->_sqlrn!=NULL);
 }
 

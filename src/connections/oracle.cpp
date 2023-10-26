@@ -806,7 +806,7 @@ bool oracleconnection::logIn(const char **error, const char **warning) {
 		OCIHandleFree(env,OCI_HTYPE_ENV);
 		return false;
 	}
-	if (cont->logEnabled() || cont->notificationsEnabled()) {
+	if (cont->getLoggingEnabled() || cont->getNotificationsEnabled()) {
 		if (OCIAttrGet((dvoid *)svc,OCI_HTYPE_SVCCTX,
 				(dvoid *)&stmtcachesize,(ub4)0,
 				(ub4)OCI_ATTR_STMTCACHESIZE,
@@ -2657,8 +2657,8 @@ bool oraclecursor::prepareQuery(const char *query, uint32_t size) {
 
 		// prepare the query...
 		bool	prepare=true;
-		if (oracleconn->cont->logEnabled() ||
-			oracleconn->cont->notificationsEnabled()) {
+		if (oracleconn->cont->getLoggingEnabled() ||
+			oracleconn->cont->getNotificationsEnabled()) {
 			// check for a statment cache hit
 			// and report our findings
 			if (OCIStmtPrepare2(oracleconn->svc,&stmt,
