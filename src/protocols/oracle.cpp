@@ -1133,7 +1133,7 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 
 			// release the cursor
 			// FIXME: kludgy
-			//cont->setState(cursor,SQLRCURSORSTATE_AVAILABLE);
+			//cont->release(cursor);
 
 		} while (loop);
 	}
@@ -5157,6 +5157,7 @@ cursorid=hackcursorid;
 	clearParams(cursor);
 	pcounts[cont->getId(cursor)]=0;
 	cont->abort(cursor);
+	cont->release(cursor);
 hackcursorid=65535;
 
 	return sendCloseResponse(cursor);

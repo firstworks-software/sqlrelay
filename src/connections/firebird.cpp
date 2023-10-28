@@ -1676,7 +1676,7 @@ void firebirdcursor::checkForTempTable(const char *query, uint32_t size) {
 	if (firebirdconn->droptemptables) {
 
 		// if "droptemptables" was specified...
-		conn->cont->addSessionTempTableForDrop(tablename.getString());
+		conn->cont->addTempTableForDrop(tablename.getString());
 
 	} else if (preserverowsoncommit) {
 
@@ -1684,7 +1684,7 @@ void firebirdcursor::checkForTempTable(const char *query, uint32_t size) {
 		// the commit/rollback is executed at the end of the
 		// session, the data won't be truncated.  It needs to
 		// be though, so we'll set it up to be truncated manually.
-		conn->cont->addSessionTempTableForTrunc(tablename.getString());
+		conn->cont->addTempTableForTrunc(tablename.getString());
 	}
 }
 

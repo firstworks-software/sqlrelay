@@ -1433,7 +1433,7 @@ clientsessionexitstatus_t sqlrprotocol_tds::clientSession(
 		}
 		// release the cursor
 		// FIXME: kludgy
-		cont->setState(cursor,SQLRCURSORSTATE_AVAILABLE);
+		cont->release(cursor);
 
 	} while (loop);
 

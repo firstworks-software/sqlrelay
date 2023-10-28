@@ -210,14 +210,14 @@ bool sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 
 	// If we're not in a transaction, we only need
 	// to log the current query.  Clear the log.
-	if (!cont->inTransaction()) {
+	if (!cont->getInTransaction()) {
 		logpool.clear();
 		log.clear();
 	}
 
 	// If we weren't in a transaction, but are now,
 	// then we also need to clear the log.
-	if (cont->inTransaction() && !wasintx) {
+	if (cont->getInTransaction() && !wasintx) {
 		logpool.clear();
 		log.clear();
 		wasintx=true;
@@ -362,7 +362,7 @@ void sqlrtrigger_replay::disableUntilEndOfTx(const char *query,
 	// If we weren't in a transaction, then just don't log the
 	// query.  If we weren't in a transaction, then clear the log
 	// and disable replay altogether until end-of-transaction.
-	if (cont->inTransaction()) {
+	if (cont->getInTransaction()) {
 		logpool.clear();
 		log.clear();
 		disabled=true;

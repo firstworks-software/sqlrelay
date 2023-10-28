@@ -1225,8 +1225,7 @@ clientsessionexitstatus_t sqlrprotocol_mysql::clientSession(
 
 			// release the cursor
 			if (request!=COM_STMT_PREPARE) {
-				cont->setState(cursor,
-					SQLRCURSORSTATE_AVAILABLE);
+				cont->release(cursor);
 			}
 
 		} while (loop);
@@ -2199,7 +2198,7 @@ bool sqlrprotocol_mysql::sendOkPacket(bool noteof,
 					const char *sessionstatechangedata) {
 
 	// update statusflags
-	if (cont->inTransaction()) {
+	if (cont->getInTransaction()) {
 		statusflags|=SERVER_STATUS_IN_TRANS;
 	} else {
 		statusflags|=SERVER_STATUS_AUTOCOMMIT;
@@ -2312,7 +2311,7 @@ bool sqlrprotocol_mysql::sendEofPacket(uint16_t warnings,
 	resetSendPacketBuffer();
 
 	// update statusflags
-	if (cont->inTransaction()) {
+	if (cont->getInTransaction()) {
 		statusflags|=SERVER_STATUS_IN_TRANS;
 	} else {
 		statusflags|=SERVER_STATUS_AUTOCOMMIT;
@@ -5092,7 +5091,7 @@ bool sqlrprotocol_mysql::comStmtClose() {
 	pcounts[cont->getId(cursor)]=0;
 
 	// release the cursor
-	cont->setState(cursor,SQLRCURSORSTATE_AVAILABLE);
+	cont->release(cursor);
 
 	return true;
 }

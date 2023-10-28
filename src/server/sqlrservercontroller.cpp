@@ -229,10 +229,8 @@ class sqlrservercontrollerprivate {
 
 	singlylinkedlist< char * >	_globaltemptables;
 	bool				_allglobaltemptables;
-	singlylinkedlist< char * >	_sessiontemptablesfordrop;
-	singlylinkedlist< char * >	_sessiontemptablesfortrunc;
-	singlylinkedlist< char * >	_transtemptablesfordrop;
-	singlylinkedlist< char * >	_transtemptablesfortrunc;
+	singlylinkedlist< char * >	_temptablesfordrop;
+	singlylinkedlist< char * >	_temptablesfortrunc;
 
 	dictionary< uint32_t, uint32_t >	*_columnmap;
 	dictionary< uint32_t, const char * >	*_columnnamemap;
@@ -440,6 +438,7 @@ sqlrservercontroller::sqlrservercontroller() {
 	pvt->_reformattedfield=NULL;
 	pvt->_reformattedfieldsize=0;
 
+	pvt->_globaltemptables.setManageArrayValues(true);
 	pvt->_allglobaltemptables=false;
 
 	pvt->_proxymode=false;
@@ -524,12 +523,6 @@ sqlrservercontroller::~sqlrservercontroller() {
 	}
 
 	delete[] pvt->_reformattedfield;
-
-	for (listnode< char * >
-			*sln=pvt->_globaltemptables.getFirst();
-						sln; sln=sln->getNext()) {
-		delete[] sln->getValue();
-	}
 
 	delete pvt->_conn;
 
@@ -1627,7 +1620,7 @@ void sqlrservercontroller::initSession() {
 	pvt->_needscommitorrollback=false;
 	pvt->_suspendedsession=false;
 	for (int32_t i=0; i<pvt->_cursorcount; i++) {
-		pvt->_cur[i]->setState(SQLRCURSORSTATE_AVAILABLE);
+		release(pvt->_cur[i]);
 	}
 	pvt->_accepttimeout=5;
 
@@ -2166,8 +2159,6 @@ sqlrservercursor *sqlrservercontroller::getCursor() {
 	uint16_t	firstnewcursor=pvt->_cursorcount;
 	do {
 		pvt->_cur[pvt->_cursorcount]=newCursor(pvt->_cursorcount);
-		pvt->_cur[pvt->_cursorcount]->
-				setState(SQLRCURSORSTATE_AVAILABLE);
 		if (!open(pvt->_cur[pvt->_cursorcount])) {
 			pvt->_debugstr.clear();
 			pvt->_debugstr.append("cursor init failure: ");
@@ -2244,11 +2235,12 @@ void sqlrservercontroller::suspendSession(const char **unixsocket,
 	// we can't wait forever for the client to resume, set a timeout
 	pvt->_accepttimeout=pvt->_cfg->getSessionTimeout();
 
-	// abort all cursors that aren't suspended...
+	// abort and release all cursors that aren't suspended...
 	raiseDebugMessageEvent("aborting busy cursors...");
 	for (int32_t i=0; i<pvt->_cursorcount; i++) {
 		if (pvt->_cur[i]->getState()==SQLRCURSORSTATE_BUSY) {
-			pvt->_cur[i]->abort();
+			abort(pvt->_cur[i]);
+			release(pvt->_cur[i]);
 		}
 	}
 	raiseDebugMessageEvent("done aborting busy cursors");
@@ -3783,7 +3775,7 @@ void sqlrservercontroller::translateBindVariables(sqlrservercursor *cursor) {
 		stdoutput.printf("translating bind variables...\n");
 		stdoutput.printf("original:\n%s\n",querybuffer);
 	}
-	if (getLogEnabled()) {
+	if (getLoggingEnabled()) {
 		raiseDebugMessageEvent("translating bind variables...");
 		raiseDebugMessageEvent("original:");
 		raiseDebugMessageEvent(querybuffer);
@@ -3961,7 +3953,7 @@ void sqlrservercontroller::translateBindVariables(sqlrservercursor *cursor) {
 	if (pvt->_debugbindtranslation) {
 		stdoutput.printf("\ntranslated:\n%s\n\n",querybuffer);
 	}
-	if (getLogEnabled()) {
+	if (getLoggingEnabled()) {
 		raiseDebugMessageEvent("translated:");
 		raiseDebugMessageEvent(querybuffer);
 	}
@@ -4121,7 +4113,7 @@ void sqlrservercontroller::translateBindVariablesFromMappings(
 		}
 		stdoutput.printf("\n");
 	}
-	if (getLogEnabled()) {
+	if (getLoggingEnabled()) {
 		raiseDebugMessageEvent("remapping bind variables...");
 		raiseDebugMessageEvent("input binds:");
 		for (i=0; i<cursor->getInputBindCount(); i++) {
@@ -4203,7 +4195,7 @@ void sqlrservercontroller::translateBindVariablesFromMappings(
 		}
 		stdoutput.printf("\n");
 	}
-	if (getLogEnabled()) {
+	if (getLoggingEnabled()) {
 		raiseDebugMessageEvent("remapped input binds:");
 		for (i=0; i<cursor->getInputBindCount(); i++) {
 			raiseDebugMessageEvent(
@@ -4331,6 +4323,10 @@ sqlrservercursor *sqlrservercontroller::useCustomQueryCursor(
 
 	// return the custom cursor
 	return customcursor;
+}
+
+bool sqlrservercontroller::isCustomQuery(sqlrservercursor *cursor) {
+	return cursor->isCustomQuery();
 }
 
 bool sqlrservercontroller::handleBinds(sqlrservercursor *cursor) {
@@ -4785,7 +4781,7 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 		return true;
 	}
 
-	// Bail if we this query should fake input binds.  This an happen if:
+	// Bail if this query should fake input binds.  This an happen if:
 	// * the instance is generally configured to fake input binds
 	// * one of the translations has set the
 	// 	fakeinputbindsforthisquery flag true
@@ -5263,7 +5259,7 @@ void sqlrservercontroller::commitOrRollback(sqlrservercursor *cursor) {
 	raiseDebugMessageEvent("done with commit or rollback check");
 }
 
-bool sqlrservercontroller::inTransaction() {
+bool sqlrservercontroller::getInTransaction() {
 	return pvt->_intransaction;
 }
 
@@ -6296,7 +6292,8 @@ void sqlrservercontroller::endSession() {
 	raiseDebugMessageEvent("aborting all cursors...");
 	for (int32_t i=0; i<pvt->_cursorcount; i++) {
 		if (pvt->_cur[i]) {
-			pvt->_cur[i]->abort();
+			abort(pvt->_cur[i]);
+			release(pvt->_cur[i]);
 		}
 	}
 	raiseDebugMessageEvent("done aborting all cursors");
@@ -6517,7 +6514,7 @@ void sqlrservercontroller::dropTempTables(sqlrservercursor *cursor) {
 
 	// run through the temp table list, dropping tables
 	for (listnode< char * >
-			*sln=pvt->_sessiontemptablesfordrop.getFirst();
+			*sln=pvt->_temptablesfordrop.getFirst();
 			sln; sln=sln->getNext()) {
 
 		// some databases (oracle) require us to truncate the
@@ -6529,7 +6526,7 @@ void sqlrservercontroller::dropTempTables(sqlrservercursor *cursor) {
 		dropTempTable(cursor,sln->getValue());
 		delete[] sln->getValue();
 	}
-	pvt->_sessiontemptablesfordrop.clear();
+	pvt->_temptablesfordrop.clear();
 }
 
 void sqlrservercontroller::dropTempTable(sqlrservercursor *cursor,
@@ -6558,12 +6555,12 @@ void sqlrservercontroller::truncateTempTables(sqlrservercursor *cursor) {
 
 	// run through the temp table list, truncating tables
 	for (listnode< char * >
-			*sln=pvt->_sessiontemptablesfortrunc.getFirst();
+			*sln=pvt->_temptablesfortrunc.getFirst();
 			sln; sln=sln->getNext()) {
 		truncateTempTable(cursor,sln->getValue());
 		delete[] sln->getValue();
 	}
-	pvt->_sessiontemptablesfortrunc.clear();
+	pvt->_temptablesfortrunc.clear();
 
 	// truncate global temp tables...
 
@@ -6783,8 +6780,12 @@ void sqlrservercontroller::closeCursors(bool destroy) {
 	raiseDebugMessageEvent("done closing cursors...");
 }
 
-void sqlrservercontroller::deleteCursor(sqlrservercursor *curs) {
-	pvt->_conn->deleteCursor(curs);
+void sqlrservercontroller::release(sqlrservercursor *cursor) {
+	cursor->setState(SQLRCURSORSTATE_AVAILABLE);
+}
+
+void sqlrservercontroller::deleteCursor(sqlrservercursor *cursor) {
+	pvt->_conn->deleteCursor(cursor);
 	decrementOpenDatabaseCursors();
 }
 
@@ -7315,7 +7316,7 @@ bool sqlrservercontroller::bulkLoadCreateErrorTable1(
 	// FIXME: this is right for teradata, but not right in general...
 	// teradata doesn't allow DDL inside of a
 	// tx unless it's the last thing in the tx
-	bool	wasintx=inTransaction();
+	bool	wasintx=getInTransaction();
 	if (wasintx) {
 		prepareQuery(cursor,"ET",2);
 		executeQuery(cursor);
@@ -7378,7 +7379,7 @@ bool sqlrservercontroller::bulkLoadCreateErrorTable2(
 	// FIXME: this is right for teradata, but not right in general...
 	// teradata doesn't allow DDL inside of a
 	// tx unless it's the last thing in the tx
-	bool	wasintx=inTransaction();
+	bool	wasintx=getInTransaction();
 	if (wasintx) {
 		prepareQuery(cursor,"ET",2);
 		executeQuery(cursor);
@@ -9082,12 +9083,8 @@ uint32_t sqlrservercontroller::getMaxFieldSize() {
 	return pvt->_maxfieldsize;
 }
 
-void sqlrservercontroller::addSessionTempTableForDrop(const char *table) {
-	pvt->_sessiontemptablesfordrop.append(charstring::duplicate(table));
-}
-
-void sqlrservercontroller::addTransactionTempTableForDrop(const char *table) {
-	pvt->_transtemptablesfordrop.append(charstring::duplicate(table));
+void sqlrservercontroller::addTempTableForDrop(const char *table) {
+	pvt->_temptablesfordrop.append(charstring::duplicate(table));
 }
 
 void sqlrservercontroller::addGlobalTempTables(const char *gtts) {
@@ -9108,15 +9105,11 @@ void sqlrservercontroller::addGlobalTempTables(const char *gtts) {
 	delete[] gttlist;
 }
 
-void sqlrservercontroller::addSessionTempTableForTrunc(const char *table) {
-	pvt->_sessiontemptablesfortrunc.append(charstring::duplicate(table));
+void sqlrservercontroller::addTempTableForTrunc(const char *table) {
+	pvt->_temptablesfortrunc.append(charstring::duplicate(table));
 }
 
-void sqlrservercontroller::addTransactionTempTableForTrunc(const char *table) {
-	pvt->_transtemptablesfortrunc.append(charstring::duplicate(table));
-}
-
-bool sqlrservercontroller::getLogEnabled() {
+bool sqlrservercontroller::getLoggingEnabled() {
 	return (pvt->_sqlrlg!=NULL);
 }
 
@@ -9547,10 +9540,6 @@ const char *sqlrservercontroller::getId() {
 
 const char *sqlrservercontroller::getConnectionId() {
 	return pvt->_connectionid;
-}
-
-bool sqlrservercontroller::isCustomQuery(sqlrservercursor *cursor) {
-	return cursor->isCustomQuery();
 }
 
 bool sqlrservercontroller::fetchFromBindCursor(sqlrservercursor *cursor) {
@@ -10334,6 +10323,14 @@ void sqlrservercontroller::closeLobField(sqlrservercursor *cursor,
 	cursor->closeLobField(mapColumn(col));
 }
 
+void sqlrservercontroller::suspendResultSet(sqlrservercursor *cursor) {
+	cursor->setState(SQLRCURSORSTATE_SUSPENDED);
+	if (cursor->getCustomQueryCursor()) {
+		cursor->getCustomQueryCursor()->
+			setState(SQLRCURSORSTATE_SUSPENDED);
+	}
+}
+
 void sqlrservercontroller::closeResultSet(sqlrservercursor *cursor) {
 	cursor->closeResultSet();
 	if (pvt->_sqlrmd) {
@@ -10468,14 +10465,6 @@ bool sqlrservercontroller::close(sqlrservercursor *cursor) {
 	return cursor->close();
 }
 
-void sqlrservercontroller::suspendResultSet(sqlrservercursor *cursor) {
-	cursor->setState(SQLRCURSORSTATE_SUSPENDED);
-	if (cursor->getCustomQueryCursor()) {
-		cursor->getCustomQueryCursor()->
-			setState(SQLRCURSORSTATE_SUSPENDED);
-	}
-}
-
 void sqlrservercontroller::abort(sqlrservercursor *cursor) {
 	cursor->abort();
 }
@@ -10484,13 +10473,18 @@ char *sqlrservercontroller::getQueryBuffer(sqlrservercursor *cursor) {
 	return cursor->getQueryBuffer();
 }
 
+void sqlrservercontroller::setQuerySize(sqlrservercursor *cursor,
+						uint32_t querysize) {
+	cursor->setQuerySize(querysize);
+}
+
 uint32_t  sqlrservercontroller::getQuerySize(sqlrservercursor *cursor) {
 	return cursor->getQuerySize();
 }
 
-void sqlrservercontroller::setQuerySize(sqlrservercursor *cursor,
-						uint32_t querysize) {
-	cursor->setQuerySize(querysize);
+void sqlrservercontroller::setQueryStatus(sqlrservercursor *cursor,
+						sqlrquerystatus_t status) {
+	return cursor->setQueryStatus(status);
 }
 
 sqlrquerystatus_t sqlrservercontroller::getQueryStatus(
@@ -10498,13 +10492,27 @@ sqlrquerystatus_t sqlrservercontroller::getQueryStatus(
 	return cursor->getQueryStatus();
 }
 
+void sqlrservercontroller::setQueryTree(sqlrservercursor *cursor,
+							xmldom *tree) {
+	cursor->setQueryTree(tree);
+}
+
 xmldom *sqlrservercontroller::getQueryTree(sqlrservercursor *cursor) {
 	return cursor->getQueryTree();
 }
 
+void sqlrservercontroller::clearQueryTree(sqlrservercursor *cursor) {
+	cursor->clearQueryTree();
+}
+
+stringbuffer *sqlrservercontroller::getTranslatedQueryBuffer(
+					sqlrservercursor *cursor) {
+	return cursor->getTranslatedQueryBuffer();
+}
+
 const char *sqlrservercontroller::getTranslatedQuery(
 					sqlrservercursor *cursor) {
-	return cursor->getTranslatedQueryBuffer()->getString();
+	return getTranslatedQueryBuffer(cursor)->getString();
 }
 
 void sqlrservercontroller::setCommandStart(sqlrservercursor *cursor,

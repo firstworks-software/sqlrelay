@@ -517,7 +517,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 
 		/** Returns true if we're currently in a transaction and false
 		 *  otherwise. */
-		bool	inTransaction();
+		bool	getInTransaction();
 
 		// errors...
 
@@ -1014,6 +1014,62 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		/** Returns the address of the currently connected client. */
 		const char	*getClientAddr();
 
+		/** Tells the statistics framework that a command has been
+		 *  started.  "sec" and "usec" should be the number of seconds
+		 *  and microseconds since the epoch (Jan 1, 1970). */
+		void		setCommandStart(sqlrservercursor *cursor,
+						uint64_t sec, uint64_t usec);
+
+		/** Returns the seconds-component of the command start time as
+		 *  set by setCommandStart(). */
+		uint64_t	getCommandStartSec(sqlrservercursor *cursor);
+
+		/** Returns the microseconds-component of the command start
+		 *  time as set by setCommandStart(). */
+		uint64_t	getCommandStartUSec(sqlrservercursor *cursor);
+
+		/** Tells the statistics framework that a command has ended.
+		 *  "sec" and "usec" should be the number of seconds and
+		 *  microseconds since the epoch (Jan 1, 1970). */
+		void		setCommandEnd(sqlrservercursor *cursor,
+						uint64_t sec, uint64_t usec);
+
+		/** Returns the seconds-component of the command end time as
+		 *  set by setCommandStart(). */
+		uint64_t	getCommandEndSec(sqlrservercursor *cursor);
+
+		/** Returns the microseconds-component of the command end
+		 *  time as set by setCommandStart(). */
+		uint64_t	getCommandEndUSec(sqlrservercursor *cursor);
+
+		/** Tells the statistics framework that a query has been
+		 *  started.  "sec" and "usec" should be the number of seconds
+		 *  and microseconds since the epoch (Jan 1, 1970). */
+		void		setQueryStart(sqlrservercursor *cursor,
+						uint64_t sec, uint64_t usec);
+
+		/** Returns the seconds-component of the query start time as
+		 *  set by setCommandStart(). */
+		uint64_t	getQueryStartSec(sqlrservercursor *cursor);
+
+		/** Returns the microseconds-component of the query start
+		 *  time as set by setCommandStart(). */
+		uint64_t	getQueryStartUSec(sqlrservercursor *cursor);
+
+		/** Tells the statistics framework that a query has ended.
+		 *  "sec" and "usec" should be the number of seconds and
+		 *  microseconds since the epoch (Jan 1, 1970). */
+		void		setQueryEnd(sqlrservercursor *cursor,
+						uint64_t sec, uint64_t usec);
+
+		/** Returns the seconds-component of the query end time as
+		 *  set by setCommandStart(). */
+		uint64_t	getQueryEndSec(sqlrservercursor *cursor);
+
+		/** Returns the microseconds-component of the query end
+		 *  time as set by setCommandStart(). */
+		uint64_t	getQueryEndUSec(sqlrservercursor *cursor);
+
 
 
 		// event api...
@@ -1132,147 +1188,500 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 
 		// cursor api...
 
-		// cursor management
-		sqlrservercursor	*newCursor();
-		sqlrservercursor	*getCursor();
+		// cursor management...
+
+		/** Returns cursor "id" from the pool of already-open cursors
+		 *  or NULL if "id" was not a valid cursor id.
+		 *
+		 *  The size of the cursor pool depends on the value of the
+		 *  maxcursors attribute, of the instance tag, in the config
+		 *  file.  Valid cursor ids range from 0 to maxcursors-1.
+		 *
+		 *  However, you will typically only request a cursor by id
+		 *  if you already know an id from a previous call to
+		 *  getId(cursor) and have a specific reason to reuse that
+		 *  cursor. */
 		sqlrservercursor	*getCursor(uint16_t id);
+
+		/** Returns an available cursor from the pool of already-open
+		 *  cursors from the pool of available cursors, or NULL if no
+		 *  cursor was currently available.
+		 *
+		 *  The size of the cursor pool depends on the value of the
+		 *  maxcursors attribute, of the instance tag, in the config
+		 *  file. */
+		sqlrservercursor	*getCursor();
+
+		/** Allocates a cursor, outside of the cursor pool.  This
+		 *  cursor will have an id >= the value of the maxcursors
+		 *  attribute, of the instance tag, in the config file.
+		 *
+		 *  This cursor must be opened by calling open(cursor) before
+		 *  it can be used and should be closed by calling close(cursor)
+		 *  and deleted by calling deleteCursor(cursor) when you are
+		 *  done using it.
+		 *
+		 *  Returns NULL if a new cursor couldn't be allocated. */
+		sqlrservercursor	*newCursor();
+
+		/** Returns the id of "cursor". */
 		uint16_t	getId(sqlrservercursor *cursor);
-		bool		open(sqlrservercursor *cursor);
-		bool		close(sqlrservercursor *cursor);
-		void		suspendResultSet(sqlrservercursor *cursor);
-		void		abort(sqlrservercursor *cursor);
-		void		deleteCursor(sqlrservercursor *curs);
 
-		// command stats
-		void		setCommandStart(sqlrservercursor *cursor,
-						uint64_t sec, uint64_t usec);
-		uint64_t	getCommandStartSec(sqlrservercursor *cursor);
-		uint64_t	getCommandStartUSec(sqlrservercursor *cursor);
-		void		setCommandEnd(sqlrservercursor *cursor,
-						uint64_t sec, uint64_t usec);
-		uint64_t	getCommandEndSec(sqlrservercursor *cursor);
-		uint64_t	getCommandEndUSec(sqlrservercursor *cursor);
+		/** Opens "cursor".  Returns true on success and false on
+		 *  failure. */
+		bool	open(sqlrservercursor *cursor);
 
-		// query stats
-		void		setQueryStart(sqlrservercursor *cursor,
-						uint64_t sec, uint64_t usec);
-		uint64_t	getQueryStartSec(sqlrservercursor *cursor);
-		uint64_t	getQueryStartUSec(sqlrservercursor *cursor);
-		void		setQueryEnd(sqlrservercursor *cursor,
-						uint64_t sec, uint64_t usec);
-		uint64_t	getQueryEndSec(sqlrservercursor *cursor);
-		uint64_t	getQueryEndUSec(sqlrservercursor *cursor);
+		/** Closes "cursor".  Returns true on success and false on
+		 *  failure. */
+		bool	close(sqlrservercursor *cursor);
 
-		// query buffer
+		/** Closes the result set of "cursor" and clears any custom
+		 *  query cursor associated with "cursor". */
+		void	abort(sqlrservercursor *cursor);
+
+		/** Releases "cursor" back to the pool of already-open cursors
+		 *  and marks it available so that it may be returned by a
+		 *  future call to getCursor().
+		 *
+		 *  Note that "cursor" should have been returned from a call to
+		 *  getCursor().  This method should not be called on a cursor
+		 *  returned from newCursor(). */
+		void	release(sqlrservercursor *cursor);
+
+		/** Deletes "cursor".
+		 *
+		 *  Note that "cursor" should have been allocated by a call to
+		 *  newCursor().  This method should not be called on a cursor
+		 *  returned from getCursor() */
+		void	deleteCursor(sqlrservercursor *cursor);
+
+
+
+		// query buffer...
+
+		/** Returns a pointer to the query buffer of "cursor" */
 		char		*getQueryBuffer(sqlrservercursor *cursor);
-		uint32_t 	getQuerySize(sqlrservercursor *cursor);
-		void		setQuerySize(sqlrservercursor *cursor,
-						uint32_t querysize);
 
-		// query status
+		/** Sets the size, in bytes, of the query that is currently
+		 *  present in the query buffer of "cursor" to "querysize". */
+		void		setQuerySize(sqlrservercursor *cursor,
+							uint32_t querysize);
+
+		/** Returns the size, in bytes, of the query that is currently
+		 *  present in the query buffer of "cursor", as set by
+		 *  setQuerySize(). */
+		uint32_t 	getQuerySize(sqlrservercursor *cursor);
+
+
+
+		// query status...
+
+		/** Sets the status of the current query of "cursor"
+		 *  to "status". */
+		void	setQueryStatus(sqlrservercursor *cursor,
+						sqlrquerystatus_t status);
+
+		/** Returns the status of the current query of "cursor",
+		 *  as set by setQueryStatus(). */
 		sqlrquerystatus_t	getQueryStatus(
 						sqlrservercursor *cursor);
 
-		// query translations
-		xmldom		*getQueryTree(sqlrservercursor *cursor);
+
+
+		// query translations...
+
+		/** Sets the tree representing the current query of "cursor" to
+		 *  "tree". */
+		void	setQueryTree(sqlrservercursor *cursor, xmldom *tree);
+
+		/** Returns the tree representing the current query of "cursor"
+		 *  as set by setQueryTree(), or NULL if no tree has been
+		 *  set since initialization of "cursor" or since the most
+		 *  recent call to clearQueryTree(). */
+		xmldom	*getQueryTree(sqlrservercursor *cursor);
+
+		/** Sets the tree representing the current query of "cursor" to
+		 *  NULL. */
+		void	clearQueryTree(sqlrservercursor *cursor);
+
+		/** Returns the translated query buffer of "cursor". */
+		stringbuffer	*getTranslatedQueryBuffer(
+						sqlrservercursor *cursor);
+
+		/** Returns the query currently stored in the translated quer
+		 *  buffer of "cursor". */
 		const char	*getTranslatedQuery(sqlrservercursor *cursor);
 
-		// running queries
+
+
+		// running queries...
+
+		/** Copies "size" bytes of "query" to the query buffer of
+		 *  "cursor" and prepares the query, with all directives,
+		 *  translations, and filters enabled.
+		 *
+		 *  Returns true on success and false otherwise. */
 		bool	prepareQuery(sqlrservercursor *cursor,
 						const char *query,
 						uint32_t size);
+
+		/** Copies "size" bytes of "query" to the query buffer of
+		 *  "cursor" and prepares the query.
+		 *
+		 *  Directives are enabled if "enabledirectives" is true or
+		 *  disabled if it is false.
+		 *  Translations are enabled if "enabletranslations" is true or
+		 *  disabled if it is false.
+		 *  Filters are enabled if "enablefilters" is true or disabled
+		 *  if it is false.
+		 *
+		 *  Returns true on success and false otherwise. */
 		bool	prepareQuery(sqlrservercursor *cursor,
 						const char *query,
 						uint32_t size,
 						bool enabledirectives,
 						bool enabletranslations,
 						bool enablefilters);
+
+		/** Executes the currently prepared query of "cursor", with all
+		 *  directives, translations, and filters enabled.
+		 *
+		 *  Returns true on success and false otherwise. */
 		bool	executeQuery(sqlrservercursor *cursor);
+
+		/** Executes the currently prepraed query of "cursor".
+		 *
+		 *  Directives are enabled if "enabledirectives" is true or
+		 *  disabled if it is false.
+		 *  Translations are enabled if "enabletranslations" is true or
+		 *  disabled if it is false.
+		 *  Filters are enabled if "enablefilters" is true or disabled
+		 *  if it is false.
+		 *  Triggers are enabled if "enabletriggers" is true or disabled
+		 *  if it is false.
+		 *
+		 *  Returns true on success and false otherwise. */
 		bool	executeQuery(sqlrservercursor *cursor,
 						bool enabledirectives,
 						bool enabletranslations,
 						bool enablefilters,
 						bool enabletriggers);
+
+		/** Fetches from bind cursor "cursor".  Returns true on sucecss
+		 *  and false otherwise. */
 		bool	fetchFromBindCursor(sqlrservercursor *cursor);
+
+		/** Advances to the next result set of "cursor".
+		 *
+		 *  Returns true and sets "nextresultsetavailable" true if
+		 *  another result set was available.
+		 *
+		 *  Returns true and sets "nextresultsetavailable" false if
+		 *  another result set was not available.
+		 *
+		 *  Returns false if an error occured while checking for
+		 *  another resulet set. */
 		bool	nextResultSet(sqlrservercursor *cursor,
 						bool *nextresultsetavailable);
 
-		// bind variables
+
+
+		// bind variables...
+
+		/** Returns the memory pool of "cursor" used to store bind
+		 *  variable names and values. */
 		memorypool	*getBindPool(sqlrservercursor *cursor);
+
+		/** Returns the memory pool of "cursor" used to map bind
+ 		 *  variable names when the value of the attribute
+ 		 *  translatebindvariables of the instance tag in the config
+ 		 *  file is set to "yes". */
 		memorypool	*getBindMappingsPool(sqlrservercursor *cursor);
+
+		/** Returns the dictionary of bind variable name mappings of
+		 *  "cursor".  The keys are the old (original) bind variable
+		 *  names and the values are the new (translated) bind variable
+		 *  names.
+		 *
+		 *  The dictionary is populated by prepareQuery() and remains
+		 *  populated with the same key-value pairs until the next call
+		 *  to prepareQuery().  If it is empty then either bind variable
+		 *  translation is disabled or the most recently prepared query
+		 *  contained no bind variables. */
 		dictionary<char *, char *>	*getBindMappings(
 						sqlrservercursor *cursor);
 
-		// input bind variables
-		void		setFakeInputBindsForThisQuery(
+
+
+		// fake input binds...
+
+		/** Sets whether to fake input binds for the current query of
+		 *  "cursor", by rewriting the query, to "fake".
+		 *
+		 *  Note that the behavior of prepareQuery() is as follows:
+		 *
+		 *    * It initially configures whether input binds should be
+		 *      faked or not, based on the value of the
+		 *      "fakeinputbindvariables" attribute of the instance tag,
+		 *      in the config file.
+		 *    * It then processes filters, directives, translations,
+		 *      and before-triggers, which can call this method to
+		 *      override that.
+		 *    * It then checks to see if the query supports native
+		 *      binds and sets input binds to be faked if native binds
+		 *      are not supported with this query.
+		 *
+		 *  So, it is possible for this method to hae no effect if:
+		 *
+		 *    * It is called from a module other than a filter,
+		 *      directive, translation, or before-trigger.
+		 *    * It sets binds to not be faked, but the query itself
+		 *      doesn't support native binds.
+		 */
+		void	setFakeInputBindsForThisQuery(
 						sqlrservercursor *cursor,
 						bool fake);
-		bool		getFakeInputBindsForThisQuery(
+
+		/** Returns whether or not input binds will be faked for the
+		 *  current query of "cursor".  See
+		 *  setFakeInputBindsForThisQuery(). */
+		bool	getFakeInputBindsForThisQuery(
 						sqlrservercursor *cursor);
-		void		setInputBindCount(sqlrservercursor *cursor,
-						uint16_t inbindcount);
+
+
+
+		// input bind variables...
+
+		/** Sets the number of valid input binds in "cursor" to
+		 *  "inbindcount". */
+		void	setInputBindCount(sqlrservercursor *cursor,
+							uint16_t inbindcount);
+
+		/** Returns the number of valid input binds in "cursor", as
+		 *  set by setInputBindCount(). */
 		uint16_t	getInputBindCount(sqlrservercursor *cursor);
+
+		/** Returns the array of input binds in "cursor".  The total
+		 *  number of bind variables in the array is equal to the value
+		 *  of the maxbindcount attribute of the instance tag in the
+		 *  config file.  However, only the first getInputBindCount()
+		 *  bind variables are currently valid.  The state of the rest
+		 *  are undefined. */
 		sqlrserverbindvar	*getInputBinds(
 						sqlrservercursor *cursor);
 
-		// output bind variables
+
+
+		// output bind variables...
+
+		/** Sets the number of valid output binds in "cursor" to
+		 *  "outbindcount". */
 		void		setOutputBindCount(sqlrservercursor *cursor,
-						uint16_t outbindcount);
+							uint16_t outbindcount);
+
+		/** Returns the number of valid output binds in "cursor", as
+		 *  set by setOutputBindCount(). */
 		uint16_t	getOutputBindCount(sqlrservercursor *cursor);
+
+		/** Returns the array of output binds in "cursor".  The total
+		 *  number of bind variables in the array is equal to the value
+		 *  of the maxbindcount attribute of the instance tag in the
+		 *  config file.  However, only the first getOutputBindCount()
+		 *  bind variables are currently valid.  The state of the rest
+		 *  are undefined. */
 		sqlrserverbindvar	*getOutputBinds(
 						sqlrservercursor *cursor);
-		bool		getLobOutputBindLength(
-						sqlrservercursor *cursor,
-						uint16_t index,
-						uint64_t *length);
-		bool		getLobOutputBindSegment(
-						sqlrservercursor *cursor,
-						uint16_t index,
-						char *buffer,
-						uint64_t buffersize,
-						uint64_t offset,
-						uint64_t charstoread,
-						uint64_t *charsread);
-		void		closeLobOutputBind(sqlrservercursor *cursor,
-								uint16_t index);
 
-		// input/output bind variables
+		/** Opens LOB output bind at position "index" in "cursor"
+		 *  (unless it is already open) and sets "length" equal to its
+		 *  length, in characters.
+ 		 *
+ 		 *  Returns true on success and false otherwise.  Will return
+ 		 *  false if the output bind at position "index" is not a LOB.
+ 		 *
+ 		 *  For example...
+ 		 *
+ 		 *  if
+ 		 *  getOutputBinds(cursor)[index].type==
+ 		 *  			SQLRSERVERBINDVARTYPE_BLOB
+ 		 *  or
+ 		 *  getOutputBinds(cursor)[index].type==
+ 		 *  			SQLRSERVERBINDVARTYPE_CLOB
+ 		 *  then this method will return true. */
+		bool	getLobOutputBindLength(sqlrservercursor *cursor,
+							uint16_t index,
+							uint64_t *length);
+
+		/** Opens LOB output bind at position "index" in "cursor"
+		 *  (unless it is already open) and attempts to fetch
+		 *  "charstoread" characters from position "offset" into
+		 *  "buffer" of "buffersize" bytes.  Populates "charsread" with
+		 *  the number of characters that were actually read.
+ 		 *
+ 		 *  Returns true on success and false otherwise.  Will return
+ 		 *  false if the output bind at position "index" is not a LOB.
+ 		 *
+ 		 *  For example...
+ 		 *
+ 		 *  if
+ 		 *  getOutputBinds(cursor)[index].type==
+ 		 *  			SQLRSERVERBINDVARTYPE_BLOB
+ 		 *  or
+ 		 *  getOutputBinds(cursor)[index].type==
+ 		 *  			SQLRSERVERBINDVARTYPE_CLOB
+ 		 *  then this method will return true. */
+		bool	getLobOutputBindSegment(sqlrservercursor *cursor,
+							uint16_t index,
+							char *buffer,
+							uint64_t buffersize,
+							uint64_t offset,
+							uint64_t charstoread,
+							uint64_t *charsread);
+
+		/** Closes LOB output bind at position "index" of "cursor".
+ 		 *
+ 		 *  For example...
+ 		 *
+ 		 *  if
+ 		 *  getOutputBinds(cursor)[index].type==
+ 		 *  			SQLRSERVERBINDVARTYPE_BLOB
+ 		 *  or
+ 		 *  getOutputBinds(cursor)[index].type==
+ 		 *  			SQLRSERVERBINDVARTYPE_CLOB
+ 		 *  and the LOB was opened by a call to
+ 		 *  getLobOutputBindLength() or getLobOutputBindSegment()
+ 		 *  then this method will close it. */
+		void	closeLobOutputBind(sqlrservercursor *cursor,
+							uint16_t index);
+
+
+
+		// input/output bind variables...
+
+		/** Sets the number of valid input-output binds in "cursor" to
+		 *  "inoutbindcount". */
 		void		setInputOutputBindCount(
 						sqlrservercursor *cursor,
 						uint16_t inoutbindcount);
+
+		/** Returns the number of valid input-output binds in "cursor",
+ 		 *  as set by setInputOutputBindCount(). */
 		uint16_t	getInputOutputBindCount(
 						sqlrservercursor *cursor);
+
+		/** Returns the array of input-output binds in "cursor".  The
+		 *  total number of bind variables in the array is equal to the
+		 *  value of the maxbindcount attribute of the instance tag in
+		 *  the config file.  However, only the first
+		 *  getInputOutputBindCount() bind variables are currently
+		 *  valid.  The state of the rest are undefined. */
 		sqlrserverbindvar	*getInputOutputBinds(
 						sqlrservercursor *cursor);
-		bool		getLobInputOutputBindLength(
-						sqlrservercursor *cursor,
-						uint16_t index,
-						uint64_t *length);
-		bool		getLobInputOutputBindSegment(
-						sqlrservercursor *cursor,
-						uint16_t index,
-						char *buffer,
-						uint64_t buffersize,
-						uint64_t offset,
-						uint64_t charstoread,
-						uint64_t *charsread);
-		void		closeLobInputOutputBind(
-						sqlrservercursor *cursor,
-						uint16_t index);
 
-		// custom queries
-		bool		isCustomQuery(sqlrservercursor *cursor);
+		/** Opens LOB input-output bind at position "index" in "cursor"
+		 *  (unless it is already open) and sets "length" equal to its
+		 *  length, in characters.
+ 		 *
+ 		 *  Returns true on success and false otherwise.  Will return
+ 		 *  false if the output bind at position "index" is not a LOB.
+ 		 *
+ 		 *  For example...
+ 		 *
+ 		 *  if
+ 		 *  getOutputBinds(cursor)[index].type==
+ 		 *  			SQLRSERVERBINDVARTYPE_BLOB
+ 		 *  or
+ 		 *  getOutputBinds(cursor)[index].type==
+ 		 *  			SQLRSERVERBINDVARTYPE_CLOB
+ 		 *  then this method will return true. */
+		bool	getLobInputOutputBindLength(sqlrservercursor *cursor,
+							uint16_t index,
+							uint64_t *length);
+
+		/** Opens LOB input-output bind at position "index" in "cursor"
+		 *  (unless it is already open) and attempts to fetch
+		 *  "charstoread" characters from position "offset" into
+		 *  "buffer" of "buffersize" bytes.  Populates "charsread" with
+		 *  the number of characters that were actually read.
+ 		 *
+ 		 *  Returns true on success and false otherwise.  Will return
+ 		 *  false if the output bind at position "index" is not a LOB.
+ 		 *
+ 		 *  For example...
+ 		 *
+ 		 *  if
+ 		 *  getOutputBinds(cursor)[index].type==
+ 		 *  			SQLRSERVERBINDVARTYPE_BLOB
+ 		 *  or
+ 		 *  getOutputBinds(cursor)[index].type==
+ 		 *  			SQLRSERVERBINDVARTYPE_CLOB
+ 		 *  then this method will return true. */
+		bool	getLobInputOutputBindSegment(sqlrservercursor *cursor,
+							uint16_t index,
+							char *buffer,
+							uint64_t buffersize,
+							uint64_t offset,
+							uint64_t charstoread,
+							uint64_t *charsread);
+
+		/** Closes LOB input-output bind at position "index" of
+		 *  "cursor".
+ 		 *
+ 		 *  For example...
+ 		 *
+ 		 *  if
+ 		 *  getOutputBinds(cursor)[index].type==
+ 		 *  			SQLRSERVERBINDVARTYPE_BLOB
+ 		 *  or
+ 		 *  getOutputBinds(cursor)[index].type==
+ 		 *  			SQLRSERVERBINDVARTYPE_CLOB
+ 		 *  and the LOB was opened by a call to
+ 		 *  getLobOutputBindLength() or getLobOutputBindSegment()
+ 		 *  then this method will close it. */
+		void	closeLobInputOutputBind(sqlrservercursor *cursor,
+							uint16_t index);
+
+
+
+		// custom queries...
+
+		/** Determines if the query currently in the query buffer of
+		 *  "cursor" needs to be handled with a custom query module.
+		 *  If so, it configures "cursor" to use that module and
+		 *  returns the custom query cursor.  If not, it just returns
+		 *  "cursor". */
 		sqlrservercursor	*useCustomQueryCursor(
 						sqlrservercursor *cursor);
 
-		// temp tables
-		void	addGlobalTempTables(const char *gtts);
-		void	addSessionTempTableForDrop(const char *tablename);
-		void	addSessionTempTableForTrunc(const char *tablename);
-		void	addTransactionTempTableForDrop(const char *tablename);
-		void	addTransactionTempTableForTrunc(const char *tablename);
+		/** Returns true if "cursor" is handling the current query
+ 		 *  using a custom query module and false otherwise. */
+		bool	isCustomQuery(sqlrservercursor *cursor);
 
-		// table name remapping
+
+
+		// temp tables...
+
+		/** Adds global temporary tables defined by "gtts" to the list
+		 *  of global temporary tables that will be truncated when the
+		 *  client session ends.
+		 *
+		 *  "gtts" may be either "%", indicating that all global
+		 *  temporary tables should be truncated, or a comma separated
+		 *  list of tables to truncate such as
+		 *  "table1,table2,table3". */
+		void	addGlobalTempTables(const char *gtts);
+
+		/** Adds "tablename" to the list of temporary tables that will
+		 *  be dropped when the client session ends. */
+		void	addTempTableForDrop(const char *tablename);
+
+		/** Adds "tablename" to the list of temporary tables that will
+		 *  be truncated when the client session ends. */
+		void	addTempTableForTrunc(const char *tablename);
+
+
+
+		// table name remapping...
 		const char	*translateTableName(const char *table);
 		bool		removeReplacementTable(const char *database,
 							const char *schema,
@@ -1281,7 +1690,9 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 							const char *schema,
 							const char *table);
 
-		// db, table, column, procedure bind/column lists
+
+
+		// db, table, column, procedure bind/column lists...
 		bool		getListsByApiCalls();
 		bool		fakePrepareAndExecuteForApiCall(
 						sqlrservercursor *cursor);
@@ -1336,7 +1747,9 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 						const char **schema,
 						const char **object);
 
-		// column info
+
+
+		// column info...
 		bool		columnInfoIsValidAfterPrepare(
 						sqlrservercursor *cursor);
 		uint16_t	getSendColumnInfo();
@@ -1421,24 +1834,29 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 
 		bool		handleResultSetHeader(sqlrservercursor *cursor);
 
-		// result set navigation
-		bool		knowsRowCount(sqlrservercursor *cursor);
-		uint64_t	rowCount(sqlrservercursor *cursor);
-		bool		knowsAffectedRows(sqlrservercursor *cursor);
-		uint64_t	affectedRows(sqlrservercursor *cursor);
-		bool		noRowsToReturn(sqlrservercursor *cursor);
-		bool		skipRow(sqlrservercursor *cursor,
-							bool *error);
-		bool		skipRows(sqlrservercursor *cursor,
-							uint64_t rows,
-							bool *error);
-		bool		fetchRow(sqlrservercursor *cursor, bool *error);
-		void		nextRow(sqlrservercursor *cursor);
-		uint64_t	getTotalRowsFetched(sqlrservercursor *cursor);
-		void		closeResultSet(sqlrservercursor *cursor);
-		void		closeAllResultSets();
 
-		// fields
+
+		// result set navigation...
+		bool	knowsRowCount(sqlrservercursor *cursor);
+		uint64_t	rowCount(sqlrservercursor *cursor);
+		bool	knowsAffectedRows(sqlrservercursor *cursor);
+		uint64_t	affectedRows(sqlrservercursor *cursor);
+		bool	noRowsToReturn(sqlrservercursor *cursor);
+		bool	skipRow(sqlrservercursor *cursor, bool *error);
+		bool	skipRows(sqlrservercursor *cursor, uint64_t rows,
+								bool *error);
+		bool	fetchRow(sqlrservercursor *cursor, bool *error);
+		void	nextRow(sqlrservercursor *cursor);
+		uint64_t	getTotalRowsFetched(sqlrservercursor *cursor);
+
+		/** Suspends the result set of "cursor". */
+		void	suspendResultSet(sqlrservercursor *cursor);
+		void	closeResultSet(sqlrservercursor *cursor);
+		void	closeAllResultSets();
+
+
+
+		// fields...
 		bool	getField(sqlrservercursor *cursor,
 						uint32_t col,
 						const char **field,
@@ -1583,7 +2001,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 
 
 
-		// bulk load
+		// bulk load..
 		bool	bulkLoadBegin(const char *id,
 					const char *errorfieldtable,
 					const char *errorrowtable,
@@ -1628,35 +2046,53 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		bool	bulkLoadDropErrorTables(const char *errorfieldtable,
 						const char *errorrowtable);
 
-		// cursor state
+
+
+		// cursor state...
 		void			setState(sqlrservercursor *cursor,
 						sqlrcursorstate_t state);
 		sqlrcursorstate_t	getState(sqlrservercursor *cursor);
 
-		// memory pools
+
+
+		// memory pools...
 		memorypool	*getPerTransactionMemoryPool();
 		memorypool	*getPerSessionMemoryPool();
 
-		// query parser
+
+
+		// query parser...
 		sqlrparser	*getParser();
 
-		// gss
+
+
+		// gss...
 		gsscontext	*getGssContext();
 
-		// tls
+
+
+		// tls...
 		tlscontext	*getTlsContext();
 
-		// configuration
+
+
+		// configuration...
 		sqlrconfig	*getConfig();
 		sqlrpaths	*getPaths();
 
-		// shared memory
+
+
+		// shared memory...
 		sqlrshm		*getShm();
 
-		// module data
+
+
+		// module data...
 		sqlrmoduledata	*getModuleData(const char *id);
 
-		// utilities
+
+
+		// utilities...
 		bool		skipComment(const char **ptr,
 						const char *endptr);
 		bool		skipWhitespace(const char **ptr,
@@ -2040,13 +2476,22 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		sqlrservercursor(sqlrserverconnection *conn, uint16_t id);
 		virtual	~sqlrservercursor();
 
+		/** Opens the cursor.  Returns true on success and false on
+		 *  failure. */
 		virtual	bool	open();
+
+		/** Closes the cursor.  Returns true on success and false on
+		 *  failure. */
 		virtual	bool	close();
 
 		virtual sqlrquerytype_t	determineQueryType(
 						const char *query,
 						uint32_t size);
+
+		/** Returns true if we are handling the current query
+ 		 *  using a custom query module and false otherwise. */
 		virtual	bool	isCustomQuery();
+
 		virtual	bool	prepareQuery(const char *query,
 							uint32_t size);
 		virtual	bool	supportsNativeBinds(const char *query,
@@ -2139,15 +2584,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		virtual	bool	outputBindCursor(const char *variable,
 						uint16_t variablesize,
 						sqlrservercursor *cursor);
-		virtual bool	getLobOutputBindLength(uint16_t index,
-							uint64_t *length);
-		virtual bool	getLobOutputBindSegment(uint16_t index,
-							char *buffer,
-							uint64_t buffersize,
-							uint64_t offset,
-							uint64_t charstoread,
-							uint64_t *charsread);
-		virtual void	closeLobOutputBind(uint16_t index);
+
 		virtual	bool	inputOutputBind(const char *variable, 
 						uint16_t variablesize,
 						char *value,
@@ -2199,8 +2636,24 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		virtual	const char	*truncateTableQuery();
 		virtual	bool		executeQuery(const char *query,
 							uint32_t size);
+
+		/** Assumes that the current cursor is a bind cursor and
+		 *  fetches from it.  Returns true on sucecss and false
+		 *  otherwise. */
 		virtual bool	fetchFromBindCursor();
+
+		/** Advances to the next result set.
+		 *
+		 *  Returns true and sets "nextresultsetavailable" true if
+		 *  another result set was available.
+		 *
+		 *  Returns true and sets "nextresultsetavailable" false if
+		 *  another result set was not available.
+		 *
+		 *  Returns false if an error occured while checking for
+		 *  another resulet set. */
 		virtual	bool	nextResultSet(bool *nextresultsetavailable);
+
 		virtual	bool	queryIsNotSelect();
 		virtual	bool	queryIsCommitOrRollback();
 
@@ -2279,39 +2732,176 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 
 		bool		fakeInputBinds();
 
+		/** Returns the memory pool used to store bind variable names
+		 *  and values. */
 		memorypool	*getBindPool();
+
+		/** Returns the memory pool used to map bind variable names
+		 *  when the value of the attribute translatebindvariables of
+		 *  the instance tag in the config file is set to "yes". */
 		memorypool	*getBindMappingsPool();
+
+		/** Returns the dictionary of bind variable name mappings.  The
+		 *  keys are the old (original) bind variable names and the
+		 *  values are the new (translated) bind variable names.
+		 *
+		 *  The dictionary is populated by
+		 *  sqlrservercontroller::prepareQuery() and remains populated
+		 *  with the same key-value pairs until the next call to
+		 *  prepareQuery().  If it is empty then either bind variable
+		 *  translation is disabled or the most recently prepared query
+		 *  contained no bind variables. */
 		dictionary<char *, char *>	*getBindMappings();
 
+		/** Sets the number of input binds in "cursor" to
+		 *  "inbindcount". */
 		void		setInputBindCount(uint16_t inbindcount);
+
+		/** Returns the number of input binds in "cursor", as set by
+		 *  setInputBindCount(). */
 		uint16_t	getInputBindCount();
+
+		/** Returns the array of input binds in "cursor".  The total
+		 *  number of bind variables in the array is equal to the value
+		 *  of the maxbindcount attribute of the instance tag in the
+		 *  config file.  However, only the first getInputBindCount()
+		 *  bind variables are currently valid.  The state of the rest
+		 *  are undefined. */
 		sqlrserverbindvar	*getInputBinds();
 
+		/** Sets the number of valid output binds to "outbindcount". */
 		void		setOutputBindCount(uint16_t outbindcount);
+
+		/** Returns the number of valid output binds, as set by
+		 *  setOutputBindCount(). */
 		uint16_t	getOutputBindCount();
+
+		/** Returns the array of output binds in "cursor".  The total
+		 *  number of bind variables in the array is equal to the value
+		 *  of the maxbindcount attribute of the instance tag in the
+		 *  config file.  However, only the first getOutputBindCount()
+		 *  bind variables are currently valid.  The state of the rest
+		 *  are undefined. */
 		sqlrserverbindvar	*getOutputBinds();
 
+		/** Opens LOB output bind at position "index" (unless it is
+		 *  already open) and sets "length" equal to its length, in
+		 *  characters.
+ 		 *
+ 		 *  Returns true on success and false otherwise.  Will return
+ 		 *  false if the output bind at position "index" is not a LOB.
+ 		 *
+ 		 *  For example...
+ 		 *
+ 		 *  if
+ 		 *  getOutputBinds(cursor)[index].type==
+ 		 *  			SQLRSERVERBINDVARTYPE_BLOB
+ 		 *  or
+ 		 *  getOutputBinds(cursor)[index].type==
+ 		 *  			SQLRSERVERBINDVARTYPE_CLOB
+ 		 *  then this method will return true. */
+		virtual bool	getLobOutputBindLength(uint16_t index,
+							uint64_t *length);
+
+		/** Opens LOB output bind at position "index" (unless it is
+		 *  already open) and attempts to fetch "charstoread"
+		 *  characters from position "offset" into "buffer" of
+		 *  "buffersize" bytes.  Populates "charsread" with the number
+		 *  of characters that were actually read.
+ 		 *
+ 		 *  Returns true on success and false otherwise.  Will return
+ 		 *  false if the output bind at position "index" is not a LOB.
+ 		 *
+ 		 *  For example...
+ 		 *
+ 		 *  if
+ 		 *  getOutputBinds(cursor)[index].type==
+ 		 *  			SQLRSERVERBINDVARTYPE_BLOB
+ 		 *  or
+ 		 *  getOutputBinds(cursor)[index].type==
+ 		 *  			SQLRSERVERBINDVARTYPE_CLOB
+ 		 *  then this method will return true. */
+		virtual bool	getLobOutputBindSegment(uint16_t index,
+							char *buffer,
+							uint64_t buffersize,
+							uint64_t offset,
+							uint64_t charstoread,
+							uint64_t *charsread);
+
+		/** Closes LOB output bind at position "index".
+ 		 *
+ 		 *  For example...
+ 		 *
+ 		 *  if
+ 		 *  getOutputBinds(cursor)[index].type==
+ 		 *  			SQLRSERVERBINDVARTYPE_BLOB
+ 		 *  or
+ 		 *  getOutputBinds(cursor)[index].type==
+ 		 *  			SQLRSERVERBINDVARTYPE_CLOB
+ 		 *  and the LOB was opened by a call to
+ 		 *  getLobOutputBindLength() or getLobOutputBindSegment()
+ 		 *  then this method will close it. */
+		virtual void	closeLobOutputBind(uint16_t index);
+
+		/** Sets the number of valid input-output binds to
+		 *  "inoutbindcount". */
 		void		setInputOutputBindCount(
 					uint16_t inoutbindcount);
+
+		/** Returns the number of valid input-output binds as set by
+		 *  setInputOutputBindCount(). */
 		uint16_t	getInputOutputBindCount();
+
+		/** Returns the array of input-output binds.  The total number
+		 *  of bind variables in the array is equal to the value of the
+		 *  maxbindcount attribute of the instance tag in the config
+		 *  file.  However, only the first getInputOutputBindCount()
+		 *  bind variables are currently valid.  The state of the rest
+		 *  are undefined. */
 		sqlrserverbindvar	*getInputOutputBinds();
 
 		void	performSubstitution(stringbuffer *buffer,
 							int16_t index);
+
+		/** Immediately closes the result set of "cursor". */
 		void	abort();
 
+		/** Returns a pointer to the query buffer. */
 		char		*getQueryBuffer();
-		uint32_t 	getQuerySize();
+
+		/** Sets the size, in bytes, of the query that is currently
+		 *  present in the query buffer to "querysize". */
 		void		setQuerySize(uint32_t querysize);
 
-		void		setQueryStatus(sqlrquerystatus_t status);
+		/** Returns the size, in bytes, of the query that is currently
+		 *  present in the query buffer, as set by setQuerySize(). */
+		uint32_t 	getQuerySize();
+
+		/** Sets the status of the current query to "status". */
+		void	setQueryStatus(sqlrquerystatus_t status);
+
+		/** Returns the status of the current query as set by
+		 *  setQueryStatus(). */
 		sqlrquerystatus_t	getQueryStatus();
 
+		/** Sets the tree representing the current query to "tree". */
 		void		setQueryTree(xmldom *tree);
+
+		/** Returns the tree representing the current query as set by
+		 *  setQueryTree(), or NULL if no tree has been set since
+		 *  initialization or since the most recent call to
+		 *  clearQueryTree(). */
 		xmldom		*getQueryTree();
+
+		/** Sets the tree representing the current query to NULL. */
 		void		clearQueryTree();
 
+		/** Returns the translated query buffer of "cursor". */
 		stringbuffer	*getTranslatedQueryBuffer();
+
+		/** Returns the query currently stored in the translated quer
+		 *  buffer of "cursor". */
+		const char	*getTranslatedQuery();
 
 		void		setCommandStart(uint64_t sec, uint64_t usec);
 		uint64_t	getCommandStartSec();
@@ -2411,7 +3001,34 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		void	setBindsWereFaked(bool faked);
 		bool	getBindsWereFaked();
 
+		/** Sets whether to fake input binds for the current query of
+		 *  "cursor", by rewriting the query, to "fake".
+		 *
+		 *  Note that the behavior of prepareQuery() is as follows:
+		 *
+		 *    * It initially configures whether input binds should be
+		 *      faked or not, based on the value of the
+		 *      "fakeinputbindvariables" attribute of the instance tag,
+		 *      in the config file.
+		 *    * It then processes filters, directives, translations,
+		 *      and before-triggers, which can call this method to
+		 *      override that.
+		 *    * It then checks to see if the query supports native
+		 *      binds and sets input binds to be faked if native binds
+		 *      are not supported with this query.
+		 *
+		 *  So, it is possible for this method to hae no effect if:
+		 *
+		 *    * It is called from a module other than a filter,
+		 *      directive, translation, or before-trigger.
+		 *    * It sets binds to not be faked, but the query itself
+		 *      doesn't support native binds.
+		 */
 		void	setFakeInputBindsForThisQuery(bool fake);
+
+		/** Returns whether or not input binds will be faked for the
+		 *  current query of "cursor".  See
+		 *  setFakeInputBindsForThisQuery(). */
 		bool	getFakeInputBindsForThisQuery();
 
 		void		setQueryType(sqlrquerytype_t querytype);

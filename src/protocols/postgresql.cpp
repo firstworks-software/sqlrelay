@@ -1065,8 +1065,7 @@ bool sqlrprotocol_postgresql::sendStartupParameterStatuses() {
 				q.clear();
 			}
 			if (cursor) {
-				cont->setState(cursor,
-						SQLRCURSORSTATE_AVAILABLE);
+				cont->release(cursor);
 			}
 
 		} else {
@@ -1140,7 +1139,7 @@ bool sqlrprotocol_postgresql::sendReadyForQuery() {
 	// }
 
 	// set values to send
-	char	txblockstatus=(cont->inTransaction())?'T':'I';
+	char	txblockstatus=(cont->getInTransaction())?'T':'I';
 
 	// debug
 	if (getDebug()) {
@@ -1288,7 +1287,7 @@ bool sqlrprotocol_postgresql::query() {
 		if (first) {
 			newtx=(*end &&
 				cont->skipWhitespaceAndComments(end+1)[0] &&
-				!cont->inTransaction());
+				!cont->getInTransaction());
 			if (newtx) {
 				debugStart("begin");
 				debugEnd();
@@ -1351,7 +1350,7 @@ bool sqlrprotocol_postgresql::query() {
 	}
 
 	// release the cursor
-	cont->setState(cursor,SQLRCURSORSTATE_AVAILABLE);
+	cont->release(cursor);
 
 	return (result)?sendReadyForQuery():false;
 }
@@ -2771,8 +2770,8 @@ bool sqlrprotocol_postgresql::close() {
 	// remove stmt/portal -> cursor mapping
 	dict->remove((char *)name.getString());
 
-	// mark the cursor available
-	cont->setState(cursor,SQLRCURSORSTATE_AVAILABLE);
+	// release the cursor
+	cont->release(cursor);
 
 	debugStart("CloseComplete");
 	debugEnd();

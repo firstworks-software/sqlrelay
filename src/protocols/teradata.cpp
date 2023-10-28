@@ -1481,7 +1481,7 @@ bool sqlrprotocol_teradata::copKindContinue() {
 			if (getDebug()) {
 				stdoutput.printf("	releasing request\n");
 			}
-			cont->setState(req->cur,SQLRCURSORSTATE_AVAILABLE);
+			cont->release(req->cur);
 		}
 		delete req;
 		req=NULL;
@@ -2054,7 +2054,7 @@ end:
 			if (getDebug()) {
 				stdoutput.printf("	releasing request\n");
 			}
-			cont->setState(req->cur,SQLRCURSORSTATE_AVAILABLE);
+			cont->release(req->cur);
 		}
 		delete req;
 		req=NULL;

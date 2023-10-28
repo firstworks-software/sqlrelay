@@ -916,7 +916,7 @@ void sqlrservercursor::checkForTempTable(const char *query, uint32_t size) {
 	}
 
 	// append to list of temp tables
-	conn->cont->addSessionTempTableForDrop(tablename.getString());
+	conn->cont->addTempTableForDrop(tablename.getString());
 }
 
 const char *sqlrservercursor::truncateTableQuery() {
@@ -1463,12 +1463,7 @@ sqlrserverbindvar *sqlrservercursor::getInputOutputBinds() {
 }
 
 void sqlrservercursor::abort() {
-	// I was once concerned that calling this here would prevent suspended
-	// result sets from being able to return column data upon resume if the
-	// entire result set had already been sent, but I don't think that's an
-	// issue any more.
 	closeResultSet();
-	setState(SQLRCURSORSTATE_AVAILABLE);
 	clearCustomQueryCursor();
 }
 
