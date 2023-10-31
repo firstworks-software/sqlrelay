@@ -17,7 +17,7 @@ class SQLRSERVER_DLLSPEC sqlrquery_sqlrcmdgstat : public sqlrquery {
 			sqlrquery_sqlrcmdgstat(sqlrservercontroller *cont,
 							sqlrqueries *qs,
 							domnode *parameters);
-		bool	match(const char *querystring, uint32_t querylength);
+		bool	match(const char *querystring, uint32_t querysize);
 		sqlrquerycursor	*newCursor(sqlrserverconnection *conn,
 							uint16_t id);
 };
@@ -40,18 +40,18 @@ class sqlrquery_sqlrcmdgstatcursor : public sqlrquerycursor {
 						uint16_t id);
 
 		bool		executeQuery(const char *query,
-						uint32_t length);
+						uint32_t size);
 		uint32_t	colCount();
 		const char	*getColumnName(uint32_t col);
 		uint16_t	getColumnType(uint32_t col);
-		uint32_t	getColumnLength(uint32_t col);
+		uint32_t	getColumnSize(uint32_t col);
 		uint32_t	getColumnPrecision(uint32_t col);
 		uint32_t	getColumnScale(uint32_t col);
 		bool		noRowsToReturn();
 		bool		fetchRow(bool *error);
 		void		getField(uint32_t col,
 					const char **field,
-					uint64_t *fieldlength,
+					uint64_t *fieldsize,
 					bool *blob, bool *null);
 	private:
 		void	setGSResult(const char *key,
@@ -74,7 +74,7 @@ sqlrquery_sqlrcmdgstat::sqlrquery_sqlrcmdgstat(sqlrservercontroller *cont,
 }
 
 bool sqlrquery_sqlrcmdgstat::match(const char *querystring,
-					uint32_t querylength) {
+					uint32_t querysize) {
 	debugFunction();
 	return !charstring::compareIgnoringCase(querystring,"sqlrcmd gstat");
 }
@@ -97,7 +97,7 @@ sqlrquery_sqlrcmdgstatcursor::sqlrquery_sqlrcmdgstatcursor(
 }
 
 bool sqlrquery_sqlrcmdgstatcursor::executeQuery(const char *query,
-							uint32_t length) {
+							uint32_t size) {
 
 	sqlrshm	*gs=conn->cont->getShm();
 
@@ -245,7 +245,7 @@ uint32_t sqlrquery_sqlrcmdgstatcursor::colCount() {
 struct colinfo_t {
 	const char	*name;
 	uint16_t	type;
-	uint32_t	length;
+	uint32_t	size;
 	uint32_t	precision;
 	uint32_t	scale;
 };
@@ -263,8 +263,8 @@ uint16_t sqlrquery_sqlrcmdgstatcursor::getColumnType(uint32_t col) {
 	return (col<2)?colinfo[col].type:0;
 }
 
-uint32_t sqlrquery_sqlrcmdgstatcursor::getColumnLength(uint32_t col) {
-	return (col<2)?colinfo[col].length:0;
+uint32_t sqlrquery_sqlrcmdgstatcursor::getColumnSize(uint32_t col) {
+	return (col<2)?colinfo[col].size:0;
 }
 
 uint32_t sqlrquery_sqlrcmdgstatcursor::getColumnPrecision(uint32_t col) {
@@ -290,12 +290,12 @@ bool sqlrquery_sqlrcmdgstatcursor::fetchRow(bool *error) {
 
 void sqlrquery_sqlrcmdgstatcursor::getField(uint32_t col,
 						const char **field,
-						uint64_t *fieldlength,
+						uint64_t *fieldsize,
 						bool *blob,
 						bool *null) {
 	if ((currentrow-1)>=GSTAT_ROW_COUNT_MAX) {
 		*field=NULL;
-		*fieldlength=0;
+		*fieldsize=0;
 		*blob=false;
 		*null=true;
 		return;
@@ -307,7 +307,7 @@ void sqlrquery_sqlrcmdgstatcursor::getField(uint32_t col,
 	} else {
 		*field=NULL;
 	}
-	*fieldlength=charstring::getLength(*field);
+	*fieldsize=charstring::getLength(*field);
 	*blob=false;
 	*null=false;
 }

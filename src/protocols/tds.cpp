@@ -726,9 +726,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		uint64_t	rows(sqlrservercursor *cursor);
 		void	lobData(byte_t tdstype);
 		void	field(byte_t tdstype,
-					uint32_t collength,
+					uint32_t colsize,
 					const char *field,
-					uint64_t fieldlength,
+					uint64_t fieldsize,
 					bool null);
 		void	dateTime(const char *datetime,
 					int32_t *dayssince1900,
@@ -738,7 +738,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		void	timen(const char *field);
 		void	decimal(const char *field,
 					byte_t *ispositive,
-					byte_t *len,
+					byte_t *size,
 					byte_t *val);
 		void	guid(const char *field, byte_t *g);
 		byte_t	charsToHex(const char *chars);
@@ -764,9 +764,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 
 		void	envChange(byte_t type,
 					const wchar_t *newvalue,
-					size_t newvaluelen,
+					size_t newvaluesize,
 					const wchar_t *oldvalue,
-					size_t oldvaluelen);
+					size_t oldvaluesize);
 		void	info(uint32_t number,
 					byte_t state,
 					byte_t infoclass,
@@ -815,7 +815,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 
 		uint32_t	maxquerysize;
 		uint16_t	maxbindcount;
-		uint32_t	maxerrorlength;
 
 		char		**bindvarnames;
 
@@ -847,18 +846,17 @@ sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
 		debugEnd();
 	}
 
-	srvname=cont->dbHostName();
+	srvname=cont->getDbHostName();
 
-	dbversion=cont->dbVersion();
+	dbversion=cont->getDbVersion();
 	getServerTdsVersion();
 
-	const char	*dbtype=cont->identify();
+	const char	*dbtype=cont->getDbType();
 	dbistds=(!charstring::compare(dbtype,"freetds") ||
 			!charstring::compare(dbtype,"sap"));
 
 	maxquerysize=cont->getConfig()->getMaxQuerySize();
 	maxbindcount=cont->getConfig()->getMaxBindCount();
-	maxerrorlength=cont->getConfig()->getMaxErrorLength();
 
 	bindvarnames=new char *[maxbindcount];
 	for (uint16_t i=0; i<maxbindcount; i++) {
@@ -901,7 +899,7 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 	reqpacket.clear();
 
 	byte_t		packetstatus=0;
-	uint16_t	packetlength=0;
+	uint16_t	packetsize=0;
 	uint16_t	spid=0;
 	byte_t		packetwindow=0;
 
@@ -925,10 +923,10 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 			return false;
 		}
 
-		// get the packet length
-		if (clientsock->read(&packetlength)!=sizeof(packetlength)) {
+		// get the packet size
+		if (clientsock->read(&packetsize)!=sizeof(packetsize)) {
 			if (getDebug()) {
-				stdoutput.write("read packet length failed\n");
+				stdoutput.write("read packet size failed\n");
 				debugSystemError();
 			}
 			return false;
@@ -981,21 +979,21 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 			}
 			return false;
 		}
-		if (packetlength<8) {
+		if (packetsize<8) {
 			if (getDebug()) {
-				stdoutput.printf("invalid packet length: %d\n",
-								packetlength);
+				stdoutput.printf("invalid packet size: %d\n",
+								packetsize);
 				debugSystemError();
 			}
 			return false;
 		}
 
-		// bump the packet length down
-		packetlength-=8;
+		// bump the packet size down
+		packetsize-=8;
 
 		// get the packet data
-		byte_t	*packet=new byte_t[packetlength];
-		if (clientsock->read(packet,packetlength)!=packetlength) {
+		byte_t	*packet=new byte_t[packetsize];
+		if (clientsock->read(packet,packetsize)!=packetsize) {
 			if (getDebug()) {
 				stdoutput.write("read packet failed\n");
 				debugSystemError();
@@ -1004,10 +1002,10 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 		}
 
 		// append the data to the receive buffer
-		reqpacket.append(packet,packetlength);
+		reqpacket.append(packet,packetsize);
 
-		// bump the packet length back up
-		packetlength+=8;
+		// bump the packet size back up
+		packetsize+=8;
 
 		if (getDebug()) {
 			debugStart("recv");
@@ -1015,15 +1013,15 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 								*packettype);
 			stdoutput.printf("	packet status:	0x%02x\n",
 								packetstatus);
-			stdoutput.printf("	packet length:	%d\n",
-								packetlength);
+			stdoutput.printf("	packet size:	%d\n",
+								packetsize);
 			stdoutput.printf("	spid:		%d\n",
 								spid);
 			stdoutput.printf("	packet id:	%d\n",
 								packetid);
 			stdoutput.printf("	packet window:	%d\n",
 								packetwindow);
-			debugHexDump(packet,packetlength-8);
+			debugHexDump(packet,packetsize-8);
 			debugEnd();
 		}
 
@@ -1045,15 +1043,15 @@ bool sqlrprotocol_tds::sendPacket() {
 		// set header parts
 		byte_t		packettype=TABULAR_RESULT;
 		byte_t		packetstatus=0;
-		uint16_t	packetlength=remaining;
-		if (packetlength>negotiatedpacketsize) {
-			packetlength=negotiatedpacketsize;
+		uint16_t	packetsize=remaining;
+		if (packetsize>negotiatedpacketsize) {
+			packetsize=negotiatedpacketsize;
 		}
-		remaining-=packetlength;
+		remaining-=packetsize;
 		if (!remaining) {
 			packetstatus|=STATUS_EOM;
 		}
-		packetlength+=8;
+		packetsize+=8;
 		uint16_t	spid=0;
 		byte_t		packetwindow=0;
 
@@ -1063,15 +1061,15 @@ bool sqlrprotocol_tds::sendPacket() {
 								packettype);
 			stdoutput.printf("	packet status:	0x%02x\n",
 								packetstatus);
-			stdoutput.printf("	packet length:	%d\n",
-								packetlength);
+			stdoutput.printf("	packet size:	%d\n",
+								packetsize);
 			stdoutput.printf("	spid:		%d\n",
 								spid);
 			stdoutput.printf("	packet id:	%d\n",
 								packetid);
 			stdoutput.printf("	packet window:	%d\n",
 								packetwindow);
-			debugHexDump(packet,packetlength-8);
+			debugHexDump(packet,packetsize-8);
 			debugEnd();
 		}
 
@@ -1093,10 +1091,10 @@ bool sqlrprotocol_tds::sendPacket() {
 			return false;
 		}
 
-		// send the packet length
-		if (clientsock->write(packetlength)!=sizeof(packetlength)) {
+		// send the packet size
+		if (clientsock->write(packetsize)!=sizeof(packetsize)) {
 			if (getDebug()) {
-				stdoutput.write("write packet length failed\n");
+				stdoutput.write("write packet size failed\n");
 				debugSystemError();
 			}
 			return false;
@@ -1129,11 +1127,11 @@ bool sqlrprotocol_tds::sendPacket() {
 			return false;
 		}
 
-		// bump the packet length down
-		packetlength-=8;
+		// bump the packet size down
+		packetsize-=8;
 
 		// send the packet data
-		if (clientsock->write(packet,packetlength)!=packetlength) {
+		if (clientsock->write(packet,packetsize)!=packetsize) {
 			if (getDebug()) {
 				stdoutput.write("write packet data failed\n");
 				debugSystemError();
@@ -1159,10 +1157,10 @@ bool sqlrprotocol_tds::sendPacket() {
 
 wchar_t *sqlrprotocol_tds::readPassword(const byte_t *rp,
 						size_t charcount) {
-	uint16_t	len=charcount*sizeof(uint16_t);
-	byte_t		*temp=(byte_t *)bytestring::duplicate(rp,len);
+	uint16_t	size=charcount*sizeof(uint16_t);
+	byte_t		*temp=(byte_t *)bytestring::duplicate(rp,size);
 	byte_t		*ch=temp;
-	for (uint16_t i=0; i<len; i++) {
+	for (uint16_t i=0; i<size; i++) {
 		*ch=*ch^0xA5;
 		*ch=((*ch&0x0F)<<4)|((*ch&0xF0)>>4);
 		ch++;
@@ -1435,7 +1433,7 @@ clientsessionexitstatus_t sqlrprotocol_tds::clientSession(
 		}
 		// release the cursor
 		// FIXME: kludgy
-		cont->setState(cursor,SQLRCURSORSTATE_AVAILABLE);
+		cont->release(cursor);
 
 	} while (loop);
 
@@ -1478,7 +1476,7 @@ bool sqlrprotocol_tds::preLogin() {
 	// some useful variables
 	byte_t		plopttok;
 	uint16_t	ploptoff;
-	uint16_t	ploptlen;
+	uint16_t	ploptsize;
 
 	for (;;) {
 
@@ -1497,14 +1495,14 @@ bool sqlrprotocol_tds::preLogin() {
 			stdoutput.printf("	offset:	%hd\n",ploptoff);
 		}
 
-		// get the option length
-		readBE(rp,&ploptlen,&rp);
+		// get the option size
+		readBE(rp,&ploptsize,&rp);
 		if (getDebug()) {
-			stdoutput.printf("	length:	%hd\n\n",ploptlen);
+			stdoutput.printf("	size:	%hd\n\n",ploptsize);
 		}
 
 		// FIXME: verify that the packet is as long
-		// as the sum of the option lengths claim
+		// as the sum of the option sizes claim
 
 		// get the option data
 		const byte_t		*dummy;
@@ -1540,10 +1538,10 @@ bool sqlrprotocol_tds::preLogin() {
 				break;
 
 			case PL_INSTOPT:
-				instvalidity=new char[ploptlen+1];
+				instvalidity=new char[ploptsize+1];
 				read(startrp+ploptoff,
-					instvalidity,ploptlen,&dummy);
-				instvalidity[ploptlen]='\0';
+					instvalidity,ploptsize,&dummy);
+				instvalidity[ploptsize]='\0';
 				if (getDebug()) {
 					stdoutput.write("	"
 							"pl_instopt\n");
@@ -1646,9 +1644,9 @@ bool sqlrprotocol_tds::preLogin() {
 	// version
 	write(&resppacket,(byte_t)PL_VERSION);
 	writeBE(&resppacket,ploptoff);
-	ploptlen=sizeof(version)+sizeof(subbuild);
-	ploptoff+=ploptlen;
-	writeBE(&resppacket,ploptlen);
+	ploptsize=sizeof(version)+sizeof(subbuild);
+	ploptoff+=ploptsize;
+	writeBE(&resppacket,ploptsize);
 	// FIXME: we should probably send an accurate version
 	// instead of regurgitating what the client sent us
 	packetdata.append(version);
@@ -1664,9 +1662,9 @@ bool sqlrprotocol_tds::preLogin() {
 	// encryption
 	write(&resppacket,(byte_t)PL_ENCRYPTION);
 	writeBE(&resppacket,ploptoff);
-	ploptlen=sizeof(encryption);
-	ploptoff+=ploptlen;
-	writeBE(&resppacket,ploptlen);
+	ploptsize=sizeof(encryption);
+	ploptoff+=ploptsize;
+	writeBE(&resppacket,ploptsize);
 	// FIXME: implement encryption
 	encryption=ENCRYPT_NOT_SUP;
 	packetdata.append(encryption);
@@ -1679,12 +1677,12 @@ bool sqlrprotocol_tds::preLogin() {
 	// instopt
 	write(&resppacket,(byte_t)PL_INSTOPT);
 	writeBE(&resppacket,ploptoff);
-	ploptlen=charstring::getLength(instvalidity)+1;
-	ploptoff+=ploptlen;
-	writeBE(&resppacket,ploptlen);
+	ploptsize=charstring::getLength(instvalidity)+1;
+	ploptoff+=ploptsize;
+	writeBE(&resppacket,ploptsize);
 	// FIXME: we should probably send an accurate instopt
 	// instead of regurgitating what the client sent us
-	packetdata.append(instvalidity,ploptlen);
+	packetdata.append(instvalidity,ploptsize);
 	if (getDebug()) {
 		stdoutput.write("	pl_instopt\n");
 		stdoutput.printf("		instvalidity:	%s\n",
@@ -1694,9 +1692,9 @@ bool sqlrprotocol_tds::preLogin() {
 	// threadid
 	write(&resppacket,(byte_t)PL_THREADID);
 	writeBE(&resppacket,ploptoff);
-	ploptlen=sizeof(threadid);
-	ploptoff+=ploptlen;
-	writeBE(&resppacket,ploptlen);
+	ploptsize=sizeof(threadid);
+	ploptoff+=ploptsize;
+	writeBE(&resppacket,ploptsize);
 	threadid=process::getProcessId();
 	packetdata.append(threadid);
 	if (getDebug()) {
@@ -1708,9 +1706,9 @@ bool sqlrprotocol_tds::preLogin() {
 	// mars
 	write(&resppacket,(byte_t)PL_MARS);
 	writeBE(&resppacket,ploptoff);
-	ploptlen=sizeof(mars);
-	ploptoff+=ploptlen;
-	writeBE(&resppacket,ploptlen);
+	ploptsize=sizeof(mars);
+	ploptoff+=ploptsize;
+	writeBE(&resppacket,ploptsize);
 	// FIXME: SQL Relay actually does support multiple active result sets
 	mars=0;
 	packetdata.append(mars);
@@ -1761,7 +1759,7 @@ bool sqlrprotocol_tds::tds7Login() {
 	const byte_t	*startrp=rp;
 
 	// initialize values...
-	uint32_t	length=0;
+	uint32_t	size=0;
 	uint32_t	tdsversion=0;
 	clienttdsversion=700;
 	uint32_t	packetsize=0;
@@ -1841,7 +1839,7 @@ bool sqlrprotocol_tds::tds7Login() {
 	byte_t		*sspi=NULL;
 
 	// copy values out of the recv packet...
-	readLE(rp,&length,&rp);
+	readLE(rp,&size,&rp);
 	readBE(rp,&tdsversion,&rp);
 	clienttdsversion=tdsVersionHexToDec(tdsversion);
 	readLE(rp,&packetsize,&rp);
@@ -1948,17 +1946,17 @@ bool sqlrprotocol_tds::tds7Login() {
 		changepassword=readPassword(startrp+ibchangepassword,
 							cchchangepassword);
 	}
-	uint32_t	sspilen=0;
-	if (sspilen<65535) {
-		sspilen=cbsspi;
+	uint32_t	sspisize=0;
+	if (sspisize<65535) {
+		sspisize=cbsspi;
 	} else {
 		if (cbsspilong==0) {
-			sspilen=65535;
+			sspisize=65535;
 		} else {
-			sspilen=cbsspilong;
+			sspisize=cbsspilong;
 		}
 	}
-	sspi=(byte_t *)bytestring::duplicate(startrp+ibsspi,sspilen);
+	sspi=(byte_t *)bytestring::duplicate(startrp+ibsspi,sspisize);
 
 	// set option/type flags...
 	fbyteorder=(optionflags1&(0x01));
@@ -1998,8 +1996,8 @@ bool sqlrprotocol_tds::tds7Login() {
 
 	if (getDebug()) {
 		debugStart("tds7 login");
-		stdoutput.printf("	length:		%d\n",
-							length);
+		stdoutput.printf("	size:		%d\n",
+							size);
 		stdoutput.printf("	tdsversion:	0x%08x (%d)\n",
 							tdsversion,
 							clienttdsversion);
@@ -2140,7 +2138,7 @@ bool sqlrprotocol_tds::tds7Login() {
 						ibsspi,
 						cbsspi,
 						cbsspilong);
-		debugHexDump((byte_t *)sspi,sspilen);
+		debugHexDump((byte_t *)sspi,sspisize);
 		debugEnd();
 	}
 
@@ -2169,7 +2167,8 @@ bool sqlrprotocol_tds::tds7Login() {
 	if (retval && cchdatabase) {
 
 		char		*olddatabase=cont->getCurrentDatabase();
-		uint32_t	olddatabaselen=charstring::getLength(olddatabase);
+		uint32_t	olddatabaselen=
+					charstring::getLength(olddatabase);
 		wchar_t		*olddatabase32=wcharstring::duplicate(
 						olddatabase,olddatabaselen);
 
@@ -2298,18 +2297,18 @@ void sqlrprotocol_tds::loginAck() {
 	uint32_t	tdsversion=
 			tdsVersionDecToHex(negotiatedtdsversion,true);
 	const char	*progname=dbversion;
-	byte_t		prognamelen=(byte_t)charstring::getLength(progname);
+	byte_t		prognamesize=(byte_t)charstring::getLength(progname);
 	ucs2_t		*progname16=ucs2charstring::duplicate(progname,
-							(size_t)prognamelen);
+							(size_t)prognamesize);
 	byte_t		majorver=0;
 	byte_t		minorver=0;
 	byte_t		buildnumhi=0;
 	byte_t		buildnumlow=0;
 
-	uint16_t	tokenlength=sizeof(byte_t)+
+	uint16_t	tokensize=sizeof(byte_t)+
 					sizeof(uint32_t)+
 					sizeof(byte_t)+
-					prognamelen*sizeof(ucs2_t)+
+					prognamesize*sizeof(ucs2_t)+
 					sizeof(byte_t)+
 					sizeof(byte_t)+
 					sizeof(byte_t)+
@@ -2318,14 +2317,14 @@ void sqlrprotocol_tds::loginAck() {
 	if (getDebug()) {
 		debugStart("login ack");
 		stdoutput.printf("	token:		0x%02x\n",token);
-		stdoutput.printf("	tokenlength:	0x%02x (%hd)\n",
-							tokenlength,
-							tokenlength);
+		stdoutput.printf("	tokensize:	0x%02x (%hd)\n",
+							tokensize,
+							tokensize);
 		stdoutput.printf("	interface:	%d\n",iface);
 		stdoutput.printf("	tdsversion:	0x%08x (%d)\n",
 							tdsversion,
 							negotiatedtdsversion);
-		stdoutput.printf("	prognamelen:	%d\n",prognamelen);
+		stdoutput.printf("	prognamesize:	%d\n",prognamesize);
 		stdoutput.printf("	progname:	%s\n",progname);
 		stdoutput.printf("	majorver:	%d\n",majorver);
 		stdoutput.printf("	minorver:	%d\n",minorver);
@@ -2335,11 +2334,11 @@ void sqlrprotocol_tds::loginAck() {
 	}
 
 	write(&resppacket,token);
-	write(&resppacket,hostToLE(tokenlength));
+	write(&resppacket,hostToLE(tokensize));
 	write(&resppacket,iface);
 	writeBE(&resppacket,tdsversion);
-	write(&resppacket,prognamelen);
-	write(&resppacket,progname16,prognamelen);
+	write(&resppacket,prognamesize);
+	write(&resppacket,progname16,prognamesize);
 	write(&resppacket,majorver);
 	write(&resppacket,minorver);
 	write(&resppacket,buildnumhi);
@@ -2465,7 +2464,7 @@ void sqlrprotocol_tds::envChangeSqlCollation(uint32_t lcid,
 
 	byte_t		type=ENV_CHANGE_SQL_COLLATION;
 	
-	uint16_t	tokenlength=
+	uint16_t	tokensize=
 				sizeof(byte_t)+
 				sizeof(byte_t)+
 				sizeof(uint32_t)+
@@ -2475,11 +2474,11 @@ void sqlrprotocol_tds::envChangeSqlCollation(uint32_t lcid,
 	if (getDebug()) {
 		debugStart("env change");
 		stdoutput.printf("	token:		0x%02x\n",token);
-		stdoutput.printf("	tokenlength:	0x%02x (%hd)\n",
-							tokenlength,
-							tokenlength);
+		stdoutput.printf("	tokensize:	0x%02x (%hd)\n",
+							tokensize,
+							tokensize);
 		stdoutput.printf("	type:		%d\n",type);
-		stdoutput.printf("	newvaluelen:	%d\n",
+		stdoutput.printf("	newvaluesize:	%d\n",
 							sizeof(uint32_t)+
 							sizeof(byte_t));
 		stdoutput.printf("	newvalue:	");
@@ -2487,12 +2486,12 @@ void sqlrprotocol_tds::envChangeSqlCollation(uint32_t lcid,
 		stdoutput.printf(" %d\n",sortid);
 		debugHexDump((byte_t *)&lcid,sizeof(lcid));
 		debugHexDump((byte_t *)&sortid,sizeof(sortid));
-		stdoutput.printf("	oldvaluelen:	0\n");
+		stdoutput.printf("	oldvaluesize:	0\n");
 		debugEnd();
 	}
 
 	write(&resppacket,token);
-	write(&resppacket,hostToLE(tokenlength));
+	write(&resppacket,hostToLE(tokensize));
 	write(&resppacket,type);
 	write(&resppacket,(byte_t)(sizeof(lcid)+sizeof(sortid)));
 	writeBE(&resppacket,lcid);
@@ -2582,16 +2581,16 @@ void sqlrprotocol_tds::negotiatePacketSize(uint32_t packetsize) {
 void sqlrprotocol_tds::envChangePacketSize() {
 
 	char		*npsize=charstring::parseNumber(negotiatedpacketsize);
-	uint32_t	npsizelen=charstring::getLength(npsize);
-	wchar_t		*npsize32=wcharstring::duplicate(npsize,npsizelen);
+	uint32_t	npsizesize=charstring::getLength(npsize);
+	wchar_t		*npsize32=wcharstring::duplicate(npsize,npsizesize);
 
 	char		*opsize=charstring::parseNumber(oldpacketsize);
-	uint32_t	opsizelen=charstring::getLength(opsize);
-	wchar_t		*opsize32=wcharstring::duplicate(opsize,opsizelen);
+	uint32_t	opsizesize=charstring::getLength(opsize);
+	wchar_t		*opsize32=wcharstring::duplicate(opsize,opsizesize);
 
 	envChange(ENV_CHANGE_PACKET_SIZE,
-				npsize32,npsizelen,
-				opsize32,opsizelen);
+				npsize32,npsizesize,
+				opsize32,opsizesize);
 
 	delete[] npsize32;
 	delete[] npsize;
@@ -2688,24 +2687,24 @@ bool sqlrprotocol_tds::sqlBatch(sqlrservercursor *cursor) {
 
 	// get the sql
 	const ucs2_t	*sql=(const ucs2_t *)rp;
-	uint16_t	sqllength=rpsize/sizeof(ucs2_t);
+	uint16_t	sqlsize=rpsize/sizeof(ucs2_t);
 	// FIXME: use maxquerysize here
 
 	// FIXME: Ideally we could just send the unconverted query, as long
-	// as we also send the proper length in bytes.  SQL Relay really
+	// as we also send the proper size in bytes.  SQL Relay really
 	// appears to want ascii queries though, or at least it wants the
 	// query itself (other than embedded values) to be acsii.
-	char	*sql8=charstring::duplicateUcs2(sql,(size_t)sqllength);
+	char	*sql8=charstring::duplicateUcs2(sql,(size_t)sqlsize);
 
 	if (getDebug()) {
 		stdoutput.printf("	sql:		%s\n",sql8);
-		stdoutput.printf("	sqllength:	%d\n",sqllength);
+		stdoutput.printf("	sqlsize:	%d\n",sqlsize);
 		debugEnd();
 	}
 
 	// run the query
 	bool	success=
-		cont->prepareQuery(cursor,sql8,sqllength,true,true,true) &&
+		cont->prepareQuery(cursor,sql8,sqlsize,true,true,true) &&
 		cont->executeQuery(cursor,true,true,true,true);
 
 	// clean up
@@ -3017,7 +3016,7 @@ void sqlrprotocol_tds::colFlags(sqlrservercursor *cursor,
 
 			// this bit is reserved
 
-			// fixed length clr type (FIXME)
+			// fixed size clr type (FIXME)
 			flags|=((false)?(0x0001<<11):0);
 
 			// these 4 bits are reserved
@@ -3064,28 +3063,28 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 			stdoutput.write("		varlentype...\n");
 		}
 
-		uint32_t length=cont->getColumnLength(cursor,col);
+		uint32_t size=cont->getColumnSize(cursor,col);
 		uint32_t precision=cont->getColumnPrecision(cursor,col);
 		uint32_t scale=cont->getColumnScale(cursor,col);
 
-		// length
+		// size
 		switch (tdstype) {
 			case TDS_TYPE_SSVARIANT:
 			case TDS_TYPE_TEXT:
 			case TDS_TYPE_NTEXT:
 			case TDS_TYPE_IMAGE:
 			case TDS_TYPE_XML:
-				// limit the length to 2^31-1 because the
+				// limit the size to 2^31-1 because the
 				// client will interpret it as signed
-				if (length>2147483647) {
-					length=2147483647;
+				if (size>2147483647) {
+					size=2147483647;
 				}
-				write(&resppacket,hostToLE(length));
+				write(&resppacket,hostToLE(size));
 				if (getDebug()) {
 					stdoutput.printf("		"
-							"length:	"
+							"size:	"
 							"	%d (32-bit)\n",
-							length);
+							size);
 				}
 				break;
 			case TDS_TYPE_BIGCHAR:
@@ -3094,54 +3093,54 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 			case TDS_TYPE_NVARCHAR:
 			case TDS_TYPE_BIGBINARY:
 			case TDS_TYPE_BIGVARBIN:
-				// limit the length to 2^15-1 because the
+				// limit the size to 2^15-1 because the
 				// client will interpret it as signed
-				if (length>32767) {
-					length=32767;
+				if (size>32767) {
+					size=32767;
 				}
-				write(&resppacket,hostToLE((uint16_t)length));
+				write(&resppacket,hostToLE((uint16_t)size));
 				if (getDebug()) {
 					stdoutput.printf("		"
-							"length:	"
+							"size:	"
 							"	%d (16-bit)\n",
-							length);
+							size);
 				}
 				break;
 			case TDS_TYPE_DATEN:
-				// don't actually send a length for this type
+				// don't actually send a size for this type
 				break;
 			case TDS_TYPE_TIMEN:
 			case TDS_TYPE_DATETIME2N:
 			case TDS_TYPE_DATETIMEOFFSETN:
-				// don't actually send a length for these types,
+				// don't actually send a size for these types,
 				// we'll send a scale below instead
 				break;
 			case TDS_TYPE_DATETIMN:
-				// valid lengths for these are 4 and 8,
-				// but sometimes length is reported as 0
-				if (length!=4 && length!=8) {
-					length=4;
+				// valid sizes for these are 4 and 8,
+				// but sometimes size is reported as 0
+				if (size!=4 && size!=8) {
+					size=4;
 				}
-				write(&resppacket,(byte_t)length);
+				write(&resppacket,(byte_t)size);
 				if (getDebug()) {
 					stdoutput.printf("		"
-							"length:	"
+							"size:	"
 							"	%d (8-bit)\n",
-							length);
+							size);
 				}
 				break;
 			default:
-				// limit the length to 2^7-1 because the
+				// limit the size to 2^7-1 because the
 				// client will interpret it as signed
-				if (length>127) {
-					length=127;
+				if (size>127) {
+					size=127;
 				}
-				write(&resppacket,(byte_t)length);
+				write(&resppacket,(byte_t)size);
 				if (getDebug()) {
 					stdoutput.printf("		"
-							"length:	"
+							"size:	"
 							"	%d (8-bit)\n",
-							length);
+							size);
 				}
 				break;
 		}
@@ -3299,7 +3298,7 @@ void sqlrprotocol_tds::cryptoMetaData() {
 void sqlrprotocol_tds::colName(sqlrservercursor *cursor,
 						uint16_t col) {
 
-	size_t 		namelen=cont->getColumnNameLength(cursor,col);
+	size_t 		namelen=cont->getColumnNameSize(cursor,col);
 	const char	*name=cont->getColumnName(cursor,col);
 	ucs2_t		*name16=ucs2charstring::duplicate(name,namelen);
 	write(&resppacket,(byte_t)namelen);
@@ -3458,11 +3457,11 @@ uint64_t sqlrprotocol_tds::rows(sqlrservercursor *cursor) {
 
 			// get the field
 			const char	*fld=NULL;
-			uint64_t	fldlength=0;
+			uint64_t	fldsize=0;
 			bool		blob=false;
 			bool		null=false;
 			if (!cont->getField(cursor,col,
-					&fld,&fldlength,&blob,&null)) {
+					&fld,&fldsize,&blob,&null)) {
 				// FIXME: handle error
 			}
 
@@ -3470,8 +3469,8 @@ uint64_t sqlrprotocol_tds::rows(sqlrservercursor *cursor) {
 			field(tdstype,
 				// FIXME: cache this earlier and
 				// just look it up here
-				cont->getColumnLength(cursor,col),
-				fld,fldlength,null);
+				cont->getColumnSize(cursor,col),
+				fld,fldsize,null);
 
 			if (getDebug()) {
 				stdoutput.write("	}\n");
@@ -3505,17 +3504,17 @@ void sqlrprotocol_tds::lobData(byte_t tdstype) {
 
 	// dummy textpointer
 	const char	*textptr="dummy textptr   ";
-	byte_t		textptrlen=charstring::getLength(textptr);
-	write(&resppacket,textptrlen);
-	write(&resppacket,textptr,textptrlen);
+	byte_t		textptrsize=charstring::getLength(textptr);
+	write(&resppacket,textptrsize);
+	write(&resppacket,textptr,textptrsize);
 
 	// dummy timestamp
 	const char	*ts="dummyTS";
 	write(&resppacket,ts,8);
 
 	if (getDebug()) {
-		stdoutput.printf("		textptrlen:	%d\n",
-								textptrlen);
+		stdoutput.printf("		textptrsize:	%d\n",
+								textptrsize);
 		stdoutput.printf("		textptr:	%s\n",
 								textptr);
 		stdoutput.printf("		ts:		%s\n",
@@ -3524,9 +3523,9 @@ void sqlrprotocol_tds::lobData(byte_t tdstype) {
 }
 
 void sqlrprotocol_tds::field(byte_t tdstype,
-				uint32_t collength,
+				uint32_t colsize,
 				const char *field,
-				uint64_t fieldlength,
+				uint64_t fieldsize,
 				bool null) {
 
 	// handle nulls
@@ -3581,14 +3580,14 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 		return;
 	}
 
-	// handle variable length types by appending the length, then
+	// handle variable size types by appending the size, then
 	// changing the type so the switch below will append the data
 	switch (tdstype) {
 		case TDS_TYPE_INTN:
 			{
-			byte_t	len=collength;
-			write(&resppacket,len);
-			switch (len) {
+			byte_t	size=colsize;
+			write(&resppacket,size);
+			switch (size) {
 				case 1:
 					tdstype=TDS_TYPE_INT1;
 					break;
@@ -3610,9 +3609,9 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 			break;
 		case TDS_TYPE_FLTN:
 			{
-			byte_t	len=collength;
-			write(&resppacket,len);
-			switch (len) {
+			byte_t	size=colsize;
+			write(&resppacket,size);
+			switch (size) {
 				case 4:
 					tdstype=TDS_TYPE_FLT4;
 					break;
@@ -3624,9 +3623,9 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 			break;
 		case TDS_TYPE_MONEYN:
 			{
-			byte_t	len=collength;
-			write(&resppacket,len);
-			switch (len) {
+			byte_t	size=colsize;
+			write(&resppacket,size);
+			switch (size) {
 				case 4:
 					tdstype=TDS_TYPE_MONEY4;
 					break;
@@ -3638,9 +3637,9 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 			break;
 		case TDS_TYPE_DATETIMN:
 			{
-			byte_t	len=collength;
-			write(&resppacket,len);
-			switch (len) {
+			byte_t	size=colsize;
+			write(&resppacket,size);
+			switch (size) {
 				case 4:
 					tdstype=TDS_TYPE_DATETIM4;
 					break;
@@ -3803,22 +3802,22 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 		case TDS_TYPE_NUMERICN:
 			{
 			byte_t	ispositive;
-			byte_t	len;
+			byte_t	size;
 			byte_t	val[16];
-			decimal(field,&ispositive,&len,val);
+			decimal(field,&ispositive,&size,val);
 			if (tdstype==TDS_TYPE_DECIMALN ||
 				tdstype==TDS_TYPE_NUMERICN) {
-				write(&resppacket,len);
+				write(&resppacket,size);
 				write(&resppacket,ispositive);
-				write(&resppacket,val,len-1);
+				write(&resppacket,val,size-1);
 			} else {
 				write(&resppacket,ispositive);
-				write(&resppacket,val,len);
+				write(&resppacket,val,size);
 			}
 			if (getDebug()) {
 				stdoutput.write("		data: ");
 				stdoutput.printf("%d ",ispositive);
-				switch (len) {
+				switch (size) {
 					case 4:
 						stdoutput.printf("%d ",
 							*((int32_t *)val));
@@ -3834,7 +3833,7 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 						stdoutput.write("... ");
 						break;
 				}
-				stdoutput.printf("(%s %d)\n",field,len);
+				stdoutput.printf("(%s %d)\n",field,size);
 			}
 			}
 			break;
@@ -3859,13 +3858,13 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 		case TDS_TYPE_CHAR:
 		case TDS_TYPE_VARCHAR:
 			{
-			write(&resppacket,(byte_t)fieldlength);
-			write(&resppacket,field,fieldlength);
+			write(&resppacket,(byte_t)fieldsize);
+			write(&resppacket,field,fieldsize);
 			if (getDebug()) {
-				stdoutput.printf("		length: %d\n",
-								fieldlength);
+				stdoutput.printf("		size: %d\n",
+								fieldsize);
 				stdoutput.write("		data: ");
-				stdoutput.printf("%.*s\n",fieldlength,field);
+				stdoutput.printf("%.*s\n",fieldsize,field);
 			}
 			}
 			break;
@@ -3876,17 +3875,17 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 			// each pair of characters are the hex value of a
 			// byte.  However, other databases may encode them
 			// differently.
-			write(&resppacket,(byte_t)(fieldlength/2));
+			write(&resppacket,(byte_t)(fieldsize/2));
 			const char	*f=field;
-			for (byte_t i=0; i<fieldlength/2; i++) {
+			for (byte_t i=0; i<fieldsize/2; i++) {
 				write(&resppacket,charsToHex(f));
 				f+=2;
 			}
 			if (getDebug()) {
-				stdoutput.printf("		length: %d\n",
-								fieldlength);
+				stdoutput.printf("		size: %d\n",
+								fieldsize);
 				stdoutput.write("		data:\n");
-				debugHexDump((byte_t *)field,fieldlength);
+				debugHexDump((byte_t *)field,fieldsize);
 				stdoutput.write('\n');
 			}
 			}
@@ -3898,17 +3897,17 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 			// each pair of characters are the hex value of a
 			// byte.  However, other databases may encode them
 			// differently.
-			write(&resppacket,hostToLE((uint16_t)(fieldlength/2)));
+			write(&resppacket,hostToLE((uint16_t)(fieldsize/2)));
 			const char	*f=field;
-			for (uint16_t i=0; i<(fieldlength/2); i++) {
+			for (uint16_t i=0; i<(fieldsize/2); i++) {
 				write(&resppacket,charsToHex(f));
 				f+=2;
 			}
 			if (getDebug()) {
-				stdoutput.printf("		length: %d\n",
-								fieldlength);
+				stdoutput.printf("		size: %d\n",
+								fieldsize);
 				stdoutput.write("		data:\n");
-				debugHexDump((byte_t *)field,fieldlength);
+				debugHexDump((byte_t *)field,fieldsize);
 				stdoutput.write('\n');
 			}
 			}
@@ -3918,13 +3917,13 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 		case TDS_TYPE_NCHAR:
 		case TDS_TYPE_NVARCHAR:
 			{
-			write(&resppacket,hostToLE((uint16_t)fieldlength));
-			write(&resppacket,field,fieldlength);
+			write(&resppacket,hostToLE((uint16_t)fieldsize));
+			write(&resppacket,field,fieldsize);
 			if (getDebug()) {
-				stdoutput.printf("		length: %d\n",
-								fieldlength);
+				stdoutput.printf("		size: %d\n",
+								fieldsize);
 				stdoutput.write("		data: ");
-				stdoutput.printf("%.*s\n",fieldlength,field);
+				stdoutput.printf("%.*s\n",fieldsize,field);
 			}
 			}
 			break;
@@ -3935,13 +3934,13 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 		case TDS_TYPE_TEXT:
 		case TDS_TYPE_NTEXT:
 			{
-			write(&resppacket,hostToLE((uint32_t)fieldlength));
-			write(&resppacket,field,fieldlength);
+			write(&resppacket,hostToLE((uint32_t)fieldsize));
+			write(&resppacket,field,fieldsize);
 			if (getDebug()) {
-				stdoutput.printf("		length: %d\n",
-								fieldlength);
+				stdoutput.printf("		size: %d\n",
+								fieldsize);
 				stdoutput.write("		data: ");
-				stdoutput.printf("%.*s\n",fieldlength,field);
+				stdoutput.printf("%.*s\n",fieldsize,field);
 			}
 			}
 			break;
@@ -3952,17 +3951,17 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 			// each pair of characters are the hex value of a
 			// byte.  However, other databases may encode them
 			// differently.
-			write(&resppacket,hostToLE((uint32_t)(fieldlength/2)));
+			write(&resppacket,hostToLE((uint32_t)(fieldsize/2)));
 			const char	*f=field;
-			for (uint32_t i=0; i<fieldlength/2; i++) {
+			for (uint32_t i=0; i<fieldsize/2; i++) {
 				write(&resppacket,charsToHex(f));
 				f+=2;
 			}
 			if (getDebug()) {
-				stdoutput.printf("		length: %d\n",
-								fieldlength);
+				stdoutput.printf("		size: %d\n",
+								fieldsize);
 				stdoutput.write("		data:\n");
-				debugHexDump((byte_t *)field,fieldlength);
+				debugHexDump((byte_t *)field,fieldsize);
 				stdoutput.write('\n');
 			}
 			}
@@ -4162,8 +4161,8 @@ void sqlrprotocol_tds::timen(const char *field) {
 	// 3 bytes if 0 <= n <= 2
 	// 4 bytes if 3 <= n <= 4
 	// 5 bytes if 5 <= n <= 7
-	byte_t	len=3;
-	write(&resppacket,len);
+	byte_t	size=3;
+	write(&resppacket,size);
 	byte_t	bytes[3]={0,0,0};
 	write(&resppacket,bytes,sizeof(bytes));
 	if (getDebug()) {
@@ -4173,7 +4172,7 @@ void sqlrprotocol_tds::timen(const char *field) {
 
 void sqlrprotocol_tds::decimal(const char *field,
 				byte_t *ispositive,
-				byte_t *len,
+				byte_t *size,
 				byte_t *val) {
 
 	uint32_t	precision=charstring::getLength(field);
@@ -4191,20 +4190,20 @@ void sqlrprotocol_tds::decimal(const char *field,
 	}
 
 	if (precision>=1 && precision<=9) {
-		*len=4;
+		*size=4;
 		int32_t	v=charstring::convertToInteger((*ispositive)?copy:copy+1);
 		v=hostToLE((uint32_t)v);
 		bytestring::copy(val,&v,sizeof(v));
 	} else if (precision>=10 && precision<=19) {
-		*len=8;
+		*size=8;
 		int64_t	v=charstring::convertToInteger((*ispositive)?copy:copy+1);
 		v=hostToLE((uint64_t)v);
 		bytestring::copy(val,&v,sizeof(v));
 	} else if (precision>=20 && precision<=28) {
-		*len=12;
+		*size=12;
 		// FIXME: actually implement this...
 	} else if (precision>=29 && precision<=38) {
-		*len=16;
+		*size=16;
 		// FIXME: actually implement this...
 	}
 
@@ -4282,14 +4281,14 @@ void sqlrprotocol_tds::sqlBatchError(sqlrservercursor *cursor) {
 
 	// get the error
 	const char	*errorstring;
-	uint32_t	errorlength;
+	uint32_t	errorsize;
 	int64_t		errorcode;
 	bool		liveconnection;
-	cont->errorMessage(cursor,&errorstring,
-					&errorlength,
-					&errorcode,
-					&liveconnection);
-	char	*errorbuffer=charstring::duplicate(errorstring,errorlength);
+	cont->getError(cursor,&errorstring,
+				&errorsize,
+				&errorcode,
+				&liveconnection);
+	char	*errorbuffer=charstring::duplicate(errorstring,errorsize);
 	char	*errptr=errorbuffer;
 
 	// if the server is mssql/sap then parse the various parts
@@ -4728,7 +4727,7 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 								tdstype);
 	}
 
-	uint32_t	maxlength=0;
+	uint32_t	maxsize=0;
 	byte_t		precision=0;
 	byte_t		scale=0;
 
@@ -4744,17 +4743,17 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 			stdoutput.write("		varlentype...\n");
 		}
 
-		// maxlength
+		// maxsize
 		switch (tdstype) {
 			case TDS_TYPE_SSVARIANT:
 			case TDS_TYPE_TEXT:
 			case TDS_TYPE_NTEXT:
 			case TDS_TYPE_IMAGE:
-				readLE(rp,&maxlength,&rp);
+				readLE(rp,&maxsize,&rp);
 				if (getDebug()) {
 					stdoutput.printf("		"
-							"maxlength:	"
-							"%d\n",maxlength);
+							"maxsize:	"
+							"%d\n",maxsize);
 				}
 				break;
 			case TDS_TYPE_BIGCHAR:
@@ -4764,25 +4763,25 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 			case TDS_TYPE_BIGBINARY:
 			case TDS_TYPE_BIGVARBIN:
 				{
-				uint16_t	len;
-				readLE(rp,&len,&rp);
-				maxlength=len;
+				uint16_t	size;
+				readLE(rp,&size,&rp);
+				maxsize=size;
 				if (getDebug()) {
 					stdoutput.printf("		"
-							"maxlength:	"
-							"%d\n",maxlength);
+							"maxsize:	"
+							"%d\n",maxsize);
 				}
 				}
 				break;
 			default:
 				{
-				byte_t	len;
-				read(rp,&len,&rp);
-				maxlength=len;
+				byte_t	size;
+				read(rp,&size,&rp);
+				maxsize=size;
 				if (getDebug()) {
 					stdoutput.printf("		"
-							"maxlength:	"
-							"%d\n",maxlength);
+							"maxsize:	"
+							"%d\n",maxsize);
 				}
 				}
 				break;
@@ -4842,14 +4841,14 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 
 	// FIXME: handle output binds too
 
-	// handle variable length types by getting the length, then
+	// handle variable size types by getting the size, then
 	// changing the type so the switch below will get the data
 	switch (tdstype) {
 		case TDS_TYPE_INTN:
 			{
-			byte_t	len;
-			read(rp,&len,&rp);
-			switch (len) {
+			byte_t	size;
+			read(rp,&size,&rp);
+			switch (size) {
 				case 1:
 					tdstype=TDS_TYPE_INT1;
 					break;
@@ -4867,16 +4866,16 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 			break;
 		case TDS_TYPE_BITN:
 			{
-			byte_t	len;
-			read(rp,&len,&rp);
+			byte_t	size;
+			read(rp,&size,&rp);
 			tdstype=TDS_TYPE_BIT;
 			}
 			break;
 		case TDS_TYPE_FLTN:
 			{
-			byte_t	len;
-			read(rp,&len,&rp);
-			switch (len) {
+			byte_t	size;
+			read(rp,&size,&rp);
+			switch (size) {
 				case 4:
 					tdstype=TDS_TYPE_FLT4;
 					break;
@@ -4888,9 +4887,9 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 			break;
 		case TDS_TYPE_MONEYN:
 			{
-			byte_t	len;
-			read(rp,&len,&rp);
-			switch (len) {
+			byte_t	size;
+			read(rp,&size,&rp);
+			switch (size) {
 				case 4:
 					tdstype=TDS_TYPE_MONEY4;
 					break;
@@ -4902,9 +4901,9 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 			break;
 		case TDS_TYPE_DATETIMN:
 			{
-			byte_t	len;
-			read(rp,&len,&rp);
-			switch (len) {
+			byte_t	size;
+			read(rp,&size,&rp);
+			switch (size) {
 				case 4:
 					tdstype=TDS_TYPE_DATETIM4;
 					break;
@@ -4949,12 +4948,12 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 			if (bv) {
 				bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
 				bv->valuesize=1;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				bv->value.integerval=val;
 			}
 
 			if (getDebug() && bv) {
-				stdoutput.printf("		valuelen:"
+				stdoutput.printf("		valuesize:"
 							"	%d\n",
 							bv->valuesize);
 				stdoutput.printf("		value:	"
@@ -4972,12 +4971,12 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 			if (bv) {
 				bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
 				bv->valuesize=2;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				bv->value.integerval=val;
 			}
 	
 			if (getDebug() && bv) {
-				stdoutput.printf("		valuelen:"
+				stdoutput.printf("		valuesize:"
 							"	%d\n",
 							bv->valuesize);
 				stdoutput.printf("		value:	"
@@ -4995,12 +4994,12 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 			if (bv) {
 				bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
 				bv->valuesize=4;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				bv->value.integerval=val;
 			}
 
 			if (getDebug() && bv) {
-				stdoutput.printf("		valuelen:"
+				stdoutput.printf("		valuesize:"
 							"	%d\n",
 							bv->valuesize);
 				stdoutput.printf("		value:	"
@@ -5026,24 +5025,24 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 
 			if (bv) {
 				bv->type=SQLRSERVERBINDVARTYPE_DOUBLE;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				bv->value.doubleval.value=val;
 
 				// FIXME: kludgy
 				char	*num=charstring::parseNumber(
 						bv->value.doubleval.value);
-				size_t	len=charstring::getLength(num);
-				bv->value.doubleval.precision=len-
+				size_t	size=charstring::getLength(num);
+				bv->value.doubleval.precision=size-
 					(charstring::contains(num,'-')?1:0)-
 					(charstring::contains(num,'.')?1:0);
 				bv->value.doubleval.scale=
-					(num+len)-
+					(num+size)-
 					charstring::findFirstOrEnd(num,'.')-1;
 				delete[] num;
 			}
 
 			if (getDebug() && bv) {
-				stdoutput.printf("		valuelen:"
+				stdoutput.printf("		valuesize:"
 							"	%d\n",
 							bv->valuesize);
 				stdoutput.printf("		value:	"
@@ -5086,24 +5085,24 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 
 			if (bv) {
 				bv->type=SQLRSERVERBINDVARTYPE_DOUBLE;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				bv->value.doubleval.value=val;
 
 				// FIXME: kludgy
 				char	*num=charstring::parseNumber(
 						bv->value.doubleval.value);
-				size_t	len=charstring::getLength(num);
-				bv->value.doubleval.precision=len-
+				size_t	size=charstring::getLength(num);
+				bv->value.doubleval.precision=size-
 					(charstring::contains(num,'-')?1:0)-
 					(charstring::contains(num,'.')?1:0);
 				bv->value.doubleval.scale=
-					(num+len)-
+					(num+size)-
 					charstring::findFirstOrEnd(num,'.')-1;
 				delete[] num;
 			}
 
 			if (getDebug() && bv) {
-				stdoutput.printf("		valuelen:"
+				stdoutput.printf("		valuesize:"
 							"	%d\n",
 							bv->valuesize);
 				stdoutput.printf("		value:	"
@@ -5136,12 +5135,12 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 			if (bv) {
 				bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
 				bv->valuesize=8;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				bv->value.integerval=val;
 			}
 
 			if (getDebug() && bv) {
-				stdoutput.printf("		valuelen:"
+				stdoutput.printf("		valuesize:"
 							"	%d\n",
 							bv->valuesize);
 				stdoutput.printf("		value:	"
@@ -5152,10 +5151,10 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 			break;
 		case TDS_TYPE_GUID:
 			{
-			byte_t	len;
-			read(rp,&len,&rp);
+			byte_t	size;
+			read(rp,&size,&rp);
 			// FIXME: actually implement this
-			rp+=len;
+			rp+=size;
 			}
 			break;
 		case TDS_TYPE_DECIMAL:
@@ -5167,10 +5166,10 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 			byte_t	val[16];
 			if (tdstype==TDS_TYPE_DECIMALN ||
 				tdstype==TDS_TYPE_NUMERICN) {
-				byte_t	len;
-				read(rp,&len,&rp);
+				byte_t	size;
+				read(rp,&size,&rp);
 				read(rp,&ispositive,&rp);
-				read(rp,val,len-1,&rp);
+				read(rp,val,size-1,&rp);
 			} else {
 				read(rp,&ispositive,&rp);
 				read(rp,val,sizeof(val),&rp);
@@ -5180,9 +5179,9 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 			break;
 		case TDS_TYPE_DATEN:
 			{
-			byte_t	len;
+			byte_t	size;
 			uint16_t	dayssince1;
-			read(rp,&len,&rp);
+			read(rp,&size,&rp);
 			readLE(rp,&dayssince1,&rp);
 			// FIXME: actually implement this
 			}
@@ -5212,28 +5211,28 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 		case TDS_TYPE_CHAR:
 		case TDS_TYPE_VARCHAR:
 			{
-			byte_t	len;
-			read(rp,&len,&rp);
+			byte_t	size;
+			read(rp,&size,&rp);
 			// FIXME: actually implement this
-			rp+=len;
+			rp+=size;
 			}
 			break;
 		case TDS_TYPE_BINARY:
 		case TDS_TYPE_VARBINARY:
 			{
-			byte_t	len;
-			read(rp,&len,&rp);
+			byte_t	size;
+			read(rp,&size,&rp);
 			// FIXME: actually implement this
-			rp+=len;
+			rp+=size;
 			}
 			break;
 		case TDS_TYPE_BIGBINARY:
 		case TDS_TYPE_BIGVARBIN:
 			{
-			uint16_t	len;
-			readLE(rp,&len,&rp);
+			uint16_t	size;
+			readLE(rp,&size,&rp);
 			// FIXME: actually implement this
-			rp+=len;
+			rp+=size;
 			}
 			break;
 		case TDS_TYPE_BIGCHAR:
@@ -5241,18 +5240,18 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 		case TDS_TYPE_NCHAR:
 		case TDS_TYPE_NVARCHAR:
 			{
-			uint16_t	len;
-			readLE(rp,&len,&rp);
+			uint16_t	size;
+			readLE(rp,&size,&rp);
 
 			if (bv) {
 				bv->type=SQLRSERVERBINDVARTYPE_STRING;
-				bv->valuesize=len;
+				bv->valuesize=size;
 				bv->value.stringval=(char *)rp;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 			}
 
 			if (getDebug() && bv) {
-				stdoutput.printf("		valuelen:"
+				stdoutput.printf("		valuesize:"
 							"	%d\n",
 							bv->valuesize);
 				stdoutput.printf("		value:	"
@@ -5261,7 +5260,7 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 							bv->value.stringval);
 			}
 
-			rp+=len;
+			rp+=size;
 			}
 			break;
 		case TDS_TYPE_UDT:
@@ -5271,19 +5270,19 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 		case TDS_TYPE_TEXT:
 		case TDS_TYPE_NTEXT:
 			{
-			uint32_t	len;
-			readLE(rp,&len,&rp);
+			uint32_t	size;
+			readLE(rp,&size,&rp);
 			// FIXME: actually implement this
-			rp+=len;
+			rp+=size;
 			}
 			break;
 		case TDS_TYPE_IMAGE:
 		case TDS_TYPE_SSVARIANT:
 			{
-			uint32_t	len;
-			readLE(rp,&len,&rp);
+			uint32_t	size;
+			readLE(rp,&size,&rp);
 			// FIXME: actually implement this
-			rp+=len;
+			rp+=size;
 			}
 			break;
 		case TDS_TYPE_TVP:
@@ -5360,7 +5359,7 @@ void sqlrprotocol_tds::envChange(byte_t type,
 						sizeof(byte_t);
 	uint16_t	oldvaluelensize=sizeof(byte_t);
 
-	uint16_t	tokenlength=
+	uint16_t	tokensize=
 				sizeof(byte_t)+
 				newvaluelensize+
 				newvaluelen*sizeof(uint16_t)+
@@ -5370,9 +5369,9 @@ void sqlrprotocol_tds::envChange(byte_t type,
 	if (getDebug()) {
 		debugStart("env change");
 		stdoutput.printf("	token:		0x%02x\n",token);
-		stdoutput.printf("	tokenlength:	0x%02x (%hd)\n",
-							tokenlength,
-							tokenlength);
+		stdoutput.printf("	tokensize:	0x%02x (%hd)\n",
+							tokensize,
+							tokensize);
 		stdoutput.printf("	type:		%d\n",type);
 		stdoutput.printf("	newvaluelensize:%d\n",newvaluelensize);
 		stdoutput.printf("	newvaluelen:	%d\n",newvaluelen);
@@ -5384,7 +5383,7 @@ void sqlrprotocol_tds::envChange(byte_t type,
 	}
 
 	write(&resppacket,token);
-	write(&resppacket,hostToLE(tokenlength));
+	write(&resppacket,hostToLE(tokensize));
 	write(&resppacket,type);
 	if (newvaluelensize==sizeof(byte_t)) {
 		write(&resppacket,(byte_t)newvaluelen);
@@ -5440,7 +5439,7 @@ void sqlrprotocol_tds::infoOrError(byte_t token,
 	ucs2_t		*procname16=ucs2charstring::duplicate(
 					procname,(size_t)procnamelen);
 
-	uint16_t	tokenlength=sizeof(uint32_t)+
+	uint16_t	tokensize=sizeof(uint32_t)+
 					sizeof(byte_t)+
 					sizeof(byte_t)+
 					sizeof(uint16_t)+
@@ -5456,9 +5455,9 @@ void sqlrprotocol_tds::infoOrError(byte_t token,
 	if (getDebug()) {
 		debugStart((token==TOKEN_INFO)?"info":"error");
 		stdoutput.printf("	token:		0x%02x\n",token);
-		stdoutput.printf("	tokenlength:	0x%02x (%hd)\n",
-							tokenlength,
-							tokenlength);
+		stdoutput.printf("	tokensize:	0x%02x (%hd)\n",
+							tokensize,
+							tokensize);
 		stdoutput.printf("	number:		%d\n",number);
 		stdoutput.printf("	state:		%d\n",state);
 		stdoutput.printf("	class:		%d\n",infoerrclass);
@@ -5470,7 +5469,7 @@ void sqlrprotocol_tds::infoOrError(byte_t token,
 	}
 
 	write(&resppacket,token);
-	write(&resppacket,hostToLE(tokenlength));
+	write(&resppacket,hostToLE(tokensize));
 	write(&resppacket,hostToLE(number));
 	write(&resppacket,state);
 	write(&resppacket,infoerrclass);

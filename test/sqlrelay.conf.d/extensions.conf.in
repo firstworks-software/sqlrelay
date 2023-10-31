@@ -2,9 +2,6 @@
 <instances>
 
 	<instance id="extensionstest"
-			addresses="0.0.0.0"
-			port="9000"
-			socket="/tmp/test.socket"
 			dbase="oracle8"
 			connections="0"
 			maxconnections="15"
@@ -28,6 +25,11 @@
 			ignoreselectdatabase="yes"
 			isolationlevel="read committed"
 			passwordpath="@abs_top_builddir@/test/sqlrelay.conf.d/pwdenc">
+		<listeners>
+			<listener port="9000"
+				addresses="0.0.0.0"
+				socket="/tmp/test.socket"/>
+		</listeners>
 		<auths>
 			<auth module="sqlrclient_userlist">
 				<user user="test"
@@ -190,7 +192,7 @@
 			<logger module="slowqueries"/>
 		</loggers>
 		<connections>
-                        <connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=@HOSTNAME@;password=[testuser.pwd];lastinsertidfunction=last_insert_id();droptemptables=yes;faketransactionblocks=yes;autocommit=yes;fetchatonce=5;maxselectlistsize=-1;maxitembuffersize=6000" passwordencryptionid="rot16"/>
+                        <connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=@HOSTNAME@;password=[testuser.pwd];lastinsertidfunction=last_insert_id();droptemptables=yes;faketransactionblocks=yes;autocommit=yes;fetchatonce=5;maxcolumncount=-1;maxfieldlength=6000" passwordencryptionid="rot16"/>
 		</connections>
 	</instance>
 

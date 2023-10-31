@@ -92,9 +92,9 @@ class SQLRSERVER_DLLSPEC freetdscursor : public sqlrservercursor {
 		bool		open();
 		bool		close();
 		bool		prepareQuery(const char *query,
-							uint32_t length);
+							uint32_t size);
 		bool		supportsNativeBinds(const char *query,
-							uint32_t length);
+							uint32_t size);
 		void		encodeBlob(stringbuffer *buffer,
 							const char *data,
 							uint32_t datasize);
@@ -157,13 +157,13 @@ class SQLRSERVER_DLLSPEC freetdscursor : public sqlrservercursor {
 						int16_t *isnull);
 		#endif
 		bool		executeQuery(const char *query,
-						uint32_t length);
+						uint32_t size);
 		bool		knowsAffectedRows();
 		uint64_t	affectedRows();
 		uint32_t	colCount();
 		const char	*getColumnName(uint32_t col);
 		uint16_t	getColumnType(uint32_t col);
-		uint32_t	getColumnLength(uint32_t col);
+		uint32_t	getColumnSize(uint32_t col);
 		uint32_t	getColumnPrecision(uint32_t col);
 		uint32_t	getColumnScale(uint32_t col);
 		uint16_t	getColumnIsNullable(uint32_t col);
@@ -179,7 +179,7 @@ class SQLRSERVER_DLLSPEC freetdscursor : public sqlrservercursor {
 		bool		fetchRow(bool *error);
 		void		getField(uint32_t col,
 					const char **field,
-					uint64_t *fieldlength,
+					uint64_t *fieldsize,
 					bool *blob,
 					bool *null);
 		void		nextRow();
@@ -188,7 +188,7 @@ class SQLRSERVER_DLLSPEC freetdscursor : public sqlrservercursor {
 		void		discardCursor();
 
 		char		*cursorname;
-		size_t		cursornamelength;
+		size_t		cursornamesize;
 
 		void		checkRePrepare();
 
@@ -214,7 +214,7 @@ class SQLRSERVER_DLLSPEC freetdscursor : public sqlrservercursor {
 		uint16_t	paramindex;
 		CS_INT		*outbindtype;
 		char		**outbindstrings;
-		uint32_t	*outbindstringlengths;
+		uint32_t	*outbindstringsizes;
 		int64_t		**outbindints;
 		double		**outbinddoubles;
 		datebind	*outbinddates;
@@ -224,11 +224,11 @@ class SQLRSERVER_DLLSPEC freetdscursor : public sqlrservercursor {
 		CS_DATAFMT	templatecolumn;
 		CS_DATAFMT	*column;
 		char		**data;
-		CS_INT		**datalength;
+		CS_INT		**datasize;
 		CS_SMALLINT	**nullindicator;
 
 		char		*query;
-		uint32_t	length;
+		uint32_t	size;
 		bool		prepared;
 		bool		clean;
 
@@ -248,9 +248,9 @@ class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 		sqlrservercursor	*newCursor(uint16_t id);
 		void	deleteCursor(sqlrservercursor *curs);
 		void	logOut();
-		const char	*identify();
-		const char	*dbVersion();
-		const char	*dbHostNameQuery();
+		const char	*getDbType();
+		const char	*getDbVersion();
+		const char	*getDbHostNameQuery();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes);
@@ -260,14 +260,14 @@ class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 		const char	*getCurrentDatabaseQuery();
 		const char	*getLastInsertIdQuery();
 		const char	*getNoopQuery();
-		const char	*bindFormat();
+		const char	*getBindFormat();
 		const char	*beginTransactionQuery();
 		const char	*tempTableDropPrefix();
 		bool		commit();
 		bool		rollback();
-		void		errorMessage(char *errorbuffer,
-					uint32_t errorbufferlength,
-					uint32_t *errorlength,
+		void		getError(char *errorbuffer,
+					uint32_t errorbuffersize,
+					uint32_t *errorsize,
 					int64_t	*errorcode,
 					bool *liveconnection);
 
@@ -285,7 +285,7 @@ class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 		const char	*hostname;
 		const char	*packetsize;
 
-		const char	*identity;
+		const char	*dbtype;
 
 		bool		dbused;
 
@@ -319,7 +319,7 @@ freetdsconnection::freetdsconnection(sqlrservercontroller *cont) :
 	dbversion=NULL;
 	sybasedb=true;
 
-	identity=NULL;
+	dbtype=NULL;
 }
 
 freetdsconnection::~freetdsconnection() {
@@ -349,7 +349,7 @@ void freetdsconnection::handleConnectString() {
 		cont->setMaxColumnCount(2);
 	}
 
-	identity=cont->getConnectStringValue("identity");
+	dbtype=cont->getConnectStringValue("identity");
 }
 
 bool freetdsconnection::logIn(const char **error, const char **warning) {
@@ -614,15 +614,15 @@ void freetdsconnection::logOut() {
 	cs_ctx_drop(context);
 }
 
-const char *freetdsconnection::identify() {
-	return (identity)?identity:"freetds";
+const char *freetdsconnection::getDbType() {
+	return (dbtype)?dbtype:"freetds";
 }
 
-const char *freetdsconnection::dbVersion() {
+const char *freetdsconnection::getDbVersion() {
 	return dbversion;
 }
 
-const char *freetdsconnection::dbHostNameQuery() {
+const char *freetdsconnection::getDbHostNameQuery() {
 	return "select asehostname()";
 }
 
@@ -844,7 +844,7 @@ const char *freetdsconnection::getNoopQuery() {
 	return "waitfor delay '0:0'";
 }
 
-const char *freetdsconnection::bindFormat() {
+const char *freetdsconnection::getBindFormat() {
 	return "@*";
 }
 
@@ -908,14 +908,14 @@ freetdscursor::freetdscursor(sqlrserverconnection *conn, uint16_t id) :
 	languagecmd=NULL;
 	cursorcmd=NULL;
 
-	cursornamelength=charstring::getIntegerLength(id);
+	cursornamesize=charstring::getIntegerLength(id);
 	cursorname=charstring::parseNumber(id);
 
 	uint16_t	maxbindcount=conn->cont->getConfig()->getMaxBindCount();
 	parameter=new CS_DATAFMT[maxbindcount];
 	outbindtype=new CS_INT[maxbindcount];
 	outbindstrings=new char *[maxbindcount];
-	outbindstringlengths=new uint32_t[maxbindcount];
+	outbindstringsizes=new uint32_t[maxbindcount];
 	outbindints=new int64_t *[maxbindcount];
 	outbinddoubles=new double *[maxbindcount];
 	outbinddates=new datebind[maxbindcount];
@@ -932,7 +932,7 @@ freetdscursor::freetdscursor(sqlrserverconnection *conn, uint16_t id) :
 	// no longer than MAX_ITEM_BUFFER_SIZE, override some
 	templatecolumn.datatype=CS_CHAR_TYPE;
 	templatecolumn.format=CS_FMT_NULLTERM;
-	templatecolumn.maxlength=conn->cont->getMaxFieldLength();
+	templatecolumn.maxlength=conn->cont->getMaxFieldSize();
 	templatecolumn.scale=CS_UNUSED;
 	templatecolumn.precision=CS_UNUSED;
 	templatecolumn.status=CS_UNUSED;
@@ -947,7 +947,7 @@ freetdscursor::~freetdscursor() {
 	delete[] parameter;
 	delete[] outbindtype;
 	delete[] outbindstrings;
-	delete[] outbindstringlengths;
+	delete[] outbindstringsizes;
 	delete[] outbindints;
 	delete[] outbinddoubles;
 	delete[] outbinddates;
@@ -961,19 +961,19 @@ void freetdscursor::allocateResultSetBuffers(int32_t columncount) {
 		this->columncount=0;
 		column=NULL;
 		data=NULL;
-		datalength=NULL;
+		datasize=NULL;
 		nullindicator=NULL;
 	} else {
 		this->columncount=columncount;
 		column=new CS_DATAFMT[columncount];
 		data=new char *[columncount];
-		datalength=new CS_INT *[columncount];
+		datasize=new CS_INT *[columncount];
 		nullindicator=new CS_SMALLINT *[columncount];
 		uint32_t	fetchatonce=getFetchAtOnce();
-		uint32_t	maxfieldlength=conn->cont->getMaxFieldLength();
+		uint32_t	maxfieldsize=conn->cont->getMaxFieldSize();
 		for (int32_t i=0; i<columncount; i++) {
-			data[i]=new char[fetchatonce*maxfieldlength];
-			datalength[i]=new CS_INT[fetchatonce];
+			data[i]=new char[fetchatonce*maxfieldsize];
+			datasize[i]=new CS_INT[fetchatonce];
 			nullindicator[i]=new CS_SMALLINT[fetchatonce];
 		}
 	}
@@ -984,11 +984,11 @@ void freetdscursor::deallocateResultSetBuffers() {
 		delete[] column;
 		for (int32_t i=0; i<columncount; i++) {
 			delete[] data[i];
-			delete[] datalength[i];
+			delete[] datasize[i];
 			delete[] nullindicator[i];
 		}
 		delete[] data;
-		delete[] datalength;
+		delete[] datasize;
 		delete[] nullindicator;
 		columncount=0;
 	}
@@ -1019,7 +1019,7 @@ bool freetdscursor::open() {
 			uint32_t	errlen;
 			int64_t		errn;
 			bool		live;
-			errorMessage(err,sizeof(err),&errlen,&errn,&live);
+			getError(err,sizeof(err),&errlen,&errn,&live);
 			stderror.printf("%s\n",err);
 			retval=false;
 		} else {
@@ -1085,7 +1085,7 @@ bool freetdscursor::close() {
 	return retval;
 }
 
-bool freetdscursor::prepareQuery(const char *query, uint32_t length) {
+bool freetdscursor::prepareQuery(const char *query, uint32_t size) {
 
 	// if the client aborts while a query is in the middle of running,
 	// commit or rollback will be called, potentially before closeResultSet
@@ -1100,7 +1100,7 @@ bool freetdscursor::prepareQuery(const char *query, uint32_t length) {
 	clean=true;
 
 	this->query=(char *)query;
-	this->length=length;
+	this->size=size;
 
 	paramindex=0;
 	outbindindex=0;
@@ -1115,9 +1115,9 @@ bool freetdscursor::prepareQuery(const char *query, uint32_t length) {
 		if (ct_cursor(cursorcmd,
 				CS_CURSOR_DECLARE,
 				(CS_CHAR *)cursorname,
-				(CS_INT)cursornamelength,
+				(CS_INT)cursornamesize,
 				(CS_CHAR *)query,
-				length,
+				size,
 				//CS_READ_ONLY)!=CS_SUCCEED) {
 				CS_UNUSED)!=CS_SUCCEED) {
 			return false;
@@ -1134,7 +1134,7 @@ bool freetdscursor::prepareQuery(const char *query, uint32_t length) {
 		if (ct_command(languagecmd,
 				CS_RPC_CMD,
 				(CS_CHAR *)query+5,
-				length-5,
+				size-5,
 				CS_UNUSED)!=CS_SUCCEED) {
 			return false;
 		}
@@ -1150,7 +1150,7 @@ bool freetdscursor::prepareQuery(const char *query, uint32_t length) {
 		if (ct_command(languagecmd,
 				CS_RPC_CMD,
 				(CS_CHAR *)query+8,
-				length-8,
+				size-8,
 				CS_UNUSED)!=CS_SUCCEED) {
 			return false;
 		}
@@ -1164,7 +1164,7 @@ bool freetdscursor::prepareQuery(const char *query, uint32_t length) {
 		if (ct_command(languagecmd,
 				CS_LANG_CMD,
 				(CS_CHAR *)query,
-				length,
+				size,
 				CS_UNUSED)!=CS_SUCCEED) {
 			return false;
 		}
@@ -1176,7 +1176,7 @@ bool freetdscursor::prepareQuery(const char *query, uint32_t length) {
 	return true;
 }
 
-bool freetdscursor::supportsNativeBinds(const char *query, uint32_t length) {
+bool freetdscursor::supportsNativeBinds(const char *query, uint32_t size) {
 	#ifdef FREETDS_SUPPORTS_CURSORS
 		return true;
 	#else
@@ -1203,7 +1203,7 @@ void freetdscursor::checkRePrepare() {
 	// ct_command.  You have to re-prepare too.  I'll make this transparent
 	// to the user.
 	if (!prepared) {
-		prepareQuery(query,length);
+		prepareQuery(query,size);
 	}
 }
 
@@ -1362,7 +1362,7 @@ bool freetdscursor::outputBind(const char *variable,
 
 	outbindtype[outbindindex]=CS_CHAR_TYPE;
 	outbindstrings[outbindindex]=value;
-	outbindstringlengths[outbindindex]=valuesize;
+	outbindstringsizes[outbindindex]=valuesize;
 	outbindindex++;
 
 	(CS_VOID)bytestring::zero(&parameter[paramindex],
@@ -1506,7 +1506,7 @@ bool freetdscursor::outputBind(const char *variable,
 }
 #endif
 
-bool freetdscursor::executeQuery(const char *query, uint32_t length) {
+bool freetdscursor::executeQuery(const char *query, uint32_t size) {
 
 	// initialize results (We use CS_UNSUPPORTED so that if the query
 	// fails to execute, discardResults won't attempt to cancel any
@@ -1518,7 +1518,7 @@ bool freetdscursor::executeQuery(const char *query, uint32_t length) {
 	freetdsconn->liveconnection=true;
 
 	if (ct_command(cmd,CS_LANG_CMD,
-			(CS_CHAR *)query,length,
+			(CS_CHAR *)query,size,
 			CS_UNUSED)!=CS_SUCCEED) {
 		return false;
 	}
@@ -1623,7 +1623,7 @@ bool freetdscursor::executeQuery(const char *query, uint32_t length) {
 		}
 	}
 
-	checkForTempTable(query,length);
+	checkForTempTable(query,size);
 
 	// reset the prepared flag
 	prepared=false;
@@ -1694,7 +1694,7 @@ bool freetdscursor::executeQuery(const char *query, uint32_t length) {
 			if (ct_bind(cmd,i+1,
 					&column[i],
 					(CS_VOID *)data[i],
-					datalength[i],
+					datasize[i],
 					nullindicator[i])!=CS_SUCCEED) {
 				break;
 			}
@@ -1744,12 +1744,12 @@ bool freetdscursor::executeQuery(const char *query, uint32_t length) {
 		}
 		for (CS_INT i=0; i<maxindex; i++) {
 			if (outbindtype[i]==CS_CHAR_TYPE) {
-				CS_INT	length=outbindstringlengths[i];
-				if (datalength[i][0]<length) {
-					length=datalength[i][0];
+				CS_INT	size=outbindstringsizes[i];
+				if (datasize[i][0]<size) {
+					size=datasize[i][0];
 				}
 				bytestring::copy(outbindstrings[i],
-						data[i],length);
+							data[i],size);
 			} else if (outbindtype[i]==CS_INT_TYPE) {
 				*outbindints[i]=
 					charstring::convertToInteger(data[i]);
@@ -1837,12 +1837,12 @@ uint16_t freetdscursor::getColumnType(uint32_t col) {
 			// float, at least against sybase.  If we get a float
 			// type, then check for the library version and check
 			// the usertype to decide what it really is, and update
-			// its datatype and maxlength.  The usertype appears to
+			// its datatype and maxsize.  The usertype appears to
 			// consistently be 26 for decimals and 10 for numerics.
 			// 
 			// It's a bit of a hack to do this here, because
 			// there's no guarantee that getColumnType will be
-			// called before getColumnLength, or at all, for that
+			// called before getColumnSize, or at all, for that
 			// matter, but all existing protocol modules do.
 			if (majorversion==0 && minorversion<=91) {
 				if (column[col].usertype==26) {
@@ -1895,11 +1895,11 @@ uint16_t freetdscursor::getColumnType(uint32_t col) {
 	}
 }
 
-uint32_t freetdscursor::getColumnLength(uint32_t col) {
+uint32_t freetdscursor::getColumnSize(uint32_t col) {
 	// limit the column size
-	uint32_t	maxfieldlength=conn->cont->getMaxFieldLength();
-	if ((uint32_t)column[col].maxlength>maxfieldlength) {
-		column[col].maxlength=maxfieldlength;
+	uint32_t	maxfieldsize=conn->cont->getMaxFieldSize();
+	if ((uint32_t)column[col].maxlength>maxfieldsize) {
+		column[col].maxlength=maxfieldsize;
 	}
 	return column[col].maxlength;
 }
@@ -2048,7 +2048,7 @@ bool freetdscursor::fetchRow(bool *error) {
 }
 
 void freetdscursor::getField(uint32_t col,
-				const char **field, uint64_t *fieldlength,
+				const char **field, uint64_t *fieldsize,
 				bool *blob, bool *null) {
 
 	// handle NULLs
@@ -2057,18 +2057,18 @@ void freetdscursor::getField(uint32_t col,
 		return;
 	}
 
-	uint32_t	maxfieldlength=conn->cont->getMaxFieldLength();
+	uint32_t	maxfieldsize=conn->cont->getMaxFieldSize();
 
 	// Empty TEXT fields don't get properly converted
 	// to null-terminated strings.  Handle them.
-	if (column[col].datatype==CS_TEXT_TYPE && !datalength[col][row]) {
-		data[col][row*maxfieldlength]='\0';
-		datalength[col][row]=1;
+	if (column[col].datatype==CS_TEXT_TYPE && !datasize[col][row]) {
+		data[col][row*maxfieldsize]='\0';
+		datasize[col][row]=1;
 	}
 
 	// handle normal datatypes
-	*field=&data[col][row*maxfieldlength];
-	*fieldlength=datalength[col][row]-1;
+	*field=&data[col][row*maxfieldsize];
+	*fieldsize=datasize[col][row]-1;
 }
 
 void freetdscursor::nextRow() {
@@ -2281,14 +2281,14 @@ bool freetdsconnection::rollback() {
 	return sqlrserverconnection::rollback();
 }
 
-void freetdsconnection::errorMessage(char *errorbuffer,
-					uint32_t errorbufferlength,
-					uint32_t *errorlength,
+void freetdsconnection::getError(char *errorbuffer,
+					uint32_t errorbuffersize,
+					uint32_t *errorsize,
 					int64_t *errorcode,
 					bool *liveconnection) {
-	*errorlength=this->errorstring.getStringLength();
-	charstring::safeCopy(errorbuffer,errorbufferlength,
-				this->errorstring.getString(),*errorlength);
+	*errorsize=this->errorstring.getStringLength();
+	charstring::safeCopy(errorbuffer,errorbuffersize,
+				this->errorstring.getString(),*errorsize);
 	*liveconnection=this->liveconnection;
 	*errorcode=this->errorcode;
 }

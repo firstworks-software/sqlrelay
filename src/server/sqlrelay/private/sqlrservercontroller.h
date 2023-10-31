@@ -1,6 +1,15 @@
 // Copyright (c) 1999-2018 David Muse
 // See the file COPYING for more information
 
+	public:
+		sqlrservercontroller();
+		~sqlrservercontroller();
+
+		bool	init(int argc, const char **argv);
+		bool	listen();
+
+		void	reLogIn();
+
 	private:
 		void	setUserAndGroup();
 
@@ -64,7 +73,7 @@
 					stringbuffer *newquery);
 		void	mapBindVariable(sqlrservercursor *cursor,
 					const char *variablename,
-					uint64_t variablenamelen,
+					uint64_t variablenamesize,
 					uint16_t bindindex);
 
 		void	translateBeginTransaction(sqlrservercursor *cursor);
@@ -115,6 +124,7 @@
 		sqlrparser	*newParser();
 
 		void	setClientSessionStartTime();
+		void	setCurrentUser(const char *user, uint32_t usersize);
 		void	setClientAddr();
 
 

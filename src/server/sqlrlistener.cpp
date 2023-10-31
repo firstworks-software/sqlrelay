@@ -92,7 +92,7 @@ class sqlrlistenerprivate {
 
 		uint32_t	_maxquerysize;
 		uint16_t	_maxbindcount;
-		uint16_t	_maxbindnamelength;
+		uint16_t	_maxbindnamesize;
 		int32_t		_idleclienttimeout;
 
 		bool	_isforkedchild;
@@ -147,7 +147,7 @@ sqlrlistener::sqlrlistener() {
 
 	pvt->_maxquerysize=0;
 	pvt->_maxbindcount=0;
-	pvt->_maxbindnamelength=0;
+	pvt->_maxbindnamesize=0;
 	pvt->_idleclienttimeout=-1;
 
 	pvt->_isforkedchild=false;
@@ -344,7 +344,7 @@ bool sqlrlistener::init(int argc, const char **argv) {
 	pvt->_idleclienttimeout=pvt->_cfg->getIdleClientTimeout();
 	pvt->_maxquerysize=pvt->_cfg->getMaxQuerySize();
 	pvt->_maxbindcount=pvt->_cfg->getMaxBindCount();
-	pvt->_maxbindnamelength=pvt->_cfg->getMaxBindNameLength();
+	pvt->_maxbindnamesize=pvt->_cfg->getMaxBindNameSize();
 	pvt->_maxlisteners=pvt->_cfg->getMaxListeners();
 	pvt->_listenertimeout=pvt->_cfg->getListenerTimeout();
 
@@ -1563,7 +1563,7 @@ bool sqlrlistener::handOffOrProxyClient(filedescriptor *sock,
 	uint32_t		connectionpid;
 	uint16_t		inetport;
 	char 			unixportstr[MAXPATHLEN+1];
-	uint16_t		unixportstrlen;
+	uint16_t		unixportstrsize;
 	bool			retval=false;
 
 	// loop in case client doesn't get handed off successfully
@@ -1574,7 +1574,7 @@ bool sqlrlistener::handOffOrProxyClient(filedescriptor *sock,
 		}
 
 		if (!getAConnection(&connectionpid,&inetport,
-					unixportstr,&unixportstrlen,
+					unixportstr,&unixportstrsize,
 					sock,thr)) {
 			// fatal error occurred while getting a connection
 			retval=false;
@@ -1793,7 +1793,7 @@ void sqlrlistener::waitForConnectionToBeReadyForHandoff() {
 bool sqlrlistener::getAConnection(uint32_t *connectionpid,
 					uint16_t *inetport,
 					char *unixportstr,
-					uint16_t *unixportstrlen,
+					uint16_t *unixportstrsize,
 					filedescriptor *sock,
 					thread *thr) {
 
@@ -2245,13 +2245,13 @@ void sqlrlistener::waitForClientClose(bool passstatus,
 					// input bind vars
 					pvt->_maxbindcount*
 						(2*sizeof(uint16_t)+
-						pvt->_maxbindnamelength)+
+						pvt->_maxbindnamesize)+
 					// output bind var count
 					sizeof(uint16_t)+
 					// output bind vars
 					pvt->_maxbindcount*
 						(2*sizeof(uint16_t)+
-						pvt->_maxbindnamelength)+
+						pvt->_maxbindnamesize)+
 					// get column info
 					sizeof(uint16_t)+
 					// skip/fetch
@@ -2503,10 +2503,6 @@ const char *sqlrlistener::getId() {
 	return pvt->_cmdl->getId();
 }
 
-const char *sqlrlistener::getLogDir() {
-	return pvt->_sqlrpth->getLogDir();
-}
-
-const char *sqlrlistener::getDebugDir() {
-	return pvt->_sqlrpth->getDebugDir();
+sqlrpaths *sqlrlistener::getPaths() {
+	return pvt->_sqlrpth;
 }

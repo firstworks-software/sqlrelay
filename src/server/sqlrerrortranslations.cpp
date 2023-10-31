@@ -171,7 +171,7 @@ bool sqlrerrortranslations::run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					int64_t errornumber,
 					const char *error,
-					uint32_t errorlength,
+					uint32_t errorsize,
 					int64_t *translatederrornumber,
 					stringbuffer *translatederror) {
 	debugFunction();
@@ -198,7 +198,7 @@ bool sqlrerrortranslations::run(sqlrserverconnection *sqlrcon,
 		if (!node->getValue()->etr->run(sqlrcon,sqlrcur,
 						errornumber,
 						error,
-						errorlength,
+						errorsize,
 						temperrornumber,
 						temperrorstr)) {
 			pvt->_error=node->getValue()->etr->getError();
@@ -209,7 +209,7 @@ bool sqlrerrortranslations::run(sqlrserverconnection *sqlrcon,
 		}
 
 		error=temperrorstr->getString();
-		errorlength=temperrorstr->getSize();
+		errorsize=temperrorstr->getSize();
 		errornumber=*temperrornumber;
 
 		temperrorstr=(temperrorstr==&temperrorstr1)?
@@ -218,7 +218,7 @@ bool sqlrerrortranslations::run(sqlrserverconnection *sqlrcon,
 					&temperrornumber2:&temperrornumber1;
 	}
 
-	translatederror->append(error,errorlength);
+	translatederror->append(error,errorsize);
 	*translatederrornumber=errornumber;
 
 	return true;

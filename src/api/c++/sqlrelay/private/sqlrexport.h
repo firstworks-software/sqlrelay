@@ -2,6 +2,8 @@
 // See the file COPYING for more information
 
 		virtual	bool	exportToJsonDomNode(domnode *jsondomnode);
+		virtual	bool	exportToTable(sqlrconnection *sqlrcon,
+							const char *table);
 
 	private:
 		sqlrconnection		*sqlrcon;

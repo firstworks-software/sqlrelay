@@ -77,6 +77,10 @@
 	sqlrsh -id can decrypt two-way encrypted passwords now
 	fixed bug in cistring patterns translation that caused strings to be
 		lower-cased
+	added connectstring auth modules
+	lots of length -> size conversions
+	renamed various server-side methods to start with verbs
+	added sqlrexporttable class
 
 1.9.2 - ruby cursor constructor marks associated ruby connection object now
 	updated bad-command and no-cursor-available handling in sqlrclient
@@ -457,7 +461,7 @@
 		true/false indicating whether we're in a transaction or not
 	pushed processing of various connect-string parameters up to
 		sqlrserverconnection class
-	renamed maxselectlist and maxitembuffersize to maxcolumncount and
+	renamed maxselectlistsize and maxitembuffersize to maxcolumncount and
 		maxfieldlength (old parameter names still work though)
 	fetch-at-once, max column count, and max field length are now available
 		via server API

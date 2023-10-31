@@ -55,7 +55,8 @@ bool sqlrlogger_custom_nw::init(sqlrlistener *sqlrl,
 	}
 
 	const char	*logdir=
-			(sqlrcon)?sqlrcon->cont->getLogDir():sqlrl->getLogDir();
+			(sqlrcon)?sqlrcon->cont->getPaths()->getLogDir():
+						sqlrl->getPaths()->getLogDir();
 	const char	*id=
 			(sqlrcon)?sqlrcon->cont->getId():sqlrl->getId();
 
@@ -106,7 +107,7 @@ bool sqlrlogger_custom_nw::run(sqlrlistener *sqlrl,
 	// get error, if there was one
 	static char	errorcodebuf[100+1];
 	errorcodebuf[0]='\0';
-	if (!sqlrcur->getErrorLength()) {
+	if (!sqlrcur->getErrorSize()) {
 		charstring::copy(errorcodebuf,"0");
 	} else {
 		charstring::printf(errorcodebuf,100,"%s",

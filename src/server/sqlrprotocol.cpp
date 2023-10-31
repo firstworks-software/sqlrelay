@@ -249,24 +249,24 @@ bool sqlrprotocol::read(const byte_t *rp, byte_t *value,
 }
 
 void sqlrprotocol::read(const byte_t *rp, char *value,
-						size_t length,
+						size_t size,
 						const byte_t **rpout) {
-	bytestring::copy(value,rp,length);
-	*rpout=rp+length;
+	bytestring::copy(value,rp,size);
+	*rpout=rp+size;
 }
 
 void sqlrprotocol::read(const byte_t *rp, byte_t *value,
-						size_t length,
+						size_t size,
 						const byte_t **rpout) {
-	bytestring::copy(value,rp,length);
-	*rpout=rp+length;
+	bytestring::copy(value,rp,size);
+	*rpout=rp+size;
 }
 
 void sqlrprotocol::read(const byte_t *rp, ucs2_t *value,
-						size_t length,
+						size_t size,
 						const byte_t **rpout) {
-	bytestring::copy(value,rp,length*sizeof(ucs2_t));
-	*rpout=rp+length*sizeof(ucs2_t);
+	bytestring::copy(value,rp,size*sizeof(ucs2_t));
+	*rpout=rp+size*sizeof(ucs2_t);
 }
 
 void sqlrprotocol::read(const byte_t *rp, float *value,
@@ -495,18 +495,16 @@ void sqlrprotocol::write(bytebuffer *buffer, const char *value) {
 	write(buffer,value,charstring::getLength(value));
 }
 
-void sqlrprotocol::write(bytebuffer *buffer, const char *value,
-							size_t length) {
-	buffer->append(value,length);
+void sqlrprotocol::write(bytebuffer *buffer, const char *value, size_t size) {
+	buffer->append(value,size);
 }
 
-void sqlrprotocol::write(bytebuffer *buffer, const byte_t *value,
-							size_t length) {
-	buffer->append(value,length);
+void sqlrprotocol::write(bytebuffer *buffer, const byte_t *value, size_t size) {
+	buffer->append(value,size);
 }
 
-void sqlrprotocol::write(bytebuffer *buffer, const ucs2_t *str, size_t length) {
-	buffer->appendUcs2(str,length);
+void sqlrprotocol::write(bytebuffer *buffer, const ucs2_t *str, size_t size) {
+	buffer->appendUcs2(str,size);
 }
 
 void sqlrprotocol::write(bytebuffer *buffer, float value) {
@@ -584,9 +582,9 @@ void sqlrprotocol::writeLenEncStr(bytebuffer *buffer,
 
 void sqlrprotocol::writeLenEncStr(bytebuffer *buffer,
 						const char *string,
-						uint64_t length) {
-	writeLenEncInt(buffer,length);
-	buffer->append(string,length);
+						uint64_t size) {
+	writeLenEncInt(buffer,size);
+	buffer->append(string,size);
 }
 
 uint16_t sqlrprotocol::toHost(uint16_t value) {

@@ -84,7 +84,7 @@ bool sqlrtrigger_upsert::run(sqlrserverconnection *sqlrcon,
 	// NOTE: for now determineQueryType() groups simple insert,
 	// multi-insert, insert/select and select-into into SQLRQUERYTYPE_INSERT
 	const char		*query=cont->getQueryBuffer(icur);
-	uint32_t		querylen=cont->getQueryLength(icur);
+	uint32_t		querylen=cont->getQuerySize(icur);
 	sqlrquerytype_t		querytype=icur->getQueryType();
 	if (debug) {
 		stdoutput.printf("upsert {\n");
@@ -107,7 +107,7 @@ bool sqlrtrigger_upsert::run(sqlrserverconnection *sqlrcon,
 			stdoutput.printf("	no matching error "
 					"found for:\n%d: %.*s}\n",
 					cont->getErrorNumber(icur),
-					cont->getErrorLength(icur),
+					cont->getErrorSize(icur),
 					cont->getErrorBuffer(icur));
 		}
 		return *success;
@@ -248,14 +248,14 @@ bool sqlrtrigger_upsert::run(sqlrserverconnection *sqlrcon,
 			// copy the error from the cursor used to run the
 			// update to the cursor used to run the original insert
         		const char      *errorstring;
-        		uint32_t        errorlength;
+        		uint32_t        errorsize;
         		int64_t         errnum;
         		bool            liveconnection;
-        		cont->errorMessage(ucur,&errorstring,
-							&errorlength,
-                                        		&errnum,
-							&liveconnection);
-			cont->setError(icur,errorstring,errorlength,
+        		cont->getError(ucur,&errorstring,
+						&errorsize,
+                                        	&errnum,
+						&liveconnection);
+			cont->setError(icur,errorstring,errorsize,
 						errnum,liveconnection);
 		}
 	}
@@ -277,15 +277,15 @@ bool sqlrtrigger_upsert::run(sqlrserverconnection *sqlrcon,
 	if (debug) {
 		if (!*success) {
         		const char      *errorstring;
-        		uint32_t        errorlength;
+        		uint32_t        errorsize;
         		int64_t         errnum;
         		bool            liveconnection;
-        		cont->errorMessage(icur,&errorstring,
-							&errorlength,
-                                        		&errnum,
-							&liveconnection);
+        		cont->getError(icur,&errorstring,
+						&errorsize,
+                                        	&errnum,
+						&liveconnection);
 			stdoutput.printf("error: %d - %.*s\n",
-					errnum,errorlength,errorstring);
+					errnum,errorsize,errorstring);
 		}
 		stdoutput.printf("}\n");
 	}
@@ -307,7 +307,7 @@ bool sqlrtrigger_upsert::errorEncountered(sqlrservercursor *icur) {
 	// the error buffer may not be terminated, but contains() below
 	// needs a terminated string, so make a copy of it here
 	stringbuffer	err;
-	err.append(cont->getErrorBuffer(icur),cont->getErrorLength(icur));
+	err.append(cont->getErrorBuffer(icur),cont->getErrorSize(icur));
 
 	// look through the errors and see if we find
 	// one that matches the icur's error
@@ -373,7 +373,7 @@ bool sqlrtrigger_upsert::copyInputBinds(sqlrservercursor *ucur,
 		// it to the corresponding column
 		if (isBind(val)) {
 
-			if (cont->bindFormat()[0]=='?') {
+			if (cont->getBindFormat()[0]=='?') {
 
 				// we only support bind by position...
 
@@ -499,7 +499,7 @@ void sqlrtrigger_upsert::copyInputBind(memorypool *pool, bool where,
 	// We do need to rename the variable for the copy of the bind that
 	// we'll use in the where clause though....
 
-	if (charstring::contains(cont->bindFormat(),'*')) {
+	if (charstring::contains(cont->getBindFormat(),'*')) {
 
 		// if we support named binds, then prepend "where_"
 		// to the variable name
@@ -529,7 +529,7 @@ void sqlrtrigger_upsert::copyInputBind(memorypool *pool, bool where,
 					bindnumber);
 
 		// unless we only support bind-by-position...
-		if (cont->bindFormat()[0]!='?') {
+		if (cont->getBindFormat()[0]!='?') {
 
 			// map the set -> where bind variable name for
 			// easier lookup when building the update query

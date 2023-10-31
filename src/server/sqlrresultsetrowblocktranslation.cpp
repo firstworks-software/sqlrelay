@@ -28,7 +28,7 @@ bool sqlrresultsetrowblocktranslation::setRow(sqlrserverconnection *sqlrcon,
 						uint32_t colcount,
 						const char * const *fieldnames,
 						const char * const *fields,
-						uint64_t *fieldlengths,
+						uint64_t *fieldsizes,
 						bool *blobs,
 						bool *nulls) {
 	return true;
@@ -45,7 +45,7 @@ bool sqlrresultsetrowblocktranslation::getRow(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur,
 						uint32_t colcount,
 						const char ***field,
-						uint64_t **fieldlengths,
+						uint64_t **fieldsizes,
 						bool **blobs,
 						bool **nulls) {
 	return true;

@@ -1,6 +1,13 @@
 // Copyright (c) 1999-2018 David Muse
 // See the file COPYING for more information
 
+	public:
+		sqlrlistener();
+		~sqlrlistener();
+
+		bool	init(int argc, const char **argv);
+		bool	listen();
+
 	private:
 		void	cleanUp();
 		void	setUserAndGroup();
@@ -51,7 +58,7 @@
 		bool	getAConnection(uint32_t *connectionpid,
 					uint16_t *inetport,
 					char *unixportstr,
-					uint16_t *unixportstrlen,
+					uint16_t *unixportstrsize,
 					filedescriptor *sock,
 					thread *thr);
 		bool	findMatchingSocket(uint32_t connectionpid,

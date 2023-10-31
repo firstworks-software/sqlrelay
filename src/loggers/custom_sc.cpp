@@ -65,7 +65,8 @@ bool sqlrlogger_custom_sc::init(sqlrlistener *sqlrl,
 	// get log path and name
 	const char	*path=getParameters()->getAttributeValue("path");
 	if (!charstring::getLength(path)) {
-		path=(sqlrcon)?sqlrcon->cont->getLogDir():sqlrl->getLogDir();
+		path=(sqlrcon)?sqlrcon->cont->getPaths()->getLogDir():
+					sqlrl->getPaths()->getLogDir();
 	}
 	const char	*name=getParameters()->getAttributeValue("name");
 	if (!charstring::getLength(name)) {
@@ -163,12 +164,12 @@ bool sqlrlogger_custom_sc::run(sqlrlistener *sqlrl,
 		case SQLREVENT_DB_LOGIN:
 			logbuffer.append(SQLRELAY);
 			logbuffer.append(" logged in to DB ");
-			logbuffer.append(sqlrcon->cont->dbIpAddress());
+			logbuffer.append(sqlrcon->cont->getDbIpAddress());
 			break;
 		case SQLREVENT_DB_LOGOUT:
 			logbuffer.append(SQLRELAY);
 			logbuffer.append(" logged out of DB ");
-			logbuffer.append(sqlrcon->cont->dbIpAddress());
+			logbuffer.append(sqlrcon->cont->getDbIpAddress());
 			break;
 		case SQLREVENT_DB_ERROR:
 		case SQLREVENT_DB_WARNING:

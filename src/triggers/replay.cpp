@@ -210,14 +210,14 @@ bool sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 
 	// If we're not in a transaction, we only need
 	// to log the current query.  Clear the log.
-	if (!cont->inTransaction()) {
+	if (!cont->getInTransaction()) {
 		logpool.clear();
 		log.clear();
 	}
 
 	// If we weren't in a transaction, but are now,
 	// then we also need to clear the log.
-	if (cont->inTransaction() && !wasintx) {
+	if (cont->getInTransaction() && !wasintx) {
 		logpool.clear();
 		log.clear();
 		wasintx=true;
@@ -230,7 +230,7 @@ bool sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 
 	// get query type
 	const char		*query=sqlrcur->getQueryBuffer();
-	uint32_t		querylen=sqlrcur->getQueryLength();
+	uint32_t		querylen=sqlrcur->getQuerySize();
 	sqlrquerytype_t		querytype=SQLRQUERYTYPE_ETC;
 	linkedlist<char *>	*columns=NULL;
 	linkedlist<char *>	*allcolumns=NULL;
@@ -251,7 +251,7 @@ bool sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 	if (!includeselects && querytype==SQLRQUERYTYPE_SELECT) {
 		if (debug) {
 			stdoutput.printf("ignoring query:\n%.*s\n}\n",
-						sqlrcur->getQueryLength(),
+						sqlrcur->getQuerySize(),
 						sqlrcur->getQueryBuffer());
 		}
 		delete columns;
@@ -362,7 +362,7 @@ void sqlrtrigger_replay::disableUntilEndOfTx(const char *query,
 	// If we weren't in a transaction, then just don't log the
 	// query.  If we weren't in a transaction, then clear the log
 	// and disable replay altogether until end-of-transaction.
-	if (cont->inTransaction()) {
+	if (cont->getInTransaction()) {
 		logpool.clear();
 		log.clear();
 		disabled=true;
@@ -557,7 +557,8 @@ void sqlrtrigger_replay::copyBind(memorypool *pool,
 	} else if (source->type==SQLRSERVERBINDVARTYPE_DATE) {
 		dest->value.dateval.tz=
 			(char *)pool->allocate(
-				charstring::getLength(source->value.dateval.tz)+1);
+				charstring::getLength(
+					source->value.dateval.tz)+1);
 		charstring::copy(dest->value.dateval.tz,
 					source->value.dateval.tz);
 		dest->value.dateval.buffer=
@@ -580,7 +581,7 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, bool replaytx) {
 	if (debug) {
 		stdoutput.printf("replay {\n");
 		stdoutput.printf("	triggering query:\n%.*s\n",
-					sqlrcur->getQueryLength(),
+					sqlrcur->getQuerySize(),
 					sqlrcur->getQueryBuffer());
 	}
 
@@ -622,7 +623,7 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, bool replaytx) {
 				stdoutput.printf(
 					"		"
 					"prepare error: %.*s\n",
-					sqlrcur->getErrorLength(),
+					sqlrcur->getErrorSize(),
 					sqlrcur->getErrorBuffer());
 				stdoutput.printf("	}\n");
 			}
@@ -722,7 +723,7 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, bool replaytx) {
 				stdoutput.printf(
 					"		"
 					"execute error: %.*s\n",
-					sqlrcur->getErrorLength(),
+					sqlrcur->getErrorSize(),
 					sqlrcur->getErrorBuffer());
 			}
 		}
@@ -840,7 +841,7 @@ bool sqlrtrigger_replay::replayCondition(sqlrservercursor *sqlrcur,
 						(indent)?"	":"",
 						val->error,
 						(indent)?"	":"",
-						sqlrcur->getErrorLength(),
+						sqlrcur->getErrorSize(),
 						sqlrcur->getErrorBuffer(),
 						(indent)?"	":"",
 						(*replaytx)?"true":"false",
@@ -907,32 +908,32 @@ void sqlrtrigger_replay::logReplayCondition(condition *cond) {
 					charstring::getLength(cond->query));
 		if (!success && debug) {
         		const char      *errorstring;
-        		uint32_t        errorlength;
+        		uint32_t        errorsize;
         		int64_t         errnum;
         		bool            liveconnection;
-        		cont->errorMessage(logcur,&errorstring,
-							&errorlength,
-                                        		&errnum,
-							&liveconnection);
+        		cont->getError(logcur,&errorstring,
+						&errorsize,
+                                        	&errnum,
+						&liveconnection);
 			stdoutput.printf("failed to prepare log query:\n"
 						"%s\n%.*s\n",cond->query,
-						errorlength,errorstring);
+						errorsize,errorstring);
 		}
 	}
 	if (success) {
 		success=cont->executeQuery(logcur);
 		if (!success && debug) {
         		const char      *errorstring;
-        		uint32_t        errorlength;
+        		uint32_t        errorsize;
         		int64_t         errnum;
         		bool            liveconnection;
-        		cont->errorMessage(logcur,&errorstring,
-							&errorlength,
-                                        		&errnum,
-							&liveconnection);
+        		cont->getError(logcur,&errorstring,
+						&errorsize,
+                                        	&errnum,
+						&liveconnection);
 			stdoutput.printf("failed to execute log query:\n"
 						"%s\n%.*s\n",cond->query,
-						errorlength,errorstring);
+						errorsize,errorstring);
 		}
 	}
 	if (success) {
@@ -960,21 +961,21 @@ void sqlrtrigger_replay::logReplayCondition(condition *cond) {
 			for (uint32_t i=0; i<cont->colCount(logcur); i++) {
 
 				const char	*field;
-				uint64_t	fieldlength;
+				uint64_t	fieldsize;
 				bool		blob;
 				bool		null;
 				cont->getField(logcur,i,&field,
-						&fieldlength,&blob,&null);
+						&fieldsize,&blob,&null);
 
 				str.append(cont->getColumnName(logcur,i));
 				str.append(" : ");
-				if (fieldlength>
+				if (fieldsize>
 					(uint64_t)(80-
-					cont->getColumnNameLength(logcur,i)-
+					cont->getColumnNameSize(logcur,i)-
 					4)) {
 					str.append('\n');
 				}
-				str.append(field,fieldlength);
+				str.append(field,fieldsize);
 				str.append('\n');
 			}
 			str.append('\n');

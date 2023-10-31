@@ -184,11 +184,11 @@ bool sqlrresultsetheadertranslations::run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					uint32_t colcount,
 					const char ***columnnames,
-					uint16_t **columnnamelengths,
+					uint16_t **columnnamesizes,
 					uint16_t **columntypes,
 					const char ***columntypenames,
-					uint16_t **columntypenamelengths,
-					uint32_t **columnlengths,
+					uint16_t **columntypenamesizes,
+					uint32_t **columnsizes,
 					uint32_t **columnprecisions,
 					uint32_t **columnscales,
 					uint16_t **columnisnullables,
@@ -200,7 +200,7 @@ bool sqlrresultsetheadertranslations::run(sqlrserverconnection *sqlrcon,
 					uint16_t **columnisbinarys,
 					uint16_t **columnisautoincrements,
 					const char ***columntables,
-					uint16_t **columntablelengths) {
+					uint16_t **columntablesizes) {
 	debugFunction();
 
 	pvt->_error=NULL;
@@ -217,11 +217,11 @@ bool sqlrresultsetheadertranslations::run(sqlrserverconnection *sqlrcon,
 		if (!node->getValue()->rstr->run(sqlrcon,sqlrcur,
 						colcount,
 						columnnames,
-						columnnamelengths,
+						columnnamesizes,
 						columntypes,
 						columntypenames,
-						columntypenamelengths,
-						columnlengths,
+						columntypenamesizes,
+						columnsizes,
 						columnprecisions,
 						columnscales,
 						columnisnullables,
@@ -233,7 +233,7 @@ bool sqlrresultsetheadertranslations::run(sqlrserverconnection *sqlrcon,
 						columnisbinarys,
 						columnisautoincrements,
 						columntables,
-						columntablelengths)) {
+						columntablesizes)) {
 			pvt->_error=node->getValue()->rstr->getError();
 			return false;
 		}

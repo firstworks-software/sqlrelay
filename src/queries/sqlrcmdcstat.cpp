@@ -14,7 +14,7 @@ class SQLRSERVER_DLLSPEC sqlrquery_sqlrcmdcstat : public sqlrquery {
 			sqlrquery_sqlrcmdcstat(sqlrservercontroller *cont,
 							sqlrqueries *qs,
 							domnode *parameters);
-		bool	match(const char *querystring, uint32_t querylength);
+		bool	match(const char *querystring, uint32_t querysize);
 		sqlrquerycursor	*newCursor(sqlrserverconnection *conn,
 							uint16_t id);
 };
@@ -29,11 +29,11 @@ class sqlrquery_sqlrcmdcstatcursor : public sqlrquerycursor {
 			~sqlrquery_sqlrcmdcstatcursor();
 
 		bool		executeQuery(const char *query,
-						uint32_t length);
+						uint32_t size);
 		uint32_t	colCount();
 		const char	*getColumnName(uint32_t col);
 		uint16_t	getColumnType(uint32_t col);
-		uint32_t	getColumnLength(uint32_t col);
+		uint32_t	getColumnSize(uint32_t col);
 		uint32_t	getColumnPrecision(uint32_t col);
 		uint32_t	getColumnScale(uint32_t col);
 		uint16_t	getColumnIsNullable(uint32_t col);
@@ -41,7 +41,7 @@ class sqlrquery_sqlrcmdcstatcursor : public sqlrquerycursor {
 		bool		fetchRow(bool *error);
 		void		getField(uint32_t col,
 					const char **field,
-					uint64_t *fieldlength,
+					uint64_t *fieldsize,
 					bool *blob, bool *null);
 	private:
 		uint64_t	currentrow;
@@ -59,7 +59,7 @@ sqlrquery_sqlrcmdcstat::sqlrquery_sqlrcmdcstat(sqlrservercontroller *cont,
 }
 
 bool sqlrquery_sqlrcmdcstat::match(const char *querystring,
-					uint32_t querylength) {
+					uint32_t querysize) {
 	debugFunction();
 	return !charstring::compareIgnoringCase(querystring,"sqlrcmd cstat");
 }
@@ -91,7 +91,7 @@ sqlrquery_sqlrcmdcstatcursor::~sqlrquery_sqlrcmdcstatcursor() {
 }
 
 bool sqlrquery_sqlrcmdcstatcursor::executeQuery(const char *query,
-						uint32_t length) {
+						uint32_t size) {
 	currentrow=0;
 	return true;
 }
@@ -103,7 +103,7 @@ uint32_t sqlrquery_sqlrcmdcstatcursor::colCount() {
 struct colinfo_t {
 	const char	*name;
 	uint16_t	type;
-	uint32_t	length;
+	uint32_t	size;
 	uint32_t	precision;
 	uint32_t	scale;
 };
@@ -128,8 +128,8 @@ uint16_t sqlrquery_sqlrcmdcstatcursor::getColumnType(uint32_t col) {
 	return (col<9)?colinfo[col].type:0;
 }
 
-uint32_t sqlrquery_sqlrcmdcstatcursor::getColumnLength(uint32_t col) {
-	return (col<9)?colinfo[col].length:0;
+uint32_t sqlrquery_sqlrcmdcstatcursor::getColumnSize(uint32_t col) {
+	return (col<9)?colinfo[col].size:0;
 }
 
 uint32_t sqlrquery_sqlrcmdcstatcursor::getColumnPrecision(uint32_t col) {
@@ -177,11 +177,11 @@ static const char * const statenames[]={
 
 void sqlrquery_sqlrcmdcstatcursor::getField(uint32_t col,
 					const char **field,
-					uint64_t *fieldlength,
+					uint64_t *fieldsize,
 					bool *blob,
 					bool *null) {
 	*field=NULL;
-	*fieldlength=0;
+	*fieldsize=0;
 	*blob=false;
 	*null=false;
 
@@ -199,7 +199,7 @@ void sqlrquery_sqlrcmdcstatcursor::getField(uint32_t col,
 			// * if the connection is processing this command
 			if (cs->processid==(uint32_t)process::getProcessId()) {
 				*field="*";
-				*fieldlength=1;
+				*fieldsize=1;
 			} else {
 				*null=true;
 			}
@@ -219,7 +219,7 @@ void sqlrquery_sqlrcmdcstatcursor::getField(uint32_t col,
 			// internally defined status
 			if (cs->state<=WAIT_SEMAPHORE) {
 				*field=statenames[cs->state];
-				*fieldlength=charstring::getLength(*field);
+				*fieldsize=charstring::getLength(*field);
 				return;
 			}
 			*null=true;
@@ -243,19 +243,19 @@ void sqlrquery_sqlrcmdcstatcursor::getField(uint32_t col,
 			// client_addr -
 			// address of currently connected client
 			*field=cs->clientaddr;
-			*fieldlength=charstring::getLength(*field);
+			*fieldsize=charstring::getLength(*field);
 			return;
 		case 7:
 			// client info -
 			// client info string
 			*field=cs->clientinfo;
-			*fieldlength=charstring::getLength(*field);
+			*fieldsize=charstring::getLength(*field);
 			return;
 		case 8:
 			// sql_text -
 			// query currently being executed
 			*field=cs->sqltext;
-			*fieldlength=charstring::getLength(*field);
+			*fieldsize=charstring::getLength(*field);
 			return;
 		default:
 			*null=true;
@@ -263,7 +263,7 @@ void sqlrquery_sqlrcmdcstatcursor::getField(uint32_t col,
 	}
 
 	*field=fieldbuffer[col];
-	*fieldlength=charstring::getLength(fieldbuffer[col]);
+	*fieldsize=charstring::getLength(fieldbuffer[col]);
 }
 
 extern "C" {

@@ -607,10 +607,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_mysql : public sqlrprotocol {
 		bool	recvHandshakeResponse();
 		bool	parseHandshakeResponse41(
 					const byte_t *rp,
-					uint64_t rplen);
+					uint64_t rpsize);
 		bool	parseHandshakeResponse320(
 					const byte_t *rp,
-					uint64_t rplen);
+					uint64_t rpsize);
 		bool	handleTlsRequest();
 		bool	noClientTls();
 		bool	negotiateAuthMethod();
@@ -634,7 +634,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_mysql : public sqlrprotocol {
 					const char *sqlstate);
 		bool	sendErrPacket(uint16_t errorcode,
 					const char *errormessage,
-					uint64_t errorlength,
+					uint64_t errorsize,
 					const char *sqlstate);
 		bool	sendEofPacket(uint16_t warnings,
 					uint16_t statusflags);
@@ -715,7 +715,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_mysql : public sqlrprotocol {
 						const char *query);
 		bool	sendQuery(sqlrservercursor *cursor,
 						const char *query,
-						uint64_t querylen);
+						uint64_t querysize);
 		bool	sendQueryResult(sqlrservercursor *cursor,
 						bool binary);
 		bool	sendResultSet(sqlrservercursor *cursor,
@@ -736,7 +736,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_mysql : public sqlrprotocol {
 						const char *orgtable,
 						const char *colname,
 						const char *orgcolname,
-						uint32_t length,
+						uint32_t size,
 						const char *columntypestring,
 						uint32_t scale,
 						byte_t columntype,
@@ -744,7 +744,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_mysql : public sqlrprotocol {
 						const char *defaults,
 						bool fieldlistcommand);
 		byte_t		getColumnType(const char *columntypestring,
-						uint16_t columntypelen,
+						uint16_t columntypesize,
 						uint32_t scale);
 		uint16_t	getColumnFlags(sqlrservercursor *cursor,
 						uint32_t column,
@@ -770,7 +770,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_mysql : public sqlrprotocol {
 		bool	buildBinaryRow(sqlrservercursor *cursor,
 						uint32_t colcount);
 		void	buildBinaryField(const char *field,
-						uint64_t fieldlength,
+						uint64_t fieldsize,
 						byte_t columntype);
 		bool	buildTextRow(sqlrservercursor *cursor,
 						uint32_t colcount);
@@ -866,7 +866,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_mysql : public sqlrprotocol {
 		char		*username;
 		char		*challenge;
 		char		*response;
-		uint64_t	responselength;
+		uint64_t	responsesize;
 		const char	*serverauthpluginname;
 		const char	*clientauthpluginname;
 		char		*database;
@@ -1225,8 +1225,7 @@ clientsessionexitstatus_t sqlrprotocol_mysql::clientSession(
 
 			// release the cursor
 			if (request!=COM_STMT_PREPARE) {
-				cont->setState(cursor,
-					SQLRCURSORSTATE_AVAILABLE);
+				cont->release(cursor);
 			}
 
 		} while (loop);
@@ -1254,7 +1253,7 @@ bool sqlrprotocol_mysql::sendPacket() {
 
 bool sqlrprotocol_mysql::sendPacket(bool flush) {
 
-	// FIXME: what if resppacket.getSize() > maxpacketlength?
+	// FIXME: what if resppacket.getSize() > maxpacketsize?
 
 	// overwrite the first 4 bytes of the resppacket
 	resppacket.setPositionRelativeToBeginning(0);
@@ -1429,7 +1428,7 @@ void sqlrprotocol_mysql::buildHandshake10() {
 
 	// set values to send
 	char		protocolversion=0x0a;
-	const char	*serverversion=cont->dbVersion();
+	const char	*serverversion=cont->getDbVersion();
 	uint32_t	connectionid=process::getProcessId();
 	serverauthpluginname="mysql_native_password";
 	generateChallenge();
@@ -1531,7 +1530,7 @@ void sqlrprotocol_mysql::buildHandshake9() {
 	// set values to send
 	char		protocolversion=0x09;
 	uint32_t	connectionid=process::getProcessId();
-	const char	*serverversion=cont->dbVersion();
+	const char	*serverversion=cont->getDbVersion();
 	serverauthpluginname="mysql_old_password";
 	generateChallenge();
 
@@ -1578,9 +1577,9 @@ bool sqlrprotocol_mysql::recvHandshakeResponse() {
 
 bool sqlrprotocol_mysql::parseHandshakeResponse41(
 					const byte_t *rp,
-					uint64_t rplen) {
+					uint64_t rpsize) {
 
-	const byte_t	*end=rp+rplen;
+	const byte_t	*end=rp+rpsize;
 
 	debugStart("handshake response 41");
 
@@ -1635,42 +1634,42 @@ bool sqlrprotocol_mysql::parseHandshakeResponse41(
 	}
 
 	// challenge response
-	responselength=0;
+	responsesize=0;
 	if (servercapabilityflags&
 			CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA &&
 		clientcapabilityflags&
 			CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA) {
-		responselength=readLenEncInt(rp,&rp);
+		responsesize=readLenEncInt(rp,&rp);
 		delete[] response;
-		response=(char *)bytestring::duplicate(rp,responselength);
-		rp+=responselength;
+		response=(char *)bytestring::duplicate(rp,responsesize);
+		rp+=responsesize;
 	} else if (servercapabilityflags&CLIENT_SECURE_CONNECTION &&
 			clientcapabilityflags&CLIENT_SECURE_CONNECTION) {
-		responselength=*((char *)rp);
+		responsesize=*((char *)rp);
 		rp++;
 		delete[] response;
-		response=(char *)bytestring::duplicate(rp,responselength);
-		rp+=responselength;
+		response=(char *)bytestring::duplicate(rp,responsesize);
+		rp+=responsesize;
 	} else {
 		for (const byte_t *r=rp; *r && r!=end; r++) {
-			responselength++;
+			responsesize++;
 		}
 		delete[] response;
-		response=(char *)bytestring::duplicate(rp,responselength);
-		rp+=responselength+1;
+		response=(char *)bytestring::duplicate(rp,responsesize);
+		rp+=responsesize+1;
 	}
 
 	// sometimes there's a null terminator here
-	// eg. the Connector/J 5.1.45 sends one, even when it sends the length
+	// eg. the Connector/J 5.1.45 sends one, even when it sends the size
 	if (!*rp) {
 		rp++;
 	}
 
 	if (getDebug()) {
-		stdoutput.printf("	challenge response length: %lld\n",
-								responselength);
+		stdoutput.printf("	challenge response size: %lld\n",
+								responsesize);
 		stdoutput.printf("	challenge response: \"");
-		stdoutput.safePrint(response,responselength);
+		stdoutput.safePrint(response,responsesize);
 		stdoutput.printf("\"\n");
 		if (rp==end) {
 			if (clientcapabilityflags&CLIENT_CONNECT_WITH_DB) {
@@ -1717,22 +1716,22 @@ bool sqlrprotocol_mysql::parseHandshakeResponse41(
 			stdoutput.write("	connect attrs:\n");
 		}
 
-		// length of all key-values
-		uint64_t	alllen=readLenEncInt(rp,&rp);
+		// size of all key-values
+		uint64_t	allsize=readLenEncInt(rp,&rp);
 		const byte_t	*start=rp;
-		while ((uint64_t)(rp-start)<alllen) {
+		while ((uint64_t)(rp-start)<allsize) {
 
 			// key
-			uint64_t	keylen=readLenEncInt(rp,&rp);
+			uint64_t	keysize=readLenEncInt(rp,&rp);
 			char		*key=charstring::duplicate(
-						(const char *)rp,keylen);
-			rp+=keylen;
+						(const char *)rp,keysize);
+			rp+=keysize;
 
 			// value
-			uint64_t	vallen=readLenEncInt(rp,&rp);
+			uint64_t	valsize=readLenEncInt(rp,&rp);
 			char		*val=charstring::duplicate(
-						(const char *)rp,vallen);
-			rp+=vallen;
+						(const char *)rp,valsize);
+			rp+=valsize;
 
 			if (getDebug()) {
 				stdoutput.printf("		%s=%s\n",
@@ -1759,11 +1758,11 @@ bool sqlrprotocol_mysql::parseHandshakeResponse41(
 
 bool sqlrprotocol_mysql::parseHandshakeResponse320(
 					const byte_t *rp,
-					uint64_t rplen) {
+					uint64_t rpsize) {
 
 	debugStart("handshake response 320");
 
-	const byte_t	*end=rp+rplen;
+	const byte_t	*end=rp+rpsize;
 
 	// capability flags
 	uint16_t	shortcapabilityflags;
@@ -1814,7 +1813,7 @@ bool sqlrprotocol_mysql::parseHandshakeResponse320(
 	// challenge response
 	delete[] response;
 	response=charstring::duplicate((const char *)rp);
-	responselength=charstring::getLength(response);
+	responsesize=charstring::getLength(response);
 	rp+=charstring::getLength(response)+1;
 	if (getDebug()) {
 		stdoutput.write("	challenge response: ");
@@ -2076,17 +2075,17 @@ bool sqlrprotocol_mysql::recvAuthResponse() {
 	const byte_t	*rp=reqpacket;
 	delete[] response;
 	response=charstring::duplicate((const char *)rp,reqpacketsize);
-	responselength=reqpacketsize;
+	responsesize=reqpacketsize;
 
 	// assume client accepted the auth type...
 	clientauthpluginname=serverauthpluginname;
 
 	if (getDebug()) {
 		debugStart("auth response");
-		stdoutput.printf("	challenge response length: %lld\n",
-								responselength);
+		stdoutput.printf("	challenge response size: %lld\n",
+								responsesize);
 		stdoutput.printf("	challenge response: \"");
-		stdoutput.safePrint(response,responselength);
+		stdoutput.safePrint(response,responsesize);
 		stdoutput.printf("\"\n");
 		debugEnd();
 	}
@@ -2100,7 +2099,7 @@ bool sqlrprotocol_mysql::negotiateMoreData() {
 
 		// if the client sent 0x01 as the challenge response,
 		// then we need to send the server's rsa public key file...
-		if (responselength==1 && response[0]==0x01) {
+		if (responsesize==1 && response[0]==0x01) {
 
 			moredata.clear();
 			// FIXME: send the actual rsa public key file...
@@ -2141,7 +2140,7 @@ bool sqlrprotocol_mysql::authenticate() {
 	sqlrmysqlcredentials	cred;
 	cred.setUser(username);
 	cred.setPassword(response);
-	cred.setPasswordLength(responselength);
+	cred.setPasswordSize(responsesize);
 	cred.setMethod(clientauthpluginname);
 	cred.setExtra(challenge);
 	bool	retval=cont->auth(&cred);
@@ -2199,7 +2198,7 @@ bool sqlrprotocol_mysql::sendOkPacket(bool noteof,
 					const char *sessionstatechangedata) {
 
 	// update statusflags
-	if (cont->inTransaction()) {
+	if (cont->getInTransaction()) {
 		statusflags|=SERVER_STATUS_IN_TRANS;
 	} else {
 		statusflags|=SERVER_STATUS_AUTOCOMMIT;
@@ -2269,7 +2268,7 @@ bool sqlrprotocol_mysql::sendErrPacket(uint16_t errorcode,
 
 bool sqlrprotocol_mysql::sendErrPacket(uint16_t errorcode,
 					const char *errormessage,
-					uint64_t errorlength,
+					uint64_t errorsize,
 					const char *sqlstate) {
 	resetSendPacketBuffer();
 
@@ -2277,9 +2276,9 @@ bool sqlrprotocol_mysql::sendErrPacket(uint16_t errorcode,
 		debugStart("err");
 		stdoutput.printf("	error code: %hd\n",errorcode);
 		stdoutput.printf("	error message: \"%.*s\"\n",
-							(uint32_t)errorlength,
+							(uint32_t)errorsize,
 							errormessage);
-		stdoutput.printf("	error length: %lld\n",errorlength);
+		stdoutput.printf("	error size: %lld\n",errorsize);
 		stdoutput.printf("	sql state: \"%s\"\n",sqlstate);
 		debugEnd();
 	}
@@ -2290,7 +2289,7 @@ bool sqlrprotocol_mysql::sendErrPacket(uint16_t errorcode,
 		write(&resppacket,(char)0x23);
 		write(&resppacket,sqlstate);
 	}
-	write(&resppacket,errormessage,errorlength);
+	write(&resppacket,errormessage,errorsize);
 	write(&resppacket,'\0');
 
 	return sendPacket(true);
@@ -2312,7 +2311,7 @@ bool sqlrprotocol_mysql::sendEofPacket(uint16_t warnings,
 	resetSendPacketBuffer();
 
 	// update statusflags
-	if (cont->inTransaction()) {
+	if (cont->getInTransaction()) {
 		statusflags|=SERVER_STATUS_IN_TRANS;
 	} else {
 		statusflags|=SERVER_STATUS_AUTOCOMMIT;
@@ -2813,8 +2812,8 @@ bool sqlrprotocol_mysql::comInitDb() {
 	// analogous to "use db"
 
 	const char	*rp=(const char *)reqpacket;
-	uint64_t	rplen=reqpacketsize;
-	char		*schemaname=charstring::duplicate(rp+1,rplen-1);
+	uint64_t	rpsize=reqpacketsize;
+	char		*schemaname=charstring::duplicate(rp+1,rpsize-1);
 
 	if (getDebug()) {
 		debugStart("com_init_db");
@@ -2990,8 +2989,8 @@ bool sqlrprotocol_mysql::comCreateDb(sqlrservercursor *cursor) {
 	// creates a new database
 
 	const char	*rp=(const char *)reqpacket;
-	uint64_t	rplen=reqpacketsize;
-	char		*schemaname=charstring::duplicate(rp+1,rplen-1);
+	uint64_t	rpsize=reqpacketsize;
+	char		*schemaname=charstring::duplicate(rp+1,rpsize-1);
 
 	if (getDebug()) {
 		debugStart("com_create_db");
@@ -3015,8 +3014,8 @@ bool sqlrprotocol_mysql::comDropDb(sqlrservercursor *cursor) {
 	// drops an existing database
 
 	const char	*rp=(const char *)reqpacket;
-	uint64_t	rplen=reqpacketsize;
-	char		*schemaname=charstring::duplicate(rp+1,rplen-1);
+	uint64_t	rpsize=reqpacketsize;
+	char		*schemaname=charstring::duplicate(rp+1,rpsize-1);
 
 	if (getDebug()) {
 		debugStart("com_drop_db");
@@ -3041,13 +3040,13 @@ bool sqlrprotocol_mysql::comQuery(sqlrservercursor *cursor) {
 
 	// get the query and query size
 	const char	*query=(const char *)reqpacket+1;
-	uint64_t	querylen=reqpacketsize-1;
+	uint64_t	querysize=reqpacketsize-1;
 
 	// bounds checking
-	if (querylen>maxquerysize) {
+	if (querysize>maxquerysize) {
 		stringbuffer	err;
 		err.append("Query loo large (");
-		err.append(querylen);
+		err.append(querysize);
 		err.append(">");
 		err.append(maxquerysize);
 		err.append(")");
@@ -3057,13 +3056,13 @@ bool sqlrprotocol_mysql::comQuery(sqlrservercursor *cursor) {
 	if (getDebug()) {
 		debugStart("com_query");
 		stdoutput.printf("	query: \"");
-		stdoutput.safePrint(query,(uint32_t)querylen);
+		stdoutput.safePrint(query,(uint32_t)querysize);
 		stdoutput.printf("\"\n");
-		stdoutput.printf("	query length: %d\n",querylen);
+		stdoutput.printf("	query size: %d\n",querysize);
 		debugEnd();
 	}
 
-	return sendQuery(cursor,query,querylen);
+	return sendQuery(cursor,query,querysize);
 }
 
 bool sqlrprotocol_mysql::sendQuery(sqlrservercursor *cursor,
@@ -3073,11 +3072,11 @@ bool sqlrprotocol_mysql::sendQuery(sqlrservercursor *cursor,
 
 bool sqlrprotocol_mysql::sendQuery(sqlrservercursor *cursor,
 						const char *query,
-						uint64_t querylen) {
+						uint64_t querysize) {
 	// FIXME: handle custom cursors
 	columntypescached[cont->getId(cursor)]=false;
 	clearParams(cursor);
-	return (cont->prepareQuery(cursor,query,querylen,true,true,true) &&
+	return (cont->prepareQuery(cursor,query,querysize,true,true,true) &&
 			cont->executeQuery(cursor,true,true,true,true))?
 			sendQueryResult(cursor,false):
 			sendQueryError(cursor);
@@ -3141,7 +3140,7 @@ void sqlrprotocol_mysql::cacheColumnDefinitions(sqlrservercursor *cursor,
 
 	for (uint32_t i=0; i<colcount; i++) {
 		ct[i]=getColumnType(cont->getColumnTypeName(cursor,i),
-					cont->getColumnTypeNameLength(cursor,i),
+					cont->getColumnTypeNameSize(cursor,i),
 					cont->getColumnScale(cursor,i));
 	}
 
@@ -3231,7 +3230,7 @@ bool sqlrprotocol_mysql::sendColumnDefinition(sqlrservercursor *cursor,
 						const char *orgtable,
 						const char *colname,
 						const char *orgcolname,
-						uint32_t length,
+						uint32_t size,
 						const char *columntypestring,
 						uint32_t scale,
 						byte_t columntype,
@@ -3267,7 +3266,7 @@ bool sqlrprotocol_mysql::sendColumnDefinition(sqlrservercursor *cursor,
 		stdoutput.printf("	name: %s\n",colname);
 		stdoutput.printf("	org name: %s\n",orgcolname);
 		debugCharacterSet(servercharacterset);
-		stdoutput.printf("	length: %ld\n",length);
+		stdoutput.printf("	size: %ld\n",size);
 		debugColumnType(columntypestring,columntype);
 		debugColumnFlags(flags);
 		stdoutput.printf("	defaults: %s\n",defaults);
@@ -3292,7 +3291,7 @@ bool sqlrprotocol_mysql::sendColumnDefinition(sqlrservercursor *cursor,
 		// 2 bytes for the server character set here
 		// (odd because it's 1 byte everywhere else)
 		writeLE(&resppacket,(uint16_t)servercharacterset);
-		writeLE(&resppacket,length);
+		writeLE(&resppacket,size);
 		write(&resppacket,columntype);
 		writeLE(&resppacket,flags);
 		write(&resppacket,(char)decimals);
@@ -3306,7 +3305,7 @@ bool sqlrprotocol_mysql::sendColumnDefinition(sqlrservercursor *cursor,
 		writeLenEncStr(&resppacket,table);
 		writeLenEncStr(&resppacket,colname);
 		write(&resppacket,(char)0x03);
-		writeTriplet(&resppacket,length);
+		writeTriplet(&resppacket,size);
 		writeLenEncInt(&resppacket,1);
 		write(&resppacket,columntype);
   		if (clientcapabilityflags&CLIENT_LONG_FLAG) {
@@ -3321,9 +3320,9 @@ bool sqlrprotocol_mysql::sendColumnDefinition(sqlrservercursor *cursor,
 
 	if (fieldlistcommand) {
 		if (!charstring::isNullOrEmpty(defaults)) {
-			uint64_t	len=charstring::getLength(defaults);
-			writeLenEncInt(&resppacket,len);
-			write(&resppacket,defaults,len);
+			uint64_t	size=charstring::getLength(defaults);
+			writeLenEncInt(&resppacket,size);
+			write(&resppacket,defaults,size);
 		} else {
 			// send NULL as 0xfb
 			write(&resppacket,(char)0xfb);
@@ -3334,27 +3333,27 @@ bool sqlrprotocol_mysql::sendColumnDefinition(sqlrservercursor *cursor,
 }
 
 byte_t sqlrprotocol_mysql::getColumnType(const char *columntypestring,
-						uint16_t columntypelen,
+						uint16_t columntypesize,
 						uint32_t scale) {
 
 	// sometimes column types have parentheses, like CHAR(40)
 	const char	*leftparen=charstring::findFirst(columntypestring,"(");
 	if (leftparen) {
-		columntypelen=leftparen-columntypestring;
+		columntypesize=leftparen-columntypestring;
 	}
 
 	const char * const 	*datatypestring=cont->dataTypeStrings();
 
 	for (uint32_t index=0; datatypestring[index]; index++) {
 
-		// compare "columntypelen" bytes but also make sure that the
+		// compare "columntypesize" bytes but also make sure that the
 		// byte afterward is a NULL, we don't want "DATE" to match
 		// "DATETIME" for example
 		if (!charstring::compareIgnoringCase(
 					datatypestring[index],
 					columntypestring,
-					columntypelen) &&
-				datatypestring[index][columntypelen]=='\0') {
+					columntypesize) &&
+				datatypestring[index][columntypesize]=='\0') {
 
 			byte_t	retval=mysqltypemap[index];
 
@@ -3540,7 +3539,7 @@ bool sqlrprotocol_mysql::buildBinaryRow(sqlrservercursor *cursor,
 
 	// field pointers
 	const char	*field;
-	uint64_t	fieldlength;
+	uint64_t	fieldsize;
 	bool		blob;
 	bool		null;
 
@@ -3562,7 +3561,7 @@ bool sqlrprotocol_mysql::buildBinaryRow(sqlrservercursor *cursor,
 
 		// get the field
 		null=false;
-		if (!cont->getField(cursor,i,&field,&fieldlength,&blob,&null)) {
+		if (!cont->getField(cursor,i,&field,&fieldsize,&blob,&null)) {
 			return false;
 		}
 
@@ -3590,10 +3589,10 @@ bool sqlrprotocol_mysql::buildBinaryRow(sqlrservercursor *cursor,
 		}
 
 		// get the field (again)
-		fieldlength=0;
+		fieldsize=0;
 		blob=false;
 		null=false;
-		if (!cont->getField(cursor,i,&field,&fieldlength,&blob,&null)) {
+		if (!cont->getField(cursor,i,&field,&fieldsize,&blob,&null)) {
 			if (getDebug()) {
 				stdoutput.write("	}\n");
 			}
@@ -3609,9 +3608,9 @@ bool sqlrprotocol_mysql::buildBinaryRow(sqlrservercursor *cursor,
 		} else if (!null) {
 			if (getDebug()) {
 				stdoutput.printf("		\"%s\" (%d)\n",
-							field,fieldlength);
+							field,fieldsize);
 			}
-			buildBinaryField(field,fieldlength,ct[i]);
+			buildBinaryField(field,fieldsize,ct[i]);
 		}
 
 		if (getDebug()) {
@@ -3623,7 +3622,7 @@ bool sqlrprotocol_mysql::buildBinaryRow(sqlrservercursor *cursor,
 }
 
 void sqlrprotocol_mysql::buildBinaryField(const char *field,
-						uint64_t fieldlength,
+						uint64_t fieldsize,
 						byte_t columntype) {
 
 	switch (columntype) {
@@ -3649,7 +3648,7 @@ void sqlrprotocol_mysql::buildBinaryField(const char *field,
 			// false and this method will be called instead of
 			// buildLobField().  So, this method has to handle LOBs
 			// too.
-			writeLenEncStr(&resppacket,field,fieldlength);
+			writeLenEncStr(&resppacket,field,fieldsize);
 			break;
 
 		case MYSQL_TYPE_LONGLONG:
@@ -3794,10 +3793,10 @@ bool sqlrprotocol_mysql::buildTextRow(sqlrservercursor *cursor,
 
 		// get the field
 		const char 	*field=NULL;
-		uint64_t	fieldlength=0;
+		uint64_t	fieldsize=0;
 		bool		blob=false;
 		bool		null=false;
-		if (!cont->getField(cursor,i,&field,&fieldlength,&blob,&null)) {
+		if (!cont->getField(cursor,i,&field,&fieldsize,&blob,&null)) {
 			if (getDebug()) {
 				stdoutput.write("	}\n");
 			}
@@ -3818,9 +3817,9 @@ bool sqlrprotocol_mysql::buildTextRow(sqlrservercursor *cursor,
 		} else {
 			if (getDebug()) {
 				stdoutput.printf("		\"%s\" (%d)\n",
-							field,fieldlength);
+							field,fieldsize);
 			}
-			writeLenEncStr(&resppacket,field,fieldlength);
+			writeLenEncStr(&resppacket,field,fieldsize);
 		}
 
 		if (getDebug()) {
@@ -3836,9 +3835,9 @@ bool sqlrprotocol_mysql::buildTextRow(sqlrservercursor *cursor,
 /*void sqlrprotocol_mysql::buildLobField(sqlrservercursor *cursor,
 							uint32_t col) {
 
-	// Get lob length.  If this fails, send a NULL field.
+	// Get lob size.  If this fails, send a NULL field.
 	uint64_t	loblength=0;
-	if (!cont->getLobFieldLength(cursor,col,&loblength)) {
+	if (!cont->getLobFieldLEngth(cursor,col,&loblength)) {
 		// send NULL as 0xfb
 		write(&resppacket,(char)0xfb);
 		cont->closeLobField(cursor,col);
@@ -3897,8 +3896,7 @@ bool sqlrprotocol_mysql::buildTextRow(sqlrservercursor *cursor,
 
 			// if we haven't started sending yet, then do that now
 			if (start) {
-				writeLenEncInt(
-						&resppacket,loblength);
+				writeLenEncInt(&resppacket,loblength);
 				start=false;
 			}
 
@@ -3921,16 +3919,16 @@ void sqlrprotocol_mysql::buildLobField(sqlrservercursor *cursor,
 	// the lob contains multi-byte characters, then there will be more bytes
 	// than characters and the client will complain about a malformed
 	// packet, at best.  This is the only reliable way to get the actual
-	// byte-length of the lob that I can think of.
+	// number of bytes of the lob that I can think of.
 	//
 	// My original alternative solution idea was to write the data to the
-	// resppacket, and then back-patch the length.  But, since it's a
+	// resppacket, and then back-patch the size.  But, since it's a
 	// length-encoded integer, we don't know how much space to leave
 	// ourselves.
 	//
 	// The only other idea that I can think of is to keep a list of
 	// resppackets, append data to them until we hit a lob, then start a
-	// new packet, append it's length to the end of the previous packet,
+	// new packet, append it's size to the end of the previous packet,
 	// and so on.  Then sendPacket could send all of the packets.  Maybe
 	// we'll do that eventually.
 
@@ -3976,17 +3974,17 @@ bool sqlrprotocol_mysql::comFieldList(sqlrservercursor *cursor) {
 	// get the column list for the specified table
 
 	const byte_t	*rp=reqpacket;
-	uint64_t	rplen=reqpacketsize;
+	uint64_t	rpsize=reqpacketsize;
 	rp++;
-	rplen--;
+	rpsize--;
 
 	// get the table
 	char	*table=charstring::duplicate((const char *)rp);
 	rp+=charstring::getLength(table);
-	rplen-=charstring::getLength(table);
+	rpsize-=charstring::getLength(table);
 
 	// get the wildcard
-	char	*wild=charstring::duplicate((const char *)rp,rplen);
+	char	*wild=charstring::duplicate((const char *)rp,rpsize);
 
 	// some apps aren't well behaved, trim spaces off of both sides
 	charstring::bothTrim(table);
@@ -4064,7 +4062,7 @@ bool sqlrprotocol_mysql::getListByQuery(sqlrservercursor *cursor,
 
 	// build the appropriate query
 	const char	*query=NULL;
-	uint32_t	querylen=0;
+	uint32_t	querysize=0;
 	bool		havewild=charstring::getLength(wild);
 	switch (listtype) {
 		case MYSQLLISTTYPE_DATABASE_LIST:
@@ -4087,10 +4085,10 @@ bool sqlrprotocol_mysql::getListByQuery(sqlrservercursor *cursor,
 	// FIXME: this can fail
 	buildListQuery(cursor,query,wild,table);
 	query=cont->getQueryBuffer(cursor);
-	querylen=cont->getQueryLength(cursor);
+	querysize=cont->getQuerySize(cursor);
 
 	// prepare and execute the query
-	return cont->prepareQuery(cursor,query,querylen,true,true,true) &&
+	return cont->prepareQuery(cursor,query,querysize,true,true,true) &&
 				cont->executeQuery(cursor,true,true,true,true);
 }
 
@@ -4115,20 +4113,20 @@ bool sqlrprotocol_mysql::buildListQuery(sqlrservercursor *cursor,
 	escapeParameter(&tablebuf,table);
 
 	// bounds checking
-	cont->setQueryLength(cursor,charstring::getLength(query)+
+	cont->setQuerySize(cursor,charstring::getLength(query)+
 					wildbuf.getStringLength()+
 					tablebuf.getStringLength());
-	if (cont->getQueryLength(cursor)>maxquerysize) {
+	if (cont->getQuerySize(cursor)>maxquerysize) {
 		stringbuffer	err;
 		err.append("Query loo large (");
-		err.append(cont->getQueryLength(cursor));
+		err.append(cont->getQuerySize(cursor));
 		err.append(">");
 		err.append(maxquerysize);
 		err.append(")");
 		return sendErrPacket(1105,err.getString(),"24000");
 	}
 
-	// fill the query buffer and update the length
+	// fill the query buffer and update the size
 	char	*querybuffer=cont->getQueryBuffer(cursor);
 	if (tablebuf.getStringLength()) {
 		charstring::printf(querybuffer,maxquerysize+1,
@@ -4138,7 +4136,7 @@ bool sqlrprotocol_mysql::buildListQuery(sqlrservercursor *cursor,
 		charstring::printf(querybuffer,maxquerysize+1,
 						query,wildbuf.getString());
 	}
-	cont->setQueryLength(cursor,charstring::getLength(querybuffer));
+	cont->setQuerySize(cursor,charstring::getLength(querybuffer));
 	return true;
 }
 
@@ -4170,120 +4168,120 @@ bool sqlrprotocol_mysql::sendFieldListResponse(sqlrservercursor *cursor) {
 		// convert to a column definition and send it
 		const char	*name=NULL;
 		const char	*typestring=NULL;
-		const char	*lengthstring=NULL;
+		const char	*sizestring=NULL;
 		const char	*precstring=NULL;
 		const char	*scalestring=NULL;
 		const char	*isnullable=NULL;
 		const char	*columnkey=NULL;
 		const char	*defaultvalue=NULL;
 		const char	*extra=NULL;
-		uint64_t	fieldlength=0;
+		uint64_t	fieldsize=0;
 		bool		blob=false;
 		bool		null=false;
 		cont->getField(cursor,0,
-				&name,&fieldlength,
+				&name,&fieldsize,
 				&blob,&null);
 		cont->getField(cursor,1,
-				&typestring,&fieldlength,
+				&typestring,&fieldsize,
 				&blob,&null);
 		cont->getField(cursor,2,
-				&lengthstring,&fieldlength,
+				&sizestring,&fieldsize,
 				&blob,&null);
 		cont->getField(cursor,3,
-				&precstring,&fieldlength,
+				&precstring,&fieldsize,
 				&blob,&null);
 		cont->getField(cursor,4,
-				&scalestring,&fieldlength,
+				&scalestring,&fieldsize,
 				&blob,&null);
 		cont->getField(cursor,5,
-				&isnullable,&fieldlength,
+				&isnullable,&fieldsize,
 				&blob,&null);
 		cont->getField(cursor,6,
-				&columnkey,&fieldlength,
+				&columnkey,&fieldsize,
 				&blob,&null);
 		cont->getField(cursor,7,
-				&defaultvalue,&fieldlength,
+				&defaultvalue,&fieldsize,
 				&blob,&null);
 		cont->getField(cursor,8,
-				&extra,&fieldlength,
+				&extra,&fieldsize,
 				&blob,&null);
 
 		uint32_t	prec=charstring::convertToInteger(precstring);
 		uint32_t	scale=charstring::convertToInteger(scalestring);
 		char		type=getColumnType(typestring,
-						charstring::getLength(typestring),
-						scale);
-		uint32_t	length=0;
-		if (!charstring::isNullOrEmpty(lengthstring)) {
-			length=charstring::convertToInteger(lengthstring);
+					charstring::getLength(typestring),
+					scale);
+		uint32_t	size=0;
+		if (!charstring::isNullOrEmpty(sizestring)) {
+			size=charstring::convertToInteger(sizestring);
 		} else {
 			switch ((byte_t)type) {
 				case MYSQL_TYPE_DECIMAL:
-					length=prec+2;
+					size=prec+2;
 					break;
 				case MYSQL_TYPE_TINY:
-					length=4;
+					size=4;
 					break;
 				case MYSQL_TYPE_SHORT:
-					length=6;
+					size=6;
 					break;
 				case MYSQL_TYPE_LONG:
-					length=11;
+					size=11;
 					break;
 				case MYSQL_TYPE_FLOAT:
-					length=12;
+					size=12;
 					break;
 				case MYSQL_TYPE_DOUBLE:
-					length=22;
+					size=22;
 					break;
 				case MYSQL_TYPE_TIMESTAMP:
-					length=19;
+					size=19;
 					break;
 				case MYSQL_TYPE_LONGLONG:
-					length=20;
+					size=20;
 					break;
 				case MYSQL_TYPE_INT24:
-					length=9;
+					size=9;
 					break;
 				case MYSQL_TYPE_DATE:
-					length=10;
+					size=10;
 					break;
 				case MYSQL_TYPE_TIME:
-					length=10;
+					size=10;
 					break;
 				case MYSQL_TYPE_DATETIME:
-					length=19;
+					size=19;
 					break;
 				case MYSQL_TYPE_YEAR:
-					length=4;
+					size=4;
 					break;
 				case MYSQL_TYPE_NEWDATE:
-					length=10;
+					size=10;
 					break;
 				case MYSQL_TYPE_BIT:
-					length=1;
+					size=1;
 					break;
 				case MYSQL_TYPE_TIMESTAMP2:
-					length=19;
+					size=19;
 					break;
 				case MYSQL_TYPE_DATETIME2:
-					length=19;
+					size=19;
 					break;
 				case MYSQL_TYPE_TIME2:
-					length=10;
+					size=10;
 					break;
 				case MYSQL_TYPE_NEWDECIMAL:
-					length=prec+2;
+					size=prec+2;
 					break;
 				case MYSQL_TYPE_ENUM:
 				case MYSQL_TYPE_SET:
 				case MYSQL_TYPE_GEOMETRY:
 					// FIXME: not really sure about these
-					length=8;
+					size=8;
 					break;
 				default:
 					// fall back to 50
-					length=50;
+					size=50;
 					break;
 			}
 		}
@@ -4315,7 +4313,7 @@ bool sqlrprotocol_mysql::sendFieldListResponse(sqlrservercursor *cursor) {
 		// FIXME: get and send default value
 		if (!sendColumnDefinition(cursor,column++,
 					"def","","","",name,"",
-					length,typestring,scale,
+					size,typestring,scale,
 					type,flags,defaultvalue,true)) {
 			return false;
 		}
@@ -4423,13 +4421,13 @@ bool sqlrprotocol_mysql::comStmtPrepare(sqlrservercursor *cursor) {
 
 	// get the query and query size
 	const char	*query=(const char *)reqpacket+1;
-	uint64_t	querylen=reqpacketsize-1;
+	uint64_t	querysize=reqpacketsize-1;
 
 	// bounds checking
-	if (querylen>maxquerysize) {
+	if (querysize>maxquerysize) {
 		stringbuffer	err;
 		err.append("Query loo large (");
-		err.append(querylen);
+		err.append(querysize);
 		err.append(">");
 		err.append(maxquerysize);
 		err.append(")");
@@ -4438,22 +4436,22 @@ bool sqlrprotocol_mysql::comStmtPrepare(sqlrservercursor *cursor) {
 
 	// copy it into the cursor's query buffer
 	char	*querybuffer=cont->getQueryBuffer(cursor);
-	bytestring::copy(querybuffer,query,querylen);
-	querybuffer[querylen]='\0';
-	cont->setQueryLength(cursor,querylen);
+	bytestring::copy(querybuffer,query,querysize);
+	querybuffer[querysize]='\0';
+	cont->setQuerySize(cursor,querysize);
 
 	if (getDebug()) {
 		debugStart("com_stmt_prepare");
 		stdoutput.printf("	query: \"");
-		stdoutput.safePrint(query,(uint32_t)querylen);
+		stdoutput.safePrint(query,(uint32_t)querysize);
 		stdoutput.printf("\"\n");
-		stdoutput.printf("	query length: %d\n",querylen);
+		stdoutput.printf("	query size: %d\n",querysize);
 		debugEnd();
 	}
 
 	// prepare the query
 	if (!cont->prepareQuery(cursor,cont->getQueryBuffer(cursor),
-					cont->getQueryLength(cursor),
+					cont->getQuerySize(cursor),
 					true,true,true)) {
 		return sendQueryError(cursor);
 	}
@@ -4468,7 +4466,7 @@ bool sqlrprotocol_mysql::sendStmtPrepareOk(sqlrservercursor *cursor) {
 	// db doesn't know, and the sqlrservercursor class should expose it.
 	uint16_t	pcount=cont->countBindVariables(
 					cont->getQueryBuffer(cursor),
-					cont->getQueryLength(cursor));
+					cont->getQuerySize(cursor));
 	uint16_t	warningcount=0;
 
 	// bounds checking
@@ -4696,7 +4694,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 		byte_t	nullbitmapmask=(1<<(i%8));
 		if (nullbitmapindex&nullbitmapmask) {
 			bv->type=SQLRSERVERBINDVARTYPE_NULL;
-			bv->isnull=cont->nullBindValue();
+			bv->isnull=cont->getNullBindValue();
 			if (getDebug()) {
 				stdoutput.printf("		%d {\n",i);
 				stdoutput.printf("			"
@@ -4715,7 +4713,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 			case MYSQL_TYPE_TINY:
 				bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
 				bv->value.integerval=*((char *)rp);
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				rp+=sizeof(char);
 				break;
 			case MYSQL_TYPE_SHORT:
@@ -4724,7 +4722,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 				uint16_t	val;
 				readLE(rp,&val,&rp);
 				bv->value.integerval=(int16_t)val;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				}
 				break;
 			case MYSQL_TYPE_LONG:
@@ -4733,7 +4731,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 				uint32_t	val;
 				readLE(rp,&val,&rp);
 				bv->value.integerval=(int32_t)val;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				}
 				break;
 			case MYSQL_TYPE_LONGLONG:
@@ -4742,7 +4740,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 				uint64_t	val;
 				readLE(rp,&val,&rp);
 				bv->value.integerval=(int64_t)val;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				}
 				break;
 			case MYSQL_TYPE_FLOAT:
@@ -4753,7 +4751,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 				bv->value.doubleval.value=temp;
 				bv->value.doubleval.precision=0;
 				bv->value.doubleval.scale=0;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				}
 				break;
 			case MYSQL_TYPE_DOUBLE:
@@ -4761,7 +4759,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 				read(rp,&bv->value.doubleval.value,&rp);
 				bv->value.doubleval.precision=0;
 				bv->value.doubleval.scale=0;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				break;
 			case MYSQL_TYPE_TIME:
 				{
@@ -4775,16 +4773,16 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 				bv->value.dateval.microsecond=0;
 				bv->value.dateval.tz=NULL;
 				bv->value.dateval.isnegative=false;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				bv->value.dateval.buffersize=64;
 				bv->value.dateval.buffer=
 					(char *)bindpool->allocate(
 						bv->value.dateval.buffersize);
 
-				char	len=*((char *)rp);
+				char	size=*((char *)rp);
 				rp+=sizeof(char);
 
-				if (len) {
+				if (size) {
 					char	isneg=*((char *)rp);
 					bv->value.dateval.isnegative=isneg;
 					rp+=sizeof(char);
@@ -4807,7 +4805,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 					bv->value.dateval.second=
 							*((char *)rp);
 					rp+=sizeof(char);
-					if (len>8) {
+					if (size>8) {
 						int32_t	ms;
 						bytestring::copy(&ms,
 							rp,sizeof(int32_t));
@@ -4833,16 +4831,16 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 				bv->value.dateval.microsecond=-1;
 				bv->value.dateval.tz=NULL;
 				bv->value.dateval.isnegative=false;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				bv->value.dateval.buffersize=64;
 				bv->value.dateval.buffer=
 					(char *)bindpool->allocate(
 						bv->value.dateval.buffersize);
 
-				char	len=*((char *)rp);
+				char	size=*((char *)rp);
 				rp+=sizeof(char);
 
-				if (len) {
+				if (size) {
 					int16_t	year;
 					bytestring::copy(&year,
 							rp,sizeof(int16_t));
@@ -4858,9 +4856,9 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 					rp+=sizeof(char);
 
 					// ignore time parts
-					if (len>4) {
+					if (size>4) {
 						rp+=3*sizeof(char);
-						if (len>7) {
+						if (size>7) {
 							rp+=sizeof(int32_t);
 						}
 					}
@@ -4880,16 +4878,16 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 				bv->value.dateval.microsecond=0;
 				bv->value.dateval.tz=NULL;
 				bv->value.dateval.isnegative=false;
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				bv->value.dateval.buffersize=64;
 				bv->value.dateval.buffer=
 					(char *)bindpool->allocate(
 						bv->value.dateval.buffersize);
 
-				char	len=*((char *)rp);
+				char	size=*((char *)rp);
 				rp+=sizeof(char);
 
-				if (len) {
+				if (size) {
 					int16_t	year;
 					bytestring::copy(&year,
 							rp,sizeof(int16_t));
@@ -4903,7 +4901,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 					rp+=sizeof(char);
 					bv->value.dateval.day=*((char *)rp);
 					rp+=sizeof(char);
-					if (len>4) {
+					if (size>4) {
 						bv->value.dateval.hour=
 								*((char *)rp);
 						rp+=sizeof(char);
@@ -4913,7 +4911,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 						bv->value.dateval.second=
 								*((char *)rp);
 						rp+=sizeof(char);
-						if (len>7) {
+						if (size>7) {
 							int32_t	ms;
 							bytestring::copy(&ms,
 							rp,sizeof(int32_t));
@@ -4943,7 +4941,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 							(const char *)rp,
 							bv->valuesize);
 				bv->value.stringval[bv->valuesize]='\0';
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				rp+=bv->valuesize;
 				break;
 			case MYSQL_TYPE_STRING:
@@ -4959,7 +4957,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 							(const char *)rp,
 							bv->valuesize);
 				bv->value.stringval[bv->valuesize]='\0';
-				bv->isnull=cont->nonNullBindValue();
+				bv->isnull=cont->getNonNullBindValue();
 				rp+=bv->valuesize;
 				break;
 		}
@@ -5019,30 +5017,30 @@ bool sqlrprotocol_mysql::comStmtSendLongData() {
 	// sends long data to the server
 
 	const byte_t	*rp=reqpacket;
-	uint64_t	rplen=reqpacketsize;
+	uint64_t	rpsize=reqpacketsize;
 	rp++;
-	rplen--;
+	rpsize--;
 
 	// get statement id
 	uint32_t	stmtid;
 	readLE(rp,&stmtid,&rp);
-	rplen-=sizeof(uint32_t);
+	rpsize-=sizeof(uint32_t);
 
 	// get the parameter id
 	uint16_t	paramid;
 	readLE(rp,&paramid,&rp);
-	rplen-=sizeof(uint16_t);
+	rpsize-=sizeof(uint16_t);
 
 	// get the data
 	const byte_t	*data=rp;
-	uint64_t	datalen=rplen;
+	uint64_t	datasize=rpsize;
 
 	if (getDebug()) {
 		debugStart("com_stmt_long_data");
 		stdoutput.printf("	statement id: %d\n",stmtid);
 		stdoutput.printf("	parameter id: %d\n",paramid);
-		stdoutput.printf("	data length: %lld\n",datalen);
-		debugHexDump(data,datalen);
+		stdoutput.printf("	data size: %lld\n",datasize);
+		debugHexDump(data,datasize);
 		debugEnd();
 	}
 
@@ -5093,7 +5091,7 @@ bool sqlrprotocol_mysql::comStmtClose() {
 	pcounts[cont->getId(cursor)]=0;
 
 	// release the cursor
-	cont->setState(cursor,SQLRCURSORSTATE_AVAILABLE);
+	cont->release(cursor);
 
 	return true;
 }
@@ -5185,30 +5183,30 @@ bool sqlrprotocol_mysql::comStmtFetch() {
 bool sqlrprotocol_mysql::sendError() {
 
 	const char	*errorstring;
-	uint32_t	errorlength;
+	uint32_t	errorsize;
 	int64_t		errnum;
 	bool		liveconnection;
-	cont->errorMessage(&errorstring,
-				&errorlength,
-				&errnum,
-				&liveconnection);
+	cont->getError(&errorstring,
+			&errorsize,
+			&errnum,
+			&liveconnection);
 
-	return sendErrPacket(errnum,errorstring,errorlength,"42000");
+	return sendErrPacket(errnum,errorstring,errorsize,"42000");
 }
 
 bool sqlrprotocol_mysql::sendQueryError(sqlrservercursor *cursor) {
 
 	const char	*errorstring;
-	uint32_t	errorlength;
+	uint32_t	errorsize;
 	int64_t		errnum;
 	bool		liveconnection;
-	cont->errorMessage(cursor,
-				&errorstring,
-				&errorlength,
-				&errnum,
-				&liveconnection);
+	cont->getError(cursor,
+			&errorstring,
+			&errorsize,
+			&errnum,
+			&liveconnection);
 
-	return sendErrPacket(errnum,errorstring,errorlength,"42000");
+	return sendErrPacket(errnum,errorstring,errorsize,"42000");
 }
 
 bool sqlrprotocol_mysql::sendNotImplementedError() {

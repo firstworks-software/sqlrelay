@@ -23,7 +23,7 @@ sqlrquery::~sqlrquery() {
 	delete pvt;
 }
 
-bool sqlrquery::match(const char *querystring, uint32_t querylength) {
+bool sqlrquery::match(const char *querystring, uint32_t querysize) {
 	return false;
 }
 
@@ -67,7 +67,7 @@ sqlrquerycursor::~sqlrquerycursor() {
 }
 
 sqlrquerytype_t	sqlrquerycursor::determineQueryType(const char *query,
-							uint32_t length) {
+							uint32_t size) {
 	return SQLRQUERYTYPE_CUSTOM;
 }
 

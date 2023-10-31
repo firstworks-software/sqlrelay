@@ -34,7 +34,7 @@ class sqlrresultsetrowblocktranslationsprivate {
 		singlylinkedlist< sqlrresultsetrowblocktranslationplugin * >
 									_tlist;
 
-		uint64_t		_rowblocksize;
+		uint64_t		_rowblockcount;
 		uint64_t		_rowcount;
 
 		const char		*_error;
@@ -46,7 +46,7 @@ sqlrresultsetrowblocktranslations::sqlrresultsetrowblocktranslations(
 	pvt=new sqlrresultsetrowblocktranslationsprivate;
 	pvt->_cont=cont;
 	pvt->_debug=cont->getConfig()->getDebugResultSetRowBlockTranslations();
-	pvt->_rowblocksize=0;
+	pvt->_rowblockcount=0;
 	pvt->_rowcount=0;
 	pvt->_error=NULL;
 }
@@ -62,10 +62,14 @@ bool sqlrresultsetrowblocktranslations::load(domnode *parameters) {
 
 	unload();
 
-	pvt->_rowblocksize=charstring::convertToInteger(
+	pvt->_rowblockcount=charstring::convertToInteger(
+				parameters->getAttributeValue("rowblockcount"));
+	if (pvt->_rowblockcount) {
+		pvt->_rowblockcount=charstring::convertToInteger(
 				parameters->getAttributeValue("rowblocksize"));
-	if (!pvt->_rowblocksize) {
-		pvt->_rowblocksize=10;
+	}
+	if (!pvt->_rowblockcount) {
+		pvt->_rowblockcount=10;
 	}
 	
 
@@ -192,8 +196,8 @@ void sqlrresultsetrowblocktranslations::loadResultSetRowBlockTranslation(
 	pvt->_tlist.append(sqlrrstp);
 }
 
-uint64_t sqlrresultsetrowblocktranslations::getRowBlockSize() {
-	return pvt->_rowblocksize;
+uint64_t sqlrresultsetrowblocktranslations::getRowBlockCount() {
+	return pvt->_rowblockcount;
 }
 
 bool sqlrresultsetrowblocktranslations::setRow(sqlrserverconnection *sqlrcon,
@@ -201,7 +205,7 @@ bool sqlrresultsetrowblocktranslations::setRow(sqlrserverconnection *sqlrcon,
 						uint32_t colcount,
 						const char * const *fieldnames,
 						const char * const *fields,
-						uint64_t *fieldlengths,
+						uint64_t *fieldsizes,
 						bool *blobs,
 						bool *nulls) {
 	debugFunction();
@@ -221,7 +225,7 @@ bool sqlrresultsetrowblocktranslations::setRow(sqlrserverconnection *sqlrcon,
 
 	if (!node->getValue()->rstr->setRow(sqlrcon,sqlrcur,
 						colcount,fieldnames,
-						fields,fieldlengths,
+						fields,fieldsizes,
 						blobs,nulls)) {
 		pvt->_rowcount=0;
 		return false;
@@ -270,7 +274,7 @@ bool sqlrresultsetrowblocktranslations::run(sqlrserverconnection *sqlrcon,
 			}
 
 			const char	**oldfields;
-			uint64_t	*oldfieldlengths;
+			uint64_t	*oldfieldsizes;
 			bool		*oldblobs;
 			bool		*oldnulls;
 			if (!node->getValue()->rstr->getRow(
@@ -278,7 +282,7 @@ bool sqlrresultsetrowblocktranslations::run(sqlrserverconnection *sqlrcon,
 							sqlrcur,
 							colcount,
 							&oldfields,
-							&oldfieldlengths,
+							&oldfieldsizes,
 							&oldblobs,
 							&oldnulls)) {
 				pvt->_rowcount=0;
@@ -297,7 +301,7 @@ bool sqlrresultsetrowblocktranslations::run(sqlrserverconnection *sqlrcon,
 							colcount,
 							fieldnames,
 							oldfields,
-							oldfieldlengths,
+							oldfieldsizes,
 							oldblobs,
 							oldnulls)) {
 				pvt->_rowcount=0;
@@ -326,7 +330,7 @@ bool sqlrresultsetrowblocktranslations::getRow(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur,
 						uint32_t colcount,
 						const char ***fields,
-						uint64_t **fieldlengths,
+						uint64_t **fieldsizes,
 						bool **blobs,
 						bool **nulls) {
 	debugFunction();
@@ -345,7 +349,7 @@ bool sqlrresultsetrowblocktranslations::getRow(sqlrserverconnection *sqlrcon,
 
 	if (!node->getValue()->rstr->getRow(sqlrcon,sqlrcur,
 						colcount,
-						fields,fieldlengths,
+						fields,fieldsizes,
 						blobs,nulls)) {
 		pvt->_rowcount=0;
 		return false;

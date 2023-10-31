@@ -28,7 +28,7 @@ bool sqlrresultsettranslation::run(sqlrserverconnection *sqlrcon,
 					const char *fieldname,
 					uint32_t fieldindex,
 					const char **field,
-					uint64_t *fieldlength) {
+					uint64_t *fieldsize) {
 	return true;
 }
 

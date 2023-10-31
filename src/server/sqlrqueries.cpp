@@ -150,14 +150,14 @@ void sqlrqueries::loadQuery(domnode *query) {
 
 sqlrquerycursor *sqlrqueries::match(sqlrserverconnection *sqlrcon,
 					const char *querystring,
-					uint32_t querylength,
+					uint32_t querysize,
 					uint16_t id) {
 	debugFunction();
 	for (listnode< sqlrqueryplugin * > *node=
 						pvt->_llist.getFirst();
 						node; node=node->getNext()) {
 		sqlrquery	*qr=node->getValue()->qr;
-		if (qr->match(querystring,querylength)) {
+		if (qr->match(querystring,querysize)) {
 			return qr->newCursor(sqlrcon,id);
 		}
 	}

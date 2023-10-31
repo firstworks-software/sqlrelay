@@ -203,3 +203,7 @@ filedescriptor *sqlrexport::getFileDescriptor() {
 bool sqlrexport::exportToJsonDomNode(domnode *jsondomnode) {
 	return true;
 }
+
+bool sqlrexport::exportToTable(sqlrconnection *sqlrcon, const char *table) {
+	return true;
+}

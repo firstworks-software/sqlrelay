@@ -20,10 +20,10 @@
 
 struct db2column {
 	char		*name;
-	uint16_t	namelength;
+	uint16_t	namesize;
 	// SQLColAttribute requires that these are signed, 32 bit integers
 	int32_t		type;
-	int32_t		length;
+	int32_t		size;
 	int32_t		precision;
 	int32_t		scale;
 	int32_t		nullable;
@@ -35,7 +35,7 @@ struct db2column {
 	uint16_t	binary;
 	uint16_t	autoincrement;
 	char		table[4096];
-	uint16_t	tablelength;
+	uint16_t	tablesize;
 };
 
 struct datebind {
@@ -63,7 +63,7 @@ class SQLRSERVER_DLLSPEC db2cursor : public sqlrservercursor {
 		bool		open();
 		bool		close();
 		bool		prepareQuery(const char *query,
-						uint32_t length);
+						uint32_t size);
 		void		encodeBlob(stringbuffer *buffer,
 						const char *data,
 						uint32_t datasize);
@@ -152,18 +152,18 @@ class SQLRSERVER_DLLSPEC db2cursor : public sqlrservercursor {
 							uint64_t charstoread,
 							uint64_t *charsread);
 		bool		executeQuery(const char *query,
-						uint32_t length);
-		void		errorMessage(char *errorbuffer,
-						uint32_t errorbufferlength,
-						uint32_t *errorlength,
+						uint32_t size);
+		void		getError(char *errorbuffer,
+						uint32_t errorbuffersize,
+						uint32_t *errorsize,
 						int64_t	*errorcode,
 						bool *liveconnection);
 		uint64_t	affectedRows();
 		uint32_t	colCount();
 		const char	*getColumnName(uint32_t i);
-		uint16_t	getColumnNameLength(uint32_t i);
+		uint16_t	getColumnNameSize(uint32_t i);
 		uint16_t	getColumnType(uint32_t i);
-		uint32_t	getColumnLength(uint32_t i);
+		uint32_t	getColumnSize(uint32_t i);
 		uint32_t	getColumnPrecision(uint32_t i);
 		uint32_t	getColumnScale(uint32_t i);
 		uint16_t	getColumnIsNullable(uint32_t i);
@@ -171,13 +171,13 @@ class SQLRSERVER_DLLSPEC db2cursor : public sqlrservercursor {
 		uint16_t	getColumnIsBinary(uint32_t i);
 		uint16_t	getColumnIsAutoIncrement(uint32_t i);
 		const char	*getColumnTable(uint32_t i);
-		uint16_t	getColumnTableLength(uint32_t i);
+		uint16_t	getColumnTableSize(uint32_t i);
 		bool		noRowsToReturn();
 		bool		skipRow(bool *error);
 		bool		fetchRow(bool *error);
 		void		getField(uint32_t col,
 					const char **fld,
-					uint64_t *fldlength,
+					uint64_t *fldsize,
 					bool *blob,
 					bool *null);
 		void		nextRow();
@@ -239,26 +239,25 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 		sqlrservercursor	*newCursor(uint16_t id);
 		void	deleteCursor(sqlrservercursor *curs);
 		void	logOut();
-		int16_t	nullBindValue();
-		bool	bindValueIsNull(int16_t isnull);
-		bool	autoCommitOn();
-		bool	autoCommitOff();
+		int16_t	getNullBindValue();
+		bool	setAutoCommitOn();
+		bool	setAutoCommitOff();
 		bool	supportsTransactionBlocks();
 		bool	supportsAutoCommit();
 		bool	commit();
 		bool	rollback();
-		void	errorMessage(char *errorbuffer,
-					uint32_t errorbufferlength,
-					uint32_t *errorlength,
+		void	getError(char *errorbuffer,
+					uint32_t errorbuffersize,
+					uint32_t *errorsize,
 					int64_t	*errorcode,
 					bool *liveconnection);
 		bool	liveConnection(SQLINTEGER nativeerror,
 					const char *errorbuffer,
-					SQLSMALLINT errlength);
+					SQLSMALLINT errsize);
 		const char	*pingQuery();
-		const char	*identify();
-		const char	*dbVersion();
-		const char	*dbHostNameQuery();
+		const char	*getDbType();
+		const char	*getDbVersion();
+		const char	*getDbHostNameQuery();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes);
@@ -269,8 +268,8 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 		const char	*getLastInsertIdQuery();
 		const char	*setIsolationLevelQuery();
 		const char	*noopQuery();
-		const char	*bindFormat();
-		const char	*nextvalFormat();
+		const char	*getBindFormat();
+		const char	*getNextvalFormat();
 
 		SQLHENV		env;
 		SQLRETURN	erg;
@@ -284,7 +283,7 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 
 		int32_t		maxoutbindlobsize;
 
-		const char	*identity;
+		const char	*dbtype;
 
 		char		dbversion[512];
 		uint16_t	dbmajorversion;
@@ -300,7 +299,7 @@ db2connection::db2connection(sqlrservercontroller *cont) :
 					sqlrserverconnection(cont) {
 
 	maxoutbindlobsize=MAX_OUT_BIND_LOB_SIZE;
-	identity=NULL;
+	dbtype=NULL;
 }
 
 void db2connection::handleConnectString() {
@@ -316,7 +315,7 @@ void db2connection::handleConnectString() {
 		server=tmp;
 	}
 
-	identity=cont->getConnectStringValue("identity");
+	dbtype=cont->getConnectStringValue("identity");
 
 	lang=cont->getConnectStringValue("lang");
 
@@ -414,22 +413,22 @@ const char *db2connection::logInError(const char *errmsg) {
 	SQLCHAR		state[10];
 	SQLINTEGER	nativeerrnum;
 	SQLCHAR		errorbuffer[1024];
-	SQLSMALLINT	errlength;
+	SQLSMALLINT	errsize;
 
 	SQLGetDiagRec(SQL_HANDLE_DBC,dbc,1,state,&nativeerrnum,
-					errorbuffer,1024,&errlength);
-	errormessage.append(errorbuffer,errlength);
+					errorbuffer,1024,&errsize);
+	errormessage.append(errorbuffer,errsize);
 	return errormessage.getString();
 }
 
 void db2connection::dbVersionSpecificTasks() {
 
 	// get the db version
-	SQLSMALLINT	dbversionlen;
+	SQLSMALLINT	dbversionsize;
 	SQLGetInfo(dbc,SQL_DBMS_VER,
 			(SQLPOINTER)dbversion,
 			(SQLSMALLINT)sizeof(dbversion),
-			&dbversionlen);
+			&dbversionsize);
 	dbmajorversion=charstring::convertToInteger(dbversion);
 
 	// set queries to use based on version
@@ -549,24 +548,17 @@ void db2connection::logOut() {
 	SQLFreeHandle(SQL_HANDLE_ENV,env);
 }
 
-int16_t db2connection::nullBindValue() {
+int16_t db2connection::getNullBindValue() {
 	return SQL_NULL_DATA;
 }
 
-bool db2connection::bindValueIsNull(int16_t isnull) {
-	if (isnull==SQL_NULL_DATA) {
-		return true;
-	}
-	return false;
-}
-
-bool db2connection::autoCommitOn() {
+bool db2connection::setAutoCommitOn() {
 	return (SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
 				(SQLPOINTER)SQL_AUTOCOMMIT_ON,
 				sizeof(SQLINTEGER))==SQL_SUCCESS);
 }
 
-bool db2connection::autoCommitOff() {
+bool db2connection::setAutoCommitOff() {
 	return (SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
 				(SQLPOINTER)SQL_AUTOCOMMIT_OFF,
 				sizeof(SQLINTEGER))==SQL_SUCCESS);
@@ -588,39 +580,39 @@ bool db2connection::rollback() {
 	return (SQLEndTran(SQL_HANDLE_ENV,env,SQL_ROLLBACK)==SQL_SUCCESS);
 }
 
-void db2connection::errorMessage(char *errorbuffer,
-					uint32_t errorbufferlength,
-					uint32_t *errorlength,
-					int64_t *errorcode,
-					bool *liveconnection) {
+void db2connection::getError(char *errorbuffer,
+				uint32_t errorbuffersize,
+				uint32_t *errorsize,
+				int64_t *errorcode,
+				bool *liveconnection) {
 	SQLCHAR		state[10];
 	SQLINTEGER	nativeerrnum;
-	SQLSMALLINT	errlength;
+	SQLSMALLINT	errsize;
 
 	SQLGetDiagRec(SQL_HANDLE_DBC,dbc,1,state,&nativeerrnum,
-				(SQLCHAR *)errorbuffer,errorbufferlength,
-				&errlength);
+				(SQLCHAR *)errorbuffer,errorbuffersize,
+				&errsize);
 
 	// set return values
-	*errorlength=errlength;
+	*errorsize=errsize;
 	*errorcode=nativeerrnum;
-	*liveconnection=liveConnection(nativeerrnum,errorbuffer,errlength);
+	*liveconnection=liveConnection(nativeerrnum,errorbuffer,errsize);
 }
 
 bool db2connection::liveConnection(SQLINTEGER nativeerrnum,
 					const char *errorbuffer,
-					SQLSMALLINT errlength) {
+					SQLSMALLINT errsize) {
 
 	// When the DB goes down, DB2 first reports one error:
 	// 	[IBM][CLI Driver] SQL1224N  A database agent could not be
 	//	started to service a request, or was terminated as a result of
 	//	a database system shutdown or a force command.  SQLSTATE=55032
-	//	(in this case nativeerrnum==-1224 and errlength==184)
+	//	(in this case nativeerrnum==-1224 and errsize==184)
 	// then upon repeated attempts to run a query, it reports:
 	//	[IBM][CLI Driver] CLI0106E  Connection is closed. SQLSTATE=08003
-	//	(in this case nativeerrnum==-99999 and errlength==64)
+	//	(in this case nativeerrnum==-99999 and errsize==64)
 	//	(unforutnately other errors have the same error number and
-	//	length, such as "Invalid cursor state." so we have to
+	//	size, such as "Invalid cursor state." so we have to
 	//	discriminate a bit for this one)
 	// here's another one for -1224
 	//	[IBM][CLI Driver] SQL1224N  The database manager is not able to
@@ -632,13 +624,13 @@ bool db2connection::liveConnection(SQLINTEGER nativeerrnum,
 	// the server side, the DB2 client reports:
 	//	[IBM][CLI Driver] SQL30081N  A communication error has been
 	//	detected...
-	//	(in this case nativeerrnum==-30081 and the error length is
+	//	(in this case nativeerrnum==-30081 and the error size is
 	//	variable depending on the host name/ip address of the server
 	//	and other things, so we'll only test for the error number)
-	return !((nativeerrnum==-1224 && errlength==184) ||
-		(nativeerrnum==-99999 && errlength==64 &&
+	return !((nativeerrnum==-1224 && errsize==184) ||
+		(nativeerrnum==-99999 && errsize==64 &&
 		charstring::contains(errorbuffer,"Connection is closed")) ||
-		(nativeerrnum==-1224 && errlength==220) ||
+		(nativeerrnum==-1224 && errsize==220) ||
 		(nativeerrnum==-30081));
 }
 
@@ -647,15 +639,15 @@ const char *db2connection::pingQuery() {
 	return "values 1";
 }
 
-const char *db2connection::identify() {
-	return (identity)?identity:"db2";
+const char *db2connection::getDbType() {
+	return (dbtype)?dbtype:"db2";
 }
 
-const char *db2connection::dbVersion() {
+const char *db2connection::getDbVersion() {
 	return dbversion;
 }
 
-const char *db2connection::dbHostNameQuery() {
+const char *db2connection::getDbHostNameQuery() {
 	return dbhostnamequery;
 }
 
@@ -721,11 +713,11 @@ const char *db2connection::getColumnListQuery(const char *table, bool wild) {
 		"	colno";
 }
 
-const char *db2connection::bindFormat() {
+const char *db2connection::getBindFormat() {
 	return "?";
 }
 
-const char *db2connection::nextvalFormat() {
+const char *db2connection::getNextvalFormat() {
 	return "(nextval for %s)";
 }
 
@@ -802,14 +794,14 @@ void db2cursor::allocateResultSetBuffers(int32_t columncount) {
 		loblength=new SQLINTEGER *[columncount];
 		indicator=new SQLINTEGER *[columncount];
 		uint32_t	fetchatonce=getFetchAtOnce();
-		uint32_t	maxfieldlength=conn->cont->getMaxFieldLength();
+		uint32_t	maxfieldsize=conn->cont->getMaxFieldSize();
 		#if (DB2VERSION>7)
 		rowstat=new SQLUSMALLINT[fetchatonce];
 		#endif
 		column=new db2column[columncount];
 		for (int32_t i=0; i<columncount; i++) {
 			column[i].name=new char[4096];
-			field[i]=new char[fetchatonce*maxfieldlength];
+			field[i]=new char[fetchatonce*maxfieldsize];
 			loblocator[i]=new SQLINTEGER[fetchatonce];
 			loblength[i]=new SQLINTEGER[fetchatonce];
 			indicator[i]=new SQLINTEGER[fetchatonce];
@@ -899,7 +891,7 @@ bool db2cursor::close() {
 	return true;
 }
 
-bool db2cursor::prepareQuery(const char *query, uint32_t length) {
+bool db2cursor::prepareQuery(const char *query, uint32_t size) {
 
 	bindformaterror=false;
 
@@ -907,7 +899,7 @@ bool db2cursor::prepareQuery(const char *query, uint32_t length) {
 	ncols=0;
 
 	// prepare the query
-	erg=SQLPrepare(stmt,(SQLCHAR *)query,length);
+	erg=SQLPrepare(stmt,(SQLCHAR *)query,size);
 	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 }
 
@@ -1344,6 +1336,7 @@ bool db2cursor::outputBindClob(const char *variable,
 }
 
 bool db2cursor::getLobOutputBindLength(uint16_t index, uint64_t *length) {
+	// FIXME: this code assumes that the lob characters are 1 byte long
 	if (outlobbindlen[index]>db2conn->maxoutbindlobsize) {
 		outlobbindlen[index]=db2conn->maxoutbindlobsize;
 	}
@@ -1355,19 +1348,20 @@ bool db2cursor::getLobOutputBindSegment(uint16_t index,
 					char *buffer, uint64_t buffersize,
 					uint64_t offset, uint64_t charstoread,
 					uint64_t *charsread) {
-	uint64_t	len=outlobbindlen[index];
-	if (offset>len) {
+	// FIXME: this code assumes that the lob characters are 1 byte long
+	uint64_t	length=outlobbindlen[index];
+	if (offset>length) {
 		return false;
 	}
-	if (offset+charstoread>len) {
-		charstoread=charstoread-((offset+charstoread)-len);
+	if (offset+charstoread>length) {
+		charstoread=charstoread-((offset+charstoread)-length);
 	}
 	bytestring::copy(buffer,outlobbind[index]+offset,charstoread);
 	*charsread=charstoread;
 	return true;
 }
 
-bool db2cursor::executeQuery(const char *query, uint32_t length) {
+bool db2cursor::executeQuery(const char *query, uint32_t size) {
 
 	// initialize row counts
 	rowgroupindex=0;
@@ -1382,7 +1376,7 @@ bool db2cursor::executeQuery(const char *query, uint32_t length) {
 		return false;
 	}
 
-	checkForTempTable(query,length);
+	checkForTempTable(query,size);
 
 	// get the column count
 	erg=SQLNumResultCols(stmt,&ncols);
@@ -1418,15 +1412,15 @@ bool db2cursor::executeQuery(const char *query, uint32_t length) {
 			// column name
 			erg=SQLColAttribute(stmt,i+1,SQL_COLUMN_LABEL,
 					column[i].name,4096,
-					(SQLSMALLINT *)&(column[i].namelength),
+					(SQLSMALLINT *)&(column[i].namesize),
 					NULL);
 			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
 				return false;
 			}
 
-			// column length
+			// column size
 			erg=SQLColAttribute(stmt,i+1,SQL_COLUMN_LENGTH,
-					NULL,0,NULL,&(column[i].length));
+					NULL,0,NULL,&(column[i].size));
 			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
 				return false;
 			}
@@ -1488,12 +1482,12 @@ bool db2cursor::executeQuery(const char *query, uint32_t length) {
 			erg=SQLColAttribute(stmt,i+1,
 				SQL_COLUMN_TABLE_NAME,
 				column[i].table,4096,
-				(SQLSMALLINT *)&(column[i].tablelength),
+				(SQLSMALLINT *)&(column[i].tablesize),
 				NULL);
 			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
 				return false;
 			}
-			column[i].tablelength=
+			column[i].tablesize=
 				charstring::getLength(column[i].table);
 		}
 
@@ -1512,7 +1506,7 @@ bool db2cursor::executeQuery(const char *query, uint32_t length) {
 			default:
 				erg=SQLBindCol(stmt,i+1,SQL_C_CHAR,
 					field[i],
-					conn->cont->getMaxFieldLength(),
+					conn->cont->getMaxFieldSize(),
 					indicator[i]);
 				break;
 		}
@@ -1550,19 +1544,19 @@ bool db2cursor::executeQuery(const char *query, uint32_t length) {
 	return true;
 }
 
-void db2cursor::errorMessage(char *errorbuffer,
-					uint32_t errorbufferlength,
-					uint32_t *errorlength,
-					int64_t *errorcode,
-					bool *liveconnection) {
+void db2cursor::getError(char *errorbuffer,
+				uint32_t errorbuffersize,
+				uint32_t *errorsize,
+				int64_t *errorcode,
+				bool *liveconnection) {
 	if (bindformaterror) {
 		// handle bind format errors
-		*errorlength=charstring::getLength(
+		*errorsize=charstring::getLength(
 				SQLR_ERROR_INVALIDBINDVARIABLEFORMAT_STRING);
 		charstring::safeCopy(errorbuffer,
-				errorbufferlength,
+				errorbuffersize,
 				SQLR_ERROR_INVALIDBINDVARIABLEFORMAT_STRING,
-				*errorlength);
+				*errorsize);
 		*errorcode=SQLR_ERROR_INVALIDBINDVARIABLEFORMAT;
 		*liveconnection=true;
 		return;
@@ -1570,17 +1564,17 @@ void db2cursor::errorMessage(char *errorbuffer,
 
 	SQLCHAR		state[10];
 	SQLINTEGER	nativeerrnum;
-	SQLSMALLINT	errlength;
+	SQLSMALLINT	errsize;
 
 	SQLGetDiagRec(SQL_HANDLE_STMT,stmt,1,state,&nativeerrnum,
-				(SQLCHAR *)errorbuffer,errorbufferlength,
-				&errlength);
+				(SQLCHAR *)errorbuffer,errorbuffersize,
+				&errsize);
 
 	// set return values
-	*errorlength=errlength;
+	*errorsize=errsize;
 	*errorcode=nativeerrnum;
 	*liveconnection=db2conn->liveConnection(nativeerrnum,
-						errorbuffer,errlength);
+						errorbuffer,errsize);
 }
 
 uint64_t db2cursor::affectedRows() {
@@ -1595,8 +1589,8 @@ const char *db2cursor::getColumnName(uint32_t i) {
 	return column[i].name;
 }
 
-uint16_t db2cursor::getColumnNameLength(uint32_t i) {
-	return column[i].namelength;
+uint16_t db2cursor::getColumnNameSize(uint32_t i) {
+	return column[i].namesize;
 }
 
 uint16_t db2cursor::getColumnType(uint32_t i) {
@@ -1661,8 +1655,8 @@ uint16_t db2cursor::getColumnType(uint32_t i) {
 	}
 }
 
-uint32_t db2cursor::getColumnLength(uint32_t i) {
-	return column[i].length;
+uint32_t db2cursor::getColumnSize(uint32_t i) {
+	return column[i].size;
 }
 
 uint32_t db2cursor::getColumnPrecision(uint32_t i) {
@@ -1700,8 +1694,8 @@ const char *db2cursor::getColumnTable(uint32_t i) {
 	return column[i].table;
 }
 
-uint16_t db2cursor::getColumnTableLength(uint32_t i) {
-	return column[i].tablelength;
+uint16_t db2cursor::getColumnTableSize(uint32_t i) {
+	return column[i].tablesize;
 }
 
 bool db2cursor::noRowsToReturn() {
@@ -1775,7 +1769,7 @@ bool db2cursor::fetchRow(bool *error) {
 }
 
 void db2cursor::getField(uint32_t col,
-				const char **fld, uint64_t *fldlength,
+				const char **fld, uint64_t *fldsize,
 				bool *blob, bool *null) {
 
 	// handle NULLs
@@ -1791,8 +1785,8 @@ void db2cursor::getField(uint32_t col,
 	}
 
 	// handle normal datatypes
-	*fld=&field[col][rowgroupindex*conn->cont->getMaxFieldLength()];
-	*fldlength=indicator[col][rowgroupindex];
+	*fld=&field[col][rowgroupindex*conn->cont->getMaxFieldSize()];
+	*fldsize=indicator[col][rowgroupindex];
 }
 
 void db2cursor::nextRow() {

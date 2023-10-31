@@ -213,7 +213,7 @@ bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					sqlrparser *sqlrp,
 					const char *query,
-					uint32_t querylength,
+					uint32_t querysize,
 					stringbuffer *translatedquery) {
 	debugFunction();
 
@@ -222,7 +222,7 @@ bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
 	// FIXME: I commented this out to allow empty queries to be sent
 	// before getXXXList() calls.  Hopefully it doesn't break something
 	// else...
-	/*if (!querylength || !query) {
+	/*if (!querysize || !query) {
 		pvt->_error="query was empty or null";
 		if (pvt->_debug) {
 			stdoutput.printf("\n%s\n\n",pvt->_error);
@@ -315,7 +315,7 @@ bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
 			}
 
 			if (!tr->run(sqlrcon,sqlrcur,
-					query,querylength,tempquerystr)) {
+					query,querysize,tempquerystr)) {
 				pvt->_error=tr->getError();
 				if (pvt->_debug) {
 					stdoutput.printf("\n%s\n\n",
@@ -325,7 +325,7 @@ bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
 			}
 
 			query=tempquerystr->getString();
-			querylength=tempquerystr->getSize();
+			querysize=tempquerystr->getSize();
 
 			tempquerystr=(tempquerystr==&tempquerystr1)?
 						&tempquerystr2:&tempquerystr1;
@@ -347,7 +347,7 @@ bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
 			return false;
 		}
 	} else {
-		translatedquery->append(query,querylength);
+		translatedquery->append(query,querysize);
 		if (sqlrp->parse(translatedquery->getString())) {
 			pvt->_tree=sqlrp->getTree();
 		} else {

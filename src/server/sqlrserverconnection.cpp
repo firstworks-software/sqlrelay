@@ -16,11 +16,11 @@ class sqlrserverconnectionprivate {
 	friend class sqlrserverconnection;
 
 		uint32_t	_maxquerysize;
-		uint32_t	_maxerrorlength;
+		uint32_t	_maxerrorsize;
 
 		char		*_errorbuffer;
 		uint32_t	_errorbuffersize;
-		uint32_t	_errorlength;
+		uint32_t	_errorsize;
 		int64_t		_errnum;
 		bool		_liveconnection;
 
@@ -40,11 +40,11 @@ sqlrserverconnection::sqlrserverconnection(sqlrservercontroller *cont) {
 	this->cont=cont;
 
 	pvt->_maxquerysize=cont->getConfig()->getMaxQuerySize();
-	pvt->_maxerrorlength=cont->getConfig()->getMaxErrorLength();
+	pvt->_maxerrorsize=cont->getConfig()->getMaxErrorSize();
 
-	pvt->_errorbuffersize=pvt->_maxerrorlength+1;
+	pvt->_errorbuffersize=pvt->_maxerrorsize+1;
 	pvt->_errorbuffer=new char[pvt->_errorbuffersize];
-	pvt->_errorlength=0;
+	pvt->_errorsize=0;
 	pvt->_errnum=0;
 	pvt->_liveconnection=false;
 
@@ -116,19 +116,22 @@ void sqlrserverconnection::handleConnectString() {
 	}
 	cont->setMaxColumnCount(maxcolumncount);
 
-	// max field length
-	int32_t		maxfieldlength=MAX_FIELD_LENGTH;
-	const char	*mfl=cont->getConnectStringValue("maxfieldlength");
-	if (!mfl) {
-		mfl=cont->getConnectStringValue("maxitembuffersize");
+	// max field size
+	int32_t		maxfieldsize=MAX_FIELD_LENGTH;
+	const char	*mfs=cont->getConnectStringValue("maxfieldsize");
+	if (!mfs) {
+		mfs=cont->getConnectStringValue("maxfieldlength");
 	}
-	if (mfl) {
-		maxfieldlength=charstring::convertToInteger(mfl);
-		if (maxfieldlength<0) {
-			maxfieldlength=0;
+	if (!mfs) {
+		mfs=cont->getConnectStringValue("maxitembuffersize");
+	}
+	if (mfs) {
+		maxfieldsize=charstring::convertToInteger(mfs);
+		if (maxfieldsize<0) {
+			maxfieldsize=0;
 		}
 	}
-	cont->setMaxFieldLength(maxfieldlength);
+	cont->setMaxFieldSize(maxfieldsize);
 
 	// connect timeout
 	int64_t		connecttimeout=0;
@@ -174,12 +177,12 @@ bool sqlrserverconnection::changeProxiedUser(const char *newuser,
 	return false;
 }
 
-bool sqlrserverconnection::autoCommitOn() {
+bool sqlrserverconnection::setAutoCommitOn() {
 	cont->setFakeAutoCommit(true);
 	return true;
 }
 
-bool sqlrserverconnection::autoCommitOff() {
+bool sqlrserverconnection::setAutoCommitOff() {
 	cont->setFakeAutoCommit(false);
 	return true;
 }
@@ -211,14 +214,14 @@ bool sqlrserverconnection::begin() {
 
 	// init some variables
 	const char	*beginquery=beginTransactionQuery();
-	int		beginquerylen=charstring::getLength(beginquery);
+	int		beginquerysize=charstring::getLength(beginquery);
 	bool		retval=false;
 
 	// run the query...
 	sqlrservercursor	*begincur=cont->newCursor();
 	if (begincur->open() &&
-		begincur->prepareQuery(beginquery,beginquerylen)) {
-		retval=begincur->executeQuery(beginquery,beginquerylen);
+		begincur->prepareQuery(beginquery,beginquerysize)) {
+		retval=begincur->executeQuery(beginquery,beginquerysize);
 	}
 
 	// If there was an error, copy it out.  We'll be destroying the
@@ -251,14 +254,14 @@ bool sqlrserverconnection::commit() {
 
 	// init some variables
 	const char	*commitquery="commit";
-	int		commitquerylen=6;
+	int		commitquerysize=6;
 	bool		retval=false;
 
 	// run the query...
 	sqlrservercursor	*commitcur=cont->newCursor();
 	if (commitcur->open() &&
-		commitcur->prepareQuery(commitquery,commitquerylen)) {
-		retval=commitcur->executeQuery(commitquery,commitquerylen);
+		commitcur->prepareQuery(commitquery,commitquerysize)) {
+		retval=commitcur->executeQuery(commitquery,commitquerysize);
 	}
 
 	// If there was an error, copy it out.  We'll be destroying the
@@ -287,14 +290,14 @@ bool sqlrserverconnection::rollback() {
 
 	// init some variables
 	const char	*rollbackquery="rollback";
-	int		rollbackquerylen=8;
+	int		rollbackquerysize=8;
 	bool		retval=false;
 
 	// run the query...
 	sqlrservercursor	*rbcur=cont->newCursor();
 	if (rbcur->open() &&
-		rbcur->prepareQuery(rollbackquery,rollbackquerylen)) {
-		retval=rbcur->executeQuery(rollbackquery,rollbackquerylen);
+		rbcur->prepareQuery(rollbackquery,rollbackquerysize)) {
+		retval=rbcur->executeQuery(rollbackquery,rollbackquerysize);
 	}
 
 	// If there was an error, copy it out.  We'll be destroying the
@@ -336,30 +339,26 @@ bool sqlrserverconnection::selectDatabase(const char *database) {
 	}
 
 	// bounds checking
-	size_t		sdquerylen=charstring::getLength(sdquerybase)+
-					charstring::getLength(database)+1;
-	if (sdquerylen>pvt->_maxquerysize) {
+	size_t	sdquerysize=charstring::getLength(sdquerybase)+
+				charstring::getLength(database)+1;
+	if (sdquerysize>pvt->_maxquerysize) {
 		return false;
 	}
 
 	// create the select database query
-	char	*sdquery=new char[sdquerylen];
-	charstring::printf(sdquery,sdquerylen,sdquerybase,database);
-	sdquerylen=charstring::getLength(sdquery);
+	char	*sdquery=new char[sdquerysize];
+	charstring::printf(sdquery,sdquerysize,sdquerybase,database);
+	sdquerysize=charstring::getLength(sdquery);
 
 	// run the query...
 	// (enable translations, triggers, etc. for this one)
 	bool	retval=false;
 	sqlrservercursor	*sdcur=cont->newCursor();
 	if (cont->open(sdcur) &&
-		cont->prepareQuery(sdcur,sdquery,sdquerylen,true,true,true) &&
+		cont->prepareQuery(sdcur,sdquery,sdquerysize,true,true,true) &&
 		cont->executeQuery(sdcur,true,true,true,true)) {
 		cont->closeResultSet(sdcur);
 		retval=true;
-
-		// set a flag indicating that the db has been changed
-		// so it can be reset at the end of the session
-		cont->dbHasChanged();
 	} else {
 		// If there was an error, copy it out.  We'll be destroying the
 		// cursor in a moment and the error will be lost otherwise.
@@ -385,24 +384,24 @@ char *sqlrserverconnection::getCurrentDatabase() {
 		return NULL;
 	}
 
-	size_t		gcdquerylen=charstring::getLength(gcdquery);
+	size_t	gcdquerysize=charstring::getLength(gcdquery);
 
 	// run the query...
 	char	*retval=NULL;
 	sqlrservercursor	*gcdcur=cont->newCursor();
 	if (gcdcur->open() &&
-		gcdcur->prepareQuery(gcdquery,gcdquerylen) &&
-		gcdcur->executeQuery(gcdquery,gcdquerylen)) {
+		gcdcur->prepareQuery(gcdquery,gcdquerysize) &&
+		gcdcur->executeQuery(gcdquery,gcdquerysize)) {
 
 		bool	error=false;
 		if (!gcdcur->noRowsToReturn() && gcdcur->fetchRow(&error)) {
 
 			// get the first field of the row and return it
 			const char	*field=NULL;
-			uint64_t	fieldlength=0;
+			uint64_t	fieldsize=0;
 			bool		blob=false;
 			bool		null=false;
-			gcdcur->getField(0,&field,&fieldlength,&blob,&null);
+			gcdcur->getField(0,&field,&fieldsize,&blob,&null);
 			retval=charstring::duplicate(field);
 		} 
 	}
@@ -426,24 +425,24 @@ char *sqlrserverconnection::getCurrentSchema() {
 		return NULL;
 	}
 
-	size_t		gcsquerylen=charstring::getLength(gcsquery);
+	size_t	gcsquerysize=charstring::getLength(gcsquery);
 
 	// run the query...
 	char	*retval=NULL;
 	sqlrservercursor	*gcscur=cont->newCursor();
 	if (gcscur->open() &&
-		gcscur->prepareQuery(gcsquery,gcsquerylen) &&
-		gcscur->executeQuery(gcsquery,gcsquerylen)) {
+		gcscur->prepareQuery(gcsquery,gcsquerysize) &&
+		gcscur->executeQuery(gcsquery,gcsquerysize)) {
 
 		bool	error=false;
 		if (!gcscur->noRowsToReturn() && gcscur->fetchRow(&error)) {
 
 			// get the first field of the row and return it
 			const char	*field=NULL;
-			uint64_t	fieldlength=0;
+			uint64_t	fieldsize=0;
 			bool		blob=false;
 			bool		null=false;
-			gcscur->getField(0,&field,&fieldlength,&blob,&null);
+			gcscur->getField(0,&field,&fieldsize,&blob,&null);
 			retval=charstring::duplicate(field);
 		} 
 	}
@@ -474,24 +473,24 @@ bool sqlrserverconnection::getLastInsertId(uint64_t *id) {
 		return false;
 	}
 
-	size_t	liiquerylen=charstring::getLength(liiquery);
+	size_t	liiquerysize=charstring::getLength(liiquery);
 
 	// run the query...
 	bool	retval=false;
 	sqlrservercursor	*liicur=cont->newCursor();
 	if (liicur->open() &&
-		liicur->prepareQuery(liiquery,liiquerylen) &&
-		liicur->executeQuery(liiquery,liiquerylen)) {
+		liicur->prepareQuery(liiquery,liiquerysize) &&
+		liicur->executeQuery(liiquery,liiquerysize)) {
 
 		bool	error=false;
 		if (!liicur->noRowsToReturn() && liicur->fetchRow(&error)) {
 
 			// get the first field of the row and return it
 			const char	*field=NULL;
-			uint64_t	fieldlength=0;
+			uint64_t	fieldsize=0;
 			bool		blob=false;
 			bool		null=false;
-			liicur->getField(0,&field,&fieldlength,&blob,&null);
+			liicur->getField(0,&field,&fieldsize,&blob,&null);
 			*id=charstring::convertToInteger(field);
 			retval=true;
 
@@ -540,23 +539,23 @@ bool sqlrserverconnection::setIsolationLevel(const char *isolevel) {
 	}
 
 	// bounds checking
-	size_t		silquerylen=charstring::getLength(silquerybase)+
+	size_t		silquerysize=charstring::getLength(silquerybase)+
 					charstring::getLength(isolevel)+1;
-	if (silquerylen>pvt->_maxquerysize) {
+	if (silquerysize>pvt->_maxquerysize) {
 		return false;
 	}
 
 	// create the set isolation level query
-	char	*silquery=new char[silquerylen];
-	charstring::printf(silquery,silquerylen,silquerybase,isolevel);
-	silquerylen=charstring::getLength(silquery);
+	char	*silquery=new char[silquerysize];
+	charstring::printf(silquery,silquerysize,silquerybase,isolevel);
+	silquerysize=charstring::getLength(silquery);
 
 	// run the query...
 	bool	retval=false;
 	sqlrservercursor	*silcur=cont->newCursor();
 	if (silcur->open() &&
-		silcur->prepareQuery(silquery,silquerylen) &&
-		silcur->executeQuery(silquery,silquerylen)) {
+		silcur->prepareQuery(silquery,silquerysize) &&
+		silcur->executeQuery(silquery,silquerysize)) {
 		retval=true;
 	}
 
@@ -579,11 +578,11 @@ const char *sqlrserverconnection::setIsolationLevelQuery() {
 
 bool sqlrserverconnection::ping() {
 	const char	*pingquery=pingQuery();
-	int		pingquerylen=charstring::getLength(pingquery);
+	int		pingquerysize=charstring::getLength(pingquery);
 	sqlrservercursor	*pingcur=cont->newCursor();
 	if (pingcur->open() &&
-		pingcur->prepareQuery(pingquery,pingquerylen) &&
-		pingcur->executeQuery(pingquery,pingquerylen)) {
+		pingcur->prepareQuery(pingquery,pingquerysize) &&
+		pingcur->executeQuery(pingquery,pingquerysize)) {
 		pingcur->closeResultSet();
 		pingcur->close();
 		cont->deleteCursor(pingcur);
@@ -598,15 +597,15 @@ const char *sqlrserverconnection::pingQuery() {
 	return "select 1";
 }
 
-const char *sqlrserverconnection::dbHostNameQuery() {
+const char *sqlrserverconnection::getDbHostNameQuery() {
 	return NULL;
 }
 
-const char *sqlrserverconnection::dbIpAddressQuery() {
+const char *sqlrserverconnection::getDbIpAddressQuery() {
 	return NULL;
 }
 
-const char *sqlrserverconnection::dbHostName() {
+const char *sqlrserverconnection::getDbHostName() {
 
 	if (pvt->_dbhostname) {
 		return pvt->_dbhostname;
@@ -622,23 +621,23 @@ const char *sqlrserverconnection::dbHostName() {
 	// if we have a host name query then use it, otherwise get the
 	// ip address and convert it to a host name...
 
-	const char	*dbhnquery=dbHostNameQuery();
+	const char	*dbhnquery=getDbHostNameQuery();
 	if (dbhnquery) {
 
-		size_t		dbhnquerylen=charstring::getLength(dbhnquery);
+		size_t		dbhnquerysize=charstring::getLength(dbhnquery);
 		sqlrservercursor	*dbhncur=cont->newCursor();
 		if (dbhncur->open() &&
-			dbhncur->prepareQuery(dbhnquery,dbhnquerylen) &&
-			dbhncur->executeQuery(dbhnquery,dbhnquerylen)) {
+			dbhncur->prepareQuery(dbhnquery,dbhnquerysize) &&
+			dbhncur->executeQuery(dbhnquery,dbhnquerysize)) {
 
 			bool	error=false;
 			if (!dbhncur->noRowsToReturn() &&
 					dbhncur->fetchRow(&error)) {
 				const char	*field=NULL;
-				uint64_t	fieldlength=0;
+				uint64_t	fieldsize=0;
 				bool		blob=false;
 				bool		null=false;
-				dbhncur->getField(0,&field,&fieldlength,
+				dbhncur->getField(0,&field,&fieldsize,
 								&blob,&null);
 				pvt->_dbhostname=charstring::duplicate(field);
 			} 
@@ -650,7 +649,7 @@ const char *sqlrserverconnection::dbHostName() {
 
 	} else {
 
-		const char	*ipaddr=dbIpAddress();
+		const char	*ipaddr=getDbIpAddress();
 		char		ip[4];
 		for (uint8_t i=0; i<4; i++) {
 			ip[i]=charstring::convertToInteger(ipaddr);
@@ -665,7 +664,7 @@ const char *sqlrserverconnection::dbHostName() {
 	return pvt->_dbhostname;
 }
 
-const char *sqlrserverconnection::dbIpAddress() {
+const char *sqlrserverconnection::getDbIpAddress() {
 
 	if (pvt->_dbipaddress) {
 		return pvt->_dbipaddress;
@@ -681,23 +680,23 @@ const char *sqlrserverconnection::dbIpAddress() {
 	// if we have an ip address query then use it, otherwise get the
 	// host name and convert it to an ip address...
 
-	const char	*dbiaquery=dbIpAddressQuery();
+	const char	*dbiaquery=getDbIpAddressQuery();
 	if (dbiaquery) {
 
-		size_t		dbiaquerylen=charstring::getLength(dbiaquery);
+		size_t		dbiaquerysize=charstring::getLength(dbiaquery);
 		sqlrservercursor	*dbiacur=cont->newCursor();
 		if (dbiacur->open() &&
-			dbiacur->prepareQuery(dbiaquery,dbiaquerylen) &&
-			dbiacur->executeQuery(dbiaquery,dbiaquerylen)) {
+			dbiacur->prepareQuery(dbiaquery,dbiaquerysize) &&
+			dbiacur->executeQuery(dbiaquery,dbiaquerysize)) {
 
 			bool	error=false;
 			if (!dbiacur->noRowsToReturn() &&
 					dbiacur->fetchRow(&error)) {
 				const char	*field=NULL;
-				uint64_t	fieldlength=0;
+				uint64_t	fieldsize=0;
 				bool		blob=false;
 				bool		null=false;
-				dbiacur->getField(0,&field,&fieldlength,
+				dbiacur->getField(0,&field,&fieldsize,
 								&blob,&null);
 				pvt->_dbipaddress=charstring::duplicate(field);
 			} 
@@ -708,7 +707,7 @@ const char *sqlrserverconnection::dbIpAddress() {
 		cont->deleteCursor(dbiacur);
 
 	} else {
-		pvt->_dbipaddress=hostentry::getAddressString(dbHostName());
+		pvt->_dbipaddress=hostentry::getAddressString(getDbHostName());
 	}
 	pvt->_dbhostiploop=0;
 	return pvt->_dbipaddress;
@@ -969,17 +968,17 @@ bool sqlrserverconnection::isSynonym(const char *table) {
 	}
 
 	// rebuild it to include the table
-	size_t	synquerylen=charstring::getLength(synquerybase)+
+	size_t	synquerysize=charstring::getLength(synquerybase)+
 					charstring::getLength(table);
-	char	*synquery=new char[synquerylen+1];
-	charstring::printf(synquery,synquerylen+1,synquerybase,table);
-	synquerylen=charstring::getLength(synquery);
+	char	*synquery=new char[synquerysize+1];
+	charstring::printf(synquery,synquerysize+1,synquerybase,table);
+	synquerysize=charstring::getLength(synquery);
 
 	sqlrservercursor	*syncur=cont->newCursor();
 	bool	error=false;
 	bool	result=(syncur->open() &&
-			syncur->prepareQuery(synquery,synquerylen) &&
-			syncur->executeQuery(synquery,synquerylen) &&
+			syncur->prepareQuery(synquery,synquerysize) &&
+			syncur->executeQuery(synquery,synquerysize) &&
 			!syncur->noRowsToReturn() &&
 			syncur->fetchRow(&error));
 	syncur->closeResultSet();
@@ -993,23 +992,23 @@ const char *sqlrserverconnection::isSynonymQuery() {
 	return NULL;
 }
 
-const char *sqlrserverconnection::bindFormat() {
+const char *sqlrserverconnection::getBindFormat() {
 	return ":*";
 }
 
-int16_t sqlrserverconnection::nonNullBindValue() {
+int16_t sqlrserverconnection::getNonNullBindValue() {
 	return 0;
 }
 
-int16_t sqlrserverconnection::nullBindValue() {
+int16_t sqlrserverconnection::getNullBindValue() {
 	return -1;
 }
 
-bool sqlrserverconnection::bindValueIsNull(int16_t isnull) {
-	return (isnull==nullBindValue());
+bool sqlrserverconnection::getBindValueIsNull(int16_t isnull) {
+	return (isnull==getNullBindValue());
 }
 
-const char *sqlrserverconnection::nextvalFormat() {
+const char *sqlrserverconnection::getNextvalFormat() {
 	return "%s.nextval";
 }
 
@@ -1033,12 +1032,12 @@ uint32_t sqlrserverconnection::getErrorBufferSize() {
 	return pvt->_errorbuffersize;
 }
 
-uint32_t sqlrserverconnection::getErrorLength() {
-	return pvt->_errorlength;
+uint32_t sqlrserverconnection::getErrorSize() {
+	return pvt->_errorsize;
 }
 
-void sqlrserverconnection::setErrorLength(uint32_t errorlength) {
-	pvt->_errorlength=errorlength;
+void sqlrserverconnection::setErrorSize(uint32_t errorsize) {
+	pvt->_errorsize=errorsize;
 }
 
 uint32_t sqlrserverconnection::getErrorNumber() {

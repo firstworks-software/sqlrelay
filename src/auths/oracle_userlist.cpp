@@ -5,6 +5,7 @@
 #include <rudiments/charstring.h>
 #include <rudiments/bytebuffer.h>
 #include <rudiments/sha1.h>
+#include <rudiments/sensitivevalue.h>
 
 class SQLRSERVER_DLLSPEC sqlrauth_oracle_userlist : public sqlrauth {
 	public:
@@ -13,8 +14,8 @@ class SQLRSERVER_DLLSPEC sqlrauth_oracle_userlist : public sqlrauth {
 							sqlrpwdencs *sqlrpe,
 							domnode *parameters);
 		const char	*auth(sqlrcredentials *cred);
-		bool	compare(const char *suppliedresponse,
-					uint64_t suppliedresponselength,
+		bool		compare(const char *suppliedresponse,
+					uint64_t suppliedresponsesize,
 					const char *validpassword,
 					const char *method,
 					const char *extra);
@@ -23,6 +24,8 @@ class SQLRSERVER_DLLSPEC sqlrauth_oracle_userlist : public sqlrauth {
 		const char	**passwords;
 		const char	**passwordencryptions;
 		uint64_t	usercount;
+
+		sensitivevalue	passwordvalue;
 
 		bool	debug;
 };
@@ -55,7 +58,8 @@ sqlrauth_oracle_userlist::sqlrauth_oracle_userlist(
 	for (uint64_t i=0; i<usercount; i++) {
 
 		users[i]=user->getAttributeValue("user");
-		passwords[i]=user->getAttributeValue("password");
+		passwordvalue.parse(user->getAttributeValue("password"));
+		passwords[i]=passwordvalue.detachTextValue();
 
 		// support modern "passwordencryptionid" and fall back to
 		// older "passwordencryption" attribute
@@ -87,8 +91,8 @@ const char *sqlrauth_oracle_userlist::auth(sqlrcredentials *cred) {
 
 	const char	*user=((sqlroraclecredentials *)cred)->getUser();
 	const char	*password=((sqlroraclecredentials *)cred)->getPassword();
-	uint64_t	passwordlength=((sqlroraclecredentials *)cred)->
-							getPasswordLength();
+	uint64_t	passwordsize=((sqlroraclecredentials *)cred)->
+							getPasswordSize();
 	const char	*method=((sqlroraclecredentials *)cred)->getMethod();
 	const char	*extra=((sqlroraclecredentials *)cred)->getExtra();
 
@@ -96,7 +100,7 @@ const char *sqlrauth_oracle_userlist::auth(sqlrcredentials *cred) {
 		stdoutput.printf("auth %s {\n",method);
 		stdoutput.printf("	user: \"%s\"\n",user);
 		stdoutput.printf("	password: \"");
-		stdoutput.safePrint(password,passwordlength);
+		stdoutput.safePrint(password,passwordsize);
 		stdoutput.printf("\"\n");
 		stdoutput.printf("	method: \"%s\"\n",method);
 		stdoutput.printf("	extra: \"%s\"\n",extra);
@@ -147,7 +151,7 @@ const char *sqlrauth_oracle_userlist::auth(sqlrcredentials *cred) {
 					// compare it to the password
 					// that was passed in
 					retval=compare(password,
-							passwordlength,
+							passwordsize,
 							pwd,
 							method,extra);
 
@@ -163,7 +167,7 @@ const char *sqlrauth_oracle_userlist::auth(sqlrcredentials *cred) {
 				// if password encryption isn't being used,
 				// return the user if the passwords match
 				return (compare(password,
-						passwordlength,
+						passwordsize,
 						passwords[i],
 						method,
 						extra))?user:NULL;
@@ -174,7 +178,7 @@ const char *sqlrauth_oracle_userlist::auth(sqlrcredentials *cred) {
 }
 
 bool sqlrauth_oracle_userlist::compare(const char *suppliedresponse,
-						uint64_t suppliedresponselength,
+						uint64_t suppliedresponsesize,
 						const char *validpassword,
 						const char *method,
 						const char *extra) {
@@ -188,7 +192,7 @@ bool sqlrauth_oracle_userlist::compare(const char *suppliedresponse,
 			stdoutput.printf("\n");
 			stdoutput.printf("	supplied response: ");
 			stdoutput.safePrint(suppliedresponse,
-						suppliedresponselength);
+						suppliedresponsesize);
 			stdoutput.printf("\n");
 			stdoutput.printf("}\n");
 		}
@@ -239,15 +243,15 @@ bool sqlrauth_oracle_userlist::compare(const char *suppliedresponse,
 					expectedresponse.getSize());
 		stdoutput.printf("\n");
 		stdoutput.printf("	supplied response: ");
-		stdoutput.safePrint(suppliedresponse,suppliedresponselength);
+		stdoutput.safePrint(suppliedresponse,suppliedresponsesize);
 		stdoutput.printf("\n");
 		stdoutput.printf("}\n");
 	}
 
 	// compare the expected and supplied response sizes and values
-	return (expectedresponse.getSize()==suppliedresponselength) &&
+	return (expectedresponse.getSize()==suppliedresponsesize) &&
 		!bytestring::compare(expectedresponse.getBuffer(),
-				suppliedresponse,suppliedresponselength);
+				suppliedresponse,suppliedresponsesize);
 }
 
 extern "C" {
