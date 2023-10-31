@@ -80,6 +80,7 @@
 	added connectstring auth modules
 	lots of length -> size conversions
 	renamed various server-side methods to start with verbs
+	added sqlrexporttable class
 
 1.9.2 - ruby cursor constructor marks associated ruby connection object now
 	updated bad-command and no-cursor-available handling in sqlrclient
