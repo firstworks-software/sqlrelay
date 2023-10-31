@@ -65,8 +65,6 @@ install: $(INSTALLLIB)
 	$(CHMOD) 644 $(includedir)/sqlrelay/sqlrimportxml.h
 	$(CP) sqlrelay/sqlrimportcsv.h $(includedir)/sqlrelay
 	$(CHMOD) 644 $(includedir)/sqlrelay/sqlrimportcsv.h
-	$(CP) sqlrelay/sqlrimporttable.h $(includedir)/sqlrelay
-	$(CHMOD) 644 $(includedir)/sqlrelay/sqlrimporttable.h
 	$(CP) sqlrelay/sqlrexport.h $(includedir)/sqlrelay
 	$(CHMOD) 644 $(includedir)/sqlrelay/sqlrexport.h
 	$(CP) sqlrelay/sqlrexportxml.h $(includedir)/sqlrelay
