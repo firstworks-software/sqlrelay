@@ -200,6 +200,10 @@ filedescriptor *sqlrexport::getFileDescriptor() {
 	return fd;
 }
 
+bool sqlrexport::exportToFile(const char *filename, const char *table) {
+	return true;
+}
+
 bool sqlrexport::exportToJsonDomNode(domnode *jsondomnode) {
 	return true;
 }

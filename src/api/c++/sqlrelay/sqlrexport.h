@@ -36,7 +36,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		void	setShutdownFlag(bool *shuttingdown);
 
 		virtual	bool	exportToFile(const char *filename,
-						const char *table)=0;
+						const char *table);
 
 		virtual	bool	headerStart();
 		virtual	bool	columnStart();
