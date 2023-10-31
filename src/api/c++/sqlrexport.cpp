@@ -209,5 +209,6 @@ bool sqlrexport::exportToJsonDomNode(domnode *jsondomnode) {
 }
 
 bool sqlrexport::exportToTable(sqlrconnection *sqlrcon, const char *table) {
+stdoutput.printf("sqlrexport::exportToTable()\n");
 	return true;
 }

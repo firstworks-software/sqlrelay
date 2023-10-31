@@ -1,6 +1,7 @@
 // Copyright (c) 1999-2018 David Muse
 // See the file COPYING for more information
 
+	public:
 		virtual	bool	exportToJsonDomNode(domnode *jsondomnode);
 		virtual	bool	exportToTable(sqlrconnection *sqlrcon,
 							const char *table);

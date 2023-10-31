@@ -123,6 +123,8 @@ install: $(INSTALLLIB)
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrexportcsv.h
 	$(CP) sqlrelay/private/sqlrexporttableincludes.h $(includedir)/sqlrelay/private
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrexporttableincludes.h
+	$(CP) sqlrelay/private/sqlrexporttable.h $(includedir)/sqlrelay/private
+	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrexporttable.h
 
 installdll::
 	$(MKINSTALLDIRS) $(bindir)

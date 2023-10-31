@@ -8,9 +8,18 @@
 #include <datatypes.h>
 
 sqlrexporttable::sqlrexporttable() {
+	commitcount=0;
 }
 
 sqlrexporttable::~sqlrexporttable() {
+}
+
+void sqlrexporttable::setCommitCount(uint64_t commitcount) {
+	this->commitcount=commitcount;
+}
+
+uint64_t sqlrexporttable::getCommitCount() {
+	return commitcount;
 }
 
 bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
@@ -39,14 +48,10 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 	// export header
 	uint32_t	cols=selectcur->colCount();
 	clearNumberColumns();
-	uint32_t	bindindex=0;
+	uint32_t	bindindex=1;
 	for (setCurrentColumn(0);
 		getCurrentColumn()<cols;
 		setCurrentColumn(getCurrentColumn()+1)) {
-
-		if (getCurrentColumn()) {
-			insertquery.append(',');
-		}
 
 		setNumberColumn(getCurrentColumn(),
 			isNumberTypeChar(selectcur->getColumnType(
@@ -64,6 +69,9 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 				return false;
 			}
 
+			if (bindindex>1) {
+				insertquery.append(',');
+			}
 			if (bf=='?') {
 				insertquery.append('?');
 			} else if (bf=='$') {
@@ -94,23 +102,41 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 		return false;
 	}
 
+	// start a transaction, if necessary
+	if (commitcount) {
+		sqlrcon->begin();
+	}
+
+	// prepare query
 	sqlrcursor	*insertcur=new sqlrcursor(sqlrcon);
 	insertcur->prepareQuery(insertquery.getString(),
 				insertquery.getStringLength());
+
+	// set up array of bind names
 	dynamicarray<char *>	bindnames;
 	bindnames.setManageArrayValues(true);
-	bindindex=0;
 
 	// export rows...
+	bool	success=true;
 	do {
+
+		// commit/begin, if necessary
+		if (commitcount && !((getCurrentRow()+1)%500)) {
+			sqlrcon->commit();
+			sqlrcon->begin();
+		}
 
 		// reset export-row flag
 		setExportRow(true);
 
 		// call the pre-row event
 		if (!rowStart()) {
-			return false;
+			success=false;
+			break;
 		}
+
+		// reset bind index
+		bindindex=1;
 
 		// if rowStart() didn't disable export of this row...
 		if (getExportRow()) {
@@ -139,7 +165,8 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 
 				// call the pre-field event
 				if (!fieldStart()) {
-					return false;
+					success=false;
+					break;
 				}
 
 				if (!bindnames[bindindex]) {
@@ -153,20 +180,35 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 
 				// call the post-field event
 				if (!fieldEnd()) {
-					return false;
+					success=false;
+					break;
 				}
 			}
 		}
 
-		if (!insertcur->executeQuery()) {
-			return false;
+		if (!success) {
+			break;
 		}
+
+		// It's not impossible that there were 0 rows in this result
+		// set.  If that was the case then bindindex should still be 1
+		// at this point, and no values should be bound.  In that case,
+		// we don't want to attempt to execute anything.
+		if (bindindex>1) {
+			if (!insertcur->executeQuery()) {
+stdoutput.printf("%s\n",insertcur->errorMessage());
+				success=false;
+				break;
+			}
+		}
+		insertcur->clearBinds();
 
 		// call the post-row event
 		// (we call this before closing the row in case an overridden
 		// rowEnd() wants to add more fields or something)
 		if (!rowEnd()) {
-			return false;
+			success=false;
+			break;
 		}
 
 		setCurrentRow(getCurrentRow()+1);
@@ -174,10 +216,18 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 	} while  (!selectcur->endOfResultSet() ||
 			getCurrentRow()<selectcur->rowCount());
 
+	// final commit, if necessary
+	if (commitcount) {
+		sqlrcon->commit();
+	}
+
+	// clean up
+	delete insertcur;
+
 	// call the post-rows event
 	if (!rowsEnd()) {
 		return false;
 	}
 
-	return true;
+	return success;
 }
