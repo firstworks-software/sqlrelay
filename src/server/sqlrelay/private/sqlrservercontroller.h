@@ -149,6 +149,27 @@
 					linkedlist<char *> *allcolumns,
 					linkedlist<char *> *columns);
 
+		sqlrdatabaseobject *createDatabaseObject(
+						const char *database,
+						const char *schema,
+						const char *object,
+						const char *dependency);
+		void	setReplacementName(
+				dictionary< sqlrdatabaseobject *, char *> *dict,
+				sqlrdatabaseobject *oldobject,
+				const char *newobject);
+		bool	getReplacementName(
+				dictionary< sqlrdatabaseobject *, char *> *dict,
+				const char *database,
+				const char *schema,
+				const char *oldobject,
+				const char **newobject);
+		bool	removeReplacement(
+				dictionary< sqlrdatabaseobject *, char *> *dict,
+				const char *database,
+				const char *schema,
+				const char *object);
+
 		static void     alarmHandler(int32_t signum);
 
 		sqlrservercontrollerprivate	*pvt;

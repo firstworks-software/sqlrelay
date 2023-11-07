@@ -4012,8 +4012,10 @@ bool sqlrprotocol_sqlrclient::getListCommand(sqlrservercursor *cursor,
 		charstring::bothTrim(object);
 
 		// translate object name, if necessary
-		const char	*newobject=cont->translateTableName(object);
-		if (newobject) {
+		const char	*newobject=NULL;
+		if (cont->getReplacementTableName(NULL,NULL,
+						object,&newobject) &&
+						newobject) {
 			delete[] object;
 			object=charstring::duplicate(newobject);
 		}

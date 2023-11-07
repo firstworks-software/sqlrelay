@@ -61,6 +61,14 @@
 	}
 #endif
 
+class sqlrdatabaseobject {
+	public:
+		const char	*database;
+		const char	*schema;
+		const char	*object;
+		const char	*dependency;
+};
+
 class sqlrservercontrollerprivate {
 	friend class sqlrservercontroller;
 
@@ -306,6 +314,9 @@ class sqlrservercontrollerprivate {
 	dictionary<char *,linkedlist<char *> *>	_colcache;
 	dictionary<char *,const char *>		_autoinccolcache;
 	dictionary<char *,const char *>		_primarykeycolcache;
+
+	dictionary< sqlrdatabaseobject *, char * >	_tablenamemap;
+	dictionary< sqlrdatabaseobject *, char * >	_indexnamemap;
 };
 
 static signalhandler		alarmhandler;
@@ -6397,6 +6408,8 @@ void sqlrservercontroller::endSession() {
 	}
 
 	// reset translation modules
+	pvt->_tablenamemap.clear();
+	pvt->_indexnamemap.clear();
 	if (pvt->_sqlrt) {
 		pvt->_sqlrt->endSession();
 	}
@@ -9503,33 +9516,188 @@ const char *sqlrservercontroller::getDbVersion() {
 	return pvt->_conn->getDbVersion();
 }
 
-const char *sqlrservercontroller::translateTableName(const char *table) {
-	if (pvt->_sqlrt) {
-		const char	*newname=NULL;
-		if (pvt->_sqlrt->getReplacementTableName(
-					NULL,NULL,table,&newname)) {
-			return newname;
-		}
+sqlrdatabaseobject *sqlrservercontroller::createDatabaseObject(
+						const char *database,
+						const char *schema,
+						const char *object,
+						const char *dependency) {
+
+	// initialize copy pointers
+	char	*databasecopy=NULL;
+	char	*schemacopy=NULL;
+	char	*objectcopy=NULL;
+	char	*dependencycopy=NULL;
+
+	// create buffers and copy data into them
+	if (database) {
+		databasecopy=(char *)pvt->_sessionpool.allocate(
+				charstring::getLength(database)+1);
+		charstring::copy(databasecopy,database);
 	}
-	return NULL;
+	if (schema) {
+		schemacopy=(char *)pvt->_sessionpool.allocate(
+				charstring::getLength(schema)+1);
+		charstring::copy(schemacopy,schema);
+	}
+	if (object) {
+		objectcopy=(char *)pvt->_sessionpool.allocate(
+				charstring::getLength(object)+1);
+		charstring::copy(objectcopy,object);
+	}
+	if (dependency) {
+		dependencycopy=(char *)pvt->_sessionpool.allocate(
+				charstring::getLength(dependency)+1);
+		charstring::copy(dependencycopy,dependency);
+	}
+
+	// create the databaseobject
+	sqlrdatabaseobject	*dbo=(sqlrdatabaseobject *)
+			pvt->_sessionpool.allocate(sizeof(sqlrdatabaseobject));
+
+
+	// populate it
+	// (if placement new worked as expected on all platforms, we wouldn't
+	// need to do this, we could pass them into the constructor or
+	// use setters or something...)
+	dbo->database=databasecopy;
+	dbo->schema=schemacopy;
+	dbo->object=objectcopy;
+	dbo->dependency=dependencycopy;
+
+	// return it
+	return dbo;
 }
 
-bool sqlrservercontroller::removeReplacementTable(const char *database,
-							const char *schema,
-							const char *table) {
-	if (pvt->_sqlrt) {
-		return pvt->_sqlrt->removeReplacementTable(
-						database,schema,table);
+void sqlrservercontroller::setReplacementTableName(
+					const char *database,
+					const char *schema,
+					const char *oldtable,
+					const char *newtable) {
+	setReplacementName(&pvt->_tablenamemap,
+				createDatabaseObject(
+					database,
+					schema,
+					oldtable,
+					NULL),
+				newtable);
+}
+
+void sqlrservercontroller::setReplacementIndexName(
+					const char *database,
+					const char *schema,
+					const char *oldindex,
+					const char *newindex,
+					const char *table) {
+	setReplacementName(&pvt->_indexnamemap,
+				createDatabaseObject(
+					database,
+					schema,
+					oldindex,
+					table),
+				newindex);
+}
+
+void sqlrservercontroller::setReplacementName(
+				dictionary< sqlrdatabaseobject *, char *> *dict,
+				sqlrdatabaseobject *oldobject,
+				const char *newobject) {
+	dict->setValue(oldobject,(char *)newobject);
+}
+
+bool sqlrservercontroller::getReplacementTableName(const char *database,
+						const char *schema,
+						const char *oldtable,
+						const char **newtable) {
+	return getReplacementName(&pvt->_tablenamemap,
+					database,schema,
+					oldtable,newtable);
+}
+
+bool sqlrservercontroller::getReplacementIndexName(const char *database,
+						const char *schema,
+						const char *oldtable,
+						const char **newtable) {
+	return getReplacementName(&pvt->_indexnamemap,
+					database,schema,
+					oldtable,newtable);
+}
+
+bool sqlrservercontroller::getReplacementName(
+				dictionary< sqlrdatabaseobject *, char *> *dict,
+				const char *database,
+				const char *schema,
+				const char *oldobject,
+				const char **newobject) {
+
+	*newobject=NULL;
+	for (listnode<sqlrdatabaseobject *> *node=dict->getKeys()->getFirst();
+						node; node=node->getNext()) {
+
+		sqlrdatabaseobject	*dbo=node->getValue();
+		if (!charstring::compare(dbo->database,database) &&
+			!charstring::compare(dbo->schema,schema) &&
+			!charstring::compare(dbo->object,oldobject)) {
+			*newobject=dict->getValue(dbo);
+			return true;
+		}
 	}
 	return false;
 }
 
+bool sqlrservercontroller::removeReplacementTable(const char *database,
+						const char *schema,
+						const char *table) {
+
+	// remove the table
+	if (!removeReplacement(&pvt->_tablenamemap,database,schema,table)) {
+		return false;
+	}
+
+	// remove any indices that depend on the table
+	for (listnode<sqlrdatabaseobject *> *node=
+			pvt->_indexnamemap.getKeys()->getFirst(); node;) {
+
+		sqlrdatabaseobject	*dbo=node->getValue();
+
+		// make sure to move on to the next node here rather than
+		// after calling remove, otherwise it could cause a
+		// reference-after-free condition
+		node=node->getNext();
+
+		if (!charstring::compare(dbo->database,database) &&
+			!charstring::compare(dbo->schema,schema) &&
+			!charstring::compare(dbo->dependency,table)) {
+
+			pvt->_indexnamemap.remove(dbo);
+		}
+	}
+	return true;
+}
+
 bool sqlrservercontroller::removeReplacementIndex(const char *database,
-							const char *schema,
-							const char *table) {
-	if (pvt->_sqlrt) {
-		return pvt->_sqlrt->removeReplacementIndex(
-						database,schema,table);
+						const char *schema,
+						const char *index) {
+	return removeReplacement(&pvt->_indexnamemap,database,schema,index);
+}
+
+bool sqlrservercontroller::removeReplacement(
+				dictionary< sqlrdatabaseobject *, char *> *dict,
+				const char *database,
+				const char *schema,
+				const char *object) {
+
+	for (listnode<sqlrdatabaseobject *> *node=dict->getKeys()->getFirst();
+						node; node=node->getNext()) {
+
+		sqlrdatabaseobject	*dbo=node->getValue();
+		const char		*replacementobject=dict->getValue(dbo);
+		if (!charstring::compare(dbo->database,database) &&
+			!charstring::compare(dbo->schema,schema) &&
+			!charstring::compare(replacementobject,object)) {
+
+			dict->remove(dbo);
+			return true;
+		}
 	}
 	return false;
 }

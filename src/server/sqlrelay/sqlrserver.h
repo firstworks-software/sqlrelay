@@ -328,14 +328,14 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		 *
 		 *  Defaults to 0 but may be overriden by a child class of
 		 *  sqlrserverconnection. */
-		int16_t		getNonNullBindValue();
+		int16_t	getNonNullBindValue();
 
 		/** Returns the value that the database expects or returns in
 		 *  the "null indicator" for a null bind value.
 		 *
 		 *  Defaults to -1 but may be overriden by a child class of
 		 *  sqlrserverconnection. */
-		int16_t		getNullBindValue();
+		int16_t	getNullBindValue();
 
 		/** Returns true if "isnull" matches the value that the database
 		 *  expects or returns in the "null indicator" for a null bind
@@ -346,11 +346,11 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		 *  rewriting the query, rather than by using actual bind
 		 *  variables.  If "fake" is false then the server will use
 		 *  actual bind variables. */
-		void		setFakeInputBinds(bool fake);
+		void	setFakeInputBinds(bool fake);
 
 		/** Returns true if the server will fake input binds by
 		 *  rewriting the query, or false otherwise. */
-		bool		getFakeInputBinds();
+		bool	getFakeInputBinds();
 
 
 
@@ -1017,7 +1017,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		/** Tells the statistics framework that a command has been
 		 *  started.  "sec" and "usec" should be the number of seconds
 		 *  and microseconds since the epoch (Jan 1, 1970). */
-		void		setCommandStart(sqlrservercursor *cursor,
+		void	setCommandStart(sqlrservercursor *cursor,
 						uint64_t sec, uint64_t usec);
 
 		/** Returns the seconds-component of the command start time as
@@ -1031,7 +1031,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		/** Tells the statistics framework that a command has ended.
 		 *  "sec" and "usec" should be the number of seconds and
 		 *  microseconds since the epoch (Jan 1, 1970). */
-		void		setCommandEnd(sqlrservercursor *cursor,
+		void	setCommandEnd(sqlrservercursor *cursor,
 						uint64_t sec, uint64_t usec);
 
 		/** Returns the seconds-component of the command end time as
@@ -1045,7 +1045,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		/** Tells the statistics framework that a query has been
 		 *  started.  "sec" and "usec" should be the number of seconds
 		 *  and microseconds since the epoch (Jan 1, 1970). */
-		void		setQueryStart(sqlrservercursor *cursor,
+		void	setQueryStart(sqlrservercursor *cursor,
 						uint64_t sec, uint64_t usec);
 
 		/** Returns the seconds-component of the query start time as
@@ -1059,7 +1059,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		/** Tells the statistics framework that a query has ended.
 		 *  "sec" and "usec" should be the number of seconds and
 		 *  microseconds since the epoch (Jan 1, 1970). */
-		void		setQueryEnd(sqlrservercursor *cursor,
+		void	setQueryEnd(sqlrservercursor *cursor,
 						uint64_t sec, uint64_t usec);
 
 		/** Returns the seconds-component of the query end time as
@@ -1682,46 +1682,66 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 
 
 		// table name remapping...
+		void	setReplacementTableName(
+					const char *database,
+					const char *schema,
+					const char *oldtable,
+					const char *newtable);
+		void	setReplacementIndexName(
+					const char *database,
+					const char *schema,
+					const char *oldindex,
+					const char *newindex,
+					const char *table);
+		bool	getReplacementTableName(
+					const char *database,
+					const char *schema,
+					const char *oldtable,
+					const char **newtable);
 		const char	*translateTableName(const char *table);
-		bool		removeReplacementTable(const char *database,
+		bool	getReplacementIndexName(const char *database,
+						const char *schema,
+						const char *oldtable,
+						const char **newtable);
+		bool	removeReplacementTable(const char *database,
 							const char *schema,
 							const char *table);
-		bool		removeReplacementIndex(const char *database,
+		bool	removeReplacementIndex(const char *database,
 							const char *schema,
 							const char *table);
 
 
 
 		// db, table, column, procedure bind/column lists...
-		bool		getListsByApiCalls();
-		bool		fakePrepareAndExecuteForApiCall(
+		bool	getListsByApiCalls();
+		bool	fakePrepareAndExecuteForApiCall(
 						sqlrservercursor *cursor);
-		bool		getDatabaseList(sqlrservercursor *cursor,
+		bool	getDatabaseList(sqlrservercursor *cursor,
 						const char *wild);
-		bool		getSchemaList(sqlrservercursor *cursor,
+		bool	getSchemaList(sqlrservercursor *cursor,
 						const char *wild);
-		bool		getTableList(sqlrservercursor *cursor,
+		bool	getTableList(sqlrservercursor *cursor,
 						const char *wild,
 						uint16_t objecttypes);
-		bool		getTableTypeList(sqlrservercursor *cursor,
+		bool	getTableTypeList(sqlrservercursor *cursor,
 						const char *wild);
-		bool		getColumnList(sqlrservercursor *cursor,
+		bool	getColumnList(sqlrservercursor *cursor,
 						const char *table,
 						const char *wild);
-		bool		getPrimaryKeyList(sqlrservercursor *cursor,
+		bool	getPrimaryKeyList(sqlrservercursor *cursor,
 						const char *table,
 						const char *wild);
-		bool		getKeyAndIndexList(sqlrservercursor *cursor,
+		bool	getKeyAndIndexList(sqlrservercursor *cursor,
 						const char *table,
 						const char *wild);
-		bool		getProcedureBindAndColumnList(
+		bool	getProcedureBindAndColumnList(
 						sqlrservercursor *cursor,
 						const char *proc,
 						const char *wild);
-		bool		getTypeInfoList(sqlrservercursor *cursor,
+		bool	getTypeInfoList(sqlrservercursor *cursor,
 						const char *type,
 						const char *wild);
-		bool		getProcedureList(sqlrservercursor *cursor,
+		bool	getProcedureList(sqlrservercursor *cursor,
 						const char *wild);
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getSchemaListQuery(bool wild);
@@ -1750,31 +1770,31 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 
 
 		// column info...
-		bool		columnInfoIsValidAfterPrepare(
+		bool	columnInfoIsValidAfterPrepare(
 						sqlrservercursor *cursor);
 		uint16_t	getSendColumnInfo();
-		void		setSendColumnInfo(uint16_t sendcolumninfo);
+		void	setSendColumnInfo(uint16_t sendcolumninfo);
 		uint32_t	colCount(sqlrservercursor *cursor);
 		uint16_t	columnTypeFormat(sqlrservercursor *cursor);
-		void		setDatabaseListColumnMap(
+		void	setDatabaseListColumnMap(
 					sqlrserverlistformat_t listformat);
-		void		setSchemaListColumnMap(
+		void	setSchemaListColumnMap(
 					sqlrserverlistformat_t listformat);
-		void		setTableListColumnMap(
+		void	setTableListColumnMap(
 					sqlrserverlistformat_t listformat);
-		void		setTableTypeListColumnMap(
+		void	setTableTypeListColumnMap(
 					sqlrserverlistformat_t listformat);
-		void		setColumnListColumnMap(
+		void	setColumnListColumnMap(
 					sqlrserverlistformat_t listformat);
-		void		setPrimaryKeyListColumnMap(
+		void	setPrimaryKeyListColumnMap(
 					sqlrserverlistformat_t listformat);
-		void		setKeyAndIndexListColumnMap(
+		void	setKeyAndIndexListColumnMap(
 					sqlrserverlistformat_t listformat);
-		void		setProcedureBindAndColumnListColumnMap(
+		void	setProcedureBindAndColumnListColumnMap(
 					sqlrserverlistformat_t listformat);
-		void		setTypeInfoListColumnMap(
+		void	setTypeInfoListColumnMap(
 					sqlrserverlistformat_t listformat);
-		void		setProcedureListColumnMap(
+		void	setProcedureListColumnMap(
 					sqlrserverlistformat_t listformat);
 		const char	*getColumnName(sqlrservercursor *cursor,
 							uint32_t col);
@@ -2083,7 +2103,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 
 
 		// shared memory...
-		sqlrshm		*getShm();
+		sqlrshm	*getShm();
 
 
 
@@ -2093,9 +2113,9 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 
 
 		// utilities...
-		bool		skipComment(const char **ptr,
+		bool	skipComment(const char **ptr,
 						const char *endptr);
-		bool		skipWhitespace(const char **ptr,
+		bool	skipWhitespace(const char **ptr,
 						const char *endptr);
 		const char	*skipWhitespace(const char *query);
 		const char	*skipComments(const char *query);
@@ -2104,17 +2124,17 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		const char	*asciiToHex(byte_t ch);
 		const char	*asciiToOctal(byte_t ch);
 
-		bool		hasBindVariables(const char *query,
+		bool	hasBindVariables(const char *query,
 							uint32_t querysize);
 		uint16_t	countBindVariables(const char *query,
 							uint32_t querysize);
-		void		splitObjectName(const char *currentdb,
+		void	splitObjectName(const char *currentdb,
 						const char *currentschema,
 						const char *combinedobject,
 						const char **db,
 						const char **schema,
 						const char **object);
-		bool		parseInsert(const char *query,
+		bool	parseInsert(const char *query,
 					uint32_t querysize,
 					sqlrquerytype_t *querytype,
 					char **table,
@@ -3847,32 +3867,6 @@ class SQLRSERVER_DLLSPEC sqlrquerytranslations {
 
 		void	endTransaction(bool commit);
 		void	endSession();
-
-		void	setReplacementTableName(const char *database,
-						const char *schema,
-						const char *oldtable,
-						const char *newtable);
-		void	setReplacementIndexName(const char *database,
-						const char *schema,
-						const char *oldindex,
-						const char *newindex,
-						const char *table);
-
-		bool	getReplacementTableName(const char *database,
-						const char *schema,
-						const char *oldtable,
-						const char **newtable);
-		bool	getReplacementIndexName(const char *database,
-						const char *schema,
-						const char *oldtable,
-						const char **newtable);
-
-		bool	removeReplacementTable(const char *database,
-						const char *schema,
-						const char *table);
-		bool	removeReplacementIndex(const char *database,
-						const char *schema,
-						const char *index);
 
 		bool	getUseOriginalOnError();
 

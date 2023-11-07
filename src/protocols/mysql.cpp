@@ -3991,8 +3991,10 @@ bool sqlrprotocol_mysql::comFieldList(sqlrservercursor *cursor) {
 	charstring::bothTrim(wild);
 
 	// translate the table name, if necessary
-	const char	*newtable=cont->translateTableName(table);
-	if (newtable) {
+	const char	*newtable=NULL;
+	if (cont->getReplacementTableName(NULL,NULL,
+					table,&newtable) &&
+					newtable) {
 		delete[] table;
 		table=charstring::duplicate(newtable);
 	}
