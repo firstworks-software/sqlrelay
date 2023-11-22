@@ -350,7 +350,7 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		bool		getKeyAndIndexList(sqlrservercursor *cursor,
 						const char *table,
 						const char *wild);
-		bool		getProcedureBindAndColumnList(
+		bool		getProcedureParameterList(
 						sqlrservercursor *cursor,
 						const char *procedure,
 						const char *wild);
@@ -1615,7 +1615,7 @@ bool odbcconnection::getKeyAndIndexList(sqlrservercursor *cursor,
 	return (retval)?odbccur->handleColumns(true,true):false;
 }
 
-bool odbcconnection::getProcedureBindAndColumnList(
+bool odbcconnection::getProcedureParameterList(
 					sqlrservercursor *cursor,
 					const char *procedure,
 					const char *wild) {

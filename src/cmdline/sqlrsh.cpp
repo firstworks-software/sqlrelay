@@ -1158,10 +1158,10 @@ bool sqlrsh::externalCommand(sqlrconnection *sqlrcon,
 			delete[] table;
 			delete[] wild;
 		} else if (!charstring::compareIgnoringCase(command,
-				"show procedure binds and columns",32)) {
+					"show procedure parameters",25)) {
 			char	*procedure=getProcedure(command);
 			char	*wild=getWild(command);
-			sqlrcur->getProcedureBindAndColumnList(procedure,wild);
+			sqlrcur->getProcedureParameterList(procedure,wild);
 			delete[] procedure;
 			delete[] wild;
 		} else if (!charstring::compareIgnoringCase(command,

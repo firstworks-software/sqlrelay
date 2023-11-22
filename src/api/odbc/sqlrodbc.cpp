@@ -10035,7 +10035,7 @@ SQLRETURN SQL_API SQLProcedureColumns(SQLHSTMT statementhandle,
 	SQLR_STMTClearError(stmt);
 
 	SQLRETURN	retval=
-		(stmt->cur->getProcedureBindAndColumnList(
+		(stmt->cur->getProcedureParameterList(
 						procedure.getString(),wild,
 						SQLRCLIENTLISTFORMAT_ODBC))?
 							SQL_SUCCESS:SQL_ERROR;

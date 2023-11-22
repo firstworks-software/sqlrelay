@@ -152,7 +152,7 @@
 		sqlrdatabaseobject *createDatabaseObject(
 						const char *database,
 						const char *schema,
-						const char *object,
+						const char *name,
 						const char *dependency);
 		void	setReplacementName(
 				dictionary< sqlrdatabaseobject *, char *> *dict,
@@ -169,6 +169,9 @@
 				const char *database,
 				const char *schema,
 				const char *object);
+
+		bool	fakePrepareAndExecuteForApiCall(
+						sqlrservercursor *cursor);
 
 		static void     alarmHandler(int32_t signum);
 

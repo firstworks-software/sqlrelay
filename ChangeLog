@@ -82,6 +82,7 @@
 	renamed various server-side methods to start with verbs
 	added sqlrexporttable class
 	moved table/index-translation into controller
+	improved replay trigger logging
 
 1.9.2 - ruby cursor constructor marks associated ruby connection object now
 	updated bad-command and no-cursor-available handling in sqlrclient

@@ -1074,14 +1074,14 @@ bool sqlrcursor::getKeyAndIndexList(const char *table,
 					(table)?table:"",qualifier,0);
 }
 
-bool sqlrcursor::getProcedureBindAndColumnList(
+bool sqlrcursor::getProcedureParameterList(
 				const char *procedure,
 				const char *wild) {
-	return getProcedureBindAndColumnList(procedure,wild,
+	return getProcedureParameterList(procedure,wild,
 					SQLRCLIENTLISTFORMAT_MYSQL);
 }
 
-bool sqlrcursor::getProcedureBindAndColumnList(
+bool sqlrcursor::getProcedureParameterList(
 				const char *procedure,
 				const char *wild,
 				sqlrclientlistformat_t listformat) {

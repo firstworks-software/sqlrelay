@@ -1682,59 +1682,155 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 
 
 		// table name remapping...
+
+		/** Creates a mapping between old table name
+		 *  "database"."schema"."oldtable" and new table name "newtable"
+		 *  in the table name replacement map, such "newtable" can be
+		 *  retrieved by a call to getReplacementTableName.  This is
+		 *  primarly useful for remapping temporary table names, but
+		 *  could be used for other things as well. */
 		void	setReplacementTableName(
 					const char *database,
 					const char *schema,
 					const char *oldtable,
 					const char *newtable);
+
+		/** Creates a mapping between old index name
+		 *  "database"."schema"."oldindex" and new index name
+		 *  "newindex", which are dependent on table "table", in the
+		 *  index name replacement map, such that "newindex" can be
+		 *  retrieved by getReplacementIndexName.  This is primarly
+		 *  useful for remapping temporary index names, but could be
+		 *  used for other things as well. */
 		void	setReplacementIndexName(
 					const char *database,
 					const char *schema,
 					const char *oldindex,
 					const char *newindex,
 					const char *table);
+
+		/** Looks up "database"."schema"."oldtable" in the table name
+		 *  replacement map and returns the mapping in "newtable".
+		 *  Returns true of a mapping was found.  Returns false and
+		 *  sets "newtable" to NULL if no mapping was found. */
 		bool	getReplacementTableName(
 					const char *database,
 					const char *schema,
 					const char *oldtable,
 					const char **newtable);
-		const char	*translateTableName(const char *table);
+
+		/** Looks up "database"."schema"."oldindex" in the index name
+		 *  replacement map and returns the mapping in "newindex".
+		 *  Returns true of a mapping was found.  Returns false and
+		 *  sets "newindex" to NULL if no mapping was found. */
 		bool	getReplacementIndexName(const char *database,
 						const char *schema,
-						const char *oldtable,
-						const char **newtable);
+						const char *oldindex,
+						const char **newindex);
+
+		/** Looks through the table name replacement map, removes
+		 *  the entry for "database"."schema"."oldtable", and removes
+		 *  any dependent indexes from the index name replacement map.
+		 *  Returns true if a mapping was found and removed, and false
+		 *  if no mapping was found. */
 		bool	removeReplacementTable(const char *database,
 							const char *schema,
-							const char *table);
+							const char *oldtable);
+
+		/** Looks through the index name replacement map, removes
+		 *  the entry for "database"."schema"."oldindex".  Returns true
+		 *  if a mapping was found and removed, and false if no mapping
+		 *  was found. */
 		bool	removeReplacementIndex(const char *database,
 							const char *schema,
-							const char *table);
+							const char *oldindex);
 
 
 
 		// db, table, column, procedure bind/column lists...
+
+		/** Returns true if the currently loaded database connection
+		 *  module fetches lists (database lists, table lists, column
+		 *  lists, etc.) via API call and false if it fetches lists via
+		 *  query. */
 		bool	getListsByApiCalls();
-		bool	fakePrepareAndExecuteForApiCall(
-						sqlrservercursor *cursor);
+
+		/** Makes the API call to fetch the list of databases that are
+		 *  visible to the user that SQL Relay is logged in as.  Only
+		 *  returns database names that match wildcard "wild" if "wild"
+		 *  is non-NULL.  Returns true on success and false on
+		 *  failure. */
 		bool	getDatabaseList(sqlrservercursor *cursor,
 						const char *wild);
+
+		/** Makes the API call to fetch the list of schemas, in the
+		 *  current database, that are visible to the user that SQL
+		 *  Relay is logged in as.  Only returns schema names that
+		 *  match wildcard "wild" if "wild" is non-NULL.  Returns true
+		 *  on success and false on failure. */
 		bool	getSchemaList(sqlrservercursor *cursor,
 						const char *wild);
+
+		/** Makes the API call to fetch the list of tables (and
+		 *  table-like objects), in the current database and schema,
+		 *  that are visible to the user that SQL Relay is logged in
+		 *  as.  "objecttypes" should be an or-ed set of one or more of
+		 *  the following object types:
+		 *
+		 *  DB_OBJECT_TABLE
+		 *  DB_OBJECT_VIEW
+		 *  DB_OBJECT_ALIAS
+		 *  DB_OBJECT_SYNONYM
+		 *
+		 *  Only returns table names that match wildcard "wild" if
+		 *  "wild" is non-NULL.  Returns true on success and false on
+		 *  failure. */
 		bool	getTableList(sqlrservercursor *cursor,
 						const char *wild,
 						uint16_t objecttypes);
+
+		/** Makes the API call to fetch the list of table type names in
+		 *  the current database and schema, that are visible to the
+		 *  user that SQL Relay is logged in as.  Only returns table
+		 *  type names that match wildcard "wild" if "wild" is non-NULL.
+		 *  Returns true on success and false on failure. */
 		bool	getTableTypeList(sqlrservercursor *cursor,
 						const char *wild);
+
+		/** Makes the API call to fetch the list of column names in
+		 *  "table", where "table" is in the current database and
+		 *  schema.  Only returns column names that match wildcard
+		 *  "wild" if "wild" is non-NULL.  Returns true on success and
+		 *  false on failure. */
 		bool	getColumnList(sqlrservercursor *cursor,
 						const char *table,
 						const char *wild);
+
+		/** Makes the API call to fetch the list of primaray key column
+		 *  names in "table", where "table" is in the current database
+		 *  and schema.  Only returns primary key column names that
+		 *  match wildcard "wild" if "wild" is non-NULL.  Returns true
+		 *  on success and false on failure. */
 		bool	getPrimaryKeyList(sqlrservercursor *cursor,
 						const char *table,
 						const char *wild);
+
+		/** Makes the API call to fetch the indices and indexed columns
+		 *  of "table", where "table" is in the current database and
+		 *  schema.  Only returns primary key column names that match
+		 *  wildcard "wild" if "wild" is non-NULL.  Returns true on
+		 *  success and false on failure. */
 		bool	getKeyAndIndexList(sqlrservercursor *cursor,
 						const char *table,
 						const char *wild);
-		bool	getProcedureBindAndColumnList(
+
+		/** Makes the API call to fetch the parameter names of "proc",
+		 *  where "proc" is in the current database and schema, and
+		 *  information about them, such as whether they are input,
+		 *  output, or input-output variables.  Only returns parameter
+		 *  names that match wildcard "wild" if "wild" is non-NULL.
+		 *  Returns true on success and false on failure. */
+		bool	getProcedureParameterList(
 						sqlrservercursor *cursor,
 						const char *proc,
 						const char *wild);
@@ -1755,7 +1851,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 							bool wild);
 		const char	*getKeyAndIndexListQuery(const char *table,
 							bool wild);
-		const char	*getProcedureBindAndColumnListQuery(
+		const char	*getProcedureParameterListQuery(
 							const char *proc,
 							bool wild);
 		const char	*getTypeInfoListQuery(const char *type,
@@ -1790,7 +1886,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 					sqlrserverlistformat_t listformat);
 		void	setKeyAndIndexListColumnMap(
 					sqlrserverlistformat_t listformat);
-		void	setProcedureBindAndColumnListColumnMap(
+		void	setProcedureParameterListColumnMap(
 					sqlrserverlistformat_t listformat);
 		void	setTypeInfoListColumnMap(
 					sqlrserverlistformat_t listformat);
@@ -2328,7 +2424,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		virtual	sqlrserverlistformat_t
 					getKeyAndIndexListFormat();
 		virtual	sqlrserverlistformat_t
-					getProcedureBindAndColumnListFormat();
+					getProcedureParameterListFormat();
 		virtual	sqlrserverlistformat_t
 					getTypeInfoListFormat();
 		virtual	sqlrserverlistformat_t
@@ -2358,7 +2454,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 						sqlrservercursor *cursor,
 						const char *table,
 						const char *wild);
-		virtual bool		getProcedureBindAndColumnList(
+		virtual bool		getProcedureParameterList(
 						sqlrservercursor *cursor,
 						const char *procedure,
 						const char *wild);
@@ -2387,7 +2483,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		virtual const char	*getKeyAndIndexListQuery(
 						const char *table,
 						bool wild);
-		virtual const char	*getProcedureBindAndColumnListQuery(
+		virtual const char	*getProcedureParameterListQuery(
 						const char *procedure,
 						bool wild);
 		virtual const char	*getTypeInfoListQuery(

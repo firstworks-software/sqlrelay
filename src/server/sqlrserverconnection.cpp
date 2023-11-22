@@ -757,7 +757,7 @@ sqlrserverlistformat_t sqlrserverconnection::getKeyAndIndexListFormat() {
 }
 
 sqlrserverlistformat_t sqlrserverconnection::
-				getProcedureBindAndColumnListFormat() {
+				getProcedureParameterListFormat() {
 	return (getListsByApiCalls())?
 		SQLRSERVERLISTFORMAT_ODBC:SQLRSERVERLISTFORMAT_MYSQL;
 }
@@ -825,7 +825,7 @@ bool sqlrserverconnection::getKeyAndIndexList(sqlrservercursor *cursor,
 	return false;
 }
 
-bool sqlrserverconnection::getProcedureBindAndColumnList(
+bool sqlrserverconnection::getProcedureParameterList(
 						sqlrservercursor *cursor,
 						const char *procedure,
 						const char *wild) {
@@ -944,7 +944,7 @@ const char *sqlrserverconnection::getKeyAndIndexListQuery(const char *table,
 	return "select 1";
 }
 
-const char *sqlrserverconnection::getProcedureBindAndColumnListQuery(
+const char *sqlrserverconnection::getProcedureParameterListQuery(
 							const char *procedure,
 							bool wild) {
 	return "select 1";

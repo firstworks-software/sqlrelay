@@ -2618,12 +2618,12 @@ bool sqlrservercontroller::getKeyAndIndexList(sqlrservercursor *cursor,
 		handleResultSetHeader(cursor);
 }
 
-bool sqlrservercontroller::getProcedureBindAndColumnList(
+bool sqlrservercontroller::getProcedureParameterList(
 						sqlrservercursor *cursor,
 						const char *proc,
 						const char *wild) {
 	return fakePrepareAndExecuteForApiCall(cursor) &&
-		pvt->_conn->getProcedureBindAndColumnList(cursor,proc,wild) &&
+		pvt->_conn->getProcedureParameterList(cursor,proc,wild) &&
 		handleResultSetHeader(cursor);
 }
 
@@ -2678,10 +2678,10 @@ const char *sqlrservercontroller::getKeyAndIndexListQuery(const char *table,
 	return pvt->_conn->getKeyAndIndexListQuery(table,wild);
 }
 
-const char *sqlrservercontroller::getProcedureBindAndColumnListQuery(
+const char *sqlrservercontroller::getProcedureParameterListQuery(
 							const char *proc,
 							bool wild) {
-	return pvt->_conn->getProcedureBindAndColumnListQuery(proc,wild);
+	return pvt->_conn->getProcedureParameterListQuery(proc,wild);
 }
 
 const char *sqlrservercontroller::getTypeInfoListQuery(const char *type,
@@ -5632,7 +5632,7 @@ void sqlrservercontroller::setKeyAndIndexListColumnMap(
 	}
 }
 
-void sqlrservercontroller::setProcedureBindAndColumnListColumnMap(
+void sqlrservercontroller::setProcedureParameterListColumnMap(
 					sqlrserverlistformat_t listformat) {
 
 	// for now, don't remap columns if api calls are used to get lists,
@@ -9615,11 +9615,11 @@ bool sqlrservercontroller::getReplacementTableName(const char *database,
 
 bool sqlrservercontroller::getReplacementIndexName(const char *database,
 						const char *schema,
-						const char *oldtable,
-						const char **newtable) {
+						const char *oldindex,
+						const char **newindex) {
 	return getReplacementName(&pvt->_indexnamemap,
 					database,schema,
-					oldtable,newtable);
+					oldindex,newindex);
 }
 
 bool sqlrservercontroller::getReplacementName(
@@ -9645,8 +9645,8 @@ bool sqlrservercontroller::getReplacementName(
 }
 
 bool sqlrservercontroller::removeReplacementTable(const char *database,
-						const char *schema,
-						const char *table) {
+							const char *schema,
+							const char *table) {
 
 	// remove the table
 	if (!removeReplacement(&pvt->_tablenamemap,database,schema,table)) {
@@ -9675,8 +9675,8 @@ bool sqlrservercontroller::removeReplacementTable(const char *database,
 }
 
 bool sqlrservercontroller::removeReplacementIndex(const char *database,
-						const char *schema,
-						const char *index) {
+							const char *schema,
+							const char *index) {
 	return removeReplacement(&pvt->_indexnamemap,database,schema,index);
 }
 
