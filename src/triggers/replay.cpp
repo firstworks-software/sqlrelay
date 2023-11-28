@@ -762,13 +762,13 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 					"execute error: %.*s\n",
 					sqlrcur->getErrorSize(),
 					sqlrcur->getErrorBuffer());
-				str.append("execute error:\n");
-				str.append(qd->query,qd->querylen);
-				str.append("\n");
-				str.append(sqlrcur->getErrorBuffer(),
-						sqlrcur->getErrorSize());
-				str.append("\n\n");
 			}
+			str.append("execute error:\n");
+			str.append(qd->query,qd->querylen);
+			str.append("\n");
+			str.append(sqlrcur->getErrorBuffer(),
+					sqlrcur->getErrorSize());
+			str.append("\n\n");
 		}
 		if (debug) {
 			stdoutput.printf("	}\n");

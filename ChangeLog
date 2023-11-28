@@ -83,6 +83,7 @@
 	added sqlrexporttable class
 	moved table/index-translation into controller
 	improved replay trigger logging
+	fixed bug that could cause upserts to be confused with multi-inserts
 
 1.9.2 - ruby cursor constructor marks associated ruby connection object now
 	updated bad-command and no-cursor-available handling in sqlrclient

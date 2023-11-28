@@ -3299,12 +3299,31 @@ bool sqlrservercontroller::parseInsert(const char *query,
 					charstring::findFirst(ptr,')');
 			getColumnsFromInsertQuery(ptr,colsend,localcolumns);
 			ptr=colsend;
+
+			// NOTE: it might be tempting not to worry about
+			// skipping whitepace and the closing paren, and more
+			// whitespace, and just findFirst("values (") or
+			// findFirst("values(") below, but that's unreliable,
+			// as some upserts include values(`...`) functions and
+			// we can end up skipping all the way to one of those.
+
+			// we should be after the last column name, skip any
+			// whitespace after that
+			skipWhitespace(&ptr,end);
+
+			// we should be on the closing paren, skip that
+			ptr++;
+
+			// we should be after the closing paren, skip any
+			// whitespace after that
+			skipWhitespace(&ptr,end);
 		}
 		if (ptr>=end) {
 			return false;
 		}
 		
 		// look for the "values (" keyword
+		// (see note above for why we don't just do a findFirst() here)
 		// FIXME: the below is kind-of a kludge...
 		// sometimes queries are written:
 		//	insert into blah values(...);
@@ -3312,14 +3331,13 @@ bool sqlrservercontroller::parseInsert(const char *query,
 		// doesn't fix this (though it ought to)
 		const char	*localrawvalues=NULL;
 		if (end>ptr+7) {
-			localrawvalues=charstring::findFirst(ptr,"values(");
+			if (!charstring::compare(ptr,"values(",7)) {
+				localrawvalues=ptr+7;
+			}
 		}
-		if (localrawvalues) {
-			localrawvalues+=7;
-		} else if (end>ptr+8) {
-			localrawvalues=charstring::findFirst(ptr,"values (");
-			if (localrawvalues) {
-				localrawvalues+=8;
+		if (!localrawvalues && end>ptr+8) {
+			if (!charstring::compare(ptr,"values (",8)) {
+				localrawvalues=ptr+8;
 			}
 		}
 
