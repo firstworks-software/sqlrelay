@@ -3459,8 +3459,8 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 	uint16_t	options;
 	uint16_t	moreoptions;
 	uint16_t	cursorid;
-	uint32_t	querysize;
-	const char	*query;
+	uint32_t	querysize=0;
+	const char	*query=NULL;
 
 	readBE(rp,&options,&rp);
 	readBE(rp,&moreoptions,&rp);
