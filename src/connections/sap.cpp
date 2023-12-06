@@ -45,7 +45,7 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 		const char	*selectDatabaseQuery();
 		const char	*getCurrentDatabaseQuery();
 		const char	*getLastInsertIdQuery();
-		const char	*noopQuery();
+		const char	*getNoopQuery();
 		const char	*getBindFormat();
 		const char	*beginTransactionQuery();
 		const char	*tempTableDropPrefix();
@@ -177,7 +177,7 @@ class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 						int16_t *isnull);
 		bool		executeQuery(const char *query,
 						uint32_t size);
-		uint64_t	affectedRows();
+		uint64_t	getAffectedRows();
 		uint32_t	colCount();
 		const char	*getColumnName(uint32_t col);
 		uint16_t	getColumnType(uint32_t col);
@@ -667,7 +667,7 @@ const char *sapconnection::getLastInsertIdQuery() {
 	return "select @@identity";
 }
 
-const char *sapconnection::noopQuery() {
+const char *sapconnection::getNoopQuery() {
 	return "waitfor delay '0:0'";
 }
 
@@ -1476,7 +1476,7 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 	return (!sapconn->errorcode);
 }
 
-uint64_t sapcursor::affectedRows() {
+uint64_t sapcursor::getAffectedRows() {
 	return affectedrows;
 }
 

@@ -17,10 +17,8 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_upsert : public sqlrtrigger {
 						sqlrtriggers *ts,
 						domnode *parameters);
 
-		bool	run(sqlrserverconnection *sqlrcon,
-						sqlrservercursor *icur,
-						bool before,
-						bool *success);
+		bool	runAfter(sqlrserverconnection *sqlrcon,
+						sqlrservercursor *icur);
 	private:
 		bool	errorEncountered(sqlrservercursor *icur);
 		domnode	*tableEncountered(const char *table);
@@ -68,15 +66,8 @@ sqlrtrigger_upsert::sqlrtrigger_upsert(sqlrservercontroller *cont,
 	tables=parameters->getFirstTagChild("tables");
 }
 
-bool sqlrtrigger_upsert::run(sqlrserverconnection *sqlrcon,
-						sqlrservercursor *icur,
-						bool before,
-						bool *success) {
-
-	// before the query has been run, don't do anything
-	if (before) {
-		return *success;
-	}
+bool sqlrtrigger_upsert::runAfter(sqlrserverconnection *sqlrcon,
+						sqlrservercursor *icur) {
 
 	// after the query has been run...
 
@@ -98,7 +89,7 @@ bool sqlrtrigger_upsert::run(sqlrserverconnection *sqlrcon,
 		if (debug) {
 			stdoutput.printf("	query was not an insert\n}\n");
 		}
-		return *success;
+		return true;
 	}
 
 	// bail if the query didn't throw an error that we care about
@@ -110,7 +101,7 @@ bool sqlrtrigger_upsert::run(sqlrserverconnection *sqlrcon,
 					cont->getErrorSize(icur),
 					cont->getErrorBuffer(icur));
 		}
-		return *success;
+		return true;
 	}
 
 	// parse the query
@@ -135,7 +126,7 @@ bool sqlrtrigger_upsert::run(sqlrserverconnection *sqlrcon,
 		delete[] table;
 		delete cols;
 		delete vals;
-		return *success;
+		return true;
 	}
 
 	// debug
@@ -153,7 +144,7 @@ bool sqlrtrigger_upsert::run(sqlrserverconnection *sqlrcon,
 		delete[] table;
 		delete cols;
 		delete vals;
-		return *success;
+		return true;
 	}
 
 	// debug
@@ -205,38 +196,45 @@ bool sqlrtrigger_upsert::run(sqlrserverconnection *sqlrcon,
 		}
 	}
 
-	// If we made it here, then the original insert failed with some error
-	// that triggered all of this to happen.  So *success ought to be false.
-	// Reset it to true.  We'll set it false again if some step below fails.
-	*success=true;
 
-	// Create an separate cursor to run the update rather than just using
+	// Create a separate cursor to run the update rather than just using
 	// the cursor that ran the original insert.  This preserves the insert
 	// cursor in case the client wants to use it to reexecute the insert.
 	sqlrservercursor	*ucur=cont->newCursor();
 	if (!ucur) {
-		*success=false;
 		cont->setError(icur,"upsert failed - "
 					"failed to create update cursor",
 					SQLR_ERROR_TRIGGER,true);
+		if (debug) {
+			stdoutput.printf("	upsert failed - "
+					"failed to create update cursor\n}\n");
+		}
+		delete[] table;
+		delete cols;
+		delete vals;
+		return false;
 	}
 
 	// open the update cursor
-	if (*success) {
-		*success=cont->open(ucur);
-		if (!*success) {
-			cont->setError(icur,"upsert failed - "
-						"failed to open update cursor",
-						SQLR_ERROR_TRIGGER,true);
+	if (!cont->open(ucur)) {
+		cont->setError(icur,"upsert failed - "
+					"failed to open update cursor",
+					SQLR_ERROR_TRIGGER,true);
+		if (debug) {
+			stdoutput.printf("	upsert failed - "
+					"failed to open update cursor\n}\n");
 		}
+		delete[] table;
+		delete cols;
+		delete vals;
+		return false;
 	}
 
 	// copy input binds from icur to ucur, convert the insert
 	// to an update, then prepare and execute the update query
 	// (each of these sets the error message internally if it fails)
 	stringbuffer		update;
-	if (*success) {
-		*success=copyInputBinds(ucur,icur,cols,vals,tablenode) &&
+	bool	success=copyInputBinds(ucur,icur,cols,vals,tablenode) &&
 				convertInsertToUpdate(ucur,table,
 						cols,vals,
 						autoinccolumn,primarykeycolumn,
@@ -244,49 +242,40 @@ bool sqlrtrigger_upsert::run(sqlrserverconnection *sqlrcon,
 				cont->prepareQuery(ucur,update.getString(),
 						update.getStringLength()) &&
 				cont->executeQuery(ucur);
-		if (!*success) {
-			// copy the error from the cursor used to run the
-			// update to the cursor used to run the original insert
-        		const char      *errorstring;
-        		uint32_t        errorsize;
-        		int64_t         errnum;
-        		bool            liveconnection;
-        		cont->getError(ucur,&errorstring,
-						&errorsize,
-                                        	&errnum,
-						&liveconnection);
-			cont->setError(icur,errorstring,errorsize,
-						errnum,liveconnection);
-		}
-	}
+	if (success) {
 
-	// FIXME: Ideally we'd copy the affected rows from ucur to icur.
-	// icur's affected rows will be 0 here because the insert failed.
-	// Also, it's not impossible that ucur updated more than 1 row.  But,
-	// the controller doesn't keep a copy of the affected rows, it just
-	// returns them directly from the cursor, so, currently, there's no
-	// way to set the affected rows.
-
-	if (*success) {
 		// icur currenty contains the error that
 		// triggered the upsert, clear that error
 		cont->clearError();
 		cont->clearError(icur);
-	}
 
-	if (debug) {
-		if (!*success) {
-        		const char      *errorstring;
-        		uint32_t        errorsize;
-        		int64_t         errnum;
-        		bool            liveconnection;
-        		cont->getError(icur,&errorstring,
-						&errorsize,
-                                        	&errnum,
-						&liveconnection);
+		// FIXME: Ideally we'd copy the affected rows from ucur to
+		// icur.  icur's affected rows will be 0 here because the
+		// insert failed.  Also, it's not impossible that ucur updated
+		// more than 1 row.  But, the controller doesn't keep a copy of
+		// the affected rows, it just returns them directly from the
+		// cursor, so, currently, there's no way to set the affected
+		// rows.
+	} else {
+		// copy the error from the cursor used to run the
+		// update to the cursor used to run the original insert
+        	const char      *errorstring;
+        	uint32_t        errorsize;
+        	int64_t         errnum;
+        	bool            liveconnection;
+        	cont->getError(ucur,&errorstring,
+					&errorsize,
+                                       	&errnum,
+					&liveconnection);
+		cont->setError(icur,errorstring,errorsize,
+					errnum,liveconnection);
+		if (debug) {
 			stdoutput.printf("error: %d - %.*s\n",
 					errnum,errorsize,errorstring);
 		}
+	}
+
+	if (debug) {
 		stdoutput.printf("}\n");
 	}
 
@@ -299,7 +288,7 @@ bool sqlrtrigger_upsert::run(sqlrserverconnection *sqlrcon,
 	delete[] table;
 	delete cols;
 	delete vals;
-	return *success;
+	return success;
 }
 
 bool sqlrtrigger_upsert::errorEncountered(sqlrservercursor *icur) {

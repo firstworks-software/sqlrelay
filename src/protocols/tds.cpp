@@ -3413,7 +3413,7 @@ uint64_t sqlrprotocol_tds::rows(sqlrservercursor *cursor) {
 	uint32_t	colcount=cont->colCount(cursor);
 	if (!colcount) {
 		// return the affected row count though
-		return cont->affectedRows(cursor);
+		return cont->getAffectedRows(cursor);
 	}
 
 	// for each row...
@@ -4539,7 +4539,7 @@ bool sqlrprotocol_tds::remoteProcedureCall(sqlrservercursor *cursor) {
 			// build the response packet
 			if (success) {
 				doneInProc(DONE_MORE|DONE_COUNT,0,
-						cont->affectedRows(cursor));
+						cont->getAffectedRows(cursor));
 				returnStatus(cursor);
 				returnValues(cursor);
 				doneProc(DONE_FINAL,0,0);

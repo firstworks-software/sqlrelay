@@ -41,15 +41,13 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_replay : public sqlrtrigger {
 		sqlrtrigger_replay(sqlrservercontroller *cont,
 						sqlrtriggers *ts,
 						domnode *parameters);
-		bool	run(sqlrserverconnection *sqlrcon,
-						sqlrservercursor *sqlrcur,
-						bool before,
-						bool *success);
+		bool	runAfter(sqlrserverconnection *sqlrcon,
+						sqlrservercursor *sqlrcur);
 
 		void	endTransaction(bool commit);
 
 	private:
-		bool	logQuery(sqlrservercursor *sqlrcur);
+		void	logQuery(sqlrservercursor *sqlrcur);
 		bool	replay(sqlrservercursor *sqlrcur,
 					condition *cond);
 		condition	*replayCondition(sqlrservercursor *sqlrcur);
@@ -162,50 +160,36 @@ sqlrtrigger_replay::sqlrtrigger_replay(sqlrservercontroller *cont,
 	disabled=false;
 }
 
-bool sqlrtrigger_replay::run(sqlrserverconnection *sqlrcon,
-						sqlrservercursor *sqlrcur,
-						bool before,
-						bool *success) {
-
-	// only run this trigger after running a query
-	if (before) {
-		return *success;
-	}
+bool sqlrtrigger_replay::runAfter(sqlrserverconnection *sqlrcon,
+						sqlrservercursor *sqlrcur) {
 
 	// bail if logging/replay was disabled due to a query we can't handle
 	if (disabled) {
-		return *success;
+		return true;
 	}
 
-	// bail if we couldn't log the query for some reason
-	if (!logQuery(sqlrcur)) {
-		*success=false;
-		return false;
-	}
+	// log the query
+	logQuery(sqlrcur);
 
 	// bail if the query failed (*success==false)
 	// but we didn't encounter a replay condition
 	condition	*cond=NULL;
-	if (!(*success)) {
+	if (cont->getErrorSize(sqlrcur)) {
 		cond=replayCondition(sqlrcur);
 		if (!cond) {
-			*success=false;
-			return false;
+			return true;
 		}
 	}
 
 	// replay the log if the query failed because of a replay condition
-	if (cond) {
-		*success=replay(sqlrcur,cond);
-	}
-	return *success;
+	return (cond)?replay(sqlrcur,cond):true;
 }
 
-bool sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
+void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 
 	// bail if we're not supposed to be logging
 	if (!logqueries) {
-		return true;
+		return;
 	}
 
 	// If we're not in a transaction, we only need
@@ -255,14 +239,14 @@ bool sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 						sqlrcur->getQueryBuffer());
 		}
 		delete columns;
-		return true;
+		return;
 	}
 
 	// We can't select-into during replay.
 	if (querytype==SQLRQUERYTYPE_SELECTINTO) {
 		disableUntilEndOfTx(query,querylen,querytype);
 		delete columns;
-		return true;
+		return;
 	}
 
 	// log the query...
@@ -296,7 +280,7 @@ bool sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 			// There's no way (currently) to handle these.
 			disableUntilEndOfTx(query,querylen,querytype);
 			delete columns;
-			return true;
+			return;
 		}
 
 	} else if (querytype==SQLRQUERYTYPE_INSERTSELECT) {
@@ -304,7 +288,7 @@ bool sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 		// There's no way (currently) to handle these.
 		disableUntilEndOfTx(query,querylen,querytype);
 		delete columns;
-		return true;
+		return;
 
 	} else {
 		copyQuery(qd,query,querylen);
@@ -352,7 +336,7 @@ bool sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 #endif
 
 	delete columns;
-	return true;
+	return;
 }
 
 void sqlrtrigger_replay::disableUntilEndOfTx(const char *query, 

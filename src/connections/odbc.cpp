@@ -193,7 +193,7 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 						uint32_t *errorsize,
 						int64_t	*errorcode,
 						bool *liveconnection);
-		uint64_t	affectedRows();
+		uint64_t	getAffectedRows();
 		uint32_t	colCount();
 		const char	*getColumnName(uint32_t i);
 		uint16_t	getColumnNameSize(uint32_t i);
@@ -3655,7 +3655,7 @@ void odbccursor::getError(char *errorbuffer,
 	*liveconnection=odbcconn->isLiveConnection(state);
 }
 
-uint64_t odbccursor::affectedRows() {
+uint64_t odbccursor::getAffectedRows() {
 	return affectedrows;
 }
 

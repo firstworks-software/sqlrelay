@@ -49,7 +49,7 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 		const char	*getCurrentDatabaseQuery();
 		bool		getLastInsertId(uint64_t *id);
 		const char	*getLastInsertIdQuery();
-		const char	*noopQuery();
+		const char	*getNoopQuery();
 		const char	*getBindFormat();
 		const char	*getNextvalFormat();
 
@@ -148,7 +148,7 @@ class SQLRSERVER_DLLSPEC postgresqlcursor : public sqlrservercursor {
 #endif
 		bool		knowsRowCount();
 		uint64_t	rowCount();
-		uint64_t	affectedRows();
+		uint64_t	getAffectedRows();
 		uint32_t	colCount();
 		uint16_t	columnTypeFormat();
 		const char	*getColumnName(uint32_t col);
@@ -722,7 +722,7 @@ const char *postgresqlconnection::getLastInsertIdQuery() {
 	return lastinsertidquery;
 }
 
-const char *postgresqlconnection::noopQuery() {
+const char *postgresqlconnection::getNoopQuery() {
 	return "do language plpgsql $$declare dummy int; begin end$$";
 }
 
@@ -1223,7 +1223,7 @@ uint64_t postgresqlcursor::rowCount() {
 	return nrows;
 }
 
-uint64_t postgresqlcursor::affectedRows() {
+uint64_t postgresqlcursor::getAffectedRows() {
 	return affectedrows;
 }
 

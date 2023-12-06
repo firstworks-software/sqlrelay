@@ -6229,7 +6229,7 @@ void sqlrprotocol_teradata::updateActivityCount() {
 	// set the activity count from the affected rows
 	// (unless it's already been set)
 	if (!req->activitycount) {
-		req->activitycount=cont->affectedRows(req->cur);
+		req->activitycount=cont->getAffectedRows(req->cur);
 	}
 
 	// fudge some particular activity counts

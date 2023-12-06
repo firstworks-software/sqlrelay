@@ -199,33 +199,51 @@ sqlrtriggerplugin *sqlrtriggers::loadTrigger(domnode *trigger) {
 	return sqltp;
 }
 
-void sqlrtriggers::runBeforeTriggers(sqlrserverconnection *sqlrcon,
-					sqlrservercursor *sqlrcur) {
+bool sqlrtriggers::runBeforeTriggers(sqlrserverconnection *sqlrcon,
+					sqlrservercursor *sqlrcur,
+					bool *suppress) {
 	debugFunction();
-	run(sqlrcon,sqlrcur,&pvt->_beforetriggers,true,NULL);
+	return runBefore(sqlrcon,sqlrcur,&pvt->_beforetriggers,suppress);
 }
 
-void sqlrtriggers::runAfterTriggers(sqlrserverconnection *sqlrcon,
-						sqlrservercursor *sqlrcur,
-						bool *success) {
+bool sqlrtriggers::runAfterTriggers(sqlrserverconnection *sqlrcon,
+						sqlrservercursor *sqlrcur) {
 	debugFunction();
-	run(sqlrcon,sqlrcur,&pvt->_aftertriggers,false,success);
+	return runAfter(sqlrcon,sqlrcur,&pvt->_aftertriggers);
 }
 
-void sqlrtriggers::run(sqlrserverconnection *sqlrcon,
+bool sqlrtriggers::runBefore(sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
 				singlylinkedlist< sqlrtriggerplugin * > *list,
-				bool before,
-				bool *success) {
+				bool *suppress) {
 	debugFunction();
 	for (listnode< sqlrtriggerplugin * > *node=list->getFirst();
 						node; node=node->getNext()) {
 		if (pvt->_debug) {
-			stdoutput.printf("\nrunning %s trigger...\n\n",
-						(before)?"before":"after");
+			stdoutput.printf("\nrunning before trigger...\n\n");
 		}
-		node->getValue()->tr->run(sqlrcon,sqlrcur,before,success);
+		if (!node->getValue()->tr->runBefore(
+					sqlrcon,sqlrcur,suppress)) {
+			return false;
+		}
 	}
+	return true;
+}
+
+bool sqlrtriggers::runAfter(sqlrserverconnection *sqlrcon,
+				sqlrservercursor *sqlrcur,
+				singlylinkedlist< sqlrtriggerplugin * > *list) {
+	debugFunction();
+	for (listnode< sqlrtriggerplugin * > *node=list->getFirst();
+						node; node=node->getNext()) {
+		if (pvt->_debug) {
+			stdoutput.printf("\nrunning after trigger...\n\n");
+		}
+		if (!node->getValue()->tr->runAfter(sqlrcon,sqlrcur)) {
+			return false;
+		}
+	}
+	return true;
 }
 
 void sqlrtriggers::endTransaction(bool commit) {

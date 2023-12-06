@@ -159,7 +159,7 @@ class SQLRSERVER_DLLSPEC freetdscursor : public sqlrservercursor {
 		bool		executeQuery(const char *query,
 						uint32_t size);
 		bool		knowsAffectedRows();
-		uint64_t	affectedRows();
+		uint64_t	getAffectedRows();
 		uint32_t	colCount();
 		const char	*getColumnName(uint32_t col);
 		uint16_t	getColumnType(uint32_t col);
@@ -1790,7 +1790,7 @@ bool freetdscursor::knowsAffectedRows() {
 	return knowsaffectedrows;
 }
 
-uint64_t freetdscursor::affectedRows() {
+uint64_t freetdscursor::getAffectedRows() {
 	return affectedrows;
 }
 

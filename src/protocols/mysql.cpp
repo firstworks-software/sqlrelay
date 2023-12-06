@@ -3107,7 +3107,7 @@ bool sqlrprotocol_mysql::sendQueryResult(sqlrservercursor *cursor,
 	// 		Records: xxx Duplicates: xxx Warnings: xxx
 	// 	update
 	// 		Rows matched: xxx Changed: xxx Warnings: xxx
-	return sendOkPacket(true,cont->affectedRows(cursor),id,0,0,"",0,"");
+	return sendOkPacket(true,cont->getAffectedRows(cursor),id,0,0,"",0,"");
 }
 
 bool sqlrprotocol_mysql::sendResultSet(sqlrservercursor *cursor,

@@ -518,7 +518,7 @@ const char *sqlrserverconnection::getLastInsertIdQuery() {
 	return NULL;
 }
 
-const char *sqlrserverconnection::noopQuery() {
+const char *sqlrserverconnection::getNoopQuery() {
 	return "";
 }
 

@@ -2669,7 +2669,7 @@ void sqlrprotocol_sqlrclient::returnResultSetHeader(sqlrservercursor *cursor) {
 	sendRowCounts(cont->knowsRowCount(cursor),
 			cont->rowCount(cursor),
 			cont->knowsAffectedRows(cursor),
-			cont->affectedRows(cursor));
+			cont->getAffectedRows(cursor));
 	cont->raiseDebugMessageEvent("done returning row counts");
 
 	// tell the client whether or not the column information will be sent

@@ -158,7 +158,7 @@ class SQLRSERVER_DLLSPEC db2cursor : public sqlrservercursor {
 						uint32_t *errorsize,
 						int64_t	*errorcode,
 						bool *liveconnection);
-		uint64_t	affectedRows();
+		uint64_t	getAffectedRows();
 		uint32_t	colCount();
 		const char	*getColumnName(uint32_t i);
 		uint16_t	getColumnNameSize(uint32_t i);
@@ -267,7 +267,7 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 		const char	*getCurrentDatabaseQuery();
 		const char	*getLastInsertIdQuery();
 		const char	*setIsolationLevelQuery();
-		const char	*noopQuery();
+		const char	*getNoopQuery();
 		const char	*getBindFormat();
 		const char	*getNextvalFormat();
 
@@ -737,7 +737,7 @@ const char *db2connection::setIsolationLevelQuery() {
         return "set current isolation %s";
 }
 
-const char *db2connection::noopQuery() {
+const char *db2connection::getNoopQuery() {
 	return "begin end;";
 }
 
@@ -1577,7 +1577,7 @@ void db2cursor::getError(char *errorbuffer,
 						errorbuffer,errsize);
 }
 
-uint64_t db2cursor::affectedRows() {
+uint64_t db2cursor::getAffectedRows() {
 	return affectedrows;
 }
 

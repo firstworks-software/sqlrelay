@@ -1845,7 +1845,7 @@ bool sqlrprotocol_postgresql::sendCommandComplete(sqlrservercursor *cursor) {
 
 	// for some commands we append row counts and other stuff
 	int64_t	affectedrows=(cont->knowsAffectedRows(cursor))?
-						cont->affectedRows(cursor):0;
+					cont->getAffectedRows(cursor):0;
 	if (!charstring::compare(newq,"SELECT")) {
 		commandtag.append(' ');
 		commandtag.append(cont->rowCount(cursor));

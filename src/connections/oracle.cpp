@@ -141,7 +141,7 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		const char	*selectDatabaseQuery();
 		const char	*getCurrentDatabaseQuery();
 		const char	*getLastInsertIdQuery();
-		const char	*noopQuery();
+		const char	*getNoopQuery();
 
 		ub4		stmtmode;
 
@@ -312,7 +312,7 @@ class SQLRSERVER_DLLSPEC oraclecursor : public sqlrservercursor {
 						uint32_t *errorsize,
 						int64_t	*errorcode,
 						bool *liveconnection);
-		uint64_t	affectedRows();
+		uint64_t	getAffectedRows();
 		uint32_t	colCount();
 		const char	*getColumnName(uint32_t col);
 		uint16_t	getColumnNameSize(uint32_t col);
@@ -2386,7 +2386,7 @@ const char *oracleconnection::getLastInsertIdQuery() {
 	return lastinsertidquery;
 }
 
-const char *oracleconnection::noopQuery() {
+const char *oracleconnection::getNoopQuery() {
 	return "begin null; end;";
 }
 
@@ -3881,7 +3881,7 @@ void oraclecursor::getError(char *errorbuffer,
 	#endif
 }
 
-uint64_t oraclecursor::affectedRows() {
+uint64_t oraclecursor::getAffectedRows() {
 
 	// get the affected row count
 	ub4	rows;

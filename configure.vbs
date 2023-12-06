@@ -959,7 +959,7 @@ if disableoracle=false then
 end if
 if disablemysql=false then
 	MYSQLBUILD="yes    "
-	TESTDBS=TESTDBs&"""mysql"",""mysqlupsert"",""mysqldeadlockreplay"","
+	TESTDBS=TESTDBs&"""mysql"",""mysqlupsert"",""mysqldeadlockreplay"",""mysqlsplitmultiinsert"","
 end if
 if disablepostgresql=false then
 	POSTGRESQLBUILD="yes    "

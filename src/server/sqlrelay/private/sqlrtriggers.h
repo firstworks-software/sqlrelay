@@ -4,10 +4,12 @@
 	private:
 		void	unload();
 		sqlrtriggerplugin	*loadTrigger(domnode *trigger);
-		void	run(sqlrserverconnection *sqlrcon,
+		bool	runBefore(sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
 				singlylinkedlist< sqlrtriggerplugin * > *list,
-				bool before,
-				bool *success);
+				bool *suppress);
+		bool	runAfter(sqlrserverconnection *sqlrcon,
+				sqlrservercursor *sqlrcur,
+				singlylinkedlist< sqlrtriggerplugin * > *list);
 
 		sqlrtriggersprivate	*pvt;

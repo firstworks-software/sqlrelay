@@ -1001,7 +1001,7 @@ bool sqlrservercursor::knowsAffectedRows() {
 	return true;
 }
 
-uint64_t sqlrservercursor::affectedRows() {
+uint64_t sqlrservercursor::getAffectedRows() {
 	return 0;
 }
 

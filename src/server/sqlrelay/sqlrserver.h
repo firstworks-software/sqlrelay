@@ -434,6 +434,12 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 
 
 
+		// noop query...
+		/** Returns the noop query for this database. */
+		const char	*getNoopQuery();
+
+
+
 		// transactions...
 
 		/** Begins a new transaction.  Returns true on success and
@@ -1956,7 +1962,9 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		bool	knowsRowCount(sqlrservercursor *cursor);
 		uint64_t	rowCount(sqlrservercursor *cursor);
 		bool	knowsAffectedRows(sqlrservercursor *cursor);
-		uint64_t	affectedRows(sqlrservercursor *cursor);
+		void	setAffectedRows(sqlrservercursor *cursor,
+						uint64_t affectedrows);
+		uint64_t	getAffectedRows(sqlrservercursor *cursor);
 		bool	noRowsToReturn(sqlrservercursor *cursor);
 		bool	skipRow(sqlrservercursor *cursor, bool *error);
 		bool	skipRows(sqlrservercursor *cursor, uint64_t rows,
@@ -2377,7 +2385,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 
 		virtual bool		getLastInsertId(uint64_t *id);
 		virtual const char	*getLastInsertIdQuery();
-		virtual const char	*noopQuery();
+		virtual const char	*getNoopQuery();
 
 		virtual bool		setIsolationLevel(const char *isolevel);
 		virtual const char	*setIsolationLevelQuery();
@@ -2794,7 +2802,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		virtual bool		knowsRowCount();
 		virtual uint64_t	rowCount();
 		virtual bool		knowsAffectedRows();
-		virtual uint64_t	affectedRows();
+		virtual uint64_t	getAffectedRows();
 		virtual	uint32_t	colCount();
 		virtual uint16_t	columnTypeFormat();
 		virtual const char	*getColumnName(uint32_t col);
@@ -4370,10 +4378,11 @@ class SQLRSERVER_DLLSPEC sqlrtrigger {
 					domnode *parameters);
 		virtual	~sqlrtrigger();
 
-		virtual bool	run(sqlrserverconnection *sqlrcon,
-					sqlrservercursor *sqlrcur,
-					bool before,
-					bool *success);
+		virtual bool	runBefore(sqlrserverconnection *sqlrcon,
+						sqlrservercursor *sqlrcur,
+						bool *suppress);
+		virtual bool	runAfter(sqlrserverconnection *sqlrcon,
+						sqlrservercursor *sqlrcur);
 
 		virtual void	endTransaction(bool commit);
 		virtual void	endSession();
@@ -4391,11 +4400,11 @@ class SQLRSERVER_DLLSPEC sqlrtriggers {
 		~sqlrtriggers();
 
 		bool	load(domnode *parameters);
-		void	runBeforeTriggers(sqlrserverconnection *sqlrcon,
-						sqlrservercursor *sqlrcur);
-		void	runAfterTriggers(sqlrserverconnection *sqlrcon,
+		bool	runBeforeTriggers(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur,
-						bool *success);
+						bool *suppress);
+		bool	runAfterTriggers(sqlrserverconnection *sqlrcon,
+						sqlrservercursor *sqlrcur);
 
 		void	endTransaction(bool commit);
 		void	endSession();

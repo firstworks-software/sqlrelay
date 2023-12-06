@@ -228,7 +228,7 @@ class SQLRSERVER_DLLSPEC routercursor : public sqlrservercursor {
 						bool *liveconnection);
 		bool		knowsRowCount();
 		uint64_t	rowCount();
-		uint64_t	affectedRows();
+		uint64_t	getAffectedRows();
 		uint32_t	colCount();
 		uint16_t	columnTypeFormat();
 		const char	*getColumnName(uint32_t col);
@@ -1678,7 +1678,7 @@ uint64_t routercursor::rowCount() {
 	return (currentcur)?currentcur->rowCount():0;
 }
 
-uint64_t routercursor::affectedRows() {
+uint64_t routercursor::getAffectedRows() {
 	return (currentcur)?currentcur->affectedRows():0;
 }
 

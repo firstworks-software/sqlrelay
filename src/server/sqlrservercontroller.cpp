@@ -317,6 +317,9 @@ class sqlrservercontrollerprivate {
 
 	dictionary< sqlrdatabaseobject *, char * >	_tablenamemap;
 	dictionary< sqlrdatabaseobject *, char * >	_indexnamemap;
+
+	dictionary< sqlrservercursor *, bool >		_overrideaffectedrows;
+	dictionary< sqlrservercursor *, uint64_t >	_affectedrows;
 };
 
 static signalhandler		alarmhandler;
@@ -2540,6 +2543,10 @@ bool sqlrservercontroller::getLastInsertId(uint64_t *id) {
 	return pvt->_conn->getLastInsertId(id);
 }
 
+const char *sqlrservercontroller::getNoopQuery() {
+	return pvt->_conn->getNoopQuery();
+}
+
 bool sqlrservercontroller::setIsolationLevel(const char *isolevel) {
 	return pvt->_conn->setIsolationLevel(isolevel);
 }
@@ -3774,7 +3781,7 @@ bool sqlrservercontroller::translateQuery(sqlrservercursor *cursor) {
 
 	// replace with a noop if the query is empty
 	if (charstring::isNullOrEmpty(translatedquery->getString())) {
-		translatedquery->append(pvt->_conn->noopQuery());
+		translatedquery->append(pvt->_conn->getNoopQuery());
 	}
 
 	// write the translated query to the cursor's query buffer
@@ -4883,6 +4890,10 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 	// set state
 	setState((isCustomQuery(cursor))?PROCESS_CUSTOM:PROCESS_SQL);
 
+	// reset affected rows
+	pvt->_overrideaffectedrows.setValue(cursor,false);
+	pvt->_affectedrows.setValue(cursor,0);
+
 	// if we're re-executing
 	if (cursor->getQueryHasBeenExecuted()) {
 
@@ -5023,7 +5034,7 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 	cursor->setQueryStart(dt.getSecond(),dt.getMicrosecond());
 
 	// init result
-	bool	success=false;
+	bool	success=true;
 
 	// if the query needs to be intercepted, then intercept it
 	if (cursor->getQueryNeedsIntercept()) {
@@ -5146,9 +5157,13 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 	}
 
 	// handle before-triggers
+	bool	suppress=false;
 	if (enabletriggers && pvt->_sqlrtr) {
-		pvt->_sqlrtr->runBeforeTriggers(pvt->_conn,cursor);
+		success=pvt->_sqlrtr->runBeforeTriggers(pvt->_conn,cursor,
+								&suppress);
 	}
+	// FIXME: handle if runBeforeTriggers set success=false;
+	
 
 	// (re)set the query start time
 	dt.initFromSystemDateTime();
@@ -5167,7 +5182,14 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 	}
 
 	// execute the query
-	success=cursor->executeQuery(query,querysize);
+	if (success) {
+		if (!suppress) {
+			success=cursor->executeQuery(query,querysize);
+		} else {
+			// FIXME: do we need to do anything to fake
+			// like a query was actually executed
+		}
+	}
 
 	// set flag indicating that the query has been executed
 	// NOTE: We want to do this whether the query succeeds or fails so that
@@ -5232,7 +5254,7 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 
 	// handle after-triggers
 	if (enabletriggers && pvt->_sqlrtr) {
-		pvt->_sqlrtr->runAfterTriggers(pvt->_conn,cursor,&success);
+		success=pvt->_sqlrtr->runAfterTriggers(pvt->_conn,cursor);
 	}
 
 	// was the query a commit or rollback?
@@ -5253,6 +5275,13 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 	raiseDebugMessageEvent("done executing query");
 
 	if (success) {
+
+		// get affected rows
+		if (!pvt->_overrideaffectedrows.getValue(cursor)) {
+			pvt->_affectedrows.setValue(
+				cursor,cursor->getAffectedRows());
+		}
+
 		cursor->setQueryStatus(SQLRQUERYSTATUS_SUCCESS);
 	}
 
@@ -9881,8 +9910,14 @@ bool sqlrservercontroller::knowsAffectedRows(sqlrservercursor *cursor) {
 	return cursor->knowsAffectedRows();
 }
 
-uint64_t sqlrservercontroller::affectedRows(sqlrservercursor *cursor) {
-	return cursor->affectedRows();
+void sqlrservercontroller::setAffectedRows(sqlrservercursor *cursor,
+						uint64_t affectedrows) {
+	pvt->_overrideaffectedrows.setValue(cursor,true);
+	pvt->_affectedrows.setValue(cursor,affectedrows);
+}
+
+uint64_t sqlrservercontroller::getAffectedRows(sqlrservercursor *cursor) {
+	return pvt->_affectedrows.getValue(cursor);
 }
 
 uint32_t sqlrservercontroller::colCount(sqlrservercursor *cursor) {

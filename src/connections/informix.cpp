@@ -151,7 +151,7 @@ class SQLRSERVER_DLLSPEC informixcursor : public sqlrservercursor {
 						uint32_t *errorsize,
 						int64_t	*errorcode,
 						bool *liveconnection);
-		uint64_t	affectedRows();
+		uint64_t	getAffectedRows();
 		uint32_t	colCount();
 		const char	*getColumnName(uint32_t i);
 		uint16_t	getColumnNameSize(uint32_t i);
@@ -256,7 +256,7 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 		const char	*getCurrentDatabaseQuery();
 		const char	*getLastInsertIdQuery();
 		const char	*setIsolationLevelQuery();
-		const char	*noopQuery();
+		const char	*getNoopQuery();
 		const char	*getBindFormat();
 
 		SQLHENV		env;
@@ -771,7 +771,7 @@ const char *informixconnection::setIsolationLevelQuery() {
         return "set isolation %s";
 }
 
-const char *informixconnection::noopQuery() {
+const char *informixconnection::getNoopQuery() {
         return "noop";
 }
 
@@ -1553,7 +1553,7 @@ void informixcursor::getError(char *errorbuffer,
 							errorbuffer,errsize);
 }
 
-uint64_t informixcursor::affectedRows() {
+uint64_t informixcursor::getAffectedRows() {
 	return affectedrows;
 }
 

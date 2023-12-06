@@ -105,7 +105,7 @@ class SQLRSERVER_DLLSPEC mysqlcursor : public sqlrservercursor {
 						bool *liveconnection);
 		bool		knowsRowCount();
 		uint64_t	rowCount();
-		uint64_t	affectedRows();
+		uint64_t	getAffectedRows();
 		uint32_t	colCount();
 		const char	*getColumnName(uint32_t col);
 #ifdef HAVE_MYSQL_FIELD_NAME_LENGTH
@@ -223,7 +223,7 @@ class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 		const char	*getCurrentDatabaseQuery();
 		const char	*setIsolationLevelQuery();
 		bool		getLastInsertId(uint64_t *id);
-		const char	*noopQuery();
+		const char	*getNoopQuery();
 		bool		setAutoCommitOn();
 		bool		setAutoCommitOff();
 		bool		supportsAutoCommit();
@@ -767,7 +767,7 @@ bool mysqlconnection::getLastInsertId(uint64_t *id) {
 	return true;
 }
 
-const char *mysqlconnection::noopQuery() {
+const char *mysqlconnection::getNoopQuery() {
 	return "set @noop=null";
 }
 
@@ -1619,7 +1619,7 @@ uint64_t mysqlcursor::rowCount() {
 	return nrows;
 }
 
-uint64_t mysqlcursor::affectedRows() {
+uint64_t mysqlcursor::getAffectedRows() {
 	return affectedrows;
 }
 
