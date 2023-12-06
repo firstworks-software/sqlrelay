@@ -3818,14 +3818,18 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 				stdoutput.write("		data: ");
 				stdoutput.printf("%d ",ispositive);
 				switch (size) {
-					case 4:
-						stdoutput.printf("%d ",
-							*((int32_t *)val));
+					case 4: {
+						uint32_t	*v=
+							(uint32_t *)val;
+						stdoutput.printf("%d ",*v);
 						break;
-					case 8:
-						stdoutput.printf("%lld ",
-							*((int64_t *)val));
+						}
+					case 8: {
+						uint64_t	*v=
+							(uint64_t *)val;
+						stdoutput.printf("%lld ",*v);
 						break;
+						}
 					case 12:
 						stdoutput.write("... ");
 						break;
