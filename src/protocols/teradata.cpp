@@ -2230,7 +2230,8 @@ bool sqlrprotocol_teradata::sendResponseToClient() {
 
 	// calculate response authentication...
 	// (if bytes 3-6 are non-zero, otherwise just zero it out)
-	uint32_t	time=*((uint32_t *)&requestauth[3]);
+	uint32_t	*timeptr=(uint32_t *)&requestauth[3];
+	uint32_t	time=*timeptr;
 	if (time) {
 
 		// FIXME: the below is incorrect for kind == CONNECT
@@ -4116,7 +4117,8 @@ void sqlrprotocol_teradata::parseFloatBind(const byte_t *ptr,
 						const byte_t **outptr) {
 	uint64_t	val;
 	read(ptr,&val,outptr);
-	inbind->value.doubleval.value=*((double *)&val);
+	double		*valptr=(double *)&val;
+	inbind->value.doubleval.value=*valptr;
 	// set precision/scale to max values
 	// (NOTE: these were determined experimentally, and work with a
 	// teradata backend, it's possible that other backends might not
