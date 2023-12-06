@@ -424,7 +424,7 @@ static bool loadLibraries(stringbuffer *errormessage) {
 	for (uint16_t i=0; i<5; i++) {
 		for (listnode<char *> *n=l[i].getFirst(); n; n=n->getNext()) {
 			const char *libname=n->getValue();
-			if (file::readable(libname)) {
+			if (file::isReadable(libname)) {
 				libnames.append(libname);
 			}
 		}
