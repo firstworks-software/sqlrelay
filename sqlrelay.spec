@@ -399,9 +399,9 @@ make
 make install DESTDIR=%{buildroot}
 
 # move systemd files to (_unitdir)
-mkdir -p %{buildroot}%{_unitdir}
-mv %{buildroot}/usr/lib/systemd/system/sqlrcachemanager.service %{buildroot}%{_unitdir}
-mv %{buildroot}/usr/lib/systemd/system/sqlrelay.service %{buildroot}%{_unitdir}
+#mkdir -p %{buildroot}%{_unitdir}
+#mv %{buildroot}/usr/lib/systemd/system/sqlrcachemanager.service %{buildroot}%{_unitdir}
+#mv %{buildroot}/usr/lib/systemd/system/sqlrelay.service %{buildroot}%{_unitdir}
 
 # create tmpfiles.d directories and config file
 mkdir -p %{buildroot}/run/%{name}
