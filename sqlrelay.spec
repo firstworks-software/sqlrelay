@@ -400,7 +400,8 @@ make install DESTDIR=%{buildroot}
 
 # move systemd files to (_unitdir)
 mkdir -p %{buildroot}%{_unitdir}
-mv %{buildroot}/usr/lib/systemd/system/* %{buildroot}%{_unitdir}
+mv %{buildroot}/usr/lib/systemd/system/sqlrcachemanager.service %{buildroot}%{_unitdir}
+mv %{buildroot}/usr/lib/systemd/system/sqlrelay.service %{buildroot}%{_unitdir}
 
 # create tmpfiles.d directories and config file
 mkdir -p %{buildroot}/run/%{name}
@@ -776,13 +777,14 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_javadocdir}/%{name}
 
 %changelog
-* Fri Jun 30 2023 David Muse <david.muse@firstworks.com> - 2.0.0-1
+* Fri Dec  8 2023 David Muse <david.muse@firstworks.com> - 2.0.0-1
 - Updated to version 2.0.0.
 - Removed support for mdbtools.
 - Updated to build python 3 packages for rhel > 6.
 - Removed sqlrresultsetdomnode.
 - Moved sqlr-pwdenc to clients package.
 - Moved pwdenc-related libraries and header files to common package.
+- Cleaned up service installation.
 
 * Thu Mar 04 2021 David Muse <david.muse@firstworks.com> - 1.9.0-1
 - Updated to version 1.9.0.
