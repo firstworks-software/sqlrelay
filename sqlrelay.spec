@@ -398,11 +398,6 @@ make
 %install
 make install DESTDIR=%{buildroot}
 
-# move systemd files to (_unitdir)
-#mkdir -p %{buildroot}%{_unitdir}
-#mv %{buildroot}/usr/lib/systemd/system/sqlrcachemanager.service %{buildroot}%{_unitdir}
-#mv %{buildroot}/usr/lib/systemd/system/sqlrelay.service %{buildroot}%{_unitdir}
-
 # create tmpfiles.d directories and config file
 mkdir -p %{buildroot}/run/%{name}
 mkdir -p %{buildroot}%{_tmpfilesdir}
@@ -461,20 +456,24 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_libdir}/libsqlrserver.so.12
 %{_libdir}/libsqlrserver.so.12.*
 %{_libexecdir}/%{name}/sqlrauth_*
-%{_libexecdir}/%{name}/sqlrbindvariabletranslation_*
+#%{_libexecdir}/%{name}/sqlrbindvariabletranslation_*
 %{_libexecdir}/%{name}/sqlrconfig_*
+%{_libexecdir}/%{name}/sqlrdirective_*
+%{_libexecdir}/%{name}/sqlrerrortranslation_*
 %{_libexecdir}/%{name}/sqlrfilter_*
-%{_libexecdir}/%{name}/sqlrtrigger_*
+%{_libexecdir}/%{name}/sqlrlogger_*
 %{_libexecdir}/%{name}/sqlrnotification_*
 %{_libexecdir}/%{name}/sqlrparser_*
 %{_libexecdir}/%{name}/sqlrprotocol_*
-%{_libexecdir}/%{name}/sqlrlogger_*
-%{_libexecdir}/%{name}/sqlrmoduledata_*
 %{_libexecdir}/%{name}/sqlrquery_*
+%{_libexecdir}/%{name}/sqlrquerytranslation_*
+%{_libexecdir}/%{name}/sqlrmoduledata_*
+#%{_libexecdir}/%{name}/sqlrresultsetheadertranslation_*
+#%{_libexecdir}/%{name}/sqlrresultsetrowblocktranslation_*
+#%{_libexecdir}/%{name}/sqlrresultsetrowtranslation_*
 %{_libexecdir}/%{name}/sqlrresultsettranslation_*
 %{_libexecdir}/%{name}/sqlrschedule_*
-%{_libexecdir}/%{name}/sqlrtranslation_*
-%{_libexecdir}/%{name}/sqlrdirective_*
+%{_libexecdir}/%{name}/sqlrtrigger_*
 %{_mandir}/*/sqlr-listener.*
 %{_mandir}/*/sqlr-connection.*
 %{_mandir}/*/sqlr-scaler.*
@@ -784,7 +783,8 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 - Removed sqlrresultsetdomnode.
 - Moved sqlr-pwdenc to clients package.
 - Moved pwdenc-related libraries and header files to common package.
-- Cleaned up service installation.
+- Removed movement of service files.
+- Added new modules to files section.
 
 * Thu Mar 04 2021 David Muse <david.muse@firstworks.com> - 1.9.0-1
 - Updated to version 1.9.0.
