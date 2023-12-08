@@ -457,7 +457,7 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_libdir}/libsqlrserver.so.12.*
 %{_libexecdir}/%{name}/sqlrauth_*
 %{_libexecdir}/%{name}/sqlrconfig_*
-%{_libexecdir}/%{name}/sqlrbindvariabletransalation_*
+%{_libexecdir}/%{name}/sqlrbindvariabletranslation_*
 %{_libexecdir}/%{name}/sqlrdirective_*
 %{_libexecdir}/%{name}/sqlrerrortranslation_*
 %{_libexecdir}/%{name}/sqlrfilter_*
