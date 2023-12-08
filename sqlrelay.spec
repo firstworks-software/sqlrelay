@@ -561,9 +561,10 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %dir %{_includedir}/%{name}
 %dir %{_includedir}/%{name}/private
 %{_includedir}/%{name}/sqlrutil.h
-%{_includedir}/%{name}/private/sqlrutilincludes.h
+%{_includedir}/%{name}/private/sqlrconfig.h
 %{_includedir}/%{name}/private/sqlrpwdenc.h
 %{_includedir}/%{name}/private/sqlrpwdencs.h
+%{_includedir}/%{name}/private/sqlrutilincludes.h
 %{_libdir}/libsqlrutil.so
 %{_datadir}/sqlrelay
 
@@ -596,7 +597,7 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_includedir}/%{name}/private/sqlrrowlist.h
 %{_includedir}/%{name}/private/sqlrscalar.h
 %{_includedir}/%{name}/sqlrcrud.h
-%{_includedir}/%{name}/private/sqlrcrudincludes.h
+%{_includedir}/%{name}/private/sqlrcrud*.h
 %{_libdir}/libsqlrclient.so
 %{_libdir}/pkgconfig/%{name}-c++.pc
 %exclude %{_libdir}/lib*.la
