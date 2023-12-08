@@ -457,6 +457,7 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_libdir}/libsqlrserver.so.12.*
 %{_libexecdir}/%{name}/sqlrauth_*
 %{_libexecdir}/%{name}/sqlrconfig_*
+%{_libexecdir}/%{name}/sqlrbindvariabletransalation_*
 %{_libexecdir}/%{name}/sqlrdirective_*
 %{_libexecdir}/%{name}/sqlrerrortranslation_*
 %{_libexecdir}/%{name}/sqlrfilter_*
@@ -468,6 +469,9 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_libexecdir}/%{name}/sqlrquerytranslation_*
 %{_libexecdir}/%{name}/sqlrmoduledata_*
 %{_libexecdir}/%{name}/sqlrresultsettranslation_*
+%{_libexecdir}/%{name}/sqlrresultsetheadertranslation_*
+%{_libexecdir}/%{name}/sqlrresultsetrowblocktranslation_*
+%{_libexecdir}/%{name}/sqlrresultsetrowtranslation_*
 %{_libexecdir}/%{name}/sqlrschedule_*
 %{_libexecdir}/%{name}/sqlrtrigger_*
 %{_mandir}/*/sqlr-listener.*
@@ -510,7 +514,6 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_includedir}/%{name}/private/sqlrquerycursor.h
 %{_includedir}/%{name}/private/sqlrquery.h
 %{_includedir}/%{name}/private/sqlrquerytranslation*.h
-%{_includedir}/%{name}/private/sqlrmoduledata*.h
 %{_includedir}/%{name}/private/sqlrresultsetheadertranslation*.h
 %{_includedir}/%{name}/private/sqlrresultsetrowblocktranslation*.h
 %{_includedir}/%{name}/private/sqlrresultsetrowtranslation*.h
@@ -580,24 +583,20 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_includedir}/%{name}/private/sqlrclientincludes.h
 %{_includedir}/%{name}/private/sqlrconnection.h
 %{_includedir}/%{name}/private/sqlrcursor.h
-%{_includedir}/%{name}/sqlrimport.h
-%{_includedir}/%{name}/sqlrimportcsv.h
-%{_includedir}/%{name}/sqlrimportxml.h
-%{_includedir}/%{name}/private/sqlrimport.h
-%{_includedir}/%{name}/private/sqlrimportincludes.h
-%{_includedir}/%{name}/private/sqlrimportcsv.h
-%{_includedir}/%{name}/private/sqlrimportcsvincludes.h
-%{_includedir}/%{name}/private/sqlrimportxml.h
-%{_includedir}/%{name}/private/sqlrimportxmlincludes.h
-%{_includedir}/%{name}/sqlrexport.h
-%{_includedir}/%{name}/sqlrexportcsv.h
-%{_includedir}/%{name}/sqlrexportxml.h
-%{_includedir}/%{name}/private/sqlrexport.h
-%{_includedir}/%{name}/private/sqlrexportincludes.h
-%{_includedir}/%{name}/private/sqlrexportcsv.h
-%{_includedir}/%{name}/private/sqlrexportcsvincludes.h
-%{_includedir}/%{name}/private/sqlrexportxml.h
-%{_includedir}/%{name}/private/sqlrexportxmlincludes.h
+%{_includedir}/%{name}/sqlrimport*.h
+%{_includedir}/%{name}/private/sqlrimport*.h
+%{_includedir}/%{name}/sqlrexport*.h
+%{_includedir}/%{name}/private/sqlrexport*.h
+%{_includedir}/%{name}/sqlrcollections.h
+%{_includedir}/%{name}/private/sqlrcollectionsincludes.h
+%{_includedir}/%{name}/private/sqlrlistnode.h
+%{_includedir}/%{name}/private/sqlrresultsetlist.h
+%{_includedir}/%{name}/private/sqlrresultsettable.h
+%{_includedir}/%{name}/private/sqlrrowdictionary.h
+%{_includedir}/%{name}/private/sqlrrowlist.h
+%{_includedir}/%{name}/private/sqlrscalar.h
+%{_includedir}/%{name}/sqlrcrud.h
+%{_includedir}/%{name}/private/sqlrcrudincludes.h
 %{_libdir}/libsqlrclient.so
 %{_libdir}/pkgconfig/%{name}-c++.pc
 %exclude %{_libdir}/lib*.la
@@ -760,7 +759,7 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 - Moved sqlr-pwdenc to clients package.
 - Moved pwdenc-related libraries and header files to common package.
 - Removed movement of service files.
-- Added new modules to files section.
+- Added new modules and includes.
 
 * Thu Mar 04 2021 David Muse <david.muse@firstworks.com> - 1.9.0-1
 - Updated to version 1.9.0.
