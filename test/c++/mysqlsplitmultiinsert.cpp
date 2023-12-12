@@ -90,6 +90,25 @@ int	main(int argc, char **argv) {
 	checkSuccess(cur->getFieldAsInteger(0,(uint32_t)0),4);
 	stdoutput.printf("\n");
 
+	stdoutput.printf("INSERT WITH COLUMNS: \n");
+	checkSuccess(cur->sendQuery("insert into testtable (testtinyint,testsmallint,testmediumint,testint,testbigint,testfloat,testreal,testdecimal,testdate,testtime,testdatetime,testyear,testchar,testvarchar,testtext,testtinytext,testmediumtext,testlongtext,testblob,testtinyblob,testmediumblob,testlongblob,testtimestamp) values "
+			"(1,1,1,1,1,1.1,1.1,1.1,'2001-01-01','01:00:00','2001-01-01 01:00:00','2001','char1','varchar1','text1','tinytext1','mediumtext1','longtext1','blob1','tinyblob1','mediumblob1','longblob1',NULL),"
+			"(2,2,2,2,2,2.1,2.1,2.1,'2002-01-01','02:00:00','2002-01-01 02:00:00','2002','char2','varchar2','text2','tinytext2','mediumtext2','longtext2','blob2','tinyblob2','mediumblob2','longblob2',NULL),"
+			"(3,3,3,3,3,3.1,3.1,3.1,'2003-01-01','03:00:00','2003-01-01 03:00:00','2003','char3','varchar3','text3','tinytext3','mediumtext3','longtext3','blob3','tinyblob3','mediumblob3','longblob3',NULL),"
+			"(4,4,4,4,4,4.1,4.1,4.1,'2004-01-01','04:00:00','2004-01-01 04:00:00','2004','char4','varchar4','text4','tinytext4','mediumtext4','longtext4','blob4','tinyblob4','mediumblob4','longblob4',NULL)"
+			" on duplicate key update testtinyint=values(testtinyint)"
+			),1);
+	stdoutput.printf("\n");
+
+	stdoutput.printf("AFFECTED ROWS: \n");
+	checkSuccess(cur->affectedRows(),4);
+	stdoutput.printf("\n");
+
+	stdoutput.printf("ROW COUNT: \n");
+	checkSuccess(cur->sendQuery("select count(*) from testtable"),1);
+	checkSuccess(cur->getFieldAsInteger(0,(uint32_t)0),8);
+	stdoutput.printf("\n");
+
 	cur->sendQuery("drop table testtable");
 
 	delete cur;

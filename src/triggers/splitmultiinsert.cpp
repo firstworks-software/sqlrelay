@@ -238,6 +238,9 @@ void sqlrtrigger_splitmultiinsert::parsePrefix(const char *query,
 		// skip until closing paren
 		*ptr=charstring::findFirst(*ptr,')');
 
+		// skip closing paren
+		(*ptr)++;
+
 		// skip space after columns
 		(*ptr)++;
 	}
