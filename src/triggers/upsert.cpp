@@ -254,13 +254,9 @@ bool sqlrtrigger_upsert::runAfter(sqlrserverconnection *sqlrcon,
 		cont->clearError();
 		cont->clearError(icur);
 
-		// FIXME: Ideally we'd copy the affected rows from ucur to
-		// icur.  icur's affected rows will be 0 here because the
-		// insert failed.  Also, it's not impossible that ucur updated
-		// more than 1 row.  But, the controller doesn't keep a copy of
-		// the affected rows, it just returns them directly from the
-		// cursor, so, currently, there's no way to set the affected
-		// rows.
+		// copy affected rows back to icur
+		cont->setAffectedRows(icur,cont->getAffectedRows(ucur));
+
 	} else {
 		// copy the error from the cursor used to run the
 		// update to the cursor used to run the original insert
