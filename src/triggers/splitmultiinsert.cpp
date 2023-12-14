@@ -74,6 +74,9 @@ bool sqlrtrigger_splitmultiinsert::runBefore(sqlrserverconnection *sqlrcon,
 	// NOTE: parseInsert will populate querytype with a more specific value
 	cont->parseInsert(query,querylen,&querytype,
 				NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+	if (debug) {
+		stdoutput.printf("	query type: %d\n",querytype);
+	}
 
 	// bail if the query wasn't a multi-insert
 	if (querytype!=SQLRQUERYTYPE_MULTIINSERT) {

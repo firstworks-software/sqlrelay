@@ -144,8 +144,13 @@ sqlrtrigger_replay::sqlrtrigger_replay(sqlrservercontroller *cont,
 		// for now we only support logging the result of a single query.
 		// Get the query and file to log to, if provided...
 		c->logfile=cond->getFirstTagChild("log")->
+					getAttributeValue("file");
+		// formerly, the log file was part of the query tag
+		if (!c->logfile) {
+			c->logfile=cond->getFirstTagChild("log")->
 					getFirstTagChild("query")->
 					getAttributeValue("file");
+		}
 		c->query=cond->getFirstTagChild("log")->
 					getFirstTagChild("query")->
 					getFirstChild("text")->getValue();

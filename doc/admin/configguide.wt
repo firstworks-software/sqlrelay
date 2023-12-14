@@ -5030,7 +5030,7 @@ If an error code 1213 occurs (a !MySQL deadlock), then the entire transaction is
 
 Note that the normalize translation is also configured.  This helps the trigger parse and rewrite queries more accurately.  See the section on Auto-Increment Columns below for details.
 
-Deadlocks aren't completely preventable, but if you know which queries caused the deadlock, then you can usually modify them (or the app) to mitigate the problem.  The replay module allows you to specify a query to run and a location to log the output of the query to, for each condition.  For example:
+Deadlocks aren't completely preventable, but if you know which queries caused the deadlock, then you can usually modify them (or the app) to mitigate the problem.  The replay module allows you to specify a file to log to and a query to run and log the output of, for each condition.  For example:
 
 {{{#!blockquote
 {{{#!code
@@ -5040,7 +5040,7 @@ Deadlocks aren't completely preventable, but if you know which queries caused th
 
 In this example...
 
-If an error code 1213 occurs (a !MySQL deadlock), then the query "show engine innodb status" is executed, and the results logged to /tmp/example-deadlocks.log  Then, the entire transaction is replayed.
+If an error code 1213 occurs (a !MySQL deadlock), then the module logs various bits of information to the log, runs the query "show engine innodb status" and outputs the results of the query to /tmp/example-deadlocks.log as well.  Then, the entire transaction is replayed and details about that are logged to the file too.
 
 If an error code 1205 occurs (a !MySQL lock wait timeout), then the previous query is replayed, but no logging occurs.
 
@@ -5064,13 +5064,13 @@ The '''condition''' tag supports the following attributes:
  * transaction - replay the entire transaction if this condition occurs
  * transaction - replay the previous query if this condition occurs
 
-The '''log''' tag doesn't support any attributes.
+The '''log''' tag supports the following attributes:
 
-The '''query''' tag contains the query to be run, and supports the following attributes:
-
-* '''log'''
- * the name of the file to log the output of the query to
+* '''file'''
+ * the name of the file to log information to, including the output of the query specified in the query tag
  * each log entry consists of a divider, timestamp, and result set
+
+The '''query''' tag contains the query to be run
 
 Sample (partial) log entries follow:
 

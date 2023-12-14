@@ -7704,7 +7704,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>Note that the normalize translation is also configured.  This helps the trigger parse and rewrite queries more accurately.  See the section on Auto-Increment Columns below for details.</p>
 
-<p>Deadlocks aren't completely preventable, but if you know which queries caused the deadlock, then you can usually modify them (or the app) to mitigate the problem.  The replay module allows you to specify a query to run and a location to log the output of the query to, for each condition.  For example:</p>
+<p>Deadlocks aren't completely preventable, but if you know which queries caused the deadlock, then you can usually modify them (or the app) to mitigate the problem.  The replay module allows you to specify a file to log to and a query to run and log the output of, for each condition.  For example:</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -7722,8 +7722,8 @@ http://www.gnu.org/software/src-highlite -->
 		<b><font color="#0000FF">&lt;triggers&gt;</font></b>
 			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"replay"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"after"</font><b><font color="#0000FF">&gt;</font></b>
 				<b><font color="#0000FF">&lt;condition</font></b> <font color="#009900">error</font><font color="#990000">=</font><font color="#FF0000">"1213"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"transaction"</font><b><font color="#0000FF">&gt;</font></b>
-					<b><font color="#0000FF">&lt;log&gt;</font></b>
-						<b><font color="#0000FF">&lt;query</font></b> <font color="#009900">file</font><font color="#990000">=</font><font color="#FF0000">"/tmp/example-deadlocks.log"</font><b><font color="#0000FF">&gt;</font></b>
+					<b><font color="#0000FF">&lt;log</font></b> <font color="#009900">file</font><font color="#990000">=</font><font color="#FF0000">"/tmp/example-deadlocks.log"</font><b><font color="#0000FF">&gt;</font></b>
+						<b><font color="#0000FF">&lt;query&gt;</font></b>
 						show engine innodb status
 						<b><font color="#0000FF">&lt;/query&gt;</font></b>
 					<b><font color="#0000FF">&lt;/log&gt;</font></b>
@@ -7740,7 +7740,7 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>In this example...</p>
 
-<p>If an error code 1213 occurs (a MySQL deadlock), then the query "show engine innodb status" is executed, and the results logged to /tmp/example-deadlocks.log  Then, the entire transaction is replayed.</p>
+<p>If an error code 1213 occurs (a MySQL deadlock), then the module logs various bits of information to the log, runs the query "show engine innodb status" and outputs the results of the query to /tmp/example-deadlocks.log as well.  Then, the entire transaction is replayed and details about that are logged to the file too.</p>
 
 <p>If an error code 1205 occurs (a MySQL lock wait timeout), then the previous query is replayed, but no logging occurs.</p>
 
@@ -7780,18 +7780,18 @@ http://www.gnu.org/software/src-highlite -->
 
 </ul>
 
-<p>The <b>log</b> tag doesn't support any attributes.</p>
-
-<p>The <b>query</b> tag contains the query to be run, and supports the following attributes:</p>
+<p>The <b>log</b> tag supports the following attributes:</p>
 
 <ul>
-  <li><b>log</b></li>
+  <li><b>file</b></li>
   <ul>
-    <li>the name of the file to log the output of the query to</li>
+    <li>the name of the file to log information to, including the output of the query specified in the query tag</li>
     <li>each log entry consists of a divider, timestamp, and result set</li>
   </ul>
 
 </ul>
+
+<p>The <b>query</b> tag contains the query to be run</p>
 
 <p>Sample (partial) log entries follow:</p>
 
