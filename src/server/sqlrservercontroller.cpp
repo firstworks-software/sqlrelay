@@ -2703,7 +2703,7 @@ const char *sqlrservercontroller::getProcedureListQuery(bool wild) {
 void sqlrservercontroller::saveError() {
 
 	// don't overwrite any message that's already been saved
-	if (pvt->_conn->getErrorSize()) {
+	if (pvt->_conn->getErrorNumber() || pvt->_conn->getErrorSize()) {
 		return;
 	}
 
@@ -2731,7 +2731,7 @@ void sqlrservercontroller::saveError() {
 void sqlrservercontroller::saveErrorFromCursor(sqlrservercursor *cursor) {
 
 	// don't overwrite any message that's already been saved
-	if (pvt->_conn->getErrorSize()) {
+	if (pvt->_conn->getErrorNumber() || pvt->_conn->getErrorSize()) {
 		return;
 	}
 
@@ -2747,6 +2747,13 @@ void sqlrservercontroller::saveErrorFromCursor(sqlrservercursor *cursor) {
 	pvt->_conn->setErrorSize(errorsize);
 	pvt->_conn->setErrorNumber(errorcode);
 	pvt->_conn->setLiveConnection(liveconnection);
+
+	if (pvt->_debugsql) {
+		stdoutput.printf("%d:ERROR:\n%d:",
+				process::getProcessId(),errorcode);
+		stdoutput.write(pvt->_conn->getErrorBuffer(),errorsize);
+		stdoutput.write('\n');
+	}
 }
 
 
@@ -4877,6 +4884,15 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 				handleResultSetHeader(cursor):true;
 }
 
+void sqlrservercontroller::setQuerySuppressed(sqlrservercursor *cursor,
+							bool querysuppressed) {
+	cursor->setQuerySuppressed(querysuppressed);
+}
+
+bool sqlrservercontroller::getQuerySuppressed(sqlrservercursor *cursor) {
+	return cursor->getQuerySuppressed();
+}
+
 bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor) {
 	return executeQuery(cursor,false,false,false,false);
 }
@@ -5157,10 +5173,9 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 	}
 
 	// handle before-triggers
-	bool	suppress=false;
+	setQuerySuppressed(cursor,false);
 	if (enabletriggers && pvt->_sqlrtr) {
-		success=pvt->_sqlrtr->runBeforeTriggers(pvt->_conn,cursor,
-								&suppress);
+		success=pvt->_sqlrtr->runBeforeTriggers(pvt->_conn,cursor);
 	}
 	// FIXME: handle if runBeforeTriggers set success=false;
 	
@@ -5183,7 +5198,7 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 
 	// execute the query
 	if (success) {
-		if (!suppress) {
+		if (!getQuerySuppressed(cursor)) {
 			success=cursor->executeQuery(query,querysize);
 		} else {
 			// FIXME: do we need to do anything to fake
@@ -5252,9 +5267,26 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 		clearColumnCaches();
 	}
 
-	// handle after-triggers
+	// handle after-triggers...
+	// Run these whether the query suceeded or failed.  There are triggers
+	// like replay and upsert that only run if specific failures occurred.
 	if (enabletriggers && pvt->_sqlrtr) {
-		success=pvt->_sqlrtr->runAfterTriggers(pvt->_conn,cursor);
+
+		// If the triggers succeeded, and there's no lingering error,
+		// then we want "success" to be true.
+		//
+		// There might be a lingering error if the original query set
+		// an error, and it wasn't cleared (on purpose) by any of the
+		// triggers.
+		//
+		// If a trigger fails, it should return false, and optionally
+		// set an error.  The case where a trigger sets an error but
+		// still returns true should also be caught here, though I
+		// can't think of a case where a well-behaved trigger should do 
+		// his.
+		success=pvt->_sqlrtr->runAfterTriggers(pvt->_conn,cursor) &&
+						!getErrorNumber(cursor) &&
+						!getErrorSize(cursor);
 	}
 
 	// was the query a commit or rollback?
@@ -9821,7 +9853,7 @@ bool sqlrservercontroller::nextResultSet(sqlrservercursor *cursor,
 void sqlrservercontroller::saveError(sqlrservercursor *cursor) {
 
 	// don't overwrite any message that's already been saved
-	if (cursor->getErrorSize()) {
+	if (cursor->getErrorNumber() || cursor->getErrorSize()) {
 		return;
 	}
 

@@ -16,12 +16,8 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_splitmultiinsert : public sqlrtrigger {
 						domnode *parameters);
 
 		bool	runBefore(sqlrserverconnection *sqlrcon,
-						sqlrservercursor *micur,
-						bool *suppress);
+						sqlrservercursor *micur);
 	private:
-		bool	copyInputBinds(sqlrservercursor *micur,
-					sqlrservercursor *sicur);
-
 		void	parsePrefix(const char *query,
 					const char **ptr,
 					stringbuffer *prefix);
@@ -47,8 +43,12 @@ sqlrtrigger_splitmultiinsert::sqlrtrigger_splitmultiinsert(
 }
 
 bool sqlrtrigger_splitmultiinsert::runBefore(sqlrserverconnection *sqlrcon,
-						sqlrservercursor *micur,
-						bool *suppress) {
+						sqlrservercursor *micur) {
+
+	// bail if the query was suppressed
+	if (cont->getQuerySuppressed(micur)) {
+		return true;
+	}
 
 	// get the query and query type
 	// NOTE: for now determineQueryType() groups simple insert,
@@ -88,7 +88,7 @@ bool sqlrtrigger_splitmultiinsert::runBefore(sqlrserverconnection *sqlrcon,
 	}
 
 	// suppress execution of the original query
-	*suppress=true;
+	cont->setQuerySuppressed(micur,true);
 
 	// buffers that we'll need later
 	stringbuffer	prefix;
@@ -146,12 +146,7 @@ bool sqlrtrigger_splitmultiinsert::runBefore(sqlrserverconnection *sqlrcon,
 					singleinsert.getString());
 		}
 
-		// copy input binds from micur to sicur
-		success=copyInputBinds(micur,sicur);
-		if (!success) {
-			// FIXME: set error...
-			break;
-		}
+// FIXME: copy input binds from micur to sicur
 		
 		// prepare and execute the single-insert query
 		success=cont->prepareQuery(sicur,
@@ -199,6 +194,7 @@ bool sqlrtrigger_splitmultiinsert::runBefore(sqlrserverconnection *sqlrcon,
 	cont->setAffectedRows(micur,affectedrows);
 
 	if (debug) {
+		stdoutput.printf("	affected rows: %lld\n",affectedrows);
 		stdoutput.printf("}\n");
 	}
 
@@ -207,13 +203,6 @@ bool sqlrtrigger_splitmultiinsert::runBefore(sqlrserverconnection *sqlrcon,
 	cont->close(sicur);
 	cont->deleteCursor(sicur);
 	return success;
-}
-
-bool sqlrtrigger_splitmultiinsert::copyInputBinds(
-					sqlrservercursor *micur,
-					sqlrservercursor *sicur) {
-	// FIXME: implement this
-	return true;
 }
 
 void sqlrtrigger_splitmultiinsert::parsePrefix(const char *query,

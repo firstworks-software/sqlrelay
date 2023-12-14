@@ -1349,6 +1349,16 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 						bool enabletranslations,
 						bool enablefilters);
 
+		/** Sets whether the current query is "suppressed" or not.
+ 		 *  Currently may be called by a before-trigger to suppresses
+ 		 *  execution of the query by executeQuery(). */
+		void	setQuerySuppressed(sqlrservercursor *cursor,
+						bool querysuppressed);
+
+		/** Returns whether the current query is "suppressed" or not
+ 		 *  as set by a call to setQuerySuppressed(). */
+		bool	getQuerySuppressed(sqlrservercursor *cursor);
+
 		/** Executes the currently prepared query of "cursor", with all
 		 *  directives, translations, and filters enabled.
 		 *
@@ -3228,6 +3238,16 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 
 		byte_t		*getModuleData();
 
+		/** Sets whether the current query is "suppressed" or not.
+ 		 *  Currently may be called by a before-trigger to suppresses
+ 		 *  execution of the query by
+ 		 *  sqlrservercontroller::executeQuery(). */
+		void	setQuerySuppressed(bool querysuppressed);
+
+		/** Returns whether the current query is "suppressed" or not
+ 		 *  as set by a call to setQuerySuppressed(). */
+		bool	getQuerySuppressed();
+
 		sqlrserverconnection	*conn;
 
 	#include <sqlrelay/private/sqlrservercursor.h>
@@ -4379,8 +4399,7 @@ class SQLRSERVER_DLLSPEC sqlrtrigger {
 		virtual	~sqlrtrigger();
 
 		virtual bool	runBefore(sqlrserverconnection *sqlrcon,
-						sqlrservercursor *sqlrcur,
-						bool *suppress);
+						sqlrservercursor *sqlrcur);
 		virtual bool	runAfter(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur);
 
@@ -4401,8 +4420,7 @@ class SQLRSERVER_DLLSPEC sqlrtriggers {
 
 		bool	load(domnode *parameters);
 		bool	runBeforeTriggers(sqlrserverconnection *sqlrcon,
-						sqlrservercursor *sqlrcur,
-						bool *suppress);
+						sqlrservercursor *sqlrcur);
 		bool	runAfterTriggers(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur);
 

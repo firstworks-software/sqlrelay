@@ -168,6 +168,11 @@ sqlrtrigger_replay::sqlrtrigger_replay(sqlrservercontroller *cont,
 bool sqlrtrigger_replay::runAfter(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur) {
 
+	// bail if the query was suppressed
+	if (cont->getQuerySuppressed(sqlrcur)) {
+		return true;
+	}
+
 	// bail if logging/replay was disabled due to a query we can't handle
 	if (disabled) {
 		return true;
@@ -176,14 +181,10 @@ bool sqlrtrigger_replay::runAfter(sqlrserverconnection *sqlrcon,
 	// log the query
 	logQuery(sqlrcur);
 
-	// bail if the query failed (*success==false)
-	// but we didn't encounter a replay condition
-	condition	*cond=NULL;
-	if (cont->getErrorSize(sqlrcur)) {
-		cond=replayCondition(sqlrcur);
-		if (!cond) {
-			return true;
-		}
+	// bail if we didn't encounter a replay condition
+	condition	*cond=replayCondition(sqlrcur);
+	if (!cond) {
+		return true;
 	}
 
 	// replay the log if the query failed because of a replay condition
@@ -299,6 +300,9 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 		copyQuery(qd,query,querylen);
 	}
 
+// FIXME: create copy*Binds() methods in sqlrservercontroller
+// and use them here instead of doing it in here
+
 	// copy in input binds
 	uint16_t		incount=sqlrcur->getInputBindCount();
 	sqlrserverbindvar	*invars=sqlrcur->getInputBinds();
@@ -341,7 +345,6 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 #endif
 
 	delete columns;
-	return;
 }
 
 void sqlrtrigger_replay::disableUntilEndOfTx(const char *query, 
@@ -858,6 +861,11 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 
 condition *sqlrtrigger_replay::replayCondition(sqlrservercursor *sqlrcur) {
 
+	// the error buffer may not be terminated, but contains() below
+	// needs a terminated string, so make a copy of it here
+	stringbuffer	err;
+	err.append(cont->getErrorBuffer(sqlrcur),cont->getErrorSize(sqlrcur));
+
 	// did we get a replay condition?
 	for (listnode<condition *> *node=conditions.getFirst();
 						node; node=node->getNext()) {
@@ -865,9 +873,7 @@ condition *sqlrtrigger_replay::replayCondition(sqlrservercursor *sqlrcur) {
 		condition	*cond=node->getValue();
 
 		if (cond->cond==CONDITION_ERROR) {
-			// FIXME: error buffer not guaranteed to be terminated
-			if (charstring::contains(
-				sqlrcur->getErrorBuffer(),cond->error)) {
+			if (charstring::contains(err.getString(),cond->error)) {
 				writeReplayConditionToLogFile(cond,sqlrcur);
 				return cond;
 			}
@@ -1047,6 +1053,11 @@ void sqlrtrigger_replay::writeReplayConditionToLogFile(condition *cond,
 
 void sqlrtrigger_replay::writeToLogFile(const char *logfile,
 					const char *str, size_t size) {
+
+	// bail if there's nowhere to write to or nothing to write
+	if (!logfile || !str || !size) {
+		return;
+	}
 
 	// open log file
 	file	lf;

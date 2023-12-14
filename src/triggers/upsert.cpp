@@ -69,6 +69,11 @@ sqlrtrigger_upsert::sqlrtrigger_upsert(sqlrservercontroller *cont,
 bool sqlrtrigger_upsert::runAfter(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *icur) {
 
+	// bail if the query was suppressed
+	if (cont->getQuerySuppressed(icur)) {
+		return true;
+	}
+
 	// after the query has been run...
 
 	// get the query and query type
@@ -297,6 +302,9 @@ bool sqlrtrigger_upsert::errorEncountered(sqlrservercursor *icur) {
 	// needs a terminated string, so make a copy of it here
 	stringbuffer	err;
 	err.append(cont->getErrorBuffer(icur),cont->getErrorSize(icur));
+
+	// FIXME: this is somewhat inefficient, copy xml to a list of
+	// conditions like I'm doing in the replay module
 
 	// look through the errors and see if we find
 	// one that matches the icur's error

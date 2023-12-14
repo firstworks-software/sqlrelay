@@ -115,6 +115,8 @@ class sqlrservercursorprivate {
 		bool		_resultsetheaderhasbeenhandled;
 
 		byte_t		_moduledata[1024];
+
+		bool		_querysuppressed;
 };
 
 sqlrservercursor::sqlrservercursor(sqlrserverconnection *conn, uint16_t id) {
@@ -231,6 +233,8 @@ sqlrservercursor::sqlrservercursor(sqlrserverconnection *conn, uint16_t id) {
 	pvt->_fetchatonce=conn->cont->getFetchAtOnce();
 
 	pvt->_resultsetheaderhasbeenhandled=false;
+
+	pvt->_querysuppressed=false;
 }
 
 sqlrservercursor::~sqlrservercursor() {
@@ -2026,4 +2030,12 @@ bool sqlrservercursor::getResultSetHeaderHasBeenHandled() {
 
 byte_t *sqlrservercursor::getModuleData() {
 	return pvt->_moduledata;
+}
+
+void sqlrservercursor::setQuerySuppressed(bool querysuppressed) {
+	pvt->_querysuppressed=querysuppressed;
+}
+
+bool sqlrservercursor::getQuerySuppressed() {
+	return pvt->_querysuppressed;
 }

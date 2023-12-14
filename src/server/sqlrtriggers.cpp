@@ -200,10 +200,9 @@ sqlrtriggerplugin *sqlrtriggers::loadTrigger(domnode *trigger) {
 }
 
 bool sqlrtriggers::runBeforeTriggers(sqlrserverconnection *sqlrcon,
-					sqlrservercursor *sqlrcur,
-					bool *suppress) {
+						sqlrservercursor *sqlrcur) {
 	debugFunction();
-	return runBefore(sqlrcon,sqlrcur,&pvt->_beforetriggers,suppress);
+	return runBefore(sqlrcon,sqlrcur,&pvt->_beforetriggers);
 }
 
 bool sqlrtriggers::runAfterTriggers(sqlrserverconnection *sqlrcon,
@@ -214,16 +213,14 @@ bool sqlrtriggers::runAfterTriggers(sqlrserverconnection *sqlrcon,
 
 bool sqlrtriggers::runBefore(sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
-				singlylinkedlist< sqlrtriggerplugin * > *list,
-				bool *suppress) {
+				singlylinkedlist< sqlrtriggerplugin * > *list) {
 	debugFunction();
 	for (listnode< sqlrtriggerplugin * > *node=list->getFirst();
 						node; node=node->getNext()) {
 		if (pvt->_debug) {
 			stdoutput.printf("\nrunning before trigger...\n\n");
 		}
-		if (!node->getValue()->tr->runBefore(
-					sqlrcon,sqlrcur,suppress)) {
+		if (!node->getValue()->tr->runBefore(sqlrcon,sqlrcur)) {
 			return false;
 		}
 	}

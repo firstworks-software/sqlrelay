@@ -6,8 +6,7 @@
 		sqlrtriggerplugin	*loadTrigger(domnode *trigger);
 		bool	runBefore(sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
-				singlylinkedlist< sqlrtriggerplugin * > *list,
-				bool *suppress);
+				singlylinkedlist< sqlrtriggerplugin * > *list);
 		bool	runAfter(sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
 				singlylinkedlist< sqlrtriggerplugin * > *list);

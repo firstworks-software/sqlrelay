@@ -23,9 +23,7 @@ sqlrtrigger::~sqlrtrigger() {
 }
 
 bool sqlrtrigger::runBefore(sqlrserverconnection *sqlrcon,
-				sqlrservercursor *sqlrcur,
-				bool *suppress) {
-	*suppress=false;
+				sqlrservercursor *sqlrcur) {
 	return true;
 }
 
