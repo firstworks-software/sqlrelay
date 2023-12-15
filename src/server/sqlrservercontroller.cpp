@@ -3461,6 +3461,17 @@ bool sqlrservercontroller::parseInsert(const char *query,
 int32_t sqlrservercontroller::compareQuoted(const char *str1,
 						const char *str2) {
 
+	// handle NULLs
+	if (!str1 && !str2) {
+		return 0;
+	}
+	if (!str2) {
+		return 1;
+	}
+	if (!str1) {
+		return -1;
+	}
+
 	// compare str1 and str2, ignoring any quoting by single-quotes,
 	// double-quotes, back-quotes, or square brackets
 	const char	*str1ptr=str1;
