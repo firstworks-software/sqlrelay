@@ -147,7 +147,8 @@ bool sqlrtrigger_splitmultiinsert::runBefore(sqlrserverconnection *sqlrcon,
 		}
 
 		// copy input binds from micur to sicur
-		cont->copyInputBinds(micur,sicur);
+		// FIXME: see #7430
+		//cont->copyInputBinds(micur,sicur);
 		
 		// prepare and execute the single-insert query
 		success=cont->prepareQuery(sicur,
