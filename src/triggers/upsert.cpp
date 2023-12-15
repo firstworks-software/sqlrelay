@@ -42,7 +42,6 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_upsert : public sqlrtrigger {
 					domnode *tablenode,
 					stringbuffer *query);
 		bool	isBind(const char *var);
-		void	deleteArray(char **vals, uint64_t valcount);
 
 		sqlrservercontroller	*cont;
 
@@ -662,14 +661,6 @@ bool sqlrtrigger_upsert::isBind(const char *var) {
 				getBindVariableDelimiterAtSignSupported(),
 				cont->getConfig()->
 				getBindVariableDelimiterDollarSignSupported());
-}
-
-
-void sqlrtrigger_upsert::deleteArray(char **vals, uint64_t valcount) {
-	for (uint64_t i=0; i<valcount; i++) {
-		delete[] vals[i];
-	}
-	delete[] vals;
 }
 
 extern "C" {
