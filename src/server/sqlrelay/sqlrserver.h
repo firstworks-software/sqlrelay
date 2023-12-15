@@ -1427,6 +1427,58 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		dictionary<char *, char *>	*getBindMappings(
 						sqlrservercursor *cursor);
 
+		/** Copies all bind variables from "sourcecur" to "destcur".
+		 *
+		 *  Note that no attempt is made to resolve bind variable name 
+		 *  collisions.
+		 *
+		 *  Returns true if all bind variables were successfully copied
+		 *  and false if the maximum number of bind variables was
+		 *  exceeded in destcur before all bind variables were copied.*/
+		bool	copyBinds(sqlrservercursor *sourcecur,
+						sqlrservercursor *destcur);
+
+		/** Copies input bind variables from "sourcecur" to "destcur".
+		 *
+		 *  Note that no attempt is made to resolve bind variable name 
+		 *  collisions.
+		 *
+		 *  Returns true if all bind variables were successfully copied
+		 *  and false if the maximum number of bind variables was
+		 *  exceeded in destcur before all bind variables were copied.*/
+		bool	copyInputBinds(sqlrservercursor *sourcecur,
+						sqlrservercursor *destcur);
+
+		/** Copies output bind variables from "sourcecur" to "destcur".
+		 *
+		 *  Note that no attempt is made to resolve bind variable name 
+		 *  collisions.
+		 *
+		 *  Returns true if all bind variables were successfully copied
+		 *  and false if the maximum number of bind variables was
+		 *  exceeded in destcur before all bind variables were copied.*/
+		bool	copyOutputBinds(sqlrservercursor *sourcecur,
+						sqlrservercursor *destcur);
+
+		/** Copies input-output bind variables from "sourcecur" to
+ 		 *  "destcur".
+		 *
+		 *  Note that no attempt is made to resolve bind variable name 
+		 *  collisions.
+		 *
+		 *  Returns true if all bind variables were successfully copied
+		 *  and false if the maximum number of bind variables was
+		 *  exceeded in destcur before all bind variables were copied.*/
+		bool	copyInputOutputBinds(sqlrservercursor *sourcecur,
+						sqlrservercursor *destcur);
+
+		/** Copies bind variable "source" to bind variable "dest",
+		 *  allocating space for variable names, string variables, and
+		 *  dates in "destpool". */
+		void	copyBind(sqlrserverbindvar *source,
+						sqlrserverbindvar *dest,
+						memorypool *destpool);
+
 
 
 		// fake input binds...

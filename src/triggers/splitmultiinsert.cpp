@@ -146,7 +146,8 @@ bool sqlrtrigger_splitmultiinsert::runBefore(sqlrserverconnection *sqlrcon,
 					singleinsert.getString());
 		}
 
-// FIXME: copy input binds from micur to sicur
+		// copy input binds from micur to sicur
+		cont->copyInputBinds(micur,sicur);
 		
 		// prepare and execute the single-insert query
 		success=cont->prepareQuery(sicur,
@@ -218,7 +219,7 @@ void sqlrtrigger_splitmultiinsert::parsePrefix(const char *query,
 	(*ptr)+=12;
 
 	// find first space after table name
-	// FIXME: the atble name could be quoted and contain a space
+	// FIXME: the table name could be quoted and contain a space
 	*ptr=charstring::findFirst(*ptr,' ');
 
 	// skip space

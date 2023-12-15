@@ -10609,6 +10609,112 @@ dictionary<char *, char *> *sqlrservercontroller::getBindMappings(
 	return cursor->getBindMappings();
 }
 
+
+bool sqlrservercontroller::copyBinds(sqlrservercursor *sourcecur,
+						sqlrservercursor *destcur) {
+	return copyInputBinds(sourcecur,destcur) &&
+		copyOutputBinds(sourcecur,destcur) &&
+		copyInputOutputBinds(sourcecur,destcur);
+	
+}
+
+bool sqlrservercontroller::copyInputBinds(sqlrservercursor *sourcecur,
+						sqlrservercursor *destcur) {
+
+	uint16_t		srcindex=0;
+	uint16_t		srccount=getInputBindCount(sourcecur);
+	sqlrserverbindvar	*srcvars=getInputBinds(sourcecur);
+	uint16_t		destindex=getInputBindCount(destcur);
+	uint16_t		destmax=getConfig()->getMaxBindCount();
+	sqlrserverbindvar	*destvars=getInputBinds(destcur);
+	memorypool		*destpool=getBindPool(destcur);
+
+	while (srcindex<srccount && destindex<destmax) {
+		copyBind(&(srcvars[srcindex]),&(destvars[destindex]),destpool);
+		srcindex++;
+		destindex++;
+	}
+	setInputBindCount(destcur,destindex);
+
+	return srcindex==srccount;
+}
+
+bool sqlrservercontroller::copyOutputBinds(sqlrservercursor *sourcecur,
+						sqlrservercursor *destcur) {
+
+	uint16_t		srcindex=0;
+	uint16_t		srccount=getOutputBindCount(sourcecur);
+	sqlrserverbindvar	*srcvars=getOutputBinds(sourcecur);
+	uint16_t		destindex=getOutputBindCount(destcur);
+	uint16_t		destmax=getConfig()->getMaxBindCount();
+	sqlrserverbindvar	*destvars=getOutputBinds(destcur);
+	memorypool		*destpool=getBindPool(destcur);
+
+	while (srcindex<srccount && destindex<destmax) {
+		copyBind(&(srcvars[srcindex]),&(destvars[destindex]),destpool);
+		srcindex++;
+		destindex++;
+	}
+	setOutputBindCount(destcur,destindex);
+
+	return srcindex==srccount;
+}
+
+bool sqlrservercontroller::copyInputOutputBinds(sqlrservercursor *sourcecur,
+						sqlrservercursor *destcur) {
+
+	uint16_t 		srcindex=0;
+	uint16_t		srccount=getInputOutputBindCount(sourcecur);
+	sqlrserverbindvar	*srcvars=getInputOutputBinds(sourcecur);
+	uint16_t		destindex=getInputOutputBindCount(destcur);
+	uint16_t		destmax=getConfig()->getMaxBindCount();
+	sqlrserverbindvar	*destvars=getInputOutputBinds(destcur);
+	memorypool		*destpool=getBindPool(destcur);
+
+	while (srcindex<srccount && destindex<destmax) {
+		copyBind(&(srcvars[srcindex]),&(destvars[destindex]),destpool);
+		srcindex++;
+		destindex++;
+	}
+	setInputOutputBindCount(destcur,destindex);
+
+	return srcindex==srccount;
+}
+
+void sqlrservercontroller::copyBind(sqlrserverbindvar *source,
+						sqlrserverbindvar *dest,
+						memorypool *destpool) {
+
+	// byte-copy everything
+	bytestring::copy(dest,source,sizeof(sqlrserverbindvar));
+
+	// (re)copy variable name
+	dest->variablesize=source->variablesize;
+	dest->variable=(char *)destpool->allocate(dest->variablesize+1);
+	charstring::copy(dest->variable,source->variable);
+	
+	// (re)copy strings
+	if (source->type==SQLRSERVERBINDVARTYPE_STRING) {
+		dest->value.stringval=
+			(char *)destpool->allocate(source->valuesize+1);
+		charstring::copy(dest->value.stringval,
+					source->value.stringval);
+	} else if (source->type==SQLRSERVERBINDVARTYPE_DATE) {
+		dest->value.dateval.tz=
+			(char *)destpool->allocate(
+				charstring::getLength(
+					source->value.dateval.tz)+1);
+		charstring::copy(dest->value.dateval.tz,
+					source->value.dateval.tz);
+		dest->value.dateval.buffer=
+			(char *)destpool->allocate(
+				source->value.dateval.buffersize);
+		charstring::copy(dest->value.dateval.buffer,
+					source->value.dateval.buffer,
+					source->value.dateval.buffersize);
+	}
+}
+
 void sqlrservercontroller::setFakeInputBindsForThisQuery(
 					sqlrservercursor *cursor, bool fake) {
 	cursor->setFakeInputBindsForThisQuery(fake);

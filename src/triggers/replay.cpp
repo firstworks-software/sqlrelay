@@ -77,10 +77,6 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_replay : public sqlrtrigger {
 						uint64_t liid,
 						const char *autoinccolumn);
 
-		void	copyBind(memorypool *pool,
-					sqlrserverbindvar *dest,
-					sqlrserverbindvar *source);
-
 		sqlrservercontroller	*cont;
 
 		bool		debug;
@@ -300,15 +296,13 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 		copyQuery(qd,query,querylen);
 	}
 
-// FIXME: create copy*Binds() methods in sqlrservercontroller
-// and use them here instead of doing it in here
 
 	// copy in input binds
 	uint16_t		incount=sqlrcur->getInputBindCount();
 	sqlrserverbindvar	*invars=sqlrcur->getInputBinds();
 	for (uint16_t i=0; i<incount; i++) {
 		sqlrserverbindvar	*bv=new sqlrserverbindvar;
-		copyBind(&logpool,bv,&(invars[i]));
+		cont->copyBind(&(invars[i]),bv,&logpool);
 		qd->inbindvars.append(bv);
 	}
 	
@@ -317,7 +311,7 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 	sqlrserverbindvar	*outvars=sqlrcur->getOutputBinds();
 	for (uint16_t i=0; i<outcount; i++) {
 		sqlrserverbindvar	*bv=new sqlrserverbindvar;
-		copyBind(&logpool,bv,&(outvars[i]));
+		cont->copyBind(&(outvars[i]),bv,&logpool);
 		qd->outbindvars.append(bv);
 	}
 
@@ -326,7 +320,7 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 	sqlrserverbindvar	*inoutvars=sqlrcur->getInputOutputBinds();
 	for (uint16_t i=0; i<inoutcount; i++) {
 		sqlrserverbindvar	*bv=new sqlrserverbindvar;
-		copyBind(&logpool,bv,&(inoutvars[i]));
+		cont->copyBind(&(inoutvars[i]),bv,&logpool);
 		qd->inoutbindvars.append(bv);
 	}
 
@@ -551,40 +545,6 @@ void sqlrtrigger_replay::appendValues(stringbuffer *newquery,
 	}
 }
 
-void sqlrtrigger_replay::copyBind(memorypool *pool,
-					sqlrserverbindvar *dest,
-					sqlrserverbindvar *source) {
-
-	// byte-copy everything
-	bytestring::copy(dest,source,sizeof(sqlrserverbindvar));
-
-	// (re)copy variable name
-	dest->variablesize=source->variablesize;
-	dest->variable=(char *)pool->allocate(dest->variablesize+1);
-	charstring::copy(dest->variable,source->variable);
-	
-	// (re)copy strings
-	if (source->type==SQLRSERVERBINDVARTYPE_STRING) {
-		dest->value.stringval=
-			(char *)pool->allocate(source->valuesize+1);
-		charstring::copy(dest->value.stringval,
-					source->value.stringval);
-	} else if (source->type==SQLRSERVERBINDVARTYPE_DATE) {
-		dest->value.dateval.tz=
-			(char *)pool->allocate(
-				charstring::getLength(
-					source->value.dateval.tz)+1);
-		charstring::copy(dest->value.dateval.tz,
-					source->value.dateval.tz);
-		dest->value.dateval.buffer=
-			(char *)pool->allocate(
-				source->value.dateval.buffersize);
-		charstring::copy(dest->value.dateval.buffer,
-					source->value.dateval.buffer,
-					source->value.dateval.buffersize);
-	}
-}
-
 bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 
 	// buffer for log file
@@ -681,7 +641,7 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 						bv->variablesize,
 						bv->variable);
 			}
-			copyBind(pool,&(invars[i]),bv);
+			cont->copyBind(&(invars[i]),bv,pool);
 			inbindnode=inbindnode->getNext();
 		}
 		if (debug && incount) {
@@ -706,7 +666,7 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 						bv->variablesize,
 						bv->variable);
 			}
-			copyBind(pool,&(outvars[i]),bv);
+			cont->copyBind(&(outvars[i]),bv,pool);
 			outbindnode=outbindnode->getNext();
 		}
 		if (debug && outcount) {
@@ -733,7 +693,7 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 						bv->variablesize,
 						bv->variable);
 			}
-			copyBind(pool,&(inoutvars[i]),bv);
+			cont->copyBind(&(inoutvars[i]),bv,pool);
 			inoutbindnode=inoutbindnode->getNext();
 		}
 		if (debug && inoutcount) {
