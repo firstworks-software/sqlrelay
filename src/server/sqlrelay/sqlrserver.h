@@ -2312,6 +2312,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 					bool *columnsincludeprimarykeycolumn,
 					linkedlist<char *> **values,
 					const char **rawvalues);
+		int32_t	compareQuoted(const char *str1, const char *str2);
 
 		bool	isBitType(const char *type);
 		bool	isBitType(int16_t type);

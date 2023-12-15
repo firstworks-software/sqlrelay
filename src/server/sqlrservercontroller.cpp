@@ -3391,12 +3391,10 @@ bool sqlrservercontroller::parseInsert(const char *query,
 			for (listnode<char *> *node=localcolumns->getFirst();
 						node; node=node->getNext()) {
 				const char	*col=node->getValue();
-				if (!charstring::compare(col,
-						localautoinccolumn)) {
+				if (!compareQuoted(col,localautoinccolumn)) {
 					localcolsincludeautoinccol=true;
 				}
-				if (!charstring::compare(col,
-						localprimarykeycolumn)) {
+				if (!compareQuoted(col,localprimarykeycolumn)) {
 					localcolsincludeprimarykeycol=true;
 				}
 			}
@@ -3458,6 +3456,31 @@ bool sqlrservercontroller::parseInsert(const char *query,
 	}
 
 	return true;
+}
+
+int32_t sqlrservercontroller::compareQuoted(const char *str1,
+						const char *str2) {
+
+	// compare str1 and str2, ignoring any quoting by single-quotes,
+	// double-quotes, back-quotes, or square brackets
+	const char	*str1ptr=str1;
+	const char	*str2ptr=str2;
+	char	*str1copy=NULL;
+	char	*str2copy=NULL;
+	if (character::isInSet(*str1,"`'\"[")) {
+		str1copy=charstring::duplicate(str1);
+		str1ptr=str1copy+1;
+		str1copy[charstring::getLength(str1copy)-1]='\0';
+	}
+	if (character::isInSet(*str2,"`'\"[")) {
+		str2copy=charstring::duplicate(str2);
+		str2ptr=str2copy+1;
+		str2copy[charstring::getLength(str2copy)-1]='\0';
+	}
+	uint32_t	result=charstring::compare(str1ptr,str2ptr);
+	delete[] str1copy;
+	delete[] str2copy;
+	return result;
 }
 
 void sqlrservercontroller::getColumnsInTable(const char *table, 
