@@ -288,20 +288,19 @@ void sqlrtrigger_splitmultiinsert::parseValues(const char **ptr,
 
 	// skip to the closing paren, accounting for nested parens and quotes
 	uint16_t	depth=0;
-	bool		inquotes=false;
 	for (;;) {
 		if (**ptr=='\'') {
-			inquotes=!inquotes;
-		} else if (!inquotes) {
-			if (**ptr==')') {
-				if (!depth) {
-					break;
-				} else {
-					depth--;
-				}
-			} else if (**ptr=='(') {
-				depth++;
+			*ptr=charstring::findEndOfQuotedString(
+							*ptr,'\'',true,true);
+		}
+		if (**ptr==')') {
+			if (!depth) {
+				break;
+			} else {
+				depth--;
 			}
+		} else if (**ptr=='(') {
+			depth++;
 		}
 		(*ptr)++;
 	}

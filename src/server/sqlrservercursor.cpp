@@ -419,6 +419,7 @@ bool sqlrservercursor::blockCanBeIntercepted(const char *block) {
 
 #elif 0
 	// FIXME: handle other types of quoting - ", `, and []
+	// FIXME: use findEndOfQuotedString()
 
 	bool		inquotes=false;
 	const char	*ptr=block;

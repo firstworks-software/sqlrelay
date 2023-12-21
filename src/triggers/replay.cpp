@@ -463,84 +463,86 @@ void sqlrtrigger_replay::appendValues(stringbuffer *newquery,
 	listnode<char *>	*col=columns->getFirst();
 	stringbuffer		value;
 	const char		*c=values;
-	char			prevc='\0';
-	bool			inquotes=false;
 	uint32_t		parens=0;
 	for (;;) {
 
-		// end-of-values condition
-		if (!inquotes && !parens && *c==')') {
-
-			// if the value was a null and this is
-			// the autoincrement column, then
-			// append the last-insert-id,
-			// otherwise just append the value
-			if (!charstring::compare(col->getValue(),
-							autoinccolumn) &&
-				!charstring::compare(value.getString(),
-								"null")) {
-				newquery->append(liid);
-			} else {
-				newquery->append(
-					value.getString());
-			}
-
-			// append the )
-			newquery->append(')');
-
-			return;
+		// handle quotes
+		if (*c=='\'') {
+			const char	*after=
+				charstring::findEndOfQuotedString(
+							c,'\'',true,true);
+			value.append(c,after-c-1);
+			c=after;
 		}
 
-		// handle quotes...
-		if (!inquotes && *c=='\'') {
-			inquotes=true;
-		} else if (inquotes && *c=='\'' && prevc!='\\') {
-			inquotes=false;
-		}
+		// handle parens
+		if (*c=='(') {
 
-		if (!inquotes) {
+			parens++;
+			value.append(*c);
 
-			// handle parentheses...
-			if (*c=='(') {
-				parens++;
-				value.append(*c);
-			} else if (parens && *c==')') {
+		} else if (*c==')') {
+
+			if (parens) {
+
 				parens--;
 				value.append(*c);
-			} else {
-				if (*c==',') {
 
-					// if the value was a null and this is
-					// the autoincrement column, then
-					// append the last-insert-id,
-					// otherwise just append the value
-					if (!charstring::compare(
-							col->getValue(),
+			} else {
+
+				// if the value was a null and this is
+				// the autoincrement column, then
+				// append the last-insert-id,
+				// otherwise just append the value
+				if (!charstring::compare(col->getValue(),
 							autoinccolumn) &&
-						!charstring::compare(
+					!charstring::compare(
 							value.getString(),
 							"null")) {
-						newquery->append(liid);
-					} else {
-						newquery->append(
-							value.getString());
-					}
-
-					// append the comma
-					newquery->append(',');
-
-					col=col->getNext();
-					value.clear();
+					newquery->append(liid);
 				} else {
-					value.append(*c);
+					newquery->append(
+						value.getString());
 				}
+
+				// append the )
+				newquery->append(')');
+
+				return;
 			}
-		} else {
+
+		} else
+
+		// handle commas between values
+		if (*c==',') {
+
+			// if the value was a null and this is the
+			// autoincrement column, then append the
+			// last-insert-id, otherwise just append the value
+			if (!charstring::compare(col->getValue(),
+						autoinccolumn) &&
+				!charstring::compare(
+						value.getString(),
+						"null")) {
+				newquery->append(liid);
+			} else {
+				newquery->append(value.getString());
+			}
+
+			// append the comma
+			newquery->append(',');
+
+			col=col->getNext();
+			value.clear();
+
+		} else
+
+		// handle all other characters
+		{
 			value.append(*c);
 		}
 
 		// keep going
-		prevc=*c;
 		c++;
 	}
 }

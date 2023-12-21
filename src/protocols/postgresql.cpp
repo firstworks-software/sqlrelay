@@ -1361,23 +1361,19 @@ void sqlrprotocol_postgresql::getQuery(const char *query,
 
 	*start=cont->skipWhitespaceAndComments(query);
 
-	bool	inquotes=false;
-	char	quote='\0';
 	const char *ch=*start;
 	while (*ch) {
-		if (!inquotes) {
-			if (*ch=='\'' || *ch=='"' || *ch=='`') {
-				inquotes=true;
-				quote=*ch;
-			} else if (*ch==';') {
-				break;
-			}
+		if (*ch=='\'') {
+			ch=charstring::findEndOfQuotedString(ch,'\'',true,true);
+		} else if (*ch=='"') {
+			ch=charstring::findEndOfQuotedString(ch,'"',true,true);
+		} else if (*ch=='`') {
+			ch=charstring::findEndOfQuotedString(ch,'`',true,true);
+		} else if (*ch==';') {
+			break;
 		} else {
-			if (*ch==quote) {
-				inquotes=false;
-			}
+			ch++;
 		}
-		ch++;
 	}
 	*end=ch;
 }

@@ -3603,53 +3603,50 @@ void sqlrservercontroller::getFirstValuesFromInsertQuery(
 						linkedlist<char *> *values,
 						bool *multiinsert) {
 	const char	*c=start;
-	char		prevc='\0';
-	bool		inquotes=false;
 	uint32_t	parens=0;
 	const char	*startofvalue=c;
 	for (;;) {
 
-		// end-of-values condition
-		if (!inquotes && !parens && *c==')') {
-			// copy out the last value
+		// handle quotes
+		if (*c=='\'') {
+			c=charstring::findEndOfQuotedString(c,'\'',true,true);
+		}
+
+		// handle parens
+		if (*c=='(') {
+
+			parens++;
+
+		} else if (*c==')') {
+
+			if (parens) {
+				parens--;
+			} else {
+				// copy out the last value
+				values->append(charstring::duplicate(
+							startofvalue,
+							c-startofvalue));
+
+				// if there's a comma after the closing
+				// paren, then this is a multi-insert
+				c++;
+				*multiinsert=(*c==',');
+				return;
+			}
+
+		} else
+
+		// handle commas between values
+		if (*c==',') {
+
+			// copy out the value if we found a comma
 			values->append(charstring::duplicate(
 							startofvalue,
 							c-startofvalue));
-
-			// if there's a comma after the closing
-			// paren, then this is a multi-insert
-			c++;
-			*multiinsert=(*c==',');
-			return;
-		}
-
-		// handle quotes...
-		if (!inquotes && *c=='\'') {
-			inquotes=true;
-		} else if (inquotes && *c=='\'' && prevc!='\\') {
-			inquotes=false;
-		}
-
-		if (!inquotes) {
-
-			// handle parentheses...
-			if (*c=='(') {
-				parens++;
-			} else if (parens && *c==')') {
-				parens--;
-			} else {
-				// copy out the value if we found a comma
-				if (*c==',') {
-					values->append(charstring::duplicate(
-							startofvalue,
-							c-startofvalue));
-					startofvalue=c+1;
-				}
-			}
+			startofvalue=c+1;
 		}
 
 		// keep going
-		prevc=*c;
 		c++;
 	}
 }
