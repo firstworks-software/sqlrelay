@@ -142,6 +142,7 @@
 					linkedlist<char *> *columns);
 		void	getFirstValuesFromInsertQuery(
 					const char *start,
+					const char *end,
 					linkedlist<char *> *values,
 					bool *mutiinsert);
 		void	deriveColumnsFromInsertQuery(

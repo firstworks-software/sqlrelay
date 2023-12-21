@@ -116,6 +116,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_postgresql : public sqlrprotocol {
 
 		bool	query();
 		void	getQuery(const char *query,
+						uint32_t querysize,
 						const char **start,
 						const char **end);
 		const char	*skipWhitespace(const char *str);
@@ -1278,7 +1279,7 @@ bool sqlrprotocol_postgresql::query() {
 		// get the query
 		const char	*start=NULL;
 		const char	*end=NULL;
-		getQuery(query,&start,&end);
+		getQuery(query,querysize,&start,&end);
 		query=start;
 		querysize=end-start;
 
@@ -1356,19 +1357,24 @@ bool sqlrprotocol_postgresql::query() {
 }
 
 void sqlrprotocol_postgresql::getQuery(const char *query,
+					uint32_t querysize,
 					const char **start,
 					const char **end) {
 
 	*start=cont->skipWhitespaceAndComments(query);
 
-	const char *ch=*start;
+	const char	*ch=*start;
+	const char	*queryend=query+querysize;
 	while (*ch) {
 		if (*ch=='\'') {
-			ch=charstring::findEndOfQuotedString(ch,'\'',true,true);
+			ch=charstring::findEndOfQuotedString(
+						ch,queryend,'\'',true,true);
 		} else if (*ch=='"') {
-			ch=charstring::findEndOfQuotedString(ch,'"',true,true);
+			ch=charstring::findEndOfQuotedString(
+						ch,queryend,'"',true,true);
 		} else if (*ch=='`') {
-			ch=charstring::findEndOfQuotedString(ch,'`',true,true);
+			ch=charstring::findEndOfQuotedString(
+						ch,queryend,'`',true,true);
 		} else if (*ch==';') {
 			break;
 		} else {

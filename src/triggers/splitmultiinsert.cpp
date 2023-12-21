@@ -22,9 +22,11 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_splitmultiinsert : public sqlrtrigger {
 					const char **ptr,
 					stringbuffer *prefix);
 		void	parseSuffix(const char *startofvalues,
+					const char *queryend,
 					const char **ptr,
 					stringbuffer *suffix);
 		void	parseValues(const char **ptr,
+					const char *end,
 					stringbuffer *values);
 
 		sqlrservercontroller	*cont;
@@ -54,11 +56,12 @@ bool sqlrtrigger_splitmultiinsert::runBefore(sqlrserverconnection *sqlrcon,
 	// NOTE: for now determineQueryType() groups simple insert,
 	// multi-insert, insert/select and select-into into SQLRQUERYTYPE_INSERT
 	const char		*query=cont->getQueryBuffer(micur);
-	uint32_t		querylen=cont->getQuerySize(micur);
+	uint32_t		querysize=cont->getQuerySize(micur);
+	const char		*queryend=query+querysize;
 	sqlrquerytype_t		querytype=micur->getQueryType();
 	if (debug) {
 		stdoutput.printf("splitmultiinsert {\n");
-		stdoutput.printf("	query:\n%.*s\n",querylen,query);
+		stdoutput.printf("	query:\n%.*s\n",querysize,query);
 		stdoutput.printf("	query type: %d\n",querytype);
 	}
 
@@ -72,7 +75,7 @@ bool sqlrtrigger_splitmultiinsert::runBefore(sqlrserverconnection *sqlrcon,
 	}
 
 	// NOTE: parseInsert will populate querytype with a more specific value
-	cont->parseInsert(query,querylen,&querytype,
+	cont->parseInsert(query,querysize,&querytype,
 				NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 	if (debug) {
 		stdoutput.printf("	query type: %d\n",querytype);
@@ -102,7 +105,7 @@ bool sqlrtrigger_splitmultiinsert::runBefore(sqlrserverconnection *sqlrcon,
 
 	// parse out the suffix
 	const char	*suffixptr=NULL;
-	parseSuffix(ptr,&suffixptr,&suffix);
+	parseSuffix(ptr,queryend,&suffixptr,&suffix);
 
 	// Create an separate cursor to run the single-inserts rather than
 	// just using the cursor that ran the original multi-insert.  This
@@ -134,7 +137,7 @@ bool sqlrtrigger_splitmultiinsert::runBefore(sqlrserverconnection *sqlrcon,
 	for (;;) {
 
 		// parse out the values for this insert
-		parseValues(&ptr,&values);
+		parseValues(&ptr,queryend,&values);
 		
 		// build the query
 		singleinsert.append(prefix.getString(),prefix.getSize());
@@ -258,13 +261,14 @@ void sqlrtrigger_splitmultiinsert::parsePrefix(const char *query,
 }
 
 void sqlrtrigger_splitmultiinsert::parseSuffix(const char *startofvalues,
+							const char *queryend,
 							const char **ptr,
 							stringbuffer *suffix) {
 
 	// skip values
 	*ptr=startofvalues;
 	for (;;) {
-		parseValues(ptr,NULL);
+		parseValues(ptr,queryend,NULL);
 		if (**ptr!=',') {
 			break;
 		}
@@ -276,6 +280,7 @@ void sqlrtrigger_splitmultiinsert::parseSuffix(const char *startofvalues,
 }
 
 void sqlrtrigger_splitmultiinsert::parseValues(const char **ptr,
+							const char *end,
 							stringbuffer *values) {
 
 	// we should be on the opening parentheses of a set of values...
@@ -291,7 +296,7 @@ void sqlrtrigger_splitmultiinsert::parseValues(const char **ptr,
 	for (;;) {
 		if (**ptr=='\'') {
 			*ptr=charstring::findEndOfQuotedString(
-							*ptr,'\'',true,true);
+						*ptr,end-*ptr+1,'\'',true,true);
 		}
 		if (**ptr==')') {
 			if (!depth) {

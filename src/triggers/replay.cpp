@@ -13,7 +13,7 @@
 class querydetails {
 	public:
 		char		*query;
-		uint32_t	querylen;
+		uint32_t	querysize;
 		linkedlist<sqlrserverbindvar *>	inbindvars;
 		linkedlist<sqlrserverbindvar *>	outbindvars;
 		linkedlist<sqlrserverbindvar *>	inoutbindvars;
@@ -58,14 +58,14 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_replay : public sqlrtrigger {
 
 
 		void	disableUntilEndOfTx(const char *query, 
-						int32_t querylen,
+						int32_t querysize,
 						sqlrquerytype_t querytype);
 		void	copyQuery(querydetails *qd,
 					const char *query,
-					uint32_t querylen);
+					uint32_t querysize);
 		void	rewriteQuery(querydetails *qd,
 					const char *query,
-					uint32_t querylen,
+					uint32_t querysize,
 					linkedlist<char *> *columns,
 					const char *autoinccolumn,
 					uint64_t liid,
@@ -73,6 +73,7 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_replay : public sqlrtrigger {
 					const char *values);
 		void	appendValues(stringbuffer *newquery,
 						const char *values,
+						const char *end,
 						linkedlist<char *> *columns,
 						uint64_t liid,
 						const char *autoinccolumn);
@@ -216,14 +217,14 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 
 	// get query type
 	const char		*query=sqlrcur->getQueryBuffer();
-	uint32_t		querylen=sqlrcur->getQuerySize();
+	uint32_t		querysize=sqlrcur->getQuerySize();
 	sqlrquerytype_t		querytype=SQLRQUERYTYPE_ETC;
 	linkedlist<char *>	*columns=NULL;
 	linkedlist<char *>	*allcolumns=NULL;
 	const char 		*autoinccolumn=NULL;
 	bool			columnsincludeautoinccolumn=false;
 	const char		*rawvalues=NULL;
-	cont->parseInsert(query,querylen,
+	cont->parseInsert(query,querysize,
 				&querytype,
 				NULL,
 				&columns,
@@ -246,7 +247,7 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 
 	// We can't select-into during replay.
 	if (querytype==SQLRQUERYTYPE_SELECTINTO) {
-		disableUntilEndOfTx(query,querylen,querytype);
+		disableUntilEndOfTx(query,querysize,querytype);
 		delete columns;
 		return;
 	}
@@ -267,11 +268,11 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 			// but it was included in the insert, then we don't
 			// actually have to rewrite anything.  Just do a normal
 			// copy.
-			copyQuery(qd,query,querylen);
+			copyQuery(qd,query,querysize);
 
 		} else if (querytype==SQLRQUERYTYPE_INSERT) {
 
-			rewriteQuery(qd,query,querylen,
+			rewriteQuery(qd,query,querysize,
 					columns,autoinccolumn,liid,
 					columnsincludeautoinccolumn,rawvalues);
 
@@ -280,7 +281,7 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 			// The query was apparently a multi-insert, with
 			// an autoincrement column, which generated an id.
 			// There's no way (currently) to handle these.
-			disableUntilEndOfTx(query,querylen,querytype);
+			disableUntilEndOfTx(query,querysize,querytype);
 			delete columns;
 			return;
 		}
@@ -288,12 +289,12 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 	} else if (querytype==SQLRQUERYTYPE_INSERTSELECT) {
 
 		// There's no way (currently) to handle these.
-		disableUntilEndOfTx(query,querylen,querytype);
+		disableUntilEndOfTx(query,querysize,querytype);
 		delete columns;
 		return;
 
 	} else {
-		copyQuery(qd,query,querylen);
+		copyQuery(qd,query,querysize);
 	}
 
 
@@ -342,7 +343,7 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 }
 
 void sqlrtrigger_replay::disableUntilEndOfTx(const char *query, 
-						int32_t querylen,
+						int32_t querysize,
 						sqlrquerytype_t querytype) {
 
 	// If we weren't in a transaction, then just don't log the
@@ -378,7 +379,7 @@ void sqlrtrigger_replay::disableUntilEndOfTx(const char *query,
 			str.append(" query encountered, "
 					"disabling replay until "
 					"end-of-transaction:\n");
-			str.append(query,querylen);
+			str.append(query,querysize);
 			str.append("\n\n");
 
 			writeToLogFile(node->getValue()->logfile,
@@ -391,19 +392,19 @@ void sqlrtrigger_replay::disableUntilEndOfTx(const char *query,
 
 void sqlrtrigger_replay::copyQuery(querydetails *qd,
 					const char *query,
-					uint32_t querylen) {
+					uint32_t querysize) {
 
 	// copy query verbatim
-	qd->querylen=querylen;
-	qd->query=(char *)logpool.allocate(querylen+1);
-	bytestring::copy(qd->query,query,querylen);
+	qd->querysize=querysize;
+	qd->query=(char *)logpool.allocate(querysize+1);
+	bytestring::copy(qd->query,query,querysize);
 	// (make sure to null terminate)
-	qd->query[querylen]='\0';
+	qd->query[querysize]='\0';
 }
 
 void sqlrtrigger_replay::rewriteQuery(querydetails *qd,
 					const char *query,
-					uint32_t querylen,
+					uint32_t querysize,
 					linkedlist<char *> *columns,
 					const char *autoinccolumn,
 					uint64_t liid,
@@ -445,9 +446,11 @@ void sqlrtrigger_replay::rewriteQuery(querydetails *qd,
 	// append values
 	newquery.append(") values (");
 	if (!columnsincludeautoinccolumn) {
-		newquery.append(liid)->append(',')->append(rawvalues);
+		newquery.append(liid)->append(',');
+		newquery.append(rawvalues,querysize-(rawvalues-query));
 	} else {
-		appendValues(&newquery,rawvalues,columns,liid,autoinccolumn);
+		appendValues(&newquery,rawvalues,query+querysize,
+					columns,liid,autoinccolumn);
 	}
 
 	// copy out the rewritten query
@@ -456,6 +459,7 @@ void sqlrtrigger_replay::rewriteQuery(querydetails *qd,
 
 void sqlrtrigger_replay::appendValues(stringbuffer *newquery,
 						const char *values,
+						const char *end,
 						linkedlist<char *> *columns,
 						uint64_t liid,
 						const char *autoinccolumn) {
@@ -470,7 +474,7 @@ void sqlrtrigger_replay::appendValues(stringbuffer *newquery,
 		if (*c=='\'') {
 			const char	*after=
 				charstring::findEndOfQuotedString(
-							c,'\'',true,true);
+						c,end-c+1,'\'',true,true);
 			value.append(c,after-c-1);
 			c=after;
 		}
@@ -601,9 +605,9 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 		if (debug) {
 			stdoutput.printf("	prepare query {\n");
 			stdoutput.printf("		query:\n%.*s\n",
-						qd->querylen,qd->query);
+						qd->querysize,qd->query);
 		}
-		if (!cont->prepareQuery(sqlrcur,qd->query,qd->querylen)) {
+		if (!cont->prepareQuery(sqlrcur,qd->query,qd->querysize)) {
 			if (debug) {
 				stdoutput.printf(
 					"		"
@@ -613,7 +617,7 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 				stdoutput.printf("	}\n");
 			}
 			str.append("prepare error:\n");
-			str.append(qd->query,qd->querylen);
+			str.append(qd->query,qd->querysize);
 			str.append("\n");
 			str.append(sqlrcur->getErrorBuffer(),
 					sqlrcur->getErrorSize());
@@ -718,7 +722,7 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 					sqlrcur->getErrorBuffer());
 			}
 			str.append("execute error:\n");
-			str.append(qd->query,qd->querylen);
+			str.append(qd->query,qd->querysize);
 			str.append("\n");
 			str.append(sqlrcur->getErrorBuffer(),
 					sqlrcur->getErrorSize());
@@ -740,7 +744,7 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 				str.append(" max retries (");
 				str.append(maxretries);
 				str.append(") reached at query:\n");
-				str.append(qd->query,qd->querylen);
+				str.append(qd->query,qd->querysize);
 				str.append("\n");
 				str.append(sqlrcur->getErrorBuffer(),
 						sqlrcur->getErrorSize());

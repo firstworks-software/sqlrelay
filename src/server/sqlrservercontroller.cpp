@@ -3365,7 +3365,7 @@ bool sqlrservercontroller::parseInsert(const char *query,
 						new linkedlist<char *>();
 			localvalues->setManageArrayValues(true);
 			bool			multiinsert;
-			getFirstValuesFromInsertQuery(localrawvalues,
+			getFirstValuesFromInsertQuery(localrawvalues,end,
 						localvalues,&multiinsert);
 
 			// if there were multiple sets of values
@@ -3600,6 +3600,7 @@ void sqlrservercontroller::getColumnsFromInsertQuery(
 
 void sqlrservercontroller::getFirstValuesFromInsertQuery(
 						const char *start,
+						const char *end,
 						linkedlist<char *> *values,
 						bool *multiinsert) {
 	const char	*c=start;
@@ -3609,7 +3610,8 @@ void sqlrservercontroller::getFirstValuesFromInsertQuery(
 
 		// handle quotes
 		if (*c=='\'') {
-			c=charstring::findEndOfQuotedString(c,'\'',true,true);
+			c=charstring::findEndOfQuotedString(c,end-start+1,
+								'\'',true,true);
 		}
 
 		// handle parens
