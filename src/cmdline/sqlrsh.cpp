@@ -1676,7 +1676,7 @@ void sqlrsh::displayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
 			// write the field
 			if (env->format==SQLRSH_FORMAT_PLAIN) {
-				stdoutput.write(field);
+				stdoutput.write(field,fieldlength);
 			} else {
 				// we need to quote the field if it's not a
 				// number, or if it is a number, but has more

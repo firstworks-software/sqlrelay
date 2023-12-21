@@ -1368,13 +1368,13 @@ void sqlrprotocol_postgresql::getQuery(const char *query,
 	while (*ch) {
 		if (*ch=='\'') {
 			ch=charstring::findEndOfQuotedString(
-						ch,queryend,'\'',true,true);
+					ch,queryend-ch+1,'\'',true,true);
 		} else if (*ch=='"') {
 			ch=charstring::findEndOfQuotedString(
-						ch,queryend,'"',true,true);
+					ch,queryend-ch+1,'"',true,true);
 		} else if (*ch=='`') {
 			ch=charstring::findEndOfQuotedString(
-						ch,queryend,'`',true,true);
+					ch,queryend-ch+1,'`',true,true);
 		} else if (*ch==';') {
 			break;
 		} else {

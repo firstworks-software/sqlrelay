@@ -2814,7 +2814,8 @@ bool sqlrcursor::sendQueryInternal() {
 			pvt->_sqlrc->debugPrint("Length: ");
 			pvt->_sqlrc->debugPrint((int64_t)pvt->_querylen);
 			pvt->_sqlrc->debugPrint("\n");
-			pvt->_sqlrc->debugPrint(pvt->_queryptr);
+			pvt->_sqlrc->debugPrintBlob(pvt->_queryptr,
+							pvt->_querylen);
 			pvt->_sqlrc->debugPrint("\n");
 			pvt->_sqlrc->debugPreEnd();
 		}
