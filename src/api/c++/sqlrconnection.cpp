@@ -2029,8 +2029,7 @@ void sqlrconnection::debugPrintBlob(const char *blob, uint32_t length) {
 	debugPrint('\n');
 	int	column=0;
 	for (uint32_t i=0; i<length; i++) {
-		if (character::isInSet(blob[i],"\t\n\r") ||
-			(blob[i]>=' ' && blob[i]<='~')) {
+		if (blob[i]>=' ' && blob[i]<='~') {
 			debugPrint(blob[i]);
 		} else {
 			debugPrint('.');
