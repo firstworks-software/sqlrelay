@@ -224,11 +224,7 @@ Java bindings for the SQL Relay client API.
 License: LGPLv2
 Summary: TCL bindings for the SQL Relay client API
 BuildRequires: tcl-devel
-%if 0%{?fedora}
 Requires: tcl(abi) = 8.6
-%else
-Requires: tcl(abi) = 8.5
-%endif
 
 %description -n tcl-%{name}
 TCL bindings for the SQL Relay client API.
@@ -752,7 +748,7 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_javadocdir}/%{name}
 
 %changelog
-* Fri Dec  8 2023 David Muse <david.muse@firstworks.com> - 2.0.0-1
+* Fri Jan  5 2023 David Muse <david.muse@firstworks.com> - 2.0.0-1
 - Updated to version 2.0.0.
 - Removed support for mdbtools.
 - Updated to build python 3 packages for rhel > 6.
@@ -761,6 +757,7 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 - Moved pwdenc-related libraries and header files to common package.
 - Removed movement of service files.
 - Added new modules and includes.
+- Removed tcl(abi) = 8.5 for non-fedora platforms.
 
 * Thu Mar 04 2021 David Muse <david.muse@firstworks.com> - 1.9.0-1
 - Updated to version 1.9.0.
