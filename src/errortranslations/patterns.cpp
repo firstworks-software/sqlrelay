@@ -31,11 +31,10 @@ struct pattern_t {
 class SQLRSERVER_DLLSPEC sqlrerrortranslation_patterns :
 					public sqlrerrortranslation {
 	public:
-			sqlrerrortranslation_patterns(
-						sqlrservercontroller *cont,
+		sqlrerrortranslation_patterns(sqlrservercontroller *cont,
 						sqlrerrortranslations *sqlts,
 						domnode *parameters);
-			~sqlrerrortranslation_patterns();
+		~sqlrerrortranslation_patterns();
 		bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					int64_t errornumber,

@@ -10,10 +10,10 @@
 
 class conndb {
 	public:
-		conndb(const char *dbname,
+	conndb(const char *dbname,
 			const char *connid,
 			sqlrconnection *sqlrcon);
-		~conndb();
+	~conndb();
 	char		*dbname;
 	const char	*connid;
 	sqlrconnection	*sqlrcon;
@@ -34,10 +34,10 @@ conndb::~conndb() {
 
 class SQLRSERVER_DLLSPEC sqlrrouter_usedatabase : public sqlrrouter {
 	public:
-			sqlrrouter_usedatabase(sqlrservercontroller *cont,
+		sqlrrouter_usedatabase(sqlrservercontroller *cont,
 						sqlrrouters *rs,
 						domnode *parameters);
-			~sqlrrouter_usedatabase();
+		~sqlrrouter_usedatabase();
 
 		const char	*route(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur,

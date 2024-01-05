@@ -23,10 +23,10 @@ struct pattern_t {
 
 class SQLRSERVER_DLLSPEC sqlrfilter_tag : public sqlrfilter {
 	public:
-			sqlrfilter_tag(sqlrservercontroller *cont,
+		sqlrfilter_tag(sqlrservercontroller *cont,
 						sqlrfilters *fs,
 						domnode *parameters);
-			~sqlrfilter_tag();
+		~sqlrfilter_tag();
 		bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					const char *query);

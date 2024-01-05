@@ -14,7 +14,7 @@
 
 class SQLRSERVER_DLLSPEC sqlrquery_sqlrcmdgstat : public sqlrquery {
 	public:
-			sqlrquery_sqlrcmdgstat(sqlrservercontroller *cont,
+		sqlrquery_sqlrcmdgstat(sqlrservercontroller *cont,
 							sqlrqueries *qs,
 							domnode *parameters);
 		bool	match(const char *querystring, uint32_t querysize);

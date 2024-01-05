@@ -8,8 +8,7 @@
 class SQLRSERVER_DLLSPEC sqlrerrortranslation_renumber :
 					public sqlrerrortranslation {
 	public:
-			sqlrerrortranslation_renumber(
-						sqlrservercontroller *cont,
+		sqlrerrortranslation_renumber(sqlrservercontroller *cont,
 						sqlrerrortranslations *sqlts,
 						domnode *parameters);
 		bool	run(sqlrserverconnection *sqlrcon,

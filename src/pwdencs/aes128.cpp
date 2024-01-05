@@ -7,7 +7,7 @@
 
 class SQLRSERVER_DLLSPEC sqlrpwenc_aes128 : public sqlrpwdenc {
 	public:
-			sqlrpwenc_aes128(domnode *parameters, bool debug);
+		sqlrpwenc_aes128(domnode *parameters, bool debug);
 		char	*encrypt(const char *value);
 		char	*decrypt(const char *value);
 	private:

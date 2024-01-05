@@ -9,7 +9,7 @@
 
 class SQLRSERVER_DLLSPEC sqlrauth_oracle_userlist : public sqlrauth {
 	public:
-			sqlrauth_oracle_userlist(sqlrservercontroller *cont,
+		sqlrauth_oracle_userlist(sqlrservercontroller *cont,
 							sqlrauths *auths,
 							sqlrpwdencs *sqlrpe,
 							domnode *parameters);

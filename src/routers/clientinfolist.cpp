@@ -6,10 +6,10 @@
 
 class SQLRSERVER_DLLSPEC sqlrrouter_clientinfolist : public sqlrrouter {
 	public:
-			sqlrrouter_clientinfolist(sqlrservercontroller *cont,
+		sqlrrouter_clientinfolist(sqlrservercontroller *cont,
 						sqlrrouters *rs,
 						domnode *parameters);
-			~sqlrrouter_clientinfolist();
+		~sqlrrouter_clientinfolist();
 
 		const char	*route(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur,

@@ -555,7 +555,7 @@ enum oraclelisttype_t {
 
 class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 	public:
-			sqlrprotocol_oracle(sqlrservercontroller *cont,
+		sqlrprotocol_oracle(sqlrservercontroller *cont,
 							sqlrprotocols *ps,
 							domnode *parameters);
 		virtual	~sqlrprotocol_oracle();

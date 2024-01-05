@@ -7,7 +7,7 @@
 
 class SQLRSERVER_DLLSPEC sqlrschedule_cron_userlist : public sqlrschedule {
 	public:
-			sqlrschedule_cron_userlist(sqlrservercontroller *cont,
+		sqlrschedule_cron_userlist(sqlrservercontroller *cont,
 							sqlrschedules *ss,
 							domnode *parameters);
 

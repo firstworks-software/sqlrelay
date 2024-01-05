@@ -46,8 +46,8 @@ class routercursor;
 class SQLRSERVER_DLLSPEC routerconnection : public sqlrserverconnection {
 	friend class routercursor;
 	public:
-			routerconnection(sqlrservercontroller *cont);
-			~routerconnection();
+		routerconnection(sqlrservercontroller *cont);
+		~routerconnection();
 	private:
 		bool		supportsAuthOnDatabase();
 		void		handleConnectString();
@@ -124,10 +124,9 @@ class SQLRSERVER_DLLSPEC routerconnection : public sqlrserverconnection {
 class SQLRSERVER_DLLSPEC routercursor : public sqlrservercursor {
 	friend class routerconnection;
 	private:
-				routercursor(sqlrserverconnection *conn,
-								uint16_t id);
+		routercursor(sqlrserverconnection *conn, uint16_t id);
 	public:
-				~routercursor();
+		~routercursor();
 	private:
 		bool		prepareQuery(const char *query,
 						uint32_t size);

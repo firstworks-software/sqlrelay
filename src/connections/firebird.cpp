@@ -61,9 +61,8 @@ class firebirdconnection;
 class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 	friend class firebirdconnection;
 	private:
-				firebirdcursor(sqlrserverconnection *conn,
-								uint16_t id);
-				~firebirdcursor();
+		firebirdcursor(sqlrserverconnection *conn, uint16_t id);
+		~firebirdcursor();
 		void		allocateResultSetBuffers(int32_t columncount);
 		void		deallocateResultSetBuffers();
 		bool		prepareQuery(const char *query,
@@ -221,8 +220,8 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 	friend class firebirdcursor;
 	public:
-			firebirdconnection(sqlrservercontroller *cont);
-			~firebirdconnection();
+		firebirdconnection(sqlrservercontroller *cont);
+		~firebirdconnection();
 	private:
 		void	handleConnectString();
 		bool	logIn(const char **error, const char **warning);

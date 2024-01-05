@@ -534,7 +534,7 @@ request::~request() {
 
 class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 	public:
-			sqlrprotocol_teradata(sqlrservercontroller *cont,
+		sqlrprotocol_teradata(sqlrservercontroller *cont,
 							sqlrprotocols *ps,
 							domnode *parameters);
 		virtual	~sqlrprotocol_teradata();

@@ -10,9 +10,8 @@
 
 class SQLRSERVER_DLLSPEC sqlrlogger_stalecursors : public sqlrlogger {
 	public:
-			sqlrlogger_stalecursors(sqlrloggers *ls,
-						domnode *parameters);
-			~sqlrlogger_stalecursors();
+		sqlrlogger_stalecursors(sqlrloggers *ls, domnode *parameters);
+		~sqlrlogger_stalecursors();
 
 		bool	init(sqlrlistener *sqlrl, sqlrserverconnection *sqlrcon);
 		bool	run(sqlrlistener *sqlrl,

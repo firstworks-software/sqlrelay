@@ -5,7 +5,7 @@
 
 class SQLRSERVER_DLLSPEC sqlrnotification_events : public sqlrnotification {
 	public:
-			sqlrnotification_events(sqlrnotifications *ns,
+		sqlrnotification_events(sqlrnotifications *ns,
 						domnode *parameters);
 
 		bool	run(sqlrlistener *sqlrl,

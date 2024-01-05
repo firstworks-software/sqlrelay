@@ -31,8 +31,7 @@ struct pattern_t {
 class SQLRSERVER_DLLSPEC sqlrquerytranslation_patterns :
 					public sqlrquerytranslation {
 	public:
-			sqlrquerytranslation_patterns(
-						sqlrservercontroller *cont,
+		sqlrquerytranslation_patterns(sqlrservercontroller *cont,
 						sqlrquerytranslations *sqlts,
 						domnode *parameters);
 			~sqlrquerytranslation_patterns();

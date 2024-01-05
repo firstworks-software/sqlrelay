@@ -6,11 +6,11 @@
 class SQLRSERVER_DLLSPEC sqlrresultsetrowtranslation_test :
 					public sqlrresultsetrowtranslation {
 	public:
-			sqlrresultsetrowtranslation_test(
+		sqlrresultsetrowtranslation_test(
 					sqlrservercontroller *cont,
 					sqlrresultsetrowtranslations *rs,
 					domnode *parameters);
-			~sqlrresultsetrowtranslation_test();
+		~sqlrresultsetrowtranslation_test();
 		bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					uint32_t colcount,

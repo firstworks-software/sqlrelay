@@ -580,7 +580,7 @@ enum mysqllisttype_t {
 
 class SQLRSERVER_DLLSPEC sqlrprotocol_mysql : public sqlrprotocol {
 	public:
-			sqlrprotocol_mysql(sqlrservercontroller *cont,
+		sqlrprotocol_mysql(sqlrservercontroller *cont,
 							sqlrprotocols *ps,
 							domnode *parameters);
 		virtual	~sqlrprotocol_mysql();

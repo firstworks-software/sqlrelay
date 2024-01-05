@@ -8,11 +8,11 @@
 class SQLRSERVER_DLLSPEC sqlrresultsettranslation_reformatdatetime :
 					public sqlrresultsettranslation {
 	public:
-			sqlrresultsettranslation_reformatdatetime(
+		sqlrresultsettranslation_reformatdatetime(
 					sqlrservercontroller *cont,
 					sqlrresultsettranslations *rs,
 					domnode *parameters);
-			~sqlrresultsettranslation_reformatdatetime();
+		~sqlrresultsettranslation_reformatdatetime();
 		bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					const char *fieldname,

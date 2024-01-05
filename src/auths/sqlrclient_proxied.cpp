@@ -7,10 +7,10 @@
 
 class SQLRSERVER_DLLSPEC sqlrauth_sqlrclient_proxied : public sqlrauth {
 	public:
-			sqlrauth_sqlrclient_proxied(sqlrservercontroller *cont,
-						sqlrauths *auths,
-						sqlrpwdencs *sqlrpe,
-						domnode *parameters);
+		sqlrauth_sqlrclient_proxied(sqlrservercontroller *cont,
+							sqlrauths *auths,
+							sqlrpwdencs *sqlrpe,
+							domnode *parameters);
 		const char	*auth(sqlrcredentials *cred);
 	private:
 		stringbuffer	lastuser;

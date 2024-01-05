@@ -35,7 +35,7 @@ enum sqlrclientquerytype_t {
 
 class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 	public:
-			sqlrprotocol_sqlrclient(sqlrservercontroller *cont,
+		sqlrprotocol_sqlrclient(sqlrservercontroller *cont,
 							sqlrprotocols *ps,
 							domnode *parameters);
 		virtual	~sqlrprotocol_sqlrclient();

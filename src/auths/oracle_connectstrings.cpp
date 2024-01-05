@@ -9,11 +9,10 @@
 
 class SQLRSERVER_DLLSPEC sqlrauth_oracle_connectstrings : public sqlrauth {
 	public:
-			sqlrauth_oracle_connectstrings(
-						sqlrservercontroller *cont,
-						sqlrauths *auths,
-						sqlrpwdencs *sqlrpe,
-						domnode *parameters);
+		sqlrauth_oracle_connectstrings(sqlrservercontroller *cont,
+							sqlrauths *auths,
+							sqlrpwdencs *sqlrpe,
+							domnode *parameters);
 		const char	*auth(sqlrcredentials *cred);
 		bool		compare(const char *suppliedresponse,
 					uint64_t suppliedresponsesize,

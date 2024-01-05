@@ -8,7 +8,7 @@
 
 class SQLRSERVER_DLLSPEC sqlrauth_oracle_database : public sqlrauth {
 	public:
-			sqlrauth_oracle_database(sqlrservercontroller *cont,
+		sqlrauth_oracle_database(sqlrservercontroller *cont,
 							sqlrauths *auths,
 							sqlrpwdencs *sqlrpe,
 							domnode *parameters);

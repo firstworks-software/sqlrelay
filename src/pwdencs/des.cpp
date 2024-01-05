@@ -7,7 +7,7 @@
 
 class SQLRSERVER_DLLSPEC sqlrpwdenc_des : public sqlrpwdenc {
 	public:
-			sqlrpwdenc_des(domnode *parameters, bool debug);
+		sqlrpwdenc_des(domnode *parameters, bool debug);
 		bool	oneWay();
 		char	*encrypt(const char *value);
 

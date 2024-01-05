@@ -71,7 +71,7 @@
 
 class SQLRSERVER_DLLSPEC sqlrprotocol_postgresql : public sqlrprotocol {
 	public:
-			sqlrprotocol_postgresql(sqlrservercontroller *cont,
+		sqlrprotocol_postgresql(sqlrservercontroller *cont,
 							sqlrprotocols *ps,
 							domnode *parameters);
 		virtual	~sqlrprotocol_postgresql();

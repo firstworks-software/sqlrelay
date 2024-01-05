@@ -9,7 +9,7 @@
 
 class SQLRSERVER_DLLSPEC sqlrdirective_custom_wf : public sqlrdirective {
 	public:
-			sqlrdirective_custom_wf(sqlrservercontroller *cont,
+		sqlrdirective_custom_wf(sqlrservercontroller *cont,
 							sqlrdirectives *sqlds,
 							domnode *parameters);
 		bool	run(sqlrserverconnection *sqlrcon,

@@ -6,11 +6,11 @@
 class SQLRSERVER_DLLSPEC sqlrresultsetheadertranslation_test :
 					public sqlrresultsetheadertranslation {
 	public:
-			sqlrresultsetheadertranslation_test(
+		sqlrresultsetheadertranslation_test(
 					sqlrservercontroller *cont,
 					sqlrresultsetheadertranslations *rs,
 					domnode *parameters);
-			~sqlrresultsetheadertranslation_test();
+		~sqlrresultsetheadertranslation_test();
 		bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					uint32_t colcount,

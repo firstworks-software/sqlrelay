@@ -29,12 +29,11 @@
 
 class SQLRSERVER_DLLSPEC sqlrauth_teradata_sidechannel : public sqlrauth {
 	public:
-			sqlrauth_teradata_sidechannel(
-						sqlrservercontroller *cont,
-						sqlrauths *auths,
-						sqlrpwdencs *sqlrpe,
-						domnode *parameters);
-			~sqlrauth_teradata_sidechannel();
+		sqlrauth_teradata_sidechannel(sqlrservercontroller *cont,
+							sqlrauths *auths,
+							sqlrpwdencs *sqlrpe,
+							domnode *parameters);
+		~sqlrauth_teradata_sidechannel();
 		const char	*auth(sqlrcredentials *cred);
 	private:
 		bool	recvMessageFromClient();

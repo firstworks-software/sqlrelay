@@ -638,7 +638,7 @@ static const char *procids[]={
 // TDS protocol class
 class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 	public:
-			sqlrprotocol_tds(sqlrservercontroller *cont,
+		sqlrprotocol_tds(sqlrservercontroller *cont,
 							sqlrprotocols *ps,
 							domnode *parameters);
 		virtual	~sqlrprotocol_tds();

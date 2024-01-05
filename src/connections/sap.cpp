@@ -25,8 +25,8 @@
 class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 	friend class sapcursor;
 	public:
-			sapconnection(sqlrservercontroller *cont);
-			~sapconnection();
+		sapconnection(sqlrservercontroller *cont);
+		~sapconnection();
 	private:
 		void		handleConnectString();
 		bool		logIn(const char **error, const char **warning);
@@ -107,9 +107,8 @@ struct datebind {
 class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 	friend class sapconnection;
 	private:
-				sapcursor(sqlrserverconnection *conn,
-								uint16_t id);
-				~sapcursor();
+		sapcursor(sqlrserverconnection *conn, uint16_t id);
+		~sapcursor();
 		void		allocateResultSetBuffers(int32_t columncount);
 		void		deallocateResultSetBuffers();
 		bool		open();

@@ -84,9 +84,8 @@ class freetdsconnection;
 class SQLRSERVER_DLLSPEC freetdscursor : public sqlrservercursor {
 	friend class freetdsconnection;
 	private:
-				freetdscursor(sqlrserverconnection *conn,
-								uint16_t id);
-				~freetdscursor();
+		freetdscursor(sqlrserverconnection *conn, uint16_t id);
+		~freetdscursor();
 		void		allocateResultSetBuffers(int32_t columncount);
 		void		deallocateResultSetBuffers();
 		bool		open();
@@ -239,8 +238,8 @@ class SQLRSERVER_DLLSPEC freetdscursor : public sqlrservercursor {
 class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 	friend class freetdscursor;
 	public:
-			freetdsconnection(sqlrservercontroller *cont);
-			~freetdsconnection();
+		freetdsconnection(sqlrservercontroller *cont);
+		~freetdsconnection();
 	private:
 		void	handleConnectString();
 		bool	logIn(const char **error, const char **warning);

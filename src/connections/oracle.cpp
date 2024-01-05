@@ -89,8 +89,8 @@ struct datebind {
 class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 	friend class oraclecursor;
 	public:
-				oracleconnection(sqlrservercontroller *cont);
-				~oracleconnection();
+		oracleconnection(sqlrservercontroller *cont);
+		~oracleconnection();
 	private:
 		void		handleConnectString();
 		#ifdef HAVE_ORACLE_8i
@@ -187,8 +187,7 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 class SQLRSERVER_DLLSPEC oraclecursor : public sqlrservercursor {
 	friend class oracleconnection;
 	private:
-				oraclecursor(sqlrserverconnection *conn,
-								uint16_t id);
+		oraclecursor(sqlrserverconnection *conn, uint16_t id);
 				~oraclecursor();
 		void		allocateResultSetBuffers(int32_t columncount);
 		void		deallocateResultSetBuffers();

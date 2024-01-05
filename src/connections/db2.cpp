@@ -55,8 +55,8 @@ class db2connection;
 class SQLRSERVER_DLLSPEC db2cursor : public sqlrservercursor {
 	friend class db2connection;
 	public:
-			db2cursor(sqlrserverconnection *conn, uint16_t id);
-			~db2cursor();
+		db2cursor(sqlrserverconnection *conn, uint16_t id);
+		~db2cursor();
 	private:
 		void		allocateResultSetBuffers(int32_t columncount);
 		void		deallocateResultSetBuffers();
@@ -229,7 +229,7 @@ class SQLRSERVER_DLLSPEC db2cursor : public sqlrservercursor {
 class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 	friend class db2cursor;
 	public:
-			db2connection(sqlrservercontroller *cont);
+		db2connection(sqlrservercontroller *cont);
 	private:
 		void	handleConnectString();
 		bool	mustDetachBeforeLogIn();

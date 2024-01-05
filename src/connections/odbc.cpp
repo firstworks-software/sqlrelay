@@ -82,9 +82,8 @@ class odbcconnection;
 class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 	friend class odbcconnection;
 	private:
-				odbccursor(sqlrserverconnection *conn,
-							uint16_t id);
-				~odbccursor();
+		odbccursor(sqlrserverconnection *conn, uint16_t id);
+		~odbccursor();
 		void		allocateResultSetBuffers(int32_t columncount);
 		void		deallocateResultSetBuffers();
 		bool		prepareQuery(const char *query,
@@ -293,8 +292,8 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 	friend class odbccursor;
 	public:
-			odbcconnection(sqlrservercontroller *cont);
-			~odbcconnection();
+		odbcconnection(sqlrservercontroller *cont);
+		~odbcconnection();
 	private:
 		void		handleConnectString();
 		bool		logIn(const char **error, const char **warning);

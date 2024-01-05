@@ -7,7 +7,7 @@
 
 class SQLRSERVER_DLLSPEC sqlrrouter_regex : public sqlrrouter {
 	public:
-			sqlrrouter_regex(sqlrservercontroller *cont,
+		sqlrrouter_regex(sqlrservercontroller *cont,
 						sqlrrouters *rs,
 						domnode *parameters);
 

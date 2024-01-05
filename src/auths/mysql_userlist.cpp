@@ -10,7 +10,7 @@
 
 class SQLRSERVER_DLLSPEC sqlrauth_mysql_userlist : public sqlrauth {
 	public:
-			sqlrauth_mysql_userlist(sqlrservercontroller *cont,
+		sqlrauth_mysql_userlist(sqlrservercontroller *cont,
 							sqlrauths *auths,
 							sqlrpwdencs *sqlrpe,
 							domnode *parameters);

@@ -9,7 +9,7 @@
 
 class SQLRSERVER_DLLSPEC sqlrauth_postgresql_userlist : public sqlrauth {
 	public:
-			sqlrauth_postgresql_userlist(sqlrservercontroller *cont,
+		sqlrauth_postgresql_userlist(sqlrservercontroller *cont,
 							sqlrauths *auths,
 							sqlrpwdencs *sqlrpe,
 							domnode *parameters);

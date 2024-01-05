@@ -17,8 +17,8 @@
 class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 	friend class postgresqlcursor;
 	public:
-			postgresqlconnection(sqlrservercontroller *cont);
-			~postgresqlconnection();
+		postgresqlconnection(sqlrservercontroller *cont);
+		~postgresqlconnection();
 	private:
 		void		handleConnectString();
 		bool		logIn(const char **error, const char **warning);
@@ -91,9 +91,8 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 class SQLRSERVER_DLLSPEC postgresqlcursor : public sqlrservercursor {
 	friend class postgresqlconnection;
 	private:
-				postgresqlcursor(sqlrserverconnection *conn,
-								uint16_t id);
-				~postgresqlcursor();
+		postgresqlcursor(sqlrserverconnection *conn, uint16_t id);
+		~postgresqlcursor();
 #if (defined(HAVE_POSTGRESQL_PQPREPARE) && \
 		defined(HAVE_POSTGRESQL_PQEXECPREPARED)) || \
 		(defined(HAVE_POSTGRESQL_PQSENDQUERYPREPARED) && \

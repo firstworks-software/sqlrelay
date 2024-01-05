@@ -9,11 +9,10 @@
 
 class SQLRSERVER_DLLSPEC sqlrauth_postgresql_connectstrings : public sqlrauth {
 	public:
-			sqlrauth_postgresql_connectstrings(
-						sqlrservercontroller *cont,
-						sqlrauths *auths,
-						sqlrpwdencs *sqlrpe,
-						domnode *parameters);
+		sqlrauth_postgresql_connectstrings(sqlrservercontroller *cont,
+							sqlrauths *auths,
+							sqlrpwdencs *sqlrpe,
+							domnode *parameters);
 		const char	*auth(sqlrcredentials *cred);
 		bool		compare(const char *suppliedresponse,
 					uint64_t suppliedresponsesize,

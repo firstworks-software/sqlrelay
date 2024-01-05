@@ -40,9 +40,8 @@ class mysqlconnection;
 class SQLRSERVER_DLLSPEC mysqlcursor : public sqlrservercursor {
 	friend class mysqlconnection;
 	private:
-				mysqlcursor(sqlrserverconnection *conn,
-							uint16_t id);
-				~mysqlcursor();
+		mysqlcursor(sqlrserverconnection *conn, uint16_t id);
+		~mysqlcursor();
 
 		void		allocateResultSetBuffers(int32_t columncount);
 		void		deallocateResultSetBuffers();
@@ -197,8 +196,8 @@ class SQLRSERVER_DLLSPEC mysqlcursor : public sqlrservercursor {
 class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 	friend class mysqlcursor;
 	public:
-				mysqlconnection(sqlrservercontroller *cont);
-				~mysqlconnection();
+		mysqlconnection(sqlrservercontroller *cont);
+		~mysqlconnection();
 	private:
 		void		handleConnectString();
 		bool		logIn(const char **error, const char **warning);

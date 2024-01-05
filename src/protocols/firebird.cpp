@@ -395,7 +395,7 @@
 
 class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 	public:
-			sqlrprotocol_firebird(sqlrservercontroller *cont,
+		sqlrprotocol_firebird(sqlrservercontroller *cont,
 							sqlrprotocols *ps,
 							domnode *parameters);
 		virtual	~sqlrprotocol_firebird();

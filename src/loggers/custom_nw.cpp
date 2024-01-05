@@ -13,9 +13,8 @@
 
 class SQLRSERVER_DLLSPEC sqlrlogger_custom_nw : public sqlrlogger {
 	public:
-			sqlrlogger_custom_nw(sqlrloggers *ls,
-						domnode *parameters);
-			~sqlrlogger_custom_nw();
+		sqlrlogger_custom_nw(sqlrloggers *ls, domnode *parameters);
+		~sqlrlogger_custom_nw();
 
 		bool	init(sqlrlistener *sqlrl, sqlrserverconnection *sqlrcon);
 		bool	run(sqlrlistener *sqlrl,

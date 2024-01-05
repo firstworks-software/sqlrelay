@@ -35,8 +35,8 @@ extern "C" {
 class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 	friend class sqlitecursor;
 	public:
-				sqliteconnection(sqlrservercontroller *cont);
-				~sqliteconnection();
+		sqliteconnection(sqlrservercontroller *cont);
+		~sqliteconnection();
 	private:
 		void		handleConnectString();
 		bool		logIn(const char **error, const char **warning);
@@ -95,9 +95,8 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 class SQLRSERVER_DLLSPEC sqlitecursor : public sqlrservercursor {
 	friend class sqliteconnection;
 	private:
-				sqlitecursor(sqlrserverconnection *conn,
-								uint16_t id);
-				~sqlitecursor();
+		sqlitecursor(sqlrserverconnection *conn, uint16_t id);
+		~sqlitecursor();
 
 		bool		supportsNativeBinds(const char *query,
 							uint32_t size);

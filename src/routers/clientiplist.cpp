@@ -5,10 +5,10 @@
 
 class SQLRSERVER_DLLSPEC sqlrrouter_clientiplist : public sqlrrouter {
 	public:
-			sqlrrouter_clientiplist(sqlrservercontroller *cont,
+		sqlrrouter_clientiplist(sqlrservercontroller *cont,
 						sqlrrouters *rs,
 						domnode *parameters);
-			~sqlrrouter_clientiplist();
+		~sqlrrouter_clientiplist();
 
 		const char	*route(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur,

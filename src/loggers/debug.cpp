@@ -10,9 +10,8 @@
 
 class SQLRSERVER_DLLSPEC sqlrlogger_debug : public sqlrlogger {
 	public:
-			sqlrlogger_debug(sqlrloggers *ls,
-						domnode *parameters);
-			~sqlrlogger_debug();
+		sqlrlogger_debug(sqlrloggers *ls, domnode *parameters);
+		~sqlrlogger_debug();
 
 		bool	init(sqlrlistener *sqlrl, sqlrserverconnection *sqlrcon);
 		bool	run(sqlrlistener *sqlrl,

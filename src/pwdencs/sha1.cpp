@@ -7,7 +7,7 @@
 
 class SQLRSERVER_DLLSPEC sqlrpwenc_sha1 : public sqlrpwdenc {
 	public:
-			sqlrpwenc_sha1(domnode *parameters, bool debug);
+		sqlrpwenc_sha1(domnode *parameters, bool debug);
 		bool	oneWay();
 		char	*encrypt(const char *value);
 };

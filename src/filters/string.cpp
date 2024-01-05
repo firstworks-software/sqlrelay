@@ -8,10 +8,10 @@
 
 class SQLRSERVER_DLLSPEC sqlrfilter_string : public sqlrfilter {
 	public:
-			sqlrfilter_string(sqlrservercontroller *cont,
+		sqlrfilter_string(sqlrservercontroller *cont,
 						sqlrfilters *fs,
 						domnode *parameters);
-			~sqlrfilter_string();
+		~sqlrfilter_string();
 		bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					const char *query);

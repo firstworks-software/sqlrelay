@@ -7,7 +7,7 @@
 
 class SQLRSERVER_DLLSPEC sqlrauth_mysql_database : public sqlrauth {
 	public:
-			sqlrauth_mysql_database(sqlrservercontroller *cont,
+		sqlrauth_mysql_database(sqlrservercontroller *cont,
 							sqlrauths *auths,
 							sqlrpwdencs *sqlrpe,
 							domnode *parameters);

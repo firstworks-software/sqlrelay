@@ -9,7 +9,7 @@
 
 class SQLRSERVER_DLLSPEC sqlrdirective_crash : public sqlrdirective {
 	public:
-			sqlrdirective_crash(sqlrservercontroller *cont,
+		sqlrdirective_crash(sqlrservercontroller *cont,
 							sqlrdirectives *sqlds,
 							domnode *parameters);
 		bool	run(sqlrserverconnection *sqlrcon,

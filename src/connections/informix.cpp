@@ -53,8 +53,8 @@ class informixconnection;
 class SQLRSERVER_DLLSPEC informixcursor : public sqlrservercursor {
 	friend class informixconnection;
 	public:
-			informixcursor(sqlrserverconnection *conn, uint16_t id);
-			~informixcursor();
+		informixcursor(sqlrserverconnection *conn, uint16_t id);
+		~informixcursor();
 	private:
 		void		allocateResultSetBuffers(int32_t columncount);
 		void		deallocateResultSetBuffers();
@@ -220,7 +220,7 @@ class SQLRSERVER_DLLSPEC informixcursor : public sqlrservercursor {
 class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 	friend class informixcursor;
 	public:
-			informixconnection(sqlrservercontroller *cont);
+		informixconnection(sqlrservercontroller *cont);
 	private:
 		void	handleConnectString();
 		bool	logIn(const char **error, const char **warning);

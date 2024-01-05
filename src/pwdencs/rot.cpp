@@ -6,7 +6,7 @@
 
 class SQLRSERVER_DLLSPEC sqlrpwenc_rot : public sqlrpwdenc {
 	public:
-			sqlrpwenc_rot(domnode *parameters, bool debug);
+		sqlrpwenc_rot(domnode *parameters, bool debug);
 		char	*encrypt(const char *value);
 		char	*decrypt(const char *value);
 	private:

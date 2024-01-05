@@ -8,7 +8,7 @@
 
 class SQLRSERVER_DLLSPEC sqlrfilter_regex : public sqlrfilter {
 	public:
-			sqlrfilter_regex(sqlrservercontroller *cont,
+		sqlrfilter_regex(sqlrservercontroller *cont,
 						sqlrfilters *fs,
 						domnode *parameters);
 		bool	run(sqlrserverconnection *sqlrcon,

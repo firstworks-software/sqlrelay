@@ -10,8 +10,7 @@
 class SQLRSERVER_DLLSPEC sqlrquerytranslation_normalize :
 					public sqlrquerytranslation {
 	public:
-			sqlrquerytranslation_normalize(
-						sqlrservercontroller *cont,
+		sqlrquerytranslation_normalize(sqlrservercontroller *cont,
 						sqlrquerytranslations *sqlts,
 						domnode *parameters);
 		bool	run(sqlrserverconnection *sqlrcon,

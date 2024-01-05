@@ -7,11 +7,11 @@
 
 class SQLRSERVER_DLLSPEC sqlrauth_sqlrclient_sqlrelay : public sqlrauth {
 	public:
-			sqlrauth_sqlrclient_sqlrelay(sqlrservercontroller *cont,
-						sqlrauths *auths,
-						sqlrpwdencs *sqlrpe,
-						domnode *parameters);
-			~sqlrauth_sqlrclient_sqlrelay();
+		sqlrauth_sqlrclient_sqlrelay(sqlrservercontroller *cont,
+							sqlrauths *auths,
+							sqlrpwdencs *sqlrpe,
+							domnode *parameters);
+		~sqlrauth_sqlrclient_sqlrelay();
 		const char	*auth(sqlrcredentials *cred);
 	private:
 		const char	*host;

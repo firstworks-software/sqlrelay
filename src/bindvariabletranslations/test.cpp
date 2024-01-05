@@ -6,11 +6,11 @@
 class SQLRSERVER_DLLSPEC sqlrbindvariabletranslation_test :
 					public sqlrbindvariabletranslation {
 	public:
-			sqlrbindvariabletranslation_test(
+		sqlrbindvariabletranslation_test(
 					sqlrservercontroller *cont,
 					sqlrbindvariabletranslations *rs,
 					domnode *parameters);
-			~sqlrbindvariabletranslation_test();
+		~sqlrbindvariabletranslation_test();
 		bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur);
 };

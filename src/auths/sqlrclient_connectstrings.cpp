@@ -7,13 +7,11 @@
 
 class SQLRSERVER_DLLSPEC sqlrauth_sqlrclient_connectstrings : public sqlrauth {
 	public:
-			sqlrauth_sqlrclient_connectstrings(
-						sqlrservercontroller *cont,
-						sqlrauths *auths,
-						sqlrpwdencs *sqlrpe,
-						domnode *parameters);
-			~sqlrauth_sqlrclient_connectstrings();
-
+		sqlrauth_sqlrclient_connectstrings(sqlrservercontroller *cont,
+							sqlrauths *auths,
+							sqlrpwdencs *sqlrpe,
+							domnode *parameters);
+		~sqlrauth_sqlrclient_connectstrings();
 		const char	*auth(sqlrcredentials *cred);
 	private:
 		const char	*userPassword(const char *user,

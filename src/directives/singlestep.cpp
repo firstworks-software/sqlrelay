@@ -9,7 +9,7 @@
 
 class SQLRSERVER_DLLSPEC sqlrdirective_singlestep : public sqlrdirective {
 	public:
-			sqlrdirective_singlestep(sqlrservercontroller *cont,
+		sqlrdirective_singlestep(sqlrservercontroller *cont,
 							sqlrdirectives *sqlds,
 							domnode *parameters);
 		bool	run(sqlrserverconnection *sqlrcon,

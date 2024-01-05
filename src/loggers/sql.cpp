@@ -11,8 +11,8 @@
 
 class SQLRSERVER_DLLSPEC sqlrlogger_sql : public sqlrlogger {
 	public:
-			sqlrlogger_sql(sqlrloggers *ls, domnode *parameters);
-			~sqlrlogger_sql();
+		sqlrlogger_sql(sqlrloggers *ls, domnode *parameters);
+		~sqlrlogger_sql();
 
 		bool	init(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon);
