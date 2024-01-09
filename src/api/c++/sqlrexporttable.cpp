@@ -124,7 +124,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 	do {
 
 		// commit/begin, if necessary
-		if (commitcount && !((getCurrentRow()+1)%500)) {
+		if (commitcount && !((getCurrentRow()+1)%commitcount)) {
 			sqlrcon->commit();
 			sqlrcon->begin();
 		}
