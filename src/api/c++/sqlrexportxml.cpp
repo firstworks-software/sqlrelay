@@ -36,41 +36,78 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 	}
 	filedescriptor	*fd=getFileDescriptor();
 
-	// export header
-	fd->printf("<?xml version=\"1.0\"?>\n");
+	// export xml header
+	fd->write("<?xml version=\"1.0\"?>\n");
 
 	// export table name
 	if (!charstring::isNullOrEmpty(table)) {
-		fd->printf("<table name=\"%s\">\n",table);
+		fd->write("<table name=\"");
+		escapeField(fd,table);
+		fd->write("\">\n");
+	}
+
+	// call the pre-columns event
+	if (!columnsStart()) {
+		return false;
 	}
 
 	sqlrcursor	*sqlrcur=getSqlrCursor();
 	const char * const *columnstoignore=getColumnsToIgnore();
 
-	// export columns
+	// export columns...
 	uint32_t	cols=sqlrcur->colCount();
-	clearNumberColumns();
-	for (uint32_t j=0; j<cols; j++) {
-		setNumberColumn(j,isNumberTypeChar(sqlrcur->getColumnType(j)));
-		if (charstring::isInSet(sqlrcur->getColumnName(j),
-						columnstoignore)) {
-			cols--;
-		}
-	}
 	if (!getIgnoreColumns()) {
 		fd->printf("<columns count=\"%d\">\n",cols);
 	}
-	cols=sqlrcur->colCount();
-	if (!getIgnoreColumns()) {
-		for (uint32_t j=0; j<cols; j++) {
-			const char	*name=sqlrcur->getColumnName(j);
-			if (charstring::isInSet(name,columnstoignore)) {
-				continue;
-			}
-			fd->printf("	<column name=\"%s\" type=\"%s\"/>\n",
-						name,sqlrcur->getColumnType(j));
+	clearNumberColumns();
+	for (setCurrentColumn(0);
+		getCurrentColumn()<cols;
+		setCurrentColumn(getCurrentColumn()+1)) {
+
+		// set whether this is a numeric column or not
+		setNumberColumn(getCurrentColumn(),
+			isNumberTypeChar(sqlrcur->getColumnType(
+						getCurrentColumn())));
+
+		// set the current field
+		setCurrentField(sqlrcur->getColumnName(getCurrentColumn()));
+
+		// ignore particular columns
+		if (charstring::isInSet(getCurrentField(),columnstoignore)) {
+			continue;
 		}
-		fd->printf("</columns>\n");
+
+		if (!getIgnoreColumns()) {
+
+			// call the pre-column event
+			if (!columnStart()) {
+				return false;
+			}
+
+			// export the column name and type
+			fd->write("	<column name=\"");
+			escapeField(fd,getCurrentField());
+			fd->write("\" type=\"");
+			escapeField(fd,sqlrcur->getColumnType(
+						getCurrentField()));
+			fd->write("\"/>\n");
+
+			// call the post-column event
+			if (!columnEnd()) {
+				return false;
+			}
+		}
+	}
+
+	// call the post-columns event
+	// (we call this before closing the columns in case an overridden
+	// columnsEnd() wants to add more columns or something)
+	if (!columnsEnd()) {
+		return false;
+	}
+
+	if (!getIgnoreColumns()) {
+		fd->write("</columns>\n");
 	}
 
 	// call the pre-rows event
@@ -79,7 +116,7 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 	}
 
 	// export rows
-	fd->printf("<rows>\n");
+	fd->write("<rows>\n");
 	while (!sqlrcur->endOfResultSet() ||
 			getCurrentRow()<sqlrcur->rowCount()) {
 
@@ -93,7 +130,9 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 
 		// if rowStart() didn't disable export of this row...
 		if (getExportRow()) {
-			fd->printf("	<row>\n");
+
+			fd->write("	<row>\n");
+
 			for (setCurrentColumn(0);
 				getCurrentColumn()<cols;
 				setCurrentColumn(getCurrentColumn()+1)) {
@@ -122,9 +161,9 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 				}
 
 				// export the field
-				fd->printf("	<field>");
+				fd->write("	<field>");
 				escapeField(fd,getCurrentField());
-				fd->printf("</field>\n");
+				fd->write("</field>\n");
 
 				// call the post-field event
 				if (!fieldEnd()) {
@@ -142,19 +181,21 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 
 		// if rowStart() didn't disable export of this row...
 		if (getExportRow()) {
-			fd->printf("	</row>\n");
+			fd->write("	</row>\n");
 		}
 
 		setCurrentRow(getCurrentRow()+1);
 	}
 
-	fd->printf("</rows>\n");
-	fd->printf("</table>\n");
-
 	// call the post-rows event
+	// (we call this before closing the rows in case an overridden
+	// rowsEnd() wants to add more rows or something)
 	if (!rowsEnd()) {
 		return false;
 	}
+
+	fd->write("</rows>\n");
+	fd->write("</table>\n");
 
 	return true;
 }

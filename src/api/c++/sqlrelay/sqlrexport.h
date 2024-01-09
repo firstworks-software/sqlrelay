@@ -196,8 +196,8 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 							const char *table);
 
 		/** This method should be called by implementations of the
-		 *  exportTo*() methods, prior to the export of the result set
-		 *  header.
+		 *  exportTo*() methods, prior to the export of the columns of
+		 *  the result set.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -205,11 +205,11 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  Should return true on success and false if an error
 		 *  occurred and export should stop if this method return
 		 *  false. */
-		virtual	bool	headerStart();
+		virtual	bool	columnsStart();
 
 		/** This method should be called by implementations of the
 		 *  exportTo*() methods, prior to the export of each column of
-		 *  the result set header.
+		 *  the result set.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -221,7 +221,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 
 		/** This method should be called by implementations of the
 		 *  exportTo*() methods, after the export of each column of the
-		 *  result set header.
+		 *  result set.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -232,8 +232,8 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		virtual	bool	columnEnd();
 
 		/** This method should be called by implementations of the
-		 *  exportTo*() methods, after the export of the result set
-		 *  header.
+		 *  exportTo*() methods, after the export of the columns of
+		 *  the result set.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -241,7 +241,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  Should return true on success and false if an error
 		 *  occurred and export should stop if this method return
 		 *  false. */
-		virtual	bool	headerEnd();
+		virtual	bool	columnsEnd();
 
 		/** This method should be called by implementations of the
 		 *  exportTo*() methods, prior to the export of the rows of

@@ -36,15 +36,15 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 	}
 	filedescriptor	*fd=getFileDescriptor();
 
-	// call the pre-header event
-	if (!headerStart()) {
+	// call the pre-columns event
+	if (!columnsStart()) {
 		return false;
 	}
 
 	sqlrcursor	*sqlrcur=getSqlrCursor();
 	const char * const *columnstoignore=getColumnsToIgnore();
 
-	// export header
+	// export columns...
 	uint32_t	cols=sqlrcur->colCount();
 	clearNumberColumns();
 	bool	first=true;
@@ -52,11 +52,15 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 		getCurrentColumn()<cols;
 		setCurrentColumn(getCurrentColumn()+1)) {
 
+		// set whether this is a numeric column or not
 		setNumberColumn(getCurrentColumn(),
 			isNumberTypeChar(sqlrcur->getColumnType(
 						getCurrentColumn())));
 
+		// set the current field
 		setCurrentField(sqlrcur->getColumnName(getCurrentColumn()));
+
+		// ignore particular columns
 		if (charstring::isInSet(getCurrentField(),columnstoignore)) {
 			continue;
 		}
@@ -66,7 +70,7 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 			if (first) {
 				first=false;
 			} else {
-				fd->printf(",");
+				fd->write(',');
 			}
 
 			// call the pre-column event
@@ -74,6 +78,7 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 				return false;
 			}
 
+			// export the column name
 			bool	isnumber=
 				charstring::isNumber(getCurrentField());
 			if (!isnumber) {
@@ -91,10 +96,10 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 		}
 	}
 
-	// call the post-header event
-	// (we call this before closing the header in case an overridden
-	// headerEnd() wants to add more columns or something)
-	if (!headerEnd()) {
+	// call the post-columns event
+	// (we call this before closing the columns in case an overridden
+	// columnsEnd() wants to add more columns or something)
+	if (!columnsEnd()) {
 		return false;
 	}
 
@@ -127,7 +132,7 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 				getCurrentColumn()<cols;
 				setCurrentColumn(getCurrentColumn()+1)) {
 
-				// ignore particular fields
+				// ignore particular columns
 				if (columnstoignore) {
 					if (charstring::isInSet(
 						sqlrcur->getColumnName(
@@ -226,29 +231,32 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 	setCurrentColumn(0);
 	setCurrentField(NULL);
 
-	// call the pre-header event
-	if (!headerStart()) {
+	// call the pre-columns event
+	if (!columnsStart()) {
 		return false;
 	}
 
 	sqlrcursor	*sqlrcur=getSqlrCursor();
 	const char * const *columnstoignore=getColumnsToIgnore();
 
+	// export columns...
+	uint32_t	cols=sqlrcur->colCount();
 	domnode	*columns=jsondomnode->appendTag("columns");
 	columns->setAttributeValue("t","a");
-
-	// export header
-	uint32_t	cols=sqlrcur->colCount();
 	clearNumberColumns();
 	for (setCurrentColumn(0);
 		getCurrentColumn()<cols;
 		setCurrentColumn(getCurrentColumn()+1)) {
 
+		// set whether this is a numeric column or not
 		setNumberColumn(getCurrentColumn(),
 			isNumberTypeChar(sqlrcur->getColumnType(
 						getCurrentColumn())));
 
+		// set the current field
 		setCurrentField(sqlrcur->getColumnName(getCurrentColumn()));
+
+		// ignore particular columns
 		if (charstring::isInSet(getCurrentField(),columnstoignore)) {
 			continue;
 		}
@@ -260,6 +268,7 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 				return false;
 			}
 
+			// export the column name
 			bool	isnumber=
 				charstring::isNumber(getCurrentField());
 			domnode	*column=columns->appendTag("v");
@@ -280,10 +289,8 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 		}
 	}
 
-	// call the post-header event
-	// (we call this before closing the header in case an overridden
-	// headerEnd() wants to add more columns or something)
-	if (!headerEnd()) {
+	// call the post-columns event
+	if (!columnsEnd()) {
 		return false;
 	}
 
@@ -292,7 +299,7 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 		return false;
 	}
 
-	// export rows...
+	// export rows
 	do {
 
 		// reset export-row flag
@@ -313,7 +320,7 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 				getCurrentColumn()<cols;
 				setCurrentColumn(getCurrentColumn()+1)) {
 
-				// ignore particular fields
+				// ignore particular columns
 				if (columnstoignore) {
 					if (charstring::isInSet(
 						sqlrcur->getColumnName(
@@ -336,6 +343,7 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 					return false;
 				}
 
+				// export the field
 				domnode	*field=row->appendTag("v");
 				if (getNumberColumn(getCurrentColumn())) {
 					field->setAttributeValue("t","n");
@@ -355,15 +363,13 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 		}
 
 		// call the post-row event
-		// (we call this before closing the row in case an overridden
-		// rowEnd() wants to add more fields or something)
 		if (!rowEnd()) {
 			return false;
 		}
 
 		setCurrentRow(getCurrentRow()+1);
 
-	} while  (!sqlrcur->endOfResultSet() ||
+	} while (!sqlrcur->endOfResultSet() ||
 			getCurrentRow()<sqlrcur->rowCount());
 
 	// call the post-rows event

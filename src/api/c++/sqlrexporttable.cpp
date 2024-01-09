@@ -32,8 +32,8 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 	setCurrentColumn(0);
 	setCurrentField(NULL);
 
-	// call the pre-header event
-	if (!headerStart()) {
+	// call the pre-columns event
+	if (!columnsStart()) {
 		return false;
 	}
 
@@ -46,7 +46,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 	char		bf=(!charstring::isNullOrEmpty(bindformat))?
 							bindformat[0]:':';
 
-	// export header
+	// export bind variables...
 	uint32_t	cols=selectcur->colCount();
 	clearNumberColumns();
 	uint32_t	bindindex=1;
@@ -54,49 +54,52 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 		getCurrentColumn()<cols;
 		setCurrentColumn(getCurrentColumn()+1)) {
 
+		// set whether this is a numeric column or not
 		setNumberColumn(getCurrentColumn(),
 			isNumberTypeChar(selectcur->getColumnType(
 						getCurrentColumn())));
 
+		// set the current field
 		setCurrentField(selectcur->getColumnName(getCurrentColumn()));
+
+		// ignore particular columns
 		if (charstring::isInSet(getCurrentField(),columnstoignore)) {
 			continue;
 		}
 
-		if (!getIgnoreColumns()) {
+		if (bindindex>1) {
+			insertquery.append(',');
+		}
 
-			// call the pre-column event
-			if (!columnStart()) {
-				return false;
-			}
+		// call the pre-column event
+		if (!columnStart()) {
+			return false;
+		}
 
-			if (bindindex>1) {
-				insertquery.append(',');
-			}
-			if (bf=='?') {
-				insertquery.append('?');
-			} else if (bf=='$') {
-				insertquery.append('$')->append(bindindex);
-			} else if (bf=='@' || bf==':') {
-				insertquery.append(bf)->append(bindindex);
-			}
-			bindindex++;
+		// append the bind variable
+		if (bf=='?') {
+			insertquery.append('?');
+		} else if (bf=='$') {
+			insertquery.append('$')->append(bindindex);
+		} else if (bf=='@' || bf==':') {
+			insertquery.append(bf)->append(bindindex);
+		}
+		bindindex++;
 
-			// call the post-column event
-			if (!columnEnd()) {
-				return false;
-			}
+		// call the post-column event
+		if (!columnEnd()) {
+			return false;
 		}
 	}
 
-	insertquery.append(')');
-
-	// call the post-header event
-	// (we call this before closing the header in case an overridden
-	// headerEnd() wants to add more columns or something)
-	if (!headerEnd()) {
+	// call the post-columns event
+	// (we call this before closing the columns in case an overridden
+	// columnsEnd() wants to add more columns or something)
+	if (!columnsEnd()) {
 		return false;
 	}
+
+	insertquery.append(')');
 
 	// call the pre-rows event
 	if (!rowsStart()) {
@@ -116,7 +119,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 	dynamicarray<char *>	bindnames;
 	bindnames.setManageArrayValues(true);
 
-	// export rows...
+	// export bind values...
 	bool	success=true;
 	do {
 
@@ -145,7 +148,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 				getCurrentColumn()<cols;
 				setCurrentColumn(getCurrentColumn()+1)) {
 
-				// ignore particular fields
+				// ignore particular columns
 				if (columnstoignore) {
 					if (charstring::isInSet(
 						selectcur->getColumnName(
@@ -169,6 +172,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 					break;
 				}
 
+				// export the bind value
 				if (!bindnames[bindindex]) {
 					bindnames[bindindex]=
 					charstring::parseNumber(bindindex);
