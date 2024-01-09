@@ -34,9 +34,21 @@ void sqlrimport::setSqlrCursor(sqlrcursor *sqlrcur) {
 	this->sqlrcur=sqlrcur;
 }
 
+sqlrconnection *sqlrimport::getSqlrConnection() {
+	return sqlrcon;
+}
+
+sqlrcursor *sqlrimport::getSqlrCursor() {
+	return sqlrcur;
+}
+
 void sqlrimport::setDbType(const char *dbtype) {
 	delete[] this->dbtype;
 	this->dbtype=charstring::duplicate(dbtype);
+}
+
+const char *sqlrimport::getDbType() {
+	return dbtype;
 }
 
 void sqlrimport::setObjectName(const char *objectname) {
@@ -44,8 +56,16 @@ void sqlrimport::setObjectName(const char *objectname) {
 	this->objectname=charstring::duplicate(objectname);
 }
 
+const char *sqlrimport::getObjectName() {
+	return objectname;
+}
+
 void sqlrimport::setIgnoreColumns(bool ignorecolumns) {
 	this->ignorecolumns=ignorecolumns;
+}
+
+bool sqlrimport::getIgnoreColumns() {
+	return ignorecolumns;
 }
 
 void sqlrimport::mapColumnName(const char *from, const char *to) {
@@ -56,19 +76,35 @@ void sqlrimport::mapColumnName(const char *from, const char *to) {
 	}
 }
 
-void sqlrimport::mixedCaseColumnNames() {
+const char *sqlrimport::getMappedColumnName(const char *from) {
+	return columnmap.getValue(from);
+}
+
+void sqlrimport::setMixedCaseColumnNames() {
 	lowercasecolumnnames=false;
 	uppercasecolumnnames=false;
 }
 
-void sqlrimport::lowerCaseColumnNames() {
+bool sqlrimport::getMixedCaseColumnNames() {
+	return !lowercasecolumnnames && !uppercasecolumnnames;
+}
+
+void sqlrimport::setLowerCaseColumnNames() {
 	lowercasecolumnnames=true;
 	uppercasecolumnnames=false;
 }
 
-void sqlrimport::upperCaseColumnNames() {
+bool sqlrimport::getLowerCaseColumnNames() {
+	return lowercasecolumnnames;
+}
+
+void sqlrimport::setUpperCaseColumnNames() {
 	lowercasecolumnnames=false;
 	uppercasecolumnnames=true;
+}
+
+bool sqlrimport::getUpperCaseColumnNames() {
+	return uppercasecolumnnames;
 }
 
 void sqlrimport::mapFieldValue(const char *from, const char *to) {
@@ -79,26 +115,54 @@ void sqlrimport::mapFieldValue(const char *from, const char *to) {
 	}
 }
 
+const char *sqlrimport::getMappedFieldValue(const char *from) {
+	return fieldmap.getValue(from);
+}
+
 void sqlrimport::setCommitCount(uint64_t commitcount) {
 	this->commitcount=commitcount;
+}
+
+uint64_t sqlrimport::getCommitCount() {
+	return commitcount;
 }
 
 void sqlrimport::setLogger(logger *lg) {
 	this->lg=lg;
 }
 
+logger *sqlrimport::getLogger() {
+	return lg;
+}
+
 void sqlrimport::setCoarseLogLevel(uint8_t coarseloglevel) {
 	this->coarseloglevel=coarseloglevel;
+}
+
+uint8_t sqlrimport::getCoarseLogLevel() {
+	return coarseloglevel;
 }
 
 void sqlrimport::setFineLogLevel(uint8_t fineloglevel) {
 	this->fineloglevel=fineloglevel;
 }
 
+uint8_t sqlrimport::getFineLogLevel() {
+	return fineloglevel;
+}
+
 void sqlrimport::setLogIndent(uint32_t logindent) {
 	this->logindent=logindent;
 }
 
+uint32_t sqlrimport::getLogIndent() {
+	return logindent;
+}
+
 void sqlrimport::setLogErrors(bool logerrors) {
 	this->logerrors=logerrors;
+}
+
+bool sqlrimport::getLogErrors() {
+	return logerrors;
 }

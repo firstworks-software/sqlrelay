@@ -26,6 +26,14 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  will use to run queries. */
 		void	setSqlrCursor(sqlrcursor *sqlrcur);
 
+		/** Returns the instance of sqlrconnection that this instance
+ 		 *  is configured to use to connect to the database. */
+		sqlrconnection	*getSqlrConnection();
+
+		/** Returns the instance of sqlrursor that this instance
+ 		 *  is configured to use to connect to export data. */
+		sqlrcursor	*getSqlrCursor();
+
 		/** Sets the database type, which impacts how things like
 		 *  escaping, sequences, and auto-increment fields are handled.
 		 *  Should be one of "postgresql", "mysql", "firebird",
@@ -33,12 +41,18 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  NULL for generic handling.  Defaults to NULL. */
 		void	setDbType(const char *dbtype);
 
+		/** Returns the database type as set by setDbType(). */
+		const char	*getDbType();
+
 		/** By default, the name of the table or sequence to import
 		 *  data into is derived from the import file (eg. from the
 		 *  CSV file name, or from an XML tag inside of the file).
 		 *  This method may be used to explicitly override that name,
 		 *  or provide one if none can be derived. */
 		void	setObjectName(const char *objectname);
+
+		/** Returns the object name as set by setObjectName(). */
+		const char	*getObjectName();
 
 		/** If "ignorecolumns" is set false, then column information
 		 *  will be read from the import (eg. from the CSV header, from
@@ -57,22 +71,46 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  Defaults to false. */
 		void	setIgnoreColumns(bool ignorecolumns);
 
+		/** Returns whether or not column information will be
+		 *  ignored. */
+		bool	getIgnoreColumns();
+
 		/** Maps column name "from" to "to".  If "to" is NULL then
 		 *  the column is unmapped. */
 		void	mapColumnName(const char *from, const char *to);
 
+		/** Returns the name that "from" is mapped to, or NULL if
+		 *  "from" is not mapped to anything. */
+		const char	*getMappedColumnName(const char *from);
+
 		/** Leaves column names as-is. */
-		void	mixedCaseColumnNames();
+		void	setMixedCaseColumnNames();
+
+		/** Returns true if column names are left as-is and false
+		 *  otherwise. */
+		bool	getMixedCaseColumnNames();
 
 		/** Lower-cases colum names. */
-		void	lowerCaseColumnNames();
+		void	setLowerCaseColumnNames();
+
+		/** Returns true if column names are lower-cased and false
+		 *  otherwise. */
+		bool	getLowerCaseColumnNames();
 
 		/** Upper-cases colum names. */
-		void	upperCaseColumnNames();
+		void	setUpperCaseColumnNames();
+
+		/** Returns true if column names are upper-cased and false
+		 *  otherwise. */
+		bool	getUpperCaseColumnNames();
 
 		/** Maps field value "from" to "to".  If "to" is NULL then
 		 *  the field is unmapped. */
 		void	mapFieldValue(const char *from, const char *to);
+
+		/** Returns the value that "from" is mapped to, or NULL if
+		 *  "from" is not mapped to anything. */
+		const char	*getMappedFieldValue(const char *from);
 
 		/** Call commit after every "commitcount" inserts.  If set to 0
 		 *  then no commits will be called and the commit behavior will
@@ -80,9 +118,17 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  are connecting to.  Defaults to 0. */
 		void	setCommitCount(uint64_t commitcount);
 
-		/** Sets the logger instance to use.  If set to NULL then no
-		 *  logging will be done.  Defaults to NULL. */
+		/** Returns the commit count. */
+		uint64_t getCommitCount();
+
+		/** Sets the logger to use when logging progress to "lg".
+		 *  If "lg" is set to NULL then progress will not be logged.
+		 *  Defaults to NULL. */
 		void	setLogger(logger *lg);
+
+		/** Returns the logger that is set to use when logging
+ 		 *  progress or NULL if no logger is set. */
+		logger	*getLogger();
 
 		/** Sets the coarse log level.  General log messages will be
 		 *  logged at this level.  If the log level of "lg" (set by
@@ -91,6 +137,9 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  Defaults to 0. */
 		void	setCoarseLogLevel(uint8_t coarseloglevel);
 
+		/** Returns the coarse log level. */
+		uint8_t		getCoarseLogLevel();
+
 		/** Sets the fine log level.  Detailed log messages will be
 		 *  logged at this level.  If the log level of "lg" (set by
 		 *  setLogger() above) is set equal to or greater than
@@ -98,13 +147,23 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  Defaults to 9. */
 		void	setFineLogLevel(uint8_t fineloglevel);
 
+		/** Returns the fine log level. */
+		uint8_t		getFineLogLevel();
+
 		/** Sets the log indent level to "logindent".  Defaults to 0. */
 		void	setLogIndent(uint32_t logindent);
+
+		/** Returns the log indent. */
+		uint32_t	getLogIndent();
 
 		/** If "logerrors" is set true then SQL errors will be logged
 		 *  at the coarse log level.  If set false then SQL errors will
 		 *  not be logged.  Defaults to false. */
 		void	setLogErrors(bool logerrors);
+
+		/** Returns true if SQL errors will be logged at the coarse log
+		 *  level and false otherwise. */
+		bool	getLogErrors();
 
 		/** Imports data from "filename".  The table (or sequence)
 		 *  to import the data into will be derived from the import

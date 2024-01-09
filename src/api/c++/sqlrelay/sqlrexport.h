@@ -59,12 +59,13 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		const char * const *getColumnsToIgnore();
 
 		/** Sets the logger to use when logging progress to "lg".
-		 *  If "lg" is set to NULL then progress will not be logged. */
+		 *  If "lg" is set to NULL then progress will not be logged.
+		 *  Defaults to NULL. */
 		void	setLogger(logger *lg);
 
 		/** Returns the logger that is set to use when logging
  		 *  progress or NULL if no logger is set. */
-		logger		*getLogger();
+		logger	*getLogger();
 
 		/** Sets the coarse log level.  General log messages will be
 		 *  logged at this level.  If the log level of "lg" (set by
