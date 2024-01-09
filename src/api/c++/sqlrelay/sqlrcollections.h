@@ -30,7 +30,7 @@ class SQLRCLIENT_DLLSPEC sqlrscalar : public scalarcollection<const char *> {
 		 *  column that the instance returns fields from to "column". */
 		sqlrscalar(sqlrcursor *cursor, uint64_t row, uint64_t column);
 
-		/** Deletes this intance of the sqlrscalar class. */
+		/** Deletes this instance of the sqlrscalar class. */
 		~sqlrscalar();
 
 		/** Returns true. */
@@ -47,11 +47,11 @@ class SQLRCLIENT_DLLSPEC sqlrscalar : public scalarcollection<const char *> {
 		 *  to "col". */
 		void	setColumn(uint32_t col);
 
-		/** Returns the value stored in this intance.  Returns NULL or
+		/** Returns the value stored in this instance.  Returns NULL or
 		 *  0 if no value has been stored. */
 		const char	*getValue();
 
-		/** Returns a reference to the value stored in this intance. */
+		/** Returns a reference to the value stored in this instance. */
 		const char *	&getReference();
 
 		#include <sqlrelay/private/sqlrscalar.h>
@@ -110,7 +110,7 @@ class SQLRCLIENT_DLLSPEC sqlrrowlist : public listcollection<const char *> {
 		 *  the instance returns fields from to "row". */
 		sqlrrowlist(sqlrcursor *cursor, uint64_t row);
 
-		/** Deletes this intance of the sqlrrowlist class. */
+		/** Deletes this instance of the sqlrrowlist class. */
 		~sqlrrowlist();
 
 		/** Sets the cursor used by this instance to "cursor". */
@@ -179,7 +179,7 @@ class SQLRCLIENT_DLLSPEC sqlrrowdictionary :
 		 *  row that the instance returns fields from to "row". */
 		sqlrrowdictionary(sqlrcursor *cursor, uint64_t row);
 
-		/** Deletes this intance of the sqlrrowdictionary class. */
+		/** Deletes this instance of the sqlrrowdictionary class. */
 		~sqlrrowdictionary();
 
 		/** Sets the cursor used by this instance to "cursor". */
@@ -256,7 +256,7 @@ class SQLRCLIENT_DLLSPEC sqlrresultsetlist :
 		 *  column that the instance returns fields from to "col". */
 		sqlrresultsetlist(sqlrcursor *cursor, uint64_t col);
 
-		/** Deletes this intance of the sqlrresultsetlist
+		/** Deletes this instance of the sqlrresultsetlist
 		 *  class. */
 		~sqlrresultsetlist();
 
@@ -274,7 +274,7 @@ class SQLRCLIENT_DLLSPEC sqlrresultsetlist :
 		bool	isBlockBased();
 
 		/** Returns the result set buffer size of the cursor used by
- 		 *  this intance.  Returns 0 if the cursor is configured to
+ 		 *  this instance.  Returns 0 if the cursor is configured to
  		 *  fetch all rows at once. */
 		uint64_t	getBlockSize();
 
@@ -323,7 +323,7 @@ class SQLRCLIENT_DLLSPEC sqlrresultsettable :
 		 *  sets the cursor used by the instance to "cursor". */
 		sqlrresultsettable(sqlrcursor *cursor);
 
-		/** Deletes this intance of the sqlrresultsettable class. */
+		/** Deletes this instance of the sqlrresultsettable class. */
 		~sqlrresultsettable();
 
 		/** Sets the cursor used by this instance to "cursor". */
@@ -336,7 +336,7 @@ class SQLRCLIENT_DLLSPEC sqlrresultsettable :
 		bool	isBlockBased();
 
 		/** Returns the result set buffer size of the cursor used by
- 		 *  this intance.  Returns 0 if the cursor is configured to
+ 		 *  this instance.  Returns 0 if the cursor is configured to
  		 *  fetch all rows at once. */
 		uint64_t	getBlockSize();
 

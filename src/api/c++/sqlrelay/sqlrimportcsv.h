@@ -13,7 +13,7 @@ class SQLRCLIENT_DLLSPEC sqlrimportcsv : public sqlrimport, public csvsax {
 		/** Creates an instance of the sqlrimportcsv class. */
 		sqlrimportcsv();
 
-		/** Destroys this intance of the sqlrimportcsv class. */
+		/** Destroys this instance of the sqlrimportcsv class. */
 		~sqlrimportcsv();
 
 		/** Inserts a primary key at "primarykeycolumnindex".
