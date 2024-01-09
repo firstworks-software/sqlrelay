@@ -20,7 +20,50 @@ class SQLRCLIENT_DLLSPEC sqlrexportxml : public sqlrexport {
 		 *  "filename" in XML format.
 		 *
 		 *  If "table" is non-null then the table name is embedded in
-		 *  the XML file in the <table/> tag.
+		 *  the XML file in the <table/> tag.  If "table" is null then
+		 *  the <table> tag is omitted.
+		 *
+		 *  The XML format is as follows:
+		 *  (This example is a table of US states, exported from
+		 *  PostgreSQL)
+		 *
+		 *  <?xml version="1.0"?>
+		 *  <table name="states">
+		 *  <columns count="6">
+		 *          <column name="state_id" type="int4"/>
+		 *          <column name="state_name" type="varchar"/>
+		 *          <column name="state_abbreviation" type="varchar"/>
+		 *          <column name="latitude" type="numeric"/>
+		 *          <column name="longitude" type="numeric"/>
+		 *          <column name="creation_date" type="date"/>
+		 *  </columns>
+		 *  <rows>
+		 *          <row>
+		 *          <field>1</field>
+		 *          <field>Louisiana</field>
+		 *          <field>LA</field>
+		 *          <field>31.259800</field>
+		 *          <field>-92.658700</field>
+		 *          <field>2005-08-16</field>
+		 *          </row>
+		 *          <row>
+		 *          <field>2</field>
+		 *          <field>Texas</field>
+		 *          <field>TX</field>
+		 *          <field>31.653400</field>
+		 *          <field>-100.546900</field>
+		 *          <field>2005-08-17</field>
+		 *          </row>
+		 *          <row>
+		 *          <field>3</field>
+		 *          <field>Georgia</field>
+		 *          <field>GA</field>
+		 *          <field>32.750300</field>
+		 *          <field>-83.737800</field>
+		 *          <field>2005-08-16</field>
+		 *          </row>
+		 *  </rows>
+		 *  </table>
 		 *
 		 *  Returns true on success and false if an error occurred. */
 		bool	exportToFile(const char *filename, const char *table);
