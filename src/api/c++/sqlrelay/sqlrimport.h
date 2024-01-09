@@ -6,6 +6,10 @@
 
 #include <sqlrelay/private/sqlrimportincludes.h>
 
+/** The sqlrimport class provides a base class for child classes that wish to
+ *  implement import of data from a file into a database, via SQL Relay.  It
+ *  provides various common methods.  Each child class must implement the
+ *  importFromFile() method. */
 class SQLRCLIENT_DLLSPEC sqlrimport {
 	public:
 		/** Creates an instance of the sqlrimport class. */
@@ -37,15 +41,15 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		void	setObjectName(const char *objectname);
 
 		/** If "ignorecolumns" is set false, then column information
-		 *  will be read from the import file (eg, from the CSV header,
-		 *  or from XML tags inside of the file) and used to define the
+		 *  will be read from the import (eg. from the CSV header, from
+		 *  XML tags inside of the file, etc.) and used to define the
 		 *  column-order of the import data, which may be different
 		 *  from the column-order of the table, and may exclude
 		 *  nullable columns.
 		 *
 		 *  If "ignorecolumns" is set true, then any column information
-		 *  included in the import file will be ignored.  Import data
-		 *  will be assumed to be in the same column-order as the
+		 *  included in the import will be ignored.  Import data will
+		 *  be assumed to be in the same column-order as the
 		 *  column-order of the table.  This is useful, for example,
 		 *  when a CSV header contains different column names than the
 		 *  table.
@@ -105,7 +109,7 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		/** Imports data from "filename".  The table (or sequence)
 		 *  to import the data into will be derived from the import
 		 *  file (eg. from the CSV file name, or from an XML tag inside
-		 *  of the file) or may be overridden using setObjectName()
+		 *  of the file) and may be overridden using setObjectName()
 		 *  above. */
 		virtual	bool	importFromFile(const char *filename)=0;
 

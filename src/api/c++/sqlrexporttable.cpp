@@ -23,6 +23,7 @@ uint64_t sqlrexporttable::getCommitCount() {
 }
 
 bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
+						sqlrcursor *sqlrcur,
 						const char *table) {
 
 	// reset flags
@@ -37,7 +38,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 	}
 
 	sqlrcursor	*selectcur=getSqlrCursor();
-	const char * const *fieldstoignore=getFieldsToIgnore();
+	const char * const *columnstoignore=getColumnsToIgnore();
 
 	stringbuffer	insertquery;
 	insertquery.append("insert into ")->append(table)->append(" values (");
@@ -58,7 +59,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 						getCurrentColumn())));
 
 		setCurrentField(selectcur->getColumnName(getCurrentColumn()));
-		if (charstring::isInSet(getCurrentField(),fieldstoignore)) {
+		if (charstring::isInSet(getCurrentField(),columnstoignore)) {
 			continue;
 		}
 
@@ -108,8 +109,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 	}
 
 	// prepare query
-	sqlrcursor	*insertcur=new sqlrcursor(sqlrcon);
-	insertcur->prepareQuery(insertquery.getString(),
+	sqlrcur->prepareQuery(insertquery.getString(),
 				insertquery.getStringLength());
 
 	// set up array of bind names
@@ -146,11 +146,11 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 				setCurrentColumn(getCurrentColumn()+1)) {
 
 				// ignore particular fields
-				if (fieldstoignore) {
+				if (columnstoignore) {
 					if (charstring::isInSet(
 						selectcur->getColumnName(
 							getCurrentColumn()),
-						fieldstoignore)) {
+						columnstoignore)) {
 						continue;
 					}
 				}
@@ -173,7 +173,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 					bindnames[bindindex]=
 					charstring::parseNumber(bindindex);
 				}
-				insertcur->inputBind(
+				sqlrcur->inputBind(
 					bindnames[bindindex],
 					getCurrentField());
 				bindindex++;
@@ -195,13 +195,12 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 		// at this point, and no values should be bound.  In that case,
 		// we don't want to attempt to execute anything.
 		if (bindindex>1) {
-			if (!insertcur->executeQuery()) {
-stdoutput.printf("%s\n",insertcur->errorMessage());
+			if (!sqlrcur->executeQuery()) {
 				success=false;
 				break;
 			}
 		}
-		insertcur->clearBinds();
+		sqlrcur->clearBinds();
 
 		// call the post-row event
 		// (we call this before closing the row in case an overridden
@@ -220,9 +219,6 @@ stdoutput.printf("%s\n",insertcur->errorMessage());
 	if (commitcount) {
 		sqlrcon->commit();
 	}
-
-	// clean up
-	delete insertcur;
 
 	// call the post-rows event
 	if (!rowsEnd()) {

@@ -6,6 +6,7 @@
 
 #include <sqlrelay/private/sqlrimportcsvincludes.h>
 
+/** The sqlrimportcsv class implements sqlrimport for CSV files. */
 class SQLRCLIENT_DLLSPEC sqlrimportcsv : public sqlrimport, public csvsax {
 	public:
 
@@ -63,7 +64,8 @@ class SQLRCLIENT_DLLSPEC sqlrimportcsv : public sqlrimport, public csvsax {
 
 		/** Imports data from "filename".  The table (or sequence)
 		 *  to import the data into will be derived from the import
-		 *  file name or may be overridden using setObjectName(). */
+		 *  file name, and may be overridden using setObjectName().
+		 *  Returns true on success and false if an error occurred. */
 		bool	importFromFile(const char *filename);
 
 	protected:

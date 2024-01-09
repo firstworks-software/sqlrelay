@@ -42,7 +42,7 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 	}
 
 	sqlrcursor	*sqlrcur=getSqlrCursor();
-	const char * const *fieldstoignore=getFieldsToIgnore();
+	const char * const *columnstoignore=getColumnsToIgnore();
 
 	// export header
 	uint32_t	cols=sqlrcur->colCount();
@@ -57,7 +57,7 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 						getCurrentColumn())));
 
 		setCurrentField(sqlrcur->getColumnName(getCurrentColumn()));
-		if (charstring::isInSet(getCurrentField(),fieldstoignore)) {
+		if (charstring::isInSet(getCurrentField(),columnstoignore)) {
 			continue;
 		}
 
@@ -128,11 +128,11 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 				setCurrentColumn(getCurrentColumn()+1)) {
 
 				// ignore particular fields
-				if (fieldstoignore) {
+				if (columnstoignore) {
 					if (charstring::isInSet(
 						sqlrcur->getColumnName(
 							getCurrentColumn()),
-						fieldstoignore)) {
+						columnstoignore)) {
 						continue;
 					}
 				}
@@ -217,7 +217,8 @@ void sqlrexportcsv::escapeField(filedescriptor *fd, const char *field) {
 	}
 }
 
-bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode) {
+bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
+						const char *table) {
 
 	// reset flags
 	setExportRow(true);
@@ -231,7 +232,7 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode) {
 	}
 
 	sqlrcursor	*sqlrcur=getSqlrCursor();
-	const char * const *fieldstoignore=getFieldsToIgnore();
+	const char * const *columnstoignore=getColumnsToIgnore();
 
 	domnode	*columns=jsondomnode->appendTag("columns");
 	columns->setAttributeValue("t","a");
@@ -248,7 +249,7 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode) {
 						getCurrentColumn())));
 
 		setCurrentField(sqlrcur->getColumnName(getCurrentColumn()));
-		if (charstring::isInSet(getCurrentField(),fieldstoignore)) {
+		if (charstring::isInSet(getCurrentField(),columnstoignore)) {
 			continue;
 		}
 
@@ -313,11 +314,11 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode) {
 				setCurrentColumn(getCurrentColumn()+1)) {
 
 				// ignore particular fields
-				if (fieldstoignore) {
+				if (columnstoignore) {
 					if (charstring::isInSet(
 						sqlrcur->getColumnName(
 							getCurrentColumn()),
-						fieldstoignore)) {
+						columnstoignore)) {
 						continue;
 					}
 				}

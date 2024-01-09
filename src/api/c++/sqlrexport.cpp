@@ -7,7 +7,7 @@ sqlrexport::sqlrexport() {
 	sqlrcon=NULL;
 	sqlrcur=NULL;
 	ignorecolumns=false;
-	fieldstoignore=NULL;
+	columnstoignore=NULL;
 	fd=NULL;
 	exportrow=true;
 	currentrow=0;
@@ -15,9 +15,8 @@ sqlrexport::sqlrexport() {
 	currentfield=NULL;
 	lg=NULL;
 	coarseloglevel=0;
-	fineloglevel=0;
+	fineloglevel=9;
 	logindent=0;
-	shutdownflag=false;
 	exportedrowcount=0;
 }
 
@@ -48,12 +47,12 @@ bool sqlrexport::getIgnoreColumns() {
 	return ignorecolumns;
 }
 
-void sqlrexport::setFieldsToIgnore(const char * const *fieldstoignore) {
-	this->fieldstoignore=fieldstoignore;
+void sqlrexport::setColumnsToIgnore(const char * const *columnstoignore) {
+	this->columnstoignore=columnstoignore;
 }
 
-const char * const *sqlrexport::getFieldsToIgnore() {
-	return fieldstoignore;
+const char * const *sqlrexport::getColumnsToIgnore() {
+	return columnstoignore;
 }
 
 void sqlrexport::setLogger(logger *lg) {
@@ -86,10 +85,6 @@ uint8_t sqlrexport::getFineLogLevel() {
 
 uint32_t sqlrexport::getLogIndent() {
 	return logindent;
-}
-
-void sqlrexport::setShutdownFlag(bool *shutdownflag) {
-	this->shutdownflag=shutdownflag;
 }
 
 bool sqlrexport::headerStart() {
@@ -200,15 +195,24 @@ filedescriptor *sqlrexport::getFileDescriptor() {
 	return fd;
 }
 
+bool sqlrexport::exportToFile(const char *filename) {
+	return exportToFile(filename,NULL);
+}
+
 bool sqlrexport::exportToFile(const char *filename, const char *table) {
 	return true;
 }
 
-bool sqlrexport::exportToJsonDomNode(domnode *jsondomnode) {
+bool sqlrexport::exportToTable(sqlrconnection *sqlrcon,
+					sqlrcursor *sqlrcur,
+					const char *table) {
 	return true;
 }
 
-bool sqlrexport::exportToTable(sqlrconnection *sqlrcon, const char *table) {
-stdoutput.printf("sqlrexport::exportToTable()\n");
+bool sqlrexport::exportToJsonDomNode(domnode *jsondomnode) {
+	return exportToJsonDomNode(jsondomnode,NULL);
+}
+
+bool sqlrexport::exportToJsonDomNode(domnode *jsondomnode, const char *table) {
 	return true;
 }

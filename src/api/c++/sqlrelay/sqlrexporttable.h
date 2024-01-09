@@ -15,6 +15,7 @@ class SQLRCLIENT_DLLSPEC sqlrexporttable : public sqlrexport {
 		uint64_t	getCommitCount();
 
 		bool	exportToTable(sqlrconnection *sqlrcon,
+						sqlrcursor *sqlrcur,
 						const char *table);
 
 	#include <sqlrelay/private/sqlrexporttable.h>

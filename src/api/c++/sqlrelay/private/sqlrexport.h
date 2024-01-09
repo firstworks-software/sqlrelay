@@ -1,16 +1,11 @@
 // Copyright (c) 1999-2018 David Muse
 // See the file COPYING for more information
 
-	public:
-		virtual	bool	exportToJsonDomNode(domnode *jsondomnode);
-		virtual	bool	exportToTable(sqlrconnection *sqlrcon,
-							const char *table);
-
 	private:
 		sqlrconnection		*sqlrcon;
 		sqlrcursor		*sqlrcur;
 		bool			ignorecolumns;
-		const char * const	*fieldstoignore;
+		const char * const	*columnstoignore;
 		filedescriptor		*fd;
 		bool			exportrow;
 		uint64_t		currentrow;
@@ -20,6 +15,5 @@
 		uint8_t			coarseloglevel;
 		uint8_t			fineloglevel;
 		uint32_t		logindent;
-		bool			shutdownflag;
 		dynamicarray<bool>	numbercolumns;
 		uint64_t		exportedrowcount;

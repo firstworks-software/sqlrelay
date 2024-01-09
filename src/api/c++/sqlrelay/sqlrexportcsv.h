@@ -11,7 +11,10 @@ class SQLRCLIENT_DLLSPEC sqlrexportcsv : public sqlrexport {
 			sqlrexportcsv();
 			~sqlrexportcsv();
 
-		bool	exportToFile(const char *filename, const char *table);
+		bool	exportToFile(const char *filename,
+						const char *table);
+		bool	exportToJsonDomNode(domnode *jsondomnode,
+						const char *table);
 
 	#include <sqlrelay/private/sqlrexportcsv.h>
 };

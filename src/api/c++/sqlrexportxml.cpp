@@ -45,7 +45,7 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 	}
 
 	sqlrcursor	*sqlrcur=getSqlrCursor();
-	const char * const *fieldstoignore=getFieldsToIgnore();
+	const char * const *columnstoignore=getColumnsToIgnore();
 
 	// export columns
 	uint32_t	cols=sqlrcur->colCount();
@@ -53,7 +53,7 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 	for (uint32_t j=0; j<cols; j++) {
 		setNumberColumn(j,isNumberTypeChar(sqlrcur->getColumnType(j)));
 		if (charstring::isInSet(sqlrcur->getColumnName(j),
-						fieldstoignore)) {
+						columnstoignore)) {
 			cols--;
 		}
 	}
@@ -64,7 +64,7 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 	if (!getIgnoreColumns()) {
 		for (uint32_t j=0; j<cols; j++) {
 			const char	*name=sqlrcur->getColumnName(j);
-			if (charstring::isInSet(name,fieldstoignore)) {
+			if (charstring::isInSet(name,columnstoignore)) {
 				continue;
 			}
 			fd->printf("	<column name=\"%s\" type=\"%s\"/>\n",
@@ -98,12 +98,12 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 				getCurrentColumn()<cols;
 				setCurrentColumn(getCurrentColumn()+1)) {
 
-				// ignore particular fields
-				if (fieldstoignore) {
+				// ignore particular columns
+				if (columnstoignore) {
 					if (charstring::isInSet(
 						sqlrcur->getColumnName(
 							getCurrentColumn()),
-						fieldstoignore)) {
+						columnstoignore)) {
 						continue;
 					}
 				}
