@@ -129,6 +129,20 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 
 		/** Exports the result set of the cursor currently in use as
 		 *  set by the most recent call to setSqlrCursor() to the
+		 *  database table "table" using "sqlrcon".
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  Note that the default implementation of this method just
+		 *  uses sqlrcon to allocate an sqlrcursor, calls
+		 *  exportToTable(sqlrcon,sqlrcur,table), then frees the
+		 *  cursor.  Child classes that support export to a database
+		 *  table should override that exportToTable() method. */
+		virtual	bool	exportToTable(sqlrconnection *sqlrcon,
+							const char *table);
+
+		/** Exports the result set of the cursor currently in use as
+		 *  set by the most recent call to setSqlrCursor() to the
 		 *  database table "table" using "sqlrcon" and "sqlrcur".
 		 *
 		 *  Returns true on success and false if an error occurred.
