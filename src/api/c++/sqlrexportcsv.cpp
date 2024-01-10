@@ -19,6 +19,7 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 
 	// reset flags
 	setExportRow(true);
+	setExportedRowCount(0);
 	setCurrentRow(0);
 	setCurrentColumn(0);
 	setCurrentField(NULL);
@@ -200,6 +201,7 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 			fd->write('\n');
 		}
 
+		setExportedRowCount(getExportedRowCount()+1);
 		setCurrentRow(getCurrentRow()+1);
 	}
 
@@ -225,8 +227,9 @@ void sqlrexportcsv::escapeField(filedescriptor *fd, const char *field) {
 bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 						const char *table) {
 
-	// reset flags
+	// reset flags and counts
 	setExportRow(true);
+	setExportedRowCount(0);
 	setCurrentRow(0);
 	setCurrentColumn(0);
 	setCurrentField(NULL);
@@ -367,6 +370,7 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 			return false;
 		}
 
+		setExportedRowCount(getExportedRowCount()+1);
 		setCurrentRow(getCurrentRow()+1);
 
 	} while (!sqlrcur->endOfResultSet() ||

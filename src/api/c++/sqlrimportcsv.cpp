@@ -19,7 +19,6 @@ sqlrimportcsv::sqlrimportcsv() : sqlrimport(), csvsax() {
 	ignoreemptyrecords=false;
 	colcount=0;
 	currenttablecol=0;
-	currentcol=0;
 	numbercolumn=NULL;
 	datecolumn=NULL;
 	foundfieldtext=false;
@@ -83,6 +82,10 @@ void sqlrimportcsv::setIgnoreEmptyRecords(bool ignoreemptyrecords) {
 
 bool sqlrimportcsv::importFromFile(const char *filename) {
 
+	// reset flags
+	setCurrentRow(0);
+	setCurrentColumn(0);
+	setCurrentField(NULL);
 	delete[] numbercolumn;
 	delete[] datecolumn;
 	numbercolumn=NULL;
@@ -96,7 +99,9 @@ bool sqlrimportcsv::importFromFile(const char *filename) {
 }
 
 bool sqlrimportcsv::headerStart() {
-	return true;
+
+	// call the pr-columns event
+	return columnsStart();
 }
 
 bool sqlrimportcsv::column(const char *name, bool quoted) {
@@ -108,18 +113,31 @@ bool sqlrimportcsv::column(const char *name, bool quoted) {
 	}
 
 	// if this column is the primary key...
-	if (insertprimarykey && currentcol==primarykeycolumnindex) {
+	if (insertprimarykey && getCurrentColumn()==primarykeycolumnindex) {
 
 		// and we're building a list of column names from the ones
 		// specified in the CSV header, rather than just grabbing
 		// the columns from the table itself...
 		if (!ignorecolumns) {
 
+			// call the pre-column event
+			if (!columnStart()) {
+				return false;
+			}
+
 			// append the primary key name
 			columns[columns.getCount()]=
 				charstring::duplicate(primarykeycolumnname);
+
+			// set the current field
+			setCurrentField(columns[columns.getCount()]);
+
+			// call the post-column event
+			if (!columnEnd()) {
+				return false;
+			}
 		}
-		currentcol++;
+		setCurrentColumn(getCurrentColumn()+1);
 	}
 
 	// if there are any static columns...
@@ -130,7 +148,8 @@ bool sqlrimportcsv::column(const char *name, bool quoted) {
 
 			// get the static column name for this position
 			const char	*colname=
-				staticvaluecolumnnames.getValue(currentcol);
+				staticvaluecolumnnames.getValue(
+							getCurrentColumn());
 			if (!colname) {
 				break;
 			}
@@ -140,11 +159,24 @@ bool sqlrimportcsv::column(const char *name, bool quoted) {
 			// grabbing the columns from the table itself...
 			if (!ignorecolumns) {
 
+				// call the pre-column event
+				if (!columnStart()) {
+					return false;
+				}
+
 				// append the column name
 				columns[columns.getCount()]=
 					charstring::duplicate(colname);
+
+				// set the current field
+				setCurrentField(columns[columns.getCount()]);
+
+				// call the post-column event
+				if (!columnEnd()) {
+					return false;
+				}
 			}
-			currentcol++;
+			setCurrentColumn(getCurrentColumn()+1);
 		}
 	}
 
@@ -163,7 +195,7 @@ bool sqlrimportcsv::column(const char *name, bool quoted) {
 
 			// and put it in the list of columns to ignore when
 			// importing data later too
-			columnswithemptynames.append(currentcol);
+			columnswithemptynames.append(getCurrentColumn());
 		}
 	}
 
@@ -172,12 +204,25 @@ bool sqlrimportcsv::column(const char *name, bool quoted) {
 	// itself, and not ignoring this column because it's name was empty...
 	if (!ignorecolumns && includecolumn) {
 
+		// call the pre-column event
+		if (!columnStart()) {
+			return false;
+		}
+
 		// append the column name to the list of column names
 		columns[columns.getCount()]=charstring::duplicate(name);
+
+		// set the current field
+		setCurrentField(columns[columns.getCount()]);
+
+		// call the post-column event
+		if (!columnEnd()) {
+			return false;
+		}
 	}
 
 	// next...
-	currentcol++;
+	setCurrentColumn(getCurrentColumn()+1);
 
 	return true;
 }
@@ -235,25 +280,32 @@ bool sqlrimportcsv::headerEnd() {
 				"%ld columns",(unsigned long)colcount);
 	}
 
-	return true;
+	// call the post-columns event
+	return columnsEnd();
 }
 
 bool sqlrimportcsv::bodyStart() {
+
+	// reset counts
 	recordcount=0;
 	committedcount=0;
-	return true;
+	setImportedRowCount(0);
+
+	// call the pre-rows event
+	return rowsStart();
 }
 
 bool sqlrimportcsv::recordStart() {
 
-	// reset various flags and counters
+	// reset flags and counters
 	currenttablecol=0;
-	currentcol=0;
+	setCurrentColumn(0);
 	fieldcount=0;
 	emptyrecord=true;
 	columnswithemptynamesnode=columnswithemptynames.getFirst();
 
-	return true;
+	// call the pre-row event
+	return rowStart();
 }
 
 bool sqlrimportcsv::field(const char *value, bool quoted) {
@@ -261,7 +313,14 @@ bool sqlrimportcsv::field(const char *value, bool quoted) {
 	// if we're manually adding the primary key, and this is the primary
 	// key position, then add it
 	// (don't count this when determining if a record was empty or not)
-	if (insertprimarykey && currentcol==primarykeycolumnindex) {
+	if (insertprimarykey && getCurrentColumn()==primarykeycolumnindex) {
+
+		// call the pre-field event
+		if (!fieldStart()) {
+			return false;
+		}
+
+		// append the field
 		if (primarykeysequence) {
 			stringbuffer	tmp;
 			tmp.printf(sqlrcon->nextvalFormat(),primarykeysequence);
@@ -271,8 +330,16 @@ bool sqlrimportcsv::field(const char *value, bool quoted) {
 					charstring::duplicate("null");
 		}
 
+		// set the current field
+		setCurrentField(columns[fields.getCount()]);
+
+		// call the post-field event
+		if (!fieldEnd()) {
+			return false;
+		}
+
 		// next...
-		currentcol++;
+		setCurrentColumn(getCurrentColumn()+1);
 		currenttablecol++;
 		fieldcount++;
 	}
@@ -286,22 +353,37 @@ bool sqlrimportcsv::field(const char *value, bool quoted) {
 
 			// get the static column name for this position
 			const char	*colname=
-				staticvaluecolumnnames.getValue(currentcol);
+				staticvaluecolumnnames.getValue(
+							getCurrentColumn());
 			if (!colname) {
 				break;
 			}
 
 			// get the static column value for this position
 			const char	*colvalue=
-				staticvaluecolumnvalues.getValue(currentcol);
+				staticvaluecolumnvalues.getValue(
+							getCurrentColumn());
+
+			// call the pre-field event
+			if (!fieldStart()) {
+				return false;
+			}
 
 			// append the field
 			stringbuffer	tmp;
 			appendField(&tmp,colvalue,0,true);
 			fields[fields.getCount()]=tmp.detachString();
 
+			// set the current field
+			setCurrentField(columns[fields.getCount()]);
+
+			// call the post-field event
+			if (!fieldEnd()) {
+				return false;
+			}
+
 			// next...
-			currentcol++;
+			setCurrentColumn(getCurrentColumn()+1);
 			currenttablecol++;
 			fieldcount++;
 		}
@@ -312,7 +394,8 @@ bool sqlrimportcsv::field(const char *value, bool quoted) {
 	bool	includefield=true;
 	if (ignorecolumnswithemptynames &&
 			columnswithemptynamesnode &&
-			currentcol==columnswithemptynamesnode->getValue()) {
+			getCurrentColumn()==
+				columnswithemptynamesnode->getValue()) {
 		includefield=false;
 		columnswithemptynamesnode=columnswithemptynamesnode->getNext();
 	}
@@ -333,20 +416,33 @@ bool sqlrimportcsv::field(const char *value, bool quoted) {
 			emptyrecord=false;
 		}
 
+		// call the pre-field event
+		if (!fieldStart()) {
+			return false;
+		}
+
 		// append the field
 		stringbuffer	tmp;
 		appendField(&tmp,value,currenttablecol,false);
 		fields[fields.getCount()]=tmp.detachString();
 
+		// set the current field
+		setCurrentField(columns[fields.getCount()]);
+
+		// call the post-field event
+		if (!fieldEnd()) {
+			return false;
+		}
+
 		// next...
-		currentcol++;
+		setCurrentColumn(getCurrentColumn()+1);
 		currenttablecol++;
 		fieldcount++;
 
 	} else {
 
 		// next column...
-		currentcol++;
+		setCurrentColumn(getCurrentColumn()+1);
 	}
 
 	return true;
@@ -435,7 +531,9 @@ bool sqlrimportcsv::recordEnd() {
 
 	// ignore empty records, if we're configured to do so
 	if (ignoreemptyrecords && emptyrecord) {
-		return true;
+
+		// call the row-end event
+		return rowEnd();
 	}
 
 	// build query
@@ -532,6 +630,15 @@ bool sqlrimportcsv::recordEnd() {
 			sqlrcon->begin();
 		}
 	}
+
+	// call the row-end event
+	if (!rowEnd()) {
+		return false;
+	}
+
+	setImportedRowCount(getImportedRowCount()+1);
+	setCurrentRow(getCurrentRow()+1);
+
 	return true;
 }
 
@@ -559,7 +666,8 @@ bool sqlrimportcsv::bodyEnd() {
 		delete[] columns[i];
 	}
 
-	return true;
+	// call the rows-end event
+	return rowsEnd();
 }
 
 

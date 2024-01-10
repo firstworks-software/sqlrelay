@@ -172,7 +172,6 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  above. */
 		virtual	bool	importFromFile(const char *filename)=0;
 
-#if 0
 		/** This method should be called by implementations of the
 		 *  importFrom*() methods, prior to the import of the columns of
 		 *  the result set.
@@ -295,8 +294,51 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 
 		/** Returns the number of rows that were imported by the most
 		 *  recent call to one of the importFrom*() methods. */
-		virtual uint64_t	getImportedRowCount();
-#endif
+		uint64_t	getImportedRowCount();
+
+	protected:
+
+		/** This method may be called by implementations of the
+		 *  importFrom*() methods, or by implementations of the various
+		 *  Start()/End() methods to set the index of the row that is
+		 *  currently being imported. */
+		void	setCurrentRow(uint64_t currentrow);
+
+		/** This method may be called by implementations of the
+		 *  importFrom*() methods, or by implementations of the various
+		 *  Start()/End() methods to get the index of the row that is
+		 *  currently being imported. */
+		uint64_t	getCurrentRow();
+
+		/** This method may be called by implementations of the
+		 *  importFrom*() methods, or by implementations of the various
+		 *  Start()/End() methods to set the index of the column that is
+		 *  currently being imported. */
+		void	setCurrentColumn(uint32_t currentcol);
+
+		/** This method may be called by implementations of the
+		 *  importFrom*() methods, or by implementations of the various
+		 *  Start()/End() methods to get the index of the column that is
+		 *  currently being imported. */
+		uint32_t	getCurrentColumn();
+
+		/** This method may be called by implementations of the
+		 *  importFrom*() methods, or by implementations of the various
+		 *  Start()/End() methods to set the name of the field that is
+		 *  currently being imported. */
+		void	setCurrentField(const char *currentfield);
+
+		/** This method may be called by implementations of the
+		 *  importFrom*() methods, or by implementations of the various
+		 *  Start()/End() methods to get the name of the field that is
+		 *  currently being imported. */
+		const char	*getCurrentField();
+
+		/** This method may be called by implementations of the
+		 *  importFrom*() methods, or by implementations of the various
+		 *  Start()/End() methods to set the number of rows that have
+		 *  been imported. */
+		void setImportedRowCount(uint64_t importedrowcount);
 
 	#include <sqlrelay/private/sqlrimport.h>
 };

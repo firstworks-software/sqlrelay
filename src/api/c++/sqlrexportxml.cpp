@@ -19,6 +19,7 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 
 	// reset flags
 	setExportRow(true);
+	setExportedRowCount(0);
 	setCurrentRow(0);
 	setCurrentColumn(0);
 	setCurrentField(NULL);
@@ -184,6 +185,7 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 			fd->write("	</row>\n");
 		}
 
+		setExportedRowCount(getExportedRowCount()+1);
 		setCurrentRow(getCurrentRow()+1);
 	}
 

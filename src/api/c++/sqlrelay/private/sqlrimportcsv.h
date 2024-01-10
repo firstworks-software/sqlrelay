@@ -4,7 +4,7 @@
 	private:
 		void	appendField(stringbuffer *query,
 					const char *value,
-					uint32_t currentcol,
+					uint32_t currenttablecol,
 					bool overrideisstring);
 		void	escapeField(stringbuffer *strb, const char *field);
 
@@ -19,7 +19,6 @@
 		stringbuffer	query;
 		uint32_t	colcount;
 		uint32_t	currenttablecol;
-		uint32_t	currentcol;
 		bool		*numbercolumn;
 		bool		*datecolumn;
 		bool		foundfieldtext;

@@ -176,17 +176,18 @@ bool sqlrimportxml::sequenceTagStart() {
 
 bool sqlrimportxml::columnsTagStart() {
 	currenttag=COLUMNSTAG;
-	return true;
+	return columnsStart();
 }
 
 bool sqlrimportxml::columnTagStart() {
 	currenttag=COLUMNTAG;
-	return true;
+	return columnStart();
 }
 
 bool sqlrimportxml::rowsTagStart() {
 	currenttag=ROWSTAG;
-	return true;
+	setImportedRowCount(0);
+	return rowsStart();
 }
 
 bool sqlrimportxml::rowTagStart() {
@@ -196,14 +197,14 @@ bool sqlrimportxml::rowTagStart() {
 	currenttag=ROWTAG;
 	currentcol=0;
 	fieldcount=0;
-	return true;
+	return rowStart();
 }
 
 bool sqlrimportxml::fieldTagStart() {
 	currenttag=FIELDTAG;
 	infield=true;
 	foundfieldtext=false;
-	return true;
+	return fieldStart();
 }
 
 
@@ -326,16 +327,16 @@ bool sqlrimportxml::columnsTagEnd() {
 		lg->write(coarseloglevel,NULL,logindent,
 				"%ld columns",(unsigned long)currentcol);
 	}
-	return true;
+	return columnsEnd();
 }
 
 bool sqlrimportxml::columnTagEnd() {
 	currentcol++;
-	return true;
+	return columnEnd();
 }
 
 bool sqlrimportxml::rowsTagEnd() {
-	return true;
+	return rowsEnd();
 }
 
 bool sqlrimportxml::rowTagEnd() {
@@ -374,6 +375,10 @@ bool sqlrimportxml::rowTagEnd() {
 			sqlrcon->begin();
 		}
 	}
+	if (!rowEnd()) {
+		return false;
+	}
+	setImportedRowCount(getImportedRowCount()+1);
 	return true;
 }
 
@@ -387,7 +392,7 @@ bool sqlrimportxml::fieldTagEnd() {
 	infield=false;
 	currentcol++;
 	fieldcount++;
-	return true;
+	return fieldEnd();
 }
 
 bool sqlrimportxml::text(const char *string) {

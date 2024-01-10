@@ -108,7 +108,6 @@ bool sqlrexport::columnsEnd() {
 }
 
 bool sqlrexport::rowsStart() {
-	exportedrowcount=0;
 	return true;
 }
 
@@ -128,15 +127,16 @@ bool sqlrexport::fieldEnd() {
 }
 
 bool sqlrexport::rowEnd() {
-	if (exportrow) {
-		exportedrowcount++;
-	}
 	return true;
 }
 
 bool sqlrexport::rowsEnd() {
 	// by default, just return success
 	return true;
+}
+
+void sqlrexport::setExportedRowCount(uint64_t exportedrowcount) {
+	this->exportedrowcount=exportedrowcount;
 }
 
 uint64_t sqlrexport::getExportedRowCount() {

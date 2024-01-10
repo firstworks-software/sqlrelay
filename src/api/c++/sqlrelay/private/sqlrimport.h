@@ -8,6 +8,9 @@
 		char		*objectname;
 		bool		ignorecolumns;
 		uint64_t	commitcount;
+		uint64_t	currentrow;
+		uint32_t	currentcol;
+		const char	*currentfield;
 		logger		*lg;
 		uint8_t		coarseloglevel;
 		uint8_t		fineloglevel;

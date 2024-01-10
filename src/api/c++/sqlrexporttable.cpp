@@ -26,8 +26,9 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 						sqlrcursor *sqlrcur,
 						const char *table) {
 
-	// reset flags
+	// reset flags and counts
 	setExportRow(true);
+	setExportedRowCount(0);
 	setCurrentRow(0);
 	setCurrentColumn(0);
 	setCurrentField(NULL);
@@ -214,6 +215,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 			break;
 		}
 
+		setExportedRowCount(getExportedRowCount()+1);
 		setCurrentRow(getCurrentRow()+1);
 
 	} while  (!selectcur->endOfResultSet() ||

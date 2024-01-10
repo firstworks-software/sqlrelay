@@ -12,6 +12,9 @@ sqlrimport::sqlrimport() {
 	objectname=NULL;
 	ignorecolumns=false;
 	commitcount=0;
+	currentrow=0;
+	currentcol=0;
+	currentfield=NULL;
 	lg=NULL;
 	coarseloglevel=0;
 	fineloglevel=9;
@@ -168,7 +171,6 @@ bool sqlrimport::getLogErrors() {
 	return logerrors;
 }
 
-#if 0
 bool sqlrimport::columnsStart() {
 	// by default, just return success
 	return true;
@@ -190,7 +192,6 @@ bool sqlrimport::columnsEnd() {
 }
 
 bool sqlrimport::rowsStart() {
-	importedrowcount=0;
 	return true;
 }
 
@@ -210,7 +211,6 @@ bool sqlrimport::fieldEnd() {
 }
 
 bool sqlrimport::rowEnd() {
-	importedrowcount++;
 	return true;
 }
 
@@ -219,7 +219,34 @@ bool sqlrimport::rowsEnd() {
 	return true;
 }
 
+void sqlrimport::setImportedRowCount(uint64_t importedrowcount) {
+	this->importedrowcount=importedrowcount;
+}
+
 uint64_t sqlrimport::getImportedRowCount() {
 	return importedrowcount;
 }
-#endif
+
+void sqlrimport::setCurrentRow(uint64_t currentrow) {
+	this->currentrow=currentrow;
+}
+
+uint64_t sqlrimport::getCurrentRow() {
+	return currentrow;
+}
+
+void sqlrimport::setCurrentColumn(uint32_t currentcol) {
+	this->currentcol=currentcol;
+}
+
+uint32_t sqlrimport::getCurrentColumn() {
+	return currentcol;
+}
+
+void sqlrimport::setCurrentField(const char *currentfield) {
+	this->currentfield=currentfield;
+}
+
+const char *sqlrimport::getCurrentField() {
+	return currentfield;
+}

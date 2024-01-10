@@ -318,7 +318,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 
 		/** Returns the number of rows that were exported by the most
 		 *  recent call to one of the exportTo*() methods. */
-		virtual uint64_t	getExportedRowCount();
+		uint64_t	getExportedRowCount();
 
 	protected:
 
@@ -338,7 +338,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  exportTo*() methods, or by implementations of the various
 		 *  Start()/End() methods to set the index of the row that is
 		 *  currently being exported. */
-		void		setCurrentRow(uint64_t currentrow);
+		void	setCurrentRow(uint64_t currentrow);
 
 		/** This method may be called by implementations of the
 		 *  exportTo*() methods, or by implementations of the various
@@ -350,7 +350,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  exportTo*() methods, or by implementations of the various
 		 *  Start()/End() methods to set the index of the column that is
 		 *  currently being exported. */
-		void		setCurrentColumn(uint32_t currentcol);
+		void	setCurrentColumn(uint32_t currentcol);
 
 		/** This method may be called by implementations of the
 		 *  exportTo*() methods, or by implementations of the various
@@ -362,7 +362,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  exportTo*() methods, or by implementations of the various
 		 *  Start()/End() methods to set the name of the field that is
 		 *  currently being exported. */
-		void		setCurrentField(const char *currentfield);
+		void	setCurrentField(const char *currentfield);
 
 		/** This method may be called by implementations of the
 		 *  exportTo*() methods, or by implementations of the various
@@ -388,10 +388,16 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  columns to non-numeric. */
 		void	clearNumberColumns();
 
+		/** This method may be called by implementations of the
+		 *  exportTo*() methods, or by implementations of the various
+		 *  Start()/End() methods to set the number of rows that have
+		 *  been exported. */
+		void setExportedRowCount(uint64_t exportedrowcount);
+
 		/** This method may be called by implementations of
  		 *  exportToFile() to set the file descriptor to which to
  		 *  export data. */
-		void		setFileDescriptor(filedescriptor *fd);
+		void	setFileDescriptor(filedescriptor *fd);
 
 		/** This method may be called by implementations of
 		 *  exportToFile() to get the file descriptor to which data is
