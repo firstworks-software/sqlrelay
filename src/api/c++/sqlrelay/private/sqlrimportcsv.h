@@ -14,7 +14,7 @@
 		char		*primarykeysequence;
 
 		bool		ignorecolumnswithemptynames;
-		bool		ignoreemptyrows;
+		bool		ignoreemptyrecords;
 
 		stringbuffer	query;
 		uint32_t	colcount;
@@ -24,8 +24,8 @@
 		bool		*datecolumn;
 		bool		foundfieldtext;
 		uint32_t	fieldcount;
-		bool		emptyrow;
-		uint64_t	rowcount;
+		bool		emptyrecord;
+		uint64_t	recordcount;
 		uint64_t	committedcount;
 
 		linkedlist<uint32_t>		columnswithemptynames;

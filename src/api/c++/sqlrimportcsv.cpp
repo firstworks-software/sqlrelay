@@ -16,7 +16,7 @@ sqlrimportcsv::sqlrimportcsv() : sqlrimport(), csvsax() {
 	primarykeycolumnindex=0;
 	primarykeysequence=NULL;
 	ignorecolumnswithemptynames=false;
-	ignoreemptyrows=false;
+	ignoreemptyrecords=false;
 	colcount=0;
 	currenttablecol=0;
 	currentcol=0;
@@ -24,8 +24,8 @@ sqlrimportcsv::sqlrimportcsv() : sqlrimport(), csvsax() {
 	datecolumn=NULL;
 	foundfieldtext=false;
 	fieldcount=0;
-	emptyrow=true;
-	rowcount=0;
+	emptyrecord=true;
+	recordcount=0;
 	committedcount=0;
 	columnswithemptynamesnode=NULL;
 	staticvaluecolumnnames.setManageArrayValues(true);
@@ -77,8 +77,8 @@ void sqlrimportcsv::setIgnoreColumnsWithEmptyNames(
 	this->ignorecolumnswithemptynames=ignorecolumnswithemptynames;
 }
 
-void sqlrimportcsv::setIgnoreEmptyRows(bool ignoreemptyrows) {
-	this->ignoreemptyrows=ignoreemptyrows;
+void sqlrimportcsv::setIgnoreEmptyRecords(bool ignoreemptyrecords) {
+	this->ignoreemptyrecords=ignoreemptyrecords;
 }
 
 bool sqlrimportcsv::importFromFile(const char *filename) {
@@ -239,7 +239,7 @@ bool sqlrimportcsv::headerEnd() {
 }
 
 bool sqlrimportcsv::bodyStart() {
-	rowcount=0;
+	recordcount=0;
 	committedcount=0;
 	return true;
 }
@@ -250,7 +250,7 @@ bool sqlrimportcsv::recordStart() {
 	currenttablecol=0;
 	currentcol=0;
 	fieldcount=0;
-	emptyrow=true;
+	emptyrecord=true;
 	columnswithemptynamesnode=columnswithemptynames.getFirst();
 
 	return true;
@@ -260,7 +260,7 @@ bool sqlrimportcsv::field(const char *value, bool quoted) {
 
 	// if we're manually adding the primary key, and this is the primary
 	// key position, then add it
-	// (don't count this when determining if a row was empty or not)
+	// (don't count this when determining if a record was empty or not)
 	if (insertprimarykey && currentcol==primarykeycolumnindex) {
 		if (primarykeysequence) {
 			stringbuffer	tmp;
@@ -278,7 +278,7 @@ bool sqlrimportcsv::field(const char *value, bool quoted) {
 	}
 
 	// if there are any static columns...
-	// (don't count these when determining if a row was empty or not)
+	// (don't count these when determining if a record was empty or not)
 	if (staticvaluecolumnnames.getCount()) {
 
 		// loop, handling them
@@ -329,8 +329,8 @@ bool sqlrimportcsv::field(const char *value, bool quoted) {
 		// check for a non-empty field
 		// (do this AFTER remapping the field in case some set
 		// of values get mapped to empty strings or NULLs)
-		if (emptyrow && !charstring::isNullOrEmpty(value)) {
-			emptyrow=false;
+		if (emptyrecord && !charstring::isNullOrEmpty(value)) {
+			emptyrecord=false;
 		}
 
 		// append the field
@@ -433,8 +433,8 @@ void sqlrimportcsv::appendField(stringbuffer *query,
 
 bool sqlrimportcsv::recordEnd() {
 
-	// ignore empty rows, if we're configured to do so
-	if (ignoreemptyrows && emptyrow) {
+	// ignore empty records, if we're configured to do so
+	if (ignoreemptyrecords && emptyrecord) {
 		return true;
 	}
 
@@ -479,8 +479,8 @@ bool sqlrimportcsv::recordEnd() {
 	if (fieldcount) {
 
 		// if we're committing every so often, and this is the very
-		// first row, then begin a transaction
-		if (commitcount && !rowcount) {
+		// first record, then begin a transaction
+		if (commitcount && !recordcount) {
 			sqlrcon->begin();
 		}
 
@@ -496,19 +496,19 @@ bool sqlrimportcsv::recordEnd() {
 			}
 		}
 
-		// bump the rowcount
-		rowcount++;
+		// bump the recordcount
+		recordcount++;
 
 		// log
-		if (lg && !(rowcount%100)) {
+		if (lg && !(recordcount%100)) {
 			lg->write(fineloglevel,NULL,logindent,
-					"imported %lld rows",
-					(unsigned long long)rowcount);
+					"imported %lld records",
+					(unsigned long long)recordcount);
 		}
 
 		// if we're committing every so often, and it's time to commit,
 		// then commit, log and begin a new transaction
-		if (commitcount && !(rowcount%commitcount)) {
+		if (commitcount && !(recordcount%commitcount)) {
 
 			sqlrcon->commit();
 			committedcount++;
@@ -516,14 +516,16 @@ bool sqlrimportcsv::recordEnd() {
 			if (lg) {
 				if (!(committedcount%10)) {
 					lg->write(fineloglevel,NULL,logindent,
-						"committed %lld rows "
+						"committed %lld records "
 						"(to %s)...",
-						(unsigned long long)rowcount,
+						(unsigned long long)
+						recordcount,
 						objectname);
 				} else {
 					lg->write(fineloglevel,NULL,logindent,
-						"committed %lld rows",
-						(unsigned long long)rowcount);
+						"committed %lld records",
+						(unsigned long long)
+						recordcount);
 				}
 			}
 
@@ -537,8 +539,8 @@ bool sqlrimportcsv::bodyEnd() {
 
 	if (lg) {
 		lg->write(coarseloglevel,NULL,logindent,
-				"imported %lld rows",
-				(unsigned long long)rowcount);
+				"imported %lld records",
+				(unsigned long long)recordcount);
 	}
 
 	// final commit
@@ -546,8 +548,8 @@ bool sqlrimportcsv::bodyEnd() {
 		sqlrcon->commit();
 		if (lg) {
 			lg->write(coarseloglevel,NULL,logindent,
-					"committed %lld rows (to %s)",
-					(unsigned long long)rowcount,
+					"committed %lld records (to %s)",
+					(unsigned long long)recordcount,
 					objectname);
 		}
 	}

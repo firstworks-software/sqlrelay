@@ -35,7 +35,8 @@ class SQLRCLIENT_DLLSPEC sqlrimportcsv : public sqlrimport, public csvsax {
 		 *  to insertPrimaryKey(). */
 		void	removePrimaryKey();
 
-		/** Inserts static value "value" at "columnindex" for all rows.
+		/** Inserts static value "value" at "columnindex" for all
+		 *  records.
 		 *
 		 *  If setIgnoreColumns(false) is set (the default) then
 		 *  "columnname" must be supplied.  Otherwise it can be set to
@@ -59,8 +60,8 @@ class SQLRCLIENT_DLLSPEC sqlrimportcsv : public sqlrimport, public csvsax {
 		void	setIgnoreColumnsWithEmptyNames(
 					bool ignorecolumnswithemptynames);
 
-		/** Configures the instance to ignore empty rows. */
-		void	setIgnoreEmptyRows(bool ignoreemptyrows);
+		/** Configures the instance to ignore empty records. */
+		void	setIgnoreEmptyRecords(bool ignoreemptyrecords);
 
 		/** Imports data from "filename".  The table (or sequence)
 		 *  to import the data into will be derived from the import
