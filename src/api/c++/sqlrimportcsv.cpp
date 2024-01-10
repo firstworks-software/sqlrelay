@@ -95,6 +95,10 @@ bool sqlrimportcsv::importFromFile(const char *filename) {
 	return csvsax::parseFile(filename);
 }
 
+bool sqlrimportcsv::headerStart() {
+	return true;
+}
+
 bool sqlrimportcsv::column(const char *name, bool quoted) {
 
 	// remap the name, if the name has been mapped
@@ -240,7 +244,7 @@ bool sqlrimportcsv::bodyStart() {
 	return true;
 }
 
-bool sqlrimportcsv::rowStart() {
+bool sqlrimportcsv::recordStart() {
 
 	// reset various flags and counters
 	currenttablecol=0;
@@ -427,7 +431,7 @@ void sqlrimportcsv::appendField(stringbuffer *query,
 	}
 }
 
-bool sqlrimportcsv::rowEnd() {
+bool sqlrimportcsv::recordEnd() {
 
 	// ignore empty rows, if we're configured to do so
 	if (ignoreemptyrows && emptyrow) {

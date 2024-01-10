@@ -13,6 +13,7 @@
 		uint8_t		fineloglevel;
 		uint32_t	logindent;
 		bool		logerrors;
+		uint64_t	importedrowcount;
 
 		bool		lowercasecolumnnames;
 		bool		uppercasecolumnnames;

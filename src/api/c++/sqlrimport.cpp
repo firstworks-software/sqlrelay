@@ -19,6 +19,7 @@ sqlrimport::sqlrimport() {
 	logerrors=true;
 	lowercasecolumnnames=false;
 	uppercasecolumnnames=false;
+	importedrowcount=0;
 }
 
 sqlrimport::~sqlrimport() {
@@ -166,3 +167,59 @@ void sqlrimport::setLogErrors(bool logerrors) {
 bool sqlrimport::getLogErrors() {
 	return logerrors;
 }
+
+#if 0
+bool sqlrimport::columnsStart() {
+	// by default, just return success
+	return true;
+}
+
+bool sqlrimport::columnStart() {
+	// by default, just return success
+	return true;
+}
+
+bool sqlrimport::columnEnd() {
+	// by default, just return success
+	return true;
+}
+
+bool sqlrimport::columnsEnd() {
+	// by default, just return success
+	return true;
+}
+
+bool sqlrimport::rowsStart() {
+	importedrowcount=0;
+	return true;
+}
+
+bool sqlrimport::rowStart() {
+	// by default, just return success
+	return true;
+}
+
+bool sqlrimport::fieldStart() {
+	// by default, just return success
+	return true;
+}
+
+bool sqlrimport::fieldEnd() {
+	// by default, just return success
+	return true;
+}
+
+bool sqlrimport::rowEnd() {
+	importedrowcount++;
+	return true;
+}
+
+bool sqlrimport::rowsEnd() {
+	// by default, just return success
+	return true;
+}
+
+uint64_t sqlrimport::getImportedRowCount() {
+	return importedrowcount;
+}
+#endif

@@ -69,6 +69,14 @@ class SQLRCLIENT_DLLSPEC sqlrimportcsv : public sqlrimport, public csvsax {
 		bool	importFromFile(const char *filename);
 
 	protected:
+		/** Called when the start of the header is encountered, even if
+		 *  setColumnNames(true) is set.  May be overridden to do
+		 *  application-specific work upon encountring the beginning of
+		 *  the header.  Returns false if an error occurred when
+		 *  processing the end of the header and true otherwise.
+		 *  Overridden methods may return false to stop processing. */
+		virtual	bool	headerStart();
+
 		/** Called when a column is encountered in the CSV header, even
 		 *  if setColumnNames(true) is set.  May be overridden to do
 		 *  application-specific work upon encountering a column.
@@ -95,13 +103,13 @@ class SQLRCLIENT_DLLSPEC sqlrimportcsv : public sqlrimport, public csvsax {
 		 *  stop processing. */
 		virtual	bool	bodyStart();
 
-		/** Called when the beginning of a row is encountered.
+		/** Called when the beginning of a record is encountered.
 		 *  May be overridden to do application-specific work upon
-		 *  encountering the start of a row. Returns false if an
-		 *  error occurred when processing the start of a row and
+		 *  encountering the start of a record. Returns false if an
+		 *  error occurred when processing the start of a record and
 		 *  true otherwise.  Overridden methods may return false to
 		 *  stop processing. */
-		virtual	bool	rowStart();
+		virtual	bool	recordStart();
 
 		/** Called when a field is encountered.  May be overridden to
 		 *  do application-specific work upon encountering a field.
@@ -112,13 +120,13 @@ class SQLRCLIENT_DLLSPEC sqlrimportcsv : public sqlrimport, public csvsax {
 		 *  false to stop processing. */
 		virtual	bool	field(const char *value, bool quoted);
 
-		/** Called when the end of a row is encountered.  May be
+		/** Called when the end of a record is encountered.  May be
 		 *  overridden to do application-specific work upon
-		 *  encountering the end of a row. Returns false if an
-		 *  error occurred when processing the end of a row and
+		 *  encountering the end of a record. Returns false if an
+		 *  error occurred when processing the end of a record and
 		 *  true otherwise.  Overridden methods may return false to
 		 *  stop processing. */
-		virtual	bool	rowEnd();
+		virtual	bool	recordEnd();
 
 		/** Called when the end of the CSV body is encountered.  May
 		 *  be overridden to do application-specific work upon
