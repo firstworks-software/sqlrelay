@@ -331,7 +331,7 @@ bool sqlrimportcsv::field(const char *value, bool quoted) {
 		}
 
 		// set the current field
-		setCurrentField(columns[fields.getCount()]);
+		setCurrentField(fields[fields.getCount()]);
 
 		// call the post-field event
 		if (!fieldEnd()) {
@@ -375,7 +375,7 @@ bool sqlrimportcsv::field(const char *value, bool quoted) {
 			fields[fields.getCount()]=tmp.detachString();
 
 			// set the current field
-			setCurrentField(columns[fields.getCount()]);
+			setCurrentField(fields[fields.getCount()]);
 
 			// call the post-field event
 			if (!fieldEnd()) {
@@ -427,7 +427,7 @@ bool sqlrimportcsv::field(const char *value, bool quoted) {
 		fields[fields.getCount()]=tmp.detachString();
 
 		// set the current field
-		setCurrentField(columns[fields.getCount()]);
+		setCurrentField(fields[fields.getCount()]);
 
 		// call the post-field event
 		if (!fieldEnd()) {

@@ -30,7 +30,6 @@
 		unsigned short	currenttag;
 		char		*currentattribute;
 
-		stringbuffer	query;
 		char		*table;
 		char		*sequence;
 		char		*sequencevalue;

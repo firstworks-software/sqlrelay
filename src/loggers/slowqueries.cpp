@@ -7,7 +7,6 @@
 #include <rudiments/file.h>
 #include <rudiments/permissions.h>
 #include <rudiments/filesystem.h>
-#include <rudiments/stringbuffer.h>
 
 class SQLRSERVER_DLLSPEC sqlrlogger_slowqueries : public sqlrlogger {
 	public:
@@ -30,18 +29,26 @@ class SQLRSERVER_DLLSPEC sqlrlogger_slowqueries : public sqlrlogger {
 		uint64_t	totalusec;
 		bool		usecommand;
 		bool		enabled;
+		bool		sync;
+
+		datetime	dt;
+		char		datebuffer[27];
+		char		querysecbuffer[7];
 };
 
 sqlrlogger_slowqueries::sqlrlogger_slowqueries(sqlrloggers *ls,
 						domnode *parameters) :
 						sqlrlogger(ls,parameters) {
 	querylogname=NULL;
-	sec=charstring::convertToInteger(parameters->getAttributeValue("sec"));
-	usec=charstring::convertToInteger(parameters->getAttributeValue("usec"));
+	sec=charstring::convertToInteger(
+				parameters->getAttributeValue("sec"));
+	usec=charstring::convertToInteger(
+				parameters->getAttributeValue("usec"));
 	totalusec=sec*1000000+usec;
 	usecommand=!charstring::compareIgnoringCase(
 			parameters->getAttributeValue("timer"),"command");
 	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
+	sync=charstring::isYes(parameters->getAttributeValue("sync"));
 }
 
 sqlrlogger_slowqueries::~sqlrlogger_slowqueries() {
@@ -140,9 +147,8 @@ bool sqlrlogger_slowqueries::run(sqlrlistener *sqlrl,
 	// log times
 	if (queryusec>=totalusec) {
 
-		datetime	dt;
+		// get the date/time as a string
 		dt.initFromSystemDateTime();
-		char	datebuffer[26];
 		charstring::printf(datebuffer,sizeof(datebuffer),
 					"%s %d %s % 2d  %02d:%02d:%02d",
 					days[dt.getDayOfWeek()-1],
@@ -152,19 +158,31 @@ bool sqlrlogger_slowqueries::run(sqlrlistener *sqlrl,
 					dt.getHour(),
 					dt.getMinute(),
 					dt.getSecond());
+
+		// get the query duration as a string
+		charstring::printf(querysecbuffer,sizeof(querysecbuffer),
+					"%.*f",6,querysec);
 		
-		stringbuffer	logentry;
-		logentry.append(datebuffer)->append(" :\n");
-		logentry.append(sqlrcur->getQueryBuffer());
-		logentry.append("\n");
-		logentry.append("execution time: ")->append(querysec,6);
-		logentry.append("\n");
-		if ((size_t)querylog.write(logentry.getString(),
-					logentry.getStringLength())!=
-						logentry.getStringLength()) {
+		// write the log entry
+		if (querylog.write(datebuffer)!=
+				(ssize_t)charstring::getLength(datebuffer) ||
+			querylog.write(" :\n",3)!=3 ||
+			querylog.write(sqlrcur->getQueryBuffer(),
+					sqlrcur->getQuerySize())!=
+				(ssize_t)sqlrcur->getQuerySize() ||
+			querylog.write('\n')!=1 ||
+			querylog.write("execution time: ",16)!= 16 ||
+			querylog.write(querysecbuffer)!=
+				(ssize_t)charstring::getLength(
+							querysecbuffer) ||
+			querylog.write('\n')!=1) {
 			return false;
 		}
-		//querylog.flushWriteBuffer(-1,-1);
+
+		// flush, if we need to
+		if (sync) {
+			querylog.flushWriteBuffer(-1,-1);
+		}
 	}
 	return true;
 }

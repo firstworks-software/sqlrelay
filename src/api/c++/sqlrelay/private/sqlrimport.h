@@ -22,3 +22,7 @@
 		bool		uppercasecolumnnames;
 		dictionary<const char *, const char *>	columnmap;
 		dictionary<const char *, const char *>	fieldmap;
+
+		stringbuffer		query;
+		dynamicarray<char *>	columns;
+		dynamicarray<char *>	fields;

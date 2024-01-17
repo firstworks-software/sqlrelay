@@ -16,7 +16,6 @@
 		bool		ignorecolumnswithemptynames;
 		bool		ignoreemptyrecords;
 
-		stringbuffer	query;
 		uint32_t	colcount;
 		uint32_t	currenttablecol;
 		bool		*numbercolumn;
@@ -32,6 +31,3 @@
 
 		dictionary<uint32_t, char *>	staticvaluecolumnnames;
 		dictionary<uint32_t, char *>	staticvaluecolumnvalues;
-
-		dynamicarray<char *>		columns;
-		dynamicarray<char *>		fields;

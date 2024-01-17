@@ -8238,12 +8238,16 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>This module takes two attributes: <b>sec</b> and <b>usec</b>.  Queries that take longer than <b>sec</b> seconds and <b>usec</b> microseconds will be logged.  Both attributes default to 0 and omitting them causes all queries to be logged.</p>
+<p>This module takes three attributes: <b>sec</b>, <b>usec</b>, and <b>sync</b>.</p>
+
+<p>Queries that take longer than <b>sec</b> seconds and <b>usec</b> microseconds will be logged.  Both attributes default to 0 and omitting them causes all queries to be logged.</p>
+
+<p>If <b>sync</b> is set to "yes" then data will be written to the log synchronously, that is, data will be written to the log immediately and completely after each query has been executed.  This degrades performance, sometimes significantly, but makes it easier to monitor the log.  If <b>sync</b> is set to "no" (the default) then data will be written to the log asynchronously, that is, data may not be written to the log immediately or completely after each query has been executed.  This improves performance, sometimes significantly, but makes it it more difficult to monitor the log, and may require an sqlr-stop to be executed for the final bit of data to be written to the log.</p>
 
 <p>The general format is:</p>
 
 <blockquote>
-  <pre>Mon 2014 Apr  6 15:58:17 :
+  <pre>Mon 2014 Apr  6  15:58:17 :
 select 1 from dual
 time: 0.000001
 </pre>
