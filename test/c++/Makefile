@@ -30,10 +30,11 @@ all: db2 \
 	mysqlupsert \
 	mysqldeadlockreplay \
 	mysqlsplitmultiinsert \
+	mysqlexportimport \
 	postgresqlupsert
 
 clean:
-	$(RM) *.lo *.o *.obj db2$(EXE) db27$(EXE) db26$(EXE) freetds$(EXE) firebird$(EXE) informix$(EXE) mysql$(EXE) oracleclobfetch$(EXE) oracleclobinsert$(EXE) oracle$(EXE) oracle8$(EXE) oracle7$(EXE) postgresql$(EXE) sqlite$(EXE) sap$(EXE) router$(EXE) extensions$(EXE) krb$(EXE) tls$(EXE) mysqldeadlockreplay$(EXE) mysqlsplitmultiinsert$(EXE) emoji$(EXE) mysqlupsert$(EXE) postgresqlupsert$(EXE) cachefile* sqlnet.log
+	$(RM) *.lo *.o *.obj db2$(EXE) db27$(EXE) db26$(EXE) freetds$(EXE) firebird$(EXE) informix$(EXE) mysql$(EXE) oracleclobfetch$(EXE) oracleclobinsert$(EXE) oracle$(EXE) oracle8$(EXE) oracle7$(EXE) postgresql$(EXE) sqlite$(EXE) sap$(EXE) router$(EXE) extensions$(EXE) krb$(EXE) tls$(EXE) mysqldeadlockreplay$(EXE) mysqlsplitmultiinsert$(EXE) mysqlupsert$(EXE) mysqlexportimport$(EXE) emoji$(EXE) postgresqlupsert$(EXE) *.csv cachefile* sqlnet.log
 	$(RMTREE) .libs
 
 db2: db2.cpp db2.$(OBJ)
@@ -98,11 +99,14 @@ mysqldeadlockreplay: mysqldeadlockreplay.cpp mysqldeadlockreplay.$(OBJ)
 mysqlsplitmultiinsert: mysqlsplitmultiinsert.cpp mysqlsplitmultiinsert.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) mysqlsplitmultiinsert.$(OBJ) $(CPPTESTLIBS)
 
-emoji: emoji.cpp emoji.$(OBJ)
-	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) emoji.$(OBJ) $(CPPTESTLIBS)
-
 mysqlupsert: mysqlupsert.cpp mysqlupsert.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) mysqlupsert.$(OBJ) $(CPPTESTLIBS)
+
+mysqlexportimport: mysqlexportimport.cpp mysqlexportimport.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) mysqlexportimport.$(OBJ) $(CPPTESTLIBS)
+
+emoji: emoji.cpp emoji.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) emoji.$(OBJ) $(CPPTESTLIBS)
 
 postgresqlupsert: postgresqlupsert.cpp postgresqlupsert.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) postgresqlupsert.$(OBJ) $(CPPTESTLIBS)

@@ -15,6 +15,10 @@ sqlrexportcsv::sqlrexportcsv() {
 sqlrexportcsv::~sqlrexportcsv() {
 }
 
+bool sqlrexportcsv::exportToFile(const char *filename) {
+	return sqlrexport::exportToFile(filename);
+}
+
 bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 
 	// reset flags
@@ -222,6 +226,10 @@ void sqlrexportcsv::escapeField(filedescriptor *fd, const char *field) {
 			fd->write(*f);
 		}
 	}
+}
+
+bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode) {
+	return sqlrexport::exportToJsonDomNode(jsondomnode);
 }
 
 bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,

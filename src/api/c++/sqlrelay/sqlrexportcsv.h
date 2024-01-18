@@ -22,8 +22,8 @@ class SQLRCLIENT_DLLSPEC sqlrexportcsv : public sqlrexport {
 		 *  The "table" argument is ignored in this implementation.
 		 *
 		 *  Returns true on success and false if an error occurred. */
-		bool	exportToFile(const char *filename,
-						const char *table);
+		virtual	bool	exportToFile(const char *filename,
+							const char *table);
 
 		/** Exports the result set of the cursor currently in use as
 		 *  set by the most recent call to setSqlrCursor() to the
@@ -32,8 +32,8 @@ class SQLRCLIENT_DLLSPEC sqlrexportcsv : public sqlrexport {
 		 *  The "table" argument is ignored in this implementation.
 		 *
 		 *  Returns true on success and false if an error occurred. */
-		bool	exportToJsonDomNode(domnode *jsondomnode,
-						const char *table);
+		virtual	bool	exportToJsonDomNode(domnode *jsondomnode,
+							const char *table);
 
 	#include <sqlrelay/private/sqlrexportcsv.h>
 };
