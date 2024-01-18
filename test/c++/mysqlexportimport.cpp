@@ -11,10 +11,10 @@
 #include <rudiments/randomnumber.h>
 #include <rudiments/stdio.h>
 
-#define ROWS 10000
+//#define ROWS 10000
 //#define ROWS 1000
 //#define ROWS 100
-//#define ROWS 10
+#define ROWS 10
 //#define ROWS 2
 //#define ROWS 1
 
@@ -81,28 +81,35 @@ void checkSuccess(uint64_t value, uint64_t success) {
 	}
 }
 
-const char * const columns[]={
-	"testsmallint",
-	"testmediumint",
-	"testint",
-	"testbigint",
-	"testfloat",
-	"testreal",
-	"testdecimal",
-	"testdate",
-	"testtime",
-	"testdatetime",
-	"testchar",
-	"testvarchar",
-	"testtext",
-	"testtinytext",
-	"testmediumtext",
-	"testlongtext",
-	"testblob",
-	"testtinyblob",
-	"testmediumblob",
-	"testlongblob",
-	NULL
+struct field_t {
+	const char	*name;
+	const char	*type;
+	const char	*pattern;
+	bool		quote;
+};
+
+field_t field[]={
+	{"testsmallint","smallint","%lld",false},
+	{"testmediumint","mediumint","%lld",false},
+	{"testint","int","%lld",false},
+	{"testbigint","bigint","%lld",false},
+	{"testfloat","float","%lld.1",false},
+	{"testreal","real","%lld.1",false},
+	{"testdecimal","decimal(5,1)","%lld.1",false},
+	{"testdate","date","%04lld-01-01",true},
+	{"testtime","time","01:00:00",true},
+	{"testdatetime","datetime","%04lld-01-01 01:00:00",true},
+	{"testchar","char(40)","char%lld",true},
+	{"testvarchar","varchar(40)","varchar%lld",true},
+	{"testtext","text","text%lld",true},
+	{"testtinytext","tinytext","tinytext%lld",true},
+	{"testmediumtext","mediumtext","mediumtext%lld",true},
+	{"testlongtext","longtext","longtext%lld",true},
+	{"testblob","blob","blob%lld",true},
+	{"testtinyblob","tinyblob","tinyblob%lld",true},
+	{"testmediumblob","mediumblob","mediumblob%lld",true,},
+	{"testlongblob","longblob","longblob%lld",true},
+	{NULL,NULL,NULL,false}
 };
 
 void generateComparisonFile(const char *filename,
@@ -125,23 +132,17 @@ void generateComparisonFile(const char *filename,
 	comparison.setWriteBufferSize(optblocksize);
 
 	// write header, ignoring columns to ignore,
-	// determining indexes to ignore
-	uint16_t			index=0;
-	dictionary<uint32_t,bool>	indexestoignore;
-	bool				first=true;
 	stringbuffer			header;
-	for (const char * const *c=columns; *c; c++) {
-		if (!charstring::isInSet(*c,columnstoignore)) {
-			if (!first) {
-				header.append(',');
-			}
-			header.append('"')->append(*c)->append('"');
-			first=false;
-			indexestoignore.setValue(index,false);
-		} else {
-			indexestoignore.setValue(index,true);
+	for (uint64_t col=0; field[col].name; col++) {
+		if (charstring::isInSet(field[col].name,columnstoignore)) {
+			continue;
 		}
-		index++;
+		if (header.getSize()) {
+			header.append(',');
+		}
+		header.append('"');
+		header.append(field[col].name);
+		header.append('"');
 	}
 	if (!ignorecolumns) {
 		header.append('\n');
@@ -149,157 +150,34 @@ void generateComparisonFile(const char *filename,
 					header.getStringLength());
 	}
 
-	// write records, ignoring index to ignore
-	bool	success=true;
+	// write records, ignoring indexes as appropriate
 	stringbuffer	record;
-	for (uint64_t i=0; i<ROWS && success; i++) {
-		first=true;
-		if (!indexestoignore.getValue(0)) {
-			record.printf("%lld",i);
-			first=false;
-		}
-		if (!indexestoignore.getValue(1)) {
-			if (!first) {
+	for (uint64_t row=0; row<ROWS; row++) {
+		for (uint32_t col=0; field[col].name; col++) {
+			if (charstring::isInSet(field[col].name,
+							columnstoignore)) {
+				continue;
+			}
+			if (record.getSize()) {
 				record.append(',');
 			}
-			record.printf("%lld",i);
-			first=false;
-		}
-		if (!indexestoignore.getValue(2)) {
-			if (!first) {
-				record.append(',');
+			if (field[col].quote) {
+				record.append('"');
 			}
-			record.printf("%lld",i);
-			first=false;
-		}
-		if (!indexestoignore.getValue(3)) {
-			if (!first) {
-				record.append(',');
+			record.printf(field[col].pattern,row);
+			if (field[col].quote) {
+				record.append('"');
 			}
-			record.printf("%lld",i);
-			first=false;
-		}
-		if (!indexestoignore.getValue(4)) {
-			if (!first) {
-				record.append(',');
-			}
-			record.printf("%.*f",1,((double)i+0.1));
-			first=false;
-		}
-		if (!indexestoignore.getValue(5)) {
-			if (!first) {
-				record.append(',');
-			}
-			record.printf("%.*f",1,((double)i+0.1));
-			first=false;
-		}
-		if (!indexestoignore.getValue(6)) {
-			if (!first) {
-				record.append(',');
-			}
-			record.printf("%.*f",1,((double)i+0.1));
-			first=false;
-		}
-		if (!indexestoignore.getValue(7)) {
-			if (!first) {
-				record.append(',');
-			}
-			record.printf("\"%04d-01-01\"",i);
-			first=false;
-		}
-		if (!indexestoignore.getValue(8)) {
-			if (!first) {
-				record.append(',');
-			}
-			record.printf("\"01:00:00\"",i);
-			first=false;
-		}
-		if (!indexestoignore.getValue(9)) {
-			if (!first) {
-				record.append(',');
-			}
-			record.printf("\"%04d-01-01 01:00:00\"",i);
-			first=false;
-		}
-		if (!indexestoignore.getValue(10)) {
-			if (!first) {
-				record.append(',');
-			}
-			record.printf("\"char%d\"",i);
-			first=false;
-		}
-		if (!indexestoignore.getValue(11)) {
-			if (!first) {
-				record.append(',');
-			}
-			record.printf("\"varchar%d\"",i);
-			first=false;
-		}
-		if (!indexestoignore.getValue(12)) {
-			if (!first) {
-				record.append(',');
-			}
-			record.printf("\"text%d\"",i);
-			first=false;
-		}
-		if (!indexestoignore.getValue(13)) {
-			if (!first) {
-				record.append(',');
-			}
-			record.printf("\"tinytext%d\"",i);
-			first=false;
-		}
-		if (!indexestoignore.getValue(14)) {
-			if (!first) {
-				record.append(',');
-			}
-			record.printf("\"mediumtext%d\"",i);
-			first=false;
-		}
-		if (!indexestoignore.getValue(15)) {
-			if (!first) {
-				record.append(',');
-			}
-			record.printf("\"longtext%d\"",i);
-			first=false;
-		}
-		if (!indexestoignore.getValue(16)) {
-			if (!first) {
-				record.append(',');
-			}
-			record.printf("\"blob%d\"",i);
-			first=false;
-		}
-		if (!indexestoignore.getValue(17)) {
-			if (!first) {
-				record.append(',');
-			}
-			record.printf("\"tinyblob%d\"",i);
-			first=false;
-		}
-		if (!indexestoignore.getValue(18)) {
-			if (!first) {
-				record.append(',');
-			}
-			record.printf("\"mediumblob%d\"",i);
-			first=false;
-		}
-		if (!indexestoignore.getValue(19)) {
-			if (!first) {
-				record.append(',');
-			}
-			record.printf("\"longblob%d\"",i);
-			first=false;
 		}
 		record.append('\n');
 		if (comparison.write(record.getString(),
 					record.getStringLength())!=
 					(ssize_t)record.getStringLength()) {
-			success=false;
+			checkSuccess(0,1);
 		}
 		record.clear();
 	}
-	checkSuccess(success,1);
+	checkSuccess(1,1);
 
 	comparison.flushWriteBuffer(-1,-1);
 }
@@ -333,7 +211,6 @@ void diffFiles(const char *filename1, const char *filename2) {
 	checkSuccess(f2.open(filename2,O_RDONLY),1);
 	f2.setReadBufferSize(obs2);
 
-	bool	success=true;
 	for (;;) {
 
 		// lines
@@ -346,18 +223,16 @@ void diffFiles(const char *filename1, const char *filename2) {
 
 		// fail if the sizes are different then
 		if (size1!=size2) {
-			success=false;
 			delete[] line1;
 			delete[] line2;
-			break;
+			checkSuccess(0,1);
 		}
 
 		// fail if the lines are not the same
 		if (charstring::compare(line1,line2)) {
-			success=false;
 			delete[] line1;
 			delete[] line2;
-			break;
+			checkSuccess(0,1);
 		}
 
 		// bail if we failed to read either line
@@ -367,7 +242,7 @@ void diffFiles(const char *filename1, const char *filename2) {
 			break;
 		}
 	}
-	checkSuccess(success,1);
+	checkSuccess(1,1);
 }
 
 int main(int argc, char **argv) {
@@ -376,6 +251,7 @@ int main(int argc, char **argv) {
 	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
+	stringbuffer	query;
 
 	// clean up
 	cur->sendQuery("drop table testtable");
@@ -384,54 +260,42 @@ int main(int argc, char **argv) {
 
 	// create a new table
 	stdoutput.printf("CREATE TEMPTABLE: \n");
-	checkSuccess(cur->sendQuery(
-			"create table testtable ("
-			"testsmallint smallint, "
-			"testmediumint mediumint, "
-			"testint int, "
-			"testbigint bigint, "
-			"testfloat float, "
-			"testreal real, "
-			"testdecimal decimal(5,1), "
-			"testdate date, "
-			"testtime time, "
-			"testdatetime datetime, "
-			"testchar char(40), "
-			"testvarchar varchar(40), "
-			"testtext text, "
-			"testtinytext tinytext, "
-			"testmediumtext mediumtext, "
-			"testlongtext longtext, "
-			"testblob blob, "
-			"testtinyblob tinyblob, "
-			"testmediumblob mediumblob, "
-			"testlongblob longblob)"),1);
+	query.append("create table testtable (");
+	for (uint64_t col=0; field[col].name; col++) {
+		if (col) {
+			query.append(',');
+		}
+		query.append(field[col].name);
+		query.append(' ');
+		query.append(field[col].type);
+	}
+	query.append(')');
+	checkSuccess(cur->sendQuery(query.getString()),1);
 	stdoutput.printf("\n");
 
 	// insert
 	stdoutput.printf("INSERT: \n");
-	stringbuffer	query;
-	bool success=true;
-	for (uint64_t i=0; i<ROWS && success; i++) {
-		query.printf("insert into testtable values "
-			"(%lld,%lld,%lld,%lld,"
-			"%.*f,%.*f,%.*f,"
-			"'%04d-01-01','01:00:00','%04d-01-01 01:00:00',"
-			"'char%d','varchar%d','text%d','tinytext%d',"
-			"'mediumtext%d','longtext%d','blob%d','tinyblob%d',"
-			"'mediumblob%d','longblob%d')",
-			i,i,i,i,
-			1,((double)i+0.1),1,((double)i+0.1),1,((double)i+0.1),
-			i,i,
-			i,i,i,i,
-			i,i,i,i,
-			i,i);
-		if (!cur->sendQuery(query.getString())) {
-			success=false;
-		}
+	for (uint64_t row=0; row<ROWS; row++) {
 		query.clear();
+		query.append("insert into testtable values (");
+		for (uint32_t col=0; field[col].pattern; col++) {
+			if (col) {
+				query.append(',');
+			}
+			if (field[col].quote) {
+				query.append('\'');
+			}
+			query.printf(field[col].pattern,row);
+			if (field[col].quote) {
+				query.append('\'');
+			}
+		}
+		query.append(')');
+		if (!cur->sendQuery(query.getString())) {
+			checkSuccess(0,1);
+		}
 	}
-	checkSuccess(success,1);
+	checkSuccess(1,1);
 	stdoutput.printf("\n");
 
 	// set up export
@@ -461,7 +325,7 @@ int main(int argc, char **argv) {
 			ignorecolumns=true;
 		} else if (iteration>=2 && iteration<=21) {
 			// for iterations 2-21, exclude individual columns
-			const char	*col=columns[iteration-2];
+			const char	*col=field[iteration-2].name;
 			columnstoignore=new const char *[2];
 			columnstoignore[0]=col;
 			columnstoignore[1]=NULL;
@@ -480,12 +344,12 @@ int main(int argc, char **argv) {
 			stringbuffer	opt;
 			opt.append("IGNORE ");
 			columnstoignore=new const char *[11];
+			uint32_t	rn;
 			for (uint8_t i=0; i<10; i++) {
-				uint32_t	rn;
 				r.generate(&rn);
 				r.setSeed(rn);
 				rn=r.scale(rn,0,19);
-				const char	*col=columns[rn];
+				const char	*col=field[rn].name;
 				columnstoignore[i]=col;
 				if (i) {
 					opt.append(',');
