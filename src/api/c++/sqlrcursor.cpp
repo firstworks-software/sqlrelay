@@ -622,14 +622,11 @@ void sqlrcursor::startCaching() {
 	if (pvt->_cachedest && pvt->_cachedestind) {
 
 		// calculate and set write buffer size
-		filesystem	fs;
-		if (fs.open(pvt->_cachedestname)) {
-			off64_t	optblocksize=fs.getOptimumTransferBlockSize();
-			pvt->_cachedest->setWriteBufferSize(
-					(optblocksize)?optblocksize:1024);
-			pvt->_cachedestind->setWriteBufferSize(
-					(optblocksize)?optblocksize:1024);
-		}
+		off64_t	optblocksize=
+			filesystem::getOptimumTransferBlockSize(
+						pvt->_cachedestname);
+		pvt->_cachedest->setWriteBufferSize(optblocksize);
+		pvt->_cachedestind->setWriteBufferSize(optblocksize);
 
 		if (!pvt->_resumed) {
 
@@ -5856,14 +5853,10 @@ bool sqlrcursor::openCachedResultSet(const char *filename) {
 		pvt->_cachesourceind->open(indexfilename,O_RDWR)) {
 
 		// calculate and set write buffer size
-		filesystem	fs;
-		if (fs.open(filename)) {
-			off64_t	optblocksize=fs.getOptimumTransferBlockSize();
-			pvt->_cachesource->setReadBufferSize(
-					(optblocksize)?optblocksize:1024);
-			pvt->_cachesourceind->setReadBufferSize(
-					(optblocksize)?optblocksize:1024);
-		}
+		off64_t	optblocksize=
+			filesystem::getOptimumTransferBlockSize(filename);
+		pvt->_cachesource->setReadBufferSize(optblocksize);
+		pvt->_cachesourceind->setReadBufferSize(optblocksize);
 
 		delete[] indexfilename;
 

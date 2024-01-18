@@ -116,20 +116,13 @@ void generateComparisonFile(const char *filename,
 				bool ignorecolumns,
 				const char * const *columnstoignore) {
 
-	// get optimium block size
-	filesystem	fs;
-	off64_t		optblocksize;
-	if (fs.open(filename)) {
-		optblocksize=fs.getOptimumTransferBlockSize();
-	} else {
-		optblocksize=sys::getPageSize();
-	}
 
 	// create file
 	file	comparison;
 	checkSuccess(comparison.create(filename,
 				permissions::parsePermString("rw-rw-r--")),1);
-	comparison.setWriteBufferSize(optblocksize);
+	comparison.setWriteBufferSize(
+		filesystem::getOptimumTransferBlockSize(filename));
 
 	// write header, ignoring columns to ignore,
 	stringbuffer			header;
@@ -184,32 +177,17 @@ void generateComparisonFile(const char *filename,
 
 void diffFiles(const char *filename1, const char *filename2) {
 
-	// get optimium block size
-	filesystem	fs;
-	off64_t		obs1;
-	if (fs.open(filename1)) {
-		obs1=fs.getOptimumTransferBlockSize();
-	} else {
-		obs1=sys::getPageSize();
-	}
-	off64_t		obs2;
-	if (fs.open(filename2)) {
-		obs2=fs.getOptimumTransferBlockSize();
-	} else {
-		obs2=sys::getPageSize();
-	}
-
-	// files
-	file	f1;
-	file	f2;
-
 	// open file 1
+	file	f1;
 	checkSuccess(f1.open(filename1,O_RDONLY),1);
-	f1.setReadBufferSize(obs1);
+	f1.setReadBufferSize(
+		filesystem::getOptimumTransferBlockSize(filename1));
 
 	// open file 2
+	file	f2;
 	checkSuccess(f2.open(filename2,O_RDONLY),1);
-	f2.setReadBufferSize(obs2);
+	f2.setReadBufferSize(
+		filesystem::getOptimumTransferBlockSize(filename2));
 
 	for (;;) {
 

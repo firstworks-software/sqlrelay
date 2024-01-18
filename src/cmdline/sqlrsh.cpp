@@ -297,11 +297,9 @@ bool sqlrsh::runScript(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 	if (scriptfile.open(trimmedfilename,O_RDONLY)) {
 
 		// optimize
-		filesystem	fs;
-		if (fs.open(trimmedfilename)) {
-			scriptfile.setReadBufferSize(
-				fs.getOptimumTransferBlockSize());
-		}
+		scriptfile.setReadBufferSize(
+			filesystem::getOptimumTransferBlockSize(
+							trimmedfilename));
 
 		for (;;) {
 		

@@ -88,9 +88,8 @@ bool sqlrlogger_slowqueries::init(sqlrlistener *sqlrl,
 	}
 
 	// optimize
-	filesystem	fs;
-	fs.open(querylogname);
-	querylog.setWriteBufferSize(fs.getOptimumTransferBlockSize());
+	querylog.setWriteBufferSize(
+			filesystem::getOptimumTransferBlockSize(querylogname));
 	return true;
 }
 

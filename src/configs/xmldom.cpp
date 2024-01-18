@@ -2470,10 +2470,8 @@ void sqlrconfig_xmldom::parseLinkFile(const char *urlname) {
 		}
 
 		// optimize
-		filesystem	fs;
-		if (fs.open(urlname)) {
-			fl.setReadBufferSize(fs.getOptimumTransferBlockSize());
-		}
+		fl.setReadBufferSize(
+			filesystem::getOptimumTransferBlockSize(urlname));
 		fl.adviseSequentialAccess(0,fl.getSize());
 		fl.adviseOnlyOnce(0,fl.getSize());
 
