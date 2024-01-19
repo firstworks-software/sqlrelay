@@ -18,6 +18,8 @@
 //#define ROWS 2
 //#define ROWS 1
 
+//#define DEBUG 1
+
 sqlrconnection	*con;
 sqlrcursor	*cur;
 
@@ -81,6 +83,191 @@ void checkSuccess(uint64_t value, uint64_t success) {
 	}
 }
 
+class testsqlrexportcsv : public sqlrexportcsv {
+	public:
+		testsqlrexportcsv();
+		bool	columnsStart();
+		bool	columnStart();
+		bool	columnEnd();
+		bool	columnsEnd();
+		bool	rowsStart();
+		bool	rowStart();
+		bool	fieldStart();
+		bool	fieldEnd();
+		bool	rowEnd();
+		bool	rowsEnd();
+
+		bool	tests(const char *method);
+
+		bool		exportrow;
+		uint64_t	currentcol;
+		uint32_t	currentrow;
+};
+
+testsqlrexportcsv::testsqlrexportcsv() {
+	exportrow=true;
+	currentcol=0;
+	currentrow=0;
+}
+
+bool testsqlrexportcsv::tests(const char *method) {
+	if (getExportRow()!=exportrow) {
+		stdoutput.printf("\n%s - getExportRow(): %d!=%d\n",
+					method,getExportRow(),exportrow);
+		return false;
+	}
+	if (getCurrentRow()!=currentrow) {
+		stdoutput.printf("\n%s - getCurrentRow(): %lld!=%lld\n",
+					method,getCurrentRow(),currentrow);
+		return false;
+	}
+	if (getCurrentColumn()!=currentcol) {
+		stdoutput.printf("\n%s - getCurrentColumn(): %ld!=%ld\n",
+					method,getCurrentColumn(),currentcol);
+		return false;
+	}
+	return true;
+}
+
+bool testsqlrexportcsv::columnsStart() {
+	#ifdef DEBUG
+		stdoutput.printf("\ncolumnsStart()...\n");
+	#endif
+	if (!sqlrexportcsv::columnsStart()) {
+		return false;
+	}
+	if (!tests("columnsStart()")) {
+		return false;
+	}
+	return true;
+}
+
+bool testsqlrexportcsv::columnStart() {
+	#ifdef DEBUG
+		stdoutput.printf("columnStart()...\n");
+	#endif
+	if (!sqlrexportcsv::columnStart()) {
+		return false;
+	}
+	if (!tests("columnStart()")) {
+		return false;
+	}
+	return true;
+}
+
+bool testsqlrexportcsv::columnEnd() {
+	#ifdef DEBUG
+		stdoutput.printf("columnEnd()...\n");
+	#endif
+	if (!sqlrexportcsv::columnEnd()) {
+		return false;
+	}
+	if (!tests("columnEnd()")) {
+		return false;
+	}
+	currentcol++;
+	return true;
+}
+
+bool testsqlrexportcsv::columnsEnd() {
+	#ifdef DEBUG
+		stdoutput.printf("columnsEnd()...\n");
+	#endif
+	if (!sqlrexportcsv::columnsEnd()) {
+		return false;
+	}
+	if (!tests("columnsEnd()")) {
+		return false;
+	}
+	currentcol=0;
+	return true;
+}
+
+bool testsqlrexportcsv::rowsStart() {
+	#ifdef DEBUG
+		stdoutput.printf("rowsStart()...\n");
+	#endif
+	if (!sqlrexportcsv::rowsStart()) {
+		return false;
+	}
+	if (!tests("rowsStart()")) {
+		return false;
+	}
+	return true;
+}
+
+bool testsqlrexportcsv::rowStart() {
+	#ifdef DEBUG
+		stdoutput.printf("rowStart()...\n");
+	#endif
+	if (!sqlrexportcsv::rowStart()) {
+		return false;
+	}
+	if (!tests("rowStart()")) {
+		return false;
+	}
+	currentcol=0;
+	return true;
+}
+
+bool testsqlrexportcsv::fieldStart() {
+	#ifdef DEBUG
+		stdoutput.printf("fieldStart()...\n");
+	#endif
+	if (!sqlrexportcsv::fieldStart()) {
+		return false;
+	}
+	if (!tests("fieldStart()")) {
+		return false;
+	}
+	return true;
+}
+
+bool testsqlrexportcsv::fieldEnd() {
+	#ifdef DEBUG
+		stdoutput.printf("fieldEnd()...\n");
+	#endif
+	if (!sqlrexportcsv::fieldEnd()) {
+		return false;
+	}
+	if (!tests("fieldEnd()")) {
+		return false;
+	}
+	currentcol++;
+	return true;
+}
+
+bool testsqlrexportcsv::rowEnd() {
+	#ifdef DEBUG
+		stdoutput.printf("rowEnd()...\n");
+	#endif
+	if (!sqlrexportcsv::rowEnd()) {
+		return false;
+	}
+	if (!tests("rowEnd()")) {
+		return false;
+	}
+	currentrow++;
+	currentcol=0;
+	return true;
+}
+
+bool testsqlrexportcsv::rowsEnd() {
+	#ifdef DEBUG
+		stdoutput.printf("rowsEnd()...\n");
+	#endif
+	if (!sqlrexportcsv::rowsEnd()) {
+		return false;
+	}
+	if (!tests("rowsEnd()")) {
+		return false;
+	}
+	exportrow=true;
+	currentcol=0;
+	currentrow=0;
+	return true;
+}
+
 struct field_t {
 	const char	*name;
 	const char	*type;
@@ -124,8 +311,8 @@ void generateComparisonFile(const char *filename,
 	comparison.setWriteBufferSize(
 		filesystem::getOptimumTransferBlockSize(filename));
 
-	// write header, ignoring columns to ignore,
-	stringbuffer			header;
+	// write header, ignoring columns as appropriate
+	stringbuffer	header;
 	for (uint64_t col=0; field[col].name; col++) {
 		if (charstring::isInSet(field[col].name,columnstoignore)) {
 			continue;
@@ -143,7 +330,7 @@ void generateComparisonFile(const char *filename,
 					header.getStringLength());
 	}
 
-	// write records, ignoring indexes as appropriate
+	// write records, ignoring columns as appropriate
 	stringbuffer	record;
 	for (uint64_t row=0; row<ROWS; row++) {
 		for (uint32_t col=0; field[col].name; col++) {
@@ -278,7 +465,7 @@ int main(int argc, char **argv) {
 
 	// set up export
 	stdoutput.printf("SET UP EXPORT: \n");
-	sqlrexportcsv	ec;
+	testsqlrexportcsv	ec;
 	ec.setSqlrConnection(con);
 	ec.setSqlrCursor(cur);
 	checkSuccess((uint64_t)ec.getSqlrConnection(),(uint64_t)con);
@@ -295,6 +482,8 @@ int main(int argc, char **argv) {
 		bool		ignorecolumns=false;
 		const char	**columnstoignore=NULL;
 		uint16_t	columnstoignorecount=0;
+		stringbuffer	opt;
+		const char	*col;
 		if (iteration==0) {
 			option=charstring::duplicate("");
 		} else if (iteration==1) {
@@ -303,23 +492,21 @@ int main(int argc, char **argv) {
 			ignorecolumns=true;
 		} else if (iteration>=2 && iteration<=21) {
 			// for iterations 2-21, exclude individual columns
-			const char	*col=field[iteration-2].name;
+			col=field[iteration-2].name;
 			columnstoignore=new const char *[2];
 			columnstoignore[0]=col;
 			columnstoignore[1]=NULL;
 			columnstoignorecount=1;
-			stringbuffer	opt;
 			opt.append("IGNORE ");
 			opt.append(col);
 			opt.append(" column - ");
 			option=opt.detachString();
 			ignorecolumns=false;
 		} else if (iteration>=22 && iteration<=32) {
-			// for iterations 22-21, exclude random sets of
+			// for iterations 22-32, exclude random sets of
 			// columns, possibly with repetitions
 			randomnumber	r;
 			r.setSeed(randomnumber::getSeed());
-			stringbuffer	opt;
 			opt.append("IGNORE ");
 			columnstoignore=new const char *[11];
 			uint32_t	rn;
@@ -327,7 +514,7 @@ int main(int argc, char **argv) {
 				r.generate(&rn);
 				r.setSeed(rn);
 				rn=r.scale(rn,0,19);
-				const char	*col=field[rn].name;
+				col=field[rn].name;
 				columnstoignore[i]=col;
 				if (i) {
 					opt.append(',');

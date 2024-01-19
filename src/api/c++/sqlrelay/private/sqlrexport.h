@@ -10,6 +10,7 @@
 		bool			exportrow;
 		uint64_t		currentrow;
 		uint32_t		currentcol;
+		const char		*currentcolname;
 		const char		*currentfield;
 		logger			*lg;
 		uint8_t			coarseloglevel;

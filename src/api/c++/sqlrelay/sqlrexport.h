@@ -200,6 +200,9 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  exportTo*() methods, prior to the export of the columns of
 		 *  the result set.
 		 *
+		 *  Note that it should be called whether or not columns are
+		 *  ignored.
+		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
@@ -211,6 +214,10 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		/** This method should be called by implementations of the
 		 *  exportTo*() methods, prior to the export of each column of
 		 *  the result set.
+		 *
+		 *  Note that it should be called for each column, whether or
+		 *  not columns are ignored, and whether or not this particular
+		 *  column is ignored.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -224,6 +231,10 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  exportTo*() methods, after the export of each column of the
 		 *  result set.
 		 *
+		 *  Note that it should be called for each column, whether or
+		 *  not columns are ignored, and whether or not this particular
+		 *  column is ignored.
+		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
@@ -235,6 +246,9 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		/** This method should be called by implementations of the
 		 *  exportTo*() methods, after the export of the columns of
 		 *  the result set.
+		 *
+		 *  Note that it should be called whether or not columns are
+		 *  ignored.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -325,67 +339,81 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		/** This method may be called by implementations of the
 		 *  exportTo*() methods, or by implementations of the various
 		 *  Start()/End() methods to indicate whether the current row
-		 *  should be exported or not. */
+		 *  of the result set should be exported or not. */
 		void	setExportRow(bool exportrow);
 
 		/** This method may be called by implementations of the
 		 *  exportTo*() methods, or by implementations of the various
 		 *  Start()/End() methods to determine whether the current row
-		 *  should be exported or not. */
+		 *  of the result set should be exported or not. */
 		bool	getExportRow();
 
 		/** This method may be called by implementations of the
 		 *  exportTo*() methods, or by implementations of the various
-		 *  Start()/End() methods to set the index of the row that is
-		 *  currently being exported. */
+		 *  Start()/End() methods to set the index of the row of the
+		 *  result set that is currently being exported. */
 		void	setCurrentRow(uint64_t currentrow);
 
 		/** This method may be called by implementations of the
 		 *  exportTo*() methods, or by implementations of the various
-		 *  Start()/End() methods to get the index of the row that is
-		 *  currently being exported. */
+		 *  Start()/End() methods to get the index of the row of the
+		 *  result set that is currently being exported. */
 		uint64_t	getCurrentRow();
 
 		/** This method may be called by implementations of the
 		 *  exportTo*() methods, or by implementations of the various
-		 *  Start()/End() methods to set the index of the column that is
-		 *  currently being exported. */
+		 *  Start()/End() methods to set the index of the column of the
+		 *  result set that is currently being exported. */
 		void	setCurrentColumn(uint32_t currentcol);
 
 		/** This method may be called by implementations of the
 		 *  exportTo*() methods, or by implementations of the various
-		 *  Start()/End() methods to get the index of the column that is
-		 *  currently being exported. */
+		 *  Start()/End() methods to get the index of the column of the
+		 *  result set that is currently being exported. */
 		uint32_t	getCurrentColumn();
 
 		/** This method may be called by implementations of the
 		 *  exportTo*() methods, or by implementations of the various
-		 *  Start()/End() methods to set the name of the field that is
-		 *  currently being exported. */
+		 *  Start()/End() methods to set the name of the column of the
+		 *  result set that is currently being exported. */
+		void	setCurrentColumnName(const char *currentcolname);
+
+		/** This method may be called by implementations of the
+		 *  exportTo*() methods, or by implementations of the various
+		 *  Start()/End() methods to get the name of the column of the
+		 *  result set that is currently being exported. */
+		const char	*getCurrentColumnName();
+
+		/** This method may be called by implementations of the
+		 *  exportTo*() methods, or by implementations of the various
+		 *  Start()/End() methods to set the value of the field of the
+		 *  result set that is currently being exported. */
 		void	setCurrentField(const char *currentfield);
 
 		/** This method may be called by implementations of the
 		 *  exportTo*() methods, or by implementations of the various
-		 *  Start()/End() methods to get the name of the field that is
-		 *  currently being exported. */
+		 *  Start()/End() methods to get the value of the field of the
+		 *  result set that is currently being exported. */
 		const char	*getCurrentField();
 
 		/** This method may be called by implementations of the
 		 *  exportTo*() methods, or by implementations of the various
 		 *  Start()/End() methods to set whether the data type of the
-		 *  column in position "index" is a numeric type or not. */
+		 *  column of the result set in position "index" is a numeric
+		 *  type or not. */
 		void	setNumberColumn(uint64_t index, bool value);
 
 		/** This method may be called by implementations of the
 		 *  exportTo*() methods, or by implementations of the various
 		 *  Start()/End() methods to get whether the data type of the
-		 *  column in position "index" is a numeric type or not. */
+		 *  column of the result set in position "index" is a numeric
+		 *  type or not. */
 		bool	getNumberColumn(uint64_t index);
 
 		/** This method may be called by implementations of the
 		 *  exportTo*() methods, or by implementations of the various
 		 *  Start()/End() methods to clear the data types of all
-		 *  columns to non-numeric. */
+		 *  columns of the result set to non-numeric. */
 		void	clearNumberColumns();
 
 		/** This method may be called by implementations of the

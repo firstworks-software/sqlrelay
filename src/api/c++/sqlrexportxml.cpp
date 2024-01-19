@@ -17,25 +17,31 @@ sqlrexportxml::~sqlrexportxml() {
 
 bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 
-	// reset flags
+	// reset flags and counts
 	setExportRow(true);
 	setExportedRowCount(0);
 	setCurrentRow(0);
 	setCurrentColumn(0);
+	setCurrentColumnName(NULL);
 	setCurrentField(NULL);
+	clearNumberColumns();
 
 	// output to stdoutput or create/open file
 	setFileDescriptor(&stdoutput);
 	file	f;
 	if (!charstring::isNullOrEmpty(filename)) {
 		if (!f.create(filename,
-				permissions::parsePermString("rw-r--r--"))) {
+			permissions::parsePermString("rw-r--r--"))) {
 			// FIXME: report error
 			return false;
 		}
 		setFileDescriptor(&f);
 	}
 	filedescriptor	*fd=getFileDescriptor();
+
+	// get a cursor and column count
+	sqlrcursor	*sqlrcur=getSqlrCursor();
+	uint32_t	cols=sqlrcur->colCount();
 
 	// export xml header
 	fd->write("<?xml version=\"1.0\"?>\n");
@@ -52,38 +58,33 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 		return false;
 	}
 
-	sqlrcursor	*sqlrcur=getSqlrCursor();
-	const char * const *columnstoignore=getColumnsToIgnore();
-
 	// export columns...
-	uint32_t	cols=sqlrcur->colCount();
 	if (!getIgnoreColumns()) {
 		fd->printf("<columns count=\"%d\">\n",cols);
 	}
-	clearNumberColumns();
 	for (setCurrentColumn(0);
 		getCurrentColumn()<cols;
 		setCurrentColumn(getCurrentColumn()+1)) {
 
+		// set the current column name and field
+		setCurrentColumnName(
+			sqlrcur->getColumnName(getCurrentColumn()));
+		setCurrentField(sqlrcur->getColumnName(getCurrentColumn()));
+	
 		// set whether this is a numeric column or not
 		setNumberColumn(getCurrentColumn(),
 			isNumberTypeChar(sqlrcur->getColumnType(
 						getCurrentColumn())));
 
-		// set the current field
-		setCurrentField(sqlrcur->getColumnName(getCurrentColumn()));
-
-		// ignore particular columns
-		if (charstring::isInSet(getCurrentField(),columnstoignore)) {
-			continue;
+		// call the pre-column event
+		if (!columnStart()) {
+			return false;
 		}
 
-		if (!getIgnoreColumns()) {
-
-			// call the pre-column event
-			if (!columnStart()) {
-				return false;
-			}
+		// if we're not ignoring all columns, or this column...
+		if (!getIgnoreColumns() &&
+			!charstring::isInSet(getCurrentField(),
+						getColumnsToIgnore())) {
 
 			// export the column name and type
 			fd->write("	<column name=\"");
@@ -92,17 +93,18 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 			escapeField(fd,sqlrcur->getColumnType(
 						getCurrentField()));
 			fd->write("\"/>\n");
+		}
 
-			// call the post-column event
-			if (!columnEnd()) {
-				return false;
-			}
+		// call the post-column event
+		if (!columnEnd()) {
+			return false;
 		}
 	}
 
 	// call the post-columns event
-	// (we call this before closing the columns in case an overridden
-	// columnsEnd() wants to add more columns or something)
+	// (we call this before closing the columns in case an
+	// overridden columnsEnd() wants to add more columns or
+	// something)
 	if (!columnsEnd()) {
 		return false;
 	}
@@ -110,6 +112,11 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 	if (!getIgnoreColumns()) {
 		fd->write("</columns>\n");
 	}
+
+	// reset current column/field
+	setCurrentColumn(0);
+	setCurrentColumnName(NULL);
+	setCurrentField(NULL);
 
 	// call the pre-rows event
 	if (!rowsStart()) {
@@ -131,45 +138,44 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 
 		// if rowStart() didn't disable export of this row...
 		if (getExportRow()) {
-
 			fd->write("	<row>\n");
+		}
 
-			for (setCurrentColumn(0);
-				getCurrentColumn()<cols;
-				setCurrentColumn(getCurrentColumn()+1)) {
+		for (setCurrentColumn(0);
+			getCurrentColumn()<cols;
+			setCurrentColumn(getCurrentColumn()+1)) {
 
-				// ignore particular columns
-				if (columnstoignore) {
-					if (charstring::isInSet(
-						sqlrcur->getColumnName(
-							getCurrentColumn()),
-						columnstoignore)) {
-						continue;
-					}
-				}
+			// set the current column name and field
+			setCurrentColumnName(
+				sqlrcur->getColumnName(getCurrentColumn()));
+			setCurrentField(sqlrcur->getField(
+						getCurrentRow(),
+						getCurrentColumn()));
+			if (!getCurrentField()) {
+				break;
+			}
 
-				// get the field
-				setCurrentField(sqlrcur->getField(
-							getCurrentRow(),
-							getCurrentColumn()));
-				if (!getCurrentField()) {
-					break;
-				}
+			// call the pre-field event
+			if (!fieldStart()) {
+				return false;
+			}
 
-				// call the pre-field event
-				if (!fieldStart()) {
-					return false;
-				}
+			// if we're not ignoring this row or column...
+			if (getExportRow() &&
+				!charstring::isInSet(
+					sqlrcur->getColumnName(
+						getCurrentColumn()),
+				getColumnsToIgnore())) {
 
 				// export the field
 				fd->write("	<field>");
 				escapeField(fd,getCurrentField());
 				fd->write("</field>\n");
+			}
 
-				// call the post-field event
-				if (!fieldEnd()) {
-					return false;
-				}
+			// call the post-field event
+			if (!fieldEnd()) {
+				return false;
 			}
 		}
 
@@ -185,8 +191,14 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 			fd->write("	</row>\n");
 		}
 
-		setExportedRowCount(getExportedRowCount()+1);
+		// update counts and currents
+		if (getExportRow()) {
+			setExportedRowCount(getExportedRowCount()+1);
+		}
 		setCurrentRow(getCurrentRow()+1);
+		setCurrentColumn(0);
+		setCurrentColumnName(NULL);
+		setCurrentField(NULL);
 	}
 
 	// call the post-rows event

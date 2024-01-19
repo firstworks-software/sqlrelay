@@ -31,15 +31,18 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 	setExportedRowCount(0);
 	setCurrentRow(0);
 	setCurrentColumn(0);
+	setCurrentColumnName(NULL);
 	setCurrentField(NULL);
+	clearNumberColumns();
+
+	// get a cursor and column count
+	sqlrcursor	*selectcur=getSqlrCursor();
+	uint32_t	cols=selectcur->colCount();
 
 	// call the pre-columns event
 	if (!columnsStart()) {
 		return false;
 	}
-
-	sqlrcursor	*selectcur=getSqlrCursor();
-	const char * const *columnstoignore=getColumnsToIgnore();
 
 	stringbuffer	insertquery;
 	insertquery.append("insert into ")->append(table)->append(" values (");
@@ -48,44 +51,43 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 							bindformat[0]:':';
 
 	// export bind variables...
-	uint32_t	cols=selectcur->colCount();
-	clearNumberColumns();
 	uint32_t	bindindex=1;
 	for (setCurrentColumn(0);
 		getCurrentColumn()<cols;
 		setCurrentColumn(getCurrentColumn()+1)) {
+
+		// set the current column name and field
+		setCurrentColumnName(
+			sqlrcur->getColumnName(getCurrentColumn()));
+		setCurrentField(sqlrcur->getColumnName(getCurrentColumn()));
 
 		// set whether this is a numeric column or not
 		setNumberColumn(getCurrentColumn(),
 			isNumberTypeChar(selectcur->getColumnType(
 						getCurrentColumn())));
 
-		// set the current field
-		setCurrentField(selectcur->getColumnName(getCurrentColumn()));
-
-		// ignore particular columns
-		if (charstring::isInSet(getCurrentField(),columnstoignore)) {
-			continue;
-		}
-
-		if (bindindex>1) {
-			insertquery.append(',');
-		}
-
 		// call the pre-column event
 		if (!columnStart()) {
 			return false;
 		}
 
-		// append the bind variable
-		if (bf=='?') {
-			insertquery.append('?');
-		} else if (bf=='$') {
-			insertquery.append('$')->append(bindindex);
-		} else if (bf=='@' || bf==':') {
-			insertquery.append(bf)->append(bindindex);
+		// if we're not ignoring this column...
+		if (!charstring::isInSet(getCurrentField(),
+						getColumnsToIgnore())) {
+
+			// append the bind variable
+			if (bindindex>1) {
+				insertquery.append(',');
+			}
+			if (bf=='?') {
+				insertquery.append('?');
+			} else if (bf=='$') {
+				insertquery.append('$')->append(bindindex);
+			} else if (bf=='@' || bf==':') {
+				insertquery.append(bf)->append(bindindex);
+			}
+			bindindex++;
 		}
-		bindindex++;
 
 		// call the post-column event
 		if (!columnEnd()) {
@@ -101,6 +103,11 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 	}
 
 	insertquery.append(')');
+
+	// reset current column/field
+	setCurrentColumn(0);
+	setCurrentColumnName(NULL);
+	setCurrentField(NULL);
 
 	// call the pre-rows event
 	if (!rowsStart()) {
@@ -120,7 +127,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 	dynamicarray<char *>	bindnames;
 	bindnames.setManageArrayValues(true);
 
-	// export bind values...
+	// export rows...
 	bool	success=true;
 	do {
 
@@ -142,38 +149,34 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 		// reset bind index
 		bindindex=1;
 
-		// if rowStart() didn't disable export of this row...
-		if (getExportRow()) {
+		for (setCurrentColumn(0);
+			getCurrentColumn()<cols;
+			setCurrentColumn(getCurrentColumn()+1)) {
 
-			for (setCurrentColumn(0);
-				getCurrentColumn()<cols;
-				setCurrentColumn(getCurrentColumn()+1)) {
+			// set the current column name and field
+			setCurrentColumnName(
+				sqlrcur->getColumnName(getCurrentColumn()));
+			setCurrentField(sqlrcur->getField(
+						getCurrentRow(),
+						getCurrentColumn()));
+			if (!getCurrentField()) {
+				break;
+			}
 
-				// ignore particular columns
-				if (columnstoignore) {
-					if (charstring::isInSet(
-						selectcur->getColumnName(
-							getCurrentColumn()),
-						columnstoignore)) {
-						continue;
-					}
-				}
+			// call the pre-field event
+			if (!fieldStart()) {
+				success=false;
+				break;
+			}
 
-				// get the field
-				setCurrentField(selectcur->getField(
-							getCurrentRow(),
-							getCurrentColumn()));
-				if (!getCurrentField()) {
-					break;
-				}
+			// if we're not ignoring this row or column...
+			if (getExportRow() &&
+				!charstring::isInSet(
+					selectcur->getColumnName(
+						getCurrentColumn()),
+					getColumnsToIgnore())) {
 
-				// call the pre-field event
-				if (!fieldStart()) {
-					success=false;
-					break;
-				}
-
-				// export the bind value
+				// export the field
 				if (!bindnames[bindindex]) {
 					bindnames[bindindex]=
 					charstring::parseNumber(bindindex);
@@ -182,12 +185,12 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 					bindnames[bindindex],
 					getCurrentField());
 				bindindex++;
+			}
 
-				// call the post-field event
-				if (!fieldEnd()) {
-					success=false;
-					break;
-				}
+			// call the post-field event
+			if (!fieldEnd()) {
+				success=false;
+				break;
 			}
 		}
 
@@ -195,7 +198,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 			break;
 		}
 
-		// It's not impossible that there were 0 rows in this result
+		// It's not impossible that there were 0 columns in this result
 		// set.  If that was the case then bindindex should still be 1
 		// at this point, and no values should be bound.  In that case,
 		// we don't want to attempt to execute anything.
@@ -208,15 +211,19 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 		sqlrcur->clearBinds();
 
 		// call the post-row event
-		// (we call this before closing the row in case an overridden
-		// rowEnd() wants to add more fields or something)
 		if (!rowEnd()) {
 			success=false;
 			break;
 		}
 
-		setExportedRowCount(getExportedRowCount()+1);
+		// update counts and currents
+		if (getExportRow()) {
+			setExportedRowCount(getExportedRowCount()+1);
+		}
 		setCurrentRow(getCurrentRow()+1);
+		setCurrentColumn(0);
+		setCurrentColumnName(NULL);
+		setCurrentField(NULL);
 
 	} while  (!selectcur->endOfResultSet() ||
 			getCurrentRow()<selectcur->rowCount());

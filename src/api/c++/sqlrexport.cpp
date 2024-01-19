@@ -12,6 +12,7 @@ sqlrexport::sqlrexport() {
 	exportrow=true;
 	currentrow=0;
 	currentcol=0;
+	currentcolname=NULL;
 	currentfield=NULL;
 	lg=NULL;
 	coarseloglevel=0;
@@ -165,6 +166,14 @@ void sqlrexport::setCurrentColumn(uint32_t currentcol) {
 
 uint32_t sqlrexport::getCurrentColumn() {
 	return currentcol;
+}
+
+void sqlrexport::setCurrentColumnName(const char *currentcolname) {
+	this->currentcolname=currentcolname;
+}
+
+const char *sqlrexport::getCurrentColumnName() {
+	return currentcolname;
 }
 
 void sqlrexport::setCurrentField(const char *currentfield) {
