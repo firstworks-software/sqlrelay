@@ -21,13 +21,17 @@ bool sqlrexportcsv::exportToFile(const char *filename) {
 
 bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 
+	// get the cursor and column count
+	sqlrcursor	*sqlrcur=getSqlrCursor();
+	uint32_t	cols=sqlrcur->colCount();
+
 	// reset flags and counts
 	setExportRow(true);
 	setExportedRowCount(0);
 	setCurrentRow(0);
 	setCurrentColumn(0);
-	setCurrentColumnName(NULL);
-	setCurrentField(NULL);
+	setCurrentColumnName(sqlrcur->getColumnName(getCurrentColumn()));
+	setCurrentField(getCurrentColumnName());
 	clearNumberColumns();
 
 	// output to stdoutput or create/open file
@@ -43,10 +47,6 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 	}
 	filedescriptor	*fd=getFileDescriptor();
 
-	// get a cursor and column count
-	sqlrcursor	*sqlrcur=getSqlrCursor();
-	uint32_t	cols=sqlrcur->colCount();
-
 	// call the pre-columns event
 	if (!columnsStart()) {
 		return false;
@@ -54,14 +54,13 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 
 	// export columns...
 	bool	first=true;
-	for (setCurrentColumn(0);
-		getCurrentColumn()<cols;
-		setCurrentColumn(getCurrentColumn()+1)) {
+	for (uint32_t i=0; i<cols; i++) {
 
-		// set the current column name and field
+		// set the current column (and field)
+		setCurrentColumn(i);
 		setCurrentColumnName(
 			sqlrcur->getColumnName(getCurrentColumn()));
-		setCurrentField(sqlrcur->getColumnName(getCurrentColumn()));
+		setCurrentField(getCurrentColumnName());
 
 		// set whether this is a numeric column or not
 		setNumberColumn(getCurrentColumn(),
@@ -115,8 +114,8 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 
 	// reset current column/field
 	setCurrentColumn(0);
-	setCurrentColumnName(NULL);
-	setCurrentField(NULL);
+	setCurrentColumnName(sqlrcur->getColumnName(getCurrentColumn()));
+	setCurrentField(sqlrcur->getField(getCurrentRow(),getCurrentColumn()));
 
 	// call the pre-rows event
 	if (!rowsStart()) {
@@ -136,11 +135,10 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 		}
 
 		bool	first=true;
-		for (setCurrentColumn(0);
-			getCurrentColumn()<cols;
-			setCurrentColumn(getCurrentColumn()+1)) {
+		for (uint32_t i=0; i<cols; i++) {
 
-			// set the current column name and field
+			// set the current column and field
+			setCurrentColumn(i);
 			setCurrentColumnName(
 				sqlrcur->getColumnName(getCurrentColumn()));
 			setCurrentField(sqlrcur->getField(
@@ -211,7 +209,8 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 		}
 		setCurrentRow(getCurrentRow()+1);
 		setCurrentColumn(0);
-		setCurrentColumnName(NULL);
+		setCurrentColumnName(
+			sqlrcur->getColumnName(getCurrentColumn()));
 		setCurrentField(NULL);
 	}
 
@@ -241,18 +240,18 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode) {
 bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 						const char *table) {
 
+	// get the cursor and column count
+	sqlrcursor	*sqlrcur=getSqlrCursor();
+	uint32_t	cols=sqlrcur->colCount();
+
 	// reset flags and counts
 	setExportRow(true);
 	setExportedRowCount(0);
 	setCurrentRow(0);
 	setCurrentColumn(0);
-	setCurrentColumnName(NULL);
-	setCurrentField(NULL);
+	setCurrentColumnName(sqlrcur->getColumnName(getCurrentColumn()));
+	setCurrentField(getCurrentColumnName());
 	clearNumberColumns();
-
-	// get a cursor and column count
-	sqlrcursor	*sqlrcur=getSqlrCursor();
-	uint32_t	cols=sqlrcur->colCount();
 
 	// call the pre-columns event
 	if (!columnsStart()) {
@@ -272,7 +271,7 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 		// set the current column name and field
 		setCurrentColumnName(
 			sqlrcur->getColumnName(getCurrentColumn()));
-		setCurrentField(sqlrcur->getColumnName(getCurrentColumn()));
+		setCurrentField(getCurrentColumnName());
 
 		// set whether this is a numeric column or not
 		setNumberColumn(getCurrentColumn(),
@@ -317,8 +316,8 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 
 	// reset current column/field
 	setCurrentColumn(0);
-	setCurrentColumnName(NULL);
-	setCurrentField(NULL);
+	setCurrentColumnName(sqlrcur->getColumnName(getCurrentColumn()));
+	setCurrentField(sqlrcur->getField(getCurrentRow(),getCurrentColumn()));
 
 	// call the pre-rows event
 	if (!rowsStart()) {
@@ -399,7 +398,8 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 		}
 		setCurrentRow(getCurrentRow()+1);
 		setCurrentColumn(0);
-		setCurrentColumnName(NULL);
+		setCurrentColumnName(
+			sqlrcur->getColumnName(getCurrentColumn()));
 		setCurrentField(NULL);
 
 	} while (!sqlrcur->endOfResultSet() ||

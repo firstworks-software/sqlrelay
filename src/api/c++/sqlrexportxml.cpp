@@ -17,13 +17,17 @@ sqlrexportxml::~sqlrexportxml() {
 
 bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 
+	// get the cursor and column count
+	sqlrcursor	*sqlrcur=getSqlrCursor();
+	uint32_t	cols=sqlrcur->colCount();
+
 	// reset flags and counts
 	setExportRow(true);
 	setExportedRowCount(0);
 	setCurrentRow(0);
 	setCurrentColumn(0);
-	setCurrentColumnName(NULL);
-	setCurrentField(NULL);
+	setCurrentColumnName(sqlrcur->getColumnName(getCurrentColumn()));
+	setCurrentField(getCurrentColumnName());
 	clearNumberColumns();
 
 	// output to stdoutput or create/open file
@@ -38,10 +42,6 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 		setFileDescriptor(&f);
 	}
 	filedescriptor	*fd=getFileDescriptor();
-
-	// get a cursor and column count
-	sqlrcursor	*sqlrcur=getSqlrCursor();
-	uint32_t	cols=sqlrcur->colCount();
 
 	// export xml header
 	fd->write("<?xml version=\"1.0\"?>\n");
@@ -62,14 +62,13 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 	if (!getIgnoreColumns()) {
 		fd->printf("<columns count=\"%d\">\n",cols);
 	}
-	for (setCurrentColumn(0);
-		getCurrentColumn()<cols;
-		setCurrentColumn(getCurrentColumn()+1)) {
+	for (uint32_t i=0; i<cols; i++) {
 
-		// set the current column name and field
+		// set the current column (and field)
+		setCurrentColumn(i);
 		setCurrentColumnName(
 			sqlrcur->getColumnName(getCurrentColumn()));
-		setCurrentField(sqlrcur->getColumnName(getCurrentColumn()));
+		setCurrentField(getCurrentColumnName());
 	
 		// set whether this is a numeric column or not
 		setNumberColumn(getCurrentColumn(),
@@ -115,8 +114,8 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 
 	// reset current column/field
 	setCurrentColumn(0);
-	setCurrentColumnName(NULL);
-	setCurrentField(NULL);
+	setCurrentColumnName(sqlrcur->getColumnName(getCurrentColumn()));
+	setCurrentField(sqlrcur->getField(getCurrentRow(),getCurrentColumn()));
 
 	// call the pre-rows event
 	if (!rowsStart()) {
@@ -141,11 +140,10 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 			fd->write("	<row>\n");
 		}
 
-		for (setCurrentColumn(0);
-			getCurrentColumn()<cols;
-			setCurrentColumn(getCurrentColumn()+1)) {
+		for (uint32_t i=0; i<cols; i++) {
 
-			// set the current column name and field
+			// set the current column and field
+			setCurrentColumn(i);
 			setCurrentColumnName(
 				sqlrcur->getColumnName(getCurrentColumn()));
 			setCurrentField(sqlrcur->getField(
@@ -197,7 +195,8 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 		}
 		setCurrentRow(getCurrentRow()+1);
 		setCurrentColumn(0);
-		setCurrentColumnName(NULL);
+		setCurrentColumnName(
+			sqlrcur->getColumnName(getCurrentColumn()));
 		setCurrentField(NULL);
 	}
 

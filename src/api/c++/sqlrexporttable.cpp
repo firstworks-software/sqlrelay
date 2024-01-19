@@ -26,18 +26,18 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 						sqlrcursor *sqlrcur,
 						const char *table) {
 
+	// get the cursor and column count
+	sqlrcursor	*selectcur=getSqlrCursor();
+	uint32_t	cols=selectcur->colCount();
+
 	// reset flags and counts
 	setExportRow(true);
 	setExportedRowCount(0);
 	setCurrentRow(0);
 	setCurrentColumn(0);
-	setCurrentColumnName(NULL);
-	setCurrentField(NULL);
+	setCurrentColumnName(sqlrcur->getColumnName(getCurrentColumn()));
+	setCurrentField(getCurrentColumnName());
 	clearNumberColumns();
-
-	// get a cursor and column count
-	sqlrcursor	*selectcur=getSqlrCursor();
-	uint32_t	cols=selectcur->colCount();
 
 	// call the pre-columns event
 	if (!columnsStart()) {
@@ -52,14 +52,13 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 
 	// export bind variables...
 	uint32_t	bindindex=1;
-	for (setCurrentColumn(0);
-		getCurrentColumn()<cols;
-		setCurrentColumn(getCurrentColumn()+1)) {
+	for (uint32_t i=0; i<cols; i++) {
 
-		// set the current column name and field
+		// set the current column (and field)
+		setCurrentColumn(i);
 		setCurrentColumnName(
 			sqlrcur->getColumnName(getCurrentColumn()));
-		setCurrentField(sqlrcur->getColumnName(getCurrentColumn()));
+		setCurrentField(getCurrentColumnName());
 
 		// set whether this is a numeric column or not
 		setNumberColumn(getCurrentColumn(),
@@ -106,8 +105,8 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 
 	// reset current column/field
 	setCurrentColumn(0);
-	setCurrentColumnName(NULL);
-	setCurrentField(NULL);
+	setCurrentColumnName(sqlrcur->getColumnName(getCurrentColumn()));
+	setCurrentField(sqlrcur->getField(getCurrentRow(),getCurrentColumn()));
 
 	// call the pre-rows event
 	if (!rowsStart()) {
@@ -149,11 +148,10 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 		// reset bind index
 		bindindex=1;
 
-		for (setCurrentColumn(0);
-			getCurrentColumn()<cols;
-			setCurrentColumn(getCurrentColumn()+1)) {
+		for (uint32_t i=0; i<cols; i++) {
 
-			// set the current column name and field
+			// set the current column and field
+			setCurrentColumn(i);
 			setCurrentColumnName(
 				sqlrcur->getColumnName(getCurrentColumn()));
 			setCurrentField(sqlrcur->getField(
@@ -222,7 +220,8 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 		}
 		setCurrentRow(getCurrentRow()+1);
 		setCurrentColumn(0);
-		setCurrentColumnName(NULL);
+		setCurrentColumnName(
+			sqlrcur->getColumnName(getCurrentColumn()));
 		setCurrentField(NULL);
 
 	} while  (!selectcur->endOfResultSet() ||

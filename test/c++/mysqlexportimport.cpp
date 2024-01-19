@@ -126,6 +126,13 @@ bool testsqlrexportcsv::tests(const char *method) {
 					method,getCurrentColumn(),currentcol);
 		return false;
 	}
+	if (charstring::compare(getCurrentColumnName(),
+				getSqlrCursor()->getColumnName(currentcol))) {
+		stdoutput.printf("\n%s - getCurrentColumnName(): %s!=%s\n",
+				method,getCurrentColumnName(),
+				getSqlrCursor()->getColumnName(currentcol));
+		return false;
+	}
 	return true;
 }
 
@@ -133,6 +140,7 @@ bool testsqlrexportcsv::columnsStart() {
 	#ifdef DEBUG
 		stdoutput.printf("\ncolumnsStart()...\n");
 	#endif
+	currentcol=0;
 	if (!sqlrexportcsv::columnsStart()) {
 		return false;
 	}
@@ -165,7 +173,9 @@ bool testsqlrexportcsv::columnEnd() {
 	if (!tests("columnEnd()")) {
 		return false;
 	}
-	currentcol++;
+	if (currentcol<getSqlrCursor()->colCount()-1) {
+		currentcol++;
+	}
 	return true;
 }
 
@@ -200,13 +210,13 @@ bool testsqlrexportcsv::rowStart() {
 	#ifdef DEBUG
 		stdoutput.printf("rowStart()...\n");
 	#endif
+	currentcol=0;
 	if (!sqlrexportcsv::rowStart()) {
 		return false;
 	}
 	if (!tests("rowStart()")) {
 		return false;
 	}
-	currentcol=0;
 	return true;
 }
 
@@ -233,7 +243,9 @@ bool testsqlrexportcsv::fieldEnd() {
 	if (!tests("fieldEnd()")) {
 		return false;
 	}
-	currentcol++;
+	if (currentcol<getSqlrCursor()->colCount()-1) {
+		currentcol++;
+	}
 	return true;
 }
 
@@ -249,6 +261,7 @@ bool testsqlrexportcsv::rowEnd() {
 	}
 	currentrow++;
 	currentcol=0;
+	exportrow=true;
 	return true;
 }
 
@@ -262,8 +275,6 @@ bool testsqlrexportcsv::rowsEnd() {
 	if (!tests("rowsEnd()")) {
 		return false;
 	}
-	exportrow=true;
-	currentcol=0;
 	currentrow=0;
 	return true;
 }
