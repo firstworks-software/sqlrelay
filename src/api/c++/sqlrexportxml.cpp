@@ -17,19 +17,6 @@ sqlrexportxml::~sqlrexportxml() {
 
 bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 
-	// get the cursor and column count
-	sqlrcursor	*sqlrcur=getSqlrCursor();
-	uint32_t	cols=sqlrcur->colCount();
-
-	// reset flags and counts
-	setExportRow(true);
-	setExportedRowCount(0);
-	setCurrentRow(0);
-	setCurrentColumn(0);
-	setCurrentColumnName(sqlrcur->getColumnName(0));
-	setCurrentField(getCurrentColumnName());
-	clearAreNumericColumns();
-
 	// output to stdoutput or create/open file
 	setFileDescriptor(&stdoutput);
 	file	f;
@@ -42,6 +29,19 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 		setFileDescriptor(&f);
 	}
 	filedescriptor	*fd=getFileDescriptor();
+
+	// get the cursor and column count
+	sqlrcursor	*sqlrcur=getSqlrCursor();
+	uint32_t	cols=sqlrcur->colCount();
+
+	// reset flags and counts
+	setExportRow(true);
+	setExportedRowCount(0);
+	setCurrentRow(0);
+	setCurrentColumn(0);
+	setCurrentColumnName(sqlrcur->getColumnName(0));
+	setCurrentField(getCurrentColumnName());
+	clearAreNumericColumns();
 
 	// export xml header
 	fd->write("<?xml version=\"1.0\"?>\n");
