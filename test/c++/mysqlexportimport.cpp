@@ -85,6 +85,37 @@ void checkSuccess(uint64_t value, uint64_t success) {
 	}
 }
 
+struct field_t {
+	const char	*name;
+	const char	*type;
+	const char	*pattern;
+	bool		quote;
+};
+
+field_t field[]={
+	{"testsmallint","smallint","%lld",false},
+	{"testmediumint","mediumint","%lld",false},
+	{"testint","int","%lld",false},
+	{"testbigint","bigint","%lld",false},
+	{"testfloat","float","%lld.1",false},
+	{"testreal","real","%lld.1",false},
+	{"testdecimal","decimal(5,1)","%lld.1",false},
+	{"testdate","date","%04lld-01-01",true},
+	{"testtime","time","01:00:00",true},
+	{"testdatetime","datetime","%04lld-01-01 01:00:00",true},
+	{"testchar","char(40)","char%lld",true},
+	{"testvarchar","varchar(40)","varchar%lld",true},
+	{"testtext","text","text%lld",true},
+	{"testtinytext","tinytext","tinytext%lld",true},
+	{"testmediumtext","mediumtext","mediumtext%lld",true},
+	{"testlongtext","longtext","longtext%lld",true},
+	{"testblob","blob","blob%lld",true},
+	{"testtinyblob","tinyblob","tinyblob%lld",true},
+	{"testmediumblob","mediumblob","mediumblob%lld",true,},
+	{"testlongblob","longblob","longblob%lld",true},
+	{NULL,NULL,NULL,false}
+};
+
 class testsqlrexportcsv : public sqlrexportcsv {
 	public:
 		testsqlrexportcsv();
@@ -105,6 +136,7 @@ class testsqlrexportcsv : public sqlrexportcsv {
 		uint32_t	currentcol;
 		uint64_t	currentrow;
 		uint64_t	exportedrowcount;
+		bool		inrows;
 };
 
 testsqlrexportcsv::testsqlrexportcsv() {
@@ -112,6 +144,7 @@ testsqlrexportcsv::testsqlrexportcsv() {
 	currentcol=0;
 	currentrow=0;
 	exportedrowcount=0;
+	inrows=false;
 }
 
 bool testsqlrexportcsv::tests(const char *method) {
@@ -137,7 +170,24 @@ bool testsqlrexportcsv::tests(const char *method) {
 				getSqlrCursor()->getColumnName(currentcol));
 		return false;
 	}
-	// getCurrentField
+	if (inrows && field[currentcol].name!=NULL) {
+		stringbuffer	f;
+		f.printf(field[currentcol].pattern,currentrow);
+		if (charstring::compare(getCurrentField(),f.getString())) {
+			stdoutput.printf("\n%s - getCurrentField(): %s!=%s\n",
+					method,getCurrentField(),
+					f.getString());
+			return false;
+		}
+	} else {
+		if (charstring::compare(getCurrentField(),
+					getCurrentColumnName())) {
+			stdoutput.printf("\n%s - getCurrentField(): %s!=%s\n",
+					method,getCurrentField(),
+					getCurrentColumnName());
+			return false;
+		}
+	}
 	if (getIsNumericColumn(currentcol)!=
 			isNumberTypeChar(getSqlrCursor()->
 						getColumnType(
@@ -163,7 +213,11 @@ bool testsqlrexportcsv::columnsStart() {
 	#ifdef DEBUG
 		stdoutput.printf("\ncolumnsStart()...\n");
 	#endif
+	exportrow=true;
 	currentcol=0;
+	currentrow=0;
+	exportedrowcount=0;
+	inrows=false;
 	if (!sqlrexportcsv::columnsStart()) {
 		return false;
 	}
@@ -196,9 +250,7 @@ bool testsqlrexportcsv::columnEnd() {
 	if (!tests("columnEnd()")) {
 		return false;
 	}
-	if (currentcol<getSqlrCursor()->colCount()-1) {
-		currentcol++;
-	}
+	currentcol++;
 	return true;
 }
 
@@ -212,7 +264,6 @@ bool testsqlrexportcsv::columnsEnd() {
 	if (!tests("columnsEnd()")) {
 		return false;
 	}
-	currentcol=0;
 	return true;
 }
 
@@ -220,6 +271,11 @@ bool testsqlrexportcsv::rowsStart() {
 	#ifdef DEBUG
 		stdoutput.printf("rowsStart()...\n");
 	#endif
+	exportrow=true;
+	currentcol=0;
+	currentrow=0;
+	exportedrowcount=0;
+	inrows=true;
 	if (!sqlrexportcsv::rowsStart()) {
 		return false;
 	}
@@ -233,6 +289,7 @@ bool testsqlrexportcsv::rowStart() {
 	#ifdef DEBUG
 		stdoutput.printf("rowStart()...\n");
 	#endif
+	exportrow=true;
 	currentcol=0;
 	if (!sqlrexportcsv::rowStart()) {
 		return false;
@@ -266,9 +323,7 @@ bool testsqlrexportcsv::fieldEnd() {
 	if (!tests("fieldEnd()")) {
 		return false;
 	}
-	if (currentcol<getSqlrCursor()->colCount()-1) {
-		currentcol++;
-	}
+	currentcol++;
 	return true;
 }
 
@@ -282,12 +337,10 @@ bool testsqlrexportcsv::rowEnd() {
 	if (!tests("rowEnd()")) {
 		return false;
 	}
-	currentrow++;
-	currentcol=0;
 	if (exportrow) {
 		exportedrowcount++;
 	}
-	exportrow=true;
+	currentrow++;
 	return true;
 }
 
@@ -301,41 +354,8 @@ bool testsqlrexportcsv::rowsEnd() {
 	if (!tests("rowsEnd()")) {
 		return false;
 	}
-	currentrow=0;
-	exportedrowcount=0;
 	return true;
 }
-
-struct field_t {
-	const char	*name;
-	const char	*type;
-	const char	*pattern;
-	bool		quote;
-};
-
-field_t field[]={
-	{"testsmallint","smallint","%lld",false},
-	{"testmediumint","mediumint","%lld",false},
-	{"testint","int","%lld",false},
-	{"testbigint","bigint","%lld",false},
-	{"testfloat","float","%lld.1",false},
-	{"testreal","real","%lld.1",false},
-	{"testdecimal","decimal(5,1)","%lld.1",false},
-	{"testdate","date","%04lld-01-01",true},
-	{"testtime","time","01:00:00",true},
-	{"testdatetime","datetime","%04lld-01-01 01:00:00",true},
-	{"testchar","char(40)","char%lld",true},
-	{"testvarchar","varchar(40)","varchar%lld",true},
-	{"testtext","text","text%lld",true},
-	{"testtinytext","tinytext","tinytext%lld",true},
-	{"testmediumtext","mediumtext","mediumtext%lld",true},
-	{"testlongtext","longtext","longtext%lld",true},
-	{"testblob","blob","blob%lld",true},
-	{"testtinyblob","tinyblob","tinyblob%lld",true},
-	{"testmediumblob","mediumblob","mediumblob%lld",true,},
-	{"testlongblob","longblob","longblob%lld",true},
-	{NULL,NULL,NULL,false}
-};
 
 void generateComparisonFile(const char *filename,
 				bool ignorecolumns,

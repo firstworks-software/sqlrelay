@@ -206,6 +206,16 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
+		 *  At this point...
+		 *  * getExportRow() should return true
+		 *  * getExportedRowCount() should return 0
+		 *  * getCurrentRow() should return 0
+		 *  * getCurrentColumn() should return 0
+		 *  * getCurrentColumnName() should return the name of column 0
+		 *  * getCurrentField() should also return the name of column 0
+		 *  * getIsNumericColumn() should return true/false correctly
+		 *    for each column
+		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and export should stop if this method return
 		 *  false. */
@@ -221,6 +231,19 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
+		 *
+		 *  At this point...
+		 *  * getExportRow() should return true
+		 *  * getExportedRowCount() should return 0
+		 *  * getCurrentRow() should return 0
+		 *  * getCurrentColumn() should return the index of the
+		 *    column that we're starting
+		 *  * getCurrentColumnName() should return the name of the
+		 *    column that we're starting
+		 *  * getCurrentField() should also return the name of the
+		 *    column that we're starting
+		 *  * getIsNumericColumn() should return true/false correctly
+		 *    for each column
 		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and export should stop if this method return
@@ -238,6 +261,19 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
+		 *  At this point...
+		 *  * getExportRow() should return true
+		 *  * getExportedRowCount() should return 0
+		 *  * getCurrentRow() should return 0
+		 *  * getCurrentColumn() should return the index of the
+		 *    column that we're ending
+		 *  * getCurrentColumnName() should return the name of the
+		 *    column that we're ending
+		 *  * getCurrentField() should also return the name of the
+		 *    column that we're ending
+		 *  * getIsNumericColumn() should return true/false correctly
+		 *    for each column
+		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and export should stop if this method return
 		 *  false. */
@@ -253,6 +289,17 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
+		 *  At this point...
+		 *  * getExportRow() should return true
+		 *  * getExportedRowCount() should return 0
+		 *  * getCurrentRow() should return 0
+		 *  * getCurrentColumn() should return one more than the index
+		 *    of the last column
+		 *  * getCurrentColumnName() should return NULL
+		 *  * getCurrentField() should also return NULL
+		 *  * getIsNumericColumn() should return true/false correctly
+		 *    for each column
+		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and export should stop if this method return
 		 *  false. */
@@ -264,6 +311,17 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
+		 *
+		 *  At this point...
+		 *  * getExportRow() should return true
+		 *  * getExportedRowCount() should return 0
+		 *  * getCurrentRow() should return 0
+		 *  * getCurrentColumn() should return 0
+		 *  * getCurrentColumnName() should return the name of column 0
+		 *  * getCurrentField() should return the value of the field in
+		 *    row 0, column 0
+		 *  * getIsNumericColumn() should return true/false correctly
+		 *    for each column
 		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and export should stop if this method return
@@ -277,6 +335,21 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
+		 *  At this point...
+		 *  * getExportRow() should return true or false, as
+		 *    appropriate for this row
+		 *  * getExportedRowCount() should return the number of rows
+		 *    that have been exported - it should not include the
+		 *    row that we are starting
+		 *  * getCurrentRow() should return the index of the row that
+		 *    we're starting
+		 *  * getCurrentColumn() should return 0
+		 *  * getCurrentColumnName() should return the name of column 0
+		 *  * getCurrentField() should return the value of the field in
+		 *    row 0, column 0
+		 *  * getIsNumericColumn() should return true/false correctly
+		 *    for each column
+		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and export should stop if this method return
 		 *  false. */
@@ -288,6 +361,24 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
+		 *
+		 *  At this point...
+		 *  * getExportRow() should return true or false, as
+		 *    appropriate for this row
+		 *  * getExportedRowCount() should return the number of rows
+		 *    that have been exported
+		 *  * getCurrentRow() should return the index of the row that
+		 *    we previously started
+		 *  * getCurrentColumn() should return the index of the column
+		 *    that corresponds to the index of the field that we're
+		 *    starting
+		 *  * getCurrentColumnName() should return the name of column
+		 *    that corresponds to the index of the field that we're
+		 *    starting
+		 *  * getCurrentField() should return the value of the field
+		 *    that we're starting
+		 *  * getIsNumericColumn() should return true/false correctly
+		 *    for each column
 		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and export should stop if this method return
@@ -301,6 +392,24 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
+		 *  At this point...
+		 *  * getExportRow() should return true or false, as
+		 *    appropriate for this row
+		 *  * getExportedRowCount() should return the number of rows
+		 *    that have been exported
+		 *  * getCurrentRow() should return the index of the row that
+		 *    we previously started
+		 *  * getCurrentColumn() should return the index of the column
+		 *    that corresponds to the index of the field that we're
+		 *    ending
+		 *  * getCurrentColumnName() should return the name of column
+		 *    that corresponds to the index of the field that we're
+		 *    ending
+		 *  * getCurrentField() should return the value of the field
+		 *    that we're ending
+		 *  * getIsNumericColumn() should return true/false correctly
+		 *    for each column
+		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and export should stop if this method return
 		 *  false. */
@@ -312,6 +421,21 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
+		 *
+		 *  At this point...
+		 *  * getExportRow() should return true or false, as
+		 *    appropriate for this row
+		 *  * getExportedRowCount() should return the number of rows
+		 *    that have been exported - it should not include the
+		 *    row that we are ending
+		 *  * getCurrentRow() should return the index of the row that
+		 *    we're ending
+		 *  * getCurrentColumn() should return one more than the index
+		 *    of the last column
+		 *  * getCurrentColumnName() should return NULL
+		 *  * getCurrentField() should return NULL
+		 *  * getIsNumericColumn() should return true/false correctly
+		 *    for each column
 		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and export should stop if this method return
@@ -325,13 +449,29 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
+		 *  At this point...
+		 *  * getExportRow() should return true or false,
+		 *    as appropriate for the last row
+		 *  * getExportedRowCount() should return the number of rows
+		 *    that were exported
+		 *  * getCurrentRow() should return one more than the index
+		 *    of the last row
+		 *  * getCurrentColumn() should return one more than the index
+		 *    of the last column
+		 *  * getCurrentColumnName() should return NULL
+		 *  * getCurrentField() should return NULL
+		 *  * getIsNumericColumn() should return true/false correctly
+		 *    for each column
+		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and export should stop if this method return
 		 *  false. */
 		virtual	bool	rowsEnd();
 
 		/** Returns the number of rows that were exported by the most
-		 *  recent call to one of the exportTo*() methods. */
+		 *  recent call to one of the exportTo*() methods, or the
+		 *  current number of rows that have been exported, if called
+		 *  from inside one of the Start()/End() methods. */
 		uint64_t	getExportedRowCount();
 
 	protected:

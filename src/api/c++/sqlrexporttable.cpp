@@ -58,10 +58,11 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 
 	// export bind variables...
 	uint32_t	bindindex=1;
-	for (uint32_t i=0; i<cols; i++) {
+	for (setCurrentColumn(0);
+			getCurrentColumn()<cols;
+			setCurrentColumn(getCurrentColumn()+1)) {
 
 		// set the current column (and field)
-		setCurrentColumn(i);
 		setCurrentColumnName(
 			sqlrcur->getColumnName(getCurrentColumn()));
 		setCurrentField(getCurrentColumnName());
@@ -95,6 +96,10 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 		}
 	}
 
+	// set the current column and field to NULL
+	setCurrentColumnName(NULL);
+	setCurrentField(NULL);
+
 	// call the post-columns event
 	// (we call this before closing the columns in case an overridden
 	// columnsEnd() wants to add more columns or something)
@@ -106,8 +111,8 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 
 	// reset current column/field
 	setCurrentColumn(0);
-	setCurrentColumnName(sqlrcur->getColumnName(getCurrentColumn()));
-	setCurrentField(sqlrcur->getField(getCurrentRow(),getCurrentColumn()));
+	setCurrentColumnName(sqlrcur->getColumnName(0));
+	setCurrentField(sqlrcur->getField(0,(uint32_t)0));
 
 	// call the pre-rows event
 	if (!rowsStart()) {
@@ -137,8 +142,11 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 			sqlrcon->begin();
 		}
 
-		// reset export-row flag
+		// reset export-row flag and current column/field
 		setExportRow(true);
+		setCurrentColumn(0);
+		setCurrentColumnName(sqlrcur->getColumnName(0));
+		setCurrentField(sqlrcur->getField(getCurrentRow(),(uint32_t)0));
 
 		// call the pre-row event
 		if (!rowStart()) {
@@ -209,21 +217,23 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 		}
 		sqlrcur->clearBinds();
 
+		// set the current column and field to NULL
+		setCurrentColumnName(NULL);
+		setCurrentField(NULL);
+
 		// call the post-row event
 		if (!rowEnd()) {
 			success=false;
 			break;
 		}
 
-		// update counts and currents
+		// update exported row count
 		if (getExportRow()) {
 			setExportedRowCount(getExportedRowCount()+1);
 		}
+
+		// update current row
 		setCurrentRow(getCurrentRow()+1);
-		setCurrentColumn(0);
-		setCurrentColumnName(
-			sqlrcur->getColumnName(getCurrentColumn()));
-		setCurrentField(NULL);
 
 	} while  (!selectcur->endOfResultSet() ||
 			getCurrentRow()<selectcur->rowCount());
