@@ -336,8 +336,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  override this method to do something else.
 		 *
 		 *  At this point...
-		 *  * getExportRow() should return true or false, as
-		 *    appropriate for this row
+		 *  * getExportRow() should return true
 		 *  * getExportedRowCount() should return the number of rows
 		 *    that have been exported - it should not include the
 		 *    row that we are starting
@@ -349,6 +348,9 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *    row 0, column 0
 		 *  * getIsNumericColumn() should return true/false correctly
 		 *    for each column
+		 *
+		 *  This is a good place to call setExportRow(false) if you
+		 *  don't want this row to be exported.
 		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and export should stop if this method return
@@ -380,6 +382,12 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  * getIsNumericColumn() should return true/false correctly
 		 *    for each column
 		 *
+		 *  This is a good place to call setCurrentField(...) if you
+		 *  want to modify the value of the field that is going to
+		 *  be exported.  Note that if the value of the field is
+		 *  replaced, then the memory allocated to store the new value
+		 *  should persist until fieldEnd() is called.
+		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and export should stop if this method return
 		 *  false. */
@@ -409,6 +417,10 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *    that we're ending
 		 *  * getIsNumericColumn() should return true/false correctly
 		 *    for each column
+		 *
+		 *  If you called setCurrentField(...) in fieldStart(), and had
+		 *  to allocate memory for the new value, then this is a good
+		 *  place to free that memory.
 		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and export should stop if this method return
