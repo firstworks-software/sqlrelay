@@ -35,9 +35,14 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 	setExportedRowCount(0);
 	setCurrentRow(0);
 	setCurrentColumn(0);
-	setCurrentColumnName(sqlrcur->getColumnName(getCurrentColumn()));
+	setCurrentColumnName(sqlrcur->getColumnName(0));
 	setCurrentField(getCurrentColumnName());
 	clearNumberColumns();
+
+	// determine numeric columns
+	for (uint32_t i=0; i<cols; i++) {
+		setNumberColumn(i,isNumberTypeChar(sqlrcur->getColumnType(i)));
+	}
 
 	// call the pre-columns event
 	if (!columnsStart()) {
@@ -59,11 +64,6 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 		setCurrentColumnName(
 			sqlrcur->getColumnName(getCurrentColumn()));
 		setCurrentField(getCurrentColumnName());
-
-		// set whether this is a numeric column or not
-		setNumberColumn(getCurrentColumn(),
-			isNumberTypeChar(selectcur->getColumnType(
-						getCurrentColumn())));
 
 		// call the pre-column event
 		if (!columnStart()) {

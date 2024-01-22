@@ -2,6 +2,8 @@
 // See the file COPYING for more information.
 
 #include <sqlrelay/sqlrexportcsv.h>
+#define NEED_IS_NUMBER_TYPE_CHAR 1
+#include "../../src/common/datatypes.h"
 #include <rudiments/process.h>
 #include <rudiments/sys.h>
 #include <rudiments/file.h>
@@ -100,14 +102,16 @@ class testsqlrexportcsv : public sqlrexportcsv {
 		bool	tests(const char *method);
 
 		bool		exportrow;
-		uint64_t	currentcol;
-		uint32_t	currentrow;
+		uint32_t	currentcol;
+		uint64_t	currentrow;
+		uint64_t	exportedrowcount;
 };
 
 testsqlrexportcsv::testsqlrexportcsv() {
 	exportrow=true;
 	currentcol=0;
 	currentrow=0;
+	exportedrowcount=0;
 }
 
 bool testsqlrexportcsv::tests(const char *method) {
@@ -131,6 +135,25 @@ bool testsqlrexportcsv::tests(const char *method) {
 		stdoutput.printf("\n%s - getCurrentColumnName(): %s!=%s\n",
 				method,getCurrentColumnName(),
 				getSqlrCursor()->getColumnName(currentcol));
+		return false;
+	}
+	// getCurrentField
+	if (getNumberColumn(currentcol)!=
+			isNumberTypeChar(getSqlrCursor()->
+						getColumnType(
+							getCurrentColumn()))) {
+		stdoutput.printf("\n%s - getNumberColumn(%d): %d!=%d\n",
+				method,currentcol,
+				getNumberColumn(currentcol),
+				isNumberTypeChar(
+					getSqlrCursor()->
+						getColumnType(
+							getCurrentColumn())));
+		return false;
+	}
+	if (getExportedRowCount()!=exportedrowcount) {
+		stdoutput.printf("\n%s - getExportedRowCount(): %lld!=%lld\n",
+				method,getExportedRowCount(),exportedrowcount);
 		return false;
 	}
 	return true;
@@ -261,6 +284,9 @@ bool testsqlrexportcsv::rowEnd() {
 	}
 	currentrow++;
 	currentcol=0;
+	if (exportrow) {
+		exportedrowcount++;
+	}
 	exportrow=true;
 	return true;
 }
@@ -276,6 +302,7 @@ bool testsqlrexportcsv::rowsEnd() {
 		return false;
 	}
 	currentrow=0;
+	exportedrowcount=0;
 	return true;
 }
 
