@@ -32,7 +32,7 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 	setCurrentColumn(0);
 	setCurrentColumnName(sqlrcur->getColumnName(0));
 	setCurrentField(getCurrentColumnName());
-	clearNumberColumns();
+	clearAreNumericColumns();
 
 	// output to stdoutput or create/open file
 	setFileDescriptor(&stdoutput);
@@ -49,7 +49,8 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 
 	// determine numeric columns
 	for (uint32_t i=0; i<cols; i++) {
-		setNumberColumn(i,isNumberTypeChar(sqlrcur->getColumnType(i)));
+		setIsNumericColumn(
+			i,isNumberTypeChar(sqlrcur->getColumnType(i)));
 	}
 
 	// call the pre-columns event
@@ -166,7 +167,8 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 				// spreadsheet apps) likes to convert 12+
 				// digit numbers to scientific notation.
 				bool	quote=
-					(!getNumberColumn(getCurrentColumn()) ||
+					(!getIsNumericColumn(
+						getCurrentColumn()) ||
 					charstring::getLength(
 						getCurrentField())>=12);
 
@@ -251,11 +253,12 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 	setCurrentColumn(0);
 	setCurrentColumnName(sqlrcur->getColumnName(0));
 	setCurrentField(getCurrentColumnName());
-	clearNumberColumns();
+	clearAreNumericColumns();
 
 	// determine numeric columns
 	for (uint32_t i=0; i<cols; i++) {
-		setNumberColumn(i,isNumberTypeChar(sqlrcur->getColumnType(i)));
+		setIsNumericColumn(
+			i,isNumberTypeChar(sqlrcur->getColumnType(i)));
 	}
 
 	// call the pre-columns event
@@ -370,7 +373,7 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 
 				// export the field
 				domnode	*field=row->appendTag("v");
-				if (getNumberColumn(getCurrentColumn())) {
+				if (getIsNumericColumn(getCurrentColumn())) {
 					field->setAttributeValue("t","n");
 					field->setAttributeValue("v",
 							getCurrentField());

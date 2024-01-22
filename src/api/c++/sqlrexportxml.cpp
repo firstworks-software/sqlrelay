@@ -28,7 +28,7 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 	setCurrentColumn(0);
 	setCurrentColumnName(sqlrcur->getColumnName(0));
 	setCurrentField(getCurrentColumnName());
-	clearNumberColumns();
+	clearAreNumericColumns();
 
 	// output to stdoutput or create/open file
 	setFileDescriptor(&stdoutput);
@@ -55,7 +55,8 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 
 	// determine numeric columns
 	for (uint32_t i=0; i<cols; i++) {
-		setNumberColumn(i,isNumberTypeChar(sqlrcur->getColumnType(i)));
+		setIsNumericColumn(
+			i,isNumberTypeChar(sqlrcur->getColumnType(i)));
 	}
 
 	// call the pre-columns event

@@ -184,16 +184,16 @@ const char *sqlrexport::getCurrentField() {
 	return currentfield;
 }
 
-void sqlrexport::setNumberColumn(uint64_t index, bool value) {
-	numbercolumns[index]=value;
+void sqlrexport::setIsNumericColumn(uint64_t index, bool value) {
+	numericcolumn[index]=value;
 }
 
-bool sqlrexport::getNumberColumn(uint64_t index) {
-	return numbercolumns[index];
+bool sqlrexport::getIsNumericColumn(uint64_t index) {
+	return numericcolumn[index];
 }
 
-void sqlrexport::clearNumberColumns() {
-	numbercolumns.clear();
+void sqlrexport::clearAreNumericColumns() {
+	numericcolumn.clear();
 }
 
 void sqlrexport::setFileDescriptor(filedescriptor *fd) {

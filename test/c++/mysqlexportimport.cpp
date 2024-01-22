@@ -138,13 +138,13 @@ bool testsqlrexportcsv::tests(const char *method) {
 		return false;
 	}
 	// getCurrentField
-	if (getNumberColumn(currentcol)!=
+	if (getIsNumericColumn(currentcol)!=
 			isNumberTypeChar(getSqlrCursor()->
 						getColumnType(
 							getCurrentColumn()))) {
-		stdoutput.printf("\n%s - getNumberColumn(%d): %d!=%d\n",
+		stdoutput.printf("\n%s - getIsNumericColumn(%d): %d!=%d\n",
 				method,currentcol,
-				getNumberColumn(currentcol),
+				getIsNumericColumn(currentcol),
 				isNumberTypeChar(
 					getSqlrCursor()->
 						getColumnType(

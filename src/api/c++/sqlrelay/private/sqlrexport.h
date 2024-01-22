@@ -16,5 +16,5 @@
 		uint8_t			coarseloglevel;
 		uint8_t			fineloglevel;
 		uint32_t		logindent;
-		dynamicarray<bool>	numbercolumns;
+		dynamicarray<bool>	numericcolumn;
 		uint64_t		exportedrowcount;

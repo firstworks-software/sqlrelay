@@ -400,21 +400,24 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  exportTo*() methods, or by implementations of the various
 		 *  Start()/End() methods to set whether the data type of the
 		 *  column of the result set in position "index" is a numeric
-		 *  type or not. */
-		void	setNumberColumn(uint64_t index, bool value);
+		 *  type or not.  If "numeric" is true then the type of the
+		 *  column is set to numeric.  If "numeric" is false then the
+		 *  type of the column is set to non-numeric. */
+		void	setIsNumericColumn(uint64_t index, bool numeric);
 
 		/** This method may be called by implementations of the
 		 *  exportTo*() methods, or by implementations of the various
 		 *  Start()/End() methods to get whether the data type of the
 		 *  column of the result set in position "index" is a numeric
 		 *  type or not. */
-		bool	getNumberColumn(uint64_t index);
+		bool	getIsNumericColumn(uint64_t index);
 
 		/** This method may be called by implementations of the
 		 *  exportTo*() methods, or by implementations of the various
 		 *  Start()/End() methods to clear the data types of all
-		 *  columns of the result set to non-numeric. */
-		void	clearNumberColumns();
+		 *  columns of the result set, setting them to to
+		 *  non-numeric. */
+		void	clearAreNumericColumns();
 
 		/** This method may be called by implementations of the
 		 *  exportTo*() methods, or by implementations of the various
