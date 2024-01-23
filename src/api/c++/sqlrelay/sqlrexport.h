@@ -217,7 +217,8 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  * getCurrentColumn() should return 0
 		 *  * getCurrentColumnName() should return the name of column 0
 		 *  * getCurrentField() should also return the name of column 0
-		 *  * getIsNumericColumn() should return false for all columns
+		 *  * getIsNumericColumn() should return true/false correctly
+		 *    for each column
 		 *  * Nothing should have been written to files, domnodes,
 		 *    or tables
 		 *
