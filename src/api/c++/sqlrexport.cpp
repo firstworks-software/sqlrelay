@@ -277,16 +277,18 @@ bool sqlrexport::exportToFile(const char *filename, const char *table) {
 }
 
 bool sqlrexport::exportToTable(sqlrconnection *sqlrcon,
-					const char *table) {
+					const char *table,
+					uint64_t commitcount) {
 	sqlrcursor	*sqlrcur=new sqlrcursor(sqlrcon);
-	bool		retval=exportToTable(sqlrcon,sqlrcur,table);
+	bool		retval=exportToTable(sqlrcon,sqlrcur,table,commitcount);
 	delete sqlrcur;
 	return retval;
 }
 
 bool sqlrexport::exportToTable(sqlrconnection *sqlrcon,
 					sqlrcursor *sqlrcur,
-					const char *table) {
+					const char *table,
+					uint64_t commitcount) {
 	clearOutput();
 	return true;
 }

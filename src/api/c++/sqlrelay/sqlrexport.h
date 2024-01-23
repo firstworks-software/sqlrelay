@@ -130,7 +130,9 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 
 		/** Exports the result set of the cursor currently in use as
 		 *  set by the most recent call to setSqlrCursor() to the
-		 *  database table "table" using "sqlrcon".
+		 *  database table "table" using "sqlrcon".  A commit is
+		 *  called every "commitcount" rows.  No commit is called if
+		 *  "commitcount" is set to 0.
 		 *
 		 *  Returns true on success and false if an error occurred.
 		 *
@@ -140,11 +142,14 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  cursor.  Child classes that support export to a database
 		 *  table should override that exportToTable() method. */
 		virtual	bool	exportToTable(sqlrconnection *sqlrcon,
-							const char *table);
+							const char *table,
+							uint64_t commitcount);
 
 		/** Exports the result set of the cursor currently in use as
 		 *  set by the most recent call to setSqlrCursor() to the
 		 *  database table "table" using "sqlrcon" and "sqlrcur".
+		 *  A commit is called every "commitcount" rows.  No commit is
+		 *  called if "commitcount" is set to 0.
 		 *
 		 *  Returns true on success and false if an error occurred.
 		 *
@@ -159,7 +164,8 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false.  */
 		virtual	bool	exportToTable(sqlrconnection *sqlrcon,
 							sqlrcursor *sqlrcur,
-							const char *table);
+							const char *table,
+							uint64_t commitcount);
 
 		/** Exports the result set of the cursor currently in use as
 		 *  set by the most recent call to setSqlrCursor() to the

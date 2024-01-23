@@ -8,25 +8,17 @@
 #include <datatypes.h>
 
 sqlrexporttable::sqlrexporttable() {
-	commitcount=0;
 }
 
 sqlrexporttable::~sqlrexporttable() {
 }
 
-void sqlrexporttable::setCommitCount(uint64_t commitcount) {
-	this->commitcount=commitcount;
-}
-
-uint64_t sqlrexporttable::getCommitCount() {
-	return commitcount;
-}
-
 bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 						sqlrcursor *sqlrcur,
-						const char *table) {
+						const char *table,
+						uint64_t commitcount) {
 
-	if (!sqlrexport::exportToTable(sqlrcon,sqlrcur,table)) {
+	if (!sqlrexport::exportToTable(sqlrcon,sqlrcur,table,commitcount)) {
 		return false;
 	}
 

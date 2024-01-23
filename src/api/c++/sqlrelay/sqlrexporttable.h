@@ -15,23 +15,17 @@ class SQLRCLIENT_DLLSPEC sqlrexporttable : public sqlrexport {
 		/** Destroys this instance of the sqlrexporttable class. */
 		~sqlrexporttable();
 
-		/** Sets the number of insert statements between commits to
-		 *  "commitcount". */
-		void	setCommitCount(uint64_t commitcount);
-
-		/** Returns the commit count. */
-		uint64_t	getCommitCount();
-
 		/** Exports the result set of the cursor currently in use as
 		 *  set by the most recent call to setSqlrCursor() to the
 		 *  database table "table" using "sqlrcon" and "sqlrcur".
+		 *  A commit is called every "commitcount" rows.  No commit is
+		 *  called if "commitcount" is set to 0.
 		 *
 		 *  Returns true on success and false if an error occurred. */
 		bool	exportToTable(sqlrconnection *sqlrcon,
 						sqlrcursor *sqlrcur,
-						const char *table);
-
-	#include <sqlrelay/private/sqlrexporttable.h>
+						const char *table,
+						uint64_t commitcount);
 };
 
 #endif

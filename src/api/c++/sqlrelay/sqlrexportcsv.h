@@ -19,6 +19,20 @@ class SQLRCLIENT_DLLSPEC sqlrexportcsv : public sqlrexport {
 		 *  set by the most recent call to setSqlrCursor() to file
 		 *  "filename" in CSV format.
 		 *
+		 *  The following result set:
+		 *
+		 *  col1,col2,col3,col4
+		 *  =====================
+		 *  0,0.0,field00,field01
+		 *  1,1.1,field10,field11
+		 *
+		 *  would be exported as:
+		 *
+		 *  "col1","col2","col3","col4"
+		 *  0,0.0,"field00","field01"
+		 *  1,1.1,"field10","field11"
+		 *
+		 *
 		 *  The "table" argument is ignored in this implementation.
 		 *
 		 *  Returns true on success and false if an error occurred. */
