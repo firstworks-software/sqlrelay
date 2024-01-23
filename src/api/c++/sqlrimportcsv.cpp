@@ -321,17 +321,17 @@ bool sqlrimportcsv::field(const char *value, bool quoted) {
 		}
 
 		// append the field
+		uint64_t	index=fields.getCount();
 		if (primarykeysequence) {
 			stringbuffer	tmp;
 			tmp.printf(sqlrcon->nextvalFormat(),primarykeysequence);
-			fields[fields.getCount()]=tmp.detachString();
+			fields[index]=tmp.detachString();
 		} else {
-			fields[fields.getCount()]=
-					charstring::duplicate("null");
+			fields[index]=charstring::duplicate("null");
 		}
 
 		// set the current field
-		setCurrentField(fields[fields.getCount()]);
+		setCurrentField(fields[index]);
 
 		// call the post-field event
 		if (!fieldEnd()) {
@@ -370,12 +370,13 @@ bool sqlrimportcsv::field(const char *value, bool quoted) {
 			}
 
 			// append the field
+			uint64_t	index=fields.getCount();
 			stringbuffer	tmp;
 			appendField(&tmp,colvalue,0,true);
-			fields[fields.getCount()]=tmp.detachString();
+			fields[index]=tmp.detachString();
 
 			// set the current field
-			setCurrentField(fields[fields.getCount()]);
+			setCurrentField(fields[index]);
 
 			// call the post-field event
 			if (!fieldEnd()) {
@@ -422,12 +423,13 @@ bool sqlrimportcsv::field(const char *value, bool quoted) {
 		}
 
 		// append the field
+		uint64_t	index=fields.getCount();
 		stringbuffer	tmp;
 		appendField(&tmp,value,currenttablecol,false);
-		fields[fields.getCount()]=tmp.detachString();
+		fields[index]=tmp.detachString();
 
 		// set the current field
-		setCurrentField(fields[fields.getCount()]);
+		setCurrentField(fields[index]);
 
 		// call the post-field event
 		if (!fieldEnd()) {
