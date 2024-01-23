@@ -22,6 +22,10 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 		return false;
 	}
 
+	// capture the table and commit count
+	setTable(table);
+	setCommitCount(commitcount);
+
 	// get the cursor and column count
 	sqlrcursor	*selectcur=getSqlrCursor();
 	uint32_t	cols=selectcur->colCount();
@@ -116,7 +120,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 	}
 
 	// start a transaction, if necessary
-	if (commitcount) {
+	if (getCommitCount()) {
 		sqlrcon->begin();
 	}
 
@@ -133,7 +137,8 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 	do {
 
 		// commit/begin, if necessary
-		if (commitcount && !((getCurrentRow()+1)%commitcount)) {
+		if (getCommitCount() &&
+			!((getCurrentRow()+1)%getCommitCount())) {
 			sqlrcon->commit();
 			sqlrcon->begin();
 		}
@@ -235,7 +240,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 			getCurrentRow()<selectcur->rowCount());
 
 	// final commit, if necessary
-	if (commitcount) {
+	if (getCommitCount()) {
 		sqlrcon->commit();
 	}
 

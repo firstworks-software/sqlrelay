@@ -17,7 +17,8 @@ class SQLRCLIENT_DLLSPEC sqlrexportcsv : public sqlrexport {
 
 		/** Exports the result set of the cursor currently in use as
 		 *  set by the most recent call to setSqlrCursor() to file
-		 *  "filename" in CSV format.
+		 *  "filename" in CSV format, or to standard output if
+		 *  "filename" is NULL or empty.
 		 *
 		 *  The following result set:
 		 *

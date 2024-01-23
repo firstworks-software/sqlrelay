@@ -11,20 +11,7 @@ sqlrexport::sqlrexport() {
 	ignorecolumns=false;
 	columnstoignore=NULL;
 
-	fd=NULL;
-	jsondomnode=NULL;
-	columnsdomnode=NULL;
-	currentcolumndomnode=NULL;
-	rowsdomnode=NULL;
-	currentrowdomnode=NULL;
-	currentfielddomnode=NULL;
-
-	exportrow=true;
-	currentrow=0;
-	currentcol=0;
-	currentcolname=NULL;
-	currentfield=NULL;
-	exportedrowcount=0;
+	clearOutput();
 
 	lg=NULL;
 	coarseloglevel=0;
@@ -207,6 +194,14 @@ void sqlrexport::clearAreNumericColumns() {
 	numericcolumn.clear();
 }
 
+void sqlrexport::setFileName(const char *filename) {
+	this->filename=filename;
+}
+
+const char *sqlrexport::getFileName() {
+	return filename;
+}
+
 void sqlrexport::setFileDescriptor(filedescriptor *fd) {
 	this->fd=fd;
 }
@@ -215,8 +210,24 @@ filedescriptor *sqlrexport::getFileDescriptor() {
 	return fd;
 }
 
+void sqlrexport::setTable(const char *table) {
+	this->table=table;
+}
+
+const char *sqlrexport::getTable() {
+	return table;
+}
+
 stringbuffer *sqlrexport::getInsertQueryBuffer() {
 	return &insertquery;
+}
+
+void sqlrexport::setCommitCount(uint64_t commitcount) {
+	this->commitcount=commitcount;
+}
+
+uint64_t sqlrexport::getCommitCount() {
+	return commitcount;
 }
 
 void sqlrexport::setJsonDomNode(domnode *dn) {
@@ -303,8 +314,14 @@ bool sqlrexport::exportToJsonDomNode(domnode *jsondomnode, const char *table) {
 }
 
 void sqlrexport::clearOutput() {
+
+	filename=NULL;
 	fd=NULL;
+
+	table=NULL;
 	insertquery.clear();
+	commitcount=0;
+
 	jsondomnode=NULL;
 	columnsdomnode=NULL;
 	currentcolumndomnode=NULL;

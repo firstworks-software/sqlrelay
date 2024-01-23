@@ -17,7 +17,8 @@ class SQLRCLIENT_DLLSPEC sqlrexportxml : public sqlrexport {
 
 		/** Exports the result set of the cursor currently in use as
 		 *  set by the most recent call to setSqlrCursor() to the file
-		 *  "filename" in XML format.
+		 *  "filename" in XML format, or to standard output if
+		 *  "filename" is NULL or empty.
 		 *
 		 *  If "table" is non-null then the table name is embedded in
 		 *  the XML file in the <table/> tag.  If "table" is null then

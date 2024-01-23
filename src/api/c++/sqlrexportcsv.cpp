@@ -25,6 +25,10 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 		return false;
 	}
 
+	// capture the filename and table
+	setFileName(filename);
+	setTable(table);
+
 	// output to stdoutput or create/open file
 	setFileDescriptor(&stdoutput);
 	file	f;
@@ -261,6 +265,7 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 		return false;
 	}
 
+	// capture the top-level domnode
 	setJsonDomNode(jsondomnode);
 
 	// get the cursor and column count

@@ -21,6 +21,10 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 		return false;
 	}
 
+	// capture the filename and table
+	setFileName(filename);
+	setTable(table);
+
 	// output to stdoutput or create/open file
 	setFileDescriptor(&stdoutput);
 	file	f;

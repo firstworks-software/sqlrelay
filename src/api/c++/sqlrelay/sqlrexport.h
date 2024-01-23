@@ -95,7 +95,8 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 
 		/** Exports the result set of the cursor currently in use as
 		 *  set by the most recent call to setSqlrCursor() to file
-		 *  "filename".
+		 *  "filename" or to standard output if "filename" is NULL or
+		 *  empty.
 		 *
 		 *  Returns true on success and false if an error occurred.
 		 *
@@ -107,7 +108,8 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 
 		/** Exports the result set of the cursor currently in use as
 		 *  set by the most recent call to setSqlrCursor() to file
-		 *  "filename".
+		 *  "filename" or to standard output if "filename" is NULL or
+		 *  empty.
 		 *
 		 *  If "table" is non-null, then the result set is presumed
 		 *  to be a (possibly partial) dump of that table, and the
@@ -494,181 +496,271 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 
 	protected:
 
-		/** This method may be called by implementations of the
-		 *  exportTo*() methods, or by implementations of the various
-		 *  Start()/End() methods to indicate whether the current row
-		 *  of the result set should be exported or not. */
+		/** Sets whether the current row of the result set will be
+		 *  exported or not.
+		 *  
+		 *  Should be called by implementations of exportTo*().  May
+		 *  also be called by rowStart().  Not commonly called by other
+		 *  *Start/End() methods. */
 		void	setExportRow(bool exportrow);
 
-		/** This method may be called by implementations of the
-		 *  exportTo*() methods, or by implementations of the various
-		 *  Start()/End() methods to determine whether the current row
-		 *  of the result set should be exported or not. */
+		/** Gets whether the current row of the result set will be
+		 *  exported or not.
+		 *  
+		 *  May be called by implementations of exportTo*() or by
+		 *  implementations of the *Start/End() methods. */
 		bool	getExportRow();
 
-		/** This method may be called by implementations of the
-		 *  exportTo*() methods, or by implementations of the various
-		 *  Start()/End() methods to set the index of the row of the
-		 *  result set that is currently being exported. */
+		/** Sets the index of the row of the result set that is
+		 *  currently being exported.
+		 *  
+		 *  Should be called by implementations of exportTo*().  Not
+		 *  commonly called by implementations of the *Start/End()
+		 *  methods. */
 		void	setCurrentRow(uint64_t currentrow);
 
-		/** This method may be called by implementations of the
-		 *  exportTo*() methods, or by implementations of the various
-		 *  Start()/End() methods to get the index of the row of the
-		 *  result set that is currently being exported. */
+		/** Gets the index of the row of the result set that is
+		 *  currently being exported.
+		 *
+		 *  May be called by implementations of exportTo*() or by
+		 *  implementations of the *Start/End() methods. */
 		uint64_t	getCurrentRow();
 
-		/** This method may be called by implementations of the
-		 *  exportTo*() methods, or by implementations of the various
-		 *  Start()/End() methods to set the index of the column of the
-		 *  result set that is currently being exported. */
+		/** Sets the index of the column of the result set that is
+		 *  currently being exported.
+		 *  
+		 *  Should be called by implementations of exportTo*().  Not
+		 *  commonly called by implementations of the *Start/End()
+		 *  methods. */
 		void	setCurrentColumn(uint32_t currentcol);
 
-		/** This method may be called by implementations of the
-		 *  exportTo*() methods, or by implementations of the various
-		 *  Start()/End() methods to get the index of the column of the
-		 *  result set that is currently being exported. */
+		/** Gets the index of the column of the result set that is
+		 *  currently being exported.
+		 *
+		 *  May be called by implementations of exportTo*() or by
+		 *  implementations of the *Start/End() methods. */
 		uint32_t	getCurrentColumn();
 
-		/** This method may be called by implementations of the
-		 *  exportTo*() methods, or by implementations of the various
-		 *  Start()/End() methods to set the name of the column of the
-		 *  result set that is currently being exported. */
+		/** Sets the name of the column of the result set that is
+		 *  currently being exported.
+		 *
+		 *  Should be called by implementations of exportTo*().  May
+		 *  also be called by columnStart().  Not commonly called by
+		 *  other *Start/End() methods. */
 		void	setCurrentColumnName(const char *currentcolname);
 
-		/** This method may be called by implementations of the
-		 *  exportTo*() methods, or by implementations of the various
-		 *  Start()/End() methods to get the name of the column of the
-		 *  result set that is currently being exported. */
+		/** Gets the name of the column of the result set that is
+		 *  currently being exported.
+		 *
+		 *  May be called by implementations of exportTo*() or by
+		 *  implementations of the *Start/End() methods. */
 		const char	*getCurrentColumnName();
 
-		/** This method may be called by implementations of the
-		 *  exportTo*() methods, or by implementations of the various
-		 *  Start()/End() methods to set the value of the field of the
-		 *  result set that is currently being exported. */
+		/** Sets the value of the field of the result set that is
+		 *  currently being exported.
+		 *
+		 *  Should be called by implementations of exportTo*().  Not
+		 *  commonly called by implementations of the *Start/End()
+		 *  methods. */
 		void	setCurrentField(const char *currentfield);
 
-		/** This method may be called by implementations of the
-		 *  exportTo*() methods, or by implementations of the various
-		 *  Start()/End() methods to get the value of the field of the
-		 *  result set that is currently being exported. */
+		/** Gets the value of the field of the result set that is
+		 *  currently being exported.
+		 *
+		 *  May be called by implementations of exportTo*() or by
+		 *  implementations of the *Start/End() methods. */
 		const char	*getCurrentField();
 
-		/** This method may be called by implementations of the
-		 *  exportTo*() methods, or by implementations of the various
-		 *  Start()/End() methods to set whether the data type of the
-		 *  column of the result set in position "index" is a numeric
-		 *  type or not.  If "numeric" is true then the type of the
-		 *  column is set to numeric.  If "numeric" is false then the
-		 *  type of the column is set to non-numeric. */
+		/** Sets whether the data type of the column of the result set
+		 *  in position "index" is a numeric type or not.  If "numeric"
+		 *  is true then the type of the column is set to numeric.  If
+		 *  "numeric" is false then the type of the column is set to
+		 *  non-numeric.
+		 *
+		 *  Should be called by implementations of exportTo*().  Not
+		 *  commonly called by implementations of the *Start/End()
+		 *  methods. */
 		void	setIsNumericColumn(uint64_t index, bool numeric);
 
-		/** This method may be called by implementations of the
-		 *  exportTo*() methods, or by implementations of the various
-		 *  Start()/End() methods to get whether the data type of the
-		 *  column of the result set in position "index" is a numeric
-		 *  type or not. */
+		/** Get whether the data type of the column of the result set
+		 *  in position "index" is a numeric type or not.
+		 *
+		 *  May be called by implementations of exportTo*() or by
+		 *  implementations of the *Start/End() methods. */
 		bool	getIsNumericColumn(uint64_t index);
 
-		/** This method may be called by implementations of the
-		 *  exportTo*() methods, or by implementations of the various
-		 *  Start()/End() methods to clear the data types of all
-		 *  columns of the result set, setting them to to
-		 *  non-numeric. */
+		/** Clears the data types of all columns of the result set,
+		 *  setting them to to non-numeric.
+		 *
+		 *  Should be called by implementations of exportTo*().  Not
+		 *  commonly called by implementations of the *Start/End()
+		 *  methods. */
 		void	clearAreNumericColumns();
 
-		/** This method may be called by implementations of the
-		 *  exportTo*() methods, or by implementations of the various
-		 *  Start()/End() methods to set the number of rows that have
-		 *  been exported. */
-		void setExportedRowCount(uint64_t exportedrowcount);
+		/** Sets the number of rows that have been exported.
+		 *
+		 *  Should be called by implementations of exportTo*().  Not
+		 *  commonly called by implementations of the *Start/End()
+		 *  methods. */
+		void	setExportedRowCount(uint64_t exportedrowcount);
 
-		/** This method may be called by implementations of
- 		 *  exportToFile() to set the file descriptor to which to
- 		 *  export data. */
+		/** Captures the name of the file to which data will be
+		 *  exported, making it available to the *Start/End()
+		 *  methods.
+		 *
+		 *  Should be called by implementations of exportToFile().  Not
+		 *  commonly called by implementations of the *Start/End()
+		 *  methods. */
+		void	setFileName(const char *filename);
+
+		/** Gets the name of the file to which data is being exported.
+		 *
+		 *  May be called by implementations of exportToFile() or by
+		 *  implementations of the *Start/End() methods. */
+		const char	*getFileName();
+
+		/** Sets the file descriptor to which export data will be
+ 		 *  exported.
+ 		 *
+		 *  Should be called by implementations of exportToFile().  Not
+		 *  commonly called by implementations of the *Start/End()
+		 *  methods. */
 		void	setFileDescriptor(filedescriptor *fd);
 
-		/** This method may be called by implementations of
-		 *  exportToFile() to get the file descriptor to which data is
-		 *  being exported. */
+		/** Gets the file descriptor to which data is being exported.
+		 *
+		 *  May be called by implementations of exportToFile() or by
+		 *  implementations of the *Start/End() methods. */
 		filedescriptor	*getFileDescriptor();
 
-		/** This method may be called by implementations of the
-		 *  exportToTable() methods, or by implementations of the
-		 *  various Start()/End() methods to access the buffer that the
-		 *  insert query is written to before it is exported. */
+		/** Captures the name of the table associated with the export,
+		 *  making it available to the *Start/End() methods.
+		 *
+		 *  In the case of exportToFile() or exportToJsonDomNode(), this
+		 *  is the table that is being exported - commonly NULL or
+		 *  empty.
+		 *
+		 *  In the case of exportToTable(), this is the table that data
+		 *  will be exported to.
+		 *
+		 *  Should be called by implementations of exportTo*().  Not
+		 *  commonly called by implementations of the *Start/End()
+		 *  methods. */
+		void	setTable(const char *table);
+
+		/** Gets the name of the table associated with the export.
+		 *
+		 *  In the case of exportToFile() or exportToJsonDomNode(), this
+		 *  is the table that is being exported - commonly NULL or
+		 *  empty.
+		 *
+		 *  In the case of exportToTable(), this is the table that data
+		 *  will be exported to.
+		 *
+		 *  May be called by implementations of exportToTable() or by
+		 *  implementations of the *Start/End() methods. */
+		const char	*getTable();
+
+		/** Gets the buffer that the insert query is written when
+		 *  exporting data to a table.
+		 *
+		 *  Should be called by implementations of exportToTable().
+		 *  May also be called by implementations of the *Start/End()
+		 *  methods. */
 		stringbuffer	*getInsertQueryBuffer();
 
-		/** This method may be called by implementations of the
-		 *  exportToJsonDomNode() methods, or by implementations of the
-		 *  various Start()/End() methods to set the top-level domnode
-		 *  that is being written to. */
+		/** Captures the commit count, making it available to the
+		 *  *Start/End() methods.
+		 *
+		 *  Should be called by implementations of exportToTable().  Not
+		 *  commonly called by implementations of the *Start/End()
+		 *  methods. */
+		void	setCommitCount(uint64_t commitcount);
+
+		/** Gets the commit count.
+		 *
+		 *  May be called by implementations of exportToTable() or by
+		 *  implementations of the *Start/End() methods. */
+		uint64_t	getCommitCount();
+
+		/** Captures the top-level domnode, making it available to
+		 *  *Start/End() methods.
+		 *
+		 *  Should be called by implementations of
+		 *  exportToJsonDomNode().  Not commonly called by
+		 *  implementations of the *Start/End() methods. */
 		void	setJsonDomNode(domnode *dn);
 
-		/** This method may be called by implementations of the
-		 *  exportToJsonDomNode() methods, or by implementations of the
-		 *  various Start()/End() methods to get the top-level
-		 *  domnode that is being written to. */
+		/** Gets the top-level domnode.
+		 *
+		 *  May be called by implementations of exportToJsonDomNode()
+		 *  or by implementations of the *Start/End() methods. */
 		domnode	*getJsonDomNode();
 
-		/** This method may be called by implementations of the
-		 *  exportToJsonDomNode() methods, or by implementations of the
-		 *  various Start()/End() methods to set the domnode that
-		 *  columns are being written to. */
+		/** Set the domnode that columns will be written to.
+		 *
+		 *  Should be called by implementations of
+		 *  exportToJsonDomNode().  Not commonly called by
+		 *  implementations of the *Start/End() methods. */
 		void	setColumnsDomNode(domnode *dn);
 
-		/** This method may be called by implementations of the
-		 *  exportToJsonDomNode() methods, or by implementations of the
-		 *  various Start()/End() methods to get the domnode that
-		 *  columns are being written to. */
+		/** Gets the domnode that columns are being written to.
+		 *
+		 *  May be called by implementations of exportToJsonDomNode()
+		 *  or by implementations of the *Start/End() methods. */
 		domnode	*getColumnsDomNode();
 
-		/** This method may be called by implementations of the
-		 *  exportToJsonDomNode() methods, or by implementations of the
-		 *  various Start()/End() methods to set the domnode that
-		 *  the current column is being written to. */
+		/** Sets the domnode that the current column will be written to.
+		 * 
+		 *  Should be called by implementations of
+		 *  exportToJsonDomNode().  Not commonly called by
+		 *  implementations of the *Start/End() methods. */
 		void	setCurrentColumnDomNode(domnode *dn);
 
-		/** This method may be called by implementations of the
-		 *  exportToJsonDomNode() methods, or by implementations of the
-		 *  various Start()/End() methods to get the domnode that
-		 *  the current column is being written to. */
+		/** Gets the domnode that the current column is being written
+		 *  to.
+		 *
+		 *  May be called by implementations of exportToJsonDomNode()
+		 *  or by implementations of the *Start/End() methods. */
 		domnode	*getCurrentColumnDomNode();
 
-		/** This method may be called by implementations of the
-		 *  exportToJsonDomNode() methods, or by implementations of the
-		 *  various Start()/End() methods to set the domnode that
-		 *  rows are being written to. */
+		/** Sets the domnode that rows are being written to.
+		 * 
+		 *  Should be called by implementations of
+		 *  exportToJsonDomNode().  Not commonly called by
+		 *  implementations of the *Start/End() methods. */
 		void	setRowsDomNode(domnode *dn);
 
-		/** This method may be called by implementations of the
-		 *  exportToJsonDomNode() methods, or by implementations of the
-		 *  various Start()/End() methods to get the domnode that
-		 *  rows are being written to. */
+		/** Gets the domnode that rows are being written to.
+		 *
+		 *  May be called by implementations of exportToJsonDomNode()
+		 *  or by implementations of the *Start/End() methods. */
 		domnode	*getRowsDomNode();
 
-		/** This method may be called by implementations of the
-		 *  exportToJsonDomNode() methods, or by implementations of the
-		 *  various Start()/End() methods to set the domnode that
-		 *  the current row is being written to. */
+		/** Sets the domnode that the current row will be written to.
+		 * 
+		 *  Should be called by implementations of
+		 *  exportToJsonDomNode().  Not commonly called by
+		 *  implementations of the *Start/End() methods. */
 		void	setCurrentRowDomNode(domnode *dn);
 
-		/** This method may be called by implementations of the
-		 *  exportToJsonDomNode() methods, or by implementations of the
-		 *  various Start()/End() methods to get the domnode that
-		 *  the current row is being written to. */
+		/** Gets the domnode that the current row is being written to.
+		 *
+		 *  May be called by implementations of exportToJsonDomNode()
+		 *  or by implementations of the *Start/End() methods. */
 		domnode	*getCurrentRowDomNode();
 
-		/** This method may be called by implementations of the
-		 *  exportToJsonDomNode() methods, or by implementations of the
-		 *  various Start()/End() methods to set the domnode that
-		 *  the current field is being written to. */
+		/** Sets the domnode that the current field will be written to.
+		 * 
+		 *  Should be called by implementations of
+		 *  exportToJsonDomNode().  Not commonly called by
+		 *  implementations of the *Start/End() methods. */
 		void	setCurrentFieldDomNode(domnode *dn);
 
-		/** This method may be called by implementations of the
-		 *  exportToJsonDomNode() methods, or by implementations of the
-		 *  various Start()/End() methods to get the domnode that
-		 *  the current field is being written to. */
+		/** Gets the domnode that the current field is being written to.
+		 *
+		 *  May be called by implementations of exportToJsonDomNode()
+		 *  or by implementations of the *Start/End() methods. */
 		domnode	*getCurrentFieldDomNode();
 
 	#include <sqlrelay/private/sqlrexport.h>

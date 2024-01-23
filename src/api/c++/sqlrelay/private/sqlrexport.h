@@ -10,8 +10,13 @@
 		bool			ignorecolumns;
 		const char * const	*columnstoignore;
 
+		const char		*filename;
 		filedescriptor		*fd;
+
+		const char		*table;
 		stringbuffer		insertquery;
+		uint64_t		commitcount;
+
 		domnode			*jsondomnode;
 		domnode			*columnsdomnode;
 		domnode			*currentcolumndomnode;
