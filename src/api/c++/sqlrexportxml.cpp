@@ -51,6 +51,11 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 	setCurrentField(getCurrentColumnName());
 	clearAreNumericColumns();
 
+	// call the export-start event
+	if (!exportStart()) {
+		return false;
+	}
+
 	// export xml header
 	fd->write("<?xml version=\"1.0\"?>\n");
 
@@ -67,7 +72,7 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 			i,isNumberTypeChar(sqlrcur->getColumnType(i)));
 	}
 
-	// call the pre-columns event
+	// call the columns-start event
 	if (!columnsStart()) {
 		return false;
 	}
@@ -85,7 +90,7 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 			sqlrcur->getColumnName(getCurrentColumn()));
 		setCurrentField(getCurrentColumnName());
 	
-		// call the pre-column event
+		// call the column-start event
 		if (!columnStart()) {
 			return false;
 		}
@@ -104,7 +109,7 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 			fd->write("\"/>\n");
 		}
 
-		// call the post-column event
+		// call the column-end event
 		if (!columnEnd()) {
 			return false;
 		}
@@ -114,7 +119,7 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 	setCurrentColumnName(NULL);
 	setCurrentField(NULL);
 
-	// call the post-columns event
+	// call the columns-end event
 	// (we call this before closing the columns in case an
 	// overridden columnsEnd() wants to add more columns or
 	// something)
@@ -131,7 +136,7 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 	setCurrentColumnName(sqlrcur->getColumnName(0));
 	setCurrentField(sqlrcur->getField(0,(uint32_t)0));
 
-	// call the pre-rows event
+	// call the rows-start event
 	if (!rowsStart()) {
 		return false;
 	}
@@ -147,7 +152,7 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 		setCurrentColumnName(sqlrcur->getColumnName(0));
 		setCurrentField(sqlrcur->getField(getCurrentRow(),(uint32_t)0));
 
-		// call the pre-row event
+		// call the row-start event
 		if (!rowStart()) {
 			return false;
 		}
@@ -170,7 +175,7 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 				break;
 			}
 
-			// call the pre-field event
+			// call the field-start event
 			if (!fieldStart()) {
 				return false;
 			}
@@ -188,7 +193,7 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 				fd->write("</field>\n");
 			}
 
-			// call the post-field event
+			// call the field-end event
 			if (!fieldEnd()) {
 				return false;
 			}
@@ -198,7 +203,7 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 		setCurrentColumnName(NULL);
 		setCurrentField(NULL);
 
-		// call the post-row event
+		// call the row-end event
 		// (we call this before closing the row in case an overridden
 		// rowEnd() wants to add more fields or something)
 		if (!rowEnd()) {
@@ -219,7 +224,7 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 		setCurrentRow(getCurrentRow()+1);
 	}
 
-	// call the post-rows event
+	// call the rows-end event
 	// (we call this before closing the rows in case an overridden
 	// rowsEnd() wants to add more rows or something)
 	if (!rowsEnd()) {
@@ -228,6 +233,11 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 
 	fd->write("</rows>\n");
 	fd->write("</table>\n");
+
+	// call the export-end event
+	if (!exportEnd()) {
+		return false;
+	}
 
 	return true;
 }

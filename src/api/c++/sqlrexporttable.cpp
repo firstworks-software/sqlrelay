@@ -39,13 +39,18 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 	setCurrentField(getCurrentColumnName());
 	clearAreNumericColumns();
 
+	// call the export-start event
+	if (!exportStart()) {
+		return false;
+	}
+
 	// determine numeric columns
 	for (uint32_t i=0; i<cols; i++) {
 		setIsNumericColumn(
 			i,isNumberTypeChar(sqlrcur->getColumnType(i)));
 	}
 
-	// call the pre-columns event
+	// call the columns-start event
 	if (!columnsStart()) {
 		return false;
 	}
@@ -67,7 +72,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 			sqlrcur->getColumnName(getCurrentColumn()));
 		setCurrentField(getCurrentColumnName());
 
-		// call the pre-column event
+		// call the column-start event
 		if (!columnStart()) {
 			return false;
 		}
@@ -90,7 +95,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 			bindindex++;
 		}
 
-		// call the post-column event
+		// call the column-end event
 		if (!columnEnd()) {
 			return false;
 		}
@@ -100,7 +105,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 	setCurrentColumnName(NULL);
 	setCurrentField(NULL);
 
-	// call the post-columns event
+	// call the columns-end event
 	// (we call this before closing the columns in case an overridden
 	// columnsEnd() wants to add more columns or something)
 	if (!columnsEnd()) {
@@ -114,7 +119,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 	setCurrentColumnName(sqlrcur->getColumnName(0));
 	setCurrentField(sqlrcur->getField(0,(uint32_t)0));
 
-	// call the pre-rows event
+	// call the rows-start event
 	if (!rowsStart()) {
 		return false;
 	}
@@ -149,7 +154,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 		setCurrentColumnName(sqlrcur->getColumnName(0));
 		setCurrentField(sqlrcur->getField(getCurrentRow(),(uint32_t)0));
 
-		// call the pre-row event
+		// call the row-start event
 		if (!rowStart()) {
 			success=false;
 			break;
@@ -171,7 +176,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 				break;
 			}
 
-			// call the pre-field event
+			// call the field-start event
 			if (!fieldStart()) {
 				success=false;
 				break;
@@ -195,7 +200,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 				bindindex++;
 			}
 
-			// call the post-field event
+			// call the field-end event
 			if (!fieldEnd()) {
 				success=false;
 				break;
@@ -225,7 +230,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 		setCurrentColumnName(NULL);
 		setCurrentField(NULL);
 
-		// call the post-row event
+		// call the row-end event
 		if (!rowEnd()) {
 			success=false;
 			break;
@@ -247,8 +252,13 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 		sqlrcon->commit();
 	}
 
-	// call the post-rows event
+	// call the rows-end event
 	if (!rowsEnd()) {
+		return false;
+	}
+
+	// call the export-end event
+	if (!exportEnd()) {
 		return false;
 	}
 

@@ -205,6 +205,28 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 							const char *table);
 
 		/** This method should be called by implementations of the
+		 *  exportTo*() methods, at the beginning of the export process.
+		 *
+		 *  This implementation just returns true but a child class may
+		 *  override this method to do something else.
+		 *
+		 *  At this point...
+		 *  * getExportRow() should return true
+		 *  * getExportedRowCount() should return 0
+		 *  * getCurrentRow() should return 0
+		 *  * getCurrentColumn() should return 0
+		 *  * getCurrentColumnName() should return the name of column 0
+		 *  * getCurrentField() should also return the name of column 0
+		 *  * getIsNumericColumn() should return false for all columns
+		 *  * Nothing should have been written to files, domnodes,
+		 *    or tables
+		 *
+		 *  Should return true on success and false if an error
+		 *  occurred and export should stop if this method return
+		 *  false. */
+		virtual bool	exportStart();
+
+		/** This method should be called by implementations of the
 		 *  exportTo*() methods, prior to the export of the columns of
 		 *  the result set.
 		 *
@@ -507,6 +529,33 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  occurred and export should stop if this method return
 		 *  false. */
 		virtual	bool	rowsEnd();
+
+		/** This method should be called by implementations of the
+		 *  exportTo*() methods, at the end of the export process.
+		 *
+		 *  This implementation just returns true but a child class may
+		 *  override this method to do something else.
+		 *
+		 *  At this point...
+		 *  * getExportRow() should return true or false,
+		 *    as appropriate for the last row
+		 *  * getExportedRowCount() should return the number of rows
+		 *    that were exported
+		 *  * getCurrentRow() should return one more than the index
+		 *    of the last row
+		 *  * getCurrentColumn() should return one more than the index
+		 *    of the last column
+		 *  * getCurrentColumnName() should return NULL
+		 *  * getCurrentField() should return NULL
+		 *  * getIsNumericColumn() should return true/false correctly
+		 *    for each column
+		 *  * There should be nothing left to write to files, domnodes,
+		 *    or tables
+		 *
+		 *  Should return true on success and false if an error
+		 *  occurred and export should stop if this method return
+		 *  false. */
+		virtual bool	exportEnd();
 
 		/** Returns the number of rows that were exported by the most
 		 *  recent call to one of the exportTo*() methods, or the

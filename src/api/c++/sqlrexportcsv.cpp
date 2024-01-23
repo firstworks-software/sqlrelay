@@ -55,13 +55,18 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 	setCurrentField(getCurrentColumnName());
 	clearAreNumericColumns();
 
+	// call the export-start event
+	if (!exportStart()) {
+		return false;
+	}
+
 	// determine numeric columns
 	for (uint32_t i=0; i<cols; i++) {
 		setIsNumericColumn(
 			i,isNumberTypeChar(sqlrcur->getColumnType(i)));
 	}
 
-	// call the pre-columns event
+	// call the columns-start event
 	if (!columnsStart()) {
 		return false;
 	}
@@ -77,7 +82,7 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 			sqlrcur->getColumnName(getCurrentColumn()));
 		setCurrentField(getCurrentColumnName());
 
-		// call the pre-column event
+		// call the column-start event
 		if (!columnStart()) {
 			return false;
 		}
@@ -104,7 +109,7 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 			}
 		}
 
-		// call the post-column event
+		// call the column-end event
 		if (!columnEnd()) {
 			return false;
 		}
@@ -114,7 +119,7 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 	setCurrentColumnName(NULL);
 	setCurrentField(NULL);
 
-	// call the post-columns event
+	// call the columns-end event
 	// (we call this before closing the columns in case an
 	// overridden columnsEnd() wants to add more columns or
 	// something)
@@ -131,7 +136,7 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 	setCurrentColumnName(sqlrcur->getColumnName(0));
 	setCurrentField(sqlrcur->getField(0,(uint32_t)0));
 
-	// call the pre-rows event
+	// call the rows-start event
 	if (!rowsStart()) {
 		return false;
 	}
@@ -146,7 +151,7 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 		setCurrentColumnName(sqlrcur->getColumnName(0));
 		setCurrentField(sqlrcur->getField(getCurrentRow(),(uint32_t)0));
 
-		// call the pre-row event
+		// call the row-start event
 		if (!rowStart()) {
 			return false;
 		}
@@ -166,7 +171,7 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 				break;
 			}
 
-			// call the pre-field event
+			// call the field-start event
 			if (!fieldStart()) {
 				return false;
 			}
@@ -204,7 +209,7 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 				}
 			}
 
-			// call the post-field event
+			// call the field-end event
 			if (!fieldEnd()) {
 				return false;
 			}
@@ -214,7 +219,7 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 		setCurrentColumnName(NULL);
 		setCurrentField(NULL);
 
-		// call the post-row event
+		// call the row-end event
 		// (we call this before closing the row in case an overridden
 		// rowEnd() wants to add more fields or something)
 		if (!rowEnd()) {
@@ -235,8 +240,13 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 		setCurrentRow(getCurrentRow()+1);
 	}
 
-	// call the post-rows event
+	// call the rows-end event
 	if (!rowsEnd()) {
+		return false;
+	}
+
+	// call the export-end event
+	if (!exportEnd()) {
 		return false;
 	}
 
@@ -281,13 +291,18 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 	setCurrentField(getCurrentColumnName());
 	clearAreNumericColumns();
 
+	// call the export-start event
+	if (!exportStart()) {
+		return false;
+	}
+
 	// determine numeric columns
 	for (uint32_t i=0; i<cols; i++) {
 		setIsNumericColumn(
 			i,isNumberTypeChar(sqlrcur->getColumnType(i)));
 	}
 
-	// call the pre-columns event
+	// call the columns-start event
 	if (!columnsStart()) {
 		return false;
 	}
@@ -307,7 +322,7 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 			sqlrcur->getColumnName(getCurrentColumn()));
 		setCurrentField(getCurrentColumnName());
 
-		// call the pre-column event
+		// call the column-start event
 		if (!columnStart()) {
 			return false;
 		}
@@ -335,13 +350,13 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 			}
 		}
 
-		// call the post-column event
+		// call the column-end event
 		if (!columnEnd()) {
 			return false;
 		}
 	}
 
-	// call the post-columns event
+	// call the columns-end event
 	if (!columnsEnd()) {
 		return false;
 	}
@@ -351,7 +366,7 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 	setCurrentColumnName(sqlrcur->getColumnName(0));
 	setCurrentField(sqlrcur->getField(0,(uint32_t)0));
 
-	// call the pre-rows event
+	// call the rows-start event
 	if (!rowsStart()) {
 		return false;
 	}
@@ -365,7 +380,7 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 		setCurrentColumnName(sqlrcur->getColumnName(0));
 		setCurrentField(sqlrcur->getField(getCurrentRow(),(uint32_t)0));
 
-		// call the pre-row event
+		// call the row-start event
 		if (!rowStart()) {
 			return false;
 		}
@@ -392,7 +407,7 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 				break;
 			}
 
-			// call the pre-field event
+			// call the field-start event
 			if (!fieldStart()) {
 				return false;
 			}
@@ -421,13 +436,13 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 				}
 			}
 
-			// call the post-field event
+			// call the field-end event
 			if (!fieldEnd()) {
 				return false;
 			}
 		}
 
-		// call the post-row event
+		// call the row-end event
 		if (!rowEnd()) {
 			return false;
 		}
@@ -443,8 +458,13 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 	} while (!sqlrcur->endOfResultSet() ||
 			getCurrentRow()<sqlrcur->rowCount());
 
-	// call the post-rows event
+	// call the rows-end event
 	if (!rowsEnd()) {
+		return false;
+	}
+
+	// call the export-end event
+	if (!exportEnd()) {
 		return false;
 	}
 
