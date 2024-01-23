@@ -604,7 +604,9 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  methods. */
 		void	setExportedRowCount(uint64_t exportedrowcount);
 
-		/** Captures the name of the file to which data will be
+		/** When exporting to a file...
+		 *
+		 *  Captures the name of the file to which data will be
 		 *  exported, making it available to the *Start/End()
 		 *  methods.
 		 *
@@ -613,13 +615,17 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  methods. */
 		void	setFileName(const char *filename);
 
-		/** Gets the name of the file to which data is being exported.
+		/** When exporting to a file...
+		 *
+		 *  Gets the name of the file to which data is being exported.
 		 *
 		 *  May be called by implementations of exportToFile() or by
 		 *  implementations of the *Start/End() methods. */
 		const char	*getFileName();
 
-		/** Sets the file descriptor to which export data will be
+		/** When exporting to a file...
+		 *
+		 *  Sets the file descriptor to which export data will be
  		 *  exported.
  		 *
 		 *  Should be called by implementations of exportToFile().  Not
@@ -627,7 +633,9 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  methods. */
 		void	setFileDescriptor(filedescriptor *fd);
 
-		/** Gets the file descriptor to which data is being exported.
+		/** When exporting to a file...
+		 *
+		 *  Gets the file descriptor to which data is being exported.
 		 *
 		 *  May be called by implementations of exportToFile() or by
 		 *  implementations of the *Start/End() methods. */
@@ -661,7 +669,9 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  implementations of the *Start/End() methods. */
 		const char	*getTable();
 
-		/** Gets the buffer that the insert query is written when
+		/** When exporting to a table...
+		 *
+		 *  Gets the buffer that the insert query is written when
 		 *  exporting data to a table.
 		 *
 		 *  Should be called by implementations of exportToTable().
@@ -669,7 +679,9 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  methods. */
 		stringbuffer	*getInsertQueryBuffer();
 
-		/** Captures the commit count, making it available to the
+		/** When exporting to a table...
+		 *
+		 *  Captures the commit count, making it available to the
 		 *  *Start/End() methods.
 		 *
 		 *  Should be called by implementations of exportToTable().  Not
@@ -677,13 +689,17 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  methods. */
 		void	setCommitCount(uint64_t commitcount);
 
-		/** Gets the commit count.
+		/** When exporting to a table...
+		 *
+		 *  Gets the commit count.
 		 *
 		 *  May be called by implementations of exportToTable() or by
 		 *  implementations of the *Start/End() methods. */
 		uint64_t	getCommitCount();
 
-		/** Captures the top-level domnode, making it available to
+		/** When exporting to a JSON domnode...
+		 *
+		 *  Captures the top-level domnode, making it available to
 		 *  *Start/End() methods.
 		 *
 		 *  Should be called by implementations of
@@ -691,73 +707,95 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  implementations of the *Start/End() methods. */
 		void	setJsonDomNode(domnode *dn);
 
-		/** Gets the top-level domnode.
+		/** When exporting to a JSON domnode...
+		 *
+		 *  Gets the top-level domnode.
 		 *
 		 *  May be called by implementations of exportToJsonDomNode()
 		 *  or by implementations of the *Start/End() methods. */
 		domnode	*getJsonDomNode();
 
-		/** Set the domnode that columns will be written to.
+		/** When exporting to a JSON domnode...
+		 *
+		 *  Set the domnode that columns will be written to.
 		 *
 		 *  Should be called by implementations of
 		 *  exportToJsonDomNode().  Not commonly called by
 		 *  implementations of the *Start/End() methods. */
 		void	setColumnsDomNode(domnode *dn);
 
-		/** Gets the domnode that columns are being written to.
+		/** When exporting to a JSON domnode...
+		 *
+		 *  Gets the domnode that columns are being written to.
 		 *
 		 *  May be called by implementations of exportToJsonDomNode()
 		 *  or by implementations of the *Start/End() methods. */
 		domnode	*getColumnsDomNode();
 
-		/** Sets the domnode that the current column will be written to.
+		/** When exporting to a JSON domnode...
+		 *
+		 *  Sets the domnode that the current column will be written to.
 		 * 
 		 *  Should be called by implementations of
 		 *  exportToJsonDomNode().  Not commonly called by
 		 *  implementations of the *Start/End() methods. */
 		void	setCurrentColumnDomNode(domnode *dn);
 
-		/** Gets the domnode that the current column is being written
+		/** When exporting to a JSON domnode...
+		 *
+		 *  Gets the domnode that the current column is being written
 		 *  to.
 		 *
 		 *  May be called by implementations of exportToJsonDomNode()
 		 *  or by implementations of the *Start/End() methods. */
 		domnode	*getCurrentColumnDomNode();
 
-		/** Sets the domnode that rows are being written to.
+		/** When exporting to a JSON domnode...
+		 *
+		 *  Sets the domnode that rows are being written to.
 		 * 
 		 *  Should be called by implementations of
 		 *  exportToJsonDomNode().  Not commonly called by
 		 *  implementations of the *Start/End() methods. */
 		void	setRowsDomNode(domnode *dn);
 
-		/** Gets the domnode that rows are being written to.
+		/** When exporting to a JSON domnode...
+		 *
+		 *  Gets the domnode that rows are being written to.
 		 *
 		 *  May be called by implementations of exportToJsonDomNode()
 		 *  or by implementations of the *Start/End() methods. */
 		domnode	*getRowsDomNode();
 
-		/** Sets the domnode that the current row will be written to.
+		/** When exporting to a JSON domnode...
+		 *
+		 *  Sets the domnode that the current row will be written to.
 		 * 
 		 *  Should be called by implementations of
 		 *  exportToJsonDomNode().  Not commonly called by
 		 *  implementations of the *Start/End() methods. */
 		void	setCurrentRowDomNode(domnode *dn);
 
-		/** Gets the domnode that the current row is being written to.
+		/** When exporting to a JSON domnode...
+		 *
+		 *  Gets the domnode that the current row is being written to.
 		 *
 		 *  May be called by implementations of exportToJsonDomNode()
 		 *  or by implementations of the *Start/End() methods. */
 		domnode	*getCurrentRowDomNode();
 
-		/** Sets the domnode that the current field will be written to.
+		/** When exporting to a JSON domnode...
+		 *
+		 *  Sets the domnode that the current field will be written to.
 		 * 
 		 *  Should be called by implementations of
 		 *  exportToJsonDomNode().  Not commonly called by
 		 *  implementations of the *Start/End() methods. */
 		void	setCurrentFieldDomNode(domnode *dn);
 
-		/** Gets the domnode that the current field is being written to.
+		/** When exporting to a JSON domnode...
+		 *
+		 *  Gets the domnode that the current field is being written to.
 		 *
 		 *  May be called by implementations of exportToJsonDomNode()
 		 *  or by implementations of the *Start/End() methods. */
