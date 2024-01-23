@@ -126,11 +126,12 @@ bool sqlrimportcsv::column(const char *name, bool quoted) {
 			}
 
 			// append the primary key name
-			columns[columns.getCount()]=
+			uint64_t	index=columns.getCount();
+			columns[index]=
 				charstring::duplicate(primarykeycolumnname);
 
 			// set the current field
-			setCurrentField(columns[columns.getCount()]);
+			setCurrentField(columns[index]);
 
 			// call the post-column event
 			if (!columnEnd()) {
@@ -165,11 +166,12 @@ bool sqlrimportcsv::column(const char *name, bool quoted) {
 				}
 
 				// append the column name
-				columns[columns.getCount()]=
+				uint64_t	index=columns.getCount();
+				columns[index]=
 					charstring::duplicate(colname);
 
 				// set the current field
-				setCurrentField(columns[columns.getCount()]);
+				setCurrentField(columns[index]);
 
 				// call the post-column event
 				if (!columnEnd()) {
@@ -210,10 +212,11 @@ bool sqlrimportcsv::column(const char *name, bool quoted) {
 		}
 
 		// append the column name to the list of column names
-		columns[columns.getCount()]=charstring::duplicate(name);
+		uint64_t	index=columns.getCount();
+		columns[index]=charstring::duplicate(name);
 
 		// set the current field
-		setCurrentField(columns[columns.getCount()]);
+		setCurrentField(columns[index]);
 
 		// call the post-column event
 		if (!columnEnd()) {
