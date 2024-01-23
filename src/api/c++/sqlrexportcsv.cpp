@@ -289,7 +289,8 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 
 	// export columns...
 	if (!getIgnoreColumns()) {
-		setColumnsDomNode(getJsonDomNode()->appendTag("columns"));
+		// "h" for header, like in csvdom
+		setColumnsDomNode(getJsonDomNode()->appendTag("h"));
 		getColumnsDomNode()->setAttributeValue("t","a");
 	}
 	for (setCurrentColumn(0);
@@ -312,6 +313,8 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 						getColumnsToIgnore())) {
 
 			// export the column name
+			// "v" for value, all jsondom arrays
+			// consist of "v"alues
 			bool	isnumber=
 				charstring::isNumber(getCurrentField());
 			domnode	*column=getColumnsDomNode()->appendTag("v");
@@ -364,8 +367,9 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 
 		// if rowStart() didn't disable export of this row...
 		if (getExportRow()) {
+			// "r" for record, like in csvdom
 			setCurrentRowDomNode(
-				getJsonDomNode()->appendTag("row"));
+				getJsonDomNode()->appendTag("r"));
 			getCurrentRowDomNode()->setAttributeValue("t","a");
 		}
 
@@ -396,6 +400,8 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 					getColumnsToIgnore())) {
 
 				// export the field
+				// "v" for value, all jsondom arrays
+				// consist of "v"alues
 				domnode	*field=getCurrentRowDomNode()->
 								appendTag("v");
 				setCurrentFieldDomNode(field);
