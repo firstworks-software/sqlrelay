@@ -51,6 +51,12 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 	setCurrentField(getCurrentColumnName());
 	clearAreNumericColumns();
 
+	// determine numeric columns
+	for (uint32_t i=0; i<cols; i++) {
+		setIsNumericColumn(
+			i,isNumberTypeChar(sqlrcur->getColumnType(i)));
+	}
+
 	// call the export-start event
 	if (!exportStart()) {
 		return false;
@@ -64,12 +70,6 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 		fd->write("<table name=\"");
 		escapeField(fd,table);
 		fd->write("\">\n");
-	}
-
-	// determine numeric columns
-	for (uint32_t i=0; i<cols; i++) {
-		setIsNumericColumn(
-			i,isNumberTypeChar(sqlrcur->getColumnType(i)));
 	}
 
 	// call the columns-start event

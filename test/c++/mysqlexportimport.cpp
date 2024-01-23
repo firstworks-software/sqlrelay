@@ -119,6 +119,7 @@ field_t field[]={
 class testsqlrexportcsv : public sqlrexportcsv {
 	public:
 		testsqlrexportcsv();
+		bool	exportStart();
 		bool	columnsStart();
 		bool	columnStart();
 		bool	columnEnd();
@@ -129,6 +130,7 @@ class testsqlrexportcsv : public sqlrexportcsv {
 		bool	fieldEnd();
 		bool	rowEnd();
 		bool	rowsEnd();
+		bool	exportEnd();
 
 		bool	tests(const char *method);
 
@@ -209,15 +211,28 @@ bool testsqlrexportcsv::tests(const char *method) {
 	return true;
 }
 
-bool testsqlrexportcsv::columnsStart() {
+bool testsqlrexportcsv::exportStart() {
 	#ifdef DEBUG
-		stdoutput.printf("\ncolumnsStart()...\n");
+		stdoutput.printf("\nexportStart()...\n");
 	#endif
 	exportrow=true;
 	currentcol=0;
 	currentrow=0;
 	exportedrowcount=0;
 	inrows=false;
+	if (!sqlrexportcsv::exportStart()) {
+		return false;
+	}
+	if (!tests("exportStart()")) {
+		return false;
+	}
+	return true;
+}
+
+bool testsqlrexportcsv::columnsStart() {
+	#ifdef DEBUG
+		stdoutput.printf("\ncolumnsStart()...\n");
+	#endif
 	if (!sqlrexportcsv::columnsStart()) {
 		return false;
 	}
@@ -352,6 +367,19 @@ bool testsqlrexportcsv::rowsEnd() {
 		return false;
 	}
 	if (!tests("rowsEnd()")) {
+		return false;
+	}
+	return true;
+}
+
+bool testsqlrexportcsv::exportEnd() {
+	#ifdef DEBUG
+		stdoutput.printf("exportEnd()...\n");
+	#endif
+	if (!sqlrexportcsv::exportEnd()) {
+		return false;
+	}
+	if (!tests("exportEnd()")) {
 		return false;
 	}
 	return true;

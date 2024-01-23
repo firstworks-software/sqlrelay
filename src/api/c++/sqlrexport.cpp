@@ -86,6 +86,11 @@ uint32_t sqlrexport::getLogIndent() {
 	return logindent;
 }
 
+bool sqlrexport::exportStart() {
+	// by default, just return success
+	return true;
+}
+
 bool sqlrexport::columnsStart() {
 	// by default, just return success
 	return true;
@@ -107,6 +112,7 @@ bool sqlrexport::columnsEnd() {
 }
 
 bool sqlrexport::rowsStart() {
+	// by default, just return success
 	return true;
 }
 
@@ -126,10 +132,16 @@ bool sqlrexport::fieldEnd() {
 }
 
 bool sqlrexport::rowEnd() {
+	// by default, just return success
 	return true;
 }
 
 bool sqlrexport::rowsEnd() {
+	// by default, just return success
+	return true;
+}
+
+bool sqlrexport::exportEnd() {
 	// by default, just return success
 	return true;
 }

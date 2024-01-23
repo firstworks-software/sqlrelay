@@ -55,15 +55,15 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 	setCurrentField(getCurrentColumnName());
 	clearAreNumericColumns();
 
-	// call the export-start event
-	if (!exportStart()) {
-		return false;
-	}
-
 	// determine numeric columns
 	for (uint32_t i=0; i<cols; i++) {
 		setIsNumericColumn(
 			i,isNumberTypeChar(sqlrcur->getColumnType(i)));
+	}
+
+	// call the export-start event
+	if (!exportStart()) {
+		return false;
 	}
 
 	// call the columns-start event
@@ -291,15 +291,15 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 	setCurrentField(getCurrentColumnName());
 	clearAreNumericColumns();
 
-	// call the export-start event
-	if (!exportStart()) {
-		return false;
-	}
-
 	// determine numeric columns
 	for (uint32_t i=0; i<cols; i++) {
 		setIsNumericColumn(
 			i,isNumberTypeChar(sqlrcur->getColumnType(i)));
+	}
+
+	// call the export-start event
+	if (!exportStart()) {
+		return false;
 	}
 
 	// call the columns-start event
