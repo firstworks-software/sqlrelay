@@ -93,6 +93,12 @@ class SQLRCLIENT_DLLSPEC sqlrexportcsv : public sqlrexport {
 		 *  defined by jsondom.  As such, the tree can be operated on
 		 *  by methods that can operate on a jsondom tree.
 		 *
+		 *  Note that since there is no tag representing the set of
+		 *  records/rows, rather the tag for an each record/row is just
+		 *  appeneded to the top-level tag, there is no "rows domnode".
+		 *  As such, this method never calls setRowsDomNode(), and
+		 *  getRowsDomNode() always return NULL.
+		 *
 		 *  The "table" argument is ignored in this implementation.
 		 *
 		 *  Returns true on success and false if an error occurred. */

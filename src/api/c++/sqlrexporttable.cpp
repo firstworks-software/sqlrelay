@@ -206,17 +206,20 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 			break;
 		}
 
-		// It's not impossible that there were 0 columns in this result
-		// set.  If that was the case then bindindex should still be 1
-		// at this point, and no values should be bound.  In that case,
-		// we don't want to attempt to execute anything.
-		if (bindindex>1) {
-			if (!sqlrcur->executeQuery()) {
-				success=false;
-				break;
+		if (getExportRow()) {
+			// It's not impossible that there were 0 columns in
+			// this result set.  If that was the case then
+			// bindindex should still be 1 at this point, and no
+			// values should be bound.  In that case, we don't want
+			// to attempt to execute anything.
+			if (bindindex>1) {
+				if (!sqlrcur->executeQuery()) {
+					success=false;
+					break;
+				}
 			}
+			sqlrcur->clearBinds();
 		}
-		sqlrcur->clearBinds();
 
 		// set the current column and field to NULL
 		setCurrentColumnName(NULL);

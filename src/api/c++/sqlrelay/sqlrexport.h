@@ -390,11 +390,31 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  * getIsNumericColumn() should return true/false correctly
 		 *    for each column
 		 *
-		 *  This is a good place to call setCurrentField(...) if you
-		 *  want to modify the value of the field that is going to
-		 *  be exported.  Note that if the value of the field is
-		 *  replaced, then the memory allocated to store the new value
-		 *  should persist until fieldEnd() is called.
+		 *  If you want to modify the value of the field that is going
+		 *  to be exported, this is a good method to override to call
+		 *  setCurrentField(...)
+		 *
+		 *  Note, however...
+		 *
+		 *  The memory allocated to store the new value must persist
+		 *  until the value is actually exported.  When this is depends
+		 *  on the implementation of the exportTo*() method.
+		 *
+		 *  Implementations of exportToFile() and exportToJsonDom()
+		 *  typically export the field before calling fieldEnd().  As
+		 *  such, storage for the updated field value may be freed
+		 *  inside of your implementation of fieldEnd().
+		 *
+		 *  However, implementations of exportToTable() tend to build
+		 *  an insert statement, bind values before calling fieldEnd(),
+		 *  and then execute the statement before calling rowEnd().  In
+		 *  this case, storage for the updated field value should be
+		 *  freed inside of your implemenatation of rowEnd().
+		 *
+		 *  Be sure to verify how the various exportTo*() methods that
+		 *  you are using were written, and use care when freeing 
+		 *  storage allocated for updated field values.
+		 *
 		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and export should stop if this method return
