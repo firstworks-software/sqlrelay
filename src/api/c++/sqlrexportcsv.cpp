@@ -21,6 +21,10 @@ bool sqlrexportcsv::exportToFile(const char *filename) {
 
 bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 
+	if (!sqlrexport::exportToFile(filename,table)) {
+		return false;
+	}
+
 	// output to stdoutput or create/open file
 	setFileDescriptor(&stdoutput);
 	file	f;
@@ -253,6 +257,12 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode) {
 bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 						const char *table) {
 
+	if (!sqlrexport::exportToJsonDomNode(jsondomnode,table)) {
+		return false;
+	}
+
+	setJsonDomNode(jsondomnode);
+
 	// get the cursor and column count
 	sqlrcursor	*sqlrcur=getSqlrCursor();
 	uint32_t	cols=sqlrcur->colCount();
@@ -278,10 +288,9 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 	}
 
 	// export columns...
-	domnode	*columns;
 	if (!getIgnoreColumns()) {
-		columns=jsondomnode->appendTag("columns");
-		columns->setAttributeValue("t","a");
+		setColumnsDomNode(getJsonDomNode()->appendTag("columns"));
+		getColumnsDomNode()->setAttributeValue("t","a");
 	}
 	for (setCurrentColumn(0);
 		getCurrentColumn()<cols;
@@ -305,7 +314,8 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 			// export the column name
 			bool	isnumber=
 				charstring::isNumber(getCurrentField());
-			domnode	*column=columns->appendTag("v");
+			domnode	*column=getColumnsDomNode()->appendTag("v");
+			setCurrentColumnDomNode(column);
 			if (isnumber) {
 				column->setAttributeValue("t","n");
 				column->setAttributeValue("v",
@@ -353,10 +363,10 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 		}
 
 		// if rowStart() didn't disable export of this row...
-		domnode	*row;
 		if (getExportRow()) {
-			row=jsondomnode->appendTag("row");
-			row->setAttributeValue("t","a");
+			setCurrentRowDomNode(
+				getJsonDomNode()->appendTag("row"));
+			getCurrentRowDomNode()->setAttributeValue("t","a");
 		}
 
 		for (setCurrentColumn(0);
@@ -386,7 +396,9 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 					getColumnsToIgnore())) {
 
 				// export the field
-				domnode	*field=row->appendTag("v");
+				domnode	*field=getCurrentRowDomNode()->
+								appendTag("v");
+				setCurrentFieldDomNode(field);
 				if (getIsNumericColumn(getCurrentColumn())) {
 					field->setAttributeValue("t","n");
 					field->setAttributeValue("v",

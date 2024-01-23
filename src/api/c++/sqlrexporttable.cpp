@@ -26,6 +26,10 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 						sqlrcursor *sqlrcur,
 						const char *table) {
 
+	if (!sqlrexport::exportToTable(sqlrcon,sqlrcur,table)) {
+		return false;
+	}
+
 	// get the cursor and column count
 	sqlrcursor	*selectcur=getSqlrCursor();
 	uint32_t	cols=selectcur->colCount();
@@ -50,8 +54,8 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 		return false;
 	}
 
-	stringbuffer	insertquery;
-	insertquery.append("insert into ")->append(table)->append(" values (");
+	stringbuffer	*insertquery=getInsertQueryBuffer();
+	insertquery->append("insert into ")->append(table)->append(" values (");
 	const char	*bindformat=sqlrcon->bindFormat();
 	char		bf=(!charstring::isNullOrEmpty(bindformat))?
 							bindformat[0]:':';
@@ -78,14 +82,14 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 
 			// append the bind variable
 			if (bindindex>1) {
-				insertquery.append(',');
+				insertquery->append(',');
 			}
 			if (bf=='?') {
-				insertquery.append('?');
+				insertquery->append('?');
 			} else if (bf=='$') {
-				insertquery.append('$')->append(bindindex);
+				insertquery->append('$')->append(bindindex);
 			} else if (bf=='@' || bf==':') {
-				insertquery.append(bf)->append(bindindex);
+				insertquery->append(bf)->append(bindindex);
 			}
 			bindindex++;
 		}
@@ -107,7 +111,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 		return false;
 	}
 
-	insertquery.append(')');
+	insertquery->append(')');
 
 	// reset current column/field
 	setCurrentColumn(0);
@@ -125,8 +129,8 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 	}
 
 	// prepare query
-	sqlrcur->prepareQuery(insertquery.getString(),
-				insertquery.getStringLength());
+	sqlrcur->prepareQuery(insertquery->getString(),
+				insertquery->getStringLength());
 
 	// set up array of bind names
 	dynamicarray<char *>	bindnames;

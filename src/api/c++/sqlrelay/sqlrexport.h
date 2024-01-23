@@ -169,8 +169,8 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *
 		 *  Note that the default implementation of this method just
 		 *  calls exportToJsonDomNode(jsondomnode,NULL).  Child classes
-		 *  that  support export to a JSON domnode should override that
-		 *  exportToFile() method. */
+		 *  tha  support export to a JSON domnode should override that
+		 *  exportToJsonDomNode() method. */
 		virtual	bool	exportToJsonDomNode(domnode *jsondomnode);
 
 		/** Exports the result set of the cursor currently in use as
@@ -586,6 +586,84 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  exportToFile() to get the file descriptor to which data is
 		 *  being exported. */
 		filedescriptor	*getFileDescriptor();
+
+		/** This method may be called by implementations of the
+		 *  exportToTable() methods, or by implementations of the
+		 *  various Start()/End() methods to access the buffer that the
+		 *  insert query is written to before it is exported. */
+		stringbuffer	*getInsertQueryBuffer();
+
+		/** This method may be called by implementations of the
+		 *  exportToJsonDomNode() methods, or by implementations of the
+		 *  various Start()/End() methods to set the top-level domnode
+		 *  that is being written to. */
+		void	setJsonDomNode(domnode *dn);
+
+		/** This method may be called by implementations of the
+		 *  exportToJsonDomNode() methods, or by implementations of the
+		 *  various Start()/End() methods to get the top-level
+		 *  domnode that is being written to. */
+		domnode	*getJsonDomNode();
+
+		/** This method may be called by implementations of the
+		 *  exportToJsonDomNode() methods, or by implementations of the
+		 *  various Start()/End() methods to set the domnode that
+		 *  columns are being written to. */
+		void	setColumnsDomNode(domnode *dn);
+
+		/** This method may be called by implementations of the
+		 *  exportToJsonDomNode() methods, or by implementations of the
+		 *  various Start()/End() methods to get the domnode that
+		 *  columns are being written to. */
+		domnode	*getColumnsDomNode();
+
+		/** This method may be called by implementations of the
+		 *  exportToJsonDomNode() methods, or by implementations of the
+		 *  various Start()/End() methods to set the domnode that
+		 *  the current column is being written to. */
+		void	setCurrentColumnDomNode(domnode *dn);
+
+		/** This method may be called by implementations of the
+		 *  exportToJsonDomNode() methods, or by implementations of the
+		 *  various Start()/End() methods to get the domnode that
+		 *  the current column is being written to. */
+		domnode	*getCurrentColumnDomNode();
+
+		/** This method may be called by implementations of the
+		 *  exportToJsonDomNode() methods, or by implementations of the
+		 *  various Start()/End() methods to set the domnode that
+		 *  rows are being written to. */
+		void	setRowsDomNode(domnode *dn);
+
+		/** This method may be called by implementations of the
+		 *  exportToJsonDomNode() methods, or by implementations of the
+		 *  various Start()/End() methods to get the domnode that
+		 *  rows are being written to. */
+		domnode	*getRowsDomNode();
+
+		/** This method may be called by implementations of the
+		 *  exportToJsonDomNode() methods, or by implementations of the
+		 *  various Start()/End() methods to set the domnode that
+		 *  the current row is being written to. */
+		void	setCurrentRowDomNode(domnode *dn);
+
+		/** This method may be called by implementations of the
+		 *  exportToJsonDomNode() methods, or by implementations of the
+		 *  various Start()/End() methods to get the domnode that
+		 *  the current row is being written to. */
+		domnode	*getCurrentRowDomNode();
+
+		/** This method may be called by implementations of the
+		 *  exportToJsonDomNode() methods, or by implementations of the
+		 *  various Start()/End() methods to set the domnode that
+		 *  the current field is being written to. */
+		void	setCurrentFieldDomNode(domnode *dn);
+
+		/** This method may be called by implementations of the
+		 *  exportToJsonDomNode() methods, or by implementations of the
+		 *  various Start()/End() methods to get the domnode that
+		 *  the current field is being written to. */
+		domnode	*getCurrentFieldDomNode();
 
 	#include <sqlrelay/private/sqlrexport.h>
 };

@@ -4,21 +4,32 @@
 #include <sqlrelay/sqlrexport.h>
 
 sqlrexport::sqlrexport() {
+
 	sqlrcon=NULL;
 	sqlrcur=NULL;
+
 	ignorecolumns=false;
 	columnstoignore=NULL;
+
 	fd=NULL;
+	jsondomnode=NULL;
+	columnsdomnode=NULL;
+	currentcolumndomnode=NULL;
+	rowsdomnode=NULL;
+	currentrowdomnode=NULL;
+	currentfielddomnode=NULL;
+
 	exportrow=true;
 	currentrow=0;
 	currentcol=0;
 	currentcolname=NULL;
 	currentfield=NULL;
+	exportedrowcount=0;
+
 	lg=NULL;
 	coarseloglevel=0;
 	fineloglevel=9;
 	logindent=0;
-	exportedrowcount=0;
 }
 
 sqlrexport::~sqlrexport() {
@@ -204,11 +215,64 @@ filedescriptor *sqlrexport::getFileDescriptor() {
 	return fd;
 }
 
+stringbuffer *sqlrexport::getInsertQueryBuffer() {
+	return &insertquery;
+}
+
+void sqlrexport::setJsonDomNode(domnode *dn) {
+	jsondomnode=dn;
+}
+
+domnode	*sqlrexport::getJsonDomNode() {
+	return jsondomnode;
+}
+
+void sqlrexport::setColumnsDomNode(domnode *dn) {
+	columnsdomnode=dn;
+}
+
+domnode	*sqlrexport::getColumnsDomNode() {
+	return columnsdomnode;
+}
+
+void sqlrexport::setCurrentColumnDomNode(domnode *dn) {
+	currentcolumndomnode=dn;
+}
+
+domnode	*sqlrexport::getCurrentColumnDomNode() {
+	return currentcolumndomnode;
+}
+
+void sqlrexport::setRowsDomNode(domnode *dn) {
+	rowsdomnode=dn;
+}
+
+domnode	*sqlrexport::getRowsDomNode() {
+	return rowsdomnode;
+}
+
+void sqlrexport::setCurrentRowDomNode(domnode *dn) {
+	currentrowdomnode=dn;
+}
+
+domnode	*sqlrexport::getCurrentRowDomNode() {
+	return currentrowdomnode;
+}
+
+void sqlrexport::setCurrentFieldDomNode(domnode *dn) {
+	currentfielddomnode=dn;
+}
+
+domnode	*sqlrexport::getCurrentFieldDomNode() {
+	return currentfielddomnode;
+}
+
 bool sqlrexport::exportToFile(const char *filename) {
 	return exportToFile(filename,NULL);
 }
 
 bool sqlrexport::exportToFile(const char *filename, const char *table) {
+	clearOutput();
 	return true;
 }
 
@@ -223,6 +287,7 @@ bool sqlrexport::exportToTable(sqlrconnection *sqlrcon,
 bool sqlrexport::exportToTable(sqlrconnection *sqlrcon,
 					sqlrcursor *sqlrcur,
 					const char *table) {
+	clearOutput();
 	return true;
 }
 
@@ -231,5 +296,24 @@ bool sqlrexport::exportToJsonDomNode(domnode *jsondomnode) {
 }
 
 bool sqlrexport::exportToJsonDomNode(domnode *jsondomnode, const char *table) {
+	clearOutput();
 	return true;
+}
+
+void sqlrexport::clearOutput() {
+	fd=NULL;
+	insertquery.clear();
+	jsondomnode=NULL;
+	columnsdomnode=NULL;
+	currentcolumndomnode=NULL;
+	rowsdomnode=NULL;
+	currentrowdomnode=NULL;
+	currentfielddomnode=NULL;
+
+	exportrow=true;
+	currentrow=0;
+	currentcol=0;
+	currentcolname=NULL;
+	currentfield=NULL;
+	exportedrowcount=0;
 }
