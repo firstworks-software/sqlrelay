@@ -161,6 +161,11 @@ bool sqlrexport::commitEnd() {
 	return true;
 }
 
+bool sqlrexport::error(int64_t errornumber, const char *errormessage) {
+	// by default, just return error
+	return false;
+}
+
 bool sqlrexport::exportEnd() {
 	// by default, just return success
 	return true;

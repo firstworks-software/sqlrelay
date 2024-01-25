@@ -133,7 +133,12 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 		if (!beginStart()) {
 			return false;
 		}
-		sqlrcon->begin();
+		if (!sqlrcon->begin()) {
+			if (!error(sqlrcon->errorNumber(),
+					sqlrcon->errorMessage())) {
+				return false;
+			}
+		}
 		if (!beginEnd()) {
 			return false;
 		}
@@ -158,14 +163,24 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 			if (!commitStart()) {
 				return false;
 			}
-			sqlrcon->commit();
+			if (!sqlrcon->commit()) {
+				if (!error(sqlrcon->errorNumber(),
+						sqlrcon->errorMessage())) {
+					return false;
+				}
+			}
 			if (!commitEnd()) {
 				return false;
 			}
 			if (!beginStart()) {
 				return false;
 			}
-			sqlrcon->begin();
+			if (!sqlrcon->begin()) {
+				if (!error(sqlrcon->errorNumber(),
+						sqlrcon->errorMessage())) {
+					return false;
+				}
+			}
 			if (!beginEnd()) {
 				return false;
 			}
@@ -242,8 +257,12 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 			// to attempt to execute anything.
 			if (bindindex>1) {
 				if (!sqlrcur->executeQuery()) {
-					success=false;
-					break;
+					if (!error(
+						sqlrcur->errorNumber(),
+						sqlrcur->errorMessage())) {
+						success=false;
+						break;
+					}
 				}
 			}
 			sqlrcur->clearBinds();
@@ -275,7 +294,12 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 		if (!commitStart()) {
 			return false;
 		}
-		sqlrcon->commit();
+		if (!sqlrcon->commit()) {
+			if (!error(sqlrcon->errorNumber(),
+					sqlrcon->errorMessage())) {
+				return false;
+			}
+		}
 		if (!commitEnd()) {
 			return false;
 		}

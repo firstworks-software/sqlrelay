@@ -576,6 +576,18 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		virtual	bool	commitEnd();
 
 		/** This method should be called by implementations of the
+		 *  exportToTable() methods, if a commit(), begin(),
+		 *  executeQuery(), or other database operation fails.
+		 *
+		 *  This implementation just returns false but a child class may
+		 *  override this method to do something else.
+		 *
+		 *  Should return true if export may continue, or false if 
+		 *  should stop. */
+		virtual	bool	error(int64_t errornumber,
+					const char *errormessage);
+
+		/** This method should be called by implementations of the
 		 *  exportTo*() methods, at the end of the export process.
 		 *
 		 *  This implementation just returns true but a child class may
