@@ -24,7 +24,7 @@
 		domnode			*currentrowdomnode;
 		domnode			*currentfielddomnode;
 
-		bool			exportrow;
+		bool			ignorerow;
 		uint64_t		currentrow;
 		uint32_t		currentcol;
 		const char		*currentcolname;

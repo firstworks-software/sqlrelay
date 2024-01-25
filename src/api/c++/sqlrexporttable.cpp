@@ -31,7 +31,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 	uint32_t	cols=selectcur->colCount();
 
 	// reset flags and counts
-	setExportRow(true);
+	setIgnoreRow(false);
 	setExportedRowCount(0);
 	setCurrentRow(0);
 	setCurrentColumn(0);
@@ -153,7 +153,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 		}
 
 		// reset export-row flag and current column/field
-		setExportRow(true);
+		setIgnoreRow(false);
 		setCurrentColumn(0);
 		setCurrentColumnName(sqlrcur->getColumnName(0));
 		setCurrentField(sqlrcur->getField(getCurrentRow(),(uint32_t)0));
@@ -187,7 +187,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 			}
 
 			// if we're not ignoring this row or column...
-			if (getExportRow() &&
+			if (!getIgnoreRow() &&
 				!charstring::isInSet(
 					selectcur->getColumnName(
 						getCurrentColumn()),
@@ -215,7 +215,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 			break;
 		}
 
-		if (getExportRow()) {
+		if (!getIgnoreRow()) {
 			// It's not impossible that there were 0 columns in
 			// this result set.  If that was the case then
 			// bindindex should still be 1 at this point, and no
@@ -241,7 +241,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 		}
 
 		// update exported row count
-		if (getExportRow()) {
+		if (!getIgnoreRow()) {
 			setExportedRowCount(getExportedRowCount()+1);
 		}
 

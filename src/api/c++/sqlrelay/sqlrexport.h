@@ -567,19 +567,19 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 	protected:
 
 		/** Sets whether the current row of the result set will be
-		 *  exported or not.
+		 *  ignored (not exported) or not.
 		 *  
 		 *  Should be called by implementations of exportTo*().  May
 		 *  also be called by rowStart().  Not commonly called by other
 		 *  *Start/End() methods. */
-		void	setExportRow(bool exportrow);
+		void	setIgnoreRow(bool ignorerow);
 
 		/** Gets whether the current row of the result set will be
-		 *  exported or not.
+		 *  ignored (not exported) or not.
 		 *  
 		 *  May be called by implementations of exportTo*() or by
 		 *  implementations of the *Start/End() methods. */
-		bool	getExportRow();
+		bool	getIgnoreRow();
 
 		/** Sets the index of the row of the result set that is
 		 *  currently being exported.

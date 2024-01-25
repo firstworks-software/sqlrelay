@@ -154,12 +154,12 @@ uint64_t sqlrexport::getExportedRowCount() {
 	return exportedrowcount;
 }
 
-void sqlrexport::setExportRow(bool exportrow) {
-	this->exportrow=exportrow;
+void sqlrexport::setIgnoreRow(bool ignorerow) {
+	this->ignorerow=ignorerow;
 }
 
-bool sqlrexport::getExportRow() {
-	return exportrow;
+bool sqlrexport::getIgnoreRow() {
+	return ignorerow;
 }
 
 void sqlrexport::setCurrentRow(uint64_t currentrow) {
@@ -341,7 +341,7 @@ void sqlrexport::clearOutput() {
 	currentrowdomnode=NULL;
 	currentfielddomnode=NULL;
 
-	exportrow=true;
+	ignorerow=false;
 	currentrow=0;
 	currentcol=0;
 	currentcolname=NULL;

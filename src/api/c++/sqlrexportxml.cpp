@@ -43,7 +43,7 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 	uint32_t	cols=sqlrcur->colCount();
 
 	// reset flags and counts
-	setExportRow(true);
+	setIgnoreRow(false);
 	setExportedRowCount(0);
 	setCurrentRow(0);
 	setCurrentColumn(0);
@@ -151,7 +151,7 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 			getCurrentRow()<sqlrcur->rowCount()) {
 
 		// reset export-row flag and current column/field
-		setExportRow(true);
+		setIgnoreRow(false);
 		setCurrentColumn(0);
 		setCurrentColumnName(sqlrcur->getColumnName(0));
 		setCurrentField(sqlrcur->getField(getCurrentRow(),(uint32_t)0));
@@ -162,7 +162,7 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 		}
 
 		// if rowStart() didn't disable export of this row...
-		if (getExportRow()) {
+		if (!getIgnoreRow()) {
 			fd->write("	<row>\n");
 		}
 
@@ -185,7 +185,7 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 			}
 
 			// if we're not ignoring this row or column...
-			if (getExportRow() &&
+			if (!getIgnoreRow() &&
 				!charstring::isInSet(
 					sqlrcur->getColumnName(
 						getCurrentColumn()),
@@ -215,12 +215,12 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 		}
 
 		// if rowStart() didn't disable export of this row...
-		if (getExportRow()) {
+		if (!getIgnoreRow()) {
 			fd->write("	</row>\n");
 		}
 
 		// update exported row count
-		if (getExportRow()) {
+		if (!getIgnoreRow()) {
 			setExportedRowCount(getExportedRowCount()+1);
 		}
 

@@ -141,7 +141,7 @@ class testsqlrexportcsv : public sqlrexportcsv {
 		bool	tests(const char *method);
 
 	private:
-		bool		exportrow;
+		bool		ignorerow;
 		uint32_t	currentcol;
 		uint64_t	currentrow;
 		uint64_t	exportedrowcount;
@@ -153,7 +153,7 @@ class testsqlrexportcsv : public sqlrexportcsv {
 };
 
 testsqlrexportcsv::testsqlrexportcsv() {
-	exportrow=true;
+	ignorerow=false;
 	currentcol=0;
 	currentrow=0;
 	exportedrowcount=0;
@@ -182,9 +182,9 @@ bool testsqlrexportcsv::tests(const char *method) {
 					method,getFileName(),testfilename);
 		return false;
 	}
-	if (getExportRow()!=exportrow) {
-		stdoutput.printf("\n%s - getExportRow(): %d!=%d\n",
-					method,getExportRow(),exportrow);
+	if (getIgnoreRow()!=ignorerow) {
+		stdoutput.printf("\n%s - getIgnoreRow(): %d!=%d\n",
+					method,getIgnoreRow(),ignorerow);
 		return false;
 	}
 	if (getCurrentRow()!=currentrow) {
@@ -256,7 +256,7 @@ bool testsqlrexportcsv::exportStart() {
 	#ifdef DEBUG
 		stdoutput.printf("\nexportStart()...\n");
 	#endif
-	exportrow=true;
+	ignorerow=false;
 	currentcol=0;
 	currentrow=0;
 	exportedrowcount=0;
@@ -330,7 +330,7 @@ bool testsqlrexportcsv::rowsStart() {
 	#ifdef DEBUG
 		stdoutput.printf("rowsStart()...\n");
 	#endif
-	exportrow=true;
+	ignorerow=false;
 	currentcol=0;
 	currentrow=0;
 	exportedrowcount=0;
@@ -348,14 +348,14 @@ bool testsqlrexportcsv::rowStart() {
 	#ifdef DEBUG
 		stdoutput.printf("rowStart()...\n");
 	#endif
-	exportrow=true;
+	ignorerow=false;
 	currentcol=0;
 	if (!sqlrexportcsv::rowStart()) {
 		return false;
 	}
 	if (rowstoignore && (*rowstoignore)[currentrow]) {
-		setExportRow(false);
-		exportrow=false;
+		setIgnoreRow(true);
+		ignorerow=true;
 	}
 	if (!tests("rowStart()")) {
 		return false;
@@ -403,7 +403,7 @@ bool testsqlrexportcsv::rowEnd() {
 	if (!tests("rowEnd()")) {
 		return false;
 	}
-	if (exportrow) {
+	if (!ignorerow) {
 		exportedrowcount++;
 	}
 	currentrow++;
