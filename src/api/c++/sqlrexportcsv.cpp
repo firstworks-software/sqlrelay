@@ -77,7 +77,7 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 			getCurrentColumn()<cols;
 			setCurrentColumn(getCurrentColumn()+1)) {
 
-		// set the current column (and field)
+		// set the current column name (and field)
 		setCurrentColumnName(
 			sqlrcur->getColumnName(getCurrentColumn()));
 		setCurrentField(getCurrentColumnName());
@@ -86,6 +86,10 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 		if (!columnStart()) {
 			return false;
 		}
+
+		// reset the current field to the current column name too
+		// (in case columnStart overrode the columm name)
+		setCurrentField(getCurrentColumnName());
 
 		// if we're not ignoring all columns or this column...
 		if (!getIgnoreColumns() &&
@@ -317,7 +321,7 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 		getCurrentColumn()<cols;
 		setCurrentColumn(getCurrentColumn()+1)) {
 
-		// set the current column name and field
+		// set the current column name (and field)
 		setCurrentColumnName(
 			sqlrcur->getColumnName(getCurrentColumn()));
 		setCurrentField(getCurrentColumnName());
@@ -326,6 +330,10 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 		if (!columnStart()) {
 			return false;
 		}
+
+		// reset the current field to the current column name
+		// (in case columnStart overrode the columm name)
+		setCurrentField(getCurrentColumnName());
 
 		// if we're not ignoring all columns or this column...
 		if (!getIgnoreColumns() &&

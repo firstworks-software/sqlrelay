@@ -11,6 +11,7 @@
 #include <rudiments/permissions.h>
 #include <rudiments/dictionary.h>
 #include <rudiments/randomnumber.h>
+#include <rudiments/dynamicarray.h>
 #include <rudiments/stdio.h>
 
 //#define ROWS 10000
@@ -119,6 +120,11 @@ field_t field[]={
 class testsqlrexportcsv : public sqlrexportcsv {
 	public:
 		testsqlrexportcsv();
+
+		void	setColumnsToModify(const char * const *columnstomodify);
+		void	setRowsToIgnore(dynamicarray<bool> *rowstoignore);
+		void	setTestFileName(const char *testfilename);
+
 		bool	exportStart();
 		bool	columnsStart();
 		bool	columnStart();
@@ -134,11 +140,16 @@ class testsqlrexportcsv : public sqlrexportcsv {
 
 		bool	tests(const char *method);
 
+	private:
 		bool		exportrow;
 		uint32_t	currentcol;
 		uint64_t	currentrow;
 		uint64_t	exportedrowcount;
 		bool		inrows;
+
+		const char * const	*columnstomodify;
+		dynamicarray<bool>	*rowstoignore;
+		const char		*testfilename;
 };
 
 testsqlrexportcsv::testsqlrexportcsv() {
@@ -147,9 +158,30 @@ testsqlrexportcsv::testsqlrexportcsv() {
 	currentrow=0;
 	exportedrowcount=0;
 	inrows=false;
+	columnstomodify=NULL;
+	rowstoignore=NULL;
+	testfilename=NULL;
+}
+
+void testsqlrexportcsv::setColumnsToModify(
+				const char * const *columnstomodify) {
+	this->columnstomodify=columnstomodify;
+}
+
+void testsqlrexportcsv::setRowsToIgnore(dynamicarray<bool> *rowstoignore) {
+	this->rowstoignore=rowstoignore;
+}
+
+void testsqlrexportcsv::setTestFileName(const char *testfilename) {
+	this->testfilename=testfilename;
 }
 
 bool testsqlrexportcsv::tests(const char *method) {
+	if (charstring::compare(getFileName(),testfilename)) {
+		stdoutput.printf("\n%s - getFileName(): %s!=%s\n",
+					method,getFileName(),testfilename);
+		return false;
+	}
 	if (getExportRow()!=exportrow) {
 		stdoutput.printf("\n%s - getExportRow(): %d!=%d\n",
 					method,getExportRow(),exportrow);
@@ -165,16 +197,25 @@ bool testsqlrexportcsv::tests(const char *method) {
 					method,getCurrentColumn(),currentcol);
 		return false;
 	}
-	if (charstring::compare(getCurrentColumnName(),
-				getSqlrCursor()->getColumnName(currentcol))) {
+	const char	*colname=getSqlrCursor()->getColumnName(currentcol);
+	if (!charstring::compare(method,"columnEnd()") &&
+			charstring::isInSet(colname,columnstomodify)) {
+		colname="MODIFIED";
+	}
+	if (charstring::compare(getCurrentColumnName(),colname)) {
 		stdoutput.printf("\n%s - getCurrentColumnName(): %s!=%s\n",
-				method,getCurrentColumnName(),
-				getSqlrCursor()->getColumnName(currentcol));
+					method,getCurrentColumnName(),colname);
 		return false;
 	}
 	if (inrows && field[currentcol].name!=NULL) {
 		stringbuffer	f;
-		f.printf(field[currentcol].pattern,currentrow);
+		if (!charstring::compare(method,"fieldEnd()") &&
+			charstring::isInSet(getCurrentColumnName(),
+							columnstomodify)) {
+			f.write("MODIFIED");
+		} else {
+			f.printf(field[currentcol].pattern,currentrow);
+		}
 		if (charstring::compare(getCurrentField(),f.getString())) {
 			stdoutput.printf("\n%s - getCurrentField(): %s!=%s\n",
 					method,getCurrentField(),
@@ -252,6 +293,9 @@ bool testsqlrexportcsv::columnStart() {
 	if (!tests("columnStart()")) {
 		return false;
 	}
+	if (charstring::isInSet(getCurrentColumnName(),columnstomodify)) {
+		setCurrentColumnName("MODIFIED");
+	}
 	return true;
 }
 
@@ -309,6 +353,10 @@ bool testsqlrexportcsv::rowStart() {
 	if (!sqlrexportcsv::rowStart()) {
 		return false;
 	}
+	if (rowstoignore && (*rowstoignore)[currentrow]) {
+		setExportRow(false);
+		exportrow=false;
+	}
 	if (!tests("rowStart()")) {
 		return false;
 	}
@@ -324,6 +372,9 @@ bool testsqlrexportcsv::fieldStart() {
 	}
 	if (!tests("fieldStart()")) {
 		return false;
+	}
+	if (charstring::isInSet(getCurrentColumnName(),columnstomodify)) {
+		setCurrentField("MODIFIED");
 	}
 	return true;
 }
@@ -387,7 +438,9 @@ bool testsqlrexportcsv::exportEnd() {
 
 void generateComparisonFile(const char *filename,
 				bool ignorecolumns,
-				const char * const *columnstoignore) {
+				const char * const *columnstoignore,
+				const char * const *columnstomodify,
+				dynamicarray<bool> *rowstoignore) {
 
 
 	// create file
@@ -407,7 +460,11 @@ void generateComparisonFile(const char *filename,
 			header.append(',');
 		}
 		header.append('"');
-		header.append(field[col].name);
+		if (charstring::isInSet(field[col].name,columnstomodify)) {
+			header.append("MODIFIED");
+		} else {
+			header.append(field[col].name);
+		}
 		header.append('"');
 	}
 	if (!ignorecolumns) {
@@ -419,6 +476,9 @@ void generateComparisonFile(const char *filename,
 	// write records, ignoring columns as appropriate
 	stringbuffer	record;
 	for (uint64_t row=0; row<ROWS; row++) {
+		if ((*rowstoignore)[row]) {
+			continue;
+		}
 		for (uint32_t col=0; field[col].name; col++) {
 			if (charstring::isInSet(field[col].name,
 							columnstoignore)) {
@@ -430,7 +490,12 @@ void generateComparisonFile(const char *filename,
 			if (field[col].quote) {
 				record.append('"');
 			}
-			record.printf(field[col].pattern,row);
+			if (charstring::isInSet(field[col].name,
+							columnstomodify)) {
+				record.write("MODIFIED");
+			} else {
+				record.printf(field[col].pattern,row);
+			}
 			if (field[col].quote) {
 				record.append('"');
 			}
@@ -564,12 +629,14 @@ int main(int argc, char **argv) {
 		stdoutput.printf("\n");
 
 		// set options
-		const char	*option=NULL;
-		bool		ignorecolumns=false;
-		const char	**columnstoignore=NULL;
-		uint16_t	columnstoignorecount=0;
-		stringbuffer	opt;
-		const char	*col;
+		const char		*option=NULL;
+		bool			ignorecolumns=false;
+		const char		**columnstoignore=NULL;
+		uint16_t		columnstoignorecount=0;
+		const char		**columnstomodify=NULL;
+		dynamicarray<bool>	rowstoignore;
+		stringbuffer		opt;
+		const char		*col;
 		if (iteration==0) {
 			option=charstring::duplicate("");
 		} else if (iteration==1) {
@@ -577,7 +644,7 @@ int main(int argc, char **argv) {
 			option=charstring::duplicate("IGNORE COLUMNS - ");
 			ignorecolumns=true;
 		} else if (iteration>=2 && iteration<=21) {
-			// for iterations 2-21, exclude individual columns
+			// for iterations 2-21, ignore individual columns
 			col=field[iteration-2].name;
 			columnstoignore=new const char *[2];
 			columnstoignore[0]=col;
@@ -587,9 +654,8 @@ int main(int argc, char **argv) {
 			opt.append(col);
 			opt.append(" column - ");
 			option=opt.detachString();
-			ignorecolumns=false;
 		} else if (iteration>=22 && iteration<=32) {
-			// for iterations 22-32, exclude random sets of
+			// for iterations 22-32, ignore random sets of
 			// columns, possibly with repetitions
 			randomnumber	r;
 			r.setSeed(randomnumber::getSeed());
@@ -611,7 +677,49 @@ int main(int argc, char **argv) {
 			columnstoignorecount=10;
 			opt.append(" column - ");
 			option=opt.detachString();
-			ignorecolumns=false;
+		} else if (iteration==33) {
+			// for iteration 33, don't export various rows
+			opt.append("IGNORE ");
+			randomnumber	r;
+			r.setSeed(randomnumber::getSeed());
+			uint32_t	rn;
+			uint64_t	ircount=0;
+			for (uint64_t row=0; row<ROWS; row++) {
+				r.generate(&rn);
+				r.setSeed(rn);
+				rn=r.scale(rn,0,1);
+				if (rn) {
+					rowstoignore[row]=true;
+					ircount++;
+				} else {
+					rowstoignore[row]=false;
+				}
+			}
+			opt.append(ircount);
+			opt.append(" ROWS - ");
+			option=opt.detachString();
+		} else if (iteration>=34 && iteration<=44) {
+			// for iterations 22-32, modify random sets of
+			// columns and fields, possibly with repetitions
+			randomnumber	r;
+			r.setSeed(randomnumber::getSeed());
+			opt.append("MODIFY ");
+			columnstomodify=new const char *[11];
+			uint32_t	rn;
+			for (uint8_t i=0; i<10; i++) {
+				r.generate(&rn);
+				r.setSeed(rn);
+				rn=r.scale(rn,0,19);
+				col=field[rn].name;
+				columnstomodify[i]=col;
+				if (i) {
+					opt.append(',');
+				}
+				opt.append(col);
+			}
+			columnstomodify[10]=NULL;
+			opt.append(" column - ");
+			option=opt.detachString();
 		} else {
 			break;
 		}
@@ -620,6 +728,9 @@ int main(int argc, char **argv) {
 		stdoutput.printf("%sEXPORT CSV: \n",option);
 		ec.setIgnoreColumns(ignorecolumns);
 		ec.setColumnsToIgnore(columnstoignore);
+		ec.setColumnsToModify(columnstomodify);
+		ec.setRowsToIgnore(&rowstoignore);
+		ec.setTestFileName("testtable.csv");
 		checkSuccess(ec.getIgnoreColumns(),ignorecolumns);
 		if (columnstoignore) {
 			for (uint16_t i=0; i<columnstoignorecount; i++) {
@@ -641,7 +752,8 @@ int main(int argc, char **argv) {
 		// generate comparison CSV
 		stdoutput.printf("%sGENERATE COMPARISON CSV: \n",option);
 		generateComparisonFile("testtable-comparison.csv",
-					ignorecolumns,columnstoignore);
+					ignorecolumns,columnstoignore,
+					columnstomodify,&rowstoignore);
 		stdoutput.printf("\n");
 
 		// diff CSV

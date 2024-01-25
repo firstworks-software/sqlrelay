@@ -95,6 +95,10 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 			return false;
 		}
 
+		// set the current field to the current column name too
+		// (in case columnStart overrode the columm name)
+		setCurrentField(getCurrentColumnName());
+
 		// if we're not ignoring all columns, or this column...
 		if (!getIgnoreColumns() &&
 			!charstring::isInSet(getCurrentField(),

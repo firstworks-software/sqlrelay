@@ -77,6 +77,10 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 			return false;
 		}
 
+		// reset the current field to the current column name too
+		// (in case columnStart overrode the columm name)
+		setCurrentField(getCurrentColumnName());
+
 		// if we're not ignoring this column...
 		if (!charstring::isInSet(getCurrentField(),
 						getColumnsToIgnore())) {
