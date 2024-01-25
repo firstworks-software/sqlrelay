@@ -13,7 +13,7 @@ class SQLRCLIENT_DLLSPEC sqlrexportxml : public sqlrexport {
 		sqlrexportxml();
 
 		/** Destroys this instance of the sqlrexportxml class. */
-		~sqlrexportxml();
+		virtual	~sqlrexportxml();
 
 		/** Exports the result set of the cursor currently in use as
 		 *  set by the most recent call to setSqlrCursor() to the file
@@ -67,7 +67,8 @@ class SQLRCLIENT_DLLSPEC sqlrexportxml : public sqlrexport {
 		 *  </table>
 		 *
 		 *  Returns true on success and false if an error occurred. */
-		bool	exportToFile(const char *filename, const char *table);
+		virtual	bool	exportToFile(const char *filename,
+							const char *table);
 
 	#include <sqlrelay/private/sqlrexportxml.h>
 };

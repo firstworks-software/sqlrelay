@@ -13,6 +13,8 @@
 		const char		*filename;
 		filedescriptor		*fd;
 
+		sqlrconnection		*exportcon;
+		sqlrcursor		*exportcur;
 		const char		*table;
 		stringbuffer		insertquery;
 		uint64_t		commitcount;

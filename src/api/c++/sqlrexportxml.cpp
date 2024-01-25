@@ -15,6 +15,10 @@ sqlrexportxml::sqlrexportxml() {
 sqlrexportxml::~sqlrexportxml() {
 }
 
+bool sqlrexportxml::exportToFile(const char *filename) {
+	return sqlrexport::exportToFile(filename);
+}
+
 bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 
 	if (!sqlrexport::exportToFile(filename,table)) {

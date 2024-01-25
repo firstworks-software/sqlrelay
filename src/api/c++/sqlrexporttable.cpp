@@ -13,22 +13,30 @@ sqlrexporttable::sqlrexporttable() {
 sqlrexporttable::~sqlrexporttable() {
 }
 
-bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
-						sqlrcursor *sqlrcur,
+bool sqlrexporttable::exportToTable(sqlrconnection *exportcon,
+						const char *table,
+						uint64_t commitcount) {
+	return sqlrexport::exportToTable(exportcon,table,commitcount);
+}
+
+bool sqlrexporttable::exportToTable(sqlrconnection *exportcon,
+						sqlrcursor *exportcur,
 						const char *table,
 						uint64_t commitcount) {
 
-	if (!sqlrexport::exportToTable(sqlrcon,sqlrcur,table,commitcount)) {
+	if (!sqlrexport::exportToTable(exportcon,exportcur,table,commitcount)) {
 		return false;
 	}
 
-	// capture the table and commit count
+	// capture the con, cur, table and commit count
+	setExportSqlrConnection(exportcon);
+	setExportSqlrCursor(exportcur);
 	setTable(table);
 	setCommitCount(commitcount);
 
 	// get the cursor and column count
-	sqlrcursor	*selectcur=getSqlrCursor();
-	uint32_t	cols=selectcur->colCount();
+	sqlrcursor	*sqlrcur=getSqlrCursor();
+	uint32_t	cols=sqlrcur->colCount();
 
 	// reset flags and counts
 	setIgnoreRow(false);
@@ -57,7 +65,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 
 	stringbuffer	*insertquery=getInsertQueryBuffer();
 	insertquery->append("insert into ")->append(table)->append(" values (");
-	const char	*bindformat=sqlrcon->bindFormat();
+	const char	*bindformat=exportcon->bindFormat();
 	char		bf=(!charstring::isNullOrEmpty(bindformat))?
 							bindformat[0]:':';
 
@@ -133,9 +141,9 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 		if (!beginStart()) {
 			return false;
 		}
-		if (!sqlrcon->begin()) {
-			if (!error(sqlrcon->errorNumber(),
-					sqlrcon->errorMessage())) {
+		if (!exportcon->begin()) {
+			if (!error(exportcon->errorNumber(),
+					exportcon->errorMessage())) {
 				return false;
 			}
 		}
@@ -146,7 +154,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 	}
 
 	// prepare query
-	sqlrcur->prepareQuery(insertquery->getString(),
+	exportcur->prepareQuery(insertquery->getString(),
 				insertquery->getStringLength());
 
 	// set up array of bind names
@@ -163,9 +171,9 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 			if (!commitStart()) {
 				return false;
 			}
-			if (!sqlrcon->commit()) {
-				if (!error(sqlrcon->errorNumber(),
-						sqlrcon->errorMessage())) {
+			if (!exportcon->commit()) {
+				if (!error(exportcon->errorNumber(),
+						exportcon->errorMessage())) {
 					return false;
 				}
 			}
@@ -175,9 +183,9 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 			if (!beginStart()) {
 				return false;
 			}
-			if (!sqlrcon->begin()) {
-				if (!error(sqlrcon->errorNumber(),
-						sqlrcon->errorMessage())) {
+			if (!exportcon->begin()) {
+				if (!error(exportcon->errorNumber(),
+						exportcon->errorMessage())) {
 					return false;
 				}
 			}
@@ -223,7 +231,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 			// if we're not ignoring this row or column...
 			if (!getIgnoreRow() &&
 				!charstring::isInSet(
-					selectcur->getColumnName(
+					sqlrcur->getColumnName(
 						getCurrentColumn()),
 					getColumnsToIgnore())) {
 
@@ -232,7 +240,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 					bindnames[bindindex]=
 					charstring::parseNumber(bindindex);
 				}
-				sqlrcur->inputBind(
+				exportcur->inputBind(
 					bindnames[bindindex],
 					getCurrentField());
 				bindindex++;
@@ -256,16 +264,16 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 			// values should be bound.  In that case, we don't want
 			// to attempt to execute anything.
 			if (bindindex>1) {
-				if (!sqlrcur->executeQuery()) {
+				if (!exportcur->executeQuery()) {
 					if (!error(
-						sqlrcur->errorNumber(),
-						sqlrcur->errorMessage())) {
+						exportcur->errorNumber(),
+						exportcur->errorMessage())) {
 						success=false;
 						break;
 					}
 				}
 			}
-			sqlrcur->clearBinds();
+			exportcur->clearBinds();
 		}
 
 		// set the current column and field to NULL
@@ -286,17 +294,17 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 		// update current row
 		setCurrentRow(getCurrentRow()+1);
 
-	} while  (!selectcur->endOfResultSet() ||
-			getCurrentRow()<selectcur->rowCount());
+	} while  (!sqlrcur->endOfResultSet() ||
+			getCurrentRow()<sqlrcur->rowCount());
 
 	// final commit, if necessary
 	if (getCommitCount()) {
 		if (!commitStart()) {
 			return false;
 		}
-		if (!sqlrcon->commit()) {
-			if (!error(sqlrcon->errorNumber(),
-					sqlrcon->errorMessage())) {
+		if (!exportcon->commit()) {
+			if (!error(exportcon->errorNumber(),
+					exportcon->errorMessage())) {
 				return false;
 			}
 		}

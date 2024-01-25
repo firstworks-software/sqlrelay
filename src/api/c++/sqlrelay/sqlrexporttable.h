@@ -13,7 +13,7 @@ class SQLRCLIENT_DLLSPEC sqlrexporttable : public sqlrexport {
 		sqlrexporttable();
 
 		/** Destroys this instance of the sqlrexporttable class. */
-		~sqlrexporttable();
+		virtual ~sqlrexporttable();
 
 		/** Exports the result set of the cursor currently in use as
 		 *  set by the most recent call to setSqlrCursor() to the
@@ -22,10 +22,12 @@ class SQLRCLIENT_DLLSPEC sqlrexporttable : public sqlrexport {
 		 *  called if "commitcount" is set to 0.
 		 *
 		 *  Returns true on success and false if an error occurred. */
-		bool	exportToTable(sqlrconnection *sqlrcon,
-						sqlrcursor *sqlrcur,
-						const char *table,
-						uint64_t commitcount);
+		virtual bool	exportToTable(sqlrconnection *sqlrcon,
+							sqlrcursor *sqlrcur,
+							const char *table,
+							uint64_t commitcount);
+
+	#include <sqlrelay/private/sqlrexporttable.h>
 };
 
 #endif

@@ -13,7 +13,7 @@ class SQLRCLIENT_DLLSPEC sqlrexportcsv : public sqlrexport {
 		sqlrexportcsv();
 
 		/** Destroys this instance of the sqlrexportcsv class. */
-		~sqlrexportcsv();
+		virtual	~sqlrexportcsv();
 
 		/** Exports the result set of the cursor currently in use as
 		 *  set by the most recent call to setSqlrCursor() to file

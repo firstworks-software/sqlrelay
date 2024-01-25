@@ -143,13 +143,13 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  exportToTable(sqlrcon,sqlrcur,table), then frees the
 		 *  cursor.  Child classes that support export to a database
 		 *  table should override that exportToTable() method. */
-		virtual	bool	exportToTable(sqlrconnection *sqlrcon,
+		virtual	bool	exportToTable(sqlrconnection *exportcon,
 							const char *table,
 							uint64_t commitcount);
 
 		/** Exports the result set of the cursor currently in use as
 		 *  set by the most recent call to setSqlrCursor() to the
-		 *  database table "table" using "sqlrcon" and "sqlrcur".
+		 *  database table "table" using "exportcon" and "exportcur".
 		 *  A commit is called every "commitcount" rows.  No commit is
 		 *  called if "commitcount" is set to 0.
 		 *
@@ -164,10 +164,10 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  time.  If any of the Start()/End() methods return false,
 		 *  then export should stop and this method should return
 		 *  false.  */
-		virtual	bool	exportToTable(sqlrconnection *sqlrcon,
-							sqlrcursor *sqlrcur,
-							const char *table,
-							uint64_t commitcount);
+		virtual	bool	exportToTable(sqlrconnection *exportcon,
+						sqlrcursor *exportcur,
+						const char *table,
+						uint64_t commitcount);
 
 		/** Exports the result set of the cursor currently in use as
 		 *  set by the most recent call to setSqlrCursor() to the
@@ -804,6 +804,44 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  May also be called by implementations of the *Start/End()
 		 *  methods. */
 		stringbuffer	*getInsertQueryBuffer();
+
+		/** When exporting to a table...
+		 *
+		 *  Captures the instance of sqlrconnection that this instance
+		 *  will use to export data to the table.
+		 *
+		 *  Should be called by implementations of exportToTable().  Not
+		 *  commonly called by implementations of the *Start/End()
+		 *  methods. */
+		void	setExportSqlrConnection(sqlrconnection *exportcon);
+
+		/** When exporting to a table...
+		 *
+		 *  Gets the instance of sqlrconnection that this instance
+		 *  will use to export data to the table.
+		 *
+		 *  May be called by implementations of exportToTable() or by
+		 *  implementations of the *Start/End() methods. */
+		sqlrconnection	*getExportSqlrConnection();
+
+		/** When exporting to a table...
+		 *
+		 *  Captures the instance of sqlrcursor that this instance
+		 *  will use to export data to the table.
+		 *
+		 *  Should be called by implementations of exportToTable().  Not
+		 *  commonly called by implementations of the *Start/End()
+		 *  methods. */
+		void	setExportSqlrCursor(sqlrcursor *exportcur);
+
+		/** When exporting to a table...
+		 *
+		 *  Gets the instance of sqlrcursor that this instance
+		 *  will use to export data to the table.
+		 *
+		 *  May be called by implementations of exportToTable() or by
+		 *  implementations of the *Start/End() methods. */
+		sqlrcursor	*getExportSqlrCursor();
 
 		/** When exporting to a table...
 		 *

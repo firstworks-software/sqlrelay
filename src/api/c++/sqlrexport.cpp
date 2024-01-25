@@ -26,12 +26,12 @@ void sqlrexport::setSqlrConnection(sqlrconnection *sqlrcon) {
 	this->sqlrcon=sqlrcon;
 }
 
-void sqlrexport::setSqlrCursor(sqlrcursor *sqlrcur) {
-	this->sqlrcur=sqlrcur;
-}
-
 sqlrconnection *sqlrexport::getSqlrConnection() {
 	return sqlrcon;
+}
+
+void sqlrexport::setSqlrCursor(sqlrcursor *sqlrcur) {
+	this->sqlrcur=sqlrcur;
 }
 
 sqlrcursor *sqlrexport::getSqlrCursor() {
@@ -247,6 +247,22 @@ filedescriptor *sqlrexport::getFileDescriptor() {
 	return fd;
 }
 
+void sqlrexport::setExportSqlrConnection(sqlrconnection *exportcon) {
+	this->exportcon=exportcon;
+}
+
+sqlrconnection *sqlrexport::getExportSqlrConnection() {
+	return exportcon;
+}
+
+void sqlrexport::setExportSqlrCursor(sqlrcursor *exportcur) {
+	this->exportcur=exportcur;
+}
+
+sqlrcursor *sqlrexport::getExportSqlrCursor() {
+	return exportcur;
+}
+
 void sqlrexport::setTable(const char *table) {
 	this->table=table;
 }
@@ -355,6 +371,8 @@ void sqlrexport::clearOutput() {
 	filename=NULL;
 	fd=NULL;
 
+	exportcon=NULL;
+	exportcur=NULL;
 	table=NULL;
 	insertquery.clear();
 	commitcount=0;
