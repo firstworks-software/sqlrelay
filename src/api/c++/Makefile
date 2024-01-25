@@ -121,8 +121,9 @@ install: $(INSTALLLIB)
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrexportcsvincludes.h
 	$(CP) sqlrelay/private/sqlrexportcsv.h $(includedir)/sqlrelay/private
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrexportcsv.h
-	$(CP) sqlrelay/private/sqlrexporttableincludes.h $(includedir)/sqlrelay/private
+	$(CP) sqlrelay/private/sqlrexporttable.h $(includedir)/sqlrelay/private
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrexporttable.h
+	$(CP) sqlrelay/private/sqlrexporttableincludes.h $(includedir)/sqlrelay/private
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrexporttableincludes.h
 
 installdll::
