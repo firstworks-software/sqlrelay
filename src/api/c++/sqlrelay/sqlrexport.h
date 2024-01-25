@@ -19,19 +19,19 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		virtual	~sqlrexport();
 
 		/** Sets the instance of sqlrconnection that this instance
-		 *  will use to connect to the database. */
+		 *  will use to fetch data for the export. */
 		void	setSqlrConnection(sqlrconnection *sqlrcon);
 
 		/** Sets the instance of sqlrcursor that this instance
-		 *  will use to export data. */
+		 *  will use to fetch data for the export. */
 		void	setSqlrCursor(sqlrcursor *sqlrcur);
 
 		/** Returns the instance of sqlrconnection that this instance
- 		 *  is configured to use to connect to the database. */
+ 		 *  is configured to use to fetch data for the export. */
 		sqlrconnection	*getSqlrConnection();
 
 		/** Returns the instance of sqlrursor that this instance
- 		 *  is configured to use to connect to export data. */
+ 		 *  is configured to use to fetch data for the export. */
 		sqlrcursor	*getSqlrCursor();
 
 		/** If "ignorecolumns" is set false, then column information
@@ -532,6 +532,50 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		virtual	bool	rowsEnd();
 
 		/** This method should be called by implementations of the
+		 *  exportToTable() methods, before a begin().
+		 *
+		 *  This implementation just returns true but a child class may
+		 *  override this method to do something else.
+		 *
+		 *  Should return true on success and false if an error
+		 *  occurred and export should stop if this method return
+		 *  false. */
+		virtual	bool	beginStart();
+
+		/** This method should be called by implementations of the
+		 *  exportToTable() methods, after a begin().
+		 *
+		 *  This implementation just returns true but a child class may
+		 *  override this method to do something else.
+		 *
+		 *  Should return true on success and false if an error
+		 *  occurred and export should stop if this method return
+		 *  false. */
+		virtual	bool	beginEnd();
+
+		/** This method should be called by implementations of the
+		 *  exportToTable() methods, before a commit().
+		 *
+		 *  This implementation just returns true but a child class may
+		 *  override this method to do something else.
+		 *
+		 *  Should return true on success and false if an error
+		 *  occurred and export should stop if this method return
+		 *  false. */
+		virtual	bool	commitStart();
+
+		/** This method should be called by implementations of the
+		 *  exportToTable() methods, after a commit().
+		 *
+		 *  This implementation just returns true but a child class may
+		 *  override this method to do something else.
+		 *
+		 *  Should return true on success and false if an error
+		 *  occurred and export should stop if this method return
+		 *  false. */
+		virtual	bool	commitEnd();
+
+		/** This method should be called by implementations of the
 		 *  exportTo*() methods, at the end of the export process.
 		 *
 		 *  This implementation just returns true but a child class may
@@ -567,7 +611,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 	protected:
 
 		/** Sets whether the current row of the result set will be
-		 *  ignored (not exported) or not.
+		 *  ignored or not.  Rows that are ignored are not exported.
 		 *  
 		 *  Should be called by implementations of exportTo*().  May
 		 *  also be called by rowStart().  Not commonly called by other
@@ -575,7 +619,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		void	setIgnoreRow(bool ignorerow);
 
 		/** Gets whether the current row of the result set will be
-		 *  ignored (not exported) or not.
+		 *  ignored or not.  Rows that are ignored are not exported.
 		 *  
 		 *  May be called by implementations of exportTo*() or by
 		 *  implementations of the *Start/End() methods. */

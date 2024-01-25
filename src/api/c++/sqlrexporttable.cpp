@@ -130,7 +130,14 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 
 	// start a transaction, if necessary
 	if (getCommitCount()) {
+		if (!beginStart()) {
+			return false;
+		}
 		sqlrcon->begin();
+		if (!beginEnd()) {
+			return false;
+		}
+		
 	}
 
 	// prepare query
@@ -148,8 +155,20 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 		// commit/begin, if necessary
 		if (getCommitCount() &&
 			!((getCurrentRow()+1)%getCommitCount())) {
+			if (!commitStart()) {
+				return false;
+			}
 			sqlrcon->commit();
+			if (!commitEnd()) {
+				return false;
+			}
+			if (!beginStart()) {
+				return false;
+			}
 			sqlrcon->begin();
+			if (!beginEnd()) {
+				return false;
+			}
 		}
 
 		// reset export-row flag and current column/field
@@ -253,7 +272,13 @@ bool sqlrexporttable::exportToTable(sqlrconnection *sqlrcon,
 
 	// final commit, if necessary
 	if (getCommitCount()) {
+		if (!commitStart()) {
+			return false;
+		}
 		sqlrcon->commit();
+		if (!commitEnd()) {
+			return false;
+		}
 	}
 
 	// call the rows-end event

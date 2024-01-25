@@ -141,6 +141,26 @@ bool sqlrexport::rowsEnd() {
 	return true;
 }
 
+bool sqlrexport::beginStart() {
+	// by default, just return success
+	return true;
+}
+
+bool sqlrexport::beginEnd() {
+	// by default, just return success
+	return true;
+}
+
+bool sqlrexport::commitStart() {
+	// by default, just return success
+	return true;
+}
+
+bool sqlrexport::commitEnd() {
+	// by default, just return success
+	return true;
+}
+
 bool sqlrexport::exportEnd() {
 	// by default, just return success
 	return true;
