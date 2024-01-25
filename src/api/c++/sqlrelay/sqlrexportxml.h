@@ -7,7 +7,7 @@
 #include <sqlrelay/private/sqlrexportxmlincludes.h>
 
 /** The sqlrexportxml class implements sqlrexport for XML files. */
-class SQLRCLIENT_DLLSPEC sqlrexportxml : public sqlrexport {
+class SQLRCLIENT_DLLSPEC sqlrexportxml : virtual public sqlrexport {
 	public:
 		/** Creates an instance of the sqlrexportxml class. */
 		sqlrexportxml();
@@ -20,9 +20,9 @@ class SQLRCLIENT_DLLSPEC sqlrexportxml : public sqlrexport {
 		 *  "filename" in XML format, or to standard output if
 		 *  "filename" is NULL or empty.
 		 *
-		 *  If "table" is non-null then the table name is embedded in
-		 *  the XML file in the <table/> tag.  If "table" is null then
-		 *  the <table> tag is omitted.
+		 *  If "table" is non-null then the table name is included as
+		 *  the "name" attribute of the table tag.  If "table" is null
+		 *  then the name attribute is omitted.
 		 *
 		 *  The XML format is as follows:
 		 *  (This example is a table of US states, exported from

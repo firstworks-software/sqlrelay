@@ -69,12 +69,14 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 	// export xml header
 	fd->write("<?xml version=\"1.0\"?>\n");
 
-	// export table name
+	// export table tag
+	fd->write("<table");
 	if (!charstring::isNullOrEmpty(table)) {
-		fd->write("<table name=\"");
+	 	fd->write(" name=\"");
 		escapeField(fd,table);
-		fd->write("\">\n");
+		fd->write("\"");
 	}
+	fd->write(">\n");
 
 	// call the columns-start event
 	if (!columnsStart()) {
@@ -93,6 +95,8 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 		setCurrentColumnName(
 			sqlrcur->getColumnName(getCurrentColumn()));
 		setCurrentField(getCurrentColumnName());
+		const char	*type=
+			sqlrcur->getColumnType(getCurrentColumn());
 	
 		// call the column-start event
 		if (!columnStart()) {
@@ -112,8 +116,7 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 			fd->write("	<column name=\"");
 			escapeField(fd,getCurrentField());
 			fd->write("\" type=\"");
-			escapeField(fd,sqlrcur->getColumnType(
-						getCurrentField()));
+			escapeField(fd,type);
 			fd->write("\"/>\n");
 		}
 
@@ -170,10 +173,11 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 			fd->write("	<row>\n");
 		}
 
-		for (uint32_t i=0; i<cols; i++) {
+		for (setCurrentColumn(0);
+				getCurrentColumn()<cols;
+				setCurrentColumn(getCurrentColumn()+1)) {
 
 			// set the current column and field
-			setCurrentColumn(i);
 			setCurrentColumnName(
 				sqlrcur->getColumnName(getCurrentColumn()));
 			setCurrentField(sqlrcur->getField(
@@ -251,6 +255,9 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 }
 
 void sqlrexportxml::escapeField(filedescriptor *fd, const char *field) {
+	if (!field) {
+		return;
+	}
 	for (const char *f=field; *f; f++) {
 		if (*f=='"') {
 			fd->write("\"\"");

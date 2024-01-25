@@ -258,6 +258,9 @@ bool sqlrexportcsv::exportToFile(const char *filename, const char *table) {
 }
 
 void sqlrexportcsv::escapeField(filedescriptor *fd, const char *field) {
+	if (!field) {
+		return;
+	}
 	for (const char *f=field; *f; f++) {
 		// escape double quotes and ignore non-ascii characters
 		if (*f=='"') {

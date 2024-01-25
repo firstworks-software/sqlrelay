@@ -7,7 +7,7 @@
 #include <sqlrelay/private/sqlrexportcsvincludes.h>
 
 /** The sqlrexportcsv class implements sqlrexport for CSV files. */
-class SQLRCLIENT_DLLSPEC sqlrexportcsv : public sqlrexport {
+class SQLRCLIENT_DLLSPEC sqlrexportcsv : virtual public sqlrexport {
 	public:
 		/** Creates an instance of the sqlrexportcsv class. */
 		sqlrexportcsv();

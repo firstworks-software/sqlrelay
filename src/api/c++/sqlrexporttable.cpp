@@ -209,10 +209,11 @@ bool sqlrexporttable::exportToTable(sqlrconnection *exportcon,
 		// reset bind index
 		bindindex=1;
 
-		for (uint32_t i=0; i<cols; i++) {
+		for (setCurrentColumn(0);
+				getCurrentColumn()<cols;
+				setCurrentColumn(getCurrentColumn()+1)) {
 
 			// set the current column and field
-			setCurrentColumn(i);
 			setCurrentColumnName(
 				sqlrcur->getColumnName(getCurrentColumn()));
 			setCurrentField(sqlrcur->getField(

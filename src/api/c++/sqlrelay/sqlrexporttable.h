@@ -7,7 +7,7 @@
 #include <sqlrelay/private/sqlrexporttableincludes.h>
 
 /** The sqlrexporttable class implements sqlrexport for database tables. */
-class SQLRCLIENT_DLLSPEC sqlrexporttable : public sqlrexport {
+class SQLRCLIENT_DLLSPEC sqlrexporttable : virtual public sqlrexport {
 	public:
 		/** Creates an instance of the sqlrexporttable class. */
 		sqlrexporttable();
