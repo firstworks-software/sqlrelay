@@ -163,6 +163,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *exportcon,
 
 	// export rows...
 	bool	success=true;
+	bool	first=true;
 	do {
 
 		// commit/begin, if necessary
@@ -207,7 +208,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *exportcon,
 		}
 
 		// reset bind index
-		bindindex=1;
+		bindindex=0;
 
 		for (setCurrentColumn(0);
 				getCurrentColumn()<cols;
@@ -237,9 +238,9 @@ bool sqlrexporttable::exportToTable(sqlrconnection *exportcon,
 					getColumnsToIgnore())) {
 
 				// export the field
-				if (!bindnames[bindindex]) {
+				if (first) {
 					bindnames[bindindex]=
-					charstring::parseNumber(bindindex);
+					charstring::parseNumber(bindindex+1);
 				}
 				exportcur->inputBind(
 					bindnames[bindindex],
@@ -261,10 +262,10 @@ bool sqlrexporttable::exportToTable(sqlrconnection *exportcon,
 		if (!getIgnoreRow()) {
 			// It's not impossible that there were 0 columns in
 			// this result set.  If that was the case then
-			// bindindex should still be 1 at this point, and no
+			// bindindex should still be 0 at this point, and no
 			// values should be bound.  In that case, we don't want
 			// to attempt to execute anything.
-			if (bindindex>1) {
+			if (bindindex) {
 				if (!exportcur->executeQuery()) {
 					if (!error(
 						exportcur->errorNumber(),
@@ -275,6 +276,7 @@ bool sqlrexporttable::exportToTable(sqlrconnection *exportcon,
 				}
 			}
 			exportcur->clearBinds();
+			first=false;
 		}
 
 		// set the current column and field to NULL

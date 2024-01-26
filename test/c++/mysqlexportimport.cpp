@@ -25,6 +25,7 @@
 
 //#define DEBUG 1
 
+stringbuffer	createquery;
 sqlrconnection	*con;
 sqlrcursor	*cur;
 
@@ -132,6 +133,7 @@ class testsqlrexport : virtual public sqlrexport {
 		void	setColumnsToModify(const char * const *columnstomodify);
 		void	setRowsToIgnore(dynamicarray<bool> *rowstoignore);
 		void	setTestFileName(const char *testfilename);
+		void	setTestTable(const char *testtable);
 
 		bool	exportStart();
 		bool	columnsStart();
@@ -145,6 +147,7 @@ class testsqlrexport : virtual public sqlrexport {
 		bool	rowEnd();
 		bool	rowsEnd();
 		bool	exportEnd();
+		bool	error(int64_t errornumber, const char *errormessage);
 
 		bool	tests(const char *method);
 
@@ -158,6 +161,7 @@ class testsqlrexport : virtual public sqlrexport {
 		const char * const	*columnstomodify;
 		dynamicarray<bool>	*rowstoignore;
 		const char		*testfilename;
+		const char		*testtable;
 };
 
 testsqlrexport::testsqlrexport() : sqlrexport() {
@@ -169,6 +173,7 @@ testsqlrexport::testsqlrexport() : sqlrexport() {
 	columnstomodify=NULL;
 	rowstoignore=NULL;
 	testfilename=NULL;
+	testtable=NULL;
 }
 
 void testsqlrexport::setColumnsToModify(
@@ -184,11 +189,23 @@ void testsqlrexport::setTestFileName(const char *testfilename) {
 	this->testfilename=testfilename;
 }
 
+void testsqlrexport::setTestTable(const char *testtable) {
+	this->testtable=testtable;
+}
+
 bool testsqlrexport::tests(const char *method) {
-	if (charstring::compare(getFileName(),testfilename)) {
-		stdoutput.printf("\n%s - getFileName(): %s!=%s\n",
+	if (getFileName()) {
+		if (charstring::compare(getFileName(),testfilename)) {
+			stdoutput.printf("\n%s - getFileName(): %s!=%s\n",
 					method,getFileName(),testfilename);
-		return false;
+			return false;
+		}
+	} else {
+		if (charstring::compare(getTable(),testtable)) {
+			stdoutput.printf("\n%s - getTable(): %s!=%s\n",
+					method,getTable(),testtable);
+			return false;
+		}
 	}
 	if (getIgnoreRow()!=ignorerow) {
 		stdoutput.printf("\n%s - getIgnoreRow(): %d!=%d\n",
@@ -444,6 +461,11 @@ bool testsqlrexport::exportEnd() {
 	return true;
 }
 
+bool testsqlrexport::error(int64_t errornumber, const char *errormessage) {
+	stdoutput.printf("\n%lld: %s\n",errornumber,errormessage);
+	return false;
+}
+
 
 // define a set of classes that inherit from our base class, to get the event
 // methods, but also inherit from classes that export to csv, xml, and table,
@@ -613,11 +635,85 @@ void generateComparisonXml(const char *filename,
 	comparison.flushWriteBuffer(-1,-1);
 }
 
+void createTable(const char *tablename,
+			const char * const *columnstoignore,
+			uint32_t *colcount) {
+
+	stringbuffer	query;
+	query.append("create table ")->append(tablename)->append(" (");
+	uint32_t	ccount=0;
+	for (uint64_t col=0; field[col].name; col++) {
+		if (charstring::isInSet(field[col].name,columnstoignore)) {
+			continue;
+		}
+		if (ccount) {
+			query.append(',');
+		}
+		query.append(field[col].name);
+		query.append(' ');
+		query.append(field[col].type);
+		ccount++;
+	}
+	query.append(')');
+	checkSuccess(cur->sendQuery(query.getString()),1);
+	if (colcount) {
+		*colcount=ccount;
+	}
+}
+
 void generateComparisonTable(const char *tablename,
 				bool ignorecolumns,
 				const char * const *columnstoignore,
 				const char * const *columnstomodify,
 				dynamicarray<bool> *rowstoignore) {
+
+	// connect to db
+	sqlrconnection	econ("sqlrelay",9000,"/tmp/test.socket",
+					"testuser","testpassword",0,1);
+	sqlrcursor	ecur(&econ);
+
+	// create table
+	createTable(tablename,columnstoignore,NULL);
+
+	// populate table
+	stringbuffer	query;
+	for (uint64_t row=0; row<ROWS; row++) {
+		if ((*rowstoignore)[row]) {
+			continue;
+		}
+		query.clear();
+		query.append("insert into ");
+		query.append(tablename);
+		query.append(" testtable values (");
+		bool	first=true;
+		for (uint32_t col=0; field[col].pattern; col++) {
+			if (charstring::isInSet(field[col].name,
+							columnstoignore)) {
+				continue;
+			}
+			if (first) {
+				first=false;
+			} else {
+				query.append(',');
+			}
+			if (field[col].quote) {
+				query.append('\'');
+			}
+			if (charstring::isInSet(field[col].name,
+							columnstomodify)) {
+				query.printf(field[col].pattern,row+1);
+			} else {
+				query.printf(field[col].pattern,row);
+			}
+			if (field[col].quote) {
+				query.append('\'');
+			}
+		}
+		query.append(')');
+		if (!cur->sendQuery(query.getString())) {
+			return;
+		}
+	}
 }
 
 
@@ -681,10 +777,10 @@ int main(int argc, char **argv) {
 	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
-	stringbuffer	query;
 
 	// clean up
 	cur->sendQuery("drop table testtable");
+	cur->sendQuery("drop table testtable_export");
 	cur->sendQuery("drop table testtable_comparison");
 	file::remove("testtable.csv");
 	file::remove("testtable-comparison.csv");
@@ -692,24 +788,14 @@ int main(int argc, char **argv) {
 	file::remove("testtable-comparison.xml");
 
 	// create a new table
-	stdoutput.printf("CREATE TEMPTABLE: \n");
-	query.append("create table testtable (");
+	stdoutput.printf("CREATE TESTTABLE: \n");
 	uint32_t	colcount=0;
-	for (uint64_t col=0; field[col].name; col++) {
-		if (col) {
-			query.append(',');
-		}
-		query.append(field[col].name);
-		query.append(' ');
-		query.append(field[col].type);
-		colcount++;
-	}
-	query.append(')');
-	checkSuccess(cur->sendQuery(query.getString()),1);
+	createTable("testtable",NULL,&colcount);
 	stdoutput.printf("\n");
 
 	// insert
 	stdoutput.printf("INSERT: \n");
+	stringbuffer	query;
 	for (uint64_t row=0; row<ROWS; row++) {
 		query.clear();
 		query.append("insert into testtable values (");
@@ -861,7 +947,7 @@ int main(int argc, char **argv) {
 		}
 
 		// iterate through formats...
-		for (uint8_t fiter=0; fiter<2; fiter++) {
+		for (uint8_t fiter=0; fiter<3; fiter++) {
 
 			// csv, xml, or table
 			testsqlrexport	*e;
@@ -879,10 +965,15 @@ int main(int argc, char **argv) {
 				exp="testtable.xml";
 				comp="testtable-comparison.xml";
 			} else if (fiter==2) {
+// for tables, skip modified colnames/fields, for now
+if (oiter>=34 && oiter<=44) {
+	continue;
+}
 				e=&tset;
 				format="TABLE";
 				exp="testtable_export";
 				comp="testtable_comparison";
+				createTable(exp,columnstoignore,NULL);
 			}
 
 			// export file or table
@@ -892,9 +983,11 @@ int main(int argc, char **argv) {
 			e->setColumnsToModify(columnstomodify);
 			e->setRowsToIgnore(&rowstoignore);
 			e->setTestFileName(exp);
+			e->setTestTable(exp);
 			checkSuccess(e->getIgnoreColumns(),ignorecolumns);
 			if (columnstoignore) {
-				for (uint16_t i=0; i<columnstoignorecount; i++) {
+				for (uint16_t i=0;
+					i<columnstoignorecount; i++) {
 					checkSuccess(
 						e->getColumnsToIgnore()[i],
 						columnstoignore[i]);

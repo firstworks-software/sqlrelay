@@ -453,6 +453,10 @@ bool sqlrexportcsv::exportToJsonDomNode(domnode *jsondomnode,
 			}
 		}
 
+		// set the current column and field to NULL
+		setCurrentColumnName(NULL);
+		setCurrentField(NULL);
+
 		// call the row-end event
 		if (!rowEnd()) {
 			return false;
