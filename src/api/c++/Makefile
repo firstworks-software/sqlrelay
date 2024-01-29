@@ -12,8 +12,10 @@ SRCS = sqlrconnection.cpp \
 	sqlrimportxml.cpp \
 	sqlrimportcsv.cpp \
 	sqlrexport.cpp \
+	sqlrexportfile.cpp \
 	sqlrexportxml.cpp \
 	sqlrexportcsv.cpp \
+	sqlrexportjsondomnode.cpp \
 	sqlrexporttable.cpp \
 	sqlrcrud.cpp
 LOBJS = sqlrconnection.$(OBJ) \
@@ -26,8 +28,10 @@ LOBJS = sqlrconnection.$(OBJ) \
 	sqlrimportxml.$(OBJ) \
 	sqlrimportcsv.$(OBJ) \
 	sqlrexport.$(OBJ) \
+	sqlrexportfile.$(OBJ) \
 	sqlrexportxml.$(OBJ) \
 	sqlrexportcsv.$(OBJ) \
+	sqlrexportjsondomnode.$(OBJ) \
 	sqlrexporttable.$(OBJ) \
 	sqlrcrud.$(OBJ)
 
@@ -67,10 +71,14 @@ install: $(INSTALLLIB)
 	$(CHMOD) 644 $(includedir)/sqlrelay/sqlrimportcsv.h
 	$(CP) sqlrelay/sqlrexport.h $(includedir)/sqlrelay
 	$(CHMOD) 644 $(includedir)/sqlrelay/sqlrexport.h
+	$(CP) sqlrelay/sqlrexportfile.h $(includedir)/sqlrelay
+	$(CHMOD) 644 $(includedir)/sqlrelay/sqlrexportfile.h
 	$(CP) sqlrelay/sqlrexportxml.h $(includedir)/sqlrelay
 	$(CHMOD) 644 $(includedir)/sqlrelay/sqlrexportxml.h
 	$(CP) sqlrelay/sqlrexportcsv.h $(includedir)/sqlrelay
 	$(CHMOD) 644 $(includedir)/sqlrelay/sqlrexportcsv.h
+	$(CP) sqlrelay/sqlrexportjsondomnode.h $(includedir)/sqlrelay
+	$(CHMOD) 644 $(includedir)/sqlrelay/sqlrexportjsondomnode.h
 	$(CP) sqlrelay/sqlrexporttable.h $(includedir)/sqlrelay
 	$(CHMOD) 644 $(includedir)/sqlrelay/sqlrexporttable.h
 	$(CP) sqlrelay/private/sqlrclientincludes.h $(includedir)/sqlrelay/private
@@ -117,10 +125,18 @@ install: $(INSTALLLIB)
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrexportxmlincludes.h
 	$(CP) sqlrelay/private/sqlrexportxml.h $(includedir)/sqlrelay/private
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrexportxml.h
+	$(CP) sqlrelay/private/sqlrexportfileincludes.h $(includedir)/sqlrelay/private
+	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrexportfileincludes.h
+	$(CP) sqlrelay/private/sqlrexportfile.h $(includedir)/sqlrelay/private
+	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrexportfile.h
 	$(CP) sqlrelay/private/sqlrexportcsvincludes.h $(includedir)/sqlrelay/private
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrexportcsvincludes.h
 	$(CP) sqlrelay/private/sqlrexportcsv.h $(includedir)/sqlrelay/private
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrexportcsv.h
+	$(CP) sqlrelay/private/sqlrexportjsondomnodeincludes.h $(includedir)/sqlrelay/private
+	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrexportjsondomnodeincludes.h
+	$(CP) sqlrelay/private/sqlrexportjsondomnode.h $(includedir)/sqlrelay/private
+	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrexportjsondomnode.h
 	$(CP) sqlrelay/private/sqlrexporttable.h $(includedir)/sqlrelay/private
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrexporttable.h
 	$(CP) sqlrelay/private/sqlrexporttableincludes.h $(includedir)/sqlrelay/private

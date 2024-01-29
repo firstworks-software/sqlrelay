@@ -132,8 +132,6 @@ class testsqlrexport : virtual public sqlrexport {
 
 		void	setColumnsToModify(const char * const *columnstomodify);
 		void	setRowsToIgnore(dynamicarray<bool> *rowstoignore);
-		void	setTestFileName(const char *testfilename);
-		void	setTestTable(const char *testtable);
 
 		bool	exportStart();
 		bool	columnsStart();
@@ -149,7 +147,7 @@ class testsqlrexport : virtual public sqlrexport {
 		bool	exportEnd();
 		bool	error(int64_t errornumber, const char *errormessage);
 
-		bool	tests(const char *method);
+		virtual bool	tests(const char *method);
 
 	private:
 		bool		ignorerow;
@@ -160,8 +158,6 @@ class testsqlrexport : virtual public sqlrexport {
 
 		const char * const	*columnstomodify;
 		dynamicarray<bool>	*rowstoignore;
-		const char		*testfilename;
-		const char		*testtable;
 };
 
 testsqlrexport::testsqlrexport() : sqlrexport() {
@@ -172,8 +168,6 @@ testsqlrexport::testsqlrexport() : sqlrexport() {
 	inrows=false;
 	columnstomodify=NULL;
 	rowstoignore=NULL;
-	testfilename=NULL;
-	testtable=NULL;
 }
 
 void testsqlrexport::setColumnsToModify(
@@ -185,28 +179,7 @@ void testsqlrexport::setRowsToIgnore(dynamicarray<bool> *rowstoignore) {
 	this->rowstoignore=rowstoignore;
 }
 
-void testsqlrexport::setTestFileName(const char *testfilename) {
-	this->testfilename=testfilename;
-}
-
-void testsqlrexport::setTestTable(const char *testtable) {
-	this->testtable=testtable;
-}
-
 bool testsqlrexport::tests(const char *method) {
-	if (getFileName()) {
-		if (charstring::compare(getFileName(),testfilename)) {
-			stdoutput.printf("\n%s - getFileName(): %s!=%s\n",
-					method,getFileName(),testfilename);
-			return false;
-		}
-	} else {
-		if (charstring::compare(getTable(),testtable)) {
-			stdoutput.printf("\n%s - getTable(): %s!=%s\n",
-					method,getTable(),testtable);
-			return false;
-		}
-	}
 	if (getIgnoreRow()!=ignorerow) {
 		stdoutput.printf("\n%s - getIgnoreRow(): %d!=%d\n",
 					method,getIgnoreRow(),ignorerow);
@@ -472,15 +445,93 @@ bool testsqlrexport::error(int64_t errornumber, const char *errormessage) {
 // to get the export methods
 class testsqlrexportcsv : virtual public testsqlrexport,
 					virtual public sqlrexportcsv {
+	public:
+		testsqlrexportcsv();
+		void	setTestFileName(const char *testfilename);
+		bool	tests(const char *method);
+	private:
+		const char	*testfilename;
 };
+
+testsqlrexportcsv::testsqlrexportcsv() {
+	testfilename=NULL;
+}
+
+void testsqlrexportcsv::setTestFileName(const char *testfilename) {
+	this->testfilename=testfilename;
+}
+
+bool testsqlrexportcsv::tests(const char *method) {
+	if (!testsqlrexport::tests(method)) {
+		return false;
+	}
+	if (charstring::compare(getFileName(),testfilename)) {
+		stdoutput.printf("\n%s - getFileName(): %s!=%s\n",
+				method,getFileName(),testfilename);
+		return false;
+	}
+	return true;
+}
 
 class testsqlrexportxml : virtual public testsqlrexport,
 					virtual public sqlrexportxml {
+	public:
+		testsqlrexportxml();
+		void	setTestFileName(const char *testfilename);
+		bool	tests(const char *method);
+	private:
+		const char	*testfilename;
 };
+
+testsqlrexportxml::testsqlrexportxml() {
+	testfilename=NULL;
+}
+
+void testsqlrexportxml::setTestFileName(const char *testfilename) {
+	this->testfilename=testfilename;
+}
+
+bool testsqlrexportxml::tests(const char *method) {
+	if (!testsqlrexport::tests(method)) {
+		return false;
+	}
+	if (charstring::compare(getFileName(),testfilename)) {
+		stdoutput.printf("\n%s - getFileName(): %s!=%s\n",
+				method,getFileName(),testfilename);
+		return false;
+	}
+	return true;
+}
 
 class testsqlrexporttable : virtual public testsqlrexport,
 					virtual public sqlrexporttable {
+	public:
+		testsqlrexporttable();
+		void	setTestTable(const char *testtable);
+		bool	tests(const char *method);
+	private:
+		const char	*testtable;
 };
+
+testsqlrexporttable::testsqlrexporttable() {
+	testtable=NULL;
+}
+
+void testsqlrexporttable::setTestTable(const char *testtable) {
+	this->testtable=testtable;
+}
+
+bool testsqlrexporttable::tests(const char *method) {
+	if (!testsqlrexport::tests(method)) {
+		return false;
+	}
+	if (charstring::compare(getTable(),testtable)) {
+		stdoutput.printf("\n%s - getTable(): %s!=%s\n",
+				method,getTable(),testtable);
+		return false;
+	}
+	return true;
+}
 
 
 // define a set of methods that generate something to compare our export to
@@ -982,8 +1033,6 @@ if (oiter>=34 && oiter<=44) {
 			e->setColumnsToIgnore(columnstoignore);
 			e->setColumnsToModify(columnstomodify);
 			e->setRowsToIgnore(&rowstoignore);
-			e->setTestFileName(exp);
-			e->setTestTable(exp);
 			checkSuccess(e->getIgnoreColumns(),ignorecolumns);
 			if (columnstoignore) {
 				for (uint16_t i=0;
@@ -1005,17 +1054,25 @@ if (oiter>=34 && oiter<=44) {
 				"select * from testtable "
 				"order by testsmallint"),1);
 			if (fiter==0) {
-				checkSuccess(tsec.exportToFile(exp),1);
+				tsec.setFileName(exp);
+				tsec.setTestFileName(exp);
+				checkSuccess(tsec.exportData(),1);
 			} else if (fiter==1) {
-				checkSuccess(tsex.exportToFile(exp),1);
+				tsex.setFileName(exp);
+				tsex.setTestFileName(exp);
+				checkSuccess(tsex.exportData(),1);
 			} else if (fiter==2) {
 				sqlrconnection	econ("sqlrelay",9000,
 							"/tmp/test.socket",
 							"testuser",
 							"testpassword",0,1);
 				sqlrcursor	ecur(&econ);
-				checkSuccess(tset.exportToTable(&econ,&ecur,
-								exp,500),1);
+				tset.setExportSqlrConnection(&econ);
+				tset.setExportSqlrCursor(&ecur);
+				tset.setTable(exp);
+				tset.setCommitCount(500);
+				tset.setTestTable(exp);
+				checkSuccess(tset.exportData(),1);
 			}
 			stdoutput.printf("\n");
 

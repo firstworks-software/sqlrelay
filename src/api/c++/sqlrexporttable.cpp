@@ -7,32 +7,65 @@
 #define NEED_IS_NUMBER_TYPE_CHAR
 #include <datatypes.h>
 
-sqlrexporttable::sqlrexporttable() {
+sqlrexporttable::sqlrexporttable() : sqlrexport() {
+	exportcon=NULL;
+	exportcur=NULL;
+	commitcount=0;
 }
 
 sqlrexporttable::~sqlrexporttable() {
 }
 
-bool sqlrexporttable::exportToTable(sqlrconnection *exportcon,
-						const char *table,
-						uint64_t commitcount) {
-	return sqlrexport::exportToTable(exportcon,table,commitcount);
+void sqlrexporttable::setExportSqlrConnection(sqlrconnection *exportcon) {
+	this->exportcon=exportcon;
 }
 
-bool sqlrexporttable::exportToTable(sqlrconnection *exportcon,
-						sqlrcursor *exportcur,
-						const char *table,
-						uint64_t commitcount) {
+sqlrconnection *sqlrexporttable::getExportSqlrConnection() {
+	return exportcon;
+}
 
-	if (!sqlrexport::exportToTable(exportcon,exportcur,table,commitcount)) {
-		return false;
-	}
+void sqlrexporttable::setExportSqlrCursor(sqlrcursor *exportcur) {
+	this->exportcur=exportcur;
+}
+
+sqlrcursor *sqlrexporttable::getExportSqlrCursor() {
+	return exportcur;
+}
+
+stringbuffer *sqlrexporttable::getInsertQueryBuffer() {
+	return &insertquery;
+}
+
+void sqlrexporttable::setCommitCount(uint64_t commitcount) {
+	this->commitcount=commitcount;
+}
+
+uint64_t sqlrexporttable::getCommitCount() {
+	return commitcount;
+}
+
+bool sqlrexporttable::exportData() {
+
+	clearOutput();
 
 	// capture the con, cur, table and commit count
-	setExportSqlrConnection(exportcon);
-	setExportSqlrCursor(exportcur);
-	setTable(table);
-	setCommitCount(commitcount);
+	sqlrconnection	*exportcon=getExportSqlrConnection();
+	sqlrcursor	*exportcur=getExportSqlrCursor();
+	const char	*table=getTable();
+
+	// sanity checks
+	if (!exportcon) {
+		// FIXME: set error
+		return false;
+	}
+	if (!exportcur) {
+		// FIXME: set error
+		return false;
+	}
+	if (!table) {
+		// FIXME: set error
+		return false;
+	}
 
 	// get the cursor and column count
 	sqlrcursor	*sqlrcur=getSqlrCursor();
@@ -327,4 +360,9 @@ bool sqlrexporttable::exportToTable(sqlrconnection *exportcon,
 	}
 
 	return success;
+}
+
+void sqlrexporttable::clearOutput() {
+	sqlrexport::clearOutput();
+	insertquery.clear();
 }

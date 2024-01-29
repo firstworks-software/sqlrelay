@@ -8,8 +8,8 @@
 
 /** The sqlrexport class provides a base class for child classes that wish to
  *  implement export of data from a database, via SQL Relay.  It provides
- *  various common methods.  Each child class should implement at least one of
- *  exportToFile(), exportToTable(), or exportToJsonDomNode(). */
+ *  various common methods.  Each child class should implement the
+ *  exportData() method. */
 class SQLRCLIENT_DLLSPEC sqlrexport {
 	public:
 		/** Creates an instance of the sqlrexport class. */
@@ -33,6 +33,20 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		/** Returns the instance of sqlrursor that this instance
  		 *  is configured to use to fetch data for the export. */
 		sqlrcursor	*getSqlrCursor();
+
+		/** Sets the name of the table associated with the export.
+		 *
+		 *  This may be used differently by different child classes.
+		 *  Eg. it may be the name of the table being exported, or the
+		 *  name of the table that data is being exported to. */
+		void	setTable(const char *table);
+
+		/** Gets the name of the table associated with the export.
+		 *
+		 *  This may be used differently by different child classes.
+		 *  Eg. it may be the name of the table being exported, or the
+		 *  name of the table that data is being exported to. */
+		const char	*getTable();
 
 		/** If "ignorecolumns" is set false, then column information
 		 *  will be exported (eg. to the CSV header, XML tags inside
@@ -94,118 +108,17 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		uint32_t	getLogIndent();
 
 		/** Exports the result set of the cursor currently in use as
-		 *  set by the most recent call to setSqlrCursor() to file
-		 *  "filename" or to standard output if "filename" is NULL or
-		 *  empty.
+		 *  set by the most recent call to setSqlrCursor().
 		 *
 		 *  Returns true on success and false if an error occurred.
 		 *
 		 *  Note that the default implementation of this method just
-		 *  calls exportToFile(filename,NULL).  Child classes that
-		 *  support export to a file should override that
-		 *  exportToFile() method. */
-		virtual	bool	exportToFile(const char *filename);
+		 *  returns true.  Child classes that should override this
+		 *  method. */
+		virtual	bool	exportData();
 
-		/** Exports the result set of the cursor currently in use as
-		 *  set by the most recent call to setSqlrCursor() to file
-		 *  "filename" or to standard output if "filename" is NULL or
-		 *  empty.
-		 *
-		 *  If "table" is non-null, then the result set is presumed
-		 *  to be a (possibly partial) dump of that table, and the
-		 *  table name is embedded in the export, if the export format
-		 *  supports this.
-		 *
-		 *  Returns true on success and false if an error occurred.
-		 *
-		 *  Note that the default implementation of this method just
-		 *  returns true.  Child classes that support export to a file
-		 *  should override this method.
-		 *
-		 *  The method implemented by the child class should call the
-		 *  various Start()/End() methods below at the appropriate
-		 *  time.  If any of the Start()/End() methods return false,
-		 *  then export should stop and this method should return
-		 *  false.  */
-		virtual	bool	exportToFile(const char *filename,
-							const char *table);
-
-		/** Exports the result set of the cursor currently in use as
-		 *  set by the most recent call to setSqlrCursor() to the
-		 *  database table "table" using "sqlrcon".  A commit is
-		 *  called every "commitcount" rows.  No commit is called if
-		 *  "commitcount" is set to 0.
-		 *
-		 *  Returns true on success and false if an error occurred.
-		 *
-		 *  Note that the default implementation of this method just
-		 *  uses sqlrcon to allocate an sqlrcursor, calls
-		 *  exportToTable(sqlrcon,sqlrcur,table), then frees the
-		 *  cursor.  Child classes that support export to a database
-		 *  table should override that exportToTable() method. */
-		virtual	bool	exportToTable(sqlrconnection *exportcon,
-							const char *table,
-							uint64_t commitcount);
-
-		/** Exports the result set of the cursor currently in use as
-		 *  set by the most recent call to setSqlrCursor() to the
-		 *  database table "table" using "exportcon" and "exportcur".
-		 *  A commit is called every "commitcount" rows.  No commit is
-		 *  called if "commitcount" is set to 0.
-		 *
-		 *  Returns true on success and false if an error occurred.
-		 *
-		 *  Note that the default implementation of this method just
-		 *  returns true.  Child classes that support export to a
-		 *  database table should override this method.
-		 *
-		 *  The method implemented by the child class should call the
-		 *  various Start()/End() methods below at the appropriate
-		 *  time.  If any of the Start()/End() methods return false,
-		 *  then export should stop and this method should return
-		 *  false.  */
-		virtual	bool	exportToTable(sqlrconnection *exportcon,
-						sqlrcursor *exportcur,
-						const char *table,
-						uint64_t commitcount);
-
-		/** Exports the result set of the cursor currently in use as
-		 *  set by the most recent call to setSqlrCursor() to the
-		 *  JSON domnode "jsondomnode".
-		 *
-		 *  Returns true on success and false if an error occurred.
-		 *
-		 *  Note that the default implementation of this method just
-		 *  calls exportToJsonDomNode(jsondomnode,NULL).  Child classes
-		 *  tha  support export to a JSON domnode should override that
-		 *  exportToJsonDomNode() method. */
-		virtual	bool	exportToJsonDomNode(domnode *jsondomnode);
-
-		/** Exports the result set of the cursor currently in use as
-		 *  set by the most recent call to setSqlrCursor() to the
-		 *  JSON domnode "jsondomnode".
-		 *
-		 *  If "table" is non-null, then the result set is presumed
-		 *  to be a (possibly partial) dump of that table, and the
-		 *  table name is embedded in the export, if the export format
-		 *  supports this.
-		 *
-		 *  Returns true on success and false if an error occurred.
-		 *
-		 *  Note that the default implementation of this method just
-		 *  returns true.  Child classes that support export to a
-		 *  JSON domnode should override this method.
-		 *
-		 *  The method implemented by the child class should call the
-		 *  various Start()/End() methods below at the appropriate
-		 *  time.  If any of the Start()/End() methods return false,
-		 *  then export should stop and this method should return
-		 *  false.  */
-		virtual	bool	exportToJsonDomNode(domnode *jsondomnode,
-							const char *table);
-
-		/** This method should be called by implementations of the
-		 *  exportTo*() methods, at the beginning of the export process.
+		/** This method should be called by implementations of
+		 *  exportData(), at the beginning of the export process.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -227,9 +140,9 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual bool	exportStart();
 
-		/** This method should be called by implementations of the
-		 *  exportTo*() methods, prior to the export of the columns of
-		 *  the result set.
+		/** This method should be called by implementations of
+		 *  exportData(), prior to the export of the columns of the
+		 *  result set.
 		 *
 		 *  Note that it should be called whether or not columns are
 		 *  ignored.
@@ -252,9 +165,9 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	columnsStart();
 
-		/** This method should be called by implementations of the
-		 *  exportTo*() methods, prior to the export of each column of
-		 *  the result set.
+		/** This method should be called by implementations of
+		 *  exportData(), prior to the export of each column of the
+		 *  result set.
 		 *
 		 *  Note that it should be called for each column, whether or
 		 *  not columns are ignored, and whether or not this particular
@@ -281,8 +194,8 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	columnStart();
 
-		/** This method should be called by implementations of the
-		 *  exportTo*() methods, after the export of each column of the
+		/** This method should be called by implementations of
+		 *  exportData(), after the export of each column of the
 		 *  result set.
 		 *
 		 *  Note that it should be called for each column, whether or
@@ -310,9 +223,9 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	columnEnd();
 
-		/** This method should be called by implementations of the
-		 *  exportTo*() methods, after the export of the columns of
-		 *  the result set.
+		/** This method should be called by implementations of
+		 *  exportData(), after the export of the columns of the
+		 *  result set.
 		 *
 		 *  Note that it should be called whether or not columns are
 		 *  ignored.
@@ -336,9 +249,9 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	columnsEnd();
 
-		/** This method should be called by implementations of the
-		 *  exportTo*() methods, prior to the export of the rows of
-		 *  the result set.
+		/** This method should be called by implementations of
+		 *  exportData(), prior to the export of the rows of the
+		 *  result set.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -359,9 +272,9 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	rowsStart();
 
-		/** This method should be called by implementations of the
-		 *  exportTo*() methods, prior to the export of each row of
-		 *  the result set.
+		/** This method should be called by implementations of
+		 *  exportData(), prior to the export of each row of the
+		 *  result set.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -388,9 +301,9 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	rowStart();
 
-		/** This method should be called by implementations of the
-		 *  exportTo*() methods, prior to the export of each field of
-		 *  the result set.
+		/** This method should be called by implementations of
+		 *  exportData(), prior to the export of each field of the
+		 *  result set.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -421,20 +334,21 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *
 		 *  The memory allocated to store the new value must persist
 		 *  until the value is actually exported.  When this is depends
-		 *  on the implementation of the exportTo*() method.
+		 *  on the implementation of the exportData() method.
 		 *
-		 *  Implementations of exportToFile() and exportToJsonDom()
+		 *  Implementations that export to a file or json domnode
 		 *  typically export the field before calling fieldEnd().  As
 		 *  such, storage for the updated field value may be freed
 		 *  inside of your implementation of fieldEnd().
 		 *
-		 *  However, implementations of exportToTable() tend to build
-		 *  an insert statement, bind values before calling fieldEnd(),
-		 *  and then execute the statement before calling rowEnd().  In
-		 *  this case, storage for the updated field value should be
-		 *  freed inside of your implemenatation of rowEnd().
+		 *  However, implementations that export to a table tend to
+		 *  build an insert statement, bind values before calling
+		 *  fieldEnd(), and then execute the statement before calling
+		 *  rowEnd().  In this case, storage for the updated field
+		 *  value should be freed inside of your implemenatation of
+		 *  rowEnd().
 		 *
-		 *  Be sure to verify how the various exportTo*() methods that
+		 *  Be sure to verify how the various exportData() methods that
 		 *  you are using were written, and use care when freeing 
 		 *  storage allocated for updated field values.
 		 *
@@ -444,9 +358,9 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	fieldStart();
 
-		/** This method should be called by implementations of the
-		 *  exportTo*() methods, after the export of each field of
-		 *  the result set.
+		/** This method should be called by implementations of
+		 *  exportData(), after the export of each field of the
+		 *  result set.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -478,9 +392,9 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	fieldEnd();
 
-		/** This method should be called by implementations of the
-		 *  exportTo*() methods, after the export of each row of
-		 *  the result set.
+		/** This method should be called by implementations of
+		 *  exportData(), after the export of each row of the
+		 *  result set.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -505,9 +419,9 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	rowEnd();
 
-		/** This method should be called by implementations of the
-		 *  exportTo*() methods, after the export of the rows of
-		 *  the result set.
+		/** This method should be called by implementations of
+		 *  exportData(), after the export of the rows of the
+		 *  result set.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -531,8 +445,8 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	rowsEnd();
 
-		/** This method should be called by implementations of the
-		 *  exportToTable() methods, before a begin().
+		/** This method should be called by implementations of
+		 *  exportData(), before a begin().
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -542,8 +456,8 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	beginStart();
 
-		/** This method should be called by implementations of the
-		 *  exportToTable() methods, after a begin().
+		/** This method should be called by implementations of
+		 *  exportData(), after a begin().
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -553,8 +467,8 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	beginEnd();
 
-		/** This method should be called by implementations of the
-		 *  exportToTable() methods, before a commit().
+		/** This method should be called by implementations of
+		 *  exportData(), before a commit().
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -564,8 +478,8 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	commitStart();
 
-		/** This method should be called by implementations of the
-		 *  exportToTable() methods, after a commit().
+		/** This method should be called by implementations of
+		 *  exportData(), after a commit().
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -575,8 +489,8 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	commitEnd();
 
-		/** This method should be called by implementations of the
-		 *  exportToTable() methods, if a commit(), begin(),
+		/** This method should be called by implementations of
+		 *  exportData() methods, if a commit(), begin(),
 		 *  executeQuery(), or other database operation fails.
 		 *
 		 *  This implementation just returns false but a child class may
@@ -587,8 +501,8 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		virtual	bool	error(int64_t errornumber,
 					const char *errormessage);
 
-		/** This method should be called by implementations of the
-		 *  exportTo*() methods, at the end of the export process.
+		/** This method should be called by implementations of
+		 *  exportData(), at the end of the export process.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -615,9 +529,9 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		virtual bool	exportEnd();
 
 		/** Returns the number of rows that were exported by the most
-		 *  recent call to one of the exportTo*() methods, or the
-		 *  current number of rows that have been exported, if called
-		 *  from inside one of the Start()/End() methods. */
+		 *  recent call to exportData(), or the current number of rows
+		 *  that have been exported, if called from inside one of the
+		 *  Start()/End() methods. */
 		uint64_t	getExportedRowCount();
 
 	protected:
@@ -625,7 +539,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		/** Sets whether the current row of the result set will be
 		 *  ignored or not.  Rows that are ignored are not exported.
 		 *  
-		 *  Should be called by implementations of exportTo*().  May
+		 *  Should be called by implementations of exportData().  May
 		 *  also be called by rowStart().  Not commonly called by other
 		 *  *Start/End() methods. */
 		void	setIgnoreRow(bool ignorerow);
@@ -633,14 +547,14 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		/** Gets whether the current row of the result set will be
 		 *  ignored or not.  Rows that are ignored are not exported.
 		 *  
-		 *  May be called by implementations of exportTo*() or by
+		 *  May be called by implementations of exportData() or by
 		 *  implementations of the *Start/End() methods. */
 		bool	getIgnoreRow();
 
 		/** Sets the index of the row of the result set that is
 		 *  currently being exported.
 		 *  
-		 *  Should be called by implementations of exportTo*().  Not
+		 *  Should be called by implementations of exportData().  Not
 		 *  commonly called by implementations of the *Start/End()
 		 *  methods. */
 		void	setCurrentRow(uint64_t currentrow);
@@ -648,14 +562,14 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		/** Gets the index of the row of the result set that is
 		 *  currently being exported.
 		 *
-		 *  May be called by implementations of exportTo*() or by
+		 *  May be called by implementations of exportData() or by
 		 *  implementations of the *Start/End() methods. */
 		uint64_t	getCurrentRow();
 
 		/** Sets the index of the column of the result set that is
 		 *  currently being exported.
 		 *  
-		 *  Should be called by implementations of exportTo*().  Not
+		 *  Should be called by implementations of exportData().  Not
 		 *  commonly called by implementations of the *Start/End()
 		 *  methods. */
 		void	setCurrentColumn(uint32_t currentcol);
@@ -663,14 +577,14 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		/** Gets the index of the column of the result set that is
 		 *  currently being exported.
 		 *
-		 *  May be called by implementations of exportTo*() or by
+		 *  May be called by implementations of exportData() or by
 		 *  implementations of the *Start/End() methods. */
 		uint32_t	getCurrentColumn();
 
 		/** Sets the name of the column of the result set that is
 		 *  currently being exported.
 		 *
-		 *  Should be called by implementations of exportTo*().  May
+		 *  Should be called by implementations of exportData().  May
 		 *  also be called by columnStart().  Not commonly called by
 		 *  other *Start/End() methods. */
 		void	setCurrentColumnName(const char *currentcolname);
@@ -678,14 +592,14 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		/** Gets the name of the column of the result set that is
 		 *  currently being exported.
 		 *
-		 *  May be called by implementations of exportTo*() or by
+		 *  May be called by implementations of exportData() or by
 		 *  implementations of the *Start/End() methods. */
 		const char	*getCurrentColumnName();
 
 		/** Sets the value of the field of the result set that is
 		 *  currently being exported.
 		 *
-		 *  Should be called by implementations of exportTo*().  Not
+		 *  Should be called by implementations of exportData().  Not
 		 *  commonly called by implementations of the *Start/End()
 		 *  methods. */
 		void	setCurrentField(const char *currentfield);
@@ -693,7 +607,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		/** Gets the value of the field of the result set that is
 		 *  currently being exported.
 		 *
-		 *  May be called by implementations of exportTo*() or by
+		 *  May be called by implementations of exportData() or by
 		 *  implementations of the *Start/End() methods. */
 		const char	*getCurrentField();
 
@@ -703,7 +617,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  "numeric" is false then the type of the column is set to
 		 *  non-numeric.
 		 *
-		 *  Should be called by implementations of exportTo*().  Not
+		 *  Should be called by implementations of exportData().  Not
 		 *  commonly called by implementations of the *Start/End()
 		 *  methods. */
 		void	setIsNumericColumn(uint64_t index, bool numeric);
@@ -711,259 +625,24 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		/** Get whether the data type of the column of the result set
 		 *  in position "index" is a numeric type or not.
 		 *
-		 *  May be called by implementations of exportTo*() or by
+		 *  May be called by implementations of exportData() or by
 		 *  implementations of the *Start/End() methods. */
 		bool	getIsNumericColumn(uint64_t index);
 
 		/** Clears the data types of all columns of the result set,
 		 *  setting them to to non-numeric.
 		 *
-		 *  Should be called by implementations of exportTo*().  Not
+		 *  Should be called by implementations of exportData().  Not
 		 *  commonly called by implementations of the *Start/End()
 		 *  methods. */
 		void	clearAreNumericColumns();
 
 		/** Sets the number of rows that have been exported.
 		 *
-		 *  Should be called by implementations of exportTo*().  Not
+		 *  Should be called by implementations of exportData().  Not
 		 *  commonly called by implementations of the *Start/End()
 		 *  methods. */
 		void	setExportedRowCount(uint64_t exportedrowcount);
-
-		/** When exporting to a file...
-		 *
-		 *  Captures the name of the file to which data will be
-		 *  exported, making it available to the *Start/End()
-		 *  methods.
-		 *
-		 *  Should be called by implementations of exportToFile().  Not
-		 *  commonly called by implementations of the *Start/End()
-		 *  methods. */
-		void	setFileName(const char *filename);
-
-		/** When exporting to a file...
-		 *
-		 *  Gets the name of the file to which data is being exported.
-		 *
-		 *  May be called by implementations of exportToFile() or by
-		 *  implementations of the *Start/End() methods. */
-		const char	*getFileName();
-
-		/** When exporting to a file...
-		 *
-		 *  Sets the file descriptor to which export data will be
- 		 *  exported.
- 		 *
-		 *  Should be called by implementations of exportToFile().  Not
-		 *  commonly called by implementations of the *Start/End()
-		 *  methods. */
-		void	setFileDescriptor(filedescriptor *fd);
-
-		/** When exporting to a file...
-		 *
-		 *  Gets the file descriptor to which data is being exported.
-		 *
-		 *  May be called by implementations of exportToFile() or by
-		 *  implementations of the *Start/End() methods. */
-		filedescriptor	*getFileDescriptor();
-
-		/** Captures the name of the table associated with the export,
-		 *  making it available to the *Start/End() methods.
-		 *
-		 *  In the case of exportToFile() or exportToJsonDomNode(), this
-		 *  is the table that is being exported - commonly NULL or
-		 *  empty.
-		 *
-		 *  In the case of exportToTable(), this is the table that data
-		 *  will be exported to.
-		 *
-		 *  Should be called by implementations of exportTo*().  Not
-		 *  commonly called by implementations of the *Start/End()
-		 *  methods. */
-		void	setTable(const char *table);
-
-		/** Gets the name of the table associated with the export.
-		 *
-		 *  In the case of exportToFile() or exportToJsonDomNode(), this
-		 *  is the table that is being exported - commonly NULL or
-		 *  empty.
-		 *
-		 *  In the case of exportToTable(), this is the table that data
-		 *  will be exported to.
-		 *
-		 *  May be called by implementations of exportToTable() or by
-		 *  implementations of the *Start/End() methods. */
-		const char	*getTable();
-
-		/** When exporting to a table...
-		 *
-		 *  Gets the buffer that the insert query is written when
-		 *  exporting data to a table.
-		 *
-		 *  Should be called by implementations of exportToTable().
-		 *  May also be called by implementations of the *Start/End()
-		 *  methods. */
-		stringbuffer	*getInsertQueryBuffer();
-
-		/** When exporting to a table...
-		 *
-		 *  Captures the instance of sqlrconnection that this instance
-		 *  will use to export data to the table.
-		 *
-		 *  Should be called by implementations of exportToTable().  Not
-		 *  commonly called by implementations of the *Start/End()
-		 *  methods. */
-		void	setExportSqlrConnection(sqlrconnection *exportcon);
-
-		/** When exporting to a table...
-		 *
-		 *  Gets the instance of sqlrconnection that this instance
-		 *  will use to export data to the table.
-		 *
-		 *  May be called by implementations of exportToTable() or by
-		 *  implementations of the *Start/End() methods. */
-		sqlrconnection	*getExportSqlrConnection();
-
-		/** When exporting to a table...
-		 *
-		 *  Captures the instance of sqlrcursor that this instance
-		 *  will use to export data to the table.
-		 *
-		 *  Should be called by implementations of exportToTable().  Not
-		 *  commonly called by implementations of the *Start/End()
-		 *  methods. */
-		void	setExportSqlrCursor(sqlrcursor *exportcur);
-
-		/** When exporting to a table...
-		 *
-		 *  Gets the instance of sqlrcursor that this instance
-		 *  will use to export data to the table.
-		 *
-		 *  May be called by implementations of exportToTable() or by
-		 *  implementations of the *Start/End() methods. */
-		sqlrcursor	*getExportSqlrCursor();
-
-		/** When exporting to a table...
-		 *
-		 *  Captures the commit count, making it available to the
-		 *  *Start/End() methods.
-		 *
-		 *  Should be called by implementations of exportToTable().  Not
-		 *  commonly called by implementations of the *Start/End()
-		 *  methods. */
-		void	setCommitCount(uint64_t commitcount);
-
-		/** When exporting to a table...
-		 *
-		 *  Gets the commit count.
-		 *
-		 *  May be called by implementations of exportToTable() or by
-		 *  implementations of the *Start/End() methods. */
-		uint64_t	getCommitCount();
-
-		/** When exporting to a JSON domnode...
-		 *
-		 *  Captures the top-level domnode, making it available to
-		 *  *Start/End() methods.
-		 *
-		 *  Should be called by implementations of
-		 *  exportToJsonDomNode().  Not commonly called by
-		 *  implementations of the *Start/End() methods. */
-		void	setJsonDomNode(domnode *dn);
-
-		/** When exporting to a JSON domnode...
-		 *
-		 *  Gets the top-level domnode.
-		 *
-		 *  May be called by implementations of exportToJsonDomNode()
-		 *  or by implementations of the *Start/End() methods. */
-		domnode	*getJsonDomNode();
-
-		/** When exporting to a JSON domnode...
-		 *
-		 *  Set the domnode that columns will be written to.
-		 *
-		 *  Should be called by implementations of
-		 *  exportToJsonDomNode().  Not commonly called by
-		 *  implementations of the *Start/End() methods. */
-		void	setColumnsDomNode(domnode *dn);
-
-		/** When exporting to a JSON domnode...
-		 *
-		 *  Gets the domnode that columns are being written to.
-		 *
-		 *  May be called by implementations of exportToJsonDomNode()
-		 *  or by implementations of the *Start/End() methods. */
-		domnode	*getColumnsDomNode();
-
-		/** When exporting to a JSON domnode...
-		 *
-		 *  Sets the domnode that the current column will be written to.
-		 * 
-		 *  Should be called by implementations of
-		 *  exportToJsonDomNode().  Not commonly called by
-		 *  implementations of the *Start/End() methods. */
-		void	setCurrentColumnDomNode(domnode *dn);
-
-		/** When exporting to a JSON domnode...
-		 *
-		 *  Gets the domnode that the current column is being written
-		 *  to.
-		 *
-		 *  May be called by implementations of exportToJsonDomNode()
-		 *  or by implementations of the *Start/End() methods. */
-		domnode	*getCurrentColumnDomNode();
-
-		/** When exporting to a JSON domnode...
-		 *
-		 *  Sets the domnode that rows are being written to.
-		 * 
-		 *  Should be called by implementations of
-		 *  exportToJsonDomNode().  Not commonly called by
-		 *  implementations of the *Start/End() methods. */
-		void	setRowsDomNode(domnode *dn);
-
-		/** When exporting to a JSON domnode...
-		 *
-		 *  Gets the domnode that rows are being written to.
-		 *
-		 *  May be called by implementations of exportToJsonDomNode()
-		 *  or by implementations of the *Start/End() methods. */
-		domnode	*getRowsDomNode();
-
-		/** When exporting to a JSON domnode...
-		 *
-		 *  Sets the domnode that the current row will be written to.
-		 * 
-		 *  Should be called by implementations of
-		 *  exportToJsonDomNode().  Not commonly called by
-		 *  implementations of the *Start/End() methods. */
-		void	setCurrentRowDomNode(domnode *dn);
-
-		/** When exporting to a JSON domnode...
-		 *
-		 *  Gets the domnode that the current row is being written to.
-		 *
-		 *  May be called by implementations of exportToJsonDomNode()
-		 *  or by implementations of the *Start/End() methods. */
-		domnode	*getCurrentRowDomNode();
-
-		/** When exporting to a JSON domnode...
-		 *
-		 *  Sets the domnode that the current field will be written to.
-		 * 
-		 *  Should be called by implementations of
-		 *  exportToJsonDomNode().  Not commonly called by
-		 *  implementations of the *Start/End() methods. */
-		void	setCurrentFieldDomNode(domnode *dn);
-
-		/** When exporting to a JSON domnode...
-		 *
-		 *  Gets the domnode that the current field is being written to.
-		 *
-		 *  May be called by implementations of exportToJsonDomNode()
-		 *  or by implementations of the *Start/End() methods. */
-		domnode	*getCurrentFieldDomNode();
 
 	#include <sqlrelay/private/sqlrexport.h>
 };

@@ -7,7 +7,7 @@
 #include <sqlrelay/private/sqlrexportxmlincludes.h>
 
 /** The sqlrexportxml class implements sqlrexport for XML files. */
-class SQLRCLIENT_DLLSPEC sqlrexportxml : virtual public sqlrexport {
+class SQLRCLIENT_DLLSPEC sqlrexportxml : virtual public sqlrexportfile {
 	public:
 		/** Creates an instance of the sqlrexportxml class. */
 		sqlrexportxml();
@@ -17,12 +17,14 @@ class SQLRCLIENT_DLLSPEC sqlrexportxml : virtual public sqlrexport {
 
 		/** Exports the result set of the cursor currently in use as
 		 *  set by the most recent call to setSqlrCursor() to the file
-		 *  "filename" in XML format, or to standard output if
-		 *  "filename" is NULL or empty.
+		 *  set by the most recent call to setFileName(), or to
+		 *  standard output if setFileName() was never called, or if
+		 *  setFileName(NULL) was called.
 		 *
-		 *  If "table" is non-null then the table name is included as
-		 *  the "name" attribute of the table tag.  If "table" is null
-		 *  then the name attribute is omitted.
+		 *  If setTable() was called with a non-null value then the
+		 *  table name is included as the "name" attribute of the table
+		 *  tag.  If setTable() was never called, or setTable(NULL) was
+		 *  called, then the name attribute is omitted.
 		 *
 		 *  The XML format is as follows:
 		 *  (This example is a table of US states, exported from
@@ -67,8 +69,7 @@ class SQLRCLIENT_DLLSPEC sqlrexportxml : virtual public sqlrexport {
 		 *  </table>
 		 *
 		 *  Returns true on success and false if an error occurred. */
-		virtual	bool	exportToFile(const char *filename,
-							const char *table);
+		virtual	bool	exportData();
 
 	#include <sqlrelay/private/sqlrexportxml.h>
 };

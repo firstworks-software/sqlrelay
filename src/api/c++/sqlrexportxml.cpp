@@ -9,31 +9,21 @@
 #define NEED_IS_NUMBER_TYPE_CHAR
 #include <datatypes.h>
 
-sqlrexportxml::sqlrexportxml() {
+sqlrexportxml::sqlrexportxml() : sqlrexportfile() {
 }
 
 sqlrexportxml::~sqlrexportxml() {
 }
 
-bool sqlrexportxml::exportToFile(const char *filename) {
-	return sqlrexport::exportToFile(filename);
-}
+bool sqlrexportxml::exportData() {
 
-bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
-
-	if (!sqlrexport::exportToFile(filename,table)) {
-		return false;
-	}
-
-	// capture the filename and table
-	setFileName(filename);
-	setTable(table);
+	clearOutput();
 
 	// output to stdoutput or create/open file
 	setFileDescriptor(&stdoutput);
 	file	f;
-	if (!charstring::isNullOrEmpty(filename)) {
-		if (!f.create(filename,
+	if (!charstring::isNullOrEmpty(getFileName())) {
+		if (!f.create(getFileName(),
 			permissions::parsePermString("rw-r--r--"))) {
 			// FIXME: report error
 			return false;
@@ -71,9 +61,9 @@ bool sqlrexportxml::exportToFile(const char *filename, const char *table) {
 
 	// export table tag
 	fd->write("<table");
-	if (!charstring::isNullOrEmpty(table)) {
+	if (!charstring::isNullOrEmpty(getTable())) {
 	 	fd->write(" name=\"");
-		escapeField(fd,table);
+		escapeField(fd,getTable());
 		fd->write("\"");
 	}
 	fd->write(">\n");

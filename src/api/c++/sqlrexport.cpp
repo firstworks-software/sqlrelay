@@ -8,15 +8,17 @@ sqlrexport::sqlrexport() {
 	sqlrcon=NULL;
 	sqlrcur=NULL;
 
+	table=NULL;
+
 	ignorecolumns=false;
 	columnstoignore=NULL;
-
-	clearOutput();
 
 	lg=NULL;
 	coarseloglevel=0;
 	fineloglevel=9;
 	logindent=0;
+
+	clearOutput();
 }
 
 sqlrexport::~sqlrexport() {
@@ -36,6 +38,14 @@ void sqlrexport::setSqlrCursor(sqlrcursor *sqlrcur) {
 
 sqlrcursor *sqlrexport::getSqlrCursor() {
 	return sqlrcur;
+}
+
+void sqlrexport::setTable(const char *table) {
+	this->table=table;
+}
+
+const char *sqlrexport::getTable() {
+	return table;
 }
 
 void sqlrexport::setIgnoreColumns(bool ignorecolumns) {
@@ -231,163 +241,16 @@ void sqlrexport::clearAreNumericColumns() {
 	numericcolumn.clear();
 }
 
-void sqlrexport::setFileName(const char *filename) {
-	this->filename=filename;
-}
-
-const char *sqlrexport::getFileName() {
-	return filename;
-}
-
-void sqlrexport::setFileDescriptor(filedescriptor *fd) {
-	this->fd=fd;
-}
-
-filedescriptor *sqlrexport::getFileDescriptor() {
-	return fd;
-}
-
-void sqlrexport::setExportSqlrConnection(sqlrconnection *exportcon) {
-	this->exportcon=exportcon;
-}
-
-sqlrconnection *sqlrexport::getExportSqlrConnection() {
-	return exportcon;
-}
-
-void sqlrexport::setExportSqlrCursor(sqlrcursor *exportcur) {
-	this->exportcur=exportcur;
-}
-
-sqlrcursor *sqlrexport::getExportSqlrCursor() {
-	return exportcur;
-}
-
-void sqlrexport::setTable(const char *table) {
-	this->table=table;
-}
-
-const char *sqlrexport::getTable() {
-	return table;
-}
-
-stringbuffer *sqlrexport::getInsertQueryBuffer() {
-	return &insertquery;
-}
-
-void sqlrexport::setCommitCount(uint64_t commitcount) {
-	this->commitcount=commitcount;
-}
-
-uint64_t sqlrexport::getCommitCount() {
-	return commitcount;
-}
-
-void sqlrexport::setJsonDomNode(domnode *dn) {
-	jsondomnode=dn;
-}
-
-domnode	*sqlrexport::getJsonDomNode() {
-	return jsondomnode;
-}
-
-void sqlrexport::setColumnsDomNode(domnode *dn) {
-	columnsdomnode=dn;
-}
-
-domnode	*sqlrexport::getColumnsDomNode() {
-	return columnsdomnode;
-}
-
-void sqlrexport::setCurrentColumnDomNode(domnode *dn) {
-	currentcolumndomnode=dn;
-}
-
-domnode	*sqlrexport::getCurrentColumnDomNode() {
-	return currentcolumndomnode;
-}
-
-void sqlrexport::setRowsDomNode(domnode *dn) {
-	rowsdomnode=dn;
-}
-
-domnode	*sqlrexport::getRowsDomNode() {
-	return rowsdomnode;
-}
-
-void sqlrexport::setCurrentRowDomNode(domnode *dn) {
-	currentrowdomnode=dn;
-}
-
-domnode	*sqlrexport::getCurrentRowDomNode() {
-	return currentrowdomnode;
-}
-
-void sqlrexport::setCurrentFieldDomNode(domnode *dn) {
-	currentfielddomnode=dn;
-}
-
-domnode	*sqlrexport::getCurrentFieldDomNode() {
-	return currentfielddomnode;
-}
-
-bool sqlrexport::exportToFile(const char *filename) {
-	return exportToFile(filename,NULL);
-}
-
-bool sqlrexport::exportToFile(const char *filename, const char *table) {
-	clearOutput();
-	return true;
-}
-
-bool sqlrexport::exportToTable(sqlrconnection *sqlrcon,
-					const char *table,
-					uint64_t commitcount) {
-	sqlrcursor	*sqlrcur=new sqlrcursor(sqlrcon);
-	bool		retval=exportToTable(sqlrcon,sqlrcur,table,commitcount);
-	delete sqlrcur;
-	return retval;
-}
-
-bool sqlrexport::exportToTable(sqlrconnection *sqlrcon,
-					sqlrcursor *sqlrcur,
-					const char *table,
-					uint64_t commitcount) {
-	clearOutput();
-	return true;
-}
-
-bool sqlrexport::exportToJsonDomNode(domnode *jsondomnode) {
-	return exportToJsonDomNode(jsondomnode,NULL);
-}
-
-bool sqlrexport::exportToJsonDomNode(domnode *jsondomnode, const char *table) {
-	clearOutput();
+bool sqlrexport::exportData() {
 	return true;
 }
 
 void sqlrexport::clearOutput() {
-
-	filename=NULL;
-	fd=NULL;
-
-	exportcon=NULL;
-	exportcur=NULL;
-	table=NULL;
-	insertquery.clear();
-	commitcount=0;
-
-	jsondomnode=NULL;
-	columnsdomnode=NULL;
-	currentcolumndomnode=NULL;
-	rowsdomnode=NULL;
-	currentrowdomnode=NULL;
-	currentfielddomnode=NULL;
-
 	ignorerow=false;
 	currentrow=0;
 	currentcol=0;
 	currentcolname=NULL;
 	currentfield=NULL;
 	exportedrowcount=0;
+	numericcolumn.clear();
 }
