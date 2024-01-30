@@ -443,65 +443,43 @@ bool testsqlrexport::error(int64_t errornumber, const char *errormessage) {
 // define a set of classes that inherit from our base class, to get the event
 // methods, but also inherit from classes that export to csv, xml, and table,
 // to get the export methods
-class testsqlrexportcsv : virtual public testsqlrexport,
+class testsqlrexportfile : virtual public testsqlrexport,
+				virtual public sqlrexportfile {
+	public:
+		testsqlrexportfile();
+		void	setTestFileName(const char *testfilename);
+		bool	tests(const char *method);
+	private:
+		const char	*testfilename;
+};
+
+testsqlrexportfile::testsqlrexportfile() : testsqlrexport() {
+	testfilename=NULL;
+}
+
+void testsqlrexportfile::setTestFileName(const char *testfilename) {
+	this->testfilename=testfilename;
+}
+
+bool testsqlrexportfile::tests(const char *method) {
+	if (!testsqlrexport::tests(method)) {
+		return false;
+	}
+	if (charstring::compare(getFileName(),testfilename)) {
+		stdoutput.printf("\n%s - getFileName(): %s!=%s\n",
+				method,getFileName(),testfilename);
+		return false;
+	}
+	return true;
+}
+
+class testsqlrexportcsv : virtual public testsqlrexportfile,
 					virtual public sqlrexportcsv {
-	public:
-		testsqlrexportcsv();
-		void	setTestFileName(const char *testfilename);
-		bool	tests(const char *method);
-	private:
-		const char	*testfilename;
 };
 
-testsqlrexportcsv::testsqlrexportcsv() {
-	testfilename=NULL;
-}
-
-void testsqlrexportcsv::setTestFileName(const char *testfilename) {
-	this->testfilename=testfilename;
-}
-
-bool testsqlrexportcsv::tests(const char *method) {
-	if (!testsqlrexport::tests(method)) {
-		return false;
-	}
-	if (charstring::compare(getFileName(),testfilename)) {
-		stdoutput.printf("\n%s - getFileName(): %s!=%s\n",
-				method,getFileName(),testfilename);
-		return false;
-	}
-	return true;
-}
-
-class testsqlrexportxml : virtual public testsqlrexport,
+class testsqlrexportxml : virtual public testsqlrexportfile,
 					virtual public sqlrexportxml {
-	public:
-		testsqlrexportxml();
-		void	setTestFileName(const char *testfilename);
-		bool	tests(const char *method);
-	private:
-		const char	*testfilename;
 };
-
-testsqlrexportxml::testsqlrexportxml() {
-	testfilename=NULL;
-}
-
-void testsqlrexportxml::setTestFileName(const char *testfilename) {
-	this->testfilename=testfilename;
-}
-
-bool testsqlrexportxml::tests(const char *method) {
-	if (!testsqlrexport::tests(method)) {
-		return false;
-	}
-	if (charstring::compare(getFileName(),testfilename)) {
-		stdoutput.printf("\n%s - getFileName(): %s!=%s\n",
-				method,getFileName(),testfilename);
-		return false;
-	}
-	return true;
-}
 
 class testsqlrexporttable : virtual public testsqlrexport,
 					virtual public sqlrexporttable {
