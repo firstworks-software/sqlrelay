@@ -1133,6 +1133,14 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		void	raiseDbWarningEvent(sqlrservercursor *cursor,
 							const char *info);
 
+		/** Raises a query-received event on cursor "cursor", which may
+ 		 *  be logged, or which may trigger a notification. */
+		void	raiseQueryReceivedEvent(sqlrservercursor *cursor);
+
+		/** Raises a query-prepared event on cursor "cursor", which may
+ 		 *  be logged, or which may trigger a notification. */
+		void	raiseQueryPreparedEvent(sqlrservercursor *cursor);
+
 		/** Raises a query-executed event on cursor "cursor", which may
  		 *  be logged, or which may trigger a notification. */
 		void	raiseQueryExecutedEvent(sqlrservercursor *cursor);
@@ -3682,6 +3690,8 @@ enum sqlrevent_t {
 	SQLREVENT_DB_LOGOUT,
 	SQLREVENT_DB_ERROR,
 	SQLREVENT_DB_WARNING,
+	SQLREVENT_QUERY_RECEIVED,
+	SQLREVENT_QUERY_PREPARED,
 	SQLREVENT_QUERY_EXECUTED,
 	SQLREVENT_FILTER_VIOLATION,
 	SQLREVENT_INTERNAL_ERROR,

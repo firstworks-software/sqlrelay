@@ -4773,7 +4773,7 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 	if (enablefilters && pvt->_sqlrf) {
 		if (!filterQuery(cursor,true)) {
 
-			// log the query
+			// log query-executed
 			raiseQueryExecutedEvent(cursor);
 
 			cursor->setQueryStatus(
@@ -4800,7 +4800,7 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 
 		} else {
 
-			// log the query
+			// log query-executed (attempt)
 			raiseQueryExecutedEvent(cursor);
 			return false;
 		}
@@ -4822,7 +4822,7 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 	if (enablefilters && pvt->_sqlrf) {
 		if (!filterQuery(cursor,false)) {
 
-			// log the query
+			// log query-executed
 			raiseQueryExecutedEvent(cursor);
 
 			cursor->setQueryStatus(
@@ -4870,6 +4870,9 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 
 	raiseDebugMessageEvent("preparing query...");
 
+	// log query-received
+	raiseQueryReceivedEvent(cursor);
+
 	// set the query start time (in case the prepare fails)
 	datetime	dt;
 	dt.initFromSystemDateTime();
@@ -4877,6 +4880,9 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 
 	// prepare the query
 	bool	success=cursor->prepareQuery(query,querysize);
+
+	// log query-prepared
+	raiseQueryPreparedEvent(cursor);
 
 	// log result
 	raiseDebugMessageEvent((success)?"prepare query succeeded":
@@ -4903,7 +4909,7 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 		pvt->_debugstr.append("\"");
 		raiseDebugMessageEvent(pvt->_debugstr.getString());
 
-		// log the query (attempt)
+		// log query-executed (attempt)
 		raiseQueryExecutedEvent(cursor);
 
 		return false;
@@ -4978,7 +4984,7 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 		if (enablefilters && pvt->_sqlrf) {
 			if (!filterQuery(cursor,true)) {
 
-				// log the query
+				// log query-executed
 				raiseQueryExecutedEvent(cursor);
 
 				cursor->setQueryStatus(
@@ -5005,7 +5011,7 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 
 			} else {
 
-				// log the query
+				// log query-executed
 				raiseQueryExecutedEvent(cursor);
 				return false;
 			}
@@ -5027,7 +5033,7 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 		if (enablefilters && pvt->_sqlrf) {
 			if (!filterQuery(cursor,false)) {
 
-				// log the query
+				// log query-executed
 				raiseQueryExecutedEvent(cursor);
 
 				cursor->setQueryStatus(
@@ -5099,7 +5105,7 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 				cursor->setQueryStatus(SQLRQUERYSTATUS_SUCCESS);
 			}
 
-			// log the query
+			// log query-executed
 			raiseQueryExecutedEvent(cursor);
 
 			return success;
@@ -5126,8 +5132,14 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 		dt.initFromSystemDateTime();
 		cursor->setQueryStart(dt.getSecond(),dt.getMicrosecond());
 
+		// log query-received
+		raiseQueryReceivedEvent(cursor);
+
 		// prepare the query
 		success=cursor->prepareQuery(query,querysize);
+
+		// log query-prepared
+		raiseQueryPreparedEvent(cursor);
 
 		// log result
 		raiseDebugMessageEvent((success)?"prepare query succeeded":
@@ -5155,7 +5167,7 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 			pvt->_debugstr.append("\"");
 			raiseDebugMessageEvent(pvt->_debugstr.getString());
 
-			// log the query (attempt)
+			// log query-executed (attempt)
 			raiseQueryExecutedEvent(cursor);
 
 			return false;
@@ -5198,7 +5210,7 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 			pvt->_debugstr.append("\"");
 			raiseDebugMessageEvent(pvt->_debugstr.getString());
 
-			// log the query (attempt)
+			// log query-executed (attempt)
 			raiseQueryExecutedEvent(cursor);
 
 			return false;
@@ -5350,7 +5362,7 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 		cursor->setQueryStatus(SQLRQUERYSTATUS_SUCCESS);
 	}
 
-	// log the query
+	// log query-executed
 	raiseQueryExecutedEvent(cursor);
 
 	return (success)?handleResultSetHeader(cursor):false;
@@ -9389,6 +9401,34 @@ void sqlrservercontroller::raiseDbWarningEvent(sqlrservercursor *cursor,
 		pvt->_sqlrn->run(NULL,pvt->_conn,cursor,
 					SQLREVENT_DB_WARNING,
 					info);
+	}
+}
+
+void sqlrservercontroller::raiseQueryReceivedEvent(sqlrservercursor *cursor) {
+	if (pvt->_sqlrlg) {
+		pvt->_sqlrlg->run(NULL,pvt->_conn,cursor,
+					SQLRLOGGER_LOGLEVEL_INFO,
+					SQLREVENT_QUERY_RECEIVED,
+					NULL);
+	}
+	if (pvt->_sqlrn) {
+		pvt->_sqlrn->run(NULL,pvt->_conn,cursor,
+					SQLREVENT_QUERY_RECEIVED,
+					NULL);
+	}
+}
+
+void sqlrservercontroller::raiseQueryPreparedEvent(sqlrservercursor *cursor) {
+	if (pvt->_sqlrlg) {
+		pvt->_sqlrlg->run(NULL,pvt->_conn,cursor,
+					SQLRLOGGER_LOGLEVEL_INFO,
+					SQLREVENT_QUERY_PREPARED,
+					NULL);
+	}
+	if (pvt->_sqlrn) {
+		pvt->_sqlrn->run(NULL,pvt->_conn,cursor,
+					SQLREVENT_QUERY_PREPARED,
+					NULL);
 	}
 }
 

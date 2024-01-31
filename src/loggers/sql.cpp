@@ -27,6 +27,7 @@ class SQLRSERVER_DLLSPEC sqlrlogger_sql : public sqlrlogger {
 		file		querylog;
 		bool		enabled;
 		bool		sync;
+		sqlrevent_t	queryevent;
 		pid_t		pid;
 };
 
@@ -35,6 +36,17 @@ sqlrlogger_sql::sqlrlogger_sql(sqlrloggers *ls, domnode *parameters) :
 	querylogname=NULL;
 	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
 	sync=charstring::isYes(parameters->getAttributeValue("sync"));
+	const char	*qestr=parameters->getAttributeValue("queryevent");
+	if (charstring::isNullOrEmpty(qestr)) {
+		qestr="executed";
+	}
+	if (!charstring::compare(qestr,"received")) {
+		queryevent=SQLREVENT_QUERY_RECEIVED;
+	} else if (!charstring::compare(qestr,"prepared")) {
+		queryevent=SQLREVENT_QUERY_PREPARED;
+	} else if (!charstring::compare(qestr,"executed")) {
+		queryevent=SQLREVENT_QUERY_EXECUTED;
+	}
 }
 
 sqlrlogger_sql::~sqlrlogger_sql() {
@@ -97,7 +109,7 @@ bool sqlrlogger_sql::run(sqlrlistener *sqlrl,
 
 	// don't do anything unless we got INFO/QUERY/TX
 	if (level!=SQLRLOGGER_LOGLEVEL_INFO ||
-		(event!=SQLREVENT_QUERY_EXECUTED &&
+		(event!=queryevent &&
 		event!=SQLREVENT_BEGIN_TRANSACTION &&
 		event!=SQLREVENT_ROLLBACK &&
 		event!=SQLREVENT_COMMIT)) {
@@ -130,7 +142,7 @@ bool sqlrlogger_sql::run(sqlrlistener *sqlrl,
 	}
 
 	// log query (and error, if there was one)
-	if (event==SQLREVENT_QUERY_EXECUTED) {
+	if (event==queryevent) {
 		if (querylog.write(sqlrcur->getQueryBuffer(),
 					sqlrcur->getQuerySize())!=
 						sqlrcur->getQuerySize() ||

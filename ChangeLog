@@ -89,6 +89,8 @@
 	added splitmultiinsert trigger
 	added event methods to sqlrimport
 	changed SQLREVENT_QUERY to SQLREVENT_QUERY_EXECUTED
+	changed SQLREVENT_QUERY_RECEIVED and SQLREVENT_QUERY_PREPARED
+	updated sql logger with queryevent option
 
 1.9.2 - ruby cursor constructor marks associated ruby connection object now
 	updated bad-command and no-cursor-available handling in sqlrclient
