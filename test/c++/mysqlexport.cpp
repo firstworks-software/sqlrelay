@@ -90,6 +90,7 @@ void checkSuccess(uint64_t value, uint64_t success) {
 }
 
 
+
 // define the fields for the table that we're going to export
 struct field_t {
 	const char	*name;
@@ -124,8 +125,9 @@ field_t field[]={
 };
 
 
-// define a class that overrides the various event methods, runs a set of tests
-// in each one, and bails if any of the tests fail
+
+// define a child of sqlrexport that overrides the various event methods,
+// runs a set of tests in each one, and bails if any of the tests fail
 class testsqlrexport : virtual public sqlrexport {
 	public:
 		testsqlrexport();
@@ -170,8 +172,7 @@ testsqlrexport::testsqlrexport() : sqlrexport() {
 	rowstoignore=NULL;
 }
 
-void testsqlrexport::setColumnsToModify(
-				const char * const *columnstomodify) {
+void testsqlrexport::setColumnsToModify(const char * const *columnstomodify) {
 	this->columnstomodify=columnstomodify;
 }
 
@@ -180,21 +181,29 @@ void testsqlrexport::setRowsToIgnore(dynamicarray<bool> *rowstoignore) {
 }
 
 bool testsqlrexport::tests(const char *method) {
+
+	// test ignore row
 	if (getIgnoreRow()!=ignorerow) {
 		stdoutput.printf("\n%s - getIgnoreRow(): %d!=%d\n",
 					method,getIgnoreRow(),ignorerow);
 		return false;
 	}
+
+	// test current row
 	if (getCurrentRow()!=currentrow) {
 		stdoutput.printf("\n%s - getCurrentRow(): %lld!=%lld\n",
 					method,getCurrentRow(),currentrow);
 		return false;
 	}
+
+	// test current col
 	if (getCurrentColumn()!=currentcol) {
 		stdoutput.printf("\n%s - getCurrentColumn(): %ld!=%ld\n",
 					method,getCurrentColumn(),currentcol);
 		return false;
 	}
+
+	// test current column name
 	const char	*colname=getSqlrCursor()->getColumnName(currentcol);
 	if (!charstring::compare(method,"columnEnd()") &&
 			charstring::isInSet(colname,columnstomodify)) {
@@ -205,6 +214,8 @@ bool testsqlrexport::tests(const char *method) {
 					method,getCurrentColumnName(),colname);
 		return false;
 	}
+
+	// test current field
 	if (inrows && field[currentcol].name!=NULL) {
 		stringbuffer	f;
 		if (!charstring::compare(method,"fieldEnd()") &&
@@ -229,6 +240,8 @@ bool testsqlrexport::tests(const char *method) {
 			return false;
 		}
 	}
+
+	// test numeric column
 	if (getIsNumericColumn(currentcol)!=
 			isNumberTypeChar(getSqlrCursor()->
 						getColumnType(
@@ -242,26 +255,36 @@ bool testsqlrexport::tests(const char *method) {
 							getCurrentColumn())));
 		return false;
 	}
+
+	// test exported row count
 	if (getExportedRowCount()!=exportedrowcount) {
 		stdoutput.printf("\n%s - getExportedRowCount(): %lld!=%lld\n",
 				method,getExportedRowCount(),exportedrowcount);
 		return false;
 	}
+
 	return true;
 }
 
 bool testsqlrexport::exportStart() {
+
 	#ifdef DEBUG
 		stdoutput.printf("\nexportStart()...\n");
 	#endif
+
+	// reset flags and counts
 	ignorerow=false;
 	currentcol=0;
 	currentrow=0;
 	exportedrowcount=0;
 	inrows=false;
+
+	// call parent method
 	if (!sqlrexport::exportStart()) {
 		return false;
 	}
+
+	// run tests
 	if (!tests("exportStart()")) {
 		return false;
 	}
@@ -269,12 +292,17 @@ bool testsqlrexport::exportStart() {
 }
 
 bool testsqlrexport::columnsStart() {
+
 	#ifdef DEBUG
 		stdoutput.printf("\ncolumnsStart()...\n");
 	#endif
+
+	// call parent method
 	if (!sqlrexport::columnsStart()) {
 		return false;
 	}
+
+	// run tests
 	if (!tests("columnsStart()")) {
 		return false;
 	}
@@ -282,15 +310,22 @@ bool testsqlrexport::columnsStart() {
 }
 
 bool testsqlrexport::columnStart() {
+
 	#ifdef DEBUG
 		stdoutput.printf("columnStart()...\n");
 	#endif
+
+	// call parent method
 	if (!sqlrexport::columnStart()) {
 		return false;
 	}
+
+	// run tests
 	if (!tests("columnStart()")) {
 		return false;
 	}
+
+	// modify column, if necessary
 	if (charstring::isInSet(getCurrentColumnName(),columnstomodify)) {
 		setCurrentColumnName("MODIFIED");
 	}
@@ -298,26 +333,39 @@ bool testsqlrexport::columnStart() {
 }
 
 bool testsqlrexport::columnEnd() {
+
 	#ifdef DEBUG
 		stdoutput.printf("columnEnd()...\n");
 	#endif
+
+	// call parent method
 	if (!sqlrexport::columnEnd()) {
 		return false;
 	}
+
+	// run tests
 	if (!tests("columnEnd()")) {
 		return false;
 	}
+
+	// increment current column
 	currentcol++;
+
 	return true;
 }
 
 bool testsqlrexport::columnsEnd() {
+
 	#ifdef DEBUG
 		stdoutput.printf("columnsEnd()...\n");
 	#endif
+
+	// call parent method
 	if (!sqlrexport::columnsEnd()) {
 		return false;
 	}
+
+	// run tests
 	if (!tests("columnsEnd()")) {
 		return false;
 	}
@@ -325,17 +373,24 @@ bool testsqlrexport::columnsEnd() {
 }
 
 bool testsqlrexport::rowsStart() {
+
 	#ifdef DEBUG
 		stdoutput.printf("rowsStart()...\n");
 	#endif
+
+	// reset flags and counts
 	ignorerow=false;
 	currentcol=0;
 	currentrow=0;
 	exportedrowcount=0;
 	inrows=true;
+
+	// call parent method
 	if (!sqlrexport::rowsStart()) {
 		return false;
 	}
+
+	// run tests
 	if (!tests("rowsStart()")) {
 		return false;
 	}
@@ -343,18 +398,27 @@ bool testsqlrexport::rowsStart() {
 }
 
 bool testsqlrexport::rowStart() {
+
 	#ifdef DEBUG
 		stdoutput.printf("rowStart()...\n");
 	#endif
+
+	// reset flags and counts
 	ignorerow=false;
 	currentcol=0;
+
+	// call parent method
 	if (!sqlrexport::rowStart()) {
 		return false;
 	}
+
+	// ignore row, if necessary
 	if (rowstoignore && (*rowstoignore)[currentrow]) {
 		setIgnoreRow(true);
 		ignorerow=true;
 	}
+
+	// run tests
 	if (!tests("rowStart()")) {
 		return false;
 	}
@@ -362,15 +426,22 @@ bool testsqlrexport::rowStart() {
 }
 
 bool testsqlrexport::fieldStart() {
+
 	#ifdef DEBUG
 		stdoutput.printf("fieldStart()...\n");
 	#endif
+
+	// call parent method
 	if (!sqlrexport::fieldStart()) {
 		return false;
 	}
+
+	// run tests
 	if (!tests("fieldStart()")) {
 		return false;
 	}
+
+	// modify field, if necessary
 	if (charstring::isInSet(getCurrentColumnName(),columnstomodify)) {
 		setCurrentField("MODIFIED");
 	}
@@ -378,43 +449,64 @@ bool testsqlrexport::fieldStart() {
 }
 
 bool testsqlrexport::fieldEnd() {
+
 	#ifdef DEBUG
 		stdoutput.printf("fieldEnd()...\n");
 	#endif
+
+	// call parent method
 	if (!sqlrexport::fieldEnd()) {
 		return false;
 	}
+
+	// run tests
 	if (!tests("fieldEnd()")) {
 		return false;
 	}
+
+	// increment current column
 	currentcol++;
+
 	return true;
 }
 
 bool testsqlrexport::rowEnd() {
+
 	#ifdef DEBUG
 		stdoutput.printf("rowEnd()...\n");
 	#endif
+
+	// call parent method
 	if (!sqlrexport::rowEnd()) {
 		return false;
 	}
+
+	// run tests
 	if (!tests("rowEnd()")) {
 		return false;
 	}
+
+	// increment row counts
 	if (!ignorerow) {
 		exportedrowcount++;
 	}
 	currentrow++;
+
 	return true;
 }
 
 bool testsqlrexport::rowsEnd() {
+
 	#ifdef DEBUG
 		stdoutput.printf("rowsEnd()...\n");
 	#endif
+
+	// call parent method
 	if (!sqlrexport::rowsEnd()) {
 		return false;
 	}
+
+	// run tests
 	if (!tests("rowsEnd()")) {
 		return false;
 	}
@@ -422,12 +514,17 @@ bool testsqlrexport::rowsEnd() {
 }
 
 bool testsqlrexport::exportEnd() {
+
 	#ifdef DEBUG
 		stdoutput.printf("exportEnd()...\n");
 	#endif
+
+	// call parent method
 	if (!sqlrexport::exportEnd()) {
 		return false;
 	}
+
+	// run tests
 	if (!tests("exportEnd()")) {
 		return false;
 	}
@@ -435,9 +532,12 @@ bool testsqlrexport::exportEnd() {
 }
 
 bool testsqlrexport::error(int64_t errornumber, const char *errormessage) {
+
+	// print out error and bail
 	stdoutput.printf("\n%lld: %s\n",errornumber,errormessage);
 	return false;
 }
+
 
 
 // define a set of classes that inherit from our base class, to get the event
@@ -462,9 +562,13 @@ void testsqlrexportfile::setTestFileName(const char *testfilename) {
 }
 
 bool testsqlrexportfile::tests(const char *method) {
+
+	// call parent method
 	if (!testsqlrexport::tests(method)) {
 		return false;
 	}
+
+	// test file name
 	if (charstring::compare(getFileName(),testfilename)) {
 		stdoutput.printf("\n%s - getFileName(): %s!=%s\n",
 				method,getFileName(),testfilename);
@@ -500,9 +604,13 @@ void testsqlrexporttable::setTestTable(const char *testtable) {
 }
 
 bool testsqlrexporttable::tests(const char *method) {
+
+	// call parent method
 	if (!testsqlrexport::tests(method)) {
 		return false;
 	}
+
+	// test table name
 	if (charstring::compare(getTable(),testtable)) {
 		stdoutput.printf("\n%s - getTable(): %s!=%s\n",
 				method,getTable(),testtable);
@@ -510,6 +618,7 @@ bool testsqlrexporttable::tests(const char *method) {
 	}
 	return true;
 }
+
 
 
 // define a set of methods that generate something to compare our export to
@@ -526,7 +635,7 @@ void generateComparisonCsv(const char *filename,
 	comparison.setWriteBufferSize(
 		filesystem::getOptimumTransferBlockSize(filename));
 
-	// write header, ignoring columns as appropriate
+	// write header, ignoring and modifying columns as necessary
 	stringbuffer	header;
 	for (uint64_t col=0; field[col].name; col++) {
 		if (charstring::isInSet(field[col].name,columnstoignore)) {
@@ -549,7 +658,7 @@ void generateComparisonCsv(const char *filename,
 					header.getStringLength());
 	}
 
-	// write records, ignoring columns as appropriate
+	// write records, ignoring columns and modifying fields as necessary
 	stringbuffer	record;
 	for (uint64_t row=0; row<ROWS; row++) {
 		if ((*rowstoignore)[row]) {
@@ -602,7 +711,7 @@ void generateComparisonXml(const char *filename,
 	comparison.setWriteBufferSize(
 		filesystem::getOptimumTransferBlockSize(filename));
 
-	// write header, ignoring columns as appropriate
+	// write header, ignoring and modifying columns as necessary
 	comparison.write("<?xml version=\"1.0\"?>\n");
 	comparison.write("<table>\n");
 	if (!ignorecolumns) {
@@ -627,7 +736,7 @@ void generateComparisonXml(const char *filename,
 					header.getStringLength());
 	}
 
-	// write records, ignoring columns as appropriate
+	// write records, ignoring columns and modifying fields as necessary
 	stringbuffer	record;
 	comparison.write("<rows>\n");
 	for (uint64_t row=0; row<ROWS; row++) {
@@ -668,6 +777,7 @@ void createTable(const char *tablename,
 			const char * const *columnstoignore,
 			uint32_t *colcount) {
 
+	// create a table as defined by fields[], ignoring columns as necessary
 	stringbuffer	query;
 	query.append("create table ")->append(tablename)->append(" (");
 	uint32_t	ccount=0;
@@ -704,7 +814,7 @@ void generateComparisonTable(const char *tablename,
 	// create table
 	createTable(tablename,columnstoignore,NULL);
 
-	// populate table
+	// populate table, ignoring and modifying fields as necessary
 	stringbuffer	query;
 	for (uint64_t row=0; row<ROWS; row++) {
 		if ((*rowstoignore)[row]) {
@@ -771,7 +881,7 @@ void diffFiles(const char *filename1, const char *filename2) {
 		ssize_t	size1=f1.read(&line1,"\n");
 		ssize_t	size2=f2.read(&line2,"\n");
 
-		// fail if the sizes are different then
+		// fail if the sizes are different
 		if (size1!=size2) {
 			delete[] line1;
 			delete[] line2;
@@ -796,6 +906,63 @@ void diffFiles(const char *filename1, const char *filename2) {
 }
 
 void diffTables(const char *table1, const char *table2) {
+	
+	sqlrconnection	con("sqlrelay",9000,"/tmp/test.socket",
+						"testuser","testpassword",0,1);
+	sqlrcursor	cur1(&con);
+	sqlrcursor	cur2(&con);
+
+	stringbuffer	q1;
+	q1.append("select * from ");
+	q1.append(table1);
+	q1.append(" order by testsmallint");
+
+	stringbuffer	q2;
+	q2.append("select * from ");
+	q2.append(table2);
+	q2.append(" order by testsmallint");
+
+	cur1.setResultSetBufferSize(10);
+	cur1.sendQuery(q1.getString());
+
+	cur2.setResultSetBufferSize(10);
+	cur2.sendQuery(q2.getString());
+
+	// fail if the column counts are different
+	checkSuccess((int)cur1.colCount(),(int)cur2.colCount());
+
+	// run through the rows...
+	uint64_t	row=0;
+	for (;;) {
+
+		// determine if we're at the end of either result set
+		bool	rowend1=(cur1.endOfResultSet() && row>cur1.rowCount());
+		bool	rowend2=(cur2.endOfResultSet() && row>cur2.rowCount());
+
+		// fail if the row counts are different
+		if (rowend1 && !rowend2) {
+			checkSuccess(0,1);
+		}
+		if (rowend2 && !rowend1) {
+			checkSuccess(0,1);
+		}
+
+		// bail if we're at the end of both result sets
+		if (rowend1 && rowend2) {
+			break;
+		}
+
+		// run through the fields...
+		for (uint32_t col=0; col<cur1.colCount(); col++) {
+
+			// bail if the fields aren't the same
+			if (charstring::compare(cur1.getField(row,col),
+						cur2.getField(row,col))) {
+				checkSuccess(0,1);
+			}
+		}
+		row++;
+	}
 }
 
 
@@ -879,7 +1046,7 @@ int main(int argc, char **argv) {
 	uint8_t oiter=0;
 	for (;;) {
 
-		// set options
+		// set options for ignoring/modifying rows/columns/fields
 		const char		*option=NULL;
 		bool			ignorecolumns=false;
 		const char		**columnstoignore=NULL;
@@ -1005,7 +1172,7 @@ if (oiter>=34 && oiter<=44) {
 				createTable(exp,columnstoignore,NULL);
 			}
 
-			// export file or table
+			// export file/table
 			stdoutput.printf("%sEXPORT %s: \n",option,format);
 			e->setIgnoreColumns(ignorecolumns);
 			e->setColumnsToIgnore(columnstoignore);
@@ -1054,7 +1221,7 @@ if (oiter>=34 && oiter<=44) {
 			}
 			stdoutput.printf("\n");
 
-			// generate comparison file
+			// generate comparison file/table
 			stdoutput.printf(
 				"%sGENERATE COMPARISON %s: \n",option,format);
 			if (fiter==0) {
@@ -1072,7 +1239,7 @@ if (oiter>=34 && oiter<=44) {
 			}
 			stdoutput.printf("\n");
 
-			// diff files
+			// diff files/tables
 			stdoutput.printf("%sDIFF %s: \n",option,format);
 			if (fiter<2) {
 				diffFiles(exp,comp);

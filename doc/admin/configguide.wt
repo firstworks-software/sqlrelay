@@ -5514,7 +5514,7 @@ The '''events''' tag defines the set of events to listen for.  Valid events are:
 * '''db_logout''' - The SQL Relay server closed a connection to the database.
 * '''db_error''' - A query generated an error.
 * '''db_warning''' - A query generated a warning.
-* '''query''' - A query was executed.
+* '''query_executed''' - A query was executed.
 * '''filter_violation''' - A [#filtering query filter module] prevented a query from being executed.
 * '''internal_error''' - An internal error occurred.
 * '''internal_warning''' - An internal warning occurred.

@@ -26,6 +26,7 @@ class SQLRSERVER_DLLSPEC sqlrlogger_sql : public sqlrlogger {
 		char		*querylogname;
 		file		querylog;
 		bool		enabled;
+		bool		sync;
 		pid_t		pid;
 };
 
@@ -33,6 +34,7 @@ sqlrlogger_sql::sqlrlogger_sql(sqlrloggers *ls, domnode *parameters) :
 						sqlrlogger(ls,parameters) {
 	querylogname=NULL;
 	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
+	sync=charstring::isYes(parameters->getAttributeValue("sync"));
 }
 
 sqlrlogger_sql::~sqlrlogger_sql() {
@@ -95,7 +97,7 @@ bool sqlrlogger_sql::run(sqlrlistener *sqlrl,
 
 	// don't do anything unless we got INFO/QUERY/TX
 	if (level!=SQLRLOGGER_LOGLEVEL_INFO ||
-		(event!=SQLREVENT_QUERY &&
+		(event!=SQLREVENT_QUERY_EXECUTED &&
 		event!=SQLREVENT_BEGIN_TRANSACTION &&
 		event!=SQLREVENT_ROLLBACK &&
 		event!=SQLREVENT_COMMIT)) {
@@ -115,45 +117,65 @@ bool sqlrlogger_sql::run(sqlrlistener *sqlrl,
 		}
 	}
 
-	stringbuffer	logentry;
-
 	// log pid changes
 	if (process::getProcessId()!=pid) {
 		pid=process::getProcessId();
-		logentry.append("-- pid changed to ");
-		logentry.append((uint64_t)pid);
-		logentry.append('\n');
+		if (querylog.write("-- pid changed to ",18)!=18) {
+			return false;
+		}
+		querylog.printf("%lld",(uint64_t)pid);
+		if (querylog.write('\n')!=1) {
+			return false;
+		}
 	}
 
 	// log query (and error, if there was one)
-	if (event==SQLREVENT_QUERY) {
-		logentry.append(sqlrcon->cont->getQueryBuffer(sqlrcur));
-		logentry.append(";\n");
-		if (sqlrcon->cont->getErrorSize(sqlrcur)) {
-			logentry.append("-- ERROR: ");
-			logentry.append(sqlrcon->cont->getErrorBuffer(sqlrcur));
-			logentry.append("\n");
+	if (event==SQLREVENT_QUERY_EXECUTED) {
+		if (querylog.write(sqlrcur->getQueryBuffer(),
+					sqlrcur->getQuerySize())!=
+						sqlrcur->getQuerySize() ||
+			querylog.write(";\n",2)!=2) {
+			return false;
+		}
+		if (sqlrcur->getErrorSize()) {
+			if (querylog.write("-- ERROR: ",10)!=10 ||
+				querylog.write(
+					sqlrcur->getErrorBuffer(),
+					sqlrcur->getErrorSize())!=
+						sqlrcur->getErrorSize() ||
+				querylog.write('\n')!=1) {
+				return false;
+			}
 		}
 	} else {
 		if (event==SQLREVENT_BEGIN_TRANSACTION) {
-			logentry.append("begin;\n");
+			if (querylog.write("begin;\n",7)!=7) {
+				return false;
+			}
 		} else if (event==SQLREVENT_ROLLBACK) {
-			logentry.append("rollback;\n");
+			if (querylog.write("rollback;\n")!=10) {
+				return false;
+			}
 		} else if (event==SQLREVENT_COMMIT) {
-			logentry.append("commit;\n");
+			if (querylog.write("commit;\n")!=8) {
+				return false;
+			}
 		}
 		if (sqlrcon->cont->getErrorSize()) {
-			logentry.append("-- ERROR: ");
-			logentry.append(sqlrcon->cont->getErrorBuffer());
-			logentry.append("\n");
+			if (querylog.write("-- ERROR: ",10)!=10 ||
+				querylog.write(sqlrcon->getErrorBuffer(),
+						sqlrcon->getErrorSize())!=
+						sqlrcon->getErrorSize() ||
+				querylog.write('\n')!=1) {
+				return false;
+			}
 		}
 	}
-	if ((size_t)querylog.write(logentry.getString(),
-				logentry.getStringLength())!=
-				logentry.getStringLength()) {
-		return false;
+
+	// flush, if we need to
+	if (sync) {
+		querylog.flushWriteBuffer(-1,-1);
 	}
-	//querylog.flushWriteBuffer(-1,-1);
 	return true;
 }
 

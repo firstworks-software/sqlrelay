@@ -171,7 +171,7 @@ bool sqlrlogger_stalecursors::run(sqlrlistener *sqlrl,
 
 		sqlrclientcon->commit();
 
-	} else if (event==SQLREVENT_QUERY) {
+	} else if (event==SQLREVENT_QUERY_EXECUTED) {
 
 		sqlrclientcon->begin();
 

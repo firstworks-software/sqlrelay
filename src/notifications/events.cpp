@@ -48,7 +48,7 @@ bool sqlrnotification_events::run(sqlrlistener *sqlrl,
 		}
 
 		// do we care about this query
-		if (event==SQLREVENT_QUERY) {
+		if (event==SQLREVENT_QUERY_EXECUTED) {
 			const char	*pattern=
 					enode->getAttributeValue("pattern");
 			if (!charstring::isNullOrEmpty(pattern)) {

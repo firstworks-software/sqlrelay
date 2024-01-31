@@ -88,7 +88,8 @@ bool sqlrlogger_custom_nw::run(sqlrlistener *sqlrl,
 	}
 
 	// don't do anything unless we got INFO/QUERY
-	if (level!=SQLRLOGGER_LOGLEVEL_INFO || event!=SQLREVENT_QUERY) {
+	if (level!=SQLRLOGGER_LOGLEVEL_INFO ||
+			event!=SQLREVENT_QUERY_EXECUTED) {
 		return true;
 	}
 

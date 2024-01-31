@@ -455,7 +455,7 @@ static const char *eventtypes[]={
 	"DB_LOGOUT",
 	"DB_ERROR",
 	"DB_WARNING",
-	"QUERY",
+	"QUERY_EXECUTED",
 	"FILTER_VIOLATION",
 	"INTERNAL_ERROR",
 	"INTERNAL_WARNING",
