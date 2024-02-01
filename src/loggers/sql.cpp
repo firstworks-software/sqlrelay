@@ -28,6 +28,8 @@ class SQLRSERVER_DLLSPEC sqlrlogger_sql : public sqlrlogger {
 		bool		enabled;
 		bool		sync;
 		sqlrevent_t	queryevent;
+		bool		logpidchange;
+		bool		logerrors;
 		pid_t		pid;
 };
 
@@ -47,6 +49,10 @@ sqlrlogger_sql::sqlrlogger_sql(sqlrloggers *ls, domnode *parameters) :
 	} else if (!charstring::compare(qestr,"executed")) {
 		queryevent=SQLREVENT_QUERY_EXECUTED;
 	}
+	logpidchange=!charstring::isNo(
+			parameters->getAttributeValue("logpidchange"));
+	logerrors=!charstring::isNo(
+			parameters->getAttributeValue("logerrors"));
 }
 
 sqlrlogger_sql::~sqlrlogger_sql() {
@@ -130,7 +136,7 @@ bool sqlrlogger_sql::run(sqlrlistener *sqlrl,
 	}
 
 	// log pid changes
-	if (process::getProcessId()!=pid) {
+	if (logpidchange && process::getProcessId()!=pid) {
 		pid=process::getProcessId();
 		if (querylog.write("-- pid changed to ",18)!=18) {
 			return false;
@@ -149,7 +155,7 @@ bool sqlrlogger_sql::run(sqlrlistener *sqlrl,
 			querylog.write(";\n",2)!=2) {
 			return false;
 		}
-		if (sqlrcur->getErrorSize()) {
+		if (logerrors && sqlrcur->getErrorSize()) {
 			if (querylog.write("-- ERROR: ",10)!=10 ||
 				querylog.write(
 					sqlrcur->getErrorBuffer(),
@@ -173,7 +179,7 @@ bool sqlrlogger_sql::run(sqlrlistener *sqlrl,
 				return false;
 			}
 		}
-		if (sqlrcon->cont->getErrorSize()) {
+		if (logerrors && sqlrcon->cont->getErrorSize()) {
 			if (querylog.write("-- ERROR: ",10)!=10 ||
 				querylog.write(sqlrcon->getErrorBuffer(),
 						sqlrcon->getErrorSize())!=
