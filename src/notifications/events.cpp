@@ -41,9 +41,14 @@ bool sqlrnotification_events::run(sqlrlistener *sqlrl,
 			!enode->isNullNode();
 			enode=enode->getNextTagSibling("event")) {
 
+		// get the event string (and fudge it if necessary)
+		const char	*eventstr=enode->getAttributeValue("event");
+		if (!charstring::compare(eventstr,"query")) {
+			eventstr="query_executed";
+		}
+
 		// do we care about this event?
-		if (event!=getNotifications()->
-				eventType(enode->getAttributeValue("event"))) {
+		if (event!=getNotifications()->eventType(eventstr)) {
 			continue;
 		}
 
