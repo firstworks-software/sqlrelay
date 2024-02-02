@@ -794,7 +794,7 @@ void createTable(const char *tablename,
 		ccount++;
 	}
 	query.append(')');
-	checkSuccess(cur->sendQuery(query.getString()),1);
+	cur->sendQuery(query.getString());
 	if (colcount) {
 		*colcount=ccount;
 	}
@@ -823,7 +823,7 @@ void generateComparisonTable(const char *tablename,
 		query.clear();
 		query.append("insert into ");
 		query.append(tablename);
-		query.append(" testtable values (");
+		query.append(" values (");
 		bool	first=true;
 		for (uint32_t col=0; field[col].pattern; col++) {
 			if (charstring::isInSet(field[col].name,
@@ -849,10 +849,12 @@ void generateComparisonTable(const char *tablename,
 			}
 		}
 		query.append(')');
-		if (!cur->sendQuery(query.getString())) {
+		if (!ecur.sendQuery(query.getString())) {
 			return;
 		}
 	}
+
+	econ.commit();
 }
 
 
@@ -907,10 +909,13 @@ void diffFiles(const char *filename1, const char *filename2) {
 
 void diffTables(const char *table1, const char *table2) {
 	
-	sqlrconnection	con("sqlrelay",9000,"/tmp/test.socket",
+	sqlrconnection	con1("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
-	sqlrcursor	cur1(&con);
-	sqlrcursor	cur2(&con);
+	sqlrconnection	con2("sqlrelay",9000,"/tmp/test.socket",
+						"testuser","testpassword",0,1);
+
+	sqlrcursor	cur1(&con1);
+	sqlrcursor	cur2(&con2);
 
 	stringbuffer	q1;
 	q1.append("select * from ");
@@ -1218,6 +1223,7 @@ if (oiter>=34 && oiter<=44) {
 				tset.setCommitCount(500);
 				tset.setTestTable(exp);
 				checkSuccess(tset.exportData(),1);
+				econ.commit();
 			}
 			stdoutput.printf("\n");
 
