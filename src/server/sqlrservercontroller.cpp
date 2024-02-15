@@ -4757,6 +4757,8 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 
 	// bail if we are just generally configured to fake input binds
 	if (cursor->getFakeInputBindsForThisQuery()) {
+stdoutput.printf("fake input binds for this query 1\n");
+stdoutput.printf("%.*s\n",(querysize<20)?querysize:20,query);
 		return true;
 	}
 
@@ -4780,6 +4782,8 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 
 			cursor->setQueryStatus(
 				SQLRQUERYSTATUS_FILTER_VIOLATION);
+stdoutput.printf("before-filter failed\n");
+stdoutput.printf("%.*s\n",(querysize<20)?querysize:20,query);
 			return false;
 		}
 	}
@@ -4808,6 +4812,8 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 			raiseQueryExecutedEvent(cursor);
 
 			// error is already set by translateQuery()
+stdoutput.printf("translate failed\n");
+stdoutput.printf("%.*s\n",(querysize<20)?querysize:20,query);
 			return false;
 		}
 	}
@@ -4835,6 +4841,8 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 
 			cursor->setQueryStatus(
 				SQLRQUERYSTATUS_FILTER_VIOLATION);
+stdoutput.printf("after-filter failed\n");
+stdoutput.printf("%.*s\n",(querysize<20)?querysize:20,query);
 			return false;
 		}
 	}
@@ -4862,6 +4870,8 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 	// actually intercept it yet, but bail if it needs to be.
 	cursor->setQueryNeedsIntercept(checkInterceptQuery(cursor));
 	if (cursor->getQueryNeedsIntercept()) {
+stdoutput.printf("needs intercept\n");
+stdoutput.printf("%.*s\n",(querysize<20)?querysize:20,query);
 		return true;
 	}
 
@@ -4873,6 +4883,8 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 	// In any of these cases, the cursor's fakeinputbindsforthisquery
 	// flag will have been set true.
 	if (cursor->getFakeInputBindsForThisQuery()) {
+stdoutput.printf("fake input binds for this query 2\n");
+stdoutput.printf("%.*s\n",(querysize<20)?querysize:20,query);
 		return true;
 	}
 
@@ -4920,6 +4932,8 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 		// log query-executed (attempt)
 		raiseQueryExecutedEvent(cursor);
 
+stdoutput.printf("prepare failed\n");
+stdoutput.printf("%.*s\n",(querysize<20)?querysize:20,query);
 		return false;
 	}
 

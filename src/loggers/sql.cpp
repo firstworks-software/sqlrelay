@@ -148,7 +148,6 @@ bool sqlrlogger_sql::run(sqlrlistener *sqlrl,
 	}
 
 	// log query (and error, if there was one)
-querylog.printf("%d:%d\n",queryevent,event);
 	if (event==queryevent) {
 		if (querylog.write(sqlrcur->getQueryBuffer(),
 					sqlrcur->getQuerySize())!=
