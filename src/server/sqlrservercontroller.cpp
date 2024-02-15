@@ -4773,7 +4773,9 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 	if (enablefilters && pvt->_sqlrf) {
 		if (!filterQuery(cursor,true)) {
 
-			// log query-executed
+			// raise query-related events
+			raiseQueryReceivedEvent(cursor);
+			raiseQueryPreparedEvent(cursor);
 			raiseQueryExecutedEvent(cursor);
 
 			cursor->setQueryStatus(
@@ -4800,7 +4802,9 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 
 		} else {
 
-			// log query-executed (attempt)
+			// raise query-related events
+			raiseQueryReceivedEvent(cursor);
+			raiseQueryPreparedEvent(cursor);
 			raiseQueryExecutedEvent(cursor);
 			return false;
 		}
@@ -4822,7 +4826,9 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 	if (enablefilters && pvt->_sqlrf) {
 		if (!filterQuery(cursor,false)) {
 
-			// log query-executed
+			// raise query-related events
+			raiseQueryReceivedEvent(cursor);
+			raiseQueryPreparedEvent(cursor);
 			raiseQueryExecutedEvent(cursor);
 
 			cursor->setQueryStatus(
@@ -4985,6 +4991,9 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 			if (!filterQuery(cursor,true)) {
 
 				// log query-executed
+				// FIXME: if query hasn't been prepared at this
+				// point then we need to raise received and
+				// prepared events too
 				raiseQueryExecutedEvent(cursor);
 
 				cursor->setQueryStatus(
@@ -5012,6 +5021,9 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 			} else {
 
 				// log query-executed
+				// FIXME: if query hasn't been prepared at this
+				// point then we need to raise received and
+				// prepared events too
 				raiseQueryExecutedEvent(cursor);
 				return false;
 			}
@@ -5034,6 +5046,9 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 			if (!filterQuery(cursor,false)) {
 
 				// log query-executed
+				// FIXME: if query hasn't been prepared at this
+				// point then we need to raise received and
+				// prepared events too
 				raiseQueryExecutedEvent(cursor);
 
 				cursor->setQueryStatus(
@@ -5106,6 +5121,9 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 			}
 
 			// log query-executed
+			// FIXME: if query hasn't been prepared at this
+			// point then we need to raise received and
+			// prepared events too
 			raiseQueryExecutedEvent(cursor);
 
 			return success;
@@ -5128,12 +5146,12 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 
 		raiseDebugMessageEvent("preparing query...");
 
+		// log query-received
+		raiseQueryReceivedEvent(cursor);
+
 		// set the query start time (in case the prepare fails)
 		dt.initFromSystemDateTime();
 		cursor->setQueryStart(dt.getSecond(),dt.getMicrosecond());
-
-		// log query-received
-		raiseQueryReceivedEvent(cursor);
 
 		// prepare the query
 		success=cursor->prepareQuery(query,querysize);
