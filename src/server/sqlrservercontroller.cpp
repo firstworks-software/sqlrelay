@@ -4806,6 +4806,8 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 			raiseQueryReceivedEvent(cursor);
 			raiseQueryPreparedEvent(cursor);
 			raiseQueryExecutedEvent(cursor);
+
+			// error is already set by translateQuery()
 			return false;
 		}
 	}
@@ -5025,6 +5027,8 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 				// point then we need to raise received and
 				// prepared events too
 				raiseQueryExecutedEvent(cursor);
+
+				// error is already set by translateQuery()
 				return false;
 			}
 		}
