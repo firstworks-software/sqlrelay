@@ -4673,6 +4673,11 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 						bool enabledirectives,
 						bool enabletranslations,
 						bool enablefilters) {
+if (!charstring::compareIgnoringCase(query,"insert into efile",17)) {
+	stdoutput.printf("%d\n",process::getProcessId());
+	stdoutput.write(query,querysize);
+	stdoutput.write("\n");
+}
 
 	if (pvt->_debugsql) {
 		stdoutput.printf("\n===================="
@@ -4757,8 +4762,10 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 
 	// bail if we are just generally configured to fake input binds
 	if (cursor->getFakeInputBindsForThisQuery()) {
-stdoutput.printf("fake input binds for this query 1\n");
-stdoutput.printf("%.*s\n",(querysize<20)?querysize:20,query);
+if (!charstring::compareIgnoringCase(query,"insert into efile",17)) {
+	stdoutput.printf("fake input binds for this query 1\n");
+	stdoutput.printf("%.*s\n",(querysize<30)?querysize:30,query);
+}
 		return true;
 	}
 
@@ -4782,8 +4789,10 @@ stdoutput.printf("%.*s\n",(querysize<20)?querysize:20,query);
 
 			cursor->setQueryStatus(
 				SQLRQUERYSTATUS_FILTER_VIOLATION);
-stdoutput.printf("before-filter failed\n");
-stdoutput.printf("%.*s\n",(querysize<20)?querysize:20,query);
+if (!charstring::compareIgnoringCase(query,"insert into efile",17)) {
+	stdoutput.printf("before-filter failed\n");
+	stdoutput.printf("%.*s\n",(querysize<30)?querysize:30,query);
+}
 			return false;
 		}
 	}
@@ -4812,8 +4821,10 @@ stdoutput.printf("%.*s\n",(querysize<20)?querysize:20,query);
 			raiseQueryExecutedEvent(cursor);
 
 			// error is already set by translateQuery()
-stdoutput.printf("translate failed\n");
-stdoutput.printf("%.*s\n",(querysize<20)?querysize:20,query);
+if (!charstring::compareIgnoringCase(query,"insert into efile",17)) {
+	stdoutput.printf("translate failed\n");
+	stdoutput.printf("%.*s\n",(querysize<30)?querysize:30,query);
+}
 			return false;
 		}
 	}
@@ -4841,8 +4852,10 @@ stdoutput.printf("%.*s\n",(querysize<20)?querysize:20,query);
 
 			cursor->setQueryStatus(
 				SQLRQUERYSTATUS_FILTER_VIOLATION);
-stdoutput.printf("after-filter failed\n");
-stdoutput.printf("%.*s\n",(querysize<20)?querysize:20,query);
+if (!charstring::compareIgnoringCase(query,"insert into efile",17)) {
+	stdoutput.printf("after-filter failed\n");
+	stdoutput.printf("%.*s\n",(querysize<30)?querysize:30,query);
+}
 			return false;
 		}
 	}
@@ -4870,8 +4883,10 @@ stdoutput.printf("%.*s\n",(querysize<20)?querysize:20,query);
 	// actually intercept it yet, but bail if it needs to be.
 	cursor->setQueryNeedsIntercept(checkInterceptQuery(cursor));
 	if (cursor->getQueryNeedsIntercept()) {
-stdoutput.printf("needs intercept\n");
-stdoutput.printf("%.*s\n",(querysize<20)?querysize:20,query);
+if (!charstring::compareIgnoringCase(query,"insert into efile",17)) {
+	stdoutput.printf("needs intercept\n");
+	stdoutput.printf("%.*s\n",(querysize<30)?querysize:30,query);
+}
 		return true;
 	}
 
@@ -4883,8 +4898,10 @@ stdoutput.printf("%.*s\n",(querysize<20)?querysize:20,query);
 	// In any of these cases, the cursor's fakeinputbindsforthisquery
 	// flag will have been set true.
 	if (cursor->getFakeInputBindsForThisQuery()) {
-stdoutput.printf("fake input binds for this query 2\n");
-stdoutput.printf("%.*s\n",(querysize<20)?querysize:20,query);
+if (!charstring::compareIgnoringCase(query,"insert into efile",17)) {
+	stdoutput.printf("fake input binds for this query 2\n");
+	stdoutput.printf("%.*s\n",(querysize<30)?querysize:30,query);
+}
 		return true;
 	}
 
@@ -4932,8 +4949,10 @@ stdoutput.printf("%.*s\n",(querysize<20)?querysize:20,query);
 		// log query-executed (attempt)
 		raiseQueryExecutedEvent(cursor);
 
-stdoutput.printf("prepare failed\n");
-stdoutput.printf("%.*s\n",(querysize<20)?querysize:20,query);
+if (!charstring::compareIgnoringCase(query,"insert into efile",17)) {
+	stdoutput.printf("prepare failed\n");
+	stdoutput.printf("%.*s\n",(querysize<30)?querysize:30,query);
+}
 		return false;
 	}
 
