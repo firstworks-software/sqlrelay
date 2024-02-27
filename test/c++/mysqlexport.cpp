@@ -5,6 +5,7 @@
 #include <sqlrelay/sqlrexportxml.h>
 #include <sqlrelay/sqlrexporttable.h>
 #define NEED_IS_NUMBER_TYPE_CHAR 1
+#define NEED_IS_DATETIME_TYPE_CHAR 1
 #include "../../src/common/datatypes.h"
 #include <rudiments/process.h>
 #include <rudiments/sys.h>
@@ -124,6 +125,16 @@ field_t field[]={
 	{NULL,NULL,NULL,NULL,false}
 };
 
+bool modifyField(const char *columnname,
+			const char * const *columnstomodify,
+			const char *columntype) {
+	// only modify a field if it's in the set of columns to modify,
+	// and it's type is not numeric or date/time
+	return charstring::isInSet(columnname,columnstomodify) &&
+					!isNumberTypeChar(columntype) &&
+					!isDateTimeTypeChar(columntype);
+}
+
 
 
 // define a child of sqlrexport that overrides the various event methods,
@@ -158,6 +169,9 @@ class testsqlrexport : virtual public sqlrexport {
 		uint64_t	exportedrowcount;
 		bool		inrows;
 
+		stringbuffer			modifiedcolumnname;
+		linkedlist<stringbuffer *>	modifiedfields;
+
 		const char * const	*columnstomodify;
 		dynamicarray<bool>	*rowstoignore;
 };
@@ -170,6 +184,7 @@ testsqlrexport::testsqlrexport() : sqlrexport() {
 	inrows=false;
 	columnstomodify=NULL;
 	rowstoignore=NULL;
+	modifiedfields.setManageValues(true);
 }
 
 void testsqlrexport::setColumnsToModify(const char * const *columnstomodify) {
@@ -205,9 +220,11 @@ bool testsqlrexport::tests(const char *method) {
 
 	// test current column name
 	const char	*colname=getSqlrCursor()->getColumnName(currentcol);
+	stringbuffer	colnamestr;
 	if (!charstring::compare(method,"columnEnd()") &&
 			charstring::isInSet(colname,columnstomodify)) {
-		colname="MODIFIED";
+		colnamestr.append(colname)->append("MODIFIED");
+		colname=colnamestr.getString();
 	}
 	if (charstring::compare(getCurrentColumnName(),colname)) {
 		stdoutput.printf("\n%s - getCurrentColumnName(): %s!=%s\n",
@@ -218,12 +235,14 @@ bool testsqlrexport::tests(const char *method) {
 	// test current field
 	if (inrows && field[currentcol].name!=NULL) {
 		stringbuffer	f;
+		f.printf(field[currentcol].pattern,currentrow);
 		if (!charstring::compare(method,"fieldEnd()") &&
-			charstring::isInSet(getCurrentColumnName(),
-							columnstomodify)) {
-			f.write("MODIFIED");
-		} else {
-			f.printf(field[currentcol].pattern,currentrow);
+			modifyField(getCurrentColumnName(),
+					columnstomodify,
+					getSqlrCursor()->
+						getColumnType(
+							getCurrentColumn()))) {
+			f.append("MODIFIED");
 		}
 		if (charstring::compare(getCurrentField(),f.getString())) {
 			stdoutput.printf("\n%s - getCurrentField(): %s!=%s\n",
@@ -327,7 +346,10 @@ bool testsqlrexport::columnStart() {
 
 	// modify column, if necessary
 	if (charstring::isInSet(getCurrentColumnName(),columnstomodify)) {
-		setCurrentColumnName("MODIFIED");
+		modifiedcolumnname.clear();
+		modifiedcolumnname.append(getCurrentColumnName());
+		modifiedcolumnname.append("MODIFIED");
+		setCurrentColumnName(modifiedcolumnname.getString());
 	}
 	return true;
 }
@@ -406,6 +428,7 @@ bool testsqlrexport::rowStart() {
 	// reset flags and counts
 	ignorerow=false;
 	currentcol=0;
+	modifiedfields.clear();
 
 	// call parent method
 	if (!sqlrexport::rowStart()) {
@@ -442,8 +465,13 @@ bool testsqlrexport::fieldStart() {
 	}
 
 	// modify field, if necessary
-	if (charstring::isInSet(getCurrentColumnName(),columnstomodify)) {
-		setCurrentField("MODIFIED");
+	if (modifyField(getCurrentColumnName(),columnstomodify,
+			getSqlrCursor()->getColumnType(getCurrentColumn()))) {
+		stringbuffer	*modifiedfield=new stringbuffer();
+		modifiedfield->append(getCurrentField());
+		modifiedfield->append("MODIFIED");
+		modifiedfields.append(modifiedfield);
+		setCurrentField(modifiedfield->getString());
 	}
 	return true;
 }
@@ -645,10 +673,9 @@ void generateComparisonCsv(const char *filename,
 			header.append(',');
 		}
 		header.append('"');
+		header.append(field[col].name);
 		if (charstring::isInSet(field[col].name,columnstomodify)) {
 			header.append("MODIFIED");
-		} else {
-			header.append(field[col].name);
 		}
 		header.append('"');
 	}
@@ -675,11 +702,10 @@ void generateComparisonCsv(const char *filename,
 			if (field[col].quote) {
 				record.append('"');
 			}
-			if (charstring::isInSet(field[col].name,
-							columnstomodify)) {
-				record.write("MODIFIED");
-			} else {
-				record.printf(field[col].pattern,row);
+			record.printf(field[col].pattern,row);
+			if (modifyField(field[col].name,
+					columnstomodify,field[col].dbtype)) {
+				record.append("MODIFIED");
 			}
 			if (field[col].quote) {
 				record.append('"');
@@ -723,15 +749,17 @@ void generateComparisonXml(const char *filename,
 				continue;
 			}
 			const char	*colname=field[col].name;
+			const char	*colnameext="";
 			if (charstring::isInSet(field[col].name,
 							columnstomodify)) {
-				colname="MODIFIED";
+				colnameext="MODIFIED";
 			}
-			header.printf("	<column name=\"%s\" "
+			header.printf("	<column name=\"%s%s\" "
 						"type=\"%s\"/>\n",
-						colname,field[col].dbtype);
+						colname,colnameext,
+						field[col].dbtype);
 		}
-		header.write("</columns>\n");
+		header.append("</columns>\n");
 		checkSuccess(comparison.write(header.getString()),
 					header.getStringLength());
 	}
@@ -743,22 +771,21 @@ void generateComparisonXml(const char *filename,
 		if ((*rowstoignore)[row]) {
 			continue;
 		}
-		record.write("	<row>\n");
+		record.append("	<row>\n");
 		for (uint32_t col=0; field[col].name; col++) {
 			if (charstring::isInSet(field[col].name,
 							columnstoignore)) {
 				continue;
 			}
-			record.write("	<field>");
-			if (charstring::isInSet(field[col].name,
-							columnstomodify)) {
-				record.write("MODIFIED");
-			} else {
-				record.printf(field[col].pattern,row);
+			record.append("	<field>");
+			record.printf(field[col].pattern,row);
+			if (modifyField(field[col].name,
+					columnstomodify,field[col].dbtype)) {
+				record.append("MODIFIED");
 			}
-			record.write("</field>\n");
+			record.append("</field>\n");
 		}
-		record.write("	</row>\n");
+		record.append("	</row>\n");
 		if (comparison.write(record.getString(),
 					record.getStringLength())!=
 					(ssize_t)record.getStringLength()) {
@@ -775,6 +802,7 @@ void generateComparisonXml(const char *filename,
 
 void createTable(const char *tablename,
 			const char * const *columnstoignore,
+			const char * const *columnstomodify,
 			uint32_t *colcount) {
 
 	// create a table as defined by fields[], ignoring columns as necessary
@@ -789,6 +817,9 @@ void createTable(const char *tablename,
 			query.append(',');
 		}
 		query.append(field[col].name);
+		if (charstring::isInSet(field[col].name,columnstomodify)) {
+			query.append("MODIFIED");
+		}
 		query.append(' ');
 		query.append(field[col].type);
 		ccount++;
@@ -812,7 +843,7 @@ void generateComparisonTable(const char *tablename,
 	sqlrcursor	ecur(&econ);
 
 	// create table
-	createTable(tablename,columnstoignore,NULL);
+	createTable(tablename,columnstoignore,columnstomodify,NULL);
 
 	// populate table, ignoring and modifying fields as necessary
 	stringbuffer	query;
@@ -838,11 +869,12 @@ void generateComparisonTable(const char *tablename,
 			if (field[col].quote) {
 				query.append('\'');
 			}
+			query.printf(field[col].pattern,row);
 			if (charstring::isInSet(field[col].name,
-							columnstomodify)) {
-				query.printf(field[col].pattern,row+1);
-			} else {
-				query.printf(field[col].pattern,row);
+							columnstomodify) &&
+				!isNumberTypeChar(field[col].dbtype) &&
+				!isDateTimeTypeChar(field[col].dbtype)) {
+				query.append("MODIFIED");
 			}
 			if (field[col].quote) {
 				query.append('\'');
@@ -909,27 +941,25 @@ void diffFiles(const char *filename1, const char *filename2) {
 
 void diffTables(const char *table1, const char *table2) {
 	
+	// select from table 1
 	sqlrconnection	con1("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
-	sqlrconnection	con2("sqlrelay",9000,"/tmp/test.socket",
-						"testuser","testpassword",0,1);
-
 	sqlrcursor	cur1(&con1);
-	sqlrcursor	cur2(&con2);
-
 	stringbuffer	q1;
 	q1.append("select * from ");
 	q1.append(table1);
 	q1.append(" order by testsmallint");
+	cur1.setResultSetBufferSize(10);
+	cur1.sendQuery(q1.getString());
 
+	// select from table 2
+	sqlrconnection	con2("sqlrelay",9000,"/tmp/test.socket",
+						"testuser","testpassword",0,1);
+	sqlrcursor	cur2(&con2);
 	stringbuffer	q2;
 	q2.append("select * from ");
 	q2.append(table2);
 	q2.append(" order by testsmallint");
-
-	cur1.setResultSetBufferSize(10);
-	cur1.sendQuery(q1.getString());
-
 	cur2.setResultSetBufferSize(10);
 	cur2.sendQuery(q2.getString());
 
@@ -991,7 +1021,7 @@ int main(int argc, char **argv) {
 	// create a new table
 	stdoutput.printf("CREATE TESTTABLE: \n");
 	uint32_t	colcount=0;
-	createTable("testtable",NULL,&colcount);
+	createTable("testtable",NULL,NULL,&colcount);
 	stdoutput.printf("\n");
 
 	// insert
@@ -1122,7 +1152,7 @@ int main(int argc, char **argv) {
 			opt.append(" ROWS - ");
 			option=opt.detachString();
 		} else if (oiter>=34 && oiter<=44) {
-			// for iterations 22-32, modify random sets of
+			// for iterations 34-44, modify random sets of
 			// columns and fields, possibly with repetitions
 			randomnumber	r;
 			r.setSeed(randomnumber::getSeed());
@@ -1167,14 +1197,15 @@ int main(int argc, char **argv) {
 				comp="testtable-comparison.xml";
 			} else if (fiter==2) {
 // for tables, skip modified colnames/fields, for now
-if (oiter>=34 && oiter<=44) {
-	continue;
-}
+//if (oiter>=34 && oiter<=44) {
+	//continue;
+//}
 				e=&tset;
 				format="TABLE";
 				exp="testtable_export";
 				comp="testtable_comparison";
-				createTable(exp,columnstoignore,NULL);
+				createTable(exp,columnstoignore,
+						columnstomodify,NULL);
 			}
 
 			// export file/table
