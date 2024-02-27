@@ -9,6 +9,7 @@ SRCS = sqlrconnection.cpp \
 	sqlrrowdictionary.cpp \
 	sqlrresultsettable.cpp \
 	sqlrimport.cpp \
+	sqlrimportfile.cpp \
 	sqlrimportxml.cpp \
 	sqlrimportcsv.cpp \
 	sqlrexport.cpp \
@@ -26,6 +27,7 @@ LOBJS = sqlrconnection.$(OBJ) \
 	sqlrrowdictionary.$(OBJ) \
 	sqlrresultsettable.$(OBJ) \
 	sqlrimport.$(OBJ) \
+	sqlrimportfile.$(OBJ) \
 	sqlrimportxml.$(OBJ) \
 	sqlrimportcsv.$(OBJ) \
 	sqlrexport.$(OBJ) \
@@ -67,6 +69,8 @@ install: $(INSTALLLIB)
 	$(CHMOD) 644 $(includedir)/sqlrelay/sqlrcrud.h
 	$(CP) sqlrelay/sqlrimport.h $(includedir)/sqlrelay
 	$(CHMOD) 644 $(includedir)/sqlrelay/sqlrimport.h
+	$(CP) sqlrelay/sqlrimportfile.h $(includedir)/sqlrelay
+	$(CHMOD) 644 $(includedir)/sqlrelay/sqlrimportfile.h
 	$(CP) sqlrelay/sqlrimportxml.h $(includedir)/sqlrelay
 	$(CHMOD) 644 $(includedir)/sqlrelay/sqlrimportxml.h
 	$(CP) sqlrelay/sqlrimportcsv.h $(includedir)/sqlrelay
@@ -113,6 +117,10 @@ install: $(INSTALLLIB)
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrimportincludes.h
 	$(CP) sqlrelay/private/sqlrimport.h $(includedir)/sqlrelay/private
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrimport.h
+	$(CP) sqlrelay/private/sqlrimportfileincludes.h $(includedir)/sqlrelay/private
+	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrimportfileincludes.h
+	$(CP) sqlrelay/private/sqlrimportfile.h $(includedir)/sqlrelay/private
+	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrimportfile.h
 	$(CP) sqlrelay/private/sqlrimportxmlincludes.h $(includedir)/sqlrelay/private
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrimportxmlincludes.h
 	$(CP) sqlrelay/private/sqlrimportxml.h $(includedir)/sqlrelay/private

@@ -113,8 +113,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  Returns true on success and false if an error occurred.
 		 *
 		 *  Note that the default implementation of this method just
-		 *  returns true.  Child classes that should override this
-		 *  method. */
+		 *  returns true.  Child classes should override this method. */
 		virtual	bool	exportData();
 
 		/** This method should be called by implementations of

@@ -9,7 +9,7 @@
 /** The sqlrimport class provides a base class for child classes that wish to
  *  implement import of data from a file into a database, via SQL Relay.  It
  *  provides various common methods.  Each child class must implement the
- *  importFromFile() method. */
+ *  importData() method. */
 class SQLRCLIENT_DLLSPEC sqlrimport {
 	public:
 		/** Creates an instance of the sqlrimport class. */
@@ -165,12 +165,13 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  level and false otherwise. */
 		bool	getLogErrors();
 
-		/** Imports data from "filename".  The table (or sequence)
-		 *  to import the data into will be derived from the import
-		 *  file (eg. from the CSV file name, or from an XML tag inside
-		 *  of the file) and may be overridden using setObjectName()
-		 *  above. */
-		virtual	bool	importFromFile(const char *filename)=0;
+		/** Imports data.
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  Note that that default implementation of this method just
+		 *  returns true.  Child classes should override this method. */
+		virtual	bool	importData();
 
 		/** This method should be called by implementations of the
 		 *  importFrom*() methods, prior to the import of the columns of

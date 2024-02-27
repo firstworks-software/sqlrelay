@@ -171,6 +171,10 @@ bool sqlrimport::getLogErrors() {
 	return logerrors;
 }
 
+bool sqlrimport::importData() {
+	return true;
+}
+
 bool sqlrimport::columnsStart() {
 	// by default, just return success
 	return true;

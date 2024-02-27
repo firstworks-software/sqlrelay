@@ -5,6 +5,7 @@
 
 sqlrexportfile::sqlrexportfile() : sqlrexport() {
 	filename=NULL;
+	fd=NULL;
 }
 
 sqlrexportfile::~sqlrexportfile() {

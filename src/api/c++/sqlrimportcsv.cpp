@@ -10,7 +10,7 @@
 #define NEED_IS_DATETIME_TYPE_CHAR
 #include <datatypes.h>
 
-sqlrimportcsv::sqlrimportcsv() : sqlrimport(), csvsax() {
+sqlrimportcsv::sqlrimportcsv() : sqlrimportfile(), csvsax() {
 	insertprimarykey=false;
 	primarykeycolumnname=NULL;
 	primarykeycolumnindex=0;
@@ -80,7 +80,7 @@ void sqlrimportcsv::setIgnoreEmptyRecords(bool ignoreemptyrecords) {
 	this->ignoreemptyrecords=ignoreemptyrecords;
 }
 
-bool sqlrimportcsv::importFromFile(const char *filename) {
+bool sqlrimportcsv::importData() {
 
 	// reset flags
 	setCurrentRow(0);
@@ -93,14 +93,14 @@ bool sqlrimportcsv::importFromFile(const char *filename) {
 	columnswithemptynames.clear();
 
 	if (!objectname) {
-		objectname=file::getBaseName(filename,".csv");
+		objectname=file::getBaseName(getFileName(),".csv");
 	}
-	return csvsax::parseFile(filename);
+	return csvsax::parseFile(getFileName());
 }
 
 bool sqlrimportcsv::headerStart() {
 
-	// call the pr-columns event
+	// call the pre-columns event
 	return columnsStart();
 }
 

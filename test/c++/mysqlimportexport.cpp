@@ -4,6 +4,8 @@
 #include <sqlrelay/sqlrexportcsv.h>
 #include <sqlrelay/sqlrexportxml.h>
 #include <sqlrelay/sqlrexporttable.h>
+#include <sqlrelay/sqlrimportcsv.h>
+#include <sqlrelay/sqlrimportxml.h>
 #define NEED_IS_NUMBER_TYPE_CHAR 1
 #define NEED_IS_DATETIME_TYPE_CHAR 1
 #include "../../src/common/datatypes.h"
@@ -652,11 +654,11 @@ bool testsqlrexporttable::tests(const char *method) {
 
 
 // define a set of methods that generate something to compare our export to
-void generateComparisonCsv(const char *filename,
-				bool ignorecolumns,
-				const char * const *columnstoignore,
-				const char * const *columnstomodify,
-				dynamicarray<bool> *rowstoignore) {
+void generateCsv(const char *filename,
+			bool ignorecolumns,
+			const char * const *columnstoignore,
+			const char * const *columnstomodify,
+			dynamicarray<bool> *rowstoignore) {
 
 	// create file
 	file	comparison;
@@ -735,11 +737,11 @@ void generateComparisonCsv(const char *filename,
 	comparison.flushWriteBuffer(-1,-1);
 }
 
-void generateComparisonXml(const char *filename,
-				uint32_t colcount, bool ignorecolumns,
-				const char * const *columnstoignore,
-				const char * const *columnstomodify,
-				dynamicarray<bool> *rowstoignore) {
+void generateXml(const char *filename,
+			uint32_t colcount, bool ignorecolumns,
+			const char * const *columnstoignore,
+			const char * const *columnstomodify,
+			dynamicarray<bool> *rowstoignore) {
 
 	// create file
 	file	comparison;
@@ -852,11 +854,11 @@ void createTable(const char *tablename,
 	}
 }
 
-void generateComparisonTable(const char *tablename,
-				bool ignorecolumns,
-				const char * const *columnstoignore,
-				const char * const *columnstomodify,
-				dynamicarray<bool> *rowstoignore) {
+void generateTable(const char *tablename,
+			bool ignorecolumns,
+			const char * const *columnstoignore,
+			const char * const *columnstomodify,
+			dynamicarray<bool> *rowstoignore) {
 
 	// connect to db
 	sqlrconnection	econ("sqlrelay",9000,"/tmp/test.socket",
@@ -1022,13 +1024,9 @@ void diffTables(const char *table1, const char *table2) {
 }
 
 
+void exportTests() {
 
-int main(int argc, char **argv) {
-
-	// instantiation
-	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
-						"testuser","testpassword",0,1);
-	cur=new sqlrcursor(con);
+	stdoutput.printf("EXPORT TESTS... \n\n");
 
 	// clean up
 	cur->sendQuery("drop table testtable");
@@ -1217,10 +1215,6 @@ int main(int argc, char **argv) {
 				exp="testtable.xml";
 				comp="testtable-comparison.xml";
 			} else if (fiter==2) {
-// for tables, skip modified colnames/fields, for now
-//if (oiter>=34 && oiter<=44) {
-	//continue;
-//}
 				e=&tset;
 				format="TABLE";
 				exp="testtable_export";
@@ -1283,17 +1277,17 @@ int main(int argc, char **argv) {
 			stdoutput.printf(
 				"%sGENERATE COMPARISON %s: \n",option,format);
 			if (fiter==0) {
-				generateComparisonCsv(comp,
-						ignorecolumns,columnstoignore,
-						columnstomodify,&rowstoignore);
+				generateCsv(comp,
+					ignorecolumns,columnstoignore,
+					columnstomodify,&rowstoignore);
 			} else if (fiter==1) {
-				generateComparisonXml(comp,colcount,
-						ignorecolumns,columnstoignore,
-						columnstomodify,&rowstoignore);
+				generateXml(comp,colcount,
+					ignorecolumns,columnstoignore,
+					columnstomodify,&rowstoignore);
 			} else if (fiter==2) {
-				generateComparisonTable(comp,
-						ignorecolumns,columnstoignore,
-						columnstomodify,&rowstoignore);
+				generateTable(comp,
+					ignorecolumns,columnstoignore,
+					columnstomodify,&rowstoignore);
 			}
 			stdoutput.printf("\n");
 
@@ -1337,6 +1331,79 @@ int main(int argc, char **argv) {
 
 	// clean up
 	cur->sendQuery("drop table testtable");
+
+	stdoutput.printf("\n\n");
+}
+
+
+void importTests() {
+
+	stdoutput.printf("IMPORT TESTS... \n\n");
+
+	// clean up
+	cur->sendQuery("drop table testtable");
+	cur->sendQuery("drop table testtable_export");
+	cur->sendQuery("drop table testtable_comparison");
+	file::remove("testtable.csv");
+	file::remove("testtable-comparison.csv");
+	file::remove("testtable.xml");
+	file::remove("testtable-comparison.xml");
+
+	// create a new table
+	stdoutput.printf("CREATE TESTTABLE: \n");
+	uint32_t	colcount=0;
+	createTable("testtable",NULL,NULL,&colcount);
+	stdoutput.printf("\n");
+
+#if 0
+	// set up csv import
+	stdoutput.printf("SET UP CSV IMPORT: \n");
+	testsqlrimportcsv	tsic;
+	tsic.setSqlrConnection(con);
+	tsic.setSqlrCursor(cur);
+	checkSuccess((uint64_t)tsic.getSqlrConnection(),(uint64_t)con);
+	checkSuccess((uint64_t)tsic.getSqlrCursor(),(uint64_t)cur);
+	stdoutput.printf("\n\n");
+
+	// set up xml import
+	stdoutput.printf("SET UP CSV IMPORT: \n");
+	testsqlrimportxml	tsix;
+	tsix.setSqlrConnection(con);
+	tsix.setSqlrCursor(cur);
+	checkSuccess((uint64_t)tsix.getSqlrConnection(),(uint64_t)con);
+	checkSuccess((uint64_t)tsix.getSqlrCursor(),(uint64_t)cur);
+	stdoutput.printf("\n\n");
+#endif
+
+	// iterate through options...
+	uint8_t oiter=0;
+	for (;;) {
+
+		if (oiter==1) {
+			break;
+		}
+
+		// iterate through formats...
+		for (uint8_t fiter=0; fiter<3; fiter++) {
+		}
+
+		oiter++;
+	}
+
+	// clean up
+	cur->sendQuery("drop table testtable");
+}
+
+
+int main(int argc, char **argv) {
+
+	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
+						"testuser","testpassword",0,1);
+	cur=new sqlrcursor(con);
+
+	exportTests();
+	importTests();
+
 
 	delete cur;
 	delete con;

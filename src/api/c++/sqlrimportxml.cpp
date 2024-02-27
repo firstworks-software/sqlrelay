@@ -30,7 +30,7 @@ const unsigned short sqlrimportxml::ZEROFILLEDATTR=12;
 const unsigned short sqlrimportxml::BINARYATTR=13;
 const unsigned short sqlrimportxml::AUTOINCREMENTATTR=14;
 
-sqlrimportxml::sqlrimportxml() : sqlrimport(), xmlsax() {
+sqlrimportxml::sqlrimportxml() : sqlrimportfile(), xmlsax() {
 	currenttag=NULLTAG;
 	currentattribute=NULL;
 	table=NULL;
@@ -53,8 +53,8 @@ sqlrimportxml::~sqlrimportxml() {
 	delete[] numbercolumn;
 }
 
-bool sqlrimportxml::importFromFile(const char *filename) {
-	return xmlsax::parseFile(filename);
+bool sqlrimportxml::importData() {
+	return xmlsax::parseFile(getFileName());
 }
 
 bool sqlrimportxml::tagStart(const char *ns, const char *name) {

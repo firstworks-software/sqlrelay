@@ -7,14 +7,15 @@
 #include <sqlrelay/private/sqlrimportcsvincludes.h>
 
 /** The sqlrimportcsv class implements sqlrimport for CSV files. */
-class SQLRCLIENT_DLLSPEC sqlrimportcsv : public sqlrimport, public csvsax {
+class SQLRCLIENT_DLLSPEC sqlrimportcsv : virtual public sqlrimportfile,
+							virtual public csvsax {
 	public:
 
 		/** Creates an instance of the sqlrimportcsv class. */
 		sqlrimportcsv();
 
 		/** Destroys this instance of the sqlrimportcsv class. */
-		~sqlrimportcsv();
+		virtual ~sqlrimportcsv();
 
 		/** Inserts a primary key at "primarykeycolumnindex".
 		 *
@@ -63,79 +64,12 @@ class SQLRCLIENT_DLLSPEC sqlrimportcsv : public sqlrimport, public csvsax {
 		/** Configures the instance to ignore empty records. */
 		void	setIgnoreEmptyRecords(bool ignoreemptyrecords);
 
-		/** Imports data from "filename".  The table (or sequence)
-		 *  to import the data into will be derived from the import
-		 *  file name, and may be overridden using setObjectName().
-		 *  Returns true on success and false if an error occurred. */
-		bool	importFromFile(const char *filename);
-
-	protected:
-		/** Called when the start of the header is encountered, even if
-		 *  setColumnNames(true) is set.  May be overridden to do
-		 *  application-specific work upon encountring the beginning of
-		 *  the header.  Returns false if an error occurred when
-		 *  processing the end of the header and true otherwise.
-		 *  Overridden methods may return false to stop processing. */
-		virtual	bool	headerStart();
-
-		/** Called when a column is encountered in the CSV header, even
-		 *  if setColumnNames(true) is set.  May be overridden to do
-		 *  application-specific work upon encountering a column.
-		 *  "name" contains the column name.  "quoted" is set true if
-		 *  the colum name is quoted in the file, and false otherwise.
-		 *  Returns false if an error occurred when processing the
-		 *  column and true otherwise.  Overridden methods may return
-		 *  false to stop processing. */
-		virtual	bool	column(const char *name, bool quoted);
-
-		/** Called when the end of the CSV header is encountered, even
-		 *  if setColumnNames(true) is set.  May be overridden to do
-		 *  application-specific work upon encountering the end of the
-		 *  header. Returns false if an error occurred when processing
-		 *  the end of the header and true otherwise.  Overridden
-		 *  methods may return false to stop processing. */
-		virtual	bool	headerEnd();
-
-		/** Called when the beginning of the CSV body is encountered.
-		 *  May be overridden to do application-specific work upon
-		 *  encountering the start of the body. Returns false if an
-		 *  error occurred when processing the start of the body and
-		 *  true otherwise.  Overridden methods may return false to
-		 *  stop processing. */
-		virtual	bool	bodyStart();
-
-		/** Called when the beginning of a record is encountered.
-		 *  May be overridden to do application-specific work upon
-		 *  encountering the start of a record. Returns false if an
-		 *  error occurred when processing the start of a record and
-		 *  true otherwise.  Overridden methods may return false to
-		 *  stop processing. */
-		virtual	bool	recordStart();
-
-		/** Called when a field is encountered.  May be overridden to
-		 *  do application-specific work upon encountering a field.
-		 *  "value" contains the column name.  "quoted" is set true if
-		 *  the colum name is quoted in the file, and false otherwise.
-		 *  Returns false if an error occurred when processing the
-		 *  field and true otherwise.  Overridden methods may return
-		 *  false to stop processing. */
-		virtual	bool	field(const char *value, bool quoted);
-
-		/** Called when the end of a record is encountered.  May be
-		 *  overridden to do application-specific work upon
-		 *  encountering the end of a record. Returns false if an
-		 *  error occurred when processing the end of a record and
-		 *  true otherwise.  Overridden methods may return false to
-		 *  stop processing. */
-		virtual	bool	recordEnd();
-
-		/** Called when the end of the CSV body is encountered.  May
-		 *  be overridden to do application-specific work upon
-		 *  encountering the end of the CSV body. Returns false if an
-		 *  error occurred when processing the end of the CSV body and
-		 *  true otherwise.  Overridden methods may return false to
-		 *  stop processing. */
-		virtual	bool	bodyEnd();
+		/** Imports data from the file set by the most recent call to
+		 *  setFileName().  The table (or sequence) to import the data
+		 *  into will be derived from the import file name, and may be
+		 *  overridden using setObjectName().  Returns true on success
+		 *  and false if an error occurred. */
+		virtual bool	importData();
 
 	#include <sqlrelay/private/sqlrimportcsv.h>
 };

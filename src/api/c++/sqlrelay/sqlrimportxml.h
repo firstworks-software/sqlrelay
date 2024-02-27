@@ -8,18 +8,20 @@
 
 /** The sqlrimportxml class implements sqlrimport for XML files, specifically
  *  XML files exported by the sqlrexportxml class. */
-class SQLRCLIENT_DLLSPEC sqlrimportxml : public sqlrimport, public xmlsax {
+class SQLRCLIENT_DLLSPEC sqlrimportxml : virtual public sqlrimportfile,
+							virtual public xmlsax {
 	public:
 		/** Creates an instance of the sqlrimportxml class. */
 		sqlrimportxml();
 
 		/** Destroys this instance of the sqlrimportxml class. */
-		~sqlrimportxml();
+		virtual ~sqlrimportxml();
 
-		/** Imports data from "filename".  The table or sequence to
-		 *  import the data into will be deried from the name attribute
-		 *  of the table or sequence tag inside the file and may be
-		 *  overridden using setObjectName().
+		/** Imports data from the file set by the most recent call to
+		 *  setFileName().  The table or sequence to import the data
+		 *  into will be deried from the name attribute of the table or
+		 *  sequence tag inside the file and may be overridden using
+		 *  setObjectName().
 		 *
 		 *  The XML format is as follows.
 		 *
@@ -74,7 +76,7 @@ class SQLRCLIENT_DLLSPEC sqlrimportxml : public sqlrimport, public xmlsax {
 		 *  <sequence name="state_ids" value="4"/>
 		 *
 		 *  Returns true on success and false if an error occurred. */
-		bool	importFromFile(const char *filename);
+		virtual bool	importData();
 
 	#include <sqlrelay/private/sqlrimportxml.h>
 };

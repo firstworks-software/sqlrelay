@@ -22,9 +22,8 @@ class SQLRCLIENT_DLLSPEC sqlrexportfile : virtual public sqlrexport {
 		 *  If "filename" is NULL the data will be exported to standard
 		 *  output.
 		 *
-		 *  Should be called by implementations of exportData().  Not
-		 *  commonly called by implementations of the *Start/End()
-		 *  methods. */
+		 *  Not commonly called by implementation of exportData() or
+		 *  of the *Start/End() methods. */
 		void	setFileName(const char *filename);
 
 		/** Gets the name of the file to which data will be be exported.
@@ -47,8 +46,7 @@ class SQLRCLIENT_DLLSPEC sqlrexportfile : virtual public sqlrexport {
 		virtual	bool	exportData();
 
 	protected:
-		/** Sets the file descriptor to which export data is being
- 		 *  exported.
+		/** Sets the file descriptor to which data is being exported.
  		 *
 		 *  Should be called by implementations of exportData().  Not
 		 *  commonly called by implementations of the *Start/End()
