@@ -54,7 +54,7 @@ sqlrimportxml::~sqlrimportxml() {
 }
 
 bool sqlrimportxml::importData() {
-	return xmlsax::parseFile(getFileName());
+	return importStart() && xmlsax::parseFile(getFileName()) && importEnd();
 }
 
 bool sqlrimportxml::tagStart(const char *ns, const char *name) {

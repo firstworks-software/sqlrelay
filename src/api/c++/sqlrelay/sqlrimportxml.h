@@ -75,6 +75,11 @@ class SQLRCLIENT_DLLSPEC sqlrimportxml : virtual public sqlrimportfile,
 		 *  <?xml version="1.0"?>
 		 *  <sequence name="state_ids" value="4"/>
 		 *
+		 *  If setCommitCount() was called with a non-zero value then a
+		 *  commit will be called after every "commitcount" rows is
+		 *  inserted.  No commit will be called if setCommitCount() was
+		 *  never called, or if setCommitCount(0) was called.
+		 *
 		 *  Returns true on success and false if an error occurred. */
 		virtual bool	importData();
 

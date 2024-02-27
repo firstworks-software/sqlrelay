@@ -175,6 +175,11 @@ bool sqlrimport::importData() {
 	return true;
 }
 
+bool sqlrimport::importStart() {
+	// by default, just return success
+	return true;
+}
+
 bool sqlrimport::columnsStart() {
 	// by default, just return success
 	return true;
@@ -219,6 +224,16 @@ bool sqlrimport::rowEnd() {
 }
 
 bool sqlrimport::rowsEnd() {
+	// by default, just return success
+	return true;
+}
+
+bool sqlrimport::error(int64_t errornumber, const char *errormessage) {
+	// by default, just return error
+	return false;
+}
+
+bool sqlrimport::importEnd() {
 	// by default, just return success
 	return true;
 }

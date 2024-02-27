@@ -653,6 +653,358 @@ bool testsqlrexporttable::tests(const char *method) {
 
 
 
+// define a child of sqlrimport that overrides the various event methods,
+// runs a set of tests in each one, and bails if any of the tests fail
+class testsqlrimport : virtual public sqlrimport {
+	public:
+		testsqlrimport();
+
+		void	setColumnsToModify(const char * const *columnstomodify);
+		void	setRowsToIgnore(dynamicarray<bool> *rowstoignore);
+
+		bool	importStart();
+		bool	columnsStart();
+		bool	columnStart();
+		bool	columnEnd();
+		bool	columnsEnd();
+		bool	rowsStart();
+		bool	rowStart();
+		bool	fieldStart();
+		bool	fieldEnd();
+		bool	rowEnd();
+		bool	rowsEnd();
+		bool	importEnd();
+		bool	error(int64_t errornumber, const char *errormessage);
+
+		virtual bool	tests(const char *method);
+
+	private:
+		bool		ignorerow;
+		uint32_t	currentcol;
+		uint64_t	currentrow;
+		uint64_t	importedrowcount;
+		bool		inrows;
+
+		stringbuffer			modifiedcolumnname;
+		linkedlist<stringbuffer *>	modifiedfields;
+
+		const char * const	*columnstomodify;
+		dynamicarray<bool>	*rowstoignore;
+};
+
+testsqlrimport::testsqlrimport() : sqlrimport() {
+}
+
+void testsqlrimport::setColumnsToModify(const char * const *columnstomodify) {
+	this->columnstomodify=columnstomodify;
+}
+
+void testsqlrimport::setRowsToIgnore(dynamicarray<bool> *rowstoignore) {
+	this->rowstoignore=rowstoignore;
+}
+
+bool testsqlrimport::tests(const char *method) {
+	// FIXME: do stuff...
+	return true;
+}
+
+bool testsqlrimport::importStart() {
+
+	#ifdef DEBUG
+		stdoutput.printf("\nimportStart()...\n");
+	#endif
+
+	// FIXME: do stuff...
+
+	// call parent method
+	if (!sqlrimport::importStart()) {
+		return false;
+	}
+
+	// run tests
+	if (!tests("importStart()")) {
+		return false;
+	}
+	return true;
+}
+
+bool testsqlrimport::columnsStart() {
+
+	#ifdef DEBUG
+		stdoutput.printf("\ncolumnsStart()...\n");
+	#endif
+
+	// FIXME: do stuff...
+
+	// call parent method
+	if (!sqlrimport::columnsStart()) {
+		return false;
+	}
+
+	// run tests
+	if (!tests("columnsStart()")) {
+		return false;
+	}
+	return true;
+}
+
+bool testsqlrimport::columnStart() {
+
+	#ifdef DEBUG
+		stdoutput.printf("\ncolumnStart()...\n");
+	#endif
+
+	// FIXME: do stuff...
+
+	// call parent method
+	if (!sqlrimport::columnStart()) {
+		return false;
+	}
+
+	// run tests
+	if (!tests("columnStart()")) {
+		return false;
+	}
+	return true;
+}
+
+bool testsqlrimport::columnEnd() {
+
+	#ifdef DEBUG
+		stdoutput.printf("\ncolumnEnd()...\n");
+	#endif
+
+	// FIXME: do stuff...
+
+	// call parent method
+	if (!sqlrimport::columnEnd()) {
+		return false;
+	}
+
+	// run tests
+	if (!tests("columnEnd()")) {
+		return false;
+	}
+	return true;
+}
+
+bool testsqlrimport::columnsEnd() {
+
+	#ifdef DEBUG
+		stdoutput.printf("\ncolumnsEnd()...\n");
+	#endif
+
+	// FIXME: do stuff...
+
+	// call parent method
+	if (!sqlrimport::columnsEnd()) {
+		return false;
+	}
+
+	// run tests
+	if (!tests("columnsEnd()")) {
+		return false;
+	}
+	return true;
+}
+
+bool testsqlrimport::rowsStart() {
+
+	#ifdef DEBUG
+		stdoutput.printf("\nrowsStart()...\n");
+	#endif
+
+	// FIXME: do stuff...
+
+	// call parent method
+	if (!sqlrimport::rowsStart()) {
+		return false;
+	}
+
+	// run tests
+	if (!tests("rowsStart()")) {
+		return false;
+	}
+	return true;
+}
+
+bool testsqlrimport::rowStart() {
+
+	#ifdef DEBUG
+		stdoutput.printf("\nrowStart()...\n");
+	#endif
+
+	// FIXME: do stuff...
+
+	// call parent method
+	if (!sqlrimport::rowStart()) {
+		return false;
+	}
+
+	// run tests
+	if (!tests("rowStart()")) {
+		return false;
+	}
+	return true;
+}
+
+bool testsqlrimport::fieldStart() {
+
+	#ifdef DEBUG
+		stdoutput.printf("\nfieldStart()...\n");
+	#endif
+
+	// FIXME: do stuff...
+
+	// call parent method
+	if (!sqlrimport::fieldStart()) {
+		return false;
+	}
+
+	// run tests
+	if (!tests("fieldStart()")) {
+		return false;
+	}
+	return true;
+}
+
+bool testsqlrimport::fieldEnd() {
+
+	#ifdef DEBUG
+		stdoutput.printf("\nfieldEnd()...\n");
+	#endif
+
+	// FIXME: do stuff...
+
+	// call parent method
+	if (!sqlrimport::fieldEnd()) {
+		return false;
+	}
+
+	// run tests
+	if (!tests("fieldEnd()")) {
+		return false;
+	}
+	return true;
+}
+
+bool testsqlrimport::rowEnd() {
+
+	#ifdef DEBUG
+		stdoutput.printf("\nrowEnd()...\n");
+	#endif
+
+	// FIXME: do stuff...
+
+	// call parent method
+	if (!sqlrimport::rowEnd()) {
+		return false;
+	}
+
+	// run tests
+	if (!tests("rowEnd()")) {
+		return false;
+	}
+	return true;
+}
+
+bool testsqlrimport::rowsEnd() {
+
+	#ifdef DEBUG
+		stdoutput.printf("\nrowsEnd()...\n");
+	#endif
+
+	// FIXME: do stuff...
+
+	// call parent method
+	if (!sqlrimport::rowsEnd()) {
+		return false;
+	}
+
+	// run tests
+	if (!tests("rowsEnd()")) {
+		return false;
+	}
+	return true;
+}
+
+bool testsqlrimport::importEnd() {
+
+	#ifdef DEBUG
+		stdoutput.printf("\nimportEnd()...\n");
+	#endif
+
+	// FIXME: do stuff...
+
+	// call parent method
+	if (!sqlrimport::importEnd()) {
+		return false;
+	}
+
+	// run tests
+	if (!tests("importEnd()")) {
+		return false;
+	}
+	return true;
+}
+
+bool testsqlrimport::error(int64_t errornumber, const char *errormessage) {
+
+	// print out error and bail
+	stdoutput.printf("\n%lld: %s\n",errornumber,errormessage);
+	return false;
+}
+
+
+
+
+// define a set of classes that inherit from our base class, to get the event
+// methods, but also inherit from classes that import to csv, xml, and table,
+// to get the import methods
+class testsqlrimportfile : virtual public testsqlrimport,
+				virtual public sqlrimportfile {
+	public:
+		testsqlrimportfile();
+		void	setTestFileName(const char *testfilename);
+		bool	tests(const char *method);
+	private:
+		const char	*testfilename;
+};
+
+testsqlrimportfile::testsqlrimportfile() : testsqlrimport() {
+	testfilename=NULL;
+}
+
+void testsqlrimportfile::setTestFileName(const char *testfilename) {
+	this->testfilename=testfilename;
+}
+
+bool testsqlrimportfile::tests(const char *method) {
+
+	// call parent method
+	if (!testsqlrimport::tests(method)) {
+		return false;
+	}
+
+	// test file name
+	if (charstring::compare(getFileName(),testfilename)) {
+		stdoutput.printf("\n%s - getFileName(): %s!=%s\n",
+				method,getFileName(),testfilename);
+		return false;
+	}
+	return true;
+}
+
+class testsqlrimportcsv : virtual public testsqlrimportfile,
+					virtual public sqlrimportcsv {
+};
+
+class testsqlrimportxml : virtual public testsqlrimportfile,
+					virtual public sqlrimportxml {
+};
+
+
+
 // define a set of methods that generate something to compare our export to
 void generateCsv(const char *filename,
 			bool ignorecolumns,
@@ -1355,7 +1707,6 @@ void importTests() {
 	createTable("testtable",NULL,NULL,&colcount);
 	stdoutput.printf("\n");
 
-#if 0
 	// set up csv import
 	stdoutput.printf("SET UP CSV IMPORT: \n");
 	testsqlrimportcsv	tsic;
@@ -1373,7 +1724,6 @@ void importTests() {
 	checkSuccess((uint64_t)tsix.getSqlrConnection(),(uint64_t)con);
 	checkSuccess((uint64_t)tsix.getSqlrCursor(),(uint64_t)cur);
 	stdoutput.printf("\n\n");
-#endif
 
 	// iterate through options...
 	uint8_t oiter=0;

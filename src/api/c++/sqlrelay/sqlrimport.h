@@ -19,19 +19,19 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		virtual	~sqlrimport();
 
 		/** Sets the instance of sqlrconnection that this instance
-		 *  will use to connect to the database. */
+		 *  will use to insert data for the import. */
 		void	setSqlrConnection(sqlrconnection *sqlrcon);
 
 		/** Sets the instance of sqlrcursor that this instance
-		 *  will use to run queries. */
+		 *  will use to insert data for the import. */
 		void	setSqlrCursor(sqlrcursor *sqlrcur);
 
 		/** Returns the instance of sqlrconnection that this instance
- 		 *  is configured to use to connect to the database. */
+ 		 *  is configured to use to insert data for the import. */
 		sqlrconnection	*getSqlrConnection();
 
 		/** Returns the instance of sqlrursor that this instance
- 		 *  is configured to use to connect to import data. */
+ 		 *  is configured to use to insert data for the import. */
 		sqlrcursor	*getSqlrCursor();
 
 		/** Sets the database type, which impacts how things like
@@ -167,18 +167,38 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 
 		/** Imports data.
 		 *
+		 *  If setCommitCount() was called with a non-zero value then a
+		 *  commit will be called after every "commitcount" rows is
+		 *  inserted.  No commit will be called if setCommitCount() was
+		 *  never called, or if setCommitCount(0) was called.
+		 *
 		 *  Returns true on success and false if an error occurred.
 		 *
 		 *  Note that that default implementation of this method just
 		 *  returns true.  Child classes should override this method. */
 		virtual	bool	importData();
 
-		/** This method should be called by implementations of the
-		 *  importFrom*() methods, prior to the import of the columns of
-		 *  the result set.
+		/** This method should be called by implementations of
+		 *  importData(), at the beginning of the import process.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
+		 *
+		 *  At this point...
+		 *
+		 *  Should return true on success and false if an error
+		 *  occurred and import should stop if this method return
+		 *  false. */
+		virtual bool	importStart();
+
+		/** This method should be called by implementations of the
+		 *  importData(), prior to the import of the columns of the
+		 *  result set.
+		 *
+		 *  This implementation just returns true but a child class may
+		 *  override this method to do something else.
+		 *
+		 *  At this point...
 		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and import should stop if this method return
@@ -186,11 +206,13 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		virtual	bool	columnsStart();
 
 		/** This method should be called by implementations of the
-		 *  importFrom*() methods, prior to the import of each column of
-		 *  the result set.
+		 *  importData(), prior to the import of each column of the
+		 *  result set.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
+		 *
+		 *  At this point...
 		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and import should stop if this method return
@@ -198,11 +220,13 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		virtual	bool	columnStart();
 
 		/** This method should be called by implementations of the
-		 *  importFrom*() methods, after the import of each column of
-		 *  the result set.
+		 *  importData(), after the import of each column of the result
+		 *  set.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
+		 *
+		 *  At this point...
 		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and import should stop if this method return
@@ -210,11 +234,13 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		virtual	bool	columnEnd();
 
 		/** This method should be called by implementations of the
-		 *  importFrom*() methods, after the import of the columns of
-		 *  the result set.
+		 *  importData(), after the import of the columns of the result
+		 *  set.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
+		 *
+		 *  At this point...
 		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and import should stop if this method return
@@ -222,11 +248,13 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		virtual	bool	columnsEnd();
 
 		/** This method should be called by implementations of the
-		 *  importFrom*() methods, prior to the import of the rows of
-		 *  the result set.
+		 *  importData(), prior to the import of the rows of the result
+		 *  set.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
+		 *
+		 *  At this point...
 		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and import should stop if this method return
@@ -234,11 +262,13 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		virtual	bool	rowsStart();
 
 		/** This method should be called by implementations of the
-		 *  importFrom*() methods, prior to the import of each row of
-		 *  the result set.
+		 *  importData(), prior to the import of each row of the result
+		 *  set.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
+		 *
+		 *  At this point...
 		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and import should stop if this method return
@@ -246,11 +276,13 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		virtual	bool	rowStart();
 
 		/** This method should be called by implementations of the
-		 *  importFrom*() methods, prior to the import of each field of
-		 *  the result set.
+		 *  importData(), prior to the import of each field of the
+		 *  result set.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
+		 *
+		 *  At this point...
 		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and import should stop if this method return
@@ -258,11 +290,13 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		virtual	bool	fieldStart();
 
 		/** This method should be called by implementations of the
-		 *  importFrom*() methods, after the import of each field of
-		 *  the result set.
+		 *  importData(), after the import of each field of the result
+		 *  set.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
+		 *
+		 *  At this point...
 		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and import should stop if this method return
@@ -270,11 +304,13 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		virtual	bool	fieldEnd();
 
 		/** This method should be called by implementations of the
-		 *  importFrom*() methods, after the import of each row of
-		 *  the result set.
+		 *  importData(), after the import of each row of the result
+		 *  set.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
+		 *
+		 *  At this point...
 		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and import should stop if this method return
@@ -282,61 +318,88 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		virtual	bool	rowEnd();
 
 		/** This method should be called by implementations of the
-		 *  importFrom*() methods, after the import of the rows of
-		 *  the result set.
+		 *  importData(), after the import of the rows of the result
+		 *  set.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
+		 *
+		 *  At this point...
 		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and import should stop if this method return
 		 *  false. */
 		virtual	bool	rowsEnd();
 
+		/** This method should be called by implementations of
+		 *  importData() methods, if a commit(), begin(),
+		 *  executeQuery(), or other database operation fails.
+		 *
+		 *  This implementation just returns false but a child class may
+		 *  override this method to do something else.
+		 *
+		 *  Should return true if import may continue, or false if 
+		 *  should stop. */
+		virtual	bool	error(int64_t errornumber,
+					const char *errormessage);
+
+		/** This method should be called by implementations of
+		 *  importData(), at the end of the import process.
+		 *
+		 *  This implementation just returns true but a child class may
+		 *  override this method to do something else.
+		 *
+		 *  At this point...
+		 *
+		 *  Should return true on success and false if an error
+		 *  occurred and import should stop if this method return
+		 *  false. */
+		virtual bool	importEnd();
+
 		/** Returns the number of rows that were imported by the most
-		 *  recent call to one of the importFrom*() methods. */
+		 *  recent call to one of the importData(). */
 		uint64_t	getImportedRowCount();
 
 	protected:
 
 		/** This method may be called by implementations of the
-		 *  importFrom*() methods, or by implementations of the various
+		 *  importData(), or by implementations of the various
 		 *  Start()/End() methods to set the index of the row that is
 		 *  currently being imported. */
 		void	setCurrentRow(uint64_t currentrow);
 
 		/** This method may be called by implementations of the
-		 *  importFrom*() methods, or by implementations of the various
+		 *  importData(), or by implementations of the various
 		 *  Start()/End() methods to get the index of the row that is
 		 *  currently being imported. */
 		uint64_t	getCurrentRow();
 
 		/** This method may be called by implementations of the
-		 *  importFrom*() methods, or by implementations of the various
+		 *  importData(), or by implementations of the various
 		 *  Start()/End() methods to set the index of the column that is
 		 *  currently being imported. */
 		void	setCurrentColumn(uint32_t currentcol);
 
 		/** This method may be called by implementations of the
-		 *  importFrom*() methods, or by implementations of the various
+		 *  importData(), or by implementations of the various
 		 *  Start()/End() methods to get the index of the column that is
 		 *  currently being imported. */
 		uint32_t	getCurrentColumn();
 
 		/** This method may be called by implementations of the
-		 *  importFrom*() methods, or by implementations of the various
+		 *  importData(), or by implementations of the various
 		 *  Start()/End() methods to set the name of the field that is
 		 *  currently being imported. */
 		void	setCurrentField(const char *currentfield);
 
 		/** This method may be called by implementations of the
-		 *  importFrom*() methods, or by implementations of the various
+		 *  importData(), or by implementations of the various
 		 *  Start()/End() methods to get the name of the field that is
 		 *  currently being imported. */
 		const char	*getCurrentField();
 
 		/** This method may be called by implementations of the
-		 *  importFrom*() methods, or by implementations of the various
+		 *  importData(), or by implementations of the various
 		 *  Start()/End() methods to set the number of rows that have
 		 *  been imported. */
 		void setImportedRowCount(uint64_t importedrowcount);

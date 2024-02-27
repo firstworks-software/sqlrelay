@@ -95,7 +95,7 @@ bool sqlrimportcsv::importData() {
 	if (!objectname) {
 		objectname=file::getBaseName(getFileName(),".csv");
 	}
-	return csvsax::parseFile(getFileName());
+	return importStart() && csvsax::parseFile(getFileName()) && importEnd();
 }
 
 bool sqlrimportcsv::headerStart() {

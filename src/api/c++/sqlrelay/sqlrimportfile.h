@@ -10,7 +10,7 @@
  *  to implement import of data from a database, via SQL Relay, to a file.  It
  *  provides various common methods.  Each child class should implement the
  *  importData() method. */
-class SQLRCLIENT_DLLSPEC sqlrimportfile : public sqlrimport {
+class SQLRCLIENT_DLLSPEC sqlrimportfile : virtual public sqlrimport {
 	public:
 		/** Creates an instance of the sqlrimportfile class. */
 		sqlrimportfile();
@@ -36,6 +36,11 @@ class SQLRCLIENT_DLLSPEC sqlrimportfile : public sqlrimport {
 		/** Imports data from the file set by the most recent call to
 		 *  setFileName() or from standard input if setFileName() was
 		 *  never called or setFileName(NULL) was called.
+		 *
+		 *  If setCommitCount() was called with a non-zero value then a
+		 *  commit will be called after every "commitcount" rows is
+		 *  inserted.  No commit will be called if setCommitCount() was
+		 *  never called, or if setCommitCount(0) was called.
 		 *
 		 *  Returns true on success and false if an error occurred.
 		 *
