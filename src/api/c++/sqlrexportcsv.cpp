@@ -3,6 +3,7 @@
 
 #include <sqlrelay/sqlrexportcsv.h>
 #include <rudiments/file.h>
+#include <rudiments/filesystem.h>
 #include <rudiments/permissions.h>
 
 #define NEED_IS_NUMBER_TYPE_CHAR
@@ -27,6 +28,8 @@ bool sqlrexportcsv::exportData() {
 			// FIXME: report error
 			return false;
 		}
+		f.setWriteBufferSize(
+			filesystem::getOptimumTransferBlockSize(getFileName()));
 		setFileDescriptor(&f);
 	}
 	filedescriptor	*fd=getFileDescriptor();
@@ -52,11 +55,13 @@ bool sqlrexportcsv::exportData() {
 
 	// call the export-start event
 	if (!exportStart()) {
+		fd->flushWriteBuffer(-1,-1);
 		return false;
 	}
 
 	// call the columns-start event
 	if (!columnsStart()) {
+		fd->flushWriteBuffer(-1,-1);
 		return false;
 	}
 
@@ -73,6 +78,7 @@ bool sqlrexportcsv::exportData() {
 
 		// call the column-start event
 		if (!columnStart()) {
+			fd->flushWriteBuffer(-1,-1);
 			return false;
 		}
 
@@ -104,6 +110,7 @@ bool sqlrexportcsv::exportData() {
 
 		// call the column-end event
 		if (!columnEnd()) {
+			fd->flushWriteBuffer(-1,-1);
 			return false;
 		}
 	}
@@ -117,6 +124,7 @@ bool sqlrexportcsv::exportData() {
 	// overridden columnsEnd() wants to add more columns or
 	// something)
 	if (!columnsEnd()) {
+		fd->flushWriteBuffer(-1,-1);
 		return false;
 	}
 
@@ -131,6 +139,7 @@ bool sqlrexportcsv::exportData() {
 
 	// call the rows-start event
 	if (!rowsStart()) {
+		fd->flushWriteBuffer(-1,-1);
 		return false;
 	}
 
@@ -146,6 +155,7 @@ bool sqlrexportcsv::exportData() {
 
 		// call the row-start event
 		if (!rowStart()) {
+			fd->flushWriteBuffer(-1,-1);
 			return false;
 		}
 
@@ -166,6 +176,7 @@ bool sqlrexportcsv::exportData() {
 
 			// call the field-start event
 			if (!fieldStart()) {
+				fd->flushWriteBuffer(-1,-1);
 				return false;
 			}
 
@@ -204,6 +215,7 @@ bool sqlrexportcsv::exportData() {
 
 			// call the field-end event
 			if (!fieldEnd()) {
+				fd->flushWriteBuffer(-1,-1);
 				return false;
 			}
 		}
@@ -216,6 +228,7 @@ bool sqlrexportcsv::exportData() {
 		// (we call this before closing the row in case an overridden
 		// rowEnd() wants to add more fields or something)
 		if (!rowEnd()) {
+			fd->flushWriteBuffer(-1,-1);
 			return false;
 		}
 
@@ -235,14 +248,17 @@ bool sqlrexportcsv::exportData() {
 
 	// call the rows-end event
 	if (!rowsEnd()) {
+		fd->flushWriteBuffer(-1,-1);
 		return false;
 	}
 
 	// call the export-end event
 	if (!exportEnd()) {
+		fd->flushWriteBuffer(-1,-1);
 		return false;
 	}
 
+	fd->flushWriteBuffer(-1,-1);
 	return true;
 }
 

@@ -2,8 +2,8 @@
 // See the file COPYING for more information
 
 #include <sqlrelay/sqlrexportxml.h>
-#include <rudiments/filedescriptor.h>
 #include <rudiments/file.h>
+#include <rudiments/filesystem.h>
 #include <rudiments/permissions.h>
 
 #define NEED_IS_NUMBER_TYPE_CHAR
@@ -28,6 +28,8 @@ bool sqlrexportxml::exportData() {
 			// FIXME: report error
 			return false;
 		}
+		f.setWriteBufferSize(
+			filesystem::getOptimumTransferBlockSize(getFileName()));
 		setFileDescriptor(&f);
 	}
 	filedescriptor	*fd=getFileDescriptor();
@@ -53,6 +55,7 @@ bool sqlrexportxml::exportData() {
 
 	// call the export-start event
 	if (!exportStart()) {
+		fd->flushWriteBuffer(-1,-1);
 		return false;
 	}
 
@@ -70,6 +73,7 @@ bool sqlrexportxml::exportData() {
 
 	// call the columns-start event
 	if (!columnsStart()) {
+		fd->flushWriteBuffer(-1,-1);
 		return false;
 	}
 
@@ -90,6 +94,7 @@ bool sqlrexportxml::exportData() {
 	
 		// call the column-start event
 		if (!columnStart()) {
+			fd->flushWriteBuffer(-1,-1);
 			return false;
 		}
 
@@ -112,6 +117,7 @@ bool sqlrexportxml::exportData() {
 
 		// call the column-end event
 		if (!columnEnd()) {
+			fd->flushWriteBuffer(-1,-1);
 			return false;
 		}
 	}
@@ -125,6 +131,7 @@ bool sqlrexportxml::exportData() {
 	// overridden columnsEnd() wants to add more columns or
 	// something)
 	if (!columnsEnd()) {
+		fd->flushWriteBuffer(-1,-1);
 		return false;
 	}
 
@@ -139,6 +146,7 @@ bool sqlrexportxml::exportData() {
 
 	// call the rows-start event
 	if (!rowsStart()) {
+		fd->flushWriteBuffer(-1,-1);
 		return false;
 	}
 
@@ -155,6 +163,7 @@ bool sqlrexportxml::exportData() {
 
 		// call the row-start event
 		if (!rowStart()) {
+			fd->flushWriteBuffer(-1,-1);
 			return false;
 		}
 
@@ -179,6 +188,7 @@ bool sqlrexportxml::exportData() {
 
 			// call the field-start event
 			if (!fieldStart()) {
+				fd->flushWriteBuffer(-1,-1);
 				return false;
 			}
 
@@ -197,6 +207,7 @@ bool sqlrexportxml::exportData() {
 
 			// call the field-end event
 			if (!fieldEnd()) {
+				fd->flushWriteBuffer(-1,-1);
 				return false;
 			}
 		}
@@ -209,6 +220,7 @@ bool sqlrexportxml::exportData() {
 		// (we call this before closing the row in case an overridden
 		// rowEnd() wants to add more fields or something)
 		if (!rowEnd()) {
+			fd->flushWriteBuffer(-1,-1);
 			return false;
 		}
 
@@ -230,6 +242,7 @@ bool sqlrexportxml::exportData() {
 	// (we call this before closing the rows in case an overridden
 	// rowsEnd() wants to add more rows or something)
 	if (!rowsEnd()) {
+		fd->flushWriteBuffer(-1,-1);
 		return false;
 	}
 
@@ -238,9 +251,11 @@ bool sqlrexportxml::exportData() {
 
 	// call the export-end event
 	if (!exportEnd()) {
+		fd->flushWriteBuffer(-1,-1);
 		return false;
 	}
 
+	fd->flushWriteBuffer(-1,-1);
 	return true;
 }
 
