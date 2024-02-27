@@ -303,11 +303,8 @@ bool sqlrexportxml::escapeField(filedescriptor *fd, const char *field) {
 		return true;
 	}
 	for (const char *f=field; *f; f++) {
-		if (*f=='"') {
-			if (fd->write("\"\"")!=2) {
-				return systemError();
-			}
-		} else if (*f<' ' || *f>'~' || *f=='&' || *f=='<' || *f=='>') {
+		if (*f=='"' || *f<' ' || *f>'~' ||
+				*f=='&' || *f=='<' || *f=='>') {
 			if (fd->printf("&%d;",(uint8_t)*f)!=
 						((*f<=9)?3:((*f>=100)?5:4))) {
 				return systemError();

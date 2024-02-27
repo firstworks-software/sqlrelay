@@ -286,12 +286,12 @@ bool sqlrexportcsv::escapeField(filedescriptor *fd, const char *field) {
 		return true;
 	}
 	for (const char *f=field; *f; f++) {
-		// escape double quotes and ignore non-ascii characters
+		// escape double quotes
 		if (*f=='"') {
 			if (fd->write("\"\"")!=2) {
 				return systemError();
 			}
-		} else if (*f>=' ' && *f<='~') {
+		} else {
 			if (fd->write(*f)!=sizeof(char)) {
 				return systemError();
 			}

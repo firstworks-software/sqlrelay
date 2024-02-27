@@ -112,16 +112,18 @@ field_t field[]={
 	{"testdate","date","DATE","%04lld-01-01",true},
 	{"testtime","time","TIME","01:00:00",true},
 	{"testdatetime","datetime","DATETIME","%04lld-01-01 01:00:00",true},
-	{"testchar","char(40)","STRING","char%lld",true},
-	{"testvarchar","varchar(40)","VARSTRING","varchar%lld",true},
-	{"testtext","text","BLOB","text%lld",true},
-	{"testtinytext","tinytext","TINYBLOB","tinytext%lld",true},
-	{"testmediumtext","mediumtext","MEDIUMBLOB","mediumtext%lld",true},
-	{"testlongtext","longtext","LONGBLOB","longtext%lld",true},
-	{"testblob","blob","BLOB","blob%lld",true},
-	{"testtinyblob","tinyblob","TINYBLOB","tinyblob%lld",true},
-	{"testmediumblob","mediumblob","MEDIUMBLOB","mediumblob%lld",true,},
-	{"testlongblob","longblob","LONGBLOB","longblob%lld",true},
+	{"testchar","char(40)","STRING","char%lld\t\"<>",true},
+	{"testvarchar","varchar(40)","VARSTRING","varchar%lld\t\"<>",true},
+	{"testtext","text","BLOB","text%lld\t\"<>",true},
+	{"testtinytext","tinytext","TINYBLOB","tinytext%lld\t\"<>",true},
+	{"testmediumtext","mediumtext","MEDIUMBLOB",
+				"mediumtext%lld\t\"<>",true},
+	{"testlongtext","longtext","LONGBLOB","longtext%lld\t\"<>",true},
+	{"testblob","blob","BLOB","blob%lld\t\"<>",true},
+	{"testtinyblob","tinyblob","TINYBLOB","tinyblob%lld\t\"<>",true},
+	{"testmediumblob","mediumblob","MEDIUMBLOB",
+				"mediumblob%lld\t\"<>",true,},
+	{"testlongblob","longblob","LONGBLOB","longblob%lld\t\"<>",true},
 	{NULL,NULL,NULL,NULL,false}
 };
 
@@ -702,7 +704,16 @@ void generateComparisonCsv(const char *filename,
 			if (field[col].quote) {
 				record.append('"');
 			}
-			record.printf(field[col].pattern,row);
+			char	*fld;
+			charstring::printf(&fld,field[col].pattern,row);
+			for (const char *f=fld; *f; f++) {
+				if (*f=='"') {
+					record.append("\"\"");
+				} else {
+					record.append(*f);
+				}
+			}
+			delete[] fld;
 			if (modifyField(field[col].name,
 					columnstomodify,field[col].dbtype)) {
 				record.append("MODIFIED");
@@ -778,7 +789,17 @@ void generateComparisonXml(const char *filename,
 				continue;
 			}
 			record.append("	<field>");
-			record.printf(field[col].pattern,row);
+			char	*fld;
+			charstring::printf(&fld,field[col].pattern,row);
+			for (const char *f=fld; *f; f++) {
+				if (*f=='"' || *f<' ' || *f>'~' ||
+						*f=='&' || *f=='<' || *f=='>') {
+					record.printf("&%d;",(uint8_t)*f);
+				} else {
+					record.write(*f);
+				}
+			}
+			delete[] fld;
 			if (modifyField(field[col].name,
 					columnstomodify,field[col].dbtype)) {
 				record.append("MODIFIED");
