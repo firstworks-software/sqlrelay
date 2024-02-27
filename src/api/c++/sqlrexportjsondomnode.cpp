@@ -6,59 +6,10 @@
 #define NEED_IS_NUMBER_TYPE_CHAR
 #include <datatypes.h>
 
-sqlrexportjsondomnode::sqlrexportjsondomnode() : sqlrexport() {
-	jsondomnode=NULL;
+sqlrexportjsondomnode::sqlrexportjsondomnode() : sqlrexportdomnode() {
 }
 
 sqlrexportjsondomnode::~sqlrexportjsondomnode() {
-}
-
-void sqlrexportjsondomnode::setJsonDomNode(domnode *dn) {
-	jsondomnode=dn;
-}
-
-domnode	*sqlrexportjsondomnode::getJsonDomNode() {
-	return jsondomnode;
-}
-
-void sqlrexportjsondomnode::setColumnsDomNode(domnode *dn) {
-	columnsdomnode=dn;
-}
-
-domnode	*sqlrexportjsondomnode::getColumnsDomNode() {
-	return columnsdomnode;
-}
-
-void sqlrexportjsondomnode::setCurrentColumnDomNode(domnode *dn) {
-	currentcolumndomnode=dn;
-}
-
-domnode	*sqlrexportjsondomnode::getCurrentColumnDomNode() {
-	return currentcolumndomnode;
-}
-
-void sqlrexportjsondomnode::setRowsDomNode(domnode *dn) {
-	rowsdomnode=dn;
-}
-
-domnode	*sqlrexportjsondomnode::getRowsDomNode() {
-	return rowsdomnode;
-}
-
-void sqlrexportjsondomnode::setCurrentRowDomNode(domnode *dn) {
-	currentrowdomnode=dn;
-}
-
-domnode	*sqlrexportjsondomnode::getCurrentRowDomNode() {
-	return currentrowdomnode;
-}
-
-void sqlrexportjsondomnode::setCurrentFieldDomNode(domnode *dn) {
-	currentfielddomnode=dn;
-}
-
-domnode	*sqlrexportjsondomnode::getCurrentFieldDomNode() {
-	return currentfielddomnode;
 }
 
 bool sqlrexportjsondomnode::exportData() {
@@ -66,8 +17,8 @@ bool sqlrexportjsondomnode::exportData() {
 	clearOutput();
 
 	// sanity check
-	if (!getJsonDomNode()) {
-		return error(0,"No domnode set with setJsonDomNode()");
+	if (!getDomNode()) {
+		return error(0,"No domnode set with setDomNode()");
 	}
 
 	// get the cursor and column count
@@ -102,7 +53,7 @@ bool sqlrexportjsondomnode::exportData() {
 	// export columns...
 	if (!getIgnoreColumns()) {
 		// "h" for header, like in csvdom
-		setColumnsDomNode(getJsonDomNode()->appendTag("h"));
+		setColumnsDomNode(getDomNode()->appendTag("h"));
 		getColumnsDomNode()->setAttributeValue("t","a");
 	}
 	for (setCurrentColumn(0);
@@ -184,8 +135,7 @@ bool sqlrexportjsondomnode::exportData() {
 		// if rowStart() didn't disable export of this row...
 		if (!getIgnoreRow()) {
 			// "r" for record, like in csvdom
-			setCurrentRowDomNode(
-				getJsonDomNode()->appendTag("r"));
+			setCurrentRowDomNode(getDomNode()->appendTag("r"));
 			getCurrentRowDomNode()->setAttributeValue("t","a");
 		}
 
@@ -269,13 +219,4 @@ bool sqlrexportjsondomnode::exportData() {
 	}
 
 	return true;
-}
-
-void sqlrexportjsondomnode::clearOutput() {
-	sqlrexport::clearOutput();
-	columnsdomnode=NULL;
-	currentcolumndomnode=NULL;
-	rowsdomnode=NULL;
-	currentrowdomnode=NULL;
-	currentfielddomnode=NULL;
 }

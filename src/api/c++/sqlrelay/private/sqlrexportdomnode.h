@@ -5,7 +5,7 @@
 
 	private:
 
-		domnode			*jsondomnode;
+		domnode			*topdomnode;
 		domnode			*columnsdomnode;
 		domnode			*currentcolumndomnode;
 		domnode			*rowsdomnode;
