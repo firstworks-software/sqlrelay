@@ -2,6 +2,7 @@
 // See the file COPYING for more information
 
 		virtual void	clearOutput();
+		virtual bool	systemError();
 
 	private:
 

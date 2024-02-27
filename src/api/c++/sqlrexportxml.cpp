@@ -25,8 +25,7 @@ bool sqlrexportxml::exportData() {
 	if (!charstring::isNullOrEmpty(getFileName())) {
 		if (!f.create(getFileName(),
 			permissions::parsePermString("rw-r--r--"))) {
-			// FIXME: report error
-			return false;
+			return systemError();
 		}
 		f.setWriteBufferSize(
 			filesystem::getOptimumTransferBlockSize(getFileName()));
@@ -60,16 +59,28 @@ bool sqlrexportxml::exportData() {
 	}
 
 	// export xml header
-	fd->write("<?xml version=\"1.0\"?>\n");
+	if (fd->write("<?xml version=\"1.0\"?>\n")!=22) {
+		return systemError();
+	}
 
 	// export table tag
-	fd->write("<table");
-	if (!charstring::isNullOrEmpty(getTable())) {
-	 	fd->write(" name=\"");
-		escapeField(fd,getTable());
-		fd->write("\"");
+	if (fd->write("<table")!=6) {
+		return systemError();
 	}
-	fd->write(">\n");
+	if (!charstring::isNullOrEmpty(getTable())) {
+	 	if (fd->write(" name=\"")!=7) {
+			return systemError();
+		}
+		if (!escapeField(fd,getTable())) {
+			return false;
+		}
+		if (fd->write('\"')!=sizeof(char)) {
+			return systemError();
+		}
+	}
+	if (fd->write(">\n")!=2) {
+		return systemError();
+	}
 
 	// call the columns-start event
 	if (!columnsStart()) {
@@ -108,11 +119,21 @@ bool sqlrexportxml::exportData() {
 						getColumnsToIgnore())) {
 
 			// export the column name and type
-			fd->write("	<column name=\"");
-			escapeField(fd,getCurrentField());
-			fd->write("\" type=\"");
-			escapeField(fd,type);
-			fd->write("\"/>\n");
+			if (fd->write("	<column name=\"")!=15) {
+				return systemError();
+			}
+			if (!escapeField(fd,getCurrentField())) {
+				return false;
+			}
+			if (fd->write("\" type=\"")!=8) {
+				return systemError();
+			}
+			if (!escapeField(fd,type)) {
+				return false;
+			}
+			if (fd->write("\"/>\n")!=4) {
+				return systemError();
+			}
 		}
 
 		// call the column-end event
@@ -136,7 +157,9 @@ bool sqlrexportxml::exportData() {
 	}
 
 	if (!getIgnoreColumns()) {
-		fd->write("</columns>\n");
+		if (fd->write("</columns>\n")!=11) {
+			return systemError();
+		}
 	}
 
 	// reset current column/field
@@ -151,7 +174,9 @@ bool sqlrexportxml::exportData() {
 	}
 
 	// export rows
-	fd->write("<rows>\n");
+	if (fd->write("<rows>\n")!=7) {
+		return systemError();
+	}
 	while (!sqlrcur->endOfResultSet() ||
 			getCurrentRow()<sqlrcur->rowCount()) {
 
@@ -169,7 +194,9 @@ bool sqlrexportxml::exportData() {
 
 		// if rowStart() didn't disable export of this row...
 		if (!getIgnoreRow()) {
-			fd->write("	<row>\n");
+			if (fd->write("	<row>\n")!=7) {
+				return systemError();
+			}
 		}
 
 		for (setCurrentColumn(0);
@@ -200,9 +227,15 @@ bool sqlrexportxml::exportData() {
 				getColumnsToIgnore())) {
 
 				// export the field
-				fd->write("	<field>");
-				escapeField(fd,getCurrentField());
-				fd->write("</field>\n");
+				if (fd->write("	<field>")!=8) {
+					return systemError();
+				}
+				if (!escapeField(fd,getCurrentField())) {
+					return false;
+				}
+				if (fd->write("</field>\n")!=9) {
+					return systemError();
+				}
 			}
 
 			// call the field-end event
@@ -226,7 +259,9 @@ bool sqlrexportxml::exportData() {
 
 		// if rowStart() didn't disable export of this row...
 		if (!getIgnoreRow()) {
-			fd->write("	</row>\n");
+			if (fd->write("	</row>\n")!=8) {
+				return systemError();
+			}
 		}
 
 		// update exported row count
@@ -246,8 +281,12 @@ bool sqlrexportxml::exportData() {
 		return false;
 	}
 
-	fd->write("</rows>\n");
-	fd->write("</table>\n");
+	if (fd->write("</rows>\n")!=8) {
+		return systemError();
+	}
+	if (fd->write("</table>\n")!=9) {
+		return systemError();
+	}
 
 	// call the export-end event
 	if (!exportEnd()) {
@@ -259,17 +298,25 @@ bool sqlrexportxml::exportData() {
 	return true;
 }
 
-void sqlrexportxml::escapeField(filedescriptor *fd, const char *field) {
+bool sqlrexportxml::escapeField(filedescriptor *fd, const char *field) {
 	if (!field) {
-		return;
+		return true;
 	}
 	for (const char *f=field; *f; f++) {
 		if (*f=='"') {
-			fd->write("\"\"");
+			if (fd->write("\"\"")!=2) {
+				return systemError();
+			}
 		} else if (*f<' ' || *f>'~' || *f=='&' || *f=='<' || *f=='>') {
-			fd->printf("&%d;",(uint8_t)*f);
+			if (fd->printf("&%d;",(uint8_t)*f)!=
+						((*f<=9)?3:((*f>=100)?5:4))) {
+				return systemError();
+			}
 		} else {
-			fd->write(*f);
+			if (fd->write(*f)!=sizeof(char)) {
+				return systemError();
+			}
 		}
 	}
+	return true;
 }

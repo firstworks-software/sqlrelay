@@ -67,8 +67,7 @@ bool sqlrexportjsondomnode::exportData() {
 
 	// sanity check
 	if (!getJsonDomNode()) {
-		// FIXME: set error
-		return false;
+		return error(0,"No domnode set with setJsonDomNode()");
 	}
 
 	// get the cursor and column count

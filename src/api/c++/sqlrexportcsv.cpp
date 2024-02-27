@@ -25,8 +25,7 @@ bool sqlrexportcsv::exportData() {
 	if (!charstring::isNullOrEmpty(getFileName())) {
 		if (!f.create(getFileName(),
 			permissions::parsePermString("rw-r--r--"))) {
-			// FIXME: report error
-			return false;
+			return systemError();
 		}
 		f.setWriteBufferSize(
 			filesystem::getOptimumTransferBlockSize(getFileName()));
@@ -95,16 +94,24 @@ bool sqlrexportcsv::exportData() {
 			if (first) {
 				first=false;
 			} else {
-				fd->write(',');
+				if (fd->write(',')!=sizeof(char)) {
+					return systemError();
+				}
 			}
 			bool	isnumber=
 				charstring::isNumber(getCurrentField());
 			if (!isnumber) {
-				fd->write('"');
+				if (fd->write('"')!=sizeof(char)) {
+					return systemError();
+				}
 			}
-			escapeField(fd,getCurrentField());
+			if (!escapeField(fd,getCurrentField())) {
+				return false;
+			}
 			if (!isnumber) {
-				fd->write('"');
+				if (fd->write('"')!=sizeof(char)) {
+					return systemError();
+				}
 			}
 		}
 
@@ -129,7 +136,9 @@ bool sqlrexportcsv::exportData() {
 	}
 
 	if (!getIgnoreColumns()) {
-		fd->write('\n');
+		if (fd->write('\n')!=sizeof(char)) {
+			return systemError();
+		}
 	}
 
 	// reset current column/field
@@ -202,14 +211,22 @@ bool sqlrexportcsv::exportData() {
 				if (first) {
 					first=false;
 				} else {
-					fd->write(',');
+					if (fd->write(',')!=sizeof(char)) {
+						return systemError();
+					}
 				}
 				if (quote) {
-					fd->write('"');
+					if (fd->write('"')!=sizeof(char)) {
+						return systemError();
+					}
 				}
-				escapeField(fd,getCurrentField());
+				if (!escapeField(fd,getCurrentField())) {
+					return false;
+				}
 				if (quote) {
-					fd->write('"');
+					if (fd->write('"')!=sizeof(char)) {
+						return systemError();
+					}
 				}
 			}
 
@@ -234,7 +251,9 @@ bool sqlrexportcsv::exportData() {
 
 		// if rowStart() didn't disable export of this row...
 		if (!getIgnoreRow()) {
-			fd->write('\n');
+			if (fd->write('\n')!=sizeof(char)) {
+				return systemError();
+			}
 		}
 
 		// update exported row count
@@ -262,16 +281,21 @@ bool sqlrexportcsv::exportData() {
 	return true;
 }
 
-void sqlrexportcsv::escapeField(filedescriptor *fd, const char *field) {
+bool sqlrexportcsv::escapeField(filedescriptor *fd, const char *field) {
 	if (!field) {
-		return;
+		return true;
 	}
 	for (const char *f=field; *f; f++) {
 		// escape double quotes and ignore non-ascii characters
 		if (*f=='"') {
-			fd->write("\"\"");
+			if (fd->write("\"\"")!=2) {
+				return systemError();
+			}
 		} else if (*f>=' ' && *f<='~') {
-			fd->write(*f);
+			if (fd->write(*f)!=sizeof(char)) {
+				return systemError();
+			}
 		}
 	}
+	return true;
 }

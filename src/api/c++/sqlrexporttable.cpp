@@ -55,16 +55,15 @@ bool sqlrexporttable::exportData() {
 
 	// sanity checks
 	if (!exportcon) {
-		// FIXME: set error
-		return false;
+		return error(
+			0,"No connection set with setExportSqlrConnection()");
 	}
 	if (!exportcur) {
-		// FIXME: set error
-		return false;
+		return error(
+			0,"No connection set with setExportSqlrCursor()");
 	}
 	if (!table) {
-		// FIXME: set error
-		return false;
+		return error(0,"No table set with setTable()");
 	}
 
 	// get the cursor and column count

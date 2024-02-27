@@ -2,4 +2,4 @@
 // See the file COPYING for more information
 
 	private:
-		void	escapeField(filedescriptor *fd, const char *field);
+		bool	escapeField(filedescriptor *fd, const char *field);

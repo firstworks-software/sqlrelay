@@ -2,6 +2,7 @@
 // See the file COPYING for more information
 
 #include <sqlrelay/sqlrexport.h>
+#include <rudiments/error.h>
 
 sqlrexport::sqlrexport() {
 
@@ -253,4 +254,11 @@ void sqlrexport::clearOutput() {
 	currentfield=NULL;
 	exportedrowcount=0;
 	numericcolumn.clear();
+}
+
+bool sqlrexport::systemError() {
+	char	*err=error::getErrorString();
+	bool	retval=error(error::getErrorNumber(),err);
+	delete[] err;
+	return retval;
 }
