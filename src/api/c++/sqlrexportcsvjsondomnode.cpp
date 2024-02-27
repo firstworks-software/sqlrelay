@@ -1,18 +1,18 @@
 // Copyright (c) 1999-2018 David Muse
 // See the file COPYING for more information
 
-#include <sqlrelay/sqlrexportjsondomnode.h>
+#include <sqlrelay/sqlrexportcsvjsondomnode.h>
 
 #define NEED_IS_NUMBER_TYPE_CHAR
 #include <datatypes.h>
 
-sqlrexportjsondomnode::sqlrexportjsondomnode() : sqlrexportdomnode() {
+sqlrexportcsvjsondomnode::sqlrexportcsvjsondomnode() : sqlrexportdomnode() {
 }
 
-sqlrexportjsondomnode::~sqlrexportjsondomnode() {
+sqlrexportcsvjsondomnode::~sqlrexportcsvjsondomnode() {
 }
 
-bool sqlrexportjsondomnode::exportData() {
+bool sqlrexportcsvjsondomnode::exportData() {
 
 	clearOutput();
 

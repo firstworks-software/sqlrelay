@@ -1,21 +1,25 @@
 // Copyright (c) 1999-2018 David Muse
 // See the file COPYING for more information
 
-#ifndef SQLREXPORTJSONDOMNODE_H
-#define SQLREXPORTJSONDOMNODE_H
+#ifndef SQLREXPORTCSVJSONDOMNODE_H
+#define SQLREXPORTCSVJSONDOMNODE_H
 
-#include <sqlrelay/private/sqlrexportjsondomnodeincludes.h>
+#include <sqlrelay/private/sqlrexportcsvjsondomnodeincludes.h>
 
-/** The sqlrexportjsondomnode class implements sqlrexport to a json domnode. */
-class SQLRCLIENT_DLLSPEC sqlrexportjsondomnode :
+/** The sqlrexportcsvjsondomnode class implements sqlrexport to a json domnode,
+ *  in a format similar to the DOM tree that the rudiments class csvdom defines
+ *  to represent a CSV, though it uses the rules defined for representing JSON
+ *  by the rudiments class jsondom. */
+class SQLRCLIENT_DLLSPEC sqlrexportcsvjsondomnode :
 				virtual public sqlrexportdomnode {
 	public:
-		/** Creates an instance of the sqlrexportjsondomnode class. */
-		sqlrexportjsondomnode();
+		/** Creates an instance of the sqlrexportcsvjsondomnode
+ 		 *  class. */
+		sqlrexportcsvjsondomnode();
 
-		/** Destroys this instance of the sqlrexportjsondomnode
+		/** Destroys this instance of the sqlrexportcsvjsondomnode
 		 *  class. */
-		virtual	~sqlrexportjsondomnode();
+		virtual	~sqlrexportcsvjsondomnode();
 
 		/** Exports the result set of the cursor currently in use as
 		 *  set by the most recent call to setSqlrCursor() to the

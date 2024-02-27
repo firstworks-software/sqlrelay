@@ -16,7 +16,7 @@ SRCS = sqlrconnection.cpp \
 	sqlrexportxml.cpp \
 	sqlrexportcsv.cpp \
 	sqlrexportdomnode.cpp \
-	sqlrexportjsondomnode.cpp \
+	sqlrexportcsvjsondomnode.cpp \
 	sqlrexporttable.cpp \
 	sqlrcrud.cpp
 LOBJS = sqlrconnection.$(OBJ) \
@@ -33,7 +33,7 @@ LOBJS = sqlrconnection.$(OBJ) \
 	sqlrexportxml.$(OBJ) \
 	sqlrexportcsv.$(OBJ) \
 	sqlrexportdomnode.$(OBJ) \
-	sqlrexportjsondomnode.$(OBJ) \
+	sqlrexportcsvjsondomnode.$(OBJ) \
 	sqlrexporttable.$(OBJ) \
 	sqlrcrud.$(OBJ)
 
@@ -81,8 +81,8 @@ install: $(INSTALLLIB)
 	$(CHMOD) 644 $(includedir)/sqlrelay/sqlrexportcsv.h
 	$(CP) sqlrelay/sqlrexportdomnode.h $(includedir)/sqlrelay
 	$(CHMOD) 644 $(includedir)/sqlrelay/sqlrexportdomnode.h
-	$(CP) sqlrelay/sqlrexportjsondomnode.h $(includedir)/sqlrelay
-	$(CHMOD) 644 $(includedir)/sqlrelay/sqlrexportjsondomnode.h
+	$(CP) sqlrelay/sqlrexportcsvjsondomnode.h $(includedir)/sqlrelay
+	$(CHMOD) 644 $(includedir)/sqlrelay/sqlrexportcsvjsondomnode.h
 	$(CP) sqlrelay/sqlrexporttable.h $(includedir)/sqlrelay
 	$(CHMOD) 644 $(includedir)/sqlrelay/sqlrexporttable.h
 	$(CP) sqlrelay/private/sqlrclientincludes.h $(includedir)/sqlrelay/private
@@ -141,8 +141,8 @@ install: $(INSTALLLIB)
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrexportdomnodeincludes.h
 	$(CP) sqlrelay/private/sqlrexportdomnode.h $(includedir)/sqlrelay/private
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrexportdomnode.h
-	$(CP) sqlrelay/private/sqlrexportjsondomnodeincludes.h $(includedir)/sqlrelay/private
-	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrexportjsondomnodeincludes.h
+	$(CP) sqlrelay/private/sqlrexportcsvjsondomnodeincludes.h $(includedir)/sqlrelay/private
+	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrexportcsvjsondomnodeincludes.h
 	$(CP) sqlrelay/private/sqlrexporttable.h $(includedir)/sqlrelay/private
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrexporttable.h
 	$(CP) sqlrelay/private/sqlrexporttableincludes.h $(includedir)/sqlrelay/private
