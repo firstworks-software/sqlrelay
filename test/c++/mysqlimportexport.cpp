@@ -1625,7 +1625,7 @@ void exportTests() {
 		if (oiter==0) {
 			option=charstring::duplicate("");
 		} else if (oiter==1) {
-			// for iteration 1, ignore columsn
+			// for iteration 1, ignore columns
 			option=charstring::duplicate("IGNORE COLUMNS - ");
 			ignorecolumns=true;
 		} else if (oiter>=2 && oiter<=21) {
@@ -1903,7 +1903,7 @@ void importTests() {
 			option=charstring::duplicate("");
 #if 0
 		} else if (oiter==1) {
-			// for iteration 1, ignore columsn
+			// for iteration 1, ignore columns
 			option=charstring::duplicate("IGNORE COLUMNS - ");
 			ignorecolumns=true;
 		} else if (oiter>=2 && oiter<=21) {
