@@ -1192,7 +1192,7 @@ void generateCsv(const char *filename,
 	// write records, ignoring columns and modifying fields as necessary
 	stringbuffer	record;
 	for (uint64_t row=0; row<ROWS; row++) {
-		if ((*rowstoignore)[row]) {
+		if (rowstoignore && (*rowstoignore)[row]) {
 			continue;
 		}
 		for (uint32_t col=0; field[col].name; col++) {
@@ -1285,7 +1285,7 @@ void generateXml(const char *filename,
 	stringbuffer	record;
 	comparison.write("<rows>\n");
 	for (uint64_t row=0; row<ROWS; row++) {
-		if ((*rowstoignore)[row]) {
+		if (rowstoignore && (*rowstoignore)[row]) {
 			continue;
 		}
 		record.append("	<row>\n");
@@ -1379,7 +1379,7 @@ void generateTable(const char *tablename,
 	bool		success=true;
 	stringbuffer	query;
 	for (uint64_t row=0; row<ROWS; row++) {
-		if ((*rowstoignore)[row]) {
+		if (rowstoignore && (*rowstoignore)[row]) {
 			continue;
 		}
 		query.clear();
@@ -1889,111 +1889,29 @@ void importTests() {
 		// set options for ignoring/modifying rows/columns/fields
 		const char		*option=NULL;
 		bool			ignorecolumns=false;
-		bool			excludecolumns=false;
-		const char		**columnstoignore=NULL;
-#if 0
-		uint16_t		columnstoignorecount=0;
-#endif
-		const char		**columnstomodify=NULL;
-		dynamicarray<bool>	rowstoignore;
-		for (uint64_t row=0; row<ROWS; row++) {
-			rowstoignore[row]=false;
-		}
 		stringbuffer		opt;
-#if 0
-		const char		*col;
-#endif
 		if (oiter==0) {
 			option=charstring::duplicate("");
 		} else if (oiter==1) {
 			// for iteration 1, ignore columns
 			option=charstring::duplicate("IGNORE COLUMNS - ");
 			ignorecolumns=true;
-#if 0
-		} else if (oiter>=2 && oiter<=21) {
-			// for iterations 2-21, ignore individual columns
-			col=field[oiter-2].name;
-			columnstoignore=new const char *[2];
-			columnstoignore[0]=col;
-			columnstoignore[1]=NULL;
-			columnstoignorecount=1;
-			opt.append("IGNORE ");
-			opt.append(col);
-			opt.append(" column - ");
-			option=opt.detachString();
-		} else if (oiter>=22 && oiter<=32) {
-			// for iterations 22-32, ignore random sets of
-			// columns, possibly with repetitions
-			randomnumber	r;
-			r.setSeed(randomnumber::getSeed());
-			opt.append("IGNORE ");
-			columnstoignore=new const char *[11];
-			uint32_t	rn;
-			for (uint8_t i=0; i<10; i++) {
-				r.generate(&rn);
-				r.setSeed(rn);
-				rn=r.scale(rn,0,19);
-				col=field[rn].name;
-				columnstoignore[i]=col;
-				if (i) {
-					opt.append(',');
-				}
-				opt.append(col);
-			}
-			columnstoignore[10]=NULL;
-			columnstoignorecount=10;
-			opt.append(" column - ");
-			option=opt.detachString();
-		} else if (oiter==33) {
-			// for iteration 33, don't import various rows
-			opt.append("IGNORE ");
-			randomnumber	r;
-			r.setSeed(randomnumber::getSeed());
-			uint32_t	rn;
-			uint64_t	ircount=0;
-			for (uint64_t row=0; row<ROWS; row++) {
-				r.generate(&rn);
-				r.setSeed(rn);
-				rn=r.scale(rn,0,1);
-				if (rn) {
-					rowstoignore[row]=true;
-					ircount++;
-				}
-			}
-			opt.append(ircount);
-			opt.append(" ROWS - ");
-			option=opt.detachString();
-		} else if (oiter>=34 && oiter<=44) {
-			// for iterations 34-44, modify random sets of
-			// columns and fields, possibly with repetitions
-			randomnumber	r;
-			r.setSeed(randomnumber::getSeed());
-			opt.append("MODIFY ");
-			columnstomodify=new const char *[11];
-			uint32_t	rn;
-			for (uint8_t i=0; i<10; i++) {
-				r.generate(&rn);
-				r.setSeed(rn);
-				rn=r.scale(rn,0,19);
-				col=field[rn].name;
-				columnstomodify[i]=col;
-				if (i) {
-					opt.append(',');
-				}
-				opt.append(col);
-			}
-			columnstomodify[10]=NULL;
-			opt.append(" column - ");
-			option=opt.detachString();
-#endif
+// FIXME: test insert primary key
+// FIXME: test insert static values
+// FIXME: test ignore columns with empty names
+// FIXME: test ignore empty records
 		} else {
 			break;
 		}
 
 		// iterate through formats...
 		// (1==CSV, 2=XML)
-		//for (uint8_t fiter=0; fiter<2; fiter++) {
-for (uint8_t fiter=0; fiter<1; fiter++) {
+// FIXME: test xml
+#if 0
+		for (uint8_t fiter=0; fiter<2; fiter++) {
+#else
+		for (uint8_t fiter=0; fiter<1; fiter++) {
+#endif
 
 			// csv or xml
 			testsqlrimport	*im;
@@ -2003,18 +1921,14 @@ for (uint8_t fiter=0; fiter<1; fiter++) {
 				im=&tsic;
 				format="CSV";
 				imp="testtable.csv";
-				generateCsv(imp,
-					excludecolumns,columnstoignore,
-					columnstomodify,&rowstoignore);
+				generateCsv(imp,false,NULL,NULL,NULL);
 				tsic.setFileName(imp);
 				tsic.setTestFileName(imp);
 			} else if (fiter==1) {
 				im=&tsix;
 				format="XML";
 				imp="testtable.xml";
-				generateXml(imp,colcount,
-					excludecolumns,columnstoignore,
-					columnstomodify,&rowstoignore);
+				generateXml(imp,colcount,false,NULL,NULL,NULL);
 				tsix.setFileName(imp);
 				tsix.setTestFileName(imp);
 			}
@@ -2022,37 +1936,12 @@ for (uint8_t fiter=0; fiter<1; fiter++) {
 			// import file/table
 			stdoutput.printf("%sIMPORT %s: \n",option,format);
 			im->setIgnoreColumns(ignorecolumns);
-#if 0
-			im->setColumnsToIgnore(columnstoignore);
-#endif
-			im->setColumnsToModify(columnstomodify);
-			im->setRowsToIgnore(&rowstoignore);
 			checkSuccess(im->getIgnoreColumns(),ignorecolumns);
-#if 0
-			if (columnstoignore) {
-				for (uint16_t i=0;
-					i<columnstoignorecount; i++) {
-					checkSuccess(
-						im->getColumnsToIgnore()[i],
-						columnstoignore[i]);
-				}
-				checkSuccess(
-					im->getColumnsToIgnore()[
-						columnstoignorecount],
-					NULL);
-			} else {
-				checkSuccess(
-					(uint64_t)im->getColumnsToIgnore(),
-					(uint64_t)0);
-			}
-#endif
 			checkSuccess(im->importData(),1);
 			stdoutput.printf("\n\n");
 
 			// generate comparison table
-			generateTable("testtable_comparison",
-					columnstoignore,
-					columnstomodify,&rowstoignore);
+			generateTable("testtable_comparison",NULL,NULL,NULL);
 
 			// diff tables
 			stdoutput.printf("%sDIFF TABLES: \n",option);
@@ -2073,7 +1962,6 @@ for (uint8_t fiter=0; fiter<1; fiter++) {
 
 		// clean up
 		delete[] option;
-		delete[] columnstoignore;
 
 		oiter++;
 	}
