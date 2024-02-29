@@ -335,6 +335,9 @@ bool sqlrimportcsv::recordStart() {
 	fieldcount=0;
 	emptyrecord=true;
 	columnswithemptynamesnode=columnswithemptynames.getFirst();
+	setCurrentColumn(0);
+	setCurrentColumnName(NULL);
+	setCurrentField(NULL);
 
 	// call the start-row event
 	return rowStart();
@@ -514,6 +517,9 @@ bool sqlrimportcsv::field(const char *value, bool quoted) {
 
 		// set the current column name
 		setCurrentColumnName(columns[getCurrentColumn()]);
+
+		// FIXME: I think I should call events and setCurrentField()
+		// in here somewhere
 
 		// next column...
 		setCurrentColumn(getCurrentColumn()+1);

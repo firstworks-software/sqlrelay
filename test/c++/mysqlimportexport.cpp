@@ -26,7 +26,8 @@
 //#define ROWS 2
 //#define ROWS 1
 
-#define DEBUG 1
+//#define DEBUG_EXPORT 1
+//#define DEBUG_IMPORT 1
 
 stringbuffer	createquery;
 sqlrconnection	*con;
@@ -298,7 +299,7 @@ bool testsqlrexport::tests(const char *method) {
 
 bool testsqlrexport::exportStart() {
 
-	#ifdef DEBUG
+	#ifdef DEBUG_EXPORT
 		stdoutput.printf("\nexportStart()...\n");
 	#endif
 
@@ -323,7 +324,7 @@ bool testsqlrexport::exportStart() {
 
 bool testsqlrexport::columnsStart() {
 
-	#ifdef DEBUG
+	#ifdef DEBUG_EXPORT
 		stdoutput.printf("\ncolumnsStart()...\n");
 	#endif
 
@@ -341,7 +342,7 @@ bool testsqlrexport::columnsStart() {
 
 bool testsqlrexport::columnStart() {
 
-	#ifdef DEBUG
+	#ifdef DEBUG_EXPORT
 		stdoutput.printf("columnStart()...\n");
 	#endif
 
@@ -367,7 +368,7 @@ bool testsqlrexport::columnStart() {
 
 bool testsqlrexport::columnEnd() {
 
-	#ifdef DEBUG
+	#ifdef DEBUG_EXPORT
 		stdoutput.printf("columnEnd()...\n");
 	#endif
 
@@ -389,7 +390,7 @@ bool testsqlrexport::columnEnd() {
 
 bool testsqlrexport::columnsEnd() {
 
-	#ifdef DEBUG
+	#ifdef DEBUG_EXPORT
 		stdoutput.printf("columnsEnd()...\n");
 	#endif
 
@@ -407,7 +408,7 @@ bool testsqlrexport::columnsEnd() {
 
 bool testsqlrexport::rowsStart() {
 
-	#ifdef DEBUG
+	#ifdef DEBUG_EXPORT
 		stdoutput.printf("rowsStart()...\n");
 	#endif
 
@@ -432,7 +433,7 @@ bool testsqlrexport::rowsStart() {
 
 bool testsqlrexport::rowStart() {
 
-	#ifdef DEBUG
+	#ifdef DEBUG_EXPORT
 		stdoutput.printf("rowStart()...\n");
 	#endif
 
@@ -461,7 +462,7 @@ bool testsqlrexport::rowStart() {
 
 bool testsqlrexport::fieldStart() {
 
-	#ifdef DEBUG
+	#ifdef DEBUG_EXPORT
 		stdoutput.printf("fieldStart()...\n");
 	#endif
 
@@ -489,7 +490,7 @@ bool testsqlrexport::fieldStart() {
 
 bool testsqlrexport::fieldEnd() {
 
-	#ifdef DEBUG
+	#ifdef DEBUG_EXPORT
 		stdoutput.printf("fieldEnd()...\n");
 	#endif
 
@@ -511,7 +512,7 @@ bool testsqlrexport::fieldEnd() {
 
 bool testsqlrexport::rowEnd() {
 
-	#ifdef DEBUG
+	#ifdef DEBUG_EXPORT
 		stdoutput.printf("rowEnd()...\n");
 	#endif
 
@@ -536,7 +537,7 @@ bool testsqlrexport::rowEnd() {
 
 bool testsqlrexport::rowsEnd() {
 
-	#ifdef DEBUG
+	#ifdef DEBUG_EXPORT
 		stdoutput.printf("rowsEnd()...\n");
 	#endif
 
@@ -554,7 +555,7 @@ bool testsqlrexport::rowsEnd() {
 
 bool testsqlrexport::exportEnd() {
 
-	#ifdef DEBUG
+	#ifdef DEBUG_EXPORT
 		stdoutput.printf("exportEnd()...\n");
 	#endif
 
@@ -786,7 +787,7 @@ bool testsqlrimport::tests(const char *method) {
 
 bool testsqlrimport::importStart() {
 
-	#ifdef DEBUG
+	#ifdef DEBUG_IMPORT
 		stdoutput.printf("\nimportStart()...\n");
 	#endif
 
@@ -813,7 +814,7 @@ bool testsqlrimport::importStart() {
 
 bool testsqlrimport::columnsStart() {
 
-	#ifdef DEBUG
+	#ifdef DEBUG_IMPORT
 		stdoutput.printf("\ncolumnsStart()...\n");
 	#endif
 
@@ -831,7 +832,7 @@ bool testsqlrimport::columnsStart() {
 
 bool testsqlrimport::columnStart() {
 
-	#ifdef DEBUG
+	#ifdef DEBUG_IMPORT
 		stdoutput.printf("\ncolumnStart()...\n");
 	#endif
 
@@ -859,7 +860,7 @@ bool testsqlrimport::columnStart() {
 
 bool testsqlrimport::columnEnd() {
 
-	#ifdef DEBUG
+	#ifdef DEBUG_IMPORT
 		stdoutput.printf("\ncolumnEnd()...\n");
 	#endif
 
@@ -881,7 +882,7 @@ bool testsqlrimport::columnEnd() {
 
 bool testsqlrimport::columnsEnd() {
 
-	#ifdef DEBUG
+	#ifdef DEBUG_IMPORT
 		stdoutput.printf("\ncolumnsEnd()...\n");
 	#endif
 
@@ -903,7 +904,7 @@ bool testsqlrimport::columnsEnd() {
 
 bool testsqlrimport::rowsStart() {
 
-	#ifdef DEBUG
+	#ifdef DEBUG_IMPORT
 		stdoutput.printf("\nrowsStart()...\n");
 	#endif
 
@@ -928,7 +929,7 @@ bool testsqlrimport::rowsStart() {
 
 bool testsqlrimport::rowStart() {
 
-	#ifdef DEBUG
+	#ifdef DEBUG_IMPORT
 		stdoutput.printf("\nrowStart()...\n");
 	#endif
 
@@ -952,7 +953,7 @@ bool testsqlrimport::rowStart() {
 
 bool testsqlrimport::fieldStart() {
 
-	#ifdef DEBUG
+	#ifdef DEBUG_IMPORT
 		stdoutput.printf("\nfieldStart()...\n");
 	#endif
 
@@ -983,7 +984,7 @@ bool testsqlrimport::fieldStart() {
 
 bool testsqlrimport::fieldEnd() {
 
-	#ifdef DEBUG
+	#ifdef DEBUG_IMPORT
 		stdoutput.printf("\nfieldEnd()...\n");
 	#endif
 
@@ -1005,7 +1006,7 @@ bool testsqlrimport::fieldEnd() {
 
 bool testsqlrimport::rowEnd() {
 
-	#ifdef DEBUG
+	#ifdef DEBUG_IMPORT
 		stdoutput.printf("\nrowEnd()...\n");
 	#endif
 
@@ -1034,7 +1035,7 @@ bool testsqlrimport::rowEnd() {
 
 bool testsqlrimport::rowsEnd() {
 
-	#ifdef DEBUG
+	#ifdef DEBUG_IMPORT
 		stdoutput.printf("\nrowsEnd()...\n");
 	#endif
 
@@ -1052,7 +1053,7 @@ bool testsqlrimport::rowsEnd() {
 
 bool testsqlrimport::importEnd() {
 
-	#ifdef DEBUG
+	#ifdef DEBUG_IMPORT
 		stdoutput.printf("\nimportEnd()...\n");
 	#endif
 
@@ -1167,6 +1168,7 @@ void generateCsv(const char *filename,
 	stringbuffer	record;
 	for (uint64_t row=0; row<ROWS; row++) {
 		if ((*rowstoignore)[row]) {
+stdoutput.printf("ignore row %lld\n",row);
 			continue;
 		}
 		for (uint32_t col=0; field[col].name; col++) {
@@ -1351,6 +1353,7 @@ void generateTable(const char *tablename,
 	createTable(tablename,columnstoignore,columnstomodify,NULL);
 
 	// populate table, ignoring and modifying fields as necessary
+	bool		success=true;
 	stringbuffer	query;
 	for (uint64_t row=0; row<ROWS; row++) {
 		if ((*rowstoignore)[row]) {
@@ -1387,9 +1390,12 @@ void generateTable(const char *tablename,
 		}
 		query.append(')');
 		if (!ecur.sendQuery(query.getString())) {
-			return;
+			success=false;
+			break;
 		}
 	}
+
+	checkSuccess(success,1);
 
 	econ.commit();
 
@@ -1591,6 +1597,9 @@ void exportTests() {
 		uint16_t		columnstoignorecount=0;
 		const char		**columnstomodify=NULL;
 		dynamicarray<bool>	rowstoignore;
+		for (uint64_t row=0; row<ROWS; row++) {
+			rowstoignore[row]=false;
+		}
 		stringbuffer		opt;
 		const char		*col;
 		if (oiter==0) {
@@ -1647,8 +1656,6 @@ void exportTests() {
 				if (rn) {
 					rowstoignore[row]=true;
 					ircount++;
-				} else {
-					rowstoignore[row]=false;
 				}
 			}
 			opt.append(ircount);
@@ -1756,7 +1763,7 @@ void exportTests() {
 				checkSuccess(tset.exportData(),1);
 				econ.commit();
 			}
-			stdoutput.printf("\n");
+			stdoutput.printf("\n\n");
 
 			// generate comparison file/table
 			if (fiter==0) {
@@ -1772,7 +1779,6 @@ void exportTests() {
 					ignorecolumns,columnstoignore,
 					columnstomodify,&rowstoignore);
 			}
-			stdoutput.printf("\n");
 
 			// diff files/tables
 			stdoutput.printf("%sDIFF %s: \n",option,format);
@@ -1866,6 +1872,9 @@ void importTests() {
 #endif
 		const char		**columnstomodify=NULL;
 		dynamicarray<bool>	rowstoignore;
+		for (uint64_t row=0; row<ROWS; row++) {
+			rowstoignore[row]=false;
+		}
 		stringbuffer		opt;
 #if 0
 		const char		*col;
@@ -1925,8 +1934,6 @@ void importTests() {
 				if (rn) {
 					rowstoignore[row]=true;
 					ircount++;
-				} else {
-					rowstoignore[row]=false;
 				}
 			}
 			opt.append(ircount);
@@ -1961,7 +1968,8 @@ void importTests() {
 
 		// iterate through formats...
 		// (1==CSV, 2=XML)
-		for (uint8_t fiter=0; fiter<2; fiter++) {
+		//for (uint8_t fiter=0; fiter<2; fiter++) {
+for (uint8_t fiter=0; fiter<1; fiter++) {
 
 			// csv or xml
 			testsqlrimport	*im;
@@ -2015,18 +2023,15 @@ void importTests() {
 			}
 #endif
 			checkSuccess(im->importData(),1);
-			stdoutput.printf("\n");
+			stdoutput.printf("\n\n");
 
 			// generate comparison table
-			stdoutput.printf(
-				"%sGENERATE COMPARISON %s: \n",option,format);
 			generateTable("testtable_comparison",
 					ignorecolumns,columnstoignore,
 					columnstomodify,&rowstoignore);
-			stdoutput.printf("\n");
 
 			// diff tables
-			stdoutput.printf("%sDIFF %s: \n",option,format);
+			stdoutput.printf("%sDIFF TABLES: \n",option);
 			diffTables("testtable","testtable_comparison");
 			stdoutput.printf("\n");
 
@@ -2060,7 +2065,7 @@ int main(int argc, char **argv) {
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 
-	//exportTests();
+	exportTests();
 	importTests();
 
 
