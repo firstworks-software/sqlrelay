@@ -5,36 +5,33 @@
 		bool	tagStart(const char *ns, const char *name);
 		bool	attributeName(const char *name);
 		bool	attributeValue(const char *value);
+		bool	text(const char *string);
+		void	massageField(stringbuffer *strb, const char *field);
 		bool	tagEnd(const char *ns, const char *name);
 
 		bool	tableTagStart();
 		bool	sequenceTagStart();
 		bool	columnsTagStart();
 		bool	columnTagStart();
+		bool	columnTagEnd();
+		bool	columnsTagEnd();
 		bool	rowsTagStart();
 		bool	rowTagStart();
 		bool	fieldTagStart();
-
-		bool	tableTagEnd();
-		bool	sequenceTagEnd();
-		bool	columnsTagEnd();
-		bool	columnTagEnd();
-		bool	rowsTagEnd();
 		bool	rowTagEnd();
 		bool	fieldTagEnd();
-
-		bool	text(const char *string);
-
-		void	massageField(stringbuffer *strb, const char *field);
+		bool	rowsTagEnd();
+		bool	tableTagEnd();
+		bool	sequenceTagEnd();
 
 		unsigned short	currenttag;
 		char		*currentattribute;
 
-		char		*table;
-		char		*sequence;
+		char		*cname;
+		char		*fval;
 		char		*sequencevalue;
 		uint32_t	colcount;
-		stringbuffer	columns;
+		stringbuffer	columnsstr;
 		uint32_t	currentcol;
 		bool		infield;
 		bool		foundfieldtext;

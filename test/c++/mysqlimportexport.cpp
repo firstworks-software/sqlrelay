@@ -1903,7 +1903,7 @@ void importTests() {
 		// iterate through formats...
 		// (1==CSV, 2=XML)
 // FIXME: test xml
-#if 0
+#if 1
 		for (uint8_t fiter=0; fiter<2; fiter++) {
 #else
 		for (uint8_t fiter=0; fiter<1; fiter++) {
@@ -1973,7 +1973,7 @@ int main(int argc, char **argv) {
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 
-	exportTests();
+	//exportTests();
 	importTests();
 
 
