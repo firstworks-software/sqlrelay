@@ -25,7 +25,6 @@
 		bool		ignorecolumnswithemptynames;
 		bool		ignoreemptyrecords;
 
-		uint32_t	colcount;
 		uint32_t	currenttablecol;
 		bool		foundfieldtext;
 		uint32_t	fieldcount;

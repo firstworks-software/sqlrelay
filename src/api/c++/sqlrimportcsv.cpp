@@ -17,7 +17,6 @@ sqlrimportcsv::sqlrimportcsv() : sqlrimportfile(), csvsax() {
 	primarykeysequence=NULL;
 	ignorecolumnswithemptynames=false;
 	ignoreemptyrecords=false;
-	colcount=0;
 	currenttablecol=0;
 	foundfieldtext=false;
 	fieldcount=0;
@@ -80,8 +79,6 @@ bool sqlrimportcsv::importData() {
 
 	// reset flags and counters
 	clearFlagsAndCounts();
-
-	// FIXME: push this up...
 	columnswithemptynames.clear();
 
 	if (!getObjectName()) {
@@ -261,10 +258,11 @@ bool sqlrimportcsv::headerEnd() {
 
 	// we need to figure out which columns are numbers or dates...
 
-	// bail if there were no columns
-	// (eg. if the csv file was completely empty)
-	if (!columns.getCount()) {
-		return true;
+	// if we're not ignoring columns, but there weren't any (i.e. a totally
+	// empty csv), then don't get any info about columns from the database,
+	// just call the columns-end event and bail
+	if (!getIgnoreColumns() && !columns.getCount()) {
+		return columnsEnd();
 	}
 
 	// get info about these columns from the database
@@ -294,10 +292,8 @@ bool sqlrimportcsv::headerEnd() {
 		return false;
 	}
 
-	// get the column count
-	colcount=getSqlrCursor()->colCount();
-
 	// run through the columns, figuring out which are numbers and dates...
+	uint32_t	colcount=getSqlrCursor()->colCount();
 	for (uint32_t i=0; i<colcount; i++) {
 		setIsNumericColumn(i,
 			isNumberTypeChar(getSqlrCursor()->getColumnType(i)));

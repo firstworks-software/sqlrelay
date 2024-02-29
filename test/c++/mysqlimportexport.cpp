@@ -812,6 +812,10 @@ bool testsqlrimport::importStart() {
 	currentcolname=NULL;
 	currentrow=0;
 	currentfield=NULL;
+	for (uint64_t col=0; field[col].name; col++) {
+		isnumeric[col]=false;
+		isdatetime[col]=false;
+	}
 	importedrowcount=0;
 	inrows=false;
 
@@ -1149,7 +1153,7 @@ class testsqlrimportxml : virtual public testsqlrimportfile,
 
 // define a set of methods that generate something to compare our export to
 void generateCsv(const char *filename,
-			bool ignorecolumns,
+			bool excludecolumns,
 			const char * const *columnstoignore,
 			const char * const *columnstomodify,
 			dynamicarray<bool> *rowstoignore) {
@@ -1179,7 +1183,7 @@ void generateCsv(const char *filename,
 		}
 		header.append('"');
 	}
-	if (!ignorecolumns) {
+	if (!excludecolumns) {
 		header.append('\n');
 		checkSuccess(comparison.write(header.getString()),
 					header.getStringLength());
@@ -1236,7 +1240,7 @@ void generateCsv(const char *filename,
 }
 
 void generateXml(const char *filename,
-			uint32_t colcount, bool ignorecolumns,
+			uint32_t colcount, bool excludecolumns,
 			const char * const *columnstoignore,
 			const char * const *columnstomodify,
 			dynamicarray<bool> *rowstoignore) {
@@ -1253,7 +1257,7 @@ void generateXml(const char *filename,
 	// write header, ignoring and modifying columns as necessary
 	comparison.write("<?xml version=\"1.0\"?>\n");
 	comparison.write("<table>\n");
-	if (!ignorecolumns) {
+	if (!excludecolumns) {
 		stringbuffer	header;
 		header.printf("<columns count=\"%ld\">\n",colcount);
 		for (uint64_t col=0; field[col].name; col++) {
@@ -1357,7 +1361,6 @@ void createTable(const char *tablename,
 }
 
 void generateTable(const char *tablename,
-			bool ignorecolumns,
 			const char * const *columnstoignore,
 			const char * const *columnstomodify,
 			dynamicarray<bool> *rowstoignore) {
@@ -1796,7 +1799,7 @@ void exportTests() {
 					columnstomodify,&rowstoignore);
 			} else if (fiter==2) {
 				generateTable(comp,
-					ignorecolumns,columnstoignore,
+					columnstoignore,
 					columnstomodify,&rowstoignore);
 			}
 
@@ -1886,6 +1889,7 @@ void importTests() {
 		// set options for ignoring/modifying rows/columns/fields
 		const char		*option=NULL;
 		bool			ignorecolumns=false;
+		bool			excludecolumns=false;
 		const char		**columnstoignore=NULL;
 #if 0
 		uint16_t		columnstoignorecount=0;
@@ -1901,11 +1905,11 @@ void importTests() {
 #endif
 		if (oiter==0) {
 			option=charstring::duplicate("");
-#if 0
 		} else if (oiter==1) {
 			// for iteration 1, ignore columns
 			option=charstring::duplicate("IGNORE COLUMNS - ");
 			ignorecolumns=true;
+#if 0
 		} else if (oiter>=2 && oiter<=21) {
 			// for iterations 2-21, ignore individual columns
 			col=field[oiter-2].name;
@@ -2000,7 +2004,7 @@ for (uint8_t fiter=0; fiter<1; fiter++) {
 				format="CSV";
 				imp="testtable.csv";
 				generateCsv(imp,
-					ignorecolumns,columnstoignore,
+					excludecolumns,columnstoignore,
 					columnstomodify,&rowstoignore);
 				tsic.setFileName(imp);
 				tsic.setTestFileName(imp);
@@ -2009,7 +2013,7 @@ for (uint8_t fiter=0; fiter<1; fiter++) {
 				format="XML";
 				imp="testtable.xml";
 				generateXml(imp,colcount,
-					ignorecolumns,columnstoignore,
+					excludecolumns,columnstoignore,
 					columnstomodify,&rowstoignore);
 				tsix.setFileName(imp);
 				tsix.setTestFileName(imp);
@@ -2047,7 +2051,7 @@ for (uint8_t fiter=0; fiter<1; fiter++) {
 
 			// generate comparison table
 			generateTable("testtable_comparison",
-					ignorecolumns,columnstoignore,
+					columnstoignore,
 					columnstomodify,&rowstoignore);
 
 			// diff tables
@@ -2061,7 +2065,7 @@ for (uint8_t fiter=0; fiter<1; fiter++) {
 						"testuser",
 						"testpassword",0,1);
 			sqlrcursor	ccur(&ccon);
-			ccur.sendQuery("drop table testtable_comparison)");
+			ccur.sendQuery("drop table testtable_comparison");
 			file::remove(imp);
 
 			stdoutput.printf("\n");
@@ -2085,7 +2089,7 @@ int main(int argc, char **argv) {
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 
-	exportTests();
+	//exportTests();
 	importTests();
 
 
