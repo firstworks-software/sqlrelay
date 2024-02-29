@@ -168,10 +168,10 @@ class testsqlrexport : virtual public sqlrexport {
 		virtual bool	tests(const char *method);
 
 	private:
-		bool		ignorerow;
-		uint32_t	currentcol;
-		uint64_t	currentrow;
-		uint64_t	exportedrowcount;
+		bool		testignorerow;
+		uint32_t	testcurrentcol;
+		uint64_t	testcurrentrow;
+		uint64_t	testexportedrowcount;
 		bool		inrows;
 
 		stringbuffer			modifiedcolumnname;
@@ -182,10 +182,10 @@ class testsqlrexport : virtual public sqlrexport {
 };
 
 testsqlrexport::testsqlrexport() : sqlrexport() {
-	ignorerow=false;
-	currentcol=0;
-	currentrow=0;
-	exportedrowcount=0;
+	testignorerow=false;
+	testcurrentcol=0;
+	testcurrentrow=0;
+	testexportedrowcount=0;
 	inrows=false;
 	columnstomodify=NULL;
 	rowstoignore=NULL;
@@ -203,23 +203,23 @@ void testsqlrexport::setRowsToIgnore(dynamicarray<bool> *rowstoignore) {
 bool testsqlrexport::tests(const char *method) {
 
 	// test ignore row
-	if (getIgnoreRow()!=ignorerow) {
+	if (getIgnoreRow()!=testignorerow) {
 		stdoutput.printf("\n%s - getIgnoreRow(): %d!=%d\n",
-					method,getIgnoreRow(),ignorerow);
+					method,getIgnoreRow(),testignorerow);
 		return false;
 	}
 
 	// test current row
-	if (getCurrentRow()!=currentrow) {
+	if (getCurrentRow()!=testcurrentrow) {
 		stdoutput.printf("\n%s - getCurrentRow(): %lld!=%lld\n",
-					method,getCurrentRow(),currentrow);
+					method,getCurrentRow(),testcurrentrow);
 		return false;
 	}
 
-	// test current col
-	if (getCurrentColumn()!=currentcol) {
+	// test current column
+	if (getCurrentColumn()!=testcurrentcol) {
 		stdoutput.printf("\n%s - getCurrentColumn(): %ld!=%ld\n",
-					method,getCurrentColumn(),currentcol);
+				method,getCurrentColumn(),testcurrentcol);
 		return false;
 	}
 
@@ -246,7 +246,7 @@ bool testsqlrexport::tests(const char *method) {
 	if (inrows && field[getCurrentColumn()].name!=NULL) {
 
 		stringbuffer	f;
-		f.printf(field[getCurrentColumn()].pattern,currentrow);
+		f.printf(field[getCurrentColumn()].pattern,testcurrentrow);
 
 		if (!charstring::compare(method,"fieldEnd()") &&
 			modifyField(getCurrentColumnName(),
@@ -291,9 +291,9 @@ bool testsqlrexport::tests(const char *method) {
 	}
 
 	// test exported row count
-	if (getExportedRowCount()!=exportedrowcount) {
+	if (getExportedRowCount()!=testexportedrowcount) {
 		stdoutput.printf("\n%s - getExportedRowCount(): %lld!=%lld\n",
-				method,getExportedRowCount(),exportedrowcount);
+			method,getExportedRowCount(),testexportedrowcount);
 		return false;
 	}
 
@@ -307,10 +307,10 @@ bool testsqlrexport::exportStart() {
 	#endif
 
 	// reset flags and counts
-	ignorerow=false;
-	currentcol=0;
-	currentrow=0;
-	exportedrowcount=0;
+	testignorerow=false;
+	testcurrentcol=0;
+	testcurrentrow=0;
+	testexportedrowcount=0;
 	inrows=false;
 
 	// call parent method
@@ -386,7 +386,7 @@ bool testsqlrexport::columnEnd() {
 	}
 
 	// increment current column
-	currentcol++;
+	testcurrentcol++;
 
 	return true;
 }
@@ -416,10 +416,10 @@ bool testsqlrexport::rowsStart() {
 	#endif
 
 	// reset flags and counts
-	ignorerow=false;
-	currentcol=0;
-	currentrow=0;
-	exportedrowcount=0;
+	testignorerow=false;
+	testcurrentcol=0;
+	testcurrentrow=0;
+	testexportedrowcount=0;
 	inrows=true;
 
 	// call parent method
@@ -441,8 +441,8 @@ bool testsqlrexport::rowStart() {
 	#endif
 
 	// reset flags and counts
-	ignorerow=false;
-	currentcol=0;
+	testignorerow=false;
+	testcurrentcol=0;
 	modifiedfields.clear();
 
 	// call parent method
@@ -451,9 +451,9 @@ bool testsqlrexport::rowStart() {
 	}
 
 	// ignore row, if necessary
-	if (rowstoignore && (*rowstoignore)[currentrow]) {
+	if (rowstoignore && (*rowstoignore)[testcurrentrow]) {
 		setIgnoreRow(true);
-		ignorerow=true;
+		testignorerow=true;
 	}
 
 	// run tests
@@ -508,7 +508,7 @@ bool testsqlrexport::fieldEnd() {
 	}
 
 	// increment current column
-	currentcol++;
+	testcurrentcol++;
 
 	return true;
 }
@@ -530,10 +530,10 @@ bool testsqlrexport::rowEnd() {
 	}
 
 	// increment row counts
-	if (!ignorerow) {
-		exportedrowcount++;
+	if (!testignorerow) {
+		testexportedrowcount++;
 	}
-	currentrow++;
+	testcurrentrow++;
 
 	return true;
 }
@@ -690,35 +690,32 @@ class testsqlrimport : virtual public sqlrimport {
 		virtual bool	tests(const char *method);
 
 	private:
-		bool		ignorerow;
-		uint32_t	currentcol;
-		const char	*currentcolname;
-		uint64_t	currentrow;
-		const char	*currentfield;
-		stringbuffer	currentfieldstr;
-		dynamicarray<bool>	isnumeric;
-		dynamicarray<bool>	isdatetime;
-		uint64_t	importedrowcount;
-		bool		inrows;
-
-		stringbuffer	modifiedcolumnname;
+		bool		testignorerow;
+		uint32_t	testcurrentcol;
+		const char	*testcurrentcolname;
+		stringbuffer	testcurrentcolnamestr;
+		uint64_t	testcurrentrow;
+		const char	*testcurrentfield;
+		stringbuffer	testcurrentfieldstr;
+		dynamicarray<bool>	testisnumeric;
+		dynamicarray<bool>	testisdatetime;
+		uint64_t	testimportedrowcount;
 
 		const char * const	*columnstomodify;
 		dynamicarray<bool>	*rowstoignore;
 };
 
 testsqlrimport::testsqlrimport() : sqlrimport() {
-	ignorerow=false;
-	currentcol=0;
-	currentcolname=NULL;
-	currentrow=0;
-	currentfield=NULL;
+	testignorerow=false;
+	testcurrentcol=0;
+	testcurrentcolname=NULL;
+	testcurrentrow=0;
+	testcurrentfield=NULL;
 	for (uint64_t col=0; field[col].name; col++) {
-		isnumeric[col]=false;
-		isdatetime[col]=false;
+		testisnumeric[col]=false;
+		testisdatetime[col]=false;
 	}
-	importedrowcount=0;
-	inrows=false;
+	testimportedrowcount=0;
 	columnstomodify=NULL;
 	rowstoignore=NULL;
 }
@@ -734,66 +731,66 @@ void testsqlrimport::setRowsToIgnore(dynamicarray<bool> *rowstoignore) {
 bool testsqlrimport::tests(const char *method) {
 
 	// test ignore row
-	if (getIgnoreRow()!=ignorerow) {
+	if (getIgnoreRow()!=testignorerow) {
 		stdoutput.printf("\n%s - getIgnoreRow(): %d!=%d\n",
-					method,getIgnoreRow(),ignorerow);
+					method,getIgnoreRow(),testignorerow);
 		return false;
 	}
 
 	// test current row
-	if (getCurrentRow()!=currentrow) {
+	if (getCurrentRow()!=testcurrentrow) {
 		stdoutput.printf("\n%s - getCurrentRow(): %lld!=%lld\n",
-					method,getCurrentRow(),currentrow);
+					method,getCurrentRow(),testcurrentrow);
 		return false;
 	}
 
 	// test current column
-	if (getCurrentColumn()!=currentcol) {
+	if (getCurrentColumn()!=testcurrentcol) {
 		stdoutput.printf("\n%s - getCurrentColumn(): %ld!=%ld\n",
-					method,getCurrentColumn(),currentcol);
+				method,getCurrentColumn(),testcurrentcol);
 		return false;
 	}
 
 	// test current column name
-	if (charstring::compare(getCurrentColumnName(),currentcolname)) {
+	if (charstring::compare(getCurrentColumnName(),testcurrentcolname)) {
 		stdoutput.printf(
 			"\n%s - getCurrentColumnName(): %s!=%s\n",
-			method,getCurrentColumnName(),currentcolname);
+			method,getCurrentColumnName(),testcurrentcolname);
 		return false;
 	}
 
 	// test current field
-	if (charstring::compare(getCurrentField(),currentfield)) {
+	if (charstring::compare(getCurrentField(),testcurrentfield)) {
 		stdoutput.printf(
 			"\n%s - getCurrentField(): %s!=%s\n",
-			method,getCurrentField(),currentfield);
+			method,getCurrentField(),testcurrentfield);
 		return false;
 	}
 
 	// test numeric column
 	if (getIsNumericColumn(getCurrentColumn())!=
-					isnumeric[getCurrentColumn()]) {
+					testisnumeric[getCurrentColumn()]) {
 		stdoutput.printf("\n%s - getIsNumericColumn(%d): %d!=%d\n",
 			method,getCurrentColumn(),
 			getIsNumericColumn(getCurrentColumn()),
-			isnumeric[getCurrentColumn()]);
+			testisnumeric[getCurrentColumn()]);
 		return false;
 	}
 
 	// test datetime column
 	if (getIsDateTimeColumn(getCurrentColumn())!=
-					isdatetime[getCurrentColumn()]) {
+					testisdatetime[getCurrentColumn()]) {
 		stdoutput.printf("\n%s - getIsDateTimeColumn(%d): %d!=%d\n",
 			method,getCurrentColumn(),
 			getIsDateTimeColumn(getCurrentColumn()),
-			isdatetime[getCurrentColumn()]);
+			testisdatetime[getCurrentColumn()]);
 		return false;
 	}
 
 	// test imported row count
-	if (getImportedRowCount()!=importedrowcount) {
+	if (getImportedRowCount()!=testimportedrowcount) {
 		stdoutput.printf("\n%s - getImportedRowCount(): %lld!=%lld\n",
-				method,getImportedRowCount(),importedrowcount);
+			method,getImportedRowCount(),testimportedrowcount);
 		return false;
 	}
 
@@ -807,17 +804,16 @@ bool testsqlrimport::importStart() {
 	#endif
 
 	// reset flags and counts
-	ignorerow=false;
-	currentcol=0;
-	currentcolname=NULL;
-	currentrow=0;
-	currentfield=NULL;
+	testignorerow=false;
+	testcurrentcol=0;
+	testcurrentcolname=NULL;
+	testcurrentrow=0;
+	testcurrentfield=NULL;
 	for (uint64_t col=0; field[col].name; col++) {
-		isnumeric[col]=false;
-		isdatetime[col]=false;
+		testisnumeric[col]=false;
+		testisdatetime[col]=false;
 	}
-	importedrowcount=0;
-	inrows=false;
+	testimportedrowcount=0;
 
 	// call parent method
 	if (!sqlrimport::importStart()) {
@@ -856,14 +852,14 @@ bool testsqlrimport::columnStart() {
 	#endif
 
 	// set column name to test against (modifying it if necessary)
-	currentcolname=field[getCurrentColumn()].name;
-	if (charstring::isInSet(getCurrentColumnName(),columnstomodify)) {
-		modifiedcolumnname.clear();
-		modifiedcolumnname.append(getCurrentColumnName());
-		modifiedcolumnname.append("MODIFIED");
-		currentcolname=modifiedcolumnname.getString();
+	testcurrentcolname=field[getCurrentColumn()].name;
+	if (charstring::isInSet(testcurrentcolname,columnstomodify)) {
+		testcurrentcolnamestr.clear();
+		testcurrentcolnamestr.append(testcurrentcolname);
+		testcurrentcolnamestr.append("MODIFIED");
+		testcurrentcolname=testcurrentcolnamestr.getString();
 	}
-	currentfield=currentcolname;
+	testcurrentfield=testcurrentcolname;
 
 	// call parent method
 	if (!sqlrimport::columnStart()) {
@@ -894,7 +890,7 @@ bool testsqlrimport::columnEnd() {
 	}
 
 	// increment current column
-	currentcol++;
+	testcurrentcol++;
 
 	return true;
 }
@@ -906,13 +902,13 @@ bool testsqlrimport::columnsEnd() {
 	#endif
 
 	// reset flags and counts
-	currentcolname=NULL;
-	currentfield=NULL;
+	testcurrentcolname=NULL;
+	testcurrentfield=NULL;
 
 	// set isnumeric/isdatetime flags
 	for (uint64_t col=0; field[col].name; col++) {
-		isnumeric[col]=isNumberTypeChar(field[col].dbtype);
-		isdatetime[col]=isDateTimeTypeChar(field[col].dbtype);
+		testisnumeric[col]=isNumberTypeChar(field[col].dbtype);
+		testisdatetime[col]=isDateTimeTypeChar(field[col].dbtype);
 	}
 
 	// call parent method
@@ -934,11 +930,10 @@ bool testsqlrimport::rowsStart() {
 	#endif
 
 	// reset flags and counts
-	ignorerow=false;
-	currentcol=0;
-	currentrow=0;
-	importedrowcount=0;
-	inrows=true;
+	testignorerow=false;
+	testcurrentcol=0;
+	testcurrentrow=0;
+	testimportedrowcount=0;
 
 	// call parent method
 	if (!sqlrimport::rowsStart()) {
@@ -959,10 +954,10 @@ bool testsqlrimport::rowStart() {
 	#endif
 
 	// reset flags and counts
-	ignorerow=false;
-	currentcol=0;
-	currentcolname=NULL;
-	currentfield=NULL;
+	testignorerow=false;
+	testcurrentcol=0;
+	testcurrentcolname=NULL;
+	testcurrentfield=NULL;
 
 	// call parent method
 	if (!sqlrimport::rowStart()) {
@@ -983,17 +978,17 @@ bool testsqlrimport::fieldStart() {
 	#endif
 
 	// set column name to test against
-	currentcolname=field[getCurrentColumn()].name;
+	testcurrentcolname=field[getCurrentColumn()].name;
 
 	// set field to test against (modifying it if necessary)
-	currentfieldstr.clear();
-	currentfieldstr.printf(
+	testcurrentfieldstr.clear();
+	testcurrentfieldstr.printf(
 		field[getCurrentColumn()].pattern,getCurrentRow());
 	if (modifyField(getCurrentColumnName(),columnstomodify,
 				field[getCurrentColumn()].dbtype)) {
-		currentfieldstr.append("MODIFIED");
+		testcurrentfieldstr.append("MODIFIED");
 	}
-	currentfield=currentfieldstr.getString();
+	testcurrentfield=testcurrentfieldstr.getString();
 
 	// call parent method
 	if (!sqlrimport::fieldStart()) {
@@ -1024,7 +1019,7 @@ bool testsqlrimport::fieldEnd() {
 	}
 
 	// increment current column
-	currentcol++;
+	testcurrentcol++;
 
 	return true;
 }
@@ -1036,8 +1031,8 @@ bool testsqlrimport::rowEnd() {
 	#endif
 
 	// reset flags and counts
-	currentcolname=NULL;
-	currentfield=NULL;
+	testcurrentcolname=NULL;
+	testcurrentfield=NULL;
 
 	// call parent method
 	if (!sqlrimport::rowEnd()) {
@@ -1050,10 +1045,10 @@ bool testsqlrimport::rowEnd() {
 	}
 
 	// increment row counts
-	if (!ignorerow) {
-		importedrowcount++;
+	if (!testignorerow) {
+		testimportedrowcount++;
 	}
-	currentrow++;
+	testcurrentrow++;
 
 	return true;
 }
@@ -1896,6 +1891,7 @@ void importTests() {
 			// for iteration 1, ignore columns
 			option=charstring::duplicate("IGNORE COLUMNS - ");
 			ignorecolumns=true;
+// FIXME: test modifying columns and fields during import
 // FIXME: test insert primary key
 // FIXME: test insert static values
 // FIXME: test ignore columns with empty names
@@ -1977,7 +1973,7 @@ int main(int argc, char **argv) {
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 
-	//exportTests();
+	exportTests();
 	importTests();
 
 
