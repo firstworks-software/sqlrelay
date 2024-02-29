@@ -46,7 +46,7 @@ uint64_t sqlrexporttable::getCommitCount() {
 
 bool sqlrexporttable::exportData() {
 
-	clearOutput();
+	clearFlagsAndCounts();
 
 	// capture the con, cur, table and commit count
 	sqlrconnection	*exportcon=getExportSqlrConnection();
@@ -70,14 +70,9 @@ bool sqlrexporttable::exportData() {
 	sqlrcursor	*sqlrcur=getSqlrCursor();
 	uint32_t	cols=sqlrcur->colCount();
 
-	// reset flags and counts
-	setIgnoreRow(false);
-	setExportedRowCount(0);
-	setCurrentRow(0);
-	setCurrentColumn(0);
+	// set initial column/field
 	setCurrentColumnName(sqlrcur->getColumnName(0));
 	setCurrentField(getCurrentColumnName());
-	clearAreNumericColumns();
 
 	// determine numeric columns
 	for (uint32_t i=0; i<cols; i++) {
@@ -361,7 +356,7 @@ bool sqlrexporttable::exportData() {
 	return success;
 }
 
-void sqlrexporttable::clearOutput() {
-	sqlrexport::clearOutput();
+void sqlrexporttable::clearFlagsAndCounts() {
+	sqlrexport::clearFlagsAndCounts();
 	insertquery.clear();
 }

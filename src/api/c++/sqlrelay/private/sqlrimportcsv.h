@@ -11,10 +11,10 @@
 		bool	recordEnd();
 		bool	bodyEnd();
 
-		void	appendField(stringbuffer *query,
+		void	appendField(stringbuffer *strb,
 					const char *value,
-					uint32_t currenttablecol,
-					bool overrideisstring);
+					bool isnumeric,
+					bool isdatetime);
 		void	escapeField(stringbuffer *strb, const char *field);
 
 		bool		insertprimarykey;
@@ -27,8 +27,6 @@
 
 		uint32_t	colcount;
 		uint32_t	currenttablecol;
-		bool		*numbercolumn;
-		bool		*datecolumn;
 		bool		foundfieldtext;
 		uint32_t	fieldcount;
 		bool		emptyrecord;
@@ -40,3 +38,5 @@
 
 		dictionary<uint32_t, char *>	staticvaluecolumnnames;
 		dictionary<uint32_t, char *>	staticvaluecolumnvalues;
+
+		dynamicarray<bool>		quotefield;

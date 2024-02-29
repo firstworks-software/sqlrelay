@@ -64,12 +64,12 @@ domnode	*sqlrexportdomnode::getCurrentFieldDomNode() {
 }
 
 bool sqlrexportdomnode::exportData() {
-	clearOutput();
+	clearFlagsAndCounts();
 	return true;
 }
 
-void sqlrexportdomnode::clearOutput() {
-	sqlrexport::clearOutput();
+void sqlrexportdomnode::clearFlagsAndCounts() {
+	sqlrexport::clearFlagsAndCounts();
 	columnsdomnode=NULL;
 	currentcolumndomnode=NULL;
 	rowsdomnode=NULL;

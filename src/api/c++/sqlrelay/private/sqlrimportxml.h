@@ -35,7 +35,6 @@
 		char		*sequencevalue;
 		uint32_t	colcount;
 		stringbuffer	columns;
-		bool		*numbercolumn;
 		uint32_t	currentcol;
 		bool		infield;
 		bool		foundfieldtext;

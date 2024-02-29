@@ -26,7 +26,7 @@
 //#define ROWS 2
 //#define ROWS 1
 
-//#define DEBUG 1
+#define DEBUG 1
 
 stringbuffer	createquery;
 sqlrconnection	*con;
@@ -222,24 +222,28 @@ bool testsqlrexport::tests(const char *method) {
 		return false;
 	}
 
-	// test current column name
+	// test current column name (modifying it if necessary)
 	const char	*colname=getSqlrCursor()->getColumnName(currentcol);
+
 	stringbuffer	colnamestr;
 	if (!charstring::compare(method,"columnEnd()") &&
 			charstring::isInSet(colname,columnstomodify)) {
 		colnamestr.append(colname)->append("MODIFIED");
 		colname=colnamestr.getString();
 	}
+
 	if (charstring::compare(getCurrentColumnName(),colname)) {
 		stdoutput.printf("\n%s - getCurrentColumnName(): %s!=%s\n",
 					method,getCurrentColumnName(),colname);
 		return false;
 	}
 
-	// test current field
+	// test current field (modifying it if necessary)
 	if (inrows && field[currentcol].name!=NULL) {
+
 		stringbuffer	f;
 		f.printf(field[currentcol].pattern,currentrow);
+
 		if (!charstring::compare(method,"fieldEnd()") &&
 			modifyField(getCurrentColumnName(),
 					columnstomodify,
@@ -248,13 +252,16 @@ bool testsqlrexport::tests(const char *method) {
 							getCurrentColumn()))) {
 			f.append("MODIFIED");
 		}
+
 		if (charstring::compare(getCurrentField(),f.getString())) {
 			stdoutput.printf("\n%s - getCurrentField(): %s!=%s\n",
 					method,getCurrentField(),
 					f.getString());
 			return false;
 		}
+
 	} else {
+
 		if (charstring::compare(getCurrentField(),
 					getCurrentColumnName())) {
 			stdoutput.printf("\n%s - getCurrentField(): %s!=%s\n",
@@ -348,7 +355,7 @@ bool testsqlrexport::columnStart() {
 		return false;
 	}
 
-	// modify column, if necessary
+	// modify column name, if necessary
 	if (charstring::isInSet(getCurrentColumnName(),columnstomodify)) {
 		modifiedcolumnname.clear();
 		modifiedcolumnname.append(getCurrentColumnName());
@@ -681,18 +688,29 @@ class testsqlrimport : virtual public sqlrimport {
 	private:
 		bool		ignorerow;
 		uint32_t	currentcol;
+		const char	*currentcolname;
 		uint64_t	currentrow;
+		const char	*currentfield;
+		stringbuffer	currentfieldstr;
 		uint64_t	importedrowcount;
 		bool		inrows;
 
-		stringbuffer			modifiedcolumnname;
-		linkedlist<stringbuffer *>	modifiedfields;
+		stringbuffer	modifiedcolumnname;
 
 		const char * const	*columnstomodify;
 		dynamicarray<bool>	*rowstoignore;
 };
 
 testsqlrimport::testsqlrimport() : sqlrimport() {
+	ignorerow=false;
+	currentcol=0;
+	currentcolname=NULL;
+	currentrow=0;
+	currentfield=NULL;
+	importedrowcount=0;
+	inrows=false;
+	columnstomodify=NULL;
+	rowstoignore=NULL;
 }
 
 void testsqlrimport::setColumnsToModify(const char * const *columnstomodify) {
@@ -704,7 +722,65 @@ void testsqlrimport::setRowsToIgnore(dynamicarray<bool> *rowstoignore) {
 }
 
 bool testsqlrimport::tests(const char *method) {
-	// FIXME: do stuff...
+
+	// test ignore row
+	if (getIgnoreRow()!=ignorerow) {
+		stdoutput.printf("\n%s - getIgnoreRow(): %d!=%d\n",
+					method,getIgnoreRow(),ignorerow);
+		return false;
+	}
+
+	// test current row
+	if (getCurrentRow()!=currentrow) {
+		stdoutput.printf("\n%s - getCurrentRow(): %lld!=%lld\n",
+					method,getCurrentRow(),currentrow);
+		return false;
+	}
+
+	// test current column
+	if (getCurrentColumn()!=currentcol) {
+		stdoutput.printf("\n%s - getCurrentColumn(): %ld!=%ld\n",
+					method,getCurrentColumn(),currentcol);
+		return false;
+	}
+
+	// test current column name
+	if (charstring::compare(getCurrentColumnName(),currentcolname)) {
+		stdoutput.printf(
+			"\n%s - getCurrentColumnName(): %s!=%s\n",
+			method,getCurrentColumnName(),currentcolname);
+		return false;
+	}
+
+	// test current field
+	if (charstring::compare(getCurrentField(),currentfield)) {
+		stdoutput.printf(
+			"\n%s - getCurrentField(): %s!=%s\n",
+			method,getCurrentField(),currentfield);
+		return false;
+	}
+
+#if 0
+	// test numeric column
+	if (getIsNumericColumn(currentcol)!=
+			isNumberTypeChar(
+				datatypes->getValue(getCurrentColumn()))) {
+		stdoutput.printf("\n%s - getIsNumericColumn(%d): %d!=%d\n",
+				method,currentcol,
+				getIsNumericColumn(currentcol),
+				isNumberTypeChar(datatypes->getValue(
+							getCurrentColumn())));
+		return false;
+	}
+#endif
+
+	// test imported row count
+	if (getImportedRowCount()!=importedrowcount) {
+		stdoutput.printf("\n%s - getImportedRowCount(): %lld!=%lld\n",
+				method,getImportedRowCount(),importedrowcount);
+		return false;
+	}
+
 	return true;
 }
 
@@ -714,7 +790,14 @@ bool testsqlrimport::importStart() {
 		stdoutput.printf("\nimportStart()...\n");
 	#endif
 
-	// FIXME: do stuff...
+	// reset flags and counts
+	ignorerow=false;
+	currentcol=0;
+	currentcolname=NULL;
+	currentrow=0;
+	currentfield=NULL;
+	importedrowcount=0;
+	inrows=false;
 
 	// call parent method
 	if (!sqlrimport::importStart()) {
@@ -734,8 +817,6 @@ bool testsqlrimport::columnsStart() {
 		stdoutput.printf("\ncolumnsStart()...\n");
 	#endif
 
-	// FIXME: do stuff...
-
 	// call parent method
 	if (!sqlrimport::columnsStart()) {
 		return false;
@@ -754,7 +835,15 @@ bool testsqlrimport::columnStart() {
 		stdoutput.printf("\ncolumnStart()...\n");
 	#endif
 
-	// FIXME: do stuff...
+	// set column name to test against (modifying it if necessary)
+	currentcolname=field[getCurrentColumn()].name;
+	if (charstring::isInSet(getCurrentColumnName(),columnstomodify)) {
+		modifiedcolumnname.clear();
+		modifiedcolumnname.append(getCurrentColumnName());
+		modifiedcolumnname.append("MODIFIED");
+		currentcolname=modifiedcolumnname.getString();
+	}
+	currentfield=currentcolname;
 
 	// call parent method
 	if (!sqlrimport::columnStart()) {
@@ -774,8 +863,6 @@ bool testsqlrimport::columnEnd() {
 		stdoutput.printf("\ncolumnEnd()...\n");
 	#endif
 
-	// FIXME: do stuff...
-
 	// call parent method
 	if (!sqlrimport::columnEnd()) {
 		return false;
@@ -785,6 +872,10 @@ bool testsqlrimport::columnEnd() {
 	if (!tests("columnEnd()")) {
 		return false;
 	}
+
+	// increment current column
+	currentcol++;
+
 	return true;
 }
 
@@ -794,7 +885,9 @@ bool testsqlrimport::columnsEnd() {
 		stdoutput.printf("\ncolumnsEnd()...\n");
 	#endif
 
-	// FIXME: do stuff...
+	// reset flags and counts
+	currentcolname=NULL;
+	currentfield=NULL;
 
 	// call parent method
 	if (!sqlrimport::columnsEnd()) {
@@ -814,7 +907,12 @@ bool testsqlrimport::rowsStart() {
 		stdoutput.printf("\nrowsStart()...\n");
 	#endif
 
-	// FIXME: do stuff...
+	// reset flags and counts
+	ignorerow=false;
+	currentcol=0;
+	currentrow=0;
+	importedrowcount=0;
+	inrows=true;
 
 	// call parent method
 	if (!sqlrimport::rowsStart()) {
@@ -834,7 +932,11 @@ bool testsqlrimport::rowStart() {
 		stdoutput.printf("\nrowStart()...\n");
 	#endif
 
-	// FIXME: do stuff...
+	// reset flags and counts
+	ignorerow=false;
+	currentcol=0;
+	currentcolname=NULL;
+	currentfield=NULL;
 
 	// call parent method
 	if (!sqlrimport::rowStart()) {
@@ -854,7 +956,18 @@ bool testsqlrimport::fieldStart() {
 		stdoutput.printf("\nfieldStart()...\n");
 	#endif
 
-	// FIXME: do stuff...
+	// set column name to test against
+	currentcolname=field[getCurrentColumn()].name;
+
+	// set field to test against (modifying it if necessary)
+	currentfieldstr.clear();
+	currentfieldstr.printf(
+		field[getCurrentColumn()].pattern,getCurrentRow());
+	if (modifyField(getCurrentColumnName(),columnstomodify,
+				field[getCurrentColumn()].dbtype)) {
+		currentfieldstr.append("MODIFIED");
+	}
+	currentfield=currentfieldstr.getString();
 
 	// call parent method
 	if (!sqlrimport::fieldStart()) {
@@ -874,8 +987,6 @@ bool testsqlrimport::fieldEnd() {
 		stdoutput.printf("\nfieldEnd()...\n");
 	#endif
 
-	// FIXME: do stuff...
-
 	// call parent method
 	if (!sqlrimport::fieldEnd()) {
 		return false;
@@ -885,6 +996,10 @@ bool testsqlrimport::fieldEnd() {
 	if (!tests("fieldEnd()")) {
 		return false;
 	}
+
+	// increment current column
+	currentcol++;
+
 	return true;
 }
 
@@ -894,7 +1009,9 @@ bool testsqlrimport::rowEnd() {
 		stdoutput.printf("\nrowEnd()...\n");
 	#endif
 
-	// FIXME: do stuff...
+	// reset flags and counts
+	currentcolname=NULL;
+	currentfield=NULL;
 
 	// call parent method
 	if (!sqlrimport::rowEnd()) {
@@ -905,6 +1022,13 @@ bool testsqlrimport::rowEnd() {
 	if (!tests("rowEnd()")) {
 		return false;
 	}
+
+	// increment row counts
+	if (!ignorerow) {
+		importedrowcount++;
+	}
+	currentrow++;
+
 	return true;
 }
 
@@ -913,8 +1037,6 @@ bool testsqlrimport::rowsEnd() {
 	#ifdef DEBUG
 		stdoutput.printf("\nrowsEnd()...\n");
 	#endif
-
-	// FIXME: do stuff...
 
 	// call parent method
 	if (!sqlrimport::rowsEnd()) {
@@ -933,8 +1055,6 @@ bool testsqlrimport::importEnd() {
 	#ifdef DEBUG
 		stdoutput.printf("\nimportEnd()...\n");
 	#endif
-
-	// FIXME: do stuff...
 
 	// call parent method
 	if (!sqlrimport::importEnd()) {
@@ -1012,6 +1132,8 @@ void generateCsv(const char *filename,
 			const char * const *columnstomodify,
 			dynamicarray<bool> *rowstoignore) {
 
+	stdoutput.printf("GENERATE CSV:\n");
+
 	// create file
 	file	comparison;
 	checkSuccess(comparison.create(filename,
@@ -1087,6 +1209,8 @@ void generateCsv(const char *filename,
 	checkSuccess(1,1);
 
 	comparison.flushWriteBuffer(-1,-1);
+
+	stdoutput.printf("\n\n");
 }
 
 void generateXml(const char *filename,
@@ -1094,6 +1218,8 @@ void generateXml(const char *filename,
 			const char * const *columnstoignore,
 			const char * const *columnstomodify,
 			dynamicarray<bool> *rowstoignore) {
+
+	stdoutput.printf("GENERATE XML:\n");
 
 	// create file
 	file	comparison;
@@ -1173,6 +1299,8 @@ void generateXml(const char *filename,
 	checkSuccess(1,1);
 
 	comparison.flushWriteBuffer(-1,-1);
+
+	stdoutput.printf("\n\n");
 }
 
 void createTable(const char *tablename,
@@ -1180,7 +1308,7 @@ void createTable(const char *tablename,
 			const char * const *columnstomodify,
 			uint32_t *colcount) {
 
-	// create a table as defined by fields[], ignoring columns as necessary
+	// create a table as defined by field[], ignoring columns as necessary
 	stringbuffer	query;
 	query.append("create table ")->append(tablename)->append(" (");
 	uint32_t	ccount=0;
@@ -1211,6 +1339,8 @@ void generateTable(const char *tablename,
 			const char * const *columnstoignore,
 			const char * const *columnstomodify,
 			dynamicarray<bool> *rowstoignore) {
+
+	stdoutput.printf("GENERATE TABLE:\n");
 
 	// connect to db
 	sqlrconnection	econ("sqlrelay",9000,"/tmp/test.socket",
@@ -1262,6 +1392,8 @@ void generateTable(const char *tablename,
 	}
 
 	econ.commit();
+
+	stdoutput.printf("\n\n");
 }
 
 
@@ -1549,6 +1681,7 @@ void exportTests() {
 		}
 
 		// iterate through formats...
+		// (1==CSV, 2=XML, 3==TABLE)
 		for (uint8_t fiter=0; fiter<3; fiter++) {
 
 			// csv, xml, or table
@@ -1626,8 +1759,6 @@ void exportTests() {
 			stdoutput.printf("\n");
 
 			// generate comparison file/table
-			stdoutput.printf(
-				"%sGENERATE COMPARISON %s: \n",option,format);
 			if (fiter==0) {
 				generateCsv(comp,
 					ignorecolumns,columnstoignore,
@@ -1654,19 +1785,19 @@ void exportTests() {
 
 			// clean up
 			if (fiter==2) {
-				sqlrconnection	econ("sqlrelay",9000,
+				sqlrconnection	ccon("sqlrelay",9000,
 							"/tmp/test.socket",
 							"testuser",
 							"testpassword",0,1);
-				sqlrcursor	ecur(&econ);
+				sqlrcursor	ccur(&ccon);
 
-				ecur.prepareQuery("drop table $(EXP)");
-				ecur.substitution("EXP",exp);
-				ecur.executeQuery();
+				ccur.prepareQuery("drop table $(EXP)");
+				ccur.substitution("EXP",exp);
+				ccur.executeQuery();
 				
-				ecur.prepareQuery("drop table $(COMP)");
-				ecur.substitution("COMP",comp);
-				ecur.executeQuery();
+				ccur.prepareQuery("drop table $(COMP)");
+				ccur.substitution("COMP",comp);
+				ccur.executeQuery();
 			}
 			file::remove(exp);
 			file::remove(comp);
@@ -1694,12 +1825,9 @@ void importTests() {
 
 	// clean up
 	cur->sendQuery("drop table testtable");
-	cur->sendQuery("drop table testtable_export");
 	cur->sendQuery("drop table testtable_comparison");
 	file::remove("testtable.csv");
-	file::remove("testtable-comparison.csv");
 	file::remove("testtable.xml");
-	file::remove("testtable-comparison.xml");
 
 	// create a new table
 	stdoutput.printf("CREATE TESTTABLE: \n");
@@ -1729,13 +1857,194 @@ void importTests() {
 	uint8_t oiter=0;
 	for (;;) {
 
-		if (oiter==1) {
+		// set options for ignoring/modifying rows/columns/fields
+		const char		*option=NULL;
+		bool			ignorecolumns=false;
+		const char		**columnstoignore=NULL;
+#if 0
+		uint16_t		columnstoignorecount=0;
+#endif
+		const char		**columnstomodify=NULL;
+		dynamicarray<bool>	rowstoignore;
+		stringbuffer		opt;
+#if 0
+		const char		*col;
+#endif
+		if (oiter==0) {
+			option=charstring::duplicate("");
+#if 0
+		} else if (oiter==1) {
+			// for iteration 1, ignore columsn
+			option=charstring::duplicate("IGNORE COLUMNS - ");
+			ignorecolumns=true;
+		} else if (oiter>=2 && oiter<=21) {
+			// for iterations 2-21, ignore individual columns
+			col=field[oiter-2].name;
+			columnstoignore=new const char *[2];
+			columnstoignore[0]=col;
+			columnstoignore[1]=NULL;
+			columnstoignorecount=1;
+			opt.append("IGNORE ");
+			opt.append(col);
+			opt.append(" column - ");
+			option=opt.detachString();
+		} else if (oiter>=22 && oiter<=32) {
+			// for iterations 22-32, ignore random sets of
+			// columns, possibly with repetitions
+			randomnumber	r;
+			r.setSeed(randomnumber::getSeed());
+			opt.append("IGNORE ");
+			columnstoignore=new const char *[11];
+			uint32_t	rn;
+			for (uint8_t i=0; i<10; i++) {
+				r.generate(&rn);
+				r.setSeed(rn);
+				rn=r.scale(rn,0,19);
+				col=field[rn].name;
+				columnstoignore[i]=col;
+				if (i) {
+					opt.append(',');
+				}
+				opt.append(col);
+			}
+			columnstoignore[10]=NULL;
+			columnstoignorecount=10;
+			opt.append(" column - ");
+			option=opt.detachString();
+		} else if (oiter==33) {
+			// for iteration 33, don't import various rows
+			opt.append("IGNORE ");
+			randomnumber	r;
+			r.setSeed(randomnumber::getSeed());
+			uint32_t	rn;
+			uint64_t	ircount=0;
+			for (uint64_t row=0; row<ROWS; row++) {
+				r.generate(&rn);
+				r.setSeed(rn);
+				rn=r.scale(rn,0,1);
+				if (rn) {
+					rowstoignore[row]=true;
+					ircount++;
+				} else {
+					rowstoignore[row]=false;
+				}
+			}
+			opt.append(ircount);
+			opt.append(" ROWS - ");
+			option=opt.detachString();
+		} else if (oiter>=34 && oiter<=44) {
+			// for iterations 34-44, modify random sets of
+			// columns and fields, possibly with repetitions
+			randomnumber	r;
+			r.setSeed(randomnumber::getSeed());
+			opt.append("MODIFY ");
+			columnstomodify=new const char *[11];
+			uint32_t	rn;
+			for (uint8_t i=0; i<10; i++) {
+				r.generate(&rn);
+				r.setSeed(rn);
+				rn=r.scale(rn,0,19);
+				col=field[rn].name;
+				columnstomodify[i]=col;
+				if (i) {
+					opt.append(',');
+				}
+				opt.append(col);
+			}
+			columnstomodify[10]=NULL;
+			opt.append(" column - ");
+			option=opt.detachString();
+#endif
+		} else {
 			break;
 		}
 
 		// iterate through formats...
-		for (uint8_t fiter=0; fiter<3; fiter++) {
+		// (1==CSV, 2=XML)
+		for (uint8_t fiter=0; fiter<2; fiter++) {
+
+			// csv or xml
+			testsqlrimport	*im;
+			const char	*format;
+			const char	*imp;
+			if (fiter==0) {
+				im=&tsic;
+				format="CSV";
+				imp="testtable.csv";
+				generateCsv(imp,
+					ignorecolumns,columnstoignore,
+					columnstomodify,&rowstoignore);
+				tsic.setFileName(imp);
+				tsic.setTestFileName(imp);
+			} else if (fiter==1) {
+				im=&tsix;
+				format="XML";
+				imp="testtable.xml";
+				generateXml(imp,colcount,
+					ignorecolumns,columnstoignore,
+					columnstomodify,&rowstoignore);
+				tsix.setFileName(imp);
+				tsix.setTestFileName(imp);
+			}
+
+			// import file/table
+			stdoutput.printf("%sIMPORT %s: \n",option,format);
+			im->setIgnoreColumns(ignorecolumns);
+#if 0
+			im->setColumnsToIgnore(columnstoignore);
+#endif
+			im->setColumnsToModify(columnstomodify);
+			im->setRowsToIgnore(&rowstoignore);
+			checkSuccess(im->getIgnoreColumns(),ignorecolumns);
+#if 0
+			if (columnstoignore) {
+				for (uint16_t i=0;
+					i<columnstoignorecount; i++) {
+					checkSuccess(
+						im->getColumnsToIgnore()[i],
+						columnstoignore[i]);
+				}
+				checkSuccess(
+					im->getColumnsToIgnore()[
+						columnstoignorecount],
+					NULL);
+			} else {
+				checkSuccess(
+					(uint64_t)im->getColumnsToIgnore(),
+					(uint64_t)0);
+			}
+#endif
+			checkSuccess(im->importData(),1);
+			stdoutput.printf("\n");
+
+			// generate comparison table
+			stdoutput.printf(
+				"%sGENERATE COMPARISON %s: \n",option,format);
+			generateTable("testtable_comparison",
+					ignorecolumns,columnstoignore,
+					columnstomodify,&rowstoignore);
+			stdoutput.printf("\n");
+
+			// diff tables
+			stdoutput.printf("%sDIFF %s: \n",option,format);
+			diffTables("testtable","testtable_comparison");
+			stdoutput.printf("\n");
+
+			// clean up
+			sqlrconnection	ccon("sqlrelay",9000,
+						"/tmp/test.socket",
+						"testuser",
+						"testpassword",0,1);
+			sqlrcursor	ccur(&ccon);
+			ccur.sendQuery("drop table testtable_comparison)");
+			file::remove(imp);
+
+			stdoutput.printf("\n");
 		}
+
+		// clean up
+		delete[] option;
+		delete[] columnstoignore;
 
 		oiter++;
 	}
@@ -1751,7 +2060,7 @@ int main(int argc, char **argv) {
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 
-	exportTests();
+	//exportTests();
 	importTests();
 
 

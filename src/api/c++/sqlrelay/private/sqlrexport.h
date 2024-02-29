@@ -1,7 +1,7 @@
 // Copyright (c) 1999-2018 David Muse
 // See the file COPYING for more information
 
-		virtual void	clearOutput();
+		virtual void	clearFlagsAndCounts();
 		virtual bool	systemError();
 
 	private:
@@ -18,6 +18,7 @@
 		uint8_t			coarseloglevel;
 		uint8_t			fineloglevel;
 		uint32_t		logindent;
+		bool			logerrors;
 
 		bool			ignorerow;
 		uint64_t		currentrow;

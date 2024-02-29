@@ -17,7 +17,7 @@ sqlrexportxml::~sqlrexportxml() {
 
 bool sqlrexportxml::exportData() {
 
-	clearOutput();
+	clearFlagsAndCounts();
 
 	// output to stdoutput or create/open file
 	setFileDescriptor(&stdoutput);
@@ -37,14 +37,9 @@ bool sqlrexportxml::exportData() {
 	sqlrcursor	*sqlrcur=getSqlrCursor();
 	uint32_t	cols=sqlrcur->colCount();
 
-	// reset flags and counts
-	setIgnoreRow(false);
-	setExportedRowCount(0);
-	setCurrentRow(0);
-	setCurrentColumn(0);
+	// set initial column/field
 	setCurrentColumnName(sqlrcur->getColumnName(0));
 	setCurrentField(getCurrentColumnName());
-	clearAreNumericColumns();
 
 	// determine numeric columns
 	for (uint32_t i=0; i<cols; i++) {

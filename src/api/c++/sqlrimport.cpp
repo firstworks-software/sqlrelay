@@ -4,25 +4,39 @@
 #include <sqlrelay/sqlrimport.h>
 
 #include <rudiments/file.h>
+#include <rudiments/error.h>
 
 sqlrimport::sqlrimport() {
 	sqlrcon=NULL;
 	sqlrcur=NULL;
+
 	dbtype=NULL;
 	objectname=NULL;
+
 	ignorecolumns=false;
+	lowercasecolumnnames=false;
+	uppercasecolumnnames=false;
+
+	reformatdatetime=false;
+	ddmm=false;
+	yyyyddmm=false;
+	datedelimiters=NULL;
+	nocenturythreshold=100;
+	lastcenturythreshold=10;
+	datetimeformat="YYYY-MM-DD HH24:MI:SS";
+
 	commitcount=0;
-	currentrow=0;
-	currentcol=0;
-	currentfield=NULL;
+
 	lg=NULL;
 	coarseloglevel=0;
 	fineloglevel=9;
 	logindent=0;
 	logerrors=true;
-	lowercasecolumnnames=false;
-	uppercasecolumnnames=false;
-	importedrowcount=0;
+
+	clearFlagsAndCounts();
+
+	columns.setManageArrayValues(true);
+	fields.setManageArrayValues(true);
 }
 
 sqlrimport::~sqlrimport() {
@@ -123,6 +137,62 @@ const char *sqlrimport::getMappedFieldValue(const char *from) {
 	return fieldmap.getValue(from);
 }
 
+void sqlrimport::setReformatDateTime(bool reformatdatetime) {
+	this->reformatdatetime=reformatdatetime;
+}
+
+bool sqlrimport::getReformatDateTime() {
+	return reformatdatetime;
+}
+
+void sqlrimport::setDdMm(bool ddmm) {
+	this->ddmm=ddmm;
+}
+
+bool sqlrimport::getDdMm() {
+	return ddmm;
+}
+
+void sqlrimport::setYyyyDdMm(bool yyyyddmm) {
+	this->yyyyddmm=yyyyddmm;
+}
+
+bool sqlrimport::getYyyyDdMm() {
+	return yyyyddmm;
+}
+
+void sqlrimport::setDateDelimiters(const char *datedelimiters) {
+	this->datedelimiters=datedelimiters;
+}
+
+const char *sqlrimport::getDateDelimiters() {
+	return datedelimiters;
+}
+
+void sqlrimport::setNoCenturyThreshold(uint16_t nocenturythreshold) {
+	this->nocenturythreshold=nocenturythreshold;
+}
+
+uint16_t sqlrimport::getNoCenturyThreshold() {
+	return nocenturythreshold;
+}
+
+void sqlrimport::setLastCenturyThreshold(uint16_t lastcenturythreshold) {
+	this->lastcenturythreshold=lastcenturythreshold;
+}
+
+uint16_t sqlrimport::getLastCenturyThreshold() {
+	return lastcenturythreshold;
+}
+
+void sqlrimport::setDateTimeFormat(const char *datetimeformat) {
+	this->datetimeformat=datetimeformat;
+}
+
+const char *sqlrimport::getDateTimeFormat() {
+	return datetimeformat;
+}
+
 void sqlrimport::setCommitCount(uint64_t commitcount) {
 	this->commitcount=commitcount;
 }
@@ -169,10 +239,6 @@ void sqlrimport::setLogErrors(bool logerrors) {
 
 bool sqlrimport::getLogErrors() {
 	return logerrors;
-}
-
-bool sqlrimport::importData() {
-	return true;
 }
 
 bool sqlrimport::importStart() {
@@ -246,6 +312,14 @@ uint64_t sqlrimport::getImportedRowCount() {
 	return importedrowcount;
 }
 
+void sqlrimport::setIgnoreRow(bool ignorerow) {
+	this->ignorerow=ignorerow;
+}
+
+bool sqlrimport::getIgnoreRow() {
+	return ignorerow;
+}
+
 void sqlrimport::setCurrentRow(uint64_t currentrow) {
 	this->currentrow=currentrow;
 }
@@ -262,10 +336,64 @@ uint32_t sqlrimport::getCurrentColumn() {
 	return currentcol;
 }
 
-void sqlrimport::setCurrentField(const char *currentfield) {
+void sqlrimport::setCurrentColumnName(char *currentcolname) {
+	this->currentcolname=currentcolname;
+}
+
+char *sqlrimport::getCurrentColumnName() {
+	return currentcolname;
+}
+
+void sqlrimport::setCurrentField(char *currentfield) {
 	this->currentfield=currentfield;
 }
 
-const char *sqlrimport::getCurrentField() {
+char *sqlrimport::getCurrentField() {
 	return currentfield;
+}
+
+void sqlrimport::setIsNumericColumn(uint64_t index, bool value) {
+	numericcolumn[index]=value;
+}
+
+bool sqlrimport::getIsNumericColumn(uint64_t index) {
+	return numericcolumn[index];
+}
+
+void sqlrimport::clearAreNumericColumns() {
+	numericcolumn.clear();
+}
+
+void sqlrimport::setIsDateTimeColumn(uint64_t index, bool value) {
+	datetimecolumn[index]=value;
+}
+
+bool sqlrimport::getIsDateTimeColumn(uint64_t index) {
+	return datetimecolumn[index];
+}
+
+void sqlrimport::clearAreDateTimeColumns() {
+	datetimecolumn.clear();
+}
+
+bool sqlrimport::importData() {
+	return true;
+}
+
+void sqlrimport::clearFlagsAndCounts() {
+	ignorerow=false;
+	currentrow=0;
+	currentcol=0;
+	currentcolname=NULL;
+	currentfield=NULL;
+	importedrowcount=0;
+	numericcolumn.clear();
+	datetimecolumn.clear();
+}
+
+bool sqlrimport::systemError() {
+	char	*err=error::getErrorString();
+	bool	retval=error(error::getErrorNumber(),err);
+	delete[] err;
+	return retval;
 }

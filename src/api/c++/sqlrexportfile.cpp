@@ -28,11 +28,11 @@ filedescriptor *sqlrexportfile::getFileDescriptor() {
 }
 
 bool sqlrexportfile::exportData() {
-	clearOutput();
+	clearFlagsAndCounts();
 	return true;
 }
 
-void sqlrexportfile::clearOutput() {
-	sqlrexport::clearOutput();
+void sqlrexportfile::clearFlagsAndCounts() {
+	sqlrexport::clearFlagsAndCounts();
 	fd=NULL;
 }

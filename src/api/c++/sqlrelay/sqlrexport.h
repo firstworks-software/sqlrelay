@@ -107,6 +107,15 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		/** Returns the log indent. */
 		uint32_t	getLogIndent();
 
+		/** If "logerrors" is set true then SQL errors will be logged
+		 *  at the coarse log level.  If set false then SQL errors will
+		 *  not be logged.  Defaults to false. */
+		void	setLogErrors(bool logerrors);
+
+		/** Returns true if SQL errors will be logged at the coarse log
+		 *  level and false otherwise. */
+		bool	getLogErrors();
+
 		/** Exports the result set of the cursor currently in use as
 		 *  set by the most recent call to setSqlrCursor().
 		 *
@@ -131,8 +140,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  * getCurrentField() should also return the name of column 0
 		 *  * getIsNumericColumn() should return true/false correctly
 		 *    for each column
-		 *  * Nothing should have been written to files, domnodes,
-		 *    or tables
+		 *  * No data should have been exported.
 		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and export should stop if this method return
@@ -141,7 +149,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 
 		/** This method should be called by implementations of
 		 *  exportData(), prior to the export of the columns of the
-		 *  result set.
+		 *  data.
 		 *
 		 *  Note that it should be called whether or not columns are
 		 *  ignored.
@@ -166,7 +174,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 
 		/** This method should be called by implementations of
 		 *  exportData(), prior to the export of each column of the
-		 *  result set.
+		 *  data.
 		 *
 		 *  Note that it should be called for each column, whether or
 		 *  not columns are ignored, and whether or not this particular
@@ -195,7 +203,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 
 		/** This method should be called by implementations of
 		 *  exportData(), after the export of each column of the
-		 *  result set.
+		 *  data.
 		 *
 		 *  Note that it should be called for each column, whether or
 		 *  not columns are ignored, and whether or not this particular
@@ -224,7 +232,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 
 		/** This method should be called by implementations of
 		 *  exportData(), after the export of the columns of the
-		 *  result set.
+		 *  data.
 		 *
 		 *  Note that it should be called whether or not columns are
 		 *  ignored.
@@ -250,7 +258,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 
 		/** This method should be called by implementations of
 		 *  exportData(), prior to the export of the rows of the
-		 *  result set.
+		 *  data.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -273,7 +281,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 
 		/** This method should be called by implementations of
 		 *  exportData(), prior to the export of each row of the
-		 *  result set.
+		 *  data.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -302,7 +310,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 
 		/** This method should be called by implementations of
 		 *  exportData(), prior to the export of each field of the
-		 *  result set.
+		 *  data.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -359,7 +367,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 
 		/** This method should be called by implementations of
 		 *  exportData(), after the export of each field of the
-		 *  result set.
+		 *  data.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -383,8 +391,9 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *    for each column
 		 *
 		 *  If you called setCurrentField(...) in fieldStart(), and had
-		 *  to allocate memory for the new value, then this is a good
-		 *  place to free that memory.
+		 *  to allocate memory for the new value, then this may be an
+		 *  appropriate place to free that memory.  See notes in
+		 *  fieldStart() for details.
 		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and export should stop if this method return
@@ -393,7 +402,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 
 		/** This method should be called by implementations of
 		 *  exportData(), after the export of each row of the
-		 *  result set.
+		 *  data.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -413,6 +422,11 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  * getIsNumericColumn() should return true/false correctly
 		 *    for each column
 		 *
+		 *  If you called setCurrentField(...) in fieldStart(), and had
+		 *  to allocate memory for the new value, then this may be an
+		 *  appropriate place to free that memory.  See notes in
+		 *  fieldStart() for details.
+		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and export should stop if this method return
 		 *  false. */
@@ -420,7 +434,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 
 		/** This method should be called by implementations of
 		 *  exportData(), after the export of the rows of the
-		 *  result set.
+		 *  data.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -519,8 +533,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  * getCurrentField() should return NULL
 		 *  * getIsNumericColumn() should return true/false correctly
 		 *    for each column
-		 *  * There should be nothing left to write to files, domnodes,
-		 *    or tables
+		 *  * There should be nothing left to export.
 		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and export should stop if this method return
@@ -535,84 +548,84 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 
 	protected:
 
-		/** Sets whether the current row of the result set will be
-		 *  ignored or not.  Rows that are ignored are not exported.
+		/** Sets whether the current row of the data will be ignored or
+		 *  not.  Rows that are ignored are not exported.
 		 *  
 		 *  Should be called by implementations of exportData().  May
 		 *  also be called by rowStart().  Not commonly called by other
 		 *  *Start/End() methods. */
 		void	setIgnoreRow(bool ignorerow);
 
-		/** Gets whether the current row of the result set will be
-		 *  ignored or not.  Rows that are ignored are not exported.
+		/** Gets whether the current row of the data will be ignored or
+		 *  not.  Rows that are ignored are not exported.
 		 *  
 		 *  May be called by implementations of exportData() or by
 		 *  implementations of the *Start/End() methods. */
 		bool	getIgnoreRow();
 
-		/** Sets the index of the row of the result set that is
-		 *  currently being exported.
+		/** Sets the index of the row of the data that is currently
+		 *  being exported.
 		 *  
 		 *  Should be called by implementations of exportData().  Not
 		 *  commonly called by implementations of the *Start/End()
 		 *  methods. */
 		void	setCurrentRow(uint64_t currentrow);
 
-		/** Gets the index of the row of the result set that is
-		 *  currently being exported.
+		/** Gets the index of the row of the data that is currently
+		 *  being exported.
 		 *
 		 *  May be called by implementations of exportData() or by
 		 *  implementations of the *Start/End() methods. */
 		uint64_t	getCurrentRow();
 
-		/** Sets the index of the column of the result set that is
-		 *  currently being exported.
+		/** Sets the index of the column of the data that is currently
+		 *  being exported.
 		 *  
 		 *  Should be called by implementations of exportData().  Not
 		 *  commonly called by implementations of the *Start/End()
 		 *  methods. */
 		void	setCurrentColumn(uint32_t currentcol);
 
-		/** Gets the index of the column of the result set that is
-		 *  currently being exported.
+		/** Gets the index of the column of the data that is currently
+		 *  being exported.
 		 *
 		 *  May be called by implementations of exportData() or by
 		 *  implementations of the *Start/End() methods. */
 		uint32_t	getCurrentColumn();
 
-		/** Sets the name of the column of the result set that is
-		 *  currently being exported.
+		/** Sets the name of the column of the data that is currently
+		 *  being exported.
 		 *
 		 *  Should be called by implementations of exportData().  May
 		 *  also be called by columnStart().  Not commonly called by
 		 *  other *Start/End() methods. */
 		void	setCurrentColumnName(const char *currentcolname);
 
-		/** Gets the name of the column of the result set that is
-		 *  currently being exported.
+		/** Gets the name of the column of the data that is currently
+		 *  being exported.
 		 *
 		 *  May be called by implementations of exportData() or by
 		 *  implementations of the *Start/End() methods. */
 		const char	*getCurrentColumnName();
 
-		/** Sets the value of the field of the result set that is
-		 *  currently being exported.
+		/** Sets the value of the field of the data that is currently
+		 *  being exported.
 		 *
 		 *  Should be called by implementations of exportData().  Not
 		 *  commonly called by implementations of the *Start/End()
 		 *  methods. */
 		void	setCurrentField(const char *currentfield);
 
-		/** Gets the value of the field of the result set that is
-		 *  currently being exported.
+		/** Gets the value of the field of the data that is currently
+		 *  being exported.
 		 *
 		 *  May be called by implementations of exportData() or by
 		 *  implementations of the *Start/End() methods. */
 		const char	*getCurrentField();
 
-		/** Sets whether the data type of the column of the result set
-		 *  in position "index" is a numeric type or not.  If "numeric"
-		 *  is true then the type of the column is set to numeric.  If
+		/** Sets whether the data type of the column of the data in
+		 *  position "index" is a numeric type or not.  If "numeric" is
+		 *  true then the type of the column is set to numeric.  If
 		 *  "numeric" is false then the type of the column is set to
 		 *  non-numeric.
 		 *
@@ -621,15 +634,15 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  methods. */
 		void	setIsNumericColumn(uint64_t index, bool numeric);
 
-		/** Get whether the data type of the column of the result set
-		 *  in position "index" is a numeric type or not.
+		/** Get whether the data type of the column of the data in
+		 *  position "index" is a numeric type or not.
 		 *
 		 *  May be called by implementations of exportData() or by
 		 *  implementations of the *Start/End() methods. */
 		bool	getIsNumericColumn(uint64_t index);
 
-		/** Clears the data types of all columns of the result set,
-		 *  setting them to to non-numeric.
+		/** Clears the data types of all columns of the data, setting
+		 *  them to to non-numeric.
 		 *
 		 *  Should be called by implementations of exportData().  Not
 		 *  commonly called by implementations of the *Start/End()

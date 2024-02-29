@@ -38,7 +38,6 @@ sqlrimportxml::sqlrimportxml() : sqlrimportfile(), xmlsax() {
 	sequencevalue=NULL;
 	colcount=0;
 	currentcol=0;
-	numbercolumn=NULL;
 	infield=false;
 	foundfieldtext=false;
 	fieldcount=0;
@@ -50,7 +49,6 @@ sqlrimportxml::~sqlrimportxml() {
 	delete[] currentattribute;
 	delete[] sequence;
 	delete[] sequencevalue;
-	delete[] numbercolumn;
 }
 
 bool sqlrimportxml::importData() {
@@ -105,8 +103,7 @@ bool sqlrimportxml::attributeValue(const char *value) {
 				colcount=charstring::
 					convertToUnsignedInteger(value);
 				columns.clear();
-				delete[] numbercolumn;
-				numbercolumn=new bool[colcount];
+				clearAreNumericColumns();
 				currentcol=0;
 			}
 			break;
@@ -118,9 +115,9 @@ bool sqlrimportxml::attributeValue(const char *value) {
 					c=m;
 				}
 				char	*cm=charstring::duplicate(c);
-				if (lowercasecolumnnames) {
+				if (getLowerCaseColumnNames()) {
 					charstring::lower(cm);
-				} else if (uppercasecolumnnames) {
+				} else if (getUpperCaseColumnNames()) {
 					charstring::upper(cm);
 				}
 				query.append(cm);
@@ -130,8 +127,8 @@ bool sqlrimportxml::attributeValue(const char *value) {
 				}
 			} else if (!charstring::compare(currentattribute,
 								"type")) {
-				numbercolumn[currentcol]=
-					isNumberTypeChar(value);
+				setIsNumericColumn(currentcol,
+						isNumberTypeChar(value));
 			}
 			break;
 		case ROWSTAG:
@@ -211,18 +208,19 @@ bool sqlrimportxml::fieldTagStart() {
 
 bool sqlrimportxml::tableTagEnd() {
 
-	if (lg) {
-		lg->write(coarseloglevel,NULL,logindent,
+	if (getLogger()) {
+		getLogger()->write(getCoarseLogLevel(),NULL,getLogIndent(),
 				"imported %lld rows",
 				(unsigned long long)rowcount);
 	}
 
-	if (commitcount) {
-		sqlrcon->commit();
-		if (lg) {
-			lg->write(coarseloglevel,NULL,logindent,
-					"committed %lld rows (to %s)",
-					(unsigned long long)rowcount,table);
+	if (getCommitCount()) {
+		getSqlrConnection()->commit();
+		if (getLogger()) {
+			getLogger()->write(
+				getCoarseLogLevel(),NULL,getLogIndent(),
+				"committed %lld rows (to %s)",
+				(unsigned long long)rowcount,table);
 		}
 	}
 	return true;
@@ -234,19 +232,20 @@ bool sqlrimportxml::sequenceTagEnd() {
 
 	// sqlite, mysql, sap/sybase and mssql have autoincrementing fields
 	// odbc can't tell what kind of underlying db we're using
-	if (charstring::contains(dbtype,"firebird") ||
-		charstring::contains(dbtype,"interbase")) {
+	if (charstring::contains(getDbType(),"firebird") ||
+		charstring::contains(getDbType(),"interbase")) {
 		query.append("set generator ")->append(sequence);
 		query.append(" to ")->append(sequencevalue);
-		if (!sqlrcur->sendQuery(query.getString())) {
-			if (lg) {
-				lg->write(coarseloglevel,NULL,logindent,
-						"%s",sqlrcur->errorMessage());
+		if (!getSqlrCursor()->sendQuery(query.getString())) {
+			if (getLogger()) {
+				getLogger()->write(
+					getCoarseLogLevel(),NULL,getLogIndent(),
+					"%s",getSqlrCursor()->errorMessage());
 			}
 		}
 		return true;
-	} else if (charstring::contains(dbtype,"oracle")) {
-		sqlrcursor	sqlrcur2(sqlrcon);
+	} else if (charstring::contains(getDbType(),"oracle")) {
+		sqlrcursor	sqlrcur2(getSqlrConnection());
 		char	*uppersequence=charstring::duplicate(sequence);
 		charstring::upper(uppersequence);
 		query.append("select * from all_sequences where "
@@ -254,18 +253,20 @@ bool sqlrimportxml::sequenceTagEnd() {
 		query.append(uppersequence)->append("'");
 		delete[] uppersequence;
 		if (!sqlrcur2.sendQuery(query.getString())) {
-			if (lg) {
-				lg->write(coarseloglevel,NULL,logindent,
-						"%s",sqlrcur->errorMessage());
+			if (getLogger()) {
+				getLogger()->write(
+					getCoarseLogLevel(),NULL,getLogIndent(),
+					"%s",sqlrcur2.errorMessage());
 			}
 			return true;
 		}
 		query.clear();
 		query.append("drop sequence ")->append(sequence);
-		if (!sqlrcur->sendQuery(query.getString())) {
-			if (lg) {
-				lg->write(coarseloglevel,NULL,logindent,
-						"%s",sqlrcur->errorMessage());
+		if (!getSqlrCursor()->sendQuery(query.getString())) {
+			if (getLogger()) {
+				getLogger()->write(
+					getCoarseLogLevel(),NULL,getLogIndent(),
+					"%s",getSqlrCursor()->errorMessage());
 			}
 			return true;
 		}
@@ -295,37 +296,39 @@ bool sqlrimportxml::sequenceTagEnd() {
 			query.append(" cache ");
 			query.append(sqlrcur2.getField(0,"CACHE_SIZE"));
 		}
-		if (!sqlrcur->sendQuery(query.getString())) {
-			if (lg) {
-				lg->write(coarseloglevel,NULL,logindent,
-						"%s",sqlrcur->errorMessage());
+		if (!getSqlrCursor()->sendQuery(query.getString())) {
+			if (getLogger()) {
+				getLogger()->write(
+					getCoarseLogLevel(),NULL,getLogIndent(),
+					"%s",getSqlrCursor()->errorMessage());
 			}
 		}
 		return true;
-	} else if (charstring::contains(dbtype,"postgresql") ||
-			charstring::contains(dbtype,"db2") ||
-			charstring::contains(dbtype,"informix")) {
+	} else if (charstring::contains(getDbType(),"postgresql") ||
+			charstring::contains(getDbType(),"db2") ||
+			charstring::contains(getDbType(),"informix")) {
 		query.append("alter sequence ")->append(sequence);
 		query.append(" restart with ")->append(sequencevalue);
-		if (!sqlrcur->sendQuery(query.getString())) {
-			if (lg) {
-				lg->write(coarseloglevel,NULL,logindent,
-						"%s",sqlrcur->errorMessage());
+		if (!getSqlrCursor()->sendQuery(query.getString())) {
+			if (getLogger()) {
+				getLogger()->write(
+					getCoarseLogLevel(),NULL,getLogIndent(),
+					"%s",getSqlrCursor()->errorMessage());
 			}
 		}
 		return true;
 	}
 
-	if (lg) {
-		lg->write(coarseloglevel,NULL,logindent,
-				"%s doesn't support sequences",dbtype);
+	if (getLogger()) {
+		getLogger()->write(getCoarseLogLevel(),NULL,getLogIndent(),
+				"%s doesn't support sequences",getDbType());
 	}
 	return true;
 }
 
 bool sqlrimportxml::columnsTagEnd() {
-	if (lg) {
-		lg->write(coarseloglevel,NULL,logindent,
+	if (getLogger()) {
+		getLogger()->write(getCoarseLogLevel(),NULL,getLogIndent(),
 				"%ld columns",(unsigned long)currentcol);
 	}
 	return columnsEnd();
@@ -343,37 +346,43 @@ bool sqlrimportxml::rowsTagEnd() {
 bool sqlrimportxml::rowTagEnd() {
 	query.append(')');
 	if (fieldcount) {
-		if (commitcount && !rowcount) {
-			sqlrcon->begin();
+		if (getCommitCount() && !rowcount) {
+			getSqlrConnection()->begin();
 		}
-		if (!sqlrcur->sendQuery(query.getString())) {
-			if (lg && logerrors) {
-				lg->write(coarseloglevel,NULL,logindent,
-						"%s",sqlrcur->errorMessage());
+		if (!getSqlrCursor()->sendQuery(query.getString())) {
+			if (getLogger() && getLogErrors()) {
+				getLogger()->write(
+					getCoarseLogLevel(),NULL,getLogIndent(),
+					"%s",getSqlrCursor()->errorMessage());
 			}
 		}
 		rowcount++;
-		if (lg && !(rowcount%100)) {
-			lg->write(fineloglevel,NULL,logindent,
+		if (getLogger() && !(rowcount%100)) {
+			getLogger()->write(
+					getFineLogLevel(),NULL,getLogIndent(),
 					"imported %lld rows",
 					(unsigned long long)rowcount);
 		}
-		if (commitcount && !(rowcount%commitcount)) {
-			sqlrcon->commit();
+		if (getCommitCount() && !(rowcount%getCommitCount())) {
+			getSqlrConnection()->commit();
 			committedcount++;
-			if (lg) {
+			if (getLogger()) {
 				if (!(committedcount%10)) {
-					lg->write(fineloglevel,NULL,logindent,
+					getLogger()->write(
+						getFineLogLevel(),NULL,
+						getLogIndent(),
 						"committed %lld rows "
 						"(to %s)...",
 						(unsigned long long)rowcount);
 				} else {
-					lg->write(fineloglevel,NULL,logindent,
+					getLogger()->write(
+						getFineLogLevel(),NULL,
+						getLogIndent(),
 						"committed %lld rows",
 						(unsigned long long)rowcount);
 				}
 			}
-			sqlrcon->begin();
+			getSqlrConnection()->begin();
 		}
 	}
 	if (!rowEnd()) {
@@ -404,11 +413,11 @@ bool sqlrimportxml::text(const char *string) {
 		}
 		foundfieldtext=true;
 		if (!charstring::isNullOrEmpty(string)) {
-			if (!numbercolumn[currentcol]) {
+			if (!getIsNumericColumn(currentcol)) {
 				query.append('\'');
 			}
 			massageField(&query,string);
-			if (!numbercolumn[currentcol]) {
+			if (!getIsNumericColumn(currentcol)) {
 				query.append('\'');
 			}
 		} else {
@@ -446,8 +455,8 @@ void sqlrimportxml::massageField(stringbuffer *strb, const char *field) {
 			}
 
 		} else if (field[index]=='\\' &&
-				(!charstring::compare(dbtype,"postgresql") ||
-				!charstring::compare(dbtype,"mysql"))) {
+			(!charstring::compare(getDbType(),"postgresql") ||
+			!charstring::compare(getDbType(),"mysql"))) {
 
 			// for postgres and mysql, escape \'s
 			strb->append("\\\\");

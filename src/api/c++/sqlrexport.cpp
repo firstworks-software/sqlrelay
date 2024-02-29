@@ -2,6 +2,7 @@
 // See the file COPYING for more information
 
 #include <sqlrelay/sqlrexport.h>
+
 #include <rudiments/error.h>
 
 sqlrexport::sqlrexport() {
@@ -18,8 +19,9 @@ sqlrexport::sqlrexport() {
 	coarseloglevel=0;
 	fineloglevel=9;
 	logindent=0;
+	logerrors=true;
 
-	clearOutput();
+	clearFlagsAndCounts();
 }
 
 sqlrexport::~sqlrexport() {
@@ -69,6 +71,10 @@ void sqlrexport::setLogger(logger *lg) {
 	this->lg=lg;
 }
 
+logger *sqlrexport::getLogger() {
+	return lg;
+}
+
 void sqlrexport::setCoarseLogLevel(uint8_t coarseloglevel) {
 	this->coarseloglevel=coarseloglevel;
 }
@@ -81,10 +87,6 @@ void sqlrexport::setLogIndent(uint32_t logindent) {
 	this->logindent=logindent;
 }
 
-logger *sqlrexport::getLogger() {
-	return lg;
-}
-
 uint8_t sqlrexport::getCoarseLogLevel() {
 	return coarseloglevel;
 }
@@ -95,6 +97,14 @@ uint8_t sqlrexport::getFineLogLevel() {
 
 uint32_t sqlrexport::getLogIndent() {
 	return logindent;
+}
+
+void sqlrexport::setLogErrors(bool logerrors) {
+	this->logerrors=logerrors;
+}
+
+bool sqlrexport::getLogErrors() {
+	return logerrors;
 }
 
 bool sqlrexport::exportStart() {
@@ -246,7 +256,7 @@ bool sqlrexport::exportData() {
 	return true;
 }
 
-void sqlrexport::clearOutput() {
+void sqlrexport::clearFlagsAndCounts() {
 	ignorerow=false;
 	currentrow=0;
 	currentcol=0;
