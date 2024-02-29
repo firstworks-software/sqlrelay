@@ -357,7 +357,7 @@ void sqlrimport::setIsNumericColumn(uint64_t index, bool value) {
 }
 
 bool sqlrimport::getIsNumericColumn(uint64_t index) {
-	return numericcolumn[index];
+	return (index<numericcolumn.getCount())?numericcolumn[index]:false;
 }
 
 void sqlrimport::clearAreNumericColumns() {
@@ -369,7 +369,7 @@ void sqlrimport::setIsDateTimeColumn(uint64_t index, bool value) {
 }
 
 bool sqlrimport::getIsDateTimeColumn(uint64_t index) {
-	return datetimecolumn[index];
+	return (index<datetimecolumn.getCount())?datetimecolumn[index]:false;
 }
 
 void sqlrimport::clearAreDateTimeColumns() {

@@ -245,7 +245,7 @@ void sqlrexport::setIsNumericColumn(uint64_t index, bool value) {
 }
 
 bool sqlrexport::getIsNumericColumn(uint64_t index) {
-	return numericcolumn[index];
+	return (index<numericcolumn.getCount())?numericcolumn[index]:false;
 }
 
 void sqlrexport::clearAreNumericColumns() {

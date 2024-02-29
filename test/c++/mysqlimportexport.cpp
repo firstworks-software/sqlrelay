@@ -223,8 +223,11 @@ bool testsqlrexport::tests(const char *method) {
 		return false;
 	}
 
+	// FIXME: do these like testsqlrimport::tests()...
+
 	// test current column name (modifying it if necessary)
-	const char	*colname=getSqlrCursor()->getColumnName(currentcol);
+	const char	*colname=getSqlrCursor()->getColumnName(
+							getCurrentColumn());
 
 	stringbuffer	colnamestr;
 	if (!charstring::compare(method,"columnEnd()") &&
@@ -240,10 +243,10 @@ bool testsqlrexport::tests(const char *method) {
 	}
 
 	// test current field (modifying it if necessary)
-	if (inrows && field[currentcol].name!=NULL) {
+	if (inrows && field[getCurrentColumn()].name!=NULL) {
 
 		stringbuffer	f;
-		f.printf(field[currentcol].pattern,currentrow);
+		f.printf(field[getCurrentColumn()].pattern,currentrow);
 
 		if (!charstring::compare(method,"fieldEnd()") &&
 			modifyField(getCurrentColumnName(),
@@ -273,13 +276,13 @@ bool testsqlrexport::tests(const char *method) {
 	}
 
 	// test numeric column
-	if (getIsNumericColumn(currentcol)!=
+	if (getIsNumericColumn(getCurrentColumn())!=
 			isNumberTypeChar(getSqlrCursor()->
 						getColumnType(
 							getCurrentColumn()))) {
 		stdoutput.printf("\n%s - getIsNumericColumn(%d): %d!=%d\n",
-				method,currentcol,
-				getIsNumericColumn(currentcol),
+				method,getCurrentColumn(),
+				getIsNumericColumn(getCurrentColumn()),
 				isNumberTypeChar(
 					getSqlrCursor()->
 						getColumnType(
@@ -693,6 +696,8 @@ class testsqlrimport : virtual public sqlrimport {
 		uint64_t	currentrow;
 		const char	*currentfield;
 		stringbuffer	currentfieldstr;
+		dynamicarray<bool>	isnumeric;
+		dynamicarray<bool>	isdatetime;
 		uint64_t	importedrowcount;
 		bool		inrows;
 
@@ -708,6 +713,10 @@ testsqlrimport::testsqlrimport() : sqlrimport() {
 	currentcolname=NULL;
 	currentrow=0;
 	currentfield=NULL;
+	for (uint64_t col=0; field[col].name; col++) {
+		isnumeric[col]=false;
+		isdatetime[col]=false;
+	}
 	importedrowcount=0;
 	inrows=false;
 	columnstomodify=NULL;
@@ -761,19 +770,25 @@ bool testsqlrimport::tests(const char *method) {
 		return false;
 	}
 
-#if 0
 	// test numeric column
-	if (getIsNumericColumn(currentcol)!=
-			isNumberTypeChar(
-				datatypes->getValue(getCurrentColumn()))) {
+	if (getIsNumericColumn(getCurrentColumn())!=
+					isnumeric[getCurrentColumn()]) {
 		stdoutput.printf("\n%s - getIsNumericColumn(%d): %d!=%d\n",
-				method,currentcol,
-				getIsNumericColumn(currentcol),
-				isNumberTypeChar(datatypes->getValue(
-							getCurrentColumn())));
+			method,getCurrentColumn(),
+			getIsNumericColumn(getCurrentColumn()),
+			isnumeric[getCurrentColumn()]);
 		return false;
 	}
-#endif
+
+	// test datetime column
+	if (getIsDateTimeColumn(getCurrentColumn())!=
+					isdatetime[getCurrentColumn()]) {
+		stdoutput.printf("\n%s - getIsDateTimeColumn(%d): %d!=%d\n",
+			method,getCurrentColumn(),
+			getIsDateTimeColumn(getCurrentColumn()),
+			isdatetime[getCurrentColumn()]);
+		return false;
+	}
 
 	// test imported row count
 	if (getImportedRowCount()!=importedrowcount) {
@@ -889,6 +904,12 @@ bool testsqlrimport::columnsEnd() {
 	// reset flags and counts
 	currentcolname=NULL;
 	currentfield=NULL;
+
+	// set isnumeric/isdatetime flags
+	for (uint64_t col=0; field[col].name; col++) {
+		isnumeric[col]=isNumberTypeChar(field[col].dbtype);
+		isdatetime[col]=isDateTimeTypeChar(field[col].dbtype);
+	}
 
 	// call parent method
 	if (!sqlrimport::columnsEnd()) {
@@ -1168,7 +1189,6 @@ void generateCsv(const char *filename,
 	stringbuffer	record;
 	for (uint64_t row=0; row<ROWS; row++) {
 		if ((*rowstoignore)[row]) {
-stdoutput.printf("ignore row %lld\n",row);
 			continue;
 		}
 		for (uint32_t col=0; field[col].name; col++) {
