@@ -77,7 +77,7 @@ void sqlrimportcsv::setIgnoreEmptyRecords(bool ignoreemptyrecords) {
 
 bool sqlrimportcsv::importData() {
 
-	// reset flags and counters
+	// update flags and counters
 	clearFlagsAndCounts();
 	columnswithemptynames.clear();
 
@@ -317,7 +317,7 @@ bool sqlrimportcsv::headerEnd() {
 
 bool sqlrimportcsv::bodyStart() {
 
-	// reset flags and counters
+	// update flags and counters
 	recordcount=0;
 	committedcount=0;
 	setImportedRowCount(0);
@@ -331,7 +331,7 @@ bool sqlrimportcsv::bodyStart() {
 
 bool sqlrimportcsv::recordStart() {
 
-	// reset flags and counters
+	// update flags and counters
 	currenttablecol=0;
 	fieldcount=0;
 	emptyrecord=true;
@@ -534,76 +534,107 @@ void sqlrimportcsv::appendField(stringbuffer *strb,
 					bool isnumeric,
 					bool isdatetime) {
 
-	if (!charstring::isNullOrEmpty(value)) {
-
-		if (isdatetime && getReformatDateTime()) {
-
-			int16_t year;
-			int16_t month;
-			int16_t day;
-			int16_t hour;
-			int16_t minute;
-			int16_t second;
-			int32_t microsecond;
-			bool isnegative;
-			datetime::parse(value,
-					getDdMm(),
-					getYyyyDdMm(),
-					getDateDelimiters(),
-					&year,&month,&day,
-					&hour,&minute,&second,
-					&microsecond,&isnegative);
-			if (hour==-1) {
-				hour=0;
-			}
-			if (minute==-1) {
-				minute=0;
-			}
-			if (second==-1) {
-				second=0;
-			}
-			if (microsecond==-1) {
-				microsecond=0;
-			}
-
-			// massage the year...
-			// If it's less than (eg.) 100, then assume that the
-			// century wasn't given.
-			// If what was given is > (eg.) 10 years from the
-			// current year, then assume it was meant to be a date
-			// from the previous century.
-			if (year<getNoCenturyThreshold()) {
-				datetime	dt;
-				dt.initFromSystemDateTime();
-				int32_t	century=dt.getCentury();
-				if (year>dt.getShortYear()+
-						getLastCenturyThreshold()) {
-					century--;
-				}
-				year=((century-1)*getNoCenturyThreshold())+year;
-			}
-
-			char	*dt=datetime::formatAs(
-						getDateTimeFormat(),
-						year,month,day,
-						hour,minute,second,
-						microsecond,isnegative);
-			strb->append(dt);
-			delete[] dt;
-
-		} else if (isnumeric && !charstring::isNumber(value)) {
-			strb->append("NULL");
-		} else {
-			escapeField(strb,value);
-		}
-	} else {
+	// handle empty values
+	if (charstring::isNullOrEmpty(value)) {
 		strb->append("NULL");
+		return;
+	}
+
+	// handle non-numbers in numeric columns
+	if (isnumeric && !charstring::isNumber(value)) {
+		strb->append("NULL");
+		return;
+	}
+
+	// handle date/times
+	if (isdatetime && getReformatDateTime()) {
+
+		int16_t year;
+		int16_t month;
+		int16_t day;
+		int16_t hour;
+		int16_t minute;
+		int16_t second;
+		int32_t microsecond;
+		bool isnegative;
+		datetime::parse(value,
+				getDdMm(),
+				getYyyyDdMm(),
+				getDateDelimiters(),
+				&year,&month,&day,
+				&hour,&minute,&second,
+				&microsecond,&isnegative);
+		if (hour==-1) {
+			hour=0;
+		}
+		if (minute==-1) {
+			minute=0;
+		}
+		if (second==-1) {
+			second=0;
+		}
+		if (microsecond==-1) {
+			microsecond=0;
+		}
+
+		// massage the year...
+		// If it's less than (eg.) 100, then assume that the
+		// century wasn't given.
+		// If what was given is > (eg.) 10 years from the
+		// current year, then assume it was meant to be a date
+		// from the previous century.
+		if (year<getNoCenturyThreshold()) {
+			datetime	dt;
+			dt.initFromSystemDateTime();
+			int32_t	century=dt.getCentury();
+			if (year>dt.getShortYear()+
+					getLastCenturyThreshold()) {
+				century--;
+			}
+			year=((century-1)*getNoCenturyThreshold())+year;
+		}
+
+		char	*dt=datetime::formatAs(
+					getDateTimeFormat(),
+					year,month,day,
+					hour,minute,second,
+					microsecond,isnegative);
+		strb->append(dt);
+		delete[] dt;
+
+		return;
+
+	}
+
+	// handle normal values
+	for (uint32_t index=0; value[index]; index++) {
+
+
+		if (value[index]=='\\' &&
+			(!charstring::compare(getDbType(),"postgresql") ||
+			!charstring::compare(getDbType(),"mysql"))) {
+
+			// for postgres and mysql, escape \'s
+			strb->append("\\\\");
+
+		} else {
+
+			char	ch=value[index];
+
+			// double-up any single-quotes
+			if (ch=='\'') {
+				strb->append('\'');
+			}
+
+			// append the character
+			strb->append(ch);
+		}
 	}
 }
 
 bool sqlrimportcsv::recordEnd() {
 	
-	// reset flags and counters
+	// update flags and counters
 	setCurrentColumnName(NULL);
 	setCurrentField(NULL);
 
@@ -637,7 +668,7 @@ bool sqlrimportcsv::recordEnd() {
 			query.append(cm);
 			delete[] cm;
 		}
-		query.append(")");
+		query.append(')');
 	}
 	query.append(" values (");
 	for (uint64_t i=0; i<fields.getCount(); i++) {
@@ -726,6 +757,7 @@ bool sqlrimportcsv::recordEnd() {
 		return false;
 	}
 
+	// update flags and counters
 	setImportedRowCount(getImportedRowCount()+1);
 	setCurrentRow(getCurrentRow()+1);
 
@@ -761,29 +793,4 @@ bool sqlrimportcsv::bodyEnd() {
 
 	// call the rows-end event
 	return rowsEnd();
-}
-
-
-void sqlrimportcsv::escapeField(stringbuffer *strb, const char *field) {
-	for (uint32_t index=0; field[index]; index++) {
-		if (field[index]=='\\' &&
-			(!charstring::compare(getDbType(),"postgresql") ||
-			!charstring::compare(getDbType(),"mysql"))) {
-
-			// for postgres and mysql, escape \'s
-			strb->append("\\\\");
-
-		} else {
-
-			char	ch=field[index];
-
-			// double-up any single-quotes
-			if (ch=='\'') {
-				strb->append('\'');
-			}
-
-			// append the character
-			strb->append(ch);
-		}
-	}
 }

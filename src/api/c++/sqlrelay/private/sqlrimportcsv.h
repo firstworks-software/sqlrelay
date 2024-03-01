@@ -15,7 +15,6 @@
 					const char *value,
 					bool isnumeric,
 					bool isdatetime);
-		void	escapeField(stringbuffer *strb, const char *field);
 
 		bool		insertprimarykey;
 		char		*primarykeycolumnname;
@@ -37,5 +36,3 @@
 
 		dictionary<uint32_t, char *>	staticvaluecolumnnames;
 		dictionary<uint32_t, char *>	staticvaluecolumnvalues;
-
-		dynamicarray<bool>		quotefield;

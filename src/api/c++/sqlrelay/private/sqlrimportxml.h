@@ -6,7 +6,10 @@
 		bool	attributeName(const char *name);
 		bool	attributeValue(const char *value);
 		bool	text(const char *string);
-		void	massageField(stringbuffer *strb, const char *field);
+		void	appendField(stringbuffer *strb,
+					const char *field,
+					bool isnumeric,
+					bool isdatetime);
 		bool	tagEnd(const char *ns, const char *name);
 
 		bool	tableTagStart();
@@ -34,7 +37,6 @@
 		stringbuffer	columnsstr;
 		uint32_t	currentcol;
 		bool		infield;
-		bool		foundfieldtext;
 		uint32_t	fieldcount;
 		uint64_t	rowcount;
 		uint64_t	committedcount;

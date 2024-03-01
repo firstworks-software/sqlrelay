@@ -37,7 +37,6 @@ sqlrimportxml::sqlrimportxml() : sqlrimportfile(), xmlsax() {
 	sequencevalue=NULL;
 	colcount=0;
 	infield=false;
-	foundfieldtext=false;
 	fieldcount=0;
 	rowcount=0;
 	committedcount=0;
@@ -127,7 +126,6 @@ bool sqlrimportxml::attributeValue(const char *value) {
 					convertToUnsignedInteger(value);
 
 				// update flags and counters
-				columnsstr.clear();
 				clearAreNumericColumns();
 				setCurrentColumn(0);
 			}
@@ -141,26 +139,6 @@ bool sqlrimportxml::attributeValue(const char *value) {
 				cname=charstring::duplicate(value);
 				setCurrentColumnName(cname);
 				setCurrentField(cname);
-
-				// append the column to the insert query
-				// FIXME: do this later, in rowEnd(),
-				// from the columns[] array
-				const char	*c=getCurrentColumnName();
-				const char	*m=columnmap.getValue(c);
-				if (m) {
-					c=m;
-				}
-				char	*cm=charstring::duplicate(c);
-				if (getLowerCaseColumnNames()) {
-					charstring::lower(cm);
-				} else if (getUpperCaseColumnNames()) {
-					charstring::upper(cm);
-				}
-				query.append(cm);
-				delete[] cm;
-				if (getCurrentColumn()<colcount-1) {
-					columnsstr.append(',');
-				}
 
 			} else if (!charstring::compare(currentattribute,
 								"type")) {
@@ -185,55 +163,65 @@ bool sqlrimportxml::text(const char *string) {
 	// if we're in a field
 	if (infield) {
 		
-		// update flags and counters
-		foundfieldtext=true;
-
-		// get the mapped value, if there is one
+		// if this value has a mapping, then get that
 		const char	*s=fieldmap.getValue(string);
 		if (s) {
 			string=s;
 		}
 
+		// determine whether to quote this field
+		// FIXME: need currenttablecolumn like in sqlrimportcsv
+		// rather than getCurrentColumn()
+		bool	isnumeric=getIsNumericColumn(getCurrentColumn());
+		bool	isdatetime=getIsDateTimeColumn(getCurrentColumn());
+		quotefield[getCurrentColumn()]=!isnumeric;
+
 		// set the current field
 		stringbuffer	tmpstr;
-		massageField(&tmpstr,string);
+		appendField(&tmpstr,string,isnumeric,isdatetime);
 		fval=tmpstr.detachString();
 		setCurrentField(fval);
-
-		// append the field to the insert query
-		// FIXME: do this later, in rowEnd()
-		// from the fields[] array
-		if (!charstring::isNullOrEmpty(string)) {
-			if (!getIsNumericColumn(getCurrentColumn())) {
-				query.append('\'');
-			}
-			massageField(&query,string);
-			if (!getIsNumericColumn(getCurrentColumn())) {
-				query.append('\'');
-			}
-		} else {
-			query.append("NULL");
-		}
-		if (getCurrentColumn()<colcount-1) {
-			query.append(",");
-		}
 	}
 	return true;
 }
 
-void sqlrimportxml::massageField(stringbuffer *strb, const char *field) {
+void sqlrimportxml::appendField(stringbuffer *strb,
+					const char *value,
+					bool isnumeric,
+					bool isdatetime) {
 
-	for (uint32_t index=0; field[index]; index++) {
-		if (field[index]=='&') {
+	// handle empty values
+	if (charstring::isNullOrEmpty(value)) {
+		strb->append("NULL");
+		return;
+	}
+
+	// handle non-numbers in numeric columns
+ 	if (isnumeric && !charstring::isNumber(value)) {
+		strb->append("NULL");
+		return;
+	}
+
+	// handle date/times
+	if (isdatetime && getReformatDateTime()) {
+		// FIXME: implement this...
+		return;
+	}
+
+	// handle normal values
+	for (uint32_t index=0; value[index]; index++) {
+
+		if (value[index]=='&') {
 
 			// expand xml entities...
 
 			// skip past the &
 			index++;
 
-			// get the number and convert it to a character
+			// get the number and convert
+			// it to a character
 			char	ch=(char)charstring::
-					convertToUnsignedInteger(field+index);
+				convertToUnsignedInteger(value+index);
 
 			// double-up any single-quotes
 			if (ch=='\'') {
@@ -244,11 +232,11 @@ void sqlrimportxml::massageField(stringbuffer *strb, const char *field) {
 			strb->append(ch);
 
 			// skip past the entity
-			while (field[index] && field[index]!=';') {
+			while (value[index] && value[index]!=';') {
 				index++;
 			}
 
-		} else if (field[index]=='\\' &&
+		} else if (value[index]=='\\' &&
 			(!charstring::compare(getDbType(),"postgresql") ||
 			!charstring::compare(getDbType(),"mysql"))) {
 
@@ -257,7 +245,7 @@ void sqlrimportxml::massageField(stringbuffer *strb, const char *field) {
 
 		} else {
 
-			char	ch=field[index];
+			char	ch=value[index];
 
 			// double-up any single-quotes
 			if (ch=='\'') {
@@ -442,12 +430,6 @@ bool sqlrimportxml::rowsTagStart() {
 
 bool sqlrimportxml::rowTagStart() {
 
-	// begin building the insert query
-	// FIXME: do this later, in rowEnd()
-	query.clear();
-	query.append("insert into ")->append(getObjectName())->append(" (");
-	query.append(columnsstr.getString())->append(") values (");
-
 	// set the current tag
 	currenttag=ROWTAG;
 
@@ -468,7 +450,6 @@ bool sqlrimportxml::fieldTagStart() {
 
 	// update flags and counters
 	infield=true;
-	foundfieldtext=false;
 	fval=NULL;
 
 	// don't call the column-start event yet, we need
@@ -488,8 +469,12 @@ bool sqlrimportxml::fieldTagEnd() {
 		return false;
 	}
 
-	// update flags and counters
-	infield=false;
+	// append the current field
+	// (which fieldStart() may have overridden)
+	if (getCurrentField()!=fval) {
+		delete[] fval;
+	}
+	fields[fields.getCount()]=getCurrentField();
 
 	// call the field-end event
 	if (!fieldEnd()) {
@@ -499,15 +484,7 @@ bool sqlrimportxml::fieldTagEnd() {
 	// next...
 	setCurrentColumn(getCurrentColumn()+1);
 	fieldcount++;
-
-	// continue building the insert query
-	// FIXME: do this later, in rowEnd()
-	if (!foundfieldtext) {
-		query.append("NULL");
-		if (getCurrentColumn()<colcount-1) {
-			query.append(",");
-		}
-	}
+	infield=false;
 
 	return true;
 }
@@ -518,43 +495,84 @@ bool sqlrimportxml::rowTagEnd() {
 	setCurrentColumnName(NULL);
 	setCurrentField(NULL);
 
-	// FIXME: move other query building stuff here
-
-	// continue building the insert query
+	// build the insert query
+	query.clear();
+	query.append("insert into ")->append(getObjectName());
+	if (!getIgnoreColumns()) {
+		query.append(" (");
+		for (uint64_t i=0; i<columns.getCount(); i++) {
+			if (i) {
+				query.append(',');
+			}
+			const char	*c=columns[i];
+			const char	*m=columnmap.getValue(c);
+			if (m) {
+				c=m;
+			}
+			char	*cm=charstring::duplicate(c);
+			if (getLowerCaseColumnNames()) {
+				charstring::lower(cm);
+			} else if (getUpperCaseColumnNames()) {
+				charstring::upper(cm);
+			}
+			query.append(cm);
+			delete[] cm;
+		}
+		query.append(')');
+	}
+	query.append(") values (");
+	for (uint64_t i=0; i<fields.getCount(); i++) {
+		if (i) {
+			query.append(',');
+		}
+		if (quotefield[i]) {
+			query.append('\'');
+		}
+		query.append(fields[i]);
+		if (quotefield[i]) {
+			query.append('\'');
+		}
+	}
+	fields.clear();
+	quotefield.clear();
 	query.append(')');
 
-	// if there were any fields...
+	// if there were any actual values (i.e. not an empty file)
 	if (fieldcount) {
 
-		// begin, if we need to
+		// if we're committing every so often, and this is the very
+		// first record, then begin a transaction
 		if (getCommitCount() && !rowcount) {
 			getSqlrConnection()->begin();
 		}
 
-		// insert the row
+		// send the query
 		if (!getSqlrCursor()->sendQuery(query.getString())) {
 			if (getLogger() && getLogErrors()) {
-				getLogger()->write(
-					getCoarseLogLevel(),NULL,getLogIndent(),
+				getLogger()->write(getCoarseLogLevel(),
+					NULL,getLogIndent(),
 					"%s",getSqlrCursor()->errorMessage());
 			}
 		}
 
-		// update flags and counters
+		// bump the rowcount
 		rowcount++;
 
 		// log
 		if (getLogger() && !(rowcount%100)) {
-			getLogger()->write(
-					getFineLogLevel(),NULL,getLogIndent(),
+			getLogger()->write(getFineLogLevel(),
+					NULL,getLogIndent(),
 					"imported %lld rows",
 					(unsigned long long)rowcount);
 		}
 
-		// commit, if we need to
+		// if we're committing every so often, and it's time to commit,
+		// then commmit, log and begin a new transaction
 		if (getCommitCount() && !(rowcount%getCommitCount())) {
+
 			getSqlrConnection()->commit();
 			committedcount++;
+
 			if (getLogger()) {
 				if (!(committedcount%10)) {
 					getLogger()->write(
@@ -562,13 +580,16 @@ bool sqlrimportxml::rowTagEnd() {
 						getLogIndent(),
 						"committed %lld rows "
 						"(to %s)...",
-						(unsigned long long)rowcount);
+						(unsigned long long)
+						rowcount,
+						getObjectName());
 				} else {
 					getLogger()->write(
 						getFineLogLevel(),NULL,
 						getLogIndent(),
 						"committed %lld rows",
-						(unsigned long long)rowcount);
+						(unsigned long long)
+						rowcount);
 				}
 			}
 			getSqlrConnection()->begin();

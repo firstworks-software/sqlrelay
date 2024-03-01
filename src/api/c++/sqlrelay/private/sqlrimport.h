@@ -50,3 +50,4 @@ protected:
 		stringbuffer		query;
 		dynamicarray<char *>	columns;
 		dynamicarray<char *>	fields;
+		dynamicarray<bool>	quotefield;
