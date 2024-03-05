@@ -293,7 +293,10 @@ bool sqlrimportcsv::headerEnd() {
 	query.append(" from ")->append(getObjectName());
 	getSqlrCursor()->setResultSetBufferSize(1);
 	if (!getSqlrCursor()->sendQuery(query.getString())) {
-		return false;
+		if (!error(getSqlrConnection()->errorNumber(),
+				getSqlrConnection()->errorMessage())) {
+			return false;
+		}
 	}
 
 	// run through the columns, figuring out which are numbers and dates...
@@ -645,7 +648,7 @@ bool sqlrimportcsv::recordEnd() {
 		return rowEnd();
 	}
 
-	// build query
+	// build the insert query
 	query.clear();
 	query.append("insert into ")->append(getObjectName());
 	if (!getIgnoreColumns()) {
@@ -694,7 +697,19 @@ bool sqlrimportcsv::recordEnd() {
 		// if we're committing every so often, and this is the very
 		// first record, then begin a transaction
 		if (getCommitCount() && !recordcount) {
-			getSqlrConnection()->begin();
+			if (!beginStart()) {
+				return false;
+			}
+			if (!getSqlrConnection()->begin()) {
+				if (!error(
+					getSqlrConnection()->errorNumber(),
+					getSqlrConnection()->errorMessage())) {
+					return false;
+				}
+			}
+			if (!beginEnd()) {
+				return false;
+			}
 		}
 
 		// send the query
@@ -704,9 +719,9 @@ bool sqlrimportcsv::recordEnd() {
 					NULL,getLogIndent(),
 					"%s",getSqlrCursor()->errorMessage());
 			}
-			if (getCommitCount()) {
-				getSqlrConnection()->commit();
-				getSqlrConnection()->begin();
+			if (!error(getSqlrConnection()->errorNumber(),
+					getSqlrConnection()->errorMessage())) {
+				return false;
 			}
 		}
 
@@ -725,7 +740,19 @@ bool sqlrimportcsv::recordEnd() {
 		// then commit, log and begin a new transaction
 		if (getCommitCount() && !(recordcount%getCommitCount())) {
 
-			getSqlrConnection()->commit();
+			if (!commitStart()) {
+				return false;
+			}
+			if (!getSqlrConnection()->commit()) {
+				if (!error(
+					getSqlrConnection()->errorNumber(),
+					getSqlrConnection()->errorMessage())) {
+					return false;
+				}
+			}
+			if (!commitEnd()) {
+				return false;
+			}
 			committedcount++;
 
 			if (getLogger()) {
@@ -748,7 +775,19 @@ bool sqlrimportcsv::recordEnd() {
 				}
 			}
 
-			getSqlrConnection()->begin();
+			if (!beginStart()) {
+				return false;
+			}
+			if (!getSqlrConnection()->begin()) {
+				if (!error(
+					getSqlrConnection()->errorNumber(),
+					getSqlrConnection()->errorMessage())) {
+					return false;
+				}
+			}
+			if (!beginEnd()) {
+				return false;
+			}
 		}
 	}
 
@@ -774,7 +813,19 @@ bool sqlrimportcsv::bodyEnd() {
 
 	// final commit
 	if (getCommitCount()) {
-		getSqlrConnection()->commit();
+		if (!commitStart()) {
+			return false;
+		}
+		if (!getSqlrConnection()->commit()) {
+			if (!error(
+				getSqlrConnection()->errorNumber(),
+				getSqlrConnection()->errorMessage())) {
+				return false;
+			}
+		}
+		if (!commitEnd()) {
+			return false;
+		}
 		if (getLogger()) {
 			getLogger()->write(
 					getCoarseLogLevel(),NULL,getLogIndent(),

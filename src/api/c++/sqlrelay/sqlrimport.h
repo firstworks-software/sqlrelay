@@ -631,6 +631,50 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		virtual	bool	rowsEnd();
 
 		/** This method should be called by implementations of
+		 *  importData(), before a begin().
+		 *
+		 *  This implementation just returns true but a child class may
+		 *  override this method to do something else.
+		 *
+		 *  Should return true on success and false if an error
+		 *  occurred and import should stop if this method return
+		 *  false. */
+		virtual	bool	beginStart();
+
+		/** This method should be called by implementations of
+		 *  importData(), after a begin().
+		 *
+		 *  This implementation just returns true but a child class may
+		 *  override this method to do something else.
+		 *
+		 *  Should return true on success and false if an error
+		 *  occurred and import should stop if this method return
+		 *  false. */
+		virtual	bool	beginEnd();
+
+		/** This method should be called by implementations of
+		 *  importData(), before a commit().
+		 *
+		 *  This implementation just returns true but a child class may
+		 *  override this method to do something else.
+		 *
+		 *  Should return true on success and false if an error
+		 *  occurred and import should stop if this method return
+		 *  false. */
+		virtual	bool	commitStart();
+
+		/** This method should be called by implementations of
+		 *  importData(), after a commit().
+		 *
+		 *  This implementation just returns true but a child class may
+		 *  override this method to do something else.
+		 *
+		 *  Should return true on success and false if an error
+		 *  occurred and import should stop if this method return
+		 *  false. */
+		virtual	bool	commitEnd();
+
+		/** This method should be called by implementations of
 		 *  importData() methods, if a commit(), begin(),
 		 *  executeQuery(), or other database operation fails.
 		 *

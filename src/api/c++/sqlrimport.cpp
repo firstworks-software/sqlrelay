@@ -294,6 +294,26 @@ bool sqlrimport::rowsEnd() {
 	return true;
 }
 
+bool sqlrimport::beginStart() {
+	// by default, just return success
+	return true;
+}
+
+bool sqlrimport::beginEnd() {
+	// by default, just return success
+	return true;
+}
+
+bool sqlrimport::commitStart() {
+	// by default, just return success
+	return true;
+}
+
+bool sqlrimport::commitEnd() {
+	// by default, just return success
+	return true;
+}
+
 bool sqlrimport::error(int64_t errornumber, const char *errormessage) {
 	// by default, just return error
 	return false;

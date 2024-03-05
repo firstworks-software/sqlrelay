@@ -388,7 +388,10 @@ bool sqlrimportxml::columnsTagEnd() {
 	query.append(" from ")->append(getObjectName());
 	getSqlrCursor()->setResultSetBufferSize(1);
 	if (!getSqlrCursor()->sendQuery(query.getString())) {
-		return false;
+		if (!error(getSqlrConnection()->errorNumber(),
+				getSqlrConnection()->errorMessage())) {
+			return false;
+		}
 	}
 
 	// run through the columns, figuring out which are numbers and dates...
@@ -520,7 +523,7 @@ bool sqlrimportxml::rowTagEnd() {
 		}
 		query.append(')');
 	}
-	query.append(") values (");
+	query.append(" values (");
 	for (uint64_t i=0; i<fields.getCount(); i++) {
 		if (i) {
 			query.append(',');
@@ -543,7 +546,19 @@ bool sqlrimportxml::rowTagEnd() {
 		// if we're committing every so often, and this is the very
 		// first record, then begin a transaction
 		if (getCommitCount() && !rowcount) {
-			getSqlrConnection()->begin();
+			if (!beginStart()) {
+				return false;
+			}
+			if (!getSqlrConnection()->begin()) {
+				if (!error(
+					getSqlrConnection()->errorNumber(),
+					getSqlrConnection()->errorMessage())) {
+					return false;
+				}
+			}
+			if (!beginEnd()) {
+				return false;
+			}
 		}
 
 		// send the query
@@ -552,6 +567,10 @@ bool sqlrimportxml::rowTagEnd() {
 				getLogger()->write(getCoarseLogLevel(),
 					NULL,getLogIndent(),
 					"%s",getSqlrCursor()->errorMessage());
+			}
+			if (!error(getSqlrConnection()->errorNumber(),
+					getSqlrConnection()->errorMessage())) {
+				return false;
 			}
 		}
 
@@ -570,7 +589,19 @@ bool sqlrimportxml::rowTagEnd() {
 		// then commmit, log and begin a new transaction
 		if (getCommitCount() && !(rowcount%getCommitCount())) {
 
-			getSqlrConnection()->commit();
+			if (!commitStart()) {
+				return false;
+			}
+			if (!getSqlrConnection()->commit()) {
+				if (!error(
+					getSqlrConnection()->errorNumber(),
+					getSqlrConnection()->errorMessage())) {
+					return false;
+				}
+			}
+			if (!commitEnd()) {
+				return false;
+			}
 			committedcount++;
 
 			if (getLogger()) {
@@ -592,7 +623,19 @@ bool sqlrimportxml::rowTagEnd() {
 						rowcount);
 				}
 			}
-			getSqlrConnection()->begin();
+			if (!beginStart()) {
+				return false;
+			}
+			if (!getSqlrConnection()->begin()) {
+				if (!error(
+					getSqlrConnection()->errorNumber(),
+					getSqlrConnection()->errorMessage())) {
+					return false;
+				}
+			}
+			if (!beginEnd()) {
+				return false;
+			}
 		}
 	}
 
@@ -625,7 +668,19 @@ bool sqlrimportxml::tableTagEnd() {
 
 	// commit, if we need to
 	if (getCommitCount()) {
-		getSqlrConnection()->commit();
+		if (!commitStart()) {
+			return false;
+		}
+		if (!getSqlrConnection()->commit()) {
+			if (!error(
+				getSqlrConnection()->errorNumber(),
+				getSqlrConnection()->errorMessage())) {
+				return false;
+			}
+		}
+		if (!commitEnd()) {
+			return false;
+		}
 		if (getLogger()) {
 			getLogger()->write(
 				getCoarseLogLevel(),NULL,getLogIndent(),
@@ -645,10 +700,6 @@ bool sqlrimportxml::sequenceTagEnd() {
 	// there should be a backend method like restartSequence() implemented
 	// by the connection modules
 
-	// sqlite, mysql, sap/sybase and mssql have autoincrementing fields
-	// odbc can't tell what kind of underlying db we're using, so don't
-	// do anything for those databases
-
 	// for firebird and interbase...
 	if (charstring::contains(getDbType(),"firebird") ||
 		charstring::contains(getDbType(),"interbase")) {
@@ -662,6 +713,8 @@ bool sqlrimportxml::sequenceTagEnd() {
 					getCoarseLogLevel(),NULL,getLogIndent(),
 					"%s",getSqlrCursor()->errorMessage());
 			}
+			return error(getSqlrConnection()->errorNumber(),
+					getSqlrConnection()->errorMessage());
 		}
 		return true;
 
@@ -685,7 +738,8 @@ bool sqlrimportxml::sequenceTagEnd() {
 					getCoarseLogLevel(),NULL,getLogIndent(),
 					"%s",sqlrcur2.errorMessage());
 			}
-			return true;
+			return error(sqlrcur2.errorNumber(),
+					sqlrcur2.errorMessage());
 		}
 
 		// drop the sequence
@@ -697,7 +751,8 @@ bool sqlrimportxml::sequenceTagEnd() {
 					getCoarseLogLevel(),NULL,getLogIndent(),
 					"%s",getSqlrCursor()->errorMessage());
 			}
-			return true;
+			return error(getSqlrConnection()->errorNumber(),
+					getSqlrConnection()->errorMessage());
 		}
 
 		// recreate the sequence to start with the provided value, but
@@ -734,6 +789,8 @@ bool sqlrimportxml::sequenceTagEnd() {
 					getCoarseLogLevel(),NULL,getLogIndent(),
 					"%s",getSqlrCursor()->errorMessage());
 			}
+			return error(getSqlrConnection()->errorNumber(),
+					getSqlrConnection()->errorMessage());
 		}
 		return true;
 
@@ -751,11 +808,15 @@ bool sqlrimportxml::sequenceTagEnd() {
 					getCoarseLogLevel(),NULL,getLogIndent(),
 					"%s",getSqlrCursor()->errorMessage());
 			}
+			return error(getSqlrConnection()->errorNumber(),
+					getSqlrConnection()->errorMessage());
 		}
 		return true;
 	}
 
-	// log
+	// sqlite, mysql, sap/sybase and mssql have autoincrementing fields
+	// odbc can't tell what kind of underlying db we're using, so don't
+	// do anything for those databases
 	if (getLogger()) {
 		getLogger()->write(getCoarseLogLevel(),NULL,getLogIndent(),
 				"%s doesn't support sequences",getDbType());

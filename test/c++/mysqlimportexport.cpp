@@ -1147,13 +1147,14 @@ class testsqlrimportxml : virtual public testsqlrimportfile,
 
 
 // define a set of methods that generate something to compare our export to
-void generateCsv(const char *filename,
+void generateCsv(const char *option,
+			const char *filename,
 			bool excludecolumns,
 			const char * const *columnstoignore,
 			const char * const *columnstomodify,
 			dynamicarray<bool> *rowstoignore) {
 
-	stdoutput.printf("GENERATE CSV:\n");
+	stdoutput.printf("%sGENERATE CSV:\n",option);
 
 	// create file
 	file	comparison;
@@ -1234,13 +1235,14 @@ void generateCsv(const char *filename,
 	stdoutput.printf("\n\n");
 }
 
-void generateXml(const char *filename,
+void generateXml(const char *option,
+			const char *filename,
 			uint32_t colcount, bool excludecolumns,
 			const char * const *columnstoignore,
 			const char * const *columnstomodify,
 			dynamicarray<bool> *rowstoignore) {
 
-	stdoutput.printf("GENERATE XML:\n");
+	stdoutput.printf("%sGENERATE XML:\n",option);
 
 	// create file
 	file	comparison;
@@ -1355,12 +1357,13 @@ void createTable(const char *tablename,
 	}
 }
 
-void generateTable(const char *tablename,
+void generateTable(const char *option,
+			const char *tablename,
 			const char * const *columnstoignore,
 			const char * const *columnstomodify,
 			dynamicarray<bool> *rowstoignore) {
 
-	stdoutput.printf("GENERATE TABLE:\n");
+	stdoutput.printf("%sGENERATE TABLE:\n",option);
 
 	// connect to db
 	sqlrconnection	econ("sqlrelay",9000,"/tmp/test.socket",
@@ -1785,15 +1788,15 @@ void exportTests() {
 
 			// generate comparison file/table
 			if (fiter==0) {
-				generateCsv(comp,
+				generateCsv(option,comp,
 					ignorecolumns,columnstoignore,
 					columnstomodify,&rowstoignore);
 			} else if (fiter==1) {
-				generateXml(comp,colcount,
+				generateXml(option,comp,colcount,
 					ignorecolumns,columnstoignore,
 					columnstomodify,&rowstoignore);
 			} else if (fiter==2) {
-				generateTable(comp,
+				generateTable(option,comp,
 					columnstoignore,
 					columnstomodify,&rowstoignore);
 			}
@@ -1902,12 +1905,7 @@ void importTests() {
 
 		// iterate through formats...
 		// (1==CSV, 2=XML)
-// FIXME: test xml
-#if 1
 		for (uint8_t fiter=0; fiter<2; fiter++) {
-#else
-		for (uint8_t fiter=0; fiter<1; fiter++) {
-#endif
 
 			// csv or xml
 			testsqlrimport	*im;
@@ -1917,14 +1915,16 @@ void importTests() {
 				im=&tsic;
 				format="CSV";
 				imp="testtable.csv";
-				generateCsv(imp,false,NULL,NULL,NULL);
+				generateCsv(option,imp,
+						false,NULL,NULL,NULL);
 				tsic.setFileName(imp);
 				tsic.setTestFileName(imp);
 			} else if (fiter==1) {
 				im=&tsix;
 				format="XML";
 				imp="testtable.xml";
-				generateXml(imp,colcount,false,NULL,NULL,NULL);
+				generateXml(option,imp,colcount,
+						false,NULL,NULL,NULL);
 				tsix.setFileName(imp);
 				tsix.setTestFileName(imp);
 			}
@@ -1937,7 +1937,8 @@ void importTests() {
 			stdoutput.printf("\n\n");
 
 			// generate comparison table
-			generateTable("testtable_comparison",NULL,NULL,NULL);
+			generateTable(option,"testtable_comparison",
+							NULL,NULL,NULL);
 
 			// diff tables
 			stdoutput.printf("%sDIFF TABLES: \n",option);
@@ -1950,6 +1951,7 @@ void importTests() {
 						"testuser",
 						"testpassword",0,1);
 			sqlrcursor	ccur(&ccon);
+			ccur.sendQuery("delete from testtable");
 			ccur.sendQuery("drop table testtable_comparison");
 			file::remove(imp);
 
