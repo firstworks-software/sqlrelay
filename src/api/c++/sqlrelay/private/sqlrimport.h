@@ -1,14 +1,13 @@
 // Copyright (c) 1999-2018 David Muse
 // See the file COPYING for more information
 
+		// FIXME: unhide these
+		bool		initialBegin();
+		bool		insertRow();
+		bool		periodicCommit();
+		bool		finalCommit();
 		virtual void	clearFlagsAndCounts();
 		virtual bool	systemError();
-
-	protected:
-		bool		getInsertPrimaryKey();
-		const char	*getPrimaryKeyColumnName();
-		uint32_t	getPrimaryKeyColumnIndex();
-		const char	*getPrimaryKeySequence();
 
 	private:
 		sqlrconnection	*sqlrcon;
@@ -20,10 +19,8 @@
 		uint32_t	primarykeycolumnindex;
 		char		*primarykeysequence;
 
-protected:
 		dictionary<uint32_t, char *>	staticvaluecolumnnames;
-		dictionary<uint32_t, char *>	staticvaluecolumnvalues;
-private:
+		dictionary<uint32_t, char *>	staticvalues;
 
 		char		*dbtype;
 		char		*objectname;

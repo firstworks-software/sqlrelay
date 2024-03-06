@@ -37,9 +37,7 @@ sqlrimportxml::sqlrimportxml() : sqlrimportfile(), xmlsax() {
 	sequencevalue=NULL;
 	colcount=0;
 	infield=false;
-	fieldcount=0;
-	rowcount=0;
-	committedcount=0;
+	emptyrecord=true;
 }
 
 sqlrimportxml::~sqlrimportxml() {
@@ -167,6 +165,13 @@ bool sqlrimportxml::text(const char *string) {
 		const char	*s=fieldmap.getValue(string);
 		if (s) {
 			string=s;
+		}
+
+		// check for a non-empty field
+		// (do this AFTER remapping the field in case some set
+		// of values get mapped to empty strings or NULLs)
+		if (emptyrecord && !charstring::isNullOrEmpty(string)) {
+			emptyrecord=false;
 		}
 
 		// determine whether to quote this field
@@ -420,12 +425,15 @@ bool sqlrimportxml::rowsTagStart() {
 	currenttag=ROWSTAG;
 
 	// update flags and counters
-	rowcount=0;
-	committedcount=0;
 	setImportedRowCount(0);
 	setCurrentColumn(0);
 	setCurrentColumnName(NULL);
 	setCurrentField(NULL);
+
+	// begin a transaction (if necessary)
+	if (!initialBegin()) {
+		return false;
+	}
 
 	// call the rows-start event
 	return rowsStart();
@@ -437,10 +445,11 @@ bool sqlrimportxml::rowTagStart() {
 	currenttag=ROWTAG;
 
 	// update flags and counters
+	emptyrecord=true;
+	setIgnoreRow(false);
 	setCurrentColumn(0);
 	setCurrentColumnName(NULL);
 	setCurrentField(NULL);
-	fieldcount=0;
 
 	// call the row-start event
 	return rowStart();
@@ -486,157 +495,40 @@ bool sqlrimportxml::fieldTagEnd() {
 
 	// next...
 	setCurrentColumn(getCurrentColumn()+1);
-	fieldcount++;
 	infield=false;
 
 	return true;
 }
 
 bool sqlrimportxml::rowTagEnd() {
-
+	
 	// update flags and counters
 	setCurrentColumnName(NULL);
 	setCurrentField(NULL);
 
-	// build the insert query
+	// clear the query buffer
 	query.clear();
-	query.append("insert into ")->append(getObjectName());
-	if (!getIgnoreColumns()) {
-		query.append(" (");
-		for (uint64_t i=0; i<columns.getCount(); i++) {
-			if (i) {
-				query.append(',');
-			}
-			const char	*c=columns[i];
-			const char	*m=columnmap.getValue(c);
-			if (m) {
-				c=m;
-			}
-			char	*cm=charstring::duplicate(c);
-			if (getLowerCaseColumnNames()) {
-				charstring::lower(cm);
-			} else if (getUpperCaseColumnNames()) {
-				charstring::upper(cm);
-			}
-			query.append(cm);
-			delete[] cm;
+
+	// if we're ignoring this record in particular, there were no columns
+	// (somehow), or if we're generally ignoring empty records, and this
+	// was an empty record, then ignore it
+	if (getIgnoreRow() || !columns.getCount() ||
+		(getIgnoreEmptyRows() && emptyrecord)) {
+
+		// call the row-end event
+		if (!rowEnd()) {
+			return false;
 		}
-		query.append(')');
+
+		// update flags and counters
+		setCurrentRow(getCurrentRow()+1);
+
+		return true;
 	}
-	query.append(" values (");
-	for (uint64_t i=0; i<fields.getCount(); i++) {
-		if (i) {
-			query.append(',');
-		}
-		if (quotefield[i]) {
-			query.append('\'');
-		}
-		query.append(fields[i]);
-		if (quotefield[i]) {
-			query.append('\'');
-		}
-	}
-	fields.clear();
-	quotefield.clear();
-	query.append(')');
 
-	// if there were any actual values (i.e. not an empty file)
-	if (fieldcount) {
-
-		// if we're committing every so often, and this is the very
-		// first record, then begin a transaction
-		if (getCommitCount() && !rowcount) {
-			if (!beginStart()) {
-				return false;
-			}
-			if (!getSqlrConnection()->begin()) {
-				if (!error(
-					getSqlrConnection()->errorNumber(),
-					getSqlrConnection()->errorMessage())) {
-					return false;
-				}
-			}
-			if (!beginEnd()) {
-				return false;
-			}
-		}
-
-		// send the query
-		if (!getSqlrCursor()->sendQuery(query.getString())) {
-			if (getLogger() && getLogErrors()) {
-				getLogger()->write(getCoarseLogLevel(),
-					NULL,getLogIndent(),
-					"%s",getSqlrCursor()->errorMessage());
-			}
-			if (!error(getSqlrConnection()->errorNumber(),
-					getSqlrConnection()->errorMessage())) {
-				return false;
-			}
-		}
-
-		// bump the rowcount
-		rowcount++;
-
-		// log
-		if (getLogger() && !(rowcount%100)) {
-			getLogger()->write(getFineLogLevel(),
-					NULL,getLogIndent(),
-					"imported %lld rows",
-					(unsigned long long)rowcount);
-		}
-
-		// if we're committing every so often, and it's time to commit,
-		// then commmit, log and begin a new transaction
-		if (getCommitCount() && !(rowcount%getCommitCount())) {
-
-			if (!commitStart()) {
-				return false;
-			}
-			if (!getSqlrConnection()->commit()) {
-				if (!error(
-					getSqlrConnection()->errorNumber(),
-					getSqlrConnection()->errorMessage())) {
-					return false;
-				}
-			}
-			if (!commitEnd()) {
-				return false;
-			}
-			committedcount++;
-
-			if (getLogger()) {
-				if (!(committedcount%10)) {
-					getLogger()->write(
-						getFineLogLevel(),NULL,
-						getLogIndent(),
-						"committed %lld rows "
-						"(to %s)...",
-						(unsigned long long)
-						rowcount,
-						getObjectName());
-				} else {
-					getLogger()->write(
-						getFineLogLevel(),NULL,
-						getLogIndent(),
-						"committed %lld rows",
-						(unsigned long long)
-						rowcount);
-				}
-			}
-			if (!beginStart()) {
-				return false;
-			}
-			if (!getSqlrConnection()->begin()) {
-				if (!error(
-					getSqlrConnection()->errorNumber(),
-					getSqlrConnection()->errorMessage())) {
-					return false;
-				}
-			}
-			if (!beginEnd()) {
-				return false;
-			}
-		}
+	// insert the row
+	if (!insertRow()) {
+		return false;
 	}
 
 	// call the row-end event
@@ -648,46 +540,44 @@ bool sqlrimportxml::rowTagEnd() {
 	setImportedRowCount(getImportedRowCount()+1);
 	setCurrentRow(getCurrentRow()+1);
 
-	return true;
+	// log
+	if (getLogger() && !(getImportedRowCount()%100)) {
+		getLogger()->write(getFineLogLevel(),
+				NULL,getLogIndent(),
+				"imported %lld records",
+				(unsigned long long)getImportedRowCount());
+	}
+
+	// do periodic commit (if necessary)
+	return periodicCommit();
 }
 
 bool sqlrimportxml::rowsTagEnd() {
+
+	// log
+	if (getLogger()) {
+		getLogger()->write(getCoarseLogLevel(),NULL,getLogIndent(),
+				"imported %lld records",
+				(unsigned long long)getImportedRowCount());
+	}
+
+	// do final commit (if necessary)
+	if (!finalCommit()) {
+		return false;
+	}
+
+	// clean up column names
+	columns.clear();
+
+	// set the current column and field to NULL
+	setCurrentColumnName(NULL);
+	setCurrentField(NULL);
 
 	// call the rows-end event
 	return rowsEnd();
 }
 
 bool sqlrimportxml::tableTagEnd() {
-
-	// log
-	if (getLogger()) {
-		getLogger()->write(getCoarseLogLevel(),NULL,getLogIndent(),
-				"imported %lld rows",
-				(unsigned long long)rowcount);
-	}
-
-	// commit, if we need to
-	if (getCommitCount()) {
-		if (!commitStart()) {
-			return false;
-		}
-		if (!getSqlrConnection()->commit()) {
-			if (!error(
-				getSqlrConnection()->errorNumber(),
-				getSqlrConnection()->errorMessage())) {
-				return false;
-			}
-		}
-		if (!commitEnd()) {
-			return false;
-		}
-		if (getLogger()) {
-			getLogger()->write(
-				getCoarseLogLevel(),NULL,getLogIndent(),
-				"committed %lld rows (to %s)",
-				(unsigned long long)rowcount,getObjectName());
-		}
-	}
 	return true;
 }
 

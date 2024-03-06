@@ -16,7 +16,7 @@ sqlrimport::sqlrimport() {
 	primarykeysequence=NULL;
 
 	staticvaluecolumnnames.setManageArrayValues(true);
-	staticvaluecolumnvalues.setManageArrayValues(true);
+	staticvalues.setManageArrayValues(true);
 
 	dbtype=NULL;
 	objectname=NULL;
@@ -112,13 +112,25 @@ void sqlrimport::insertStaticValue(const char *columnname,
 	removeStaticValue(columnindex);
 	staticvaluecolumnnames.setValue(
 			columnindex,charstring::duplicate(columnname));
-	staticvaluecolumnvalues.setValue(
+	staticvalues.setValue(
 			columnindex,charstring::duplicate(value));
 }
 
 void sqlrimport::removeStaticValue(uint32_t columnindex) {
 	staticvaluecolumnnames.remove(columnindex);
-	staticvaluecolumnvalues.remove(columnindex);
+	staticvalues.remove(columnindex);
+}
+
+const char *sqlrimport::getStaticValueColumnName(uint32_t index) {
+	return staticvaluecolumnnames.getValue(index);
+}
+
+const char *sqlrimport::getStaticValue(uint32_t index) {
+	return staticvalues.getValue(index);
+}
+
+uint32_t sqlrimport::getStaticValueCount() {
+	return staticvalues.getCount();
 }
 
 void sqlrimport::setDbType(const char *dbtype) {
@@ -487,6 +499,231 @@ void sqlrimport::clearFlagsAndCounts() {
 	importedrowcount=0;
 	numericcolumn.clear();
 	datetimecolumn.clear();
+}
+
+bool sqlrimport::initialBegin() {
+
+	// if we're committing every so often, then begin a transaction
+	if (getCommitCount()) {
+		if (!beginStart()) {
+			return false;
+		}
+		if (!getSqlrConnection()->begin()) {
+			if (!error(getSqlrConnection()->errorNumber(),
+					getSqlrConnection()->errorMessage())) {
+				return false;
+			}
+		}
+		if (!beginEnd()) {
+			return false;
+		}
+	}
+	return true;
+}
+
+bool sqlrimport::insertRow() {
+
+	// build the insert query...
+
+	// insert into...
+	query.append("insert into ")->append(getObjectName());
+
+	// if we're not ignoring the columns specified in the
+	// file then build a column list from them...
+	if (!getIgnoreColumns()) {
+
+		query.append(" (");
+
+		// run through the column names...
+		bool	first=true;
+		for (uint64_t i=0; i<columns.getCount(); i++) {
+
+			// get the column name and remap it,
+			// if the name has been mapped
+			const char	*c=columns[i];
+			const char	*m=columnmap.getValue(c);
+			if (m) {
+				c=m;
+			}
+
+			// if we're ignoring empty column names,
+			// and this column name is empty, then ignore it
+			if (getIgnoreColumnsWithEmptyNames() &&
+					charstring::isNullOrEmpty(c)) {
+				continue;
+			}
+
+			// determine if we need a comma or not
+			if (first) {
+				first=false;
+			} else {
+				query.append(',');
+			}
+
+			// upper-case or lower-case the column name,
+			// if we need to
+			char	*cm=charstring::duplicate(c);
+			if (getLowerCaseColumnNames()) {
+				charstring::lower(cm);
+			} else if (getUpperCaseColumnNames()) {
+				charstring::upper(cm);
+			}
+
+			// append the column name
+			query.append(cm);
+
+			// clean up
+			delete[] cm;
+		}
+
+		query.append(')');
+
+	}
+
+	// values...
+	query.append(" values (");
+
+	// run through the fields...
+	bool	first=true;
+	for (uint64_t i=0; i<fields.getCount(); i++) {
+
+		// get the column name and remap it,
+		// if the name has been mapped
+		const char	*c=columns[i];
+		const char	*m=columnmap.getValue(c);
+		if (m) {
+			c=m;
+		}
+
+		// if we're ignoring empty column names,
+		// and this column name is empty, then ignore it
+		if (getIgnoreColumnsWithEmptyNames() &&
+				charstring::isNullOrEmpty(c)) {
+			continue;
+		}
+
+		// determine if we need a comma or not
+		if (first) {
+			first=false;
+		} else {
+			query.append(',');
+		}
+
+		// open-quote the field, if necessary
+		if (quotefield[i]) {
+			query.append('\'');
+		}
+
+		// append the field
+		query.append(fields[i]);
+
+		// close-quote the field, if necessary
+		if (quotefield[i]) {
+			query.append('\'');
+		}
+	}
+	query.append(')');
+
+	// clean up
+	fields.clear();
+	quotefield.clear();
+
+	// send the query
+	if (!getSqlrCursor()->sendQuery(query.getString())) {
+		if (getLogger() && getLogErrors()) {
+			getLogger()->write(getCoarseLogLevel(),
+				NULL,getLogIndent(),
+				"%s",getSqlrCursor()->errorMessage());
+		}
+		if (!error(getSqlrConnection()->errorNumber(),
+				getSqlrConnection()->errorMessage())) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool sqlrimport::periodicCommit() {
+
+	// if we're committing every so often, and it's time to commit,
+	// then commit, log and begin a new transaction
+	if (getCommitCount() && !(getImportedRowCount()%getCommitCount())) {
+
+		if (!commitStart()) {
+			return false;
+		}
+		if (!getSqlrConnection()->commit()) {
+			if (!error(getSqlrConnection()->errorNumber(),
+					getSqlrConnection()->errorMessage())) {
+				return false;
+			}
+		}
+		if (!commitEnd()) {
+			return false;
+		}
+
+		if (getLogger()) {
+			if (!((getImportedRowCount()/getCommitCount())%10)) {
+				getLogger()->write(
+					getFineLogLevel(),NULL,
+					getLogIndent(),
+					"committed %lld records "
+					"(to %s)...",
+					(unsigned long long)
+					getImportedRowCount(),
+					getObjectName());
+			} else {
+				getLogger()->write(
+					getFineLogLevel(),NULL,
+					getLogIndent(),
+					"committed %lld records",
+					(unsigned long long)
+					getImportedRowCount());
+			}
+		}
+
+		if (!beginStart()) {
+			return false;
+		}
+		if (!getSqlrConnection()->begin()) {
+			if (!error(getSqlrConnection()->errorNumber(),
+					getSqlrConnection()->errorMessage())) {
+				return false;
+			}
+		}
+		if (!beginEnd()) {
+			return false;
+		}
+	}
+	return true;
+}
+
+bool sqlrimport::finalCommit() {
+
+	// final commit
+	if (getCommitCount()) {
+		if (!commitStart()) {
+			return false;
+		}
+		if (!getSqlrConnection()->commit()) {
+			if (!error(getSqlrConnection()->errorNumber(),
+					getSqlrConnection()->errorMessage())) {
+				return false;
+			}
+		}
+		if (!commitEnd()) {
+			return false;
+		}
+		if (getLogger()) {
+			getLogger()->write(
+				getCoarseLogLevel(),NULL,getLogIndent(),
+				"committed %lld records (to %s)",
+				(unsigned long long)getImportedRowCount(),
+				getObjectName());
+		}
+	}
+	return true;
 }
 
 bool sqlrimport::systemError() {

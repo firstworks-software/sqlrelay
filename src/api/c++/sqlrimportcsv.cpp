@@ -13,10 +13,7 @@
 sqlrimportcsv::sqlrimportcsv() : sqlrimportfile(), csvsax() {
 	currenttablecol=0;
 	foundfieldtext=false;
-	fieldcount=0;
 	emptyrecord=true;
-	recordcount=0;
-	committedcount=0;
 }
 
 sqlrimportcsv::~sqlrimportcsv() {
@@ -91,15 +88,14 @@ bool sqlrimportcsv::column(const char *name, bool quoted) {
 
 
 	// if there are any static columns...
-	if (staticvaluecolumnnames.getCount()) {
+	if (getStaticValueCount()) {
 
 		// loop, handling them
 		for (;;) {
 
 			// get the static column name for this position
 			const char	*svname=
-				staticvaluecolumnnames.getValue(
-							getCurrentColumn());
+				getStaticValueColumnName(getCurrentColumn());
 			if (!svname) {
 				break;
 			}
@@ -194,14 +190,14 @@ bool sqlrimportcsv::headerEnd() {
 
 	if (getIgnoreColumns()) {
 
-		// if we're ignoring the columns specified in the CSV header,
+		// if we're ignoring the columns specified in the file,
 		// then just grab the column names from the table itself
 		query.append('*');
 
 	} else {
 
 		// if we built a list of column names from the ones specified
-		// in the CSV header, then select those specific columns
+		// in the file, then select those specific columns
 		//
 		// NOTE: columns[] should contain the full list of columns,
 		// including any inserted primary key columns, static columns,
@@ -258,12 +254,15 @@ bool sqlrimportcsv::headerEnd() {
 bool sqlrimportcsv::bodyStart() {
 
 	// update flags and counters
-	recordcount=0;
-	committedcount=0;
 	setImportedRowCount(0);
 	setCurrentColumn(0);
 	setCurrentColumnName(NULL);
 	setCurrentField(NULL);
+
+	// begin a transaction (if necessary)
+	if (!initialBegin()) {
+		return false;
+	}
 
 	// call the start-rows event
 	return rowsStart();
@@ -273,7 +272,6 @@ bool sqlrimportcsv::recordStart() {
 
 	// update flags and counters
 	currenttablecol=0;
-	fieldcount=0;
 	emptyrecord=true;
 	setIgnoreRow(false);
 	setCurrentColumn(0);
@@ -332,13 +330,12 @@ bool sqlrimportcsv::field(const char *value, bool quoted) {
 		// next...
 		setCurrentColumn(getCurrentColumn()+1);
 		currenttablecol++;
-		fieldcount++;
 	}
 
 
 	// if there are any static columns...
 	// (don't count these when determining if a record was empty or not)
-	if (staticvaluecolumnnames.getCount()) {
+	if (getStaticValueCount()) {
 
 		// loop, handling them
 		for (;;) {
@@ -348,16 +345,14 @@ bool sqlrimportcsv::field(const char *value, bool quoted) {
 
 			// get the static column name for this position
 			const char	*colname=
-				staticvaluecolumnnames.getValue(
-							getCurrentColumn());
+				getStaticValueColumnName(getCurrentColumn());
 			if (!colname) {
 				break;
 			}
 
 			// get the static column value for this position
 			const char	*colvalue=
-				staticvaluecolumnvalues.getValue(
-							getCurrentColumn());
+				getStaticValue(getCurrentColumn());
 
 			// always quote these
 			quotefield[getCurrentColumn()]=true;
@@ -389,7 +384,6 @@ bool sqlrimportcsv::field(const char *value, bool quoted) {
 			// next...
 			setCurrentColumn(getCurrentColumn()+1);
 			currenttablecol++;
-			fieldcount++;
 		}
 	}
 
@@ -443,7 +437,6 @@ bool sqlrimportcsv::field(const char *value, bool quoted) {
 	// next...
 	setCurrentColumn(getCurrentColumn()+1);
 	currenttablecol++;
-	fieldcount++;
 
 	return true;
 }
@@ -560,9 +553,11 @@ bool sqlrimportcsv::recordEnd() {
 	// clear the query buffer
 	query.clear();
 
-	// if we're ignoring this record in particular, or generally ignoring
-	// empty records, and this was an empty record, then ignore it
-	if (getIgnoreRow() || (getIgnoreEmptyRows() && emptyrecord)) {
+	// if we're ignoring this record in particular, there were no columns
+	// (somehow), or if we're generally ignoring empty records, and this
+	// was an empty record, then ignore it
+	if (getIgnoreRow() || !columns.getCount() ||
+		(getIgnoreEmptyRows() && emptyrecord)) {
 
 		// call the row-end event
 		if (!rowEnd()) {
@@ -575,209 +570,9 @@ bool sqlrimportcsv::recordEnd() {
 		return true;
 	}
 
-	// if there were any actual values (i.e. not an empty csv)
-	if (fieldcount) {
-
-		// build the insert query...
-
-		// insert into...
-		query.append("insert into ")->append(getObjectName());
-
-		// if we're not ignoring the columns specified in the
-		// CSV header then build a column list from them...
-		if (!getIgnoreColumns()) {
-
-			query.append(" (");
-
-			// run through the column names...
-			bool	first=true;
-			for (uint64_t i=0; i<columns.getCount(); i++) {
-
-				// get the column name and remap it,
-				// if the name has been mapped
-				const char	*c=columns[i];
-				const char	*m=columnmap.getValue(c);
-				if (m) {
-					c=m;
-				}
-
-				// if we're ignoring empty column names,
-				// and this column name is empty, then ignore it
-				if (getIgnoreColumnsWithEmptyNames() &&
-						charstring::isNullOrEmpty(c)) {
-					continue;
-				}
-
-				// determine if we need a comma or not
-				if (first) {
-					first=false;
-				} else {
-					query.append(',');
-				}
-
-				// upper-case or lower-case the column name,
-				// if we need to
-				char	*cm=charstring::duplicate(c);
-				if (getLowerCaseColumnNames()) {
-					charstring::lower(cm);
-				} else if (getUpperCaseColumnNames()) {
-					charstring::upper(cm);
-				}
-
-				// append the column name
-				query.append(cm);
-
-				// clean up
-				delete[] cm;
-			}
-
-			query.append(')');
-
-		}
-
-		// values...
-		query.append(" values (");
-
-		// run through the fields...
-		bool	first=true;
-		for (uint64_t i=0; i<fields.getCount(); i++) {
-
-			// get the column name and remap it,
-			// if the name has been mapped
-			const char	*c=columns[i];
-			const char	*m=columnmap.getValue(c);
-			if (m) {
-				c=m;
-			}
-
-			// if we're ignoring empty column names,
-			// and this column name is empty, then ignore it
-			if (getIgnoreColumnsWithEmptyNames() &&
-					charstring::isNullOrEmpty(c)) {
-				continue;
-			}
-
-			// determine if we need a comma or not
-			if (first) {
-				first=false;
-			} else {
-				query.append(',');
-			}
-
-			// open-quote the field, if necessary
-			if (quotefield[i]) {
-				query.append('\'');
-			}
-
-			// append the field
-			query.append(fields[i]);
-
-			// close-quote the field, if necessary
-			if (quotefield[i]) {
-				query.append('\'');
-			}
-		}
-		query.append(')');
-
-		// clean up
-		fields.clear();
-		quotefield.clear();
-
-		// if we're committing every so often, and this is the very
-		// first record, then begin a transaction
-		if (getCommitCount() && !recordcount) {
-			if (!beginStart()) {
-				return false;
-			}
-			if (!getSqlrConnection()->begin()) {
-				if (!error(
-					getSqlrConnection()->errorNumber(),
-					getSqlrConnection()->errorMessage())) {
-					return false;
-				}
-			}
-			if (!beginEnd()) {
-				return false;
-			}
-		}
-
-		// send the query
-		if (!getSqlrCursor()->sendQuery(query.getString())) {
-			if (getLogger() && getLogErrors()) {
-				getLogger()->write(getCoarseLogLevel(),
-					NULL,getLogIndent(),
-					"%s",getSqlrCursor()->errorMessage());
-			}
-			if (!error(getSqlrConnection()->errorNumber(),
-					getSqlrConnection()->errorMessage())) {
-				return false;
-			}
-		}
-
-		// bump the recordcount
-		recordcount++;
-
-		// log
-		if (getLogger() && !(recordcount%100)) {
-			getLogger()->write(getFineLogLevel(),
-					NULL,getLogIndent(),
-					"imported %lld records",
-					(unsigned long long)recordcount);
-		}
-
-		// if we're committing every so often, and it's time to commit,
-		// then commit, log and begin a new transaction
-		if (getCommitCount() && !(recordcount%getCommitCount())) {
-
-			if (!commitStart()) {
-				return false;
-			}
-			if (!getSqlrConnection()->commit()) {
-				if (!error(
-					getSqlrConnection()->errorNumber(),
-					getSqlrConnection()->errorMessage())) {
-					return false;
-				}
-			}
-			if (!commitEnd()) {
-				return false;
-			}
-			committedcount++;
-
-			if (getLogger()) {
-				if (!(committedcount%10)) {
-					getLogger()->write(
-						getFineLogLevel(),NULL,
-						getLogIndent(),
-						"committed %lld records "
-						"(to %s)...",
-						(unsigned long long)
-						recordcount,
-						getObjectName());
-				} else {
-					getLogger()->write(
-						getFineLogLevel(),NULL,
-						getLogIndent(),
-						"committed %lld records",
-						(unsigned long long)
-						recordcount);
-				}
-			}
-
-			if (!beginStart()) {
-				return false;
-			}
-			if (!getSqlrConnection()->begin()) {
-				if (!error(
-					getSqlrConnection()->errorNumber(),
-					getSqlrConnection()->errorMessage())) {
-					return false;
-				}
-			}
-			if (!beginEnd()) {
-				return false;
-			}
-		}
+	// insert the row
+	if (!insertRow()) {
+		return false;
 	}
 
 	// call the row-end event
@@ -789,39 +584,29 @@ bool sqlrimportcsv::recordEnd() {
 	setImportedRowCount(getImportedRowCount()+1);
 	setCurrentRow(getCurrentRow()+1);
 
-	return true;
+	// log
+	if (getLogger() && !(getImportedRowCount()%100)) {
+		getLogger()->write(getFineLogLevel(),
+				NULL,getLogIndent(),
+				"imported %lld records",
+				(unsigned long long)getImportedRowCount());
+	}
+
+	// do periodic commit (if necessary)
+	return periodicCommit();
 }
 
 bool sqlrimportcsv::bodyEnd() {
 
 	if (getLogger()) {
 		getLogger()->write(getCoarseLogLevel(),NULL,getLogIndent(),
-					"imported %lld records",
-					(unsigned long long)recordcount);
+				"imported %lld records",
+				(unsigned long long)getImportedRowCount());
 	}
 
-	// final commit
-	if (getCommitCount()) {
-		if (!commitStart()) {
-			return false;
-		}
-		if (!getSqlrConnection()->commit()) {
-			if (!error(
-				getSqlrConnection()->errorNumber(),
-				getSqlrConnection()->errorMessage())) {
-				return false;
-			}
-		}
-		if (!commitEnd()) {
-			return false;
-		}
-		if (getLogger()) {
-			getLogger()->write(
-					getCoarseLogLevel(),NULL,getLogIndent(),
-					"committed %lld records (to %s)",
-					(unsigned long long)recordcount,
-					getObjectName());
-		}
+	// do final commit (if necessary)
+	if (!finalCommit()) {
+		return false;
 	}
 
 	// clean up column names

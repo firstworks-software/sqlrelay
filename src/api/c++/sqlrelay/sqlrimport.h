@@ -53,6 +53,25 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  to insertPrimaryKey(). */
 		void	removePrimaryKey();
 
+		/** Returns whether or not a primary key will be inserted,
+		 *  as set by insertPrimaryKey(). */
+		bool		getInsertPrimaryKey();
+
+		/** Returns the primary key column name as set by
+		 *  insertPrimaryKey() or NULL if insertPrimaryKey() was never
+		 *  called, or if removePrimaryKey() was called. */
+		const char	*getPrimaryKeyColumnName();
+
+		/** Returns the primary key column index as set by
+		 *  insertPrimaryKey() or 0 if insertPrimaryKey() was never
+		 *  called, or if removePrimaryKey() was called. */
+		uint32_t	getPrimaryKeyColumnIndex();
+
+		/** Returns the primary key column sequence as set by
+		 *  insertPrimaryKey() or NULL if insertPrimaryKey() was never
+		 *  called, or if removePrimaryKey() was called. */
+		const char	*getPrimaryKeySequence();
+
 		/** Inserts static value "value" at "columnindex" for all
 		 *  rows.
 		 *
@@ -66,6 +85,24 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		/** Removes any static value configuaration at "columnindex"
 		 *  set by a prior call to insertStaticValue(). */
 		void	removeStaticValue(uint32_t columnindex);
+
+		/** Returns the column name for the static value that will be
+		 *  inserted at "index" as set by insertStaticValue() or NULL
+		 *  if insertStaticValue() was never called, or if
+		 *  removeStaticValue() was called. */
+		const char	*getStaticValueColumnName(uint32_t index);
+
+		/** Returns the static value that will be inserted at "index"
+		 *  as set by insertStaticValue() or NULL if
+		 *  insertStaticValue() was never called, or if
+		 *  removeStaticValue() was called. */
+		const char	*getStaticValue(uint32_t index);
+
+		/** Returns the number of static values that will be inserted
+		 *  as set by calls to insertStaticValue() or 0 if
+		 *  insertStaticValue() was never called, or if
+		 *  removeStaticValue() was called. */
+		uint32_t	getStaticValueCount();
 
 		/** Sets the database type, which impacts how things like
 		 *  escaping, sequences, and auto-increment fields are handled.

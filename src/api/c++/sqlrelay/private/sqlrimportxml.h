@@ -37,9 +37,7 @@
 		stringbuffer	columnsstr;
 		uint32_t	currentcol;
 		bool		infield;
-		uint32_t	fieldcount;
-		uint64_t	rowcount;
-		uint64_t	committedcount;
+		bool		emptyrecord;
 
 		static const unsigned short	NULLTAG;
 		static const unsigned short	TABLETAG;

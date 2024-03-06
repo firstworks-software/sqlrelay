@@ -18,7 +18,4 @@
 
 		uint32_t	currenttablecol;
 		bool		foundfieldtext;
-		uint32_t	fieldcount;
 		bool		emptyrecord;
-		uint64_t	recordcount;
-		uint64_t	committedcount;
