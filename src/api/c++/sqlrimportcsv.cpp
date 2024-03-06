@@ -275,6 +275,7 @@ bool sqlrimportcsv::recordStart() {
 	currenttablecol=0;
 	fieldcount=0;
 	emptyrecord=true;
+	setIgnoreRow(false);
 	setCurrentColumn(0);
 	setCurrentColumnName(NULL);
 	setCurrentField(NULL);
@@ -559,12 +560,19 @@ bool sqlrimportcsv::recordEnd() {
 	// clear the query buffer
 	query.clear();
 
-	// if we're ignoring empty records, and this
-	// was an empty record, then ignore it
-	if (getIgnoreEmptyRows() && emptyrecord) {
+	// if we're ignoring this record in particular, or generally ignoring
+	// empty records, and this was an empty record, then ignore it
+	if (getIgnoreRow() || (getIgnoreEmptyRows() && emptyrecord)) {
 
 		// call the row-end event
-		return rowEnd();
+		if (!rowEnd()) {
+			return false;
+		}
+
+		// update flags and counters
+		setCurrentRow(getCurrentRow()+1);
+
+		return true;
 	}
 
 	// if there were any actual values (i.e. not an empty csv)
