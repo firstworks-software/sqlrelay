@@ -16,23 +16,9 @@
 					bool isnumeric,
 					bool isdatetime);
 
-		bool		insertprimarykey;
-		char		*primarykeycolumnname;
-		uint32_t	primarykeycolumnindex;
-		char		*primarykeysequence;
-
-		bool		ignorecolumnswithemptynames;
-		bool		ignoreemptyrecords;
-
 		uint32_t	currenttablecol;
 		bool		foundfieldtext;
 		uint32_t	fieldcount;
 		bool		emptyrecord;
 		uint64_t	recordcount;
 		uint64_t	committedcount;
-
-		linkedlist<uint32_t>		columnswithemptynames;
-		listnode<uint32_t>		*columnswithemptynamesnode;
-
-		dictionary<uint32_t, char *>	staticvaluecolumnnames;
-		dictionary<uint32_t, char *>	staticvaluecolumnvalues;

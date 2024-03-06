@@ -10,12 +10,22 @@ sqlrimport::sqlrimport() {
 	sqlrcon=NULL;
 	sqlrcur=NULL;
 
+	insertprimarykey=false;
+	primarykeycolumnname=NULL;
+	primarykeycolumnindex=0;
+	primarykeysequence=NULL;
+
+	staticvaluecolumnnames.setManageArrayValues(true);
+	staticvaluecolumnvalues.setManageArrayValues(true);
+
 	dbtype=NULL;
 	objectname=NULL;
 
 	ignorecolumns=false;
 	lowercasecolumnnames=false;
 	uppercasecolumnnames=false;
+	ignorecolumnswithemptynames=false;
+	ignoreemptyrows=false;
 
 	reformatdatetime=false;
 	ddmm=false;
@@ -40,6 +50,8 @@ sqlrimport::sqlrimport() {
 }
 
 sqlrimport::~sqlrimport() {
+	delete[] primarykeycolumnname;
+	delete[] primarykeysequence;
 	delete[] dbtype;
 	delete[] objectname;
 }
@@ -58,6 +70,55 @@ sqlrconnection *sqlrimport::getSqlrConnection() {
 
 sqlrcursor *sqlrimport::getSqlrCursor() {
 	return sqlrcur;
+}
+
+void sqlrimport::insertPrimaryKey(const char *primarykeycolumnname,
+					uint32_t primarykeycolumnindex,
+					const char *primarykeysequence) {
+	removePrimaryKey();
+	this->primarykeycolumnname=charstring::duplicate(primarykeycolumnname);
+	this->primarykeycolumnindex=primarykeycolumnindex;
+	this->primarykeysequence=charstring::duplicate(primarykeysequence);
+	insertprimarykey=true;
+}
+
+void sqlrimport::removePrimaryKey() {
+	delete[] this->primarykeycolumnname;
+	delete[] this->primarykeysequence;
+	this->primarykeycolumnname=NULL;
+	this->primarykeysequence=NULL;
+	insertprimarykey=false;
+}
+
+bool sqlrimport::getInsertPrimaryKey() {
+	return insertprimarykey;
+}
+
+const char *sqlrimport::getPrimaryKeyColumnName() {
+	return primarykeycolumnname;
+}
+
+uint32_t sqlrimport::getPrimaryKeyColumnIndex() {
+	return primarykeycolumnindex;
+}
+
+const char *sqlrimport::getPrimaryKeySequence() {
+	return primarykeysequence;
+}
+
+void sqlrimport::insertStaticValue(const char *columnname,
+					uint32_t columnindex,
+					const char *value) {
+	removeStaticValue(columnindex);
+	staticvaluecolumnnames.setValue(
+			columnindex,charstring::duplicate(columnname));
+	staticvaluecolumnvalues.setValue(
+			columnindex,charstring::duplicate(value));
+}
+
+void sqlrimport::removeStaticValue(uint32_t columnindex) {
+	staticvaluecolumnnames.remove(columnindex);
+	staticvaluecolumnvalues.remove(columnindex);
 }
 
 void sqlrimport::setDbType(const char *dbtype) {
@@ -84,6 +145,23 @@ void sqlrimport::setIgnoreColumns(bool ignorecolumns) {
 
 bool sqlrimport::getIgnoreColumns() {
 	return ignorecolumns;
+}
+
+void sqlrimport::setIgnoreColumnsWithEmptyNames(
+					bool ignorecolumnswithemptynames) {
+	this->ignorecolumnswithemptynames=ignorecolumnswithemptynames;
+}
+
+bool sqlrimport::getIgnoreColumnsWithEmptyNames() {
+	return ignorecolumnswithemptynames;
+}
+
+void sqlrimport::setIgnoreEmptyRows(bool ignoreemptyrows) {
+	this->ignoreemptyrows=ignoreemptyrows;
+}
+
+bool sqlrimport::getIgnoreEmptyRows() {
+	return ignoreemptyrows;
 }
 
 void sqlrimport::mapColumnName(const char *from, const char *to) {

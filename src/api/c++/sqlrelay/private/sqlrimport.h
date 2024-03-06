@@ -4,23 +4,37 @@
 		virtual void	clearFlagsAndCounts();
 		virtual bool	systemError();
 
+	protected:
+		bool		getInsertPrimaryKey();
+		const char	*getPrimaryKeyColumnName();
+		uint32_t	getPrimaryKeyColumnIndex();
+		const char	*getPrimaryKeySequence();
+
 	private:
-		sqlrconnection		*sqlrcon;
-		sqlrcursor		*sqlrcur;
+		sqlrconnection	*sqlrcon;
+		sqlrcursor	*sqlrcur;
 
-		char			*dbtype;
-		char			*objectname;
 
-		bool			ignorecolumns;
-protected:
-		dictionary<const char *, const char *>	columnmap;
-private:
-		bool			lowercasecolumnnames;
-		bool			uppercasecolumnnames;
+		bool		insertprimarykey;
+		char		*primarykeycolumnname;
+		uint32_t	primarykeycolumnindex;
+		char		*primarykeysequence;
 
 protected:
-		dictionary<const char *, const char *>	fieldmap;
+		dictionary<uint32_t, char *>	staticvaluecolumnnames;
+		dictionary<uint32_t, char *>	staticvaluecolumnvalues;
 private:
+
+		char		*dbtype;
+		char		*objectname;
+
+		bool		ignorecolumns;
+		bool		ignorecolumnswithemptynames;
+		bool		ignoreemptyrows;
+
+		bool		lowercasecolumnnames;
+		bool		uppercasecolumnnames;
+
 		bool		reformatdatetime;
 		bool		ddmm;
 		bool		yyyyddmm;
@@ -29,25 +43,28 @@ private:
 		uint16_t	lastcenturythreshold;
 		const char	*datetimeformat;
 
-		uint64_t		commitcount;
+		uint64_t	commitcount;
 
-		logger			*lg;
-		uint8_t			coarseloglevel;
-		uint8_t			fineloglevel;
-		uint32_t		logindent;
-		bool			logerrors;
+		logger		*lg;
+		uint8_t		coarseloglevel;
+		uint8_t		fineloglevel;
+		uint32_t	logindent;
+		bool		logerrors;
 
-		bool			ignorerow;
-		uint64_t		currentrow;
-		uint32_t		currentcol;
-		char			*currentcolname;
-		char			*currentfield;
-		uint64_t		importedrowcount;
+		bool		ignorerow;
+		uint64_t	currentrow;
+		uint32_t	currentcol;
+		char		*currentcolname;
+		char		*currentfield;
+		uint64_t	importedrowcount;
+
 		dynamicarray<bool>	numericcolumn;
 		dynamicarray<bool>	datetimecolumn;
 
-protected:
+	protected:
 		stringbuffer		query;
 		dynamicarray<char *>	columns;
 		dynamicarray<char *>	fields;
 		dynamicarray<bool>	quotefield;
+		dictionary<const char *, const char *>	columnmap;
+		dictionary<const char *, const char *>	fieldmap;

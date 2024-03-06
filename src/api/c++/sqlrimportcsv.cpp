@@ -11,75 +11,21 @@
 #include <datatypes.h>
 
 sqlrimportcsv::sqlrimportcsv() : sqlrimportfile(), csvsax() {
-	insertprimarykey=false;
-	primarykeycolumnname=NULL;
-	primarykeycolumnindex=0;
-	primarykeysequence=NULL;
-	ignorecolumnswithemptynames=false;
-	ignoreemptyrecords=false;
 	currenttablecol=0;
 	foundfieldtext=false;
 	fieldcount=0;
 	emptyrecord=true;
 	recordcount=0;
 	committedcount=0;
-	columnswithemptynamesnode=NULL;
-	staticvaluecolumnnames.setManageArrayValues(true);
-	staticvaluecolumnvalues.setManageArrayValues(true);
 }
 
 sqlrimportcsv::~sqlrimportcsv() {
-	delete[] primarykeycolumnname;
-	delete[] primarykeysequence;
-}
-
-void sqlrimportcsv::insertPrimaryKey(const char *primarykeycolumnname,
-					uint32_t primarykeycolumnindex,
-					const char *primarykeysequence) {
-	removePrimaryKey();
-	this->primarykeycolumnname=charstring::duplicate(primarykeycolumnname);
-	this->primarykeycolumnindex=primarykeycolumnindex;
-	this->primarykeysequence=charstring::duplicate(primarykeysequence);
-	insertprimarykey=true;
-}
-
-void sqlrimportcsv::removePrimaryKey() {
-	delete[] this->primarykeycolumnname;
-	delete[] this->primarykeysequence;
-	this->primarykeycolumnname=NULL;
-	this->primarykeysequence=NULL;
-	insertprimarykey=false;
-}
-
-void sqlrimportcsv::insertStaticValue(const char *columnname,
-					uint32_t columnindex,
-					const char *value) {
-	removeStaticValue(columnindex);
-	staticvaluecolumnnames.setValue(
-			columnindex,charstring::duplicate(columnname));
-	staticvaluecolumnvalues.setValue(
-			columnindex,charstring::duplicate(value));
-}
-
-void sqlrimportcsv::removeStaticValue(uint32_t columnindex) {
-	staticvaluecolumnnames.remove(columnindex);
-	staticvaluecolumnvalues.remove(columnindex);
-}
-
-void sqlrimportcsv::setIgnoreColumnsWithEmptyNames(
-					bool ignorecolumnswithemptynames) {
-	this->ignorecolumnswithemptynames=ignorecolumnswithemptynames;
-}
-
-void sqlrimportcsv::setIgnoreEmptyRecords(bool ignoreemptyrecords) {
-	this->ignoreemptyrecords=ignoreemptyrecords;
 }
 
 bool sqlrimportcsv::importData() {
 
 	// update flags and counters
 	clearFlagsAndCounts();
-	columnswithemptynames.clear();
 
 	// set the table name from the file name,
 	// if it wasn't already set
@@ -99,129 +45,21 @@ bool sqlrimportcsv::headerStart() {
 
 bool sqlrimportcsv::column(const char *name, bool quoted) {
 
+
 	// remap the name, if the name has been mapped
 	const char	*mappedname=columnmap.getValue(name);
 	if (mappedname) {
 		name=mappedname;
 	}
 
+
 	// if this column is the primary key...
-	if (insertprimarykey && getCurrentColumn()==primarykeycolumnindex) {
+	if (getInsertPrimaryKey() &&
+			getCurrentColumn()==getPrimaryKeyColumnIndex()) {
 
-		// and we're building a list of column names from the ones
-		// specified in the CSV header, rather than just grabbing
-		// the columns from the table itself...
-		if (!getIgnoreColumns()) {
-
-			// set the current column name (and field)
-			char	*cname=charstring::duplicate(
-						primarykeycolumnname);
-			setCurrentColumnName(cname);
-			setCurrentField(cname);
-
-			// call the column-start event
-			if (!columnStart()) {
-				delete[] cname;
-				return false;
-			}
-
-			// append the current column
-			// (which columnStart() may have overridden)
-			if (getCurrentColumnName()!=cname) {
-				delete[] cname;
-			}
-			columns[columns.getCount()]=getCurrentColumnName();
-
-			// reset the current field to the current column name
-			// (in case columnStart() overrode the column name)
-			setCurrentField(getCurrentColumnName());
-
-			// call the column-end event
-			if (!columnEnd()) {
-				return false;
-			}
-		}
-		setCurrentColumn(getCurrentColumn()+1);
-	}
-
-	// if there are any static columns...
-	if (staticvaluecolumnnames.getCount()) {
-
-		// loop, handling them
-		for (;;) {
-
-			// get the static column name for this position
-			const char	*svname=
-				staticvaluecolumnnames.getValue(
-							getCurrentColumn());
-			if (!svname) {
-				break;
-			}
-
-			// and we're building a list of column names from the
-			// ones specified in the CSV header, rather than just
-			// grabbing the columns from the table itself...
-			if (!getIgnoreColumns()) {
-
-				// set the current column name (and field)
-				char	*cname=charstring::duplicate(svname);
-				setCurrentColumnName(cname);
-				setCurrentField(cname);
-
-				// call the column-start event
-				if (!columnStart()) {
-					delete[] cname;
-					return false;
-				}
-
-				// append the current column
-				// (which columnStart() may have overridden)
-				if (getCurrentColumnName()!=cname) {
-					delete[] cname;
-				}
-				columns[columns.getCount()]=
-						getCurrentColumnName();
-
-				// reset the current field to the current
-				// column name (in case columnStart() overrode
-				// the column name)
-				setCurrentField(getCurrentColumnName());
-
-				// call the column-end event
-				if (!columnEnd()) {
-					return false;
-				}
-			}
-			setCurrentColumn(getCurrentColumn()+1);
-		}
-	}
-
-	// by default, we want to include this column in the list of column
-	// names that we're building
-	bool	includecolumn=true;
-
-	// but, if we're ignoring columns with empty names...
-	if (ignorecolumnswithemptynames) {
-
-		// if this column name is empty, then don't include it
-		// list of column names that we're building
-		includecolumn=!charstring::isNullOrEmpty(name);
-
-		if (!includecolumn) {
-
-			// and put it in the list of columns to ignore when
-			// importing data later too
-			columnswithemptynames.append(getCurrentColumn());
-		}
-	}
-
-	// and we're building a list of column names from the ones specified in
-	// the CSV header, rather than just grabbing the columns from the table
-	// itself, and not ignoring this column because it's name was empty...
-	if (!getIgnoreColumns() && includecolumn) {
-
-		// set the current column name
-		char	*cname=charstring::duplicate(name);
+		// set the current column name (and field)
+		char	*cname=charstring::duplicate(
+					getPrimaryKeyColumnName());
 		setCurrentColumnName(cname);
 		setCurrentField(cname);
 
@@ -246,6 +84,87 @@ bool sqlrimportcsv::column(const char *name, bool quoted) {
 		if (!columnEnd()) {
 			return false;
 		}
+
+		// next...
+		setCurrentColumn(getCurrentColumn()+1);
+	}
+
+
+	// if there are any static columns...
+	if (staticvaluecolumnnames.getCount()) {
+
+		// loop, handling them
+		for (;;) {
+
+			// get the static column name for this position
+			const char	*svname=
+				staticvaluecolumnnames.getValue(
+							getCurrentColumn());
+			if (!svname) {
+				break;
+			}
+
+			// set the current column name (and field)
+			char	*cname=charstring::duplicate(svname);
+			setCurrentColumnName(cname);
+			setCurrentField(cname);
+
+			// call the column-start event
+			if (!columnStart()) {
+				delete[] cname;
+				return false;
+			}
+
+			// append the current column
+			// (which columnStart() may have overridden)
+			if (getCurrentColumnName()!=cname) {
+				delete[] cname;
+			}
+			columns[columns.getCount()]=getCurrentColumnName();
+
+			// reset the current field to the current
+			// column name (in case columnStart() overrode
+			// the column name)
+			setCurrentField(getCurrentColumnName());
+
+			// call the column-end event
+			if (!columnEnd()) {
+				return false;
+			}
+
+			// next...
+			setCurrentColumn(getCurrentColumn()+1);
+		}
+	}
+
+
+	// if this is just a normal column...
+
+	// set the current column name
+	char	*cname=charstring::duplicate(name);
+	setCurrentColumnName(cname);
+	setCurrentField(cname);
+
+	// call the column-start event
+	if (!columnStart()) {
+		delete[] cname;
+		return false;
+	}
+
+	// append the current column
+	// (which columnStart() may have overridden)
+	if (getCurrentColumnName()!=cname) {
+		delete[] cname;
+	}
+	columns[columns.getCount()]=getCurrentColumnName();
+
+	// reset the current field to the current column name
+	// (in case columnStart() overrode the column name)
+	setCurrentField(getCurrentColumnName());
+
+	// call the column-end event
+	if (!columnEnd()) {
+		return false;
 	}
 
 	// next...
@@ -274,20 +193,38 @@ bool sqlrimportcsv::headerEnd() {
 	query.append("select ");
 
 	if (getIgnoreColumns()) {
+
 		// if we're ignoring the columns specified in the CSV header,
 		// then just grab the column names from the table itself
 		query.append('*');
+
 	} else {
+
 		// if we built a list of column names from the ones specified
 		// in the CSV header, then select those specific columns
 		//
 		// NOTE: columns[] should contain the full list of columns,
-		// including any inserted primary key or static columns
+		// including any inserted primary key columns, static columns,
+		// and columns with empty names
 		for (uint64_t i=0; i<columns.getCount(); i++) {
+
 			if (i) {
 				query.append(',');
 			}
-			query.append(columns[i]);
+
+			// if we're ignoring columns with empty names and
+			// this column has an empty name...
+			if (getIgnoreColumnsWithEmptyNames() &&
+				charstring::isNullOrEmpty(columns[i])) {
+
+				// then fetch NULL instead of the column itself
+				query.append("NULL");
+
+			} else {
+
+				// otherwise, fetch the column
+				query.append(columns[i]);
+			}
 		}
 	}
 	query.append(" from ")->append(getObjectName());
@@ -338,7 +275,6 @@ bool sqlrimportcsv::recordStart() {
 	currenttablecol=0;
 	fieldcount=0;
 	emptyrecord=true;
-	columnswithemptynamesnode=columnswithemptynames.getFirst();
 	setCurrentColumn(0);
 	setCurrentColumnName(NULL);
 	setCurrentField(NULL);
@@ -349,10 +285,12 @@ bool sqlrimportcsv::recordStart() {
 
 bool sqlrimportcsv::field(const char *value, bool quoted) {
 
+
 	// if we're manually adding the primary key, and this is the primary
 	// key position, then add it
 	// (don't count this when determining if a record was empty or not)
-	if (insertprimarykey && getCurrentColumn()==primarykeycolumnindex) {
+	if (getInsertPrimaryKey() &&
+			getCurrentColumn()==getPrimaryKeyColumnIndex()) {
 
 		// set the current column name
 		setCurrentColumnName(columns[getCurrentColumn()]);
@@ -362,10 +300,10 @@ bool sqlrimportcsv::field(const char *value, bool quoted) {
 
 		// set the current field
 		char	*tmp;
-		if (primarykeysequence) {
+		if (getPrimaryKeySequence()) {
 			stringbuffer	tmpstr;
 			tmpstr.printf(getSqlrConnection()->nextvalFormat(),
-							primarykeysequence);
+						getPrimaryKeySequence());
 			tmp=tmpstr.detachString();
 		} else {
 			tmp=charstring::duplicate("null");
@@ -395,6 +333,7 @@ bool sqlrimportcsv::field(const char *value, bool quoted) {
 		currenttablecol++;
 		fieldcount++;
 	}
+
 
 	// if there are any static columns...
 	// (don't count these when determining if a record was empty or not)
@@ -453,81 +392,57 @@ bool sqlrimportcsv::field(const char *value, bool quoted) {
 		}
 	}
 
-	// should we include this field, or ignore it
-	// because its column name was blank?
-	bool	includefield=true;
-	if (ignorecolumnswithemptynames &&
-			columnswithemptynamesnode &&
-			getCurrentColumn()==
-				columnswithemptynamesnode->getValue()) {
-		includefield=false;
-		columnswithemptynamesnode=columnswithemptynamesnode->getNext();
+	// if this is a normal field...
+
+	// set the current column name
+	setCurrentColumnName(columns[getCurrentColumn()]);
+
+	// if this value has a mapping, then get that
+	const char	*v=fieldmap.getValue(value);
+	if (v) {
+		value=v;
 	}
 
-	// if we should include this field...
-	if (includefield) {
-
-		// set the current column name
-		setCurrentColumnName(columns[getCurrentColumn()]);
-
-		// if this value has a mapping, then get that
-		const char	*v=fieldmap.getValue(value);
-		if (v) {
-			value=v;
-		}
-
-		// check for a non-empty field
-		// (do this AFTER remapping the field in case some set
-		// of values get mapped to empty strings or NULLs)
-		if (emptyrecord && !charstring::isNullOrEmpty(value)) {
-			emptyrecord=false;
-		}
-
-		// determine whether to quote this field
-		bool	isnumeric=getIsNumericColumn(currenttablecol);
-		bool	isdatetime=getIsDateTimeColumn(currenttablecol);
-		quotefield[getCurrentColumn()]=!isnumeric;
-
-		// set the current field
-		stringbuffer	tmpstr;
-		appendField(&tmpstr,value,isnumeric,isdatetime);
-		char		*tmp=tmpstr.detachString();
-		setCurrentField(tmp);
-
-		// call the field-start event
-		if (!fieldStart()) {
-			delete[] tmp;
-			return false;
-		}
-
-		// append the current field
-		// (which fieldStart() may have overridden)
-		if (getCurrentField()!=tmp) {
-			delete[] tmp;
-		}
-		fields[fields.getCount()]=getCurrentField();
-
-		// call the field-end event
-		if (!fieldEnd()) {
-			return false;
-		}
-
-		// next...
-		setCurrentColumn(getCurrentColumn()+1);
-		currenttablecol++;
-		fieldcount++;
-
-	} else {
-
-		// set the current column name
-		setCurrentColumnName(columns[getCurrentColumn()]);
-
-		// FIXME: I think I should call events and setCurrentField()
-		// in here somewhere
-
-		// next column...
-		setCurrentColumn(getCurrentColumn()+1);
+	// check for a non-empty field
+	// (do this AFTER remapping the field in case some set
+	// of values get mapped to empty strings or NULLs)
+	if (emptyrecord && !charstring::isNullOrEmpty(value)) {
+		emptyrecord=false;
 	}
+
+	// determine whether to quote this field
+	bool	isnumeric=getIsNumericColumn(currenttablecol);
+	bool	isdatetime=getIsDateTimeColumn(currenttablecol);
+	quotefield[getCurrentColumn()]=!isnumeric;
+
+	// set the current field
+	stringbuffer	tmpstr;
+	appendField(&tmpstr,value,isnumeric,isdatetime);
+	char		*tmp=tmpstr.detachString();
+	setCurrentField(tmp);
+
+	// call the field-start event
+	if (!fieldStart()) {
+		delete[] tmp;
+		return false;
+	}
+
+	// append the current field
+	// (which fieldStart() may have overridden)
+	if (getCurrentField()!=tmp) {
+		delete[] tmp;
+	}
+	fields[fields.getCount()]=getCurrentField();
+
+	// call the field-end event
+	if (!fieldEnd()) {
+		return false;
+	}
+
+	// next...
+	setCurrentColumn(getCurrentColumn()+1);
+	currenttablecol++;
+	fieldcount++;
 
 	return true;
 }
@@ -641,58 +556,124 @@ bool sqlrimportcsv::recordEnd() {
 	setCurrentColumnName(NULL);
 	setCurrentField(NULL);
 
-	// ignore empty records, if we're configured to do so
-	if (ignoreemptyrecords && emptyrecord) {
+	// clear the query buffer
+	query.clear();
+
+	// if we're ignoring empty records, and this
+	// was an empty record, then ignore it
+	if (getIgnoreEmptyRows() && emptyrecord) {
 
 		// call the row-end event
 		return rowEnd();
 	}
 
-	// build the insert query
-	query.clear();
-	query.append("insert into ")->append(getObjectName());
-	if (!getIgnoreColumns()) {
-		query.append(" (");
-		for (uint64_t i=0; i<columns.getCount(); i++) {
-			if (i) {
-				query.append(',');
+	// if there were any actual values (i.e. not an empty csv)
+	if (fieldcount) {
+
+		// build the insert query...
+
+		// insert into...
+		query.append("insert into ")->append(getObjectName());
+
+		// if we're not ignoring the columns specified in the
+		// CSV header then build a column list from them...
+		if (!getIgnoreColumns()) {
+
+			query.append(" (");
+
+			// run through the column names...
+			bool	first=true;
+			for (uint64_t i=0; i<columns.getCount(); i++) {
+
+				// get the column name and remap it,
+				// if the name has been mapped
+				const char	*c=columns[i];
+				const char	*m=columnmap.getValue(c);
+				if (m) {
+					c=m;
+				}
+
+				// if we're ignoring empty column names,
+				// and this column name is empty, then ignore it
+				if (getIgnoreColumnsWithEmptyNames() &&
+						charstring::isNullOrEmpty(c)) {
+					continue;
+				}
+
+				// determine if we need a comma or not
+				if (first) {
+					first=false;
+				} else {
+					query.append(',');
+				}
+
+				// upper-case or lower-case the column name,
+				// if we need to
+				char	*cm=charstring::duplicate(c);
+				if (getLowerCaseColumnNames()) {
+					charstring::lower(cm);
+				} else if (getUpperCaseColumnNames()) {
+					charstring::upper(cm);
+				}
+
+				// append the column name
+				query.append(cm);
+
+				// clean up
+				delete[] cm;
 			}
+
+			query.append(')');
+
+		}
+
+		// values...
+		query.append(" values (");
+
+		// run through the fields...
+		bool	first=true;
+		for (uint64_t i=0; i<fields.getCount(); i++) {
+
+			// get the column name and remap it,
+			// if the name has been mapped
 			const char	*c=columns[i];
 			const char	*m=columnmap.getValue(c);
 			if (m) {
 				c=m;
 			}
-			char	*cm=charstring::duplicate(c);
-			if (getLowerCaseColumnNames()) {
-				charstring::lower(cm);
-			} else if (getUpperCaseColumnNames()) {
-				charstring::upper(cm);
+
+			// if we're ignoring empty column names,
+			// and this column name is empty, then ignore it
+			if (getIgnoreColumnsWithEmptyNames() &&
+					charstring::isNullOrEmpty(c)) {
+				continue;
 			}
-			query.append(cm);
-			delete[] cm;
+
+			// determine if we need a comma or not
+			if (first) {
+				first=false;
+			} else {
+				query.append(',');
+			}
+
+			// open-quote the field, if necessary
+			if (quotefield[i]) {
+				query.append('\'');
+			}
+
+			// append the field
+			query.append(fields[i]);
+
+			// close-quote the field, if necessary
+			if (quotefield[i]) {
+				query.append('\'');
+			}
 		}
 		query.append(')');
-	}
-	query.append(" values (");
-	for (uint64_t i=0; i<fields.getCount(); i++) {
-		if (i) {
-			query.append(',');
-		}
-		if (quotefield[i]) {
-			query.append('\'');
-		}
-		query.append(fields[i]);
-		if (quotefield[i]) {
-			query.append('\'');
-		}
-	}
-	fields.clear();
-	quotefield.clear();
-	query.append(')');
 
-
-	// if there were any actual values (i.e. not an empty csv)
-	if (fieldcount) {
+		// clean up
+		fields.clear();
+		quotefield.clear();
 
 		// if we're committing every so often, and this is the very
 		// first record, then begin a transaction

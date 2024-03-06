@@ -1590,7 +1590,7 @@ void exportTests() {
 	stdoutput.printf("\n\n");
 
 	// set up xml export
-	stdoutput.printf("SET UP CSV EXPORT: \n");
+	stdoutput.printf("SET UP XML EXPORT: \n");
 	testsqlrexportxml	tsex;
 	tsex.setSqlrConnection(con);
 	tsex.setSqlrCursor(cur);
@@ -1872,7 +1872,7 @@ void importTests() {
 	stdoutput.printf("\n\n");
 
 	// set up xml import
-	stdoutput.printf("SET UP CSV IMPORT: \n");
+	stdoutput.printf("SET UP XML IMPORT: \n");
 	testsqlrimportxml	tsix;
 	tsix.setSqlrConnection(con);
 	tsix.setSqlrCursor(cur);

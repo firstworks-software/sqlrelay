@@ -34,6 +34,39 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
  		 *  is configured to use to insert data for the import. */
 		sqlrcursor	*getSqlrCursor();
 
+		/** Inserts a primary key at "primarykeycolumnindex".
+		 *
+		 *  If setIgnoreColumns(false) is set (the default) then
+		 *  "primarykeycolumnname" must be supplied.  Otherwise it can
+		 *  be set to NULL or an empty string.
+		 *
+		 *  If "primarykeycolumnsequence" is non-empty and non-null
+		 *  then nextval('"primarykeycolumnsequence"') will be used to
+		 *  generate the key.  Otherwise a NULL will be used in an
+		 *  attempt to trigger an autoincrement/serial column to
+		 *  generate a key. */
+		void	insertPrimaryKey(const char *primarykeycolumnname,
+						uint32_t primarykeycolumnindex,
+						const char *primarykeysequence);
+
+		/** Removes any primary key configuaration set by a prior call
+		 *  to insertPrimaryKey(). */
+		void	removePrimaryKey();
+
+		/** Inserts static value "value" at "columnindex" for all
+		 *  rows.
+		 *
+		 *  If setIgnoreColumns(false) is set (the default) then
+		 *  "columnname" must be supplied.  Otherwise it can be set to
+		 *  NULL or an empty string. */
+		void	insertStaticValue(const char *columnname,
+						uint32_t columnindex,
+						const char *value);
+
+		/** Removes any static value configuaration at "columnindex"
+		 *  set by a prior call to insertStaticValue(). */
+		void	removeStaticValue(uint32_t columnindex);
+
 		/** Sets the database type, which impacts how things like
 		 *  escaping, sequences, and auto-increment fields are handled.
 		 *  Should be one of "postgresql", "mysql", "firebird",
@@ -74,6 +107,27 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		/** Returns whether or not column information will be
 		 *  ignored. */
 		bool	getIgnoreColumns();
+
+		/** If "ignorecolumnswithemptynames" is set true, then columns
+		 *  with empty column names will be completely ignored.  It
+		 *  will be as if those columns are completely absent from the
+		 *  CSV, which may be important to keep in mind when specifying
+		 *  indexes for primary keys or static values.
+		 *
+		 *  Note that "ignorecolumsnwithemptynames" is observed even if
+		 *  setIgnoreColumns(true) is set. */
+		void	setIgnoreColumnsWithEmptyNames(
+					bool ignorecolumnswithemptynames);
+
+		/** Returns whether or not columns with empty names will be
+		 *  ignored. */
+		bool	getIgnoreColumnsWithEmptyNames();
+
+		/** Configures the instance to ignore empty rows. */
+		void	setIgnoreEmptyRows(bool ignoreemptyrows);
+
+		/** Returns whether or not empty rows will be ignored. */
+		bool	getIgnoreEmptyRows();
 
 		/** Maps column name "from" to "to".  If "to" is NULL then
 		 *  the column is unmapped. */
@@ -290,7 +344,7 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		void	setCoarseLogLevel(uint8_t coarseloglevel);
 
 		/** Returns the coarse log level. */
-		uint8_t		getCoarseLogLevel();
+		uint8_t	getCoarseLogLevel();
 
 		/** Sets the fine log level.  Detailed log messages will be
 		 *  logged at this level.  If the log level of "lg" (set by
@@ -300,7 +354,7 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		void	setFineLogLevel(uint8_t fineloglevel);
 
 		/** Returns the fine log level. */
-		uint8_t		getFineLogLevel();
+		uint8_t	getFineLogLevel();
 
 		/** Sets the log indent level to "logindent".  Defaults to 0. */
 		void	setLogIndent(uint32_t logindent);
@@ -402,6 +456,14 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  passed in to it, and that buffer will eventually be
 		 *  deallocated by this class.  Plan accordingly.
 		 *
+		 *  Note that this method is called whether or not a column is
+		 *  ignored.  For example... If setIgnoreColums(true) has been
+		 *  called, then this method will still be called for each
+		 *  column.  If setIgnoreColumnsWithEmptyNames(true) has been
+		 *  called, then this method will still be called for each
+		 *  column, whether it is empty or not.  getCurrentColumnName()
+		 *  will also return the (possibly empty) column name.
+		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and import should stop if this method return
 		 *  false. */
@@ -425,6 +487,14 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *    column that we're ending
 		 *  * getIsNumericColumn() should return false for all columns
 		 *  * getIsDateTimeColumn() should return false for all columns
+		 *
+		 *  Note that this method is called whether or not a column is
+		 *  ignored.  For example... If setIgnoreColums(true) has been
+		 *  called, then this method will still be called for each
+		 *  column.  If setIgnoreColumnsWithEmptyNames(true) has been
+		 *  called, then this method will still be called for each
+		 *  column, whether it is empty or not.  getCurrentColumnName()
+		 *  will also return the (possibly empty) column name.
 		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and import should stop if this method return
@@ -499,6 +569,11 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  * getIsDateTimeColumn() should return true/false correctly
 		 *    for each column
 		 *
+		 *  Note that this method is called whether or not a row is
+		 *  ignored.  For example...  If setIgnoreEmptyRows(true)
+		 *  has been called then this method will still be called for
+		 *  each empty row.
+		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and import should stop if this method return
 		 *  false. */
@@ -539,6 +614,17 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  will eventually be deallocated by this class.  Plan
 		 *  accordingly.
 		 *
+		 *  Note that this method is called whether or not a column or
+		 *  row is ignored.  For example...  If
+		 *  setIgnoreColumnsWithEmptyNames(true) has been called, then
+		 *  this method will still be called for each column, whether
+		 *  it is empty or not.  getCurrentColumnName() will also
+		 *  return the (possibly empty) column name.  If
+		 *  setIgnoreEmptyRows(true) has been called then this
+		 *  method will still be called for each column of each empty
+		 *  row.  getCurrentField() will also return the (possibly
+		 *  empty) field.
+		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and import should stop if this method return
 		 *  false. */
@@ -570,6 +656,17 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  * getIsDateTimeColumn() should return true/false correctly
 		 *    for each column
 		 *
+		 *  Note that this method is called whether or not a column or
+		 *  row is ignored.  For example...  If
+		 *  setIgnoreColumnsWithEmptyNames(true) has been called, then
+		 *  this method will still be called for each column, whether
+		 *  it is empty or not.  getCurrentColumnName() will also
+		 *  return the (possibly empty) column name.  If
+		 *  setIgnoreEmptyRows(true) has been called then this
+		 *  method will still be called for each column of each empty
+		 *  row.  getCurrentField() will also return the (possibly
+		 *  empty) field.
+		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and import should stop if this method return
 		 *  false. */
@@ -597,6 +694,11 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *    for each column
 		 *  * getIsDateTimeColumn() should return true/false correctly
 		 *    for each column
+		 *
+		 *  Note that this method is called whether or not a row is
+		 *  ignored.  For example...  If setIgnoreEmptyRows(true)
+		 *  has been called then this method will still be called for
+		 *  each empty row.
 		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and import should stop if this method return
