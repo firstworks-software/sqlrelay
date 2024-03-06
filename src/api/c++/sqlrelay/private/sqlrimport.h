@@ -2,6 +2,7 @@
 // See the file COPYING for more information
 
 		// FIXME: unhide these
+		bool		determineColumnTypes();
 		bool		initialBegin();
 		bool		insertRow();
 		bool		periodicCommit();

@@ -6,6 +6,10 @@
 #include <rudiments/file.h>
 #include <rudiments/error.h>
 
+#define NEED_IS_NUMBER_TYPE_CHAR
+#define NEED_IS_DATETIME_TYPE_CHAR
+#include <datatypes.h>
+
 sqlrimport::sqlrimport() {
 	sqlrcon=NULL;
 	sqlrcur=NULL;
@@ -499,6 +503,67 @@ void sqlrimport::clearFlagsAndCounts() {
 	importedrowcount=0;
 	numericcolumn.clear();
 	datetimecolumn.clear();
+}
+
+bool sqlrimport::determineColumnTypes() {
+
+	// we need to figure out which columns are numbers or dates...
+
+	// get info about these columns from the database
+	query.clear();
+	query.append("select ");
+
+	if (getIgnoreColumns()) {
+		// if we're ignoring the columns specified in the file,
+		// then just grab the column names from the table itself
+		query.append('*');
+	} else {
+		// if we built a list of column names from the ones specified
+		// in the file, then select those specific columns
+		//
+		// NOTE: columns[] should contain the full list of columns,
+		// including any inserted primary key columns, static columns,
+		// and columns with empty names
+		for (uint64_t i=0; i<columns.getCount(); i++) {
+
+			if (i) {
+				query.append(',');
+			}
+
+			// if we're ignoring columns with empty names and
+			// this column has an empty name...
+			if (getIgnoreColumnsWithEmptyNames() &&
+				charstring::isNullOrEmpty(columns[i])) {
+
+				// then fetch NULL instead of the column itself
+				query.append("NULL");
+
+			} else {
+
+				// otherwise, fetch the column
+				query.append(columns[i]);
+			}
+		}
+	}
+	query.append(" from ")->append(getObjectName());
+	getSqlrCursor()->setResultSetBufferSize(1);
+	if (!getSqlrCursor()->sendQuery(query.getString())) {
+		if (!error(getSqlrConnection()->errorNumber(),
+				getSqlrConnection()->errorMessage())) {
+			return false;
+		}
+	}
+
+	// run through the columns, figuring out which are numbers and dates...
+	uint32_t	colcount=getSqlrCursor()->colCount();
+	for (uint32_t i=0; i<colcount; i++) {
+		setIsNumericColumn(i,
+			isNumberTypeChar(getSqlrCursor()->getColumnType(i)));
+		setIsDateTimeColumn(i,
+			isDateTimeTypeChar(getSqlrCursor()->getColumnType(i)));
+	}
+
+	return true;
 }
 
 bool sqlrimport::initialBegin() {

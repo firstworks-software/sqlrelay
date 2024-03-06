@@ -3,9 +3,6 @@
 
 #include <sqlrelay/sqlrimportxml.h>
 #include <rudiments/stdio.h>
-#define NEED_IS_NUMBER_TYPE_CHAR 1
-#define NEED_IS_DATETIME_TYPE_CHAR 1
-#include <datatypes.h>
 
 const unsigned short sqlrimportxml::NULLTAG=0;
 const unsigned short sqlrimportxml::TABLETAG=1;
@@ -360,8 +357,6 @@ bool sqlrimportxml::columnsTagEnd() {
 	setCurrentColumnName(NULL);
 	setCurrentField(NULL);
 
-	// we need to figure out which columns are numbers or dates...
-
 	// if we're not ignoring columns, but there weren't any (i.e. a totally
 	// empty csv), then don't get any info about columns from the database,
 	// just call the columns-end event and bail
@@ -369,50 +364,9 @@ bool sqlrimportxml::columnsTagEnd() {
 		return columnsEnd();
 	}
 
-	// get info about these columns from the database
-	query.clear();
-	query.append("select ");
-
-	if (getIgnoreColumns()) {
-		// if we're ignoring the columns specified in the CSV header,
-		// then just grab the column names from the table itself
-		query.append('*');
-	} else {
-		// if we built a list of column names from the ones specified
-		// in the CSV header, then select those specific columns
-		//
-		// NOTE: columns[] should contain the full list of columns,
-		// including any inserted primary key or static columns
-		for (uint64_t i=0; i<columns.getCount(); i++) {
-			if (i) {
-				query.append(',');
-			}
-			query.append(columns[i]);
-		}
-	}
-	query.append(" from ")->append(getObjectName());
-	getSqlrCursor()->setResultSetBufferSize(1);
-	if (!getSqlrCursor()->sendQuery(query.getString())) {
-		if (!error(getSqlrConnection()->errorNumber(),
-				getSqlrConnection()->errorMessage())) {
-			return false;
-		}
-	}
-
-	// run through the columns, figuring out which are numbers and dates...
-	uint32_t	colcount=getSqlrCursor()->colCount();
-	for (uint32_t i=0; i<colcount; i++) {
-		setIsNumericColumn(i,
-			isNumberTypeChar(getSqlrCursor()->getColumnType(i)));
-		setIsDateTimeColumn(i,
-			isDateTimeTypeChar(getSqlrCursor()->getColumnType(i)));
-	}
-
-	// log
-	if (getLogger()) {
-		getLogger()->write(getCoarseLogLevel(),
-					NULL,getLogIndent(),
-					"%ld columns",(unsigned long)colcount);
+	// we need to figure out which columns are numbers or dates
+	if (!determineColumnTypes()) {
+		return false;
 	}
 
 	// call the columns-end event

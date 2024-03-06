@@ -6,10 +6,6 @@
 #include <rudiments/file.h>
 #include <rudiments/datetime.h>
 
-#define NEED_IS_NUMBER_TYPE_CHAR
-#define NEED_IS_DATETIME_TYPE_CHAR
-#include <datatypes.h>
-
 sqlrimportcsv::sqlrimportcsv() : sqlrimportfile(), csvsax() {
 	currenttablecol=0;
 	foundfieldtext=false;
@@ -175,8 +171,6 @@ bool sqlrimportcsv::headerEnd() {
 	setCurrentColumnName(NULL);
 	setCurrentField(NULL);
 
-	// we need to figure out which columns are numbers or dates...
-
 	// if we're not ignoring columns, but there weren't any (i.e. a totally
 	// empty csv), then don't get any info about columns from the database,
 	// just call the columns-end event and bail
@@ -184,67 +178,9 @@ bool sqlrimportcsv::headerEnd() {
 		return columnsEnd();
 	}
 
-	// get info about these columns from the database
-	query.clear();
-	query.append("select ");
-
-	if (getIgnoreColumns()) {
-
-		// if we're ignoring the columns specified in the file,
-		// then just grab the column names from the table itself
-		query.append('*');
-
-	} else {
-
-		// if we built a list of column names from the ones specified
-		// in the file, then select those specific columns
-		//
-		// NOTE: columns[] should contain the full list of columns,
-		// including any inserted primary key columns, static columns,
-		// and columns with empty names
-		for (uint64_t i=0; i<columns.getCount(); i++) {
-
-			if (i) {
-				query.append(',');
-			}
-
-			// if we're ignoring columns with empty names and
-			// this column has an empty name...
-			if (getIgnoreColumnsWithEmptyNames() &&
-				charstring::isNullOrEmpty(columns[i])) {
-
-				// then fetch NULL instead of the column itself
-				query.append("NULL");
-
-			} else {
-
-				// otherwise, fetch the column
-				query.append(columns[i]);
-			}
-		}
-	}
-	query.append(" from ")->append(getObjectName());
-	getSqlrCursor()->setResultSetBufferSize(1);
-	if (!getSqlrCursor()->sendQuery(query.getString())) {
-		if (!error(getSqlrConnection()->errorNumber(),
-				getSqlrConnection()->errorMessage())) {
-			return false;
-		}
-	}
-
-	// run through the columns, figuring out which are numbers and dates...
-	uint32_t	colcount=getSqlrCursor()->colCount();
-	for (uint32_t i=0; i<colcount; i++) {
-		setIsNumericColumn(i,
-			isNumberTypeChar(getSqlrCursor()->getColumnType(i)));
-		setIsDateTimeColumn(i,
-			isDateTimeTypeChar(getSqlrCursor()->getColumnType(i)));
-	}
-
-	if (getLogger()) {
-		getLogger()->write(getCoarseLogLevel(),
-					NULL,getLogIndent(),
-					"%ld columns",(unsigned long)colcount);
+	// we need to figure out which columns are numbers or dates
+	if (!determineColumnTypes()) {
+		return false;
 	}
 
 	// call the columns-end event
