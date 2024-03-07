@@ -704,9 +704,6 @@ bool sqlrimport::processPrimaryKeyAndStaticColumns() {
 
 bool sqlrimport::determineColumnTypes() {
 
-	// FIXME: this doesn't handle primary keys or static values, so 
-	// numericcolumn[x] may not map correctly to column[x]
-
 	// we need to figure out which columns are numbers or dates...
 
 	// get info about these columns from the database
@@ -755,12 +752,65 @@ bool sqlrimport::determineColumnTypes() {
 	}
 
 	// run through the columns, figuring out which are numbers and dates...
+	//
+	// NOTE: col is the index of the database columns and counter is the
+	// index of the numericcolumn/datetimecolumn dictionaries.  Separeate
+	// indices are necessary to handle primary keys and static values.
+	uint32_t	counter=0;
 	uint32_t	colcount=getSqlrCursor()->colCount();
-	for (uint32_t i=0; i<colcount; i++) {
-		setIsNumericColumn(i,
-			isNumberTypeChar(getSqlrCursor()->getColumnType(i)));
-		setIsDateTimeColumn(i,
-			isDateTimeTypeChar(getSqlrCursor()->getColumnType(i)));
+	for (uint32_t col=0; col<colcount; col++) {
+
+		// if this column is the primary key...
+		if (getInsertPrimaryKey() &&
+				counter==getPrimaryKeyColumnIndex()) {
+
+			// these are all generated from sequences,
+			// so they must be numeric
+			setIsNumericColumn(counter,true);
+
+			// next...
+			counter++;
+		}
+
+		// if there are any static columns...
+		if (getStaticValueCount()) {
+
+			// loop, handling them
+			for (;;) {
+
+				// get the static column name for this position
+				const char	*value=getStaticValue(counter);
+				if (!value) {
+					break;
+				}
+
+				// set numeric or date/time
+				if (charstring::isNumber(value)) {
+					setIsNumericColumn(counter,true);
+				} else if (datetime::parse(value,
+							getDdMm(),
+							getYyyyDdMm(),
+							getDateDelimiters(),
+							NULL,NULL,NULL,NULL,
+							NULL,NULL,NULL,NULL)) {
+					setIsDateTimeColumn(counter,true);
+				}
+
+				// next...
+				counter++;
+			}
+		}
+
+		// set numeric or date/time
+		const char	*coltype=getSqlrCursor()->getColumnType(col);
+		if (isNumberTypeChar(coltype)) {
+			setIsNumericColumn(counter,true);
+		} else if (isDateTimeTypeChar(coltype)) {
+			setIsDateTimeColumn(counter,true);
+		}
+
+		// next...
+		counter++;
 	}
 
 	return true;
@@ -907,15 +957,15 @@ bool sqlrimport::processField(char **fval) {
 				break;
 			}
 
-			// get the static column value for this position
-			const char	*colvalue=
+			// get the static value for this position
+			const char	*value=
 				getStaticValue(getCurrentColumn());
 
 			// always quote these
 			quotefield[getCurrentColumn()]=true;
 
 			// set the current field
-			char	*tmp=massageValue(colvalue,false,false);
+			char	*tmp=massageValue(value,false,false);
 			setCurrentField(tmp);
 
 			// call the field-start event
@@ -959,8 +1009,6 @@ bool sqlrimport::processField(char **fval) {
 	}
 
 	// determine whether to quote this field
-	// FIXME: getCurrentColumn() will not be corerect here if we
-	// inserted a primary key or static columns
 	bool	isnumeric=getIsNumericColumn(getCurrentColumn());
 	bool	isdatetime=getIsDateTimeColumn(getCurrentColumn());
 	quotefield[getCurrentColumn()]=!isnumeric;
