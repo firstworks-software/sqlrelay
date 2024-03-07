@@ -360,6 +360,7 @@ bool sqlrimport::columnsEnd() {
 }
 
 bool sqlrimport::rowsStart() {
+	// by default, just return success
 	return true;
 }
 
@@ -388,6 +389,7 @@ bool sqlrimport::rowEnd() {
 				(unsigned long long)getImportedRowCount());
 	}
 
+	// by default, just return success
 	return true;
 }
 
