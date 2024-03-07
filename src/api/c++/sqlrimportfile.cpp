@@ -6,6 +6,7 @@
 sqlrimportfile::sqlrimportfile() : sqlrimport() {
 	filename=NULL;
 	fd=NULL;
+	extension=NULL;
 }
 
 sqlrimportfile::~sqlrimportfile() {
@@ -27,7 +28,22 @@ filedescriptor *sqlrimportfile::getFileDescriptor() {
 	return fd;
 }
 
+void sqlrimportfile::setExtension(const char *extension) {
+	this->extension=extension;
+}
+
+const char *sqlrimportfile::getExtension() {
+	return extension;
+}
+
 bool sqlrimportfile::importData() {
+
 	fd=NULL;
+
+	// set the table name from the file name, if it wasn't already set
+	if (!getObjectName()) {
+		setObjectName(file::getBaseName(getFileName(),extension));
+	}
+
 	return true;
 }

@@ -6,12 +6,17 @@
 #include <rudiments/file.h>
 
 sqlrimportcsv::sqlrimportcsv() : sqlrimportfile(), csvsax() {
+	setExtension(".csv");
 }
 
 sqlrimportcsv::~sqlrimportcsv() {
 }
 
 bool sqlrimportcsv::importData() {
+
+	if (!sqlrimportfile::importData()) {
+		return false;
+	}
 
 	// set the table name from the file name, if it wasn't already set
 	if (!getObjectName()) {

@@ -20,6 +20,7 @@ sqlrimportxml::sqlrimportxml() : sqlrimportfile(), xmlsax() {
 	infield=false;
 	fval=NULL;
 	sequencevalue=NULL;
+	setExtension(".xml");
 }
 
 sqlrimportxml::~sqlrimportxml() {
@@ -32,9 +33,8 @@ sqlrimportxml::~sqlrimportxml() {
 
 bool sqlrimportxml::importData() {
 
-	// set the table name from the file name, if it wasn't already set
-	if (!getObjectName()) {
-		setObjectName(file::getBaseName(getFileName(),".xml"));
+	if (!sqlrimportfile::importData()) {
+		return false;
 	}
 
 	// NOTE: startProcessingImport() calls the import-start event
