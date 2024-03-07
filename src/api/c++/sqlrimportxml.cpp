@@ -13,21 +13,6 @@ const unsigned short sqlrimportxml::ROWTAG=5;
 const unsigned short sqlrimportxml::FIELDTAG=6;
 const unsigned short sqlrimportxml::SEQUENCETAG=7;
 
-const unsigned short sqlrimportxml::NULLATTR=0;
-const unsigned short sqlrimportxml::NAMEATTR=1;
-const unsigned short sqlrimportxml::TYPEATTR=3;
-const unsigned short sqlrimportxml::LENGTHATTR=4;
-const unsigned short sqlrimportxml::PRECISIONATTR=5;
-const unsigned short sqlrimportxml::SCALEATTR=6;
-const unsigned short sqlrimportxml::NULLABLEATTR=7;
-const unsigned short sqlrimportxml::PRIMARYKEYATTR=8;
-const unsigned short sqlrimportxml::UNIQUEATTR=9;
-const unsigned short sqlrimportxml::PARTOFKEYATTR=10;
-const unsigned short sqlrimportxml::UNSIGNEDATTR=11;
-const unsigned short sqlrimportxml::ZEROFILLEDATTR=12;
-const unsigned short sqlrimportxml::BINARYATTR=13;
-const unsigned short sqlrimportxml::AUTOINCREMENTATTR=14;
-
 sqlrimportxml::sqlrimportxml() : sqlrimportfile(), xmlsax() {
 	currenttag=NULLTAG;
 	currentattribute=NULL;
@@ -62,21 +47,40 @@ bool sqlrimportxml::importData() {
 
 bool sqlrimportxml::tagStart(const char *ns, const char *name) {
 
-	// call the appropriate tag-start method
 	if (!charstring::compare(name,"table")) {
-		return tableTagStart();
+		currenttag=TABLETAG;
+		return true;
 	} else if (!charstring::compare(name,"columns")) {
-		return columnsTagStart();
+		currenttag=COLUMNSTAG;
+		// NOTE: startProcessingColumns() calls the columns-start event;
+		return startProcessingColumns();
 	} else if (!charstring::compare(name,"column")) {
-		return columnTagStart();
+		currenttag=COLUMNTAG;
+		// reset cname
+		cname=NULL;
+		// don't call the column-start event yet, we need
+		// the attributes to have been processed first
+		return true;
 	} else if (!charstring::compare(name,"rows")) {
-		return rowsTagStart();
+		currenttag=ROWSTAG;
+		// NOTE: startProcessingRows() calls the rows-start event
+		return startProcessingRows();
 	} else if (!charstring::compare(name,"row")) {
-		return rowTagStart();
+		currenttag=ROWTAG;
+		// NOTE: startProcessingRow() calls the row-start event
+		return startProcessingRow();
 	} else if (!charstring::compare(name,"field")) {
-		return fieldTagStart();
+		currenttag=FIELDTAG;
+		// we're in a field
+		infield=true;
+		// reset fval
+		fval=NULL;
+		// don't call the column-start event yet, we need
+		// the attributes to have been processed first
+		return true;
 	} else if (!charstring::compare(name,"sequence")) {
-		return sequenceTagStart();
+		currenttag=SEQUENCETAG;
+		return true;
 	}
 	return true;
 }
@@ -166,134 +170,36 @@ char *sqlrimportxml::unescapeValue(const char *value) {
 
 bool sqlrimportxml::tagEnd(const char *ns, const char *name) {
 
-	// call the appropriate tag-end method
-	if (!charstring::compare(name,"table")) {
-		return tableTagEnd();
+	if (!charstring::compare(name,"column")) {
+		// NOTE: atttributeValue() should have set cname by now
+		// NOTE: processColumnName() calls the
+		// column-start and column-end events
+		return processColumnName(&cname);
 	} else if (!charstring::compare(name,"columns")) {
-		return columnsTagEnd();
-	} else if (!charstring::compare(name,"column")) {
-		return columnTagEnd();
-	} else if (!charstring::compare(name,"rows")) {
-		return rowsTagEnd();
-	} else if (!charstring::compare(name,"row")) {
-		return rowTagEnd();
+		// NOTE: endProcessingColumns() calls the columns-end event
+		return endProcessingColumns();
 	} else if (!charstring::compare(name,"field")) {
-		return fieldTagEnd();
+		// we're not in a field any more
+		infield=false;
+		// NOTE: text() should have set fval by now
+		// NOTE: processField() calls the
+		// field-start and field-end events
+		return processField(&fval);
+	} else if (!charstring::compare(name,"row")) {
+		// NOTE: endProcessingRow() calls the row-end event
+		return endProcessingRow();
+	} else if (!charstring::compare(name,"rows")) {
+		// NOTE: endProcessingRows() calls the rows-end event
+		return endProcessingRows();
+	} else if (!charstring::compare(name,"table")) {
+		return true;
 	} else if (!charstring::compare(name,"sequence")) {
-		return sequenceTagEnd();
+		return resetSequence();
 	}
 	return true;
 }
 
-bool sqlrimportxml::tableTagStart() {
-
-	// set the current tag
-	currenttag=TABLETAG;
-
-	return true;
-}
-
-bool sqlrimportxml::columnsTagStart() {
-
-	// set the current tag
-	currenttag=COLUMNSTAG;
-
-	// NOTE: startProcessingColumns() calls the columns-start event;
-	return startProcessingColumns();
-}
-
-bool sqlrimportxml::columnTagStart() {
-
-	// set the current tag
-	currenttag=COLUMNTAG;
-
-	// reset cname
-	cname=NULL;
-
-	// don't call the column-start event yet, we need
-	// the attributes to have been processed first
-	return true;
-}
-
-bool sqlrimportxml::columnTagEnd() {
-	// NOTE: atttributeValue() should have set cname by now
-	// NOTE: processColumnName() calls the
-	// column-start and column-end events
-	return processColumnName(&cname);
-}
-
-bool sqlrimportxml::columnsTagEnd() {
-	// NOTE: endProcessingColumns() calls the columns-end event
-	return endProcessingColumns();
-}
-
-bool sqlrimportxml::rowsTagStart() {
-
-	// set the current tag
-	currenttag=ROWSTAG;
-
-	// NOTE: startProcessingRows() calls the rows-start event
-	return startProcessingRows();
-}
-
-bool sqlrimportxml::rowTagStart() {
-
-	// set the current tag
-	currenttag=ROWTAG;
-
-	// NOTE: startProcessingRow() calls the row-start event
-	return startProcessingRow();
-}
-
-bool sqlrimportxml::fieldTagStart() {
-
-	// set the current tag
-	currenttag=FIELDTAG;
-
-	// we're in a field
-	infield=true;
-
-	// reset fval
-	fval=NULL;
-
-	// don't call the column-start event yet, we need
-	// the attributes to have been processed first
-	return true;
-}
-
-bool sqlrimportxml::fieldTagEnd() {
-
-	// we're not in a field any more
-	infield=false;
-
-	// NOTE: text() should have set fval by now
-	// NOTE: processField() calls the field-start and field-end events
-	return processField(&fval);
-}
-
-bool sqlrimportxml::rowTagEnd() {
-	// NOTE: endProcessingRow() calls the row-end event
-	return endProcessingRow();
-}
-
-bool sqlrimportxml::rowsTagEnd() {
-	// NOTE: endProcessingRows() calls the rows-end event
-	return endProcessingRows();
-}
-
-bool sqlrimportxml::tableTagEnd() {
-	return true;
-}
-
-bool sqlrimportxml::sequenceTagStart() {
-
-	// set the current tag
-	currenttag=SEQUENCETAG;
-
-	return true;
-}
-
-bool sqlrimportxml::sequenceTagEnd() {
+bool sqlrimportxml::resetSequence() {
 
 	// reset the sequence...
 	query.clear();
