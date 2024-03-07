@@ -721,25 +721,49 @@ bool sqlrimport::determineColumnTypes() {
 		// NOTE: columns[] should contain the full list of columns,
 		// including any inserted primary key columns, static columns,
 		// and columns with empty names
+		bool	first=true;
 		for (uint64_t i=0; i<columns.getCount(); i++) {
 
-			if (i) {
+			// if this column has an empty name...
+			if (charstring::isNullOrEmpty(columns[i])) {
+
+				if (getIgnoreColumnsWithEmptyNames()) {
+
+					// if we're ignoring columns with
+					// empty names, then skip this one
+					continue;
+
+				} else {
+
+					// if we're not ignoring columns with
+					// empty names, then...
+
+					// FIXME:
+					// What to do in this case?
+					//
+					// * We're not ignoring all column names
+					// * We don't want to ignore columns
+					//   with empty names
+					// * The column name was empty
+					//
+					// If we let this fall through then
+					// we'll append an empty column name
+					// and the query will fail.  We don't
+					// have anything to replace the empty
+					// name with though.
+					//
+					// For now, we'll let the query fail,
+					// but that's definitely not ideal.
+				}
+			}
+
+			// otherwise, append the column
+			if (first) {
+				first=false;
+			} else {
 				query.append(',');
 			}
-
-			// if we're ignoring columns with empty names and
-			// this column has an empty name...
-			if (getIgnoreColumnsWithEmptyNames() &&
-				charstring::isNullOrEmpty(columns[i])) {
-
-				// then fetch NULL instead of the column itself
-				query.append("NULL");
-
-			} else {
-
-				// otherwise, fetch the column
-				query.append(columns[i]);
-			}
+			query.append(columns[i]);
 		}
 	}
 	query.append(" from ")->append(getObjectName());
@@ -751,8 +775,33 @@ bool sqlrimport::determineColumnTypes() {
 		}
 	}
 
+#if 1
 	// run through the columns, figuring out which are numbers and dates...
+	uint32_t	colcount=getSqlrCursor()->colCount();
+	for (uint32_t col=0; col<colcount; col++) {
+
+		// set numeric or date/time
+		const char	*coltype=getSqlrCursor()->getColumnType(col);
+		if (isNumberTypeChar(coltype)) {
+			setIsNumericColumn(col,true);
+		} else if (isDateTimeTypeChar(coltype)) {
+			setIsDateTimeColumn(col,true);
+		}
+	}
+#else
+	// FIXME: I'm not sure that the code below is necessary.  The list of
+	// columns from the database should contain every column contained in
+	// the file.  We're either ignoring the columns from the file and just
+	// assuming that they (plus ones we added as the primary key and static
+	// values) match up to what's in the db, or we're only inserting columns
+	// into the db that are in the file (plus ones we added as the primary
+	// key and static values).  Either way, they should match up to what we
+	// selected from the db above.
 	//
+	// I could be missing something though, so I'll leave this code here,
+	// but disabled, for now...
+
+	// run through the columns, figuring out which are numbers and dates...
 	// NOTE: col is the index of the database columns and counter is the
 	// index of the numericcolumn/datetimecolumn dictionaries.  Separeate
 	// indices are necessary to handle primary keys and static values.
@@ -812,6 +861,7 @@ bool sqlrimport::determineColumnTypes() {
 		// next...
 		counter++;
 	}
+#endif
 
 	return true;
 }
