@@ -310,11 +310,6 @@ bool sqlrimportxml::sequenceTagEnd() {
 		query.append("set generator ")->append(getObjectName());
 		query.append(" to ")->append(sequencevalue);
 		if (!getSqlrCursor()->sendQuery(query.getString())) {
-			if (getLogger()) {
-				getLogger()->write(
-					getCoarseLogLevel(),NULL,getLogIndent(),
-					"%s",getSqlrCursor()->errorMessage());
-			}
 			return error(getSqlrConnection()->errorNumber(),
 					getSqlrConnection()->errorMessage());
 		}
@@ -335,11 +330,6 @@ bool sqlrimportxml::sequenceTagEnd() {
 		query.append(uppersequence)->append("'");
 		delete[] uppersequence;
 		if (!sqlrcur2.sendQuery(query.getString())) {
-			if (getLogger()) {
-				getLogger()->write(
-					getCoarseLogLevel(),NULL,getLogIndent(),
-					"%s",sqlrcur2.errorMessage());
-			}
 			return error(sqlrcur2.errorNumber(),
 					sqlrcur2.errorMessage());
 		}
@@ -348,11 +338,6 @@ bool sqlrimportxml::sequenceTagEnd() {
 		query.clear();
 		query.append("drop sequence ")->append(getObjectName());
 		if (!getSqlrCursor()->sendQuery(query.getString())) {
-			if (getLogger()) {
-				getLogger()->write(
-					getCoarseLogLevel(),NULL,getLogIndent(),
-					"%s",getSqlrCursor()->errorMessage());
-			}
 			return error(getSqlrConnection()->errorNumber(),
 					getSqlrConnection()->errorMessage());
 		}
@@ -386,11 +371,6 @@ bool sqlrimportxml::sequenceTagEnd() {
 			query.append(sqlrcur2.getField(0,"CACHE_SIZE"));
 		}
 		if (!getSqlrCursor()->sendQuery(query.getString())) {
-			if (getLogger()) {
-				getLogger()->write(
-					getCoarseLogLevel(),NULL,getLogIndent(),
-					"%s",getSqlrCursor()->errorMessage());
-			}
 			return error(getSqlrConnection()->errorNumber(),
 					getSqlrConnection()->errorMessage());
 		}
@@ -405,11 +385,6 @@ bool sqlrimportxml::sequenceTagEnd() {
 		query.append("alter sequence ")->append(getObjectName());
 		query.append(" restart with ")->append(sequencevalue);
 		if (!getSqlrCursor()->sendQuery(query.getString())) {
-			if (getLogger()) {
-				getLogger()->write(
-					getCoarseLogLevel(),NULL,getLogIndent(),
-					"%s",getSqlrCursor()->errorMessage());
-			}
 			return error(getSqlrConnection()->errorNumber(),
 					getSqlrConnection()->errorMessage());
 		}
@@ -419,10 +394,5 @@ bool sqlrimportxml::sequenceTagEnd() {
 	// sqlite, mysql, sap/sybase and mssql have autoincrementing fields
 	// odbc can't tell what kind of underlying db we're using, so don't
 	// do anything for those databases
-	if (getLogger()) {
-		getLogger()->write(getCoarseLogLevel(),NULL,getLogIndent(),
-				"%s doesn't support sequences",getDbType());
-	}
-
 	return true;
 }

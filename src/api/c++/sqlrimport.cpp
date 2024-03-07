@@ -379,10 +379,33 @@ bool sqlrimport::fieldEnd() {
 }
 
 bool sqlrimport::rowEnd() {
+
+	// FIXME: push down
+	if (getLogger() && !(getImportedRowCount()%100)) {
+		getLogger()->write(getFineLogLevel(),
+				NULL,getLogIndent(),
+				"importing %lld rows",
+				(unsigned long long)getImportedRowCount());
+	}
+
 	return true;
 }
 
 bool sqlrimport::rowsEnd() {
+
+	// FIXME: push down
+	if (getLogger() && getCommitCount()) {
+		getLogger()->write(getCoarseLogLevel(),NULL,getLogIndent(),
+				"committed %lld records (to %s)",
+				(unsigned long long)getImportedRowCount(),
+				getObjectName());
+	}
+	if (getLogger()) {
+		getLogger()->write(getCoarseLogLevel(),NULL,getLogIndent(),
+				"imported %lld records",
+				(unsigned long long)getImportedRowCount());
+	}
+
 	// by default, just return success
 	return true;
 }
@@ -403,11 +426,30 @@ bool sqlrimport::commitStart() {
 }
 
 bool sqlrimport::commitEnd() {
+
+	// FIXME: push down
+	if (getLogger() && !((getImportedRowCount()/getCommitCount())%10)) {
+		getLogger()->write(
+			getCoarseLogLevel(),NULL,
+			getLogIndent(),
+			"committed %lld records (to %s)...",
+			(unsigned long long)
+			getImportedRowCount(),
+			getObjectName());
+	}
+
 	// by default, just return success
 	return true;
 }
 
 bool sqlrimport::error(int64_t errornumber, const char *errormessage) {
+
+	// FIXME: push down
+	if (getLogger() && getLogErrors()) {
+		getLogger()->write(getCoarseLogLevel(),
+			NULL,getLogIndent(),"%s",errormessage);
+	}
+
 	// by default, just return error
 	return false;
 }
@@ -776,20 +818,23 @@ bool sqlrimport::startProcessingRow() {
 
 bool sqlrimport::initialBegin() {
 
-	// if we're committing every so often, then begin a transaction
-	if (getCommitCount()) {
-		if (!beginStart()) {
+	// bail if we're not committing every so often
+	if (!getCommitCount()) {
+		return true;
+	}
+
+	// then begin a transaction
+	if (!beginStart()) {
+		return false;
+	}
+	if (!getSqlrConnection()->begin()) {
+		if (!error(getSqlrConnection()->errorNumber(),
+				getSqlrConnection()->errorMessage())) {
 			return false;
 		}
-		if (!getSqlrConnection()->begin()) {
-			if (!error(getSqlrConnection()->errorNumber(),
-					getSqlrConnection()->errorMessage())) {
-				return false;
-			}
-		}
-		if (!beginEnd()) {
-			return false;
-		}
+	}
+	if (!beginEnd()) {
+		return false;
 	}
 	return true;
 }
@@ -1071,14 +1116,6 @@ bool sqlrimport::endProcessingRow() {
 	setCurrentColumnName(NULL);
 	setCurrentField(NULL);
 
-	// log
-	if (getLogger() && !(getImportedRowCount()%100)) {
-		getLogger()->write(getFineLogLevel(),
-				NULL,getLogIndent(),
-				"importing %lld rows",
-				(unsigned long long)getImportedRowCount());
-	}
-
 	// call the row-end event
 	// (call this before importing the row in case rowEnd() wants to call
 	// setEmptyRow() or modify a field or something)
@@ -1220,11 +1257,6 @@ bool sqlrimport::insertRow() {
 
 	// send the query
 	if (!getSqlrCursor()->sendQuery(query.getString())) {
-		if (getLogger() && getLogErrors()) {
-			getLogger()->write(getCoarseLogLevel(),
-				NULL,getLogIndent(),
-				"%s",getSqlrCursor()->errorMessage());
-		}
 		if (!error(getSqlrConnection()->errorNumber(),
 				getSqlrConnection()->errorMessage())) {
 			return false;
@@ -1236,10 +1268,15 @@ bool sqlrimport::insertRow() {
 
 bool sqlrimport::periodicCommit() {
 
-	// if we're committing every so often, and it's time to commit,
-	// then commit, log and begin a new transaction
-	if (getCommitCount() && !(getImportedRowCount()%getCommitCount())) {
+	// bail if we're not committing every so often
+	if (!getCommitCount()) {
+		return true;
+	}
 
+	// if it's time to commit, then commit and begin a new transaction
+	if (!(getImportedRowCount()%getCommitCount())) {
+
+		// commit
 		if (!commitStart()) {
 			return false;
 		}
@@ -1253,26 +1290,7 @@ bool sqlrimport::periodicCommit() {
 			return false;
 		}
 
-		if (getLogger()) {
-			if (!((getImportedRowCount()/getCommitCount())%10)) {
-				getLogger()->write(
-					getFineLogLevel(),NULL,
-					getLogIndent(),
-					"committed %lld records "
-					"(to %s)...",
-					(unsigned long long)
-					getImportedRowCount(),
-					getObjectName());
-			} else {
-				getLogger()->write(
-					getFineLogLevel(),NULL,
-					getLogIndent(),
-					"committed %lld records",
-					(unsigned long long)
-					getImportedRowCount());
-			}
-		}
-
+		// begin
 		if (!beginStart()) {
 			return false;
 		}
@@ -1291,27 +1309,23 @@ bool sqlrimport::periodicCommit() {
 
 bool sqlrimport::finalCommit() {
 
-	// final commit
-	if (getCommitCount()) {
-		if (!commitStart()) {
+	// bail if we're not committing every so often
+	if (!getCommitCount()) {
+		return true;
+	}
+
+	// do a final commit
+	if (!commitStart()) {
+		return false;
+	}
+	if (!getSqlrConnection()->commit()) {
+		if (!error(getSqlrConnection()->errorNumber(),
+				getSqlrConnection()->errorMessage())) {
 			return false;
 		}
-		if (!getSqlrConnection()->commit()) {
-			if (!error(getSqlrConnection()->errorNumber(),
-					getSqlrConnection()->errorMessage())) {
-				return false;
-			}
-		}
-		if (!commitEnd()) {
-			return false;
-		}
-		if (getLogger()) {
-			getLogger()->write(
-				getCoarseLogLevel(),NULL,getLogIndent(),
-				"committed %lld records (to %s)",
-				(unsigned long long)getImportedRowCount(),
-				getObjectName());
-		}
+	}
+	if (!commitEnd()) {
+		return false;
 	}
 	return true;
 }
@@ -1329,13 +1343,6 @@ bool sqlrimport::endProcessingRows() {
 	// set the current column and field to NULL
 	setCurrentColumnName(NULL);
 	setCurrentField(NULL);
-
-	// log
-	if (getLogger()) {
-		getLogger()->write(getCoarseLogLevel(),NULL,getLogIndent(),
-				"imported %lld records",
-				(unsigned long long)getImportedRowCount());
-	}
 
 	// call the rows-end event
 	return rowsEnd();
