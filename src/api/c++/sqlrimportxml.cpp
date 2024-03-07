@@ -16,9 +16,7 @@ const unsigned short sqlrimportxml::SEQUENCETAG=7;
 sqlrimportxml::sqlrimportxml() : sqlrimportfile(), xmlsax() {
 	currenttag=NULLTAG;
 	currentattribute=NULL;
-	cname=NULL;
 	infield=false;
-	fval=NULL;
 	sequencevalue=NULL;
 	setExtension(".xml");
 }
@@ -26,9 +24,6 @@ sqlrimportxml::sqlrimportxml() : sqlrimportfile(), xmlsax() {
 sqlrimportxml::~sqlrimportxml() {
 	delete[] currentattribute;
 	delete[] sequencevalue;
-	// do not delete[] cname or fval, as they have either been added to
-	// columns[]/fields[] and deleted by them, or deleted manually
-	// elsewhere
 }
 
 bool sqlrimportxml::importData() {
@@ -55,8 +50,8 @@ bool sqlrimportxml::tagStart(const char *ns, const char *name) {
 		return startProcessingColumns();
 	} else if (!charstring::compare(name,"column")) {
 		currenttag=COLUMNTAG;
-		// reset cname
-		cname=NULL;
+		// clear the column name buffer
+		clearColumnNameBuffer();
 		// don't call the column-start event yet, we need
 		// the attributes to have been processed first
 		return true;
@@ -72,8 +67,8 @@ bool sqlrimportxml::tagStart(const char *ns, const char *name) {
 		currenttag=FIELDTAG;
 		// we're in a field
 		infield=true;
-		// reset fval
-		fval=NULL;
+		// clear the field buffer
+		clearFieldBuffer();
 		// don't call the column-start event yet, we need
 		// the attributes to have been processed first
 		return true;
@@ -105,7 +100,7 @@ bool sqlrimportxml::attributeValue(const char *value) {
 			break;
 		case COLUMNTAG:
 			if (!charstring::compare(currentattribute,"name")) {
-				cname=charstring::duplicate(value);
+				setColumnNameBuffer(value);
 			}
 			break;
 		case ROWSTAG:
@@ -129,7 +124,7 @@ bool sqlrimportxml::attributeValue(const char *value) {
 
 bool sqlrimportxml::text(const char *string) {
 	if (infield) {
-		fval=charstring::duplicate(string);
+		setFieldBuffer(string);
 	}
 	return true;
 }
@@ -170,20 +165,21 @@ char *sqlrimportxml::unescapeValue(const char *value) {
 bool sqlrimportxml::tagEnd(const char *ns, const char *name) {
 
 	if (!charstring::compare(name,"column")) {
-		// NOTE: atttributeValue() should have set cname by now
+		// NOTE: atttributeValue() should have set
+		// the column name buffer by now
 		// NOTE: processColumnName() calls the
 		// column-start and column-end events
-		return processColumnName(&cname);
+		return processColumnName();
 	} else if (!charstring::compare(name,"columns")) {
 		// NOTE: endProcessingColumns() calls the columns-end event
 		return endProcessingColumns();
 	} else if (!charstring::compare(name,"field")) {
 		// we're not in a field any more
 		infield=false;
-		// NOTE: text() should have set fval by now
+		// NOTE: text() should have set the field buffer by now
 		// NOTE: processField() calls the
 		// field-start and field-end events
-		return processField(&fval);
+		return processField();
 	} else if (!charstring::compare(name,"row")) {
 		// NOTE: endProcessingRow() calls the row-end event
 		return endProcessingRow();

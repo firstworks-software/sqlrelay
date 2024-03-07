@@ -12,9 +12,7 @@
 
 		unsigned short	currenttag;
 		char		*currentattribute;
-		char		*cname;
 		bool		infield;
-		char		*fval;
 		char		*sequencevalue;
 
 		static const unsigned short	NULLTAG;

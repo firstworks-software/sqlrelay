@@ -46,6 +46,9 @@ sqlrimport::sqlrimport() {
 	logindent=0;
 	logerrors=true;
 
+	colnamebuffer=NULL;
+	fieldbuffer=NULL;
+
 	clearFlagsAndCounts();
 
 	columns.setManageArrayValues(true);
@@ -57,6 +60,9 @@ sqlrimport::~sqlrimport() {
 	delete[] primarykeysequence;
 	delete[] dbtype;
 	delete[] objectname;
+	// do not delete[] colnamebuffer or fieldbuffer, as they have either
+	// been added to columns[]/fields[] and deleted by them, or deleted
+	// manuall elsewhere
 }
 
 void sqlrimport::setSqlrConnection(sqlrconnection *sqlrcon) {
@@ -558,6 +564,40 @@ bool sqlrimport::getEmptyRow() {
 	return emptyrow;
 }
 
+void sqlrimport::setColumnNameBuffer(const char *value) {
+	colnamebuffer=charstring::duplicate(value);
+}
+
+char *sqlrimport::getColumnNameBuffer() {
+	return colnamebuffer;
+}
+
+void sqlrimport::clearColumnNameBuffer() {
+	colnamebuffer=NULL;
+}
+
+void sqlrimport::freeColumnNameBuffer() {
+	delete[] colnamebuffer;
+	colnamebuffer=NULL;
+}
+
+void sqlrimport::setFieldBuffer(const char *value) {
+	fieldbuffer=charstring::duplicate(value);
+}
+
+char *sqlrimport::getFieldBuffer() {
+	return fieldbuffer;
+}
+
+void sqlrimport::clearFieldBuffer() {
+	fieldbuffer=NULL;
+}
+
+void sqlrimport::freeFieldBuffer() {
+	delete[] fieldbuffer;
+	fieldbuffer=NULL;
+}
+
 bool sqlrimport::startProcessingImport() {
 
 	// update flags and counters
@@ -572,7 +612,7 @@ bool sqlrimport::startProcessingColumns() {
 	return columnsStart();
 }
 
-bool sqlrimport::processColumnName(char **cname) {
+bool sqlrimport::processColumnName() {
 
 	// first, process any primary keys or static
 	// columns that should go before this one
@@ -583,28 +623,26 @@ bool sqlrimport::processColumnName(char **cname) {
 	// now, process the actual column name...
 
 	// remap the name, if the name has been mapped
-	const char	*mappedname=columnmap.getValue(*cname);
+	const char	*mappedname=columnmap.getValue(getColumnNameBuffer());
 	if (mappedname) {
-		delete[] *cname;
-		*cname=charstring::duplicate(mappedname);
+		freeColumnNameBuffer();
+		setColumnNameBuffer(mappedname);
 	}
 
 	// set the current column name
-	setCurrentColumnName(*cname);
-	setCurrentField(*cname);
+	setCurrentColumnName(getColumnNameBuffer());
+	setCurrentField(getColumnNameBuffer());
 
 	// call the column-start event
 	if (!columnStart()) {
-		delete[] *cname;
-		*cname=NULL;
+		freeColumnNameBuffer();
 		return false;
 	}
 
 	// append the current column
 	// (which columnStart() may have overridden)
-	if (getCurrentColumnName()!=*cname) {
-		delete[] *cname;
-		*cname=NULL;
+	if (getCurrentColumnName()!=getColumnNameBuffer()) {
+		freeColumnNameBuffer();
 	}
 	columns[columns.getCount()]=getCurrentColumnName();
 
@@ -944,7 +982,7 @@ bool sqlrimport::initialBegin() {
 	return true;
 }
 
-bool sqlrimport::processField(char **fval) {
+bool sqlrimport::processField() {
 
 	// if we're manually adding the primary key, and this is the primary
 	// key position, then add it
@@ -1048,16 +1086,16 @@ bool sqlrimport::processField(char **fval) {
 	setCurrentColumnName(columns[getCurrentColumn()]);
 
 	// if this value has a mapping, then get that
-	const char	*v=fieldmap.getValue(*fval);
+	const char	*v=fieldmap.getValue(getFieldBuffer());
 	if (v) {
-		delete[] *fval;
-		*fval=charstring::duplicate(v);
+		freeFieldBuffer();
+		setFieldBuffer(v);
 	}
 
 	// check for a non-empty field
 	// (do this AFTER remapping the field in case some set
 	// of values get mapped to empty strings or NULLs)
-	if (getEmptyRow() && !charstring::isNullOrEmpty(*fval)) {
+	if (getEmptyRow() && !charstring::isNullOrEmpty(getFieldBuffer())) {
 		setEmptyRow(false);
 	}
 
@@ -1067,9 +1105,8 @@ bool sqlrimport::processField(char **fval) {
 	quotefield[getCurrentColumn()]=!isnumeric;
 
 	// set the current field
-	char	*tmp=massageValue(*fval,isnumeric,isdatetime);
-	delete[] *fval;
-	*fval=NULL;
+	char	*tmp=massageValue(getFieldBuffer(),isnumeric,isdatetime);
+	freeFieldBuffer();
 	setCurrentField(tmp);
 
 	// call the field-start event

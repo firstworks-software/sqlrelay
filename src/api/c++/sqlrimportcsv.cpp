@@ -36,10 +36,10 @@ bool sqlrimportcsv::headerStart() {
 }
 
 bool sqlrimportcsv::column(const char *name, bool quoted) {
-	char	*cname=charstring::duplicate(name);
+	setColumnNameBuffer(name);
 	// NOTE: processColumnName() calls the
 	// column-start and column-end events
-	return processColumnName(&cname);
+	return processColumnName();
 }
 
 bool sqlrimportcsv::headerEnd() {
@@ -58,9 +58,9 @@ bool sqlrimportcsv::recordStart() {
 }
 
 bool sqlrimportcsv::field(const char *value, bool quoted) {
-	char	*fval=charstring::duplicate(value);
+	setFieldBuffer(value);
 	// NOTE: processField() calls the field-start and field-end events
-	return processField(&fval);
+	return processField();
 }
 
 bool sqlrimportcsv::recordEnd() {

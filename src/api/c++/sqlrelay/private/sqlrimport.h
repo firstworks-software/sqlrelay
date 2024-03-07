@@ -6,16 +6,25 @@
 		void	setEmptyRow(bool emptyrow);
 		bool	getEmptyRow();
 
+		void	setColumnNameBuffer(const char *value);
+		char	*getColumnNameBuffer();
+		void	clearColumnNameBuffer();
+		void	freeColumnNameBuffer();
+		void	setFieldBuffer(const char *value);
+		char	*getFieldBuffer();
+		void	clearFieldBuffer();
+		void	freeFieldBuffer();
+
 		virtual bool	startProcessingImport();
 		virtual bool	startProcessingColumns();
-		virtual bool	processColumnName(char **cname);
+		virtual bool	processColumnName();
 		virtual bool	processPrimaryKeyAndStaticColumns();
 		virtual bool	determineColumnTypes();
 		virtual bool	endProcessingColumns();
 		virtual bool	startProcessingRows();
 		virtual bool	startProcessingRow();
 		virtual bool	initialBegin();
-		virtual bool	processField(char **value);
+		virtual bool	processField();
 		virtual char	*massageValue(const char *value,
 							bool isnumeric,
 							bool isdatetime);
@@ -64,6 +73,9 @@
 		uint8_t		fineloglevel;
 		uint32_t	logindent;
 		bool		logerrors;
+
+		char		*colnamebuffer;
+		char		*fieldbuffer;
 
 		bool			ignorerow;
 		uint64_t		currentrow;
