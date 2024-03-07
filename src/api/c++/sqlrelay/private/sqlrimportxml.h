@@ -6,14 +6,10 @@
 		bool	attributeName(const char *name);
 		bool	attributeValue(const char *value);
 		bool	text(const char *string);
-		void	appendField(stringbuffer *strb,
-					const char *field,
-					bool isnumeric,
-					bool isdatetime);
+		char	*unescapeValue(const char *value);
 		bool	tagEnd(const char *ns, const char *name);
 
 		bool	tableTagStart();
-		bool	sequenceTagStart();
 		bool	columnsTagStart();
 		bool	columnTagStart();
 		bool	columnTagEnd();
@@ -25,19 +21,15 @@
 		bool	fieldTagEnd();
 		bool	rowsTagEnd();
 		bool	tableTagEnd();
+		bool	sequenceTagStart();
 		bool	sequenceTagEnd();
 
 		unsigned short	currenttag;
 		char		*currentattribute;
-
 		char		*cname;
+		bool		infield;
 		char		*fval;
 		char		*sequencevalue;
-		uint32_t	colcount;
-		stringbuffer	columnsstr;
-		uint32_t	currentcol;
-		bool		infield;
-		bool		emptyrecord;
 
 		static const unsigned short	NULLTAG;
 		static const unsigned short	TABLETAG;

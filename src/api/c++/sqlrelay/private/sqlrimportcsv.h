@@ -10,12 +10,3 @@
 		bool	field(const char *value, bool quoted);
 		bool	recordEnd();
 		bool	bodyEnd();
-
-		void	appendField(stringbuffer *strb,
-					const char *value,
-					bool isnumeric,
-					bool isdatetime);
-
-		uint32_t	currenttablecol;
-		bool		foundfieldtext;
-		bool		emptyrecord;

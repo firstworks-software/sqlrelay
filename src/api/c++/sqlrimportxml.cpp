@@ -6,12 +6,12 @@
 
 const unsigned short sqlrimportxml::NULLTAG=0;
 const unsigned short sqlrimportxml::TABLETAG=1;
-const unsigned short sqlrimportxml::SEQUENCETAG=2;
-const unsigned short sqlrimportxml::COLUMNSTAG=3;
-const unsigned short sqlrimportxml::COLUMNTAG=4;
-const unsigned short sqlrimportxml::ROWSTAG=5;
-const unsigned short sqlrimportxml::ROWTAG=6;
-const unsigned short sqlrimportxml::FIELDTAG=7;
+const unsigned short sqlrimportxml::COLUMNSTAG=2;
+const unsigned short sqlrimportxml::COLUMNTAG=3;
+const unsigned short sqlrimportxml::ROWSTAG=4;
+const unsigned short sqlrimportxml::ROWTAG=5;
+const unsigned short sqlrimportxml::FIELDTAG=6;
+const unsigned short sqlrimportxml::SEQUENCETAG=7;
 
 const unsigned short sqlrimportxml::NULLATTR=0;
 const unsigned short sqlrimportxml::NAMEATTR=1;
@@ -31,15 +31,18 @@ const unsigned short sqlrimportxml::AUTOINCREMENTATTR=14;
 sqlrimportxml::sqlrimportxml() : sqlrimportfile(), xmlsax() {
 	currenttag=NULLTAG;
 	currentattribute=NULL;
-	sequencevalue=NULL;
-	colcount=0;
+	cname=NULL;
 	infield=false;
-	emptyrecord=true;
+	fval=NULL;
+	sequencevalue=NULL;
 }
 
 sqlrimportxml::~sqlrimportxml() {
 	delete[] currentattribute;
 	delete[] sequencevalue;
+	// do not delete[] cname or fval, as they have either been added to
+	// columns[]/fields[] and deleted by them, or deleted manually
+	// elsewhere
 }
 
 bool sqlrimportxml::importData() {
@@ -47,7 +50,7 @@ bool sqlrimportxml::importData() {
 	// update flags and counters
 	clearFlagsAndCounts();
 
-	// set the table/sequence name from the file name,
+	// set the table name from the file name,
 	// if it wasn't already set
 	if (!getObjectName()) {
 		setObjectName(file::getBaseName(getFileName(),".xml"));
@@ -62,8 +65,6 @@ bool sqlrimportxml::tagStart(const char *ns, const char *name) {
 	// call the appropriate tag-start method
 	if (!charstring::compare(name,"table")) {
 		return tableTagStart();
-	} else if (!charstring::compare(name,"sequence")) {
-		return sequenceTagStart();
 	} else if (!charstring::compare(name,"columns")) {
 		return columnsTagStart();
 	} else if (!charstring::compare(name,"column")) {
@@ -74,6 +75,8 @@ bool sqlrimportxml::tagStart(const char *ns, const char *name) {
 		return rowTagStart();
 	} else if (!charstring::compare(name,"field")) {
 		return fieldTagStart();
+	} else if (!charstring::compare(name,"sequence")) {
+		return sequenceTagStart();
 	}
 	return true;
 }
@@ -90,174 +93,75 @@ bool sqlrimportxml::attributeName(const char *name) {
 bool sqlrimportxml::attributeValue(const char *value) {
 
 	switch (currenttag) {
-
 		case TABLETAG:
-
 			if (!charstring::compare(currentattribute,"name")) {
-				// set the table name
 				setObjectName(value);
 			}
 			break;
-
-		case SEQUENCETAG:
-
+		case COLUMNSTAG:
+			break;
+		case COLUMNTAG:
 			if (!charstring::compare(currentattribute,"name")) {
-				// set the sequence name
+				cname=charstring::duplicate(value);
+			}
+			break;
+		case ROWSTAG:
+			break;
+		case ROWTAG:
+			break;
+		case FIELDTAG:
+			break;
+		case SEQUENCETAG:
+			if (!charstring::compare(currentattribute,"name")) {
 				setObjectName(value);
 			}
-
 			if (!charstring::compare(currentattribute,"value")) {
-				// set the sequence value
 				delete[] sequencevalue;
 				sequencevalue=charstring::duplicate(value);
 			}
-			break;
-
-		case COLUMNSTAG:
-
-			if (!charstring::compare(currentattribute,"count")) {
-				// set the column count
-				colcount=charstring::
-					convertToUnsignedInteger(value);
-
-				// update flags and counters
-				clearAreNumericColumns();
-				setCurrentColumn(0);
-			}
-			break;
-
-		case COLUMNTAG:
-
-			if (!charstring::compare(currentattribute,"name")) {
-
-				// set the current column name
-				cname=charstring::duplicate(value);
-				setCurrentColumnName(cname);
-				setCurrentField(cname);
-
-			} else if (!charstring::compare(currentattribute,
-								"type")) {
-				// FIXME: don't do anything with this, I guess?
-			}
-			break;
-
-		case ROWSTAG:
-			break;
-
-		case ROWTAG:
-			break;
-
-		case FIELDTAG:
 			break;
 	}
 	return true;
 }
 
 bool sqlrimportxml::text(const char *string) {
-
-	// if we're in a field
 	if (infield) {
-		
-		// if this value has a mapping, then get that
-		const char	*s=fieldmap.getValue(string);
-		if (s) {
-			string=s;
-		}
-
-		// check for a non-empty field
-		// (do this AFTER remapping the field in case some set
-		// of values get mapped to empty strings or NULLs)
-		if (emptyrecord && !charstring::isNullOrEmpty(string)) {
-			emptyrecord=false;
-		}
-
-		// determine whether to quote this field
-		// FIXME: need currenttablecolumn like in sqlrimportcsv
-		// rather than getCurrentColumn()
-		bool	isnumeric=getIsNumericColumn(getCurrentColumn());
-		bool	isdatetime=getIsDateTimeColumn(getCurrentColumn());
-		quotefield[getCurrentColumn()]=!isnumeric;
-
-		// set the current field
-		stringbuffer	tmpstr;
-		appendField(&tmpstr,string,isnumeric,isdatetime);
-		fval=tmpstr.detachString();
-		setCurrentField(fval);
+		fval=charstring::duplicate(string);
 	}
 	return true;
 }
 
-void sqlrimportxml::appendField(stringbuffer *strb,
-					const char *value,
-					bool isnumeric,
-					bool isdatetime) {
+char *sqlrimportxml::unescapeValue(const char *value) {
 
-	// handle empty values
-	if (charstring::isNullOrEmpty(value)) {
-		strb->append("NULL");
-		return;
-	}
+	stringbuffer	strb;
 
-	// handle non-numbers in numeric columns
- 	if (isnumeric && !charstring::isNumber(value)) {
-		strb->append("NULL");
-		return;
-	}
+	for (const char *v=value; *v; v++) {
 
-	// handle date/times
-	if (isdatetime && getReformatDateTime()) {
-		// FIXME: implement this...
-		return;
-	}
-
-	// handle normal values
-	for (uint32_t index=0; value[index]; index++) {
-
-		if (value[index]=='&') {
+		if (*v=='&') {
 
 			// expand xml entities...
 
 			// skip past the &
-			index++;
+			v++;
 
 			// get the number and convert
 			// it to a character
 			char	ch=(char)charstring::
-				convertToUnsignedInteger(value+index);
-
-			// double-up any single-quotes
-			if (ch=='\'') {
-				strb->append('\'');
-			}
+					convertToUnsignedInteger(v);
 
 			// append the character
-			strb->append(ch);
+			strb.append(ch);
 
 			// skip past the entity
-			while (value[index] && value[index]!=';') {
-				index++;
+			while (*v && *v!=';') {
+				v++;
 			}
-
-		} else if (value[index]=='\\' &&
-			(!charstring::compare(getDbType(),"postgresql") ||
-			!charstring::compare(getDbType(),"mysql"))) {
-
-			// for postgres and mysql, escape \'s
-			strb->append("\\\\");
-
 		} else {
-
-			char	ch=value[index];
-
-			// double-up any single-quotes
-			if (ch=='\'') {
-				strb->append('\'');
-			}
-
-			// append the character
-			strb->append(ch);
+			strb.append(*v);
 		}
 	}
+
+	return strb.detachString();
 }
 
 bool sqlrimportxml::tagEnd(const char *ns, const char *name) {
@@ -265,8 +169,6 @@ bool sqlrimportxml::tagEnd(const char *ns, const char *name) {
 	// call the appropriate tag-end method
 	if (!charstring::compare(name,"table")) {
 		return tableTagEnd();
-	} else if (!charstring::compare(name,"sequence")) {
-		return sequenceTagEnd();
 	} else if (!charstring::compare(name,"columns")) {
 		return columnsTagEnd();
 	} else if (!charstring::compare(name,"column")) {
@@ -277,6 +179,8 @@ bool sqlrimportxml::tagEnd(const char *ns, const char *name) {
 		return rowTagEnd();
 	} else if (!charstring::compare(name,"field")) {
 		return fieldTagEnd();
+	} else if (!charstring::compare(name,"sequence")) {
+		return sequenceTagEnd();
 	}
 	return true;
 }
@@ -289,21 +193,13 @@ bool sqlrimportxml::tableTagStart() {
 	return true;
 }
 
-bool sqlrimportxml::sequenceTagStart() {
-
-	// set the current tag
-	currenttag=SEQUENCETAG;
-
-	return true;
-}
-
 bool sqlrimportxml::columnsTagStart() {
 
 	// set the current tag
 	currenttag=COLUMNSTAG;
 
-	// call the columns-start event
-	return columnsStart();
+	// NOTE: startProcessingColumns() calls the columns-start event;
+	return startProcessingColumns();
 }
 
 bool sqlrimportxml::columnTagStart() {
@@ -311,7 +207,7 @@ bool sqlrimportxml::columnTagStart() {
 	// set the current tag
 	currenttag=COLUMNTAG;
 
-	// update flags and counters
+	// reset cname
 	cname=NULL;
 
 	// don't call the column-start event yet, we need
@@ -320,57 +216,15 @@ bool sqlrimportxml::columnTagStart() {
 }
 
 bool sqlrimportxml::columnTagEnd() {
-
-	// NOTE: atttributeValue() should have called
-	// setCurrentColumnName() and setCurrentField() by now
-
-	// call the column-start event
-	if (!columnStart()) {
-		return false;
-	}
-
-	// append the current column
-	// (which columnStart() may have overridden)
-	if (getCurrentColumnName()!=cname) {
-		delete[] cname;
-	}
-	columns[columns.getCount()]=getCurrentColumnName();
-
-	// reset the current field to the current column name
-	// (in case columnStart() override the column name)
-	setCurrentField(getCurrentColumnName());
-
-	// call the column-end event
-	if (!columnEnd()) {
-		return false;
-	}
-
-	// next...
-	setCurrentColumn(getCurrentColumn()+1);
-
-	return true;
+	// NOTE: atttributeValue() should have set cname by now
+	// NOTE: processColumnName() calls the
+	// column-start and column-end events
+	return processColumnName(&cname);
 }
 
 bool sqlrimportxml::columnsTagEnd() {
-
-	// set the current column and field to NULL
-	setCurrentColumnName(NULL);
-	setCurrentField(NULL);
-
-	// if we're not ignoring columns, but there weren't any (i.e. a totally
-	// empty csv), then don't get any info about columns from the database,
-	// just call the columns-end event and bail
-	if (!getIgnoreColumns() && !columns.getCount()) {
-		return columnsEnd();
-	}
-
-	// we need to figure out which columns are numbers or dates
-	if (!determineColumnTypes()) {
-		return false;
-	}
-
-	// call the columns-end event
-	return columnsEnd();
+	// NOTE: endProcessingColumns() calls the columns-end event
+	return endProcessingColumns();
 }
 
 bool sqlrimportxml::rowsTagStart() {
@@ -378,19 +232,8 @@ bool sqlrimportxml::rowsTagStart() {
 	// set the current tag
 	currenttag=ROWSTAG;
 
-	// update flags and counters
-	setImportedRowCount(0);
-	setCurrentColumn(0);
-	setCurrentColumnName(NULL);
-	setCurrentField(NULL);
-
-	// begin a transaction (if necessary)
-	if (!initialBegin()) {
-		return false;
-	}
-
-	// call the rows-start event
-	return rowsStart();
+	// NOTE: startProcessingRows() calls the rows-start event
+	return startProcessingRows();
 }
 
 bool sqlrimportxml::rowTagStart() {
@@ -398,15 +241,8 @@ bool sqlrimportxml::rowTagStart() {
 	// set the current tag
 	currenttag=ROWTAG;
 
-	// update flags and counters
-	emptyrecord=true;
-	setIgnoreRow(false);
-	setCurrentColumn(0);
-	setCurrentColumnName(NULL);
-	setCurrentField(NULL);
-
-	// call the row-start event
-	return rowStart();
+	// NOTE: startProcessingRow() calls the row-start event
+	return startProcessingRow();
 }
 
 bool sqlrimportxml::fieldTagStart() {
@@ -414,8 +250,10 @@ bool sqlrimportxml::fieldTagStart() {
 	// set the current tag
 	currenttag=FIELDTAG;
 
-	// update flags and counters
+	// we're in a field
 	infield=true;
+
+	// reset fval
 	fval=NULL;
 
 	// don't call the column-start event yet, we need
@@ -425,113 +263,33 @@ bool sqlrimportxml::fieldTagStart() {
 
 bool sqlrimportxml::fieldTagEnd() {
 
-	// set the current column name
-	setCurrentColumnName(columns[getCurrentColumn()]);
-
-	// NOTE: text() should have called setCurrentField() by now
-
-	// call the field-start event
-	if (!fieldStart()) {
-		return false;
-	}
-
-	// append the current field
-	// (which fieldStart() may have overridden)
-	if (getCurrentField()!=fval) {
-		delete[] fval;
-	}
-	fields[fields.getCount()]=getCurrentField();
-
-	// call the field-end event
-	if (!fieldEnd()) {
-		return false;
-	}
-
-	// next...
-	setCurrentColumn(getCurrentColumn()+1);
+	// we're not in a field any more
 	infield=false;
 
-	return true;
+	// NOTE: text() should have set fval by now
+	// NOTE: processField() calls the field-start and field-end events
+	return processField(&fval);
 }
 
 bool sqlrimportxml::rowTagEnd() {
-	
-	// update flags and counters
-	setCurrentColumnName(NULL);
-	setCurrentField(NULL);
-
-	// clear the query buffer
-	query.clear();
-
-	// if we're ignoring this record in particular, there were no columns
-	// (somehow), or if we're generally ignoring empty records, and this
-	// was an empty record, then ignore it
-	if (getIgnoreRow() || !columns.getCount() ||
-		(getIgnoreEmptyRows() && emptyrecord)) {
-
-		// call the row-end event
-		if (!rowEnd()) {
-			return false;
-		}
-
-		// update flags and counters
-		setCurrentRow(getCurrentRow()+1);
-
-		return true;
-	}
-
-	// insert the row
-	if (!insertRow()) {
-		return false;
-	}
-
-	// call the row-end event
-	if (!rowEnd()) {
-		return false;
-	}
-
-	// update flags and counters
-	setImportedRowCount(getImportedRowCount()+1);
-	setCurrentRow(getCurrentRow()+1);
-
-	// log
-	if (getLogger() && !(getImportedRowCount()%100)) {
-		getLogger()->write(getFineLogLevel(),
-				NULL,getLogIndent(),
-				"imported %lld records",
-				(unsigned long long)getImportedRowCount());
-	}
-
-	// do periodic commit (if necessary)
-	return periodicCommit();
+	// NOTE: endProcessingRow() calls the row-end event
+	return endProcessingRow();
 }
 
 bool sqlrimportxml::rowsTagEnd() {
-
-	// log
-	if (getLogger()) {
-		getLogger()->write(getCoarseLogLevel(),NULL,getLogIndent(),
-				"imported %lld records",
-				(unsigned long long)getImportedRowCount());
-	}
-
-	// do final commit (if necessary)
-	if (!finalCommit()) {
-		return false;
-	}
-
-	// clean up column names
-	columns.clear();
-
-	// set the current column and field to NULL
-	setCurrentColumnName(NULL);
-	setCurrentField(NULL);
-
-	// call the rows-end event
-	return rowsEnd();
+	// NOTE: endProcessingRows() calls the rows-end event
+	return endProcessingRows();
 }
 
 bool sqlrimportxml::tableTagEnd() {
+	return true;
+}
+
+bool sqlrimportxml::sequenceTagStart() {
+
+	// set the current tag
+	currenttag=SEQUENCETAG;
+
 	return true;
 }
 

@@ -31,7 +31,7 @@ class SQLRCLIENT_DLLSPEC sqlrimportxml : virtual public sqlrimportfile,
 		 *
 		 *  <?xml version="1.0"?>
 		 *  <table name="states">
-		 *  <columns count="6">
+		 *  <columns>
 		 *          <column name="state_id" type="int4"/>
 		 *          <column name="state_name" type="varchar"/>
 		 *          <column name="state_abbreviation" type="varchar"/>
