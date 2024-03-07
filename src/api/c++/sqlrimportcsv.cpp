@@ -13,17 +13,16 @@ sqlrimportcsv::~sqlrimportcsv() {
 
 bool sqlrimportcsv::importData() {
 
-	// update flags and counters
-	clearFlagsAndCounts();
-
-	// set the table name from the file name,
-	// if it wasn't already set
+	// set the table name from the file name, if it wasn't already set
 	if (!getObjectName()) {
 		setObjectName(file::getBaseName(getFileName(),".csv"));
 	}
 
-	// run the import-start event, parse the file, run the import-end event
-	return importStart() && csvsax::parseFile(getFileName()) && importEnd();
+	// NOTE: startProcessingImport() calls the import-start event
+	// NOTE: endProcessingImport() calls the import-end event
+	return startProcessingImport() &&
+		csvsax::parseFile(getFileName()) &&
+		endProcessingImport();
 }
 
 bool sqlrimportcsv::headerStart() {

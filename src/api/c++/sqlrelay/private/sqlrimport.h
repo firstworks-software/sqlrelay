@@ -6,12 +6,12 @@
 		void	setEmptyRow(bool emptyrow);
 		bool	getEmptyRow();
 
+		virtual bool	startProcessingImport();
 		virtual bool	startProcessingColumns();
 		virtual bool	processColumnName(char **cname);
 		virtual bool	processPrimaryKeyAndStaticColumns();
 		virtual bool	determineColumnTypes();
 		virtual bool	endProcessingColumns();
-
 		virtual bool	startProcessingRows();
 		virtual bool	startProcessingRow();
 		virtual bool	initialBegin();
@@ -25,6 +25,7 @@
 		virtual bool	periodicCommit();
 		virtual bool	finalCommit();
 		virtual bool	endProcessingRows();
+		virtual bool	endProcessingImport();
 
 		virtual bool	systemError();
 

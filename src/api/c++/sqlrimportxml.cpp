@@ -32,17 +32,16 @@ sqlrimportxml::~sqlrimportxml() {
 
 bool sqlrimportxml::importData() {
 
-	// update flags and counters
-	clearFlagsAndCounts();
-
-	// set the table name from the file name,
-	// if it wasn't already set
+	// set the table name from the file name, if it wasn't already set
 	if (!getObjectName()) {
 		setObjectName(file::getBaseName(getFileName(),".xml"));
 	}
 
-	// run the import-start event, parse the file, run the import-end event
-	return importStart() && xmlsax::parseFile(getFileName()) && importEnd();
+	// NOTE: startProcessingImport() calls the import-start event
+	// NOTE: endProcessingImport() calls the import-end event
+	return startProcessingImport() &&
+		xmlsax::parseFile(getFileName()) &&
+		endProcessingImport();
 }
 
 bool sqlrimportxml::tagStart(const char *ns, const char *name) {

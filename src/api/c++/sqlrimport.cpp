@@ -558,6 +558,15 @@ bool sqlrimport::getEmptyRow() {
 	return emptyrow;
 }
 
+bool sqlrimport::startProcessingImport() {
+
+	// update flags and counters
+	clearFlagsAndCounts();
+
+	// call the import-start event
+	return importStart();
+}
+
 bool sqlrimport::startProcessingColumns() {
 	// call the columns-start event
 	return columnsStart();
@@ -1440,6 +1449,11 @@ bool sqlrimport::endProcessingRows() {
 
 	// call the rows-end event
 	return rowsEnd();
+}
+
+bool sqlrimport::endProcessingImport() {
+	// call the import-end event
+	return importEnd();
 }
 
 bool sqlrimport::systemError() {
