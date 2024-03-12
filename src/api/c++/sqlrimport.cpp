@@ -386,34 +386,11 @@ bool sqlrimport::fieldEnd() {
 }
 
 bool sqlrimport::rowEnd() {
-
-	// FIXME: push down
-	if (getLogger() && !(getImportedRowCount()%100)) {
-		getLogger()->write(getFineLogLevel(),
-				NULL,getLogIndent(),
-				"importing %lld rows",
-				(unsigned long long)getImportedRowCount());
-	}
-
 	// by default, just return success
 	return true;
 }
 
 bool sqlrimport::rowsEnd() {
-
-	// FIXME: push down
-	if (getLogger() && getCommitCount()) {
-		getLogger()->write(getCoarseLogLevel(),NULL,getLogIndent(),
-				"committed %lld records (to %s)",
-				(unsigned long long)getImportedRowCount(),
-				getObjectName());
-	}
-	if (getLogger()) {
-		getLogger()->write(getCoarseLogLevel(),NULL,getLogIndent(),
-				"imported %lld records",
-				(unsigned long long)getImportedRowCount());
-	}
-
 	// by default, just return success
 	return true;
 }
@@ -434,30 +411,11 @@ bool sqlrimport::commitStart() {
 }
 
 bool sqlrimport::commitEnd() {
-
-	// FIXME: push down
-	if (getLogger() && !((getImportedRowCount()/getCommitCount())%10)) {
-		getLogger()->write(
-			getCoarseLogLevel(),NULL,
-			getLogIndent(),
-			"committed %lld records (to %s)...",
-			(unsigned long long)
-			getImportedRowCount(),
-			getObjectName());
-	}
-
 	// by default, just return success
 	return true;
 }
 
 bool sqlrimport::error(int64_t errornumber, const char *errormessage) {
-
-	// FIXME: push down
-	if (getLogger() && getLogErrors()) {
-		getLogger()->write(getCoarseLogLevel(),
-			NULL,getLogIndent(),"%s",errormessage);
-	}
-
 	// by default, just return error
 	return false;
 }
