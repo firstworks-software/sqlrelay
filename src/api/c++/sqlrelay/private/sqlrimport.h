@@ -77,16 +77,16 @@
 		char		*colnamebuffer;
 		char		*fieldbuffer;
 
-		bool			ignorerow;
-		uint64_t		currentrow;
-		uint32_t		currentcol;
-		char			*currentcolname;
-		dynamicarray<bool>	numericcolumn;
-		dynamicarray<bool>	datetimecolumn;
-		char			*currentfield;
-		bool			emptyrow;
-		uint64_t		importedrowcount;
-		uint64_t		commitcount;
+		bool				ignorerow;
+		uint64_t			currentrow;
+		uint32_t			currentcol;
+		char				*currentcolname;
+		dictionary<uint32_t, bool>	numericcolumn;
+		dictionary<uint32_t, bool>	datetimecolumn;
+		char				*currentfield;
+		bool				emptyrow;
+		uint64_t			importedrowcount;
+		uint64_t			commitcount;
 
 	protected:
 		stringbuffer		query;

@@ -474,11 +474,11 @@ char *sqlrimport::getCurrentField() {
 }
 
 void sqlrimport::setIsNumericColumn(uint64_t index, bool value) {
-	numericcolumn[index]=value;
+	numericcolumn.setValue(index,value);
 }
 
 bool sqlrimport::getIsNumericColumn(uint64_t index) {
-	return (index<numericcolumn.getCount())?numericcolumn[index]:false;
+	return numericcolumn.getValue(index);
 }
 
 void sqlrimport::clearAreNumericColumns() {
@@ -486,11 +486,11 @@ void sqlrimport::clearAreNumericColumns() {
 }
 
 void sqlrimport::setIsDateTimeColumn(uint64_t index, bool value) {
-	datetimecolumn[index]=value;
+	datetimecolumn.setValue(index,value);
 }
 
 bool sqlrimport::getIsDateTimeColumn(uint64_t index) {
-	return (index<datetimecolumn.getCount())?datetimecolumn[index]:false;
+	return datetimecolumn.getValue(index);
 }
 
 void sqlrimport::clearAreDateTimeColumns() {
@@ -951,9 +951,6 @@ bool sqlrimport::processField() {
 		// set the current column name
 		setCurrentColumnName(columns[getCurrentColumn()]);
 
-		// never quote these
-		quotefield[getCurrentColumn()]=false;
-
 		// set the current field
 		char	*tmp;
 		if (getPrimaryKeySequence()) {
@@ -978,6 +975,9 @@ bool sqlrimport::processField() {
 			delete[] tmp;
 		}
 		fields[fields.getCount()]=getCurrentField();
+
+		// never quote these
+		quotefield[getCurrentColumn()]=false;
 
 		// call the field-end event
 		if (!fieldEnd()) {
@@ -1010,9 +1010,6 @@ bool sqlrimport::processField() {
 			const char	*value=
 				getStaticValue(getCurrentColumn());
 
-			// always quote these
-			quotefield[getCurrentColumn()]=true;
-
 			// set the current field
 			char	*tmp=massageValue(value,false,false);
 			setCurrentField(tmp);
@@ -1029,6 +1026,9 @@ bool sqlrimport::processField() {
 				delete[] tmp;
 			}
 			fields[fields.getCount()]=getCurrentField();
+
+			// always quote these
+			quotefield[getCurrentColumn()]=true;
 
 			// call the field-end event
 			if (!fieldEnd()) {
@@ -1057,10 +1057,9 @@ bool sqlrimport::processField() {
 		setEmptyRow(false);
 	}
 
-	// determine whether to quote this field
+	// determine whether the field is numeric or date/time
 	bool	isnumeric=getIsNumericColumn(getCurrentColumn());
 	bool	isdatetime=getIsDateTimeColumn(getCurrentColumn());
-	quotefield[getCurrentColumn()]=!isnumeric;
 
 	// set the current field
 	char	*tmp=massageValue(getFieldBuffer(),isnumeric,isdatetime);
@@ -1079,6 +1078,9 @@ bool sqlrimport::processField() {
 		delete[] tmp;
 	}
 	fields[fields.getCount()]=getCurrentField();
+
+	// quote these if they are non-numeric
+	quotefield[getCurrentColumn()]=!isnumeric;
 
 	// call the field-end event
 	if (!fieldEnd()) {
@@ -1104,13 +1106,13 @@ char *sqlrimport::massageValue(const char *value,
 	// handle empty values
 	if (charstring::isNullOrEmpty(value)) {
 		delete[] unescaped;
-		return charstring::duplicate("NULL");
+		return NULL;
 	}
 
 	// handle non-numbers in numeric columns
 	if (isnumeric && !charstring::isNumber(value)) {
 		delete[] unescaped;
-		return charstring::duplicate("NULL");
+		return NULL;
 	}
 
 	// handle date/times
@@ -1334,17 +1336,32 @@ bool sqlrimport::insertRow() {
 			query.append(',');
 		}
 
-		// open-quote the field, if necessary
-		if (quotefield[i]) {
-			query.append('\'');
-		}
+		// get the field
+		const char	*field=fields[i];
 
-		// append the field
-		query.append(fields[i]);
+		if (field) {
 
-		// close-quote the field, if necessary
-		if (quotefield[i]) {
-			query.append('\'');
+			// for non-NULL fields...
+
+			// open-quote the field, if necessary
+			if (quotefield[i]) {
+				query.append('\'');
+			}
+
+			// append the field
+			query.append(field);
+
+			// close-quote the field, if necessary
+			if (quotefield[i]) {
+				query.append('\'');
+			}
+
+		} else {
+
+			// for NULL fields...
+
+			// append the field
+			query.append("NULL");
 		}
 	}
 	query.append(')');
