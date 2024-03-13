@@ -768,8 +768,8 @@ bool sqlrimport::determineColumnTypes() {
 	query.append(" from ")->append(getObjectName());
 	getSqlrCursor()->setResultSetBufferSize(1);
 	if (!getSqlrCursor()->sendQuery(query.getString())) {
-		if (!error(getSqlrConnection()->errorNumber(),
-				getSqlrConnection()->errorMessage())) {
+		if (!error(getSqlrCursor()->errorNumber(),
+				getSqlrCursor()->errorMessage())) {
 			return false;
 		}
 	}
@@ -1355,8 +1355,8 @@ bool sqlrimport::insertRow() {
 
 	// send the query
 	if (!getSqlrCursor()->sendQuery(query.getString())) {
-		if (!error(getSqlrConnection()->errorNumber(),
-				getSqlrConnection()->errorMessage())) {
+		if (!error(getSqlrCursor()->errorNumber(),
+				getSqlrCursor()->errorMessage())) {
 			return false;
 		}
 	}
