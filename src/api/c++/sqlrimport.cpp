@@ -32,6 +32,7 @@ sqlrimport::sqlrimport() {
 	lowercasecolumnnames=false;
 	uppercasecolumnnames=false;
 	ignorecolumnswithemptynames=false;
+
 	ignoreemptyrows=false;
 
 	reformatdatetime=false;
@@ -435,12 +436,12 @@ uint64_t sqlrimport::getImportedRowCount() {
 	return importedrowcount;
 }
 
-void sqlrimport::setIgnoreRow(bool ignorerow) {
-	this->ignorerow=ignorerow;
+void sqlrimport::setExcludeRow(bool excluderow) {
+	this->excluderow=excluderow;
 }
 
-bool sqlrimport::getIgnoreRow() {
-	return ignorerow;
+bool sqlrimport::getExcludeRow() {
+	return excluderow;
 }
 
 void sqlrimport::setCurrentRow(uint64_t currentrow) {
@@ -504,7 +505,7 @@ bool sqlrimport::importData() {
 }
 
 void sqlrimport::clearFlagsAndCounts() {
-	ignorerow=false;
+	excluderow=false;
 	currentrow=0;
 	currentcol=0;
 	currentcolname=NULL;
@@ -1044,7 +1045,7 @@ bool sqlrimport::startProcessingRows() {
 bool sqlrimport::startProcessingRow() {
 
 	// update flags and counters
-	setIgnoreRow(false);
+	setExcludeRow(false);
 	setCurrentColumn(0);
 	setCurrentColumnName(NULL);
 	setCurrentField(NULL);
@@ -1363,10 +1364,10 @@ bool sqlrimport::endProcessingRow() {
 	// clear the query buffer
 	clearQueryBuffer();
 
-	// if we're ignoring this row in particular, there were no columns
-	// (somehow), or if we're generally ignoring empty rows, and this
-	// was an empty row, then ignore it
-	if (getIgnoreRow() || !getColumnNameCount() ||
+	// if we're excluding this row in particular, there were no columns
+	// (somehow), or if we're generally excluding empty rows, and this
+	// was an empty row, then exclude it
+	if (getExcludeRow() || !getColumnNameCount() ||
 		(getIgnoreEmptyRows() && getEmptyRow())) {
 
 		return true;

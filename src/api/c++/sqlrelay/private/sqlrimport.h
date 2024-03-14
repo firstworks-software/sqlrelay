@@ -79,6 +79,7 @@
 
 		bool		ignorecolumns;
 		bool		ignorecolumnswithemptynames;
+
 		bool		ignoreemptyrows;
 
 		bool		lowercasecolumnnames;
@@ -107,7 +108,7 @@
 		dynamicarray<char *>			fields;
 		dynamicarray<bool>			quotefields;
 
-		bool				ignorerow;
+		bool				excluderow;
 		uint64_t			currentrow;
 		uint32_t			currentcol;
 		char				*currentcolname;

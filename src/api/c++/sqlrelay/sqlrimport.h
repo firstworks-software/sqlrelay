@@ -860,20 +860,20 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  false. */
 		virtual bool	importEnd();
 
-		/** Sets whether the current row of the data will be ignored or
-		 *  not.  Rows that are ignored are not imported.
+		/** Sets whether the current row of the data will be excluded or
+		 *  not.  Rows that are excluded are not imported.
 		 *  
 		 *  Should be called by implementations of importData().  May
 		 *  also be called by rowStart().  Not commonly called by other
 		 *  *Start/End() methods. */
-		void	setIgnoreRow(bool ignorerow);
+		void	setExcludeRow(bool excluderow);
 
-		/** Gets whether the current row of the data will be ignored or
-		 *  not.  Rows that are ignored are not imported.
+		/** Gets whether the current row of the data will be excluded or
+		 *  not.  Rows that are excluded are not imported.
 		 *  
 		 *  May be called by implementations of importData() or by
 		 *  implementations of the *Start/End() methods. */
-		bool	getIgnoreRow();
+		bool	getExcludeRow();
 
 		/** Sets the index of the row of data that is currently being
 		 *  imported.

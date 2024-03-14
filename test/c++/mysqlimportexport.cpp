@@ -690,7 +690,7 @@ class testsqlrimport : virtual public sqlrimport {
 		virtual bool	tests(const char *method);
 
 	private:
-		bool		testignorerow;
+		bool		testexcluderow;
 		uint32_t	testcurrentcol;
 		const char	*testcurrentcolname;
 		stringbuffer	testcurrentcolnamestr;
@@ -706,7 +706,7 @@ class testsqlrimport : virtual public sqlrimport {
 };
 
 testsqlrimport::testsqlrimport() : sqlrimport() {
-	testignorerow=false;
+	testexcluderow=false;
 	testcurrentcol=0;
 	testcurrentcolname=NULL;
 	testcurrentrow=0;
@@ -730,10 +730,10 @@ void testsqlrimport::setRowsToIgnore(dynamicarray<bool> *rowstoignore) {
 
 bool testsqlrimport::tests(const char *method) {
 
-	// test ignore row
-	if (getIgnoreRow()!=testignorerow) {
-		stdoutput.printf("\n%s - getIgnoreRow(): %d!=%d\n",
-					method,getIgnoreRow(),testignorerow);
+	// test exclude row
+	if (getExcludeRow()!=testexcluderow) {
+		stdoutput.printf("\n%s - getExcludeRow(): %d!=%d\n",
+					method,getExcludeRow(),testexcluderow);
 		return false;
 	}
 
@@ -804,7 +804,7 @@ bool testsqlrimport::importStart() {
 	#endif
 
 	// reset flags and counts
-	testignorerow=false;
+	testexcluderow=false;
 	testcurrentcol=0;
 	testcurrentcolname=NULL;
 	testcurrentrow=0;
@@ -930,7 +930,7 @@ bool testsqlrimport::rowsStart() {
 	#endif
 
 	// reset flags and counts
-	testignorerow=false;
+	testexcluderow=false;
 	testcurrentcol=0;
 	testcurrentrow=0;
 	testimportedrowcount=0;
@@ -954,7 +954,7 @@ bool testsqlrimport::rowStart() {
 	#endif
 
 	// reset flags and counts
-	testignorerow=false;
+	testexcluderow=false;
 	testcurrentcol=0;
 	testcurrentcolname=NULL;
 	testcurrentfield=NULL;
@@ -1045,7 +1045,7 @@ bool testsqlrimport::rowEnd() {
 	}
 
 	// increment row counts
-	if (!testignorerow) {
+	if (!testexcluderow) {
 		testimportedrowcount++;
 	}
 	testcurrentrow++;
