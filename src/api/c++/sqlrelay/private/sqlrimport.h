@@ -10,10 +10,30 @@
 		char	*getColumnNameBuffer();
 		void	clearColumnNameBuffer();
 		void	freeColumnNameBuffer();
+
+		void	setColumnName(uint64_t index, char *value);
+		char	*getColumnName(uint64_t index);
+		uint64_t	getColumnNameCount();
+		void	clearColumnNames();
+
 		void	setFieldBuffer(const char *value);
 		char	*getFieldBuffer();
 		void	clearFieldBuffer();
 		void	freeFieldBuffer();
+
+		void	setField(uint64_t index, char *value);
+		char	*getField(uint64_t index);
+		uint64_t	getFieldCount();
+		void	clearFields();
+
+		void	setQuoteField(uint64_t index, bool quote);
+		bool	getQuoteField(uint64_t index);
+		void	clearQuoteFields();
+
+		void	appendToQueryBuffer(const char *str);
+		void	appendToQueryBuffer(const char ch);
+		const char	*getQueryBufferString();
+		void	clearQueryBuffer();
 
 		virtual bool	startProcessingImport();
 		virtual bool	startProcessingColumns();
@@ -74,8 +94,14 @@
 		uint32_t	logindent;
 		bool		logerrors;
 
-		char		*colnamebuffer;
-		char		*fieldbuffer;
+		char					*colnamebuffer;
+		dictionary<const char *, const char *>	columnmap;
+		dynamicarray<char *>			columnnames;
+
+		char					*fieldbuffer;
+		dictionary<const char *, const char *>	fieldmap;
+		dynamicarray<char *>			fields;
+		dynamicarray<bool>			quotefields;
 
 		bool				ignorerow;
 		uint64_t			currentrow;
@@ -88,10 +114,4 @@
 		uint64_t			importedrowcount;
 		uint64_t			commitcount;
 
-	protected:
-		stringbuffer		query;
-		dynamicarray<char *>	columns;
-		dynamicarray<char *>	fields;
-		dynamicarray<bool>	quotefield;
-		dictionary<const char *, const char *>	columnmap;
-		dictionary<const char *, const char *>	fieldmap;
+		stringbuffer	query;

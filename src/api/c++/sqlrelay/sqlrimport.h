@@ -421,6 +421,13 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  returns true.  Child classes should override this method. */
 		virtual	bool	importData();
 
+                /** Returns the number of rows that were imported by the most
+                 *  recent call to importData(), or the current number of rows
+                 *  that have been imported, if called from inside one of the
+                 *  Start()/End() methods. */
+		uint64_t	getImportedRowCount();
+
+	protected:
 		/** This method should be called by implementations of
 		 *  importData(), at the beginning of the import process.
 		 *
@@ -852,12 +859,6 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  occurred and import should stop if this method return
 		 *  false. */
 		virtual bool	importEnd();
-
-		/** Returns the number of rows that were imported by the most
-		 *  recent call to one of the importData(). */
-		uint64_t	getImportedRowCount();
-
-	protected:
 
 		/** Sets whether the current row of the data will be ignored or
 		 *  not.  Rows that are ignored are not imported.

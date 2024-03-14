@@ -51,7 +51,7 @@ sqlrimport::sqlrimport() {
 
 	clearFlagsAndCounts();
 
-	columns.setManageArrayValues(true);
+	columnnames.setManageArrayValues(true);
 	fields.setManageArrayValues(true);
 }
 
@@ -539,6 +539,22 @@ void sqlrimport::freeColumnNameBuffer() {
 	colnamebuffer=NULL;
 }
 
+void sqlrimport::setColumnName(uint64_t index, char *value) {
+	columnnames[index]=value;
+}
+
+char *sqlrimport::getColumnName(uint64_t index) {
+	return columnnames[index];
+}
+
+uint64_t sqlrimport::getColumnNameCount() {
+	return columnnames.getCount();
+}
+
+void sqlrimport::clearColumnNames() {
+	columnnames.clear();
+}
+
 void sqlrimport::setFieldBuffer(const char *value) {
 	fieldbuffer=charstring::duplicate(value);
 }
@@ -554,6 +570,50 @@ void sqlrimport::clearFieldBuffer() {
 void sqlrimport::freeFieldBuffer() {
 	delete[] fieldbuffer;
 	fieldbuffer=NULL;
+}
+
+void sqlrimport::setField(uint64_t index, char *value) {
+	fields[index]=value;
+}
+
+char *sqlrimport::getField(uint64_t index) {
+	return fields[index];
+}
+
+uint64_t sqlrimport::getFieldCount() {
+	return fields.getCount();
+}
+
+void sqlrimport::clearFields() {
+	fields.clear();
+}
+
+void sqlrimport::setQuoteField(uint64_t index, bool quote) {
+	quotefields[index]=quote;
+}
+
+bool sqlrimport::getQuoteField(uint64_t index) {
+	return quotefields[index];
+}
+
+void sqlrimport::clearQuoteFields() {
+	quotefields.clear();
+}
+
+void sqlrimport::appendToQueryBuffer(const char *str) {
+	query.append(str);
+}
+
+void sqlrimport::appendToQueryBuffer(const char ch) {
+	query.append(ch);
+}
+
+const char *sqlrimport::getQueryBufferString() {
+	return query.getString();
+}
+
+void sqlrimport::clearQueryBuffer() {
+	query.clear();
 }
 
 bool sqlrimport::startProcessingImport() {
@@ -581,7 +641,7 @@ bool sqlrimport::processColumnName() {
 	// now, process the actual column name...
 
 	// remap the name, if the name has been mapped
-	const char	*mappedname=columnmap.getValue(getColumnNameBuffer());
+	const char	*mappedname=getMappedColumnName(getColumnNameBuffer());
 	if (mappedname) {
 		freeColumnNameBuffer();
 		setColumnNameBuffer(mappedname);
@@ -602,7 +662,7 @@ bool sqlrimport::processColumnName() {
 	if (getCurrentColumnName()!=getColumnNameBuffer()) {
 		freeColumnNameBuffer();
 	}
-	columns[columns.getCount()]=getCurrentColumnName();
+	setColumnName(getColumnNameCount(),getCurrentColumnName());
 
 	// reset the current field to the current column name
 	// (in case columnStart() overrode the column name)
@@ -642,7 +702,7 @@ bool sqlrimport::processPrimaryKeyAndStaticColumns() {
 		if (getCurrentColumnName()!=cname) {
 			delete[] cname;
 		}
-		columns[columns.getCount()]=getCurrentColumnName();
+		setColumnName(getColumnNameCount(),getCurrentColumnName());
 
 		// reset the current field to the current column name
 		// (in case columnStart() overrode the column name)
@@ -687,7 +747,8 @@ bool sqlrimport::processPrimaryKeyAndStaticColumns() {
 			if (getCurrentColumnName()!=cname) {
 				delete[] cname;
 			}
-			columns[columns.getCount()]=getCurrentColumnName();
+			setColumnName(getColumnNameCount(),
+						getCurrentColumnName());
 
 			// reset the current field to the current
 			// column name (in case columnStart() overrode
@@ -712,13 +773,13 @@ bool sqlrimport::determineColumnTypes() {
 	// we need to figure out which columns are numbers or dates...
 
 	// get info about these columns from the database
-	query.clear();
-	query.append("select ");
+	clearQueryBuffer();
+	appendToQueryBuffer("select ");
 
 	if (getIgnoreColumns()) {
 		// if we're ignoring the columns specified in the file,
 		// then just grab the column names from the table itself
-		query.append('*');
+		appendToQueryBuffer('*');
 	} else {
 		// if we built a list of column names from the ones specified
 		// in the file, then select those specific columns
@@ -726,14 +787,14 @@ bool sqlrimport::determineColumnTypes() {
 		// NOTE: columns[] should contain the full list of columns,
 		// including any inserted primary key columns, static columns,
 		// and columns with empty names
-		for (uint64_t i=0; i<columns.getCount(); i++) {
+		for (uint64_t i=0; i<getColumnNameCount(); i++) {
 
 			// determine if we need a comma or not
 			if (i) {
-				query.append(',');
+				appendToQueryBuffer(',');
 			}
 
-			if (charstring::isNullOrEmpty(columns[i])) {
+			if (charstring::isNullOrEmpty(getColumnName(i))) {
 
 				// If this column has an empty name then
 				// append a NULL.  This will cause the
@@ -756,18 +817,19 @@ bool sqlrimport::determineColumnTypes() {
 				// datetimes, then they won't be reformatted.
 				// Hopefully they're in the right format
 				// already.
-				query.append("NULL");
+				appendToQueryBuffer("NULL");
 
 			} else {
 
 				// otherwise, append the column
-				query.append(columns[i]);
+				appendToQueryBuffer(getColumnName(i));
 			}
 		}
 	}
-	query.append(" from ")->append(getObjectName());
+	appendToQueryBuffer(" from ");
+	appendToQueryBuffer(getObjectName());
 	getSqlrCursor()->setResultSetBufferSize(1);
-	if (!getSqlrCursor()->sendQuery(query.getString())) {
+	if (!getSqlrCursor()->sendQuery(getQueryBufferString())) {
 		if (!error(getSqlrCursor()->errorNumber(),
 				getSqlrCursor()->errorMessage())) {
 			return false;
@@ -874,7 +936,7 @@ bool sqlrimport::endProcessingColumns() {
 	// if we're not ignoring columns, but there weren't any, then don't get
 	// any info about columns from the database, just call the columns-end
 	// event and bail
-	if (!getIgnoreColumns() && !columns.getCount()) {
+	if (!getIgnoreColumns() && !getColumnNameCount()) {
 		return columnsEnd();
 	}
 
@@ -949,7 +1011,7 @@ bool sqlrimport::processField() {
 			getCurrentColumn()==getPrimaryKeyColumnIndex()) {
 
 		// set the current column name
-		setCurrentColumnName(columns[getCurrentColumn()]);
+		setCurrentColumnName(getColumnName(getCurrentColumn()));
 
 		// set the current field
 		char	*tmp;
@@ -974,10 +1036,10 @@ bool sqlrimport::processField() {
 		if (getCurrentField()!=tmp) {
 			delete[] tmp;
 		}
-		fields[fields.getCount()]=getCurrentField();
+		setField(getFieldCount(),getCurrentField());
 
 		// never quote these
-		quotefield[getCurrentColumn()]=false;
+		setQuoteField(getCurrentColumn(),false);
 
 		// call the field-end event
 		if (!fieldEnd()) {
@@ -997,7 +1059,7 @@ bool sqlrimport::processField() {
 		for (;;) {
 
 			// set the current column name
-			setCurrentColumnName(columns[getCurrentColumn()]);
+			setCurrentColumnName(getColumnName(getCurrentColumn()));
 
 			// get the static column name for this position
 			const char	*colname=
@@ -1025,10 +1087,10 @@ bool sqlrimport::processField() {
 			if (getCurrentField()!=tmp) {
 				delete[] tmp;
 			}
-			fields[fields.getCount()]=getCurrentField();
+			setField(getFieldCount(),getCurrentField());
 
 			// always quote these
-			quotefield[getCurrentColumn()]=true;
+			setQuoteField(getCurrentColumn(),true);
 
 			// call the field-end event
 			if (!fieldEnd()) {
@@ -1041,10 +1103,10 @@ bool sqlrimport::processField() {
 	}
 
 	// set the current column name
-	setCurrentColumnName(columns[getCurrentColumn()]);
+	setCurrentColumnName(getColumnName(getCurrentColumn()));
 
 	// if this value has a mapping, then get that
-	const char	*v=fieldmap.getValue(getFieldBuffer());
+	const char	*v=getMappedFieldValue(getFieldBuffer());
 	if (v) {
 		freeFieldBuffer();
 		setFieldBuffer(v);
@@ -1077,10 +1139,10 @@ bool sqlrimport::processField() {
 	if (getCurrentField()!=tmp) {
 		delete[] tmp;
 	}
-	fields[fields.getCount()]=getCurrentField();
+	setField(getFieldCount(),getCurrentField());
 
 	// quote these if they are non-numeric
-	quotefield[getCurrentColumn()]=!isnumeric;
+	setQuoteField(getCurrentColumn(),!isnumeric);
 
 	// call the field-end event
 	if (!fieldEnd()) {
@@ -1224,12 +1286,12 @@ bool sqlrimport::endProcessingRow() {
 	}
 
 	// clear the query buffer
-	query.clear();
+	clearQueryBuffer();
 
 	// if we're ignoring this row in particular, there were no columns
 	// (somehow), or if we're generally ignoring empty rows, and this
 	// was an empty row, then ignore it
-	if (getIgnoreRow() || !columns.getCount() ||
+	if (getIgnoreRow() || !getColumnNameCount() ||
 		(getIgnoreEmptyRows() && getEmptyRow())) {
 
 		return true;
@@ -1253,22 +1315,23 @@ bool sqlrimport::insertRow() {
 	// build the insert query...
 
 	// insert into...
-	query.append("insert into ")->append(getObjectName());
+	appendToQueryBuffer("insert into ");
+	appendToQueryBuffer(getObjectName());
 
 	// if we're not ignoring the columns specified in the
 	// file then build a column list from them...
 	if (!getIgnoreColumns()) {
 
-		query.append(" (");
+		appendToQueryBuffer(" (");
 
 		// run through the column names...
 		bool	first=true;
-		for (uint64_t i=0; i<columns.getCount(); i++) {
+		for (uint64_t i=0; i<getColumnNameCount(); i++) {
 
 			// get the column name and remap it,
 			// if the name has been mapped
-			const char	*c=columns[i];
-			const char	*m=columnmap.getValue(c);
+			const char	*c=getColumnName(i);
+			const char	*m=getMappedColumnName(c);
 			if (m) {
 				c=m;
 			}
@@ -1284,7 +1347,7 @@ bool sqlrimport::insertRow() {
 			if (first) {
 				first=false;
 			} else {
-				query.append(',');
+				appendToQueryBuffer(',');
 			}
 
 			// upper-case or lower-case the column name,
@@ -1297,27 +1360,27 @@ bool sqlrimport::insertRow() {
 			}
 
 			// append the column name
-			query.append(cm);
+			appendToQueryBuffer(cm);
 
 			// clean up
 			delete[] cm;
 		}
 
-		query.append(')');
+		appendToQueryBuffer(')');
 
 	}
 
 	// values...
-	query.append(" values (");
+	appendToQueryBuffer(" values (");
 
 	// run through the fields...
 	bool	first=true;
-	for (uint64_t i=0; i<fields.getCount(); i++) {
+	for (uint64_t i=0; i<getFieldCount(); i++) {
 
 		// get the column name and remap it,
 		// if the name has been mapped
-		const char	*c=columns[i];
-		const char	*m=columnmap.getValue(c);
+		const char	*c=getColumnName(i);
+		const char	*m=getMappedColumnName(c);
 		if (m) {
 			c=m;
 		}
@@ -1333,27 +1396,27 @@ bool sqlrimport::insertRow() {
 		if (first) {
 			first=false;
 		} else {
-			query.append(',');
+			appendToQueryBuffer(',');
 		}
 
 		// get the field
-		const char	*field=fields[i];
+		const char	*field=getField(i);
 
 		if (field) {
 
 			// for non-NULL fields...
 
 			// open-quote the field, if necessary
-			if (quotefield[i]) {
-				query.append('\'');
+			if (getQuoteField(i)) {
+				appendToQueryBuffer('\'');
 			}
 
 			// append the field
-			query.append(field);
+			appendToQueryBuffer(field);
 
 			// close-quote the field, if necessary
-			if (quotefield[i]) {
-				query.append('\'');
+			if (getQuoteField(i)) {
+				appendToQueryBuffer('\'');
 			}
 
 		} else {
@@ -1361,17 +1424,17 @@ bool sqlrimport::insertRow() {
 			// for NULL fields...
 
 			// append the field
-			query.append("NULL");
+			appendToQueryBuffer("NULL");
 		}
 	}
-	query.append(')');
+	appendToQueryBuffer(')');
 
 	// clean up
-	fields.clear();
-	quotefield.clear();
+	clearFields();
+	clearQuoteFields();
 
 	// send the query
-	if (!getSqlrCursor()->sendQuery(query.getString())) {
+	if (!getSqlrCursor()->sendQuery(getQueryBufferString())) {
 		if (!error(getSqlrCursor()->errorNumber(),
 				getSqlrCursor()->errorMessage())) {
 			return false;
@@ -1453,7 +1516,7 @@ bool sqlrimport::endProcessingRows() {
 	}
 
 	// clean up column names
-	columns.clear();
+	clearColumnNames();
 
 	// set the current column and field to NULL
 	setCurrentColumnName(NULL);

@@ -125,6 +125,13 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  returns true.  Child classes should override this method. */
 		virtual	bool	exportData();
 
+		/** Returns the number of rows that were exported by the most
+		 *  recent call to exportData(), or the current number of rows
+		 *  that have been exported, if called from inside one of the
+		 *  Start()/End() methods. */
+		uint64_t	getExportedRowCount();
+
+	protected:
 		/** This method should be called by implementations of
 		 *  exportData(), at the beginning of the export process.
 		 *
@@ -539,14 +546,6 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  occurred and export should stop if this method return
 		 *  false. */
 		virtual bool	exportEnd();
-
-		/** Returns the number of rows that were exported by the most
-		 *  recent call to exportData(), or the current number of rows
-		 *  that have been exported, if called from inside one of the
-		 *  Start()/End() methods. */
-		uint64_t	getExportedRowCount();
-
-	protected:
 
 		/** Sets whether the current row of the data will be ignored or
 		 *  not.  Rows that are ignored are not exported.

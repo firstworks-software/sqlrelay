@@ -197,7 +197,7 @@ bool sqlrimportxml::tagEnd(const char *ns, const char *name) {
 bool sqlrimportxml::resetSequence() {
 
 	// reset the sequence...
-	query.clear();
+	clearQueryBuffer();
 
 	// FIXME: arguably restarting a sequence should be an API call, and
 	// there should be a backend method like restartSequence() implemented
@@ -208,9 +208,11 @@ bool sqlrimportxml::resetSequence() {
 		charstring::contains(getDbType(),"interbase")) {
 
 		// restart the sequence (generator) with the provided value
-		query.append("set generator ")->append(getObjectName());
-		query.append(" to ")->append(sequencevalue);
-		if (!getSqlrCursor()->sendQuery(query.getString())) {
+		appendToQueryBuffer("set generator ");
+		appendToQueryBuffer(getObjectName());
+		appendToQueryBuffer(" to ");
+		appendToQueryBuffer(sequencevalue);
+		if (!getSqlrCursor()->sendQuery(getQueryBufferString())) {
 			return error(getSqlrConnection()->errorNumber(),
 					getSqlrConnection()->errorMessage());
 		}
@@ -226,52 +228,56 @@ bool sqlrimportxml::resetSequence() {
 		char		*uppersequence=
 				charstring::duplicate(getObjectName());
 		charstring::upper(uppersequence);
-		query.append("select * from all_sequences where "
+		appendToQueryBuffer("select * from all_sequences where "
 				"sequence_name='");
-		query.append(uppersequence)->append("'");
+		appendToQueryBuffer(uppersequence);
+		appendToQueryBuffer("'");
 		delete[] uppersequence;
-		if (!sqlrcur2.sendQuery(query.getString())) {
+		if (!sqlrcur2.sendQuery(getQueryBufferString())) {
 			return error(sqlrcur2.errorNumber(),
 					sqlrcur2.errorMessage());
 		}
 
 		// drop the sequence
-		query.clear();
-		query.append("drop sequence ")->append(getObjectName());
-		if (!getSqlrCursor()->sendQuery(query.getString())) {
+		clearQueryBuffer();
+		appendToQueryBuffer("drop sequence ");
+		appendToQueryBuffer(getObjectName());
+		if (!getSqlrCursor()->sendQuery(getQueryBufferString())) {
 			return error(getSqlrConnection()->errorNumber(),
 					getSqlrConnection()->errorMessage());
 		}
 
 		// recreate the sequence to start with the provided value, but
 		// also using configuration parameters that we fetched above
-		query.clear();
-		query.append("create sequence ")->append(getObjectName());
-		query.append(" start with ")->append(sequencevalue);
-		query.append(" maxvalue ");
-		query.append(sqlrcur2.getField(0,"MAX_VALUE"));
-		query.append(" minvalue ");
-		query.append(sqlrcur2.getField(0,"MIN_VALUE"));
+		clearQueryBuffer();
+		appendToQueryBuffer("create sequence ");
+		appendToQueryBuffer(getObjectName());
+		appendToQueryBuffer(" start with ");
+		appendToQueryBuffer(sequencevalue);
+		appendToQueryBuffer(" maxvalue ");
+		appendToQueryBuffer(sqlrcur2.getField(0,"MAX_VALUE"));
+		appendToQueryBuffer(" minvalue ");
+		appendToQueryBuffer(sqlrcur2.getField(0,"MIN_VALUE"));
 		if (!charstring::compare(
 				sqlrcur2.getField(0,"CYCLE_FLAG"),"N")) {
-			query.append(" nocycle ");
+			appendToQueryBuffer(" nocycle ");
 		} else {
-			query.append(" cycle ");
+			appendToQueryBuffer(" cycle ");
 		}
 		if (!charstring::compare(
 				sqlrcur2.getField(0,"ORDER_FLAG"),"N")) {
-			query.append(" noorder ");
+			appendToQueryBuffer(" noorder ");
 		} else {
-			query.append(" order ");
+			appendToQueryBuffer(" order ");
 		}
 		if (!charstring::compare(
 				sqlrcur2.getField(0,"CACHE_SIZE"),"0")) {
-			query.append(" nocache ");
+			appendToQueryBuffer(" nocache ");
 		} else {
-			query.append(" cache ");
-			query.append(sqlrcur2.getField(0,"CACHE_SIZE"));
+			appendToQueryBuffer(" cache ");
+			appendToQueryBuffer(sqlrcur2.getField(0,"CACHE_SIZE"));
 		}
-		if (!getSqlrCursor()->sendQuery(query.getString())) {
+		if (!getSqlrCursor()->sendQuery(getQueryBufferString())) {
 			return error(getSqlrConnection()->errorNumber(),
 					getSqlrConnection()->errorMessage());
 		}
@@ -283,9 +289,11 @@ bool sqlrimportxml::resetSequence() {
 			charstring::contains(getDbType(),"informix")) {
 
 		// restart the sequence with the provided value
-		query.append("alter sequence ")->append(getObjectName());
-		query.append(" restart with ")->append(sequencevalue);
-		if (!getSqlrCursor()->sendQuery(query.getString())) {
+		appendToQueryBuffer("alter sequence ");
+		appendToQueryBuffer(getObjectName());
+		appendToQueryBuffer(" restart with ");
+		appendToQueryBuffer(sequencevalue);
+		if (!getSqlrCursor()->sendQuery(getQueryBufferString())) {
 			return error(getSqlrConnection()->errorNumber(),
 					getSqlrConnection()->errorMessage());
 		}

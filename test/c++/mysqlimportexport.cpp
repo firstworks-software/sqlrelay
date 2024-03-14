@@ -1975,7 +1975,7 @@ int main(int argc, char **argv) {
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 
-	//exportTests();
+	exportTests();
 	importTests();
 
 
