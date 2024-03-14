@@ -140,7 +140,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  override this method to do something else.
 		 *
 		 *  At this point...
-		 *  * getExportRow() should return true
+		 *  * getExcludeRow() should return false
 		 *  * getExportedRowCount() should return 0
 		 *  * getCurrentRow() should return 0
 		 *  * getCurrentColumn() should return 0

@@ -435,7 +435,7 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  override this method to do something else.
 		 *
 		 *  At this point...
-		 *  * getImportRow() should return true
+		 *  * getExcludeRow() should return false
 		 *  * getImportedRowCount() should return 0
 		 *  * getCurrentRow() should return 0
 		 *  * getCurrentColumn() should return 0
@@ -458,7 +458,7 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  override this method to do something else.
 		 *
 		 *  At this point...
-		 *  * getImportRow() should return true
+		 *  * getExcludeRow() should return false
 		 *  * getImportedRowCount() should return 0
 		 *  * getCurrentRow() should return 0
 		 *  * getCurrentColumn() should return 0
@@ -480,7 +480,7 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  override this method to do something else.
 		 *
 		 *  At this point...
-		 *  * getImportRow() should return true
+		 *  * getExcludeRow() should return false
 		 *  * getImportedRowCount() should return 0
 		 *  * getCurrentRow() should return 0
 		 *  * getCurrentColumn() should return the index of the
@@ -520,7 +520,10 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  override this method to do something else.
 		 *
 		 *  At this point...
-		 *  * getImportRow() should return true
+		 *  * getExcludeRow() should return false by default, or true
+		 *    if set true by a call to setExcludeRow(true) by an
+		 *    overridden columnStart().  However at this point, a value
+		 *    of true will be ignored.
 		 *  * getImportedRowCount() should return 0
 		 *  * getCurrentRow() should return 0
 		 *  * getCurrentColumn() should return the index of the
@@ -552,7 +555,10 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  override this method to do something else.
 		 *
 		 *  At this point...
-		 *  * getImportRow() should return true
+		 *  * getExcludeRow() should return false by default, or true
+		 *    if set true by a call to setExcludeRow(true) by an
+		 *    overridden columnStart()/columnEnd().  However at this
+		 *    point, a value of true will be ignored.
 		 *  * getImportedRowCount() should return 0
 		 *  * getCurrentRow() should return 0
 		 *  * getCurrentColumn() should return one more than the index
@@ -576,7 +582,7 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  override this method to do something else.
 		 *
 		 *  At this point...
-		 *  * getImportRow() should return true
+		 *  * getExcludeRow() should return false.
 		 *  * getImportedRowCount() should return 0
 		 *  * getCurrentRow() should return 0
 		 *  * getCurrentColumn() should return 0
@@ -599,7 +605,7 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  override this method to do something else.
 		 *
 		 *  At this point...
-		 *  * getImportRow() should return true
+		 *  * getExcludeRow() should return false.
 		 *  * getImportedRowCount() should return the number of rows
 		 *    that have been exported - it should not include the
 		 *    row that we are starting
@@ -631,8 +637,10 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  override this method to do something else.
 		 *
 		 *  At this point...
-		 *  * getImportRow() should return true or false, as
-		 *    appropriate for this row
+		 *  * getExcludeRow() should return false by default, or true
+		 *    if set by a call to setExcludeRow(true) in an overridden
+		 *    rowStart() method.  However at this point, a value of
+		 *    true will be ignored.
 		 *  * getImportedRowCount() should return the number of rows
 		 *    that have been exported
 		 *  * getCurrentRow() should return the index of the row that
@@ -681,8 +689,10 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  override this method to do something else.
 		 *
 		 *  At this point...
-		 *  * getImportRow() should return true or false, as
-		 *    appropriate for this row
+		 *  * getExcludeRow() should return false by default, or true
+		 *    if set by a call to setExcludeRow(true) in an overridden
+		 *    *Start/End() method.  However at this point, a value of
+		 *    true will be ignored.
 		 *  * getImportedRowCount() should return the number of rows
 		 *    that have been exported
 		 *  * getCurrentRow() should return the index of the row that
@@ -723,8 +733,10 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  override this method to do something else.
 		 *
 		 *  At this point...
-		 *  * getImportRow() should return true or false, as
-		 *    appropriate for this row
+		 *  * getExcludeRow() should return false by default, or true
+		 *    if set by a call to setExcludeRow(true) in an overridden
+		 *    *Start/End() method.  However at this point, a value of
+		 *    true will be ignored.
 		 *  * getImportedRowCount() should return the number of rows
 		 *    that have been exported - it should not include the
 		 *    row that we are ending
@@ -756,8 +768,10 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  override this method to do something else.
 		 *
 		 *  At this point...
-		 *  * getImportRow() should return true or false,
-		 *    as appropriate for the last row
+		 *  * getExcludeRow() should return false by default, or true
+		 *    if set by a call to setExcludeRow(true) in an overridden
+		 *    *Start/End() method.  However at this point, a value of
+		 *    true will be ignored.
 		 *  * getImportedRowCount() should return the number of rows
 		 *    that were exported
 		 *  * getCurrentRow() should return one more than the index
@@ -839,8 +853,10 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  override this method to do something else.
 		 *
 		 *  At this point...
-		 *  * getImportRow() should return true or false,
-		 *    as appropriate for the last row
+		 *  * getExcludeRow() should return false by default, or true
+		 *    if set by a call to setExcludeRow(true) in an overridden
+		 *    *Start/End() method.  However at this point, a value of
+		 *    true will be ignored.
 		 *  * getImportedRowCount() should return the number of rows
 		 *    that were exported
 		 *  * getCurrentRow() should return one more than the index
