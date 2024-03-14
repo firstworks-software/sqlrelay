@@ -116,9 +116,9 @@ bool sqlrexporttable::exportData() {
 		// (in case columnStart overrode the columm name)
 		setCurrentField(getCurrentColumnName());
 
-		// if we're not ignoring this column...
+		// if we're not excluding this column...
 		if (!charstring::isInSet(getCurrentField(),
-						getColumnsToIgnore())) {
+						getColumnsToExclude())) {
 
 			// append the bind variable
 			if (bindindex>1) {
@@ -223,7 +223,7 @@ bool sqlrexporttable::exportData() {
 		}
 
 		// reset export-row flag and current column/field
-		setIgnoreRow(false);
+		setExcludeRow(false);
 		setCurrentColumn(0);
 		setCurrentColumnName(sqlrcur->getColumnName(0));
 		setCurrentField(sqlrcur->getField(getCurrentRow(),(uint32_t)0));
@@ -257,12 +257,12 @@ bool sqlrexporttable::exportData() {
 				break;
 			}
 
-			// if we're not ignoring this row or column...
-			if (!getIgnoreRow() &&
+			// if we're not excluding this row or column...
+			if (!getExcludeRow() &&
 				!charstring::isInSet(
 					sqlrcur->getColumnName(
 						getCurrentColumn()),
-					getColumnsToIgnore())) {
+					getColumnsToExclude())) {
 
 				// export the field
 				if (first) {
@@ -286,7 +286,7 @@ bool sqlrexporttable::exportData() {
 			break;
 		}
 
-		if (!getIgnoreRow()) {
+		if (!getExcludeRow()) {
 			// It's not impossible that there were 0 columns in
 			// this result set.  If that was the case then
 			// bindindex should still be 0 at this point, and no
@@ -317,7 +317,7 @@ bool sqlrexporttable::exportData() {
 		}
 
 		// update exported row count
-		if (!getIgnoreRow()) {
+		if (!getExcludeRow()) {
 			setExportedRowCount(getExportedRowCount()+1);
 		}
 

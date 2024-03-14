@@ -48,29 +48,30 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  name of the table that data is being exported to. */
 		const char	*getTable();
 
-		/** If "ignorecolumns" is set false, then column information
+		/** If "excludecolumns" is set false, then column information
 		 *  will be exported (eg. to the CSV header, XML tags inside
 		 *  of the file, etc.).
 		 *
-		 *  If "ignorecolumns" is set true, then column information
+		 *  If "excludecolumns" is set true, then column information
 		 *  will not be exported.
 		 *
 		 *  Defaults to false. */
-		void	setIgnoreColumns(bool ignorecolumns);
+		void	setExcludeColumns(bool excludecolumns);
 
 		/** Returns whether or not column information will be
 		 *  exported. */
-		bool	getIgnoreColumns();
+		bool	getExcludeColumns();
 
-		/** If "columnstoignore" is a null terminated array of column
+		/** If "columnstoexclude" is a null terminated array of column
 		 *  names, then those columns will not be exported.  If
-		 *  "columnstoignore" is NULL then all columns will be
+		 *  "columnstoexclude" is NULL then all columns will be
 		 *  exported. */
-		void	setColumnsToIgnore(const char * const *columnstoignore);
+		void	setColumnsToExclude(
+				const char * const *columnstoexclude);
 
 		/** Returns the current set of columns that will not be
 		 *  exported as a NULL-terminated array. */
-		const char * const *getColumnsToIgnore();
+		const char * const *getColumnsToExclude();
 
 		/** Sets the logger to use when logging progress to "lg".
 		 *  If "lg" is set to NULL then progress will not be logged.
@@ -159,7 +160,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  data.
 		 *
 		 *  Note that it should be called whether or not columns are
-		 *  ignored.
+		 *  excluded.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -184,8 +185,8 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  data.
 		 *
 		 *  Note that it should be called for each column, whether or
-		 *  not columns are ignored, and whether or not this particular
-		 *  column is ignored.
+		 *  not columns are excluded, and whether or not this particular
+		 *  column is excluded.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -213,8 +214,8 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  data.
 		 *
 		 *  Note that it should be called for each column, whether or
-		 *  not columns are ignored, and whether or not this particular
-		 *  column is ignored.
+		 *  not columns are excluded, and whether or not this particular
+		 *  column is excluded.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -242,7 +243,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  data.
 		 *
 		 *  Note that it should be called whether or not columns are
-		 *  ignored.
+		 *  excluded.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -547,20 +548,20 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual bool	exportEnd();
 
-		/** Sets whether the current row of the data will be ignored or
-		 *  not.  Rows that are ignored are not exported.
+		/** Sets whether the current row of the data will be excluded or
+		 *  not.  Rows that are excluded are not exported.
 		 *  
 		 *  Should be called by implementations of exportData().  May
 		 *  also be called by rowStart().  Not commonly called by other
 		 *  *Start/End() methods. */
-		void	setIgnoreRow(bool ignorerow);
+		void	setExcludeRow(bool excluderow);
 
-		/** Gets whether the current row of the data will be ignored or
-		 *  not.  Rows that are ignored are not exported.
+		/** Gets whether the current row of the data will be excluded or
+		 *  not.  Rows that are excluded are not exported.
 		 *  
 		 *  May be called by implementations of exportData() or by
 		 *  implementations of the *Start/End() methods. */
-		bool	getIgnoreRow();
+		bool	getExcludeRow();
 
 		/** Sets the index of the row of the data that is currently
 		 *  being exported.

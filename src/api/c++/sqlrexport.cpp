@@ -12,8 +12,8 @@ sqlrexport::sqlrexport() {
 
 	table=NULL;
 
-	ignorecolumns=false;
-	columnstoignore=NULL;
+	excludecolumns=false;
+	columnstoexclude=NULL;
 
 	lg=NULL;
 	coarseloglevel=0;
@@ -51,20 +51,20 @@ const char *sqlrexport::getTable() {
 	return table;
 }
 
-void sqlrexport::setIgnoreColumns(bool ignorecolumns) {
-	this->ignorecolumns=ignorecolumns;
+void sqlrexport::setExcludeColumns(bool excludecolumns) {
+	this->excludecolumns=excludecolumns;
 }
 
-bool sqlrexport::getIgnoreColumns() {
-	return ignorecolumns;
+bool sqlrexport::getExcludeColumns() {
+	return excludecolumns;
 }
 
-void sqlrexport::setColumnsToIgnore(const char * const *columnstoignore) {
-	this->columnstoignore=columnstoignore;
+void sqlrexport::setColumnsToExclude(const char * const *columnstoexclude) {
+	this->columnstoexclude=columnstoexclude;
 }
 
-const char * const *sqlrexport::getColumnsToIgnore() {
-	return columnstoignore;
+const char * const *sqlrexport::getColumnsToExclude() {
+	return columnstoexclude;
 }
 
 void sqlrexport::setLogger(logger *lg) {
@@ -200,12 +200,12 @@ uint64_t sqlrexport::getExportedRowCount() {
 	return exportedrowcount;
 }
 
-void sqlrexport::setIgnoreRow(bool ignorerow) {
-	this->ignorerow=ignorerow;
+void sqlrexport::setExcludeRow(bool excluderow) {
+	this->excluderow=excluderow;
 }
 
-bool sqlrexport::getIgnoreRow() {
-	return ignorerow;
+bool sqlrexport::getExcludeRow() {
+	return excluderow;
 }
 
 void sqlrexport::setCurrentRow(uint64_t currentrow) {
@@ -257,7 +257,7 @@ bool sqlrexport::exportData() {
 }
 
 void sqlrexport::clearFlagsAndCounts() {
-	ignorerow=false;
+	excluderow=false;
 	currentrow=0;
 	currentcol=0;
 	currentcolname=NULL;

@@ -11,8 +11,8 @@
 
 		const char		*table;
 
-		bool			ignorecolumns;
-		const char * const	*columnstoignore;
+		bool			excludecolumns;
+		const char * const	*columnstoexclude;
 
 		logger			*lg;
 		uint8_t			coarseloglevel;
@@ -20,7 +20,7 @@
 		uint32_t		logindent;
 		bool			logerrors;
 
-		bool			ignorerow;
+		bool			excluderow;
 		uint64_t		currentrow;
 		uint32_t		currentcol;
 		const char		*currentcolname;

@@ -84,7 +84,7 @@ bool sqlrexportxml::exportData() {
 	}
 
 	// export columns...
-	if (!getIgnoreColumns()) {
+	if (!getExcludeColumns()) {
 		fd->printf("<columns count=\"%d\">\n",cols);
 	}
 	for (setCurrentColumn(0);
@@ -108,10 +108,10 @@ bool sqlrexportxml::exportData() {
 		// (in case columnStart overrode the columm name)
 		setCurrentField(getCurrentColumnName());
 
-		// if we're not ignoring all columns, or this column...
-		if (!getIgnoreColumns() &&
+		// if we're not excluding all columns, or this column...
+		if (!getExcludeColumns() &&
 			!charstring::isInSet(getCurrentField(),
-						getColumnsToIgnore())) {
+						getColumnsToExclude())) {
 
 			// export the column name and type
 			if (fd->write("	<column name=\"")!=15) {
@@ -151,7 +151,7 @@ bool sqlrexportxml::exportData() {
 		return false;
 	}
 
-	if (!getIgnoreColumns()) {
+	if (!getExcludeColumns()) {
 		if (fd->write("</columns>\n")!=11) {
 			return systemError();
 		}
@@ -176,7 +176,7 @@ bool sqlrexportxml::exportData() {
 			getCurrentRow()<sqlrcur->rowCount()) {
 
 		// reset export-row flag and current column/field
-		setIgnoreRow(false);
+		setExcludeRow(false);
 		setCurrentColumn(0);
 		setCurrentColumnName(sqlrcur->getColumnName(0));
 		setCurrentField(sqlrcur->getField(getCurrentRow(),(uint32_t)0));
@@ -188,7 +188,7 @@ bool sqlrexportxml::exportData() {
 		}
 
 		// if rowStart() didn't disable export of this row...
-		if (!getIgnoreRow()) {
+		if (!getExcludeRow()) {
 			if (fd->write("	<row>\n")!=7) {
 				return systemError();
 			}
@@ -214,12 +214,12 @@ bool sqlrexportxml::exportData() {
 				return false;
 			}
 
-			// if we're not ignoring this row or column...
-			if (!getIgnoreRow() &&
+			// if we're not excluding this row or column...
+			if (!getExcludeRow() &&
 				!charstring::isInSet(
 					sqlrcur->getColumnName(
 						getCurrentColumn()),
-				getColumnsToIgnore())) {
+				getColumnsToExclude())) {
 
 				// export the field
 				if (fd->write("	<field>")!=8) {
@@ -253,14 +253,14 @@ bool sqlrexportxml::exportData() {
 		}
 
 		// if rowStart() didn't disable export of this row...
-		if (!getIgnoreRow()) {
+		if (!getExcludeRow()) {
 			if (fd->write("	</row>\n")!=8) {
 				return systemError();
 			}
 		}
 
 		// update exported row count
-		if (!getIgnoreRow()) {
+		if (!getExcludeRow()) {
 			setExportedRowCount(getExportedRowCount()+1);
 		}
 

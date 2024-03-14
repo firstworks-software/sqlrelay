@@ -149,7 +149,7 @@ class testsqlrexport : virtual public sqlrexport {
 		testsqlrexport();
 
 		void	setColumnsToModify(const char * const *columnstomodify);
-		void	setRowsToIgnore(dynamicarray<bool> *rowstoignore);
+		void	setRowsToExclude(dynamicarray<bool> *rowstoexclude);
 
 		bool	exportStart();
 		bool	columnsStart();
@@ -168,7 +168,7 @@ class testsqlrexport : virtual public sqlrexport {
 		virtual bool	tests(const char *method);
 
 	private:
-		bool		testignorerow;
+		bool		testexcluderow;
 		uint32_t	testcurrentcol;
 		uint64_t	testcurrentrow;
 		uint64_t	testexportedrowcount;
@@ -178,17 +178,17 @@ class testsqlrexport : virtual public sqlrexport {
 		linkedlist<stringbuffer *>	modifiedfields;
 
 		const char * const	*columnstomodify;
-		dynamicarray<bool>	*rowstoignore;
+		dynamicarray<bool>	*rowstoexclude;
 };
 
 testsqlrexport::testsqlrexport() : sqlrexport() {
-	testignorerow=false;
+	testexcluderow=false;
 	testcurrentcol=0;
 	testcurrentrow=0;
 	testexportedrowcount=0;
 	inrows=false;
 	columnstomodify=NULL;
-	rowstoignore=NULL;
+	rowstoexclude=NULL;
 	modifiedfields.setManageValues(true);
 }
 
@@ -196,16 +196,16 @@ void testsqlrexport::setColumnsToModify(const char * const *columnstomodify) {
 	this->columnstomodify=columnstomodify;
 }
 
-void testsqlrexport::setRowsToIgnore(dynamicarray<bool> *rowstoignore) {
-	this->rowstoignore=rowstoignore;
+void testsqlrexport::setRowsToExclude(dynamicarray<bool> *rowstoexclude) {
+	this->rowstoexclude=rowstoexclude;
 }
 
 bool testsqlrexport::tests(const char *method) {
 
-	// test ignore row
-	if (getIgnoreRow()!=testignorerow) {
-		stdoutput.printf("\n%s - getIgnoreRow(): %d!=%d\n",
-					method,getIgnoreRow(),testignorerow);
+	// test exclude row
+	if (getExcludeRow()!=testexcluderow) {
+		stdoutput.printf("\n%s - getExcludeRow(): %d!=%d\n",
+					method,getExcludeRow(),testexcluderow);
 		return false;
 	}
 
@@ -307,7 +307,7 @@ bool testsqlrexport::exportStart() {
 	#endif
 
 	// reset flags and counts
-	testignorerow=false;
+	testexcluderow=false;
 	testcurrentcol=0;
 	testcurrentrow=0;
 	testexportedrowcount=0;
@@ -416,7 +416,7 @@ bool testsqlrexport::rowsStart() {
 	#endif
 
 	// reset flags and counts
-	testignorerow=false;
+	testexcluderow=false;
 	testcurrentcol=0;
 	testcurrentrow=0;
 	testexportedrowcount=0;
@@ -441,7 +441,7 @@ bool testsqlrexport::rowStart() {
 	#endif
 
 	// reset flags and counts
-	testignorerow=false;
+	testexcluderow=false;
 	testcurrentcol=0;
 	modifiedfields.clear();
 
@@ -450,10 +450,10 @@ bool testsqlrexport::rowStart() {
 		return false;
 	}
 
-	// ignore row, if necessary
-	if (rowstoignore && (*rowstoignore)[testcurrentrow]) {
-		setIgnoreRow(true);
-		testignorerow=true;
+	// exclude row, if necessary
+	if (rowstoexclude && (*rowstoexclude)[testcurrentrow]) {
+		setExcludeRow(true);
+		testexcluderow=true;
 	}
 
 	// run tests
@@ -530,7 +530,7 @@ bool testsqlrexport::rowEnd() {
 	}
 
 	// increment row counts
-	if (!testignorerow) {
+	if (!testexcluderow) {
 		testexportedrowcount++;
 	}
 	testcurrentrow++;
@@ -1150,9 +1150,9 @@ class testsqlrimportxml : virtual public testsqlrimportfile,
 void generateCsv(const char *option,
 			const char *filename,
 			bool excludecolumns,
-			const char * const *columnstoignore,
+			const char * const *columnstoexclude,
 			const char * const *columnstomodify,
-			dynamicarray<bool> *rowstoignore) {
+			dynamicarray<bool> *rowstoexclude) {
 
 	stdoutput.printf("%sGENERATE CSV:\n",option);
 
@@ -1166,7 +1166,7 @@ void generateCsv(const char *option,
 	// write header, ignoring and modifying columns as necessary
 	stringbuffer	header;
 	for (uint64_t col=0; field[col].name; col++) {
-		if (charstring::isInSet(field[col].name,columnstoignore)) {
+		if (charstring::isInSet(field[col].name,columnstoexclude)) {
 			continue;
 		}
 		if (header.getSize()) {
@@ -1188,12 +1188,12 @@ void generateCsv(const char *option,
 	// write records, ignoring columns and modifying fields as necessary
 	stringbuffer	record;
 	for (uint64_t row=0; row<ROWS; row++) {
-		if (rowstoignore && (*rowstoignore)[row]) {
+		if (rowstoexclude && (*rowstoexclude)[row]) {
 			continue;
 		}
 		for (uint32_t col=0; field[col].name; col++) {
 			if (charstring::isInSet(field[col].name,
-							columnstoignore)) {
+							columnstoexclude)) {
 				continue;
 			}
 			if (record.getSize()) {
@@ -1238,9 +1238,9 @@ void generateCsv(const char *option,
 void generateXml(const char *option,
 			const char *filename,
 			uint32_t colcount, bool excludecolumns,
-			const char * const *columnstoignore,
+			const char * const *columnstoexclude,
 			const char * const *columnstomodify,
-			dynamicarray<bool> *rowstoignore) {
+			dynamicarray<bool> *rowstoexclude) {
 
 	stdoutput.printf("%sGENERATE XML:\n",option);
 
@@ -1259,7 +1259,7 @@ void generateXml(const char *option,
 		header.printf("<columns count=\"%ld\">\n",colcount);
 		for (uint64_t col=0; field[col].name; col++) {
 			if (charstring::isInSet(field[col].name,
-							columnstoignore)) {
+							columnstoexclude)) {
 				continue;
 			}
 			const char	*colname=field[col].name;
@@ -1282,13 +1282,13 @@ void generateXml(const char *option,
 	stringbuffer	record;
 	comparison.write("<rows>\n");
 	for (uint64_t row=0; row<ROWS; row++) {
-		if (rowstoignore && (*rowstoignore)[row]) {
+		if (rowstoexclude && (*rowstoexclude)[row]) {
 			continue;
 		}
 		record.append("	<row>\n");
 		for (uint32_t col=0; field[col].name; col++) {
 			if (charstring::isInSet(field[col].name,
-							columnstoignore)) {
+							columnstoexclude)) {
 				continue;
 			}
 			record.append("	<field>");
@@ -1327,7 +1327,7 @@ void generateXml(const char *option,
 }
 
 void createTable(const char *tablename,
-			const char * const *columnstoignore,
+			const char * const *columnstoexclude,
 			const char * const *columnstomodify,
 			uint32_t *colcount) {
 
@@ -1336,7 +1336,7 @@ void createTable(const char *tablename,
 	query.append("create table ")->append(tablename)->append(" (");
 	uint32_t	ccount=0;
 	for (uint64_t col=0; field[col].name; col++) {
-		if (charstring::isInSet(field[col].name,columnstoignore)) {
+		if (charstring::isInSet(field[col].name,columnstoexclude)) {
 			continue;
 		}
 		if (ccount) {
@@ -1359,9 +1359,9 @@ void createTable(const char *tablename,
 
 void generateTable(const char *option,
 			const char *tablename,
-			const char * const *columnstoignore,
+			const char * const *columnstoexclude,
 			const char * const *columnstomodify,
-			dynamicarray<bool> *rowstoignore) {
+			dynamicarray<bool> *rowstoexclude) {
 
 	stdoutput.printf("%sGENERATE TABLE:\n",option);
 
@@ -1371,13 +1371,13 @@ void generateTable(const char *option,
 	sqlrcursor	ecur(&econ);
 
 	// create table
-	createTable(tablename,columnstoignore,columnstomodify,NULL);
+	createTable(tablename,columnstoexclude,columnstomodify,NULL);
 
 	// populate table, ignoring and modifying fields as necessary
 	bool		success=true;
 	stringbuffer	query;
 	for (uint64_t row=0; row<ROWS; row++) {
-		if (rowstoignore && (*rowstoignore)[row]) {
+		if (rowstoexclude && (*rowstoexclude)[row]) {
 			continue;
 		}
 		query.clear();
@@ -1387,7 +1387,7 @@ void generateTable(const char *option,
 		bool	first=true;
 		for (uint32_t col=0; field[col].pattern; col++) {
 			if (charstring::isInSet(field[col].name,
-							columnstoignore)) {
+							columnstoexclude)) {
 				continue;
 			}
 			if (first) {
@@ -1613,54 +1613,54 @@ void exportTests() {
 
 		// set options for ignoring/modifying rows/columns/fields
 		const char		*option=NULL;
-		bool			ignorecolumns=false;
-		const char		**columnstoignore=NULL;
-		uint16_t		columnstoignorecount=0;
+		bool			excludecolumns=false;
+		const char		**columnstoexclude=NULL;
+		uint16_t		columnstoexcludecount=0;
 		const char		**columnstomodify=NULL;
-		dynamicarray<bool>	rowstoignore;
+		dynamicarray<bool>	rowstoexclude;
 		for (uint64_t row=0; row<ROWS; row++) {
-			rowstoignore[row]=false;
+			rowstoexclude[row]=false;
 		}
 		stringbuffer		opt;
 		const char		*col;
 		if (oiter==0) {
 			option=charstring::duplicate("");
 		} else if (oiter==1) {
-			// for iteration 1, ignore columns
+			// for iteration 1, exclude columns
 			option=charstring::duplicate("IGNORE COLUMNS - ");
-			ignorecolumns=true;
+			excludecolumns=true;
 		} else if (oiter>=2 && oiter<=21) {
-			// for iterations 2-21, ignore individual columns
+			// for iterations 2-21, exclude individual columns
 			col=field[oiter-2].name;
-			columnstoignore=new const char *[2];
-			columnstoignore[0]=col;
-			columnstoignore[1]=NULL;
-			columnstoignorecount=1;
+			columnstoexclude=new const char *[2];
+			columnstoexclude[0]=col;
+			columnstoexclude[1]=NULL;
+			columnstoexcludecount=1;
 			opt.append("IGNORE ");
 			opt.append(col);
 			opt.append(" column - ");
 			option=opt.detachString();
 		} else if (oiter>=22 && oiter<=32) {
-			// for iterations 22-32, ignore random sets of
+			// for iterations 22-32, exclude random sets of
 			// columns, possibly with repetitions
 			randomnumber	r;
 			r.setSeed(randomnumber::getSeed());
 			opt.append("IGNORE ");
-			columnstoignore=new const char *[11];
+			columnstoexclude=new const char *[11];
 			uint32_t	rn;
 			for (uint8_t i=0; i<10; i++) {
 				r.generate(&rn);
 				r.setSeed(rn);
 				rn=r.scale(rn,0,19);
 				col=field[rn].name;
-				columnstoignore[i]=col;
+				columnstoexclude[i]=col;
 				if (i) {
 					opt.append(',');
 				}
 				opt.append(col);
 			}
-			columnstoignore[10]=NULL;
-			columnstoignorecount=10;
+			columnstoexclude[10]=NULL;
+			columnstoexcludecount=10;
 			opt.append(" column - ");
 			option=opt.detachString();
 		} else if (oiter==33) {
@@ -1675,7 +1675,7 @@ void exportTests() {
 				r.setSeed(rn);
 				rn=r.scale(rn,0,1);
 				if (rn) {
-					rowstoignore[row]=true;
+					rowstoexclude[row]=true;
 					ircount++;
 				}
 			}
@@ -1732,31 +1732,31 @@ void exportTests() {
 				format="TABLE";
 				exp="testtable_export";
 				comp="testtable_comparison";
-				createTable(exp,columnstoignore,
+				createTable(exp,columnstoexclude,
 						columnstomodify,NULL);
 			}
 
 			// export file/table
 			stdoutput.printf("%sEXPORT %s: \n",option,format);
-			e->setIgnoreColumns(ignorecolumns);
-			e->setColumnsToIgnore(columnstoignore);
+			e->setExcludeColumns(excludecolumns);
+			e->setColumnsToExclude(columnstoexclude);
 			e->setColumnsToModify(columnstomodify);
-			e->setRowsToIgnore(&rowstoignore);
-			checkSuccess(e->getIgnoreColumns(),ignorecolumns);
-			if (columnstoignore) {
+			e->setRowsToExclude(&rowstoexclude);
+			checkSuccess(e->getExcludeColumns(),excludecolumns);
+			if (columnstoexclude) {
 				for (uint16_t i=0;
-					i<columnstoignorecount; i++) {
+					i<columnstoexcludecount; i++) {
 					checkSuccess(
-						e->getColumnsToIgnore()[i],
-						columnstoignore[i]);
+						e->getColumnsToExclude()[i],
+						columnstoexclude[i]);
 				}
 				checkSuccess(
-					e->getColumnsToIgnore()[
-						columnstoignorecount],
+					e->getColumnsToExclude()[
+						columnstoexcludecount],
 					NULL);
 			} else {
 				checkSuccess(
-					(uint64_t)e->getColumnsToIgnore(),
+					(uint64_t)e->getColumnsToExclude(),
 					(uint64_t)0);
 			}
 			checkSuccess(cur->sendQuery(
@@ -1789,16 +1789,16 @@ void exportTests() {
 			// generate comparison file/table
 			if (fiter==0) {
 				generateCsv(option,comp,
-					ignorecolumns,columnstoignore,
-					columnstomodify,&rowstoignore);
+					excludecolumns,columnstoexclude,
+					columnstomodify,&rowstoexclude);
 			} else if (fiter==1) {
 				generateXml(option,comp,colcount,
-					ignorecolumns,columnstoignore,
-					columnstomodify,&rowstoignore);
+					excludecolumns,columnstoexclude,
+					columnstomodify,&rowstoexclude);
 			} else if (fiter==2) {
 				generateTable(option,comp,
-					columnstoignore,
-					columnstomodify,&rowstoignore);
+					columnstoexclude,
+					columnstomodify,&rowstoexclude);
 			}
 
 			// diff files/tables
@@ -1834,7 +1834,7 @@ void exportTests() {
 
 		// clean up
 		delete[] option;
-		delete[] columnstoignore;
+		delete[] columnstoexclude;
 
 		oiter++;
 	}
@@ -1977,7 +1977,7 @@ int main(int argc, char **argv) {
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 
-	//exportTests();
+	exportTests();
 	importTests();
 
 

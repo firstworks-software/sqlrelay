@@ -46,7 +46,7 @@ bool sqlrexportcsvjsondomnode::exportData() {
 	}
 
 	// export columns...
-	if (!getIgnoreColumns()) {
+	if (!getExcludeColumns()) {
 		// "h" for header, like in csvdom
 		setColumnsDomNode(getDomNode()->appendTag("h"));
 		getColumnsDomNode()->setAttributeValue("t","a");
@@ -69,10 +69,10 @@ bool sqlrexportcsvjsondomnode::exportData() {
 		// (in case columnStart overrode the columm name)
 		setCurrentField(getCurrentColumnName());
 
-		// if we're not ignoring all columns or this column...
-		if (!getIgnoreColumns() &&
+		// if we're not excluding all columns or this column...
+		if (!getExcludeColumns() &&
 			!charstring::isInSet(getCurrentField(),
-						getColumnsToIgnore())) {
+						getColumnsToExclude())) {
 
 			// export the column name
 			// "v" for value, all jsondom arrays
@@ -117,7 +117,7 @@ bool sqlrexportcsvjsondomnode::exportData() {
 	do {
 
 		// reset export-row flag and current column/field
-		setIgnoreRow(false);
+		setExcludeRow(false);
 		setCurrentColumn(0);
 		setCurrentColumnName(sqlrcur->getColumnName(0));
 		setCurrentField(sqlrcur->getField(getCurrentRow(),(uint32_t)0));
@@ -128,7 +128,7 @@ bool sqlrexportcsvjsondomnode::exportData() {
 		}
 
 		// if rowStart() didn't disable export of this row...
-		if (!getIgnoreRow()) {
+		if (!getExcludeRow()) {
 			// "r" for record, like in csvdom
 			setCurrentRowDomNode(getDomNode()->appendTag("r"));
 			getCurrentRowDomNode()->setAttributeValue("t","a");
@@ -153,12 +153,12 @@ bool sqlrexportcsvjsondomnode::exportData() {
 				return false;
 			}
 
-			// if we're not ignoring this row or column...
-			if (!getIgnoreRow() &&
+			// if we're not excluding this row or column...
+			if (!getExcludeRow() &&
 				!charstring::isInSet(
 					sqlrcur->getColumnName(
 						getCurrentColumn()),
-					getColumnsToIgnore())) {
+					getColumnsToExclude())) {
 
 				// export the field
 				// "v" for value, all jsondom arrays
@@ -193,7 +193,7 @@ bool sqlrexportcsvjsondomnode::exportData() {
 		}
 
 		// update exported row count
-		if (!getIgnoreRow()) {
+		if (!getExcludeRow()) {
 			setExportedRowCount(getExportedRowCount()+1);
 		}
 

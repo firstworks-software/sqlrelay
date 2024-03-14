@@ -80,10 +80,10 @@ bool sqlrexportcsv::exportData() {
 		// (in case columnStart overrode the columm name)
 		setCurrentField(getCurrentColumnName());
 
-		// if we're not ignoring all columns or this column...
-		if (!getIgnoreColumns() &&
+		// if we're not excluding all columns or this column...
+		if (!getExcludeColumns() &&
 			!charstring::isInSet(getCurrentField(),
-						getColumnsToIgnore())) {
+						getColumnsToExclude())) {
 
 			// export the column name
 			if (first) {
@@ -130,7 +130,7 @@ bool sqlrexportcsv::exportData() {
 		return false;
 	}
 
-	if (!getIgnoreColumns()) {
+	if (!getExcludeColumns()) {
 		if (fd->write('\n')!=sizeof(char)) {
 			return systemError();
 		}
@@ -152,7 +152,7 @@ bool sqlrexportcsv::exportData() {
 			getCurrentRow()<sqlrcur->rowCount()) {
 
 		// reset export-row flag and current column/field
-		setIgnoreRow(false);
+		setExcludeRow(false);
 		setCurrentColumn(0);
 		setCurrentColumnName(sqlrcur->getColumnName(0));
 		setCurrentField(sqlrcur->getField(getCurrentRow(),(uint32_t)0));
@@ -184,12 +184,12 @@ bool sqlrexportcsv::exportData() {
 				return false;
 			}
 
-			// if we're not ignoring this row or column...
-			if (!getIgnoreRow() &&
+			// if we're not excluding this row or column...
+			if (!getExcludeRow() &&
 				!charstring::isInSet(
 					sqlrcur->getColumnName(
 						getCurrentColumn()),
-					getColumnsToIgnore())) {
+					getColumnsToExclude())) {
 
 				// we need to quote the field if it's not a
 				// number, or if it is a number, but has more
@@ -245,14 +245,14 @@ bool sqlrexportcsv::exportData() {
 		}
 
 		// if rowStart() didn't disable export of this row...
-		if (!getIgnoreRow()) {
+		if (!getExcludeRow()) {
 			if (fd->write('\n')!=sizeof(char)) {
 				return systemError();
 			}
 		}
 
 		// update exported row count
-		if (!getIgnoreRow()) {
+		if (!getExcludeRow()) {
 			setExportedRowCount(getExportedRowCount()+1);
 		}
 
