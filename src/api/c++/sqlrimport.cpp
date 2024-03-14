@@ -24,6 +24,8 @@ sqlrimport::sqlrimport() {
 	staticvalues.setManageArrayValues(true);
 
 	dbtype=NULL;
+	supportslimit=false;
+
 	objectname=NULL;
 
 	ignorecolumns=false;
@@ -772,9 +774,29 @@ bool sqlrimport::determineColumnTypes() {
 
 	// we need to figure out which columns are numbers or dates...
 
+	// be sure to limit the number of rows that will be returned
+	// to speed up the query...
+
+	// for sap/sybase
+	if (charstring::contains(getDbType(),"sap") ||
+			charstring::contains(getDbType(),"sybase")) {
+		if (!getSqlrCursor()->sendQuery("set rowcount 1")) {
+			if (!error(getSqlrCursor()->errorNumber(),
+					getSqlrCursor()->errorMessage())) {
+				return false;
+			}
+		}
+	}
+
 	// get info about these columns from the database
 	clearQueryBuffer();
 	appendToQueryBuffer("select ");
+
+	// for firebird and interbase...
+	if (charstring::contains(getDbType(),"firebird") ||
+		charstring::contains(getDbType(),"interbase")) {
+		appendToQueryBuffer("first 1 ");
+	}
 
 	if (getIgnoreColumns()) {
 		// if we're ignoring the columns specified in the file,
@@ -828,13 +850,62 @@ bool sqlrimport::determineColumnTypes() {
 	}
 	appendToQueryBuffer(" from ");
 	appendToQueryBuffer(getObjectName());
+
+	// for oracle
+	if (charstring::contains(getDbType(),"oracle")) {
+		appendToQueryBuffer(" where ROWNUM<=1");
+
+	// for postgresql, informix, sqlite, mysql
+	} else if (charstring::contains(getDbType(),"postgresql") ||
+			charstring::contains(getDbType(),"informix") ||
+			charstring::contains(getDbType(),"sqlite") ||
+			charstring::contains(getDbType(),"mysql")) {
+		appendToQueryBuffer(" limit 1");
+
+	// for db2
+	} else if (charstring::contains(getDbType(),"db2")) {
+		appendToQueryBuffer(" fetch first 1 rows only");
+	}
+
+	// odbc can't tell what kind of underlying db we're using, so we
+	// can't provide a limit clause for those databases
+
+	// don't even try to fetch more than 1 row
 	getSqlrCursor()->setResultSetBufferSize(1);
-	if (!getSqlrCursor()->sendQuery(getQueryBufferString())) {
-		if (!error(getSqlrCursor()->errorNumber(),
-				getSqlrCursor()->errorMessage())) {
+
+	// send the get-column-info query
+	bool	result=getSqlrCursor()->sendQuery(getQueryBufferString());
+
+	// if we got an error then hang on to it, because for sap/sybase we need
+	// to reset the rowcount and we don't want that to mask this error if it
+	// succeeds
+	int64_t	errnum=0;
+	char	*errmsg=NULL;
+	if (!result) {
+		errnum=getSqlrCursor()->errorNumber();
+		errmsg=charstring::duplicate(getSqlrCursor()->errorMessage());
+	}
+
+	// for sap/sybase
+	if (charstring::contains(getDbType(),"sap") ||
+			charstring::contains(getDbType(),"sybase")) {
+		if (!getSqlrCursor()->sendQuery("set rowcount 0")) {
+			if (!error(getSqlrCursor()->errorNumber(),
+					getSqlrCursor()->errorMessage())) {
+				delete[] errmsg;
+				return false;
+			}
+		}
+	}
+
+	// bail if the get-column-info query failed
+	if (!result) {
+		if (!error(errnum,errmsg)) {
+			delete[] errmsg;
 			return false;
 		}
 	}
+	delete[] errmsg;
 
 #if 1
 	// run through the columns, figuring out which are numbers and dates...

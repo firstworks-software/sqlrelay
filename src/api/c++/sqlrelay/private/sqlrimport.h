@@ -1,6 +1,8 @@
 // Copyright (c) 1999-2018 David Muse
 // See the file COPYING for more information
 
+		bool	getSupportsLimit();
+
 		virtual void	clearFlagsAndCounts();
 
 		void	setEmptyRow(bool emptyrow);
@@ -71,6 +73,8 @@
 		dictionary<uint32_t, char *>	staticvalues;
 
 		char		*dbtype;
+		bool		supportslimit;
+
 		char		*objectname;
 
 		bool		ignorecolumns;

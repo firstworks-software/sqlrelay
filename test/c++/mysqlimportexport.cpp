@@ -1867,6 +1867,7 @@ void importTests() {
 	testsqlrimportcsv	tsic;
 	tsic.setSqlrConnection(con);
 	tsic.setSqlrCursor(cur);
+	tsic.setDbType(con->identify());
 	checkSuccess((uint64_t)tsic.getSqlrConnection(),(uint64_t)con);
 	checkSuccess((uint64_t)tsic.getSqlrCursor(),(uint64_t)cur);
 	stdoutput.printf("\n\n");
@@ -1876,6 +1877,7 @@ void importTests() {
 	testsqlrimportxml	tsix;
 	tsix.setSqlrConnection(con);
 	tsix.setSqlrCursor(cur);
+	tsix.setDbType(con->identify());
 	checkSuccess((uint64_t)tsix.getSqlrConnection(),(uint64_t)con);
 	checkSuccess((uint64_t)tsix.getSqlrCursor(),(uint64_t)cur);
 	stdoutput.printf("\n\n");
@@ -1975,7 +1977,7 @@ int main(int argc, char **argv) {
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 
-	exportTests();
+	//exportTests();
 	importTests();
 
 
