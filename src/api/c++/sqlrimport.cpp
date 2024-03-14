@@ -772,6 +772,10 @@ bool sqlrimport::processPrimaryKeyAndStaticColumns() {
 
 bool sqlrimport::determineColumnTypes() {
 
+        // FIXME: arguably this should use getColumnInfo().  This
+        // approach tends to be faster, but it's convoluted and depends
+        // on the db type having been set.
+
 	// we need to figure out which columns are numbers or dates...
 
 	// be sure to limit the number of rows that will be returned
