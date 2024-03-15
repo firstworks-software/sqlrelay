@@ -2,4 +2,10 @@
 // See the file COPYING for more information
 
 	private:
-		bool	escapeField(filedescriptor *fd, const char *field);
+
+		bool	exportColumnName(bool first);
+		bool	endProcessingColumns();
+		bool	exportField(bool first);
+		bool	endProcessingRow();
+
+		bool	escapeValue(filedescriptor *fd, const char *field);

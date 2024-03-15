@@ -2,6 +2,28 @@
 // See the file COPYING for more information
 
 		virtual void	clearFlagsAndCounts();
+
+		virtual bool	startProcessingExport();
+		virtual bool	sanityCheck();
+		virtual bool	startProcessingColumns();
+		virtual bool	excludeThisColumn();
+		virtual bool	exportColumnName(bool first);
+		virtual bool	startProcessingColumn();
+		virtual bool	endProcessingColumn();
+		virtual bool	endProcessingColumns();
+		virtual bool	startProcessingRows();
+		virtual bool	startProcessingRow();
+		virtual bool	startProcessingField();
+		virtual bool	excludeThisField();
+		virtual bool	exportField(bool first);
+		virtual bool	endProcessingField();
+		virtual bool	endProcessingRow();
+		virtual bool	endProcessingRows();
+		virtual bool	endProcessingExport();
+
+		virtual bool	flush();
+		virtual bool	escapeValue(filedescriptor *fd,
+						const char *value);
 		virtual bool	systemError();
 
 	private:

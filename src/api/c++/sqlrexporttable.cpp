@@ -4,13 +4,14 @@
 #include <sqlrelay/sqlrexporttable.h>
 #include <rudiments/dynamicarray.h>
 
-#define NEED_IS_NUMBER_TYPE_CHAR
-#include <datatypes.h>
-
 sqlrexporttable::sqlrexporttable() : sqlrexport() {
 	exportcon=NULL;
 	exportcur=NULL;
 	commitcount=0;
+	bf='\0';
+	bindindex=0;
+	bindnames.setManageArrayValues(true);
+	firstrow=true;
 }
 
 sqlrexporttable::~sqlrexporttable() {
@@ -45,121 +46,95 @@ uint64_t sqlrexporttable::getCommitCount() {
 }
 
 bool sqlrexporttable::exportData() {
+	return sqlrexport::exportData();
+}
 
-	clearFlagsAndCounts();
+void sqlrexporttable::clearFlagsAndCounts() {
+	sqlrexport::clearFlagsAndCounts();
+	insertquery.clear();
+	bf='\0';
+	bindindex=0;
+	bindnames.clear();
+	firstrow=true;
+}
 
-	// capture the con, cur, table and commit count
-	sqlrconnection	*exportcon=getExportSqlrConnection();
-	sqlrcursor	*exportcur=getExportSqlrCursor();
-	const char	*table=getTable();
+bool sqlrexporttable::sanityCheck() {
 
-	// sanity checks
-	if (!exportcon) {
+	if (!sqlrexport::sanityCheck()) {
+		return false;
+	}
+
+	if (!getExportSqlrConnection()) {
 		return error(
 			0,"No connection set with setExportSqlrConnection()");
 	}
-	if (!exportcur) {
+	if (!getExportSqlrCursor()) {
 		return error(
 			0,"No connection set with setExportSqlrCursor()");
 	}
-	if (!table) {
+	if (!getTable()) {
 		return error(0,"No table set with setTable()");
 	}
 
-	// get the cursor and column count
-	sqlrcursor	*sqlrcur=getSqlrCursor();
-	uint32_t	cols=sqlrcur->colCount();
+	return true;
+}
 
-	// set initial column/field
-	setCurrentColumnName(sqlrcur->getColumnName(0));
-	setCurrentField(getCurrentColumnName());
+bool sqlrexporttable::startProcessingColumns() {
 
-	// determine numeric columns
-	for (uint32_t i=0; i<cols; i++) {
-		setIsNumericColumn(
-			i,isNumberTypeChar(sqlrcur->getColumnType(i)));
-	}
-
-	// call the export-start event
-	if (!exportStart()) {
+	if (!sqlrexport::startProcessingColumns()) {
 		return false;
 	}
 
-	// call the columns-start event
-	if (!columnsStart()) {
+	// start building the insert query
+	insertquery.append("insert into ");
+	insertquery.append(getTable());
+	insertquery.append(" values (");
+	const char	*bindformat=getExportSqlrConnection()->bindFormat();
+	bf=(!charstring::isNullOrEmpty(bindformat))?bindformat[0]:':';
+	return true;
+}
+
+bool sqlrexporttable::excludeThisColumn() {
+	// NOTE that we don't check getExcludeColumns() as that
+	// doesn't make any sense when exporting to a table
+	return charstring::isInSet(getCurrentField(),getColumnsToExclude());
+}
+
+bool sqlrexporttable::exportColumnName(bool first) {
+
+	if (!sqlrexport::exportColumnName(first)) {
 		return false;
 	}
 
-	stringbuffer	*insertquery=getInsertQueryBuffer();
-	insertquery->append("insert into ")->append(table)->append(" values (");
-	const char	*bindformat=exportcon->bindFormat();
-	char		bf=(!charstring::isNullOrEmpty(bindformat))?
-							bindformat[0]:':';
-
-	// export bind variables...
-	uint32_t	bindindex=1;
-	for (setCurrentColumn(0);
-			getCurrentColumn()<cols;
-			setCurrentColumn(getCurrentColumn()+1)) {
-
-		// set the current column (and field)
-		setCurrentColumnName(
-			sqlrcur->getColumnName(getCurrentColumn()));
-		setCurrentField(getCurrentColumnName());
-
-		// call the column-start event
-		if (!columnStart()) {
-			return false;
-		}
-
-		// reset the current field to the current column name too
-		// (in case columnStart overrode the columm name)
-		setCurrentField(getCurrentColumnName());
-
-		// if we're not excluding this column...
-		if (!charstring::isInSet(getCurrentField(),
-						getColumnsToExclude())) {
-
-			// append the bind variable
-			if (bindindex>1) {
-				insertquery->append(',');
-			}
-			if (bf=='?') {
-				insertquery->append('?');
-			} else if (bf=='$') {
-				insertquery->append('$')->append(bindindex);
-			} else if (bf=='@' || bf==':') {
-				insertquery->append(bf)->append(bindindex);
-			}
-			bindindex++;
-		}
-
-		// call the column-end event
-		if (!columnEnd()) {
-			return false;
-		}
+	// append the bind variable for this column to the insert query
+	if (bindindex) {
+		insertquery.append(',');
 	}
+	if (bf=='?') {
+		insertquery.append('?');
+	} else if (bf=='$') {
+		insertquery.append('$')->append(bindindex+1);
+	} else if (bf=='@' || bf==':') {
+		insertquery.append(bf)->append(bindindex+1);
+	}
+	bindindex++;
+	return true;
+}
 
-	// set the current column and field to NULL
-	setCurrentColumnName(NULL);
-	setCurrentField(NULL);
+bool sqlrexporttable::endProcessingColumns() {
 
-	// call the columns-end event
-	// (we call this before closing the columns in case an overridden
-	// columnsEnd() wants to add more columns or something)
-	if (!columnsEnd()) {
+	if (!sqlrexport::endProcessingColumns()) {
 		return false;
 	}
 
-	insertquery->append(')');
+	// close the values clause
+	insertquery.append(')');
+	return true;
+}
 
-	// reset current column/field
-	setCurrentColumn(0);
-	setCurrentColumnName(sqlrcur->getColumnName(0));
-	setCurrentField(sqlrcur->getField(0,(uint32_t)0));
+bool sqlrexporttable::startProcessingRows() {
 
-	// call the rows-start event
-	if (!rowsStart()) {
+	if (!sqlrexport::startProcessingRows()) {
 		return false;
 	}
 
@@ -168,6 +143,7 @@ bool sqlrexporttable::exportData() {
 		if (!beginStart()) {
 			return false;
 		}
+		sqlrconnection	*exportcon=getExportSqlrConnection();
 		if (!exportcon->begin()) {
 			if (!error(exportcon->errorNumber(),
 					exportcon->errorMessage())) {
@@ -181,153 +157,136 @@ bool sqlrexporttable::exportData() {
 	}
 
 	// prepare query
-	exportcur->prepareQuery(insertquery->getString(),
-				insertquery->getStringLength());
+	getExportSqlrCursor()->prepareQuery(insertquery.getString(),
+						insertquery.getStringLength());
+	return true;
+}
 
-	// set up array of bind names
-	dynamicarray<char *>	bindnames;
-	bindnames.setManageArrayValues(true);
+bool sqlrexporttable::startProcessingRow() {
 
-	// export rows...
-	bool	success=true;
-	bool	first=true;
-	do {
-
-		// commit/begin, if necessary
-		if (getCommitCount() &&
-			!((getCurrentRow()+1)%getCommitCount())) {
-			if (!commitStart()) {
-				return false;
-			}
-			if (!exportcon->commit()) {
-				if (!error(exportcon->errorNumber(),
-						exportcon->errorMessage())) {
-					return false;
-				}
-			}
-			if (!commitEnd()) {
-				return false;
-			}
-			if (!beginStart()) {
-				return false;
-			}
-			if (!exportcon->begin()) {
-				if (!error(exportcon->errorNumber(),
-						exportcon->errorMessage())) {
-					return false;
-				}
-			}
-			if (!beginEnd()) {
+	// commit/begin, if necessary
+	if (getCommitCount() &&
+		!((getCurrentRow()+1)%getCommitCount())) {
+		if (!commitStart()) {
+			return false;
+		}
+		sqlrconnection	*exportcon=getExportSqlrConnection();
+		if (!exportcon->commit()) {
+			if (!error(exportcon->errorNumber(),
+					exportcon->errorMessage())) {
 				return false;
 			}
 		}
-
-		// reset export-row flag and current column/field
-		setExcludeRow(false);
-		setCurrentColumn(0);
-		setCurrentColumnName(sqlrcur->getColumnName(0));
-		setCurrentField(sqlrcur->getField(getCurrentRow(),(uint32_t)0));
-
-		// call the row-start event
-		if (!rowStart()) {
-			success=false;
-			break;
+		if (!commitEnd()) {
+			return false;
 		}
-
-		// reset bind index
-		bindindex=0;
-
-		for (setCurrentColumn(0);
-				getCurrentColumn()<cols;
-				setCurrentColumn(getCurrentColumn()+1)) {
-
-			// set the current column and field
-			setCurrentColumnName(
-				sqlrcur->getColumnName(getCurrentColumn()));
-			setCurrentField(sqlrcur->getField(
-						getCurrentRow(),
-						getCurrentColumn()));
-			if (!getCurrentField()) {
-				break;
-			}
-
-			// call the field-start event
-			if (!fieldStart()) {
-				success=false;
-				break;
-			}
-
-			// if we're not excluding this row or column...
-			if (!getExcludeRow() &&
-				!charstring::isInSet(
-					sqlrcur->getColumnName(
-						getCurrentColumn()),
-					getColumnsToExclude())) {
-
-				// export the field
-				if (first) {
-					bindnames[bindindex]=
-					charstring::parseNumber(bindindex+1);
-				}
-				exportcur->inputBind(
-					bindnames[bindindex],
-					getCurrentField());
-				bindindex++;
-			}
-
-			// call the field-end event
-			if (!fieldEnd()) {
-				success=false;
-				break;
+		if (!beginStart()) {
+			return false;
+		}
+		if (!exportcon->begin()) {
+			if (!error(exportcon->errorNumber(),
+					exportcon->errorMessage())) {
+				return false;
 			}
 		}
-
-		if (!success) {
-			break;
+		if (!beginEnd()) {
+			return false;
 		}
+	}
 
-		if (!getExcludeRow()) {
-			// It's not impossible that there were 0 columns in
-			// this result set.  If that was the case then
-			// bindindex should still be 0 at this point, and no
-			// values should be bound.  In that case, we don't want
-			// to attempt to execute anything.
-			if (bindindex) {
-				if (!exportcur->executeQuery()) {
-					if (!error(
-						exportcur->errorNumber(),
+	// reset bind index
+	bindindex=0;
+
+	if (!sqlrexport::startProcessingRow()) {
+		// even if this fails, we need to do a final commit
+		finalCommit();
+		return false;
+	}
+	return true;
+}
+
+bool sqlrexporttable::startProcessingField() {
+
+	if (!sqlrexport::startProcessingField()) {
+		// even if this fails, we need to do a final commit
+		finalCommit();
+		return false;
+	}
+	return true;
+}
+
+bool sqlrexporttable::endProcessingField() {
+
+	if (!sqlrexport::endProcessingField()) {
+		// even if this fails, we need to do a final commit
+		finalCommit();
+		return false;
+	}
+	return true;
+}
+
+bool sqlrexporttable::exportField(bool first) {
+
+	if (!sqlrexport::exportField(first)) {
+		return false;
+	}
+
+	// set the bind variable name for this position, if necessary
+	if (firstrow) {
+		bindnames[bindindex]=charstring::parseNumber(bindindex+1);
+	}
+
+	// bind the current field
+	exportcur->inputBind(bindnames[bindindex],getCurrentField());
+
+	// next...
+	bindindex++;
+
+	return true;
+}
+
+bool sqlrexporttable::endProcessingRow() {
+
+	if (!getExcludeRow()) {
+		// It's not impossible that there were 0 columns in
+		// this result set.  If that was the case then
+		// bindindex should still be 0 at this point, and no
+		// values should be bound.  In that case, we don't want
+		// to attempt to execute anything.
+		sqlrcursor	*exportcur=getExportSqlrCursor();
+		if (bindindex) {
+			if (!exportcur->executeQuery()) {
+				if (!error(exportcur->errorNumber(),
 						exportcur->errorMessage())) {
-						success=false;
-						break;
-					}
+					return false;
 				}
 			}
-			exportcur->clearBinds();
-			first=false;
 		}
+		exportcur->clearBinds();
+		firstrow=false;
+	}
 
-		// set the current column and field to NULL
-		setCurrentColumnName(NULL);
-		setCurrentField(NULL);
+	if (!sqlrexport::endProcessingRow()) {
+		// even if this fails, we need to do a final commit
+		finalCommit();
+		return false;
+	}
+	return true;
+}
 
-		// call the row-end event
-		if (!rowEnd()) {
-			success=false;
-			break;
-		}
+bool sqlrexporttable::endProcessingRows() {
 
-		// update exported row count
-		if (!getExcludeRow()) {
-			setExportedRowCount(getExportedRowCount()+1);
-		}
+	// final commit
+	if (!finalCommit()) {
+		return false;
+	}
 
-		// update current row
-		setCurrentRow(getCurrentRow()+1);
+	return sqlrexport::endProcessingRows();
+}
 
-	} while  (!sqlrcur->endOfResultSet() ||
-			getCurrentRow()<sqlrcur->rowCount());
+bool sqlrexporttable::finalCommit() {
 
-	// final commit, if necessary
+	// do the final commit, if necessary
 	if (getCommitCount()) {
 		if (!commitStart()) {
 			return false;
@@ -342,21 +301,5 @@ bool sqlrexporttable::exportData() {
 			return false;
 		}
 	}
-
-	// call the rows-end event
-	if (!rowsEnd()) {
-		return false;
-	}
-
-	// call the export-end event
-	if (!exportEnd()) {
-		return false;
-	}
-
-	return success;
-}
-
-void sqlrexporttable::clearFlagsAndCounts() {
-	sqlrexport::clearFlagsAndCounts();
-	insertquery.clear();
+	return true;
 }

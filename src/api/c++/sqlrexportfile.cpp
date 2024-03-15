@@ -3,6 +3,9 @@
 
 #include <sqlrelay/sqlrexportfile.h>
 
+#include <rudiments/filesystem.h>
+#include <rudiments/permissions.h>
+
 sqlrexportfile::sqlrexportfile() : sqlrexport() {
 	filename=NULL;
 	fd=NULL;
@@ -28,11 +31,38 @@ filedescriptor *sqlrexportfile::getFileDescriptor() {
 }
 
 bool sqlrexportfile::exportData() {
-	clearFlagsAndCounts();
-	return true;
+	return sqlrexport::exportData();
 }
 
 void sqlrexportfile::clearFlagsAndCounts() {
 	sqlrexport::clearFlagsAndCounts();
 	fd=NULL;
+}
+
+bool sqlrexportfile::sanityCheck() {
+
+	if (!sqlrexport::sanityCheck()) {
+		return false;
+	}
+
+	// sanity check on file name
+	if (!charstring::isNullOrEmpty(getFileName())) {
+		if (!f.create(getFileName(),
+			permissions::parsePermString("rw-r--r--"))) {
+			return systemError();
+		}
+		f.setWriteBufferSize(
+			filesystem::getOptimumTransferBlockSize(getFileName()));
+		setFileDescriptor(&f);
+		return true;
+	}
+
+	// if no file name was set then fall back to standard output
+	setFileDescriptor(&stdoutput);
+	return true;
+}
+
+bool sqlrexportfile::flush() {
+	getFileDescriptor()->flushWriteBuffer(-1,-1);
+	return true;
 }

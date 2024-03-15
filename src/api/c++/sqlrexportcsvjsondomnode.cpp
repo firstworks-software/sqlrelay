@@ -3,9 +3,6 @@
 
 #include <sqlrelay/sqlrexportcsvjsondomnode.h>
 
-#define NEED_IS_NUMBER_TYPE_CHAR
-#include <datatypes.h>
-
 sqlrexportcsvjsondomnode::sqlrexportcsvjsondomnode() : sqlrexportdomnode() {
 }
 
@@ -13,205 +10,79 @@ sqlrexportcsvjsondomnode::~sqlrexportcsvjsondomnode() {
 }
 
 bool sqlrexportcsvjsondomnode::exportData() {
+	return sqlrexportdomnode::exportData();
+}
 
-	clearFlagsAndCounts();
+bool sqlrexportcsvjsondomnode::startProcessingColumns() {
 
-	// sanity check
-	if (!getDomNode()) {
-		return error(0,"No domnode set with setDomNode()");
-	}
-
-	// get the cursor and column count
-	sqlrcursor	*sqlrcur=getSqlrCursor();
-	uint32_t	cols=sqlrcur->colCount();
-
-	// set initial column/field
-	setCurrentColumnName(sqlrcur->getColumnName(0));
-	setCurrentField(getCurrentColumnName());
-
-	// determine numeric columns
-	for (uint32_t i=0; i<cols; i++) {
-		setIsNumericColumn(
-			i,isNumberTypeChar(sqlrcur->getColumnType(i)));
-	}
-
-	// call the export-start event
-	if (!exportStart()) {
+	// start processing columns
+	if (!sqlrexportdomnode::startProcessingColumns()) {
 		return false;
 	}
 
-	// call the columns-start event
-	if (!columnsStart()) {
-		return false;
-	}
-
-	// export columns...
+	// export columns node
 	if (!getExcludeColumns()) {
 		// "h" for header, like in csvdom
 		setColumnsDomNode(getDomNode()->appendTag("h"));
 		getColumnsDomNode()->setAttributeValue("t","a");
 	}
-	for (setCurrentColumn(0);
-		getCurrentColumn()<cols;
-		setCurrentColumn(getCurrentColumn()+1)) {
+	return true;
+}
 
-		// set the current column name (and field)
-		setCurrentColumnName(
-			sqlrcur->getColumnName(getCurrentColumn()));
-		setCurrentField(getCurrentColumnName());
+bool sqlrexportcsvjsondomnode::exportColumnName(bool first) {
 
-		// call the column-start event
-		if (!columnStart()) {
-			return false;
-		}
-
-		// reset the current field to the current column name
-		// (in case columnStart overrode the columm name)
-		setCurrentField(getCurrentColumnName());
-
-		// if we're not excluding all columns or this column...
-		if (!getExcludeColumns() &&
-			!charstring::isInSet(getCurrentField(),
-						getColumnsToExclude())) {
-
-			// export the column name
-			// "v" for value, all jsondom arrays
-			// consist of "v"alues
-			bool	isnumber=
-				charstring::isNumber(getCurrentField());
-			domnode	*column=getColumnsDomNode()->appendTag("v");
-			setCurrentColumnDomNode(column);
-			if (isnumber) {
-				column->setAttributeValue("t","n");
-				column->setAttributeValue("v",
-						getCurrentField());
-			} else {
-				column->setAttributeValue("t","s");
-				column->setAttributeValue("v",
-						getCurrentField());
-			}
-		}
-
-		// call the column-end event
-		if (!columnEnd()) {
-			return false;
-		}
-	}
-
-	// call the columns-end event
-	if (!columnsEnd()) {
+	if (!sqlrexportdomnode::exportColumnName(first)) {
 		return false;
 	}
 
-	// reset current column/field
-	setCurrentColumn(0);
-	setCurrentColumnName(sqlrcur->getColumnName(0));
-	setCurrentField(sqlrcur->getField(0,(uint32_t)0));
+	// export the column name
+	// "v" for value, all jsondom arrays
+	// consist of "v"alues
+	bool	isnumber=charstring::isNumber(getCurrentField());
+	domnode	*column=getColumnsDomNode()->appendTag("v");
+	setCurrentColumnDomNode(column);
+	if (isnumber) {
+		column->setAttributeValue("t","n");
+		column->setAttributeValue("v",getCurrentField());
+	} else {
+		column->setAttributeValue("t","s");
+		column->setAttributeValue("v",getCurrentField());
+	}
+	return true;
+}
 
-	// call the rows-start event
-	if (!rowsStart()) {
+bool sqlrexportcsvjsondomnode::startProcessingRow() {
+
+	// start processing row
+	if (!sqlrexportdomnode::startProcessingRow()) {
 		return false;
 	}
 
-	// export rows
-	do {
+	// if rowStart() didn't disable export of this row...
+	if (!getExcludeRow()) {
+		// "r" for record, like in csvdom
+		setCurrentRowDomNode(getDomNode()->appendTag("r"));
+		getCurrentRowDomNode()->setAttributeValue("t","a");
+	}
+	return true;
+}
 
-		// reset export-row flag and current column/field
-		setExcludeRow(false);
-		setCurrentColumn(0);
-		setCurrentColumnName(sqlrcur->getColumnName(0));
-		setCurrentField(sqlrcur->getField(getCurrentRow(),(uint32_t)0));
+bool sqlrexportcsvjsondomnode::exportField(bool first) {
 
-		// call the row-start event
-		if (!rowStart()) {
-			return false;
-		}
-
-		// if rowStart() didn't disable export of this row...
-		if (!getExcludeRow()) {
-			// "r" for record, like in csvdom
-			setCurrentRowDomNode(getDomNode()->appendTag("r"));
-			getCurrentRowDomNode()->setAttributeValue("t","a");
-		}
-
-		for (setCurrentColumn(0);
-			getCurrentColumn()<cols;
-			setCurrentColumn(getCurrentColumn()+1)) {
-
-			// set the current column name and field
-			setCurrentColumnName(
-				sqlrcur->getColumnName(getCurrentColumn()));
-			setCurrentField(sqlrcur->getField(
-						getCurrentRow(),
-						getCurrentColumn()));
-			if (!getCurrentField()) {
-				break;
-			}
-
-			// call the field-start event
-			if (!fieldStart()) {
-				return false;
-			}
-
-			// if we're not excluding this row or column...
-			if (!getExcludeRow() &&
-				!charstring::isInSet(
-					sqlrcur->getColumnName(
-						getCurrentColumn()),
-					getColumnsToExclude())) {
-
-				// export the field
-				// "v" for value, all jsondom arrays
-				// consist of "v"alues
-				domnode	*field=getCurrentRowDomNode()->
-								appendTag("v");
-				setCurrentFieldDomNode(field);
-				if (getIsNumericColumn(getCurrentColumn())) {
-					field->setAttributeValue("t","n");
-					field->setAttributeValue("v",
-							getCurrentField());
-				} else {
-					field->setAttributeValue("t","s");
-					field->setAttributeValue("v",
-							getCurrentField());
-				}
-			}
-
-			// call the field-end event
-			if (!fieldEnd()) {
-				return false;
-			}
-		}
-
-		// set the current column and field to NULL
-		setCurrentColumnName(NULL);
-		setCurrentField(NULL);
-
-		// call the row-end event
-		if (!rowEnd()) {
-			return false;
-		}
-
-		// update exported row count
-		if (!getExcludeRow()) {
-			setExportedRowCount(getExportedRowCount()+1);
-		}
-
-		// update current row
-		setCurrentRow(getCurrentRow()+1);
-
-	} while (!sqlrcur->endOfResultSet() ||
-			getCurrentRow()<sqlrcur->rowCount());
-
-	// call the rows-end event
-	if (!rowsEnd()) {
+	if (!sqlrexportdomnode::exportField(first)) {
 		return false;
 	}
 
-	// call the export-end event
-	if (!exportEnd()) {
-		return false;
+	// export the field
+	// "v" for value, all jsondom arrays consist of "v"alues
+	domnode	*field=getCurrentRowDomNode()->appendTag("v");
+	setCurrentFieldDomNode(field);
+	if (getIsNumericColumn(getCurrentColumn())) {
+		field->setAttributeValue("t","n");
+		field->setAttributeValue("v",getCurrentField());
+	} else {
+		field->setAttributeValue("t","s");
+		field->setAttributeValue("v",getCurrentField());
 	}
-
 	return true;
 }

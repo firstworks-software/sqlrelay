@@ -149,6 +149,8 @@ install: $(INSTALLLIB)
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrexportdomnodeincludes.h
 	$(CP) sqlrelay/private/sqlrexportdomnode.h $(includedir)/sqlrelay/private
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrexportdomnode.h
+	$(CP) sqlrelay/private/sqlrexportcsvjsondomnode.h $(includedir)/sqlrelay/private
+	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrexportcsvjsondomnode.h
 	$(CP) sqlrelay/private/sqlrexportcsvjsondomnodeincludes.h $(includedir)/sqlrelay/private
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrexportcsvjsondomnodeincludes.h
 	$(CP) sqlrelay/private/sqlrexporttable.h $(includedir)/sqlrelay/private

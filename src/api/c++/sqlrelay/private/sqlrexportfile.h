@@ -3,7 +3,11 @@
 
 		virtual void	clearFlagsAndCounts();
 
+		virtual bool	sanityCheck();
+		virtual bool	flush();
+
 	private:
 
 		const char		*filename;
+		file			f;
 		filedescriptor		*fd;

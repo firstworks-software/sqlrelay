@@ -64,8 +64,7 @@ domnode	*sqlrexportdomnode::getCurrentFieldDomNode() {
 }
 
 bool sqlrexportdomnode::exportData() {
-	clearFlagsAndCounts();
-	return true;
+	return sqlrexport::exportData();
 }
 
 void sqlrexportdomnode::clearFlagsAndCounts() {
@@ -75,4 +74,16 @@ void sqlrexportdomnode::clearFlagsAndCounts() {
 	rowsdomnode=NULL;
 	currentrowdomnode=NULL;
 	currentfielddomnode=NULL;
+}
+
+bool sqlrexportdomnode::sanityCheck() {
+
+	if (!sqlrexport::sanityCheck()) {
+		return false;
+	}
+
+	if (!getDomNode()) {
+		return error(0,"No domnode set with setDomNode()");
+	}
+	return true;
 }

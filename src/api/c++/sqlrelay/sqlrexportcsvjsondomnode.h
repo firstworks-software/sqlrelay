@@ -82,6 +82,8 @@ class SQLRCLIENT_DLLSPEC sqlrexportcsvjsondomnode :
 		 *
 		 *  Returns true on success and false if an error occurred. */
 		virtual	bool	exportData();
+
+	#include <sqlrelay/private/sqlrexportcsvjsondomnode.h>
 };
 
 #endif

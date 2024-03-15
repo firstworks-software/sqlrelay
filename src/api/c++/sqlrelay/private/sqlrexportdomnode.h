@@ -3,6 +3,8 @@
 
 		virtual void	clearFlagsAndCounts();
 
+		virtual bool	sanityCheck();
+
 	private:
 
 		domnode			*topdomnode;
