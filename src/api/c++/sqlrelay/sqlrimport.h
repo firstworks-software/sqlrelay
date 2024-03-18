@@ -617,10 +617,13 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  * getIsDateTimeColumn() should return true/false correctly
 		 *    for each column
 		 *
+		 *  This is a good place to call setExcludeRow(true) if you
+		 *  don't want this row to be imported.
+		 *
 		 *  Note that this method is called whether or not a row is
-		 *  ignored.  For example...  If setIgnoreEmptyRows(true)
-		 *  has been called then this method will still be called for
-		 *  each empty row.
+		 *  ignored or excluded.  For example...  If
+		 *  setIgnoreEmptyRows(true) has been called then this method
+		 *  will still be called for each empty row.
 		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and import should stop if this method return
@@ -662,7 +665,7 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  accordingly.
 		 *
 		 *  Note that this method is called whether or not a column or
-		 *  row is ignored.  For example...  If
+		 *  row is ignored or excluded.  For example...  If
 		 *  setIgnoreColumnsWithEmptyNames(true) has been called, then
 		 *  this method will still be called for each column, whether
 		 *  it is empty or not.  getCurrentColumnName() will also
@@ -703,7 +706,7 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *    for each column
 		 *
 		 *  Note that this method is called whether or not a column or
-		 *  row is ignored.  For example...  If
+		 *  row is ignored or excluded.  For example...  If
 		 *  setIgnoreColumnsWithEmptyNames(true) has been called, then
 		 *  this method will still be called for each column, whether
 		 *  it is empty or not.  getCurrentColumnName() will also
@@ -741,9 +744,9 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *    for each column
 		 *
 		 *  Note that this method is called whether or not a row is
-		 *  ignored.  For example...  If setIgnoreEmptyRows(true)
-		 *  has been called then this method will still be called for
-		 *  each empty row.
+		 *  ignored or excluded.  For example...  If
+		 *  setIgnoreEmptyRows(true) has been called then this method
+		 *  will still be called for each empty row.
 		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and import should stop if this method return

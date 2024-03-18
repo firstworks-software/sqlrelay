@@ -204,6 +204,31 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  * getIsNumericColumn() should return true/false correctly
 		 *    for each column
 		 *
+		 *  If you want to modify the name of the column that is going
+		 *  to be exported, this is a good method to override to call
+		 *  setCurrentColumnName(...)
+		 *
+		 *  Note, however...
+		 *
+		 *  The memory allocated to store the new value must persist
+		 *  until the value is actually exported.  When this is depends
+		 *  on the implementation of the exportData() method.
+		 *
+		 *  Implementations that export to a file or json domnode
+		 *  typically export the column name before calling
+		 *  columnEnd().  As such, storage for the updated column name
+		 *  may be freed inside of your implementation of columnEnd().
+		 *
+		 *  However, other implementations may export all column names
+		 *  at once prior to calling columnsEnd().  In this case,
+		 *  storage for the updated column name should be freed inside
+		 *  of your implemenatation of columnsEnd().
+		 *
+		 *  Be sure to verify how the various exportData() methods that
+		 *  you are using were written, and use care when freeing 
+		 *  storage allocated for updated column names.
+		 *
+		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and export should stop if this method return
 		 *  false. */
@@ -233,6 +258,11 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  * getIsNumericColumn() should return true/false correctly
 		 *    for each column
 		 *
+		 *  If you called setColumnName(...) in columnStart(), and had
+		 *  to allocate memory for the new value, then this may be an
+		 *  appropriate place to free that memory.  See notes in
+		 *  columnStart() for details.
+		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and export should stop if this method return
 		 *  false. */
@@ -258,6 +288,11 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  * getCurrentField() should also return NULL
 		 *  * getIsNumericColumn() should return true/false correctly
 		 *    for each column
+		 *
+		 *  If you called setColumnName(...) in columnStart(), and had
+		 *  to allocate memory for the new value, then this may be an
+		 *  appropriate place to free that memory.  See notes in
+		 *  columnStart() for details.
 		 *
 		 *  Should return true on success and false if an error
 		 *  occurred and export should stop if this method return
@@ -308,7 +343,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  * getIsNumericColumn() should return true/false correctly
 		 *    for each column
 		 *
-		 *  This is a good place to call setExportRow(false) if you
+		 *  This is a good place to call setExcludeRow(true) if you
 		 *  don't want this row to be exported.
 		 *
 		 *  Should return true on success and false if an error

@@ -1369,7 +1369,6 @@ bool sqlrimport::endProcessingRow() {
 	// was an empty row, then exclude it
 	if (getExcludeRow() || !getColumnNameCount() ||
 		(getIgnoreEmptyRows() && getEmptyRow())) {
-
 		return true;
 	}
 
