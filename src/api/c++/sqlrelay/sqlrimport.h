@@ -428,8 +428,8 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		uint64_t	getImportedRowCount();
 
 	protected:
-		/** This method should be called by implementations of
-		 *  importData(), at the beginning of the import process.
+		/** This method should be called at the beginning of the import
+		 *  process.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -450,14 +450,14 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  false. */
 		virtual bool	importStart();
 
-		/** This method should be called by implementations of the
-		 *  importData(), prior to the import of the columns of the
-		 *  data.
+		/** This method should be called prior to the import of the
+		 *  columns.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
-		 *  At this point...
+		 *  At this point, unless specifically set otherwise in an
+		 *  overridden method...
 		 *  * getExcludeRow() should return false
 		 *  * getImportedRowCount() should return 0
 		 *  * getCurrentRow() should return 0
@@ -472,14 +472,14 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  false. */
 		virtual	bool	columnsStart();
 
-		/** This method should be called by implementations of the
-		 *  importData(), prior to the import of each column of the
-		 *  data.
+		/** This method should be called prior to the import of each
+		 *  column.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
-		 *  At this point...
+		 *  At this point, unless specifically set otherwise in an
+		 *  overridden method...
 		 *  * getExcludeRow() should return false
 		 *  * getImportedRowCount() should return 0
 		 *  * getCurrentRow() should return 0
@@ -513,17 +513,15 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  false. */
 		virtual	bool	columnStart();
 
-		/** This method should be called by implementations of the
-		 *  importData(), after the import of each column of the data.
+		/** This method should be called after the import of each
+		 *  column.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
-		 *  At this point...
-		 *  * getExcludeRow() should return false by default, or true
-		 *    if set true by a call to setExcludeRow(true) by an
-		 *    overridden columnStart().  However at this point, a value
-		 *    of true will be ignored.
+		 *  At this point, unless specifically set otherwise in an
+		 *  overridden method...
+		 *  * getExcludeRow() should return false
 		 *  * getImportedRowCount() should return 0
 		 *  * getCurrentRow() should return 0
 		 *  * getCurrentColumn() should return the index of the
@@ -548,17 +546,15 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  false. */
 		virtual	bool	columnEnd();
 
-		/** This method should be called by implementations of the
-		 *  importData(), after the import of the columns of the data.
+		/** This method should be called after the import of the
+		 *  columns.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
-		 *  At this point...
-		 *  * getExcludeRow() should return false by default, or true
-		 *    if set true by a call to setExcludeRow(true) by an
-		 *    overridden columnStart()/columnEnd().  However at this
-		 *    point, a value of true will be ignored.
+		 *  At this point, unless specifically set otherwise in an
+		 *  overridden method...
+		 *  * getExcludeRow() should return false
 		 *  * getImportedRowCount() should return 0
 		 *  * getCurrentRow() should return 0
 		 *  * getCurrentColumn() should return one more than the index
@@ -575,14 +571,15 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  false. */
 		virtual	bool	columnsEnd();
 
-		/** This method should be called by implementations of the
-		 *  importData(), prior to the import of the rows of the data.
+		/** This method should be called prior to the import of the
+		 *  rows.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
-		 *  At this point...
-		 *  * getExcludeRow() should return false.
+		 *  At this point, unless specifically set otherwise in an
+		 *  overridden method...
+		 *  * getExcludeRow() should return false
 		 *  * getImportedRowCount() should return 0
 		 *  * getCurrentRow() should return 0
 		 *  * getCurrentColumn() should return 0
@@ -598,14 +595,15 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  false. */
 		virtual	bool	rowsStart();
 
-		/** This method should be called by implementations of the
-		 *  importData(), prior to the import of each row of the data.
+		/** This method should be called prior to the import of each
+		 *  row.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
-		 *  At this point...
-		 *  * getExcludeRow() should return false.
+		 *  At this point, unless specifically set otherwise in an
+		 *  overridden method...
+		 *  * getExcludeRow() should return false
 		 *  * getImportedRowCount() should return the number of rows
 		 *    that have been exported - it should not include the
 		 *    row that we are starting
@@ -629,18 +627,15 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  false. */
 		virtual	bool	rowStart();
 
-		/** This method should be called by implementations of the
-		 *  importData(), prior to the import of each field of the
-		 *  data.
+		/** This method should be called prior to the import of each
+		 *  field.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
-		 *  At this point...
-		 *  * getExcludeRow() should return false by default, or true
-		 *    if set by a call to setExcludeRow(true) in an overridden
-		 *    rowStart() method.  However at this point, a value of
-		 *    true will be ignored.
+		 *  At this point, unless specifically set otherwise in an
+		 *  overridden method...
+		 *  * getExcludeRow() should return false
 		 *  * getImportedRowCount() should return the number of rows
 		 *    that have been exported
 		 *  * getCurrentRow() should return the index of the row that
@@ -682,17 +677,14 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  false. */
 		virtual	bool	fieldStart();
 
-		/** This method should be called by implementations of the
-		 *  importData(), after the import of each field of the data.
+		/** This method should be called after the import of each field.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
-		 *  At this point...
-		 *  * getExcludeRow() should return false by default, or true
-		 *    if set by a call to setExcludeRow(true) in an overridden
-		 *    *Start/End() method.  However at this point, a value of
-		 *    true will be ignored.
+		 *  At this point, unless specifically set otherwise in an
+		 *  overridden method...
+		 *  * getExcludeRow() should return false
 		 *  * getImportedRowCount() should return the number of rows
 		 *    that have been exported
 		 *  * getCurrentRow() should return the index of the row that
@@ -726,17 +718,14 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  false. */
 		virtual	bool	fieldEnd();
 
-		/** This method should be called by implementations of the
-		 *  importData(), after the import of each row of the data.
+		/** This method should be called after the import of each row.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
-		 *  At this point...
-		 *  * getExcludeRow() should return false by default, or true
-		 *    if set by a call to setExcludeRow(true) in an overridden
-		 *    *Start/End() method.  However at this point, a value of
-		 *    true will be ignored.
+		 *  At this point, unless specifically set otherwise in an
+		 *  overridden method...
+		 *  * getExcludeRow() should return false
 		 *  * getImportedRowCount() should return the number of rows
 		 *    that have been exported - it should not include the
 		 *    row that we are ending
@@ -761,17 +750,14 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  false. */
 		virtual	bool	rowEnd();
 
-		/** This method should be called by implementations of the
-		 *  importData(), after the import of the rows of the data.
+		/** This method should be called after the import of the rows.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
-		 *  At this point...
-		 *  * getExcludeRow() should return false by default, or true
-		 *    if set by a call to setExcludeRow(true) in an overridden
-		 *    *Start/End() method.  However at this point, a value of
-		 *    true will be ignored.
+		 *  At this point, unless specifically set otherwise in an
+		 *  overridden method...
+		 *  * getExcludeRow() should return false
 		 *  * getImportedRowCount() should return the number of rows
 		 *    that were exported
 		 *  * getCurrentRow() should return one more than the index
@@ -790,8 +776,7 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  false. */
 		virtual	bool	rowsEnd();
 
-		/** This method should be called by implementations of
-		 *  importData(), before a begin().
+		/** This method should be called before a begin().
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -801,8 +786,7 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  false. */
 		virtual	bool	beginStart();
 
-		/** This method should be called by implementations of
-		 *  importData(), after a begin().
+		/** This method should be called after a begin().
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -812,8 +796,7 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  false. */
 		virtual	bool	beginEnd();
 
-		/** This method should be called by implementations of
-		 *  importData(), before a commit().
+		/** This method should be called before a commit().
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -823,8 +806,7 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  false. */
 		virtual	bool	commitStart();
 
-		/** This method should be called by implementations of
-		 *  importData(), after a commit().
+		/** This method should be called after a commit().
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -834,8 +816,7 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  false. */
 		virtual	bool	commitEnd();
 
-		/** This method should be called by implementations of
-		 *  importData() methods, if a commit(), begin(),
+		/** This method should be called if a commit(), begin(),
 		 *  executeQuery(), or other database operation fails.
 		 *
 		 *  This implementation just returns false but a child class may
@@ -846,17 +827,15 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		virtual	bool	error(int64_t errornumber,
 					const char *errormessage);
 
-		/** This method should be called by implementations of
-		 *  importData(), at the end of the import process.
+		/** This method should be called at the end of the import
+		 *  process.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
-		 *  At this point...
-		 *  * getExcludeRow() should return false by default, or true
-		 *    if set by a call to setExcludeRow(true) in an overridden
-		 *    *Start/End() method.  However at this point, a value of
-		 *    true will be ignored.
+		 *  At this point, unless specifically set otherwise in an
+		 *  overridden method...
+		 *  * getExcludeRow() should return false
 		 *  * getImportedRowCount() should return the number of rows
 		 *    that were exported
 		 *  * getCurrentRow() should return one more than the index
@@ -876,146 +855,134 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  false. */
 		virtual bool	importEnd();
 
-		/** Sets whether the current row of the data will be excluded or
-		 *  not.  Rows that are excluded are not imported.
+		/** Sets whether the current row will be excluded or not.
+		 *  Rows that are excluded are not imported.
 		 *  
-		 *  Should be called by implementations of importData().  May
-		 *  also be called by rowStart().  Not commonly called by other
-		 *  *Start/End() methods. */
+		 *  May be called by implementations of rowStart().  Not
+		 *  commonly called by other *Start/End() methods. */
 		void	setExcludeRow(bool excluderow);
 
-		/** Gets whether the current row of the data will be excluded or
-		 *  not.  Rows that are excluded are not imported.
+		/** Gets whether the current row of will be excluded or not.
+		 *  Rows that are excluded are not imported.
 		 *  
-		 *  May be called by implementations of importData() or by
-		 *  implementations of the *Start/End() methods. */
+		 *  May be called by implementations of the *Start/End()
+		 *  methods. */
 		bool	getExcludeRow();
 
-		/** Sets the index of the row of data that is currently being
-		 *  imported.
+		/** Sets the index of the row that is currently being imported.
 		 *  
-		 *  Should be called by implementations of importData().  Not
-		 *  commonly called by implementations of the *Start/End()
+		 *  Not commonly called by implementations of the *Start/End()
 		 *  methods. */
 		void	setCurrentRow(uint64_t currentrow);
 
-		/** Gets the index of the row of data that is currently being
- 		 *  imported.
+		/** Gets the index of the row that is currently being imported.
 		 *
-		 *  May be called by implementations of importData() or by
-		 *  implementations of the *Start/End() methods. */
+		 *  May be called by implementations of the *Start/End()
+		 *  methods. */
 		uint64_t	getCurrentRow();
 
-		/** Sets the index of the column of the data that is currently
-		 *  being imported.
+		/** Sets the index of the column that is currently being
+ 		 *  imported.
 		 *  
-		 *  Should be called by implementations of importData().  Not
-		 *  commonly called by implementations of the *Start/End()
+		 *  Not commonly called by implementations of the *Start/End()
 		 *  methods. */
 		void	setCurrentColumn(uint32_t currentcol);
 
-		/** Gets the index of the column of the data that is currently
-		 *  being imported.
+		/** Gets the index of the column that is currently being
+		 *  imported.
 		 *
-		 *  May be called by implementations of importData() or by
-		 *  implementations of the *Start/End() methods. */
+		 *  May be called by implementations of the *Start/End()
+		 *  methods. */
 		uint32_t	getCurrentColumn();
 
-		/** Sets the name of the column of the data that is currently
-		 *  being imported.
+		/** Sets the name of the column that is currently being
+		 *  imported.
 		 *
 		 *  Note that "currentcolname" is a char *, not a const char *.
 		 *  Whatever value it is set to will eventually be freed by
 		 *  this class.  Set "currentcolname" accordingly.
 		 *
-		 *  Should be called by implementations of importData().  May
-		 *  also be called by columnStart().  Not commonly called by
+		 *  May be called by columnStart().  Not commonly called by
 		 *  other *Start/End() methods. */
 		void	setCurrentColumnName(char *currentcolname);
 
-		/** Gets the name of the column of the data that is currently
-		 *  being imported.
+		/** Gets the name of the column that is currently being
+		 *  imported.
 		 *
-		 *  May be called by implementations of importData() or by
-		 *  implementations of the *Start/End() methods. */
+		 *  May be called by implementations of the *Start/End()
+		 *  methods. */
 		char	*getCurrentColumnName();
 
-		/** Sets the value of the field of the data that is currently
-		 *  being imported.
+		/** Sets the value of the field that is currently being
+		 *  imported.
 		 *
 		 *  Note that "currentfield" is a char *, not a const char *
 		 *  argument.  A buffer must be allocated, populated, and
 		 *  passed in to it, and that buffer will eventually be
 		 *  deallocated by this class.  Plan accordingly.
 		 *
-		 *  Should be called by implementations of importData().  Not
-		 *  commonly called by implementations of the *Start/End()
+		 *  Not commonly called by implementations of the *Start/End()
 		 *  methods. */
 		void	setCurrentField(char *currentfield);
 
-		/** Gets the value of the field of the data that is currently
-		 *  being imported.
+		/** Gets the value of the field that is currently being
+		 *  imported.
 		 *
-		 *  May be called by implementations of importData() or by
-		 *  implementations of the *Start/End() methods. */
+		 *  May be called by implementations of the *Start/End()
+		 *  methods. */
 		char	*getCurrentField();
 
-		/** Sets whether the data type of the column of the data in
-		 *  position "index" is a numeric type or not.  If "numeric"
-		 *  is true then the type of the column is set to numeric.  If
+		/** Sets whether the data type of the column in position
+		 *  "index" is a numeric type or not.  If "numeric" is true
+		 *  then the type of the column is set to numeric.  If
 		 *  "numeric" is false then the type of the column is set to
 		 *  non-numeric.
 		 *
-		 *  Should be called by implementations of importData().  Not
-		 *  commonly called by implementations of the *Start/End()
+		 *  Not commonly called by implementations of the *Start/End()
 		 *  methods. */
 		void	setIsNumericColumn(uint64_t index, bool numeric);
 
-		/** Get whether the data type of the column of the data in
-		 *  position "index" is a numeric type or not.
+		/** Get whether the data type of the column in position "index"
+		 *  is a numeric type or not.
 		 *
-		 *  May be called by implementations of importData() or by
-		 *  implementations of the *Start/End() methods. */
+		 *  May be called by implementations of the *Start/End()
+		 *  methods. */
 		bool	getIsNumericColumn(uint64_t index);
 
-		/** Clears the data types of all columns of the data setting
-		 *  them to to non-numeric.
+		/** Clears the data types of all columns, setting them to to
+		 *  non-numeric.
 		 *
-		 *  Should be called by implementations of importData().  Not
-		 *  commonly called by implementations of the *Start/End()
+		 *  Not commonly called by implementations of the *Start/End()
 		 *  methods. */
 		void	clearAreNumericColumns();
 
-		/** Sets whether the data type of the column of the data in
-		 *  position "index" is a date/time type or not.  If "datetime"
-		 *  is true then the type of the column is set to date/time.  If
+		/** Sets whether the data type of the column in position
+		 *  "index" is a date/time type or not.  If "datetime" is true
+		 *  then the type of the column is set to date/time.  If
 		 *  "datetime" is false then the type of the column is set to
-		 *  non-date/time
+		 *  non-date/time.
 		 *
-		 *  Should be called by implementations of importData().  Not
-		 *  commonly called by implementations of the *Start/End()
+		 *  Not commonly called by implementations of the *Start/End()
 		 *  methods. */
 		void	setIsDateTimeColumn(uint64_t index, bool datetime);
 
-		/** Get whether the data type of the column of the data in
-		 *  position "index" is a date/time type or not.
+		/** Get whether the data type of the column in position "index"
+		 *  is a date/time type or not.
 		 *
-		 *  May be called by implementations of importData() or by
-		 *  implementations of the *Start/End() methods. */
+		 *  May be called by implementations of the *Start/End()
+		 *  methods. */
 		bool	getIsDateTimeColumn(uint64_t index);
 
-		/** Clears the data types of all columns of the data setting
-		 *  them to to non-date/time.
+		/** Clears the data types of all columns, setting them to to
+		 *  non-date/time.
 		 *
-		 *  Should be called by implementations of importData().  Not
-		 *  commonly called by implementations of the *Start/End()
+		 *  Not commonly called by implementations of the *Start/End()
 		 *  methods. */
 		void	clearAreDateTimeColumns();
 
 		/** Sets the number of rows that have been imported.
 		 *
-		 *  Should be called by implementations of importData().  Not
-		 *  commonly called by implementations of the *Start/End()
+		 *  Not commonly called by implementations of the *Start/End()
 		 *  methods. */
 		void setImportedRowCount(uint64_t importedrowcount);
 

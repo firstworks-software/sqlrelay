@@ -133,8 +133,8 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		uint64_t	getExportedRowCount();
 
 	protected:
-		/** This method should be called by implementations of
-		 *  exportData(), at the beginning of the export process.
+		/** This method should be called at the beginning of the export
+		 *  process.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -155,9 +155,8 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual bool	exportStart();
 
-		/** This method should be called by implementations of
-		 *  exportData(), prior to the export of the columns of the
-		 *  data.
+		/** This method should be called prior to the export of the
+		 *  columns.
 		 *
 		 *  Note that it should be called whether or not columns are
 		 *  excluded.
@@ -165,8 +164,9 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
-		 *  At this point...
-		 *  * getExportRow() should return true
+		 *  At this point, unless specifically set otherwise in an
+		 *  overridden method...
+		 *  * getExcludeRow() should return false
 		 *  * getExportedRowCount() should return 0
 		 *  * getCurrentRow() should return 0
 		 *  * getCurrentColumn() should return 0
@@ -180,9 +180,8 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	columnsStart();
 
-		/** This method should be called by implementations of
-		 *  exportData(), prior to the export of each column of the
-		 *  data.
+		/** This method should be called prior to the export of each
+		 *  column.
 		 *
 		 *  Note that it should be called for each column, whether or
 		 *  not columns are excluded, and whether or not this particular
@@ -191,8 +190,9 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
-		 *  At this point...
-		 *  * getExportRow() should return true
+		 *  At this point, unless specifically set otherwise in an
+		 *  overridden method...
+		 *  * getExcludeRow() should return false
 		 *  * getExportedRowCount() should return 0
 		 *  * getCurrentRow() should return 0
 		 *  * getCurrentColumn() should return the index of the
@@ -209,9 +209,8 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	columnStart();
 
-		/** This method should be called by implementations of
-		 *  exportData(), after the export of each column of the
-		 *  data.
+		/** This method should be called after the export of each
+		 *  column.
 		 *
 		 *  Note that it should be called for each column, whether or
 		 *  not columns are excluded, and whether or not this particular
@@ -220,8 +219,9 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
-		 *  At this point...
-		 *  * getExportRow() should return true
+		 *  At this point, unless specifically set otherwise in an
+		 *  overridden method...
+		 *  * getExcludeRow() should return false
 		 *  * getExportedRowCount() should return 0
 		 *  * getCurrentRow() should return 0
 		 *  * getCurrentColumn() should return the index of the
@@ -238,9 +238,8 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	columnEnd();
 
-		/** This method should be called by implementations of
-		 *  exportData(), after the export of the columns of the
-		 *  data.
+		/** This method should be called after the export of the
+		 *  columns.
 		 *
 		 *  Note that it should be called whether or not columns are
 		 *  excluded.
@@ -248,8 +247,9 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
-		 *  At this point...
-		 *  * getExportRow() should return true
+		 *  At this point, unless specifically set otherwise in an
+		 *  overridden method...
+		 *  * getExcludeRow() should return false
 		 *  * getExportedRowCount() should return 0
 		 *  * getCurrentRow() should return 0
 		 *  * getCurrentColumn() should return one more than the index
@@ -264,15 +264,15 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	columnsEnd();
 
-		/** This method should be called by implementations of
-		 *  exportData(), prior to the export of the rows of the
-		 *  data.
+		/** This method should be called by prior to the export of the
+		 *  rows.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
-		 *  At this point...
-		 *  * getExportRow() should return true
+		 *  At this point, unless specifically set otherwise in an
+		 *  overridden method...
+		 *  * getExcludeRow() should return false
 		 *  * getExportedRowCount() should return 0
 		 *  * getCurrentRow() should return 0
 		 *  * getCurrentColumn() should return 0
@@ -287,15 +287,15 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	rowsStart();
 
-		/** This method should be called by implementations of
-		 *  exportData(), prior to the export of each row of the
-		 *  data.
+		/** This method should be called prior to the export of each
+		 *  row.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
-		 *  At this point...
-		 *  * getExportRow() should return true
+		 *  At this point, unless specifically set otherwise in an
+		 *  overridden method...
+		 *  * getExcludeRow() should return false
 		 *  * getExportedRowCount() should return the number of rows
 		 *    that have been exported - it should not include the
 		 *    row that we are starting
@@ -316,16 +316,15 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	rowStart();
 
-		/** This method should be called by implementations of
-		 *  exportData(), prior to the export of each field of the
-		 *  data.
+		/** This method should be called by prior to the export of each
+		 *  field.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
-		 *  At this point...
-		 *  * getExportRow() should return true or false, as
-		 *    appropriate for this row
+		 *  At this point, unless specifically set otherwise in an
+		 *  overridden method...
+		 *  * getExcludeRow() should return false
 		 *  * getExportedRowCount() should return the number of rows
 		 *    that have been exported
 		 *  * getCurrentRow() should return the index of the row that
@@ -373,16 +372,14 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	fieldStart();
 
-		/** This method should be called by implementations of
-		 *  exportData(), after the export of each field of the
-		 *  data.
+		/** This method should be called after the export of each field.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
-		 *  At this point...
-		 *  * getExportRow() should return true or false, as
-		 *    appropriate for this row
+		 *  At this point, unless specifically set otherwise in an
+		 *  overridden method...
+		 *  * getExcludeRow() should return false
 		 *  * getExportedRowCount() should return the number of rows
 		 *    that have been exported
 		 *  * getCurrentRow() should return the index of the row that
@@ -408,16 +405,14 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	fieldEnd();
 
-		/** This method should be called by implementations of
-		 *  exportData(), after the export of each row of the
-		 *  data.
+		/** This method should be called after the export of each row.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
-		 *  At this point...
-		 *  * getExportRow() should return true or false, as
-		 *    appropriate for this row
+		 *  At this point, unless specifically set otherwise in an
+		 *  overridden method...
+		 *  * getExcludeRow() should return false
 		 *  * getExportedRowCount() should return the number of rows
 		 *    that have been exported - it should not include the
 		 *    row that we are ending
@@ -440,16 +435,14 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	rowEnd();
 
-		/** This method should be called by implementations of
-		 *  exportData(), after the export of the rows of the
-		 *  data.
+		/** This method should be called after the export of the rows.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
-		 *  At this point...
-		 *  * getExportRow() should return true or false,
-		 *    as appropriate for the last row
+		 *  At this point, unless specifically set otherwise in an
+		 *  overridden method...
+		 *  * getExcludeRow() should return false
 		 *  * getExportedRowCount() should return the number of rows
 		 *    that were exported
 		 *  * getCurrentRow() should return one more than the index
@@ -466,8 +459,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	rowsEnd();
 
-		/** This method should be called by implementations of
-		 *  exportData(), before a begin().
+		/** This method should be called before a begin().
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -477,8 +469,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	beginStart();
 
-		/** This method should be called by implementations of
-		 *  exportData(), after a begin().
+		/** This method should be called after a begin().
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -488,8 +479,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	beginEnd();
 
-		/** This method should be called by implementations of
-		 *  exportData(), before a commit().
+		/** This method should be called before a commit().
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -499,8 +489,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	commitStart();
 
-		/** This method should be called by implementations of
-		 *  exportData(), after a commit().
+		/** This method should be called after a commit().
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
@@ -510,8 +499,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual	bool	commitEnd();
 
-		/** This method should be called by implementations of
-		 *  exportData() methods, if a commit(), begin(),
+		/** This method should be called if a commit(), begin(),
 		 *  executeQuery(), or other database operation fails.
 		 *
 		 *  This implementation just returns false but a child class may
@@ -522,15 +510,15 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		virtual	bool	error(int64_t errornumber,
 					const char *errormessage);
 
-		/** This method should be called by implementations of
-		 *  exportData(), at the end of the export process.
+		/** This method should be called at the end of the export
+		 *  process.
 		 *
 		 *  This implementation just returns true but a child class may
 		 *  override this method to do something else.
 		 *
-		 *  At this point...
-		 *  * getExportRow() should return true or false,
-		 *    as appropriate for the last row
+		 *  At this point, unless specifically set otherwise in an
+		 *  overridden method...
+		 *  * getExcludeRow() should return false
 		 *  * getExportedRowCount() should return the number of rows
 		 *    that were exported
 		 *  * getCurrentRow() should return one more than the index
@@ -548,111 +536,101 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
 		 *  false. */
 		virtual bool	exportEnd();
 
-		/** Sets whether the current row of the data will be excluded or
-		 *  not.  Rows that are excluded are not exported.
+		/** Sets whether the current row will be excluded or not.  Rows
+		 *  that are excluded are not exported.
 		 *  
-		 *  Should be called by implementations of exportData().  May
-		 *  also be called by rowStart().  Not commonly called by other
-		 *  *Start/End() methods. */
+		 *  May be called by rowStart(), fieldStart(), or fieldEnd().
+		 *  Not commonly called by other *Start/End() methods. */
 		void	setExcludeRow(bool excluderow);
 
-		/** Gets whether the current row of the data will be excluded or
-		 *  not.  Rows that are excluded are not exported.
+		/** Gets whether the current row will be excluded or not.  Rows
+		 *  that are excluded are not exported.
 		 *  
-		 *  May be called by implementations of exportData() or by
-		 *  implementations of the *Start/End() methods. */
+		 *  May be called by implementations of the *Start/End()
+		 *  methods. */
 		bool	getExcludeRow();
 
-		/** Sets the index of the row of the data that is currently
-		 *  being exported.
+		/** Sets the index of the row that is currently being exported.
 		 *  
-		 *  Should be called by implementations of exportData().  Not
-		 *  commonly called by implementations of the *Start/End()
+		 *  Not commonly called by implementations of the *Start/End()
 		 *  methods. */
 		void	setCurrentRow(uint64_t currentrow);
 
-		/** Gets the index of the row of the data that is currently
-		 *  being exported.
+		/** Gets the index of the row that is currently being exported.
 		 *
-		 *  May be called by implementations of exportData() or by
-		 *  implementations of the *Start/End() methods. */
+		 *  May be called by implementations of the *Start/End()
+		 *  methods. */
 		uint64_t	getCurrentRow();
 
-		/** Sets the index of the column of the data that is currently
-		 *  being exported.
+		/** Sets the index of the column that is currently being
+		 *  exported.
 		 *  
-		 *  Should be called by implementations of exportData().  Not
-		 *  commonly called by implementations of the *Start/End()
+		 *  Not commonly called by implementations of the *Start/End()
 		 *  methods. */
 		void	setCurrentColumn(uint32_t currentcol);
 
-		/** Gets the index of the column of the data that is currently
-		 *  being exported.
+		/** Gets the index of the column that is currently being
+		 *  exported.
 		 *
-		 *  May be called by implementations of exportData() or by
-		 *  implementations of the *Start/End() methods. */
+		 *  May be called by implementations of the *Start/End()
+		 *  methods. */
 		uint32_t	getCurrentColumn();
 
-		/** Sets the name of the column of the data that is currently
-		 *  being exported.
+		/** Sets the name of the column that is currently being
+		 *  exported.
 		 *
-		 *  Should be called by implementations of exportData().  May
-		 *  also be called by columnStart().  Not commonly called by
+		 *  May be called by columnStart().  Not commonly called by
 		 *  other *Start/End() methods. */
 		void	setCurrentColumnName(const char *currentcolname);
 
-		/** Gets the name of the column of the data that is currently
-		 *  being exported.
+		/** Gets the name of the column that is currently being
+		 *  exported.
 		 *
-		 *  May be called by implementations of exportData() or by
-		 *  implementations of the *Start/End() methods. */
+		 *  May be called by implementations of the *Start/End()
+		 *  methods. */
 		const char	*getCurrentColumnName();
 
-		/** Sets the value of the field of the data that is currently
-		 *  being exported.
+		/** Sets the value of the field that is currently being
+		 *  exported.
 		 *
-		 *  Should be called by implementations of exportData().  Not
-		 *  commonly called by implementations of the *Start/End()
+		 *  Not commonly called by implementations of the *Start/End()
 		 *  methods. */
 		void	setCurrentField(const char *currentfield);
 
-		/** Gets the value of the field of the data that is currently
-		 *  being exported.
+		/** Gets the value of the field that is currently being
+		 *  exported.
 		 *
-		 *  May be called by implementations of exportData() or by
-		 *  implementations of the *Start/End() methods. */
+		 *  May be called by implementations of the *Start/End()
+		 *  methods. */
 		const char	*getCurrentField();
 
-		/** Sets whether the data type of the column of the data in
-		 *  position "index" is a numeric type or not.  If "numeric" is
-		 *  true then the type of the column is set to numeric.  If
+		/** Sets whether the data type of the column in position
+		 *  "index" is a numeric type or not.  If "numeric" is true
+		 *  then the type of the column is set to numeric.  If
 		 *  "numeric" is false then the type of the column is set to
 		 *  non-numeric.
 		 *
-		 *  Should be called by implementations of exportData().  Not
-		 *  commonly called by implementations of the *Start/End()
+		 *  Not commonly called by implementations of the *Start/End()
 		 *  methods. */
 		void	setIsNumericColumn(uint64_t index, bool numeric);
 
-		/** Get whether the data type of the column of the data in
-		 *  position "index" is a numeric type or not.
+		/** Get whether the data type of the column in position
+		 *  "index" is a numeric type or not.
 		 *
-		 *  May be called by implementations of exportData() or by
-		 *  implementations of the *Start/End() methods. */
+		 *  May be called by implementations of the *Start/End()
+		 *  methods. */
 		bool	getIsNumericColumn(uint64_t index);
 
-		/** Clears the data types of all columns of the data, setting
-		 *  them to to non-numeric.
+		/** Clears the data types of all columns, setting them to to
+		 *  non-numeric.
 		 *
-		 *  Should be called by implementations of exportData().  Not
-		 *  commonly called by implementations of the *Start/End()
+		 *  Not commonly called by implementations of the *Start/End()
 		 *  methods. */
 		void	clearAreNumericColumns();
 
 		/** Sets the number of rows that have been exported.
 		 *
-		 *  Should be called by implementations of exportData().  Not
-		 *  commonly called by implementations of the *Start/End()
+		 *  Not commonly called by implementations of the *Start/End()
 		 *  methods. */
 		void	setExportedRowCount(uint64_t exportedrowcount);
 
