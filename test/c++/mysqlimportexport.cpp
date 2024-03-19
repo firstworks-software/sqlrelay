@@ -1928,19 +1928,27 @@ void importTests() {
 			// for iteration 1, ignore columns
 			option=charstring::duplicate("IGNORE COLUMNS - ");
 			ignorecolumns=true;
-		} else if (oiter==2) {
-			// for iteration 2, ignore empty rows
-			option=charstring::duplicate("IGNORE EMPTY ROWS - ");
+		} else if (oiter>=2 && oiter<=12) {
+			// for iterations 2-12, randomly replace
+			// rows with empty rows, and ignore them
+			opt.append("IGNORE EMPTY ROWS - ");
 			randomnumber	r;
 			r.setSeed(r.getSeed());
+			uint64_t	emptycount=0;
 			for (uint64_t i=0; i<ROWS; i++) {
 				uint32_t	result;
 				r.generate(&result);
 				r.setSeed(result);
-				emptyrows[i]=r.scale(result,0,1);
+				bool	empty=r.scale(result,0,1);
+				emptyrows[i]=empty;
+				if (empty) {
+					emptycount++;
+				}
 			}
-// FIXME: test ignore columns with empty names
+			opt.append(emptycount)->append(" empty rows - ");
+			option=opt.detachString();
 // FIXME: test modifying columns and fields during import
+// FIXME: test ignore columns with empty names
 // FIXME: test insert primary key
 // FIXME: test insert static values
 		} else {
@@ -2024,7 +2032,7 @@ int main(int argc, char **argv) {
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 
-	//exportTests();
+	exportTests();
 	importTests();
 
 
