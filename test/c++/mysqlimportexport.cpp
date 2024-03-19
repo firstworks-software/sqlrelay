@@ -1947,11 +1947,11 @@ void importTests() {
 			}
 			opt.append(emptycount)->append(" empty rows - ");
 			option=opt.detachString();
-// FIXME: test modifying columns and fields during import
-// FIXME: test ignore columns with empty names
-// FIXME: test insert primary key
-// FIXME: test insert static values
 		} else {
+			// FIXME: test modifying fields during import
+			// FIXME: test ignore columns with empty names
+			// FIXME: test insert primary key
+			// FIXME: test insert static values
 			break;
 		}
 
@@ -2034,7 +2034,6 @@ int main(int argc, char **argv) {
 
 	exportTests();
 	importTests();
-
 
 	delete cur;
 	delete con;
