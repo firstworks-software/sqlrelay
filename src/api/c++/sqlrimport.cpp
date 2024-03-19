@@ -1235,13 +1235,20 @@ char *sqlrimport::massageValue(const char *value,
 					bool isnumeric,
 					bool isdatetime) {
 
+	// handle null values
+	// (do this here so implemenations of unescapeValue()
+	// don't have to worry about handling NULLs)
+	if (!value) {
+		return NULL;
+	}
+
 	// unescape the value
 	char	*unescaped=unescapeValue(value);
 	if (unescaped) {
 		value=unescaped;
 	}
 
-	// handle empty values
+	// handle null/empty values (again, after unescaping)
 	if (charstring::isNullOrEmpty(value)) {
 		delete[] unescaped;
 		return NULL;
@@ -1361,14 +1368,16 @@ bool sqlrimport::endProcessingRow() {
 		return false;
 	}
 
-	// clear the query buffer
-	clearQueryBuffer();
-
 	// if we're excluding this row in particular, there were no columns
 	// (somehow), or if we're generally excluding empty rows, and this
 	// was an empty row, then exclude it
 	if (getExcludeRow() || !getColumnNameCount() ||
 		(getIgnoreEmptyRows() && getEmptyRow())) {
+
+		// update flags and counters
+		clearFields();
+		clearQuoteFields();
+		setCurrentRow(getCurrentRow()+1);
 		return true;
 	}
 
@@ -1378,8 +1387,10 @@ bool sqlrimport::endProcessingRow() {
 	}
 
 	// update flags and counters
-	setImportedRowCount(getImportedRowCount()+1);
+	clearFields();
+	clearQuoteFields();
 	setCurrentRow(getCurrentRow()+1);
+	setImportedRowCount(getImportedRowCount()+1);
 
 	// do periodic commit (if necessary)
 	return periodicCommit();
@@ -1388,6 +1399,9 @@ bool sqlrimport::endProcessingRow() {
 bool sqlrimport::insertRow() {
 
 	// build the insert query...
+
+	// clear the query buffer
+	clearQueryBuffer();
 
 	// insert into...
 	appendToQueryBuffer("insert into ");
@@ -1504,10 +1518,6 @@ bool sqlrimport::insertRow() {
 	}
 	appendToQueryBuffer(')');
 
-	// clean up
-	clearFields();
-	clearQuoteFields();
-
 	// send the query
 	if (!getSqlrCursor()->sendQuery(getQueryBufferString())) {
 		if (!error(getSqlrCursor()->errorNumber(),
@@ -1515,7 +1525,6 @@ bool sqlrimport::insertRow() {
 			return false;
 		}
 	}
-
 	return true;
 }
 

@@ -672,6 +672,7 @@ class testsqlrimport : virtual public sqlrimport {
 
 		void	setColumnsToModify(const char * const *columnstomodify);
 		void	setRowsToIgnore(dynamicarray<bool> *rowstoignore);
+		void	setEmptyRows(dynamicarray<bool> *emptyrows);
 
 		bool	importStart();
 		bool	columnsStart();
@@ -703,6 +704,7 @@ class testsqlrimport : virtual public sqlrimport {
 
 		const char * const	*columnstomodify;
 		dynamicarray<bool>	*rowstoignore;
+		dynamicarray<bool>	*emptyrows;
 };
 
 testsqlrimport::testsqlrimport() : sqlrimport() {
@@ -718,6 +720,7 @@ testsqlrimport::testsqlrimport() : sqlrimport() {
 	testimportedrowcount=0;
 	columnstomodify=NULL;
 	rowstoignore=NULL;
+	emptyrows=NULL;
 }
 
 void testsqlrimport::setColumnsToModify(const char * const *columnstomodify) {
@@ -726,6 +729,10 @@ void testsqlrimport::setColumnsToModify(const char * const *columnstomodify) {
 
 void testsqlrimport::setRowsToIgnore(dynamicarray<bool> *rowstoignore) {
 	this->rowstoignore=rowstoignore;
+}
+
+void testsqlrimport::setEmptyRows(dynamicarray<bool> *emptyrows) {
+	this->emptyrows=emptyrows;
 }
 
 bool testsqlrimport::tests(const char *method) {
@@ -982,13 +989,17 @@ bool testsqlrimport::fieldStart() {
 
 	// set field to test against (modifying it if necessary)
 	testcurrentfieldstr.clear();
-	testcurrentfieldstr.printf(
-		field[getCurrentColumn()].pattern,getCurrentRow());
-	if (modifyField(getCurrentColumnName(),columnstomodify,
-				field[getCurrentColumn()].dbtype)) {
-		testcurrentfieldstr.append("MODIFIED");
+	if (emptyrows && (*emptyrows)[getCurrentRow()]) {
+		testcurrentfield=NULL;
+	} else {
+		testcurrentfieldstr.printf(
+			field[getCurrentColumn()].pattern,getCurrentRow());
+		if (modifyField(getCurrentColumnName(),columnstomodify,
+					field[getCurrentColumn()].dbtype)) {
+			testcurrentfieldstr.append("MODIFIED");
+		}
+		testcurrentfield=testcurrentfieldstr.getString();
 	}
-	testcurrentfield=testcurrentfieldstr.getString();
 
 	// call parent method
 	if (!sqlrimport::fieldStart()) {
@@ -1045,7 +1056,7 @@ bool testsqlrimport::rowEnd() {
 	}
 
 	// increment row counts
-	if (!testexcluderow) {
+	if (!testexcluderow && !(emptyrows && (*emptyrows)[getCurrentRow()])) {
 		testimportedrowcount++;
 	}
 	testcurrentrow++;
@@ -1152,7 +1163,8 @@ void generateCsv(const char *option,
 			bool excludecolumns,
 			const char * const *columnstoexclude,
 			const char * const *columnstomodify,
-			dynamicarray<bool> *rowstoexclude) {
+			dynamicarray<bool> *rowstoexclude,
+			dynamicarray<bool> *emptyrows) {
 
 	stdoutput.printf("%sGENERATE CSV:\n",option);
 
@@ -1191,34 +1203,39 @@ void generateCsv(const char *option,
 		if (rowstoexclude && (*rowstoexclude)[row]) {
 			continue;
 		}
+		bool	first=true;
 		for (uint32_t col=0; field[col].name; col++) {
 			if (charstring::isInSet(field[col].name,
 							columnstoexclude)) {
 				continue;
 			}
-			if (record.getSize()) {
+			if (!first) {
 				record.append(',');
 			}
-			if (field[col].quote) {
-				record.append('"');
-			}
-			char	*fld;
-			charstring::printf(&fld,field[col].pattern,row);
-			for (const char *f=fld; *f; f++) {
-				if (*f=='"') {
-					record.append("\"\"");
-				} else {
-					record.append(*f);
+			if (!emptyrows || !(*emptyrows)[row]) {
+				if (field[col].quote) {
+					record.append('"');
+				}
+				char	*fld;
+				charstring::printf(
+					&fld,field[col].pattern,row);
+				for (const char *f=fld; *f; f++) {
+					if (*f=='"') {
+						record.append("\"\"");
+					} else {
+						record.append(*f);
+					}
+				}
+				delete[] fld;
+				if (modifyField(field[col].name,
+					columnstomodify,field[col].dbtype)) {
+					record.append("MODIFIED");
+				}
+				if (field[col].quote) {
+					record.append('"');
 				}
 			}
-			delete[] fld;
-			if (modifyField(field[col].name,
-					columnstomodify,field[col].dbtype)) {
-				record.append("MODIFIED");
-			}
-			if (field[col].quote) {
-				record.append('"');
-			}
+			first=false;
 		}
 		record.append('\n');
 		if (comparison.write(record.getString(),
@@ -1240,7 +1257,8 @@ void generateXml(const char *option,
 			uint32_t colcount, bool excludecolumns,
 			const char * const *columnstoexclude,
 			const char * const *columnstomodify,
-			dynamicarray<bool> *rowstoexclude) {
+			dynamicarray<bool> *rowstoexclude,
+			dynamicarray<bool> *emptyrows) {
 
 	stdoutput.printf("%sGENERATE XML:\n",option);
 
@@ -1292,20 +1310,23 @@ void generateXml(const char *option,
 				continue;
 			}
 			record.append("	<field>");
-			char	*fld;
-			charstring::printf(&fld,field[col].pattern,row);
-			for (const char *f=fld; *f; f++) {
-				if (*f=='"' || *f<' ' || *f>'~' ||
+			if (!emptyrows || !(*emptyrows)[row]) {
+				char	*fld;
+				charstring::printf(&fld,field[col].pattern,row);
+				for (const char *f=fld; *f; f++) {
+					if (*f=='"' || *f<' ' || *f>'~' ||
 						*f=='&' || *f=='<' || *f=='>') {
-					record.printf("&%d;",(uint8_t)*f);
-				} else {
-					record.write(*f);
+						record.printf(
+							"&%d;",(uint8_t)*f);
+					} else {
+						record.write(*f);
+					}
 				}
-			}
-			delete[] fld;
-			if (modifyField(field[col].name,
+				delete[] fld;
+				if (modifyField(field[col].name,
 					columnstomodify,field[col].dbtype)) {
-				record.append("MODIFIED");
+					record.append("MODIFIED");
+				}
 			}
 			record.append("</field>\n");
 		}
@@ -1361,7 +1382,8 @@ void generateTable(const char *option,
 			const char *tablename,
 			const char * const *columnstoexclude,
 			const char * const *columnstomodify,
-			dynamicarray<bool> *rowstoexclude) {
+			dynamicarray<bool> *rowstoexclude,
+			dynamicarray<bool> *emptyrows) {
 
 	stdoutput.printf("%sGENERATE TABLE:\n",option);
 
@@ -1378,6 +1400,9 @@ void generateTable(const char *option,
 	stringbuffer	query;
 	for (uint64_t row=0; row<ROWS; row++) {
 		if (rowstoexclude && (*rowstoexclude)[row]) {
+			continue;
+		}
+		if (emptyrows && (*emptyrows)[row]) {
 			continue;
 		}
 		query.clear();
@@ -1790,15 +1815,18 @@ void exportTests() {
 			if (fiter==0) {
 				generateCsv(option,comp,
 					excludecolumns,columnstoexclude,
-					columnstomodify,&rowstoexclude);
+					columnstomodify,&rowstoexclude,
+					NULL);
 			} else if (fiter==1) {
 				generateXml(option,comp,colcount,
 					excludecolumns,columnstoexclude,
-					columnstomodify,&rowstoexclude);
+					columnstomodify,&rowstoexclude,
+					NULL);
 			} else if (fiter==2) {
 				generateTable(option,comp,
 					columnstoexclude,
-					columnstomodify,&rowstoexclude);
+					columnstomodify,&rowstoexclude,
+					NULL);
 			}
 
 			// diff files/tables
@@ -1889,6 +1917,10 @@ void importTests() {
 		// set options for ignoring/modifying rows/columns/fields
 		const char		*option=NULL;
 		bool			ignorecolumns=false;
+		dynamicarray<bool>	emptyrows;
+		for (uint64_t i=0; i<ROWS; i++) {
+			emptyrows[i]=false;
+		}
 		stringbuffer		opt;
 		if (oiter==0) {
 			option=charstring::duplicate("");
@@ -1896,11 +1928,21 @@ void importTests() {
 			// for iteration 1, ignore columns
 			option=charstring::duplicate("IGNORE COLUMNS - ");
 			ignorecolumns=true;
+		} else if (oiter==2) {
+			// for iteration 2, ignore empty rows
+			option=charstring::duplicate("IGNORE EMPTY ROWS - ");
+			randomnumber	r;
+			r.setSeed(r.getSeed());
+			for (uint64_t i=0; i<ROWS; i++) {
+				uint32_t	result;
+				r.generate(&result);
+				r.setSeed(result);
+				emptyrows[i]=r.scale(result,0,1);
+			}
+// FIXME: test ignore columns with empty names
 // FIXME: test modifying columns and fields during import
 // FIXME: test insert primary key
 // FIXME: test insert static values
-// FIXME: test ignore columns with empty names
-// FIXME: test ignore empty records
 		} else {
 			break;
 		}
@@ -1918,7 +1960,8 @@ void importTests() {
 				format="CSV";
 				imp="testtable.csv";
 				generateCsv(option,imp,
-						false,NULL,NULL,NULL);
+						false,NULL,NULL,NULL,
+						&emptyrows);
 				tsic.setFileName(imp);
 				tsic.setTestFileName(imp);
 			} else if (fiter==1) {
@@ -1926,7 +1969,8 @@ void importTests() {
 				format="XML";
 				imp="testtable.xml";
 				generateXml(option,imp,colcount,
-						false,NULL,NULL,NULL);
+						false,NULL,NULL,NULL,
+						&emptyrows);
 				tsix.setFileName(imp);
 				tsix.setTestFileName(imp);
 			}
@@ -1935,12 +1979,15 @@ void importTests() {
 			stdoutput.printf("%sIMPORT %s: \n",option,format);
 			im->setIgnoreColumns(ignorecolumns);
 			checkSuccess(im->getIgnoreColumns(),ignorecolumns);
+			im->setEmptyRows(&emptyrows);
+			im->setIgnoreEmptyRows(true);
 			checkSuccess(im->importData(),1);
 			stdoutput.printf("\n\n");
 
 			// generate comparison table
 			generateTable(option,"testtable_comparison",
-							NULL,NULL,NULL);
+							NULL,NULL,NULL,
+							&emptyrows);
 
 			// diff tables
 			stdoutput.printf("%sDIFF TABLES: \n",option);
@@ -1977,7 +2024,7 @@ int main(int argc, char **argv) {
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 
-	exportTests();
+	//exportTests();
 	importTests();
 
 
