@@ -1382,7 +1382,7 @@ bool informixcursor::executeQuery(const char *query, uint32_t size) {
 	// run through the columns
 	for (SQLSMALLINT i=0; i<ncols; i++) {
 
-		if (conn->cont->getSendColumnInfo()==SEND_COLUMN_INFO) {
+		if (conn->cont->getSendColumnInfo()) {
 
 			// column name
 			erg=SQLColAttribute(stmt,i+1,SQL_COLUMN_LABEL,

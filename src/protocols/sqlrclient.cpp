@@ -2608,7 +2608,7 @@ bool sqlrprotocol_sqlrclient::getSendColumnInfo() {
 	}
 	cont->raiseDebugMessageEvent("done getting send column info...");
 
-	cont->setSendColumnInfo(sendcolumninfo);
+	cont->setSendColumnInfo((sendcolumninfo==SEND_COLUMN_INFO));
 
 	return true;
 }
@@ -2673,9 +2673,11 @@ void sqlrprotocol_sqlrclient::returnResultSetHeader(sqlrservercursor *cursor) {
 	cont->raiseDebugMessageEvent("done returning row counts");
 
 	// tell the client whether or not the column information will be sent
-	uint16_t	sendcolumninfo=cont->getSendColumnInfo();
-	clientsock->write(sendcolumninfo);
-	cont->raiseDebugMessageEvent((sendcolumninfo==SEND_COLUMN_INFO)?
+	bool	sendcolumninfo=cont->getSendColumnInfo();
+	clientsock->write((sendcolumninfo)?
+				(uint16_t)SEND_COLUMN_INFO:
+				(uint16_t)DONT_SEND_COLUMN_INFO);
+	cont->raiseDebugMessageEvent((sendcolumninfo)?
 					"column info will be sent":
 					"column info will not be sent");
 
@@ -2684,7 +2686,7 @@ void sqlrprotocol_sqlrclient::returnResultSetHeader(sqlrservercursor *cursor) {
 	clientsock->write(cont->colCount(cursor));
 	cont->raiseDebugMessageEvent("done returning column counts");
 
-	if (sendcolumninfo==SEND_COLUMN_INFO) {
+	if (sendcolumninfo) {
 
 		// return the column type format
 		cont->raiseDebugMessageEvent("sending column type format...");
@@ -4039,7 +4041,7 @@ bool sqlrprotocol_sqlrclient::getListCommand(sqlrservercursor *cursor,
 	cont->setInputBindCount(cursor,0);
 	cont->setOutputBindCount(cursor,0);
 	cont->setInputOutputBindCount(cursor,0);
-	cont->setSendColumnInfo(SEND_COLUMN_INFO);
+	cont->setSendColumnInfo(true);
 
 	// get the list and return it
 	bool	retval=true;

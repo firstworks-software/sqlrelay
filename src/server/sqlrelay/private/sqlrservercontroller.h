@@ -86,6 +86,8 @@
 		uint32_t	mapColumn(uint32_t col);
 		uint32_t	mapColumnCount(uint32_t colcount);
 
+		bool	handleResultSetHeader(sqlrservercursor *cursor);
+
 		void	commitOrRollback(sqlrservercursor *cursor);
 
 		void	dropTempTables(sqlrservercursor *cursor);

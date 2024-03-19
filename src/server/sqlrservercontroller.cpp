@@ -151,7 +151,7 @@ class sqlrservercontrollerprivate {
 
 	const char	*_isolationlevel;
 
-	uint16_t	_sendcolumninfo;
+	bool		_sendcolumninfo;
 
 	uint32_t	_accepttimeout;
 
@@ -379,7 +379,7 @@ sqlrservercontroller::sqlrservercontroller() {
 
 	pvt->_isolationlevel=NULL;
 
-	pvt->_sendcolumninfo=SEND_COLUMN_INFO;
+	pvt->_sendcolumninfo=true;
 
 	pvt->_maxquerysize=0;
 	pvt->_maxbindcount=0;
@@ -2900,7 +2900,7 @@ bool sqlrservercontroller::interceptQuery(sqlrservercursor *cursor) {
 			cursor->setInputBindCount(0);
 			cursor->setOutputBindCount(0);
 			cursor->setInputOutputBindCount(0);
-			pvt->_sendcolumninfo=DONT_SEND_COLUMN_INFO;
+			pvt->_sendcolumninfo=false;
 			if (pvt->_faketransactionblocks &&
 					pvt->_infaketransactionblock) {
 				setError(cursor,
@@ -2919,7 +2919,7 @@ bool sqlrservercontroller::interceptQuery(sqlrservercursor *cursor) {
 			cursor->setInputBindCount(0);
 			cursor->setOutputBindCount(0);
 			cursor->setInputOutputBindCount(0);
-			pvt->_sendcolumninfo=DONT_SEND_COLUMN_INFO;
+			pvt->_sendcolumninfo=false;
 			if (pvt->_faketransactionblocks &&
 					!pvt->_infaketransactionblock) {
 				setError(cursor,
@@ -2938,7 +2938,7 @@ bool sqlrservercontroller::interceptQuery(sqlrservercursor *cursor) {
 			cursor->setInputBindCount(0);
 			cursor->setOutputBindCount(0);
 			cursor->setInputOutputBindCount(0);
-			pvt->_sendcolumninfo=DONT_SEND_COLUMN_INFO;
+			pvt->_sendcolumninfo=false;
 			if (pvt->_faketransactionblocks &&
 					!pvt->_infaketransactionblock) {
 				setError(cursor,
@@ -2957,7 +2957,7 @@ bool sqlrservercontroller::interceptQuery(sqlrservercursor *cursor) {
 			cursor->setInputBindCount(0);
 			cursor->setOutputBindCount(0);
 			cursor->setInputOutputBindCount(0);
-			pvt->_sendcolumninfo=DONT_SEND_COLUMN_INFO;
+			pvt->_sendcolumninfo=false;
 			// FIXME: fake tx block issues here???
 			// FIXME: should we also handle
 			// SQLRQUERYTYPE_SET_INCLUDING_AUTOCOMMIT_ON
@@ -2969,7 +2969,7 @@ bool sqlrservercontroller::interceptQuery(sqlrservercursor *cursor) {
 			cursor->setInputBindCount(0);
 			cursor->setOutputBindCount(0);
 			cursor->setInputOutputBindCount(0);
-			pvt->_sendcolumninfo=DONT_SEND_COLUMN_INFO;
+			pvt->_sendcolumninfo=false;
 			// FIXME: fake tx block issues here???
 			// FIXME: should we also handle
 			// SQLRQUERYTYPE_SET_INCLUDING_AUTOCOMMIT_OFF
@@ -4673,11 +4673,6 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 						bool enabledirectives,
 						bool enabletranslations,
 						bool enablefilters) {
-if (!charstring::compareIgnoringCase(query,"insert into efile",17)) {
-	stdoutput.printf("%d\n",process::getProcessId());
-	stdoutput.write(query,querysize);
-	stdoutput.write("\n");
-}
 
 	if (pvt->_debugsql) {
 		stdoutput.printf("\n===================="
@@ -4762,10 +4757,6 @@ if (!charstring::compareIgnoringCase(query,"insert into efile",17)) {
 
 	// bail if we are just generally configured to fake input binds
 	if (cursor->getFakeInputBindsForThisQuery()) {
-if (!charstring::compareIgnoringCase(query,"insert into efile",17)) {
-	stdoutput.printf("fake input binds for this query 1\n");
-	stdoutput.printf("%.*s\n",(querysize<30)?querysize:30,query);
-}
 		return true;
 	}
 
@@ -4789,10 +4780,6 @@ if (!charstring::compareIgnoringCase(query,"insert into efile",17)) {
 
 			cursor->setQueryStatus(
 				SQLRQUERYSTATUS_FILTER_VIOLATION);
-if (!charstring::compareIgnoringCase(query,"insert into efile",17)) {
-	stdoutput.printf("before-filter failed\n");
-	stdoutput.printf("%.*s\n",(querysize<30)?querysize:30,query);
-}
 			return false;
 		}
 	}
@@ -4821,10 +4808,6 @@ if (!charstring::compareIgnoringCase(query,"insert into efile",17)) {
 			raiseQueryExecutedEvent(cursor);
 
 			// error is already set by translateQuery()
-if (!charstring::compareIgnoringCase(query,"insert into efile",17)) {
-	stdoutput.printf("translate failed\n");
-	stdoutput.printf("%.*s\n",(querysize<30)?querysize:30,query);
-}
 			return false;
 		}
 	}
@@ -4852,10 +4835,6 @@ if (!charstring::compareIgnoringCase(query,"insert into efile",17)) {
 
 			cursor->setQueryStatus(
 				SQLRQUERYSTATUS_FILTER_VIOLATION);
-if (!charstring::compareIgnoringCase(query,"insert into efile",17)) {
-	stdoutput.printf("after-filter failed\n");
-	stdoutput.printf("%.*s\n",(querysize<30)?querysize:30,query);
-}
 			return false;
 		}
 	}
@@ -4883,10 +4862,6 @@ if (!charstring::compareIgnoringCase(query,"insert into efile",17)) {
 	// actually intercept it yet, but bail if it needs to be.
 	cursor->setQueryNeedsIntercept(checkInterceptQuery(cursor));
 	if (cursor->getQueryNeedsIntercept()) {
-if (!charstring::compareIgnoringCase(query,"insert into efile",17)) {
-	stdoutput.printf("needs intercept\n");
-	stdoutput.printf("%.*s\n",(querysize<30)?querysize:30,query);
-}
 		return true;
 	}
 
@@ -4898,10 +4873,6 @@ if (!charstring::compareIgnoringCase(query,"insert into efile",17)) {
 	// In any of these cases, the cursor's fakeinputbindsforthisquery
 	// flag will have been set true.
 	if (cursor->getFakeInputBindsForThisQuery()) {
-if (!charstring::compareIgnoringCase(query,"insert into efile",17)) {
-	stdoutput.printf("fake input binds for this query 2\n");
-	stdoutput.printf("%.*s\n",(querysize<30)?querysize:30,query);
-}
 		return true;
 	}
 
@@ -4949,10 +4920,6 @@ if (!charstring::compareIgnoringCase(query,"insert into efile",17)) {
 		// log query-executed (attempt)
 		raiseQueryExecutedEvent(cursor);
 
-if (!charstring::compareIgnoringCase(query,"insert into efile",17)) {
-	stdoutput.printf("prepare failed\n");
-	stdoutput.printf("%.*s\n",(querysize<30)?querysize:30,query);
-}
 		return false;
 	}
 
@@ -5459,12 +5426,12 @@ bool sqlrservercontroller::columnInfoIsValidAfterPrepare(
 		cursor->columnInfoIsValidAfterPrepare();
 }
 
-uint16_t sqlrservercontroller::getSendColumnInfo() {
-	return pvt->_sendcolumninfo;
+void sqlrservercontroller::setSendColumnInfo(bool sendcolumninfo) {
+	pvt->_sendcolumninfo=sendcolumninfo;
 }
 
-void sqlrservercontroller::setSendColumnInfo(uint16_t sendcolumninfo) {
-	pvt->_sendcolumninfo=sendcolumninfo;
+bool sqlrservercontroller::getSendColumnInfo() {
+	return pvt->_sendcolumninfo;
 }
 
 bool sqlrservercontroller::skipRows(sqlrservercursor *cursor,
@@ -10135,7 +10102,7 @@ uint32_t sqlrservercontroller::colCount(sqlrservercursor *cursor) {
 uint16_t sqlrservercontroller::columnTypeFormat(sqlrservercursor *cursor) {
 	// see comment in colCount()
 	if (!cursor->getColumnInfoIsValid()) {
-		return 0;
+		return COLUMN_TYPE_IDS;
 	}
 	return cursor->columnTypeFormat();
 }
@@ -10160,7 +10127,8 @@ uint16_t sqlrservercontroller::getColumnNameSize(sqlrservercursor *cursor,
 	}
 	if (pvt->_columnnamemap) {
 		// FIXME: use a static map for these
-		return charstring::getLength(pvt->_columnnamemap->getValue(col));
+		return charstring::getLength(
+				pvt->_columnnamemap->getValue(col));
 	}
 	return cursor->getColumnNameSizeFromBuffer(mapColumn(col));
 }
@@ -10169,7 +10137,7 @@ uint16_t sqlrservercontroller::getColumnType(sqlrservercursor *cursor,
 							uint32_t col) {
 	// see comment in colCount()
 	if (!cursor->getColumnInfoIsValid()) {
-		return 0;
+		return UNKNOWN_DATATYPE;
 	}
 	return cursor->getColumnTypeFromBuffer(mapColumn(col));
 }

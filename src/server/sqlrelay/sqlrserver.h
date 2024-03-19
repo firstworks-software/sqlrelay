@@ -1882,11 +1882,10 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 						const char *table,
 						const char *wild);
 
-		/** Makes the API call to fetch the list of primaray key column
-		 *  names in "table", where "table" is in the current database
-		 *  and schema.  Only returns primary key column names that
-		 *  match wildcard "wild" if "wild" is non-NULL.  Returns true
-		 *  on success and false on failure. */
+		/** Makes the API call to fetch the list of columns that
+		 *  compose the primary key of "table".  Only returns primary
+		 *  key column names that match wildcard "wild" if "wild" is
+		 *  non-NULL.  Returns true on success and false on failure. */
 		bool	getPrimaryKeyList(sqlrservercursor *cursor,
 						const char *table,
 						const char *wild);
@@ -1910,100 +1909,348 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 						sqlrservercursor *cursor,
 						const char *proc,
 						const char *wild);
+
+		/** Makes the API call to fetch the info about datatype "type",
+		 *  where "type" is in the current database and schema.
+		 *  Only returns info for types that match wildcard "wild" if
+		 *  "wild" is non-NULL.  Returns true on success and false on
+		 *  failure. */
 		bool	getTypeInfoList(sqlrservercursor *cursor,
 						const char *type,
 						const char *wild);
+
+		/** Makes the API call to fetch the list of stored procedures
+		 *  in the current database and schema, and information about
+		 *  them, such as the number of input and output parameters,
+		 *  the numer of result sets that the procdure may retrun, a
+		 *  description of the procedure, and the procedure type
+		 *  (procedure or function).  Only returns info for procedures
+		 *  that match wildcard "wild" if "wild" is non-NULL.  Returns
+		 *  true on success and false on failure. */
 		bool	getProcedureList(sqlrservercursor *cursor,
 						const char *wild);
+
+		/** Returns a query that can be used to fetch the list of
+		 *  database names.  If "wild" is true the the query also
+		 *  includes a where clause that inlcudes a %s which can be
+		 *  used to substitute in a wildcard value which can be used
+		 *  to filter the results. */
 		const char	*getDatabaseListQuery(bool wild);
+
+		/** Returns a query that can be used to fetch the list of
+		 *  schema names.  If "wild" is true the the query also
+		 *  includes a where clause that inlcudes a %s which can be
+		 *  used to substitute in a wildcard value which can be used
+		 *  to filter the results. */
 		const char	*getSchemaListQuery(bool wild);
+
+		/** Returns a query that can be used to fetch the list of
+		 *  table names.  If "wild" is true the the query also
+		 *  includes a where clause that inlcudes a %s which can be
+		 *  used to substitute in a wildcard value which can be used
+		 *  to filter the results. */
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes);
+
+		/** Returns a query that can be used to fetch the list of
+		 *  table types.  If "wild" is true the the query also includes
+		 *  a where clause that inlcudes a %s which can be used to
+		 *  substitute in a wildcard value which can be used to filter
+		 *  the results. */
 		const char	*getTableTypeListQuery(bool wild);
+
+		/** Returns a query that can be used to fetch the list of
+		 *  global temporary table names. */
 		const char	*getGlobalTempTableListQuery();
+
+		/** Returns a query that can be used to fetch the list of
+		 *  column names from "table".  If "wild" is true the the query
+		 *  also includes a where clause that inlcudes a %s which can
+		 *  be used to substitute in a wildcard value which can be used
+		 *  to filter the results. */
 		const char	*getColumnListQuery(const char *table,
 							bool wild);
+
+		/** Returns a query that can be used to fetch the list of
+		 *  columns that compose the primary key of "table".  If "wild"
+		 *  is true the the query also includes a where clause that
+		 *  inlcudes a %s which can be used to substitute in a wildcard
+		 *  value which can be used to filter the results. */
 		const char	*getPrimaryKeyListQuery(const char *table,
 							bool wild);
+
+		/** Returns a query that can be used to fetch the indices and
+		 *  indexed columns  of "table", where "table" is in the
+		 *  current database and schema.  If "wild" is true the the
+		 *  query also includes a where clause that inlcudes a %s which
+		 *  can be used to substitute in a wildcard value which can be
+		 *  used to filter the results. */
 		const char	*getKeyAndIndexListQuery(const char *table,
 							bool wild);
+
+		/** Returns a query that can be used to fetch the parameter
+ 		 *  names of "proc", where "proc" is in the current database
+ 		 *  and schema, and information about them, such as whether
+ 		 *  they are input, output, or input-output variables.  If
+ 		 *  "wild" is true the the query also includes a where clause
+ 		 *  that inlcudes a %s which can be used to substitute in a
+ 		 *  wildcard value which can be used to filter the results. */
 		const char	*getProcedureParameterListQuery(
 							const char *proc,
 							bool wild);
+
+		/** Returns a query that can be used to fetch info about
+		 *  datatype "type", where "type" is in the current database
+		 *  and schema.  If "wild" is true the the query also includes
+		 *  a where clause that inlcudes a %s which can be used to
+		 *  substitute in a wildcard value which can be used to filter
+		 *  the results. */
 		const char	*getTypeInfoListQuery(const char *type,
 							bool wild);
+
+		/** Returns a query that can be used to fetch the list of
+		 *  stored procedures in the current database and schema, and
+		 *  information about them, such as the number of input and
+		 *  output parameters, the numer of result sets that the
+		 *  procdure may retrun, a description of the procedure, and
+		 *  the procedure type (procedure or function).  If "wild" is
+		 *  true the the query also includes a where clause that
+		 *  inlcudes a %s which can be used to substitute in a wildcard
+		 *  value which can be used to filter the results. */
 		const char	*getProcedureListQuery(bool wild);
-		void		splitObjectName(const char *fqobject,
-						const char *currentcatalog,
-						const char **catalog,
-						const char **schema,
-						const char **object);
 
 
 
 		// column info...
-		bool	columnInfoIsValidAfterPrepare(
-						sqlrservercursor *cursor);
-		uint16_t	getSendColumnInfo();
-		void	setSendColumnInfo(uint16_t sendcolumninfo);
-		uint32_t	colCount(sqlrservercursor *cursor);
-		uint16_t	columnTypeFormat(sqlrservercursor *cursor);
+
+		/** Returns true if, for "cursor", column info such as name,
+		 *  size, type, precision, scale, etc. is valid after a query
+		 *  has been prepared and false if column info is only valid
+		 *  after a query has been executed. */
+		bool	columnInfoIsValidAfterPrepare(sqlrservercursor *cursor);
+
+		/** Sets whether to send column info to the client, or not.
+		 *
+		 *  If "sendcolumninfo" is true then column info will be sent to
+		 *  the client as part of the result set.  If "sendcolumninfo"
+		 *  is false then no column info will be sent to the client. */
+		void	setSendColumnInfo(bool sendcolumninfo);
+
+		/** Returns true if column info will be sent to the client and
+		 *  false if column info will not be sent to the client. */
+		bool	getSendColumnInfo();
+
+		/** Sets the format to map columns to when fetching the list
+		 *  of database names to "listformat". */
 		void	setDatabaseListColumnMap(
 					sqlrserverlistformat_t listformat);
+
+		/** Sets the format to map columns to when fetching the list
+		 *  of schema names to "listformat". */
 		void	setSchemaListColumnMap(
 					sqlrserverlistformat_t listformat);
+
+		/** Sets the format to map columns to when fetching the list
+		 *  of table names to "listformat". */
 		void	setTableListColumnMap(
 					sqlrserverlistformat_t listformat);
+
+		/** Sets the format to map columns to when fetching the list
+		 *  of table type names to "listformat". */
 		void	setTableTypeListColumnMap(
 					sqlrserverlistformat_t listformat);
+
+		/** Sets the format to map columns to when fetching the list
+		 *  of column names to "listformat". */
 		void	setColumnListColumnMap(
 					sqlrserverlistformat_t listformat);
+
+		/** Sets the format to map columns to when fetching the list
+		 *  of primary key names to "listformat". */
 		void	setPrimaryKeyListColumnMap(
 					sqlrserverlistformat_t listformat);
+
+		/** Sets the format to map columns to when fetching the list
+		 *  of key and index names to "listformat". */
 		void	setKeyAndIndexListColumnMap(
 					sqlrserverlistformat_t listformat);
+
+		/** Sets the format to map columns to when fetching the list
+		 *  of procedure parameter names to "listformat". */
 		void	setProcedureParameterListColumnMap(
 					sqlrserverlistformat_t listformat);
+
+		/** Sets the format to map columns to when fetching the list
+		 *  of type info names to "listformat". */
 		void	setTypeInfoListColumnMap(
 					sqlrserverlistformat_t listformat);
+
+		/** Sets the format to map columns to when fetching the list
+		 *  of procedure names to "listformat". */
 		void	setProcedureListColumnMap(
 					sqlrserverlistformat_t listformat);
+
+		/** Returns the number of columns in the current result set of
+		 *  "cursor".  Returns 0 if column info is not yet valid or if
+		 *  the query has no result set (eg. if it was a DML or DDL
+		 *  query). */
+		uint32_t	colCount(sqlrservercursor *cursor);
+
+		/** Some database backends have predictable column types that
+		 *  can be mapped to numeric ids.  If the client is aware of
+		 *  these ids and if the protocol supports sending column types
+		 *  as ids (eg. the sqlrclient protocol), then these numeric
+		 *  ids can be sent to the client instead of sending column
+		 *  type name strings.
+		 *
+		 *  Other database backends (eg. postgresql, router) don't have
+		 *  predictable column types and so column type names must be
+		 *  sent as strings.
+		 *
+		 *  This method returns COLUMN_TYPE_IDS in the first case and
+		 *  COLUMN_TYPE_NAMES in the second case. */
+		uint16_t	columnTypeFormat(sqlrservercursor *cursor);
+
+		/** Returns the name of the column at position "col" in the
+		 *  current result set of "cursor".  Returns NULL if column info
+		 *  is not yet valid or if the query has no result set (eg. if
+		 *  it was a DML or DDL query). */
 		const char	*getColumnName(sqlrservercursor *cursor,
 							uint32_t col);
+
+		/** Returns the size (number of bytes) of the column name at
+ 		 *  position "col" in the current result set of "cursor".
+ 		 *  Returns 0 if column info is not yet valid or if the query
+ 		 *  has no result set (eg. if it was a DML or DDL query). */
 		uint16_t	getColumnNameSize(sqlrservercursor *cursor,
 							uint32_t col);
+
+		/** Returns the numeric type id of the column at position "col"
+		 *  in the current result set of "cursor".  Returns
+		 *  UNKNOWN_DATATYPE if column info is not yet valid, if the
+		 *  query has no result set (eg. if it was a DML or DDL query,
+		 *  or if columnTypeFormat() returns COLUMN_TYPE_NAMES. */
 		uint16_t	getColumnType(sqlrservercursor *cursor,
 							uint32_t col);
+
+		/** Returns the type name string of the column at position "col"
+		 *  in the current result set of "cursor".  Returns NULL if
+		 *  column info is not yet valid, if the query has no result
+		 *  set (eg. if it was a DML or DDL query, or if
+		 *  columnTypeFormat() returns COLUMN_TYPE_IDS. */
 		const char	*getColumnTypeName(sqlrservercursor *cursor,
 							uint32_t col);
+
+		/** Returns the size (number of bytes) of the type name string
+		 *  of the column at position "col" in the current result set
+		 *  of "cursor".  Returns 0 if column info is not yet valid, if
+		 *  the query has no result set (eg. if it was a DML or DDL
+		 *  query, or if columnTypeFormat() returns COLUMN_TYPE_IDS. */
 		uint16_t	getColumnTypeNameSize(
 						sqlrservercursor *cursor,
 							uint32_t col);
+
+		/** Returns the size of the column at position "col" in the
+		 *  current result set of "cursor".  Returns 0 if column info
+		 *  is not yet valid or if the query has no result set (eg. if
+		 *  it was a DML or DDL query). */
 		uint32_t	getColumnSize(sqlrservercursor *cursor,
 							uint32_t col);
+
+		/** Returns the precision of the column at position "col" in
+		 *  the current result set of "cursor".  Returns 0 if column
+		 *  info is not yet valid or if the query has no result set
+		 *  (eg. if it was a DML or DDL query). */
 		uint32_t	getColumnPrecision(sqlrservercursor *cursor,
 							uint32_t col);
+
+		/** Returns the scale of the column at position "col" in
+		 *  the current result set of "cursor".  Returns 0 if column
+		 *  info is not yet valid or if the query has no result set
+		 *  (eg. if it was a DML or DDL query). */
 		uint32_t	getColumnScale(sqlrservercursor *cursor,
 							uint32_t col);
+
+		/** Returns non-zero if the column at position "col" in the
+		 *  current result set of "cursor" is nullable and 0if it is
+		 *  not nullable.  Returns 0 if column info is not yet valid or
+		 *  if the query has no result set (eg. if it was a DML or DDL
+		 *  query). */
 		uint16_t	getColumnIsNullable(sqlrservercursor *cursor,
 							uint32_t col);
+
+		/** Returns non-zero if the column at position "col" in the
+		 *  current result set of "cursor" is the primary key and 0 if
+		 *  it is not the primary key.  Returns 0 if column info is not
+		 *  yet valid or if the query has no result set (eg. if it was
+		 *  a DML or DDL query). */
 		uint16_t	getColumnIsPrimaryKey(sqlrservercursor *cursor,
 							uint32_t col);
+
+		/** Returns non-zero if the column at position "col" in the
+		 *  current result set of "cursor" is a unique column and 0 if
+		 *  it is not a unique column.  Returns 0 if column info is not
+		 *  yet valid or if the query has no result set (eg. if it was
+		 *  a DML or DDL query). */
 		uint16_t	getColumnIsUnique(sqlrservercursor *cursor,
 							uint32_t col);
+
+		/** Returns non-zero if the column at position "col" in the
+		 *  current result set of "cursor" is part of a key and 0 if it
+		 *  is not part of a key.  Returns 0 if column info is not yet
+		 *  valid or if the query has no result set (eg. if it was a
+		 *  DML or DDL query). */
 		uint16_t	getColumnIsPartOfKey(sqlrservercursor *cursor,
 							uint32_t col);
+
+		/** Returns non-zero if the column at position "col" in the
+		 *  current result set of "cursor" is unsigned and 0 if it is
+		 *  signed.  Returns 0 if column info is not yet valid or if
+		 *  the query has no result set (eg. if it was a DML or DDL
+		 *  query). */
 		uint16_t	getColumnIsUnsigned(sqlrservercursor *cursor,
 							uint32_t col);
+
+		/** Returns non-zero if the column at position "col" in the
+		 *  current result set of "cursor" is zero-filled and 0 if it
+		 *  is not zero-filled.  Returns 0 if column info is not yet
+		 *  valid or if the query has no result set (eg. if it was a
+		 *  DML or DDL query). */
 		uint16_t	getColumnIsZeroFilled(sqlrservercursor *cursor,
 							uint32_t col);
+
+		/** Returns non-zero if the column at position "col" in the
+		 *  current result set of "cursor" is binary and 0 if it is not
+		 *  binary.  Returns 0 if column info is not yet valid or if
+		 *  the query has no result set (eg. if it was a DML or DDL
+		 *  query). */
 		uint16_t	getColumnIsBinary(sqlrservercursor *cursor,
 							uint32_t col);
+
+		/** Returns non-zero if the column at position "col" in the
+		 *  current result set of "cursor" is an auto-increment column
+		 *  and 0 if it is not an auto-increment column.  Returns 0 if
+		 *  column info is not yet valid or if the query has no result
+		 *  set (eg. if it was a DML or DDL query). */
 		uint16_t	getColumnIsAutoIncrement(
 						sqlrservercursor *cursor,
 							uint32_t col);
+
+		/** Returns the name of the table that the column at position
+		 *  "col" in the current result set of "cursor" is from.
+		 *  Returns NULL if column info is not yet valid, if the
+		 *  query has no result set (eg. if it was a DML or DDL
+		 *  query), or if the database backend doesn't know what
+		 *  table the column came from. */
 		const char	*getColumnTable(sqlrservercursor *cursor,
 							uint32_t col);
+
+		/** Returns the size (number of bytes) of the name of the table
+		 *  that the column at position "col" in the current result set
+		 *  of "cursor" is from.  Returns NULL if column info is not
+		 *  yet valid, if the query has no result set (eg. if it was a
+		 *  DML or DDL query), or if the database backend doesn't know
+		 *  what table the column came from. */
 		uint16_t	getColumnTableSize(sqlrservercursor *cursor,
 							uint32_t col);
 
@@ -2016,15 +2263,12 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		 *  appended to "output". */
 		bool	getColumnNames(const char *query, stringbuffer *output);
 
-
 		/** Appends a comma-separated list of the names of the columns
 		 *  in the current result of "cursor" to "output".  Nothing is
 		 *  appended to "output" if no query has been executed yet, or
 		 *  if the query has no result set. */
 		void	getColumnNames(sqlrservercursor *cursor,
 							stringbuffer *output);
-
-		bool		handleResultSetHeader(sqlrservercursor *cursor);
 
 
 
@@ -2487,7 +2731,12 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 
 		virtual bool		cacheDbHostInfo();
 
+		/** Returns true if the currently loaded database connection
+		 *  module fetches lists (database lists, table lists, column
+		 *  lists, etc.) via API call and false if it fetches lists via
+		 *  query. */
 		virtual bool		getListsByApiCalls();
+
 		virtual	sqlrserverlistformat_t
 					getDatabaseListFormat();
 		virtual	sqlrserverlistformat_t
@@ -2508,68 +2757,213 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 					getTypeInfoListFormat();
 		virtual	sqlrserverlistformat_t
 					getProcedureListFormat();
+
+		/** Makes the API call to fetch the list of databases that are
+		 *  visible to the user that SQL Relay is logged in as.  Only
+		 *  returns database names that match wildcard "wild" if "wild"
+		 *  is non-NULL.  Returns true on success and false on
+		 *  failure. */
 		virtual bool		getDatabaseList(
 						sqlrservercursor *cursor,
 						const char *wild);
+
+		/** Makes the API call to fetch the list of schemas, in the
+		 *  current database, that are visible to the user that SQL
+		 *  Relay is logged in as.  Only returns schema names that
+		 *  match wildcard "wild" if "wild" is non-NULL.  Returns true
+		 *  on success and false on failure. */
 		virtual bool		getSchemaList(
 						sqlrservercursor *cursor,
 						const char *wild);
+
+		/** Makes the API call to fetch the list of tables (and
+		 *  table-like objects), in the current database and schema,
+		 *  that are visible to the user that SQL Relay is logged in
+		 *  as.  "objecttypes" should be an or-ed set of one or more of
+		 *  the following object types:
+		 *
+		 *  DB_OBJECT_TABLE
+		 *  DB_OBJECT_VIEW
+		 *  DB_OBJECT_ALIAS
+		 *  DB_OBJECT_SYNONYM
+		 *
+		 *  Only returns table names that match wildcard "wild" if
+		 *  "wild" is non-NULL.  Returns true on success and false on
+		 *  failure. */
 		virtual bool		getTableList(
 						sqlrservercursor *cursor,
 						const char *wild,
 						uint16_t objecttypes);
+
+		/** Makes the API call to fetch the list of table type names in
+		 *  the current database and schema, that are visible to the
+		 *  user that SQL Relay is logged in as.  Only returns table
+		 *  type names that match wildcard "wild" if "wild" is non-NULL.
+		 *  Returns true on success and false on failure. */
 		virtual bool		getTableTypeList(
 						sqlrservercursor *cursor,
 						const char *wild);
+
+		/** Makes the API call to fetch the list of column names in
+		 *  "table", where "table" is in the current database and
+		 *  schema.  Only returns column names that match wildcard
+		 *  "wild" if "wild" is non-NULL.  Returns true on success and
+		 *  false on failure. */
 		virtual bool		getColumnList(
 						sqlrservercursor *cursor,
 						const char *table,
 						const char *wild);
+
+		/** Makes the API call to fetch the list of columns that
+		 *  compose the primary key of "table".  Only returns primary
+		 *  key column names that match wildcard "wild" if "wild" is
+		 *  non-NULL.  Returns true on success and false on failure. */
 		virtual bool		getPrimaryKeyList(
 						sqlrservercursor *cursor,
 						const char *table,
 						const char *wild);
+
+		/** Makes the API call to fetch the indices and indexed columns
+		 *  of "table", where "table" is in the current database and
+		 *  schema.  Only returns primary key column names that match
+		 *  wildcard "wild" if "wild" is non-NULL.  Returns true on
+		 *  success and false on failure. */
 		virtual bool		getKeyAndIndexList(
 						sqlrservercursor *cursor,
 						const char *table,
 						const char *wild);
+
+		/** Makes the API call to fetch the parameter names of "proc",
+		 *  where "proc" is in the current database and schema, and
+		 *  information about them, such as whether they are input,
+		 *  output, or input-output variables.  Only returns parameter
+		 *  names that match wildcard "wild" if "wild" is non-NULL.
+		 *  Returns true on success and false on failure. */
 		virtual bool		getProcedureParameterList(
 						sqlrservercursor *cursor,
 						const char *procedure,
 						const char *wild);
+
+		/** Makes the API call to fetch the info about datatype "type",
+		 *  where "type" is in the current database and schema.
+		 *  Only returns info for types that match wildcard "wild" if
+		 *  "wild" is non-NULL.  Returns true on success and false on
+		 *  failure. */
 		virtual bool		getTypeInfoList(
 						sqlrservercursor *cursor,
 						const char *type,
 						const char *wild);
+
+		/** Makes the API call to fetch the list of stored procedures
+		 *  in the current database and schema, and information about
+		 *  them, such as the number of input and output parameters,
+		 *  the numer of result sets that the procdure may retrun, a
+		 *  description of the procedure, and the procedure type
+		 *  (procedure or function).  Only returns info for procedures
+		 *  that match wildcard "wild" if "wild" is non-NULL.  Returns
+		 *  true on success and false on failure. */
 		virtual bool		getProcedureList(
 						sqlrservercursor *cursor,
 						const char *wild);
+
+		/** Returns a query that can be used to fetch the list of
+		 *  database names.  If "wild" is true the the query also
+		 *  includes a where clause that inlcudes a %s which can be
+		 *  used to substitute in a wildcard value which can be used
+		 *  to filter the results. */
 		virtual const char	*getDatabaseListQuery(bool wild);
+
+		/** Returns a query that can be used to fetch the list of
+		 *  schema names.  If "wild" is true the the query also
+		 *  includes a where clause that inlcudes a %s which can be
+		 *  used to substitute in a wildcard value which can be used
+		 *  to filter the results. */
 		virtual const char	*getSchemaListQuery(bool wild);
+
+		/** Returns a query that can be used to fetch the list of
+		 *  table names.  If "wild" is true the the query also
+		 *  includes a where clause that inlcudes a %s which can be
+		 *  used to substitute in a wildcard value which can be used
+		 *  to filter the results. */
 		virtual const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes);
+
 		virtual const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes,
 						const char *extrawhere);
+
+		/** Returns a query that can be used to fetch the list of
+		 *  table types.  If "wild" is true the the query also includes
+		 *  a where clause that inlcudes a %s which can be used to
+		 *  substitute in a wildcard value which can be used to filter
+		 *  the results. */
 		virtual const char	*getTableTypeListQuery(bool wild);
+
+		/** Returns a query that can be used to fetch the list of
+		 *  global temporary table names. */
 		virtual const char	*getGlobalTempTableListQuery();
+
+		/** Returns a query that can be used to fetch the list of
+		 *  column names from "table".  If "wild" is true the the query
+		 *  also includes a where clause that inlcudes a %s which can
+		 *  be used to substitute in a wildcard value which can be used
+		 *  to filter the results. */
 		virtual const char	*getColumnListQuery(
 						const char *table,
 						bool wild);
+
+		/** Returns a query that can be used to fetch the list of
+		 *  columns that compose the primary key of "table".  If "wild"
+		 *  is true the the query also includes a where clause that
+		 *  inlcudes a %s which can be used to substitute in a wildcard
+		 *  value which can be used to filter the results. */
 		virtual const char	*getPrimaryKeyListQuery(
 						const char *table,
 						bool wild);
+
+		/** Returns a query that can be used to fetch the indices and
+		 *  indexed columns  of "table", where "table" is in the
+		 *  current database and schema.  If "wild" is true the the
+		 *  query also includes a where clause that inlcudes a %s which
+		 *  can be used to substitute in a wildcard value which can be
+		 *  used to filter the results. */
 		virtual const char	*getKeyAndIndexListQuery(
 						const char *table,
 						bool wild);
+
+		/** Returns a query that can be used to fetch the parameter
+ 		 *  names of "proc", where "proc" is in the current database
+ 		 *  and schema, and information about them, such as whether
+ 		 *  they are input, output, or input-output variables.  If
+ 		 *  "wild" is true the the query also includes a where clause
+ 		 *  that inlcudes a %s which can be used to substitute in a
+ 		 *  wildcard value which can be used to filter the results. */
 		virtual const char	*getProcedureParameterListQuery(
 						const char *procedure,
 						bool wild);
+
+		/** Returns a query that can be used to fetch info about
+		 *  datatype "type", where "type" is in the current database
+		 *  and schema.  If "wild" is true the the query also includes
+		 *  a where clause that inlcudes a %s which can be used to
+		 *  substitute in a wildcard value which can be used to filter
+		 *  the results. */
 		virtual const char	*getTypeInfoListQuery(
 						const char *type,
 						bool wild);
+
+		/** Returns a query that can be used to fetch the list of
+		 *  stored procedures in the current database and schema, and
+		 *  information about them, such as the number of input and
+		 *  output parameters, the numer of result sets that the
+		 *  procdure may retrun, a description of the procedure, and
+		 *  the procedure type (procedure or function).  If "wild" is
+		 *  true the the query also includes a where clause that
+		 *  inlcudes a %s which can be used to substitute in a wildcard
+		 *  value which can be used to filter the results. */
 		virtual const char	*getProcedureListQuery(
 						bool wild);
+
 		virtual bool		isSynonym(const char *table);
 		virtual const char	*isSynonymQuery();
 
@@ -2874,26 +3268,146 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		virtual uint64_t	rowCount();
 		virtual bool		knowsAffectedRows();
 		virtual uint64_t	getAffectedRows();
+
+		/** Returns the number of columns in the current result set.
+		 *  Returns 0 if column info is not yet valid or if the query
+		 *  has no result set (eg. if it was a DML or DDL query). */
 		virtual	uint32_t	colCount();
+
+		/** Some database backends have predictable column types that
+		 *  can be mapped to numeric ids.  If the client is aware of
+		 *  these ids and if the protocol supports sending column types
+		 *  as ids (eg. the sqlrclient protocol), then these numeric
+		 *  ids can be sent to the client instead of sending column
+		 *  type name strings.
+		 *
+		 *  Other database backends (eg. postgresql, router) don't have
+		 *  predictable column types and so column type names must be
+		 *  sent as strings.
+		 *
+		 *  This method returns COLUMN_TYPE_IDS in the first case and
+		 *  COLUMN_TYPE_NAMES in the second case. */
 		virtual uint16_t	columnTypeFormat();
+
+		/** Returns the name of the column at position "col" in the
+		 *  current result set.  Returns NULL if column info is not yet
+		 *  valid or if the query has no result set (eg. if it was a
+		 *  DML or DDL query). */
 		virtual const char	*getColumnName(uint32_t col);
+
+		/** Returns the size (number of bytes) of the column name at
+ 		 *  position "col" in the current result set.  Returns 0 if
+ 		 *  column info is not yet valid or if the query has no result
+ 		 *  set (eg. if it was a DML or DDL query). */
 		virtual uint16_t	getColumnNameSize(uint32_t col);
+
+		/** Returns the numeric type id of the column at position "col"
+		 *  in the current result set.  Returns UNKNOWN_DATATYPE if
+		 *  column info is not yet valid, if the query has no result
+		 *  set (eg. if it was a DML or DDL query, or if
+		 *  columnTypeFormat() returns COLUMN_TYPE_NAMES. */
 		virtual uint16_t	getColumnType(uint32_t col);
+
+		/** Returns the type name string of the column at position "col"
+		 *  in the current result set.  Returns NULL if column info is
+		 *  not yet valid, if the query has no result set (eg. if it
+		 *  was a DML or DDL query, or if columnTypeFormat() returns
+		 *  COLUMN_TYPE_IDS. */
 		virtual const char	*getColumnTypeName(uint32_t col);
+
+		/** Returns the size (number of bytes) of the type name string
+		 *  of the column at position "col" in the current result set.
+		 *  Returns 0 if column info is not yet valid, if the query has
+		 *  no result set (eg. if it was a DML or DDL query, or if
+		 *  columnTypeFormat() returns COLUMN_TYPE_IDS. */
 		virtual uint16_t	getColumnTypeNameSize(uint32_t col);
+
+		/** Returns the size of the column at position "col" in the
+		 *  current result set.  Returns 0 if column info is not yet
+		 *  valid or if the query has no result set (eg. if it was a
+		 *  DML or DDL query). */
 		virtual uint32_t	getColumnSize(uint32_t col);
+
+		/** Returns the precision of the column at position "col" in
+		 *  the current result set.  Returns 0 if column info is not
+		 *  yet valid or if the query has no result set (eg. if it was
+		 *  a DML or DDL query). */
 		virtual uint32_t	getColumnPrecision(uint32_t col);
+
+		/** Returns the scale of the column at position "col" in
+		 *  the current result set.  Returns 0 if column info is not
+		 *  yet valid or if the query has no result set (eg. if it was
+		 *  a DML or DDL query). */
 		virtual uint32_t	getColumnScale(uint32_t col);
+
+		/** Returns non-zero if the column at position "col" in the
+		 *  current result set is nullable and 0if it is not nullable.
+		 *  Returns 0 if column info is not yet valid or if the query
+		 *  has no result set (eg. if it was a DML or DDL query). */
 		virtual uint16_t	getColumnIsNullable(uint32_t col);
+
+		/** Returns non-zero if the column at position "col" in the
+		 *  current result set is the primary key and 0 if it is not
+		 *  the primary key.  Returns 0 if column info is not yet valid
+		 *  or if the query has no result set (eg. if it was a DML or
+		 *  DDL query). */
 		virtual uint16_t	getColumnIsPrimaryKey(uint32_t col);
+
+		/** Returns non-zero if the column at position "col" in the
+		 *  current result set is a unique column and 0 if it is not a
+		 *  unique column.  Returns 0 if column info is not yet valid
+		 *  or if the query has no result set (eg. if it was a DML or
+		 *  DDL query). */
 		virtual uint16_t	getColumnIsUnique(uint32_t col);
+
+		/** Returns non-zero if the column at position "col" in the
+		 *  current result set is part of a key and 0 if it is not part
+		 *  of a key.  Returns 0 if column info is not yet valid or if
+		 *  the query has no result set (eg. if it was a DML or DDL
+		 *  query). */
 		virtual uint16_t	getColumnIsPartOfKey(uint32_t col);
+
+		/** Returns non-zero if the column at position "col" in the
+		 *  current result set is unsigned and 0 if it is signed.
+		 *  Returns 0 if column info is not yet valid or if the query
+		 *  has no result set (eg. if it was a DML or DDL query). */
 		virtual uint16_t	getColumnIsUnsigned(uint32_t col);
+
+		/** Returns non-zero if the column at position "col" in the
+		 *  current result set is zero-filled and 0 if it is not
+		 *  zero-filled.  Returns 0 if column info is not yet valid or
+		 *  if the query has no result set (eg. if it was a DML or DDL
+		 *  query). */
 		virtual uint16_t	getColumnIsZeroFilled(uint32_t col);
+
+		/** Returns non-zero if the column at position "col" in the
+		 *  current result set is binary and 0 if it is not binary.
+		 *  Returns 0 if column info is not yet valid or if the query
+		 *  has no result set (eg. if it was a DML or DDL query). */
 		virtual uint16_t	getColumnIsBinary(uint32_t col);
+
+		/** Returns non-zero if the column at position "col" in the
+		 *  current result set is an auto-increment column and 0 if it
+		 *  is not an auto-increment column.  Returns 0 if column info
+		 *  is not yet valid or if the query has no result set (eg. if
+		 *  it was a DML or DDL query). */
 		virtual uint16_t	getColumnIsAutoIncrement(uint32_t col);
+
+		/** Returns the name of the table that the column at position
+		 *  "col" in the current result set is from.  Returns NULL if
+		 *  column info is not yet valid, if the query has no result
+		 *  set (eg. if it was a DML or DDL query), or if the database
+		 *  backend doesn't know what table the column came from. */
 		virtual const char	*getColumnTable(uint32_t col);
+
+		/** Returns the size (number of bytes) of the name of the table
+		 *  that the column at position "col" in the current result set
+		 *  is from.  Returns NULL if column info is not yet valid, if
+		 *  the query has no result set (eg. if it was a DML or DDL
+		 *  query), or if the database backend doesn't know what table
+		 *  the column came from. */
 		virtual uint16_t	getColumnTableSize(uint32_t col);
+
 		virtual bool		ignoreDateDdMmParameter(uint32_t col,
 							const char *data,
 							uint32_t size);
@@ -2920,6 +3434,10 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		virtual void	encodeBlob(stringbuffer *buffer,
 					const char *data, uint32_t datasize);
 
+		/** Returns true if column info such as name, size, type,
+		 *  precision, scale, etc. is valid after a query has been
+		 *  prepared and false if column info is only valid after a
+		 *  query has been executed. */
 		virtual bool	columnInfoIsValidAfterPrepare();
 
 

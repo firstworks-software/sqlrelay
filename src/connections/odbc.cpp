@@ -1601,7 +1601,7 @@ bool odbcconnection::getKeyAndIndexList(sqlrservercursor *cursor,
 		accuracy=SQL_ENSURE;
 	}
 
-	// get the primary key list
+	// get the key and index list
 	erg=SQLStatistics(odbccur->stmt,
 			(SQLCHAR *)catalog,SQL_NTS,
 			(SQLCHAR *)schema,SQL_NTS,
@@ -3305,7 +3305,7 @@ bool odbccursor::handleColumns(bool getcolumninfo, bool bindcolumns) {
 		// run through the columns
 		for (SQLSMALLINT i=0; i<ncols; i++) {
 
-			if (conn->cont->getSendColumnInfo()==SEND_COLUMN_INFO) {
+			if (conn->cont->getSendColumnInfo()) {
 #if (ODBCVER >= 0x0300)
 				// column name
 				erg=SQLColAttribute(stmt,i+1,SQL_DESC_LABEL,

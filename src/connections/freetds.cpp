@@ -1699,7 +1699,7 @@ bool freetdscursor::executeQuery(const char *query, uint32_t size) {
 			}
 
 			// describe the columns
-			if (conn->cont->getSendColumnInfo()==SEND_COLUMN_INFO) {
+			if (conn->cont->getSendColumnInfo()) {
 				if (ct_describe(cmd,i+1,
 						&column[i])!=CS_SUCCEED) {
 					break;
