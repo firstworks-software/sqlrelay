@@ -970,10 +970,10 @@ void sqlrtrigger_replay::writeReplayConditionToLogFile(condition *cond,
 
 					const char	*field;
 					uint64_t	fieldsize;
-					bool		blob;
+					bool		lob;
 					bool		null;
 					cont->getField(logcur,i,&field,
-						&fieldsize,&blob,&null);
+						&fieldsize,&lob,&null);
 
 					str.append(
 						cont->getColumnName(logcur,i));
