@@ -3506,16 +3506,16 @@ void sqlrprotocol_sqlrclient::returnRow(sqlrservercursor *cursor) {
 
 		const char	*field=NULL;
 		uint64_t	fieldsize=0;
-		bool		blob=false;
+		bool		lob=false;
 		bool		null=false;
-		if (!cont->getField(cursor,i,&field,&fieldsize,&blob,&null)) {
+		if (!cont->getField(cursor,i,&field,&fieldsize,&lob,&null)) {
 			// FIXME: handle error
 		}
 
 		// send data to the client
 		if (null) {
 			sendNullField();
-		} else if (blob) {
+		} else if (lob) {
 			sendLobField(cursor,i);
 		} else {
 			sendField(field,fieldsize);

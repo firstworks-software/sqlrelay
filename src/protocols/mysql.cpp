@@ -3242,7 +3242,7 @@ bool sqlrprotocol_mysql::sendColumnDefinition(sqlrservercursor *cursor,
 	// * 0x00 for integers and static strings
 	// * 0x1f for dynamic strings, double, float
 	// * 0x00 to 0x51 for decimals
-	// (FIXME: what to do for blobs, null set, enum, etc.)
+	// (FIXME: what to do for lobs, null set, enum, etc.)
 	char		decimals=0;
 	if (columntype==MYSQL_TYPE_FLOAT ||
 		columntype==MYSQL_TYPE_DOUBLE ||
@@ -3540,7 +3540,7 @@ bool sqlrprotocol_mysql::buildBinaryRow(sqlrservercursor *cursor,
 	// field pointers
 	const char	*field;
 	uint64_t	fieldsize;
-	bool		blob;
+	bool		lob;
 	bool		null;
 
 	// get the column type
@@ -3561,7 +3561,7 @@ bool sqlrprotocol_mysql::buildBinaryRow(sqlrservercursor *cursor,
 
 		// get the field
 		null=false;
-		if (!cont->getField(cursor,i,&field,&fieldsize,&blob,&null)) {
+		if (!cont->getField(cursor,i,&field,&fieldsize,&lob,&null)) {
 			return false;
 		}
 
@@ -3590,9 +3590,9 @@ bool sqlrprotocol_mysql::buildBinaryRow(sqlrservercursor *cursor,
 
 		// get the field (again)
 		fieldsize=0;
-		blob=false;
+		lob=false;
 		null=false;
-		if (!cont->getField(cursor,i,&field,&fieldsize,&blob,&null)) {
+		if (!cont->getField(cursor,i,&field,&fieldsize,&lob,&null)) {
 			if (getDebug()) {
 				stdoutput.write("	}\n");
 			}
@@ -3600,7 +3600,7 @@ bool sqlrprotocol_mysql::buildBinaryRow(sqlrservercursor *cursor,
 		}
 
 		// send the field
-		if (blob) {
+		if (lob) {
 			if (getDebug()) {
 				stdoutput.write("		LOB\n");
 			}
@@ -3644,7 +3644,7 @@ void sqlrprotocol_mysql::buildBinaryField(const char *field,
 			// This happens with the mysql connection module when
 			// it's using the traditional mysql API, which doesn't
 			// handle LOBs differently from other data.  In cases
-			// like that, the blob flag passed to getField() will be
+			// like that, the lob flag passed to getField() will be
 			// false and this method will be called instead of
 			// buildLobField().  So, this method has to handle LOBs
 			// too.
@@ -3794,9 +3794,9 @@ bool sqlrprotocol_mysql::buildTextRow(sqlrservercursor *cursor,
 		// get the field
 		const char 	*field=NULL;
 		uint64_t	fieldsize=0;
-		bool		blob=false;
+		bool		lob=false;
 		bool		null=false;
-		if (!cont->getField(cursor,i,&field,&fieldsize,&blob,&null)) {
+		if (!cont->getField(cursor,i,&field,&fieldsize,&lob,&null)) {
 			if (getDebug()) {
 				stdoutput.write("	}\n");
 			}
@@ -3809,7 +3809,7 @@ bool sqlrprotocol_mysql::buildTextRow(sqlrservercursor *cursor,
 				stdoutput.write("		NULL\n");
 			}
 			write(&resppacket,(char)0xfb);
-		} else if (blob) {
+		} else if (lob) {
 			if (getDebug()) {
 				stdoutput.write("		LOB\n");
 			}
@@ -4178,35 +4178,35 @@ bool sqlrprotocol_mysql::sendFieldListResponse(sqlrservercursor *cursor) {
 		const char	*defaultvalue=NULL;
 		const char	*extra=NULL;
 		uint64_t	fieldsize=0;
-		bool		blob=false;
+		bool		lob=false;
 		bool		null=false;
 		cont->getField(cursor,0,
 				&name,&fieldsize,
-				&blob,&null);
+				&lob,&null);
 		cont->getField(cursor,1,
 				&typestring,&fieldsize,
-				&blob,&null);
+				&lob,&null);
 		cont->getField(cursor,2,
 				&sizestring,&fieldsize,
-				&blob,&null);
+				&lob,&null);
 		cont->getField(cursor,3,
 				&precstring,&fieldsize,
-				&blob,&null);
+				&lob,&null);
 		cont->getField(cursor,4,
 				&scalestring,&fieldsize,
-				&blob,&null);
+				&lob,&null);
 		cont->getField(cursor,5,
 				&isnullable,&fieldsize,
-				&blob,&null);
+				&lob,&null);
 		cont->getField(cursor,6,
 				&columnkey,&fieldsize,
-				&blob,&null);
+				&lob,&null);
 		cont->getField(cursor,7,
 				&defaultvalue,&fieldsize,
-				&blob,&null);
+				&lob,&null);
 		cont->getField(cursor,8,
 				&extra,&fieldsize,
-				&blob,&null);
+				&lob,&null);
 
 		uint32_t	prec=charstring::convertToInteger(precstring);
 		uint32_t	scale=charstring::convertToInteger(scalestring);

@@ -1040,7 +1040,7 @@ bool sqlrprotocol_postgresql::sendStartupParameterStatuses() {
 			stringbuffer	q;
 			const char	*field;
 			uint64_t	fieldsize;
-			bool		blob;
+			bool		lob;
 			bool		null;
 			bool		error;
 			sqlrservercursor	*cursor=cont->getCursor();
@@ -1055,7 +1055,7 @@ bool sqlrprotocol_postgresql::sendStartupParameterStatuses() {
 					!cont->getField(cursor,0,
 							&field,
 							&fieldsize,
-							&blob,
+							&lob,
 							&null)) {
 					field="";
 					fieldsize=0;
@@ -1780,11 +1780,11 @@ bool sqlrprotocol_postgresql::sendDataRow(sqlrservercursor *cursor,
 
 	const char	*field;
 	uint64_t	fieldsize;
-	bool		blob;
+	bool		lob;
 	bool		null;
 	for (uint16_t i=0; i<colcount; i++) {
 
-		if (!cont->getField(cursor,i,&field,&fieldsize,&blob,&null)) {
+		if (!cont->getField(cursor,i,&field,&fieldsize,&lob,&null)) {
 			return false;
 		}
 

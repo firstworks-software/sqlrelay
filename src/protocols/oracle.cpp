@@ -4895,7 +4895,7 @@ void sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 	// field pointers
 	const char	*field;
 	uint64_t	fieldsize;
-	bool		blob;
+	bool		lob;
 	bool		null;
 
 	// put the fields
@@ -4908,14 +4908,14 @@ void sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 
 		// get the field (again)
 		fieldsize=0;
-		blob=false;
+		lob=false;
 		null=false;
-		if (!cont->getField(cursor,i,&field,&fieldsize,&blob,&null)) {
+		if (!cont->getField(cursor,i,&field,&fieldsize,&lob,&null)) {
 			// FIXME: handle error
 		}
 
 		// put the field
-		if (blob) {
+		if (lob) {
 			if (getDebug()) {
 				stdoutput.write("		LOB\n");
 			}

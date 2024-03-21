@@ -6963,11 +6963,11 @@ void sqlrprotocol_teradata::appendRowParcels(bool *eors) {
 
 			const char	*field=NULL;
 			uint64_t	fieldsize=0;
-			bool		blob=false;
+			bool		lob=false;
 			bool		null=false;
 			if (!cont->getField(req->cur,i,
 						&field,&fieldsize,
-						&blob,&null)) {
+						&lob,&null)) {
 				// FIXME: handle error
 			}
 

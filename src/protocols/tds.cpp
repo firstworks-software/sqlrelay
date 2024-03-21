@@ -3458,10 +3458,10 @@ uint64_t sqlrprotocol_tds::rows(sqlrservercursor *cursor) {
 			// get the field
 			const char	*fld=NULL;
 			uint64_t	fldsize=0;
-			bool		blob=false;
+			bool		lob=false;
 			bool		null=false;
 			if (!cont->getField(cursor,col,
-					&fld,&fldsize,&blob,&null)) {
+					&fld,&fldsize,&lob,&null)) {
 				// FIXME: handle error
 			}
 
