@@ -2922,7 +2922,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		 *  class. */
 		virtual bool	mustDetachBeforeLogIn();
 
-		virtual bool	supportsAuthOnDatabase();
+		virtual bool	supportsDatabaseAuth();
 		virtual	void	handleConnectString();
 
 

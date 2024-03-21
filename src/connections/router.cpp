@@ -49,7 +49,7 @@ class SQLRSERVER_DLLSPEC routerconnection : public sqlrserverconnection {
 		routerconnection(sqlrservercontroller *cont);
 		~routerconnection();
 	private:
-		bool		supportsAuthOnDatabase();
+		bool		supportsDatabaseAuth();
 		void		handleConnectString();
 		bool		logIn(const char **error, const char **warning);
 		sqlrservercursor	*newCursor(uint16_t id);
@@ -305,7 +305,7 @@ routerconnection::~routerconnection() {
 	delete sqlrr;
 }
 
-bool routerconnection::supportsAuthOnDatabase() {
+bool routerconnection::supportsDatabaseAuth() {
 	return false;
 }
 

@@ -66,7 +66,7 @@ bool sqlrserverconnection::mustDetachBeforeLogIn() {
 	return pvt->_detachbeforelogin;
 }
 
-bool sqlrserverconnection::supportsAuthOnDatabase() {
+bool sqlrserverconnection::supportsDatabaseAuth() {
 	return true;
 }
 
