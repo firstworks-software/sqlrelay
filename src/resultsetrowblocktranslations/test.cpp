@@ -17,7 +17,7 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslation_test :
 						const char * const *fieldnames,
 						const char **fields,
 						uint64_t *fieldlengths,
-						bool *blobs,
+						bool *lobs,
 						bool *nulls);
 		bool	run(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur,
@@ -28,7 +28,7 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslation_test :
 						uint32_t colcount,
 						const char ***fields,
 						uint64_t **fieldlengths,
-						bool **blobs,
+						bool **lobs,
 						bool **nulls);
 };
 
@@ -51,7 +51,7 @@ bool sqlrresultsetrowblocktranslation_test::setRow(
 					const char * const *fieldnames,
 					const char **fields,
 					uint64_t *fieldlengths,
-					bool *blobs,
+					bool *lobs,
 					bool *nulls) {
 	return true;
 }
@@ -70,7 +70,7 @@ bool sqlrresultsetrowblocktranslation_test::getRow(
 					uint32_t colcount,
 					const char ***fields,
 					uint64_t **fieldlengths,
-					bool **blobs,
+					bool **lobs,
 					bool **nulls) {
 	return true;
 }
