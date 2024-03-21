@@ -52,7 +52,7 @@ class sqlrquery_sqlrcmdgstatcursor : public sqlrquerycursor {
 		void		getField(uint32_t col,
 					const char **field,
 					uint64_t *fieldsize,
-					bool *blob, bool *null);
+					bool *lob, bool *null);
 	private:
 		void	setGSResult(const char *key,
 					int32_t value, uint16_t i);
@@ -291,12 +291,12 @@ bool sqlrquery_sqlrcmdgstatcursor::fetchRow(bool *error) {
 void sqlrquery_sqlrcmdgstatcursor::getField(uint32_t col,
 						const char **field,
 						uint64_t *fieldsize,
-						bool *blob,
+						bool *lob,
 						bool *null) {
 	if ((currentrow-1)>=GSTAT_ROW_COUNT_MAX) {
 		*field=NULL;
 		*fieldsize=0;
-		*blob=false;
+		*lob=false;
 		*null=true;
 		return;
 	}
@@ -308,7 +308,7 @@ void sqlrquery_sqlrcmdgstatcursor::getField(uint32_t col,
 		*field=NULL;
 	}
 	*fieldsize=charstring::getLength(*field);
-	*blob=false;
+	*lob=false;
 	*null=false;
 }
 

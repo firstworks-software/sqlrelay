@@ -42,7 +42,7 @@ class sqlrquery_sqlrcmdcstatcursor : public sqlrquerycursor {
 		void		getField(uint32_t col,
 					const char **field,
 					uint64_t *fieldsize,
-					bool *blob, bool *null);
+					bool *lob, bool *null);
 	private:
 		uint64_t	currentrow;
 		char		*fieldbuffer[9];
@@ -178,11 +178,11 @@ static const char * const statenames[]={
 void sqlrquery_sqlrcmdcstatcursor::getField(uint32_t col,
 					const char **field,
 					uint64_t *fieldsize,
-					bool *blob,
+					bool *lob,
 					bool *null) {
 	*field=NULL;
 	*fieldsize=0;
-	*blob=false;
+	*lob=false;
 	*null=false;
 
 	delete[] fieldbuffer[col];
