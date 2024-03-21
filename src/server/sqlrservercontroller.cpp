@@ -232,8 +232,8 @@ class sqlrservercontrollerprivate {
 	const char	*_dbhostname;
 	const char	*_dbipaddress;
 
-	char		*_reformattedfield;
-	uint32_t	_reformattedfieldsize;
+	char		*_reformattedvalue;
+	uint32_t	_reformattedvaluesize;
 
 	singlylinkedlist< char * >	_globaltemptables;
 	bool				_allglobaltemptables;
@@ -449,8 +449,8 @@ sqlrservercontroller::sqlrservercontroller() {
 	pvt->_dbhostname=NULL;
 	pvt->_dbipaddress=NULL;
 
-	pvt->_reformattedfield=NULL;
-	pvt->_reformattedfieldsize=0;
+	pvt->_reformattedvalue=NULL;
+	pvt->_reformattedvaluesize=0;
 
 	pvt->_globaltemptables.setManageArrayValues(true);
 	pvt->_allglobaltemptables=false;
@@ -536,7 +536,7 @@ sqlrservercontroller::~sqlrservercontroller() {
 		delete[] pvt->_pidfile;
 	}
 
-	delete[] pvt->_reformattedfield;
+	delete[] pvt->_reformattedvalue;
 
 	delete pvt->_conn;
 
@@ -3458,6 +3458,65 @@ bool sqlrservercontroller::parseInsert(const char *query,
 	return true;
 }
 
+bool sqlrservercontroller::reformatDateTime(const char *value,
+						uint64_t valuesize,
+						const char **newvalue,
+						uint64_t *newvaluesize,
+						bool ddmm,
+						bool yyyyddmm,
+						const char *datedelimiters,
+						const char *datetimeformat,
+						const char *dateformat,
+						const char *timeformat) {
+
+	// parse the value
+	int16_t	year=-1;
+	int16_t	month=-1;
+	int16_t	day=-1;
+	int16_t	hour=-1;
+	int16_t	minute=-1;
+	int16_t	second=-1;
+	int32_t	microsecond=-1;
+	bool	isnegative=false;
+	if (!datetime::parse(value,ddmm,yyyyddmm,
+				datedelimiters,
+				&year,&month,&day,
+				&hour,&minute,&second,
+				&microsecond,&isnegative)) {
+		return false;
+	}
+
+	// decide which format to use based on what parts
+	// were detected in the date/time
+	const char	*format=datetimeformat;
+	if (hour==-1) {
+		format=dateformat;
+	} else if (day==-1) {
+		format=timeformat;
+	}
+
+	// convert to the specified format
+	delete[] pvt->_reformattedvalue;
+	pvt->_reformattedvalue=datetime::formatAs(format,
+						year,month,day,
+						hour,minute,second,
+						microsecond,isnegative);
+	pvt->_reformattedvaluesize=
+			charstring::getLength(pvt->_reformattedvalue);
+
+	if (pvt->_debugsqlrresultsettranslation) {
+		stdoutput.printf("\nconverted datetime "
+			"\"%s\" to \"%s\"\nusing ddmm=%d and yyyyddmm=%d\n",
+			value,pvt->_reformattedvalue,ddmm,yyyyddmm);
+	}
+
+	// set return values
+	*newvalue=pvt->_reformattedvalue;
+	*newvaluesize=pvt->_reformattedvaluesize;
+
+	return true;
+}
+
 int32_t sqlrservercontroller::compareQuoted(const char *str1,
 						const char *str2) {
 
@@ -6353,85 +6412,6 @@ bool sqlrservercontroller::reformatRow(sqlrservercursor *cursor,
 			}
 		}
 	}
-	return true;
-}
-
-bool sqlrservercontroller::reformatDateTimes(sqlrservercursor *cursor,
-						uint32_t index,
-						const char *field,
-						uint64_t fieldsize,
-						const char **newfield,
-						uint64_t *newfieldsize,
-						bool ddmm, bool yyyyddmm,
-						bool ignorenondatetime,
-						const char *datedelimiters,
-						const char *datetimeformat,
-						const char *dateformat,
-						const char *timeformat) {
-
-	// ignore non-date fields, if specified
-	if (ignorenondatetime &&
-		!isDateTimeTypeInt(getColumnType(cursor,index))) {
-
-		// set return values
-		*newfield=field;
-		*newfieldsize=fieldsize;
-
-		return true;
-	}
-
-	// This weirdness is mainly to address a FreeTDS/MSSQL
-	// issue.  See the code for the method
-	// freetdscursor::ignoreDateDdMmParameter() for more info.
-	if (cursor->ignoreDateDdMmParameter(index,field,fieldsize)) {
-		ddmm=false;
-		yyyyddmm=false;
-	}
-
-	int16_t	year=-1;
-	int16_t	month=-1;
-	int16_t	day=-1;
-	int16_t	hour=-1;
-	int16_t	minute=-1;
-	int16_t	second=-1;
-	int32_t	microsecond=-1;
-	bool	isnegative=false;
-	if (!datetime::parse(field,ddmm,yyyyddmm,
-				datedelimiters,
-				&year,&month,&day,
-				&hour,&minute,&second,
-				&microsecond,&isnegative)) {
-		return false;
-	}
-
-	// decide which format to use based on what parts
-	// were detected in the date/time
-	const char	*format=datetimeformat;
-	if (hour==-1) {
-		format=dateformat;
-	} else if (day==-1) {
-		format=timeformat;
-	}
-
-	// convert to the specified format
-	delete[] pvt->_reformattedfield;
-	pvt->_reformattedfield=datetime::formatAs(format,
-						year,month,day,
-						hour,minute,second,
-						microsecond,isnegative);
-	pvt->_reformattedfieldsize=
-			charstring::getLength(pvt->_reformattedfield);
-
-	if (pvt->_debugsqlrresultsettranslation) {
-		stdoutput.printf("\nconverted date "
-			"\"%s\" to \"%s\"\nusing ddmm=%d and yyyyddmm=%d\n",
-			field,pvt->_reformattedfield,ddmm,yyyyddmm);
-	}
-
-	// set return values
-	*newfield=pvt->_reformattedfield;
-	*newfieldsize=pvt->_reformattedfieldsize;
-
 	return true;
 }
 

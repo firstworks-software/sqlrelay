@@ -12,17 +12,13 @@ class SQLRSERVER_DLLSPEC sqlrresultsettranslation_reformatdatetime :
 					sqlrservercontroller *cont,
 					sqlrresultsettranslations *rs,
 					domnode *parameters);
-		~sqlrresultsettranslation_reformatdatetime();
 		bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					const char *fieldname,
 					uint32_t fieldindex,
 					const char **field,
-					uint64_t *fieldlength);
+					uint64_t *fieldsize);
 	private:
-		char		*reformattedfield;
-		uint64_t	reformattedfieldlength;
-
 		bool		ddmm;
 		bool		yyyyddmm;
 		bool		ignorenondatetime;
@@ -44,9 +40,6 @@ sqlrresultsettranslation_reformatdatetime::
 				sqlrresultsettranslation(cont,rs,parameters) {
 
 	debug=cont->getConfig()->getDebugResultSetTranslations();
-
-	reformattedfield=NULL;
-	reformattedfieldlength=0;
 
 	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
 	if (!enabled) {
@@ -80,31 +73,43 @@ sqlrresultsettranslation_reformatdatetime::
 
 }
 
-sqlrresultsettranslation_reformatdatetime::
-	~sqlrresultsettranslation_reformatdatetime() {
-	delete[] reformattedfield;
-}
-
 bool sqlrresultsettranslation_reformatdatetime::run(
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					const char *fieldname,
 					uint32_t fieldindex,
 					const char **field,
-					uint64_t *fieldlength) {
+					uint64_t *fieldsize) {
 	debugFunction();
 
 	if (!enabled) {
 		return true;
 	}
 
-	// For now, call the sqlrservercontroller method.
-	// Eventually that code should be moved here.
-	sqlrcon->cont->reformatDateTimes(sqlrcur,fieldindex,
-					*field,*fieldlength,
-					field,fieldlength,
-					ddmm,yyyyddmm,
-					ignorenondatetime,
+	// ignore non-date fields, if specified
+	if (ignorenondatetime &&
+		!sqlrcon->cont->isDateTimeType(
+			sqlrcon->cont->getColumnType(sqlrcur,fieldindex))) {
+		return true;
+	}
+
+	// This weirdness is mainly to address a FreeTDS/MSSQL
+	// issue.  See the code for the method
+	// freetdscursor::ignoreDateDdMmParameter() for more info.
+	bool	localddmm=ddmm;
+	bool	localyyyyddmm=yyyyddmm;
+	if (sqlrcur->ignoreDateDdMmParameter(fieldindex,*field,*fieldsize)) {
+		localddmm=false;
+		localyyyyddmm=false;
+	}
+
+	// reformat the date/time
+	sqlrcon->cont->reformatDateTime(*field,
+					*fieldsize,
+					field,
+					fieldsize,
+					localddmm,
+					localyyyyddmm,
 					datedelimiters,
 					datetimeformat,
 					dateformat,

@@ -2432,56 +2432,6 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		void	closeLobField(sqlrservercursor *cursor,
 						uint32_t col);
 
-		/** Attempts to parse the first "fieldsize" bytes of "field",
-		 *  which is presumed to be a date, time, or date/time and
-		 *  reformat it as specified by the other parameters.
-		 *
-		 *  Handles a wide variety of date/time formats.
-		 *
-		 *  If "ddmm" is set true then the date format is assumed to
-		 *  be dd/mm/yyyy rather than mm/dd/yyyy when a date with a
-		 *  trailing year is encountered.
-		 *
-		 *  If "yyyyddmm" is set true then the date format is assumed
-		 *  to be yyyy/dd/mm rather than yyyy/mm/dd when a date with
-		 *  a leading year is encountered.
-		 *
-		 *  "datedelimiters" may be set to a set of valid date
-		 *  delimiters and may contain any combination of '/', '-', '.',
-		 *  and ':'.  Eg. "/-" would mean that only '/' and '-' are
-		 *  valid date delimiters.  If left NULL then it defaults to
-		 *  "/-.:"
-		 *
-		 *  If "field" is determined to be a date/time then it is
-		 *  converted to the format specified by "datetimeformat".
-		 *
-		 *  If "field" is determined to be a date then it is converted
-		 *  to the format specified by "dateformat".
-		 *
-		 *  If "field" is determined to be a time then it is converted
-		 *  to the format specified by "timeformat".
-		 *
-		 *  The reformatted "field" is written to "newfield" and
-		 *  "newfieldsize" is set to the number of bytes that were
-		 *  written to "newfield", not including the NULL terminator.
-		 *  Note that "newfield" points to an internal buffer that will
-		 *  be overwritten by the next call to reformatDateTimes().
-		 *
-		 *  Returns true if the date/time was successfully parsed and
-		 *  false if it failed to parse the date/time. */
-		bool	reformatDateTimes(sqlrservercursor *cursor,
-						uint32_t index,
-						const char *field,
-						uint64_t fieldsize,
-						const char **newfield,
-						uint64_t *newfieldsize,
-						bool ddmm, bool yyyyddmm,
-						bool ignorenondatetime,
-						const char *datedelimiters,
-						const char *datetimeformat,
-						const char *dateformat,
-						const char *timeformat);
-
 
 
 		// errors...
@@ -2582,53 +2532,6 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		/** Returns the flag indicating whether the connection to the
 		 *  database is up, as set by setLiveConnection(). */
 		bool	getLiveConnection(sqlrservercursor *cursor);
-
-
-
-		// bulk load..
-		bool	bulkLoadBegin(const char *id,
-					const char *errorfieldtable,
-					const char *errorrowtable,
-					uint64_t maxerrorcount,
-					bool droperrortables);
-		bool	bulkLoadCheckpoint(const char *id);
-		bool	bulkLoadPrepareQuery(const char *query,
-						uint64_t querysize,
-						uint16_t inbindcount,
-						sqlrserverbindvar *inbinds);
-		bool	bulkLoadCreateErrorTables(const char *query,
-						uint64_t querysize,
-						const char *errorfieldtable,
-						const char *errorrowtable);
-		bool	bulkLoadCreateErrorTable1(sqlrservercursor *cursor,
-						const char *query,
-						uint64_t querysize,
-						const char *errorfieldtable);
-		bool	bulkLoadCreateErrorTable2(sqlrservercursor *cursor,
-						const char *query,
-						uint64_t querysize,
-						const char *errorrowtable);
-		bool	bulkLoadJoin(const char *id);
-		bool	bulkLoadInputBind(const byte_t *data,
-						uint64_t datasize);
-		void	bulkLoadParseInsert(const char *query,
-						uint64_t querysize,
-						char **table,
-                                                linkedlist<char *> *cols,
-                                                linkedlist<char *> *binds);
-		bool	bulkLoadExecuteQuery();
-		void	bulkLoadInitBinds();
-		void	bulkLoadBindRow(const byte_t *data,
-						uint64_t datasize);
-		void	bulkLoadError();
-		bool	bulkLoadStoreError(int64_t errorcode,
-						const char *error,
-						uint32_t errorsize,
-						const char *errorfieldtable,
-						const char *errorrowtable);
-		bool	bulkLoadEnd();
-		bool	bulkLoadDropErrorTables(const char *errorfieldtable,
-						const char *errorrowtable);
 
 
 
@@ -2856,6 +2759,53 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 					bool *columnsincludeprimarykeycolumn,
 					linkedlist<char *> **values,
 					const char **rawvalues);
+
+		/** Attempts to parse the first "valuesize" bytes of "value",
+		 *  which is presumed to be a date, time, or date/time and
+		 *  reformat it as specified by the other parameters.
+		 *
+		 *  Handles a wide variety of date/time formats.
+		 *
+		 *  If "ddmm" is set true then the date format is assumed to
+		 *  be dd/mm/yyyy rather than mm/dd/yyyy when a date with a
+		 *  trailing year is encountered.
+		 *
+		 *  If "yyyyddmm" is set true then the date format is assumed
+		 *  to be yyyy/dd/mm rather than yyyy/mm/dd when a date with
+		 *  a leading year is encountered.
+		 *
+		 *  "datedelimiters" may be set to a set of valid date
+		 *  delimiters and may contain any combination of '/', '-', '.',
+		 *  and ':'.  Eg. "/-" would mean that only '/' and '-' are
+		 *  valid date delimiters.  If left NULL then it defaults to
+		 *  "/-.:"
+		 *
+		 *  If "value" is determined to be a date/time then it is
+		 *  converted to the format specified by "datetimeformat".
+		 *
+		 *  If "value" is determined to be a date then it is converted
+		 *  to the format specified by "dateformat".
+		 *
+		 *  If "value" is determined to be a time then it is converted
+		 *  to the format specified by "timeformat".
+		 *
+		 *  The reformatted "value" is written to "newvalue" and
+		 *  "newvaluesize" is set to the number of bytes that were
+		 *  written to "newvalue", not including the NULL terminator.
+		 *  Note that "newvalue" points to an internal buffer that will
+		 *  be overwritten by the next call to reformatDateTimes().
+		 *
+		 *  Returns true if the date/time was successfully parsed and
+		 *  false if it failed to parse the date/time. */
+		bool	reformatDateTime(const char *value,
+						uint64_t valuesize,
+						const char **newvalue,
+						uint64_t *newvaluesize,
+						bool ddmm, bool yyyyddmm,
+						const char *datedelimiters,
+						const char *datetimeformat,
+						const char *dateformat,
+						const char *timeformat);
 
 		/** Compares (object names) str1 and str2, ignoring any
 		 *  quoting by single-quotes, double-quotes, back-quotes, or
@@ -3803,7 +3753,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		 *  the column came from. */
 		virtual uint16_t	getColumnTableSize(uint32_t col);
 
-		virtual bool		ignoreDateDdMmParameter(uint32_t col,
+		virtual bool	ignoreDateDdMmParameter(uint32_t col,
 							const char *data,
 							uint32_t size);
 

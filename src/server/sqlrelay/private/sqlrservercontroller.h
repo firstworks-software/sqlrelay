@@ -10,6 +10,50 @@
 
 		void	reLogIn();
 
+		bool	bulkLoadBegin(const char *id,
+					const char *errorfieldtable,
+					const char *errorrowtable,
+					uint64_t maxerrorcount,
+					bool droperrortables);
+		bool	bulkLoadCheckpoint(const char *id);
+		bool	bulkLoadPrepareQuery(const char *query,
+						uint64_t querysize,
+						uint16_t inbindcount,
+						sqlrserverbindvar *inbinds);
+		bool	bulkLoadCreateErrorTables(const char *query,
+						uint64_t querysize,
+						const char *errorfieldtable,
+						const char *errorrowtable);
+		bool	bulkLoadCreateErrorTable1(sqlrservercursor *cursor,
+						const char *query,
+						uint64_t querysize,
+						const char *errorfieldtable);
+		bool	bulkLoadCreateErrorTable2(sqlrservercursor *cursor,
+						const char *query,
+						uint64_t querysize,
+						const char *errorrowtable);
+		bool	bulkLoadJoin(const char *id);
+		bool	bulkLoadInputBind(const byte_t *data,
+						uint64_t datasize);
+		void	bulkLoadParseInsert(const char *query,
+						uint64_t querysize,
+						char **table,
+                                                linkedlist<char *> *cols,
+                                                linkedlist<char *> *binds);
+		bool	bulkLoadExecuteQuery();
+		void	bulkLoadInitBinds();
+		void	bulkLoadBindRow(const byte_t *data,
+						uint64_t datasize);
+		void	bulkLoadError();
+		bool	bulkLoadStoreError(int64_t errorcode,
+						const char *error,
+						uint32_t errorsize,
+						const char *errorfieldtable,
+						const char *errorrowtable);
+		bool	bulkLoadEnd();
+		bool	bulkLoadDropErrorTables(const char *errorfieldtable,
+						const char *errorrowtable);
+
 	private:
 		void	setUserAndGroup();
 
