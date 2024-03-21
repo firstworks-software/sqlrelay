@@ -399,9 +399,9 @@ char *sqlrserverconnection::getCurrentDatabase() {
 			// get the first field of the row and return it
 			const char	*field=NULL;
 			uint64_t	fieldsize=0;
-			bool		blob=false;
+			bool		lob=false;
 			bool		null=false;
-			gcdcur->getField(0,&field,&fieldsize,&blob,&null);
+			gcdcur->getField(0,&field,&fieldsize,&lob,&null);
 			retval=charstring::duplicate(field);
 		} 
 	}
@@ -440,9 +440,9 @@ char *sqlrserverconnection::getCurrentSchema() {
 			// get the first field of the row and return it
 			const char	*field=NULL;
 			uint64_t	fieldsize=0;
-			bool		blob=false;
+			bool		lob=false;
 			bool		null=false;
-			gcscur->getField(0,&field,&fieldsize,&blob,&null);
+			gcscur->getField(0,&field,&fieldsize,&lob,&null);
 			retval=charstring::duplicate(field);
 		} 
 	}
@@ -488,9 +488,9 @@ bool sqlrserverconnection::getLastInsertId(uint64_t *id) {
 			// get the first field of the row and return it
 			const char	*field=NULL;
 			uint64_t	fieldsize=0;
-			bool		blob=false;
+			bool		lob=false;
 			bool		null=false;
-			liicur->getField(0,&field,&fieldsize,&blob,&null);
+			liicur->getField(0,&field,&fieldsize,&lob,&null);
 			*id=charstring::convertToInteger(field);
 			retval=true;
 
@@ -635,10 +635,10 @@ const char *sqlrserverconnection::getDbHostName() {
 					dbhncur->fetchRow(&error)) {
 				const char	*field=NULL;
 				uint64_t	fieldsize=0;
-				bool		blob=false;
+				bool		lob=false;
 				bool		null=false;
 				dbhncur->getField(0,&field,&fieldsize,
-								&blob,&null);
+								&lob,&null);
 				pvt->_dbhostname=charstring::duplicate(field);
 			} 
 		
@@ -694,10 +694,10 @@ const char *sqlrserverconnection::getDbIpAddress() {
 					dbiacur->fetchRow(&error)) {
 				const char	*field=NULL;
 				uint64_t	fieldsize=0;
-				bool		blob=false;
+				bool		lob=false;
 				bool		null=false;
 				dbiacur->getField(0,&field,&fieldsize,
-								&blob,&null);
+								&lob,&null);
 				pvt->_dbipaddress=charstring::duplicate(field);
 			} 
 		

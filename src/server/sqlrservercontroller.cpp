@@ -3767,6 +3767,14 @@ bool sqlrservercontroller::isBlobType(int16_t type) {
 	return ::isBlobTypeInt(type);
 }
 
+bool sqlrservercontroller::isClobType(const char *type) {
+	return ::isClobTypeChar(type);
+}
+
+bool sqlrservercontroller::isClobType(int16_t type) {
+	return ::isClobTypeInt(type);
+}
+
 bool sqlrservercontroller::isUnsignedType(const char *type) {
 	return ::isUnsignedTypeChar(type);
 }

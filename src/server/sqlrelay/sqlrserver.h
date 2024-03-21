@@ -2867,6 +2867,14 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		 *  otherwise. */
 		bool	isBlobType(int16_t type);
 
+		/** Returns true if datatype string "type" is a clob type and
+		 *  false otherwise. */
+		bool	isClobType(const char *type);
+
+		/** Returns true if datatype id "type" is a clob type and false
+		 *  otherwise. */
+		bool	isClobType(int16_t type);
+
 		/** Returns true if datatype string "type" is an unsigned type
 		 *  and false otherwise. */
 		bool	isUnsignedType(const char *type);

@@ -6622,7 +6622,8 @@ void sqlrprotocol_teradata::appendQueryExtension(uint16_t col) {
 	// permitted in where clause
 	// (FIXME: there could be other types that aren't allowed)
 	int16_t	type=cont->getColumnType(req->cur,col);
-	char	pbtifsr=(cont->isBlobType(type))?'N':'Y';
+	char	pbtifsr=(cont->isBlobType(type) ||
+				cont->isClobType(type))?'N':'Y';
 
 	// PBTIFWR
 	// writable (i.e. is not an expression)
@@ -6681,6 +6682,7 @@ void sqlrprotocol_teradata::appendQueryExtension(uint16_t col) {
 				cont->isFloatType(type) ||
 				cont->isNumberType(type) ||
 				cont->isBlobType(type) ||
+				cont->isClobType(type) ||
 				cont->isUnsignedType(type) ||
 				cont->isBinaryType(type) ||
 				cont->isDateTimeType(type))?0:1;
@@ -6693,6 +6695,7 @@ void sqlrprotocol_teradata::appendQueryExtension(uint16_t col) {
 				cont->isFloatType(type) ||
 				cont->isNumberType(type) ||
 				cont->isBlobType(type) ||
+				cont->isClobType(type) ||
 				cont->isUnsignedType(type) ||
 				cont->isBinaryType(type) ||
 				cont->isDateTimeType(type))?

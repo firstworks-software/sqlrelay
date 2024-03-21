@@ -374,7 +374,7 @@ static int sqlrcursorDescribe(pdo_stmt_t *stmt, int colno TSRMLS_DC) {
 		} else {
 			stmt->columns[colno].param_type=PDO_PARAM_INT;
 		}
-	} else if (isBlobTypeChar(type)) {
+	} else if (isBlobTypeChar(type) || isClobTypeChar(type)) {
 		stmt->columns[colno].param_type=
 			(sqlrstmt->fetchlobsasstrings)?
 				PDO_PARAM_STR:PDO_PARAM_LOB;
@@ -483,7 +483,7 @@ static int sqlrcursorGetField(pdo_stmt_t *stmt,
 
 		// handle NULLs and empty strings
 		if (ptr) {
-			if (isBlobTypeChar(type)) {
+			if (isBlobTypeChar(type) || isClobTypeChar(type)) {
 				// empty lobs must be sent as empty streams
 				php_stream	*strm=
 						php_stream_memory_create(
@@ -516,7 +516,7 @@ static int sqlrcursorGetField(pdo_stmt_t *stmt,
 						sqlrstmt->currentrow,colno));
 				ctype=PDO_PARAM_INT;
 			}
-		} else if (isBlobTypeChar(type)) {
+		} else if (isBlobTypeChar(type) || isClobTypeChar(type)) {
 			php_stream	*strm=php_stream_memory_create(
 							TEMP_STREAM_DEFAULT);
 			TSRMLS_FETCH();
@@ -960,7 +960,7 @@ static int sqlrcursorColumnMetadata(pdo_stmt_t *stmt,
 		} else {
 			pdotype=PDO_PARAM_INT;
 		}
-	} else if (isBlobTypeChar(type)) {
+	} else if (isBlobTypeChar(type) || isClobTypeChar(type)) {
 		pdotype=PDO_PARAM_LOB;
 	} else if (isBoolTypeChar(type)) {
 		pdotype=PDO_PARAM_BOOL;
