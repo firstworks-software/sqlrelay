@@ -48,7 +48,7 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 		const char	*getNoopQuery();
 		const char	*getBindFormat();
 		const char	*beginTransactionQuery();
-		const char	*tempTableDropPrefix();
+		const char	*tempTablePrefix();
 		bool		commit();
 		bool		rollback();
 		void		getError(char *errorbuffer,
@@ -1830,7 +1830,7 @@ CS_RETCODE sapconnection::serverMessageCallback(CS_CONTEXT *ctxt,
 	return CS_SUCCEED;
 }
 
-const char *sapconnection::tempTableDropPrefix() {
+const char *sapconnection::tempTablePrefix() {
 	return "#";
 }
 

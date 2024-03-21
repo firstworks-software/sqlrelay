@@ -270,25 +270,25 @@ sqlrquerytype_t sqlrservercursor::determineQueryType(const char *query,
 	sqlrquerytype_t	retval=SQLRQUERYTYPE_ETC;
 
 	// look for specific query types
-	if (!charstring::compare(ptr,"select",6)) {
+	if (!charstring::compareIgnoringCase(ptr,"select",6)) {
 		retval=SQLRQUERYTYPE_SELECT;
 		ptr=ptr+6;
-	} else if (!charstring::compare(ptr,"insert",6)) {
+	} else if (!charstring::compareIgnoringCase(ptr,"insert",6)) {
 		retval=SQLRQUERYTYPE_INSERT;
 		ptr=ptr+6;
-	} else if (!charstring::compare(ptr,"update",6)) {
+	} else if (!charstring::compareIgnoringCase(ptr,"update",6)) {
 		retval=SQLRQUERYTYPE_UPDATE;
 		ptr=ptr+6;
-	} else if (!charstring::compare(ptr,"delete",6)) {
+	} else if (!charstring::compareIgnoringCase(ptr,"delete",6)) {
 		retval=SQLRQUERYTYPE_DELETE;
 		ptr=ptr+6;
-	} else if (!charstring::compare(ptr,"create",6)) {
+	} else if (!charstring::compareIgnoringCase(ptr,"create",6)) {
 		retval=SQLRQUERYTYPE_CREATE;
 		ptr=ptr+6;
 	} else if (!charstring::compareIgnoringCase(ptr,"drop",4)) {
 		retval=SQLRQUERYTYPE_DROP;
 		ptr=ptr+4;
-	} else if (!charstring::compare(ptr,"alter",5)) {
+	} else if (!charstring::compareIgnoringCase(ptr,"alter",5)) {
 		retval=SQLRQUERYTYPE_ALTER;
 		ptr=ptr+5;
 	} else if (isBeginTransactionQuery(ptr)) {
@@ -1090,8 +1090,8 @@ uint16_t sqlrservercursor::getColumnTableSize(uint32_t col) {
 	return charstring::getLength(getColumnTable(col));
 }
 
-bool sqlrservercursor::ignoreDateDdMmParameter(uint32_t col,
-					const char *data, uint32_t size) {
+bool sqlrservercursor::ignoreDateDdMmParameter(const char *data,
+							uint32_t size) {
 	return false;
 }
 
@@ -1407,9 +1407,9 @@ void sqlrservercursor::performSubstitution(stringbuffer *buffer,
 void sqlrservercursor::encodeBlob(stringbuffer *buffer,
 				const char *data, uint32_t datasize) {
 
-	// by default, follow the SQL Standard:
+	// by default, follow the SQL standard:
 	// X'...' where ... is the lob data and each byte of lob data is
-	// converted to two hex characters..
+	// converted to two hex characters.
 	// eg: hello -> X'68656C6C6F'
 
 	buffer->append("X\'");

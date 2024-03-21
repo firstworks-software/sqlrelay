@@ -6688,7 +6688,7 @@ void sqlrservercontroller::dropTempTable(sqlrservercursor *cursor,
 
 	stringbuffer	dropquery;
 	dropquery.append("drop table ");
-	dropquery.append(pvt->_conn->tempTableDropPrefix());
+	dropquery.append(pvt->_conn->tempTablePrefix());
 	dropquery.append(tablename);
 
 	// kind of a kluge...

@@ -1012,7 +1012,7 @@ const char *sqlrserverconnection::getNextvalFormat() {
 	return "%s.nextval";
 }
 
-const char *sqlrserverconnection::tempTableDropPrefix() {
+const char *sqlrserverconnection::tempTablePrefix() {
 	return "";
 }
 

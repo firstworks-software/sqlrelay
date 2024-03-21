@@ -170,9 +170,8 @@ class SQLRSERVER_DLLSPEC freetdscursor : public sqlrservercursor {
 		uint16_t	getColumnIsUnsigned(uint32_t col);
 		uint16_t	getColumnIsBinary(uint32_t col);
 		uint16_t	getColumnIsAutoIncrement(uint32_t col);
-		bool		ignoreDateDdMmParameter(uint32_t col,
-						const char *data,
-						uint32_t size);
+		bool		ignoreDateDdMmParameter(const char *data,
+							uint32_t size);
 		bool		noRowsToReturn();
 		bool		skipRow(bool *error);
 		bool		fetchRow(bool *error);
@@ -261,7 +260,7 @@ class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 		const char	*getNoopQuery();
 		const char	*getBindFormat();
 		const char	*beginTransactionQuery();
-		const char	*tempTableDropPrefix();
+		const char	*tempTablePrefix();
 		bool		commit();
 		bool		rollback();
 		void		getError(char *errorbuffer,
@@ -1931,8 +1930,7 @@ uint16_t freetdscursor::getColumnIsAutoIncrement(uint32_t col) {
 	return (column[col].status&CS_IDENTITY);
 }
 
-bool freetdscursor::ignoreDateDdMmParameter(uint32_t col,
-					const char *data, uint32_t size) {
+bool freetdscursor::ignoreDateDdMmParameter(const char *data, uint32_t size) {
 
 	// This is for a very FreeTDS/MSSQL Server-specific issue...
 	//
@@ -2266,7 +2264,7 @@ CS_RETCODE freetdsconnection::serverMessageCallback(CS_CONTEXT *ctxt,
 	return CS_SUCCEED;
 }
 
-const char *freetdsconnection::tempTableDropPrefix() {
+const char *freetdsconnection::tempTablePrefix() {
 	return "#";
 }
 

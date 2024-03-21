@@ -98,7 +98,7 @@ bool sqlrresultsettranslation_reformatdatetime::run(
 	// freetdscursor::ignoreDateDdMmParameter() for more info.
 	bool	localddmm=ddmm;
 	bool	localyyyyddmm=yyyyddmm;
-	if (sqlrcur->ignoreDateDdMmParameter(fieldindex,*field,*fieldsize)) {
+	if (sqlrcur->ignoreDateDdMmParameter(*field,*fieldsize)) {
 		localddmm=false;
 		localyyyyddmm=false;
 	}
