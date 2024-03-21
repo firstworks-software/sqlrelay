@@ -320,21 +320,22 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		 *  :* - database uses a : followed by any characters to
 		 *       represent a bind variable
 		 *
-		 *  Defaults to :* but may be overriden by a child class. */
+		 *  Returns :* by default but may be overriden by a child
+		 *  class. */
 		const char	*getBindFormat();
 
 		/** Returns the value that the database expects or returns in
 		 *  the "null indicator" for a non-null bind value.
 		 *
-		 *  Defaults to 0 but may be overriden by a child class of
-		 *  sqlrserverconnection. */
+		 *  Returns 0 by default, but may be overriden by a child
+		 *  class. */
 		int16_t	getNonNullBindValue();
 
 		/** Returns the value that the database expects or returns in
 		 *  the "null indicator" for a null bind value.
 		 *
-		 *  Defaults to -1 but may be overriden by a child class of
-		 *  sqlrserverconnection. */
+		 *  Returns -1 by default but may be overriden by a child
+		 *  class. */
 		int16_t	getNullBindValue();
 
 		/** Returns true if "isnull" matches the value that the database
@@ -368,8 +369,8 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		 *  Returns an empty string if the database does not support
 		 *  sequences.
 		 *
-		 *  Defaults to %s.nextval but may be overriden by a child
-		 *  class. */
+		 *  Returns %s.nextval by default but may be overriden by a
+		 *  child class. */
 		const char	*getNextvalFormat();
 
 
@@ -630,8 +631,8 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		 *  "state". */
 		void	setState(enum sqlrconnectionstate_t state);
 
-		/** Returns the database connection state as set by
-		 *  setState(). */
+		/** Returns the state of the database connection as set by the
+		 *  most recent call to setState(). */
 		enum sqlrconnectionstate_t	getState();
 
 
@@ -2273,37 +2274,150 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 
 
 		// result set navigation...
+
+		/** Some databases know the row count of a result set prior to
+		 *  fetching any results.  Other databases do not, or do not
+		 *  always know the row count.  For the current result set of
+		 *  "cursor", this method returns true in the first case and
+		 *  false in the second. */
 		bool	knowsRowCount(sqlrservercursor *cursor);
+
+		/** If the database knows the row count of a result set prior to
+		 *  fetching any results (see knowsRowCount()) then this method
+		 *  returns the number of rows in the result set.  For the
+		 *  current result set of "cursor", if the database does not
+		 *  know the row count, then this method returns the number of
+		 *  rows that have currently been fetched. */
 		uint64_t	rowCount(sqlrservercursor *cursor);
+
+		/** Most databases know the affected row count, but some
+		 *  databases (eg. firebird, sqlite, some versions of freetds)
+		 *  do not.  For the current result set of "cursor", this
+		 *  method returns true in the first case and false in the
+		 *  second. */
 		bool	knowsAffectedRows(sqlrservercursor *cursor);
+
+		/** Sets the number of affected rows for the current result set
+		 *  of "cursor" to "affectedrows". */
 		void	setAffectedRows(sqlrservercursor *cursor,
 						uint64_t affectedrows);
+
+		/** Returns the number of affected rows for the current result
+		 *  set of "cursor", as set by the most recent call to
+		 *  setAffectedRows(). */
 		uint64_t	getAffectedRows(sqlrservercursor *cursor);
+
+		/** Returns true if the current result set of "cursor" has no
+		 *  rows to return and false if there are rows to return. */
 		bool	noRowsToReturn(sqlrservercursor *cursor);
+
+		/** Fetches the next row of the current result set of "cursor".
+		 *  Sets "error" to true if an error occurred and to false if
+		 *  no error occurred.  Returns true if a row was fetched and
+		 *  false if no row was fetched, either because an error
+		 *  occurred or because all rows have already been fetched. */
+		bool	fetchRow(sqlrservercursor *cursor, bool *error);
+
+		/** Skips the next row of the current result set of "cursor".
+		 *  If the database supports skipping without fetching, then
+		 *  this is more efficient than skipping a row by just fetching
+		 *  it.  Sets "error" to true if an error occurred and to false
+		 *  if no error occurred.  Returns true if a row was fetched
+		 *  and false if no row was fetched, either because an error
+		 *  occurred or because all rows have already been fetched. */
 		bool	skipRow(sqlrservercursor *cursor, bool *error);
+
+		/** Skips the next "rows" rows of the current result set of
+		 *  "cursor".  If the database supports skipping without
+		 *  fetching, then this is more efficient than skipping rows
+		 *  by just fetching them.  If the database supports skipping
+		 *  multiple rows at a time, without fetching them, then this
+		 *  is more efficient than calling skipRow() "rows" times.
+		 *  Sets "error" to true if an error occurred and to false if
+		 *  no error occurred.  Returns true if a row was fetched and
+		 *  false if no row was fetched, either because an error
+		 *  occurred or because all rows have already been fetched. */
 		bool	skipRows(sqlrservercursor *cursor, uint64_t rows,
 								bool *error);
-		bool	fetchRow(sqlrservercursor *cursor, bool *error);
+
+		/** Sets internal flags and/or counters related to moving to
+		 *  the next row of the current result set of "cursor".  Must
+		 *  be called after fetchRow().  Note that this method is
+		 *  kludgy and may be removed in the future. */
 		void	nextRow(sqlrservercursor *cursor);
+
+		/** Returns the total number of rows that have been skipped or
+		 *  fetched in the current result set of "cursor" since the
+		 *  query was executed.
+		 *
+		 *  Note that this differs from rowCount() in that it always
+		 *  returns only the number of rows that have been skipped or
+		 *  fetched so far, independent of knowsRowCount(), whereas the
+		 *  behavior of rowCount() depends on knowsRowCount(). */
 		uint64_t	getTotalRowsFetched(sqlrservercursor *cursor);
 
-		/** Suspends the result set of "cursor". */
+		/** Suspends the current result set of "cursor". */
 		void	suspendResultSet(sqlrservercursor *cursor);
+
+		/** Closes the current result set of "cursor". */
 		void	closeResultSet(sqlrservercursor *cursor);
+
+		/** Closes the current result set of all cursors open in the
+		 *  current connection. */
 		void	closeAllResultSets();
 
 
 
 		// fields...
+
+		/** Fetches information about the field in column "col" of the
+		 *  current row, of the current result set of "cursor".  Sets
+		 *  "field" to the value of the field, "fieldsize" to the
+		 *  number of bytes in the value, "lob" true if the field is
+		 *  a LOB or false otherwise, and "null" true if the field is
+		 *  null or false otherwise.  Returns true on success and false
+		 *  if an error occurred. */
 		bool	getField(sqlrservercursor *cursor,
 						uint32_t col,
 						const char **field,
 						uint64_t *fieldsize,
-						bool *blob,
+						bool *lob,
 						bool *null);
+
+		/** If the field in column "col" of the current row, of the
+ 		 *  current result set of "cursor" is a LOB, then this method
+ 		 *  sets "length" to the number of characters in the field.
+ 		 *  Returns true on success and false if an error occurred.
+ 		 *
+ 		 *  Note that "length" is set to the number of characters
+ 		 *  rather than bytes.  In the case of a binary LOB, the number
+ 		 *  of characters and bytes will be the same, but in the case
+ 		 *  of a text LOB, they will be different if the LOB uses a
+ 		 *  variable width encoding such as UTF-8 or a fixed width
+ 		 *  encoding of more than 8-bits, such as UCS2. */
 		bool	getLobFieldLength(sqlrservercursor *cursor,
 						uint32_t col,
 						uint64_t *length);
+
+		/** If the field in column "col" of the current row, of the
+		 *  current result set of "cursor" is a LOB, then this method
+		 *  attempts to fetch "charstoread" characters from character
+		 *  position "offset" into "buffer" of size "buffer".  The
+		 *  actual number of characters that were read is returned
+		 *  in "charsread".  "charsread" may be less than "charstoread"
+		 *  if "charsread" characters won't fit in "buffer" or if
+		 *  the end of the LOB was reached prior to fetching
+		 *  "charstoread".  0 will be returned in "charsread" if an
+		 *  attempt is made to read past the end of the LOB.
+		 *
+		 *  Note that "offset", "charstoread", and "charsread" all
+		 *  refer to numbers of characters, while "buffersize" refers
+		 *  to numbers of bytes.
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  Note that attempting to read past the end of the LOB is not
+		 *  considered to be an error.*/
 		bool	getLobFieldSegment(sqlrservercursor *cursor,
 						uint32_t col,
 						char *buffer,
@@ -2311,18 +2425,50 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 						uint64_t offset,
 						uint64_t charstoread,
 						uint64_t *charsread);
+
+		/** If the field in column "col" of the current row, of the
+		 *  current result set of "cursor" is a LOB then this method
+		 *  closes the LOB. */
 		void	closeLobField(sqlrservercursor *cursor,
 						uint32_t col);
-		bool	reformatField(sqlrservercursor *cursor,
-						const char *name,
-						uint32_t index,
-						const char **field,
-						uint64_t *fieldsize);
-		bool	reformatRow(sqlrservercursor *cursor,
-						uint32_t colcount,
-						const char * const *names,
-						const char ***fields,
-						uint64_t **fieldsizes);
+
+		/** Attempts to parse the first "fieldsize" bytes of "field",
+		 *  which is presumed to be a date, time, or date/time and
+		 *  reformat it as specified by the other parameters.
+		 *
+		 *  Handles a wide variety of date/time formats.
+		 *
+		 *  If "ddmm" is set true then the date format is assumed to
+		 *  be dd/mm/yyyy rather than mm/dd/yyyy when a date with a
+		 *  trailing year is encountered.
+		 *
+		 *  If "yyyyddmm" is set true then the date format is assumed
+		 *  to be yyyy/dd/mm rather than yyyy/mm/dd when a date with
+		 *  a leading year is encountered.
+		 *
+		 *  "datedelimiters" may be set to a set of valid date
+		 *  delimiters and may contain any combination of '/', '-', '.',
+		 *  and ':'.  Eg. "/-" would mean that only '/' and '-' are
+		 *  valid date delimiters.  If left NULL then it defaults to
+		 *  "/-.:"
+		 *
+		 *  If "field" is determined to be a date/time then it is
+		 *  converted to the format specified by "datetimeformat".
+		 *
+		 *  If "field" is determined to be a date then it is converted
+		 *  to the format specified by "dateformat".
+		 *
+		 *  If "field" is determined to be a time then it is converted
+		 *  to the format specified by "timeformat".
+		 *
+		 *  The reformatted "field" is written to "newfield" and
+		 *  "newfieldsize" is set to the number of bytes that were
+		 *  written to "newfield", not including the NULL terminator.
+		 *  Note that "newfield" points to an internal buffer that will
+		 *  be overwritten by the next call to reformatDateTimes().
+		 *
+		 *  Returns true if the date/time was successfully parsed and
+		 *  false if it failed to parse the date/time. */
 		bool	reformatDateTimes(sqlrservercursor *cursor,
 						uint32_t index,
 						const char *field,
@@ -2487,71 +2633,217 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 
 
 		// cursor state...
-		void			setState(sqlrservercursor *cursor,
+
+		/** Sets the state of "cursor" to "state". */
+		void	setState(sqlrservercursor *cursor,
 						sqlrcursorstate_t state);
+
+		/** Returns the state of "cursor" as set by the most recent
+		 *  call to setState(). */
 		sqlrcursorstate_t	getState(sqlrservercursor *cursor);
 
 
 
 		// memory pools...
-		memorypool	*getPerTransactionMemoryPool();
+
+		/** Returns the memory pool that persists for the duration of a
+		 *  client session and is cleared at the end of each
+		 *  session. */
 		memorypool	*getPerSessionMemoryPool();
+
+		/** Returns the memory pool that persists for the duration of a
+		 *  transaction, and is cleared at the end of each
+		 *  transaction. */
+		memorypool	*getPerTransactionMemoryPool();
 
 
 
 		// query parser...
+
+		/** Returns the query parser that is configured to be used by
+		 *  this instance or the default parser if none was
+		 *  configured. */
 		sqlrparser	*getParser();
 
 
 
 		// gss...
+
+		/** Returns the GSS context in use by the current client
+		 *  connection, or NULL if no GSS context is in use. */
 		gsscontext	*getGssContext();
 
 
 
 		// tls...
+
+		/** Returns the TLS context in use by the current client
+		 *  connection, or NULL if no TLS context is in use. */
 		tlscontext	*getTlsContext();
 
 
 
 		// configuration...
+
+		/** Returns the configuration for the this instance. */
 		sqlrconfig	*getConfig();
+
+		/** Returns the paths for this instance. */
 		sqlrpaths	*getPaths();
 
 
 
 		// shared memory...
+
+		/** Returns the shared memory segment that this instance is
+		 *  using to communicate with the sqlr-listener, sqlr-scaler,
+		 *  sqlr-status, and other processes. */
 		sqlrshm	*getShm();
 
 
 
 		// module data...
+
+		/** Returns the instance of module data assigned to "id" or
+		 *  NULL if no module data was assigned to "id". */
 		sqlrmoduledata	*getModuleData(const char *id);
 
 
 
 		// utilities...
-		bool	skipComment(const char **ptr,
-						const char *endptr);
-		bool	skipWhitespace(const char **ptr,
-						const char *endptr);
+
+		/** Advances "ptr" past any SQL comments, without advancing
+		 *  it past "endptr". */
+		bool	skipComment(const char **ptr, const char *endptr);
+
+		/** Advances "ptr" past any whitespace, without advancing it
+		 *  past "endptr". */
+		bool	skipWhitespace(const char **ptr, const char *endptr);
+
+		/** Skips any whitespace at the beginning of "query" and
+		 *  returns a pointer to the first character after the
+		 *  whitespace. */
 		const char	*skipWhitespace(const char *query);
+
+		/** Skips any SQL comments at the beginning of "query" and
+		 *  returns a pointer to the first character after the
+		 *  whitespace. */
 		const char	*skipComments(const char *query);
+
+		/** Skips any whitespace and SQL comments at the beginning of
+		 *  "query" and returns a pointer to the first character after
+		 *  the whitespace. */
 		const char	*skipWhitespaceAndComments(const char *query);
 
+		/** Returns a 2-character hex representation of "ch". */
 		const char	*asciiToHex(byte_t ch);
+
+		/** Returns a 2-digit octal representation of "ch". */
 		const char	*asciiToOctal(byte_t ch);
 
-		bool	hasBindVariables(const char *query,
-							uint32_t querysize);
+		/** Returns true if the first "querysize" bytes of "query"
+		 *  contain any bind variables. */
+		bool	hasBindVariables(const char *query, uint32_t querysize);
+
+		/** Returns the number of bind variables found in the first
+		 *  "querysize" bytes of "query". */
 		uint16_t	countBindVariables(const char *query,
 							uint32_t querysize);
+
+		/** Splits "combinedobject" into "db", "schema", and "object".
+		 *
+		 *  If "combinedobject" consisted of 3 parts, then "currentdb"
+		 *  and "currentschema" are ignored, "db" is set to the first
+		 *  part, "schema" is set to the second part, and "object" is
+		 *  set to the third part.
+		 *
+		 *  If "combineeobject" consisted of 2 parts, then if the first
+		 *  part is the same as "currentdb" then "db" is set to
+		 *  "currentdb" ,"schema" is set to "currentschema" and
+		 *  "object" is set to the second part.  If the first part is
+		 *  not the same as "currentdb" then "db" is set to "currentdb",
+		 *  "schema" is set to the first part, and "object" is set to
+		 *  the second part.
+		 *
+		 *  If "combinedobject" only consisted of 1 part, then "db" is
+		 *  set to "currentdb", "schema" is set to "currentschema", and
+		 *  "object" is set to "combinedobject".
+		 *
+		 *  Note that "db", "schema", and "object" point to internal
+		 *  buffers that are overwritten by each call to
+		 *  splitObjectName(). */
 		void	splitObjectName(const char *currentdb,
 						const char *currentschema,
 						const char *combinedobject,
 						const char **db,
 						const char **schema,
 						const char **object);
+
+		/** Parses the first "querysize" bytes of "query", which is
+		 *  presumed to be some type of normalized insert query.
+		 *
+		 *  "querytype" is set to one of SQLRQUERYTYPE_INSERT,
+		 *  SQLRQUERYTYPE_MULTIINSERT, SQLRQUERYTYPE_INSERTSELECT, or
+		 *  SQLRQUERYTYPE_SELECT, depending on what type of insert
+		 *  statement was found.  If the query type could not be
+		 *  determined then "querytype" is set to SQLRQUERYTYPE_ETC.
+		 *
+		 *  If the query was an insert, multi-insert, or insert-select,
+		 *  then...
+		 *
+		 *  "table" is set to the name of the table that the insert
+		 *  is targeting.
+		 *
+		 *  If the query specified a set of columns, then "columns"
+		 *  is set to a list of columns.  If the query does
+		 *  not specify a set of columns, then "columns" is populated
+		 *  with the full set of columns in the table.
+		 *
+		 *  "allcolumns" is populated with the full set of columns in
+		 *  the table.
+		 *
+		 *  "autoinccolumn" is populated with the name of the table's
+		 *  auto-increment column, or NULL if the table does not contain
+		 *  an auto-increment column.
+		 *
+		 *  "columnsincludeautoinccolumn" is set to true if "columns"
+		 *  contains the auto-increment column, and false if it does
+		 *  not.
+		 *
+		 *  "primarykeycolumn" is populated with the name of the table's
+		 *  primary key column, or NULL if the table does not contain
+		 *  a primary key column.
+		 *
+		 *  "columnsincludeprimarykeycolumn" is set to true if "columns"
+		 *  contains the primary key column, and false if it does
+		 *  not.
+		 *
+		 *  "values" is populated with the first set of values
+		 *  provided by the query.  If the query is a multi-insert
+		 *  then subsequent sets of values are not returned.  If the
+		 *  query is an insert-select then values is set to NULL.
+		 *
+		 *  "rawvalues" is set to the opening parentheses in "query"
+		 *  that begins the set of values provided by the query.
+		 *  If the query is an insert-select then rawvalues is set to
+		 *  NULL.
+		 *
+		 *  If the query is a select-into then "table", "columns",
+		 *  "allcolumns", "autoinccolumn", "primarykeycolumn",
+		 *  "values", and "rawvalues" are set to NULL, and
+		 *  "columnsincludeautoinccolumn" and
+		 *  "columnsincludeprimarykeycolumn" are set to false.
+		 *
+		 *  Note that "table", "columns", "allcolumns",
+		 *  "autoinccolumn", "primarykeycolumn", "values", and
+		 *  "rawvalues" are allocated internally and returned, and must
+		 *  be deallocated by the calling program.  Note also that the
+		 *  linkedlists "columns", "allcolumns", and "values" manage
+		 *  the values stored in them.  Thus deallocating or clearing
+		 *  the linkedlists deallocates the values stored in them.
+		 *
+		 *  Returns true if parsing succeeded and false if the query
+		 *  was somehow malformed. */
 		bool	parseInsert(const char *query,
 					uint32_t querysize,
 					sqlrquerytype_t *querytype,
@@ -2564,25 +2856,92 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 					bool *columnsincludeprimarykeycolumn,
 					linkedlist<char *> **values,
 					const char **rawvalues);
+
+		/** Compares (object names) str1 and str2, ignoring any
+		 *  quoting by single-quotes, double-quotes, back-quotes, or
+		 *  square brackets.
+		 *
+		 *  Eg. the following strings would be considered equivalent:
+		 *
+		 *  * object
+		 *  * 'object'
+		 *  * "object"
+		 *  * `object`
+		 *  * [object]
+		 *
+		 *  Returns 0 if the strings are equivalent, a value less than
+		 *  1 if str1 is less than str2, and a value greater than 1 if
+		 *  str2 is greater than str1.
+		 *
+		 *  Also returns 0 if both strings are NULL, 1 if str1 is NULL
+		 *  but str2 is not, and -1 if str2 is NULl but str1 is not. */
 		int32_t	compareQuoted(const char *str1, const char *str2);
 
+		/** Returns true if datatype string "type" is a bit type and
+		 *  false otherwise. */
 		bool	isBitType(const char *type);
+
+		/** Returns true if datatype id "type" is a bit type and false
+		 *  otherwise. */
 		bool	isBitType(int16_t type);
+
+		/** Returns true if datatype string "type" is a bool type and
+		 *  false otherwise. */
 		bool	isBoolType(const char *type);
+
+		/** Returns true if datatype id "type" is a bool type and false
+		 *  otherwise. */
 		bool	isBoolType(int16_t type);
+
+		/** Returns true if datatype string "type" is a float type and
+		 *  false otherwise. */
 		bool	isFloatType(const char *type);
+
+		/** Returns true if datatype id "type" is a float type and false
+		 *  otherwise. */
 		bool	isFloatType(int16_t type);
+
+		/** Returns true if datatype string "type" is a number type and
+		 *  false otherwise. */
 		bool	isNumberType(const char *type);
+
+		/** Returns true if datatype id "type" is a number type and
+		 *  false otherwise. */
 		bool	isNumberType(int16_t type);
+
+		/** Returns true if datatype string "type" is a blob type and
+		 *  false otherwise. */
 		bool	isBlobType(const char *type);
+
+		/** Returns true if datatype id "type" is a blob type and false
+		 *  otherwise. */
 		bool	isBlobType(int16_t type);
+
+		/** Returns true if datatype string "type" is an unsigned type
+		 *  and false otherwise. */
 		bool	isUnsignedType(const char *type);
+
+		/** Returns true if datatype id "type" is an unsigned type and
+		 *  false otherwise. */
 		bool	isUnsignedType(int16_t type);
+
+		/** Returns true if datatype string "type" is a binary type and
+		 *  false otherwise. */
 		bool	isBinaryType(const char *type);
+
+		/** Returns true if datatype id "type" is a binary type and
+		 *  false otherwise. */
 		bool	isBinaryType(int16_t type);
+
+		/** Returns true if datatype string "type" is a date/time type
+		 *  and false otherwise. */
 		bool	isDateTimeType(const char *type);
+
+		/** Returns true if datatype id "type" is a date/tim type and
+		 *  false otherwise. */
 		bool	isDateTimeType(int16_t type);
 
+		/** Returns the full set of known datatype strings. */
 		const char * const	*dataTypeStrings();
 
 	#include <sqlrelay/private/sqlrservercontroller.h>
@@ -2629,7 +2988,8 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		/** Returns true if the database is transactional and false
 		 *  otherwise.
 		 *
-		 *  Defaults to true but may be overridden by a child class. */
+		 *  Returns true by default but may be overridden by a child
+		 *  class. */
 		virtual bool	isTransactional();
 
 		/** Returns true if the database supports begin-commit/rollback
@@ -2637,13 +2997,15 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		 *  false it a commit/rollback just begins another transaction
 		 *  (eg. the behavior of oracle databases).
 		 *
-		 *  Defaults to true but may be overridden by a child class. */
+		 *  Returns true by default, but may be overridden by a child
+		 *  class. */
 		virtual bool	supportsTransactionBlocks();
 
 		/** Returns true if the database supports auto-commit and false
 		 *  if it does not.
 		 *
-		 *  Defaults to false but may be overridden by a child class. */
+		 *  Returns true by default but may be overridden by a child
+		 *  class. */
 		virtual bool	supportsAutoCommit();
 
 		/** Begins a new transaction.  Returns true on success and
@@ -2982,21 +3344,22 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		 *  :* - database uses a : followed by any characters to
 		 *       represent a bind variable
 		 *
-		 *  Defaults to :* but may be overriden by a child class of
-		 *  sqlrserverconnection. */
+		 *  Returns :* by default but may be overriden by a child
+		 *  class. */
 		virtual	const char	*getBindFormat();
 
 		/** Returns the value that the database expects or returns in
 		 *  the "null indicator" for a non-null bind value.
 		 *
-		 *  Defaults to 0 but may be overriden by a child class. */
+		 *  Returns 0 by default but may be overriden by a child
+		 *  class. */
 		virtual	int16_t		getNonNullBindValue();
 
 		/** Returns the value that the database expects or returns in
 		 *  the "null indicator" for a null bind value.
 		 *
-		 *  Defaults to -1 but may be overriden by a child class of
-		 *  sqlrserverconnection. */
+		 *  Retruns -1 by default but may be overriden by a child
+		 *  class. */
 		virtual	int16_t		getNullBindValue();
 
 		/** Returns true if "isnull" matches the value that the database
@@ -3016,8 +3379,8 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		 *  Returns an empty string if the database does not support
 		 *  sequences.
 		 *
-		 *  Defaults to %s.nextval but may be overriden by a child
-		 *  class of sqlrserverconnection. */
+		 *  Returns %s.nextval by default but may be overriden by a
+		 *  child class. */
 		virtual const char	*getNextvalFormat();
 
 		virtual const char	*tempTableDropPrefix();
@@ -3264,9 +3627,41 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 						int64_t *errorcode,
 						bool *liveconnection);
 
+		/** Some databases know the row count of a result set prior to
+		 *  fetching any results.  Other databases do not, or do not
+		 *  always know the row count.  For the current result set,
+		 *  this method returns true in the first case and false in the
+		 *  second.
+		 *
+		 *  Returns false by default but may be overridden by a child
+		 *  class. */
 		virtual bool		knowsRowCount();
+
+		/** If the database knows the row count of a result set prior to
+		 *  fetching any results (see knowsRowCount()) then this method
+		 *  returns the number of rows in the result set.  For the
+		 *  current result set, if the database does not know the row
+		 *  count, then this method returns the number of rows that
+		 *  have currently been fetched.
+		 *
+		 *  Returns 0 by default but may be overridden by a child
+		 *  class. */
 		virtual uint64_t	rowCount();
+
+		/** Most databases know the affected row count, but some
+		 *  databases (eg. firebird, sqlite, some versions of freetds)
+		 *  do not.  For the current result set, this method returns
+		 *  true in the first case and false in the second.
+		 *
+		 *  Returns true by default but may be overridden by a child
+		 *  class. */
 		virtual bool		knowsAffectedRows();
+
+		/** Returns the number of affected rows for the current result
+		 *  set, as set by the most recent call to setAffectedRows().
+		 *
+		 *  Returns 0 by default but may be overridden by a child
+		 *  class. */
 		virtual uint64_t	getAffectedRows();
 
 		/** Returns the number of columns in the current result set.
@@ -3411,24 +3806,91 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		virtual bool		ignoreDateDdMmParameter(uint32_t col,
 							const char *data,
 							uint32_t size);
+
+		/** Returns true if the current result set has no rows to
+		 *  return and false if there are rows to return. */
 		virtual	bool	noRowsToReturn();
+
+		/** Skips the next row of the current result set.  If the
+		 *  database supports skipping without fetching, then this is
+		 *  more efficient than skipping a row by just fetching it.
+		 *  Sets "error" to true if an error occurred and to false if
+		 *  no error occurred.  Returns true if a row was fetched and
+		 *  false if no row was fetched, either because an error
+		 *  occurred or because all rows have already been fetched. */
 		virtual	bool	skipRow(bool *error);
+
+		/** Fetches the next row of the current result set.  Sets
+		 *  "error" to true if an error occurred and to false if no
+		 *  error occurred.  Returns true if a row was fetched and
+		 *  false if no row was fetched, either because an error
+		 *  occurred or because all rows have already been fetched. */
 		virtual	bool	fetchRow(bool *error);
+
+		/** Sets internal flags and/or counters related to moving to
+		 *  the next row of the current result set.  Must be called
+		 *  after fetchRow().  Note that this method is kludgy and may
+		 *  be removed in the future. */
 		virtual	void	nextRow();
+
+		/** Fetches information about the field in column "col" of the
+		 *  current row, of the current result set.  Sets "field" to
+		 *  the value of the field, "fieldsize" to the number of bytes
+		 *  in the value, "lob" true if the field is a LOB or false
+		 *  otherwise, and "null" true if the field is null or false
+		 *  otherwise.  Returns true on success and false if an error
+		 *  occurred. */
 		virtual void	getField(uint32_t col,
 						const char **field,
 						uint64_t *fieldsize,
-						bool *blob,
+						bool *lob,
 						bool *null);
+
+		/** If the field in column "col" of the current row, of the
+ 		 *  current result set is a LOB, then this method sets "length"
+ 		 *  to the number of characters in the field.  Returns true on
+ 		 *  success and false if an error occurred.
+ 		 *
+ 		 *  Note that "length" is set to the number of characters
+ 		 *  rather than bytes.  In the case of a binary LOB, the number
+ 		 *  of characters and bytes will be the same, but in the case
+ 		 *  of a text LOB, they will be different if the LOB uses a
+ 		 *  variable width encoding such as UTF-8 or a fixed width
+ 		 *  encoding of more than 8-bits, such as UCS2. */
 		virtual bool	getLobFieldLength(uint32_t col,
 						uint64_t *length);
+
+		/** If the field in column "col" of the current row, of the
+		 *  current result set is a LOB, then this method attempts to
+		 *  fetch "charstoread" characters from character position
+		 *  "offset" into "buffer" of size "buffer".  The actual number
+		 *  of characters that were read is returned in "charsread".
+		 *  "charsread" may be less than "charstoread" if "charsread"
+		 *  characters won't fit in "buffer" or if the end of the LOB
+		 *  was reached prior to fetching "charstoread".  0 will be
+		 *  returned in "charsread" if an attempt is made to read past
+		 *  the end of the LOB.
+		 *
+		 *  Note that "offset", "charstoread", and "charsread" all
+		 *  refer to numbers of characters, while "buffersize" refers
+		 *  to numbers of bytes.
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  Note that attempting to read past the end of the LOB is not
+		 *  considered to be an error.*/
 		virtual bool	getLobFieldSegment(uint32_t col,
 						char *buffer,
 						uint64_t buffersize,
 						uint64_t offset,
 						uint64_t charstoread,
 						uint64_t *charsread);
+
+		/** If the field in column "col" of the current row, of the
+		 *  current result is a LOB then this method closes the LOB. */
 		virtual void	closeLobField(uint32_t col);
+
+		/** Closes the current result set. */
 		virtual	void	closeResultSet();
 
 		virtual void	encodeBlob(stringbuffer *buffer,
@@ -3576,7 +4038,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		void	performSubstitution(stringbuffer *buffer,
 							int16_t index);
 
-		/** Immediately closes the result set of "cursor". */
+		/** Immediately closes the result set. */
 		void	abort();
 
 		/** Returns a pointer to the query buffer. */
@@ -3609,11 +4071,11 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		/** Sets the tree representing the current query to NULL. */
 		void		clearQueryTree();
 
-		/** Returns the translated query buffer of "cursor". */
+		/** Returns the translated query buffer. */
 		stringbuffer	*getTranslatedQueryBuffer();
 
 		/** Returns the query currently stored in the translated quer
-		 *  buffer of "cursor". */
+		 *  buffer. */
 		const char	*getTranslatedQuery();
 
 		void		setCommandStart(uint64_t sec, uint64_t usec);
@@ -3644,7 +4106,11 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		void		tallyFetchTime();
 		uint64_t	getFetchUSec();
 
+		/** Sets the state of the cursor to "state". */
 		void			setState(sqlrcursorstate_t state);
+
+		/** Returns the state of the as set by the most recent
+		 *  call to setState(). */
 		sqlrcursorstate_t	getState();
 
 		void		setCustomQueryCursor(sqlrquerycursor *cur);
@@ -3740,8 +4206,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		void	setFakeInputBindsForThisQuery(bool fake);
 
 		/** Returns whether or not input binds will be faked for the
-		 *  current query of "cursor".  See
-		 *  setFakeInputBindsForThisQuery(). */
+		 *  current query.  See setFakeInputBindsForThisQuery(). */
 		bool	getFakeInputBindsForThisQuery();
 
 		void		setQueryType(sqlrquerytype_t querytype);
@@ -3794,7 +4259,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		void	getFieldPointers(const char ***fieldnames,
 					const char ***fields,
 					uint64_t **fieldsizes,
-					bool **blob,
+					bool **lob,
 					bool **null);
 
 		void		setQueryTimeout(uint64_t querytimeout);
@@ -4780,7 +5245,7 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslation {
 					const char * const *fieldnames,
 					const char * const *fields,
 					uint64_t *fieldsizes,
-					bool *blobs,
+					bool *lobs,
 					bool *nulls);
 		virtual bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
@@ -4791,7 +5256,7 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslation {
 					uint32_t colcount,
 					const char ***fields,
 					uint64_t **fieldsizes,
-					bool **blobs,
+					bool **lobs,
 					bool **nulls);
 
 		virtual const char	*getError();
@@ -4822,7 +5287,7 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslations {
 					const char * const *fieldnames,
 					const char * const *fields,
 					uint64_t *fieldsizes,
-					bool *blobs,
+					bool *lobs,
 					bool *nulls);
 		bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
@@ -4833,7 +5298,7 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslations {
 					uint32_t colcount,
 					const char ***fields,
 					uint64_t **fieldsizes,
-					bool **blobs,
+					bool **lobs,
 					bool **nulls);
 
 		const char	*getError();

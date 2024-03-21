@@ -161,8 +161,8 @@ class sqlrservercontrollerprivate {
 	uint64_t		_serversockincount;
 	unixsocketserver	*_serversockun;
 
-	memorypool	_txpool;
 	memorypool	_sessionpool;
+	memorypool	_txpool;
 
 	bool		_debugsql;
 	bool		_debugbulkload;
@@ -286,7 +286,7 @@ class sqlrservercontrollerprivate {
 	const char	**_fieldnames;
 	const char	**_fields;
 	uint64_t	*_fieldsizes;
-	bool		*_blobs;
+	bool		*_lobs;
 	bool		*_nulls;
 
 	char			*_bulkserveridfilename;
@@ -3549,14 +3549,14 @@ void sqlrservercontroller::getColumnsInTable(const char *table,
 				const char	*columnkey;
 				const char	*extra;
 				uint64_t	fieldsize;
-				bool		blob;
+				bool		lob;
 				bool		null;
 				getField(gclcur,0,&column,
-						&fieldsize,&blob,&null);
+						&fieldsize,&lob,&null);
 				getField(gclcur,6,&columnkey,
-						&fieldsize,&blob,&null);
+						&fieldsize,&lob,&null);
 				getField(gclcur,8,&extra,
-						&fieldsize,&blob,&null);
+						&fieldsize,&lob,&null);
 
 				char	*dup=charstring::duplicate(column);
 				(*columns)->append(dup);
@@ -6372,6 +6372,11 @@ bool sqlrservercontroller::reformatDateTimes(sqlrservercursor *cursor,
 	// ignore non-date fields, if specified
 	if (ignorenondatetime &&
 		!isDateTimeTypeInt(getColumnType(cursor,index))) {
+
+		// set return values
+		*newfield=field;
+		*newfieldsize=fieldsize;
+
 		return true;
 	}
 
@@ -6728,7 +6733,7 @@ void sqlrservercontroller::truncateTempTables(sqlrservercursor *cursor) {
 
 		const char	*tablename=NULL;
 		uint64_t	fieldsize;
-		bool		blob;
+		bool		lob;
 		bool		null;
 		const char	*query=getGlobalTempTableListQuery();
 
@@ -6741,7 +6746,7 @@ void sqlrservercontroller::truncateTempTables(sqlrservercursor *cursor) {
 			bool	error;
 			while (fetchRow(gttcur,&error)) {
 				getField(gttcur,0,
-					&tablename,&fieldsize,&blob,&null);
+					&tablename,&fieldsize,&lob,&null);
 				truncateTempTable(cursor,tablename);
 
 				// FIXME: kludgy
@@ -10450,7 +10455,7 @@ bool sqlrservercontroller::fetchRow(sqlrservercursor *cursor, bool *error) {
 	cursor->getFieldPointers(&(pvt->_fieldnames),
 					&(pvt->_fields),
 					&(pvt->_fieldsizes),
-					&(pvt->_blobs),
+					&(pvt->_lobs),
 					&(pvt->_nulls));
 
 	// get the column count
@@ -10505,12 +10510,12 @@ bool sqlrservercontroller::fetchRow(sqlrservercursor *cursor, bool *error) {
 						getColumnName(cursor,i);
 					pvt->_fields[i]=NULL;
 					pvt->_fieldsizes[i]=0;
-					pvt->_blobs[i]=false;
+					pvt->_lobs[i]=false;
 					pvt->_nulls[i]=false;
 					cursor->getField(i,
 						&(pvt->_fields[i]),
 						&(pvt->_fieldsizes[i]),
-						&(pvt->_blobs[i]),
+						&(pvt->_lobs[i]),
 						&(pvt->_nulls[i]));
 
 					// A connection module might return the
@@ -10535,7 +10540,7 @@ bool sqlrservercontroller::fetchRow(sqlrservercursor *cursor, bool *error) {
 							pvt->_fieldnames,
 							pvt->_fields,
 							pvt->_fieldsizes,
-							pvt->_blobs,
+							pvt->_lobs,
 							pvt->_nulls)) {
 					*error=true;
 					setError(cursor,
@@ -10562,7 +10567,7 @@ bool sqlrservercontroller::fetchRow(sqlrservercursor *cursor, bool *error) {
 						colcount,
 						&(pvt->_fields),
 						&(pvt->_fieldsizes),
-						&(pvt->_blobs),
+						&(pvt->_lobs),
 						&(pvt->_nulls))) {
 			if (pvt->_sqlrrsrbt->getError()) {
 				*error=true;
@@ -10595,11 +10600,11 @@ bool sqlrservercontroller::fetchRow(sqlrservercursor *cursor, bool *error) {
 			pvt->_fieldnames[i]=getColumnName(cursor,i);
 			pvt->_fields[i]=NULL;
 			pvt->_fieldsizes[i]=0;
-			pvt->_blobs[i]=false;
+			pvt->_lobs[i]=false;
 			pvt->_nulls[i]=false;
 			cursor->getField(i,&(pvt->_fields[i]),
 						&(pvt->_fieldsizes[i]),
-						&(pvt->_blobs[i]),
+						&(pvt->_lobs[i]),
 						&(pvt->_nulls[i]));
 
 			// A connection module might return the actual field
@@ -10634,7 +10639,7 @@ bool sqlrservercontroller::getField(sqlrservercursor *cursor,
 						uint32_t col,
 						const char **field,
 						uint64_t *fieldsize,
-						bool *blob,
+						bool *lob,
 						bool *null) {
 
 	// return the requested field (which these pointers
@@ -10642,7 +10647,7 @@ bool sqlrservercontroller::getField(sqlrservercursor *cursor,
 	uint32_t	actualcol=mapColumn(col);
 	*field=pvt->_fields[actualcol];
 	*fieldsize=pvt->_fieldsizes[actualcol];
-	*blob=pvt->_blobs[actualcol];
+	*lob=pvt->_lobs[actualcol];
 	*null=pvt->_nulls[actualcol];
 
 	// reformat the field
@@ -11100,12 +11105,12 @@ void sqlrservercontroller::setLiveConnection(sqlrservercursor *cursor,
 	cursor->setLiveConnection(liveconnection);
 }
 
-memorypool *sqlrservercontroller::getPerTransactionMemoryPool() {
-	return &pvt->_txpool;
-}
-
 memorypool *sqlrservercontroller::getPerSessionMemoryPool() {
 	return &pvt->_sessionpool;
+}
+
+memorypool *sqlrservercontroller::getPerTransactionMemoryPool() {
+	return &pvt->_txpool;
 }
 
 sqlrparser *sqlrservercontroller::getParser() {

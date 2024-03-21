@@ -88,6 +88,17 @@
 
 		bool	handleResultSetHeader(sqlrservercursor *cursor);
 
+		bool	reformatField(sqlrservercursor *cursor,
+						const char *name,
+						uint32_t index,
+						const char **field,
+						uint64_t *fieldsize);
+		bool	reformatRow(sqlrservercursor *cursor,
+						uint32_t colcount,
+						const char * const *names,
+						const char ***fields,
+						uint64_t **fieldsizes);
+
 		void	commitOrRollback(sqlrservercursor *cursor);
 
 		void	dropTempTables(sqlrservercursor *cursor);

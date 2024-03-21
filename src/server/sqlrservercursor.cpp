@@ -104,7 +104,7 @@ class sqlrservercursorprivate {
 		const char	**_fieldnames;
 		const char	**_fields;
 		uint64_t	*_fieldsizes;
-		bool		*_blobs;
+		bool		*_lobs;
 		bool		*_nulls;
 
 		uint64_t	_querytimeout;
@@ -219,7 +219,7 @@ sqlrservercursor::sqlrservercursor(sqlrserverconnection *conn, uint16_t id) {
 	pvt->_fieldnames=NULL;
 	pvt->_fields=NULL;
 	pvt->_fieldsizes=NULL;
-	pvt->_blobs=NULL;
+	pvt->_lobs=NULL;
 	pvt->_nulls=NULL;
 	uint32_t	colcount=conn->cont->getMaxColumnCount();
 	if (colcount) {
@@ -1115,11 +1115,11 @@ void sqlrservercursor::nextRow() {
 
 void sqlrservercursor::getField(uint32_t col,
 				const char **field, uint64_t *fieldsize,
-				bool *blob, bool *null) {
+				bool *lob, bool *null) {
 	// by default, do nothing
 	*field=NULL;
 	*fieldsize=0;
-	*blob=false;
+	*lob=false;
 	*null=false;
 }
 
@@ -1408,7 +1408,7 @@ void sqlrservercursor::encodeBlob(stringbuffer *buffer,
 				const char *data, uint32_t datasize) {
 
 	// by default, follow the SQL Standard:
-	// X'...' where ... is the blob data and each byte of blob data is
+	// X'...' where ... is the lob data and each byte of lob data is
 	// converted to two hex characters..
 	// eg: hello -> X'68656C6C6F'
 
@@ -1945,7 +1945,7 @@ void sqlrservercursor::allocateFieldPointers(uint32_t colcount) {
 	pvt->_fieldnames=new const char *[colcount];
 	pvt->_fields=new const char *[colcount];
 	pvt->_fieldsizes=new uint64_t[colcount];
-	pvt->_blobs=new bool[colcount];
+	pvt->_lobs=new bool[colcount];
 	pvt->_nulls=new bool[colcount];
 }
 
@@ -1953,14 +1953,14 @@ void sqlrservercursor::deallocateFieldPointers() {
 	delete[] pvt->_fieldnames;
 	delete[] pvt->_fields;
 	delete[] pvt->_fieldsizes;
-	delete[] pvt->_blobs;
+	delete[] pvt->_lobs;
 	delete[] pvt->_nulls;
 }
 
 void sqlrservercursor::getFieldPointers(const char ***fieldnames,
 					const char ***fields,
 					uint64_t **fieldsizes,
-					bool **blobs,
+					bool **lobs,
 					bool **nulls) {
 
 	// get the max column count
@@ -1984,7 +1984,7 @@ void sqlrservercursor::getFieldPointers(const char ***fieldnames,
 	*fieldnames=pvt->_fieldnames;
 	*fields=pvt->_fields;
 	*fieldsizes=pvt->_fieldsizes;
-	*blobs=pvt->_blobs;
+	*lobs=pvt->_lobs;
 	*nulls=pvt->_nulls;
 }
 
