@@ -658,9 +658,9 @@ static bool isBlobTypeInt(int16_t type) {
 		type==BFILE_DATATYPE ||
 		type==GEOMETRY_DATATYPE ||
 		type==SDO_GEOMETRY_DATATYPE ||
-		type==GRAPHIC ||
-		type==VARGRAPHIC ||
-		type==LONGVARGRAPHIC);
+		type==GRAPHIC_DATATYPE ||
+		type==VARGRAPHIC_DATATYPE ||
+		type==LONGVARGRAPHIC_DATATYPE);
 }
 #endif
 
@@ -689,8 +689,8 @@ static bool isClobTypeInt(int16_t type) {
 		type==MEDIUMTEXT_DATATYPE ||
 		type==LONGTEXT_DATATYPE ||
 		type==JSON_DATATYPE ||
-		type==NTEXT ||
-		type==XML);
+		type==NTEXT_DATATYPE ||
+		type==XML_DATATYPE);
 }
 #endif
 

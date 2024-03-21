@@ -15,6 +15,7 @@
 #define NEED_IS_NUMBER_TYPE_CHAR 1
 #define NEED_IS_FLOAT_TYPE_CHAR 1
 #define NEED_IS_BLOB_TYPE_CHAR 1
+#define NEED_IS_CLOB_TYPE_CHAR 1
 #include <datatypes.h>
 #include <defines.h>
 #define NEED_IS_BIND_DELIMITER 1

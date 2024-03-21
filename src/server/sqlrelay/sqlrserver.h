@@ -99,7 +99,11 @@ class SQLRSERVER_DLLSPEC sqlrserverbindvar {
 
 class SQLRSERVER_DLLSPEC sqlrlistener {
 	public:
+
+		/** Returns the id of this instance. */
 		const char	*getId();
+
+		/** Returns the paths for this instance. */
 		sqlrpaths	*getPaths();
 
 	#include <sqlrelay/private/sqlrlistener.h>
@@ -107,10 +111,6 @@ class SQLRSERVER_DLLSPEC sqlrlistener {
 
 class SQLRSERVER_DLLSPEC sqlrservercontroller {
 	public:
-		// connection api...
-
-
-
 		// connect string...
 
 		/** Returns the value of parameter "variable", of the string
@@ -2907,9 +2907,19 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 
 class SQLRSERVER_DLLSPEC sqlrserverconnection {
 	public:
+		/** Creates an instance of sqlrserverconnection. */
 		sqlrserverconnection(sqlrservercontroller *cont);
+
+		/** Deletes this instance of sqlrserverconnection. */
 		virtual	~sqlrserverconnection();
 
+		/** Returns true if the process must detach from the
+		 *  controlling tty prior to logging in to the database, and
+		 *  false if the process may log in prior to detaching from the
+		 *  controlling tty.
+		 *
+		 *  Returns false by default but may be overridden by a child
+		 *  class. */
 		virtual bool	mustDetachBeforeLogIn();
 
 		virtual bool	supportsAuthOnDatabase();
