@@ -133,7 +133,7 @@ class SQLRSERVER_DLLSPEC mysqlcursor : public sqlrservercursor {
 		void		getField(uint32_t col,
 					const char **field,
 					uint64_t *fieldsize,
-					bool *blob,
+					bool *lob,
 					bool *null);
 
 #ifdef HAVE_MYSQL_STMT_PREPARE
@@ -1959,7 +1959,7 @@ bool mysqlcursor::fetchRow(bool *error) {
 
 void mysqlcursor::getField(uint32_t col,
 				const char **fld, uint64_t *fldsize,
-				bool *blob, bool *null) {
+				bool *lob, bool *null) {
 
 #ifdef HAVE_MYSQL_STMT_PREPARE
 	if (usestmtprepare) {
@@ -1973,7 +1973,7 @@ void mysqlcursor::getField(uint32_t col,
 				coltype==BLOB_DATATYPE ||
 				coltype==MEDIUM_BLOB_DATATYPE ||
 				coltype==LONG_BLOB_DATATYPE) {
-				*blob=true;
+				*lob=true;
 				return;
 			} else {
 				*fld=&field[col*

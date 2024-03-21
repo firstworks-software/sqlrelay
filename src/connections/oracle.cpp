@@ -327,7 +327,7 @@ class SQLRSERVER_DLLSPEC oraclecursor : public sqlrservercursor {
 		void		getField(uint32_t col,
 					const char **field,
 					uint64_t *fieldsize,
-					bool *blob,
+					bool *lob,
 					bool *null);
 		void		nextRow();
 		bool		getLobFieldLength(uint32_t col,
@@ -4004,7 +4004,7 @@ bool oraclecursor::fetchRow(bool *error) {
 
 void oraclecursor::getField(uint32_t col,
 				const char **field, uint64_t *fieldsize,
-				bool *blob, bool *null) {
+				bool *lob, bool *null) {
 
 	// handle NULLs
 	if (def_indp[col][row]) {
@@ -4012,11 +4012,11 @@ void oraclecursor::getField(uint32_t col,
 		return;
 	}
 
-	// handle blobs
+	// handle lobs
 	if (desc[col].dbtype==BLOB_TYPE ||
 		desc[col].dbtype==CLOB_TYPE ||
 		desc[col].dbtype==BFILE_TYPE) {
-		*blob=true;
+		*lob=true;
 		return;
 	}
 

@@ -211,7 +211,7 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 		void		getField(uint32_t col,
 					const char **field,
 					uint64_t *fieldsize,
-					bool *blob,
+					bool *lob,
 					bool *null);
 		bool		getLobFieldLength(uint32_t col, uint64_t *size);
 		bool		getLobFieldSegment(uint32_t col,
@@ -3862,7 +3862,7 @@ bool odbccursor::fetchRow(bool *error) {
 
 void odbccursor::getField(uint32_t col,
 				const char **fld, uint64_t *fldsize,
-				bool *blob, bool *null) {
+				bool *lob, bool *null) {
 
 	// handle NULLs
 	if (indicator[col]==SQL_NULL_DATA) {
@@ -3872,7 +3872,7 @@ void odbccursor::getField(uint32_t col,
 
 	// handle lobs
 	if (isLob(column[col].type)) {
-		*blob=true;
+		*lob=true;
 		return;
 	}
 
@@ -3920,7 +3920,7 @@ bool odbccursor::getLobFieldSegment(uint32_t col,
 		charstoread=charstoread-((offset+charstoread)-loblength[col]);
 	}
 
-	// read a blob segment, at most MAX_LOB_CHUNK_SIZE bytes at a time
+	// read a lob segment, at most MAX_LOB_CHUNK_SIZE bytes at a time
 	uint64_t	totalbytesread=0;
 	SQLLEN		bytestoread=0;
 	uint64_t	remainingbytestoread=charstoread;

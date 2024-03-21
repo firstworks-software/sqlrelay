@@ -249,7 +249,7 @@ class SQLRSERVER_DLLSPEC routercursor : public sqlrservercursor {
 		void		getField(uint32_t col,
 					const char **field,
 					uint64_t *fieldsize,
-					bool *blob,
+					bool *lob,
 					bool *null);
 		void		closeResultSet();
 
@@ -1768,7 +1768,7 @@ bool routercursor::fetchRow(bool *error) {
 
 void routercursor::getField(uint32_t col,
 				const char **field, uint64_t *fieldsize,
-				bool *blob, bool *null) {
+				bool *lob, bool *null) {
 	const char	*fld=currentcur->getField(nextrow-1,col);
 	uint32_t	len=currentcur->getFieldLength(nextrow-1,col);
 	if (len) {

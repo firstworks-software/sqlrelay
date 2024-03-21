@@ -178,7 +178,7 @@ class SQLRSERVER_DLLSPEC db2cursor : public sqlrservercursor {
 		void		getField(uint32_t col,
 					const char **fld,
 					uint64_t *fldsize,
-					bool *blob,
+					bool *lob,
 					bool *null);
 		void		nextRow();
 		bool		getLobFieldLength(uint32_t col,
@@ -1770,7 +1770,7 @@ bool db2cursor::fetchRow(bool *error) {
 
 void db2cursor::getField(uint32_t col,
 				const char **fld, uint64_t *fldsize,
-				bool *blob, bool *null) {
+				bool *lob, bool *null) {
 
 	// handle NULLs
 	if (indicator[col][rowgroupindex]==SQL_NULL_DATA) {
@@ -1778,9 +1778,9 @@ void db2cursor::getField(uint32_t col,
 		return;
 	}
 
-	// handle blobs
+	// handle lobs
 	if (column[col].type==SQL_CLOB || column[col].type==SQL_BLOB) {
-		*blob=true;
+		*lob=true;
 		return;
 	}
 
@@ -1836,7 +1836,7 @@ bool db2cursor::getLobFieldSegment(uint32_t col,
 			((offset+charstoread)-loblength[col][rowgroupindex]);
 	}
 
-	// read a blob segment, at most MAX_LOB_CHUNK_SIZE bytes at a time
+	// read a lob segment, at most MAX_LOB_CHUNK_SIZE bytes at a time
 	uint64_t	totalbytesread=0;
 	SQLUINTEGER	bytestoread=0;
 	uint64_t	remainingbytestoread=charstoread;

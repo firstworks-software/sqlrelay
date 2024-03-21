@@ -163,7 +163,7 @@ class SQLRSERVER_DLLSPEC postgresqlcursor : public sqlrservercursor {
 		void		getField(uint32_t col,
 					const char **field,
 					uint64_t *fieldsize,
-					bool *blob,
+					bool *lob,
 					bool *null);
 		void		closeResultSet();
 
@@ -1620,7 +1620,7 @@ bool postgresqlcursor::fetchRow(bool *error) {
 
 void postgresqlcursor::getField(uint32_t col,
 				const char **field, uint64_t *fieldsize,
-				bool *blob, bool *null) {
+				bool *lob, bool *null) {
 
 	// handle NULLs
 	if (PQgetisnull(pgresult,currentrow,col)) {

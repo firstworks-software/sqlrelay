@@ -176,7 +176,7 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 		void		getField(uint32_t col,
 					const char **field,
 					uint64_t *fieldsize,
-					bool *blob,
+					bool *lob,
 					bool *null);
 		bool		getLobFieldLength(uint32_t col,
 						uint64_t *length);
@@ -1810,7 +1810,7 @@ bool firebirdcursor::fetchRow(bool *error) {
 
 void firebirdcursor::getField(uint32_t col,
 				const char **fld, uint64_t *fldsize,
-				bool *blob, bool *null) {
+				bool *lob, bool *null) {
 
 	// handle a null field
 	if ((outsqlda->sqlvar[col].sqltype & 1) && 
@@ -2002,7 +2002,7 @@ void firebirdcursor::getField(uint32_t col,
 	#endif
 	} else if (outsqlda->sqlvar[col].sqltype==SQL_BLOB ||
 			outsqlda->sqlvar[col].sqltype==SQL_BLOB+1) {
-		*blob=true;
+		*lob=true;
 	}
 }
 

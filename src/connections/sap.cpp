@@ -194,7 +194,7 @@ class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 		void		getField(uint32_t col,
 					const char **field,
 					uint64_t *fieldsize,
-					bool *blob,
+					bool *lob,
 					bool *null);
 		void		nextRow();
 		void		closeResultSet();
@@ -1636,7 +1636,7 @@ bool sapcursor::fetchRow(bool *error) {
 
 void sapcursor::getField(uint32_t col,
 				const char **field, uint64_t *fieldsize,
-				bool *blob, bool *null) {
+				bool *lob, bool *null) {
 
 	// handle NULLs
 	if (nullindicator[col][row]==-1) {

@@ -179,7 +179,7 @@ class SQLRSERVER_DLLSPEC freetdscursor : public sqlrservercursor {
 		void		getField(uint32_t col,
 					const char **field,
 					uint64_t *fieldsize,
-					bool *blob,
+					bool *lob,
 					bool *null);
 		void		nextRow();
 		void		closeResultSet();
@@ -2048,7 +2048,7 @@ bool freetdscursor::fetchRow(bool *error) {
 
 void freetdscursor::getField(uint32_t col,
 				const char **field, uint64_t *fieldsize,
-				bool *blob, bool *null) {
+				bool *lob, bool *null) {
 
 	// handle NULLs
 	if (nullindicator[col][row]==-1) {

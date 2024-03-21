@@ -145,7 +145,7 @@ class SQLRSERVER_DLLSPEC sqlitecursor : public sqlrservercursor {
 		void		getField(uint32_t col,
 					const char **field,
 					uint64_t *fieldsize,
-					bool *blob,
+					bool *lob,
 					bool *null);
 		void		closeResultSet();
 
@@ -907,7 +907,7 @@ bool sqlitecursor::fetchRow(bool *error) {
 
 void sqlitecursor::getField(uint32_t col,
 				const char **field, uint64_t *fieldsize,
-				bool *blob, bool *null) {
+				bool *lob, bool *null) {
 
 #ifdef HAVE_SQLITE3_STMT
 
@@ -915,7 +915,7 @@ void sqlitecursor::getField(uint32_t col,
 	if (lastinsertrowid) {
 		*field=lastinsertrowidstr;
 		*fieldsize=charstring::getLength(*field);
-		*blob=false;
+		*lob=false;
 		*null=false;
 		return;
 	}
@@ -930,10 +930,10 @@ void sqlitecursor::getField(uint32_t col,
 	*fieldsize=sqlite3_column_bytes(stmt,col);
 	*null=(*field==NULL);
 
-	// set the blob indiciator false, otherwise we'll have to implement
-	// methods for fetching the blob in chunks and there's no need to
+	// set the lob indiciator false, otherwise we'll have to implement
+	// methods for fetching the lob in chunks and there's no need to
 	// do that, for now at least
-	*blob=false;
+	*lob=false;
 #else
 	// sqlite is kind of strange, the result set is not returned
 	// in a 2-d array of pointers to rows/columns, but rather
