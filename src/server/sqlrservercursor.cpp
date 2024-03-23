@@ -114,8 +114,6 @@ class sqlrservercursorprivate {
 
 		bool		_resultsetheaderhasbeenhandled;
 
-		byte_t		_moduledata[1024];
-
 		bool		_querysuppressed;
 };
 
@@ -252,6 +250,7 @@ sqlrservercursor::~sqlrservercursor() {
 }
 
 bool sqlrservercursor::open() {
+	// by default do nothing
 	return true;
 }
 
@@ -1834,7 +1833,7 @@ void sqlrservercursor::getColumnPointers(const char ***columnnames,
 	// get the max column count
 	uint32_t	colcount=conn->cont->getMaxColumnCount();
 
-	// decide if we need to allocate field pointers here,
+	// decide if we need to allocate column pointers here,
 	// and if so, how many columns
 	bool	allocate=false;
 	if (!colcount) {
@@ -1842,7 +1841,7 @@ void sqlrservercursor::getColumnPointers(const char ***columnnames,
 		allocate=true;
 	}
 
-	// allocate the field pointers, if necessary
+	// allocate the column pointers, if necessary
 	if (allocate) {
 		deallocateColumnPointers();
 		allocateColumnPointers(colcount);
@@ -2027,10 +2026,6 @@ void sqlrservercursor::setResultSetHeaderHasBeenHandled(
 
 bool sqlrservercursor::getResultSetHeaderHasBeenHandled() {
 	return pvt->_resultsetheaderhasbeenhandled;
-}
-
-byte_t *sqlrservercursor::getModuleData() {
-	return pvt->_moduledata;
 }
 
 void sqlrservercursor::setQuerySuppressed(bool querysuppressed) {

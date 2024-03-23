@@ -305,6 +305,8 @@ class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 						CS_SERVERMSG *msgp);
 
 		stringbuffer	loginerror;
+
+		stringbuffer	tablelistquery;
 };
 
 stringbuffer	freetdsconnection::errorstring;
@@ -675,8 +677,54 @@ const char *freetdsconnection::getTableListQuery(bool wild,
 			"order by "
 			"	name";
 	} else {
-		return sqlrserverconnection::getTableListQuery(
-						wild,objecttypes);
+		tablelistquery.clear();
+		tablelistquery.append(
+			"select "
+			"	table_catalog as table_cat, "
+			"	table_schema as table_schem, "
+			"	table_name, "
+			"	case "
+			"		when table_type = "
+			"'BASE TABLE' then 'TABLE' "
+			"		else table_type "
+			"	end as table_type, "
+			"	NULL as remarks, "
+			"	NULL as extra "
+			"from "
+			"	information_schema.tables "
+			"where ");
+		if (wild) {
+			tablelistquery.append("	table_name like '%s' and ");
+		}
+		tablelistquery.append("	(");
+		if (objecttypes&DB_OBJECT_TABLE) {
+			tablelistquery.append("	table_type = 'BASE TABLE' ");
+		}
+		if (objecttypes&DB_OBJECT_VIEW) {
+			if (tablelistquery.getSize()) {
+				tablelistquery.append("	or ");
+			}
+			tablelistquery.append("	table_type = 'VIEW' ");
+		}
+		if (objecttypes&DB_OBJECT_ALIAS) {
+			if (tablelistquery.getSize()) {
+				tablelistquery.append("	or ");
+			}
+			tablelistquery.append("	table_type = 'ALIAS' ");
+		}
+		if (objecttypes&DB_OBJECT_SYNONYM) {
+			if (tablelistquery.getSize()) {
+				tablelistquery.append("	or ");
+			}
+			tablelistquery.append("	table_type = 'SYNONYM' ");
+		}
+		tablelistquery.append(
+			") "
+			"order by "
+			"	table_cat, "
+			"	table_schem, "
+			"	table_name");
+		return tablelistquery.getString();
 	}
 }
 

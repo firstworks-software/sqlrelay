@@ -6751,9 +6751,8 @@ void sqlrservercontroller::truncateTempTables(sqlrservercursor *cursor) {
 	}
 
 	// specific tables...
-	for (listnode< char * >
-			*sln=pvt->_globaltemptables.getFirst();
-			sln; sln=sln->getNext()) {
+	for (listnode< char * > *sln=pvt->_globaltemptables.getFirst();
+						sln; sln=sln->getNext()) {
 		truncateTempTable(cursor,sln->getValue());
 	}
 }

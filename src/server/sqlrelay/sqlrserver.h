@@ -216,8 +216,8 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		const char	*getId();
 
 		/** Returns the connection id of the connection - the value
- 		 *  of the connectionid attribute, of the connection tag,
- 		 *  in the config file. */
+		 *  of the connectionid attribute, of the connection tag,
+		 *  in the config file. */
 		const char	*getConnectionId();
 
 
@@ -228,7 +228,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		bool	send(byte_t *data, size_t size);
 
 		/** Receives "size" bytes from the database into buffer
- 		 *  "data". */
+		 *  "data". */
 		bool	recv(byte_t **data, size_t *size);
 
 
@@ -512,7 +512,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		void	setFakeTransactionBlocks(bool ftb);
 
 		/** Returns whether transaction blocks are being faked, as set
- 		 *  by setFakeTransactionBlocks(). */
+		 *  by setFakeTransactionBlocks(). */
 		bool	getFakeTransactionBlocks();
 
 		/** If "fac" is true then auto-commit is faked by executing a
@@ -922,7 +922,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		void	incrementReexecuteQueryCount();
 
 		/** Returns the number of fetch-from-bind-cursor commands
- 		 *  that have been run since the instance was started. */
+		 *  that have been run since the instance was started. */
 		uint32_t	getFetchFromBindCursorCount();
 
 		/** Increments the number of fetch-from-bind-cursor commands
@@ -962,43 +962,43 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		void	incrementResumeResultSetCount();
 
 		/** Returns the number of get-database-list commands that
- 		 *  have been run since the instance was started. */
+		 *  have been run since the instance was started. */
 		uint32_t	getGetDbListCount();
 
 		/** Increments the number of get-database-list commands that
- 		 *  have been run since the instance was started. */
+		 *  have been run since the instance was started. */
 		void	incrementGetDbListCount();
 
 		/** Returns the number of get-table-list commands that
- 		 *  have been run since the instance was started. */
+		 *  have been run since the instance was started. */
 		uint32_t	getGetTableListCount();
 
 		/** Increments the number of get-table-list commands that
- 		 *  have been run since the instance was started. */
+		 *  have been run since the instance was started. */
 		void	incrementGetTableListCount();
 
 		/** Returns the number of get-column-list commands that
- 		 *  have been run since the instance was started. */
+		 *  have been run since the instance was started. */
 		uint32_t	getGetColumnListCount();
 
 		/** Increments the number of get-column-list commands that
- 		 *  have been run since the instance was started. */
+		 *  have been run since the instance was started. */
 		void	incrementGetColumnListCount();
 
 		/** Returns the number of get-query-tree commands that
- 		 *  have been run since the instance was started. */
+		 *  have been run since the instance was started. */
 		uint32_t	getGetQueryTreeCount();
 
 		/** Increments the number of get-query-tree commands that
- 		 *  have been run since the instance was started. */
+		 *  have been run since the instance was started. */
 		void	incrementGetQueryTreeCount();
 
 		/** Returns the number of re-logins that have occcurred
- 		 *  since the instance was started. */
+		 *  since the instance was started. */
 		uint32_t	getReLogInCount();
 
 		/** Increments the number of re-logins that have occcurred
- 		 *  since the instance was started. */
+		 *  since the instance was started. */
 		void	incrementReLogInCount();
 
 		/** Returns the number of get-next-result-set commands that
@@ -1153,15 +1153,15 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 							const char *info);
 
 		/** Raises a query-received event on cursor "cursor", which may
- 		 *  be logged, or which may trigger a notification. */
+		 *  be logged, or which may trigger a notification. */
 		void	raiseQueryReceivedEvent(sqlrservercursor *cursor);
 
 		/** Raises a query-prepared event on cursor "cursor", which may
- 		 *  be logged, or which may trigger a notification. */
+		 *  be logged, or which may trigger a notification. */
 		void	raiseQueryPreparedEvent(sqlrservercursor *cursor);
 
 		/** Raises a query-executed event on cursor "cursor", which may
- 		 *  be logged, or which may trigger a notification. */
+		 *  be logged, or which may trigger a notification. */
 		void	raiseQueryExecutedEvent(sqlrservercursor *cursor);
 
 		/** Raises a filter-violation event on cursor "cursor", which
@@ -1379,13 +1379,13 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 						bool enablefilters);
 
 		/** Sets whether the current query is "suppressed" or not.
- 		 *  Currently may be called by a before-trigger to suppresses
- 		 *  execution of the query by executeQuery(). */
+		 *  Currently may be called by a before-trigger to suppresses
+		 *  execution of the query by executeQuery(). */
 		void	setQuerySuppressed(sqlrservercursor *cursor,
 						bool querysuppressed);
 
 		/** Returns whether the current query is "suppressed" or not
- 		 *  as set by a call to setQuerySuppressed(). */
+		 *  as set by a call to setQuerySuppressed(). */
 		bool	getQuerySuppressed(sqlrservercursor *cursor);
 
 		/** Executes the currently prepared query of "cursor", with all
@@ -1439,9 +1439,9 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		memorypool	*getBindPool(sqlrservercursor *cursor);
 
 		/** Returns the memory pool of "cursor" used to map bind
- 		 *  variable names when the value of the attribute
- 		 *  translatebindvariables of the instance tag in the config
- 		 *  file is set to "yes". */
+		 *  variable names when the value of the attribute
+		 *  translatebindvariables of the instance tag in the config
+		 *  file is set to "yes". */
 		memorypool	*getBindMappingsPool(sqlrservercursor *cursor);
 
 		/** Returns the dictionary of bind variable name mappings of
@@ -1491,7 +1491,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 						sqlrservercursor *destcur);
 
 		/** Copies input-output bind variables from "sourcecur" to
- 		 *  "destcur".
+		 *  "destcur".
 		 *
 		 *  Note that no attempt is made to resolve bind variable name 
 		 *  collisions.
@@ -1543,8 +1543,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		/** Returns whether or not input binds will be faked for the
 		 *  current query of "cursor".  See
 		 *  setFakeInputBindsForThisQuery(). */
-		bool	getFakeInputBindsForThisQuery(
-						sqlrservercursor *cursor);
+		bool	getFakeInputBindsForThisQuery(sqlrservercursor *cursor);
 
 
 
@@ -1593,19 +1592,19 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		/** Opens LOB output bind at position "index" in "cursor"
 		 *  (unless it is already open) and sets "length" equal to its
 		 *  length, in characters.
- 		 *
- 		 *  Returns true on success and false otherwise.  Will return
- 		 *  false if the output bind at position "index" is not a LOB.
- 		 *
- 		 *  For example...
- 		 *
- 		 *  if
- 		 *  getOutputBinds(cursor)[index].type==
- 		 *  			SQLRSERVERBINDVARTYPE_BLOB
- 		 *  or
- 		 *  getOutputBinds(cursor)[index].type==
- 		 *  			SQLRSERVERBINDVARTYPE_CLOB
- 		 *  then this method will return true. */
+		 *
+		 *  Returns true on success and false otherwise.  Will return
+		 *  false if the output bind at position "index" is not a LOB.
+		 *
+		 *  For example...
+		 *
+		 *  if
+		 *  getOutputBinds(cursor)[index].type==
+		 *			SQLRSERVERBINDVARTYPE_BLOB
+		 *  or
+		 *  getOutputBinds(cursor)[index].type==
+		 *			SQLRSERVERBINDVARTYPE_CLOB
+		 *  then this method will return true. */
 		bool	getLobOutputBindLength(sqlrservercursor *cursor,
 							uint16_t index,
 							uint64_t *length);
@@ -1615,19 +1614,19 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		 *  "charstoread" characters from position "offset" into
 		 *  "buffer" of "buffersize" bytes.  Populates "charsread" with
 		 *  the number of characters that were actually read.
- 		 *
- 		 *  Returns true on success and false otherwise.  Will return
- 		 *  false if the output bind at position "index" is not a LOB.
- 		 *
- 		 *  For example...
- 		 *
- 		 *  if
- 		 *  getOutputBinds(cursor)[index].type==
- 		 *  			SQLRSERVERBINDVARTYPE_BLOB
- 		 *  or
- 		 *  getOutputBinds(cursor)[index].type==
- 		 *  			SQLRSERVERBINDVARTYPE_CLOB
- 		 *  then this method will return true. */
+		 *
+		 *  Returns true on success and false otherwise.  Will return
+		 *  false if the output bind at position "index" is not a LOB.
+		 *
+		 *  For example...
+		 *
+		 *  if
+		 *  getOutputBinds(cursor)[index].type==
+		 *			SQLRSERVERBINDVARTYPE_BLOB
+		 *  or
+		 *  getOutputBinds(cursor)[index].type==
+		 *			SQLRSERVERBINDVARTYPE_CLOB
+		 *  then this method will return true. */
 		bool	getLobOutputBindSegment(sqlrservercursor *cursor,
 							uint16_t index,
 							char *buffer,
@@ -1637,18 +1636,18 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 							uint64_t *charsread);
 
 		/** Closes LOB output bind at position "index" of "cursor".
- 		 *
- 		 *  For example...
- 		 *
- 		 *  if
- 		 *  getOutputBinds(cursor)[index].type==
- 		 *  			SQLRSERVERBINDVARTYPE_BLOB
- 		 *  or
- 		 *  getOutputBinds(cursor)[index].type==
- 		 *  			SQLRSERVERBINDVARTYPE_CLOB
- 		 *  and the LOB was opened by a call to
- 		 *  getLobOutputBindLength() or getLobOutputBindSegment()
- 		 *  then this method will close it. */
+		 *
+		 *  For example...
+		 *
+		 *  if
+		 *  getOutputBinds(cursor)[index].type==
+		 *			SQLRSERVERBINDVARTYPE_BLOB
+		 *  or
+		 *  getOutputBinds(cursor)[index].type==
+		 *			SQLRSERVERBINDVARTYPE_CLOB
+		 *  and the LOB was opened by a call to
+		 *  getLobOutputBindLength() or getLobOutputBindSegment()
+		 *  then this method will close it. */
 		void	closeLobOutputBind(sqlrservercursor *cursor,
 							uint16_t index);
 
@@ -1663,7 +1662,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 						uint16_t inoutbindcount);
 
 		/** Returns the number of valid input-output binds in "cursor",
- 		 *  as set by setInputOutputBindCount(). */
+		 *  as set by setInputOutputBindCount(). */
 		uint16_t	getInputOutputBindCount(
 						sqlrservercursor *cursor);
 
@@ -1679,19 +1678,19 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		/** Opens LOB input-output bind at position "index" in "cursor"
 		 *  (unless it is already open) and sets "length" equal to its
 		 *  length, in characters.
- 		 *
- 		 *  Returns true on success and false otherwise.  Will return
- 		 *  false if the output bind at position "index" is not a LOB.
- 		 *
- 		 *  For example...
- 		 *
- 		 *  if
- 		 *  getOutputBinds(cursor)[index].type==
- 		 *  			SQLRSERVERBINDVARTYPE_BLOB
- 		 *  or
- 		 *  getOutputBinds(cursor)[index].type==
- 		 *  			SQLRSERVERBINDVARTYPE_CLOB
- 		 *  then this method will return true. */
+		 *
+		 *  Returns true on success and false otherwise.  Will return
+		 *  false if the output bind at position "index" is not a LOB.
+		 *
+		 *  For example...
+		 *
+		 *  if
+		 *  getOutputBinds(cursor)[index].type==
+		 *			SQLRSERVERBINDVARTYPE_BLOB
+		 *  or
+		 *  getOutputBinds(cursor)[index].type==
+		 *			SQLRSERVERBINDVARTYPE_CLOB
+		 *  then this method will return true. */
 		bool	getLobInputOutputBindLength(sqlrservercursor *cursor,
 							uint16_t index,
 							uint64_t *length);
@@ -1701,19 +1700,19 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		 *  "charstoread" characters from position "offset" into
 		 *  "buffer" of "buffersize" bytes.  Populates "charsread" with
 		 *  the number of characters that were actually read.
- 		 *
- 		 *  Returns true on success and false otherwise.  Will return
- 		 *  false if the output bind at position "index" is not a LOB.
- 		 *
- 		 *  For example...
- 		 *
- 		 *  if
- 		 *  getOutputBinds(cursor)[index].type==
- 		 *  			SQLRSERVERBINDVARTYPE_BLOB
- 		 *  or
- 		 *  getOutputBinds(cursor)[index].type==
- 		 *  			SQLRSERVERBINDVARTYPE_CLOB
- 		 *  then this method will return true. */
+		 *
+		 *  Returns true on success and false otherwise.  Will return
+		 *  false if the output bind at position "index" is not a LOB.
+		 *
+		 *  For example...
+		 *
+		 *  if
+		 *  getOutputBinds(cursor)[index].type==
+		 *			SQLRSERVERBINDVARTYPE_BLOB
+		 *  or
+		 *  getOutputBinds(cursor)[index].type==
+		 *			SQLRSERVERBINDVARTYPE_CLOB
+		 *  then this method will return true. */
 		bool	getLobInputOutputBindSegment(sqlrservercursor *cursor,
 							uint16_t index,
 							char *buffer,
@@ -1724,18 +1723,18 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 
 		/** Closes LOB input-output bind at position "index" of
 		 *  "cursor".
- 		 *
- 		 *  For example...
- 		 *
- 		 *  if
- 		 *  getOutputBinds(cursor)[index].type==
- 		 *  			SQLRSERVERBINDVARTYPE_BLOB
- 		 *  or
- 		 *  getOutputBinds(cursor)[index].type==
- 		 *  			SQLRSERVERBINDVARTYPE_CLOB
- 		 *  and the LOB was opened by a call to
- 		 *  getLobOutputBindLength() or getLobOutputBindSegment()
- 		 *  then this method will close it. */
+		 *
+		 *  For example...
+		 *
+		 *  if
+		 *  getOutputBinds(cursor)[index].type==
+		 *			SQLRSERVERBINDVARTYPE_BLOB
+		 *  or
+		 *  getOutputBinds(cursor)[index].type==
+		 *			SQLRSERVERBINDVARTYPE_CLOB
+		 *  and the LOB was opened by a call to
+		 *  getLobOutputBindLength() or getLobOutputBindSegment()
+		 *  then this method will close it. */
 		void	closeLobInputOutputBind(sqlrservercursor *cursor,
 							uint16_t index);
 
@@ -1752,7 +1751,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 						sqlrservercursor *cursor);
 
 		/** Returns true if "cursor" is handling the current query
- 		 *  using a custom query module and false otherwise. */
+		 *  using a custom query module and false otherwise. */
 		bool	isCustomQuery(sqlrservercursor *cursor);
 
 
@@ -1853,29 +1852,29 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 
 		/** Returns true if the currently loaded database connection
 		 *  module fetches lists (database lists, table lists, column
-		 *  lists, etc.) via API call and false if it fetches lists via
-		 *  query. */
+		 *  lists, etc.) via database API call and false if it fetches
+		 *  lists via query. */
 		bool	getListsByApiCalls();
 
-		/** Makes the API call to fetch the list of databases that are
-		 *  visible to the user that SQL Relay is logged in as.  Only
-		 *  returns database names that match wildcard "wild" if "wild"
-		 *  is non-NULL.
+		/** Makes the database API call to fetch the list of databases
+		 *  that are visible to the user that SQL Relay is logged in
+		 *  as.  Only returns database names that match wildcard
+		 *  "wild" if "wild" is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
 		bool	getDatabaseList(sqlrservercursor *cursor,
-						const char *wild);
+							const char *wild);
 
-		/** Makes the API call to fetch the list of schemas, in the
-		 *  current database, that are visible to the user that SQL
-		 *  Relay is logged in as.  Only returns schema names that
+		/** Makes the database API call to fetch the list of schemas,
+		 *  in the current database, that are visible to the user that
+		 *  SQL Relay is logged in as.  Only returns schema names that
 		 *  match wildcard "wild" if "wild" is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
 		bool	getSchemaList(sqlrservercursor *cursor,
-						const char *wild);
+							const char *wild);
 
-		/** Makes the API call to fetch the list of tables (and
+		/** Makes the database API call to fetch the list of tables (and
 		 *  table-like objects), in the current database and schema,
 		 *  that are visible to the user that SQL Relay is logged in
 		 *  as.  "objecttypes" should be an or-ed set of one or more of
@@ -1891,81 +1890,82 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		 *
 		 *  Returns true on success and false on failure. */
 		bool	getTableList(sqlrservercursor *cursor,
-						const char *wild,
-						uint16_t objecttypes);
+							const char *wild,
+							uint16_t objecttypes);
 
-		/** Makes the API call to fetch the list of table type names in
-		 *  the current database and schema, that are visible to the
-		 *  user that SQL Relay is logged in as.  Only returns table
-		 *  type names that match wildcard "wild" if "wild" is non-NULL.
+		/** Makes the database API call to fetch the list of table type
+		 *  names in the current database and schema, that are visible
+		 *  to the user that SQL Relay is logged in as.  Only returns
+		 *  table type names that match wildcard "wild" if "wild" is
+		 *  non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
 		bool	getTableTypeList(sqlrservercursor *cursor,
-						const char *wild);
+							const char *wild);
 
-		/** Makes the API call to fetch the list of column names in
-		 *  "table", where "table" is in the current database and
-		 *  schema.  Only returns column names that match wildcard
+		/** Makes the database API call to fetch the list of column
+		 *  names in "table", where "table" is in the current database
+		 *  and schema.  Only returns column names that match wildcard
 		 *  "wild" if "wild" is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
 		bool	getColumnList(sqlrservercursor *cursor,
-						const char *table,
-						const char *wild);
+							const char *table,
+							const char *wild);
 
-		/** Makes the API call to fetch the list of columns that
-		 *  compose the primary key of "table".  Only returns primary
-		 *  key column names that match wildcard "wild" if "wild" is
-		 *  non-NULL.
+		/** Makes the database API call to fetch the list of columns
+		 *  that compose the primary key of "table".  Only returns
+		 *  primary key column names that match wildcard "wild" if
+		 *  "wild" is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
 		bool	getPrimaryKeyList(sqlrservercursor *cursor,
-						const char *table,
-						const char *wild);
+							const char *table,
+							const char *wild);
 
-		/** Makes the API call to fetch the indices and indexed columns
-		 *  of "table", where "table" is in the current database and
-		 *  schema.  Only returns primary key column names that match
-		 *  wildcard "wild" if "wild" is non-NULL.
+		/** Makes the database API call to fetch the indices and
+		 *  indexed columns of "table", where "table" is in the current
+		 *  database and schema.  Only returns primary key column names
+		 *  that match wildcard "wild" if "wild" is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
 		bool	getKeyAndIndexList(sqlrservercursor *cursor,
-						const char *table,
-						const char *wild);
+							const char *table,
+							const char *wild);
 
-		/** Makes the API call to fetch the parameter names of "proc",
-		 *  where "proc" is in the current database and schema, and
-		 *  information about them, such as whether they are input,
+		/** Makes the database API call to fetch the parameter names of
+		 *  "proc", where "proc" is in the current database and schema,
+		 *  and information about them, such as whether they are input,
 		 *  output, or input-output variables.  Only returns parameter
 		 *  names that match wildcard "wild" if "wild" is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
-		bool	getProcedureParameterList(
-						sqlrservercursor *cursor,
-						const char *proc,
-						const char *wild);
+		bool	getProcedureParameterList(sqlrservercursor *cursor,
+							const char *proc,
+							const char *wild);
 
-		/** Makes the API call to fetch the info about datatype "type",
-		 *  where "type" is in the current database and schema.
-		 *  Only returns info for types that match wildcard "wild" if
-		 *  "wild" is non-NULL.
+		/** Makes the database API call to fetch the info about
+		 *  datatype "type", where "type" is in the current database
+		 *  and schema.  Only returns info for types that match
+		 *  wildcard "wild" if "wild" is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
 		bool	getTypeInfoList(sqlrservercursor *cursor,
-						const char *type,
-						const char *wild);
+							const char *type,
+							const char *wild);
 
-		/** Makes the API call to fetch the list of stored procedures
-		 *  in the current database and schema, and information about
-		 *  them, such as the number of input and output parameters,
-		 *  the numer of result sets that the procdure may retrun, a
-		 *  description of the procedure, and the procedure type
-		 *  (procedure or function).  Only returns info for procedures
-		 *  that match wildcard "wild" if "wild" is non-NULL.
+		/** Makes the database API call to fetch the list of stored
+		 *  procedures in the current database and schema, and
+		 *  information about them, such as the number of input and
+		 *  output parameters, the numer of result sets that the
+		 *  procdure may retrun, a description of the procedure, and
+		 *  the procedure type (procedure or function).  Only returns
+		 *  info for procedures that match wildcard "wild" if "wild"
+		 *  is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
 		bool	getProcedureList(sqlrservercursor *cursor,
-						const char *wild);
+							const char *wild);
 
 		/** Returns a query that can be used to fetch the list of
 		 *  database names.  If "wild" is true the the query also
@@ -1987,7 +1987,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		 *  used to substitute in a wildcard value which can be used
 		 *  to filter the results. */
 		const char	*getTableListQuery(bool wild,
-						uint16_t objecttypes);
+							uint16_t objecttypes);
 
 		/** Returns a query that can be used to fetch the list of
 		 *  table types.  If "wild" is true the the query also includes
@@ -2006,7 +2006,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		 *  be used to substitute in a wildcard value which can be used
 		 *  to filter the results. */
 		const char	*getColumnListQuery(const char *table,
-							bool wild);
+								bool wild);
 
 		/** Returns a query that can be used to fetch the list of
 		 *  columns that compose the primary key of "table".  If "wild"
@@ -2014,7 +2014,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		 *  inlcudes a %s which can be used to substitute in a wildcard
 		 *  value which can be used to filter the results. */
 		const char	*getPrimaryKeyListQuery(const char *table,
-							bool wild);
+								bool wild);
 
 		/** Returns a query that can be used to fetch the indices and
 		 *  indexed columns  of "table", where "table" is in the
@@ -2023,15 +2023,15 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		 *  can be used to substitute in a wildcard value which can be
 		 *  used to filter the results. */
 		const char	*getKeyAndIndexListQuery(const char *table,
-							bool wild);
+								bool wild);
 
 		/** Returns a query that can be used to fetch the parameter
- 		 *  names of "proc", where "proc" is in the current database
- 		 *  and schema, and information about them, such as whether
- 		 *  they are input, output, or input-output variables.  If
- 		 *  "wild" is true the the query also includes a where clause
- 		 *  that inlcudes a %s which can be used to substitute in a
- 		 *  wildcard value which can be used to filter the results. */
+		 *  names of "proc", where "proc" is in the current database
+		 *  and schema, and information about them, such as whether
+		 *  they are input, output, or input-output variables.  If
+		 *  "wild" is true the the query also includes a where clause
+		 *  that inlcudes a %s which can be used to substitute in a
+		 *  wildcard value which can be used to filter the results. */
 		const char	*getProcedureParameterListQuery(
 							const char *proc,
 							bool wild);
@@ -2043,7 +2043,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		 *  substitute in a wildcard value which can be used to filter
 		 *  the results. */
 		const char	*getTypeInfoListQuery(const char *type,
-							bool wild);
+								bool wild);
 
 		/** Returns a query that can be used to fetch the list of
 		 *  stored procedures in the current database and schema, and
@@ -2159,10 +2159,10 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 							uint32_t col);
 
 		/** Returns the size (number of bytes) of the column name at
- 		 *  position "col" in the current result set of "cursor".
- 		 *
- 		 *  Returns 0 if column info is not yet valid or if the query
- 		 *  has no result set (eg. if it was a DML or DDL query). */
+		 *  position "col" in the current result set of "cursor".
+		 *
+		 *  Returns 0 if column info is not yet valid or if the query
+		 *  has no result set (eg. if it was a DML or DDL query). */
 		uint16_t	getColumnNameSize(sqlrservercursor *cursor,
 							uint32_t col);
 
@@ -2451,17 +2451,17 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 						bool *null);
 
 		/** If the field in column "col" of the current row, of the
- 		 *  current result set of "cursor" is a LOB, then this method
- 		 *  sets "length" to the number of characters in the field.
- 		 *
- 		 *  Returns true on success and false if an error occurred.
- 		 *
- 		 *  Note that "length" is set to the number of characters
- 		 *  rather than bytes.  In the case of a binary LOB, the number
- 		 *  of characters and bytes will be the same, but in the case
- 		 *  of a text LOB, they will be different if the LOB uses a
- 		 *  variable width encoding such as UTF-8 or a fixed width
- 		 *  encoding of more than 8-bits, such as UCS2. */
+		 *  current result set of "cursor" is a LOB, then this method
+		 *  sets "length" to the number of characters in the field.
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  Note that "length" is set to the number of characters
+		 *  rather than bytes.  In the case of a binary LOB, the number
+		 *  of characters and bytes will be the same, but in the case
+		 *  of a text LOB, they will be different if the LOB uses a
+		 *  variable width encoding such as UTF-8 or a fixed width
+		 *  encoding of more than 8-bits, such as UCS2. */
 		bool	getLobFieldLength(sqlrservercursor *cursor,
 						uint32_t col,
 						uint64_t *length);
@@ -2999,7 +2999,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 
 		/** Parses the database connect string.
 		 *
-		 *  This method parses out the following connect string
+		 *  This implementation parses out the following connect string
 		 *  parameters: 
 		 *
 		 *   * user
@@ -3023,7 +3023,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		virtual	bool	send(byte_t *data, size_t size);
 
 		/** Receives "size" bytes from the database into buffer
- 		 *  "data". */
+		 *  "data". */
 		virtual	bool	recv(byte_t **data, size_t *size);
 
 		/** Logs in to the database.
@@ -3049,9 +3049,9 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		/** By default, logs out of the database and back in as
 		 *  "newuser", authenticated using password "newpassword".
 		 *
-		 *  However if the database supports a more efficient way of
-		 *  changing users then this method may be overridden by a
-		 *  child class to use that method.
+		 *  However if the database supports a more efficient strategy
+		 *  for changing users then this method may be overridden by a
+		 *  child class to use that strategy.
 		 *
 		 *  Returns true if login was successful and false otherwise. */
 		virtual	bool	changeUser(const char *newuser,
@@ -3061,7 +3061,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		 *  switches from the current user to "newuser" using password
 		 *  "newpassword".
 		 *
-		 *  By default, this method just returns false, but may be
+		 *  This implementation just returns false, but may be
 		 *  overridden by a child class to change proxied users if
 		 *  the database supports a way of doing that.
 		 *
@@ -3146,9 +3146,10 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 
 		/** Returns the query that the database uses to select a
 		 *  database, which includes a %s which can be used to
-		 *  substitute in the name of the database to select.  This
-		 *  method just returns NULL, but it may be overridden by a
-		 *  child class to return the query. */
+		 *  substitute in the name of the database to select.
+		 *
+		 *  This implementation just returns NULL, but it may be
+		 *  overridden by  child class to return the query. */
 		virtual const char	*selectDatabaseQuery();
 
 		/** Returns the current database.
@@ -3159,9 +3160,10 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		virtual char		*getCurrentDatabase();
 
 		/** Returns the query that the database uses to return the
-		 *  database that is currently in use.  This method just
-		 *  returns NULL, but it may be overridden by a child class to
-		 *  return the query. */
+		 *  database that is currently in use.
+		 *
+		 *  This implementation just returns getNoopQuery(), but it may
+		 *  be overridden by a child class to return the query. */
 		virtual const char	*getCurrentDatabaseQuery();
 
 		/** Returns the current database.
@@ -3172,9 +3174,10 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		virtual char		*getCurrentSchema();
 
 		/** Returns the query that the database uses to return the
-		 *  schema that is currently in use.  This method just
-		 *  returns NULL, but it may be overridden by a child class to
-		 *  return the query. */
+		 *  schema that is currently in use.
+		 *
+		 *  This implementation just returns getNoopQuery(), but it may
+		 *  be overridden by a child class to return the query. */
 		virtual const char	*getCurrentSchemaQuery();
 
 		/** Returns the last-insert-id.  That is, if an insert was
@@ -3183,35 +3186,39 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		 *  generated in "id".
 		 *
 		 *  Returns true on succcess and false if an error occurred. */
-		virtual bool		getLastInsertId(uint64_t *id);
+		virtual bool	getLastInsertId(uint64_t *id);
 
 		/** Returns the query that the database uses to fetch the
 		 *  last-insert-id.  That is, if an insert was performed into a
 		 *  table with an auto-increment field, then this method
 		 *  returns the query that can be used to fetch that
-		 *  auto-increment-id.  This method just returns NULL, but it
-		 *  may be overridden by a child class to return the query. */
+		 *  auto-increment-id.
+		 *
+		 *  This implementation just returns getNoopQuery(), but it may
+		 *  be overridden by a child class to return the query. */
 		virtual const char	*getLastInsertIdQuery();
 
 		/** Returns the no-op query for this the database.  That is, a
 		 *  query that safely doesn't do anything - doesn't modify any
-		 *  tables, return any result set, or set any parameters.  This
-		 *  method just returns "", but it may be overridden by a child
-		 *  class to return a more appropriate query for this
-		 *  database. */
+		 *  tables, return any result set, or set any parameters.
+		 *
+		 *  This implementation just returns "", but it may be
+		 *  overridden by a child class to return a more appropriate
+		 *  query for this database. */
 		virtual const char	*getNoopQuery();
 
 		/** Sets the transaction isolation level to "isolevel".
 		 *
 		 *  Returns true on success and false if an error occurred. */
-		virtual bool		setIsolationLevel(const char *isolevel);
+		virtual bool	setIsolationLevel(const char *isolevel);
 
 		/** Returns the query that the database uses to set the
 		 *  isolation level, which includes a %s that can be used to
-		 *  substitute in the name of the isolation level.  This method
-		 *  returns "set transaction isolation level %s", but it may be
-		 *  overridden by a child class if the database requires a
-		 *  different query. */
+		 *  substitute in the name of the isolation level.
+		 *
+		 *  This implementation returns "set transaction isolation
+		 *  level %s", but it may be overridden by a child class if the
+		 *  database requires a different query. */
 		virtual const char	*setIsolationLevelQuery();
 
 		/** Pings the database using the "ping query" defined by the
@@ -3219,12 +3226,14 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		 *
 		 *  Returns true if the ping succeeded and false if it
 		 *  failed. */
-		virtual bool		ping();
+		virtual bool	ping();
 
 		/** Returns an inexpensive query that may be used to determine
-		 *  if the database is alive or not.  This method returns
-		 *  "select 1", but it may be overridden by a child class to
-		 *  return a more approprite query for this database. */
+		 *  if the database is alive or not.
+		 *
+		 *  This implementation returns "select 1", but it may be
+		 *  overridden by a child class to return a more approprite
+		 *  query for this database. */
 		virtual const char	*pingQuery();
 
 		/** Returns the type of database: oracle, mysql, postgresql,
@@ -3240,6 +3249,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 
 		/** Returns the query that the database uses to return its host
 		 *  name in a result set consisting of a single row and column.
+		 *
 		 *  This method just returns NULL, but it may be overridden by
 		 *  a child class to return the query. */
 		virtual const char	*getDbHostNameQuery();
@@ -3250,133 +3260,144 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 
 		/** Returns the query that the database uses to return its ip
 		 *  address in a result set consisting of a single row and
-		 *  column.  This method just returns NULL, but it may be
+		 *  column.
+		 *
+		 *  This implementation just returns NULL, but it may be
 		 *  overridden by a child class to return the query. */
 		virtual const char	*getDbIpAddressQuery();
 
-		virtual bool		cacheDbHostInfo();
+		virtual bool	cacheDbHostInfo();
 
 		/** Returns true if the currently loaded database connection
 		 *  module fetches lists (database lists, table lists, column
-		 *  lists, etc.) via API call and false if it fetches lists via
-		 *  query. */
-		virtual bool		getListsByApiCalls();
+		 *  lists, etc.) via database API call and false if it fetches
+		 *  lists via query. */
+		virtual bool	getListsByApiCalls();
 
 		/** Returns the format that the result set that database lists
-		 *  are returned in.  This method returns
-		 *  SQLRSERVERLISTFORMAT_ODBC if getListsByApiCalls() returns
-		 *  true, and SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls()
-		 *  returns false, but may be overridden by a child class to
-		 *  return a different result. */
-		virtual	sqlrserverlistformat_t
-					getDatabaseListFormat();
+		 *  are returned in.
+		 *
+		 *  This implementation returns SQLRSERVERLISTFORMAT_ODBC if
+		 *  getListsByApiCalls() returns true, and
+		 *  SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls() returns
+		 *  false, but may be overridden by a child class to return a
+		 *  different result. */
+		virtual	sqlrserverlistformat_t	getDatabaseListFormat();
 
 		/** Returns the format that the result set that schema lists
-		 *  are returned in.  This method returns
-		 *  SQLRSERVERLISTFORMAT_ODBC if getListsByApiCalls() returns
-		 *  true, and SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls()
-		 *  returns false, but may be overridden by a child class to
-		 *  return a different result. */
-		virtual	sqlrserverlistformat_t
-					getSchemaListFormat();
+		 *  are returned in.
+		 *
+		 *  This method returns SQLRSERVERLISTFORMAT_ODBC if
+		 *  getListsByApiCalls() returns true, and
+		 *  SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls() returns
+		 *  false, but may be overridden by a child class to return a
+		 *  different result. */
+		virtual	sqlrserverlistformat_t	getSchemaListFormat();
 
 		/** Returns the format that the result set that table lists
-		 *  are returned in.  This method returns
-		 *  SQLRSERVERLISTFORMAT_ODBC if getListsByApiCalls() returns
-		 *  true, and SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls()
-		 *  returns false, but may be overridden by a child class to
-		 *  return a different result. */
-		virtual	sqlrserverlistformat_t
-					getTableListFormat();
+		 *  are returned in.
+		 *
+		 *  This method returns SQLRSERVERLISTFORMAT_ODBC if
+		 *  getListsByApiCalls() returns true, and
+		 *  SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls() returns
+		 *  false, but may be overridden by a child class to return a
+		 *  different result. */
+		virtual	sqlrserverlistformat_t	getTableListFormat();
 
 		/** Returns the format that the result set that table type lists
-		 *  are returned in.  This method returns
-		 *  SQLRSERVERLISTFORMAT_ODBC if getListsByApiCalls() returns
-		 *  true, and SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls()
-		 *  returns false, but may be overridden by a child class to
-		 *  return a different result. */
-		virtual	sqlrserverlistformat_t
-					getTableTypeListFormat();
+		 *  are returned in.
+		 *
+		 *  This method returns SQLRSERVERLISTFORMAT_ODBC if
+		 *  getListsByApiCalls() returns true, and
+		 *  SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls() returns
+		 *  false, but may be overridden by a child class to return a
+		 *  different result. */
+		virtual	sqlrserverlistformat_t	getTableTypeListFormat();
 
 		/** Returns the format that the result set that column lists
-		 *  are returned in.  This method returns
-		 *  SQLRSERVERLISTFORMAT_ODBC if getListsByApiCalls() returns
-		 *  true, and SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls()
-		 *  returns false, but may be overridden by a child class to
-		 *  return a different result. */
-		virtual	sqlrserverlistformat_t
-					getColumnListFormat();
+		 *  are returned in.
+		 *
+		 *  This method returns SQLRSERVERLISTFORMAT_ODBC if
+		 *  getListsByApiCalls() returns true, and
+		 *  SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls() returns
+		 *  false, but may be overridden by a child class to return a
+		 *  different result. */
+		virtual	sqlrserverlistformat_t	getColumnListFormat();
 
 		/** Returns the format that the result set that primary key
-		 *  lists are returned in.  This method returns
-		 *  SQLRSERVERLISTFORMAT_ODBC if getListsByApiCalls() returns
-		 *  true, and SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls()
-		 *  returns false, but may be overridden by a child class to
-		 *  return a different result. */
-		virtual	sqlrserverlistformat_t
-					getPrimaryKeyListFormat();
+		 *  lists are returned in.
+		 *
+		 *  This method returns SQLRSERVERLISTFORMAT_ODBC if
+		 *  getListsByApiCalls() returns true, and
+		 *  SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls() returns
+		 *  false, but may be overridden by a child class to return a
+		 *  different result. */
+		virtual	sqlrserverlistformat_t	getPrimaryKeyListFormat();
 
 		/** Returns the format that the result set that key and index
-		 *  lists are returned in.  This method returns
-		 *  SQLRSERVERLISTFORMAT_ODBC if getListsByApiCalls() returns
-		 *  true, and SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls()
-		 *  returns false, but may be overridden by a child class to
-		 *  return a different result. */
-		virtual	sqlrserverlistformat_t
-					getKeyAndIndexListFormat();
+		 *  lists are returned in.
+		 *
+		 *  This method returns SQLRSERVERLISTFORMAT_ODBC if
+		 *  getListsByApiCalls() returns true, and
+		 *  SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls() returns
+		 *  false, but may be overridden by a child class to return a
+		 *  different result. */
+		virtual	sqlrserverlistformat_t	getKeyAndIndexListFormat();
 
 		/** Returns the format that the result set that procedure
- 		 *  parameter lists are returned in.  This method returns
-		 *  SQLRSERVERLISTFORMAT_ODBC if getListsByApiCalls() returns
-		 *  true, and SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls()
-		 *  returns false, but may be overridden by a child class to
-		 *  return a different result. */
+		 *  parameter lists are returned in.
+		 *
+		 *  This method returns SQLRSERVERLISTFORMAT_ODBC if
+		 *  getListsByApiCalls() returns true, and
+		 *  SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls() returns
+		 *  false, but may be overridden by a child class to return a
+		 *  different result. */
 		virtual	sqlrserverlistformat_t
 					getProcedureParameterListFormat();
 
 		/** Returns the format that the result set that type info lists
-		 *  are returned in.  This method returns
-		 *  SQLRSERVERLISTFORMAT_ODBC if getListsByApiCalls() returns
-		 *  true, and SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls()
-		 *  returns false, but may be overridden by a child class to
-		 *  return a different result. */
-		virtual	sqlrserverlistformat_t
-					getTypeInfoListFormat();
+		 *  are returned in.
+		 *
+		 *  This method returns SQLRSERVERLISTFORMAT_ODBC if
+		 *  getListsByApiCalls() returns true, and
+		 *  SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls() returns
+		 *  false, but may be overridden by a child class to return a
+		 *  different result. */
+		virtual	sqlrserverlistformat_t	getTypeInfoListFormat();
 
 		/** Returns the format that the result set that procedure lists
-		 *  are returned in.  This method returns
-		 *  SQLRSERVERLISTFORMAT_ODBC if getListsByApiCalls() returns
-		 *  true, and SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls()
-		 *  returns false, but may be overridden by a child class to
-		 *  return a different result. */
-		virtual	sqlrserverlistformat_t
-					getProcedureListFormat();
+		 *  are returned in.
+		 *
+		 *  This method returns SQLRSERVERLISTFORMAT_ODBC if
+		 *  getListsByApiCalls() returns true, and
+		 *  SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls() returns
+		 *  false, but may be overridden by a child class to return a
+		 *  different result. */
+		virtual	sqlrserverlistformat_t	getProcedureListFormat();
 
-		/** Makes the API call to fetch the list of databases that are
-		 *  visible to the user that SQL Relay is logged in as.  Only
-		 *  returns database names that match wildcard "wild" if "wild"
-		 *  is non-NULL.
+		/** Makes the database API call to fetch the list of databases
+ 		 *  that are visible to the user that SQL Relay is logged in
+ 		 *  as.  Only returns database names that match wildcard "wild"
+ 		 *  if "wild" is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
-		virtual bool		getDatabaseList(
-						sqlrservercursor *cursor,
-						const char *wild);
+		virtual bool	getDatabaseList(sqlrservercursor *cursor,
+							const char *wild);
 
-		/** Makes the API call to fetch the list of schemas, in the
-		 *  current database, that are visible to the user that SQL
-		 *  Relay is logged in as.  Only returns schema names that
+		/** Makes the database API call to fetch the list of schemas,
+		 *  in the current database, that are visible to the user that
+		 *  SQL Relay is logged in as.  Only returns schema names that
 		 *  match wildcard "wild" if "wild" is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
-		virtual bool		getSchemaList(
-						sqlrservercursor *cursor,
-						const char *wild);
+		virtual bool	getSchemaList(sqlrservercursor *cursor,
+							const char *wild);
 
-		/** Makes the API call to fetch the list of tables (and
-		 *  table-like objects), in the current database and schema,
-		 *  that are visible to the user that SQL Relay is logged in
-		 *  as.  "objecttypes" should be an or-ed set of one or more of
-		 *  the following object types:
+		/** Makes the databaase API call to fetch the list of tables
+		 *  (and table-like objects), in the current database and
+		 *  schema, that are visible to the user that SQL Relay is
+		 *  logged in as.  "objecttypes" should be an or-ed set of one
+		 *  or more of the following object types:
 		 *
 		 *  DB_OBJECT_TABLE
 		 *  DB_OBJECT_VIEW
@@ -3387,175 +3408,206 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		 *  "wild" is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
-		virtual bool		getTableList(
-						sqlrservercursor *cursor,
-						const char *wild,
-						uint16_t objecttypes);
+		virtual bool	getTableList(sqlrservercursor *cursor,
+							const char *wild,
+							uint16_t objecttypes);
 
-		/** Makes the API call to fetch the list of table type names in
-		 *  the current database and schema, that are visible to the
-		 *  user that SQL Relay is logged in as.  Only returns table
-		 *  type names that match wildcard "wild" if "wild" is non-NULL.
-		 *
-		 *  Returns true on success and false on failure. */
-		virtual bool		getTableTypeList(
-						sqlrservercursor *cursor,
-						const char *wild);
-
-		/** Makes the API call to fetch the list of column names in
-		 *  "table", where "table" is in the current database and
-		 *  schema.  Only returns column names that match wildcard
-		 *  "wild" if "wild" is non-NULL.
-		 *
-		 *  Returns true on success and false on failure. */
-		virtual bool		getColumnList(
-						sqlrservercursor *cursor,
-						const char *table,
-						const char *wild);
-
-		/** Makes the API call to fetch the list of columns that
-		 *  compose the primary key of "table".  Only returns primary
-		 *  key column names that match wildcard "wild" if "wild" is
+		/** Makes the database API call to fetch the list of table type
+		 *  names in the current database and schema, that are visible
+		 *  to the user that SQL Relay is logged in as.  Only returns
+		 *  table type names that match wildcard "wild" if "wild" is
 		 *  non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
-		virtual bool		getPrimaryKeyList(
-						sqlrservercursor *cursor,
-						const char *table,
-						const char *wild);
+		virtual bool	getTableTypeList(sqlrservercursor *cursor,
+							const char *wild);
 
-		/** Makes the API call to fetch the indices and indexed columns
-		 *  of "table", where "table" is in the current database and
-		 *  schema.  Only returns primary key column names that match
-		 *  wildcard "wild" if "wild" is non-NULL.
+		/** Makes the database API call to fetch the list of column
+		 *  names in "table", where "table" is in the current database
+		 *  and schema.  Only returns column names that match wildcard
+		 *  "wild" if "wild" is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
-		virtual bool		getKeyAndIndexList(
-						sqlrservercursor *cursor,
-						const char *table,
-						const char *wild);
+		virtual bool	getColumnList(sqlrservercursor *cursor,
+							const char *table,
+							const char *wild);
 
-		/** Makes the API call to fetch the parameter names of "proc",
-		 *  where "proc" is in the current database and schema, and
-		 *  information about them, such as whether they are input,
+		/** Makes the database API call to fetch the list of columns
+		 *  that compose the primary key of "table".  Only returns
+		 *  primary key column names that match wildcard "wild" if
+		 *  "wild" is non-NULL.
+		 *
+		 *  Returns true on success and false on failure. */
+		virtual bool	getPrimaryKeyList(sqlrservercursor *cursor,
+							const char *table,
+							const char *wild);
+
+		/** Makes the database API call to fetch the indices and
+		 *  indexed columns of "table", where "table" is in the current
+		 *  database and schema.  Only returns primary key column names
+		 *  that match wildcard "wild" if "wild" is non-NULL.
+		 *
+		 *  Returns true on success and false on failure. */
+		virtual bool	getKeyAndIndexList(sqlrservercursor *cursor,
+							const char *table,
+							const char *wild);
+
+		/** Makes the database API call to fetch the parameter names of
+		 *  "proc", where "proc" is in the current database and schema,
+		 *  and information about them, such as whether they are input,
 		 *  output, or input-output variables.  Only returns parameter
 		 *  names that match wildcard "wild" if "wild" is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
-		virtual bool		getProcedureParameterList(
+		virtual bool	getProcedureParameterList(
 						sqlrservercursor *cursor,
-						const char *procedure,
-						const char *wild);
+							const char *procedure,
+							const char *wild);
 
-		/** Makes the API call to fetch the info about datatype "type",
-		 *  where "type" is in the current database and schema.
-		 *  Only returns info for types that match wildcard "wild" if
-		 *  "wild" is non-NULL.
+		/** Makes the database API call to fetch the info about
+		 *  datatype "type", where "type" is in the current database
+		 *  and schema.  Only returns info for types that match
+		 *  wildcard "wild" if "wild" is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
-		virtual bool		getTypeInfoList(
-						sqlrservercursor *cursor,
-						const char *type,
-						const char *wild);
+		virtual bool	getTypeInfoList(sqlrservercursor *cursor,
+							const char *type,
+							const char *wild);
 
-		/** Makes the API call to fetch the list of stored procedures
-		 *  in the current database and schema, and information about
-		 *  them, such as the number of input and output parameters,
-		 *  the numer of result sets that the procdure may retrun, a
-		 *  description of the procedure, and the procedure type
-		 *  (procedure or function).  Only returns info for procedures
-		 *  that match wildcard "wild" if "wild" is non-NULL.
+		/** Makes the database API call to fetch the list of stored
+		 *  procedures in the current database and schema, and
+		 *  information about them, such as the number of input and
+		 *  output parameters, the numer of result sets that the
+		 *  procdure may retrun, a description of the procedure, and
+		 *  the procedure type (procedure or function).  Only returns
+		 *  info for procedures that match wildcard "wild" if "wild" is
+		 *  non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
-		virtual bool		getProcedureList(
-						sqlrservercursor *cursor,
-						const char *wild);
+		virtual bool	getProcedureList(sqlrservercursor *cursor,
+							const char *wild);
 
 		/** Returns a query that can be used to fetch the list of
 		 *  database names.  If "wild" is true the the query also
 		 *  includes a where clause that inlcudes a %s which can be
 		 *  used to substitute in a wildcard value which can be used
-		 *  to filter the results. */
+		 *  to filter the results.
+		 *
+		 *  This implementation just returns getNoopQuery(), but it may
+		 *  be overridden by a child class to return a database-specific
+		 *  query. */
 		virtual const char	*getDatabaseListQuery(bool wild);
 
 		/** Returns a query that can be used to fetch the list of
 		 *  schema names.  If "wild" is true the the query also
 		 *  includes a where clause that inlcudes a %s which can be
 		 *  used to substitute in a wildcard value which can be used
-		 *  to filter the results. */
+		 *  to filter the results.
+		 *
+		 *  This implementation just returns getNoopQuery(), but it may
+		 *  be overridden by a child class to return a database-specific
+		 *  query. */
 		virtual const char	*getSchemaListQuery(bool wild);
 
 		/** Returns a query that can be used to fetch the list of
 		 *  table names.  If "wild" is true the the query also
 		 *  includes a where clause that inlcudes a %s which can be
 		 *  used to substitute in a wildcard value which can be used
-		 *  to filter the results. */
+		 *  to filter the results.
+		 *
+		 *  This implementation returns a query against the
+		 *  information_schema, but it may be overridden by a child
+		 *  class to return a database-specific query. */
 		virtual const char	*getTableListQuery(bool wild,
-						uint16_t objecttypes);
-
-		virtual const char	*getTableListQuery(bool wild,
-						uint16_t objecttypes,
-						const char *extrawhere);
+							uint16_t objecttypes);
 
 		/** Returns a query that can be used to fetch the list of
 		 *  table types.  If "wild" is true the the query also includes
 		 *  a where clause that inlcudes a %s which can be used to
 		 *  substitute in a wildcard value which can be used to filter
-		 *  the results. */
+		 *  the results.
+		 *
+		 *  This implementation just returns getNoopQuery(), but it may
+		 *  be overridden by a child class to return a database-specific
+		 *  query. */
 		virtual const char	*getTableTypeListQuery(bool wild);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  global temporary table names. */
+		 *  global temporary table names.
+		 *
+		 *  This implementation just returns getNoopQuery(), but it may
+		 *  be overridden by a child class to return a database-specific
+		 *  query. */
 		virtual const char	*getGlobalTempTableListQuery();
 
 		/** Returns a query that can be used to fetch the list of
 		 *  column names from "table".  If "wild" is true the the query
 		 *  also includes a where clause that inlcudes a %s which can
 		 *  be used to substitute in a wildcard value which can be used
-		 *  to filter the results. */
+		 *  to filter the results.
+		 *
+		 *  This implementation just returns getNoopQuery(), but it may
+		 *  be overridden by a child class to return a database-specific
+		 *  query. */
 		virtual const char	*getColumnListQuery(
-						const char *table,
-						bool wild);
+							const char *table,
+							bool wild);
 
 		/** Returns a query that can be used to fetch the list of
 		 *  columns that compose the primary key of "table".  If "wild"
 		 *  is true the the query also includes a where clause that
 		 *  inlcudes a %s which can be used to substitute in a wildcard
-		 *  value which can be used to filter the results. */
+		 *  value which can be used to filter the results.
+		 *
+		 *  This implementation just returns getNoopQuery(), but it may
+		 *  be overridden by a child class to return a database-specific
+		 *  query. */
 		virtual const char	*getPrimaryKeyListQuery(
-						const char *table,
-						bool wild);
+							const char *table,
+							bool wild);
 
 		/** Returns a query that can be used to fetch the indices and
 		 *  indexed columns  of "table", where "table" is in the
 		 *  current database and schema.  If "wild" is true the the
 		 *  query also includes a where clause that inlcudes a %s which
 		 *  can be used to substitute in a wildcard value which can be
-		 *  used to filter the results. */
+		 *  used to filter the results.
+		 *
+		 *  This implementation just returns getNoopQuery(), but it may
+		 *  be overridden by a child class to return a database-specific
+		 *  query. */
 		virtual const char	*getKeyAndIndexListQuery(
-						const char *table,
-						bool wild);
+							const char *table,
+							bool wild);
 
 		/** Returns a query that can be used to fetch the parameter
- 		 *  names of "proc", where "proc" is in the current database
- 		 *  and schema, and information about them, such as whether
- 		 *  they are input, output, or input-output variables.  If
- 		 *  "wild" is true the the query also includes a where clause
- 		 *  that inlcudes a %s which can be used to substitute in a
- 		 *  wildcard value which can be used to filter the results. */
+		 *  names of "proc", where "proc" is in the current database
+		 *  and schema, and information about them, such as whether
+		 *  they are input, output, or input-output variables.  If
+		 *  "wild" is true the the query also includes a where clause
+		 *  that inlcudes a %s which can be used to substitute in a
+		 *  wildcard value which can be used to filter the results.
+		 *
+		 *  This implementation just returns getNoopQuery(), but it may
+		 *  be overridden by a child class to return a database-specific
+		 *  query. */
 		virtual const char	*getProcedureParameterListQuery(
-						const char *procedure,
-						bool wild);
+							const char *procedure,
+							bool wild);
 
 		/** Returns a query that can be used to fetch info about
 		 *  datatype "type", where "type" is in the current database
 		 *  and schema.  If "wild" is true the the query also includes
 		 *  a where clause that inlcudes a %s which can be used to
 		 *  substitute in a wildcard value which can be used to filter
-		 *  the results. */
+		 *  the results.
+		 *
+		 *  This implementation just returns getNoopQuery(), but it may
+		 *  be overridden by a child class to return a database-specific
+		 *  query. */
 		virtual const char	*getTypeInfoListQuery(
-						const char *type,
-						bool wild);
+							const char *type,
+							bool wild);
 
 		/** Returns a query that can be used to fetch the list of
 		 *  stored procedures in the current database and schema, and
@@ -3565,18 +3617,25 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		 *  the procedure type (procedure or function).  If "wild" is
 		 *  true the the query also includes a where clause that
 		 *  inlcudes a %s which can be used to substitute in a wildcard
-		 *  value which can be used to filter the results. */
-		virtual const char	*getProcedureListQuery(
-						bool wild);
+		 *  value which can be used to filter the results.
+		 *
+		 *  This implementation just returns getNoopQuery(), but it may
+		 *  be overridden by a child class to return a database-specific
+		 *  query. */
+		virtual const char	*getProcedureListQuery(bool wild);
 
 		/** Returns true if "table" is a synonym, rather than an actual
 		 *  table and false otherwise. */
-		virtual bool		isSynonym(const char *table);
+		virtual bool	isSynonym(const char *table);
 
 		/** Returns the query that can be used to determine if a table
 		 *  name is a synonym rather than an actual table, that
 		 *  includes a %s which can be used to substitute in a table
-		 *  name. */
+		 *  name.
+		 *
+		 *  This implementation just returns getNoopQuery(), but it may
+		 *  be overridden by a child class to return a database-specific
+		 *  query. */
 		virtual const char	*isSynonymQuery();
 
 		/** Allocates a cursor and assigns it an id of "id".
@@ -3591,8 +3650,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 
 		/** Deletes "cursor" which was previously allocated by
 		 *  newCursor(). */
-		virtual void			deleteCursor(
-						sqlrservercursor *curs)=0;
+		virtual void deleteCursor(sqlrservercursor *curs)=0;
 
 		/** Returns a string representing the bind variable format used
 		 *  by the database.  For example:
@@ -3658,7 +3716,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		virtual bool		tempTableTruncateBeforeDrop();
 
 		/** Performs various clean-up tasks when a client session
- 		 *  ends. */
+		 *  ends. */
 		virtual void		endSession();
 
 		/** Returns a pointer to the connection-level error buffer. */
@@ -3708,12 +3766,18 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 
 		/** Opens the cursor.
 		 *  
-		 *  Returns true on success and false on failure. */
+		 *  Returns true on success and false on failure.
+		 *
+		 *  This method just returns true, but may be overridden by
+		 *  a child class to perform module-specific tasks. */
 		virtual	bool	open();
 
 		/** Closes the cursor.
 		 *  
-		 *  Returns true on success and false on failure. */
+		 *  Returns true on success and false on failure.
+		 *
+		 *  This method just returns true, but may be overridden by
+		 *  a child class to perform module-specific tasks. */
 		virtual	bool	close();
 
 		/** Returns the type "query", of "size" bytes.  This method
@@ -3721,12 +3785,11 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		 *  comparing the query to various patterns, however it may be
 		 *  overridden by a child class to use a database-API-provided
 		 *  method, or something else. */
-		virtual sqlrquerytype_t	determineQueryType(
-						const char *query,
-						uint32_t size);
+		virtual sqlrquerytype_t	determineQueryType(const char *query,
+								uint32_t size);
 
 		/** Returns true if we are handling the current query
- 		 *  using a custom query module and false otherwise. */
+		 *  using a custom query module and false otherwise. */
 		virtual	bool	isCustomQuery();
 
 		/** Prepares "query", of "size" bytes.
@@ -3736,21 +3799,20 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		 *  This method just returns true, but may be overridden by
 		 *  a child class to actually prepare the query and return
 		 *  true or false, as appropriate. */
-		virtual	bool	prepareQuery(const char *query,
-							uint32_t size);
+		virtual	bool	prepareQuery(const char *query, uint32_t size);
 
 		/** Returns true if "query", of "size" bytes, supports native
- 		 *  binds, and false if native binds are not supported by this
- 		 *  query.
- 		 *
- 		 *  This method just returns true, but may be overriden by
- 		 *  a child class to return true or false, as appropriate. */
+		 *  binds, and false if native binds are not supported by this
+		 *  query.
+		 *
+		 *  This method just returns true, but may be overriden by
+		 *  a child class to return true or false, as appropriate. */
 		virtual	bool	supportsNativeBinds(const char *query,
 							uint32_t size);
 
 		/** Binds character value "value", of "valuesize" bytes, with
-		 *  null indicator "isnull" to variable "variable" of
-		 *  "variablesize" bytes.
+		 *  null indicator "isnull" to input bind variable "variable"
+		 *  of "variablesize" bytes.
 		 *
 		 *  Returns true if the bind succeeded and false otherwise.
 		 *
@@ -3763,8 +3825,8 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 						uint32_t valuesize,
 						int16_t *isnull);
 
-		/** Binds integer value "value" to variable "variable" of
-		 *  "variablesize" bytes.
+		/** Binds integer value "value" to input bind variable
+		 *  "variable" of "variablesize" bytes.
 		 *
 		 *  Returns true if the bind succeeded and false otherwise.
 		 *
@@ -3776,8 +3838,8 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 						int64_t *value);
 
 		/** Binds double-precision floating point value "value", with
-		 *  precision "precision" and scale "scale" to variable
-		 *  "variable" of "variablesize" bytes.
+		 *  precision "precision" and scale "scale" to input bind
+		 *  variable "variable" of "variablesize" bytes.
 		 *
 		 *  Returns true if the bind succeeded and false otherwise.
 		 *
@@ -3823,19 +3885,20 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 
 		/** Binds the broken-down date/time specified by "year",
 		 *  "month", "day", "hour", "minute", "second", "microsecond",
-		 *  "tz", and "isnegative" to variable "variable" of
+		 *  "tz", and "isnegative" to input bind variable "variable" of
 		 *  "variablesize" bytes.
 		 *  
-		 *  A "buffer" of "buffersize" bytes is also provided in case
-		 *  the date/time must be first converted to a string.
+		 *  A "buffer" of "buffersize" bytes should also be passed in
+		 *  case the date/time must be first converted to a string.
 		 *
 		 *  Returns true if the bind succeeded and false otherwise.
 		 *
-		 *  This method converts the broken-down date/time to a string
-		 *  then calls the inputBind() method for binding strings, but
-		 *  may be overridden by a child class to work differently,
-		 *  for example, to bind the broken-down date/time components
-		 *  directly, if the database API supports that. */
+		 *  This method uses converts the broken-down date/time to a
+		 *  string, stored in "buffer", then calls the inputBind()
+		 *  method for binding strings, but may be overridden by a
+		 *  child class to work differently, for example, to bind the
+		 *  broken-down date/time components directly, if the database
+		 *  API supports that. */
 		virtual bool	inputBind(const char *variable,
 						uint16_t variablesize,
 						int64_t year,
@@ -3852,8 +3915,8 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 						int16_t *isnull);
 
 		/** Binds blob value "value", of "valuesize" bytes, with
-		 *  null indicator "isnull" to variable "variable" of
-		 *  "variablesize" bytes.
+		 *  null indicator "isnull" to input bind variable "variable"
+		 *  of "variablesize" bytes.
 		 *
 		 *  Returns true if the bind succeeded and false otherwise.
 		 *
@@ -3867,8 +3930,8 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 						int16_t *isnull);
 
 		/** Binds clob value "value", of "valuesize" bytes, with
-		 *  null indicator "isnull" to variable "variable" of
-		 *  "variablesize" bytes.
+		 *  null indicator "isnull" to input bind variable "variable"
+		 *  of "variablesize" bytes.
 		 *
 		 *  Returns true if the bind succeeded and false otherwise.
 		 *
@@ -3881,17 +3944,44 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 						uint32_t valuesize,
 						int16_t *isnull);
 
+		/** Binds character buffer "value", of "valuesize" bytes, and
+		 *  null indicator "isnull" to output bind variable "variable"
+		 *  of "variablesize" bytes.
+		 *
+		 *  Returns true if the bind succeeded and false otherwise.
+		 *
+		 *  This method just returns true, but may be overridden by
+		 *  a child class to actually bind the value and return
+		 *  true or false, as appropriate. */
 		virtual	bool	outputBind(const char *variable, 
 						uint16_t variablesize,
 						char *value,
 						uint32_t valuesize,
 						int16_t *isnull);
 
+		/** Binds integer buffer "value", and null indicator "isnull"
+		 *  to output bind variable "variable" of "variablesize" bytes.
+		 *
+		 *  Returns true if the bind succeeded and false otherwise.
+		 *
+		 *  This method just returns true, but may be overridden by
+		 *  a child class to actually bind the value and return
+		 *  true or false, as appropriate. */
 		virtual	bool	outputBind(const char *variable, 
 						uint16_t variablesize,
 						int64_t *value,
 						int16_t *isnull);
 
+		/** Binds double-precision floating point buffer "value",
+		 *  integer buffers "precision" and "scale", and null indicator
+		 *  "isnull" to output bind variable "variable" of
+		 *  "variablesize" bytes.
+		 *
+		 *  Returns true if the bind succeeded and false otherwise.
+		 *
+		 *  This method just returns true, but may be overridden by
+		 *  a child class to actually bind the value and return
+		 *  true or false, as appropriate. */
 		virtual	bool	outputBind(const char *variable, 
 						uint16_t variablesize,
 						double *value,
@@ -3899,6 +3989,19 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 						uint32_t *scale,
 						int16_t *isnull);
 
+		/** Binds the broken-down date/time buffers "year", "month",
+		 *  "day", "hour", "minute", "second", "microsecond", "tz",
+		 *  and "isnegative", and null indicator "isnull" to output
+		 *  bind variable "variable" of "variablesize" bytes.
+		 *  
+		 *  A "buffer" of "buffersize" bytes is also provided in case
+		 *  the date/time must be converted from a string.
+		 *
+		 *  Returns true if the bind succeeded and false otherwise.
+		 *
+		 *  This method just returns true, but may be overridden by
+		 *  a child class to actually bind the value and return
+		 *  true or false, as appropriate. */
 		virtual bool	outputBind(const char *variable,
 						uint16_t variablesize,
 						int16_t *year,
@@ -3914,31 +4017,143 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 						uint16_t buffersize,
 						int16_t *isnull);
 
+		/** Binds a blob buffer and null indicator "isnull" to output
+		 *  bind variable "variable" of "variablesize" bytes such that,
+		 *  later, data can be fetched from the blob buffer using
+		 *  getLobOutputBindLength(), getLobOutputBindSegment(), and
+		 *  closeLobOutputBind().
+		 *
+		 *  Returns true if the bind succeeded and false otherwise.
+		 *
+		 *  This method just returns true, but may be overridden by
+		 *  a child class to actually bind the value and return
+		 *  true or false, as appropriate. */
 		virtual	bool	outputBindBlob(const char *variable, 
 						uint16_t variablesize,
 						uint16_t index,
 						int16_t *isnull);
 
+		/** Binds a clob buffer and null indicator "isnull" to output
+		 *  bind variable "variable" of "variablesize" bytes such that,
+		 *  later, data can be fetched from the blob buffer using
+		 *  getLobOutputBindLength(), getLobOutputBindSegment(), and
+		 *  closeLobOutputBind().
+		 *
+		 *  Returns true if the bind succeeded and false otherwise.
+		 *
+		 *  This method just returns true, but may be overridden by
+		 *  a child class to actually bind the value and return
+		 *  true or false, as appropriate. */
 		virtual	bool	outputBindClob(const char *variable, 
 						uint16_t variablesize,
 						uint16_t index,
 						int16_t *isnull);
 
+		/** Opens LOB output bind at position "index" (unless it is
+		 *  already open) and sets "length" equal to its length, in
+		 *  characters.
+		 *
+		 *  Returns true on success and false otherwise.  Will return
+		 *  false if the output bind at position "index" is not a LOB.
+		 *
+		 *  For example...
+		 *
+		 *  if
+		 *  getOutputBinds()[index].type==SQLRSERVERBINDVARTYPE_BLOB
+		 *  or
+		 *  getOutputBinds()[index].type==SQLRSERVERBINDVARTYPE_CLOB
+		 *  then this method will return true. */
+		virtual bool	getLobOutputBindLength(uint16_t index,
+							uint64_t *length);
+
+		/** Opens LOB output bind at position "index" (unless it is
+		 *  already open) and attempts to fetch "charstoread"
+		 *  characters from position "offset" into "buffer" of
+		 *  "buffersize" bytes.  Populates "charsread" with the number
+		 *  of characters that were actually read.
+		 *
+		 *  Returns true on success and false otherwise.  Will return
+		 *  false if the output bind at position "index" is not a LOB.
+		 *
+		 *  For example...
+		 *
+		 *  if
+		 *  getOutputBinds()[index].type==SQLRSERVERBINDVARTYPE_BLOB
+		 *  or
+		 *  getOutputBinds()[index].type==SQLRSERVERBINDVARTYPE_CLOB
+		 *  then this method will return true. */
+		virtual bool	getLobOutputBindSegment(uint16_t index,
+							char *buffer,
+							uint64_t buffersize,
+							uint64_t offset,
+							uint64_t charstoread,
+							uint64_t *charsread);
+
+		/** Closes LOB output bind at position "index".
+		 *
+		 *  For example...
+		 *
+		 *  if
+		 *  getOutputBinds()[index].type==SQLRSERVERBINDVARTYPE_BLOB
+		 *  or
+		 *  getOutputBinds()[index].type==SQLRSERVERBINDVARTYPE_CLOB
+		 *  and the LOB was opened by a call to
+		 *  getLobOutputBindLength() or getLobOutputBindSegment()
+		 *  then this method will close it. */
+		virtual void	closeLobOutputBind(uint16_t index);
+
+		/** Binds cursor "cursor" to output bind variable "variable"
+		 *  of "variablesize" bytes, such that, later, a result set
+		 *  can be fetched from it using fetchFromBindCursor().
+		 *
+		 *  Returns true if the bind succeeded and false otherwise.
+		 *
+		 *  This method just returns true, but may be overridden by
+		 *  a child class to actually bind the value and return
+		 *  true or false, as appropriate. */
 		virtual	bool	outputBindCursor(const char *variable,
 						uint16_t variablesize,
 						sqlrservercursor *cursor);
 
+		/** Binds character buffer "value", of "valuesize" bytes, and
+		 *  null indicator "isnull" to input/output bind variable
+		 *  "variable" of "variablesize" bytes.
+		 *
+		 *  Returns true if the bind succeeded and false otherwise.
+		 *
+		 *  This method just returns true, but may be overridden by
+		 *  a child class to actually bind the value and return
+		 *  true or false, as appropriate. */
 		virtual	bool	inputOutputBind(const char *variable, 
 						uint16_t variablesize,
 						char *value,
 						uint32_t valuesize,
 						int16_t *isnull);
 
+		/** Binds integer buffer "value" and null indicator "isnull"
+		 *  to input/output bind variable "variable" of "variablesize"
+		 *  bytes.
+		 *
+		 *  Returns true if the bind succeeded and false otherwise.
+		 *
+		 *  This method just returns true, but may be overridden by
+		 *  a child class to actually bind the value and return
+		 *  true or false, as appropriate. */
 		virtual	bool	inputOutputBind(const char *variable, 
 						uint16_t variablesize,
 						int64_t *value,
 						int16_t *isnull);
 
+		/** Binds double-precision floating point buffer "value",
+		 *  integer buffers "precision" and "scale", and null indicator
+		 *  "isnull" to input/output bind variable "variable" of
+		 *  "variablesize" bytes.
+		 *
+		 *  Returns true if the bind succeeded and false otherwise.
+		 *
+		 *  This method just returns true, but may be overridden by
+		 *  a child class to actually bind the value and return
+		 *  true or false, as appropriate. */
 		virtual	bool	inputOutputBind(const char *variable, 
 						uint16_t variablesize,
 						double *value,
@@ -3946,6 +4161,20 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 						uint32_t *scale,
 						int16_t *isnull);
 
+		/** Binds the broken-down date/time buffers "year", "month",
+		 *  "day", "hour", "minute", "second", "microsecond", "tz",
+		 *  and "isnegative", and null indicator "isnull" to
+		 *  input/output bind variable "variable" of "variablesize"
+		 *  bytes.
+		 *  
+		 *  A "buffer" of "buffersize" bytes is also provided in case
+		 *  the date/time must be converted from a string.
+		 *
+		 *  Returns true if the bind succeeded and false otherwise.
+		 *
+		 *  This method just returns true, but may be overridden by
+		 *  a child class to actually bind the value and return
+		 *  true or false, as appropriate. */
 		virtual bool	inputOutputBind(const char *variable,
 						uint16_t variablesize,
 						int16_t *year,
@@ -3961,19 +4190,73 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 						uint16_t buffersize,
 						int16_t *isnull);
 
+		/** Binds a blob buffer and null indicator "isnull" to
+		 *  input/output bind variable "variable" of "variablesize"
+		 *  bytes such that, later, data can be fetched from the blob
+		 *  buffer using getLobInputOutputBindLength(),
+		 *  getLobInputOutputBindSegment(), and
+		 *  closeLobInputOutputBind().
+		 *
+		 *  Returns true if the bind succeeded and false otherwise.
+		 *
+		 *  This method just returns true, but may be overridden by
+		 *  a child class to actually bind the value and return
+		 *  true or false, as appropriate. */
 		virtual	bool	inputOutputBindBlob(const char *variable, 
 						uint16_t variablesize,
 						uint16_t index,
 						int16_t *isnull);
 
+		/** Binds a clob buffer and null indicator "isnull" to
+		 *  input/output bind variable "variable" of "variablesize"
+		 *  bytes such that, later, data can be fetched from the blob
+		 *  buffer using getLobInputOutputBindLength(),
+		 *  getLobInputOutputBindSegment(), and
+		 *  closeLobInputOutputBind().
+		 *
+		 *  Returns true if the bind succeeded and false otherwise.
+		 *
+		 *  This method just returns true, but may be overridden by
+		 *  a child class to actually bind the value and return
+		 *  true or false, as appropriate. */
 		virtual	bool	inputOutputBindClob(const char *variable, 
 						uint16_t variablesize,
 						uint16_t index,
 						int16_t *isnull);
 
+		/** Opens LOB input/output bind at position "index" (unless it
+		 *  is already open) and sets "length" equal to its length, in
+		 *  characters.
+		 *
+		 *  Returns true on success and false otherwise.  Will return
+		 *  false if the output bind at position "index" is not a LOB.
+		 *
+		 *  For example...
+		 *
+		 *  if
+		 *  getOutputBinds()[index].type==SQLRSERVERBINDVARTYPE_BLOB
+		 *  or
+		 *  getOutputBinds()[index].type==SQLRSERVERBINDVARTYPE_CLOB
+		 *  then this method will return true. */
 		virtual bool	getLobInputOutputBindLength(uint16_t index,
 							uint64_t *length);
 
+		/** Opens LOB input/output bind at position "index" (unless it
+		 *  is already open) and attempts to fetch "charstoread"
+		 *  characters from position "offset" into "buffer" of
+		 *  "buffersize" bytes.  Populates "charsread" with the number
+		 *  of characters that were actually read.
+		 *
+		 *  Returns true on success and false otherwise.  Will return
+		 *  false if the output bind at position "index" is not a LOB.
+		 *
+		 *  For example...
+		 *
+		 *  if
+		 *  getOutputBinds()[index].type==SQLRSERVERBINDVARTYPE_BLOB
+		 *  or
+		 *  getOutputBinds()[index].type==SQLRSERVERBINDVARTYPE_CLOB
+		 *  then this method will return true. */
 		virtual bool	getLobInputOutputBindSegment(uint16_t index,
 							char *buffer,
 							uint64_t buffersize,
@@ -3981,6 +4264,17 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 							uint64_t charstoread,
 							uint64_t *charsread);
 
+		/** Closes LOB input/output bind at position "index".
+		 *
+		 *  For example...
+		 *
+		 *  if
+		 *  getOutputBinds()[index].type==SQLRSERVERBINDVARTYPE_BLOB
+		 *  or
+		 *  getOutputBinds()[index].type==SQLRSERVERBINDVARTYPE_CLOB
+		 *  and the LOB was opened by a call to
+		 *  getLobOutputBindLength() or getLobOutputBindSegment()
+		 *  then this method will close it. */
 		virtual void	closeLobInputOutputBind(uint16_t index);
 
 		/** Checks "query" of "size" bytes, to see if it is a create
@@ -4010,8 +4304,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		 *  This method just returns true, but may be overridden by
 		 *  a child class to actually prepare the query and return
 		 *  true or false, as appropriate. */
-		virtual	bool		executeQuery(const char *query,
-							uint32_t size);
+		virtual	bool	executeQuery(const char *query, uint32_t size);
 
 		/** Assumes that the current cursor is a bind cursor and
 		 *  fetches from it.
@@ -4075,7 +4368,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		 *
 		 *  Returns false by default but may be overridden by a child
 		 *  class. */
-		virtual bool		knowsRowCount();
+		virtual bool	knowsRowCount();
 
 		/** If the database knows the row count of a result set prior to
 		 *  fetching any results (see knowsRowCount()) then this method
@@ -4095,7 +4388,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		 *
 		 *  Returns true by default but may be overridden by a child
 		 *  class. */
-		virtual bool		knowsAffectedRows();
+		virtual bool	knowsAffectedRows();
 
 		/** Returns the number of affected rows for the current result
 		 *  set, as set by the most recent call to setAffectedRows().
@@ -4108,7 +4401,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		 *
 		 *  Returns 0 if column info is not yet valid or if the query
 		 *  has no result set (eg. if it was a DML or DDL query). */
-		virtual	uint32_t	colCount();
+		virtual uint32_t	colCount();
 
 		/** Some database backends have predictable column types that
 		 *  can be mapped to numeric ids.  If the client is aware of
@@ -4134,10 +4427,10 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		virtual const char	*getColumnName(uint32_t col);
 
 		/** Returns the size (number of bytes) of the column name at
- 		 *  position "col" in the current result set.
- 		 *
- 		 *  Returns 0 if column info is not yet valid or if the query
- 		 *  has no result set (eg. if it was a DML or DDL query). */
+		 *  position "col" in the current result set.
+		 *
+		 *  Returns 0 if column info is not yet valid or if the query
+		 *  has no result set (eg. if it was a DML or DDL query). */
 		virtual uint16_t	getColumnNameSize(uint32_t col);
 
 		/** Returns the numeric type id of the column at position "col"
@@ -4320,17 +4613,17 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 						bool *null);
 
 		/** If the field in column "col" of the current row, of the
- 		 *  current result set is a LOB, then this method sets "length"
- 		 *  to the number of characters in the field.
- 		 *
- 		 *  Returns true on success and false if an error occurred.
- 		 *
- 		 *  Note that "length" is set to the number of characters
- 		 *  rather than bytes.  In the case of a binary LOB, the number
- 		 *  of characters and bytes will be the same, but in the case
- 		 *  of a text LOB, they will be different if the LOB uses a
- 		 *  variable width encoding such as UTF-8 or a fixed width
- 		 *  encoding of more than 8-bits, such as UCS2. */
+		 *  current result set is a LOB, then this method sets "length"
+		 *  to the number of characters in the field.
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  Note that "length" is set to the number of characters
+		 *  rather than bytes.  In the case of a binary LOB, the number
+		 *  of characters and bytes will be the same, but in the case
+		 *  of a text LOB, they will be different if the LOB uses a
+		 *  variable width encoding such as UTF-8 or a fixed width
+		 *  encoding of more than 8-bits, such as UCS2. */
 		virtual bool	getLobFieldLength(uint32_t col,
 						uint64_t *length);
 
@@ -4378,7 +4671,8 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		 *  However, it may be overridden by a child class to encode
 		 *  blobs differently, as required by the database. */
 		virtual void	encodeBlob(stringbuffer *buffer,
-					const char *data, uint32_t datasize);
+						const char *data,
+						uint32_t datasize);
 
 		/** Returns true if column info such as name, size, type,
 		 *  precision, scale, etc. is valid after a query has been
@@ -4412,7 +4706,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 
 		/** Sets the number of input binds in "cursor" to
 		 *  "inbindcount". */
-		void		setInputBindCount(uint16_t inbindcount);
+		void	setInputBindCount(uint16_t inbindcount);
 
 		/** Returns the number of input binds in "cursor", as set by
 		 *  setInputBindCount(). */
@@ -4427,7 +4721,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		sqlrserverbindvar	*getInputBinds();
 
 		/** Sets the number of valid output binds to "outbindcount". */
-		void		setOutputBindCount(uint16_t outbindcount);
+		void	setOutputBindCount(uint16_t outbindcount);
 
 		/** Returns the number of valid output binds, as set by
 		 *  setOutputBindCount(). */
@@ -4441,69 +4735,9 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		 *  are undefined. */
 		sqlrserverbindvar	*getOutputBinds();
 
-		/** Opens LOB output bind at position "index" (unless it is
-		 *  already open) and sets "length" equal to its length, in
-		 *  characters.
- 		 *
- 		 *  Returns true on success and false otherwise.  Will return
- 		 *  false if the output bind at position "index" is not a LOB.
- 		 *
- 		 *  For example...
- 		 *
- 		 *  if
- 		 *  getOutputBinds(cursor)[index].type==
- 		 *  			SQLRSERVERBINDVARTYPE_BLOB
- 		 *  or
- 		 *  getOutputBinds(cursor)[index].type==
- 		 *  			SQLRSERVERBINDVARTYPE_CLOB
- 		 *  then this method will return true. */
-		virtual bool	getLobOutputBindLength(uint16_t index,
-							uint64_t *length);
-
-		/** Opens LOB output bind at position "index" (unless it is
-		 *  already open) and attempts to fetch "charstoread"
-		 *  characters from position "offset" into "buffer" of
-		 *  "buffersize" bytes.  Populates "charsread" with the number
-		 *  of characters that were actually read.
- 		 *
- 		 *  Returns true on success and false otherwise.  Will return
- 		 *  false if the output bind at position "index" is not a LOB.
- 		 *
- 		 *  For example...
- 		 *
- 		 *  if
- 		 *  getOutputBinds(cursor)[index].type==
- 		 *  			SQLRSERVERBINDVARTYPE_BLOB
- 		 *  or
- 		 *  getOutputBinds(cursor)[index].type==
- 		 *  			SQLRSERVERBINDVARTYPE_CLOB
- 		 *  then this method will return true. */
-		virtual bool	getLobOutputBindSegment(uint16_t index,
-							char *buffer,
-							uint64_t buffersize,
-							uint64_t offset,
-							uint64_t charstoread,
-							uint64_t *charsread);
-
-		/** Closes LOB output bind at position "index".
- 		 *
- 		 *  For example...
- 		 *
- 		 *  if
- 		 *  getOutputBinds(cursor)[index].type==
- 		 *  			SQLRSERVERBINDVARTYPE_BLOB
- 		 *  or
- 		 *  getOutputBinds(cursor)[index].type==
- 		 *  			SQLRSERVERBINDVARTYPE_CLOB
- 		 *  and the LOB was opened by a call to
- 		 *  getLobOutputBindLength() or getLobOutputBindSegment()
- 		 *  then this method will close it. */
-		virtual void	closeLobOutputBind(uint16_t index);
-
 		/** Sets the number of valid input-output binds to
 		 *  "inoutbindcount". */
-		void		setInputOutputBindCount(
-					uint16_t inoutbindcount);
+		void	setInputOutputBindCount(uint16_t inoutbindcount);
 
 		/** Returns the number of valid input-output binds as set by
 		 *  setInputOutputBindCount(). */
@@ -4521,11 +4755,11 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		void	abort();
 
 		/** Returns a pointer to the query buffer. */
-		char		*getQueryBuffer();
+		char	*getQueryBuffer();
 
 		/** Sets the size, in bytes, of the query that is currently
 		 *  present in the query buffer to "querysize". */
-		void		setQuerySize(uint32_t querysize);
+		void	setQuerySize(uint32_t querysize);
 
 		/** Returns the size, in bytes, of the query that is currently
 		 *  present in the query buffer, as set by setQuerySize(). */
@@ -4539,16 +4773,16 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		sqlrquerystatus_t	getQueryStatus();
 
 		/** Sets the tree representing the current query to "tree". */
-		void		setQueryTree(xmldom *tree);
+		void	setQueryTree(xmldom *tree);
 
 		/** Returns the tree representing the current query as set by
 		 *  setQueryTree(), or NULL if no tree has been set since
 		 *  initialization or since the most recent call to
 		 *  clearQueryTree(). */
-		xmldom		*getQueryTree();
+		xmldom	*getQueryTree();
 
 		/** Sets the tree representing the current query to NULL. */
-		void		clearQueryTree();
+		void	clearQueryTree();
 
 		/** Returns the translated query buffer. */
 		stringbuffer	*getTranslatedQueryBuffer();
@@ -4560,7 +4794,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		/** Sets the command-start time.  That is, the time that the
 		 *  SQL command (eg. begin a transaction, run a query, commit,
 		 *  etc.) was received by SQL Relay, to "sec" and "usec". */
-		void		setCommandStart(uint64_t sec, uint64_t usec);
+		void	setCommandStart(uint64_t sec, uint64_t usec);
 
 		/** Returns the seconds component of the command-start time as
 		 *  set by setCommandStart(). */
@@ -4571,9 +4805,9 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		uint64_t	getCommandStartUSec();
 
 		/** Sets the command-end time.  That is, the time that the SQL
- 		 *  command (eg. begin a transaction, run a query, commit,
- 		 *  etc.) was completed, to "sec" and "usec". */
-		void		setCommandEnd(uint64_t sec, uint64_t usec);
+		 *  command (eg. begin a transaction, run a query, commit,
+		 *  etc.) was completed, to "sec" and "usec". */
+		void	setCommandEnd(uint64_t sec, uint64_t usec);
 
 		/** Returns the seconds component of the command-end time as
 		 *  set by setCommandEnd(). */
@@ -4585,7 +4819,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 
 		/** Sets the query-start time.  That is, the time that the
 		 *  query was executed, to "sec" and "usec". */
-		void		setQueryStart(uint64_t sec, uint64_t usec);
+		void	setQueryStart(uint64_t sec, uint64_t usec);
 
 		/** Returns the seconds component of the query-start time
 		 *  as set by setQueryStart(). */
@@ -4597,7 +4831,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 
 		/** Sets the query-end time.  That is, the time that query
 		 *  execution was complated, to "sec" and "usec". */
-		void		setQueryEnd(uint64_t sec, uint64_t usec);
+		void	setQueryEnd(uint64_t sec, uint64_t usec);
 
 		/** Returns the seconds component of the query-end time
 		 *  as set by setQueryEnd(). */
@@ -4609,7 +4843,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 
 		/** Sets the fetch-start time.  That is, the time that fetching
 		 *  of the result set started, to "sec" and "usec". */
-		void		setFetchStart(uint64_t sec, uint64_t usec);
+		void	setFetchStart(uint64_t sec, uint64_t usec);
 
 		/** Returns the seconds component of the fetch-start time
 		 *  as set by setFetchStart(). */
@@ -4621,7 +4855,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 
 		/** Sets the fetch-end time.  That is, the time that fetching
 		 *  of the result set was completed, to "sec" and "usec". */
-		void		setFetchEnd(uint64_t sec, uint64_t usec);
+		void	setFetchEnd(uint64_t sec, uint64_t usec);
 
 		/** Returns the seconds component of the fetch-end time
 		 *  as set by setFetchEnd(). */
@@ -4632,7 +4866,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		uint64_t	getFetchEndUSec();
 
 		/** Resets the fetch-time.  That is the number of milliseconds
- 		 *  that elapsed during the fetch of the result set, to 0. */
+		 *  that elapsed during the fetch of the result set, to 0. */
 		void	resetFetchTime();
 
 		/** Adds the number of milliseconds between the fetch-start
@@ -4645,25 +4879,47 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		uint64_t	getFetchUSec();
 
 		/** Sets the state of the cursor to "state". */
-		void			setState(sqlrcursorstate_t state);
+		void	setState(sqlrcursorstate_t state);
 
 		/** Returns the state of the as set by the most recent
 		 *  call to setState(). */
 		sqlrcursorstate_t	getState();
 
-		void		setCustomQueryCursor(sqlrquerycursor *cur);
+		/** Sets the custom query cursor to "cur".
+		 *  
+		 *  If this query should be handled by a custom sqlrquerycursor
+		 *  rather than the standard sqlrservercursor implemented by
+		 *  this database module, then set that cursor using this
+		 *  method. */
+		void	setCustomQueryCursor(sqlrquerycursor *cur);
+
+		/** Returns the custom query cursor as set by a previous call
+		 *  to setCustomQueryCursor() or NULL of none has been set or
+		 *  if clearCustomQueryCursor() has been called. */
 		sqlrquerycursor	*getCustomQueryCursor();
-		void		clearCustomQueryCursor();
 
-		void		clearTotalRowsFetched();
+		/** Clears the custom query cursor. */
+		void	clearCustomQueryCursor();
+
+		/** Increments the total number of rows fetched. */
+		void	incrementTotalRowsFetched();
+
+		/** Returns the total number of rows fetched. */
 		uint64_t	getTotalRowsFetched();
-		void		incrementTotalRowsFetched();
 
-		void		setCurrentRowReformatted(bool crr);
-		bool		getCurrentRowReformatted();
+		/** Sets the total number of rows fetched to 0. */
+		void	clearTotalRowsFetched();
+
+		/** Sets whether or not the current row was reformatted. */
+		void	setCurrentRowReformatted(bool crr);
+
+		/** Returns whether or not the current row was reformatted,
+		 *  as set by the previous call to
+		 *  setCurrentRowReformatted(). */
+		bool	getCurrentRowReformatted();
 
 		/** Returns a pointer to the cursor-level error buffer. */
-		char		*getErrorBuffer();
+		char	*getErrorBuffer();
 
 		/** Returns the size, in bytes, of the cursor-level error
 		 *  buffer. */
@@ -4671,14 +4927,14 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 
 		/** Sets the number of bytes currently stored in the
 		 *  cursor-level error buffer to "errorsize". */
-		void		setErrorSize(uint32_t errorsize);
+		void	setErrorSize(uint32_t errorsize);
 
 		/** Returns the number of bytes currently stored in the
 		 *  cursor-level error buffer, as set by setErrorSize(). */
 		uint32_t	getErrorSize();
 
 		/** Sets the cursor-level numeric error code to "errnum". */
-		void		setErrorNumber(uint32_t errnum);
+		void	setErrorNumber(uint32_t errnum);
 
 		/** Returns the cursor-level numeric error code as set by
 		 *  setErrorNumber(). */
@@ -4686,36 +4942,75 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 
 		/** Sets a flag indicating whether the connection to the
 		 *  database is up to "liveconnection". */
-		void		setLiveConnection(bool liveconnection);
+		void	setLiveConnection(bool liveconnection);
 
 		/** Returns the flag indicating whether the connection to the
 		 *  database is up, as set by setLiveConnection(). */
-		bool		getLiveConnection();
+		bool	getLiveConnection();
 
-		void		setCreateTempTablePattern(
-						const char *createtemp);
-		const char	*skipCreateTempTableClause(
-						const char *query);
+		/** Sets the regular expression pattern used to identify a
+		 *  create-temp-table clause to "createtemp".
+		 *
+		 *  Defaults to "(create|CREATE|declare|DECLARE)[ 	\\r\\n]+((global|GLOBAL|local|LOCAL)?[ 	\\r\\n]+)?(temp|TEMP|temporary|TEMPORARY)?[ 	\\r\\n]+(table|TABLE)[ 	\\r\\n]+" */
+		void	setCreateTempTablePattern(const char *createtemp);
 
+		/** Skips past any leading whitespace and comments and then
+		 *  past any create-temp-table clause as set by
+		 *  setCreateTempTablePattern() in "query" and returns a
+		 *  pointer to the first character past the create-temp-table
+		 *  clause, or NULL if no create-temp-table pattern was
+		 *  found. */
+		const char	*skipCreateTempTableClause(const char *query);
+
+		/** Sets whether column info is currently valid to "valid". */
 		void	setColumnInfoIsValid(bool valid);
+
+		/** Returns whether column info is currently valid, as set by
+		 *  the most recent call to setColumnInfoIsValid(). */
 		bool	getColumnInfoIsValid();
 
+		/** Sets whether the query has been pre-processed to
+		 *  "preprocessed". */
 		void	setQueryHasBeenPreProcessed(bool preprocessed);
+
+		/** Returns whether the query has been pre-processed, as set by
+		 *  the most recent call to setQueryHasBeenPreProcessed(). */
 		bool	getQueryHasBeenPreProcessed();
 
+		/** Sets whether the query has been prepared to "prepared". */
 		void	setQueryHasBeenPrepared(bool prepared);
+
+		/** Returns whether the query has been prepared, as set by
+		 *  the most recent call to setQueryHasBeenPrepared(). */
 		bool	getQueryHasBeenPrepared();
 
+		/** Sets whether the query has been executed to "executed". */
 		void	setQueryHasBeenExecuted(bool executed);
+
+		/** Returns whether the query has been executed, as set by
+		 *  the most recent call to setQueryHasBeenExecuted(). */
 		bool	getQueryHasBeenExecuted();
 
+		/** Sets whether the query needs to be intercepted to
+		 *  "intercept". */
 		void	setQueryNeedsIntercept(bool intercept);
+
+		/** Returns whether the query needs to be intercepted, as set
+		 *  by the most recent call to setQueryNeedsIntercept(). */
 		bool	getQueryNeedsIntercept();
 
+		/** Sets whether the query was intercepted to "intercepted". */
 		void	setQueryWasIntercepted(bool intercepted);
+
+		/** Returns whether the query was intercepted, as set by the
+		 *  most recent call to setQueryWasIntercepted(). */
 		bool	getQueryWasIntercepted();
 
+		/** Sets whether binds were faked to "faked". */
 		void	setBindsWereFaked(bool faked);
+
+		/** Returns whether binds were faked, as set by the most recent
+		 *  call to setBindsWereFaked(). */
 		bool	getBindsWereFaked();
 
 		/** Sets whether to fake input binds for the current query of
@@ -4747,92 +5042,156 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		 *  current query.  See setFakeInputBindsForThisQuery(). */
 		bool	getFakeInputBindsForThisQuery();
 
-		void		setQueryType(sqlrquerytype_t querytype);
+		/** Sets the type of the current query to "querytype". */
+		void	setQueryType(sqlrquerytype_t querytype);
+
+		/** Returns the type of the current query as set by the most
+		 *  recent call to setQueryType(). */
 		sqlrquerytype_t	getQueryType();
 
+		/** Returns the buffer that the query was written to if input
+		 *  binds were faked. */
 		stringbuffer	*getQueryWithFakeInputBindsBuffer();
 
-		void	allocateColumnPointers(uint32_t colcount);
-		void	deallocateColumnPointers();
-		void	getColumnPointers(const char ***columnnames,
-					uint16_t **columnnamesizes,
-					uint16_t **columntypes,
-					const char ***columntypenames,
-					uint16_t **columntypenamesizes,
-					uint32_t **columnsizes,
-					uint32_t **columnprecisions,
-					uint32_t **columnscales,
-					uint16_t **columnisnullables,
-					uint16_t **columnisprimarykeys,
-					uint16_t **columnisuniques,
-					uint16_t **columnispartofkeys,
-					uint16_t **columnisunsigneds,
-					uint16_t **columniszerofilleds,
-					uint16_t **columnisbinarys,
-					uint16_t **columnisautoincrements,
-					const char ***columntables,
-					uint16_t **columntablesizes);
+		/** Returns the column name, currently stored in the column
+		 *  name buffer for column "col". */
 		const char	*getColumnNameFromBuffer(uint32_t col);
+
+		/** Returns the size (in bytes) of the column name,  currently
+		 *  stored in the column name buffer for column "col". */
 		uint16_t	getColumnNameSizeFromBuffer(uint32_t col);
+
+		/** Returns the column type, currently stored in the column
+		 *  type buffer for column "col". */
 		uint16_t	getColumnTypeFromBuffer(uint32_t col);
+
+		/** Returns the column type name, currently stored in the
+		 *  column type name buffer for column "col". */
 		const char	*getColumnTypeNameFromBuffer(uint32_t col);
+
+		/** Returns the size (in bytes) of the column type name,
+		 *  currently stored in the column type name buffer for column
+		 *  "col". */
 		uint16_t	getColumnTypeNameSizeFromBuffer(uint32_t col);
+
+		/** Returns the size (in bytes) of the column, currently stored
+		 *  in the column size buffer for column "col". */
 		uint32_t	getColumnSizeFromBuffer(uint32_t col);
+
+		/** Returns the precision of the column, currently stored
+		 *  in the column precision buffer for column "col". */
 		uint32_t	getColumnPrecisionFromBuffer(uint32_t col);
+
+		/** Returns the scale of the column, currently stored
+		 *  in the column scale buffer for column "col". */
 		uint32_t	getColumnScaleFromBuffer(uint32_t col);
+
+		/** Returns the is-nullable flag of the column, currently
+		 *  stored in the is-nullable buffer for column "col". */
 		uint16_t	getColumnIsNullableFromBuffer(uint32_t col);
+
+		/** Returns the primary-key flag of the column, currently
+		 *  stored in the primary-key buffer for column "col". */
 		uint16_t	getColumnIsPrimaryKeyFromBuffer(uint32_t col);
+
+		/** Returns the is-unique flag of the column, currently
+		 *  stored in the is-unique buffer for column "col". */
 		uint16_t	getColumnIsUniqueFromBuffer(uint32_t col);
+
+		/** Returns the is-part-of-key flag of the column, currently
+		 *  stored in the is-part-of-key buffer for column "col". */
 		uint16_t	getColumnIsPartOfKeyFromBuffer(uint32_t col);
+
+		/** Returns the is-unsigned flag of the column, currently
+		 *  stored in the is-unsigned buffer for column "col". */
 		uint16_t	getColumnIsUnsignedFromBuffer(uint32_t col);
+
+		/** Returns the is-zero-filled flag of the column, currently
+		 *  stored in the is-zero-filled buffer for column "col". */
 		uint16_t	getColumnIsZeroFilledFromBuffer(uint32_t col);
+
+		/** Returns the is-binary flag of the column, currently
+		 *  stored in the is-binary buffer for column "col". */
 		uint16_t	getColumnIsBinaryFromBuffer(uint32_t col);
+
+		/** Returns the is-auto-increment flag of the column, currently
+		 *  stored in the is-auto-increment buffer for column "col". */
 		uint16_t	getColumnIsAutoIncrementFromBuffer(
 							uint32_t col);
+
+		/** Returns the column table, currently stored in the
+		 *  column table buffer for column "col". */
 		const char	*getColumnTableFromBuffer(uint32_t col);
+
+		/** Returns the size (in bytes) of the column table, currently
+		 *  stored in the column table buffer for column "col". */
 		uint16_t	getColumnTableSizeFromBuffer(uint32_t col);
 
+		/** Allocates pointers to the preallocated field buffers for
+		 *  "colcount" columns. */
 		void	allocateFieldPointers(uint32_t colcount);
-		void	deallocateFieldPointers();
+
+		/** Returns the field buffer pointers allocated by the most
+		 *  recent call to allocateFieldPointers(), or NULLs if
+		 *  allocateFieldPointers() was never called, or if
+		 *  deallocateFieldPointers() was called. */
 		void	getFieldPointers(const char ***fieldnames,
 					const char ***fields,
 					uint64_t **fieldsizes,
 					bool **lob,
 					bool **null);
 
-		void		setQueryTimeout(uint64_t querytimeout);
+		/** Deallocates any field buffer pointers previously allocated
+ 		 *  by a call to allocateFieldPointers(). */
+		void	deallocateFieldPointers();
+
+		/** Sets the query timeout to "querytimeout". */
+		void	setQueryTimeout(uint64_t querytimeout);
+
+		/** Returns the query timeout as set by the most recent call
+		 *  to setQueryTimeout(). */
 		uint64_t	getQueryTimeout();
-		void		setExecuteDirect(bool executedirect);
-		bool		getExecuteDirect();
-		void		setExecuteRpc(bool executerpc);
-		bool		getExecuteRpc();
+
+		/** Sets the execute-direct flag to "executedirect". */
+		void	setExecuteDirect(bool executedirect);
+
+		/** Returns the execute-direct flag as set by the most recent
+		 *  call to setExecuteDirect(). */
+		bool	getExecuteDirect();
+
+		/** Sets the execute-rpc flag to "executerpc". */
+		void	setExecuteRpc(bool executerpc);
+
+		/** Returns the execute-rpc flag as set by the most recent
+		 *  call to setExecuteRpc(). */
+		bool	getExecuteRpc();
 
 		/** Sets the number of rows to fetch at once to
 		 *  "fetchatonce". */
-		void		setFetchAtOnce(uint32_t fetchatonce);
+		void	setFetchAtOnce(uint32_t fetchatonce);
 
 		/** Returns the number of rows that will be fetched at once. */
 		uint32_t	getFetchAtOnce();
 
-		void		setResultSetHeaderHasBeenHandled(
+		/** Sets whether or not the result set header has been handled
+		 *  to "resultsetheaderhasbeenhandled". */
+		void	setResultSetHeaderHasBeenHandled(
 					bool resultsetheaderhasbeenhandled);
-		bool		getResultSetHeaderHasBeenHandled();
 
-		byte_t		*getModuleData();
+		/** Returns whether or not the result set header has been
+		 *  handled as set by the most recent call to
+		 *  setResultSetHeaderHasBeenHandled(). */
+		bool	getResultSetHeaderHasBeenHandled();
 
 		/** Sets whether the current query is "suppressed" or not.
- 		 *  Currently may be called by a before-trigger to suppresses
- 		 *  execution of the query by
- 		 *  sqlrservercontroller::executeQuery(). */
+		 *  Currently may be called by a before-trigger to suppresses
+		 *  execution of the query by
+		 *  sqlrservercontroller::executeQuery(). */
 		void	setQuerySuppressed(bool querysuppressed);
 
 		/** Returns whether the current query is "suppressed" or not
- 		 *  as set by a call to setQuerySuppressed(). */
+		 *  as set by a call to setQuerySuppressed(). */
 		bool	getQuerySuppressed();
-
-		bool	fakeInputBinds();
-		void	performSubstitution(stringbuffer *buffer,
-							int16_t index);
 
 		sqlrserverconnection	*conn;
 

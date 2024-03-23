@@ -86,6 +86,8 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 	private:
 		file	devnull;
 #endif
+
+		stringbuffer	tablelistquery;
 };
 
 class SQLRSERVER_DLLSPEC postgresqlcursor : public sqlrservercursor {
@@ -578,8 +580,55 @@ const char *postgresqlconnection::getDatabaseListQuery(bool wild) {
 
 const char *postgresqlconnection::getTableListQuery(bool wild,
 						uint16_t objecttypes) {
-	return sqlrserverconnection::getTableListQuery(wild,objecttypes,
-					" and table_schema = 'public' ");
+	tablelistquery.clear();
+	tablelistquery.append(
+		"select "
+		"	table_catalog as table_cat, "
+		"	table_schema as table_schem, "
+		"	table_name, "
+		"	case "
+		"		when table_type = "
+		"'BASE TABLE' then 'TABLE' "
+		"		else table_type "
+		"	end as table_type, "
+		"	NULL as remarks, "
+		"	NULL as extra "
+		"from "
+		"	information_schema.tables "
+		"where ");
+	if (wild) {
+		tablelistquery.append("	table_name like '%s' and ");
+	}
+	tablelistquery.append("	(");
+	if (objecttypes&DB_OBJECT_TABLE) {
+		tablelistquery.append("	table_type = 'BASE TABLE' ");
+	}
+	if (objecttypes&DB_OBJECT_VIEW) {
+		if (tablelistquery.getSize()) {
+			tablelistquery.append("	or ");
+		}
+		tablelistquery.append("	table_type = 'VIEW' ");
+	}
+	if (objecttypes&DB_OBJECT_ALIAS) {
+		if (tablelistquery.getSize()) {
+			tablelistquery.append("	or ");
+		}
+		tablelistquery.append("	table_type = 'ALIAS' ");
+	}
+	if (objecttypes&DB_OBJECT_SYNONYM) {
+		if (tablelistquery.getSize()) {
+			tablelistquery.append("	or ");
+		}
+		tablelistquery.append("	table_type = 'SYNONYM' ");
+	}
+	tablelistquery.append(
+		") "
+		"and table_schema = 'public' "
+		"order by "
+		"	table_cat, "
+		"	table_schem, "
+		"	table_name");
+	return tablelistquery.getString();
 }
 
 sqlrserverlistformat_t postgresqlconnection::getColumnListFormat() {
