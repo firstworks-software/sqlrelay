@@ -1305,7 +1305,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		/** Returns the size, in bytes, of the query that is currently
 		 *  present in the query buffer of "cursor", as set by
 		 *  setQuerySize(). */
-		uint32_t 	getQuerySize(sqlrservercursor *cursor);
+		uint32_t	getQuerySize(sqlrservercursor *cursor);
 
 
 
@@ -3376,9 +3376,9 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		virtual	sqlrserverlistformat_t	getProcedureListFormat();
 
 		/** Makes the database API call to fetch the list of databases
- 		 *  that are visible to the user that SQL Relay is logged in
- 		 *  as.  Only returns database names that match wildcard "wild"
- 		 *  if "wild" is non-NULL.
+		 *  that are visible to the user that SQL Relay is logged in
+		 *  as.  Only returns database names that match wildcard "wild"
+		 *  if "wild" is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
 		virtual bool	getDatabaseList(sqlrservercursor *cursor,
@@ -4763,7 +4763,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 
 		/** Returns the size, in bytes, of the query that is currently
 		 *  present in the query buffer, as set by setQuerySize(). */
-		uint32_t 	getQuerySize();
+		uint32_t	getQuerySize();
 
 		/** Sets the status of the current query to "status". */
 		void	setQueryStatus(sqlrquerystatus_t status);
@@ -5142,7 +5142,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 					bool **null);
 
 		/** Deallocates any field buffer pointers previously allocated
- 		 *  by a call to allocateFieldPointers(). */
+		 *  by a call to allocateFieldPointers(). */
 		void	deallocateFieldPointers();
 
 		/** Sets the query timeout to "querytimeout". */
@@ -5207,185 +5207,558 @@ enum clientsessionexitstatus_t {
 
 class SQLRSERVER_DLLSPEC sqlrprotocol {
 	public:
+		/** Creates an instance of sqlrprotocol, configured with
+		 *  parameters "parameters".
+		 *
+		 *  This implementation handles the following parameters
+		 *  which are generic to all protocols:
+		 *
+		 *  * tls - yes/no, whether or not to support TLS
+		 *  * tlsversion - the TLS protocol version to use
+		 *  * tlscert - the TLS certificate to use
+		 *  * tlskey - the TLS key to use
+		 *  * tlspassword - the password to use when reading the key
+		 *  * tlsvalidate - yes/no - whether or not to validate peer
+		 *  * tlsca - the TLS CA certificate to use
+		 *  * tlsciphers - the TLS cipher list to use
+		 *  * tlsdepth - the TLS validation depth
+		 *
+		 *  * krb - yes/no, whether or not to support Kerberos
+		 *  * krbkeytab - the Kerberos keytab file to use
+		 *  * krbservice - the Kerberos service to use
+		 *  * krbmech - the Kerberos mech to use
+		 *  * krbflags - the Kerboeros flags to use
+		 *
+		 *  However, it may be overridden by a child class to do
+		 *  additional initialization and handle additional
+		 *  parameters. */
 		sqlrprotocol(sqlrservercontroller *cont,
 					sqlrprotocols *ps,
 					domnode *parameters);
+
+		/** Deletes this instance of sqlrprotocol. */
 		virtual	~sqlrprotocol();
 
+		/** Has a session with the client, should:
+		 *
+		 *  * configure any socket options on "clientsock"
+		 *  * accept the security context, if necessary
+		 *  * get commands from the client
+		 *  * perform those commands
+		 *  * close the client connection
+		 *  * end the session
+		 *  * return the exit status
+		 */
 		virtual clientsessionexitstatus_t
 				clientSession(filedescriptor *clientsock)=0;
 
-		virtual	bool		useKrb();
+		/** Returns true or false depending on whether the krb
+		 *  parameter was set to yes or no. */
+		virtual	bool	useKrb();
+
+		/** Returns the GSS context if the krb parameter was "yes",
+		 *  or NULL otherwise. */
 		virtual gsscontext	*getGssContext();
 
-		virtual	bool		useTls();
+		/** Returns true or false depending on whether the tls
+		 *  parameter was set to yes or no. */
+		virtual	bool	useTls();
+
+		/** Returns the TLS context if the tls parameter was "yes",
+		 *  or NULL otherwise. */
 		virtual tlscontext	*getTlsContext();
 
+		/** Called by the sqlrservercontroller at the end of a
+		 *  transaction.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endTransaction(bool commit);
+
+		/** Called by the sqlrservercontroller at the end of a client
+		 *  session.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endSession();
 
 	protected:
-		sqlrprotocols		*getProtocols();
-		domnode			*getParameters();
 
+		/** Returns the instance of sqlrprotocols passed in as "ps" to
+		 *  the constructor. */
+		sqlrprotocols	*getProtocols();
+
+		/** Returns the top-level domnode of the parameters passed in
+		 *  as "parameters" to the constructor. */
+		domnode	*getParameters();
+
+		/** Surprisingly, not all client-server protocols expect
+		 *  integers to be passed in network byte order (big-endian).
+		 *  Many, which presumably originated on intel hardware, expect
+		 *  integers to be passed in little-endian byte order.
+		 * 
+		 *  This method sets the byte order that integers will be
+		 *  passed across the network in.
+		 *
+		 *  If "bigendian" is true, then integers are expected to be
+		 *  passed in to it in big-endian byte order.  If "bigendian"
+		 *  is false, then integers are expected to be passed in to it
+		 *  in little-endian byte order.
+		 *
+		 *  The read(), toHost(), write(), and hostTo() methods use
+		 *  this setting to determine what conversion to use when
+		 *  converting integers between protocol and host byte order. */
 		void	setProtocolIsBigEndian(bool bigendian);
+
+		/** Returns true or false as set by setProtocolIsBigEndian().
+		 *
+		 *  The read(), toHost(), write(), and hostTo() methods use
+		 *  this setting to determine what conversion to use when
+		 *  converting integers between protocol and host byte order. */
 		bool	getProtocolIsBigEndian();
 
+		/** Reads a (signed) character from byte string "rp" into
+		 *  buffer "value" and sets "rpout" to the byte following the
+		 *  character read. */
 		void	read(const byte_t *rp,
 					char *value,
 					const byte_t **rpout);
+
+		/** Reads a (signed) character from byte string "rp" into
+		 *  buffer "value" and sets "rpout" to the byte following the
+		 *  character read.
+		 *
+		 *  If the (signed) character read does not match "expected"
+		 *  then "rpout" is set back to "rp" and an error message
+		 *  including "name" is written out if debug is enabled.
+		 *
+		 *  Returns true if the value read matches expected and false
+		 *  otherwise. */
 		bool	read(const byte_t *rp,
 					char *value,
 					const char *name,
 					char expected,
 					const byte_t **rpout);
+
+		/** Reads a byte from byte string "rp" into buffer "value"
+		 *  and sets "rpout" to the byte following the byte read. */
 		void	read(const byte_t *rp,
 					byte_t *value,
 					const byte_t **rpout);
+
+		/** Reads a byte from byte string "rp" into buffer "value" and
+		 *  sets "rpout" to the byte following the byte read.
+		 *
+		 *  If the byte read does not match "expected" then "rpout" is
+		 *  set back to "rp" and an error message including "name" is
+		 *  written out if debug is enabled.
+		 *
+		 *  Returns true if the value read matches expected and false
+		 *  otherwise. */
 		bool	read(const byte_t *rp,
 					byte_t *value,
 					const char *name,
 					byte_t expected,
 					const byte_t **rpout);
+
+		/** Reads "size" (signed) characters from byte string "rp" into
+		 *  buffer "value" and sets "rpout" to the byte following the
+		 *  characters read. */
 		void	read(const byte_t *rp,
 					char *value,
 					size_t size,
 					const byte_t **rpout);
+
+		/** Reads "size" bytes from byte string "rp" into buffer
+		 *  "value" and sets "rpout" to the byte following the byte
+		 *  read. */
 		void	read(const byte_t *rp,
 					byte_t *value,
 					size_t size,
 					const byte_t **rpout);
+
+		/** Reads "size" ucs2_t characters from byte string "rp" into
+		 *  buffer "value" and sets "rpout" to the byte following the
+		 *  characters read. */
 		void	read(const byte_t *rp,
 					ucs2_t *value,
 					size_t size,
 					const byte_t **rpout);
+
+		/** Reads a float from byte string "rp" into buffer "value" and
+		 *  sets "rpout" to the byte following the float read. */
 		void	read(const byte_t *rp,
 					float *value,
 					const byte_t **rpout);
+
+		/** Reads a double from byte string "rp" into buffer "value" and
+		 *  sets "rpout" to the byte following the double read. */
 		void	read(const byte_t *rp,
 					double *value,
 					const byte_t **rpout);
+
+		/** Reads a 16 bit unsigned integer from byte string "rp" into
+		 *  buffer "value", converts "value" to host byte order
+		 *  (consulting getProtocolIsBigEndian() to determine how to
+		 *  convert it), and sets "rpout" to the byte following the
+		 *  integer read. */
 		void	read(const byte_t *rp,
 					uint16_t *value,
 					const byte_t **rpout);
+
+		/** Reads a 16 bit unsigned integer from byte string "rp" into
+		 *  buffer "value", converts "value" from little-endian to host
+		 *  byte order, and sets "rpout" to the byte following the
+		 *  integer read. */
 		void	readLE(const byte_t *rp,
 					uint16_t *value,
 					const byte_t **rpout);
+
+		/** Reads a 16 bit unsigned integer from byte string "rp" into
+		 *  buffer "value", converts "value" from little-endian to host
+		 *  byte order, and sets "rpout" to the byte following the
+		 *  integer read.
+		 *
+		 *  If the integer read  does not match "expected" then "rpout"
+		 *  is set back to "rp" and an error message including "name" is
+		 *  written out if debug is enabled.
+		 *
+		 *  Returns true if the value read matches expected and false
+		 *  otherwise. */
 		bool	readLE(const byte_t *rp,
 					uint16_t *value,
 					const char *name,
 					uint16_t expected,
 					const byte_t **rpout);
+
+		/** Reads a 16 bit unsigned integer from byte string "rp" into
+		 *  buffer "value", converts "value" from big-endian to host
+		 *  byte order, and sets "rpout" to the byte following the
+		 *  integer read. */
 		void	readBE(const byte_t *rp,
 					uint16_t *value,
 					const byte_t **rpout);
+
+		/** Reads a 16 bit unsigned integer from byte string "rp" into
+		 *  buffer "value", converts "value" from big-endian to host
+		 *  byte order, and sets "rpout" to the byte following the
+		 *  integer read.
+		 *
+		 *  If the integer read  does not match "expected" then "rpout"
+		 *  is set back to "rp" and an error message including "name" is
+		 *  written out if debug is enabled.
+		 *
+		 *  Returns true if the value read matches expected and false
+		 *  otherwise. */
 		bool	readBE(const byte_t *rp,
 					uint16_t *value,
 					const char *name,
 					uint16_t expected,
 					const byte_t **rpout);
+
+		/** Reads a 32 bit unsigned integer from byte string "rp" into
+		 *  buffer "value", converts "value" to host byte order
+		 *  (consulting getProtocolIsBigEndian() to determine how to
+		 *  convert it), and sets "rpout" to the byte following the
+		 *  integer read. */
 		void	read(const byte_t *rp,
 					uint32_t *value,
 					const byte_t **rpout);
+
+		/** Reads a 32 bit unsigned integer from byte string "rp" into
+		 *  buffer "value", converts "value" from little-endian to host
+		 *  byte order, and sets "rpout" to the byte following the
+		 *  integer read. */
 		void	readLE(const byte_t *rp,
 					uint32_t *value,
 					const byte_t **rpout);
+
+		/** Reads a 32 bit unsigned integer from byte string "rp" into
+		 *  buffer "value", converts "value" from little-endian to host
+		 *  byte order, and sets "rpout" to the byte following the
+		 *  integer read.
+		 *
+		 *  If the integer read  does not match "expected" then "rpout"
+		 *  is set back to "rp" and an error message including "name" is
+		 *  written out if debug is enabled.
+		 *
+		 *  Returns true if the value read matches expected and false
+		 *  otherwise. */
 		bool	readLE(const byte_t *rp,
 					uint32_t *value,
 					const char *name,
 					uint32_t expected,
 					const byte_t **rpout);
+
+		/** Reads a 32 bit unsigned integer from byte string "rp" into
+		 *  buffer "value", converts "value" from big-endian to host
+		 *  byte order, and sets "rpout" to the byte following the
+		 *  integer read. */
 		void	readBE(const byte_t *rp,
 					uint32_t *value,
 					const byte_t **rpout);
+
+		/** Reads a 32 bit unsigned integer from byte string "rp" into
+		 *  buffer "value", converts "value" from big-endian to host
+		 *  byte order, and sets "rpout" to the byte following the
+		 *  integer read.
+		 *
+		 *  If the integer read  does not match "expected" then "rpout"
+		 *  is set back to "rp" and an error message including "name" is
+		 *  written out if debug is enabled.
+		 *
+		 *  Returns true if the value read matches expected and false
+		 *  otherwise. */
 		bool	readBE(const byte_t *rp,
 					uint32_t *value,
 					const char *name,
 					uint32_t expected,
 					const byte_t **rpout);
+
+		/** Reads a 64 bit unsigned integer from byte string "rp" into
+		 *  buffer "value", converts "value" to host byte order
+		 *  (consulting getProtocolIsBigEndian() to determine how to
+		 *  convert it), and sets "rpout" to the byte following the
+		 *  integer read. */
 		void	read(const byte_t *rp,
 					uint64_t *value,
 					const byte_t **rpout);
+
+		/** Reads a 64 bit unsigned integer from byte string "rp" into
+		 *  buffer "value", converts "value" from little-endian to host
+		 *  byte order, and sets "rpout" to the byte following the
+		 *  integer read. */
 		void	readLE(const byte_t *rp,
 					uint64_t *value,
 					const byte_t **rpout);
+
+		/** Reads a 64 bit unsigned integer from byte string "rp" into
+		 *  buffer "value", converts "value" from little-endian to host
+		 *  byte order, and sets "rpout" to the byte following the
+		 *  integer read.
+		 *
+		 *  If the integer read  does not match "expected" then "rpout"
+		 *  is set back to "rp" and an error message including "name" is
+		 *  written out if debug is enabled.
+		 *
+		 *  Returns true if the value read matches expected and false
+		 *  otherwise. */
 		bool	readLE(const byte_t *rp,
 					uint64_t *value,
 					const char *name,
 					uint64_t expected,
 					const byte_t **rpout);
+
+		/** Reads a 64 bit unsigned integer from byte string "rp" into
+		 *  buffer "value", converts "value" from big-endian to host
+		 *  byte order, and sets "rpout" to the byte following the
+		 *  integer read. */
 		void	readBE(const byte_t *rp,
 					uint64_t *value,
 					const byte_t **rpout);
+
+		/** Reads a 64 bit unsigned integer from byte string "rp" into
+		 *  buffer "value", converts "value" from big-endian to host
+		 *  byte order, and sets "rpout" to the byte following the
+		 *  integer read.
+		 *
+		 *  If the integer read  does not match "expected" then "rpout"
+		 *  is set back to "rp" and an error message including "name" is
+		 *  written out if debug is enabled.
+		 *
+		 *  Returns true if the value read matches expected and false
+		 *  otherwise. */
 		bool	readBE(const byte_t *rp,
 					uint64_t *value,
 					const char *name,
 					uint64_t expected,
 					const byte_t **rpout);
+
+		/** Reads length-encoded integer from byte string "in",
+		 *  converts it from big-endian to host byte order, returns it,
+		 *  and sets "out" to the byte following the end of the
+		 *  length-encoded integer. */
 		uint64_t	readLenEncInt(const byte_t *in,
 						const byte_t **out);
 
+		/** Writes "value" to byte buffer "buffer". */
 		void	write(bytebuffer *buffer, char value);
+
+		/** Writes "value" to byte buffer "buffer". */
 		void	write(bytebuffer *buffer, byte_t value);
+
+		/** Writes "value" to byte buffer "buffer". */
 		void	write(bytebuffer *buffer, const char *value);
+
+		/** Writes "size" characters of "value" to byte buffer
+		 *  "buffer". */
 		void	write(bytebuffer *buffer, const char *value,
 								size_t size);
+
+		/** Writes "size" bytes of "value" to byte buffer "buffer". */
 		void	write(bytebuffer *buffer, const byte_t *value,
 								size_t size);
+
+		/** Writes "size" characters of "value" to byte buffer
+		 *  "buffer". */
 		void	write(bytebuffer *buffer, const ucs2_t *str,
 								size_t size);
+
+		/** Writes "value" to byte buffer "buffer". */
 		void	write(bytebuffer *buffer, float value);
+
+		/** Writes "value" to byte buffer "buffer". */
 		void	write(bytebuffer *buffer, double value);
+
+		/** Converts "value" to protocol byte order (consulting
+		 *  getProtocolIsBigEndian() to determine how to convert it)
+		 *  then writes "value" to byte buffer "buffer". */
 		void	write(bytebuffer *buffer, uint16_t value);
+
+		/** Converts "value" from host byte order to little-endian,
+		 *  then writes "value" to byte buffer "buffer". */
 		void	writeLE(bytebuffer *buffer, uint16_t value);
+
+		/** Converts "value" from host byte order to big-endian,
+		 *  then writes "value" to byte buffer "buffer". */
 		void	writeBE(bytebuffer *buffer, uint16_t value);
+
+		/** Converts "value" to protocol byte order (consulting
+		 *  getProtocolIsBigEndian() to determine how to convert it)
+		 *  then writes "value" to byte buffer "buffer". */
 		void	write(bytebuffer *buffer, uint32_t value);
+
+		/** Converts "value" from host byte order to little-endian,
+		 *  then writes "value" to byte buffer "buffer". */
 		void	writeLE(bytebuffer *buffer, uint32_t value);
+
+		/** Converts "value" from host byte order to big-endian,
+		 *  then writes "value" to byte buffer "buffer". */
 		void	writeBE(bytebuffer *buffer, uint32_t value);
+
+		/** Converts "value" to protocol byte order (consulting
+		 *  getProtocolIsBigEndian() to determine how to convert it)
+		 *  then writes "value" to byte buffer "buffer". */
 		void	write(bytebuffer *buffer, uint64_t value);
+
+		/** Converts "value" from host byte order to little-endian,
+		 *  then writes "value" to byte buffer "buffer". */
 		void	writeLE(bytebuffer *buffer, uint64_t value);
+
+		/** Converts "value" from host byte order to big-endian,
+		 *  then writes "value" to byte buffer "buffer". */
 		void	writeBE(bytebuffer *buffer, uint64_t value);
+
+		/** Writes length-encoded-integer "value" to byte buffer
+		 *  "buffer". */
 		void	writeLenEncInt(bytebuffer *buffer,
 						uint64_t value);
+
+		/** Writes length-encoded-string "string" to byte buffer
+		 *  "buffer". */
 		void	writeLenEncStr(bytebuffer *buffer,
 						const char *string);
+
+		/** Writes "size" bytes of length-encoded-string "string" to
+		 *  byte buffer "buffer". */
 		void	writeLenEncStr(bytebuffer *buffer,
 						const char *string,
 						uint64_t size);
+
+		/** Converts "value" from host byte order to big-endian, then
+		 *  writes the first 3 bytes of it to byte buffer "buffer". */
 		void	writeTriplet(bytebuffer *buffer, uint32_t value);
 
+		/** Converts "value" from protocol byte order to host byte
+		 *  order (consulting getProtocolIsBigEndian() to determine how
+		 *  to convert it) and returns it. */
 		uint16_t	toHost(uint16_t value);
+
+		/** Converts "value" from protocol byte order to host byte
+		 *  order (consulting getProtocolIsBigEndian() to determine how
+		 *  to convert it) and returns it. */
 		uint32_t	toHost(uint32_t value);
+
+		/** Converts "value" from protocol byte order to host byte
+		 *  order (consulting getProtocolIsBigEndian() to determine how
+		 *  to convert it) and returns it. */
 		uint64_t	toHost(uint64_t value);
+
+		/** Converts "value" from little-endian to host byteorder and
+		 *  returns it. */
 		uint16_t	leToHost(uint16_t value);
+
+		/** Converts "value" from little-endian to host byteorder and
+		 *  returns it. */
 		uint32_t	leToHost(uint32_t value);
+
+		/** Converts "value" from little-endian to host byteorder and
+		 *  returns it. */
 		uint64_t	leToHost(uint64_t value);
+
+		/** Converts "value" from big-endian to host byteorder and
+		 *  returns it. */
 		uint16_t	beToHost(uint16_t value);
+
+		/** Converts "value" from big-endian to host byteorder and
+		 *  returns it. */
 		uint32_t	beToHost(uint32_t value);
+
+		/** Converts "value" from big-endian to host byteorder and
+		 *  returns it. */
 		uint64_t	beToHost(uint64_t value);
 
+		/** Converts "value" from host byte order to protocol byte order
+		 *  (consulting getProtocolIsBigEndian() to determine how to
+		 *  convert it) and returns it. */
 		uint16_t	hostTo(uint16_t value);
+
+		/** Converts "value" from host byte order to protocol byte order
+		 *  (consulting getProtocolIsBigEndian() to determine how to
+		 *  convert it) and returns it. */
 		uint32_t	hostTo(uint32_t value);
+
+		/** Converts "value" from host byte order to protocol byte order
+		 *  (consulting getProtocolIsBigEndian() to determine how to
+		 *  convert it) and returns it. */
 		uint64_t	hostTo(uint64_t value);
+
+		/** Converts "value" from host byte order to little-endian and
+		 *  returns it. */
 		uint16_t	hostToLE(uint16_t value);
+
+		/** Converts "value" from host byte order to little-endian and
+		 *  returns it. */
 		uint32_t	hostToLE(uint32_t value);
+
+		/** Converts "value" from host byte order to little-endian and
+		 *  returns it. */
 		uint64_t	hostToLE(uint64_t value);
+
+		/** Converts "value" from host byte order to big-endian and
+		 *  returns it. */
 		uint16_t	hostToBE(uint16_t value);
+
+		/** Converts "value" from host byte order to big-endian and
+		 *  returns it. */
 		uint32_t	hostToBE(uint32_t value);
+
+		/** Converts "value" from host byte order to big-endian and
+		 *  returns it. */
 		uint64_t	hostToBE(uint64_t value);
 
+		/** Returns true if debug is enabled and false otherwise. */
 		bool	getDebug();
 
 		void	debugStart(const char *title);
 		void	debugStart(const char *title, uint16_t indent);
-		void	debugEnd();
-		void	debugEnd(uint16_t indent);
-
 		void	debugHexDump(const byte_t *data,
 						uint64_t size);
 		void	debugHexDump(const byte_t *data,
 						uint64_t size,
 						uint16_t indent);
+		void	debugEnd();
+		void	debugEnd(uint16_t indent);
 
 		sqlrservercontroller	*cont;
 
@@ -5795,8 +6168,8 @@ class SQLRSERVER_DLLSPEC sqlrrouter {
 	protected:
 		sqlrrouters	*getRouters();
 		domnode	*getParameters();
-		const char 	**getConnectionIds();
-		sqlrconnection 	**getConnections();
+		const char	**getConnectionIds();
+		sqlrconnection	**getConnections();
 		uint16_t	getConnectionCount();
 
 	#include <sqlrelay/private/sqlrrouter.h>
@@ -5821,8 +6194,8 @@ class SQLRSERVER_DLLSPEC sqlrrouters {
 		void	endSession();
 
 		const char	*getCurrentConnectionId();
-		const char 	**getConnectionIds();
-		sqlrconnection 	**getConnections();
+		const char	**getConnectionIds();
+		sqlrconnection	**getConnections();
 		uint16_t	getConnectionCount();
 
 	#include <sqlrelay/private/sqlrrouters.h>

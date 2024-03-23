@@ -680,19 +680,6 @@ void sqlrprotocol::debugStart(const char *title, uint16_t indent) {
 	}
 }
 
-void sqlrprotocol::debugEnd() {
-	debugEnd(0);
-}
-
-void sqlrprotocol::debugEnd(uint16_t indent) {
-	if (pvt->_debug) {
-		for (uint16_t i=0; i<indent; i++) {
-			stdoutput.write('	');
-		}
-		stdoutput.write("}\n");
-	}
-}
-
 void sqlrprotocol::debugHexDump(const byte_t *data, uint64_t size) {
 	debugHexDump(data,size,1);
 }
@@ -704,4 +691,17 @@ void sqlrprotocol::debugHexDump(const byte_t *data,
 		return;
 	}
 	stdoutput.printHex(data,size,indent);
+}
+
+void sqlrprotocol::debugEnd() {
+	debugEnd(0);
+}
+
+void sqlrprotocol::debugEnd(uint16_t indent) {
+	if (pvt->_debug) {
+		for (uint16_t i=0; i<indent; i++) {
+			stdoutput.write('	');
+		}
+		stdoutput.write("}\n");
+	}
 }
