@@ -20,6 +20,11 @@ class sqlrscheduleruleprivate {
 sqlrschedulerule::sqlrschedulerule(bool allow, const char *when) {
 
 	pvt=new sqlrscheduleruleprivate;
+	pvt->_years.setManageValues(true);
+	pvt->_months.setManageValues(true);
+	pvt->_daysofmonth.setManageValues(true);
+	pvt->_daysofweek.setManageValues(true);
+	pvt->_dayparts.setManageValues(true);
 
 	char		**whenparts;
 	uint64_t	whenpartscount;
@@ -43,35 +48,15 @@ sqlrschedulerule::sqlrschedulerule(bool allow,
 					const char *daysofweek,
 					const char *dayparts) {
 	pvt=new sqlrscheduleruleprivate;
+	pvt->_years.setManageValues(true);
+	pvt->_months.setManageValues(true);
+	pvt->_daysofmonth.setManageValues(true);
+	pvt->_daysofweek.setManageValues(true);
+	pvt->_dayparts.setManageValues(true);
 	init(allow,years,months,daysofmonth,daysofweek,dayparts);
 }
 
 sqlrschedulerule::~sqlrschedulerule() {
-	for (listnode< sqlrscheduleperiod * > *n=
-						pvt->_years.getFirst();
-						n; n=n->getNext()) {
-		delete n->getValue();
-	}
-	for (listnode< sqlrscheduleperiod * > *n=
-						pvt->_months.getFirst();
-						n; n=n->getNext()) {
-		delete n->getValue();
-	}
-	for (listnode< sqlrscheduleperiod * > *n=
-						pvt->_daysofmonth.getFirst();
-						n; n=n->getNext()) {
-		delete n->getValue();
-	}
-	for (listnode< sqlrscheduleperiod * > *n=
-						pvt->_daysofweek.getFirst();
-						n; n=n->getNext()) {
-		delete n->getValue();
-	}
-	for (listnode< sqlrscheduledaypart * > *n=
-						pvt->_dayparts.getFirst();
-						n; n=n->getNext()) {
-		delete n->getValue();
-	}
 	delete pvt;
 }
 
@@ -281,7 +266,8 @@ void sqlrschedulerule::splitDayParts(const char *daypartlist) {
 		dp->startminute=charstring::convertToInteger(minute);
 
 		if (daypartpartscount>1) {
-			dp->endhour=charstring::convertToInteger(daypartparts[1]);
+			dp->endhour=
+				charstring::convertToInteger(daypartparts[1]);
 			minute=charstring::findFirst(daypartparts[1],":");
 			if (minute) {
 				minute++;
@@ -323,13 +309,10 @@ sqlrschedule::sqlrschedule(sqlrservercontroller *cont,
 	pvt=new sqlrscheduleprivate;
 	pvt->_ss=ss;
 	pvt->_parameters=parameters;
+	pvt->_rules.setManageValues(true);
 }
 
 sqlrschedule::~sqlrschedule() {
-	for (listnode< sqlrschedulerule * > *r=pvt->_rules.getFirst();
-							r; r=r->getNext()) {
-		delete r->getValue();
-	}
 	delete pvt;
 }
 

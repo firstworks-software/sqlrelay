@@ -3149,7 +3149,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		 *  substitute in the name of the database to select.
 		 *
 		 *  This implementation just returns NULL, but it may be
-		 *  overridden by  child class to return the query. */
+		 *  overridden by child class to return the query. */
 		virtual const char	*selectDatabaseQuery();
 
 		/** Returns the current database.
@@ -5229,8 +5229,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol {
 		 *  * krbmech - the Kerberos mech to use
 		 *  * krbflags - the Kerboeros flags to use
 		 *
-		 *  However, it may be overridden by a child class to do
-		 *  additional initialization and handle additional
+		 *  However, it may be overridden by a child class to perform
+		 *  additional initialization tasks and handle additional
 		 *  parameters. */
 		sqlrprotocol(sqlrservercontroller *cont,
 					sqlrprotocols *ps,
@@ -5781,21 +5781,37 @@ class SQLRSERVER_DLLSPEC sqlrprotocols {
 
 class SQLRSERVER_DLLSPEC sqlrcredentials {
 	public:
+		/** Creates an instance of sqlrcredentials. */
 		sqlrcredentials();
+
+		/** Deletes this instance of sqlrcredentials. */
 		virtual	~sqlrcredentials();
+
+		/** Returns a string describing the type of credentials. */
 		virtual const char	*getType()=0;
 };
 
 class SQLRSERVER_DLLSPEC sqlruserpasswordcredentials : public sqlrcredentials {
 	public:
+		/** Creates an instance of sqlruserpasswordcredentials. */
 		sqlruserpasswordcredentials();
+
+		/** Deletes this instance of sqlruserpasswordcredentials. */
 		~sqlruserpasswordcredentials();
+
+		/** Returns "userpassword". */
 		const char	*getType();
 
+		/** Sets the user to "user". */
 		void	setUser(const char *user);
+
+		/** Sets the password to "password". */
 		void	setPassword(const char *password);
 
+		/** Returns the user. */
 		const char	*getUser();
+
+		/** Returns the password. */
 		const char	*getPassword();
 
 	#include <sqlrelay/private/sqlruserpasswordcredentials.h>
@@ -5803,11 +5819,19 @@ class SQLRSERVER_DLLSPEC sqlruserpasswordcredentials : public sqlrcredentials {
 
 class SQLRSERVER_DLLSPEC sqlrgsscredentials : public sqlrcredentials {
 	public:
+		/** Creates an instance of sqlrgsscredentials. */
 		sqlrgsscredentials();
+
+		/** Deletes this instance of sqlrgsscredentials. */
 		~sqlrgsscredentials();
+
+		/** Returns "gss". */
 		const char	*getType();
 
+		/** Sets the initiator to "initiator". */
 		void		setInitiator(const char *initiator);
+
+		/** Returns the initiator. */
 		const char	*getInitiator();
 
 	#include <sqlrelay/private/sqlrgsscredentials.h>
@@ -5815,15 +5839,27 @@ class SQLRSERVER_DLLSPEC sqlrgsscredentials : public sqlrcredentials {
 
 class SQLRSERVER_DLLSPEC sqlrtlscredentials : public sqlrcredentials {
 	public:
+		/** Creates an instance of sqlrtlscredentials. */
 		sqlrtlscredentials();
+
+		/** Deletes this instance of sqlrtlscredentials. */
 		~sqlrtlscredentials();
+
+		/** Returns "tls". */
 		const char	*getType();
 
+		/** Sets the common name to "commonname". */
 		void	setCommonName(const char *commonname);
+
+		/** Sets the set of subject alternative names to
+		 *  "subjectalternativenames". */
 		void	setSubjectAlternateNames(
 				linkedlist < char * > *subjectalternatenames);
 
+		/** Returns the common name. */
 		const char		*getCommonName();
+
+		/** Returns the set of subject alternative names. */
 		linkedlist< char * >	*getSubjectAlternateNames();
 
 	#include <sqlrelay/private/sqlrtlscredentials.h>
@@ -5831,20 +5867,46 @@ class SQLRSERVER_DLLSPEC sqlrtlscredentials : public sqlrcredentials {
 
 class SQLRSERVER_DLLSPEC sqlrmysqlcredentials : public sqlrcredentials {
 	public:
+		/** Creates an instance of sqlrmysqlcredentials. */
 		sqlrmysqlcredentials();
+
+		/** Deletes this instance of sqlrmysqlcredentials. */
 		~sqlrmysqlcredentials();
+
+		/** Returns "mysql". */
 		const char	*getType();
 
+		/** Sets the user to "user". */
 		void	setUser(const char *user);
+
+		/** Sets the password to "password". */
 		void	setPassword(const char *password);
+
+		/** Sets the number of bytes in the password to
+		 *  "passwordsize". */
 		void	setPasswordSize(uint64_t passwordsize);
+
+		/** Sets the authentication method (eg. mysql_native_password,
+		 *  sha256_password, cached_sha2_password, etc.) to "method". */
 		void	setMethod(const char *method);
+
+		/** Sets the extra info required for the selected
+		 *  authentication method (eg. challenge) to "extra". */
 		void	setExtra(const char *extra);
 
+		/** Returns the user. */
 		const char	*getUser();
+
+		/** Returns the password. */
 		const char	*getPassword();
+
+		/** Returns the number of bytes in the password. */
 		uint64_t	getPasswordSize();
+
+		/** Returns the authentication method. */
 		const char	*getMethod();
+
+		/** Returns the extra info. */
 		const char	*getExtra();
 
 	#include <sqlrelay/private/sqlrmysqlcredentials.h>
@@ -5852,20 +5914,46 @@ class SQLRSERVER_DLLSPEC sqlrmysqlcredentials : public sqlrcredentials {
 
 class SQLRSERVER_DLLSPEC sqlrpostgresqlcredentials : public sqlrcredentials {
 	public:
+		/** Creates an instance of sqlrpostgresqlcredentials. */
 		sqlrpostgresqlcredentials();
+
+		/** Deletes this instance of sqlrpostgresqlcredentials. */
 		~sqlrpostgresqlcredentials();
+
+		/** Returns "postgresql". */
 		const char	*getType();
 
+		/** Sets the user to "user". */
 		void	setUser(const char *user);
+
+		/** Sets the password to "password". */
 		void	setPassword(const char *password);
+
+		/** Sets the number of bytes in the password to
+		 *  "passwordsize". */
 		void	setPasswordSize(uint64_t passwordsize);
+
+		/** Sets the authentication method (eg. psotgresql_md5,
+		 *  postgresql_cleartext, etc.) to "method". */
 		void	setMethod(const char *method);
+
+		/** Sets the salt required by some authentication methods to
+		 *  "salt". */
 		void	setSalt(uint32_t salt);
 
+		/** Returns the user. */
 		const char	*getUser();
+
+		/** Returns the password. */
 		const char	*getPassword();
+
+		/** Returns the number of bytes in the password. */
 		uint64_t	getPasswordSize();
+
+		/** Returns the authentication method. */
 		const char	*getMethod();
+
+		/** Returns the salt. */
 		uint32_t	getSalt();
 
 	#include <sqlrelay/private/sqlrpostgresqlcredentials.h>
@@ -5873,20 +5961,45 @@ class SQLRSERVER_DLLSPEC sqlrpostgresqlcredentials : public sqlrcredentials {
 
 class SQLRSERVER_DLLSPEC sqlroraclecredentials : public sqlrcredentials {
 	public:
-			sqlroraclecredentials();
-		virtual	~sqlroraclecredentials();
+		/** Creates an instance of sqlroraclecredentials. */
+		sqlroraclecredentials();
+
+		/** Deletes this instance of sqlroraclecredentials. */
+		~sqlroraclecredentials();
+
+		/** Returns "oracle". */
 		const char	*getType();
 
+		/** Sets the user to "user". */
 		void	setUser(const char *user);
+
+		/** Sets the password to "password". */
 		void	setPassword(const char *password);
+
+		/** Sets the number of bytes in the password to
+		 *  "passwordsize". */
 		void	setPasswordSize(uint64_t passwordsize);
+
+		/** Sets the authentication method to "method". */
 		void	setMethod(const char *method);
+
+		/** Sets the extra info required for the selected
+		 *  authentication method to "extra". */
 		void	setExtra(const char *extra);
 
+		/** Returns the user. */
 		const char	*getUser();
+
+		/** Returns the password. */
 		const char	*getPassword();
+
+		/** Returns the number of bytes in the password. */
 		uint64_t	getPasswordSize();
+
+		/** Returns the authentication method. */
 		const char	*getMethod();
+
+		/** Returns the extra info. */
 		const char	*getExtra();
 
 	#include <sqlrelay/private/sqlroraclecredentials.h>
@@ -5894,12 +6007,19 @@ class SQLRSERVER_DLLSPEC sqlroraclecredentials : public sqlrcredentials {
 
 class SQLRSERVER_DLLSPEC sqlrteradatacredentials : public sqlrcredentials {
 	public:
-			sqlrteradatacredentials();
-		virtual	~sqlrteradatacredentials();
+		/** Creates an instance of sqlrteradatacredentials. */
+		sqlrteradatacredentials();
+
+		/** Deletes this instance of sqlroraclecredentials. */
+		~sqlrteradatacredentials();
+
+		/** Returns "teradata". */
 		const char	*getType();
 
+		/** Sets the client file descriptor to "fd". */
 		void	setClientFileDescriptor(filedescriptor *fd);
 
+		/** Returns the client file desctiptor. */
 		filedescriptor	*getClientFileDescriptor();
 
 	#include <sqlrelay/private/sqlrteradatacredentials.h>
@@ -5907,16 +6027,47 @@ class SQLRSERVER_DLLSPEC sqlrteradatacredentials : public sqlrcredentials {
 
 class SQLRSERVER_DLLSPEC sqlrauth {
 	public:
+		/** Creates an instance of sqlrauth, configured with
+		 *  parameters "parameters".
+		 *
+		 *  This implementation doesn't handle any parameters,
+		 *  however, it may be overridden by a child class to
+		 *  perform additional initialization tasks and handle
+		 *  some set of parameters. */
 		sqlrauth(sqlrservercontroller *cont,
 					sqlrauths *auths,
 					sqlrpwdencs *sqlrpe,
 					domnode *parameters);
+
+		/** Deletes this instance of sqlrauth. */
 		virtual	~sqlrauth();
+
+		/** Authenticates "cred" against the authentication backend.
+		 *  Returns a representation of the entity that was successfully
+		 *  authenticated (eg. user, GSS initiator, TLS common name or
+		 *  subject alternate name, etc.) if authentication succeeded,
+		 *  or NULL if authentication failed.
+		 *
+		 *  This implementation just returns NULL, but may be
+		 *  overridden by a child class to perform authentication
+		 *  of instances one or more children of sqlrcredentials
+		 *  against against a particular backend, such as a list of
+		 *  users, the database itself, or some other authentication
+		 *  system. */
 		virtual	const char	*auth(sqlrcredentials *cred);
 
 	protected:
+
+		/** Returns the instance of sqlrauths passed in as "auths" to
+		 *  the constructor. */
 		sqlrauths	*getAuths();
+
+		/** Returns the instance of sqlrpwdencs passed in as "sqlrpe" to
+		 *  the constructor. */
 		sqlrpwdencs	*getPasswordEncryptions();
+
+		/** Returns the top-level domnode of the parameters passed in
+		 *  as "parameters" to the constructor. */
 		domnode	*getParameters();
 
 		sqlrservercontroller	*cont;
@@ -5975,22 +6126,61 @@ enum sqlrlogger_loglevel_t {
 
 class SQLRSERVER_DLLSPEC sqlrlogger {
 	public:
+		/** Creates an instance of sqlrlogger, configured with
+		 *  parameters "parameters".
+		 *
+		 *  This implementation doesn't handle any parameters,
+		 *  however, it may be overridden by a child class to
+		 *  perform additional initialization tasks and handle
+		 *  some set of parameters. */
 		sqlrlogger(sqlrloggers *ls, domnode *parameters);
+
+		/** Deletes this instance of sqlrlogger. */
 		virtual	~sqlrlogger();
 
+		/** Initializes this instance of sqlrlogger.
+		 *  
+		 *  Returns true on success and false if an error occurred. */
 		virtual bool	init(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon);
+
+		/** Logs "event" of loglevel "level" with "info".
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  This implementation just returns true, but may be
+		 *  overridden by a child class to perform logging of
+		 *  specific events/info at specific loglevels to specific
+		 *  backends. */
 		virtual bool	run(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					sqlrlogger_loglevel_t level,
 					sqlrevent_t event,
 					const char *info);
+
+		/** Called by the sqlrservercontroller at the end of a
+		 *  transaction.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endTransaction(bool commit);
+
+		/** Called by the sqlrservercontroller at the end of a client
+		 *  session.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endSession();
 
 	protected:
+
+		/** Returns the instance of sqlrloggers passed in as "ls" to
+		 *  the constructor. */
 		sqlrloggers	*getLoggers();
+
+		/** Returns the top-level domnode of the parameters passed in
+		 *  as "parameters" to the constructor. */
 		domnode	*getParameters();
 
 	#include <sqlrelay/private/sqlrlogger.h>
@@ -6025,21 +6215,54 @@ class SQLRSERVER_DLLSPEC sqlrloggers {
 
 class SQLRSERVER_DLLSPEC sqlrnotification {
 	public:
+		/** Creates an instance of sqlrnotification, configured with
+		 *  parameters "parameters".
+		 *
+		 *  This implementation doesn't handle any parameters,
+		 *  however, it may be overridden by a child class to
+		 *  perform additional initialization tasks and handle
+		 *  some set of parameters. */
 		sqlrnotification(sqlrnotifications *ns,
 					domnode *parameters);
 		virtual	~sqlrnotification();
 
+		/** Performs notification of "event" with "info".
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  This implementation just returns true, but may be
+		 *  overridden by a child class to perform logging of
+		 *  specific events/info at specific loglevels to specific
+		 *  backends. */
 		virtual bool	run(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					sqlrevent_t event,
 					const char *info);
+
+		/** Called by the sqlrservercontroller at the end of a
+		 *  transaction.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endTransaction(bool commit);
+
+		/** Called by the sqlrservercontroller at the end of a client
+		 *  session.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endSession();
 
 	protected:
+
+		/** Returns the instance of sqlrnotifications passed in as "ns"
+		 *  to the constructor. */
 		sqlrnotifications	*getNotifications();
-		domnode		*getParameters();
+
+		/** Returns the top-level domnode of the parameters passed in
+		 *  as "parameters" to the constructor. */
+		domnode	*getParameters();
 
 	#include <sqlrelay/private/sqlrnotification.h>
 };
@@ -6109,15 +6332,47 @@ class SQLRSERVER_DLLSPEC sqlrschedulerule {
 
 class SQLRSERVER_DLLSPEC sqlrschedule {
 	public:
+		/** Creates an instance of sqlrschedule, configured with
+		 *  parameters "parameters".
+		 *
+		 *  This implementation doesn't handle any parameters,
+		 *  however, it may be overridden by a child class to
+		 *  perform additional initialization tasks and handle
+		 *  some set of parameters. */
 		sqlrschedule(sqlrservercontroller *cont,
 					sqlrschedules *ss,
 					domnode *parameters);
+
+		/** Deletes this instance of sqlrschedule. */
 		virtual	~sqlrschedule();
 
-		virtual bool	allowed(sqlrserverconnection *sqlrcon,
-							const char *user);
-
+		/** Adds a schedule rule for time period "when".
+		 *
+		 *  If "allow" is true then the user is allowed access.  If
+		 *  "allow" is false  then the user is denied access.
+		 *
+		 *  This implementation interprets "when" as a cron-style
+		 *  string defining which years, months, days of month, days of
+		 *  week, and day parts the rule applies to.
+		 *
+		 *  May be overridden by a child class to interpret "when"
+		 *  differently. */
 		virtual	void	addRule(bool allow, const char *when);
+
+		/** Adds a schedule rule for broken-down time period composed
+		 *  of "years", "months", "daysofmonth", "daysofweek", and
+		 *  "dayparts".
+		 *  
+		 *  If "allow" is true then the user is allowed access.  If
+		 *  "allow" is false then the user is denied access.
+		 *
+		 *  This implementation interprets each of the broken-down
+		 *  time period components as cron-style string components,
+		 *  which collectively define the time period that the rule
+		 *  applies to.
+		 *
+		 *  May be overridden by a child class to interpret the time
+		 *  period components differently. */
 		virtual	void	addRule(bool allow,
 					const char *years,
 					const char *months,
@@ -6125,10 +6380,35 @@ class SQLRSERVER_DLLSPEC sqlrschedule {
 					const char *daysofweek,
 					const char *dayparts);
 
+		/** Determines if the user is allowed access or not, at
+		 *  date/time "dt".  If the user is currently allowed access,
+		 *  then "currentlyallowed" should be set to true.  If the user
+		 *  is not currently allowed access, then "currentlyallowed"
+		 *  should be set to false.
+		 *
+		 *  Returns "currentlyallowed" if none of the rules affect
+		 *  the date/time "dt".  Returns true if the rules do affect
+		 *  the date/time "dt" and allow access.  Returns false if the
+		 *  rules do affect the date/time "dt" and deny access. */
 		virtual	bool	rulesAllow(datetime *dt, bool currentlyallowed);
 
+		/** Returns true of "user" is allowed access at the current
+		 *  time, and false if "user" is not allowed access.
+		 *
+		 *  This implementation just returns true, but it may be
+		 *  overridden by child class to evaluate rules to determine
+		 *  if the user is allowed access. */
+		virtual bool	allowed(sqlrserverconnection *sqlrcon,
+							const char *user);
+
 	protected:
+
+		/** Returns the instance of sqlrschedules passed in
+		 *  as "ss" to the constructor. */
 		sqlrschedules	*getSchedules();
+
+		/** Returns the top-level domnode of the parameters passed in
+		 *  as "parameters" to the constructor. */
 		domnode	*getParameters();
 
 	#include <sqlrelay/private/sqlrschedule.h>
@@ -6151,8 +6431,8 @@ class SQLRSERVER_DLLSPEC sqlrschedules {
 class SQLRSERVER_DLLSPEC sqlrrouter {
 	public:
 		sqlrrouter(sqlrservercontroller *cont,
-				sqlrrouters *rs,
-				domnode *parameters);
+					sqlrrouters *rs,
+					domnode *parameters);
 		virtual	~sqlrrouter();
 
 		virtual const char *route(sqlrserverconnection *sqlrcon,
@@ -6162,7 +6442,18 @@ class SQLRSERVER_DLLSPEC sqlrrouter {
 
 		virtual	bool	routeEntireSession();
 
+		/** Called by the sqlrservercontroller at the end of a
+		 *  transaction.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endTransaction(bool commit);
+
+		/** Called by the sqlrservercontroller at the end of a client
+		 *  session.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endSession();
 
 	protected:
@@ -6221,6 +6512,12 @@ class SQLRSERVER_DLLSPEC sqlrparser {
 
 		virtual void	getMetaData(domnode *node);
 
+
+		/** Called by the sqlrservercontroller at the end of a client
+		 *  session.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endSession();
 
 	protected:
@@ -6284,7 +6581,18 @@ class SQLRSERVER_DLLSPEC sqlrquerytranslation {
 
 		virtual const char	*getError();
 
+		/** Called by the sqlrservercontroller at the end of a
+		 *  transaction.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endTransaction(bool commit);
+
+		/** Called by the sqlrservercontroller at the end of a client
+		 *  session.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endSession();
 
 	protected:
@@ -6336,7 +6644,18 @@ class SQLRSERVER_DLLSPEC sqlrfilter {
 
 		virtual void	getError(const char **err, int64_t *errn);
 
+		/** Called by the sqlrservercontroller at the end of a
+		 *  transaction.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endTransaction(bool commit);
+
+		/** Called by the sqlrservercontroller at the end of a client
+		 *  session.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endSession();
 
 	protected:
@@ -6383,7 +6702,18 @@ class SQLRSERVER_DLLSPEC sqlrbindvariabletranslation {
 
 		virtual const char	*getError();
 
+		/** Called by the sqlrservercontroller at the end of a
+		 *  transaction.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endTransaction(bool commit);
+
+		/** Called by the sqlrservercontroller at the end of a client
+		 *  session.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endSession();
 
 	protected:
@@ -6426,7 +6756,18 @@ class SQLRSERVER_DLLSPEC sqlrresultsettranslation {
 
 		virtual const char	*getError();
 
+		/** Called by the sqlrservercontroller at the end of a
+		 *  transaction.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endTransaction(bool commit);
+
+		/** Called by the sqlrservercontroller at the end of a client
+		 *  session.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endSession();
 
 	protected:
@@ -6474,7 +6815,18 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowtranslation {
 
 		virtual const char	*getError();
 
+		/** Called by the sqlrservercontroller at the end of a
+		 *  transaction.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endTransaction(bool commit);
+
+		/** Called by the sqlrservercontroller at the end of a client
+		 *  session.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endSession();
 
 	protected:
@@ -6535,7 +6887,18 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslation {
 
 		virtual const char	*getError();
 
+		/** Called by the sqlrservercontroller at the end of a
+		 *  transaction.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endTransaction(bool commit);
+
+		/** Called by the sqlrservercontroller at the end of a client
+		 *  session.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endSession();
 
 	protected:
@@ -6615,7 +6978,18 @@ class SQLRSERVER_DLLSPEC sqlrresultsetheadertranslation {
 
 		virtual const char	*getError();
 
+		/** Called by the sqlrservercontroller at the end of a
+		 *  transaction.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endTransaction(bool commit);
+
+		/** Called by the sqlrservercontroller at the end of a client
+		 *  session.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endSession();
 
 	protected:
@@ -6679,7 +7053,18 @@ class SQLRSERVER_DLLSPEC sqlrerrortranslation {
 
 		virtual const char	*getError();
 
+		/** Called by the sqlrservercontroller at the end of a
+		 *  transaction.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endTransaction(bool commit);
+
+		/** Called by the sqlrservercontroller at the end of a client
+		 *  session.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endSession();
 
 	protected:
@@ -6723,7 +7108,18 @@ class SQLRSERVER_DLLSPEC sqlrtrigger {
 		virtual bool	runAfter(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur);
 
+		/** Called by the sqlrservercontroller at the end of a
+		 *  transaction.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endTransaction(bool commit);
+
+		/** Called by the sqlrservercontroller at the end of a client
+		 *  session.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endSession();
 
 	protected:
@@ -6763,7 +7159,18 @@ class SQLRSERVER_DLLSPEC sqlrquery {
 						sqlrserverconnection *sqlrcon,
 						uint16_t id);
 
+		/** Called by the sqlrservercontroller at the end of a
+		 *  transaction.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endTransaction(bool commit);
+
+		/** Called by the sqlrservercontroller at the end of a client
+		 *  session.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endSession();
 
 	protected:
@@ -6821,6 +7228,12 @@ class SQLRSERVER_DLLSPEC sqlrmoduledata {
 		domnode		*getParameters();
 
 		virtual void	closeResultSet(sqlrservercursor *sqlrcur);
+
+		/** Called by the sqlrservercontroller at the end of a
+		 *  transaction.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endTransaction(bool commit);
 		virtual void	endSession();
 
