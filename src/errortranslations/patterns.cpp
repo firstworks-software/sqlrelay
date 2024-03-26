@@ -32,7 +32,7 @@ class SQLRSERVER_DLLSPEC sqlrerrortranslation_patterns :
 					public sqlrerrortranslation {
 	public:
 		sqlrerrortranslation_patterns(sqlrservercontroller *cont,
-						sqlrerrortranslations *sqlts,
+						sqlrerrortranslations *ts,
 						domnode *parameters);
 		~sqlrerrortranslation_patterns();
 		bool	run(sqlrserverconnection *sqlrcon,
@@ -72,9 +72,9 @@ class SQLRSERVER_DLLSPEC sqlrerrortranslation_patterns :
 
 sqlrerrortranslation_patterns::sqlrerrortranslation_patterns(
 						sqlrservercontroller *cont,
-						sqlrerrortranslations *sqlts,
+						sqlrerrortranslations *ts,
 						domnode *parameters) :
-				sqlrerrortranslation(cont,sqlts,parameters) {
+				sqlrerrortranslation(cont,ts,parameters) {
 	debugFunction();
 
 	debug=cont->getConfig()->getDebugErrorTranslations();

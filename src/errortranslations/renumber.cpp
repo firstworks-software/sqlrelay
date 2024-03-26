@@ -9,7 +9,7 @@ class SQLRSERVER_DLLSPEC sqlrerrortranslation_renumber :
 					public sqlrerrortranslation {
 	public:
 		sqlrerrortranslation_renumber(sqlrservercontroller *cont,
-						sqlrerrortranslations *sqlts,
+						sqlrerrortranslations *ts,
 						domnode *parameters);
 		bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
@@ -28,9 +28,9 @@ class SQLRSERVER_DLLSPEC sqlrerrortranslation_renumber :
 
 sqlrerrortranslation_renumber::sqlrerrortranslation_renumber(
 						sqlrservercontroller *cont,
-						sqlrerrortranslations *sqlts,
+						sqlrerrortranslations *ts,
 						domnode *parameters) :
-				sqlrerrortranslation(cont,sqlts,parameters) {
+				sqlrerrortranslation(cont,ts,parameters) {
 	debugFunction();
 
 	debug=cont->getConfig()->getDebugErrorTranslations();

@@ -3788,8 +3788,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor {
 		virtual sqlrquerytype_t	determineQueryType(const char *query,
 								uint32_t size);
 
-		/** Returns true if we are handling the current query
-		 *  using a custom query module and false otherwise. */
+		/** Returns false. */
 		virtual	bool	isCustomQuery();
 
 		/** Prepares "query", of "size" bytes.
@@ -6430,7 +6429,12 @@ class SQLRSERVER_DLLSPEC sqlrschedules {
 class SQLRSERVER_DLLSPEC sqlrrouter {
 	public:
 		/** Creates an instance of sqlrrouter, configured with
-		 *  parameters "parameters". */
+		 *  parameters "parameters".
+		 *
+		 *  This implementation doesn't handle any parameters,
+		 *  however, it may be overridden by a child class to
+		 *  perform additional initialization tasks and handle
+		 *  some set of parameters. */
 		sqlrrouter(sqlrservercontroller *cont,
 					sqlrrouters *rs,
 					domnode *parameters);
@@ -6515,7 +6519,12 @@ class SQLRSERVER_DLLSPEC sqlrrouters {
 class SQLRSERVER_DLLSPEC sqlrparser {
 	public:
 		/** Creates an instance of sqlrparser, configured with
-		 *  parameters "parameters". */
+		 *  parameters "parameters".
+		 *
+		 *  This implementation doesn't handle any parameters,
+		 *  however, it may be overridden by a child class to
+		 *  perform additional initialization tasks and handle
+		 *  some set of parameters. */
 		sqlrparser(sqlrservercontroller *cont,
 				domnode *parameters);
 
@@ -6619,7 +6628,12 @@ class SQLRSERVER_DLLSPEC sqlrparser {
 class SQLRSERVER_DLLSPEC sqlrdirective {
 	public:
 		/** Creates an instance of sqlrdirective, configured with
-		 *  parameters "parameters". */
+		 *  parameters "parameters".
+		 *
+		 *  This implementation doesn't handle any parameters,
+		 *  however, it may be overridden by a child class to
+		 *  perform additional initialization tasks and handle
+		 *  some set of parameters. */
 		sqlrdirective(sqlrservercontroller *cont,
 					sqlrdirectives *ds,
 					domnode *parameters);
@@ -6669,7 +6683,12 @@ class SQLRSERVER_DLLSPEC sqlrdirectives {
 class SQLRSERVER_DLLSPEC sqlrquerytranslation {
 	public:
 		/** Creates an instance of sqlrquerytranslation, configured with
-		 *  parameters "parameters". */
+		 *  parameters "parameters".
+		 *
+		 *  This implementation doesn't handle any parameters,
+		 *  however, it may be overridden by a child class to
+		 *  perform additional initialization tasks and handle
+		 *  some set of parameters. */
 		sqlrquerytranslation(sqlrservercontroller *cont,
 					sqlrquerytranslations *ts,
 					domnode *parameters);
@@ -6693,7 +6712,7 @@ class SQLRSERVER_DLLSPEC sqlrquerytranslation {
 		 *  the specific error.
 		 *
 		 *  This implementation returns true, but may be overridden by
-		 *  a child class to return perform specific translations. */
+		 *  a child class to perform specific translations. */
 		virtual bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					const char *query,
@@ -6707,8 +6726,9 @@ class SQLRSERVER_DLLSPEC sqlrquerytranslation {
 		 *  If an error occurred, then getError() may be used to get
 		 *  the specific error.
 		 *
-		 *  This implementation returns true, but may be overridden by
-		 *  a child class to return perform specific translations. */
+		 *  This implementation just returns true, but may be
+		 *  overridden by a child class to perform specific
+		 *  translations. */
 		virtual bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					xmldom *querytree);
@@ -6770,9 +6790,18 @@ class SQLRSERVER_DLLSPEC sqlrquerytranslations {
 
 class SQLRSERVER_DLLSPEC sqlrfilter {
 	public:
+		/** Creates an instance of sqlrqueryfilter, configured with
+		 *  parameters "parameters".
+		 *
+		 *  This implementation doesn't handle any parameters,
+		 *  however, it may be overridden by a child class to
+		 *  perform additional initialization tasks and handle
+		 *  some set of parameters. */
 		sqlrfilter(sqlrservercontroller *cont,
 					sqlrfilters *fs,
 					domnode *parameters);
+
+		/** Deletes this instance of sqlrtranslation. */
 		virtual	~sqlrfilter();
 
 		/** Returns true if this implementation requires a query tree
@@ -6782,14 +6811,42 @@ class SQLRSERVER_DLLSPEC sqlrfilter {
 		 *  a child class to return true. */
 		virtual bool	requiresTree();
 
+		/** Filters "query".
+		 *
+		 *  Returns true if the query should be filtered out and false
+		 *  if the query should not be filtered out.  May optionally
+		 *  set an error indicating why the query was filtered out.
+		 *
+		 *  If an error occurred, then getError() may be used to get
+		 *  the specific error.
+		 *
+		 *  This implementation just returns true, but may be
+		 *  overridden by a child class to perform specific
+		 *  filtering tasks. */
 		virtual bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					const char *query);
 
+
+		/** Filters the query represented by "querytree".
+		 *
+		 *  Returns true if the query should be filtered out and false
+		 *  if the query should not be filtered out.  May optionally
+		 *  set an error indicating why the query was filtered out.
+		 *
+		 *  If an error occurred, then getError() may be used to get
+		 *  the specific error.
+		 *
+		 *  This implementation just returns true, but may be
+		 *  overridden by a child class to perform specific
+		 *  filtering tasks. */
 		virtual bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					xmldom *querytree);
 
+		/** If run() filtered out the query and set an error indicating
+ 		 *  why, then "err" returns the error string and "errn" returns
+ 		 *  the error number. */
 		virtual void	getError(const char **err, int64_t *errn);
 
 		/** Called by the sqlrservercontroller at the end of a
@@ -6807,6 +6864,9 @@ class SQLRSERVER_DLLSPEC sqlrfilter {
 		virtual void	endSession();
 
 	protected:
+
+		/** Returns the instance of sqlrfilters passed in as "fs" to
+		 *  the constructor. */
 		sqlrfilters	*getFilters();
 
 		/** Returns the top-level domnode of the parameters passed in
@@ -6843,14 +6903,33 @@ class SQLRSERVER_DLLSPEC sqlrfilters {
 
 class SQLRSERVER_DLLSPEC sqlrbindvariabletranslation {
 	public:
+		/** Creates an instance of sqlrbindvariabletranslation,
+ 		 *  configured with parameters "parameters".
+		 *
+		 *  This implementation doesn't handle any parameters,
+		 *  however, it may be overridden by a child class to
+		 *  perform additional initialization tasks and handle
+		 *  some set of parameters. */
 		sqlrbindvariabletranslation(sqlrservercontroller *cont,
 					sqlrbindvariabletranslations *bvts,
 					domnode *parameters);
+
+		/** Deletes this instance of sqlrbindvariabletranslation. */
 		virtual	~sqlrbindvariabletranslation();
 
+		/** Translates the current bind variables of "sqlrcur".
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  This implementation just returns true, but may be
+		 *  overridden by a child class to perform specific
+		 *  translations. */
 		virtual bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur);
 
+		/** Returns an error if the previous call to run() returned
+ 		 *  false, or NULL if the previous call to run() succeeded or
+ 		 *  if run() was never called. */
 		virtual const char	*getError();
 
 		/** Called by the sqlrservercontroller at the end of a
@@ -6868,6 +6947,9 @@ class SQLRSERVER_DLLSPEC sqlrbindvariabletranslation {
 		virtual void	endSession();
 
 	protected:
+
+		/** Returns the instance of sqlrbindvariabletranslations
+		 *  passed in as "bvts" to the constructor. */
 		sqlrbindvariabletranslations	*getBindVariableTranslations();
 
 		/** Returns the top-level domnode of the parameters passed in
@@ -6896,11 +6978,31 @@ class SQLRSERVER_DLLSPEC sqlrbindvariabletranslations {
 
 class SQLRSERVER_DLLSPEC sqlrresultsettranslation {
 	public:
+		/** Creates an instance of sqlrresultsettranslation,
+ 		 *  configured with parameters "parameters".
+		 *
+		 *  This implementation doesn't handle any parameters,
+		 *  however, it may be overridden by a child class to
+		 *  perform additional initialization tasks and handle
+		 *  some set of parameters. */
 		sqlrresultsettranslation(sqlrservercontroller *cont,
 						sqlrresultsettranslations *rs,
 						domnode *parameters);
+
+		/** Deletes this instance of sqlrresultsettranslation. */
 		virtual	~sqlrresultsettranslation();
 
+		/** Translates the field of the column at index "fieldindex"
+		 *  of the current row of the current result set of "sqlrcur".
+		 *  "fieldname" will also be set to the column name of that
+		 *  field.  Returns the translated field in "field", and
+		 *  returns the translated field size in "fieldsize".
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  This implementation just returns true, but may be
+		 *  overridden by a child class to perform specific
+		 *  translations. */
 		virtual bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					const char *fieldname,
@@ -6908,6 +7010,9 @@ class SQLRSERVER_DLLSPEC sqlrresultsettranslation {
 					const char **field,
 					uint64_t *fieldsize);
 
+		/** Returns an error if the previous call to run() returned
+ 		 *  false, or NULL if the previous call to run() succeeded or
+ 		 *  if run() was never called. */
 		virtual const char	*getError();
 
 		/** Called by the sqlrservercontroller at the end of a
@@ -6925,6 +7030,9 @@ class SQLRSERVER_DLLSPEC sqlrresultsettranslation {
 		virtual void	endSession();
 
 	protected:
+
+		/** Returns the instance of sqlrresultsettranslations
+		 *  passed in as "rs" to the constructor. */
 		sqlrresultsettranslations	*getResultSetTranslations();
 
 		/** Returns the top-level domnode of the parameters passed in
@@ -6957,12 +7065,33 @@ class SQLRSERVER_DLLSPEC sqlrresultsettranslations {
 
 class SQLRSERVER_DLLSPEC sqlrresultsetrowtranslation {
 	public:
+		/** Creates an instance of sqlrresultsetrowtranslation,
+ 		 *  configured with parameters "parameters".
+		 *
+		 *  This implementation doesn't handle any parameters,
+		 *  however, it may be overridden by a child class to
+		 *  perform additional initialization tasks and handle
+		 *  some set of parameters. */
 		sqlrresultsetrowtranslation(
 					sqlrservercontroller *cont,
 					sqlrresultsetrowtranslations *rs,
 					domnode *parameters);
+
+		/** Deletes this instance of sqlrresultsetrowtranslation. */
 		virtual	~sqlrresultsetrowtranslation();
 
+		/** Translates all fields of the current row of the current
+		 *  result set of "sqlrcur".  "colcount" will be set to the
+		 *  number of columns in the result set, and "fieldnames" will
+		 *  be set to the column names.  Returns the translated fields
+		 *  in "fields", and returns the translated field sizes in
+		 *  "fieldsizes".
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  This implementation just returns true, but may be
+		 *  overridden by a child class to perform specific
+		 *  translations. */
 		virtual bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					uint32_t colcount,
@@ -6970,6 +7099,9 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowtranslation {
 					const char ***fields,
 					uint64_t **fieldsizes);
 
+		/** Returns an error if the previous call to run() returned
+ 		 *  false, or NULL if the previous call to run() succeeded or
+ 		 *  if run() was never called. */
 		virtual const char	*getError();
 
 		/** Called by the sqlrservercontroller at the end of a
@@ -6987,6 +7119,9 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowtranslation {
 		virtual void	endSession();
 
 	protected:
+
+		/** Returns the instance of sqlrresultsetrowtranslations
+		 *  passed in as "rs" to the constructor. */
 		sqlrresultsetrowtranslations	*getResultSetRowTranslations();
 
 		/** Returns the top-level domnode of the parameters passed in
@@ -7019,12 +7154,44 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowtranslations {
 
 class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslation {
 	public:
+		/** Creates an instance of sqlrresultsetrowblocktranslation,
+ 		 *  configured with parameters "parameters".
+		 *
+		 *  This implementation doesn't handle any parameters,
+		 *  however, it may be overridden by a child class to
+		 *  perform additional initialization tasks and handle
+		 *  some set of parameters. */
 		sqlrresultsetrowblocktranslation(
 					sqlrservercontroller *cont,
 					sqlrresultsetrowblocktranslations *rs,
 					domnode *parameters);
+
+		/** Deletes this instance of
+		 *  sqlrresultsetrowblocktranslation. */
 		virtual	~sqlrresultsetrowblocktranslation();
 
+		/** Sets a row to be translated.  The row will be the current
+		 *  row of the current result set of "sqlrcur".
+		 *
+		 *  setRow() will be called several times to define a block of
+		 *  rows to be translated, then run() will be called to
+		 *  translate the rows, then getRow() will be called several
+		 *  times to fetch the translated rows.
+		 *
+		 *  "colcount" will be set to the number of columns in the
+		 *  result set, and "fieldnames" will be set to the column
+		 *  names.  "fields" will contain the field values,
+		 *  "fieldsizes" will contain the number of bytes in each
+		 *  field, "lobs" will contain true or false for each field,
+		 *  indicating whether it is a lob or not, and "nulls" will
+		 *  contain true or false for each field, indicating whether it
+		 *  is null or not.
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  This implementation just returns true, but may be
+		 *  overridden by a child class to perform specific tasks to
+		 *  keep track of the row. */
 		virtual bool	setRow(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					uint32_t colcount,
@@ -7033,10 +7200,45 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslation {
 					uint64_t *fieldsizes,
 					bool *lobs,
 					bool *nulls);
+
+		/** Translates the rows set by previous calls to setRow().
+		 *
+		 *  "colcount" will be set to the number of columns in the
+		 *  result set, and "fieldnames" will be set to the column
+		 *  names.
+		 *
+		 *  setRow() will be called several times to define a block of
+		 *  rows to be translated, then run() will be called to
+		 *  translate the rows, then getRow() will be called several
+		 *  times to fetch the translated rows.
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  This implementation just returns true, but may be
+		 *  overridden by a child class to perform specific
+		 *  translations. */
 		virtual bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					uint32_t colcount,
 					const char * const *fieldnames);
+
+		/** Returns the next translated row in the block of rows that
+		 *  were translated by the most recent call to run().
+		 *
+		 *  "colcount" will be set to the number of columns in the
+		 *  result set, and "fieldnames" will be set to the column
+		 *  names.
+		 *
+		 *  Returns the translated fields in "fields", the translated
+		 *  field sizes in "fieldsizes", whether each column is a lob
+		 *  or not in "lobs", and whether each column is null or not in
+		 *  "nulls".
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  This implementation just returns true, but may be
+		 *  overridden by a child class to perform specific tasks to
+		 *  return the translated row. */
 		virtual bool	getRow(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					uint32_t colcount,
@@ -7045,6 +7247,9 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslation {
 					bool **lobs,
 					bool **nulls);
 
+		/** Returns an error if the previous call to run() or getRow()
+		 *  returned false, or NULL if the previous call to run()
+		 *  succeeded or if run() was never called. */
 		virtual const char	*getError();
 
 		/** Called by the sqlrservercontroller at the end of a
@@ -7062,6 +7267,9 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslation {
 		virtual void	endSession();
 
 	protected:
+
+		/** Returns the instance of sqlrresultsetrowblocktranslations
+		 *  passed in as "rs" to the constructor. */
 		sqlrresultsetrowblocktranslations
 					*getResultSetRowBlockTranslations();
 
@@ -7111,12 +7319,101 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslations {
 
 class SQLRSERVER_DLLSPEC sqlrresultsetheadertranslation {
 	public:
+		/** Creates an instance of sqlrresultsetheadertranslation,
+ 		 *  configured with parameters "parameters".
+		 *
+		 *  This implementation doesn't handle any parameters,
+		 *  however, it may be overridden by a child class to
+		 *  perform additional initialization tasks and handle
+		 *  some set of parameters. */
 		sqlrresultsetheadertranslation(
 					sqlrservercontroller *cont,
 					sqlrresultsetheadertranslations *rs,
 					domnode *parameters);
+
+		/** Deletes this instance of sqlrresultsetheadertranslation. */
 		virtual	~sqlrresultsetheadertranslation();
 
+		/** Translates the header of the current result set of
+		 *  "sqlrcur".
+		 *  
+		 *  "colcount" will be set to the number of columns in the
+		 *  result set.
+		 *
+		 *  "columnnames" will be set to the current column names and
+		 *  will return the set of translated column names.
+		 *
+		 *  "columnnamesizes" will be set to the number of bytes in each
+		 *  of the current column names and will return the number of
+		 *  bytes in each of the translated column name.
+		 *
+		 *  "columntypes" will be set to the current column types and
+		 *  will return the set of translated column types.
+		 *
+		 *  "columntypenames" will be set to the current column type
+		 *  names and will return the set of translated column type
+		 *  names.
+		 *
+		 *  "columntypenamesizes" will be set to the number of bytes in
+		 *  each of the current column type names and will return the
+		 *  number of bytes in each of the translated column type name.
+		 *
+		 *  "columnsizes" will be set to the current column sizes and
+		 *  will return the set of translated column sizes.
+		 *
+		 *  "columnprecisions" will be set to the current column
+		 *  precisions and will return the set of translated column
+		 *  precisions.
+		 *
+		 *  "columnscales" will be set to the current column scales and
+		 *  will return the set of translated column scales.
+		 *
+		 *  "columnisnullables" will be set to the current is-nullables
+		 *  flags and will return the set of translated is-nullable
+		 *  flags.
+		 *
+		 *  "columnisprimarykeys" will be set to the current
+		 *  is-primary-key flags and will return the set of translated
+		 *  is-primary-key flags.
+		 *
+		 *  "columnisuniques" will be set to the current is-unique-key
+		 *  flags and will return the set of translated is-unique-key
+		 *  flags.
+		 *
+		 *  "columnispartofkeys" will be set to the current
+		 *  is-part-of-key flags and will return the set of translated
+		 *  is-part-of-key flags.
+		 *
+		 *  "columnisunsigneds" will be set to the current
+		 *  is-unsigned flags and will return the set of translated
+		 *  is-unsigned flags.
+		 *
+		 *  "columniszerofilled" will be set to the current
+		 *  is-zero-filled flags and will return the set of translated
+		 *  is-zero-filled flags.
+		 *
+		 *  "columnisbinary" will be set to the current
+		 *  is-binary flags and will return the set of translated
+		 *  is-binary flags.
+		 *
+		 *  "columnisautoincrements" will be set to the current
+		 *  is-auto-increment flags and will return the set of
+		 *  translated is-auto-increment flags.
+		 *
+		 *  "columntablenames" will be set to the current column table
+		 *  names and  will return the set of translated column table
+		 *  names.
+		 *
+		 *  "columntablenamesizes" will be set to the number of bytes
+		 *  in each of the current column table names and will return
+		 *  the number of bytes in each of the translated column table
+		 *  name.
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  This implementation just returns true, but may be
+		 *  overridden by a child class to perform specific
+		 *  translation tasks. */
 		virtual bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					uint32_t colcount,
@@ -7139,6 +7436,9 @@ class SQLRSERVER_DLLSPEC sqlrresultsetheadertranslation {
 					const char ***columntables,
 					uint16_t **columntablesizes);
 
+		/** Returns an error if the previous call to run() returned
+		 *  false, or NULL if the previous call to run() succeeded or
+		 *  if run() was never called. */
 		virtual const char	*getError();
 
 		/** Called by the sqlrservercontroller at the end of a
@@ -7156,6 +7456,9 @@ class SQLRSERVER_DLLSPEC sqlrresultsetheadertranslation {
 		virtual void	endSession();
 
 	protected:
+
+		/** Returns the instance of sqlrresultsetheadertranslations
+		 *  passed in as "rs" to the constructor. */
 		sqlrresultsetheadertranslations
 					*getResultSetHeaderTranslations();
 
@@ -7204,11 +7507,29 @@ class SQLRSERVER_DLLSPEC sqlrresultsetheadertranslations {
 
 class SQLRSERVER_DLLSPEC sqlrerrortranslation {
 	public:
+		/** Creates an instance of sqlrerrortranslation,
+ 		 *  configured with parameters "parameters".
+		 *
+		 *  This implementation doesn't handle any parameters,
+		 *  however, it may be overridden by a child class to
+		 *  perform additional initialization tasks and handle
+		 *  some set of parameters. */
 		sqlrerrortranslation(sqlrservercontroller *cont,
-					sqlrerrortranslations *sqlts,
+					sqlrerrortranslations *es,
 					domnode *parameters);
+
+		/** Deletes this instance of sqlrerrortranslation. */
 		virtual	~sqlrerrortranslation();
 
+		/** Translates "error" of "errorsize" bytes and "errornumber".
+		 *  Returns the translated error in "translatederror" and the
+		 *  translated error number in "translatederrornumber".
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  This implementation just returns true, but may be
+		 *  overridden by a child class to perform specific
+		 *  translation tasks. */
 		virtual bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					int64_t errornumber,
@@ -7217,6 +7538,9 @@ class SQLRSERVER_DLLSPEC sqlrerrortranslation {
 					int64_t *translatederrornumber,
 					stringbuffer *translatederror);
 
+		/** Returns an error if the previous call to run() returned
+		 *  false, or NULL if the previous call to run() succeeded or
+		 *  if run() was never called. */
 		virtual const char	*getError();
 
 		/** Called by the sqlrservercontroller at the end of a
@@ -7234,6 +7558,9 @@ class SQLRSERVER_DLLSPEC sqlrerrortranslation {
 		virtual void	endSession();
 
 	protected:
+
+		/** Returns the instance of sqlrerrortranslations
+		 *  passed in as "es" to the constructor. */
 		sqlrerrortranslations	*getErrorTranslations();
 
 		/** Returns the top-level domnode of the parameters passed in
@@ -7267,13 +7594,35 @@ class SQLRSERVER_DLLSPEC sqlrerrortranslations {
 
 class SQLRSERVER_DLLSPEC sqlrtrigger {
 	public:
+		/** Creates an instance of sqlrtrigger, configured with
+		 *  parameters "parameters".
+		 *
+		 *  This implementation doesn't handle any parameters,
+		 *  however, it may be overridden by a child class to
+		 *  perform additional initialization tasks and handle
+		 *  some set of parameters. */
 		sqlrtrigger(sqlrservercontroller *cont,
 					sqlrtriggers *ts,
 					domnode *parameters);
+
+		/** Deletes this instance of sqlrtrigger. */
 		virtual	~sqlrtrigger();
 
+		/** Runs before execution of the query.
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  This implementation just returns true, but may be
+		 *  overridden by a child class to perform specific tasks. */
 		virtual bool	runBefore(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur);
+
+		/** Runs after execution of the query.
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  This implementation just returns true, but may be
+		 *  overridden by a child class to perform specific tasks. */
 		virtual bool	runAfter(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur);
 
@@ -7292,6 +7641,9 @@ class SQLRSERVER_DLLSPEC sqlrtrigger {
 		virtual void	endSession();
 
 	protected:
+
+		/** Returns the instance of sqlrtriggers passed in as "ss" to
+		 *  the constructor. */
 		sqlrtriggers	*getTriggers();
 
 		/** Returns the top-level domnode of the parameters passed in
@@ -7320,13 +7672,35 @@ class SQLRSERVER_DLLSPEC sqlrtriggers {
 
 class SQLRSERVER_DLLSPEC sqlrquery {
 	public:
+		/** Creates an instance of sqlrquery, configured with
+		 *  parameters "parameters".
+		 *
+		 *  This implementation doesn't handle any parameters,
+		 *  however, it may be overridden by a child class to
+		 *  perform additional initialization tasks and handle
+		 *  some set of parameters. */
 		sqlrquery(sqlrservercontroller *cont,
 				sqlrqueries *qs,
 				domnode *parameters);
+
+		/** Deletes this instance of sqlrquery. */
 		virtual	~sqlrquery();
 
+		/** Returns true if "querysize" bytes of "querystring" match
+		 *  critera for handling this query and false otherwise.
+		 *
+		 *  This implementation just returns false, but may be
+		 *  overridden by a child class to do specfic query
+		 *  matching. */
 		virtual bool	match(const char *querystring,
 						uint32_t querysize);
+
+		/** Returns a new sqlrquerycursor to handle this query, and
+		 *  assigns it an id of "id".
+		 *
+		 *  This implementation just returns NULL, but may be
+		 *  overridden by a child class to allocate and return a
+		 *  specific child of sqlrquerycursor. */
 		virtual sqlrquerycursor	*newCursor(	
 						sqlrserverconnection *sqlrcon,
 						uint16_t id);
@@ -7346,6 +7720,9 @@ class SQLRSERVER_DLLSPEC sqlrquery {
 		virtual void	endSession();
 
 	protected:
+
+		/** Returns the instance of sqlrqueries passed in as "qs" to
+		 *  the constructor. */
 		sqlrqueries	*getQueries();
 
 		/** Returns the top-level domnode of the parameters passed in
@@ -7357,18 +7734,37 @@ class SQLRSERVER_DLLSPEC sqlrquery {
 
 class SQLRSERVER_DLLSPEC sqlrquerycursor : public sqlrservercursor {
 	public:
+		/** Creates an instance of sqlrquerycursor, configured with
+		 *  parameters "parameters" and an id of "id". */
 		sqlrquerycursor(sqlrserverconnection *conn,
 					sqlrquery *q,
 					domnode *parameters,
 					uint16_t id);
+
+		/** Deletes this instance of sqlrquerycursor. */
 		virtual	~sqlrquerycursor();
+
+		/** Returns the query type of the first "size" bytes of "query".
+		 * 
+		 *  This implementation just returns SQLRQUERYTYPE_CUSTOM, but
+		 *  may be overridden by a child class to do specfic query type
+		 *  analysis. */
 		virtual sqlrquerytype_t	determineQueryType(
 						const char *query,
 						uint32_t size);
+
+		/** Returns true. */
 		bool	isCustomQuery();
 
 	protected:
+
+		/** Returns the instance of sqlrquery passed in as "q" to the
+		 *  constructor. */
 		sqlrquery	*getQuery();
+
+		/** Returns the instance of sqlrqueries passed in as "qs" to
+		 *  the constructor of the instance of sqlrquery that was
+		 *  passed into the constructor as "q". */
 		sqlrqueries	*getQueries();
 
 		/** Returns the top-level domnode of the parameters passed in
@@ -7397,10 +7793,27 @@ class SQLRSERVER_DLLSPEC sqlrqueries {
 
 class SQLRSERVER_DLLSPEC sqlrmoduledata {
 	public:
+		/** Creates an instance of sqlrmoduledata, configured with
+		 *  parameters "parameters".
+		 *
+		 *  This implementation handles the following parameters
+		 *  which are generic to all module data implementations:
+		 *
+		 *  * module - the name of the module to load
+		 *  * id - the id assigned to this instance of the module
+		 *
+		 *  However, it may be overridden by a child class to perform
+		 *  additional initialization tasks and handle additional
+		 *  parameters. */
 		sqlrmoduledata(domnode *parameters);
+
+		/** Deletes this instance of sqlrmoduledata. */
 		virtual	~sqlrmoduledata();
 
+		/** Returns the value of the module parameter. */
 		const char	*getModuleType();
+
+		/** Returns the value of the id parameter. */
 		const char	*getId();
 
 		/** Called by the sqlrservercontroller when the current result
@@ -7451,14 +7864,42 @@ class SQLRSERVER_DLLSPEC sqlrmoduledatas {
 
 class SQLRSERVER_DLLSPEC sqlrmoduledata_tag : public sqlrmoduledata {
 	public:
+		/** Creates an instance of sqlrmoduledata_tag, configured with
+		 *  parameters "parameters". */
 		sqlrmoduledata_tag(domnode *parameters);
+
+		/** Deletes this instance of sqlrmoduledata_tag. */
 		~sqlrmoduledata_tag();
 		
+		/** Tags the current query of "cursorid" (as returned by
+		 *  sqlrservercursor::getId()) with "tag".
+		 *
+		 *  May be called multiple times to tag the query with multiple
+		 *  tags. */
 		void	addTag(uint16_t cursorid, const char *tag);
+		
+		/** Tags the current query of "cursorid" (as returned by
+		 *  sqlrservercursor::getId()) with the first "size" bytes of
+		 *  "tag".
+		 *
+		 *  May be called multiple times to tag the query with multiple
+		 *  tags. */
 		void	addTag(uint16_t cursorid, const char *tag, size_t size);
+
+		/** Returns the set of tags for "cursorid" (as returned by
+		 *  sqlrservercursor::getId()) as an avltree. */
 		avltree<char *>	*getTags(uint16_t cursorid);
+
+		/** Returns true if the current query of "cursorid" (as
+		 *  returned by sqlrservercursor::getId()) has been tagged with
+		 *  tag "tag" and false otherwise. */
 		bool	tagExists(uint16_t cursorid, const char *tag);
 
+		/** Clears any tags that were assigned to the current query of
+		 *  "sqlrcur".
+		 *
+		 *  Called by the sqlrservercontroller when the current result
+		 *  set of "sqlrcur" is closed. */
 		void	closeResultSet(sqlrservercursor *sqlrcur);
 
 	#include <sqlrelay/private/sqlrmoduledata_tag.h>

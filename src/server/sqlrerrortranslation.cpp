@@ -7,15 +7,15 @@ class sqlrerrortranslationprivate {
 	friend class sqlrerrortranslation;
 	private:
 
-		sqlrerrortranslations	*_sqlets;
-		domnode		*_parameters;
+		sqlrerrortranslations	*_es;
+		domnode			*_parameters;
 };
 
 sqlrerrortranslation::sqlrerrortranslation(sqlrservercontroller *cont,
-					sqlrerrortranslations *sqlets,
+					sqlrerrortranslations *es,
 					domnode *parameters) {
 	pvt=new sqlrerrortranslationprivate;
-	pvt->_sqlets=sqlets;
+	pvt->_es=es;
 	pvt->_parameters=parameters;
 }
 
@@ -38,7 +38,7 @@ const char *sqlrerrortranslation::getError() {
 }
 
 sqlrerrortranslations *sqlrerrortranslation::getErrorTranslations() {
-	return pvt->_sqlets;
+	return pvt->_es;
 }
 
 domnode *sqlrerrortranslation::getParameters() {

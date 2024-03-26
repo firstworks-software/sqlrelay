@@ -16,9 +16,9 @@ class SQLRSERVER_DLLSPEC sqlrfilter_string : public sqlrfilter {
 					sqlrservercursor *sqlrcur,
 					const char *query);
 	private:
-		const char		*pattern;
-		char			*lowerpattern;
-		bool			ignorecase;
+		const char	*pattern;
+		char		*lowerpattern;
+		bool		ignorecase;
 
 		bool	enabled;
 
@@ -77,7 +77,7 @@ bool sqlrfilter_string::run(sqlrserverconnection *sqlrcon,
 
 	bool	result=!charstring::contains(query,pattern);
 
-	if (result && debug) {
+	if (!result && debug) {
 		stdoutput.printf("string: matches pattern \"%s\"\n\n",pattern);
 	}
 
