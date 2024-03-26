@@ -22,7 +22,7 @@ sqlrfilter::~sqlrfilter() {
 	delete pvt;
 }
 
-bool sqlrfilter::usesTree() {
+bool sqlrfilter::requiresTree() {
 	return false;
 }
 

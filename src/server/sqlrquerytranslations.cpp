@@ -251,7 +251,7 @@ bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
 
 		sqlrquerytranslation	*tr=node->getValue()->tr;
 
-		if (tr->usesTree()) {
+		if (tr->requiresTree()) {
 
 			if (!sqlrp) {
 				pvt->_error="query translation requires query "

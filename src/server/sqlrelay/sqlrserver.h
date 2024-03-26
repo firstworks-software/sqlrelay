@@ -3713,11 +3713,11 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 		 *  it may be dropped, and false otherwise.  This method
 		 *  returns false, but it may be overridden by a child class to
 		 *  return true. */
-		virtual bool		tempTableTruncateBeforeDrop();
+		virtual bool	tempTableTruncateBeforeDrop();
 
 		/** Performs various clean-up tasks when a client session
 		 *  ends. */
-		virtual void		endSession();
+		virtual void	endSession();
 
 		/** Returns a pointer to the connection-level error buffer. */
 		char		*getErrorBuffer();
@@ -3728,14 +3728,14 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 
 		/** Sets the number of bytes currently stored in the
 		 *  connection-level error buffer to "errorsize". */
-		void		setErrorSize(uint32_t errorsize);
+		void	setErrorSize(uint32_t errorsize);
 
 		/** Returns the number of bytes currently stored in the
 		 *  connection-level error buffer, as set by setErrorSize(). */
 		uint32_t	getErrorSize();
 
 		/** Sets the connection-level numeric error code to "errnum". */
-		void		setErrorNumber(uint32_t errnum);
+		void	setErrorNumber(uint32_t errnum);
 
 		/** Returns the connection-level numeric error code as set by
 		 *  setErrorNumber(). */
@@ -3743,11 +3743,11 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 
 		/** Sets a flag indicating whether the connection to the
 		 *  database is up to "liveconnection". */
-		void		setLiveConnection(bool liveconnection);
+		void	setLiveConnection(bool liveconnection);
 
 		/** Returns the flag indicating whether the connection to the
 		 *  database is up, as set by setLiveConnection(). */
-		bool		getLiveConnection();
+		bool	getLiveConnection();
 
 		sqlrservercontroller	*cont;
 
@@ -6231,9 +6231,8 @@ class SQLRSERVER_DLLSPEC sqlrnotification {
 		 *  Returns true on success and false if an error occurred.
 		 *
 		 *  This implementation just returns true, but may be
-		 *  overridden by a child class to perform logging of
-		 *  specific events/info at specific loglevels to specific
-		 *  backends. */
+		 *  overridden by a child class to perform notification of
+		 *  specific events/info to specific backends. */
 		virtual bool	run(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
@@ -6430,17 +6429,35 @@ class SQLRSERVER_DLLSPEC sqlrschedules {
 
 class SQLRSERVER_DLLSPEC sqlrrouter {
 	public:
+		/** Creates an instance of sqlrrouter, configured with
+		 *  parameters "parameters". */
 		sqlrrouter(sqlrservercontroller *cont,
 					sqlrrouters *rs,
 					domnode *parameters);
+
+		/** Deletes this instance of sqlrrouter. */
 		virtual	~sqlrrouter();
 
+		/** Returns true if this implementation routes entire sessions,
+		 *  and false if this module routes individual SQL commands or
+		 *  queries. */
+		virtual	bool	routeEntireSession();
+
+		/** Examines the current operation that "sqlrcon" and/or
+		 *  "sqlrcur" is engaged in and returns the connectionid that
+		 *  the operation needs to be routed to, or NULL if none of
+		 *  this instance's rules apply to the current operation.
+		 *
+		 *  This implementation just returns NULL, but it may be
+		 *  overridden by child class to evaluate rules to determine
+		 *  which connectionid to route an operation to.
+		 *
+		 *  If an error occurred, then "err" is set to the error
+		 *  message and "errn" is set to the error number. */
 		virtual const char *route(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur,
 						const char **err,
 						int64_t *errn);
-
-		virtual	bool	routeEntireSession();
 
 		/** Called by the sqlrservercontroller at the end of a
 		 *  transaction.
@@ -6457,11 +6474,14 @@ class SQLRSERVER_DLLSPEC sqlrrouter {
 		virtual void	endSession();
 
 	protected:
+
+		/** Returns the instance of sqlrrouters passed in as "rs" to
+		 *  the constructor. */
 		sqlrrouters	*getRouters();
+
+		/** Returns the top-level domnode of the parameters passed in
+		 *  as "parameters" to the constructor. */
 		domnode	*getParameters();
-		const char	**getConnectionIds();
-		sqlrconnection	**getConnections();
-		uint16_t	getConnectionCount();
 
 	#include <sqlrelay/private/sqlrrouter.h>
 };
@@ -6494,22 +6514,89 @@ class SQLRSERVER_DLLSPEC sqlrrouters {
 
 class SQLRSERVER_DLLSPEC sqlrparser {
 	public:
+		/** Creates an instance of sqlrparser, configured with
+		 *  parameters "parameters". */
 		sqlrparser(sqlrservercontroller *cont,
 				domnode *parameters);
+
+		/** Deletes this instance of sqlrparser. */
 		virtual	~sqlrparser();
 
+		/** Parses "query" and generates an xmldom tree that represents
+		 *  the query.
+		 *
+		 *  May also generate an xmldom tree containing metadata about
+		 *  the query.
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  This implementation just returns false, but may be
+		 *  overridden by a child class to parse the query and generate
+		 *  an implementation-specific tree representing the query,
+		 *  and, optionally, an implementation-specific tree
+		 *  representing metadata about the query. */
 		virtual	bool	parse(const char *query);
-		virtual	void	useTree(xmldom *tree);
+
+		/** Configures this instance to append the root node of
+		 *  already-existing "tree" rather than creating its own
+		 *  internal xmldom tree to store the query tree. */
+		virtual	void	setTree(xmldom *tree);
+
+		/** Returns the tree set by a previous call to setTree(). */
 		virtual	xmldom	*getTree();
+
+		/** Detaches the tree that this instance is configured to use
+		 *  and returns it.  Subsequent calls to detachTree() will
+		 *  return NULL.  If the tree was set by a previous call to
+		 *  setTree() then that tree is returned.  If the tree was
+		 *  allocated internally then it is returned, and must be
+		 *  deallocated by the calling program. */
 		virtual	xmldom	*detachTree();
 
+		/** Walks the query tree and writes the query represented by
+		 *  the tree to "output".
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  This implementation just returns false, but may be
+		 *  overridden by a child class to write out the
+		 *  implementation-specific query tree. */
 		virtual	bool	write(stringbuffer *output);
-		virtual	bool	write(domnode *node,
-					stringbuffer *output,
-					bool omitsiblings);
+
+		/** Walks the query tree, starting at "node" and writes the
+		 *  query represented by that node, its children, its siblings,
+		 *  and their children to "output".
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  This implementation just returns false, but may be
+		 *  overridden by a child class to write out the
+		 *  implementation-specific query tree. */
 		virtual	bool	write(domnode *node, 
 					stringbuffer *output);
 
+		/** Walks the query tree, starting at "node" and writes the
+		 *  query represented to "output".
+		 *
+		 *  If "omitsiblings" is true then only the parts of the query
+		 *  represented by that node and its children will be written.
+		 *
+		 *  If "omitsiblings" is false then the parts of the query
+		 *  represented by that node, its children, its siblings,
+		 *  and their children will be written.
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  This implementation just returns false, but may be
+		 *  overridden by a child class to write out the
+		 *  implementation-specific query tree. */
+		virtual	bool	write(domnode *node,
+					stringbuffer *output,
+					bool omitsiblings);
+
+		/** If parse() generated a tree representing metadata about the
+ 		 *  query, then this method appends that metadata as children
+ 		 *  to "node". */
 		virtual void	getMetaData(domnode *node);
 
 
@@ -6521,6 +6608,9 @@ class SQLRSERVER_DLLSPEC sqlrparser {
 		virtual void	endSession();
 
 	protected:
+
+		/** Returns the top-level domnode of the parameters passed in
+		 *  as "parameters" to the constructor. */
 		domnode	*getParameters();
 
 	#include <sqlrelay/private/sqlrparser.h>
@@ -6528,16 +6618,32 @@ class SQLRSERVER_DLLSPEC sqlrparser {
 
 class SQLRSERVER_DLLSPEC sqlrdirective {
 	public:
+		/** Creates an instance of sqlrdirective, configured with
+		 *  parameters "parameters". */
 		sqlrdirective(sqlrservercontroller *cont,
-					sqlrdirectives *sqlts,
+					sqlrdirectives *ds,
 					domnode *parameters);
+
+		/** Deletes this instance of sqlrparser. */
 		virtual	~sqlrdirective();
 
+		/** Applies this directive to "query".
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  This implementation just returns true, but may be
+		 *  overridden by a child class to perform specific tasks. */
 		virtual bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					const char *query);
 	protected:
+
+		/** Returns the instance of sqlrdirectives passed in as "ds" to
+		 *  the constructor. */
 		sqlrdirectives	*getDirectives();
+
+		/** Returns the top-level domnode of the parameters passed in
+		 *  as "parameters" to the constructor. */
 		domnode	*getParameters();
 		bool		getDirective(const char *line,
 						const char **directivestart,
@@ -6562,23 +6668,54 @@ class SQLRSERVER_DLLSPEC sqlrdirectives {
 
 class SQLRSERVER_DLLSPEC sqlrquerytranslation {
 	public:
+		/** Creates an instance of sqlrquerytranslation, configured with
+		 *  parameters "parameters". */
 		sqlrquerytranslation(sqlrservercontroller *cont,
-					sqlrquerytranslations *sqlts,
+					sqlrquerytranslations *ts,
 					domnode *parameters);
+
+		/** Deletes this instance of sqlrtranslation. */
 		virtual	~sqlrquerytranslation();
 
-		virtual bool	usesTree();
+		/** Returns true if this implementation requires a query tree
+		 *  and false if it does not.
+		 *
+		 *  This implementation returns false, but may be overridden by
+		 *  a child class to return true. */
+		virtual bool	requiresTree();
 
+		/** Translates to "query" of "querysize" bytes and writes the
+		 *  translated query to "translatedquery".
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  If an error occurred, then getError() may be used to get
+		 *  the specific error.
+		 *
+		 *  This implementation returns true, but may be overridden by
+		 *  a child class to return perform specific translations. */
 		virtual bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					const char *query,
 					uint32_t querysize,
 					stringbuffer *translatedquery);
 
+		/** Translates "querytree" in-place.
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  If an error occurred, then getError() may be used to get
+		 *  the specific error.
+		 *
+		 *  This implementation returns true, but may be overridden by
+		 *  a child class to return perform specific translations. */
 		virtual bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					xmldom *querytree);
 
+		/** Returns an error if the previous call to run() returned
+ 		 *  false, or NULL if the previous call to run() succeeded or
+ 		 *  if run() was never called. */
 		virtual const char	*getError();
 
 		/** Called by the sqlrservercontroller at the end of a
@@ -6596,7 +6733,13 @@ class SQLRSERVER_DLLSPEC sqlrquerytranslation {
 		virtual void	endSession();
 
 	protected:
+
+		/** Returns the instance of sqlrquerytranslations passed in as
+ 		 *  "qs" to the constructor. */
 		sqlrquerytranslations	*getQueryTranslations();
+
+		/** Returns the top-level domnode of the parameters passed in
+		 *  as "parameters" to the constructor. */
 		domnode			*getParameters();
 
 	#include <sqlrelay/private/sqlrquerytranslation.h>
@@ -6632,7 +6775,12 @@ class SQLRSERVER_DLLSPEC sqlrfilter {
 					domnode *parameters);
 		virtual	~sqlrfilter();
 
-		virtual bool	usesTree();
+		/** Returns true if this implementation requires a query tree
+		 *  and false if it does not.
+		 *
+		 *  This implementation returns false, but may be overridden by
+		 *  a child class to return true. */
+		virtual bool	requiresTree();
 
 		virtual bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
@@ -6660,6 +6808,9 @@ class SQLRSERVER_DLLSPEC sqlrfilter {
 
 	protected:
 		sqlrfilters	*getFilters();
+
+		/** Returns the top-level domnode of the parameters passed in
+		 *  as "parameters" to the constructor. */
 		domnode	*getParameters();
 
 	#include <sqlrelay/private/sqlrfilter.h>
@@ -6718,7 +6869,10 @@ class SQLRSERVER_DLLSPEC sqlrbindvariabletranslation {
 
 	protected:
 		sqlrbindvariabletranslations	*getBindVariableTranslations();
-		domnode				*getParameters();
+
+		/** Returns the top-level domnode of the parameters passed in
+		 *  as "parameters" to the constructor. */
+		domnode	*getParameters();
 
 	#include <sqlrelay/private/sqlrbindvariabletranslation.h>
 };
@@ -6772,7 +6926,10 @@ class SQLRSERVER_DLLSPEC sqlrresultsettranslation {
 
 	protected:
 		sqlrresultsettranslations	*getResultSetTranslations();
-		domnode			*getParameters();
+
+		/** Returns the top-level domnode of the parameters passed in
+		 *  as "parameters" to the constructor. */
+		domnode	*getParameters();
 
 	#include <sqlrelay/private/sqlrresultsettranslation.h>
 };
@@ -6831,7 +6988,10 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowtranslation {
 
 	protected:
 		sqlrresultsetrowtranslations	*getResultSetRowTranslations();
-		domnode			*getParameters();
+
+		/** Returns the top-level domnode of the parameters passed in
+		 *  as "parameters" to the constructor. */
+		domnode	*getParameters();
 
 	#include <sqlrelay/private/sqlrresultsetrowtranslation.h>
 };
@@ -6904,7 +7064,10 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslation {
 	protected:
 		sqlrresultsetrowblocktranslations
 					*getResultSetRowBlockTranslations();
-		domnode			*getParameters();
+
+		/** Returns the top-level domnode of the parameters passed in
+		 *  as "parameters" to the constructor. */
+		domnode	*getParameters();
 
 	#include <sqlrelay/private/sqlrresultsetrowblocktranslation.h>
 };
@@ -6995,7 +7158,10 @@ class SQLRSERVER_DLLSPEC sqlrresultsetheadertranslation {
 	protected:
 		sqlrresultsetheadertranslations
 					*getResultSetHeaderTranslations();
-		domnode		*getParameters();
+
+		/** Returns the top-level domnode of the parameters passed in
+		 *  as "parameters" to the constructor. */
+		domnode	*getParameters();
 
 	#include <sqlrelay/private/sqlrresultsetheadertranslation.h>
 };
@@ -7069,7 +7235,10 @@ class SQLRSERVER_DLLSPEC sqlrerrortranslation {
 
 	protected:
 		sqlrerrortranslations	*getErrorTranslations();
-		domnode			*getParameters();
+
+		/** Returns the top-level domnode of the parameters passed in
+		 *  as "parameters" to the constructor. */
+		domnode	*getParameters();
 
 	#include <sqlrelay/private/sqlrerrortranslation.h>
 };
@@ -7124,6 +7293,9 @@ class SQLRSERVER_DLLSPEC sqlrtrigger {
 
 	protected:
 		sqlrtriggers	*getTriggers();
+
+		/** Returns the top-level domnode of the parameters passed in
+		 *  as "parameters" to the constructor. */
 		domnode	*getParameters();
 
 	#include <sqlrelay/private/sqlrtrigger.h>
@@ -7175,6 +7347,9 @@ class SQLRSERVER_DLLSPEC sqlrquery {
 
 	protected:
 		sqlrqueries	*getQueries();
+
+		/** Returns the top-level domnode of the parameters passed in
+		 *  as "parameters" to the constructor. */
 		domnode	*getParameters();
 
 	#include <sqlrelay/private/sqlrquery.h>
@@ -7195,6 +7370,9 @@ class SQLRSERVER_DLLSPEC sqlrquerycursor : public sqlrservercursor {
 	protected:
 		sqlrquery	*getQuery();
 		sqlrqueries	*getQueries();
+
+		/** Returns the top-level domnode of the parameters passed in
+		 *  as "parameters" to the constructor. */
 		domnode	*getParameters();
 
 	#include <sqlrelay/private/sqlrquerycursor.h>
@@ -7225,8 +7403,11 @@ class SQLRSERVER_DLLSPEC sqlrmoduledata {
 		const char	*getModuleType();
 		const char	*getId();
 
-		domnode		*getParameters();
-
+		/** Called by the sqlrservercontroller when the current result
+		 *  set of "sqlrcur" is closed.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	closeResultSet(sqlrservercursor *sqlrcur);
 
 		/** Called by the sqlrservercontroller at the end of a
@@ -7235,7 +7416,19 @@ class SQLRSERVER_DLLSPEC sqlrmoduledata {
 		 *  This implementation just returns, but may be overridden by
 		 *  a child class to do additional things at transaction-end. */
 		virtual void	endTransaction(bool commit);
+
+		/** Called by the sqlrservercontroller at the end of a client
+		 *  session.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
 		virtual void	endSession();
+
+	protected:
+
+		/** Returns the top-level domnode of the parameters passed in
+		 *  as "parameters" to the constructor. */
+		domnode		*getParameters();
 
 	#include <sqlrelay/private/sqlrmoduledata.h>
 };

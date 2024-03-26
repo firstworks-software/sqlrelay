@@ -222,7 +222,7 @@ bool sqlrfilters::run(sqlrserverconnection *sqlrcon,
 
 		sqlrfilter	*f=node->getValue()->f;
 
-		if (f->usesTree()) {
+		if (f->requiresTree()) {
 
 			if (!sqlrp) {
 				if (pvt->_debug) {

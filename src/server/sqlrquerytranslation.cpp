@@ -7,15 +7,15 @@ class sqlrquerytranslationprivate {
 	friend class sqlrquerytranslation;
 	private:
 
-		sqlrquerytranslations	*_sqlts;
-		domnode		*_parameters;
+		sqlrquerytranslations	*_ts;
+		domnode			*_parameters;
 };
 
 sqlrquerytranslation::sqlrquerytranslation(sqlrservercontroller *cont,
-					sqlrquerytranslations *sqlts,
+					sqlrquerytranslations *ts,
 					domnode *parameters) {
 	pvt=new sqlrquerytranslationprivate;
-	pvt->_sqlts=sqlts;
+	pvt->_ts=ts;
 	pvt->_parameters=parameters;
 }
 
@@ -23,7 +23,7 @@ sqlrquerytranslation::~sqlrquerytranslation() {
 	delete pvt;
 }
 
-bool sqlrquerytranslation::usesTree() {
+bool sqlrquerytranslation::requiresTree() {
 	return false;
 }
 
@@ -46,7 +46,7 @@ const char *sqlrquerytranslation::getError() {
 }
 
 sqlrquerytranslations *sqlrquerytranslation::getQueryTranslations() {
-	return pvt->_sqlts;
+	return pvt->_ts;
 }
 
 domnode *sqlrquerytranslation::getParameters() {

@@ -11,7 +11,7 @@ class SQLRSERVER_DLLSPEC sqlrquerytranslation_normalize :
 					public sqlrquerytranslation {
 	public:
 		sqlrquerytranslation_normalize(sqlrservercontroller *cont,
-						sqlrquerytranslations *sqlts,
+						sqlrquerytranslations *ts,
 						domnode *parameters);
 		bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
@@ -64,9 +64,9 @@ class SQLRSERVER_DLLSPEC sqlrquerytranslation_normalize :
 
 sqlrquerytranslation_normalize::sqlrquerytranslation_normalize(
 					sqlrservercontroller *cont,
-					sqlrquerytranslations *sqlts,
+					sqlrquerytranslations *ts,
 					domnode *parameters) :
-				sqlrquerytranslation(cont,sqlts,parameters) {
+				sqlrquerytranslation(cont,ts,parameters) {
 	debugFunction();
 
 	debug=cont->getConfig()->getDebugQueryTranslations();
@@ -785,9 +785,9 @@ extern "C" {
 	SQLRSERVER_DLLSPEC sqlrquerytranslation
 				*new_sqlrquerytranslation_normalize(
 						sqlrservercontroller *cont,
-						sqlrquerytranslations *sqlts,
+						sqlrquerytranslations *ts,
 						domnode *parameters) {
 		return new sqlrquerytranslation_normalize(
-						cont,sqlts,parameters);
+						cont,ts,parameters);
 	}
 }

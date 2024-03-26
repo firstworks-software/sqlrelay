@@ -19,31 +19,38 @@ sqlrparser::~sqlrparser() {
 }
 
 bool sqlrparser::parse(const char *query) {
+	// by default, do nothing...
 	return false;
 }
 
-void sqlrparser::useTree(xmldom *tree) {
+void sqlrparser::setTree(xmldom *tree) {
+	// by default, do nothing...
 }
 
 xmldom *sqlrparser::getTree() {
+	// by default, do nothing...
 	return NULL;
 }
 
 xmldom *sqlrparser::detachTree() {
+	// by default, do nothing...
 	return NULL;
 }
 
 bool sqlrparser::write(stringbuffer *output) {
+	// by default, do nothing...
 	return false;
 }
 
 bool sqlrparser::write(domnode *node,
 				stringbuffer *output,
 				bool omitsiblings) {
+	// by default, do nothing...
 	return false;
 }
 
 bool sqlrparser::write(domnode *node, stringbuffer *output) {
+	// by default, do nothing...
 	return false;
 }
 

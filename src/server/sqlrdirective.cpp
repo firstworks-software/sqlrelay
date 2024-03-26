@@ -6,15 +6,15 @@
 class sqlrdirectiveprivate {
 	friend class sqlrdirective;
 	private:
-		sqlrdirectives	*_sqlds;
+		sqlrdirectives	*_ds;
 		domnode	*_parameters;
 };
 
 sqlrdirective::sqlrdirective(sqlrservercontroller *cont,
-					sqlrdirectives *sqlds,
+					sqlrdirectives *ds,
 					domnode *parameters) {
 	pvt=new sqlrdirectiveprivate;
-	pvt->_sqlds=sqlds;
+	pvt->_ds=ds;
 	pvt->_parameters=parameters;
 }
 
@@ -29,7 +29,7 @@ bool sqlrdirective::run(sqlrserverconnection *sqlrcon,
 }
 
 sqlrdirectives *sqlrdirective::getDirectives() {
-	return pvt->_sqlds;
+	return pvt->_ds;
 }
 
 domnode *sqlrdirective::getParameters() {
