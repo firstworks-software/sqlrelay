@@ -10,7 +10,7 @@
 
 class SQLRSERVER_DLLSPEC sqlrlogger_slowqueries : public sqlrlogger {
 	public:
-		sqlrlogger_slowqueries(sqlrloggers *ls, domnode *parameters);
+		sqlrlogger_slowqueries(domnode *parameters);
 		~sqlrlogger_slowqueries();
 
 		bool	init(sqlrlistener *sqlrl,
@@ -18,7 +18,7 @@ class SQLRSERVER_DLLSPEC sqlrlogger_slowqueries : public sqlrlogger {
 		bool	run(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
-					sqlrlogger_loglevel_t level,
+					sqlrloglevel_t level,
 					sqlrevent_t event,
 					const char *info);
 	private:
@@ -36,9 +36,8 @@ class SQLRSERVER_DLLSPEC sqlrlogger_slowqueries : public sqlrlogger {
 		char		querysecbuffer[7];
 };
 
-sqlrlogger_slowqueries::sqlrlogger_slowqueries(sqlrloggers *ls,
-						domnode *parameters) :
-						sqlrlogger(ls,parameters) {
+sqlrlogger_slowqueries::sqlrlogger_slowqueries(domnode *parameters) :
+						sqlrlogger(parameters) {
 	querylogname=NULL;
 	sec=charstring::convertToInteger(
 				parameters->getAttributeValue("sec"));
@@ -98,7 +97,7 @@ static const char *days[]={"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
 bool sqlrlogger_slowqueries::run(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
-					sqlrlogger_loglevel_t level,
+					sqlrloglevel_t level,
 					sqlrevent_t event,
 					const char *info) {
 
@@ -189,8 +188,7 @@ bool sqlrlogger_slowqueries::run(sqlrlistener *sqlrl,
 
 extern "C" {
 	SQLRSERVER_DLLSPEC sqlrlogger *new_sqlrlogger_slowqueries(
-						sqlrloggers *ls,
 						domnode *parameters) {
-		return new sqlrlogger_slowqueries(ls,parameters);
+		return new sqlrlogger_slowqueries(parameters);
 	}
 }

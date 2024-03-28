@@ -8,7 +8,6 @@ class SQLRSERVER_DLLSPEC sqlrbindvariabletranslation_test :
 	public:
 		sqlrbindvariabletranslation_test(
 					sqlrservercontroller *cont,
-					sqlrbindvariabletranslations *rs,
 					domnode *parameters);
 		~sqlrbindvariabletranslation_test();
 		bool	run(sqlrserverconnection *sqlrcon,
@@ -18,9 +17,8 @@ class SQLRSERVER_DLLSPEC sqlrbindvariabletranslation_test :
 sqlrbindvariabletranslation_test::
 	sqlrbindvariabletranslation_test(
 				sqlrservercontroller *cont,
-				sqlrbindvariabletranslations *rs,
 				domnode *parameters) :
-		sqlrbindvariabletranslation(cont,rs,parameters) {
+		sqlrbindvariabletranslation(cont,parameters) {
 }
 
 sqlrbindvariabletranslation_test::
@@ -36,8 +34,7 @@ extern "C" {
 	SQLRSERVER_DLLSPEC sqlrbindvariabletranslation
 			*new_sqlrbindvariabletranslation_test(
 					sqlrservercontroller *cont,
-					sqlrbindvariabletranslations *rs,
 					domnode *parameters) {
-		return new sqlrbindvariabletranslation_test(cont,rs,parameters);
+		return new sqlrbindvariabletranslation_test(cont,parameters);
 	}
 }

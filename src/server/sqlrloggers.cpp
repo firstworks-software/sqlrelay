@@ -113,10 +113,8 @@ void sqlrloggers::loadLogger(domnode *logger) {
 	// load the logger itself
 	stringbuffer	functionname;
 	functionname.append("new_sqlrlogger_")->append(module);
-	sqlrlogger *(*newLogger)(sqlrloggers *,
-					domnode *)=
-			(sqlrlogger *(*)(sqlrloggers *,
-						domnode *))
+	sqlrlogger *(*newLogger)(domnode *)=
+			(sqlrlogger *(*)(domnode *))
 				dl->getSymbol(functionname.getString());
 	if (!newLogger) {
 		stdoutput.printf("failed to load logger: %s\n",module);
@@ -126,7 +124,7 @@ void sqlrloggers::loadLogger(domnode *logger) {
 		delete dl;
 		return;
 	}
-	sqlrlogger	*lg=(*newLogger)(this,logger);
+	sqlrlogger	*lg=(*newLogger)(logger);
 
 #else
 
@@ -158,7 +156,7 @@ void sqlrloggers::init(sqlrlistener *sqlrl,
 void sqlrloggers::run(sqlrlistener *sqlrl,
 				sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
-				sqlrlogger_loglevel_t level,
+				sqlrloglevel_t level,
 				sqlrevent_t event,
 				const char *info) {
 	debugFunction();
@@ -184,60 +182,4 @@ void sqlrloggers::endSession() {
 						node; node=node->getNext()) {
 		node->getValue()->lg->endSession();
 	}
-}
-
-static const char *loglevels[]={"DEBUG","INFO","WARNING","ERROR"};
-
-const char *sqlrloggers::logLevel(sqlrlogger_loglevel_t level) {
-	return loglevels[(uint8_t)level];
-}
-
-sqlrlogger_loglevel_t sqlrloggers::logLevel(const char *level) {
-	uint16_t	retval=SQLRLOGGER_LOGLEVEL_DEBUG;
-	for (const char * const *ll=loglevels; *ll; ll++) {
-		if (!charstring::compareIgnoringCase(level,*ll)) {
-			break;
-		}
-		retval++;
-	}
-	return (sqlrlogger_loglevel_t)retval;
-}
-
-// FIXME: push up and consolidate
-static const char *eventtypes[]={
-	"CLIENT_CONNECTED",
-	"CLIENT_CONNECTION_REFUSED",
-	"CLIENT_DISCONNECTED",
-	"CLIENT_PROTOCOL_ERROR",
-	"DB_LOGIN",
-	"DB_LOGOUT",
-	"DB_ERROR",
-	"DB_WARNING",
-	"QUERY_RECEIVED",
-	"QUERY_PREPARED",
-	"QUERY_EXECUTED",
-	"FILTER_VIOLATION",
-	"INTERNAL_ERROR",
-	"INTERNAL_WARNING",
-	"DEBUG_MESSAGE",
-	"SCHEDULE_VIOLATION",
-	"INTEGRITY_VIOLATION",
-	"TRANSLATION_FAILURE",
-	"PARSE_FAILURE",
-	NULL
-};
-
-const char *sqlrloggers::eventType(sqlrevent_t event) {
-	return eventtypes[(uint16_t)event];
-}
-
-sqlrevent_t sqlrloggers::eventType(const char *event) {
-	uint16_t	retval=SQLREVENT_CLIENT_CONNECTED;
-	for (const char * const *ev=eventtypes; *ev; ev++) {
-		if (!charstring::compareIgnoringCase(event,*ev)) {
-			break;
-		}
-		retval++;
-	}
-	return (sqlrevent_t)retval;
 }

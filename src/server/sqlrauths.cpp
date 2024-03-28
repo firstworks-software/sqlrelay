@@ -111,11 +111,9 @@ void sqlrauths::loadAuth(domnode *auth, sqlrpwdencs *sqlrpe) {
 	stringbuffer	functionname;
 	functionname.append("new_sqlrauth_")->append(module);
 	sqlrauth *(*newAuth)(sqlrservercontroller *,
-					sqlrauths *,
 					sqlrpwdencs *,
 					domnode *)=
 			(sqlrauth *(*)(sqlrservercontroller *,
-					sqlrauths *,
 					sqlrpwdencs *,
 					domnode *))
 				dl->getSymbol(functionname.getString());
@@ -128,7 +126,7 @@ void sqlrauths::loadAuth(domnode *auth, sqlrpwdencs *sqlrpe) {
 		delete dl;
 		return;
 	}
-	sqlrauth	*au=(*newAuth)(pvt->_cont,this,sqlrpe,auth);
+	sqlrauth	*au=(*newAuth)(pvt->_cont,sqlrpe,auth);
 
 #else
 

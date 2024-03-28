@@ -1,4 +1,3 @@
 sqlrauth	*new_sqlrauth_@module@(sqlrservercontroller *cont,
-						sqlrauths *auths,
 						sqlrpwdencs *sqlrpe,
 						domnode *parameters);

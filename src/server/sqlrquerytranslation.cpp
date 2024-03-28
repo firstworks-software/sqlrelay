@@ -6,16 +6,12 @@
 class sqlrquerytranslationprivate {
 	friend class sqlrquerytranslation;
 	private:
-
-		sqlrquerytranslations	*_ts;
 		domnode			*_parameters;
 };
 
 sqlrquerytranslation::sqlrquerytranslation(sqlrservercontroller *cont,
-					sqlrquerytranslations *ts,
 					domnode *parameters) {
 	pvt=new sqlrquerytranslationprivate;
-	pvt->_ts=ts;
 	pvt->_parameters=parameters;
 }
 
@@ -43,10 +39,6 @@ bool sqlrquerytranslation::run(sqlrserverconnection *sqlrcon,
 
 const char *sqlrquerytranslation::getError() {
 	return NULL;
-}
-
-sqlrquerytranslations *sqlrquerytranslation::getQueryTranslations() {
-	return pvt->_ts;
 }
 
 domnode *sqlrquerytranslation::getParameters() {

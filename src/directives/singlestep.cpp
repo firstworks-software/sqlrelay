@@ -10,7 +10,6 @@
 class SQLRSERVER_DLLSPEC sqlrdirective_singlestep : public sqlrdirective {
 	public:
 		sqlrdirective_singlestep(sqlrservercontroller *cont,
-							sqlrdirectives *sqlds,
 							domnode *parameters);
 		bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
@@ -28,9 +27,8 @@ class SQLRSERVER_DLLSPEC sqlrdirective_singlestep : public sqlrdirective {
 
 sqlrdirective_singlestep::sqlrdirective_singlestep(
 					sqlrservercontroller *cont,
-					sqlrdirectives *sqlds,
 					domnode *parameters) :
-				sqlrdirective(cont,sqlds,parameters) {
+				sqlrdirective(cont,parameters) {
 	debugFunction();
 
 	this->cont=cont;
@@ -86,8 +84,7 @@ bool sqlrdirective_singlestep::run(sqlrserverconnection *sqlrcon,
 extern "C" {
 	SQLRSERVER_DLLSPEC sqlrdirective *new_sqlrdirective_singlestep(
 						sqlrservercontroller *cont,
-						sqlrdirectives *sqlds,
 						domnode *parameters) {
-		return new sqlrdirective_singlestep(cont,sqlds,parameters);
+		return new sqlrdirective_singlestep(cont,parameters);
 	}
 }

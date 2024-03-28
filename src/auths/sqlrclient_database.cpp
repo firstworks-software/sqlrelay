@@ -8,7 +8,6 @@
 class SQLRSERVER_DLLSPEC sqlrauth_sqlrclient_database : public sqlrauth {
 	public:
 		sqlrauth_sqlrclient_database(sqlrservercontroller *cont,
-							sqlrauths *auths,
 							sqlrpwdencs *sqlrpe,
 							domnode *parameters);
 		const char	*auth(sqlrcredentials *cred);
@@ -20,10 +19,9 @@ class SQLRSERVER_DLLSPEC sqlrauth_sqlrclient_database : public sqlrauth {
 
 sqlrauth_sqlrclient_database::sqlrauth_sqlrclient_database(
 					sqlrservercontroller *cont,
-					sqlrauths *auths,
 					sqlrpwdencs *sqlrpe,
 					domnode *parameters) :
-					sqlrauth(cont,auths,sqlrpe,parameters) {
+					sqlrauth(cont,sqlrpe,parameters) {
 	first=true;
 }
 
@@ -75,10 +73,9 @@ const char *sqlrauth_sqlrclient_database::auth(sqlrcredentials *cred) {
 extern "C" {
 	SQLRSERVER_DLLSPEC sqlrauth *new_sqlrauth_sqlrclient_database(
 						sqlrservercontroller *cont,
-						sqlrauths *auths,
 						sqlrpwdencs *sqlrpe,
 						domnode *parameters) {
 		return new sqlrauth_sqlrclient_database(
-						cont,auths,sqlrpe,parameters);
+						cont,sqlrpe,parameters);
 	}
 }

@@ -116,10 +116,8 @@ void sqlrschedules::loadSchedule(domnode *schedule) {
 	stringbuffer	functionname;
 	functionname.append("new_sqlrschedule_")->append(module);
 	sqlrschedule *(*newSchedule)(sqlrservercontroller *,
-						sqlrschedules *,
 						domnode *)=
 			(sqlrschedule *(*)(sqlrservercontroller *,
-							sqlrschedules *,
 							domnode *))
 				dl->getSymbol(functionname.getString());
 	if (!newSchedule) {
@@ -131,7 +129,7 @@ void sqlrschedules::loadSchedule(domnode *schedule) {
 		delete dl;
 		return;
 	}
-	sqlrschedule	*s=(*newSchedule)(pvt->_cont,this,schedule);
+	sqlrschedule	*s=(*newSchedule)(pvt->_cont,schedule);
 
 #else
 

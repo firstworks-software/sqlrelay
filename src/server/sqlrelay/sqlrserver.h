@@ -63,6 +63,41 @@ enum sqlrserverlistformat_t {
 	SQLRSERVERLISTFORMAT_JDBC
 };
 
+enum sqlrevent_t {
+	SQLREVENT_CLIENT_CONNECTED=0,
+	SQLREVENT_CLIENT_CONNECTION_REFUSED,
+	SQLREVENT_CLIENT_DISCONNECTED,
+	SQLREVENT_CLIENT_PROTOCOL_ERROR,
+	SQLREVENT_DB_LOGIN,
+	SQLREVENT_DB_LOGOUT,
+	SQLREVENT_DB_ERROR,
+	SQLREVENT_DB_WARNING,
+	SQLREVENT_QUERY_RECEIVED,
+	SQLREVENT_QUERY_PREPARED,
+	SQLREVENT_QUERY_EXECUTED,
+	SQLREVENT_FILTER_VIOLATION,
+	SQLREVENT_INTERNAL_ERROR,
+	SQLREVENT_INTERNAL_WARNING,
+	SQLREVENT_DEBUG_MESSAGE,
+	SQLREVENT_SCHEDULE_VIOLATION,
+	SQLREVENT_INTEGRITY_VIOLATION,
+	SQLREVENT_TRANSLATION_FAILURE,
+	SQLREVENT_PARSE_FAILURE,
+	SQLREVENT_CURSOR_OPEN,
+	SQLREVENT_CURSOR_CLOSE,
+	SQLREVENT_BEGIN_TRANSACTION,
+	SQLREVENT_COMMIT,
+	SQLREVENT_ROLLBACK,
+	SQLREVENT_INVALID_EVENT
+};
+
+enum sqlrloglevel_t {
+	SQLRLOGGER_LOGLEVEL_DEBUG=0,
+	SQLRLOGGER_LOGLEVEL_INFO,
+	SQLRLOGGER_LOGLEVEL_WARNING,
+	SQLRLOGGER_LOGLEVEL_ERROR
+};
+
 class SQLRSERVER_DLLSPEC sqlrserverbindvar {
 	public:
 		char	*variable;
@@ -105,6 +140,19 @@ class SQLRSERVER_DLLSPEC sqlrlistener {
 
 		/** Returns the paths for this instance. */
 		sqlrpaths	*getPaths();
+
+		/** Returns a string representation of log level "level". */
+		const char	*getLogLevel(sqlrloglevel_t level);
+
+		/** Returns the sqlrloglevel_t corresponding to string
+ 		 *  "level". */
+		sqlrloglevel_t	getLogLevel(const char *level);
+
+		/** Returns a string representation of event type "event". */
+		const char	*getEventType(sqlrevent_t event);
+
+		/** Returns the sqlrevent_t corresponding to string "event". */
+		sqlrevent_t	getEventType(const char *event);
 
 	#include <sqlrelay/private/sqlrlistener.h>
 };
@@ -2969,6 +3017,19 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 		/** Returns the full set of known datatype strings. */
 		const char * const	*dataTypeStrings();
 
+		/** Returns a string representation of log level "level". */
+		const char	*getLogLevel(sqlrloglevel_t level);
+
+		/** Returns the sqlrloglevel_t corresponding to string
+ 		 *  "level". */
+		sqlrloglevel_t	getLogLevel(const char *level);
+
+		/** Returns a string representation of event type "event". */
+		const char	*getEventType(sqlrevent_t event);
+
+		/** Returns the sqlrevent_t corresponding to string "event". */
+		sqlrevent_t	getEventType(const char *event);
+
 	#include <sqlrelay/private/sqlrservercontroller.h>
 };
 
@@ -5232,7 +5293,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol {
 		 *  additional initialization tasks and handle additional
 		 *  parameters. */
 		sqlrprotocol(sqlrservercontroller *cont,
-					sqlrprotocols *ps,
 					domnode *parameters);
 
 		/** Deletes this instance of sqlrprotocol. */
@@ -5282,10 +5342,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol {
 		virtual void	endSession();
 
 	protected:
-
-		/** Returns the instance of sqlrprotocols passed in as "ps" to
-		 *  the constructor. */
-		sqlrprotocols	*getProtocols();
 
 		/** Returns the top-level domnode of the parameters passed in
 		 *  as "parameters" to the constructor. */
@@ -6034,7 +6090,6 @@ class SQLRSERVER_DLLSPEC sqlrauth {
 		 *  perform additional initialization tasks and handle
 		 *  some set of parameters. */
 		sqlrauth(sqlrservercontroller *cont,
-					sqlrauths *auths,
 					sqlrpwdencs *sqlrpe,
 					domnode *parameters);
 
@@ -6056,10 +6111,6 @@ class SQLRSERVER_DLLSPEC sqlrauth {
 		virtual	const char	*auth(sqlrcredentials *cred);
 
 	protected:
-
-		/** Returns the instance of sqlrauths passed in as "auths" to
-		 *  the constructor. */
-		sqlrauths	*getAuths();
 
 		/** Returns the instance of sqlrpwdencs passed in as "sqlrpe" to
 		 *  the constructor. */
@@ -6088,41 +6139,6 @@ class SQLRSERVER_DLLSPEC sqlrauths {
 	#include <sqlrelay/private/sqlrauths.h>
 };
 
-enum sqlrevent_t {
-	SQLREVENT_CLIENT_CONNECTED=0,
-	SQLREVENT_CLIENT_CONNECTION_REFUSED,
-	SQLREVENT_CLIENT_DISCONNECTED,
-	SQLREVENT_CLIENT_PROTOCOL_ERROR,
-	SQLREVENT_DB_LOGIN,
-	SQLREVENT_DB_LOGOUT,
-	SQLREVENT_DB_ERROR,
-	SQLREVENT_DB_WARNING,
-	SQLREVENT_QUERY_RECEIVED,
-	SQLREVENT_QUERY_PREPARED,
-	SQLREVENT_QUERY_EXECUTED,
-	SQLREVENT_FILTER_VIOLATION,
-	SQLREVENT_INTERNAL_ERROR,
-	SQLREVENT_INTERNAL_WARNING,
-	SQLREVENT_DEBUG_MESSAGE,
-	SQLREVENT_SCHEDULE_VIOLATION,
-	SQLREVENT_INTEGRITY_VIOLATION,
-	SQLREVENT_TRANSLATION_FAILURE,
-	SQLREVENT_PARSE_FAILURE,
-	SQLREVENT_CURSOR_OPEN,
-	SQLREVENT_CURSOR_CLOSE,
-	SQLREVENT_BEGIN_TRANSACTION,
-	SQLREVENT_COMMIT,
-	SQLREVENT_ROLLBACK,
-	SQLREVENT_INVALID_EVENT
-};
-
-enum sqlrlogger_loglevel_t {
-	SQLRLOGGER_LOGLEVEL_DEBUG=0,
-	SQLRLOGGER_LOGLEVEL_INFO,
-	SQLRLOGGER_LOGLEVEL_WARNING,
-	SQLRLOGGER_LOGLEVEL_ERROR
-};
-
 class SQLRSERVER_DLLSPEC sqlrlogger {
 	public:
 		/** Creates an instance of sqlrlogger, configured with
@@ -6132,7 +6148,7 @@ class SQLRSERVER_DLLSPEC sqlrlogger {
 		 *  however, it may be overridden by a child class to
 		 *  perform additional initialization tasks and handle
 		 *  some set of parameters. */
-		sqlrlogger(sqlrloggers *ls, domnode *parameters);
+		sqlrlogger(domnode *parameters);
 
 		/** Deletes this instance of sqlrlogger. */
 		virtual	~sqlrlogger();
@@ -6154,7 +6170,7 @@ class SQLRSERVER_DLLSPEC sqlrlogger {
 		virtual bool	run(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
-					sqlrlogger_loglevel_t level,
+					sqlrloglevel_t level,
 					sqlrevent_t event,
 					const char *info);
 
@@ -6173,10 +6189,6 @@ class SQLRSERVER_DLLSPEC sqlrlogger {
 		virtual void	endSession();
 
 	protected:
-
-		/** Returns the instance of sqlrloggers passed in as "ls" to
-		 *  the constructor. */
-		sqlrloggers	*getLoggers();
 
 		/** Returns the top-level domnode of the parameters passed in
 		 *  as "parameters" to the constructor. */
@@ -6196,18 +6208,12 @@ class SQLRSERVER_DLLSPEC sqlrloggers {
 		void	run(sqlrlistener *sqlrl,
 				sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
-				sqlrlogger_loglevel_t level,
+				sqlrloglevel_t level,
 				sqlrevent_t event,
 				const char *info);
 
 		void	endTransaction(bool commit);
 		void	endSession();
-
-		const char	*logLevel(sqlrlogger_loglevel_t level);
-		sqlrlogger_loglevel_t	logLevel(const char *level);
-
-		const char	*eventType(sqlrevent_t event);
-		sqlrevent_t	eventType(const char *event);
 
 	#include <sqlrelay/private/sqlrloggers.h>
 };
@@ -6221,8 +6227,7 @@ class SQLRSERVER_DLLSPEC sqlrnotification {
 		 *  however, it may be overridden by a child class to
 		 *  perform additional initialization tasks and handle
 		 *  some set of parameters. */
-		sqlrnotification(sqlrnotifications *ns,
-					domnode *parameters);
+		sqlrnotification(domnode *parameters);
 		virtual	~sqlrnotification();
 
 		/** Performs notification of "event" with "info".
@@ -6237,6 +6242,59 @@ class SQLRSERVER_DLLSPEC sqlrnotification {
 					sqlrservercursor *sqlrcur,
 					sqlrevent_t event,
 					const char *info);
+
+		/** Composes a notification regarding "event" with additional
+		 *  information "info" using template "templatefile" and sends
+		 *  it to "address" with subject "subject" using the transport
+		 *  defined by "transportid".
+		 *
+		 *  Currently, the only supported transport is mail, so
+		 *  effectively the transportid parameter is ignored, but may
+		 *  be implemented in the future.
+		 *
+		 *  If "templatefile" is null or empty then the default
+		 *  template is used:
+		 *
+		 *  SQL Relay Notification
+		 *
+		 *  Event          : @event@
+		 *  Event Info     : @eventinfo@
+		 *  Date           : @datetime@
+		 *  Host Name      : @hostname@
+		 *  Instance       : @instance@
+		 *  Process Id     : @pid@
+		 *  Client Address : @clientaddr@
+		 *  Client Info    : @clientinfo@
+		 *  User           : @user@
+		 *  Query          : 
+		 *  @query@
+		 *
+		 *  * @event@ is substituted with "event"
+		 *  * @eventinfo@ is substituted with "info"
+		 *  * @datetime@ is substituted with the current date/time
+		 *  * @hostname@ is substituted with the hostname
+		 *  * @instance@ is substituted with the id of the
+		 *               sqlr-listner or sqlr-connection process
+		 *  * @pid@ is substituted with process id of the
+		 *               sqlr-listner or sqlr-connection process
+		 *  * @clientaddr@ is substituted with the IP address of the
+		 *                 client that generated the event
+		 *  * @clientinfo@ is substituted with any client info provided
+		 *                 by the client that generated the event
+		 *  * @user@ is substituted with the current user
+		 *  * @query@ is substituted with the query that generated the
+		 *            event, if there was one
+		 *
+		 *  Returns true on success and false if an error occurred. */
+		bool	sendNotification(sqlrlistener *sqlrl,
+						sqlrserverconnection *sqlrcon,
+						sqlrservercursor *sqlrcur,
+						const char *address,
+						const char *transportid,
+						const char *subject,
+						const char *templatefile,
+						sqlrevent_t event,
+						const char *info);
 
 		/** Called by the sqlrservercontroller at the end of a
 		 *  transaction.
@@ -6253,10 +6311,6 @@ class SQLRSERVER_DLLSPEC sqlrnotification {
 		virtual void	endSession();
 
 	protected:
-
-		/** Returns the instance of sqlrnotifications passed in as "ns"
-		 *  to the constructor. */
-		sqlrnotifications	*getNotifications();
 
 		/** Returns the top-level domnode of the parameters passed in
 		 *  as "parameters" to the constructor. */
@@ -6279,21 +6333,6 @@ class SQLRSERVER_DLLSPEC sqlrnotifications {
 
 		void	endTransaction(bool commit);
 		void	endSession();
-
-		const char	*eventType(sqlrevent_t event);
-		sqlrevent_t	eventType(const char *event);
-
-		bool	sendNotification(sqlrlistener *sqlrl,
-						sqlrserverconnection *sqlrcon,
-						sqlrservercursor *sqlrcur,
-						const char *address,
-						const char *transportid,
-						const char *subject,
-						const char *templatefile,
-						sqlrevent_t event,
-						const char *info);
-
-		domnode	*getTransport(const char *transportid);
 
 	#include <sqlrelay/private/sqlrnotifications.h>
 };
@@ -6338,7 +6377,6 @@ class SQLRSERVER_DLLSPEC sqlrschedule {
 		 *  perform additional initialization tasks and handle
 		 *  some set of parameters. */
 		sqlrschedule(sqlrservercontroller *cont,
-					sqlrschedules *ss,
 					domnode *parameters);
 
 		/** Deletes this instance of sqlrschedule. */
@@ -6400,10 +6438,6 @@ class SQLRSERVER_DLLSPEC sqlrschedule {
 							const char *user);
 
 	protected:
-
-		/** Returns the instance of sqlrschedules passed in
-		 *  as "ss" to the constructor. */
-		sqlrschedules	*getSchedules();
 
 		/** Returns the top-level domnode of the parameters passed in
 		 *  as "parameters" to the constructor. */
@@ -6635,7 +6669,6 @@ class SQLRSERVER_DLLSPEC sqlrdirective {
 		 *  perform additional initialization tasks and handle
 		 *  some set of parameters. */
 		sqlrdirective(sqlrservercontroller *cont,
-					sqlrdirectives *ds,
 					domnode *parameters);
 
 		/** Deletes this instance of sqlrparser. */
@@ -6652,17 +6685,31 @@ class SQLRSERVER_DLLSPEC sqlrdirective {
 					const char *query);
 	protected:
 
-		/** Returns the instance of sqlrdirectives passed in as "ds" to
-		 *  the constructor. */
-		sqlrdirectives	*getDirectives();
-
 		/** Returns the top-level domnode of the parameters passed in
 		 *  as "parameters" to the constructor. */
 		domnode	*getParameters();
-		bool		getDirective(const char *line,
-						const char **directivestart,
-						uint32_t *directivesize,
-						const char **newline);
+
+		/** Searches "line" for a directive.  Directives must start
+		 *  with the SQL comment -- and end with a new line.
+		 *  For example:
+		 * 
+		 *  -- directive
+		 *
+		 *  If a directive is found on "line" then "directivestart" is
+		 *  set to the first byte of the directive and "directivesize"
+		 *  is set to the number of bytes in the directive.  "newline"
+		 *  is set to the \r following the directive.
+		 *  
+		 *  If no directive was found then "directivestart" is set to
+		 *  NULL, "directivesize" is set to 0, and newline is set to
+		 *  the start of the line.
+		 *
+		 *  Returns true if a directive was found and false if no
+		 *  directive was found. */
+		bool	getDirective(const char *line,
+					const char **directivestart,
+					uint32_t *directivesize,
+					const char **newline);
 
 	#include <sqlrelay/private/sqlrdirective.h>
 };
@@ -6690,7 +6737,6 @@ class SQLRSERVER_DLLSPEC sqlrquerytranslation {
 		 *  perform additional initialization tasks and handle
 		 *  some set of parameters. */
 		sqlrquerytranslation(sqlrservercontroller *cont,
-					sqlrquerytranslations *ts,
 					domnode *parameters);
 
 		/** Deletes this instance of sqlrtranslation. */
@@ -6754,13 +6800,9 @@ class SQLRSERVER_DLLSPEC sqlrquerytranslation {
 
 	protected:
 
-		/** Returns the instance of sqlrquerytranslations passed in as
- 		 *  "qs" to the constructor. */
-		sqlrquerytranslations	*getQueryTranslations();
-
 		/** Returns the top-level domnode of the parameters passed in
 		 *  as "parameters" to the constructor. */
-		domnode			*getParameters();
+		domnode	*getParameters();
 
 	#include <sqlrelay/private/sqlrquerytranslation.h>
 };
@@ -6798,7 +6840,6 @@ class SQLRSERVER_DLLSPEC sqlrfilter {
 		 *  perform additional initialization tasks and handle
 		 *  some set of parameters. */
 		sqlrfilter(sqlrservercontroller *cont,
-					sqlrfilters *fs,
 					domnode *parameters);
 
 		/** Deletes this instance of sqlrtranslation. */
@@ -6865,10 +6906,6 @@ class SQLRSERVER_DLLSPEC sqlrfilter {
 
 	protected:
 
-		/** Returns the instance of sqlrfilters passed in as "fs" to
-		 *  the constructor. */
-		sqlrfilters	*getFilters();
-
 		/** Returns the top-level domnode of the parameters passed in
 		 *  as "parameters" to the constructor. */
 		domnode	*getParameters();
@@ -6911,7 +6948,6 @@ class SQLRSERVER_DLLSPEC sqlrbindvariabletranslation {
 		 *  perform additional initialization tasks and handle
 		 *  some set of parameters. */
 		sqlrbindvariabletranslation(sqlrservercontroller *cont,
-					sqlrbindvariabletranslations *bvts,
 					domnode *parameters);
 
 		/** Deletes this instance of sqlrbindvariabletranslation. */
@@ -6948,10 +6984,6 @@ class SQLRSERVER_DLLSPEC sqlrbindvariabletranslation {
 
 	protected:
 
-		/** Returns the instance of sqlrbindvariabletranslations
-		 *  passed in as "bvts" to the constructor. */
-		sqlrbindvariabletranslations	*getBindVariableTranslations();
-
 		/** Returns the top-level domnode of the parameters passed in
 		 *  as "parameters" to the constructor. */
 		domnode	*getParameters();
@@ -6986,7 +7018,6 @@ class SQLRSERVER_DLLSPEC sqlrresultsettranslation {
 		 *  perform additional initialization tasks and handle
 		 *  some set of parameters. */
 		sqlrresultsettranslation(sqlrservercontroller *cont,
-						sqlrresultsettranslations *rs,
 						domnode *parameters);
 
 		/** Deletes this instance of sqlrresultsettranslation. */
@@ -7031,10 +7062,6 @@ class SQLRSERVER_DLLSPEC sqlrresultsettranslation {
 
 	protected:
 
-		/** Returns the instance of sqlrresultsettranslations
-		 *  passed in as "rs" to the constructor. */
-		sqlrresultsettranslations	*getResultSetTranslations();
-
 		/** Returns the top-level domnode of the parameters passed in
 		 *  as "parameters" to the constructor. */
 		domnode	*getParameters();
@@ -7074,7 +7101,6 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowtranslation {
 		 *  some set of parameters. */
 		sqlrresultsetrowtranslation(
 					sqlrservercontroller *cont,
-					sqlrresultsetrowtranslations *rs,
 					domnode *parameters);
 
 		/** Deletes this instance of sqlrresultsetrowtranslation. */
@@ -7120,10 +7146,6 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowtranslation {
 
 	protected:
 
-		/** Returns the instance of sqlrresultsetrowtranslations
-		 *  passed in as "rs" to the constructor. */
-		sqlrresultsetrowtranslations	*getResultSetRowTranslations();
-
 		/** Returns the top-level domnode of the parameters passed in
 		 *  as "parameters" to the constructor. */
 		domnode	*getParameters();
@@ -7163,7 +7185,6 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslation {
 		 *  some set of parameters. */
 		sqlrresultsetrowblocktranslation(
 					sqlrservercontroller *cont,
-					sqlrresultsetrowblocktranslations *rs,
 					domnode *parameters);
 
 		/** Deletes this instance of
@@ -7268,11 +7289,6 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslation {
 
 	protected:
 
-		/** Returns the instance of sqlrresultsetrowblocktranslations
-		 *  passed in as "rs" to the constructor. */
-		sqlrresultsetrowblocktranslations
-					*getResultSetRowBlockTranslations();
-
 		/** Returns the top-level domnode of the parameters passed in
 		 *  as "parameters" to the constructor. */
 		domnode	*getParameters();
@@ -7328,7 +7344,6 @@ class SQLRSERVER_DLLSPEC sqlrresultsetheadertranslation {
 		 *  some set of parameters. */
 		sqlrresultsetheadertranslation(
 					sqlrservercontroller *cont,
-					sqlrresultsetheadertranslations *rs,
 					domnode *parameters);
 
 		/** Deletes this instance of sqlrresultsetheadertranslation. */
@@ -7457,11 +7472,6 @@ class SQLRSERVER_DLLSPEC sqlrresultsetheadertranslation {
 
 	protected:
 
-		/** Returns the instance of sqlrresultsetheadertranslations
-		 *  passed in as "rs" to the constructor. */
-		sqlrresultsetheadertranslations
-					*getResultSetHeaderTranslations();
-
 		/** Returns the top-level domnode of the parameters passed in
 		 *  as "parameters" to the constructor. */
 		domnode	*getParameters();
@@ -7515,7 +7525,6 @@ class SQLRSERVER_DLLSPEC sqlrerrortranslation {
 		 *  perform additional initialization tasks and handle
 		 *  some set of parameters. */
 		sqlrerrortranslation(sqlrservercontroller *cont,
-					sqlrerrortranslations *es,
 					domnode *parameters);
 
 		/** Deletes this instance of sqlrerrortranslation. */
@@ -7558,10 +7567,6 @@ class SQLRSERVER_DLLSPEC sqlrerrortranslation {
 		virtual void	endSession();
 
 	protected:
-
-		/** Returns the instance of sqlrerrortranslations
-		 *  passed in as "es" to the constructor. */
-		sqlrerrortranslations	*getErrorTranslations();
 
 		/** Returns the top-level domnode of the parameters passed in
 		 *  as "parameters" to the constructor. */
@@ -7841,7 +7846,7 @@ class SQLRSERVER_DLLSPEC sqlrmoduledata {
 
 		/** Returns the top-level domnode of the parameters passed in
 		 *  as "parameters" to the constructor. */
-		domnode		*getParameters();
+		domnode	*getParameters();
 
 	#include <sqlrelay/private/sqlrmoduledata.h>
 };

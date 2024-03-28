@@ -16,7 +16,6 @@
 class sqlrprotocolprivate {
 	friend class sqlrprotocol;
 	private:
-		sqlrprotocols		*_ps;
 		domnode			*_parameters;
 		bool			_bigendian;
 		bool			_debug;
@@ -28,13 +27,10 @@ class sqlrprotocolprivate {
 		tlscontext		_tctx;
 };
 
-sqlrprotocol::sqlrprotocol(sqlrservercontroller *cont,
-				sqlrprotocols *ps,
-				domnode *parameters) {
+sqlrprotocol::sqlrprotocol(sqlrservercontroller *cont, domnode *parameters) {
 
 	pvt=new sqlrprotocolprivate;
 	this->cont=cont;
-	pvt->_ps=ps;
 	pvt->_parameters=parameters;
 	pvt->_bigendian=false;
 	pvt->_debug=cont->getConfig()->getDebugProtocols();
@@ -187,10 +183,6 @@ void sqlrprotocol::endTransaction(bool commit) {
 }
 
 void sqlrprotocol::endSession() {
-}
-
-sqlrprotocols *sqlrprotocol::getProtocols() {
-	return pvt->_ps;
 }
 
 domnode *sqlrprotocol::getParameters() {

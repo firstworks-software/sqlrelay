@@ -154,10 +154,8 @@ void sqlrquerytranslations::loadTranslation(domnode *translation) {
 	stringbuffer	functionname;
 	functionname.append("new_sqlrquerytranslation_")->append(module);
 	sqlrquerytranslation *(*newQueryTranslation)(sqlrservercontroller *,
-						sqlrquerytranslations *,
 						domnode *)=
 		(sqlrquerytranslation *(*)(sqlrservercontroller *,
-						sqlrquerytranslations *,
 						domnode *))
 				dl->getSymbol(functionname.getString());
 	if (!newQueryTranslation) {
@@ -168,7 +166,6 @@ void sqlrquerytranslations::loadTranslation(domnode *translation) {
 		functionname.append("new_sqlrtranslation_")->append(module);
 		newQueryTranslation=
 		(sqlrquerytranslation *(*)(sqlrservercontroller *,
-						sqlrquerytranslations *,
 						domnode *))
 				dl->getSymbol(functionname.getString());
 		if (!newQueryTranslation) {
@@ -182,7 +179,7 @@ void sqlrquerytranslations::loadTranslation(domnode *translation) {
 			return;
 		}
 	}
-	sqlrquerytranslation	*tr=(*newQueryTranslation)(pvt->_cont,this,
+	sqlrquerytranslation	*tr=(*newQueryTranslation)(pvt->_cont,
 								translation);
 
 #else

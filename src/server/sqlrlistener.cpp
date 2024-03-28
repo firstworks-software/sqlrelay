@@ -2506,3 +2506,59 @@ const char *sqlrlistener::getId() {
 sqlrpaths *sqlrlistener::getPaths() {
 	return pvt->_sqlrpth;
 }
+
+// FIXME: push loglevel/eventtype up and consolidate somehow
+static const char *loglevels[]={"DEBUG","INFO","WARNING","ERROR"};
+
+const char *sqlrlistener::getLogLevel(sqlrloglevel_t level) {
+	return loglevels[(uint8_t)level];
+}
+
+sqlrloglevel_t sqlrlistener::getLogLevel(const char *level) {
+	uint16_t	retval=SQLRLOGGER_LOGLEVEL_DEBUG;
+	for (const char * const *ll=loglevels; *ll; ll++) {
+		if (!charstring::compareIgnoringCase(level,*ll)) {
+			break;
+		}
+		retval++;
+	}
+	return (sqlrloglevel_t)retval;
+}
+
+static const char *eventtypes[]={
+	"CLIENT_CONNECTED",
+	"CLIENT_CONNECTION_REFUSED",
+	"CLIENT_DISCONNECTED",
+	"CLIENT_PROTOCOL_ERROR",
+	"DB_LOGIN",
+	"DB_LOGOUT",
+	"DB_ERROR",
+	"DB_WARNING",
+	"QUERY_RECEIVED",
+	"QUERY_PREPARED",
+	"QUERY_EXECUTED",
+	"FILTER_VIOLATION",
+	"INTERNAL_ERROR",
+	"INTERNAL_WARNING",
+	"DEBUG_MESSAGE",
+	"SCHEDULE_VIOLATION",
+	"INTEGRITY_VIOLATION",
+	"TRANSLATION_FAILURE",
+	"PARSE_FAILURE",
+	NULL
+};
+
+const char *sqlrlistener::getEventType(sqlrevent_t event) {
+	return eventtypes[(uint16_t)event];
+}
+
+sqlrevent_t sqlrlistener::getEventType(const char *event) {
+	uint16_t	retval=SQLREVENT_CLIENT_CONNECTED;
+	for (const char * const *ev=eventtypes; *ev; ev++) {
+		if (!charstring::compareIgnoringCase(event,*ev)) {
+			break;
+		}
+		retval++;
+	}
+	return (sqlrevent_t)retval;
+}

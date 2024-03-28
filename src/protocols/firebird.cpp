@@ -396,7 +396,6 @@
 class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 	public:
 		sqlrprotocol_firebird(sqlrservercontroller *cont,
-							sqlrprotocols *ps,
 							domnode *parameters);
 		virtual	~sqlrprotocol_firebird();
 
@@ -552,9 +551,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 
 
 sqlrprotocol_firebird::sqlrprotocol_firebird(sqlrservercontroller *cont,
-					sqlrprotocols *ps,
 					domnode *parameters) :
-					sqlrprotocol(cont,ps,parameters) {
+					sqlrprotocol(cont,parameters) {
 
 	clientsock=NULL;
 
@@ -3819,8 +3817,7 @@ void sqlrprotocol_firebird::debugStatusVector(uint64_t *sv, uint8_t svlen) {
 extern "C" {
 	SQLRSERVER_DLLSPEC sqlrprotocol	*new_sqlrprotocol_firebird(
 						sqlrservercontroller *cont,
-						sqlrprotocols *ps,
 						domnode *parameters) {
-		return new sqlrprotocol_firebird(cont,ps,parameters);
+		return new sqlrprotocol_firebird(cont,parameters);
 	}
 }

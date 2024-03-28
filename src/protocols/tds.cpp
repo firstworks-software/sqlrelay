@@ -639,7 +639,6 @@ static const char *procids[]={
 class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 	public:
 		sqlrprotocol_tds(sqlrservercontroller *cont,
-							sqlrprotocols *ps,
 							domnode *parameters);
 		virtual	~sqlrprotocol_tds();
 
@@ -835,9 +834,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 };
 
 sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
-					sqlrprotocols *ps,
 					domnode *parameters) :
-					sqlrprotocol(cont,ps,parameters) {
+					sqlrprotocol(cont,parameters) {
 
 	clientsock=NULL;
 
@@ -5602,8 +5600,7 @@ void sqlrprotocol_tds::debugSystemError() {
 extern "C" {
 	SQLRSERVER_DLLSPEC sqlrprotocol	*new_sqlrprotocol_tds(
 						sqlrservercontroller *cont,
-						sqlrprotocols *ps,
 						domnode *parameters) {
-		return new sqlrprotocol_tds(cont,ps,parameters);
+		return new sqlrprotocol_tds(cont,parameters);
 	}
 }

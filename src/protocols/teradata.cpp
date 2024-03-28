@@ -535,7 +535,6 @@ request::~request() {
 class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 	public:
 		sqlrprotocol_teradata(sqlrservercontroller *cont,
-							sqlrprotocols *ps,
 							domnode *parameters);
 		virtual	~sqlrprotocol_teradata();
 
@@ -872,9 +871,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 };
 
 sqlrprotocol_teradata::sqlrprotocol_teradata(sqlrservercontroller *cont,
-					sqlrprotocols *ps,
 					domnode *parameters) :
-					sqlrprotocol(cont,ps,parameters) {
+					sqlrprotocol(cont,parameters) {
 
 	// configure passthrough mode
 	if (getDebug()) {
@@ -8232,8 +8230,7 @@ bool sqlrprotocol_teradata::generateSharedSecret() {
 extern "C" {
 	SQLRSERVER_DLLSPEC sqlrprotocol	*new_sqlrprotocol_teradata(
 						sqlrservercontroller *cont,
-						sqlrprotocols *ps,
 						domnode *parameters) {
-		return new sqlrprotocol_teradata(cont,ps,parameters);
+		return new sqlrprotocol_teradata(cont,parameters);
 	}
 }

@@ -72,7 +72,6 @@
 class SQLRSERVER_DLLSPEC sqlrprotocol_postgresql : public sqlrprotocol {
 	public:
 		sqlrprotocol_postgresql(sqlrservercontroller *cont,
-							sqlrprotocols *ps,
 							domnode *parameters);
 		virtual	~sqlrprotocol_postgresql();
 
@@ -215,9 +214,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_postgresql : public sqlrprotocol {
 
 
 sqlrprotocol_postgresql::sqlrprotocol_postgresql(sqlrservercontroller *cont,
-					sqlrprotocols *ps,
 					domnode *parameters) :
-					sqlrprotocol(cont,ps,parameters) {
+					sqlrprotocol(cont,parameters) {
 
 	clientsock=NULL;
 
@@ -2854,8 +2852,7 @@ void sqlrprotocol_postgresql::readString(const byte_t *rp,
 extern "C" {
 	SQLRSERVER_DLLSPEC sqlrprotocol	*new_sqlrprotocol_postgresql(
 						sqlrservercontroller *cont,
-						sqlrprotocols *ps,
 						domnode *parameters) {
-		return new sqlrprotocol_postgresql(cont,ps,parameters);
+		return new sqlrprotocol_postgresql(cont,parameters);
 	}
 }

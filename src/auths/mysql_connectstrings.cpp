@@ -11,7 +11,6 @@
 class SQLRSERVER_DLLSPEC sqlrauth_mysql_connectstrings : public sqlrauth {
 	public:
 		sqlrauth_mysql_connectstrings(sqlrservercontroller *cont,
-							sqlrauths *auths,
 							sqlrpwdencs *sqlrpe,
 							domnode *parameters);
 		const char	*auth(sqlrcredentials *cred);
@@ -33,10 +32,9 @@ class SQLRSERVER_DLLSPEC sqlrauth_mysql_connectstrings : public sqlrauth {
 
 sqlrauth_mysql_connectstrings::sqlrauth_mysql_connectstrings(
 					sqlrservercontroller *cont,
-					sqlrauths *auths,
 					sqlrpwdencs *sqlrpe,
 					domnode *parameters) :
-					sqlrauth(cont,auths,sqlrpe,parameters) {
+					sqlrauth(cont,sqlrpe,parameters) {
 
 	debug=cont->getConfig()->getDebugAuths();
 
@@ -319,10 +317,9 @@ bool sqlrauth_mysql_connectstrings::compare(const char *suppliedresponse,
 extern "C" {
 	SQLRSERVER_DLLSPEC sqlrauth *new_sqlrauth_mysql_connectstrings(
 						sqlrservercontroller *cont,
-						sqlrauths *auths,
 						sqlrpwdencs *sqlrpe,
 						domnode *parameters) {
-		return new sqlrauth_mysql_connectstrings(cont,auths,
+		return new sqlrauth_mysql_connectstrings(cont,
 							sqlrpe,parameters);
 	}
 }

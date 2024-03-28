@@ -6,16 +6,13 @@
 class sqlrresultsetrowblocktranslationprivate {
 	friend class sqlrresultsetrowblocktranslation;
 	private:
-		sqlrresultsetrowblocktranslations	*_rs;
-		domnode					*_parameters;
+		domnode	*_parameters;
 };
 
 sqlrresultsetrowblocktranslation::sqlrresultsetrowblocktranslation(
 				sqlrservercontroller *cont,
-				sqlrresultsetrowblocktranslations *rs,
 				domnode *parameters) {
 	pvt=new sqlrresultsetrowblocktranslationprivate;
-	pvt->_rs=rs;
 	pvt->_parameters=parameters;
 }
 
@@ -53,11 +50,6 @@ bool sqlrresultsetrowblocktranslation::getRow(sqlrserverconnection *sqlrcon,
 
 const char *sqlrresultsetrowblocktranslation::getError() {
 	return NULL;
-}
-
-sqlrresultsetrowblocktranslations *sqlrresultsetrowblocktranslation::
-					getResultSetRowBlockTranslations() {
-	return pvt->_rs;
 }
 
 domnode *sqlrresultsetrowblocktranslation::getParameters() {

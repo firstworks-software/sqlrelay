@@ -13,27 +13,26 @@
 
 class SQLRSERVER_DLLSPEC sqlrlogger_custom_sc : public sqlrlogger {
 	public:
-		sqlrlogger_custom_sc(sqlrloggers *ls, domnode *parameters);
+		sqlrlogger_custom_sc(domnode *parameters);
 		~sqlrlogger_custom_sc();
 
 		bool	init(sqlrlistener *sqlrl, sqlrserverconnection *sqlrcon);
 		bool	run(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
-					sqlrlogger_loglevel_t level,
+					sqlrloglevel_t level,
 					sqlrevent_t event,
 					const char *info);
 	private:
 		file	querylog;
 		char	*querylogname;
-		sqlrlogger_loglevel_t	loglevel;
-		stringbuffer		logbuffer;
-		bool			enabled;
+		sqlrloglevel_t	loglevel;
+		stringbuffer	logbuffer;
+		bool		enabled;
 };
 
-sqlrlogger_custom_sc::sqlrlogger_custom_sc(sqlrloggers *ls,
-						domnode *parameters) :
-						sqlrlogger(ls,parameters) {
+sqlrlogger_custom_sc::sqlrlogger_custom_sc(domnode *parameters) :
+						sqlrlogger(parameters) {
 	querylogname=NULL;
 	loglevel=SQLRLOGGER_LOGLEVEL_ERROR;
 	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
@@ -85,7 +84,7 @@ bool sqlrlogger_custom_sc::init(sqlrlistener *sqlrl,
 bool sqlrlogger_custom_sc::run(sqlrlistener *sqlrl,
 				sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
-				sqlrlogger_loglevel_t level,
+				sqlrloglevel_t level,
 				sqlrevent_t event,
 				const char *info) {
 	debugFunction();
@@ -98,6 +97,16 @@ bool sqlrlogger_custom_sc::run(sqlrlistener *sqlrl,
 	if (level<loglevel) {
 		return true;
 	}
+
+	// get log level string
+	const char	*ll=(sqlrl)?
+			sqlrl->getLogLevel(loglevel):
+			sqlrcon->cont->getLogLevel(loglevel);
+
+	// get event type string
+	const char	*et=(sqlrl)?
+			sqlrl->getEventType(event):
+			sqlrcon->cont->getEventType(event);
 
 	// reinit the log if the file was switched
 	file	querylog2;
@@ -128,8 +137,8 @@ bool sqlrlogger_custom_sc::run(sqlrlistener *sqlrl,
 	// append the event type and log level
 	// (except for db errors/warnings which are handled specially)
 	if (event!=SQLREVENT_DB_ERROR && event!=SQLREVENT_DB_WARNING) {
-		logbuffer.append(getLoggers()->eventType(event))->append(' ');
-		logbuffer.append(getLoggers()->logLevel(level))->append(": ");
+		logbuffer.append(et)->append(' ');
+		logbuffer.append(ll)->append(": ");
 	}
 
 	// get the client IP, it's needed for some events
@@ -176,14 +185,11 @@ bool sqlrlogger_custom_sc::run(sqlrlistener *sqlrl,
 			const char	*colon=charstring::findFirst(info,':');
 			if (colon) {
 				logbuffer.append(info,colon-info)->append(' ');
-				logbuffer.append(getLoggers()->
-						logLevel(level))->append(": ");
+				logbuffer.append(ll)->append(": ");
 				logbuffer.append(colon+2);
 			} else {
-				logbuffer.append(getLoggers()->
-						eventType(event))->append(' ');
-				logbuffer.append(getLoggers()->
-						logLevel(level))->append(": ");
+				logbuffer.append(et)->append(' ');
+				logbuffer.append(ll)->append(": ");
 				logbuffer.append(info);
 			}
 			}
@@ -231,8 +237,7 @@ bool sqlrlogger_custom_sc::run(sqlrlistener *sqlrl,
 
 extern "C" {
 	SQLRSERVER_DLLSPEC sqlrlogger *new_sqlrlogger_custom_sc(
-						sqlrloggers *ls,
 						domnode *parameters) {
-		return new sqlrlogger_custom_sc(ls,parameters);
+		return new sqlrlogger_custom_sc(parameters);
 	}
 }

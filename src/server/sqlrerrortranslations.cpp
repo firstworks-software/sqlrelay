@@ -126,10 +126,8 @@ void sqlrerrortranslations::loadErrorTranslation(domnode *errortranslation) {
 	stringbuffer	functionname;
 	functionname.append("new_sqlrerrortranslation_")->append(module);
 	sqlrerrortranslation *(*newErrorTranslation)(sqlrservercontroller *,
-						sqlrerrortranslations *,
 						domnode *)=
 		(sqlrerrortranslation *(*)(sqlrservercontroller *,
-						sqlrerrortranslations *,
 						domnode *))
 				dl->getSymbol(functionname.getString());
 	if (!newErrorTranslation) {
@@ -144,7 +142,7 @@ void sqlrerrortranslations::loadErrorTranslation(domnode *errortranslation) {
 	}
 	sqlrerrortranslation	*tr=
 		(*newErrorTranslation)
-			(pvt->_cont,this,errortranslation);
+			(pvt->_cont,errortranslation);
 
 #else
 	dynamiclib		*dl=NULL;

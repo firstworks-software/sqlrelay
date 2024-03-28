@@ -30,7 +30,6 @@
 class SQLRSERVER_DLLSPEC sqlrauth_teradata_sidechannel : public sqlrauth {
 	public:
 		sqlrauth_teradata_sidechannel(sqlrservercontroller *cont,
-							sqlrauths *auths,
 							sqlrpwdencs *sqlrpe,
 							domnode *parameters);
 		~sqlrauth_teradata_sidechannel();
@@ -115,10 +114,9 @@ class SQLRSERVER_DLLSPEC sqlrauth_teradata_sidechannel : public sqlrauth {
 
 sqlrauth_teradata_sidechannel::sqlrauth_teradata_sidechannel(
 					sqlrservercontroller *cont,
-					sqlrauths *auths,
 					sqlrpwdencs *sqlrpe,
 					domnode *parameters) :
-					sqlrauth(cont,auths,sqlrpe,parameters) {
+					sqlrauth(cont,sqlrpe,parameters) {
 
 	debug=cont->getConfig()->getDebugAuths();
 
@@ -613,10 +611,9 @@ void sqlrauth_teradata_sidechannel::debugHexDump(const byte_t *data,
 extern "C" {
 	SQLRSERVER_DLLSPEC sqlrauth *new_sqlrauth_teradata_sidechannel(
 						sqlrservercontroller *cont,
-						sqlrauths *auths,
 						sqlrpwdencs *sqlrpe,
 						domnode *parameters) {
-		return new sqlrauth_teradata_sidechannel(cont,auths,
+		return new sqlrauth_teradata_sidechannel(cont,
 							sqlrpe,parameters);
 	}
 }

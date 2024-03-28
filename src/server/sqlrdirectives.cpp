@@ -119,10 +119,8 @@ void sqlrdirectives::loadDirective(domnode *directive) {
 	stringbuffer	functionname;
 	functionname.append("new_sqlrdirective_")->append(module);
 	sqlrdirective *(*newDirective)(sqlrservercontroller *,
-						sqlrdirectives *,
 						domnode *)=
 		(sqlrdirective *(*)(sqlrservercontroller *,
-						sqlrdirectives *,
 						domnode *))
 				dl->getSymbol(functionname.getString());
 	if (!newDirective) {
@@ -134,7 +132,7 @@ void sqlrdirectives::loadDirective(domnode *directive) {
 		delete dl;
 		return;
 	}
-	sqlrdirective	*dr=(*newDirective)(pvt->_cont,this,directive);
+	sqlrdirective	*dr=(*newDirective)(pvt->_cont,directive);
 
 #else
 	dynamiclib	*dl=NULL;

@@ -6,16 +6,13 @@
 class sqlrresultsetrowtranslationprivate {
 	friend class sqlrresultsetrowtranslation;
 	private:
-		sqlrresultsetrowtranslations	*_rs;
-		domnode			*_parameters;
+		domnode	*_parameters;
 };
 
 sqlrresultsetrowtranslation::sqlrresultsetrowtranslation(
 				sqlrservercontroller *cont,
-				sqlrresultsetrowtranslations *rs,
 				domnode *parameters) {
 	pvt=new sqlrresultsetrowtranslationprivate;
-	pvt->_rs=rs;
 	pvt->_parameters=parameters;
 }
 
@@ -34,11 +31,6 @@ bool sqlrresultsetrowtranslation::run(sqlrserverconnection *sqlrcon,
 
 const char *sqlrresultsetrowtranslation::getError() {
 	return NULL;
-}
-
-sqlrresultsetrowtranslations *sqlrresultsetrowtranslation::
-					getResultSetRowTranslations() {
-	return pvt->_rs;
 }
 
 domnode *sqlrresultsetrowtranslation::getParameters() {

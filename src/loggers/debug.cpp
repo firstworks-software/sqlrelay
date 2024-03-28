@@ -10,14 +10,14 @@
 
 class SQLRSERVER_DLLSPEC sqlrlogger_debug : public sqlrlogger {
 	public:
-		sqlrlogger_debug(sqlrloggers *ls, domnode *parameters);
+		sqlrlogger_debug(domnode *parameters);
 		~sqlrlogger_debug();
 
 		bool	init(sqlrlistener *sqlrl, sqlrserverconnection *sqlrcon);
 		bool	run(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
-					sqlrlogger_loglevel_t level,
+					sqlrloglevel_t level,
 					sqlrevent_t event,
 					const char *info);
 	private:
@@ -34,9 +34,8 @@ class SQLRSERVER_DLLSPEC sqlrlogger_debug : public sqlrlogger {
 		bool			logconnection;
 };
 
-sqlrlogger_debug::sqlrlogger_debug(sqlrloggers *ls,
-					domnode *parameters) :
-					sqlrlogger(ls,parameters) {
+sqlrlogger_debug::sqlrlogger_debug(domnode *parameters) :
+					sqlrlogger(parameters) {
 	dbgfile=NULL;
 	debuglogger=NULL;
 	dbgfilename=NULL;
@@ -90,7 +89,7 @@ bool sqlrlogger_debug::init(sqlrlistener *sqlrl,
 bool sqlrlogger_debug::run(sqlrlistener *sqlrl,
 				sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
-				sqlrlogger_loglevel_t level,
+				sqlrloglevel_t level,
 				sqlrevent_t event,
 				const char *info) {
 	if (!enabled) {
@@ -151,8 +150,7 @@ void sqlrlogger_debug::closeDebugFile() {
 
 extern "C" {
 	SQLRSERVER_DLLSPEC sqlrlogger *new_sqlrlogger_debug(
-						sqlrloggers *ls,
 						domnode *parameters) {
-		return new sqlrlogger_debug(ls,parameters);
+		return new sqlrlogger_debug(parameters);
 	}
 }

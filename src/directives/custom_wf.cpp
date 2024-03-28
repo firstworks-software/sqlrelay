@@ -10,7 +10,6 @@
 class SQLRSERVER_DLLSPEC sqlrdirective_custom_wf : public sqlrdirective {
 	public:
 		sqlrdirective_custom_wf(sqlrservercontroller *cont,
-							sqlrdirectives *sqlds,
 							domnode *parameters);
 		bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
@@ -28,9 +27,8 @@ class SQLRSERVER_DLLSPEC sqlrdirective_custom_wf : public sqlrdirective {
 
 sqlrdirective_custom_wf::sqlrdirective_custom_wf(
 					sqlrservercontroller *cont,
-					sqlrdirectives *sqlds,
 					domnode *parameters) :
-				sqlrdirective(cont,sqlds,parameters) {
+				sqlrdirective(cont,parameters) {
 	debugFunction();
 
 	this->cont=cont;
@@ -146,8 +144,7 @@ void sqlrdirective_custom_wf::parseDirective(
 extern "C" {
 	SQLRSERVER_DLLSPEC sqlrdirective *new_sqlrdirective_custom_wf(
 						sqlrservercontroller *cont,
-						sqlrdirectives *sqlds,
 						domnode *parameters) {
-		return new sqlrdirective_custom_wf(cont,sqlds,parameters);
+		return new sqlrdirective_custom_wf(cont,parameters);
 	}
 }

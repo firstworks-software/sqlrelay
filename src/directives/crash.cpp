@@ -10,7 +10,6 @@
 class SQLRSERVER_DLLSPEC sqlrdirective_crash : public sqlrdirective {
 	public:
 		sqlrdirective_crash(sqlrservercontroller *cont,
-							sqlrdirectives *sqlds,
 							domnode *parameters);
 		bool	run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
@@ -28,9 +27,8 @@ class SQLRSERVER_DLLSPEC sqlrdirective_crash : public sqlrdirective {
 };
 
 sqlrdirective_crash::sqlrdirective_crash(sqlrservercontroller *cont,
-					sqlrdirectives *sqlds,
 					domnode *parameters) :
-				sqlrdirective(cont,sqlds,parameters) {
+				sqlrdirective(cont,parameters) {
 	debugFunction();
 
 	this->cont=cont;
@@ -155,8 +153,7 @@ void sqlrdirective_crash::crashmeTest(int32_t iargument) {
 extern "C" {
 	SQLRSERVER_DLLSPEC sqlrdirective *new_sqlrdirective_crash(
 						sqlrservercontroller *cont,
-						sqlrdirectives *sqlds,
 						domnode *parameters) {
-		return new sqlrdirective_crash(cont,sqlds,parameters);
+		return new sqlrdirective_crash(cont,parameters);
 	}
 }

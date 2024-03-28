@@ -11,7 +11,7 @@
 
 class SQLRSERVER_DLLSPEC sqlrlogger_sql : public sqlrlogger {
 	public:
-		sqlrlogger_sql(sqlrloggers *ls, domnode *parameters);
+		sqlrlogger_sql(domnode *parameters);
 		~sqlrlogger_sql();
 
 		bool	init(sqlrlistener *sqlrl,
@@ -19,7 +19,7 @@ class SQLRSERVER_DLLSPEC sqlrlogger_sql : public sqlrlogger {
 		bool	run(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
-					sqlrlogger_loglevel_t level,
+					sqlrloglevel_t level,
 					sqlrevent_t event,
 					const char *info);
 	private:
@@ -33,8 +33,7 @@ class SQLRSERVER_DLLSPEC sqlrlogger_sql : public sqlrlogger {
 		pid_t		pid;
 };
 
-sqlrlogger_sql::sqlrlogger_sql(sqlrloggers *ls, domnode *parameters) :
-						sqlrlogger(ls,parameters) {
+sqlrlogger_sql::sqlrlogger_sql(domnode *parameters) : sqlrlogger(parameters) {
 	querylogname=NULL;
 	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
 	sync=charstring::isYes(parameters->getAttributeValue("sync"));
@@ -100,7 +99,7 @@ bool sqlrlogger_sql::init(sqlrlistener *sqlrl,
 bool sqlrlogger_sql::run(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
-					sqlrlogger_loglevel_t level,
+					sqlrloglevel_t level,
 					sqlrevent_t event,
 					const char *info) {
 
@@ -198,9 +197,7 @@ bool sqlrlogger_sql::run(sqlrlistener *sqlrl,
 }
 
 extern "C" {
-	SQLRSERVER_DLLSPEC sqlrlogger *new_sqlrlogger_sql(
-						sqlrloggers *ls,
-						domnode *parameters) {
-		return new sqlrlogger_sql(ls,parameters);
+	SQLRSERVER_DLLSPEC sqlrlogger *new_sqlrlogger_sql(domnode *parameters) {
+		return new sqlrlogger_sql(parameters);
 	}
 }

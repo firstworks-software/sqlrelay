@@ -132,11 +132,9 @@ void sqlrbindvariabletranslations::loadBindVariableTranslation(
 	functionname.append("new_sqlrbindvariabletranslation_")->append(module);
 	sqlrbindvariabletranslation *(*newBindVariableTranslation)
 					(sqlrservercontroller *,
-					sqlrbindvariabletranslations *,
 					domnode *)=
 		(sqlrbindvariabletranslation *(*)
 					(sqlrservercontroller *,
-					sqlrbindvariabletranslations *,
 					domnode *))
 				dl->getSymbol(functionname.getString());
 	if (!newBindVariableTranslation) {
@@ -151,7 +149,7 @@ void sqlrbindvariabletranslations::loadBindVariableTranslation(
 	}
 	sqlrbindvariabletranslation	*bvtr=
 		(*newBindVariableTranslation)
-			(pvt->_cont,this,bindvariabletranslation);
+			(pvt->_cont,bindvariabletranslation);
 
 #else
 	dynamiclib			*dl=NULL;

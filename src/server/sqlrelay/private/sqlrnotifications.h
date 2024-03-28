@@ -5,11 +5,4 @@
 		void		unload();
 		void		loadNotification(domnode *notification);
 
-		char		*substitutions(sqlrlistener *sqlrl,
-						sqlrserverconnection *sqlrcon,
-						sqlrservercursor *sqlrcur,
-						const char *str,
-						const char *event,
-						const char *info);
-
 		sqlrnotificationsprivate	*pvt;

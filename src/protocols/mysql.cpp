@@ -581,7 +581,6 @@ enum mysqllisttype_t {
 class SQLRSERVER_DLLSPEC sqlrprotocol_mysql : public sqlrprotocol {
 	public:
 		sqlrprotocol_mysql(sqlrservercontroller *cont,
-							sqlrprotocols *ps,
 							domnode *parameters);
 		virtual	~sqlrprotocol_mysql();
 
@@ -889,9 +888,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_mysql : public sqlrprotocol {
 };
 
 sqlrprotocol_mysql::sqlrprotocol_mysql(sqlrservercontroller *cont,
-					sqlrprotocols *ps,
 					domnode *parameters) :
-					sqlrprotocol(cont,ps,parameters) {
+					sqlrprotocol(cont,parameters) {
 
 	clientsock=NULL;
 
@@ -5226,8 +5224,7 @@ bool sqlrprotocol_mysql::sendMalformedPacketError() {
 extern "C" {
 	SQLRSERVER_DLLSPEC sqlrprotocol	*new_sqlrprotocol_mysql(
 						sqlrservercontroller *cont,
-						sqlrprotocols *ps,
 						domnode *parameters) {
-		return new sqlrprotocol_mysql(cont,ps,parameters);
+		return new sqlrprotocol_mysql(cont,parameters);
 	}
 }

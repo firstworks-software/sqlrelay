@@ -8,7 +8,6 @@
 class SQLRSERVER_DLLSPEC sqlrauth_mysql_database : public sqlrauth {
 	public:
 		sqlrauth_mysql_database(sqlrservercontroller *cont,
-							sqlrauths *auths,
 							sqlrpwdencs *sqlrpe,
 							domnode *parameters);
 		const char	*auth(sqlrcredentials *cred);
@@ -22,10 +21,9 @@ class SQLRSERVER_DLLSPEC sqlrauth_mysql_database : public sqlrauth {
 
 sqlrauth_mysql_database::sqlrauth_mysql_database(
 					sqlrservercontroller *cont,
-					sqlrauths *auths,
 					sqlrpwdencs *sqlrpe,
 					domnode *parameters) :
-					sqlrauth(cont,auths,sqlrpe,parameters) {
+					sqlrauth(cont,sqlrpe,parameters) {
 	debug=cont->getConfig()->getDebugAuths();
 	first=true;
 }
@@ -107,10 +105,8 @@ const char *sqlrauth_mysql_database::auth(sqlrcredentials *cred) {
 extern "C" {
 	SQLRSERVER_DLLSPEC sqlrauth *new_sqlrauth_mysql_database(
 						sqlrservercontroller *cont,
-						sqlrauths *auths,
 						sqlrpwdencs *sqlrpe,
 						domnode *parameters) {
-		return new sqlrauth_mysql_database(cont,auths,
-							sqlrpe,parameters);
+		return new sqlrauth_mysql_database(cont,sqlrpe,parameters);
 	}
 }

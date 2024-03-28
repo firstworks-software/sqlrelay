@@ -10,7 +10,6 @@
 class SQLRSERVER_DLLSPEC sqlrauth_postgresql_connectstrings : public sqlrauth {
 	public:
 		sqlrauth_postgresql_connectstrings(sqlrservercontroller *cont,
-							sqlrauths *auths,
 							sqlrpwdencs *sqlrpe,
 							domnode *parameters);
 		const char	*auth(sqlrcredentials *cred);
@@ -33,10 +32,9 @@ class SQLRSERVER_DLLSPEC sqlrauth_postgresql_connectstrings : public sqlrauth {
 
 sqlrauth_postgresql_connectstrings::sqlrauth_postgresql_connectstrings(
 					sqlrservercontroller *cont,
-					sqlrauths *auths,
 					sqlrpwdencs *sqlrpe,
 					domnode *parameters) :
-					sqlrauth(cont,auths,sqlrpe,parameters) {
+					sqlrauth(cont,sqlrpe,parameters) {
 
 	debug=cont->getConfig()->getDebugAuths();
 
@@ -264,10 +262,9 @@ bool sqlrauth_postgresql_connectstrings::compare(const char *suppliedresponse,
 extern "C" {
 	SQLRSERVER_DLLSPEC sqlrauth *new_sqlrauth_postgresql_connectstrings(
 						sqlrservercontroller *cont,
-						sqlrauths *auths,
 						sqlrpwdencs *sqlrpe,
 						domnode *parameters) {
-		return new sqlrauth_postgresql_connectstrings(cont,auths,
+		return new sqlrauth_postgresql_connectstrings(cont,
 							sqlrpe,parameters);
 	}
 }

@@ -8,7 +8,6 @@
 class SQLRSERVER_DLLSPEC sqlrauth_sqlrclient_proxied : public sqlrauth {
 	public:
 		sqlrauth_sqlrclient_proxied(sqlrservercontroller *cont,
-							sqlrauths *auths,
 							sqlrpwdencs *sqlrpe,
 							domnode *parameters);
 		const char	*auth(sqlrcredentials *cred);
@@ -19,10 +18,9 @@ class SQLRSERVER_DLLSPEC sqlrauth_sqlrclient_proxied : public sqlrauth {
 
 sqlrauth_sqlrclient_proxied::sqlrauth_sqlrclient_proxied(
 					sqlrservercontroller *cont,
-					sqlrauths *auths,
 					sqlrpwdencs *sqlrpe,
 					domnode *parameters) :
-					sqlrauth(cont,auths,sqlrpe,parameters) {
+					sqlrauth(cont,sqlrpe,parameters) {
 }
 
 const char *sqlrauth_sqlrclient_proxied::auth(sqlrcredentials *cred) {
@@ -64,10 +62,9 @@ const char *sqlrauth_sqlrclient_proxied::auth(sqlrcredentials *cred) {
 extern "C" {
 	SQLRSERVER_DLLSPEC sqlrauth *new_sqlrauth_sqlrclient_proxied(
 						sqlrservercontroller *cont,
-						sqlrauths *auths,
 						sqlrpwdencs *sqlrpe,
 						domnode *parameters) {
 		return new sqlrauth_sqlrclient_proxied(
-						cont,auths,sqlrpe,parameters);
+						cont,sqlrpe,parameters);
 	}
 }

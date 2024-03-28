@@ -556,7 +556,6 @@ enum oraclelisttype_t {
 class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 	public:
 		sqlrprotocol_oracle(sqlrservercontroller *cont,
-							sqlrprotocols *ps,
 							domnode *parameters);
 		virtual	~sqlrprotocol_oracle();
 
@@ -858,9 +857,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 };
 
 sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
-					sqlrprotocols *ps,
 					domnode *parameters) :
-					sqlrprotocol(cont,ps,parameters) {
+					sqlrprotocol(cont,parameters) {
 
 	clientsock=NULL;
 
@@ -5408,8 +5406,7 @@ bool sqlrprotocol_oracle::sendNotImplementedError() {
 extern "C" {
 	SQLRSERVER_DLLSPEC sqlrprotocol	*new_sqlrprotocol_oracle(
 						sqlrservercontroller *cont,
-						sqlrprotocols *ps,
 						domnode *parameters) {
-		return new sqlrprotocol_oracle(cont,ps,parameters);
+		return new sqlrprotocol_oracle(cont,parameters);
 	}
 }

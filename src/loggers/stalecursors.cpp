@@ -10,14 +10,14 @@
 
 class SQLRSERVER_DLLSPEC sqlrlogger_stalecursors : public sqlrlogger {
 	public:
-		sqlrlogger_stalecursors(sqlrloggers *ls, domnode *parameters);
+		sqlrlogger_stalecursors(domnode *parameters);
 		~sqlrlogger_stalecursors();
 
 		bool	init(sqlrlistener *sqlrl, sqlrserverconnection *sqlrcon);
 		bool	run(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
-					sqlrlogger_loglevel_t level,
+					sqlrloglevel_t level,
 					sqlrevent_t event,
 					const char *info);
 	private:
@@ -40,9 +40,8 @@ class SQLRSERVER_DLLSPEC sqlrlogger_stalecursors : public sqlrlogger {
 		stringbuffer	dtstr;
 };
 
-sqlrlogger_stalecursors::sqlrlogger_stalecursors(sqlrloggers *ls,
-						domnode *parameters) :
-						sqlrlogger(ls,parameters) {
+sqlrlogger_stalecursors::sqlrlogger_stalecursors(domnode *parameters) :
+						sqlrlogger(parameters) {
 
 	host=parameters->getAttributeValue("host");
 	port=charstring::convertToInteger(parameters->getAttributeValue("port"));
@@ -143,7 +142,7 @@ bool sqlrlogger_stalecursors::init(sqlrlistener *sqlrl,
 bool sqlrlogger_stalecursors::run(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
-					sqlrlogger_loglevel_t level,
+					sqlrloglevel_t level,
 					sqlrevent_t event,
 					const char *info) {
 
@@ -218,8 +217,7 @@ bool sqlrlogger_stalecursors::run(sqlrlistener *sqlrl,
 
 extern "C" {
 	SQLRSERVER_DLLSPEC sqlrlogger *new_sqlrlogger_stalecursors(
-						sqlrloggers *ls,
 						domnode *parameters) {
-		return new sqlrlogger_stalecursors(ls,parameters);
+		return new sqlrlogger_stalecursors(parameters);
 	}
 }
