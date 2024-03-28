@@ -132,6 +132,8 @@ class SQLRSERVER_DLLSPEC sqlrserverbindvar {
 		int16_t			isnull;
 };
 
+#include <sqlrelay/private/sqlrserverclasses.h>
+
 class SQLRSERVER_DLLSPEC sqlrlistener {
 	public:
 
@@ -5820,20 +5822,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol {
 	#include <sqlrelay/private/sqlrprotocol.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrprotocols {
-	public:
-		sqlrprotocols(sqlrservercontroller *cont);
-		~sqlrprotocols();
-
-		bool		load(domnode *listeners);
-		sqlrprotocol	*getProtocol(uint16_t port);
-
-		void	endTransaction(bool commit);
-		void	endSession();
-
-	#include <sqlrelay/private/sqlrprotocols.h>
-};
-
 class SQLRSERVER_DLLSPEC sqlrcredentials {
 	public:
 		/** Creates an instance of sqlrcredentials. */
@@ -6125,20 +6113,6 @@ class SQLRSERVER_DLLSPEC sqlrauth {
 	#include <sqlrelay/private/sqlrauth.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrauths {
-	public:
-		sqlrauths(sqlrservercontroller *cont);
-		~sqlrauths();
-
-		bool		load(domnode *parameters,
-					sqlrpwdencs *sqlrpe);
-		const char	*auth(sqlrcredentials *cred);
-
-		void	endSession();
-
-	#include <sqlrelay/private/sqlrauths.h>
-};
-
 class SQLRSERVER_DLLSPEC sqlrlogger {
 	public:
 		/** Creates an instance of sqlrlogger, configured with
@@ -6195,27 +6169,6 @@ class SQLRSERVER_DLLSPEC sqlrlogger {
 		domnode	*getParameters();
 
 	#include <sqlrelay/private/sqlrlogger.h>
-};
-
-class SQLRSERVER_DLLSPEC sqlrloggers {
-	public:
-		sqlrloggers(sqlrpaths *sqlrpth);
-		~sqlrloggers();
-
-		bool	load(domnode *parameters);
-		void	init(sqlrlistener *sqlrl,
-				sqlrserverconnection *sqlrcon);
-		void	run(sqlrlistener *sqlrl,
-				sqlrserverconnection *sqlrcon,
-				sqlrservercursor *sqlrcur,
-				sqlrloglevel_t level,
-				sqlrevent_t event,
-				const char *info);
-
-		void	endTransaction(bool commit);
-		void	endSession();
-
-	#include <sqlrelay/private/sqlrloggers.h>
 };
 
 class SQLRSERVER_DLLSPEC sqlrnotification {
@@ -6317,24 +6270,6 @@ class SQLRSERVER_DLLSPEC sqlrnotification {
 		domnode	*getParameters();
 
 	#include <sqlrelay/private/sqlrnotification.h>
-};
-
-class SQLRSERVER_DLLSPEC sqlrnotifications {
-	public:
-		sqlrnotifications(sqlrpaths *sqlrpth);
-		~sqlrnotifications();
-
-		bool	load(domnode *parameters);
-		void	run(sqlrlistener *sqlrl,
-					sqlrserverconnection *sqlrcon,
-					sqlrservercursor *sqlrcur,
-					sqlrevent_t event,
-					const char *info);
-
-		void	endTransaction(bool commit);
-		void	endSession();
-
-	#include <sqlrelay/private/sqlrnotifications.h>
 };
 
 class SQLRSERVER_DLLSPEC sqlrscheduleperiod {
@@ -6446,20 +6381,6 @@ class SQLRSERVER_DLLSPEC sqlrschedule {
 	#include <sqlrelay/private/sqlrschedule.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrschedules {
-	public:
-		sqlrschedules(sqlrservercontroller *cont);
-		~sqlrschedules();
-
-		bool	load(domnode *parameters);
-		bool	allowed(sqlrserverconnection *sqlrcon,
-						const char *user);
-
-		void	endSession();
-
-	#include <sqlrelay/private/sqlrschedules.h>
-};
-
 class SQLRSERVER_DLLSPEC sqlrrouter {
 	public:
 		/** Creates an instance of sqlrrouter, configured with
@@ -6522,32 +6443,6 @@ class SQLRSERVER_DLLSPEC sqlrrouter {
 		domnode	*getParameters();
 
 	#include <sqlrelay/private/sqlrrouter.h>
-};
-
-class SQLRSERVER_DLLSPEC sqlrrouters {
-	public:
-		sqlrrouters(sqlrservercontroller *cont,
-				const char **connectionids,
-				sqlrconnection **connections,
-				uint16_t connectioncount);
-		~sqlrrouters();
-
-		bool		load(domnode *parameters);
-		const char	*route(sqlrserverconnection *sqlrcon,
-						sqlrservercursor *sqlrcur,
-						const char **err,
-						int64_t *errn);
-		bool	routeEntireSession();
-
-		void	endTransaction(bool commit);
-		void	endSession();
-
-		const char	*getCurrentConnectionId();
-		const char	**getConnectionIds();
-		sqlrconnection	**getConnections();
-		uint16_t	getConnectionCount();
-
-	#include <sqlrelay/private/sqlrrouters.h>
 };
 
 class SQLRSERVER_DLLSPEC sqlrparser {
@@ -6714,19 +6609,6 @@ class SQLRSERVER_DLLSPEC sqlrdirective {
 	#include <sqlrelay/private/sqlrdirective.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrdirectives {
-	public:
-		sqlrdirectives(sqlrservercontroller *cont);
-		~sqlrdirectives();
-
-		bool	load(domnode *parameters);
-		bool	run(sqlrserverconnection *sqlrcon,
-					sqlrservercursor *sqlrcur,
-					const char *query);
-
-	#include <sqlrelay/private/sqlrdirectives.h>
-};
-
 class SQLRSERVER_DLLSPEC sqlrquerytranslation {
 	public:
 		/** Creates an instance of sqlrquerytranslation, configured with
@@ -6805,29 +6687,6 @@ class SQLRSERVER_DLLSPEC sqlrquerytranslation {
 		domnode	*getParameters();
 
 	#include <sqlrelay/private/sqlrquerytranslation.h>
-};
-
-class SQLRSERVER_DLLSPEC sqlrquerytranslations {
-	public:
-		sqlrquerytranslations(sqlrservercontroller *cont);
-		~sqlrquerytranslations();
-
-		bool	load(domnode *parameters);
-		bool	run(sqlrserverconnection *sqlrcon,
-						sqlrservercursor *sqlrcur,
-						sqlrparser *sqlrp,
-						const char *query,
-						uint32_t querysize,
-						stringbuffer *translatedquery);
-
-		const char	*getError();
-
-		void	endTransaction(bool commit);
-		void	endSession();
-
-		bool	getUseOriginalOnError();
-
-	#include <sqlrelay/private/sqlrquerytranslations.h>
 };
 
 class SQLRSERVER_DLLSPEC sqlrfilter {
@@ -6913,31 +6772,6 @@ class SQLRSERVER_DLLSPEC sqlrfilter {
 	#include <sqlrelay/private/sqlrfilter.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrfilters {
-	public:
-		sqlrfilters(sqlrservercontroller *cont);
-		~sqlrfilters();
-
-		bool	load(domnode *parameters);
-		bool	runBeforeFilters(sqlrserverconnection *sqlrcon,
-						sqlrservercursor *sqlrcur,
-						sqlrparser *sqlrp,
-						const char *query,
-						const char **err,
-						int64_t *errn);
-		bool	runAfterFilters(sqlrserverconnection *sqlrcon,
-						sqlrservercursor *sqlrcur,
-						sqlrparser *sqlrp,
-						const char *query,
-						const char **err,
-						int64_t *errn);
-
-		void	endTransaction(bool commit);
-		void	endSession();
-
-	#include <sqlrelay/private/sqlrfilters.h>
-};
-
 class SQLRSERVER_DLLSPEC sqlrbindvariabletranslation {
 	public:
 		/** Creates an instance of sqlrbindvariabletranslation,
@@ -6989,23 +6823,6 @@ class SQLRSERVER_DLLSPEC sqlrbindvariabletranslation {
 		domnode	*getParameters();
 
 	#include <sqlrelay/private/sqlrbindvariabletranslation.h>
-};
-
-class SQLRSERVER_DLLSPEC sqlrbindvariabletranslations {
-	public:
-		sqlrbindvariabletranslations(sqlrservercontroller *cont);
-		~sqlrbindvariabletranslations();
-
-		bool	load(domnode *parameters);
-		bool	run(sqlrserverconnection *sqlrcon,
-					sqlrservercursor *sqlrcur);
-
-		const char	*getError();
-
-		void	endTransaction(bool commit);
-		void	endSession();
-
-	#include <sqlrelay/private/sqlrbindvariabletranslations.h>
 };
 
 class SQLRSERVER_DLLSPEC sqlrresultsettranslation {
@@ -7069,27 +6886,6 @@ class SQLRSERVER_DLLSPEC sqlrresultsettranslation {
 	#include <sqlrelay/private/sqlrresultsettranslation.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrresultsettranslations {
-	public:
-		sqlrresultsettranslations(sqlrservercontroller *cont);
-		~sqlrresultsettranslations();
-
-		bool	load(domnode *parameters);
-		bool	run(sqlrserverconnection *sqlrcon,
-						sqlrservercursor *sqlrcur,
-						const char *fieldname,
-						uint32_t fieldindex,
-						const char **field,
-						uint64_t *fieldsize);
-
-		const char	*getError();
-
-		void	endTransaction(bool commit);
-		void	endSession();
-
-	#include <sqlrelay/private/sqlrresultsettranslations.h>
-};
-
 class SQLRSERVER_DLLSPEC sqlrresultsetrowtranslation {
 	public:
 		/** Creates an instance of sqlrresultsetrowtranslation,
@@ -7151,27 +6947,6 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowtranslation {
 		domnode	*getParameters();
 
 	#include <sqlrelay/private/sqlrresultsetrowtranslation.h>
-};
-
-class SQLRSERVER_DLLSPEC sqlrresultsetrowtranslations {
-	public:
-		sqlrresultsetrowtranslations(sqlrservercontroller *cont);
-		~sqlrresultsetrowtranslations();
-
-		bool	load(domnode *parameters);
-		bool	run(sqlrserverconnection *sqlrcon,
-						sqlrservercursor *sqlrcur,
-						uint32_t colcount,
-						const char * const *fieldnames,
-						const char ***fields,
-						uint64_t **fieldsizes);
-
-		const char	*getError();
-
-		void	endTransaction(bool commit);
-		void	endSession();
-
-	#include <sqlrelay/private/sqlrresultsetrowtranslations.h>
 };
 
 class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslation {
@@ -7308,43 +7083,6 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslation {
 		domnode	*getParameters();
 
 	#include <sqlrelay/private/sqlrresultsetrowblocktranslation.h>
-};
-
-class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslations {
-	public:
-		sqlrresultsetrowblocktranslations(sqlrservercontroller *cont);
-		~sqlrresultsetrowblocktranslations();
-
-		bool	load(domnode *parameters);
-
-		uint64_t	getRowBlockCount();
-
-		bool	setRow(sqlrserverconnection *sqlrcon,
-					sqlrservercursor *sqlrcur,
-					uint32_t colcount,
-					const char * const *fieldnames,
-					const char * const *fields,
-					uint64_t *fieldsizes,
-					bool *lobs,
-					bool *nulls);
-		bool	run(sqlrserverconnection *sqlrcon,
-					sqlrservercursor *sqlrcur,
-					uint32_t colcount,
-					const char * const *fieldnames);
-		bool	getRow(sqlrserverconnection *sqlrcon,
-					sqlrservercursor *sqlrcur,
-					uint32_t colcount,
-					const char ***fields,
-					uint64_t **fieldsizes,
-					bool **lobs,
-					bool **nulls);
-
-		const char	*getError();
-
-		void	endTransaction(bool commit);
-		void	endSession();
-
-	#include <sqlrelay/private/sqlrresultsetrowblocktranslations.h>
 };
 
 class SQLRSERVER_DLLSPEC sqlrresultsetheadertranslation {
@@ -7493,42 +7231,6 @@ class SQLRSERVER_DLLSPEC sqlrresultsetheadertranslation {
 	#include <sqlrelay/private/sqlrresultsetheadertranslation.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrresultsetheadertranslations {
-	public:
-		sqlrresultsetheadertranslations(sqlrservercontroller *cont);
-		~sqlrresultsetheadertranslations();
-
-		bool	load(domnode *parameters);
-		bool	run(sqlrserverconnection *sqlrcon,
-					sqlrservercursor *sqlrcur,
-					uint32_t colcount,
-					const char ***columnnames,
-					uint16_t **columnnamesizes,
-					uint16_t **columntypes,
-					const char ***columntypenames,
-					uint16_t **columntypenamesizes,
-					uint32_t **columnsizes,
-					uint32_t **columnprecisions,
-					uint32_t **columnscales,
-					uint16_t **columnisnullables,
-					uint16_t **columnisprimarykeys,
-					uint16_t **columnisuniques,
-					uint16_t **columnispartofkeys,
-					uint16_t **columnisunsigneds,
-					uint16_t **columniszerofilleds,
-					uint16_t **columnisbinarys,
-					uint16_t **columnisautoincrements,
-					const char ***columntables,
-					uint16_t **columntablesizes);
-
-		const char	*getError();
-
-		void	endTransaction(bool commit);
-		void	endSession();
-
-	#include <sqlrelay/private/sqlrresultsetheadertranslations.h>
-};
-
 class SQLRSERVER_DLLSPEC sqlrerrortranslation {
 	public:
 		/** Creates an instance of sqlrerrortranslation,
@@ -7589,28 +7291,6 @@ class SQLRSERVER_DLLSPEC sqlrerrortranslation {
 	#include <sqlrelay/private/sqlrerrortranslation.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrerrortranslations {
-	public:
-		sqlrerrortranslations(sqlrservercontroller *cont);
-		~sqlrerrortranslations();
-
-		bool	load(domnode *parameters);
-		bool	run(sqlrserverconnection *sqlrcon,
-					sqlrservercursor *sqlrcur,
-					int64_t errornumber,
-					const char *error,
-					uint32_t errorsize,
-					int64_t *translatederrornumber,
-					stringbuffer *translatederror);
-
-		const char	*getError();
-
-		void	endTransaction(bool commit);
-		void	endSession();
-
-	#include <sqlrelay/private/sqlrerrortranslations.h>
-};
-
 class SQLRSERVER_DLLSPEC sqlrtrigger {
 	public:
 		/** Creates an instance of sqlrtrigger, configured with
@@ -7665,23 +7345,6 @@ class SQLRSERVER_DLLSPEC sqlrtrigger {
 		domnode	*getParameters();
 
 	#include <sqlrelay/private/sqlrtrigger.h>
-};
-
-class SQLRSERVER_DLLSPEC sqlrtriggers {
-	public:
-		sqlrtriggers(sqlrservercontroller *cont);
-		~sqlrtriggers();
-
-		bool	load(domnode *parameters);
-		bool	runBeforeTriggers(sqlrserverconnection *sqlrcon,
-						sqlrservercursor *sqlrcur);
-		bool	runAfterTriggers(sqlrserverconnection *sqlrcon,
-						sqlrservercursor *sqlrcur);
-
-		void	endTransaction(bool commit);
-		void	endSession();
-
-	#include <sqlrelay/private/sqlrtriggers.h>
 };
 
 class SQLRSERVER_DLLSPEC sqlrquery {
@@ -7777,23 +7440,6 @@ class SQLRSERVER_DLLSPEC sqlrquerycursor : public sqlrservercursor {
 	#include <sqlrelay/private/sqlrquerycursor.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrqueries {
-	public:
-		sqlrqueries(sqlrservercontroller *cont);
-		~sqlrqueries();
-
-		bool		load(domnode *parameters);
-		sqlrquerycursor	*match(sqlrserverconnection *sqlrcon,
-						const char *querystring,
-						uint32_t querysize,
-						uint16_t id);
-
-		void	endTransaction(bool commit);
-		void	endSession();
-
-	#include <sqlrelay/private/sqlrqueries.h>
-};
-
 class SQLRSERVER_DLLSPEC sqlrmoduledata {
 	public:
 		/** Creates an instance of sqlrmoduledata, configured with
@@ -7847,22 +7493,6 @@ class SQLRSERVER_DLLSPEC sqlrmoduledata {
 		domnode	*getParameters();
 
 	#include <sqlrelay/private/sqlrmoduledata.h>
-};
-
-class SQLRSERVER_DLLSPEC sqlrmoduledatas {
-	public:
-		sqlrmoduledatas(sqlrservercontroller *cont);
-		~sqlrmoduledatas();
-
-		bool	load(domnode *parameters);
-
-		sqlrmoduledata	*getModuleData(const char *id);
-
-		void	closeResultSet(sqlrservercursor *sqlrcur);
-		void	endTransaction(bool commit);
-		void	endSession();
-
-	#include <sqlrelay/private/sqlrmoduledatas.h>
 };
 
 class SQLRSERVER_DLLSPEC sqlrmoduledata_tag : public sqlrmoduledata {

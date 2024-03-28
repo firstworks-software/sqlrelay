@@ -37,7 +37,6 @@ class SQLRSERVER_DLLSPEC sqlrrouter_usedatabase : public sqlrrouter {
 		sqlrrouter_usedatabase(sqlrservercontroller *cont,
 						sqlrrouters *rs,
 						domnode *parameters);
-		~sqlrrouter_usedatabase();
 
 		const char	*route(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur,
@@ -53,6 +52,7 @@ class SQLRSERVER_DLLSPEC sqlrrouter_usedatabase : public sqlrrouter {
 		bool	debug;
 
 		dictionary<char *,conndb *>	dbs;
+
 		bool	initialized;
 };
 
@@ -70,10 +70,9 @@ sqlrrouter_usedatabase::sqlrrouter_usedatabase(sqlrservercontroller *cont,
 	}
 
 	initialized=false;
-}
 
-sqlrrouter_usedatabase::~sqlrrouter_usedatabase() {
-	// FIXME: clean up dictionary
+	dbs.setManageArrayKeys(true);
+	dbs.setManageValues(true);
 }
 
 const char *sqlrrouter_usedatabase::route(sqlrserverconnection *sqlrcon,
