@@ -34,6 +34,7 @@ class sqlrresultsetrowblocktranslationsprivate {
 		singlylinkedlist< sqlrresultsetrowblocktranslationplugin * >
 									_tlist;
 
+		uint64_t		_rowblockcount;
 		uint64_t		_rowcount;
 
 		const char		*_error;
@@ -45,6 +46,7 @@ sqlrresultsetrowblocktranslations::sqlrresultsetrowblocktranslations(
 	pvt=new sqlrresultsetrowblocktranslationsprivate;
 	pvt->_cont=cont;
 	pvt->_debug=cont->getConfig()->getDebugResultSetRowBlockTranslations();
+	pvt->_rowblockcount=0;
 	pvt->_rowcount=0;
 	pvt->_error=NULL;
 }
@@ -59,6 +61,16 @@ bool sqlrresultsetrowblocktranslations::load(domnode *parameters) {
 	debugFunction();
 
 	unload();
+
+	pvt->_rowblockcount=charstring::convertToInteger(
+			parameters->getAttributeValue("rowblockcount"));
+	if (pvt->_rowblockcount) {
+		pvt->_rowblockcount=charstring::convertToInteger(
+			parameters->getAttributeValue("rowblocksize"));
+	}
+	if (!pvt->_rowblockcount) {
+		pvt->_rowblockcount=10;
+	}
 
 	// run through the result set translation list
 	for (domnode *resultsetrowblocktranslation=
@@ -179,6 +191,10 @@ void sqlrresultsetrowblocktranslations::loadResultSetRowBlockTranslation(
 	sqlrrstp->dl=dl;
 	sqlrrstp->module=module;
 	pvt->_tlist.append(sqlrrstp);
+}
+
+uint64_t sqlrresultsetrowblocktranslations::getRowBlockCount() {
+	return pvt->_rowblockcount;
 }
 
 bool sqlrresultsetrowblocktranslations::setRow(sqlrserverconnection *sqlrcon,
