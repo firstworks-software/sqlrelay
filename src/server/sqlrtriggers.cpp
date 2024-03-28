@@ -161,10 +161,8 @@ sqlrtriggerplugin *sqlrtriggers::loadTrigger(domnode *trigger) {
 	stringbuffer	functionname;
 	functionname.append("new_sqlrtrigger_")->append(module);
 	sqlrtrigger *(*newTrigger)(sqlrservercontroller *,
-						sqlrtriggers *,
 						domnode *)=
 			(sqlrtrigger *(*)(sqlrservercontroller *,
-						sqlrtriggers *,
 						domnode *))
 				dl->getSymbol(functionname.getString());
 	if (!newTrigger) {
@@ -176,7 +174,7 @@ sqlrtriggerplugin *sqlrtriggers::loadTrigger(domnode *trigger) {
 		delete dl;
 		return NULL;
 	}
-	sqlrtrigger	*tr=(*newTrigger)(pvt->_cont,this,trigger);
+	sqlrtrigger	*tr=(*newTrigger)(pvt->_cont,trigger);
 
 #else
 

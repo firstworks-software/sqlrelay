@@ -14,7 +14,6 @@
 class SQLRSERVER_DLLSPEC sqlrtrigger_upsert : public sqlrtrigger {
 	public:
 		sqlrtrigger_upsert(sqlrservercontroller *cont,
-						sqlrtriggers *ts,
 						domnode *parameters);
 
 		bool	runAfter(sqlrserverconnection *sqlrcon,
@@ -54,9 +53,8 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_upsert : public sqlrtrigger {
 };
 
 sqlrtrigger_upsert::sqlrtrigger_upsert(sqlrservercontroller *cont,
-					sqlrtriggers *ts,
 					domnode *parameters) :
-					sqlrtrigger(cont,ts,parameters) {
+					sqlrtrigger(cont,parameters) {
 	this->cont=cont;
 
 	debug=cont->getConfig()->getDebugTriggers();
@@ -666,9 +664,8 @@ bool sqlrtrigger_upsert::isBind(const char *var) {
 extern "C" {
 	SQLRSERVER_DLLSPEC
 	sqlrtrigger	*new_sqlrtrigger_upsert(sqlrservercontroller *cont,
-						sqlrtriggers *ts,
 						domnode *parameters) {
 
-		return new sqlrtrigger_upsert(cont,ts,parameters);
+		return new sqlrtrigger_upsert(cont,parameters);
 	}
 }

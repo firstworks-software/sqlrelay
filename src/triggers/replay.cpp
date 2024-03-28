@@ -39,7 +39,6 @@ class condition {
 class SQLRSERVER_DLLSPEC sqlrtrigger_replay : public sqlrtrigger {
 	public:
 		sqlrtrigger_replay(sqlrservercontroller *cont,
-						sqlrtriggers *ts,
 						domnode *parameters);
 		bool	runAfter(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur);
@@ -96,9 +95,8 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_replay : public sqlrtrigger {
 };
 
 sqlrtrigger_replay::sqlrtrigger_replay(sqlrservercontroller *cont,
-					sqlrtriggers *ts,
 					domnode *parameters) :
-					sqlrtrigger(cont,ts,parameters) {
+					sqlrtrigger(cont,parameters) {
 	this->cont=cont;
 
 	debug=cont->getConfig()->getDebugTriggers();
@@ -1064,9 +1062,8 @@ void sqlrtrigger_replay::endTransaction(bool commit) {
 extern "C" {
 	SQLRSERVER_DLLSPEC
 	sqlrtrigger	*new_sqlrtrigger_replay(sqlrservercontroller *cont,
-						sqlrtriggers *ts,
 						domnode *parameters) {
 
-		return new sqlrtrigger_replay(cont,ts,parameters);
+		return new sqlrtrigger_replay(cont,parameters);
 	}
 }

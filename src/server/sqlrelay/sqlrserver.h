@@ -7179,10 +7179,21 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslation {
 		/** Creates an instance of sqlrresultsetrowblocktranslation,
  		 *  configured with parameters "parameters".
 		 *
-		 *  This implementation doesn't handle any parameters,
-		 *  however, it may be overridden by a child class to
-		 *  perform additional initialization tasks and handle
-		 *  some set of parameters. */
+		 *  This implementation handles the following parameter
+		 *  which is generic to all result set row block translation
+		 *  implementations:
+		 *
+		 *  * rowblockcount - the number of rows that each block
+		 *                    consists of, defaults to 10 if not
+		 *                    specified
+		 *
+		 *  Note that rowblockcont is an attribute of the parent
+		 *  resultestrowblocktranslations tag, not of individual
+		 *  resultsetrowblocktranslation tags.
+		 *
+		 *  However, it may be overridden by a child class to perform
+		 *  additional initialization tasks and handle additional
+		 *  parameters. */
 		sqlrresultsetrowblocktranslation(
 					sqlrservercontroller *cont,
 					domnode *parameters);
@@ -7190,6 +7201,9 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslation {
 		/** Deletes this instance of
 		 *  sqlrresultsetrowblocktranslation. */
 		virtual	~sqlrresultsetrowblocktranslation();
+
+		/** Returns rowblockcount as set in the parameters. */
+		uint64_t	getRowBlockCount();
 
 		/** Sets a row to be translated.  The row will be the current
 		 *  row of the current result set of "sqlrcur".
@@ -7302,8 +7316,6 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslations {
 		~sqlrresultsetrowblocktranslations();
 
 		bool	load(domnode *parameters);
-
-		uint64_t	getRowBlockCount();
 
 		bool	setRow(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
@@ -7607,7 +7619,6 @@ class SQLRSERVER_DLLSPEC sqlrtrigger {
 		 *  perform additional initialization tasks and handle
 		 *  some set of parameters. */
 		sqlrtrigger(sqlrservercontroller *cont,
-					sqlrtriggers *ts,
 					domnode *parameters);
 
 		/** Deletes this instance of sqlrtrigger. */
@@ -7647,10 +7658,6 @@ class SQLRSERVER_DLLSPEC sqlrtrigger {
 
 	protected:
 
-		/** Returns the instance of sqlrtriggers passed in as "ss" to
-		 *  the constructor. */
-		sqlrtriggers	*getTriggers();
-
 		/** Returns the top-level domnode of the parameters passed in
 		 *  as "parameters" to the constructor. */
 		domnode	*getParameters();
@@ -7684,9 +7691,7 @@ class SQLRSERVER_DLLSPEC sqlrquery {
 		 *  however, it may be overridden by a child class to
 		 *  perform additional initialization tasks and handle
 		 *  some set of parameters. */
-		sqlrquery(sqlrservercontroller *cont,
-				sqlrqueries *qs,
-				domnode *parameters);
+		sqlrquery(sqlrservercontroller *cont, domnode *parameters);
 
 		/** Deletes this instance of sqlrquery. */
 		virtual	~sqlrquery();
@@ -7726,10 +7731,6 @@ class SQLRSERVER_DLLSPEC sqlrquery {
 
 	protected:
 
-		/** Returns the instance of sqlrqueries passed in as "qs" to
-		 *  the constructor. */
-		sqlrqueries	*getQueries();
-
 		/** Returns the top-level domnode of the parameters passed in
 		 *  as "parameters" to the constructor. */
 		domnode	*getParameters();
@@ -7766,11 +7767,6 @@ class SQLRSERVER_DLLSPEC sqlrquerycursor : public sqlrservercursor {
 		/** Returns the instance of sqlrquery passed in as "q" to the
 		 *  constructor. */
 		sqlrquery	*getQuery();
-
-		/** Returns the instance of sqlrqueries passed in as "qs" to
-		 *  the constructor of the instance of sqlrquery that was
-		 *  passed into the constructor as "q". */
-		sqlrqueries	*getQueries();
 
 		/** Returns the top-level domnode of the parameters passed in
 		 *  as "parameters" to the constructor. */

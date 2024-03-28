@@ -12,7 +12,6 @@
 class SQLRSERVER_DLLSPEC sqlrtrigger_splitmultiinsert : public sqlrtrigger {
 	public:
 		sqlrtrigger_splitmultiinsert(sqlrservercontroller *cont,
-						sqlrtriggers *ts,
 						domnode *parameters);
 
 		bool	runBefore(sqlrserverconnection *sqlrcon,
@@ -36,9 +35,8 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_splitmultiinsert : public sqlrtrigger {
 
 sqlrtrigger_splitmultiinsert::sqlrtrigger_splitmultiinsert(
 					sqlrservercontroller *cont,
-					sqlrtriggers *ts,
 					domnode *parameters) :
-					sqlrtrigger(cont,ts,parameters) {
+					sqlrtrigger(cont,parameters) {
 	this->cont=cont;
 
 	debug=cont->getConfig()->getDebugTriggers();
@@ -325,9 +323,8 @@ extern "C" {
 	SQLRSERVER_DLLSPEC
 	sqlrtrigger	*new_sqlrtrigger_splitmultiinsert(
 						sqlrservercontroller *cont,
-						sqlrtriggers *ts,
 						domnode *parameters) {
 
-		return new sqlrtrigger_splitmultiinsert(cont,ts,parameters);
+		return new sqlrtrigger_splitmultiinsert(cont,parameters);
 	}
 }

@@ -6,7 +6,8 @@
 class sqlrresultsetrowblocktranslationprivate {
 	friend class sqlrresultsetrowblocktranslation;
 	private:
-		domnode	*_parameters;
+		domnode		*_parameters;
+		uint64_t	_rowblockcount;
 };
 
 sqlrresultsetrowblocktranslation::sqlrresultsetrowblocktranslation(
@@ -14,10 +15,24 @@ sqlrresultsetrowblocktranslation::sqlrresultsetrowblocktranslation(
 				domnode *parameters) {
 	pvt=new sqlrresultsetrowblocktranslationprivate;
 	pvt->_parameters=parameters;
+
+	pvt->_rowblockcount=charstring::convertToInteger(
+		parameters->getParent()->getAttributeValue("rowblockcount"));
+	if (pvt->_rowblockcount) {
+		pvt->_rowblockcount=charstring::convertToInteger(
+		parameters->getParent()->getAttributeValue("rowblocksize"));
+	}
+	if (!pvt->_rowblockcount) {
+		pvt->_rowblockcount=10;
+	}
 }
 
 sqlrresultsetrowblocktranslation::~sqlrresultsetrowblocktranslation() {
 	delete pvt;
+}
+
+uint64_t sqlrresultsetrowblocktranslation::getRowBlockCount() {
+	return pvt->_rowblockcount;
 }
 
 bool sqlrresultsetrowblocktranslation::setRow(sqlrserverconnection *sqlrcon,

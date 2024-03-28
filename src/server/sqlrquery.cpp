@@ -7,15 +7,12 @@
 class sqlrqueryprivate {
 	friend class sqlrquery;
 	private:
-		sqlrqueries	*_qs;
 		domnode	*_parameters;
 };
 
 sqlrquery::sqlrquery(sqlrservercontroller *cont,
-				sqlrqueries *qs,
 				domnode *parameters) {
 	pvt=new sqlrqueryprivate;
-	pvt->_qs=qs;
 	pvt->_parameters=parameters;
 }
 
@@ -29,10 +26,6 @@ bool sqlrquery::match(const char *querystring, uint32_t querysize) {
 
 sqlrquerycursor *sqlrquery::newCursor(sqlrserverconnection *conn, uint16_t id) {
 	return NULL;
-}
-
-sqlrqueries *sqlrquery::getQueries() {
-	return pvt->_qs;
 }
 
 domnode *sqlrquery::getParameters() {
@@ -77,10 +70,6 @@ bool sqlrquerycursor::isCustomQuery() {
 
 sqlrquery *sqlrquerycursor::getQuery() {
 	return pvt->_q;
-}
-
-sqlrqueries *sqlrquerycursor::getQueries() {
-	return pvt->_q->getQueries();
 }
 
 domnode *sqlrquerycursor::getParameters() {
