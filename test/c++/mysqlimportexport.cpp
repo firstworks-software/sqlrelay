@@ -775,7 +775,8 @@ bool testsqlrimport::tests(const char *method) {
 	}
 
 	// test numeric column
-	if (getIsNumericColumn(getCurrentColumn())!=
+	if (getCurrentColumn()<testisnumeric.getCount() &&
+			getIsNumericColumn(getCurrentColumn())!=
 					testisnumeric[getCurrentColumn()]) {
 		stdoutput.printf("\n%s - getIsNumericColumn(%d): %d!=%d\n",
 			method,getCurrentColumn(),
@@ -785,7 +786,8 @@ bool testsqlrimport::tests(const char *method) {
 	}
 
 	// test datetime column
-	if (getIsDateTimeColumn(getCurrentColumn())!=
+	if (getCurrentColumn()<testisdatetime.getCount() &&
+			getIsDateTimeColumn(getCurrentColumn())!=
 					testisdatetime[getCurrentColumn()]) {
 		stdoutput.printf("\n%s - getIsDateTimeColumn(%d): %d!=%d\n",
 			method,getCurrentColumn(),
