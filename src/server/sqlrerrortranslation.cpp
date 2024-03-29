@@ -6,13 +6,13 @@
 class sqlrerrortranslationprivate {
 	friend class sqlrerrortranslation;
 	private:
-		domnode	*_parameters;
 };
 
-sqlrerrortranslation::sqlrerrortranslation(sqlrservercontroller *cont,
-					domnode *parameters) {
+sqlrerrortranslation::sqlrerrortranslation(
+				sqlrservercontroller *cont,
+				domnode *parameters) :
+				sqlrservermodule(cont,parameters) {
 	pvt=new sqlrerrortranslationprivate;
-	pvt->_parameters=parameters;
 }
 
 sqlrerrortranslation::~sqlrerrortranslation() {
@@ -31,14 +31,4 @@ bool sqlrerrortranslation::run(sqlrserverconnection *sqlrcon,
 
 const char *sqlrerrortranslation::getError() {
 	return NULL;
-}
-
-domnode *sqlrerrortranslation::getParameters() {
-	return pvt->_parameters;
-}
-
-void sqlrerrortranslation::endTransaction(bool commit) {
-}
-
-void sqlrerrortranslation::endSession() {
 }

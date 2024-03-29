@@ -6,13 +6,12 @@
 class sqlrfilterprivate {
 	friend class sqlrfilter;
 	private:
-		domnode	*_parameters;
 };
 
 sqlrfilter::sqlrfilter(sqlrservercontroller *cont,
-				domnode *parameters) {
+				domnode *parameters) :
+				sqlrservermodule(cont,parameters) {
 	pvt=new sqlrfilterprivate;
-	pvt->_parameters=parameters;
 }
 
 sqlrfilter::~sqlrfilter() {
@@ -37,9 +36,9 @@ bool sqlrfilter::run(sqlrserverconnection *sqlrcon,
 
 void sqlrfilter::getError(const char **err, int64_t *errn) {
 	const char	*error=
-			pvt->_parameters->getAttributeValue("error");
+			getParameters()->getAttributeValue("error");
 	const char	*errnum=
-			pvt->_parameters->getAttributeValue("errornumber");
+			getParameters()->getAttributeValue("errornumber");
 	if (err) {
 		if (!charstring::isNullOrEmpty(error)) {
 			*err=error;
@@ -54,14 +53,4 @@ void sqlrfilter::getError(const char **err, int64_t *errn) {
 			*errn=0;
 		}
 	}
-}
-
-domnode *sqlrfilter::getParameters() {
-	return pvt->_parameters;
-}
-
-void sqlrfilter::endTransaction(bool commit) {
-}
-
-void sqlrfilter::endSession() {
 }

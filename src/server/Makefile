@@ -3,10 +3,12 @@ top_builddir = ../..
 include ../../config.mk
 
 LIBSQLRSERVERSRCS = \
+	sqlrserverbase.cpp \
 	sqlrlistener.cpp \
 	sqlrservercontroller.cpp \
 	sqlrserverconnection.cpp \
 	sqlrservercursor.cpp \
+	sqlrservermodule.cpp \
 	sqlrprotocols.cpp \
 	sqlrprotocol.cpp \
 	sqlrparser.cpp \
@@ -48,10 +50,12 @@ LIBSQLRSERVERSRCS = \
 	$(STATICPLUGINSRCS)
 
 LIBSQLRSERVERLOBJS = \
+	sqlrserverbase.$(OBJ) \
 	sqlrlistener.$(OBJ) \
 	sqlrservercontroller.$(OBJ) \
 	sqlrserverconnection.$(OBJ) \
 	sqlrservercursor.$(OBJ) \
+	sqlrservermodule.$(OBJ) \
 	sqlrprotocols.$(OBJ) \
 	sqlrprotocol.$(OBJ) \
 	sqlrparser.$(OBJ) \
@@ -470,6 +474,8 @@ install: $(INSTALLLIB)
 	$(CP) sqlrelay/sqlrserver.h $(includedir)/sqlrelay
 	$(CHMOD) 644 $(includedir)/sqlrelay/sqlrserver.h
 	$(MKINSTALLDIRS) $(includedir)/sqlrelay/private
+	$(CP) sqlrelay/private/sqlrserverbase.h $(includedir)/sqlrelay/private/sqlrserverbase.h
+	$(CP) sqlrelay/private/sqlrservermodule.h $(includedir)/sqlrelay/private/sqlrservermodule.h
 	$(CP) sqlrelay/private/sqlrauth.h $(includedir)/sqlrelay/private/sqlrauth.h
 	$(CP) sqlrelay/private/sqlrfilter.h $(includedir)/sqlrelay/private/sqlrfilter.h
 	$(CP) sqlrelay/private/sqlrgsscredentials.h $(includedir)/sqlrelay/private/sqlrgsscredentials.h
@@ -507,6 +513,8 @@ install: $(INSTALLLIB)
 	$(CP) sqlrelay/private/sqlrtlscredentials.h $(includedir)/sqlrelay/private/sqlrtlscredentials.h
 	$(CP) sqlrelay/private/sqlroraclecredentials.h $(includedir)/sqlrelay/private/sqlroraclecredentials.h
 	$(CP) sqlrelay/private/sqlrteradatacredentials.h $(includedir)/sqlrelay/private/sqlrteradatacredentials.h
+	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrserverbase.h
+	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrservermodule.h
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrauth.h
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrfilter.h
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrgsscredentials.h
@@ -515,6 +523,8 @@ install: $(INSTALLLIB)
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrnotification.h
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrparser.h
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrquerycursor.h
+	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrserverincludes.h
+	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrserverclasses.h
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrquery.h
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrresultsetrowtranslation.h
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrresultsetrowblocktranslation.h
@@ -559,6 +569,8 @@ installlib:
 
 uninstall: $(UNINSTALLLIB)
 	$(RM) $(includedir)/sqlrelay/sqlrserver.h \
+		$(includedir)/sqlrelay/private/sqlrserverbase.h \
+		$(includedir)/sqlrelay/private/sqlrservermodule.h \
 		$(includedir)/sqlrelay/private/sqlrauth.h \
 		$(includedir)/sqlrelay/private/sqlrauths.h \
 		$(includedir)/sqlrelay/private/sqlrfilter.h \
@@ -595,6 +607,7 @@ uninstall: $(UNINSTALLLIB)
 		$(includedir)/sqlrelay/private/sqlrservercontroller.h \
 		$(includedir)/sqlrelay/private/sqlrservercursor.h \
 		$(includedir)/sqlrelay/private/sqlrserverincludes.h \
+		$(includedir)/sqlrelay/private/sqlrserverclasses.h \
 		$(includedir)/sqlrelay/private/sqlrshm.h \
 		$(includedir)/sqlrelay/private/sqlrtlscredentials.h \
 		$(includedir)/sqlrelay/private/sqlrquerytranslation.h \

@@ -6,12 +6,11 @@
 class sqlrloggerprivate {
 	friend class sqlrlogger;
 	private:
-		domnode	*_parameters;
 };
 
-sqlrlogger::sqlrlogger(domnode *parameters) {
+sqlrlogger::sqlrlogger(domnode *parameters) : 
+			sqlrservermodule(NULL,parameters) {
 	pvt=new sqlrloggerprivate;
-	pvt->_parameters=parameters;
 }
 
 sqlrlogger::~sqlrlogger() {
@@ -29,14 +28,4 @@ bool sqlrlogger::run(sqlrlistener *sqlrl,
 			sqlrevent_t event,
 			const char *info) {
 	return true;
-}
-
-domnode *sqlrlogger::getParameters() {
-	return pvt->_parameters;
-}
-
-void sqlrlogger::endTransaction(bool commit) {
-}
-
-void sqlrlogger::endSession() {
 }

@@ -6,15 +6,14 @@
 class sqlrresultsetrowblocktranslationprivate {
 	friend class sqlrresultsetrowblocktranslation;
 	private:
-		domnode		*_parameters;
 		uint64_t	_rowblockcount;
 };
 
 sqlrresultsetrowblocktranslation::sqlrresultsetrowblocktranslation(
 				sqlrservercontroller *cont,
-				domnode *parameters) {
+				domnode *parameters) :
+				sqlrservermodule(cont,parameters) {
 	pvt=new sqlrresultsetrowblocktranslationprivate;
-	pvt->_parameters=parameters;
 
 	pvt->_rowblockcount=charstring::convertToInteger(
 		parameters->getParent()->getAttributeValue("rowblockcount"));
@@ -65,14 +64,4 @@ bool sqlrresultsetrowblocktranslation::getRow(sqlrserverconnection *sqlrcon,
 
 const char *sqlrresultsetrowblocktranslation::getError() {
 	return NULL;
-}
-
-domnode *sqlrresultsetrowblocktranslation::getParameters() {
-	return pvt->_parameters;
-}
-
-void sqlrresultsetrowblocktranslation::endTransaction(bool commit) {
-}
-
-void sqlrresultsetrowblocktranslation::endSession() {
 }

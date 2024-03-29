@@ -182,12 +182,12 @@ class SQLRUTIL_DLLSPEC sqlrconfig {
 		virtual const char	*getDebug()=0;
 		virtual bool		getDebugSql()=0;
 		virtual bool		getDebugBulkLoad()=0;
+		virtual bool		getDebugBindTranslations()=0;
 		virtual bool		getDebugParser()=0;
 		virtual bool		getDebugDirectives()=0;
 		virtual bool		getDebugQueryTranslations()=0;
 		virtual bool		getDebugFilters()=0;
 		virtual bool		getDebugTriggers()=0;
-		virtual bool		getDebugBindTranslations()=0;
 		virtual bool		getDebugBindVariableTranslations()=0;
 		virtual bool		getDebugResultSetTranslations()=0;
 		virtual bool		getDebugResultSetRowTranslations()=0;

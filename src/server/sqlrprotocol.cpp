@@ -16,7 +16,6 @@
 class sqlrprotocolprivate {
 	friend class sqlrprotocol;
 	private:
-		domnode			*_parameters;
 		bool			_bigendian;
 		bool			_debug;
 		bool			_usekrb;
@@ -27,11 +26,11 @@ class sqlrprotocolprivate {
 		tlscontext		_tctx;
 };
 
-sqlrprotocol::sqlrprotocol(sqlrservercontroller *cont, domnode *parameters) {
+sqlrprotocol::sqlrprotocol(sqlrservercontroller *cont, domnode *parameters) :
+					sqlrservermodule(cont,parameters) {
 
 	pvt=new sqlrprotocolprivate;
 	this->cont=cont;
-	pvt->_parameters=parameters;
 	pvt->_bigendian=false;
 	pvt->_debug=cont->getConfig()->getDebugProtocols();
 
@@ -177,16 +176,6 @@ tlscontext *sqlrprotocol::getTlsContext() {
 
 bool sqlrprotocol::useTls() {
 	return pvt->_usetls;
-}
-
-void sqlrprotocol::endTransaction(bool commit) {
-}
-
-void sqlrprotocol::endSession() {
-}
-
-domnode *sqlrprotocol::getParameters() {
-	return pvt->_parameters;
 }
 
 void sqlrprotocol::setProtocolIsBigEndian(bool bigendian) {
@@ -649,51 +638,4 @@ uint32_t sqlrprotocol::hostToBE(uint32_t value) {
 
 uint64_t sqlrprotocol::hostToBE(uint64_t value) {
 	return filedescriptor::convertHostToNet(value);
-}
-
-bool sqlrprotocol::getDebug() {
-	return pvt->_debug;
-}
-
-void sqlrprotocol::debugStart(const char *title) {
-	debugStart(title,0);
-}
-
-void sqlrprotocol::debugStart(const char *title, uint16_t indent) {
-	if (pvt->_debug) {
-		for (uint16_t i=0; i<indent; i++) {
-			stdoutput.write('	');
-		}
-		if (!indent) {
-			stdoutput.printf("%d: ",process::getProcessId());
-		}
-		stdoutput.write(title);
-		stdoutput.write(" {\n");
-	}
-}
-
-void sqlrprotocol::debugHexDump(const byte_t *data, uint64_t size) {
-	debugHexDump(data,size,1);
-}
-
-void sqlrprotocol::debugHexDump(const byte_t *data,
-						uint64_t size,
-						uint16_t indent) {
-	if (!pvt->_debug) {
-		return;
-	}
-	stdoutput.printHex(data,size,indent);
-}
-
-void sqlrprotocol::debugEnd() {
-	debugEnd(0);
-}
-
-void sqlrprotocol::debugEnd(uint16_t indent) {
-	if (pvt->_debug) {
-		for (uint16_t i=0; i<indent; i++) {
-			stdoutput.write('	');
-		}
-		stdoutput.write("}\n");
-	}
 }

@@ -6,13 +6,12 @@
 class sqlrtriggerprivate {
 	friend class sqlrtrigger;
 	private:
-		domnode	*_parameters;
 };
 
 sqlrtrigger::sqlrtrigger(sqlrservercontroller *cont,
-				domnode *parameters) {
+				domnode *parameters) :
+				sqlrservermodule(cont,parameters) {
 	pvt=new sqlrtriggerprivate;
-	pvt->_parameters=parameters;
 }
 
 sqlrtrigger::~sqlrtrigger() {
@@ -27,14 +26,4 @@ bool sqlrtrigger::runBefore(sqlrserverconnection *sqlrcon,
 bool sqlrtrigger::runAfter(sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur) {
 	return true;
-}
-
-domnode *sqlrtrigger::getParameters() {
-	return pvt->_parameters;
-}
-
-void sqlrtrigger::endTransaction(bool commit) {
-}
-
-void sqlrtrigger::endSession() {
 }

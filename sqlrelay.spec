@@ -506,7 +506,6 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_includedir}/%{name}/private/sqlrnotification*.h
 %{_includedir}/%{name}/private/sqlrparser.h
 %{_includedir}/%{name}/private/sqlrprotocol*.h
-%{_includedir}/%{name}/private/sqlrqueries.h
 %{_includedir}/%{name}/private/sqlrquerycursor.h
 %{_includedir}/%{name}/private/sqlrquery.h
 %{_includedir}/%{name}/private/sqlrquerytranslation*.h

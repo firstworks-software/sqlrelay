@@ -14,12 +14,11 @@
 class sqlrnotificationprivate {
 	friend class sqlrnotification;
 	private:
-		domnode		*_parameters;
 };
 
-sqlrnotification::sqlrnotification(domnode *parameters) {
+sqlrnotification::sqlrnotification(domnode *parameters) :
+					sqlrservermodule(NULL,parameters) {
 	pvt=new sqlrnotificationprivate;
-	pvt->_parameters=parameters;
 }
 
 sqlrnotification::~sqlrnotification() {
@@ -32,10 +31,6 @@ bool sqlrnotification::run(sqlrlistener *sqlrl,
 			sqlrevent_t event,
 			const char *info) {
 	return true;
-}
-
-domnode *sqlrnotification::getParameters() {
-	return pvt->_parameters;
 }
 
 bool sqlrnotification::sendNotification(sqlrlistener *sqlrl,
@@ -205,7 +200,7 @@ bool sqlrnotification::sendNotification(sqlrlistener *sqlrl,
 }
 
 domnode *sqlrnotification::getTransport(const char *transportid) {
-	for (domnode *tnode=pvt->_parameters->getParent()->
+	for (domnode *tnode=getParameters()->getParent()->
 					getFirstTagChild("transport");
 				!tnode->isNullNode();
 				tnode=tnode->getNextTagSibling("transport")) {
@@ -214,7 +209,7 @@ domnode *sqlrnotification::getTransport(const char *transportid) {
 			return tnode;
 		}
 	}
-	return pvt->_parameters->getNullNode();
+	return getParameters()->getNullNode();
 }
 
 char *sqlrnotification::substitutions(sqlrlistener *sqlrl,
@@ -305,10 +300,4 @@ char *sqlrnotification::substitutions(sqlrlistener *sqlrl,
 	delete[] pid;
 
 	return outbuf.detachString();
-}
-
-void sqlrnotification::endTransaction(bool commit) {
-}
-
-void sqlrnotification::endSession() {
 }

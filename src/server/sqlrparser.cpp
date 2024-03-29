@@ -6,12 +6,11 @@
 class sqlrparserprivate {
 	friend class sqlrparser;
 	private:
-		domnode		*_parameters;
 };
 
-sqlrparser::sqlrparser(sqlrservercontroller *cont, domnode *parameters) {
+sqlrparser::sqlrparser(sqlrservercontroller *cont, domnode *parameters) :
+					sqlrservermodule(cont,parameters) {
 	pvt=new sqlrparserprivate;
-	pvt->_parameters=parameters;
 }
 
 sqlrparser::~sqlrparser() {
@@ -56,12 +55,4 @@ bool sqlrparser::write(domnode *node, stringbuffer *output) {
 
 void sqlrparser::getMetaData(domnode *node) {
 	// by default, do nothing...
-}
-
-domnode *sqlrparser::getParameters() {
-	return pvt->_parameters;
-}
-
-void sqlrparser::endSession() {
-	// nothing for now, maybe in the future
 }

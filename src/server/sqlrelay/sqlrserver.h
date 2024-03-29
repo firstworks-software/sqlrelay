@@ -134,7 +134,48 @@ class SQLRSERVER_DLLSPEC sqlrserverbindvar {
 
 #include <sqlrelay/private/sqlrserverclasses.h>
 
-class SQLRSERVER_DLLSPEC sqlrlistener {
+class SQLRSERVER_DLLSPEC sqlrserverbase {
+	public:
+		/** Creates an instance of sqlrserverbase. */
+		sqlrserverbase();
+
+		/** Deletes this instance of sqlrserverbase. */
+		virtual ~sqlrserverbase();
+
+		/** Sets the debug flag to "debug".  Defaults to false. */
+		void	setDebug(bool debug);
+
+		/** Returns the debug flag as set by setDebug() or false if
+		 *  setDebug() was never called. */
+		bool	getDebug();
+
+		/** Begins a new section of debug. */
+		void	debugStart(const char *title);
+
+		/** Begins a new section of debug,
+		 *  indented by "indent" tabs. */
+		void	debugStart(const char *title, uint16_t indent);
+
+		/** Dumps "size" bytes of "data" as hex. */
+		void	debugHexDump(const byte_t *data,
+						uint64_t size);
+
+		/** Dumps "size" bytes of "data" as hex,
+		 *  indented by "indent" tabs. */
+		void	debugHexDump(const byte_t *data,
+						uint64_t size,
+						uint16_t indent);
+
+		/** Ends a section of debug. */
+		void	debugEnd();
+
+		/** Ends a section of debug, indented by "indent" tabs. */
+		void	debugEnd(uint16_t indent);
+
+	#include <sqlrelay/private/sqlrserverbase.h>
+};
+
+class SQLRSERVER_DLLSPEC sqlrlistener : public sqlrserverbase {
 	public:
 
 		/** Returns the id of this instance. */
@@ -159,7 +200,7 @@ class SQLRSERVER_DLLSPEC sqlrlistener {
 	#include <sqlrelay/private/sqlrlistener.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrservercontroller {
+class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 	public:
 		// connect string...
 
@@ -3035,7 +3076,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller {
 	#include <sqlrelay/private/sqlrservercontroller.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrserverconnection {
+class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 	public:
 
 		/** Creates an instance of sqlrserverconnection. */
@@ -3817,7 +3858,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection {
 	#include <sqlrelay/private/sqlrserverconnection.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrservercursor {
+class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 	public:
 
 		/** Creates an instance of sqlrserverccursor and assigns it an
@@ -5267,7 +5308,50 @@ enum clientsessionexitstatus_t {
 	CLIENTSESSIONEXITSTATUS_SUSPENDED_SESSION
 };
 
-class SQLRSERVER_DLLSPEC sqlrprotocol {
+class SQLRSERVER_DLLSPEC sqlrservermodule : public sqlrserverbase {
+	public:
+		/** Creates an instance of sqlrservermodule, configured with
+		 *  parameters "parameters".
+		 *
+		 *  This implementation handles the following parameters
+		 *  which are generic to all modules:
+		 *
+		 *  * debug - yes/no, whether or not to enabled debug
+		 *
+		 *  However, it may be overridden by a child class to perform
+		 *  additional initialization tasks and handle additional
+		 *  parameters. */
+		sqlrservermodule(sqlrservercontroller *cont,
+					domnode *parameters);
+
+		/** Deletes this instance of sqlrservermodule. */
+		virtual	~sqlrservermodule();
+
+		/** Called by the sqlrservercontroller at the end of a
+		 *  transaction.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
+		virtual void	endTransaction(bool commit);
+
+		/** Called by the sqlrservercontroller at the end of a client
+		 *  session.
+		 *
+		 *  This implementation just returns, but may be overridden by
+		 *  a child class to do additional things at transaction-end. */
+		virtual void	endSession();
+
+	protected:
+		/** Returns the top-level domnode of the parameters passed in
+		 *  as "parameters" to the constructor. */
+		domnode	*getParameters();
+
+		sqlrservercontroller	*cont;
+
+	#include <sqlrelay/private/sqlrservermodule.h>
+};
+
+class SQLRSERVER_DLLSPEC sqlrprotocol : public sqlrservermodule {
 	public:
 		/** Creates an instance of sqlrprotocol, configured with
 		 *  parameters "parameters".
@@ -5329,25 +5413,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol {
 		 *  or NULL otherwise. */
 		virtual tlscontext	*getTlsContext();
 
-		/** Called by the sqlrservercontroller at the end of a
-		 *  transaction.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endTransaction(bool commit);
-
-		/** Called by the sqlrservercontroller at the end of a client
-		 *  session.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endSession();
-
 	protected:
-
-		/** Returns the top-level domnode of the parameters passed in
-		 *  as "parameters" to the constructor. */
-		domnode	*getParameters();
 
 		/** Surprisingly, not all client-server protocols expect
 		 *  integers to be passed in network byte order (big-endian).
@@ -5804,19 +5870,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol {
 		 *  returns it. */
 		uint64_t	hostToBE(uint64_t value);
 
-		/** Returns true if debug is enabled and false otherwise. */
-		bool	getDebug();
-
-		void	debugStart(const char *title);
-		void	debugStart(const char *title, uint16_t indent);
-		void	debugHexDump(const byte_t *data,
-						uint64_t size);
-		void	debugHexDump(const byte_t *data,
-						uint64_t size,
-						uint16_t indent);
-		void	debugEnd();
-		void	debugEnd(uint16_t indent);
-
 		sqlrservercontroller	*cont;
 
 	#include <sqlrelay/private/sqlrprotocol.h>
@@ -6068,7 +6121,7 @@ class SQLRSERVER_DLLSPEC sqlrteradatacredentials : public sqlrcredentials {
 	#include <sqlrelay/private/sqlrteradatacredentials.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrauth {
+class SQLRSERVER_DLLSPEC sqlrauth : public sqlrservermodule {
 	public:
 		/** Creates an instance of sqlrauth, configured with
 		 *  parameters "parameters".
@@ -6104,16 +6157,12 @@ class SQLRSERVER_DLLSPEC sqlrauth {
 		 *  the constructor. */
 		sqlrpwdencs	*getPasswordEncryptions();
 
-		/** Returns the top-level domnode of the parameters passed in
-		 *  as "parameters" to the constructor. */
-		domnode	*getParameters();
-
 		sqlrservercontroller	*cont;
 
 	#include <sqlrelay/private/sqlrauth.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrlogger {
+class SQLRSERVER_DLLSPEC sqlrlogger : public sqlrservermodule {
 	public:
 		/** Creates an instance of sqlrlogger, configured with
 		 *  parameters "parameters".
@@ -6148,30 +6197,10 @@ class SQLRSERVER_DLLSPEC sqlrlogger {
 					sqlrevent_t event,
 					const char *info);
 
-		/** Called by the sqlrservercontroller at the end of a
-		 *  transaction.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endTransaction(bool commit);
-
-		/** Called by the sqlrservercontroller at the end of a client
-		 *  session.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endSession();
-
-	protected:
-
-		/** Returns the top-level domnode of the parameters passed in
-		 *  as "parameters" to the constructor. */
-		domnode	*getParameters();
-
 	#include <sqlrelay/private/sqlrlogger.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrnotification {
+class SQLRSERVER_DLLSPEC sqlrnotification : public sqlrservermodule {
 	public:
 		/** Creates an instance of sqlrnotification, configured with
 		 *  parameters "parameters".
@@ -6249,26 +6278,6 @@ class SQLRSERVER_DLLSPEC sqlrnotification {
 						sqlrevent_t event,
 						const char *info);
 
-		/** Called by the sqlrservercontroller at the end of a
-		 *  transaction.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endTransaction(bool commit);
-
-		/** Called by the sqlrservercontroller at the end of a client
-		 *  session.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endSession();
-
-	protected:
-
-		/** Returns the top-level domnode of the parameters passed in
-		 *  as "parameters" to the constructor. */
-		domnode	*getParameters();
-
 	#include <sqlrelay/private/sqlrnotification.h>
 };
 
@@ -6302,7 +6311,7 @@ class SQLRSERVER_DLLSPEC sqlrschedulerule {
 	#include <sqlrelay/private/sqlrschedulerule.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrschedule {
+class SQLRSERVER_DLLSPEC sqlrschedule : public sqlrservermodule {
 	public:
 		/** Creates an instance of sqlrschedule, configured with
 		 *  parameters "parameters".
@@ -6372,16 +6381,10 @@ class SQLRSERVER_DLLSPEC sqlrschedule {
 		virtual bool	allowed(sqlrserverconnection *sqlrcon,
 							const char *user);
 
-	protected:
-
-		/** Returns the top-level domnode of the parameters passed in
-		 *  as "parameters" to the constructor. */
-		domnode	*getParameters();
-
 	#include <sqlrelay/private/sqlrschedule.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrrouter {
+class SQLRSERVER_DLLSPEC sqlrrouter : public sqlrservermodule {
 	public:
 		/** Creates an instance of sqlrrouter, configured with
 		 *  parameters "parameters".
@@ -6418,34 +6421,16 @@ class SQLRSERVER_DLLSPEC sqlrrouter {
 						const char **err,
 						int64_t *errn);
 
-		/** Called by the sqlrservercontroller at the end of a
-		 *  transaction.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endTransaction(bool commit);
-
-		/** Called by the sqlrservercontroller at the end of a client
-		 *  session.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endSession();
-
 	protected:
 
 		/** Returns the instance of sqlrrouters passed in as "rs" to
 		 *  the constructor. */
 		sqlrrouters	*getRouters();
 
-		/** Returns the top-level domnode of the parameters passed in
-		 *  as "parameters" to the constructor. */
-		domnode	*getParameters();
-
 	#include <sqlrelay/private/sqlrrouter.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrparser {
+class SQLRSERVER_DLLSPEC sqlrparser : public sqlrservermodule {
 	public:
 		/** Creates an instance of sqlrparser, configured with
 		 *  parameters "parameters".
@@ -6537,24 +6522,10 @@ class SQLRSERVER_DLLSPEC sqlrparser {
  		 *  to "node". */
 		virtual void	getMetaData(domnode *node);
 
-
-		/** Called by the sqlrservercontroller at the end of a client
-		 *  session.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endSession();
-
-	protected:
-
-		/** Returns the top-level domnode of the parameters passed in
-		 *  as "parameters" to the constructor. */
-		domnode	*getParameters();
-
 	#include <sqlrelay/private/sqlrparser.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrdirective {
+class SQLRSERVER_DLLSPEC sqlrdirective : public sqlrservermodule {
 	public:
 		/** Creates an instance of sqlrdirective, configured with
 		 *  parameters "parameters".
@@ -6579,10 +6550,6 @@ class SQLRSERVER_DLLSPEC sqlrdirective {
 					sqlrservercursor *sqlrcur,
 					const char *query);
 	protected:
-
-		/** Returns the top-level domnode of the parameters passed in
-		 *  as "parameters" to the constructor. */
-		domnode	*getParameters();
 
 		/** Searches "line" for a directive.  Directives must start
 		 *  with the SQL comment -- and end with a new line.
@@ -6609,7 +6576,7 @@ class SQLRSERVER_DLLSPEC sqlrdirective {
 	#include <sqlrelay/private/sqlrdirective.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrquerytranslation {
+class SQLRSERVER_DLLSPEC sqlrquerytranslation : public sqlrservermodule {
 	public:
 		/** Creates an instance of sqlrquerytranslation, configured with
 		 *  parameters "parameters".
@@ -6666,30 +6633,10 @@ class SQLRSERVER_DLLSPEC sqlrquerytranslation {
  		 *  if run() was never called. */
 		virtual const char	*getError();
 
-		/** Called by the sqlrservercontroller at the end of a
-		 *  transaction.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endTransaction(bool commit);
-
-		/** Called by the sqlrservercontroller at the end of a client
-		 *  session.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endSession();
-
-	protected:
-
-		/** Returns the top-level domnode of the parameters passed in
-		 *  as "parameters" to the constructor. */
-		domnode	*getParameters();
-
 	#include <sqlrelay/private/sqlrquerytranslation.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrfilter {
+class SQLRSERVER_DLLSPEC sqlrfilter : public sqlrservermodule {
 	public:
 		/** Creates an instance of sqlrqueryfilter, configured with
 		 *  parameters "parameters".
@@ -6749,30 +6696,10 @@ class SQLRSERVER_DLLSPEC sqlrfilter {
  		 *  the error number. */
 		virtual void	getError(const char **err, int64_t *errn);
 
-		/** Called by the sqlrservercontroller at the end of a
-		 *  transaction.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endTransaction(bool commit);
-
-		/** Called by the sqlrservercontroller at the end of a client
-		 *  session.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endSession();
-
-	protected:
-
-		/** Returns the top-level domnode of the parameters passed in
-		 *  as "parameters" to the constructor. */
-		domnode	*getParameters();
-
 	#include <sqlrelay/private/sqlrfilter.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrbindvariabletranslation {
+class SQLRSERVER_DLLSPEC sqlrbindvariabletranslation : public sqlrservermodule {
 	public:
 		/** Creates an instance of sqlrbindvariabletranslation,
  		 *  configured with parameters "parameters".
@@ -6802,30 +6729,10 @@ class SQLRSERVER_DLLSPEC sqlrbindvariabletranslation {
  		 *  if run() was never called. */
 		virtual const char	*getError();
 
-		/** Called by the sqlrservercontroller at the end of a
-		 *  transaction.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endTransaction(bool commit);
-
-		/** Called by the sqlrservercontroller at the end of a client
-		 *  session.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endSession();
-
-	protected:
-
-		/** Returns the top-level domnode of the parameters passed in
-		 *  as "parameters" to the constructor. */
-		domnode	*getParameters();
-
 	#include <sqlrelay/private/sqlrbindvariabletranslation.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrresultsettranslation {
+class SQLRSERVER_DLLSPEC sqlrresultsettranslation : public sqlrservermodule {
 	public:
 		/** Creates an instance of sqlrresultsettranslation,
  		 *  configured with parameters "parameters".
@@ -6863,30 +6770,10 @@ class SQLRSERVER_DLLSPEC sqlrresultsettranslation {
  		 *  if run() was never called. */
 		virtual const char	*getError();
 
-		/** Called by the sqlrservercontroller at the end of a
-		 *  transaction.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endTransaction(bool commit);
-
-		/** Called by the sqlrservercontroller at the end of a client
-		 *  session.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endSession();
-
-	protected:
-
-		/** Returns the top-level domnode of the parameters passed in
-		 *  as "parameters" to the constructor. */
-		domnode	*getParameters();
-
 	#include <sqlrelay/private/sqlrresultsettranslation.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrresultsetrowtranslation {
+class SQLRSERVER_DLLSPEC sqlrresultsetrowtranslation : public sqlrservermodule {
 	public:
 		/** Creates an instance of sqlrresultsetrowtranslation,
  		 *  configured with parameters "parameters".
@@ -6926,30 +6813,11 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowtranslation {
  		 *  if run() was never called. */
 		virtual const char	*getError();
 
-		/** Called by the sqlrservercontroller at the end of a
-		 *  transaction.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endTransaction(bool commit);
-
-		/** Called by the sqlrservercontroller at the end of a client
-		 *  session.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endSession();
-
-	protected:
-
-		/** Returns the top-level domnode of the parameters passed in
-		 *  as "parameters" to the constructor. */
-		domnode	*getParameters();
-
 	#include <sqlrelay/private/sqlrresultsetrowtranslation.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslation {
+class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslation :
+						public sqlrservermodule {
 	public:
 		/** Creates an instance of sqlrresultsetrowblocktranslation,
  		 *  configured with parameters "parameters".
@@ -7062,30 +6930,11 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslation {
 		 *  succeeded or if run() was never called. */
 		virtual const char	*getError();
 
-		/** Called by the sqlrservercontroller at the end of a
-		 *  transaction.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endTransaction(bool commit);
-
-		/** Called by the sqlrservercontroller at the end of a client
-		 *  session.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endSession();
-
-	protected:
-
-		/** Returns the top-level domnode of the parameters passed in
-		 *  as "parameters" to the constructor. */
-		domnode	*getParameters();
-
 	#include <sqlrelay/private/sqlrresultsetrowblocktranslation.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrresultsetheadertranslation {
+class SQLRSERVER_DLLSPEC sqlrresultsetheadertranslation :
+						public sqlrservermodule {
 	public:
 		/** Creates an instance of sqlrresultsetheadertranslation,
  		 *  configured with parameters "parameters".
@@ -7208,30 +7057,10 @@ class SQLRSERVER_DLLSPEC sqlrresultsetheadertranslation {
 		 *  if run() was never called. */
 		virtual const char	*getError();
 
-		/** Called by the sqlrservercontroller at the end of a
-		 *  transaction.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endTransaction(bool commit);
-
-		/** Called by the sqlrservercontroller at the end of a client
-		 *  session.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endSession();
-
-	protected:
-
-		/** Returns the top-level domnode of the parameters passed in
-		 *  as "parameters" to the constructor. */
-		domnode	*getParameters();
-
 	#include <sqlrelay/private/sqlrresultsetheadertranslation.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrerrortranslation {
+class SQLRSERVER_DLLSPEC sqlrerrortranslation : public sqlrservermodule {
 	public:
 		/** Creates an instance of sqlrerrortranslation,
  		 *  configured with parameters "parameters".
@@ -7268,30 +7097,10 @@ class SQLRSERVER_DLLSPEC sqlrerrortranslation {
 		 *  if run() was never called. */
 		virtual const char	*getError();
 
-		/** Called by the sqlrservercontroller at the end of a
-		 *  transaction.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endTransaction(bool commit);
-
-		/** Called by the sqlrservercontroller at the end of a client
-		 *  session.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endSession();
-
-	protected:
-
-		/** Returns the top-level domnode of the parameters passed in
-		 *  as "parameters" to the constructor. */
-		domnode	*getParameters();
-
 	#include <sqlrelay/private/sqlrerrortranslation.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrtrigger {
+class SQLRSERVER_DLLSPEC sqlrtrigger : public sqlrservermodule {
 	public:
 		/** Creates an instance of sqlrtrigger, configured with
 		 *  parameters "parameters".
@@ -7324,30 +7133,10 @@ class SQLRSERVER_DLLSPEC sqlrtrigger {
 		virtual bool	runAfter(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur);
 
-		/** Called by the sqlrservercontroller at the end of a
-		 *  transaction.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endTransaction(bool commit);
-
-		/** Called by the sqlrservercontroller at the end of a client
-		 *  session.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endSession();
-
-	protected:
-
-		/** Returns the top-level domnode of the parameters passed in
-		 *  as "parameters" to the constructor. */
-		domnode	*getParameters();
-
 	#include <sqlrelay/private/sqlrtrigger.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrquery {
+class SQLRSERVER_DLLSPEC sqlrquery : public sqlrservermodule {
 	public:
 		/** Creates an instance of sqlrquery, configured with
 		 *  parameters "parameters".
@@ -7379,26 +7168,6 @@ class SQLRSERVER_DLLSPEC sqlrquery {
 		virtual sqlrquerycursor	*newCursor(	
 						sqlrserverconnection *sqlrcon,
 						uint16_t id);
-
-		/** Called by the sqlrservercontroller at the end of a
-		 *  transaction.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endTransaction(bool commit);
-
-		/** Called by the sqlrservercontroller at the end of a client
-		 *  session.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endSession();
-
-	protected:
-
-		/** Returns the top-level domnode of the parameters passed in
-		 *  as "parameters" to the constructor. */
-		domnode	*getParameters();
 
 	#include <sqlrelay/private/sqlrquery.h>
 };
@@ -7440,7 +7209,7 @@ class SQLRSERVER_DLLSPEC sqlrquerycursor : public sqlrservercursor {
 	#include <sqlrelay/private/sqlrquerycursor.h>
 };
 
-class SQLRSERVER_DLLSPEC sqlrmoduledata {
+class SQLRSERVER_DLLSPEC sqlrmoduledata : public sqlrservermodule {
 	public:
 		/** Creates an instance of sqlrmoduledata, configured with
 		 *  parameters "parameters".
@@ -7471,26 +7240,6 @@ class SQLRSERVER_DLLSPEC sqlrmoduledata {
 		 *  This implementation just returns, but may be overridden by
 		 *  a child class to do additional things at transaction-end. */
 		virtual void	closeResultSet(sqlrservercursor *sqlrcur);
-
-		/** Called by the sqlrservercontroller at the end of a
-		 *  transaction.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endTransaction(bool commit);
-
-		/** Called by the sqlrservercontroller at the end of a client
-		 *  session.
-		 *
-		 *  This implementation just returns, but may be overridden by
-		 *  a child class to do additional things at transaction-end. */
-		virtual void	endSession();
-
-	protected:
-
-		/** Returns the top-level domnode of the parameters passed in
-		 *  as "parameters" to the constructor. */
-		domnode	*getParameters();
 
 	#include <sqlrelay/private/sqlrmoduledata.h>
 };

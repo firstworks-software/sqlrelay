@@ -6,14 +6,13 @@
 class sqlrresultsetheadertranslationprivate {
 	friend class sqlrresultsetheadertranslation;
 	private:
-		domnode	*_parameters;
 };
 
 sqlrresultsetheadertranslation::sqlrresultsetheadertranslation(
 				sqlrservercontroller *cont,
-				domnode *parameters) {
+				domnode *parameters) :
+				sqlrservermodule(cont,parameters) {
 	pvt=new sqlrresultsetheadertranslationprivate;
-	pvt->_parameters=parameters;
 }
 
 sqlrresultsetheadertranslation::~sqlrresultsetheadertranslation() {
@@ -46,14 +45,4 @@ bool sqlrresultsetheadertranslation::run(sqlrserverconnection *sqlrcon,
 
 const char *sqlrresultsetheadertranslation::getError() {
 	return NULL;
-}
-
-domnode *sqlrresultsetheadertranslation::getParameters() {
-	return pvt->_parameters;
-}
-
-void sqlrresultsetheadertranslation::endTransaction(bool commit) {
-}
-
-void sqlrresultsetheadertranslation::endSession() {
 }

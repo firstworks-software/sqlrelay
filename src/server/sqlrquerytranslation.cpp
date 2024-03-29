@@ -6,13 +6,13 @@
 class sqlrquerytranslationprivate {
 	friend class sqlrquerytranslation;
 	private:
-		domnode			*_parameters;
 };
 
-sqlrquerytranslation::sqlrquerytranslation(sqlrservercontroller *cont,
-					domnode *parameters) {
+sqlrquerytranslation::sqlrquerytranslation(
+				sqlrservercontroller *cont,
+				domnode *parameters) :
+				sqlrservermodule(cont,parameters) {
 	pvt=new sqlrquerytranslationprivate;
-	pvt->_parameters=parameters;
 }
 
 sqlrquerytranslation::~sqlrquerytranslation() {
@@ -39,14 +39,4 @@ bool sqlrquerytranslation::run(sqlrserverconnection *sqlrcon,
 
 const char *sqlrquerytranslation::getError() {
 	return NULL;
-}
-
-domnode *sqlrquerytranslation::getParameters() {
-	return pvt->_parameters;
-}
-
-void sqlrquerytranslation::endTransaction(bool commit) {
-}
-
-void sqlrquerytranslation::endSession() {
 }

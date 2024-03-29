@@ -103,7 +103,7 @@ class sqlrlistenerprivate {
 static signalhandler		alarmhandler;
 static volatile sig_atomic_t	alarmrang=0;
 
-sqlrlistener::sqlrlistener() {
+sqlrlistener::sqlrlistener() : sqlrserverbase() {
 
 	pvt=new sqlrlistenerprivate;
 

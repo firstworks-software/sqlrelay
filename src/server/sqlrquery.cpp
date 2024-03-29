@@ -7,13 +7,12 @@
 class sqlrqueryprivate {
 	friend class sqlrquery;
 	private:
-		domnode	*_parameters;
 };
 
 sqlrquery::sqlrquery(sqlrservercontroller *cont,
-				domnode *parameters) {
+				domnode *parameters) :
+				sqlrservermodule(cont,parameters) {
 	pvt=new sqlrqueryprivate;
-	pvt->_parameters=parameters;
 }
 
 sqlrquery::~sqlrquery() {
@@ -28,28 +27,18 @@ sqlrquerycursor *sqlrquery::newCursor(sqlrserverconnection *conn, uint16_t id) {
 	return NULL;
 }
 
-domnode *sqlrquery::getParameters() {
-	return pvt->_parameters;
-}
-
-void sqlrquery::endTransaction(bool commit) {
-}
-
-void sqlrquery::endSession() {
-}
-
 class sqlrquerycursorprivate {
 	friend class sqlrquerycursor;
 	private:
 		sqlrquery	*_q;
-		domnode	*_parameters;
+		domnode		*_parameters;
 };
 
 sqlrquerycursor::sqlrquerycursor(sqlrserverconnection *conn,
 					sqlrquery *q,
 					domnode *parameters,
 					uint16_t id) :
-						sqlrservercursor(conn,id) {
+					sqlrservercursor(conn,id) {
 	pvt=new sqlrquerycursorprivate;
 	pvt->_q=q;
 	pvt->_parameters=parameters;

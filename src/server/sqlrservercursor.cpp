@@ -117,7 +117,8 @@ class sqlrservercursorprivate {
 		bool		_querysuppressed;
 };
 
-sqlrservercursor::sqlrservercursor(sqlrserverconnection *conn, uint16_t id) {
+sqlrservercursor::sqlrservercursor(sqlrserverconnection *conn, uint16_t id) :
+							sqlrserverbase() {
 
 	pvt=new sqlrservercursorprivate;
 

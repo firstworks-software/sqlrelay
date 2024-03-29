@@ -327,7 +327,7 @@ class sqlrservercontrollerprivate {
 static signalhandler		alarmhandler;
 static volatile sig_atomic_t	alarmrang=0;
 
-sqlrservercontroller::sqlrservercontroller() {
+sqlrservercontroller::sqlrservercontroller() : sqlrserverbase() {
 
 	pvt=new sqlrservercontrollerprivate;
 

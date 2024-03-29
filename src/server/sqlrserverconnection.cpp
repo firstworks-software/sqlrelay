@@ -33,7 +33,8 @@ class sqlrserverconnectionprivate {
 		stringbuffer	_tablelistquery;
 };
 
-sqlrserverconnection::sqlrserverconnection(sqlrservercontroller *cont) {
+sqlrserverconnection::sqlrserverconnection(sqlrservercontroller *cont) :
+							sqlrserverbase() {
 
 	pvt=new sqlrserverconnectionprivate;
 

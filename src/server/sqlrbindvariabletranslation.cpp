@@ -5,15 +5,13 @@
 
 class sqlrbindvariabletranslationprivate {
 	friend class sqlrbindvariabletranslation;
-	private:
-		domnode	*_parameters;
 };
 
 sqlrbindvariabletranslation::sqlrbindvariabletranslation(
 				sqlrservercontroller *cont,
-				domnode *parameters) {
+				domnode *parameters) :
+				sqlrservermodule(cont,parameters) {
 	pvt=new sqlrbindvariabletranslationprivate;
-	pvt->_parameters=parameters;
 }
 
 sqlrbindvariabletranslation::~sqlrbindvariabletranslation() {
@@ -27,14 +25,4 @@ bool sqlrbindvariabletranslation::run(sqlrserverconnection *sqlrcon,
 
 const char *sqlrbindvariabletranslation::getError() {
 	return NULL;
-}
-
-domnode *sqlrbindvariabletranslation::getParameters() {
-	return pvt->_parameters;
-}
-
-void sqlrbindvariabletranslation::endTransaction(bool commit) {
-}
-
-void sqlrbindvariabletranslation::endSession() {
 }
