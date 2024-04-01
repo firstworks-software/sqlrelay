@@ -1767,11 +1767,9 @@ bool sqlrprotocol_mysql::parseHandshakeResponse320(
 	response=charstring::duplicate((const char *)rp);
 	responsesize=charstring::getLength(response);
 	rp+=charstring::getLength(response)+1;
-	if (getDebug()) {
-		stringbuffer	b;
-		b.safePrint(response);
-		debugWrite("challenge response: \"%s\"",b.getString());
-	}
+
+	debugWrite("challenge response: \"%s\"",response);
+
 
 	// database
 	delete[] database;
@@ -1957,12 +1955,10 @@ bool sqlrprotocol_mysql::sendAuthSwitchRequest() {
 
 	resetSendPacketBuffer();
 
-	if (getDebug()) {
-		debugStart("auth switch request");
-		debugWrite("auth plugin name: \"%s\"",serverauthpluginname);
-		debugWrite("challenge: \"%s\"",challenge);
-		debugEnd();
-	}
+	debugStart("auth switch request");
+	debugWrite("auth plugin name: \"%s\"",serverauthpluginname);
+	debugWrite("challenge: \"%s\"",challenge);
+	debugEnd();
 
 	write(&resppacket,(char)0xFE);
 	write(&resppacket,serverauthpluginname,
@@ -2657,10 +2653,9 @@ bool sqlrprotocol_mysql::getRequest(char *request) {
 
 bool sqlrprotocol_mysql::comSleep() {
 	// internal server command
-	if (getDebug()) {
-		debugStart("com_sleep");
-		debugEnd();
-	}
+	debugStart("com_sleep");
+	debugWrite("...");
+	debugEnd();
 	return sendNotImplementedError();
 }
 
@@ -2672,11 +2667,9 @@ bool sqlrprotocol_mysql::comInitDb() {
 	uint64_t	rpsize=reqpacketsize;
 	char		*schemaname=charstring::duplicate(rp+1,rpsize-1);
 
-	if (getDebug()) {
-		debugStart("com_init_db");
-		debugWrite("schemaname: \"%s\"",schemaname);
-		debugEnd();
-	}
+	debugStart("com_init_db");
+	debugWrite("schemaname: \"%s\"",schemaname);
+	debugEnd();
 
 	bool	retval=true;
 	if (!cont->selectDatabase(schemaname)) {
@@ -2689,17 +2682,18 @@ bool sqlrprotocol_mysql::comInitDb() {
 }
 
 bool sqlrprotocol_mysql::comStatistics() {
+
 	// returns a text representation of various statistics
 	const char	*statistics="Uptime: 0  Threads: 0  Questions: 0  "
 					"Slow queries: 0  Opens: 0  "
 					"Flush tables: 0  Open tables: 0  "
 					"Queries per second avg: 0";
 	// FIXME: implement this somehow
-	if (getDebug()) {
-		debugStart("com_statistics");
-		debugWrite("%s",statistics);
-		debugEnd();
-	}
+
+	debugStart("com_statistics");
+	debugWrite("%s",statistics);
+	debugEnd();
+
 	resetSendPacketBuffer();
 	write(&resppacket,statistics,charstring::getLength(statistics));
 	return sendPacket(true);
@@ -2707,28 +2701,24 @@ bool sqlrprotocol_mysql::comStatistics() {
 
 bool sqlrprotocol_mysql::comConnect() {
 	// internal server command
-	if (getDebug()) {
-		debugStart("com_connect");
-		debugEnd();
-	}
+	debugStart("com_connect");
+	debugWrite("...");
+	debugEnd();
 	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_mysql::comDebug() {
 	// asks the server to dump internal debug info to stdoutput
-	if (getDebug()) {
-		debugStart("com_debug");
-		debugEnd();
-	}
+	debugStart("com_debug");
+	debugWrite("...");
+	debugEnd();
 	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_mysql::comPing() {
 	// pings the server
-	if (getDebug()) {
-		debugStart("com_ping");
-		debugEnd();
-	}
+	debugStart("com_ping");
+	debugEnd();
 	if (!cont->ping()) {
 		return sendError();
 	}
@@ -2737,90 +2727,74 @@ bool sqlrprotocol_mysql::comPing() {
 
 bool sqlrprotocol_mysql::comTime() {
 	// internal server command
-	if (getDebug()) {
-		debugStart("com_time");
-		debugEnd();
-	}
+	debugStart("com_time");
+	debugWrite("...");
+	debugEnd();
 	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_mysql::comDelayedInsert() {
 	// internal server command
-	if (getDebug()) {
-		debugStart("com_delayed_insert");
-		debugEnd();
-	}
+	debugStart("com_delayed_insert");
+	debugWrite("...");
+	debugEnd();
 	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_mysql::comChangeUser() {
 	// switches from the current user to the specified user
-	if (getDebug()) {
-		debugStart("com_change_user");
-		debugWrite("...");
-		debugEnd();
-	}
+	debugStart("com_change_user");
+	debugWrite("...");
+	debugEnd();
 	// FIXME: implement this...
 	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_mysql::comBinLogDump() {
 	// part of replication protocol
-	if (getDebug()) {
-		debugStart("com_bin_log_dump");
-		debugWrite("...");
-		debugEnd();
-	}
+	debugStart("com_bin_log_dump");
+	debugWrite("...");
+	debugEnd();
 	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_mysql::comTableDump() {
 	// part of replication protocol
-	if (getDebug()) {
-		debugStart("com_table_dump");
-		debugWrite("...");
-		debugEnd();
-	}
+	debugStart("com_table_dump");
+	debugWrite("...");
+	debugEnd();
 	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_mysql::comConnectOut() {
 	// part of replication protocol
-	if (getDebug()) {
-		debugStart("com_connect_out");
-		debugWrite("...");
-		debugEnd();
-	}
+	debugStart("com_connect_out");
+	debugWrite("...");
+	debugEnd();
 	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_mysql::comRegisterSlave() {
 	// part of replication protocol
-	if (getDebug()) {
-		debugStart("com_register_slave");
-		debugWrite("...");
-		debugEnd();
-	}
+	debugStart("com_register_slave");
+	debugWrite("...");
+	debugEnd();
 	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_mysql::comDaemon() {
 	// internal server command
-	if (getDebug()) {
-		debugStart("com_daemon");
-		debugWrite("...");
-		debugEnd();
-	}
+	debugStart("com_daemon");
+	debugWrite("...");
+	debugEnd();
 	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_mysql::comBinlogDumpGtid() {
 	// part of replication protocol
-	if (getDebug()) {
-		debugStart("com_binlog_dump_gtid");
-		debugWrite("...");
-		debugEnd();
-	}
+	debugStart("com_binlog_dump_gtid");
+	debugWrite("...");
+	debugEnd();
 	return sendNotImplementedError();
 }
 
@@ -2829,11 +2803,9 @@ bool sqlrprotocol_mysql::comResetConnection() {
 	// resets the state of the current connection
 	// without logging out and logging back in
 
-	if (getDebug()) {
-		debugStart("com_reset_connection");
-		debugWrite("...");
-		debugEnd();
-	}
+	debugStart("com_reset_connection");
+	debugWrite("...");
+	debugEnd();
 
 	// FIXME: SQL Relay doesn't have a good analog for this.
 	if (true) {
@@ -2850,11 +2822,9 @@ bool sqlrprotocol_mysql::comCreateDb(sqlrservercursor *cursor) {
 	uint64_t	rpsize=reqpacketsize;
 	char		*schemaname=charstring::duplicate(rp+1,rpsize-1);
 
-	if (getDebug()) {
-		debugStart("com_create_db");
-		debugWrite("schemaname: \"%s\"",schemaname);
-		debugEnd();
-	}
+	debugStart("com_create_db");
+	debugWrite("schemaname: \"%s\"",schemaname);
+	debugEnd();
 
 	stringbuffer	query;
 	query.append("create database ")->append(schemaname);
@@ -2875,11 +2845,9 @@ bool sqlrprotocol_mysql::comDropDb(sqlrservercursor *cursor) {
 	uint64_t	rpsize=reqpacketsize;
 	char		*schemaname=charstring::duplicate(rp+1,rpsize-1);
 
-	if (getDebug()) {
-		debugStart("com_drop_db");
-		debugWrite("schemaname: \"%s\"",schemaname);
-		debugEnd();
-	}
+	debugStart("com_drop_db");
+	debugWrite("schemaname: \"%s\"",schemaname);
+	debugEnd();
 
 	stringbuffer	query;
 	query.append("drop database ")->append(schemaname);
@@ -3010,11 +2978,10 @@ bool sqlrprotocol_mysql::sendColumnDefinitions(sqlrservercursor *cursor,
 							bool binary) {
 
 	// column count
-	if (getDebug()) {
-		debugStart("column count");
-		debugWrite("count: %d",colcount);
-		debugEnd();
-	}
+	debugStart("column count");
+	debugWrite("count: %d",colcount);
+	debugEnd();
+
 	resetSendPacketBuffer();
 	writeLenEncInt(&resppacket,colcount);
 	if (!sendPacket()) {
@@ -3036,9 +3003,7 @@ bool sqlrprotocol_mysql::sendColumnDefinitions(sqlrservercursor *cursor,
 		}
 	} else {
 		clientsock->flushWriteBuffer(-1,-1);
-		if (getDebug()) {
-			debugWrite("col defs flush...");
-		}
+		debugWrite("col defs flush...");
 	}
 	return true;
 }
@@ -3115,25 +3080,21 @@ bool sqlrprotocol_mysql::sendColumnDefinition(sqlrservercursor *cursor,
 		}
 	}
 
-	if (getDebug()) {
-		stringbuffer	b;
-		b.append("column ")->append(column);
-		debugStart(b.getString());
-		debugWrite("catalog: %s",catalog);
-		debugWrite("schema: %s",schema);
-		debugWrite("table: %s",table);
-		debugWrite("org table: %s",orgtable);
-		debugWrite("name: %s",colname);
-		debugWrite("org name: %s",orgcolname);
-		debugCharacterSet(servercharacterset);
-		debugWrite("size: %ld",size);
-		debugColumnType(columntypestring,columntype);
-		debugColumnFlags(flags);
-		debugWrite("defaults: %s",defaults);
-		debugWrite("decimals: %d (0x%02x)",decimals,
+	debugStart("column %d",column);
+	debugWrite("catalog: %s",catalog);
+	debugWrite("schema: %s",schema);
+	debugWrite("table: %s",table);
+	debugWrite("org table: %s",orgtable);
+	debugWrite("name: %s",colname);
+	debugWrite("org name: %s",orgcolname);
+	debugCharacterSet(servercharacterset);
+	debugWrite("size: %ld",size);
+	debugColumnType(columntypestring,columntype);
+	debugColumnFlags(flags);
+	debugWrite("defaults: %s",defaults);
+	debugWrite("decimals: %d (0x%02x)",decimals,
 					(uint32_t)(0x000000ff&decimals));
-		debugEnd();
-	}
+	debugEnd();
 
 	resetSendPacketBuffer();
 
@@ -3441,40 +3402,28 @@ bool sqlrprotocol_mysql::buildBinaryRow(sqlrservercursor *cursor,
 	// send the fields
 	for (i=0; i<colcount; i++) {
 
-		if (getDebug()) {
-			stringbuffer	b;
-			b.append("col ")->append(i);
-			debugStart(b.getString());
-			debugColumnType(NULL,ct[i]);
-		}
+		debugStart("col %d",i);
+		debugColumnType(NULL,ct[i]);
 
 		// get the field (again)
 		fieldsize=0;
 		lob=false;
 		null=false;
 		if (!cont->getField(cursor,i,&field,&fieldsize,&lob,&null)) {
-			if (getDebug()) {
-				debugEnd();
-			}
+			debugEnd();
 			return false;
 		}
 
 		// send the field
 		if (lob) {
-			if (getDebug()) {
-				debugWrite("LOB");
-			}
+			debugWrite("LOB");
 			buildLobField(cursor,i);
 		} else if (!null) {
-			if (getDebug()) {
-				debugWrite("\"%s\" (%d)",field,fieldsize);
-			}
+			debugWrite("\"%s\" (%d)",field,fieldsize);
 			buildBinaryField(field,fieldsize,ct[i]);
 		}
 
-		if (getDebug()) {
-			debugEnd();
-		}
+		debugEnd();
 	}
 
 	return true;
@@ -3646,11 +3595,7 @@ bool sqlrprotocol_mysql::buildTextRow(sqlrservercursor *cursor,
 	// send the fields
 	for (uint32_t i=0; i<colcount; i++) {
 
-		if (getDebug()) {
-			stringbuffer	b;
-			b.append("col ")->append(i);
-			debugStart(b.getString());
-		}
+		debugStart("col %d",i);
 
 		// get the field
 		const char 	*field=NULL;
@@ -3658,33 +3603,23 @@ bool sqlrprotocol_mysql::buildTextRow(sqlrservercursor *cursor,
 		bool		lob=false;
 		bool		null=false;
 		if (!cont->getField(cursor,i,&field,&fieldsize,&lob,&null)) {
-			if (getDebug()) {
-				debugEnd();
-			}
+			debugEnd();
 			return false;
 		}
 
 		// send the field
 		if (null) {
-			if (getDebug()) {
-				debugWrite("NULL");
-			}
+			debugWrite("NULL");
 			write(&resppacket,(char)0xfb);
 		} else if (lob) {
-			if (getDebug()) {
-				debugWrite("LOB");
-			}
+			debugWrite("LOB");
 			buildLobField(cursor,i);
 		} else {
-			if (getDebug()) {
-				debugWrite("\"%s\" (%d)",field,fieldsize);
-			}
+			debugWrite("\"%s\" (%d)",field,fieldsize);
 			writeLenEncStr(&resppacket,field,fieldsize);
 		}
 
-		if (getDebug()) {
-			debugEnd();
-		}
+		debugEnd();
 	}
 
 	return true;
@@ -3704,9 +3639,7 @@ bool sqlrprotocol_mysql::buildTextRow(sqlrservercursor *cursor,
 		return;
 	}
 
-	if (getDebug()) {
-		debugWrite("lob length: %lld",loblength);
-	}
+	debugWrite("lob length: %lld",loblength);
 
 	// for lobs of 0 length
 	if (!loblength) {
@@ -3740,12 +3673,9 @@ bool sqlrprotocol_mysql::buildTextRow(sqlrservercursor *cursor,
 			}
 			cont->closeLobField(cursor,col);
 
-			if (getDebug()) {
-				debugWrite("chars sent: %lld",charssent);
-				debugWrite("bytes sent: %lld",
-					(uint64_t)(resppacket.getPosition()-
-								startbyte));
-			}
+			debugWrite("chars sent: %lld",charssent);
+			debugWrite("bytes sent: %lld",
+				(uint64_t)(resppacket.getPosition()-startbyte));
 			return;
 
 		} else {
@@ -3855,12 +3785,10 @@ bool sqlrprotocol_mysql::comFieldList(sqlrservercursor *cursor) {
 		table=charstring::duplicate(newtable);
 	}
 
-	if (getDebug()) {
-		debugStart("com_field_list");
-		debugWrite("table: \"%s\"",table);
-		debugWrite("wild: \"%s\"",wild);
-		debugEnd();
-	}
+	debugStart("com_field_list");
+	debugWrite("table: \"%s\"",table);
+	debugWrite("wild: \"%s\"",wild);
+	debugEnd();
 
 	// get the list
 	bool	success=true;
@@ -4193,11 +4121,9 @@ bool sqlrprotocol_mysql::comRefresh(sqlrservercursor *cursor) {
 
 	byte_t	command=*(reqpacket+1);
 
-	if (getDebug()) {
-		debugStart("com_refresh");
-		debugRefreshCommand(command);
-		debugEnd();
-	}
+	debugStart("com_refresh");
+	debugRefreshCommand(command);
+	debugEnd();
 
 	const char	*query=NULL;
 	if (command&REFRESH_GRANT) {
@@ -4229,11 +4155,9 @@ bool sqlrprotocol_mysql::comShutdown(sqlrservercursor *cursor) {
 
 	byte_t	command=*(reqpacket+1);
 
-	if (getDebug()) {
-		debugStart("com_shutdown");
-		debugShutdownCommand(command);
-		debugEnd();
-	}
+	debugStart("com_shutdown");
+	debugShutdownCommand(command);
+	debugEnd();
 
 	// Even though many shutdown commands are defined, Currently, mysql
 	// only supports a "shutdown" without any arguments, which implements
@@ -4243,10 +4167,8 @@ bool sqlrprotocol_mysql::comShutdown(sqlrservercursor *cursor) {
 
 bool sqlrprotocol_mysql::comProcessInfo(sqlrservercursor *cursor) {
 	// returns a list of active server threads
-	if (getDebug()) {
-		debugStart("com_process_info");
-		debugEnd();
-	}
+	debugStart("com_process_info");
+	debugEnd();
 	return sendQuery(cursor,"show processlist");
 }
 
@@ -4259,11 +4181,9 @@ bool sqlrprotocol_mysql::comProcessKill(sqlrservercursor *cursor) {
 	uint32_t	connid;
 	readLE(rp,&connid,&rp);
 
-	if (getDebug()) {
-		debugStart("com_process_kill");
-		debugWrite("connection id: %ld",connid);
-		debugEnd();
-	}
+	debugStart("com_process_kill");
+	debugWrite("connection id: %ld",connid);
+	debugEnd();
 
 	stringbuffer	query;
 	query.append("kill ")->append(connid);
@@ -4341,14 +4261,12 @@ bool sqlrprotocol_mysql::sendStmtPrepareOk(sqlrservercursor *cursor) {
 	// store the number of params
 	pcounts[cont->getId(cursor)]=pcount;
 
-	if (getDebug()) {
-		debugStart("stmt_prepare_ok");
-		debugWrite("statement id: %d",(uint32_t)cont->getId(cursor));
-		debugWrite("number of columns: %hd",ccount);
-		debugWrite("number of params: %hd",pcount);
-		debugWrite("warning count: %hd",warningcount);
-		debugEnd();
-	}
+	debugStart("stmt_prepare_ok");
+	debugWrite("statement id: %d",(uint32_t)cont->getId(cursor));
+	debugWrite("number of columns: %hd",ccount);
+	debugWrite("number of params: %hd",pcount);
+	debugWrite("warning count: %hd",warningcount);
+	debugEnd();
 
 	resetSendPacketBuffer();
 
@@ -4423,9 +4341,7 @@ bool sqlrprotocol_mysql::sendStmtPrepareOk(sqlrservercursor *cursor) {
 	// flush, if necessary
 	if (flush) {
 		clientsock->flushWriteBuffer(-1,-1);
-		if (getDebug()) {
-			debugWrite("stmt prep ok flush...");
-		}
+		debugWrite("stmt prep ok flush...");
 	}
 
 	return true;
@@ -4456,12 +4372,10 @@ bool sqlrprotocol_mysql::comStmtExecute() {
 	uint32_t	iterationcount;
 	readLE(rp,&iterationcount,&rp);
 
-	if (getDebug()) {
-		debugStart("com_stmt_execute");
-		debugWrite("statement id: %d",stmtid);
-		debugStmtExecuteFlags(flags);
-		debugWrite("iteration count: %d",iterationcount);
-	}
+	debugStart("com_stmt_execute");
+	debugWrite("statement id: %d",stmtid);
+	debugStmtExecuteFlags(flags);
+	debugWrite("iteration count: %d",iterationcount);
 	
 	// get the parameters
 	uint16_t	pcount=pcounts[cont->getId(cursor)];
@@ -4527,9 +4441,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 
 	const byte_t	*rp=in;
 
-	if (getDebug()) {
-		debugStart("bind");
-	}
+	debugStart("bind");
 
 	memorypool		*bindpool=cont->getBindPool(cursor);
 	sqlrserverbindvar	*inbinds=cont->getInputBinds(cursor);
@@ -4551,15 +4463,11 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 		if (nullbitmapindex&nullbitmapmask) {
 			bv->type=SQLRSERVERBINDVARTYPE_NULL;
 			bv->isnull=cont->getNullBindValue();
-			if (getDebug()) {
-				stringbuffer	b;
-				b.append(i);
-				debugStart(b.getString());
-				debugWrite("variable: %s",bv->variable);
-				debugWrite("type: NULL");
-				debugWrite("isnull: true");
-				debugEnd();
-			}
+			debugStart("%d",i);
+			debugWrite("variable: %s",bv->variable);
+			debugWrite("type: NULL");
+			debugWrite("isnull: true");
+			debugEnd();
 			continue;
 		}
 
@@ -4817,36 +4725,30 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 				break;
 		}
 
-		if (getDebug()) {
-			stringbuffer	b;
-			b.append(i);
-			debugStart(b.getString());
-			debugWrite("variable: %s",bv->variable);
-			if (bv->type==SQLRSERVERBINDVARTYPE_STRING) {
-				debugWrite("type: STRING");
-				debugWrite("value: %s",bv->value.stringval);
-			} else if (bv->type==SQLRSERVERBINDVARTYPE_INTEGER) {
-				debugWrite("type: INTEGER");
-				debugWrite("value: %lld",bv->value.integerval);
-			} else if (bv->type==SQLRSERVERBINDVARTYPE_DOUBLE) {
-				debugWrite("type: DOUBLE");
-				debugWrite("value: %f (%d,%d)",
-						bv->value.doubleval.value,
-						bv->value.doubleval.precision,
-						bv->value.doubleval.scale);
-			} else if (bv->type==SQLRSERVERBINDVARTYPE_DATE) {
-				debugWrite("type: DATE");
-				debugWrite("value: ... coming soon...");
-			}
-			debugWrite("value size: %d",bv->valuesize);
-			debugWrite("isnull: false");
-			debugEnd();
+		debugStart("%d",i);
+		debugWrite("variable: %s",bv->variable);
+		if (bv->type==SQLRSERVERBINDVARTYPE_STRING) {
+			debugWrite("type: STRING");
+			debugWrite("value: %s",bv->value.stringval);
+		} else if (bv->type==SQLRSERVERBINDVARTYPE_INTEGER) {
+			debugWrite("type: INTEGER");
+			debugWrite("value: %lld",bv->value.integerval);
+		} else if (bv->type==SQLRSERVERBINDVARTYPE_DOUBLE) {
+			debugWrite("type: DOUBLE");
+			debugWrite("value: %f (%d,%d)",
+					bv->value.doubleval.value,
+					bv->value.doubleval.precision,
+					bv->value.doubleval.scale);
+		} else if (bv->type==SQLRSERVERBINDVARTYPE_DATE) {
+			debugWrite("type: DATE");
+			debugWrite("value: ... coming soon...");
 		}
-	}
-
-	if (getDebug()) {
+		debugWrite("value size: %d",bv->valuesize);
+		debugWrite("isnull: false");
 		debugEnd();
 	}
+
+	debugEnd();
 
 	*out=rp;
 }
@@ -4879,14 +4781,12 @@ bool sqlrprotocol_mysql::comStmtSendLongData() {
 	const byte_t	*data=rp;
 	uint64_t	datasize=rpsize;
 
-	if (getDebug()) {
-		debugStart("com_stmt_long_data");
-		debugWrite("statement id: %d",stmtid);
-		debugWrite("parameter id: %d",paramid);
-		debugWrite("data size: %lld",datasize);
-		debugHexDump(data,datasize);
-		debugEnd();
-	}
+	debugStart("com_stmt_long_data");
+	debugWrite("statement id: %d",stmtid);
+	debugWrite("parameter id: %d",paramid);
+	debugWrite("data size: %lld",datasize);
+	debugHexDump(data,datasize);
+	debugEnd();
 
 	// get the requested cursor
 	sqlrservercursor	*cursor=cont->getCursor(stmtid);
@@ -4919,11 +4819,9 @@ bool sqlrprotocol_mysql::comStmtClose() {
 	uint32_t	stmtid;
 	readLE(rp,&stmtid,&rp);
 
-	if (getDebug()) {
-		debugStart("com_stmt_close");
-		debugWrite("statement id: %d",stmtid);
-		debugEnd();
-	}
+	debugStart("com_stmt_close");
+	debugWrite("statement id: %d",stmtid);
+	debugEnd();
 
 	// get the requested cursor
 	sqlrservercursor	*cursor=cont->getCursor(stmtid);
@@ -4951,11 +4849,9 @@ bool sqlrprotocol_mysql::comStmtReset() {
 	uint32_t	stmtid;
 	readLE(rp,&stmtid,&rp);
 
-	if (getDebug()) {
-		debugStart("com_stmt_reset");
-		debugWrite("statement id: %d",stmtid);
-		debugEnd();
-	}
+	debugStart("com_stmt_reset");
+	debugWrite("statement id: %d",stmtid);
+	debugEnd();
 
 	// get the requested cursor
 	sqlrservercursor	*cursor=cont->getCursor(stmtid);
@@ -4981,11 +4877,9 @@ bool sqlrprotocol_mysql::comSetOption(sqlrservercursor *cursor) {
 	uint16_t	multistmtoption;
 	readLE(rp,&multistmtoption,&rp);
 
-	if (getDebug()) {
-		debugStart("com_set_option");
-		debugMultiStatementOption(multistmtoption);
-		debugEnd();
-	}
+	debugStart("com_set_option");
+	debugMultiStatementOption(multistmtoption);
+	debugEnd();
 
 	// FIXME: SQL Relay doesn't have a good analog for this.
 	if (true) {
@@ -5009,12 +4903,10 @@ bool sqlrprotocol_mysql::comStmtFetch() {
 	uint32_t	numrows;
 	readLE(rp,&numrows,&rp);
 
-	if (getDebug()) {
-		debugStart("com_stmt_fetch");
-		debugWrite("statement id: %d",stmtid);
-		debugWrite("number of rows: %d",numrows);
-		debugEnd();
-	}
+	debugStart("com_stmt_fetch");
+	debugWrite("statement id: %d",stmtid);
+	debugWrite("number of rows: %d",numrows);
+	debugEnd();
 
 	// get the requested cursor
 	sqlrservercursor	*cursor=cont->getCursor(stmtid);

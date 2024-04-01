@@ -35,7 +35,7 @@ bool sqlrserverbase::getDebug() {
 	return pvt->_debug;
 }
 
-void sqlrserverbase::debugStart(const char *title) {
+void sqlrserverbase::debugStart(const char *title, ...) {
 	if (!pvt->_debug) {
 		return;
 	}
@@ -44,7 +44,10 @@ void sqlrserverbase::debugStart(const char *title) {
 		pvt->_logbuffer.append(process::getProcessId());
 		pvt->_logbuffer.append(": ");
 	}
-	pvt->_logbuffer.append(title);
+	va_list	argp;
+	va_start(argp,title);
+	pvt->_logbuffer.printf(title,&argp);
+	va_end(argp);
 	pvt->_lg.start(1,NULL,pvt->_indent,pvt->_logbuffer.getString());
 	pvt->_indent++;
 }

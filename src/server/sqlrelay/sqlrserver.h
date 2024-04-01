@@ -149,8 +149,9 @@ class SQLRSERVER_DLLSPEC sqlrserverbase {
 		 *  setDebug() was never called. */
 		bool	getDebug();
 
-		/** Starts a section of debug. */
-		void	debugStart(const char *title);
+		/** Starts a section of debug, writing "..." formatted using
+		 *  "title". */
+		void	debugStart(const char *title, ...);
 
 		/** Writes "..." formatted using "string" as a single line of
 		 *  debug. */
