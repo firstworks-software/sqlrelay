@@ -149,28 +149,18 @@ class SQLRSERVER_DLLSPEC sqlrserverbase {
 		 *  setDebug() was never called. */
 		bool	getDebug();
 
-		/** Begins a new section of debug. */
+		/** Starts a section of debug. */
 		void	debugStart(const char *title);
 
-		/** Begins a new section of debug,
-		 *  indented by "indent" tabs. */
-		void	debugStart(const char *title, uint16_t indent);
+		/** Writes "..." formatted using "string" as a single line of
+		 *  debug. */
+		void	debugWrite(const char *string, ...);
 
 		/** Dumps "size" bytes of "data" as hex. */
-		void	debugHexDump(const byte_t *data,
-						uint64_t size);
-
-		/** Dumps "size" bytes of "data" as hex,
-		 *  indented by "indent" tabs. */
-		void	debugHexDump(const byte_t *data,
-						uint64_t size,
-						uint16_t indent);
+		void	debugHexDump(const byte_t *data, uint64_t size);
 
 		/** Ends a section of debug. */
 		void	debugEnd();
-
-		/** Ends a section of debug, indented by "indent" tabs. */
-		void	debugEnd(uint16_t indent);
 
 	#include <sqlrelay/private/sqlrserverbase.h>
 };

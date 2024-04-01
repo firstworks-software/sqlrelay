@@ -642,9 +642,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_mysql : public sqlrprotocol {
 		void	debugCapabilityFlags(uint32_t capabilityflags);
 		void	debugCharacterSet(byte_t characterset);
 		void	debugStatusFlags(uint16_t statusflags);
-		void	debugColumnType(const char *name,
-					byte_t columntype);
-		void	debugColumnType(byte_t columntype);
+		void	debugColumnType(const char *name, byte_t columntype);
 		void	debugColumnFlags(uint16_t statusflags);
 		void	debugSystemError();
 		void	debugRefreshCommand(byte_t command);
@@ -919,38 +917,36 @@ sqlrprotocol_mysql::sqlrprotocol_mysql(sqlrservercontroller *cont,
 			parameters->getAttributeValue(
 				"oldmariadbjdbcservercapabilitieshack"));
 
-	if (getDebug()) {
-		debugStart("parameters");
-		stdoutput.printf("	handshake: %d\n",handshake);
-		stdoutput.printf("	clientprotocol: %d\n",clientprotocol);
-		stdoutput.printf("	datetodatetime: %d\n",datetodatetime);
-		stdoutput.printf("	zeroscaledecimaltobigint"
-				": %d\n",zeroscaledecimaltobigint);
-		stdoutput.printf("	oldmariadbjdbcservercapabilitieshack"
-				": %d\n",oldmariadbjdbcservercapabilitieshack);
-		if (useTls()) {
-			stdoutput.printf("	tls: yes\n");
-			stdoutput.printf("	tls version: %s\n",
-				getTlsContext()->getProtocolVersion());
-			stdoutput.printf("	tls cert: %s\n",
-				getTlsContext()->getCertificateChainFile());
-			stdoutput.printf("	tls key: %s\n",
-				getTlsContext()->getPrivateKeyFile());
-			stdoutput.printf("	tls password: %s\n",
-				getTlsContext()->getPrivateKeyPassword());
-			stdoutput.printf("	tls validate: %d\n",
-				getTlsContext()->getValidatePeer());
-			stdoutput.printf("	tls ca: %s\n",
-				getTlsContext()->getCertificateAuthority());
-			stdoutput.printf("	tls ciphers: %s\n",
-				getTlsContext()->getCiphers());
-			stdoutput.printf("	tls depth: %d\n",
-				getTlsContext()->getValidationDepth());
-		} else {
-			stdoutput.printf("	tls: no\n");
-		}
-		debugEnd();
+	debugStart("parameters");
+	debugWrite("handshake: %d",handshake);
+	debugWrite("clientprotocol: %d",clientprotocol);
+	debugWrite("datetodatetime: %d",datetodatetime);
+	debugWrite("zeroscaledecimaltobigint: %d",
+				zeroscaledecimaltobigint);
+	debugWrite("oldmariadbjdbcservercapabilitieshack: %d",
+				oldmariadbjdbcservercapabilitieshack);
+	if (useTls()) {
+		debugWrite("tls: yes");
+		debugWrite("tls version: %s",
+			getTlsContext()->getProtocolVersion());
+		debugWrite("tls cert: %s",
+			getTlsContext()->getCertificateChainFile());
+		debugWrite("tls key: %s",
+			getTlsContext()->getPrivateKeyFile());
+		debugWrite("tls password: %s",
+			getTlsContext()->getPrivateKeyPassword());
+		debugWrite("tls validate: %d",
+			getTlsContext()->getValidatePeer());
+		debugWrite("tls ca: %s",
+			getTlsContext()->getCertificateAuthority());
+		debugWrite("tls ciphers: %s",
+			getTlsContext()->getCiphers());
+		debugWrite("tls depth: %d",
+			getTlsContext()->getValidationDepth());
+	} else {
+		debugWrite("tls: no");
 	}
+	debugEnd();
 
 	r.setSeed(randomnumber::getSeed());
 
@@ -1276,8 +1272,8 @@ bool sqlrprotocol_mysql::sendPacket(bool flush) {
 		temp.append(seq);
 		temp.append(resppacket.getBuffer(),resppacket.getSize());
 		debugStart("send");
-		stdoutput.printf("	size: %d\n",beToHost(size));
-		stdoutput.printf("	seq:  %d\n",seq);
+		debugWrite("size: %d",beToHost(size));
+		debugWrite("seq: %d",seq);
 		debugHexDump(temp.getBuffer(),temp.getSize());
 		debugEnd();
 	}
@@ -1286,22 +1282,16 @@ bool sqlrprotocol_mysql::sendPacket(bool flush) {
 	if (clientsock->write(resppacket.getBuffer(),
 				resppacket.getSize())!=
 				(ssize_t)resppacket.getSize()) {
-		if (getDebug()) {
-			stdoutput.write("write packet data failed\n");
-			debugSystemError();
-		}
+		debugWrite("write packet data failed");
+		debugSystemError();
 		return false;
 	}
 
 	if (flush) {
 		clientsock->flushWriteBuffer(-1,-1);
-		if (getDebug()) {
-			stdoutput.write("send packet flush...\n");
-		}
+		debugWrite("send packet flush...");
 	} else {
-		if (getDebug()) {
-			stdoutput.write("no flush...\n");
-		}
+		debugWrite("no flush...");
 	}
 
 	// bump seq
@@ -1320,10 +1310,8 @@ bool sqlrprotocol_mysql::recvPacket() {
 	if (clientsock->read(&sizebytes[3])!=sizeof(byte_t) ||
 		clientsock->read(&sizebytes[2])!=sizeof(byte_t) ||
 		clientsock->read(&sizebytes[1])!=sizeof(byte_t)) {
-		if (getDebug()) {
-			stdoutput.write("read packet size failed\n");
-			debugSystemError();
-		}
+		debugWrite("read packet size failed");
+		debugSystemError();
 		return false;
 	}
 	reqpacketsize=beToHost(size);
@@ -1331,10 +1319,8 @@ bool sqlrprotocol_mysql::recvPacket() {
 	// sequence
 	// 1 byte
 	if (clientsock->read(&seq)!=sizeof(byte_t)) {
-		if (getDebug()) {
-			stdoutput.write("read packet sequence failed\n");
-			debugSystemError();
-		}
+		debugWrite("read packet sequence failed");
+		debugSystemError();
 		return false;
 	}
 
@@ -1343,17 +1329,15 @@ bool sqlrprotocol_mysql::recvPacket() {
 
 	// packet
 	if (clientsock->read(reqpacket,reqpacketsize)!=(ssize_t)reqpacketsize) {
-		if (getDebug()) {
-			stdoutput.write("read packet failed\n");
-			debugSystemError();
-		}
+		debugWrite("read packet failed");
+		debugSystemError();
 		return false;
 	}
 
 	if (getDebug()) {
 		debugStart("recv");
-		stdoutput.printf("	size: %d\n",reqpacketsize);
-		stdoutput.printf("	seq:  %d\n",seq);
+		debugWrite("size: %d",reqpacketsize);
+		debugWrite("seq: %d",seq);
 		bytebuffer	temp;
 		temp.append(sizebytes[3]);
 		temp.append(sizebytes[2]);
@@ -1465,23 +1449,20 @@ void sqlrprotocol_mysql::buildHandshake10() {
 	char		reserved[10]={0,0,0,0,0,0,0,0,0,0};
 
 	// debug
-	if (getDebug()) {
-		debugStart("handshake 10");
-		stdoutput.printf("	protocol version: 0x%02x\n",
-					(uint32_t)(0x000000ff&protocolversion));
-		stdoutput.printf("	server version: \"%s\"\n",
-							serverversion);
-		stdoutput.printf("	connectionid: %ld\n",connectionid);
-		stdoutput.printf("	challenge: \"%s\"\n",challenge);
-		debugCapabilityFlags(servercapabilityflags);
-		debugCharacterSet(servercharacterset);
-		debugStatusFlags(statusflags);
-		if (servercapabilityflags&CLIENT_PLUGIN_AUTH) {
-			stdoutput.printf("	auth plugin name: \"%s\"\n",
-							serverauthpluginname);
-		}
-		debugEnd();
+	debugStart("handshake 10");
+	debugWrite("protocol version: 0x%02x",
+				(uint32_t)(0x000000ff&protocolversion));
+	debugWrite("server version: \"%s\"",serverversion);
+	debugWrite("connectionid: %ld",connectionid);
+	debugWrite("challenge: \"%s\"",challenge);
+	debugCapabilityFlags(servercapabilityflags);
+	debugCharacterSet(servercharacterset);
+	debugStatusFlags(statusflags);
+	if (servercapabilityflags&CLIENT_PLUGIN_AUTH) {
+		debugWrite("auth plugin name: \"%s\"",
+					serverauthpluginname);
 	}
+	debugEnd();
 
 	// split up status flags
 	uint16_t	lowservercapabilityflags=
@@ -1533,17 +1514,14 @@ void sqlrprotocol_mysql::buildHandshake9() {
 	generateChallenge();
 
 	// debug
-	if (getDebug()) {
-		debugStart("handshake 9");
-		stdoutput.printf("	protocol version: 0x%02x\n",
-					(uint32_t)(0x000000ff&protocolversion));
-		stdoutput.printf("	server version: \"%s\"\n",
-							serverversion);
-		stdoutput.printf("	connectionid: %ld\n",connectionid);
-		stdoutput.printf("	scramble: \"%s\"\n",challenge);
-		debugCapabilityFlags(servercapabilityflags);
-		debugEnd();
-	}
+	debugStart("handshake 9");
+	debugWrite("protocol version: 0x%02x",
+			(uint32_t)(0x000000ff&protocolversion));
+	debugWrite("server version: \"%s\"",serverversion);
+	debugWrite("connectionid: %ld",connectionid);
+	debugWrite("scramble: \"%s\"",challenge);
+	debugCapabilityFlags(servercapabilityflags);
+	debugEnd();
 
 	// convert some values to little endian
 	servercapabilityflags=hostToLE(servercapabilityflags);
@@ -1583,23 +1561,17 @@ bool sqlrprotocol_mysql::parseHandshakeResponse41(
 
 	// capability flags
 	readLE(rp,&clientcapabilityflags,&rp);
-	if (getDebug()) {
-		debugCapabilityFlags(clientcapabilityflags);
-	}
+	debugCapabilityFlags(clientcapabilityflags);
 
 	// max-packet size
 	uint32_t	maxpacketsize;
 	readLE(rp,&maxpacketsize,&rp);
-	if (getDebug()) {
-		stdoutput.printf("	max-packet size: %d\n",maxpacketsize);
-	}
+	debugWrite("max-packet size: %d",maxpacketsize);
 
 	// character set
 	clientcharacterset=*rp;
 	rp++;
-	if (getDebug()) {
-		debugCharacterSet(clientcharacterset);
-	}
+	debugCharacterSet(clientcharacterset);
 
 	// reserved
 	rp+=23;
@@ -1627,9 +1599,7 @@ bool sqlrprotocol_mysql::parseHandshakeResponse41(
 	delete[] username;
 	username=charstring::duplicate((const char *)rp);
 	rp+=charstring::getLength(username)+1;
-	if (getDebug()) {
-		stdoutput.printf("	username: \"%s\"\n",username);
-	}
+	debugWrite("username: \"%s\"",username);
 
 	// challenge response
 	responsesize=0;
@@ -1664,25 +1634,21 @@ bool sqlrprotocol_mysql::parseHandshakeResponse41(
 	}
 
 	if (getDebug()) {
-		stdoutput.printf("	challenge response size: %lld\n",
-								responsesize);
-		stdoutput.printf("	challenge response: \"");
-		stdoutput.safePrint(response,responsesize);
-		stdoutput.printf("\"\n");
+		debugWrite("challenge response size: %lld",responsesize);
+		stringbuffer	b;
+		b.safePrint(response,responsesize);
+		debugWrite("challenge response: \"%s\"",b.getString());
 		if (rp==end) {
 			if (clientcapabilityflags&CLIENT_CONNECT_WITH_DB) {
-				stdoutput.write("	short packet, "
-							"db missing\n");
+				debugWrite("short packet, db missing");
 			}
 			if (clientcapabilityflags&CLIENT_PLUGIN_AUTH) {
-				stdoutput.write("	short packet, "
-							"client plugin name "
-							"missing\n");
+				debugWrite("short packet, "
+						"client plugin name missing");
 			}
 			if (clientcapabilityflags&CLIENT_CONNECT_ATTRS) {
-				stdoutput.write("	short packet, "
-							"connect attrs "
-							"missing\n");
+				debugWrite("short packet, "
+						"connect attrs missing");
 			}
 		}
 	}
@@ -1693,26 +1659,19 @@ bool sqlrprotocol_mysql::parseHandshakeResponse41(
 	if (rp<end && clientcapabilityflags&CLIENT_CONNECT_WITH_DB) {
 		database=charstring::duplicate((const char *)rp);
 		rp+=charstring::getLength(database)+1;
-		if (getDebug()) {
-			stdoutput.printf("	database: \"%s\"\n",database);
-		}
+		debugWrite("database: \"%s\"",database);
 	}
 
 	// auth plugin name
 	if (rp<end && clientcapabilityflags&CLIENT_PLUGIN_AUTH) {
 		clientauthpluginname=(const char *)rp;
 		rp+=charstring::getLength(clientauthpluginname)+1;
-		if (getDebug()) {
-			stdoutput.printf("	auth plugin name: \"%s\"\n",
-							clientauthpluginname);
-		}
+		debugWrite("auth plugin name: \"%s\"",clientauthpluginname);
 	}
 
 	if (rp<end && clientcapabilityflags&CLIENT_CONNECT_ATTRS) {
 
-		if (getDebug()) {
-			stdoutput.write("	connect attrs:\n");
-		}
+		debugStart("connect attrs");
 
 		// size of all key-values
 		uint64_t	allsize=readLenEncInt(rp,&rp);
@@ -1731,15 +1690,14 @@ bool sqlrprotocol_mysql::parseHandshakeResponse41(
 						(const char *)rp,valsize);
 			rp+=valsize;
 
-			if (getDebug()) {
-				stdoutput.printf("		%s=%s\n",
-								key,val);
-			}
+			debugWrite("%s: %s",key,val);
 
 			// FIXME: do something with these
 			delete[] key;
 			delete[] val;
 		}
+
+		debugEnd();
 	}
 
 	// if the client wasn't capable of sending us the plugin name but
@@ -1765,9 +1723,7 @@ bool sqlrprotocol_mysql::parseHandshakeResponse320(
 	// capability flags
 	uint16_t	shortcapabilityflags;
 	readLE(rp,&shortcapabilityflags,&rp);
-	if (getDebug()) {
-		debugCapabilityFlags(shortcapabilityflags);
-	}
+	debugCapabilityFlags(shortcapabilityflags);
 	clientcapabilityflags=shortcapabilityflags;
 
 	// max-packet size
@@ -1777,9 +1733,8 @@ bool sqlrprotocol_mysql::parseHandshakeResponse320(
 	maxpacketsize=(maxpacketsize&0xFFFFFF00);
 	maxpacketsize=leToHost(maxpacketsize);
 	// FIXME: sanity check on maxpacketsize
-	if (getDebug()) {
-		stdoutput.printf("	max-packet size: %d\n",maxpacketsize);
-	}
+
+	debugWrite("max-packet size: %d",maxpacketsize);
 
 	// handle tls
 	if (clientcapabilityflags&CLIENT_SSL) {
@@ -1804,9 +1759,8 @@ bool sqlrprotocol_mysql::parseHandshakeResponse320(
 	delete[] username;
 	username=charstring::duplicate((const char *)rp);
 	rp+=charstring::getLength(username)+1;
-	if (getDebug()) {
-		stdoutput.printf("	username: \"%s\"\n",username);
-	}
+	debugWrite("username: \"%s\"",username);
+
 
 	// challenge response
 	delete[] response;
@@ -1814,9 +1768,9 @@ bool sqlrprotocol_mysql::parseHandshakeResponse320(
 	responsesize=charstring::getLength(response);
 	rp+=charstring::getLength(response)+1;
 	if (getDebug()) {
-		stdoutput.write("	challenge response: ");
-		stdoutput.safePrint(response);
-		stdoutput.write("\n");
+		stringbuffer	b;
+		b.safePrint(response);
+		debugWrite("challenge response: \"%s\"",b.getString());
 	}
 
 	// database
@@ -1825,9 +1779,7 @@ bool sqlrprotocol_mysql::parseHandshakeResponse320(
 	if (clientcapabilityflags&CLIENT_CONNECT_WITH_DB) {
 		database=charstring::duplicate((const char *)rp);
 		rp+=charstring::getLength(database)+1;
-		if (getDebug()) {
-			stdoutput.printf("	database: \"%s\"\n",database);
-		}
+		debugWrite("database: \"%s\"",database);
 	}
 
 	// with protocol 320, assume "mysql_old_password"
@@ -1841,20 +1793,15 @@ bool sqlrprotocol_mysql::parseHandshakeResponse320(
 
 bool sqlrprotocol_mysql::handleTlsRequest() {
 
-	if (getDebug()) {
-		stdoutput.printf("	client requesting tls\n");
-	}
+	debugWrite("client requesting tls");
 
 	clientsock->setSocketLayer(getTlsContext());
 	getTlsContext()->setFileDescriptor(clientsock);
 
 	if (!getTlsContext()->accept()) {
 
-		if (getDebug()) {
-			stdoutput.printf("	"
-					"tls accept failed: %s\n",
-					getTlsContext()->getErrorString());
-		}
+		debugWrite("tls accept failed: %s",
+				getTlsContext()->getErrorString());
 		debugEnd();
 
 		stringbuffer	err;
@@ -1870,9 +1817,7 @@ bool sqlrprotocol_mysql::handleTlsRequest() {
 		return false;
 	}
 
-	if (getDebug()) {
-		stdoutput.printf("	tls accept success\n");
-	}
+	debugWrite("tls accept success");
 	debugEnd();
 
 	// client will re-send the handshake, this time including user/password
@@ -1886,10 +1831,7 @@ bool sqlrprotocol_mysql::noClientTls() {
 						"TLS mutual auth required":
 						"TLS required";
 	err.append(errdetail);
-	if (getDebug()) {
-		stdoutput.printf(
-			"%s but tls not enabled on client\n",errdetail);
-	}
+	debugWrite("%s but tls not enabled on client",errdetail);
 	debugEnd();
 	return sendErrPacket(2026,err.getString(),
 				err.getStringLength(),"HY000");
@@ -1921,12 +1863,9 @@ bool sqlrprotocol_mysql::negotiateAuthMethod() {
 	//   the client indicated that it doesn't support protocol 41 and
 	//   so we fell back to protocol 320 and mysql_old_password
 	if (!charstring::compare(clientauthpluginname,serverauthpluginname)) {
-		if (getDebug()) {
-			debugStart("negotiate auth method");
-			stdoutput.printf("	agreed on %s\n",
-						clientauthpluginname);
-			debugEnd();
-		}
+		debugStart("negotiate auth method");
+		debugWrite("agreed on %s",clientauthpluginname);
+		debugEnd();
 		return true;
 	}
 
@@ -1941,12 +1880,9 @@ bool sqlrprotocol_mysql::negotiateAuthMethod() {
 		charstring::isNullOrEmpty(clientauthpluginname)) {
 
 		serverauthpluginname="mysql_old_password";
-		if (getDebug()) {
-			debugStart("negotiate auth method");
-			stdoutput.printf("	trying %s\n",
-						serverauthpluginname);
-			debugEnd();
-		}
+		debugStart("negotiate auth method");
+		debugWrite("trying %s",serverauthpluginname);
+		debugEnd();
 		generateChallenge();
 		return sendOldAuthSwitchRequest() && recvAuthResponse();
 	}
@@ -1962,12 +1898,9 @@ bool sqlrprotocol_mysql::negotiateAuthMethod() {
 				serverauthpluginname=*plugin;
 			}
 		}
-		if (getDebug()) {
-			debugStart("negotiate auth method");
-			stdoutput.printf("	trying %s\n",
-						serverauthpluginname);
-			debugEnd();
-		}
+		debugStart("negotiate auth method");
+		debugWrite("trying %s",serverauthpluginname);
+		debugEnd();
 		generateChallenge();
 
 		// negotiate...
@@ -1978,12 +1911,9 @@ bool sqlrprotocol_mysql::negotiateAuthMethod() {
 			(!charstring::isNullOrEmpty(response))?
 					serverauthpluginname:NULL;
 		if (clientauthpluginname) {
-			if (getDebug()) {
-				debugStart("negotiate auth method");
-				stdoutput.printf("	agreed on %s\n",
-							serverauthpluginname);
-				debugEnd();
-			}
+			debugStart("negotiate auth method");
+			debugWrite("agreed on %s",serverauthpluginname);
+			debugEnd();
 			return true;
 		}
 	}
@@ -1995,12 +1925,9 @@ bool sqlrprotocol_mysql::negotiateAuthMethod() {
 
 		// generate challenge...
 		serverauthpluginname=*plugin;
-		if (getDebug()) {
-			debugStart("negotiate auth method");
-			stdoutput.printf("	trying %s\n",
-						serverauthpluginname);
-			debugEnd();
-		}
+		debugStart("negotiate auth method");
+		debugWrite("trying %s",serverauthpluginname);
+		debugEnd();
 		generateChallenge();
 
 		// negotiate
@@ -2011,21 +1938,17 @@ bool sqlrprotocol_mysql::negotiateAuthMethod() {
 			(!charstring::isNullOrEmpty(response))?
 					serverauthpluginname:NULL;
 		if (clientauthpluginname) {
-			if (getDebug()) {
-				debugStart("negotiate auth method");
-				stdoutput.printf("	agreed on %s\n",
-							serverauthpluginname);
-				debugEnd();
-			}
+			debugStart("negotiate auth method");
+			debugWrite("agreed on %s",serverauthpluginname);
+			debugEnd();
 			return true;
 		}
 	}
 
-	if (getDebug()) {
-		debugStart("negotiate auth method");
-		stdoutput.write("	could not agree on auth method\n");
-		debugEnd();
-	}
+	debugStart("negotiate auth method");
+	debugWrite("could not agree on auth method");
+	debugEnd();
+
 	// FIXME: return error somehow?
 	return false;
 }
@@ -2036,9 +1959,8 @@ bool sqlrprotocol_mysql::sendAuthSwitchRequest() {
 
 	if (getDebug()) {
 		debugStart("auth switch request");
-		stdoutput.printf("	auth plugin name: \"%s\"\n",
-							serverauthpluginname);
-		stdoutput.printf("	challenge: \"%s\"\n",challenge);
+		debugWrite("auth plugin name: \"%s\"",serverauthpluginname);
+		debugWrite("challenge: \"%s\"",challenge);
 		debugEnd();
 	}
 
@@ -2054,10 +1976,8 @@ bool sqlrprotocol_mysql::sendOldAuthSwitchRequest() {
 
 	resetSendPacketBuffer();
 
-	if (getDebug()) {
-		debugStart("old auth switch request");
-		debugEnd();
-	}
+	debugStart("old auth switch request");
+	debugEnd();
 
 	write(&resppacket,(char)0xFE);
 
@@ -2080,11 +2000,10 @@ bool sqlrprotocol_mysql::recvAuthResponse() {
 
 	if (getDebug()) {
 		debugStart("auth response");
-		stdoutput.printf("	challenge response size: %lld\n",
-								responsesize);
-		stdoutput.printf("	challenge response: \"");
-		stdoutput.safePrint(response,responsesize);
-		stdoutput.printf("\"\n");
+		debugWrite("challenge response size: %lld",responsesize);
+		stringbuffer	b;
+		b.safePrint(response,responsesize);
+		debugWrite("challenge response: \"%s\"",b.getString());
 		debugEnd();
 	}
 
@@ -2121,11 +2040,9 @@ bool sqlrprotocol_mysql::sendAuthMoreDataPacket() {
 
 	resetSendPacketBuffer();
 
-	if (getDebug()) {
-		debugStart("auth more data");
-		stdoutput.printf("	more data: %s\n",moredata.getString());
-		debugEnd();
-	}
+	debugStart("auth more data");
+	debugWrite("more data: %s",moredata.getString());
+	debugEnd();
 
 	write(&resppacket,(char)0x01);
 	write(&resppacket,moredata.getBuffer(),moredata.getSize());
@@ -2142,11 +2059,9 @@ bool sqlrprotocol_mysql::authenticate() {
 	cred.setMethod(clientauthpluginname);
 	cred.setExtra(challenge);
 	bool	retval=cont->auth(&cred);
-	if (getDebug()) {
-		debugStart("authenticate");
-		stdoutput.printf("	auth %s\n",(retval)?"success":"failed");
-		debugEnd();
-	}
+	debugStart("authenticate");
+	debugWrite("auth %s",(retval)?"success":"failed");
+	debugEnd();
 
 	// FIXME: there are apparently cases where an
 	// AuthMoreData packet should be sent here
@@ -2168,12 +2083,9 @@ bool sqlrprotocol_mysql::authenticate() {
 	// if we were passed a database at login, then select it here
 	if (database) {
 		retval=cont->selectDatabase(database);
-		if (getDebug()) {
-			debugStart("select database");
-			stdoutput.printf("	%s: %s\n",
-					database,(retval)?"success":"failed");
-			debugEnd();
-		}
+		debugStart("select database");
+		debugWrite(database,"%s",(retval)?"success":"failed");
+		debugEnd();
 		if (!retval) {
 			return sendError();
 		}
@@ -2206,25 +2118,22 @@ bool sqlrprotocol_mysql::sendOkPacket(bool noteof,
 
 	if (getDebug()) {
 		debugStart((noteof)?"ok":"ok (eof)");
-		stdoutput.printf("	header: 0x%02x\n",
-				(uint32_t)(0x000000ff&header));
-		stdoutput.printf("	affected rows: %lld\n",affectedrows);
-		stdoutput.printf("	last insert id: %lld\n",lastinsertid);
+		debugWrite("header: 0x%02x",(uint32_t)(0x000000ff&header));
+		debugWrite("affected rows: %lld",affectedrows);
+		debugWrite("last insert id: %lld",lastinsertid);
 		if (servercapabilityflags&CLIENT_PROTOCOL_41 &&
 				clientcapabilityflags&CLIENT_PROTOCOL_41) {
 			debugStatusFlags(statusflags);
-			stdoutput.printf("	warnings: %hd\n",warnings);
+			debugWrite("warnings: %hd",warnings);
 		} else if (servercapabilityflags&CLIENT_TRANSACTIONS &&
 				clientcapabilityflags&CLIENT_TRANSACTIONS) {
 			debugStatusFlags(statusflags);
 		}
-		stdoutput.printf("	info: \"%s\"\n",info);
+		debugWrite("info: \"%s\"",info);
 		if (statusflags&SERVER_SESSION_STATE_CHANGED) {
-			stdoutput.printf("	session state change "
-						"type: 0x%02x\n",
+			debugWrite("session state change type: 0x%02x",
 				(uint32_t)(0x000000ff&sessionstatechangetype));
-			stdoutput.printf("	session state change "
-						"data: \"%s\"\n",
+			debugWrite("session state change data: \"%s\"",
 							sessionstatechangedata);
 		}
 		debugEnd();
@@ -2270,16 +2179,12 @@ bool sqlrprotocol_mysql::sendErrPacket(uint16_t errorcode,
 					const char *sqlstate) {
 	resetSendPacketBuffer();
 
-	if (getDebug()) {
-		debugStart("err");
-		stdoutput.printf("	error code: %hd\n",errorcode);
-		stdoutput.printf("	error message: \"%.*s\"\n",
-							(uint32_t)errorsize,
-							errormessage);
-		stdoutput.printf("	error size: %lld\n",errorsize);
-		stdoutput.printf("	sql state: \"%s\"\n",sqlstate);
-		debugEnd();
-	}
+	debugStart("err");
+	debugWrite("error code: %hd",errorcode);
+	debugWrite("error message: \"%.*s\"",(uint32_t)errorsize,errormessage);
+	debugWrite("error size: %lld",errorsize);
+	debugWrite("sql state: \"%s\"",sqlstate);
+	debugEnd();
 
 	write(&resppacket,(char)0xFF);
 	writeLE(&resppacket,errorcode);
@@ -2315,13 +2220,11 @@ bool sqlrprotocol_mysql::sendEofPacket(uint16_t warnings,
 		statusflags|=SERVER_STATUS_AUTOCOMMIT;
 	}
 
-	if (getDebug()) {
-		debugStart("eof");
-		stdoutput.write("	header: 0xfe\n");
-		stdoutput.printf("	warnings: %hd\n",warnings);
-		debugStatusFlags(statusflags);
-		debugEnd();
-	}
+	debugStart("eof");
+	debugWrite("header: 0xfe");
+	debugWrite("warnings: %hd",warnings);
+	debugStatusFlags(statusflags);
+	debugEnd();
 
 	write(&resppacket,(char)0xfe);
 	if (servercapabilityflags&CLIENT_PROTOCOL_41 &&
@@ -2334,458 +2237,414 @@ bool sqlrprotocol_mysql::sendEofPacket(uint16_t warnings,
 }
 
 void sqlrprotocol_mysql::debugCapabilityFlags(uint32_t capabilityflags) {
-	stdoutput.write("	capability flags:\n");
-	stdoutput.write("		");
-	stdoutput.printf("0x%08x\n",capabilityflags);
-	stdoutput.write("		");
-	stdoutput.printBits(capabilityflags);
-	stdoutput.write("\n");
+	if (!getDebug()) {
+		return;
+	}
+	debugStart("capability flags");
+	debugWrite("0x%08x",capabilityflags);
+	stringbuffer	b;
+	b.printBits(capabilityflags);
+	debugWrite("%s",b.getString());
 	if (capabilityflags&CLIENT_LONG_PASSWORD) {
-		stdoutput.write("		"
-				"CLIENT_LONG_PASSWORD\n");
+		debugWrite("CLIENT_LONG_PASSWORD");
 	}
 	if (capabilityflags&CLIENT_LONG_FLAG) {
-		stdoutput.write("		"
-				"CLIENT_LONG_FLAG\n");
+		debugWrite("CLIENT_LONG_FLAG");
 	}
 	if (capabilityflags&CLIENT_CONNECT_WITH_DB) {
-		stdoutput.write("		"
-				"CLIENT_CONNECT_WITH_DB\n");
+		debugWrite("CLIENT_CONNECT_WITH_DB");
 	}
 	if (capabilityflags&CLIENT_NO_SCHEMA) {
-		stdoutput.write("		"
-				"CLIENT_NO_SCHEMA\n");
+		debugWrite("CLIENT_NO_SCHEMA");
 	}
 	if (capabilityflags&CLIENT_COMPRESS) {
-		stdoutput.write("		"
-				"CLIENT_COMPRESS\n");
+		debugWrite("CLIENT_COMPRESS");
 	}
 	if (capabilityflags&CLIENT_ODBC) {
-		stdoutput.write("		"
-				"CLIENT_ODBC\n");
+		debugWrite("CLIENT_ODBC");
 	}
 	if (capabilityflags&CLIENT_LOCAL_FILES) {
-		stdoutput.write("		"
-				"CLIENT_LOCAL_FILES\n");
+		debugWrite("CLIENT_LOCAL_FILES");
 	}
 	if (capabilityflags&CLIENT_IGNORE_SPACE) {
-		stdoutput.write("		"
-				"CLIENT_IGNORE_SPACE\n");
+		debugWrite("CLIENT_IGNORE_SPACE");
 	}
 	if (capabilityflags&CLIENT_PROTOCOL_41) {
-		stdoutput.write("		"
-				"CLIENT_PROTOCOL_41\n");
+		debugWrite("CLIENT_PROTOCOL_41");
 	}
 	if (capabilityflags&CLIENT_INTERACTIVE) {
-		stdoutput.write("		"
-				"CLIENT_INTERACTIVE\n");
+		debugWrite("CLIENT_INTERACTIVE");
 	}
 	if (capabilityflags&CLIENT_SSL) {
-		stdoutput.write("		"
-				"CLIENT_SSL\n");
+		debugWrite("CLIENT_SSL");
 	}
 	if (capabilityflags&CLIENT_IGNORE_SIGPIPE) {
-		stdoutput.write("		"
-				"CLIENT_IGNORE_SIGPIPE\n");
+		debugWrite("CLIENT_IGNORE_SIGPIPE");
 	}
 	if (capabilityflags&CLIENT_TRANSACTIONS) {
-		stdoutput.write("		"
-				"CLIENT_TRANSACTIONS\n");
+		debugWrite("CLIENT_TRANSACTIONS");
 	}
 	if (capabilityflags&CLIENT_RESERVED) {
-		stdoutput.write("		"
-				"CLIENT_RESERVED\n");
+		debugWrite("CLIENT_RESERVED");
 	}
 	if (capabilityflags&CLIENT_SECURE_CONNECTION) {
-		stdoutput.write("		"
-				"CLIENT_SECURE_CONNECTION\n");
+		debugWrite("CLIENT_SECURE_CONNECTION");
 	}
 	if (capabilityflags&CLIENT_MULTI_STATEMENTS) {
-		stdoutput.write("		"
-				"CLIENT_MULTI_STATEMENTS\n");
+		debugWrite("CLIENT_MULTI_STATEMENTS");
 	}
 	if (capabilityflags&CLIENT_MULTI_RESULTS) {
-		stdoutput.write("		"
-				"CLIENT_MULTI_RESULTS\n");
+		debugWrite("CLIENT_MULTI_RESULTS");
 	}
 	if (capabilityflags&CLIENT_PS_MULTI_RESULTS) {
-		stdoutput.write("		"
-				"CLIENT_PS_MULTI_RESULTS\n");
+		debugWrite("CLIENT_PS_MULTI_RESULTS");
 	}
 	if (capabilityflags&CLIENT_PLUGIN_AUTH) {
-		stdoutput.write("		"
-				"CLIENT_PLUGIN_AUTH\n");
+		debugWrite("CLIENT_PLUGIN_AUTH");
 	}
 	if (capabilityflags&CLIENT_CONNECT_ATTRS) {
-		stdoutput.write("		"
-				"CLIENT_CONNECT_ATTRS\n");
+		debugWrite("CLIENT_CONNECT_ATTRS");
 	}
 	if (capabilityflags&CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA) {
-		stdoutput.write("		"
-				"CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA\n");
+		debugWrite("CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA");
 	}
 	if (capabilityflags&CLIENT_CAN_HANDLE_EXPIRED_PASSWORDS) {
-		stdoutput.write("		"
-				"CLIENT_CAN_HANDLE_EXPIRED_PASSWORDS\n");
+		debugWrite("CLIENT_CAN_HANDLE_EXPIRED_PASSWORDS");
 	}
 	if (capabilityflags&CLIENT_SESSION_TRACK) {
-		stdoutput.write("		"
-				"CLIENT_SESSION_TRACK\n");
+		debugWrite("CLIENT_SESSION_TRACK");
 	}
 	if (capabilityflags&CLIENT_DEPRECATE_EOF) {
-		stdoutput.write("		"
-				"CLIENT_DEPRECATE_EOF\n");
+		debugWrite("CLIENT_DEPRECATE_EOF");
 	}
+	debugEnd();
 }
 
 void sqlrprotocol_mysql::debugCharacterSet(byte_t characterset) {
-	stdoutput.printf("	character set: 0x%02x\n",
-				(uint32_t)(0x000000ff&characterset));
+	debugWrite("character set: 0x%02x",
+			(uint32_t)(0x000000ff&characterset));
 }
 
 void sqlrprotocol_mysql::debugStatusFlags(uint16_t statusflags) {
-	stdoutput.write("	status flags:\n");
-	stdoutput.write("		");
-	stdoutput.printf("0x%04x\n",statusflags);
-	stdoutput.write("		");
-	stdoutput.printBits(statusflags);
-	stdoutput.write("\n");
+	if (!getDebug()) {
+		return;
+	}
+	debugStart("status flags");
+	debugWrite("0x%04x",statusflags);
+	stringbuffer	b;
+	b.printBits(statusflags);
+	debugWrite("%s",b.getString());
 	if (statusflags&SERVER_STATUS_IN_TRANS) {
-		stdoutput.write("		"
-				"SERVER_STATUS_IN_TRANS\n");
+		debugWrite("SERVER_STATUS_IN_TRANS");
 	}
 	if (statusflags&SERVER_STATUS_AUTOCOMMIT) {
-		stdoutput.write("		"
-				"SERVER_STATUS_AUTOCOMMIT\n");
+		debugWrite("SERVER_STATUS_AUTOCOMMIT");
 	}
 	if (statusflags&SERVER_MORE_RESULTS_EXISTS) {
-		stdoutput.write("		"
-				"SERVER_MORE_RESULTS_EXISTS\n");
+		debugWrite("SERVER_MORE_RESULTS_EXISTS");
 	}
 	if (statusflags&SERVER_STATUS_NO_GOOD_INDEX_USED) {
-		stdoutput.write("		"
-				"SERVER_STATUS_NO_GOOD_INDEX_USED\n");
+		debugWrite("SERVER_STATUS_NO_GOOD_INDEX_USED");
 	}
 	if (statusflags&SERVER_STATUS_NO_INDEX_USED) {
-		stdoutput.write("		"
-				"SERVER_STATUS_NO_INDEX_USED\n");
+		debugWrite("SERVER_STATUS_NO_INDEX_USED");
 	}
 	if (statusflags&SERVER_STATUS_CURSOR_EXISTS) {
-		stdoutput.write("		"
-				"SERVER_STATUS_CURSOR_EXISTS\n");
+		debugWrite("SERVER_STATUS_CURSOR_EXISTS");
 	}
 	if (statusflags&SERVER_STATUS_LAST_ROW_SENT) {
-		stdoutput.write("		"
-				"SERVER_STATUS_LAST_ROW_SENT\n");
+		debugWrite("SERVER_STATUS_LAST_ROW_SENT");
 	}
 	if (statusflags&SERVER_STATUS_DB_DROPPED) {
-		stdoutput.write("		"
-				"SERVER_STATUS_DB_DROPPED\n");
+		debugWrite("SERVER_STATUS_DB_DROPPED");
 	}
 	if (statusflags&SERVER_STATUS_NO_BACKSLASH_ESCAPES) {
-		stdoutput.write("		"
-				"SERVER_STATUS_NO_BACKSLASH_ESCAPES\n");
+		debugWrite("SERVER_STATUS_NO_BACKSLASH_ESCAPES");
 	}
 	if (statusflags&SERVER_STATUS_METADATA_CHANGED) {
-		stdoutput.write("		"
-				"SERVER_STATUS_METADATA_CHANGED\n");
+		debugWrite("SERVER_STATUS_METADATA_CHANGED");
 	}
 	if (statusflags&SERVER_QUERY_WAS_SLOW) {
-		stdoutput.write("		"
-				"SERVER_QUERY_WAS_SLOW\n");
+		debugWrite("SERVER_QUERY_WAS_SLOW");
 	}
 	if (statusflags&SERVER_PS_OUT_PARAMS) {
-		stdoutput.write("		"
-				"SERVER_PS_OUT_PARAMS\n");
+		debugWrite("SERVER_PS_OUT_PARAMS");
 	}
 	if (statusflags&SERVER_STATUS_IN_TRANS_READONLY) {
-		stdoutput.write("		"
-				"SERVER_STATUS_IN_TRANS_READONLY\n");
+		debugWrite("SERVER_STATUS_IN_TRANS_READONLY");
 	}
 	if (statusflags&SERVER_SESSION_STATE_CHANGED) {
-		stdoutput.write("		"
-				"SERVER_SESSION_STATE_CHANGED\n");
+		debugWrite("SERVER_SESSION_STATE_CHANGED");
 	}
+	debugEnd();
 }
 
 void sqlrprotocol_mysql::debugColumnType(const char *name, byte_t columntype) {
-	stdoutput.printf("	type: %s (0x%02x)\n",name,
-				(uint32_t)(0x000000ff&columntype));
-	debugColumnType(columntype);
-}
-
-void sqlrprotocol_mysql::debugColumnType(byte_t columntype) {
-	stdoutput.write("		");
+	if (!getDebug()) {
+		return;
+	}
+	const char	*typestring=NULL;
 	switch (columntype) {
 		case MYSQL_TYPE_DECIMAL:
-			stdoutput.write("MYSQL_TYPE_DECIMAL\n");
+			typestring="MYSQL_TYPE_DECIMAL";
 			break;
 		case MYSQL_TYPE_TINY:
-			stdoutput.write("MYSQL_TYPE_TINY\n");
+			typestring="MYSQL_TYPE_TINY";
 			break;
 		case MYSQL_TYPE_SHORT:
-			stdoutput.write("MYSQL_TYPE_SHORT\n");
+			typestring="MYSQL_TYPE_SHORT";
 			break;
 		case MYSQL_TYPE_LONG:
-			stdoutput.write("MYSQL_TYPE_LONG\n");
+			typestring="MYSQL_TYPE_LONG";
 			break;
 		case MYSQL_TYPE_FLOAT:
-			stdoutput.write("MYSQL_TYPE_FLOAT\n");
+			typestring="MYSQL_TYPE_FLOAT";
 			break;
 		case MYSQL_TYPE_DOUBLE:
-			stdoutput.write("MYSQL_TYPE_DOUBLE\n");
+			typestring="MYSQL_TYPE_DOUBLE";
 			break;
 		case MYSQL_TYPE_NULL:
-			stdoutput.write("MYSQL_TYPE_NULL\n");
+			typestring="MYSQL_TYPE_NULL";
 			break;
 		case MYSQL_TYPE_TIMESTAMP:
-			stdoutput.write("MYSQL_TYPE_TIMESTAMP\n");
+			typestring="MYSQL_TYPE_TIMESTAMP";
 			break;
 		case MYSQL_TYPE_LONGLONG:
-			stdoutput.write("MYSQL_TYPE_LONGLONG\n");
+			typestring="MYSQL_TYPE_LONGLONG";
 			break;
 		case MYSQL_TYPE_INT24:
-			stdoutput.write("MYSQL_TYPE_INT24\n");
+			typestring="MYSQL_TYPE_INT24";
 			break;
 		case MYSQL_TYPE_DATE:
-			stdoutput.write("MYSQL_TYPE_DATE\n");
+			typestring="MYSQL_TYPE_DATE";
 			break;
 		case MYSQL_TYPE_TIME:
-			stdoutput.write("MYSQL_TYPE_TIME\n");
+			typestring="MYSQL_TYPE_TIME";
 			break;
 		case MYSQL_TYPE_DATETIME:
-			stdoutput.write("MYSQL_TYPE_DATETIME\n");
+			typestring="MYSQL_TYPE_DATETIME";
 			break;
 		case MYSQL_TYPE_YEAR:
-			stdoutput.write("MYSQL_TYPE_YEAR\n");
+			typestring="MYSQL_TYPE_YEAR";
 			break;
 		case MYSQL_TYPE_NEWDATE:
-			stdoutput.write("MYSQL_TYPE_NEWDATE\n");
+			typestring="MYSQL_TYPE_NEWDATE";
 			break;
 		case MYSQL_TYPE_VARCHAR:
-			stdoutput.write("MYSQL_TYPE_VARCHAR\n");
+			typestring="MYSQL_TYPE_VARCHAR";
 			break;
 		case MYSQL_TYPE_BIT:
-			stdoutput.write("MYSQL_TYPE_BIT\n");
+			typestring="MYSQL_TYPE_BIT";
 			break;
 		case MYSQL_TYPE_TIMESTAMP2:
-			stdoutput.write("MYSQL_TYPE_TIMESTAMP2\n");
+			typestring="MYSQL_TYPE_TIMESTAMP2";
 			break;
 		case MYSQL_TYPE_DATETIME2:
-			stdoutput.write("MYSQL_TYPE_DATETIME2\n");
+			typestring="MYSQL_TYPE_DATETIME2";
 			break;
 		case MYSQL_TYPE_TIME2:
-			stdoutput.write("MYSQL_TYPE_TIME2\n");
+			typestring="MYSQL_TYPE_TIME2";
 			break;
 		case MYSQL_TYPE_NEWDECIMAL:
-			stdoutput.write("MYSQL_TYPE_NEWDECIMAL\n");
+			typestring="MYSQL_TYPE_NEWDECIMAL";
 			break;
 		case MYSQL_TYPE_ENUM:
-			stdoutput.write("MYSQL_TYPE_ENUM\n");
+			typestring="MYSQL_TYPE_ENUM";
 			break;
 		case MYSQL_TYPE_SET:
-			stdoutput.write("MYSQL_TYPE_SET\n");
+			typestring="MYSQL_TYPE_SET";
 			break;
 		case MYSQL_TYPE_TINY_BLOB:
-			stdoutput.write("MYSQL_TYPE_TINY_BLOB\n");
+			typestring="MYSQL_TYPE_TINY_BLOB";
 			break;
 		case MYSQL_TYPE_MEDIUM_BLOB:
-			stdoutput.write("MYSQL_TYPE_MEDIUM_BLOB\n");
+			typestring="MYSQL_TYPE_MEDIUM_BLOB";
 			break;
 		case MYSQL_TYPE_LONG_BLOB:
-			stdoutput.write("MYSQL_TYPE_LONG_BLOB\n");
+			typestring="MYSQL_TYPE_LONG_BLOB";
 			break;
 		case MYSQL_TYPE_BLOB:
-			stdoutput.write("MYSQL_TYPE_BLOB\n");
+			typestring="MYSQL_TYPE_BLOB";
 			break;
 		case MYSQL_TYPE_VAR_STRING:
-			stdoutput.write("MYSQL_TYPE_VAR_STRING\n");
+			typestring="MYSQL_TYPE_VAR_STRING";
 			break;
 		case MYSQL_TYPE_STRING:
-			stdoutput.write("MYSQL_TYPE_STRING\n");
+			typestring="MYSQL_TYPE_STRING";
 			break;
 		case MYSQL_TYPE_GEOMETRY:
-			stdoutput.write("MYSQL_TYPE_GEOMETRY\n");
+			typestring="MYSQL_TYPE_GEOMETRY";
 			break;
 		default:
-			stdoutput.write("unknown MYSQL_TYPE\n");
+			typestring="unknown MYSQL_TYPE";
 			break;
 	}
+	debugWrite("type: %s (0x%02x) %s",
+			(name)?name:"",
+			(uint32_t)(0x000000ff&columntype),
+			typestring);
 }
 
 void sqlrprotocol_mysql::debugColumnFlags(uint16_t columnflags) {
-	stdoutput.write("	column flags:\n");
-	stdoutput.write("		");
-	stdoutput.printf("0x%04x\n",columnflags);
-	stdoutput.write("		");
-	stdoutput.printBits(columnflags);
-	stdoutput.write("\n");
+	if (!getDebug()) {
+		return;
+	}
+	debugStart("column flags");
+	debugWrite("0x%04x",columnflags);
+	stringbuffer	b;
+	b.printBits(columnflags);
+	debugWrite("%s",b.getString());
 	if (columnflags&NOT_NULL_FLAG) {
-		stdoutput.write("		"
-				"NOT_NULL_FLAG\n");
+		debugWrite("NOT_NULL_FLAG");
 	}
 	if (columnflags&PRI_KEY_FLAG) {
-		stdoutput.write("		"
-				"PRI_KEY_FLAG\n");
+		debugWrite("PRI_KEY_FLAG");
 	}
 	if (columnflags&UNIQUE_KEY_FLAG) {
-		stdoutput.write("		"
-				"UNIQUE_KEY_FLAG\n");
+		debugWrite("UNIQUE_KEY_FLAG");
 	}
 	if (columnflags&MULTIPLE_KEY_FLAG) {
-		stdoutput.write("		"
-				"MULTIPLE_KEY_FLAG\n");
+		debugWrite("MULTIPLE_KEY_FLAG");
 	}
 	if (columnflags&UNSIGNED_FLAG) {
-		stdoutput.write("		"
-				"UNSIGNED_FLAG\n");
+		debugWrite("UNSIGNED_FLAG");
 	}
 	if (columnflags&ZEROFILL_FLAG) {
-		stdoutput.write("		"
-				"ZEROFILL_FLAG\n");
+		debugWrite("ZEROFILL_FLAG");
 	}
 	if (columnflags&BINARY_FLAG) {
-		stdoutput.write("		"
-				"BINARY_FLAG\n");
+		debugWrite("BINARY_FLAG");
 	}
 	if (columnflags&AUTO_INCREMENT_FLAG) {
-		stdoutput.write("		"
-				"AUTO_INCREMENT_FLAG\n");
+		debugWrite("AUTO_INCREMENT_FLAG");
 	}
 	if (columnflags&ENUM_FLAG) {
-		stdoutput.write("		"
-				"ENUM_FLAG\n");
+		debugWrite("ENUM_FLAG");
 	}
 	if (columnflags&SET_FLAG) {
-		stdoutput.write("		"
-				"SET_FLAG\n");
+		debugWrite("SET_FLAG");
 	}
 	if (columnflags&BLOB_FLAG) {
-		stdoutput.write("		"
-				"BLOB_FLAG\n");
+		debugWrite("BLOB_FLAG");
 	}
 	if (columnflags&TIMESTAMP_FLAG) {
-		stdoutput.write("		"
-				"TIMESTAMP_FLAG\n");
+		debugWrite("TIMESTAMP_FLAG");
 	}
 	if (columnflags&NUM_FLAG) {
-		stdoutput.write("		"
-				"NUM_FLAG\n");
+		debugWrite("NUM_FLAG");
 	}
+	debugEnd();
 }
 
 void sqlrprotocol_mysql::debugSystemError() {
+	if (!getDebug()) {
+		return;
+	}
 	char	*err=error::getErrorString();
-	stdoutput.printf("%s\n",err);
+	debugWrite("%s",err);
 	delete[] err;
 }
 
 void sqlrprotocol_mysql::debugRefreshCommand(byte_t command) {
-	stdoutput.write("	refresh command:\n");
-	stdoutput.printf("		%08x\n",command);
+	if (!getDebug()) {
+		return;
+	}
+	debugStart("refresh command");
+	debugWrite("%08x",command);
 	switch (command) {
 		case REFRESH_GRANT:
-			stdoutput.write("		"
-					"REFRESH_GRANT\n");
+			debugWrite("REFRESH_GRANT");
 			break;
 		case REFRESH_LOG:
-			stdoutput.write("		"
-					"REFRESH_LOG\n");
+			debugWrite("REFRESH_LOG");
 			break;
 		case REFRESH_TABLES:
-			stdoutput.write("		"
-					"REFRESH_TABLES\n");
+			debugWrite("REFRESH_TABLES");
 			break;
 		case REFRESH_HOSTS:
-			stdoutput.write("		"
-					"REFRESH_HOSTS\n");
+			debugWrite("REFRESH_HOSTS");
 			break;
 		case REFRESH_STATUS:
-			stdoutput.write("		"
-					"REFRESH_STATUS\n");
+			debugWrite("REFRESH_STATUS");
 			break;
 		case REFRESH_THREADS:
-			stdoutput.write("		"
-					"REFRESH_THREADS\n");
+			debugWrite("REFRESH_THREADS");
 			break;
 		case REFRESH_SLAVE:
-			stdoutput.write("		"
-					"REFRESH_SLAVE\n");
+			debugWrite("REFRESH_SLAVE");
 			break;
 		case REFRESH_MASTER:
-			stdoutput.write("		"
-					"REFRESH_MASTER\n");
+			debugWrite("REFRESH_MASTER");
 			break;
 	}
+	debugEnd();
 }
 
 void sqlrprotocol_mysql::debugShutdownCommand(byte_t command) {
-	stdoutput.write("	shutdown command:\n");
-	stdoutput.printf("		%08x\n",command);
+	if (!getDebug()) {
+		return;
+	}
+	debugStart("shutdown command");
+	debugWrite("%08x",command);
 	if (command==SHUTDOWN_DEFAULT) {
-		stdoutput.write("		"
-					"SHUTDOWN_DEFAULT\n");
+		debugWrite("SHUTDOWN_DEFAULT");
 	}
 	if (command&SHUTDOWN_WAIT_CONNECTIONS) {
-		stdoutput.write("		"
-					"SHUTDOWN_WAIT_CONNECTIONS\n");
+		debugWrite("SHUTDOWN_WAIT_CONNECTIONS");
 	}
 	if (command&SHUTDOWN_WAIT_TRANSACTIONS) {
-		stdoutput.write("		"
-					"SHUTDOWN_WAIT_TRANSACTIONS\n");
+		debugWrite("SHUTDOWN_WAIT_TRANSACTIONS");
 	}
 	if (command&SHUTDOWN_WAIT_UPDATES) {
-		stdoutput.write("		"
-					"SHUTDOWN_WAIT_UPDATES\n");
+		debugWrite("SHUTDOWN_WAIT_UPDATES");
 	}
 	if (command&SHUTDOWN_WAIT_ALL_BUFFERS) {
-		stdoutput.write("		"
-					"SHUTDOWN_WAIT_ALL_BUFFERS\n");
+		debugWrite("SHUTDOWN_WAIT_ALL_BUFFERS");
 	}
 	if (command&SHUTDOWN_WAIT_CRITICAL_BUFFERS) {
-		stdoutput.write("		"
-					"SHUTDOWN_WAIT_CRITICAL_BUFFERS\n");
+		debugWrite("SHUTDOWN_WAIT_CRITICAL_BUFFERS");
 	}
 	if (command&KILL_QUERY) {
-		stdoutput.write("		"
-					"KILL_QUERY\n");
+		debugWrite("KILL_QUERY");
 	}
 	if (command&KILL_CONNECTION) {
-		stdoutput.write("		"
-					"KILL_CONNECTION\n");
+		debugWrite("KILL_CONNECTION");
 	}
+	debugEnd();
 }
 
 void sqlrprotocol_mysql::debugStmtExecuteFlags(byte_t flags) {
-	stdoutput.write("	flags:\n");
+	if (!getDebug()) {
+		return;
+	}
+	debugStart("flags");
 	if (flags&CURSOR_TYPE_NO_CURSOR) {
-		stdoutput.write("		"
-					"CURSOR_TYPE_NO_CURSOR\n");
+		debugWrite("CURSOR_TYPE_NO_CURSOR");
 	}
 	if (flags&CURSOR_TYPE_READ_ONLY) {
-		stdoutput.write("		"
-					"CURSOR_TYPE_READ_ONLY\n");
+		debugWrite("CURSOR_TYPE_READ_ONLY");
 	}
 	if (flags&CURSOR_TYPE_FOR_UPDATE) {
-		stdoutput.write("		"
-					"CURSOR_TYPE_FOR_UPDATE\n");
+		debugWrite("CURSOR_TYPE_FOR_UPDATE");
 	}
 	if (flags&CURSOR_TYPE_SCROLLABLE) {
-		stdoutput.write("		"
-					"CURSOR_TYPE_SCROLLABLE\n");
+		debugWrite("CURSOR_TYPE_SCROLLABLE");
 	}
+	debugEnd();
 }
 
 void sqlrprotocol_mysql::debugMultiStatementOption(uint16_t multistmtoption) {
-	stdoutput.write("	multi statement option:\n");
+	if (!getDebug()) {
+		return;
+	}
+	debugStart("multi statement option");
 	if (multistmtoption==MYSQL_OPTION_MULTI_STATEMENTS_ON) {
-		stdoutput.write("		"
-					"MYSQL_OPTION_MULTI_STATEMENTS_ON\n");
+		debugWrite("MYSQL_OPTION_MULTI_STATEMENTS_ON");
 	}
 	if (multistmtoption==MYSQL_OPTION_MULTI_STATEMENTS_OFF) {
-		stdoutput.write("		"
-					"MYSQL_OPTION_MULTI_STATEMENTS_OFF\n");
+		debugWrite("MYSQL_OPTION_MULTI_STATEMENTS_OFF");
 	}
+	debugEnd();
 }
 
 bool sqlrprotocol_mysql::getRequest(char *request) {
@@ -2815,7 +2674,7 @@ bool sqlrprotocol_mysql::comInitDb() {
 
 	if (getDebug()) {
 		debugStart("com_init_db");
-		stdoutput.printf("	schemaname: \"%s\"\n",schemaname);
+		debugWrite("schemaname: \"%s\"",schemaname);
 		debugEnd();
 	}
 
@@ -2838,7 +2697,7 @@ bool sqlrprotocol_mysql::comStatistics() {
 	// FIXME: implement this somehow
 	if (getDebug()) {
 		debugStart("com_statistics");
-		stdoutput.printf("	%s\n",statistics);
+		debugWrite("%s",statistics);
 		debugEnd();
 	}
 	resetSendPacketBuffer();
@@ -2898,7 +2757,7 @@ bool sqlrprotocol_mysql::comChangeUser() {
 	// switches from the current user to the specified user
 	if (getDebug()) {
 		debugStart("com_change_user");
-		stdoutput.printf("	...\n");
+		debugWrite("...");
 		debugEnd();
 	}
 	// FIXME: implement this...
@@ -2909,7 +2768,7 @@ bool sqlrprotocol_mysql::comBinLogDump() {
 	// part of replication protocol
 	if (getDebug()) {
 		debugStart("com_bin_log_dump");
-		stdoutput.printf("	...\n");
+		debugWrite("...");
 		debugEnd();
 	}
 	return sendNotImplementedError();
@@ -2919,7 +2778,7 @@ bool sqlrprotocol_mysql::comTableDump() {
 	// part of replication protocol
 	if (getDebug()) {
 		debugStart("com_table_dump");
-		stdoutput.printf("	...\n");
+		debugWrite("...");
 		debugEnd();
 	}
 	return sendNotImplementedError();
@@ -2929,7 +2788,7 @@ bool sqlrprotocol_mysql::comConnectOut() {
 	// part of replication protocol
 	if (getDebug()) {
 		debugStart("com_connect_out");
-		stdoutput.printf("	...\n");
+		debugWrite("...");
 		debugEnd();
 	}
 	return sendNotImplementedError();
@@ -2939,7 +2798,7 @@ bool sqlrprotocol_mysql::comRegisterSlave() {
 	// part of replication protocol
 	if (getDebug()) {
 		debugStart("com_register_slave");
-		stdoutput.printf("	...\n");
+		debugWrite("...");
 		debugEnd();
 	}
 	return sendNotImplementedError();
@@ -2949,7 +2808,7 @@ bool sqlrprotocol_mysql::comDaemon() {
 	// internal server command
 	if (getDebug()) {
 		debugStart("com_daemon");
-		stdoutput.printf("	...\n");
+		debugWrite("...");
 		debugEnd();
 	}
 	return sendNotImplementedError();
@@ -2959,7 +2818,7 @@ bool sqlrprotocol_mysql::comBinlogDumpGtid() {
 	// part of replication protocol
 	if (getDebug()) {
 		debugStart("com_binlog_dump_gtid");
-		stdoutput.printf("	...\n");
+		debugWrite("...");
 		debugEnd();
 	}
 	return sendNotImplementedError();
@@ -2972,6 +2831,7 @@ bool sqlrprotocol_mysql::comResetConnection() {
 
 	if (getDebug()) {
 		debugStart("com_reset_connection");
+		debugWrite("...");
 		debugEnd();
 	}
 
@@ -2992,7 +2852,7 @@ bool sqlrprotocol_mysql::comCreateDb(sqlrservercursor *cursor) {
 
 	if (getDebug()) {
 		debugStart("com_create_db");
-		stdoutput.printf("	schemaname: \"%s\"\n",schemaname);
+		debugWrite("schemaname: \"%s\"",schemaname);
 		debugEnd();
 	}
 
@@ -3017,7 +2877,7 @@ bool sqlrprotocol_mysql::comDropDb(sqlrservercursor *cursor) {
 
 	if (getDebug()) {
 		debugStart("com_drop_db");
-		stdoutput.printf("	schemaname: \"%s\"\n",schemaname);
+		debugWrite("schemaname: \"%s\"",schemaname);
 		debugEnd();
 	}
 
@@ -3053,10 +2913,10 @@ bool sqlrprotocol_mysql::comQuery(sqlrservercursor *cursor) {
 
 	if (getDebug()) {
 		debugStart("com_query");
-		stdoutput.printf("	query: \"");
-		stdoutput.safePrint(query,(uint32_t)querysize);
-		stdoutput.printf("\"\n");
-		stdoutput.printf("	query size: %d\n",querysize);
+		stringbuffer	b;
+		b.safePrint(query,(uint32_t)querysize);
+		debugWrite("query: \"%s\"",b.getString());
+		debugWrite("query size: %d",querysize);
 		debugEnd();
 	}
 
@@ -3152,7 +3012,7 @@ bool sqlrprotocol_mysql::sendColumnDefinitions(sqlrservercursor *cursor,
 	// column count
 	if (getDebug()) {
 		debugStart("column count");
-		stdoutput.printf("	count: %d\n",colcount);
+		debugWrite("count: %d",colcount);
 		debugEnd();
 	}
 	resetSendPacketBuffer();
@@ -3177,7 +3037,7 @@ bool sqlrprotocol_mysql::sendColumnDefinitions(sqlrservercursor *cursor,
 	} else {
 		clientsock->flushWriteBuffer(-1,-1);
 		if (getDebug()) {
-			stdoutput.write("col defs flush...\n");
+			debugWrite("col defs flush...");
 		}
 	}
 	return true;
@@ -3256,19 +3116,21 @@ bool sqlrprotocol_mysql::sendColumnDefinition(sqlrservercursor *cursor,
 	}
 
 	if (getDebug()) {
-		stdoutput.printf("column %d {\n",column);
-		stdoutput.printf("	catalog: %s\n",catalog);
-		stdoutput.printf("	schema: %s\n",schema);
-		stdoutput.printf("	table: %s\n",table);
-		stdoutput.printf("	org table: %s\n",orgtable);
-		stdoutput.printf("	name: %s\n",colname);
-		stdoutput.printf("	org name: %s\n",orgcolname);
+		stringbuffer	b;
+		b.append("column ")->append(column);
+		debugStart(b.getString());
+		debugWrite("catalog: %s",catalog);
+		debugWrite("schema: %s",schema);
+		debugWrite("table: %s",table);
+		debugWrite("org table: %s",orgtable);
+		debugWrite("name: %s",colname);
+		debugWrite("org name: %s",orgcolname);
 		debugCharacterSet(servercharacterset);
-		stdoutput.printf("	size: %ld\n",size);
+		debugWrite("size: %ld",size);
 		debugColumnType(columntypestring,columntype);
 		debugColumnFlags(flags);
-		stdoutput.printf("	defaults: %s\n",defaults);
-		stdoutput.printf("	decimals: %d (0x%02x)\n",decimals,
+		debugWrite("defaults: %s",defaults);
+		debugWrite("decimals: %d (0x%02x)",decimals,
 					(uint32_t)(0x000000ff&decimals));
 		debugEnd();
 	}
@@ -3568,11 +3430,9 @@ bool sqlrprotocol_mysql::buildBinaryRow(sqlrservercursor *cursor,
 	}
 
 	if (getDebug()) {
-		stdoutput.write("	null bitmap {\n");
-		stdoutput.write("		");
-		stdoutput.printBits(nb,nullbitmapsize);
-		stdoutput.write('\n');
-		stdoutput.write("	}\n");
+		stringbuffer	b;
+		b.printBits(nb,nullbitmapsize);
+		debugWrite("null bitmap: %s",b.getString());
 	}
 
 	// append the null bitmap
@@ -3582,8 +3442,10 @@ bool sqlrprotocol_mysql::buildBinaryRow(sqlrservercursor *cursor,
 	for (i=0; i<colcount; i++) {
 
 		if (getDebug()) {
-			stdoutput.printf("	col %d {\n",i);
-			debugColumnType(ct[i]);
+			stringbuffer	b;
+			b.append("col ")->append(i);
+			debugStart(b.getString());
+			debugColumnType(NULL,ct[i]);
 		}
 
 		// get the field (again)
@@ -3592,7 +3454,7 @@ bool sqlrprotocol_mysql::buildBinaryRow(sqlrservercursor *cursor,
 		null=false;
 		if (!cont->getField(cursor,i,&field,&fieldsize,&lob,&null)) {
 			if (getDebug()) {
-				stdoutput.write("	}\n");
+				debugEnd();
 			}
 			return false;
 		}
@@ -3600,19 +3462,18 @@ bool sqlrprotocol_mysql::buildBinaryRow(sqlrservercursor *cursor,
 		// send the field
 		if (lob) {
 			if (getDebug()) {
-				stdoutput.write("		LOB\n");
+				debugWrite("LOB");
 			}
 			buildLobField(cursor,i);
 		} else if (!null) {
 			if (getDebug()) {
-				stdoutput.printf("		\"%s\" (%d)\n",
-							field,fieldsize);
+				debugWrite("\"%s\" (%d)",field,fieldsize);
 			}
 			buildBinaryField(field,fieldsize,ct[i]);
 		}
 
 		if (getDebug()) {
-			stdoutput.write("	}\n");
+			debugEnd();
 		}
 	}
 
@@ -3786,7 +3647,9 @@ bool sqlrprotocol_mysql::buildTextRow(sqlrservercursor *cursor,
 	for (uint32_t i=0; i<colcount; i++) {
 
 		if (getDebug()) {
-			stdoutput.printf("	col %d {\n",i);
+			stringbuffer	b;
+			b.append("col ")->append(i);
+			debugStart(b.getString());
 		}
 
 		// get the field
@@ -3796,7 +3659,7 @@ bool sqlrprotocol_mysql::buildTextRow(sqlrservercursor *cursor,
 		bool		null=false;
 		if (!cont->getField(cursor,i,&field,&fieldsize,&lob,&null)) {
 			if (getDebug()) {
-				stdoutput.write("	}\n");
+				debugEnd();
 			}
 			return false;
 		}
@@ -3804,24 +3667,23 @@ bool sqlrprotocol_mysql::buildTextRow(sqlrservercursor *cursor,
 		// send the field
 		if (null) {
 			if (getDebug()) {
-				stdoutput.write("		NULL\n");
+				debugWrite("NULL");
 			}
 			write(&resppacket,(char)0xfb);
 		} else if (lob) {
 			if (getDebug()) {
-				stdoutput.write("		LOB\n");
+				debugWrite("LOB");
 			}
 			buildLobField(cursor,i);
 		} else {
 			if (getDebug()) {
-				stdoutput.printf("		\"%s\" (%d)\n",
-							field,fieldsize);
+				debugWrite("\"%s\" (%d)",field,fieldsize);
 			}
 			writeLenEncStr(&resppacket,field,fieldsize);
 		}
 
 		if (getDebug()) {
-			stdoutput.write("	}\n");
+			debugEnd();
 		}
 	}
 
@@ -3843,7 +3705,7 @@ bool sqlrprotocol_mysql::buildTextRow(sqlrservercursor *cursor,
 	}
 
 	if (getDebug()) {
-		stdoutput.printf("		lob length: %lld\n",loblength);
+		debugWrite("lob length: %lld",loblength);
 	}
 
 	// for lobs of 0 length
@@ -3879,14 +3741,10 @@ bool sqlrprotocol_mysql::buildTextRow(sqlrservercursor *cursor,
 			cont->closeLobField(cursor,col);
 
 			if (getDebug()) {
-				stdoutput.printf("		"
-						"chars sent: %lld\n",
-						charssent);
-				stdoutput.printf("		"
-						"bytes sent: %lld\n",
-						(uint64_t)
-						(resppacket.getPosition()-
-						startbyte));
+				debugWrite("chars sent: %lld",charssent);
+				debugWrite("bytes sent: %lld",
+					(uint64_t)(resppacket.getPosition()-
+								startbyte));
 			}
 			return;
 
@@ -3999,8 +3857,8 @@ bool sqlrprotocol_mysql::comFieldList(sqlrservercursor *cursor) {
 
 	if (getDebug()) {
 		debugStart("com_field_list");
-		stdoutput.printf("	table: \"%s\"\n",table);
-		stdoutput.printf("	wild: \"%s\"\n",wild);
+		debugWrite("table: \"%s\"",table);
+		debugWrite("wild: \"%s\"",wild);
 		debugEnd();
 	}
 
@@ -4403,7 +4261,7 @@ bool sqlrprotocol_mysql::comProcessKill(sqlrservercursor *cursor) {
 
 	if (getDebug()) {
 		debugStart("com_process_kill");
-		stdoutput.printf("	connection id: %ld\n",connid);
+		debugWrite("connection id: %ld",connid);
 		debugEnd();
 	}
 
@@ -4442,10 +4300,10 @@ bool sqlrprotocol_mysql::comStmtPrepare(sqlrservercursor *cursor) {
 
 	if (getDebug()) {
 		debugStart("com_stmt_prepare");
-		stdoutput.printf("	query: \"");
-		stdoutput.safePrint(query,(uint32_t)querysize);
-		stdoutput.printf("\"\n");
-		stdoutput.printf("	query size: %d\n",querysize);
+		stringbuffer	b;
+		b.safePrint(query,(uint32_t)querysize);
+		debugWrite("query: \"%s\"",b.getString());
+		debugWrite("query size: %d",querysize);
 		debugEnd();
 	}
 
@@ -4485,11 +4343,10 @@ bool sqlrprotocol_mysql::sendStmtPrepareOk(sqlrservercursor *cursor) {
 
 	if (getDebug()) {
 		debugStart("stmt_prepare_ok");
-		stdoutput.printf("	statement id: %d\n",
-						(uint32_t)cont->getId(cursor));
-		stdoutput.printf("	number of columns: %hd\n",ccount);
-		stdoutput.printf("	number of params: %hd\n",pcount);
-		stdoutput.printf("	warning count: %hd\n",warningcount);
+		debugWrite("statement id: %d",(uint32_t)cont->getId(cursor));
+		debugWrite("number of columns: %hd",ccount);
+		debugWrite("number of params: %hd",pcount);
+		debugWrite("warning count: %hd",warningcount);
 		debugEnd();
 	}
 
@@ -4567,7 +4424,7 @@ bool sqlrprotocol_mysql::sendStmtPrepareOk(sqlrservercursor *cursor) {
 	if (flush) {
 		clientsock->flushWriteBuffer(-1,-1);
 		if (getDebug()) {
-			stdoutput.write("stmt prep ok flush...\n");
+			debugWrite("stmt prep ok flush...");
 		}
 	}
 
@@ -4601,9 +4458,9 @@ bool sqlrprotocol_mysql::comStmtExecute() {
 
 	if (getDebug()) {
 		debugStart("com_stmt_execute");
-		stdoutput.printf("	statement id: %d\n",stmtid);
+		debugWrite("statement id: %d",stmtid);
 		debugStmtExecuteFlags(flags);
-		stdoutput.printf("	iteration count: %d\n",iterationcount);
+		debugWrite("iteration count: %d",iterationcount);
 	}
 	
 	// get the parameters
@@ -4623,13 +4480,12 @@ bool sqlrprotocol_mysql::comStmtExecute() {
 		rp++;
 
 		if (getDebug()) {
-			stdoutput.write("	null bitmap {\n");
-			stdoutput.write("		");
-			stdoutput.printBits(nullbitmap,(pcount+7)/8);
-			stdoutput.write('\n');
-			stdoutput.write("	}\n");
-			stdoutput.printf("	new params bound: %d\n",
-							newparamsbound);
+			debugStart("null bitmap");
+			stringbuffer	b;
+			b.printBits(nullbitmap,(pcount+7)/8);
+			debugWrite("%s");
+			debugEnd();
+			debugWrite("new params bound: %d",newparamsbound);
 		}
 
 		uint16_t	*pt=ptypes[cont->getId(cursor)];
@@ -4672,7 +4528,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 	const byte_t	*rp=in;
 
 	if (getDebug()) {
-		stdoutput.write("	bind {\n");
+		debugStart("bind");
 	}
 
 	memorypool		*bindpool=cont->getBindPool(cursor);
@@ -4696,14 +4552,13 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 			bv->type=SQLRSERVERBINDVARTYPE_NULL;
 			bv->isnull=cont->getNullBindValue();
 			if (getDebug()) {
-				stdoutput.printf("		%d {\n",i);
-				stdoutput.printf("			"
-						"variable: %s\n",bv->variable);
-				stdoutput.write("			");
-				stdoutput.write("type: NULL\n");
-				stdoutput.write("			"
-						"isnull: true\n");
-				stdoutput.write("		}\n");
+				stringbuffer	b;
+				b.append(i);
+				debugStart(b.getString());
+				debugWrite("variable: %s",bv->variable);
+				debugWrite("type: NULL");
+				debugWrite("isnull: true");
+				debugEnd();
 			}
 			continue;
 		}
@@ -4963,45 +4818,34 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 		}
 
 		if (getDebug()) {
-			stdoutput.printf("		%d {\n",i);
-			stdoutput.printf("			"
-						"variable: %s\n",bv->variable);
+			stringbuffer	b;
+			b.append(i);
+			debugStart(b.getString());
+			debugWrite("variable: %s",bv->variable);
 			if (bv->type==SQLRSERVERBINDVARTYPE_STRING) {
-				stdoutput.write("			"
-						"type: STRING\n");
-				stdoutput.printf("			"
-						"value: %s\n",
-						bv->value.stringval);
+				debugWrite("type: STRING");
+				debugWrite("value: %s",bv->value.stringval);
 			} else if (bv->type==SQLRSERVERBINDVARTYPE_INTEGER) {
-				stdoutput.write("			"
-						"type: INTEGER\n");
-				stdoutput.printf("			"
-						"value: %lld\n",
-						bv->value.integerval);
+				debugWrite("type: INTEGER");
+				debugWrite("value: %lld",bv->value.integerval);
 			} else if (bv->type==SQLRSERVERBINDVARTYPE_DOUBLE) {
-				stdoutput.write("			"
-						"type: DOUBLE\n");
-				stdoutput.printf("			"
-						"value: %f (%d,%d)\n",
+				debugWrite("type: DOUBLE");
+				debugWrite("value: %f (%d,%d)",
 						bv->value.doubleval.value,
 						bv->value.doubleval.precision,
 						bv->value.doubleval.scale);
 			} else if (bv->type==SQLRSERVERBINDVARTYPE_DATE) {
-				stdoutput.write("			"
-						"type: DATE\n");
-				stdoutput.printf("			"
-						"value: ... coming soon...\n");
+				debugWrite("type: DATE");
+				debugWrite("value: ... coming soon...");
 			}
-			stdoutput.printf("			"
-					"value size: %d\n",bv->valuesize);
-			stdoutput.write("			"
-					"isnull: false\n");
-			stdoutput.write("		}\n");
+			debugWrite("value size: %d",bv->valuesize);
+			debugWrite("isnull: false");
+			debugEnd();
 		}
 	}
 
 	if (getDebug()) {
-		stdoutput.write("	}\n");
+		debugEnd();
 	}
 
 	*out=rp;
@@ -5037,9 +4881,9 @@ bool sqlrprotocol_mysql::comStmtSendLongData() {
 
 	if (getDebug()) {
 		debugStart("com_stmt_long_data");
-		stdoutput.printf("	statement id: %d\n",stmtid);
-		stdoutput.printf("	parameter id: %d\n",paramid);
-		stdoutput.printf("	data size: %lld\n",datasize);
+		debugWrite("statement id: %d",stmtid);
+		debugWrite("parameter id: %d",paramid);
+		debugWrite("data size: %lld",datasize);
 		debugHexDump(data,datasize);
 		debugEnd();
 	}
@@ -5077,7 +4921,7 @@ bool sqlrprotocol_mysql::comStmtClose() {
 
 	if (getDebug()) {
 		debugStart("com_stmt_close");
-		stdoutput.printf("	statement id: %d\n",stmtid);
+		debugWrite("statement id: %d",stmtid);
 		debugEnd();
 	}
 
@@ -5109,7 +4953,7 @@ bool sqlrprotocol_mysql::comStmtReset() {
 
 	if (getDebug()) {
 		debugStart("com_stmt_reset");
-		stdoutput.printf("	statement id: %d\n",stmtid);
+		debugWrite("statement id: %d",stmtid);
 		debugEnd();
 	}
 
@@ -5167,8 +5011,8 @@ bool sqlrprotocol_mysql::comStmtFetch() {
 
 	if (getDebug()) {
 		debugStart("com_stmt_fetch");
-		stdoutput.printf("	statement id: %d\n",stmtid);
-		stdoutput.printf("	number of rows: %d\n",numrows);
+		debugWrite("statement id: %d",stmtid);
+		debugWrite("number of rows: %d",numrows);
 		debugEnd();
 	}
 

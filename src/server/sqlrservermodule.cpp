@@ -33,9 +33,9 @@ sqlrservermodule::sqlrservermodule(sqlrservercontroller *cont,
 	} else {
 		// if debug wasn't enabled in the parent tag, but was
 		// specifically enabled in the tag for this module, then
-		// ensable it
+		// enable it
 		if (charstring::isYes(parameters->getAttributeValue("debug"))) {
-			setDebug(false);
+			setDebug(true);
 		}
 	}
 }

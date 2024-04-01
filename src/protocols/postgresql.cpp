@@ -1521,7 +1521,7 @@ bool sqlrprotocol_postgresql::sendRowDescription(sqlrservercursor *cursor,
 			stdoutput.printf("		type modifier: %d\n",
 							datatypemodifier);
 			stdoutput.printf("		format code: 0\n");
-			debugEnd(1);
+			debugEnd();
 		}
 	}
 
@@ -1809,7 +1809,7 @@ bool sqlrprotocol_postgresql::sendDataRow(sqlrservercursor *cursor,
 				stdoutput.printf("		%d: %.*s\n",
 						fieldsize,fieldsize,field);
 			}
-			debugEnd(1);
+			debugEnd();
 		}
 	}
 
@@ -2182,7 +2182,7 @@ bool sqlrprotocol_postgresql::bind() {
 			}
 		}
 
-		debugEnd(1);
+		debugEnd();
 	}
 
 	delete[] paramformatcodes;
@@ -2553,7 +2553,7 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 		case 2283: //anyelement
 		case 705: //unknown
 		default:
-			debugEnd(1);
+			debugEnd();
 			debugEnd();
 			stringbuffer	err;
 			err.append("parameter oid ");

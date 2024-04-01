@@ -2675,7 +2675,7 @@ bool sqlrprotocol_teradata::parseClientConfigParcel(
 			stdoutput.printf("		field: %d\n",field);
 			stdoutput.printf("		size: %d\n",size);
 			stdoutput.printf("		data:\n");
-			debugHexDump(ptr,size,2);
+			debugHexDump(ptr,size);
 			stdoutput.write('\n');
 		}
 		ptr+=size;
@@ -2812,13 +2812,13 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(
 		stdoutput.printf("		post-marker size: %d\n",
 							postmarkersize);
 		stdoutput.printf("		unknown1:\n");
-		debugHexDump(unknown1,7,2);
+		debugHexDump(unknown1,7);
 		stdoutput.printf("		body size: %d\n",
 							bodysize);
 		stdoutput.printf("		unknown2:\n");
-		debugHexDump(unknown2,10,2);
+		debugHexDump(unknown2,10);
 		stdoutput.printf("		unknown3:\n");
-		debugHexDump(unknown3,2,2);
+		debugHexDump(unknown3,2);
 		stdoutput.printf("		fields size: %d\n",
 							fieldssize);
 	}
@@ -2954,7 +2954,7 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(
 	ptr+=reqmechsize;
 	if (getDebug()) {
 		stdoutput.write("		requested mech:\n");
-		debugHexDump(reqmech,reqmechsize,2);
+		debugHexDump(reqmech,reqmechsize);
 	}
 
 	// negotiate mech
@@ -3305,7 +3305,7 @@ bool sqlrprotocol_teradata::parseOptionsParcel(
 			stdoutput.printf("		"
 					"failed to get a cursor\n");
 		}
-		debugEnd(2);
+		debugEnd();
 		// FIXME: return an error to the client if this happens
 		return false;
 	}
@@ -3520,7 +3520,7 @@ void sqlrprotocol_teradata::parseUsing() {
 
 	const char	*queryend=req->query+req->querylen;
 
-	debugStart("bind variables",2);
+	debugStart("bind variables");
 
 	sqlrserverbindvar	*inbinds=cont->getInputBinds(req->cur);
 	memorypool		*bindpool=cont->getBindPool(req->cur);
@@ -3718,7 +3718,7 @@ void sqlrprotocol_teradata::parseUsing() {
 		}
 	}
 
-	debugEnd(2);
+	debugEnd();
 
 	// we have bind variables
 	req->bindvars=true;
@@ -3886,7 +3886,7 @@ bool sqlrprotocol_teradata::parseDataParcel(
 	sqlrserverbindvar	*inbinds=cont->getInputBinds(req->cur);
 	uint16_t		inbindcount=cont->getInputBindCount(req->cur);
 
-	debugStart("bind values",2);
+	debugStart("bind values");
 
 	for (uint16_t count=0; count<inbindcount; count++) {
 
@@ -3993,7 +3993,7 @@ bool sqlrprotocol_teradata::parseDataParcel(
 		}
 	}
 
-	debugEnd(2);
+	debugEnd();
 
 	// we have bind values
 	req->bindvals=true;
@@ -4326,7 +4326,7 @@ bool sqlrprotocol_teradata::parseStatementInfoExtensions(
 	// parcels.  However, so far, I've only seen extension number 8, which
 	// isn't defined in the spec, but appears to describe a parameter.
 
-	debugStart("bind variables",2);
+	debugStart("bind variables");
 
 	// input bind count
 	uint16_t	ibcount=0;
@@ -4350,7 +4350,7 @@ bool sqlrprotocol_teradata::parseStatementInfoExtensions(
 				ibcount++;
 			}
 		} else {
-			debugStart("unhandled extension",2);
+			debugStart("unhandled extension");
 			stdoutput.printf("			"
 					"layout: %d\n",pbtilout);
 			stdoutput.printf("			"
@@ -4358,7 +4358,7 @@ bool sqlrprotocol_teradata::parseStatementInfoExtensions(
 			stdoutput.printf("			"
 					"size: %d\n",pbtilen);
 			debugHexDump(ext,pbtilen);
-			debugEnd(2);
+			debugEnd();
 		}
 
 		// move on to the next extension
@@ -4366,7 +4366,7 @@ bool sqlrprotocol_teradata::parseStatementInfoExtensions(
 		extlen-=pbtilen;
 	}
 
-	debugEnd(2);
+	debugEnd();
 
 	// set input bind count
 	cont->setInputBindCount(req->cur,ibcount);
@@ -4625,7 +4625,7 @@ bool sqlrprotocol_teradata::parseMultipartIndicDataParcel(
 		ptr++;
 	}
 
-	debugStart("bind values",2);
+	debugStart("bind values");
 
 	// parse bind values...
 	for (uint16_t i=0; i<ibcount; i++) {
@@ -4695,7 +4695,7 @@ bool sqlrprotocol_teradata::parseMultipartIndicDataParcel(
 		}
 	}
 
-	debugEnd(2);
+	debugEnd();
 
 	// we have bind values
 	req->bindvals=true;
@@ -4832,7 +4832,7 @@ bool sqlrprotocol_teradata::prepareQuery() {
 	}
 
 	// prepare the query
-	debugStart("prepare query",1);
+	debugStart("prepare query");
 	bool	retval=cont->prepareQuery(req->cur,
 					query,querylen,
 					true,true,true);
@@ -4840,13 +4840,13 @@ bool sqlrprotocol_teradata::prepareQuery() {
 		stdoutput.printf("		result: %s\n",
 					(retval)?"success":"error");
 	}
-	debugEnd(1);
+	debugEnd();
 	return retval;
 }
 
 bool sqlrprotocol_teradata::executeQuery() {
 
-	debugStart("execute query",1);
+	debugStart("execute query");
 
 	// execute the query
 	bool	retval=cont->executeQuery(req->cur,true,true,true,true);
@@ -4855,7 +4855,7 @@ bool sqlrprotocol_teradata::executeQuery() {
 		stdoutput.printf("		result: %s\n",
 					(retval)?"success":"error");
 	}
-	debugEnd(1);
+	debugEnd();
 
 	return retval;
 }
@@ -5288,13 +5288,13 @@ void sqlrprotocol_teradata::appendConfigResponseField49() {
 							unknown7,unknown7);
 		stdoutput.printf("			"
 					"unknown8:\n");
-		debugHexDump(unknown8,unknown8size,3);
+		debugHexDump(unknown8,unknown8size);
 		stdoutput.printf("			"
 					"unknown9: %d (0x%04x)\n",
 							unknown9,unknown9);
 		stdoutput.printf("			"
 					"unknown10:\n");
-		debugHexDump(unknown10,unknown10size,3);
+		debugHexDump(unknown10,unknown10size);
 		stdoutput.printf("			"
 					"unknown11: %d (0x%04x)\n",
 							unknown11,unknown11);
@@ -5496,7 +5496,7 @@ void sqlrprotocol_teradata::appendConfigResponseField12() {
 		stdoutput.printf("		field: %d (0x%02x)\n",
 								field,field);
 		stdoutput.printf("			data:\n");
-		debugHexDump(data,sizeof(data),3);
+		debugHexDump(data,sizeof(data));
 	}
 }
 
@@ -5542,7 +5542,7 @@ void sqlrprotocol_teradata::appendConfigResponseField14() {
 		stdoutput.printf("		field: %d (0x%02x)\n",
 								field,field);
 		stdoutput.printf("			data:\n");
-		debugHexDump(data,sizeof(data),3);
+		debugHexDump(data,sizeof(data));
 	}
 }
 
@@ -5587,11 +5587,11 @@ void sqlrprotocol_teradata::appendConfigResponseField16() {
 		stdoutput.printf("		field: %d (0x%02x)\n",
 								field,field);
 		stdoutput.printf("			data1:\n");
-		debugHexDump(data1,sizeof(data1),3);
+		debugHexDump(data1,sizeof(data1));
 		stdoutput.printf("			unknown: %d (0x%02x)\n",
 							unknown,unknown);
 		stdoutput.printf("			data2:\n");
-		debugHexDump(data2,sizeof(data2),3);
+		debugHexDump(data2,sizeof(data2));
 	}
 }
 
@@ -5608,7 +5608,7 @@ void sqlrprotocol_teradata::appendConfigResponseField6() {
 		stdoutput.printf("		field: %d (0x%02x)\n",
 								field,field);
 		stdoutput.printf("			data:\n");
-		debugHexDump(data,sizeof(data),3);
+		debugHexDump(data,sizeof(data));
 	}
 }
 
@@ -5706,9 +5706,9 @@ void sqlrprotocol_teradata::appendGatewayConfigParcel() {
 	if (getDebug()) {
 		stdoutput.printf("		marker: %d\n",marker);
 		stdoutput.printf("		field 1:\n");
-		debugHexDump(data1,sizeof(data1),3);
+		debugHexDump(data1,sizeof(data1));
 		stdoutput.printf("		release:\n");
-		debugHexDump(releasedata,sizeof(releasedata),3);
+		debugHexDump(releasedata,sizeof(releasedata));
 		stdoutput.printf("		field 3:\n");
 		stdoutput.printf("		field 4:\n");
 		stdoutput.printf("			%d\n",data4);
@@ -5718,11 +5718,11 @@ void sqlrprotocol_teradata::appendGatewayConfigParcel() {
 		stdoutput.printf("		field 8:\n");
 		stdoutput.printf("		field 9:\n");
 		stdoutput.printf("		field 10:\n");
-		debugHexDump(data10,sizeof(data10),3);
+		debugHexDump(data10,sizeof(data10));
 		stdoutput.printf("		field 11:\n");
-		debugHexDump(data11,sizeof(data11),3);
+		debugHexDump(data11,sizeof(data11));
 		stdoutput.printf("		field 12:\n");
-		debugHexDump(data12,sizeof(data12),3);
+		debugHexDump(data12,sizeof(data12));
 		stdoutput.printf("		field 14:\n");
 	}
 
@@ -5766,7 +5766,7 @@ void sqlrprotocol_teradata::appendTd2MechanismParcel() {
 	if (getDebug()) {
 		stdoutput.printf("		marker: %d\n",marker);
 		stdoutput.printf("		mech:\n");
-		debugHexDump(td2mech,sizeof(td2mech),2);
+		debugHexDump(td2mech,sizeof(td2mech));
 		stdoutput.printf("		field 16: %d,%d\n",
 						field16data1,field16data2);
 		stdoutput.printf("		field 17: %d,%d\n",
@@ -5804,7 +5804,7 @@ void sqlrprotocol_teradata::appendTdNegoMechanismParcel() {
 	if (getDebug()) {
 		stdoutput.printf("		marker: %d\n",marker);
 		stdoutput.printf("		mech:\n");
-		debugHexDump(tdnegomech,sizeof(tdnegomech),2);
+		debugHexDump(tdnegomech,sizeof(tdnegomech));
 		stdoutput.printf("		field 17: %d,%d\n",
 						field17data1,field17data2);
 	}
@@ -5840,7 +5840,7 @@ void sqlrprotocol_teradata::appendLdapMechanismParcel() {
 	if (getDebug()) {
 		stdoutput.printf("		marker: %d\n",marker);
 		stdoutput.printf("		mech:\n");
-		debugHexDump(ldapmech,sizeof(ldapmech),2);
+		debugHexDump(ldapmech,sizeof(ldapmech));
 		stdoutput.printf("		field 17: %d,%d\n",
 						field17data1,field17data2);
 	}
@@ -5876,7 +5876,7 @@ void sqlrprotocol_teradata::appendKrbMechanismParcel() {
 	if (getDebug()) {
 		stdoutput.printf("		marker: %d\n",marker);
 		stdoutput.printf("		mech:\n");
-		debugHexDump(krbmech,sizeof(krbmech),2);
+		debugHexDump(krbmech,sizeof(krbmech));
 		stdoutput.printf("		field 17: %d,%d\n",
 						field17data1,field17data2);
 	}
@@ -5912,7 +5912,7 @@ void sqlrprotocol_teradata::appendKrbCompatMechanismParcel() {
 	if (getDebug()) {
 		stdoutput.printf("		marker: %d\n",marker);
 		stdoutput.printf("		mech:\n");
-		debugHexDump(krbcompatmech,sizeof(krbcompatmech),2);
+		debugHexDump(krbcompatmech,sizeof(krbcompatmech));
 		stdoutput.printf("		field 17: %d,%d\n",
 						field17data1,field17data2);
 	}
@@ -6014,7 +6014,7 @@ void sqlrprotocol_teradata::appendSsoResponseParcel() {
 	write(&respdata,serverpubkey,sizeof(serverpubkey));
 	if (getDebug()) {
 		stdoutput.printf("		marker:\n");
-		debugHexDump(marker,sizeof(marker),2);
+		debugHexDump(marker,sizeof(marker));
 		stdoutput.printf("		unknown:\n");
 		debugHexDump(unknown,sizeof(unknown));
 		stdoutput.printf("		dh \"p\":\n");
@@ -6148,7 +6148,7 @@ void sqlrprotocol_teradata::appendSsoParcel() {
 	write(&respdata,data,sizeof(data));
 	if (getDebug()) {
 		stdoutput.printf("		data:\n");
-		debugHexDump(data,sizeof(data),2);
+		debugHexDump(data,sizeof(data));
 	}
 
 	debugParcelEnd();
@@ -6439,7 +6439,7 @@ void sqlrprotocol_teradata::getFieldFormat(bytebuffer *fieldformat,
 
 void sqlrprotocol_teradata::appendFieldParcel(const char *data, uint16_t size) {
 	debugParcelStart("send","field",18);
-	debugHexDump((const byte_t *)data,size,2);
+	debugHexDump((const byte_t *)data,size);
 	debugParcelEnd();
 	appendParcelHeader(18,size);
 	write(&respdata,data,size);
@@ -7419,7 +7419,7 @@ void sqlrprotocol_teradata::appendRecordParcel() {
 		}
 		stdoutput.printf("		row buffer:\n");
 		debugHexDump(req->rowbuffer.getBuffer(),
-				req->rowbuffer.getSize(),1);
+				req->rowbuffer.getSize());
 	}
 	debugParcelEnd();
 

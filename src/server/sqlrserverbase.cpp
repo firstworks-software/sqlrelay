@@ -2,18 +2,25 @@
 // See the file COPYING for more information
 
 #include <sqlrelay/sqlrserver.h>
-#include <rudiments/stdio.h>
+#include <rudiments/logger.h>
 #include <rudiments/process.h>
 
 class sqlrserverbaseprivate {
 	friend class sqlrserverbase;
 	private:
-		bool	_debug;
+		logger			_lg;
+		stdoutdestination	_sod;
+		bool			_debug;
+		uint16_t		_indent;
+		stringbuffer		_logbuffer;
 };
 
 sqlrserverbase::sqlrserverbase() {
 	pvt=new sqlrserverbaseprivate;
 	pvt->_debug=false;
+	pvt->_indent=0;
+	pvt->_lg.setLogLevel(1);
+	pvt->_lg.addLogDestination(&pvt->_sod);
 }
 
 sqlrserverbase::~sqlrserverbase() {
@@ -29,44 +36,42 @@ bool sqlrserverbase::getDebug() {
 }
 
 void sqlrserverbase::debugStart(const char *title) {
-	debugStart(title,0);
-}
-
-void sqlrserverbase::debugStart(const char *title, uint16_t indent) {
-	if (pvt->_debug) {
-		for (uint16_t i=0; i<indent; i++) {
-			stdoutput.write('	');
-		}
-		if (!indent) {
-			stdoutput.printf("%d: ",process::getProcessId());
-		}
-		stdoutput.write(title);
-		stdoutput.write(" {\n");
-	}
-}
-
-void sqlrserverbase::debugHexDump(const byte_t *data, uint64_t size) {
-	debugHexDump(data,size,1);
-}
-
-void sqlrserverbase::debugHexDump(const byte_t *data,
-						uint64_t size,
-						uint16_t indent) {
 	if (!pvt->_debug) {
 		return;
 	}
-	stdoutput.printHex(data,size,indent);
+	pvt->_logbuffer.clear();
+	if (!pvt->_indent) {
+		pvt->_logbuffer.append(process::getProcessId());
+		pvt->_logbuffer.append(": ");
+	}
+	pvt->_logbuffer.append(title);
+	pvt->_lg.start(1,NULL,pvt->_indent,pvt->_logbuffer.getString());
+	pvt->_indent++;
+}
+
+void sqlrserverbase::debugWrite(const char *string, ...) {
+	if (!pvt->_debug) {
+		return;
+	}
+	va_list	argp;
+	va_start(argp,string);
+	pvt->_lg.write(1,NULL,pvt->_indent,string,&argp);
+	va_end(argp);
+}
+
+void sqlrserverbase::debugHexDump(const byte_t *data, uint64_t size) {
+	if (!pvt->_debug) {
+		return;
+	}
+	pvt->_logbuffer.clear();
+	pvt->_logbuffer.printHex(data,size,0);
+	pvt->_lg.write(1,NULL,0,pvt->_logbuffer.getString());
 }
 
 void sqlrserverbase::debugEnd() {
-	debugEnd(0);
-}
-
-void sqlrserverbase::debugEnd(uint16_t indent) {
-	if (pvt->_debug) {
-		for (uint16_t i=0; i<indent; i++) {
-			stdoutput.write('	');
-		}
-		stdoutput.write("}\n");
+	if (!pvt->_debug) {
+		return;
 	}
+	pvt->_indent--;
+	pvt->_lg.end(1,(const char *)NULL,pvt->_indent);
 }
