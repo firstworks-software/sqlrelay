@@ -839,10 +839,8 @@ sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
 
 	clientsock=NULL;
 
-	if (getDebug()) {
-		debugStart("parameters");
-		debugEnd();
-	}
+	debugStart("parameters");
+	debugEnd();
 
 	srvname=cont->getDbHostName();
 
@@ -905,55 +903,43 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 
 		// get the packet type
 		if (clientsock->read(packettype)!=sizeof(*packettype)) {
-			if (getDebug()) {
-				stdoutput.write("read packet type failed\n");
-				debugSystemError();
-			}
+			debugWrite("read packet type failed");
+			debugSystemError();
 			return false;
 		}
 
 		// get the packet status
 		if (clientsock->read(&packetstatus)!=sizeof(packetstatus)) {
-			if (getDebug()) {
-				stdoutput.write("read packet status failed\n");
-				debugSystemError();
-			}
+			debugWrite("read packet status failed");
+			debugSystemError();
 			return false;
 		}
 
 		// get the packet size
 		if (clientsock->read(&packetsize)!=sizeof(packetsize)) {
-			if (getDebug()) {
-				stdoutput.write("read packet size failed\n");
-				debugSystemError();
-			}
+			debugWrite("read packet size failed");
+			debugSystemError();
 			return false;
 		}
 
 		// get the spid
 		if (clientsock->read(&spid)!=sizeof(spid)) {
-			if (getDebug()) {
-				stdoutput.write("read spid failed\n");
-				debugSystemError();
-			}
+			debugWrite("read spid failed");
+			debugSystemError();
 			return false;
 		}
 
 		// get the packet id
 		if (clientsock->read(&packetid)!=sizeof(packetid)) {
-			if (getDebug()) {
-				stdoutput.write("read packet id failed\n");
-				debugSystemError();
-			}
+			debugWrite("read packet id failed");
+			debugSystemError();
 			return false;
 		}
 
 		// get the packet window
 		if (clientsock->read(&packetwindow)!=sizeof(packetwindow)) {
-			if (getDebug()) {
-				stdoutput.write("read packet window failed\n");
-				debugSystemError();
-			}
+			debugWrite("read packet window failed");
+			debugSystemError();
 			return false;
 		}
 
@@ -969,20 +955,13 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 			*packettype!=TDS7_LOGIN &&
 			*packettype!=SSPI &&
 			*packettype!=PRE_LOGIN) {
-			if (getDebug()) {
-				stdoutput.printf("invalid packet type: "
-								"0x%02x\n",
-								*packettype);
-				debugSystemError();
-			}
+			debugWrite("invalid packet type: 0x%02x",*packettype);
+			debugSystemError();
 			return false;
 		}
 		if (packetsize<8) {
-			if (getDebug()) {
-				stdoutput.printf("invalid packet size: %d\n",
-								packetsize);
-				debugSystemError();
-			}
+			debugWrite("invalid packet size: %d",packetsize);
+			debugSystemError();
 			return false;
 		}
 
@@ -992,10 +971,8 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 		// get the packet data
 		byte_t	*packet=new byte_t[packetsize];
 		if (clientsock->read(packet,packetsize)!=packetsize) {
-			if (getDebug()) {
-				stdoutput.write("read packet failed\n");
-				debugSystemError();
-			}
+			debugWrite("read packet failed");
+			debugSystemError();
 			return false;
 		}
 
@@ -1005,23 +982,15 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 		// bump the packet size back up
 		packetsize+=8;
 
-		if (getDebug()) {
-			debugStart("recv");
-			stdoutput.printf("	packet type:	0x%02x\n",
-								*packettype);
-			stdoutput.printf("	packet status:	0x%02x\n",
-								packetstatus);
-			stdoutput.printf("	packet size:	%d\n",
-								packetsize);
-			stdoutput.printf("	spid:		%d\n",
-								spid);
-			stdoutput.printf("	packet id:	%d\n",
-								packetid);
-			stdoutput.printf("	packet window:	%d\n",
-								packetwindow);
-			debugHexDump(packet,packetsize-8);
-			debugEnd();
-		}
+		debugStart("recv");
+		debugWrite("packet type: 0x%02x",*packettype);
+		debugWrite("packet status: 0x%02x",packetstatus);
+		debugWrite("packet size: %d",packetsize);
+		debugWrite("spid: %d",spid);
+		debugWrite("packet id: %d",packetid);
+		debugWrite("packet window: %d",packetwindow);
+		debugHexDump(packet,packetsize-8);
+		debugEnd();
 
 	} while (!(packetstatus&STATUS_EOM));
 
@@ -1053,75 +1022,55 @@ bool sqlrprotocol_tds::sendPacket() {
 		uint16_t	spid=0;
 		byte_t		packetwindow=0;
 
-		if (getDebug()) {
-			debugStart("send");
-			stdoutput.printf("	packet type:	0x%02x\n",
-								packettype);
-			stdoutput.printf("	packet status:	0x%02x\n",
-								packetstatus);
-			stdoutput.printf("	packet size:	%d\n",
-								packetsize);
-			stdoutput.printf("	spid:		%d\n",
-								spid);
-			stdoutput.printf("	packet id:	%d\n",
-								packetid);
-			stdoutput.printf("	packet window:	%d\n",
-								packetwindow);
-			debugHexDump(packet,packetsize-8);
-			debugEnd();
-		}
+		debugStart("send");
+		debugWrite("packet type: 0x%02x",packettype);
+		debugWrite("packet status: 0x%02x",packetstatus);
+		debugWrite("packet size: %d",packetsize);
+		debugWrite("spid: %d",spid);
+		debugWrite("packet id: %d",packetid);
+		debugWrite("packet window: %d",packetwindow);
+		debugHexDump(packet,packetsize-8);
+		debugEnd();
 
 		// send the packet type
 		if (clientsock->write(packettype)!=sizeof(packettype)) {
-			if (getDebug()) {
-				stdoutput.write("write packet type failed\n");
-				debugSystemError();
-			}
+			debugWrite("write packet type failed");
+			debugSystemError();
 			return false;
 		}
 
 		// send the packet status
 		if (clientsock->write(packetstatus)!=sizeof(packetstatus)) {
-			if (getDebug()) {
-				stdoutput.write("write packet status failed\n");
-				debugSystemError();
-			}
+			debugWrite("write packet status failed");
+			debugSystemError();
 			return false;
 		}
 
 		// send the packet size
 		if (clientsock->write(packetsize)!=sizeof(packetsize)) {
-			if (getDebug()) {
-				stdoutput.write("write packet size failed\n");
-				debugSystemError();
-			}
+			debugWrite("write packet size failed");
+			debugSystemError();
 			return false;
 		}
 
 		// send the spid
 		if (clientsock->write(spid)!=sizeof(spid)) {
-			if (getDebug()) {
-				stdoutput.write("write spid failed\n");
-				debugSystemError();
-			}
+			debugWrite("write spid failed");
+			debugSystemError();
 			return false;
 		}
 
 		// send the packet id
 		if (clientsock->write(packetid)!=sizeof(packetid)) {
-			if (getDebug()) {
-				stdoutput.write("write packet id failed\n");
-				debugSystemError();
-			}
+			debugWrite("write packet id failed");
+			debugSystemError();
 			return false;
 		}
 
 		// send the packet window
 		if (clientsock->write(packetwindow)!=sizeof(packetwindow)) {
-			if (getDebug()) {
-				stdoutput.write("write packet window failed\n");
-				debugSystemError();
-			}
+			debugWrite("write packet window failed");
+			debugSystemError();
 			return false;
 		}
 
@@ -1130,18 +1079,14 @@ bool sqlrprotocol_tds::sendPacket() {
 
 		// send the packet data
 		if (clientsock->write(packet,packetsize)!=packetsize) {
-			if (getDebug()) {
-				stdoutput.write("write packet data failed\n");
-				debugSystemError();
-			}
+			debugWrite("write packet data failed");
+			debugSystemError();
 			return false;
 		}
 
 		if (!clientsock->flushWriteBuffer(-1,-1)) {
-			if (getDebug()) {
-				stdoutput.write("flush write buffer failed\n");
-				debugSystemError();
-			}
+			debugWrite("flush write buffer failed");
+			debugSystemError();
 			return false;
 		}
 
@@ -1205,14 +1150,10 @@ void sqlrprotocol_tds::getServerTdsVersion() {
 
 	// FIXME: what if the backend isn't MSSQL?
 
-	if (getDebug()) {
-		debugStart("server tds version");
-		stdoutput.printf("	dbversion:\n	%s\n",
-							dbversion);
-		stdoutput.printf("	servertdsversion:	%d\n",
-							servertdsversion);
-		debugEnd();
-	}
+	debugStart("server tds version");
+	debugWrite("dbversion:\n %s",dbversion);
+	debugWrite("servertdsversion: %d",servertdsversion);
+	debugEnd();
 }
 
 uint32_t sqlrprotocol_tds::tdsVersionHexToDec(uint32_t tdsversion) {
@@ -1339,16 +1280,11 @@ void sqlrprotocol_tds::negotiateTdsVersion() {
 		(clienttdsversion<servertdsversion)?
 				clienttdsversion:servertdsversion;
 
-	if (getDebug()) {
-		debugStart("negotiate tds version");
-		stdoutput.printf("	client:		%d\n",
-							clienttdsversion);
-		stdoutput.printf("	server:		%d\n",
-							servertdsversion);
-		stdoutput.printf("	negotiated:	%d\n",
-							negotiatedtdsversion);
-		debugEnd();
-	}
+	debugStart("negotiate tds version");
+	debugWrite("client: %d",clienttdsversion);
+	debugWrite("server: %d",servertdsversion);
+	debugWrite("negotiated: %d",negotiatedtdsversion);
+	debugEnd();
 }
 
 clientsessionexitstatus_t sqlrprotocol_tds::clientSession(
@@ -1466,10 +1402,8 @@ bool sqlrprotocol_tds::preLogin() {
 	const byte_t		*rp=reqpacket.getBuffer();
 	const byte_t		*startrp=rp;
 
-	if (getDebug()) {
-		debugStart("pre-login");
-		stdoutput.write("	receiving...\n");
-	}
+	debugStart("pre-login");
+	debugWrite("receiving...");
 
 	// some useful variables
 	byte_t		plopttok;
@@ -1480,24 +1414,18 @@ bool sqlrprotocol_tds::preLogin() {
 
 		// get the option token
 		read(rp,&plopttok,&rp);
-		if (getDebug()) {
-			stdoutput.printf("\n	token:	0x%02x\n",plopttok);
-		}
+		debugWrite("token: 0x%02x",plopttok);
 		if (plopttok==PL_TERMINATOR) {
 			break;
 		}
 
 		// get the option offset
 		readBE(rp,&ploptoff,&rp);
-		if (getDebug()) {
-			stdoutput.printf("	offset:	%hd\n",ploptoff);
-		}
+		debugWrite("offset: %hd",ploptoff);
 
 		// get the option size
 		readBE(rp,&ploptsize,&rp);
-		if (getDebug()) {
-			stdoutput.printf("	size:	%hd\n\n",ploptsize);
-		}
+		debugWrite("size: %hd",ploptsize);
 
 		// FIXME: verify that the packet is as long
 		// as the sum of the option sizes claim
@@ -1511,28 +1439,15 @@ bool sqlrprotocol_tds::preLogin() {
 				readLE(startrp+ploptoff,&version,&dummy);
 				readLE(startrp+ploptoff+sizeof(version),
 							&subbuild,&dummy);
-				if (getDebug()) {
-					stdoutput.write("	"
-							"pl_version\n");
-					stdoutput.printf("		"
-							"version:	%d\n",
-							version);
-					stdoutput.printf("		"
-							"subbuiild:	%hd\n",
-							subbuild);
-				}
+				debugWrite("pl_version");
+				debugWrite("version: %d",version);
+				debugWrite("subbuiild: %hd",subbuild);
 				break;
 
 			case PL_ENCRYPTION:
 				read(startrp+ploptoff,&encryption,&dummy);
-				if (getDebug()) {
-					stdoutput.write("	"
-							"pl_encryption\n");
-					stdoutput.printf("		"
-							"encryption:	"
-							"0x%02x\n",
-							encryption);
-				}
+				debugWrite("pl_encryption");
+				debugWrite("encryption:	0x%02x",encryption);
 				break;
 
 			case PL_INSTOPT:
@@ -1540,35 +1455,20 @@ bool sqlrprotocol_tds::preLogin() {
 				read(startrp+ploptoff,
 					instvalidity,ploptsize,&dummy);
 				instvalidity[ploptsize]='\0';
-				if (getDebug()) {
-					stdoutput.write("	"
-							"pl_instopt\n");
-					stdoutput.printf("		"
-							"instvalidity:	%s\n",
-							instvalidity);
-				}
+				debugWrite("pl_instopt");
+				debugWrite("instvalidity: %s",instvalidity);
 				break;
 
 			case PL_THREADID:
 				readLE(startrp+ploptoff,&threadid,&dummy);
-				if (getDebug()) {
-					stdoutput.write("	"
-							"pl_threadid\n");
-					stdoutput.printf("		"
-							"threadid:	%d\n",
-							threadid);
-				}
+				debugWrite("pl_threadid");
+				debugWrite("threadid: %d",threadid);
 				break;
 
 			case PL_MARS:
 				read(startrp+ploptoff,&mars,&dummy);
-				if (getDebug()) {
-					stdoutput.write("	"
-							"mars\n");
-					stdoutput.printf("		"
-							"mars:		%d\n",
-							mars);
-				}
+				debugWrite("mars");
+				debugWrite("mars: %d",mars);
 				break;
 
 			case PL_TRACEID:
@@ -1578,51 +1478,33 @@ bool sqlrprotocol_tds::preLogin() {
 				read(startrp+ploptoff+sizeof(connid),
 						activityid,sizeof(activityid),
 						&dummy);
-				if (getDebug()) {
-					stdoutput.write("	"
-							"traceid\n");
-					stdoutput.printf("		"
-							"connid:	%.*s\n",
-							sizeof(connid),
-							connid);
-					stdoutput.printf("		"
-							"activityid:	%.*s\n",
-							sizeof(activityid),
-							activityid);
-				}
+				debugWrite("traceid");
+				debugWrite("connid: %.*s",
+						sizeof(connid),connid);
+				debugWrite("activityid: %.*s",
+						sizeof(activityid),activityid);
 				break;
 
 			case PL_FEDAUTHREQUIRED:
 				read(startrp+ploptoff,
 						&fedauthrequired,
 						&dummy);
-				if (getDebug()) {
-					stdoutput.write("	"
-							"fedauthrequired\n");
-					stdoutput.printf("		"
-							"fedauthrequired:%d\n",
-							fedauthrequired);
-				}
+				debugWrite("fedauthrequired");
+				debugWrite("fedauthrequired:%d",
+						fedauthrequired);
 				break;
 
 			case PL_NONCEOPT:
 				read(startrp+ploptoff,
 						nonce,sizeof(nonce),
 						&dummy);
-				if (getDebug()) {
-					stdoutput.write("	"
-							"nonceopt\n");
-					stdoutput.printf("		"
-							"nonce:		%.*s\n",
-							sizeof(nonce),nonce);
-				}
+				debugWrite("nonceopt");
+				debugWrite("nonce: %.*s",sizeof(nonce),nonce);
 				break;
 		}
 	}
 
-	if (getDebug()) {
-		stdoutput.write("\n	sending...\n\n");
-	}
+	debugWrite("sending...");
 
 
 	// begin building the response packet
@@ -1649,13 +1531,9 @@ bool sqlrprotocol_tds::preLogin() {
 	// instead of regurgitating what the client sent us
 	packetdata.append(version);
 	packetdata.append(subbuild);
-	if (getDebug()) {
-		stdoutput.write("	pl_version\n");
-		stdoutput.printf("		version:	%d\n",
-								version);
-		stdoutput.printf("		subbuiild:	%hd\n",
-								subbuild);
-	}
+	debugWrite("pl_version");
+	debugWrite("version: %d",version);
+	debugWrite("subbuiild: %hd",subbuild);
 
 	// encryption
 	write(&resppacket,(byte_t)PL_ENCRYPTION);
@@ -1666,11 +1544,8 @@ bool sqlrprotocol_tds::preLogin() {
 	// FIXME: implement encryption
 	encryption=ENCRYPT_NOT_SUP;
 	packetdata.append(encryption);
-	if (getDebug()) {
-		stdoutput.write("	pl_encryption\n");
-		stdoutput.printf("		encryption:	0x%02x\n",
-								encryption);
-	}
+	debugWrite("pl_encryption");
+	debugWrite("encryption: 0x%02x",encryption);
 
 	// instopt
 	write(&resppacket,(byte_t)PL_INSTOPT);
@@ -1681,11 +1556,8 @@ bool sqlrprotocol_tds::preLogin() {
 	// FIXME: we should probably send an accurate instopt
 	// instead of regurgitating what the client sent us
 	packetdata.append(instvalidity,ploptsize);
-	if (getDebug()) {
-		stdoutput.write("	pl_instopt\n");
-		stdoutput.printf("		instvalidity:	%s\n",
-								instvalidity);
-	}
+	debugWrite("pl_instopt");
+	debugWrite("instvalidity: %s",instvalidity);
 	
 	// threadid
 	write(&resppacket,(byte_t)PL_THREADID);
@@ -1695,11 +1567,8 @@ bool sqlrprotocol_tds::preLogin() {
 	writeBE(&resppacket,ploptsize);
 	threadid=process::getProcessId();
 	packetdata.append(threadid);
-	if (getDebug()) {
-		stdoutput.write("	pl_threadid\n");
-		stdoutput.printf("		threadid:	%d\n",
-								threadid);
-	}
+	debugWrite("pl_threadid");
+	debugWrite("threadid: %d",threadid);
 
 	// mars
 	write(&resppacket,(byte_t)PL_MARS);
@@ -1710,11 +1579,8 @@ bool sqlrprotocol_tds::preLogin() {
 	// FIXME: SQL Relay actually does support multiple active result sets
 	mars=0;
 	packetdata.append(mars);
-	if (getDebug()) {
-		stdoutput.write("	mars\n");
-		stdoutput.printf("		mars:		%d\n",
-								mars);
-	}
+	debugWrite("mars");
+	debugWrite("mars: %d",mars);
 
 	// no need to send traceid, fedauthrequired, or nonce in response
 
@@ -1737,10 +1603,8 @@ bool sqlrprotocol_tds::preLogin() {
 
 bool sqlrprotocol_tds::preTds7Login() {
 
-	if (getDebug()) {
-		debugStart("pre-tds7 login");
-		debugEnd();
-	}
+	debugStart("pre-tds7 login");
+	debugEnd();
 
 	// FIXME: actually implement this
 
@@ -1994,148 +1858,81 @@ bool sqlrprotocol_tds::tds7Login() {
 
 	if (getDebug()) {
 		debugStart("tds7 login");
-		stdoutput.printf("	size:		%d\n",
-							size);
-		stdoutput.printf("	tdsversion:	0x%08x (%d)\n",
-							tdsversion,
-							clienttdsversion);
-		stdoutput.printf("	packetsize:	%d\n",
-							packetsize);
-		stdoutput.printf("	clientprogver:	0x%08x (%d)\n",
-							clientprogver,
-							clientprogver);
-		stdoutput.printf("	clientpid:	%d\n",
-							clientpid);
-		stdoutput.printf("	connectionid:	%d\n",
-							connectionid);
-		stdoutput.write("	optionflags1:	");
-		stdoutput.printBits(optionflags1);
-		stdoutput.write('\n');
-		stdoutput.printf("	fbyteorder:			%d\n",
-						fbyteorder);
-		stdoutput.printf("	fcharset:			%d\n",
-						fcharset);
-		stdoutput.printf("	ffloattype:			%d\n",
-						ffloattype);
-		stdoutput.printf("	fdumpload:			%d\n",
-						fdumpload);
-		stdoutput.printf("	fusedbwarn:			%d\n",
-						fusedbwarn);
-		stdoutput.printf("	fusedbfatal:			%d\n",
-						fusedbfatal);
-		stdoutput.printf("	fsetlangwarn:			%d\n",
-						fsetlangwarn);
-		stdoutput.write('\n');
-		stdoutput.write("	optionflags2:	");
-		stdoutput.printBits(optionflags2);
-		stdoutput.write('\n');
-		stdoutput.printf("	fsetlangfatal:			%d\n",
-						fsetlangfatal);
-		stdoutput.printf("	fodbc:				%d\n",
-						fodbc);
-		stdoutput.printf("	ftranboundary:			%d\n",
-						ftranboundary);
-		stdoutput.printf("	fcachecontent:			%d\n",
-						fcachecontent);
-		stdoutput.printf("	fusertype:			%d\n",
-						fusertype);
-		stdoutput.printf("	fintsecurity:			%d\n",
-						fintsecurity);
-		stdoutput.write('\n');
-		stdoutput.write("	typeflags:	");
-		stdoutput.printBits(typeflags);
-		stdoutput.write('\n');
-		stdoutput.printf("	fsqltype:			%d\n",
-						fsqltype);
-		stdoutput.printf("	foledb:				%d\n",
-						foledb);
-		stdoutput.printf("	freadonlyintent:		%d\n",
-						freadonlyintent);
-		stdoutput.write('\n');
-		stdoutput.write("	optionflags3:	");
-		stdoutput.printBits(optionflags3);
-		stdoutput.write('\n');
-		stdoutput.printf("	fchangepassword:		%d\n",
-						fchangepassword);
-		stdoutput.printf("	fuserinstance:			%d\n",
-						fuserinstance);
-		stdoutput.printf("	fsendyukonbinaryxml:		%d\n",
-						fsendyukonbinaryxml);
-		stdoutput.printf("	funknowncollationhandling:	%d\n",
-						funknowncollationhandling);
-		stdoutput.printf("	fextension:			%d\n",
-						fextension);
-		stdoutput.write("\n");
-		stdoutput.printf("	clienttimzone:	%d\n",
-						clienttimzone);
-		stdoutput.write("	clientlcid:	");
-		stdoutput.printBits(clientlcid);
-		stdoutput.write("\n\n");
-		stdoutput.printf("	hostname:		"
-						"(%hd,%hd) %S\n",
-						ibhostname,
-						cchhostname,
-						hostname);
-		stdoutput.printf("	username:		"
-						"(%hd,%hd) %S\n",
-						ibusername,
-						cchusername,
-						username);
-		stdoutput.printf("	password:		"
-						"(%hd,%hd) %S\n",
-						ibpassword,
-						cchpassword,
-						password);
-		stdoutput.printf("	appname:		"
-						"(%hd,%hd) %S\n",
-						ibappname,
-						cchappname,
-						appname);
-		stdoutput.printf("	servername:		"
-						"(%hd,%hd) %S\n",
-						ibservername,
-						cchservername,
-						servername);
-		stdoutput.write("	extension:		");
-		stdoutput.printf("(%hd,%hd) ",ibextension,cbextension);
-		stdoutput.safePrint(extension,cbextension);
-		stdoutput.write("\n");
-		stdoutput.printf("	cltintname:		"
-						"(%hd,%hd) %S\n",
-						ibcltintname,
-						cchcltintname,
-						cltintname);
-		stdoutput.printf("	language:		"
-						"(%hd,%hd) %S\n",
-						iblanguage,
-						cchlanguage,
-						language);
-		stdoutput.printf("	database:		"
-						"(%hd,%hd) %S\n",
-						ibdatabase,
-						cchdatabase,
-						database);
-		stdoutput.printf("	clientid:		"
-						"%02x:%02x:%02x:"
-						"%02x:%02x:%02x\n",
-						clientid[0],clientid[1],
-						clientid[2],clientid[3],
-						clientid[4],clientid[5]);
-		stdoutput.printf("	atchdbfile:		"
-						"(%hd,%hd) %S\n",
-						ibatchdbfile,
-						cchatchdbfile,
-						atchdbfile);
-		stdoutput.printf("	changepassword:		"
-						"(%hd,%hd) %S\n",
-						ibchangepassword,
-						cchchangepassword,
-						changepassword);
-		stdoutput.printf("	sspi:			"
-						"(%hd,%hd,%d)\n",
-						ibsspi,
-						cbsspi,
-						cbsspilong);
+		debugWrite("size: %d",size);
+		debugWrite("tdsversion: 0x%08x (%d)",
+					tdsversion,clienttdsversion);
+		debugWrite("packetsize: %d",packetsize);
+		debugWrite("clientprogver: 0x%08x (%d)",
+					clientprogver,clientprogver);
+		debugWrite("clientpid: %d",clientpid);
+		debugWrite("connectionid: %d",connectionid);
+		stringbuffer	b;
+		b.printBits(optionflags1);
+		debugWrite("optionflags1: %s",b.getString());
+		debugWrite("fbyteorder: %d",fbyteorder);
+		debugWrite("fcharset: %d",fcharset);
+		debugWrite("ffloattype: %d",ffloattype);
+		debugWrite("fdumpload: %d",fdumpload);
+		debugWrite("fusedbwarn: %d",fusedbwarn);
+		debugWrite("fusedbfatal: %d",fusedbfatal);
+		debugWrite("fsetlangwarn: %d",fsetlangwarn);
+		b.clear();
+		b.printBits(optionflags2);
+		debugWrite("optionflags2: %s",b.getString());
+		debugWrite("fsetlangfatal: %d",fsetlangfatal);
+		debugWrite("fodbc: %d",fodbc);
+		debugWrite("ftranboundary: %d",ftranboundary);
+		debugWrite("fcachecontent: %d",fcachecontent);
+		debugWrite("fusertype: %d",fusertype);
+		debugWrite("fintsecurity: %d",fintsecurity);
+		b.clear();
+		b.printBits(typeflags);
+		debugWrite("typeflags: %s",b.getString());
+		debugWrite("fsqltype: %d",fsqltype);
+		debugWrite("foledb: %d",foledb);
+		debugWrite("freadonlyintent: %d",freadonlyintent);
+		b.clear();
+		b.printBits(optionflags3);
+		debugWrite("optionflags3: %s",b.getString());
+		debugWrite("fchangepassword: %d",fchangepassword);
+		debugWrite("fuserinstance: %d",fuserinstance);
+		debugWrite("fsendyukonbinaryxml: %d",fsendyukonbinaryxml);
+		debugWrite("funknowncollationhandling: %d",
+					funknowncollationhandling);
+		debugWrite("fextension: %d",fextension);
+		debugWrite("clienttimzone: %d",clienttimzone);
+		b.clear();
+		b.printBits(clientlcid);
+		debugWrite("clientlcid: %s",b.getString());
+		debugWrite("hostname: (%hd,%hd) %S",
+					ibhostname,cchhostname,hostname);
+		debugWrite("username: (%hd,%hd) %S",
+					ibusername,cchusername,username);
+		debugWrite("password: (%hd,%hd) %S",
+					ibpassword,cchpassword,password);
+		debugWrite("appname: (%hd,%hd) %S",
+					ibappname,cchappname,appname);
+		debugWrite("servername: (%hd,%hd) %S",
+					ibservername,cchservername,servername);
+		b.clear();
+		b.safePrint(extension,cbextension);
+		debugWrite("extension: (%hd,%hd) %s",
+					ibextension,cbextension,b.getString());
+		debugWrite("cltintname: (%hd,%hd) %S",
+					ibcltintname,cchcltintname,cltintname);
+		debugWrite("language: (%hd,%hd) %S",
+					iblanguage,cchlanguage,language);
+		debugWrite("database: (%hd,%hd) %S",
+					ibdatabase,cchdatabase,database);
+		debugWrite("clientid: %02x:%02x:%02x:%02x:%02x:%02x",
+					clientid[0],clientid[1],clientid[2],
+					clientid[3],clientid[4],clientid[5]);
+		debugWrite("atchdbfile: (%hd,%hd) %S",
+					ibatchdbfile,cchatchdbfile,atchdbfile);
+		debugWrite("changepassword: (%hd,%hd) %S",
+					ibchangepassword,cchchangepassword,
+					changepassword);
+		debugWrite("sspi: (%hd,%hd,%d)",ibsspi,cbsspi,cbsspilong);
 		debugHexDump((byte_t *)sspi,sspisize);
 		debugEnd();
 	}
@@ -2271,15 +2068,11 @@ bool sqlrprotocol_tds::auth(const wchar_t *username,
 
 	bool	authsuccess=cont->auth(&cred);
 
-	if (getDebug()) {
-		debugStart("authenticate");
-		stdoutput.printf("	username: %s\n",username8);
-		stdoutput.printf("	password: %s\n",password8);
-		stdoutput.write((authsuccess)?
-					"	success\n":
-					"	failed\n");
-		debugEnd();
-	}
+	debugStart("authenticate");
+	debugWrite("username: %s",username8);
+	debugWrite("password: %s",password8);
+	debugWrite((authsuccess)?"success":"failed");
+	debugEnd();
 
 	delete[] username8;
 	delete[] password8;
@@ -2312,24 +2105,18 @@ void sqlrprotocol_tds::loginAck() {
 					sizeof(byte_t)+
 					sizeof(byte_t);
 	
-	if (getDebug()) {
-		debugStart("login ack");
-		stdoutput.printf("	token:		0x%02x\n",token);
-		stdoutput.printf("	tokensize:	0x%02x (%hd)\n",
-							tokensize,
-							tokensize);
-		stdoutput.printf("	interface:	%d\n",iface);
-		stdoutput.printf("	tdsversion:	0x%08x (%d)\n",
-							tdsversion,
-							negotiatedtdsversion);
-		stdoutput.printf("	prognamesize:	%d\n",prognamesize);
-		stdoutput.printf("	progname:	%s\n",progname);
-		stdoutput.printf("	majorver:	%d\n",majorver);
-		stdoutput.printf("	minorver:	%d\n",minorver);
-		stdoutput.printf("	buildnumhi:	%d\n",buildnumhi);
-		stdoutput.printf("	buildnumlow:	%d\n",buildnumlow);
-		debugEnd();
-	}
+	debugStart("login ack");
+	debugWrite("token: 0x%02x",token);
+	debugWrite("tokensize: 0x%02x (%hd)",tokensize,tokensize);
+	debugWrite("interface: %d",iface);
+	debugWrite("tdsversion: 0x%08x (%d)",tdsversion,negotiatedtdsversion);
+	debugWrite("prognamesize: %d",prognamesize);
+	debugWrite("progname: %s",progname);
+	debugWrite("majorver: %d",majorver);
+	debugWrite("minorver: %d",minorver);
+	debugWrite("buildnumhi: %d",buildnumhi);
+	debugWrite("buildnumlow: %d",buildnumlow);
+	debugEnd();
 
 	write(&resppacket,token);
 	write(&resppacket,hostToLE(tokensize));
@@ -2365,14 +2152,10 @@ bool sqlrprotocol_tds::changeDatabase(const wchar_t *database,
 
 	bool	changedbsuccess=cont->selectDatabase(database8);
 
-	if (getDebug()) {
-		debugStart("change db");
-		stdoutput.printf("	db:	%s\n",database8);
-		stdoutput.write((changedbsuccess)?
-					"	success\n":
-					"	failed\n");
-		debugEnd();
-	}
+	debugStart("change db");
+	debugWrite("db: %s",database8);
+	debugWrite((changedbsuccess)?"success":"failed");
+	debugEnd();
 
 	delete[] database8;
 
@@ -2429,26 +2212,17 @@ bool sqlrprotocol_tds::changeCollation(uint32_t lcid) {
 
 	if (getDebug()) {
 		debugStart("change collation");
-		stdoutput.write("	lcid:	");
-		stdoutput.printBits(lcid);
-		stdoutput.write('\n');
-		stdoutput.printf("	lcidignorecase:		%d\n",
-						lcidignorecase);
-		stdoutput.printf("	lcidignoreaccent:	%d\n",
-						lcidignoreaccent);
-		stdoutput.printf("	lcidignorewidth:	%d\n",
-						lcidignorewidth);
-		stdoutput.printf("	lcidignorekana:		%d\n",
-						lcidignorekana);
-		stdoutput.printf("	lcidbinary:		%d\n",
-						lcidbinary);
-		stdoutput.printf("	lcidbinary2:		%d\n",
-						lcidbinary2);
-		stdoutput.printf("	lcidversion:		%d\n",
-						lcidversion);
-		stdoutput.write((changecollationsuccess)?
-					"	success\n":
-					"	failed\n");
+		stringbuffer	b;
+		b.printBits(lcid);
+		debugWrite("lcid: %s",b.getString());
+		debugWrite("lcidignorecase: %d",lcidignorecase);
+		debugWrite("lcidignoreaccent: %d",lcidignoreaccent);
+		debugWrite("lcidignorewidth: %d",lcidignorewidth);
+		debugWrite("lcidignorekana: %d",lcidignorekana);
+		debugWrite("lcidbinary: %d",lcidbinary);
+		debugWrite("lcidbinary2: %d",lcidbinary2);
+		debugWrite("lcidversion: %d",lcidversion);
+		debugWrite((changecollationsuccess)?"success":"failed");
 		debugEnd();
 	}
 
@@ -2471,20 +2245,16 @@ void sqlrprotocol_tds::envChangeSqlCollation(uint32_t lcid,
 
 	if (getDebug()) {
 		debugStart("env change");
-		stdoutput.printf("	token:		0x%02x\n",token);
-		stdoutput.printf("	tokensize:	0x%02x (%hd)\n",
-							tokensize,
-							tokensize);
-		stdoutput.printf("	type:		%d\n",type);
-		stdoutput.printf("	newvaluesize:	%d\n",
-							sizeof(uint32_t)+
-							sizeof(byte_t));
-		stdoutput.printf("	newvalue:	");
-		stdoutput.printBits(lcid);
-		stdoutput.printf(" %d\n",sortid);
+		debugWrite("token: 0x%02x",token);
+		debugWrite("tokensize: 0x%02x (%hd)",tokensize,tokensize);
+		debugWrite("type: %d",type);
+		debugWrite("newvaluesize: %d",sizeof(uint32_t)+sizeof(byte_t));
+		stringbuffer	b;
+		b.printBits(lcid);
+		debugWrite("newvalue: %s %d",b.getString(),sortid);
 		debugHexDump((byte_t *)&lcid,sizeof(lcid));
 		debugHexDump((byte_t *)&sortid,sizeof(sortid));
-		stdoutput.printf("	oldvaluesize:	0\n");
+		debugWrite("oldvaluesize: 0");
 		debugEnd();
 	}
 
@@ -2506,14 +2276,10 @@ bool sqlrprotocol_tds::changeLanguage(const wchar_t *language,
 
 	bool	changelangsuccess=true;
 
-	if (getDebug()) {
-		debugStart("change lang");
-		stdoutput.printf("	lang:	%s\n",language8);
-		stdoutput.write((changelangsuccess)?
-					"	success\n":
-					"	failed\n");
-		debugEnd();
-	}
+	debugStart("change lang");
+	debugWrite("lang: %s",language8);
+	debugWrite((changelangsuccess)?"success":"failed");
+	debugEnd();
 
 	delete[] language8;
 
@@ -2565,15 +2331,10 @@ void sqlrprotocol_tds::negotiatePacketSize(uint32_t packetsize) {
 		changepacketsizesuccess=false;
 	}
 
-	if (getDebug()) {
-		debugStart("change packet size");
-		stdoutput.printf("	requested packetsize:	%d\n",
-								packetsize);
-		stdoutput.write((changepacketsizesuccess)?
-					"	success\n":
-					"	failed\n");
-		debugEnd();
-	}
+	debugStart("change packet size");
+	debugWrite("requested packetsize: %d",packetsize);
+	debugWrite((changepacketsizesuccess)?"success":"failed");
+	debugEnd();
 }
 
 void sqlrprotocol_tds::envChangePacketSize() {
@@ -2598,10 +2359,8 @@ void sqlrprotocol_tds::envChangePacketSize() {
 
 bool sqlrprotocol_tds::federatedAuthenticationToken() {
 
-	if (getDebug()) {
-		debugStart("fed auth token");
-		debugEnd();
-	}
+	debugStart("fed auth token");
+	debugEnd();
 
 	// FIXME: actually implement this
 
@@ -2615,10 +2374,8 @@ bool sqlrprotocol_tds::attention() {
 
 	//const byte_t	*rp=reqpacket.getBuffer();
 
-	if (getDebug()) {
-		debugStart("attention");
-		debugEnd();
-	}
+	debugStart("attention");
+	debugEnd();
 
 	// FIXME: actually implement this
 
@@ -2632,10 +2389,8 @@ bool sqlrprotocol_tds::transactionManagerRequest() {
 
 	//const byte_t	*rp=reqpacket.getBuffer();
 
-	if (getDebug()) {
-		debugStart("tx mgr request");
-		debugEnd();
-	}
+	debugStart("tx mgr request");
+	debugEnd();
 
 	// FIXME: actually implement this
 
@@ -2649,10 +2404,8 @@ bool sqlrprotocol_tds::sspi() {
 
 	//const byte_t	*rp=reqpacket.getBuffer();
 
-	if (getDebug()) {
-		debugStart("sspi");
-		debugEnd();
-	}
+	debugStart("sspi");
+	debugEnd();
 
 	// FIXME: actually implement this
 
@@ -2694,11 +2447,9 @@ bool sqlrprotocol_tds::sqlBatch(sqlrservercursor *cursor) {
 	// query itself (other than embedded values) to be acsii.
 	char	*sql8=charstring::duplicateUcs2(sql,(size_t)sqlsize);
 
-	if (getDebug()) {
-		stdoutput.printf("	sql:		%s\n",sql8);
-		stdoutput.printf("	sqlsize:	%d\n",sqlsize);
-		debugEnd();
-	}
+	debugWrite("sql: %s",sql8);
+	debugWrite("sqlsize: %d",sqlsize);
+	debugEnd();
 
 	// run the query
 	bool	success=
@@ -2733,10 +2484,7 @@ void sqlrprotocol_tds::allHeaders(const byte_t *rp,
 	uint32_t	allheaderssize;
 	readLE(rp,&allheaderssize,&rp);
 
-	if (getDebug()) {
-		stdoutput.printf("	all-headers size:	%d\n",
-							allheaderssize);
-	}
+	debugWrite("all-headers size: %d",allheaderssize);
 
 	// decrement remaining sizes
 	allheaderssize-=sizeof(allheaderssize);
@@ -2750,13 +2498,8 @@ void sqlrprotocol_tds::allHeaders(const byte_t *rp,
 		uint16_t	headertype;
 		readLE(rp,&headertype,&rp);
 
-		if (getDebug()) {
-			stdoutput.printf("\n	header size:	"
-						"	%d\n",headersize);
-			stdoutput.printf("	header type:	"
-						"	0x%04x\n",headertype);
-			stdoutput.write('\n');
-		}
+		debugWrite("header size: %d",headersize);
+		debugWrite("header type: 0x%04x",headertype);
 
 		switch (headertype) {
 			case ALL_HEADERS_QUERY_NOTIFICATIONS:
@@ -2829,28 +2572,22 @@ void sqlrprotocol_tds::colMetaData(sqlrservercursor *cursor, bool nometadata) {
 	write(&resppacket,token);
 	write(&resppacket,hostToLE(count));
 
-	if (getDebug()) {
-		debugStart("col meta data");
-		stdoutput.printf("	token:	0x%02x\n",token);
-		stdoutput.printf("	count:	%d\n",count);
-	}
+	debugStart("col meta data");
+	debugWrite("token: 0x%02x",token);
+	debugWrite("count: %d",count);
 
 	cekTable();
 
 	if (nometadata) {
 		write(&resppacket,(uint16_t)0xFFFF);
-		if (getDebug()) {
-			stdoutput.write("	no metadata\n");
-		}
+		debugWrite("no metadata");
 	} else {
 		for (uint16_t col=0; col<count; col++) {
 			colData(cursor,col);
 		}
 	}
 
-	if (getDebug()) {
-		debugEnd();
-	}
+	debugEnd();
 }
 
 void sqlrprotocol_tds::cekTable() {
@@ -2938,9 +2675,7 @@ byte_t sqlrprotocol_tds::mapType(uint16_t type) {
 
 void sqlrprotocol_tds::colData(sqlrservercursor *cursor, uint16_t col) {
 
-	if (getDebug()) {
-		stdoutput.printf("	col %d {\n",col);
-	}
+	debugStart("col %d",col);
 
 	byte_t	tdstype=mapType(cont->getColumnType(cursor,col));
 
@@ -2951,9 +2686,7 @@ void sqlrprotocol_tds::colData(sqlrservercursor *cursor, uint16_t col) {
 	cryptoMetaData();
 	colName(cursor,col);
 
-	if (getDebug()) {
-		stdoutput.write("	}\n");
-	}
+	debugEnd();
 }
 
 void sqlrprotocol_tds::userType(byte_t tdstype) {
@@ -2973,9 +2706,7 @@ void sqlrprotocol_tds::userType(byte_t tdstype) {
 		write(&resppacket,hostToLE(usertype));
 	}
 
-	if (getDebug()) {
-		stdoutput.printf("		usertype:	%d\n",usertype);
-	}
+	debugWrite("usertype: %d",usertype);
 }
 
 void sqlrprotocol_tds::colFlags(sqlrservercursor *cursor,
@@ -3032,9 +2763,9 @@ void sqlrprotocol_tds::colFlags(sqlrservercursor *cursor,
 	writeBE(&resppacket,flags);
 
 	if (getDebug()) {
-		stdoutput.write("		flags:		");
-		stdoutput.printBits(flags);
-		stdoutput.write('\n');
+		stringbuffer	b;
+		b.printBits(flags);
+		debugWrite("flags: %s",b.getString());
 	}
 }
 
@@ -3044,22 +2775,15 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 
 	write(&resppacket,tdstype);
 
-	if (getDebug()) {
-		stdoutput.printf("		tdstype:	0x%02x\n",
-								tdstype);
-	}
+	debugWrite("tdstype: 0x%02x",tdstype);
 
 	if (isFixedLenType(tdstype)) {
 
-		if (getDebug()) {
-			stdoutput.write("		fixedlentype...\n");
-		}
+		debugWrite("fixedlentype...");
 
 	} else if (isVarLenType(tdstype)) {
 
-		if (getDebug()) {
-			stdoutput.write("		varlentype...\n");
-		}
+		debugWrite("varlentype...");
 
 		uint32_t size=cont->getColumnSize(cursor,col);
 		uint32_t precision=cont->getColumnPrecision(cursor,col);
@@ -3078,12 +2802,7 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 					size=2147483647;
 				}
 				write(&resppacket,hostToLE(size));
-				if (getDebug()) {
-					stdoutput.printf("		"
-							"size:	"
-							"	%d (32-bit)\n",
-							size);
-				}
+				debugWrite("size: %d (32-bit)",size);
 				break;
 			case TDS_TYPE_BIGCHAR:
 			case TDS_TYPE_BIGVARCHR:
@@ -3097,12 +2816,7 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 					size=32767;
 				}
 				write(&resppacket,hostToLE((uint16_t)size));
-				if (getDebug()) {
-					stdoutput.printf("		"
-							"size:	"
-							"	%d (16-bit)\n",
-							size);
-				}
+				debugWrite("size: %d (16-bit)",size);
 				break;
 			case TDS_TYPE_DATEN:
 				// don't actually send a size for this type
@@ -3120,12 +2834,7 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 					size=4;
 				}
 				write(&resppacket,(byte_t)size);
-				if (getDebug()) {
-					stdoutput.printf("		"
-							"size:	"
-							"	%d (8-bit)\n",
-							size);
-				}
+				debugWrite("size: %d (8-bit)",size);
 				break;
 			default:
 				// limit the size to 2^7-1 because the
@@ -3134,12 +2843,7 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 					size=127;
 				}
 				write(&resppacket,(byte_t)size);
-				if (getDebug()) {
-					stdoutput.printf("		"
-							"size:	"
-							"	%d (8-bit)\n",
-							size);
-				}
+				debugWrite("size: %d (8-bit)",size);
 				break;
 		}
 
@@ -3159,12 +2863,11 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 					byte_t	coll[5]={0,0,0,0,0};
 					write(&resppacket,coll,sizeof(coll));
 					if (getDebug()) {
-						stdoutput.write(
-							"		"
-							"collation:	");
-						stdoutput.printBits(
-							coll,sizeof(coll));
-						stdoutput.write("\n");
+						stringbuffer	b;
+						b.printBits(coll,sizeof(coll));
+						debugWrite(
+							"collation: %s",
+							b.getString());
 					}
 					}
 					break;
@@ -3178,11 +2881,7 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 			case TDS_TYPE_DECIMAL:
 			case TDS_TYPE_DECIMALN:
 				write(&resppacket,(byte_t)precision);
-				if (getDebug()) {
-					stdoutput.printf("		"
-							"precision:	"
-							"%d\n",precision);
-				}
+				debugWrite("precision: %d",precision);
 				break;
 		}
 
@@ -3196,19 +2895,13 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 			case TDS_TYPE_DATETIME2N:
 			case TDS_TYPE_DATETIMEOFFSETN:
 				write(&resppacket,(byte_t)scale);
-				if (getDebug()) {
-					stdoutput.printf("		"
-							"scale:		"
-							"%d\n",scale);
-				}
+				debugWrite("scale: %d",scale);
 				break;
 		}
 
 	} else if (isPartLenType(tdstype)) {
 
-		if (getDebug()) {
-			stdoutput.write("		partlentype...\n");
-		}
+		debugWrite("partlentype...");
 
 		// FIXME: [ushortmaxlen] [collation] [xml_info] [utd_info]
 	}
@@ -3250,11 +2943,7 @@ void sqlrprotocol_tds::tableName(byte_t tdstype) {
 		write(&resppacket,partname,partnamelen);
 		delete[] partname;
 
-		if (getDebug()) {
-			stdoutput.printf("		"
-					"part name:	"
-					"%s\n",partname8);
-		}
+		debugWrite("part name: %s",partname8);
 	}
 }
 
@@ -3302,10 +2991,8 @@ void sqlrprotocol_tds::colName(sqlrservercursor *cursor,
 	write(&resppacket,(byte_t)namelen);
 	write(&resppacket,name16,namelen);
 
-	if (getDebug()) {
-		stdoutput.printf("		namelen:	%d\n",namelen);
-		stdoutput.printf("		name:		%s\n",name);
-	}
+	debugWrite("namelen: %d",namelen);
+	debugWrite("name: %s",name);
 
 	delete[] name16;
 }
@@ -3431,10 +3118,8 @@ uint64_t sqlrprotocol_tds::rows(sqlrservercursor *cursor) {
 		byte_t	token=TOKEN_ROW;
 		write(&resppacket,token);
 
-		if (getDebug()) {
-			debugStart("row");
-			stdoutput.printf("	token:	0x%02x\n",token);
-		}
+		debugStart("row");
+		debugWrite("token: 0x%02x",token);
 
 		// append the fields to the packet
 		for (uint32_t col=0; col<colcount; col++) {
@@ -3444,12 +3129,8 @@ uint64_t sqlrprotocol_tds::rows(sqlrservercursor *cursor) {
 			byte_t	tdstype=
 				mapType(cont->getColumnType(cursor,col));
 
-			if (getDebug()) {
-				stdoutput.printf("	col %d {\n",col);
-				stdoutput.printf("		"
-							"tdstype: 0x%02x\n",
-							tdstype);
-			}
+			debugStart("col %d",col);
+			debugWrite("tdstype: 0x%02x",tdstype);
 
 			lobData(tdstype);
 
@@ -3470,17 +3151,13 @@ uint64_t sqlrprotocol_tds::rows(sqlrservercursor *cursor) {
 				cont->getColumnSize(cursor,col),
 				fld,fldsize,null);
 
-			if (getDebug()) {
-				stdoutput.write("	}\n");
-			}
+			debugEnd();
 		}
 
 		// FIXME: kludgy
 		cont->nextRow(cursor);
 
-		if (getDebug()) {
-			debugEnd();
-		}
+		debugEnd();
 
 		// bump row count
 		rowcount++;
@@ -3510,14 +3187,9 @@ void sqlrprotocol_tds::lobData(byte_t tdstype) {
 	const char	*ts="dummyTS";
 	write(&resppacket,ts,8);
 
-	if (getDebug()) {
-		stdoutput.printf("		textptrsize:	%d\n",
-								textptrsize);
-		stdoutput.printf("		textptr:	%s\n",
-								textptr);
-		stdoutput.printf("		ts:		%s\n",
-								ts);
-	}
+	debugWrite("textptrsize: %d",textptrsize);
+	debugWrite("textptr: %s",textptr);
+	debugWrite("ts: %s",ts);
 }
 
 void sqlrprotocol_tds::field(byte_t tdstype,
@@ -3529,9 +3201,7 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 	// handle nulls
 	if (null) {
 
-		if (getDebug()) {
-			stdoutput.write("		data: null\n");
-		}
+		debugWrite("data: null");
 
 		switch (tdstype) {
 			case TDS_TYPE_NULL:
@@ -3656,30 +3326,24 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 			{
 			char	data=charstring::convertToInteger(field);
 			write(&resppacket,data);
-			if (getDebug()) {
-				stdoutput.write("		data: ");
-				stdoutput.printf("%d (1 byte)\n",data);
-			}
+			debugWrite("data: ");
+			debugWrite("%d (1 byte)",data);
 			}
 			break;
 		case TDS_TYPE_INT2:
 			{
 			int16_t	data=charstring::convertToInteger(field);
 			write(&resppacket,hostToLE((uint16_t)data));
-			if (getDebug()) {
-				stdoutput.write("		data: ");
-				stdoutput.printf("%hd (2 bytes)\n",data);
-			}
+			debugWrite("data: ");
+			debugWrite("%hd (2 bytes)",data);
 			}
 			break;
 		case TDS_TYPE_INT4:
 			{
 			int32_t	data=charstring::convertToInteger(field);
 			write(&resppacket,hostToLE((uint32_t)data));
-			if (getDebug()) {
-				stdoutput.write("		data: ");
-				stdoutput.printf("%ld (4 bytes)\n",data);
-			}
+			debugWrite("data: ");
+			debugWrite("%ld (4 bytes)",data);
 			}
 			break;
 		case TDS_TYPE_DATETIM4:
@@ -3692,22 +3356,16 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 			uint16_t	minutes=threehundredths/300/60;
 			write(&resppacket,hostToLE(days));
 			write(&resppacket,hostToLE(minutes));
-			if (getDebug()) {
-				stdoutput.write("		data: ");
-				stdoutput.printf("%d,%d\n",
-							(uint32_t)days,
-							(uint32_t)minutes);
-			}
+			debugWrite("data: ");
+			debugWrite("%d,%d",(uint32_t)days,(uint32_t)minutes);
 			}
 			break;
 		case TDS_TYPE_FLT4:
 			{
 			float	data=charstring::convertToFloat(field);
 			write(&resppacket,data);
-			if (getDebug()) {
-				stdoutput.write("		data: ");
-				stdoutput.printf("%f\n",data);
-			}
+			debugWrite("data: ");
+			debugWrite("%f",data);
 			}
 			break;
 		case TDS_TYPE_MONEY:
@@ -3722,13 +3380,11 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 			write(&resppacket,
 				hostToLE(
 				(uint32_t)(data&0x00000000FFFFFFFFLL)));
-			if (getDebug()) {
-				stdoutput.write("		data: ");
-				stdoutput.printf("%ld %ld (%s)\n",
+			debugWrite("data: ");
+			debugWrite("%ld %ld (%s)",
 				(uint32_t)((data&0xFFFFFFFF00000000LL)>>32),
 				(uint32_t)(data&0x00000000FFFFFFFFLL),
 				field);
-			}
 			}
 			break;
 		case TDS_TYPE_DATETIME:
@@ -3738,22 +3394,16 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 			dateTime(field,&dayssince1900,&threehundredths);
 			write(&resppacket,hostToLE((uint32_t)dayssince1900));
 			write(&resppacket,hostToLE(threehundredths));
-			if (getDebug()) {
-				stdoutput.write("		data: ");
-				stdoutput.printf("%d,%d\n",
-							dayssince1900,
-							threehundredths);
-			}
+			debugWrite("data: ");
+			debugWrite("%d,%d",dayssince1900,threehundredths);
 			}
 			break;
 		case TDS_TYPE_FLT8:
 			{
 			double	data=charstring::convertToFloat(field);
 			write(&resppacket,data);
-			if (getDebug()) {
-				stdoutput.write("		data: ");
-				stdoutput.printf("%f\n",data);
-			}
+			debugWrite("data: ");
+			debugWrite("%f",data);
 			}
 			break;
 		case TDS_TYPE_MONEY4:
@@ -3763,20 +3413,16 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 			int32_t	data=charstring::convertToInteger(copy)*100;
 			delete[] copy;
 			write(&resppacket,hostToLE((uint32_t)data));
-			if (getDebug()) {
-				stdoutput.write("		data: ");
-				stdoutput.printf("%lld (%s)\n",data,field);
-			}
+			debugWrite("data: ");
+			debugWrite("%lld (%s)",data,field);
 			}
 			break;
 		case TDS_TYPE_INT8:
 			{
 			int64_t	data=charstring::convertToInteger(field);
 			write(&resppacket,hostToLE((uint64_t)data));
-			if (getDebug()) {
-				stdoutput.write("		data: ");
-				stdoutput.printf("%lld (8 bytes)\n",data);
-			}
+			debugWrite("data: ");
+			debugWrite("%lld (8 bytes)",data);
 			}
 			break;
 		case TDS_TYPE_GUID:
@@ -3784,11 +3430,10 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 			byte_t	g[16];
 			guid(field,g);
 			if (getDebug()) {
-				stdoutput.write("		data: ");
+				debugWrite("data: ");
 				for (uint16_t i=0; i<16; i++) {
-					stdoutput.printf("%02x",g[i]);
+					debugWrite("%02x",g[i]);
 				}
-				stdoutput.printf("\n");
 			}
 			write(&resppacket,(byte_t)sizeof(g));
 			write(&resppacket,g,sizeof(g));
@@ -3812,31 +3457,27 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 				write(&resppacket,ispositive);
 				write(&resppacket,val,size);
 			}
-			if (getDebug()) {
-				stdoutput.write("		data: ");
-				stdoutput.printf("%d ",ispositive);
-				switch (size) {
-					case 4: {
-						uint32_t	*v=
-							(uint32_t *)val;
-						stdoutput.printf("%d ",*v);
-						break;
-						}
-					case 8: {
-						uint64_t	*v=
-							(uint64_t *)val;
-						stdoutput.printf("%lld ",*v);
-						break;
-						}
-					case 12:
-						stdoutput.write("... ");
-						break;
-					case 16:
-						stdoutput.write("... ");
-						break;
-				}
-				stdoutput.printf("(%s %d)\n",field,size);
+			debugWrite("data: ");
+			debugWrite("%d ",ispositive);
+			switch (size) {
+				case 4: {
+					uint32_t	*v=(uint32_t *)val;
+					debugWrite("%d ",*v);
+					break;
+					}
+				case 8: {
+					uint64_t	*v=(uint64_t *)val;
+					debugWrite("%lld ",*v);
+					break;
+					}
+				case 12:
+					debugWrite("... ");
+					break;
+				case 16:
+					debugWrite("... ");
+					break;
 			}
+			debugWrite("(%s %d)",field,size);
 			}
 			break;
 		case TDS_TYPE_DATEN:
@@ -3862,12 +3503,9 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 			{
 			write(&resppacket,(byte_t)fieldsize);
 			write(&resppacket,field,fieldsize);
-			if (getDebug()) {
-				stdoutput.printf("		size: %d\n",
-								fieldsize);
-				stdoutput.write("		data: ");
-				stdoutput.printf("%.*s\n",fieldsize,field);
-			}
+			debugWrite("size: %d",fieldsize);
+			debugWrite("data: ");
+			debugWrite("%.*s",fieldsize,field);
 			}
 			break;
 		case TDS_TYPE_BINARY:
@@ -3883,13 +3521,9 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 				write(&resppacket,charsToHex(f));
 				f+=2;
 			}
-			if (getDebug()) {
-				stdoutput.printf("		size: %d\n",
-								fieldsize);
-				stdoutput.write("		data:\n");
-				debugHexDump((byte_t *)field,fieldsize);
-				stdoutput.write('\n');
-			}
+			debugWrite("size: %d",fieldsize);
+			debugWrite("data:");
+			debugHexDump((byte_t *)field,fieldsize);
 			}
 			break;
 		case TDS_TYPE_BIGBINARY:
@@ -3905,13 +3539,9 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 				write(&resppacket,charsToHex(f));
 				f+=2;
 			}
-			if (getDebug()) {
-				stdoutput.printf("		size: %d\n",
-								fieldsize);
-				stdoutput.write("		data:\n");
-				debugHexDump((byte_t *)field,fieldsize);
-				stdoutput.write('\n');
-			}
+			debugWrite("size: %d",fieldsize);
+			debugWrite("data:");
+			debugHexDump((byte_t *)field,fieldsize);
 			}
 			break;
 		case TDS_TYPE_BIGCHAR:
@@ -3921,12 +3551,9 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 			{
 			write(&resppacket,hostToLE((uint16_t)fieldsize));
 			write(&resppacket,field,fieldsize);
-			if (getDebug()) {
-				stdoutput.printf("		size: %d\n",
-								fieldsize);
-				stdoutput.write("		data: ");
-				stdoutput.printf("%.*s\n",fieldsize,field);
-			}
+			debugWrite("size: %d",fieldsize);
+			debugWrite("data: ");
+			debugWrite("%.*s",fieldsize,field);
 			}
 			break;
 		case TDS_TYPE_UDT:
@@ -3938,12 +3565,9 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 			{
 			write(&resppacket,hostToLE((uint32_t)fieldsize));
 			write(&resppacket,field,fieldsize);
-			if (getDebug()) {
-				stdoutput.printf("		size: %d\n",
-								fieldsize);
-				stdoutput.write("		data: ");
-				stdoutput.printf("%.*s\n",fieldsize,field);
-			}
+			debugWrite("size: %d",fieldsize);
+			debugWrite("data: ");
+			debugWrite("%.*s",fieldsize,field);
 			}
 			break;
 		case TDS_TYPE_IMAGE:
@@ -3959,13 +3583,9 @@ void sqlrprotocol_tds::field(byte_t tdstype,
 				write(&resppacket,charsToHex(f));
 				f+=2;
 			}
-			if (getDebug()) {
-				stdoutput.printf("		size: %d\n",
-								fieldsize);
-				stdoutput.write("		data:\n");
-				debugHexDump((byte_t *)field,fieldsize);
-				stdoutput.write('\n');
-			}
+			debugWrite("size: %d",fieldsize);
+			debugWrite("data:");
+			debugHexDump((byte_t *)field,fieldsize);
 			}
 			break;
 	}
@@ -4057,32 +3677,19 @@ void sqlrprotocol_tds::dateTime(const char *datetime,
 	// calculate three-hundredths of a second since 12AM
 	*threehundredths=((hour*60*60+minute*60+second)*300)+(usec*3/10000);
 
-	if (getDebug()) {
-		stdoutput.write("		datetime {\n");
-		stdoutput.printf("			string:"
-					"		%s\n",datetime);
-		stdoutput.printf("			year:"
-					"		%d\n",year);
-		stdoutput.printf("			month:"
-					"		%d\n",month);
-		stdoutput.printf("			day:"
-					"		%d\n",day);
-		stdoutput.printf("			hour:"
-					"		%d\n",hour);
-		stdoutput.printf("			minute:"
-					"		%d\n",minute);
-		stdoutput.printf("			second:"
-					"		%d\n",second);
-		stdoutput.printf("			usec:"
-					"		%d\n",usec);
-		stdoutput.printf("			isnegative:"
-						"	%d\n",isnegative);
-		stdoutput.printf("			days since 1900:"
-						"	%d\n",*dayssince1900);
-		stdoutput.printf("			300ths since 12AM:"
-						"	%d\n",*threehundredths);
-		stdoutput.write("		}\n");
-	}
+	debugStart("datetime");
+	debugWrite("string: %s",datetime);
+	debugWrite("year: %d",year);
+	debugWrite("month: %d",month);
+	debugWrite("day: %d",day);
+	debugWrite("hour: %d",hour);
+	debugWrite("minute: %d",minute);
+	debugWrite("second: %d",second);
+	debugWrite("usec: %d",usec);
+	debugWrite("isnegative: %d",isnegative);
+	debugWrite("days since 1900: %d",*dayssince1900);
+	debugWrite("300ths since 12AM: %d",*threehundredths);
+	debugEnd();
 }
 
 void sqlrprotocol_tds::date(const char *datetime, uint16_t *dayssince1) {
@@ -4118,30 +3725,18 @@ void sqlrprotocol_tds::date(const char *datetime, uint16_t *dayssince1) {
 	//   * unless they are divisible by 400
 	*dayssince1+=day+((year-1)/4);
 
-	if (getDebug()) {
-		stdoutput.write("		date {\n");
-		stdoutput.printf("			string:"
-					"		%s\n",datetime);
-		stdoutput.printf("			year:"
-					"		%d\n",year);
-		stdoutput.printf("			month:"
-					"		%d\n",month);
-		stdoutput.printf("			day:"
-					"		%d\n",day);
-		stdoutput.printf("			hour:"
-					"		%d\n",hour);
-		stdoutput.printf("			minute:"
-					"		%d\n",minute);
-		stdoutput.printf("			second:"
-					"		%d\n",second);
-		stdoutput.printf("			usec:"
-					"		%d\n",usec);
-		stdoutput.printf("			isnegative:"
-						"	%d\n",isnegative);
-		stdoutput.printf("			days since 1:"
-						"	%d\n",*dayssince1);
-		stdoutput.write("		}\n");
-	}
+	debugStart("date");
+	debugWrite("string: %s",datetime);
+	debugWrite("year: %d",year);
+	debugWrite("month: %d",month);
+	debugWrite("day: %d",day);
+	debugWrite("hour: %d",hour);
+	debugWrite("minute: %d",minute);
+	debugWrite("second: %d",second);
+	debugWrite("usec: %d",usec);
+	debugWrite("isnegative: %d",isnegative);
+	debugWrite("days since 1: %d",*dayssince1);
+	debugEnd();
 }
 
 void sqlrprotocol_tds::daten(const char *field) {
@@ -4149,10 +3744,8 @@ void sqlrprotocol_tds::daten(const char *field) {
 	date(field,&dayssince1);
 	write(&resppacket,(byte_t)2);
 	write(&resppacket,hostToLE(dayssince1));
-	if (getDebug()) {
-		stdoutput.write("		data: ");
-		stdoutput.printf("%hd\n",dayssince1);
-	}
+	debugWrite("data: ");
+	debugWrite("%hd",dayssince1);
 }
 
 void sqlrprotocol_tds::timen(const char *field) {
@@ -4167,9 +3760,7 @@ void sqlrprotocol_tds::timen(const char *field) {
 	write(&resppacket,size);
 	byte_t	bytes[3]={0,0,0};
 	write(&resppacket,bytes,sizeof(bytes));
-	if (getDebug()) {
-		stdoutput.write("		data: ...");
-	}
+	debugWrite("data: ...");
 }
 
 void sqlrprotocol_tds::decimal(const char *field,
@@ -4361,10 +3952,8 @@ bool sqlrprotocol_tds::bulkLoad(sqlrservercursor *cursor) {
 
 	//const byte_t	*rp=reqpacket.getBuffer();
 
-	if (getDebug()) {
-		debugStart("bulk load");
-		debugEnd();
-	}
+	debugStart("bulk load");
+	debugEnd();
 
 	return false;
 }
@@ -4399,11 +3988,8 @@ bool sqlrprotocol_tds::remoteProcedureCall(sqlrservercursor *cursor) {
 		readLE(rp,&procid,&rp);
 		rpsize-=sizeof(procid);
 
-		if (getDebug()) {
-			stdoutput.printf("	procid:"
-					"		%hd (%s)\n",
-					procid,procids[(procid<=15)?procid:0]);
-		}
+		debugWrite("procid: %hd (%s)",
+				procid,procids[(procid<=15)?procid:0]);
 
 	} else {
 
@@ -4419,12 +4005,8 @@ bool sqlrprotocol_tds::remoteProcedureCall(sqlrservercursor *cursor) {
 		// build the query
 		query.append("exec ")->append(procname);
 
-		if (getDebug()) {
-			stdoutput.printf("	procname:"
-					"	%s\n",procname);
-			stdoutput.printf("	query:	"
-					"	%s\n",query.getString());
-		}
+		debugWrite("procname: %s",procname);
+		debugWrite("query: %s",query.getString());
 
 		// clean up
 		delete[] procname16;
@@ -4441,13 +4023,14 @@ bool sqlrprotocol_tds::remoteProcedureCall(sqlrservercursor *cursor) {
 	bool	withrecomp=(optionflags&0x0001);
 	bool	nometadata=(optionflags&(0x0001<<2))>>2;
 	bool	reusemetadata=(optionflags&(0x0001<<3))>>3;
+
 	if (getDebug()) {
-		stdoutput.write("	optionflags:	");
-		stdoutput.printBits(optionflags);
-		stdoutput.printf("\n");
-		stdoutput.printf("	withrecomp:	%d\n",withrecomp);
-		stdoutput.printf("	nometadata:	%d\n",nometadata);
-		stdoutput.printf("	reusemetadata:	%d\n",reusemetadata);
+		stringbuffer	b;
+		b.printBits(optionflags);
+		debugWrite("optionflags: %s",b.getString());
+		debugWrite("withrecomp: %d",withrecomp);
+		debugWrite("nometadata: %d",nometadata);
+		debugWrite("reusemetadata: %d",reusemetadata);
 	}
 
 
@@ -4706,28 +4289,22 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 
 	// debug
 	if (getDebug()) {
-		stdoutput.printf("	param %d {\n",(bv)?param:-1);
-		stdoutput.printf("		pnamelen:	%d\n",pnamelen);
-		stdoutput.printf("		pname:		%s\n",pname);
-		stdoutput.write("		statusflags:	");
-		stdoutput.printBits(statusflags);
-		stdoutput.write('\n');
-		stdoutput.printf("		byrefvalue:	%d\n",
-							byrefvalue);
-		stdoutput.printf("		defaultvalue:	%d\n",
-							defaultvalue);
-		stdoutput.printf("		encrypted:	%d\n",
-							encrypted);
+		debugStart("param %d",(bv)?param:-1);
+		debugWrite("pnamelen: %d",pnamelen);
+		debugWrite("pname: %s",pname);
+		stringbuffer	b;
+		b.printBits(statusflags);
+		debugWrite("statusflags: %s",b.getString());
+		debugWrite("byrefvalue: %d",byrefvalue);
+		debugWrite("defaultvalue: %d",defaultvalue);
+		debugWrite("encrypted: %d",encrypted);
 	}
 
 
 	// type info...
 	byte_t	tdstype;
 	read(rp,&tdstype,&rp);
-	if (getDebug()) {
-		stdoutput.printf("		tdstype:	0x%02x\n",
-								tdstype);
-	}
+	debugWrite("tdstype: 0x%02x",tdstype);
 
 	uint32_t	maxsize=0;
 	byte_t		precision=0;
@@ -4735,15 +4312,11 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 
 	if (isFixedLenType(tdstype)) {
 
-		if (getDebug()) {
-			stdoutput.write("		fixedlentype...\n");
-		}
+		debugWrite("fixedlentype...");
 
 	} else if (isVarLenType(tdstype)) {
 
-		if (getDebug()) {
-			stdoutput.write("		varlentype...\n");
-		}
+		debugWrite("varlentype...");
 
 		// maxsize
 		switch (tdstype) {
@@ -4752,11 +4325,7 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 			case TDS_TYPE_NTEXT:
 			case TDS_TYPE_IMAGE:
 				readLE(rp,&maxsize,&rp);
-				if (getDebug()) {
-					stdoutput.printf("		"
-							"maxsize:	"
-							"%d\n",maxsize);
-				}
+				debugWrite("maxsize: %d",maxsize);
 				break;
 			case TDS_TYPE_BIGCHAR:
 			case TDS_TYPE_BIGVARCHR:
@@ -4768,11 +4337,7 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 				uint16_t	size;
 				readLE(rp,&size,&rp);
 				maxsize=size;
-				if (getDebug()) {
-					stdoutput.printf("		"
-							"maxsize:	"
-							"%d\n",maxsize);
-				}
+				debugWrite("maxsize: %d",maxsize);
 				}
 				break;
 			default:
@@ -4780,11 +4345,7 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 				byte_t	size;
 				read(rp,&size,&rp);
 				maxsize=size;
-				if (getDebug()) {
-					stdoutput.printf("		"
-							"maxsize:	"
-							"%d\n",maxsize);
-				}
+				debugWrite("maxsize: %d",maxsize);
 				}
 				break;
 		}
@@ -4796,11 +4357,7 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 			case TDS_TYPE_DECIMAL:
 			case TDS_TYPE_DECIMALN:
 				read(rp,&precision,&rp);
-				if (getDebug()) {
-					stdoutput.printf("		"
-							"precision:	"
-							"%d\n",precision);
-				}
+				debugWrite("precision: %d",precision);
 				break;
 		}
 
@@ -4814,19 +4371,13 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 			case TDS_TYPE_DATETIME2N:
 			case TDS_TYPE_DATETIMEOFFSETN:
 				read(rp,&scale,&rp);
-				if (getDebug()) {
-					stdoutput.printf("		"
-							"scale:		"
-							"%d\n",scale);
-				}
+				debugWrite("scale: %d",scale);
 				break;
 		}
 
 	} else if (isPartLenType(tdstype)) {
 
-		if (getDebug()) {
-			stdoutput.write("		partlentype...\n");
-		}
+		debugWrite("partlentype...");
 
 		// FIXME: [ushortmaxlen] [collation] [xml_info] [utd_info]
 	} 
@@ -4930,10 +4481,9 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 			byte_t	coll[5];
 			read(rp,coll,sizeof(coll),&rp);
 			if (getDebug()) {
-				stdoutput.write("		"
-						"collation:	");
-				stdoutput.printBits(coll,sizeof(coll));
-				stdoutput.write("\n");
+				stringbuffer	b;
+				b.printBits(coll,sizeof(coll));
+				debugWrite("collation: %s",b.getString());
 			}
 			}
 			break;
@@ -4954,13 +4504,9 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 				bv->value.integerval=val;
 			}
 
-			if (getDebug() && bv) {
-				stdoutput.printf("		valuesize:"
-							"	%d\n",
-							bv->valuesize);
-				stdoutput.printf("		value:	"
-							"	%lld\n",
-							bv->value.integerval);
+			if (bv) {
+				debugWrite("valuesize: %d",bv->valuesize);
+				debugWrite("value: %lld",bv->value.integerval);
 			}
 			}
 			break;
@@ -4977,13 +4523,9 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 				bv->value.integerval=val;
 			}
 	
-			if (getDebug() && bv) {
-				stdoutput.printf("		valuesize:"
-							"	%d\n",
-							bv->valuesize);
-				stdoutput.printf("		value:	"
-							"	%lld\n",
-							bv->value.integerval);
+			if (bv) {
+				debugWrite("valuesize: %d",bv->valuesize);
+				debugWrite("value: %lld",bv->value.integerval);
 			}
 			}
 			break;
@@ -5000,13 +4542,9 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 				bv->value.integerval=val;
 			}
 
-			if (getDebug() && bv) {
-				stdoutput.printf("		valuesize:"
-							"	%d\n",
-							bv->valuesize);
-				stdoutput.printf("		value:	"
-							"	%lld\n",
-							bv->value.integerval);
+			if (bv) {
+				debugWrite("valuesize: %d",bv->valuesize);
+				debugWrite("value: %lld",bv->value.integerval);
 			}
 			}
 			break;
@@ -5043,21 +4581,15 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 				delete[] num;
 			}
 
-			if (getDebug() && bv) {
-				stdoutput.printf("		valuesize:"
-							"	%d\n",
-							bv->valuesize);
-				stdoutput.printf("		value:	"
-							"	%f\n",
-							bv->value.doubleval);
-				stdoutput.printf("		precision:"
-							"	%d\n",
-							bv->value.doubleval.
-								precision);
-				stdoutput.printf("		scale:	"
-							"	%d\n",
-							bv->value.doubleval.
-								scale);
+			if (bv) {
+				debugWrite("valuesize: %d",bv->valuesize);
+				debugWrite("value: %f",bv->value.doubleval);
+				debugWrite("precision: %d",
+						bv->value.doubleval.
+						precision);
+				debugWrite("scale: %d",
+						bv->value.doubleval.
+						scale);
 			}
 			}
 			break;
@@ -5103,21 +4635,15 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 				delete[] num;
 			}
 
-			if (getDebug() && bv) {
-				stdoutput.printf("		valuesize:"
-							"	%d\n",
-							bv->valuesize);
-				stdoutput.printf("		value:	"
-							"	%f\n",
-							bv->value.doubleval);
-				stdoutput.printf("		precision:"
-							"	%d\n",
-							bv->value.doubleval.
-								precision);
-				stdoutput.printf("		scale:	"
-							"	%d\n",
-							bv->value.doubleval.
-								scale);
+			if (bv) {
+				debugWrite("valuesize: %d",bv->valuesize);
+				debugWrite("value: %f",bv->value.doubleval);
+				debugWrite("precision: %d",
+						bv->value.doubleval.
+						precision);
+				debugWrite("scale: %d",
+						bv->value.doubleval.
+						scale);
 			}
 			}
 			break;
@@ -5141,13 +4667,9 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 				bv->value.integerval=val;
 			}
 
-			if (getDebug() && bv) {
-				stdoutput.printf("		valuesize:"
-							"	%d\n",
-							bv->valuesize);
-				stdoutput.printf("		value:	"
-							"	%lld\n",
-							bv->value.integerval);
+			if (bv) {
+				debugWrite("valuesize: %d",bv->valuesize);
+				debugWrite("value: %lld",bv->value.integerval);
 			}
 			}
 			break;
@@ -5252,14 +4774,11 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 				bv->isnull=cont->getNonNullBindValue();
 			}
 
-			if (getDebug() && bv) {
-				stdoutput.printf("		valuesize:"
-							"	%d\n",
-							bv->valuesize);
-				stdoutput.printf("		value:	"
-							"	%.*s\n",
-							bv->valuesize,
-							bv->value.stringval);
+			if (bv) {
+				debugWrite("valuesize: %d",bv->valuesize);
+				debugWrite("value: %.*s",
+						bv->valuesize,
+						bv->value.stringval);
 			}
 
 			rp+=size;
@@ -5316,9 +4835,7 @@ bool sqlrprotocol_tds::param(sqlrservercursor *cursor,
 		//   	NormVersion - byte      (tds 7.4+)
 	}
 
-	if (getDebug()) {
-		stdoutput.write("	}\n");
-	}
+	debugEnd();
 
 	// clean up
 	delete[] pname16;
@@ -5368,21 +4885,17 @@ void sqlrprotocol_tds::envChange(byte_t type,
 				oldvaluelensize+
 				oldvaluelen*sizeof(uint16_t);
 
-	if (getDebug()) {
-		debugStart("env change");
-		stdoutput.printf("	token:		0x%02x\n",token);
-		stdoutput.printf("	tokensize:	0x%02x (%hd)\n",
-							tokensize,
-							tokensize);
-		stdoutput.printf("	type:		%d\n",type);
-		stdoutput.printf("	newvaluelensize:%d\n",newvaluelensize);
-		stdoutput.printf("	newvaluelen:	%d\n",newvaluelen);
-		stdoutput.printf("	newvalue:	%S\n",newvalue);
-		stdoutput.printf("	oldvaluelensize:%d\n",oldvaluelensize);
-		stdoutput.printf("	oldvaluelen:	%d\n",oldvaluelen);
-		stdoutput.printf("	oldvalue:	%S\n",oldvalue);
-		debugEnd();
-	}
+	debugStart("env change");
+	debugWrite("token: 0x%02x",token);
+	debugWrite("tokensize: 0x%02x (%hd)",tokensize,tokensize);
+	debugWrite("type: %d",type);
+	debugWrite("newvaluelensize:%d",newvaluelensize);
+	debugWrite("newvaluelen: %d",newvaluelen);
+	debugWrite("newvalue: %S",newvalue);
+	debugWrite("oldvaluelensize:%d",oldvaluelensize);
+	debugWrite("oldvaluelen: %d",oldvaluelen);
+	debugWrite("oldvalue: %S",oldvalue);
+	debugEnd();
 
 	write(&resppacket,token);
 	write(&resppacket,hostToLE(tokensize));
@@ -5454,21 +4967,17 @@ void sqlrprotocol_tds::infoOrError(byte_t token,
 						sizeof(uint16_t):
 						sizeof(uint32_t));
 
-	if (getDebug()) {
-		debugStart((token==TOKEN_INFO)?"info":"error");
-		stdoutput.printf("	token:		0x%02x\n",token);
-		stdoutput.printf("	tokensize:	0x%02x (%hd)\n",
-							tokensize,
-							tokensize);
-		stdoutput.printf("	number:		%d\n",number);
-		stdoutput.printf("	state:		%d\n",state);
-		stdoutput.printf("	class:		%d\n",infoerrclass);
-		stdoutput.printf("	msgtext:	%s\n",msgtext);
-		stdoutput.printf("	srvname:	%s\n",srvname);
-		stdoutput.printf("	procname:	%s\n",procname);
-		stdoutput.printf("	linenumber:	%d\n",linenumber);
-		debugEnd();
-	}
+	debugStart((token==TOKEN_INFO)?"info":"error");
+	debugWrite("token: 0x%02x",token);
+	debugWrite("tokensize: 0x%02x (%hd)",tokensize,tokensize);
+	debugWrite("number: %d",number);
+	debugWrite("state: %d",state);
+	debugWrite("class: %d",infoerrclass);
+	debugWrite("msgtext: %s",msgtext);
+	debugWrite("srvname: %s",srvname);
+	debugWrite("procname: %s",procname);
+	debugWrite("linenumber: %d",linenumber);
+	debugEnd();
 
 	write(&resppacket,token);
 	write(&resppacket,hostToLE(tokensize));
@@ -5503,24 +5012,22 @@ void sqlrprotocol_tds::done(byte_t token,
 				uint16_t curcmd,
 				uint64_t donerowcount) {
 
-	if (getDebug()) {
-		switch (token) {
-			case TOKEN_DONEINPROC:
-				debugStart("done-in-proc");
-				break;
-			case TOKEN_DONEPROC:
-				debugStart("done-proc");
-				break;
-			default:
-				debugStart("done");
-				break;
-		}
-		stdoutput.printf("	token:		0x%02x\n",token);
-		stdoutput.printf("	status:		0x%02x\n",status);
-		stdoutput.printf("	curcmd:		0x%02x\n",curcmd);
-		stdoutput.printf("	donerowcount:	%lld\n",donerowcount);
-		debugEnd();
+	switch (token) {
+		case TOKEN_DONEINPROC:
+			debugStart("done-in-proc");
+			break;
+		case TOKEN_DONEPROC:
+			debugStart("done-proc");
+			break;
+		default:
+			debugStart("done");
+			break;
 	}
+	debugWrite("token: 0x%02x",token);
+	debugWrite("status: 0x%02x",status);
+	debugWrite("curcmd: 0x%02x",curcmd);
+	debugWrite("donerowcount: %lld",donerowcount);
+	debugEnd();
 
 	write(&resppacket,token);
 	write(&resppacket,hostToLE(status));
@@ -5547,12 +5054,10 @@ void sqlrprotocol_tds::returnStatus(sqlrservercursor *cursor) {
 	write(&resppacket,token);
 	write(&resppacket,hostToLE(value));
 
-	if (getDebug()) {
-		debugStart("return-status");
-		stdoutput.printf("	token:		0x%02x\n",token);
-		stdoutput.printf("	status:		%d\n",value);
-		debugEnd();
-	}
+	debugStart("return-status");
+	debugWrite("token: 0x%02x",token);
+	debugWrite("status: %d",value);
+	debugEnd();
 }
 
 void sqlrprotocol_tds::returnValues(sqlrservercursor *cursor) {
@@ -5593,7 +5098,7 @@ void sqlrprotocol_tds::doneProc(uint16_t status,
 
 void sqlrprotocol_tds::debugSystemError() {
 	char	*err=error::getErrorString();
-	stdoutput.printf("%s\n",err);
+	debugWrite(err);
 	delete[] err;
 }
 
