@@ -49,7 +49,7 @@ sqlrauth_sqlrclient_sqlrelay::sqlrauth_sqlrclient_sqlrelay(
 
 	sqlrcon=new sqlrconnection(host,port,socket,user,password,0,1);
 
-	if (charstring::sYes(sqlrdebug)) {
+	if (charstring::isYes(sqlrdebug)) {
 		sqlrcon->debugOn();
 	} else if (!charstring::isNullOrEmpty(sqlrdebug) &&
 				!charstring::isNo(sqlrdebug)) {
