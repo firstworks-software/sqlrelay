@@ -20,8 +20,6 @@ class SQLRSERVER_DLLSPEC sqlrerrortranslation_renumber :
 	private:
 		dictionary<int64_t,int64_t>	map;
 
-		bool	enabled;
-
 		bool	debug;
 };
 
@@ -32,11 +30,6 @@ sqlrerrortranslation_renumber::sqlrerrortranslation_renumber(
 	debugFunction();
 
 	debug=cont->getConfig()->getDebugErrorTranslations();
-
-	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
-	if (!enabled) {
-		return;
-	}
 
 	for (domnode *node=parameters->getFirstTagChild("renumber");
 		!node->isNullNode(); node=node->getNextTagSibling("renumber")) {
@@ -61,10 +54,6 @@ bool sqlrerrortranslation_renumber::run(sqlrserverconnection *sqlrcon,
 
 	*translatederrornumber=errornumber;
 	translatederror->append(error,errorlength);
-
-	if (!enabled) {
-		return true;
-	}
 
 	if (debug) {
 		stdoutput.printf("original error number:\n\"%lld\"\n\n",

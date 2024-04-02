@@ -22,8 +22,6 @@ class SQLRSERVER_DLLSPEC sqlrrouter_clientinfolist : public sqlrrouter {
 		regularexpression	**clientinfos;
 		uint64_t		clientinfocount;
 
-		bool	enabled;
-
 		bool	debug;
 };
 
@@ -34,11 +32,6 @@ sqlrrouter_clientinfolist::sqlrrouter_clientinfolist(sqlrservercontroller *cont,
 	clientinfos=NULL;
 
 	debug=cont->getConfig()->getDebugRouters();
-	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
-	if (!enabled && debug) {
-		stdoutput.printf("	disabled\n");
-		return;
-	}
 
 	connid=parameters->getAttributeValue("connectionid");
 
@@ -65,9 +58,6 @@ const char *sqlrrouter_clientinfolist::route(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur,
 						const char **err,
 						int64_t *errn) {
-	if (!enabled) {
-		return NULL;
-	}
 
 	if (debug) {
 		stdoutput.printf("		route {\n");

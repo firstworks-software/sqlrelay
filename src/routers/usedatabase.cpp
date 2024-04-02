@@ -47,8 +47,6 @@ class SQLRSERVER_DLLSPEC sqlrrouter_usedatabase : public sqlrrouter {
 		const char	*mapDbName(const char *sqlrconid,
 						const char *dbname);
 
-		bool	enabled;
-
 		bool	debug;
 
 		dictionary<char *,conndb *>	dbs;
@@ -62,12 +60,6 @@ sqlrrouter_usedatabase::sqlrrouter_usedatabase(sqlrservercontroller *cont,
 					sqlrrouter(cont,rs,parameters) {
 
 	debug=cont->getConfig()->getDebugRouters();
-
-	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
-	if (!enabled && debug) {
-		stdoutput.printf("	disabled\n");
-		return;
-	}
 
 	initialized=false;
 
@@ -83,7 +75,7 @@ const char *sqlrrouter_usedatabase::route(sqlrserverconnection *sqlrcon,
 	// initialze the return value to the current connection
 	const char	*retval=getRouters()->getCurrentConnectionId();
 
-	if (!enabled || !sqlrcon || !sqlrcur) {
+	if (!sqlrcon || !sqlrcur) {
 		return NULL;
 	}
 

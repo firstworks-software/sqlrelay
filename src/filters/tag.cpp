@@ -34,8 +34,6 @@ class SQLRSERVER_DLLSPEC sqlrfilter_tag : public sqlrfilter {
 		uint32_t	patterncount;
 		bool		hasscope;
 
-		bool	enabled;
-
 		sqlrmoduledata_tag	*md;
 };
 
@@ -47,11 +45,6 @@ sqlrfilter_tag::sqlrfilter_tag(sqlrservercontroller *cont,
 	p=NULL;
 	patterncount=0;
 	hasscope=false;
-
-	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
-	if (!enabled) {
-		return;
-	}
 
 	// count patterns
 	patterncount=0;
@@ -116,10 +109,6 @@ bool sqlrfilter_tag::run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					const char *query) {
 	debugFunction();
-
-	if (!enabled) {
-		return true;
-	}
 
 	if (!md) {
 		return true;

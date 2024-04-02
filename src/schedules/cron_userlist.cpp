@@ -13,7 +13,6 @@ class SQLRSERVER_DLLSPEC sqlrschedule_cron_userlist : public sqlrschedule {
 		bool	allowed(sqlrserverconnection *sqlrcon,
 						const char *user);
 	private:
-		bool	enabled;
 		bool	defaultallow;
 };
 
@@ -22,7 +21,6 @@ sqlrschedule_cron_userlist::sqlrschedule_cron_userlist(
 						domnode *parameters) :
 					sqlrschedule(cont,parameters) {
 
-	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
 	defaultallow=charstring::compareIgnoringCase(
 			parameters->getAttributeValue("default"),"deny");
 
@@ -45,11 +43,6 @@ sqlrschedule_cron_userlist::sqlrschedule_cron_userlist(
 
 bool sqlrschedule_cron_userlist::allowed(sqlrserverconnection *sqlrcon,
 							const char *user) {
-
-	if (!enabled) {
-		debugPrintf("module disabled\n");
-		return true;
-	}
 
 	// do we care about this user?
 	debugPrintf("user...\n");

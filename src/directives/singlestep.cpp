@@ -22,7 +22,6 @@ class SQLRSERVER_DLLSPEC sqlrdirective_singlestep : public sqlrdirective {
 		sqlrservercontroller	*cont;
 
 		bool	debug;
-		bool	enabled;
 };
 
 sqlrdirective_singlestep::sqlrdirective_singlestep(
@@ -34,18 +33,12 @@ sqlrdirective_singlestep::sqlrdirective_singlestep(
 	this->cont=cont;
 
 	debug=cont->getConfig()->getDebugDirectives();
-
-	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
 }
 
 bool sqlrdirective_singlestep::run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					const char *query) {
 	debugFunction();
-
-	if (!enabled) {
-		return true;
-	}
 
 	// bail if not postgresql
 	if (charstring::compare(sqlrcon->getDbType(),"postgresql")) {

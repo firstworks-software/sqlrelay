@@ -28,7 +28,6 @@ class SQLRSERVER_DLLSPEC sqlrlogger_slowqueries : public sqlrlogger {
 		uint64_t	usec;
 		uint64_t	totalusec;
 		bool		usecommand;
-		bool		enabled;
 		bool		sync;
 
 		datetime	dt;
@@ -46,7 +45,6 @@ sqlrlogger_slowqueries::sqlrlogger_slowqueries(domnode *parameters) :
 	totalusec=sec*1000000+usec;
 	usecommand=!charstring::compareIgnoringCase(
 			parameters->getAttributeValue("timer"),"command");
-	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
 	sync=charstring::isYes(parameters->getAttributeValue("sync"));
 }
 
@@ -57,10 +55,6 @@ sqlrlogger_slowqueries::~sqlrlogger_slowqueries() {
 
 bool sqlrlogger_slowqueries::init(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon) {
-
-	if (!enabled) {
-		return true;
-	}
 
 	// don't log anything for the listener
 	if (!sqlrcon) {
@@ -100,10 +94,6 @@ bool sqlrlogger_slowqueries::run(sqlrlistener *sqlrl,
 					sqlrloglevel_t level,
 					sqlrevent_t event,
 					const char *info) {
-
-	if (!enabled) {
-		return true;
-	}
 
 	// don't log anything for the listener
 	if (!sqlrcon) {

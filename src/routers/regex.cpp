@@ -20,8 +20,6 @@ class SQLRSERVER_DLLSPEC sqlrrouter_regex : public sqlrrouter {
 
 		const char	*connid;
 
-		bool	enabled;
-
 		bool	debug;
 };
 
@@ -32,11 +30,6 @@ sqlrrouter_regex::sqlrrouter_regex(sqlrservercontroller *cont,
 	relist.setManageValues(true);
 
 	debug=cont->getConfig()->getDebugRouters();
-	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
-	if (!enabled && debug) {
-		stdoutput.printf("	disabled\n");
-		return;
-	}
 
 	connid=parameters->getAttributeValue("connectionid");
 
@@ -64,7 +57,7 @@ const char *sqlrrouter_regex::route(sqlrserverconnection *sqlrcon,
 					const char **err,
 					int64_t *errn) {
 
-	if (!enabled || !sqlrcon || !sqlrcur) {
+	if (!sqlrcon || !sqlrcur) {
 		return NULL;
 	}
 

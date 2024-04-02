@@ -22,8 +22,6 @@ class SQLRSERVER_DLLSPEC sqlrrouter_userlist : public sqlrrouter {
 		const char	**users;
 		uint64_t	usercount;
 
-		bool	enabled;
-
 		bool	debug;
 };
 
@@ -34,11 +32,6 @@ sqlrrouter_userlist::sqlrrouter_userlist(sqlrservercontroller *cont,
 	users=NULL;
 
 	debug=cont->getConfig()->getDebugRouters();
-	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
-	if (!enabled && debug) {
-		stdoutput.printf("	disabled\n");
-		return;
-	}
 
 	connid=parameters->getAttributeValue("connectionid");
 
@@ -60,9 +53,6 @@ const char *sqlrrouter_userlist::route(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur,
 						const char **err,
 						int64_t *errn) {
-	if (!enabled) {
-		return NULL;
-	}
 
 	if (debug) {
 		stdoutput.printf("		route {\n");

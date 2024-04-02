@@ -23,7 +23,6 @@ class SQLRSERVER_DLLSPEC sqlrdirective_crash : public sqlrdirective {
 		sqlrservercontroller	*cont;
 
 		bool	debug;
-		bool	enabled;
 };
 
 sqlrdirective_crash::sqlrdirective_crash(sqlrservercontroller *cont,
@@ -34,8 +33,6 @@ sqlrdirective_crash::sqlrdirective_crash(sqlrservercontroller *cont,
 	this->cont=cont;
 
 	debug=cont->getConfig()->getDebugDirectives();
-
-	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
 }
 
 #define KEYWORD_SQLRELAY_CRASH "sqlrelay-crash"
@@ -45,10 +42,6 @@ bool sqlrdirective_crash::run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					const char *query) {
 	debugFunction();
-
-	if (!enabled) {
-		return true;
-	}
 
 	// run through the query, processing directives
 	const char	*line=query;

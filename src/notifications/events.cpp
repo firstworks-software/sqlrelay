@@ -13,14 +13,12 @@ class SQLRSERVER_DLLSPEC sqlrnotification_events : public sqlrnotification {
 					sqlrevent_t event,
 					const char *info);
 	private:
-		bool		enabled;
 		domnode	*eventsnode;
 		domnode	*recipientsnode;
 };
 
 sqlrnotification_events::sqlrnotification_events(domnode *parameters) :
 					sqlrnotification(parameters) {
-	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
 	eventsnode=parameters->getFirstTagChild("events");
 	recipientsnode=parameters->getFirstTagChild("recipients");
 }
@@ -30,9 +28,6 @@ bool sqlrnotification_events::run(sqlrlistener *sqlrl,
 					sqlrservercursor *sqlrcur,
 					sqlrevent_t event,
 					const char *info) {
-	if (!enabled) {
-		return true;
-	}
 
 	// for each event...
 	for (domnode *enode=eventsnode->getFirstTagChild("event");

@@ -29,7 +29,6 @@ class SQLRSERVER_DLLSPEC sqlrlogger_debug : public sqlrlogger {
 		char			*dbgfilename;
 		mode_t			dbgfileperms;
 		const char		*name;
-		bool			enabled;
 		bool			loglistener;
 		bool			logconnection;
 };
@@ -45,7 +44,6 @@ sqlrlogger_debug::sqlrlogger_debug(domnode *parameters) :
 	}
 	dbgfileperms=permissions::parsePermString(permstring);
 	name=NULL;
-	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
 	loglistener=!charstring::isNo(
 			parameters->getAttributeValue("listener"));
 	logconnection=!charstring::isNo(
@@ -59,10 +57,6 @@ sqlrlogger_debug::~sqlrlogger_debug() {
 
 bool sqlrlogger_debug::init(sqlrlistener *sqlrl,
 				sqlrserverconnection *sqlrcon) {
-
-	if (!enabled) {
-		return true;
-	}
 
 	closeDebugFile();
 	delete[] dbgfilename;
@@ -92,9 +86,6 @@ bool sqlrlogger_debug::run(sqlrlistener *sqlrl,
 				sqlrloglevel_t level,
 				sqlrevent_t event,
 				const char *info) {
-	if (!enabled) {
-		return true;
-	}
 	if (sqlrl && !loglistener) {
 		return true;
 	}

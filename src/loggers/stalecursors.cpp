@@ -32,8 +32,6 @@ class SQLRSERVER_DLLSPEC sqlrlogger_stalecursors : public sqlrlogger {
 		sqlrcursor	*updatesqlrcur;
 		sqlrcursor	*deletesqlrcur;
 
-		bool		enabled;
-
 		pid_t		pid;
 
 		datetime	dt;
@@ -48,8 +46,6 @@ sqlrlogger_stalecursors::sqlrlogger_stalecursors(domnode *parameters) :
 	socket=parameters->getAttributeValue("socket");
 	user=parameters->getAttributeValue("user");
 	password=parameters->getAttributeValue("password");
-
-	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
 
 	sqlrclientcon=NULL;
 	insertsqlrcur=NULL;
@@ -66,10 +62,6 @@ sqlrlogger_stalecursors::~sqlrlogger_stalecursors() {
 
 bool sqlrlogger_stalecursors::init(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon) {
-
-	if (!enabled) {
-		return true;
-	}
 
 	// don't do anything for the listener
 	if (!sqlrcon) {
@@ -145,10 +137,6 @@ bool sqlrlogger_stalecursors::run(sqlrlistener *sqlrl,
 					sqlrloglevel_t level,
 					sqlrevent_t event,
 					const char *info) {
-
-	if (!enabled) {
-		return true;
-	}
 
 	// don't do anything for the listener
 	if (!sqlrcon) {

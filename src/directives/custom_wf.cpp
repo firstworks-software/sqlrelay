@@ -22,7 +22,6 @@ class SQLRSERVER_DLLSPEC sqlrdirective_custom_wf : public sqlrdirective {
 		sqlrservercontroller	*cont;
 
 		bool	debug;
-		bool	enabled;
 };
 
 sqlrdirective_custom_wf::sqlrdirective_custom_wf(
@@ -34,8 +33,6 @@ sqlrdirective_custom_wf::sqlrdirective_custom_wf(
 	this->cont=cont;
 
 	debug=cont->getConfig()->getDebugDirectives();
-
-	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
 }
 
 #define KEYWORD_SQLEXECDIRECT "sqlexecdirect"
@@ -47,10 +44,6 @@ bool sqlrdirective_custom_wf::run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					const char *query) {
 	debugFunction();
-
-	if (!enabled) {
-		return true;
-	}
 
 	// reset directives
 	sqlrcur->setQueryTimeout(cont->getQueryTimeout());

@@ -64,8 +64,6 @@ class SQLRSERVER_DLLSPEC sqlrerrortranslation_patterns :
 
 		stringbuffer	te;
 
-		bool	enabled;
-
 		bool	debug;
 };
 
@@ -79,11 +77,6 @@ sqlrerrortranslation_patterns::sqlrerrortranslation_patterns(
 
 	patterns=NULL;
 	patterncount=0;
-
-	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
-	if (!enabled) {
-		return;
-	}
 
 	buildPatternsTree(parameters,&patterns,&patterncount,true);
 }
@@ -190,11 +183,6 @@ bool sqlrerrortranslation_patterns::run(sqlrserverconnection *sqlrcon,
 	debugFunction();
 
 	*translatederrornumber=errornumber;
-
-	if (!enabled) {
-		translatederror->append(error,errorlength);
-		return true;
-	}
 
 	if (debug) {
 		stdoutput.write("original error:\n\"");

@@ -32,8 +32,6 @@ class SQLRSERVER_DLLSPEC sqlrfilter_patterns : public sqlrfilter {
 		pattern_t	*p;
 		uint32_t	patterncount;
 		bool		hasscope;
-
-		bool	enabled;
 };
 
 sqlrfilter_patterns::sqlrfilter_patterns(sqlrservercontroller *cont,
@@ -44,11 +42,6 @@ sqlrfilter_patterns::sqlrfilter_patterns(sqlrservercontroller *cont,
 	p=NULL;
 	patterncount=0;
 	hasscope=false;
-
-	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
-	if (!enabled) {
-		return;
-	}
 
 	// count patterns
 	patterncount=0;
@@ -104,10 +97,6 @@ bool sqlrfilter_patterns::run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					const char *query) {
 	debugFunction();
-
-	if (!enabled) {
-		return true;
-	}
 
 	// split the string on single-quotes if necessary
 	// (NOTE: this presumes that backslash-escaped quotes

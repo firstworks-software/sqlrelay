@@ -60,8 +60,6 @@ class SQLRSERVER_DLLSPEC sqlrquerytranslation_patterns :
 		pattern_t	*patterns;
 		uint32_t	patterncount;
 
-		bool	enabled;
-
 		bool	debug;
 };
 
@@ -75,11 +73,6 @@ sqlrquerytranslation_patterns::sqlrquerytranslation_patterns(
 
 	patterns=NULL;
 	patterncount=0;
-
-	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
-	if (!enabled) {
-		return;
-	}
 
 	buildPatternsTree(parameters,&patterns,&patterncount,true);
 }
@@ -182,11 +175,6 @@ bool sqlrquerytranslation_patterns::run(sqlrserverconnection *sqlrcon,
 					uint32_t querylength,
 					stringbuffer *translatedquery) {
 	debugFunction();
-
-	if (!enabled) {
-		translatedquery->append(query,querylength);
-		return true;
-	}
 
 	if (debug) {
 		stdoutput.write("original query:\n\"");

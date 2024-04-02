@@ -19,8 +19,6 @@ class SQLRSERVER_DLLSPEC sqlrfilter_string : public sqlrfilter {
 		char		*lowerpattern;
 		bool		ignorecase;
 
-		bool	enabled;
-
 		bool	debug;
 };
 
@@ -30,11 +28,6 @@ sqlrfilter_string::sqlrfilter_string(sqlrservercontroller *cont,
 	debugFunction();
 
 	debug=cont->getConfig()->getDebugFilters();
-
-	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
-	if (!enabled) {
-		return;
-	}
 
 	pattern=parameters->getAttributeValue("pattern");
 
@@ -59,10 +52,6 @@ bool sqlrfilter_string::run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					const char *query) {
 	debugFunction();
-
-	if (!enabled) {
-		return true;
-	}
 
 	char	*lowered=NULL;
 	if (ignorecase) {

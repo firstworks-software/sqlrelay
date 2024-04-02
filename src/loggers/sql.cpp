@@ -25,7 +25,6 @@ class SQLRSERVER_DLLSPEC sqlrlogger_sql : public sqlrlogger {
 	private:
 		char		*querylogname;
 		file		querylog;
-		bool		enabled;
 		bool		sync;
 		sqlrevent_t	queryevent;
 		bool		logpidchange;
@@ -35,7 +34,6 @@ class SQLRSERVER_DLLSPEC sqlrlogger_sql : public sqlrlogger {
 
 sqlrlogger_sql::sqlrlogger_sql(domnode *parameters) : sqlrlogger(parameters) {
 	querylogname=NULL;
-	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
 	sync=charstring::isYes(parameters->getAttributeValue("sync"));
 	const char	*qestr=parameters->getAttributeValue("queryevent");
 	if (charstring::isNullOrEmpty(qestr)) {
@@ -61,10 +59,6 @@ sqlrlogger_sql::~sqlrlogger_sql() {
 
 bool sqlrlogger_sql::init(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon) {
-
-	if (!enabled) {
-		return true;
-	}
 
 	// don't log anything for the listener
 	if (!sqlrcon) {
@@ -102,10 +96,6 @@ bool sqlrlogger_sql::run(sqlrlistener *sqlrl,
 					sqlrloglevel_t level,
 					sqlrevent_t event,
 					const char *info) {
-
-	if (!enabled) {
-		return true;
-	}
 
 	// don't log anything for the listener
 	if (!sqlrcon) {

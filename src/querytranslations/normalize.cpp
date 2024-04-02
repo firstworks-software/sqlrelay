@@ -45,7 +45,6 @@ class SQLRSERVER_DLLSPEC sqlrquerytranslation_normalize :
 		stringbuffer	pass2;
 		stringbuffer	pass3;
 
-		bool	enabled;
 		bool	foreigndecimals;
 		bool	uppercase;
 		bool	lowercase;
@@ -68,8 +67,6 @@ sqlrquerytranslation_normalize::sqlrquerytranslation_normalize(
 	debugFunction();
 
 	debug=cont->getConfig()->getDebugQueryTranslations();
-
-	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
 
 	foreigndecimals=charstring::isYes(
 			parameters->getAttributeValue("foreigndecimals"));
@@ -135,11 +132,6 @@ bool sqlrquerytranslation_normalize::run(sqlrserverconnection *sqlrcon,
 					uint32_t querylength,
 					stringbuffer *translatedquery) {
 	debugFunction();
-
-	if (!enabled) {
-		translatedquery->append(query,querylength);
-		return true;
-	}
 
 	if (debug) {
 		stdoutput.write("original query:\n\"");

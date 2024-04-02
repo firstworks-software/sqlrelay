@@ -28,14 +28,12 @@ class SQLRSERVER_DLLSPEC sqlrlogger_custom_sc : public sqlrlogger {
 		char	*querylogname;
 		sqlrloglevel_t	loglevel;
 		stringbuffer	logbuffer;
-		bool		enabled;
 };
 
 sqlrlogger_custom_sc::sqlrlogger_custom_sc(domnode *parameters) :
 						sqlrlogger(parameters) {
 	querylogname=NULL;
 	loglevel=SQLRLOGGER_LOGLEVEL_ERROR;
-	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
 }
 
 sqlrlogger_custom_sc::~sqlrlogger_custom_sc() {
@@ -45,10 +43,6 @@ sqlrlogger_custom_sc::~sqlrlogger_custom_sc() {
 bool sqlrlogger_custom_sc::init(sqlrlistener *sqlrl,
 				sqlrserverconnection *sqlrcon) {
 	debugFunction();
-
-	if (!enabled) {
-		return true;
-	}
 
 	// get log level
 	const char	*ll=getParameters()->getAttributeValue("loglevel");
@@ -88,10 +82,6 @@ bool sqlrlogger_custom_sc::run(sqlrlistener *sqlrl,
 				sqlrevent_t event,
 				const char *info) {
 	debugFunction();
-
-	if (!enabled) {
-		return true;
-	}
 
 	// bail if log level is too low
 	if (level<loglevel) {

@@ -26,8 +26,6 @@ class SQLRSERVER_DLLSPEC sqlrresultsettranslation_reformatdatetime :
 		const char	*dateformat;
 		const char	*timeformat;
 
-		bool	enabled;
-
 		bool	debug;
 };
 
@@ -38,11 +36,6 @@ sqlrresultsettranslation_reformatdatetime::
 				sqlrresultsettranslation(cont,parameters) {
 
 	debug=cont->getConfig()->getDebugResultSetTranslations();
-
-	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
-	if (!enabled) {
-		return;
-	}
 
 	// get the parameters
 	const char	*dateddmm=
@@ -79,10 +72,6 @@ bool sqlrresultsettranslation_reformatdatetime::run(
 					const char **field,
 					uint64_t *fieldsize) {
 	debugFunction();
-
-	if (!enabled) {
-		return true;
-	}
 
 	// ignore non-date fields, if specified
 	if (ignorenondatetime &&

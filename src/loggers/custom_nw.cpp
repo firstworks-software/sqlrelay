@@ -31,13 +31,11 @@ class SQLRSERVER_DLLSPEC sqlrlogger_custom_nw : public sqlrlogger {
 		file	querylog;
 		char	*querylogname;
 		char	querylogbuf[102400];
-		bool	enabled;
 };
 
 sqlrlogger_custom_nw::sqlrlogger_custom_nw(domnode *parameters) :
 						sqlrlogger(parameters) {
 	querylogname=NULL;
-	enabled=!charstring::isNo(parameters->getAttributeValue("enabled"));
 }
 
 sqlrlogger_custom_nw::~sqlrlogger_custom_nw() {
@@ -47,10 +45,6 @@ sqlrlogger_custom_nw::~sqlrlogger_custom_nw() {
 bool sqlrlogger_custom_nw::init(sqlrlistener *sqlrl,
 				sqlrserverconnection *sqlrcon) {
 	debugFunction();
-
-	if (!enabled) {
-		return true;
-	}
 
 	const char	*logdir=
 			(sqlrcon)?sqlrcon->cont->getPaths()->getLogDir():
@@ -81,10 +75,6 @@ bool sqlrlogger_custom_nw::run(sqlrlistener *sqlrl,
 				sqlrevent_t event,
 				const char *info) {
 	debugFunction();
-
-	if (!enabled) {
-		return true;
-	}
 
 	// don't do anything unless we got INFO/QUERY
 	if (level!=SQLRLOGGER_LOGLEVEL_INFO ||
