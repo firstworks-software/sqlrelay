@@ -49,10 +49,10 @@ sqlrauth_sqlrclient_sqlrelay::sqlrauth_sqlrclient_sqlrelay(
 
 	sqlrcon=new sqlrconnection(host,port,socket,user,password,0,1);
 
-	if (!charstring::compareIgnoringCase(sqlrdebug,"on")) {
+	if (charstring::sYes(sqlrdebug)) {
 		sqlrcon->debugOn();
 	} else if (!charstring::isNullOrEmpty(sqlrdebug) &&
-			charstring::compareIgnoringCase(sqlrdebug,"off")) {
+				!charstring::isNo(sqlrdebug)) {
 		sqlrcon->debugOn();
 		sqlrcon->setDebugFile(sqlrdebug);
 	}
