@@ -16,12 +16,6 @@
 	}
 #endif
 
-class sqlrrouterplugin {
-	public:
-		sqlrrouter	*r;
-		dynamiclib	*dl;
-};
-
 class sqlrroutersprivate {
 	friend class sqlrrouters;
 	private:
@@ -30,7 +24,7 @@ class sqlrroutersprivate {
 		sqlrconnection		**_conns;
 		uint16_t		_conncount;
 
-		singlylinkedlist< sqlrrouterplugin * >	_llist;
+		singlylinkedlist< sqlrmoduleplugin * >	_llist;
 };
 
 sqlrrouters::sqlrrouters(sqlrservercontroller *cont,
@@ -74,13 +68,12 @@ bool sqlrrouters::load(domnode *parameters) {
 
 void sqlrrouters::unload() {
 	debugFunction();
-	for (listnode< sqlrrouterplugin * > *node=
-						pvt->_llist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_llist.getFirst();
 						node; node=node->getNext()) {
-		sqlrrouterplugin	*sqlrsp=node->getValue();
-		delete sqlrsp->r;
-		delete sqlrsp->dl;
-		delete sqlrsp;
+		sqlrmoduleplugin	*sqlrmp=node->getValue();
+		delete sqlrmp->m;
+		delete sqlrmp->dl;
+		delete sqlrmp;
 	}
 	pvt->_llist.clear();
 }
@@ -158,10 +151,11 @@ void sqlrrouters::loadRouter(domnode *router) {
 #endif
 
 	// add the plugin to the list
-	sqlrrouterplugin	*sqlrsp=new sqlrrouterplugin;
-	sqlrsp->r=r;
-	sqlrsp->dl=dl;
-	pvt->_llist.append(sqlrsp);
+	sqlrmoduleplugin	*sqlrmp=new sqlrmoduleplugin;
+	sqlrmp->m=r;
+	sqlrmp->dl=dl;
+	sqlrmp->module=module;
+	pvt->_llist.append(sqlrmp);
 }
 
 const char *sqlrrouters::route(sqlrserverconnection *sqlrcon,
@@ -169,11 +163,10 @@ const char *sqlrrouters::route(sqlrserverconnection *sqlrcon,
 					const char **err,
 					int64_t *errn) {
 	debugFunction();
-	for (listnode< sqlrrouterplugin * > *node=
-						pvt->_llist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_llist.getFirst();
 						node; node=node->getNext()) {
-		const char	*connid=node->getValue()->r->route(
-						sqlrcon,sqlrcur,err,errn);
+		sqlrrouter	*r=(sqlrrouter *)node->getValue()->m;
+		const char	*connid=r->route(sqlrcon,sqlrcur,err,errn);
 		if (connid) {
 			return connid;
 		}
@@ -183,10 +176,10 @@ const char *sqlrrouters::route(sqlrserverconnection *sqlrcon,
 
 bool sqlrrouters::routeEntireSession() {
 	debugFunction();
-	for (listnode< sqlrrouterplugin * > *node=
-						pvt->_llist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_llist.getFirst();
 						node; node=node->getNext()) {
-		if (!node->getValue()->r->routeEntireSession()) {
+		sqlrrouter	*r=(sqlrrouter *)node->getValue()->m;
+		if (!r->routeEntireSession()) {
 			return false;
 		}
 	}
@@ -194,18 +187,16 @@ bool sqlrrouters::routeEntireSession() {
 }
 
 void sqlrrouters::endTransaction(bool commit) {
-	for (listnode< sqlrrouterplugin * > *node=
-						pvt->_llist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_llist.getFirst();
 						node; node=node->getNext()) {
-		node->getValue()->r->endTransaction(commit);
+		node->getValue()->m->endTransaction(commit);
 	}
 }
 
 void sqlrrouters::endSession() {
-	for (listnode< sqlrrouterplugin * > *node=
-						pvt->_llist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_llist.getFirst();
 						node; node=node->getNext()) {
-		node->getValue()->r->endSession();
+		node->getValue()->m->endSession();
 	}
 }
 

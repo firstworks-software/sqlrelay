@@ -16,18 +16,12 @@
 	}
 #endif
 
-class sqlrloggerplugin {
-	public:
-		sqlrlogger	*lg;
-		dynamiclib	*dl;
-};
-
 class sqlrloggersprivate {
 	friend class sqlrloggers;
 	private:
 		const char	*_libexecdir;
 
-		singlylinkedlist< sqlrloggerplugin * >	_llist;
+		singlylinkedlist< sqlrmoduleplugin * >	_llist;
 };
 
 sqlrloggers::sqlrloggers(sqlrpaths *sqlrpth) : sqlrservermodules(NULL) {
@@ -65,13 +59,12 @@ bool sqlrloggers::load(domnode *parameters) {
 
 void sqlrloggers::unload() {
 	debugFunction();
-	for (listnode< sqlrloggerplugin * > *node=
-						pvt->_llist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_llist.getFirst();
 						node; node=node->getNext()) {
-		sqlrloggerplugin	*sqlrlp=node->getValue();
-		delete sqlrlp->lg;
-		delete sqlrlp->dl;
-		delete sqlrlp;
+		sqlrmoduleplugin	*sqlrmp=node->getValue();
+		delete sqlrmp->m;
+		delete sqlrmp->dl;
+		delete sqlrmp;
 	}
 	pvt->_llist.clear();
 }
@@ -141,19 +134,20 @@ void sqlrloggers::loadLogger(domnode *logger) {
 #endif
 
 	// add the plugin to the list
-	sqlrloggerplugin	*sqlrlp=new sqlrloggerplugin;
-	sqlrlp->lg=lg;
-	sqlrlp->dl=dl;
-	pvt->_llist.append(sqlrlp);
+	sqlrmoduleplugin	*sqlrmp=new sqlrmoduleplugin;
+	sqlrmp->m=lg;
+	sqlrmp->dl=dl;
+	sqlrmp->module=module;
+	pvt->_llist.append(sqlrmp);
 }
 
 void sqlrloggers::init(sqlrlistener *sqlrl,
 				sqlrserverconnection *sqlrcon) {
 	debugFunction();
-	for (listnode< sqlrloggerplugin * > *node=
-						pvt->_llist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_llist.getFirst();
 						node; node=node->getNext()) {
-		node->getValue()->lg->init(sqlrl,sqlrcon);
+		sqlrlogger	*lg=(sqlrlogger *)node->getValue()->m;
+		lg->init(sqlrl,sqlrcon);
 	}
 }
 
@@ -164,26 +158,23 @@ void sqlrloggers::run(sqlrlistener *sqlrl,
 				sqlrevent_t event,
 				const char *info) {
 	debugFunction();
-	for (listnode< sqlrloggerplugin * > *node=
-						pvt->_llist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_llist.getFirst();
 						node; node=node->getNext()) {
-		node->getValue()->lg->run(sqlrl,sqlrcon,sqlrcur,
-						level,event,info);
+		sqlrlogger	*lg=(sqlrlogger *)node->getValue()->m;
+		lg->run(sqlrl,sqlrcon,sqlrcur,level,event,info);
 	}
 }
 
 void sqlrloggers::endTransaction(bool commit) {
-	for (listnode< sqlrloggerplugin * > *node=
-						pvt->_llist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_llist.getFirst();
 						node; node=node->getNext()) {
-		node->getValue()->lg->endTransaction(commit);
+		node->getValue()->m->endTransaction(commit);
 	}
 }
 
 void sqlrloggers::endSession() {
-	for (listnode< sqlrloggerplugin * > *node=
-						pvt->_llist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_llist.getFirst();
 						node; node=node->getNext()) {
-		node->getValue()->lg->endSession();
+		node->getValue()->m->endSession();
 	}
 }

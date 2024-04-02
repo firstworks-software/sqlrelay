@@ -15,16 +15,10 @@
 	}
 #endif
 
-class sqlrprotocolplugin {
-	public:
-		sqlrprotocol	*pr;
-		dynamiclib	*dl;
-};
-
 class sqlrprotocolsprivate {
 	friend class sqlrprotocols;
 	private:
-		dictionary< uint16_t , sqlrprotocolplugin * >	_protos;
+		dictionary< uint16_t , sqlrmoduleplugin * >	_protos;
 };
 
 sqlrprotocols::sqlrprotocols(sqlrservercontroller *cont) :
@@ -68,11 +62,11 @@ void sqlrprotocols::unload() {
 	debugFunction();
 	for (listnode<uint16_t> *node=pvt->_protos.getKeys()->getFirst();
 						node; node=node->getNext()) {
-		sqlrprotocolplugin	*sqlrpp=
+		sqlrmoduleplugin	*sqlrmp=
 					pvt->_protos.getValue(node->getValue());
-		delete sqlrpp->pr;
-		delete sqlrpp->dl;
-		delete sqlrpp;
+		delete sqlrmp->m;
+		delete sqlrmp->dl;
+		delete sqlrmp;
 	}
 	pvt->_protos.clear();
 }
@@ -137,32 +131,32 @@ void sqlrprotocols::loadProtocol(uint16_t index, domnode *listener) {
 #endif
 
 	// add the plugin to the list
-	sqlrprotocolplugin	*sqlrpp=new sqlrprotocolplugin;
-	sqlrpp->pr=pr;
-	sqlrpp->dl=dl;
-	pvt->_protos.setValue(index,sqlrpp);
+	sqlrmoduleplugin	*sqlrmp=new sqlrmoduleplugin;
+	sqlrmp->m=pr;
+	sqlrmp->dl=dl;
+	pvt->_protos.setValue(index,sqlrmp);
 }
 
 sqlrprotocol *sqlrprotocols::getProtocol(uint16_t index) {
 	debugFunction();
-	sqlrprotocolplugin	*pp=NULL;
+	sqlrmoduleplugin	*pp=NULL;
 	if (!pvt->_protos.getValue(index,&pp)) {
 		return NULL;
 	}
-	return pp->pr;
+	return (sqlrprotocol *)pp->m;
 }
 
 void sqlrprotocols::endTransaction(bool commit) {
 	for (listnode<uint16_t> *node=pvt->_protos.getKeys()->getFirst();
 						node; node=node->getNext()) {
 		pvt->_protos.getValue(node->getValue())->
-					pr->endTransaction(commit);
+					m->endTransaction(commit);
 	}
 }
 
 void sqlrprotocols::endSession() {
 	for (listnode<uint16_t> *node=pvt->_protos.getKeys()->getFirst();
 						node; node=node->getNext()) {
-		pvt->_protos.getValue(node->getValue())->pr->endSession();
+		pvt->_protos.getValue(node->getValue())->m->endSession();
 	}
 }

@@ -17,13 +17,6 @@
 	}
 #endif
 
-class sqlrquerytranslationplugin {
-	public:
-		sqlrquerytranslation	*tr;
-		dynamiclib		*dl;
-		const char		*module;
-};
-
 class sqlrdatabaseobject {
 	public:
 		const char	*database;
@@ -40,7 +33,7 @@ class sqlrquerytranslationsprivate {
 
 		const char	*_error;
 
-		singlylinkedlist< sqlrquerytranslationplugin * >	_tlist;
+		singlylinkedlist< sqlrmoduleplugin * >	_tlist;
 
 		bool		_useoriginalonerror;
 };
@@ -90,13 +83,13 @@ bool sqlrquerytranslations::load(domnode *parameters) {
 
 void sqlrquerytranslations::unload() {
 	debugFunction();
-	for (listnode< sqlrquerytranslationplugin * > *node=
+	for (listnode< sqlrmoduleplugin * > *node=
 						pvt->_tlist.getFirst();
 						node; node=node->getNext()) {
-		sqlrquerytranslationplugin	*sqlt=node->getValue();
-		delete sqlt->tr;
-		delete sqlt->dl;
-		delete sqlt;
+		sqlrmoduleplugin	*sqlrmp=node->getValue();
+		delete sqlrmp->m;
+		delete sqlrmp->dl;
+		delete sqlrmp;
 	}
 	pvt->_tlist.clear();
 }
@@ -197,11 +190,11 @@ void sqlrquerytranslations::loadTranslation(domnode *translation) {
 	}
 
 	// add the plugin to the list
-	sqlrquerytranslationplugin	*sqltp=new sqlrquerytranslationplugin;
-	sqltp->tr=tr;
-	sqltp->dl=dl;
-	sqltp->module=module;
-	pvt->_tlist.append(sqltp);
+	sqlrmoduleplugin	*sqlrmpp=new sqlrmoduleplugin;
+	sqlrmpp->m=tr;
+	sqlrmpp->dl=dl;
+	sqlrmpp->module=module;
+	pvt->_tlist.append(sqlrmpp);
 }
 
 bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
@@ -238,7 +231,7 @@ bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
 	stringbuffer	tempquerystr1;
 	stringbuffer	tempquerystr2;
 	stringbuffer	*tempquerystr=&tempquerystr1;
-	for (listnode< sqlrquerytranslationplugin * > *node=
+	for (listnode< sqlrmoduleplugin * > *node=
 						pvt->_tlist.getFirst();
 						node; node=node->getNext()) {
 
@@ -247,7 +240,8 @@ bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
 						node->getValue()->module);
 		}
 
-		sqlrquerytranslation	*tr=node->getValue()->tr;
+		sqlrquerytranslation	*tr=
+			(sqlrquerytranslation *)node->getValue()->m;
 
 		if (tr->requiresTree()) {
 
@@ -372,17 +366,15 @@ bool sqlrquerytranslations::getUseOriginalOnError() {
 }
 
 void sqlrquerytranslations::endTransaction(bool commit) {
-	for (listnode< sqlrquerytranslationplugin * > *node=
-						pvt->_tlist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
 						node; node=node->getNext()) {
-		node->getValue()->tr->endTransaction(commit);
+		node->getValue()->m->endTransaction(commit);
 	}
 }
 
 void sqlrquerytranslations::endSession() {
-	for (listnode< sqlrquerytranslationplugin * > *node=
-						pvt->_tlist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
 						node; node=node->getNext()) {
-		node->getValue()->tr->endSession();
+		node->getValue()->m->endSession();
 	}
 }

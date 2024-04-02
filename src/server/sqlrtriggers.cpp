@@ -16,19 +16,13 @@
 	}
 #endif
 
-class sqlrtriggerplugin {
-	public:
-		sqlrtrigger	*tr;
-		dynamiclib	*dl;
-};
-
 class sqlrtriggersprivate {
 	friend class sqlrtriggers;
 	private:
 		bool	_debug;
 
-		singlylinkedlist< sqlrtriggerplugin * >	_beforetriggers;
-		singlylinkedlist< sqlrtriggerplugin * >	_aftertriggers;
+		singlylinkedlist< sqlrmoduleplugin * >	_beforetriggers;
+		singlylinkedlist< sqlrmoduleplugin * >	_aftertriggers;
 };
 
 sqlrtriggers::sqlrtriggers(sqlrservercontroller *cont) :
@@ -71,7 +65,7 @@ bool sqlrtriggers::load(domnode *parameters) {
 					"both"));
 
 		// load the trigger
-		sqlrtriggerplugin	*p=loadTrigger(trigger);
+		sqlrmoduleplugin	*p=loadTrigger(trigger);
 		if (!p) {
 			continue;
 		}
@@ -97,29 +91,29 @@ bool sqlrtriggers::load(domnode *parameters) {
 
 void sqlrtriggers::unload() {
 	debugFunction();
-	for (listnode< sqlrtriggerplugin * > *bnode=
+	for (listnode< sqlrmoduleplugin * > *bnode=
 				pvt->_beforetriggers.getFirst();
 					bnode; bnode=bnode->getNext()) {
-		sqlrtriggerplugin	*sqlt=bnode->getValue();
+		sqlrmoduleplugin	*sqlt=bnode->getValue();
 		if (!pvt->_aftertriggers.find(sqlt)) {
-			delete sqlt->tr;
+			delete sqlt->m;
 			delete sqlt->dl;
 			delete sqlt;
 		}
 	}
 	pvt->_beforetriggers.clear();
-	for (listnode< sqlrtriggerplugin * > *anode=
+	for (listnode< sqlrmoduleplugin * > *anode=
 				pvt->_aftertriggers.getFirst();
 					anode; anode=anode->getNext()) {
-		sqlrtriggerplugin	*sqlt=anode->getValue();
-		delete sqlt->tr;
+		sqlrmoduleplugin	*sqlt=anode->getValue();
+		delete sqlt->m;
 		delete sqlt->dl;
 		delete sqlt;
 	}
 	pvt->_aftertriggers.clear();
 }
 
-sqlrtriggerplugin *sqlrtriggers::loadTrigger(domnode *trigger) {
+sqlrmoduleplugin *sqlrtriggers::loadTrigger(domnode *trigger) {
 
 	debugFunction();
 
@@ -193,10 +187,11 @@ sqlrtriggerplugin *sqlrtriggers::loadTrigger(domnode *trigger) {
 	}
 
 	// build and return the plugin
-	sqlrtriggerplugin	*sqltp=new sqlrtriggerplugin;
-	sqltp->tr=tr;
-	sqltp->dl=dl;
-	return sqltp;
+	sqlrmoduleplugin	*sqlrmp=new sqlrmoduleplugin;
+	sqlrmp->m=tr;
+	sqlrmp->dl=dl;
+	sqlrmp->module=module;
+	return sqlrmp;
 }
 
 bool sqlrtriggers::runBeforeTriggers(sqlrserverconnection *sqlrcon,
@@ -213,14 +208,15 @@ bool sqlrtriggers::runAfterTriggers(sqlrserverconnection *sqlrcon,
 
 bool sqlrtriggers::runBefore(sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
-				singlylinkedlist< sqlrtriggerplugin * > *list) {
+				singlylinkedlist< sqlrmoduleplugin * > *list) {
 	debugFunction();
-	for (listnode< sqlrtriggerplugin * > *node=list->getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=list->getFirst();
 						node; node=node->getNext()) {
 		if (pvt->_debug) {
 			stdoutput.printf("\nrunning before trigger...\n\n");
 		}
-		if (!node->getValue()->tr->runBefore(sqlrcon,sqlrcur)) {
+		sqlrtrigger	*tr=(sqlrtrigger *)node->getValue()->m;
+		if (!tr->runBefore(sqlrcon,sqlrcur)) {
 			return false;
 		}
 	}
@@ -229,14 +225,15 @@ bool sqlrtriggers::runBefore(sqlrserverconnection *sqlrcon,
 
 bool sqlrtriggers::runAfter(sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
-				singlylinkedlist< sqlrtriggerplugin * > *list) {
+				singlylinkedlist< sqlrmoduleplugin * > *list) {
 	debugFunction();
-	for (listnode< sqlrtriggerplugin * > *node=list->getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=list->getFirst();
 						node; node=node->getNext()) {
 		if (pvt->_debug) {
 			stdoutput.printf("\nrunning after trigger...\n\n");
 		}
-		if (!node->getValue()->tr->runAfter(sqlrcon,sqlrcur)) {
+		sqlrtrigger	*tr=(sqlrtrigger *)node->getValue()->m;
+		if (!tr->runAfter(sqlrcon,sqlrcur)) {
 			return false;
 		}
 	}
@@ -244,27 +241,27 @@ bool sqlrtriggers::runAfter(sqlrserverconnection *sqlrcon,
 }
 
 void sqlrtriggers::endTransaction(bool commit) {
-	for (listnode< sqlrtriggerplugin * >
+	for (listnode< sqlrmoduleplugin * >
 				*node=pvt->_beforetriggers.getFirst();
 				node; node=node->getNext()) {
-		node->getValue()->tr->endTransaction(commit);
+		node->getValue()->m->endTransaction(commit);
 	}
-	for (listnode< sqlrtriggerplugin * >
+	for (listnode< sqlrmoduleplugin * >
 				*node=pvt->_aftertriggers.getFirst();
 				node; node=node->getNext()) {
-		node->getValue()->tr->endTransaction(commit);
+		node->getValue()->m->endTransaction(commit);
 	}
 }
 
 void sqlrtriggers::endSession() {
-	for (listnode< sqlrtriggerplugin * >
+	for (listnode< sqlrmoduleplugin * >
 				*node=pvt->_beforetriggers.getFirst();
 				node; node=node->getNext()) {
-		node->getValue()->tr->endSession();
+		node->getValue()->m->endSession();
 	}
-	for (listnode< sqlrtriggerplugin * >
+	for (listnode< sqlrmoduleplugin * >
 				*node=pvt->_aftertriggers.getFirst();
 				node; node=node->getNext()) {
-		node->getValue()->tr->endSession();
+		node->getValue()->m->endSession();
 	}
 }

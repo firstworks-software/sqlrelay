@@ -17,19 +17,12 @@
 	}
 #endif
 
-class sqlrresultsetrowtranslationplugin {
-	public:
-		sqlrresultsetrowtranslation	*rstr;
-		dynamiclib			*dl;
-		const char			*module;
-};
-
 class sqlrresultsetrowtranslationsprivate {
 	friend class sqlrresultsetrowtranslations;
 	private:
 		bool		_debug;
 
-		singlylinkedlist< sqlrresultsetrowtranslationplugin * >	_tlist;
+		singlylinkedlist< sqlrmoduleplugin * >	_tlist;
 
 		const char	*_error;
 };
@@ -73,13 +66,12 @@ bool sqlrresultsetrowtranslations::load(domnode *parameters) {
 
 void sqlrresultsetrowtranslations::unload() {
 	debugFunction();
-	for (listnode< sqlrresultsetrowtranslationplugin * > *node=
-						pvt->_tlist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
 						node; node=node->getNext()) {
-		sqlrresultsetrowtranslationplugin	*sqlt=node->getValue();
-		delete sqlt->rstr;
-		delete sqlt->dl;
-		delete sqlt;
+		sqlrmoduleplugin	*sqlrmp=node->getValue();
+		delete sqlrmp->m;
+		delete sqlrmp->dl;
+		delete sqlrmp;
 	}
 	pvt->_tlist.clear();
 }
@@ -165,12 +157,11 @@ void sqlrresultsetrowtranslations::loadResultSetRowTranslation(
 	}
 
 	// add the plugin to the list
-	sqlrresultsetrowtranslationplugin	*sqlrrstp=
-				new sqlrresultsetrowtranslationplugin;
-	sqlrrstp->rstr=rstr;
-	sqlrrstp->dl=dl;
-	sqlrrstp->module=module;
-	pvt->_tlist.append(sqlrrstp);
+	sqlrmoduleplugin	*sqlrmp=new sqlrmoduleplugin;
+	sqlrmp->m=rstr;
+	sqlrmp->dl=dl;
+	sqlrmp->module=module;
+	pvt->_tlist.append(sqlrmp);
 }
 
 bool sqlrresultsetrowtranslations::run(sqlrserverconnection *sqlrcon,
@@ -183,18 +174,19 @@ bool sqlrresultsetrowtranslations::run(sqlrserverconnection *sqlrcon,
 
 	pvt->_error=NULL;
 
-	for (listnode< sqlrresultsetrowtranslationplugin * > *node=
-						pvt->_tlist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
 						node; node=node->getNext()) {
 		if (pvt->_debug) {
 			stdoutput.printf("\nrunning translation:  %s...\n\n",
 						node->getValue()->module);
 		}
 
-		if (!node->getValue()->rstr->run(sqlrcon,sqlrcur,
-						colcount,fieldnames,
-						fields,fieldsizes)) {
-			pvt->_error=node->getValue()->rstr->getError();
+		sqlrresultsetrowtranslation	*rstr=
+			(sqlrresultsetrowtranslation *)node->getValue()->m;
+		if (!rstr->run(sqlrcon,sqlrcur,
+					colcount,fieldnames,
+					fields,fieldsizes)) {
+			pvt->_error=rstr->getError();
 			return false;
 		}
 	}
@@ -206,17 +198,15 @@ const char *sqlrresultsetrowtranslations::getError() {
 }
 
 void sqlrresultsetrowtranslations::endTransaction(bool commit) {
-	for (listnode< sqlrresultsetrowtranslationplugin * > *node=
-						pvt->_tlist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
 						node; node=node->getNext()) {
-		node->getValue()->rstr->endTransaction(commit);
+		node->getValue()->m->endTransaction(commit);
 	}
 }
 
 void sqlrresultsetrowtranslations::endSession() {
-	for (listnode< sqlrresultsetrowtranslationplugin * > *node=
-						pvt->_tlist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
 						node; node=node->getNext()) {
-		node->getValue()->rstr->endSession();
+		node->getValue()->m->endSession();
 	}
 }

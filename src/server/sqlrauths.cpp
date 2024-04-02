@@ -17,16 +17,10 @@
 	}
 #endif
 
-class sqlrauthplugin {
-	public:
-		sqlrauth	*au;
-		dynamiclib	*dl;
-};
-
 class sqlrauthsprivate {
 	friend class sqlrauths;
 	private:
-		singlylinkedlist< sqlrauthplugin * >	_llist;
+		singlylinkedlist< sqlrmoduleplugin * >	_llist;
 };
 
 sqlrauths::sqlrauths(sqlrservercontroller *cont) : sqlrservermodules(cont) {
@@ -64,12 +58,12 @@ bool sqlrauths::load(domnode *parameters, sqlrpwdencs *sqlrpe) {
 
 void sqlrauths::unload() {
 	debugFunction();
-	for (listnode< sqlrauthplugin * > *node=pvt->_llist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_llist.getFirst();
 						node; node=node->getNext()) {
-		sqlrauthplugin	*sqlrap=node->getValue();
-		delete sqlrap->au;
-		delete sqlrap->dl;
-		delete sqlrap;
+		sqlrmoduleplugin	*sqlrmp=node->getValue();
+		delete sqlrmp->m;
+		delete sqlrmp->dl;
+		delete sqlrmp;
 	}
 	pvt->_llist.clear();
 }
@@ -139,10 +133,11 @@ void sqlrauths::loadAuth(domnode *auth, sqlrpwdencs *sqlrpe) {
 #endif
 
 	// add the plugin to the list
-	sqlrauthplugin	*sqlrap=new sqlrauthplugin;
-	sqlrap->au=au;
-	sqlrap->dl=dl;
-	pvt->_llist.append(sqlrap);
+	sqlrmoduleplugin	*sqlrmp=new sqlrmoduleplugin;
+	sqlrmp->m=au;
+	sqlrmp->dl=dl;
+	sqlrmp->module=module;
+	pvt->_llist.append(sqlrmp);
 }
 
 const char *sqlrauths::auth(sqlrcredentials *cred) {
@@ -150,10 +145,10 @@ const char *sqlrauths::auth(sqlrcredentials *cred) {
 	if (!cred) {
 		return NULL;
 	}
-	for (listnode< sqlrauthplugin * > *node=
-						pvt->_llist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_llist.getFirst();
 						node; node=node->getNext()) {
-		const char	*autheduser=node->getValue()->au->auth(cred);
+		sqlrauth	*m=(sqlrauth *)node->getValue()->m;
+		const char	*autheduser=m->auth(cred);
 		if (autheduser) {
 			return autheduser;
 		}

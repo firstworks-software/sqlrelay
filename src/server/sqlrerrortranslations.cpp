@@ -17,19 +17,12 @@
 	}
 #endif
 
-class sqlrerrortranslationplugin {
-	public:
-		sqlrerrortranslation	*etr;
-		dynamiclib		*dl;
-		const char		*module;
-};
-
 class sqlrerrortranslationsprivate {
 	friend class sqlrerrortranslations;
 	private:
 		bool		_debug;
 
-		singlylinkedlist< sqlrerrortranslationplugin * >	_tlist;
+		singlylinkedlist< sqlrmoduleplugin * >	_tlist;
 
 		const char	*_error;
 };
@@ -71,13 +64,12 @@ bool sqlrerrortranslations::load(domnode *parameters) {
 
 void sqlrerrortranslations::unload() {
 	debugFunction();
-	for (listnode< sqlrerrortranslationplugin * > *node=
-						pvt->_tlist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
 						node; node=node->getNext()) {
-		sqlrerrortranslationplugin	*sqlt=node->getValue();
-		delete sqlt->etr;
-		delete sqlt->dl;
-		delete sqlt;
+		sqlrmoduleplugin	*sqlrmp=node->getValue();
+		delete sqlrmp->m;
+		delete sqlrmp->dl;
+		delete sqlrmp;
 	}
 	pvt->_tlist.clear();
 }
@@ -160,11 +152,11 @@ void sqlrerrortranslations::loadErrorTranslation(domnode *errortranslation) {
 	}
 
 	// add the plugin to the list
-	sqlrerrortranslationplugin	*sqltp=new sqlrerrortranslationplugin;
-	sqltp->etr=tr;
-	sqltp->dl=dl;
-	sqltp->module=module;
-	pvt->_tlist.append(sqltp);
+	sqlrmoduleplugin	*sqlrmp=new sqlrmoduleplugin;
+	sqlrmp->m=tr;
+	sqlrmp->dl=dl;
+	sqlrmp->module=module;
+	pvt->_tlist.append(sqlrmp);
 }
 
 bool sqlrerrortranslations::run(sqlrserverconnection *sqlrcon,
@@ -184,8 +176,7 @@ bool sqlrerrortranslations::run(sqlrserverconnection *sqlrcon,
 	stringbuffer	temperrorstr2;
 	int64_t		*temperrornumber=&temperrornumber1;
 	stringbuffer	*temperrorstr=&temperrorstr1;
-	for (listnode< sqlrerrortranslationplugin * > *node=
-						pvt->_tlist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
 						node; node=node->getNext()) {
 
 		if (pvt->_debug) {
@@ -195,13 +186,15 @@ bool sqlrerrortranslations::run(sqlrserverconnection *sqlrcon,
 
 		temperrorstr->clear();
 
-		if (!node->getValue()->etr->run(sqlrcon,sqlrcur,
-						errornumber,
-						error,
-						errorsize,
-						temperrornumber,
-						temperrorstr)) {
-			pvt->_error=node->getValue()->etr->getError();
+		sqlrerrortranslation	*etr=
+			(sqlrerrortranslation *)node->getValue()->m;
+		if (!etr->run(sqlrcon,sqlrcur,
+					errornumber,
+					error,
+					errorsize,
+					temperrornumber,
+					temperrorstr)) {
+			pvt->_error=etr->getError();
 			if (pvt->_debug) {
 				stdoutput.printf("\n%s\n\n",pvt->_error);
 			}
@@ -229,17 +222,15 @@ const char *sqlrerrortranslations::getError() {
 }
 
 void sqlrerrortranslations::endTransaction(bool commit) {
-	for (listnode< sqlrerrortranslationplugin * > *node=
-						pvt->_tlist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
 						node; node=node->getNext()) {
-		node->getValue()->etr->endTransaction(commit);
+		node->getValue()->m->endTransaction(commit);
 	}
 }
 
 void sqlrerrortranslations::endSession() {
-	for (listnode< sqlrerrortranslationplugin * > *node=
-						pvt->_tlist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
 						node; node=node->getNext()) {
-		node->getValue()->etr->endSession();
+		node->getValue()->m->endSession();
 	}
 }

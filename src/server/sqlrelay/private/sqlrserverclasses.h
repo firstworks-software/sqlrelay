@@ -1,6 +1,13 @@
 // Copyright (c) 1999-2019 David Muse
 // See the file COPYING for more information
 
+class SQLRSERVER_DLLSPEC sqlrmoduleplugin {
+	public:
+		sqlrservermodule	*m;
+		dynamiclib		*dl;
+		const char		*module;
+};
+
 class SQLRSERVER_DLLSPEC sqlrservermodules {
 	public:
 		sqlrservermodules(sqlrservercontroller *cont);
@@ -238,14 +245,14 @@ class SQLRSERVER_DLLSPEC sqlrfilters : public sqlrservermodules {
 	private:
 		void	unload();
 		void	loadFilter(domnode *filter,
-				singlylinkedlist< sqlrfilterplugin * > *list);
+				singlylinkedlist< sqlrmoduleplugin * > *list);
 		bool	run(sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
 				sqlrparser *sqlrp,
 				const char *query,
 				const char **err,
 				int64_t *errn,
-				singlylinkedlist< sqlrfilterplugin * > *list);
+				singlylinkedlist< sqlrmoduleplugin * > *list);
 
 		sqlrfiltersprivate	*pvt;
 };
@@ -453,13 +460,13 @@ class SQLRSERVER_DLLSPEC sqlrtriggers : public sqlrservermodules {
 
 	private:
 		void	unload();
-		sqlrtriggerplugin	*loadTrigger(domnode *trigger);
+		sqlrmoduleplugin	*loadTrigger(domnode *trigger);
 		bool	runBefore(sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
-				singlylinkedlist< sqlrtriggerplugin * > *list);
+				singlylinkedlist< sqlrmoduleplugin * > *list);
 		bool	runAfter(sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
-				singlylinkedlist< sqlrtriggerplugin * > *list);
+				singlylinkedlist< sqlrmoduleplugin * > *list);
 
 		sqlrtriggersprivate	*pvt;
 };

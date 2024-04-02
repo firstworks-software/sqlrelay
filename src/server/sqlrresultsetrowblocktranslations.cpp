@@ -17,20 +17,12 @@
 	}
 #endif
 
-class sqlrresultsetrowblocktranslationplugin {
-	public:
-		sqlrresultsetrowblocktranslation	*rstr;
-		dynamiclib				*dl;
-		const char				*module;
-};
-
 class sqlrresultsetrowblocktranslationsprivate {
 	friend class sqlrresultsetrowblocktranslations;
 	private:
 		bool			_debug;
 
-		singlylinkedlist< sqlrresultsetrowblocktranslationplugin * >
-									_tlist;
+		singlylinkedlist< sqlrmoduleplugin * > _tlist;
 
 		uint64_t		_rowblockcount;
 		uint64_t		_rowcount;
@@ -91,13 +83,12 @@ bool sqlrresultsetrowblocktranslations::load(domnode *parameters) {
 
 void sqlrresultsetrowblocktranslations::unload() {
 	debugFunction();
-	for (listnode< sqlrresultsetrowblocktranslationplugin * >
-					*node=pvt->_tlist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
 						node; node=node->getNext()) {
-		sqlrresultsetrowblocktranslationplugin	*sqlt=node->getValue();
-		delete sqlt->rstr;
-		delete sqlt->dl;
-		delete sqlt;
+		sqlrmoduleplugin	*sqlrmp=node->getValue();
+		delete sqlrmp->m;
+		delete sqlrmp->dl;
+		delete sqlrmp;
 	}
 	pvt->_tlist.clear();
 }
@@ -186,12 +177,11 @@ void sqlrresultsetrowblocktranslations::loadResultSetRowBlockTranslation(
 	}
 
 	// add the plugin to the list
-	sqlrresultsetrowblocktranslationplugin	*sqlrrstp=
-				new sqlrresultsetrowblocktranslationplugin;
-	sqlrrstp->rstr=rstr;
-	sqlrrstp->dl=dl;
-	sqlrrstp->module=module;
-	pvt->_tlist.append(sqlrrstp);
+	sqlrmoduleplugin	*sqlmp=new sqlrmoduleplugin;
+	sqlmp->m=rstr;
+	sqlmp->dl=dl;
+	sqlmp->module=module;
+	pvt->_tlist.append(sqlmp);
 }
 
 uint64_t sqlrresultsetrowblocktranslations::getRowBlockCount() {
@@ -208,8 +198,7 @@ bool sqlrresultsetrowblocktranslations::setRow(sqlrserverconnection *sqlrcon,
 						bool *nulls) {
 	debugFunction();
 
-	listnode< sqlrresultsetrowblocktranslationplugin * >
-						*node=pvt->_tlist.getFirst();
+	listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
 	if (!node) {
 		return true;
 	}
@@ -221,10 +210,12 @@ bool sqlrresultsetrowblocktranslations::setRow(sqlrserverconnection *sqlrcon,
 
 	pvt->_rowcount++;
 
-	if (!node->getValue()->rstr->setRow(sqlrcon,sqlrcur,
-						colcount,fieldnames,
-						fields,fieldsizes,
-						lobs,nulls)) {
+	sqlrresultsetrowblocktranslation	*rstr=
+		(sqlrresultsetrowblocktranslation *)node->getValue()->m;
+	if (!rstr->setRow(sqlrcon,sqlrcur,
+				colcount,fieldnames,
+				fields,fieldsizes,
+				lobs,nulls)) {
 		pvt->_rowcount=0;
 		return false;
 	}
@@ -240,8 +231,7 @@ bool sqlrresultsetrowblocktranslations::run(sqlrserverconnection *sqlrcon,
 
 	pvt->_error=NULL;
 
-	listnode< sqlrresultsetrowblocktranslationplugin * >
-						*node=pvt->_tlist.getFirst();
+	listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
 	if (!node) {
 		return true;
 	}
@@ -249,14 +239,15 @@ bool sqlrresultsetrowblocktranslations::run(sqlrserverconnection *sqlrcon,
 		stdoutput.printf("\nrunning translation:  %s...\n\n",
 						node->getValue()->module);
 	}
-	if (!node->getValue()->rstr->run(sqlrcon,sqlrcur,colcount,fieldnames)) {
+	sqlrresultsetrowblocktranslation	*rstr=
+		(sqlrresultsetrowblocktranslation *)node->getValue()->m;
+	if (!rstr->run(sqlrcon,sqlrcur,colcount,fieldnames)) {
 		pvt->_rowcount=0;
-		pvt->_error=node->getValue()->rstr->getError();
+		pvt->_error=rstr->getError();
 		return false;
 	}
 
-	for (listnode< sqlrresultsetrowblocktranslationplugin * >
-						*node=pvt->_tlist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
 						node; node=node->getNext()) {
 
 		if (!node->getNext()) {
@@ -275,14 +266,15 @@ bool sqlrresultsetrowblocktranslations::run(sqlrserverconnection *sqlrcon,
 			uint64_t	*oldfieldsizes;
 			bool		*oldlobs;
 			bool		*oldnulls;
-			if (!node->getValue()->rstr->getRow(
-							sqlrcon,
-							sqlrcur,
-							colcount,
-							&oldfields,
-							&oldfieldsizes,
-							&oldlobs,
-							&oldnulls)) {
+			rstr=(sqlrresultsetrowblocktranslation *)
+						node->getValue()->m;
+			if (!rstr->getRow(sqlrcon,
+						sqlrcur,
+						colcount,
+						&oldfields,
+						&oldfieldsizes,
+						&oldlobs,
+						&oldnulls)) {
 				pvt->_rowcount=0;
 				return false;
 			}
@@ -293,15 +285,14 @@ bool sqlrresultsetrowblocktranslations::run(sqlrserverconnection *sqlrcon,
 						node->getValue()->module);
 			}
 
-			if (!node->getNext()->getValue()->rstr->setRow(
-							sqlrcon,
-							sqlrcur,
-							colcount,
-							fieldnames,
-							oldfields,
-							oldfieldsizes,
-							oldlobs,
-							oldnulls)) {
+			if (!rstr->setRow(sqlrcon,
+						sqlrcur,
+						colcount,
+						fieldnames,
+						oldfields,
+						oldfieldsizes,
+						oldlobs,
+						oldnulls)) {
 				pvt->_rowcount=0;
 				return false;
 			}
@@ -312,12 +303,9 @@ bool sqlrresultsetrowblocktranslations::run(sqlrserverconnection *sqlrcon,
 						node->getValue()->module);
 		}
 
-		if (!node->getNext()->getValue()->rstr->run(sqlrcon,
-								sqlrcur,
-								colcount,
-								fieldnames)) {
+		if (!rstr->run(sqlrcon,sqlrcur,colcount,fieldnames)) {
 			pvt->_rowcount=0;
-			pvt->_error=node->getValue()->rstr->getError();
+			pvt->_error=rstr->getError();
 			return false;
 		}
 	}
@@ -333,8 +321,7 @@ bool sqlrresultsetrowblocktranslations::getRow(sqlrserverconnection *sqlrcon,
 						bool **nulls) {
 	debugFunction();
 
-	listnode< sqlrresultsetrowblocktranslationplugin * >
-						*node=pvt->_tlist.getLast();
+	listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getLast();
 	if (!node) {
 		return true;
 	}
@@ -345,10 +332,12 @@ bool sqlrresultsetrowblocktranslations::getRow(sqlrserverconnection *sqlrcon,
 
 	pvt->_rowcount--;
 
-	if (!node->getValue()->rstr->getRow(sqlrcon,sqlrcur,
-						colcount,
-						fields,fieldsizes,
-						lobs,nulls)) {
+	sqlrresultsetrowblocktranslation	*rstr=
+		(sqlrresultsetrowblocktranslation *)node->getValue()->m;
+	if (!rstr->getRow(sqlrcon,sqlrcur,
+				colcount,
+				fields,fieldsizes,
+				lobs,nulls)) {
 		pvt->_rowcount=0;
 		return false;
 	}
@@ -360,17 +349,15 @@ const char *sqlrresultsetrowblocktranslations::getError() {
 }
 
 void sqlrresultsetrowblocktranslations::endTransaction(bool commit) {
-	for (listnode< sqlrresultsetrowblocktranslationplugin * >
-					*node=pvt->_tlist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
 						node; node=node->getNext()) {
-		node->getValue()->rstr->endTransaction(commit);
+		node->getValue()->m->endTransaction(commit);
 	}
 }
 
 void sqlrresultsetrowblocktranslations::endSession() {
-	for (listnode< sqlrresultsetrowblocktranslationplugin * >
-					*node=pvt->_tlist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
 						node; node=node->getNext()) {
-		node->getValue()->rstr->endSession();
+		node->getValue()->m->endSession();
 	}
 }

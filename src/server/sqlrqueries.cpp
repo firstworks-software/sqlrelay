@@ -16,16 +16,10 @@
 	}
 #endif
 
-class sqlrqueryplugin {
-	public:
-		sqlrquery	*qr;
-		dynamiclib	*dl;
-};
-
 class sqlrqueriesprivate {
 	friend class sqlrqueries;
 	private:
-		singlylinkedlist< sqlrqueryplugin * >	_llist;
+		singlylinkedlist< sqlrmoduleplugin * >	_llist;
 };
 
 sqlrqueries::sqlrqueries(sqlrservercontroller *cont) : sqlrservermodules(cont) {
@@ -62,13 +56,13 @@ bool sqlrqueries::load(domnode *parameters) {
 
 void sqlrqueries::unload() {
 	debugFunction();
-	for (listnode< sqlrqueryplugin * > *node=
+	for (listnode< sqlrmoduleplugin * > *node=
 						pvt->_llist.getFirst();
 						node; node=node->getNext()) {
-		sqlrqueryplugin	*sqlrlp=node->getValue();
-		delete sqlrlp->qr;
-		delete sqlrlp->dl;
-		delete sqlrlp;
+		sqlrmoduleplugin	*sqlrmp=node->getValue();
+		delete sqlrmp->m;
+		delete sqlrmp->dl;
+		delete sqlrmp;
 	}
 	pvt->_llist.clear();
 }
@@ -141,10 +135,11 @@ void sqlrqueries::loadQuery(domnode *query) {
 #endif
 
 	// add the plugin to the list
-	sqlrqueryplugin	*sqlrlp=new sqlrqueryplugin;
-	sqlrlp->qr=qr;
-	sqlrlp->dl=dl;
-	pvt->_llist.append(sqlrlp);
+	sqlrmoduleplugin	*sqlrmp=new sqlrmoduleplugin;
+	sqlrmp->m=qr;
+	sqlrmp->dl=dl;
+	sqlrmp->module=module;
+	pvt->_llist.append(sqlrmp);
 }
 
 sqlrquerycursor *sqlrqueries::match(sqlrserverconnection *sqlrcon,
@@ -152,10 +147,10 @@ sqlrquerycursor *sqlrqueries::match(sqlrserverconnection *sqlrcon,
 					uint32_t querysize,
 					uint16_t id) {
 	debugFunction();
-	for (listnode< sqlrqueryplugin * > *node=
+	for (listnode< sqlrmoduleplugin * > *node=
 						pvt->_llist.getFirst();
 						node; node=node->getNext()) {
-		sqlrquery	*qr=node->getValue()->qr;
+		sqlrquery	*qr=(sqlrquery *)node->getValue()->m;
 		if (qr->match(querystring,querysize)) {
 			return qr->newCursor(sqlrcon,id);
 		}
@@ -164,17 +159,17 @@ sqlrquerycursor *sqlrqueries::match(sqlrserverconnection *sqlrcon,
 }
 
 void sqlrqueries::endTransaction(bool commit) {
-	for (listnode< sqlrqueryplugin * > *node=
+	for (listnode< sqlrmoduleplugin * > *node=
 						pvt->_llist.getFirst();
 						node; node=node->getNext()) {
-		node->getValue()->qr->endTransaction(commit);
+		node->getValue()->m->endTransaction(commit);
 	}
 }
 
 void sqlrqueries::endSession() {
-	for (listnode< sqlrqueryplugin * > *node=
+	for (listnode< sqlrmoduleplugin * > *node=
 						pvt->_llist.getFirst();
 						node; node=node->getNext()) {
-		node->getValue()->qr->endSession();
+		node->getValue()->m->endSession();
 	}
 }

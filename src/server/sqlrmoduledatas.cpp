@@ -17,13 +17,6 @@
 	}
 #endif
 
-class sqlrmoduledataplugin {
-	public:
-		sqlrmoduledata	*md;
-		dynamiclib	*dl;
-		const char	*module;
-};
-
 class sqlrdatabaseobject {
 	public:
 		const char	*database;
@@ -37,7 +30,7 @@ class sqlrmoduledatasprivate {
 	private:
 		bool		_debug;
 
-		singlylinkedlist< sqlrmoduledataplugin * >	_mlist;
+		singlylinkedlist< sqlrmoduleplugin * >		_mlist;
 		dictionary< const char *, sqlrmoduledata * >	_mdict;
 };
 
@@ -77,13 +70,13 @@ bool sqlrmoduledatas::load(domnode *parameters) {
 
 void sqlrmoduledatas::unload() {
 	debugFunction();
-	for (listnode< sqlrmoduledataplugin * > *node=
+	for (listnode< sqlrmoduleplugin * > *node=
 						pvt->_mlist.getFirst();
 						node; node=node->getNext()) {
-		sqlrmoduledataplugin	*sqlt=node->getValue();
-		delete sqlt->md;
-		delete sqlt->dl;
-		delete sqlt;
+		sqlrmoduleplugin	*sqlrmp=node->getValue();
+		delete sqlrmp->m;
+		delete sqlrmp->dl;
+		delete sqlrmp;
 	}
 	pvt->_mlist.clear();
 }
@@ -159,11 +152,11 @@ void sqlrmoduledatas::loadModuleData(domnode *moduledata) {
 	}
 
 	// add the plugin to the list
-	sqlrmoduledataplugin	*sqlmdp=new sqlrmoduledataplugin;
-	sqlmdp->md=md;
-	sqlmdp->dl=dl;
-	sqlmdp->module=module;
-	pvt->_mlist.append(sqlmdp);
+	sqlrmoduleplugin	*sqlmp=new sqlrmoduleplugin;
+	sqlmp->m=md;
+	sqlmp->dl=dl;
+	sqlmp->module=module;
+	pvt->_mlist.append(sqlmp);
 	pvt->_mdict.setValue(md->getId(),md);
 }
 
@@ -172,25 +165,26 @@ sqlrmoduledata *sqlrmoduledatas::getModuleData(const char *id) {
 }
 
 void sqlrmoduledatas::closeResultSet(sqlrservercursor *sqlrcur) {
-	for (listnode< sqlrmoduledataplugin * >
+	for (listnode< sqlrmoduleplugin * >
 				*node=pvt->_mlist.getFirst();
 				node; node=node->getNext()) {
-		node->getValue()->md->closeResultSet(sqlrcur);
+		sqlrmoduledata	*md=(sqlrmoduledata *)node->getValue()->m;
+		md->closeResultSet(sqlrcur);
 	}
 }
 
 void sqlrmoduledatas::endTransaction(bool commit) {
-	for (listnode< sqlrmoduledataplugin * >
+	for (listnode< sqlrmoduleplugin * >
 				*node=pvt->_mlist.getFirst();
 				node; node=node->getNext()) {
-		node->getValue()->md->endTransaction(commit);
+		node->getValue()->m->endTransaction(commit);
 	}
 }
 
 void sqlrmoduledatas::endSession() {
-	for (listnode< sqlrmoduledataplugin * >
+	for (listnode< sqlrmoduleplugin * >
 				*node=pvt->_mlist.getFirst();
 				node; node=node->getNext()) {
-		node->getValue()->md->endSession();
+		node->getValue()->m->endSession();
 	}
 }

@@ -29,6 +29,7 @@
 
 #include <sqlrelay/private/sqlrshm.h>
 
+class sqlrservermodule;
 class sqlrserverbaseprivate;
 class sqlrlistener;
 class sqlrlistenerprivate;

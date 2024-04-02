@@ -17,19 +17,12 @@
 	}
 #endif
 
-class sqlrbindvariabletranslationplugin {
-	public:
-		sqlrbindvariabletranslation	*bvtr;
-		dynamiclib			*dl;
-		const char			*module;
-};
-
 class sqlrbindvariabletranslationsprivate {
 	friend class sqlrbindvariabletranslations;
 	private:
 		bool		_debug;
 
-		singlylinkedlist< sqlrbindvariabletranslationplugin * >	_tlist;
+		singlylinkedlist< sqlrmoduleplugin * >	_tlist;
 
 		const char	*_error;
 };
@@ -74,11 +67,10 @@ bool sqlrbindvariabletranslations::load(domnode *parameters) {
 
 void sqlrbindvariabletranslations::unload() {
 	debugFunction();
-	for (listnode< sqlrbindvariabletranslationplugin * > *node=
-						pvt->_tlist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
 						node; node=node->getNext()) {
-		sqlrbindvariabletranslationplugin	*sqlt=node->getValue();
-		delete sqlt->bvtr;
+		sqlrmoduleplugin	*sqlt=node->getValue();
+		delete sqlt->m;
 		delete sqlt->dl;
 		delete sqlt;
 	}
@@ -167,9 +159,8 @@ void sqlrbindvariabletranslations::loadBindVariableTranslation(
 	}
 
 	// add the plugin to the list
-	sqlrbindvariabletranslationplugin	*sqlrrstp=
-				new sqlrbindvariabletranslationplugin;
-	sqlrrstp->bvtr=bvtr;
+	sqlrmoduleplugin	*sqlrrstp=new sqlrmoduleplugin;
+	sqlrrstp->m=bvtr;
 	sqlrrstp->dl=dl;
 	sqlrrstp->module=module;
 	pvt->_tlist.append(sqlrrstp);
@@ -181,16 +172,17 @@ bool sqlrbindvariabletranslations::run(sqlrserverconnection *sqlrcon,
 
 	pvt->_error=NULL;
 
-	for (listnode< sqlrbindvariabletranslationplugin * > *node=
-						pvt->_tlist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
 						node; node=node->getNext()) {
 		if (pvt->_debug) {
 			stdoutput.printf("\nrunning translation:  %s...\n\n",
 						node->getValue()->module);
 		}
 
-		if (!node->getValue()->bvtr->run(sqlrcon,sqlrcur)) {
-			pvt->_error=node->getValue()->bvtr->getError();
+		sqlrbindvariabletranslation	*bvtr=
+			(sqlrbindvariabletranslation *)node->getValue()->m;
+		if (!bvtr->run(sqlrcon,sqlrcur)) {
+			pvt->_error=bvtr->getError();
 			return false;
 		}
 	}
@@ -202,17 +194,15 @@ const char *sqlrbindvariabletranslations::getError() {
 }
 
 void sqlrbindvariabletranslations::endTransaction(bool commit) {
-	for (listnode< sqlrbindvariabletranslationplugin * > *node=
-						pvt->_tlist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
 						node; node=node->getNext()) {
-		node->getValue()->bvtr->endTransaction(commit);
+		node->getValue()->m->endTransaction(commit);
 	}
 }
 
 void sqlrbindvariabletranslations::endSession() {
-	for (listnode< sqlrbindvariabletranslationplugin * > *node=
-						pvt->_tlist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
 						node; node=node->getNext()) {
-		node->getValue()->bvtr->endSession();
+		node->getValue()->m->endSession();
 	}
 }

@@ -17,20 +17,13 @@
 	}
 #endif
 
-class sqlrfilterplugin {
-	public:
-		sqlrfilter	*f;
-		dynamiclib	*dl;
-		const char	*module;
-};
-
 class sqlrfiltersprivate {
 	friend class sqlrfilters;
 	private:
 		bool	_debug;
 
-		singlylinkedlist< sqlrfilterplugin * >	_beforefilters;
-		singlylinkedlist< sqlrfilterplugin * >	_afterfilters;
+		singlylinkedlist< sqlrmoduleplugin * >	_beforefilters;
+		singlylinkedlist< sqlrmoduleplugin * >	_afterfilters;
 };
 
 sqlrfilters::sqlrfilters(sqlrservercontroller *cont) : sqlrservermodules(cont) {
@@ -72,28 +65,28 @@ bool sqlrfilters::load(domnode *parameters) {
 
 void sqlrfilters::unload() {
 	debugFunction();
-	for (listnode< sqlrfilterplugin * > *node=
+	for (listnode< sqlrmoduleplugin * > *node=
 						pvt->_beforefilters.getFirst();
 						node; node=node->getNext()) {
-		sqlrfilterplugin	*sqlrfp=node->getValue();
-		delete sqlrfp->f;
-		delete sqlrfp->dl;
-		delete sqlrfp;
+		sqlrmoduleplugin	*sqlrmp=node->getValue();
+		delete sqlrmp->m;
+		delete sqlrmp->dl;
+		delete sqlrmp;
 	}
 	pvt->_beforefilters.clear();
-	for (listnode< sqlrfilterplugin * > *node=
+	for (listnode< sqlrmoduleplugin * > *node=
 						pvt->_afterfilters.getFirst();
 						node; node=node->getNext()) {
-		sqlrfilterplugin	*sqlrfp=node->getValue();
-		delete sqlrfp->f;
-		delete sqlrfp->dl;
-		delete sqlrfp;
+		sqlrmoduleplugin	*sqlrmp=node->getValue();
+		delete sqlrmp->m;
+		delete sqlrmp->dl;
+		delete sqlrmp;
 	}
 	pvt->_afterfilters.clear();
 }
 
 void sqlrfilters::loadFilter(domnode *filter, 
-				singlylinkedlist< sqlrfilterplugin * > *list) {
+				singlylinkedlist< sqlrmoduleplugin * > *list) {
 	debugFunction();
 
 	// ignore non-filters
@@ -168,8 +161,8 @@ void sqlrfilters::loadFilter(domnode *filter,
 	}
 
 	// add the plugin to the list
-	sqlrfilterplugin	*sqlrfp=new sqlrfilterplugin;
-	sqlrfp->f=f;
+	sqlrmoduleplugin	*sqlrfp=new sqlrmoduleplugin;
+	sqlrfp->m=f;
 	sqlrfp->dl=dl;
 	sqlrfp->module=module;
 	list->append(sqlrfp);
@@ -201,7 +194,7 @@ bool sqlrfilters::run(sqlrserverconnection *sqlrcon,
 				const char *query,
 				const char **err,
 				int64_t *errn,
-				singlylinkedlist< sqlrfilterplugin * > *list) {
+				singlylinkedlist< sqlrmoduleplugin * > *list) {
 	debugFunction();
 
 	if (!query) {
@@ -210,7 +203,7 @@ bool sqlrfilters::run(sqlrserverconnection *sqlrcon,
 
 	xmldom	*tree=NULL;
 
-	for (listnode< sqlrfilterplugin * > *node=list->getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=list->getFirst();
 						node; node=node->getNext()) {
 
 		if (pvt->_debug) {
@@ -219,7 +212,7 @@ bool sqlrfilters::run(sqlrserverconnection *sqlrcon,
 				node->getValue()->module);
 		}
 
-		sqlrfilter	*f=node->getValue()->f;
+		sqlrfilter	*f=(sqlrfilter *)node->getValue()->m;
 
 		if (f->requiresTree()) {
 
@@ -270,27 +263,27 @@ bool sqlrfilters::run(sqlrserverconnection *sqlrcon,
 }
 
 void sqlrfilters::endTransaction(bool commit) {
-	for (listnode< sqlrfilterplugin * > *node=
+	for (listnode< sqlrmoduleplugin * > *node=
 						pvt->_beforefilters.getFirst();
 						node; node=node->getNext()) {
-		node->getValue()->f->endTransaction(commit);
+		node->getValue()->m->endTransaction(commit);
 	}
-	for (listnode< sqlrfilterplugin * > *node=
+	for (listnode< sqlrmoduleplugin * > *node=
 						pvt->_afterfilters.getFirst();
 						node; node=node->getNext()) {
-		node->getValue()->f->endTransaction(commit);
+		node->getValue()->m->endTransaction(commit);
 	}
 }
 
 void sqlrfilters::endSession() {
-	for (listnode< sqlrfilterplugin * > *node=
+	for (listnode< sqlrmoduleplugin * > *node=
 						pvt->_beforefilters.getFirst();
 						node; node=node->getNext()) {
-		node->getValue()->f->endSession();
+		node->getValue()->m->endSession();
 	}
-	for (listnode< sqlrfilterplugin * > *node=
+	for (listnode< sqlrmoduleplugin * > *node=
 						pvt->_afterfilters.getFirst();
 						node; node=node->getNext()) {
-		node->getValue()->f->endSession();
+		node->getValue()->m->endSession();
 	}
 }

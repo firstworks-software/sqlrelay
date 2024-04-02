@@ -16,16 +16,10 @@
 	}
 #endif
 
-class sqlrscheduleplugin {
-	public:
-		sqlrschedule	*s;
-		dynamiclib	*dl;
-};
-
 class sqlrschedulesprivate {
 	friend class sqlrschedules;
 	private:
-		singlylinkedlist< sqlrscheduleplugin * >	_llist;
+		singlylinkedlist< sqlrmoduleplugin * >	_llist;
 };
 
 sqlrschedules::sqlrschedules(sqlrservercontroller *cont) :
@@ -64,13 +58,13 @@ bool sqlrschedules::load(domnode *parameters) {
 
 void sqlrschedules::unload() {
 	debugFunction();
-	for (listnode< sqlrscheduleplugin * > *node=
+	for (listnode< sqlrmoduleplugin * > *node=
 						pvt->_llist.getFirst();
 						node; node=node->getNext()) {
-		sqlrscheduleplugin	*sqlrsp=node->getValue();
-		delete sqlrsp->s;
-		delete sqlrsp->dl;
-		delete sqlrsp;
+		sqlrmoduleplugin	*sqlrmp=node->getValue();
+		delete sqlrmp->m;
+		delete sqlrmp->dl;
+		delete sqlrmp;
 	}
 	pvt->_llist.clear();
 }
@@ -144,18 +138,19 @@ void sqlrschedules::loadSchedule(domnode *schedule) {
 #endif
 
 	// add the plugin to the list
-	sqlrscheduleplugin	*sqlrsp=new sqlrscheduleplugin;
-	sqlrsp->s=s;
-	sqlrsp->dl=dl;
-	pvt->_llist.append(sqlrsp);
+	sqlrmoduleplugin	*sqlrmp=new sqlrmoduleplugin;
+	sqlrmp->m=s;
+	sqlrmp->dl=dl;
+	sqlrmp->module=module;
+	pvt->_llist.append(sqlrmp);
 }
 
 bool sqlrschedules::allowed(sqlrserverconnection *sqlrcon, const char *user) {
 	debugFunction();
-	for (listnode< sqlrscheduleplugin * > *node=
-						pvt->_llist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_llist.getFirst();
 						node; node=node->getNext()) {
-		if (!node->getValue()->s->allowed(sqlrcon,user)) {
+		sqlrschedule	*s=(sqlrschedule *)node->getValue()->m;
+		if (!s->allowed(sqlrcon,user)) {
 			return false;
 		}
 	}

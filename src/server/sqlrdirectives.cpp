@@ -15,19 +15,12 @@
 	}
 #endif
 
-class sqlrdirectiveplugin {
-	public:
-		sqlrdirective	*dr;
-		dynamiclib	*dl;
-		const char	*module;
-};
-
 class sqlrdirectivesprivate {
 	friend class sqlrdirectives;
 	private:
 		bool	_debug;
 
-		singlylinkedlist< sqlrdirectiveplugin * >	_dlist;
+		singlylinkedlist< sqlrmoduleplugin * >	_dlist;
 };
 
 sqlrdirectives::sqlrdirectives(sqlrservercontroller *cont) :
@@ -66,13 +59,12 @@ bool sqlrdirectives::load(domnode *parameters) {
 
 void sqlrdirectives::unload() {
 	debugFunction();
-	for (listnode< sqlrdirectiveplugin * > *node=
-						pvt->_dlist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_dlist.getFirst();
 						node; node=node->getNext()) {
-		sqlrdirectiveplugin	*sqlt=node->getValue();
-		delete sqlt->dr;
-		delete sqlt->dl;
-		delete sqlt;
+		sqlrmoduleplugin	*sqlmp=node->getValue();
+		delete sqlmp->m;
+		delete sqlmp->dl;
+		delete sqlmp;
 	}
 	pvt->_dlist.clear();
 }
@@ -150,24 +142,21 @@ void sqlrdirectives::loadDirective(domnode *directive) {
 	}
 
 	// add the plugin to the list
-	sqlrdirectiveplugin	*sqltp=new sqlrdirectiveplugin;
-	sqltp->dr=dr;
-	sqltp->dl=dl;
-	sqltp->module=module;
-	pvt->_dlist.append(sqltp);
+	sqlrmoduleplugin	*sqlrmp=new sqlrmoduleplugin;
+	sqlrmp->m=dr;
+	sqlrmp->dl=dl;
+	sqlrmp->module=module;
+	pvt->_dlist.append(sqlrmp);
 }
 
 bool sqlrdirectives::run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					const char *query) {
 	debugFunction();
-
 	if (!query) {
 		return false;
 	}
-
-	for (listnode< sqlrdirectiveplugin * > *node=
-						pvt->_dlist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=pvt->_dlist.getFirst();
 						node; node=node->getNext()) {
 
 		if (pvt->_debug) {
@@ -175,10 +164,8 @@ bool sqlrdirectives::run(sqlrserverconnection *sqlrcon,
 						node->getValue()->module);
 		}
 
-		sqlrdirective	*dr=node->getValue()->dr;
-
-		bool	success=dr->run(sqlrcon,sqlrcur,query);
-		if (!success) {
+		sqlrdirective	*dr=(sqlrdirective *)node->getValue()->m;
+		if (!dr->run(sqlrcon,sqlrcur,query)) {
 			return false;
 		}
 	}
