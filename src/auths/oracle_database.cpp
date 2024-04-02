@@ -1,7 +1,6 @@
 // Copyright (c) 2016  David Muse
 // See the file COPYING for more information
 
-#include <sqlrelay/sqlroraclecredentials.h>
 #include <sqlrelay/sqlrserver.h>
 #include <rudiments/charstring.h>
 #include <rudiments/stringbuffer.h>
@@ -16,8 +15,6 @@ class SQLRSERVER_DLLSPEC sqlrauth_oracle_database : public sqlrauth {
 		bool		first;
 		stringbuffer	lastuser;
 		stringbuffer	lastpassword;
-
-		bool	debug;
 };
 
 sqlrauth_oracle_database::sqlrauth_oracle_database(
@@ -25,7 +22,6 @@ sqlrauth_oracle_database::sqlrauth_oracle_database(
 					sqlrpwdencs *sqlrpe,
 					domnode *parameters) :
 					sqlrauth(cont,sqlrpe,parameters) {
-	debug=cont->getConfig()->getDebugAuths();
 	first=true;
 }
 
@@ -43,15 +39,17 @@ const char *sqlrauth_oracle_database::auth(sqlrcredentials *cred) {
 	const char	*method=((sqlroraclecredentials *)cred)->getMethod();
 	const char	*extra=((sqlroraclecredentials *)cred)->getExtra();
 
-	if (debug) {
-		stdoutput.printf("auth %s {\n",method);
-		stdoutput.printf("	user: \"%s\"\n",user);
-		stdoutput.printf("	password: \"");
-		stdoutput.safePrint(password,passwordsize);
-		stdoutput.printf("\"\n");
-		stdoutput.printf("	method: \"%s\"\n",method);
-		stdoutput.printf("	extra: \"%s\"\n",extra);
-		stdoutput.printf("}\n");
+	if (getDebug()) {
+		debugStart("auth %s",method);
+		debugWrite("user: \"%s\"",user);
+		stringbuffer	b;
+		b.append("password: \"");
+		b.safePrint(password,passwordsize);
+		b.append("\"");
+		debugWrite(b.getString());
+		debugWrite("method: \"%s\"",method);
+		debugWrite("extra: \"%s\"",extra);
+		debugEnd();
 	}
 
 	// sanity check on method
@@ -76,11 +74,9 @@ const char *sqlrauth_oracle_database::auth(sqlrcredentials *cred) {
 		charstring::compare(lastuser.getString(),user) ||
 		charstring::compare(lastpassword.getString(),password)) {
 
-		if (debug) {
-			stdoutput.printf("auth {\n");
-			stdoutput.printf("	changing user to %s\n",user);
-			stdoutput.printf("}\n");
-		}
+		debugStart("auth");
+		debugStart("changing user to %s",user);
+		debugEnd();
 
 		// change user
 		success=cont->changeUser(user,password);
@@ -94,11 +90,11 @@ const char *sqlrauth_oracle_database::auth(sqlrcredentials *cred) {
 			lastpassword.append(password);
 		}
 
-	} else if (debug) {
+	} else {
 
-		stdoutput.printf("auth {\n");
-		stdoutput.printf("	already logged in as %s\n",user);
-		stdoutput.printf("}\n");
+		debugStart("auth");
+		debugWrite("already logged in as %s",user);
+		debugEnd();
 	}
 	return (success)?user:NULL;
 }

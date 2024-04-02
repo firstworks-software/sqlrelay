@@ -26,8 +26,6 @@ class SQLRSERVER_DLLSPEC sqlrauth_mysql_connectstrings : public sqlrauth {
 		uint64_t	usercount;
 
 		sensitivevalue	passwordvalue;
-
-		bool	debug;
 };
 
 sqlrauth_mysql_connectstrings::sqlrauth_mysql_connectstrings(
@@ -35,8 +33,6 @@ sqlrauth_mysql_connectstrings::sqlrauth_mysql_connectstrings(
 					sqlrpwdencs *sqlrpe,
 					domnode *parameters) :
 					sqlrauth(cont,sqlrpe,parameters) {
-
-	debug=cont->getConfig()->getDebugAuths();
 
 	linkedlist< connectstringcontainer * >	*connectstrings=
 				cont->getConfig()->getConnectStringList();
@@ -99,15 +95,17 @@ const char *sqlrauth_mysql_connectstrings::auth(sqlrcredentials *cred) {
 	const char	*method=((sqlrmysqlcredentials *)cred)->getMethod();
 	const char	*extra=((sqlrmysqlcredentials *)cred)->getExtra();
 
-	if (debug) {
-		stdoutput.printf("auth %s {\n",method);
-		stdoutput.printf("	user: \"%s\"\n",user);
-		stdoutput.printf("	password: \"");
-		stdoutput.safePrint(password,passwordsize);
-		stdoutput.printf("\"\n");
-		stdoutput.printf("	method: \"%s\"\n",method);
-		stdoutput.printf("	extra: \"%s\"\n",extra);
-		stdoutput.printf("}\n");
+	if (getDebug()) {
+		debugStart("auth %s",method);
+		debugWrite("user: \"%s\"",user);
+		stringbuffer	b;
+		b.append("password: \"");
+		b.safePrint(password,passwordsize);
+		b.append("\"");
+		debugWrite(b.getString());
+		debugWrite("method: \"%s\"",method);
+		debugWrite("extra: \"%s\"",extra);
+		debugEnd();
 	}
 
 	// sanity check on method
@@ -294,17 +292,18 @@ bool sqlrauth_mysql_connectstrings::compare(const char *suppliedresponse,
 		return false;
 	}
 
-	if (debug) {
-		stdoutput.printf("auth compare {\n");
-		stdoutput.printf("	expected response: ");
-		stdoutput.safePrint(expectedresponse.getBuffer(),
+	if (getDebug()) {
+		debugStart("auth compare");
+		stringbuffer	b;
+		b.append("expected response: ");
+		b.safePrint(expectedresponse.getBuffer(),
 					expectedresponse.getSize());
-		stdoutput.printf("\n");
-		stdoutput.printf("	supplied response: ");
-		stdoutput.safePrint(suppliedresponse,
-					suppliedresponsesize);
-		stdoutput.printf("\n");
-		stdoutput.printf("}\n");
+		debugWrite(b.getString());
+		b.clear();
+		b.append("supplied response: ");
+		b.safePrint(suppliedresponse,suppliedresponsesize);
+		debugWrite(b.getString());
+		debugEnd();
 	}
 
 	// compare the expected and supplied response sizes and values

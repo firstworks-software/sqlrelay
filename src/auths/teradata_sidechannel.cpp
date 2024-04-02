@@ -82,12 +82,8 @@ class SQLRSERVER_DLLSPEC sqlrauth_teradata_sidechannel : public sqlrauth {
 					uint64_t *value,
 					byte_t **rpout);
 
-		void	debugHexDump(const byte_t *data, uint64_t size);
-
 		const char	*host;
 		uint16_t	port;
-
-		bool	debug;
 
 		filedescriptor	*clientsock;
 
@@ -117,8 +113,6 @@ sqlrauth_teradata_sidechannel::sqlrauth_teradata_sidechannel(
 					sqlrpwdencs *sqlrpe,
 					domnode *parameters) :
 					sqlrauth(cont,sqlrpe,parameters) {
-
-	debug=cont->getConfig()->getDebugAuths();
 
 	host=parameters->getAttributeValue("host");
 	port=charstring::convertToInteger(parameters->getAttributeValue("port"));
@@ -168,41 +162,33 @@ const char *sqlrauth_teradata_sidechannel::auth(sqlrcredentials *cred) {
 
 		switch (messagekind) {
 			case COPKIND_CFG:
-				if (debug) {
-					stdoutput.write("copkind_cfg {\n");
-					stdoutput.write("...\n");
-					stdoutput.write("}\n");
-				}
+				debugStart("copkind_cfg");
+				debugWrite("...");
+				debugEnd();
 				if (!passthrough()) {
 					loop=false;
 				}
 				break;
 			case COPKIND_ASSIGN:
-				if (debug) {
-					stdoutput.write("copkind_assign {\n");
-					stdoutput.write("...\n");
-					stdoutput.write("}\n");
-				}
+				debugStart("copkind_assign");
+				debugWrite("...");
+				debugEnd();
 				if (!passthrough()) {
 					loop=false;
 				}
 				break;
 			case COPKIND_SSOREQ:
-				if (debug) {
-					stdoutput.write("copkind_ssoreq {\n");
-					stdoutput.write("...\n");
-					stdoutput.write("}\n");
-				}
+				debugStart("copkind_ssoreq");
+				debugWrite("...");
+				debugEnd();
 				if (!passthrough()) {
 					loop=false;
 				}
 				break;
 			case COPKIND_CONNECT:
-				if (debug) {
-					stdoutput.write("copkind_connect {\n");
-					stdoutput.write("...\n");
-					stdoutput.write("}\n");
-				}
+				debugStart("copkind_connect");
+				debugWrite("...");
+				debugEnd();
 				if (passthrough()) {
 					retval="";
 				}
@@ -234,9 +220,7 @@ bool sqlrauth_teradata_sidechannel::recvMessageFromClient() {
 	clientrecvheader=clientrecvmessagepool->allocate(LAN_HEADER_SIZE);
 	if (clientsock->read(clientrecvheader,LAN_HEADER_SIZE)!=
 							LAN_HEADER_SIZE) {
-		if (debug) {
-			stdoutput.write("read header from client failed\n");
-		}
+		debugWrite("read header from client failed");
 		return false;
 	}
 
@@ -276,27 +260,29 @@ bool sqlrauth_teradata_sidechannel::recvMessageFromClient() {
 	clientrecvdatasize=(((uint32_t)highordermessagesize)<<16)|
 					((uint32_t)lowordermessagesize);
 
-	if (debug) {
-		stdoutput.write("client recv header {\n");
-		stdoutput.printf("	version: %d\n",(int)version);
-		stdoutput.printf("	class: %d\n",(int)messageclass);
-		stdoutput.printf("	kind: %d\n",(int)messagekind);
-		stdoutput.printf("	high order message size: %d\n",
+	if (getDebug()) {
+		debugStart("client recv header");
+		debugWrite("version: %d",(int)version);
+		debugWrite("class: %d",(int)messageclass);
+		debugWrite("kind: %d",(int)messagekind);
+		debugWrite("high order message size: %d",
 						(int)highordermessagesize);
-		stdoutput.printf("	bytevar: %d\n",(int)bytevar);
-		stdoutput.printf("	wordvar: %d\n",(int)wordvar);
-		stdoutput.printf("	low order message size: %d\n",
+		debugWrite("bytevar: %d",(int)bytevar);
+		debugWrite("wordvar: %d",(int)wordvar);
+		debugWrite("low order message size: %d",
 						(int)lowordermessagesize);
-		stdoutput.write("	res for expan: ");
-		stdoutput.safePrint((byte_t *)resforexpan,sizeof(resforexpan));
-		stdoutput.write('\n');
-		stdoutput.write("	correleation tag: ");
-		stdoutput.safePrint((byte_t *)corrtag,sizeof(corrtag));
-		stdoutput.write('\n');
-		stdoutput.printf("	session no: %d\n",(int)sessionno);
-		stdoutput.printf("	request auth: "
+		stringbuffer	b;
+		b.append("res for expan: ");
+		b.safePrint((byte_t *)resforexpan,sizeof(resforexpan));
+		debugWrite(b.getString());
+		b.clear();
+		b.write("correleation tag: ");
+		b.safePrint((byte_t *)corrtag,sizeof(corrtag));
+		debugWrite(b.getString());
+		debugWrite("session no: %d",(int)sessionno);
+		debugWrite("request auth: "
 					"%03d.%03d.%03d.%03d."
-					"%03d.%03d.%03d.%03d\n",
+					"%03d.%03d.%03d.%03d",
 					requestauth[0],
 					requestauth[1],
 					requestauth[2],
@@ -305,14 +291,13 @@ bool sqlrauth_teradata_sidechannel::recvMessageFromClient() {
 					requestauth[5],
 					requestauth[6],
 					requestauth[7]);
-		stdoutput.printf("	request no: %d\n",(int)requestno);
-		stdoutput.printf("	gateway byte: %d\n",(int)gtwbyte);
-		stdoutput.printf("	host charset: %d\n",(int)hostcharset);
-		stdoutput.printf("	clientrecvdatasize: %d\n",
+		debugWrite("request no: %d",(int)requestno);
+		debugWrite("gateway byte: %d",(int)gtwbyte);
+		debugWrite("host charset: %d",(int)hostcharset);
+		debugWrite("clientrecvdatasize: %d",
 						(int)clientrecvdatasize);
-		stdoutput.write('\n');
 		debugHexDump(clientrecvheader,LAN_HEADER_SIZE);
-		stdoutput.write("}\n");
+		debugEnd();
 	}
 
 
@@ -320,17 +305,13 @@ bool sqlrauth_teradata_sidechannel::recvMessageFromClient() {
 	clientrecvdata=clientrecvmessagepool->allocate(clientrecvdatasize);
 	if (clientsock->read(clientrecvdata,clientrecvdatasize)!=
 						(ssize_t)clientrecvdatasize) {
-		if (debug) {
-			stdoutput.write("read data from client failed\n");
-		}
+		debugWrite("read data from client failed");
 		return false;
 	}
 
-	if (debug) {
-		stdoutput.write("client recv data {\n");
-		debugHexDump(clientrecvdata,clientrecvdatasize);
-		stdoutput.write("}\n");
-	}
+	debugStart("client recv data");
+	debugHexDump(clientrecvdata,clientrecvdatasize);
+	debugEnd();
 
 	return true;
 }
@@ -344,29 +325,24 @@ bool sqlrauth_teradata_sidechannel::passthrough() {
 bool sqlrauth_teradata_sidechannel::forwardClientMessageToBackend() {
 
 	// pass whatever we received from the client through to the sidechannel
-	if (debug) {
-		stdoutput.write("sidechannel send header {\n");
-		stdoutput.printf("	size: %d\n",LAN_HEADER_SIZE);
-		debugHexDump(clientrecvheader,LAN_HEADER_SIZE);
-		stdoutput.write("}\n");
-		stdoutput.write("sidechannel send data {\n");
-		stdoutput.printf("	size: %d\n",clientrecvdatasize);
-		debugHexDump(clientrecvdata,clientrecvdatasize);
-		stdoutput.write("}\n");
-	}
+
+	debugStart("sidechannel send header");
+	debugWrite("size: %d",LAN_HEADER_SIZE);
+	debugHexDump(clientrecvheader,LAN_HEADER_SIZE);
+	debugEnd();
+
+	debugStart("sidechannel send data");
+	debugWrite("size: %d",clientrecvdatasize);
+	debugHexDump(clientrecvdata,clientrecvdatasize);
+	debugEnd();
+
 	if (isc.write(clientrecvheader,LAN_HEADER_SIZE)!=LAN_HEADER_SIZE) {
-		if (debug) {
-			stdoutput.write("send client header "
-					"to sidechannel failed\n");
-		}
+		debugWrite("send client header to sidechannel failed");
 		return false;
 	}
 	if (isc.write(clientrecvdata,clientrecvdatasize)!=
 					(ssize_t)clientrecvdatasize) {
-		if (debug) {
-			stdoutput.write("send client data "
-					"to sidechannel failed\n");
-		}
+		debugWrite("send client data to sidechannel failed");
 		return false;
 	}
 	return true;
@@ -380,9 +356,7 @@ bool sqlrauth_teradata_sidechannel::recvMessageFromBackend() {
 	sidechannelrecvheader=
 		sidechannelrecvmessagepool->allocate(LAN_HEADER_SIZE);
 	if (isc.read(sidechannelrecvheader,LAN_HEADER_SIZE)!=LAN_HEADER_SIZE) {
-		if (debug) {
-			stdoutput.write("read header failed\n");
-		}
+		debugWrite("read header failed");
 		isc.close();
 		return false;
 	}
@@ -414,18 +388,12 @@ bool sqlrauth_teradata_sidechannel::recvMessageFromBackend() {
 	sidechannelrecvdatasize=(((uint32_t)highordermessagesize)<<16)|
 				((uint32_t)lowordermessagesize);
 
-	if (debug) {
-		stdoutput.write("sidechannel recv header {\n");
-		stdoutput.printf("	high order message size: %d\n",
-						(int)highordermessagesize);
-		stdoutput.printf("	low order message size: %d\n",
-						(int)lowordermessagesize);
-		stdoutput.printf("	data size: %d\n",
-						(int)sidechannelrecvdatasize);
-		stdoutput.write('\n');
-		debugHexDump(sidechannelrecvheader,LAN_HEADER_SIZE);
-		stdoutput.write("}\n");
-	}
+	debugStart("sidechannel recv header");
+	debugWrite("high order message size: %d",(int)highordermessagesize);
+	debugWrite("low order message size: %d",(int)lowordermessagesize);
+	debugWrite("data size: %d",(int)sidechannelrecvdatasize);
+	debugHexDump(sidechannelrecvheader,LAN_HEADER_SIZE);
+	debugEnd();
 
 	// build one big packet...
 	sidechannelrecvdata=
@@ -434,18 +402,14 @@ bool sqlrauth_teradata_sidechannel::recvMessageFromBackend() {
 	// receive lan data
 	if (isc.read(sidechannelrecvdata,sidechannelrecvdatasize)!=
 					(ssize_t)sidechannelrecvdatasize) {
-		if (debug) {
-			stdoutput.write("sidechannel recv data failed\n");
-		}
+		debugWrite("sidechannel recv data failed");
 		isc.close();
 		return false;
 	}
 
-	if (debug) {
-		stdoutput.write("sidechannel recv data {\n");
-		debugHexDump(sidechannelrecvdata,sidechannelrecvdatasize);
-		stdoutput.write("}\n");
-	}
+	debugStart("sidechannel recv data");
+	debugHexDump(sidechannelrecvdata,sidechannelrecvdatasize);
+	debugEnd();
 
 	return true;
 }
@@ -453,29 +417,26 @@ bool sqlrauth_teradata_sidechannel::recvMessageFromBackend() {
 bool sqlrauth_teradata_sidechannel::forwardBackendMessageToClient() {
 
 	// send whatever we received from the sidechannel to the client
-	if (debug) {
-		stdoutput.write("client send header {\n");
-		stdoutput.printf("	size: %d\n",LAN_HEADER_SIZE);
-		debugHexDump(sidechannelrecvheader,LAN_HEADER_SIZE);
-		stdoutput.write("}\n");
-		stdoutput.write("client send data {\n");
-		stdoutput.printf("	size: %d\n",sidechannelrecvdatasize);
-		debugHexDump(sidechannelrecvdata,sidechannelrecvdatasize);
-		stdoutput.write("}\n");
-	}
+
+	debugStart("client send header");
+	debugWrite("size: %d",LAN_HEADER_SIZE);
+	debugHexDump(sidechannelrecvheader,LAN_HEADER_SIZE);
+	debugEnd();
+
+	debugStart("client send data");
+	debugWrite("size: %d",sidechannelrecvdatasize);
+	debugHexDump(sidechannelrecvdata,sidechannelrecvdatasize);
+	debugEnd();
+
 	if (clientsock->write(sidechannelrecvheader,
 				LAN_HEADER_SIZE)!=LAN_HEADER_SIZE) {
-		if (debug) {
-			stdoutput.write("clientsock write failed\n");
-		}
+		debugWrite("clientsock write failed");
 		return false;
 	}
 	if (clientsock->write(sidechannelrecvdata,
 				sidechannelrecvdatasize)!=
 				(ssize_t)sidechannelrecvdatasize) {
-		if (debug) {
-			stdoutput.write("clientsock write failed\n");
-		}
+		debugWrite("clientsock write failed");
 		return false;
 	}
 	clientsock->flushWriteBuffer(-1,-1);
@@ -574,38 +535,6 @@ void sqlrauth_teradata_sidechannel::copyOutBE(byte_t *rp,
 	bytestring::copy(value,rp,sizeof(uint64_t));
 	*value=filedescriptor::convertNetToHost(*value);
 	*rpout=rp+sizeof(uint64_t);
-}
-
-void sqlrauth_teradata_sidechannel::debugHexDump(const byte_t *data,
-							uint64_t size) {
-	if (!size) {
-		return;
-	}
-	stdoutput.write("	");
-	for (uint64_t i=0; i<size; i++) {
-		stdoutput.printf("%02x  ",data[i]);
-		if (!((i+1)%8)) {
-			stdoutput.write("   ");
-		}
-		if (!((i+1)%16)) {
-			stdoutput.write("\n	");
-		}
-	}
-	stdoutput.write("\n	");
-	for (uint64_t i=0; i<size; i++) {
-		if (data[i]>=' ' && data[i]<='~') {
-			stdoutput.printf("%c   ",data[i]);
-		} else {
-			stdoutput.write(".   ");
-		}
-		if (!((i+1)%8)) {
-			stdoutput.write("   ");
-		}
-		if (!((i+1)%16)) {
-			stdoutput.write("\n	");
-		}
-	}
-	stdoutput.write('\n');
 }
 
 extern "C" {

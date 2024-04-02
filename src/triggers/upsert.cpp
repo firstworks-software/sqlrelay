@@ -44,8 +44,6 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_upsert : public sqlrtrigger {
 
 		sqlrservercontroller	*cont;
 
-		bool	debug;
-
 		domnode	*errors;
 		domnode	*tables;
 
@@ -56,8 +54,6 @@ sqlrtrigger_upsert::sqlrtrigger_upsert(sqlrservercontroller *cont,
 					domnode *parameters) :
 					sqlrtrigger(cont,parameters) {
 	this->cont=cont;
-
-	debug=cont->getConfig()->getDebugTriggers();
 
 	errors=parameters->getFirstTagChild("errors");
 	tables=parameters->getFirstTagChild("tables");
@@ -79,30 +75,25 @@ bool sqlrtrigger_upsert::runAfter(sqlrserverconnection *sqlrcon,
 	const char		*query=cont->getQueryBuffer(icur);
 	uint32_t		querylen=cont->getQuerySize(icur);
 	sqlrquerytype_t		querytype=icur->getQueryType();
-	if (debug) {
-		stdoutput.printf("upsert {\n");
-		stdoutput.printf("	triggering query:\n%.*s\n",
-							querylen,query);
-		stdoutput.printf("	query type: %d\n",querytype);
-	}
+
+	debugStart("upsert");
+	debugWrite("triggering query:\n%.*s",querylen,query);
+	debugWrite("query type: %d",querytype);
 
 	// bail if the query wasn't an insert
 	if (querytype!=SQLRQUERYTYPE_INSERT) {
-		if (debug) {
-			stdoutput.printf("	query was not an insert\n}\n");
-		}
+		debugWrite("query was not an insert");
+		debugEnd();
 		return true;
 	}
 
 	// bail if the query didn't throw an error that we care about
 	if (!errorEncountered(icur)) {
-		if (debug) {
-			stdoutput.printf("	no matching error "
-					"found for:\n%d: %.*s}\n",
-					cont->getErrorNumber(icur),
+		debugWrite("no matching error found for:");
+		debugWrite("%d: %.*s",cont->getErrorNumber(icur),
 					cont->getErrorSize(icur),
 					cont->getErrorBuffer(icur));
-		}
+		debugEnd();
 		return true;
 	}
 
@@ -121,10 +112,8 @@ bool sqlrtrigger_upsert::runAfter(sqlrserverconnection *sqlrcon,
 
 	// bail if the query wasn't a simple insert
 	if (querytype!=SQLRQUERYTYPE_INSERT) {
-		if (debug) {
-			stdoutput.printf("	query was not a "
-						"simple insert\n}\n");
-		}
+		debugWrite("query was not a simple insert");
+		debugEnd();
 		delete[] table;
 		delete cols;
 		delete vals;
@@ -132,17 +121,13 @@ bool sqlrtrigger_upsert::runAfter(sqlrserverconnection *sqlrcon,
 	}
 
 	// debug
-	if (debug) {
-		stdoutput.printf("	table: %s\n",table);
-	}
+	debugWrite("table: %s",table);
 
 	// bail if the table isn't one that we care about
 	domnode	*tablenode=tableEncountered(table);
 	if (!tablenode) {
-		if (debug) {
-			stdoutput.printf("	table not "
-					"configured for upsert\n}\n");
-		}
+		debugWrite("table not configured for upsert");
+		debugEnd();
 		delete[] table;
 		delete cols;
 		delete vals;
@@ -150,20 +135,19 @@ bool sqlrtrigger_upsert::runAfter(sqlrserverconnection *sqlrcon,
 	}
 
 	// debug
-	if (debug) {
-		stdoutput.printf("	columns:\n");
+	if (getDebug()) {
+		debugStart("columns");
 		if (cols) {
 			for (listnode<char *> *node=cols->getFirst();
 						node; node=node->getNext()) {
-				stdoutput.printf("		%s\n",
-							node->getValue());
+				debugWrite("%s",node->getValue());
 			}
-			stdoutput.printf("	auto-increment column: %s\n",
+			debugWrite("auto-increment column: %s",
 				(autoinccolumn)?autoinccolumn:"(null");
-			stdoutput.printf("	primary key column "
-					"(from db): %s\n",
+			debugWrite("primary key column (from db): %s",
 				(primarykeycolumn)?primarykeycolumn:"(null)");
 		}
+		debugEnd();
 	}
 
 	// if parseInsert didn't find a primary key
@@ -172,30 +156,27 @@ bool sqlrtrigger_upsert::runAfter(sqlrserverconnection *sqlrcon,
 		primarykeycolumn=tablenode->
 					getFirstTagChild("primarykey")->
 					getAttributeValue("name");
-		if (debug) {
-			stdoutput.printf("	primary key column "
-						"(from config): %s\n",
+		debugWrite("primary key column (from config): %s",
 				(primarykeycolumn)?primarykeycolumn:"(null)");
-		}
 	}
 
 	// debug
-	if (debug) {
-		stdoutput.printf("	values:\n");
+	if (getDebug()) {
+		debugStart("values");
 		if (vals) {
 			for (listnode<char *> *node=vals->getFirst();
 						node; node=node->getNext()) {
-				stdoutput.printf("		%s\n",
-							node->getValue());
+				debugWrite("%s",node->getValue());
 			}
 		}
-		stdoutput.printf("	where-clause columns:\n");
+		debugEnd();
+		debugStart("where-clause columns");
 		for (domnode *node=tablenode->getFirstTagChild("column");
 				!node->isNullNode();
 				node=node->getNextTagSibling("column")) {
-			stdoutput.printf("		%s\n",
-					node->getAttributeValue("name"));
+			debugWrite("%s",node->getAttributeValue("name"));
 		}
+		debugEnd();
 	}
 
 
@@ -207,10 +188,8 @@ bool sqlrtrigger_upsert::runAfter(sqlrserverconnection *sqlrcon,
 		cont->setError(icur,"upsert failed - "
 					"failed to create update cursor",
 					SQLR_ERROR_TRIGGER,true);
-		if (debug) {
-			stdoutput.printf("	upsert failed - "
-					"failed to create update cursor\n}\n");
-		}
+		debugWrite("upsert failed - failed to create update cursor");
+		debugEnd();
 		delete[] table;
 		delete cols;
 		delete vals;
@@ -222,10 +201,8 @@ bool sqlrtrigger_upsert::runAfter(sqlrserverconnection *sqlrcon,
 		cont->setError(icur,"upsert failed - "
 					"failed to open update cursor",
 					SQLR_ERROR_TRIGGER,true);
-		if (debug) {
-			stdoutput.printf("	upsert failed - "
-					"failed to open update cursor\n}\n");
-		}
+		debugWrite("upsert failed - failed to open update cursor");
+		debugEnd();
 		delete[] table;
 		delete cols;
 		delete vals;
@@ -267,15 +244,10 @@ bool sqlrtrigger_upsert::runAfter(sqlrserverconnection *sqlrcon,
 					&liveconnection);
 		cont->setError(icur,errorstring,errorsize,
 					errnum,liveconnection);
-		if (debug) {
-			stdoutput.printf("error: %d - %.*s\n",
-					errnum,errorsize,errorstring);
-		}
+		debugWrite("error: %d - %.*s",errnum,errorsize,errorstring);
 	}
 
-	if (debug) {
-		stdoutput.printf("}\n");
-	}
+	debugEnd();
 
 	// clean up
 	if (ucur) {
@@ -343,9 +315,7 @@ bool sqlrtrigger_upsert::copyInputBinds(sqlrservercursor *ucur,
 		return true;
 	}
 
-	if (debug) {
-		stdoutput.printf("	bind-to-col map:\n");
-	}
+	debugStart("bind-to-col map");
 
 	// build a bind -> col map
 	dictionary<char *, const char *>	bindtocol;
@@ -373,22 +343,14 @@ bool sqlrtrigger_upsert::copyInputBinds(sqlrservercursor *ucur,
 				charstring::printf(&bindname,"?%hd",bindnum);
 				bindtocol.setValue(bindname,col);
 				bindnum++;
-				if (debug) {
-					stdoutput.printf("		"
-								"%s -> %s\n",
-								bindname,col);
-				}
+				debugWrite("%s -> %s",bindname,col);
 
 			} else {
 
 				// we support bind by name/number
 				bindtocol.setValue(
 					charstring::duplicate(val),col);
-				if (debug) {
-					stdoutput.printf("		"
-								"%s -> %s\n",
-								val,col);
-				}
+				debugWrite("%s -> %s",val,col);
 			}
 		}
 
@@ -429,8 +391,10 @@ bool sqlrtrigger_upsert::copyInputBinds(sqlrservercursor *ucur,
 		return false;
 	}
 
-	if (ibcount && debug) {
-		stdoutput.printf("	binds:\n");
+	debugEnd();
+
+	if (ibcount) {
+		debugStart("binds:");
 	}
 
 	// copy the input binds, making one copy for the set clause and
@@ -456,6 +420,10 @@ bool sqlrtrigger_upsert::copyInputBinds(sqlrservercursor *ucur,
 	// set the input bind count
 	cont->setInputBindCount(ucur,ubcount);
 
+	if (ibcount) {
+		debugEnd();
+	}
+
 	return true;
 }
 
@@ -475,14 +443,10 @@ void sqlrtrigger_upsert::copyInputBind(memorypool *pool, bool where,
 	// So, for the copy of the bind that we'll use in the set clause,
 	// we can bail here.
 	if (!where) {
-		if (debug) {
-			stdoutput.printf("		%s=",ubind->variable);
-			if (ubind->type==SQLRSERVERBINDVARTYPE_STRING) {
-				stdoutput.printf("%s\n",ubind->value.stringval);
-			} else {
-				stdoutput.printf("...\n");
-			}
-		}
+		debugWrite("%s=%s",
+			ubind->variable,
+			((ubind->type==SQLRSERVERBINDVARTYPE_STRING)?
+					ubind->value.stringval:"..."));
 		return;
 	}
 
@@ -527,16 +491,11 @@ void sqlrtrigger_upsert::copyInputBind(memorypool *pool, bool where,
 		}
 	}
 
-	if (debug) {
-		stdoutput.printf("		%s=",ubind->variable);
-		if (ubind->type==SQLRSERVERBINDVARTYPE_STRING) {
-			stdoutput.printf("%s\n",ubind->value.stringval);
-		} else {
-			stdoutput.printf("...\n");
-		}
-		stdoutput.printf("			%s -> %s\n",
-					ibind->variable,ubind->variable);
-	}
+	debugWrite("%s=%s",
+		ubind->variable,
+		((ubind->type==SQLRSERVERBINDVARTYPE_STRING)?
+				ubind->value.stringval:"..."));
+	debugWrite("%s -> %s",ibind->variable,ubind->variable);
 }
 
 bool sqlrtrigger_upsert::convertInsertToUpdate(
@@ -552,9 +511,7 @@ bool sqlrtrigger_upsert::convertInsertToUpdate(
 	// begin building the update query
 	query->append("update ")->append(table)->append(" set ");
 
-	if (debug) {
-		stdoutput.printf("	col-to-val map:\n");
-	}
+	debugStart("col-to-val map");
 
 	// build the set clause and map column names to values
 	dictionary<const char *, const char *>	coltoval;
@@ -586,9 +543,7 @@ bool sqlrtrigger_upsert::convertInsertToUpdate(
 		// map column -> value for use in the where clause later
 		coltoval.setValue(col,val);
 
-		if (debug) {
-			stdoutput.printf("		%s -> %s\n",col,val);
-		}
+		debugWrite("%s -> %s",col,val);
 
 		// next...
  		cnode=cnode->getNext();
@@ -641,10 +596,9 @@ bool sqlrtrigger_upsert::convertInsertToUpdate(
 		first=false;
 	}
 
-	if (debug) {
-		stdoutput.printf("	update query:\n%s\n",
-						query->getString());
-	}
+	debugWrite("update query:\n");
+	debugWrite(query->getString());
+	debugEnd();
 	
 	return retval;
 }

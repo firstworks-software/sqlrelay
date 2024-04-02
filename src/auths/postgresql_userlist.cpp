@@ -26,8 +26,6 @@ class SQLRSERVER_DLLSPEC sqlrauth_postgresql_userlist : public sqlrauth {
 		uint64_t	usercount;
 
 		sensitivevalue	passwordvalue;
-
-		bool	debug;
 };
 
 sqlrauth_postgresql_userlist::sqlrauth_postgresql_userlist(
@@ -35,8 +33,6 @@ sqlrauth_postgresql_userlist::sqlrauth_postgresql_userlist(
 					sqlrpwdencs *sqlrpe,
 					domnode *parameters) :
 					sqlrauth(cont,sqlrpe,parameters) {
-
-	debug=cont->getConfig()->getDebugAuths();
 
 	users=NULL;
 	passwords=NULL;
@@ -99,15 +95,17 @@ const char *sqlrauth_postgresql_userlist::auth(sqlrcredentials *cred) {
 	uint32_t		salt=
 		((sqlrpostgresqlcredentials *)cred)->getSalt();
 
-	if (debug) {
-		stdoutput.printf("auth %s {\n",method);
-		stdoutput.printf("	user: \"%s\"\n",user);
-		stdoutput.printf("	password: \"");
-		stdoutput.safePrint(password,passwordsize);
-		stdoutput.printf("\"\n");
-		stdoutput.printf("	method: \"%s\"\n",method);
-		stdoutput.printf("	salt: \"%d\"\n",salt);
-		stdoutput.printf("}\n");
+	if (getDebug()) {
+		debugStart("auth %s",method);
+		debugWrite("user: \"%s\"",user);
+		stringbuffer	b;
+		b.append("password: \"");
+		b.safePrint(password,passwordsize);
+		b.append("\"");
+		debugWrite(b.getString());
+		debugWrite("method: \"%s\"",method);
+		debugWrite("salt: \"%s\"",salt);
+		debugEnd();
 	}
 
 	// sanity check on method
@@ -239,17 +237,18 @@ bool sqlrauth_postgresql_userlist::compare(const char *suppliedresponse,
 		return false;
 	}
 
-	if (debug) {
-		stdoutput.printf("auth compare {\n");
-		stdoutput.printf("	expected response: ");
-		stdoutput.safePrint(expectedresponse.getBuffer(),
+	if (getDebug()) {
+		debugStart("auth compare");
+		stringbuffer	b;
+		b.append("expected response: ");
+		b.safePrint(expectedresponse.getBuffer(),
 					expectedresponse.getSize());
-		stdoutput.printf("\n");
-		stdoutput.printf("	supplied response: ");
-		stdoutput.safePrint(suppliedresponse,
-					suppliedresponsesize);
-		stdoutput.printf("\n");
-		stdoutput.printf("}\n");
+		debugWrite(b.getString());
+		b.clear();
+		b.append("supplied response: ");
+		b.safePrint(suppliedresponse,suppliedresponsesize);
+		debugWrite(b.getString());
+		debugEnd();
 	}
 
 	// compare the expected and supplied response sizes and values

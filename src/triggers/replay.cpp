@@ -79,7 +79,6 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_replay : public sqlrtrigger {
 
 		sqlrservercontroller	*cont;
 
-		bool		debug;
 		bool		includeselects;
 		uint32_t	maxretries;
 
@@ -98,8 +97,6 @@ sqlrtrigger_replay::sqlrtrigger_replay(sqlrservercontroller *cont,
 					domnode *parameters) :
 					sqlrtrigger(cont,parameters) {
 	this->cont=cont;
-
-	debug=cont->getConfig()->getDebugTriggers();
 
 	log.setManageValues(true);
 	conditions.setManageValues(true);
@@ -234,11 +231,9 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 
 	// bail if the query was a select, and we're ignoring selects
 	if (!includeselects && querytype==SQLRQUERYTYPE_SELECT) {
-		if (debug) {
-			stdoutput.printf("ignoring query:\n%.*s\n}\n",
-						sqlrcur->getQuerySize(),
-						sqlrcur->getQueryBuffer());
-		}
+		debugWrite("ignoring query:");
+		debugWrite("%.*s",sqlrcur->getQuerySize(),
+					sqlrcur->getQueryBuffer());
 		delete columns;
 		return;
 	}
@@ -327,14 +322,12 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 	log.append(qd);
 
 #if 1
-	if (debug) {
-		stdoutput.printf("-----------------------\n");
-		for (listnode<querydetails *> *node=log.getFirst();
-						node; node=node->getNext()) {
-			stdoutput.printf("%s\n",node->getValue()->query);
-		}
-		stdoutput.printf("-----------------------\n");
+	debugWrite("-----------------------");
+	for (listnode<querydetails *> *node=log.getFirst();
+					node; node=node->getNext()) {
+		debugWrite(node->getValue()->query);
 	}
+	debugWrite("-----------------------\n");
 #endif
 
 	delete columns;
@@ -565,12 +558,9 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 	// get the bind pool
 	memorypool	*pool=cont->getBindPool(sqlrcur);
 
-	if (debug) {
-		stdoutput.printf("replay {\n");
-		stdoutput.printf("	triggering query:\n%.*s\n",
-					sqlrcur->getQuerySize(),
-					sqlrcur->getQueryBuffer());
-	}
+	debugStart("replay");
+	debugWrite("triggering query:");
+	debugWrite("%.*s",sqlrcur->getQuerySize(),sqlrcur->getQueryBuffer());
 
 	// clear the triggering query's error
 	cont->clearError();
@@ -600,56 +590,47 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 		querydetails	*qd=current->getValue();
 		
 		// prepare the query
-		if (debug) {
-			stdoutput.printf("	prepare query {\n");
-			stdoutput.printf("		query:\n%.*s\n",
-						qd->querysize,qd->query);
-		}
+		debugStart("prepare query");
+		debugWrite("query:");
+		debugWrite("%.*s",qd->querysize,qd->query);
+
 		if (!cont->prepareQuery(sqlrcur,qd->query,qd->querysize)) {
-			if (debug) {
-				stdoutput.printf(
-					"		"
-					"prepare error: %.*s\n",
+
+			debugWrite("prepare error: %.*s",
 					sqlrcur->getErrorSize(),
 					sqlrcur->getErrorBuffer());
-				stdoutput.printf("	}\n");
-			}
+
 			str.append("prepare error:\n");
 			str.append(qd->query,qd->querysize);
 			str.append("\n");
 			str.append(sqlrcur->getErrorBuffer(),
 					sqlrcur->getErrorSize());
 			str.append("\n\n");
+
 			retval=false;
 			break;
 		}
-		if (debug) {
-			stdoutput.printf("	}\n");
-		}
+		debugEnd();
 
 		// copy out input binds
 		uint16_t	incount=qd->inbindvars.getCount();
 		sqlrcur->setInputBindCount(incount);
 		sqlrserverbindvar	*invars=
 					sqlrcur->getInputBinds();
-		if (debug && incount) {
-			stdoutput.printf("	input binds {\n");
+		if (incount) {
+			debugStart("input binds");
 		}
 		listnode<sqlrserverbindvar *>	*inbindnode=
 						qd->inbindvars.getFirst();
 		for (uint16_t i=0; i<incount; i++) {
 			sqlrserverbindvar	*bv=
 					inbindnode->getValue();
-			if (debug) {
-				stdoutput.printf("		%.*s\n",
-						bv->variablesize,
-						bv->variable);
-			}
+			debugWrite("%.*s",bv->variablesize,bv->variable);
 			cont->copyBind(&(invars[i]),bv,pool);
 			inbindnode=inbindnode->getNext();
 		}
-		if (debug && incount) {
-			stdoutput.printf("	}\n");
+		if (incount) {
+			debugEnd();
 		}
 
 		// copy out output binds
@@ -657,24 +638,20 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 		sqlrcur->setInputBindCount(outcount);
 		sqlrserverbindvar	*outvars=
 					sqlrcur->getOutputBinds();
-		if (debug && outcount) {
-			stdoutput.printf("	output binds {\n");
+		if (outcount) {
+			debugStart("output binds");
 		}
 		listnode<sqlrserverbindvar *>	*outbindnode=
 					qd->outbindvars.getFirst();
 		for (uint16_t i=0; i<outcount; i++) {
 			sqlrserverbindvar	*bv=
 					outbindnode->getValue();
-			if (debug) {
-				stdoutput.printf("		%.*s\n",
-						bv->variablesize,
-						bv->variable);
-			}
+			debugWrite("%.*s",bv->variablesize,bv->variable);
 			cont->copyBind(&(outvars[i]),bv,pool);
 			outbindnode=outbindnode->getNext();
 		}
-		if (debug && outcount) {
-			stdoutput.printf("	}\n");
+		if (outcount) {
+			debugEnd();
 		}
 
 		// copy out input-output binds
@@ -683,42 +660,34 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 		sqlrcur->setInputBindCount(inoutcount);
 		sqlrserverbindvar	*inoutvars=
 					sqlrcur->getInputOutputBinds();
-		if (debug && inoutcount) {
-			stdoutput.printf("	"
-					"input-output binds {\n");
+		if (inoutcount) {
+			debugStart("input-output binds");
 		}
 		listnode<sqlrserverbindvar *>	*inoutbindnode=
 					qd->inoutbindvars.getFirst();
 		for (uint16_t i=0; i<inoutcount; i++) {
 			sqlrserverbindvar	*bv=
 					inoutbindnode->getValue();
-			if (debug) {
-				stdoutput.printf("		%.*s\n",
-						bv->variablesize,
-						bv->variable);
-			}
+			debugWrite("%.*s",bv->variablesize,bv->variable);
 			cont->copyBind(&(inoutvars[i]),bv,pool);
 			inoutbindnode=inoutbindnode->getNext();
 		}
-		if (debug && inoutcount) {
-			stdoutput.printf("	}\n");
+		if (inoutcount) {
+			debugEnd();
 		}
 
 		// execute the query
-		if (debug) {
-			stdoutput.printf("	execute query {\n");
-		}
+		debugStart("execute query");
+
 		if (!cont->executeQuery(sqlrcur)) {
+
 			// if this fails, then it's actually ok, the
 			// query may have failed to execute in the
 			// original tx too...
-			if (debug) {
-				stdoutput.printf(
-					"		"
-					"execute error: %.*s\n",
+			debugWrite("execute error: %.*s",
 					sqlrcur->getErrorSize(),
 					sqlrcur->getErrorBuffer());
-			}
+
 			str.append("execute error:\n");
 			str.append(qd->query,qd->querysize);
 			str.append("\n");
@@ -726,9 +695,7 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 					sqlrcur->getErrorSize());
 			str.append("\n\n");
 		}
-		if (debug) {
-			stdoutput.printf("	}\n");
-		}
+		debugEnd();
 
 		// if the execute failed because of a replay condition...
 		if (replayCondition(sqlrcur)) {
@@ -786,12 +753,7 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 				}
 			}
 			if (sec || usec) {
-				if (debug) {
-					stdoutput.printf("	delay "
-								"%d sec, "
-								"%d usec...\n",
-								sec,usec);
-				}
+				debugWrite("delay %d sec, %d usec...",sec,usec);
 				snooze::microsnooze(sec,usec);
 			}
 
@@ -802,9 +764,7 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 		}
 	}
 
-	if (debug) {
-		stdoutput.printf("}\n");
-	}
+	debugEnd();
 
 	if (!retval) {
 		// roll back and clear the log on error
@@ -1027,10 +987,10 @@ void sqlrtrigger_replay::writeToLogFile(const char *logfile,
 	file	lf;
 	if (!lf.open(logfile,O_WRONLY|O_APPEND|O_CREAT,
 				permissions::parsePermString("rw-r--r--"))) {
-		if (debug) {
+		if (getDebug()) {
 			char	*err=error::getErrorString();
-			stdoutput.printf("failed to open %s\n%s\n",
-							logfile,err);
+			debugWrite("failed to open %s",logfile);
+			debugWrite(logfile,err);
 			delete[] err;
 			return;
 		}
@@ -1039,9 +999,7 @@ void sqlrtrigger_replay::writeToLogFile(const char *logfile,
 	// write the log message all-at-once
 	lf.write(str,size);
 
-	if (debug) {
-		stdoutput.printf("%.*s",size,str);
-	}
+	debugWrite("%.*s",size,str);
 }
 
 void sqlrtrigger_replay::endTransaction(bool commit) {

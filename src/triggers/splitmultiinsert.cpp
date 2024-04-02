@@ -29,8 +29,6 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_splitmultiinsert : public sqlrtrigger {
 					stringbuffer *values);
 
 		sqlrservercontroller	*cont;
-
-		bool	debug;
 };
 
 sqlrtrigger_splitmultiinsert::sqlrtrigger_splitmultiinsert(
@@ -38,8 +36,6 @@ sqlrtrigger_splitmultiinsert::sqlrtrigger_splitmultiinsert(
 					domnode *parameters) :
 					sqlrtrigger(cont,parameters) {
 	this->cont=cont;
-
-	debug=cont->getConfig()->getDebugTriggers();
 }
 
 bool sqlrtrigger_splitmultiinsert::runBefore(sqlrserverconnection *sqlrcon,
@@ -57,34 +53,28 @@ bool sqlrtrigger_splitmultiinsert::runBefore(sqlrserverconnection *sqlrcon,
 	uint32_t		querysize=cont->getQuerySize(micur);
 	const char		*queryend=query+querysize;
 	sqlrquerytype_t		querytype=micur->getQueryType();
-	if (debug) {
-		stdoutput.printf("splitmultiinsert {\n");
-		stdoutput.printf("	query:\n%.*s\n",querysize,query);
-		stdoutput.printf("	query type: %d\n",querytype);
-	}
+
+	debugStart("splitmultiinsert");
+	debugWrite("query:");
+	debugWrite("%.*s",querysize,query);
+	debugWrite("query type: %d",querytype);
 
 	// bail if the query wasn't an insert
 	if (querytype!=SQLRQUERYTYPE_INSERT) {
-		if (debug) {
-			stdoutput.printf(
-				"	query was not an insert\n}\n");
-		}
+		debugWrite("query was not an insert");
+		debugEnd();
 		return true;
 	}
 
 	// NOTE: parseInsert will populate querytype with a more specific value
 	cont->parseInsert(query,querysize,&querytype,
 				NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
-	if (debug) {
-		stdoutput.printf("	query type: %d\n",querytype);
-	}
+	debugWrite("query type: %d",querytype);
 
 	// bail if the query wasn't a multi-insert
 	if (querytype!=SQLRQUERYTYPE_MULTIINSERT) {
-		if (debug) {
-			stdoutput.printf("	query was not a "
-						"multi-insert\n}\n");
-		}
+		debugWrite("query was not a multi-insert");
+		debugEnd();
 		return true;
 	}
 
@@ -126,9 +116,7 @@ bool sqlrtrigger_splitmultiinsert::runBefore(sqlrserverconnection *sqlrcon,
 		return false;
 	}
 
-	if (debug) {
-		stdoutput.printf("	single inserts:\n");
-	}
+	debugStart("single inserts");
 
 	// split out each insert and run them individually...
 	uint64_t	affectedrows=0;
@@ -141,11 +129,9 @@ bool sqlrtrigger_splitmultiinsert::runBefore(sqlrserverconnection *sqlrcon,
 		singleinsert.append(prefix.getString(),prefix.getSize());
 		singleinsert.append(values.getString(),values.getSize());
 		singleinsert.append(suffix.getString(),suffix.getSize());
-		if (debug) {
-			stdoutput.printf("%.*s\n",
-					singleinsert.getSize(),
+
+		debugWrite("%.*s",singleinsert.getSize(),
 					singleinsert.getString());
-		}
 
 		// copy input binds from micur to sicur
 		// FIXME: see #7430
@@ -171,10 +157,8 @@ bool sqlrtrigger_splitmultiinsert::runBefore(sqlrserverconnection *sqlrcon,
 						&liveconnection);
 			cont->setError(micur,errorstring,errorsize,
 						errnum,liveconnection);
-			if (debug) {
-				stdoutput.printf("error: %d - %.*s\n",
-						errnum,errorsize,errorstring);
-			}
+			debugWrite("error: %d - %.*s",
+					errnum,errorsize,errorstring);
 			break;
 		}
 
@@ -196,10 +180,8 @@ bool sqlrtrigger_splitmultiinsert::runBefore(sqlrserverconnection *sqlrcon,
 	// copy affected rows back to micur
 	cont->setAffectedRows(micur,affectedrows);
 
-	if (debug) {
-		stdoutput.printf("	affected rows: %lld\n",affectedrows);
-		stdoutput.printf("}\n");
-	}
+	debugWrite("affected rows: %lld",affectedrows);
+	debugEnd();
 
 	// clean up
 	cont->closeResultSet(sicur);
