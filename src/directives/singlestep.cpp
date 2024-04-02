@@ -20,8 +20,6 @@ class SQLRSERVER_DLLSPEC sqlrdirective_singlestep : public sqlrdirective {
 					uint32_t length);
 
 		sqlrservercontroller	*cont;
-
-		bool	debug;
 };
 
 sqlrdirective_singlestep::sqlrdirective_singlestep(
@@ -31,8 +29,6 @@ sqlrdirective_singlestep::sqlrdirective_singlestep(
 	debugFunction();
 
 	this->cont=cont;
-
-	debug=cont->getConfig()->getDebugDirectives();
 }
 
 bool sqlrdirective_singlestep::run(sqlrserverconnection *sqlrcon,

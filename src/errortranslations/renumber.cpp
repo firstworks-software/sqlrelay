@@ -19,8 +19,6 @@ class SQLRSERVER_DLLSPEC sqlrerrortranslation_renumber :
 					stringbuffer *translatederror);
 	private:
 		dictionary<int64_t,int64_t>	map;
-
-		bool	debug;
 };
 
 sqlrerrortranslation_renumber::sqlrerrortranslation_renumber(
@@ -28,8 +26,6 @@ sqlrerrortranslation_renumber::sqlrerrortranslation_renumber(
 						domnode *parameters) :
 				sqlrerrortranslation(cont,parameters) {
 	debugFunction();
-
-	debug=cont->getConfig()->getDebugErrorTranslations();
 
 	for (domnode *node=parameters->getFirstTagChild("renumber");
 		!node->isNullNode(); node=node->getNextTagSibling("renumber")) {
@@ -55,20 +51,17 @@ bool sqlrerrortranslation_renumber::run(sqlrserverconnection *sqlrcon,
 	*translatederrornumber=errornumber;
 	translatederror->append(error,errorlength);
 
-	if (debug) {
-		stdoutput.printf("original error number:\n\"%lld\"\n\n",
-								errornumber);
-	}
+	debugWrite("original error number:");
+	debugWrite("\"%lld\"",errornumber);
 
 	int64_t	to;
 	if (map.getValue(errornumber,&to)) {
 		*translatederrornumber=to;
 	}
 
-	if (debug) {
-		stdoutput.printf("translated to:\n\"%lld\"\n\n",
-							*translatederrornumber);
-	}
+	debugWrite("translated to:");
+	debugWrite("\"%lld\"",*translatederrornumber);
+
 	return true;
 }
 

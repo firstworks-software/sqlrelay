@@ -20,8 +20,6 @@ class SQLRSERVER_DLLSPEC sqlrdirective_custom_wf : public sqlrdirective {
 					uint32_t length);
 
 		sqlrservercontroller	*cont;
-
-		bool	debug;
 };
 
 sqlrdirective_custom_wf::sqlrdirective_custom_wf(
@@ -31,8 +29,6 @@ sqlrdirective_custom_wf::sqlrdirective_custom_wf(
 	debugFunction();
 
 	this->cont=cont;
-
-	debug=cont->getConfig()->getDebugDirectives();
 }
 
 #define KEYWORD_SQLEXECDIRECT "sqlexecdirect"
@@ -60,9 +56,7 @@ bool sqlrdirective_custom_wf::run(sqlrserverconnection *sqlrcon,
 
 	// check for rpc markers (which might follow the comments)
 	if (*line==MARKER_ODBC_RPC) {
-		if (debug) {
-			stdoutput.printf("%s...\n",MARKER_ODBC_RPC);
-		}
+		debugWrite("%s...",MARKER_ODBC_RPC);
 		sqlrcur->setExecuteDirect(true);
 		sqlrcur->setExecuteRpc(true);
 	}
@@ -88,9 +82,7 @@ void sqlrdirective_custom_wf::parseDirective(
 	if (!charstring::compare(directivestart,
 				KEYWORD_SQLEXECDIRECT,
 				length)) {
-		if (debug) {
-			stdoutput.printf("%s...\n",KEYWORD_SQLEXECDIRECT);
-		}
+		debugWrite("%s...",KEYWORD_SQLEXECDIRECT);
 		sqlrcur->setExecuteDirect(true);
 		return;
 	}
@@ -98,9 +90,7 @@ void sqlrdirective_custom_wf::parseDirective(
 	if (!charstring::compare(directivestart,
 				KEYWORD_SQLPREPARE,
 				length)) {
-		if (debug) {
-			stdoutput.printf("%s...\n",KEYWORD_SQLPREPARE);
-		}
+		debugWrite("%s...",KEYWORD_SQLPREPARE);
 		sqlrcur->setExecuteDirect(false);
 	}
 
@@ -119,15 +109,13 @@ void sqlrdirective_custom_wf::parseDirective(
 			// terminated someplace, and I already know this it
 			// appears to be an integer, so let it rip even though
 			// we would like to use the argumentsize.
-			if (debug) {
-				stdoutput.printf("%s%lld...\n",
+			debugWrite("%s%lld...",
 					KEYWORD_QUERYTIMEOUT,
 					charstring::convertToInteger(argument));
-			}
 			sqlrcur->setQueryTimeout(
 					charstring::convertToInteger(argument));
-		} else if (debug) {
-			stdoutput.printf("%s...bad argument...\n",
+		} else {
+			debugWrite("%s...bad argument...",
 					KEYWORD_QUERYTIMEOUT);
 		}
 		return;
