@@ -26,7 +26,6 @@ class sqlrroutersprivate {
 	friend class sqlrrouters;
 	private:
 		const char		*_connid;
-		sqlrservercontroller	*_cont;
 		const char		**_connids;
 		sqlrconnection		**_conns;
 		uint16_t		_conncount;
@@ -37,11 +36,11 @@ class sqlrroutersprivate {
 sqlrrouters::sqlrrouters(sqlrservercontroller *cont,
 				const char **connectionids,
 				sqlrconnection **connections,
-				uint16_t connectioncount) {
+				uint16_t connectioncount) :
+				sqlrservermodules(cont) {
 	debugFunction();
 	pvt=new sqlrroutersprivate;
 	pvt->_connid=NULL;
-	pvt->_cont=cont;
 	pvt->_connids=connectionids;
 	pvt->_conns=connections;
 	pvt->_conncount=connectioncount;
@@ -62,6 +61,10 @@ bool sqlrrouters::load(domnode *parameters) {
 	for (domnode *router=parameters->getFirstTagChild();
 			!router->isNullNode();
 			router=router->getNextTagSibling()) {
+
+		if (isModuleDisabled(router)) {
+			continue;
+		}
 
 		// load router
 		loadRouter(router);
@@ -101,14 +104,14 @@ void sqlrrouters::loadRouter(domnode *router) {
 		}
 	}
 
-	if (pvt->_cont->getConfig()->getDebugRouters()) {
+	if (cont->getConfig()->getDebugRouters()) {
 		stdoutput.printf("loading router: %s\n",module);
 	}
 
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the router module
 	stringbuffer	modulename;
-	modulename.append(pvt->_cont->getPaths()->getLibExecDir());
+	modulename.append(cont->getPaths()->getLibExecDir());
 	modulename.append(SQLR);
 	modulename.append("router_");
 	modulename.append(module)->append(".")->append(SQLRELAY_MODULESUFFIX);
@@ -142,7 +145,7 @@ void sqlrrouters::loadRouter(domnode *router) {
 		delete dl;
 		return;
 	}
-	sqlrrouter	*r=(*newRouter)(pvt->_cont,this,router);
+	sqlrrouter	*r=(*newRouter)(cont,this,router);
 
 #else
 

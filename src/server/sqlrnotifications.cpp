@@ -30,7 +30,8 @@ class sqlrnotificationsprivate {
 		singlylinkedlist< sqlrnotificationplugin * >	_llist;
 };
 
-sqlrnotifications::sqlrnotifications(sqlrpaths *sqlrpth) {
+sqlrnotifications::sqlrnotifications(sqlrpaths *sqlrpth) :
+						sqlrservermodules(NULL) {
 	debugFunction();
 	pvt=new sqlrnotificationsprivate;
 	pvt->_libexecdir=sqlrpth->getLibExecDir();
@@ -51,6 +52,10 @@ bool sqlrnotifications::load(domnode *parameters) {
 	for (domnode *notification=parameters->getFirstTagChild();
 			!notification->isNullNode();
 			notification=notification->getNextTagSibling()) {
+
+		if (isModuleDisabled(notification)) {
+			continue;
+		}
 
 		debugPrintf("loading notification ...\n");
 

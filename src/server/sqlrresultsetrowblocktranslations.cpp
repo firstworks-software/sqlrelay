@@ -27,8 +27,6 @@ class sqlrresultsetrowblocktranslationplugin {
 class sqlrresultsetrowblocktranslationsprivate {
 	friend class sqlrresultsetrowblocktranslations;
 	private:
-		sqlrservercontroller	*_cont;
-
 		bool			_debug;
 
 		singlylinkedlist< sqlrresultsetrowblocktranslationplugin * >
@@ -41,10 +39,10 @@ class sqlrresultsetrowblocktranslationsprivate {
 };
 
 sqlrresultsetrowblocktranslations::sqlrresultsetrowblocktranslations(
-						sqlrservercontroller *cont) {
+						sqlrservercontroller *cont) :
+						sqlrservermodules(cont) {
 	debugFunction();
 	pvt=new sqlrresultsetrowblocktranslationsprivate;
-	pvt->_cont=cont;
 	pvt->_debug=cont->getConfig()->getDebugResultSetRowBlockTranslations();
 	pvt->_rowblockcount=0;
 	pvt->_rowcount=0;
@@ -79,6 +77,10 @@ bool sqlrresultsetrowblocktranslations::load(domnode *parameters) {
 			resultsetrowblocktranslation=
 				resultsetrowblocktranslation->
 						getNextTagSibling()) {
+
+		if (isModuleDisabled(resultsetrowblocktranslation)) {
+			continue;
+		}
 
 		// load result set translation
 		loadResultSetRowBlockTranslation(resultsetrowblocktranslation);
@@ -129,7 +131,7 @@ void sqlrresultsetrowblocktranslations::loadResultSetRowBlockTranslation(
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the result set translation module
 	stringbuffer	modulename;
-	modulename.append(pvt->_cont->getPaths()->getLibExecDir());
+	modulename.append(cont->getPaths()->getLibExecDir());
 	modulename.append(SQLR);
 	modulename.append("resultsetrowblocktranslation_");
 	modulename.append(module)->append(".")->append(SQLRELAY_MODULESUFFIX);
@@ -168,8 +170,7 @@ void sqlrresultsetrowblocktranslations::loadResultSetRowBlockTranslation(
 		return;
 	}
 	sqlrresultsetrowblocktranslation	*rstr=
-		(*newResultSetTranslation)
-			(pvt->_cont,resultsetrowblocktranslation);
+		(*newResultSetTranslation)(cont,resultsetrowblocktranslation);
 
 #else
 	dynamiclib			*dl=NULL;

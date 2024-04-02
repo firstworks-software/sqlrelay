@@ -27,8 +27,6 @@ class sqlrbindvariabletranslationplugin {
 class sqlrbindvariabletranslationsprivate {
 	friend class sqlrbindvariabletranslations;
 	private:
-		sqlrservercontroller	*_cont;
-
 		bool		_debug;
 
 		singlylinkedlist< sqlrbindvariabletranslationplugin * >	_tlist;
@@ -37,11 +35,11 @@ class sqlrbindvariabletranslationsprivate {
 };
 
 sqlrbindvariabletranslations::sqlrbindvariabletranslations(
-					sqlrservercontroller *cont) {
+					sqlrservercontroller *cont) :
+					sqlrservermodules(cont) {
 
 	debugFunction();
 	pvt=new sqlrbindvariabletranslationsprivate;
-	pvt->_cont=cont;
 	pvt->_debug=cont->getConfig()->getDebugBindVariableTranslations();
 	pvt->_error=NULL;
 }
@@ -62,6 +60,10 @@ bool sqlrbindvariabletranslations::load(domnode *parameters) {
 			!bindvariabletranslation->isNullNode();
 			bindvariabletranslation=
 				bindvariabletranslation->getNextTagSibling()) {
+
+		if (isModuleDisabled(bindvariabletranslation)) {
+			continue;
+		}
 
 		// load bind variable translation
 		loadBindVariableTranslation(bindvariabletranslation);
@@ -112,7 +114,7 @@ void sqlrbindvariabletranslations::loadBindVariableTranslation(
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the bind variable translation module
 	stringbuffer	modulename;
-	modulename.append(pvt->_cont->getPaths()->getLibExecDir());
+	modulename.append(cont->getPaths()->getLibExecDir());
 	modulename.append(SQLR);
 	modulename.append("bindvariabletranslation_");
 	modulename.append(module)->append(".")->append(SQLRELAY_MODULESUFFIX);
@@ -149,7 +151,7 @@ void sqlrbindvariabletranslations::loadBindVariableTranslation(
 	}
 	sqlrbindvariabletranslation	*bvtr=
 		(*newBindVariableTranslation)
-			(pvt->_cont,bindvariabletranslation);
+			(cont,bindvariabletranslation);
 
 #else
 	dynamiclib			*dl=NULL;

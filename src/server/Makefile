@@ -9,6 +9,7 @@ LIBSQLRSERVERSRCS = \
 	sqlrserverconnection.cpp \
 	sqlrservercursor.cpp \
 	sqlrservermodule.cpp \
+	sqlrservermodules.cpp \
 	sqlrprotocols.cpp \
 	sqlrprotocol.cpp \
 	sqlrparser.cpp \
@@ -56,6 +57,7 @@ LIBSQLRSERVERLOBJS = \
 	sqlrserverconnection.$(OBJ) \
 	sqlrservercursor.$(OBJ) \
 	sqlrservermodule.$(OBJ) \
+	sqlrservermodules.$(OBJ) \
 	sqlrprotocols.$(OBJ) \
 	sqlrprotocol.$(OBJ) \
 	sqlrparser.$(OBJ) \

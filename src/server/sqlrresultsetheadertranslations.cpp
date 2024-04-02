@@ -27,8 +27,6 @@ class sqlrresultsetheadertranslationplugin {
 class sqlrresultsetheadertranslationsprivate {
 	friend class sqlrresultsetheadertranslations;
 	private:
-		sqlrservercontroller	*_cont;
-
 		bool		_debug;
 
 		singlylinkedlist
@@ -38,10 +36,10 @@ class sqlrresultsetheadertranslationsprivate {
 };
 
 sqlrresultsetheadertranslations::sqlrresultsetheadertranslations(
-						sqlrservercontroller *cont) {
+						sqlrservercontroller *cont) :
+						sqlrservermodules(cont) {
 	debugFunction();
 	pvt=new sqlrresultsetheadertranslationsprivate;
-	pvt->_cont=cont;
 	pvt->_debug=cont->getConfig()->getDebugResultSetHeaderTranslations();
 	pvt->_error=NULL;
 }
@@ -64,6 +62,10 @@ bool sqlrresultsetheadertranslations::load(domnode *parameters) {
 			resultsetheadertranslation=
 				resultsetheadertranslation->
 						getNextTagSibling()) {
+
+		if (isModuleDisabled(resultsetheadertranslation)) {
+			continue;
+		}
 
 		// load result set translation
 		loadResultSetHeaderTranslation(resultsetheadertranslation);
@@ -115,7 +117,7 @@ void sqlrresultsetheadertranslations::loadResultSetHeaderTranslation(
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the result set translation module
 	stringbuffer	modulename;
-	modulename.append(pvt->_cont->getPaths()->getLibExecDir());
+	modulename.append(cont->getPaths()->getLibExecDir());
 	modulename.append(SQLR);
 	modulename.append("resultsetheadertranslation_");
 	modulename.append(module)->append(".")->append(SQLRELAY_MODULESUFFIX);
@@ -153,8 +155,7 @@ void sqlrresultsetheadertranslations::loadResultSetHeaderTranslation(
 		return;
 	}
 	sqlrresultsetheadertranslation	*rstr=
-		(*newResultSetTranslation)
-			(pvt->_cont,resultsetheadertranslation);
+		(*newResultSetTranslation)(cont,resultsetheadertranslation);
 
 #else
 	dynamiclib			*dl=NULL;

@@ -24,15 +24,13 @@ class sqlrprotocolplugin {
 class sqlrprotocolsprivate {
 	friend class sqlrprotocols;
 	private:
-		sqlrservercontroller	*_cont;
-
 		dictionary< uint16_t , sqlrprotocolplugin * >	_protos;
 };
 
-sqlrprotocols::sqlrprotocols(sqlrservercontroller *cont) {
+sqlrprotocols::sqlrprotocols(sqlrservercontroller *cont) :
+						sqlrservermodules(cont) {
 	debugFunction();
 	pvt=new sqlrprotocolsprivate;
-	pvt->_cont=cont;
 }
 
 sqlrprotocols::~sqlrprotocols() {
@@ -51,6 +49,10 @@ bool sqlrprotocols::load(domnode *parameters) {
 	for (domnode *listener=parameters->getFirstTagChild();
 			!listener->isNullNode();
 			listener=listener->getNextTagSibling()) {
+
+		if (isModuleDisabled(listener)) {
+			continue;
+		}
 
 		debugPrintf("loading protocol ...\n");
 
@@ -91,7 +93,7 @@ void sqlrprotocols::loadProtocol(uint16_t index, domnode *listener) {
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the protocol module
 	stringbuffer	modulename;
-	modulename.append(pvt->_cont->getPaths()->getLibExecDir());
+	modulename.append(cont->getPaths()->getLibExecDir());
 	modulename.append(SQLR);
 	modulename.append("protocol_");
 	modulename.append(module)->append(".")->append(SQLRELAY_MODULESUFFIX);
@@ -122,7 +124,7 @@ void sqlrprotocols::loadProtocol(uint16_t index, domnode *listener) {
 		delete dl;
 		return;
 	}
-	sqlrprotocol	*pr=(*newProtocol)(pvt->_cont,listener);
+	sqlrprotocol	*pr=(*newProtocol)(cont,listener);
 
 #else
 

@@ -35,18 +35,16 @@ class sqlrdatabaseobject {
 class sqlrmoduledatasprivate {
 	friend class sqlrmoduledatas;
 	private:
-		sqlrservercontroller	*_cont;
-		
 		bool		_debug;
 
 		singlylinkedlist< sqlrmoduledataplugin * >	_mlist;
 		dictionary< const char *, sqlrmoduledata * >	_mdict;
 };
 
-sqlrmoduledatas::sqlrmoduledatas(sqlrservercontroller *cont) {
+sqlrmoduledatas::sqlrmoduledatas(sqlrservercontroller *cont) :
+						sqlrservermodules(cont) {
 	debugFunction();
 	pvt=new sqlrmoduledatasprivate;
-	pvt->_cont=cont;
 	pvt->_debug=cont->getConfig()->getDebugModuleDatas();
 }
 
@@ -65,6 +63,10 @@ bool sqlrmoduledatas::load(domnode *parameters) {
 	for (domnode *moduledata=parameters->getFirstTagChild();
 				!moduledata->isNullNode();
 				moduledata=moduledata->getNextTagSibling()) {
+
+		if (isModuleDisabled(moduledata)) {
+			continue;
+		}
 
 		// load moduledata
 		loadModuleData(moduledata);
@@ -111,7 +113,7 @@ void sqlrmoduledatas::loadModuleData(domnode *moduledata) {
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the moduledata module
 	stringbuffer	modulename;
-	modulename.append(pvt->_cont->getPaths()->getLibExecDir());
+	modulename.append(cont->getPaths()->getLibExecDir());
 	modulename.append(SQLR);
 	modulename.append("moduledata_");
 	modulename.append(module)->append(".")->append(SQLRELAY_MODULESUFFIX);

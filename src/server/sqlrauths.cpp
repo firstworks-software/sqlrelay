@@ -26,15 +26,12 @@ class sqlrauthplugin {
 class sqlrauthsprivate {
 	friend class sqlrauths;
 	private:
-		sqlrservercontroller	*_cont;
-
 		singlylinkedlist< sqlrauthplugin * >	_llist;
 };
 
-sqlrauths::sqlrauths(sqlrservercontroller *cont) {
+sqlrauths::sqlrauths(sqlrservercontroller *cont) : sqlrservermodules(cont) {
 	debugFunction();
 	pvt=new sqlrauthsprivate;
-	pvt->_cont=cont;
 }
 
 sqlrauths::~sqlrauths() {
@@ -50,8 +47,12 @@ bool sqlrauths::load(domnode *parameters, sqlrpwdencs *sqlrpe) {
 
 	// run through each set of auths
 	for (domnode *auth=parameters->getFirstTagChild("auth");
-			!auth->isNullNode();
-			auth=auth->getNextTagSibling("auth")) {
+				!auth->isNullNode();
+				auth=auth->getNextTagSibling("auth")) {
+
+		if (isModuleDisabled(auth)) {
+			continue;
+		}
 
 		debugPrintf("loading auth ...\n");
 
@@ -63,8 +64,7 @@ bool sqlrauths::load(domnode *parameters, sqlrpwdencs *sqlrpe) {
 
 void sqlrauths::unload() {
 	debugFunction();
-	for (listnode< sqlrauthplugin * > *node=
-						pvt->_llist.getFirst();
+	for (listnode< sqlrauthplugin * > *node=pvt->_llist.getFirst();
 						node; node=node->getNext()) {
 		sqlrauthplugin	*sqlrap=node->getValue();
 		delete sqlrap->au;
@@ -93,7 +93,7 @@ void sqlrauths::loadAuth(domnode *auth, sqlrpwdencs *sqlrpe) {
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the password encryption module
 	stringbuffer	modulename;
-	modulename.append(pvt->_cont->getPaths()->getLibExecDir());
+	modulename.append(cont->getPaths()->getLibExecDir());
 	modulename.append(SQLR);
 	modulename.append("auth_");
 	modulename.append(module)->append(".")->append(SQLRELAY_MODULESUFFIX);
@@ -126,7 +126,7 @@ void sqlrauths::loadAuth(domnode *auth, sqlrpwdencs *sqlrpe) {
 		delete dl;
 		return;
 	}
-	sqlrauth	*au=(*newAuth)(pvt->_cont,sqlrpe,auth);
+	sqlrauth	*au=(*newAuth)(cont,sqlrpe,auth);
 
 #else
 
@@ -159,8 +159,4 @@ const char *sqlrauths::auth(sqlrcredentials *cred) {
 		}
 	}
 	return NULL;
-}
-
-void sqlrauths::endSession() {
-	// nothing for now, maybe in the future
 }

@@ -30,7 +30,7 @@ class sqlrloggersprivate {
 		singlylinkedlist< sqlrloggerplugin * >	_llist;
 };
 
-sqlrloggers::sqlrloggers(sqlrpaths *sqlrpth) {
+sqlrloggers::sqlrloggers(sqlrpaths *sqlrpth) : sqlrservermodules(NULL) {
 	debugFunction();
 	pvt=new sqlrloggersprivate;
 	pvt->_libexecdir=sqlrpth->getLibExecDir();
@@ -50,6 +50,10 @@ bool sqlrloggers::load(domnode *parameters) {
 	// run through the logger list
 	for (domnode *logger=parameters->getFirstTagChild();
 		!logger->isNullNode(); logger=logger->getNextTagSibling()) {
+
+		if (isModuleDisabled(logger)) {
+			continue;
+		}
 
 		debugPrintf("loading logger ...\n");
 

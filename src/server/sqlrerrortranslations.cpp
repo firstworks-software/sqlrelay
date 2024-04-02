@@ -27,8 +27,6 @@ class sqlrerrortranslationplugin {
 class sqlrerrortranslationsprivate {
 	friend class sqlrerrortranslations;
 	private:
-		sqlrservercontroller	*_cont;
-		
 		bool		_debug;
 
 		singlylinkedlist< sqlrerrortranslationplugin * >	_tlist;
@@ -36,10 +34,10 @@ class sqlrerrortranslationsprivate {
 		const char	*_error;
 };
 
-sqlrerrortranslations::sqlrerrortranslations(sqlrservercontroller *cont) {
+sqlrerrortranslations::sqlrerrortranslations(sqlrservercontroller *cont) :
+						sqlrservermodules(cont) {
 	debugFunction();
 	pvt=new sqlrerrortranslationsprivate;
-	pvt->_cont=cont;
 	pvt->_debug=cont->getConfig()->getDebugErrorTranslations();
 	pvt->_error=NULL;
 }
@@ -59,6 +57,10 @@ bool sqlrerrortranslations::load(domnode *parameters) {
 	for (domnode *errortranslation=parameters->getFirstTagChild();
 		!errortranslation->isNullNode();
 		errortranslation=errortranslation->getNextTagSibling()) {
+
+		if (isModuleDisabled(errortranslation)) {
+			continue;
+		}
 
 		// load error translation
 		loadErrorTranslation(errortranslation);
@@ -107,7 +109,7 @@ void sqlrerrortranslations::loadErrorTranslation(domnode *errortranslation) {
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the error translation module
 	stringbuffer	modulename;
-	modulename.append(pvt->_cont->getPaths()->getLibExecDir());
+	modulename.append(cont->getPaths()->getLibExecDir());
 	modulename.append(SQLR);
 	modulename.append("errortranslation_");
 	modulename.append(module)->append(".")->append(SQLRELAY_MODULESUFFIX);
@@ -142,7 +144,7 @@ void sqlrerrortranslations::loadErrorTranslation(domnode *errortranslation) {
 	}
 	sqlrerrortranslation	*tr=
 		(*newErrorTranslation)
-			(pvt->_cont,errortranslation);
+			(cont,errortranslation);
 
 #else
 	dynamiclib		*dl=NULL;

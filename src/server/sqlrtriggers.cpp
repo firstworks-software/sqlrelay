@@ -25,18 +25,16 @@ class sqlrtriggerplugin {
 class sqlrtriggersprivate {
 	friend class sqlrtriggers;
 	private:
-		sqlrservercontroller	*_cont;
-
 		bool	_debug;
 
 		singlylinkedlist< sqlrtriggerplugin * >	_beforetriggers;
 		singlylinkedlist< sqlrtriggerplugin * >	_aftertriggers;
 };
 
-sqlrtriggers::sqlrtriggers(sqlrservercontroller *cont) {
+sqlrtriggers::sqlrtriggers(sqlrservercontroller *cont) :
+					sqlrservermodules(cont) {
 	debugFunction();
 	pvt=new sqlrtriggersprivate;
-	pvt->_cont=cont;
 	pvt->_debug=cont->getConfig()->getDebugTriggers();
 }
 
@@ -54,6 +52,10 @@ bool sqlrtriggers::load(domnode *parameters) {
 	// run through the trigger list
 	for (domnode *trigger=parameters->getFirstTagChild();
 		!trigger->isNullNode(); trigger=trigger->getNextTagSibling()) {
+
+		if (isModuleDisabled(trigger)) {
+			continue;
+		}
 
 		bool	before=(charstring::contains(
 					trigger->getAttributeValue("when"),
@@ -143,7 +145,7 @@ sqlrtriggerplugin *sqlrtriggers::loadTrigger(domnode *trigger) {
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the trigger module
 	stringbuffer	modulename;
-	modulename.append(pvt->_cont->getPaths()->getLibExecDir());
+	modulename.append(cont->getPaths()->getLibExecDir());
 	modulename.append(SQLR);
 	modulename.append("trigger_");
 	modulename.append(module)->append(".")->append(SQLRELAY_MODULESUFFIX);
@@ -174,7 +176,7 @@ sqlrtriggerplugin *sqlrtriggers::loadTrigger(domnode *trigger) {
 		delete dl;
 		return NULL;
 	}
-	sqlrtrigger	*tr=(*newTrigger)(pvt->_cont,trigger);
+	sqlrtrigger	*tr=(*newTrigger)(cont,trigger);
 
 #else
 

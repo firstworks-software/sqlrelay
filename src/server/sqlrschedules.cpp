@@ -25,15 +25,13 @@ class sqlrscheduleplugin {
 class sqlrschedulesprivate {
 	friend class sqlrschedules;
 	private:
-		sqlrservercontroller	*_cont;
-
 		singlylinkedlist< sqlrscheduleplugin * >	_llist;
 };
 
-sqlrschedules::sqlrschedules(sqlrservercontroller *cont) {
+sqlrschedules::sqlrschedules(sqlrservercontroller *cont) :
+					sqlrservermodules(cont) {
 	debugFunction();
 	pvt=new sqlrschedulesprivate;
-	pvt->_cont=cont;
 }
 
 sqlrschedules::~sqlrschedules() {
@@ -51,6 +49,10 @@ bool sqlrschedules::load(domnode *parameters) {
 	for (domnode *schedule=parameters->getFirstTagChild();
 			!schedule->isNullNode();
 			schedule=schedule->getNextTagSibling()) {
+
+		if (isModuleDisabled(schedule)) {
+			continue;
+		}
 
 		debugPrintf("loading schedule ...\n");
 
@@ -97,7 +99,7 @@ void sqlrschedules::loadSchedule(domnode *schedule) {
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the schedule module
 	stringbuffer	modulename;
-	modulename.append(pvt->_cont->getPaths()->getLibExecDir());
+	modulename.append(cont->getPaths()->getLibExecDir());
 	modulename.append(SQLR);
 	modulename.append("schedule_");
 	modulename.append(module)->append(".")->append(SQLRELAY_MODULESUFFIX);
@@ -129,7 +131,7 @@ void sqlrschedules::loadSchedule(domnode *schedule) {
 		delete dl;
 		return;
 	}
-	sqlrschedule	*s=(*newSchedule)(pvt->_cont,schedule);
+	sqlrschedule	*s=(*newSchedule)(cont,schedule);
 
 #else
 
@@ -158,8 +160,4 @@ bool sqlrschedules::allowed(sqlrserverconnection *sqlrcon, const char *user) {
 		}
 	}
 	return true;
-}
-
-void sqlrschedules::endSession() {
-	// nothing for now, maybe in the future
 }

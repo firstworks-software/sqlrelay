@@ -5318,6 +5318,10 @@ class SQLRSERVER_DLLSPEC sqlrservermodule : public sqlrserverbase {
 		/** Deletes this instance of sqlrservermodule. */
 		virtual	~sqlrservermodule();
 
+		/** Returns true or false depending on whether the enabled
+		 *  parameter was set to yes or no. */
+		bool	getEnabled();
+
 		/** Called by the sqlrservercontroller at the end of a
 		 *  transaction.
 		 *

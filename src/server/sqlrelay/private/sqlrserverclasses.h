@@ -1,7 +1,20 @@
 // Copyright (c) 1999-2019 David Muse
 // See the file COPYING for more information
 
-class SQLRSERVER_DLLSPEC sqlrprotocols {
+class SQLRSERVER_DLLSPEC sqlrservermodules {
+	public:
+		sqlrservermodules(sqlrservercontroller *cont);
+		virtual	~sqlrservermodules();
+
+		bool	isModuleDisabled(domnode *parameters);
+
+		virtual void	endTransaction(bool commit);
+		virtual void	endSession();
+	protected:
+		sqlrservercontroller	*cont;
+};
+
+class SQLRSERVER_DLLSPEC sqlrprotocols : public sqlrservermodules {
 	public:
 		sqlrprotocols(sqlrservercontroller *cont);
 		~sqlrprotocols();
@@ -19,7 +32,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocols {
 		sqlrprotocolsprivate	*pvt;
 };
 
-class SQLRSERVER_DLLSPEC sqlrauths {
+class SQLRSERVER_DLLSPEC sqlrauths : public sqlrservermodules {
 	public:
 		sqlrauths(sqlrservercontroller *cont);
 		~sqlrauths();
@@ -28,8 +41,6 @@ class SQLRSERVER_DLLSPEC sqlrauths {
 					sqlrpwdencs *sqlrpe);
 		const char	*auth(sqlrcredentials *cred);
 
-		void	endSession();
-
 	private:
 		void	unload();
 		void	loadAuth(domnode *auth, sqlrpwdencs *sqlrpe);
@@ -37,7 +48,7 @@ class SQLRSERVER_DLLSPEC sqlrauths {
 		sqlrauthsprivate	*pvt;
 };
 
-class SQLRSERVER_DLLSPEC sqlrloggers {
+class SQLRSERVER_DLLSPEC sqlrloggers : public sqlrservermodules {
 	public:
 		sqlrloggers(sqlrpaths *sqlrpth);
 		~sqlrloggers();
@@ -62,7 +73,7 @@ class SQLRSERVER_DLLSPEC sqlrloggers {
 		sqlrloggersprivate	*pvt;
 };
 
-class SQLRSERVER_DLLSPEC sqlrnotifications {
+class SQLRSERVER_DLLSPEC sqlrnotifications : public sqlrservermodules {
 	public:
 		sqlrnotifications(sqlrpaths *sqlrpth);
 		~sqlrnotifications();
@@ -84,7 +95,7 @@ class SQLRSERVER_DLLSPEC sqlrnotifications {
 		sqlrnotificationsprivate	*pvt;
 };
 
-class SQLRSERVER_DLLSPEC sqlrschedules {
+class SQLRSERVER_DLLSPEC sqlrschedules : public sqlrservermodules {
 	public:
 		sqlrschedules(sqlrservercontroller *cont);
 		~sqlrschedules();
@@ -93,8 +104,6 @@ class SQLRSERVER_DLLSPEC sqlrschedules {
 		bool	allowed(sqlrserverconnection *sqlrcon,
 						const char *user);
 
-		void	endSession();
-
 	private:
 		void		unload();
 		void		loadSchedule(domnode *schedule);
@@ -102,7 +111,7 @@ class SQLRSERVER_DLLSPEC sqlrschedules {
 		sqlrschedulesprivate	*pvt;
 };
 
-class SQLRSERVER_DLLSPEC sqlrrouters {
+class SQLRSERVER_DLLSPEC sqlrrouters : public sqlrservermodules {
 	friend class routerconnection;
 	friend class routercursor;
 	public:
@@ -136,7 +145,7 @@ class SQLRSERVER_DLLSPEC sqlrrouters {
 		sqlrroutersprivate	*pvt;
 };
 
-class SQLRSERVER_DLLSPEC sqlrdirectives {
+class SQLRSERVER_DLLSPEC sqlrdirectives : public sqlrservermodules {
 	public:
 		sqlrdirectives(sqlrservercontroller *cont);
 		~sqlrdirectives();
@@ -153,7 +162,7 @@ class SQLRSERVER_DLLSPEC sqlrdirectives {
 		sqlrdirectivesprivate	*pvt;
 };
 
-class SQLRSERVER_DLLSPEC sqlrquerytranslations {
+class SQLRSERVER_DLLSPEC sqlrquerytranslations : public sqlrservermodules {
 	public:
 		sqlrquerytranslations(sqlrservercontroller *cont);
 		~sqlrquerytranslations();
@@ -204,7 +213,7 @@ class SQLRSERVER_DLLSPEC sqlrquerytranslations {
 
 typedef sqlrquerytranslations sqlrtranslations;
 
-class SQLRSERVER_DLLSPEC sqlrfilters {
+class SQLRSERVER_DLLSPEC sqlrfilters : public sqlrservermodules {
 	public:
 		sqlrfilters(sqlrservercontroller *cont);
 		~sqlrfilters();
@@ -241,7 +250,8 @@ class SQLRSERVER_DLLSPEC sqlrfilters {
 		sqlrfiltersprivate	*pvt;
 };
 
-class SQLRSERVER_DLLSPEC sqlrbindvariabletranslations {
+class SQLRSERVER_DLLSPEC sqlrbindvariabletranslations :
+						public sqlrservermodules {
 	public:
 		sqlrbindvariabletranslations(sqlrservercontroller *cont);
 		~sqlrbindvariabletranslations();
@@ -263,7 +273,7 @@ class SQLRSERVER_DLLSPEC sqlrbindvariabletranslations {
 		sqlrbindvariabletranslationsprivate	*pvt;
 };
 
-class SQLRSERVER_DLLSPEC sqlrresultsettranslations {
+class SQLRSERVER_DLLSPEC sqlrresultsettranslations : public sqlrservermodules {
 	public:
 		sqlrresultsettranslations(sqlrservercontroller *cont);
 		~sqlrresultsettranslations();
@@ -289,7 +299,8 @@ class SQLRSERVER_DLLSPEC sqlrresultsettranslations {
 		sqlrresultsettranslationsprivate	*pvt;
 };
 
-class SQLRSERVER_DLLSPEC sqlrresultsetrowtranslations {
+class SQLRSERVER_DLLSPEC sqlrresultsetrowtranslations :
+						public sqlrservermodules {
 	public:
 		sqlrresultsetrowtranslations(sqlrservercontroller *cont);
 		~sqlrresultsetrowtranslations();
@@ -315,7 +326,8 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowtranslations {
 		sqlrresultsetrowtranslationsprivate	*pvt;
 };
 
-class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslations {
+class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslations :
+						public sqlrservermodules {
 	public:
 		sqlrresultsetrowblocktranslations(sqlrservercontroller *cont);
 		~sqlrresultsetrowblocktranslations();
@@ -357,7 +369,8 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslations {
 		sqlrresultsetrowblocktranslationsprivate	*pvt;
 };
 
-class SQLRSERVER_DLLSPEC sqlrresultsetheadertranslations {
+class SQLRSERVER_DLLSPEC sqlrresultsetheadertranslations :
+						public sqlrservermodules {
 	public:
 		sqlrresultsetheadertranslations(sqlrservercontroller *cont);
 		~sqlrresultsetheadertranslations();
@@ -398,7 +411,7 @@ class SQLRSERVER_DLLSPEC sqlrresultsetheadertranslations {
 		sqlrresultsetheadertranslationsprivate	*pvt;
 };
 
-class SQLRSERVER_DLLSPEC sqlrerrortranslations {
+class SQLRSERVER_DLLSPEC sqlrerrortranslations : public sqlrservermodules {
 	public:
 		sqlrerrortranslations(sqlrservercontroller *cont);
 		~sqlrerrortranslations();
@@ -424,7 +437,7 @@ class SQLRSERVER_DLLSPEC sqlrerrortranslations {
 		sqlrerrortranslationsprivate	*pvt;
 };
 
-class SQLRSERVER_DLLSPEC sqlrtriggers {
+class SQLRSERVER_DLLSPEC sqlrtriggers : public sqlrservermodules {
 	public:
 		sqlrtriggers(sqlrservercontroller *cont);
 		~sqlrtriggers();
@@ -451,7 +464,7 @@ class SQLRSERVER_DLLSPEC sqlrtriggers {
 		sqlrtriggersprivate	*pvt;
 };
 
-class SQLRSERVER_DLLSPEC sqlrqueries {
+class SQLRSERVER_DLLSPEC sqlrqueries : public sqlrservermodules {
 	public:
 		sqlrqueries(sqlrservercontroller *cont);
 		~sqlrqueries();
@@ -472,7 +485,7 @@ class SQLRSERVER_DLLSPEC sqlrqueries {
 		sqlrqueriesprivate	*pvt;
 };
 
-class SQLRSERVER_DLLSPEC sqlrmoduledatas {
+class SQLRSERVER_DLLSPEC sqlrmoduledatas : public sqlrservermodules {
 	public:
 		sqlrmoduledatas(sqlrservercontroller *cont);
 		~sqlrmoduledatas();

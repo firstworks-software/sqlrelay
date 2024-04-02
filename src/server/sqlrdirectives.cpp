@@ -25,17 +25,15 @@ class sqlrdirectiveplugin {
 class sqlrdirectivesprivate {
 	friend class sqlrdirectives;
 	private:
-		sqlrservercontroller	*_cont;
-		
 		bool	_debug;
 
 		singlylinkedlist< sqlrdirectiveplugin * >	_dlist;
 };
 
-sqlrdirectives::sqlrdirectives(sqlrservercontroller *cont) {
+sqlrdirectives::sqlrdirectives(sqlrservercontroller *cont) :
+						sqlrservermodules(cont) {
 	debugFunction();
 	pvt=new sqlrdirectivesprivate;
-	pvt->_cont=cont;
 	pvt->_debug=cont->getConfig()->getDebugDirectives();
 }
 
@@ -54,6 +52,10 @@ bool sqlrdirectives::load(domnode *parameters) {
 	for (domnode *directive=parameters->getFirstTagChild();
 				!directive->isNullNode();
 				directive=directive->getNextTagSibling()) {
+
+		if (isModuleDisabled(directive)) {
+			continue;
+		}
 
 		// load directive
 		loadDirective(directive);
@@ -100,7 +102,7 @@ void sqlrdirectives::loadDirective(domnode *directive) {
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the directive module
 	stringbuffer	modulename;
-	modulename.append(pvt->_cont->getPaths()->getLibExecDir());
+	modulename.append(cont->getPaths()->getLibExecDir());
 	modulename.append(SQLR);
 	modulename.append("directive_");
 	modulename.append(module)->append(".")->append(SQLRELAY_MODULESUFFIX);
@@ -132,7 +134,7 @@ void sqlrdirectives::loadDirective(domnode *directive) {
 		delete dl;
 		return;
 	}
-	sqlrdirective	*dr=(*newDirective)(pvt->_cont,directive);
+	sqlrdirective	*dr=(*newDirective)(cont,directive);
 
 #else
 	dynamiclib	*dl=NULL;

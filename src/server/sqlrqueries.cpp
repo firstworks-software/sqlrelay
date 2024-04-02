@@ -25,15 +25,12 @@ class sqlrqueryplugin {
 class sqlrqueriesprivate {
 	friend class sqlrqueries;
 	private:
-		sqlrservercontroller	*_cont;
-
 		singlylinkedlist< sqlrqueryplugin * >	_llist;
 };
 
-sqlrqueries::sqlrqueries(sqlrservercontroller *cont) {
+sqlrqueries::sqlrqueries(sqlrservercontroller *cont) : sqlrservermodules(cont) {
 	debugFunction();
 	pvt=new sqlrqueriesprivate;
-	pvt->_cont=cont;
 }
 
 sqlrqueries::~sqlrqueries() {
@@ -50,6 +47,10 @@ bool sqlrqueries::load(domnode *parameters) {
 	// run through the query list
 	for (domnode *query=parameters->getFirstTagChild();
 		!query->isNullNode(); query=query->getNextTagSibling()) {
+
+		if (isModuleDisabled(query)) {
+			continue;
+		}
 
 		debugPrintf("loading query ...\n");
 
@@ -96,7 +97,7 @@ void sqlrqueries::loadQuery(domnode *query) {
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the query module
 	stringbuffer	modulename;
-	modulename.append(pvt->_cont->getPaths()->getLibExecDir());
+	modulename.append(cont->getPaths()->getLibExecDir());
 	modulename.append(SQLR);
 	modulename.append("query_");
 	modulename.append(module)->append(".")->append(SQLRELAY_MODULESUFFIX);
@@ -127,7 +128,7 @@ void sqlrqueries::loadQuery(domnode *query) {
 		delete dl;
 		return;
 	}
-	sqlrquery	*qr=(*newQuery)(pvt->_cont,query);
+	sqlrquery	*qr=(*newQuery)(cont,query);
 
 #else
 

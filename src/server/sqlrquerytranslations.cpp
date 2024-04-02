@@ -35,8 +35,6 @@ class sqlrdatabaseobject {
 class sqlrquerytranslationsprivate {
 	friend class sqlrquerytranslations;
 	private:
-		sqlrservercontroller	*_cont;
-		
 		xmldom		*_tree;
 		bool		_debug;
 
@@ -47,10 +45,10 @@ class sqlrquerytranslationsprivate {
 		bool		_useoriginalonerror;
 };
 
-sqlrquerytranslations::sqlrquerytranslations(sqlrservercontroller *cont) {
+sqlrquerytranslations::sqlrquerytranslations(sqlrservercontroller *cont) :
+						sqlrservermodules(cont) {
 	debugFunction();
 	pvt=new sqlrquerytranslationsprivate;
-	pvt->_cont=cont;
 	pvt->_debug=cont->getConfig()->getDebugQueryTranslations();
 	pvt->_error=NULL;
 	pvt->_tree=NULL;
@@ -78,6 +76,10 @@ bool sqlrquerytranslations::load(domnode *parameters) {
 	for (domnode *translation=parameters->getFirstTagChild();
 				!translation->isNullNode();
 				translation=translation->getNextTagSibling()) {
+
+		if (isModuleDisabled(translation)) {
+			continue;
+		}
 
 		// load translation
 		loadTranslation(translation);
@@ -124,7 +126,7 @@ void sqlrquerytranslations::loadTranslation(domnode *translation) {
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the translation module
 	stringbuffer	modulename;
-	modulename.append(pvt->_cont->getPaths()->getLibExecDir());
+	modulename.append(cont->getPaths()->getLibExecDir());
 	modulename.append(SQLR);
 	modulename.append("querytranslation_");
 	modulename.append(module)->append(".")->append(SQLRELAY_MODULESUFFIX);
@@ -134,7 +136,7 @@ void sqlrquerytranslations::loadTranslation(domnode *translation) {
 		// try again with sqlrtranslation_...
 		// (the old naming convention)
 		modulename.clear();
-		modulename.append(pvt->_cont->getPaths()->getLibExecDir());
+		modulename.append(cont->getPaths()->getLibExecDir());
 		modulename.append(SQLR);
 		modulename.append("translation_");
 		modulename.append(module)->append(".");
@@ -179,8 +181,7 @@ void sqlrquerytranslations::loadTranslation(domnode *translation) {
 			return;
 		}
 	}
-	sqlrquerytranslation	*tr=(*newQueryTranslation)(pvt->_cont,
-								translation);
+	sqlrquerytranslation	*tr=(*newQueryTranslation)(cont,translation);
 
 #else
 	dynamiclib	*dl=NULL;

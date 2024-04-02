@@ -27,18 +27,15 @@ class sqlrfilterplugin {
 class sqlrfiltersprivate {
 	friend class sqlrfilters;
 	private:
-		sqlrservercontroller	*_cont;
-
 		bool	_debug;
 
 		singlylinkedlist< sqlrfilterplugin * >	_beforefilters;
 		singlylinkedlist< sqlrfilterplugin * >	_afterfilters;
 };
 
-sqlrfilters::sqlrfilters(sqlrservercontroller *cont) {
+sqlrfilters::sqlrfilters(sqlrservercontroller *cont) : sqlrservermodules(cont) {
 	debugFunction();
 	pvt=new sqlrfiltersprivate;
-	pvt->_cont=cont;
 	pvt->_debug=cont->getConfig()->getDebugFilters();
 }
 
@@ -57,6 +54,10 @@ bool sqlrfilters::load(domnode *parameters) {
 	for (domnode *filter=parameters->getFirstTagChild();
 				!filter->isNullNode();
 				filter=filter->getNextTagSibling()) {
+
+		if (isModuleDisabled(parameters)) {
+			continue;
+		}
 
 		if (charstring::contains(
 				filter->getAttributeValue("when"),
@@ -119,7 +120,7 @@ void sqlrfilters::loadFilter(domnode *filter,
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the filter module
 	stringbuffer	modulename;
-	modulename.append(pvt->_cont->getPaths()->getLibExecDir());
+	modulename.append(cont->getPaths()->getLibExecDir());
 	modulename.append(SQLR);
 	modulename.append("filter_");
 	modulename.append(module)->append(".")->append(SQLRELAY_MODULESUFFIX);
@@ -151,7 +152,7 @@ void sqlrfilters::loadFilter(domnode *filter,
 		delete dl;
 		return;
 	}
-	sqlrfilter	*f=(*newFilter)(pvt->_cont,filter);
+	sqlrfilter	*f=(*newFilter)(cont,filter);
 
 #else
 	dynamiclib	*dl=NULL;

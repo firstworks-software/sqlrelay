@@ -8,6 +8,7 @@ class sqlrservermoduleprivate {
 	friend class sqlrservermodule;
 	public:
 		domnode	*_parameters;
+		bool	_enabled;
 };
 
 sqlrservermodule::sqlrservermodule(sqlrservercontroller *cont,
@@ -38,6 +39,10 @@ sqlrservermodule::sqlrservermodule(sqlrservercontroller *cont,
 			setDebug(true);
 		}
 	}
+
+	// set enabled flag
+	pvt->_enabled=!charstring::isNo(
+			parameters->getAttributeValue("enabled"));
 }
 
 sqlrservermodule::~sqlrservermodule() {
@@ -46,6 +51,10 @@ sqlrservermodule::~sqlrservermodule() {
 
 domnode *sqlrservermodule::getParameters() {
 	return pvt->_parameters;
+}
+
+bool sqlrservermodule::getEnabled() {
+	return pvt->_enabled;
 }
 
 void sqlrservermodule::endTransaction(bool commit) {
