@@ -15,6 +15,7 @@
 
 sqlrdirectives::sqlrdirectives(sqlrservercontroller *cont) :
 						sqlrservermodules(cont) {
+	pvt=NULL;
 	setDebug(cont->getConfig()->getDebugDirectives());
 }
 

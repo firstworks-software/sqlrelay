@@ -16,6 +16,7 @@
 
 sqlrschedules::sqlrschedules(sqlrservercontroller *cont) :
 					sqlrservermodules(cont) {
+	pvt=NULL;
 }
 
 sqlrschedules::~sqlrschedules() {

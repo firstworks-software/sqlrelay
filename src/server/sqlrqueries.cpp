@@ -15,6 +15,7 @@
 #endif
 
 sqlrqueries::sqlrqueries(sqlrservercontroller *cont) : sqlrservermodules(cont) {
+	pvt=NULL;
 }
 
 sqlrqueries::~sqlrqueries() {

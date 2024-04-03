@@ -16,6 +16,7 @@
 
 sqlrtriggers::sqlrtriggers(sqlrservercontroller *cont) :
 					sqlrservermodules(cont) {
+	pvt=NULL;
 	setDebug(cont->getConfig()->getDebugTriggers());
 }
 

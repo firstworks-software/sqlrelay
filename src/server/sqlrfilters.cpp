@@ -16,6 +16,7 @@
 #endif
 
 sqlrfilters::sqlrfilters(sqlrservercontroller *cont) : sqlrservermodules(cont) {
+	pvt=NULL;
 	setDebug(cont->getConfig()->getDebugFilters());
 }
 
