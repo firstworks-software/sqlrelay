@@ -5,8 +5,6 @@
 
 #include <rudiments/domnode.h>
 #include <rudiments/stdio.h>
-//#define DEBUG_MESSAGES 1
-#include <rudiments/debugprint.h>
 
 #include <config.h>
 
@@ -23,18 +21,15 @@ class sqlrschedulesprivate {
 
 sqlrschedules::sqlrschedules(sqlrservercontroller *cont) :
 					sqlrservermodules(cont) {
-	debugFunction();
 	pvt=new sqlrschedulesprivate;
 }
 
 sqlrschedules::~sqlrschedules() {
-	debugFunction();
 	unload();
 	delete pvt;
 }
 
 bool sqlrschedules::load(domnode *parameters) {
-	debugFunction();
 
 	unload();
 
@@ -47,8 +42,6 @@ bool sqlrschedules::load(domnode *parameters) {
 			continue;
 		}
 
-		debugPrintf("loading schedule ...\n");
-
 		// load schedule
 		loadSchedule(schedule);
 	}
@@ -56,8 +49,6 @@ bool sqlrschedules::load(domnode *parameters) {
 }
 
 void sqlrschedules::loadSchedule(domnode *schedule) {
-
-	debugFunction();
 
 	// ignore non-schedules
 	if (charstring::compare(schedule->getName(),"schedule")) {
@@ -74,7 +65,7 @@ void sqlrschedules::loadSchedule(domnode *schedule) {
 		}
 	}
 
-	debugPrintf("loading schedule: %s\n",module);
+	debugWrite("loading schedule module: %s",module);
 
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the schedule module
@@ -123,6 +114,8 @@ void sqlrschedules::loadSchedule(domnode *schedule) {
 	}
 #endif
 
+	debugWrite("success");
+
 	// add the plugin to the list
 	sqlrmoduleplugin	*sqlrmp=new sqlrmoduleplugin;
 	sqlrmp->m=s;
@@ -132,9 +125,12 @@ void sqlrschedules::loadSchedule(domnode *schedule) {
 }
 
 bool sqlrschedules::allowed(sqlrserverconnection *sqlrcon, const char *user) {
-	debugFunction();
+
 	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
+
+		debugWrite("checking schedule: %s...",node->getValue()->module);
+
 		sqlrschedule	*s=(sqlrschedule *)node->getValue()->m;
 		if (!s->allowed(sqlrcon,user)) {
 			return false;

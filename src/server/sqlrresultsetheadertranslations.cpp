@@ -6,8 +6,6 @@
 #include <rudiments/process.h>
 #include <rudiments/character.h>
 #include <rudiments/stdio.h>
-//#define DEBUG_MESSAGES 1
-#include <rudiments/debugprint.h>
 
 #include <config.h>
 
@@ -20,28 +18,23 @@
 class sqlrresultsetheadertranslationsprivate {
 	friend class sqlrresultsetheadertranslations;
 	private:
-		bool		_debug;
-
 		const char	*_error;
 };
 
 sqlrresultsetheadertranslations::sqlrresultsetheadertranslations(
 						sqlrservercontroller *cont) :
 						sqlrservermodules(cont) {
-	debugFunction();
 	pvt=new sqlrresultsetheadertranslationsprivate;
-	pvt->_debug=cont->getConfig()->getDebugResultSetHeaderTranslations();
+	setDebug(cont->getConfig()->getDebugResultSetHeaderTranslations());
 	pvt->_error=NULL;
 }
 
 sqlrresultsetheadertranslations::~sqlrresultsetheadertranslations() {
-	debugFunction();
 	unload();
 	delete pvt;
 }
 
 bool sqlrresultsetheadertranslations::load(domnode *parameters) {
-	debugFunction();
 
 	unload();
 
@@ -66,7 +59,6 @@ bool sqlrresultsetheadertranslations::load(domnode *parameters) {
 
 void sqlrresultsetheadertranslations::loadResultSetHeaderTranslation(
 				domnode *resultsetheadertranslation) {
-	debugFunction();
 
 	// ignore non-resultsetheadertranslations
 	if (charstring::compare(resultsetheadertranslation->getName(),
@@ -85,10 +77,7 @@ void sqlrresultsetheadertranslations::loadResultSetHeaderTranslation(
 		}
 	}
 
-	if (pvt->_debug) {
-		stdoutput.printf("loading result set "
-					"header translation: %s\n",module);
-	}
+	debugWrite("loading result set header translation: %s",module);
 
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the result set translation module
@@ -142,9 +131,7 @@ void sqlrresultsetheadertranslations::loadResultSetHeaderTranslation(
 	}
 #endif
 
-	if (pvt->_debug) {
-		stdoutput.printf("success\n");
-	}
+	debugWrite("success");
 
 	// add the plugin to the list
 	sqlrmoduleplugin	*sqlrrstp=new sqlrmoduleplugin;
@@ -175,16 +162,14 @@ bool sqlrresultsetheadertranslations::run(sqlrserverconnection *sqlrcon,
 					uint16_t **columnisautoincrements,
 					const char ***columntables,
 					uint16_t **columntablesizes) {
-	debugFunction();
 
 	pvt->_error=NULL;
 
 	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
-		if (pvt->_debug) {
-			stdoutput.printf("\nrunning translation:  %s...\n\n",
+
+		debugWrite("running result set header translation: %s...",
 						node->getValue()->module);
-		}
 
 		sqlrresultsetheadertranslation	*rstr=
 				(sqlrresultsetheadertranslation *)

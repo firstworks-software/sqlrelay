@@ -8,7 +8,7 @@ class SQLRSERVER_DLLSPEC sqlrmoduleplugin {
 		const char		*module;
 };
 
-class SQLRSERVER_DLLSPEC sqlrservermodules {
+class SQLRSERVER_DLLSPEC sqlrservermodules : public sqlrserverbase {
 	public:
 		sqlrservermodules(sqlrservercontroller *cont);
 		virtual	~sqlrservermodules();
@@ -170,7 +170,7 @@ class SQLRSERVER_DLLSPEC sqlrquerytranslations : public sqlrservermodules {
 		bool	getUseOriginalOnError();
 
 	private:
-		void	loadTranslation(domnode *translation);
+		void	loadQueryTranslation(domnode *translation);
 
 		sqlrdatabaseobject *createDatabaseObject(
 						const char *database,

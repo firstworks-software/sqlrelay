@@ -6,8 +6,6 @@
 #include <rudiments/process.h>
 #include <rudiments/character.h>
 #include <rudiments/stdio.h>
-//#define DEBUG_MESSAGES
-#include <rudiments/debugprint.h>
 
 #include <config.h>
 
@@ -29,7 +27,6 @@ class sqlrquerytranslationsprivate {
 	friend class sqlrquerytranslations;
 	private:
 		xmldom		*_tree;
-		bool		_debug;
 
 		const char	*_error;
 
@@ -38,22 +35,19 @@ class sqlrquerytranslationsprivate {
 
 sqlrquerytranslations::sqlrquerytranslations(sqlrservercontroller *cont) :
 						sqlrservermodules(cont) {
-	debugFunction();
 	pvt=new sqlrquerytranslationsprivate;
-	pvt->_debug=cont->getConfig()->getDebugQueryTranslations();
+	setDebug(cont->getConfig()->getDebugQueryTranslations());
 	pvt->_error=NULL;
 	pvt->_tree=NULL;
 	pvt->_useoriginalonerror=true;
 }
 
 sqlrquerytranslations::~sqlrquerytranslations() {
-	debugFunction();
 	unload();
 	delete pvt;
 }
 
 bool sqlrquerytranslations::load(domnode *parameters) {
-	debugFunction();
 
 	unload();
 
@@ -73,14 +67,13 @@ bool sqlrquerytranslations::load(domnode *parameters) {
 		}
 
 		// load translation
-		loadTranslation(translation);
+		loadQueryTranslation(translation);
 	}
 
 	return true;
 }
 
-void sqlrquerytranslations::loadTranslation(domnode *translation) {
-	debugFunction();
+void sqlrquerytranslations::loadQueryTranslation(domnode *translation) {
 
 	// ignore non-translations
 	if (charstring::compare(translation->getName(),"querytranslation")) {
@@ -97,9 +90,7 @@ void sqlrquerytranslations::loadTranslation(domnode *translation) {
 		}
 	}
 
-	if (pvt->_debug) {
-		stdoutput.printf("loading translation module: %s\n",module);
-	}
+	debugWrite("loading query translation module: %s",module);
 
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the translation module
@@ -170,9 +161,7 @@ void sqlrquerytranslations::loadTranslation(domnode *translation) {
 	}
 #endif
 
-	if (pvt->_debug) {
-		stdoutput.printf("success\n");
-	}
+	debugWrite("success");
 
 	// add the plugin to the list
 	sqlrmoduleplugin	*sqlrmpp=new sqlrmoduleplugin;
@@ -188,7 +177,6 @@ bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
 					const char *query,
 					uint32_t querysize,
 					stringbuffer *translatedquery) {
-	debugFunction();
 
 	pvt->_error=NULL;
 
@@ -197,17 +185,13 @@ bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
 	// else...
 	/*if (!querysize || !query) {
 		pvt->_error="query was empty or null";
-		if (pvt->_debug) {
-			stdoutput.printf("\n%s\n\n",pvt->_error);
-		}
+		debugWrite(pvt->_error);
 		return false;
 	}*/
 
 	if (!translatedquery) {
 		pvt->_error="buffer for translated query was null";
-		if (pvt->_debug) {
-			stdoutput.printf("\n%s\n\n",pvt->_error);
-		}
+		debugWrite(pvt->_error);
 		return false;
 	}
 
@@ -219,10 +203,8 @@ bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
 	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
 
-		if (pvt->_debug) {
-			stdoutput.printf("\nrunning translation:  %s...\n\n",
+		debugWrite("running query translation: %s...",
 						node->getValue()->module);
-		}
 
 		sqlrquerytranslation	*tr=
 			(sqlrquerytranslation *)node->getValue()->m;
@@ -232,39 +214,34 @@ bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
 			if (!sqlrp) {
 				pvt->_error="query translation requires query "
 						"tree but no parser available";
-				if (pvt->_debug) {
-					stdoutput.printf("\n%s\n\n",
-							pvt->_error);
-				}
+				debugWrite(pvt->_error);
 				return false;
 			}
 
 			if (!pvt->_tree) {
 				if (!sqlrp->parse(query)) {
-					pvt->_error="parse-query failed";
+					pvt->_error="query translation "
+							"requires query tree "
+							"but query failed to "
+							"parse";
 					sqlrcon->cont->
 						raiseParseFailureEvent(
 								sqlrcur,query);
 					return false;
 				}
 				pvt->_tree=sqlrp->getTree();
-				if (pvt->_debug) {
-					stdoutput.printf(
-						"current query tree:\n");
-					if (pvt->_tree) {
-						pvt->_tree->getRootNode()->
-							write(&stdoutput,true);
-					}
-					stdoutput.printf("\n");
+				if (getDebug()) {
+					debugWrite("current query tree:");
+					stringbuffer	b;
+					pvt->_tree->getRootNode()->
+							write(&b,true);
+					debugWrite(b.getString());
 				}
 			}
 
 			if (!tr->run(sqlrcon,sqlrcur,pvt->_tree)) {
 				pvt->_error=tr->getError();
-				if (pvt->_debug) {
-					stdoutput.printf("\n%s\n\n",
-							pvt->_error);
-				}
+				debugWrite(pvt->_error);
 				return false;
 			}
 
@@ -274,10 +251,7 @@ bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
 			if (pvt->_tree) {
 				if (!sqlrp->write(tempquerystr)) {
 					pvt->_error="write-query failed";
-					if (pvt->_debug) {
-						stdoutput.printf("\n%s\n\n",
-								pvt->_error);
-					}
+					debugWrite(pvt->_error);
 					return false;
 				}
 				pvt->_tree=NULL;
@@ -290,10 +264,7 @@ bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
 			if (!tr->run(sqlrcon,sqlrcur,
 					query,querysize,tempquerystr)) {
 				pvt->_error=tr->getError();
-				if (pvt->_debug) {
-					stdoutput.printf("\n%s\n\n",
-							pvt->_error);
-				}
+				debugWrite(pvt->_error);
 				return false;
 			}
 
@@ -308,14 +279,13 @@ bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
 	if (pvt->_tree) {
 		if (!sqlrp->write(translatedquery)) {
 			pvt->_error="final write-query failed";
-			if (pvt->_debug) {
-				stdoutput.printf("current query tree:\n");
-				if (pvt->_tree) {
-					pvt->_tree->getRootNode()->
-						write(&stdoutput,true);
-				}
-				stdoutput.printf("\n");
-				stdoutput.printf("\n%s\n\n",pvt->_error);
+			if (getDebug()) {
+				debugWrite("current query tree:");
+				stringbuffer	b;
+				pvt->_tree->getRootNode()->
+						write(&b,true);
+				debugWrite(b.getString());
+				debugWrite(pvt->_error);
 			}
 			return false;
 		}
@@ -330,12 +300,13 @@ bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
 		}
 	}
 
-	if (pvt->_debug) {
-		stdoutput.printf("\nquery tree after translation:\n");
+	if (getDebug()) {
+		debugWrite("query tree after translation:");
 		if (pvt->_tree) {
-			pvt->_tree->getRootNode()->write(&stdoutput,true);
+			stringbuffer	b;
+			pvt->_tree->getRootNode()->write(&b,true);
+			debugWrite(b.getString());
 		}
-		stdoutput.printf("\n");
 	}
 
 	return true;

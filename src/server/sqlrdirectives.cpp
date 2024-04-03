@@ -4,8 +4,6 @@
 #include <sqlrelay/sqlrserver.h>
 
 #include <rudiments/stdio.h>
-//#define DEBUG_MESSAGES
-#include <rudiments/debugprint.h>
 
 #include <config.h>
 
@@ -18,24 +16,20 @@
 class sqlrdirectivesprivate {
 	friend class sqlrdirectives;
 	private:
-		bool	_debug;
 };
 
 sqlrdirectives::sqlrdirectives(sqlrservercontroller *cont) :
 						sqlrservermodules(cont) {
-	debugFunction();
 	pvt=new sqlrdirectivesprivate;
-	pvt->_debug=cont->getConfig()->getDebugDirectives();
+	setDebug(cont->getConfig()->getDebugDirectives());
 }
 
 sqlrdirectives::~sqlrdirectives() {
-	debugFunction();
 	unload();
 	delete pvt;
 }
 
 bool sqlrdirectives::load(domnode *parameters) {
-	debugFunction();
 
 	unload();
 
@@ -56,7 +50,6 @@ bool sqlrdirectives::load(domnode *parameters) {
 }
 
 void sqlrdirectives::loadDirective(domnode *directive) {
-	debugFunction();
 
 	// ignore non-directives
 	if (charstring::compare(directive->getName(),"directive")) {
@@ -73,9 +66,7 @@ void sqlrdirectives::loadDirective(domnode *directive) {
 		}
 	}
 
-	if (pvt->_debug) {
-		stdoutput.printf("loading directive module: %s\n",module);
-	}
+	debugWrite("loading directive module: %s\n",module);
 
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the directive module
@@ -123,9 +114,7 @@ void sqlrdirectives::loadDirective(domnode *directive) {
 	}
 #endif
 
-	if (pvt->_debug) {
-		stdoutput.printf("success\n");
-	}
+	debugWrite("success\n");
 
 	// add the plugin to the list
 	sqlrmoduleplugin	*sqlrmp=new sqlrmoduleplugin;
@@ -138,17 +127,13 @@ void sqlrdirectives::loadDirective(domnode *directive) {
 bool sqlrdirectives::run(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					const char *query) {
-	debugFunction();
 	if (!query) {
 		return false;
 	}
 	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
 
-		if (pvt->_debug) {
-			stdoutput.printf("\nrunning directive:  %s...\n\n",
-						node->getValue()->module);
-		}
+		debugWrite("running directive: %s...",node->getValue()->module);
 
 		sqlrdirective	*dr=(sqlrdirective *)node->getValue()->m;
 		if (!dr->run(sqlrcon,sqlrcur,query)) {

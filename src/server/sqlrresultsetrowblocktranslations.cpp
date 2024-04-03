@@ -6,8 +6,6 @@
 #include <rudiments/process.h>
 #include <rudiments/character.h>
 #include <rudiments/stdio.h>
-//#define DEBUG_MESSAGES 1
-#include <rudiments/debugprint.h>
 
 #include <config.h>
 
@@ -20,8 +18,6 @@
 class sqlrresultsetrowblocktranslationsprivate {
 	friend class sqlrresultsetrowblocktranslations;
 	private:
-		bool			_debug;
-
 		uint64_t		_rowblockcount;
 		uint64_t		_rowcount;
 
@@ -31,22 +27,19 @@ class sqlrresultsetrowblocktranslationsprivate {
 sqlrresultsetrowblocktranslations::sqlrresultsetrowblocktranslations(
 						sqlrservercontroller *cont) :
 						sqlrservermodules(cont) {
-	debugFunction();
 	pvt=new sqlrresultsetrowblocktranslationsprivate;
-	pvt->_debug=cont->getConfig()->getDebugResultSetRowBlockTranslations();
+	setDebug(cont->getConfig()->getDebugResultSetRowBlockTranslations());
 	pvt->_rowblockcount=0;
 	pvt->_rowcount=0;
 	pvt->_error=NULL;
 }
 
 sqlrresultsetrowblocktranslations::~sqlrresultsetrowblocktranslations() {
-	debugFunction();
 	unload();
 	delete pvt;
 }
 
 bool sqlrresultsetrowblocktranslations::load(domnode *parameters) {
-	debugFunction();
 
 	unload();
 
@@ -81,7 +74,6 @@ bool sqlrresultsetrowblocktranslations::load(domnode *parameters) {
 
 void sqlrresultsetrowblocktranslations::loadResultSetRowBlockTranslation(
 					domnode *resultsetrowblocktranslation) {
-	debugFunction();
 
 	// ignore non-resultsetrowblocktranslations
 	if (charstring::compare(resultsetrowblocktranslation->getName(),
@@ -100,10 +92,7 @@ void sqlrresultsetrowblocktranslations::loadResultSetRowBlockTranslation(
 		}
 	}
 
-	if (pvt->_debug) {
-		stdoutput.printf("loading result set "
-				"row block translation: %s\n",module);
-	}
+	debugWrite("loading result set row block translation: %s",module);
 
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the result set translation module
@@ -158,9 +147,7 @@ void sqlrresultsetrowblocktranslations::loadResultSetRowBlockTranslation(
 	}
 #endif
 
-	if (pvt->_debug) {
-		stdoutput.printf("success\n");
-	}
+	debugWrite("success");
 
 	// add the plugin to the list
 	sqlrmoduleplugin	*sqlmp=new sqlrmoduleplugin;
@@ -182,17 +169,13 @@ bool sqlrresultsetrowblocktranslations::setRow(sqlrserverconnection *sqlrcon,
 						uint64_t *fieldsizes,
 						bool *lobs,
 						bool *nulls) {
-	debugFunction();
 
 	listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 	if (!node) {
 		return true;
 	}
 
-	if (pvt->_debug) {
-		stdoutput.printf("\nrunning setRow():  %s...\n\n",
-						node->getValue()->module);
-	}
+	debugWrite("running setRow(): %s...",node->getValue()->module);
 
 	pvt->_rowcount++;
 
@@ -213,7 +196,6 @@ bool sqlrresultsetrowblocktranslations::run(sqlrserverconnection *sqlrcon,
 					uint32_t colcount,
 					const char * const *fieldnames) {
 						
-	debugFunction();
 
 	pvt->_error=NULL;
 
@@ -221,10 +203,7 @@ bool sqlrresultsetrowblocktranslations::run(sqlrserverconnection *sqlrcon,
 	if (!node) {
 		return true;
 	}
-	if (pvt->_debug) {
-		stdoutput.printf("\nrunning translation:  %s...\n\n",
-						node->getValue()->module);
-	}
+
 	sqlrresultsetrowblocktranslation	*rstr=
 		(sqlrresultsetrowblocktranslation *)node->getValue()->m;
 	if (!rstr->run(sqlrcon,sqlrcur,colcount,fieldnames)) {
@@ -241,12 +220,6 @@ bool sqlrresultsetrowblocktranslations::run(sqlrserverconnection *sqlrcon,
 		}
 
 		for (uint64_t i=0; i<pvt->_rowcount; i++) {
-
-			if (pvt->_debug) {
-				stdoutput.printf("\nrunning getRow():  "
-						"%s...\n\n",
-						node->getValue()->module);
-			}
 
 			const char	**oldfields;
 			uint64_t	*oldfieldsizes;
@@ -265,12 +238,6 @@ bool sqlrresultsetrowblocktranslations::run(sqlrserverconnection *sqlrcon,
 				return false;
 			}
 
-			if (pvt->_debug) {
-				stdoutput.printf("\nrunning setRow():  "
-						"%s...\n\n",
-						node->getValue()->module);
-			}
-
 			if (!rstr->setRow(sqlrcon,
 						sqlrcur,
 						colcount,
@@ -284,10 +251,8 @@ bool sqlrresultsetrowblocktranslations::run(sqlrserverconnection *sqlrcon,
 			}
 		}
 
-		if (pvt->_debug) {
-			stdoutput.printf("\nrunning translation:  %s...\n\n",
+		debugWrite("running result set row block translation: %s...",
 						node->getValue()->module);
-		}
 
 		if (!rstr->run(sqlrcon,sqlrcur,colcount,fieldnames)) {
 			pvt->_rowcount=0;
@@ -305,16 +270,13 @@ bool sqlrresultsetrowblocktranslations::getRow(sqlrserverconnection *sqlrcon,
 						uint64_t **fieldsizes,
 						bool **lobs,
 						bool **nulls) {
-	debugFunction();
 
 	listnode< sqlrmoduleplugin * > *node=blist.getLast();
 	if (!node) {
 		return true;
 	}
-	if (pvt->_debug) {
-		stdoutput.printf("\nrunning getRow():  %s...\n\n",
-						node->getValue()->module);
-	}
+
+	debugWrite("running getRow(): %s...",node->getValue()->module);
 
 	pvt->_rowcount--;
 

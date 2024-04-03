@@ -6,8 +6,6 @@
 #include <rudiments/domnode.h>
 #include <rudiments/process.h>
 #include <rudiments/stdio.h>
-//#define DEBUG_MESSAGES 1
-#include <rudiments/debugprint.h>
 
 #include <config.h>
 
@@ -23,18 +21,16 @@ class sqlrauthsprivate {
 };
 
 sqlrauths::sqlrauths(sqlrservercontroller *cont) : sqlrservermodules(cont) {
-	debugFunction();
 	pvt=new sqlrauthsprivate;
+	setDebug(cont->getConfig()->getDebugAuths());
 }
 
 sqlrauths::~sqlrauths() {
-	debugFunction();
 	unload();
 	delete pvt;
 }
 
 bool sqlrauths::load(domnode *parameters, sqlrpwdencs *sqlrpe) {
-	debugFunction();
 
 	unload();
 
@@ -47,8 +43,6 @@ bool sqlrauths::load(domnode *parameters, sqlrpwdencs *sqlrpe) {
 			continue;
 		}
 
-		debugPrintf("loading auth ...\n");
-
 		// load password encryption
 		loadAuth(auth,sqlrpe);
 	}
@@ -56,7 +50,6 @@ bool sqlrauths::load(domnode *parameters, sqlrpwdencs *sqlrpe) {
 }
 
 void sqlrauths::loadAuth(domnode *auth, sqlrpwdencs *sqlrpe) {
-	debugFunction();
 
 	// get the auth name
 	const char	*module=auth->getAttributeValue("module");
@@ -69,7 +62,7 @@ void sqlrauths::loadAuth(domnode *auth, sqlrpwdencs *sqlrpe) {
 		}
 	}
 
-	debugPrintf("loading auth: %s\n",module);
+	debugWrite("loading auth module: %s",module);
 
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the password encryption module
@@ -119,6 +112,8 @@ void sqlrauths::loadAuth(domnode *auth, sqlrpwdencs *sqlrpe) {
 	}
 #endif
 
+	debugWrite("success");
+
 	// add the plugin to the list
 	sqlrmoduleplugin	*sqlrmp=new sqlrmoduleplugin;
 	sqlrmp->m=au;
@@ -128,12 +123,14 @@ void sqlrauths::loadAuth(domnode *auth, sqlrpwdencs *sqlrpe) {
 }
 
 const char *sqlrauths::auth(sqlrcredentials *cred) {
-	debugFunction();
 	if (!cred) {
 		return NULL;
 	}
 	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
+
+		debugWrite("running auth: %s...\n",node->getValue()->module);
+		
 		sqlrauth	*m=(sqlrauth *)node->getValue()->m;
 		const char	*autheduser=m->auth(cred);
 		if (autheduser) {

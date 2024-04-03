@@ -5,8 +5,6 @@
 
 #include <rudiments/domnode.h>
 #include <rudiments/stdio.h>
-//#define DEBUG_MESSAGES 1
-#include <rudiments/debugprint.h>
 
 #include <config.h>
 
@@ -23,19 +21,16 @@ class sqlrloggersprivate {
 };
 
 sqlrloggers::sqlrloggers(sqlrpaths *sqlrpth) : sqlrservermodules(NULL) {
-	debugFunction();
 	pvt=new sqlrloggersprivate;
 	pvt->_libexecdir=sqlrpth->getLibExecDir();
 }
 
 sqlrloggers::~sqlrloggers() {
-	debugFunction();
 	unload();
 	delete pvt;
 }
 
 bool sqlrloggers::load(domnode *parameters) {
-	debugFunction();
 
 	unload();
 
@@ -47,8 +42,6 @@ bool sqlrloggers::load(domnode *parameters) {
 			continue;
 		}
 
-		debugPrintf("loading logger ...\n");
-
 		// load logger
 		loadLogger(logger);
 	}
@@ -56,8 +49,6 @@ bool sqlrloggers::load(domnode *parameters) {
 }
 
 void sqlrloggers::loadLogger(domnode *logger) {
-
-	debugFunction();
 
 	// ignore non-loggers
 	if (charstring::compare(logger->getName(),"logger")) {
@@ -74,7 +65,7 @@ void sqlrloggers::loadLogger(domnode *logger) {
 		}
 	}
 
-	debugPrintf("loading logger: %s\n",module);
+	debugWrite("loading logger module: %s",module);
 
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the logger module
@@ -119,6 +110,8 @@ void sqlrloggers::loadLogger(domnode *logger) {
 	}
 #endif
 
+	debugWrite("success");
+
 	// add the plugin to the list
 	sqlrmoduleplugin	*sqlrmp=new sqlrmoduleplugin;
 	sqlrmp->m=lg;
@@ -129,7 +122,6 @@ void sqlrloggers::loadLogger(domnode *logger) {
 
 void sqlrloggers::init(sqlrlistener *sqlrl,
 				sqlrserverconnection *sqlrcon) {
-	debugFunction();
 	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
 		sqlrlogger	*lg=(sqlrlogger *)node->getValue()->m;
@@ -143,9 +135,12 @@ void sqlrloggers::run(sqlrlistener *sqlrl,
 				sqlrloglevel_t level,
 				sqlrevent_t event,
 				const char *info) {
-	debugFunction();
+
 	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
+
+		debugWrite("running logger: %s...\n",node->getValue()->module);
+
 		sqlrlogger	*lg=(sqlrlogger *)node->getValue()->m;
 		lg->run(sqlrl,sqlrcon,sqlrcur,level,event,info);
 	}

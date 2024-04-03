@@ -5,8 +5,6 @@
 
 #include <rudiments/domnode.h>
 #include <rudiments/stdio.h>
-//#define DEBUG_MESSAGES 1
-#include <rudiments/debugprint.h>
 
 #include <config.h>
 
@@ -24,19 +22,16 @@ class sqlrnotificationsprivate {
 
 sqlrnotifications::sqlrnotifications(sqlrpaths *sqlrpth) :
 						sqlrservermodules(NULL) {
-	debugFunction();
 	pvt=new sqlrnotificationsprivate;
 	pvt->_libexecdir=sqlrpth->getLibExecDir();
 }
 
 sqlrnotifications::~sqlrnotifications() {
-	debugFunction();
 	unload();
 	delete pvt;
 }
 
 bool sqlrnotifications::load(domnode *parameters) {
-	debugFunction();
 
 	unload();
 
@@ -49,8 +44,6 @@ bool sqlrnotifications::load(domnode *parameters) {
 			continue;
 		}
 
-		debugPrintf("loading notification ...\n");
-
 		// load notification
 		loadNotification(notification);
 	}
@@ -58,8 +51,6 @@ bool sqlrnotifications::load(domnode *parameters) {
 }
 
 void sqlrnotifications::loadNotification(domnode *notification) {
-
-	debugFunction();
 
 	// ignore non-notifications
 	if (charstring::compare(notification->getName(),"notification")) {
@@ -76,7 +67,7 @@ void sqlrnotifications::loadNotification(domnode *notification) {
 		}
 	}
 
-	debugPrintf("loading notification: %s\n",module);
+	debugWrite("loading notification module: %s",module);
 
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the notification module
@@ -123,6 +114,8 @@ void sqlrnotifications::loadNotification(domnode *notification) {
 	}
 #endif
 
+	debugWrite("success");
+
 	// add the plugin to the list
 	sqlrmoduleplugin	*sqlrmp=new sqlrmoduleplugin;
 	sqlrmp->m=n;
@@ -136,9 +129,13 @@ void sqlrnotifications::run(sqlrlistener *sqlrl,
 					sqlrservercursor *sqlrcur,
 					sqlrevent_t event,
 					const char *info) {
-	debugFunction();
+
 	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
+
+		debugWrite("running notification: %s...",
+					node->getValue()->module);
+
 		sqlrnotification	*n=
 			(sqlrnotification *)node->getValue()->m;
 		n->run(sqlrl,sqlrcon,sqlrcur,event,info);

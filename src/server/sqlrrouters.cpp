@@ -5,8 +5,6 @@
 
 #include <rudiments/domnode.h>
 #include <rudiments/stdio.h>
-//#define DEBUG_MESSAGES 1
-#include <rudiments/debugprint.h>
 
 #include <config.h>
 
@@ -30,8 +28,8 @@ sqlrrouters::sqlrrouters(sqlrservercontroller *cont,
 				sqlrconnection **connections,
 				uint16_t connectioncount) :
 				sqlrservermodules(cont) {
-	debugFunction();
 	pvt=new sqlrroutersprivate;
+	setDebug(cont->getConfig()->getDebugRouters());
 	pvt->_connid=NULL;
 	pvt->_connids=connectionids;
 	pvt->_conns=connections;
@@ -39,13 +37,11 @@ sqlrrouters::sqlrrouters(sqlrservercontroller *cont,
 }
 
 sqlrrouters::~sqlrrouters() {
-	debugFunction();
 	unload();
 	delete pvt;
 }
 
 bool sqlrrouters::load(domnode *parameters) {
-	debugFunction();
 
 	unload();
 
@@ -66,8 +62,6 @@ bool sqlrrouters::load(domnode *parameters) {
 
 void sqlrrouters::loadRouter(domnode *router) {
 
-	debugFunction();
-
 	// ignore non-routers
 	if (charstring::compare(router->getName(),"router")) {
 		return;
@@ -82,6 +76,8 @@ void sqlrrouters::loadRouter(domnode *router) {
 			return;
 		}
 	}
+
+	debugWrite("loading router module: %s",module);
 
 	if (cont->getConfig()->getDebugRouters()) {
 		stdoutput.printf("loading router: %s\n",module);
@@ -136,6 +132,8 @@ void sqlrrouters::loadRouter(domnode *router) {
 	}
 #endif
 
+	debugWrite("success");
+
 	// add the plugin to the list
 	sqlrmoduleplugin	*sqlrmp=new sqlrmoduleplugin;
 	sqlrmp->m=r;
@@ -148,9 +146,12 @@ const char *sqlrrouters::route(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					const char **err,
 					int64_t *errn) {
-	debugFunction();
+
 	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
+
+		debugWrite("checking route: %s...",node->getValue()->module);
+
 		sqlrrouter	*r=(sqlrrouter *)node->getValue()->m;
 		const char	*connid=r->route(sqlrcon,sqlrcur,err,errn);
 		if (connid) {
@@ -161,7 +162,6 @@ const char *sqlrrouters::route(sqlrserverconnection *sqlrcon,
 }
 
 bool sqlrrouters::routeEntireSession() {
-	debugFunction();
 	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
 		sqlrrouter	*r=(sqlrrouter *)node->getValue()->m;

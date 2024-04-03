@@ -6,8 +6,6 @@
 #include <rudiments/process.h>
 #include <rudiments/character.h>
 #include <rudiments/stdio.h>
-//#define DEBUG_MESSAGES 1
-#include <rudiments/debugprint.h>
 
 #include <config.h>
 
@@ -20,23 +18,19 @@
 class sqlrfiltersprivate {
 	friend class sqlrfilters;
 	private:
-		bool	_debug;
 };
 
 sqlrfilters::sqlrfilters(sqlrservercontroller *cont) : sqlrservermodules(cont) {
-	debugFunction();
 	pvt=new sqlrfiltersprivate;
-	pvt->_debug=cont->getConfig()->getDebugFilters();
+	setDebug(cont->getConfig()->getDebugFilters());
 }
 
 sqlrfilters::~sqlrfilters() {
-	debugFunction();
 	unload();
 	delete pvt;
 }
 
 bool sqlrfilters::load(domnode *parameters) {
-	debugFunction();
 
 	unload();
 
@@ -62,7 +56,6 @@ bool sqlrfilters::load(domnode *parameters) {
 
 void sqlrfilters::loadFilter(domnode *filter, 
 				singlylinkedlist< sqlrmoduleplugin * > *list) {
-	debugFunction();
 
 	// ignore non-filters
 	if (charstring::compare(filter->getName(),"filter")) {
@@ -79,11 +72,9 @@ void sqlrfilters::loadFilter(domnode *filter,
 		}
 	}
 
-	if (pvt->_debug) {
-		stdoutput.printf("loading %s-filter module: %s\n",
+	debugWrite("loading (%s) filter module: %s",
 				(list==&blist)?"before":"after",
 				module);
-	}
 
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the filter module
@@ -131,9 +122,7 @@ void sqlrfilters::loadFilter(domnode *filter,
 	}
 #endif
 
-	if (pvt->_debug) {
-		stdoutput.printf("success\n");
-	}
+	debugWrite("success");
 
 	// add the plugin to the list
 	sqlrmoduleplugin	*sqlrfp=new sqlrmoduleplugin;
@@ -149,7 +138,6 @@ bool sqlrfilters::runBeforeFilters(sqlrserverconnection *sqlrcon,
 					const char *query,
 					const char **err,
 					int64_t *errn) {
-	debugFunction();
 	return run(sqlrcon,sqlrcur,sqlrp,query,err,errn,&blist);
 }
 
@@ -159,7 +147,6 @@ bool sqlrfilters::runAfterFilters(sqlrserverconnection *sqlrcon,
 					const char *query,
 					const char **err,
 					int64_t *errn) {
-	debugFunction();
 	return run(sqlrcon,sqlrcur,sqlrp,query,err,errn,&alist);
 }
 
@@ -170,7 +157,6 @@ bool sqlrfilters::run(sqlrserverconnection *sqlrcon,
 				const char **err,
 				int64_t *errn,
 				singlylinkedlist< sqlrmoduleplugin * > *list) {
-	debugFunction();
 
 	if (!query) {
 		return false;
@@ -181,43 +167,33 @@ bool sqlrfilters::run(sqlrserverconnection *sqlrcon,
 	for (listnode< sqlrmoduleplugin * > *node=list->getFirst();
 						node; node=node->getNext()) {
 
-		if (pvt->_debug) {
-			stdoutput.printf("\nrunning %s-filter: %s...\n\n",
+		debugWrite("running (%s) filter: %s...",
 				(list==&blist)?"before":"after",
 				node->getValue()->module);
-		}
 
 		sqlrfilter	*f=(sqlrfilter *)node->getValue()->m;
 
 		if (f->requiresTree()) {
 
 			if (!sqlrp) {
-				if (pvt->_debug) {
-					stdoutput.printf("\nfilter "
-							"requires query tree "
-							"but no parser "
-							"available...\n\n");
-				}
+				debugWrite("filter requires query tree "
+						"but no parser available...");
 				return true;
 			}
 
 			if (!tree) {
 				if (!sqlrp->parse(query)) {
-					if (pvt->_debug) {
-						stdoutput.printf("\nfilter "
-							"requires query tree "
-							"but query failed to "
-							"parse ...\n\n");
-					}
+					debugWrite(
+						"filter requires query tree "
+						"but query failed to parse...");
 					return true;
 				}
 				tree=sqlrp->getTree();
-				if (pvt->_debug) {
-					stdoutput.printf(
-						"query tree:\n");
-					tree->getRootNode()->
-						write(&stdoutput,true);
-					stdoutput.printf("\n");
+				if (getDebug()) {
+					debugWrite("query tree:");
+					stringbuffer	b;
+					tree->getRootNode()->write(&b,true);
+					debugWrite(b.getString());
 				}
 			}
 

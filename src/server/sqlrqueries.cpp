@@ -5,8 +5,6 @@
 
 #include <rudiments/domnode.h>
 #include <rudiments/stdio.h>
-//#define DEBUG_MESSAGES 1
-#include <rudiments/debugprint.h>
 
 #include <config.h>
 
@@ -22,18 +20,15 @@ class sqlrqueriesprivate {
 };
 
 sqlrqueries::sqlrqueries(sqlrservercontroller *cont) : sqlrservermodules(cont) {
-	debugFunction();
 	pvt=new sqlrqueriesprivate;
 }
 
 sqlrqueries::~sqlrqueries() {
-	debugFunction();
 	unload();
 	delete pvt;
 }
 
 bool sqlrqueries::load(domnode *parameters) {
-	debugFunction();
 
 	unload();
 
@@ -45,8 +40,6 @@ bool sqlrqueries::load(domnode *parameters) {
 			continue;
 		}
 
-		debugPrintf("loading query ...\n");
-
 		// load query
 		loadQuery(query);
 	}
@@ -54,8 +47,6 @@ bool sqlrqueries::load(domnode *parameters) {
 }
 
 void sqlrqueries::loadQuery(domnode *query) {
-
-	debugFunction();
 
 	// ignore non-queries
 	if (charstring::compare(query->getName(),"query")) {
@@ -72,7 +63,7 @@ void sqlrqueries::loadQuery(domnode *query) {
 		}
 	}
 
-	debugPrintf("loading query: %s\n",module);
+	debugWrite("loading query module: %s\n",module);
 
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the query module
@@ -120,6 +111,8 @@ void sqlrqueries::loadQuery(domnode *query) {
 	}
 #endif
 
+	debugWrite("success");
+
 	// add the plugin to the list
 	sqlrmoduleplugin	*sqlrmp=new sqlrmoduleplugin;
 	sqlrmp->m=qr;
@@ -132,9 +125,13 @@ sqlrquerycursor *sqlrqueries::match(sqlrserverconnection *sqlrcon,
 					const char *querystring,
 					uint32_t querysize,
 					uint16_t id) {
-	debugFunction();
+
 	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
+
+		debugWrite("matching against query: %s...",
+					node->getValue()->module);
+
 		sqlrquery	*qr=(sqlrquery *)node->getValue()->m;
 		if (qr->match(querystring,querysize)) {
 			return qr->newCursor(sqlrcon,id);

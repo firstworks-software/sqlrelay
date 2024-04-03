@@ -6,8 +6,6 @@
 #include <rudiments/process.h>
 #include <rudiments/character.h>
 #include <rudiments/stdio.h>
-//#define DEBUG_MESSAGES
-#include <rudiments/debugprint.h>
 
 #include <config.h>
 
@@ -20,27 +18,22 @@
 class sqlrerrortranslationsprivate {
 	friend class sqlrerrortranslations;
 	private:
-		bool		_debug;
-
 		const char	*_error;
 };
 
 sqlrerrortranslations::sqlrerrortranslations(sqlrservercontroller *cont) :
 						sqlrservermodules(cont) {
-	debugFunction();
 	pvt=new sqlrerrortranslationsprivate;
-	pvt->_debug=cont->getConfig()->getDebugErrorTranslations();
+	setDebug(cont->getConfig()->getDebugErrorTranslations());
 	pvt->_error=NULL;
 }
 
 sqlrerrortranslations::~sqlrerrortranslations() {
-	debugFunction();
 	unload();
 	delete pvt;
 }
 
 bool sqlrerrortranslations::load(domnode *parameters) {
-	debugFunction();
 
 	unload();
 
@@ -61,7 +54,6 @@ bool sqlrerrortranslations::load(domnode *parameters) {
 }
 
 void sqlrerrortranslations::loadErrorTranslation(domnode *errortranslation) {
-	debugFunction();
 
 	// ignore non-errortranslations
 	if (charstring::compare(errortranslation->getName()
@@ -79,10 +71,7 @@ void sqlrerrortranslations::loadErrorTranslation(domnode *errortranslation) {
 		}
 	}
 
-	if (pvt->_debug) {
-		stdoutput.printf("loading error "
-					"translation module: %s\n",module);
-	}
+	debugWrite("loading error translation module: %s",module);
 
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the error translation module
@@ -133,9 +122,7 @@ void sqlrerrortranslations::loadErrorTranslation(domnode *errortranslation) {
 	}
 #endif
 
-	if (pvt->_debug) {
-		stdoutput.printf("success\n");
-	}
+	debugWrite("success");
 
 	// add the plugin to the list
 	sqlrmoduleplugin	*sqlrmp=new sqlrmoduleplugin;
@@ -152,7 +139,6 @@ bool sqlrerrortranslations::run(sqlrserverconnection *sqlrcon,
 					uint32_t errorsize,
 					int64_t *translatederrornumber,
 					stringbuffer *translatederror) {
-	debugFunction();
 
 	pvt->_error=NULL;
 
@@ -165,10 +151,8 @@ bool sqlrerrortranslations::run(sqlrserverconnection *sqlrcon,
 	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
 
-		if (pvt->_debug) {
-			stdoutput.printf("\nrunning translation:  %s...\n\n",
+		debugWrite("running error translation: %s...",
 						node->getValue()->module);
-		}
 
 		temperrorstr->clear();
 
@@ -181,9 +165,6 @@ bool sqlrerrortranslations::run(sqlrserverconnection *sqlrcon,
 					temperrornumber,
 					temperrorstr)) {
 			pvt->_error=etr->getError();
-			if (pvt->_debug) {
-				stdoutput.printf("\n%s\n\n",pvt->_error);
-			}
 			return false;
 		}
 

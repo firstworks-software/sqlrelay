@@ -4,8 +4,6 @@
 #include <sqlrelay/sqlrserver.h>
 
 #include <rudiments/stdio.h>
-//#define DEBUG_MESSAGES 1
-#include <rudiments/debugprint.h>
 
 #include <config.h>
 
@@ -23,18 +21,15 @@ class sqlrprotocolsprivate {
 
 sqlrprotocols::sqlrprotocols(sqlrservercontroller *cont) :
 						sqlrservermodules(cont) {
-	debugFunction();
 	pvt=new sqlrprotocolsprivate;
 }
 
 sqlrprotocols::~sqlrprotocols() {
-	debugFunction();
 	unload();
 	delete pvt;
 }
 
 bool sqlrprotocols::load(domnode *parameters) {
-	debugFunction();
 
 	unload();
 
@@ -48,8 +43,6 @@ bool sqlrprotocols::load(domnode *parameters) {
 			continue;
 		}
 
-		debugPrintf("loading protocol ...\n");
-
 		// load protocol
 		loadProtocol(i,listener);
 
@@ -59,7 +52,6 @@ bool sqlrprotocols::load(domnode *parameters) {
 }
 
 void sqlrprotocols::loadProtocol(uint16_t index, domnode *listener) {
-	debugFunction();
 
 	// ignore any non-listener entries
 	if (charstring::compare(listener->getName(),"listener")) {
@@ -69,7 +61,7 @@ void sqlrprotocols::loadProtocol(uint16_t index, domnode *listener) {
 	// get the protocol name
 	const char	*module=listener->getAttributeValue("protocol");
 
-	debugPrintf("loading protocol: %s\n",module);
+	debugWrite("loading protocol module: %s",module);
 
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the protocol module
@@ -117,6 +109,8 @@ void sqlrprotocols::loadProtocol(uint16_t index, domnode *listener) {
 	}
 #endif
 
+	debugWrite("success");
+
 	// add the plugin to the list
 	sqlrmoduleplugin	*sqlrmp=new sqlrmoduleplugin;
 	sqlrmp->m=pr;
@@ -126,7 +120,6 @@ void sqlrprotocols::loadProtocol(uint16_t index, domnode *listener) {
 }
 
 sqlrprotocol *sqlrprotocols::getProtocol(uint16_t index) {
-	debugFunction();
 	sqlrmoduleplugin	*pp=NULL;
 	if (!pvt->_protos.getValue(index,&pp)) {
 		return NULL;

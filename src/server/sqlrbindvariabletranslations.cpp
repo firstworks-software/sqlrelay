@@ -6,8 +6,6 @@
 #include <rudiments/process.h>
 #include <rudiments/character.h>
 #include <rudiments/stdio.h>
-//#define DEBUG_MESSAGES 1
-#include <rudiments/debugprint.h>
 
 #include <config.h>
 
@@ -20,29 +18,23 @@
 class sqlrbindvariabletranslationsprivate {
 	friend class sqlrbindvariabletranslations;
 	private:
-		bool		_debug;
-
 		const char	*_error;
 };
 
 sqlrbindvariabletranslations::sqlrbindvariabletranslations(
 					sqlrservercontroller *cont) :
 					sqlrservermodules(cont) {
-
-	debugFunction();
 	pvt=new sqlrbindvariabletranslationsprivate;
-	pvt->_debug=cont->getConfig()->getDebugBindVariableTranslations();
+	setDebug(cont->getConfig()->getDebugBindVariableTranslations());
 	pvt->_error=NULL;
 }
 
 sqlrbindvariabletranslations::~sqlrbindvariabletranslations() {
-	debugFunction();
 	unload();
 	delete pvt;
 }
 
 bool sqlrbindvariabletranslations::load(domnode *parameters) {
-	debugFunction();
 
 	unload();
 
@@ -65,7 +57,6 @@ bool sqlrbindvariabletranslations::load(domnode *parameters) {
 
 void sqlrbindvariabletranslations::loadBindVariableTranslation(
 					domnode *bindvariabletranslation) {
-	debugFunction();
 
 	// ignore non-bindvariabletranslations
 	if (charstring::compare(bindvariabletranslation->getName(),
@@ -84,10 +75,7 @@ void sqlrbindvariabletranslations::loadBindVariableTranslation(
 		}
 	}
 
-	if (pvt->_debug) {
-		stdoutput.printf("loading bind variable translation: %s\n",
-									module);
-	}
+	debugWrite("loading bind variable translation module: %s",module);
 
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the bind variable translation module
@@ -140,9 +128,7 @@ void sqlrbindvariabletranslations::loadBindVariableTranslation(
 	}
 #endif
 
-	if (pvt->_debug) {
-		stdoutput.printf("success\n");
-	}
+	debugWrite("success");
 
 	// add the plugin to the list
 	sqlrmoduleplugin	*sqlrrstp=new sqlrmoduleplugin;
@@ -154,16 +140,14 @@ void sqlrbindvariabletranslations::loadBindVariableTranslation(
 
 bool sqlrbindvariabletranslations::run(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur) {
-	debugFunction();
 
 	pvt->_error=NULL;
 
 	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
-		if (pvt->_debug) {
-			stdoutput.printf("\nrunning translation:  %s...\n\n",
+
+		debugWrite("running bind variable translation: %s...",
 						node->getValue()->module);
-		}
 
 		sqlrbindvariabletranslation	*bvtr=
 			(sqlrbindvariabletranslation *)node->getValue()->m;

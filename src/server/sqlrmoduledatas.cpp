@@ -6,8 +6,6 @@
 #include <rudiments/process.h>
 #include <rudiments/character.h>
 #include <rudiments/stdio.h>
-//#define DEBUG_MESSAGES
-#include <rudiments/debugprint.h>
 
 #include <config.h>
 
@@ -28,26 +26,21 @@ class sqlrdatabaseobject {
 class sqlrmoduledatasprivate {
 	friend class sqlrmoduledatas;
 	private:
-		bool		_debug;
-
 		dictionary< const char *, sqlrmoduledata * >	_mdict;
 };
 
 sqlrmoduledatas::sqlrmoduledatas(sqlrservercontroller *cont) :
 						sqlrservermodules(cont) {
-	debugFunction();
 	pvt=new sqlrmoduledatasprivate;
-	pvt->_debug=cont->getConfig()->getDebugModuleDatas();
+	setDebug(cont->getConfig()->getDebugModuleDatas());
 }
 
 sqlrmoduledatas::~sqlrmoduledatas() {
-	debugFunction();
 	unload();
 	delete pvt;
 }
 
 bool sqlrmoduledatas::load(domnode *parameters) {
-	debugFunction();
 
 	unload();
 
@@ -68,7 +61,6 @@ bool sqlrmoduledatas::load(domnode *parameters) {
 }
 
 void sqlrmoduledatas::loadModuleData(domnode *moduledata) {
-	debugFunction();
 
 	// ignore non-moduledatas
 	if (charstring::compare(moduledata->getName(),"moduledata")) {
@@ -85,9 +77,7 @@ void sqlrmoduledatas::loadModuleData(domnode *moduledata) {
 		}
 	}
 
-	if (pvt->_debug) {
-		stdoutput.printf("loading moduledata module: %s\n",module);
-	}
+	debugWrite("loading moduledata module: %s",module);
 
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the moduledata module
@@ -133,9 +123,7 @@ void sqlrmoduledatas::loadModuleData(domnode *moduledata) {
 	}
 #endif
 
-	if (pvt->_debug) {
-		stdoutput.printf("success\n");
-	}
+	debugWrite("success");
 
 	// add the plugin to the list
 	sqlrmoduleplugin	*sqlmp=new sqlrmoduleplugin;

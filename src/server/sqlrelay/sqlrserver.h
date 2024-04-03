@@ -132,8 +132,6 @@ class SQLRSERVER_DLLSPEC sqlrserverbindvar {
 		int16_t			isnull;
 };
 
-#include <sqlrelay/private/sqlrserverclasses.h>
-
 class SQLRSERVER_DLLSPEC sqlrserverbase {
 	public:
 		/** Creates an instance of sqlrserverbase. */
@@ -5298,6 +5296,8 @@ enum clientsessionexitstatus_t {
 	CLIENTSESSIONEXITSTATUS_ENDED_SESSION,
 	CLIENTSESSIONEXITSTATUS_SUSPENDED_SESSION
 };
+
+#include <sqlrelay/private/sqlrservermodules.h>
 
 class SQLRSERVER_DLLSPEC sqlrservermodule : public sqlrserverbase {
 	public:

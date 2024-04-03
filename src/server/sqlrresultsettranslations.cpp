@@ -6,8 +6,6 @@
 #include <rudiments/process.h>
 #include <rudiments/character.h>
 #include <rudiments/stdio.h>
-//#define DEBUG_MESSAGES 1
-#include <rudiments/debugprint.h>
 
 #include <config.h>
 
@@ -20,8 +18,6 @@
 class sqlrresultsettranslationsprivate {
 	friend class sqlrresultsettranslations;
 	private:
-		bool		_debug;
-
 		const char	*_error;
 };
 
@@ -29,20 +25,17 @@ sqlrresultsettranslations::sqlrresultsettranslations(
 					sqlrservercontroller *cont) :
 					sqlrservermodules(cont) {
 
-	debugFunction();
 	pvt=new sqlrresultsettranslationsprivate;
-	pvt->_debug=cont->getConfig()->getDebugResultSetTranslations();
+	setDebug(cont->getConfig()->getDebugResultSetTranslations());
 	pvt->_error=NULL;
 }
 
 sqlrresultsettranslations::~sqlrresultsettranslations() {
-	debugFunction();
 	unload();
 	delete pvt;
 }
 
 bool sqlrresultsettranslations::load(domnode *parameters) {
-	debugFunction();
 
 	unload();
 
@@ -65,7 +58,6 @@ bool sqlrresultsettranslations::load(domnode *parameters) {
 
 void sqlrresultsettranslations::loadResultSetTranslation(
 				domnode *resultsettranslation) {
-	debugFunction();
 
 	// ignore non-resultsettranslations
 	if (charstring::compare(resultsettranslation->getName(),
@@ -84,9 +76,7 @@ void sqlrresultsettranslations::loadResultSetTranslation(
 		}
 	}
 
-	if (pvt->_debug) {
-		stdoutput.printf("loading result set translation: %s\n",module);
-	}
+	debugWrite("loading result set translation: %s",module);
 
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the result set translation module
@@ -138,9 +128,7 @@ void sqlrresultsettranslations::loadResultSetTranslation(
 	}
 #endif
 
-	if (pvt->_debug) {
-		stdoutput.printf("success\n");
-	}
+	debugWrite("success");
 
 	// add the plugin to the list
 	sqlrmoduleplugin	*sqlrmp=new sqlrmoduleplugin;
@@ -156,16 +144,14 @@ bool sqlrresultsettranslations::run(sqlrserverconnection *sqlrcon,
 						uint32_t fieldindex,
 						const char **field,
 						uint64_t *fieldsize) {
-	debugFunction();
 
 	pvt->_error=NULL;
 
 	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
-		if (pvt->_debug) {
-			stdoutput.printf("\nrunning translation:  %s...\n\n",
+
+		debugWrite("running result set translation:  %s...",
 						node->getValue()->module);
-		}
 
 		sqlrresultsettranslation	*rstr=
 			(sqlrresultsettranslation *)node->getValue()->m;

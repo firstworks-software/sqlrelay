@@ -5,8 +5,6 @@
 
 #include <rudiments/domnode.h>
 #include <rudiments/stdio.h>
-//#define DEBUG_MESSAGES 1
-#include <rudiments/debugprint.h>
 
 #include <config.h>
 
@@ -19,24 +17,20 @@
 class sqlrtriggersprivate {
 	friend class sqlrtriggers;
 	private:
-		bool	_debug;
 };
 
 sqlrtriggers::sqlrtriggers(sqlrservercontroller *cont) :
 					sqlrservermodules(cont) {
-	debugFunction();
 	pvt=new sqlrtriggersprivate;
-	pvt->_debug=cont->getConfig()->getDebugTriggers();
+	setDebug(cont->getConfig()->getDebugTriggers());
 }
 
 sqlrtriggers::~sqlrtriggers() {
-	debugFunction();
 	unload();
 	delete pvt;
 }
 
 bool sqlrtriggers::load(domnode *parameters) {
-	debugFunction();
 
 	unload();
 
@@ -69,17 +63,13 @@ bool sqlrtriggers::load(domnode *parameters) {
 
 		// add trigger to before list
 		if (before) {
-			if (pvt->_debug) {
-				stdoutput.printf("before trigger\n");
-			}
+			debugWrite("before trigger\n");
 			blist.append(p);
 		}
 
 		// add trigger to after list
 		if (after) {
-			if (pvt->_debug) {
-				stdoutput.printf("after trigger\n");
-			}
+			debugWrite("after trigger\n");
 			alist.append(p);
 		}
 	}
@@ -87,8 +77,6 @@ bool sqlrtriggers::load(domnode *parameters) {
 }
 
 sqlrmoduleplugin *sqlrtriggers::loadTrigger(domnode *trigger) {
-
-	debugFunction();
 
 	// ignore non-triggers
 	if (charstring::compare(trigger->getName(),"trigger")) {
@@ -105,9 +93,7 @@ sqlrmoduleplugin *sqlrtriggers::loadTrigger(domnode *trigger) {
 		}
 	}
 
-	if (pvt->_debug) {
-		stdoutput.printf("loading trigger: %s\n",module);
-	}
+	debugWrite("loading trigger: %s",module);
 
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the trigger module
@@ -155,9 +141,7 @@ sqlrmoduleplugin *sqlrtriggers::loadTrigger(domnode *trigger) {
 	}
 #endif
 
-	if (pvt->_debug) {
-		stdoutput.printf("success\n");
-	}
+	debugWrite("success");
 
 	// build and return the plugin
 	sqlrmoduleplugin	*sqlrmp=new sqlrmoduleplugin;
@@ -169,25 +153,23 @@ sqlrmoduleplugin *sqlrtriggers::loadTrigger(domnode *trigger) {
 
 bool sqlrtriggers::runBeforeTriggers(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur) {
-	debugFunction();
 	return runBefore(sqlrcon,sqlrcur,&blist);
 }
 
 bool sqlrtriggers::runAfterTriggers(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur) {
-	debugFunction();
 	return runAfter(sqlrcon,sqlrcur,&alist);
 }
 
 bool sqlrtriggers::runBefore(sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
 				singlylinkedlist< sqlrmoduleplugin * > *list) {
-	debugFunction();
 	for (listnode< sqlrmoduleplugin * > *node=list->getFirst();
 						node; node=node->getNext()) {
-		if (pvt->_debug) {
-			stdoutput.printf("\nrunning before trigger...\n\n");
-		}
+
+		debugWrite("running before trigger: %s...",
+					node->getValue()->module);
+
 		sqlrtrigger	*tr=(sqlrtrigger *)node->getValue()->m;
 		if (!tr->runBefore(sqlrcon,sqlrcur)) {
 			return false;
@@ -199,12 +181,12 @@ bool sqlrtriggers::runBefore(sqlrserverconnection *sqlrcon,
 bool sqlrtriggers::runAfter(sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
 				singlylinkedlist< sqlrmoduleplugin * > *list) {
-	debugFunction();
 	for (listnode< sqlrmoduleplugin * > *node=list->getFirst();
 						node; node=node->getNext()) {
-		if (pvt->_debug) {
-			stdoutput.printf("\nrunning after trigger...\n\n");
-		}
+
+		debugWrite("running after trigger: %s...",
+					node->getValue()->module);
+
 		sqlrtrigger	*tr=(sqlrtrigger *)node->getValue()->m;
 		if (!tr->runAfter(sqlrcon,sqlrcur)) {
 			return false;
