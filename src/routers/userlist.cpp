@@ -21,8 +21,6 @@ class SQLRSERVER_DLLSPEC sqlrrouter_userlist : public sqlrrouter {
 
 		const char	**users;
 		uint64_t	usercount;
-
-		bool	debug;
 };
 
 sqlrrouter_userlist::sqlrrouter_userlist(sqlrservercontroller *cont,
@@ -30,8 +28,6 @@ sqlrrouter_userlist::sqlrrouter_userlist(sqlrservercontroller *cont,
 						domnode *parameters) :
 					sqlrrouter(cont,rs,parameters) {
 	users=NULL;
-
-	debug=cont->getConfig()->getDebugRouters();
 
 	connid=parameters->getAttributeValue("connectionid");
 
@@ -54,17 +50,12 @@ const char *sqlrrouter_userlist::route(sqlrserverconnection *sqlrcon,
 						const char **err,
 						int64_t *errn) {
 
-	if (debug) {
-		stdoutput.printf("		route {\n");
-	}
+	debugWrite("route");
 
 	// get the user
 	const char	*user=sqlrcon->cont->getCurrentUser();
 	if (charstring::isNullOrEmpty(user)) {
-		if (debug) {
-			stdoutput.printf("			"
-					"routing null/empty user\n");
-		}
+		debugWrite("routing null/empty user");
 		return NULL;
 	}
 
@@ -74,18 +65,13 @@ const char *sqlrrouter_userlist::route(sqlrserverconnection *sqlrcon,
 		// if the user matches...
 		if (!charstring::compare(user,users[i]) ||
 			!charstring::compare(users[i],"*")) {
-			if (debug) {
-				stdoutput.printf("			"
-						"routing user %s to %s\n",
-						user,connid);
-			}
+			debugWrite("routing user %s to %s",user,connid);
 			return connid;
 		}
 	}
 
-	if (debug) {
-		stdoutput.printf("		}\n");
-	}
+	debugEnd();
+
 	return NULL;
 }
 

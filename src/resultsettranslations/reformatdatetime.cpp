@@ -25,8 +25,6 @@ class SQLRSERVER_DLLSPEC sqlrresultsettranslation_reformatdatetime :
 		const char	*datetimeformat;
 		const char	*dateformat;
 		const char	*timeformat;
-
-		bool	debug;
 };
 
 sqlrresultsettranslation_reformatdatetime::
@@ -34,8 +32,6 @@ sqlrresultsettranslation_reformatdatetime::
 				sqlrservercontroller *cont,
 				domnode *parameters) :
 				sqlrresultsettranslation(cont,parameters) {
-
-	debug=cont->getConfig()->getDebugResultSetTranslations();
 
 	// get the parameters
 	const char	*dateddmm=
@@ -102,10 +98,7 @@ bool sqlrresultsettranslation_reformatdatetime::run(
 					dateformat,
 					timeformat);
 
-	if (debug) {
-		stdoutput.printf("using ddmm=%d and yyyyddmm=%d\n",
-							ddmm,yyyyddmm);
-	}
+	debugWrite("using ddmm=%d and yyyyddmm=%d",ddmm,yyyyddmm);
 
 	return true;
 }

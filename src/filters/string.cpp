@@ -18,16 +18,12 @@ class SQLRSERVER_DLLSPEC sqlrfilter_string : public sqlrfilter {
 		const char	*pattern;
 		char		*lowerpattern;
 		bool		ignorecase;
-
-		bool	debug;
 };
 
 sqlrfilter_string::sqlrfilter_string(sqlrservercontroller *cont,
 						domnode *parameters) :
 						sqlrfilter(cont,parameters) {
 	debugFunction();
-
-	debug=cont->getConfig()->getDebugFilters();
 
 	pattern=parameters->getAttributeValue("pattern");
 
@@ -64,8 +60,8 @@ bool sqlrfilter_string::run(sqlrserverconnection *sqlrcon,
 
 	bool	result=!charstring::contains(query,pattern);
 
-	if (!result && debug) {
-		stdoutput.printf("string: matches pattern \"%s\"\n\n",pattern);
+	if (!result) {
+		debugWrite("string: matches pattern \"%s\"",pattern);
 	}
 
 	delete[] lowered;

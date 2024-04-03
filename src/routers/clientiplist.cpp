@@ -22,8 +22,6 @@ class SQLRSERVER_DLLSPEC sqlrrouter_clientiplist : public sqlrrouter {
 
 		const char	**clientips;
 		uint64_t	clientipcount;
-
-		bool	debug;
 };
 
 sqlrrouter_clientiplist::sqlrrouter_clientiplist(sqlrservercontroller *cont,
@@ -31,8 +29,6 @@ sqlrrouter_clientiplist::sqlrrouter_clientiplist(sqlrservercontroller *cont,
 						domnode *parameters) :
 					sqlrrouter(cont,rs,parameters) {
 	clientips=NULL;
-
-	debug=cont->getConfig()->getDebugRouters();
 
 	connid=parameters->getAttributeValue("connectionid");
 
@@ -55,17 +51,13 @@ const char *sqlrrouter_clientiplist::route(sqlrserverconnection *sqlrcon,
 						const char **err,
 						int64_t *errn) {
 
-	if (debug) {
-		stdoutput.printf("		route {\n");
-	}
+	debugStart("route");
 
 	// get the clientip
 	const char	*clientip=sqlrcon->cont->getClientAddr();
 	if (charstring::isNullOrEmpty(clientip)) {
-		if (debug) {
-			stdoutput.printf("			"
-					"routing null/empty client ip\n");
-		}
+		debugWrite("routing null/empty client ip");
+		debugEnd();
 		return NULL;
 	}
 
@@ -74,50 +66,31 @@ const char *sqlrrouter_clientiplist::route(sqlrserverconnection *sqlrcon,
 
 		// if the clientip matches...
 		if (match(clientip,clientips[i])) {
-			if (debug) {
-				stdoutput.printf("			"
-							"routing client ip "
-							"\"%s\" to %s\n	}\n",
+			debugWrite("routing client ip \"%s\" to %s",
 							clientip,connid);
-			}
+			debugEnd();
 			return connid;
 		}
 	}
 
-	stdoutput.printf("		}\n");
+	debugEnd();
+
 	return NULL;
 }
 
 bool sqlrrouter_clientiplist::match(const char *ip, const char *pattern) {
 
-	if (debug) {
-		stdoutput.printf("\n");
-	}
-
 	for (uint16_t i=0; i<4; i++) {
 
-		if (debug) {
-			stdoutput.printf("%d: ip=%s  pattern=%s\n",
-							i,ip,pattern);
-		}
+		debugWrite("%d: ip=%s  pattern=%s\n",i,ip,pattern);
 
 		// handle wildcards
 		if (!charstring::compare(pattern,"*")) {
-			if (debug) {
-				stdoutput.printf("		"
-						"%s matches "
-						"wildcard %s...\n",
-						ip,pattern);
-			}
+			debugWrite("%s matches wildcard %s...",ip,pattern);
 			break;
 		}
 		if (!charstring::compare(pattern,"*.",2)) {
-			if (debug) {
-				stdoutput.printf("		"
-						"%s matches "
-						"wildcard %s...\n",
-						ip,pattern);
-			}
+			debugWrite("%s matches wildcard %s...",ip,pattern);
 			pattern=pattern+2;
 			ip=charstring::findFirst(ip,'.')+1;
 			continue;
@@ -133,29 +106,20 @@ bool sqlrrouter_clientiplist::match(const char *ip, const char *pattern) {
 			const char	*start=chunk;
 			const char	*end=dash+1;
 
-			uint64_t	i=charstring::convertToUnsignedInteger(ip);
+			uint64_t	i=
+				charstring::convertToUnsignedInteger(ip);
 			bool		inrange=
-				(charstring::convertToUnsignedInteger(start)<=i &&
-					charstring::convertToUnsignedInteger(end)>=i);
+			(charstring::convertToUnsignedInteger(start)<=i &&
+				charstring::convertToUnsignedInteger(end)>=i);
 
 			delete[] chunk;
 
 			if (!inrange) {
-				if (debug) {
-					stdoutput.printf("		"
-							"%s doesn't "
-							"match %s...\n",
-							ip,pattern);
-				}
+				debugWrite("%s doesn't match %s...",ip,pattern);
 				return false;
 			}
 
-			if (debug) {
-				stdoutput.printf("		"
-						"%s matches "
-						"range %s...\n",
-						ip,pattern);
-			}
+			debugWrite("%s matches range %s...",ip,pattern);
 
 			pattern=dot+1;
 			ip=charstring::findFirst(ip,'.')+1;
@@ -169,12 +133,7 @@ bool sqlrrouter_clientiplist::match(const char *ip, const char *pattern) {
 		if (charstring::convertToUnsignedInteger(pattern)==
 				charstring::convertToUnsignedInteger(ip)) {
 
-			if (debug) {
-				stdoutput.printf("		"
-						"%s matches "
-						"individual %s...\n",
-						ip,pattern);
-			}
+			debugWrite("%s matches individual %s...",ip,pattern);
 
 			pattern=charstring::findFirst(pattern,'.')+1;
 			ip=charstring::findFirst(ip,'.')+1;
@@ -182,17 +141,11 @@ bool sqlrrouter_clientiplist::match(const char *ip, const char *pattern) {
 			continue;
 		}
 
-		if (debug) {
-			stdoutput.printf("		"
-					"%s doesn't match %s...\n",
-					ip,pattern);
-		}
+		debugWrite("%s doesn't match %s...",ip,pattern);
 		return false;
 	}
 
-	if (debug) {
-		stdoutput.printf("match found\n");
-	}
+	debugWrite("match found");
 	return true;
 }
 

@@ -47,8 +47,6 @@ class SQLRSERVER_DLLSPEC sqlrrouter_usedatabase : public sqlrrouter {
 		const char	*mapDbName(const char *sqlrconid,
 						const char *dbname);
 
-		bool	debug;
-
 		dictionary<char *,conndb *>	dbs;
 
 		bool	initialized;
@@ -58,8 +56,6 @@ sqlrrouter_usedatabase::sqlrrouter_usedatabase(sqlrservercontroller *cont,
 						sqlrrouters *rs,
 						domnode *parameters) :
 					sqlrrouter(cont,rs,parameters) {
-
-	debug=cont->getConfig()->getDebugRouters();
 
 	initialized=false;
 
@@ -94,49 +90,34 @@ const char *sqlrrouter_usedatabase::route(sqlrserverconnection *sqlrcon,
 		initialized=true;
 	}
 
-	if (debug) {
-		stdoutput.printf("		route {\n"
-				"			%s\n",query);
-	}
+	debugStart("route");
+	debugWrite("%s",query);
 
 	// get the id of the connection that hosts the db
 	conndb		*cdb=NULL;
 	if (dbs.getValue((char *)dbalias,&cdb)) {
 
-		if (debug) {
-			stdoutput.printf("			"
-					"%s to %s at %s ",
-					dbalias,cdb->dbname,cdb->connid);
-		}
+		stdoutput.printf("%s to %s at %s ",
+				dbalias,cdb->dbname,cdb->connid);
 
 		// select the specified db
 		if (cdb->sqlrcon->selectDatabase(cdb->dbname)) {
-			if (debug) {
-				stdoutput.printf("(success)\n");
-			}
+			debugWrite("(success)");
 			retval=cdb->connid;
 		} else {
 			*err=cdb->sqlrcon->errorMessage();
 			*errn=cdb->sqlrcon->errorNumber();
-			if (debug) {
-				stdoutput.printf("(failed)\n");
-			}
+			debugWrite("(failed)");
 			retval=NULL;
 		}
 	} else {
 		*err=SQLR_ERROR_DBNOTFOUND_STRING;
 		*errn=SQLR_ERROR_DBNOTFOUND;
-		if (debug) {
-			stdoutput.printf("			"
-						"%s not found\n",
-						dbalias);
-		}
+		debugWrite("%s not found",dbalias);
 		retval=NULL;
 	}
 
-	if (debug) {
-		stdoutput.printf("		}\n");
-	}
+	debugEnd();
 
 	// the original "use database" query shouldn't actually be run now,
 	// so disable it by setting the size of the query to 0
@@ -147,9 +128,7 @@ const char *sqlrrouter_usedatabase::route(sqlrserverconnection *sqlrcon,
 
 void sqlrrouter_usedatabase::buildDictionary() {
 
-	if (debug) {
-		stdoutput.printf("		build dictionary {\n");
-	}
+	debugStart("build dictionary");
 
 	// run through the connections...
 	for (uint16_t i=0; i<getRouters()->getConnectionCount(); i++) {
@@ -172,17 +151,12 @@ void sqlrrouter_usedatabase::buildDictionary() {
 			conndb	*cdb=new conndb(dbname,sqlrconid,sqlrcon);
 			dbs.setValue(charstring::duplicate(dbalias),cdb);
 
-			if (debug) {
-				stdoutput.printf("			"
-						"%s -> %s@%s\n",
-						dbalias,dbname,sqlrconid);
-			}
+			stdoutput.printf("%s -> %s@%s\n",
+					dbalias,dbname,sqlrconid);
 		}
 	}
 
-	if (debug) {
-		stdoutput.printf("		}\n");
-	}
+	debugEnd();
 }
 
 const char *sqlrrouter_usedatabase::mapDbName(const char *sqlrconid,

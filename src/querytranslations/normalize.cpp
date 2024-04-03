@@ -56,8 +56,6 @@ class SQLRSERVER_DLLSPEC sqlrquerytranslation_normalize :
 		bool	removebq;
 		bool	doubleescape;
 		bool	slashescape;
-
-		bool	debug;
 };
 
 sqlrquerytranslation_normalize::sqlrquerytranslation_normalize(
@@ -65,8 +63,6 @@ sqlrquerytranslation_normalize::sqlrquerytranslation_normalize(
 					domnode *parameters) :
 				sqlrquerytranslation(cont,parameters) {
 	debugFunction();
-
-	debug=cont->getConfig()->getDebugQueryTranslations();
 
 	foreigndecimals=charstring::isYes(
 			parameters->getAttributeValue("foreigndecimals"));
@@ -133,10 +129,11 @@ bool sqlrquerytranslation_normalize::run(sqlrserverconnection *sqlrcon,
 					stringbuffer *translatedquery) {
 	debugFunction();
 
-	if (debug) {
-		stdoutput.write("original query:\n\"");
-		stdoutput.safePrint(query,querylength);
-		stdoutput.write("\"\n\n");
+	if (getDebug()) {
+		debugWrite("original query:");
+		stringbuffer	b;
+		b.safePrint(query,querylength);
+		debugWrite("\"%s\"",b.getString());
 	}
 
 	// clear the normalized query buffers
@@ -241,10 +238,11 @@ bool sqlrquerytranslation_normalize::run(sqlrserverconnection *sqlrcon,
 		ptr++;
 	}
 
-	if (debug) {
-		stdoutput.write("normalized query (pass 1):\n\"");
-		stdoutput.safePrint(pass1.getString(),pass1.getSize());
-		stdoutput.write("\"\n\n");
+	if (getDebug()) {
+		debugWrite("normalized query (pass 1):");
+		stringbuffer	b;
+		b.safePrint(pass1.getString(),pass1.getSize());
+		debugWrite("\"%s\"",b.getString());
 	}
 
 	// normalize the query, second pass...
@@ -357,10 +355,11 @@ bool sqlrquerytranslation_normalize::run(sqlrserverconnection *sqlrcon,
 		}
 	}
 
-	if (debug) {
-		stdoutput.write("normalized query (pass 2):\n\"");
-		stdoutput.safePrint(pass2.getString(),pass2.getSize());
-		stdoutput.write("\"\n\n");
+	if (getDebug()) {
+		debugWrite("normalized query (pass 2):");
+		stringbuffer	b;
+		b.safePrint(pass2.getString(),pass2.getSize());
+		debugWrite("\"%s\"",b.getString());
 	}
 
 	// normalize the query, third pass...
@@ -499,10 +498,11 @@ bool sqlrquerytranslation_normalize::run(sqlrserverconnection *sqlrcon,
 		ptr++;
 	}
 
-	if (debug) {
-		stdoutput.write("normalized query (pass 3):\n\"");
-		stdoutput.safePrint(pass3.getString(),pass3.getSize());
-		stdoutput.write("\"\n\n");
+	if (getDebug()) {
+		debugWrite("normalized query (pass 3):");
+		stringbuffer	b;
+		b.safePrint(pass3.getString(),pass3.getSize());
+		debugWrite("\"%s\"",b.getString());
 	}
 
 	// normalize the query, fourth pass...
@@ -543,11 +543,12 @@ bool sqlrquerytranslation_normalize::run(sqlrserverconnection *sqlrcon,
 		ptr++;
 	}
 
-	if (debug) {
-		stdoutput.write("normalized query (pass 4):\n\"");
-		stdoutput.safePrint(translatedquery->getString(),
-					translatedquery->getSize());
-		stdoutput.write("\"\n\n");
+	if (getDebug()) {
+		debugWrite("normalized query (pass 4):");
+		stringbuffer	b;
+		b.safePrint(translatedquery->getString(),
+				translatedquery->getSize());
+		debugWrite("\"%s\"",b.getString());
 	}
 
 	return true;

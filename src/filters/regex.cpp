@@ -16,16 +16,12 @@ class SQLRSERVER_DLLSPEC sqlrfilter_regex : public sqlrfilter {
 	private:
 		regularexpression	re;
 		const char		*pattern;
-
-		bool	debug;
 };
 
 sqlrfilter_regex::sqlrfilter_regex(sqlrservercontroller *cont,
 						domnode *parameters) :
 						sqlrfilter(cont,parameters) {
 	debugFunction();
-
-	debug=cont->getConfig()->getDebugFilters();
 
 	pattern=parameters->getAttributeValue("pattern");
 	re.setPattern(pattern);
@@ -38,10 +34,7 @@ bool sqlrfilter_regex::run(sqlrserverconnection *sqlrcon,
 	debugFunction();
 
 	if (re.match(query)) {
-		if (debug) {
-			stdoutput.printf("regex: matches pattern \"%s\"\n\n",
-								pattern);
-		}
+		debugWrite("regex: matches pattern \"%s\"",pattern);
 		return false;
 	}
 	return true;
