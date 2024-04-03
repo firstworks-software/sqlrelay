@@ -129,7 +129,7 @@ const char *sqlrauths::auth(sqlrcredentials *cred) {
 	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
 
-		debugWrite("running auth: %s...\n",node->getValue()->module);
+		debugWrite("running auth: %s...",node->getValue()->module);
 		
 		sqlrauth	*m=(sqlrauth *)node->getValue()->m;
 		const char	*autheduser=m->auth(cred);

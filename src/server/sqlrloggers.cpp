@@ -139,7 +139,7 @@ void sqlrloggers::run(sqlrlistener *sqlrl,
 	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
 
-		debugWrite("running logger: %s...\n",node->getValue()->module);
+		debugWrite("running logger: %s...",node->getValue()->module);
 
 		sqlrlogger	*lg=(sqlrlogger *)node->getValue()->m;
 		lg->run(sqlrl,sqlrcon,sqlrcur,level,event,info);

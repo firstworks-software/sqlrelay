@@ -66,7 +66,7 @@ void sqlrdirectives::loadDirective(domnode *directive) {
 		}
 	}
 
-	debugWrite("loading directive module: %s\n",module);
+	debugWrite("loading directive module: %s",module);
 
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the directive module
@@ -114,7 +114,7 @@ void sqlrdirectives::loadDirective(domnode *directive) {
 	}
 #endif
 
-	debugWrite("success\n");
+	debugWrite("success");
 
 	// add the plugin to the list
 	sqlrmoduleplugin	*sqlrmp=new sqlrmoduleplugin;

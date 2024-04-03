@@ -63,7 +63,7 @@ void sqlrqueries::loadQuery(domnode *query) {
 		}
 	}
 
-	debugWrite("loading query module: %s\n",module);
+	debugWrite("loading query module: %s",module);
 
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the query module

@@ -63,13 +63,13 @@ bool sqlrtriggers::load(domnode *parameters) {
 
 		// add trigger to before list
 		if (before) {
-			debugWrite("before trigger\n");
+			debugWrite("before trigger");
 			blist.append(p);
 		}
 
 		// add trigger to after list
 		if (after) {
-			debugWrite("after trigger\n");
+			debugWrite("after trigger");
 			alist.append(p);
 		}
 	}
