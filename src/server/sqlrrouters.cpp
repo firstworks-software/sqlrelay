@@ -37,51 +37,23 @@ sqlrrouters::sqlrrouters(sqlrservercontroller *cont,
 }
 
 sqlrrouters::~sqlrrouters() {
-	unload();
 	delete pvt;
 }
 
-bool sqlrrouters::load(domnode *parameters) {
-
-	unload();
-
-	// run through the router list
-	for (domnode *router=parameters->getFirstTagChild();
-			!router->isNullNode();
-			router=router->getNextTagSibling()) {
-
-		if (isModuleDisabled(router)) {
-			continue;
-		}
-
-		// load router
-		loadRouter(router);
-	}
-	return true;
-}
-
-void sqlrrouters::loadRouter(domnode *router) {
+void sqlrrouters::loadModule(domnode *parameters) {
 
 	// ignore non-routers
-	if (charstring::compare(router->getName(),"router")) {
+	if (charstring::compare(parameters->getName(),"router")) {
 		return;
 	}
 
-	// get the router name
-	const char	*module=router->getAttributeValue("module");
-	if (!charstring::getLength(module)) {
-		// try "file", that's what it used to be called
-		module=router->getAttributeValue("file");
-		if (!charstring::getLength(module)) {
-			return;
-		}
+	// get the module name
+	const char	*module=getModuleName(parameters);
+	if (charstring::isNullOrEmpty(module)) {
+		return;
 	}
 
 	debugWrite("loading router module: %s",module);
-
-	if (cont->getConfig()->getDebugRouters()) {
-		stdoutput.printf("loading router: %s\n",module);
-	}
 
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the router module
@@ -120,7 +92,7 @@ void sqlrrouters::loadRouter(domnode *router) {
 		delete dl;
 		return;
 	}
-	sqlrrouter	*r=(*newRouter)(cont,this,router);
+	sqlrrouter	*r=(*newRouter)(cont,this,parameters);
 
 #else
 

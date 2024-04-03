@@ -18,10 +18,9 @@
 class sqlrresultsetrowblocktranslationsprivate {
 	friend class sqlrresultsetrowblocktranslations;
 	private:
-		uint64_t		_rowblockcount;
-		uint64_t		_rowcount;
-
-		const char		*_error;
+		uint64_t	_rowblockcount;
+		uint64_t	_rowcount;
+		const char	*_error;
 };
 
 sqlrresultsetrowblocktranslations::sqlrresultsetrowblocktranslations(
@@ -35,13 +34,10 @@ sqlrresultsetrowblocktranslations::sqlrresultsetrowblocktranslations(
 }
 
 sqlrresultsetrowblocktranslations::~sqlrresultsetrowblocktranslations() {
-	unload();
 	delete pvt;
 }
 
 bool sqlrresultsetrowblocktranslations::load(domnode *parameters) {
-
-	unload();
 
 	pvt->_rowblockcount=charstring::convertToInteger(
 			parameters->getAttributeValue("rowblockcount"));
@@ -53,43 +49,21 @@ bool sqlrresultsetrowblocktranslations::load(domnode *parameters) {
 		pvt->_rowblockcount=10;
 	}
 
-	// run through the result set translation list
-	for (domnode *resultsetrowblocktranslation=
-				parameters->getFirstTagChild();
-			!resultsetrowblocktranslation->isNullNode();
-			resultsetrowblocktranslation=
-				resultsetrowblocktranslation->
-						getNextTagSibling()) {
-
-		if (isModuleDisabled(resultsetrowblocktranslation)) {
-			continue;
-		}
-
-		// load result set translation
-		loadResultSetRowBlockTranslation(resultsetrowblocktranslation);
-	}
-
-	return true;
+	return sqlrservermodules::load(parameters);
 }
 
-void sqlrresultsetrowblocktranslations::loadResultSetRowBlockTranslation(
-					domnode *resultsetrowblocktranslation) {
+void sqlrresultsetrowblocktranslations::loadModule(domnode *parameters) {
 
 	// ignore non-resultsetrowblocktranslations
-	if (charstring::compare(resultsetrowblocktranslation->getName(),
+	if (charstring::compare(parameters->getName(),
 					"resultsetrowblocktranslation")) {
 		return;
 	}
 
-	// get the result set translation name
-	const char	*module=
-		resultsetrowblocktranslation->getAttributeValue("module");
-	if (!charstring::getLength(module)) {
-		// try "file", that's what it used to be called
-		module=resultsetrowblocktranslation->getAttributeValue("file");
-		if (!charstring::getLength(module)) {
-			return;
-		}
+	// get the module name
+	const char	*module=getModuleName(parameters);
+	if (charstring::isNullOrEmpty(module)) {
+		return;
 	}
 
 	debugWrite("loading result set row block translation: %s",module);
@@ -136,7 +110,7 @@ void sqlrresultsetrowblocktranslations::loadResultSetRowBlockTranslation(
 		return;
 	}
 	sqlrresultsetrowblocktranslation	*rstr=
-		(*newResultSetTranslation)(cont,resultsetrowblocktranslation);
+		(*newResultSetTranslation)(cont,parameters);
 
 #else
 	dynamiclib			*dl=NULL;

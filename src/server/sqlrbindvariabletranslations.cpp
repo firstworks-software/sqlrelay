@@ -30,49 +30,21 @@ sqlrbindvariabletranslations::sqlrbindvariabletranslations(
 }
 
 sqlrbindvariabletranslations::~sqlrbindvariabletranslations() {
-	unload();
 	delete pvt;
 }
 
-bool sqlrbindvariabletranslations::load(domnode *parameters) {
-
-	unload();
-
-	// run through the bind variable translation list
-	for (domnode *bindvariabletranslation=parameters->getFirstTagChild();
-			!bindvariabletranslation->isNullNode();
-			bindvariabletranslation=
-				bindvariabletranslation->getNextTagSibling()) {
-
-		if (isModuleDisabled(bindvariabletranslation)) {
-			continue;
-		}
-
-		// load bind variable translation
-		loadBindVariableTranslation(bindvariabletranslation);
-	}
-
-	return true;
-}
-
-void sqlrbindvariabletranslations::loadBindVariableTranslation(
-					domnode *bindvariabletranslation) {
+void sqlrbindvariabletranslations::loadModule(domnode *parameters) {
 
 	// ignore non-bindvariabletranslations
-	if (charstring::compare(bindvariabletranslation->getName(),
-						"bindvariabletranslation")) {
+	if (charstring::compare(parameters->getName(),
+					"bindvariabletranslation")) {
 		return;
 	}
 
-	// get the bind variable translation name
-	const char	*module=
-			bindvariabletranslation->getAttributeValue("module");
-	if (!charstring::getLength(module)) {
-		// try "file", that's what it used to be called
-		module=bindvariabletranslation->getAttributeValue("file");
-		if (!charstring::getLength(module)) {
-			return;
-		}
+	// get the module name
+	const char	*module=getModuleName(parameters);
+	if (charstring::isNullOrEmpty(module)) {
+		return;
 	}
 
 	debugWrite("loading bind variable translation module: %s",module);
@@ -116,8 +88,7 @@ void sqlrbindvariabletranslations::loadBindVariableTranslation(
 		return;
 	}
 	sqlrbindvariabletranslation	*bvtr=
-		(*newBindVariableTranslation)
-			(cont,bindvariabletranslation);
+		(*newBindVariableTranslation)(cont,parameters);
 
 #else
 	dynamiclib			*dl=NULL;

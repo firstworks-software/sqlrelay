@@ -36,45 +36,20 @@ sqlrmoduledatas::sqlrmoduledatas(sqlrservercontroller *cont) :
 }
 
 sqlrmoduledatas::~sqlrmoduledatas() {
-	unload();
 	delete pvt;
 }
 
-bool sqlrmoduledatas::load(domnode *parameters) {
-
-	unload();
-
-	// run through the moduledata list
-	for (domnode *moduledata=parameters->getFirstTagChild();
-				!moduledata->isNullNode();
-				moduledata=moduledata->getNextTagSibling()) {
-
-		if (isModuleDisabled(moduledata)) {
-			continue;
-		}
-
-		// load moduledata
-		loadModuleData(moduledata);
-	}
-
-	return true;
-}
-
-void sqlrmoduledatas::loadModuleData(domnode *moduledata) {
+void sqlrmoduledatas::loadModule(domnode *parameters) {
 
 	// ignore non-moduledatas
-	if (charstring::compare(moduledata->getName(),"moduledata")) {
+	if (charstring::compare(parameters->getName(),"moduledata")) {
 		return;
 	}
 
-	// get the moduledata name
-	const char	*module=moduledata->getAttributeValue("module");
-	if (!charstring::getLength(module)) {
-		// try "file", that's what it used to be called
-		module=moduledata->getAttributeValue("file");
-		if (!charstring::getLength(module)) {
-			return;
-		}
+	// get the module name
+	const char	*module=getModuleName(parameters);
+	if (charstring::isNullOrEmpty(module)) {
+		return;
 	}
 
 	debugWrite("loading moduledata module: %s",module);
@@ -112,7 +87,7 @@ void sqlrmoduledatas::loadModuleData(domnode *moduledata) {
 		delete dl;
 		return;
 	}
-	sqlrmoduledata	*md=(*newModuleData)(moduledata);
+	sqlrmoduledata	*md=(*newModuleData)(parameters);
 
 #else
 	dynamiclib	*dl=NULL;

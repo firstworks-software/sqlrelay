@@ -13,57 +13,25 @@
 	}
 #endif
 
-class sqlrdirectivesprivate {
-	friend class sqlrdirectives;
-	private:
-};
-
 sqlrdirectives::sqlrdirectives(sqlrservercontroller *cont) :
 						sqlrservermodules(cont) {
-	pvt=new sqlrdirectivesprivate;
 	setDebug(cont->getConfig()->getDebugDirectives());
 }
 
 sqlrdirectives::~sqlrdirectives() {
-	unload();
-	delete pvt;
 }
 
-bool sqlrdirectives::load(domnode *parameters) {
-
-	unload();
-
-	// run through the directive list
-	for (domnode *directive=parameters->getFirstTagChild();
-				!directive->isNullNode();
-				directive=directive->getNextTagSibling()) {
-
-		if (isModuleDisabled(directive)) {
-			continue;
-		}
-
-		// load directive
-		loadDirective(directive);
-	}
-
-	return true;
-}
-
-void sqlrdirectives::loadDirective(domnode *directive) {
+void sqlrdirectives::loadModule(domnode *parameters) {
 
 	// ignore non-directives
-	if (charstring::compare(directive->getName(),"directive")) {
+	if (charstring::compare(parameters->getName(),"directive")) {
 		return;
 	}
 
-	// get the directive name
-	const char	*module=directive->getAttributeValue("module");
-	if (!charstring::getLength(module)) {
-		// try "file", that's what it used to be called
-		module=directive->getAttributeValue("file");
-		if (!charstring::getLength(module)) {
-			return;
-		}
+	// get the module name
+	const char	*module=getModuleName(parameters);
+	if (charstring::isNullOrEmpty(module)) {
+		return;
 	}
 
 	debugWrite("loading directive module: %s",module);
@@ -103,7 +71,7 @@ void sqlrdirectives::loadDirective(domnode *directive) {
 		delete dl;
 		return;
 	}
-	sqlrdirective	*dr=(*newDirective)(cont,directive);
+	sqlrdirective	*dr=(*newDirective)(cont,parameters);
 
 #else
 	dynamiclib	*dl=NULL;

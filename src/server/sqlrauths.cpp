@@ -15,51 +15,41 @@
 	}
 #endif
 
-class sqlrauthsprivate {
-	friend class sqlrauths;
-	private:
-};
-
 sqlrauths::sqlrauths(sqlrservercontroller *cont) : sqlrservermodules(cont) {
-	pvt=new sqlrauthsprivate;
 	setDebug(cont->getConfig()->getDebugAuths());
 }
 
 sqlrauths::~sqlrauths() {
-	unload();
-	delete pvt;
 }
 
 bool sqlrauths::load(domnode *parameters, sqlrpwdencs *sqlrpe) {
 
 	unload();
 
-	// run through each set of auths
-	for (domnode *auth=parameters->getFirstTagChild("auth");
+	for (domnode *auth=parameters->getFirstTagChild();
 				!auth->isNullNode();
-				auth=auth->getNextTagSibling("auth")) {
+				auth=auth->getNextTagSibling()) {
 
 		if (isModuleDisabled(auth)) {
 			continue;
 		}
 
-		// load password encryption
-		loadAuth(auth,sqlrpe);
+		loadAuthModule(auth,sqlrpe);
 	}
 	return true;
 }
 
-void sqlrauths::loadAuth(domnode *auth, sqlrpwdencs *sqlrpe) {
+void sqlrauths::loadAuthModule(domnode *parameters, sqlrpwdencs *sqlrpe) {
 
-	// get the auth name
-	const char	*module=auth->getAttributeValue("module");
-	if (!charstring::getLength(module)) {
-		// try "file", that's what it used to be called
-		module=auth->getAttributeValue("file");
-		if (!charstring::getLength(module)) {
-			// fall back to default if no module is specified
-			module="default";
-		}
+	// ignore non-auths
+	if (charstring::compare(parameters->getName(),"auth")) {
+		return;
+	}
+
+	// get the module name
+	const char	*module=getModuleName(parameters);
+	if (charstring::isNullOrEmpty(module)) {
+		return;
 	}
 
 	debugWrite("loading auth module: %s",module);
@@ -100,7 +90,7 @@ void sqlrauths::loadAuth(domnode *auth, sqlrpwdencs *sqlrpe) {
 		delete dl;
 		return;
 	}
-	sqlrauth	*au=(*newAuth)(cont,sqlrpe,auth);
+	sqlrauth	*au=(*newAuth)(cont,sqlrpe,parameters);
 
 #else
 

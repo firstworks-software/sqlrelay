@@ -27,9 +27,7 @@ class sqlrquerytranslationsprivate {
 	friend class sqlrquerytranslations;
 	private:
 		xmldom		*_tree;
-
 		const char	*_error;
-
 		bool		_useoriginalonerror;
 };
 
@@ -43,13 +41,10 @@ sqlrquerytranslations::sqlrquerytranslations(sqlrservercontroller *cont) :
 }
 
 sqlrquerytranslations::~sqlrquerytranslations() {
-	unload();
 	delete pvt;
 }
 
 bool sqlrquerytranslations::load(domnode *parameters) {
-
-	unload();
 
 	// default to useoriginal-on-error
 	pvt->_useoriginalonerror=
@@ -57,37 +52,20 @@ bool sqlrquerytranslations::load(domnode *parameters) {
 				parameters->getAttributeValue("onerror"),
 				"original");
 
-	// run through the translation list
-	for (domnode *translation=parameters->getFirstTagChild();
-				!translation->isNullNode();
-				translation=translation->getNextTagSibling()) {
-
-		if (isModuleDisabled(translation)) {
-			continue;
-		}
-
-		// load translation
-		loadQueryTranslation(translation);
-	}
-
-	return true;
+	return sqlrservermodules::load(parameters);
 }
 
-void sqlrquerytranslations::loadQueryTranslation(domnode *translation) {
+void sqlrquerytranslations::loadModule(domnode *parameters) {
 
 	// ignore non-translations
-	if (charstring::compare(translation->getName(),"querytranslation")) {
+	if (charstring::compare(parameters->getName(),"querytranslation")) {
 		return;
 	}
 
-	// get the translation name
-	const char	*module=translation->getAttributeValue("module");
-	if (!charstring::getLength(module)) {
-		// try "file", that's what it used to be called
-		module=translation->getAttributeValue("file");
-		if (!charstring::getLength(module)) {
-			return;
-		}
+	// get the module name
+	const char	*module=getModuleName(parameters);
+	if (charstring::isNullOrEmpty(module)) {
+		return;
 	}
 
 	debugWrite("loading query translation module: %s",module);
@@ -150,7 +128,7 @@ void sqlrquerytranslations::loadQueryTranslation(domnode *translation) {
 			return;
 		}
 	}
-	sqlrquerytranslation	*tr=(*newQueryTranslation)(cont,translation);
+	sqlrquerytranslation	*tr=(*newQueryTranslation)(cont,parameters);
 
 #else
 	dynamiclib	*dl=NULL;

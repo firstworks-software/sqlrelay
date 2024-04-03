@@ -14,53 +14,23 @@
 	}
 #endif
 
-class sqlrqueriesprivate {
-	friend class sqlrqueries;
-	private:
-};
-
 sqlrqueries::sqlrqueries(sqlrservercontroller *cont) : sqlrservermodules(cont) {
-	pvt=new sqlrqueriesprivate;
 }
 
 sqlrqueries::~sqlrqueries() {
-	unload();
-	delete pvt;
 }
 
-bool sqlrqueries::load(domnode *parameters) {
-
-	unload();
-
-	// run through the query list
-	for (domnode *query=parameters->getFirstTagChild();
-		!query->isNullNode(); query=query->getNextTagSibling()) {
-
-		if (isModuleDisabled(query)) {
-			continue;
-		}
-
-		// load query
-		loadQuery(query);
-	}
-	return true;
-}
-
-void sqlrqueries::loadQuery(domnode *query) {
+void sqlrqueries::loadModule(domnode *parameters) {
 
 	// ignore non-queries
-	if (charstring::compare(query->getName(),"query")) {
+	if (charstring::compare(parameters->getName(),"query")) {
 		return;
 	}
 
-	// get the query name
-	const char	*module=query->getAttributeValue("module");
-	if (!charstring::getLength(module)) {
-		// try "file", that's what it used to be called
-		module=query->getAttributeValue("file");
-		if (!charstring::getLength(module)) {
-			return;
-		}
+	// get the module name
+	const char	*module=getModuleName(parameters);
+	if (charstring::isNullOrEmpty(module)) {
+		return;
 	}
 
 	debugWrite("loading query module: %s",module);
@@ -99,7 +69,7 @@ void sqlrqueries::loadQuery(domnode *query) {
 		delete dl;
 		return;
 	}
-	sqlrquery	*qr=(*newQuery)(cont,query);
+	sqlrquery	*qr=(*newQuery)(cont,parameters);
 
 #else
 

@@ -14,55 +14,24 @@
 	}
 #endif
 
-class sqlrschedulesprivate {
-	friend class sqlrschedules;
-	private:
-};
-
 sqlrschedules::sqlrschedules(sqlrservercontroller *cont) :
 					sqlrservermodules(cont) {
-	pvt=new sqlrschedulesprivate;
 }
 
 sqlrschedules::~sqlrschedules() {
-	unload();
-	delete pvt;
 }
 
-bool sqlrschedules::load(domnode *parameters) {
-
-	unload();
-
-	// run through the schedule list
-	for (domnode *schedule=parameters->getFirstTagChild();
-			!schedule->isNullNode();
-			schedule=schedule->getNextTagSibling()) {
-
-		if (isModuleDisabled(schedule)) {
-			continue;
-		}
-
-		// load schedule
-		loadSchedule(schedule);
-	}
-	return true;
-}
-
-void sqlrschedules::loadSchedule(domnode *schedule) {
+void sqlrschedules::loadModule(domnode *parameters) {
 
 	// ignore non-schedules
-	if (charstring::compare(schedule->getName(),"schedule")) {
+	if (charstring::compare(parameters->getName(),"schedule")) {
 		return;
 	}
 
-	// get the schedule name
-	const char	*module=schedule->getAttributeValue("module");
-	if (!charstring::getLength(module)) {
-		// try "file", that's what it used to be called
-		module=schedule->getAttributeValue("file");
-		if (!charstring::getLength(module)) {
-			return;
-		}
+	// get the module name
+	const char	*module=getModuleName(parameters);
+	if (charstring::isNullOrEmpty(module)) {
+		return;
 	}
 
 	debugWrite("loading schedule module: %s",module);
@@ -102,7 +71,7 @@ void sqlrschedules::loadSchedule(domnode *schedule) {
 		delete dl;
 		return;
 	}
-	sqlrschedule	*s=(*newSchedule)(cont,schedule);
+	sqlrschedule	*s=(*newSchedule)(cont,parameters);
 
 #else
 

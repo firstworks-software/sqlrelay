@@ -27,44 +27,20 @@ sqlrnotifications::sqlrnotifications(sqlrpaths *sqlrpth) :
 }
 
 sqlrnotifications::~sqlrnotifications() {
-	unload();
 	delete pvt;
 }
 
-bool sqlrnotifications::load(domnode *parameters) {
-
-	unload();
-
-	// run through the notification list
-	for (domnode *notification=parameters->getFirstTagChild();
-			!notification->isNullNode();
-			notification=notification->getNextTagSibling()) {
-
-		if (isModuleDisabled(notification)) {
-			continue;
-		}
-
-		// load notification
-		loadNotification(notification);
-	}
-	return true;
-}
-
-void sqlrnotifications::loadNotification(domnode *notification) {
+void sqlrnotifications::loadModule(domnode *parameters) {
 
 	// ignore non-notifications
-	if (charstring::compare(notification->getName(),"notification")) {
+	if (charstring::compare(parameters->getName(),"notification")) {
 		return;
 	}
 
-	// get the notification name
-	const char	*module=notification->getAttributeValue("module");
-	if (!charstring::getLength(module)) {
-		// try "file", that's what it used to be called
-		module=notification->getAttributeValue("file");
-		if (!charstring::getLength(module)) {
-			return;
-		}
+	// get the module name
+	const char	*module=getModuleName(parameters);
+	if (charstring::isNullOrEmpty(module)) {
+		return;
 	}
 
 	debugWrite("loading notification module: %s",module);
@@ -102,7 +78,7 @@ void sqlrnotifications::loadNotification(domnode *notification) {
 		delete dl;
 		return;
 	}
-	sqlrnotification	*n=(*newNotification)(notification);
+	sqlrnotification	*n=(*newNotification)(parameters);
 
 #else
 

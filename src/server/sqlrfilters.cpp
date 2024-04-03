@@ -15,19 +15,11 @@
 	}
 #endif
 
-class sqlrfiltersprivate {
-	friend class sqlrfilters;
-	private:
-};
-
 sqlrfilters::sqlrfilters(sqlrservercontroller *cont) : sqlrservermodules(cont) {
-	pvt=new sqlrfiltersprivate;
 	setDebug(cont->getConfig()->getDebugFilters());
 }
 
 sqlrfilters::~sqlrfilters() {
-	unload();
-	delete pvt;
 }
 
 bool sqlrfilters::load(domnode *parameters) {
@@ -46,30 +38,26 @@ bool sqlrfilters::load(domnode *parameters) {
 		if (charstring::contains(
 				filter->getAttributeValue("when"),
 				"before")) {
-			loadFilter(filter,&blist);
+			loadFilterModule(filter,&blist);
 		} else {
-			loadFilter(filter,&alist);
+			loadFilterModule(filter,&alist);
 		}
 	}
 	return true;
 }
 
-void sqlrfilters::loadFilter(domnode *filter, 
+void sqlrfilters::loadFilterModule(domnode *parameters,
 				singlylinkedlist< sqlrmoduleplugin * > *list) {
 
 	// ignore non-filters
-	if (charstring::compare(filter->getName(),"filter")) {
+	if (charstring::compare(parameters->getName(),"filter")) {
 		return;
 	}
 
-	// get the filter name
-	const char	*module=filter->getAttributeValue("module");
-	if (!charstring::getLength(module)) {
-		// try "file", that's what it used to be called
-		module=filter->getAttributeValue("file");
-		if (!charstring::getLength(module)) {
-			return;
-		}
+	// get the module name
+	const char	*module=getModuleName(parameters);
+	if (charstring::isNullOrEmpty(module)) {
+		return;
 	}
 
 	debugWrite("loading (%s) filter module: %s",
@@ -111,7 +99,7 @@ void sqlrfilters::loadFilter(domnode *filter,
 		delete dl;
 		return;
 	}
-	sqlrfilter	*f=(*newFilter)(cont,filter);
+	sqlrfilter	*f=(*newFilter)(cont,parameters);
 
 #else
 	dynamiclib	*dl=NULL;

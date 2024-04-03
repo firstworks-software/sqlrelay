@@ -30,49 +30,21 @@ sqlrresultsetrowtranslations::sqlrresultsetrowtranslations(
 }
 
 sqlrresultsetrowtranslations::~sqlrresultsetrowtranslations() {
-	unload();
 	delete pvt;
 }
 
-bool sqlrresultsetrowtranslations::load(domnode *parameters) {
-
-	unload();
-
-	// run through the result set translation list
-	for (domnode *resultsetrowtranslation=parameters->getFirstTagChild();
-			!resultsetrowtranslation->isNullNode();
-			resultsetrowtranslation=
-				resultsetrowtranslation->getNextTagSibling()) {
-
-		if (isModuleDisabled(resultsetrowtranslation)) {
-			continue;
-		}
-
-		// load result set translation
-		loadResultSetRowTranslation(resultsetrowtranslation);
-	}
-
-	return true;
-}
-
-void sqlrresultsetrowtranslations::loadResultSetRowTranslation(
-				domnode *resultsetrowtranslation) {
+void sqlrresultsetrowtranslations::loadModule(domnode *parameters) {
 
 	// ignore non-resultsetrowtranslations
-	if (charstring::compare(resultsetrowtranslation->getName(),
-						"resultsetrowtranslation")) {
+	if (charstring::compare(parameters->getName(),
+					"resultsetrowtranslation")) {
 		return;
 	}
 
-	// get the result set translation name
-	const char	*module=
-			resultsetrowtranslation->getAttributeValue("module");
-	if (!charstring::getLength(module)) {
-		// try "file", that's what it used to be called
-		module=resultsetrowtranslation->getAttributeValue("file");
-		if (!charstring::getLength(module)) {
-			return;
-		}
+	// get the module name
+	const char	*module=getModuleName(parameters);
+	if (charstring::isNullOrEmpty(module)) {
+		return;
 	}
 
 	debugWrite("loading result set row translation: %s",module);
@@ -117,7 +89,7 @@ void sqlrresultsetrowtranslations::loadResultSetRowTranslation(
 		return;
 	}
 	sqlrresultsetrowtranslation	*rstr=
-		(*newResultSetTranslation)(cont,resultsetrowtranslation);
+		(*newResultSetTranslation)(cont,parameters);
 
 #else
 	dynamiclib			*dl=NULL;

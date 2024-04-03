@@ -26,43 +26,20 @@ sqlrloggers::sqlrloggers(sqlrpaths *sqlrpth) : sqlrservermodules(NULL) {
 }
 
 sqlrloggers::~sqlrloggers() {
-	unload();
 	delete pvt;
 }
 
-bool sqlrloggers::load(domnode *parameters) {
-
-	unload();
-
-	// run through the logger list
-	for (domnode *logger=parameters->getFirstTagChild();
-		!logger->isNullNode(); logger=logger->getNextTagSibling()) {
-
-		if (isModuleDisabled(logger)) {
-			continue;
-		}
-
-		// load logger
-		loadLogger(logger);
-	}
-	return true;
-}
-
-void sqlrloggers::loadLogger(domnode *logger) {
+void sqlrloggers::loadModule(domnode *parameters) {
 
 	// ignore non-loggers
-	if (charstring::compare(logger->getName(),"logger")) {
+	if (charstring::compare(parameters->getName(),"logger")) {
 		return;
 	}
 
-	// get the logger name
-	const char	*module=logger->getAttributeValue("module");
-	if (!charstring::getLength(module)) {
-		// try "file", that's what it used to be called
-		module=logger->getAttributeValue("file");
-		if (!charstring::getLength(module)) {
-			return;
-		}
+	// get the module name
+	const char	*module=getModuleName(parameters);
+	if (charstring::isNullOrEmpty(module)) {
+		return;
 	}
 
 	debugWrite("loading logger module: %s",module);
@@ -98,7 +75,7 @@ void sqlrloggers::loadLogger(domnode *logger) {
 		delete dl;
 		return;
 	}
-	sqlrlogger	*lg=(*newLogger)(logger);
+	sqlrlogger	*lg=(*newLogger)(parameters);
 
 #else
 

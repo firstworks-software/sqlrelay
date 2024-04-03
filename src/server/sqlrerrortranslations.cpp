@@ -29,46 +29,20 @@ sqlrerrortranslations::sqlrerrortranslations(sqlrservercontroller *cont) :
 }
 
 sqlrerrortranslations::~sqlrerrortranslations() {
-	unload();
 	delete pvt;
 }
 
-bool sqlrerrortranslations::load(domnode *parameters) {
-
-	unload();
-
-	// run through the error translation list
-	for (domnode *errortranslation=parameters->getFirstTagChild();
-		!errortranslation->isNullNode();
-		errortranslation=errortranslation->getNextTagSibling()) {
-
-		if (isModuleDisabled(errortranslation)) {
-			continue;
-		}
-
-		// load error translation
-		loadErrorTranslation(errortranslation);
-	}
-
-	return true;
-}
-
-void sqlrerrortranslations::loadErrorTranslation(domnode *errortranslation) {
+void sqlrerrortranslations::loadModule(domnode *parameters) {
 
 	// ignore non-errortranslations
-	if (charstring::compare(errortranslation->getName()
-					,"errortranslation")) {
+	if (charstring::compare(parameters->getName(),"errortranslation")) {
 		return;
 	}
 
-	// get the error translation name
-	const char	*module=errortranslation->getAttributeValue("module");
-	if (!charstring::getLength(module)) {
-		// try "file", that's what it used to be called
-		module=errortranslation->getAttributeValue("file");
-		if (!charstring::getLength(module)) {
-			return;
-		}
+	// get the module name
+	const char	*module=getModuleName(parameters);
+	if (charstring::isNullOrEmpty(module)) {
+		return;
 	}
 
 	debugWrite("loading error translation module: %s",module);
@@ -109,9 +83,7 @@ void sqlrerrortranslations::loadErrorTranslation(domnode *errortranslation) {
 		delete dl;
 		return;
 	}
-	sqlrerrortranslation	*tr=
-		(*newErrorTranslation)
-			(cont,errortranslation);
+	sqlrerrortranslation	*tr=(*newErrorTranslation)(cont,parameters);
 
 #else
 	dynamiclib		*dl=NULL;

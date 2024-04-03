@@ -25,7 +25,6 @@ sqlrprotocols::sqlrprotocols(sqlrservercontroller *cont) :
 }
 
 sqlrprotocols::~sqlrprotocols() {
-	unload();
 	delete pvt;
 }
 
@@ -33,7 +32,6 @@ bool sqlrprotocols::load(domnode *parameters) {
 
 	unload();
 
-	// run through the listeners
 	uint16_t	i=0;
 	for (domnode *listener=parameters->getFirstTagChild();
 			!listener->isNullNode();
@@ -43,23 +41,22 @@ bool sqlrprotocols::load(domnode *parameters) {
 			continue;
 		}
 
-		// load protocol
-		loadProtocol(i,listener);
+		loadProtocolModule(i,listener);
 
 		i++;
 	}
 	return true;
 }
 
-void sqlrprotocols::loadProtocol(uint16_t index, domnode *listener) {
+void sqlrprotocols::loadProtocolModule(uint16_t index, domnode *parameters) {
 
 	// ignore any non-listener entries
-	if (charstring::compare(listener->getName(),"listener")) {
+	if (charstring::compare(parameters->getName(),"listener")) {
 		return;
 	}
 
 	// get the protocol name
-	const char	*module=listener->getAttributeValue("protocol");
+	const char	*module=parameters->getAttributeValue("protocol");
 
 	debugWrite("loading protocol module: %s",module);
 
@@ -97,7 +94,7 @@ void sqlrprotocols::loadProtocol(uint16_t index, domnode *listener) {
 		delete dl;
 		return;
 	}
-	sqlrprotocol	*pr=(*newProtocol)(cont,listener);
+	sqlrprotocol	*pr=(*newProtocol)(cont,parameters);
 
 #else
 

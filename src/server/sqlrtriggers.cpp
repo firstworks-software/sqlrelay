@@ -14,20 +14,12 @@
 	}
 #endif
 
-class sqlrtriggersprivate {
-	friend class sqlrtriggers;
-	private:
-};
-
 sqlrtriggers::sqlrtriggers(sqlrservercontroller *cont) :
 					sqlrservermodules(cont) {
-	pvt=new sqlrtriggersprivate;
 	setDebug(cont->getConfig()->getDebugTriggers());
 }
 
 sqlrtriggers::~sqlrtriggers() {
-	unload();
-	delete pvt;
 }
 
 bool sqlrtriggers::load(domnode *parameters) {
@@ -56,7 +48,7 @@ bool sqlrtriggers::load(domnode *parameters) {
 					"both"));
 
 		// load the trigger
-		sqlrmoduleplugin	*p=loadTrigger(trigger);
+		sqlrmoduleplugin	*p=loadTriggerModule(trigger);
 		if (!p) {
 			continue;
 		}
@@ -76,21 +68,17 @@ bool sqlrtriggers::load(domnode *parameters) {
 	return true;
 }
 
-sqlrmoduleplugin *sqlrtriggers::loadTrigger(domnode *trigger) {
+sqlrmoduleplugin *sqlrtriggers::loadTriggerModule(domnode *parameters) {
 
 	// ignore non-triggers
-	if (charstring::compare(trigger->getName(),"trigger")) {
+	if (charstring::compare(parameters->getName(),"trigger")) {
 		return NULL;
 	}
 
-	// get the trigger name
-	const char	*module=trigger->getAttributeValue("module");
-	if (!charstring::getLength(module)) {
-		// try "file", that's what it used to be called
-		module=trigger->getAttributeValue("file");
-		if (!charstring::getLength(module)) {
-			return NULL;
-		}
+	// get the module name
+	const char	*module=getModuleName(parameters);
+	if (charstring::isNullOrEmpty(module)) {
+		return NULL;
 	}
 
 	debugWrite("loading trigger: %s",module);
@@ -129,7 +117,7 @@ sqlrmoduleplugin *sqlrtriggers::loadTrigger(domnode *trigger) {
 		delete dl;
 		return NULL;
 	}
-	sqlrtrigger	*tr=(*newTrigger)(cont,trigger);
+	sqlrtrigger	*tr=(*newTrigger)(cont,parameters);
 
 #else
 
