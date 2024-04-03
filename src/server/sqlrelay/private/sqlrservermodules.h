@@ -39,7 +39,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocols : public sqlrservermodules {
 		sqlrprotocol	*getProtocol(uint16_t port);
 
 	private:
-		void	loadProtocolModule(uint16_t index, domnode *listener);
+		void	loadModule(domnode *parameters, uint16_t index);
 
 		sqlrprotocolsprivate	*pvt;
 };
@@ -53,7 +53,7 @@ class SQLRSERVER_DLLSPEC sqlrauths : public sqlrservermodules {
 		const char	*auth(sqlrcredentials *cred);
 
 	private:
-		void	loadAuthModule(domnode *auth, sqlrpwdencs *sqlrpe);
+		void	loadModule(domnode *parameters, sqlrpwdencs *sqlrpe);
 
 		sqlrauthsprivate	*pvt;
 };
@@ -219,7 +219,7 @@ class SQLRSERVER_DLLSPEC sqlrfilters : public sqlrservermodules {
 						int64_t *errn);
 
 	private:
-		void	loadFilterModule(domnode *filter,
+		void	loadModule(domnode *parameters,
 				singlylinkedlist< sqlrmoduleplugin * > *list);
 		bool	run(sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
@@ -396,7 +396,7 @@ class SQLRSERVER_DLLSPEC sqlrtriggers : public sqlrservermodules {
 						sqlrservercursor *sqlrcur);
 
 	private:
-		sqlrmoduleplugin	*loadTriggerModule(domnode *trigger);
+		void	loadModule(domnode *trigger, sqlrmoduleplugin **plugin);
 		bool	runBefore(sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
 				singlylinkedlist< sqlrmoduleplugin * > *list);

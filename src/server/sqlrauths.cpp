@@ -26,20 +26,23 @@ bool sqlrauths::load(domnode *parameters, sqlrpwdencs *sqlrpe) {
 
 	unload();
 
-	for (domnode *auth=parameters->getFirstTagChild();
-				!auth->isNullNode();
-				auth=auth->getNextTagSibling()) {
+	// run through the module tags
+	for (domnode *moduledata=parameters->getFirstTagChild();
+				!moduledata->isNullNode();
+				moduledata=moduledata->getNextTagSibling()) {
 
-		if (isModuleDisabled(auth)) {
+		// skip disabled modules
+		if (isModuleDisabled(moduledata)) {
 			continue;
 		}
 
-		loadAuthModule(auth,sqlrpe);
+		// load the module
+		loadModule(moduledata,sqlrpe);
 	}
 	return true;
 }
 
-void sqlrauths::loadAuthModule(domnode *parameters, sqlrpwdencs *sqlrpe) {
+void sqlrauths::loadModule(domnode *parameters, sqlrpwdencs *sqlrpe) {
 
 	// ignore non-auths
 	if (charstring::compare(parameters->getName(),"auth")) {

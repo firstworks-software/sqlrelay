@@ -39,12 +39,17 @@ sqlrresultsetrowblocktranslations::~sqlrresultsetrowblocktranslations() {
 
 bool sqlrresultsetrowblocktranslations::load(domnode *parameters) {
 
+	// get rowblockcount parameter
 	pvt->_rowblockcount=charstring::convertToInteger(
 			parameters->getAttributeValue("rowblockcount"));
+
+	// try "rowblocksize", that's what it used to be called
 	if (pvt->_rowblockcount) {
 		pvt->_rowblockcount=charstring::convertToInteger(
 			parameters->getAttributeValue("rowblocksize"));
 	}
+
+	// default to 10
 	if (!pvt->_rowblockcount) {
 		pvt->_rowblockcount=10;
 	}

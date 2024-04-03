@@ -32,23 +32,27 @@ bool sqlrprotocols::load(domnode *parameters) {
 
 	unload();
 
+	// run through the module tags
 	uint16_t	i=0;
-	for (domnode *listener=parameters->getFirstTagChild();
-			!listener->isNullNode();
-			listener=listener->getNextTagSibling()) {
+	for (domnode *moduledata=parameters->getFirstTagChild();
+				!moduledata->isNullNode();
+				moduledata=moduledata->getNextTagSibling()) {
 
-		if (isModuleDisabled(listener)) {
+		// skip disabled moudles
+		if (isModuleDisabled(moduledata)) {
 			continue;
 		}
 
-		loadProtocolModule(i,listener);
+		// load the module
+		loadModule(moduledata,i);
 
+		// next...
 		i++;
 	}
 	return true;
 }
 
-void sqlrprotocols::loadProtocolModule(uint16_t index, domnode *parameters) {
+void sqlrprotocols::loadModule(domnode *parameters, uint16_t index) {
 
 	// ignore any non-listener entries
 	if (charstring::compare(parameters->getName(),"listener")) {

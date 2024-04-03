@@ -26,27 +26,34 @@ bool sqlrfilters::load(domnode *parameters) {
 
 	unload();
 
-	// run through the filter list
-	for (domnode *filter=parameters->getFirstTagChild();
-				!filter->isNullNode();
-				filter=filter->getNextTagSibling()) {
+	// run through the module tags
+	for (domnode *moduledata=parameters->getFirstTagChild();
+				!moduledata->isNullNode();
+				moduledata=moduledata->getNextTagSibling()) {
 
+		// skip disabled modules
 		if (isModuleDisabled(parameters)) {
 			continue;
 		}
 
+		// load the module
 		if (charstring::contains(
-				filter->getAttributeValue("when"),
+				moduledata->getAttributeValue("when"),
 				"before")) {
-			loadFilterModule(filter,&blist);
+
+			// before-filter
+			loadModule(moduledata,&blist);
+
 		} else {
-			loadFilterModule(filter,&alist);
+
+			// after-filter
+			loadModule(moduledata,&alist);
 		}
 	}
 	return true;
 }
 
-void sqlrfilters::loadFilterModule(domnode *parameters,
+void sqlrfilters::loadModule(domnode *parameters,
 				singlylinkedlist< sqlrmoduleplugin * > *list) {
 
 	// ignore non-filters

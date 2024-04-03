@@ -26,29 +26,33 @@ bool sqlrtriggers::load(domnode *parameters) {
 
 	unload();
 
-	// run through the trigger list
-	for (domnode *trigger=parameters->getFirstTagChild();
-		!trigger->isNullNode(); trigger=trigger->getNextTagSibling()) {
+	// run through the module list
+	for (domnode *moduledata=parameters->getFirstTagChild();
+				!moduledata->isNullNode();
+				moduledata=moduledata->getNextTagSibling()) {
 
-		if (isModuleDisabled(trigger)) {
+		// skip disabled modules
+		if (isModuleDisabled(moduledata)) {
 			continue;
 		}
 
+		// is this a before, after, or both trigger
 		bool	before=(charstring::contains(
-					trigger->getAttributeValue("when"),
+					moduledata->getAttributeValue("when"),
 					"before") ||
 				charstring::contains(
-					trigger->getAttributeValue("when"),
+					moduledata->getAttributeValue("when"),
 					"both"));
 		bool	after=(charstring::contains(
-					trigger->getAttributeValue("when"),
+					moduledata->getAttributeValue("when"),
 					"after") ||
 				charstring::contains(
-					trigger->getAttributeValue("when"),
+					moduledata->getAttributeValue("when"),
 					"both"));
 
 		// load the trigger
-		sqlrmoduleplugin	*p=loadTriggerModule(trigger);
+		sqlrmoduleplugin	*p;
+		loadModule(moduledata,&p);
 		if (!p) {
 			continue;
 		}
@@ -68,17 +72,19 @@ bool sqlrtriggers::load(domnode *parameters) {
 	return true;
 }
 
-sqlrmoduleplugin *sqlrtriggers::loadTriggerModule(domnode *parameters) {
+void sqlrtriggers::loadModule(domnode *parameters, sqlrmoduleplugin **plugin) {
+
+	*plugin=NULL;
 
 	// ignore non-triggers
 	if (charstring::compare(parameters->getName(),"trigger")) {
-		return NULL;
+		return;
 	}
 
 	// get the module name
 	const char	*module=getModuleName(parameters);
 	if (charstring::isNullOrEmpty(module)) {
-		return NULL;
+		return;
 	}
 
 	debugWrite("loading trigger: %s",module);
@@ -97,7 +103,7 @@ sqlrmoduleplugin *sqlrtriggers::loadTriggerModule(domnode *parameters) {
 		stdoutput.printf("%s\n",(error)?error:"");
 		delete[] error;
 		delete dl;
-		return NULL;
+		return;
 	}
 
 	// load the trigger itself
@@ -115,7 +121,7 @@ sqlrmoduleplugin *sqlrtriggers::loadTriggerModule(domnode *parameters) {
 		delete[] error;
 		dl->close();
 		delete dl;
-		return NULL;
+		return;
 	}
 	sqlrtrigger	*tr=(*newTrigger)(cont,parameters);
 
@@ -136,7 +142,8 @@ sqlrmoduleplugin *sqlrtriggers::loadTriggerModule(domnode *parameters) {
 	sqlrmp->m=tr;
 	sqlrmp->dl=dl;
 	sqlrmp->module=module;
-	return sqlrmp;
+	*plugin=sqlrmp;
+	return;
 }
 
 bool sqlrtriggers::runBeforeTriggers(sqlrserverconnection *sqlrcon,

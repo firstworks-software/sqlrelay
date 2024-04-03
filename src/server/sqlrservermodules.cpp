@@ -19,18 +19,9 @@ sqlrservermodules::~sqlrservermodules() {
 }
 
 bool sqlrservermodules::isModuleDisabled(domnode *parameters) {
-
-
 	if (charstring::isNo(parameters->getAttributeValue("enabled"))) {
-		const char	*module=parameters->getAttributeValue("module");
-		// try "file", that's what it used to be called
-		module=parameters->getAttributeValue("file");
-		if (charstring::isNullOrEmpty(module)) {
-			// fall back to default if no module is specified
-			module="default";
-		}
-
-		debugWrite("not loading %s - disabled",module);
+		debugWrite("not loading %s - disabled",
+				getModuleName(parameters));
 		return true;
 	}
 	return false;
@@ -53,7 +44,6 @@ bool sqlrservermodules::load(domnode *parameters) {
 		// load the module
 		loadModule(moduledata);
 	}
-
 	return true;
 }
 
