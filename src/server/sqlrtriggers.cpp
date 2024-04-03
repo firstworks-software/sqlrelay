@@ -20,9 +20,6 @@ class sqlrtriggersprivate {
 	friend class sqlrtriggers;
 	private:
 		bool	_debug;
-
-		singlylinkedlist< sqlrmoduleplugin * >	_beforetriggers;
-		singlylinkedlist< sqlrmoduleplugin * >	_aftertriggers;
 };
 
 sqlrtriggers::sqlrtriggers(sqlrservercontroller *cont) :
@@ -75,7 +72,7 @@ bool sqlrtriggers::load(domnode *parameters) {
 			if (pvt->_debug) {
 				stdoutput.printf("before trigger\n");
 			}
-			pvt->_beforetriggers.append(p);
+			blist.append(p);
 		}
 
 		// add trigger to after list
@@ -83,34 +80,10 @@ bool sqlrtriggers::load(domnode *parameters) {
 			if (pvt->_debug) {
 				stdoutput.printf("after trigger\n");
 			}
-			pvt->_aftertriggers.append(p);
+			alist.append(p);
 		}
 	}
 	return true;
-}
-
-void sqlrtriggers::unload() {
-	debugFunction();
-	for (listnode< sqlrmoduleplugin * > *bnode=
-				pvt->_beforetriggers.getFirst();
-					bnode; bnode=bnode->getNext()) {
-		sqlrmoduleplugin	*sqlt=bnode->getValue();
-		if (!pvt->_aftertriggers.find(sqlt)) {
-			delete sqlt->m;
-			delete sqlt->dl;
-			delete sqlt;
-		}
-	}
-	pvt->_beforetriggers.clear();
-	for (listnode< sqlrmoduleplugin * > *anode=
-				pvt->_aftertriggers.getFirst();
-					anode; anode=anode->getNext()) {
-		sqlrmoduleplugin	*sqlt=anode->getValue();
-		delete sqlt->m;
-		delete sqlt->dl;
-		delete sqlt;
-	}
-	pvt->_aftertriggers.clear();
 }
 
 sqlrmoduleplugin *sqlrtriggers::loadTrigger(domnode *trigger) {
@@ -197,13 +170,13 @@ sqlrmoduleplugin *sqlrtriggers::loadTrigger(domnode *trigger) {
 bool sqlrtriggers::runBeforeTriggers(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur) {
 	debugFunction();
-	return runBefore(sqlrcon,sqlrcur,&pvt->_beforetriggers);
+	return runBefore(sqlrcon,sqlrcur,&blist);
 }
 
 bool sqlrtriggers::runAfterTriggers(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur) {
 	debugFunction();
-	return runAfter(sqlrcon,sqlrcur,&pvt->_aftertriggers);
+	return runAfter(sqlrcon,sqlrcur,&alist);
 }
 
 bool sqlrtriggers::runBefore(sqlrserverconnection *sqlrcon,
@@ -238,30 +211,4 @@ bool sqlrtriggers::runAfter(sqlrserverconnection *sqlrcon,
 		}
 	}
 	return true;
-}
-
-void sqlrtriggers::endTransaction(bool commit) {
-	for (listnode< sqlrmoduleplugin * >
-				*node=pvt->_beforetriggers.getFirst();
-				node; node=node->getNext()) {
-		node->getValue()->m->endTransaction(commit);
-	}
-	for (listnode< sqlrmoduleplugin * >
-				*node=pvt->_aftertriggers.getFirst();
-				node; node=node->getNext()) {
-		node->getValue()->m->endTransaction(commit);
-	}
-}
-
-void sqlrtriggers::endSession() {
-	for (listnode< sqlrmoduleplugin * >
-				*node=pvt->_beforetriggers.getFirst();
-				node; node=node->getNext()) {
-		node->getValue()->m->endSession();
-	}
-	for (listnode< sqlrmoduleplugin * >
-				*node=pvt->_aftertriggers.getFirst();
-				node; node=node->getNext()) {
-		node->getValue()->m->endSession();
-	}
 }

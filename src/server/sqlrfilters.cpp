@@ -21,9 +21,6 @@ class sqlrfiltersprivate {
 	friend class sqlrfilters;
 	private:
 		bool	_debug;
-
-		singlylinkedlist< sqlrmoduleplugin * >	_beforefilters;
-		singlylinkedlist< sqlrmoduleplugin * >	_afterfilters;
 };
 
 sqlrfilters::sqlrfilters(sqlrservercontroller *cont) : sqlrservermodules(cont) {
@@ -55,34 +52,12 @@ bool sqlrfilters::load(domnode *parameters) {
 		if (charstring::contains(
 				filter->getAttributeValue("when"),
 				"before")) {
-			loadFilter(filter,&pvt->_beforefilters);
+			loadFilter(filter,&blist);
 		} else {
-			loadFilter(filter,&pvt->_afterfilters);
+			loadFilter(filter,&alist);
 		}
 	}
 	return true;
-}
-
-void sqlrfilters::unload() {
-	debugFunction();
-	for (listnode< sqlrmoduleplugin * > *node=
-						pvt->_beforefilters.getFirst();
-						node; node=node->getNext()) {
-		sqlrmoduleplugin	*sqlrmp=node->getValue();
-		delete sqlrmp->m;
-		delete sqlrmp->dl;
-		delete sqlrmp;
-	}
-	pvt->_beforefilters.clear();
-	for (listnode< sqlrmoduleplugin * > *node=
-						pvt->_afterfilters.getFirst();
-						node; node=node->getNext()) {
-		sqlrmoduleplugin	*sqlrmp=node->getValue();
-		delete sqlrmp->m;
-		delete sqlrmp->dl;
-		delete sqlrmp;
-	}
-	pvt->_afterfilters.clear();
 }
 
 void sqlrfilters::loadFilter(domnode *filter, 
@@ -106,7 +81,7 @@ void sqlrfilters::loadFilter(domnode *filter,
 
 	if (pvt->_debug) {
 		stdoutput.printf("loading %s-filter module: %s\n",
-				(list==&pvt->_beforefilters)?"before":"after",
+				(list==&blist)?"before":"after",
 				module);
 	}
 
@@ -175,7 +150,7 @@ bool sqlrfilters::runBeforeFilters(sqlrserverconnection *sqlrcon,
 					const char **err,
 					int64_t *errn) {
 	debugFunction();
-	return run(sqlrcon,sqlrcur,sqlrp,query,err,errn,&pvt->_beforefilters);
+	return run(sqlrcon,sqlrcur,sqlrp,query,err,errn,&blist);
 }
 
 bool sqlrfilters::runAfterFilters(sqlrserverconnection *sqlrcon,
@@ -185,7 +160,7 @@ bool sqlrfilters::runAfterFilters(sqlrserverconnection *sqlrcon,
 					const char **err,
 					int64_t *errn) {
 	debugFunction();
-	return run(sqlrcon,sqlrcur,sqlrp,query,err,errn,&pvt->_afterfilters);
+	return run(sqlrcon,sqlrcur,sqlrp,query,err,errn,&alist);
 }
 
 bool sqlrfilters::run(sqlrserverconnection *sqlrcon,
@@ -208,7 +183,7 @@ bool sqlrfilters::run(sqlrserverconnection *sqlrcon,
 
 		if (pvt->_debug) {
 			stdoutput.printf("\nrunning %s-filter: %s...\n\n",
-				(list==&pvt->_beforefilters)?"before":"after",
+				(list==&blist)?"before":"after",
 				node->getValue()->module);
 		}
 
@@ -260,30 +235,4 @@ bool sqlrfilters::run(sqlrserverconnection *sqlrcon,
 		}
 	}
 	return true;
-}
-
-void sqlrfilters::endTransaction(bool commit) {
-	for (listnode< sqlrmoduleplugin * > *node=
-						pvt->_beforefilters.getFirst();
-						node; node=node->getNext()) {
-		node->getValue()->m->endTransaction(commit);
-	}
-	for (listnode< sqlrmoduleplugin * > *node=
-						pvt->_afterfilters.getFirst();
-						node; node=node->getNext()) {
-		node->getValue()->m->endTransaction(commit);
-	}
-}
-
-void sqlrfilters::endSession() {
-	for (listnode< sqlrmoduleplugin * > *node=
-						pvt->_beforefilters.getFirst();
-						node; node=node->getNext()) {
-		node->getValue()->m->endSession();
-	}
-	for (listnode< sqlrmoduleplugin * > *node=
-						pvt->_afterfilters.getFirst();
-						node; node=node->getNext()) {
-		node->getValue()->m->endSession();
-	}
 }

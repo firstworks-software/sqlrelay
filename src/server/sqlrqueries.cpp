@@ -19,7 +19,6 @@
 class sqlrqueriesprivate {
 	friend class sqlrqueries;
 	private:
-		singlylinkedlist< sqlrmoduleplugin * >	_llist;
 };
 
 sqlrqueries::sqlrqueries(sqlrservercontroller *cont) : sqlrservermodules(cont) {
@@ -52,19 +51,6 @@ bool sqlrqueries::load(domnode *parameters) {
 		loadQuery(query);
 	}
 	return true;
-}
-
-void sqlrqueries::unload() {
-	debugFunction();
-	for (listnode< sqlrmoduleplugin * > *node=
-						pvt->_llist.getFirst();
-						node; node=node->getNext()) {
-		sqlrmoduleplugin	*sqlrmp=node->getValue();
-		delete sqlrmp->m;
-		delete sqlrmp->dl;
-		delete sqlrmp;
-	}
-	pvt->_llist.clear();
 }
 
 void sqlrqueries::loadQuery(domnode *query) {
@@ -139,7 +125,7 @@ void sqlrqueries::loadQuery(domnode *query) {
 	sqlrmp->m=qr;
 	sqlrmp->dl=dl;
 	sqlrmp->module=module;
-	pvt->_llist.append(sqlrmp);
+	blist.append(sqlrmp);
 }
 
 sqlrquerycursor *sqlrqueries::match(sqlrserverconnection *sqlrcon,
@@ -147,8 +133,7 @@ sqlrquerycursor *sqlrqueries::match(sqlrserverconnection *sqlrcon,
 					uint32_t querysize,
 					uint16_t id) {
 	debugFunction();
-	for (listnode< sqlrmoduleplugin * > *node=
-						pvt->_llist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
 		sqlrquery	*qr=(sqlrquery *)node->getValue()->m;
 		if (qr->match(querystring,querysize)) {
@@ -156,20 +141,4 @@ sqlrquerycursor *sqlrqueries::match(sqlrserverconnection *sqlrcon,
 		}
 	}
 	return NULL;
-}
-
-void sqlrqueries::endTransaction(bool commit) {
-	for (listnode< sqlrmoduleplugin * > *node=
-						pvt->_llist.getFirst();
-						node; node=node->getNext()) {
-		node->getValue()->m->endTransaction(commit);
-	}
-}
-
-void sqlrqueries::endSession() {
-	for (listnode< sqlrmoduleplugin * > *node=
-						pvt->_llist.getFirst();
-						node; node=node->getNext()) {
-		node->getValue()->m->endSession();
-	}
 }

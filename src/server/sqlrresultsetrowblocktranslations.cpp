@@ -22,8 +22,6 @@ class sqlrresultsetrowblocktranslationsprivate {
 	private:
 		bool			_debug;
 
-		singlylinkedlist< sqlrmoduleplugin * > _tlist;
-
 		uint64_t		_rowblockcount;
 		uint64_t		_rowcount;
 
@@ -79,18 +77,6 @@ bool sqlrresultsetrowblocktranslations::load(domnode *parameters) {
 	}
 
 	return true;
-}
-
-void sqlrresultsetrowblocktranslations::unload() {
-	debugFunction();
-	for (listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
-						node; node=node->getNext()) {
-		sqlrmoduleplugin	*sqlrmp=node->getValue();
-		delete sqlrmp->m;
-		delete sqlrmp->dl;
-		delete sqlrmp;
-	}
-	pvt->_tlist.clear();
 }
 
 void sqlrresultsetrowblocktranslations::loadResultSetRowBlockTranslation(
@@ -181,7 +167,7 @@ void sqlrresultsetrowblocktranslations::loadResultSetRowBlockTranslation(
 	sqlmp->m=rstr;
 	sqlmp->dl=dl;
 	sqlmp->module=module;
-	pvt->_tlist.append(sqlmp);
+	blist.append(sqlmp);
 }
 
 uint64_t sqlrresultsetrowblocktranslations::getRowBlockCount() {
@@ -198,7 +184,7 @@ bool sqlrresultsetrowblocktranslations::setRow(sqlrserverconnection *sqlrcon,
 						bool *nulls) {
 	debugFunction();
 
-	listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
+	listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 	if (!node) {
 		return true;
 	}
@@ -231,7 +217,7 @@ bool sqlrresultsetrowblocktranslations::run(sqlrserverconnection *sqlrcon,
 
 	pvt->_error=NULL;
 
-	listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
+	listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 	if (!node) {
 		return true;
 	}
@@ -247,7 +233,7 @@ bool sqlrresultsetrowblocktranslations::run(sqlrserverconnection *sqlrcon,
 		return false;
 	}
 
-	for (listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
 
 		if (!node->getNext()) {
@@ -321,7 +307,7 @@ bool sqlrresultsetrowblocktranslations::getRow(sqlrserverconnection *sqlrcon,
 						bool **nulls) {
 	debugFunction();
 
-	listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getLast();
+	listnode< sqlrmoduleplugin * > *node=blist.getLast();
 	if (!node) {
 		return true;
 	}
@@ -346,18 +332,4 @@ bool sqlrresultsetrowblocktranslations::getRow(sqlrserverconnection *sqlrcon,
 
 const char *sqlrresultsetrowblocktranslations::getError() {
 	return pvt->_error;
-}
-
-void sqlrresultsetrowblocktranslations::endTransaction(bool commit) {
-	for (listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
-						node; node=node->getNext()) {
-		node->getValue()->m->endTransaction(commit);
-	}
-}
-
-void sqlrresultsetrowblocktranslations::endSession() {
-	for (listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
-						node; node=node->getNext()) {
-		node->getValue()->m->endSession();
-	}
 }

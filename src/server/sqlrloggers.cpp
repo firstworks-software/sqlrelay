@@ -20,8 +20,6 @@ class sqlrloggersprivate {
 	friend class sqlrloggers;
 	private:
 		const char	*_libexecdir;
-
-		singlylinkedlist< sqlrmoduleplugin * >	_llist;
 };
 
 sqlrloggers::sqlrloggers(sqlrpaths *sqlrpth) : sqlrservermodules(NULL) {
@@ -55,18 +53,6 @@ bool sqlrloggers::load(domnode *parameters) {
 		loadLogger(logger);
 	}
 	return true;
-}
-
-void sqlrloggers::unload() {
-	debugFunction();
-	for (listnode< sqlrmoduleplugin * > *node=pvt->_llist.getFirst();
-						node; node=node->getNext()) {
-		sqlrmoduleplugin	*sqlrmp=node->getValue();
-		delete sqlrmp->m;
-		delete sqlrmp->dl;
-		delete sqlrmp;
-	}
-	pvt->_llist.clear();
 }
 
 void sqlrloggers::loadLogger(domnode *logger) {
@@ -138,13 +124,13 @@ void sqlrloggers::loadLogger(domnode *logger) {
 	sqlrmp->m=lg;
 	sqlrmp->dl=dl;
 	sqlrmp->module=module;
-	pvt->_llist.append(sqlrmp);
+	blist.append(sqlrmp);
 }
 
 void sqlrloggers::init(sqlrlistener *sqlrl,
 				sqlrserverconnection *sqlrcon) {
 	debugFunction();
-	for (listnode< sqlrmoduleplugin * > *node=pvt->_llist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
 		sqlrlogger	*lg=(sqlrlogger *)node->getValue()->m;
 		lg->init(sqlrl,sqlrcon);
@@ -158,23 +144,9 @@ void sqlrloggers::run(sqlrlistener *sqlrl,
 				sqlrevent_t event,
 				const char *info) {
 	debugFunction();
-	for (listnode< sqlrmoduleplugin * > *node=pvt->_llist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
 		sqlrlogger	*lg=(sqlrlogger *)node->getValue()->m;
 		lg->run(sqlrl,sqlrcon,sqlrcur,level,event,info);
-	}
-}
-
-void sqlrloggers::endTransaction(bool commit) {
-	for (listnode< sqlrmoduleplugin * > *node=pvt->_llist.getFirst();
-						node; node=node->getNext()) {
-		node->getValue()->m->endTransaction(commit);
-	}
-}
-
-void sqlrloggers::endSession() {
-	for (listnode< sqlrmoduleplugin * > *node=pvt->_llist.getFirst();
-						node; node=node->getNext()) {
-		node->getValue()->m->endSession();
 	}
 }

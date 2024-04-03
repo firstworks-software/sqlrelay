@@ -22,8 +22,6 @@ class sqlrresultsettranslationsprivate {
 	private:
 		bool		_debug;
 
-		singlylinkedlist< sqlrmoduleplugin * >	_tlist;
-
 		const char	*_error;
 };
 
@@ -63,18 +61,6 @@ bool sqlrresultsettranslations::load(domnode *parameters) {
 	}
 
 	return true;
-}
-
-void sqlrresultsettranslations::unload() {
-	debugFunction();
-	for (listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
-						node; node=node->getNext()) {
-		sqlrmoduleplugin	*sqlrmp=node->getValue();
-		delete sqlrmp->m;
-		delete sqlrmp->dl;
-		delete sqlrmp;
-	}
-	pvt->_tlist.clear();
 }
 
 void sqlrresultsettranslations::loadResultSetTranslation(
@@ -161,7 +147,7 @@ void sqlrresultsettranslations::loadResultSetTranslation(
 	sqlrmp->m=rstr;
 	sqlrmp->dl=dl;
 	sqlrmp->module=module;
-	pvt->_tlist.append(sqlrmp);
+	blist.append(sqlrmp);
 }
 
 bool sqlrresultsettranslations::run(sqlrserverconnection *sqlrcon,
@@ -174,7 +160,7 @@ bool sqlrresultsettranslations::run(sqlrserverconnection *sqlrcon,
 
 	pvt->_error=NULL;
 
-	for (listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
 		if (pvt->_debug) {
 			stdoutput.printf("\nrunning translation:  %s...\n\n",
@@ -195,18 +181,4 @@ bool sqlrresultsettranslations::run(sqlrserverconnection *sqlrcon,
 
 const char *sqlrresultsettranslations::getError() {
 	return pvt->_error;
-}
-
-void sqlrresultsettranslations::endTransaction(bool commit) {
-	for (listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
-						node; node=node->getNext()) {
-		node->getValue()->m->endTransaction(commit);
-	}
-}
-
-void sqlrresultsettranslations::endSession() {
-	for (listnode< sqlrmoduleplugin * > *node=pvt->_tlist.getFirst();
-						node; node=node->getNext()) {
-		node->getValue()->m->endSession();
-	}
 }

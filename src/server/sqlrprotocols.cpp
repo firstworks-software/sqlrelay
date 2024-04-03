@@ -58,19 +58,6 @@ bool sqlrprotocols::load(domnode *parameters) {
 	return true;
 }
 
-void sqlrprotocols::unload() {
-	debugFunction();
-	for (listnode<uint16_t> *node=pvt->_protos.getKeys()->getFirst();
-						node; node=node->getNext()) {
-		sqlrmoduleplugin	*sqlrmp=
-					pvt->_protos.getValue(node->getValue());
-		delete sqlrmp->m;
-		delete sqlrmp->dl;
-		delete sqlrmp;
-	}
-	pvt->_protos.clear();
-}
-
 void sqlrprotocols::loadProtocol(uint16_t index, domnode *listener) {
 	debugFunction();
 
@@ -134,6 +121,7 @@ void sqlrprotocols::loadProtocol(uint16_t index, domnode *listener) {
 	sqlrmoduleplugin	*sqlrmp=new sqlrmoduleplugin;
 	sqlrmp->m=pr;
 	sqlrmp->dl=dl;
+	blist.append(sqlrmp);
 	pvt->_protos.setValue(index,sqlrmp);
 }
 
@@ -144,19 +132,4 @@ sqlrprotocol *sqlrprotocols::getProtocol(uint16_t index) {
 		return NULL;
 	}
 	return (sqlrprotocol *)pp->m;
-}
-
-void sqlrprotocols::endTransaction(bool commit) {
-	for (listnode<uint16_t> *node=pvt->_protos.getKeys()->getFirst();
-						node; node=node->getNext()) {
-		pvt->_protos.getValue(node->getValue())->
-					m->endTransaction(commit);
-	}
-}
-
-void sqlrprotocols::endSession() {
-	for (listnode<uint16_t> *node=pvt->_protos.getKeys()->getFirst();
-						node; node=node->getNext()) {
-		pvt->_protos.getValue(node->getValue())->m->endSession();
-	}
 }

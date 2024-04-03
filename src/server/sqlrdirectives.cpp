@@ -19,8 +19,6 @@ class sqlrdirectivesprivate {
 	friend class sqlrdirectives;
 	private:
 		bool	_debug;
-
-		singlylinkedlist< sqlrmoduleplugin * >	_dlist;
 };
 
 sqlrdirectives::sqlrdirectives(sqlrservercontroller *cont) :
@@ -55,18 +53,6 @@ bool sqlrdirectives::load(domnode *parameters) {
 	}
 
 	return true;
-}
-
-void sqlrdirectives::unload() {
-	debugFunction();
-	for (listnode< sqlrmoduleplugin * > *node=pvt->_dlist.getFirst();
-						node; node=node->getNext()) {
-		sqlrmoduleplugin	*sqlmp=node->getValue();
-		delete sqlmp->m;
-		delete sqlmp->dl;
-		delete sqlmp;
-	}
-	pvt->_dlist.clear();
 }
 
 void sqlrdirectives::loadDirective(domnode *directive) {
@@ -146,7 +132,7 @@ void sqlrdirectives::loadDirective(domnode *directive) {
 	sqlrmp->m=dr;
 	sqlrmp->dl=dl;
 	sqlrmp->module=module;
-	pvt->_dlist.append(sqlrmp);
+	blist.append(sqlrmp);
 }
 
 bool sqlrdirectives::run(sqlrserverconnection *sqlrcon,
@@ -156,7 +142,7 @@ bool sqlrdirectives::run(sqlrserverconnection *sqlrcon,
 	if (!query) {
 		return false;
 	}
-	for (listnode< sqlrmoduleplugin * > *node=pvt->_dlist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
 
 		if (pvt->_debug) {

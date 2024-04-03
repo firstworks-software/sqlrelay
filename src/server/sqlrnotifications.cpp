@@ -20,8 +20,6 @@ class sqlrnotificationsprivate {
 	friend class sqlrnotifications;
 	private:
 		const char	*_libexecdir;
-
-		singlylinkedlist< sqlrmoduleplugin * >	_llist;
 };
 
 sqlrnotifications::sqlrnotifications(sqlrpaths *sqlrpth) :
@@ -57,19 +55,6 @@ bool sqlrnotifications::load(domnode *parameters) {
 		loadNotification(notification);
 	}
 	return true;
-}
-
-void sqlrnotifications::unload() {
-	debugFunction();
-	for (listnode< sqlrmoduleplugin * > *node=
-						pvt->_llist.getFirst();
-						node; node=node->getNext()) {
-		sqlrmoduleplugin	*sqlrmp=node->getValue();
-		delete sqlrmp->m;
-		delete sqlrmp->dl;
-		delete sqlrmp;
-	}
-	pvt->_llist.clear();
 }
 
 void sqlrnotifications::loadNotification(domnode *notification) {
@@ -143,7 +128,7 @@ void sqlrnotifications::loadNotification(domnode *notification) {
 	sqlrmp->m=n;
 	sqlrmp->dl=dl;
 	sqlrmp->module=module;
-	pvt->_llist.append(sqlrmp);
+	blist.append(sqlrmp);
 }
 
 void sqlrnotifications::run(sqlrlistener *sqlrl,
@@ -152,25 +137,10 @@ void sqlrnotifications::run(sqlrlistener *sqlrl,
 					sqlrevent_t event,
 					const char *info) {
 	debugFunction();
-	for (listnode< sqlrmoduleplugin * > *node=pvt->_llist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
 		sqlrnotification	*n=
 			(sqlrnotification *)node->getValue()->m;
 		n->run(sqlrl,sqlrcon,sqlrcur,event,info);
 	}
 }
-
-void sqlrnotifications::endTransaction(bool commit) {
-	for (listnode< sqlrmoduleplugin * > *node=pvt->_llist.getFirst();
-						node; node=node->getNext()) {
-		node->getValue()->m->endTransaction(commit);
-	}
-}
-
-void sqlrnotifications::endSession() {
-	for (listnode< sqlrmoduleplugin * > *node=pvt->_llist.getFirst();
-						node; node=node->getNext()) {
-		node->getValue()->m->endSession();
-	}
-}
-

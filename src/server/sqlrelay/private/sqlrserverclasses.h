@@ -15,9 +15,13 @@ class SQLRSERVER_DLLSPEC sqlrservermodules {
 
 		bool	isModuleDisabled(domnode *parameters);
 
+		virtual void	unload();
 		virtual void	endTransaction(bool commit);
 		virtual void	endSession();
 	protected:
+		singlylinkedlist< sqlrmoduleplugin * >	blist;
+		singlylinkedlist< sqlrmoduleplugin * >	alist;
+
 		sqlrservercontroller	*cont;
 };
 
@@ -26,14 +30,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocols : public sqlrservermodules {
 		sqlrprotocols(sqlrservercontroller *cont);
 		~sqlrprotocols();
 
-		bool		load(domnode *listeners);
+		bool	load(domnode *listeners);
 		sqlrprotocol	*getProtocol(uint16_t port);
 
-		void	endTransaction(bool commit);
-		void	endSession();
-
 	private:
-		void	unload();
 		void	loadProtocol(uint16_t index, domnode *listener);
 
 		sqlrprotocolsprivate	*pvt;
@@ -44,12 +44,10 @@ class SQLRSERVER_DLLSPEC sqlrauths : public sqlrservermodules {
 		sqlrauths(sqlrservercontroller *cont);
 		~sqlrauths();
 
-		bool		load(domnode *parameters,
-					sqlrpwdencs *sqlrpe);
+		bool	load(domnode *parameters, sqlrpwdencs *sqlrpe);
 		const char	*auth(sqlrcredentials *cred);
 
 	private:
-		void	unload();
 		void	loadAuth(domnode *auth, sqlrpwdencs *sqlrpe);
 
 		sqlrauthsprivate	*pvt;
@@ -70,12 +68,8 @@ class SQLRSERVER_DLLSPEC sqlrloggers : public sqlrservermodules {
 				sqlrevent_t event,
 				const char *info);
 
-		void	endTransaction(bool commit);
-		void	endSession();
-
 	private:
-		void		unload();
-		void		loadLogger(domnode *logger);
+		void	loadLogger(domnode *logger);
 
 		sqlrloggersprivate	*pvt;
 };
@@ -92,12 +86,8 @@ class SQLRSERVER_DLLSPEC sqlrnotifications : public sqlrservermodules {
 					sqlrevent_t event,
 					const char *info);
 
-		void	endTransaction(bool commit);
-		void	endSession();
-
 	private:
-		void		unload();
-		void		loadNotification(domnode *notification);
+		void	loadNotification(domnode *notification);
 
 		sqlrnotificationsprivate	*pvt;
 };
@@ -112,8 +102,7 @@ class SQLRSERVER_DLLSPEC sqlrschedules : public sqlrservermodules {
 						const char *user);
 
 	private:
-		void		unload();
-		void		loadSchedule(domnode *schedule);
+		void	loadSchedule(domnode *schedule);
 
 		sqlrschedulesprivate	*pvt;
 };
@@ -128,15 +117,12 @@ class SQLRSERVER_DLLSPEC sqlrrouters : public sqlrservermodules {
 				uint16_t connectioncount);
 		~sqlrrouters();
 
-		bool		load(domnode *parameters);
+		bool	load(domnode *parameters);
 		const char	*route(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur,
 						const char **err,
 						int64_t *errn);
 		bool	routeEntireSession();
-
-		void	endTransaction(bool commit);
-		void	endSession();
 
 		const char	*getCurrentConnectionId();
 		const char	**getConnectionIds();
@@ -144,8 +130,7 @@ class SQLRSERVER_DLLSPEC sqlrrouters : public sqlrservermodules {
 		uint16_t	getConnectionCount();
 
 	private:
-		void		unload();
-		void		loadRouter(domnode *route);
+		void	loadRouter(domnode *route);
 
 		void	setCurrentConnectionId(const char *connid);
 
@@ -163,7 +148,6 @@ class SQLRSERVER_DLLSPEC sqlrdirectives : public sqlrservermodules {
 					const char *query);
 
 	private:
-		void	unload();
 		void	loadDirective(domnode *directive);
 
 		sqlrdirectivesprivate	*pvt;
@@ -183,14 +167,9 @@ class SQLRSERVER_DLLSPEC sqlrquerytranslations : public sqlrservermodules {
 						stringbuffer *translatedquery);
 
 		const char	*getError();
-
-		void	endTransaction(bool commit);
-		void	endSession();
-
 		bool	getUseOriginalOnError();
 
 	private:
-		void	unload();
 		void	loadTranslation(domnode *translation);
 
 		sqlrdatabaseobject *createDatabaseObject(
@@ -239,11 +218,7 @@ class SQLRSERVER_DLLSPEC sqlrfilters : public sqlrservermodules {
 						const char **err,
 						int64_t *errn);
 
-		void	endTransaction(bool commit);
-		void	endSession();
-
 	private:
-		void	unload();
 		void	loadFilter(domnode *filter,
 				singlylinkedlist< sqlrmoduleplugin * > *list);
 		bool	run(sqlrserverconnection *sqlrcon,
@@ -269,11 +244,7 @@ class SQLRSERVER_DLLSPEC sqlrbindvariabletranslations :
 
 		const char	*getError();
 
-		void	endTransaction(bool commit);
-		void	endSession();
-
 	private:
-		void	unload();
 		void	loadBindVariableTranslation(
 					domnode *bindvariabletranslation);
 
@@ -295,13 +266,8 @@ class SQLRSERVER_DLLSPEC sqlrresultsettranslations : public sqlrservermodules {
 
 		const char	*getError();
 
-		void	endTransaction(bool commit);
-		void	endSession();
-
 	private:
-		void	unload();
-		void	loadResultSetTranslation(
-					domnode *resultsettranslation);
+		void	loadResultSetTranslation(domnode *resultsettranslation);
 
 		sqlrresultsettranslationsprivate	*pvt;
 };
@@ -322,11 +288,7 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowtranslations :
 
 		const char	*getError();
 
-		void	endTransaction(bool commit);
-		void	endSession();
-
 	private:
-		void	unload();
 		void	loadResultSetRowTranslation(
 					domnode *resultsetrowtranslation);
 
@@ -365,11 +327,7 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslations :
 
 		const char	*getError();
 
-		void	endTransaction(bool commit);
-		void	endSession();
-
 	private:
-		void	unload();
 		void	loadResultSetRowBlockTranslation(
 					domnode *resultsetrowblocktranslation);
 
@@ -407,11 +365,7 @@ class SQLRSERVER_DLLSPEC sqlrresultsetheadertranslations :
 
 		const char	*getError();
 
-		void	endTransaction(bool commit);
-		void	endSession();
-
 	private:
-		void	unload();
 		void	loadResultSetHeaderTranslation(
 					domnode *resultsetheadertranslation);
 
@@ -434,11 +388,7 @@ class SQLRSERVER_DLLSPEC sqlrerrortranslations : public sqlrservermodules {
 
 		const char	*getError();
 
-		void	endTransaction(bool commit);
-		void	endSession();
-
 	private:
-		void	unload();
 		void	loadErrorTranslation(domnode *errortranslation);
 
 		sqlrerrortranslationsprivate	*pvt;
@@ -455,11 +405,7 @@ class SQLRSERVER_DLLSPEC sqlrtriggers : public sqlrservermodules {
 		bool	runAfterTriggers(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur);
 
-		void	endTransaction(bool commit);
-		void	endSession();
-
 	private:
-		void	unload();
 		sqlrmoduleplugin	*loadTrigger(domnode *trigger);
 		bool	runBefore(sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
@@ -476,17 +422,13 @@ class SQLRSERVER_DLLSPEC sqlrqueries : public sqlrservermodules {
 		sqlrqueries(sqlrservercontroller *cont);
 		~sqlrqueries();
 
-		bool		load(domnode *parameters);
+		bool	load(domnode *parameters);
 		sqlrquerycursor	*match(sqlrserverconnection *sqlrcon,
 						const char *querystring,
 						uint32_t querysize,
 						uint16_t id);
 
-		void	endTransaction(bool commit);
-		void	endSession();
-
 	private:
-		void	unload();
 		void	loadQuery(domnode *logger);
 
 		sqlrqueriesprivate	*pvt;
@@ -502,11 +444,8 @@ class SQLRSERVER_DLLSPEC sqlrmoduledatas : public sqlrservermodules {
 		sqlrmoduledata	*getModuleData(const char *id);
 
 		void	closeResultSet(sqlrservercursor *sqlrcur);
-		void	endTransaction(bool commit);
-		void	endSession();
 
 	private:
-		void	unload();
 		void	loadModuleData(domnode *moduledata);
 
 		sqlrmoduledatasprivate	*pvt;

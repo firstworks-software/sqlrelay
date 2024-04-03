@@ -30,7 +30,6 @@ class sqlrmoduledatasprivate {
 	private:
 		bool		_debug;
 
-		singlylinkedlist< sqlrmoduleplugin * >		_mlist;
 		dictionary< const char *, sqlrmoduledata * >	_mdict;
 };
 
@@ -66,19 +65,6 @@ bool sqlrmoduledatas::load(domnode *parameters) {
 	}
 
 	return true;
-}
-
-void sqlrmoduledatas::unload() {
-	debugFunction();
-	for (listnode< sqlrmoduleplugin * > *node=
-						pvt->_mlist.getFirst();
-						node; node=node->getNext()) {
-		sqlrmoduleplugin	*sqlrmp=node->getValue();
-		delete sqlrmp->m;
-		delete sqlrmp->dl;
-		delete sqlrmp;
-	}
-	pvt->_mlist.clear();
 }
 
 void sqlrmoduledatas::loadModuleData(domnode *moduledata) {
@@ -156,7 +142,7 @@ void sqlrmoduledatas::loadModuleData(domnode *moduledata) {
 	sqlmp->m=md;
 	sqlmp->dl=dl;
 	sqlmp->module=module;
-	pvt->_mlist.append(sqlmp);
+	blist.append(sqlmp);
 	pvt->_mdict.setValue(md->getId(),md);
 }
 
@@ -165,26 +151,9 @@ sqlrmoduledata *sqlrmoduledatas::getModuleData(const char *id) {
 }
 
 void sqlrmoduledatas::closeResultSet(sqlrservercursor *sqlrcur) {
-	for (listnode< sqlrmoduleplugin * >
-				*node=pvt->_mlist.getFirst();
-				node; node=node->getNext()) {
+	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
+						node; node=node->getNext()) {
 		sqlrmoduledata	*md=(sqlrmoduledata *)node->getValue()->m;
 		md->closeResultSet(sqlrcur);
-	}
-}
-
-void sqlrmoduledatas::endTransaction(bool commit) {
-	for (listnode< sqlrmoduleplugin * >
-				*node=pvt->_mlist.getFirst();
-				node; node=node->getNext()) {
-		node->getValue()->m->endTransaction(commit);
-	}
-}
-
-void sqlrmoduledatas::endSession() {
-	for (listnode< sqlrmoduleplugin * >
-				*node=pvt->_mlist.getFirst();
-				node; node=node->getNext()) {
-		node->getValue()->m->endSession();
 	}
 }

@@ -19,7 +19,6 @@
 class sqlrschedulesprivate {
 	friend class sqlrschedules;
 	private:
-		singlylinkedlist< sqlrmoduleplugin * >	_llist;
 };
 
 sqlrschedules::sqlrschedules(sqlrservercontroller *cont) :
@@ -54,19 +53,6 @@ bool sqlrschedules::load(domnode *parameters) {
 		loadSchedule(schedule);
 	}
 	return true;
-}
-
-void sqlrschedules::unload() {
-	debugFunction();
-	for (listnode< sqlrmoduleplugin * > *node=
-						pvt->_llist.getFirst();
-						node; node=node->getNext()) {
-		sqlrmoduleplugin	*sqlrmp=node->getValue();
-		delete sqlrmp->m;
-		delete sqlrmp->dl;
-		delete sqlrmp;
-	}
-	pvt->_llist.clear();
 }
 
 void sqlrschedules::loadSchedule(domnode *schedule) {
@@ -142,12 +128,12 @@ void sqlrschedules::loadSchedule(domnode *schedule) {
 	sqlrmp->m=s;
 	sqlrmp->dl=dl;
 	sqlrmp->module=module;
-	pvt->_llist.append(sqlrmp);
+	blist.append(sqlrmp);
 }
 
 bool sqlrschedules::allowed(sqlrserverconnection *sqlrcon, const char *user) {
 	debugFunction();
-	for (listnode< sqlrmoduleplugin * > *node=pvt->_llist.getFirst();
+	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
 		sqlrschedule	*s=(sqlrschedule *)node->getValue()->m;
 		if (!s->allowed(sqlrcon,user)) {
