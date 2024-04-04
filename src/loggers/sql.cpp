@@ -138,17 +138,17 @@ bool sqlrlogger_sql::run(sqlrlistener *sqlrl,
 
 	// log query (and error, if there was one)
 	if (event==queryevent) {
-		if (querylog.write(sqlrcur->getQueryBuffer(),
-					sqlrcur->getQuerySize())!=
+		if ((uint32_t)querylog.write(sqlrcur->getQueryBuffer(),
+						sqlrcur->getQuerySize())!=
 						sqlrcur->getQuerySize() ||
 			querylog.write(";\n",2)!=2) {
 			return false;
 		}
 		if (logerrors && sqlrcur->getErrorSize()) {
 			if (querylog.write("-- ERROR: ",10)!=10 ||
-				querylog.write(
-					sqlrcur->getErrorBuffer(),
-					sqlrcur->getErrorSize())!=
+				(uint32_t)querylog.write(
+						sqlrcur->getErrorBuffer(),
+						sqlrcur->getErrorSize())!=
 						sqlrcur->getErrorSize() ||
 				querylog.write('\n')!=1) {
 				return false;
@@ -170,7 +170,8 @@ bool sqlrlogger_sql::run(sqlrlistener *sqlrl,
 		}
 		if (logerrors && sqlrcon->cont->getErrorSize()) {
 			if (querylog.write("-- ERROR: ",10)!=10 ||
-				querylog.write(sqlrcon->getErrorBuffer(),
+				(uint32_t)querylog.write(
+						sqlrcon->getErrorBuffer(),
 						sqlrcon->getErrorSize())!=
 						sqlrcon->getErrorSize() ||
 				querylog.write('\n')!=1) {
