@@ -41,7 +41,7 @@ void sqlrserverbase::debugStart(const char *title, ...) {
 	}
 	pvt->_logbuffer.clear();
 	if (!pvt->_indent) {
-		pvt->_logbuffer.append(process::getProcessId());
+		pvt->_logbuffer.append((uint64_t)process::getProcessId());
 		pvt->_logbuffer.append(": ");
 	}
 	va_list	argp;
