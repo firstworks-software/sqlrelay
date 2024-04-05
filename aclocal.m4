@@ -9613,12 +9613,37 @@ dnl if it does not , then it sets the variable PIPE=""
 AC_DEFUN([FW_CHECK_PIPE],
 [
 AC_MSG_CHECKING(for -pipe option)
-FW_TRY_LINK([#include <stdio.h>],[printf("hello");],[-pipe],[],[],[PIPE="-pipe"],[PIPE=""])
-if ( test -n "$PIPE" )
+
+dnl Solaris 8 and 9 support -pipe, but often fail to compile code that uses
+dnl templates when -pipe is used, with errors like:
+dnl
+dnl "<stdin>", line 346800 : Internal: Out of symbol table
+dnl 
+dnl ... output pipe has been closed
+dnl
+dnl It's not clear why not using -pipe makes it work, but it does.
+PIPECHECK="yes"
+OS="`uname -s 2> /dev/null`"
+VERSION="`uname -r 2> /dev/null`"
+if ( test "$OS" = "SunOS" )
 then
-	AC_MSG_RESULT(yes)
+	if ( test "$VERSION" = "5.8" -o "$VERSION" = "5.9" )
+	then
+		PIPECHECK="no"
+	fi
+fi
+
+if ( test "$PIPECHECK" = "yes" )
+then
+	FW_TRY_LINK([#include <stdio.h>],[printf("hello");],[-pipe],[],[],[PIPE="-pipe"],[PIPE=""])
+	if ( test -n "$PIPE" )
+	then
+		AC_MSG_RESULT(yes)
+	else
+		AC_MSG_RESULT(no)
+	fi
 else
-	AC_MSG_RESULT(no)
+	AC_MSG_RESULT(no - Solaris 8/9)
 fi
 AC_SUBST(PIPE)
 ])

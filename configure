@@ -17148,6 +17148,20 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for -pipe option" >&5
 $as_echo_n "checking for -pipe option... " >&6; }
 
+PIPECHECK="yes"
+OS="`uname -s 2> /dev/null`"
+VERSION="`uname -r 2> /dev/null`"
+if ( test "$OS" = "SunOS" )
+then
+	if ( test "$VERSION" = "5.8" -o "$VERSION" = "5.9" )
+	then
+		PIPECHECK="no"
+	fi
+fi
+
+if ( test "$PIPECHECK" = "yes" )
+then
+
 SAVECPPFLAGS="$CPPFLAGS"
 SAVELIBS="$LIBS"
 SAVE_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
@@ -17178,13 +17192,17 @@ LIBS="$SAVELIBS"
 LD_LIBRARY_PATH="$SAVE_LD_LIBRARY_PATH"
 export LD_LIBRARY_PATH
 
-if ( test -n "$PIPE" )
-then
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+	if ( test -n "$PIPE" )
+	then
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-else
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+	else
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
+	fi
+else
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no - Solaris 8/9" >&5
+$as_echo "no - Solaris 8/9" >&6; }
 fi
 
 
