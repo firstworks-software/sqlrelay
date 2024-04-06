@@ -17201,8 +17201,8 @@ $as_echo "yes" >&6; }
 $as_echo "no" >&6; }
 	fi
 else
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no - Solaris 8/9" >&5
-$as_echo "no - Solaris 8/9" >&6; }
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no - disabled on Solaris 8/9" >&5
+$as_echo "no - disabled on Solaris 8/9" >&6; }
 fi
 
 

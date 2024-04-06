@@ -67,10 +67,6 @@ bool sqlrserverconnection::mustDetachBeforeLogIn() {
 	return pvt->_detachbeforelogin;
 }
 
-bool sqlrserverconnection::supportsDatabaseAuth() {
-	return true;
-}
-
 void sqlrserverconnection::handleConnectString() {
 
 	// get some parameters that are common to most db's

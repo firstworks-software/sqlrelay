@@ -9643,7 +9643,7 @@ then
 		AC_MSG_RESULT(no)
 	fi
 else
-	AC_MSG_RESULT(no - Solaris 8/9)
+	AC_MSG_RESULT(no - disabled on Solaris 8/9)
 fi
 AC_SUBST(PIPE)
 ])

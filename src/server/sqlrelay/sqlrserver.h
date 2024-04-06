@@ -315,6 +315,10 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 
 		// client auth...
 
+		/** Returns true if this database connection module supports
+		 *  database-auth and false if it does not. */
+		bool	supportsDatabaseAuth();
+
 		/** Authenticates "cred".
 		 *  
 		 *  Returns true if authentication was successful and false
