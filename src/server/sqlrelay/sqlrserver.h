@@ -315,10 +315,6 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 
 		// client auth...
 
-		/** Returns true if this database connection module supports
-		 *  database-auth and false if it does not. */
-		bool	supportsDatabaseAuth();
-
 		/** Authenticates "cred".
 		 *  
 		 *  Returns true if authentication was successful and false
@@ -3086,13 +3082,6 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  Returns false by default but may be overridden by a child
 		 *  class. */
 		virtual bool	mustDetachBeforeLogIn();
-
-		/** Returns true if this module supports database-auth and
-		 *  false if it does not.
-		 *
-		 *  Returns true by default, but may be overridden by a child
-		 *  class. */
-		virtual bool	supportsDatabaseAuth();
 
 		/** Parses the database connect string.
 		 *
