@@ -184,7 +184,7 @@ bool sqlrfilters::run(sqlrserverconnection *sqlrcon,
 						"but query failed to parse...");
 					return true;
 				}
-				tree=sqlrp->getTree();
+				tree=sqlrp->getQueryTree();
 				if (getDebug()) {
 					debugWrite("query tree:");
 					stringbuffer	b;

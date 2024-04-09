@@ -6433,36 +6433,96 @@ class SQLRSERVER_DLLSPEC sqlrparser : public sqlrservermodule {
 		/** Deletes this instance of sqlrparser. */
 		virtual	~sqlrparser();
 
-		/** Parses "query" and generates an xmldom tree that represents
-		 *  the query.
+		/** By default, when parse() is called, it allocates a query
+		 *  tree internally and appends to the root node of that tree.
+		 *  This method configures this instance to append to the root
+		 *  node of "querytree" rather than to the root node of the
+		 *  internally-allocated query tree when parse() is called.
 		 *
-		 *  May also generate an xmldom tree containing metadata about
-		 *  the query.
+		 *  setQueryTree(NULL) can be called to revert to the default
+		 *  behavior.
+		 *
+		 *  Should be called prior to calling parse(), otherwise the
+		 *  behavior is undefined. */
+		virtual	void	setQueryTree(xmldom *querytree);
+
+		/** Returns the query tree root node set by a previous call to
+		 *  setQueryTree(), or the root node of the internal query tree
+		 *  if no call to setQueryTree() was previously made or if
+		 *  setQueryTree(NULL) was previously called.
+		 *
+		 *  May return NULL if neither setQueryTree() nor parse() have
+		 *  ever been called, or if setQueryTree(NULL) was previously
+		 *  called. */
+		virtual	xmldom	*getQueryTree();
+
+		/** Detaches the query tree that this instance is configured to
+		 *  use and returns it - either the internally-allocated query
+		 *  tree or the query tree set by a previous call to
+		 *  setQueryTree().
+		 *
+		 *  Subsequent calls to detachTree() will return NULL.
+		 *
+		 *  The returned query tree must ultimately be deallocated by
+		 *  the calling program.
+		 *
+		 *  May return NULL if neither setQueryTree() nor parse() have
+		 *  ever been called, or if setQueryTree(NULL) was previously
+		 *  called. */
+		virtual	xmldom	*detachQueryTree();
+
+		/** By default, when parse() is called, it allocates a metadata
+		 *  tree internally and appends to the root node of that tree.
+		 *  This method configures this instance to append to the root
+		 *  node of "metadatatree" rather than to the root node of the
+		 *  internally-allocated metadata tree when parse() is called.
+		 *
+		 *  setMetaDataTree(NULL) can be called to revert to the default
+		 *  behavior.
+		 *
+		 *  Should be called prior to calling parse(), otherwise the
+		 *  behavior is undefined. */
+		virtual	void	setMetaDataTree(xmldom *metadatatree);
+
+		/** Returns the metadata tree root node set by a previous call
+		 *  to setMetaDataTree(), or the root node of the internal
+		 *  metadata tree if no call to setMetaDataTree() was
+		 *  previously made or if setMetaDataTree(NULL) was previously
+		 *  called.
+		 *
+		 *  May return NULL if neither setMetaDataTree() nor parse()
+		 *  have ever been called, or if setMetaDataTree(NULL) was
+		 *  previously called. */
+		virtual	xmldom	*getMetaDataTree();
+
+		/** Detaches the metadata tree that this instance is configured
+		 *  to use and returns it - either the internally-allocated
+		 *  metadata tree or the metadata tree set by a previous call
+		 *  to setMetaDataTree().
+		 *
+		 *  Subsequent calls to detachTree() will return NULL.
+		 *
+		 *  The returned metadata tree must ultimately be deallocated by
+		 *  the calling program.
+		 *
+		 *  May return NULL if neither setMetaDataTree() nor parse()
+		 *  have ever been called, or if setMetaDataTree(NULL) was
+		 *  previously called. */
+		virtual	xmldom	*detachMetaDataTree();
+
+		/** Parses "query" and populates an xmldom tree that represents
+		 *  the query.  Also, optionally, populatss an xmldom tree
+		 *  representing metadata about the query.
 		 *
 		 *  Returns true on success and false if an error occurred.
 		 *
-		 *  This implementation just returns false, but may be
+		 *  This implementation just empties any internally-allocated
+		 *  query and metadata trees and returns false, but may be
 		 *  overridden by a child class to parse the query and generate
 		 *  an implementation-specific tree representing the query,
 		 *  and, optionally, an implementation-specific tree
 		 *  representing metadata about the query. */
 		virtual	bool	parse(const char *query);
-
-		/** Configures this instance to append the root node of
-		 *  already-existing "tree" rather than creating its own
-		 *  internal xmldom tree to store the query tree. */
-		virtual	void	setTree(xmldom *tree);
-
-		/** Returns the tree set by a previous call to setTree(). */
-		virtual	xmldom	*getTree();
-
-		/** Detaches the tree that this instance is configured to use
-		 *  and returns it.  Subsequent calls to detachTree() will
-		 *  return NULL.  If the tree was set by a previous call to
-		 *  setTree() then that tree is returned.  If the tree was
-		 *  allocated internally then it is returned, and must be
-		 *  deallocated by the calling program. */
-		virtual	xmldom	*detachTree();
 
 		/** Walks the query tree and writes the query represented by
 		 *  the tree to "output".
@@ -6504,11 +6564,6 @@ class SQLRSERVER_DLLSPEC sqlrparser : public sqlrservermodule {
 		virtual	bool	write(domnode *node,
 					stringbuffer *output,
 					bool omitsiblings);
-
-		/** If parse() generated a tree representing metadata about the
- 		 *  query, then this method appends that metadata as children
- 		 *  to "node". */
-		virtual void	getMetaData(domnode *node);
 
 	#include <sqlrelay/private/sqlrparser.h>
 };

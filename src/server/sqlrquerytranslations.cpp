@@ -207,7 +207,7 @@ bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
 								sqlrcur,query);
 					return false;
 				}
-				pvt->_tree=sqlrp->getTree();
+				pvt->_tree=sqlrp->getQueryTree();
 				if (getDebug()) {
 					debugWrite("current query tree:");
 					stringbuffer	b;
@@ -270,7 +270,7 @@ bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
 	} else {
 		translatedquery->append(query,querysize);
 		if (sqlrp->parse(translatedquery->getString())) {
-			pvt->_tree=sqlrp->getTree();
+			pvt->_tree=sqlrp->getQueryTree();
 		} else {
 			sqlrcon->cont->raiseParseFailureEvent(sqlrcur,
 						translatedquery->getString());

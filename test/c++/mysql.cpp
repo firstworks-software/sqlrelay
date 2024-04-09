@@ -4,6 +4,7 @@
 #include <sqlrelay/sqlrclient.h>
 #include <rudiments/process.h>
 #include <rudiments/bytestring.h>
+#include <rudiments/randomnumber.h>
 #include <rudiments/stdio.h>
 
 //#define PROFILING 1
@@ -1174,7 +1175,10 @@ for (uint16_t a=0; a<50; a++) {
 	// binary data
 	if (majorversion>3) {
 		stdoutput.printf("BINARY DATA: \n");
+
 		checkSuccess(cur->sendQuery("create table testtable (col1 longblob)"),true);
+
+		// binary 0-255 (slash-escaped)
 		byte_t	buffer[256];
 		for (uint16_t i=0; i<256; i++) {
 			buffer[i]=i;
@@ -1198,35 +1202,90 @@ for (uint16_t a=0; a<50; a++) {
 							buffer,sizeof(buffer)),0);
 		checkSuccess(cur->sendQuery("delete from testtable"),true);
 		stdoutput.printf("\n");
+
+		// '' (double-single-quote escaped)
 		checkSuccess(cur->sendQuery("insert into testtable values (_binary'''''')"),true);
 		checkSuccess(cur->sendQuery("select col1 from testtable"),true);
 		checkSuccess(cur->getFieldLength(0,(uint32_t)0),2);
 		checkSuccess(charstring::compare(cur->getField(0,(uint32_t)0),"''"),0);
 		checkSuccess(cur->sendQuery("delete from testtable"),true);
 		stdoutput.printf("\n");
+
+		// "" (unescaped)
 		checkSuccess(cur->sendQuery("insert into testtable values (_binary'\"\"')"),true);
 		checkSuccess(cur->sendQuery("select col1 from testtable"),true);
 		checkSuccess(cur->getFieldLength(0,(uint32_t)0),2);
 		checkSuccess(charstring::compare(cur->getField(0,(uint32_t)0),"\"\""),0);
 		checkSuccess(cur->sendQuery("delete from testtable"),true);
 		stdoutput.printf("\n");
+
+		// (null)"" (unescaped)
 		checkSuccess(cur->sendQuery("insert into testtable values (_binary'\0\"\"')",43),true);
 		checkSuccess(cur->sendQuery("select col1 from testtable"),true);
 		checkSuccess(cur->getFieldLength(0,(uint32_t)0),3);
 		checkSuccess(bytestring::compare(cur->getField(0,(uint32_t)0),"\0\"\"",3),0);
 		checkSuccess(cur->sendQuery("delete from testtable"),true);
 		stdoutput.printf("\n");
+
+		// \(null)\"\" (slash-escaped)
 		checkSuccess(cur->sendQuery("insert into testtable values (_binary'\\\0\\\"\\\"')",46),true);
 		checkSuccess(cur->sendQuery("select col1 from testtable"),true);
 		checkSuccess(cur->getFieldLength(0,(uint32_t)0),3);
 		checkSuccess(bytestring::compare(cur->getField(0,(uint32_t)0),"\0\"\"",3),0);
 		checkSuccess(cur->sendQuery("delete from testtable"),true);
 		stdoutput.printf("\n");
+
+		// \\' (slash-escaped)
 		checkSuccess(cur->sendQuery("insert into testtable values (_binary'\\\\\\'')",44),true);
 		checkSuccess(cur->sendQuery("select col1 from testtable"),true);
 		checkSuccess(cur->getFieldLength(0,(uint32_t)0),2);
 		checkSuccess(bytestring::compare(cur->getField(0,(uint32_t)0),"\\\'",2),0);
 		checkSuccess(cur->sendQuery("delete from testtable"),true);
+		stdoutput.printf("\n");
+
+		// random ',",\,(null) (slash-and-double-single-quote-escaped)
+		randomnumber	r1;
+		randomnumber	r2;
+		r1.setSeed(r1.getSeed());
+		r2.setSeed(r2.getSeed());
+		char	ch[]={'\'','"','\\','\0'};
+		for (uint16_t i=0; i<sizeof(buffer); i++) {
+			uint32_t	result1;
+			r1.generate(&result1);
+			r1.setSeed(result1);
+			buffer[i]=ch[r1.scale(result1,0,3)];
+		}
+		query.clear();
+		query.append("insert into testtable values (_binary'");
+		for (uint64_t i=0; i<sizeof(buffer); i++) {
+			uint32_t	result2;
+			r2.generate(&result2);
+			r2.setSeed(result2);
+			if (buffer[i]=='\'') {
+#if 0
+				if (r2.scale(result2,0,1)) {
+					query.append('\'');
+				} else {
+					query.append("''");
+				}
+#else
+				query.append('\'');
+#endif
+			}
+			if (buffer[i]=='\\') {
+				query.append('\\');
+			}
+			query.append(buffer[i]);
+		}
+		query.append("')");
+		checkSuccess(cur->sendQuery(query.getString(),query.getSize()),true);
+		checkSuccess(cur->sendQuery("select col1 from testtable"),true);
+		checkSuccess(cur->getFieldLength(0,(uint32_t)0),sizeof(buffer));
+		checkSuccess(bytestring::compare(cur->getField(0,(uint32_t)0),
+							buffer,sizeof(buffer)),0);
+		checkSuccess(cur->sendQuery("delete from testtable"),true);
+		stdoutput.printf("\n");
+
 		cur->sendQuery("drop table testtable");
 		stdoutput.printf("\n");
 	}

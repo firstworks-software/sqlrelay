@@ -3926,7 +3926,7 @@ bool sqlrservercontroller::translateQuery(sqlrservercursor *cursor) {
 
 	// update the query tree
 	if (pvt->_sqlrp) {
-		cursor->setQueryTree(pvt->_sqlrp->detachTree());
+		cursor->setQueryTree(pvt->_sqlrp->detachQueryTree());
 	}
 
 	if (pvt->_debugsqlrquerytranslations) {
