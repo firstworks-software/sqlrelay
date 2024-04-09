@@ -10,7 +10,6 @@
 class SQLRSERVER_DLLSPEC sqlrauth_oracle_userlist : public sqlrauth {
 	public:
 		sqlrauth_oracle_userlist(sqlrservercontroller *cont,
-							sqlrpwdencs *sqlrpe,
 							domnode *parameters);
 		const char	*auth(sqlrcredentials *cred);
 		bool		compare(const char *suppliedresponse,
@@ -29,9 +28,8 @@ class SQLRSERVER_DLLSPEC sqlrauth_oracle_userlist : public sqlrauth {
 
 sqlrauth_oracle_userlist::sqlrauth_oracle_userlist(
 					sqlrservercontroller *cont,
-					sqlrpwdencs *sqlrpe,
 					domnode *parameters) :
-					sqlrauth(cont,sqlrpe,parameters) {
+					sqlrauth(cont,parameters) {
 
 	users=NULL;
 	passwords=NULL;
@@ -114,15 +112,13 @@ const char *sqlrauth_oracle_userlist::auth(sqlrcredentials *cred) {
 		// if the user matches...
 		if (!charstring::compare(user,users[i])) {
 
-			if (getPasswordEncryptions() &&
-				charstring::getLength(passwordencryptions[i])) {
+			if (charstring::getLength(passwordencryptions[i])) {
 
 				// if password encryption is being used...
 
 				// get the module
 				sqlrpwdenc	*pe=
-					getPasswordEncryptions()->
-						getPasswordEncryptionById(
+					cont->getPasswordEncryptionById(
 							passwordencryptions[i]);
 				if (!pe) {
 					return NULL;
@@ -256,8 +252,7 @@ bool sqlrauth_oracle_userlist::compare(const char *suppliedresponse,
 extern "C" {
 	SQLRSERVER_DLLSPEC sqlrauth *new_sqlrauth_oracle_userlist(
 						sqlrservercontroller *cont,
-						sqlrpwdencs *sqlrpe,
 						domnode *parameters) {
-		return new sqlrauth_oracle_userlist(cont,sqlrpe,parameters);
+		return new sqlrauth_oracle_userlist(cont,parameters);
 	}
 }

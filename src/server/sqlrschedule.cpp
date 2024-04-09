@@ -298,6 +298,8 @@ class sqlrscheduleprivate {
 	friend class sqlrschedule;
 	private:
 		linkedlist< sqlrschedulerule * >	_rules;
+
+		bool	_defaultallow;
 };
 
 sqlrschedule::sqlrschedule(sqlrservercontroller *cont,
@@ -305,14 +307,40 @@ sqlrschedule::sqlrschedule(sqlrservercontroller *cont,
 					sqlrservermodule(cont,parameters) {
 	pvt=new sqlrscheduleprivate;
 	pvt->_rules.setManageValues(true);
+
+	pvt->_defaultallow=charstring::compareIgnoringCase(parameters->
+					getAttributeValue("default"),"deny");
+
+	// parse the rules
+	for (domnode *r=parameters->
+				getFirstTagChild("rules")->
+				getFirstTagChild();
+			!r->isNullNode();
+			r=r->getNextTagSibling()) {
+
+		if (!charstring::compare(r->getName(),"allow") ||
+			!charstring::compare(r->getName(),"deny")) {
+
+			addRule(charstring::compareIgnoringCase(
+						r->getName(),"deny"),
+						r->getAttributeValue("when"));
+		}
+	}
 }
 
 sqlrschedule::~sqlrschedule() {
 	delete pvt;
 }
 
+bool sqlrschedule::getDefaultAllow() {
+	return pvt->_defaultallow;
+}
+
 bool sqlrschedule::allowed(sqlrserverconnection *sqlrcon, const char *user) {
-	return true;
+	// compare date/time to schedule rules
+	datetime	dt;
+	dt.initFromSystemDateTime();
+	return rulesAllow(&dt,getDefaultAllow());
 }
 
 void sqlrschedule::addRule(bool allow, const char *when) {
@@ -325,6 +353,10 @@ void sqlrschedule::addRule(bool allow,
 				const char *dayparts) {
 	pvt->_rules.append(new sqlrschedulerule(allow,years,months,
 					daysofmonth,daysofweek,dayparts));
+}
+
+void sqlrschedule::clearRules() {
+	pvt->_rules.clear();
 }
 
 bool sqlrschedule::rulesAllow(datetime *dt, bool currentlyallowed) {

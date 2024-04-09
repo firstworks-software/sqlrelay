@@ -337,6 +337,14 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 
 
 
+		// password encryption...
+
+		/** Returns the password encryption module corresponding to
+		 *  "id". */
+		sqlrpwdenc	*getPasswordEncryptionById(const char *id);
+
+
+
 		// close client connection...
 
 		/** Attempts to read "bytes" bytes from the client, in
@@ -5858,8 +5866,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol : public sqlrservermodule {
 		 *  returns it. */
 		uint64_t	hostToBE(uint64_t value);
 
-		sqlrservercontroller	*cont;
-
 	#include <sqlrelay/private/sqlrprotocol.h>
 };
 
@@ -6119,7 +6125,6 @@ class SQLRSERVER_DLLSPEC sqlrauth : public sqlrservermodule {
 		 *  perform additional initialization tasks and handle
 		 *  some set of parameters. */
 		sqlrauth(sqlrservercontroller *cont,
-					sqlrpwdencs *sqlrpe,
 					domnode *parameters);
 
 		/** Deletes this instance of sqlrauth. */
@@ -6138,14 +6143,6 @@ class SQLRSERVER_DLLSPEC sqlrauth : public sqlrservermodule {
 		 *  users, the database itself, or some other authentication
 		 *  system. */
 		virtual	const char	*auth(sqlrcredentials *cred);
-
-	protected:
-
-		/** Returns the instance of sqlrpwdencs passed in as "sqlrpe" to
-		 *  the constructor. */
-		sqlrpwdencs	*getPasswordEncryptions();
-
-		sqlrservercontroller	*cont;
 
 	#include <sqlrelay/private/sqlrauth.h>
 };
@@ -6304,15 +6301,44 @@ class SQLRSERVER_DLLSPEC sqlrschedule : public sqlrservermodule {
 		/** Creates an instance of sqlrschedule, configured with
 		 *  parameters "parameters".
 		 *
-		 *  This implementation doesn't handle any parameters,
-		 *  however, it may be overridden by a child class to
-		 *  perform additional initialization tasks and handle
-		 *  some set of parameters. */
+		 *  This implementation handles the following parameters
+		 *  which are generic to all schedules.
+		 *
+		 *  * default - allow/deny, whether access is initially allowed
+		 *              or denied, prior to the application of any
+		 *              rules.  Defaults to "allow" if not set.
+		 *
+		 *  This implementation also parses and applies rules of the
+		 *  following format:
+		 *
+		 *  <rules>
+		 *    <!-- deny access at all times -->
+		 *    <deny when="* * * * *"/>
+		 *
+		 *    <!-- allow access during business hours -->
+		 *    <allow when="* * * 2-5 8:00-17:00"/>
+		 *
+		 *    <!-- deny access during the lunch hour -->
+		 *    <deny when="* * * 2-5 12:00-12:59"/>
+		 *  </rules>
+		 *
+		 *  Access is allowed by default, unless default="deny" is set.
+		 *  Each rule is then applied, in order, and each rule may
+		 *  reverse the outcome of the previous rule.
+		 *
+		 *  It may be overridden by a child class to perform additional
+		 *  initialization tasks and handle additional parameters. */
 		sqlrschedule(sqlrservercontroller *cont,
 					domnode *parameters);
 
 		/** Deletes this instance of sqlrschedule. */
 		virtual	~sqlrschedule();
+
+		/** Returns true if the default is to allow access, prior to
+		 *  the application of any rules, or false if the default is to
+		 *  deny access, prior to the application of any rules, as set
+		 *  by the "default" parameter. */
+		bool getDefaultAllow();
 
 		/** Adds a schedule rule for time period "when".
 		 *
@@ -6348,6 +6374,9 @@ class SQLRSERVER_DLLSPEC sqlrschedule : public sqlrservermodule {
 					const char *daysofweek,
 					const char *dayparts);
 
+		/** Clears all rules. */
+		virtual void	clearRules();
+
 		/** Determines if the user is allowed access or not, at
 		 *  date/time "dt".  If the user is currently allowed access,
 		 *  then "currentlyallowed" should be set to true.  If the user
@@ -6363,9 +6392,12 @@ class SQLRSERVER_DLLSPEC sqlrschedule : public sqlrservermodule {
 		/** Returns true of "user" is allowed access at the current
 		 *  time, and false if "user" is not allowed access.
 		 *
-		 *  This implementation just returns true, but it may be
-		 *  overridden by child class to evaluate rules to determine
-		 *  if the user is allowed access. */
+		 *  This implementation ignores "user" and just returns true if
+		 *  access woud be allowed by comparing the current date/time
+		 *  to the rules, taking the "default" parameter into account,
+		 *  or false otherwise.  It may be overridden by child class to
+		 *  evaluate rules to determine if the user is allowed
+		 *  access. */
 		virtual bool	allowed(sqlrserverconnection *sqlrcon,
 							const char *user);
 

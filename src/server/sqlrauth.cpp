@@ -7,16 +7,12 @@
 class sqlrauthprivate {
 	friend class sqlrauth;
 	public:
-		sqlrpwdencs	*_sqlrpe;
 };
 
 sqlrauth::sqlrauth(sqlrservercontroller *cont,
-				sqlrpwdencs *sqlrpe,
 				domnode *parameters) :
 				sqlrservermodule(cont,parameters) {
 	pvt=new sqlrauthprivate;
-	this->cont=cont;
-	pvt->_sqlrpe=sqlrpe;
 }
 
 sqlrauth::~sqlrauth() {
@@ -25,8 +21,4 @@ sqlrauth::~sqlrauth() {
 
 const char *sqlrauth::auth(sqlrcredentials *cred) {
 	return NULL;
-}
-
-sqlrpwdencs *sqlrauth::getPasswordEncryptions() {
-	return pvt->_sqlrpe;
 }

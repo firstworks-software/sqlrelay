@@ -23,7 +23,7 @@ sqlrauths::sqlrauths(sqlrservercontroller *cont) : sqlrservermodules(cont) {
 sqlrauths::~sqlrauths() {
 }
 
-bool sqlrauths::load(domnode *parameters, sqlrpwdencs *sqlrpe) {
+bool sqlrauths::load(domnode *parameters) {
 
 	unload();
 
@@ -38,12 +38,12 @@ bool sqlrauths::load(domnode *parameters, sqlrpwdencs *sqlrpe) {
 		}
 
 		// load the module
-		loadModule(moduledata,sqlrpe);
+		loadModule(moduledata);
 	}
 	return true;
 }
 
-void sqlrauths::loadModule(domnode *parameters, sqlrpwdencs *sqlrpe) {
+void sqlrauths::loadModule(domnode *parameters) {
 
 	// ignore non-auths
 	if (charstring::compare(parameters->getName(),"auth")) {
@@ -79,10 +79,8 @@ void sqlrauths::loadModule(domnode *parameters, sqlrpwdencs *sqlrpe) {
 	stringbuffer	functionname;
 	functionname.append("new_sqlrauth_")->append(module);
 	sqlrauth *(*newAuth)(sqlrservercontroller *,
-					sqlrpwdencs *,
 					domnode *)=
 			(sqlrauth *(*)(sqlrservercontroller *,
-					sqlrpwdencs *,
 					domnode *))
 				dl->getSymbol(functionname.getString());
 	if (!newAuth) {
@@ -94,7 +92,7 @@ void sqlrauths::loadModule(domnode *parameters, sqlrpwdencs *sqlrpe) {
 		delete dl;
 		return;
 	}
-	sqlrauth	*au=(*newAuth)(cont,sqlrpe,parameters);
+	sqlrauth	*au=(*newAuth)(cont,parameters);
 
 #else
 

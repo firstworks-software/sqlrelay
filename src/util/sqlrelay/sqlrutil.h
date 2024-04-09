@@ -9,7 +9,7 @@
 class SQLRUTIL_DLLSPEC sqlrcmdline : public commandline {
 	friend class sqlrpaths;
 	public:
-			sqlrcmdline(int argc, const char **argv);
+		sqlrcmdline(int argc, const char **argv);
 
 		const char	*getId() const;
 	private:
@@ -18,8 +18,8 @@ class SQLRUTIL_DLLSPEC sqlrcmdline : public commandline {
 
 class SQLRUTIL_DLLSPEC sqlrpaths {
 	public:
-				sqlrpaths(sqlrcmdline *cmdl);
-				~sqlrpaths();
+		sqlrpaths(sqlrcmdline *cmdl);
+		~sqlrpaths();
 		const char	*getBinDir();
 		const char	*getLocalStateDir();
 		const char	*getTmpDir();
@@ -58,8 +58,8 @@ class SQLRUTIL_DLLSPEC sqlrpaths {
 
 class SQLRUTIL_DLLSPEC connectstringcontainer {
 	public:
-				connectstringcontainer();
-				~connectstringcontainer();
+		connectstringcontainer();
+		~connectstringcontainer();
 		void		parseConnectString();
 		void		setConnectionId(const char *connectionid);
 		void		setString(const char *string);
@@ -87,8 +87,8 @@ typedef listnode< connectstringcontainer * >	connectstringnode;
 
 class SQLRUTIL_DLLSPEC routecontainer {
 	public:
-			routecontainer();
-			~routecontainer();
+		routecontainer();
+		~routecontainer();
 
 		void	setIsFilter(bool isfilter);
 		void	setHost(const char *host);
@@ -118,7 +118,7 @@ typedef listnode< routecontainer * >	routenode;
 
 class SQLRUTIL_DLLSPEC sqlrconfig {
 	public:
-			sqlrconfig();
+		sqlrconfig();
 		virtual ~sqlrconfig();
 
 		virtual void	getEnabledIds(const char *url,
@@ -275,8 +275,8 @@ class SQLRUTIL_DLLSPEC sqlrconfig {
 
 class SQLRUTIL_DLLSPEC sqlrconfigs {
 	public:
-			sqlrconfigs(sqlrpaths *sqlrpth);
-			~sqlrconfigs();
+		sqlrconfigs(sqlrpaths *sqlrpth);
+		~sqlrconfigs();
 		void		getEnabledIds(const char *urls,
 						linkedlist< char * > *idlist);
 		sqlrconfig	*load(const char *urls, const char *id);

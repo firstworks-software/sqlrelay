@@ -12,33 +12,12 @@ class SQLRSERVER_DLLSPEC sqlrschedule_cron_userlist : public sqlrschedule {
 
 		bool	allowed(sqlrserverconnection *sqlrcon,
 						const char *user);
-	private:
-		bool	defaultallow;
 };
 
 sqlrschedule_cron_userlist::sqlrschedule_cron_userlist(
 						sqlrservercontroller *cont,
 						domnode *parameters) :
 					sqlrschedule(cont,parameters) {
-
-	defaultallow=charstring::compareIgnoringCase(
-			parameters->getAttributeValue("default"),"deny");
-
-	// parse the rules
-	for (domnode *r=parameters->
-				getFirstTagChild("rules")->
-				getFirstTagChild();
-			!r->isNullNode();
-			r=r->getNextTagSibling()) {
-
-		if (!charstring::compare(r->getName(),"allow") ||
-			!charstring::compare(r->getName(),"deny")) {
-
-			addRule(charstring::compareIgnoringCase(
-						r->getName(),"deny"),
-						r->getAttributeValue("when"));
-		}
-	}
 }
 
 bool sqlrschedule_cron_userlist::allowed(sqlrserverconnection *sqlrcon,
@@ -74,9 +53,7 @@ bool sqlrschedule_cron_userlist::allowed(sqlrserverconnection *sqlrcon,
 	}
 
 	// compare date/time to schedule rules
-	datetime	dt;
-	dt.initFromSystemDateTime();
-	return rulesAllow(&dt,defaultallow);
+	return sqlrschedule::allowed(sqlrcon,user);
 }
 
 extern "C" {

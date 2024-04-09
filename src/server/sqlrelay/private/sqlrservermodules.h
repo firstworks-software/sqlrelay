@@ -49,11 +49,11 @@ class SQLRSERVER_DLLSPEC sqlrauths : public sqlrservermodules {
 		sqlrauths(sqlrservercontroller *cont);
 		~sqlrauths();
 
-		bool	load(domnode *parameters, sqlrpwdencs *sqlrpe);
+		bool	load(domnode *parameters);
 		const char	*auth(sqlrcredentials *cred);
 
 	private:
-		void	loadModule(domnode *parameters, sqlrpwdencs *sqlrpe);
+		void	loadModule(domnode *parameters);
 
 		sqlrauthsprivate	*pvt;
 };

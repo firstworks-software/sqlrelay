@@ -30,7 +30,6 @@ sqlrprotocol::sqlrprotocol(sqlrservercontroller *cont, domnode *parameters) :
 					sqlrservermodule(cont,parameters) {
 
 	pvt=new sqlrprotocolprivate;
-	this->cont=cont;
 	pvt->_bigendian=false;
 	pvt->_debug=cont->getConfig()->getDebugProtocols();
 

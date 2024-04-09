@@ -8,7 +8,6 @@
 class SQLRSERVER_DLLSPEC sqlrauth_sqlrclient_connectstrings : public sqlrauth {
 	public:
 		sqlrauth_sqlrclient_connectstrings(sqlrservercontroller *cont,
-							sqlrpwdencs *sqlrpe,
 							domnode *parameters);
 		~sqlrauth_sqlrclient_connectstrings();
 		const char	*auth(sqlrcredentials *cred);
@@ -26,9 +25,8 @@ class SQLRSERVER_DLLSPEC sqlrauth_sqlrclient_connectstrings : public sqlrauth {
 
 sqlrauth_sqlrclient_connectstrings::sqlrauth_sqlrclient_connectstrings(
 					sqlrservercontroller *cont,
-					sqlrpwdencs *sqlrpe,
 					domnode *parameters) :
-					sqlrauth(cont,sqlrpe,parameters) {
+					sqlrauth(cont,parameters) {
 
 	linkedlist< connectstringcontainer * >	*connectstrings=
 				cont->getConfig()->getConnectStringList();
@@ -111,12 +109,10 @@ const char *sqlrauth_sqlrclient_connectstrings::userPassword(
 	}
 
 	// if password encryption is being used...
-	if (getPasswordEncryptions() &&
-		charstring::getLength(passwordencryptions[index])) {
+	if (charstring::getLength(passwordencryptions[index])) {
 
 		// get the module
-		sqlrpwdenc	*pe=getPasswordEncryptions()->
-					getPasswordEncryptionById(
+		sqlrpwdenc	*pe=cont->getPasswordEncryptionById(
 						passwordencryptions[index]);
 		if (!pe) {
 			return NULL;
@@ -166,9 +162,7 @@ const char *sqlrauth_sqlrclient_connectstrings::userPassword(
 extern "C" {
 	SQLRSERVER_DLLSPEC sqlrauth *new_sqlrauth_sqlrclient_connectstrings(
 						sqlrservercontroller *cont,
-						sqlrpwdencs *sqlrpe,
 						domnode *parameters) {
-		return new sqlrauth_sqlrclient_connectstrings(
-						cont,sqlrpe,parameters);
+		return new sqlrauth_sqlrclient_connectstrings(cont,parameters);
 	}
 }

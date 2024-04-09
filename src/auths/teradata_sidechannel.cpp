@@ -30,7 +30,6 @@
 class SQLRSERVER_DLLSPEC sqlrauth_teradata_sidechannel : public sqlrauth {
 	public:
 		sqlrauth_teradata_sidechannel(sqlrservercontroller *cont,
-							sqlrpwdencs *sqlrpe,
 							domnode *parameters);
 		~sqlrauth_teradata_sidechannel();
 		const char	*auth(sqlrcredentials *cred);
@@ -110,9 +109,8 @@ class SQLRSERVER_DLLSPEC sqlrauth_teradata_sidechannel : public sqlrauth {
 
 sqlrauth_teradata_sidechannel::sqlrauth_teradata_sidechannel(
 					sqlrservercontroller *cont,
-					sqlrpwdencs *sqlrpe,
 					domnode *parameters) :
-					sqlrauth(cont,sqlrpe,parameters) {
+					sqlrauth(cont,parameters) {
 
 	host=parameters->getAttributeValue("host");
 	port=charstring::convertToInteger(parameters->getAttributeValue("port"));
@@ -540,9 +538,7 @@ void sqlrauth_teradata_sidechannel::copyOutBE(byte_t *rp,
 extern "C" {
 	SQLRSERVER_DLLSPEC sqlrauth *new_sqlrauth_teradata_sidechannel(
 						sqlrservercontroller *cont,
-						sqlrpwdencs *sqlrpe,
 						domnode *parameters) {
-		return new sqlrauth_teradata_sidechannel(cont,
-							sqlrpe,parameters);
+		return new sqlrauth_teradata_sidechannel(cont,parameters);
 	}
 }

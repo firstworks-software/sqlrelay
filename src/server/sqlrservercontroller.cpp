@@ -618,7 +618,7 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 	domnode	*auths=pvt->_cfg->getAuths();
 	if (!auths->isNullNode()) {
 		pvt->_sqlra=new sqlrauths(this);
-		pvt->_sqlra->load(auths,pvt->_sqlrpe);
+		pvt->_sqlra->load(auths);
 	}
 
 	// load database plugin
@@ -2236,6 +2236,10 @@ bool sqlrservercontroller::changeProxiedUser(const char *newuser,
 						const char *newpassword) {
 	raiseDebugMessageEvent("change proxied user");
 	return pvt->_conn->changeProxiedUser(newuser,newpassword);
+}
+
+sqlrpwdenc *sqlrservercontroller::getPasswordEncryptionById(const char *id) {
+	return (pvt->_sqlrpe)?pvt->_sqlrpe->getPasswordEncryptionById(id):NULL;
 }
 
 void sqlrservercontroller::beginSession() {

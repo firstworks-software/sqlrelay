@@ -8,7 +8,6 @@
 class SQLRSERVER_DLLSPEC sqlrauth_oracle_database : public sqlrauth {
 	public:
 		sqlrauth_oracle_database(sqlrservercontroller *cont,
-							sqlrpwdencs *sqlrpe,
 							domnode *parameters);
 		const char	*auth(sqlrcredentials *cred);
 	private:
@@ -19,9 +18,8 @@ class SQLRSERVER_DLLSPEC sqlrauth_oracle_database : public sqlrauth {
 
 sqlrauth_oracle_database::sqlrauth_oracle_database(
 					sqlrservercontroller *cont,
-					sqlrpwdencs *sqlrpe,
 					domnode *parameters) :
-					sqlrauth(cont,sqlrpe,parameters) {
+					sqlrauth(cont,parameters) {
 	first=true;
 }
 
@@ -102,8 +100,7 @@ const char *sqlrauth_oracle_database::auth(sqlrcredentials *cred) {
 extern "C" {
 	SQLRSERVER_DLLSPEC sqlrauth *new_sqlrauth_oracle_database(
 						sqlrservercontroller *cont,
-						sqlrpwdencs *sqlrpe,
 						domnode *parameters) {
-		return new sqlrauth_oracle_database(cont,sqlrpe,parameters);
+		return new sqlrauth_oracle_database(cont,parameters);
 	}
 }
