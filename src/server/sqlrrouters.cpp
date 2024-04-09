@@ -17,23 +17,23 @@
 class sqlrroutersprivate {
 	friend class sqlrrouters;
 	private:
-		const char		*_connid;
-		const char		**_connids;
 		sqlrconnection		**_conns;
+		const char		**_connids;
 		uint16_t		_conncount;
+		const char		*_connid;
 };
 
 sqlrrouters::sqlrrouters(sqlrservercontroller *cont,
-				const char **connectionids,
 				sqlrconnection **connections,
+				const char **connectionids,
 				uint16_t connectioncount) :
 				sqlrservermodules(cont) {
 	pvt=new sqlrroutersprivate;
 	setDebug(cont->getConfig()->getDebugRouters());
-	pvt->_connid=NULL;
-	pvt->_connids=connectionids;
 	pvt->_conns=connections;
+	pvt->_connids=connectionids;
 	pvt->_conncount=connectioncount;
+	pvt->_connid=NULL;
 }
 
 sqlrrouters::~sqlrrouters() {

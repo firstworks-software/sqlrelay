@@ -6404,6 +6404,63 @@ class SQLRSERVER_DLLSPEC sqlrschedule : public sqlrservermodule {
 	#include <sqlrelay/private/sqlrschedule.h>
 };
 
+class SQLRSERVER_DLLSPEC sqlrrouters : public sqlrservermodules {
+	public:
+		/** Creates an instance of sqlrrouters, where:
+		 *
+		 *  * "connections" is an array of sqlrconnections, as defined
+		 *    in the config file
+		 *  * "connectionids" is an array of corresponding ids, as
+		 *    specified in the config file
+		 *  * "connectioncount" is the number of elements in those
+		 *    arrays. */
+		sqlrrouters(sqlrservercontroller *cont,
+				sqlrconnection **connections,
+				const char **connectionids,
+				uint16_t connectioncount);
+
+		/** Deletes this instance of sqlrrouters. */
+		~sqlrrouters();
+
+		/** Returns the array of sqlrconnections passed in to the
+		 *  constructor. */
+		sqlrconnection	**getConnections();
+
+		/** Returns the array of corresponding ids passed in to the
+		 *  constructor. */
+		const char	**getConnectionIds();
+
+		/** Returns the number of elements in the arrays of
+		 *  sqlrconnections and ids that were passed into the
+		 *  constructor. */
+		uint16_t	getConnectionCount();
+
+		/** Runs through the router modules, running each one's route()
+		 *  method, and returning the connectionid of the first one
+		 *  that doesn't return NULL.  Returns NULL if all modules
+		 *  returned NULL. */
+		const char	*route(sqlrserverconnection *sqlrcon,
+						sqlrservercursor *sqlrcur,
+						const char **err,
+						int64_t *errn);
+
+		/** Runs through the router modules, running each one's
+		 *  routeEntireSession() method, and returning true if all
+		 *  return true, or false if one returns false. */
+		bool	routeEntireSession();
+
+		/** Sets the currently selected connection id to "connid". */
+		void	setCurrentConnectionId(const char *connid);
+
+		/** Gets the current connection id as set by a previous call to
+		 *  setCurrentConnectionId(), or NULL if
+		 *  setCurrentConnectionId() has never been set.  Typically
+		 *  called after route(), with the result of that method. */
+		const char	*getCurrentConnectionId();
+
+	#include <sqlrelay/private/sqlrrouters.h>
+};
+
 class SQLRSERVER_DLLSPEC sqlrrouter : public sqlrservermodule {
 	public:
 		/** Creates an instance of sqlrrouter, configured with

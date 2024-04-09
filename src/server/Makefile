@@ -494,6 +494,7 @@ install: $(INSTALLLIB)
 	$(CP) sqlrelay/private/sqlrerrortranslation.h $(includedir)/sqlrelay/private/sqlrerrortranslation.h
 	$(CP) sqlrelay/private/sqlrbindvariabletranslation.h $(includedir)/sqlrelay/private/sqlrbindvariabletranslation.h
 	$(CP) sqlrelay/private/sqlrresultsettranslation.h $(includedir)/sqlrelay/private/sqlrresultsettranslation.h
+	$(CP) sqlrelay/private/sqlrrouters.h $(includedir)/sqlrelay/private/sqlrrouters.h
 	$(CP) sqlrelay/private/sqlrrouter.h $(includedir)/sqlrelay/private/sqlrrouter.h
 	$(CP) sqlrelay/private/sqlrschedule.h $(includedir)/sqlrelay/private/sqlrschedule.h
 	$(CP) sqlrelay/private/sqlrschedulerule.h $(includedir)/sqlrelay/private/sqlrschedulerule.h
@@ -534,6 +535,7 @@ install: $(INSTALLLIB)
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrerrortranslation.h
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrbindvariabletranslation.h
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrresultsettranslation.h
+	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrrouters.h
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrrouter.h
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrschedule.h
 	$(CHMOD) 644 $(includedir)/sqlrelay/private/sqlrschedulerule.h
@@ -600,8 +602,8 @@ uninstall: $(UNINSTALLLIB)
 		$(includedir)/sqlrelay/private/sqlrbindvariabletranslations.h \
 		$(includedir)/sqlrelay/private/sqlrresultsettranslation.h \
 		$(includedir)/sqlrelay/private/sqlrresultsettranslations.h \
-		$(includedir)/sqlrelay/private/sqlrrouter.h \
 		$(includedir)/sqlrelay/private/sqlrrouters.h \
+		$(includedir)/sqlrelay/private/sqlrrouter.h \
 		$(includedir)/sqlrelay/private/sqlrschedule.h \
 		$(includedir)/sqlrelay/private/sqlrschedulerule.h \
 		$(includedir)/sqlrelay/private/sqlrschedules.h \

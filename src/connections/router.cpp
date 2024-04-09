@@ -374,7 +374,7 @@ void routerconnection::handleConnectString() {
 	// (this is just a convenient place to do it)
 	domnode	*routers=cont->getConfig()->getRouters();
 	if (!routers->isNullNode()) {
-		sqlrr=new sqlrrouters(cont,conids,cons,concount);
+		sqlrr=new sqlrrouters(cont,cons,conids,concount);
 		sqlrr->load(routers);
 		routeentiresession=sqlrr->routeEntireSession();
 	}

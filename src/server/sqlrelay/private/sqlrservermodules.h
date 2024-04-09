@@ -109,35 +109,6 @@ class SQLRSERVER_DLLSPEC sqlrschedules : public sqlrservermodules {
 		sqlrschedulesprivate	*pvt;
 };
 
-class SQLRSERVER_DLLSPEC sqlrrouters : public sqlrservermodules {
-	friend class routerconnection;
-	friend class routercursor;
-	public:
-		sqlrrouters(sqlrservercontroller *cont,
-				const char **connectionids,
-				sqlrconnection **connections,
-				uint16_t connectioncount);
-		~sqlrrouters();
-
-		const char	*route(sqlrserverconnection *sqlrcon,
-						sqlrservercursor *sqlrcur,
-						const char **err,
-						int64_t *errn);
-		bool	routeEntireSession();
-
-		const char	*getCurrentConnectionId();
-		const char	**getConnectionIds();
-		sqlrconnection	**getConnections();
-		uint16_t	getConnectionCount();
-
-	private:
-		void	loadModule(domnode *parameters);
-
-		void	setCurrentConnectionId(const char *connid);
-
-		sqlrroutersprivate	*pvt;
-};
-
 class SQLRSERVER_DLLSPEC sqlrdirectives : public sqlrservermodules {
 	public:
 		sqlrdirectives(sqlrservercontroller *cont);
