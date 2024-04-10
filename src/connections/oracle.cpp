@@ -217,8 +217,6 @@ class SQLRSERVER_DLLSPEC oraclecursor : public sqlrservercursor {
 						int32_t microsecond,
 						const char *tz,
 						bool isnegative,
-						char *buffer,
-						uint16_t buffersize,
 						int16_t *isnull);
 		bool		outputBind(const char *variable, 
 						uint16_t variablesize,
@@ -2922,8 +2920,6 @@ bool oraclecursor::inputBind(const char *variable,
 				int32_t microsecond,
 				const char *tz,
 				bool isnegative,
-				char *buffer,
-				uint16_t buffersize,
 				int16_t *isnull) {
 	checkRePrepare();
 
