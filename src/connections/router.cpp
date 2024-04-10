@@ -6,6 +6,7 @@
 #include <rudiments/character.h>
 #include <rudiments/snooze.h>
 #include <rudiments/regularexpression.h>
+#include <rudiments/process.h>
 
 #include <datatypes.h>
 #include <defines.h>
@@ -376,6 +377,9 @@ bool routerconnection::logIn(const char **error, const char **warning) {
 	justloggedin=true;
 
 	while (!ping()) {
+		if (process::getShutDownFlag()) {
+			return false;
+		}
 		snooze::macrosnooze(1);
 	}
 	endSession();

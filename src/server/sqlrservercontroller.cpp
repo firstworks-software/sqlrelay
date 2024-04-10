@@ -569,6 +569,11 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 	// initialize the paths
 	pvt->_pth=new sqlrpaths(pvt->_cmdl);
 
+	// create the pid file as early as possible, but especially before
+	// login,  in case login takes a while and someone runs sqlr-stop while
+	// we're logging in
+	createPidFile();
+
 	// default id warning
 	if (!charstring::compare(pvt->_cmdl->getId(),DEFAULT_ID)) {
 		stderror.printf("Warning: using default id.\n");
@@ -655,8 +660,8 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 		pvt->_sqlrs->load(schedules);
 	}
 
-	// handle the pid file
-	if (!handlePidFile()) {
+	// wait for listener startup
+	if (!waitForListenerStartup()) {
 		return false;
 	}
 
@@ -688,22 +693,26 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 		pvt->_ttl=0;
 	}
 
-	// log in and detach
+	// detach
 	if (pvt->_conn->mustDetachBeforeLogIn() &&
 			!pvt->_cmdl->isFound("-nodetach")) {
+
 		process::detach();
+
+		// (re)create the pid file with the pid of the detached process
+		createPidFile();
 	}
+
+	// log in
 	bool	reloginatstart=pvt->_cfg->getReLoginAtStart();
 	if (!reloginatstart) {
+
 		if (!attemptLogIn(!pvt->_silent)) {
 			return false;
 		}
-	}
-	if (!pvt->_conn->mustDetachBeforeLogIn() &&
-			!pvt->_cmdl->isFound("-nodetach")) {
-		process::detach();
-	}
-	if (reloginatstart) {
+
+	} else {
+
 		while (!attemptLogIn(false)) {
 			snooze::macrosnooze(5);
 			if (process::getShutDownFlag()) {
@@ -711,6 +720,18 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 			}
 		}
 	}
+
+	// detach
+	if (!pvt->_conn->mustDetachBeforeLogIn() &&
+			!pvt->_cmdl->isFound("-nodetach")) {
+
+		process::detach();
+
+		// (re)create the pid file with the pid of the detached process
+		createPidFile();
+	}
+
+	// init connection stats
 	initConnStats();
 
 	// get the module datas
@@ -849,15 +870,6 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 	// set autocommit behavior
 	setAutoCommit(pvt->_initialautocommit);
 
-	// create connection pid file
-	pid_t	pid=process::getProcessId();
-	charstring::printf(&pvt->_pidfile,
-				"%ssqlr-connection-%s.%ld.pid",
-				pvt->_pth->getPidDir(),
-				pvt->_cmdl->getId(),
-				(long)pid);
-	process::createPidFile(pvt->_pidfile,permissions::getOwnerReadWrite());
-
 	// increment connection counter
 	if (pvt->_cfg->getDynamicScaling()) {
 		incrementConnectionCount();
@@ -895,6 +907,32 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 	#endif
 
 	return true;
+}
+
+void sqlrservercontroller::createPidFile() {
+
+	// if a pid file already exists, then remove it
+	if (pvt->_pidfile) {
+		file::remove(pvt->_pidfile);
+		delete[] pvt->_pidfile;
+	}
+
+	// create a pid file
+	pid_t	pid=process::getProcessId();
+	charstring::printf(&pvt->_pidfile,
+				"%ssqlr-connection-%s.%ld.pid",
+				pvt->_pth->getPidDir(),
+				pvt->_cmdl->getId(),
+				(long)pid);
+	process::createPidFile(pvt->_pidfile,permissions::getOwnerReadWrite());
+
+	// There is, unfortunately an unavoidable race condition here.  This
+	// is called right after detach(), but there's no way to detach, delete
+	// the original pid file, and create another one in an atomic operation.
+	// And, there's no telling when sqlr-stop will be run.  It could happen
+	// somewhere in the middle of all of this and either errnoeusly attempt
+	// to kill the parent process or just not see a pid file at all.  Not
+	// sure what to do about that.
 }
 
 void sqlrservercontroller::setUserAndGroup() {
@@ -976,7 +1014,7 @@ sqlrserverconnection *sqlrservercontroller::initConnection(const char *dbase) {
 	return conn;
 }
 
-bool sqlrservercontroller::handlePidFile() {
+bool sqlrservercontroller::waitForListenerStartup() {
 
 	// check for listener's pid file
 	// (Look a few times.  It might not be there right away.  The listener

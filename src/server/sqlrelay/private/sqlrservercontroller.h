@@ -55,11 +55,13 @@
 						const char *errorrowtable);
 
 	private:
+		void	createPidFile();
+
 		void	setUserAndGroup();
 
 		sqlrserverconnection	*initConnection(const char *dbase);
 
-		bool	handlePidFile();
+		bool	waitForListenerStartup();
 
 		void	initDatabaseAvailableFileName();
 
