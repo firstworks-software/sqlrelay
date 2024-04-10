@@ -39,15 +39,15 @@ struct db2column {
 };
 
 struct datebind {
-	int16_t		*year;
-	int16_t		*month;
-	int16_t		*day;
-	int16_t		*hour;
-	int16_t		*minute;
-	int16_t		*second;
-	int32_t		*microsecond;
-	const char	**tz;
-	char		*buffer;
+	int16_t			*year;
+	int16_t			*month;
+	int16_t			*day;
+	int16_t			*hour;
+	int16_t			*minute;
+	int16_t			*second;
+	int32_t			*microsecond;
+	const char		**tz;
+	SQL_TIMESTAMP_STRUCT	buffer;
 };
 
 class db2connection;
@@ -91,8 +91,6 @@ class SQLRSERVER_DLLSPEC db2cursor : public sqlrservercursor {
 						int32_t microsecond,
 						const char *tz,
 						bool isnegative,
-						char *buffer,
-						uint16_t buffersize,
 						int16_t *isnull);
 		bool		inputBindBlob(const char *variable,
 						uint16_t variablesize,
@@ -132,8 +130,6 @@ class SQLRSERVER_DLLSPEC db2cursor : public sqlrservercursor {
 						int32_t *microsecond,
 						const char **tz,
 						bool *isnegative,
-						char *buffer,
-						uint16_t buffersize,
 						int16_t *isnull);
 		bool		outputBindBlob(const char *variable, 
 						uint16_t variablesize,
@@ -205,14 +201,16 @@ class SQLRSERVER_DLLSPEC db2cursor : public sqlrservercursor {
 		#endif
 		db2column	*column;
 
-		uint16_t	maxbindcount;
-		SQLINTEGER	*blobbindsize;
-		datebind	**outdatebind;
-		char		**outlobbind;
-		SQLINTEGER 	*outlobbindlen;
-		int16_t		**outisnullptr;
-		SQLINTEGER	*outisnull;
-		SQLINTEGER	sqlnulldata;
+		uint16_t		maxbindcount;
+		SQLINTEGER		*blobbindsize;
+		SQL_DATE_STRUCT		*indatebind;
+		SQL_TIMESTAMP_STRUCT	*intsbind;
+		datebind		**outdatebind;
+		char			**outlobbind;
+		SQLINTEGER 		*outlobbindlen;
+		int16_t			**outisnullptr;
+		SQLINTEGER		*outisnull;
+		SQLINTEGER		sqlnulldata;
 
 		uint64_t	rowgroupindex;
 		uint64_t	totalinrowgroup;
@@ -748,6 +746,8 @@ db2cursor::db2cursor(sqlrserverconnection *conn, uint16_t id) :
 	lobstmt=0;
 	maxbindcount=conn->cont->getConfig()->getMaxBindCount();
 	blobbindsize=new SQLINTEGER[maxbindcount];
+	indatebind=new SQL_DATE_STRUCT[maxbindcount];
+	intsbind=new SQL_TIMESTAMP_STRUCT[maxbindcount];
 	outdatebind=new datebind *[maxbindcount];
 	outlobbind=new char *[maxbindcount];
 	outlobbindlen=new SQLINTEGER[maxbindcount];
@@ -767,6 +767,8 @@ db2cursor::db2cursor(sqlrserverconnection *conn, uint16_t id) :
 
 db2cursor::~db2cursor() {
 	delete[] blobbindsize;
+	delete[] indatebind;
+	delete[] intsbind;
 	delete[] outdatebind;
 	delete[] outlobbind;
 	delete[] outlobbindlen;
@@ -1018,8 +1020,6 @@ bool db2cursor::inputBind(const char *variable,
 					int32_t microsecond,
 					const char *tz,
 					bool isnegative,
-					char *buffer,
-					uint16_t buffersize,
 					int16_t *isnull) {
 
 	uint16_t	pos=charstring::convertToInteger(variable+1);
@@ -1033,7 +1033,7 @@ bool db2cursor::inputBind(const char *variable,
 
 	if (validdate && !validtime) {
 
-		SQL_DATE_STRUCT	*ts=(SQL_DATE_STRUCT *)buffer;
+		SQL_DATE_STRUCT	*ts=&(indatebind[pos-1]);
 		ts->year=year;
 		ts->month=month;
 		ts->day=day;
@@ -1045,13 +1045,13 @@ bool db2cursor::inputBind(const char *variable,
 				SQL_DATE,
 				0,
 				0,
-				buffer,
+				ts,
 				0,
 				NULL);
 
 	} else {
 
-		SQL_TIMESTAMP_STRUCT	*ts=(SQL_TIMESTAMP_STRUCT *)buffer;
+		SQL_TIMESTAMP_STRUCT	*ts=&(intsbind[pos-1]);
 		ts->year=year;
 		ts->month=month;
 		ts->day=day;
@@ -1067,7 +1067,7 @@ bool db2cursor::inputBind(const char *variable,
 				SQL_TIMESTAMP,
 				0,
 				0,
-				buffer,
+				ts,
 				0,
 				NULL);
 	}
@@ -1233,8 +1233,6 @@ bool db2cursor::outputBind(const char *variable,
 					int32_t *microsecond,
 					const char **tz,
 					bool *isnegative,
-					char *buffer,
-					uint16_t buffersize,
 					int16_t *isnull) {
 
 	uint16_t	pos=charstring::convertToInteger(variable+1);
@@ -1252,8 +1250,9 @@ bool db2cursor::outputBind(const char *variable,
 	db->second=second;
 	db->microsecond=microsecond;
 	db->tz=tz;
+
 	*isnegative=false;
-	db->buffer=buffer;
+
 	outdatebind[pos-1]=db;
 	outisnullptr[pos-1]=isnull;
 
@@ -1264,7 +1263,7 @@ bool db2cursor::outputBind(const char *variable,
 				SQL_TIMESTAMP,
 				0,
 				0,
-				buffer,
+				&(db->buffer),
 				0,
 				&(outisnull[pos-1])
 				);
@@ -1525,15 +1524,13 @@ bool db2cursor::executeQuery(const char *query, uint32_t size) {
 	for (uint16_t i=0; i<getOutputBindCount(); i++) {
 		if (outdatebind[i]) {
 			datebind	*db=outdatebind[i];
-			SQL_TIMESTAMP_STRUCT	*ts=
-				(SQL_TIMESTAMP_STRUCT *)db->buffer;
-			*(db->year)=ts->year;
-			*(db->month)=ts->month;
-			*(db->day)=ts->day;
-			*(db->hour)=ts->hour;
-			*(db->minute)=ts->minute;
-			*(db->second)=ts->second;
-			*(db->microsecond)=ts->fraction/1000;
+			*(db->year)=db->buffer.year;
+			*(db->month)=db->buffer.month;
+			*(db->day)=db->buffer.day;
+			*(db->hour)=db->buffer.hour;
+			*(db->minute)=db->buffer.minute;
+			*(db->second)=db->buffer.second;
+			*(db->microsecond)=db->buffer.fraction/1000;
 			*(db->tz)=NULL;
 		}
 		if (outisnullptr[i]) {

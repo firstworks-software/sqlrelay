@@ -61,15 +61,15 @@ struct odbccolumn {
 };
 
 struct datebind {
-	int16_t		*year;
-	int16_t		*month;
-	int16_t		*day;
-	int16_t		*hour;
-	int16_t		*minute;
-	int16_t		*second;
-	int32_t		*microsecond;
-	const char	**tz;
-	char		*buffer;
+	int16_t			*year;
+	int16_t			*month;
+	int16_t			*day;
+	int16_t			*hour;
+	int16_t			*minute;
+	int16_t			*second;
+	int32_t			*microsecond;
+	const char		**tz;
+	SQL_TIMESTAMP_STRUCT	buffer;
 };
 
 struct charbind {
@@ -115,8 +115,6 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 						int32_t microsecond,
 						const char *tz,
 						bool isnegative,
-						char *buffer,
-						uint16_t buffersize,
 						int16_t *isnull);
 		bool		inputBindBlob(const char *variable,
 						uint16_t variablesize,
@@ -149,8 +147,6 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 						int32_t *microsecond,
 						const char **tz,
 						bool *isnegative,
-						char *buffer,
-						uint16_t buffersize,
 						int16_t *isnull);
 		bool		inputOutputBind(const char *variable, 
 						uint16_t variablesize,
@@ -178,8 +174,6 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 						int32_t *microsecond,
 						const char **tz,
 						bool *isnegative,
-						char *buffer,
-						uint16_t buffersize,
 						int16_t *isnull);
 		int16_t		getNonNullBindValue();
 		int16_t		getNullBindValue();
@@ -253,21 +247,24 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 		#endif
 		odbccolumn 	*column;
 
-		uint16_t	maxbindcount;
-		datebind	**outdatebind;
-		charbind	**outcharbind;
-		int16_t		**outisnullptr;
-		datebind	**inoutdatebind;
-		charbind	**inoutcharbind;
-		int16_t		**inoutisnullptr;
+		uint16_t		maxbindcount;
+		SQL_DATE_STRUCT		*indatebind;
+		SQL_TIME_STRUCT		*intimebind;
+		SQL_TIMESTAMP_STRUCT	*intsbind;
+		datebind		**outdatebind;
+		charbind		**outcharbind;
+		int16_t			**outisnullptr;
+		datebind		**inoutdatebind;
+		charbind		**inoutcharbind;
+		int16_t			**inoutisnullptr;
 		#ifdef SQLBINDPARAMETER_SQLLEN
-		SQLLEN		*outisnull;
-		SQLLEN		*inoutisnull;
-		SQLLEN		sqlnulldata;
+		SQLLEN			*outisnull;
+		SQLLEN			*inoutisnull;
+		SQLLEN			sqlnulldata;
 		#else
-		SQLINTEGER	*outisnull;
-		SQLINTEGER	*inoutisnull;
-		SQLINTEGER	sqlnulldata;
+		SQLINTEGER		*outisnull;
+		SQLINTEGER		*inoutisnull;
+		SQLINTEGER		sqlnulldata;
 		#endif
 
 		bool		bindformaterror;
@@ -2048,6 +2045,9 @@ odbccursor::odbccursor(sqlrserverconnection *conn, uint16_t id) :
 	odbcconn=(odbcconnection *)conn;
 	stmt=NULL;
 	maxbindcount=conn->cont->getConfig()->getMaxBindCount();
+	indatebind=new SQL_DATE_STRUCT[maxbindcount];
+	intimebind=new SQL_TIME_STRUCT[maxbindcount];
+	intsbind=new SQL_TIMESTAMP_STRUCT[maxbindcount];
 	outdatebind=new datebind *[maxbindcount];
 	outcharbind=new charbind *[maxbindcount];
 	outisnullptr=new int16_t *[maxbindcount];
@@ -2082,6 +2082,9 @@ odbccursor::odbccursor(sqlrserverconnection *conn, uint16_t id) :
 }
 
 odbccursor::~odbccursor() {
+	delete[] indatebind;
+	delete[] intimebind;
+	delete[] intsbind;
 	delete[] outdatebind;
 	delete[] outcharbind;
 	delete[] outisnullptr;
@@ -2501,8 +2504,6 @@ bool odbccursor::inputBind(const char *variable,
 				int32_t microsecond,
 				const char *tz,
 				bool isnegative,
-				char *buffer,
-				uint16_t buffersize,
 				int16_t *isnull) {
 
 	uint16_t	pos=charstring::convertToInteger(variable+1);
@@ -2516,7 +2517,7 @@ bool odbccursor::inputBind(const char *variable,
 
 	if (validdate && !validtime) {
 
-		SQL_DATE_STRUCT	*ts=(SQL_DATE_STRUCT *)buffer;
+		SQL_DATE_STRUCT	*ts=&(indatebind[pos-1]);
 		ts->year=year;
 		ts->month=month;
 		ts->day=day;
@@ -2528,13 +2529,13 @@ bool odbccursor::inputBind(const char *variable,
 				SQL_DATE,
 				0,
 				0,
-				buffer,
+				ts,
 				0,
 				NULL);
 
 	} else if (!validdate && validtime && !odbcconn->timestampfortime) {
 
-		SQL_TIME_STRUCT	*ts=(SQL_TIME_STRUCT *)buffer;
+		SQL_TIME_STRUCT	*ts=&(intimebind[pos-1]);
 		ts->hour=hour;
 		ts->minute=minute;
 		ts->second=second;
@@ -2546,13 +2547,13 @@ bool odbccursor::inputBind(const char *variable,
 				SQL_TIME,
 				0,
 				odbcconn->fractionscale,
-				buffer,
+				ts,
 				0,
 				NULL);
 
 	} else {
 
-		SQL_TIMESTAMP_STRUCT	*ts=(SQL_TIMESTAMP_STRUCT *)buffer;
+		SQL_TIMESTAMP_STRUCT	*ts=&(intsbind[pos-1]);
 		ts->year=year;
 		ts->month=month;
 		ts->day=day;
@@ -2583,7 +2584,7 @@ bool odbccursor::inputBind(const char *variable,
 				SQL_TIMESTAMP,
 				0,
 				odbcconn->fractionscale,
-				buffer,
+				ts,
 				0,
 				NULL);
 	}
@@ -2763,8 +2764,6 @@ bool odbccursor::outputBind(const char *variable,
 				int32_t *microsecond,
 				const char **tz,
 				bool *isnegative,
-				char *buffer,
-				uint16_t buffersize,
 				int16_t *isnull) {
 
 	uint16_t	pos=charstring::convertToInteger(variable+1);
@@ -2782,8 +2781,8 @@ bool odbccursor::outputBind(const char *variable,
 	db->second=second;
 	db->microsecond=microsecond;
 	db->tz=tz;
+
 	*isnegative=false;
-	db->buffer=buffer;
 
 	outdatebind[pos-1]=db;
 	outcharbind[pos-1]=NULL;
@@ -2798,9 +2797,10 @@ bool odbccursor::outputBind(const char *variable,
 				// like an input/output bind?
 				0,
 				0,
-				buffer,
+				&(db->buffer),
 				0,
-				&(outisnull[pos-1]));
+				&(outisnull[pos-1])
+				);
 	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 }
 
@@ -2988,8 +2988,6 @@ bool odbccursor::inputOutputBind(const char *variable,
 				int32_t *microsecond,
 				const char **tz,
 				bool *isnegative,
-				char *buffer,
-				uint16_t buffersize,
 				int16_t *isnull) {
 
 	uint16_t	pos=charstring::convertToInteger(variable+1);
@@ -2997,15 +2995,6 @@ bool odbccursor::inputOutputBind(const char *variable,
 		bindformaterror=true;
 		return false;
 	}
-
-	SQL_TIMESTAMP_STRUCT	*ts=(SQL_TIMESTAMP_STRUCT *)buffer;
-	ts->year=*year;
-	ts->month=*month;
-	ts->day=*day;
-	ts->hour=*hour;
-	ts->minute=*minute;
-	ts->second=*second;
-	ts->fraction=(*microsecond)*1000;
 
 	datebind	*db=new datebind;
 	db->year=year;
@@ -3016,8 +3005,16 @@ bool odbccursor::inputOutputBind(const char *variable,
 	db->second=second;
 	db->microsecond=microsecond;
 	db->tz=tz;
+
+	db->buffer.year=*year;
+	db->buffer.month=*month;
+	db->buffer.day=*day;
+	db->buffer.hour=*hour;
+	db->buffer.minute=*minute;
+	db->buffer.second=*second;
+	db->buffer.fraction=(*microsecond)*1000;
+
 	*isnegative=false;
-	db->buffer=buffer;
 
 	inoutdatebind[pos-1]=db;
 	inoutcharbind[pos-1]=NULL;
@@ -3030,7 +3027,7 @@ bool odbccursor::inputOutputBind(const char *variable,
 				SQL_TIMESTAMP,
 				29,
 				9,
-				buffer,
+				&(db->buffer),
 				0,
 				&(outisnull[pos-1]));
 	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
@@ -3137,15 +3134,13 @@ bool odbccursor::executeQuery(const char *query, uint32_t size) {
 	for (uint16_t i=0; i<maxbindcount; i++) {
 		if (outdatebind[i]) {
 			datebind	*db=outdatebind[i];
-			SQL_TIMESTAMP_STRUCT	*ts=
-				(SQL_TIMESTAMP_STRUCT *)db->buffer;
-			*(db->year)=ts->year;
-			*(db->month)=ts->month;
-			*(db->day)=ts->day;
-			*(db->hour)=ts->hour;
-			*(db->minute)=ts->minute;
-			*(db->second)=ts->second;
-			*(db->microsecond)=ts->fraction/1000;
+			*(db->year)=db->buffer.year;
+			*(db->month)=db->buffer.month;
+			*(db->day)=db->buffer.day;
+			*(db->hour)=db->buffer.hour;
+			*(db->minute)=db->buffer.minute;
+			*(db->second)=db->buffer.second;
+			*(db->microsecond)=db->buffer.fraction/1000;
 			*(db->tz)=NULL;
 		}
 		#ifdef HAVE_SQLCONNECTW
@@ -3201,15 +3196,13 @@ bool odbccursor::executeQuery(const char *query, uint32_t size) {
 	for (uint16_t i=0; i<maxbindcount; i++) {
 		if (inoutdatebind[i]) {
 			datebind	*db=inoutdatebind[i];
-			SQL_TIMESTAMP_STRUCT	*ts=
-				(SQL_TIMESTAMP_STRUCT *)db->buffer;
-			*(db->year)=ts->year;
-			*(db->month)=ts->month;
-			*(db->day)=ts->day;
-			*(db->hour)=ts->hour;
-			*(db->minute)=ts->minute;
-			*(db->second)=ts->second;
-			*(db->microsecond)=ts->fraction/1000;
+			*(db->year)=db->buffer.year;
+			*(db->month)=db->buffer.month;
+			*(db->day)=db->buffer.day;
+			*(db->hour)=db->buffer.hour;
+			*(db->minute)=db->buffer.minute;
+			*(db->second)=db->buffer.second;
+			*(db->microsecond)=db->buffer.fraction/1000;
 			*(db->tz)=NULL;
 		}
 		#ifdef HAVE_SQLCONNECTW

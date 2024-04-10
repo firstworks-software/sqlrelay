@@ -54,6 +54,7 @@ struct datebind {
         int16_t         *second;
         const char      **tz;
 	bool		*isnegative;
+	ISC_TIMESTAMP	buffer;
 };
 
 class firebirdconnection;
@@ -91,8 +92,6 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
                                         	int32_t microsecond,
                                         	const char *tz,
 						bool isnegative,
-                                        	char *buffer,
-                                        	uint16_t buffersize,
                                         	int16_t *isnull);
 		bool		inputBindBlob(const char *variable,
 						uint16_t variablesize,
@@ -130,8 +129,6 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 						int32_t *microsecond,
 						const char **tz,
 						bool *isnegative,
-						char *buffer,
-						uint16_t buffersize,
 						int16_t *isnull);
 		bool		outputBindBlob(const char *variable,
 						uint16_t variablesize,
@@ -193,6 +190,7 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 		uint16_t	maxbindcount;
 
 		XSQLDA	ISC_FAR	*inbindsqlda;
+		ISC_TIMESTAMP	*inbindts;
 		ISC_QUAD	*inbindblobid;
 		isc_blob_handle	*inbindblobhandle;
 
@@ -776,6 +774,7 @@ firebirdcursor::firebirdcursor(sqlrserverconnection *conn, uint16_t id) :
 	inbindsqlda=(XSQLDA ISC_FAR *)new byte_t[XSQLDA_LENGTH(maxbindcount)];
 	inbindsqlda->version=SQLDA_VERSION1;
 	inbindsqlda->sqln=maxbindcount;
+	inbindts=new ISC_TIMESTAMP[maxbindcount];
 	inbindblobid=new ISC_QUAD[maxbindcount];
 	inbindblobhandle=new isc_blob_handle[maxbindcount];
 
@@ -804,6 +803,7 @@ firebirdcursor::firebirdcursor(sqlrserverconnection *conn, uint16_t id) :
 
 firebirdcursor::~firebirdcursor() {
 	delete[] inbindsqlda;
+	delete[] inbindts;
 	delete[] inbindblobid;
 	delete[] inbindblobhandle;
 
@@ -1003,9 +1003,14 @@ bool firebirdcursor::inputBind(const char *variable,
 					int32_t microsecond,
 					const char *tz,
 					bool isnegative,
-					char *buffer,
-					uint16_t buffersize,
 					int16_t *isnull) {
+
+	// make bind vars 1 based like all other db's
+	long	index=charstring::convertToInteger(variable+1)-1;
+	if (index<0) {
+		bindformaterror=true;
+		return false;
+	}
 
 	// build an ISC_TIMESTAMP
 	tm	t;
@@ -1015,19 +1020,13 @@ bool firebirdcursor::inputBind(const char *variable,
 	t.tm_mday=day;
 	t.tm_mon=month-1;
 	t.tm_year=year-1900;
-	isc_encode_timestamp(&t,(ISC_TIMESTAMP *)buffer);
+	isc_encode_timestamp(&t,&(inbindts[index]));
 
-	// make bind vars 1 based like all other db's
-	long	index=charstring::convertToInteger(variable+1)-1;
-	if (index<0) {
-		bindformaterror=true;
-		return false;
-	}
 	inbindsqlda->sqlvar[index].sqltype=SQL_TIMESTAMP;
 	inbindsqlda->sqlvar[index].sqlscale=0;
 	inbindsqlda->sqlvar[index].sqlsubtype=0;
 	inbindsqlda->sqlvar[index].sqllen=sizeof(ISC_TIMESTAMP);
-	inbindsqlda->sqlvar[index].sqldata=buffer;
+	inbindsqlda->sqlvar[index].sqldata=(char *)&(inbindts[index]);
 	inbindsqlda->sqlvar[index].sqlind=(short *)NULL;
 	inbindsqlda->sqlvar[index].sqlname_length=0;
 	inbindsqlda->sqlvar[index].sqlname[0]='\0';
@@ -1216,8 +1215,6 @@ bool firebirdcursor::outputBind(const char *variable,
 				int32_t *microsecond,
 				const char **tz,
 				bool *isnegative,
-				char *buffer,
-				uint16_t buffersize,
 				int16_t *isnull) {
 
 	// store the pointers
@@ -1229,6 +1226,8 @@ bool firebirdcursor::outputBind(const char *variable,
 	outdatebind[outbindcount].second=second;
 	outdatebind[outbindcount].tz=tz;
 	outdatebind[outbindcount].isnegative=isnegative;
+
+	char	*value=(char *)&(outdatebind[outbindcount].buffer);
 
 	outbindcount++;
 
@@ -1242,7 +1241,7 @@ bool firebirdcursor::outputBind(const char *variable,
 	outbindsqlda->sqlvar[index].sqlscale=0;
 	outbindsqlda->sqlvar[index].sqlsubtype=0;
 	outbindsqlda->sqlvar[index].sqllen=sizeof(ISC_TIMESTAMP);
-	outbindsqlda->sqlvar[index].sqldata=buffer;
+	outbindsqlda->sqlvar[index].sqldata=value;
 	outbindsqlda->sqlvar[index].sqlind=isnull;
 	outbindsqlda->sqlvar[index].sqlname_length=0;
 	outbindsqlda->sqlvar[index].sqlname[0]='\0';

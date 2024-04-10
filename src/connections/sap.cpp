@@ -142,8 +142,6 @@ class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 						int32_t microsecond,
 						const char *tz,
 						bool isnegative,
-						char *buffer,
-						uint16_t buffersize,
 						int16_t *isnull);
 		bool		outputBind(const char *variable, 
 						uint16_t variablesize,
@@ -171,8 +169,6 @@ class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 						int32_t *microsecond,
 						const char **tz,
 						bool *isnegative,
-						char *buffer,
-						uint16_t buffersize,
 						int16_t *isnull);
 		bool		executeQuery(const char *query,
 						uint32_t size);
@@ -219,8 +215,10 @@ class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 		CS_INT		maxrow;
 		CS_INT		totalrows;
 
+		uint16_t	maxbindcount;
 		CS_DATAFMT	*parameter;
 		uint16_t	paramindex;
+		char		**inbindts;
 		CS_INT		*outbindtype;
 		char		**outbindstrings;
 		uint32_t	*outbindstringsizes;
@@ -689,14 +687,18 @@ sapcursor::sapcursor(sqlrserverconnection *conn, uint16_t id) :
 	cursornamesize=charstring::getIntegerLength(id);
 	cursorname=charstring::parseNumber(id);
 
-	uint16_t	maxbindcount=conn->cont->getConfig()->getMaxBindCount();
+	maxbindcount=conn->cont->getConfig()->getMaxBindCount();
 	parameter=new CS_DATAFMT[maxbindcount];
+	inbindts=new char *[maxbindcount];
 	outbindtype=new CS_INT[maxbindcount];
 	outbindstrings=new char *[maxbindcount];
 	outbindstringsizes=new uint32_t[maxbindcount];
 	outbindints=new int64_t *[maxbindcount];
 	outbinddoubles=new double *[maxbindcount];
 	outbinddates=new datebind[maxbindcount];
+	for (uint16_t i=0; i<maxbindcount; i++) {
+		inbindts[i]=new char[27];
+	}
 
 	// replace the regular expression used to detect creation of a
 	// temporary table
@@ -724,6 +726,10 @@ sapcursor::~sapcursor() {
 	close();
 	delete[] cursorname;
 	delete[] parameter;
+	for (uint16_t i=0; i<maxbindcount; i++) {
+		delete[] inbindts[i];
+	}
+	delete[] inbindts;
 	delete[] outbindtype;
 	delete[] outbindstrings;
 	delete[] outbindstringsizes;
@@ -1061,8 +1067,6 @@ bool sapcursor::inputBind(const char *variable,
 				int32_t microsecond,
 				const char *tz,
 				bool isnegative,
-				char *buffer,
-				uint16_t buffersize,
 				int16_t *isnull) {
 
 	checkRePrepare();
@@ -1083,6 +1087,7 @@ bool sapcursor::inputBind(const char *variable,
 		hour=hour-12;
 		ampm="PM";
 	}
+	char	*buffer=inbindts[paramindex];
 	charstring::copy(buffer,monthname[month-1]);
 	charstring::append(buffer," ");
 	charstring::append(buffer,(int64_t)day);
@@ -1212,8 +1217,6 @@ bool sapcursor::outputBind(const char *variable,
 				int32_t *microsecond,
 				const char **tz,
 				bool *isnegative,
-				char *buffer,
-				uint16_t buffersize,
 				int16_t *isnull) {
 	checkRePrepare();
 

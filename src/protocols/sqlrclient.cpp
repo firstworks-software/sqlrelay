@@ -1785,13 +1785,6 @@ bool sqlrprotocol_sqlrclient::getOutputBinds(sqlrservercursor *cursor) {
 			bv->value.dateval.microsecond=0;
 			bv->value.dateval.tz=NULL;
 			bv->value.dateval.isnegative=false;
-			// allocate enough space to store the date/time string
-			// or whatever buffer a child might need to store a
-			// date 512 bytes ought to be enough
-			bv->value.dateval.buffersize=512;
-			bv->value.dateval.buffer=
-				(char *)bindpool->
-					allocate(bv->value.dateval.buffersize);
 		} else if (bv->type==SQLRSERVERBINDVARTYPE_BLOB ||
 					bv->type==SQLRSERVERBINDVARTYPE_CLOB) {
 			if (!getBindSize(cursor,bv,&maxlobbindvaluesize)) {
@@ -2089,14 +2082,6 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 							cursor,info,result);
 				return false;
 			}
-
-			// allocate enough space to store the date/time string
-			// or whatever buffer a child might need to store a
-			// date 512 bytes ought to be enough
-			bv->value.dateval.buffersize=512;
-			bv->value.dateval.buffer=
-				(char *)bindpool->allocate(
-						bv->value.dateval.buffersize);
 
 			bv->isnull=cont->getNonNullBindValue();
 			cont->raiseDebugMessageEvent("DATE");
@@ -2515,12 +2500,6 @@ bool sqlrprotocol_sqlrclient::getDateBind(sqlrserverbindvar *bv,
 		return false;
 	}
 	bv->value.dateval.isnegative=tempbool;
-
-	// allocate enough space to store the date/time string
-	// 64 bytes ought to be enough
-	bv->value.dateval.buffersize=64;
-	bv->value.dateval.buffer=(char *)bindpool->
-					allocate(bv->value.dateval.buffersize);
 
 	bv->isnull=cont->getNonNullBindValue();
 

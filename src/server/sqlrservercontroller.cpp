@@ -4599,8 +4599,6 @@ bool sqlrservercontroller::handleBinds(sqlrservercursor *cursor) {
 					bind->value.dateval.microsecond,
 					bind->value.dateval.tz,
 					bind->value.dateval.isnegative,
-					bind->value.dateval.buffer,
-					bind->value.dateval.buffersize,
 					&bind->isnull)) {
 				return false;
 			}
@@ -4670,8 +4668,6 @@ bool sqlrservercontroller::handleBinds(sqlrservercursor *cursor) {
 					&bind->value.dateval.microsecond,
 					(const char **)&bind->value.dateval.tz,
 					&bind->value.dateval.isnegative,
-					bind->value.dateval.buffer,
-					bind->value.dateval.buffersize,
 					&bind->isnull)) {
 				return false;
 			}
@@ -4765,8 +4761,6 @@ bool sqlrservercontroller::handleBinds(sqlrservercursor *cursor) {
 					&bind->value.dateval.microsecond,
 					(const char **)&bind->value.dateval.tz,
 					&bind->value.dateval.isnegative,
-					bind->value.dateval.buffer,
-					bind->value.dateval.buffersize,
 					&bind->isnull)) {
 				return false;
 			}
@@ -8288,15 +8282,6 @@ void sqlrservercontroller::bulkLoadBindRow(const byte_t *data,
 				}
 				delete[] temp;
 
-				// allocate enough space to store the date/time
-				// string or whatever buffer a child might need
-				// to store a date 512 bytes ought to be enough
-				inbind->value.dateval.buffersize=512;
-				inbind->value.dateval.buffer=
-					(char *)bindpool->
-						allocate(inbind->value.dateval.
-								buffersize);
-
 				if (pvt->_debugbulkload) {
 					stdoutput.printf(
 						"%04hd-%02hd-%02hd "
@@ -10856,12 +10841,6 @@ void sqlrservercontroller::copyBind(sqlrserverbindvar *source,
 					source->value.dateval.tz)+1);
 		charstring::copy(dest->value.dateval.tz,
 					source->value.dateval.tz);
-		dest->value.dateval.buffer=
-			(char *)destpool->allocate(
-				source->value.dateval.buffersize);
-		charstring::copy(dest->value.dateval.buffer,
-					source->value.dateval.buffer,
-					source->value.dateval.buffersize);
 	}
 }
 

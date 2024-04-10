@@ -120,8 +120,6 @@ class SQLRSERVER_DLLSPEC sqlrserverbindvar {
 				int32_t		microsecond;
 				char		*tz;
 				bool		isnegative;
-				char		*buffer;
-				uint16_t	buffersize;
 			} dateval;
 			uint16_t	cursorid;
 		} value;
@@ -3981,9 +3979,6 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 		 *  "tz", and "isnegative" to input bind variable "variable" of
 		 *  "variablesize" bytes.
 		 *  
-		 *  A "buffer" of "buffersize" bytes should also be passed in
-		 *  case the date/time must be first converted to a string.
-		 *
 		 *  Returns true if the bind succeeded and false otherwise.
 		 *
 		 *  This method uses converts the broken-down date/time to a
@@ -4003,8 +3998,6 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 						int32_t microsecond,
 						const char *tz,
 						bool isnegative,
-						char *buffer,
-						uint16_t buffersize,
 						int16_t *isnull);
 
 		/** Binds blob value "value", of "valuesize" bytes, with
@@ -4106,8 +4099,6 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 						int32_t *microsecond,
 						const char **tz,
 						bool *isnegative,
-						char *buffer,
-						uint16_t buffersize,
 						int16_t *isnull);
 
 		/** Binds a blob buffer and null indicator "isnull" to output
@@ -4279,8 +4270,6 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 						int32_t *microsecond,
 						const char **tz,
 						bool *isnegative,
-						char *buffer,
-						uint16_t buffersize,
 						int16_t *isnull);
 
 		/** Binds a blob buffer and null indicator "isnull" to

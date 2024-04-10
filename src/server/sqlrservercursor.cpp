@@ -709,15 +709,14 @@ bool sqlrservercursor::inputBind(const char *variable,
 					int32_t microsecond,
 					const char *tz,
 					bool isnegative,
-					char *buffer,
-					uint16_t buffersize,
 					int16_t *isnull) {
-	dateToString(buffer,buffersize,year,month,day,
+	char	*buffer=(char *)pvt->_bindpool.allocate(64);
+	dateToString(buffer,64,year,month,day,
 			hour,minute,second,microsecond,tz,isnegative);
 	if (buffer[0]=='\0') {
 		*isnull=conn->getNullBindValue();
 	}
-	return inputBind(variable,variablesize,buffer,buffersize,isnull);
+	return inputBind(variable,variablesize,buffer,64,isnull);
 }
 
 bool sqlrservercursor::inputBindBlob(const char *variable,
@@ -776,8 +775,6 @@ bool sqlrservercursor::outputBind(const char *variable,
 					int32_t *microsecond,
 					const char **tz,
 					bool *isnegative,
-					char *buffer,
-					uint16_t buffersize,
 					int16_t *isnull) {
 	// by default, do nothing...
 	return true;
@@ -862,8 +859,6 @@ bool sqlrservercursor::inputOutputBind(const char *variable,
 						int32_t *microsecond,
 						const char **tz,
 						bool *isnegative,
-						char *buffer,
-						uint16_t buffersize,
 						int16_t *isnull) {
 	// by default, do nothing...
 	return true;

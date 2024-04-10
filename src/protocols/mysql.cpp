@@ -4537,10 +4537,6 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 				bv->value.dateval.tz=NULL;
 				bv->value.dateval.isnegative=false;
 				bv->isnull=cont->getNonNullBindValue();
-				bv->value.dateval.buffersize=64;
-				bv->value.dateval.buffer=
-					(char *)bindpool->allocate(
-						bv->value.dateval.buffersize);
 
 				char	size=*((char *)rp);
 				rp+=sizeof(char);
@@ -4595,10 +4591,6 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 				bv->value.dateval.tz=NULL;
 				bv->value.dateval.isnegative=false;
 				bv->isnull=cont->getNonNullBindValue();
-				bv->value.dateval.buffersize=64;
-				bv->value.dateval.buffer=
-					(char *)bindpool->allocate(
-						bv->value.dateval.buffersize);
 
 				char	size=*((char *)rp);
 				rp+=sizeof(char);
@@ -4642,10 +4634,6 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 				bv->value.dateval.tz=NULL;
 				bv->value.dateval.isnegative=false;
 				bv->isnull=cont->getNonNullBindValue();
-				bv->value.dateval.buffersize=64;
-				bv->value.dateval.buffer=
-					(char *)bindpool->allocate(
-						bv->value.dateval.buffersize);
 
 				char	size=*((char *)rp);
 				rp+=sizeof(char);

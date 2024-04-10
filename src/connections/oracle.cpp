@@ -83,7 +83,7 @@ struct datebind {
 	int16_t		*second;
 	const char	**tz;
 	bool		*isnegative;
-	OCIDate		*ocidate;
+	OCIDate		ocidate;
 };
 
 class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
@@ -248,8 +248,6 @@ class SQLRSERVER_DLLSPEC oraclecursor : public sqlrservercursor {
 						int32_t *microsecond,
 						const char **tz,
 						bool *isnegative,
-						char *buffer,
-						uint16_t buffersize,
 						int16_t *isnull);
 		bool		outputBindCursor(const char *variable,
 						uint16_t variablesize,
@@ -378,7 +376,7 @@ class SQLRSERVER_DLLSPEC oraclecursor : public sqlrservercursor {
 		OCIBind		**outbindpp;
 		OCIBind		**curbindpp;
 		char		**inintbindstring;
-		OCIDate		**indatebind;
+		OCIDate		*indatebind;
 		char		**outintbindstring;
 		datebind	**outdatebind;
 		int64_t		**outintbind;
@@ -2407,7 +2405,7 @@ oraclecursor::oraclecursor(sqlrserverconnection *conn, uint16_t id) :
 	outbindpp=new OCIBind *[maxbindcount];
 	curbindpp=new OCIBind *[maxbindcount];
 	inintbindstring=new char *[maxbindcount];
-	indatebind=new OCIDate *[maxbindcount];
+	indatebind=new OCIDate[maxbindcount];
 	outintbindstring=new char *[maxbindcount];
 	outdatebind=new datebind *[maxbindcount];
 	outintbind=new int64_t *[maxbindcount];
@@ -2424,7 +2422,6 @@ oraclecursor::oraclecursor(sqlrserverconnection *conn, uint16_t id) :
 		outbindpp[i]=NULL;
 		curbindpp[i]=NULL;
 		inintbindstring[i]=NULL;
-		indatebind[i]=NULL;
 		outintbindstring[i]=NULL;
 		outdatebind[i]=NULL;
 		outintbind[i]=NULL;
@@ -2470,13 +2467,9 @@ oraclecursor::~oraclecursor() {
 
 	for (uint16_t i=0; i<orainbindcount; i++) {
 		delete[] inintbindstring[i];
-		delete indatebind[i];
 	}
 	for (uint16_t i=0; i<oraoutbindcount; i++) {
 		delete[] outintbindstring[i];
-		if (outdatebind[i]) {
-			delete outdatebind[i]->ocidate;
-		}
 		delete outdatebind[i];
 	}
 
@@ -2939,9 +2932,8 @@ bool oraclecursor::inputBind(const char *variable,
 				int16_t *isnull) {
 	checkRePrepare();
 
-	indatebind[orainbindcount]=new OCIDate;
-	OCIDateSetDate(indatebind[orainbindcount],year,month,day);
-	OCIDateSetTime(indatebind[orainbindcount],hour,minute,second);
+	OCIDateSetDate(&(indatebind[orainbindcount]),year,month,day);
+	OCIDateSetTime(&(indatebind[orainbindcount]),hour,minute,second);
 
 	if (charstring::isInteger(variable+1,variablesize-1)) {
 		ub4	pos=charstring::convertToInteger(variable+1);
@@ -2951,7 +2943,7 @@ bool oraclecursor::inputBind(const char *variable,
 		}
 		if (OCIBindByPos(stmt,&inbindpp[orainbindcount],
 				oracleconn->err,pos,
-				(dvoid *)indatebind[orainbindcount],
+				(dvoid *)&(indatebind[orainbindcount]),
 				(sb4)sizeof(OCIDate),
 				SQLT_ODT,
 				(dvoid *)0,(ub2 *)0,(ub2 *)0,0,(ub4 *)0,
@@ -2963,7 +2955,7 @@ bool oraclecursor::inputBind(const char *variable,
 		if (OCIBindByName(stmt,&inbindpp[orainbindcount],
 				oracleconn->err,
 				(text *)variable,(sb4)variablesize,
-				(dvoid *)indatebind[orainbindcount],
+				(dvoid *)&(indatebind[orainbindcount]),
 				(sb4)sizeof(OCIDate),
 				SQLT_ODT,
 				(dvoid *)0,(ub2 *)0,(ub2 *)0,0,(ub4 *)0,
@@ -3123,8 +3115,6 @@ bool oraclecursor::outputBind(const char *variable,
 				int32_t *microsecond,
 				const char **tz,
 				bool *isnegative,
-				char *buffer,
-				uint16_t buffersize,
 				int16_t *isnull) {
 	checkRePrepare();
 
@@ -3138,7 +3128,6 @@ bool oraclecursor::outputBind(const char *variable,
 	db->second=second;
 	db->tz=tz;
 	db->isnegative=isnegative;
-	db->ocidate=new OCIDate;
 	outdatebind[oraoutbindcount]=db;
 
 	if (charstring::isInteger(variable+1,variablesize-1)) {
@@ -3149,7 +3138,7 @@ bool oraclecursor::outputBind(const char *variable,
 		}
 		if (OCIBindByPos(stmt,&outbindpp[oraoutbindcount],
 				oracleconn->err,pos,
-				(dvoid *)db->ocidate,
+				(dvoid *)&(db->ocidate),
 				(sb4)sizeof(OCIDate),
 				SQLT_ODT,
 				(dvoid *)isnull,(ub2 *)0,
@@ -3162,7 +3151,7 @@ bool oraclecursor::outputBind(const char *variable,
 		if (OCIBindByName(stmt,&outbindpp[oraoutbindcount],
 				oracleconn->err,
 				(text *)variable,(sb4)variablesize,
-				(dvoid *)db->ocidate,
+				(dvoid *)&(db->ocidate),
 				(sb4)sizeof(OCIDate),
 				SQLT_ODT,
 				(dvoid *)isnull,(ub2 *)0,
@@ -3750,8 +3739,8 @@ bool oraclecursor::executeQueryOrFetchFromBindCursor(const char *query,
 			ub1	hour;
 			ub1	minute;
 			ub1	second;
-			OCIDateGetDate(db->ocidate,&year,&month,&day);
-			OCIDateGetTime(db->ocidate,&hour,&minute,&second);
+			OCIDateGetDate(&(db->ocidate),&year,&month,&day);
+			OCIDateGetTime(&(db->ocidate),&hour,&minute,&second);
 			*db->year=year;
 			*db->month=month;
 			*db->day=day;
@@ -4180,16 +4169,11 @@ void oraclecursor::closeResultSet() {
 	for (uint16_t i=0; i<orainbindcount; i++) {
 		delete[] inintbindstring[i];
 		inintbindstring[i]=NULL;
-		delete indatebind[i];
-		indatebind[i]=NULL;
 	}
 	for (uint16_t i=0; i<oraoutbindcount; i++) {
 		delete[] outintbindstring[i];
 		outintbindstring[i]=NULL;
 		outintbind[i]=NULL;
-		if (outdatebind[i]) {
-			delete outdatebind[i]->ocidate;
-		}
 		delete outdatebind[i];
 		outdatebind[i]=NULL;
 	}

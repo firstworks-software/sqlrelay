@@ -3874,8 +3874,6 @@ void sqlrprotocol_teradata::parseDateBind(const byte_t *ptr,
 						sqlrserverbindvar *inbind,
 						const byte_t **outptr) {
 
-	memorypool		*bindpool=cont->getBindPool(req->cur);
-
 	// copy out the date string
 	char	*tmp=charstring::duplicate((char *)ptr,10);
 	debugWrite("%s",tmp);
@@ -3892,9 +3890,6 @@ void sqlrprotocol_teradata::parseDateBind(const byte_t *ptr,
 	inbind->value.dateval.microsecond=-1;
 	inbind->value.dateval.tz=NULL;
 	inbind->value.dateval.isnegative=false;
-	inbind->value.dateval.buffersize=64;
-	inbind->value.dateval.buffer=
-		(char *)bindpool->allocate(inbind->value.dateval.buffersize);
 
 	// parse the date/time/timestamp
 	int16_t	year=0;
@@ -3923,8 +3918,6 @@ void sqlrprotocol_teradata::parseTimeBind(const byte_t *ptr,
 						sqlrserverbindvar *inbind,
 						const byte_t **outptr) {
 
-	memorypool		*bindpool=cont->getBindPool(req->cur);
-
 	// copy out the time string
 	char	*tmp=charstring::duplicate((char *)ptr,8);
 	debugWrite("%s",tmp);
@@ -3941,9 +3934,6 @@ void sqlrprotocol_teradata::parseTimeBind(const byte_t *ptr,
 	inbind->value.dateval.microsecond=-1;
 	inbind->value.dateval.tz=NULL;
 	inbind->value.dateval.isnegative=false;
-	inbind->value.dateval.buffersize=64;
-	inbind->value.dateval.buffer=
-		(char *)bindpool->allocate(inbind->value.dateval.buffersize);
 
 	// parse the date/time/timestamp
 	int16_t	year=0;
@@ -3973,8 +3963,6 @@ void sqlrprotocol_teradata::parseTimestampBind(const byte_t *ptr,
 						sqlrserverbindvar *inbind,
 						const byte_t **outptr) {
 
-	memorypool		*bindpool=cont->getBindPool(req->cur);
-
 	// copy out the timestamp string
 	char	*tmp=charstring::duplicate((char *)ptr,19);
 	debugWrite("%s",tmp);
@@ -3991,9 +3979,6 @@ void sqlrprotocol_teradata::parseTimestampBind(const byte_t *ptr,
 	inbind->value.dateval.microsecond=-1;
 	inbind->value.dateval.tz=NULL;
 	inbind->value.dateval.isnegative=false;
-	inbind->value.dateval.buffersize=64;
-	inbind->value.dateval.buffer=
-		(char *)bindpool->allocate(inbind->value.dateval.buffersize);
 
 	// parse the date/time/timestamp
 	int16_t	year=0;

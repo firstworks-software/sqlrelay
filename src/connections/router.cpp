@@ -156,8 +156,6 @@ class SQLRSERVER_DLLSPEC routercursor : public sqlrservercursor {
 						int32_t microsecond,
 						const char *tz,
 						bool isnegative,
-						char *buffer,
-						uint16_t buffersize,
 						int16_t *isnull);
 		bool		inputBindBlob(const char *variable, 
 						uint16_t variablesize,
@@ -195,8 +193,6 @@ class SQLRSERVER_DLLSPEC routercursor : public sqlrservercursor {
 						int32_t *microsecond,
 						const char **tz,
 						bool *isnegative,
-						char *buffer,
-						uint16_t buffersize,
 						int16_t *isnull);
 		bool		outputBindBlob(const char *variable, 
 						uint16_t variablesize,
@@ -1414,8 +1410,6 @@ bool routercursor::inputBind(const char *variable,
 				int32_t microsecond,
 				const char *tz,
 				bool isnegative,
-				char *buffer,
-				uint16_t buffersize,
 				int16_t *isnull) {
 	currentcur->inputBind(variable+1,year,month,day,
 			hour,minute,second,microsecond,tz,isnegative);
@@ -1494,8 +1488,6 @@ bool routercursor::outputBind(const char *variable,
 				int32_t *microsecond,
 				const char **tz,
 				bool *isnegative,
-				char *buffer,
-				uint16_t buffersize,
 				int16_t *isnull) {
 	currentcur->defineOutputBindDouble(variable+1);
 	obv[obcount].variable=variable+1;

@@ -4950,8 +4950,6 @@ void sqlrprotocol_oracle::clearParams(sqlrservercursor *cursor) {
 		if (bv->type==SQLRSERVERBINDVARTYPE_STRING ||
 			bv->type==SQLRSERVERBINDVARTYPE_BLOB) {
 			delete[] bv->value.stringval;
-		} else if (bv->type==SQLRSERVERBINDVARTYPE_DATE) {
-			delete[] bv->value.dateval.buffer;
 		}
 	}
 	cont->setInputBindCount(cursor,0);

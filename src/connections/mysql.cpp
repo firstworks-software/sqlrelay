@@ -78,8 +78,6 @@ class SQLRSERVER_DLLSPEC mysqlcursor : public sqlrservercursor {
 						int32_t microsecond,
 						const char *tz,
 						bool isnegative,
-						char *buffer,
-						uint16_t buffersize,
 						int16_t *isnull);
 		bool		inputBindBlob(const char *variable, 
 						uint16_t variablesize,
@@ -178,6 +176,7 @@ class SQLRSERVER_DLLSPEC mysqlcursor : public sqlrservercursor {
 		uint16_t	maxbindcount;
 		MYSQL_BIND	*bind;
 		unsigned long	*bindvaluesize;
+		MYSQL_TIME	*bindtime;
 
 		MYSQL_BIND	lobfield;
 		unsigned long	lobfieldlength;
@@ -929,6 +928,7 @@ mysqlcursor::mysqlcursor(sqlrserverconnection *conn, uint16_t id) :
 	bind=new MYSQL_BIND[maxbindcount];
 	bindvaluesize=new unsigned long[maxbindcount];
 	bytestring::zero(bind,maxbindcount*sizeof(MYSQL_BIND));
+	bindtime=new MYSQL_TIME[maxbindcount];
 
 	usestmtprepare=true;
 	stmtpreparefailed=false;
@@ -968,6 +968,7 @@ mysqlcursor::~mysqlcursor() {
 #ifdef HAVE_MYSQL_STMT_PREPARE
 	delete[] bind;
 	delete[] bindvaluesize;
+	delete[] bindtime;
 #endif
 	deallocateResultSetBuffers();
 }
@@ -1288,8 +1289,6 @@ bool mysqlcursor::inputBind(const char *variable,
 				int32_t microsecond,
 				const char *tz,
 				bool isnegative,
-				char *buffer,
-				uint16_t buffersize,
 				int16_t *isnull) {
 
 	if (!usestmtprepare) {
@@ -1322,7 +1321,7 @@ bool mysqlcursor::inputBind(const char *variable,
 
 	} else {
 
-		MYSQL_TIME	*t=(MYSQL_TIME *)buffer;
+		MYSQL_TIME	*t=&(bindtime[pos]);
 
 		// MySQL supports date, time and datetime types.
 		// Decide which to use.
@@ -1346,7 +1345,7 @@ bool mysqlcursor::inputBind(const char *variable,
 		t->second_part=(microsecond>=0)?microsecond:0;
 		t->neg=(!validdate && isnegative)?TRUE:FALSE;
 
-		bind[pos].buffer=(void *)buffer;
+		bind[pos].buffer=(void *)t;
 		bind[pos].buffer_length=sizeof(MYSQL_TIME);
 		bind[pos].length=&bindvaluesize[pos];
 	}
