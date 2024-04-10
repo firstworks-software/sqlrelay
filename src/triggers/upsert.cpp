@@ -42,8 +42,6 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_upsert : public sqlrtrigger {
 					stringbuffer *query);
 		bool	isBind(const char *var);
 
-		sqlrservercontroller	*cont;
-
 		domnode	*errors;
 		domnode	*tables;
 
@@ -53,8 +51,6 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_upsert : public sqlrtrigger {
 sqlrtrigger_upsert::sqlrtrigger_upsert(sqlrservercontroller *cont,
 					domnode *parameters) :
 					sqlrtrigger(cont,parameters) {
-	this->cont=cont;
-
 	errors=parameters->getFirstTagChild("errors");
 	tables=parameters->getFirstTagChild("tables");
 }

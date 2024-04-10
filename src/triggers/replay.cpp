@@ -77,8 +77,6 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_replay : public sqlrtrigger {
 						uint64_t liid,
 						const char *autoinccolumn);
 
-		sqlrservercontroller	*cont;
-
 		bool		includeselects;
 		uint32_t	maxretries;
 
@@ -96,7 +94,6 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_replay : public sqlrtrigger {
 sqlrtrigger_replay::sqlrtrigger_replay(sqlrservercontroller *cont,
 					domnode *parameters) :
 					sqlrtrigger(cont,parameters) {
-	this->cont=cont;
 
 	log.setManageValues(true);
 	conditions.setManageValues(true);

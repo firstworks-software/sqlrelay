@@ -70,8 +70,6 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 		const char	*hostname;
 		const char	*packetsize;
 
-		const char	*dbtype;
-
 		bool		dbused;
 
 		char		*dbversion;
@@ -252,8 +250,6 @@ sapconnection::sapconnection(sqlrservercontroller *cont) :
 					sqlrserverconnection(cont) {
 	dbused=false;
 	dbversion=NULL;
-
-	dbtype=NULL;
 }
 
 sapconnection::~sapconnection() {
@@ -278,8 +274,6 @@ void sapconnection::handleConnectString() {
 		// to 2 so the db version detection doesn't crash
 		cont->setMaxColumnCount(2);
 	}
-
-	dbtype=cont->getConnectStringValue("identity");
 }
 
 bool sapconnection::logIn(const char **error, const char **warning) {
@@ -541,7 +535,7 @@ void sapconnection::logOut() {
 }
 
 const char *sapconnection::getDbType() {
-	return (dbtype)?dbtype:"sap";
+	return "sap";
 }
 
 const char *sapconnection::getDbVersion() {

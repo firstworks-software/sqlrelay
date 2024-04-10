@@ -19,16 +19,12 @@ class SQLRSERVER_DLLSPEC sqlrdirective_crash : public sqlrdirective {
 					const char *directivestart,
 					uint32_t length);
 		void	crashmeTest(int32_t iargument);
-
-		sqlrservercontroller	*cont;
 };
 
 sqlrdirective_crash::sqlrdirective_crash(sqlrservercontroller *cont,
 					domnode *parameters) :
 				sqlrdirective(cont,parameters) {
 	debugFunction();
-
-	this->cont=cont;
 }
 
 #define KEYWORD_SQLRELAY_CRASH "sqlrelay-crash"

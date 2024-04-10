@@ -271,8 +271,6 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 
 		int32_t		maxoutbindlobsize;
 
-		const char	*dbtype;
-
 		char		dbversion[512];
 
 		stringbuffer	errormsg;
@@ -282,7 +280,6 @@ informixconnection::informixconnection(sqlrservercontroller *cont) :
 					sqlrserverconnection(cont) {
 
 	maxoutbindlobsize=MAX_OUT_BIND_LOB_SIZE;
-	dbtype=NULL;
 }
 
 void informixconnection::handleConnectString() {
@@ -338,7 +335,6 @@ void informixconnection::handleConnectString() {
 	if (maxoutbindlobsize<1) {
 		maxoutbindlobsize=MAX_OUT_BIND_LOB_SIZE;
 	}
-	dbtype=cont->getConnectStringValue("identity");
 }
 
 bool informixconnection::logIn(const char **error, const char **warning) {
@@ -524,7 +520,7 @@ const char *informixconnection::pingQuery() {
 }
 
 const char *informixconnection::getDbType() {
-	return (dbtype)?dbtype:"informix";
+	return "informix";
 }
 
 const char *informixconnection::getDbVersion() {

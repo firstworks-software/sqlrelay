@@ -281,8 +281,6 @@ class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 		const char	*hostname;
 		const char	*packetsize;
 
-		const char	*dbtype;
-
 		bool		dbused;
 
 		char		*dbversion;
@@ -316,8 +314,6 @@ freetdsconnection::freetdsconnection(sqlrservercontroller *cont) :
 	dbused=false;
 	dbversion=NULL;
 	sybasedb=true;
-
-	dbtype=NULL;
 }
 
 freetdsconnection::~freetdsconnection() {
@@ -346,8 +342,6 @@ void freetdsconnection::handleConnectString() {
 		// to 2 so the db version detection doesn't crash
 		cont->setMaxColumnCount(2);
 	}
-
-	dbtype=cont->getConnectStringValue("identity");
 }
 
 bool freetdsconnection::logIn(const char **error, const char **warning) {
@@ -613,7 +607,7 @@ void freetdsconnection::logOut() {
 }
 
 const char *freetdsconnection::getDbType() {
-	return (dbtype)?dbtype:"freetds";
+	return "freetds";
 }
 
 const char *freetdsconnection::getDbVersion() {

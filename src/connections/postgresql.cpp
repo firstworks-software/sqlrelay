@@ -80,8 +80,6 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 #endif
 		char	*lastinsertidquery;
 
-		const char	*dbtype;
-
 #ifndef HAVE_POSTGRESQL_PQSETNOTICEPROCESSOR
 	private:
 		file	devnull;
@@ -233,7 +231,6 @@ postgresqlconnection::postgresqlconnection(sqlrservercontroller *cont) :
 	currentoid=InvalidOid;
 #endif
 	lastinsertidquery=NULL;
-	dbtype=NULL;
 	hostname=NULL;
 
 	datatypes.setManageArrayValues(true);
@@ -281,7 +278,6 @@ void postgresqlconnection::handleConnectString() {
 		liiquery.append(lastinsertidfunc);
 		lastinsertidquery=liiquery.detachString();
 	}
-	dbtype=cont->getConnectStringValue("identity");
 
 	// Re-process the fetchatonce parameter.  In the parent class, it ends
 	// up being set to 1 if it was configured to be 0.  However, with
@@ -485,7 +481,7 @@ void postgresqlconnection::getError(char *errorbuffer,
 }
 
 const char *postgresqlconnection::getDbType() {
-	return (dbtype)?dbtype:"postgresql";
+	return "postgresql";
 }
 
 const char *postgresqlconnection::getDbVersion() {

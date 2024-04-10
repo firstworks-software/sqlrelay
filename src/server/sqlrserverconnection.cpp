@@ -162,6 +162,13 @@ void sqlrserverconnection::handleConnectString() {
 	// detach before login
 	pvt->_detachbeforelogin=charstring::isYes(
 			cont->getConnectStringValue("detachbeforelogin"));
+
+	// database type
+	const char	*dbtype=cont->getConnectStringValue("dbtype");
+	if (!dbtype) {
+		dbtype=cont->getConnectStringValue("identity");
+	}
+	cont->setDbType(dbtype);
 }
 
 bool sqlrserverconnection::changeUser(const char *newuser,

@@ -79,8 +79,6 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 
 		char		*db;
 
-		const char	*dbtype;
-
 		#ifdef SQLITE3
 		sqlite3	*sqliteptr;
 		#else
@@ -173,7 +171,6 @@ class SQLRSERVER_DLLSPEC sqlitecursor : public sqlrservercursor {
 
 sqliteconnection::sqliteconnection(sqlrservercontroller *cont) :
 					sqlrserverconnection(cont) {
-	dbtype=NULL;
 	sqliteptr=NULL;
 	errmesg=NULL;
 	errcode=0;
@@ -189,7 +186,6 @@ sqliteconnection::~sqliteconnection() {
 
 void sqliteconnection::handleConnectString() {
 	db=charstring::duplicate(cont->getConnectStringValue("db"));
-	dbtype=cont->getConnectStringValue("identity");
 
 	cont->setFetchAtOnce(1);
 	cont->setMaxColumnCount(0);
@@ -240,7 +236,7 @@ bool sqliteconnection::ping() {
 }
 
 const char *sqliteconnection::getDbType() {
-	return (dbtype)?dbtype:"sqlite";
+	return "sqlite";
 }
 
 const char *sqliteconnection::getDbVersion() {

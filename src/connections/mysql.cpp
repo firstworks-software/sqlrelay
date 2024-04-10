@@ -271,7 +271,6 @@ class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 		bool		foundrows;
 		bool		ignorespace;
 
-		const char	*dbtype;
 		bool		usestmtapi;
 
 		char	*dbversion;
@@ -310,8 +309,6 @@ mysqlconnection::mysqlconnection(sqlrservercontroller *cont) :
 	// start this at false because we don't need to do a commit before
 	// the first query when we very first start up
 	firstquery=false;
-
-	dbtype=NULL;
 
 	mysqlptr=NULL;
 
@@ -386,7 +383,6 @@ void mysqlconnection::handleConnectString() {
 	foundrows=charstring::isYes(cont->getConnectStringValue("foundrows"));
 	ignorespace=charstring::isYes(
 			cont->getConnectStringValue("ignorespace"));
-	dbtype=cont->getConnectStringValue("identity");
 
 	usestmtapi=charstring::compare(
 			cont->getConnectStringValue("api"),"classic");
@@ -648,7 +644,7 @@ bool mysqlconnection::ping() {
 #endif
 
 const char *mysqlconnection::getDbType() {
-	return (dbtype)?dbtype:"mysql";
+	return "mysql";
 }
 
 const char *mysqlconnection::getDbVersion() {

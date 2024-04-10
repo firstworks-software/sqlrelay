@@ -179,8 +179,6 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		bool		rejectduplicatebinds;
 		bool		disablekeylookup;
 
-		const char	*dbtype;
-
 		stringbuffer	alltypeinfoquery;
 };
 
@@ -454,7 +452,6 @@ oracleconnection::oracleconnection(sqlrservercontroller *cont) :
 	#endif
 	rejectduplicatebinds=false;
 	disablekeylookup=false;
-	dbtype=NULL;
 }
 
 oracleconnection::~oracleconnection() {
@@ -516,8 +513,6 @@ void oracleconnection::handleConnectString() {
 		liiquery.append(" from dual");
 		lastinsertidquery=liiquery.detachString();
 	}
-
-	dbtype=cont->getConnectStringValue("identity");
 }
 
 #ifdef HAVE_ORACLE_8i
@@ -1144,7 +1139,7 @@ const char *oracleconnection::pingQuery() {
 }
 
 const char *oracleconnection::getDbType() {
-	return (dbtype)?dbtype:"oracle";
+	return "oracle";
 }
 
 const char *oracleconnection::getDbVersion() {

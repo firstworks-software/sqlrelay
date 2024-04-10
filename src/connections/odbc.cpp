@@ -374,7 +374,6 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		const char	*db;
 		const char	*trace;
 		const char	*tracefile;
-		const char	*dbtype;
 		const char	*odbcversion;
 		const char	*lastinsertidquery;
 		bool		mars;
@@ -608,7 +607,6 @@ odbcconnection::odbcconnection(sqlrservercontroller *cont) :
 	db=NULL;
 	trace=NULL;
 	tracefile=NULL;
-	dbtype=NULL;
 	odbcversion=NULL;
 	lastinsertidquery=NULL;
 	mars=false;
@@ -635,8 +633,6 @@ void odbcconnection::handleConnectString() {
 
 	trace=cont->getConnectStringValue("trace");
 	tracefile=cont->getConnectStringValue("tracefile");
-
-	dbtype=cont->getConnectStringValue("identity");
 
 	odbcversion=cont->getConnectStringValue("odbcversion");
 
@@ -1164,7 +1160,7 @@ bool odbcconnection::ping() {
 }
 
 const char *odbcconnection::getDbType() {
-	return (dbtype)?dbtype:"odbc";
+	return "odbc";
 }
 
 const char *odbcconnection::getDbVersion() {

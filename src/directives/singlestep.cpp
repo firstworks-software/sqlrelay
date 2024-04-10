@@ -18,8 +18,6 @@ class SQLRSERVER_DLLSPEC sqlrdirective_singlestep : public sqlrdirective {
 		void	parseDirective(sqlrservercursor *sqlrcur,
 					const char *directivestart,
 					uint32_t length);
-
-		sqlrservercontroller	*cont;
 };
 
 sqlrdirective_singlestep::sqlrdirective_singlestep(
@@ -27,8 +25,6 @@ sqlrdirective_singlestep::sqlrdirective_singlestep(
 					domnode *parameters) :
 				sqlrdirective(cont,parameters) {
 	debugFunction();
-
-	this->cont=cont;
 }
 
 bool sqlrdirective_singlestep::run(sqlrserverconnection *sqlrcon,
@@ -37,7 +33,7 @@ bool sqlrdirective_singlestep::run(sqlrserverconnection *sqlrcon,
 	debugFunction();
 
 	// bail if not postgresql
-	if (charstring::compare(sqlrcon->getDbType(),"postgresql")) {
+	if (charstring::compare(cont->getDbType(),"postgresql")) {
 		return true;
 	}
 

@@ -228,6 +228,8 @@ class sqlrservercontrollerprivate {
 	uint64_t	_querytimeout;
 	bool		_executedirect;
 
+	const char	*_dbtype;
+
 	int64_t		_loggedinsec;
 	int64_t		_loggedinusec;
 
@@ -395,6 +397,8 @@ sqlrservercontroller::sqlrservercontroller() : sqlrserverbase() {
 	pvt->_connecttimeout=0;
 	pvt->_querytimeout=0;
 	pvt->_executedirect=false;
+
+	pvt->_dbtype=NULL;
 
 	pvt->_connected=false;
 	pvt->_inclientsession=false;
@@ -9205,6 +9209,10 @@ bool sqlrservercontroller::getExecuteDirect() {
 	return pvt->_executedirect;
 }
 
+void sqlrservercontroller::setDbType(const char *dbtype) {
+	pvt->_dbtype=dbtype;
+}
+
 void sqlrservercontroller::setFakeTransactionBlocks(bool ftb) {
 	pvt->_faketransactionblocks=ftb;
 }
@@ -9722,7 +9730,7 @@ const char *sqlrservercontroller::getDbIpAddress() {
 }
 
 const char *sqlrservercontroller::getDbType() {
-	return pvt->_conn->getDbType();
+	return (pvt->_dbtype)?pvt->_dbtype:pvt->_conn->getDbType();
 }
 
 const char *sqlrservercontroller::getDbVersion() {

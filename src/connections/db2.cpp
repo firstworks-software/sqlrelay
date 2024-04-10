@@ -281,8 +281,6 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 
 		int32_t		maxoutbindlobsize;
 
-		const char	*dbtype;
-
 		char		dbversion[512];
 		uint16_t	dbmajorversion;
 
@@ -297,7 +295,6 @@ db2connection::db2connection(sqlrservercontroller *cont) :
 					sqlrserverconnection(cont) {
 
 	maxoutbindlobsize=MAX_OUT_BIND_LOB_SIZE;
-	dbtype=NULL;
 }
 
 void db2connection::handleConnectString() {
@@ -312,8 +309,6 @@ void db2connection::handleConnectString() {
 	if (!charstring::isNullOrEmpty(tmp)) {
 		server=tmp;
 	}
-
-	dbtype=cont->getConnectStringValue("identity");
 
 	lang=cont->getConnectStringValue("lang");
 
@@ -638,7 +633,7 @@ const char *db2connection::pingQuery() {
 }
 
 const char *db2connection::getDbType() {
-	return (dbtype)?dbtype:"db2";
+	return "db2";
 }
 
 const char *db2connection::getDbVersion() {

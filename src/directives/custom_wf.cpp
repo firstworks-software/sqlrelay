@@ -18,8 +18,6 @@ class SQLRSERVER_DLLSPEC sqlrdirective_custom_wf : public sqlrdirective {
 		void	parseDirective(sqlrservercursor *sqlrcur,
 					const char *directivestart,
 					uint32_t length);
-
-		sqlrservercontroller	*cont;
 };
 
 sqlrdirective_custom_wf::sqlrdirective_custom_wf(
@@ -27,8 +25,6 @@ sqlrdirective_custom_wf::sqlrdirective_custom_wf(
 					domnode *parameters) :
 				sqlrdirective(cont,parameters) {
 	debugFunction();
-
-	this->cont=cont;
 }
 
 #define KEYWORD_SQLEXECDIRECT "sqlexecdirect"

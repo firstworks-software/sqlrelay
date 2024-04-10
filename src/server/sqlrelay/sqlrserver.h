@@ -285,6 +285,18 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  file. */
 		bool	getExecuteDirect();
 
+		/** Sets the database type, overriding the value returned by
+		 *  the connection module.
+		 *
+		 *  Calling setDbType(NULL) causes getDbType() to return the
+		 *  value returned by the connection module.
+		 * 
+		 *  During initialization of the sqlr-connection, this is set
+		 *  to the value of the "dbtype" parameter, of the string
+		 *  attribute, of the connection tag, in the config file,
+		 *  if present. */
+		void	setDbType(const char *dbtype);
+
 
 
 		// environment...
@@ -385,7 +397,10 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		// database info...
 
 		/** Returns the type of database: oracle, mysql, postgresql,
-		 *  odbc, etc. */
+		 *  odbc, etc. as reported by the connection module, or as
+		 *  overridden by a call to setDbType() or by the "dbtype"
+		 *  parameter, of the string attribute, of the connection tag,
+		 *  in the config file. */
 		const char	*getDbType();
 
 		/** Returns the database version. */

@@ -95,7 +95,6 @@ class SQLRSERVER_DLLSPEC routerconnection : public sqlrserverconnection {
 		void	beginQueryFailed(uint16_t index);
 		void	raiseIntegrityViolationEvent(const char *command,
 								uint16_t index);
-		const char	*dbtype;
 
 		const char	**conids;
 		sqlrconnection	**cons;
@@ -270,8 +269,6 @@ class SQLRSERVER_DLLSPEC routercursor : public sqlrservercursor {
 
 routerconnection::routerconnection(sqlrservercontroller *cont) :
 					sqlrserverconnection(cont) {
-	dbtype=NULL;
-
 	conids=NULL;
 	cons=NULL;
 	concount=0;
@@ -301,8 +298,6 @@ routerconnection::~routerconnection() {
 }
 
 void routerconnection::handleConnectString() {
-
-	dbtype=cont->getConnectStringValue("identity");
 
 	// re-get fetchatonce, defaulting to 10, and allowing it to be set to 0
 	uint32_t	fetchatonce=10;
@@ -739,7 +734,7 @@ void routerconnection::getError(char *errorbuffer,
 
 const char *routerconnection::getDbType() {
 	// FIXME: maybe this should only return router if there's no currentcon
-	return (dbtype)?dbtype:"router";
+	return "router";
 }
 
 const char *routerconnection::getDbVersion() {

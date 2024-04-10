@@ -27,15 +27,12 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_splitmultiinsert : public sqlrtrigger {
 		void	parseValues(const char **ptr,
 					const char *end,
 					stringbuffer *values);
-
-		sqlrservercontroller	*cont;
 };
 
 sqlrtrigger_splitmultiinsert::sqlrtrigger_splitmultiinsert(
 					sqlrservercontroller *cont,
 					domnode *parameters) :
 					sqlrtrigger(cont,parameters) {
-	this->cont=cont;
 }
 
 bool sqlrtrigger_splitmultiinsert::runBefore(sqlrserverconnection *sqlrcon,

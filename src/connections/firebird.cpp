@@ -264,8 +264,6 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 
 		bool		droptemptables;
 
-		const char	*dbtype;
-
 		char		*dbversion;
 
 		char		*lastinsertidquery;
@@ -290,7 +288,6 @@ firebirdconnection::firebirdconnection(sqlrservercontroller *cont) :
 	lastinsertidquery=NULL;
 	database=NULL;
 	host=NULL;
-	dbtype=NULL;
 }
 
 firebirdconnection::~firebirdconnection() {
@@ -340,8 +337,6 @@ void firebirdconnection::handleConnectString() {
 		liiquery.append(lastinsertidfunc);
 		lastinsertidquery=liiquery.detachString();
 	}
-
-	dbtype=cont->getConnectStringValue("identity");
 
 	// firebird doesn't support multi-row fetches
 	cont->setFetchAtOnce(1);
@@ -562,7 +557,7 @@ char *firebirdconnection::getCurrentDatabase() {
 }
 
 const char *firebirdconnection::getDbType() {
-	return (dbtype)?dbtype:"firebird";
+	return "firebird";
 }
 
 const char *firebirdconnection::getDbVersion() {
