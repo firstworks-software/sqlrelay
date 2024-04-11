@@ -729,12 +729,14 @@ const char *mysqlconnection::getTableListQuery(bool wild,
 	tablelistquery.append("from ");
 	tablelistquery.append("	information_schema.tables ");
 	tablelistquery.append("where ");
+#if 0
 	tablelistquery.append(" table_catalog='def' ");
 	tablelistquery.append(" and ");
 	tablelistquery.append(" table_schema='");
 	tablelistquery.append(getCurrentDatabase());
 	tablelistquery.append("' ");
 	tablelistquery.append(" and ");
+#endif
 	if (wild) {
 		tablelistquery.append("	table_name like '%s' ");
 		tablelistquery.append("	and ");
