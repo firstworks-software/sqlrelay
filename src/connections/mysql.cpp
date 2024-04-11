@@ -215,6 +215,8 @@ class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 #endif
 		const char	*getNextvalFormat();
 		const char	*getDatabaseListQuery(bool wild);
+		const char	*getTableListQuery(bool wild,
+						uint16_t objecttypes);
 		const char	*getColumnListQuery(
 						const char *table, bool wild);
 		const char	*selectDatabaseQuery();
@@ -276,6 +278,7 @@ class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 		char	*dbversion;
 		char	*dbhostname;
 
+		stringbuffer	tablelistquery;
 		stringbuffer	columnlistquery;
 
 		static const my_bool	mytrue;
@@ -681,6 +684,62 @@ const char *mysqlconnection::getDatabaseListQuery(bool wild) {
 			"	NULL "
 			"from "
 			"	information_schema.schemata";
+}
+
+const char *mysqlconnection::getTableListQuery(bool wild,
+						uint16_t objecttypes) {
+
+	stringbuffer	otypes;
+	otypes.append("	(");
+	if (objecttypes&DB_OBJECT_TABLE) {
+		otypes.append("	table_type = 'BASE TABLE' ");
+	}
+	if (objecttypes&DB_OBJECT_VIEW) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	table_type = 'VIEW' ");
+	}
+	if (objecttypes&DB_OBJECT_ALIAS) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	table_type = 'ALIAS' ");
+	}
+	if (objecttypes&DB_OBJECT_SYNONYM) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	table_type = 'SYNONYM' ");
+	}
+	otypes.append(") ");
+
+	tablelistquery.clear();
+	tablelistquery.append("select ");
+	tablelistquery.append("	table_catalog as table_cat, ");
+	tablelistquery.append("	table_schema as table_schem, ");
+	tablelistquery.append("	table_name, ");
+	tablelistquery.append("	case ");
+	tablelistquery.append("		when table_type = ");
+	tablelistquery.append("'BASE TABLE' then 'TABLE' ");
+	tablelistquery.append("		else table_type ");
+	tablelistquery.append("	end as table_type, ");
+	tablelistquery.append("	NULL as remarks, ");
+	tablelistquery.append("	NULL as extra ");
+	tablelistquery.append("from ");
+	tablelistquery.append("	information_schema.tables ");
+	tablelistquery.append("where ");
+	if (wild) {
+		tablelistquery.append("	table_name like '%s' ");
+		tablelistquery.append("	and ");
+	}
+	tablelistquery.append(otypes.getString());
+	tablelistquery.append("order by ");
+	tablelistquery.append("	table_cat, ");
+	tablelistquery.append("	table_schem, ");
+	tablelistquery.append("	table_name");
+
+	return tablelistquery.getString();
 }
 
 const char *mysqlconnection::getColumnListQuery(
