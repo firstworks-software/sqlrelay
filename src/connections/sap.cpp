@@ -39,7 +39,8 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 		const char	*getDbHostNameQuery();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
-						uint16_t objecttypes);
+						uint16_t objecttypes,
+						bool currentschemaonly);
 		const char	*getColumnListQuery(
 						const char *table, bool wild);
 		const char	*selectDatabaseQuery();
@@ -88,6 +89,8 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 						CS_SERVERMSG *msgp);
 
 		stringbuffer	loginerror;
+
+		stringbuffer	tablelistquery;
 };
 
 struct datebind {
@@ -551,29 +554,27 @@ const char *sapconnection::getDatabaseListQuery(bool wild) {
 }
 
 const char *sapconnection::getTableListQuery(bool wild,
-						uint16_t objecttypes) {
-	return (wild)?
-		"select "
-		"	NULL as table_cat, "
-		"	NULL as table_schem, "
-		"	name as table_name, "
-		"	'TABLE' as table_type, "
-		"	NULL as remarks, "
-		"	NULL as extra "
-		"from "
-		"	sysobjects "
-		"where "
-		"	loginame is not NULL "
-		"	and "
-		"	type in ('U','V') "
-		"	and "
-		"	name like '%s' "
-		"order by "
-		"	name":
+						uint16_t objecttypes,
+						bool currentschemaonly) {
 
+	stringbuffer	otypes;
+	otypes.append("	(");
+	if (objecttypes&DB_OBJECT_TABLE) {
+		otypes.append("	type='U' ");
+	}
+	if (objecttypes&DB_OBJECT_VIEW) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	type = 'V' ");
+	}
+	otypes.append(") ");
+
+	tablelistquery.clear();
+	tablelistquery.append(
 		"select "
 		"	NULL as table_cat, "
-		"	NULL as table_schem, "
+		"	loginame as table_schem, "
 		"	name as table_name, "
 		"	'TABLE' as table_type, "
 		"	NULL as remarks, "
@@ -581,11 +582,27 @@ const char *sapconnection::getTableListQuery(bool wild,
 		"from "
 		"	sysobjects "
 		"where "
-		"	loginame is not NULL "
-		"	and "
-		"	type in ('U','V') "
+		"	loginame is not NULL ");
+	if (currentschemaonly) {
+		tablelistquery.append(
+			"	and "
+			"	upper(loginame)=upper('");
+		tablelistquery.append(cont->getUser());
+		tablelistquery.append("') ");
+	}
+	tablelistquery.append(
+		"	and ");
+	tablelistquery.append(otypes.getString());
+	if (wild) {
+		tablelistquery.append(
+			"	and "
+			"	name like '%s' ");
+	}
+	tablelistquery.append(
 		"order by "
-		"	name";
+		"	name");
+
+	return tablelistquery.getString();
 }
 
 const char *sapconnection::getColumnListQuery(

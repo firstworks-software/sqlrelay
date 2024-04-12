@@ -216,7 +216,8 @@ class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 		const char	*getNextvalFormat();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
-						uint16_t objecttypes);
+						uint16_t objecttypes,
+						bool currentschemaonly);
 		const char	*getColumnListQuery(
 						const char *table, bool wild);
 		const char	*selectDatabaseQuery();
@@ -687,7 +688,8 @@ const char *mysqlconnection::getDatabaseListQuery(bool wild) {
 }
 
 const char *mysqlconnection::getTableListQuery(bool wild,
-						uint16_t objecttypes) {
+						uint16_t objecttypes,
+						bool currentschemaonly) {
 
 	stringbuffer	otypes;
 	otypes.append("	(");
@@ -715,37 +717,42 @@ const char *mysqlconnection::getTableListQuery(bool wild,
 	otypes.append(") ");
 
 	tablelistquery.clear();
-	tablelistquery.append("select ");
-	tablelistquery.append("	table_catalog as table_cat, ");
-	tablelistquery.append("	table_schema as table_schem, ");
-	tablelistquery.append("	table_name, ");
-	tablelistquery.append("	case ");
-	tablelistquery.append("		when table_type = ");
-	tablelistquery.append("'BASE TABLE' then 'TABLE' ");
-	tablelistquery.append("		else table_type ");
-	tablelistquery.append("	end as table_type, ");
-	tablelistquery.append("	NULL as remarks, ");
-	tablelistquery.append("	NULL as extra ");
-	tablelistquery.append("from ");
-	tablelistquery.append("	information_schema.tables ");
-	tablelistquery.append("where ");
-#if 0
-	tablelistquery.append(" table_catalog='def' ");
-	tablelistquery.append(" and ");
-	tablelistquery.append(" table_schema='");
-	tablelistquery.append(getCurrentDatabase());
-	tablelistquery.append("' ");
-	tablelistquery.append(" and ");
-#endif
+	tablelistquery.append(
+		"select "
+		"	table_catalog as table_cat, "
+		"	table_schema as table_schem, "
+		"	table_name, "
+		"	case "
+		"		when table_type = "
+		"'BASE TABLE' then 'TABLE' "
+		"		else table_type "
+		"	end as table_type, "
+		"	NULL as remarks, "
+		"	NULL as extra "
+		"from "
+		"	information_schema.tables "
+		"where ");
+	if (currentschemaonly) {
+		tablelistquery.append(
+			" table_catalog='def' "
+			" and "
+			" table_schema='");
+		tablelistquery.append(getCurrentDatabase());
+		tablelistquery.append(
+			"' "
+			"	and ");
+	}
 	if (wild) {
-		tablelistquery.append("	table_name like '%s' ");
-		tablelistquery.append("	and ");
+		tablelistquery.append(
+			"	table_name like '%s' "
+			"	and ");
 	}
 	tablelistquery.append(otypes.getString());
-	tablelistquery.append("order by ");
-	tablelistquery.append("	table_cat, ");
-	tablelistquery.append("	table_schem, ");
-	tablelistquery.append("	table_name");
+	tablelistquery.append(
+		"order by "
+		"	table_cat, "
+		"	table_schem, "
+		"	table_name");
 
 	return tablelistquery.getString();
 }

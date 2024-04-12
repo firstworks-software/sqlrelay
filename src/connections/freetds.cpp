@@ -249,7 +249,8 @@ class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 		const char	*getDbHostNameQuery();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
-						uint16_t objecttypes);
+						uint16_t objecttypes,
+						bool currentschemaonly);
 		const char	*getColumnListQuery(
 						const char *table, bool wild);
 		const char	*selectDatabaseQuery();
@@ -633,12 +634,29 @@ const char *freetdsconnection::getDatabaseListQuery(bool wild) {
 }
 
 const char *freetdsconnection::getTableListQuery(bool wild,
-						uint16_t objecttypes) {
+						uint16_t objecttypes,
+						bool currentschemaonly) {
+
+	tablelistquery.clear();
 	if (sybasedb) {
-		return (wild)?
+
+		stringbuffer	otypes;
+		otypes.append("	(");
+		if (objecttypes&DB_OBJECT_TABLE) {
+			otypes.append("	type='U' ");
+		}
+		if (objecttypes&DB_OBJECT_VIEW) {
+			if (otypes.getSize()) {
+				otypes.append("	or ");
+			}
+			otypes.append("	type = 'V' ");
+		}
+		otypes.append(") ");
+
+		tablelistquery.append(
 			"select "
 			"	NULL as table_cat, "
-			"	NULL as table_schem, "
+			"	loginame as table_schem, "
 			"	name as table_name, "
 			"	'TABLE' as table_type, "
 			"	NULL as remarks, "
@@ -646,30 +664,54 @@ const char *freetdsconnection::getTableListQuery(bool wild,
 			"from "
 			"	sysobjects "
 			"where "
-			"	loginame is not NULL "
-			"	and "
-			"	type in ('U','V') "
-			"	and "
-			"	name like '%s' "
+			"	loginame is not NULL ");
+		if (currentschemaonly) {
+			tablelistquery.append(
+				"	and "
+				"	upper(loginame)=upper('");
+			tablelistquery.append(cont->getUser());
+			tablelistquery.append("') ");
+		}
+		tablelistquery.append(
+			"	and ");
+		tablelistquery.append(otypes.getString());
+		if (wild) {
+			tablelistquery.append(
+				"	and "
+				"	name like '%s' ");
+		}
+		tablelistquery.append(
 			"order by "
-			"	name":
-	
-			"select "
-			"	NULL, "
-			"	NULL, "
-			"	name, "
-			"	'TABLE', "
-			"	NULL "
-			"from "
-			"	sysobjects "
-			"where "
-			"	loginame is not NULL "
-			"	and "
-			"	type in ('U','V') "
-			"order by "
-			"	name";
+			"	name");
+
 	} else {
-		tablelistquery.clear();
+
+		stringbuffer	otypes;
+		otypes.append("	(");
+		if (objecttypes&DB_OBJECT_TABLE) {
+			otypes.append("	table_type='BASE TABLE' ");
+		}
+		if (objecttypes&DB_OBJECT_VIEW) {
+			if (otypes.getSize()) {
+				otypes.append("	or ");
+			}
+			otypes.append("	table_type = 'VIEW' ");
+		}
+		if (objecttypes&DB_OBJECT_ALIAS) {
+			if (otypes.getSize()) {
+				otypes.append("	or ");
+			}
+			otypes.append("	table_type = 'ALIAS' ");
+		}
+		if (objecttypes&DB_OBJECT_SYNONYM) {
+			if (otypes.getSize()) {
+				otypes.append("	or ");
+			}
+			otypes.append("	table_type = 'SYNONYM' ");
+		}
+		otypes.append(") ");
+
+
 		tablelistquery.append(
 			"select "
 			"	table_catalog as table_cat, "
@@ -685,39 +727,30 @@ const char *freetdsconnection::getTableListQuery(bool wild,
 			"from "
 			"	information_schema.tables "
 			"where ");
+		if (currentschemaonly) {
+			tablelistquery.append(
+				"	table_catalog='");
+			tablelistquery.append(getCurrentDatabase());
+			tablelistquery.append("' "
+				"	and "
+				"	upper(table_schema)=upper('");
+			tablelistquery.append(cont->getUser());
+			tablelistquery.append("') "
+				"	and ");
+		}
+		tablelistquery.append(otypes.getString());
 		if (wild) {
-			tablelistquery.append("	table_name like '%s' and ");
-		}
-		tablelistquery.append("	(");
-		if (objecttypes&DB_OBJECT_TABLE) {
-			tablelistquery.append("	table_type = 'BASE TABLE' ");
-		}
-		if (objecttypes&DB_OBJECT_VIEW) {
-			if (tablelistquery.getSize()) {
-				tablelistquery.append("	or ");
-			}
-			tablelistquery.append("	table_type = 'VIEW' ");
-		}
-		if (objecttypes&DB_OBJECT_ALIAS) {
-			if (tablelistquery.getSize()) {
-				tablelistquery.append("	or ");
-			}
-			tablelistquery.append("	table_type = 'ALIAS' ");
-		}
-		if (objecttypes&DB_OBJECT_SYNONYM) {
-			if (tablelistquery.getSize()) {
-				tablelistquery.append("	or ");
-			}
-			tablelistquery.append("	table_type = 'SYNONYM' ");
+			tablelistquery.append(
+				" and "
+				"	table_name like '%s' ");
 		}
 		tablelistquery.append(
-			") "
 			"order by "
 			"	table_cat, "
 			"	table_schem, "
 			"	table_name");
-		return tablelistquery.getString();
 	}
+	return tablelistquery.getString();
 }
 
 const char *freetdsconnection::getColumnListQuery(

@@ -2701,51 +2701,66 @@ const char *sqlrservercontroller::getDatabaseListQuery(bool wild) {
 	return pvt->_conn->getDatabaseListQuery(wild);
 }
 
-const char *sqlrservercontroller::getSchemaListQuery(bool wild) {
-	return pvt->_conn->getSchemaListQuery(wild);
+const char *sqlrservercontroller::getSchemaListQuery(
+						bool wild,
+						bool currentdbonly) {
+	return pvt->_conn->getSchemaListQuery(wild,currentdbonly);
 }
 
-const char *sqlrservercontroller::getTableListQuery(bool wild,
-						uint16_t objecttypes) {
-	return pvt->_conn->getTableListQuery(wild,objecttypes);
+const char *sqlrservercontroller::getTableListQuery(
+						bool wild,
+						uint16_t objecttypes,
+						bool currentschemaonly) {
+	return pvt->_conn->getTableListQuery(wild,objecttypes,
+							currentschemaonly);
 }
 
-const char *sqlrservercontroller::getTableTypeListQuery(bool wild) {
-	return pvt->_conn->getTableTypeListQuery(wild);
+const char *sqlrservercontroller::getTableTypeListQuery(
+						bool wild,
+						bool currentschemaonly) {
+	return pvt->_conn->getTableTypeListQuery(wild,currentschemaonly);
 }
 
-const char *sqlrservercontroller::getGlobalTempTableListQuery() {
-	return pvt->_conn->getGlobalTempTableListQuery();
+const char *sqlrservercontroller::getGlobalTempTableListQuery(
+						bool currentschemaonly) {
+	return pvt->_conn->getGlobalTempTableListQuery(currentschemaonly);
 }
 
-const char *sqlrservercontroller::getColumnListQuery(const char *table,
-								bool wild) {
+const char *sqlrservercontroller::getColumnListQuery(
+						const char *table,
+						bool wild) {
 	return pvt->_conn->getColumnListQuery(table,wild);
 }
 
-const char *sqlrservercontroller::getPrimaryKeyListQuery(const char *table,
-								bool wild) {
+const char *sqlrservercontroller::getPrimaryKeyListQuery(
+						const char *table,
+						bool wild) {
 	return pvt->_conn->getPrimaryKeyListQuery(table,wild);
 }
 
-const char *sqlrservercontroller::getKeyAndIndexListQuery(const char *table,
-								bool wild) {
+const char *sqlrservercontroller::getKeyAndIndexListQuery(
+						const char *table,
+						bool wild) {
 	return pvt->_conn->getKeyAndIndexListQuery(table,wild);
 }
 
 const char *sqlrservercontroller::getProcedureParameterListQuery(
-							const char *proc,
-							bool wild) {
+						const char *proc,
+						bool wild) {
 	return pvt->_conn->getProcedureParameterListQuery(proc,wild);
 }
 
-const char *sqlrservercontroller::getTypeInfoListQuery(const char *type,
-							bool wild) {
-	return pvt->_conn->getTypeInfoListQuery(type,wild);
+const char *sqlrservercontroller::getTypeInfoListQuery(
+						const char *type,
+						bool wild,
+						bool currentschemaonly) {
+	return pvt->_conn->getTypeInfoListQuery(type,wild,currentschemaonly);
 }
 
-const char *sqlrservercontroller::getProcedureListQuery(bool wild) {
-	return pvt->_conn->getProcedureListQuery(wild);
+const char *sqlrservercontroller::getProcedureListQuery(
+						bool wild,
+						bool currentschemaonly) {
+	return pvt->_conn->getProcedureListQuery(wild,currentschemaonly);
 }
 
 void sqlrservercontroller::saveError() {
@@ -3647,7 +3662,7 @@ void sqlrservercontroller::getColumnsInTable(const char *table,
 		}
 		if (retval) {
 
-			setColumnListColumnMap(SQLRSERVERLISTFORMAT_MYSQL);
+			setColumnListFormat(SQLRSERVERLISTFORMAT_MYSQL);
 
 			bool    error;
 			while (fetchRow(gclcur,&error)) {
@@ -3680,7 +3695,7 @@ void sqlrservercontroller::getColumnsInTable(const char *table,
 				nextRow(gclcur);
 			}
 
-			setColumnListColumnMap(SQLRSERVERLISTFORMAT_NULL);
+			setColumnListFormat(SQLRSERVERLISTFORMAT_NULL);
 		}
 	}
 	closeResultSet(gclcur);
@@ -5635,12 +5650,14 @@ bool sqlrservercontroller::skipRows(sqlrservercursor *cursor,
 	return true;
 }
 
-void sqlrservercontroller::setDatabaseListColumnMap(
+void sqlrservercontroller::setDatabaseListFormat(
 					sqlrserverlistformat_t listformat) {
 
-	// for now, don't remap columns if api calls are used to get lists,
-	// the columns don't come back in the "native" format
-	// FIXME: this "happens to work" for odbc passthrough:
+	// FIXME: for now, don't remap columns if api calls are used to get
+	// lists, as the the columns won't come back in the "native" format,
+	// but rather the ODBC format
+	//
+	// this "happens to work" for odbc passthrough:
 	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
 	// but wouldn't if either ODBC were replaced with something else
 	if (pvt->_conn->getListsByApiCalls()) {
@@ -5679,12 +5696,14 @@ void sqlrservercontroller::setDatabaseListColumnMap(
 	}
 }
 
-void sqlrservercontroller::setSchemaListColumnMap(
+void sqlrservercontroller::setSchemaListFormat(
 					sqlrserverlistformat_t listformat) {
 
-	// for now, don't remap columns if api calls are used to get lists,
-	// the columns don't come back in the "native" format
-	// FIXME: this "happens to work" for odbc passthrough:
+	// FIXME: for now, don't remap columns if api calls are used to get
+	// lists, as the the columns won't come back in the "native" format,
+	// but rather the ODBC format
+	//
+	// this "happens to work" for odbc passthrough:
 	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
 	// but wouldn't if either ODBC were replaced with something else
 	if (pvt->_conn->getListsByApiCalls()) {
@@ -5693,9 +5712,10 @@ void sqlrservercontroller::setSchemaListColumnMap(
 		return;
 	}
 
-	// FIXME: currently, the only connection that implements this is the
-	// odbc connection, which gets lists by api calls, but eventually we
-	// should implement it for other connections too...
+	// FIXME: currently, the only connection that implements
+	// getSchemaList() is the odbc connection, which gets lists by api
+	// calls, but eventually we should implement it for other connections
+	// too...
 	switch (listformat) {
 		case SQLRSERVERLISTFORMAT_NULL:
 			pvt->_columnmap=NULL;
@@ -5723,12 +5743,14 @@ void sqlrservercontroller::setSchemaListColumnMap(
 	}
 }
 
-void sqlrservercontroller::setTableListColumnMap(
+void sqlrservercontroller::setTableListFormat(
 					sqlrserverlistformat_t listformat) {
 
-	// for now, don't remap columns if api calls are used to get lists,
-	// the columns don't come back in the "native" format
-	// FIXME: this "happens to work" for odbc passthrough:
+	// FIXME: for now, don't remap columns if api calls are used to get
+	// lists, as the the columns won't come back in the "native" format,
+	// but rather the ODBC format
+	//
+	// this "happens to work" for odbc passthrough:
 	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
 	// but wouldn't if either ODBC were replaced with something else
 	if (pvt->_conn->getListsByApiCalls()) {
@@ -5767,12 +5789,14 @@ void sqlrservercontroller::setTableListColumnMap(
 	}
 }
 
-void sqlrservercontroller::setTableTypeListColumnMap(
+void sqlrservercontroller::setTableTypeListFormat(
 					sqlrserverlistformat_t listformat) {
 
-	// for now, don't remap columns if api calls are used to get lists,
-	// the columns don't come back in the "native" format
-	// FIXME: this "happens to work" for odbc passthrough:
+	// FIXME: for now, don't remap columns if api calls are used to get
+	// lists, as the the columns won't come back in the "native" format,
+	// but rather the ODBC format
+	//
+	// this "happens to work" for odbc passthrough:
 	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
 	// but wouldn't if either ODBC were replaced with something else
 	if (pvt->_conn->getListsByApiCalls()) {
@@ -5781,9 +5805,10 @@ void sqlrservercontroller::setTableTypeListColumnMap(
 		return;
 	}
 
-	// FIXME: currently, the only connection that implements this is the
-	// odbc connection, which gets lists by api calls, but eventually we
-	// should implement it for other connections too...
+	// FIXME: currently, the only connection that implements
+	// getTableTypeList() is the odbc connection, which gets lists by api
+	// calls, but eventually we should implement it for other connections
+	// too...
 	switch (listformat) {
 		case SQLRSERVERLISTFORMAT_NULL:
 			pvt->_columnmap=NULL;
@@ -5811,12 +5836,14 @@ void sqlrservercontroller::setTableTypeListColumnMap(
 	}
 }
 
-void sqlrservercontroller::setColumnListColumnMap(
+void sqlrservercontroller::setColumnListFormat(
 					sqlrserverlistformat_t listformat) {
 
-	// for now, don't remap columns if api calls are used to get lists,
-	// the columns don't come back in the "native" format
-	// FIXME: this "happens to work" for odbc passthrough:
+	// FIXME: for now, don't remap columns if api calls are used to get
+	// lists, as the the columns won't come back in the "native" format,
+	// but rather the ODBC format
+	//
+	// this "happens to work" for odbc passthrough:
 	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
 	// but wouldn't if either ODBC were replaced with something else
 	if (pvt->_conn->getListsByApiCalls()) {
@@ -5855,12 +5882,14 @@ void sqlrservercontroller::setColumnListColumnMap(
 	}
 }
 
-void sqlrservercontroller::setPrimaryKeyListColumnMap(
+void sqlrservercontroller::setPrimaryKeyListFormat(
 					sqlrserverlistformat_t listformat) {
 
-	// for now, don't remap columns if api calls are used to get lists,
-	// the columns don't come back in the "native" format
-	// FIXME: this "happens to work" for odbc passthrough:
+	// FIXME: for now, don't remap columns if api calls are used to get
+	// lists, as the the columns won't come back in the "native" format,
+	// but rather the ODBC format
+	//
+	// this "happens to work" for odbc passthrough:
 	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
 	// but wouldn't if either ODBC were replaced with something else
 	if (pvt->_conn->getListsByApiCalls()) {
@@ -5869,9 +5898,10 @@ void sqlrservercontroller::setPrimaryKeyListColumnMap(
 		return;
 	}
 
-	// FIXME: currently, the only connection that implements this is the
-	// odbc connection, which gets lists by api calls, but eventually we
-	// should implement it for other connections too...
+	// FIXME: currently, the only connection that implements
+	// getPrimaryKeyList() is the odbc connection, which gets lists by api
+	// calls, but eventually we should implement it for other connections
+	// too...
 	switch (listformat) {
 		case SQLRSERVERLISTFORMAT_NULL:
 			pvt->_columnmap=NULL;
@@ -5899,12 +5929,14 @@ void sqlrservercontroller::setPrimaryKeyListColumnMap(
 	}
 }
 
-void sqlrservercontroller::setKeyAndIndexListColumnMap(
+void sqlrservercontroller::setKeyAndIndexListFormat(
 					sqlrserverlistformat_t listformat) {
 
-	// for now, don't remap columns if api calls are used to get lists,
-	// the columns don't come back in the "native" format
-	// FIXME: this "happens to work" for odbc passthrough:
+	// FIXME: for now, don't remap columns if api calls are used to get
+	// lists, as the the columns won't come back in the "native" format,
+	// but rather the ODBC format
+	//
+	// this "happens to work" for odbc passthrough:
 	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
 	// but wouldn't if either ODBC were replaced with something else
 	if (pvt->_conn->getListsByApiCalls()) {
@@ -5913,9 +5945,10 @@ void sqlrservercontroller::setKeyAndIndexListColumnMap(
 		return;
 	}
 
-	// FIXME: currently, the only connection that implements this is the
-	// odbc connection, which gets lists by api calls, but eventually we
-	// should implement it for other connections too...
+	// FIXME: currently, the only connection that implements
+	// getKeyAndIndexList() is the odbc connection, which gets lists by api
+	// calls, but eventually we should implement it for other connections
+	// too...
 	switch (listformat) {
 		case SQLRSERVERLISTFORMAT_NULL:
 			pvt->_columnmap=NULL;
@@ -5943,12 +5976,14 @@ void sqlrservercontroller::setKeyAndIndexListColumnMap(
 	}
 }
 
-void sqlrservercontroller::setProcedureParameterListColumnMap(
+void sqlrservercontroller::setProcedureParameterListFormat(
 					sqlrserverlistformat_t listformat) {
 
-	// for now, don't remap columns if api calls are used to get lists,
-	// the columns don't come back in the "native" format
-	// FIXME: this "happens to work" for odbc passthrough:
+	// FIXME: for now, don't remap columns if api calls are used to get
+	// lists, as the the columns won't come back in the "native" format,
+	// but rather the ODBC format
+	//
+	// this "happens to work" for odbc passthrough:
 	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
 	// but wouldn't if either ODBC were replaced with something else
 	if (pvt->_conn->getListsByApiCalls()) {
@@ -5957,9 +5992,10 @@ void sqlrservercontroller::setProcedureParameterListColumnMap(
 		return;
 	}
 
-	// FIXME: currently, the only connection that implements this is the
-	// odbc connection, which gets lists by api calls, but eventually we
-	// should implement it for other connections too...
+	// FIXME: currently, the only connection that implements
+	// getProcedureParameterList() is the odbc connection, which gets lists
+	// by api calls, but eventually we should implement it for other
+	// connections too...
 	switch (listformat) {
 		case SQLRSERVERLISTFORMAT_NULL:
 			pvt->_columnmap=NULL;
@@ -5987,12 +6023,14 @@ void sqlrservercontroller::setProcedureParameterListColumnMap(
 	}
 }
 
-void sqlrservercontroller::setTypeInfoListColumnMap(
+void sqlrservercontroller::setTypeInfoListFormat(
 					sqlrserverlistformat_t listformat) {
 
-	// for now, don't remap columns if api calls are used to get lists,
-	// the columns don't come back in the "native" format
-	// FIXME: this "happens to work" for odbc passthrough:
+	// FIXME: for now, don't remap columns if api calls are used to get
+	// lists, as the the columns won't come back in the "native" format,
+	// but rather the ODBC format
+	//
+	// this "happens to work" for odbc passthrough:
 	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
 	// but wouldn't if either ODBC were replaced with something else
 	if (pvt->_conn->getListsByApiCalls()) {
@@ -6001,9 +6039,10 @@ void sqlrservercontroller::setTypeInfoListColumnMap(
 		return;
 	}
 
-	// FIXME: currently, the only connection that implements this is the
-	// odbc connection, which gets lists by api calls, but eventually we
-	// should implement it for other connections too...
+	// FIXME: currently, the only connection that implements
+	// getTypeInfoList() is the odbc connection, which gets lists by api
+	// calls, but eventually we should implement it for other connections
+	// too...
 	switch (listformat) {
 		case SQLRSERVERLISTFORMAT_NULL:
 			pvt->_columnmap=NULL;
@@ -6031,12 +6070,14 @@ void sqlrservercontroller::setTypeInfoListColumnMap(
 	}
 }
 
-void sqlrservercontroller::setProcedureListColumnMap(
+void sqlrservercontroller::setProcedureListFormat(
 					sqlrserverlistformat_t listformat) {
 
-	// for now, don't remap columns if api calls are used to get lists,
-	// the columns don't come back in the "native" format
-	// FIXME: this "happens to work" for odbc passthrough:
+	// FIXME: for now, don't remap columns if api calls are used to get
+	// lists, as the the columns won't come back in the "native" format,
+	// but rather the ODBC format
+	//
+	// this "happens to work" for odbc passthrough:
 	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
 	// but wouldn't if either ODBC were replaced with something else
 	if (pvt->_conn->getListsByApiCalls()) {
@@ -6045,9 +6086,10 @@ void sqlrservercontroller::setProcedureListColumnMap(
 		return;
 	}
 
-	// FIXME: currently, the only connection that implements this is the
-	// odbc connection, which gets lists by api calls, but eventually we
-	// should implement it for other connections too...
+	// FIXME: currently, the only connection that implements
+	// getProcedureList() is the odbc connection, which gets lists by api
+	// calls, but eventually we should implement it for other connections
+	// too...
 	switch (listformat) {
 		case SQLRSERVERLISTFORMAT_NULL:
 			pvt->_columnmap=NULL;
@@ -6090,7 +6132,7 @@ void sqlrservercontroller::buildColumnMaps() {
 	pvt->_mysqltablescolumnnamemap.setValue(0,"Tables_in_xxx");
 
 	// MySQL getColumnList:
-	if (pvt->_conn->getColumnListFormat()==
+	if (pvt->_conn->getNativeColumnListFormat()==
 				SQLRSERVERLISTFORMAT_POSTGRESQL) {
 		// column_name
 		pvt->_mysqlcolumnscolumnmap.setValue(0,3);
@@ -6178,7 +6220,7 @@ void sqlrservercontroller::buildColumnMaps() {
 	pvt->_odbctablescolumnnamemap.setValue(4,"REMARKS");
 
 	// ODBC getColumnList:
-	if (pvt->_conn->getColumnListFormat()==
+	if (pvt->_conn->getNativeColumnListFormat()==
 				SQLRSERVERLISTFORMAT_POSTGRESQL) {
 		// TABLE_CAT
 		pvt->_odbccolumnscolumnmap.setValue(0,0);
@@ -6315,7 +6357,7 @@ void sqlrservercontroller::buildColumnMaps() {
 	pvt->_jdbctablescolumnnamemap.setValue(9,"REF_GENERATION");
 
 	// JDBC getColumnList:
-	if (pvt->_conn->getColumnListFormat()==
+	if (pvt->_conn->getNativeColumnListFormat()==
 				SQLRSERVERLISTFORMAT_POSTGRESQL) {
 		// TABLE_CAT
 		pvt->_jdbccolumnscolumnmap.setValue(0,0);
@@ -6439,6 +6481,11 @@ void sqlrservercontroller::buildColumnMaps() {
 	pvt->_jdbccolumnscolumnnamemap.setValue(21,"SOURCE_DATA_TYPE");
 	pvt->_jdbccolumnscolumnnamemap.setValue(22,"IS_AUTOINCREMENT");
 	pvt->_jdbccolumnscolumnnamemap.setValue(23,"IS_GENERATEDCOLUMN");
+}
+
+void sqlrservercontroller::setColumnMap() {
+	// FIXME: set the column map, depending on what kind of query was run,
+	// and what column format we're set to use for that query type
 }
 
 uint32_t sqlrservercontroller::mapColumn(uint32_t col) {
@@ -6821,7 +6868,7 @@ void sqlrservercontroller::truncateTempTables(sqlrservercursor *cursor) {
 		uint64_t	fieldsize;
 		bool		lob;
 		bool		null;
-		const char	*query=getGlobalTempTableListQuery();
+		const char	*query=getGlobalTempTableListQuery(true);
 
 		sqlrservercursor	*gttcur=newCursor();
 		if (open(gttcur) &&
@@ -10415,6 +10462,9 @@ bool sqlrservercontroller::handleResultSetHeader(sqlrservercursor *cursor) {
 		return true;
 	}
 	cursor->setResultSetHeaderHasBeenHandled(true);
+
+	// set column map
+	setColumnMap();
 
 	// get arrays of field pointers,
 	// helpfully provided for us by the cursor

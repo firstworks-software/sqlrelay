@@ -123,8 +123,10 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getSchemaListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
-						uint16_t objecttypes);
-		const char	*getGlobalTempTableListQuery();
+						uint16_t objecttypes,
+						bool currentschemaonly);
+		const char	*getGlobalTempTableListQuery(
+						bool currentschemaonly);
 		const char	*getColumnListQuery(
 						const char *table,
 						bool wild);
@@ -178,6 +180,8 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		#endif
 		bool		rejectduplicatebinds;
 		bool		disablekeylookup;
+
+		stringbuffer	tablelistquery;
 
 		stringbuffer	alltypeinfoquery;
 };
@@ -1179,73 +1183,58 @@ const char *oracleconnection::getSchemaListQuery(bool wild) {
 }
 
 const char *oracleconnection::getTableListQuery(bool wild,
-						uint16_t objecttypes) {
-	if (supportssyscontext) {
-		return (wild)?
-			"select "
-			"	NULL as table_cat, "
-			"	owner as table_schem, "
-			"	table_name as table_name, "
-			"	'TABLE' as table_type, "
-			"	NULL as remarks, "
-			"	NULL as extra "
-			"from "
-			"	all_tables "
-			"where "
-			"	table_name like upper('%s') "
-			"	and "
-			"	owner=sys_context('userenv','current_schema') "
-			"order by "
-			"	owner, "
-			"	table_name":
+						uint16_t objecttypes,
+						bool currentschemaonly) {
 
-			"select "
-			"	NULL as table_cat, "
-			"	owner as table_schem, "
-			"	table_name as table_name, "
-			"	'TABLE' as table_type, "
-			"	NULL as remarks, "
-			"	NULL as extra "
-			"from "
-			"	all_tables "
-			"where "
-			"	owner=sys_context('userenv','current_schema') "
-			"order by "
-			"	owner, "
-			"	table_name";
-	} else {
-		return (wild)?
-			"select "
-			"	NULL as table_cat, "
-			"	owner as table_schem, "
-			"	table_name as table_name, "
-			"	'TABLE' as table_type, "
-			"	NULL as remarks, "
-			"	NULL as extra "
-			"from "
-			"	user_tables "
-			"where "
-			"	table_name like upper('%s') "
-			"order by "
-			"	owner, "
-			"	table_name":
-
-			"select "
-			"	NULL as table_cat, "
-			"	owner as table_schem, "
-			"	table_name as table_name, "
-			"	'TABLE' as table_type, "
-			"	NULL as remarks, "
-			"	NULL as extra "
-			"from "
-			"	user_tables "
-			"order by "
-			"	owner, "
-			"	table_name";
+	tablelistquery.clear();
+	tablelistquery.append(
+		"select "
+		"	NULL as table_cat, "
+		"	owner as table_schem, "
+		"	table_name as table_name, "
+		"	'TABLE' as table_type, "
+		"	NULL as remarks, "
+		"	NULL as extra "
+		"from "
+		"	all_tables "
+		"where ");
+	bool	prevclause=false;
+	if (currentschemaonly) {
+		tablelistquery.append(
+			"	upper(owner)=upper('");
+		tablelistquery.append(cont->getUser());
+		tablelistquery.append(
+			"') ");
+		prevclause=true;
 	}
+	if (wild) {
+		if (prevclause) {
+			tablelistquery.append(
+				"	and ");
+		}
+		tablelistquery.append(
+			"	table_name like upper('%s') ");
+		prevclause=true;
+	}
+	if (supportssyscontext) {
+		if (prevclause) {
+			tablelistquery.append(
+				"	and ");
+		}
+		tablelistquery.append(
+			"	owner=sys_context("
+					"'userenv','current_schema') ");
+	}
+	tablelistquery.append(
+		"order by "
+		"	owner, "
+		"	table_name");
+
+	return tablelistquery.getString();
 }
 
-const char *oracleconnection::getGlobalTempTableListQuery() {
+const char *oracleconnection::getGlobalTempTableListQuery(
+						bool currentschemaonly) {
 	if (supportssyscontext) {
 		return "select "
 			"	table_name "

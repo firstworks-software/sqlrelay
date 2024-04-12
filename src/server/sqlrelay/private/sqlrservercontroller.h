@@ -129,6 +129,7 @@
 		bool	handleBinds(sqlrservercursor *cursor);
 
 		void		buildColumnMaps();
+		void		setColumnMap();
 		uint32_t	mapColumn(uint32_t col);
 		uint32_t	mapColumnCount(uint32_t colcount);
 

@@ -725,55 +725,45 @@ bool sqlrserverconnection::getListsByApiCalls() {
 	return false;
 }
 
-sqlrserverlistformat_t sqlrserverconnection::getDatabaseListFormat() {
-	return (getListsByApiCalls())?
-		SQLRSERVERLISTFORMAT_ODBC:SQLRSERVERLISTFORMAT_MYSQL;
+sqlrserverlistformat_t sqlrserverconnection::getNativeDatabaseListFormat() {
+	return SQLRSERVERLISTFORMAT_MYSQL;
 }
 
-sqlrserverlistformat_t sqlrserverconnection::getSchemaListFormat() {
-	return (getListsByApiCalls())?
-		SQLRSERVERLISTFORMAT_ODBC:SQLRSERVERLISTFORMAT_MYSQL;
+sqlrserverlistformat_t sqlrserverconnection::getNativeSchemaListFormat() {
+	return SQLRSERVERLISTFORMAT_MYSQL;
 }
 
-sqlrserverlistformat_t sqlrserverconnection::getTableListFormat() {
-	return (getListsByApiCalls())?
-		SQLRSERVERLISTFORMAT_ODBC:SQLRSERVERLISTFORMAT_MYSQL;
+sqlrserverlistformat_t sqlrserverconnection::getNativeTableListFormat() {
+	return SQLRSERVERLISTFORMAT_MYSQL;
 }
 
-sqlrserverlistformat_t sqlrserverconnection::getTableTypeListFormat() {
-	return (getListsByApiCalls())?
-		SQLRSERVERLISTFORMAT_ODBC:SQLRSERVERLISTFORMAT_MYSQL;
+sqlrserverlistformat_t sqlrserverconnection::getNativeTableTypeListFormat() {
+	return SQLRSERVERLISTFORMAT_MYSQL;
 }
 
-sqlrserverlistformat_t sqlrserverconnection::getColumnListFormat() {
-	return (getListsByApiCalls())?
-		SQLRSERVERLISTFORMAT_ODBC:SQLRSERVERLISTFORMAT_MYSQL;
+sqlrserverlistformat_t sqlrserverconnection::getNativeColumnListFormat() {
+	return SQLRSERVERLISTFORMAT_MYSQL;
 }
 
-sqlrserverlistformat_t sqlrserverconnection::getPrimaryKeyListFormat() {
-	return (getListsByApiCalls())?
-		SQLRSERVERLISTFORMAT_ODBC:SQLRSERVERLISTFORMAT_MYSQL;
+sqlrserverlistformat_t sqlrserverconnection::getNativePrimaryKeyListFormat() {
+	return SQLRSERVERLISTFORMAT_MYSQL;
 }
 
-sqlrserverlistformat_t sqlrserverconnection::getKeyAndIndexListFormat() {
-	return (getListsByApiCalls())?
-		SQLRSERVERLISTFORMAT_ODBC:SQLRSERVERLISTFORMAT_MYSQL;
+sqlrserverlistformat_t sqlrserverconnection::getNativeKeyAndIndexListFormat() {
+	return SQLRSERVERLISTFORMAT_MYSQL;
 }
 
 sqlrserverlistformat_t sqlrserverconnection::
-				getProcedureParameterListFormat() {
-	return (getListsByApiCalls())?
-		SQLRSERVERLISTFORMAT_ODBC:SQLRSERVERLISTFORMAT_MYSQL;
+				getNativeProcedureParameterListFormat() {
+	return SQLRSERVERLISTFORMAT_MYSQL;
 }
 
-sqlrserverlistformat_t sqlrserverconnection::getTypeInfoListFormat() {
-	return (getListsByApiCalls())?
-		SQLRSERVERLISTFORMAT_ODBC:SQLRSERVERLISTFORMAT_MYSQL;
+sqlrserverlistformat_t sqlrserverconnection::getNativeTypeInfoListFormat() {
+	return SQLRSERVERLISTFORMAT_MYSQL;
 }
 
-sqlrserverlistformat_t sqlrserverconnection::getProcedureListFormat() {
-	return (getListsByApiCalls())?
-		SQLRSERVERLISTFORMAT_ODBC:SQLRSERVERLISTFORMAT_MYSQL;
+sqlrserverlistformat_t sqlrserverconnection::getNativeProcedureListFormat() {
+	return SQLRSERVERLISTFORMAT_MYSQL;
 }
 
 bool sqlrserverconnection::getDatabaseList(sqlrservercursor *cursor,
@@ -853,54 +843,68 @@ bool sqlrserverconnection::getProcedureList(sqlrservercursor *cursor,
 	return false;
 }
 
-const char *sqlrserverconnection::getDatabaseListQuery(bool wild) {
+const char *sqlrserverconnection::getDatabaseListQuery(
+						bool wild) {
 	return getNoopQuery();
 }
 
-const char *sqlrserverconnection::getSchemaListQuery(bool wild) {
+const char *sqlrserverconnection::getSchemaListQuery(
+						bool wild,
+						bool currentdbonly) {
 	return getNoopQuery();
 }
 
-const char *sqlrserverconnection::getTableListQuery(bool wild,
-						uint16_t objecttypes) {
+const char *sqlrserverconnection::getTableListQuery(
+						bool wild,
+						uint16_t objecttypes,
+						bool currentschemaonly) {
 	return getNoopQuery();
 }
 
-const char *sqlrserverconnection::getTableTypeListQuery(bool wild) {
+const char *sqlrserverconnection::getTableTypeListQuery(bool wild,
+						bool currentschemaonly) {
 	return getNoopQuery();
 }
 
-const char *sqlrserverconnection::getGlobalTempTableListQuery() {
+const char *sqlrserverconnection::getGlobalTempTableListQuery(
+						bool currentschemaonly) {
 	return getNoopQuery();
 }
 
-const char *sqlrserverconnection::getColumnListQuery(const char *table,
-							bool wild) {
+const char *sqlrserverconnection::getColumnListQuery(
+						const char *table,
+						bool wild) {
 	return getNoopQuery();
 }
 
-const char *sqlrserverconnection::getPrimaryKeyListQuery(const char *table,
-							bool wild) {
+const char *sqlrserverconnection::getPrimaryKeyListQuery(
+						const char *table,
+						bool wild) {
 	return getNoopQuery();
 }
 
-const char *sqlrserverconnection::getKeyAndIndexListQuery(const char *table,
-							bool wild) {
+const char *sqlrserverconnection::getKeyAndIndexListQuery(
+						const char *table,
+						bool wild) {
 	return getNoopQuery();
 }
 
 const char *sqlrserverconnection::getProcedureParameterListQuery(
-							const char *procedure,
-							bool wild) {
+						const char *procedure,
+						bool wild) {
 	return getNoopQuery();
 }
 
-const char *sqlrserverconnection::getTypeInfoListQuery(const char *type,
-							bool wild) {
+const char *sqlrserverconnection::getTypeInfoListQuery(
+						const char *type,
+						bool wild,
+						bool currentschemaonly) {
 	return getNoopQuery();
 }
 
-const char *sqlrserverconnection::getProcedureListQuery(bool wild) {
+const char *sqlrserverconnection::getProcedureListQuery(
+						bool wild,
+						bool currentschemaonly) {
 	return getNoopQuery();
 }
 

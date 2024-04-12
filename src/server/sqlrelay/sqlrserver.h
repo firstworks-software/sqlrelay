@@ -2069,93 +2069,137 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 							const char *wild);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  database names.  If "wild" is true the the query also
-		 *  includes a where clause that inlcudes a %s which can be
-		 *  used to substitute in a wildcard value which can be used
-		 *  to filter the results. */
+		 *  database names.
+		 *
+		 *  If "wild" is true the the query also includes a where
+		 *  clause that inlcudes a %s which can be used to substitute
+		 *  in a wildcard value which can be used to filter the
+		 *  results. */
 		const char	*getDatabaseListQuery(bool wild);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  schema names.  If "wild" is true the the query also
-		 *  includes a where clause that inlcudes a %s which can be
-		 *  used to substitute in a wildcard value which can be used
-		 *  to filter the results. */
-		const char	*getSchemaListQuery(bool wild);
+		 *  schema names.
+		 *
+		 *  If "wild" is true the the query also includes a where
+		 *  clause that inlcudes a %s which can be used to substitute
+		 *  in a wildcard value which can be use  to filter the
+		 *  results.
+		 *
+		 *  If "currentdbonly" is true then the query only returns
+		 *  schemas on the current database. */
+		const char	*getSchemaListQuery(bool wild,
+							bool currentdbonly);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  table names.  If "wild" is true the the query also
-		 *  includes a where clause that inlcudes a %s which can be
-		 *  used to substitute in a wildcard value which can be used
-		 *  to filter the results. */
+		 *  table names.
+		 *
+		 *  If "wild" is true the the query also includes a where
+		 *  clause that inlcudes a %s which can be used to substitute
+		 *  in a wildcard value which can be used  to filter the
+		 *  results.
+		 *
+		 *  If "currentschemaonly" is true then the query only returns
+		 *  schemas on the current database. */
 		const char	*getTableListQuery(bool wild,
-							uint16_t objecttypes);
+							uint16_t objecttypes,
+							bool currentschemaonly);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  table types.  If "wild" is true the the query also includes
-		 *  a where clause that inlcudes a %s which can be used to
-		 *  substitute in a wildcard value which can be used to filter
-		 *  the results. */
-		const char	*getTableTypeListQuery(bool wild);
+		 *  table types.
+		 *
+		 *  If "wild" is true the the query also includes a where
+		 *  clause that inlcudes a %s which can be used to substitute
+		 *  in a wildcard value which can be used to filter the
+		 *  results.
+		 *
+		 *  If "currentschemaonly" is true then the query only returns
+		 *  schemas on the current database. */
+		const char	*getTableTypeListQuery(bool wild,
+							bool currentschemaonly);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  global temporary table names. */
-		const char	*getGlobalTempTableListQuery();
+		 *  global temporary table names.
+		 *
+		 *  If "currentschemaonly" is true then the query only returns
+		 *  schemas on the current database. */
+		const char	*getGlobalTempTableListQuery(
+							bool currentschemaonly);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  column names from "table".  If "wild" is true the the query
-		 *  also includes a where clause that inlcudes a %s which can
-		 *  be used to substitute in a wildcard value which can be used
-		 *  to filter the results. */
+		 *  column names from "table".
+		 *
+		 *  If "wild" is true the the query also includes a where
+		 *  clause that inlcudes a %s which can be used to substitute
+		 *  in a wildcard value which can be used to filter the
+		 *  results. */
 		const char	*getColumnListQuery(const char *table,
 								bool wild);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  columns that compose the primary key of "table".  If "wild"
-		 *  is true the the query also includes a where clause that
-		 *  inlcudes a %s which can be used to substitute in a wildcard
-		 *  value which can be used to filter the results. */
+		 *  columns that compose the primary key of "table".
+		 *
+		 *  If "wild" is true the the query also includes a where
+		 *  clause that inlcudes a %s which can be used to substitute
+		 *  in a wildcard value which can be used to filter the
+		 *  results. */
 		const char	*getPrimaryKeyListQuery(const char *table,
 								bool wild);
 
 		/** Returns a query that can be used to fetch the indices and
 		 *  indexed columns  of "table", where "table" is in the
-		 *  current database and schema.  If "wild" is true the the
-		 *  query also includes a where clause that inlcudes a %s which
-		 *  can be used to substitute in a wildcard value which can be
-		 *  used to filter the results. */
+		 *  current database and schema.
+		 *
+		 *  If "wild" is true the the query also includes a where
+		 *  clause that inlcudes a %s which can be used to substitute
+		 *  in a wildcard value which can be used to filter the
+		 *  results. */
 		const char	*getKeyAndIndexListQuery(const char *table,
 								bool wild);
 
 		/** Returns a query that can be used to fetch the parameter
 		 *  names of "proc", where "proc" is in the current database
 		 *  and schema, and information about them, such as whether
-		 *  they are input, output, or input-output variables.  If
-		 *  "wild" is true the the query also includes a where clause
-		 *  that inlcudes a %s which can be used to substitute in a
-		 *  wildcard value which can be used to filter the results. */
+		 *  they are input, output, or input-output variables.
+		 *
+		 *  If "wild" is true then the query also includes a where
+		 *  clause that inlcudes a %s which can be used to substitute
+		 *  in a wildcard value which can be used to filter the
+		 *  results. */
 		const char	*getProcedureParameterListQuery(
 							const char *proc,
 							bool wild);
 
 		/** Returns a query that can be used to fetch info about
 		 *  datatype "type", where "type" is in the current database
-		 *  and schema.  If "wild" is true the the query also includes
-		 *  a where clause that inlcudes a %s which can be used to
-		 *  substitute in a wildcard value which can be used to filter
-		 *  the results. */
+		 *  and schema.
+		 *
+		 *  If "wild" is true the the query also includes a where
+		 *  clause that inlcudes a %s which can be used to substitute
+		 *  in a wildcard value which can be used to filter the
+		 *  results.
+		 *
+		 *  If "currentschemaonly" is true then the query only returns
+		 *  schemas on the current database. */
 		const char	*getTypeInfoListQuery(const char *type,
-								bool wild);
+							bool wild,
+							bool currentschemaonly);
 
 		/** Returns a query that can be used to fetch the list of
 		 *  stored procedures in the current database and schema, and
 		 *  information about them, such as the number of input and
 		 *  output parameters, the numer of result sets that the
 		 *  procdure may retrun, a description of the procedure, and
-		 *  the procedure type (procedure or function).  If "wild" is
-		 *  true the the query also includes a where clause that
-		 *  inlcudes a %s which can be used to substitute in a wildcard
-		 *  value which can be used to filter the results. */
-		const char	*getProcedureListQuery(bool wild);
+		 *  the procedure type (procedure or function).
+		 *
+		 *  If "wild" is true the the query also includes a where/
+		 *  clause that inlcudes a %s which can be used to substitute
+		 *  in a wildcard value which can be used to filter the
+		 *  results.
+		 *
+		 *  If "currentschemaonly" is true then the query only returns
+		 *  schemas on the current database. */
+		const char	*getProcedureListQuery(bool wild,
+							bool currentschemaonly);
 
 
 
@@ -2180,52 +2224,52 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 
 		/** Sets the format to map columns to when fetching the list
 		 *  of database names to "listformat". */
-		void	setDatabaseListColumnMap(
+		void	setDatabaseListFormat(
 					sqlrserverlistformat_t listformat);
 
 		/** Sets the format to map columns to when fetching the list
 		 *  of schema names to "listformat". */
-		void	setSchemaListColumnMap(
+		void	setSchemaListFormat(
 					sqlrserverlistformat_t listformat);
 
 		/** Sets the format to map columns to when fetching the list
 		 *  of table names to "listformat". */
-		void	setTableListColumnMap(
+		void	setTableListFormat(
 					sqlrserverlistformat_t listformat);
 
 		/** Sets the format to map columns to when fetching the list
 		 *  of table type names to "listformat". */
-		void	setTableTypeListColumnMap(
+		void	setTableTypeListFormat(
 					sqlrserverlistformat_t listformat);
 
 		/** Sets the format to map columns to when fetching the list
 		 *  of column names to "listformat". */
-		void	setColumnListColumnMap(
+		void	setColumnListFormat(
 					sqlrserverlistformat_t listformat);
 
 		/** Sets the format to map columns to when fetching the list
 		 *  of primary key names to "listformat". */
-		void	setPrimaryKeyListColumnMap(
+		void	setPrimaryKeyListFormat(
 					sqlrserverlistformat_t listformat);
 
 		/** Sets the format to map columns to when fetching the list
 		 *  of key and index names to "listformat". */
-		void	setKeyAndIndexListColumnMap(
+		void	setKeyAndIndexListFormat(
 					sqlrserverlistformat_t listformat);
 
 		/** Sets the format to map columns to when fetching the list
 		 *  of procedure parameter names to "listformat". */
-		void	setProcedureParameterListColumnMap(
+		void	setProcedureParameterListFormat(
 					sqlrserverlistformat_t listformat);
 
 		/** Sets the format to map columns to when fetching the list
 		 *  of type info names to "listformat". */
-		void	setTypeInfoListColumnMap(
+		void	setTypeInfoListFormat(
 					sqlrserverlistformat_t listformat);
 
 		/** Sets the format to map columns to when fetching the list
 		 *  of procedure names to "listformat". */
-		void	setProcedureListColumnMap(
+		void	setProcedureListFormat(
 					sqlrserverlistformat_t listformat);
 
 		/** Returns the number of columns in the current result set of
@@ -3384,103 +3428,84 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		/** Returns the format that the result set that database lists
 		 *  are returned in.
 		 *
-		 *  This implementation returns SQLRSERVERLISTFORMAT_ODBC if
-		 *  getListsByApiCalls() returns true, and
-		 *  SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls() returns
-		 *  false, but may be overridden by a child class to return a
-		 *  different result. */
-		virtual	sqlrserverlistformat_t	getDatabaseListFormat();
+		 *  This implementation returns SQLRSERVERLISTFORMAT_MYSQL, but
+		 *  may be overridden by a child class to return a different
+		 *  result. */
+		virtual	sqlrserverlistformat_t	getNativeDatabaseListFormat();
 
 		/** Returns the format that the result set that schema lists
 		 *  are returned in.
 		 *
-		 *  This method returns SQLRSERVERLISTFORMAT_ODBC if
-		 *  getListsByApiCalls() returns true, and
-		 *  SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls() returns
-		 *  false, but may be overridden by a child class to return a
-		 *  different result. */
-		virtual	sqlrserverlistformat_t	getSchemaListFormat();
+		 *  This implementation returns SQLRSERVERLISTFORMAT_MYSQL, but
+		 *  may be overridden by a child class to return a different
+		 *  result. */
+		virtual	sqlrserverlistformat_t	getNativeSchemaListFormat();
 
 		/** Returns the format that the result set that table lists
 		 *  are returned in.
 		 *
-		 *  This method returns SQLRSERVERLISTFORMAT_ODBC if
-		 *  getListsByApiCalls() returns true, and
-		 *  SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls() returns
-		 *  false, but may be overridden by a child class to return a
-		 *  different result. */
-		virtual	sqlrserverlistformat_t	getTableListFormat();
+		 *  This implementation returns SQLRSERVERLISTFORMAT_MYSQL, but
+		 *  may be overridden by a child class to return a different
+		 *  result. */
+		virtual	sqlrserverlistformat_t	getNativeTableListFormat();
 
 		/** Returns the format that the result set that table type lists
 		 *  are returned in.
 		 *
-		 *  This method returns SQLRSERVERLISTFORMAT_ODBC if
-		 *  getListsByApiCalls() returns true, and
-		 *  SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls() returns
-		 *  false, but may be overridden by a child class to return a
-		 *  different result. */
-		virtual	sqlrserverlistformat_t	getTableTypeListFormat();
+		 *  This implementation returns SQLRSERVERLISTFORMAT_MYSQL, but
+		 *  may be overridden by a child class to return a different
+		 *  result. */
+		virtual	sqlrserverlistformat_t	getNativeTableTypeListFormat();
 
 		/** Returns the format that the result set that column lists
 		 *  are returned in.
 		 *
-		 *  This method returns SQLRSERVERLISTFORMAT_ODBC if
-		 *  getListsByApiCalls() returns true, and
-		 *  SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls() returns
-		 *  false, but may be overridden by a child class to return a
-		 *  different result. */
-		virtual	sqlrserverlistformat_t	getColumnListFormat();
+		 *  This implementation returns SQLRSERVERLISTFORMAT_MYSQL, but
+		 *  may be overridden by a child class to return a different
+		 *  result. */
+		virtual	sqlrserverlistformat_t	getNativeColumnListFormat();
 
 		/** Returns the format that the result set that primary key
 		 *  lists are returned in.
 		 *
-		 *  This method returns SQLRSERVERLISTFORMAT_ODBC if
-		 *  getListsByApiCalls() returns true, and
-		 *  SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls() returns
-		 *  false, but may be overridden by a child class to return a
-		 *  different result. */
-		virtual	sqlrserverlistformat_t	getPrimaryKeyListFormat();
+		 *  This implementation returns SQLRSERVERLISTFORMAT_MYSQL, but
+		 *  may be overridden by a child class to return a different
+		 *  result. */
+		virtual	sqlrserverlistformat_t	getNativePrimaryKeyListFormat();
 
 		/** Returns the format that the result set that key and index
 		 *  lists are returned in.
 		 *
-		 *  This method returns SQLRSERVERLISTFORMAT_ODBC if
-		 *  getListsByApiCalls() returns true, and
-		 *  SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls() returns
-		 *  false, but may be overridden by a child class to return a
-		 *  different result. */
-		virtual	sqlrserverlistformat_t	getKeyAndIndexListFormat();
+		 *  This implementation returns SQLRSERVERLISTFORMAT_MYSQL, but
+		 *  may be overridden by a child class to return a different
+		 *  result. */
+		virtual	sqlrserverlistformat_t
+					getNativeKeyAndIndexListFormat();
 
 		/** Returns the format that the result set that procedure
 		 *  parameter lists are returned in.
 		 *
-		 *  This method returns SQLRSERVERLISTFORMAT_ODBC if
-		 *  getListsByApiCalls() returns true, and
-		 *  SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls() returns
-		 *  false, but may be overridden by a child class to return a
-		 *  different result. */
+		 *  This implementation returns SQLRSERVERLISTFORMAT_MYSQL, but
+		 *  may be overridden by a child class to return a different
+		 *  result. */
 		virtual	sqlrserverlistformat_t
-					getProcedureParameterListFormat();
+					getNativeProcedureParameterListFormat();
 
 		/** Returns the format that the result set that type info lists
 		 *  are returned in.
 		 *
-		 *  This method returns SQLRSERVERLISTFORMAT_ODBC if
-		 *  getListsByApiCalls() returns true, and
-		 *  SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls() returns
-		 *  false, but may be overridden by a child class to return a
-		 *  different result. */
-		virtual	sqlrserverlistformat_t	getTypeInfoListFormat();
+		 *  This implementation returns SQLRSERVERLISTFORMAT_MYSQL, but
+		 *  may be overridden by a child class to return a different
+		 *  result. */
+		virtual	sqlrserverlistformat_t	getNativeTypeInfoListFormat();
 
 		/** Returns the format that the result set that procedure lists
 		 *  are returned in.
 		 *
-		 *  This method returns SQLRSERVERLISTFORMAT_ODBC if
-		 *  getListsByApiCalls() returns true, and
-		 *  SQLRSERVERLSITFORMAT_MYSQL if getListsByApiCalls() returns
-		 *  false, but may be overridden by a child class to return a
-		 *  different result. */
-		virtual	sqlrserverlistformat_t	getProcedureListFormat();
+		 *  This implementation returns SQLRSERVERLISTFORMAT_MYSQL, but
+		 *  may be overridden by a child class to return a different
+		 *  result. */
+		virtual	sqlrserverlistformat_t	getNativeProcedureListFormat();
 
 		/** Makes the database API call to fetch the list of databases
 		 *  that are visible to the user that SQL Relay is logged in
@@ -3595,10 +3620,12 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 							const char *wild);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  database names.  If "wild" is true the the query also
-		 *  includes a where clause that inlcudes a %s which can be
-		 *  used to substitute in a wildcard value which can be used
-		 *  to filter the results.
+		 *  database names.
+		 *
+		 *  If "wild" is true the the query also includes a where
+		 *  clause that inlcudes a %s which can be used to substitute
+		 *  in a wildcard value which can be used to filter the
+		 *  results.
 		 *
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return a database-specific
@@ -3606,52 +3633,79 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		virtual const char	*getDatabaseListQuery(bool wild);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  schema names.  If "wild" is true the the query also
-		 *  includes a where clause that inlcudes a %s which can be
-		 *  used to substitute in a wildcard value which can be used
-		 *  to filter the results.
+		 *  schema names.
 		 *
+		 *  If "wild" is true the the query also includes a where
+		 *  clause that inlcudes a %s which can be used to substitute
+		 *  in a wildcard value which can be use  to filter the
+		 *  results.
+		 *
+		 *  If "currentdbonly" is true then the query only returns
+		 *  schemas on the current database.
+
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return a database-specific
 		 *  query. */
-		virtual const char	*getSchemaListQuery(bool wild);
+		virtual const char	*getSchemaListQuery(
+							bool wild,
+							bool currentdbonly);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  table names.  If "wild" is true the the query also
-		 *  includes a where clause that inlcudes a %s which can be
-		 *  used to substitute in a wildcard value which can be used
-		 *  to filter the results.
+		 *  table names.
+		 *
+		 *  If "wild" is true the the query also includes a where
+		 *  clause that inlcudes a %s which can be used to substitute
+		 *  in a wildcard value which can be used  to filter the
+		 *  results.
+		 *
+		 *  If "currentschemaonly" is true then the query only returns
+		 *  schemas on the current database.
 		 *
 		 *  This implementation returns a query against the
 		 *  information_schema, but it may be overridden by a child
 		 *  class to return a database-specific query. */
-		virtual const char	*getTableListQuery(bool wild,
-							uint16_t objecttypes);
+		virtual const char	*getTableListQuery(
+							bool wild,
+							uint16_t objecttypes,
+							bool currentschemaonly);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  table types.  If "wild" is true the the query also includes
-		 *  a where clause that inlcudes a %s which can be used to
-		 *  substitute in a wildcard value which can be used to filter
-		 *  the results.
+		 *  table types.
+		 *
+		 *  If "wild" is true the the query also includes a where
+		 *  clause that inlcudes a %s which can be used to substitute
+		 *  in a wildcard value which can be used to filter the
+		 *  results.
+		 *
+		 *  If "currentschemaonly" is true then the query only returns
+		 *  schemas on the current database.
 		 *
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return a database-specific
 		 *  query. */
-		virtual const char	*getTableTypeListQuery(bool wild);
+		virtual const char	*getTableTypeListQuery(
+							bool wild,
+							bool currentschemaonly);
 
 		/** Returns a query that can be used to fetch the list of
 		 *  global temporary table names.
 		 *
+		 *  If "currentschemaonly" is true then the query only returns
+		 *  schemas on the current database.
+		 *
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return a database-specific
 		 *  query. */
-		virtual const char	*getGlobalTempTableListQuery();
+		virtual const char	*getGlobalTempTableListQuery(
+							bool currentschemaonly);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  column names from "table".  If "wild" is true the the query
-		 *  also includes a where clause that inlcudes a %s which can
-		 *  be used to substitute in a wildcard value which can be used
-		 *  to filter the results.
+		 *  column names from "table".
+		 *
+		 *  If "wild" is true the the query also includes a where
+		 *  clause that inlcudes a %s which can be used to substitute
+		 *  in a wildcard value which can be used to filter the
+		 *  results.
 		 *
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return a database-specific
@@ -3661,10 +3715,12 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 							bool wild);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  columns that compose the primary key of "table".  If "wild"
-		 *  is true the the query also includes a where clause that
-		 *  inlcudes a %s which can be used to substitute in a wildcard
-		 *  value which can be used to filter the results.
+		 *  columns that compose the primary key of "table".
+		 *
+		 *  If "wild" is true the the query also includes a where
+		 *  clause that inlcudes a %s which can be used to substitute
+		 *  in a wildcard value which can be used to filter the
+		 *  results.
 		 *
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return a database-specific
@@ -3675,10 +3731,12 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 
 		/** Returns a query that can be used to fetch the indices and
 		 *  indexed columns  of "table", where "table" is in the
-		 *  current database and schema.  If "wild" is true the the
-		 *  query also includes a where clause that inlcudes a %s which
-		 *  can be used to substitute in a wildcard value which can be
-		 *  used to filter the results.
+		 *  current database and schema.
+		 *
+		 *  If "wild" is true the the query also includes a where
+		 *  clause that inlcudes a %s which can be used to substitute
+		 *  in a wildcard value which can be used to filter the
+		 *  results.
 		 *
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return a database-specific
@@ -3690,10 +3748,12 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		/** Returns a query that can be used to fetch the parameter
 		 *  names of "proc", where "proc" is in the current database
 		 *  and schema, and information about them, such as whether
-		 *  they are input, output, or input-output variables.  If
-		 *  "wild" is true the the query also includes a where clause
-		 *  that inlcudes a %s which can be used to substitute in a
-		 *  wildcard value which can be used to filter the results.
+		 *  they are input, output, or input-output variables.
+		 *
+		 *  If "wild" is true then the query also includes a where
+		 *  clause that inlcudes a %s which can be used to substitute
+		 *  in a wildcard value which can be used to filter the
+		 *  results.
 		 *
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return a database-specific
@@ -3704,32 +3764,45 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 
 		/** Returns a query that can be used to fetch info about
 		 *  datatype "type", where "type" is in the current database
-		 *  and schema.  If "wild" is true the the query also includes
-		 *  a where clause that inlcudes a %s which can be used to
-		 *  substitute in a wildcard value which can be used to filter
-		 *  the results.
+		 *  and schema.
+		 *
+		 *  If "wild" is true the the query also includes a where
+		 *  clause that inlcudes a %s which can be used to substitute
+		 *  in a wildcard value which can be used to filter the
+		 *  results.
+		 *
+		 *  If "currentschemaonly" is true then the query only returns
+		 *  schemas on the current database.
 		 *
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return a database-specific
 		 *  query. */
 		virtual const char	*getTypeInfoListQuery(
 							const char *type,
-							bool wild);
+							bool wild,
+							bool currentschemaonly);
 
 		/** Returns a query that can be used to fetch the list of
 		 *  stored procedures in the current database and schema, and
 		 *  information about them, such as the number of input and
 		 *  output parameters, the numer of result sets that the
 		 *  procdure may retrun, a description of the procedure, and
-		 *  the procedure type (procedure or function).  If "wild" is
-		 *  true the the query also includes a where clause that
-		 *  inlcudes a %s which can be used to substitute in a wildcard
-		 *  value which can be used to filter the results.
+		 *  the procedure type (procedure or function).
+		 *
+		 *  If "wild" is true the the query also includes a where/
+		 *  clause that inlcudes a %s which can be used to substitute
+		 *  in a wildcard value which can be used to filter the
+		 *  results.
+		 *
+		 *  If "currentschemaonly" is true then the query only returns
+		 *  schemas on the current database.
 		 *
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return a database-specific
 		 *  query. */
-		virtual const char	*getProcedureListQuery(bool wild);
+		virtual const char	*getProcedureListQuery(
+							bool wild,
+							bool currentschemaonly);
 
 		/** Returns true if "table" is a synonym, rather than an actual
 		 *  table and false otherwise. */

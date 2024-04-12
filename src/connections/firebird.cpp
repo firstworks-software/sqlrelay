@@ -242,8 +242,10 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		const char	*getDbHostName();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
-						uint16_t objecttypes);
-		const char	*getGlobalTempTableListQuery();
+						uint16_t objecttypes,
+						bool currentschemaonly);
+		const char	*getGlobalTempTableListQuery(
+						bool currentschemaonly);
 		const char	*getColumnListQuery(
 						const char *table, bool wild);
 		const char	*getBindFormat();
@@ -267,6 +269,8 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		char		*dbversion;
 
 		char		*lastinsertidquery;
+
+		stringbuffer	tablelistquery;
 
 		ISC_STATUS	error[20];
 
@@ -610,8 +614,10 @@ const char *firebirdconnection::getDatabaseListQuery(bool wild) {
 }
 
 const char *firebirdconnection::getTableListQuery(bool wild,
-						uint16_t objecttypes) {
-	return (wild)?
+						uint16_t objecttypes,
+						bool currentschemaonly) {
+	tablelistquery.clear();
+	tablelistquery.append(
 		"select "
 		"	NULL as table_cat, "
 		"	rdb$owner_name as table_schem, "
@@ -622,30 +628,31 @@ const char *firebirdconnection::getTableListQuery(bool wild,
 		"from "
 		"	rdb$relations "
 		"where "
-		"	rdb$system_flag=0 "
-		"	and "
-		"	rdb$relation_name like '%s' "
+		"	rdb$system_flag=0 ");
+	if (currentschemaonly) {
+		tablelistquery.append(
+			"	and "
+			"	upper(rdb$owner_name)=upper('");
+		tablelistquery.append(cont->getUser());
+		tablelistquery.append(
+			"') ");
+	}
+	if (wild) {
+		tablelistquery.append(
+			"	and "
+			"	rdb$relation_name like '%s' ");
+	}
+	tablelistquery.append(
 		"order by "
 		"	rdb$owner_name, "
-		"	rdb$relation_name":
+		"	rdb$relation_name");
 
-		"select "
-		"	NULL as table_cat, "
-		"	rdb$owner_name as table_schem, "
-		"	rdb$relation_name as table_name, "
-		"	'TABLE' as table_type, "
-		"	NULL as remarks, "
-		"	NULL as extra "
-		"from "
-		"	rdb$relations "
-		"where "
-		"	rdb$system_flag=0 "
-		"order by "
-		"	rdb$owner_name, "
-		"	rdb$relation_name";
+stdoutput.printf("%s\n",tablelistquery.getString());
+	return tablelistquery.getString();
 }
 
-const char *firebirdconnection::getGlobalTempTableListQuery() {
+const char *firebirdconnection::getGlobalTempTableListQuery(
+						bool currentschemaonly) {
 	return "select "
 		"	rdb$relation_name "
 		"from "

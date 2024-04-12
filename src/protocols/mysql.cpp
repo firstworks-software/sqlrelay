@@ -3822,11 +3822,11 @@ bool sqlrprotocol_mysql::getListByApiCall(sqlrservercursor *cursor,
 						const char *wild) {
 	switch (listtype) {
 		case MYSQLLISTTYPE_DATABASE_LIST:
-			cont->setDatabaseListColumnMap(
+			cont->setDatabaseListFormat(
 					SQLRSERVERLISTFORMAT_MYSQL);
 			return cont->getDatabaseList(cursor,wild);
 		case MYSQLLISTTYPE_TABLE_LIST:
-			cont->setTableListColumnMap(
+			cont->setTableListFormat(
 					SQLRSERVERLISTFORMAT_MYSQL);
 			return cont->getTableList(cursor,wild,
 							DB_OBJECT_TABLE|
@@ -3834,7 +3834,7 @@ bool sqlrprotocol_mysql::getListByApiCall(sqlrservercursor *cursor,
 							DB_OBJECT_ALIAS|
 							DB_OBJECT_SYNONYM);
 		case MYSQLLISTTYPE_COLUMN_LIST:
-			cont->setColumnListColumnMap(
+			cont->setColumnListFormat(
 					SQLRSERVERLISTFORMAT_MYSQL);
 			return cont->getColumnList(cursor,table,wild);
 	}
@@ -3859,7 +3859,8 @@ bool sqlrprotocol_mysql::getListByQuery(sqlrservercursor *cursor,
 							DB_OBJECT_TABLE|
 							DB_OBJECT_VIEW|
 							DB_OBJECT_ALIAS|
-							DB_OBJECT_SYNONYM);
+							DB_OBJECT_SYNONYM,
+							true);
 			break;
 		case MYSQLLISTTYPE_COLUMN_LIST:
 			query=cont->getColumnListQuery(table,havewild);

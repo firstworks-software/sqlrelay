@@ -39,10 +39,11 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 		const char	*getDbHostName();
 		const char	*getDbIpAddressQuery();
 		const char	*getDbIpAddress();
+		sqlrserverlistformat_t	getNativeColumnListFormat();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
-						uint16_t objecttypes);
-		sqlrserverlistformat_t	getColumnListFormat();
+						uint16_t objecttypes,
+						bool currentschemaonly);
 		const char	*getColumnListQuery(
 					const char *table, bool wild);
 		bool		selectDatabase(const char *database);
@@ -553,6 +554,10 @@ const char *postgresqlconnection::getDbIpAddress() {
 	return (charstring::getLength(ipaddress))?ipaddress:"127.0.0.1";
 }
 
+sqlrserverlistformat_t postgresqlconnection::getNativeColumnListFormat() {
+	return SQLRSERVERLISTFORMAT_POSTGRESQL;
+}
+
 const char *postgresqlconnection::getDatabaseListQuery(bool wild) {
 	return (wild)?
 		"select "
@@ -575,7 +580,34 @@ const char *postgresqlconnection::getDatabaseListQuery(bool wild) {
 }
 
 const char *postgresqlconnection::getTableListQuery(bool wild,
-						uint16_t objecttypes) {
+						uint16_t objecttypes,
+						bool currentschemaonly) {
+
+	stringbuffer	otypes;
+	otypes.append("	(");
+	if (objecttypes&DB_OBJECT_TABLE) {
+		otypes.append("	table_type='BASE TABLE' ");
+	}
+	if (objecttypes&DB_OBJECT_VIEW) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	table_type = 'VIEW' ");
+	}
+	if (objecttypes&DB_OBJECT_ALIAS) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	table_type = 'ALIAS' ");
+	}
+	if (objecttypes&DB_OBJECT_SYNONYM) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	table_type = 'SYNONYM' ");
+	}
+	otypes.append(") ");
+
 	tablelistquery.clear();
 	tablelistquery.append(
 		"select "
@@ -592,43 +624,27 @@ const char *postgresqlconnection::getTableListQuery(bool wild,
 		"from "
 		"	information_schema.tables "
 		"where ");
+	if (currentschemaonly) {
+		tablelistquery.append(
+			"	table_catalog='");
+		tablelistquery.append(getCurrentDatabase());
+		tablelistquery.append("' "
+			"	and "
+			"	table_schema='public' "
+			"	and ");
+	}
+	tablelistquery.append(otypes.getString());
 	if (wild) {
-		tablelistquery.append("	table_name like '%s' and ");
-	}
-	tablelistquery.append("	(");
-	if (objecttypes&DB_OBJECT_TABLE) {
-		tablelistquery.append("	table_type = 'BASE TABLE' ");
-	}
-	if (objecttypes&DB_OBJECT_VIEW) {
-		if (tablelistquery.getSize()) {
-			tablelistquery.append("	or ");
-		}
-		tablelistquery.append("	table_type = 'VIEW' ");
-	}
-	if (objecttypes&DB_OBJECT_ALIAS) {
-		if (tablelistquery.getSize()) {
-			tablelistquery.append("	or ");
-		}
-		tablelistquery.append("	table_type = 'ALIAS' ");
-	}
-	if (objecttypes&DB_OBJECT_SYNONYM) {
-		if (tablelistquery.getSize()) {
-			tablelistquery.append("	or ");
-		}
-		tablelistquery.append("	table_type = 'SYNONYM' ");
+		tablelistquery.append(
+			"	and "
+			"	table_name like '%s' ");
 	}
 	tablelistquery.append(
-		") "
-		"and table_schema = 'public' "
 		"order by "
 		"	table_cat, "
 		"	table_schem, "
 		"	table_name");
 	return tablelistquery.getString();
-}
-
-sqlrserverlistformat_t postgresqlconnection::getColumnListFormat() {
-	return SQLRSERVERLISTFORMAT_POSTGRESQL;
 }
 
 const char *postgresqlconnection::getColumnListQuery(

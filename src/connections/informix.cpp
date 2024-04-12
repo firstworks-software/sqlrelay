@@ -247,7 +247,8 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 		const char	*getDbHostNameQuery();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
-						uint16_t objecttypes);
+						uint16_t objecttypes,
+						bool currentschemaonly);
 		const char	*getColumnListQuery(
 					const char *table, bool wild);
 		const char	*selectDatabaseQuery();
@@ -272,6 +273,8 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 		int32_t		maxoutbindlobsize;
 
 		char		dbversion[512];
+
+		stringbuffer	tablelistquery;
 
 		stringbuffer	errormsg;
 };
@@ -550,28 +553,30 @@ const char *informixconnection::getDatabaseListQuery(bool wild) {
 }
 
 const char *informixconnection::getTableListQuery(bool wild,
-						uint16_t objecttypes) {
-	return (wild)?
-		"select distinct "
-		"	dbname as table_cat, "
-		"	owner as table_schem, "
-		"	tabname as table_name, "
-		"	'TABLE' as table_type, "
-		"	'' as remarks, "
-		"	'' as extra "
-		"from "
-		"	systables "
-		"where "
-		"	tabid > 99 "
-		"	and "
-		"	tabname like '%s' "
-		"	and "
-		"	tabtype in ('T','S','P','V') "
-		"order by "
-		"	dbname, "
-		"	owner, "
-		"	tabname":
+						uint16_t objecttypes,
+						bool currentschemaonly) {
 
+	stringbuffer	otypes;
+	otypes.append("	(");
+	if (objecttypes&DB_OBJECT_TABLE) {
+		otypes.append("	tabtype = 'T' or tabtype='E' ");
+	}
+	if (objecttypes&DB_OBJECT_VIEW) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	tabtype = 'V' ");
+	}
+	if (objecttypes&DB_OBJECT_SYNONYM) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	tabtype = 'S' or tabtype = 'P'");
+	}
+	otypes.append(") ");
+
+	tablelistquery.clear();
+	tablelistquery.append(
 		"select distinct "
 		"	dbname as table_cat, "
 		"	owner as table_schem, "
@@ -582,13 +587,30 @@ const char *informixconnection::getTableListQuery(bool wild,
 		"from "
 		"	systables "
 		"where "
-		"	tabid > 99 "
-		"	and "
-		"	tabtype in ('T','S','P','V') "
+		"	tabid > 99 ");
+	if (currentschemaonly) {
+		tablelistquery.append(
+			"	and "
+			"	upper(owner)=upper('");
+		tablelistquery.append(cont->getUser());
+		tablelistquery.append(
+			"') ");
+	}
+	tablelistquery.append(
+		"	and ");
+	tablelistquery.append(otypes.getString());
+	if (wild) {
+		tablelistquery.append(
+			"	and "
+			"	tabname like '%s' ");
+	}
+	tablelistquery.append(
 		"order by "
 		"	dbname, "
 		"	owner, "
-		"	tabname";
+		"	tabname");
+
+	return tablelistquery.getString();
 }
 
 const char *informixconnection::getColumnListQuery(

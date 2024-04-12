@@ -49,7 +49,8 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 		const char	*getDbHostName();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
-						uint16_t objecttypes);
+						uint16_t objecttypes,
+						bool currentschemaonly);
 		const char	*getColumnListQuery(
 						const char *table, bool wild);
 		#ifdef SQLITE_TRANSACTIONAL
@@ -88,6 +89,8 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 		int64_t	errcode;
 
 		char	*hostname;
+
+		stringbuffer	tablelistquery;
 };
 
 class SQLRSERVER_DLLSPEC sqlitecursor : public sqlrservercursor {
@@ -260,34 +263,24 @@ const char *sqliteconnection::getDatabaseListQuery(bool wild) {
 }
 
 const char *sqliteconnection::getTableListQuery(bool wild,
-						uint16_t objecttypes) {
-	return (wild)?
-		"select "
-		"	NULL as table_cat, "
-		"	NULL as table_schem, "
-		"	tbl_name as table_name, "
-		"	'TABLE' as table_type, "
-		"	NULL as remarks, "
-		"	NULL as extra "
-		"from "
-		"(select "
-		"	tbl_name "
-		"from "
-		"	sqlite_master "
-		"where "
-		"	type in ('table','view') "
-		"union all "
-		"select "
-		"	tbl_name "
-		"from "
-		"	sqlite_temp_master "
-		"where "
-		"	type in ('table','view')) "
-		"where "
-		"	tbl_name like '%s' "
-		"order by "
-		"	tbl_name":
+						uint16_t objecttypes,
+						bool currentschemaonly) {
 
+	stringbuffer	otypes;
+	otypes.append("	(");
+	if (objecttypes&DB_OBJECT_TABLE) {
+		otypes.append("	type = 'table' ");
+	}
+	if (objecttypes&DB_OBJECT_VIEW) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	type = 'view' ");
+	}
+	otypes.append(") ");
+
+	tablelistquery.clear();
+	tablelistquery.append(
 		"select "
 		"	NULL as table_cat, "
 		"	NULL as table_schem, "
@@ -296,21 +289,33 @@ const char *sqliteconnection::getTableListQuery(bool wild,
 		"	NULL as remarks, "
 		"	NULL as extra "
 		"from "
-		"(select "
+		"( "
+		"select "
 		"	tbl_name "
 		"from "
 		"	sqlite_master "
-		"where "
-		"	type in ('table','view') "
+		"where ");
+	tablelistquery.append(otypes.getString());
+	tablelistquery.append(
 		"union all "
 		"select "
 		"	tbl_name "
 		"from "
 		"	sqlite_temp_master "
-		"where "
-		"	type in ('table','view')) "
+		"where ");
+	tablelistquery.append(otypes.getString());
+	tablelistquery.append(
+		") ");
+	if (wild) {
+		tablelistquery.append(
+			"where "
+			"	tbl_name like '%s' ");
+	}
+	tablelistquery.append(
 		"order by "
-		"	tbl_name";
+		"	tbl_name");
+
+	return tablelistquery.getString();
 }
 
 const char *sqliteconnection::getColumnListQuery(

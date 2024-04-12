@@ -1437,44 +1437,44 @@ bool sqlrprotocol_sqlrclient::processQueryOrBindCursor(
 			// remap columns
 			switch (querytype) {
 				case SQLRCLIENTQUERYTYPE_DATABASE_LIST:
-					cont->setDatabaseListColumnMap(
+					cont->setDatabaseListFormat(
 								listformat);
 					break;
 				case SQLRCLIENTQUERYTYPE_SCHEMA_LIST:
-					cont->setSchemaListColumnMap(
+					cont->setSchemaListFormat(
 								listformat);
 					break;
 				case SQLRCLIENTQUERYTYPE_TABLE_LIST:
 				case SQLRCLIENTQUERYTYPE_TABLE_LIST_2:
-					cont->setTableListColumnMap(
+					cont->setTableListFormat(
 								listformat);
 					break;
 				case SQLRCLIENTQUERYTYPE_TABLE_TYPE_LIST:
-					cont->setTableListColumnMap(
+					cont->setTableListFormat(
 								listformat);
 					break;
 				case SQLRCLIENTQUERYTYPE_COLUMN_LIST:
-					cont->setColumnListColumnMap(
+					cont->setColumnListFormat(
 								listformat);
 					break;
 				case SQLRCLIENTQUERYTYPE_PRIMARY_KEY_LIST:
-					cont->setPrimaryKeyListColumnMap(
+					cont->setPrimaryKeyListFormat(
 								listformat);
 					break;
 				case SQLRCLIENTQUERYTYPE_KEY_AND_INDEX_LIST:
-					cont->setKeyAndIndexListColumnMap(
+					cont->setKeyAndIndexListFormat(
 								listformat);
 					break;
 				case SQLRCLIENTQUERYTYPE_PROCEDURE_PARAMETER_LIST:
-					cont->setProcedureParameterListColumnMap(
+					cont->setProcedureParameterListFormat(
 								listformat);
 					break;
 				case SQLRCLIENTQUERYTYPE_TYPE_INFO_LIST:
-					cont->setTypeInfoListColumnMap(
+					cont->setTypeInfoListFormat(
 								listformat);
 					break;
 				case SQLRCLIENTQUERYTYPE_PROCEDURE_LIST:
-					cont->setProcedureListColumnMap(
+					cont->setProcedureListFormat(
 								listformat);
 					break;
 				default:
@@ -4053,45 +4053,45 @@ bool sqlrprotocol_sqlrclient::getListByApiCall(sqlrservercursor *cursor,
 	// get the appropriate list
 	switch (querytype) {
 		case SQLRCLIENTQUERYTYPE_DATABASE_LIST:
-			cont->setDatabaseListColumnMap(listformat);
+			cont->setDatabaseListFormat(listformat);
 			success=cont->getDatabaseList(cursor,wild);
 			break;
 		case SQLRCLIENTQUERYTYPE_SCHEMA_LIST:
-			cont->setSchemaListColumnMap(listformat);
+			cont->setSchemaListFormat(listformat);
 			success=cont->getSchemaList(cursor,wild);
 			break;
 		case SQLRCLIENTQUERYTYPE_TABLE_LIST:
 		case SQLRCLIENTQUERYTYPE_TABLE_LIST_2:
-			cont->setTableListColumnMap(listformat);
+			cont->setTableListFormat(listformat);
 			success=cont->getTableList(cursor,wild,objecttypes);
 			break;
 		case SQLRCLIENTQUERYTYPE_TABLE_TYPE_LIST:
-			cont->setTableTypeListColumnMap(listformat);
+			cont->setTableTypeListFormat(listformat);
 			success=cont->getTableTypeList(cursor,wild);
 			break;
 		case SQLRCLIENTQUERYTYPE_COLUMN_LIST:
-			cont->setColumnListColumnMap(listformat);
+			cont->setColumnListFormat(listformat);
 			success=cont->getColumnList(cursor,object,wild);
 			break;
 		case SQLRCLIENTQUERYTYPE_PRIMARY_KEY_LIST:
-			cont->setPrimaryKeyListColumnMap(listformat);
+			cont->setPrimaryKeyListFormat(listformat);
 			success=cont->getPrimaryKeyList(cursor,object,wild);
 			break;
 		case SQLRCLIENTQUERYTYPE_KEY_AND_INDEX_LIST:
-			cont->setKeyAndIndexListColumnMap(listformat);
+			cont->setKeyAndIndexListFormat(listformat);
 			success=cont->getKeyAndIndexList(cursor,object,wild);
 			break;
 		case SQLRCLIENTQUERYTYPE_PROCEDURE_PARAMETER_LIST:
-			cont->setProcedureParameterListColumnMap(listformat);
+			cont->setProcedureParameterListFormat(listformat);
 			success=cont->getProcedureParameterList(
 							cursor,object,wild);
 			break;
 		case SQLRCLIENTQUERYTYPE_TYPE_INFO_LIST:
-			cont->setTypeInfoListColumnMap(listformat);
+			cont->setTypeInfoListFormat(listformat);
 			success=cont->getTypeInfoList(cursor,object,wild);
 			break;
 		case SQLRCLIENTQUERYTYPE_PROCEDURE_LIST:
-			cont->setProcedureListColumnMap(listformat);
+			cont->setProcedureListFormat(listformat);
 			success=cont->getProcedureList(cursor,wild);
 		default:
 			break;
@@ -4136,6 +4136,9 @@ bool sqlrprotocol_sqlrclient::getListByQuery(sqlrservercursor *cursor,
 					uint16_t objecttypes) {
 	debugFunction();
 
+	bool	currentonly=listformat!=SQLRSERVERLISTFORMAT_ODBC &&
+				listformat!=SQLRSERVERLISTFORMAT_JDBC;
+
 	// build the appropriate query
 	const char	*query=NULL;
 	bool		havewild=charstring::getLength(wild);
@@ -4144,14 +4147,18 @@ bool sqlrprotocol_sqlrclient::getListByQuery(sqlrservercursor *cursor,
 			query=cont->getDatabaseListQuery(havewild);
 			break;
 		case SQLRCLIENTQUERYTYPE_SCHEMA_LIST:
-			query=cont->getSchemaListQuery(havewild);
+			query=cont->getSchemaListQuery(havewild,
+							currentonly);
 			break;
 		case SQLRCLIENTQUERYTYPE_TABLE_LIST:
 		case SQLRCLIENTQUERYTYPE_TABLE_LIST_2:
-			query=cont->getTableListQuery(havewild,objecttypes);
+			query=cont->getTableListQuery(havewild,
+							objecttypes,
+							currentonly);
 			break;
 		case SQLRCLIENTQUERYTYPE_TABLE_TYPE_LIST:
-			query=cont->getTableTypeListQuery(havewild);
+			query=cont->getTableTypeListQuery(havewild,
+							currentonly);
 			break;
 		case SQLRCLIENTQUERYTYPE_COLUMN_LIST:
 			query=cont->getColumnListQuery(object,havewild);
@@ -4167,10 +4174,13 @@ bool sqlrprotocol_sqlrclient::getListByQuery(sqlrservercursor *cursor,
 							object,havewild);
 			break;
 		case SQLRCLIENTQUERYTYPE_TYPE_INFO_LIST:
-			query=cont->getTypeInfoListQuery(object,havewild);
+			query=cont->getTypeInfoListQuery(object,
+							havewild,
+							currentonly);
 			break;
 		case SQLRCLIENTQUERYTYPE_PROCEDURE_LIST:
-			query=cont->getProcedureListQuery(havewild);
+			query=cont->getProcedureListQuery(havewild,
+							currentonly);
 			break;
 		default:
 			break;
