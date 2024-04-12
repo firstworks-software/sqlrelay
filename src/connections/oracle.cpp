@@ -121,7 +121,8 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		const char	*getDbVersion();
 		const char	*getDbHostNameQuery();
 		const char	*getDatabaseListQuery(bool wild);
-		const char	*getSchemaListQuery(bool wild);
+		const char	*getSchemaListQuery(bool wild,
+						bool currentdbonly);
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes,
 						bool currentschemaonly);
@@ -1178,7 +1179,8 @@ const char *oracleconnection::getDatabaseListQuery(bool wild) {
 			"order by username";
 }
 
-const char *oracleconnection::getSchemaListQuery(bool wild) {
+const char *oracleconnection::getSchemaListQuery(bool wild,
+						bool currentdbonly) {
 	return "select test from dual";
 }
 

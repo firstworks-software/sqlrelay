@@ -9,7 +9,7 @@
                         <translation module="normalize"/>
                 </translations>
                 <triggers>
-                        <trigger module="splitmultiinsert" when="before" debug="yes"/>
+                        <trigger module="splitmultiinsert" when="before"/>
                 </triggers>
 		<connections>
 			<connection string="host=mysql;user=testuser;password=testpassword;db=@HOSTNAME@;foundrows=yes;autocommit=yes"/>
