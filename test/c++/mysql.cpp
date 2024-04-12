@@ -7,6 +7,8 @@
 #include <rudiments/randomnumber.h>
 #include <rudiments/stdio.h>
 
+#include "../../config.h"
+
 //#define PROFILING 1
 
 #ifdef PROFILING
@@ -110,7 +112,11 @@ for (uint16_t a=0; a<50; a++) {
 
 	// bind format
 	stdoutput.printf("BIND FORMAT: \n");
+#ifdef HAVE_MYSQL_STMT_PREPARE
 	checkSuccess(con->bindFormat(),"?");
+#else
+	checkSuccess(con->bindFormat(),":*");
+#endif
 	stdoutput.printf("\n");
 
 	// nextval format
