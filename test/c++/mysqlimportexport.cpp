@@ -19,6 +19,8 @@
 #include <rudiments/dynamicarray.h>
 #include <rudiments/stdio.h>
 
+#include "../../config.h"
+
 //#define ROWS 10000
 //#define ROWS 1000
 //#define ROWS 100
@@ -115,17 +117,33 @@ field_t field[]={
 	{"testdate","date","DATE","%04lld-01-01",true},
 	{"testtime","time","TIME","01:00:00",true},
 	{"testdatetime","datetime","DATETIME","%04lld-01-01 01:00:00",true},
-	{"testchar","char(40)","STRING","char%lld\t\"<>",true},
+	{"testchar","char(40)",
+#ifdef HAVE_MYSQL_STMT_PREPARE
+			"STRING",
+#else
+			"VARSTRING",
+#endif
+			"char%lld\t\"<>",true},
 	{"testvarchar","varchar(40)","VARSTRING","varchar%lld\t\"<>",true},
 	{"testtext","text","BLOB","text%lld\t\"<>",true},
 	{"testtinytext","tinytext","TINYBLOB","tinytext%lld\t\"<>",true},
-	{"testmediumtext","mediumtext","MEDIUMBLOB",
-				"mediumtext%lld\t\"<>",true},
+	{"testmediumtext","mediumtext",
+#ifdef HAVE_MYSQL_STMT_PREPARE
+			"MEDIUMBLOB",
+#else
+			"LONGBLOB",
+#endif
+			"mediumtext%lld\t\"<>",true},
 	{"testlongtext","longtext","LONGBLOB","longtext%lld\t\"<>",true},
 	{"testblob","blob","BLOB","blob%lld\t\"<>",true},
 	{"testtinyblob","tinyblob","TINYBLOB","tinyblob%lld\t\"<>",true},
-	{"testmediumblob","mediumblob","MEDIUMBLOB",
-				"mediumblob%lld\t\"<>",true,},
+	{"testmediumblob","mediumblob",
+#ifdef HAVE_MYSQL_STMT_PREPARE
+			"MEDIUMBLOB",
+#else
+			"LONGBLOB",
+#endif
+			"mediumblob%lld\t\"<>",true,},
 	{"testlongblob","longblob","LONGBLOB","longblob%lld\t\"<>",true},
 	{NULL,NULL,NULL,NULL,false}
 };
