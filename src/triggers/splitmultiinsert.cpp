@@ -25,7 +25,7 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_splitmultiinsert : public sqlrtrigger {
 					const char **ptr,
 					stringbuffer *suffix);
 		void	parseValues(const char **ptr,
-					const char *end,
+					const char *queryend,
 					stringbuffer *values);
 };
 
@@ -257,7 +257,7 @@ void sqlrtrigger_splitmultiinsert::parseSuffix(const char *startofvalues,
 }
 
 void sqlrtrigger_splitmultiinsert::parseValues(const char **ptr,
-							const char *end,
+							const char *queryend,
 							stringbuffer *values) {
 
 	// we should be on the opening parentheses of a set of values...
@@ -273,7 +273,8 @@ void sqlrtrigger_splitmultiinsert::parseValues(const char **ptr,
 	for (;;) {
 		if (**ptr=='\'') {
 			*ptr=charstring::findEndOfQuotedString(
-						*ptr,end-*ptr+1,'\'',true,true);
+						*ptr,queryend-*ptr,
+						'\'',true,true);
 		}
 		if (**ptr==')') {
 			if (!depth) {

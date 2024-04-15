@@ -72,7 +72,7 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_replay : public sqlrtrigger {
 					const char *values);
 		void	appendValues(stringbuffer *newquery,
 						const char *values,
-						const char *end,
+						const char *queryend,
 						linkedlist<char *> *columns,
 						uint64_t liid,
 						const char *autoinccolumn);
@@ -447,7 +447,7 @@ void sqlrtrigger_replay::rewriteQuery(querydetails *qd,
 
 void sqlrtrigger_replay::appendValues(stringbuffer *newquery,
 						const char *values,
-						const char *end,
+						const char *queryend,
 						linkedlist<char *> *columns,
 						uint64_t liid,
 						const char *autoinccolumn) {
@@ -462,7 +462,7 @@ void sqlrtrigger_replay::appendValues(stringbuffer *newquery,
 		if (*c=='\'') {
 			const char	*after=
 				charstring::findEndOfQuotedString(
-						c,end-c+1,'\'',true,true);
+						c,queryend-c,'\'',true,true);
 			value.append(c,after-c-1);
 			c=after;
 		}

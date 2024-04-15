@@ -3711,18 +3711,18 @@ void sqlrservercontroller::getColumnsInTable(const char *table,
 
 void sqlrservercontroller::getColumnsFromInsertQuery(
 					const char *start,
-					const char *end,
+					const char *queryend,
 					linkedlist<char *> *columns) {
 	// split the provided set of comma-separated columns
 	char		**cols=NULL;
 	uint64_t	colcount=0;
-	charstring::split(start,end-start,",",true,&cols,&colcount);
+	charstring::split(start,queryend-start,",",true,&cols,&colcount);
 	columns->listcollection<char *>::append(cols,colcount);
 }
 
 void sqlrservercontroller::getFirstValuesFromInsertQuery(
 						const char *start,
-						const char *end,
+						const char *queryend,
 						linkedlist<char *> *values,
 						bool *multiinsert) {
 	const char	*c=start;
@@ -3732,8 +3732,8 @@ void sqlrservercontroller::getFirstValuesFromInsertQuery(
 
 		// handle quotes
 		if (*c=='\'') {
-			c=charstring::findEndOfQuotedString(c,end-start+1,
-								'\'',true,true);
+			c=charstring::findEndOfQuotedString(
+						c,queryend-c,'\'',true,true);
 		}
 
 		// handle parens
