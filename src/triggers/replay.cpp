@@ -318,7 +318,7 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 	// log copied query and binds
 	log.append(qd);
 
-#if 1
+#if 0
 	debugWrite("-----------------------");
 	for (listnode<querydetails *> *node=log.getFirst();
 					node; node=node->getNext()) {
