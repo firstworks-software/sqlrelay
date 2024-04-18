@@ -554,9 +554,9 @@ sqlrservercontroller::~sqlrservercontroller() {
 	delete pvt->_bulkclientshmem;
 	delete pvt->_bulkcursor;
 
-	delete pvt->_db;
-	delete pvt->_schema;
-	delete pvt->_object;
+	delete[] pvt->_db;
+	delete[] pvt->_schema;
+	delete[] pvt->_object;
 
 	delete pvt;
 }
@@ -3268,6 +3268,9 @@ void sqlrservercontroller::splitObjectName(const char *currentdb,
 			break;
 	}
 
+	// clean up;
+	delete[] parts;
+
 	// pass values out
 	*db=pvt->_db;
 	*schema=pvt->_schema;
@@ -3465,6 +3468,8 @@ bool sqlrservercontroller::parseInsert(const char *query,
 			// copy values out
 			if (values) {
 				*values=localvalues;
+			} else {
+				delete localvalues;
 			}
 			if (rawvalues) {
 				*rawvalues=localrawvalues;
@@ -3493,6 +3498,8 @@ bool sqlrservercontroller::parseInsert(const char *query,
 		}
 		if (columns) {
 			*columns=localcolumns;
+		} else {
+			delete localcolumns;
 		}
 		if (allcolumns) {
 			*allcolumns=localallcolumns;
@@ -3718,6 +3725,7 @@ void sqlrservercontroller::getColumnsFromInsertQuery(
 	uint64_t	colcount=0;
 	charstring::split(start,queryend-start,",",true,&cols,&colcount);
 	columns->listcollection<char *>::append(cols,colcount);
+	delete[] cols;
 }
 
 void sqlrservercontroller::getFirstValuesFromInsertQuery(
@@ -7081,6 +7089,8 @@ void sqlrservercontroller::release(sqlrservercursor *cursor) {
 }
 
 void sqlrservercontroller::deleteCursor(sqlrservercursor *cursor) {
+	pvt->_overrideaffectedrows.remove(cursor);
+	pvt->_affectedrows.remove(cursor);
 	pvt->_conn->deleteCursor(cursor);
 	decrementOpenDatabaseCursors();
 }

@@ -167,6 +167,8 @@ class SQLRSERVER_DLLSPEC mysqlcursor : public sqlrservercursor {
 		bool		stmtfreeresult;
 		bool		stmtpreparefailed;
 
+		MYSQL_RES	*mysqlmetadata;
+
 		MYSQL_BIND	*fieldbind;
 		char		*field;
 		my_bool		*isnull;
@@ -992,6 +994,8 @@ mysqlcursor::mysqlcursor(sqlrserverconnection *conn, uint16_t id) :
 	stmtreset=false;
 	stmtfreeresult=false;
 
+	mysqlmetadata=NULL;
+
 	boundvariables=false;
 
 	maxbindcount=conn->cont->getConfig()->getMaxBindCount();
@@ -1117,6 +1121,10 @@ bool mysqlcursor::close() {
 		}
 #endif
 	}
+	if (mysqlmetadata) {
+		mysql_free_result(mysqlmetadata);
+		mysqlmetadata=NULL;
+	}
 	if (stmt) {
 		mysql_stmt_close(stmt);
 		stmt=NULL;
@@ -1208,15 +1216,15 @@ bool mysqlcursor::prepareQuery(const char *query, uint32_t size) {
 	}
 
 	// get the metadata
-	mysqlresult=NULL;
+	mysqlmetadata=NULL;
 	if (ncols) {
-		mysqlresult=mysql_stmt_result_metadata(stmt);
+		mysqlmetadata=mysql_stmt_result_metadata(stmt);
 
 		// grab the field info
-		if (mysqlresult) {
-			mysql_field_seek(mysqlresult,0);
+		if (mysqlmetadata) {
+			mysql_field_seek(mysqlmetadata,0);
 			for (unsigned int i=0; i<ncols; i++) {
-				mysqlfields[i]=mysql_fetch_field(mysqlresult);
+				mysqlfields[i]=mysql_fetch_field(mysqlmetadata);
 			}
 		}
 
@@ -1986,6 +1994,11 @@ uint16_t mysqlcursor::getColumnTableSize(uint32_t col) {
 
 bool mysqlcursor::noRowsToReturn() {
 	// for DML or DDL queries, return no data
+#ifdef HAVE_MYSQL_STMT_PREPARE
+	if (usestmtprepare) {
+		return (!mysqlmetadata);
+	}
+#endif
 	return (!mysqlresult);
 }
 
@@ -2162,6 +2175,10 @@ void mysqlcursor::freeResult() {
 			}
 		}
 #endif
+	}
+	if (mysqlmetadata) {
+		mysql_free_result(mysqlmetadata);
+		mysqlmetadata=NULL;
 	}
 	if (!conn->cont->getMaxColumnCount()) {
 		deallocateResultSetBuffers();
