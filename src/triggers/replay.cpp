@@ -70,8 +70,7 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_replay : public sqlrtrigger {
 					uint64_t liid,
 					bool columnsincludeautoinccolumn,
 					const char *values);
-		void	appendValues(stringbuffer *newquery,
-						const char *values,
+		void	appendValues(const char *values,
 						const char *queryend,
 						linkedlist<char *> *columns,
 						uint64_t liid,
@@ -80,9 +79,14 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_replay : public sqlrtrigger {
 		bool		includeselects;
 		uint32_t	maxretries;
 
+		stringbuffer	newquery;
+		stringbuffer	value;
+
 		linkedlist<querydetails *>	log;
 		linkedlist<condition *>		conditions;
 		memorypool			logpool;
+
+		stringbuffer	logstr;
 
 		bool	logqueries;
 
@@ -344,36 +348,37 @@ void sqlrtrigger_replay::disableUntilEndOfTx(const char *query,
 		disabled=true;
 
 		// write message to all log files
-		stringbuffer	str;
 		for (listnode<condition *> *node=conditions.getFirst();
 						node; node=node->getNext()) {
 
+			// clear log buffer
+			logstr.clear();
+
 			// delimiter
-			str.append("========================================"
+			logstr.append("========================================"
 				"=======================================\n");
 
 			// timestamp
 			datetime	dt;
 			dt.initFromSystemDateTime();
-			str.append(dt.getString())->append("\n\n");
+			logstr.append(dt.getString())->append("\n\n");
 
 			if (querytype==SQLRQUERYTYPE_INSERTSELECT) {
-				str.append("insert-select");
+				logstr.append("insert-select");
 			} else if (querytype==SQLRQUERYTYPE_SELECTINTO){
-				str.append("select-into");
+				logstr.append("select-into");
 			} else {
-				str.append("multi-insert");
+				logstr.append("multi-insert");
 			}
-			str.append(" query encountered, "
+			logstr.append(" query encountered, "
 					"disabling replay until "
 					"end-of-transaction:\n");
-			str.append(query,querysize);
-			str.append("\n\n");
+			logstr.append(query,querysize);
+			logstr.append("\n\n");
 
 			writeToLogFile(node->getValue()->logfile,
-							str.getString(),
-							str.getSize());
-			str.clear();
+							logstr.getString(),
+							logstr.getSize());
 		}
 	}
 }
@@ -398,7 +403,7 @@ void sqlrtrigger_replay::rewriteQuery(querydetails *qd,
 					uint64_t liid,
 					bool columnsincludeautoinccolumn,
 					const char *rawvalues) {
-	stringbuffer	newquery;
+	newquery.clear();
 
 	// did the query contain column names?
 
@@ -437,7 +442,7 @@ void sqlrtrigger_replay::rewriteQuery(querydetails *qd,
 		newquery.append(liid)->append(',');
 		newquery.append(rawvalues,querysize-(rawvalues-query));
 	} else {
-		appendValues(&newquery,rawvalues,query+querysize,
+		appendValues(rawvalues,query+querysize,
 					columns,liid,autoinccolumn);
 	}
 
@@ -445,15 +450,14 @@ void sqlrtrigger_replay::rewriteQuery(querydetails *qd,
 	copyQuery(qd,newquery.getString(),newquery.getStringLength());
 }
 
-void sqlrtrigger_replay::appendValues(stringbuffer *newquery,
-						const char *values,
+void sqlrtrigger_replay::appendValues(const char *values,
 						const char *queryend,
 						linkedlist<char *> *columns,
 						uint64_t liid,
 						const char *autoinccolumn) {
+	value.clear();
 
 	listnode<char *>	*col=columns->getFirst();
-	stringbuffer		value;
 	const char		*c=values;
 	uint32_t		parens=0;
 	for (;;) {
@@ -491,14 +495,14 @@ void sqlrtrigger_replay::appendValues(stringbuffer *newquery,
 					!charstring::compare(
 							value.getString(),
 							"null")) {
-					newquery->append(liid);
+					newquery.append(liid);
 				} else {
-					newquery->append(
+					newquery.append(
 						value.getString());
 				}
 
 				// append the )
-				newquery->append(')');
+				newquery.append(')');
 
 				return;
 			}
@@ -516,13 +520,13 @@ void sqlrtrigger_replay::appendValues(stringbuffer *newquery,
 				!charstring::compare(
 						value.getString(),
 						"null")) {
-				newquery->append(liid);
+				newquery.append(liid);
 			} else {
-				newquery->append(value.getString());
+				newquery.append(value.getString());
 			}
 
 			// append the comma
-			newquery->append(',');
+			newquery.append(',');
 
 			col=col->getNext();
 			value.clear();
@@ -541,13 +545,13 @@ void sqlrtrigger_replay::appendValues(stringbuffer *newquery,
 
 bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 
-	// buffer for log file
-	stringbuffer	str;
+	// clear log buffer
+	logstr.clear();
 
 	// delimiter
-	str.append("----------------------------------------"
+	logstr.append("----------------------------------------"
 			"---------------------------------------\n");
-	str.append("log replay...\n\n");
+	logstr.append("log replay...\n\n");
 
 	// don't log any queries that we run during the replay
 	logqueries=false;
@@ -597,12 +601,12 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 					sqlrcur->getErrorSize(),
 					sqlrcur->getErrorBuffer());
 
-			str.append("prepare error:\n");
-			str.append(qd->query,qd->querysize);
-			str.append("\n");
-			str.append(sqlrcur->getErrorBuffer(),
+			logstr.append("prepare error:\n");
+			logstr.append(qd->query,qd->querysize);
+			logstr.append("\n");
+			logstr.append(sqlrcur->getErrorBuffer(),
 					sqlrcur->getErrorSize());
-			str.append("\n\n");
+			logstr.append("\n\n");
 
 			retval=false;
 			break;
@@ -685,12 +689,12 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 					sqlrcur->getErrorSize(),
 					sqlrcur->getErrorBuffer());
 
-			str.append("execute error:\n");
-			str.append(qd->query,qd->querysize);
-			str.append("\n");
-			str.append(sqlrcur->getErrorBuffer(),
+			logstr.append("execute error:\n");
+			logstr.append(qd->query,qd->querysize);
+			logstr.append("\n");
+			logstr.append(sqlrcur->getErrorBuffer(),
 					sqlrcur->getErrorSize());
-			str.append("\n\n");
+			logstr.append("\n\n");
 		}
 		debugEnd();
 
@@ -702,15 +706,16 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 		
 			// bail if we've tried too many times already
 			if (maxretries && retry>maxretries) {
-				str.append("deadlocks occurred during replay,");
-				str.append(" max retries (");
-				str.append(maxretries);
-				str.append(") reached at query:\n");
-				str.append(qd->query,qd->querysize);
-				str.append("\n");
-				str.append(sqlrcur->getErrorBuffer(),
+				logstr.append(
+					"deadlocks occurred during replay,");
+				logstr.append(" max retries (");
+				logstr.append(maxretries);
+				logstr.append(") reached at query:\n");
+				logstr.append(qd->query,qd->querysize);
+				logstr.append("\n");
+				logstr.append(sqlrcur->getErrorBuffer(),
 						sqlrcur->getErrorSize());
-				str.append("\n\n");
+				logstr.append("\n\n");
 				retval=false;
 				break;
 			}
@@ -769,13 +774,13 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 		logpool.clear();
 		log.clear();
 	} else {
-		str.append("success!\n\n");
+		logstr.append("success!\n\n");
 	}
 
 	// start logging queries again
 	logqueries=true;
 
-	writeToLogFile(cond->logfile,str.getString(),str.getSize());
+	writeToLogFile(cond->logfile,logstr.getString(),logstr.getSize());
 
 	return retval;
 }
@@ -816,38 +821,39 @@ void sqlrtrigger_replay::writeReplayConditionToLogFile(condition *cond,
 		return;
 	}
 
-	// buffer
-	stringbuffer	str;
+	// clear log buffer
+	logstr.clear();
 
 	// delimiter
-	str.append("========================================"
+	logstr.append("========================================"
 			"=======================================\n");
 
 	// timestamp
 	datetime	dt;
 	dt.initFromSystemDateTime();
-	str.append(dt.getString())->append("\n\n");
+	logstr.append(dt.getString())->append("\n\n");
 
 	// replay condition
-	str.append("replay condition detected...\n\n");
-	str.append("triggering query:\n");
-	str.append(sqlrcur->getQueryBuffer(),sqlrcur->getQuerySize());
-	str.append("\n\n");
+	logstr.append("replay condition detected...\n\n");
+	logstr.append("triggering query:\n");
+	logstr.append(sqlrcur->getQueryBuffer(),sqlrcur->getQuerySize());
+	logstr.append("\n\n");
 	if (cond->cond==CONDITION_ERROR) {
-		str.append("error string: ");
-		str.append(sqlrcur->getErrorBuffer(),sqlrcur->getErrorSize());
-		str.append("\n");
-		str.append("matching error pattern: ");
-		str.append(cond->error);
-		str.append("\n");
+		logstr.append("error string: ");
+		logstr.append(sqlrcur->getErrorBuffer(),
+					sqlrcur->getErrorSize());
+		logstr.append("\n");
+		logstr.append("matching error pattern: ");
+		logstr.append(cond->error);
+		logstr.append("\n");
 	} else if (cond->cond==CONDITION_ERRORCODE) {
-		str.append("error code: ");
-		str.append(cond->errorcode);
-		str.append("\n");
+		logstr.append("error code: ");
+		logstr.append(cond->errorcode);
+		logstr.append("\n");
 	}
-	str.append("requires full replay: ");
-	str.append((cond->replaytx)?"true":"false");
-	str.append("\n\n");
+	logstr.append("requires full replay: ");
+	logstr.append((cond->replaytx)?"true":"false");
+	logstr.append("\n\n");
 
 	// run log query and write results to log file...
 	if (cond->query) {
@@ -856,14 +862,14 @@ void sqlrtrigger_replay::writeReplayConditionToLogFile(condition *cond,
 		logqueries=false;
 
 		// delimiter
-		str.append("----------------------------------------"
+		logstr.append("----------------------------------------"
 				"---------------------------------------\n");
 
 		// run query
 		sqlrservercursor        *logcur=cont->newCursor();
 		bool	success=cont->open(logcur);
 		if (!success) {
-			str.append("failed to open log query cursor\n\n");
+			logstr.append("failed to open log query cursor\n\n");
 		}
 		if (success) {
 			success=cont->prepareQuery(logcur,cond->query,
@@ -877,11 +883,11 @@ void sqlrtrigger_replay::writeReplayConditionToLogFile(condition *cond,
 							&errorsize,
                                         		&errnum,
 							&liveconnection);
-				str.append("failed to prepare log query:\n");
-				str.append(cond->query);
-				str.append("\n");
-				str.append(errorstring,errorsize);
-				str.append("\n\n");
+				logstr.append("failed to prepare log query:\n");
+				logstr.append(cond->query);
+				logstr.append("\n");
+				logstr.append(errorstring,errorsize);
+				logstr.append("\n\n");
 			}
 		}
 		if (success) {
@@ -895,17 +901,18 @@ void sqlrtrigger_replay::writeReplayConditionToLogFile(condition *cond,
 							&errorsize,
                                         		&errnum,
 							&liveconnection);
-				str.append("failed to execute log query:\n");
-				str.append(cond->query);
-				str.append("\n");
-				str.append(errorstring,errorsize);
-				str.append("\n\n");
+				logstr.append("failed to execute log query:\n");
+				logstr.append(cond->query);
+				logstr.append("\n");
+				logstr.append(errorstring,errorsize);
+				logstr.append("\n\n");
 			}
 		}
 		if (success) {
 			success=cont->colCount(logcur);
 			if (!success) {
-				str.append("log query produced no columns\n\n");
+				logstr.append(
+					"log query produced no columns\n\n");
 			}
 		}
 
@@ -930,26 +937,26 @@ void sqlrtrigger_replay::writeReplayConditionToLogFile(condition *cond,
 					cont->getField(logcur,i,&field,
 						&fieldsize,&lob,&null);
 
-					str.append(
+					logstr.append(
 						cont->getColumnName(logcur,i));
-					str.append(" : ");
+					logstr.append(" : ");
 					if (fieldsize>
 						(uint64_t)(80-
 						cont->getColumnNameSize(
 								logcur,i)-4)) {
-						str.append('\n');
+						logstr.append('\n');
 					}
-					str.append(field,fieldsize);
-					str.append('\n');
+					logstr.append(field,fieldsize);
+					logstr.append('\n');
 				}
-				str.append('\n');
+				logstr.append('\n');
 
 				// FIXME: kludgy
 				cont->nextRow(logcur);
 			}
 
 			if (first) {
-				str.append("log query produced no rows\n\n");
+				logstr.append("log query produced no rows\n\n");
 			}
 		}
 		cont->closeResultSet(logcur);
@@ -961,15 +968,15 @@ void sqlrtrigger_replay::writeReplayConditionToLogFile(condition *cond,
 	}
 
 	// write transaction log to log file
-	str.append("----------------------------------------"
+	logstr.append("----------------------------------------"
 			"---------------------------------------\n");
-	str.append("transaction log:\n\n");
+	logstr.append("transaction log:\n\n");
 	for (listnode<querydetails *> *node=log.getFirst();
 					node; node=node->getNext()) {
-		str.append(node->getValue()->query)->append("\n\n");
+		logstr.append(node->getValue()->query)->append("\n\n");
 	}
 
-	writeToLogFile(cond->logfile,str.getString(),str.getSize());
+	writeToLogFile(cond->logfile,logstr.getString(),logstr.getSize());
 }
 
 void sqlrtrigger_replay::writeToLogFile(const char *logfile,

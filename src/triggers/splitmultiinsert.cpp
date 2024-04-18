@@ -27,6 +27,11 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_splitmultiinsert : public sqlrtrigger {
 		void	parseValues(const char **ptr,
 					const char *queryend,
 					stringbuffer *values);
+
+		stringbuffer	prefix;
+		stringbuffer	suffix;
+		stringbuffer	values;
+		stringbuffer	singleinsert;
 };
 
 sqlrtrigger_splitmultiinsert::sqlrtrigger_splitmultiinsert(
@@ -78,11 +83,11 @@ bool sqlrtrigger_splitmultiinsert::runBefore(sqlrserverconnection *sqlrcon,
 	// suppress execution of the original query
 	cont->setQuerySuppressed(micur,true);
 
-	// buffers that we'll need later
-	stringbuffer	prefix;
-	stringbuffer	suffix;
-	stringbuffer	values;
-	stringbuffer	singleinsert;
+	// clear buffers
+	prefix.clear();
+	suffix.clear();
+	values.clear();
+	singleinsert.clear();
 
 	// parse out the prefix
 	const char	*ptr=NULL;
