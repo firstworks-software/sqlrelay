@@ -478,6 +478,7 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_mandir}/*/sqlr-status.*
 %doc AUTHORS ChangeLog
 %attr(755, sqlrelay, sqlrelay) %dir %{_localstatedir}/log/%{name}
+%attr(755, sqlrelay, sqlrelay) %dir %{_localstatedir}/log/%{name}/debug
 %attr(755, sqlrelay, sqlrelay) %dir /run/%{name}
 %{_tmpfilesdir}/%{name}.conf
 %exclude %{_libdir}/lib*.la
@@ -748,7 +749,7 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_javadocdir}/%{name}
 
 %changelog
-* Fri Jan  5 2023 David Muse <david.muse@firstworks.com> - 2.0.0-1
+* Fri Apr 19 2024 David Muse <david.muse@firstworks.com> - 2.0.0-1
 - Updated to version 2.0.0.
 - Removed support for mdbtools.
 - Updated to build python 3 packages for rhel > 6.
@@ -758,6 +759,7 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 - Removed movement of service files.
 - Added new modules and includes.
 - Removed tcl(abi) = 8.5 for non-fedora platforms.
+- Added log/debug directory.
 
 * Thu Mar 04 2021 David Muse <david.muse@firstworks.com> - 1.9.0-1
 - Updated to version 1.9.0.
