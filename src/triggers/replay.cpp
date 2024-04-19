@@ -12,12 +12,29 @@
 
 class querydetails {
 	public:
+		querydetails();
+		~querydetails();
+
 		char		*query;
 		uint32_t	querysize;
-		linkedlist<sqlrserverbindvar *>	inbindvars;
-		linkedlist<sqlrserverbindvar *>	outbindvars;
-		linkedlist<sqlrserverbindvar *>	inoutbindvars;
+		linkedlist<sqlrserverbindvar *>	*inbindvars;
+		linkedlist<sqlrserverbindvar *>	*outbindvars;
+		linkedlist<sqlrserverbindvar *>	*inoutbindvars;
 };
+
+querydetails::querydetails() {
+	query=NULL;
+	querysize=0;
+	inbindvars=NULL;
+	outbindvars=NULL;
+	inoutbindvars=NULL;
+}
+
+querydetails::~querydetails() {
+	delete inbindvars;
+	delete outbindvars;
+	delete inoutbindvars;
+}
 
 enum condition_t {
 	CONDITION_ERROR=0,
@@ -78,6 +95,8 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_replay : public sqlrtrigger {
 
 		bool		includeselects;
 		uint32_t	maxretries;
+
+		stringbuffer	err;
 
 		stringbuffer	newquery;
 		stringbuffer	value;
@@ -293,30 +312,42 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 
 
 	// copy in input binds
-	uint16_t		incount=sqlrcur->getInputBindCount();
-	sqlrserverbindvar	*invars=sqlrcur->getInputBinds();
-	for (uint16_t i=0; i<incount; i++) {
-		sqlrserverbindvar	*bv=new sqlrserverbindvar;
-		cont->copyBind(&(invars[i]),bv,&logpool);
-		qd->inbindvars.append(bv);
+	uint16_t	incount=sqlrcur->getInputBindCount();
+	if (incount) {
+		sqlrserverbindvar	*invars=
+					sqlrcur->getInputBinds();
+		qd->inbindvars=new linkedlist<sqlrserverbindvar *>();
+		for (uint16_t i=0; i<incount; i++) {
+			sqlrserverbindvar	*bv=new sqlrserverbindvar;
+			cont->copyBind(&(invars[i]),bv,&logpool);
+			qd->inbindvars->append(bv);
+		}
 	}
 	
 	// copy in output binds
-	uint16_t		outcount=sqlrcur->getOutputBindCount();
-	sqlrserverbindvar	*outvars=sqlrcur->getOutputBinds();
-	for (uint16_t i=0; i<outcount; i++) {
-		sqlrserverbindvar	*bv=new sqlrserverbindvar;
-		cont->copyBind(&(outvars[i]),bv,&logpool);
-		qd->outbindvars.append(bv);
+	uint16_t	outcount=sqlrcur->getOutputBindCount();
+	if (outcount) {
+		sqlrserverbindvar	*outvars=
+					sqlrcur->getOutputBinds();
+		qd->outbindvars=new linkedlist<sqlrserverbindvar *>();
+		for (uint16_t i=0; i<outcount; i++) {
+			sqlrserverbindvar	*bv=new sqlrserverbindvar;
+			cont->copyBind(&(outvars[i]),bv,&logpool);
+			qd->outbindvars->append(bv);
+		}
 	}
 
 	// copy in input-output binds
-	uint16_t		inoutcount=sqlrcur->getInputOutputBindCount();
-	sqlrserverbindvar	*inoutvars=sqlrcur->getInputOutputBinds();
-	for (uint16_t i=0; i<inoutcount; i++) {
-		sqlrserverbindvar	*bv=new sqlrserverbindvar;
-		cont->copyBind(&(inoutvars[i]),bv,&logpool);
-		qd->inoutbindvars.append(bv);
+	uint16_t	inoutcount=sqlrcur->getInputOutputBindCount();
+	if (inoutcount) {
+		sqlrserverbindvar	*inoutvars=
+					sqlrcur->getInputOutputBinds();
+		qd->inoutbindvars=new linkedlist<sqlrserverbindvar *>();
+		for (uint16_t i=0; i<inoutcount; i++) {
+			sqlrserverbindvar	*bv=new sqlrserverbindvar;
+			cont->copyBind(&(inoutvars[i]),bv,&logpool);
+			qd->inoutbindvars->append(bv);
+		}
 	}
 
 	// log copied query and binds
@@ -613,68 +644,82 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 		}
 		debugEnd();
 
+		// initialize bind counts
+		sqlrcur->setInputBindCount(0);
+		sqlrcur->setOutputBindCount(0);
+		sqlrcur->setInputOutputBindCount(0);
+
 		// copy out input binds
-		uint16_t	incount=qd->inbindvars.getCount();
-		sqlrcur->setInputBindCount(incount);
-		sqlrserverbindvar	*invars=
-					sqlrcur->getInputBinds();
-		if (incount) {
-			debugStart("input binds");
-		}
-		listnode<sqlrserverbindvar *>	*inbindnode=
-						qd->inbindvars.getFirst();
-		for (uint16_t i=0; i<incount; i++) {
-			sqlrserverbindvar	*bv=
-					inbindnode->getValue();
-			debugWrite("%.*s",bv->variablesize,bv->variable);
-			cont->copyBind(&(invars[i]),bv,pool);
-			inbindnode=inbindnode->getNext();
-		}
-		if (incount) {
-			debugEnd();
+		if (qd->inbindvars) {
+			uint16_t	incount=qd->inbindvars->getCount();
+			sqlrcur->setInputBindCount(incount);
+			sqlrserverbindvar	*invars=
+						sqlrcur->getInputBinds();
+			if (incount) {
+				debugStart("input binds");
+			}
+			listnode<sqlrserverbindvar *>	*inbindnode=
+						qd->inbindvars->getFirst();
+			for (uint16_t i=0; i<incount; i++) {
+				sqlrserverbindvar	*bv=
+						inbindnode->getValue();
+				debugWrite("%.*s",
+					bv->variablesize,bv->variable);
+				cont->copyBind(&(invars[i]),bv,pool);
+				inbindnode=inbindnode->getNext();
+			}
+			if (incount) {
+				debugEnd();
+			}
 		}
 
 		// copy out output binds
-		uint16_t	outcount=qd->outbindvars.getCount();
-		sqlrcur->setInputBindCount(outcount);
-		sqlrserverbindvar	*outvars=
-					sqlrcur->getOutputBinds();
-		if (outcount) {
-			debugStart("output binds");
-		}
-		listnode<sqlrserverbindvar *>	*outbindnode=
-					qd->outbindvars.getFirst();
-		for (uint16_t i=0; i<outcount; i++) {
-			sqlrserverbindvar	*bv=
-					outbindnode->getValue();
-			debugWrite("%.*s",bv->variablesize,bv->variable);
-			cont->copyBind(&(outvars[i]),bv,pool);
-			outbindnode=outbindnode->getNext();
-		}
-		if (outcount) {
-			debugEnd();
+		if (qd->outbindvars) {
+			uint16_t	outcount=qd->outbindvars->getCount();
+			sqlrcur->setOutputBindCount(outcount);
+			sqlrserverbindvar	*outvars=
+						sqlrcur->getOutputBinds();
+			if (outcount) {
+				debugStart("output binds");
+			}
+			listnode<sqlrserverbindvar *>	*outbindnode=
+						qd->outbindvars->getFirst();
+			for (uint16_t i=0; i<outcount; i++) {
+				sqlrserverbindvar	*bv=
+						outbindnode->getValue();
+				debugWrite("%.*s",
+					bv->variablesize,bv->variable);
+				cont->copyBind(&(outvars[i]),bv,pool);
+				outbindnode=outbindnode->getNext();
+			}
+			if (outcount) {
+				debugEnd();
+			}
 		}
 
 		// copy out input-output binds
-		uint16_t		inoutcount=
-					qd->inoutbindvars.getCount();
-		sqlrcur->setInputBindCount(inoutcount);
-		sqlrserverbindvar	*inoutvars=
-					sqlrcur->getInputOutputBinds();
-		if (inoutcount) {
-			debugStart("input-output binds");
-		}
-		listnode<sqlrserverbindvar *>	*inoutbindnode=
-					qd->inoutbindvars.getFirst();
-		for (uint16_t i=0; i<inoutcount; i++) {
-			sqlrserverbindvar	*bv=
-					inoutbindnode->getValue();
-			debugWrite("%.*s",bv->variablesize,bv->variable);
-			cont->copyBind(&(inoutvars[i]),bv,pool);
-			inoutbindnode=inoutbindnode->getNext();
-		}
-		if (inoutcount) {
-			debugEnd();
+		if (qd->inoutbindvars) {
+			uint16_t	inoutcount=
+					qd->inoutbindvars->getCount();
+			sqlrcur->setInputOutputBindCount(inoutcount);
+			sqlrserverbindvar	*inoutvars=
+						sqlrcur->getInputOutputBinds();
+			if (inoutcount) {
+				debugStart("input-output binds");
+			}
+			listnode<sqlrserverbindvar *>	*inoutbindnode=
+						qd->inoutbindvars->getFirst();
+			for (uint16_t i=0; i<inoutcount; i++) {
+				sqlrserverbindvar	*bv=
+						inoutbindnode->getValue();
+				debugWrite("%.*s",
+					bv->variablesize,bv->variable);
+				cont->copyBind(&(inoutvars[i]),bv,pool);
+				inoutbindnode=inoutbindnode->getNext();
+			}
+			if (inoutcount) {
+				debugEnd();
+			}
 		}
 
 		// execute the query
@@ -787,9 +832,14 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 
 condition *sqlrtrigger_replay::replayCondition(sqlrservercursor *sqlrcur) {
 
+	// bail if we didn't get an error
+	if (!cont->getErrorSize(sqlrcur) && !cont->getErrorNumber(sqlrcur)) {
+		return NULL;
+	}
+
 	// the error buffer may not be terminated, but contains() below
 	// needs a terminated string, so make a copy of it here
-	stringbuffer	err;
+	err.clear();
 	err.append(cont->getErrorBuffer(sqlrcur),cont->getErrorSize(sqlrcur));
 
 	// did we get a replay condition?
@@ -804,7 +854,7 @@ condition *sqlrtrigger_replay::replayCondition(sqlrservercursor *sqlrcur) {
 				return cond;
 			}
 		} else if (cond->cond==CONDITION_ERRORCODE) {
-			if (sqlrcur->getErrorNumber()==cond->errorcode) {
+			if (cont->getErrorNumber(sqlrcur)==cond->errorcode) {
 				writeReplayConditionToLogFile(cond,sqlrcur);
 				return cond;
 			}
