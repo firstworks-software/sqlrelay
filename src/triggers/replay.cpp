@@ -478,7 +478,7 @@ void sqlrtrigger_replay::rewriteQuery(querydetails *qd,
 	}
 
 	// copy out the rewritten query
-	copyQuery(qd,newquery.getString(),newquery.getStringLength());
+	copyQuery(qd,newquery.getString(),newquery.getSize());
 }
 
 void sqlrtrigger_replay::appendValues(const char *values,

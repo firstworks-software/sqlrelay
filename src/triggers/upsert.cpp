@@ -215,7 +215,7 @@ bool sqlrtrigger_upsert::runAfter(sqlrserverconnection *sqlrcon,
 						autoinccolumn,primarykeycolumn,
 						tablenode,&update) &&
 				cont->prepareQuery(ucur,update.getString(),
-						update.getStringLength()) &&
+							update.getSize()) &&
 				cont->executeQuery(ucur);
 	if (success) {
 
@@ -567,7 +567,7 @@ bool sqlrtrigger_upsert::convertInsertToUpdate(
 					"in the original insert for column: ")->
 					append(col);
 			cont->setError(ucur,err.getString(),
-						err.getStringLength(),
+						err.getSize(),
 						SQLR_ERROR_TRIGGER,true);
 			retval=false;
 			break;

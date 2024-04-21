@@ -169,7 +169,7 @@ bool sqlrquerytranslation_normalize::run(sqlrserverconnection *sqlrcon,
 			do {
 				ptr++;
 			} while (character::isWhitespace(*ptr));
-			if (ptr!=end && pass1.getStringLength()) {
+			if (ptr!=end && pass1.getSize()) {
 				pass1.append(' ');
 			}
 			continue;

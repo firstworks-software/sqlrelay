@@ -142,7 +142,7 @@ bool sqlrtrigger_splitmultiinsert::runBefore(sqlrserverconnection *sqlrcon,
 		// prepare and execute the single-insert query
 		success=cont->prepareQuery(sicur,
 					singleinsert.getString(),
-					singleinsert.getStringLength()) &&
+					singleinsert.getSize()) &&
 				cont->executeQuery(sicur,true,true,true,true);
 
 		// copy the error from the cursor used to run the
