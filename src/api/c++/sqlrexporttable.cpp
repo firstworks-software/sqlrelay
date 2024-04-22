@@ -158,7 +158,7 @@ bool sqlrexporttable::startProcessingRows() {
 
 	// prepare query
 	getExportSqlrCursor()->prepareQuery(insertquery.getString(),
-						insertquery.getStringLength());
+						insertquery.getSize());
 	return true;
 }
 

@@ -425,7 +425,7 @@ void sqlrlistener::setUserAndGroup() {
 	}
 
 	// write the error, if there was one
-	stderror.write(errorstr.getString(),errorstr.getStringLength());
+	stderror.write(errorstr.getString(),errorstr.getSize());
 
 	// clean up
 	delete[] currentuser;

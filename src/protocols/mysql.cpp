@@ -1805,8 +1805,7 @@ bool sqlrprotocol_mysql::handleTlsRequest() {
 		stringbuffer	err;
 		err.append("SSL connection error: ");
 		err.append(getTlsContext()->getErrorString());
-		sendErrPacket(2026,err.getString(),
-					err.getStringLength(),"HY000");
+		sendErrPacket(2026,err.getString(),err.getSize(),"HY000");
 		// FIXME: The clients that I've tested with don't report this
 		// error.  Instead they just keep trying to connect using a
 		// non-tls connection. I suspect that if the client had an
@@ -1831,8 +1830,7 @@ bool sqlrprotocol_mysql::noClientTls() {
 	err.append(errdetail);
 	debugWrite("%s but tls not enabled on client",errdetail);
 	debugEnd();
-	return sendErrPacket(2026,err.getString(),
-				err.getStringLength(),"HY000");
+	return sendErrPacket(2026,err.getString(),err.getSize(),"HY000");
 }
 
 static const char *supportedauthplugins[]={
@@ -2829,9 +2827,7 @@ bool sqlrprotocol_mysql::comCreateDb(sqlrservercursor *cursor) {
 	stringbuffer	query;
 	query.append("create database ")->append(schemaname);
 
-	bool	retval=sendQuery(cursor,
-				query.getString(),
-				query.getStringLength());
+	bool	retval=sendQuery(cursor,query.getString(),query.getSize());
 
 	delete[] schemaname;
 	return retval;
@@ -2852,9 +2848,7 @@ bool sqlrprotocol_mysql::comDropDb(sqlrservercursor *cursor) {
 	stringbuffer	query;
 	query.append("drop database ")->append(schemaname);
 
-	bool	retval=sendQuery(cursor,
-				query.getString(),
-				query.getStringLength());
+	bool	retval=sendQuery(cursor,query.getString(),query.getSize());
 
 	delete[] schemaname;
 	return retval;
@@ -3901,8 +3895,8 @@ bool sqlrprotocol_mysql::buildListQuery(sqlrservercursor *cursor,
 
 	// bounds checking
 	cont->setQuerySize(cursor,charstring::getLength(query)+
-					wildbuf.getStringLength()+
-					tablebuf.getStringLength());
+						wildbuf.getSize()+
+						tablebuf.getSize());
 	if (cont->getQuerySize(cursor)>maxquerysize) {
 		stringbuffer	err;
 		err.append("Query loo large (");
@@ -3915,7 +3909,7 @@ bool sqlrprotocol_mysql::buildListQuery(sqlrservercursor *cursor,
 
 	// fill the query buffer and update the size
 	char	*querybuffer=cont->getQueryBuffer(cursor);
-	if (tablebuf.getStringLength()) {
+	if (tablebuf.getSize()) {
 		charstring::printf(querybuffer,maxquerysize+1,
 						query,tablebuf.getString(),
 						wildbuf.getString());
@@ -4188,7 +4182,7 @@ bool sqlrprotocol_mysql::comProcessKill(sqlrservercursor *cursor) {
 
 	stringbuffer	query;
 	query.append("kill ")->append(connid);
-	return sendQuery(cursor,query.getString(),query.getStringLength());
+	return sendQuery(cursor,query.getString(),query.getSize());
 }
 
 bool sqlrprotocol_mysql::comStmtPrepare(sqlrservercursor *cursor) {

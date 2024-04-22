@@ -4216,15 +4216,15 @@ bool sqlrprotocol_sqlrclient::buildListQuery(sqlrservercursor *cursor,
 
 	// bounds checking
 	cont->setQuerySize(cursor,charstring::getLength(query)+
-					wildbuf.getStringLength()+
-					objectbuf.getStringLength());
+						wildbuf.getSize()+
+						objectbuf.getSize());
 	if (cont->getQuerySize(cursor)>maxquerysize) {
 		return false;
 	}
 
 	// fill the query buffer and update the size
 	char	*querybuffer=cont->getQueryBuffer(cursor);
-	if (objectbuf.getStringLength()) {
+	if (objectbuf.getSize()) {
 		charstring::printf(querybuffer,maxquerysize+1,
 						query,objectbuf.getString(),
 						wildbuf.getString());
@@ -4268,8 +4268,8 @@ bool sqlrprotocol_sqlrclient::getQueryTreeCommand(sqlrservercursor *cursor) {
 
 	// send the tree
 	clientsock->write((uint16_t)NO_ERROR_OCCURRED);
-	clientsock->write((uint64_t)xml.getStringLength());
-	clientsock->write(xml.getString(),xml.getStringLength());
+	clientsock->write((uint64_t)xml.getSize());
+	clientsock->write(xml.getString(),xml.getSize());
 	clientsock->flushWriteBuffer(-1,-1);
 
 	return true;

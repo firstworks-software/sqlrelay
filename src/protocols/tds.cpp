@@ -4038,8 +4038,7 @@ bool sqlrprotocol_tds::remoteProcedureCall(sqlrservercursor *cursor) {
 	if (procname) {
 		// prepare the query
 		retval=cont->prepareQuery(cursor,
-					query.getString(),
-					query.getStringLength(),
+					query.getString(),query.getSize(),
 					true,true,true);
 	} else {
 		// do whatever the procid asked for

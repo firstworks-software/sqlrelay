@@ -1557,7 +1557,7 @@ bool sqlrprotocol_firebird::authenticate() {
 		err.append(user);
 		err.append("\"");
 		sendErrorResponse("FATAL","28P01",
-					err.getString(),err.getStringLength());
+					err.getString(),err.getSize());
 		return false;
 	}
 

@@ -67,8 +67,8 @@ const char *sqlrauth_oracle_database::auth(sqlrcredentials *cred) {
 	// if the user we want to change to is different from the user
 	// that's currently logged in, then try to change to that user
 	bool	success=true;
-	if ((lastuser.getStringLength()==0 &&
-		lastpassword.getStringLength()==0) ||
+	if ((lastuser.getSize()==0 &&
+		lastpassword.getSize()==0) ||
 		charstring::compare(lastuser.getString(),user) ||
 		charstring::compare(lastpassword.getString(),password)) {
 

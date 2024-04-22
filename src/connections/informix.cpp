@@ -305,21 +305,21 @@ void informixconnection::handleConnectString() {
 		dsn.append("Servername=")->append(servername);
 	}
 	if (!charstring::isNullOrEmpty(db)) {
-		if (dsn.getStringLength()) {
+		if (dsn.getSize()) {
 			dsn.append(";");
 		}
 		dsn.append("Database=")->append(db);
 	}
 	const char	*user=cont->getUser();
 	if (!charstring::isNullOrEmpty(user)) {
-		if (dsn.getStringLength()) {
+		if (dsn.getSize()) {
 			dsn.append(";");
 		}
 		dsn.append("LogonID=")->append(user);
 	}
 	const char	*pass=cont->getPassword();
 	if (!charstring::isNullOrEmpty(pass)) {
-		if (dsn.getStringLength()) {
+		if (dsn.getSize()) {
 			dsn.append(";");
 		}
 		dsn.append("pwd=")->append(pass);
@@ -401,7 +401,7 @@ bool informixconnection::logIn(const char **error, const char **warning) {
 	// connect to the database
 	erg=SQLDriverConnect(dbc,NULL,
 				(SQLCHAR *)dsn.getString(),
-				dsn.getStringLength(),
+				dsn.getSize(),
 				NULL,0,NULL,SQL_DRIVER_COMPLETE);
 	if (erg==SQL_SUCCESS_WITH_INFO) {
 		*warning=logInError(NULL);

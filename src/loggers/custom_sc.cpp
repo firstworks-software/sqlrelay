@@ -216,8 +216,8 @@ bool sqlrlogger_custom_sc::run(sqlrlistener *sqlrl,
 
 	// write the buffer to the log file
 	bool	retval=((size_t)querylog.write(logbuffer.getString(),
-						logbuffer.getStringLength())==
-						logbuffer.getStringLength());
+						logbuffer.getSize())==
+						logbuffer.getSize());
 
 	// unlock the log file
 	querylog.unlockFile();

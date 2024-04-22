@@ -511,7 +511,7 @@ sqlrservercontroller::~sqlrservercontroller() {
 
 	delete pvt->_semset;
 
-	if (pvt->_unixsocket.getStringLength()) {
+	if (pvt->_unixsocket.getSize()) {
 		file::remove(pvt->_unixsocket.getString());
 	}
 
@@ -964,7 +964,7 @@ void sqlrservercontroller::setUserAndGroup() {
 	}
 
 	// write the error, if there was one
-	stderror.write(errorstr.getString(),errorstr.getStringLength());
+	stderror.write(errorstr.getString(),errorstr.getSize());
 
 	// clean up
 	delete[] currentuser;
@@ -1123,7 +1123,8 @@ bool sqlrservercontroller::logIn(bool printerrors) {
 			if (err) {
 				loginerror.append(err)->append('\n');
 			}
-			stderror.write(loginerror.getString());
+			stderror.write(loginerror.getString(),
+						loginerror.getSize());
 		}
 		if (pvt->_sqlrlg) {
 			pvt->_debugstr.clear();
@@ -2843,8 +2844,8 @@ void sqlrservercontroller::getError(const char **errorbuffer,
 			charstring::safeCopy(pvt->_conn->getErrorBuffer(),
 					pvt->_conn->getErrorBufferSize(),
 					translatederror.getString(),
-					translatederror.getStringLength());
-			*errorsize=translatederror.getStringLength();
+					translatederror.getSize());
+			*errorsize=translatederror.getSize();
 		}
 		// FIXME: report error if this fails?
 	}
@@ -4210,7 +4211,7 @@ void sqlrservercontroller::translateBindVariables(sqlrservercursor *cursor) {
 	// if we made it here then some conversion
 	// was done - update the querybuffer...
 	const char	*newq=newquery.getString();
-	uint32_t	newqsize=newquery.getStringLength();
+	uint32_t	newqsize=newquery.getSize();
 	if (newqsize>pvt->_maxquerysize) {
 		newqsize=pvt->_maxquerysize;
 	}
@@ -4277,7 +4278,7 @@ void sqlrservercontroller::translateBindVariableInStringAndMap(
 
 		// replace bind variable itself with number
 		mapBindVariable(cursor,currentbind->getString(),
-					currentbind->getStringLength(),
+					currentbind->getSize(),
 					bindindex);
 
 	} else if (bindformat[1]=='1' &&
@@ -4291,7 +4292,7 @@ void sqlrservercontroller::translateBindVariableInStringAndMap(
 
 		// replace bind variable itself with number
 		mapBindVariable(cursor,currentbind->getString(),
-					currentbind->getStringLength(),
+					currentbind->getSize(),
 					bindindex);
 
 	} else {
@@ -4310,11 +4311,11 @@ void sqlrservercontroller::translateBindVariableInStringAndMap(
 
 			// replace bind variable itself with number
 			mapBindVariable(cursor,currentbind->getString(),
-						currentbind->getStringLength(),
+						currentbind->getSize(),
 						bindindex);
 		} else {
 			newquery->append(currentbind->getString()+1,
-					currentbind->getStringLength()-1);
+					currentbind->getSize()-1);
 		}
 	}
 }
@@ -5329,7 +5330,7 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 		query=cursor->getQueryWithFakeInputBindsBuffer()->
 							getString();
 		querysize=cursor->getQueryWithFakeInputBindsBuffer()->
-							getStringLength();
+							getSize();
 	}
 
 	// if the query still hasn't been prepared (probably
@@ -6849,8 +6850,7 @@ void sqlrservercontroller::dropTempTable(sqlrservercursor *cursor,
 	// we intend to run.
 	cursor->clearQueryTree();
 
-	if (prepareQuery(cursor,dropquery.getString(),
-					dropquery.getStringLength())) {
+	if (prepareQuery(cursor,dropquery.getString(),dropquery.getSize())) {
 		executeQuery(cursor);
 	}
 	cursor->closeResultSet();
@@ -6914,7 +6914,7 @@ void sqlrservercontroller::truncateTempTable(sqlrservercursor *cursor,
 	truncatequery.append(cursor->truncateTableQuery());
 	truncatequery.append(" ")->append(tablename);
 	if (prepareQuery(cursor,truncatequery.getString(),
-					truncatequery.getStringLength())) {
+					truncatequery.getSize())) {
 		executeQuery(cursor);
 	}
 	cursor->closeResultSet();
@@ -7651,8 +7651,8 @@ bool sqlrservercontroller::bulkLoadCreateErrorTable1(
 	bool	retval=true;
 	stringbuffer	str;
 	str.printf(errorfieldtablequery,errorfieldtable);
-	if (!prepareQuery(cursor,str.getString(),str.getStringLength()) ||
-							!executeQuery(cursor)) {
+	if (!prepareQuery(cursor,str.getString(),str.getSize()) ||
+						!executeQuery(cursor)) {
 		saveErrorFromCursor(cursor);
 		retval=false;
 	}
@@ -7717,8 +7717,8 @@ bool sqlrservercontroller::bulkLoadCreateErrorTable2(
 	bool	retval=true;
 	stringbuffer	str;
 	str.printf(errorrowtablequery,errorrowtable,table);
-	if (!prepareQuery(cursor,str.getString(),str.getStringLength()) ||
-							!executeQuery(cursor)) {
+	if (!prepareQuery(cursor,str.getString(),str.getSize()) ||
+						!executeQuery(cursor)) {
 		saveErrorFromCursor(cursor);
 		retval=false;
 	}
@@ -7961,7 +7961,7 @@ void sqlrservercontroller::bulkLoadInitBinds() {
 		query.append("select * from ")->append(table);
 
 		if (prepareQuery(cur,query.getString(),
-					query.getStringLength()) &&
+					query.getSize()) &&
 					executeQuery(cur)) {
 
 			memorypool		*bindpool=
@@ -8480,7 +8480,7 @@ bool sqlrservercontroller::bulkLoadStoreError(int64_t errorcode,
 				"bad_data");
 
 		if (!prepareQuery(cur,query.getString(),
-					query.getStringLength()) ||
+					query.getSize()) ||
 					!executeQuery(cur)) {
 			// FIXME: error...
 		}
@@ -10141,8 +10141,8 @@ void sqlrservercontroller::getError(sqlrservercursor *cursor,
 			charstring::safeCopy(cursor->getErrorBuffer(),
 					cursor->getErrorBufferSize(),
 					translatederror.getString(),
-					translatederror.getStringLength());
-			*errorsize=translatederror.getStringLength();
+					translatederror.getSize());
+			*errorsize=translatederror.getSize();
 		}
 		// FIXME: report error if this fails?
 	}

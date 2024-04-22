@@ -262,7 +262,7 @@ static int sqlrcursorExecute(pdo_stmt_t *stmt TSRMLS_DC) {
 		// to re-prepare.  Arguably this is a bug in the
 		// SQL Relay client API.
 		sqlrcur->prepareQuery(sqlrstmt->subvarquery.getString(),
-				sqlrstmt->subvarquery.getStringLength());
+					sqlrstmt->subvarquery.getSize());
 	} else {
 		if (!sqlrcur->executeQuery()) {
 			sqlrelayErrorStmt(stmt);
@@ -1243,7 +1243,7 @@ sqlrconnectionPrepare(pdo_dbh_t *dbh,
 		sqlrconnectionRewriteQuery(sqlrdbh->sqlrcon,sql,sqllen,
 							&sqlrstmt->subvarquery);
 		sql=sqlrstmt->subvarquery.getString();
-		sqllen=sqlrstmt->subvarquery.getStringLength();
+		sqllen=sqlrstmt->subvarquery.getSize();
 	}
 
 	sqlrstmt->fwdonly=pdo_attr_lval(driveroptions,

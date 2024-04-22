@@ -2266,7 +2266,7 @@ const char *oracleconnection::getTypeInfoListQuery(const char *type,
 							bool wild) {
 
 	if (!charstring::compare(type,"*")) {
-		if (!alltypeinfoquery.getStringLength()) {
+		if (!alltypeinfoquery.getSize()) {
 			alltypeinfoquery.append(chartype);
 			alltypeinfoquery.append("union ");
 			alltypeinfoquery.append(nchartype);

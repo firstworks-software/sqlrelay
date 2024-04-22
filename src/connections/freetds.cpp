@@ -569,8 +569,9 @@ const char *freetdsconnection::logInError(const char *error, uint16_t stage) {
 	if (error) {
 		loginerror.append(error)->append(": ");
 	}
-	if (errorstring.getStringLength()) {
-		loginerror.append(errorstring.getString());
+	if (errorstring.getSize()) {
+		loginerror.append(errorstring.getString(),
+					errorstring.getSize());
 	}
 
 	if (stage>5) {
@@ -2361,7 +2362,7 @@ void freetdsconnection::getError(char *errorbuffer,
 					uint32_t *errorsize,
 					int64_t *errorcode,
 					bool *liveconnection) {
-	*errorsize=this->errorstring.getStringLength();
+	*errorsize=this->errorstring.getSize();
 	charstring::safeCopy(errorbuffer,errorbuffersize,
 				this->errorstring.getString(),*errorsize);
 	*liveconnection=this->liveconnection;

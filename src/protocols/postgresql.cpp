@@ -873,7 +873,7 @@ bool sqlrprotocol_postgresql::authenticate() {
 		err.append(user);
 		err.append("\"");
 		sendErrorResponse("FATAL","28P01",
-					err.getString(),err.getStringLength());
+					err.getString(),err.getSize());
 		return false;
 	}
 
@@ -1003,7 +1003,7 @@ bool sqlrprotocol_postgresql::sendStartupParameterStatuses() {
 				if (!cursor ||
 					!cont->prepareQuery(cursor,
 							q.getString(),
-							q.getStringLength()) ||
+							q.getSize()) ||
 					!cont->executeQuery(cursor) ||
 					!cont->fetchRow(cursor,&error) ||
 					!cont->getField(cursor,0,
