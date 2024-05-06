@@ -5555,6 +5555,7 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 			!pvt->_conn->supportsAutoCommit() &&
 			pvt->_fakeautocommit) {
 		raiseDebugMessageEvent("commit necessary...");
+		//success=commit() && begin();
 		success=commit();
 	}
 	

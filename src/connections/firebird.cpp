@@ -202,6 +202,7 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 		datebind	*outdatebind;
 		
 		XSQLDA	ISC_FAR	*outsqlda;
+		byte_t		*outsqldabuffer;
 		fieldstruct	*field;
 
 		ISC_LONG	querytype;
@@ -227,6 +228,8 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		void	deleteCursor(sqlrservercursor *curs);
 		void	logOut();
 		bool	supportsTransactionBlocks();
+		bool	setAutoCommitOn();
+		bool	setAutoCommitOff();
 		bool	commit();
 		bool	rollback();
 		bool	ping();
@@ -275,6 +278,8 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		ISC_STATUS	error[20];
 
 		stringbuffer	errormsg;
+
+		bool		autocommit;
 };
 
 static char tpb[] = {
@@ -286,12 +291,23 @@ static char tpb[] = {
 	isc_tpb_wait
 };
 
+static char tpbac[] = {
+	isc_tpb_version3,
+	isc_tpb_write,
+	isc_tpb_read_committed,
+	isc_tpb_rec_version,
+	// FIXME: vladimir changed this to isc_tpb_nowait.  why?
+	isc_tpb_wait,
+	isc_tpb_autocommit
+};
+
 firebirdconnection::firebirdconnection(sqlrservercontroller *cont) :
 						sqlrserverconnection(cont) {
 	dbversion=NULL;
 	lastinsertidquery=NULL;
 	database=NULL;
 	host=NULL;
+	autocommit=false;
 }
 
 firebirdconnection::~firebirdconnection() {
@@ -399,8 +415,7 @@ bool firebirdconnection::logIn(const char **err, const char **warning) {
 	db=0L;
 	tr=0L;
 	if (isc_attach_database(error,charstring::getLength(database),
-					const_cast<char *>(database),&db,
-					dpbsize,dpb)) {
+						database,&db,dpbsize,dpb)) {
 		db=0L;
 
 		errormsg.clear();
@@ -421,6 +436,8 @@ bool firebirdconnection::logIn(const char **err, const char **warning) {
 
 	// start a transaction
 	if (isc_start_transaction(error,&tr,1,&db,(uint16_t)sizeof(tpb),&tpb)) {
+
+		tr=0L;
 
 		errormsg.clear();
 
@@ -458,12 +475,38 @@ bool firebirdconnection::supportsTransactionBlocks() {
 	return false;
 }
 
+bool firebirdconnection::setAutoCommitOn() {
+	autocommit=true;
+	return !isc_commit_transaction(error,&tr) &&
+		!isc_start_transaction(error,&tr,1,&db,
+					(uint16_t)sizeof(tpbac),&tpbac);
+}
+
+bool firebirdconnection::setAutoCommitOff() {
+	autocommit=false;
+	return !isc_commit_transaction(error,&tr) &&
+		!isc_start_transaction(error,&tr,1,&db,
+					(uint16_t)sizeof(tpb),&tpb);
+}
+
 bool firebirdconnection::commit() {
-	return (!isc_commit_retaining(error,&tr));
+	if (autocommit) {
+		return !isc_commit_retaining(error,&tr);
+	} else {
+		return !isc_commit_transaction(error,&tr) &&
+			!isc_start_transaction(error,&tr,1,&db,
+					(uint16_t)sizeof(tpb),&tpb);
+	}
 }
 
 bool firebirdconnection::rollback() {
-	return (!isc_rollback_retaining(error,&tr));
+	if (autocommit) {
+		return !isc_rollback_retaining(error,&tr);
+	} else {
+		return !isc_rollback_transaction(error,&tr) &&
+			!isc_start_transaction(error,&tr,1,&db,
+					(uint16_t)sizeof(tpb),&tpb);
+	}
 }
 
 void firebirdconnection::getError(char *errorbuffer,
@@ -647,7 +690,6 @@ const char *firebirdconnection::getTableListQuery(bool wild,
 		"	rdb$owner_name, "
 		"	rdb$relation_name");
 
-stdoutput.printf("%s\n",tablelistquery.getString());
 	return tablelistquery.getString();
 }
 
@@ -767,6 +809,7 @@ firebirdcursor::firebirdcursor(sqlrserverconnection *conn, uint16_t id) :
 	firebirdconn=(firebirdconnection *)conn;
 
 	outsqlda=NULL;
+	outsqldabuffer=NULL;
 	allocateResultSetBuffers(conn->cont->getMaxColumnCount());
 
 	maxbindcount=conn->cont->getConfig()->getMaxBindCount();
@@ -790,8 +833,8 @@ firebirdcursor::firebirdcursor(sqlrserverconnection *conn, uint16_t id) :
 	outbindblobisopen=new bool[maxbindcount];
 	outdatebind=new datebind[maxbindcount];
 
-	querytype=0;
-	stmt=0;
+	querytype=0L;
+	stmt=0L;
 
 	queryisexecsp=false;
 	bindformaterror=false;
@@ -815,22 +858,25 @@ firebirdcursor::~firebirdcursor() {
 	delete[] outbindblobisopen;
 	delete[] outdatebind;
 
-	deallocateResultSetBuffers();
+	delete[] outsqldabuffer;
+	delete[] field;
 }
 
 void firebirdcursor::allocateResultSetBuffers(int32_t columncount) {
 
+	delete[] outsqldabuffer;
+
 	if (!columncount) {
-		outsqlda=(XSQLDA ISC_FAR *)new byte_t[XSQLDA_LENGTH(1)];
+		outsqldabuffer=new byte_t[XSQLDA_LENGTH(1)];
+		bytestring::zero(outsqldabuffer,XSQLDA_LENGTH(1));
+		outsqlda=(XSQLDA ISC_FAR *)outsqldabuffer;
 		outsqlda->version=SQLDA_VERSION1;
 		outsqlda->sqln=1;
 		field=NULL;
 	} else {
-		if (outsqlda) {
-			delete[] outsqlda;
-		}
-		outsqlda=(XSQLDA ISC_FAR *)new byte_t[
-						XSQLDA_LENGTH(columncount)];
+		outsqldabuffer=new byte_t[XSQLDA_LENGTH(columncount)];
+		bytestring::zero(outsqldabuffer,XSQLDA_LENGTH(columncount));
+		outsqlda=(XSQLDA ISC_FAR *)outsqldabuffer;
 		outsqlda->version=SQLDA_VERSION1;
 		outsqlda->sqln=columncount;
 		field=new fieldstruct[columncount];
@@ -843,8 +889,10 @@ void firebirdcursor::allocateResultSetBuffers(int32_t columncount) {
 
 void firebirdcursor::deallocateResultSetBuffers() {
 
-	delete[] outsqlda;
-	outsqlda=(XSQLDA ISC_FAR *)new byte_t[XSQLDA_LENGTH(1)];
+	delete[] outsqldabuffer;
+	outsqldabuffer=new byte_t[XSQLDA_LENGTH(1)];
+	bytestring::zero(outsqldabuffer,XSQLDA_LENGTH(1));
+	outsqlda=(XSQLDA ISC_FAR *)outsqldabuffer;
 	outsqlda->version=SQLDA_VERSION1;
 	outsqlda->sqln=1;
 
@@ -867,10 +915,10 @@ bool firebirdcursor::prepareQuery(const char *query, uint32_t size) {
 	if (stmt) {
 		isc_dsql_free_statement(firebirdconn->error,
 						&stmt,DSQL_drop);
+		stmt=0L;
 	}
 
 	// allocate a cursor handle
-	stmt=0;
 	if (isc_dsql_allocate_statement(firebirdconn->error,
 					&firebirdconn->db,&stmt)) {
 		return false;
@@ -1429,11 +1477,9 @@ bool firebirdcursor::executeQuery(const char *query, uint32_t size) {
 
 	// for commit or rollback, execute the API call and return
 	if (querytype==isc_info_sql_stmt_commit) {
-		return !isc_commit_retaining(firebirdconn->error,
-							&firebirdconn->tr);
+		return conn->commit();
 	} else if (querytype==isc_info_sql_stmt_rollback) {
-		return !isc_rollback_retaining(firebirdconn->error,
-							&firebirdconn->tr);
+		return conn->rollback();
 	} else if (queryisexecsp) {
 
 		// handle stored procedures...
