@@ -1116,10 +1116,12 @@ bool mysqlcursor::close() {
 		}
 #endif
 	}
+#ifdef HAVE_MYSQL_STMT_PREPARE
 	if (mysqlmetadata) {
 		mysql_free_result(mysqlmetadata);
 		mysqlmetadata=NULL;
 	}
+#endif
 	if (stmt) {
 		mysql_stmt_close(stmt);
 		stmt=NULL;
@@ -2171,10 +2173,12 @@ void mysqlcursor::freeResult() {
 		}
 #endif
 	}
+#ifdef HAVE_MYSQL_STMT_PREPARE
 	if (mysqlmetadata) {
 		mysql_free_result(mysqlmetadata);
 		mysqlmetadata=NULL;
 	}
+#endif
 	if (!conn->cont->getMaxColumnCount()) {
 		deallocateResultSetBuffers();
 	}
