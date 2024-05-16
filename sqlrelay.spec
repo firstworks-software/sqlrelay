@@ -375,6 +375,9 @@ BuildArch: noarch
 API documentation for SQL Relay.
 
 
+%debug_package
+
+
 %prep
 %autosetup -p1
 
@@ -749,7 +752,7 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_javadocdir}/%{name}
 
 %changelog
-* Fri Apr 19 2024 David Muse <david.muse@firstworks.com> - 2.0.0-1
+* Fri May 16 2024 David Muse <david.muse@firstworks.com> - 2.0.0-1
 - Updated to version 2.0.0.
 - Removed support for mdbtools.
 - Updated to build python 3 packages for rhel > 6.
@@ -760,6 +763,7 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 - Added new modules and includes.
 - Removed tcl(abi) = 8.5 for non-fedora platforms.
 - Added log/debug directory.
+- Added %debug_package.
 
 * Thu Mar 04 2021 David Muse <david.muse@firstworks.com> - 1.9.0-1
 - Updated to version 1.9.0.
