@@ -76,8 +76,14 @@ void sqlrserverconnection::handleConnectString() {
 	cont->setPassword(cont->getConnectStringValue("password"));
 
 	// autocommit
-	cont->setInitialAutoCommit(charstring::isYes(
-			cont->getConnectStringValue("autocommit")));
+	const char	*autocommit=cont->getConnectStringValue("autocommit");
+	if (charstring::isYes(autocommit)) {
+		cont->setInitialAutoCommit(true);
+	} else if (charstring::isNo(autocommit)) {
+		cont->setInitialAutoCommit(false);
+	} else {
+		cont->setInitialAutoCommit(supportsTransactionBlocks());
+	}
 
 	// fake transaction blocks
 	cont->setFakeTransactionBlocks(charstring::isYes(
@@ -182,12 +188,47 @@ bool sqlrserverconnection::changeProxiedUser(const char *newuser,
 }
 
 bool sqlrserverconnection::setAutoCommitOn() {
-	cont->setFakeAutoCommit(true);
+
+	// if the database doesn't support transactions, then autocommit
+	// is always on
+	if (!isTransactional()) {
+		return true;
+	}
+	// the APIs of databases that don't support transaction blocks must
+	// provide an auto-commit function, and setAutoCommitOn() must be
+	// implemented for them, using that function
+	if (!supportsTransactionBlocks()) {
+		return false;
+	}
+	// if we're in a transaction block, then just commit it
+	// and don't start a new one
+	if (cont->getInTransaction()) {
+		return cont->commit();
+	}
+	// otherwise, we're already outside of a transaction block,
+	// so autocommit must already be on
 	return true;
 }
 
 bool sqlrserverconnection::setAutoCommitOff() {
-	cont->setFakeAutoCommit(false);
+
+	// if the database doesn't support transactions, then it's impossible
+	// to turn auto commit off
+	if (!isTransactional()) {
+		return false;
+	}
+	// the APIs of databases that don't support transaction blocks must
+	// provide an auto-commit function, and setAutoCommitOff() must be
+	// implemented for them, using that function
+	if (!supportsTransactionBlocks()) {
+		return false;
+	}
+	// if we're not in a transaction block, then start a new one
+	if (!cont->getInTransaction()) {
+		return cont->begin();
+	}
+	// otherwise, we're already in a transaction block,
+	// so autocommit must already be off
 	return true;
 }
 
@@ -197,10 +238,6 @@ bool sqlrserverconnection::isTransactional() {
 
 bool sqlrserverconnection::supportsTransactionBlocks() {
 	return true;
-}
-
-bool sqlrserverconnection::supportsAutoCommit() {
-	return false;
 }
 
 bool sqlrserverconnection::begin() {

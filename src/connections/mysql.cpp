@@ -229,7 +229,6 @@ class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 		const char	*getNoopQuery();
 		bool		setAutoCommitOn();
 		bool		setAutoCommitOff();
-		bool		supportsAutoCommit();
 		bool		commit();
 		bool		rollback();
 		void		getError(char *errorbuffer,
@@ -915,10 +914,6 @@ bool mysqlconnection::setAutoCommitOff() {
 	// do nothing
 	return true;
 #endif
-}
-
-bool mysqlconnection::supportsAutoCommit() {
-	return true;
 }
 
 bool mysqlconnection::commit() {

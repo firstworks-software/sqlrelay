@@ -3246,13 +3246,6 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  class. */
 		virtual bool	supportsTransactionBlocks();
 
-		/** Returns true if the database supports auto-commit and false
-		 *  if it does not.
-		 *
-		 *  Returns true by default but may be overridden by a child
-		 *  class. */
-		virtual bool	supportsAutoCommit();
-
 		/** Begins a new transaction.
 		 * 
 		 *  Returns true on success and false on failure. */

@@ -316,7 +316,6 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		#if (ODBCVER>=0x0300)
 		bool		setAutoCommitOn();
 		bool		setAutoCommitOff();
-		bool		supportsAutoCommit();
 		const char	*beginTransactionQuery();
 		bool		commit();
 		bool		rollback();
@@ -2027,10 +2026,6 @@ bool odbcconnection::setAutoCommitOff() {
 				(SQLPOINTER)SQL_AUTOCOMMIT_OFF,
 				sizeof(SQLINTEGER));
 	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
-}
-
-bool odbcconnection::supportsAutoCommit() {
-	return true;
 }
 
 const char *odbcconnection::beginTransactionQuery() {

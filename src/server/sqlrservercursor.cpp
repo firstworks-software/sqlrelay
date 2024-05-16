@@ -348,6 +348,7 @@ bool sqlrservercursor::isBeginTransactionQuery(const char *query) {
 		}
 		return false;
 	} else if (!charstring::compareIgnoringCase(query,"start ",6)) {
+stdoutput.printf("\"start \" found - isBeginTransactionQuery()=true\n");
 		return true;
 	} else if (!charstring::compareIgnoringCase(query,"bt",2) &&
 							*(query+2)=='\0') {

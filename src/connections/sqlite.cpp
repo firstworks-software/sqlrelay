@@ -55,6 +55,7 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 						const char *table, bool wild);
 		#ifdef SQLITE_TRANSACTIONAL
 		const char	*setIsolationLevelQuery();
+		const char	*beginTransactionQuery();
 		#endif
 		bool		selectDatabase(const char *database);
 		char		*getCurrentDatabase();
@@ -188,6 +189,9 @@ sqliteconnection::~sqliteconnection() {
 }
 
 void sqliteconnection::handleConnectString() {
+
+	sqlrserverconnection::handleConnectString();
+
 	db=charstring::duplicate(cont->getConnectStringValue("db"));
 
 	cont->setFetchAtOnce(1);
@@ -336,6 +340,10 @@ const char *sqliteconnection::getColumnListQuery(
 #ifdef SQLITE_TRANSACTIONAL
 const char *sqliteconnection::setIsolationLevelQuery() {
 	return "pragma %s";
+}
+
+const char *sqliteconnection::beginTransactionQuery() {
+	return "begin transaction";
 }
 #endif
 

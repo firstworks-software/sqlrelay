@@ -95,10 +95,8 @@
 		bool	getProtocol();
 		void	clientSession();
 
-		bool	beginFakeTransactionBlock();
 		void	endTransaction(bool commit);
 		void	clearColumnCaches();
-		bool	endFakeTransactionBlock();
 		bool	checkInterceptQuery(sqlrservercursor *cursor);
 		bool	interceptQuery(sqlrservercursor *cursor);
 

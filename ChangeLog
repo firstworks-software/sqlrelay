@@ -96,6 +96,7 @@
 	refactored parser query/metadata tree methods
 	fixed "show tables" behavior
 	.spec file creates log/sqlrelay/debug directory now
+	refactored autocommit and fake transaction blocks
 
 1.9.2 - ruby cursor constructor marks associated ruby connection object now
 	updated bad-command and no-cursor-available handling in sqlrclient

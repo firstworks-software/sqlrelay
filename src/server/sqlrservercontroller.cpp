@@ -132,16 +132,11 @@ class sqlrservercontrollerprivate {
 	uint16_t	_inetport;
 	stringbuffer	_unixsocket;
 
-	bool		_autocommitforthissession;
-
 	bool		_faketransactionblocks;
-	bool		_faketransactionblocksautocommiton;
-	bool		_infaketransactionblock;
 	bool		_intransaction;
 
 	bool		_needscommitorrollback;
 
-	bool		_fakeautocommit;
 	bool		_initialautocommit;
 
 	bool		_fakeinputbinds;
@@ -364,14 +359,9 @@ sqlrservercontroller::sqlrservercontroller() : sqlrserverbase() {
 
 	pvt->_needscommitorrollback=false;
 
-	pvt->_fakeautocommit=false;
 	pvt->_initialautocommit=false;
 
-	pvt->_autocommitforthissession=false;
-
 	pvt->_faketransactionblocks=false;
-	pvt->_faketransactionblocksautocommiton=false;
-	pvt->_infaketransactionblock=false;
 	pvt->_intransaction=false;
 
 	pvt->_fakeinputbinds=false;
@@ -1152,6 +1142,11 @@ bool sqlrservercontroller::logIn(bool printerrors) {
 					pvt->_debugstr.getString());
 		}
 	}
+
+	// If the db doesn't support transaction blocks, and we're not faking
+	// them, then we're in one now, otherwise we're not.
+	pvt->_intransaction=!pvt->_conn->supportsTransactionBlocks() &&
+						!pvt->_faketransactionblocks;
 
 	// success... update stats
 	incrementOpenDatabaseConnections();
@@ -2332,15 +2327,7 @@ bool sqlrservercontroller::setAutoCommitOn() {
 					process::getProcessId());
 	}
 
-	pvt->_autocommitforthissession=true;
-	if (pvt->_conn->setAutoCommitOn()) {
-		if (pvt->_intransaction) {
-			raiseCommitEvent();
-		}
-		pvt->_intransaction=false;
-		return true;
-	}
-	return false;
+	return pvt->_conn->setAutoCommitOn();
 }
 
 bool sqlrservercontroller::setAutoCommitOff() {
@@ -2354,25 +2341,7 @@ bool sqlrservercontroller::setAutoCommitOff() {
 					process::getProcessId());
 	}
 
-	pvt->_autocommitforthissession=false;
-	if (pvt->_conn->setAutoCommitOff()) {
-		// if the db doesn't support transaction blocks (oracle,
-		// firebird, informix) then we are in a transaction here,
-		// otherwise we aren't
-		//pvt->_intransaction=!pvt->_conn->supportsTransactionBlocks();
-		// actually, it seems that in db's that support transaction
-		// blocks, setting autocommit off is about the same as running
-		// a begin/start-tx query, so we're in a transaction no matter
-		// what...
-		// FIXME: verify this though, with all db's
-		bool	wasintx=pvt->_intransaction;
-		pvt->_intransaction=true;
-		if (!wasintx) {
-			raiseBeginTransactionEvent();
-		}
-		return true;
-	}
-	return false;
+	return pvt->_conn->setAutoCommitOff();
 }
 
 bool sqlrservercontroller::begin() {
@@ -2382,34 +2351,20 @@ bool sqlrservercontroller::begin() {
 				 "===================="
 				 "===================="
 				 "===================\n\n");
-		stdoutput.printf("%d: begin\n",
-					process::getProcessId());
+		stdoutput.printf("%d: begin\n",process::getProcessId());
 	}
 
-	// if we're faking transaction blocks, do that,
-	// otherwise run an actual begin query
-	if ((pvt->_faketransactionblocks)?
-			beginFakeTransactionBlock():
-			pvt->_conn->begin()) {
-		pvt->_intransaction=true;
-		raiseBeginTransactionEvent();
-		return true;
-	}
-	return false;
-}
-
-bool sqlrservercontroller::beginFakeTransactionBlock() {
-
-	// save the current autocommit state
-	pvt->_faketransactionblocksautocommiton=pvt->_autocommitforthissession;
-
-	// if autocommit is on, turn it off
-	if (pvt->_autocommitforthissession) {
+	if (pvt->_conn->supportsTransactionBlocks()) {
+		if (!pvt->_conn->begin()) {
+			return false;
+		}
+	} else if (pvt->_faketransactionblocks) {
 		if (!setAutoCommitOff()) {
 			return false;
 		}
 	}
-	pvt->_infaketransactionblock=true;
+	pvt->_intransaction=true;
+	raiseBeginTransactionEvent();
 	return true;
 }
 
@@ -2420,36 +2375,21 @@ bool sqlrservercontroller::commit() {
 				 "===================="
 				 "===================="
 				 "===================\n\n");
-		stdoutput.printf("%d: commit\n",
-					process::getProcessId());
+		stdoutput.printf("%d: commit\n",process::getProcessId());
 	}
 
-	if (pvt->_conn->commit()) {
-		endTransaction(true);
-		return true;
+	if (!pvt->_conn->commit()) {
+		return false;
 	}
-	return false;
-}
-
-bool sqlrservercontroller::endFakeTransactionBlock() {
-
-	// if we're faking begins and autocommit is on,
-	// reset autocommit behavior
-	if (pvt->_faketransactionblocks &&
-		pvt->_faketransactionblocksautocommiton) {
-		if (!setAutoCommitOn()) {
-			return false;
-		}
+	endTransaction(true);
+	if (!pvt->_conn->supportsTransactionBlocks() &&
+				pvt->_faketransactionblocks) {
+		return setAutoCommitOn();
 	}
-	pvt->_infaketransactionblock=false;
 	return true;
 }
 
 void sqlrservercontroller::endTransaction(bool commit) {
-
-	// end fake transaction blocks
-	// FIXME: this can fail
-	endFakeTransactionBlock();
 
 	// raise events
 	if (commit) {
@@ -2535,7 +2475,8 @@ void sqlrservercontroller::endTransaction(bool commit) {
 	pvt->_txpool.clear();
 
 	// set in-tx flag
-	pvt->_intransaction=!pvt->_autocommitforthissession;
+	pvt->_intransaction=!(pvt->_conn->supportsTransactionBlocks() ||
+						pvt->_faketransactionblocks);
 }
 
 void sqlrservercontroller::clearColumnCaches() {
@@ -2556,15 +2497,18 @@ bool sqlrservercontroller::rollback() {
 				 "===================="
 				 "===================="
 				 "===================\n\n");
-		stdoutput.printf("%d: rollback\n",
-					process::getProcessId());
+		stdoutput.printf("%d: rollback\n",process::getProcessId());
 	}
 
-	if (pvt->_conn->rollback()) {
-		endTransaction(false);
-		return true;
+	if (!pvt->_conn->rollback()) {
+		return false;
 	}
-	return false;
+	endTransaction(false);
+	if (!pvt->_conn->supportsTransactionBlocks() &&
+				pvt->_faketransactionblocks) {
+		return setAutoCommitOn();
+	}
+	return true;
 }
 
 bool sqlrservercontroller::selectDatabase(const char *db) {
@@ -2966,7 +2910,7 @@ bool sqlrservercontroller::interceptQuery(sqlrservercursor *cursor) {
 			cursor->setInputOutputBindCount(0);
 			pvt->_sendcolumninfo=false;
 			if (pvt->_faketransactionblocks &&
-					pvt->_infaketransactionblock) {
+					pvt->_intransaction) {
 				setError(cursor,
 					SQLR_ERROR_BEGIN_IN_TX_BLOCK_STRING,
 					SQLR_ERROR_BEGIN_IN_TX_BLOCK,true);
@@ -2985,7 +2929,7 @@ bool sqlrservercontroller::interceptQuery(sqlrservercursor *cursor) {
 			cursor->setInputOutputBindCount(0);
 			pvt->_sendcolumninfo=false;
 			if (pvt->_faketransactionblocks &&
-					!pvt->_infaketransactionblock) {
+					!pvt->_intransaction) {
 				setError(cursor,
 				SQLR_ERROR_COMMIT_NOT_IN_TX_BLOCK_STRING,
 				SQLR_ERROR_COMMIT_NOT_IN_TX_BLOCK,true);
@@ -3004,7 +2948,7 @@ bool sqlrservercontroller::interceptQuery(sqlrservercursor *cursor) {
 			cursor->setInputOutputBindCount(0);
 			pvt->_sendcolumninfo=false;
 			if (pvt->_faketransactionblocks &&
-					!pvt->_infaketransactionblock) {
+					!pvt->_intransaction) {
 				setError(cursor,
 				SQLR_ERROR_ROLLBACK_NOT_IN_TX_BLOCK_STRING,
 				SQLR_ERROR_ROLLBACK_NOT_IN_TX_BLOCK,true);
@@ -5477,14 +5421,12 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 	// allow the db to run them and set the flags here
 	if (cursor->getQueryType()==
 			SQLRQUERYTYPE_SET_INCLUDING_AUTOCOMMIT_ON) {
-		pvt->_autocommitforthissession=true;
 		if (pvt->_intransaction) {
 			raiseCommitEvent();
 		}
 		pvt->_intransaction=false;
 	} else if (cursor->getQueryType()==
 			SQLRQUERYTYPE_SET_INCLUDING_AUTOCOMMIT_OFF) {
-		pvt->_autocommitforthissession=false;
 		bool	wasintx=pvt->_intransaction;
 		pvt->_intransaction=true;
 		if (wasintx) {
@@ -5548,17 +5490,6 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 	// was the query a commit or rollback?
 	commitOrRollback(cursor);
 
-	// commit if necessary
-	if (success && pvt->_conn->isTransactional() &&
-			!pvt->_conn->supportsTransactionBlocks() &&
-			pvt->_needscommitorrollback &&
-			!pvt->_conn->supportsAutoCommit() &&
-			pvt->_fakeautocommit) {
-		raiseDebugMessageEvent("commit necessary...");
-		//success=commit() && begin();
-		success=commit();
-	}
-	
 	raiseDebugMessageEvent((success)?"executing query succeeded":
 					"executing query failed");
 	raiseDebugMessageEvent("done executing query");
@@ -6612,12 +6543,7 @@ void sqlrservercontroller::endSession() {
 	// cause an implicit commit.  If we need to rollback, then make sure
 	// that's done first.
 	if (
-		// NOTE: originally, the next line was:
-		//
-		//	pvt->_infaketransactionblock ||
-		//
-		// However...
-		//
+		// NOTE:
 		// When using a database that supports sql blocks, it's
 		// possible to construct a block that confuses the
 		// begin-interceptor into not intercepting the begin.
@@ -6634,10 +6560,7 @@ void sqlrservercontroller::endSession() {
 		// ending the session before running the commit/rollback, then
 		// a commit/rollback needs to be run here.
 		//
-		// Don't worry about whether we're actually in a fake
-		// transaction block, just call the commit/rollback if we're
-		// faking transaction blocks at all.
-		//
+		// Call the commit/rollback if we're faking transaction blocks.
 		// Worst case, if we weren't in a fake transaction block (and
 		// were in autocommit mode) and the db cares, then it will
 		// throw an error, which will be ignored.
@@ -6656,8 +6579,6 @@ void sqlrservercontroller::endSession() {
 			rollback();
 			raiseDebugMessageEvent("done rolling back...");
 		}
-
-		pvt->_infaketransactionblock=false;
 	}
 
 	// truncate/drop temp tables
@@ -9315,14 +9236,6 @@ void sqlrservercontroller::setFakeTransactionBlocks(bool ftb) {
 
 bool sqlrservercontroller::getFakeTransactionBlocks() {
 	return pvt->_faketransactionblocks;
-}
-
-void sqlrservercontroller::setFakeAutoCommit(bool fac) {
-	pvt->_fakeautocommit=fac;
-}
-
-bool sqlrservercontroller::getFakeAutoCommit() {
-	return pvt->_fakeautocommit;
 }
 
 void sqlrservercontroller::setInitialAutoCommit(bool iac) {
