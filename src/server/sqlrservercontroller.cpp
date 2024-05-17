@@ -10992,7 +10992,7 @@ uint32_t  sqlrservercontroller::getQuerySize(sqlrservercursor *cursor) {
 
 void sqlrservercontroller::setQueryStatus(sqlrservercursor *cursor,
 						sqlrquerystatus_t status) {
-	return cursor->setQueryStatus(status);
+	cursor->setQueryStatus(status);
 }
 
 sqlrquerystatus_t sqlrservercontroller::getQueryStatus(
