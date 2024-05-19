@@ -301,7 +301,7 @@ class SQLRUTIL_DLLSPEC sqlrpwdenc {
 
 	protected:
 		domnode	*getParameters();
-		bool		getDebug();
+		bool	getDebug();
 
 	#include <sqlrelay/private/sqlrpwdenc.h>
 };
