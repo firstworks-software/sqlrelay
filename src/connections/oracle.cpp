@@ -166,6 +166,8 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		const char	*home;
 		const char	*sid;
 		const char	*nlslang;
+		ucs2_t		*ucs2user;
+		ucs2_t		*ucs2password;
 
 		char		*lastinsertidquery;
 
@@ -442,6 +444,8 @@ oracleconnection::oracleconnection(sqlrservercontroller *cont) :
 	home=NULL;
 	sid=NULL;
 	nlslang=NULL;
+	ucs2user=NULL;
+	ucs2password=NULL;
 
 	lastinsertidquery=NULL;
 
@@ -458,6 +462,8 @@ oracleconnection::oracleconnection(sqlrservercontroller *cont) :
 
 oracleconnection::~oracleconnection() {
 	delete[] lastinsertidquery;
+	delete[] ucs2user;
+	delete[] ucs2password;
 }
 
 void oracleconnection::handleConnectString() {
@@ -709,10 +715,29 @@ bool oracleconnection::logIn(const char **error, const char **warning) {
 	}
 
 	// set username and password
-	if (charstring::getLength(user) &&
+	dvoid	*userptr=(dvoid *)user;
+	ub4	usersize=(ub4)charstring::getLength(user);
+	dvoid	*passwordptr=(dvoid *)password;
+	ub4	passwordsize=(ub4)charstring::getLength(password);
+#if 0
+	if (charstring::contains(nlslang,"UTF16")) {
+		if (usersize) {
+			delete[] ucs2user;
+			ucs2user=ucs2charstring::duplicate(user);
+			userptr=(dvoid *)ucs2user;
+			usersize=ucs2charstring::getLength(ucs2user);
+		}
+		if (passwordsize) {
+			delete[] ucs2password;
+			ucs2password=ucs2charstring::duplicate(password);
+			passwordptr=(dvoid *)ucs2password;
+			passwordsize=ucs2charstring::getLength(ucs2password);
+		}
+	}
+#endif
+	if (usersize &&
 		OCIAttrSet((dvoid *)session,(ub4)OCI_HTYPE_SESSION,
-				(dvoid *)user,
-				(ub4)charstring::getLength(user),
+				userptr,usersize,
 				(ub4)OCI_ATTR_USERNAME,err)!=OCI_SUCCESS) {
 		*error=logInError("Set username failed");
 		OCIHandleFree(err,OCI_HTYPE_SESSION);
@@ -723,10 +748,9 @@ bool oracleconnection::logIn(const char **error, const char **warning) {
 		OCIHandleFree(env,OCI_HTYPE_ENV);
 		return false;
 	}
-	if (charstring::getLength(password) &&
+	if (passwordsize &&
 		OCIAttrSet((dvoid *)session,(ub4)OCI_HTYPE_SESSION,
-				(dvoid *)password,
-				(ub4)charstring::getLength(password),
+				passwordptr,passwordsize,
 				(ub4)OCI_ATTR_PASSWORD,err)!=OCI_SUCCESS) {
 		*error=logInError("Set password failed");
 		OCIHandleFree(err,OCI_HTYPE_SESSION);
@@ -740,7 +764,7 @@ bool oracleconnection::logIn(const char **error, const char **warning) {
 
 	// decide what credentials to use
 	sword	cred=OCI_CRED_RDBMS;
-	if (!charstring::getLength(user) && !charstring::getLength(password)) {
+	if (!usersize && !passwordsize) {
 		cred=OCI_CRED_EXT;
 	}
 
@@ -958,7 +982,17 @@ const char *oracleconnection::logInError(const char *errmsg) {
 	OCIErrorGet((dvoid *)err,1,(text *)0,&errcode,
 			message,sizeof(message),OCI_HTYPE_ERROR);
 	message[1023]='\0';
+#if 0
+	if (charstring::contains(nlslang,"UTF16")) {
+		char	*m=charstring::duplicateUcs2((ucs2_t *)message);
+		errormessage.append(m);
+		delete[] m;
+	} else {
+		errormessage.append(message);
+	}
+#else
 	errormessage.append(message);
+#endif
 	return errormessage.getString();
 }
 
