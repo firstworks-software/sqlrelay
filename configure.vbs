@@ -879,6 +879,25 @@ TESTDBS=""
 TESTAPIS=""
 
 HOSTNAME=LCase(WScript.CreateObject("WScript.Network").ComputerName)
+SHORTHOSTNAME=Replace(HOSTNAME,"centos","co")
+SHORTHOSTNAME=Replace(SHORTHOSTNAME,"debian","db")
+SHORTHOSTNAME=Replace(SHORTHOSTNAME,"fedora","fc")
+SHORTHOSTNAME=Replace(SHORTHOSTNAME,"freebsd","fb")
+SHORTHOSTNAME=Replace(SHORTHOSTNAME,"haiku","hk")
+SHORTHOSTNAME=Replace(SHORTHOSTNAME,"openbsd","ob")
+SHORTHOSTNAME=Replace(SHORTHOSTNAME,"netbsd","nb")
+SHORTHOSTNAME=Replace(SHORTHOSTNAME,"opensuse","os")
+SHORTHOSTNAME=Replace(SHORTHOSTNAME,"solaris","sl")
+SHORTHOSTNAME=Replace(SHORTHOSTNAME,"syllable","sb")
+SHORTHOSTNAME=Replace(SHORTHOSTNAME,"ubuntu","u")
+SHORTHOSTNAME=Replace(SHORTHOSTNAME,"win","w")
+SHORTHOSTNAME=Replace(SHORTHOSTNAME,"alpha","a")
+SHORTHOSTNAME=Replace(SHORTHOSTNAME,"mipsel","m32")
+SHORTHOSTNAME=Replace(SHORTHOSTNAME,"mips64el","m64")
+SHORTHOSTNAME=Replace(SHORTHOSTNAME,"hppa","hp")
+SHORTHOSTNAME=Replace(SHORTHOSTNAME,"i386","x86")
+SHORTHOSTNAME=Replace(SHORTHOSTNAME,"sparc","s32")
+SHORTHOSTNAME=Replace(SHORTHOSTNAME,"sparc64","s64")
 
 CMDLINEBUILD="no "
 CPPBUILD="no "
@@ -1237,6 +1256,7 @@ for i=lbound(infiles) to ubound(infiles)
 
 	' hostname
 	content=replace(content,"@HOSTNAME@",HOSTNAME,1,-1,0)
+	content=replace(content,"@SHORTHOSTNAME@",SHORTHOSTNAME,1,-1,0)
 
 	' write output file
 	set outfile=fso.OpenTextFile(outfiles(i),2,true)

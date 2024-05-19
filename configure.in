@@ -1100,7 +1100,7 @@ sed -e "s|^centos|co|" \
 -e "s|^freebsd|fb|" \
 -e "s|^haiku|hk|" \
 -e "s|^openbsd|ob|" \
--e "s|^netbsd|bb|" \
+-e "s|^netbsd|nb|" \
 -e "s|^opensuse|os|" \
 -e "s|^solaris|sl|" \
 -e "s|^syllable|sb|" \
