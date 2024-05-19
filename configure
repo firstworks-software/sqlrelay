@@ -6570,7 +6570,7 @@ aix[4-9]*)
   lt_cv_deplibs_check_method=pass_all
   ;;
 
-beos* | haiku* | haiku*)
+beos* | haiku*)
   lt_cv_deplibs_check_method=pass_all
   ;;
 
@@ -9648,7 +9648,7 @@ lt_prog_compiler_static=
       esac
       ;;
 
-    beos* | haiku* | haiku* | irix5* | irix6* | nonstopux* | osf3* | osf4* | osf5*)
+    beos* | haiku* | irix5* | irix6* | nonstopux* | osf3* | osf4* | osf5*)
       # PIC is the default for these OSes.
       ;;
 
@@ -10361,7 +10361,7 @@ _LT_EOF
       esac
       ;;
 
-    beos* | haiku* | haiku*)
+    beos* | haiku*)
       if $LD --help 2>&1 | $GREP ': supported targets:.* elf' > /dev/null; then
 	allow_undefined_flag=unsupported
 	# Joseph Beckenbach <jrb3@best.com> says some releases of gcc
@@ -11927,7 +11927,7 @@ amigaos*)
   esac
   ;;
 
-beos* | haiku* | haiku*)
+beos* | haiku*)
   library_names_spec='$libname$shared_ext'
   dynamic_linker="$host_os ld.so"
   shlibpath_var=LIBRARY_PATH
@@ -12707,7 +12707,7 @@ else
   lt_cv_dlopen_libs=
 
   case $host_os in
-  beos* | haiku* | haiku*)
+  beos* | haiku*)
     lt_cv_dlopen=load_add_on
     lt_cv_dlopen_libs=
     lt_cv_dlopen_self=yes
@@ -13999,7 +13999,7 @@ fi
         fi
         ;;
 
-      beos* | haiku* | haiku*)
+      beos* | haiku*)
 	if $LD --help 2>&1 | $GREP ': supported targets:.* elf' > /dev/null; then
 	  allow_undefined_flag_CXX=unsupported
 	  # Joseph Beckenbach <jrb3@best.com> says some releases of gcc
@@ -15026,7 +15026,7 @@ lt_prog_compiler_static_CXX=
       esac
       ;;
 
-    beos* | haiku* | haiku* | irix5* | irix6* | nonstopux* | osf3* | osf4* | osf5*)
+    beos* | haiku* | irix5* | irix6* | nonstopux* | osf3* | osf4* | osf5*)
       # PIC is the default for these OSes.
       ;;
     mingw* | cygwin* | os2* | pw32* | cegcc*)
@@ -15894,7 +15894,7 @@ amigaos*)
   esac
   ;;
 
-beos* | haiku* | haiku*)
+beos* | haiku*)
   library_names_spec='$libname$shared_ext'
   dynamic_linker="$host_os ld.so"
   shlibpath_var=LIBRARY_PATH
@@ -41099,7 +41099,6 @@ sed -e "s|^centos|co|" \
 -e "s|^solaris|sl|" \
 -e "s|^syllable|sb|" \
 -e "s|^ubuntu|u|" \
--e "s|^win|w|" \
 -e "s|alpha$|a|" \
 -e "s|mipsel$|m32|" \
 -e "s|mips64el$|m64|" \
