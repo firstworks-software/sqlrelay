@@ -375,9 +375,6 @@ BuildArch: noarch
 API documentation for SQL Relay.
 
 
-# debug package
-
-
 %prep
 %autosetup -p1
 
@@ -764,7 +761,6 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 - Added new modules and includes.
 - Removed tcl(abi) = 8.5 for non-fedora platforms.
 - Added log/debug directory.
-- Added debug package.
 
 * Thu Mar 04 2021 David Muse <david.muse@firstworks.com> - 1.9.0-1
 - Updated to version 1.9.0.
