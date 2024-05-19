@@ -1105,7 +1105,6 @@ sed -e "s|^centos|co|" \
 -e "s|^solaris|sl|" \
 -e "s|^syllable|sb|" \
 -e "s|^ubuntu|u|" \
--e "s|^win|w|" \
 -e "s|alpha$|a|" \
 -e "s|mipsel$|m32|" \
 -e "s|mips64el$|m64|" \

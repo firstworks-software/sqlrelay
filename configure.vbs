@@ -879,25 +879,54 @@ TESTDBS=""
 TESTAPIS=""
 
 HOSTNAME=LCase(WScript.CreateObject("WScript.Network").ComputerName)
-SHORTHOSTNAME=Replace(HOSTNAME,"centos","co")
-SHORTHOSTNAME=Replace(SHORTHOSTNAME,"debian","db")
-SHORTHOSTNAME=Replace(SHORTHOSTNAME,"fedora","fc")
-SHORTHOSTNAME=Replace(SHORTHOSTNAME,"freebsd","fb")
-SHORTHOSTNAME=Replace(SHORTHOSTNAME,"haiku","hk")
-SHORTHOSTNAME=Replace(SHORTHOSTNAME,"openbsd","ob")
-SHORTHOSTNAME=Replace(SHORTHOSTNAME,"netbsd","nb")
-SHORTHOSTNAME=Replace(SHORTHOSTNAME,"opensuse","os")
-SHORTHOSTNAME=Replace(SHORTHOSTNAME,"solaris","sl")
-SHORTHOSTNAME=Replace(SHORTHOSTNAME,"syllable","sb")
-SHORTHOSTNAME=Replace(SHORTHOSTNAME,"ubuntu","u")
-SHORTHOSTNAME=Replace(SHORTHOSTNAME,"win","w")
-SHORTHOSTNAME=Replace(SHORTHOSTNAME,"alpha","a")
-SHORTHOSTNAME=Replace(SHORTHOSTNAME,"mipsel","m32")
-SHORTHOSTNAME=Replace(SHORTHOSTNAME,"mips64el","m64")
-SHORTHOSTNAME=Replace(SHORTHOSTNAME,"hppa","hp")
-SHORTHOSTNAME=Replace(SHORTHOSTNAME,"i386","x86")
-SHORTHOSTNAME=Replace(SHORTHOSTNAME,"sparc","s32")
-SHORTHOSTNAME=Replace(SHORTHOSTNAME,"sparc64","s64")
+Set RegExp=CreateObject("VBScript.RegExp")
+patterns=Array(_
+		"^centos",_
+		"^debian",_
+		"^fedora",_
+		"^freebsd",_
+		"^haiku",_
+		"^openbsd",_
+		"^netbsd",_
+		"^opensuse",_
+		"^solaris",_
+		"^syllable",_
+		"^ubuntu",_
+		"^win",_
+		"alpha$",_
+		"mipsel$",_
+		"mips64el$",_
+		"hppa$",_
+		"i386$",_
+		"sparc$",_
+		"sparc64$"_
+		)
+replacements=Array(_
+		"co",_
+		"db",_
+		"fc",_
+		"fb",_
+		"hk",_
+		"ob",_
+		"nb",_
+		"os",_
+		"sl",_
+		"sb",_
+		"u",_
+		"w",_
+		"a",_
+		"m32",_
+		"m64",_
+		"hp",_
+		"x86",_
+		"s32",_
+		"s64"_
+		)
+SHORTHOSTNAME=HOSTNAME
+for i=lbound(patterns) to ubound(patterns)
+	RegExp.Pattern=patterns(i)
+	SHORTHOSTNAME = RegExp.Replace(SHORTHOSTNAME,replacements(i))
+next
 
 CMDLINEBUILD="no "
 CPPBUILD="no "
