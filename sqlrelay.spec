@@ -519,11 +519,12 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_includedir}/%{name}/private/sqlrresultsettranslation*.h
 %{_includedir}/%{name}/private/sqlrrouter*.h
 %{_includedir}/%{name}/private/sqlrschedule*.h
-%{_includedir}/%{name}/private/sqlrserverclasses.h
+%{_includedir}/%{name}/private/sqlrserverbase.h
 %{_includedir}/%{name}/private/sqlrserverconnection.h
 %{_includedir}/%{name}/private/sqlrservercontroller.h
 %{_includedir}/%{name}/private/sqlrservercursor.h
 %{_includedir}/%{name}/private/sqlrserverincludes.h
+%{_includedir}/%{name}/private/sqlrservermodule*.h
 %{_includedir}/%{name}/private/sqlrshm.h
 %{_includedir}/%{name}/private/sqlrtrigger*.h
 %{_libdir}/libsqlrserver.so

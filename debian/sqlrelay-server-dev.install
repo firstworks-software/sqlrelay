@@ -27,6 +27,7 @@ usr/include/sqlrelay/private/sqlrrouter.h
 usr/include/sqlrelay/private/sqlrrouters.h
 usr/include/sqlrelay/private/sqlrschedule.h
 usr/include/sqlrelay/private/sqlrschedulerule.h
+usr/include/sqlrelay/private/sqlrserverbase.h
 usr/include/sqlrelay/private/sqlrserverconnection.h
 usr/include/sqlrelay/private/sqlrservercontroller.h
 usr/include/sqlrelay/private/sqlrservercursor.h
