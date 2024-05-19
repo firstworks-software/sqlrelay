@@ -7136,7 +7136,9 @@ bool sqlrservercontroller::acquireAnnounceMutex() {
 		signalmanager::alarm(0);
 		pvt->_semset->setRetryInterruptedOperations(true);
 	} else {
+stdoutput.printf("%d: wait(0)\n",process::getProcessId());
 		result=pvt->_semset->waitWithUndo(0);
+stdoutput.printf("%d: after wait(0)\n",process::getProcessId());
 	}
 	if (result) {
 		raiseDebugMessageEvent("done acquiring announce mutex");
@@ -7184,7 +7186,9 @@ bool sqlrservercontroller::waitForListenerToFinishReading() {
 		signalmanager::alarm(0);
 		pvt->_semset->setRetryInterruptedOperations(true);
 	} else {
+stdoutput.printf("%d: wait(3)\n",process::getProcessId());
 		result=pvt->_semset->wait(3);
+stdoutput.printf("%d: after wait(3)\n",process::getProcessId());
 	}
 	if (result) {
 		raiseDebugMessageEvent("done waiting for listener");

@@ -29,8 +29,8 @@
 class SQLRSERVER_DLLSPEC scaler {
 
 	public:
-			scaler();
-			~scaler();
+		scaler();
+		~scaler();
 		bool	initScaler(int argc, const char **argv);
 		void	loop();
 

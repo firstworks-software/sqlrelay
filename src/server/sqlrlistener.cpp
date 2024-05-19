@@ -275,7 +275,7 @@ bool sqlrlistener::init(int argc, const char **argv) {
 	// The tmpdir his is often in /run or /var/run, which is often a tmpfs,
 	// at least on Linux.  So, it's blown away with each reboot.  Re-create
 	// it if it doesn't exist.
-#ifdef WIN32
+#ifdef _WIN32
 	const char	*slash="\\";
 #else
 	const char	*slash="/";
