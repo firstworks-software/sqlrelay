@@ -375,7 +375,7 @@ BuildArch: noarch
 API documentation for SQL Relay.
 
 
-%debug_package
+# debug package
 
 
 %prep
