@@ -4795,6 +4795,8 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>All schedule modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
 
+<p>All schedule modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+
 <p>Connection schedule modules can be "stacked".  Multiple different modules may be loaded, and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
 
 <blockquote>
@@ -5084,6 +5086,8 @@ http://www.gnu.org/software/src-highlite -->
 <p>Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.</p>
 
 <p>All filter modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
+
+<p>All filter modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <p>All filter modules have an <i>when</i> attribute as well, which determines when the filter is applied.  If set to "before" then the module is executed before any query translations are executed.  If set to "after", or omitted, then the module is executed  after all query translations have been executed.  See <a href="#querytranslations">Query Translations</a> below for more information.</p>
 
@@ -5451,7 +5455,9 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.</p>
 
-<p>All translation modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
+<p>All query translation modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
+
+<p>All query translation modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <p>Query translation modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
 
@@ -5847,6 +5853,8 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>All bind variable translation modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
 
+<p>All bind variable translation modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+
 <p>Bind variable translation modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
 
 <p>At startup, the SQL Relay server creates instances of the specified bind variable translations modules and initializes them.  When a query is run, the server passes the bind variables to each module, in the order that they were specified in the config file.  If a module modifies a bind variable, then that modified variable is passed on to the next module.</p>
@@ -5882,6 +5890,8 @@ http://www.gnu.org/software/src-highlite -->
 <p>Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.</p>
 
 <p>All result set header translation modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
+
+<p>All result set header translation modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <p>Result set header translation modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
 
@@ -5924,6 +5934,8 @@ http://www.gnu.org/software/src-highlite -->
 <p>Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.</p>
 
 <p>All result set translation modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
+
+<p>All result set translation modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <p>Result set translation modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
 
@@ -6102,7 +6114,9 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.</p>
 
-<p>All translation modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
+<p>All error translation modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
+
+<p>All error translation modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <p>Error translation modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
 
@@ -6400,6 +6414,8 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>All directive modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
 
+<p>All directive modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+
 <p>Directive modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
 
 <p>At startup, the SQL Relay server creates instances of the specified directive modules and initializes them.  When a query is run, the server passes the query to each module, in the order that they were specified in the config file. </p>
@@ -6609,6 +6625,8 @@ http://www.gnu.org/software/src-highlite -->
 <p>Module configurations may have attributes and/or nested tags.  How these elements are interpreted is module-specific.</p>
 
 <p>All router modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
+
+<p>All router modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <p>Router modules can be "stacked".  Multiple modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
 
@@ -7389,6 +7407,8 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>All query modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
 
+<p>All query modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+
 <p>Custom query modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
 
 <p>At startup, the SQL Relay server creates instances of the specified query modules and initializes them.  When a query is run, the server passes the query to each module, in the order that they were specified in the config file.  Each module may evaluate the query and decide whether to respond or not.  If none of the query modules respond, then the query is passed along to the database.</p>
@@ -7648,6 +7668,8 @@ http://www.gnu.org/software/src-highlite -->
 <p>Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.</p>
 
 <p>All trigger modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
+
+<p>All trigger modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <p>All trigger modules also have a <i>when</i> attribute which can be set to "before", "after", or "both", indicating whether to run the trigger before the query is executed, after the query has been executed, or both.</p>
 
@@ -8310,6 +8332,8 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>All logger modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
 
+<p>All logger modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+
 <p>Logger modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
 
 <p>At startup, the SQL Relay server processes create instances of the specified logger modules and initialize them.  As events occur, the server passes the event, log level, and optionally, a string of information about the event to each module, in the order that they were specified in the config file.  If a module is listening for that event, at that log level, then it logs information about the event to a log file.</p>
@@ -8327,7 +8351,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <br/><a name="debug"/><h3>debug</h3>
 
-<p>The <b>debug</b> module logs a great deal of information to about the internal operation of the SQL Relay server to log files in the "debug directory", usually /usr/local/firstworks/var/log/sqlrelay/debug or /usr/local/firstworks/var/sqlrelay/debug.  It creates files named sqlr-listener."pid" and sqlr-connection."pid" where "pid" is replaced with the process id of the process that is being logged.  As new processes are forked, new files are created with debug information about those processes.</p>
+<p>The <b>debug</b> module logs a great deal of information to about the internal operation of the SQL Relay server to log files in the "debug directory", usually /usr/local/firstworks/var/log/sqlrelay/debug, /usr/local/firstworks/var/sqlrelay/debug, or /var/log/sqlrelay/debug.  It creates files named sqlr-listener."pid" and sqlr-connection."pid" where "pid" is replaced with the process id of the process that is being logged.  As new processes are forked, new files are created with debug information about those processes.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -8362,7 +8386,7 @@ Sample log for connecton process: <a href="sqlr-connection.1871.html">sqlr-conne
 
 <br/><a name="sql"/><h3>sql</h3>
 
-<p>The <b>sql</b> module logs all queries to log files in the "log directory", usually /usr/local/firstworks/var/log/sqlrelay or /usr/local/firstworks/var/sqlrelay/log.  It creates files named sqlr-connection-"id"-querylog."pid" for each sqlr-connection process where "id" is replaced with the id of the instance from the configuration file and "pid" is replaced with the process id.</p>
+<p>The <b>sql</b> module logs all queries to log files in the "log directory", usually /usr/local/firstworks/var/log/sqlrelay, /usr/local/firstworks/var/sqlrelay/log, or /var/log/sqlrelay.  It creates files named sqlr-connection-"id"-querylog."pid" for each sqlr-connection process where "id" is replaced with the id of the instance from the configuration file and "pid" is replaced with the process id.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -8421,7 +8445,7 @@ select 3 from dual;
 </blockquote>
 <br/><br/><a name="slowqueries"/><h3>slowqueries</h3>
 
-<p>The <b>slowqueries</b> module logs queries that take longer to run than a specified threshold to log files in the "log directory", usually /usr/local/firstworks/var/log/sqlrelay or /usr/local/firstworks/var/sqlrelay/log.  It creates files named sqlr-connection-"id"-querylog."pid" for each sqlr-connection process where "id" is replaced with the id of the instance from the configuration file and "pid" is replaced with the process id.</p>
+<p>The <b>slowqueries</b> module logs queries that take longer to run than a specified threshold to log files in the "log directory", usually /usr/local/firstworks/var/log/sqlrelay, /usr/local/firstworks/var/sqlrelay/log, or /var/log/sqlrelay.  It creates files named sqlr-connection-"id"-querylog."pid" for each sqlr-connection process where "id" is replaced with the id of the instance from the configuration file and "pid" is replaced with the process id.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -8585,6 +8609,8 @@ http://www.gnu.org/software/src-highlite -->
 <p>Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.</p>
 
 <p>All notification modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
+
+<p>All notification modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <p>Notification modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
 

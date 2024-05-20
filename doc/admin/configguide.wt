@@ -3299,6 +3299,8 @@ Module configurations may have attributes and/or nested tags.  How these are int
 
 All schedule modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
 
+All schedule modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+
 Connection schedule modules can be "stacked".  Multiple different modules may be loaded, and multiple instances of the same type of module, with different configurations, may also be loaded.
 
 {{{#!blockquote
@@ -3477,6 +3479,8 @@ The //module// attribute specifies which module to load.
 Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.
 
 All filter modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
+
+All filter modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 All filter modules have an //when// attribute as well, which determines when the filter is applied.  If set to "before" then the module is executed before any query translations are executed.  If set to "after", or omitted, then the module is executed  after all query translations have been executed.  See [#querytranslations Query Translations] below for more information.
 
@@ -3684,7 +3688,9 @@ The //module// attribute specifies which module to load.
 
 Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.
 
-All translation modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
+All query translation modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
+
+All query translation modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 Query translation modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
 
@@ -3891,6 +3897,8 @@ Module configurations may have attributes and/or nested tags.  How these are int
 
 All bind variable translation modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
 
+All bind variable translation modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+
 Bind variable translation modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
 
 At startup, the SQL Relay server creates instances of the specified bind variable translations modules and initializes them.  When a query is run, the server passes the bind variables to each module, in the order that they were specified in the config file.  If a module modifies a bind variable, then that modified variable is passed on to the next module.
@@ -3917,6 +3925,8 @@ Module configurations may have attributes and/or nested tags.  How these are int
 
 All result set header translation modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
 
+All result set header translation modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+
 Result set header translation modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
 
 At startup, the SQL Relay server creates instances of the specified result set header translations modules and initializes them.  When a query is run, the server passes the result set header to each module, in the order that they were specified in the config file.  If a module modifies the result set header, then that modified header is passed on to the next module.
@@ -3942,6 +3952,8 @@ The //module// attribute specifies which module to load.
 Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.
 
 All result set translation modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
+
+All result set translation modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 Result set translation modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
 
@@ -4060,7 +4072,9 @@ The //module// attribute specifies which module to load.
 
 Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.
 
-All translation modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
+All error translation modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
+
+All error translation modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 Error translation modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
 
@@ -4220,6 +4234,8 @@ Module configurations may have attributes and/or nested tags.  How these are int
 
 All directive modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
 
+All directive modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+
 Directive modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
 
 At startup, the SQL Relay server creates instances of the specified directive modules and initializes them.  When a query is run, the server passes the query to each module, in the order that they were specified in the config file. 
@@ -4368,6 +4384,8 @@ The //module// attribute specifies which module to load.
 Module configurations may have attributes and/or nested tags.  How these elements are interpreted is module-specific.
 
 All router modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
+
+All router modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 Router modules can be "stacked".  Multiple modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
 
@@ -4786,6 +4804,8 @@ Module configurations may have attributes and/or nested tags.  How these are int
 
 All query modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
 
+All query modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+
 Custom query modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
 
 At startup, the SQL Relay server creates instances of the specified query modules and initializes them.  When a query is run, the server passes the query to each module, in the order that they were specified in the config file.  Each module may evaluate the query and decide whether to respond or not.  If none of the query modules respond, then the query is passed along to the database.
@@ -4994,6 +5014,8 @@ The //module// attribute specifies which module to load.
 Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.
 
 All trigger modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
+
+All trigger modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 All trigger modules also have a //when// attribute which can be set to "before", "after", or "both", indicating whether to run the trigger before the query is executed, after the query has been executed, or both.
 
@@ -5424,6 +5446,8 @@ Different modules may have different parameters.  In this example, listener="yes
 
 All logger modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
 
+All logger modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+
 Logger modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
 
 At startup, the SQL Relay server processes create instances of the specified logger modules and initialize them.  As events occur, the server passes the event, log level, and optionally, a string of information about the event to each module, in the order that they were specified in the config file.  If a module is listening for that event, at that log level, then it logs information about the event to a log file.
@@ -5441,7 +5465,7 @@ Custom modules may also be developed.  For more information, please contact [mai
 [[br]][=#debug]
 === debug ===
 
-The '''debug''' module logs a great deal of information to about the internal operation of the SQL Relay server to log files in the "debug directory", usually /usr/local/firstworks/var/log/sqlrelay/debug or /usr/local/firstworks/var/sqlrelay/debug.  It creates files named sqlr-listener."pid" and sqlr-connection."pid" where "pid" is replaced with the process id of the process that is being logged.  As new processes are forked, new files are created with debug information about those processes.
+The '''debug''' module logs a great deal of information to about the internal operation of the SQL Relay server to log files in the "debug directory", usually /usr/local/firstworks/var/log/sqlrelay/debug, /usr/local/firstworks/var/sqlrelay/debug, or /var/log/sqlrelay/debug.  It creates files named sqlr-listener."pid" and sqlr-connection."pid" where "pid" is replaced with the process id of the process that is being logged.  As new processes are forked, new files are created with debug information about those processes.
 
 {{{#!blockquote
 {{{#!code
@@ -5467,7 +5491,7 @@ Sample log for connecton process: [sqlr-connection.1871.html sqlr-connection.187
 [[br]][=#sql]
 === sql ===
 
-The '''sql''' module logs all queries to log files in the "log directory", usually /usr/local/firstworks/var/log/sqlrelay or /usr/local/firstworks/var/sqlrelay/log.  It creates files named sqlr-connection-"id"-querylog."pid" for each sqlr-connection process where "id" is replaced with the id of the instance from the configuration file and "pid" is replaced with the process id.
+The '''sql''' module logs all queries to log files in the "log directory", usually /usr/local/firstworks/var/log/sqlrelay, /usr/local/firstworks/var/sqlrelay/log, or /var/log/sqlrelay.  It creates files named sqlr-connection-"id"-querylog."pid" for each sqlr-connection process where "id" is replaced with the id of the instance from the configuration file and "pid" is replaced with the process id.
 
 {{{#!blockquote
 {{{#!code
@@ -5520,7 +5544,7 @@ Process ID changes are logged like:
 [[br]][=#slowqueries]
 === slowqueries ===
 
-The '''slowqueries''' module logs queries that take longer to run than a specified threshold to log files in the "log directory", usually /usr/local/firstworks/var/log/sqlrelay or /usr/local/firstworks/var/sqlrelay/log.  It creates files named sqlr-connection-"id"-querylog."pid" for each sqlr-connection process where "id" is replaced with the id of the instance from the configuration file and "pid" is replaced with the process id.
+The '''slowqueries''' module logs queries that take longer to run than a specified threshold to log files in the "log directory", usually /usr/local/firstworks/var/log/sqlrelay, /usr/local/firstworks/var/sqlrelay/log, or /var/log/sqlrelay.  It creates files named sqlr-connection-"id"-querylog."pid" for each sqlr-connection process where "id" is replaced with the id of the instance from the configuration file and "pid" is replaced with the process id.
 
 {{{#!blockquote
 {{{#!code
@@ -5637,6 +5661,8 @@ The //module// attribute specifies which module to load.
 Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.
 
 All notification modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
+
+All notification modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 Notification modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
 
