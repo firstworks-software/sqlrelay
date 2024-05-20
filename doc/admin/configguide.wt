@@ -127,9 +127,11 @@
  * [#sqlrcmdgstat sqlrcmdgstat]
 * [#triggers Triggers]
  * [#replay replay]
+ * [#splitmultiinsert splitmultiinsert]
  * [#upsert upsert]
 * [#logging Logging]
  * [#debug debug]
+ * [#sql sql]
  * [#slowqueries slowqueries]
  * [#stalecursors stalecursors]
 * [#notifications Notifications]
@@ -5002,6 +5004,7 @@ At startup, the SQL Relay server creates instances of the specified trigger modu
 Currently, the following trigger modules are available in the standard SQL Relay distribution:
 
 * '''replay'''
+* '''splitmultiinsert'''
 * '''upsert'''
 
 Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com]. [[Image(http://sqlrelay.sourceforge.net/images/us.png)]] [[Image(http://sqlrelay.sourceforge.net/images/br.png)]]
@@ -5172,6 +5175,7 @@ If, while replaying a query, or transaction, another replay condition is encount
 To avoid hammering the system, the module delays between retries.  The delay is initially 10 milliseconds.  This doubles with each retry until the delay reaches 1 second.  Then that doubles until it reaches 10 seconds.  From then on, the delay between retries is 10 seconds.  This algorithm isn't currently configurable.  It also isn't backed by any particular science.  It just seems to work reasonably well.
 
 
+[=#replayautoinc]
 ==== Auto-Increment Columns ====
 
 Auto-increment column values survive rollbacks.  If an insert into a table with an auto-increment column generates the value 300, and that query is rolled back then the row will be removed.  But, if the insert is run again, then it will generate the value 301 instead of 300.
@@ -5180,12 +5184,120 @@ To handle this, the replay module parses and rewrites insert queries to contain 
 
 There are some limitations to this.
 
-* Multi-row inserts are supported unless they generate auto-increment column values.  These are impossible to support, as post-insert, the last-insert-id only returns the very last value that was generated.  It's not possible to collect the others.
+* Multi-row inserts aren't directly supported if they generate auto-increment column values.  These are impossible to support directly, as post-insert, the last-insert-id only returns the very last value that was generated, and it's not possible to collect the others.  If your application does multi-row inserts into tables with auto-increment columns, then try loading the [#splitmultiinsert splitmultiinsert] module prior to the replay module to split your multi-row inserts into a set of individual insert queries, which can be replayed.
 * Insert-Select queries (eg. insert into onetable select from anothertable) and Select-Into queries (eg. select * from onetable into anothertable) are similarly not supported.
 
 If any of those are detected, then the query log is cleared and the module is disabled until the beginning of the next transaction.  If a replay condition occurs, then the error is just returned as it would have been if the module were not in use.
 
 The module also has to do a bit of work to determine whether the insert contains an auto-increment column, including query the database for the last-insert-id, and potentially column info.  Column info is cached, but the cache isn't shared across sqlr-connection processes, and is (currently) cleared at the end of each transaction.  So, the module should be used with caution in performance-sensitive applications.
+
+
+[[br]][=#splitmultiinsert]
+== splitmultiinsert ==
+
+The splitmultiinsert module splits each multi-row insert query into a set of individual insert queries.
+
+This is useful when using the [#replay replay] module, if your application does multi-row inserts into tables with auto-increment columns.  See [#replayautoinc replay - Auto-Increment Columns] above for details.  This module can, of course, be used without the replay module, but the typical use case is to use the two of them together.
+
+An example configuration:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-splitmultiinsert.conf@
+}}}
+}}}
+
+In this example...
+
+The splitmultiinsert trigger is configured to run before the query has been executed.  This is the only valid configuration for the splitmultiinsert trigger.  If when="after" or when="both" is set then the trigger will be ignored.
+
+The replay trigger is also configured.  In this configuration, the splitmultiinsert trigger supports the replay trigger by splitting multi-row inserts into a set of single-row inserts, for which it is possible to get the last-insert-id of each, if necessary.
+
+Note that the normalize translation is also configured.  This helps the splitmultiinsert and replay triggers parse and rewrite queries more accurately.
+
+In this configuration, if a //students// table exists like:
+
+{{{#!blockquote
+{{{#!code
+create table students (
+	id int primary key auto_increment,
+	firstname varchar2(128) not null,
+	lastname varchar2(128) not null,
+	major varchar2(128)
+)
+}}}
+}}}
+
+...and the following multi-row insert was performed:
+
+{{{#!blockquote
+{{{#!code
+insert into
+	students (firstname,lastname,major)
+values
+	('Richard','Muse','Mechanical Engineering'),
+	('David','Muse','Computer Science')
+}}}
+}}}
+
+...then it would be split into the following two individual inserts:
+
+{{{#!blockquote
+{{{#!code
+insert into students (firstname,lastname,major) values ('Richard','Muse','Mechanical Engineering')
+insert into students (firstname,lastname,major) values ('David','Muse','Computer Science')
+}}}
+}}}
+
+The replay module would then be able to fetch the last-insert-id for each, and rewrite them, for replay, as:
+
+{{{#!blockquote
+{{{#!code
+insert into students (id,firstname,lastname,major) values (1,'Richard','Muse','Mechanical Engineering')
+insert into students (id,firstname,lastname,major) values (2,'David','Muse','Computer Science')
+}}}
+}}}
+
+
+=== Considerations ===
+
+The splitmultiinsert trigger imposes a performance penalty.  Not only is there work involved in splitting the original query, but also, a set of individual inserts runs more slowly than a single multi-row insert.
+
+The splitmultiinsert trigger also, currently, struggles with bind variables that are split across rows in the multi-insert query.
+
+For example, consider a multi-row insert like the following:
+
+{{{#!blockquote
+{{{#!code
+insert into students (firstname,lastname,major) values (:1,:2,:3),(:4,:2,:3)
+}}}
+}}}
+
+With the following bind variables:
+
+{{{#!blockquote
+{{{#!code
+1 - "David"
+2 - "Muse"
+3 - "Computer Science"
+4 - "Richard"
+}}}
+}}}
+
+Variables 2 and 3 apply to both rows, but variable 1 only applies to the first row and variable 4 only applies to the second row.
+
+This query would be split into:
+
+{{{#!blockquote
+{{{#!code
+insert into students (firstname,lastname,major) values (:1,:2,:3)
+insert into students (firstname,lastname,major) values (:4,:2,:3)
+}}}
+}}}
+
+But, currently, all 4 bind variables would be bound when executing both queries.  This causes problems for most databases, as most databases refuse to execute queries with superfluous bind variables.
+
+This will be remedied in the future, but is currently a shortcoming of this module.
 
 
 [[br]][=#upsert]
@@ -5213,7 +5325,7 @@ The where clause of the update will only contain columns //FIRSTNAME// and //LAS
 
 The trigger will also attempt to identify primary key and autoincrement columns and exclude them from the table update.
 
-For example, if the //students// table was created like:
+For example, if the //students// table exists like:
 
 {{{#!blockquote
 {{{#!code
@@ -5319,6 +5431,7 @@ At startup, the SQL Relay server processes create instances of the specified log
 Currently, the following logger modules are available in the standard SQL Relay distribution:
 
 * '''debug'''
+* '''sql'''
 * '''slowqueries'''
 * '''stalecursors'''
 
@@ -5349,6 +5462,59 @@ mm/dd/yyyy hh:mm:ss TZ processname [pid] : info
 Sample log for main listener process: [sqlr-listener.1869.html sqlr-listener.1869][[br]]
 Sample log for child listener process: [sqlr-listener.1886.html sqlr-listener.1886][[br]]
 Sample log for connecton process: [sqlr-connection.1871.html sqlr-connection.1871][[br]]
+
+
+[[br]][=#sql]
+=== sql ===
+
+The '''sql''' module logs all queries to log files in the "log directory", usually /usr/local/firstworks/var/log/sqlrelay or /usr/local/firstworks/var/sqlrelay/log.  It creates files named sqlr-connection-"id"-querylog."pid" for each sqlr-connection process where "id" is replaced with the id of the instance from the configuration file and "pid" is replaced with the process id.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-sql.conf@
+}}}
+}}}
+
+This module takes four attributes: '''sync''', '''queryevent''', '''logerrors''', and '''logpidchange'''.
+
+If '''sync''' is set to "yes" then data will be written to the log synchronously, that is, data will be written to the log immediately and completely after each query has been executed.  This degrades performance, sometimes significantly, but makes it easier to monitor the log.  If '''sync''' is set to "no" (the default) then data will be written to the log asynchronously, that is, data may not be written to the log immediately or completely after each query has been executed.  This improves performance, sometimes significantly, but makes it it more difficult to monitor the log, and may require an sqlr-stop to be executed for the final bit of data to be written to the log.
+
+The '''queryevent''' parameter may be set to '''received''', '''prepared''', or '''executed'''.  The behavior of each is summarized as follows:
+
+* '''received''' - Each query is logged as soon as it is received by SQL Relay.  All queries are logged.  No errors can be logged.
+* '''prepared''' - Each query is logged after it has been prepared.  Queries filtered out by a filter module are not logged.  If an error occurs during preparation, then the error may be logged.
+* '''executed''' - The default.  Each query is logged after it has been executed.  Queries filtered out by a filter module or that failed to prepare are not logged.  Queries may be logged multiple times if they are prepared once and executed over and over.  If an error occurs during exceution, then the error may be logged.
+
+* '''logerrors''' - In addition to the query, log prepare/execute errors, if they occur.
+
+* '''logpidchange''' - Log process id changes.
+
+The general format is:
+
+{{{#!blockquote
+{{{
+select 1 from dual;
+select 2 from dual;
+select 3 from dual;
+}}}
+}}}
+
+Errors are logged like:
+
+{{{#!blockquote
+{{{
+-- ERROR: ORA-00942: table or view does not exist
+}}}
+}}}
+
+Process ID changes are logged like:
+
+{{{#!blockquote
+{{{
+-- pid changed to 12423
+}}}
+}}}
+
 
 
 [[br]][=#slowqueries]
