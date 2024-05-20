@@ -23,7 +23,7 @@
 
 class SQLRUTIL_DLLSPEC sqlrconfig_xmldom : public sqlrconfig, public xmldom {
 	public:
-			sqlrconfig_xmldom();
+		sqlrconfig_xmldom();
 
 		void	getEnabledIds(const char *urlname,
 					linkedlist< char * > *idlist);
@@ -373,8 +373,10 @@ void sqlrconfig_xmldom::init() {
 	debugbindvariabletranslations=DEFAULT_DEBUG_BINDVARIABLETRANSLATIONS;
 	debugresultsettranslations=DEFAULT_DEBUG_RESULTSETTRANSLATIONS;
 	debugresultsetrowtranslations=DEFAULT_DEBUG_RESULTSETROWTRANSLATIONS;
-	debugresultsetrowblocktranslations=DEFAULT_DEBUG_RESULTSETROWBLOCKTRANSLATIONS;
-	debugresultsetheadertranslations=DEFAULT_DEBUG_RESULTSETHEADERTRANSLATIONS;
+	debugresultsetrowblocktranslations=
+				DEFAULT_DEBUG_RESULTSETROWBLOCKTRANSLATIONS;
+	debugresultsetheadertranslations=
+				DEFAULT_DEBUG_RESULTSETHEADERTRANSLATIONS;
 	debugerrortranslations=DEFAULT_DEBUG_ERRORTRANSLATIONS;
 	debugprotocols=DEFAULT_DEBUG_PROTOCOLS;
 	debugauths=DEFAULT_DEBUG_AUTHS;
@@ -2011,7 +2013,8 @@ void sqlrconfig_xmldom::getTreeValues() {
 	}
 	attr=instance->getAttribute("maxclientinfosize");
 	if (!attr->isNullNode()) {
-		maxclientinfosize=charstring::convertToInteger(attr->getValue());
+		maxclientinfosize=
+			charstring::convertToInteger(attr->getValue());
 	}
 	attr=instance->getAttribute("maxquerysize");
 	if (!attr->isNullNode()) {
@@ -2032,7 +2035,8 @@ void sqlrconfig_xmldom::getTreeValues() {
 	}
 	attr=instance->getAttribute("maxlobbindvaluesize");
 	if (!attr->isNullNode()) {
-		maxlobbindvaluesize=charstring::convertToInteger(attr->getValue());
+		maxlobbindvaluesize=
+			charstring::convertToInteger(attr->getValue());
 	}
 	attr=instance->getAttribute("maxerrorsize");
 	if (!attr->isNullNode()) {
@@ -2048,7 +2052,8 @@ void sqlrconfig_xmldom::getTreeValues() {
 	}
 	attr=instance->getAttribute("listenertimeout");
 	if (!attr->isNullNode()) {
-		listenertimeout=charstring::convertToUnsignedInteger(attr->getValue());
+		listenertimeout=
+			charstring::convertToUnsignedInteger(attr->getValue());
 	}
 	attr=instance->getAttribute("reloginatstart");
 	if (!attr->isNullNode()) {
