@@ -17,8 +17,18 @@
 #endif
 
 #include <rudiments/bytestring.h>
-#include <ruby.h>
 #include "../c++/sqlrelay/sqlrclient.h"
+
+// include ruby.h after sqlrclient.h...
+// * winsock.h or bytestring.h somehow pulls in filedescriptor.h which defines:
+// 	ssize_t lowLevelRead()
+// * on some platforms (windows x86) ruby.h redefines ssize_t
+// * sqlrclient.h pulls in socketclient.h which overrides:
+// 	ssize_t lowLevelRead()
+// If ruby.h redefines ssize_t before socketclient.h overrides lowLevelRead()
+// then it will seem that the virtual method was overridden with a different
+// return type and the compile will fail.
+#include <ruby.h>
 
 #include "rubyincludes.h"
 
