@@ -1213,8 +1213,8 @@ void generateCsv(const char *option,
 	}
 	if (!excludecolumns) {
 		header.append('\n');
-		checkSuccess(comparison.write(header.getString()),
-					header.getStringLength());
+		checkSuccess((int)comparison.write(header.getString()),
+					(int)header.getStringLength());
 	}
 
 	// write records, ignoring columns and modifying fields as necessary
@@ -1312,8 +1312,8 @@ void generateXml(const char *option,
 						field[col].dbtype);
 		}
 		header.append("</columns>\n");
-		checkSuccess(comparison.write(header.getString()),
-					header.getStringLength());
+		checkSuccess((int)comparison.write(header.getString()),
+					(int)header.getStringLength());
 	}
 
 	// write records, ignoring columns and modifying fields as necessary
