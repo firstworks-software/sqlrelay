@@ -9,6 +9,8 @@
 #endif
 
 #include "../c++/sqlrelay/sqlrclient.h"
+
+#define object perlobject
 #include <EXTERN.h>
 #define explicit
 
