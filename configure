@@ -38554,6 +38554,16 @@ then
 `ls -d /usr/lib64/jvm/jdk-13-* 2> /dev/null` \
 `ls -d /usr/lib64/jvm/jdk-14-* 2> /dev/null` \
 `ls -d /usr/lib/jvm/java 2> /dev/null` \
+`ls -d /usr/lib/jvm/java-1.30* 2> /dev/null` \
+`ls -d /usr/lib/jvm/java-1.29* 2> /dev/null` \
+`ls -d /usr/lib/jvm/java-1.28* 2> /dev/null` \
+`ls -d /usr/lib/jvm/java-1.27* 2> /dev/null` \
+`ls -d /usr/lib/jvm/java-1.26* 2> /dev/null` \
+`ls -d /usr/lib/jvm/java-1.25* 2> /dev/null` \
+`ls -d /usr/lib/jvm/java-1.24* 2> /dev/null` \
+`ls -d /usr/lib/jvm/java-1.23* 2> /dev/null` \
+`ls -d /usr/lib/jvm/java-1.22* 2> /dev/null` \
+`ls -d /usr/lib/jvm/java-1.21* 2> /dev/null` \
 `ls -d /usr/lib/jvm/java-1.20* 2> /dev/null` \
 `ls -d /usr/lib/jvm/java-1.19* 2> /dev/null` \
 `ls -d /usr/lib/jvm/java-1.18* 2> /dev/null` \
