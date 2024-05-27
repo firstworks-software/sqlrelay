@@ -1773,10 +1773,11 @@ uint16_t mysqlcursor::getColumnType(uint32_t col) {
 		// differentiate them. 
 		case FIELD_TYPE_BLOB:
 			#if defined(MYSQL_VERSION_ID) && \
-					MYSQL_VERSION_ID>=100600
+					MYSQL_VERSION_ID>100505
 				if (mysqlfields[col]->flags&BINARY_FLAG) {
-					// MariaDB 10.6+ appears to use
-					// these sizes for blobs
+					// MariaDB 10.6+ and some versions of
+					// 10.5 appear to use these sizes for
+					// blobs
 					if (mysqlfields[col]->length<=255) {
 						return TINY_BLOB_DATATYPE;
 					} else if (mysqlfields[col]->
