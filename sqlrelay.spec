@@ -272,7 +272,7 @@ Oracle back-end module for SQL Relay.
 %package mysql
 License: GPLv2 with exceptions
 Summary: MySQL back-end module for SQL Relay
-BuildRequires: mariadb-devel
+BuildRequires: mariadb-connector-c-devel
 
 %description mysql
 MySQL back-end module for SQL Relay.
@@ -750,7 +750,7 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_javadocdir}/%{name}
 
 %changelog
-* Fri May 17 2024 David Muse <david.muse@firstworks.com> - 2.0.0-1
+* Tue May 28 2024 David Muse <david.muse@firstworks.com> - 2.0.0-1
 - Updated to version 2.0.0.
 - Removed support for mdbtools.
 - Updated to build python 3 packages for rhel > 6.
@@ -761,6 +761,7 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 - Added new modules and includes.
 - Removed tcl(abi) = 8.5 for non-fedora platforms.
 - Added log/debug directory.
+- Replaced mariadb-devel build dependency with mariadb-connector-c-devel.
 
 * Thu Mar 04 2021 David Muse <david.muse@firstworks.com> - 1.9.0-1
 - Updated to version 1.9.0.
