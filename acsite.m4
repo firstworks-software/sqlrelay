@@ -3572,7 +3572,7 @@ then
 			"$NODEMODULEDIR/npm8/nodejs/node-gyp/bin/node-gyp.js" \
 			"$NODEMODULEDIR/npm9/node_modules/node-gyp/bin/node-gyp.js" \
 			"$NODEMODULEDIR/npm9/nodejs/node-gyp/bin/node-gyp.js" \
-			$NODEMODULEDIR/npm10/node_modules/node-gyp/bin/node-gyp.js" \
+			"$NODEMODULEDIR/npm10/node_modules/node-gyp/bin/node-gyp.js" \
 			"$NODEMODULEDIR/npm10/nodejs/node-gyp/bin/node-gyp.js" \
 			"$NODEMODULEDIR/../../share/node-gyp/bin/node-gyp.js"
 			do
