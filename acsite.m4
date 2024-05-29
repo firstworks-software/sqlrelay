@@ -3529,7 +3529,25 @@ then
 		
 
 		AC_MSG_CHECKING(for node module directory)
-		for file in "$NODEDIR/lib64/node_modules" "$NODEDIR/lib64/nodejs" "$NODEDIR/lib/node_modules" "$NODEDIR/lib/nodejs"
+		for file in \
+			"$NODEDIR/lib64/node_modules_25" \
+			"$NODEDIR/lib64/node_modules_24" \
+			"$NODEDIR/lib64/node_modules_22" \
+			"$NODEDIR/lib64/node_modules_21" \
+			"$NODEDIR/lib64/node_modules_20" \
+			"$NODEDIR/lib64/node_modules_19" \
+			"$NODEDIR/lib64/node_modules_18" \
+			"$NODEDIR/lib64/node_modules" \
+			"$NODEDIR/lib64/nodejs" \
+			"$NODEDIR/lib/node_modules_25" \
+			"$NODEDIR/lib/node_modules_24" \
+			"$NODEDIR/lib/node_modules_22" \
+			"$NODEDIR/lib/node_modules_21" \
+			"$NODEDIR/lib/node_modules_20" \
+			"$NODEDIR/lib/node_modules_19" \
+			"$NODEDIR/lib/node_modules_18" \
+			"$NODEDIR/lib/node_modules" \
+			"$NODEDIR/lib/nodejs"
 		do
 			if ( test -d "$file" )
 			then
@@ -3542,7 +3560,21 @@ then
 		AC_MSG_CHECKING(for node-gyp)
 		if ( test -r "$NODEMODULEDIR" )
 		then
-			for file in "$NODEMODULEDIR/node-gyp/bin/node-gyp.js" "$NODEMODULEDIR/npm/node_modules/node-gyp/bin/node-gyp.js" "$NODEMODULEDIR/npm/nodejs/node-gyp/bin/node-gyp.js" "$NODEMODULEDIR/npm6/node_modules/node-gyp/bin/node-gyp.js" "$NODEMODULEDIR/npm6/nodejs/node-gyp/bin/node-gyp.js" "$NODEMODULEDIR/npm7/node_modules/node-gyp/bin/node-gyp.js" "$NODEMODULEDIR/npm7/nodejs/node-gyp/bin/node-gyp.js" "$NODEMODULEDIR/npm8/node_modules/node-gyp/bin/node-gyp.js" "$NODEMODULEDIR/npm8/nodejs/node-gyp/bin/node-gyp.js" "$NODEMODULEDIR/npm9/node_modules/node-gyp/bin/node-gyp.js" "$NODEMODULEDIR/npm9/nodejs/node-gyp/bin/node-gyp.js" "$NODEMODULEDIR/npm10/node_modules/node-gyp/bin/node-gyp.js" "$NODEMODULEDIR/npm10/nodejs/node-gyp/bin/node-gyp.js" "$NODEMODULEDIR/../../share/node-gyp/bin/node-gyp.js"
+			for file in \
+			"$NODEMODULEDIR/node-gyp/bin/node-gyp.js" \
+			"$NODEMODULEDIR/npm/node_modules/node-gyp/bin/node-gyp.js" \
+			"$NODEMODULEDIR/npm/nodejs/node-gyp/bin/node-gyp.js" \
+			"$NODEMODULEDIR/npm6/node_modules/node-gyp/bin/node-gyp.js" \
+			"$NODEMODULEDIR/npm6/nodejs/node-gyp/bin/node-gyp.js" \
+			"$NODEMODULEDIR/npm7/node_modules/node-gyp/bin/node-gyp.js" \
+			"$NODEMODULEDIR/npm7/nodejs/node-gyp/bin/node-gyp.js" \
+			"$NODEMODULEDIR/npm8/node_modules/node-gyp/bin/node-gyp.js" \
+			"$NODEMODULEDIR/npm8/nodejs/node-gyp/bin/node-gyp.js" \
+			"$NODEMODULEDIR/npm9/node_modules/node-gyp/bin/node-gyp.js" \
+			"$NODEMODULEDIR/npm9/nodejs/node-gyp/bin/node-gyp.js" \
+			$NODEMODULEDIR/npm10/node_modules/node-gyp/bin/node-gyp.js" \
+			"$NODEMODULEDIR/npm10/nodejs/node-gyp/bin/node-gyp.js" \
+			"$NODEMODULEDIR/../../share/node-gyp/bin/node-gyp.js"
 			do
 				if ( test -r "$file" )
 				then
