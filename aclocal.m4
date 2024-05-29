@@ -10365,6 +10365,23 @@ AC_SUBST(WNOERRORDATETIME)
 ])
 
 
+dnl checks to see if the -Wno-error=nonnull compiler option works or not
+dnl if it does, then WNOERRORNONNULL="-Wno-error=nonnull" is set
+dnl if it does not, then WNOERRORNONNULL="" is set
+AC_DEFUN([FW_CHECK_WNOERRORNONNULL],
+[
+AC_MSG_CHECKING(for -Wno-error=nonnull option)
+FW_TRY_LINK([#include <stdio.h>],[printf("%s %s\n",__DATE__,__TIME__);],[-Wall -Werror -Wno-error=nonnull],[],[],[WNOERRORNONNULL="-Wno-error=nonnull"],[WNOERRORNONNULL=""])
+if ( test -n "$WNOERRORNONNULL" )
+then
+	AC_MSG_RESULT(yes)
+else
+	AC_MSG_RESULT(no)
+fi
+AC_SUBST(WNOERRORNONNULL)
+])
+
+
 dnl checks to see if the -Wno-string-plus-int compiler option works or not
 dnl if it does, then WNOSTRINGPLUSINT="-Wno-string-plus-int" is set
 dnl if it does not, then WNOSTRINGPLUSINT="" is set
