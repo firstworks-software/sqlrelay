@@ -26,7 +26,7 @@ Description: Database proxy
 Package: sqlrelay-dbg
 Section: libs
 Architecture: any
-Depends: sqlrelay (= ${Source-Version})
+Depends: sqlrelay (= ${source:Version})
 Description: Debug symbols for sqlrelay.
 
 Package: sqlrelay-server-dev
@@ -39,7 +39,7 @@ Description: Development files for SQL Relay server modules
 Package: sqlrelay-server-dev-dbg
 Section: libs
 Architecture: any
-Depends: sqlrelay-server-dev (= ${Source-Version})
+Depends: sqlrelay-server-dev (= ${source:Version})
 Description: Debug symbols for sqlrelay-server-dev.
 
 Package: sqlrelay-clients
@@ -52,7 +52,7 @@ Description: Command line clients for accessing databases via SQL Relay
 Package: sqlrelay-clients-dbg
 Section: libs
 Architecture: any
-Depends: sqlrelay-clients (= ${Source-Version})
+Depends: sqlrelay-clients (= ${source:Version})
 Description: Debug symbols for sqlrelay-clients.
 
 Package: sqlrelay-cachemanager
@@ -65,7 +65,7 @@ Description: SQL Relay client-side result-set cache manager
 Package: sqlrelay-cachemanager-dbg
 Section: libs
 Architecture: any
-Depends: sqlrelay-cachemanager (= ${Source-Version})
+Depends: sqlrelay-cachemanager (= ${source:Version})
 Description: Debug symbols for sqlrelay-cachemanager.
 
 Package: sqlrelay-common
@@ -78,7 +78,7 @@ Description: Components used by SQL Relay client-side and server-side programs
 Package: sqlrelay-common-dbg
 Section: libs
 Architecture: any
-Depends: sqlrelay-common (= ${Source-Version})
+Depends: sqlrelay-common (= ${source:Version})
 Description: Debug symbols for sqlrelay-common.
 
 Package: sqlrelay-common-dev
@@ -91,7 +91,7 @@ Description: Development files for SQL Relay common components
 Package: sqlrelay-common-dev-dbg
 Section: libs
 Architecture: any
-Depends: sqlrelay-common-dev (= ${Source-Version})
+Depends: sqlrelay-common-dev (= ${source:Version})
 Description: Debug symbols for sqlrelay-common-dev.
 
 Package: sqlrelay-c++
@@ -104,7 +104,7 @@ Description: The SQL Relay C++ client library
 Package: sqlrelay-c++-dbg
 Section: libs
 Architecture: any
-Depends: sqlrelay-c++ (= ${Source-Version})
+Depends: sqlrelay-c++ (= ${source:Version})
 Description: Debug symbols for sqlrelay-c++.
 
 Package: sqlrelay-c
@@ -117,7 +117,7 @@ Description: The SQL Relay C client library
 Package: sqlrelay-c-dbg
 Section: libs
 Architecture: any
-Depends: sqlrelay-c (= ${Source-Version})
+Depends: sqlrelay-c (= ${source:Version})
 Description: Debug symbols for sqlrelay-c.
 
 Package: sqlrelay-c++-dev
@@ -130,7 +130,7 @@ Description: Development files for the SQL Relay C++ client library
 Package: sqlrelay-c++-dev-dbg
 Section: libs
 Architecture: any
-Depends: sqlrelay-c++-dev (= ${Source-Version})
+Depends: sqlrelay-c++-dev (= ${source:Version})
 Description: Debug symbols for sqlrelay-c++-dev.
 
 Package: sqlrelay-c-dev
@@ -143,7 +143,7 @@ Description: Development files for the SQL Relay C client library
 Package: sqlrelay-c-dev-dbg
 Section: libs
 Architecture: any
-Depends: sqlrelay-c-dev (= ${Source-Version})
+Depends: sqlrelay-c-dev (= ${source:Version})
 Description: Debug symbols for sqlrelay-c-dev.
 
 Package: odbc-sqlrelay
@@ -156,7 +156,7 @@ Description: ODBC driver for SQL Relay
 Package: odbc-sqlrelay-dbg
 Section: libs
 Architecture: any
-Depends: odbc-sqlrelay (= ${Source-Version})
+Depends: odbc-sqlrelay (= ${source:Version})
 Description: Debug symbols for odbc-sqlrelay.
 
 Package: perl-sqlrelay
@@ -169,7 +169,7 @@ Description: Perl bindings for the SQL Relay client API
 Package: perl-sqlrelay-dbg
 Section: libs
 Architecture: any
-Depends: perl-sqlrelay (= ${Source-Version})
+Depends: perl-sqlrelay (= ${source:Version})
 Description: Debug symbols for perl-sqlrelay.
 
 Package: perl-dbd-sqlrelay
@@ -182,7 +182,7 @@ Description: Perl DBI driver for SQL Relay
 Package: perl-dbd-sqlrelay-dbg
 Section: libs
 Architecture: any
-Depends: perl-dbd-sqlrelay (= ${Source-Version})
+Depends: perl-dbd-sqlrelay (= ${source:Version})
 Description: Debug symbols for perl-dbd-sqlrelay.
 
 Package: python3-sqlrelay
@@ -195,7 +195,7 @@ Description: Python bindings for the SQL Relay client API
 Package: python3-sqlrelay-dbg
 Section: libs
 Architecture: any
-Depends: python3-sqlrelay (= ${Source-Version})
+Depends: python3-sqlrelay (= ${source:Version})
 Description: Debug symbols for python3-sqlrelay.
 
 Package: python3-db-sqlrelay
@@ -208,7 +208,7 @@ Description: Python DB bindings for SQL Relay
 Package: python3-db-sqlrelay-dbg
 Section: libs
 Architecture: any
-Depends: python3-db-sqlrelay (= ${Source-Version})
+Depends: python3-db-sqlrelay (= ${source:Version})
 Description: Debug symbols for python3-db-sqlrelay.
 
 Package: ruby-sqlrelay
@@ -221,7 +221,7 @@ Description: Ruby bindings for the SQL Relay client API
 Package: ruby-sqlrelay-dbg
 Section: libs
 Architecture: any
-Depends: ruby-sqlrelay (= ${Source-Version})
+Depends: ruby-sqlrelay (= ${source:Version})
 Description: Debug symbols for ruby-sqlrelay.
 
 Package: php-sqlrelay
@@ -234,7 +234,7 @@ Description: PHP bindings for the SQL Relay client API
 Package: php-sqlrelay-dbg
 Section: libs
 Architecture: any
-Depends: php-sqlrelay (= ${Source-Version})
+Depends: php-sqlrelay (= ${source:Version})
 Description: Debug symbols for php-sqlrelay.
 
 Package: php-pdo-sqlrelay
@@ -247,7 +247,7 @@ Description: PHP PDO driver for SQL Relay
 Package: php-pdo-sqlrelay-dbg
 Section: libs
 Architecture: any
-Depends: php-pdo-sqlrelay (= ${Source-Version})
+Depends: php-pdo-sqlrelay (= ${source:Version})
 Description: Debug symbols for php-pdo-sqlrelay.
 
 Package: java-sqlrelay
@@ -260,7 +260,7 @@ Description: Java bindings for the SQL Relay client API
 Package: java-sqlrelay-dbg
 Section: libs
 Architecture: any
-Depends: java-sqlrelay (= ${Source-Version})
+Depends: java-sqlrelay (= ${source:Version})
 Description: Debug symbols for java-sqlrelay.
 
 Package: tcl-sqlrelay
@@ -273,7 +273,7 @@ Description: TCL bindings for the SQL Relay client API
 Package: tcl-sqlrelay-dbg
 Section: libs
 Architecture: any
-Depends: tcl-sqlrelay (= ${Source-Version})
+Depends: tcl-sqlrelay (= ${source:Version})
 Description: Debug symbols for tcl-sqlrelay.
 
 Package: erlang-sqlrelay
@@ -286,7 +286,7 @@ Description: Erlang bindings for the SQL Relay client API
 Package: erlang-sqlrelay-dbg
 Section: libs
 Architecture: any
-Depends: erlang-sqlrelay (= ${Source-Version})
+Depends: erlang-sqlrelay (= ${source:Version})
 Description: Debug symbols for erlang-sqlrelay.
 
 Package: libmono-sqlrelay
@@ -299,7 +299,7 @@ Description: Mono bindings for the SQL Relay client API and ADO.NET driver
 Package: libmono-sqlrelay-dbg
 Section: libs
 Architecture: any
-Depends: libmono-sqlrelay (= ${Source-Version})
+Depends: libmono-sqlrelay (= ${source:Version})
 Description: Debug symbols for libmono-sqlrelay.
 
 Package: node-sqlrelay
@@ -312,7 +312,7 @@ Description: Nodejs bindings for the SQL Relay client API
 Package: node-sqlrelay-dbg
 Section: libs
 Architecture: any
-Depends: node-sqlrelay (= ${Source-Version})
+Depends: node-sqlrelay (= ${source:Version})
 Description: Debug symbols for node-sqlrelay.
 
 Package: sqlrelay-oracle
@@ -325,7 +325,7 @@ Description: Oracle back-end module for SQL Relay
 Package: sqlrelay-oracle-dbg
 Section: libs
 Architecture: any
-Depends: sqlrelay-oracle (= ${Source-Version})
+Depends: sqlrelay-oracle (= ${source:Version})
 Description: Debug symbols for sqlrelay-oracle.
 
 Package: sqlrelay-mysql
@@ -338,7 +338,7 @@ Description: MySQL back-end module for SQL Relay
 Package: sqlrelay-mysql-dbg
 Section: libs
 Architecture: any
-Depends: sqlrelay-mysql (= ${Source-Version})
+Depends: sqlrelay-mysql (= ${source:Version})
 Description: Debug symbols for sqlrelay-mysql.
 
 Package: sqlrelay-postgresql
@@ -351,7 +351,7 @@ Description: PostgreSQL back-end module for SQL Relay
 Package: sqlrelay-postgresql-dbg
 Section: libs
 Architecture: any
-Depends: sqlrelay-postgresql (= ${Source-Version})
+Depends: sqlrelay-postgresql (= ${source:Version})
 Description: Debug symbols for sqlrelay-postgresql.
 
 Package: sqlrelay-sqlite
@@ -364,7 +364,7 @@ Description: SQLite back-end module for SQL Relay
 Package: sqlrelay-sqlite-dbg
 Section: libs
 Architecture: any
-Depends: sqlrelay-sqlite (= ${Source-Version})
+Depends: sqlrelay-sqlite (= ${source:Version})
 Description: Debug symbols for sqlrelay-sqlite.
 
 Package: sqlrelay-freetds
@@ -377,7 +377,7 @@ Description: FreeTDS back-end module for SQL Relay
 Package: sqlrelay-freetds-dbg
 Section: libs
 Architecture: any
-Depends: sqlrelay-freetds (= ${Source-Version})
+Depends: sqlrelay-freetds (= ${source:Version})
 Description: Debug symbols for sqlrelay-freetds.
 
 Package: sqlrelay-odbc
@@ -390,7 +390,7 @@ Description: ODBC back-end module for SQL Relay
 Package: sqlrelay-odbc-dbg
 Section: libs
 Architecture: any
-Depends: sqlrelay-odbc (= ${Source-Version})
+Depends: sqlrelay-odbc (= ${source:Version})
 Description: Debug symbols for sqlrelay-odbc.
 
 Package: sqlrelay-db2
@@ -403,7 +403,7 @@ Description: DB2 back-end module for SQL Relay
 Package: sqlrelay-db2-dbg
 Section: libs
 Architecture: any
-Depends: sqlrelay-db2 (= ${Source-Version})
+Depends: sqlrelay-db2 (= ${source:Version})
 Description: Debug symbols for sqlrelay-db2.
 
 Package: sqlrelay-firebird
@@ -416,7 +416,7 @@ Description: Firebird back-end module for SQL Relay
 Package: sqlrelay-firebird-dbg
 Section: libs
 Architecture: any
-Depends: sqlrelay-firebird (= ${Source-Version})
+Depends: sqlrelay-firebird (= ${source:Version})
 Description: Debug symbols for sqlrelay-firebird.
 
 Package: sqlrelay-informix
@@ -429,7 +429,7 @@ Description: Informix back-end module for SQL Relay
 Package: sqlrelay-informix-dbg
 Section: libs
 Architecture: any
-Depends: sqlrelay-informix (= ${Source-Version})
+Depends: sqlrelay-informix (= ${source:Version})
 Description: Debug symbols for sqlrelay-informix.
 
 Package: sqlrelay-router
@@ -442,7 +442,7 @@ Description: Router back-end module for SQL Relay
 Package: sqlrelay-router-dbg
 Section: libs
 Architecture: any
-Depends: sqlrelay-router (= ${Source-Version})
+Depends: sqlrelay-router (= ${source:Version})
 Description: Debug symbols for sqlrelay-router.
 
 Package: sqlrelay-doc
