@@ -3529,29 +3529,48 @@ then
 		
 
 		AC_MSG_CHECKING(for node module directory)
-		for file in \
-			"$NODEDIR/lib64/node_modules_25" \
-			"$NODEDIR/lib64/node_modules_24" \
-			"$NODEDIR/lib64/node_modules_22" \
-			"$NODEDIR/lib64/node_modules_21" \
-			"$NODEDIR/lib64/node_modules_20" \
-			"$NODEDIR/lib64/node_modules_19" \
-			"$NODEDIR/lib64/node_modules_18" \
-			"$NODEDIR/lib64/node_modules" \
-			"$NODEDIR/lib64/nodejs" \
-			"$NODEDIR/lib/node_modules_25" \
-			"$NODEDIR/lib/node_modules_24" \
-			"$NODEDIR/lib/node_modules_22" \
-			"$NODEDIR/lib/node_modules_21" \
-			"$NODEDIR/lib/node_modules_20" \
-			"$NODEDIR/lib/node_modules_19" \
-			"$NODEDIR/lib/node_modules_18" \
-			"$NODEDIR/lib/node_modules" \
-			"$NODEDIR/lib/nodejs"
+		DIRS=""
+		if ( test -n "$LIBARCHDIR" )
+		then
+			DIRS="$DIRS \
+				$NODEDIR/$LIBARCHDIR/node_modules_25 \
+				$NODEDIR/$LIBARCHDIR/node_modules_24 \
+				$NODEDIR/$LIBARCHDIR/node_modules_22 \
+				$NODEDIR/$LIBARCHDIR/node_modules_21 \
+				$NODEDIR/$LIBARCHDIR/node_modules_20 \
+				$NODEDIR/$LIBARCHDIR/node_modules_19 \
+				$NODEDIR/$LIBARCHDIR/node_modules_18 \
+				$NODEDIR/$LIBARCHDIR/node_modules \
+				$NODEDIR/$LIBARCHDIR/nodejs"
+		fi
+		if ( test -n "$MULTIARCHDIR" )
+		then
+			DIRS="$DIRS \
+				$NODEDIR/lib/$MULTIARCHDIR/node_modules_25 \
+				$NODEDIR/lib/$MULTIARCHDIR/node_modules_24 \
+				$NODEDIR/lib/$MULTIARCHDIR/node_modules_22 \
+				$NODEDIR/lib/$MULTIARCHDIR/node_modules_21 \
+				$NODEDIR/lib/$MULTIARCHDIR/node_modules_20 \
+				$NODEDIR/lib/$MULTIARCHDIR/node_modules_19 \
+				$NODEDIR/lib/$MULTIARCHDIR/node_modules_18 \
+				$NODEDIR/lib/$MULTIARCHDIR/node_modules \
+				$NODEDIR/lib/$MULTIARCHDIR/nodejs"
+		fi
+		DIRS="$DIRS \
+			$NODEDIR/lib/node_modules_25 \
+			$NODEDIR/lib/node_modules_24 \
+			$NODEDIR/lib/node_modules_22 \
+			$NODEDIR/lib/node_modules_21 \
+			$NODEDIR/lib/node_modules_20 \
+			$NODEDIR/lib/node_modules_19 \
+			$NODEDIR/lib/node_modules_18 \
+			$NODEDIR/lib/node_modules \
+			$NODEDIR/lib/nodejs "
+		for dir in $DIRS
 		do
-			if ( test -d "$file" )
+			if ( test -d "$dir" )
 			then
-				NODEMODULEDIR="$file"
+				NODEMODULEDIR="$dir"
 				break
 			fi
 		done
