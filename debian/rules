@@ -26,6 +26,7 @@ clean:
 	dh $@  --with autotools_dev
 
 override_dh_auto_configure:
+	./autogen.sh
 	dh_auto_configure -- \
 		--disable-static \
 		--enable-oracle-at-runtime \
