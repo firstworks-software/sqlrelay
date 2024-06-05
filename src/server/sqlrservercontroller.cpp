@@ -2327,7 +2327,14 @@ bool sqlrservercontroller::setAutoCommitOn() {
 					process::getProcessId());
 	}
 
-	return pvt->_conn->setAutoCommitOn();
+	if (pvt->_conn->setAutoCommitOn()) {
+		if (pvt->_intransaction) {
+			raiseCommitEvent();
+		}
+		pvt->_intransaction=false;
+		return true;
+	}
+	return false;
 }
 
 bool sqlrservercontroller::setAutoCommitOff() {
@@ -2341,7 +2348,15 @@ bool sqlrservercontroller::setAutoCommitOff() {
 					process::getProcessId());
 	}
 
-	return pvt->_conn->setAutoCommitOff();
+	bool	wasintx=pvt->_intransaction;
+	if (pvt->_conn->setAutoCommitOff()) {
+		pvt->_intransaction=true;
+		if (!wasintx) {
+			raiseBeginTransactionEvent();
+		}
+		return true;
+	}
+	return false;
 }
 
 bool sqlrservercontroller::begin() {
@@ -5429,7 +5444,7 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 			SQLRQUERYTYPE_SET_INCLUDING_AUTOCOMMIT_OFF) {
 		bool	wasintx=pvt->_intransaction;
 		pvt->_intransaction=true;
-		if (wasintx) {
+		if (!wasintx) {
 			raiseBeginTransactionEvent();
 		}
 	}

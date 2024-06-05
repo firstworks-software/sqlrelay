@@ -348,7 +348,6 @@ bool sqlrservercursor::isBeginTransactionQuery(const char *query) {
 		}
 		return false;
 	} else if (!charstring::compareIgnoringCase(query,"start ",6)) {
-stdoutput.printf("\"start \" found - isBeginTransactionQuery()=true\n");
 		return true;
 	} else if (!charstring::compareIgnoringCase(query,"bt",2) &&
 							*(query+2)=='\0') {
@@ -496,7 +495,9 @@ bool sqlrservercursor::isAutoCommitQuery(const char *query, bool on) {
 
 		query+=10;
 
-	}  else {
+	}
+#if 0
+	 else {
 
 		// look for "set"
 		if (!charstring::compareIgnoringCase(query,"set",3)) {
@@ -520,6 +521,11 @@ bool sqlrservercursor::isAutoCommitQuery(const char *query, bool on) {
 			return false;
 		}
 	}
+#else
+	else {
+		return false;
+	}
+#endif
 
 	// skip whitespace
 	query=conn->cont->skipWhitespaceAndComments(query);
@@ -590,9 +596,16 @@ bool sqlrservercursor::isSetIncludingAutoCommitQuery(
 		// skip whitespace
 		query=conn->cont->skipWhitespaceAndComments(query);
 
-		// look for "autocommit"
+		// look for "autocommit"/"auto"/"implicit_transactions"
 		if (!charstring::compareIgnoringCase(query,"autocommit",10)) {
 			query+=10;
+			break;
+		} else if (!charstring::compareIgnoringCase(query,"auto",4)) {
+			query+=4;
+			break;
+		} else if (!charstring::compareIgnoringCase(
+					query,"implicit_transactions",21)) {
+			query+=21;
 			break;
 		}
 
