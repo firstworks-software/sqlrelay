@@ -852,6 +852,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_mysql : public sqlrprotocol {
 		memorypool	reqpacketpool;
 		byte_t		*reqpacket;
 		uint64_t	reqpacketsize;
+		bytebuffer	longreqpacketbuffer;
 
 		randomnumber	r;
 		uint32_t	seed;
@@ -1302,54 +1303,101 @@ bool sqlrprotocol_mysql::sendPacket(bool flush) {
 
 bool sqlrprotocol_mysql::recvPacket() {
 
-	// size
-	// 3 bytes
-	uint32_t	size;
-	byte_t		*sizebytes=(byte_t *)&size;
-	sizebytes[0]=0;
-	if (clientsock->read(&sizebytes[3])!=sizeof(byte_t) ||
-		clientsock->read(&sizebytes[2])!=sizeof(byte_t) ||
-		clientsock->read(&sizebytes[1])!=sizeof(byte_t)) {
-		debugWrite("read packet size failed");
-		debugSystemError();
-		return false;
+	debugStart("recv");
+
+	// we'll need this later
+	uint64_t	localreqpacketsize;
+
+	// re-initialize some things
+	reqpacketsize=0;
+	longreqpacketbuffer.clear();
+
+	// loop, receiving up-to-16mb packets
+	for (;;) {
+
+		// size
+		// 3 bytes
+		uint32_t	size;
+		byte_t		*sizebytes=(byte_t *)&size;
+		sizebytes[0]=0;
+		if (clientsock->read(&sizebytes[3])!=sizeof(byte_t) ||
+			clientsock->read(&sizebytes[2])!=sizeof(byte_t) ||
+			clientsock->read(&sizebytes[1])!=sizeof(byte_t)) {
+			debugWrite("read packet size failed");
+			debugSystemError();
+			return false;
+		}
+		localreqpacketsize=beToHost(size);
+
+		// sequence
+		// 1 byte
+		if (clientsock->read(&seq)!=sizeof(byte_t)) {
+			debugWrite("read packet sequence failed");
+			debugSystemError();
+			return false;
+		}
+
+		// allocate space to read the packet into
+		reqpacketpool.clear();
+		reqpacket=reqpacketpool.allocate(localreqpacketsize);
+
+		// read the packet
+		if (clientsock->read(reqpacket,localreqpacketsize)!=
+						(ssize_t)localreqpacketsize) {
+			debugWrite("read packet failed");
+			debugSystemError();
+			return false;
+		}
+
+		if (getDebug()) {
+			debugWrite("size: %d",localreqpacketsize);
+			debugWrite("seq: %d",seq);
+			bytebuffer	temp;
+			temp.append(sizebytes[3]);
+			temp.append(sizebytes[2]);
+			temp.append(sizebytes[1]);
+			temp.append(seq);
+			temp.append(reqpacket,localreqpacketsize);
+			debugHexDump(temp.getBuffer(),temp.getSize());
+		}
+
+		// bump seq
+		seq++;
+
+		// tally reqpacketsize
+		reqpacketsize+=localreqpacketsize;
+
+		// bail if the packet was shorter than 16mb,
+		// otherwise loop back and read another packet...
+		if (localreqpacketsize<16777215) {
+			break;
+		}
+
+		// The memorypool that we're reading into above gets
+		// overwritten by each read.  Using a memorypool this way is
+		// fast, and minimizes heap fragmentation.
+		//
+		// However, if we have to do multiple reads, we don't end up
+		// with a contiguous buffer to just set reqpacket to.
+		//
+		// Since, presumably, having to do multiple reads is the rare
+		// case, rather than rework everything above to use some other
+		// method than results in reading directly into a contiguous 
+		// buffer, we'll just concatenate to a second buffer here.
+		longreqpacketbuffer.append(reqpacket,localreqpacketsize);
 	}
-	reqpacketsize=beToHost(size);
 
-	// sequence
-	// 1 byte
-	if (clientsock->read(&seq)!=sizeof(byte_t)) {
-		debugWrite("read packet sequence failed");
-		debugSystemError();
-		return false;
+	// if we ended up having to do multiple reads...
+	if (longreqpacketbuffer.getSize()) {
+
+		// do the final concatenation
+		longreqpacketbuffer.append(reqpacket,localreqpacketsize);
+
+		// set reqpacket
+		reqpacket=(byte_t *)longreqpacketbuffer.getBuffer();
 	}
 
-	reqpacketpool.clear();
-	reqpacket=reqpacketpool.allocate(reqpacketsize);
-
-	// packet
-	if (clientsock->read(reqpacket,reqpacketsize)!=(ssize_t)reqpacketsize) {
-		debugWrite("read packet failed");
-		debugSystemError();
-		return false;
-	}
-
-	if (getDebug()) {
-		debugStart("recv");
-		debugWrite("size: %d",reqpacketsize);
-		debugWrite("seq: %d",seq);
-		bytebuffer	temp;
-		temp.append(sizebytes[3]);
-		temp.append(sizebytes[2]);
-		temp.append(sizebytes[1]);
-		temp.append(seq);
-		temp.append(reqpacket,reqpacketsize);
-		debugHexDump(temp.getBuffer(),temp.getSize());
-		debugEnd();
-	}
-
-	// bump seq
-	seq++;
+	debugEnd();
 
 	return true;
 }
