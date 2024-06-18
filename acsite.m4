@@ -3594,7 +3594,9 @@ then
 			"$NODEMODULEDIR/npm10/node_modules/node-gyp/bin/node-gyp.js" \
 			"$NODEMODULEDIR/npm10/nodejs/node-gyp/bin/node-gyp.js" \
 			"$NODEMODULEDIR/../../share/nodejs/node-gyp/bin/node-gyp.js" \
-			"$NODEMODULEDIR/../../share/node-gyp/bin/node-gyp.js"
+			"$NODEMODULEDIR/../../../share/nodejs/node-gyp/bin/node-gyp.js" \
+			"$NODEMODULEDIR/../../share/node-gyp/bin/node-gyp.js" \
+			"$NODEMODULEDIR/../../../share/node-gyp/bin/node-gyp.js"
 			do
 				if ( test -r "$file" )
 				then
