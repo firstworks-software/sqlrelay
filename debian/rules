@@ -48,3 +48,6 @@ override_dh_install:
 		echo /usr/lib/`gcc -print-multiarch`/node_modules/sqlrelay > debian/node-sqlrelay.install; \
 	fi
 	dh_install
+
+override_dh_builddeb:
+	dh_builddeb -- -Zgzip
