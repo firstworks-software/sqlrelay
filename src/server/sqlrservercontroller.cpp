@@ -1748,7 +1748,7 @@ bool sqlrservercontroller::announceAvailability(const char *connectionid) {
 	} else {
 		// a timeout must have occurred...
 
-		// We signalled earlier in signalListenerToRead() but now we
+		// We signaled earlier in signalListenerToRead() but now we
 		// need to undo that operation.  We don't want to rely on
 		// undo's though because this isn't a mutex and not all
 		// platforms support undo's.
@@ -7169,9 +7169,9 @@ void sqlrservercontroller::releaseAnnounceMutex() {
 }
 
 void sqlrservercontroller::signalListenerToRead() {
-	raiseDebugMessageEvent("signalling listener to read");
+	raiseDebugMessageEvent("signaling listener to read");
 	pvt->_semset->signal(2);
-	raiseDebugMessageEvent("done signalling listener to read");
+	raiseDebugMessageEvent("done signaling listener to read");
 }
 
 void sqlrservercontroller::unSignalListenerToRead() {
@@ -7219,9 +7219,9 @@ bool sqlrservercontroller::waitForListenerToFinishReading() {
 }
 
 void sqlrservercontroller::signalListenerToHandoff() {
-	raiseDebugMessageEvent("signalling listener to handoff");
+	raiseDebugMessageEvent("signaling listener to handoff");
 	pvt->_semset->signal(12);
-	raiseDebugMessageEvent("done signalling listener to handoff");
+	raiseDebugMessageEvent("done signaling listener to handoff");
 }
 
 void sqlrservercontroller::acquireConnectionCountMutex() {
@@ -7237,9 +7237,9 @@ void sqlrservercontroller::releaseConnectionCountMutex() {
 }
 
 void sqlrservercontroller::signalScalerToRead() {
-	raiseDebugMessageEvent("signalling scaler to read");
+	raiseDebugMessageEvent("signaling scaler to read");
 	pvt->_semset->signal(8);
-	raiseDebugMessageEvent("done signalling scaler to read");
+	raiseDebugMessageEvent("done signaling scaler to read");
 }
 
 void sqlrservercontroller::initConnStats() {

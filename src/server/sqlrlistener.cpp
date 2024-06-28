@@ -1771,14 +1771,14 @@ bool sqlrlistener::acceptAvailableConnection(thread *thr,
 
 bool sqlrlistener::doneAcceptingAvailableConnection() {
 
-	raiseDebugMessageEvent("signalling accepted connection");
+	raiseDebugMessageEvent("signaling accepted connection");
 
 	if (!pvt->_semset->signal(3)) {
 		raiseDebugMessageEvent("failed to signal accepted connection");
 		return false;
 	}
 
-	raiseDebugMessageEvent("succeeded signalling accepted connection");
+	raiseDebugMessageEvent("succeeded signaling accepted connection");
 	return true;
 }
 
@@ -2320,11 +2320,11 @@ void sqlrlistener::incrementConnectedClientCount() {
 
 		// signal the scaler to evaluate the connection count
 		// and start more connections if necessary
-		raiseDebugMessageEvent("signalling the scaler...");
+		raiseDebugMessageEvent("signaling the scaler...");
 		if (!pvt->_semset->signal(6)) {
 			// FIXME: bail somehow
 		}
-		raiseDebugMessageEvent("finished signalling the scaler...");
+		raiseDebugMessageEvent("finished signaling the scaler...");
 	}
 
 	raiseDebugMessageEvent("finished incrementing connected client count");
