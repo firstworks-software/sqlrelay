@@ -1233,7 +1233,7 @@ bool sqlrlistener::handleTraffic(filedescriptor *fd) {
 	// there would need to be another main sqlr-listener process out there.
 	// This should never happen, the listener would have to have the same
 	// id as this one and that is checked at startup.  However, if it did
-	// happen, getValue(10) would return something greater than 0 and we
+	// happen, getValue(2) would return something greater than 0 and we
 	// would have forked anyway.
 	if (pvt->_handoffmode==HANDOFF_PROXY ||
 			pvt->_dynamicscaling ||
