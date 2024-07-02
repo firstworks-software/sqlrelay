@@ -173,7 +173,7 @@ int main(int argc, const char **argv) {
 	} else if (!charstring::compare(sqlr,"db")) {
 		sqlrc.append("host=")->append(db)->append(";port=9000;");
 	}
-	sqlrc.append("user=test;password=test;debug=no");
+	sqlrc.append("user=testuser;password=testpassword;debug=no");
 
 	// first sqlrelay, then proxy, the direct
 	for (uint16_t i=0; i<3; i++) {
