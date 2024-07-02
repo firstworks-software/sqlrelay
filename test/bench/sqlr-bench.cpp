@@ -139,6 +139,7 @@ int main(int argc, const char **argv) {
 			"	[-colsize characters-per-column] \\\n"
 			"	[-samples samples-per-test] \\\n"
 			"	[-rsbs result-set-buffer-size] \\\n"
+			"	[-querytypes [selects],[dml]] \\\n"
 			"	[-bench [sqlrelay],[proxy],[db]] \\\n"
 			"	[-debug] \\\n"
 			"	[-graph graph-file-name] \\\n"
@@ -175,7 +176,7 @@ int main(int argc, const char **argv) {
 	}
 	sqlrc.append("user=testuser;password=testpassword;debug=no");
 
-	// first sqlrelay, then proxy, the direct
+	// first sqlrelay, then proxy, then direct
 	for (uint16_t i=0; i<3; i++) {
 
 		bool	sqlrelay=(i==0);
