@@ -1474,10 +1474,8 @@ bool sqlrservercontroller::listen() {
 		waitForAvailableDatabase();
 		initSession();
 		if (!getAListener(pvt->_connectionid)) {
-stdoutput.printf("getAListener() failed\n");
 			return false;
 		}
-stdoutput.printf("getAListener() success\n");
 
 		// loop to handle suspended sessions
 		bool	reconnect=false;
@@ -1488,7 +1486,6 @@ stdoutput.printf("getAListener() success\n");
 			}
 
 			int32_t	success=waitForClient();
-stdoutput.printf("waitForClient()==%d\n",success);
 
 			if (success==1) {
 
@@ -1870,8 +1867,7 @@ int32_t sqlrservercontroller::waitForClient() {
 		uint16_t	command;
 		do {
 			// get the command
-			//if (pvt->_handoffsockun.read(&command,1,0)!=
-			if (pvt->_handoffsockun.read(&command,-1,-1)!=
+			if (pvt->_handoffsockun.read(&command,1,0)!=
 							sizeof(uint16_t)) {
 				raiseInternalErrorEvent(NULL,
 						"read handoff command failed");
@@ -1904,8 +1900,7 @@ int32_t sqlrservercontroller::waitForClient() {
 
 			// Receive the client file descriptor and use it.
 			if (!pvt->_handoffsockun.receiveSocket(
-						//&descriptor,1,0)) {
-						&descriptor,-1,-1)) {
+						&descriptor,1,0)) {
 				raiseInternalErrorEvent(NULL,
 						"failed to receive "
 						"client file descriptor");
@@ -1934,8 +1929,7 @@ int32_t sqlrservercontroller::waitForClient() {
 
 			// get the listener's pid
 			if (pvt->_handoffsockun.read(
-					//&pvt->_proxypid,1,0)!=
-					&pvt->_proxypid,-1,-1)!=
+					&pvt->_proxypid,1,0)!=
 					sizeof(uint32_t)) {
 				raiseInternalErrorEvent(NULL,
 						"failed to read process "
@@ -2059,8 +2053,7 @@ bool sqlrservercontroller::getProtocol() {
 	raiseDebugMessageEvent("getting the protocol index...");
 
 	// get protocol index
-	//if (pvt->_handoffsockun.read(&pvt->_protocolindex,1,0)!=
-	if (pvt->_handoffsockun.read(&pvt->_protocolindex,-1,-1)!=
+	if (pvt->_handoffsockun.read(&pvt->_protocolindex,1,0)!=
 							sizeof(uint16_t)) {
 		raiseDebugMessageEvent(
 			"failed to get the client protocol index");
