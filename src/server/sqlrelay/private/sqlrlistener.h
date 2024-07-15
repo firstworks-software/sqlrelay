@@ -43,15 +43,13 @@
 					thread *thr);
 		void    errorClientSession(filedescriptor *clientsock,
 					int64_t errnum, const char *err);
-		bool	semWait(int32_t index, thread *thr,
-					bool withundo, bool *timeout);
-		bool	acquireShmAccess(thread *thr, bool *timeout);
+		bool	acquireShmAccess(thread *thr, bool *timedout);
 		bool	releaseShmAccess();
+		bool	resetSemaphores(thread *thr);
 		bool	acceptAvailableConnection(thread *thr,
 							bool *alldbsdown,
-							bool *timeout);
+							bool *timedout);
 		bool	doneAcceptingAvailableConnection();
-		void	waitForConnectionToBeReadyForHandoff();
 		bool	handOffOrProxyClient(filedescriptor *sock,
 					uint16_t protocolindex,
 					thread *thr);
@@ -94,7 +92,5 @@
 							ssize_t result);
 		void	raiseClientConnectionRefusedEvent(const char *info);
 		void	raiseInternalErrorEvent(const char *info);
-
-		static void	alarmHandler(int32_t signum);
 
 		sqlrlistenerprivate	*pvt;

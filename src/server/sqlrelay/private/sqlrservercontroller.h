@@ -86,7 +86,7 @@
 
 		void	initSession();
 
-		bool	announceAvailability(const char *connectionid);
+		bool	getAListener(const char *connectionid);
 
 		bool	registerForHandoff();
 		void	deRegisterForHandoff();
@@ -163,13 +163,11 @@
 
 		void	decrementConnectedClientCount();
 
-		bool	acquireAnnounceMutex();
-		void	releaseAnnounceMutex();
-
+		bool	acquireShmAccess();
+		bool	resetSemaphores();
 		void	signalListenerToRead();
-		void	unSignalListenerToRead();
 		bool	waitForListenerToFinishReading();
-		void	signalListenerToHandoff();
+		void	releaseShmAccess();
 
 		void	acquireConnectionCountMutex();
 		void	releaseConnectionCountMutex();
@@ -231,7 +229,5 @@
 
 		bool	fakePrepareAndExecuteForApiCall(
 						sqlrservercursor *cursor);
-
-		static void     alarmHandler(int32_t signum);
 
 		sqlrservercontrollerprivate	*pvt;

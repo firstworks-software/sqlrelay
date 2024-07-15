@@ -4,6 +4,7 @@
 #include <sqlrelay/sqlrutil.h>
 
 #include <rudiments/filedescriptor.h>
+#include <rudiments/semaphoreset.h>
 #include <rudiments/thread.h>
 #include <rudiments/memorypool.h>
 #include <rudiments/stringbuffer.h>

@@ -321,9 +321,6 @@ class sqlrservercontrollerprivate {
 	dictionary< sqlrservercursor *, uint64_t >	_affectedrows;
 };
 
-static signalhandler		alarmhandler;
-static volatile sig_atomic_t	alarmrang=0;
-
 sqlrservercontroller::sqlrservercontroller() : sqlrserverbase() {
 
 	pvt=new sqlrservercontrollerprivate;
@@ -886,15 +883,7 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 	pvt->_sqlrpr=new sqlrprotocols(this);
 	pvt->_sqlrpr->load(pvt->_cfg->getListeners());
 
-	// set a handler for SIGALARMs, if necessary
-	#ifdef SIGALRM
-	if (pvt->_ttl>0 &&
-			!pvt->_semset->supportsTimedSemaphoreOperations() &&
-			sys::getSignalsInterruptSystemCalls()) {
-		alarmhandler.setHandler(alarmHandler);
-		alarmhandler.handleSignal(SIGALRM);
-	}
-	#endif
+	sqlrserverbase::init();
 
 	return true;
 }
@@ -1473,8 +1462,9 @@ bool sqlrservercontroller::listen() {
 	datetime	startdt;
 	startdt.initFromSystemDateTime();
 
-	bool		clientconnectfailed=false;
+	//bool		clientconnectfailed=false;
 
+	// loop to handle reconnects, timed out listeners, and other oddities
 	for (;;) {
 
 		if (process::getShutDownFlag()) {
@@ -1483,19 +1473,22 @@ bool sqlrservercontroller::listen() {
 
 		waitForAvailableDatabase();
 		initSession();
-		if (!announceAvailability(pvt->_connectionid)) {
+		if (!getAListener(pvt->_connectionid)) {
+stdoutput.printf("getAListener() failed\n");
 			return false;
 		}
+stdoutput.printf("getAListener() success\n");
 
 		// loop to handle suspended sessions
-		bool	loopback=false;
+		bool	reconnect=false;
 		for (;;) {
 
 			if (process::getShutDownFlag()) {
 				return false;
 			}
 
-			int	success=waitForClient();
+			int32_t	success=waitForClient();
+stdoutput.printf("waitForClient()==%d\n",success);
 
 			if (success==1) {
 
@@ -1504,8 +1497,8 @@ bool sqlrservercontroller::listen() {
 				// have a session with the client
 				clientSession();
 
-				// break out of the loop unless the client
-				// suspended the session
+				// break out of the suspended session loop
+				// unless the client suspended the session
 				if (!pvt->_suspendedsession) {
 					break;
 				}
@@ -1514,27 +1507,26 @@ bool sqlrservercontroller::listen() {
 
 				// This is a special case, basically it means
 				// that the listener wants the connection to
-				// reconnect to the database.  Just loop back
+				// reconnect to the database.  Break out of
+				// the suspended session loop and loop back
 				// so that can be handled naturally.
-				loopback=true;
+				reconnect=true;
 				break;
 
 			} else if (success==-1) {
 
-				// If waitForClient() errors out, break out of
-				// the suspendedsession loop, loop back for
-				// another session, and close connection if
-				// it is possible.  Otherwise wait for session.
-				// But it seems that under heavy load that it's
-				// impossible to change handoff socket for pid.
-				clientconnectfailed=true;
+				// If something weird happened, then break out
+				// of the suspendedsession loop, loop back, and
+				// wait for another client.
+				//clientconnectfailed=true;
 				break;
 
 			} else if (success==0) {
 
-				// If waitForClient() times out or otherwise
-				// fails to wait for someone to pick up the
-				// suspended session then roll back and break.
+				// if waitForClient() fails to wait for someone
+				// to pick up the suspended session then roll
+				// back and break out of the suspended session
+				// loop
 				if (pvt->_conn->isTransactional()) {
 					rollback();
 				}
@@ -1543,7 +1535,7 @@ bool sqlrservercontroller::listen() {
 			}
 		}
 
-		if (!loopback && pvt->_cfg->getDynamicScaling()) {
+		if (!reconnect && pvt->_cfg->getDynamicScaling()) {
 
 			decrementConnectedClientCount();
 
@@ -1553,9 +1545,11 @@ bool sqlrservercontroller::listen() {
 
 				// if the client that this was spawned for
 				// failed to connect...
+#if 0
 				if (clientconnectfailed) {
 					return false;
 				}
+#endif
 
 				// if the ttl is 0...
 				if (!pvt->_ttl) {
@@ -1681,9 +1675,9 @@ void sqlrservercontroller::initSession() {
 	raiseDebugMessageEvent("done initializing session...");
 }
 
-bool sqlrservercontroller::announceAvailability(const char *connectionid) {
+bool sqlrservercontroller::getAListener(const char *connectionid) {
 
-	raiseDebugMessageEvent("announcing availability...");
+	raiseDebugMessageEvent("getting a listener...");
 
 	// connect to listener if we haven't already
 	// and pass it this process's pid
@@ -1708,9 +1702,15 @@ bool sqlrservercontroller::announceAvailability(const char *connectionid) {
 	// In that case, since we failed to acquire the announce mutex,
 	// we don't need to release it.  We also don't need to reset the
 	// ttl because we're going to exit.
-	if (!acquireAnnounceMutex()) {
-		raiseDebugMessageEvent("ttl reached, "
-					"aborting announcing availabilty");
+	if (!acquireShmAccess()) {
+		raiseDebugMessageEvent("aborting getting a listener");
+		return false;
+	}
+
+	// reset semaphores
+	// FIXME: document why...
+	if (!resetSemaphores()) {
+		releaseShmAccess();
 		return false;
 	}
 
@@ -1737,22 +1737,16 @@ bool sqlrservercontroller::announceAvailability(const char *connectionid) {
 	}
 
 	// release the announce mutex earlier
-	releaseAnnounceMutex();
+	releaseShmAccess();
 
 	if (success) {
 
 		// reset ttl
 		pvt->_ttl=originalttl;
 
-		raiseDebugMessageEvent("done announcing availability...");
+		raiseDebugMessageEvent("done getting a listener...");
 	} else {
 		// a timeout must have occurred...
-
-		// We signaled earlier in signalListenerToRead() but now we
-		// need to undo that operation.  We don't want to rely on
-		// undo's though because this isn't a mutex and not all
-		// platforms support undo's.
-		unSignalListenerToRead();
 
 		// Close the handoff socket.  At this point, the listener
 		// will have read the connection data and will attempt to
@@ -1763,16 +1757,8 @@ bool sqlrservercontroller::announceAvailability(const char *connectionid) {
 		pvt->_handoffsockun.close();
 
 		raiseDebugMessageEvent("ttl reached, "
-					"aborting announcing availabilty");
+					"aborting getting a listener");
 	}
-
-	// signal the listener to hand off...
-	// Do this whether the wait above timed out or not.  At this point,
-	// the listener is committed to using this connection.  If a timeout
-	// did occur, and this connection is going to exit, that's OK.  Since
-	// the handoff socket was closed above, the handoff will fail, and the
-	// listener will loop back and try again with a different connection.
-	signalListenerToHandoff();
 
 	return success;
 }
@@ -1884,7 +1870,8 @@ int32_t sqlrservercontroller::waitForClient() {
 		uint16_t	command;
 		do {
 			// get the command
-			if (pvt->_handoffsockun.read(&command)!=
+			//if (pvt->_handoffsockun.read(&command,1,0)!=
+			if (pvt->_handoffsockun.read(&command,-1,-1)!=
 							sizeof(uint16_t)) {
 				raiseInternalErrorEvent(NULL,
 						"read handoff command failed");
@@ -1916,7 +1903,9 @@ int32_t sqlrservercontroller::waitForClient() {
 			}
 
 			// Receive the client file descriptor and use it.
-			if (!pvt->_handoffsockun.receiveSocket(&descriptor)) {
+			if (!pvt->_handoffsockun.receiveSocket(
+						//&descriptor,1,0)) {
+						&descriptor,-1,-1)) {
 				raiseInternalErrorEvent(NULL,
 						"failed to receive "
 						"client file descriptor");
@@ -1944,8 +1933,10 @@ int32_t sqlrservercontroller::waitForClient() {
 					"listener is proxying the client");
 
 			// get the listener's pid
-			if (pvt->_handoffsockun.read(&pvt->_proxypid)!=
-							sizeof(uint32_t)) {
+			if (pvt->_handoffsockun.read(
+					//&pvt->_proxypid,1,0)!=
+					&pvt->_proxypid,-1,-1)!=
+					sizeof(uint32_t)) {
 				raiseInternalErrorEvent(NULL,
 						"failed to read process "
 						"id during proxy handoff");
@@ -2068,7 +2059,9 @@ bool sqlrservercontroller::getProtocol() {
 	raiseDebugMessageEvent("getting the protocol index...");
 
 	// get protocol index
-	if (pvt->_handoffsockun.read(&pvt->_protocolindex)!=sizeof(uint16_t)) {
+	//if (pvt->_handoffsockun.read(&pvt->_protocolindex,1,0)!=
+	if (pvt->_handoffsockun.read(&pvt->_protocolindex,-1,-1)!=
+							sizeof(uint16_t)) {
 		raiseDebugMessageEvent(
 			"failed to get the client protocol index");
 		return false;
@@ -7128,100 +7121,89 @@ void sqlrservercontroller::decrementConnectedClientCount() {
 	raiseDebugMessageEvent("done decrementing session count");
 }
 
-bool sqlrservercontroller::acquireAnnounceMutex() {
+bool sqlrservercontroller::acquireShmAccess() {
 
-	raiseDebugMessageEvent("acquiring announce mutex");
+	raiseDebugMessageEvent("acquiring exclusive shm access");
 
 	setState(WAIT_SEMAPHORE);
 
-	// Wait.  Bail if ttl is exceeded
-	bool	result=false;
-	if (pvt->_ttl>0 && pvt->_semset->supportsTimedSemaphoreOperations()) {
-		result=pvt->_semset->waitWithUndo(0,pvt->_ttl,0);
-	} else if (pvt->_ttl>0 && sys::getSignalsInterruptSystemCalls()) {
-		pvt->_semset->setRetryInterruptedOperations(false);
-		alarmrang=0;
-		signalmanager::alarm(pvt->_ttl);
-		do {
-			error::setErrorNumber(0);
-			result=pvt->_semset->waitWithUndo(0);
-		} while (!result && error::getErrorNumber()==EINTR &&
-					!process::getShutDownFlag() &&
-					!alarmrang);
-		signalmanager::alarm(0);
-		pvt->_semset->setRetryInterruptedOperations(true);
-	} else {
-		result=pvt->_semset->waitWithUndo(0);
+	bool	timedout=false;
+	if (!semWait(pvt->_semset,0,NULL,true,pvt->_ttl,&timedout)) {
+		if (timedout) {
+			raiseDebugMessageEvent("timeout occurred");
+		} else {
+			raiseDebugMessageEvent("failed to acquire "
+							"exclusive shm access");
+		}
+		return false;
 	}
-	if (result) {
-		raiseDebugMessageEvent("done acquiring announce mutex");
-	} else {
-		raiseDebugMessageEvent("ttl reached, aborting "
-					"acquiring announce mutex");
-	}
-	return result;
+
+	// success...
+	raiseDebugMessageEvent("acquired announce mutex");
+	return true;
 }
 
-void sqlrservercontroller::releaseAnnounceMutex() {
-	raiseDebugMessageEvent("releasing announce mutex");
-	pvt->_semset->signalWithUndo(0);
-	raiseDebugMessageEvent("done releasing announce mutex");
+bool sqlrservercontroller::resetSemaphores() {
+
+	raiseDebugMessageEvent("resetting semaphores");
+
+	bool	timedout=false;
+	if (!semWait(pvt->_semset,12,NULL,false,pvt->_ttl,&timedout)) {
+		if (timedout) {
+			raiseDebugMessageEvent("timeout occured");
+		} else {
+			raiseDebugMessageEvent("failed to acquire "
+						"semaphore reset mutex");
+		}
+		return false;
+	}
+	if (!pvt->_semset->setValue(2,0)) {
+		raiseDebugMessageEvent("failed to reset semaphore 2");
+		return false;
+	}
+	if (!pvt->_semset->setValue(3,0)) {
+		raiseDebugMessageEvent("failed to reset semaphore 3");
+		return false;
+	}
+	if (!pvt->_semset->signal(12)) {
+		raiseDebugMessageEvent("failed to release "
+					"semaphore reset mutex");
+		return false;
+	}
+
+	raiseDebugMessageEvent("finished resetting semaphores");
+	return true;
 }
 
 void sqlrservercontroller::signalListenerToRead() {
 	raiseDebugMessageEvent("signaling listener to read");
 	pvt->_semset->signal(2);
-	raiseDebugMessageEvent("done signaling listener to read");
-}
-
-void sqlrservercontroller::unSignalListenerToRead() {
-	pvt->_semset->wait(2);
+	raiseDebugMessageEvent("signaled listener to read");
 }
 
 bool sqlrservercontroller::waitForListenerToFinishReading() {
 
 	raiseDebugMessageEvent("waiting for listener");
 
-	// Wait.  Bail if ttl is exceeded
-	bool	result=false;
-	if (pvt->_ttl>0 && pvt->_semset->supportsTimedSemaphoreOperations()) {
-		result=pvt->_semset->wait(3,pvt->_ttl,0);
-	} else if (pvt->_ttl>0 && sys::getSignalsInterruptSystemCalls()) {
-		pvt->_semset->setRetryInterruptedOperations(false);
-		alarmrang=0;
-		signalmanager::alarm(pvt->_ttl);
-		do {
-			error::setErrorNumber(0);
-			result=pvt->_semset->wait(3);
-		} while (!result && error::getErrorNumber()==EINTR &&
-					!process::getShutDownFlag() &&
-					!alarmrang);
-		signalmanager::alarm(0);
-		pvt->_semset->setRetryInterruptedOperations(true);
-	} else {
-		result=pvt->_semset->wait(3);
-	}
-	if (result) {
-		raiseDebugMessageEvent("done waiting for listener");
-	} else {
-		raiseDebugMessageEvent("ttl reached, "
-					"aborting waiting for listener");
+	bool	timedout=false;
+	if (!semWait(pvt->_semset,3,NULL,false,pvt->_ttl,&timedout)) {
+		if (timedout) {
+			raiseDebugMessageEvent("timeout occurred");
+		} else {
+			raiseDebugMessageEvent("failed to wait for listener");
+		}
+		return false;
 	}
 
-	// Reset this semaphore to 0.  It can get left incremented if another
-	// sqlr-connection is killed between calls to signalListenerToRead()
-	// and this method.  It's ok to reset it here becuase no one except
-	// this process has access to this semaphore at this time because of
-	// the lock on the announce mutex (semaphore 0).
-	pvt->_semset->setValue(3,0);
-
-	return result;
+	// success...
+	raiseDebugMessageEvent("done waiting for listener");
+	return true;
 }
 
-void sqlrservercontroller::signalListenerToHandoff() {
-	raiseDebugMessageEvent("signaling listener to handoff");
-	pvt->_semset->signal(12);
-	raiseDebugMessageEvent("done signaling listener to handoff");
+void sqlrservercontroller::releaseShmAccess() {
+	raiseDebugMessageEvent("releasing exclusive shm access");
+	pvt->_semset->signalWithUndo(0);
+	raiseDebugMessageEvent("released exclusive shm mutex");
 }
 
 void sqlrservercontroller::acquireConnectionCountMutex() {
@@ -9731,10 +9713,6 @@ void sqlrservercontroller::raiseRollbackEvent() {
 					SQLREVENT_ROLLBACK,
 					NULL);
 	}
-}
-
-void sqlrservercontroller::alarmHandler(int32_t signum) {
-	alarmrang=1;
 }
 
 const char *sqlrservercontroller::getDbHostName() {

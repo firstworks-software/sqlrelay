@@ -4,6 +4,9 @@
 #include <sqlrelay/sqlrserver.h>
 #include <rudiments/logger.h>
 #include <rudiments/process.h>
+#include <rudiments/sys.h>
+#include <rudiments/signalclasses.h>
+#include <rudiments/error.h>
 
 class sqlrserverbaseprivate {
 	friend class sqlrserverbase;
@@ -15,6 +18,9 @@ class sqlrserverbaseprivate {
 		stringbuffer		_logbuffer;
 };
 
+static signalhandler		alarmhandler;
+static volatile sig_atomic_t	alarmrang=0;
+
 sqlrserverbase::sqlrserverbase() {
 	pvt=new sqlrserverbaseprivate;
 	pvt->_debug=false;
@@ -25,6 +31,15 @@ sqlrserverbase::sqlrserverbase() {
 
 sqlrserverbase::~sqlrserverbase() {
 	delete pvt;
+}
+
+void sqlrserverbase::init() {
+
+	// set a handler for SIGALRMs
+	#ifdef SIGALRM
+	alarmhandler.setHandler(alarmHandler);
+	alarmhandler.handleSignal(SIGALRM);
+	#endif
 }
 
 void sqlrserverbase::setDebug(bool debug) {
@@ -77,4 +92,62 @@ void sqlrserverbase::debugEnd() {
 	}
 	pvt->_indent--;
 	pvt->_lg.end(1,(const char *)NULL,pvt->_indent);
+}
+
+bool sqlrserverbase::semWait(semaphoreset *semset,
+					int32_t index,
+					thread *thr,
+					bool withundo,
+					int32_t	timeout,
+					bool *timedout) {
+
+	bool	result=true;
+	if (timedout) {
+		*timedout=false;
+	}
+	if (timeout>0 && semset->supportsTimedSemaphoreOperations()) {
+		if (withundo) {
+			result=semset->waitWithUndo(index,timeout,0);
+		} else {
+			result=semset->wait(index,timeout,0);
+		}
+		if (timedout) {
+			*timedout=(!result && error::getErrorNumber()==EAGAIN);
+		}
+	} else if (timeout>0 && !thr && sys::getSignalsInterruptSystemCalls()) {
+		// We can't use this when using threads because alarmrang isn't
+		// thread-local and there's no way to make it be.  Also, the
+		// alarm doesn't reliably interrupt the wait() when it's called
+		// from a thread, at least not on Linux.  Hopefully platforms
+		// that supports threads also supports timed semaphore ops.
+		semset->setRetryInterruptedOperations(false);
+		alarmrang=0;
+		signalmanager::alarm(timeout);
+		do {
+			if (withundo) {
+				result=semset->waitWithUndo(index);
+			} else {
+				result=semset->wait(index);
+			}
+		} while (!result && error::getErrorNumber()==EINTR &&
+				!process::getShutDownFlag() &&
+				alarmrang!=1);
+		if (timedout) {
+			*timedout=(alarmrang==1);
+		}
+		signalmanager::alarm(0);
+		semset->setRetryInterruptedOperations(true);
+	} else {
+		if (withundo) {
+			result=semset->waitWithUndo(index);
+		} else {
+			result=semset->wait(index);
+		}
+	}
+
+	return result;
+}
+
+void sqlrserverbase::alarmHandler(int32_t signum) {
+	alarmrang=1;
 }
