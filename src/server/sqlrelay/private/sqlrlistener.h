@@ -45,7 +45,6 @@
 					int64_t errnum, const char *err);
 		bool	acquireShmAccess(thread *thr, bool *timedout);
 		bool	releaseShmAccess();
-		bool	resetSemaphores(thread *thr);
 		bool	acceptAvailableConnection(thread *thr,
 							bool *alldbsdown,
 							bool *timedout);

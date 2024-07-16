@@ -67,7 +67,6 @@ void queriesTest(void *id) {
 			colcount=randomnumber::scale(seed,1,15);
 			stdoutput.printf("%lld: creating table with %d cols\n",
 							threadid,colcount);
-stdoutput.printf("here!!!\n");
 			query.clear();
 			query.append("create table test");
 			query.append(threadid)->append(" (");
@@ -78,14 +77,11 @@ stdoutput.printf("here!!!\n");
 				query.append("col")->append(i)->append(" int");
 			}
 			query.append(")");
-stdoutput.printf("here!!!\n");
 			if (!terminated &&
 				!sqlrcur.sendQuery(query.getString())) {
-stdoutput.printf("in here!!!\n");
 				stdoutput.printf("%lld: create table - %s\n",
 					threadid,sqlrcur.errorMessage());
 			}
-stdoutput.printf("here!!!\n");
 
 			// populate it with a random number of rows
 			seed=randomnumber::generate(seed);

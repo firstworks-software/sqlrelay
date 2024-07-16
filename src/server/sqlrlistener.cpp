@@ -32,6 +32,8 @@
 	#define MAXPATHLEN	256
 #endif
 
+#define ACK	6
+
 class SQLRSERVER_DLLSPEC handoffsocketnode {
 	friend class sqlrlistener;
 	private:
@@ -1597,8 +1599,22 @@ bool sqlrlistener::handOffOrProxyClient(filedescriptor *sock,
 			// pass the file descriptor
 			if (!connectionsock.passSocket(
 					sock->getFileDescriptor())) {
-				raiseInternalErrorEvent("failed to pass "
+				raiseInternalErrorEvent("handoff failed: "
+							"failed to pass "
 							"file descriptor");
+				continue;
+			}
+
+			// read the ack
+			byte_t	ack=0;
+			if (connectionsock.read(&ack,1,0)!=sizeof(byte_t)) {
+				raiseInternalErrorEvent("handof failed: "
+							"failed to receive ack");
+				continue;
+			}
+			if (ack!=ACK) {
+				raiseInternalErrorEvent("handoff failed: "
+							"received bad ack");
 				continue;
 			}
 
@@ -1654,35 +1670,6 @@ bool sqlrlistener::releaseShmAccess() {
 	}
 
 	raiseDebugMessageEvent("finished releasing exclusive shm access");
-	return true;
-}
-
-bool sqlrlistener::resetSemaphores(thread *thr) {
-
-	raiseDebugMessageEvent("resetting semaphores");
-
-	bool	timedout=false;
-	if (!semWait(pvt->_semset,12,thr,false,
-				pvt->_listenertimeout,&timedout)) {
-		if (timedout) {
-			raiseDebugMessageEvent("timeout occured");
-		} else {
-			raiseDebugMessageEvent("failed to acquire "
-						"semaphore reset mutex");
-		}
-		return false;
-	}
-	if (!pvt->_semset->setValue(3,0)) {
-		raiseDebugMessageEvent("failed to reset semaphore 3");
-		return false;
-	}
-	if (!pvt->_semset->signal(12)) {
-		raiseDebugMessageEvent("failed to release "
-					"semaphore reset mutex");
-		return false;
-	}
-
-	raiseDebugMessageEvent("finished resetting semaphores");
 	return true;
 }
 
@@ -1770,15 +1757,8 @@ bool sqlrlistener::getAConnection(uint32_t *connectionpid,
 			// breaks so that releaseShmAccess will get called
 			// at the end, no matter what...
 
-			// reset semaphores
-			// FIXME: document why...
-			ok=resetSemaphores(thr);
-
-			if (ok) {
-				// wait for an available connection
-				ok=acceptAvailableConnection(
-					thr,&alldbsdown,&timedout);
-			}
+			// wait for an available connection
+			ok=acceptAvailableConnection(thr,&alldbsdown,&timedout);
 
 			if (ok) {
 
@@ -2019,7 +1999,6 @@ bool sqlrlistener::proxyClient(pid_t connectionpid,
 					"failed to receive ack");
 		return false;
 	}
-	#define ACK	6
 	if (ack!=ACK) {
 		raiseDebugMessageEvent("proxying client failed: "
 					"received bad ack");

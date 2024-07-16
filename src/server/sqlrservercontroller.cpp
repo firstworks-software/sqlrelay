@@ -56,6 +56,8 @@
 #define NEED_COUNT_BIND_VARIABLES 1
 #include <bindvariables.h>
 
+#define ACK	6
+
 #ifndef SQLRELAY_ENABLE_SHARED
 	extern "C" {
 		#include "sqlrserverconnectiondeclarations.cpp"
@@ -1918,6 +1920,9 @@ int32_t sqlrservercontroller::waitForClient() {
 				return -1;
 			}
 
+			// ack the handoff
+			pvt->_handoffsockun.write((byte_t)ACK);
+
 		} else if (command==HANDOFF_PROXY) {
 
 			if (!getProtocol()) {
@@ -1943,7 +1948,6 @@ int32_t sqlrservercontroller::waitForClient() {
 			raiseDebugMessageEvent(pvt->_debugstr.getString());
 
 			// acknowledge
-			#define ACK	6
 			pvt->_handoffsockun.write((byte_t)ACK);
 			pvt->_handoffsockun.flushWriteBuffer(-1,-1);
 
