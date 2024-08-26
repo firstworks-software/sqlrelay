@@ -1248,44 +1248,76 @@ bool sqlrprotocol_mysql::sendPacket() {
 
 bool sqlrprotocol_mysql::sendPacket(bool flush) {
 
-	// FIXME: what if resppacket.getSize() > maxpacketsize?
+	// initialize the position in resppacket to start sending from
+	uint32_t	resppacketpos=0;
 
-	// overwrite the first 4 bytes of the resppacket
-	resppacket.setPositionRelativeToBeginning(0);
+	// send in chunks until we've sent everything...
+	for (;;) {
 
-	// size
-	// 3 bytes
-	uint32_t	size=hostToBE((uint32_t)resppacket.getSize()-4);
-	byte_t		*sizebytes=(byte_t *)&size;
-	resppacket.write(sizebytes[3]);
-	resppacket.write(sizebytes[2]);
-	resppacket.write(sizebytes[1]);
+		// determine the number of bytes to send in the next chunk
+		uint32_t	totalsendsize=
+				resppacket.getSize()-resppacketpos;
 
-	// sequence
-	// 1 byte
-	resppacket.write(seq);
+		// we overwrite the first 4 bytes of the packet to send the
+		// size of the data and sequence number, so if there are only
+		// 4 bytes left to send then we must have sent all of the data
+		// already
+		if (totalsendsize<=4) {
+			break;
+		}
 
-	if (getDebug()) {
-		bytebuffer	temp;
-		temp.append(sizebytes[3]);
-		temp.append(sizebytes[2]);
-		temp.append(sizebytes[1]);
-		temp.append(seq);
-		temp.append(resppacket.getBuffer(),resppacket.getSize());
-		debugStart("send");
-		debugWrite("size: %d",beToHost(size));
-		debugWrite("seq: %d",seq);
-		debugHexDump(temp.getBuffer(),temp.getSize());
-		debugEnd();
-	}
+		// send data in chunks of 16mb bytes or less
+		if (totalsendsize>16777215+4) {
+			totalsendsize=16777215+4;
+		}
 
-	// packet data
-	if (clientsock->write(resppacket.getBuffer(),
-				resppacket.getSize())!=
-				(ssize_t)resppacket.getSize()) {
-		debugWrite("write packet data failed");
-		debugSystemError();
-		return false;
+		// set the position in resppacket to start sending from
+		resppacket.setPositionRelativeToBeginning(resppacketpos);
+
+		// overwrite the first 4 bytes with the size of the data and 
+		// the sequence number...
+
+		// data size: 3 bytes
+		uint32_t	size=hostToBE((uint32_t)totalsendsize-4);
+		byte_t		*sizebytes=(byte_t *)&size;
+		resppacket.write(sizebytes[3]);
+		resppacket.write(sizebytes[2]);
+		resppacket.write(sizebytes[1]);
+
+		// sequence: 1 byte
+		resppacket.write(seq);
+
+		if (getDebug()) {
+			bytebuffer	temp;
+			temp.append(sizebytes[3]);
+			temp.append(sizebytes[2]);
+			temp.append(sizebytes[1]);
+			temp.append(seq);
+			temp.append(resppacket.getBuffer()+resppacketpos,
+								totalsendsize);
+			debugStart("send");
+			debugWrite("data size: %d",beToHost(size));
+			debugWrite("seq: %d",seq);
+			debugHexDump(temp.getBuffer(),temp.getSize());
+			debugEnd();
+		}
+
+		// packet data
+		if (clientsock->write(resppacket.getBuffer()+resppacketpos,
+						totalsendsize)!=
+						(ssize_t)totalsendsize) {
+			debugWrite("write packet data failed");
+			debugSystemError();
+			return false;
+		}
+
+		// bump seq
+		seq++;
+
+		// update the position in resppacket to start sending from
+		// (make sure to give ourselves 4 bytes for the size of the
+		// data and the sequence number)
+		resppacketpos+=totalsendsize-4;
 	}
 
 	if (flush) {
@@ -1294,9 +1326,6 @@ bool sqlrprotocol_mysql::sendPacket(bool flush) {
 	} else {
 		debugWrite("no flush...");
 	}
-
-	// bump seq
-	seq++;
 
 	return true;
 }
@@ -1315,8 +1344,7 @@ bool sqlrprotocol_mysql::recvPacket() {
 	// loop, receiving up-to-16mb packets
 	for (;;) {
 
-		// size
-		// 3 bytes
+		// data size: 3 bytes
 		uint32_t	size;
 		byte_t		*sizebytes=(byte_t *)&size;
 		sizebytes[0]=0;
@@ -1329,8 +1357,7 @@ bool sqlrprotocol_mysql::recvPacket() {
 		}
 		localreqpacketsize=beToHost(size);
 
-		// sequence
-		// 1 byte
+		// sequence: 1 byte
 		if (clientsock->read(&seq)!=sizeof(byte_t)) {
 			debugWrite("read packet sequence failed");
 			debugSystemError();
@@ -1350,7 +1377,7 @@ bool sqlrprotocol_mysql::recvPacket() {
 		}
 
 		if (getDebug()) {
-			debugWrite("size: %d",localreqpacketsize);
+			debugWrite("data size: %d",localreqpacketsize);
 			debugWrite("seq: %d",seq);
 			bytebuffer	temp;
 			temp.append(sizebytes[3]);
@@ -1612,9 +1639,10 @@ bool sqlrprotocol_mysql::parseHandshakeResponse41(
 	debugCapabilityFlags(clientcapabilityflags);
 
 	// max-packet size
-	uint32_t	maxpacketsize;
-	readLE(rp,&maxpacketsize,&rp);
-	debugWrite("max-packet size: %d",maxpacketsize);
+	uint32_t	clientmaxpacketsize;
+	readLE(rp,&clientmaxpacketsize,&rp);
+	// FIXME: sanity check on clientmaxpacketsize
+	debugWrite("client max-packet size: %d",clientmaxpacketsize);
 
 	// character set
 	clientcharacterset=*rp;
@@ -1775,14 +1803,13 @@ bool sqlrprotocol_mysql::parseHandshakeResponse320(
 	clientcapabilityflags=shortcapabilityflags;
 
 	// max-packet size
-	uint32_t	maxpacketsize;
-	bytestring::copy(&maxpacketsize,&rp,sizeof(uint32_t));
+	uint32_t	clientmaxpacketsize;
+	bytestring::copy(&clientmaxpacketsize,&rp,sizeof(uint32_t));
 	rp+=3;
-	maxpacketsize=(maxpacketsize&0xFFFFFF00);
-	maxpacketsize=leToHost(maxpacketsize);
-	// FIXME: sanity check on maxpacketsize
-
-	debugWrite("max-packet size: %d",maxpacketsize);
+	clientmaxpacketsize=(clientmaxpacketsize&0xFFFFFF00);
+	clientmaxpacketsize=leToHost(clientmaxpacketsize);
+	// FIXME: sanity check on clientmaxpacketsize
+	debugWrite("client max-packet size: %d",clientmaxpacketsize);
 
 	// handle tls
 	if (clientcapabilityflags&CLIENT_SSL) {
