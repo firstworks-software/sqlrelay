@@ -26,6 +26,8 @@ class sqlrelaybenchconnection : public sqlrbenchconnection {
 			~sqlrelaybenchconnection();
 
 		bool	connect();
+		bool	begin();
+		bool	commit();
 		bool	disconnect();
 
 	private:
@@ -105,6 +107,14 @@ bool sqlrelaybenchconnection::connect() {
 	return true;
 }
 
+bool sqlrelaybenchconnection::begin() {
+	return sqlrcon->begin();
+}
+
+bool sqlrelaybenchconnection::commit() {
+	return sqlrcon->commit();
+}
+
 bool sqlrelaybenchconnection::disconnect() {
 	sqlrcon->endSession();
 	return true;
@@ -123,12 +133,14 @@ sqlrelaybenchcursor::~sqlrelaybenchcursor() {
 }
 
 bool sqlrelaybenchcursor::query(const char *query, bool getcolumns) {
+#if 0
 	if (getcolumns) {
 		sqlrcur->getColumnInfo();
 	} else {
 		sqlrcur->dontGetColumnInfo();
 	}
 	if (!sqlrcur->sendQuery(query)) {
+stdoutput.printf("%s\n",sqlrcur->errorMessage());
 		return false;
 	}
 	uint32_t	colcount=sqlrcur->colCount();
@@ -142,6 +154,13 @@ bool sqlrelaybenchcursor::query(const char *query, bool getcolumns) {
 			}
 		}
 	}
+#else
+	if (!sqlrbcon->sqlrcon->dbVersion()) {
+stdoutput.printf("%s\n",sqlrbcon->sqlrcon->errorMessage());
+		return false;
+	}
+	return true;
+#endif
 }
 
 extern "C" {

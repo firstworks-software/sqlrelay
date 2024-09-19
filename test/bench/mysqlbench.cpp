@@ -44,6 +44,8 @@ class mysqlbenchconnection : public sqlrbenchconnection {
 						const char *dbtype);
 
 		bool	connect();
+		bool	begin();
+		bool	commit();
 		bool	disconnect();
 
 	private:
@@ -169,6 +171,20 @@ bool mysqlbenchconnection::connect() {
 	return true;
 }
 
+bool mysqlbenchconnection::begin() {
+	return !mysql_real_query(&mysql,"begin",5);
+}
+
+bool mysqlbenchconnection::commit() {
+	#ifdef HAVE_MYSQL_COMMIT
+	return !mysql_commit(&mysql);
+	#elif defined(MYSQL_VERSION_ID) && MYSQL_VERSION_ID>=40000
+	return !mysql_real_query(&mysql,"commit",6);
+	#else
+	return true;
+	#endif
+}
+
 bool mysqlbenchconnection::disconnect() {
 	mysql_close(&mysql);
 	return true;
@@ -234,7 +250,8 @@ bool mysqlbenchcursor::query(const char *query, bool getcolumns) {
 		charstring::compare(query,"drop",4)) {
 
 		// prepare the query
-		if (mysql_stmt_prepare(stmt,query,charstring::getLength(query))) {
+		if (mysql_stmt_prepare(stmt,query,
+					charstring::getLength(query))) {
 stdoutput.printf("prepare: %s\n",mysql_stmt_error(stmt));
 			return false;
 		}
@@ -324,10 +341,10 @@ stdoutput.printf("execute: %s\n",mysql_stmt_error(stmt));
 		unsigned long	*mysqlrowlengths;
 		while ((mysqlrow=mysql_fetch_row(mysqlresult)) &&
 			(mysqlrowlengths=mysql_fetch_lengths(mysqlresult))) {
-for (uint32_t i=0; i<ncols; i++) {
+/*for (uint32_t i=0; i<ncols; i++) {
 	stdoutput.printf("%s,",mysqlrow[i]);
 }
-stdoutput.printf("\n");
+stdoutput.printf("\n");*/
 		}
 
 		// free the result set

@@ -153,3 +153,41 @@ bool sqlrserverbase::semWait(semaphoreset *semset,
 void sqlrserverbase::alarmHandler(int32_t signum) {
 	alarmrang=1;
 }
+
+static const char *eventtypes[]={
+	"CLIENT_CONNECTED",
+	"CLIENT_CONNECTION_REFUSED",
+	"CLIENT_DISCONNECTED",
+	"CLIENT_PROTOCOL_ERROR",
+	"DB_LOGIN",
+	"DB_LOGOUT",
+	"DB_ERROR",
+	"DB_WARNING",
+	"QUERY_RECEIVED",
+	"QUERY_PREPARED",
+	"QUERY_EXECUTED",
+	"FILTER_VIOLATION",
+	"INTERNAL_ERROR",
+	"INTERNAL_WARNING",
+	"DEBUG_MESSAGE",
+	"SCHEDULE_VIOLATION",
+	"INTEGRITY_VIOLATION",
+	"TRANSLATION_FAILURE",
+	"PARSE_FAILURE",
+	NULL
+};
+
+const char *sqlrserverbase::getEventType(sqlrevent_t event) {
+	return eventtypes[(uint16_t)event];
+}
+
+sqlrevent_t sqlrserverbase::getEventType(const char *event) {
+	uint16_t	retval=SQLREVENT_CLIENT_CONNECTED;
+	for (const char * const *ev=eventtypes; *ev; ev++) {
+		if (!charstring::compareIgnoringCase(event,*ev)) {
+			break;
+		}
+		retval++;
+	}
+	return (sqlrevent_t)retval;
+}

@@ -282,8 +282,8 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 	// set up the socket
 	clientsock->setTranslateByteOrder(true);
 	clientsock->setNaglesAlgorithmEnabled(false);
-	clientsock->setSocketReadBufferSize(65536);
-	clientsock->setSocketWriteBufferSize(65536);
+	//clientsock->setSocketReadBufferSize(65536);
+	//clientsock->setSocketWriteBufferSize(65536);
 	clientsock->setReadBufferSize(65536);
 	clientsock->setWriteBufferSize(65536);
 	//clientsock->useAsyncWrite();
@@ -1042,6 +1042,7 @@ void sqlrprotocol_sqlrclient::rollbackCommand() {
 }
 
 void sqlrprotocol_sqlrclient::dbVersionCommand() {
+#if 0
 	debugFunction();
 
 	cont->raiseDebugMessageEvent("db version");
@@ -1055,6 +1056,12 @@ void sqlrprotocol_sqlrclient::dbVersionCommand() {
 	clientsock->write(dbvsize);
 	clientsock->write(dbversion,dbvsize);
 	clientsock->flushWriteBuffer(-1,-1);
+#else
+	clientsock->write((uint16_t)NO_ERROR_OCCURRED);
+	clientsock->write((uint16_t)0);
+	clientsock->write("",0);
+	clientsock->flushWriteBuffer(-1,-1);
+#endif
 }
 
 void sqlrprotocol_sqlrclient::bindFormatCommand() {

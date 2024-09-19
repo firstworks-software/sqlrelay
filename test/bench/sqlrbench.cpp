@@ -3,6 +3,7 @@
 #include <rudiments/datetime.h>
 #include <rudiments/process.h>
 #include <rudiments/snooze.h>
+#include <sys/times.h>
 
 #include "sqlrbench.h"
 
@@ -246,6 +247,11 @@ void sqlrbench::benchSelect(
 	stdoutput.printf("queries-per-cx  queries-per-second      Mbps\n");
 
 	// run selects
+datetime	sdt;
+datetime	edt;
+float		s;
+float		us;
+float		t=0.0;
 	for (uint64_t qcount=1; qcount<=queries && !shutdown; qcount++) {
 
 		// get start time
@@ -276,6 +282,7 @@ void sqlrbench::benchSelect(
 				}
 
 				// run some number of queries per connection
+sdt.initFromSystemDateTime();
 				for (uint64_t j=0; j<qcount && !shutdown; j++) {
 
 					if (debug) {
@@ -288,6 +295,10 @@ void sqlrbench::benchSelect(
 						shutdown=true;
 					}
 				}
+edt.initFromSystemDateTime();
+s=edt.getEpoch()-sdt.getEpoch();
+us=edt.getMicrosecond()-sdt.getMicrosecond();
+t=t+s*1000000.0+us;
 
 				// close and disconnect
 				if (debug) {
@@ -350,7 +361,7 @@ void sqlrbench::benchSelect(
 		float	qpc=(float)qcount;
 
 		// display stats
-		stdoutput.printf("% 14lld  % 18.2f  % 8.2f\n",qcount,qps,mbps);
+		stdoutput.printf("% 14lld  % 18.2f  % 8.2f - %f\n",qcount,qps,mbps,t);
 
 		// update stats
 		linkedlist< float >	*d=stats->getValue(qpc);
@@ -426,7 +437,7 @@ void sqlrbench::benchDML(
 
 			for (uint64_t i=0; i<samples && !shutdown; i++) {
 
-				// connect and open
+				// connect, begin, and open
 				if (debug) {
 					stdoutput.printf(
 						"  connection %lld\n",i);
@@ -436,6 +447,12 @@ void sqlrbench::benchDML(
 				}
 				if (!con->connect()) {
 					stdoutput.printf("error connecting\n");
+				}
+				if (debug) {
+					stdoutput.printf("beginning\n");
+				}
+				if (!con->begin()) {
+					stdoutput.printf("error beginning\n");
 				}
 				if (debug) {
 					stdoutput.printf("opening\n");
@@ -469,12 +486,18 @@ void sqlrbench::benchDML(
 					shutdown=true;
 				}
 
-				// close and disconnect
+				// close, commit, and disconnect
 				if (debug) {
 					stdoutput.printf("closing\n");
 				}
 				if (!cur->close()) {
 					stdoutput.printf("error closing\n");
+				}
+				if (debug) {
+					stdoutput.printf("committing\n");
+				}
+				if (!con->commit()) {
+					stdoutput.printf("error committing\n");
 				}
 				if (debug) {
 					stdoutput.printf("disconnecting\n");
@@ -549,6 +572,14 @@ sqlrbenchconnection::sqlrbenchconnection(const char *connectstring,
 }
 
 sqlrbenchconnection::~sqlrbenchconnection() {
+}
+
+bool sqlrbenchconnection::begin() {
+	return true;
+}
+
+bool sqlrbenchconnection::commit() {
+	return true;
 }
 
 const char *sqlrbenchconnection::getParam(const char *param) {

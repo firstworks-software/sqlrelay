@@ -1464,8 +1464,6 @@ bool sqlrservercontroller::listen() {
 	datetime	startdt;
 	startdt.initFromSystemDateTime();
 
-	//bool		clientconnectfailed=false;
-
 	// loop to handle reconnects, timed out listeners, and other oddities
 	for (;;) {
 
@@ -1517,7 +1515,6 @@ bool sqlrservercontroller::listen() {
 				// If something weird happened, then break out
 				// of the suspendedsession loop, loop back, and
 				// wait for another client.
-				//clientconnectfailed=true;
 				break;
 
 			} else if (success==0) {
@@ -1541,14 +1538,6 @@ bool sqlrservercontroller::listen() {
 			// for dynamically spawned connections, bail on
 			// various conditions...
 			if (pvt->_scalerspawned) {
-
-				// if the client that this was spawned for
-				// failed to connect...
-#if 0
-				if (clientconnectfailed) {
-					return false;
-				}
-#endif
 
 				// if the ttl is 0...
 				if (!pvt->_ttl) {
@@ -3840,44 +3829,6 @@ sqlrloglevel_t sqlrservercontroller::getLogLevel(const char *level) {
 		retval++;
 	}
 	return (sqlrloglevel_t)retval;
-}
-
-static const char *eventtypes[]={
-	"CLIENT_CONNECTED",
-	"CLIENT_CONNECTION_REFUSED",
-	"CLIENT_DISCONNECTED",
-	"CLIENT_PROTOCOL_ERROR",
-	"DB_LOGIN",
-	"DB_LOGOUT",
-	"DB_ERROR",
-	"DB_WARNING",
-	"QUERY_RECEIVED",
-	"QUERY_PREPARED",
-	"QUERY_EXECUTED",
-	"FILTER_VIOLATION",
-	"INTERNAL_ERROR",
-	"INTERNAL_WARNING",
-	"DEBUG_MESSAGE",
-	"SCHEDULE_VIOLATION",
-	"INTEGRITY_VIOLATION",
-	"TRANSLATION_FAILURE",
-	"PARSE_FAILURE",
-	NULL
-};
-
-const char *sqlrservercontroller::getEventType(sqlrevent_t event) {
-	return eventtypes[(uint16_t)event];
-}
-
-sqlrevent_t sqlrservercontroller::getEventType(const char *event) {
-	uint16_t	retval=SQLREVENT_CLIENT_CONNECTED;
-	for (const char * const *ev=eventtypes; *ev; ev++) {
-		if (!charstring::compareIgnoringCase(event,*ev)) {
-			break;
-		}
-		retval++;
-	}
-	return (sqlrevent_t)retval;
 }
 
 bool sqlrservercontroller::applyDirectives(sqlrservercursor *cursor) {
@@ -7144,27 +7095,12 @@ bool sqlrservercontroller::resetSemaphores() {
 
 	raiseDebugMessageEvent("resetting semaphores");
 
-	bool	timedout=false;
-	if (!semWait(pvt->_semset,12,NULL,false,pvt->_ttl,&timedout)) {
-		if (timedout) {
-			raiseDebugMessageEvent("timeout occured");
-		} else {
-			raiseDebugMessageEvent("failed to acquire "
-						"semaphore reset mutex");
-		}
-		return false;
-	}
 	if (!pvt->_semset->setValue(2,0)) {
 		raiseDebugMessageEvent("failed to reset semaphore 2");
 		return false;
 	}
 	if (!pvt->_semset->setValue(3,0)) {
 		raiseDebugMessageEvent("failed to reset semaphore 3");
-		return false;
-	}
-	if (!pvt->_semset->signal(12)) {
-		raiseDebugMessageEvent("failed to release "
-					"semaphore reset mutex");
 		return false;
 	}
 

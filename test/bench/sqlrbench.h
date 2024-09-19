@@ -72,6 +72,8 @@ class sqlrbenchconnection {
 		virtual	~sqlrbenchconnection();
 
 		virtual	bool	connect()=0;
+		virtual	bool	begin();
+		virtual	bool	commit();
 		virtual	bool	disconnect()=0;
 
 	protected:

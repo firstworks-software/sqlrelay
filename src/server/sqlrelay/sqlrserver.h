@@ -159,6 +159,12 @@ class SQLRSERVER_DLLSPEC sqlrserverbase {
 		/** Ends a section of debug. */
 		void	debugEnd();
 
+		/** Returns a string representation of event type "event". */
+		const char	*getEventType(sqlrevent_t event);
+
+		/** Returns the sqlrevent_t corresponding to string "event". */
+		sqlrevent_t	getEventType(const char *event);
+
 	#include <sqlrelay/private/sqlrserverbase.h>
 };
 
@@ -177,12 +183,6 @@ class SQLRSERVER_DLLSPEC sqlrlistener : public sqlrserverbase {
 		/** Returns the sqlrloglevel_t corresponding to string
  		 *  "level". */
 		sqlrloglevel_t	getLogLevel(const char *level);
-
-		/** Returns a string representation of event type "event". */
-		const char	*getEventType(sqlrevent_t event);
-
-		/** Returns the sqlrevent_t corresponding to string "event". */
-		sqlrevent_t	getEventType(const char *event);
 
 	#include <sqlrelay/private/sqlrlistener.h>
 };
@@ -3120,12 +3120,6 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		/** Returns the sqlrloglevel_t corresponding to string
  		 *  "level". */
 		sqlrloglevel_t	getLogLevel(const char *level);
-
-		/** Returns a string representation of event type "event". */
-		const char	*getEventType(sqlrevent_t event);
-
-		/** Returns the sqlrevent_t corresponding to string "event". */
-		sqlrevent_t	getEventType(const char *event);
 
 	#include <sqlrelay/private/sqlrservercontroller.h>
 };

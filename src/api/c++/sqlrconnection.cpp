@@ -615,8 +615,8 @@ bool sqlrconnection::openSession() {
 		openresult=pvt->_ucs.connect();
 		if (openresult==RESULT_SUCCESS) {
 
-			pvt->_ucs.setSocketReadBufferSize(65536);
-			pvt->_ucs.setSocketWriteBufferSize(65536);
+			//pvt->_ucs.setSocketReadBufferSize(65536);
+			//pvt->_ucs.setSocketWriteBufferSize(65536);
 
 			pvt->_cs=&pvt->_ucs;
 
@@ -666,8 +666,8 @@ bool sqlrconnection::openSession() {
 		openresult=pvt->_ics.connect();
 		if (openresult==RESULT_SUCCESS) {
 
-			pvt->_ics.setSocketReadBufferSize(65536);
-			pvt->_ics.setSocketWriteBufferSize(65536);
+			//pvt->_ics.setSocketReadBufferSize(65536);
+			//pvt->_ics.setSocketWriteBufferSize(65536);
 
 			pvt->_ics.setNaglesAlgorithmEnabled(false);
 

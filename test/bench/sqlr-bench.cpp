@@ -48,7 +48,8 @@ int main(int argc, const char **argv) {
 	bool		selectqueries=true;
 	bool		dmlqueries=true;
 	bool		debug=false;
-	const char	*graph=NULL;
+	const char	*selectsgraph=NULL;
+	const char	*dmlgraph=NULL;
 	bool		nosettle=false;
 
 	// override defaults with command line parameters
@@ -107,18 +108,30 @@ int main(int argc, const char **argv) {
 	if (cmdl.isFound("nosettle")) {
 		nosettle=true;
 	}
-	stringbuffer	graphname;
-	if (cmdl.isFound("graph")) {
-		graph=cmdl.getValue("graph");
-		graphname.append(graph);
+	stringbuffer	selectsgraphname;
+	if (cmdl.isFound("selectsgraph")) {
+		selectsgraph=cmdl.getValue("selectsgraph");
+		selectsgraphname.append(selectsgraph);
 		if (charstring::compare(
-			charstring::findFirst(graph,".png"),".png")) {
-			graphname.append(".png");
+			charstring::findFirst(selectsgraph,".png"),".png")) {
+			selectsgraphname.append(".png");
 		}
 	} else {
-		graphname.append(db)->append("-bench.png");
+		selectsgraphname.append(db)->append("-selects-bench.png");
 	}
-	graph=graphname.getString();
+	selectsgraph=selectsgraphname.getString();
+	stringbuffer	dmlgraphname;
+	if (cmdl.isFound("dmlgraph")) {
+		dmlgraph=cmdl.getValue("dmlgraph");
+		dmlgraphname.append(dmlgraph);
+		if (charstring::compare(
+			charstring::findFirst(dmlgraph,".png"),".png")) {
+			dmlgraphname.append(".png");
+		}
+	} else {
+		dmlgraphname.append(db)->append("-dml-bench.png");
+	}
+	dmlgraph=dmlgraphname.getString();
 	if (cmdl.isFound("help","h")) {
 		usage=true;
 	}
@@ -142,7 +155,8 @@ int main(int argc, const char **argv) {
 			"	[-querytypes [selects],[dml]] \\\n"
 			"	[-bench [sqlrelay],[proxy],[db]] \\\n"
 			"	[-debug] \\\n"
-			"	[-graph graph-file-name] \\\n"
+			"	[-selectsgraph selects-graph-file-name] \\\n"
+			"	[-dmlgraph dml-graph-file-name] \\\n"
 			"	[-nosettle]\n");
 		process::exit(1);
 	}
@@ -404,8 +418,8 @@ int main(int argc, const char **argv) {
 
 	// graph stats
 	if (!stop) {
-		graphStats(graph,db,&selectstats);
-		// FIXME: graph dml stats
+		graphStats(selectsgraph,db,&selectstats);
+		graphStats(dmlgraph,db,&dmlstats);
 	}
 
 	// exit
@@ -423,12 +437,12 @@ void shutDown(int32_t signum) {
 void graphStats(const char *graph, const char *db,
 		dictionary< float, linkedlist< float > *> *stats) {
 
-	if (charstring::isNullOrEmpty(graph)) {
-		stdoutput.printf("\nno stats to graph\n");
+	stdoutput.printf("\ngraphing stats to %s...\n",graph);
+
+	if (charstring::isNullOrEmpty(graph) || !stats->getCount()) {
+		stdoutput.printf("no stats to graph\n");
 		return;
 	}
-
-	stdoutput.printf("\ngraphing stats to %s...\n",graph);
 
 	// rename db
 	if (!charstring::compare(db,"db2")) {
