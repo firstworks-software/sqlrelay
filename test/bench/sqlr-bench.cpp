@@ -223,16 +223,6 @@ int main(int argc, const char **argv) {
 			dl=&dbdl;
 		}
 
-		if (!nosettle) {
-			stdoutput.printf("settling for 20 seconds\n\n");
-			for (uint16_t i=0; i<20 && !stop; i++) {
-				snooze::macrosnooze(1);
-			}
-			if (stop) {
-				break;
-			}
-		}
-
 		// default connect strings
 		if (sqlrelay) {
 			if (!sqlrconnectstring) {
@@ -410,7 +400,7 @@ int main(int argc, const char **argv) {
 
 		// run the benchmarks
 		stop=!bm->run((selectqueries)?&selectstats:NULL,
-				(dmlqueries)?&dmlstats:NULL);
+				(dmlqueries)?&dmlstats:NULL,nosettle);
 
 		delete bm;
 		bm=NULL;

@@ -133,7 +133,6 @@ sqlrelaybenchcursor::~sqlrelaybenchcursor() {
 }
 
 bool sqlrelaybenchcursor::query(const char *query, bool getcolumns) {
-#if 0
 	if (getcolumns) {
 		sqlrcur->getColumnInfo();
 	} else {
@@ -154,13 +153,6 @@ stdoutput.printf("%s\n",sqlrcur->errorMessage());
 			}
 		}
 	}
-#else
-	if (!sqlrbcon->sqlrcon->dbVersion()) {
-stdoutput.printf("%s\n",sqlrbcon->sqlrcon->errorMessage());
-		return false;
-	}
-	return true;
-#endif
 }
 
 extern "C" {

@@ -27,7 +27,8 @@ class sqlrbench {
 		void	shutDown();
 		bool	run(
 			dictionary< float, linkedlist< float > *> *selectstats,
-			dictionary< float, linkedlist< float > *> *dmlstats);
+			dictionary< float, linkedlist< float > *> *dmlstats,
+			bool nosettle);
 
 	protected:
 		sqlrbenchconnection	*con;

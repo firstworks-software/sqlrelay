@@ -47,7 +47,8 @@ void sqlrbench::shutDown() {
 }
 
 bool sqlrbench::run(dictionary< float, linkedlist< float > *> *selectstats,
-			dictionary< float, linkedlist< float > *> *dmlstats) {
+			dictionary< float, linkedlist< float > *> *dmlstats,
+			bool nosettle) {
 
 	// connect and open
 	if (debug) {
@@ -122,13 +123,33 @@ bool sqlrbench::run(dictionary< float, linkedlist< float > *> *selectstats,
 
 	// select
 	if (!shutdown && selectstats) {
-		benchSelect(selectquery,queries,rows,cols,
-					colsize,samples,selectstats);
+
+		if (!nosettle) {
+			stdoutput.printf("\nsettling for 20 seconds\n\n");
+			for (uint16_t i=0; i<20 && !shutdown; i++) {
+				snooze::macrosnooze(1);
+			}
+		}
+
+		if (!shutdown) {
+			benchSelect(selectquery,queries,rows,cols,
+						colsize,samples,selectstats);
+		}
 	}
 
 	// DML
 	if (!shutdown && dmlstats) {
-		benchDML(queries,rows,cols,colsize,samples,dmlstats);
+
+		if (!nosettle) {
+			stdoutput.printf("\nsettling for 20 seconds\n\n");
+			for (uint16_t i=0; i<20 && !shutdown; i++) {
+				snooze::macrosnooze(1);
+			}
+		}
+
+		if (!shutdown) {
+			benchDML(queries,rows,cols,colsize,samples,dmlstats);
+		}
 	}
 
 	// connect and open
