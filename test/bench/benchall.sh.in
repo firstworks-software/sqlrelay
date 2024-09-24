@@ -9,7 +9,7 @@ do
 
 	echo "benching $DB..."
 
-	sqlr-start -id ${DB}test
+	sqlr-start -config @abs_top_builddir@/test/sqlrelay.conf.d/${DB}.conf -id ${DB}test
 	sleep 2
 
 	PING=""
@@ -17,7 +17,7 @@ do
 	do
 		echo
 		echo "pinging $DB..."
-		PING=`sqlrsh -id ${DB}test -command ping`
+		PING=`sqlrsh -config @abs_top_builddir@/test/sqlrelay.conf.d/${DB}.conf -id ${DB}test -command ping`
 
 		# (this collapses whitespace)
 		PING=`echo $PING`
@@ -37,7 +37,7 @@ do
 		echo
 		echo "success..."
 		echo
-		./sqlr-bench -db $DB
+		./sqlr-bench -db $DB -bench sqlrelay,db -querytypes selects
 	else
 		echo
 		echo "failed to start ${DB}test"
@@ -47,7 +47,7 @@ do
 	fi
 
 	sleep 2
-	sqlr-stop -id ${DB}test
+	sqlr-stop -config @abs_top_builddir@/test/sqlrelay.conf.d/${DB}.conf -id ${DB}test
 	sleep 2
 
 	echo
