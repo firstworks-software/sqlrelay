@@ -188,7 +188,12 @@ int main(int argc, const char **argv) {
 	} else if (!charstring::compare(sqlr,"db")) {
 		sqlrc.append("host=")->append(db)->append(";port=9000;");
 	}
-	sqlrc.append("user=testuser;password=testpassword;debug=no");
+	if (!charstring::compare(db,"db2")) {
+		sqlrc.append("user=db2inst1;");
+	} else {
+		sqlrc.append("user=testuser;");
+	}
+	sqlrc.append("password=testpassword;debug=no");
 
 	// first sqlrelay, then proxy, then direct
 	for (uint16_t i=0; i<3; i++) {
@@ -319,7 +324,7 @@ int main(int argc, const char **argv) {
 		} else if (!charstring::compare(db,"sqlite")) {
 			if (!dbconnectstring) {
 				dbconnectstring=
-					"db=/usr/local/sqlite/var/testdb;";
+					"db=../sqlrelay.conf.d/sqlite/sqlite;";
 			}
 		} else if (!charstring::compare(db,"sap") ||
 				!charstring::compare(db,"sybase")) {
