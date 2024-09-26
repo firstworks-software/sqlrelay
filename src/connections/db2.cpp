@@ -369,7 +369,7 @@ bool db2connection::logIn(const char **error, const char **warning) {
 				#endif
 				(SQLPOINTER)connecttimeout,0);
 		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-			*error="Failed to set connect timeout";
+			*error=logInError("Failed to set connect timeout");
 			SQLFreeHandle(SQL_HANDLE_DBC,dbc);
 			SQLFreeHandle(SQL_HANDLE_ENV,env);
 			return false;
