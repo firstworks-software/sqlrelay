@@ -1463,8 +1463,8 @@ bool db2cursor::executeQuery(const char *query, uint32_t size) {
 			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
 				return false;
 			}
-			column[i].tablesize=
-				charstring::getLength(column[i].table);
+			//column[i].tablesize=
+				//charstring::getLength(column[i].table);
 		}
 
 		// bind the column to a lob locator or buffer
