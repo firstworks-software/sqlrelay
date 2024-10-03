@@ -268,11 +268,6 @@ void sqlrbench::benchSelect(
 	stdoutput.printf("queries-per-cx  queries-per-second      Mbps\n");
 
 	// run selects
-datetime	sdt;
-datetime	edt;
-float		s;
-float		us;
-float		t=0.0;
 	for (uint64_t qcount=1; qcount<=queries && !shutdown; qcount++) {
 
 		// get start time
@@ -303,7 +298,6 @@ float		t=0.0;
 				}
 
 				// run some number of queries per connection
-sdt.initFromSystemDateTime();
 				for (uint64_t j=0; j<qcount && !shutdown; j++) {
 
 					if (debug) {
@@ -316,10 +310,6 @@ sdt.initFromSystemDateTime();
 						shutdown=true;
 					}
 				}
-edt.initFromSystemDateTime();
-s=edt.getEpoch()-sdt.getEpoch();
-us=edt.getMicrosecond()-sdt.getMicrosecond();
-t=t+s*1000000.0+us;
 
 				// close and disconnect
 				if (debug) {
@@ -382,7 +372,7 @@ t=t+s*1000000.0+us;
 		float	qpc=(float)qcount;
 
 		// display stats
-		stdoutput.printf("% 14lld  % 18.2f  % 8.2f - %f\n",qcount,qps,mbps,t);
+		stdoutput.printf("% 14lld  % 18.2f  % 8.2f\n",qcount,qps,mbps);
 
 		// update stats
 		linkedlist< float >	*d=stats->getValue(qpc);

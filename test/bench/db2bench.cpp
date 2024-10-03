@@ -3,6 +3,7 @@
 #include "../../config.h"
 
 #include <rudiments/environment.h>
+#include <rudiments/datetime.h>
 
 #include <sqlcli1.h>
 
