@@ -214,7 +214,7 @@ int main(int argc, const char **argv) {
 	if (!cmdl.isFound("host") ||
 			!cmdl.isFound("port") ||
 			!cmdl.isFound("concount")) {
-		stdoutput.printf("usage: stress -host host -port port -socket socket [-user user] [-password password] -concount concount -curcount curcount [-heartbeat|-garbage [size]]\n");
+		stdoutput.printf("usage: stress -host host -port port -socket socket -user user -password password -concount concount -curcount curcount [-heartbeat|-garbage [size]]\n");
 		process::exit(1);
 	}
 
