@@ -1631,11 +1631,13 @@ bool sqlrlistener::handOffOrProxyClient(filedescriptor *sock,
 		break;
 	}
 		
-	// Set the file descriptor to -1, otherwise it will get closed when
-	// connectionsock is freed.  If the file descriptor gets closed, the
-	// next time we try to pass a file descriptor to the same connection,
-	// it will fail.
-	connectionsock.setFileDescriptor(-1);
+	if (pvt->_handoffmode==HANDOFF_PASS) {
+		// Set the file descriptor to -1, otherwise it will get closed
+		// when connectionsock is freed.  If the file descriptor gets
+		// closed, the next time we try to pass a file descriptor to
+		// the same connection, it will fail.
+		connectionsock.setFileDescriptor(-1);
+	}
 
 	return retval;
 }
