@@ -1216,7 +1216,7 @@ bool postgresqlcursor::executeQuery(const char *query, uint32_t size) {
 
 	checkForTempTable(query,size);
 
-	// if the function we called aboce fetches the
+	// if the function we called above fetches the
 	// entire result set at once, then get the row count
 	if (getrowcount) {
 		nrows=PQntuples(pgresult);
