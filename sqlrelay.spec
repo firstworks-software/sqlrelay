@@ -544,10 +544,10 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %attr(755, sqlrelay, sqlrelay) %dir %{_localstatedir}/cache/%{name}
 
 %post cachemanager
-%systemd_post %{name}cachemanager.service
+%systemd_post sqlrcachemanager.service
 
 %preun cachemanager
-%systemd_preun %{name}cachemanager.service
+%systemd_preun sqlrcachemanager.service
 
 %files common
 %{_libdir}/libsqlrutil.so.13
