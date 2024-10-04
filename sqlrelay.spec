@@ -550,8 +550,8 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %systemd_preun %{name}cachemanager.service
 
 %files common
-%{_libdir}/libsqlrutil.so.12
-%{_libdir}/libsqlrutil.so.12.*
+%{_libdir}/libsqlrutil.so.13
+%{_libdir}/libsqlrutil.so.13.*
 %dir %{_libexecdir}/%{name}
 %{_libexecdir}/%{name}/sqlrpwdenc_*
 
@@ -567,12 +567,12 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_datadir}/sqlrelay
 
 %files c++
-%{_libdir}/libsqlrclient.so.7
-%{_libdir}/libsqlrclient.so.7.*
+%{_libdir}/libsqlrclient.so.8
+%{_libdir}/libsqlrclient.so.8.*
 
 %files c
-%{_libdir}/libsqlrclientwrapper.so.7
-%{_libdir}/libsqlrclientwrapper.so.7.*
+%{_libdir}/libsqlrclientwrapper.so.8
+%{_libdir}/libsqlrclientwrapper.so.8.*
 
 %files c++-devel
 %{_bindir}/sqlrclient-config
@@ -612,8 +612,8 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %exclude %{_libdir}/lib*.la
 
 %files -n odbc-%{name}
-%{_libdir}/libsqlrodbc.so.7
-%{_libdir}/libsqlrodbc.so.7.*
+%{_libdir}/libsqlrodbc.so.8
+%{_libdir}/libsqlrodbc.so.8.*
 %{_libdir}/libsqlrodbc.so
 
 %files -n perl-%{name}
@@ -750,7 +750,7 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_javadocdir}/%{name}
 
 %changelog
-* Tue May 28 2024 David Muse <david.muse@firstworks.com> - 2.0.0-1
+* Fri Oct 04 2024 David Muse <david.muse@firstworks.com> - 2.0.0-1
 - Updated to version 2.0.0.
 - Removed support for mdbtools.
 - Updated to build python 3 packages for rhel > 6.
@@ -762,6 +762,7 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 - Removed tcl(abi) = 8.5 for non-fedora platforms.
 - Added log/debug directory.
 - Replaced mariadb-devel build dependency with mariadb-connector-c-devel.
+- Updated library versions to 8 and 13.
 
 * Thu Mar 04 2021 David Muse <david.muse@firstworks.com> - 1.9.0-1
 - Updated to version 1.9.0.
