@@ -397,7 +397,7 @@ make install DESTDIR=%{buildroot}
 # create tmpfiles.d directories and config file
 mkdir -p %{buildroot}/run/%{name}
 mkdir -p %{buildroot}%{_tmpfilesdir}
-echo "d /run/%{name} 0775 root root -" > %{buildroot}%{_tmpfilesdir}/%{name}.conf
+echo "d /run/%{name} 0775 sqlrelay sqlrelay -" > %{buildroot}%{_tmpfilesdir}/%{name}.conf
 
 # move tcl modules to (tcl_sitearch)/(name)
 mkdir -p %{buildroot}%{tcl_sitearch}
@@ -477,9 +477,9 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_mandir}/*/sqlr-stop.*
 %{_mandir}/*/sqlr-status.*
 %doc AUTHORS ChangeLog
-%attr(755, sqlrelay, sqlrelay) %dir %{_localstatedir}/log/%{name}
-%attr(755, sqlrelay, sqlrelay) %dir %{_localstatedir}/log/%{name}/debug
-%attr(755, sqlrelay, sqlrelay) %dir /run/%{name}
+%attr(775, sqlrelay, sqlrelay) %dir %{_localstatedir}/log/%{name}
+%attr(775, sqlrelay, sqlrelay) %dir %{_localstatedir}/log/%{name}/debug
+%attr(775, sqlrelay, sqlrelay) %dir /run/%{name}
 %{_tmpfilesdir}/%{name}.conf
 %exclude %{_libdir}/lib*.la
 %if 0%{?fedora}
