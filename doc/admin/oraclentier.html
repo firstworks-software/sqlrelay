@@ -1,0 +1,165 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../contentstart.html"-->
+
+<h1>Using SQL Relay With Oracle n-Tiered Authentication</h1>
+
+<h2>Background</h2>
+
+<p>Ordinarily, <b>SQL Relay</b> logs into the database as a particular user
+several times and hands those sessions off to <b>SQL Relay</b> clients, thus
+avoiding the cost of connecting to and disconnecting from the database over and 
+over.  A sometimes undesirable side-effect of this approach is that it is
+impossible to distinguish which queries were run by which <b>SQL Relay</b> 
+users from within the database since <b>SQL Relay</b> uses the same
+database user to run all queries.</p>
+
+<p>Oracle n-tiered authentication provides a way around this side-effect.</p>
+
+<p>If you set up a proxy role, a proxy user and a set of users that can be 
+proxied by that proxy user in Oracle and configure <b>SQL Relay</b> to use the
+"proxied" authentication tier, <b>SQL Relay</b> users will map to Oracle
+users.</p>
+
+<h2>Setting Up Oracle</h2>
+
+<p>First, make sure your database's compatibility mode is set to a version
+equal to or higher than "8.1.0".  Log in as the sys user and run:</p>
+
+<blockquote>
+<b>select name,value from v$parameter where name='compatible</b>'
+</blockquote>
+<p>(Note: In 8i, you can log in as sys using <i>sqlplus sys/syspass</i>
+where syspass is replaced with the sys user's password.  Since 8i, you
+must use <i>sqlplus sys/syspass as sysdba</i> to log in as the sys user.)</p>
+
+<p>If the compatibility mode is not 8.1.0 or greater, then follow these
+steps:</p>
+
+<p>If you have an $ORACLE_HOME/dbs/init$ORACLE_SID.ora file, change the
+"compatible" parameter to a version equal to or higher than "8.1.0".</p>
+
+<p>If you have an $ORACLE_HOME/dbs/spfile$ORACLE_SID.ora then you can log in as
+the sys user and run:</p>
+
+<blockquote>
+<b>ALTER SYSTEM SET compatible='8.1.0' SCOPE=spfile</b>
+</blockquote>
+<p>(Note: In 8i, you can log in as sys using <i>sqlplus sys/syspass</i>
+where syspass is replaced with the sys user's password.  Since 8i, you
+must use <i>sqlplus sys/syspass as sysdba</i> to log in as the sys user.)</p>
+
+<p>After changing the compatibility mode, restart the database.</p>
+
+<p>Next, log into the database as system and create a set of users:</p>
+
+<blockquote>
+<b>CREATE USER user1 IDENTIFIED BY user1;<br/>
+GRANT CREATE SESSION TO user1;<br/>
+CREATE USER user2 IDENTIFIED BY user2;<br/>
+GRANT CREATE SESSION TO user2;<br/>
+CREATE USER user3 IDENTIFIED BY user3;<br/>
+GRANT CREATE SESSION TO user3;</b>
+</blockquote>
+<p>You may also need to run:</p>
+
+<blockquote>
+<b>ALTER USER user1 QUOTA UNLIMITED ON <i>tablespace_name</i>;<br/>
+ALTER USER user2 QUOTA UNLIMITED ON <i>tablespace_name</i>;<br/>
+ALTER USER user3 QUOTA UNLIMITED ON <i>tablespace_name</i>;<br/></b>
+</blockquote>
+<p>Where <i>tablespace_name</i> is replaced with the name of the tablespace that
+the user's schema was created in.  This appears to be necessary with
+Oracle 10g, but I don't remember it being necessary prior to 10g.</p>
+
+<p>Now, create a proxy role and give the users access to it:</p>
+
+<blockquote>
+<b>CREATE ROLE proxyrole;<br/>
+GRANT proxyrole TO user1;<br/>
+GRANT proxyrole TO user2;<br/>
+GRANT proxyrole TO user3;</b>
+</blockquote>
+<p>At this point, you'll need to perform grants to the proxyrole to give it 
+whatever permissions that the users that may use it will need.  Grants to roles
+are the performed like grants to users.  For example if proxyrole needs random 
+access to "publictable" and read access to "readonlytable":</p>
+
+<blockquote>
+<b>GRANT all ON publictable TO proxyrole;<br/>
+GRANT select ON readonlytable TO proxyrole;<br/>
+</b>
+</blockquote>
+<p>Create a proxy user:</p>
+
+<blockquote>
+<b>CREATE USER proxyuser IDENTIFIED BY proxyuser;<br/>
+GRANT CREATE SESSION TO proxyuser;</b>
+</blockquote>
+<p>Give the users access through the proxy user:</p>
+
+<blockquote>
+<b>ALTER USER user1 GRANT CONNECT THROUGH proxyuser WITH ROLES proxyrole;<br/>
+ALTER USER user2 GRANT CONNECT THROUGH proxyuser WITH ROLES proxyrole;<br/>
+ALTER USER user3 GRANT CONNECT THROUGH proxyuser WITH ROLES proxyrole;</b>
+</blockquote>
+<p>Note that you cannot do this with the SYSTEM user.  Ie.  you cannot run:</p>
+
+<blockquote>
+<b>ALTER USER SYSTEM GRANT CONNECT THROUGH proxyuser WITH ROLES proxyrole;</b><br/>
+</blockquote>
+<p>If you need to access the database through SQL Relay as the SYSTEM user, you
+must set up an instance of SQL Relay which logs in as the SYSTEM user and use
+that instance for accessing the database.</p>
+
+<p>If auditing is enabled in your database, you can enable auditing of the
+queries that the users have run through the proxyrole as follows:</p>
+
+<blockquote>
+<b>AUDIT SELECT ANY TABLE BY proxyuser ON BEHALF OF user1;<br/>
+AUDIT SELECT ANY TABLE BY proxyuser ON BEHALF OF user2;<br/>
+AUDIT SELECT ANY TABLE BY proxyuser ON BEHALF OF user3;</b>
+</blockquote>
+<p>Queries will show up in the audit table as having been run by user1, user2
+or user3, rather than as the proxyuser.</p>
+
+<h2>Setting Up SQL Relay</h2>
+
+<p><b>SQL Relay</b> should be set up to use the database authentication tier 
+and to log into Oracle as the proxy user.  Below is a configuration file
+that does this.  Note the authtier attribute of the instance tag.  Note also 
+that there are no users defined as they are unnecessary for this kind of 
+configuration.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>@parts<font color="#990000">/</font>sqlrelay<font color="#990000">-</font>proxied<font color="#990000">.</font>conf<font color="#990000">.</font>html@</tt></pre>
+
+</blockquote>
+<h2>Running SQL Relay</h2>
+
+<p>Now that Oracle and <b>SQL Relay</b> are configured, you can run 
+<b>SQL Relay</b> as follows:</p>
+
+<blockquote>
+sqlr-start -id proxyuser
+</blockquote>
+<p>You can use sqlrsh to access it as any of the database level users that
+you created earlier:</p>
+
+<blockquote>
+sqlrsh -host localhost -port 9000 -user user1 -password user1<br/>
+or<br/>
+sqlrsh -host localhost -port 9000 -user user2 -password user2<br/>
+or<br/>
+sqlrsh -host localhost -port 9000 -user user3 -password user3
+</blockquote>
+<!--#include virtual="../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

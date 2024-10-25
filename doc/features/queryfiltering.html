@@ -1,0 +1,26 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../contentstart.html"-->
+
+<h1>Query Filtering</h1>
+
+<p>Query filtering prevents queries that match a certian pattern from being run at all.  There are often certain queries that will bring the entire database to its knees.  A common use for query filtering is to identify those queries and prevent them from being run.</p>
+
+<p>For example, <i>select * from hugetable where id=100</i> might be fine...</p>
+
+<p><img src="../images/query-allowed.png"/></p>
+
+<p>...but <i>select * from hugetable</i> without a where clause might crush the database.</p>
+
+<p><img src="../images/query-rejected.png"/></p>
+
+<p>SQL Relay can be configured to allow one and reject the other.</p>
+
+<p>A complete descripton of query filtering with example configuration files is given <a href="../admin/configguide.html#filtering">here</a>.</p>
+
+<!--#include virtual="../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+
