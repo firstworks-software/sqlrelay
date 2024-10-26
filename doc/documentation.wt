@@ -4,7 +4,7 @@
 
 {{{#!include contentstart.html}}}
 
-==== SQL Relay ====
+=== SQL Relay ===
 
  SQL Relay is a powerful database connection management solution.
  
@@ -15,7 +15,7 @@
 
 ----
 
-==== Advantages ====
+=== Advantages ===
 
  [features/connectionpooling.html Persistent Database Connection Pooling] - makes database-driven web-based applications faster and more efficient[[br]]
  [features/proxying.html Proxying] - provides access to databases from unsupported platforms[[br]]
@@ -38,7 +38,7 @@
 
 ----
 
-==== Frequently Asked Questions ====
+=== Frequently Asked Questions ===
 
  [faq.html FAQ]
 
@@ -46,7 +46,7 @@
 
 [[br]]
 {{{#!td
-==== Administering SQL Relay ====
+=== Administering SQL Relay ===
 
 Guides and references for SQL Relay administration.
 
@@ -64,7 +64,7 @@ Guides and references for SQL Relay administration.
 <div style="margin-left: 56px;"/>
 }}}
 {{{#!td
-==== Database How-To's ====
+=== Database How-To's ===
 
 Getting-started guides for various databases supported by SQL Relay.
 
@@ -87,7 +87,7 @@ Getting-started guides for various databases supported by SQL Relay.
 
 [[br]]
 {{{#!td
-==== Connectors ====
+=== Connectors ===
 
 SQL Relay provides drivers for most popular database abstraction layers.
 
@@ -111,7 +111,7 @@ SQL Relay provides drivers for most popular database abstraction layers.
 <div style="margin-left: 60px;"/>
 }}}
 {{{#!td
-==== Native APIs ====
+=== Native APIs ===
 
 The native SQL Relay client APIs provide advanced features like suspended sessions, result set caching and tuning options.
 

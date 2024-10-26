@@ -38,112 +38,104 @@ Programming guides with sample code and API references are available for each la
 [../api/ruby/doc/index.html Ruby],
 [../api/java/index.html Java],
 [../api/tcl/index.html TCL],
-[../api/nodejs/html/annotated.html node.js],
-}}}
+[../api/nodejs/html/annotated.html node.js]
+
 <div class="slide">
-<div style="display: block; float: left;"/>
-<span class="heading2">C++</span>
-<div class="code">
+<h2>C++</h2>
+<div class="code" style="display: block; float: left;">
 {{{#!code
 @parts/example.cpp@
 }}}
 </div>
 </div>
-</div>
+
 <div class="slide hidden">
-<div style="display: block; float: left;"/>
-<span class="heading2">C</span>
-<div class="code">
+<h2>C</h2>
+<div class="code" style="display: block; float: left;">
 {{{#!code
 @parts/example.c@
 }}}
 </div>
 </div>
-</div>
+
 <div class="slide hidden">
-<div style="display: block; float: left;"/>
-<span class="heading2">C#</span>
-<div class="code">
+<h2>C#</h2>
+<div class="code" style="display: block; float: left;">
 {{{#!code
 @parts/example.cs@
 }}}
 </div>
 </div>
-</div>
+
 <div class="slide hidden">
-<div style="display: block; float: left;"/>
-<span class="heading2">Java</span>
-<div class="code">
+<h2>Java</h2>
+<div class="code" style="display: block; float: left;">
 {{{#!code
 @parts/example.java@
 }}}
 </div>
 </div>
-</div>
+
 <div class="slide hidden">
-<div style="display: block; float: left;"/>
-<span class="heading2">Perl</span>
-<div class="code">
+<h2>Perl</h2>
+<div class="code" style="display: block; float: left;">
 {{{#!code
 @parts/example.pl@
 }}}
 </div>
 </div>
-</div>
+
 <div class="slide hidden">
-<div style="display: block; float: left;"/>
-<span class="heading2">Python</span>
-<div class="code">
+<h2>Python</h2>
+<div class="code" style="display: block; float: left;">
 {{{#!code
 @parts/example.py@
 }}}
 </div>
 </div>
-</div>
+
 <div class="slide hidden">
-<div style="display: block; float: left;"/>
-<span class="heading2">PHP</span>
-<div class="code">
+<h2>PHP</h2>
+<div class="code" style="display: block; float: left;">
 {{{#!code
 @parts/example.php@
 }}}
 </div>
 </div>
-</div>
+
 <div class="slide hidden">
-<div style="display: block; float: left;"/>
-<span class="heading2">Ruby</span>
-<div class="code">
+<h2>Ruby</h2>
+<div class="code" style="display: block; float: left;">
 {{{#!code
 @parts/example.rb@
 }}}
 </div>
 </div>
-</div>
+
 <div class="slide hidden">
-<div style="display: block; float: left;"/>
-<span class="heading2">TCL</span>
-<div class="code">
+<h2>TCL</h2>
+<div class="code" style="display: block; float: left;">
 {{{#!code
 @parts/example.tcl@
 }}}
 </div>
 </div>
-</div>
+
 <div class="slide hidden">
-<div style="display: block; float: left;"/>
-<span class="heading2">node.js</span>
-<div class="code">
+<h2>node.js</h2>
+<div class="code" style="display: block; float: left;">
 {{{#!code
 @parts/example.js@
 }}}
 </div>
 </div>
-</div>
+
+<div style="clear: both"/>
 
 <script language="Javascript">
 rotate();
 </script>
+}}}
 
 {{{#!include ../contentend.html}}}
 
