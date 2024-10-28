@@ -7,15 +7,22 @@ function contains(str,part) {
 }
 
 function setActive(btn,img) {
-	document.getElementById("button-"+btn).style.backgroundImage="url("+img+")";
+	document.getElementById("button-"+btn).
+			style.backgroundImage="url("+img+")";
 }
 
 function setButton() {
-	if (endsWith(document.location.pathname,"index.html")) {
+	if (endsWith(document.location.pathname,"index.html") ||
+			endsWith(document.location.pathname,"/")) {
 		setActive("about","images/lightbluedenim.png");
 	} else if (endsWith(document.location.pathname,"documentation.html")) {
 		setActive("documentation","images/lightbluedenim.png");
-	} else if (endsWith(document.location.pathname,"documentation.html") || contains(document.location.pathname,"/admin/") || contains(document.location.pathname,"/api/") || contains(document.location.pathname,"/features/") || contains(document.location.pathname,"/howtos/") || contains(document.location.pathname,"/programming/")) {
+	} else if (endsWith(document.location.pathname,"documentation.html") ||
+			contains(document.location.pathname,"/admin/") ||
+			contains(document.location.pathname,"/api/") ||
+			contains(document.location.pathname,"/features/") ||
+			contains(document.location.pathname,"/howtos/") ||
+			contains(document.location.pathname,"/programming/")) {
 		setActive("documentation","../images/lightbluedenim.png");
 	} else if (endsWith(document.location.pathname,"download.html")) {
 		setActive("download","images/lightbluedenim.png");
