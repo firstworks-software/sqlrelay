@@ -25,12 +25,12 @@
 </a>
 
 </td>
-<td style="width: 1px; background-color: #F0F0F0; padding: 1px;"/>
+<td style="width: 1px; background-color: #F0F0F0; padding: 1px;"></td>
 <td>
 
 <a href="features/ha.html">
 <div style="float: left;  margin-left: 20px;">
-<!--#include virtual="presentation/loadbalancing.html" -->
+<!--#include virtual="presentation/ha.html" -->
 </div>
 </a>
 
@@ -44,21 +44,31 @@
 
 <table class="presentation">
 <tr>
-<td>
+<td style="width: 40%;">
 
 <a href="features/queryrouting.html">
-<div style="float: right;  margin-right: 155px;">
+<div style="float: right;  margin-right: 20px;">
 <!--#include virtual="presentation/queryrouting.html" -->
 </div>
 </a>
 
 </td>
-<td style="width: 1px; background-color: #F0F0F0; padding: 1px;"/>
-<td>
+<td style="width: 1px; background-color: #F0F0F0; padding: 1px;"></td>
+<td style="width: 20%;">
 
-<a href="features/proxying.html">
+<a href="features/datatranslation.html">
+<div style="width: 300px;  margin: auto;">
+<!--#include virtual="presentation/datatranslation.html" -->
+</div>
+</a>
+
+</td>
+<td style="width: 1px; background-color: #F0F0F0; padding: 1px;"></td>
+<td style="width: 40%;">
+
+<a href="features/triggers.html">
 <div style="float: left;  margin-left: 20px;">
-<!--#include virtual="presentation/proxying.html" -->
+<!--#include virtual="presentation/triggers.html" -->
 </div>
 </a>
 
@@ -74,12 +84,76 @@
 <tr>
 <td>
 
-<div style="float: right;  margin-right: 85px;">
-<!--#include virtual="presentation/compatible.html" -->
+<div style="float: right;  margin-right: 20px;">
+<!--#include virtual="presentation/security.html" -->
 </div>
 
 </td>
-<td style="width: 1px; background-color: #F0F0F0; padding: 1px;"/>
+<td style="width: 1px; background-color: #F0F0F0; padding: 1px;"></td>
+<td>
+
+<a href="features/languages.html">
+<div style="float: left;  margin-left: 20px;">
+<!--#include virtual="presentation/notifications.html" -->
+</div>
+</a>
+
+</td>
+</tr>
+</table>
+
+
+<hr style="clear: both;"/>
+
+
+<table class="presentation">
+<tr>
+<td style="width: 40%;">
+
+<a href="features/protocols.html">
+<div style="float: right;  margin-right: 20px;">
+<!--#include virtual="presentation/frontends.html" -->
+</div>
+</a>
+
+</td>
+<td style="width: 1px; background-color: #F0F0F0; padding: 1px;"></td>
+<td style="width: 20%;">
+
+<a href="features/backend.html">
+<div style="width: 350px;  margin: auto;">
+<!--#include virtual="presentation/backends.html" -->
+</div>
+</a>
+
+</td>
+<td style="width: 1px; background-color: #F0F0F0; padding: 1px;"></td>
+<td style="width: 40%;">
+
+<a href="features/proxying.html">
+<div style="float: left;  margin-left: 20px;">
+<!--#include virtual="presentation/platforms.html" -->
+</div>
+</a>
+
+</td>
+</tr>
+</table>
+
+
+<hr style="clear: both;"/>
+
+
+<table class="presentation">
+<tr>
+<td>
+
+<div style="float: right;  margin-right: 20px;">
+<!--#include virtual="presentation/dbabstraction.html" -->
+</div>
+
+</td>
+<td style="width: 1px; background-color: #F0F0F0; padding: 1px;"></td>
 <td>
 
 <a href="features/languages.html">
@@ -94,6 +168,8 @@
 
 
 <hr style="clear: both;"/>
+
+
 <br/>
 
 <center>But that's just an overview.  See the official <a href="documentation.html">documentation</a> for much more information, including comprehensive howto's, guides and references.</center>
