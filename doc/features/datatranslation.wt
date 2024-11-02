@@ -6,7 +6,11 @@
 
 = Query Translation =
 
-Query translation enables the SQL Relay server to modify queries before passing them to the database.  This is useful for things like:
+Query translation enables the SQL Relay server to modify queries before passing them to the database.
+
+[[Image(../images/query-translation.png,nolink)]]
+
+This is useful for things like:
 
 Normalizing queries for more effective query filtering:
 

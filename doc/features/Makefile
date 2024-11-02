@@ -5,15 +5,15 @@ include ../../config.mk
 .SUFFIXES: .wt .html
 
 SRCS = connectionpooling.wt \
-	databases.wt \
+	backends.wt \
+	datatranslation.wt \
 	dbabstractionlayers.wt \
 	ha.wt \
 	languages.wt \
 	multirowfetches.wt \
-	nativeprotocol.wt \
+	protocols.wt \
 	proxying.wt \
 	queryfiltering.wt \
-	querytranslation.wt \
 	queryrouting.wt \
 	resultsetcaching.wt \
 	schedules.wt \
@@ -22,15 +22,15 @@ SRCS = connectionpooling.wt \
 	throttling.wt
 
 OBJS = connectionpooling.html \
-	databases.html \
+	backends.html \
+	datatranslation.html \
 	dbabstractionlayers.html \
 	ha.html \
 	languages.html \
 	multirowfetches.html \
-	nativeprotocol.html \
+	protocols.html \
 	proxying.html \
 	queryfiltering.html \
-	querytranslation.html \
 	queryrouting.html \
 	resultsetcaching.html \
 	schedules.html \

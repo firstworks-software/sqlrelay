@@ -23,11 +23,11 @@
  [features/ha.html High Availability] - provides load balancing and failover with replicated or clustered databases[[br]]
  [features/queryrouting.html Query Routing] - conditionally sends queries to one database or another[[br]]
  [features/queryfiltering.html Query Filtering] - prevents queries that match certain patterns from being run at all[[br]]
- [features/querytranslation.html Query Translation] - modifies queries before passing them to the database[[br]]
+ [features/datatranslation.html Query Translation] - modifies queries before passing them to the database[[br]]
  [features/schedules.html Connection Schedules] - constrain database access to specified times[[br]]
 
- [features/databases.html Database Support] - a wide variety of commercial and open-source databases are supported[[br]]
- [features/nativeprotocol.html Native Database Protocol Support] - allow !MySQL/MariaDB and !PostgreSQL applications to use SQL Relay without modification[[br]]
+ [features/backends.html Database Support] - a wide variety of commercial and open-source databases are supported[[br]]
+ [features/protocols.html Native Database Protocol Support] - allow !MySQL/MariaDB and !PostgreSQL applications to use SQL Relay without modification[[br]]
  [features/dbabstractionlayers.html Abstraction Layer Support] - drivers for most popular database abstraction layers are provided[[br]]
  [features/languages.html Native API] - the powerful native SQL Relay client API supports a wide variety of programming languages[[br]]
 

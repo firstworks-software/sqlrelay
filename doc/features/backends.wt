@@ -4,41 +4,17 @@
 
 {{{#!include ../contentstart.html}}}
 
-<script language="Javascript" src="../js/featuresrotate.js"></script>
-
 = Supported Databases =
 
-<div class="slide">
-
-{{{#!td
 [[Image(../images/oracle.png,nolink)]]
-[[Image(../images/sybase.png,margin-left=10px,nolink)]]
-[[Image(../images/ibm.png,margin-left=10px,nolink)]]
-}}}
-{{{#!td
-[[Image(../images/mssqlserver.png,margin-left=10px,nolink)]]
-}}}
-
-</div>
-
-<div class="slide hidden">
+[[Image(../images/sap.png,margin-left=10px,nolink)]]
+[[Image(../images/db2.png,margin-left=10px,nolink)]]
+[[Image(../images/mssql.png,margin-left=10px,nolink)]]
 [[Image(../images/mysql.png,nolink)]]
 [[Image(../images/postgresql.png,margin-left=10px,nolink)]]
 [[Image(../images/firebird.png,margin-left=10px,nolink)]]
 [[Image(../images/sqlite.png,margin-left=10px,nolink)]]
-</div>
-
-<div class="slide hidden">
-
-{{{#!td
-[[Image(../images/unixodbc.png,nolink)]]
-[[Image(../images/iodbc.png,margin-left=10px,nolink)]]
-}}}
-{{{#!td
-[[Image(../images/freetds.png,margin-left=10px,nolink)]]
-}}}
-
-</div>
+[[Image(../images/odbc.png,nolink)]]
 
 SQL Relay supports [http://oracle.com Oracle], [http://www.mysql.com MySQL]/[http://mariadb.com MariaDB], [http://postgresql.org PostgreSQL], [http://scn.sap.com/community/developer-center/oltp-db SAP/Sybase], [http://www-01.ibm.com/software/data/db2/ IBM DB2], [http://www-01.ibm.com/software/data/informix/ Informix], [http://www.firebirdsql.org Firebird] and [http://sqlite.org SQLite] databases directly, using the native client API's for those databases.
 
