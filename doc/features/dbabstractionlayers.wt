@@ -10,13 +10,13 @@ Rather than using a native database API, most applications are written using a d
 
 For example, a PHP app might be written to use PDO and be configured to load a !MySQL/MariaDB driver at runtime to talk to a !MySQL/MariaDB database.
 
-[[Image(../images/app-pdo-mysql.png,nolink)]]
+[[Image(../images/app-phppdo-mysql.png,nolink)]]
 
 SQL Relay currently provides drivers for ADO.NET, Perl DBI, Python DB-API, PHP PDO and ODBC.  JDBC is also supported via the JDBC-ODBC bridge.
 
 The same PHP app could be configured to load the SQL Relay driver to talk to !MySQL/MariaDB via SQL Relay.
 
-[[Image(../images/app-pdo-sqlr-mysql.png,nolink)]]
+[[Image(../images/app-phppdo-sqlr-mysql.png,nolink)]]
 
 Programming guides with sample code and API references are available for each database abstraction layer:
 

@@ -6,7 +6,7 @@
 
 <script language="Javascript" src="../js/featuresrotate.js"></script>
 
-= Native API =
+= Native APIs =
 
 The native SQL Relay client API currently supports C, C++, .NET languages, Java, Perl, Python, PHP, Ruby, TCL, Erlang, and node.js.
 
