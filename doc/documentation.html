@@ -4,34 +4,11 @@
 
 <!--#include virtual="contentstart.html"-->
 
-<h3>SQL Relay</h3>
+<h3>Administering SQL Relay</h3>
+
+<p>Guides and references for SQL Relay administration:</p>
 
 <blockquote>
-  <p>SQL Relay is a powerful database connection management solution.</p>
-
-<img style="float: left; margin-right: 20px; " src="images/sqlrelay.png"/>
-<br/><br/><br/>
-With SQL Relay, you can speed up and enhance the scalability of database-driven web-based applications, access databases from unsupported platforms, throttle database access, distribute load over clustered or replicated databases, route queries and migrate applications from one database to another.
-<br/><br/><br/>
-</blockquote>
-<hr/>
-
-<h3>Frequently Asked Questions</h3>
-
-<blockquote>
-<a href="faq.html">FAQ</a>
-</blockquote>
-<hr/>
-
-<br/><table>
-  <tr>
-    <td>    <h3>Administering SQL Relay</h3>
-
-    <p>Guides and references for SQL Relay administration.</p>
-
-    <table>
-      <tr>
-        <td>        <blockquote>
 <a href="admin/installing.html">Building and Installing SQL Relay From Source</a><br/>
 <a href="admin/installingpkg.html">Installing SQL Relay From Packages</a><br/>
 <a href="admin/configguide.html">SQL Relay Configuration Guide</a><br/>
@@ -39,53 +16,32 @@ With SQL Relay, you can speed up and enhance the scalability of database-driven 
 <a href="admin/running.html">SQL Relay Command Line Programs</a><br/>
 <a href="admin/tuning.html">Tuning SQL Relay</a><br/>
 <a target="_blank" href="http://software.firstworks.com/p/current-sql-relay-benchmarks.html">Current Benchmarks</a><br/>
-        </blockquote>
-</td>
-      </tr>
-    </table>
+</blockquote>
+<hr/>
 
-</td>
-    <td><div style="margin-left: 56px;"/>
-</td>
-    <td>    <h3>Database How-To's</h3>
+<h3>Database How-To's</h3>
 
-    <p>Getting-started guides for various databases supported by SQL Relay.</p>
+<p>Getting-started guides for various databases supported by SQL Relay:</p>
 
-    <table>
-      <tr>
-        <td>        <blockquote>
+<blockquote>
 <a target="_blank" href="http://software.firstworks.com/p/getting-started-with-oracle.html">Oracle</a><br/>
 <a target="_blank" href="http://software.firstworks.com/p/getting-started-with-sapsybase.html">SAP/Sybase</a><br/>
 <a target="_blank" href="http://software.firstworks.com/p/getting-started-with-ibm-db2.html">IBM DB2</a><br/>
 <a target="_blank" href="http://software.firstworks.com/p/getting-started-with-mysql.html">MySQL</a><br/>
 <a target="_blank" href="http://software.firstworks.com/p/getting-started-with-postgresql.html">PostgreSQL</a><br/>
-        </blockquote>
-</td>
-        <td>        <blockquote>
 <a target="_blank" href="http://software.firstworks.com/p/getting-started-with-firebird.html">Firebird</a><br/>
 <a target="_blank" href="http://software.firstworks.com/p/getting-started-with-sqlite.html">SQLite</a><br/>
-<a target="_blank" href="http://software.firstworks.com/p/getting-started-with-access-on-non-ms.html">MS Access (on non-MS platforms)</a><br/>
-<a target="_blank" href="http://software.firstworks.com/p/getting-started-with-odbc-on-non-ms.html">ODBC (non-MS platforms)</a><br/>
-        </blockquote>
-</td>
-      </tr>
-    </table>
-
-</td>
-  </tr>
-</table>
-
+<a target="_blank" href="http://software.firstworks.com/p/getting-started-with-odbc-on-non-ms.html">ODBC (on non-MS platforms)</a><br/>
+</blockquote>
 <hr/>
 
-<br/><table>
+<h3>Connectors</h3>
+
+<p>SQL Relay provides drivers for several popular database abstraction layers.</p>
+
+<table>
   <tr>
-    <td>    <h3>Connectors</h3>
-
-    <p>SQL Relay provides drivers for most popular database abstraction layers.</p>
-
-    <table>
-      <tr>
-        <td>        <blockquote>
+    <td>    <blockquote>
 <b>Guides</b>:<br/>
 <a href="programming/ado.net.html">ADO.NET</a><br/>
 <a href="programming/perldbi.html">Perl DBI</a><br/>
@@ -93,28 +49,27 @@ With SQL Relay, you can speed up and enhance the scalability of database-driven 
 <a href="programming/phppdo.html">PHP PDO</a><br/>
 <a href="programming/odbc.html">ODBC</a><br/>
 <a href="programming/jdbc.html">JDBC</a><br/>
-        </blockquote>
+    </blockquote>
 </td>
-        <td>        <blockquote>
+    <td>    <blockquote>
 <b>References</b>:<br/>
 <a href="api/ado.net/html/annotated.html">ADO.NET</a><br/>
 <a href="api/perl/SQLRelay.html">Perl DBI</a><br/>
 <a href="api/python/PySQLRDB.py.html">Python DB-API</a><br/>
-        </blockquote>
+    </blockquote>
 </td>
-      </tr>
-    </table>
+  </tr>
+</table>
 
-</td>
-    <td><div style="margin-left: 60px;"/>
-</td>
-    <td>    <h3>Native APIs</h3>
+<hr/>
 
-    <p>The native SQL Relay client APIs provide advanced features like suspended sessions, result set caching and tuning options.</p>
+<h3>Native APIs</h3>
 
-    <table>
-      <tr>
-        <td>        <blockquote>
+<p>The native SQL Relay client APIs provide advanced features like substitution and bind variables, multi-row fetches, client-side result set caching, and suspended transactions.</p>
+
+<table>
+  <tr>
+    <td>    <blockquote>
 <b>Guides</b>:<br/>
 <a href="programming/c++.html">C++</a><br/>
 <a href="programming/c.html">C</a><br/>
@@ -127,9 +82,9 @@ With SQL Relay, you can speed up and enhance the scalability of database-driven 
 <a href="programming/tcl.html">TCL</a><br/>
 <a href="programming/erlang.html">Erlang</a><br/>
 <a href="programming/nodejs.html">node.js</a><br/>
-        </blockquote>
+    </blockquote>
 </td>
-        <td>        <blockquote>
+    <td>    <blockquote>
 <b>References</b>:<br/>
 <a href="api/c++/html/annotated.html">C++</a><br/>
 <a href="api/c/html/group__sqlrclientwrapper.html">C</a><br/>
@@ -142,11 +97,7 @@ With SQL Relay, you can speed up and enhance the scalability of database-driven 
 <a href="api/tcl/index.html">TCL</a><br/>
 <a href="api/erlang/html/index.html">Erlang</a><br/>
 <a href="api/nodejs/html/annotated.html">node.js</a><br/>
-        </blockquote>
-</td>
-      </tr>
-    </table>
-
+    </blockquote>
 </td>
   </tr>
 </table>

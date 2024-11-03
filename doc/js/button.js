@@ -24,6 +24,8 @@ function setButton() {
 			contains(document.location.pathname,"/howtos/") ||
 			contains(document.location.pathname,"/programming/")) {
 		setActive("documentation","../images/lightbluedenim.png");
+	} else if (endsWith(document.location.pathname,"faq.html")) {
+		setActive("faq","images/lightbluedenim.png");
 	} else if (endsWith(document.location.pathname,"download.html")) {
 		setActive("download","images/lightbluedenim.png");
 	} else if (endsWith(document.location.pathname,"license.html")) {
