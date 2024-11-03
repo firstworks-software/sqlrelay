@@ -8,35 +8,23 @@ SRCS = connectionpooling.wt \
 	backends.wt \
 	datatranslation.wt \
 	dbabstractionlayers.wt \
-	ha.wt \
-	languages.wt \
-	multirowfetches.wt \
-	protocols.wt \
-	proxying.wt \
-	queryfiltering.wt \
+	frontends.wt \
+	lbfoha.wt \
+	nativeapi.wt \
+	platforms.wt \
 	queryrouting.wt \
-	resultsetcaching.wt \
-	schedules.wt \
-	substitutionandbindvars.wt \
-	suspendedtx.wt \
-	throttling.wt
+	security.wt \
 
 OBJS = connectionpooling.html \
 	backends.html \
 	datatranslation.html \
 	dbabstractionlayers.html \
-	ha.html \
-	languages.html \
-	multirowfetches.html \
-	protocols.html \
-	proxying.html \
-	queryfiltering.html \
+	frontends.html \
+	lbfoha.html \
+	nativeapi.html \
+	platforms.html \
 	queryrouting.html \
-	resultsetcaching.html \
-	schedules.html \
-	substitutionandbindvars.html \
-	suspendedtx.html \
-	throttling.html
+	security.html
 
 .wt.html:
 	wt -i $< -o $@

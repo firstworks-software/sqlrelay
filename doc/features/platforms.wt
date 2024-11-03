@@ -4,9 +4,21 @@
 
 {{{#!include ../contentstart.html}}}
 
-= Proxying =
+= Platform Compatibility =
 
-Solves - "I need to access MS SQL Server from Linux or Oracle from !FreeBSD (or other unsupported platform)."
+...
+
+== Operating System Support ==
+
+...
+
+== Architecture Support ==
+
+...
+
+== Proxying ==
+
+"I need to access MS SQL Server from Linux or Oracle from !FreeBSD (or other unsupported platform)."
 
 Access databases from unsupported platforms.
 

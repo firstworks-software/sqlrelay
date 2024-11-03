@@ -4,7 +4,7 @@
 
 {{{#!include ../contentstart.html}}}
 
-= Supported Databases =
+= Back-End Compatibility =
 
 [[Image(../images/oracle.png,nolink)]]
 [[Image(../images/sap.png,margin-left=10px,nolink)]]

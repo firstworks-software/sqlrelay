@@ -15,29 +15,6 @@
 
 ----
 
-=== Advantages ===
-
- [features/connectionpooling.html Persistent Database Connection Pooling] - makes database-driven web-based applications faster and more efficient[[br]]
- [features/proxying.html Proxying] - provides access to databases from unsupported platforms[[br]]
- [features/throttling.html Throttling] - prevents databases from becoming overloaded[[br]]
- [features/ha.html High Availability] - provides load balancing and failover with replicated or clustered databases[[br]]
- [features/queryrouting.html Query Routing] - conditionally sends queries to one database or another[[br]]
- [features/queryfiltering.html Query Filtering] - prevents queries that match certain patterns from being run at all[[br]]
- [features/datatranslation.html Query Translation] - modifies queries before passing them to the database[[br]]
- [features/schedules.html Connection Schedules] - constrain database access to specified times[[br]]
-
- [features/backends.html Database Support] - a wide variety of commercial and open-source databases are supported[[br]]
- [features/protocols.html Native Database Protocol Support] - allow !MySQL/MariaDB and !PostgreSQL applications to use SQL Relay without modification[[br]]
- [features/dbabstractionlayers.html Abstraction Layer Support] - drivers for most popular database abstraction layers are provided[[br]]
- [features/languages.html Native API] - the powerful native SQL Relay client API supports a wide variety of programming languages[[br]]
-
- [features/substitutionandbindvars.html Substitution and Bind Variables] - make frequently run queries faster and more efficient[[br]]
- [features/multirowfetches.html Multi-Row Fetches] - reduce the number of network round-trips[[br]]
- [features/resultsetcaching.html Client-Side Result Set Caching] - makes paging faster and easier[[br]]
- [features/suspendedtx.html Suspended Transactions] - allow a single transaction to span multiple web pages[[br]]
-
-----
-
 === Frequently Asked Questions ===
 
  [faq.html FAQ]

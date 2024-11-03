@@ -4,7 +4,35 @@
 
 <!--#include virtual="../contentstart.html"-->
 
-<h1>Query Filtering</h1>
+<h1>Enhanced Database Security</h1>
+
+<p>...</p>
+
+<h2>TLS and Kerberos</h2>
+
+<p>...</p>
+
+<h2>IP Filtering</h2>
+
+<p>...</p>
+
+<h2>Connection Schedules</h2>
+
+<p>Connection schedules constrain database access to specified times.</p>
+
+<br/><p>For example, only Bob and Sally may be allowed to access the database during the day shift.</p>
+
+<p><img src="../images/dayshift.png"/></p>
+
+<br/><p>While only Joe and Mary may be allowed to access the database during the night shift.</p>
+
+<p><img src="../images/nightshift.png"/></p>
+
+<p>Database access can be constrained to any combination of years, months, days of the month, days of the week, and times of day.</p>
+
+<p>A complete description of connection schedules with example configuration files is given <a href="../admin/configguide.html#schedules">here</a>.</p>
+
+<h2>Query Filtering</h2>
 
 <p>Query filtering prevents queries that match a certian pattern from being run at all.  There are often certain queries that will bring the entire database to its knees.  A common use for query filtering is to identify those queries and prevent them from being run.</p>
 

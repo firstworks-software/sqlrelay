@@ -1,0 +1,238 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
+<script language="Javascript" src="../js/featuresrotate.js"></script>
+
+= Native APIs =
+
+...
+
+== Language Support ==
+
+The native SQL Relay client API currently supports C, C++, .NET languages, Java, Perl, Python, PHP, Ruby, TCL, Erlang, and node.js.
+
+The native API is intuitive, consistent across languages, and supports powerful features not available when using a database abstraction layer like suspended sessions, result set caching and tuning options.
+
+Programming guides with sample code and API references are available for each language:
+
+{{{#!blockquote
+'''Guides:'''
+[../programming/c++.html C++], 
+[../programming/c.html C],
+[../programming/cs.html C#],
+[../programming/perl.html Perl],
+[../programming/php.html PHP],
+[../programming/python.html Python],
+[../programming/ruby.html Ruby],
+[../programming/java.html Java],
+[../programming/tcl.html TCL],
+[../programming/erlang.html Erlang],
+[../programming/nodejs.html node.js]
+
+'''References:'''
+[../api/c++/html/annotated.html C++],
+[../api/c/html/group__sqlrclientwrapper.html C],
+[../api/cs/html/annotated.html C#],
+[../api/perl/perl.html Perl],
+[../api/php/index.html PHP],
+[../api/python/PySQLRClient.py.html Python],
+[../api/ruby/doc/index.html Ruby],
+[../api/java/index.html Java],
+[../api/tcl/index.html TCL],
+[../api/nodejs/html/annotated.html node.js]
+
+<div class="slide">
+<h2>C++</h2>
+<div class="code" style="display: block; float: left;">
+{{{#!code
+@parts/example.cpp@
+}}}
+</div>
+</div>
+
+<div class="slide hidden">
+<h2>C</h2>
+<div class="code" style="display: block; float: left;">
+{{{#!code
+@parts/example.c@
+}}}
+</div>
+</div>
+
+<div class="slide hidden">
+<h2>C#</h2>
+<div class="code" style="display: block; float: left;">
+{{{#!code
+@parts/example.cs@
+}}}
+</div>
+</div>
+
+<div class="slide hidden">
+<h2>Java</h2>
+<div class="code" style="display: block; float: left;">
+{{{#!code
+@parts/example.java@
+}}}
+</div>
+</div>
+
+<div class="slide hidden">
+<h2>Perl</h2>
+<div class="code" style="display: block; float: left;">
+{{{#!code
+@parts/example.pl@
+}}}
+</div>
+</div>
+
+<div class="slide hidden">
+<h2>Python</h2>
+<div class="code" style="display: block; float: left;">
+{{{#!code
+@parts/example.py@
+}}}
+</div>
+</div>
+
+<div class="slide hidden">
+<h2>PHP</h2>
+<div class="code" style="display: block; float: left;">
+{{{#!code
+@parts/example.php@
+}}}
+</div>
+</div>
+
+<div class="slide hidden">
+<h2>Ruby</h2>
+<div class="code" style="display: block; float: left;">
+{{{#!code
+@parts/example.rb@
+}}}
+</div>
+</div>
+
+<div class="slide hidden">
+<h2>TCL</h2>
+<div class="code" style="display: block; float: left;">
+{{{#!code
+@parts/example.tcl@
+}}}
+</div>
+</div>
+
+<div class="slide hidden">
+<h2>node.js</h2>
+<div class="code" style="display: block; float: left;">
+{{{#!code
+@parts/example.js@
+}}}
+</div>
+</div>
+
+<div style="clear: both"/>
+
+<script language="Javascript">
+rotate();
+</script>
+}}}
+
+== Substitution and Bind Variables ==
+
+Bind variables are parameters that can be dynamically inserted into a query.
+
+Before executing a query, the datbase must parse it and comes up with an execution plan.  This process is called "preparing" the query and it takes time.  If you need to run a large set of similar queries, and each must be prepared separately, then this prepare-time can add up.
+
+Bind variables allow the query to be prepared only once, with placeholders for the some of the values, and then executed over and over, just plugging in values for each execution.  By eliminating the prepare-time before every execution, performance can be improved significantly.
+
+
+The basic process is:
+
+{{{#!blockquote
+{{{
+prepare("select * from  mytable where col1=:val1 and col2=:val2 and col3=:val3");
+inputBind("val1","hello");
+inputBind("val2",5);
+inputBind("val2",20);
+execute();
+inputBind("val1","goodbye");
+inputBind("val2",7);
+inputBind("val2",34);
+execute();
+inputBind("val1","hi");
+inputBind("val2",9);
+inputBind("val2",23);
+execute();
+... and so on ...
+}}}
+}}}
+
+In addition to running faster, the program is much cleaner.  The program doesn't need to be reconstruct the query each time it is run.
+
+Most modern databases support bind variables.  MDB Tools and older versions of !MySQL, !PostgreSQL and SQLite are exceptions.  For databases that don't support bind variables, SQL Relay fakes them by rewriting the query and inserting the values manually.  The cost of re-preparing the query is incurred, but there is no way to get around it with those databases anyway.
+
+See the FAQ item [../faq.html#bindvars How do I use bind variables?] for more information.  A more complete explanation is also given in [../programming/binds.html here], and the programming guides for each language explain how to use them with queries and stored procedures.
+
+== Multi-Row Fetches ==
+
+Multi-row fetches improve performance by reducing round-trips to the database.
+
+To fetch a result set, most database API's provide a "fetch" function that fetches a single row.  The app can then do something with that row and then fetch another row.
+
+[[Image(../images/fetch-one.png,nolink)]]
+
+If instead, multiple rows were fetched at once and buffered, it would reduce the number of round-trips to the database and improve performance, at the cost of memory.
+
+Some database API's do exactly this and provide a "fetchatonce" parameter that can be used to control how many rows are fetched at once.
+
+[[Image(../images/fetch-many.png,nolink)]]
+
+When using a database that provides a "fetchatonce" parameter, SQL Relay exposes it in the configuration file and does multi-row fetches from the database.
+
+[[Image(../images/sqlr-fetch-many.png,nolink)]]
+
+The SQL Relay client goes even further.  By default, it fetches the entire result set from the SQL Relay server in one round-trip.
+
+[[Image(../images/sqlr-fetch-many-return.png,nolink)]]
+
+For small result sets, like the ones that would likely be used to build a web page, this is very fast and usually doesn't consume an inordinate amount of memory.  However for larger result sets, the necessary memory allocation can be inefficient and slow.  To remedy this, the SQL Relay API's provide methods for setting how many rows will be fetched from the SQL Relay server and buffered at once.
+
+[[Image(../images/sqlr-fetch-many-return-rsbuffersize.png,nolink)]]
+
+See the FAQ items [../faq.html#buffer Why does SQL Relay buffer the entire result set?] and [../faq.html#nobuffer How do keep SQL Relay from buffering the entire result set?] for more information.  The programming guides for each language delve into this subject as well.
+
+Even if the database does not support multi-row fetches, the SQL Relay client can still do multi-row fetches from the SQL Relay server.  If the SQL Relay server is run on the same machine as the database and the client is run on a separate machine, using SQL Relay can generally improves performance over native database access because of the reduced number of round-trips across the network while fetching the result set.
+
+[[Image(../images/sqlr-fetch-one-return-rsbuffersize.png,nolink)]]
+
+== Client-Side Result Set Caching ==
+
+Client-side result set caching is a feature of the SQL Relay API that allows you to save whatever part of the result set that you have fetched so far to a local file.  This file can be re-opened later and rows that were already fetched can be read from it again and new rows can be appended to it.
+
+When used with [suspendedtx.html suspended transactions] efficient paging can be accomplished.
+
+For example, if you have 1000 items that you want to display, 50 at a time, you can select the rows, begin fetching them and cache them to a local file.  When the app is done fetching the first 50 items, the transaction can be suspended and picked up again by the next invocations of the app.  If the user wants to view the next 50 items, then 50 more rows can be fetched and cached.  If the user wants to view the previous 50 items, then there is no need to run the query again, the rows can just be fetched from the file.
+
+Cached result sets have a TTL (time-to-live) setting and are periodically removed by the sqlr-cachemanager daemon.
+
+The programming docs for each language give more detail on this subject.
+
+== Suspended Transactions ==
+
+Suspended transactions allow a single transaction to span mulitple invocations of an app or set of apps.
+
+A challenge associated with transient apps - apps which start up, connect to the database, perform some operations, log out and die - is how to handle situations where a single transaction might need to span multiple invocations of the app or span invocations of a set of apps.  Since each invocation of an app connects and disconnects from the database, and transactions start with the connection and end with the disconnection, how can this be done?  There are many solutions, but they usually involve storing stateful data in a set of tables, in effect building an app-specific transaction model on top of the database rather than using the database's built-in transactional capabilities.
+
+With SQL Relay's suspended transaction feature, you can begin a transaction, perform some operations, then suspend the transaction and pass credentials to another app.  The next app can then pick up that same transactions, perform more operations, then either commit, rollback or suspend the transaction again.
+
+This could be useful when collecting pages of information about a user, in ecommerce checkout processes, or in paging through a large result set.
+
+The programming docs for each language give more detail on this subject.
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

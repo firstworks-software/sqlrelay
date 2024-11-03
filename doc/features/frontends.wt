@@ -4,9 +4,9 @@
 
 {{{#!include ../contentstart.html}}}
 
-= Native Database Protocol Support =
+= Front-End Compatibility =
 
-Solves - "I need a transparent, sever-only !MySQL/MariaDB or !PostgreSQL proxy with features like [connectionpooling.html Connection Pooling], [throttling.html Throttling], [ha.html High Availability], [queryrouting.html Query Routing], [queryfiltering.html Query Filtering], and [schedules.html Connection Schedules]" and "I wrote my app using the native !MySQL/MariaDB/PostgreSQL API but the company is migrating to Oracle. I can tweak the queries to work with Oracle but I really don't want to have to modify the app to use OCI."
+"I need a transparent, sever-only !MySQL/MariaDB or !PostgreSQL proxy with features like [connectionpooling.html Connection Pooling], [throttling.html Throttling], [ha.html High Availability], [queryrouting.html Query Routing], [queryfiltering.html Query Filtering], and [schedules.html Connection Schedules]" and "I wrote my app using the native !MySQL/MariaDB/PostgreSQL API but the company is migrating to Oracle. I can tweak the queries to work with Oracle but I really don't want to have to modify the app to use OCI."
 
 Native database apps communicate with the database using native database client-server protocols.
 
