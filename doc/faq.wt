@@ -97,7 +97,7 @@
 [[br]][=#whatis]
 === What is SQL Relay? ===
 
-SQL Relay is a database connection management solution.
+SQL Relay is a database proxy and database connection management solution.
 
 [[Image(images/sqlrelay.png,nolink)]]
 
