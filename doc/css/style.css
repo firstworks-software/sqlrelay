@@ -221,6 +221,10 @@ body iframe {
 	vertical-align: top;
 }
 
+.presentation td a {
+	text-decoration: none;
+}
+
 .code {
 	margin: 2px;
 	padding: 5px;

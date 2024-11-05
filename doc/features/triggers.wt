@@ -1,0 +1,15 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
+= Triggers =
+
+[[Image(../images/triggers.png,nolink)]]
+
+...
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

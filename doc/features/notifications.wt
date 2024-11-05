@@ -1,0 +1,15 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
+= Notifications =
+
+[[Image(../images/notifications.png,nolink)]]
+
+...
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

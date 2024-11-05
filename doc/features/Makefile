@@ -11,9 +11,11 @@ SRCS = connectionpooling.wt \
 	frontends.wt \
 	lbfoha.wt \
 	nativeapi.wt \
+	notifications.wt \
 	platforms.wt \
 	queryrouting.wt \
 	security.wt \
+	triggers.wt
 
 OBJS = connectionpooling.html \
 	backends.html \
@@ -22,9 +24,11 @@ OBJS = connectionpooling.html \
 	frontends.html \
 	lbfoha.html \
 	nativeapi.html \
+	notifications.html \
 	platforms.html \
 	queryrouting.html \
-	security.html
+	security.html \
+	triggers.html
 
 .wt.html:
 	wt -i $< -o $@
