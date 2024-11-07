@@ -235,7 +235,19 @@ The programming docs for each language give more detail on this subject.
 
 == Client-Side Result Set Caching ==
 
-Client-side result set caching is a feature of the SQL Relay API that allows you to save whatever part of the result set that you have fetched so far to a local file.  This file can be re-opened later and rows that were already fetched can be read from it again and new rows can be appended to it.
+Client-side result set caching is a feature of the SQL Relay API that allows you to save whatever part of the result set that you have fetched so far to a local file.
+
+[[Image(../images/cache-firstfetch.png,nolink)]]
+
+[[Image(../images/cache-fetchforward.png,nolink)]]
+
+This file can be re-opened later and rows that were already fetched can be read from it again
+
+[[Image(../images/cache-fetchcache.png,nolink)]]
+
+...and new rows can be appended to it.
+
+[[Image(../images/cache-fetchforwardagain.png,nolink)]]
 
 When used with suspended result sets efficient paging can be accomplished.
 
