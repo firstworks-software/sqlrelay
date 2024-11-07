@@ -12,7 +12,7 @@
 
 Query translation enables the SQL Relay server to modify queries before passing them to the database.
 
-[[Image(../images/query-translation.png,nolink)]]
+[[Image(../images/translation-query.png,nolink)]]
 
 This is useful for things like:
 
@@ -66,6 +66,8 @@ A complete descripton of query translation with example configuration files is g
 == Bind Variable Translation ==
 
 ...
+
+[[Image(../images/translation-binds.png,nolink)]]
 
 == Result Set Translation ==
 
