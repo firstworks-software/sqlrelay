@@ -57,7 +57,7 @@ SQL Relay provides drivers for several popular database abstraction layers.
 
 === Native APIs ===
 
-The native SQL Relay client APIs provide advanced features like substitution and bind variables, multi-row fetches, client-side result set caching, and suspended transactions.
+The native SQL Relay client APIs provide advanced features like substitution and bind variables, multi-row fetches, client-side result set caching, and suspended sessions, transactions, and result sets.
 
 {{{#!td
  '''Guides''':[[br]]
