@@ -12,7 +12,23 @@ Query routing sends queries that match one pattern to one set of database server
 
 [[Image(../images/router.png,nolink)]]
 
-A complete descripton of query routing with example configuration files is given [../admin/configguide.html#queryrouting here].
+= Session Routing =
+
+Entire sessions can be routed by user, by intercepting "use database" queries, by client ip address, and by other criteria.
+
+{{{#!td
+[[Image(../images/router-user.png,nolink)]]
+}}}
+
+{{{#!td
+[[Image(../images/router-use-database.png,nolink,margin-left: 40px)]]
+}}}
+
+{{{#!td
+[[Image(../images/router-client-ip.png,nolink,margin-left: 40px)]]
+}}}
+
+A complete descripton of query and session routing with example configuration files is given [../admin/configguide.html#queryrouting here].
 
 {{{#!include ../contentend.html}}}
 

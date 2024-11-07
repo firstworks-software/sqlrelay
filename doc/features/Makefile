@@ -13,7 +13,7 @@ SRCS = connectionpooling.wt \
 	nativeapi.wt \
 	notifications.wt \
 	platforms.wt \
-	queryrouting.wt \
+	routing.wt \
 	security.wt \
 	triggers.wt
 
@@ -26,7 +26,7 @@ OBJS = connectionpooling.html \
 	nativeapi.html \
 	notifications.html \
 	platforms.html \
-	queryrouting.html \
+	routing.html \
 	security.html \
 	triggers.html
 
