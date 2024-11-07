@@ -209,6 +209,28 @@ Even if the database does not support multi-row fetches, the SQL Relay client ca
 
 [[Image(../images/sqlr-fetch-one-return-rsbuffersize.png,nolink)]]
 
+== Suspended Transactions ==
+
+Suspended transactions allow a single transaction to span mulitple invocations of an app or set of apps.
+
+A challenge associated with transient apps - apps which start up, connect to the database, perform some operations, log out and die - is how to handle situations where a single transaction might need to span multiple invocations of the app or span invocations of a set of apps.  Since each invocation of an app connects and disconnects from the database, and transactions start with the connection and end with the disconnection, how can this be done?  There are many solutions, but they usually involve storing stateful data in a set of tables, in effect building an app-specific transaction model on top of the database rather than using the database's built-in transactional capabilities.
+
+With SQL Relay's suspended transaction feature, you can begin a transaction, perform some operations, then suspend the transaction and pass credentials to another app.  The next app can then pick up that same transactions, perform more operations, then either commit, rollback or suspend the transaction again.
+
+[[Image(../images/suspendedtx.png,nolink)]]
+
+This could be useful when collecting pages of information about a user, in ecommerce checkout processes, or in paging through a large result set.
+
+The programming docs for each language give more detail on this subject.
+
+== Suspended Result Sets ==
+
+Suspended result sets allow a result set to be accessed by successive invocations of an app.
+
+...
+
+The programming docs for each language give more detail on this subject.
+
 == Client-Side Result Set Caching ==
 
 Client-side result set caching is a feature of the SQL Relay API that allows you to save whatever part of the result set that you have fetched so far to a local file.  This file can be re-opened later and rows that were already fetched can be read from it again and new rows can be appended to it.
@@ -218,18 +240,6 @@ When used with [suspendedtx.html suspended transactions] efficient paging can be
 For example, if you have 1000 items that you want to display, 50 at a time, you can select the rows, begin fetching them and cache them to a local file.  When the app is done fetching the first 50 items, the transaction can be suspended and picked up again by the next invocations of the app.  If the user wants to view the next 50 items, then 50 more rows can be fetched and cached.  If the user wants to view the previous 50 items, then there is no need to run the query again, the rows can just be fetched from the file.
 
 Cached result sets have a TTL (time-to-live) setting and are periodically removed by the sqlr-cachemanager daemon.
-
-The programming docs for each language give more detail on this subject.
-
-== Suspended Transactions ==
-
-Suspended transactions allow a single transaction to span mulitple invocations of an app or set of apps.
-
-A challenge associated with transient apps - apps which start up, connect to the database, perform some operations, log out and die - is how to handle situations where a single transaction might need to span multiple invocations of the app or span invocations of a set of apps.  Since each invocation of an app connects and disconnects from the database, and transactions start with the connection and end with the disconnection, how can this be done?  There are many solutions, but they usually involve storing stateful data in a set of tables, in effect building an app-specific transaction model on top of the database rather than using the database's built-in transactional capabilities.
-
-With SQL Relay's suspended transaction feature, you can begin a transaction, perform some operations, then suspend the transaction and pass credentials to another app.  The next app can then pick up that same transactions, perform more operations, then either commit, rollback or suspend the transaction again.
-
-This could be useful when collecting pages of information about a user, in ecommerce checkout processes, or in paging through a large result set.
 
 The programming docs for each language give more detail on this subject.
 
