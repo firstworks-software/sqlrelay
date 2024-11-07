@@ -73,9 +73,13 @@ A complete descripton of query translation with example configuration files is g
 
 ...
 
+[[Image(../images/translation-resultset.png,nolink)]]
+
 == Error Translation ==
 
 ...
+
+[[Image(../images/translation-errors.png,nolink)]]
 
 {{{#!include ../contentend.html}}}
 
