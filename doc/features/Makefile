@@ -15,6 +15,7 @@ SRCS = connectionpooling.wt \
 	platforms.wt \
 	routing.wt \
 	security.wt \
+	throttling.wt \
 	triggers.wt
 
 OBJS = connectionpooling.html \
@@ -28,6 +29,7 @@ OBJS = connectionpooling.html \
 	platforms.html \
 	routing.html \
 	security.html \
+	throttling.html \
 	triggers.html
 
 .wt.html:

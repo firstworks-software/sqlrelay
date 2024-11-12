@@ -6,8 +6,6 @@
 
 = Load Balancing, Failover, and High Availability =
 
-"I wish there was a cheap and easy way to automatically distribute traffic to the nodes in my database cluster and manage outages."
-
 In a database cluster or replication environment, the SQL Relay server maintains a pool of connections to the various database nodes and distributes client sessions over the pool.  SQL Relay even supports disproportionate distribution of load.  If some nodes are more powerful than others, then SQL Relay can be configured to send more traffic to the more powerful nodes.
 
 {{{#!td
