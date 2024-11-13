@@ -10,28 +10,38 @@ A persistent database connection pool maintains a set of already-logged-in datab
 
 Web-based applications, and other transient apps, which connect directly to the database, run queries, and disconnect, often spend more time connecting than actually running queries.
 
+{{{#!blockquote
 [[Image(../images/app-to-db.png,nolink)]]
+}}}
 
 This "connection delay" makes apps feel unresponsive and reduces throughput unless many queries are run per connection.
 
 Applications which connect to a pool, acquire an already-logged in database connection, run queries, and release the connection, generally perform better.
 
+{{{#!blockquote
 [[Image(../images/app-to-sqlr-to-db.png,nolink)]]
+}}}
 
 Apps feel responsive and overall throughput doesn't depend nearly as much on the number of queries that are run per connection.
 
+{{{#!blockquote
 [[Image(../images/mysql-bench.png,width=320,height=240)]]
 [[Image(../images/oracle-bench.png,width=320,height=240)]]
 
 ([http://software.firstworks.com/p/current-sql-relay-benchmarks.html Current Benchmarks])
+}}}
 
 Many connection pools run within application servers or web servers, can only be used by applications running within that server, and can usually only by applications written in a particular language.  Idle database connections in one application's pool are not typically available to other applications.
 
+{{{#!blockquote
 FIXME: images here ...
+}}}
 
 Since SQL Relay runs as a standalone process, its database connections are available to all applications, even applications running on other machines, across the network.
 
+{{{#!blockquote
 FIXME: image here ...
+}}}
 
 {{{#!include ../contentend.html}}}
 

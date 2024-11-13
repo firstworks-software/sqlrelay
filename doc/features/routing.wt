@@ -8,23 +8,17 @@
 
 Query routing sends queries that match one pattern to one set of database servers and queries that match another pattern to another set of servers.  A comon use for query routing is to route DML and DDL queries to a master and distribute select queries over a pool of slaves.
 
+{{{#!blockquote
 [[Image(../images/router.png,nolink)]]
+}}}
 
 Session routing sends entire sessions to one database or another; by user, by intercepting "use database" queries, by client ip address, or by other criteria.
 
-{{{#!td
+{{{#!blockquote
 [[Image(../images/router-user.png,nolink)]]
-}}}
-
-{{{#!td
 [[Image(../images/router-use-database.png,nolink,margin-left: 40px)]]
-}}}
-
-{{{#!td
 [[Image(../images/router-client-ip.png,nolink,margin-left: 40px)]]
 }}}
-
-A complete descripton of query and session routing with example configuration files is given [../admin/configguide.html#queryrouting here].
 
 {{{#!include ../contentend.html}}}
 

@@ -10,29 +10,34 @@
 
 <p>Web-based applications, and other transient apps, which connect directly to the database, run queries, and disconnect, often spend more time connecting than actually running queries.</p>
 
-<p><img src="../images/app-to-db.png"/></p>
-
+<blockquote>
+<img src="../images/app-to-db.png"/>
+</blockquote>
 <p>This "connection delay" makes apps feel unresponsive and reduces throughput unless many queries are run per connection.</p>
 
 <p>Applications which connect to a pool, acquire an already-logged in database connection, run queries, and release the connection, generally perform better.</p>
 
-<p><img src="../images/app-to-sqlr-to-db.png"/></p>
-
+<blockquote>
+<img src="../images/app-to-sqlr-to-db.png"/>
+</blockquote>
 <p>Apps feel responsive and overall throughput doesn't depend nearly as much on the number of queries that are run per connection.</p>
 
-<p><a href="../images/mysql-bench.png"><img style="width: 320; height: 240; " src="../images/mysql-bench.png"/></a>
+<blockquote>
+  <p><a href="../images/mysql-bench.png"><img style="width: 320; height: 240; " src="../images/mysql-bench.png"/></a>
 <a href="../images/oracle-bench.png"><img style="width: 320; height: 240; " src="../images/oracle-bench.png"/></a></p>
 
-<p>(<a target="_blank" href="http://software.firstworks.com/p/current-sql-relay-benchmarks.html">Current Benchmarks</a>)</p>
-
+(<a target="_blank" href="http://software.firstworks.com/p/current-sql-relay-benchmarks.html">Current Benchmarks</a>)
+</blockquote>
 <p>Many connection pools run within application servers or web servers, can only be used by applications running within that server, and can usually only by applications written in a particular language.  Idle database connections in one application's pool are not typically available to other applications.</p>
 
-<p>FIXME: images here ...</p>
-
+<blockquote>
+FIXME: images here ...
+</blockquote>
 <p>Since SQL Relay runs as a standalone process, its database connections are available to all applications, even applications running on other machines, across the network.</p>
 
-<p>FIXME: image here ...</p>
-
+<blockquote>
+FIXME: image here ...
+</blockquote>
 <!--#include virtual="../contentend.html"-->
 
 <!--#include virtual="footer.html"-->

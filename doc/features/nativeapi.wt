@@ -139,6 +139,8 @@ rotate();
 </script>
 }}}
 
+[[br]]
+
 == Substitution and Bind Variables ==
 
 Bind variables are parameters that can be dynamically inserted into a query.
@@ -175,6 +177,8 @@ Most modern databases support bind variables.  MDB Tools and older versions of !
 
 See the FAQ item [../faq.html#bindvars How do I use bind variables?] for more information.  A more complete explanation is also given in [../programming/binds.html here], and the programming guides for each language explain how to use them with queries and stored procedures.
 
+[[br]]
+
 == Multi-Row Fetches ==
 
 Multi-row fetches improve performance by reducing round-trips to the database.
@@ -207,6 +211,8 @@ Even if the database does not support multi-row fetches, the SQL Relay client ca
 
 [[Image(../images/sqlr-fetch-one-return-rsbuffersize.png,nolink)]]
 
+[[br]]
+
 == Suspended Sessions ==
 
 Suspended sessions allow a single session, and the currently open transaction of that session, to span mulitple invocations of an app or set of apps.
@@ -221,6 +227,8 @@ This could be useful when collecting pages of information about a user, in ecomm
 
 The programming docs for each language give more detail on this subject.
 
+[[br]]
+
 == Suspended Result Sets ==
 
 Suspended result sets allow an open result set to be accessed by successive invocations of an app.
@@ -230,6 +238,8 @@ Suspended result sets allow an open result set to be accessed by successive invo
 [[Image(../images/suspendedrs.png,nolink)]]
 
 The programming docs for each language give more detail on this subject.
+
+[[br]]
 
 == Client-Side Result Set Caching ==
 

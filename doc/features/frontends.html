@@ -8,28 +8,32 @@
 
 <p>Native database apps communicate with the database using native database client-server protocols.</p>
 
-<p>For example, MySQL/MariaDB apps communicate with the database using the MySQL/MariaDB client-server protocol:</p>
+<br/><p>For example, MySQL/MariaDB apps communicate with the database using the MySQL/MariaDB client-server protocol:</p>
 
-<p><img src="../images/mysqlnativeprotocol.png"/></p>
+<blockquote>
+<img src="../images/mysqlnativeprotocol.png"/>
+</blockquote>
+<br/><p>...and PostgreSQL apps communicate with the database using the PostgreSQL client-server protocol:</p>
 
-<p>...and PostgreSQL apps communicate with the database using the PostgreSQL client-server protocol:</p>
+<blockquote>
+<img src="../images/postgresqlnativeprotocol.png"/>
+</blockquote>
+<br/><p>Whether written using the native SQL Relay API or a connector of some sort, SQL Relay apps generally communicate with SQL Relay using the SQL Relay client-server protocol:</p>
 
-<p><img src="../images/postgresqlnativeprotocol.png"/></p>
+<blockquote>
+<img src="../images/sqlrelaynativeprotocol.png"/>
+</blockquote>
+<br/><p>However, SQL Relay also supports the MySQL/MariaDB and PostgreSQL client-server protocols.  This allows apps written for those databases to communicate with SQL Relay, rather than directly with the native database, without modification.</p>
 
-<p>Whether written using the native SQL Relay API or a connector of some sort, SQL Relay apps generally communicate with SQL Relay using the SQL Relay client-server protocol:</p>
-
-<p><img src="../images/sqlrelaynativeprotocol.png"/></p>
-
-<p>However, SQL Relay also supports the MySQL/MariaDB and PostgreSQL client-server protocols.  This allows apps written for those databases to communicate with SQL Relay, rather than directly with the native database, without modification.</p>
-
-<p><img src="../images/sqlrelaymysqlprotocol.png"/>
+<blockquote>
+<img src="../images/sqlrelaymysqlprotocol.png"/>
 <br/>
 <br/>
-<img src="../images/sqlrelaypostgresqlprotocol.png"/></p>
+<img src="../images/sqlrelaypostgresqlprotocol.png"/>
+</blockquote>
+<br/><p>In this configuration, SQL Relay becomes a transparent proxy.  Native apps aimed at SQL Relay still think that they're talking to the database, but in fact, are talking to SQL Relay.  Once the app is talking to SQL Relay, most of SQL Relay's advanced features become available to the app.</p>
 
-<p>In this configuration, SQL Relay becomes a transparent proxy.  Native apps aimed at SQL Relay still think that they're talking to the database, but in fact, are talking to SQL Relay.  Once the app is talking to SQL Relay, most of SQL Relay's advanced features become available to the app.</p>
-
-<p>Since SQL Relay supports a variety of database backends, the app can also be redirected to any of these databases, instead of the database it was originally written to use.</p>
+<br/><p>Since SQL Relay supports a variety of database backends, the app can also be redirected to any of these databases, instead of the database it was originally written to use.</p>
 
 <p>FIXME: image here...</p>
 

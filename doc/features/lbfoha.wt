@@ -8,6 +8,7 @@
 
 In a database cluster or replication environment, the SQL Relay server maintains a pool of connections to the various database nodes and distributes client sessions over the pool.  SQL Relay even supports disproportionate distribution of load.  If some nodes are more powerful than others, then SQL Relay can be configured to send more traffic to the more powerful nodes.
 
+{{{#!blockquote
 {{{#!td
 [[Image(../images/cluster.png,nolink)]]
 }}}
@@ -17,6 +18,7 @@ In a database cluster or replication environment, the SQL Relay server maintains
 {{{#!td
 [[Image(../images/replicated-disproportionate.png,nolink,margin-left=20px)]]
 }}}
+}}}
 
 If a node fails, the SQL Relay server will attempt to reestablish connections to that node, while continuing to distribute client sessions over the remaining nodes.
 
@@ -24,14 +26,10 @@ Note that SQL Relay cannot currently be used to replicate databases or keep repl
 
 SQL Relay supports two front-end high availability strategies as well.  Multiple instances of SQL Relay can be placed behind a load-balancing appliance, or round-robin DNS can be used to provide load-balancing and failover over multiple instances of SQL Relay.
 
-{{{#!td
+{{{#!blockquote
 [[Image(../images/loadbalancer.png,nolink)]]
-}}}
-{{{#!td
 [[Image(../images/rrdns.png,nolink,margin-left=20px)]]
 }}}
-
-Complete descriptions of high availability strategies, with example configuration files are given [../admin/configguide.html#ha here].
 
 {{{#!include ../contentend.html}}}
 

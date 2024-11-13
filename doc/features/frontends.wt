@@ -8,26 +8,46 @@
 
 Native database apps communicate with the database using native database client-server protocols.
 
+[[br]]
+
 For example, !MySQL/MariaDB apps communicate with the database using the !MySQL/MariaDB client-server protocol:
 
+{{{#!blockquote
 [[Image(../images/mysqlnativeprotocol.png,nolink)]]
+}}}
+
+[[br]]
 
 ...and !PostgreSQL apps communicate with the database using the !PostgreSQL client-server protocol:
 
+{{{#!blockquote
 [[Image(../images/postgresqlnativeprotocol.png,nolink)]]
+}}}
+
+[[br]]
 
 Whether written using the native SQL Relay API or a connector of some sort, SQL Relay apps generally communicate with SQL Relay using the SQL Relay client-server protocol:
 
+{{{#!blockquote
 [[Image(../images/sqlrelaynativeprotocol.png,nolink)]]
+}}}
+
+[[br]]
 
 However, SQL Relay also supports the !MySQL/MariaDB and !PostgreSQL client-server protocols.  This allows apps written for those databases to communicate with SQL Relay, rather than directly with the native database, without modification.
 
+{{{#!blockquote
 [[Image(../images/sqlrelaymysqlprotocol.png,nolink)]]
 [[br]]
 [[br]]
 [[Image(../images/sqlrelaypostgresqlprotocol.png,nolink)]]
+}}}
+
+[[br]]
 
 In this configuration, SQL Relay becomes a transparent proxy.  Native apps aimed at SQL Relay still think that they're talking to the database, but in fact, are talking to SQL Relay.  Once the app is talking to SQL Relay, most of SQL Relay's advanced features become available to the app.
+
+[[br]]
 
 Since SQL Relay supports a variety of database backends, the app can also be redirected to any of these databases, instead of the database it was originally written to use.
 

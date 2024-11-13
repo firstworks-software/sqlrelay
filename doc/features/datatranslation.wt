@@ -8,21 +8,39 @@
 
 Data translation modules enable the translation of queries, bind variables, result sets, and errors.
 
+[[br]]
+
 Query translation modules enable the SQL Relay server to modify queries before sending them to the database.
 
+{{{#!blockquote
 [[Image(../images/translation-query.png,nolink)]]
+}}}
+
+[[br]]
 
 Bind variable translation modules enable the SQL Relay server to modify the values of bind variables before sending them to the database.
 
+{{{#!blockquote
 [[Image(../images/translation-binds.png,nolink)]]
+}}}
+
+[[br]]
 
 Result set translation modules enable the SQL Relay server to modify column names and field values before returning them from the database.
 
+{{{#!blockquote
 [[Image(../images/translation-resultset.png,nolink)]]
+}}}
+
+[[br]]
 
 Error translation modules enable the SQL Relay server to modify error codes and messages before returning them from the database.
 
+{{{#!blockquote
 [[Image(../images/translation-errors.png,nolink)]]
+}}}
+
+[[br]]
 
 {{{#!include ../contentend.html}}}
 
