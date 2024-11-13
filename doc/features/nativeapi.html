@@ -8,7 +8,7 @@
 
 <h1>Native APIs</h1>
 
-<p>The SQL Relay native APIs are intuitive, consistent across languages, and supports powerful and unique features such as substitution and bind variables, multi-row fetches, suspended sessions, suspended result sets, and client-side result set caching.</p>
+<p>The SQL Relay native APIs are intuitive, consistent across languages, and supports powerful and unique features such as bind variables, substitution variables, multi-row fetches, suspended sessions, suspended result sets, and client-side result set caching.</p>
 
 <h2>Language Support</h2>
 
@@ -387,39 +387,57 @@ sqlrcur<font color="#990000">.</font><b><font color="#000000">sendQuery</font></
 rotate();
 </script>
 </blockquote>
-<br/><h2>Substitution and Bind Variables</h2>
+<br/><h2>Bind Variables</h2>
 
-<p>Bind variables are parameters that can be dynamically inserted into a query.</p>
+<p>Before executing a query, the database must prepare it - parse it and develop an execution plan.  Even very similar queries must be prepared individually, and this prepare-time can add up.</p>
 
-<p>Before executing a query, the datbase must parse it and comes up with an execution plan.  This process is called "preparing" the query and it takes time.  If you need to run a large set of similar queries, and each must be prepared separately, then this prepare-time can add up.</p>
-
-<p>Bind variables allow the query to be prepared only once, with placeholders for the some of the values, and then executed over and over, just plugging in values for each execution.  By eliminating the prepare-time before every execution, performance can be improved significantly.</p>
-
-<p>The basic process is:</p>
+<p>Bind variables allow the query to be prepared once, with placeholders for values, and then executed over and over, plugging in values for each execution.</p>
 
 <blockquote>
-  <pre>prepare("select * from  mytable where col1=:val1 and col2=:val2 and col3=:val3");
-inputBind("val1","hello");
-inputBind("val2",5);
-inputBind("val2",20);
-execute();
-inputBind("val1","goodbye");
-inputBind("val2",7);
-inputBind("val2",34);
-execute();
-inputBind("val1","hi");
-inputBind("val2",9);
-inputBind("val2",23);
-execute();
-... and so on ...
-</pre>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000000">prepareQuery</font></b><font color="#990000">(</font><font color="#FF0000">"select * from  mytable where col1=:val1 and col2=:val2 and col3=:val3"</font><font color="#990000">);</font>
+<b><font color="#000000">inputBind</font></b><font color="#990000">(</font><font color="#FF0000">"val1"</font><font color="#990000">,</font><font color="#FF0000">"hello"</font><font color="#990000">);</font>
+<b><font color="#000000">inputBind</font></b><font color="#990000">(</font><font color="#FF0000">"val2"</font><font color="#990000">,</font><font color="#993399">5</font><font color="#990000">);</font>
+<b><font color="#000000">inputBind</font></b><font color="#990000">(</font><font color="#FF0000">"val2"</font><font color="#990000">,</font><font color="#993399">20</font><font color="#990000">);</font>
+<b><font color="#000000">executeQuery</font></b><font color="#990000">();</font>
+<b><font color="#000000">inputBind</font></b><font color="#990000">(</font><font color="#FF0000">"val1"</font><font color="#990000">,</font><font color="#FF0000">"goodbye"</font><font color="#990000">);</font>
+<b><font color="#000000">inputBind</font></b><font color="#990000">(</font><font color="#FF0000">"val2"</font><font color="#990000">,</font><font color="#993399">7</font><font color="#990000">);</font>
+<b><font color="#000000">inputBind</font></b><font color="#990000">(</font><font color="#FF0000">"val2"</font><font color="#990000">,</font><font color="#993399">34</font><font color="#990000">);</font>
+<b><font color="#000000">executeQuery</font></b><font color="#990000">();</font>
+<b><font color="#000000">inputBind</font></b><font color="#990000">(</font><font color="#FF0000">"val1"</font><font color="#990000">,</font><font color="#FF0000">"hi"</font><font color="#990000">);</font>
+<b><font color="#000000">inputBind</font></b><font color="#990000">(</font><font color="#FF0000">"val2"</font><font color="#990000">,</font><font color="#993399">9</font><font color="#990000">);</font>
+<b><font color="#000000">inputBind</font></b><font color="#990000">(</font><font color="#FF0000">"val2"</font><font color="#990000">,</font><font color="#993399">23</font><font color="#990000">);</font>
+<b><font color="#000000">executeQuery</font></b><font color="#990000">();</font>
+<font color="#990000">...</font> and <font color="#008080">so</font> on <font color="#990000">...</font></tt></pre>
 
 </blockquote>
-<p>In addition to running faster, the program is much cleaner.  The program doesn't need to be reconstruct the query each time it is run.</p>
+<p>By eliminating the prepare-time before each execution, performance is improved significantly.  The program is also much cleaner as the query doesn't have to be reconstructed for each execution.</p>
 
-<p>Most modern databases support bind variables.  MDB Tools and older versions of MySQL, PostgreSQL and SQLite are exceptions.  For databases that don't support bind variables, SQL Relay fakes them by rewriting the query and inserting the values manually.  The cost of re-preparing the query is incurred, but there is no way to get around it with those databases anyway.</p>
+<p>The SQL Relay APIs support bind variables with all databases.  If a database doesn't support bind variables natively, the SQL Relay server fakes them.</p>
 
-<p>See the FAQ item <a href="../faq.html#bindvars">How do I use bind variables?</a> for more information.  A more complete explanation is also given in <a href="../programming/binds.html">here</a>, and the programming guides for each language explain how to use them with queries and stored procedures.</p>
+<br/><h2>Substitution Variables</h2>
+
+<p>Bind variables can be used to replace values, but they cannot be used to replace table names, column names, entire expressions, or clauses.  The SQL Relay APIs provide substitution variables for this purpose.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000000">prepareQuery</font></b><font color="#990000">(</font><font color="#FF0000">"select $(columns) from mytable $(whereclause)"</font><font color="#990000">);</font>
+<b><font color="#000000">substitution</font></b><font color="#990000">(</font><font color="#FF0000">"columns"</font><font color="#990000">,</font><font color="#FF0000">"*"</font><font color="#990000">);</font>
+<b><font color="#000000">substitution</font></b><font color="#990000">(</font><font color="#FF0000">"table"</font><font color="#990000">,</font><font color="#FF0000">"mytable"</font><font color="#990000">);</font>
+<b><font color="#000000">substitution</font></b><font color="#990000">(</font><font color="#FF0000">"whereclause"</font><font color="#990000">,</font><font color="#FF0000">"where stringcol='true' and integercol&gt;10 and floatcol&gt;1.1"</font><font color="#990000">);</font>
+<b><font color="#000000">executeQuery</font></b><font color="#990000">();</font>
+<b><font color="#000000">substitution</font></b><font color="#990000">(</font><font color="#FF0000">"columns"</font><font color="#990000">,</font><font color="#FF0000">"stringcol"</font><font color="#990000">);</font>
+<b><font color="#000000">substitution</font></b><font color="#990000">(</font><font color="#FF0000">"whereclause"</font><font color="#990000">,</font><font color="#FF0000">"where integercol=20 and floatcol&lt;10.2"</font><font color="#990000">);</font>
+<b><font color="#000000">executeQuery</font></b><font color="#990000">();</font></tt></pre>
+
+</blockquote>
+<p>Substitution variables don't provide any performance improvement, but can make query construction much cleaner.</p>
 
 <br/><h2>Multi-Row Fetches</h2>
 
@@ -447,35 +465,25 @@ execute();
 
 <p><img src="../images/sqlr-fetch-many-return-rsbuffersize.png"/></p>
 
-<p>See the FAQ items <a href="../faq.html#buffer">Why does SQL Relay buffer the entire result set?</a> and <a href="../faq.html#nobuffer">How do keep SQL Relay from buffering the entire result set?</a> for more information.  The programming guides for each language delve into this subject as well.</p>
-
 <p>Even if the database does not support multi-row fetches, the SQL Relay client can still do multi-row fetches from the SQL Relay server.  If the SQL Relay server is run on the same machine as the database and the client is run on a separate machine, using SQL Relay can generally improves performance over native database access because of the reduced number of round-trips across the network while fetching the result set.</p>
 
 <p><img src="../images/sqlr-fetch-one-return-rsbuffersize.png"/></p>
 
 <br/><h2>Suspended Sessions</h2>
 
-<p>Suspended sessions allow a single session, and the currently open transaction of that session, to span mulitple invocations of an app or set of apps.</p>
-
-<p>A challenge associated with transient apps - apps which start up, connect to the database, perform some operations, log out, and die - is how to handle situations where a single transaction might need to span multiple invocations of the app or span invocations of a set of apps.  Since each invocation of an app connects and disconnects from the database, and transactions start with the connection and end with the disconnection, how can this be done?  There are many solutions, but they usually involve storing stateful data in a set of tables, in effect building an app-specific transaction model on top of the database rather than using the database's built-in transactional capabilities.</p>
-
-<p>With SQL Relay's suspended session feature, you can begin a session, begin a transaction, perform some operations, then suspend the session (and the transaction) and pass credentials to another app.  The next app can then pick up that same session and transaction, perform more operations, then either commit, rollback, or suspend the session/transaction again.</p>
+<p>Suspended sessions allow a single session, and the currently open transaction of that session, to span successive invocations of an app, or to be passed between apps.</p>
 
 <p><img src="../images/suspendedtx.png"/></p>
 
-<p>This could be useful when collecting pages of information about a user, in ecommerce checkout processes, or in paging through a large result set.</p>
-
-<p>The programming docs for each language give more detail on this subject.</p>
+<p>This can be useful when collecting multiple pages of information about a user, in an ecommerce checkout processes, or in other situations.</p>
 
 <br/><h2>Suspended Result Sets</h2>
 
-<p>Suspended result sets allow an open result set to be accessed by successive invocations of an app.</p>
-
-<p>...</p>
+<p>Suspended result sets allow an open result set to be accessed by successive invocations of an app, or to be passed between apps.</p>
 
 <p><img src="../images/suspendedrs.png"/></p>
 
-<p>The programming docs for each language give more detail on this subject.</p>
+<p>This can be useful in paging forwards through a large result set.</p>
 
 <br/><h2>Client-Side Result Set Caching</h2>
 
@@ -493,13 +501,7 @@ execute();
 
 <p><img src="../images/cache-fetchforwardagain.png"/></p>
 
-<p>When used with suspended result sets efficient paging can be accomplished.</p>
-
-<p>For example, if you have 1000 items that you want to display, 50 at a time, you can select the rows, begin fetching them and cache them to a local file.  When the app is done fetching the first 50 items, the result set can be suspended and picked up again by the next invocations of the app.  If the user wants to view the next 50 items, then 50 more rows can be fetched and cached.  If the user wants to view the previous 50 items, then there is no need to run the query again, the rows can just be fetched from the file.</p>
-
-<p>Cached result sets have a TTL (time-to-live) setting and are periodically removed by the sqlr-cachemanager daemon.</p>
-
-<p>The programming docs for each language give more detail on this subject.</p>
+<p>When used with suspended result sets, this can be useful in paging backwards and forwards through a large result set.</p>
 
 <!--#include virtual="../contentend.html"-->
 
