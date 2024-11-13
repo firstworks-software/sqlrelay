@@ -6,38 +6,32 @@
 
 <h1>Persistent Database Connection Pooling</h1>
 
-<p>A persistent database connection pool maintains a set of already-logged-in database connections, and hands them out to applications, on-demand.  Connection pools provide several advantages over direct database connections, but primarily the persistent connections improve application performance and responsiveness, and the limited number of connections throttle requests to limit database load.</p>
+<p>A persistent database connection pool maintains a set of already-logged-in database connections, and hands them out to applications, on-demand.</p>
 
-<h2>Application Performance and Responsiveness</h2>
-
-<p>Logging in to most databases takes a noticable amount of time...</p>
+<p>Web-based applications, and other transient apps, which connect directly to the database, run queries, and disconnect, often spend more time connecting than actually running queries.</p>
 
 <p><img src="../images/app-to-db.png"/></p>
 
-<p>Web-based applications, and other transient apps, which connect, log in, query, log out, and disconnect to deliver each bit of content, often spend more time logging in than running queries.  Page loads feel slow, and overall throughput, in queries-per-second, is generally low unless many queries are run per connection.</p>
+<p>This "connection delay" makes apps feel unresponsive and reduces throughput unless many queries are run per connection.</p>
 
-<p>Connecting to a pool, and being handed an already-logged in database connection is substantially faster than logging into the database directly.</p>
+<p>Applications which connect to a pool, acquire an already-logged in database connection, run queries, and release the connection, generally perform better.</p>
 
 <p><img src="../images/app-to-sqlr-to-db.png"/></p>
 
-<p>Overall throughput (queries-per-second) is maximized, and doesn't depend nearly as much on the number of queries that are run per connection.</p>
+<p>Apps feel responsive and overall throughput doesn't depend nearly as much on the number of queries that are run per connection.</p>
 
 <p><a href="../images/mysql-bench.png"><img style="width: 320; height: 240; " src="../images/mysql-bench.png"/></a>
 <a href="../images/oracle-bench.png"><img style="width: 320; height: 240; " src="../images/oracle-bench.png"/></a></p>
 
 <p>(<a target="_blank" href="http://software.firstworks.com/p/current-sql-relay-benchmarks.html">Current Benchmarks</a>)</p>
 
-<h3>Standalone Pool</h3>
-
-<p>Most connection pooling systems run within application servers or web-servers, can only be used by applications running within that server, and usually only by applications written in a particular language.</p>
+<p>Many connection pools run within application servers or web servers, can only be used by applications running within that server, and can usually only by applications written in a particular language.  Idle database connections in one application's pool are not typically available to other applications.</p>
 
 <p>FIXME: images here ...</p>
 
-<p>SQL Relay runs stand-alone and may be used by any application, written in a variety of langauges, including applications running on other machines, across the network.</p>
+<p>Since SQL Relay runs as a standalone process, its database connections are available to all applications, even applications running on other machines, across the network.</p>
 
 <p>FIXME: image here ...</p>
-
-<p>FIXME: this makes more efficient use of the database because fewer connections sit idle blah blah blah...</p>
 
 <!--#include virtual="../contentend.html"-->
 

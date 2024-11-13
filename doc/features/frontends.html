@@ -6,8 +6,6 @@
 
 <h1>Front-End Compatibility</h1>
 
-<p>"I need a transparent, sever-only MySQL/MariaDB or PostgreSQL proxy with features like <a href="connectionpooling.html">Connection Pooling</a>, <a href="throttling.html">Throttling</a>, <a href="ha.html">High Availability</a>, <a href="queryrouting.html">Query Routing</a>, <a href="queryfiltering.html">Query Filtering</a>, and <a href="schedules.html">Connection Schedules</a>" and "I wrote my app using the native MySQL/MariaDB/PostgreSQL API but the company is migrating to Oracle. I can tweak the queries to work with Oracle but I really don't want to have to modify the app to use OCI."</p>
-
 <p>Native database apps communicate with the database using native database client-server protocols.</p>
 
 <p>For example, MySQL/MariaDB apps communicate with the database using the MySQL/MariaDB client-server protocol:</p>
@@ -29,7 +27,11 @@
 <br/>
 <img src="../images/sqlrelaypostgresqlprotocol.png"/></p>
 
-<p>In this configuration, SQL Relay becomes a transparent proxy.  Native apps aimed at SQL Relay still think that they're talking to the database, but in fact, are talking to SQL Relay.  Once the app is talking to SQL Relay, most of SQL Relay's features become available to the app, including <a href="connectionpooling.html">Connection Pooling</a>, <a href="throttling.html">Throttling</a>, <a href="ha.html">High Availability</a>, <a href="queryrouting.html">Query Routing</a>, <a href="queryfiltering.html">Query Filtering</a>, and <a href="schedules.html">Connection Schedules</a>.  Since SQL Relay supports a variety of database backends, the app can also be redirected to any of these databases, instead of the database it was originally written to use.</p>
+<p>In this configuration, SQL Relay becomes a transparent proxy.  Native apps aimed at SQL Relay still think that they're talking to the database, but in fact, are talking to SQL Relay.  Once the app is talking to SQL Relay, most of SQL Relay's advanced features become available to the app.</p>
+
+<p>Since SQL Relay supports a variety of database backends, the app can also be redirected to any of these databases, instead of the database it was originally written to use.</p>
+
+<p>FIXME: image here...</p>
 
 <p>Some queries may have to be modified to use the syntax of the new database and some code may need to be changed, but a full rewrite of the app should not be necessary.</p>
 

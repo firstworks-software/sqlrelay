@@ -6,89 +6,21 @@
 
 <h1>Data Translation</h1>
 
-<p>...</p>
+<p>Data translation modules enable the translation of queries, bind variables, result sets, and errors.</p>
 
-<h2>Query Translation</h2>
-
-<p>Query translation enables the SQL Relay server to modify queries before passing them to the database.</p>
+<p>Query translation modules enable the SQL Relay server to modify queries before sending them to the database.</p>
 
 <p><img src="../images/translation-query.png"/></p>
 
-<p>This is useful for things like:</p>
-
-<p>Normalizing queries for more effective query filtering:</p>
-
-<blockquote>
-  <p>From:</p>
-
-  <blockquote>
-<!-- Generator: GNU source-highlight 3.1.9
-by Lorenzo Bettini
-http://www.lorenzobettini.it
-http://www.gnu.org/software/src-highlite -->
-<pre><tt>sElEcT
-	<font color="#990000">*,</font>
-	<font color="#FF0000">'He'</font> <font color="#990000">||</font> <font color="#FF0000">'Ll'</font> <font color="#990000">||</font> <font color="#FF0000">'o'</font>
-from
-	myTABLE
-where
-	myTaBLe<font color="#990000">.</font>CoLuMn1    <font color="#990000">=</font>     myTablE<font color="#990000">.</font>ColuMN2  <font color="#990000">/</font>    <font color="#993399">2</font>
-</tt></pre>
-
-  </blockquote>
-  <p>To:</p>
-
-  <blockquote>
-<!-- Generator: GNU source-highlight 3.1.9
-by Lorenzo Bettini
-http://www.lorenzobettini.it
-http://www.gnu.org/software/src-highlite -->
-<pre><tt>select <font color="#990000">*,</font> <font color="#FF0000">'HeLlo'</font> from mytable <font color="#008080">where</font> mytable<font color="#990000">.</font>column1 <font color="#990000">=</font> mytable<font color="#990000">.</font>column2<font color="#990000">/</font><font color="#993399">2</font>
-</tt></pre>
-
-  </blockquote>
-</blockquote>
-<br/><p>Migrating an application to use a different database backend without modifying the application itself:</p>
-
-<blockquote>
-  <p>From:</p>
-
-  <blockquote>
-<!-- Generator: GNU source-highlight 3.1.9
-by Lorenzo Bettini
-http://www.lorenzobettini.it
-http://www.gnu.org/software/src-highlite -->
-<pre><tt>create <font color="#008080">table</font> <b><font color="#000000">mysqltable</font></b> <font color="#990000">(</font><font color="#008080">col1</font> tinytext<font color="#990000">,</font> <font color="#008080">col2</font> mediumtext<font color="#990000">)</font></tt></pre>
-
-  </blockquote>
-  <p>To:</p>
-
-  <blockquote>
-<!-- Generator: GNU source-highlight 3.1.9
-by Lorenzo Bettini
-http://www.lorenzobettini.it
-http://www.gnu.org/software/src-highlite -->
-<pre><tt>create <font color="#008080">table</font> <b><font color="#000000">oracletable</font></b> <font color="#990000">(</font><font color="#008080">col1</font> <b><font color="#000000">varchar2</font></b><font color="#990000">(</font><font color="#993399">254</font><font color="#990000">),</font> <font color="#008080">col2</font> <b><font color="#000000">varchar2</font></b><font color="#990000">(</font><font color="#993399">1023</font><font color="#990000">))</font></tt></pre>
-
-  </blockquote>
-</blockquote>
-<br/><p>A complete descripton of query translation with example configuration files is given <a href="../admin/configguide.html#querytranslation">here</a>.</p>
-
-<h2>Bind Variable Translation</h2>
-
-<p>...</p>
+<p>Bind variable translation modules enable the SQL Relay server to modify the values of bind variables before sending them to the database.</p>
 
 <p><img src="../images/translation-binds.png"/></p>
 
-<h2>Result Set Translation</h2>
-
-<p>...</p>
+<p>Result set translation modules enable the SQL Relay server to modify column names and field values before returning them from the database.</p>
 
 <p><img src="../images/translation-resultset.png"/></p>
 
-<h2>Error Translation</h2>
-
-<p>...</p>
+<p>Error translation modules enable the SQL Relay server to modify error codes and messages before returning them from the database.</p>
 
 <p><img src="../images/translation-errors.png"/></p>
 

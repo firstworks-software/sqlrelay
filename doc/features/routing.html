@@ -4,17 +4,13 @@
 
 <!--#include virtual="../contentstart.html"-->
 
-<h1>Query Routing</h1>
-
-<p>"My database is getting slammed. I could replicate it but then I'd have to rewrite my app to send DML to the master and somehow distribute selects over the slaves."</p>
+<h1>Query and Session Routing</h1>
 
 <p>Query routing sends queries that match one pattern to one set of database servers and queries that match another pattern to another set of servers.  A comon use for query routing is to route DML and DDL queries to a master and distribute select queries over a pool of slaves.</p>
 
 <p><img src="../images/router.png"/></p>
 
-<h1>Session Routing</h1>
-
-<p>Entire sessions can be routed by user, by intercepting "use database" queries, by client ip address, and by other criteria.</p>
+<p>Session routing sends entire sessions to one database or another; by user, by intercepting "use database" queries, by client ip address, or by other criteria.</p>
 
 <table>
   <tr>

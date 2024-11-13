@@ -6,78 +6,21 @@
 
 = Data Translation =
 
-...
+Data translation modules enable the translation of queries, bind variables, result sets, and errors.
 
-== Query Translation ==
-
-Query translation enables the SQL Relay server to modify queries before passing them to the database.
+Query translation modules enable the SQL Relay server to modify queries before sending them to the database.
 
 [[Image(../images/translation-query.png,nolink)]]
 
-This is useful for things like:
-
-Normalizing queries for more effective query filtering:
-
-{{{#!blockquote
-From:
-
-{{{#!blockquote
-{{{#!code
-@../admin/parts/normalize-before.sql@
-}}}
-}}}
-
-To:
-
-{{{#!blockquote
-{{{#!code
-@../admin/parts/normalize-after.sql@
-}}}
-}}}
-
-}}}
-
-
-Migrating an application to use a different database backend without modifying the application itself:
-
-{{{#!blockquote
-From:
-
-{{{#!blockquote
-{{{#!code
-create table mysqltable (col1 tinytext, col2 mediumtext)
-}}}
-}}}
-
-To:
-
-{{{#!blockquote
-{{{#!code
-create table oracletable (col1 varchar2(254), col2 varchar2(1023))
-}}}
-}}}
-
-}}}
-
-[[br]]
-
-A complete descripton of query translation with example configuration files is given [../admin/configguide.html#querytranslation here].
-
-== Bind Variable Translation ==
-
-...
+Bind variable translation modules enable the SQL Relay server to modify the values of bind variables before sending them to the database.
 
 [[Image(../images/translation-binds.png,nolink)]]
 
-== Result Set Translation ==
-
-...
+Result set translation modules enable the SQL Relay server to modify column names and field values before returning them from the database.
 
 [[Image(../images/translation-resultset.png,nolink)]]
 
-== Error Translation ==
-
-...
+Error translation modules enable the SQL Relay server to modify error codes and messages before returning them from the database.
 
 [[Image(../images/translation-errors.png,nolink)]]
 

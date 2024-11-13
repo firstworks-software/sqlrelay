@@ -6,38 +6,32 @@
 
 = Persistent Database Connection Pooling =
 
-A persistent database connection pool maintains a set of already-logged-in database connections, and hands them out to applications, on-demand.  Connection pools provide several advantages over direct database connections, but primarily the persistent connections improve application performance and responsiveness, and the limited number of connections throttle requests to limit database load.
+A persistent database connection pool maintains a set of already-logged-in database connections, and hands them out to applications, on-demand.
 
-== Application Performance and Responsiveness ==
-
-Logging in to most databases takes a noticable amount of time...
+Web-based applications, and other transient apps, which connect directly to the database, run queries, and disconnect, often spend more time connecting than actually running queries.
 
 [[Image(../images/app-to-db.png,nolink)]]
 
-Web-based applications, and other transient apps, which connect, log in, query, log out, and disconnect to deliver each bit of content, often spend more time logging in than running queries.  Page loads feel slow, and overall throughput, in queries-per-second, is generally low unless many queries are run per connection.
+This "connection delay" makes apps feel unresponsive and reduces throughput unless many queries are run per connection.
 
-Connecting to a pool, and being handed an already-logged in database connection is substantially faster than logging into the database directly.
+Applications which connect to a pool, acquire an already-logged in database connection, run queries, and release the connection, generally perform better.
 
 [[Image(../images/app-to-sqlr-to-db.png,nolink)]]
 
-Overall throughput (queries-per-second) is maximized, and doesn't depend nearly as much on the number of queries that are run per connection.
+Apps feel responsive and overall throughput doesn't depend nearly as much on the number of queries that are run per connection.
 
 [[Image(../images/mysql-bench.png,width=320,height=240)]]
 [[Image(../images/oracle-bench.png,width=320,height=240)]]
 
 ([http://software.firstworks.com/p/current-sql-relay-benchmarks.html Current Benchmarks])
 
-=== Standalone Pool ===
-
-Most connection pooling systems run within application servers or web-servers, can only be used by applications running within that server, and usually only by applications written in a particular language.
+Many connection pools run within application servers or web servers, can only be used by applications running within that server, and can usually only by applications written in a particular language.  Idle database connections in one application's pool are not typically available to other applications.
 
 FIXME: images here ...
 
-SQL Relay runs stand-alone and may be used by any application, written in a variety of langauges, including applications running on other machines, across the network.
+Since SQL Relay runs as a standalone process, its database connections are available to all applications, even applications running on other machines, across the network.
 
 FIXME: image here ...
-
-FIXME: this makes more efficient use of the database because fewer connections sit idle blah blah blah...
 
 {{{#!include ../contentend.html}}}
 
