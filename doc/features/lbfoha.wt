@@ -10,6 +10,8 @@ In a database cluster or replication environment, the SQL Relay server maintains
 
 {{{#!blockquote
 {{{#!td
+[[br]]
+[[br]]
 [[Image(../images/cluster.png,nolink)]]
 }}}
 {{{#!td

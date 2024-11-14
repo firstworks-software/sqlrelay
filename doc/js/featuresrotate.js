@@ -3,7 +3,7 @@ var	current=0;
 var	opacity=1;
 
 function rotate() {
-	slides=document.getElementsByClassName("slide");
+	slides=document.getElementsByClassName("featuresslide");
 	if (slides && slides.length) {
 		setTimeout("fadeOut()",2000);
 	}

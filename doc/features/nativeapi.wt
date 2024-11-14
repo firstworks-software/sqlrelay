@@ -6,6 +6,93 @@
 
 <script language="Javascript" src="../js/featuresrotate.js"></script>
 
+<div style="float: right; width: 800px;">
+<div class="featuresslide">
+<h2>C++</h2>
+<div class="code" style="display: block; float: left;">
+{{{#!code
+@parts/example.cpp@
+}}}
+</div>
+</div>
+<div class="featuresslide hidden">
+<h2>C</h2>
+<div class="code" style="display: block; float: left;">
+{{{#!code
+@parts/example.c@
+}}}
+</div>
+</div>
+<div class="featuresslide hidden">
+<h2>C#</h2>
+<div class="code" style="display: block; float: left;">
+{{{#!code
+@parts/example.cs@
+}}}
+</div>
+</div>
+<div class="featuresslide hidden">
+<h2>Java</h2>
+<div class="code" style="display: block; float: left;">
+{{{#!code
+@parts/example.java@
+}}}
+</div>
+</div>
+<div class="featuresslide hidden">
+<h2>Perl</h2>
+<div class="code" style="display: block; float: left;">
+{{{#!code
+@parts/example.pl@
+}}}
+</div>
+</div>
+<div class="featuresslide hidden">
+<h2>Python</h2>
+<div class="code" style="display: block; float: left;">
+{{{#!code
+@parts/example.py@
+}}}
+</div>
+</div>
+<div class="featuresslide hidden">
+<h2>PHP</h2>
+<div class="code" style="display: block; float: left;">
+{{{#!code
+@parts/example.php@
+}}}
+</div>
+</div>
+<div class="featuresslide hidden">
+<h2>Ruby</h2>
+<div class="code" style="display: block; float: left;">
+{{{#!code
+@parts/example.rb@
+}}}
+</div>
+</div>
+<div class="featuresslide hidden">
+<h2>TCL</h2>
+<div class="code" style="display: block; float: left;">
+{{{#!code
+@parts/example.tcl@
+}}}
+</div>
+</div>
+<div class="featuresslide hidden">
+<h2>node.js</h2>
+<div class="code" style="display: block; float: left;">
+{{{#!code
+@parts/example.js@
+}}}
+</div>
+</div>
+<div style="clear: both"></div>
+<script language="Javascript">
+rotate();
+</script>
+</div>
+
 = Native APIs =
 
 The SQL Relay native APIs are intuitive, consistent across languages, and supports powerful and unique features such as bind variables, substitution variables, multi-row fetches, suspended sessions, suspended result sets, and client-side result set caching.
@@ -16,127 +103,38 @@ The native SQL Relay client API currently supports C, C++, .NET languages, Java,
 
 Programming guides with sample code and API references are available for each language:
 
+{{{#!td
 {{{#!blockquote
 '''Guides:'''
-[../programming/c++.html C++], 
-[../programming/c.html C],
-[../programming/cs.html C#],
-[../programming/perl.html Perl],
-[../programming/php.html PHP],
-[../programming/python.html Python],
-[../programming/ruby.html Ruby],
-[../programming/java.html Java],
-[../programming/tcl.html TCL],
-[../programming/erlang.html Erlang],
-[../programming/nodejs.html node.js]
 
+* [../programming/c++.html C++], 
+* [../programming/c.html C],
+* [../programming/cs.html C#],
+* [../programming/perl.html Perl],
+* [../programming/php.html PHP],
+* [../programming/python.html Python],
+* [../programming/ruby.html Ruby],
+* [../programming/java.html Java],
+* [../programming/tcl.html TCL],
+* [../programming/erlang.html Erlang],
+* [../programming/nodejs.html node.js]
+}}}
+}}}
+{{{#!td
+{{{#!blockquote
 '''References:'''
-[../api/c++/html/annotated.html C++],
-[../api/c/html/group__sqlrclientwrapper.html C],
-[../api/cs/html/annotated.html C#],
-[../api/perl/perl.html Perl],
-[../api/php/index.html PHP],
-[../api/python/PySQLRClient.py.html Python],
-[../api/ruby/doc/index.html Ruby],
-[../api/java/index.html Java],
-[../api/tcl/index.html TCL],
-[../api/nodejs/html/annotated.html node.js]
 
-<div class="slide" style="height: 570px;">
-<h2>C++</h2>
-<div class="code" style="display: block; float: left;">
-{{{#!code
-@parts/example.cpp@
+* [../api/c++/html/annotated.html C++],
+* [../api/c/html/group__sqlrclientwrapper.html C],
+* [../api/cs/html/annotated.html C#],
+* [../api/perl/perl.html Perl],
+* [../api/php/index.html PHP],
+* [../api/python/PySQLRClient.py.html Python],
+* [../api/ruby/doc/index.html Ruby],
+* [../api/java/index.html Java],
+* [../api/tcl/index.html TCL],
+* [../api/nodejs/html/annotated.html node.js]
 }}}
-</div>
-</div>
-
-<div class="slide hidden" style="height: 570px;">
-<h2>C</h2>
-<div class="code" style="display: block; float: left;">
-{{{#!code
-@parts/example.c@
-}}}
-</div>
-</div>
-
-<div class="slide hidden" style="height: 570px;">
-<h2>C#</h2>
-<div class="code" style="display: block; float: left;">
-{{{#!code
-@parts/example.cs@
-}}}
-</div>
-</div>
-
-<div class="slide hidden" style="height: 570px;">
-<h2>Java</h2>
-<div class="code" style="display: block; float: left;">
-{{{#!code
-@parts/example.java@
-}}}
-</div>
-</div>
-
-<div class="slide hidden" style="height: 570px;">
-<h2>Perl</h2>
-<div class="code" style="display: block; float: left;">
-{{{#!code
-@parts/example.pl@
-}}}
-</div>
-</div>
-
-<div class="slide hidden" style="height: 570px;">
-<h2>Python</h2>
-<div class="code" style="display: block; float: left;">
-{{{#!code
-@parts/example.py@
-}}}
-</div>
-</div>
-
-<div class="slide hidden" style="height: 570px;">
-<h2>PHP</h2>
-<div class="code" style="display: block; float: left;">
-{{{#!code
-@parts/example.php@
-}}}
-</div>
-</div>
-
-<div class="slide hidden" style="height: 570px;">
-<h2>Ruby</h2>
-<div class="code" style="display: block; float: left;">
-{{{#!code
-@parts/example.rb@
-}}}
-</div>
-</div>
-
-<div class="slide hidden" style="height: 570px;">
-<h2>TCL</h2>
-<div class="code" style="display: block; float: left;">
-{{{#!code
-@parts/example.tcl@
-}}}
-</div>
-</div>
-
-<div class="slide hidden" style="height: 570px;">
-<h2>node.js</h2>
-<div class="code" style="display: block; float: left;">
-{{{#!code
-@parts/example.js@
-}}}
-</div>
-</div>
-
-<div style="clear: both"/>
-
-<script language="Javascript">
-rotate();
-</script>
 }}}
 
 [[br]]
