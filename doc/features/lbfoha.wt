@@ -24,7 +24,7 @@ If a node fails, the SQL Relay server will attempt to reestablish connections to
 
 Note that SQL Relay cannot currently be used to replicate databases or keep replicated databases synchronized.  If you are using SQL Relay to access replicated databases then it is assumed that there is some means by which the databases are kept synchronized external to SQL Relay.
 
-SQL Relay supports two front-end high availability strategies as well.  Multiple instances of SQL Relay can be placed behind a load-balancing appliance, or round-robin DNS can be used to provide load-balancing and failover over multiple instances of SQL Relay.
+SQL Relay supports two front-end high availability strategies as well.  Multiple instances of SQL Relay can be placed behind a load balancing appliance, or round-robin DNS can be used to provide load balancing and failover over multiple instances of SQL Relay.
 
 {{{#!blockquote
 [[Image(../images/loadbalancer.png,nolink)]]

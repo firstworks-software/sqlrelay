@@ -13,8 +13,8 @@
 * [#connectionpooling What is "persistent database connection pooling"?]
 * [#throttling What is "throttling"?]
 * [#ha What is "high availability"?]
-* [#loadbalancing What is "load-balancing"?]
-* [#failover What is "fail-over"?]
+* [#loadbalancing What is "load balancing"?]
+* [#failover What is "failoover"?]
 * [#queryrouting What is "query routing"?]
 * [#sessionrouting What is "session routing"?]
 * [#queryfiltering What is "query filtering"?]
@@ -164,12 +164,12 @@ See [features/connectionpooling.html Persistent Database Connection Pooling].
 See [features/throttling.html Throttling].
 
 [[br]][=#loadbalancing]
-=== What is "load-balancing"? ===
+=== What is "load balancing"? ===
 
 See [features/lbfoha.html Load Balancing, Failover, and High Availability].
 
 [[br]][=#failover]
-=== What is "fail-over"? ===
+=== What is "failoover"? ===
 
 See [features/lbfoha.html Load Balancing, Failover, and High Availability].
 

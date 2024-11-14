@@ -109,10 +109,10 @@
 
   <li><a href="#ha">High Availability</a></li>
   <ul>
-    <li><a href="#cluster">Load-Balancing and Fail-Over With Replicated Databases or Database Clusters</a></li>
-    <li><a href="#rac">Already-Load-Balanced Databases</a></li>
+    <li><a href="#cluster">Load Balancing and Failover With Replicated Databases or Database Clusters</a></li>
+    <li><a href="#rac">Already-Load Balanced Databases</a></li>
     <li><a href="#masterslave">Master-Slave Query Routing</a></li>
-    <li><a href="#frontendlb">Front-End Load-Balancing and Fail-Over</a></li>
+    <li><a href="#frontendlb">Front-End Load Balancing and Failover</a></li>
   </ul>
 
   <li><a href="#security">Security Features</a></li>
@@ -3632,9 +3632,9 @@ http://www.gnu.org/software/src-highlite -->
 
 <br/><a name="ha"/><h1>High Availabiltiy</h1>
 
-<p>In a high availability environment, SQL Relay can be deployed as a front-end to provide load-balancing and fail-over for a set of replicated database servers or database cluster.  Load-balancing and fail-over can also be implemented over multiple SQL Relay servers.</p>
+<p>In a high availability environment, SQL Relay can be deployed as a front-end to provide load balancing and failover for a set of replicated database servers or database cluster.  Load balancing and failover can also be implemented over multiple SQL Relay servers.</p>
 
-<br/><a name="cluster"/><h2>Load-Balancing and Fail-Over With Replicated Databases or Database Clusters</h2>
+<br/><a name="cluster"/><h2>Load Balancing and Failover With Replicated Databases or Database Clusters</h2>
 
 <p>In a database cluster or replication environment, SQL Relay can be configured to maintain a pool of connections to the various database nodes and distribute client sessions over the nodes.  If an individual node fails, SQL Relay will attempt to reestablish connections to that node, while continuing to distribute client sessions over the remaining nodes.</p>
 
@@ -3697,15 +3697,15 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>In the example above, 15 is 3 times 5, so 3 times as many connections will be opened to ora3 as to ora1.  30 is 6 times 5, so 6 times as many connections will be opened to ora3 as ora1.  Since a total of 10 connections will be opened, 1 will be opened to ora1, 3 to ora2, and 6 to ora2.</p>
 
-<br/><a name="rac"/><h2>Already-Load-Balanced Databases</h2>
+<br/><a name="rac"/><h2>Already-Load Balanced Databases</h2>
 
-<p>In a typical database cluster or replicated environment, the nodes are identifiable as separate hosts.  However, when the nodes are located behind a load-balancing appliance or running on an application cluster, such as Oracle RAC, SQL Relay cannot identity an individual node.</p>
+<p>In a typical database cluster or replicated environment, the nodes are identifiable as separate hosts.  However, when the nodes are located behind a load balancing appliance or running on an application cluster, such as Oracle RAC, SQL Relay cannot identity an individual node.</p>
 
-<p>In these environments, if a node goes down, SQL Relay will attempt to re-establish the connection, but rather than failing until the node comes back up, the new connection will more likely just succeed to a different node in the cluster.  Over time, this can lead to disproportionate load-balancing, with a bias toward nodes that have never gone down.</p>
+<p>In these environments, if a node goes down, SQL Relay will attempt to re-establish the connection, but rather than failing until the node comes back up, the new connection will more likely just succeed to a different node in the cluster.  Over time, this can lead to disproportionate load balancing, with a bias toward nodes that have never gone down.</p>
 
 <p>SQL Relay manages this by "shuffling" the connections periodically.  Every so often, each database connection is re-established, giving that connection a chance to be re-established to a node that may have gone down but is now back up.</p>
 
-<p>To indicate to SQL Relay that the nodes are already-load-balanced, and need to be "shuffled" periodically, only one connection tag should be used, with the behindloadbalancer attribute set to "yes".</p>
+<p>To indicate to SQL Relay that the nodes are already-load balanced, and need to be "shuffled" periodically, only one connection tag should be used, with the behindloadbalancer attribute set to "yes".</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -3725,7 +3725,7 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <br/><br/><a name="masterslave"/><h2>Master-Slave Query Routing</h2>
 
-<p>The load-balancing scenarios described above all assume that master-master replication is being used.  SQL Relay supports master-slave replication as well.</p>
+<p>The load balancing scenarios described above all assume that master-master replication is being used.  SQL Relay supports master-slave replication as well.</p>
 
 <p>In a master-slave replication environment, SQL Relay can be configured to route DML and DDL queries to the master and distribute selects over the slaves.</p>
 
@@ -3829,25 +3829,25 @@ sqlr-start -id router
 </pre>
 
 </blockquote>
-<br/><br/><a name="frontendlb"/><h2>Front-End Load-Balancing and Fail-Over</h2>
+<br/><br/><a name="frontendlb"/><h2>Front-End Load Balancing and Failover</h2>
 
 <p>If you are building out a high availability environment, or if your pool of application servers is just sufficiently large, you might want to set up a pool of SQL Relay servers between your application servers and the database.</p>
 
-<p>SQL Relay supports two front-end load-balancing and fail-over strategies.  In the first strategy, load-balancing and fail-over are provided by an appliance or application cluster.  In the second, SQL Relay provides its own load-balancing and fail-over, with some help from DNS.</p>
+<p>SQL Relay supports two front-end load balancing and failover strategies.  In the first strategy, load balancing and failover are provided by an appliance or application cluster.  In the second, SQL Relay provides its own load balancing and failover, with some help from DNS.</p>
 
-<p>Multiple instances of SQL Relay can be placed behind a load-balancing appliance.</p>
+<p>Multiple instances of SQL Relay can be placed behind a load balancing appliance.</p>
 
 <p><img src="../images/loadbalancer.png"/></p>
 
-<p>In this illustration, the load-balancing appliance is shown as a single machine, but in a true HA environment, there would be 2 or more appliances sharing a virtual IP.  Alternatively, rather than using an appliance, SQL Relay can be run on an application server cluster such as Linux Virtual Server.</p>
+<p>In this illustration, the load balancing appliance is shown as a single machine, but in a true HA environment, there would be 2 or more appliances sharing a virtual IP.  Alternatively, rather than using an appliance, SQL Relay can be run on an application server cluster such as Linux Virtual Server.</p>
 
-<p><a target="_blank" href="http://en.wikipedia.org/wiki/Round-robin_DNS">Round-robin DNS</a> can be also be used to provide load-balancing and fail-over over multiple SQL Relay servers.</p>
+<p><a target="_blank" href="http://en.wikipedia.org/wiki/Round-robin_DNS">Round-robin DNS</a> can be also be used to provide load balancing and failover over multiple SQL Relay servers.</p>
 
 <p><img src="../images/rrdns.png"/></p>
 
 <p>In a round-robin DNS scenario, multiple IP addresses are assigned to the same host name.  The SQL Relay client is then configured to connect to that host.  When it requests the IP addresses for the host, the client receives all of the IP addresses assigned to it, rather than just a single address.</p>
 
-<p>Round-robin DNS is so-called because, traditionally, the order of the IP addresses returned on successive requests alternated reliably, in round-robin fashion.  This behavior persists in many environments, but it is no longer guaranteed, as many modern DNS resolvers sort the list and return the IP addresses in the same order, every time.  SQL Relay clients randomize the list though, and try to connect to each of the IP addresses, one-at-a-time, until they succeed.  Doing so provides both load-balancing and fail-over without requiring an appliance or application server cluster.</p>
+<p>Round-robin DNS is so-called because, traditionally, the order of the IP addresses returned on successive requests alternated reliably, in round-robin fashion.  This behavior persists in many environments, but it is no longer guaranteed, as many modern DNS resolvers sort the list and return the IP addresses in the same order, every time.  SQL Relay clients randomize the list though, and try to connect to each of the IP addresses, one-at-a-time, until they succeed.  Doing so provides both load balancing and failover without requiring an appliance or application server cluster.</p>
 
 <hr/>
 

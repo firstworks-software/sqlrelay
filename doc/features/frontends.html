@@ -8,12 +8,12 @@
 
 <p>Native database apps communicate with the database using native database client-server protocols.</p>
 
-<br/><p>For example, MySQL/MariaDB apps communicate with the database using the MySQL/MariaDB client-server protocol:</p>
+<p>For example, MySQL/MariaDB apps communicate with the database using the MySQL/MariaDB client-server protocol:</p>
 
 <blockquote>
 <img src="../images/mysqlnativeprotocol.png"/>
 </blockquote>
-<br/><p>...and PostgreSQL apps communicate with the database using the PostgreSQL client-server protocol:</p>
+<p>...and PostgreSQL apps communicate with the database using the PostgreSQL client-server protocol:</p>
 
 <blockquote>
 <img src="../images/postgresqlnativeprotocol.png"/>
@@ -23,7 +23,7 @@
 <blockquote>
 <img src="../images/sqlrelaynativeprotocol.png"/>
 </blockquote>
-<br/><p>However, SQL Relay also supports the MySQL/MariaDB and PostgreSQL client-server protocols.  This allows apps written for those databases to communicate with SQL Relay, rather than directly with the native database, without modification.</p>
+<p>However, SQL Relay also supports the MySQL/MariaDB and PostgreSQL client-server protocols.  This allows apps written for those databases to communicate with SQL Relay, rather than directly with the native database, without modification.</p>
 
 <blockquote>
 <img src="../images/sqlrelaymysqlprotocol.png"/>
@@ -31,12 +31,18 @@
 <br/>
 <img src="../images/sqlrelaypostgresqlprotocol.png"/>
 </blockquote>
-<br/><p>In this configuration, SQL Relay becomes a transparent proxy.  Native apps aimed at SQL Relay still think that they're talking to the database, but in fact, are talking to SQL Relay.  Once the app is talking to SQL Relay, most of SQL Relay's advanced features become available to the app.</p>
+<p>As such, SQL Relay can be used as a transparent proxy.  Native apps aimed at SQL Relay still think that they're talking to the database, but in fact, they are talking to SQL Relay, and can take advantage of SQL Relay's advanced features.</p>
 
-<br/><p>Since SQL Relay supports a variety of database backends, the app can also be redirected to any of these databases, instead of the database it was originally written to use.</p>
+<br/><h2>Foreign Back-End</h2>
 
-<p>FIXME: image here...</p>
+<p>Since SQL Relay supports a variety of database backends, the app can also be redirected to any of these databases, instead of the database it was originally written to use.</p>
 
+<blockquote>
+<img src="../images/sqlrelay-mysql-frontend-mssql-backend.png"/>
+<br/>
+<br/>
+<img src="../images/sqlrelay-postgresql-frontend-oracle-backend.png"/>
+</blockquote>
 <p>Some queries may have to be modified to use the syntax of the new database and some code may need to be changed, but a full rewrite of the app should not be necessary.</p>
 
 <!--#include virtual="../contentend.html"-->
