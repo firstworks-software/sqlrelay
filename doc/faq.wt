@@ -11,12 +11,12 @@
 * [#whatis What is SQL Relay?]
 * [#whatisnot What doesn't SQL Relay do?]
 * [#connectionpooling What is "persistent database connection pooling"?]
-* [#proxying What is "proxying"?]
 * [#throttling What is "throttling"?]
 * [#ha What is "high availability"?]
 * [#loadbalancing What is "load-balancing"?]
 * [#failover What is "fail-over"?]
 * [#queryrouting What is "query routing"?]
+* [#sessionrouting What is "session routing"?]
 * [#queryfiltering What is "query filtering"?]
 * [#querytranslation What is "query translation"?]
 * [#connectionschedules What are "connection schedules"?]
@@ -29,6 +29,7 @@
 * [#multirow What are "multi-row fetches"?]
 * [#resultsetcaching What is "client-side result set caching"?]
 * [#suspendedtx What are "suspended transactions"?]
+* [#suspendedrs What are "suspended result sets"?]
 * [#howwork How does SQL Relay work?]
 * [#efficiency How can SQL Relay speed up or improve the efficiency of my website?]
 * [#unsupported How does SQL Relay allow me to access a database from a platform not supported by the database vendor?]
@@ -157,60 +158,60 @@ SQL Relay does provide a query translation framework and various query translati
 
 See [features/connectionpooling.html Persistent Database Connection Pooling].
 
-[[br]][=#proxying]
-=== What is "proxying"? ===
-
-See [features/proxying.html Proxying].
-
 [[br]][=#throttling]
 === What is "throttling"? ===
 
 See [features/throttling.html Throttling].
 
-[[br]][=#ha]
-=== What is "high availability"? ===
-
-See [features/ha.html High Availability].
-
 [[br]][=#loadbalancing]
 === What is "load-balancing"? ===
 
-See [features/ha.html High Availability].
+See [features/lbfoha.html Load Balancing, Failover, and High Availability].
 
 [[br]][=#failover]
 === What is "fail-over"? ===
 
-See [features/ha.html High Availability].
+See [features/lbfoha.html Load Balancing, Failover, and High Availability].
+
+[[br]][=#ha]
+=== What is "high availability"? ===
+
+See [features/lbfoha.html Load Balancing, Failover, and High Availability].
 
 [[br]][=#queryrouting]
 === What is "query routing"? ===
 
-See [features/queryrouting.html Query Routing].
+See [features/routing.html Routing].
+
+[[br]][=#sessionrouting]
+=== What is "session routing"? ===
+
+See [features/routing.html Routing].
 
 [[br]][=#queryfiltering]
 === What is "query filtering"? ===
 
-See [features/queryfiltering.html Query Filtering].
+See [features/security.html Security - Query Filtering].
 
 [[br]][=#querytranslation]
 === What is "query translation"? ===
 
-See [features/querytranslation.html Query Translation].
+See [features/datatranslation.html Data Translation].
 
 [[br]][=#connectionschedules]
 === What are "connection schedules"? ===
 
-See [features/schedules.html Connection Schedules].
+See [features/security.html Security - Connection Schedules].
 
 [[br]][=#databases]
 === What databases does SQL Relay support? ===
 
-See [features/databases.html Supported Databases].
+See [features/backends.html Back-End Compatibility].
 
 [[br]][=#nativeprotocol]
 === What database client-server protocols does SQL Relay support? ===
 
-See [features/nativeprotocol.html Native Database Protocol Support].
+See [features/frontends.html Front-End Compatibility].
 
 [[br]][=#platforms]
 === What platforms does SQL Relay run on? ===
@@ -220,7 +221,7 @@ See the [admin/installing.html#platforms Supported Platforms] section of the ins
 [[br]][=#languages]
 === What languages does SQL Relay support? ===
 
-See [features/languages.html Native API].
+See [features/nativeapi.html Native API].
 
 [[br]][=#dbabstraction]
 === What database abstraction layers does SQL Relay support? ===
@@ -232,22 +233,27 @@ The native SQL Relay Client API's are database abstraction layers as well, as th
 [[br]][=#whatarebindvars]
 === What are "substitution and bind variables"? ===
 
-See [features/substitutionandbindvars.html Substitution and Bind Variables].
+See [features/nativeapi.html Native APIs - Bind Variables and Substitution Variables].
 
 [[br]][=#multirow]
 === What are "multi-row fetches"? ===
 
-See [features/multirowfetches.html Multi-Row Fetches].
+See [features/nativeapi.html Native APIs - Multi-Row Fetches].
 
 [[br]][=#resultsetcaching]
 === What is "client-side result set caching"? ===
 
-See [features/resultsetcaching.html Client-Side Result Set Caching].
+See [features/nativeapi.html Native APIs - Client-Side Result Set Caching].
 
 [[br]][=#suspendedtx]
 === What are "suspended transactions"? ===
 
-See [features/suspendedtx.html Suspended Transactions].
+See [features/nativeapi.html Native APIs - Suspended Transactions].
+
+[[br]][=#suspendedrs]
+=== What are "suspended result sets"? ===
+
+See [features/nativeapi.html Native APIs - Suspended Result Sets].
 
 [[br]][=#howwork]
 === How does SQL Relay work? ===
@@ -277,7 +283,7 @@ SQL Relay makes it easy to distribute load over replicated servers.  A common sc
 [[br]][=#unsupported]
 === How does SQL Relay allow me to access a database from a platform not supported by the database vendor? ===
 
-See [features/proxying.html Proxying].
+See [features/platforms.html Platforms].
 
 [[br]][=#migration]
 === How can SQL Relay help migrating my application from one database to another? ===
@@ -295,7 +301,7 @@ SQL Relay can also be configured to perform query translation - to modify querie
 [[br]][=#replicated]
 === How can SQL Relay be used with replicated or clustered databases? ===
 
-See [features/ha.html High Availability].
+See [features/lbfoha.html Load Balancing, Failover, and High Availability].
 
 [[br]][=#databaseusers]
 === Can SQL Relay proxy multiple database users instead of using the same user for every session? ===
@@ -383,7 +389,7 @@ SQL Relay makes more efficient use of resources by maintaining fewer persistent 
 [[br]][=#canxxxdb]
 === Can I use SQL Relay to connect to such-and-such database? ===
 
-See [features/databases.html Supported Databases].
+See [features/backends.html Back-End Compatibility].
 
 [[br]][=#oracle]
 === Why can't I get SQL Relay to connect to Oracle? ===

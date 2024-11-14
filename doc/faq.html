@@ -12,12 +12,12 @@
   <li><a href="#whatis">What is SQL Relay?</a></li>
   <li><a href="#whatisnot">What doesn't SQL Relay do?</a></li>
   <li><a href="#connectionpooling">What is "persistent database connection pooling"?</a></li>
-  <li><a href="#proxying">What is "proxying"?</a></li>
   <li><a href="#throttling">What is "throttling"?</a></li>
   <li><a href="#ha">What is "high availability"?</a></li>
   <li><a href="#loadbalancing">What is "load-balancing"?</a></li>
   <li><a href="#failover">What is "fail-over"?</a></li>
   <li><a href="#queryrouting">What is "query routing"?</a></li>
+  <li><a href="#sessionrouting">What is "session routing"?</a></li>
   <li><a href="#queryfiltering">What is "query filtering"?</a></li>
   <li><a href="#querytranslation">What is "query translation"?</a></li>
   <li><a href="#connectionschedules">What are "connection schedules"?</a></li>
@@ -30,6 +30,7 @@
   <li><a href="#multirow">What are "multi-row fetches"?</a></li>
   <li><a href="#resultsetcaching">What is "client-side result set caching"?</a></li>
   <li><a href="#suspendedtx">What are "suspended transactions"?</a></li>
+  <li><a href="#suspendedrs">What are "suspended result sets"?</a></li>
   <li><a href="#howwork">How does SQL Relay work?</a></li>
   <li><a href="#efficiency">How can SQL Relay speed up or improve the efficiency of my website?</a></li>
   <li><a href="#unsupported">How does SQL Relay allow me to access a database from a platform not supported by the database vendor?</a></li>
@@ -168,49 +169,49 @@ Solves - "I need to keep users out during maintenance windows."</p>
 
 <p>See <a href="features/connectionpooling.html">Persistent Database Connection Pooling</a>.</p>
 
-<br/><a name="proxying"/><h3>What is "proxying"?</h3>
-
-<p>See <a href="features/proxying.html">Proxying</a>.</p>
-
 <br/><a name="throttling"/><h3>What is "throttling"?</h3>
 
 <p>See <a href="features/throttling.html">Throttling</a>.</p>
 
-<br/><a name="ha"/><h3>What is "high availability"?</h3>
-
-<p>See <a href="features/ha.html">High Availability</a>.</p>
-
 <br/><a name="loadbalancing"/><h3>What is "load-balancing"?</h3>
 
-<p>See <a href="features/ha.html">High Availability</a>.</p>
+<p>See <a href="features/lbfoha.html">Load Balancing, Failover, and High Availability</a>.</p>
 
 <br/><a name="failover"/><h3>What is "fail-over"?</h3>
 
-<p>See <a href="features/ha.html">High Availability</a>.</p>
+<p>See <a href="features/lbfoha.html">Load Balancing, Failover, and High Availability</a>.</p>
+
+<br/><a name="ha"/><h3>What is "high availability"?</h3>
+
+<p>See <a href="features/lbfoha.html">Load Balancing, Failover, and High Availability</a>.</p>
 
 <br/><a name="queryrouting"/><h3>What is "query routing"?</h3>
 
-<p>See <a href="features/queryrouting.html">Query Routing</a>.</p>
+<p>See <a href="features/routing.html">Routing</a>.</p>
+
+<br/><a name="sessionrouting"/><h3>What is "session routing"?</h3>
+
+<p>See <a href="features/routing.html">Routing</a>.</p>
 
 <br/><a name="queryfiltering"/><h3>What is "query filtering"?</h3>
 
-<p>See <a href="features/queryfiltering.html">Query Filtering</a>.</p>
+<p>See <a href="features/security.html">Security - Query Filtering</a>.</p>
 
 <br/><a name="querytranslation"/><h3>What is "query translation"?</h3>
 
-<p>See <a href="features/querytranslation.html">Query Translation</a>.</p>
+<p>See <a href="features/datatranslation.html">Data Translation</a>.</p>
 
 <br/><a name="connectionschedules"/><h3>What are "connection schedules"?</h3>
 
-<p>See <a href="features/schedules.html">Connection Schedules</a>.</p>
+<p>See <a href="features/security.html">Security - Connection Schedules</a>.</p>
 
 <br/><a name="databases"/><h3>What databases does SQL Relay support?</h3>
 
-<p>See <a href="features/databases.html">Supported Databases</a>.</p>
+<p>See <a href="features/backends.html">Back-End Compatibility</a>.</p>
 
 <br/><a name="nativeprotocol"/><h3>What database client-server protocols does SQL Relay support?</h3>
 
-<p>See <a href="features/nativeprotocol.html">Native Database Protocol Support</a>.</p>
+<p>See <a href="features/frontends.html">Front-End Compatibility</a>.</p>
 
 <br/><a name="platforms"/><h3>What platforms does SQL Relay run on?</h3>
 
@@ -218,7 +219,7 @@ Solves - "I need to keep users out during maintenance windows."</p>
 
 <br/><a name="languages"/><h3>What languages does SQL Relay support?</h3>
 
-<p>See <a href="features/languages.html">Native API</a>.</p>
+<p>See <a href="features/nativeapi.html">Native API</a>.</p>
 
 <br/><a name="dbabstraction"/><h3>What database abstraction layers does SQL Relay support?</h3>
 
@@ -228,19 +229,23 @@ Solves - "I need to keep users out during maintenance windows."</p>
 
 <br/><a name="whatarebindvars"/><h3>What are "substitution and bind variables"?</h3>
 
-<p>See <a href="features/substitutionandbindvars.html">Substitution and Bind Variables</a>.</p>
+<p>See <a href="features/nativeapi.html">Native APIs - Bind Variables and Substitution Variables</a>.</p>
 
 <br/><a name="multirow"/><h3>What are "multi-row fetches"?</h3>
 
-<p>See <a href="features/multirowfetches.html">Multi-Row Fetches</a>.</p>
+<p>See <a href="features/nativeapi.html">Native APIs - Multi-Row Fetches</a>.</p>
 
 <br/><a name="resultsetcaching"/><h3>What is "client-side result set caching"?</h3>
 
-<p>See <a href="features/resultsetcaching.html">Client-Side Result Set Caching</a>.</p>
+<p>See <a href="features/nativeapi.html">Native APIs - Client-Side Result Set Caching</a>.</p>
 
 <br/><a name="suspendedtx"/><h3>What are "suspended transactions"?</h3>
 
-<p>See <a href="features/suspendedtx.html">Suspended Transactions</a>.</p>
+<p>See <a href="features/nativeapi.html">Native APIs - Suspended Transactions</a>.</p>
+
+<br/><a name="suspendedrs"/><h3>What are "suspended result sets"?</h3>
+
+<p>See <a href="features/nativeapi.html">Native APIs - Suspended Result Sets</a>.</p>
 
 <br/><a name="howwork"/><h3>How does SQL Relay work?</h3>
 
@@ -267,7 +272,7 @@ through the connection maintained by that daemon.</p>
 
 <br/><a name="unsupported"/><h3>How does SQL Relay allow me to access a database from a platform not supported by the database vendor?</h3>
 
-<p>See <a href="features/proxying.html">Proxying</a>.</p>
+<p>See <a href="features/platforms.html">Platforms</a>.</p>
 
 <br/><a name="migration"/><h3>How can SQL Relay help migrating my application from one database to another?</h3>
 
@@ -283,7 +288,7 @@ through the connection maintained by that daemon.</p>
 
 <br/><a name="replicated"/><h3>How can SQL Relay be used with replicated or clustered databases?</h3>
 
-<p>See <a href="features/ha.html">High Availability</a>.</p>
+<p>See <a href="features/lbfoha.html">Load Balancing, Failover, and High Availability</a>.</p>
 
 <br/><a name="databaseusers"/><h3>Can SQL Relay proxy multiple database users instead of using the same user for every session?</h3>
 
@@ -358,7 +363,7 @@ through the connection maintained by that daemon.</p>
 
 <br/><a name="canxxxdb"/><h3>Can I use SQL Relay to connect to such-and-such database?</h3>
 
-<p>See <a href="features/databases.html">Supported Databases</a>.</p>
+<p>See <a href="features/backends.html">Back-End Compatibility</a>.</p>
 
 <br/><a name="oracle"/><h3>Why can't I get SQL Relay to connect to Oracle?</h3>
 
