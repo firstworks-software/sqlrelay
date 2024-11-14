@@ -14,7 +14,16 @@ The SQL Relay server can be built and run on most unix-like and Windows operatin
 
 Since the SQL Relay client and server can run on different machines, SQL Relay can provide access to databases from a wide variety of platforms not supported by the database vendor.
 
-For example, Oracle doesn't support various embedded Linux platforms, !FreeBSD, !NetBSD or !OpenBSD. But, by running the SQL Relay server software on a supported platform such as x64 Linux and the SQL Relay client software on the unsupported platform, software on the unsupported machine can access an Oracle database.
+For example, Oracle doesn't support various embedded Linux platforms, !FreeBSD, !NetBSD or !OpenBSD.
+
+However, if you:
+
+* run the SQL Relay server software on an Oracle-supported platform such as x64 Linux
+* configure the SQL Relay server to talk to an Oracle database
+* install the SQL Relay client software on the unsupported platform
+* configure the SQL Relay client software to talk to the SQL Relay server
+
+...then, software on the unsupported machine can access the Oracle database.
 
 {{{#!blockquote
 {{{#!td
