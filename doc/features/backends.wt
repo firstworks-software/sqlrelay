@@ -16,7 +16,7 @@
 [[Image(../images/sqlite.png,margin-left=10px,nolink)]]
 [[Image(../images/odbc.png,nolink)]]
 
-SQL Relay supports [http://oracle.com Oracle], [http://www.mysql.com MySQL]/[http://mariadb.com MariaDB], [http://postgresql.org PostgreSQL], [http://scn.sap.com/community/developer-center/oltp-db SAP/Sybase], [http://www-01.ibm.com/software/data/db2/ IBM DB2], [http://www-01.ibm.com/software/data/informix/ Informix], [http://www.firebirdsql.org Firebird] and [http://sqlite.org SQLite] databases directly, using the native client API's for those databases.
+On the back-end, SQL Relay supports [http://oracle.com Oracle], [http://www.mysql.com MySQL]/[http://mariadb.com MariaDB], [http://postgresql.org PostgreSQL], [http://scn.sap.com/community/developer-center/oltp-db SAP/Sybase], [http://www-01.ibm.com/software/data/db2/ IBM DB2], [http://www-01.ibm.com/software/data/informix/ Informix], [http://www.firebirdsql.org Firebird] and [http://sqlite.org SQLite] databases directly, using the native client API's for those databases.
 
 Support is provided for Microsoft SQL Server via the [http://www.freetds.org FreeTDS] library.  !FreeTDS supports SAP/Sybase as well.  So you can access both SQL Server and SAP/Sybase databases using !FreeTDS.
 
