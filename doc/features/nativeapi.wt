@@ -4,10 +4,10 @@
 
 {{{#!include ../contentstart.html}}}
 
-<script language="Javascript" src="../js/featuresrotate.js"></script>
+<script language="Javascript" src="../js/languagesrotate.js"></script>
 
 <div style="float: right; width: 800px;">
-<div class="featuresslide">
+<div class="languagesslide">
 <h2>C++</h2>
 <div class="code" style="display: block; float: left;">
 {{{#!code
@@ -15,7 +15,7 @@
 }}}
 </div>
 </div>
-<div class="featuresslide hidden">
+<div class="languagesslide hidden">
 <h2>C</h2>
 <div class="code" style="display: block; float: left;">
 {{{#!code
@@ -23,7 +23,7 @@
 }}}
 </div>
 </div>
-<div class="featuresslide hidden">
+<div class="languagesslide hidden">
 <h2>C#</h2>
 <div class="code" style="display: block; float: left;">
 {{{#!code
@@ -31,7 +31,7 @@
 }}}
 </div>
 </div>
-<div class="featuresslide hidden">
+<div class="languagesslide hidden">
 <h2>Java</h2>
 <div class="code" style="display: block; float: left;">
 {{{#!code
@@ -39,7 +39,7 @@
 }}}
 </div>
 </div>
-<div class="featuresslide hidden">
+<div class="languagesslide hidden">
 <h2>Perl</h2>
 <div class="code" style="display: block; float: left;">
 {{{#!code
@@ -47,7 +47,7 @@
 }}}
 </div>
 </div>
-<div class="featuresslide hidden">
+<div class="languagesslide hidden">
 <h2>Python</h2>
 <div class="code" style="display: block; float: left;">
 {{{#!code
@@ -55,7 +55,7 @@
 }}}
 </div>
 </div>
-<div class="featuresslide hidden">
+<div class="languagesslide hidden">
 <h2>PHP</h2>
 <div class="code" style="display: block; float: left;">
 {{{#!code
@@ -63,7 +63,7 @@
 }}}
 </div>
 </div>
-<div class="featuresslide hidden">
+<div class="languagesslide hidden">
 <h2>Ruby</h2>
 <div class="code" style="display: block; float: left;">
 {{{#!code
@@ -71,7 +71,7 @@
 }}}
 </div>
 </div>
-<div class="featuresslide hidden">
+<div class="languagesslide hidden">
 <h2>TCL</h2>
 <div class="code" style="display: block; float: left;">
 {{{#!code
@@ -79,7 +79,7 @@
 }}}
 </div>
 </div>
-<div class="featuresslide hidden">
+<div class="languagesslide hidden">
 <h2>node.js</h2>
 <div class="code" style="display: block; float: left;">
 {{{#!code
@@ -107,16 +107,16 @@ Programming guides with sample code and API references are available for each la
 {{{#!blockquote
 '''Guides:'''
 
-* [../programming/c++.html C++], 
-* [../programming/c.html C],
-* [../programming/cs.html C#],
-* [../programming/perl.html Perl],
-* [../programming/php.html PHP],
-* [../programming/python.html Python],
-* [../programming/ruby.html Ruby],
-* [../programming/java.html Java],
-* [../programming/tcl.html TCL],
-* [../programming/erlang.html Erlang],
+* [../programming/c++.html C++] 
+* [../programming/c.html C]
+* [../programming/cs.html C#]
+* [../programming/perl.html Perl]
+* [../programming/php.html PHP]
+* [../programming/python.html Python]
+* [../programming/ruby.html Ruby]
+* [../programming/java.html Java]
+* [../programming/tcl.html TCL]
+* [../programming/erlang.html Erlang]
 * [../programming/nodejs.html node.js]
 }}}
 }}}
@@ -124,15 +124,15 @@ Programming guides with sample code and API references are available for each la
 {{{#!blockquote
 '''References:'''
 
-* [../api/c++/html/annotated.html C++],
-* [../api/c/html/group__sqlrclientwrapper.html C],
-* [../api/cs/html/annotated.html C#],
-* [../api/perl/perl.html Perl],
-* [../api/php/index.html PHP],
-* [../api/python/PySQLRClient.py.html Python],
-* [../api/ruby/doc/index.html Ruby],
-* [../api/java/index.html Java],
-* [../api/tcl/index.html TCL],
+* [../api/c++/html/annotated.html C++]
+* [../api/c/html/group__sqlrclientwrapper.html C]
+* [../api/cs/html/annotated.html C#]
+* [../api/perl/perl.html Perl]
+* [../api/php/index.html PHP]
+* [../api/python/PySQLRClient.py.html Python]
+* [../api/ruby/doc/index.html Ruby]
+* [../api/java/index.html Java]
+* [../api/tcl/index.html TCL]
 * [../api/nodejs/html/annotated.html node.js]
 }}}
 }}}
