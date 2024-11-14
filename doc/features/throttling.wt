@@ -34,31 +34,15 @@ Queued connection requests consume few system resources and may be configured to
 
 == Per-Connection Licensing Schemes ==
 
-Throttling is especially helpful when migrating from an in-house database to a cloud-service database with a per-connection licensing scheme.  Your in-house database may have allowed any number of connections, but you may only be able to afford a certain number of connections to the cloud.
+Throttling is especially useful when using a cloud-service database with a per-connection licensing scheme.  SQL Relay can be configured to open the exact number of connections that you paid for and funnel all of your database traffic through them.  If you paid for 50 connections, but every now and then you get a burst of traffic and your app requests 60 connections, then 10 of them will be queued, rather than rejected.
 
 {{{#!blockquote
-FIXME: image here...
-}}}
-
-SQL Relay can be configured to open the exact number of connections that you paid for and funnel all of your database traffic through them.  If you paid for 50 connections, but every now and then you get a burst of traffic and your app requests 60 connections, then 10 of them will be queued, rather than rejected.
-
-{{{#!blockquote
-FIXME: image here...
+[[Image(../images/app-to-sqlr-to-cloud-db-queued.png,nolink)]]
 }}}
 
 == Database Monopolization ==
 
-Multiple applications often use the same database.  Under the right set of circumstances, a lower priority app can monopolize the database with a large number of sessions or with long-running queries.
-
-{{{#!blockquote
-FIXME: image here...
-}}}
-
-In some cases, this can be managed by dedicating a database user to each application and placing quotas on the users.  But not all databases support user quotas, and applications must often share database users.
-
-{{{#!blockquote
-FIXME: image here...
-}}}
+Multiple applications often use the same database.  Under the right set of circumstances, a lower priority app can monopolize the database with a large number of sessions or with long-running queries.  In some cases, this can be managed by dedicating a database user to each application and placing quotas on the users.  But not all databases support user quotas, and applications must often share database users.
 
 SQL Relay can be used to manage this problem.  Multiple instances of SQL Relay can be created, each instance can be dedicated to a set of apps, and the instances dedicated to lower priority apps can be configured to maintain a limited number of database connections.
 

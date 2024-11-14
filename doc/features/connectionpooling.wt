@@ -34,13 +34,13 @@ Apps feel responsive and overall throughput doesn't depend nearly as much on the
 Many connection pools run within application servers or web servers, can only be used by applications running within that server, and can usually only by applications written in a particular language.  Idle database connections in one application's pool are not typically available to other applications.
 
 {{{#!blockquote
-FIXME: images here ...
+[[Image(../images/pool-inside.png,nolink)]]
 }}}
 
 Since SQL Relay runs as a standalone process, its database connections are available to all applications, even applications running on other machines, across the network.
 
 {{{#!blockquote
-FIXME: image here ...
+[[Image(../images/pool-outside.png,nolink)]]
 }}}
 
 {{{#!include ../contentend.html}}}
