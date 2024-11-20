@@ -127,7 +127,7 @@
     </ul>
 
     <li><a href="#runas">Run-As User and Group</a></li>
-    <li><a href="#deniedallowedips">Denied/Allowed IP Addresses</a></li>
+    <li><a href="#deniedallowedips">IP Filtering</a></li>
     <li><a href="#pwdfiles">Password Files</a></li>
     <li><a href="#pwdenc">Password Encryption</a></li>
     <ul>
@@ -4317,7 +4317,7 @@ http://www.gnu.org/software/src-highlite -->
   <li>SQL Relay must be able to write to "run" and "log" directories.  However, when installed from packages, the /var/run/sqlrelay and /var/log/sqlrelay directories are owned by sqlrelay/sqlrelay and have fairly restrictive 755 permissions.  Thus, the permissions on these directories must be manually changed if runasuser or runasgroup are set to any value other than "sqlrelay".  This is not an issue if SQL Relay is built from source, and is not an issue on Windows.</li>
 </ul>
 
-<br/><br/><a name="deniedallowedips"/><h2>Allowed/Denied IP Addresses</h2>
+<br/><br/><a name="deniedallowedips"/><h2>IP Filtering</h2>
 
 <p>By default, clients from any IP address are allowed to connect to the SQL Relay srever.  However, the deinedips and allowedips attributes can be used to restrict the set of IP addresses that clients can connect from.</p>
 

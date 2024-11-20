@@ -6,11 +6,60 @@
 
 <h1>Notifications</h1>
 
+<p>The SQL Relay server can notify recipients when various events occur.</p>
+
 <p><img src="../images/notifications.png"/></p>
 
-<p>...</p>
+<br/><br/><table>
+  <tr>
+    <td>    <p>Supported events include:</p>
 
-<!--#include virtual="../contentend.html"-->
+    <ul>
+      <li><b>client_connected</b></li>
+      <li><b>client_connection_refused</b></li>
+      <li><b>client_disconnected</b></li>
+      <li><b>client_protocol_error</b></li>
+      <li><b>db_login</b></li>
+      <li><b>db_logout</b></li>
+      <li><b>db_error</b></li>
+      <li><b>db_warning</b></li>
+      <li><b>query_executed</b></li>
+      <li><b>filter_violation</b></li>
+      <li><b>internal_error</b></li>
+      <li><b>internal_warning</b></li>
+      <li><b>debug_message</b></li>
+      <li><b>schedule_violation</b></li>
+      <li><b>integrity_violation</b>
+</li>
+    </ul>
+
+</td>
+    <td>    <p><div style="margin-left: 80px;">
+Use the default notification template, or design your own.</p>
+
+<div class="code">
+    <pre>SQL Relay Notification:
+
+Event          : @event@
+Event Info     : @eventinfo@
+Date           : @datetime@
+Host Name      : @hostname@
+Instance       : @instance@
+Process Id     : @pid@
+Client Address : @clientaddr@
+Client Info    : @clientinfo@
+User           : @user@
+Query          :
+@query@
+</pre>
+
+</div>
+</div>
+</td>
+  </tr>
+</table>
+
+<br/><!--#include virtual="../contentend.html"-->
 
 <!--#include virtual="footer.html"-->
 

@@ -6,9 +6,18 @@
 
 = Triggers =
 
+Database triggers allow you to run in-database stored procedures in response to DML queries.
+
+SQL Relay extends this paradigm by allowing you to run in-database or os-level tasks in response to any query.
+
 [[Image(../images/triggers.png,nolink)]]
 
-...
+The standard SQL Relay distribution includes...
+
+* '''replay''' - provides automatic deadlock resolution via transaction replay
+* '''upsert''' - automatically converts inserts to updates when the insert fails
+
+Custom trigger modules can also be developed.
 
 {{{#!include ../contentend.html}}}
 

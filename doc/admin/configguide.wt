@@ -86,7 +86,7 @@
   * [#backendenc-mysql MySQL/MariaDB]
   * [#backendenc-postgresql PostgreSQL]
  * [#runas Run-As User and Group]
- * [#deniedallowedips Denied/Allowed IP Addresses]
+ * [#deniedallowedips IP Filtering]
  * [#pwdfiles Password Files]
  * [#pwdenc Password Encryption]
   * [#rot rot]
@@ -3010,7 +3010,7 @@ There are several important considerations when setting runasuser/runasgroup:
 
 
 [[br]][=#deniedallowedips]
-== Allowed/Denied IP Addresses ==
+== IP Filtering ==
 
 By default, clients from any IP address are allowed to connect to the SQL Relay srever.  However, the deinedips and allowedips attributes can be used to restrict the set of IP addresses that clients can connect from.
 
