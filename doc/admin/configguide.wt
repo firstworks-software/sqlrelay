@@ -1420,6 +1420,8 @@ To enable proxied auth, configure SQL Relay to load the //proxied// auth module 
 
 SQL Relay supports Kerberos encryption and authentication between the SQL Relay client and SQL Relay Server.
 
+ [[Image(../images/secure-krb-unsecured.png,nolink)]]
+
 When Kerberos encryption and authentication is used:
 
 * All communications between the SQL Relay client and SQL Relay server are encrypted.
@@ -1500,6 +1502,8 @@ Any kind of full session encryption should be used with caution in performance-s
 === TLS/SSL Encryption and Authentication ===
 
 SQL Relay supports TLS/SSL encryption and authentication between the SQL Relay client and SQL Relay Server.
+
+ [[Image(../images/secure-tls-unsecured.png,nolink)]]
 
 When TLS/SSL encryption and authentication is used:
 
@@ -1850,6 +1854,8 @@ The second disadvantage may or may not be a problem, depending on how secure com
 === TLS/SSL Encryption and Authentication ===
 
 SQL Relay supports TLS/SSL encryption and authentication between the !MySQL/MariaDB client and SQL Relay Server.
+
+ [[Image(../images/secure-tls-unsecured.png,nolink)]]
 
 When TLS/SSL encryption and authentication is used:
 
@@ -2222,6 +2228,8 @@ If the database has a lot of users, or users are added, deleted, or updated regu
 === TLS/SSL Encryption and Authentication ===
 
 SQL Relay supports TLS/SSL encryption and authentication between the !PostgreSQL client and SQL Relay Server.
+
+ [[Image(../images/secure-tls-unsecured.png,nolink)]]
 
 When TLS/SSL encryption and authentication is used:
 
