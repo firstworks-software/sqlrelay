@@ -106,31 +106,35 @@ SQL Relay sits between your app and the database and provides functionality not 
 
 The main features of SQL Relay are:
 
-'''Persistent database connection pooling''' - makes database driven web-based applications faster and more efficient[[br]]
-Solves - "I've analyzed my app's performance and it seems to be spending a lot of time just logging into the database."
+'''Persistent database connection pooling''' - Improves performance and responsiveness of database-driven web-based applications.[[br]]
 
-'''Proxing''' - access databases from unsupported platforms[[br]]
-Solves - "I need to access MS SQL Server from Linux or Oracle from !FreeBSD (or other unsupported platform)."
+'''Throttling''' - Limits the number of connections to a given database and queues clients rather than denying them access.[[br]]
 
-'''Throttling''' - prevents databases from becoming overloaded[[br]]
-Solves - "When I run enough web servers to handle the traffic, it slams the database, even though most of the database connections appear to be idle."
+'''Load Balancing, Failover, and High Availability''' - Enable distribution of traffic over clustered or replicated databases for scalability and failover.[[br]]
 
-'''High Availability''' - provides load balancing and failover with replicated or clustered databases[[br]]
-Solves - "I wish there was a cheap and easy way to automatically distribute traffic to the nodes in my database cluster and manage outages."
+'''Query and Session Routing''' - Enables routing of DML to masters and distribute selects over slaves.  Enables routing of sessions by user, database, client ip, and other criteria.[[br]]
 
-'''Query Routing''' - conditionally sends queries to one database or another[[br]]
-Solves - "My database is getting slammed.  I could replicate it but then I'd have to rewrite my app to send DML to the master and somehow distribute selects over the slaves."
+'''Data Translation''' - Enables translation of queries, result sets, and errors.[[br]]
 
-'''Query Filtering''' - prevents queries that match certain patterns from being run at all[[br]]
-Solves - "My users keep running this one query that brings the database to it's knees."
+'''Triggers''' -  Enable execution of database or os-level tasks, triggered on DML and non-DML queries.[[br]]
 
-'''Query Translation''' - modifies queries before passing them to the database[[br]]
-Solves - "I need to migrate my app to a different database, but I can't afford to find and edit hundreds of queries in the code."
+'''TLS and Kerberos Support''' - Enables the connection between the application and SQL Relay server to be secured by TLS, in encryption-only, certificate validation, host name validation, and mutual authentication modes.  Enables the connection between the application snd SQL Relay server to be secured by Kerberos or Active Directory encryption and authentication.  Enables the connection between SQL Relay and the database to be secured by TLS as well, if the database supports it.[[br]]
 
-'''Connection Schedules''' - constrain database access to specified times
-Solves - "I need to keep users out during maintenance windows."
+'''IP Filtering''' - Enables restriction of the IP addresses that applications can connect to SQL Relay from.[[br]]
 
-SQL Relay has client API's for most modern programming languages and drivers for many popular database abstraction API's.
+'''Connection Schedules''' - Constrain database access to specified times.[[br]]
+
+'''Query Filtering''' - Prevents queries that match certain patterns from being run at all[[br]]
+
+'''Notifications''' - Send notifications when various events occur.[[br]]
+
+'''Front-End Compatibility''' - SQL Relay speaks !MySQL, !PostgreSQL, and its own SQLRClient front-end protocols.[[br]]
+
+'''Back-End Compatibility''' - SQL Relay supports most popular commercial and open-source database back-ends.[[br]]
+
+'''Database Abstraction Layers''' - SQL Relay provides drivers for several popular database abstraction layers.[[br]]
+
+'''Native APIs''' - SQL Relay provides client APIs for most popular programming languages.[[br]]
 
 
 [[br]][=#whatisnot]
@@ -221,7 +225,7 @@ See the [admin/installing.html#platforms Supported Platforms] section of the ins
 [[br]][=#languages]
 === What languages does SQL Relay support? ===
 
-See [features/nativeapi.html Native API].
+See [features/nativeapi.html Native APIs].
 
 [[br]][=#dbabstraction]
 === What database abstraction layers does SQL Relay support? ===
@@ -283,7 +287,7 @@ SQL Relay makes it easy to distribute load over replicated servers.  A common sc
 [[br]][=#unsupported]
 === How does SQL Relay allow me to access a database from a platform not supported by the database vendor? ===
 
-See [features/platforms.html Platforms].
+See [features/platforms.html Platform Compatibility].
 
 [[br]][=#migration]
 === How can SQL Relay help migrating my application from one database to another? ===
@@ -315,16 +319,16 @@ Oracle allows a process that is connected to the database to switch users withou
 [[br]][=#routing]
 === Can I use SQL Relay to send all insert/update/delete's to a master database and distribute select's over a set of slaves? ===
 
-Yes, see [admin/router.html Query Routing].
+Yes, see [admin/configguide.html#masterslave Master-Slave Query Routing].
 
 [[br]][=#mysqlrouting]
 === Can I use SQL Relay to make my existing !MySQL/MariaDB or !PostgreSQL app send all insert/update/delete's to a master database and distribute select's over a set of slaves? ===
 
 Probably.  You'll need to set up SQL Relay to route queries, configure it to speak either the !MySQL/MariaDB or !PostgreSQL client-server protocol to redirect your app to use SQL Relay.
 
-See [admin/router.html Query Routing] for details on how to set up SQL Relay as a query router.
+See [admin/configguide.html#masterslave Master-Slave Query Routing] for details on how to set up SQL Relay as a query router.
 
-See [admin/protocoloptions.html Client Protocol Options] in the configuration guide for details about how to configure SQL Relay to speak the !MySQL/MariaDB and !PostgreSQL protocols.
+See [admin/configguide.html#protocoloptions Client Protocol Options] in the configuration guide for details about how to configure SQL Relay to speak the !MySQL/MariaDB and !PostgreSQL protocols.
 
 [[br]][=#dropin]
 === What happened to the drop-in replacement libraries for !MySQL/MariaDB and !PostgreSQL? ===
@@ -336,7 +340,7 @@ Until the 2.0.0 release, the drop-in replacement libraries could still be manual
 [[br]][=#filtering]
 === Can SQL Relay be configured to filter out certain queries? ===
 
-Yes, see [admin/configguide.html#filtering.html Query Filtering].
+Yes, see [admin/configguide.html#filtering Query Filtering].
 
 [[br]]
 ----
@@ -373,7 +377,7 @@ The DBI-Proxy module is Perl-specific, or at least very challenging to use from 
 [[br]][=#apachedbi]
 === How does SQL Relay compare to Apache::DBI or PHP's persistent database connections? ===
 
-SQL Relay is more lightweight and potentially faster than Apache-DBI and is competitive in speed with PHP's persistent connections.  SQL Relay can be used to provide a connection pool to multiple machines and has more backend features than Apache-DBI or PHP.  However, the DBI and PHP API's are generally considered to be simpler to implement.
+SQL Relay is more lightweight and potentially faster than Apache-DBI and is competitive in speed with PHP's persistent connections.  SQL Relay can be used to provide a connection pool to multiple machines and has more back-end features than Apache-DBI or PHP.  However, the DBI and PHP API's are generally considered to be simpler to implement.
 
 When using Apache-DBI or PHP's persistent connections, a connection is opened to the database for every web server process.  Frequently, web sites need to run large numbers of processes to provide adequate response.  As the number of database connections grows, resources get strained and a lot of database connections go unused most of the time.
 
@@ -953,7 +957,7 @@ Config files can also be located on remote servers and specified by url.
 
 And, if that wasn't enough, a config file can contain lists of other config files, each of which will be consulted during start-up as well.
 
-See the [admin/configguide.html#files SQL Relay Configuration Guide] for more information.
+See the [admin/configguide.html#altconfigfile Alternative Configuration File Options] for more information.
 
 {{{#!include contentend.html}}}
 

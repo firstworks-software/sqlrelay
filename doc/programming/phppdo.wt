@@ -415,7 +415,7 @@ A third solution is to configure PDO to emulate prepares by setting the PDO::ATT
 
 Another feature of the prepare/bind/execute paradigm is the ability to 
 prepare, bind and execute a query once, then re-bind and re-execute the query 
-over and over without re-preparing it.  If your backend database natively 
+over and over without re-preparing it.  If your back-end database natively 
 supports this paradigm, you can reap a substantial performance improvement.
 
 {{{#!blockquote

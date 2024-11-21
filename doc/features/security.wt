@@ -6,7 +6,7 @@
 
 = Enhanced Database Security =
 
-SQL Relay provides various database security enhacnements such as TLS and Kerberos support on front and back ends, IP filtering, connection schedules, and query filtering.
+SQL Relay provides various database security enhancements such as TLS and Kerberos support on front and back ends, IP filtering, connection schedules, and query filtering.
 
 == TLS and Kerberos ==
 

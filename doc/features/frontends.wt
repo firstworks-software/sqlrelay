@@ -43,7 +43,7 @@ As such, SQL Relay can be used as a transparent proxy.  Native apps aimed at SQL
 
 == Foreign Back-End ==
 
-Since SQL Relay supports a variety of database backends, the app can also be redirected to any of these databases, instead of the database it was originally written to use.
+Since SQL Relay supports a variety of database back-ends, the app can also be redirected to any of these databases, instead of the database it was originally written to use.
 
 {{{#!blockquote
 [[Image(../images/sqlrelay-mysql-frontend-mssql-backend.png,nolink)]]

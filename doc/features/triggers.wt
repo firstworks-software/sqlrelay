@@ -12,12 +12,12 @@ SQL Relay extends this paradigm by allowing you to run in-database or os-level t
 
 [[Image(../images/triggers.png,nolink)]]
 
-The standard SQL Relay distribution includes...
+The standard SQL Relay distribution includes several trigger modules, including:
 
 * '''replay''' - provides automatic deadlock resolution via transaction replay
 * '''upsert''' - automatically converts inserts to updates when the insert fails
 
-Custom trigger modules can also be developed.
+Custom trigger modules can be developed too.
 
 {{{#!include ../contentend.html}}}
 

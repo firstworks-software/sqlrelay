@@ -33,7 +33,7 @@ Getting-started guides for various databases supported by SQL Relay:
 
 ----
 
-=== Connectors ===
+=== Database Abstraction Layers ===
 
 SQL Relay provides drivers for several popular database abstraction layers.
 
