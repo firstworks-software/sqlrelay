@@ -10,6 +10,7 @@
 
 * [#whatis What is SQL Relay?]
 * [#whatisnot What doesn't SQL Relay do?]
+* [#proxy What is a "database proxy"?]
 * [#connectionpooling What is "persistent database connection pooling"?]
 * [#throttling What is "throttling"?]
 * [#ha What is "high availability"?]
@@ -156,6 +157,16 @@ Similarly, though SQL Relay can provide a single-point of access for multiple da
 
 SQL Relay does provide a query translation framework and various query translation modules.  However SQL Relay cannot automatically translate queries from one syntax to another.  Though it can be used to aim an app originally written for !MySQL/MariaDB at Oracle, for example, it cannot (yet) transparently convert queries in !MySQL/MariaDB syntax to Oracle syntax.  If you want to use aim an app originally written for one database at another, you would have to modify the queries in the application, or write/configure custom query translation modules to translate specific queries from one form to another.
 
+[[br]][=#proxy]
+=== What is a "database proxy"? ===
+
+A database proxy sits between your app and the database, forwaring queries to the database and result sets back from it.  A database proxy usually provides functionality not typically provided by the database directly.
+
+Database proxies are different from other proxy servers in that they don't just forward packets back and forth.  Rather, they know that the client wants to connect to the database, run a query, fetch results sets, etc.
+
+Most database proxies are database specific.  Eg. there are a few that only speak the !MySQL protocol on the front-end, and can only connect to a !MySQL database on the back-end.  SQL Relay is different in that it can speak multiple protocols on the front-end; !MySQL, !PostgreSQL, and its own SQLRClient protocol, and can connect to a wide variety of back-end databases.
+
+Most database proxies also have a limited set of built-in functions.  SQL Relay has an extensive module framework for query and session routing, data translation, triggers, query filtering, notifications, and much more.  SQL Relay ships with lots of modules, and custom module development is also available.
 
 [[br]][=#connectionpooling]
 === What is "persistent database connection pooling"? ===
