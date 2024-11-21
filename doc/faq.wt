@@ -133,7 +133,7 @@ The main features of SQL Relay are:
 
 '''Back-End Compatibility''' - SQL Relay supports most popular commercial and open-source database back-ends.[[br]]
 
-'''Database Abstraction Layers''' - SQL Relay provides drivers for several popular database abstraction layers.[[br]]
+'''Database Abstraction Layers''' - SQL Relay provides drivers for several popular database abstraction layers, and is an abstraction layer, itself.[[br]]
 
 '''Native APIs''' - SQL Relay provides client APIs for most popular programming languages.[[br]]
 
@@ -143,13 +143,11 @@ The main features of SQL Relay are:
 
 SQL Relay is powerful but it does have some limits.
 
-It is a tool in a chain - another tier in a multi-tiered application - designed to solve specific problems.  It is not a database-enabled application development environment like Access or Delphi or modern equivalents.  It's not a reporting gateway like Crystal Reports.  It is not a database itself.
+It is a tool in a chain - another tier in a multi-tiered application - designed to solve specific problems.  It is not a database-enabled application development environment, like a modern equivalent of Access or Delphi.  It's not a reporting gateway, like a modern equivalent of Crystal Reports.  It is not a database itself.
 
-There are some features that SQL Relay currently lacks that are either being worked on, or at least planned though.
+!MySQL/MariaDB and !PostgreSQL protocol support makes SQL Relay a transparent database proxy for !MySQL/MariaDB and !PostgreSQL.  You can just aim SQL Relay at the database and aim your app at SQL Relay.  However, SQL Relay currently lacks support for other database protocols, so it can't be used as a transparent proxy for other databases, though efforts are underway to add support for various other native database protocols.
 
-!MySQL/MariaDB and !PostgreSQL protocol support makes SQL Relay a transparent database proxy for !MySQL/MariaDB and !PostgreSQL.  You can just aim SQL Relay at the database and aim your app at SQL Relay.  SQL Relay currently lacks support for other database protocols, so it can't be used as a transparent proxy for other databases, though efforts are underway to add support for various other native database protocols.
-
-SQL Relay has it's own client/server protocol and API.  If your app uses a database abstraction API like PHP PDO, Perl DBI or ODBC, you can update the connect string to use the SQL Relay driver.  Otherwise you'd need to modify your app to use the SQL Relay API.
+SQL Relay also has it's own client/server protocol and API.  If you are developing an application from scratch, then you can use this API.  If your applicaiton uses a database abstraction layer like PHP PDO, Perl DBI or ODBC, then you can just update the connect string to use the SQL Relay driver.  However, if your app was written using a database specific API, other than !MySQL or !PostgreSQL, then, in order for it to be able to use SQL Relay, you would have to port your app to use the SQL Relay API, or a supported DB abstraction layer first.
 
 SQL Relay can provide a single-point of access for replicated databases but it does not provide replication.  It cannot keep multiple databases in sync.
 
@@ -162,7 +160,7 @@ SQL Relay does provide a query translation framework and various query translati
 
 A database proxy sits between your app and the database, forwaring queries to the database and result sets back from it.  A database proxy usually provides functionality not typically provided by the database directly.
 
-Database proxies are different from other proxy servers in that they don't just forward packets back and forth.  Rather, they know that the client wants to connect to the database, run a query, fetch results sets, etc.
+Database proxies are different from other proxy servers in that they don't just forward packets back and forth.  Rather, they know that the client wants to connect to the database, run a query, fetch results sets, etc. and take specific action based on the client request and database response.
 
 Most database proxies are database specific.  Eg. there are a few that only speak the !MySQL protocol on the front-end, and can only connect to a !MySQL database on the back-end.  SQL Relay is different in that it can speak multiple protocols on the front-end; !MySQL, !PostgreSQL, and its own SQLRClient protocol, and can connect to a wide variety of back-end databases.
 
@@ -307,7 +305,7 @@ SQL Relay is both a connection pool and database abstraction layer.  Lets say th
 
 !MySQL/MariaDB and !PostgreSQL protocol support makes SQL Relay a transparent database proxy for !MySQL/MariaDB and !PostgreSQL.  You can just aim SQL Relay at the database and aim your app at SQL Relay.
 
-If your app was written using a database abstraction API supported by SQL Relay such as ODBC, ADO.NET, Perl DBI, etc. then you can install the SQL Relay driver on the client machine and then just change the connect string to point to the appropriate instance of SQL Relay.
+If your app was written using a database abstraction layer supported by SQL Relay such as ODBC, ADO.NET, Perl DBI, etc. then you can install the SQL Relay driver on the client machine and then just change the connect string to point to the appropriate instance of SQL Relay.
 
 If your app was written using a database specific API then you might have to port your app to use the SQL Relay API, or a supported DB abstraction layer first.
 
