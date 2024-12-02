@@ -1,3 +1,5 @@
+2.0.1 - moved entire website into project
+
 2.0.0 - removed support for mdbtools
 	updated to use new rudiments collection model
 	added sqlrresultsettable class
