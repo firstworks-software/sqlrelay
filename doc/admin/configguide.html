@@ -113,6 +113,12 @@
     <li><a href="#rac">Already-Load Balanced Databases</a></li>
     <li><a href="#masterslave">Master-Slave Query Routing</a></li>
     <li><a href="#frontendlb">Front-End Load Balancing and Failover</a></li>
+    <ul>
+      <li><a href="#hostrand">Host Randomization</a></li>
+      <li><a href="#lbapp">Load Balancing Appliance</a></li>
+      <li><a href="#rrdns">Round-Robin DNS</a></li>
+    </ul>
+
   </ul>
 
   <li><a href="#security">Security Features</a></li>
@@ -3843,9 +3849,65 @@ sqlr-start -id router
 </blockquote>
 <br/><br/><a name="frontendlb"/><h2>Front-End Load Balancing and Failover</h2>
 
-<p>If you are building out a high availability environment, or if your pool of application servers is just sufficiently large, you might want to set up a pool of SQL Relay servers between your application servers and the database.</p>
+<p>If you are building out a high availability environment, or if your pool of application servers is just sufficiently large, you might want to set up a pool of SQL Relay servers between your application servers and the database, and distribute client applications over the pool using host randomization, a load balancing appliance, or round-robin DNS.</p>
 
-<p>SQL Relay supports two front-end load balancing and failover strategies.  In the first strategy, load balancing and failover are provided by an appliance or application cluster.  In the second, SQL Relay provides its own load balancing and failover, with some help from DNS.</p>
+<br/><a name="hostrand"/><h3>Host Randomization</h3>
+
+<p>Since version 2.0.1, host randomization can be used to distribute SQL Relay client sessions over a pool of SQL Relay hosts.</p>
+
+<blockquote>
+<img src="../images/hostrand.png"/>
+</blockquote>
+<p>Any application which uses one of the SQL Relay Native APIs, including applications which use the SQL Relay driver for a database abstraction layer, can be configured to connect to a set of servers instead of just a single server by specifying the host or server parameter as a comma-separated set of hosts.  Internally, the API will attempt to connect to a random host in the set, until the attempt succeeds, or there are no more hosts left to try.</p>
+
+<br/><p>For example, the sqlrsh command line tool can be configured to connect to sqlr01, sqlr02, and sqlr03 as follows:</p>
+
+<blockquote>
+  <pre>sqlrsh -host sqlr01,sqlr02,sqlr03 -user scott -password tiger
+</pre>
+
+</blockquote>
+<p>Other SQL Relay command line tools can be configured similarly.</p>
+
+<br/><p>A program written using the SQL Relay Native API for C++ can be configured to connect to the same set of hosts as follows:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>	<font color="#008080">sqlrconnection</font>	<font color="#990000">*</font>con<font color="#990000">=</font><b><font color="#0000FF">new</font></b> <b><font color="#000000">sqlrconnection</font></b><font color="#990000">(</font><font color="#FF0000">"sqlr01,sqlr02,sqlr03"</font><font color="#990000">,</font><font color="#993399">9000</font><font color="#990000">,</font>NULL<font color="#990000">,</font><font color="#FF0000">"scott"</font><font color="#990000">,</font><font color="#FF0000">"tiger"</font><font color="#990000">,</font><font color="#993399">0</font><font color="#990000">,</font><font color="#993399">1</font><font color="#990000">);</font></tt></pre>
+
+</blockquote>
+<p>Other SQL Relay Native APIs can be configured similarly.</p>
+
+<br/><p>A program that uses the SQL Relay driver for ODBC can be configured as follows:</p>
+
+<blockquote>
+  <pre>[sqlrexample]
+Description=Connection to SQL Relay Pool
+Driver=SQLRelay
+Server=sqlr01,sqlr02,sqlr03
+Port=9000
+Socket=
+User=scott
+Password=tiger
+</pre>
+
+</blockquote>
+<p>A program that uses the SQL Relay driver for PHP PDO can be configured as follows:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>my $dbh<font color="#990000">=</font>DBI<font color="#990000">-&gt;</font><b><font color="#000000">connect</font></b><font color="#990000">(</font><font color="#FF0000">"DBI:SQLRelay:host=sqlr01,sqlr02,sqlr03;port=9000"</font><font color="#990000">,</font><font color="#FF0000">"scott"</font><font color="#990000">,</font><font color="#FF0000">"tiger"</font><font color="#990000">);</font></tt></pre>
+
+</blockquote>
+<p>Programs that use SQL Relay drivers for other database abstraction layers can be configured similarly.</p>
+
+<br/><a name="lbapp"/><h3>Load Balancing Appliance</h3>
 
 <p>Multiple instances of SQL Relay can be placed behind a load balancing appliance.</p>
 
@@ -3854,7 +3916,9 @@ sqlr-start -id router
 </blockquote>
 <p>In this illustration, the load balancing appliance is shown as a single machine, but in a true HA environment, there would be 2 or more appliances sharing a virtual IP.  Alternatively, rather than using an appliance, SQL Relay can be run on an application server cluster such as Linux Virtual Server.</p>
 
-<p><a target="_blank" href="http://en.wikipedia.org/wiki/Round-robin_DNS">Round-robin DNS</a> can be also be used to provide load balancing and failover over multiple SQL Relay servers.</p>
+<br/><a name="rrdns"/><h3>Round-Robin DNS</h3>
+
+<p><a target="_blank" href="http://en.wikipedia.org/wiki/Round-robin_DNS">Round-robin DNS</a> can be also be used to distribute clients over multiple SQL Relay servers.</p>
 
 <blockquote>
 <img src="../images/rrdns.png"/>

@@ -45,6 +45,10 @@ __END__
             # If "retrytime" is 0 then retries will be attempted on
             # a default interval.
             #
+	    # If "server" is a comma-separated list of hosts, then an
+	    # attempt will be made to connect to each until the attempt
+	    # succeeds, or there are no more hosts left to try.
+	    #
             # If the "socket" parameter is neither
             # NULL nor "" then an attempt will be made to
             # connect through it before attempting to
