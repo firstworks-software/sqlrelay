@@ -41,7 +41,7 @@
     <div id="search-field-wrapper">
       <input id="search-field" role="combobox" aria-label="Search"
              aria-autocomplete="list" aria-controls="search-results"
-             type="text" name="search" placeholder="Search" spellcheck="false"
+             type="text" name="search" placeholder="Search (/) for a class, method, ..." spellcheck="false"
              title="Type to search, Up and Down to navigate, Enter to load">
     </div>
 
@@ -139,15 +139,21 @@
        </header>
 
       <div id="method-c-new" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            new(host, port, socket, user, password, retrytime, tries)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              new(host, port, socket, user, password, retrytime, tries)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
-          <p>Initiates a connection to “host” on “port” or to the unix “socket” on the local machine and auths with “user” and “password”.  Failed connections will be retried for “tries” times, waiting “retrytime” seconds between each try.  If “tries” is 0 then retries will continue forever.  If “retrytime” is 0 then retries will be attempted on a default interval.  If the “socket” parameter is nether nil nor “” then an attempt will be made to connect through it before attempting to connect to “host” on “port”.  If it is nil or “” then no attempt will be made to connect through the socket.</p>
+          <p>Initiates a connection to “host” on “port” or to the unix “socket” on the local machine and auths with “user” and “password”.  Failed connections will be retried for “tries” times, waiting “retrytime” seconds between each try.  If “tries” is 0 then retries will continue forever.  If “retrytime” is 0 then retries will be attempted on a default interval.</p>
+
+<p>If “server” is a comma-separated list of hosts, then an attempt will be made to connect to each until the attempt succeeds, or there are no more hosts left to try.</p>
+
+<p>If the “socket” parameter is nether nil nor “” then an attempt will be made to connect through it before attempting to connect to “host” on “port”.  If it is nil or “” then no attempt will be made to connect through the socket.</p>
 
           <div class="method-source-code" id="new-source">
             <pre>static VALUE sqlrcon_new(VALUE self, VALUE host, VALUE port, VALUE socket,
@@ -183,10 +189,12 @@
        </header>
 
       <div id="method-i-autoCommitOff" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">autoCommitOff</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">autoCommitOff</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -207,10 +215,12 @@
       </div>
 
       <div id="method-i-autoCommitOn" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">autoCommitOn</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">autoCommitOn</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -231,14 +241,16 @@
       </div>
 
       <div id="method-i-begin" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">begin</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">begin</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
-          <p>Begins a transaction.  Returns true if the begin succeeded, false if it failed.  If the database automatically begins a new transaction when a commit or rollback is issued then this doesn&#39;t do anything unless SQL Relay is faking transaction blocks.</p>
+          <p>Begins a transaction.  Returns true if the begin succeeded, false if it failed.  If the database automatically begins a new transaction when a commit or rollback is issued then this doesn’t do anything unless SQL Relay is faking transaction blocks.</p>
 
           <div class="method-source-code" id="begin-source">
             <pre>static VALUE sqlrcon_begin(VALUE self) {
@@ -255,10 +267,12 @@
       </div>
 
       <div id="method-i-bindFormat" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">bindFormat</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">bindFormat</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -298,10 +312,12 @@
       </div>
 
       <div id="method-i-clientVersion" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">clientVersion</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">clientVersion</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -326,10 +342,12 @@
       </div>
 
       <div id="method-i-commit" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">commit</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">commit</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -350,10 +368,12 @@
       </div>
 
       <div id="method-i-dbHostName" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">dbHostName</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">dbHostName</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -378,10 +398,12 @@
       </div>
 
       <div id="method-i-dbIpAddress" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">dbIpAddress</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">dbIpAddress</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -406,10 +428,12 @@
       </div>
 
       <div id="method-i-dbVersion" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">dbVersion</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">dbVersion</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -434,10 +458,12 @@
       </div>
 
       <div id="method-i-debugOff" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">debugOff</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">debugOff</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -457,10 +483,12 @@
       </div>
 
       <div id="method-i-debugOn" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">debugOn</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">debugOn</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -480,10 +508,12 @@
       </div>
 
       <div id="method-i-disableEncryption" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">disableEncryption</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">disableEncryption</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -503,10 +533,12 @@
       </div>
 
       <div id="method-i-enableKerberos" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">enableKerberos</span><span
-            class="method-args">(p1, p2, p3)</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">enableKerberos</span><span
+              class="method-args">(p1, p2, p3)</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -514,7 +546,7 @@
 
 <p>“service” indicates the Kerberos service name of the SQL Relay server.  If left empty or NULL then the service name “sqlrelay” will be used. “sqlrelay” is the default service name of the SQL Relay server.  Note that on Windows platforms the service name must be fully qualified, including the host and realm name.  For example: “sqlrelay/sqlrserver.firstworks.com@AD.FIRSTWORKS.COM”.</p>
 
-<p>“mech” indicates the specific Kerberos mechanism to use. On Linux/Unix platforms, this should be a string representation of the mechnaism&#39;s OID, such as:</p>
+<p>“mech” indicates the specific Kerberos mechanism to use. On Linux/Unix platforms, this should be a string representation of the mechnaism’s OID, such as:</p>
 
 <pre>{ 1 2 840 113554 1 2 2 }</pre>
 
@@ -552,10 +584,12 @@
       </div>
 
       <div id="method-i-enableTls" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">enableTls</span><span
-            class="method-args">(p1, p2, p3, p4, p5, p6, p7)</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">enableTls</span><span
+              class="method-args">(p1, p2, p3, p4, p5, p6, p7)</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -578,9 +612,9 @@
 
 <pre>https://msdn.microsoft.com/en-us/library/windows/desktop/aa375549%28v=vs.85%29.aspx</pre>
 
-<p>On Windows platforms, the ciphers (alg_id&#39;s) should omit CALG_ and may be given with underscores or dashes. For example: 3DES_112</p>
+<p>On Windows platforms, the ciphers (alg_id’s) should omit CALG_ and may be given with underscores or dashes. For example: 3DES_112</p>
 
-<p>“validate” indicates whether to validate the SQL Relay&#39;s server certificate, and may be set to one of the following:</p>
+<p>“validate” indicates whether to validate the SQL Relay’s server certificate, and may be set to one of the following:</p>
 
 <pre>&quot;no&quot; - Don&#39;t validate the server&#39;s certificate.
 &quot;ca&quot; - Validate that the server&#39;s certificate was
@@ -598,7 +632,7 @@
        domain name of the host parameter.  (Falls back
        to &quot;ca&quot; validation when a unix socket is used.)</pre>
 
-<p>“ca” is the location of a certificate authority file to use, in addition to the system&#39;s root certificates, when validating the SQL Relay server&#39;s certificate.  This is useful if the SQL Relay server&#39;s certificate is self-signed.</p>
+<p>“ca” is the location of a certificate authority file to use, in addition to the system’s root certificates, when validating the SQL Relay server’s certificate.  This is useful if the SQL Relay server’s certificate is self-signed.</p>
 
 <p>On Windows, “ca” must be a file name.</p>
 
@@ -623,10 +657,12 @@
       </div>
 
       <div id="method-i-endSession" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">endSession</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">endSession</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -646,10 +682,12 @@
       </div>
 
       <div id="method-i-errorMessage" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">errorMessage</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">errorMessage</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -674,10 +712,12 @@
       </div>
 
       <div id="method-i-errorNumber" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">errorNumber</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">errorNumber</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -698,10 +738,12 @@
       </div>
 
       <div id="method-i-getBindVariableDelimiterAtSignSupported" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">getBindVariableDelimiterAtSignSupported</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">getBindVariableDelimiterAtSignSupported</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -722,10 +764,12 @@
       </div>
 
       <div id="method-i-getBindVariableDelimiterColonSupported" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">getBindVariableDelimiterColonSupported</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">getBindVariableDelimiterColonSupported</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -746,10 +790,12 @@
       </div>
 
       <div id="method-i-getBindVariableDelimiterDollarSignSupported" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">getBindVariableDelimiterDollarSignSupported</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">getBindVariableDelimiterDollarSignSupported</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -770,10 +816,12 @@
       </div>
 
       <div id="method-i-getBindVariableDelimiterQuestionMarkSupported" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">getBindVariableDelimiterQuestionMarkSupported</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">getBindVariableDelimiterQuestionMarkSupported</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -794,10 +842,12 @@
       </div>
 
       <div id="method-i-getClientInfo" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">getClientInfo</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">getClientInfo</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -822,10 +872,12 @@
       </div>
 
       <div id="method-i-getConnectionPort" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">getConnectionPort</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">getConnectionPort</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -846,10 +898,12 @@
       </div>
 
       <div id="method-i-getConnectionSocket" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">getConnectionSocket</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">getConnectionSocket</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -874,10 +928,12 @@
       </div>
 
       <div id="method-i-getCurrentDatabase" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">getCurrentDatabase</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">getCurrentDatabase</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -902,10 +958,12 @@
       </div>
 
       <div id="method-i-getDebug" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">getDebug</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">getDebug</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -926,10 +984,12 @@
       </div>
 
       <div id="method-i-getLastInsertId" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">getLastInsertId</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">getLastInsertId</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -950,10 +1010,12 @@
       </div>
 
       <div id="method-i-identify" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">identify</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">identify</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -978,14 +1040,16 @@
       </div>
 
       <div id="method-i-ping" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">ping</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">ping</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
-          <p>Returns 1 if the database is up and 0 if it&#39;s down.</p>
+          <p>Returns 1 if the database is up and 0 if it’s down.</p>
 
           <div class="method-source-code" id="ping-source">
             <pre>static VALUE sqlrcon_ping(VALUE self) {
@@ -1002,11 +1066,13 @@
       </div>
 
       <div id="method-i-resumeSession" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            resumeSession(port,socket)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              resumeSession(port,socket)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1027,10 +1093,12 @@
       </div>
 
       <div id="method-i-rollback" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">rollback</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">rollback</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1051,11 +1119,13 @@
       </div>
 
       <div id="method-i-selectDatabase" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            selectDatabase(database)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              selectDatabase(database)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1076,10 +1146,12 @@
       </div>
 
       <div id="method-i-serverVersion" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">serverVersion</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">serverVersion</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1104,11 +1176,13 @@
       </div>
 
       <div id="method-i-setBindVariableDelimiters" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            setBindVariablesDelimiters(delimiters)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              setBindVariablesDelimiters(delimiters)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1128,11 +1202,13 @@
       </div>
 
       <div id="method-i-setClientInfo" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            setClientInfo(clientinfo)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              setClientInfo(clientinfo)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1152,11 +1228,13 @@
       </div>
 
       <div id="method-i-setConnectTimeout" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            setConnectTimeout(timeoutsec,timeoutusec)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              setConnectTimeout(timeoutsec,timeoutusec)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1177,11 +1255,13 @@
       </div>
 
       <div id="method-i-setDebugFile" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            setDebugFile(filename)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              setDebugFile(filename)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1201,11 +1281,13 @@
       </div>
 
       <div id="method-i-setResponseTimeout" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            setResponseTimeout(timeoutsec,timeoutusec)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              setResponseTimeout(timeoutsec,timeoutusec)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1226,10 +1308,12 @@
       </div>
 
       <div id="method-i-suspendSession" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">suspendSession</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">suspendSession</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1257,7 +1341,7 @@
 
 <footer id="validator-badges" role="contentinfo">
   <p><a href="https://validator.w3.org/check/referer">Validate</a>
-  <p>Generated by <a href="https://ruby.github.io/rdoc/">RDoc</a> 6.3.3.
+  <p>Generated by <a href="https://ruby.github.io/rdoc/">RDoc</a> 6.6.3.1.
   <p>Based on <a href="http://deveiate.org/projects/Darkfish-RDoc/">Darkfish</a> by <a href="http://deveiate.org">Michael Granger</a>.
 </footer>
 

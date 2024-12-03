@@ -41,7 +41,7 @@
     <div id="search-field-wrapper">
       <input id="search-field" role="combobox" aria-label="Search"
              aria-autocomplete="list" aria-controls="search-results"
-             type="text" name="search" placeholder="Search" spellcheck="false"
+             type="text" name="search" placeholder="Search (/) for a class, method, ..." spellcheck="false"
              title="Type to search, Up and Down to navigate, Enter to load">
     </div>
 
@@ -184,11 +184,13 @@
        </header>
 
       <div id="method-c-new" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            new(connection)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              new(connection)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -218,14 +220,16 @@
        </header>
 
       <div id="method-i-affectedRows" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">affectedRows</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">affectedRows</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
-          <p>Returns the number of rows that were updated, inserted or deleted by the query.  Not all databases support this call.  Don&#39;t use it for applications which are designed to be portable across databases.  -1 is returned by databases which don&#39;t support this option.</p>
+          <p>Returns the number of rows that were updated, inserted or deleted by the query.  Not all databases support this call.  Don’t use it for applications which are designed to be portable across databases.  -1 is returned by databases which don’t support this option.</p>
 
           <div class="method-source-code" id="affectedRows-source">
             <pre>static VALUE sqlrcur_affectedRows(VALUE self) {
@@ -242,10 +246,12 @@
       </div>
 
       <div id="method-i-cacheOff" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">cacheOff</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">cacheOff</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -265,11 +271,13 @@
       </div>
 
       <div id="method-i-cacheToFile" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            cacheToFile(filename)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              cacheToFile(filename)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -293,10 +301,12 @@
       </div>
 
       <div id="method-i-clearBinds" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">clearBinds</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">clearBinds</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -316,10 +326,12 @@
       </div>
 
       <div id="method-i-closeResultSet" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">closeResultSet</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">closeResultSet</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -339,10 +351,12 @@
       </div>
 
       <div id="method-i-colCount" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">colCount</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">colCount</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -363,10 +377,12 @@
       </div>
 
       <div id="method-i-countBindVariables" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">countBindVariables</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">countBindVariables</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -387,11 +403,13 @@
       </div>
 
       <div id="method-i-defineOutputBindBlob" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            defineOuptutBindBlob(variable)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              defineOuptutBindBlob(variable)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -411,11 +429,13 @@
       </div>
 
       <div id="method-i-defineOutputBindClob" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            defineOutputBindClob(variable)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              defineOutputBindClob(variable)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -435,11 +455,13 @@
       </div>
 
       <div id="method-i-defineOutputBindCursor" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            defineOutputBindCursor(variable)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              defineOutputBindCursor(variable)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -459,11 +481,13 @@
       </div>
 
       <div id="method-i-defineOutputBindDouble" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            defineOutputBindDouble(variable)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              defineOutputBindDouble(variable)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -483,11 +507,13 @@
       </div>
 
       <div id="method-i-defineOutputBindInteger" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            defineOutputBindInteger(variable)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              defineOutputBindInteger(variable)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -507,11 +533,13 @@
       </div>
 
       <div id="method-i-defineOutputBindString" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            defineOutputBindString(variable,length)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              defineOutputBindString(variable,length)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -532,14 +560,16 @@
       </div>
 
       <div id="method-i-dontGetColumnInfo" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">dontGetColumnInfo</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">dontGetColumnInfo</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
-          <p>Tells the server not to send any column info (names, types, sizes).  If you don&#39;t need that info, you should call this function to improve performance.</p>
+          <p>Tells the server not to send any column info (names, types, sizes).  If you don’t need that info, you should call this function to improve performance.</p>
 
           <div class="method-source-code" id="dontGetColumnInfo-source">
             <pre>static VALUE sqlrcur_dontGetColumnInfo(VALUE self) {
@@ -555,10 +585,12 @@
       </div>
 
       <div id="method-i-endOfResultSet" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">endOfResultSet</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">endOfResultSet</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -579,10 +611,12 @@
       </div>
 
       <div id="method-i-errorMessage" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">errorMessage</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">errorMessage</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -607,10 +641,12 @@
       </div>
 
       <div id="method-i-errorNumber" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">errorNumber</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">errorNumber</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -631,10 +667,12 @@
       </div>
 
       <div id="method-i-executeQuery" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">executeQuery</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">executeQuery</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -655,10 +693,12 @@
       </div>
 
       <div id="method-i-fetchFromBindCursor" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">fetchFromBindCursor</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">fetchFromBindCursor</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -679,10 +719,12 @@
       </div>
 
       <div id="method-i-firstRowIndex" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">firstRowIndex</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">firstRowIndex</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -703,10 +745,12 @@
       </div>
 
       <div id="method-i-getCacheFileName" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">getCacheFileName</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">getCacheFileName</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -731,10 +775,12 @@
       </div>
 
       <div id="method-i-getColumnInfo" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">getColumnInfo</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">getColumnInfo</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -754,11 +800,13 @@
       </div>
 
       <div id="method-i-getColumnIsAutoIncrement" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getColumnIsAutoIncrement(col)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getColumnIsAutoIncrement(col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -783,11 +831,13 @@
       </div>
 
       <div id="method-i-getColumnIsBinary" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getColumnIsBinary(col)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getColumnIsBinary(col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -812,11 +862,13 @@
       </div>
 
       <div id="method-i-getColumnIsNullable" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getColumnIsNullable(col)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getColumnIsNullable(col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -841,11 +893,13 @@
       </div>
 
       <div id="method-i-getColumnIsPartOfKey" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getColumnIsPartOfKey(col)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getColumnIsPartOfKey(col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -870,11 +924,13 @@
       </div>
 
       <div id="method-i-getColumnIsPrimaryKey" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getColumnIsPrimaryKey(col)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getColumnIsPrimaryKey(col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -899,15 +955,17 @@
       </div>
 
       <div id="method-i-getColumnIsUnique" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getColumnIsUnique(col)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getColumnIsUnique(col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
-          <p>Returns 1 if the specified column is unique and 0 otherwise.  “col” may be specified as the column name or number.</p>
+          <p>Returns 1 if the specified column is unique and 0 otherwise. “col” may be specified as the column name or number.</p>
 
           <div class="method-source-code" id="getColumnIsUnique-source">
             <pre>static VALUE sqlrcur_getColumnIsUnique(VALUE self, VALUE col) {
@@ -928,11 +986,13 @@
       </div>
 
       <div id="method-i-getColumnIsUnsigned" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getColumnIsUnsigned(col)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getColumnIsUnsigned(col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -957,11 +1017,13 @@
       </div>
 
       <div id="method-i-getColumnIsZeroFilled" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getColumnIsZeroFilled(col)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getColumnIsZeroFilled(col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -986,11 +1048,13 @@
       </div>
 
       <div id="method-i-getColumnLength" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getColumnLength(col)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getColumnLength(col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1015,11 +1079,13 @@
       </div>
 
       <div id="method-i-getColumnList" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getColumnList(table,wild)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getColumnList(table,wild)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1040,11 +1106,13 @@
       </div>
 
       <div id="method-i-getColumnName" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getColumnName(col)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getColumnName(col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1069,10 +1137,12 @@
       </div>
 
       <div id="method-i-getColumnNames" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">getColumnNames</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">getColumnNames</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1106,15 +1176,17 @@
       </div>
 
       <div id="method-i-getColumnPrecision" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getColumnPrecision(col)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getColumnPrecision(col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
-          <p>Returns the precision of the specified column.  Precision is the total number of digits in a number.  eg: 123.45 has a precision of 5.  For non-numeric types, it&#39;s the number of characters in the string.  “col” may be specified as the column name or number.</p>
+          <p>Returns the precision of the specified column.  Precision is the total number of digits in a number.  eg: 123.45 has a precision of 5.  For non-numeric types, it’s the number of characters in the string.  “col” may be specified as the column name or number.</p>
 
           <div class="method-source-code" id="getColumnPrecision-source">
             <pre>static VALUE sqlrcur_getColumnPrecision(VALUE self, VALUE col) {
@@ -1135,11 +1207,13 @@
       </div>
 
       <div id="method-i-getColumnScale" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getColumnScale(col)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getColumnScale(col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1164,11 +1238,13 @@
       </div>
 
       <div id="method-i-getColumnType" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getColumnType(col)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getColumnType(col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1197,11 +1273,13 @@
       </div>
 
       <div id="method-i-getDatabaseList" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getDatabaseList(wild)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getDatabaseList(wild)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1222,15 +1300,17 @@
       </div>
 
       <div id="method-i-getField" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getField(row,col)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getField(row,col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
-          <p>Returns the specified field as a string.  “col” may be specified as the  column name or number.</p>
+          <p>Returns the specified field as a string.  “col” may be specified as the column name or number.</p>
 
           <div class="method-source-code" id="getField-source">
             <pre>static VALUE sqlrcur_getField(VALUE self, VALUE row, VALUE col) {
@@ -1258,11 +1338,13 @@
       </div>
 
       <div id="method-i-getFieldAsDouble" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getFieldAsDouble(row,col)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsDouble(row,col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1287,11 +1369,13 @@
       </div>
 
       <div id="method-i-getFieldAsInteger" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getFieldAsInteger(row,col)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldAsInteger(row,col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1316,11 +1400,13 @@
       </div>
 
       <div id="method-i-getFieldLength" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getFieldLength(row,col)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getFieldLength(row,col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1345,11 +1431,13 @@
       </div>
 
       <div id="method-i-getLongest" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getLongest(col)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getLongest(col)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1374,10 +1462,12 @@
       </div>
 
       <div id="method-i-getNullsAsEmptyStrings" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">getNullsAsEmptyStrings</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">getNullsAsEmptyStrings</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1397,14 +1487,16 @@
       </div>
 
       <div id="method-i-getNullsAsNils" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">getNullsAsNils</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">getNullsAsNils</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
-          <p>Tells the connection to return NULL fields and output bind variables as nil&#39;s.</p>
+          <p>Tells the connection to return NULL fields and output bind variables as nil’s.</p>
 
           <div class="method-source-code" id="getNullsAsNils-source">
             <pre>static VALUE sqlrcur_getNullsAsNils(VALUE self) {
@@ -1420,11 +1512,13 @@
       </div>
 
       <div id="method-i-getOutputBindBlob" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getOutputBindBlob(variable)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getOutputBindBlob(variable)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1451,11 +1545,13 @@
       </div>
 
       <div id="method-i-getOutputBindClob" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getOutputBindClob(variable)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getOutputBindClob(variable)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1482,11 +1578,13 @@
       </div>
 
       <div id="method-i-getOutputBindCursor" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getOutputBindCursor(variable)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getOutputBindCursor(variable)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1511,11 +1609,13 @@
       </div>
 
       <div id="method-i-getOutputBindDouble" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getOutputBindDouble(variable)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getOutputBindDouble(variable)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1536,11 +1636,13 @@
       </div>
 
       <div id="method-i-getOutputBindInteger" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getOutputBindInteger(variable)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getOutputBindInteger(variable)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1561,11 +1663,13 @@
       </div>
 
       <div id="method-i-getOutputBindLength" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getOutputBindLength(variable)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getOutputBindLength(variable)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1586,11 +1690,13 @@
       </div>
 
       <div id="method-i-getOutputBindString" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getOutputBindString(variable)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getOutputBindString(variable)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1617,10 +1723,12 @@
       </div>
 
       <div id="method-i-getResultSetBufferSize" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">getResultSetBufferSize</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">getResultSetBufferSize</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1641,10 +1749,12 @@
       </div>
 
       <div id="method-i-getResultSetId" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">getResultSetId</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">getResultSetId</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1665,11 +1775,13 @@
       </div>
 
       <div id="method-i-getRow" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getRow(row)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getRow(row)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1703,11 +1815,13 @@
       </div>
 
       <div id="method-i-getRowHash" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getRowHash(row)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getRowHash(row)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1746,11 +1860,13 @@
       </div>
 
       <div id="method-i-getRowLengths" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getRowLengths(row)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getRowLengths(row)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1780,11 +1896,13 @@
       </div>
 
       <div id="method-i-getRowLengthsHash" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getRowLengthsHash(row)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getRowLengthsHash(row)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1815,11 +1933,13 @@
       </div>
 
       <div id="method-i-getTableList" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            getTableList(wild)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              getTableList(wild)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1840,15 +1960,17 @@
       </div>
 
       <div id="method-i-inputBind" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            inputBind(variable,value,(precision),(scale))
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              inputBind(variable,value,(precision),(scale))
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
-          <p>Defines am input bind variable.  The value may be a string, integer or decimal.  If it is a decimal then the precision and scale may be specified. If you don&#39;t have the precision and scale then set them both to 0.  However in that case you may get unexpected rounding behavior if the server is faking binds.</p>
+          <p>Defines am input bind variable.  The value may be a string, integer or decimal.  If it is a decimal then the precision and scale may be specified. If you don’t have the precision and scale then set them both to 0.  However in that case you may get unexpected rounding behavior if the server is faking binds.</p>
 
           <div class="method-source-code" id="inputBind-source">
             <pre>static VALUE sqlrcur_inputBind(int argc, VALUE *argv, VALUE self) {
@@ -1893,11 +2015,13 @@
       </div>
 
       <div id="method-i-inputBindBlob" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            inputBindBlob(variable,value,size)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              inputBindBlob(variable,value,size)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1925,11 +2049,13 @@
       </div>
 
       <div id="method-i-inputBindClob" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            inputBindClob(variable,value,size)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              inputBindClob(variable,value,size)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -1957,11 +2083,13 @@
       </div>
 
       <div id="method-i-inputBinds" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            inputBinds(variables,values,(precisions),(scales))
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              inputBinds(variables,values,(precisions),(scales))
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -2020,10 +2148,12 @@
       </div>
 
       <div id="method-i-lowerCaseColumnNames" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">lowerCaseColumnNames</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">lowerCaseColumnNames</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -2043,10 +2173,12 @@
       </div>
 
       <div id="method-i-mixedCaseColumnNames" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">mixedCaseColumnNames</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">mixedCaseColumnNames</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -2066,11 +2198,13 @@
       </div>
 
       <div id="method-i-openCachedResultSet" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            openCachedResultSet(filename)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              openCachedResultSet(filename)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -2091,11 +2225,13 @@
       </div>
 
       <div id="method-i-prepareFileQuery" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            prepareFileQuery(path,filename)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              prepareFileQuery(path,filename)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -2116,11 +2252,13 @@
       </div>
 
       <div id="method-i-prepareQuery" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            prepareQuery(query)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              prepareQuery(query)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -2140,11 +2278,13 @@
       </div>
 
       <div id="method-i-prepareQueryWithLength" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            prepareQuery(query,length)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              prepareQuery(query,length)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -2165,11 +2305,13 @@
       </div>
 
       <div id="method-i-resumeCachedResultSet" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            resumeCachedResultSet(id,filename)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              resumeCachedResultSet(id,filename)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -2191,11 +2333,13 @@
       </div>
 
       <div id="method-i-resumeResultSet" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            resumeResultSet(id)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              resumeResultSet(id)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -2216,10 +2360,12 @@
       </div>
 
       <div id="method-i-rowCount" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">rowCount</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">rowCount</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -2240,11 +2386,13 @@
       </div>
 
       <div id="method-i-sendFileQuery" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            sendFileQuery(path,filename)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              sendFileQuery(path,filename)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -2265,11 +2413,13 @@
       </div>
 
       <div id="method-i-sendQuery" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            sendQuery(query)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              sendQuery(query)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -2290,11 +2440,13 @@
       </div>
 
       <div id="method-i-sendQueryWithLength" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            sendQueryWithLength(query,length)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              sendQueryWithLength(query,length)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -2316,15 +2468,17 @@
       </div>
 
       <div id="method-i-setCacheTtl" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            setCacheTtl(ttl)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              setCacheTtl(ttl)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
-          <p>Sets the time-to-live for cached result sets. The sqlr-cachemanger will remove each cached result set “ttl” seconds after it&#39;s created, provided it&#39;s scanning the directory containing the cache files.</p>
+          <p>Sets the time-to-live for cached result sets. The sqlr-cachemanger will remove each cached result set “ttl” seconds after it’s created, provided it’s scanning the directory containing the cache files.</p>
 
           <div class="method-source-code" id="setCacheTtl-source">
             <pre>static VALUE sqlrcur_setCacheTtl(VALUE self, VALUE ttl) {
@@ -2340,11 +2494,13 @@
       </div>
 
       <div id="method-i-setResultSetBufferSize" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            setResultSetBufferSize(rows)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              setResultSetBufferSize(rows)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -2364,11 +2520,13 @@
       </div>
 
       <div id="method-i-substitution" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            substitution(variable,value,(precision),(scale))
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              substitution(variable,value,(precision),(scale))
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -2407,11 +2565,13 @@
       </div>
 
       <div id="method-i-substitutions" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            substitutions(variables,values,(precisions),(scales))
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              substitutions(variables,values,(precisions),(scales))
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -2470,10 +2630,12 @@
       </div>
 
       <div id="method-i-suspendResultSet" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">suspendResultSet</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">suspendResultSet</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -2493,14 +2655,16 @@
       </div>
 
       <div id="method-i-totalRows" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">totalRows</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">totalRows</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
-          <p>Returns the total number of rows that will be returned in the result set. Not all databases support this call.  Don&#39;t use it for applications which are designed to be portable across databases.  -1 is returned by databases which don&#39;t support this option.</p>
+          <p>Returns the total number of rows that will be returned in the result set. Not all databases support this call.  Don’t use it for applications which are designed to be portable across databases.  -1 is returned by databases which don’t support this option.</p>
 
           <div class="method-source-code" id="totalRows-source">
             <pre>static VALUE sqlrcur_totalRows(VALUE self) {
@@ -2517,10 +2681,12 @@
       </div>
 
       <div id="method-i-upperCaseColumnNames" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">upperCaseColumnNames</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">upperCaseColumnNames</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -2540,11 +2706,13 @@
       </div>
 
       <div id="method-i-validBind" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-callseq">
-            validBind(variable)
-          </span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-callseq">
+              validBind(variable)
+            </span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
@@ -2565,14 +2733,16 @@
       </div>
 
       <div id="method-i-validateBinds" class="method-detail ">
-        <div class="method-heading">
-          <span class="method-name">validateBinds</span><span
-            class="method-args">()</span>
-          <span class="method-click-advice">click to toggle source</span>
+        <div class="method-header">
+          <div class="method-heading">
+            <span class="method-name">validateBinds</span><span
+              class="method-args">()</span>
+            <span class="method-click-advice">click to toggle source</span>
+          </div>
         </div>
 
         <div class="method-description">
-          <p>If you are binding to any variables that might not actually be in your query, call this to ensure that the database won&#39;t try to bind them unless they really are in the query.  There is a performance penalty for calling this function</p>
+          <p>If you are binding to any variables that might not actually be in your query, call this to ensure that the database won’t try to bind them unless they really are in the query.  There is a performance penalty for calling this function</p>
 
           <div class="method-source-code" id="validateBinds-source">
             <pre>static VALUE sqlrcur_validateBinds(VALUE self) {
@@ -2595,7 +2765,7 @@
 
 <footer id="validator-badges" role="contentinfo">
   <p><a href="https://validator.w3.org/check/referer">Validate</a>
-  <p>Generated by <a href="https://ruby.github.io/rdoc/">RDoc</a> 6.3.3.
+  <p>Generated by <a href="https://ruby.github.io/rdoc/">RDoc</a> 6.6.3.1.
   <p>Based on <a href="http://deveiate.org/projects/Darkfish-RDoc/">Darkfish</a> by <a href="http://deveiate.org">Michael Granger</a>.
 </footer>
 
