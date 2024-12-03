@@ -25,10 +25,11 @@
 
 <p>Note that SQL Relay cannot currently be used to replicate databases or keep replicated databases synchronized.  If you are using SQL Relay to access replicated databases then it is assumed that there is some means by which the databases are kept synchronized external to SQL Relay.</p>
 
-<p>SQL Relay supports two front-end high availability strategies as well.  Multiple instances of SQL Relay can be placed behind a load balancing appliance, or round-robin DNS can be used to provide load balancing and failover over multiple instances of SQL Relay.</p>
+<p>SQL Relay supports several front-end high availability strategies as well.  The SQL Relay client can do basic host randomization, multiple instances of SQL Relay can be placed behind a load balancing appliance, and round-robin DNS can be used to provide load balancing and failover over multiple instances of SQL Relay.</p>
 
 <blockquote>
-<img src="../images/loadbalancer.png"/>
+<img src="../images/hostrand.png"/>
+<img style="margin-left: 20px; " src="../images/loadbalancer.png"/>
 <img style="margin-left: 20px; " src="../images/rrdns.png"/>
 </blockquote>
 <!--#include virtual="../contentend.html"-->
