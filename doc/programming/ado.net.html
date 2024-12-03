@@ -1,9 +1,9 @@
-<html>
-<head>
-	<title>Programming with SQL Relay using the ADO.NET API</title>
-	<link rel="stylesheet" href="../css/styles.css">
-</head>
-<body>
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../contentstart.html"-->
+
 <h1>Programming with SQL Relay using the ADO.NET API</h1>
 
 <ul>
@@ -122,7 +122,7 @@ http://www.gnu.org/software/src-highlite -->
 <p>The following connect string variables control attributes of the connection:</p>
 
 <ul>
-  <li><b>Data Source</b> - The SQL Relay server to connect to.  This may be specified as <i>host:port</i>, <i>host:port:socket</i> or just <i>socket</i>.  If host, port and socket are all three specified, then a connection will first be attempted to the local socket and then to the host/port.</li>
+  <li><b>Data Source</b> - The SQL Relay server to connect to.  This may be specified as <i>host:port</i>, <i>host:port:socket</i> or just <i>socket</i>.  If host, port and socket are all three specified, then a connection will first be attempted to the local socket and then to the host/port.  If <i>host</i> is a comma-separated list of hosts, then an attempt will be made to connect to each until the attempt succeeds, or there are no more hosts left to try.</li>
   <li><b>User ID</b> - The username to use when logging into SQL Relay.</li>
   <li><b>Password</b> - The password to use when logging into SQL Relay.</li>
   <li><b>Retry Time</b> - If a connection fails, it will be retried on this interval (in seconds).</li>
@@ -514,7 +514,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>A feature of the prepare/bind/execute paradigm is the ability to prepare, 
 bind and execute a query once, then re-bind and re-execute the query 
-over and over without re-preparing it.  If your backend database natively 
+over and over without re-preparing it.  If your back-end database natively 
 supports this paradigm, you can reap a substantial performance improvement.</p>
 
 <blockquote>
@@ -2327,5 +2327,7 @@ http://www.gnu.org/software/src-highlite -->
 <blockquote>
 <b>select last insert rowid</b>
 </blockquote>
-</body>
-</html>
+<!--#include virtual="../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

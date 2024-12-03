@@ -1,3 +1,9 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
 = Programming with SQL Relay using the ADO.NET API =
 
 * [#languages Language Compatibility]
@@ -99,7 +105,7 @@ To use SQL Relay, you have to first open a connection.
 
 The following connect string variables control attributes of the connection:
 
-* '''Data Source''' - The SQL Relay server to connect to.  This may be specified as //host:port//, //host:port:socket// or just //socket//.  If host, port and socket are all three specified, then a connection will first be attempted to the local socket and then to the host/port.
+* '''Data Source''' - The SQL Relay server to connect to.  This may be specified as //host:port//, //host:port:socket// or just //socket//.  If host, port and socket are all three specified, then a connection will first be attempted to the local socket and then to the host/port.  If //host// is a comma-separated list of hosts, then an attempt will be made to connect to each until the attempt succeeds, or there are no more hosts left to try.
 * '''User ID''' - The username to use when logging into SQL Relay.
 * '''Password''' - The password to use when logging into SQL Relay.
 * '''Retry Time''' - If a connection fails, it will be retried on this interval (in seconds).
@@ -242,7 +248,7 @@ FIXME: ... clob, blob and cursor output bind ...
 
 A feature of the prepare/bind/execute paradigm is the ability to prepare, 
 bind and execute a query once, then re-bind and re-execute the query 
-over and over without re-preparing it.  If your backend database natively 
+over and over without re-preparing it.  If your back-end database natively 
 supports this paradigm, you can reap a substantial performance improvement.
 
 {{{#!blockquote
@@ -1178,3 +1184,7 @@ Unfortunately ADO.NET doesn't expose a generic method for getting the last inser
 {{{#!blockquote
 '''select last insert rowid'''
 }}}
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

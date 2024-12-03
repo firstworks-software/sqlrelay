@@ -1,1 +1,1 @@
-typeSearchIndex = [{"l":"All Classes","url":"allclasses-index.html"},{"p":"com.firstworks.sqlrelay","l":"SQLRConnection"},{"p":"com.firstworks.sqlrelay","l":"SQLRCursor"}]
+typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"com.firstworks.sqlrelay","l":"SQLRConnection"},{"p":"com.firstworks.sqlrelay","l":"SQLRCursor"}];updateSearchResults();

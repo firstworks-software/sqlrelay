@@ -1,3 +1,9 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
 = SQL Relay Command Line Programs =
 
 * [#sqlrstart Starting SQL Relay]
@@ -159,3 +165,7 @@ Here are descriptions of the statistics:
 * Forked Listeners: The total number of child listener processes that are running.  This roughly corresponds to the number of clients that are waiting to access the database.
 
 The rest of the stats are useful when reporting suspected bugs but are much more value to SQL Relay developers than users.
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

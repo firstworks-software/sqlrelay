@@ -1,9 +1,9 @@
-<html>
-<head>
-	<title>Programming with SQL Relay using the Java API</title>
-	<link rel="stylesheet" href="../css/styles.css">
-</head>
-<body>
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../contentstart.html"-->
+
 <h1>Programming with SQL Relay using the Java API</h1>
 
 <ul>
@@ -392,7 +392,7 @@ a performance cost associated with calling validateBinds() and validBind().</p>
 
 <p>Another feature of the prepare/bind/execute paradigm is the ability to 
 prepare, bind and execute a query once, then re-bind and re-execute the query 
-over and over without re-preparing it.  If your backend database natively 
+over and over without re-preparing it.  If your back-end database natively 
 supports this paradigm, you can reap a substantial performance improvement.</p>
 
 <blockquote>
@@ -2383,5 +2383,7 @@ instead of resumeResultSet() however.</p>
 <blockquote>
 <b>select last insert rowid</b>
 </blockquote>
-</body>
-</html>
+<!--#include virtual="../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

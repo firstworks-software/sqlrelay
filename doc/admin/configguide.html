@@ -1,14 +1,13 @@
-<html>
-<head>
-	<title>SQL Relay Configuration Guide</title>
-	<link rel="stylesheet" href="../css/styles.css">
-</head>
-<body>
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../contentstart.html"-->
+
 <h1>SQL Relay Configuration Guide</h1>
 
 <ul>
   <li><a href="#quick">Quick Start</a></li>
-  <li><a href="#modules">Modules</a></li>
   <li><a href="#basic">Basic Configuration</a></li>
   <ul>
     <li><a href="#modules">Modules</a></li>
@@ -110,10 +109,16 @@
 
   <li><a href="#ha">High Availability</a></li>
   <ul>
-    <li><a href="#cluster">Load-Balancing and Fail-Over With Replicated Databases or Database Clusters</a></li>
-    <li><a href="#rac">Already-Load-Balanced Databases</a></li>
+    <li><a href="#cluster">Load Balancing and Failover With Replicated Databases or Database Clusters</a></li>
+    <li><a href="#rac">Already-Load Balanced Databases</a></li>
     <li><a href="#masterslave">Master-Slave Query Routing</a></li>
-    <li><a href="#frontendlb">Front-End Load-Balancing and Fail-Over</a></li>
+    <li><a href="#frontendlb">Front-End Load Balancing and Failover</a></li>
+    <ul>
+      <li><a href="#hostrand">Host Randomization</a></li>
+      <li><a href="#lbapp">Load Balancing Appliance</a></li>
+      <li><a href="#rrdns">Round-Robin DNS</a></li>
+    </ul>
+
   </ul>
 
   <li><a href="#security">Security Features</a></li>
@@ -128,7 +133,7 @@
     </ul>
 
     <li><a href="#runas">Run-As User and Group</a></li>
-    <li><a href="#deniedallowedips">Denied/Allowed IP Addresses</a></li>
+    <li><a href="#deniedallowedips">IP Filtering</a></li>
     <li><a href="#pwdfiles">Password Files</a></li>
     <li><a href="#pwdenc">Password Encryption</a></li>
     <ul>
@@ -188,7 +193,7 @@
     <li><a href="#singlestep">singlestep</a></li>
   </ul>
 
-  <li><a href="#queryrouting">Query Routing</a></li>
+  <li><a href="#routing">Query and Session Routing</a></li>
   <ul>
     <li><a href="#regex">regex</a></li>
     <li><a href="#userlist">userlist</a></li>
@@ -1628,14 +1633,17 @@ sqlrelay_flags=""
 
 <p>Whether written using the native SQL Relay API, or a connector of some sort, SQL Relay apps generally communicate with SQL Relay using <i>SQLRClient</i>, the native SQL Relay client-server protocol.</p>
 
-<p><img src="../images/sqlrelaynativeprotocol.png"/></p>
-
+<blockquote>
+<img src="../images/sqlrelaynativeprotocol.png"/>
+</blockquote>
 <p>However, SQL Relay also supports the MySQL and PostgreSQL client-server protocols.  When SQL Relay is configured to use one of these, it allows MySQL/MariaDB and PostgreSQL apps to communicate directly with SQL Relay without modification, without having to install any software on the client.</p>
 
-<p><img src="../images/sqlrelaymysqlprotocol.png"/></p>
-
-<p><img src="../images/sqlrelaypostgresqlprotocol.png"/></p>
-
+<blockquote>
+<img src="../images/sqlrelaymysqlprotocol.png"/>
+</blockquote>
+<blockquote>
+<img src="../images/sqlrelaypostgresqlprotocol.png"/>
+</blockquote>
 <p>In these configurations, SQL Relay becomes a transparent proxy.  MySQL/MariaDB or PostgreSQL apps aimed at SQL Relay still think that they're talking to a MySQL/MariaDB or PostgreSQL database, but in fact, are talking to SQL Relay.</p>
 
 <br/><a name="sqlrclientprotocol"/><h2>SQLRClient Protocol</h2>
@@ -1987,6 +1995,9 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>SQL Relay supports Kerberos encryption and authentication between the SQL Relay client and SQL Relay Server.</p>
 
+<blockquote>
+<img src="../images/secure-krb-unsecured.png"/>
+</blockquote>
 <p>When Kerberos encryption and authentication is used:</p>
 
 <ul>
@@ -2096,6 +2107,9 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>SQL Relay supports TLS/SSL encryption and authentication between the SQL Relay client and SQL Relay Server.</p>
 
+<blockquote>
+<img src="../images/secure-tls-unsecured.png"/>
+</blockquote>
 <p>When TLS/SSL encryption and authentication is used:</p>
 
 <ul>
@@ -2610,6 +2624,9 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>SQL Relay supports TLS/SSL encryption and authentication between the MySQL/MariaDB client and SQL Relay Server.</p>
 
+<blockquote>
+<img src="../images/secure-tls-unsecured.png"/>
+</blockquote>
 <p>When TLS/SSL encryption and authentication is used:</p>
 
 <ul>
@@ -2771,7 +2788,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <a name="mysqlforeignbackend"/><h3>Foreign Backend</h3>
 
-<p>Since SQL Relay supports a variety of database backends, the app can also be redirected to any of these databases, instead of the MySQL/MariaDB database it was originally written to use.</p>
+<p>Since SQL Relay supports a variety of database back-ends, the app can also be redirected to any of these databases, instead of the MySQL/MariaDB database it was originally written to use.</p>
 
 <p>This is as simple as specifying a different database using the <i>dbase</i> attribute in the instance tag and specifying the appropriate database connection string in the <i>string</i> attribute of the connection tag.</p>
 
@@ -2794,9 +2811,9 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>In this example, a MySQL front-end provides MySQL/MariaDB applications access to an Oracle backend database.</p>
+<p>In this example, a MySQL front-end provides MySQL/MariaDB applications access to an Oracle back-end database.</p>
 
-<p>Depending on the backend, it might also be necessary to make some other configuration changes, as well, for example:</p>
+<p>Depending on the back-end, it might also be necessary to make some other configuration changes, as well, for example:</p>
 
 <ul>
   <li>In the instance tag:</li>
@@ -2829,9 +2846,9 @@ http://www.gnu.org/software/src-highlite -->
 
 <h3>Mapping zero-scale DECIMAL to BIGINT</h3>
 
-<p>When targeting a foreign backend...</p>
+<p>When targeting a foreign back-end...</p>
 
-<p>Some backend databases, like Oracle, don't have integer types.  An integer type is really just a DECIMAL with a scale of 0.</p>
+<p>Some back-end databases, like Oracle, don't have integer types.  An integer type is really just a DECIMAL with a scale of 0.</p>
 
 <p>By default, the MySQL protocol module maps zero-scale DECIMAL types to the MySQL DECIMAL type.  Buy you might want to map them to the MySQL BIGINT type instead.</p>
 
@@ -2858,9 +2875,9 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <h3>Mapping DATE to DATETIME</h3>
 
-<p>When targeting a foreign backend...</p>
+<p>When targeting a foreign back-end...</p>
 
-<p>Some backend databases, like Oracle, don't have separate DATE and DATETIME types.  Instead, they just have a DATE type, which can store date and time parts, and which parts are returned depend on a parameter like NLS_DATE_FORMAT.</p>
+<p>Some back-end databases, like Oracle, don't have separate DATE and DATETIME types.  Instead, they just have a DATE type, which can store date and time parts, and which parts are returned depend on a parameter like NLS_DATE_FORMAT.</p>
 
 <p>By default, the MySQL protocol module maps the DATE type to the MySQL DATE type.  But, if you are using DATE type fields to store date/times and have the database configured to return date and time parts, then you might want the DATE type mapped to the MySQL DATETIME type.</p>
 
@@ -3180,6 +3197,9 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>SQL Relay supports TLS/SSL encryption and authentication between the PostgreSQL client and SQL Relay Server.</p>
 
+<blockquote>
+<img src="../images/secure-tls-unsecured.png"/>
+</blockquote>
 <p>When TLS/SSL encryption and authentication is used:</p>
 
 <ul>
@@ -3357,7 +3377,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <a name="postgresqlforeignbackend"/><h3>Foreign Backend</h3>
 
-<p>Since SQL Relay supports a variety of database backends, the app can also be redirected to any of these databases, instead of the PostgreSQL database it was originally written to use.</p>
+<p>Since SQL Relay supports a variety of database back-ends, the app can also be redirected to any of these databases, instead of the PostgreSQL database it was originally written to use.</p>
 
 <p>This is as simple as specifying a different database using the <i>dbase</i> attribute in the instance tag and specifying the appropriate database connection string in the <i>string</i> attribute of the connection tag.</p>
 
@@ -3380,9 +3400,9 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>In this example, a PostgreSQL front-end provides PostgreSQL applications access to an Oracle backend database.</p>
+<p>In this example, a PostgreSQL front-end provides PostgreSQL applications access to an Oracle back-end database.</p>
 
-<p>Depending on the backend, it might also be necessary to make some other configuration changes, as well, for example:</p>
+<p>Depending on the back-end, it might also be necessary to make some other configuration changes, as well, for example:</p>
 
 <ul>
   <li>In the instance tag:</li>
@@ -3539,7 +3559,7 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>Since this instance speaks the SQLRClient, MySQL, and PostgreSQL client-server protocols, clients that wish to use it may speak any of those client-server protocol.  This means that most software written using the SQL Relay, MySQL, or PostgreSQL APIs, or written using a database abstraction layer which loads a driver for SQL Relay, MySQL, or PostgreSQL can access this instance.  However, client programs for other databases (eg. the sqlplus command line programs, Oracle SQL Developer, SQL Server Management Studio, etc.) cannot access this instance.</p>
 
-<p>In this example, a front-end that supports MySQL and PostgreSQL protocols provides access to an Oracle backend database.  As such some queries may have to be modified from their native MySQL and PostgreSQL syntax to use the syntax of the Oracle database.</p>
+<p>In this example, a front-end that supports MySQL and PostgreSQL protocols provides access to an Oracle back-end database.  As such some queries may have to be modified from their native MySQL and PostgreSQL syntax to use the syntax of the Oracle database.</p>
 
 <a name="multiprotocollistener"/><h3>Listener Options</h3>
 
@@ -3633,21 +3653,16 @@ http://www.gnu.org/software/src-highlite -->
 
 <br/><a name="ha"/><h1>High Availabiltiy</h1>
 
-<p>In a high availability environment, SQL Relay can be deployed as a front-end to provide load-balancing and fail-over for a set of replicated database servers or database cluster.  Load-balancing and fail-over can also be implemented over multiple SQL Relay servers.</p>
+<p>In a high availability environment, SQL Relay can be deployed as a front-end to provide load balancing and failover for a set of replicated database servers or database cluster.  Load balancing and failover can also be implemented over multiple SQL Relay servers.</p>
 
-<br/><a name="cluster"/><h2>Load-Balancing and Fail-Over With Replicated Databases or Database Clusters</h2>
+<br/><a name="cluster"/><h2>Load Balancing and Failover With Replicated Databases or Database Clusters</h2>
 
 <p>In a database cluster or replication environment, SQL Relay can be configured to maintain a pool of connections to the various database nodes and distribute client sessions over the nodes.  If an individual node fails, SQL Relay will attempt to reestablish connections to that node, while continuing to distribute client sessions over the remaining nodes.</p>
 
-<table>
-  <tr>
-    <td><img src="../images/cluster.png"/>
-</td>
-    <td><img style="padding-left: 40px; " src="../images/replicated.png"/>
-</td>
-  </tr>
-</table>
-
+<blockquote>
+<img src="../images/cluster.png"/>
+<img style="padding-left: 40px; " src="../images/replicated.png"/>
+</blockquote>
 <p>In the configuration file, each connection tag defines a node to maintain connections to.  In the following example, SQL Relay is configured to distribute over three Oracle nodes - ora1, ora2, and ora3</p>
 
 <blockquote>
@@ -3672,8 +3687,9 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>SQL Relay also supports disproportionate distribution of load. If some nodes can handle more traffic than others, then SQL Relay can be configured to send more traffic to the more capable nodes.</p>
 
-<p><img src="../images/replicated-disproportionate.png"/></p>
-
+<blockquote>
+<img src="../images/replicated-disproportionate.png"/>
+</blockquote>
 <p>SQL Relay uses the connection tag's metric attribute to decide how many connections to open to each node.</p>
 
 <blockquote>
@@ -3698,15 +3714,15 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>In the example above, 15 is 3 times 5, so 3 times as many connections will be opened to ora3 as to ora1.  30 is 6 times 5, so 6 times as many connections will be opened to ora3 as ora1.  Since a total of 10 connections will be opened, 1 will be opened to ora1, 3 to ora2, and 6 to ora2.</p>
 
-<br/><a name="rac"/><h2>Already-Load-Balanced Databases</h2>
+<br/><a name="rac"/><h2>Already-Load Balanced Databases</h2>
 
-<p>In a typical database cluster or replicated environment, the nodes are identifiable as separate hosts.  However, when the nodes are located behind a load-balancing appliance or running on an application cluster, such as Oracle RAC, SQL Relay cannot identity an individual node.</p>
+<p>In a typical database cluster or replicated environment, the nodes are identifiable as separate hosts.  However, when the nodes are located behind a load balancing appliance or running on an application cluster, such as Oracle RAC, SQL Relay cannot identity an individual node.</p>
 
-<p>In these environments, if a node goes down, SQL Relay will attempt to re-establish the connection, but rather than failing until the node comes back up, the new connection will more likely just succeed to a different node in the cluster.  Over time, this can lead to disproportionate load-balancing, with a bias toward nodes that have never gone down.</p>
+<p>In these environments, if a node goes down, SQL Relay will attempt to re-establish the connection, but rather than failing until the node comes back up, the new connection will more likely just succeed to a different node in the cluster.  Over time, this can lead to disproportionate load balancing, with a bias toward nodes that have never gone down.</p>
 
 <p>SQL Relay manages this by "shuffling" the connections periodically.  Every so often, each database connection is re-established, giving that connection a chance to be re-established to a node that may have gone down but is now back up.</p>
 
-<p>To indicate to SQL Relay that the nodes are already-load-balanced, and need to be "shuffled" periodically, only one connection tag should be used, with the behindloadbalancer attribute set to "yes".</p>
+<p>To indicate to SQL Relay that the nodes are already-load balanced, and need to be "shuffled" periodically, only one connection tag should be used, with the behindloadbalancer attribute set to "yes".</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -3726,12 +3742,13 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <br/><br/><a name="masterslave"/><h2>Master-Slave Query Routing</h2>
 
-<p>The load-balancing scenarios described above all assume that master-master replication is being used.  SQL Relay supports master-slave replication as well.</p>
+<p>The load balancing scenarios described above all assume that master-master replication is being used.  SQL Relay supports master-slave replication as well.</p>
 
 <p>In a master-slave replication environment, SQL Relay can be configured to route DML and DDL queries to the master and distribute selects over the slaves.</p>
 
-<p><img src="../images/router.png"/></p>
-
+<blockquote>
+<img src="../images/router.png"/>
+</blockquote>
 <p>This actually requires 3 instances of SQL Relay.  One to connect to the master, one to connect to the slaves, and a third to route queries to the first two.</p>
 
 <blockquote>
@@ -3830,25 +3847,85 @@ sqlr-start -id router
 </pre>
 
 </blockquote>
-<br/><br/><a name="frontendlb"/><h2>Front-End Load-Balancing and Fail-Over</h2>
+<br/><br/><a name="frontendlb"/><h2>Front-End Load Balancing and Failover</h2>
 
-<p>If you are building out a high availability environment, or if your pool of application servers is just sufficiently large, you might want to set up a pool of SQL Relay servers between your application servers and the database.</p>
+<p>If you are building out a high availability environment, or if your pool of application servers is just sufficiently large, you might want to set up a pool of SQL Relay servers between your application servers and the database, and distribute client applications over the pool using host randomization, a load balancing appliance, or round-robin DNS.</p>
 
-<p>SQL Relay supports two front-end load-balancing and fail-over strategies.  In the first strategy, load-balancing and fail-over are provided by an appliance or application cluster.  In the second, SQL Relay provides its own load-balancing and fail-over, with some help from DNS.</p>
+<br/><a name="hostrand"/><h3>Host Randomization</h3>
 
-<p>Multiple instances of SQL Relay can be placed behind a load-balancing appliance.</p>
+<p>Since version 2.0.1, host randomization can be used to distribute SQL Relay client sessions over a pool of SQL Relay hosts.</p>
 
-<p><img src="../images/loadbalancer.png"/></p>
+<blockquote>
+<img src="../images/hostrand.png"/>
+</blockquote>
+<p>Any application which uses one of the SQL Relay Native APIs, including applications which use the SQL Relay driver for a database abstraction layer, can be configured to connect to a set of servers instead of just a single server by specifying the host or server parameter as a comma-separated set of hosts.  Internally, the API will attempt to connect to a random host in the set, until the attempt succeeds, or there are no more hosts left to try.</p>
 
-<p>In this illustration, the load-balancing appliance is shown as a single machine, but in a true HA environment, there would be 2 or more appliances sharing a virtual IP.  Alternatively, rather than using an appliance, SQL Relay can be run on an application server cluster such as Linux Virtual Server.</p>
+<br/><p>For example, the sqlrsh command line tool can be configured to connect to sqlr01, sqlr02, and sqlr03 as follows:</p>
 
-<p><a target="_blank" href="http://en.wikipedia.org/wiki/Round-robin_DNS">Round-robin DNS</a> can be also be used to provide load-balancing and fail-over over multiple SQL Relay servers.</p>
+<blockquote>
+  <pre>sqlrsh -host sqlr01,sqlr02,sqlr03 -user scott -password tiger
+</pre>
 
-<p><img src="../images/rrdns.png"/></p>
+</blockquote>
+<p>Other SQL Relay command line tools can be configured similarly.</p>
 
+<br/><p>A program written using the SQL Relay Native API for C++ can be configured to connect to the same set of hosts as follows:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>	<font color="#008080">sqlrconnection</font>	<font color="#990000">*</font>con<font color="#990000">=</font><b><font color="#0000FF">new</font></b> <b><font color="#000000">sqlrconnection</font></b><font color="#990000">(</font><font color="#FF0000">"sqlr01,sqlr02,sqlr03"</font><font color="#990000">,</font><font color="#993399">9000</font><font color="#990000">,</font>NULL<font color="#990000">,</font><font color="#FF0000">"scott"</font><font color="#990000">,</font><font color="#FF0000">"tiger"</font><font color="#990000">,</font><font color="#993399">0</font><font color="#990000">,</font><font color="#993399">1</font><font color="#990000">);</font></tt></pre>
+
+</blockquote>
+<p>Other SQL Relay Native APIs can be configured similarly.</p>
+
+<br/><p>A program that uses the SQL Relay driver for ODBC can be configured as follows:</p>
+
+<blockquote>
+  <pre>[sqlrexample]
+Description=Connection to SQL Relay Pool
+Driver=SQLRelay
+Server=sqlr01,sqlr02,sqlr03
+Port=9000
+Socket=
+User=scott
+Password=tiger
+</pre>
+
+</blockquote>
+<p>A program that uses the SQL Relay driver for PHP PDO can be configured as follows:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>my $dbh<font color="#990000">=</font>DBI<font color="#990000">-&gt;</font><b><font color="#000000">connect</font></b><font color="#990000">(</font><font color="#FF0000">"DBI:SQLRelay:host=sqlr01,sqlr02,sqlr03;port=9000"</font><font color="#990000">,</font><font color="#FF0000">"scott"</font><font color="#990000">,</font><font color="#FF0000">"tiger"</font><font color="#990000">);</font></tt></pre>
+
+</blockquote>
+<p>Programs that use SQL Relay drivers for other database abstraction layers can be configured similarly.</p>
+
+<br/><a name="lbapp"/><h3>Load Balancing Appliance</h3>
+
+<p>Multiple instances of SQL Relay can be placed behind a load balancing appliance.</p>
+
+<blockquote>
+<img src="../images/loadbalancer.png"/>
+</blockquote>
+<p>In this illustration, the load balancing appliance is shown as a single machine, but in a true HA environment, there would be 2 or more appliances sharing a virtual IP.  Alternatively, rather than using an appliance, SQL Relay can be run on an application server cluster such as Linux Virtual Server.</p>
+
+<br/><a name="rrdns"/><h3>Round-Robin DNS</h3>
+
+<p><a target="_blank" href="http://en.wikipedia.org/wiki/Round-robin_DNS">Round-robin DNS</a> can be also be used to distribute clients over multiple SQL Relay servers.</p>
+
+<blockquote>
+<img src="../images/rrdns.png"/>
+</blockquote>
 <p>In a round-robin DNS scenario, multiple IP addresses are assigned to the same host name.  The SQL Relay client is then configured to connect to that host.  When it requests the IP addresses for the host, the client receives all of the IP addresses assigned to it, rather than just a single address.</p>
 
-<p>Round-robin DNS is so-called because, traditionally, the order of the IP addresses returned on successive requests alternated reliably, in round-robin fashion.  This behavior persists in many environments, but it is no longer guaranteed, as many modern DNS resolvers sort the list and return the IP addresses in the same order, every time.  SQL Relay clients randomize the list though, and try to connect to each of the IP addresses, one-at-a-time, until they succeed.  Doing so provides both load-balancing and fail-over without requiring an appliance or application server cluster.</p>
+<p>Round-robin DNS is so-called because, traditionally, the order of the IP addresses returned on successive requests alternated reliably, in round-robin fashion.  This behavior persists in many environments, but it is no longer guaranteed, as many modern DNS resolvers sort the list and return the IP addresses in the same order, every time.  SQL Relay clients randomize the list though, and try to connect to each of the IP addresses, one-at-a-time, until they succeed.  Doing so provides both load balancing and failover without requiring an appliance or application server cluster.</p>
 
 <hr/>
 
@@ -4318,10 +4395,13 @@ http://www.gnu.org/software/src-highlite -->
   <li>SQL Relay must be able to write to "run" and "log" directories.  However, when installed from packages, the /var/run/sqlrelay and /var/log/sqlrelay directories are owned by sqlrelay/sqlrelay and have fairly restrictive 755 permissions.  Thus, the permissions on these directories must be manually changed if runasuser or runasgroup are set to any value other than "sqlrelay".  This is not an issue if SQL Relay is built from source, and is not an issue on Windows.</li>
 </ul>
 
-<br/><br/><a name="deniedallowedips"/><h2>Allowed/Denied IP Addresses</h2>
+<br/><br/><a name="deniedallowedips"/><h2>IP Filtering</h2>
 
 <p>By default, clients from any IP address are allowed to connect to the SQL Relay srever.  However, the deinedips and allowedips attributes can be used to restrict the set of IP addresses that clients can connect from.</p>
 
+<blockquote>
+<img src="../images/ip-filtering.png"/>
+</blockquote>
 <p>The deniedips attribute can be configured with a <a target="_blank" href="http://www.regular-expressions.info">regular expression</a> indicating which IP address will be denied access.  The allowedips attribute can also be configured with a <a target="_blank" href="http://www.regular-expressions.info">regular expression</a> to override the deniedips attribute.</p>
 
 <p>For example, to deny all clients except clients connecting from the 192.168.2.0 and 64.45.22.0 networks:</p>
@@ -4758,6 +4838,10 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>Connection schedules enable the SQL Relay server to control when users are allowed to access the database.</p>
 
+<blockquote>
+<img src="../images/dayshift.png"/>
+<img src="../images/nightshift.png"/>
+</blockquote>
 <p>Connection schedules are implemented by loadable modules.  The <i>schedules</i> section of the configuration file indicates which modules to load and what parameters to use when executing them.</p>
 
 <blockquote>
@@ -5057,8 +5141,12 @@ http://www.gnu.org/software/src-highlite -->
 
 <br/><br/><a name="filtering"/><h2>Query Filtering</h2>
 
-<p>Query Filter modules enable the SQL Relay server programs to filter out queries, and not pass them along to the database.</p>
+<p>Query Filter modules enable the SQL Relay server programs to accept some queries, and filter out other queries, not passing them along to the database.</p>
 
+<blockquote>
+<img src="../images/query-allowed.png"/><br/>
+<img src="../images/query-rejected.png"/>
+</blockquote>
 <p>Query filters are implemented by loadable modules.  The <i>filters</i> section of the configuration file indicates which filter modules to load and what parameters to use when executing them.</p>
 
 <blockquote>
@@ -5429,6 +5517,9 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>Query translation enables the SQL Relay server to modify queries before passing them to the database.</p>
 
+<blockquote>
+<img src="../images/translation-query.png"/>
+</blockquote>
 <p>Query translation is implemented by loadable modules.  The <i>translations</i> section of the configuration file indicates which translation modules to load and what parameters to use when executing them.</p>
 
 <blockquote>
@@ -5903,6 +5994,9 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>Result set translation enables the SQL Relay server to modify fields in the result set before returning the field to the client.</p>
 
+<blockquote>
+<img src="../images/translation-resultset.png"/>
+</blockquote>
 <p>Result set translation is implemented by loadable modules.  The <i>resultsettranslations</i> section of the configuration file indicates which result set translation modules to load and what parameters to use when executing them.</p>
 
 <blockquote>
@@ -6082,6 +6176,9 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>Error translation enables the SQL Relay server to modify errors before passing them back to the client.</p>
 
+<blockquote>
+<img src="../images/translation-errors.png"/>
+</blockquote>
 <p>Error translation is implemented by loadable modules. The errortranslations section of the configuration file indicates which error translation modules to load and what parameters to use when executing them.</p>
 
 <blockquote>
@@ -6471,7 +6568,7 @@ select <font color="#990000">*</font> from exampletable
 </tt></pre>
 
 </blockquote>
-<p>Note that (currently) the only database backend that supports executedirect is ODBC, and the only ODBC driver where it is known to improve performance is the MS SQL Server driver.  In that environment, this directive can yield a noticeable performance improvement for queries without bind variables, and which won't be reexecuted immediately.</p>
+<p>Note that (currently) the only database back-end that supports executedirect is ODBC, and the only ODBC driver where it is known to improve performance is the MS SQL Server driver.  In that environment, this directive can yield a noticeable performance improvement for queries without bind variables, and which won't be reexecuted immediately.</p>
 
 <br/><h3>sqlprepare</h3>
 
@@ -6487,7 +6584,7 @@ select <font color="#990000">*</font> from exampletable
 </tt></pre>
 
 </blockquote>
-<p>Note that (currently) the only database backend that supports direct execution is ODBC, and the only ODBC driver where it is known to improve performance is the MS SQL Server driver.  In that environment, the executedirect=yes option can yield a noticeable performance improvement for queries without bind variables, and which won't be reexecuted immediately.  If this is the case for most of your queries, then it makes sense to set executedirect=yes and override it using this directive as needed.</p>
+<p>Note that (currently) the only database back-end that supports direct execution is ODBC, and the only ODBC driver where it is known to improve performance is the MS SQL Server driver.  In that environment, the executedirect=yes option can yield a noticeable performance improvement for queries without bind variables, and which won't be reexecuted immediately.  If this is the case for most of your queries, then it makes sense to set executedirect=yes and override it using this directive as needed.</p>
 
 <br/><h3>querytimeout</h3>
 
@@ -6505,7 +6602,7 @@ select <font color="#990000">*</font> from exampletable
 </blockquote>
 <p>Note that this directive takes a colon-delimited parameter, the number of seconds.  Setting a timeout of 0 seconds (or removing the parameter) disables the timeout.</p>
 
-<p>Note that (currently) the only database backend that supports query timeouts is ODBC.  It is known to work with the MS SQL Server driver, though it likely works with some other ODBC drivers as well.</p>
+<p>Note that (currently) the only database back-end that supports query timeouts is ODBC.  It is known to work with the MS SQL Server driver, though it likely works with some other ODBC drivers as well.</p>
 
 <br/><a name="singlestep"/><h2>singlestep</h2>
 
@@ -6572,11 +6669,13 @@ select <font color="#990000">*</font> from smalltable
 </blockquote>
 <hr/>
 
-<br/><a name="queryrouting"/><h1>Query Routing</h1>
+<br/><a name="routing"/><h1>Query and Session Routing</h1>
 
 <p>Query routing enables the SQL Relay server to send one set of queries to one database, another set of queries to another, another set of queries to another, and so on.</p>
 
-<p>To route queries, one instance of SQL Relay must be configured as a router to route queries to other instances of SQL Relay which are configured normally.</p>
+<p>Session routing sends entire sessions to one database or another; by user, by intercepting "use database" queries, by client ip address, or by other criteria.</p>
+
+<p>To route queries or sessions, one instance of SQL Relay must be configured as a router to route queries to other instances of SQL Relay which are configured normally.</p>
 
 <p>A typical use case is to configure one instance of SQL Relay to maintain connections to a master database and another instance of SQL Relay to maintain connections to a pool of slaves, then set up a third instance of SQL Relay to route queries to the other 2 instances.</p>
 
@@ -6587,7 +6686,7 @@ select <font color="#990000">*</font> from smalltable
 
 <p>There are other possiblities as well though.</p>
 
-<p>The actual query routing itself is implemented by loadable modules.  The <i>routers</i> section of the configuration file indicates which router modules to load and what parameters to use when executing them.</p>
+<p>The actual routing itself is implemented by loadable modules.  The <i>routers</i> section of the configuration file indicates which router modules to load and what parameters to use when executing them.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -6742,7 +6841,7 @@ http://www.gnu.org/software/src-highlite -->
   <li><b>fetchatonce</b> - the number of rows to fetch at a time (defaults to 10, 0 means fetch the entire result set)</li>
 </ul>
 
-<p>Note the use of a notification module to notify <i>dba@firstworks.com</i> if an <i>integrity_violation</i> event occurs.  SQL Relay must maintain parallel transactions on all databases that a query may be routed to.  An integrity violation occurs when a transaction control query (begin, commit, rollback, autocommit on, or autocommit off) succeeds on some of the backends but fails on others.  See <a href="#notifications">Notifications</a> for information about notification modules.</p>
+<p>Note the use of a notification module to notify <i>dba@firstworks.com</i> if an <i>integrity_violation</i> event occurs.  SQL Relay must maintain parallel transactions on all databases that a query may be routed to.  An integrity violation occurs when a transaction control query (begin, commit, rollback, autocommit on, or autocommit off) succeeds on some of the back-ends but fails on others.  See <a href="#notifications">Notifications</a> for information about notification modules.</p>
 
 <br/><p>Master-slave routing isn't all that the <b>regex</b> module can do though.</p>
 
@@ -6826,6 +6925,9 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>The <b>userlist</b> module routes queries by matching the user that ran the query against a list of users.</p>
 
+<blockquote>
+<img src="../images/router-user.png"/>
+</blockquote>
 <p>An example configuration follows.</p>
 
 <blockquote>
@@ -6913,6 +7015,9 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>The <b>clientiplist</b> module routes queries by matching the client that ran the query against a list of IP addresses.</p>
 
+<blockquote>
+<img src="../images/router-client-ip.png"/>
+</blockquote>
 <p>An example configuration follows.</p>
 
 <blockquote>
@@ -7070,6 +7175,9 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>The <b>usedatabase</b> module enables you to access databases across multiple database instances via the same SQL Relay front-end with "use database" queries.</p>
 
+<blockquote>
+<img src="../images/router-use-database.png"/>
+</blockquote>
 <p>For example, lets say you have two database instances:</p>
 
 <p>A MySQL/MariaDB instance that hosts 3 databases:</p>
@@ -7486,7 +7594,7 @@ INDEX MINE PROCESSID CONNECT STATE                 STATE_TIME   CLIENT_ADDR CLIE
   <ul>
     <li>NOT_AVAILABLE - the current state is not available</li>
     <li>INIT - the process is initializing</li>
-    <li>WAIT_FOR_AVAIL_DB - the process is waiting for the backend database to become available</li>
+    <li>WAIT_FOR_AVAIL_DB - the process is waiting for the back-end database to become available</li>
     <li>WAIT_CLIENT - the process is waiting for a client to connect</li>
     <li>SESSION_START - the client session is in the process of starting</li>
     <li>GET_COMMAND - the process is waiting for the client to send it a command</li>
@@ -7635,6 +7743,9 @@ module_compiled        Oct 24 2019 22:20:05
 
 <p>Triggers enable SQL Relay to execute arbitrary code either before, or after a query is run.  They are similar to a database trigger, but they run inside of SQL Relay, rather than inside of the database.   As such, they are not limited to databaes operations.  They can run queries, make library or system calls, run shell commands, and anything else that an os-level application can do.</p>
 
+<blockquote>
+<img src="../images/triggers.png"/>
+</blockquote>
 <p>Triggers are implemented by loadable modules.  The <i>triggers</i> section of the configuration file indicates which modules to load and what parameters to use when executing them.</p>
 
 <blockquote>
@@ -8575,6 +8686,9 @@ example  example-0     27168          0         select * from thattable 2019-10-
 
 <p>Notifications allow the SQL Relay server programs to notify recipients when a specified set of events occur. </p>
 
+<blockquote>
+<img src="../images/notifications.png"/>
+</blockquote>
 <p>Notifications are implemented by loadable modules.  The <i>notifications</i> section of the configuration file indicates which notification modules to load and what parameters to use when executing them.</p>
 
 <blockquote>
@@ -8711,7 +8825,7 @@ http://www.gnu.org/software/src-highlite -->
   <li><b>internal_warning</b> - An internal warning occurred.</li>
   <li><b>debug_message</b> - A debug message was generated.</li>
   <li><b>schedule_violation</b> - A <a href="#schedules">connection schedule module</a> prevented a user from logging in to the SQL Relay server.</li>
-  <li><b>integrity_violation</b> - A <a href="#queryrouting">query routing module</a> is in use and a transaction control query (begin, commit, rollback, autocommit on, or autocommit off) succeeded on some of the backends but failed on others.</li>
+  <li><b>integrity_violation</b> - A <a href="#routing">query routing module</a> is in use and a transaction control query (begin, commit, rollback, autocommit on, or autocommit off) succeeded on some of the back-ends but failed on others.</li>
 </ul>
 
 <p>Any number of events may be specified.  Each event must be specified in its own <b>event</b> tag.  The event tag supports the following attributes:</p>
@@ -9053,6 +9167,9 @@ http://myuser:mypassword@configserver.mydomain.com/sqlrconfig/db2.conf
 
 <br/><a name="advanced"/><h1>Advanced Configuration</h1>
 
-The configuration file supports many more attributes and features than the ones described in this guide including tuning options.  See the <a href="configreference.html">SQL Relay Configuration Reference</a> and <a href="tuning.html">Tuning SQL Relay</a> for more information.
-</body>
-</html>
+<p>The configuration file supports many more attributes and features than the ones described in this guide including tuning options.  See the <a href="configreference.html">SQL Relay Configuration Reference</a> and <a href="tuning.html">Tuning SQL Relay</a> for more information.</p>
+
+<!--#include virtual="../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

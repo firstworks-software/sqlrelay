@@ -1,3 +1,9 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
 = Programming with SQL Relay using JDBC =
 
 The SQL Relay distribution does not provide a native JBCD driver, but by using the JDBC-ODBC bridge provided by most Java distributions, applications which use JDBC on Unix or Linux may access databases through SQL Relay via the ODBC driver.
@@ -90,3 +96,7 @@ storing settings..
 Similarly, any program that uses JDBC can be configured to use SQL Relay via JDBC by setting its database url to jdbc:odbc:DSN where //DSN// is replaced with the ODBC DSN defined in /etc/odbc.ini.
 
 Developing applications which use JDBC is beyond the scope if this document but many examples and tutorials may be found on the web.
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

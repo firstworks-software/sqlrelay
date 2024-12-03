@@ -1,0 +1,63 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
+= Notifications =
+
+The SQL Relay server can notify recipients when various events occur.
+
+[[Image(../images/notifications.png,nolink)]]
+
+[[br]]
+[[br]]
+
+{{{#!td
+Supported events include:
+
+* '''client_connected'''
+* '''client_connection_refused'''
+* '''client_disconnected'''
+* '''client_protocol_error'''
+* '''db_login'''
+* '''db_logout'''
+* '''db_error'''
+* '''db_warning'''
+* '''query_executed'''
+* '''filter_violation'''
+* '''internal_error'''
+* '''internal_warning'''
+* '''debug_message'''
+* '''schedule_violation'''
+* '''integrity_violation'''
+}}}
+{{{#!td
+<div style="margin-left: 80px;">
+Use the default notification template, or design your own.
+
+<div class="code">
+{{{
+SQL Relay Notification:
+
+Event          : @event@
+Event Info     : @eventinfo@
+Date           : @datetime@
+Host Name      : @hostname@
+Instance       : @instance@
+Process Id     : @pid@
+Client Address : @clientaddr@
+Client Info    : @clientinfo@
+User           : @user@
+Query          :
+@query@
+}}}
+</div>
+</div>
+}}}
+
+[[br]]
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

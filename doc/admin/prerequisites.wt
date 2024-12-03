@@ -1,3 +1,9 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
 = Installing SQL Relay Prerequisites =
 
 * [#platforms Platforms]
@@ -435,3 +441,7 @@ Support for ODBC is provided by Visual Studio and Windows itself.  No additional
 On Linux and Unix platforms, SQL Relay uses !FreeTDS is generally used to access Microsoft SQL Server but on Windows, ODBC is used instead.  The ODBC driver for SQL Server must be installed to connect to a SQL Server database, but no additional software needs to be installed to build SQL Relay.
 
 }}}
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

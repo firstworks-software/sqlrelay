@@ -1,9 +1,9 @@
-<html>
-<head>
-	<title>Programming with SQL Relay using ODBC</title>
-	<link rel="stylesheet" href="../css/styles.css">
-</head>
-<body>
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../contentstart.html"-->
+
 <h1>Programming with SQL Relay using ODBC</h1>
 
 <p>The SQL Relay distribution provides an ODBC driver, enabling applications which use ODBC to access SQL Relay.</p>
@@ -80,7 +80,7 @@ Password<font color="#990000">=</font>examplepass</tt></pre>
   </ul>
 
   <li><b>FileUsage</b> - Always set to 0.  0 indicates that the driver is an RDBMS driver.  1 means that each file is a table (eg. Xbase).  2 means that each file is an entire database (eg. Access).  This parameter is not available via the Windows control panel because it is configured during installation.</li>
-  <li><b>Server</b> - The SQL Relay server to connect to.</li>
+  <li><b>Server</b> - The SQL Relay server to connect to.  If Server is a comma-separated list of hosts, then an attempt will be made to connect to each until the attempt succeeds, or there are no more hosts left to try.</li>
   <li><b>Port</b> - The port that the SQL Relay server is listening on. Either port or socket must be specified. If both are specified, socket will be preferred to port.</li>
   <li><b>Socket</b> - The socket that the SQL Relay server is listening on. Either port or socket must be specified. If both are specified, socket will be preferred to port.</li>
   <li><b>User</b> - The username to use when logging into SQL Relay.</li>
@@ -218,6 +218,9 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>Similarly, you could use SQL Relay via ODBC with PHP/PDO, PHP/ADODB, Java/JDBC (<a href="jdbc.html">using the JDBC-ODBC bridge</a>), with the ODBC Adapter for Ruby on Rails, and so on.</p>
 
-Developing applications which use ODBC is beyond the scope if this document but many examples and tutorials can be found on the web.
-</body>
-</html>
+<p>Developing applications which use ODBC is beyond the scope if this document but many examples and tutorials can be found on the web.</p>
+
+<!--#include virtual="../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

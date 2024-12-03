@@ -111,7 +111,7 @@ distclean: clean
 		test/sqlrelay.conf.d/*.conf \
 		msvc/setupx64/setupx64.vdproj \
 		msvc/setupx86/setupx86.vdproj \
-		doc/admin/installingpkg.wt \
+		doc/installingpkg.wt \
 		configure.lineno \
 		test/testresults.log \
 		test/testdetails.log \

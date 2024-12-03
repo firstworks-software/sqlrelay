@@ -45,9 +45,10 @@ OBJS = ado.net.html \
 	tcl.html
 
 .wt.html:
-	wt -i $< -o $@ -xhtml xhtml.conf
+	wt -i $< -o $@
 
 all: $(OBJS)
+	$(CHMOD) 755 *.html
 
 clean:
 	$(RM) $(OBJS)

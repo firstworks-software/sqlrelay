@@ -1,3 +1,9 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
 = The tlscert Parameter =
 
 SQL Relay supports a '''tlscert''' parameter in the SQL Relay server's configuration file, and as an argument to the various command line client programs.  In either case, it specifies the TLS certificate chain to use.
@@ -74,3 +80,7 @@ For certificates in a Windows Certificate store:
  * CA
  * (if omitted, it defaults to MY)
 * The subject part identifies the certificate.  The first certificate in the specified location/store who's Subject contains the specified subject (in a case-insensitive comparison) will be used.  Note that the order of the certificates in the store is not guaranteed, so the specified subject should contain enough information to uniquely identify a certificate.
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

@@ -1,9 +1,9 @@
-<html>
-<head>
-	<title>Programming with SQL Relay using the Python DB-API</title>
-	<link rel="stylesheet" href="../css/styles.css">
-</head>
-<body>
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../contentstart.html"-->
+
 <h1>Programming with SQL Relay using the Python DB-API</h1>
 
 <ul>
@@ -40,6 +40,16 @@ cur<font color="#990000">=</font>con<font color="#990000">.</font><b><font color
 </tt></pre>
 
 </blockquote>
+<p>The parameters of the connect method are:</p>
+
+<ul>
+  <li><b>host</b> - The SQL Relay server to connect to.  If host is a comma-separated list of hosts, then an attempt will be made to connect to each until the attempt succeeds, or there are no more hosts left to try.</li>
+  <li><b>port</b> - The port that the SQL Relay server is listening on.  Either port or socket must be specified.  If both are specified, socket will be preferred to port.</li>
+  <li><b>socket</b> - The socket that the SQL Relay server is listening on.  Either port or socket must be specified.  If both are specified, socket will be preferred to port.</li>
+  <li><b>tries</b> - If a connection fails, it will be retried this many times.</li>
+  <li><b>retrytime</b> - If a connection fails, it will be retried on this interval (in seconds).</li>
+</ul>
+
 <p>In addition to the parameters above, the following named parameters can be used to control attributes of the connection.</p>
 
 <ul>
@@ -206,7 +216,7 @@ scale.</p>
 
 <p>A feature of the prepare/bind/execute paradigm is the ability to prepare, 
 bind and execute a query once, then re-bind and re-execute the query 
-over and over without re-preparing it.  If your backend database natively 
+over and over without re-preparing it.  If your back-end database natively 
 supports this paradigm, you can reap a substantial performance improvement.</p>
 
 <p>The Python DB-API supports this paradigm via the executemany method.  If you
@@ -1187,5 +1197,7 @@ http://www.gnu.org/software/src-highlite -->
 <blockquote>
 <b>select last insert rowid</b>
 </blockquote>
-</body>
-</html>
+<!--#include virtual="../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

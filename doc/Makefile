@@ -4,19 +4,45 @@ include ../config.mk
 
 .SUFFIXES: .wt .html
 
-SRCS = index.wt faq.wt
-OBJS = index.html faq.html
+SRCS = documentation.wt faq.wt
+OBJS = documentation.html faq.html
 
 .wt.html:
-	wt -i $< -o $@ -xhtml xhtml.conf
+	wt -i $< -o $@
 
 all: $(OBJS)
+	$(CHMOD) 755 $(OBJS)
 	cd admin $(AND) $(MAKE)
 	cd features $(AND) $(MAKE)
 	cd programming $(AND) $(MAKE)
 
 install:
 	$(MKINSTALLDIRS) $(docdir)
+	$(CP) .htaccess $(docdir)
+	$(CHMOD) 755 $(docdir)/.htaccess
+	$(CP) *.html $(docdir)
+	$(CHMOD) 755 $(docdir)/*.html
+	$(MKINSTALLDIRS) $(docdir)/css
+	$(CP) css/* $(docdir)/css
+	$(CHMOD) 644 $(docdir)/css/*
+	$(MKINSTALLDIRS) $(docdir)/images
+	$(CP) images/*.jpg $(docdir)/images
+	$(CP) images/*.png $(docdir)/images
+	$(CP) images/*.PNG $(docdir)/images
+	$(CP) images/*.ico $(docdir)/images
+	$(CHMOD) 644 $(docdir)/images/*
+	$(MKINSTALLDIRS) $(docdir)/js
+	$(CP) js/* $(docdir)/js
+	$(CHMOD) 644 $(docdir)/js/*
+	$(MKINSTALLDIRS) $(docdir)/licenses
+	$(CP) licenses/* $(docdir)/licenses
+	$(CHMOD) 644 $(docdir)/licenses/*
+	$(MKINSTALLDIRS) $(docdir)/presentation
+	$(CP) presentation/* $(docdir)/presentation
+	$(CHMOD) 755 $(docdir)/presentation/*
+	$(MKINSTALLDIRS) $(docdir)/slides
+	$(CP) slides/* $(docdir)/slides
+	$(CHMOD) 755 $(docdir)/slides/*
 	$(MKINSTALLDIRS) $(docdir)/admin
 	$(MKINSTALLDIRS) $(docdir)/api
 	$(MKINSTALLDIRS) $(docdir)/api/ado.net/html
@@ -46,10 +72,8 @@ install:
 	$(MKINSTALLDIRS) $(docdir)/js
 	$(MKINSTALLDIRS) $(docdir)/css
 	$(MKINSTALLDIRS) $(docdir)/programming
-	$(CP) *.html $(docdir)
-	$(CHMOD) 644 $(docdir)/*.html
 	$(CP) admin/*.html $(docdir)/admin
-	$(CHMOD) 644 $(docdir)/admin/*.html
+	$(CHMOD) 755 $(docdir)/admin/*.html
 	$(CP) css/*.css $(docdir)/css
 	$(CHMOD) 644 $(docdir)/css/*.css
 	$(CP) api/ado.net/html/*.html $(docdir)/api/ado.net/html
@@ -175,7 +199,7 @@ install:
 	$(CP) api/nodejs/html/*.js $(docdir)/api/nodejs/html
 	$(CHMOD) 644 $(docdir)/api/nodejs/html/*.js
 	$(CP) features/*.html $(docdir)/features
-	$(CHMOD) 644 $(docdir)/features/*.html
+	$(CHMOD) 755 $(docdir)/features/*.html
 	$(CP) images/*.png $(docdir)/images
 	$(CHMOD) 644 $(docdir)/images/*.png
 	$(CP) images/*.PNG $(docdir)/images
@@ -183,7 +207,10 @@ install:
 	$(CP) js/*.js $(docdir)/js
 	$(CHMOD) 644 $(docdir)/js/*.js
 	$(CP) programming/*.html $(docdir)/programming
-	$(CHMOD) 644 $(docdir)/programming/*.html
+	$(CHMOD) 755 $(docdir)/programming/*.html
+	$(MKINSTALLDIRS) $(docdir)/support
+	$(CP) support/* $(docdir)/support
+	$(CHMOD) 644 $(docdir)/support/*
 
 uninstall:
 	$(RMTREE) $(docdir)

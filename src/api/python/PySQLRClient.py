@@ -28,11 +28,22 @@ class sqlrconnection:
 
     def __init__(self, host, port, socket, user, password, retrytime=0, tries=1):
         """ 
-        Opens a connection to the sqlrelay server and auths with
-        user and password.  Failed connections are retried for tries times,
-        waiting retrytime seconds between each try.  If tries is 0 then retries
-        will continue forever.  If retrytime is 0 then retries will be attempted
-        on a default interval.
+        Initiates a connection to "server" on "port" or to the unix "socket" on
+        the local machine and auths with "user" and "password".  Failed
+        connections will be retried for "tries" times, waiting "retrytime"
+        seconds between each try.  If "tries" is 0 then retries will continue
+        forever.  If "retrytime" is 0 then retries will be attempted on a
+        default interval.
+
+        If "server" is a comma-separated list of hosts, then an attempt will be
+        made to connect to each until the attempt succeeds, or there are no
+        more hosts left to try.
+
+        If the "socket" parameter is neither NULL nor "" then an
+        attempt will be made to connect through it before
+        attempting to connect to "server" on "port".  If it is NULL
+        or "" then no attempt will be made to connect through the
+        socket.
         """
         self.connection = CSQLRelay.sqlrcon_alloc(host, port, socket, user, password, retrytime, tries)
 

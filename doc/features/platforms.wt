@@ -1,0 +1,106 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
+= Platform Compatibility =
+
+The SQL Relay server can be built and run on most unix-like and Windows operating systems, independent of architecture, and can provide access to databases supported by that operating system.  The SQL Relay client can also be built and run on unix-like and Windows operating systems, independent of architecture.
+
+{{{#!blockquote
+[[Image(../images/proxying.png,nolink)]]
+}}}
+
+Since the SQL Relay client and server can run on different machines, SQL Relay can provide access to databases from a wide variety of platforms not supported by the database vendor.
+
+For example, Oracle doesn't support various embedded Linux platforms, !FreeBSD, !NetBSD or !OpenBSD.
+
+However, if you:
+
+* run the SQL Relay server software on an Oracle-supported platform such as x64 Linux
+* configure the SQL Relay server to talk to an Oracle database
+* install the SQL Relay client software on the unsupported platform
+* configure the SQL Relay client software to talk to the SQL Relay server
+
+...then, software on the unsupported machine can access the Oracle database.
+
+{{{#!blockquote
+{{{#!td
+[[Image(../images/freebsd-i386-thumb.png,link=../images/freebsd-i386.png)]][[br]]
+[../images/freebsd-i386.png FreeBSD i386][[br]]
+([http://www.freebsd.org www.freebsd.org])[[br]][[br]]
+}}}
+{{{#!td
+[[Image(../images/netbsd-i386-thumb.png,link=../images/netbsd-i386.png)]][[br]]
+[../images/netbsd-i386.png NetBSD i386][[br]]
+([http://www.netbsd.org www.netbsd.org])
+}}}
+{{{#!td
+[[Image(../images/openbsd-i386-thumb.png,link=../images/openbsd-i386.png)]][[br]]
+[../images/openbsd-i386.png OpenBSD i386][[br]]
+([http://www.openbsd.org www.openbsd.org])
+}}}
+{{{#!td
+[[Image(../images/minix-thumb.png,link=../images/minix.png)]][[br]]
+[../images/minix.png Minix][[br]]
+([http://www.minix3.org www.minix3.org])
+}}}
+{{{#!td
+[[Image(../images/redhat62-sparc-thumb.png,link=../images/redhat62-sparc.png)]][[br]]
+[../images/redhat62-sparc.png Redhat 6.2 Sparc][[br]]
+([ftp://ftp.archive.download.redhat.com/pub/redhat/linux/6.2/en/iso/sparc redhat archive])
+}}}
+|-
+{{{#!td
+[[Image(../images/netbsd-vax-thumb.png,link=../images/netbsd-vax.png)]][[br]]
+[../images/netbsd-vax.png NetBSD VAX][[br]]
+([http://www.netbsd.org/ports/vax www.netbsd.org/ports/vax])[[br]][[br]]
+}}}
+{{{#!td
+[[Image(../images/netbsd-sparc-thumb.png,link=../images/netbsd-sparc.png)]][[br]]
+[../images/netbsd-sparc.png NetBSD Sparc][[br]]
+([http://www.netbsd.org/ports/sparc www.netbsd.org/ports/sparc])
+}}}
+{{{#!td
+[[Image(../images/openbsd-sparc-thumb.png,link=../images/openbsd-sparc.png)]][[br]]
+[../images/openbsd-sparc.png OpenBSD Sparc][[br]]
+([http://www.openbsd.org/sparc.html www.openbsd.org/sparc.html])
+}}}
+{{{#!td
+[[Image(../images/i386-linux-uclibc-thumb.png,link=../images/i386-linux-uclibc.png,margin-top=19px)]][[br]]
+[../images/i386-linux-uclibc.png uClibc/Linux i386][[br]]
+([http://buildroot.uclibc.org buildroot.uclibc.org])
+}}}
+{{{#!td
+[[Image(../images/arm-linux-uclibc-thumb.png,link=../images/arm-linux-uclibc.png
+)]][[br]]
+[../images/arm-linux-uclibc.png uClibc/Linux ARM][[br]]
+([http://buildroot.uclibc.org buildroot.uclibc.org])
+}}}
+|-
+{{{#!td
+[[Image(../images/haiku-thumb.png,link=../images/haiku.png)]][[br]]
+[../images/haiku.png Haiku][[br]]
+([http://www.haiku-os.org www.haiku-os.org])
+}}}
+{{{#!td
+[[Image(../images/syllable-thumb.png,link=../images/syllable.png)]][[br]]
+[../images/syllable.png Syllable][[br]]
+([http://syllable.org syllable.org])
+}}}
+{{{#!td
+[[Image(../images/hurd-i386-thumb.png,link=../images/hurd-i386.png)]][[br]]
+[../images/hurd-i386.png Debian GNU/Hurd][[br]]
+([http://www.debian.org/ports/hurd/ debian.org/ports/hurd])
+}}}
+{{{#!td
+[[Image(../images/sco-osr6-i386-thumb.png,link=../images/sco-osr6-i386.png)]][[br]]
+[../images/sco-osr6-i386.png SCO OpenServer 6][[br]]
+([http://www.xinuos.com xinuos.com])
+}}}
+}}}
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

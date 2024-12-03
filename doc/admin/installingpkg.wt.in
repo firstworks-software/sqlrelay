@@ -1,3 +1,9 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
 = Installing SQL Relay From Packages =
 
 * [#platforms Supported Platforms]
@@ -138,3 +144,7 @@ To install the packages:
 SQL Relay should now be installed.  At this point, it's safe to delete the sqlrelay-binary-distribution-@SQLR_VERSION@ folder and sqlrelay-binary-distribution-@SQLR_VERSION@.zip file.
 
 NOTE: Rudiments and SQL Relay are currently built using Visual Studio 2013, and require the [https://www.microsoft.com/en-us/download/details.aspx?id=40784 Visual C++ Redistributable Packages for Visual Studio 2013].  Try installing this package manually if you encounter problems when trying to run SQL Relay.
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

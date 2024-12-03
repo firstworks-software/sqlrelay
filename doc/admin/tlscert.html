@@ -1,9 +1,9 @@
-<html>
-<head>
-	<title>The tlscert Parameter</title>
-	<link rel="stylesheet" href="../css/styles.css">
-</head>
-<body>
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../contentstart.html"-->
+
 <h1>The tlscert Parameter</h1>
 
 <p>SQL Relay supports a <b>tlscert</b> parameter in the SQL Relay server's configuration file, and as an argument to the various command line client programs.  In either case, it specifies the TLS certificate chain to use.</p>
@@ -88,9 +88,10 @@ sqlrclient
     <li>(if omitted, it defaults to MY)</li>
   </ul>
 
-  <li>The subject part identifies the certificate.  The first certificate in the specified location/store who's Subject contains the specified subject (in a case-insensitive comparison) will be used.  Note that the order of the certificates in the store is not guaranteed, so the specified subject should contain enough information to uniquely identify a certificate.
-</li>
+  <li>The subject part identifies the certificate.  The first certificate in the specified location/store who's Subject contains the specified subject (in a case-insensitive comparison) will be used.  Note that the order of the certificates in the store is not guaranteed, so the specified subject should contain enough information to uniquely identify a certificate.</li>
 </ul>
 
-</body>
-</html>
+<!--#include virtual="../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

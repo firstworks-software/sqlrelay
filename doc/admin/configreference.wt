@@ -1,3 +1,9 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
 = SQL Relay Configuration Reference =
 
 * [#example Example]
@@ -333,3 +339,7 @@ For '''odbc''' databases, the connect string syntax is "user=USER;password=PASSW
 == Advanced Configuration ==
 
 SQL Relay is highly modular, and there are additional tags and attributes that direct SQL Relay to load various filtering, translation, query routing, logging, notification, and other modules.  These are described in detail in the [configguide.html SQL Relay Configuration Guide].
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

@@ -1,3 +1,9 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
 = Substitution and Bind Variables =
 
 == What exactly are substitution and bind variables? ==
@@ -77,3 +83,7 @@ When using a database for which SQL Relay fakes bind variables, you should make 
 }}}
 
 If stringcol is a string datatype such as char or varchar, bind a string to stringvar rather than a long or double.  Failure to do so will cause the query to fail.
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

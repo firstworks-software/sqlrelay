@@ -1,3 +1,9 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
 = Programming with SQL Relay using the TCL API =
 
 * [#session Establishing a Session]
@@ -195,7 +201,7 @@ a performance cost associated with calling validateBinds() and validBind().
 
 Another feature of the prepare/bind/execute paradigm is the ability to 
 prepare, bind and execute a query once, then re-bind and re-execute the query 
-over and over without re-preparing it.  If your backend database natively 
+over and over without re-preparing it.  If your back-end database natively 
 supports this paradigm, you can reap a substantial performance improvement.
 
 {{{#!blockquote
@@ -1315,3 +1321,7 @@ When using the SQLite database, you can also get the last insert id by running t
 {{{#!blockquote
 '''select last insert rowid'''
 }}}
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

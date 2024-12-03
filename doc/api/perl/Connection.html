@@ -20,354 +20,358 @@
 
 <h1 id="NAME">NAME</h1>
 
-<pre><code>    SQLRelay::Connection - Perl API for SQL Relay</code></pre>
+<pre><code>SQLRelay::Connection - Perl API for SQL Relay</code></pre>
 
 <h1 id="SYNOPSIS">SYNOPSIS</h1>
 
-<pre><code>        use SQLRelay::Connection;
-        use SQLRelay::Cursor;
+<pre><code>use SQLRelay::Connection;
+use SQLRelay::Cursor;
 
-        my $sc=SQLRelay::Connection-&gt;new(&quot;testhost&quot;,9000,&quot;&quot;,
-                                          &quot;testuser&quot;,&quot;testpassword&quot;,0,1);
-        my $ss=SQLRelay::Cursor-&gt;new($sc);
+my $sc=SQLRelay::Connection-&gt;new(&quot;testhost&quot;,9000,&quot;&quot;,
+                                  &quot;testuser&quot;,&quot;testpassword&quot;,0,1);
+my $ss=SQLRelay::Cursor-&gt;new($sc);
 
-        $ss-&gt;sendQuery(&quot;select table_name from user_tables&quot;);
-        $sc-&gt;endSession();
+$ss-&gt;sendQuery(&quot;select table_name from user_tables&quot;);
+$sc-&gt;endSession();
 
-        for (my $i=0; $i&lt;$ss-&gt;rowCount(); $i++) {
-                print $ss-&gt;getField($i,&quot;table_name&quot;), &quot;\n&quot;;
-        }</code></pre>
+for (my $i=0; $i&lt;$ss-&gt;rowCount(); $i++) {
+        print $ss-&gt;getField($i,&quot;table_name&quot;), &quot;\n&quot;;
+}</code></pre>
 
 <h1 id="DESCRIPTION">DESCRIPTION</h1>
 
-<pre><code>    SQLRelay::Connection
+<pre><code>SQLRelay::Connection
 
-        new(server, port, socket, user, password, retrytime, tries);
-            # Initiates a connection to &quot;server&quot; on &quot;port&quot;
-            # or to the unix &quot;socket&quot; on the local machine
-            # and auths with &quot;user&quot; and &quot;password&quot;.
-            # Failed connections will be retried for 
-            # &quot;tries&quot; times, waiting &quot;retrytime&quot; seconds between each
-            # try.  If &quot;tries&quot; is 0 then retries will continue forever.
-            # If &quot;retrytime&quot; is 0 then retries will be attempted on
-            # a default interval.
-            #
-            # If the &quot;socket&quot; parameter is neither
-            # NULL nor &quot;&quot; then an attempt will be made to
-            # connect through it before attempting to
-            # connect to &quot;server&quot; on &quot;port&quot;.  If it is
-            # NULL or &quot;&quot; then no attempt will be made to
-            # connect through the socket.
+    new(server, port, socket, user, password, retrytime, tries);
+        # Initiates a connection to &quot;server&quot; on &quot;port&quot;
+        # or to the unix &quot;socket&quot; on the local machine
+        # and auths with &quot;user&quot; and &quot;password&quot;.
+        # Failed connections will be retried for 
+        # &quot;tries&quot; times, waiting &quot;retrytime&quot; seconds between each
+        # try.  If &quot;tries&quot; is 0 then retries will continue forever.
+        # If &quot;retrytime&quot; is 0 then retries will be attempted on
+        # a default interval.
+        #
+        # If &quot;server&quot; is a comma-separated list of hosts, then an
+        # attempt will be made to connect to each until the attempt
+        # succeeds, or there are no more hosts left to try.
+        #
+        # If the &quot;socket&quot; parameter is neither
+        # NULL nor &quot;&quot; then an attempt will be made to
+        # connect through it before attempting to
+        # connect to &quot;server&quot; on &quot;port&quot;.  If it is
+        # NULL or &quot;&quot; then no attempt will be made to
+        # connect through the socket.
 
-        DESTROY();
-            # Disconnects and ends the session if
-            # it hasn&#39;t been ended already.
+    DESTROY();
+        # Disconnects and ends the session if
+        # it hasn&#39;t been ended already.
 
-        setConnectTimeout(timeoutsec, timeoutusec);
-            # Sets the server connect timeout in seconds and
-            # milliseconds.  Setting either parameter to -1 disables the
-            # timeout.  You can also set this timeout using the
-            # SQLR_CLIENT_CONNECT_TIMEOUT environment variable.
+    setConnectTimeout(timeoutsec, timeoutusec);
+        # Sets the server connect timeout in seconds and
+        # milliseconds.  Setting either parameter to -1 disables the
+        # timeout.  You can also set this timeout using the
+        # SQLR_CLIENT_CONNECT_TIMEOUT environment variable.
 
-        setResponseTimeout(timeoutsec, timeoutusec);
-            # Sets the response timeout (for queries, commits, rollbacks,
-            # pings, etc.) in seconds and milliseconds.  Setting either
-            # parameter to -1 disables the timeout.  You can also set
-            # this timeout using the SQLR_CLIENT_RESPONSE_TIMEOUT
-            # environment variable.
+    setResponseTimeout(timeoutsec, timeoutusec);
+        # Sets the response timeout (for queries, commits, rollbacks,
+        # pings, etc.) in seconds and milliseconds.  Setting either
+        # parameter to -1 disables the timeout.  You can also set
+        # this timeout using the SQLR_CLIENT_RESPONSE_TIMEOUT
+        # environment variable.
 
-        setBindVariableDelimiters(delimiters);
-            # Sets which delimiters are used to identify bind variables
-            # in countBindVariables() and validateBinds().  Valid
-            # delimiters include ?,:,@, and $.  Defaults to &quot;?:@$&quot; */
+    setBindVariableDelimiters(delimiters);
+        # Sets which delimiters are used to identify bind variables
+        # in countBindVariables() and validateBinds().  Valid
+        # delimiters include ?,:,@, and $.  Defaults to &quot;?:@$&quot; */
 
-        getBindVariableDelimiterQuestionMarkSupported();
-            # Returns true if question marks (?) are considered to be
-            # valid bind variable delimiters. */
+    getBindVariableDelimiterQuestionMarkSupported();
+        # Returns true if question marks (?) are considered to be
+        # valid bind variable delimiters. */
 
-        getBindVariableDelimiterColonSupported();
-            # Returns true if colons (:) are considered to be
-            # valid bind variable delimiters. */
+    getBindVariableDelimiterColonSupported();
+        # Returns true if colons (:) are considered to be
+        # valid bind variable delimiters. */
 
-        getBindVariableDelimiterAtSignSupported();
-            # Returns true if at-signs (@) are considered to be
-            # valid bind variable delimiters. */
+    getBindVariableDelimiterAtSignSupported();
+        # Returns true if at-signs (@) are considered to be
+        # valid bind variable delimiters. */
 
-        getBindVariableDelimiterDollarSignSupported();
-            # Returns true if dollar signs ($) are considered to be
-            # valid bind variable delimiters. */
+    getBindVariableDelimiterDollarSignSupported();
+        # Returns true if dollar signs ($) are considered to be
+        # valid bind variable delimiters. */
 
-        enableKerberos(service, mech, flags);
-            # Enables Kerberos authentication and encryption.
-            #
-            #  &quot;service&quot; indicates the Kerberos service name of the
-            #  SQL Relay server.  If left empty or NULL then the service
-            #  name &quot;sqlrelay&quot; will be used. &quot;sqlrelay&quot; is the default
-            #  service name of the SQL Relay server.  Note that on Windows
-            #  platforms the service name must be fully qualified,
-            #  including the host and realm name.  For example:
-            #  &quot;sqlrelay/sqlrserver.firstworks.com@AD.FIRSTWORKS.COM&quot;.
-            #
-            #  &quot;mech&quot; indicates the specific Kerberos mechanism to use.
-            #  On Linux/Unix platforms, this should be a string
-            #  representation of the mechnaism&#39;s OID, such as:
-            #      { 1 2 840 113554 1 2 2 }
-            #  On Windows platforms, this should be a string like:
-            #      Kerberos
-            #  If left empty or NULL then the default mechanism will be
-            #  used.  Only set this if you know that you have a good
-            #  reason to.
-            #
-            #  &quot;flags&quot; indicates what Kerberos flags to use.  Multiple
-            #  flags may be specified, separated by commas.  If left
-            #  empty or NULL then a defalt set of flags will be used.
-            #  Only set this if you know that you have a good reason to.
-            #
-            #  Valid flags include:
-            #   * GSS_C_MUTUAL_FLAG
-            #   * GSS_C_REPLAY_FLAG
-            #   * GSS_C_SEQUENCE_FLAG
-            #   * GSS_C_CONF_FLAG
-            #   * GSS_C_INTEG_FLAG
-            #
-            #  For a full list of flags, consult the GSSAPI documentation,
-            #  though note that only the flags listed above are supported
-            #  on Windows.
+    enableKerberos(service, mech, flags);
+        # Enables Kerberos authentication and encryption.
+        #
+        #  &quot;service&quot; indicates the Kerberos service name of the
+        #  SQL Relay server.  If left empty or NULL then the service
+        #  name &quot;sqlrelay&quot; will be used. &quot;sqlrelay&quot; is the default
+        #  service name of the SQL Relay server.  Note that on Windows
+        #  platforms the service name must be fully qualified,
+        #  including the host and realm name.  For example:
+        #  &quot;sqlrelay/sqlrserver.firstworks.com@AD.FIRSTWORKS.COM&quot;.
+        #
+        #  &quot;mech&quot; indicates the specific Kerberos mechanism to use.
+        #  On Linux/Unix platforms, this should be a string
+        #  representation of the mechnaism&#39;s OID, such as:
+        #      { 1 2 840 113554 1 2 2 }
+        #  On Windows platforms, this should be a string like:
+        #      Kerberos
+        #  If left empty or NULL then the default mechanism will be
+        #  used.  Only set this if you know that you have a good
+        #  reason to.
+        #
+        #  &quot;flags&quot; indicates what Kerberos flags to use.  Multiple
+        #  flags may be specified, separated by commas.  If left
+        #  empty or NULL then a defalt set of flags will be used.
+        #  Only set this if you know that you have a good reason to.
+        #
+        #  Valid flags include:
+        #   * GSS_C_MUTUAL_FLAG
+        #   * GSS_C_REPLAY_FLAG
+        #   * GSS_C_SEQUENCE_FLAG
+        #   * GSS_C_CONF_FLAG
+        #   * GSS_C_INTEG_FLAG
+        #
+        #  For a full list of flags, consult the GSSAPI documentation,
+        #  though note that only the flags listed above are supported
+        #  on Windows.
 
-        enableTls(version, cert, password, ciphers, validate, ca, depth);
-            # Enables TLS/SSL encryption, and optionally authentication.
-            #
-            #  &quot;version&quot; specifies the TLS/SSL protocol version that the
-            #  client will attempt to use.  Valid values include SSL2,
-            #  SSL3, TLS1, TLS1.1, TLS1.2 or any more recent version of
-            #  TLS, as supported by and enabled in the underlying TLS/SSL
-            #  library.  If left blank or empty then the highest supported
-            #  version will be negotiated.
-            #
-            #  &quot;cert&quot; is the file name of the certificate chain file to
-            #  send to the SQL Relay server.  This is only necessary if
-            #  the SQL Relay server is configured to authenticate and
-            #  authorize clients by certificate.
-            #
-            #  If &quot;cert&quot; contains a password-protected private key, then
-            #  &quot;password&quot; may be supplied to access it.  If the private
-            #  key is not password-protected, then this argument is
-            #  ignored, and may be left empty or NULL.
-            #
-            #  &quot;ciphers&quot; is a list of ciphers to allow.  Ciphers may be
-            #  separated by spaces, commas, or colons.  If &quot;ciphers&quot; is
-            #  empty or NULL then a default set is used.  Only set this if
-            #  you know that you have a good reason to.
-            #
-            #  For a list of valid ciphers on Linux/Unix platforms, see:
-            #      man ciphers
-            #
-            #  For a list of valid ciphers on Windows platforms, see:
-            #      https://msdn.microsoft.com/en-us/library/windows/desktop/aa375549%28v=vs.85%29.aspx
-            #  On Windows platforms, the ciphers (alg_id&#39;s) should omit
-            #  CALG_ and may be given with underscores or dashes.
-            #  For example: 3DES_112
-            #
-            #  &quot;validate&quot; indicates whether to validate the SQL Relay&#39;s
-            #  server certificate, and may be set to one of the following:
-            #      &quot;no&quot; - Don&#39;t validate the server&#39;s certificate.
-            #      &quot;ca&quot; - Validate that the server&#39;s certificate was
-            #             signed by a trusted certificate authority.
-            #      &quot;ca+host&quot; - Perform &quot;ca&quot; validation and also validate
-            #             that one of the subject altenate names (or the
-            #             common name if no SANs are present) in the
-            #             certificate matches the host parameter.
-            #             (Falls back to &quot;ca&quot; validation when a unix
-            #             socket is used.)
-            #      &quot;ca+domain&quot; - Perform &quot;ca&quot; validation and also validate
-            #             that the domain name of one of the subject
-            #             alternate names (or the common name if no SANs
-            #             are present) in the certificate matches the
-            #             domain name of the host parameter.  (Falls back
-            #             to &quot;ca&quot; validation when a unix socket is used.)
-            #
-            #  &quot;ca&quot; is the location of a certificate authority file to
-            #  use, in addition to the system&#39;s root certificates, when
-            #  validating the SQL Relay server&#39;s certificate.  This is
-            #  useful if the SQL Relay server&#39;s certificate is self-signed.
-            #
-            #  On Windows, &quot;ca&quot; must be a file name.
-            #
-            #  On non-Windows systems, &quot;ca&quot; can be either a file or
-            #  directory name.  If it is a directory name, then all
-            #  certificate authority files found in that directory will be
-            #  used.  If it a file name, then only that file will be used.
-            #
-            #
-            #  Note that the supported &quot;cert&quot; and &quot;ca&quot; file formats may
-            #  vary between platforms.  A variety of file formats are
-            #  generally supported on Linux/Unix platfoms (.pem, .pfx,
-            #  etc.) but only the .pfx format is currently supported on
-            #  Windows. */
+    enableTls(version, cert, password, ciphers, validate, ca, depth);
+        # Enables TLS/SSL encryption, and optionally authentication.
+        #
+        #  &quot;version&quot; specifies the TLS/SSL protocol version that the
+        #  client will attempt to use.  Valid values include SSL2,
+        #  SSL3, TLS1, TLS1.1, TLS1.2 or any more recent version of
+        #  TLS, as supported by and enabled in the underlying TLS/SSL
+        #  library.  If left blank or empty then the highest supported
+        #  version will be negotiated.
+        #
+        #  &quot;cert&quot; is the file name of the certificate chain file to
+        #  send to the SQL Relay server.  This is only necessary if
+        #  the SQL Relay server is configured to authenticate and
+        #  authorize clients by certificate.
+        #
+        #  If &quot;cert&quot; contains a password-protected private key, then
+        #  &quot;password&quot; may be supplied to access it.  If the private
+        #  key is not password-protected, then this argument is
+        #  ignored, and may be left empty or NULL.
+        #
+        #  &quot;ciphers&quot; is a list of ciphers to allow.  Ciphers may be
+        #  separated by spaces, commas, or colons.  If &quot;ciphers&quot; is
+        #  empty or NULL then a default set is used.  Only set this if
+        #  you know that you have a good reason to.
+        #
+        #  For a list of valid ciphers on Linux/Unix platforms, see:
+        #      man ciphers
+        #
+        #  For a list of valid ciphers on Windows platforms, see:
+        #      https://msdn.microsoft.com/en-us/library/windows/desktop/aa375549%28v=vs.85%29.aspx
+        #  On Windows platforms, the ciphers (alg_id&#39;s) should omit
+        #  CALG_ and may be given with underscores or dashes.
+        #  For example: 3DES_112
+        #
+        #  &quot;validate&quot; indicates whether to validate the SQL Relay&#39;s
+        #  server certificate, and may be set to one of the following:
+        #      &quot;no&quot; - Don&#39;t validate the server&#39;s certificate.
+        #      &quot;ca&quot; - Validate that the server&#39;s certificate was
+        #             signed by a trusted certificate authority.
+        #      &quot;ca+host&quot; - Perform &quot;ca&quot; validation and also validate
+        #             that one of the subject altenate names (or the
+        #             common name if no SANs are present) in the
+        #             certificate matches the host parameter.
+        #             (Falls back to &quot;ca&quot; validation when a unix
+        #             socket is used.)
+        #      &quot;ca+domain&quot; - Perform &quot;ca&quot; validation and also validate
+        #             that the domain name of one of the subject
+        #             alternate names (or the common name if no SANs
+        #             are present) in the certificate matches the
+        #             domain name of the host parameter.  (Falls back
+        #             to &quot;ca&quot; validation when a unix socket is used.)
+        #
+        #  &quot;ca&quot; is the location of a certificate authority file to
+        #  use, in addition to the system&#39;s root certificates, when
+        #  validating the SQL Relay server&#39;s certificate.  This is
+        #  useful if the SQL Relay server&#39;s certificate is self-signed.
+        #
+        #  On Windows, &quot;ca&quot; must be a file name.
+        #
+        #  On non-Windows systems, &quot;ca&quot; can be either a file or
+        #  directory name.  If it is a directory name, then all
+        #  certificate authority files found in that directory will be
+        #  used.  If it a file name, then only that file will be used.
+        #
+        #
+        #  Note that the supported &quot;cert&quot; and &quot;ca&quot; file formats may
+        #  vary between platforms.  A variety of file formats are
+        #  generally supported on Linux/Unix platfoms (.pem, .pfx,
+        #  etc.) but only the .pfx format is currently supported on
+        #  Windows. */
 
-        disableEncryption();
-            # Disables encryption.
+    disableEncryption();
+        # Disables encryption.
 
-        endSession();
-            # Ends the session.
+    endSession();
+        # Ends the session.
 
-        suspendSession();
-            # Leaves the session open so another client
-            # can connect to it.
-            
-        getConnectionPort();
-            # Returns the inet port that the client is 
-            # communicating over. This parameter may be 
-            # passed to another client for use in
-            # the resumeSession() command below.
-            # Note: the value returned by this method is
-            # only valid after a call to suspendSession().
+    suspendSession();
+        # Leaves the session open so another client
+        # can connect to it.
+        
+    getConnectionPort();
+        # Returns the inet port that the client is 
+        # communicating over. This parameter may be 
+        # passed to another client for use in
+        # the resumeSession() command below.
+        # Note: the value returned by this method is
+        # only valid after a call to suspendSession().
 
-        getConnectionSocket();
-            # Returns the unix socket that the client is 
-            # communicating over. This parameter may be 
-            # passed to another client for use in
-            # the resumeSession() command below.
-            # Note: the value returned by this method is
-            # only valid after a call to suspendSession().
+    getConnectionSocket();
+        # Returns the unix socket that the client is 
+        # communicating over. This parameter may be 
+        # passed to another client for use in
+        # the resumeSession() command below.
+        # Note: the value returned by this method is
+        # only valid after a call to suspendSession().
 
-        resumeSession(port,socket);
-            # Resumes a session previously left open 
-            # using suspendSession().
-            # Returns true on success and false on failure.
-
-
-        ping();
-            # Returns true if the database is up and false
-            # if it&#39;s down.
-
-        identify();
-            # Returns the type of database:
-            #   oracle, postgresql, mysql, etc.
-
-        dbVersion();
-            # Returns the version of the database
-
-        dbHostName();
-            # Returns the host name of the database
-
-        dbIpAddress();
-            # Returns the ip address of the database
-
-        serverVersion();
-            # Returns the version of the SQL Relay server software
-
-        clientVersion();
-            # Returns the version of the SQL Relay client software
-
-        bindFormat();
-            # Returns a string representing the bind variable format used
-            # by the database.  For example:
-            #
-            # ?  - database uses a ? to represent a bind variable
-            # @* - database uses a @ followed by any characters to
-            #      represent a bind variable
-            # $1 - database uses a $ followed by a number to represent a
-            #      bind variable
-            # :* - database uses a : followed by any characters to
-            #      represent a bind variable
-
-        nextvalFormat();
-            # Returns a string representing the format of the sequence
-            # nextval command used in the database.  The format will
-            # contain a %s in place of the sequence name.  For example:
-            #
-            # (nextval for %s)
-            # next value for %s
-            # nextval(&#39;%s&#39;)
-            # %s.nextval
-            #
-            # Returns an empty string if the database does not support
-            # sequences.
+    resumeSession(port,socket);
+        # Resumes a session previously left open 
+        # using suspendSession().
+        # Returns true on success and false on failure.
 
 
-        selectDatabase(database);
-            # Sets the current database/schema to &quot;database&quot;
-        getCurrentDatabase();
-            # Returns the database/schema that is currently in use.
+    ping();
+        # Returns true if the database is up and false
+        # if it&#39;s down.
 
-        getLastInsertId();
-            # Returns the value of the autoincrement
-            # column for the last insert
+    identify();
+        # Returns the type of database:
+        #   oracle, postgresql, mysql, etc.
 
-        autoCommitOn();
-            # Instructs the database to perform a commit
-            # after every successful query.
-            # Returns true if setting autocommit on succeeded
-            # and false if it failed.
+    dbVersion();
+        # Returns the version of the database
 
-        autoCommitOff();
-            # Instructs the database to wait for the 
-            # client to tell it when to commit.
-            # Returns true if setting autocommit off succeeded
-            # and false if it failed.
+    dbHostName();
+        # Returns the host name of the database
 
-        begin();
-            # Begins a transaction.  Returns true if the begin
-            # succeeded, false if it failed.  If the database
-            # automatically begins a new transaction when a
-            # commit or rollback is issued then this doesn&#39;t
-            # do anything unless SQL Relay is faking transaction
-            # blocks.
+    dbIpAddress();
+        # Returns the ip address of the database
 
-        commit();
-            # Issues a commit.  Returns true if the commit
-            # succeeded, false if it failed.
+    serverVersion();
+        # Returns the version of the SQL Relay server software
 
-        rollback();
-            # Issues a rollback.  Returns true if the rollback
-            # succeeded, false if it failed.
+    clientVersion();
+        # Returns the version of the SQL Relay client software
+
+    bindFormat();
+        # Returns a string representing the bind variable format used
+        # by the database.  For example:
+        #
+        # ?  - database uses a ? to represent a bind variable
+        # @* - database uses a @ followed by any characters to
+        #      represent a bind variable
+        # $1 - database uses a $ followed by a number to represent a
+        #      bind variable
+        # :* - database uses a : followed by any characters to
+        #      represent a bind variable
+
+    nextvalFormat();
+        # Returns a string representing the format of the sequence
+        # nextval command used in the database.  The format will
+        # contain a %s in place of the sequence name.  For example:
+        #
+        # (nextval for %s)
+        # next value for %s
+        # nextval(&#39;%s&#39;)
+        # %s.nextval
+        #
+        # Returns an empty string if the database does not support
+        # sequences.
 
 
-        errorMessage();
-            # If an operation failed and generated an error, the
-            # error message is available here.  If there is no
-            # error then this method returns NULL.
+    selectDatabase(database);
+        # Sets the current database/schema to &quot;database&quot;
+    getCurrentDatabase();
+        # Returns the database/schema that is currently in use.
 
-        errorNumber();
-            # If an operation failed and generated an
-            # error, the error number is available here.
-            # If there is no error then this method 
-            # returns 0.
+    getLastInsertId();
+        # Returns the value of the autoincrement
+        # column for the last insert
+
+    autoCommitOn();
+        # Instructs the database to perform a commit
+        # after every successful query.
+        # Returns true if setting autocommit on succeeded
+        # and false if it failed.
+
+    autoCommitOff();
+        # Instructs the database to wait for the 
+        # client to tell it when to commit.
+        # Returns true if setting autocommit off succeeded
+        # and false if it failed.
+
+    begin();
+        # Begins a transaction.  Returns true if the begin
+        # succeeded, false if it failed.  If the database
+        # automatically begins a new transaction when a
+        # commit or rollback is issued then this doesn&#39;t
+        # do anything unless SQL Relay is faking transaction
+        # blocks.
+
+    commit();
+        # Issues a commit.  Returns true if the commit
+        # succeeded, false if it failed.
+
+    rollback();
+        # Issues a rollback.  Returns true if the rollback
+        # succeeded, false if it failed.
 
 
-        debugOn();
-            # Causes verbose debugging information to be 
-            # sent to standard output.  Another way to do 
-            # this is to start a query with &quot;-- debug\n&quot;.
-            # Yet another way is to set the environment
-            # variable SQLR_CLIENT_DEBUG to &quot;ON&quot;
+    errorMessage();
+        # If an operation failed and generated an error, the
+        # error message is available here.  If there is no
+        # error then this method returns NULL.
 
-        debugOff();
-            # Turns debugging off.
+    errorNumber();
+        # If an operation failed and generated an
+        # error, the error number is available here.
+        # If there is no error then this method 
+        # returns 0.
 
-        getDebug();
-            # Returns true if debugging is currently on and false
-            # if debugging is currently off.
 
-        setDebugFile(filename);
-            # Allows you to specify a file to write debug to.
-            # Setting &quot;filename&quot; to NULL or an empty string causes debug
-            # to be written to standard output (the default).
+    debugOn();
+        # Causes verbose debugging information to be 
+        # sent to standard output.  Another way to do 
+        # this is to start a query with &quot;-- debug\n&quot;.
+        # Yet another way is to set the environment
+        # variable SQLR_CLIENT_DEBUG to &quot;ON&quot;
 
-        setClientInfo(clientinfo);
-            # Allows you to set a string that will be passed to the
-            # server and ultimately included in server-side logging
-            # along with queries that were run by this instance of
-            # the client.
+    debugOff();
+        # Turns debugging off.
 
-        getClientInfo();
-            # Returns the string that was set by setClientInfo().</code></pre>
+    getDebug();
+        # Returns true if debugging is currently on and false
+        # if debugging is currently off.
+
+    setDebugFile(filename);
+        # Allows you to specify a file to write debug to.
+        # Setting &quot;filename&quot; to NULL or an empty string causes debug
+        # to be written to standard output (the default).
+
+    setClientInfo(clientinfo);
+        # Allows you to set a string that will be passed to the
+        # server and ultimately included in server-side logging
+        # along with queries that were run by this instance of
+        # the client.
+
+    getClientInfo();
+        # Returns the string that was set by setClientInfo().</code></pre>
 
 <h1 id="AUTHOR">AUTHOR</h1>
 
-<pre><code>    David Muse
-    david.muse@firstworks.com</code></pre>
+<pre><code>David Muse
+david.muse@firstworks.com</code></pre>
 
 
 </body>

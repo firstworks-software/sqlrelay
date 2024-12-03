@@ -1,3 +1,9 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
 = Using SQL Relay With Oracle n-Tiered Authentication =
 
 == Background ==
@@ -162,3 +168,7 @@ sqlrsh -host localhost -port 9000 -user user2 -password user2[[br]]
 or[[br]]
 sqlrsh -host localhost -port 9000 -user user3 -password user3
 }}}
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

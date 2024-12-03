@@ -1,9 +1,9 @@
-<html>
-<head>
-	<title>Programming with SQL Relay using the Perl DBI API</title>
-	<link rel="stylesheet" href="../css/styles.css">
-</head>
-<body>
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../contentstart.html"-->
+
 <h1>Programming with SQL Relay using the Perl DBI API</h1>
 
 <ul>
@@ -48,7 +48,7 @@ http://www.gnu.org/software/src-highlite -->
 <p>The following connect string variables control attributes of the connection:</p>
 
 <ul>
-  <li><b>host</b> - The SQL Relay server to connect to.</li>
+  <li><b>host</b> - The SQL Relay server to connect to.  If host is a comma-separated list of hosts, then an attempt will be made to connect to each until the attempt succeeds, or there are no more hosts left to try.</li>
   <li><b>port</b> - The port that the SQL Relay server is listening on.  Either port or socket must be specified.  If both are specified, socket will be preferred to port.</li>
   <li><b>socket</b> - The socket that the SQL Relay server is listening on.  Either port or socket must be specified.  If both are specified, socket will be preferred to port.</li>
   <li><b>tries</b> - If a connection fails, it will be retried this many times.</li>
@@ -402,7 +402,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>A feature of the prepare/bind/execute paradigm is the ability to prepare, 
 bind and execute a query once, then re-bind and re-execute the query 
-over and over without re-preparing it.  If your backend database natively 
+over and over without re-preparing it.  If your back-end database natively 
 supports this paradigm, you can reap a substantial performance improvement.</p>
 
 <blockquote>
@@ -1991,6 +1991,9 @@ http://www.gnu.org/software/src-highlite -->
   <li><b>PDO::SQLRelay::GetNullsAsEmptyStrings</b> - set-only (1 or 0), sets whether to return NULL values as empty strings or nulls, default (0) is to return NULL values as nulls</li>
 </ul>
 
-Default values for the statement handle attributes can be set as database handle attributes in the connect string.  Setting the corresponding connect string variable has the same effect as if the statement handle attribute were set immediately after creating the statement.  See <a href="#session">Establishing a Session</a> above.
-</body>
-</html>
+<p>Default values for the statement handle attributes can be set as database handle attributes in the connect string.  Setting the corresponding connect string variable has the same effect as if the statement handle attribute were set immediately after creating the statement.  See <a href="#session">Establishing a Session</a> above.</p>
+
+<!--#include virtual="../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

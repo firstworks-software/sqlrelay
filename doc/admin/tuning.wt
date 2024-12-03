@@ -1,3 +1,9 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
 = Tuning SQL Relay =
 
 * [#localdbconnection Connect To The Database Using a Local Connection]
@@ -559,3 +565,7 @@ it.  This is a common problem and, unfortunately, sometimes architectural
 constraints make it unavoidable.
 
 SQL Relay has parameters that allow cursors to scale up and down as needed.  If you are concerned about memory usage, consider using the cursors, maxcursors and cursors_growby parameters in the configuration file.  See the [configreference.html SQL Relay Configuration Reference] for detailed information on these parameters.
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

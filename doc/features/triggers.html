@@ -1,0 +1,27 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../contentstart.html"-->
+
+<h1>Triggers</h1>
+
+<p>Database triggers allow you to run in-database stored procedures in response to DML queries.</p>
+
+<p>SQL Relay extends this paradigm by allowing you to run in-database or os-level tasks in response to any query.</p>
+
+<p><img src="../images/triggers.png"/></p>
+
+<p>The standard SQL Relay distribution includes several trigger modules, including:</p>
+
+<ul>
+  <li><b>replay</b> - provides automatic deadlock resolution via transaction replay</li>
+  <li><b>upsert</b> - automatically converts inserts to updates when the insert fails</li>
+</ul>
+
+<p>Custom trigger modules can be developed too.</p>
+
+<!--#include virtual="../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

@@ -1,3 +1,9 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
 = Programming with SQL Relay using the PHP PDO API =
 
 * [#intro Introduction]
@@ -115,7 +121,7 @@ use.
 
 The following connect string variables control attributes of the connection:
 
-* '''host''' - The SQL Relay server to connect to.
+* '''host''' - The SQL Relay server to connect to.  If host is a comma-separated list of hosts, then an attempt will be made to connect to each until the attempt succeeds, or there are no more hosts left to try.
 * '''port''' - The port that the SQL Relay server is listening on.  Either port or socket must be specified.  If both are specified, socket will be preferred to port.
 * '''socket''' - The socket that the SQL Relay server is listening on.  Either port or socket must be specified.  If both are specified, socket will be preferred to port.
 * '''tries''' - If a connection fails, it will be retried this many times.
@@ -409,7 +415,7 @@ A third solution is to configure PDO to emulate prepares by setting the PDO::ATT
 
 Another feature of the prepare/bind/execute paradigm is the ability to 
 prepare, bind and execute a query once, then re-bind and re-execute the query 
-over and over without re-preparing it.  If your backend database natively 
+over and over without re-preparing it.  If your back-end database natively 
 supports this paradigm, you can reap a substantial performance improvement.
 
 {{{#!blockquote
@@ -1420,3 +1426,7 @@ You can also distribute the processing of a result set across a series of
 pages using suspended sessions.  If you're buffering a result set in chunks
 instead of all at once and suspend a session, when you resume the session you 
 can continue to retrieve rows from the result set.
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

@@ -1,0 +1,59 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
+= Front-End Compatibility =
+
+Native database apps communicate with the database using native database client-server protocols.
+
+For example, !MySQL/MariaDB apps communicate with the database using the !MySQL/MariaDB client-server protocol:
+
+{{{#!blockquote
+[[Image(../images/mysqlnativeprotocol.png,nolink)]]
+}}}
+
+...and !PostgreSQL apps communicate with the database using the !PostgreSQL client-server protocol:
+
+{{{#!blockquote
+[[Image(../images/postgresqlnativeprotocol.png,nolink)]]
+}}}
+
+[[br]]
+
+Whether written using the native SQL Relay API or a connector of some sort, SQL Relay apps generally communicate with SQL Relay using the SQL Relay client-server protocol:
+
+{{{#!blockquote
+[[Image(../images/sqlrelaynativeprotocol.png,nolink)]]
+}}}
+
+However, SQL Relay also supports the !MySQL/MariaDB and !PostgreSQL client-server protocols.  This allows apps written for those databases to communicate with SQL Relay, rather than directly with the native database, without modification.
+
+{{{#!blockquote
+[[Image(../images/sqlrelaymysqlprotocol.png,nolink)]]
+[[br]]
+[[br]]
+[[Image(../images/sqlrelaypostgresqlprotocol.png,nolink)]]
+}}}
+
+As such, SQL Relay can be used as a transparent proxy.  Native apps aimed at SQL Relay still think that they're talking to the database, but in fact, they are talking to SQL Relay, and can take advantage of SQL Relay's advanced features.
+
+[[br]]
+
+== Foreign Back-End ==
+
+Since SQL Relay supports a variety of database back-ends, the app can also be redirected to any of these databases, instead of the database it was originally written to use.
+
+{{{#!blockquote
+[[Image(../images/sqlrelay-mysql-frontend-mssql-backend.png,nolink)]]
+[[br]]
+[[br]]
+[[Image(../images/sqlrelay-postgresql-frontend-oracle-backend.png,nolink)]]
+}}}
+
+Some queries may have to be modified to use the syntax of the new database and some code may need to be changed, but a full rewrite of the app should not be necessary.
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

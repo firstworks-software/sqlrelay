@@ -1,3 +1,9 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
 = Creating a TLS Certificate Chain File =
 
 When obtaining a certificate from a Certificate Authority (or generating one yourself) it is common to receive 3 different files, rather than a single certificate chain file.
@@ -121,3 +127,7 @@ You'll have to either:
 === How do I convert a .pem file to a .pfx? === 
 
 You have to use an editor to extract the different parts into 3 separate files (host.crt, private.key, and ca.crt) and then run the command above to create the .pfx file from these parts.
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

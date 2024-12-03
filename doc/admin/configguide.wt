@@ -1,7 +1,12 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
 = SQL Relay Configuration Guide =
 
 * [#quick Quick Start]
-* [#modules Modules]
 * [#basic Basic Configuration]
  * [#modules Modules]
  * [#database Database Configuration]
@@ -69,10 +74,13 @@
   * [#multiprotocollistener Listener Options]
   * [#multiprotocolauth Authentication/Encryption Options]
 * [#ha High Availability]
- * [#cluster Load-Balancing and Fail-Over With Replicated Databases or Database Clusters]
- * [#rac Already-Load-Balanced Databases]
+ * [#cluster Load Balancing and Failover With Replicated Databases or Database Clusters]
+ * [#rac Already-Load Balanced Databases]
  * [#masterslave Master-Slave Query Routing]
- * [#frontendlb Front-End Load-Balancing and Fail-Over]
+ * [#frontendlb Front-End Load Balancing and Failover]
+  * [#hostrand Host Randomization]
+  * [#lbapp Load Balancing Appliance]
+  * [#rrdns Round-Robin DNS]
 * [#security Security Features]
  * [#frontendencryption Front-End Encryption and Secure Authentication]
  * [#backendencryption Back-End Encryption and Secure Authentication]
@@ -81,7 +89,7 @@
   * [#backendenc-mysql MySQL/MariaDB]
   * [#backendenc-postgresql PostgreSQL]
  * [#runas Run-As User and Group]
- * [#deniedallowedips Denied/Allowed IP Addresses]
+ * [#deniedallowedips IP Filtering]
  * [#pwdfiles Password Files]
  * [#pwdenc Password Encryption]
   * [#rot rot]
@@ -115,7 +123,7 @@
 * [#directives Query Directives]
  * [#custom_wf custom_wf]
  * [#singlestep singlestep]
-* [#queryrouting Query Routing]
+* [#routing Query and Session Routing]
  * [#regex regex]
  * [#userlist userlist]
  * [#clientiplist clientiplist]
@@ -1182,13 +1190,13 @@ sqlrelay_flags=""
 
 Whether written using the native SQL Relay API, or a connector of some sort, SQL Relay apps generally communicate with SQL Relay using //SQLRClient//, the native SQL Relay client-server protocol.
 
-[[Image(../images/sqlrelaynativeprotocol.png,nolink)]]
+ [[Image(../images/sqlrelaynativeprotocol.png,nolink)]]
 
 However, SQL Relay also supports the !MySQL and !PostgreSQL client-server protocols.  When SQL Relay is configured to use one of these, it allows !MySQL/MariaDB and !PostgreSQL apps to communicate directly with SQL Relay without modification, without having to install any software on the client.
 
-[[Image(../images/sqlrelaymysqlprotocol.png,nolink)]]
+ [[Image(../images/sqlrelaymysqlprotocol.png,nolink)]]
 
-[[Image(../images/sqlrelaypostgresqlprotocol.png,nolink)]]
+ [[Image(../images/sqlrelaypostgresqlprotocol.png,nolink)]]
 
 In these configurations, SQL Relay becomes a transparent proxy.  !MySQL/MariaDB or !PostgreSQL apps aimed at SQL Relay still think that they're talking to a !MySQL/MariaDB or !PostgreSQL database, but in fact, are talking to SQL Relay.
 
@@ -1415,6 +1423,8 @@ To enable proxied auth, configure SQL Relay to load the //proxied// auth module 
 
 SQL Relay supports Kerberos encryption and authentication between the SQL Relay client and SQL Relay Server.
 
+ [[Image(../images/secure-krb-unsecured.png,nolink)]]
+
 When Kerberos encryption and authentication is used:
 
 * All communications between the SQL Relay client and SQL Relay server are encrypted.
@@ -1495,6 +1505,8 @@ Any kind of full session encryption should be used with caution in performance-s
 === TLS/SSL Encryption and Authentication ===
 
 SQL Relay supports TLS/SSL encryption and authentication between the SQL Relay client and SQL Relay Server.
+
+ [[Image(../images/secure-tls-unsecured.png,nolink)]]
 
 When TLS/SSL encryption and authentication is used:
 
@@ -1846,6 +1858,8 @@ The second disadvantage may or may not be a problem, depending on how secure com
 
 SQL Relay supports TLS/SSL encryption and authentication between the !MySQL/MariaDB client and SQL Relay Server.
 
+ [[Image(../images/secure-tls-unsecured.png,nolink)]]
+
 When TLS/SSL encryption and authentication is used:
 
 * All communications between the !MySQL/MariaDB client and SQL Relay server are encrypted.
@@ -1972,7 +1986,7 @@ Any kind of full session encryption should be used with caution in performance-s
 [=#mysqlforeignbackend]
 === Foreign Backend ===
 
-Since SQL Relay supports a variety of database backends, the app can also be redirected to any of these databases, instead of the !MySQL/MariaDB database it was originally written to use.
+Since SQL Relay supports a variety of database back-ends, the app can also be redirected to any of these databases, instead of the !MySQL/MariaDB database it was originally written to use.
 
 This is as simple as specifying a different database using the //dbase// attribute in the instance tag and specifying the appropriate database connection string in the //string// attribute of the connection tag.
 
@@ -1982,9 +1996,9 @@ This is as simple as specifying a different database using the //dbase// attribu
 }}}
 }}}
 
-In this example, a !MySQL front-end provides !MySQL/MariaDB applications access to an Oracle backend database.
+In this example, a !MySQL front-end provides !MySQL/MariaDB applications access to an Oracle back-end database.
 
-Depending on the backend, it might also be necessary to make some other configuration changes, as well, for example:
+Depending on the back-end, it might also be necessary to make some other configuration changes, as well, for example:
 
 * In the instance tag:
  * set translatebindvariables="yes"
@@ -2010,9 +2024,9 @@ In your app, it might stil be necessary to modify some queries to use the syntax
 
 === Mapping zero-scale DECIMAL to BIGINT ===
 
-When targeting a foreign backend...
+When targeting a foreign back-end...
 
-Some backend databases, like Oracle, don't have integer types.  An integer type is really just a DECIMAL with a scale of 0.
+Some back-end databases, like Oracle, don't have integer types.  An integer type is really just a DECIMAL with a scale of 0.
 
 By default, the !MySQL protocol module maps zero-scale DECIMAL types to the !MySQL DECIMAL type.  Buy you might want to map them to the !MySQL BIGINT type instead.
 
@@ -2026,9 +2040,9 @@ The //zeroscaledecimaltobigint// option instructs the module to do this mapping.
 
 === Mapping DATE to DATETIME ===
 
-When targeting a foreign backend...
+When targeting a foreign back-end...
 
-Some backend databases, like Oracle, don't have separate DATE and DATETIME types.  Instead, they just have a DATE type, which can store date and time parts, and which parts are returned depend on a parameter like NLS_DATE_FORMAT.
+Some back-end databases, like Oracle, don't have separate DATE and DATETIME types.  Instead, they just have a DATE type, which can store date and time parts, and which parts are returned depend on a parameter like NLS_DATE_FORMAT.
 
 By default, the !MySQL protocol module maps the DATE type to the !MySQL DATE type.  But, if you are using DATE type fields to store date/times and have the database configured to return date and time parts, then you might want the DATE type mapped to the !MySQL DATETIME type.
 
@@ -2218,6 +2232,8 @@ If the database has a lot of users, or users are added, deleted, or updated regu
 
 SQL Relay supports TLS/SSL encryption and authentication between the !PostgreSQL client and SQL Relay Server.
 
+ [[Image(../images/secure-tls-unsecured.png,nolink)]]
+
 When TLS/SSL encryption and authentication is used:
 
 * All communications between the !PostgreSQL client and SQL Relay server are encrypted.
@@ -2361,7 +2377,7 @@ Any kind of full session encryption should be used with caution in performance-s
 [=#postgresqlforeignbackend]
 === Foreign Backend ===
 
-Since SQL Relay supports a variety of database backends, the app can also be redirected to any of these databases, instead of the !PostgreSQL database it was originally written to use.
+Since SQL Relay supports a variety of database back-ends, the app can also be redirected to any of these databases, instead of the !PostgreSQL database it was originally written to use.
 
 This is as simple as specifying a different database using the //dbase// attribute in the instance tag and specifying the appropriate database connection string in the //string// attribute of the connection tag.
 
@@ -2371,9 +2387,9 @@ This is as simple as specifying a different database using the //dbase// attribu
 }}}
 }}}
 
-In this example, a !PostgreSQL front-end provides !PostgreSQL applications access to an Oracle backend database.
+In this example, a !PostgreSQL front-end provides !PostgreSQL applications access to an Oracle back-end database.
 
-Depending on the backend, it might also be necessary to make some other configuration changes, as well, for example:
+Depending on the back-end, it might also be necessary to make some other configuration changes, as well, for example:
 
 * In the instance tag:
  * set translatebindvariables="yes"
@@ -2490,7 +2506,7 @@ sqlr-stop -id example
 
 Since this instance speaks the SQLRClient, !MySQL, and !PostgreSQL client-server protocols, clients that wish to use it may speak any of those client-server protocol.  This means that most software written using the SQL Relay, !MySQL, or !PostgreSQL APIs, or written using a database abstraction layer which loads a driver for SQL Relay, !MySQL, or !PostgreSQL can access this instance.  However, client programs for other databases (eg. the sqlplus command line programs, Oracle SQL Developer, SQL Server Management Studio, etc.) cannot access this instance.
 
-In this example, a front-end that supports !MySQL and !PostgreSQL protocols provides access to an Oracle backend database.  As such some queries may have to be modified from their native !MySQL and !PostgreSQL syntax to use the syntax of the Oracle database.
+In this example, a front-end that supports !MySQL and !PostgreSQL protocols provides access to an Oracle back-end database.  As such some queries may have to be modified from their native !MySQL and !PostgreSQL syntax to use the syntax of the Oracle database.
 
 [=#multiprotocollistener]
 === Listener Options ===
@@ -2551,20 +2567,16 @@ psql -h localhost -U postgresqluser
 [[br]][=#ha]
 = High Availabiltiy =
 
-In a high availability environment, SQL Relay can be deployed as a front-end to provide load-balancing and fail-over for a set of replicated database servers or database cluster.  Load-balancing and fail-over can also be implemented over multiple SQL Relay servers.
+In a high availability environment, SQL Relay can be deployed as a front-end to provide load balancing and failover for a set of replicated database servers or database cluster.  Load balancing and failover can also be implemented over multiple SQL Relay servers.
 
 
 [[br]][=#cluster]
-== Load-Balancing and Fail-Over With Replicated Databases or Database Clusters ==
+== Load Balancing and Failover With Replicated Databases or Database Clusters ==
 
 In a database cluster or replication environment, SQL Relay can be configured to maintain a pool of connections to the various database nodes and distribute client sessions over the nodes.  If an individual node fails, SQL Relay will attempt to reestablish connections to that node, while continuing to distribute client sessions over the remaining nodes.
 
-{{{#!td
-[[Image(../images/cluster.png,nolink)]]
-}}}
-{{{#!td
-[[Image(../images/replicated.png,padding-left=40px,nolink)]]
-}}}
+ [[Image(../images/cluster.png,nolink)]]
+ [[Image(../images/replicated.png,padding-left=40px,nolink)]]
 
 In the configuration file, each connection tag defines a node to maintain connections to.  In the following example, SQL Relay is configured to distribute over three Oracle nodes - ora1, ora2, and ora3
 
@@ -2578,7 +2590,7 @@ Any number of connection tags may be defined.
 
 SQL Relay also supports disproportionate distribution of load. If some nodes can handle more traffic than others, then SQL Relay can be configured to send more traffic to the more capable nodes.
 
-[[Image(../images/replicated-disproportionate.png,nolink)]]
+ [[Image(../images/replicated-disproportionate.png,nolink)]]
 
 SQL Relay uses the connection tag's metric attribute to decide how many connections to open to each node.
 
@@ -2594,15 +2606,15 @@ In the example above, 15 is 3 times 5, so 3 times as many connections will be op
 
 
 [[br]][=#rac]
-== Already-Load-Balanced Databases ==
+== Already-Load Balanced Databases ==
 
-In a typical database cluster or replicated environment, the nodes are identifiable as separate hosts.  However, when the nodes are located behind a load-balancing appliance or running on an application cluster, such as Oracle RAC, SQL Relay cannot identity an individual node.
+In a typical database cluster or replicated environment, the nodes are identifiable as separate hosts.  However, when the nodes are located behind a load balancing appliance or running on an application cluster, such as Oracle RAC, SQL Relay cannot identity an individual node.
 
-In these environments, if a node goes down, SQL Relay will attempt to re-establish the connection, but rather than failing until the node comes back up, the new connection will more likely just succeed to a different node in the cluster.  Over time, this can lead to disproportionate load-balancing, with a bias toward nodes that have never gone down.
+In these environments, if a node goes down, SQL Relay will attempt to re-establish the connection, but rather than failing until the node comes back up, the new connection will more likely just succeed to a different node in the cluster.  Over time, this can lead to disproportionate load balancing, with a bias toward nodes that have never gone down.
 
 SQL Relay manages this by "shuffling" the connections periodically.  Every so often, each database connection is re-established, giving that connection a chance to be re-established to a node that may have gone down but is now back up.
 
-To indicate to SQL Relay that the nodes are already-load-balanced, and need to be "shuffled" periodically, only one connection tag should be used, with the behindloadbalancer attribute set to "yes".
+To indicate to SQL Relay that the nodes are already-load balanced, and need to be "shuffled" periodically, only one connection tag should be used, with the behindloadbalancer attribute set to "yes".
 
 {{{#!blockquote
 {{{#!code
@@ -2614,11 +2626,11 @@ To indicate to SQL Relay that the nodes are already-load-balanced, and need to b
 [[br]][=#masterslave]
 == Master-Slave Query Routing ==
 
-The load-balancing scenarios described above all assume that master-master replication is being used.  SQL Relay supports master-slave replication as well.
+The load balancing scenarios described above all assume that master-master replication is being used.  SQL Relay supports master-slave replication as well.
 
 In a master-slave replication environment, SQL Relay can be configured to route DML and DDL queries to the master and distribute selects over the slaves.
 
-[[Image(../images/router.png,nolink)]]
+ [[Image(../images/router.png,nolink)]]
 
 This actually requires 3 instances of SQL Relay.  One to connect to the master, one to connect to the slaves, and a third to route queries to the first two.
 
@@ -2660,25 +2672,86 @@ sqlrsh -host sqlrserver -user routeruser -password routerpassword
 
 
 [[br]][=#frontendlb]
-== Front-End Load-Balancing and Fail-Over ==
+== Front-End Load Balancing and Failover ==
 
-If you are building out a high availability environment, or if your pool of application servers is just sufficiently large, you might want to set up a pool of SQL Relay servers between your application servers and the database.
+If you are building out a high availability environment, or if your pool of application servers is just sufficiently large, you might want to set up a pool of SQL Relay servers between your application servers and the database, and distribute client applications over the pool using host randomization, a load balancing appliance, or round-robin DNS.
 
-SQL Relay supports two front-end load-balancing and fail-over strategies.  In the first strategy, load-balancing and fail-over are provided by an appliance or application cluster.  In the second, SQL Relay provides its own load-balancing and fail-over, with some help from DNS.
+[[br]][=#hostrand]
+=== Host Randomization ===
 
-Multiple instances of SQL Relay can be placed behind a load-balancing appliance.
+Since version 2.0.1, host randomization can be used to distribute SQL Relay client sessions over a pool of SQL Relay hosts.
 
-[[Image(../images/loadbalancer.png,nolink)]]
+ [[Image(../images/hostrand.png,nolink)]]
 
-In this illustration, the load-balancing appliance is shown as a single machine, but in a true HA environment, there would be 2 or more appliances sharing a virtual IP.  Alternatively, rather than using an appliance, SQL Relay can be run on an application server cluster such as Linux Virtual Server.
+Any application which uses one of the SQL Relay Native APIs, including applications which use the SQL Relay driver for a database abstraction layer, can be configured to connect to a set of servers instead of just a single server by specifying the host or server parameter as a comma-separated set of hosts.  Internally, the API will attempt to connect to a random host in the set, until the attempt succeeds, or there are no more hosts left to try.
 
-[http://en.wikipedia.org/wiki/Round-robin_DNS Round-robin DNS] can be also be used to provide load-balancing and fail-over over multiple SQL Relay servers.
+[[br]]
+For example, the sqlrsh command line tool can be configured to connect to sqlr01, sqlr02, and sqlr03 as follows:
 
-[[Image(../images/rrdns.png,nolink)]]
+{{{#!blockquote
+{{{
+sqlrsh -host sqlr01,sqlr02,sqlr03 -user scott -password tiger
+}}}
+}}}
+
+Other SQL Relay command line tools can be configured similarly.
+
+[[br]]
+A program written using the SQL Relay Native API for C++ can be configured to connect to the same set of hosts as follows:
+
+{{{#!blockquote
+{{{#!code
+	sqlrconnection	*con=new sqlrconnection("sqlr01,sqlr02,sqlr03",9000,NULL,"scott","tiger",0,1);
+}}}
+}}}
+
+Other SQL Relay Native APIs can be configured similarly.
+
+[[br]]
+A program that uses the SQL Relay driver for ODBC can be configured as follows:
+
+{{{#!blockquote
+{{{
+[sqlrexample]
+Description=Connection to SQL Relay Pool
+Driver=SQLRelay
+Server=sqlr01,sqlr02,sqlr03
+Port=9000
+Socket=
+User=scott
+Password=tiger
+}}}
+}}}
+
+A program that uses the SQL Relay driver for PHP PDO can be configured as follows:
+
+{{{#!blockquote
+{{{#!code
+my $dbh=DBI->connect("DBI:SQLRelay:host=sqlr01,sqlr02,sqlr03;port=9000","scott","tiger");
+}}}
+}}}
+
+Programs that use SQL Relay drivers for other database abstraction layers can be configured similarly.
+
+[[br]][=#lbapp]
+=== Load Balancing Appliance ===
+
+Multiple instances of SQL Relay can be placed behind a load balancing appliance.
+
+ [[Image(../images/loadbalancer.png,nolink)]]
+
+In this illustration, the load balancing appliance is shown as a single machine, but in a true HA environment, there would be 2 or more appliances sharing a virtual IP.  Alternatively, rather than using an appliance, SQL Relay can be run on an application server cluster such as Linux Virtual Server.
+
+[[br]][=#rrdns]
+=== Round-Robin DNS ===
+
+[http://en.wikipedia.org/wiki/Round-robin_DNS Round-robin DNS] can be also be used to distribute clients over multiple SQL Relay servers.
+
+ [[Image(../images/rrdns.png,nolink)]]
 
 In a round-robin DNS scenario, multiple IP addresses are assigned to the same host name.  The SQL Relay client is then configured to connect to that host.  When it requests the IP addresses for the host, the client receives all of the IP addresses assigned to it, rather than just a single address.
 
-Round-robin DNS is so-called because, traditionally, the order of the IP addresses returned on successive requests alternated reliably, in round-robin fashion.  This behavior persists in many environments, but it is no longer guaranteed, as many modern DNS resolvers sort the list and return the IP addresses in the same order, every time.  SQL Relay clients randomize the list though, and try to connect to each of the IP addresses, one-at-a-time, until they succeed.  Doing so provides both load-balancing and fail-over without requiring an appliance or application server cluster.
+Round-robin DNS is so-called because, traditionally, the order of the IP addresses returned on successive requests alternated reliably, in round-robin fashion.  This behavior persists in many environments, but it is no longer guaranteed, as many modern DNS resolvers sort the list and return the IP addresses in the same order, every time.  SQL Relay clients randomize the list though, and try to connect to each of the IP addresses, one-at-a-time, until they succeed.  Doing so provides both load balancing and failover without requiring an appliance or application server cluster.
 
 ----
 
@@ -3005,9 +3078,11 @@ There are several important considerations when setting runasuser/runasgroup:
 
 
 [[br]][=#deniedallowedips]
-== Allowed/Denied IP Addresses ==
+== IP Filtering ==
 
 By default, clients from any IP address are allowed to connect to the SQL Relay srever.  However, the deinedips and allowedips attributes can be used to restrict the set of IP addresses that clients can connect from.
+
+ [[Image(../images/ip-filtering.png,nolink)]]
 
 The deniedips attribute can be configured with a [http://www.regular-expressions.info regular expression] indicating which IP address will be denied access.  The allowedips attribute can also be configured with a [http://www.regular-expressions.info regular expression] to override the deniedips attribute.
 
@@ -3285,6 +3360,9 @@ Note that multiple runs of sqlr-pwdenc with the same key and password will gener
 
 Connection schedules enable the SQL Relay server to control when users are allowed to access the database.
 
+ [[Image(../images/dayshift.png,nolink)]]
+ [[Image(../images/nightshift.png,nolink)]]
+
 Connection schedules are implemented by loadable modules.  The //schedules// section of the configuration file indicates which modules to load and what parameters to use when executing them.
 
 {{{#!blockquote
@@ -3464,7 +3542,10 @@ In general, the module works as follows:
 [[br]][=#filtering]
 == Query Filtering ==
 
-Query Filter modules enable the SQL Relay server programs to filter out queries, and not pass them along to the database.
+Query Filter modules enable the SQL Relay server programs to accept some queries, and filter out other queries, not passing them along to the database.
+
+ [[Image(../images/query-allowed.png,nolink)]][[br]]
+ [[Image(../images/query-rejected.png,nolink)]]
 
 Query filters are implemented by loadable modules.  The //filters// section of the configuration file indicates which filter modules to load and what parameters to use when executing them.
 
@@ -3675,6 +3756,8 @@ Currently, no open source parser modules are available, however custom modules m
 == Query Translation ==
 
 Query translation enables the SQL Relay server to modify queries before passing them to the database.
+
+ [[Image(../images/translation-query.png,nolink)]]
 
 Query translation is implemented by loadable modules.  The //translations// section of the configuration file indicates which translation modules to load and what parameters to use when executing them.
 
@@ -3939,6 +4022,8 @@ Currently, no open source result set header translation modules are available, h
 
 Result set translation enables the SQL Relay server to modify fields in the result set before returning the field to the client.
 
+ [[Image(../images/translation-resultset.png,nolink)]]
+
 Result set translation is implemented by loadable modules.  The //resultsettranslations// section of the configuration file indicates which result set translation modules to load and what parameters to use when executing them.
 
 {{{#!blockquote
@@ -4059,6 +4144,8 @@ Currently, no open source result set row block translation modules are available
 == Error Translation ==
 
 Error translation enables the SQL Relay server to modify errors before passing them back to the client.
+
+ [[Image(../images/translation-errors.png,nolink)]]
 
 Error translation is implemented by loadable modules. The errortranslations section of the configuration file indicates which error translation modules to load and what parameters to use when executing them.
 
@@ -4274,7 +4361,7 @@ The sqlexecdirect directive tells SQL Relay to execute the query in a single ste
 }}}
 }}}
 
-Note that (currently) the only database backend that supports executedirect is ODBC, and the only ODBC driver where it is known to improve performance is the MS SQL Server driver.  In that environment, this directive can yield a noticeable performance improvement for queries without bind variables, and which won't be reexecuted immediately.
+Note that (currently) the only database back-end that supports executedirect is ODBC, and the only ODBC driver where it is known to improve performance is the MS SQL Server driver.  In that environment, this directive can yield a noticeable performance improvement for queries without bind variables, and which won't be reexecuted immediately.
 
 
 [[br]]
@@ -4288,7 +4375,7 @@ The sqlprepare directive tells SQL Relay to prepare/execute the query in a two-s
 }}}
 }}}
 
-Note that (currently) the only database backend that supports direct execution is ODBC, and the only ODBC driver where it is known to improve performance is the MS SQL Server driver.  In that environment, the executedirect=yes option can yield a noticeable performance improvement for queries without bind variables, and which won't be reexecuted immediately.  If this is the case for most of your queries, then it makes sense to set executedirect=yes and override it using this directive as needed.
+Note that (currently) the only database back-end that supports direct execution is ODBC, and the only ODBC driver where it is known to improve performance is the MS SQL Server driver.  In that environment, the executedirect=yes option can yield a noticeable performance improvement for queries without bind variables, and which won't be reexecuted immediately.  If this is the case for most of your queries, then it makes sense to set executedirect=yes and override it using this directive as needed.
 
 
 [[br]]
@@ -4304,7 +4391,7 @@ The querytimeout directive sets a timeout (in seconds) for the query.  The follo
 
 Note that this directive takes a colon-delimited parameter, the number of seconds.  Setting a timeout of 0 seconds (or removing the parameter) disables the timeout.
 
-Note that (currently) the only database backend that supports query timeouts is ODBC.  It is known to work with the MS SQL Server driver, though it likely works with some other ODBC drivers as well.
+Note that (currently) the only database back-end that supports query timeouts is ODBC.  It is known to work with the MS SQL Server driver, though it likely works with some other ODBC drivers as well.
 
 
 [[br]][=#singlestep]
@@ -4354,24 +4441,24 @@ If singlestep=off is set, then the SQL Relay Server will fetch and buffer all ro
 ----
 
 
-[[br]][=#queryrouting]
-= Query Routing =
+[[br]][=#routing]
+= Query and Session Routing =
 
 Query routing enables the SQL Relay server to send one set of queries to one database, another set of queries to another, another set of queries to another, and so on.
 
-To route queries, one instance of SQL Relay must be configured as a router to route queries to other instances of SQL Relay which are configured normally.
+Session routing sends entire sessions to one database or another; by user, by intercepting "use database" queries, by client ip address, or by other criteria.
+
+To route queries or sessions, one instance of SQL Relay must be configured as a router to route queries to other instances of SQL Relay which are configured normally.
 
 A typical use case is to configure one instance of SQL Relay to maintain connections to a master database and another instance of SQL Relay to maintain connections to a pool of slaves, then set up a third instance of SQL Relay to route queries to the other 2 instances.
 
-{{{#!blockquote
-[[Image(../images/router.png,nolink)]]
-}}}
+ [[Image(../images/router.png,nolink)]]
 
 This is such a common case, that it is also described above in it's own section: [#masterslave Master-Slave Query Routing].
 
 There are other possiblities as well though.
 
-The actual query routing itself is implemented by loadable modules.  The //routers// section of the configuration file indicates which router modules to load and what parameters to use when executing them.
+The actual routing itself is implemented by loadable modules.  The //routers// section of the configuration file indicates which router modules to load and what parameters to use when executing them.
 
 {{{#!blockquote
 {{{#!code
@@ -4433,7 +4520,7 @@ The '''string''' attribute in each connection tag provides the parameters necess
 * '''password''' - the password to use when connecting to the SQL Relay instance
 * '''fetchatonce''' - the number of rows to fetch at a time (defaults to 10, 0 means fetch the entire result set)
 
-Note the use of a notification module to notify //dba@firstworks.com// if an //integrity_violation// event occurs.  SQL Relay must maintain parallel transactions on all databases that a query may be routed to.  An integrity violation occurs when a transaction control query (begin, commit, rollback, autocommit on, or autocommit off) succeeds on some of the backends but fails on others.  See [#notifications Notifications] for information about notification modules.
+Note the use of a notification module to notify //dba@firstworks.com// if an //integrity_violation// event occurs.  SQL Relay must maintain parallel transactions on all databases that a query may be routed to.  An integrity violation occurs when a transaction control query (begin, commit, rollback, autocommit on, or autocommit off) succeeds on some of the back-ends but fails on others.  See [#notifications Notifications] for information about notification modules.
 
 [[br]]
 
@@ -4458,6 +4545,8 @@ Note the use of a notification module, as above.
 === userlist ===
 
 The '''userlist''' module routes queries by matching the user that ran the query against a list of users.
+
+ [[Image(../images/router-user.png,nolink)]]
 
 An example configuration follows.
 
@@ -4489,6 +4578,8 @@ The '''string''' attribute in each connection tag provides the parameters necess
 === clientiplist ===
 
 The '''clientiplist''' module routes queries by matching the client that ran the query against a list of IP addresses.
+
+ [[Image(../images/router-client-ip.png,nolink)]]
 
 An example configuration follows.
 
@@ -4553,6 +4644,8 @@ The '''string''' attribute in each connection tag provides the parameters necess
 === usedatabase ===
 
 The '''usedatabase''' module enables you to access databases across multiple database instances via the same SQL Relay front-end with "use database" queries.
+
+ [[Image(../images/router-use-database.png,nolink)]]
 
 For example, lets say you have two database instances:
 
@@ -4866,7 +4959,7 @@ The columns of the result set are as follows:
 * STATE - one of the following...
  * NOT_AVAILABLE - the current state is not available
  * INIT - the process is initializing
- * WAIT_FOR_AVAIL_DB - the process is waiting for the backend database to become available
+ * WAIT_FOR_AVAIL_DB - the process is waiting for the back-end database to become available
  * WAIT_CLIENT - the process is waiting for a client to connect
  * SESSION_START - the client session is in the process of starting
  * GET_COMMAND - the process is waiting for the client to send it a command
@@ -5000,6 +5093,8 @@ The result set is a set of key-value pairs, as follows:
 = Triggers =
 
 Triggers enable SQL Relay to execute arbitrary code either before, or after a query is run.  They are similar to a database trigger, but they run inside of SQL Relay, rather than inside of the database.   As such, they are not limited to databaes operations.  They can run queries, make library or system calls, run shell commands, and anything else that an os-level application can do.
+
+ [[Image(../images/triggers.png,nolink)]]
 
 Triggers are implemented by loadable modules.  The //triggers// section of the configuration file indicates which modules to load and what parameters to use when executing them.
 
@@ -5648,6 +5743,8 @@ Note that each connection of an app instance will consume 1 connection of the lo
 
 Notifications allow the SQL Relay server programs to notify recipients when a specified set of events occur. 
 
+ [[Image(../images/notifications.png,nolink)]]
+
 Notifications are implemented by loadable modules.  The //notifications// section of the configuration file indicates which notification modules to load and what parameters to use when executing them.
 
 {{{#!blockquote
@@ -5712,7 +5809,7 @@ The '''events''' tag defines the set of events to listen for.  Valid events are:
 * '''internal_warning''' - An internal warning occurred.
 * '''debug_message''' - A debug message was generated.
 * '''schedule_violation''' - A [#schedules connection schedule module] prevented a user from logging in to the SQL Relay server.
-* '''integrity_violation''' - A [#queryrouting query routing module] is in use and a transaction control query (begin, commit, rollback, autocommit on, or autocommit off) succeeded on some of the backends but failed on others.
+* '''integrity_violation''' - A [#routing query routing module] is in use and a transaction control query (begin, commit, rollback, autocommit on, or autocommit off) succeeded on some of the back-ends but failed on others.
 
 Any number of events may be specified.  Each event must be specified in its own '''event''' tag.  The event tag supports the following attributes:
 
@@ -6007,3 +6104,7 @@ There is no limit to the depth of links.  A link file can reference another link
 = Advanced Configuration =
 
 The configuration file supports many more attributes and features than the ones described in this guide including tuning options.  See the [configreference.html SQL Relay Configuration Reference] and [tuning.html Tuning SQL Relay] for more information.
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}

@@ -1,3 +1,9 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../contentstart.html}}}
+
 = Building and Installing SQL Relay From Source =
 
 * [#platforms Supported Platforms]
@@ -247,3 +253,7 @@ To uninstall SQL Relay run:
 }}}
 
 To run the programs and scripts that use SQL Relay, it is helpful to add C:\Program Files\Firstworks\bin to your PATH.
+
+{{{#!include ../contentend.html}}}
+
+{{{#!include footer.html}}}
