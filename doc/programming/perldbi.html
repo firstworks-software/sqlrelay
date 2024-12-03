@@ -48,7 +48,7 @@ http://www.gnu.org/software/src-highlite -->
 <p>The following connect string variables control attributes of the connection:</p>
 
 <ul>
-  <li><b>host</b> - The SQL Relay server to connect to.</li>
+  <li><b>host</b> - The SQL Relay server to connect to.  If host is a comma-separated list of hosts, then an attempt will be made to connect to each until the attempt succeeds, or there are no more hosts left to try.</li>
   <li><b>port</b> - The port that the SQL Relay server is listening on.  Either port or socket must be specified.  If both are specified, socket will be preferred to port.</li>
   <li><b>socket</b> - The socket that the SQL Relay server is listening on.  Either port or socket must be specified.  If both are specified, socket will be preferred to port.</li>
   <li><b>tries</b> - If a connection fails, it will be retried this many times.</li>

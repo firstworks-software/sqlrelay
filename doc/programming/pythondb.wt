@@ -31,6 +31,14 @@ use.
 }}}
 }}}
 
+The parameters of the connect method are:
+
+* '''host''' - The SQL Relay server to connect to.  If host is a comma-separated list of hosts, then an attempt will be made to connect to each until the attempt succeeds, or there are no more hosts left to try.
+* '''port''' - The port that the SQL Relay server is listening on.  Either port or socket must be specified.  If both are specified, socket will be preferred to port.
+* '''socket''' - The socket that the SQL Relay server is listening on.  Either port or socket must be specified.  If both are specified, socket will be preferred to port.
+* '''tries''' - If a connection fails, it will be retried this many times.
+* '''retrytime''' - If a connection fails, it will be retried on this interval (in seconds).
+
 In addition to the parameters above, the following named parameters can be used to control attributes of the connection.
 
 * '''db''' - The database to switch to when logging into SQL Relay.  May be left empty or omitted to accept the default database that SQL Relay is already connected to.

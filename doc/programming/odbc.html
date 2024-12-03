@@ -80,7 +80,7 @@ Password<font color="#990000">=</font>examplepass</tt></pre>
   </ul>
 
   <li><b>FileUsage</b> - Always set to 0.  0 indicates that the driver is an RDBMS driver.  1 means that each file is a table (eg. Xbase).  2 means that each file is an entire database (eg. Access).  This parameter is not available via the Windows control panel because it is configured during installation.</li>
-  <li><b>Server</b> - The SQL Relay server to connect to.</li>
+  <li><b>Server</b> - The SQL Relay server to connect to.  If Server is a comma-separated list of hosts, then an attempt will be made to connect to each until the attempt succeeds, or there are no more hosts left to try.</li>
   <li><b>Port</b> - The port that the SQL Relay server is listening on. Either port or socket must be specified. If both are specified, socket will be preferred to port.</li>
   <li><b>Socket</b> - The socket that the SQL Relay server is listening on. Either port or socket must be specified. If both are specified, socket will be preferred to port.</li>
   <li><b>User</b> - The username to use when logging into SQL Relay.</li>

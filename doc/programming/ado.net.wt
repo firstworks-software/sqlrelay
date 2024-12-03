@@ -105,7 +105,7 @@ To use SQL Relay, you have to first open a connection.
 
 The following connect string variables control attributes of the connection:
 
-* '''Data Source''' - The SQL Relay server to connect to.  This may be specified as //host:port//, //host:port:socket// or just //socket//.  If host, port and socket are all three specified, then a connection will first be attempted to the local socket and then to the host/port.
+* '''Data Source''' - The SQL Relay server to connect to.  This may be specified as //host:port//, //host:port:socket// or just //socket//.  If host, port and socket are all three specified, then a connection will first be attempted to the local socket and then to the host/port.  If //host// is a comma-separated list of hosts, then an attempt will be made to connect to each until the attempt succeeds, or there are no more hosts left to try.
 * '''User ID''' - The username to use when logging into SQL Relay.
 * '''Password''' - The password to use when logging into SQL Relay.
 * '''Retry Time''' - If a connection fails, it will be retried on this interval (in seconds).

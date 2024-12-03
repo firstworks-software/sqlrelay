@@ -40,6 +40,16 @@ cur<font color="#990000">=</font>con<font color="#990000">.</font><b><font color
 </tt></pre>
 
 </blockquote>
+<p>The parameters of the connect method are:</p>
+
+<ul>
+  <li><b>host</b> - The SQL Relay server to connect to.  If host is a comma-separated list of hosts, then an attempt will be made to connect to each until the attempt succeeds, or there are no more hosts left to try.</li>
+  <li><b>port</b> - The port that the SQL Relay server is listening on.  Either port or socket must be specified.  If both are specified, socket will be preferred to port.</li>
+  <li><b>socket</b> - The socket that the SQL Relay server is listening on.  Either port or socket must be specified.  If both are specified, socket will be preferred to port.</li>
+  <li><b>tries</b> - If a connection fails, it will be retried this many times.</li>
+  <li><b>retrytime</b> - If a connection fails, it will be retried on this interval (in seconds).</li>
+</ul>
+
 <p>In addition to the parameters above, the following named parameters can be used to control attributes of the connection.</p>
 
 <ul>
