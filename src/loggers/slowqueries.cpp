@@ -15,7 +15,7 @@ class SQLRSERVER_DLLSPEC sqlrlogger_slowqueries : public sqlrlogger {
 
 		bool	init(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon);
-		bool	run(sqlrlistener *sqlrl,
+		bool	write(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					sqlrloglevel_t level,
@@ -88,7 +88,7 @@ bool sqlrlogger_slowqueries::init(sqlrlistener *sqlrl,
 
 static const char *days[]={"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
 
-bool sqlrlogger_slowqueries::run(sqlrlistener *sqlrl,
+bool sqlrlogger_slowqueries::write(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					sqlrloglevel_t level,

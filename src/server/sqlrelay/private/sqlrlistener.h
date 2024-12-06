@@ -86,7 +86,9 @@
 		void		decrementBusyListeners();
 		int32_t		getBusyListeners();
 
+		void	raiseDebugStartEvent(const char *info);
 		void	raiseDebugMessageEvent(const char *info);
+		void	raiseDebugEndEvent();
 		void	raiseClientProtocolErrorEvent(const char *info,
 							ssize_t result);
 		void	raiseClientConnectionRefusedEvent(const char *info);

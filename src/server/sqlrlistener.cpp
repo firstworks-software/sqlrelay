@@ -2337,9 +2337,19 @@ int32_t sqlrlistener::getBusyListeners() {
 	return pvt->_semset->getValue(10);
 }
 
+void sqlrlistener::raiseDebugStartEvent(const char *info) {
+	if (pvt->_sqlrlg) {
+		pvt->_sqlrlg->start(this,NULL,NULL,
+				SQLRLOGGER_LOGLEVEL_DEBUG,
+				SQLREVENT_DEBUG_MESSAGE,
+				info);
+	}
+	// FIXME: sqlrn?
+}
+
 void sqlrlistener::raiseDebugMessageEvent(const char *info) {
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(this,NULL,NULL,
+		pvt->_sqlrlg->write(this,NULL,NULL,
 				SQLRLOGGER_LOGLEVEL_DEBUG,
 				SQLREVENT_DEBUG_MESSAGE,
 				info);
@@ -2349,6 +2359,15 @@ void sqlrlistener::raiseDebugMessageEvent(const char *info) {
 				SQLREVENT_DEBUG_MESSAGE,
 				info);
 	}
+}
+
+void sqlrlistener::raiseDebugEndEvent() {
+	if (pvt->_sqlrlg) {
+		pvt->_sqlrlg->end(this,NULL,NULL,
+				SQLRLOGGER_LOGLEVEL_DEBUG,
+				SQLREVENT_DEBUG_MESSAGE);
+	}
+	// FIXME: sqlrn?
 }
 
 void sqlrlistener::raiseClientProtocolErrorEvent(
@@ -2373,7 +2392,7 @@ void sqlrlistener::raiseClientProtocolErrorEvent(
 		delete[] error;
 	}
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(this,NULL,NULL,
+		pvt->_sqlrlg->write(this,NULL,NULL,
 				SQLRLOGGER_LOGLEVEL_ERROR,
 				SQLREVENT_CLIENT_PROTOCOL_ERROR,
 				errorbuffer.getString());
@@ -2387,7 +2406,7 @@ void sqlrlistener::raiseClientProtocolErrorEvent(
 
 void sqlrlistener::raiseClientConnectionRefusedEvent(const char *info) {
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(this,NULL,NULL,
+		pvt->_sqlrlg->write(this,NULL,NULL,
 				SQLRLOGGER_LOGLEVEL_WARNING,
 				SQLREVENT_CLIENT_CONNECTION_REFUSED,
 				info);
@@ -2411,7 +2430,7 @@ void sqlrlistener::raiseInternalErrorEvent(const char *info) {
 		delete[] error;
 	}
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(this,NULL,NULL,
+		pvt->_sqlrlg->write(this,NULL,NULL,
 				SQLRLOGGER_LOGLEVEL_ERROR,
 				SQLREVENT_INTERNAL_ERROR,
 				errorbuffer.getString());

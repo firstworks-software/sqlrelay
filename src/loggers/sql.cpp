@@ -16,7 +16,7 @@ class SQLRSERVER_DLLSPEC sqlrlogger_sql : public sqlrlogger {
 
 		bool	init(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon);
-		bool	run(sqlrlistener *sqlrl,
+		bool	write(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					sqlrloglevel_t level,
@@ -90,7 +90,7 @@ bool sqlrlogger_sql::init(sqlrlistener *sqlrl,
 	return true;
 }
 
-bool sqlrlogger_sql::run(sqlrlistener *sqlrl,
+bool sqlrlogger_sql::write(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					sqlrloglevel_t level,

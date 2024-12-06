@@ -9262,9 +9262,19 @@ bool sqlrservercontroller::getNotificationsEnabled() {
 	return (pvt->_sqlrn!=NULL);
 }
 
+void sqlrservercontroller::raiseDebugStartEvent(const char *info) {
+	if (pvt->_sqlrlg) {
+		pvt->_sqlrlg->start(NULL,pvt->_conn,NULL,
+					SQLRLOGGER_LOGLEVEL_DEBUG,
+					SQLREVENT_DEBUG_MESSAGE,
+					info);
+	}
+	// FIXME: sqlrn?
+}
+
 void sqlrservercontroller::raiseDebugMessageEvent(const char *info) {
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(NULL,pvt->_conn,NULL,
+		pvt->_sqlrlg->write(NULL,pvt->_conn,NULL,
 					SQLRLOGGER_LOGLEVEL_DEBUG,
 					SQLREVENT_DEBUG_MESSAGE,
 					info);
@@ -9276,9 +9286,18 @@ void sqlrservercontroller::raiseDebugMessageEvent(const char *info) {
 	}
 }
 
+void sqlrservercontroller::raiseDebugEndEvent() {
+	if (pvt->_sqlrlg) {
+		pvt->_sqlrlg->end(NULL,pvt->_conn,NULL,
+					SQLRLOGGER_LOGLEVEL_DEBUG,
+					SQLREVENT_DEBUG_MESSAGE);
+	}
+	// FIXME: sqlrn?
+}
+
 void sqlrservercontroller::raiseClientConnectedEvent() {
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(NULL,pvt->_conn,NULL,
+		pvt->_sqlrlg->write(NULL,pvt->_conn,NULL,
 					SQLRLOGGER_LOGLEVEL_INFO,
 					SQLREVENT_CLIENT_CONNECTED,
 					NULL);
@@ -9292,7 +9311,7 @@ void sqlrservercontroller::raiseClientConnectedEvent() {
 
 void sqlrservercontroller::raiseClientConnectionRefusedEvent(const char *info) {
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(NULL,pvt->_conn,NULL,
+		pvt->_sqlrlg->write(NULL,pvt->_conn,NULL,
 					SQLRLOGGER_LOGLEVEL_WARNING,
 					SQLREVENT_CLIENT_CONNECTION_REFUSED,
 					info);
@@ -9306,7 +9325,7 @@ void sqlrservercontroller::raiseClientConnectionRefusedEvent(const char *info) {
 
 void sqlrservercontroller::raiseClientDisconnectedEvent(const char *info) {
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(NULL,pvt->_conn,NULL,
+		pvt->_sqlrlg->write(NULL,pvt->_conn,NULL,
 					SQLRLOGGER_LOGLEVEL_INFO,
 					SQLREVENT_CLIENT_DISCONNECTED,
 					info);
@@ -9342,7 +9361,7 @@ void sqlrservercontroller::raiseClientProtocolErrorEvent(
 		delete[] error;
 	}
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(NULL,pvt->_conn,cursor,
+		pvt->_sqlrlg->write(NULL,pvt->_conn,cursor,
 					SQLRLOGGER_LOGLEVEL_ERROR,
 					SQLREVENT_CLIENT_PROTOCOL_ERROR,
 					errorbuffer.getString());
@@ -9356,7 +9375,7 @@ void sqlrservercontroller::raiseClientProtocolErrorEvent(
 
 void sqlrservercontroller::raiseDbLogInEvent() {
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(NULL,pvt->_conn,NULL,
+		pvt->_sqlrlg->write(NULL,pvt->_conn,NULL,
 					SQLRLOGGER_LOGLEVEL_INFO,
 					SQLREVENT_DB_LOGIN,
 					NULL);
@@ -9370,7 +9389,7 @@ void sqlrservercontroller::raiseDbLogInEvent() {
 
 void sqlrservercontroller::raiseDbLogOutEvent() {
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(NULL,pvt->_conn,NULL,
+		pvt->_sqlrlg->write(NULL,pvt->_conn,NULL,
 					SQLRLOGGER_LOGLEVEL_INFO,
 					SQLREVENT_DB_LOGOUT,
 					NULL);
@@ -9385,7 +9404,7 @@ void sqlrservercontroller::raiseDbLogOutEvent() {
 void sqlrservercontroller::raiseDbErrorEvent(sqlrservercursor *cursor,
 							const char *info) {
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(NULL,pvt->_conn,cursor,
+		pvt->_sqlrlg->write(NULL,pvt->_conn,cursor,
 					SQLRLOGGER_LOGLEVEL_ERROR,
 					SQLREVENT_DB_ERROR,
 					info);
@@ -9400,7 +9419,7 @@ void sqlrservercontroller::raiseDbErrorEvent(sqlrservercursor *cursor,
 void sqlrservercontroller::raiseDbWarningEvent(sqlrservercursor *cursor,
 							const char *info) {
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(NULL,pvt->_conn,cursor,
+		pvt->_sqlrlg->write(NULL,pvt->_conn,cursor,
 					SQLRLOGGER_LOGLEVEL_WARNING,
 					SQLREVENT_DB_WARNING,
 					info);
@@ -9414,7 +9433,7 @@ void sqlrservercontroller::raiseDbWarningEvent(sqlrservercursor *cursor,
 
 void sqlrservercontroller::raiseQueryReceivedEvent(sqlrservercursor *cursor) {
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(NULL,pvt->_conn,cursor,
+		pvt->_sqlrlg->write(NULL,pvt->_conn,cursor,
 					SQLRLOGGER_LOGLEVEL_INFO,
 					SQLREVENT_QUERY_RECEIVED,
 					NULL);
@@ -9428,7 +9447,7 @@ void sqlrservercontroller::raiseQueryReceivedEvent(sqlrservercursor *cursor) {
 
 void sqlrservercontroller::raiseQueryPreparedEvent(sqlrservercursor *cursor) {
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(NULL,pvt->_conn,cursor,
+		pvt->_sqlrlg->write(NULL,pvt->_conn,cursor,
 					SQLRLOGGER_LOGLEVEL_INFO,
 					SQLREVENT_QUERY_PREPARED,
 					NULL);
@@ -9442,7 +9461,7 @@ void sqlrservercontroller::raiseQueryPreparedEvent(sqlrservercursor *cursor) {
 
 void sqlrservercontroller::raiseQueryExecutedEvent(sqlrservercursor *cursor) {
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(NULL,pvt->_conn,cursor,
+		pvt->_sqlrlg->write(NULL,pvt->_conn,cursor,
 					SQLRLOGGER_LOGLEVEL_INFO,
 					SQLREVENT_QUERY_EXECUTED,
 					NULL);
@@ -9456,7 +9475,7 @@ void sqlrservercontroller::raiseQueryExecutedEvent(sqlrservercursor *cursor) {
 
 void sqlrservercontroller::raiseFilterViolationEvent(sqlrservercursor *cursor) {
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(NULL,pvt->_conn,cursor,
+		pvt->_sqlrlg->write(NULL,pvt->_conn,cursor,
 					SQLRLOGGER_LOGLEVEL_INFO,
 					SQLREVENT_FILTER_VIOLATION,
 					NULL);
@@ -9481,7 +9500,7 @@ void sqlrservercontroller::raiseInternalErrorEvent(sqlrservercursor *cursor,
 		delete[] error;
 	}
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(NULL,pvt->_conn,cursor,
+		pvt->_sqlrlg->write(NULL,pvt->_conn,cursor,
 					SQLRLOGGER_LOGLEVEL_ERROR,
 					SQLREVENT_INTERNAL_ERROR,
 					errorbuffer.getString());
@@ -9506,7 +9525,7 @@ void sqlrservercontroller::raiseInternalWarningEvent(sqlrservercursor *cursor,
 		delete[] error;
 	}
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(NULL,pvt->_conn,cursor,
+		pvt->_sqlrlg->write(NULL,pvt->_conn,cursor,
 					SQLRLOGGER_LOGLEVEL_WARNING,
 					SQLREVENT_INTERNAL_WARNING,
 					warningbuffer.getString());
@@ -9520,7 +9539,7 @@ void sqlrservercontroller::raiseInternalWarningEvent(sqlrservercursor *cursor,
 
 void sqlrservercontroller::raiseScheduleViolationEvent(const char *info) {
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(NULL,pvt->_conn,NULL,
+		pvt->_sqlrlg->write(NULL,pvt->_conn,NULL,
 					SQLRLOGGER_LOGLEVEL_WARNING,
 					SQLREVENT_SCHEDULE_VIOLATION,
 					info);
@@ -9534,7 +9553,7 @@ void sqlrservercontroller::raiseScheduleViolationEvent(const char *info) {
 
 void sqlrservercontroller::raiseIntegrityViolationEvent(const char *info) {
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(NULL,pvt->_conn,NULL,
+		pvt->_sqlrlg->write(NULL,pvt->_conn,NULL,
 					SQLRLOGGER_LOGLEVEL_ERROR,
 					SQLREVENT_INTEGRITY_VIOLATION,
 					info);
@@ -9550,7 +9569,7 @@ void sqlrservercontroller::raiseTranslationFailureEvent(
 						sqlrservercursor *cursor,
 						const char *info) {
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(NULL,pvt->_conn,cursor,
+		pvt->_sqlrlg->write(NULL,pvt->_conn,cursor,
 					SQLRLOGGER_LOGLEVEL_ERROR,
 					SQLREVENT_TRANSLATION_FAILURE,
 					info);
@@ -9566,7 +9585,7 @@ void sqlrservercontroller::raiseParseFailureEvent(
 						sqlrservercursor *cursor,
 						const char *info) {
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(NULL,pvt->_conn,cursor,
+		pvt->_sqlrlg->write(NULL,pvt->_conn,cursor,
 					SQLRLOGGER_LOGLEVEL_ERROR,
 					SQLREVENT_PARSE_FAILURE,
 					info);
@@ -9580,7 +9599,7 @@ void sqlrservercontroller::raiseParseFailureEvent(
 
 void sqlrservercontroller::raiseCursorOpenEvent(sqlrservercursor *cursor) {
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(NULL,pvt->_conn,cursor,
+		pvt->_sqlrlg->write(NULL,pvt->_conn,cursor,
 					SQLRLOGGER_LOGLEVEL_INFO,
 					SQLREVENT_CURSOR_OPEN,
 					NULL);
@@ -9594,7 +9613,7 @@ void sqlrservercontroller::raiseCursorOpenEvent(sqlrservercursor *cursor) {
 
 void sqlrservercontroller::raiseCursorCloseEvent(sqlrservercursor *cursor) {
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(NULL,pvt->_conn,cursor,
+		pvt->_sqlrlg->write(NULL,pvt->_conn,cursor,
 					SQLRLOGGER_LOGLEVEL_INFO,
 					SQLREVENT_CURSOR_CLOSE,
 					NULL);
@@ -9608,7 +9627,7 @@ void sqlrservercontroller::raiseCursorCloseEvent(sqlrservercursor *cursor) {
 
 void sqlrservercontroller::raiseBeginTransactionEvent() {
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(NULL,pvt->_conn,NULL,
+		pvt->_sqlrlg->write(NULL,pvt->_conn,NULL,
 					SQLRLOGGER_LOGLEVEL_INFO,
 					SQLREVENT_BEGIN_TRANSACTION,
 					NULL);
@@ -9622,7 +9641,7 @@ void sqlrservercontroller::raiseBeginTransactionEvent() {
 
 void sqlrservercontroller::raiseCommitEvent() {
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(NULL,pvt->_conn,NULL,
+		pvt->_sqlrlg->write(NULL,pvt->_conn,NULL,
 					SQLRLOGGER_LOGLEVEL_INFO,
 					SQLREVENT_COMMIT,
 					NULL);
@@ -9636,7 +9655,7 @@ void sqlrservercontroller::raiseCommitEvent() {
 
 void sqlrservercontroller::raiseRollbackEvent() {
 	if (pvt->_sqlrlg) {
-		pvt->_sqlrlg->run(NULL,pvt->_conn,NULL,
+		pvt->_sqlrlg->write(NULL,pvt->_conn,NULL,
 					SQLRLOGGER_LOGLEVEL_INFO,
 					SQLREVENT_ROLLBACK,
 					NULL);

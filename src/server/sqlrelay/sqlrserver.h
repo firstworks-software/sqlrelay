@@ -1207,9 +1207,17 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  otherwise. */
 		bool	getNotificationsEnabled();
 
+		/** Raises a debug-start event with information "info", which
+		 *  may be logged, or which may trigger a notification. */
+		void	raiseDebugStartEvent(const char *info);
+
 		/** Raises a debug-message event with information "info", which
 		 *  may be logged, or which may trigger a notification. */
 		void	raiseDebugMessageEvent(const char *info);
+
+		/** Raises a debug-end event, which may be logged, or which may
+		 *  trigger a notification. */
+		void	raiseDebugEndEvent();
 
 		/** Raises a client-connected event, which may be logged, or
 		 *  which may trigger a notification. */
@@ -6231,6 +6239,21 @@ class SQLRSERVER_DLLSPEC sqlrlogger : public sqlrservermodule {
 		virtual bool	init(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon);
 
+		/** Begins a block of "event" of loglevel "level" with "info".
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  This implementation just returns true, but may be
+		 *  overridden by a child class to perform logging of
+		 *  specific events/info at specific loglevels to specific
+		 *  backends. */
+		virtual bool	start(sqlrlistener *sqlrl,
+					sqlrserverconnection *sqlrcon,
+					sqlrservercursor *sqlrcur,
+					sqlrloglevel_t level,
+					sqlrevent_t event,
+					const char *info);
+
 		/** Logs "event" of loglevel "level" with "info".
 		 *
 		 *  Returns true on success and false if an error occurred.
@@ -6239,12 +6262,26 @@ class SQLRSERVER_DLLSPEC sqlrlogger : public sqlrservermodule {
 		 *  overridden by a child class to perform logging of
 		 *  specific events/info at specific loglevels to specific
 		 *  backends. */
-		virtual bool	run(sqlrlistener *sqlrl,
+		virtual bool	write(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					sqlrloglevel_t level,
 					sqlrevent_t event,
 					const char *info);
+
+		/** Ends a block of "event" of loglevel "level".
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  This implementation just returns true, but may be
+		 *  overridden by a child class to perform logging of
+		 *  specific events/info at specific loglevels to specific
+		 *  backends. */
+		virtual bool	end(sqlrlistener *sqlrl,
+					sqlrserverconnection *sqlrcon,
+					sqlrservercursor *sqlrcur,
+					sqlrloglevel_t level,
+					sqlrevent_t event);
 
 	#include <sqlrelay/private/sqlrlogger.h>
 };

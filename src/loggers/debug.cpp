@@ -13,53 +13,102 @@ class SQLRSERVER_DLLSPEC sqlrlogger_debug : public sqlrlogger {
 		sqlrlogger_debug(domnode *parameters);
 		~sqlrlogger_debug();
 
-		bool	init(sqlrlistener *sqlrl, sqlrserverconnection *sqlrcon);
-		bool	run(sqlrlistener *sqlrl,
+		bool	init(sqlrlistener *sqlrl,
+					sqlrserverconnection *sqlrcon);
+		bool	start(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					sqlrloglevel_t level,
 					sqlrevent_t event,
 					const char *info);
+		bool	write(sqlrlistener *sqlrl,
+					sqlrserverconnection *sqlrcon,
+					sqlrservercursor *sqlrcur,
+					sqlrloglevel_t level,
+					sqlrevent_t event,
+					const char *info);
+		bool	end(sqlrlistener *sqlrl,
+					sqlrserverconnection *sqlrcon,
+					sqlrservercursor *sqlrcur,
+					sqlrloglevel_t level,
+					sqlrevent_t event);
 	private:
-		bool	openDebugFile();
-		void	closeDebugFile();
+		bool	openDebug();
+		void	closeDebug();
 
-		filedestination		*dbgfile;
-		logger			*debuglogger;
-		char			*dbgfilename;
-		mode_t			dbgfileperms;
-		const char		*name;
+		bool			logtostdout;
+		bool			logtostderr;
+		bool			logtosyslog;
+		bool			logtofile;
+
 		bool			loglistener;
 		bool			logconnection;
+
+		logger			*debuglogger;
+
+		stdoutdestination	*stdoutdest;
+		stderrdestination	*stderrdest;
+		syslogdestination	*syslogdest;
+		filedestination		*filedest;
+
+		const char		*debugdir;
+		mode_t			debugfileperms;
+
+		const char		*processname;
+
+		uint16_t		indent;
 };
 
 sqlrlogger_debug::sqlrlogger_debug(domnode *parameters) :
 					sqlrlogger(parameters) {
-	dbgfile=NULL;
-	debuglogger=NULL;
-	dbgfilename=NULL;
+
+	logtostdout=charstring::isYes(parameters->getAttributeValue("stdout"));
+	logtostderr=charstring::isYes(parameters->getAttributeValue("stderr"));
+	logtosyslog=charstring::isYes(parameters->getAttributeValue("syslog"));
+
+	// If file="..." isn't specified at all, then enable it, if nothing
+	// else was enabled.  Otherwise, only enable it if it's set to "yes".
+	const char	*fileattr=parameters->getAttributeValue("file");
+	if (charstring::isNullOrEmpty(fileattr)) {
+		logtofile=!logtostdout && !logtostderr && !logtosyslog;
+	} else {
+		logtofile=charstring::isYes(
+				parameters->getAttributeValue("file"));
+	}
+
 	const char	*permstring=parameters->getAttributeValue("perms");
 	if (!charstring::getLength(permstring)) {
 		permstring="rw-------";
 	}
-	dbgfileperms=permissions::parsePermString(permstring);
-	name=NULL;
+
 	loglistener=!charstring::isNo(
 			parameters->getAttributeValue("listener"));
 	logconnection=!charstring::isNo(
 			parameters->getAttributeValue("connection"));
+
+	debuglogger=NULL;
+
+	stdoutdest=NULL;
+	stderrdest=NULL;
+	syslogdest=NULL;
+	filedest=NULL;
+
+	debugdir=NULL;
+	debugfileperms=permissions::parsePermString(permstring);
+
+	processname=NULL;
+
+	indent=0;
 }
 
 sqlrlogger_debug::~sqlrlogger_debug() {
-	closeDebugFile();
-	delete[] dbgfilename;
+	closeDebug();
 }
 
 bool sqlrlogger_debug::init(sqlrlistener *sqlrl,
 				sqlrserverconnection *sqlrcon) {
 
-	closeDebugFile();
-	delete[] dbgfilename;
+	closeDebug();
 
 	// Log listener or connection.
 	// Log both by default, but either can be disabled.
@@ -69,18 +118,13 @@ bool sqlrlogger_debug::init(sqlrlistener *sqlrl,
 	if (sqlrcon && !logconnection) {
 		return true;
 	}
-
-	// set the debug file name
-	name=(sqlrl)?"listener":"connection";
-	const char	*debugdir=
-			(sqlrcon)?sqlrcon->cont->getPaths()->getDebugDir():
+	processname=(sqlrl)?("sqlr-listener"):("sqlr-connection");
+	debugdir=(sqlrcon)?sqlrcon->cont->getPaths()->getDebugDir():
 					sqlrl->getPaths()->getDebugDir();
-	charstring::printf(&dbgfilename,"%s/sqlr-%s.%ld",
-				debugdir,name,(long)process::getProcessId());
 	return true;
 }
 
-bool sqlrlogger_debug::run(sqlrlistener *sqlrl,
+bool sqlrlogger_debug::start(sqlrlistener *sqlrl,
 				sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
 				sqlrloglevel_t level,
@@ -92,51 +136,132 @@ bool sqlrlogger_debug::run(sqlrlistener *sqlrl,
 	if (sqlrcon && !logconnection) {
 		return true;
 	}
-	if (!debuglogger && !openDebugFile()) {
+	if (!debuglogger && !openDebug()) {
 		return false;
 	}
-	if (!charstring::isNullOrEmpty(info)) {
-		char	*header=debuglogger->getLogHeader(name);
-		debuglogger->write(0,header,0,"%s",info);
-		delete[] header;
+	if (charstring::isNullOrEmpty(info)) {
+		return true;
 	}
+	debuglogger->start(0,NULL,indent,info);
+	indent++;
 	return true;
 }
 
-bool sqlrlogger_debug::openDebugFile() {
+bool sqlrlogger_debug::write(sqlrlistener *sqlrl,
+				sqlrserverconnection *sqlrcon,
+				sqlrservercursor *sqlrcur,
+				sqlrloglevel_t level,
+				sqlrevent_t event,
+				const char *info) {
+	if (sqlrl && !loglistener) {
+		return true;
+	}
+	if (sqlrcon && !logconnection) {
+		return true;
+	}
+	if (!debuglogger && !openDebug()) {
+		return false;
+	}
+	if (charstring::isNullOrEmpty(info)) {
+		return true;
+	}
+	debuglogger->write(0,NULL,indent,info);
+	return true;
+}
 
-	// create the debug file
-	dbgfile=new filedestination();
+bool sqlrlogger_debug::end(sqlrlistener *sqlrl,
+				sqlrserverconnection *sqlrcon,
+				sqlrservercursor *sqlrcur,
+				sqlrloglevel_t level,
+				sqlrevent_t event) {
+	if (sqlrl && !loglistener) {
+		return true;
+	}
+	if (sqlrcon && !logconnection) {
+		return true;
+	}
+	if (!debuglogger && !openDebug()) {
+		return false;
+	}
+	indent--;
+	debuglogger->end(0,(const char *)NULL,indent);
+	return true;
+}
 
-	// open the file
-	bool	retval=false;
-	if (dbgfile->open(dbgfilename,dbgfileperms)) {
-		stdoutput.printf("Debugging to: %s\n",dbgfilename);
-		debuglogger=new logger();
-		debuglogger->addLogDestination(dbgfile);
-		retval=true;
-	} else {
-		stderror.printf("Couldn't open debug file: %s\n",dbgfilename);
-		if (dbgfile) {
-			dbgfile->close();
-			delete dbgfile;
-			dbgfile=NULL;
-		}
+bool sqlrlogger_debug::openDebug() {
+
+	bool	retval=true;
+
+	debuglogger=new logger();
+
+	if (logtostdout) {
+		stdoutdest=new stdoutdestination();
+		stdoutput.printf("Debugging to: stdout\n");
+		debuglogger->addLogDestination(stdoutdest);
+	}
+	
+	if (logtostderr) {
+		stderrdest=new stderrdestination();
+		stdoutput.printf("Debugging to: stderr\n");
+		debuglogger->addLogDestination(stderrdest);
+	}
+	
+	if (logtosyslog) {
+		syslogdest=new syslogdestination();
+		stdoutput.printf("Debugging to: syslog\n");
+		syslogdest->open(processname,LOG_CONS,LOG_USER,LOG_DEBUG);
+		debuglogger->addLogDestination(syslogdest);
 	}
 
-	delete[] dbgfilename;
-	dbgfilename=NULL;
+	if (logtofile) {
+
+		// build the debug file name
+		char	*debugfilename;
+		charstring::printf(&debugfilename,"%s/%s.%ld",
+			debugdir,processname,(long)process::getProcessId());
+
+		// open the file destination
+		filedest=new filedestination();
+		if (filedest->open(debugfilename,debugfileperms)) {
+			stdoutput.printf("Debugging to: %s\n",debugfilename);
+			debuglogger->addLogDestination(filedest);
+		} else {
+			stderror.printf("Couldn't open debug file: %s\n",
+								debugfilename);
+			filedest->close();
+			delete filedest;
+			filedest=NULL;
+			retval=false;
+		}
+
+		// clean up
+		delete[] debugfilename;
+	}
 	return retval;
 }
 
-void sqlrlogger_debug::closeDebugFile() {
-	if (dbgfile) {
-		dbgfile->close();
-		delete dbgfile;
-		dbgfile=NULL;
-		delete debuglogger;
-		debuglogger=NULL;
+void sqlrlogger_debug::closeDebug() {
+
+	delete stdoutdest;
+	stdoutdest=NULL;
+
+	delete stderrdest;
+	stderrdest=NULL;
+
+	if (syslogdest) {
+		syslogdest->close();
+		delete syslogdest;
+		syslogdest=NULL;
 	}
+
+	if (filedest) {
+		filedest->close();
+		delete filedest;
+		filedest=NULL;
+	}
+
+	delete debuglogger;
+	debuglogger=NULL;
 }
 
 extern "C" {

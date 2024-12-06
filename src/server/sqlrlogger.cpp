@@ -21,11 +21,28 @@ bool sqlrlogger::init(sqlrlistener *sqlrl, sqlrserverconnection *sqlrcon) {
 	return true;
 }
 
-bool sqlrlogger::run(sqlrlistener *sqlrl,
+bool sqlrlogger::start(sqlrlistener *sqlrl,
 			sqlrserverconnection *sqlrcon,
 			sqlrservercursor *sqlrcur,
 			sqlrloglevel_t level,
 			sqlrevent_t event,
 			const char *info) {
+	return true;
+}
+
+bool sqlrlogger::write(sqlrlistener *sqlrl,
+			sqlrserverconnection *sqlrcon,
+			sqlrservercursor *sqlrcur,
+			sqlrloglevel_t level,
+			sqlrevent_t event,
+			const char *info) {
+	return true;
+}
+
+bool sqlrlogger::end(sqlrlistener *sqlrl,
+			sqlrserverconnection *sqlrcon,
+			sqlrservercursor *sqlrcur,
+			sqlrloglevel_t level,
+			sqlrevent_t event) {
 	return true;
 }

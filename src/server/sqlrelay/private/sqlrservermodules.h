@@ -65,12 +65,23 @@ class SQLRSERVER_DLLSPEC sqlrloggers : public sqlrservermodules {
 
 		void	init(sqlrlistener *sqlrl,
 				sqlrserverconnection *sqlrcon);
-		void	run(sqlrlistener *sqlrl,
+		void	start(sqlrlistener *sqlrl,
 				sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
 				sqlrloglevel_t level,
 				sqlrevent_t event,
 				const char *info);
+		void	write(sqlrlistener *sqlrl,
+				sqlrserverconnection *sqlrcon,
+				sqlrservercursor *sqlrcur,
+				sqlrloglevel_t level,
+				sqlrevent_t event,
+				const char *info);
+		void	end(sqlrlistener *sqlrl,
+				sqlrserverconnection *sqlrcon,
+				sqlrservercursor *sqlrcur,
+				sqlrloglevel_t level,
+				sqlrevent_t event);
 
 	private:
 		void	loadModule(domnode *parameters);

@@ -14,7 +14,7 @@ class SQLRSERVER_DLLSPEC sqlrlogger_stalecursors : public sqlrlogger {
 		~sqlrlogger_stalecursors();
 
 		bool	init(sqlrlistener *sqlrl, sqlrserverconnection *sqlrcon);
-		bool	run(sqlrlistener *sqlrl,
+		bool	write(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					sqlrloglevel_t level,
@@ -131,7 +131,7 @@ bool sqlrlogger_stalecursors::init(sqlrlistener *sqlrl,
 	return true;
 }
 
-bool sqlrlogger_stalecursors::run(sqlrlistener *sqlrl,
+bool sqlrlogger_stalecursors::write(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					sqlrloglevel_t level,

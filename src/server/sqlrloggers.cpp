@@ -106,7 +106,24 @@ void sqlrloggers::init(sqlrlistener *sqlrl,
 	}
 }
 
-void sqlrloggers::run(sqlrlistener *sqlrl,
+void sqlrloggers::start(sqlrlistener *sqlrl,
+				sqlrserverconnection *sqlrcon,
+				sqlrservercursor *sqlrcur,
+				sqlrloglevel_t level,
+				sqlrevent_t event,
+				const char *info) {
+
+	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
+						node; node=node->getNext()) {
+		debugWrite("running logger start: %s...",
+					node->getValue()->module);
+
+		sqlrlogger	*lg=(sqlrlogger *)node->getValue()->m;
+		lg->start(sqlrl,sqlrcon,sqlrcur,level,event,info);
+	}
+}
+
+void sqlrloggers::write(sqlrlistener *sqlrl,
 				sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
 				sqlrloglevel_t level,
@@ -116,9 +133,27 @@ void sqlrloggers::run(sqlrlistener *sqlrl,
 	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
 
-		debugWrite("running logger: %s...",node->getValue()->module);
+		debugWrite("running logger write: %s...",
+					node->getValue()->module);
 
 		sqlrlogger	*lg=(sqlrlogger *)node->getValue()->m;
-		lg->run(sqlrl,sqlrcon,sqlrcur,level,event,info);
+		lg->write(sqlrl,sqlrcon,sqlrcur,level,event,info);
+	}
+}
+
+void sqlrloggers::end(sqlrlistener *sqlrl,
+				sqlrserverconnection *sqlrcon,
+				sqlrservercursor *sqlrcur,
+				sqlrloglevel_t level,
+				sqlrevent_t event) {
+
+	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
+						node; node=node->getNext()) {
+
+		debugWrite("running logger end: %s...",
+					node->getValue()->module);
+
+		sqlrlogger	*lg=(sqlrlogger *)node->getValue()->m;
+		lg->end(sqlrl,sqlrcon,sqlrcur,level,event);
 	}
 }

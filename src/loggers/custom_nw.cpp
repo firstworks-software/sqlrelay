@@ -17,7 +17,7 @@ class SQLRSERVER_DLLSPEC sqlrlogger_custom_nw : public sqlrlogger {
 		~sqlrlogger_custom_nw();
 
 		bool	init(sqlrlistener *sqlrl, sqlrserverconnection *sqlrcon);
-		bool	run(sqlrlistener *sqlrl,
+		bool	write(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
 					sqlrloglevel_t level,
@@ -68,7 +68,7 @@ bool sqlrlogger_custom_nw::init(sqlrlistener *sqlrl,
 				permissions::parsePermString("rw-------"));
 }
 
-bool sqlrlogger_custom_nw::run(sqlrlistener *sqlrl,
+bool sqlrlogger_custom_nw::write(sqlrlistener *sqlrl,
 				sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
 				sqlrloglevel_t level,
