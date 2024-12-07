@@ -1209,11 +1209,11 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 
 		/** Raises a debug-start event with information "info", which
 		 *  may be logged, or which may trigger a notification. */
-		void	raiseDebugStartEvent(const char *info);
+		void	raiseDebugStartEvent(const char *info, ...);
 
-		/** Raises a debug-message event with information "info", which
+		/** Raises a debug-write event with information "info", which
 		 *  may be logged, or which may trigger a notification. */
-		void	raiseDebugMessageEvent(const char *info);
+		void	raiseDebugWriteEvent(const char *info, ...);
 
 		/** Raises a debug-end event, which may be logged, or which may
 		 *  trigger a notification. */
@@ -1226,11 +1226,12 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		/** Raises a client-connection-refused event with information
 		 *  "info", which may be logged, or which may trigger a
 		 *  notification. */
-		void	raiseClientConnectionRefusedEvent(const char *info);
+		void	raiseClientConnectionRefusedEvent(
+						const char *info, ...);
 
 		/** Raises a client-disconnected event with information "info",
 		 *  which may be logged, or which may trigger a notification. */
-		void	raiseClientDisconnectedEvent(const char *info);
+		void	raiseClientDisconnectedEvent(const char *info, ...);
 
 		/** Raises a client-protocol-error event on cursor "cursor",
 		 *  with information "info", and with result code "result"
@@ -1238,8 +1239,8 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  RESULT_TIMEOUT, or RESULT_ABORT) which may be logged, or
 		 *  which may trigger a notification. */
 		void	raiseClientProtocolErrorEvent(sqlrservercursor *cursor,
-							const char *info,
-							ssize_t result);
+							ssize_t result,
+							const char *info, ...);
 
 		/** Raises a database-login event, which may be logged, or
 		 *  which may trigger a notification. */
@@ -1253,13 +1254,13 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  information "info", which may be logged, or which may
 		 *  trigger a notification. */
 		void	raiseDbErrorEvent(sqlrservercursor *cursor,
-							const char *info);
+							const char *info, ...);
 
 		/** Raises a database-warning event on cursor "cursor", with
 		 *  information "info", which may be logged, or which may
 		 *  trigger a notification. */
 		void	raiseDbWarningEvent(sqlrservercursor *cursor,
-							const char *info);
+							const char *info, ...);
 
 		/** Raises a query-received event on cursor "cursor", which may
 		 *  be logged, or which may trigger a notification. */
@@ -1281,31 +1282,31 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  information "info", which may be logged, or which may
 		 *  trigger a notification. */
 		void	raiseInternalErrorEvent(sqlrservercursor *cursor,
-							const char *info);
+							const char *info, ...);
 
 		/** Raises an internal-warning event on cursor "cursor", with
 		 *  information "info", which may be logged, or which may
 		 *  trigger a notification. */
 		void	raiseInternalWarningEvent(sqlrservercursor *cursor,
-							const char *info);
+							const char *info, ...);
 
 		/** Raises a schedule-violation event, with information "info",
 		 *  which may be logged, or which may trigger a notification. */
-		void	raiseScheduleViolationEvent(const char *info);
+		void	raiseScheduleViolationEvent(const char *info, ...);
 
 		/** Raises a integrity-violation event, with information "info",
 		 *  which may be logged, or which may trigger a notification. */
-		void	raiseIntegrityViolationEvent(const char *info);
+		void	raiseIntegrityViolationEvent(const char *info, ...);
 
 		/** Raises a translation-failure event, with information "info",
 		 *  which may be logged, or which may trigger a notification. */
 		void	raiseTranslationFailureEvent(sqlrservercursor *cursor,
-							const char *info);
+							const char *info, ...);
 
 		/** Raises a parse-failure event, with information "info",
 		 *  which may be logged, or which may trigger a notification. */
 		void	raiseParseFailureEvent(sqlrservercursor *cursor,
-							const char *info);
+							const char *info, ...);
 
 		/** Raises a cursor-open event, on cursor "cursor", which may
 		 *  be logged, or which may trigger a notification. */

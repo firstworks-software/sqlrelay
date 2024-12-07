@@ -832,7 +832,7 @@ bool oracleconnection::logIn(const char **error, const char **warning) {
 			stringbuffer	debugstr;
 			debugstr.append("cache size ");
 			debugstr.append(stmtcachesize);
-			cont->raiseDebugMessageEvent(debugstr.getString());
+			cont->raiseDebugWriteEvent(debugstr.getString());
 		}
 	}
 	#endif
@@ -2675,13 +2675,13 @@ bool oraclecursor::prepareQuery(const char *query, uint32_t size) {
 					OCI_SUCCESS) {
 				// we got a hit and don't
 				// need to do anything else
-				oracleconn->cont->raiseDebugMessageEvent(
+				oracleconn->cont->raiseDebugWriteEvent(
 							"statement cache hit");
 				prepare=false;
 			} else {
 				// we didn't get a hit and
 				// need to prepare the query
-				oracleconn->cont->raiseDebugMessageEvent(
+				oracleconn->cont->raiseDebugWriteEvent(
 							"statement cache miss");
 			}
 		}

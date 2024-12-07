@@ -86,12 +86,14 @@
 		void		decrementBusyListeners();
 		int32_t		getBusyListeners();
 
-		void	raiseDebugStartEvent(const char *info);
-		void	raiseDebugMessageEvent(const char *info);
+		void	raiseDebugStartEvent(const char *info, ...);
+		void	raiseDebugWriteEvent(const char *info, ...);
 		void	raiseDebugEndEvent();
-		void	raiseClientProtocolErrorEvent(const char *info,
-							ssize_t result);
-		void	raiseClientConnectionRefusedEvent(const char *info);
-		void	raiseInternalErrorEvent(const char *info);
+		void	raiseClientProtocolErrorEvent(
+						ssize_t result,
+						const char *info, ...);
+		void	raiseClientConnectionRefusedEvent(
+						const char *info, ...);
+		void	raiseInternalErrorEvent(const char *info, ...);
 
 		sqlrlistenerprivate	*pvt;
