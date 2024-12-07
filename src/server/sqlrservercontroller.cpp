@@ -1193,6 +1193,7 @@ void sqlrservercontroller::logOut() {
 
 	pvt->_loggedin=false;
 
+	raiseDebugWriteEvent("success");
 	raiseDebugEndEvent();
 }
 
@@ -5476,15 +5477,14 @@ void sqlrservercontroller::commitOrRollback(sqlrservercursor *cursor) {
 	// if the query was a commit or rollback, set a flag indicating so
 	if (pvt->_conn->isTransactional()) {
 		if (cursor->queryIsCommitOrRollback()) {
-			raiseDebugWriteEvent("not needed");
 			pvt->_needscommitorrollback=false;
 		} else if (cursor->queryIsNotSelect()) {
-			raiseDebugWriteEvent("needed");
 			pvt->_needscommitorrollback=true;
 		}
-	} else {
-		raiseDebugWriteEvent("not transactional");
 	}
+
+	raiseDebugWriteEvent("commit/rollback %s",
+		(pvt->_needscommitorrollback)?"needed":"not needed");
 
 	raiseDebugEndEvent();
 }
@@ -6946,6 +6946,7 @@ void sqlrservercontroller::closeCursors(bool destroy) {
 		}
 	}
 
+	raiseDebugWriteEvent("success");
 	raiseDebugEndEvent();
 }
 
