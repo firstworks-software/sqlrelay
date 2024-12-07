@@ -587,11 +587,12 @@ void sqlrlistener::setIpPermissions() {
 
 bool sqlrlistener::createSharedMemoryAndSemaphores(const char *id) {
 
+	raiseDebugStartEvent("creating shared memory and semaphores");
+
 	// initialize the ipc filename
 	charstring::printf(&pvt->_idfilename,
 				"%s%s.ipc",pvt->_sqlrpth->getIpcDir(),id);
 
-	raiseDebugStartEvent("creating shared memory and semaphores");
 	raiseDebugWriteEvent("id filename: %s",pvt->_idfilename);
 
 	// make sure that the file exists and is read/writeable
@@ -1059,7 +1060,7 @@ bool sqlrlistener::listen() {
 			raiseDebugWriteEvent("sleeping 1s...");
 			snooze::macrosnooze(1);
 		} else {
-			raiseDebugWriteEvent("done");
+			raiseDebugWriteEvent("success");
 			break;
 		}
 	}
