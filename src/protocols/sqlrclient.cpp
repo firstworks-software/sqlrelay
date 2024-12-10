@@ -11,8 +11,6 @@
 #include <rudiments/userentry.h>
 #include <rudiments/process.h>
 #include <rudiments/file.h>
-//#define DEBUG_MESSAGES 1
-#include <rudiments/debugprint.h>
 
 #include <datatypes.h>
 #include <defaults.h>
@@ -241,7 +239,6 @@ sqlrprotocol_sqlrclient::sqlrprotocol_sqlrclient(
 					sqlrservercontroller *cont,
 					domnode *parameters) :
 					sqlrprotocol(cont,parameters) {
-	debugFunction();
 
 	idleclienttimeout=cont->getConfig()->getIdleClientTimeout();
 	maxclientinfosize=cont->getConfig()->getMaxClientInfoSize();
@@ -269,13 +266,11 @@ sqlrprotocol_sqlrclient::sqlrprotocol_sqlrclient(
 }
 
 sqlrprotocol_sqlrclient::~sqlrprotocol_sqlrclient() {
-	debugFunction();
 	delete[] clientinfo;
 }
 
 clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 							filedescriptor *cs) {
-	debugFunction();
 
 	clientsock=cs;
 
@@ -624,7 +619,6 @@ bool sqlrprotocol_sqlrclient::acceptSecurityContext() {
 }
 
 bool sqlrprotocol_sqlrclient::getCommand(uint16_t *command) {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("getting command");
 
@@ -652,7 +646,6 @@ bool sqlrprotocol_sqlrclient::getCommand(uint16_t *command) {
 }
 
 sqlrservercursor *sqlrprotocol_sqlrclient::getCursor(uint16_t command) {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("getting a cursor");
 
@@ -715,7 +708,6 @@ sqlrservercursor *sqlrprotocol_sqlrclient::getCursor(uint16_t command) {
 }
 
 void sqlrprotocol_sqlrclient::noAvailableCursors(uint16_t command) {
-	debugFunction();
 
 	// If no cursor was available, the client
 	// could send an entire query and bind vars
@@ -774,7 +766,6 @@ void sqlrprotocol_sqlrclient::noAvailableCursors(uint16_t command) {
 }
 
 bool sqlrprotocol_sqlrclient::authCommand() {
-	debugFunction();
 
 	// get the user/password from the client
 	if (!getUserFromClient() || !getPasswordFromClient()) {
@@ -847,7 +838,6 @@ bool sqlrprotocol_sqlrclient::authCommand() {
 }
 
 bool sqlrprotocol_sqlrclient::getUserFromClient() {
-	debugFunction();
 	uint32_t	size=0;
 	ssize_t		result=clientsock->read(&size,idleclienttimeout,0);
 	if (result!=sizeof(uint32_t)) {
@@ -857,10 +847,8 @@ bool sqlrprotocol_sqlrclient::getUserFromClient() {
 		return false;
 	}
 	if (size>=sizeof(userbuffer)) {
-		debugstr.clear();
-		debugstr.append("authentication failed: user size too long: ");
-		debugstr.append(size);
-		cont->raiseClientConnectionRefusedEvent(debugstr.getString());
+		cont->raiseClientConnectionRefusedEvent(
+			"authentication failed: user size too long: %d",size);
 		return false;
 	}
 	result=clientsock->read(userbuffer,size,idleclienttimeout,0);
@@ -875,7 +863,6 @@ bool sqlrprotocol_sqlrclient::getUserFromClient() {
 }
 
 bool sqlrprotocol_sqlrclient::getPasswordFromClient() {
-	debugFunction();
 	uint32_t	size=0;
 	ssize_t		result=clientsock->read(&size,idleclienttimeout,0);
 	if (result!=sizeof(uint32_t)) {
@@ -885,11 +872,9 @@ bool sqlrprotocol_sqlrclient::getPasswordFromClient() {
 		return false;
 	}
 	if (size>=sizeof(passwordbuffer)) {
-		debugstr.clear();
-		debugstr.append("authentication failed: "
-				"password size too long: ");
-		debugstr.append(size);
-		cont->raiseClientConnectionRefusedEvent(debugstr.getString());
+		cont->raiseClientConnectionRefusedEvent(
+				"authentication failed: "
+				"password size too long: %d",size);
 		return false;
 	}
 	result=clientsock->read(passwordbuffer,size,idleclienttimeout,0);
@@ -904,7 +889,6 @@ bool sqlrprotocol_sqlrclient::getPasswordFromClient() {
 }
 
 void sqlrprotocol_sqlrclient::suspendSessionCommand() {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("suspending session");
 
@@ -934,7 +918,6 @@ void sqlrprotocol_sqlrclient::suspendSessionCommand() {
 }
 
 void sqlrprotocol_sqlrclient::pingCommand() {
-	debugFunction();
 	cont->raiseDebugStartEvent("ping");
 	bool	pingresult=cont->ping();
 	if (pingresult) {
@@ -952,7 +935,6 @@ void sqlrprotocol_sqlrclient::pingCommand() {
 }
 
 void sqlrprotocol_sqlrclient::identifyCommand() {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("identify");
 
@@ -971,7 +953,6 @@ void sqlrprotocol_sqlrclient::identifyCommand() {
 }
 
 void sqlrprotocol_sqlrclient::autoCommitCommand() {
-	debugFunction();
 	cont->raiseDebugStartEvent("autocommit");
 	bool	on;
 	ssize_t	result=clientsock->read(&on,idleclienttimeout,0);
@@ -1001,7 +982,6 @@ void sqlrprotocol_sqlrclient::autoCommitCommand() {
 }
 
 void sqlrprotocol_sqlrclient::beginCommand() {
-	debugFunction();
 	cont->raiseDebugStartEvent("begin");
 	if (cont->begin()) {
 		cont->raiseDebugWriteEvent("success");
@@ -1015,7 +995,6 @@ void sqlrprotocol_sqlrclient::beginCommand() {
 }
 
 void sqlrprotocol_sqlrclient::commitCommand() {
-	debugFunction();
 	cont->raiseDebugStartEvent("commit");
 	if (cont->commit()) {
 		cont->raiseDebugWriteEvent("success");
@@ -1029,7 +1008,6 @@ void sqlrprotocol_sqlrclient::commitCommand() {
 }
 
 void sqlrprotocol_sqlrclient::rollbackCommand() {
-	debugFunction();
 	cont->raiseDebugStartEvent("rollback");
 	if (cont->rollback()) {
 		cont->raiseDebugWriteEvent("success");
@@ -1043,7 +1021,6 @@ void sqlrprotocol_sqlrclient::rollbackCommand() {
 }
 
 void sqlrprotocol_sqlrclient::dbVersionCommand() {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("db version");
 
@@ -1062,7 +1039,6 @@ void sqlrprotocol_sqlrclient::dbVersionCommand() {
 }
 
 void sqlrprotocol_sqlrclient::bindFormatCommand() {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("bind format");
 
@@ -1081,7 +1057,6 @@ void sqlrprotocol_sqlrclient::bindFormatCommand() {
 }
 
 void sqlrprotocol_sqlrclient::getNextvalFormatCommand() {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("nextval format");
 
@@ -1100,7 +1075,6 @@ void sqlrprotocol_sqlrclient::getNextvalFormatCommand() {
 }
 
 void sqlrprotocol_sqlrclient::serverVersionCommand() {
-	debugFunction();
 
 	cont->raiseDebugWriteEvent("server version");
 
@@ -1119,7 +1093,6 @@ void sqlrprotocol_sqlrclient::serverVersionCommand() {
 }
 
 void sqlrprotocol_sqlrclient::selectDatabaseCommand() {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("select database");
 
@@ -1181,7 +1154,6 @@ void sqlrprotocol_sqlrclient::selectDatabaseCommand() {
 }
 
 void sqlrprotocol_sqlrclient::getCurrentDatabaseCommand() {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("get current database");
 
@@ -1205,7 +1177,6 @@ void sqlrprotocol_sqlrclient::getCurrentDatabaseCommand() {
 }
 
 void sqlrprotocol_sqlrclient::getCurrentSchemaCommand() {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("get current schema");
 
@@ -1229,7 +1200,6 @@ void sqlrprotocol_sqlrclient::getCurrentSchemaCommand() {
 }
 
 void sqlrprotocol_sqlrclient::getLastInsertIdCommand() {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("getting last insert id");
 
@@ -1248,7 +1218,6 @@ void sqlrprotocol_sqlrclient::getLastInsertIdCommand() {
 }
 
 void sqlrprotocol_sqlrclient::dbHostNameCommand() {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("getting db host name");
 
@@ -1266,7 +1235,6 @@ void sqlrprotocol_sqlrclient::dbHostNameCommand() {
 }
 
 void sqlrprotocol_sqlrclient::dbIpAddressCommand() {
-	debugFunction();
 
 	cont->raiseDebugWriteEvent("getting db host name");
 
@@ -1284,7 +1252,6 @@ void sqlrprotocol_sqlrclient::dbIpAddressCommand() {
 }
 
 bool sqlrprotocol_sqlrclient::newQueryCommand(sqlrservercursor *cursor) {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("new query");
 
@@ -1331,7 +1298,6 @@ bool sqlrprotocol_sqlrclient::newQueryCommand(sqlrservercursor *cursor) {
 }
 
 bool sqlrprotocol_sqlrclient::reExecuteQueryCommand(sqlrservercursor *cursor) {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("rexecute query");
 
@@ -1368,7 +1334,6 @@ bool sqlrprotocol_sqlrclient::reExecuteQueryCommand(sqlrservercursor *cursor) {
 }
 
 bool sqlrprotocol_sqlrclient::nextResultSetCommand(sqlrservercursor *cursor) {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("nextResultSet");
 
@@ -1403,7 +1368,6 @@ bool sqlrprotocol_sqlrclient::nextResultSetCommand(sqlrservercursor *cursor) {
 
 bool sqlrprotocol_sqlrclient::fetchFromBindCursorCommand(
 					sqlrservercursor *cursor) {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("fetch from bind cursor");
 
@@ -1444,7 +1408,6 @@ bool sqlrprotocol_sqlrclient::processQueryOrBindCursor(
 					sqlrserverlistformat_t listformat,
 					bool reexecute,
 					bool bindcursor) {
-	debugFunction();
 
 	// loop here to handle down databases
 	for (;;) {
@@ -1578,7 +1541,6 @@ bool sqlrprotocol_sqlrclient::processQueryOrBindCursor(
 }
 
 bool sqlrprotocol_sqlrclient::getClientInfo(sqlrservercursor *cursor) {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("getting client info");
 
@@ -1638,7 +1600,6 @@ bool sqlrprotocol_sqlrclient::getClientInfo(sqlrservercursor *cursor) {
 }
 
 bool sqlrprotocol_sqlrclient::getQuery(sqlrservercursor *cursor) {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("getting query");
 
@@ -1705,7 +1666,6 @@ bool sqlrprotocol_sqlrclient::getQuery(sqlrservercursor *cursor) {
 }
 
 bool sqlrprotocol_sqlrclient::getInputBinds(sqlrservercursor *cursor) {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("getting input binds");
 
@@ -1774,7 +1734,6 @@ bool sqlrprotocol_sqlrclient::getInputBinds(sqlrservercursor *cursor) {
 }
 
 bool sqlrprotocol_sqlrclient::getOutputBinds(sqlrservercursor *cursor) {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("getting output binds");
 
@@ -1870,7 +1829,6 @@ bool sqlrprotocol_sqlrclient::getOutputBinds(sqlrservercursor *cursor) {
 }
 
 bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("getting input/output binds");
 
@@ -2180,7 +2138,6 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 
 bool sqlrprotocol_sqlrclient::getBindVarCount(sqlrservercursor *cursor,
 							uint16_t *count) {
-	debugFunction();
 
 	// init
 	*count=0;
@@ -2205,12 +2162,9 @@ bool sqlrprotocol_sqlrclient::getBindVarCount(sqlrservercursor *cursor,
 		cont->setError(cursor,err.getString(),
 				SQLR_ERROR_MAXBINDCOUNT,true);
 
-		debugstr.clear();
-		debugstr.append("get binds failed: "
-				"client tried to send too many binds: ");
-		debugstr.append(*count);
-		cont->raiseClientProtocolErrorEvent(
-				cursor,1,debugstr.getString());
+		cont->raiseClientProtocolErrorEvent(cursor,1,
+			"get binds failed: "
+			"client tried to send too many binds: %hd",*count);
 
 		*count=0;
 		return false;
@@ -2222,7 +2176,6 @@ bool sqlrprotocol_sqlrclient::getBindVarCount(sqlrservercursor *cursor,
 bool sqlrprotocol_sqlrclient::getBindVarName(sqlrservercursor *cursor,
 						sqlrserverbindvar *bv,
 						memorypool *bindpool) {
-	debugFunction();
 
 	// init
 	bv->variablesize=0;
@@ -2249,11 +2202,9 @@ bool sqlrprotocol_sqlrclient::getBindVarName(sqlrservercursor *cursor,
 		cont->setError(cursor,err.getString(),
 					SQLR_ERROR_MAXBINDNAMESIZE,true);
 
-		debugstr.clear();
-		debugstr.append("get binds failed: bad variable name size: ");
-		debugstr.append(bindnamesize);
-		cont->raiseClientProtocolErrorEvent(
-				cursor,1,debugstr.getString());
+		cont->raiseClientProtocolErrorEvent(cursor,1,
+				"get binds failed: "
+				"bad variable name size: %hd",bindnamesize);
 		return false;
 	}
 
@@ -2279,7 +2230,6 @@ bool sqlrprotocol_sqlrclient::getBindVarName(sqlrservercursor *cursor,
 }
 
 bool sqlrprotocol_sqlrclient::getBindVarType(sqlrserverbindvar *bv) {
-	debugFunction();
 
 	// get the type
 	uint16_t	type;
@@ -2297,7 +2247,6 @@ bool sqlrprotocol_sqlrclient::getBindVarType(sqlrserverbindvar *bv) {
 bool sqlrprotocol_sqlrclient::getBindSize(sqlrservercursor *cursor,
 						sqlrserverbindvar *bv,
 						uint32_t *maxsize) {
-	debugFunction();
 
 	// init
 	bv->valuesize=0;
@@ -2329,11 +2278,9 @@ bool sqlrprotocol_sqlrclient::getBindSize(sqlrservercursor *cursor,
 			cont->setError(cursor,err.getString(),
 				SQLR_ERROR_MAXLOBBINDVALUESIZE,true);
 		}
-		debugstr.clear();
-		debugstr.append("get binds failed: bad value size: ");
-		debugstr.append(bv->valuesize);
-		cont->raiseClientProtocolErrorEvent(
-				cursor,1,debugstr.getString());
+		cont->raiseClientProtocolErrorEvent(cursor,1,
+				"get binds failed: bad value size: %d",
+				bv->valuesize);
 		return false;
 	}
 
@@ -2342,7 +2289,6 @@ bool sqlrprotocol_sqlrclient::getBindSize(sqlrservercursor *cursor,
 
 void sqlrprotocol_sqlrclient::getNullBind(sqlrserverbindvar *bv,
 						memorypool *bindpool) {
-	debugFunction();
 
 	cont->raiseDebugWriteEvent("NULL");
 
@@ -2355,7 +2301,6 @@ void sqlrprotocol_sqlrclient::getNullBind(sqlrserverbindvar *bv,
 bool sqlrprotocol_sqlrclient::getStringBind(sqlrservercursor *cursor,
 						sqlrserverbindvar *bv,
 						memorypool *bindpool) {
-	debugFunction();
 
 	cont->raiseDebugWriteEvent("STRING");
 
@@ -2391,7 +2336,6 @@ bool sqlrprotocol_sqlrclient::getStringBind(sqlrservercursor *cursor,
 }
 
 bool sqlrprotocol_sqlrclient::getIntegerBind(sqlrserverbindvar *bv) {
-	debugFunction();
 
 	cont->raiseDebugWriteEvent("INTEGER");
 
@@ -2416,7 +2360,6 @@ bool sqlrprotocol_sqlrclient::getIntegerBind(sqlrserverbindvar *bv) {
 }
 
 bool sqlrprotocol_sqlrclient::getDoubleBind(sqlrserverbindvar *bv) {
-	debugFunction();
 
 	cont->raiseDebugWriteEvent("DOUBLE");
 
@@ -2459,7 +2402,6 @@ bool sqlrprotocol_sqlrclient::getDoubleBind(sqlrserverbindvar *bv) {
 
 bool sqlrprotocol_sqlrclient::getDateBind(sqlrserverbindvar *bv,
 						memorypool *bindpool) {
-	debugFunction();
 
 	cont->raiseDebugWriteEvent("DATE");
 
@@ -2579,19 +2521,17 @@ bool sqlrprotocol_sqlrclient::getDateBind(sqlrserverbindvar *bv,
 
 	bv->isnull=cont->getNonNullBindValue();
 
-	debugstr.clear();
-	debugstr.append(bv->value.dateval.year)->append('-');
-	debugstr.append(bv->value.dateval.month)->append('-');
-	debugstr.append(bv->value.dateval.day)->append(' ');
-	if (bv->value.dateval.isnegative) {
-		debugstr.append('-');
-	}
-	debugstr.append(bv->value.dateval.hour)->append(':');
-	debugstr.append(bv->value.dateval.minute)->append(':');
-	debugstr.append(bv->value.dateval.second)->append(':');
-	debugstr.append(bv->value.dateval.microsecond)->append(' ');
-	debugstr.append(bv->value.dateval.tz);
-	cont->raiseDebugWriteEvent(debugstr.getString());
+	cont->raiseDebugWriteEvent(
+			"%04hd-%02hd-%02hd %s%02hd:%02hd:%02hd.%06d %s",
+			bv->value.dateval.year,
+			bv->value.dateval.month,
+			bv->value.dateval.day,
+			(bv->value.dateval.isnegative)?"-":"",
+			bv->value.dateval.hour,
+			bv->value.dateval.minute,
+			bv->value.dateval.second,
+			bv->value.dateval.microsecond,
+			bv->value.dateval.tz);
 
 	return true;
 }
@@ -2599,7 +2539,6 @@ bool sqlrprotocol_sqlrclient::getDateBind(sqlrserverbindvar *bv,
 bool sqlrprotocol_sqlrclient::getLobBind(sqlrservercursor *cursor,
 						sqlrserverbindvar *bv,
 						memorypool *bindpool) {
-	debugFunction();
 
 	// init
 	bv->value.stringval=NULL;
@@ -2642,7 +2581,6 @@ bool sqlrprotocol_sqlrclient::getLobBind(sqlrservercursor *cursor,
 }
 
 bool sqlrprotocol_sqlrclient::getSendColumnInfo() {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("get send column info");
 
@@ -2668,7 +2606,6 @@ bool sqlrprotocol_sqlrclient::getSendColumnInfo() {
 
 bool sqlrprotocol_sqlrclient::getSkipAndFetch(bool initial,
 						sqlrservercursor *cursor) {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("get skip and fetch");
 
@@ -2724,7 +2661,6 @@ bool sqlrprotocol_sqlrclient::getSkipAndFetch(bool initial,
 }
 
 void sqlrprotocol_sqlrclient::returnResultSetHeader(sqlrservercursor *cursor) {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("returning result set header");
 
@@ -2771,7 +2707,6 @@ void sqlrprotocol_sqlrclient::returnResultSetHeader(sqlrservercursor *cursor) {
 
 void sqlrprotocol_sqlrclient::returnColumnInfo(sqlrservercursor *cursor,
 							uint16_t format) {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("returning column info");
 
@@ -2861,7 +2796,6 @@ void sqlrprotocol_sqlrclient::sendRowCounts(bool knowsactual,
 						uint64_t actual,
 						bool knowsaffected,
 						uint64_t affected) {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("sending row counts");
 
@@ -2906,7 +2840,6 @@ void sqlrprotocol_sqlrclient::sendRowCounts(bool knowsactual,
 }
 
 void sqlrprotocol_sqlrclient::returnOutputBindValues(sqlrservercursor *cursor) {
-	debugFunction();
 
 	cont->raiseDebugStartEvent(
 			"returning %hd output bind values",
@@ -3062,14 +2995,12 @@ void sqlrprotocol_sqlrclient::returnOutputBindValues(sqlrservercursor *cursor) {
 
 void sqlrprotocol_sqlrclient::returnOutputBindBlob(sqlrservercursor *cursor,
 							uint16_t index) {
-	debugFunction();
 	sendLobOutputBind(cursor,index);
 	cont->closeLobOutputBind(cursor,index);
 }
 
 void sqlrprotocol_sqlrclient::returnOutputBindClob(sqlrservercursor *cursor,
 							uint16_t index) {
-	debugFunction();
 	sendLobOutputBind(cursor,index);
 	cont->closeLobOutputBind(cursor,index);
 }
@@ -3078,7 +3009,6 @@ void sqlrprotocol_sqlrclient::returnOutputBindClob(sqlrservercursor *cursor,
 
 void sqlrprotocol_sqlrclient::sendLobOutputBind(sqlrservercursor *cursor,
 							uint16_t index) {
-	debugFunction();
 
 	// Get lob size.  If this fails, send a NULL field.
 	uint64_t	loblength;
@@ -3138,7 +3068,6 @@ void sqlrprotocol_sqlrclient::sendLobOutputBind(sqlrservercursor *cursor,
 
 void sqlrprotocol_sqlrclient::returnInputOutputBindValues(
 						sqlrservercursor *cursor) {
-	debugFunction();
 	cont->raiseDebugStartEvent(
 		"returning %hd input/output bind values",
 		cont->getInputOutputBindCount(cursor));
@@ -3305,33 +3234,12 @@ void sqlrprotocol_sqlrclient::sendColumnDefinition(
 						uint16_t autoincrement,
 						const char *table,
 						uint16_t tablesize) {
-	debugFunction();
 
-	if (cont->getLoggingEnabled() || cont->getNotificationsEnabled()) {
-		debugstr.clear();
-		for (uint16_t i=0; i<namesize; i++) {
-			debugstr.append(name[i]);
-		}
-		debugstr.append(":");
-		debugstr.append(type);
-		debugstr.append(":");
-		debugstr.append(size);
-		debugstr.append(" (");
-		debugstr.append(precision);
-		debugstr.append(",");
-		debugstr.append(scale);
-		debugstr.append(") ");
-		if (!nullable) {
-			debugstr.append("NOT NULL ");
-		}
-		if (primarykey) {
-			debugstr.append("Primary key ");
-		}
-		if (unique) {
-			debugstr.append("Unique");
-		}
-		cont->raiseDebugWriteEvent(debugstr.getString());
-	}
+	cont->raiseDebugWriteEvent("%.*s:%hd:%d (%d,%d) %s%s%s",
+				namesize,name,type,size,precision,scale,
+				(nullable)?"":"NOT NULL ",
+				(primarykey)?"Primary key ":"",
+				(unique)?"Unique":"");
 
 	clientsock->write(namesize);
 	clientsock->write(name,namesize);
@@ -3374,35 +3282,13 @@ void sqlrprotocol_sqlrclient::sendColumnDefinitionString(
 						uint16_t autoincrement,
 						const char *table,
 						uint16_t tablesize) {
-	debugFunction();
 
-	if (cont->getLoggingEnabled() || cont->getNotificationsEnabled()) {
-		debugstr.clear();
-		for (uint16_t ni=0; ni<namesize; ni++) {
-			debugstr.append(name[ni]);
-		}
-		debugstr.append(":");
-		for (uint16_t ti=0; ti<typesize; ti++) {
-			debugstr.append(type[ti]);
-		}
-		debugstr.append(":");
-		debugstr.append(size);
-		debugstr.append(" (");
-		debugstr.append(precision);
-		debugstr.append(",");
-		debugstr.append(scale);
-		debugstr.append(") ");
-		if (!nullable) {
-			debugstr.append("NOT NULL ");
-		}
-		if (primarykey) {
-			debugstr.append("Primary key ");
-		}
-		if (unique) {
-			debugstr.append("Unique");
-		}
-		cont->raiseDebugWriteEvent(debugstr.getString());
-	}
+	cont->raiseDebugWriteEvent("%.*s:%.*s:%d (%d,%d) %s%s%s",
+				namesize,name,typesize,type,
+				size,precision,scale,
+				(nullable)?"":"NOT NULL ",
+				(primarykey)?"Primary key ":"",
+				(unique)?"Unique":"");
 
 	clientsock->write(namesize);
 	clientsock->write(name,namesize);
@@ -3431,7 +3317,6 @@ void sqlrprotocol_sqlrclient::sendColumnDefinitionString(
 bool sqlrprotocol_sqlrclient::returnResultSetData(sqlrservercursor *cursor,
 						bool getskipandfetch,
 						bool overridelazyfetch) {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("returning result set data");
 
@@ -3483,14 +3368,7 @@ bool sqlrprotocol_sqlrclient::returnResultSetData(sqlrservercursor *cursor,
 			return true;
 		}
 
-		if (cont->getLoggingEnabled() ||
-				cont->getNotificationsEnabled()) {
-			debugstr.clear();
-			debugstr.append("fetching ");
-			debugstr.append(fetch);
-			debugstr.append(" rows...");
-			cont->raiseDebugWriteEvent(debugstr.getString());
-		}
+		cont->raiseDebugWriteEvent("fetching %lld rows...",fetch);
 
 		// send the specified number of rows back
 		for (uint64_t i=0; (!fetch || i<fetch); i++) {
@@ -3549,7 +3427,6 @@ void sqlrprotocol_sqlrclient::returnFetchError(sqlrservercursor *cursor) {
 }
 
 void sqlrprotocol_sqlrclient::returnRow(sqlrservercursor *cursor) {
-	debugFunction();
 
 	if (cont->getLoggingEnabled() || cont->getNotificationsEnabled()) {
 		debugstr.clear();
@@ -3583,7 +3460,6 @@ void sqlrprotocol_sqlrclient::returnRow(sqlrservercursor *cursor) {
 }
 
 void sqlrprotocol_sqlrclient::sendField(const char *data, uint32_t size) {
-	debugFunction();
 
 	if (cont->getLoggingEnabled() || cont->getNotificationsEnabled()) {
 		debugstr.append("\"");
@@ -3597,7 +3473,6 @@ void sqlrprotocol_sqlrclient::sendField(const char *data, uint32_t size) {
 }
 
 void sqlrprotocol_sqlrclient::sendNullField() {
-	debugFunction();
 
 	if (cont->getLoggingEnabled() || cont->getNotificationsEnabled()) {
 		debugstr.append("NULL,");
@@ -3609,7 +3484,6 @@ void sqlrprotocol_sqlrclient::sendNullField() {
 
 void sqlrprotocol_sqlrclient::sendLobField(sqlrservercursor *cursor,
 							uint32_t col) {
-	debugFunction();
 
 	// Get lob length.  If this fails, send a NULL field.
 	uint64_t	loblength;
@@ -3671,13 +3545,11 @@ void sqlrprotocol_sqlrclient::sendLobField(sqlrservercursor *cursor,
 }
 
 void sqlrprotocol_sqlrclient::startSendingLong(uint64_t longsize) {
-	debugFunction();
 	clientsock->write((uint16_t)START_LONG_DATA);
 	clientsock->write(longsize);
 }
 
 void sqlrprotocol_sqlrclient::sendLongSegment(const char *data, uint32_t size) {
-	debugFunction();
 
 	if (cont->getLoggingEnabled() || cont->getNotificationsEnabled()) {
 		debugstr.append(data,size);
@@ -3689,7 +3561,6 @@ void sqlrprotocol_sqlrclient::sendLongSegment(const char *data, uint32_t size) {
 }
 
 void sqlrprotocol_sqlrclient::endSendingLong() {
-	debugFunction();
 
 	if (cont->getLoggingEnabled() || cont->getNotificationsEnabled()) {
 		debugstr.append(",");
@@ -3699,7 +3570,6 @@ void sqlrprotocol_sqlrclient::endSendingLong() {
 }
 
 void sqlrprotocol_sqlrclient::returnError(bool forcedisconnect) {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("returning error");
 
@@ -3731,7 +3601,6 @@ void sqlrprotocol_sqlrclient::returnError(bool forcedisconnect) {
 
 void sqlrprotocol_sqlrclient::returnError(sqlrservercursor *cursor,
 						bool forcedisconnect) {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("returning error");
 
@@ -3775,7 +3644,6 @@ void sqlrprotocol_sqlrclient::returnError(sqlrservercursor *cursor,
 
 bool sqlrprotocol_sqlrclient::fetchResultSetCommand(
 					sqlrservercursor *cursor) {
-	debugFunction();
 	cont->raiseDebugStartEvent("fetching result set");
 	bool	retval=returnResultSetData(cursor,true,true);
 	cont->raiseDebugWriteEvent((retval)?"success":"error");
@@ -3785,7 +3653,6 @@ bool sqlrprotocol_sqlrclient::fetchResultSetCommand(
 
 void sqlrprotocol_sqlrclient::abortResultSetCommand(
 					sqlrservercursor *cursor) {
-	debugFunction();
 	cont->raiseDebugStartEvent("aborting result set");
 	cont->abort(cursor);
 	cont->release(cursor);
@@ -3795,7 +3662,6 @@ void sqlrprotocol_sqlrclient::abortResultSetCommand(
 
 void sqlrprotocol_sqlrclient::suspendResultSetCommand(
 					sqlrservercursor *cursor) {
-	debugFunction();
 	cont->raiseDebugStartEvent("suspend result set");
 	cont->suspendResultSet(cursor);
 	cont->raiseDebugWriteEvent("success");
@@ -3804,7 +3670,6 @@ void sqlrprotocol_sqlrclient::suspendResultSetCommand(
 
 bool sqlrprotocol_sqlrclient::resumeResultSetCommand(
 					sqlrservercursor *cursor) {
-	debugFunction();
 	cont->raiseDebugStartEvent("resume result set");
 
 	bool	retval=true;
@@ -3861,7 +3726,6 @@ bool sqlrprotocol_sqlrclient::resumeResultSetCommand(
 
 bool sqlrprotocol_sqlrclient::getDatabaseListCommand(
 					sqlrservercursor *cursor) {
-	debugFunction();
 	cont->raiseDebugStartEvent("get db list");
 	bool	retval=getListCommand(cursor,
 				SQLRCLIENTQUERYTYPE_DATABASE_LIST,false);
@@ -3871,7 +3735,6 @@ bool sqlrprotocol_sqlrclient::getDatabaseListCommand(
 
 bool sqlrprotocol_sqlrclient::getSchemaListCommand(
 					sqlrservercursor *cursor) {
-	debugFunction();
 	cont->raiseDebugStartEvent("get schema list");
 	bool	retval=getListCommand(cursor,
 				SQLRCLIENTQUERYTYPE_SCHEMA_LIST,false);
@@ -3881,7 +3744,6 @@ bool sqlrprotocol_sqlrclient::getSchemaListCommand(
 
 bool sqlrprotocol_sqlrclient::getTableListCommand(
 					sqlrservercursor *cursor) {
-	debugFunction();
 	cont->raiseDebugStartEvent("get table list");
 	bool	retval=getListCommand(cursor,
 				SQLRCLIENTQUERYTYPE_TABLE_LIST,false);
@@ -3891,7 +3753,6 @@ bool sqlrprotocol_sqlrclient::getTableListCommand(
 
 bool sqlrprotocol_sqlrclient::getTableList2Command(
 					sqlrservercursor *cursor) {
-	debugFunction();
 	cont->raiseDebugStartEvent("get table list");
 	bool	retval=getListCommand(cursor,
 				SQLRCLIENTQUERYTYPE_TABLE_LIST_2,false);
@@ -3901,7 +3762,6 @@ bool sqlrprotocol_sqlrclient::getTableList2Command(
 
 bool sqlrprotocol_sqlrclient::getTableTypeListCommand(
 					sqlrservercursor *cursor) {
-	debugFunction();
 	cont->raiseDebugStartEvent("get table type list");
 	bool	retval=getListCommand(cursor,
 				SQLRCLIENTQUERYTYPE_TABLE_TYPE_LIST,false);
@@ -3911,7 +3771,6 @@ bool sqlrprotocol_sqlrclient::getTableTypeListCommand(
 
 bool sqlrprotocol_sqlrclient::getColumnListCommand(
 					sqlrservercursor *cursor) {
-	debugFunction();
 	cont->raiseDebugStartEvent("get column list");
 	bool	retval=getListCommand(cursor,
 				SQLRCLIENTQUERYTYPE_COLUMN_LIST,true);
@@ -3921,7 +3780,6 @@ bool sqlrprotocol_sqlrclient::getColumnListCommand(
 
 bool sqlrprotocol_sqlrclient::getPrimaryKeyListCommand(
 					sqlrservercursor *cursor) {
-	debugFunction();
 	cont->raiseDebugStartEvent("get primary key list");
 	bool	retval=getListCommand(cursor,
 				SQLRCLIENTQUERYTYPE_PRIMARY_KEY_LIST,true);
@@ -3931,7 +3789,6 @@ bool sqlrprotocol_sqlrclient::getPrimaryKeyListCommand(
 
 bool sqlrprotocol_sqlrclient::getKeyAndIndexListCommand(
 					sqlrservercursor *cursor) {
-	debugFunction();
 	cont->raiseDebugStartEvent("get key and index list");
 	bool	retval=getListCommand(cursor,
 				SQLRCLIENTQUERYTYPE_KEY_AND_INDEX_LIST,true);
@@ -3941,7 +3798,6 @@ bool sqlrprotocol_sqlrclient::getKeyAndIndexListCommand(
 
 bool sqlrprotocol_sqlrclient::getProcedureParameterListCommand(
 						sqlrservercursor *cursor) {
-	debugFunction();
 	cont->raiseDebugStartEvent("get procedure bind and column list");
 	bool	retval=getListCommand(cursor,
 		SQLRCLIENTQUERYTYPE_PROCEDURE_PARAMETER_LIST,true);
@@ -3951,7 +3807,6 @@ bool sqlrprotocol_sqlrclient::getProcedureParameterListCommand(
 
 bool sqlrprotocol_sqlrclient::getTypeInfoListCommand(
 					sqlrservercursor *cursor) {
-	debugFunction();
 	cont->raiseDebugStartEvent("get type info list");
 	bool	retval=getListCommand(cursor,
 				SQLRCLIENTQUERYTYPE_TYPE_INFO_LIST,true);
@@ -3961,7 +3816,6 @@ bool sqlrprotocol_sqlrclient::getTypeInfoListCommand(
 
 bool sqlrprotocol_sqlrclient::getProcedureListCommand(
 					sqlrservercursor *cursor) {
-	debugFunction();
 	cont->raiseDebugStartEvent("get procedure list");
 	bool	retval=getListCommand(cursor,
 				SQLRCLIENTQUERYTYPE_PROCEDURE_LIST,false);
@@ -3973,7 +3827,6 @@ bool sqlrprotocol_sqlrclient::getProcedureListCommand(
 bool sqlrprotocol_sqlrclient::getListCommand(sqlrservercursor *cursor,
 					sqlrclientquerytype_t querytype,
 					bool getobject) {
-	debugFunction();
 
 	// if we're using a custom cursor then close it
 	// FIXME: push up?
@@ -4006,11 +3859,10 @@ bool sqlrprotocol_sqlrclient::getListCommand(sqlrservercursor *cursor,
 
 	// bounds checking
 	if (wildsize>maxquerysize) {
-		debugstr.clear();
-		debugstr.append("get list failed: wild size too large: ");
-		debugstr.append(wildsize);
-		cont->raiseClientProtocolErrorEvent(
-					cursor,1,debugstr.getString());
+		cont->raiseClientProtocolErrorEvent(cursor,1,
+					"get list failed: "
+					"wild size too large: %d",
+					wildsize);
 		return false;
 	}
 
@@ -4043,12 +3895,10 @@ bool sqlrprotocol_sqlrclient::getListCommand(sqlrservercursor *cursor,
 
 		// bounds checking
 		if (objectsize>maxquerysize) {
-			debugstr.clear();
-			debugstr.append("get list failed: "
-					"object size too large: ");
-			debugstr.append(objectsize);
-			cont->raiseClientProtocolErrorEvent(
-					cursor,1,debugstr.getString());
+			cont->raiseClientProtocolErrorEvent(cursor,1,
+					"get list failed: "
+					"object size too large: %d",
+					objectsize);
 			return false;
 		}
 
@@ -4124,7 +3974,6 @@ bool sqlrprotocol_sqlrclient::getListByApiCall(sqlrservercursor *cursor,
 					const char *wild,
 					sqlrserverlistformat_t listformat,
 					uint16_t objecttypes) {
-	debugFunction();
 
 	// initialize flags andbuffers
 	bool	success=false;
@@ -4213,7 +4062,6 @@ bool sqlrprotocol_sqlrclient::getListByQuery(sqlrservercursor *cursor,
 					const char *wild,
 					sqlrserverlistformat_t listformat,
 					uint16_t objecttypes) {
-	debugFunction();
 
 	bool	currentonly=listformat!=SQLRSERVERLISTFORMAT_ODBC &&
 				listformat!=SQLRSERVERLISTFORMAT_JDBC;
@@ -4276,7 +4124,6 @@ bool sqlrprotocol_sqlrclient::buildListQuery(sqlrservercursor *cursor,
 						const char *query,
 						const char *wild,
 						const char *object) {
-	debugFunction();
 
 	// If the object was given like catalog.schema.object, then just
 	// get the object.
@@ -4317,7 +4164,6 @@ bool sqlrprotocol_sqlrclient::buildListQuery(sqlrservercursor *cursor,
 
 void sqlrprotocol_sqlrclient::escapeParameter(stringbuffer *buffer,
 						const char *parameter) {
-	debugFunction();
 
 	if (!parameter) {
 		return;
@@ -4333,7 +4179,6 @@ void sqlrprotocol_sqlrclient::escapeParameter(stringbuffer *buffer,
 }
 
 bool sqlrprotocol_sqlrclient::getQueryTreeCommand(sqlrservercursor *cursor) {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("getting query tree");
 
@@ -4357,7 +4202,6 @@ bool sqlrprotocol_sqlrclient::getQueryTreeCommand(sqlrservercursor *cursor) {
 
 bool sqlrprotocol_sqlrclient::getTranslatedQueryCommand(
 					sqlrservercursor *cursor) {
-	debugFunction();
 
 	cont->raiseDebugStartEvent("getting translated query");
 
