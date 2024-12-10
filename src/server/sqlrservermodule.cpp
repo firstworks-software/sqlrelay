@@ -6,9 +6,10 @@
 
 class sqlrservermoduleprivate {
 	friend class sqlrservermodule;
-	public:
-		domnode	*_parameters;
-		bool	_enabled;
+	private:
+		domnode		*_parameters;
+		bool		_enabled;
+		stringbuffer	_logbuffer;
 };
 
 sqlrservermodule::sqlrservermodule(sqlrservercontroller *cont,
@@ -55,6 +56,60 @@ domnode *sqlrservermodule::getParameters() {
 
 bool sqlrservermodule::getEnabled() {
 	return pvt->_enabled;
+}
+
+void sqlrservermodule::debugStart(const char *title, ...) {
+	if (!getDebug()) {
+		return;
+	}
+	if (!cont) {
+		return;
+	}
+	pvt->_logbuffer.clear();
+	va_list	argp;
+	va_start(argp,title);
+	pvt->_logbuffer.printf(title,&argp);
+	va_end(argp);
+	cont->raiseDebugStartEvent(pvt->_logbuffer.getString());
+}
+
+void sqlrservermodule::debugWrite(const char *string, ...) {
+	if (!getDebug()) {
+		return;
+	}
+	if (!cont) {
+		return;
+	}
+	pvt->_logbuffer.clear();
+	va_list	argp;
+	va_start(argp,string);
+	pvt->_logbuffer.printf(string,&argp);
+	va_end(argp);
+	cont->raiseDebugWriteEvent(pvt->_logbuffer.getString());
+}
+
+void sqlrservermodule::debugHexDump(const byte_t *data, uint64_t size) {
+	if (!getDebug()) {
+		return;
+	}
+	if (!cont) {
+		return;
+	}
+	pvt->_logbuffer.clear();
+	pvt->_logbuffer.printHex(data,size,0);
+	cont->raiseDebugWriteEvent("%.*s",
+			pvt->_logbuffer.getSize(),
+			pvt->_logbuffer.getString());
+}
+
+void sqlrservermodule::debugEnd() {
+	if (!getDebug()) {
+		return;
+	}
+	if (!cont) {
+		return;
+	}
+	cont->raiseDebugEndEvent();
 }
 
 void sqlrservermodule::endTransaction(bool commit) {

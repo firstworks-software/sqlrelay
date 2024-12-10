@@ -22,8 +22,9 @@ class sqlrbindvariabletranslationsprivate {
 };
 
 sqlrbindvariabletranslations::sqlrbindvariabletranslations(
-					sqlrservercontroller *cont) :
-					sqlrservermodules(cont) {
+					sqlrservercontroller *cont,
+					domnode *parameters) :
+					sqlrservermodules(cont,parameters) {
 	pvt=new sqlrbindvariabletranslationsprivate;
 	setDebug(cont->getConfig()->getDebugBindVariableTranslations());
 	pvt->_error=NULL;

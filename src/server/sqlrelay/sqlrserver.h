@@ -145,20 +145,6 @@ class SQLRSERVER_DLLSPEC sqlrserverbase {
 		 *  setDebug() was never called. */
 		bool	getDebug();
 
-		/** Starts a section of debug, writing "..." formatted using
-		 *  "title". */
-		void	debugStart(const char *title, ...);
-
-		/** Writes "..." formatted using "string" as a single line of
-		 *  debug. */
-		void	debugWrite(const char *string, ...);
-
-		/** Dumps "size" bytes of "data" as hex. */
-		void	debugHexDump(const byte_t *data, uint64_t size);
-
-		/** Ends a section of debug. */
-		void	debugEnd();
-
 		/** Returns a string representation of event type "event". */
 		const char	*getEventType(sqlrevent_t event);
 
@@ -5396,6 +5382,20 @@ class SQLRSERVER_DLLSPEC sqlrservermodule : public sqlrserverbase {
 		 *  parameter was set to yes or no. */
 		bool	getEnabled();
 
+		/** Starts a section of debug, writing "..." formatted using
+		 *  "title". */
+		void	debugStart(const char *title, ...);
+
+		/** Writes "..." formatted using "string" as a single line of
+		 *  debug. */
+		void	debugWrite(const char *string, ...);
+
+		/** Dumps "size" bytes of "data" as hex. */
+		void	debugHexDump(const byte_t *data, uint64_t size);
+
+		/** Ends a section of debug. */
+		void	debugEnd();
+
 		/** Called by the sqlrservercontroller at the end of a
 		 *  transaction.
 		 *
@@ -6238,7 +6238,7 @@ class SQLRSERVER_DLLSPEC sqlrlogger : public sqlrservermodule {
 		 *  
 		 *  Returns true on success and false if an error occurred. */
 		virtual bool	init(sqlrlistener *sqlrl,
-					sqlrserverconnection *sqlrcon);
+					sqlrservercontroller *sqlrc);
 
 		/** Begins a block of "event" of loglevel "level" with "info".
 		 *
@@ -6519,7 +6519,8 @@ class SQLRSERVER_DLLSPEC sqlrrouters : public sqlrservermodules {
 		sqlrrouters(sqlrservercontroller *cont,
 				sqlrconnection **connections,
 				const char **connectionids,
-				uint16_t connectioncount);
+				uint16_t connectioncount,
+				domnode *parameters);
 
 		/** Deletes this instance of sqlrrouters. */
 		~sqlrrouters();

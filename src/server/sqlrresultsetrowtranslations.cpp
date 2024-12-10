@@ -22,8 +22,9 @@ class sqlrresultsetrowtranslationsprivate {
 };
 
 sqlrresultsetrowtranslations::sqlrresultsetrowtranslations(
-						sqlrservercontroller *cont) :
-						sqlrservermodules(cont) {
+					sqlrservercontroller *cont,
+					domnode *parameters) :
+					sqlrservermodules(cont,parameters) {
 	pvt=new sqlrresultsetrowtranslationsprivate;
 	setDebug(cont->getConfig()->getDebugResultSetRowTranslations());
 	pvt->_error=NULL;

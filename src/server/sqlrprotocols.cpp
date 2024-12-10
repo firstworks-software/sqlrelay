@@ -19,8 +19,8 @@ class sqlrprotocolsprivate {
 		dictionary< uint16_t , sqlrmoduleplugin * >	_protos;
 };
 
-sqlrprotocols::sqlrprotocols(sqlrservercontroller *cont) :
-						sqlrservermodules(cont) {
+sqlrprotocols::sqlrprotocols(sqlrservercontroller *cont, domnode *parameters) :
+					sqlrservermodules(cont,parameters) {
 	pvt=new sqlrprotocolsprivate;
 }
 
@@ -28,13 +28,13 @@ sqlrprotocols::~sqlrprotocols() {
 	delete pvt;
 }
 
-bool sqlrprotocols::load(domnode *parameters) {
+bool sqlrprotocols::load() {
 
 	unload();
 
 	// run through the module tags
 	uint16_t	i=0;
-	for (domnode *moduledata=parameters->getFirstTagChild();
+	for (domnode *moduledata=getParameters()->getFirstTagChild();
 				!moduledata->isNullNode();
 				moduledata=moduledata->getNextTagSibling()) {
 

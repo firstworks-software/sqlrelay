@@ -20,7 +20,8 @@ class sqlrloggersprivate {
 		const char	*_libexecdir;
 };
 
-sqlrloggers::sqlrloggers(sqlrpaths *sqlrpth) : sqlrservermodules(NULL) {
+sqlrloggers::sqlrloggers(sqlrpaths *sqlrpth, domnode *parameters) :
+					sqlrservermodules(NULL,parameters) {
 	pvt=new sqlrloggersprivate;
 	pvt->_libexecdir=sqlrpth->getLibExecDir();
 }
@@ -42,7 +43,9 @@ void sqlrloggers::loadModule(domnode *parameters) {
 		return;
 	}
 
-	debugWrite("loading logger module: %s",module);
+	if (getDebug()) {
+		stdoutput.printf("loading logger module: %s\n",module);
+	}
 
 #ifdef SQLRELAY_ENABLE_SHARED
 	// load the logger module
@@ -87,7 +90,9 @@ void sqlrloggers::loadModule(domnode *parameters) {
 	}
 #endif
 
-	debugWrite("success");
+	if (getDebug()) {
+		stdoutput.printf("success\n");
+	}
 
 	// add the plugin to the list
 	sqlrmoduleplugin	*sqlrmp=new sqlrmoduleplugin;
@@ -97,12 +102,11 @@ void sqlrloggers::loadModule(domnode *parameters) {
 	blist.append(sqlrmp);
 }
 
-void sqlrloggers::init(sqlrlistener *sqlrl,
-				sqlrserverconnection *sqlrcon) {
+void sqlrloggers::init(sqlrlistener *sqlrl, sqlrservercontroller *sqlrc) {
 	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
 		sqlrlogger	*lg=(sqlrlogger *)node->getValue()->m;
-		lg->init(sqlrl,sqlrcon);
+		lg->init(sqlrl,sqlrc);
 	}
 }
 
@@ -115,8 +119,10 @@ void sqlrloggers::start(sqlrlistener *sqlrl,
 
 	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
-		debugWrite("running logger start: %s...",
-					node->getValue()->module);
+		if (getDebug()) {
+			stdoutput.printf("running logger start: %s...\n",
+						node->getValue()->module);
+		}
 
 		sqlrlogger	*lg=(sqlrlogger *)node->getValue()->m;
 		lg->start(sqlrl,sqlrcon,sqlrcur,level,event,info);
@@ -133,8 +139,10 @@ void sqlrloggers::write(sqlrlistener *sqlrl,
 	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
 
-		debugWrite("running logger write: %s...",
-					node->getValue()->module);
+		if (getDebug()) {
+			stdoutput.printf("running logger write: %s...\n",
+						node->getValue()->module);
+		}
 
 		sqlrlogger	*lg=(sqlrlogger *)node->getValue()->m;
 		lg->write(sqlrl,sqlrcon,sqlrcur,level,event,info);
@@ -150,8 +158,10 @@ void sqlrloggers::end(sqlrlistener *sqlrl,
 	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
 
-		debugWrite("running logger end: %s...",
-					node->getValue()->module);
+		if (getDebug()) {
+			stdoutput.printf("running logger end: %s...\n",
+						node->getValue()->module);
+		}
 
 		sqlrlogger	*lg=(sqlrlogger *)node->getValue()->m;
 		lg->end(sqlrl,sqlrcon,sqlrcur,level,event);

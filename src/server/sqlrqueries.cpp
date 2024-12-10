@@ -14,7 +14,8 @@
 	}
 #endif
 
-sqlrqueries::sqlrqueries(sqlrservercontroller *cont) : sqlrservermodules(cont) {
+sqlrqueries::sqlrqueries(sqlrservercontroller *cont, domnode *parameters) :
+					sqlrservermodules(cont,parameters) {
 	pvt=NULL;
 }
 

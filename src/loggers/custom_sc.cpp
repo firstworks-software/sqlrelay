@@ -16,7 +16,7 @@ class SQLRSERVER_DLLSPEC sqlrlogger_custom_sc : public sqlrlogger {
 		sqlrlogger_custom_sc(domnode *parameters);
 		~sqlrlogger_custom_sc();
 
-		bool	init(sqlrlistener *sqlrl, sqlrserverconnection *sqlrcon);
+		bool	init(sqlrlistener *sqlrl, sqlrservercontroller *sqlrc);
 		bool	write(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
@@ -41,7 +41,7 @@ sqlrlogger_custom_sc::~sqlrlogger_custom_sc() {
 }
 
 bool sqlrlogger_custom_sc::init(sqlrlistener *sqlrl,
-				sqlrserverconnection *sqlrcon) {
+				sqlrservercontroller *sqlrc) {
 	debugFunction();
 
 	// get log level
@@ -57,8 +57,8 @@ bool sqlrlogger_custom_sc::init(sqlrlistener *sqlrl,
 	// get log path and name
 	const char	*path=getParameters()->getAttributeValue("path");
 	if (!charstring::getLength(path)) {
-		path=(sqlrcon)?sqlrcon->cont->getPaths()->getLogDir():
-					sqlrl->getPaths()->getLogDir();
+		path=(sqlrc)?sqlrc->getPaths()->getLogDir():
+				sqlrl->getPaths()->getLogDir();
 	}
 	const char	*name=getParameters()->getAttributeValue("name");
 	if (!charstring::getLength(name)) {
@@ -105,7 +105,7 @@ bool sqlrlogger_custom_sc::write(sqlrlistener *sqlrl,
 		ino_t	inode2=querylog2.getInode();
 		querylog2.close();
 		if (inode1!=inode2) {
-			init(sqlrl,sqlrcon);
+			init(sqlrl,sqlrcon->cont);
 		}
 	}
 

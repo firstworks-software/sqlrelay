@@ -29,8 +29,9 @@ class sqlrmoduledatasprivate {
 		dictionary< const char *, sqlrmoduledata * >	_mdict;
 };
 
-sqlrmoduledatas::sqlrmoduledatas(sqlrservercontroller *cont) :
-						sqlrservermodules(cont) {
+sqlrmoduledatas::sqlrmoduledatas(sqlrservercontroller *cont,
+						domnode *parameters) :
+					sqlrservermodules(cont,parameters) {
 	pvt=new sqlrmoduledatasprivate;
 	setDebug(cont->getConfig()->getDebugModuleDatas());
 }

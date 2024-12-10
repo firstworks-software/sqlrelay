@@ -16,7 +16,7 @@ class SQLRSERVER_DLLSPEC sqlrlogger_custom_nw : public sqlrlogger {
 		sqlrlogger_custom_nw(domnode *parameters);
 		~sqlrlogger_custom_nw();
 
-		bool	init(sqlrlistener *sqlrl, sqlrserverconnection *sqlrcon);
+		bool	init(sqlrlistener *sqlrl, sqlrservercontroller *sqlrc);
 		bool	write(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
@@ -43,14 +43,14 @@ sqlrlogger_custom_nw::~sqlrlogger_custom_nw() {
 }
 
 bool sqlrlogger_custom_nw::init(sqlrlistener *sqlrl,
-				sqlrserverconnection *sqlrcon) {
+				sqlrservercontroller *sqlrc) {
 	debugFunction();
 
 	const char	*logdir=
-			(sqlrcon)?sqlrcon->cont->getPaths()->getLogDir():
-						sqlrl->getPaths()->getLogDir();
+			(sqlrc)?sqlrc->getPaths()->getLogDir():
+					sqlrl->getPaths()->getLogDir();
 	const char	*id=
-			(sqlrcon)?sqlrcon->cont->getId():sqlrl->getId();
+			(sqlrc)?sqlrc->getId():sqlrl->getId();
 
 	// create the directory
 	delete[] querylogname;
@@ -89,7 +89,7 @@ bool sqlrlogger_custom_nw::write(sqlrlistener *sqlrl,
 		ino_t	inode2=querylog2.getInode();
 		querylog2.close();
 		if (inode1!=inode2) {
-			init(sqlrl,sqlrcon);
+			init(sqlrl,sqlrcon->cont);
 		}
 	}
 

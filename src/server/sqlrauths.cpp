@@ -15,7 +15,8 @@
 	}
 #endif
 
-sqlrauths::sqlrauths(sqlrservercontroller *cont) : sqlrservermodules(cont) {
+sqlrauths::sqlrauths(sqlrservercontroller *cont, domnode *parameters) :
+					sqlrservermodules(cont,parameters) {
 	pvt=NULL;
 	setDebug(cont->getConfig()->getDebugAuths());
 }
@@ -23,12 +24,12 @@ sqlrauths::sqlrauths(sqlrservercontroller *cont) : sqlrservermodules(cont) {
 sqlrauths::~sqlrauths() {
 }
 
-bool sqlrauths::load(domnode *parameters) {
+bool sqlrauths::load() {
 
 	unload();
 
 	// run through the module tags
-	for (domnode *moduledata=parameters->getFirstTagChild();
+	for (domnode *moduledata=getParameters()->getFirstTagChild();
 				!moduledata->isNullNode();
 				moduledata=moduledata->getNextTagSibling()) {
 

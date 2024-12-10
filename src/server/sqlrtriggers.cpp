@@ -14,8 +14,9 @@
 	}
 #endif
 
-sqlrtriggers::sqlrtriggers(sqlrservercontroller *cont) :
-					sqlrservermodules(cont) {
+sqlrtriggers::sqlrtriggers(sqlrservercontroller *cont,
+					domnode *parameters) :
+					sqlrservermodules(cont,parameters) {
 	pvt=NULL;
 	setDebug(cont->getConfig()->getDebugTriggers());
 }
@@ -23,12 +24,12 @@ sqlrtriggers::sqlrtriggers(sqlrservercontroller *cont) :
 sqlrtriggers::~sqlrtriggers() {
 }
 
-bool sqlrtriggers::load(domnode *parameters) {
+bool sqlrtriggers::load() {
 
 	unload();
 
 	// run through the module list
-	for (domnode *moduledata=parameters->getFirstTagChild();
+	for (domnode *moduledata=getParameters()->getFirstTagChild();
 				!moduledata->isNullNode();
 				moduledata=moduledata->getNextTagSibling()) {
 

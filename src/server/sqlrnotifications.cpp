@@ -20,8 +20,9 @@ class sqlrnotificationsprivate {
 		const char	*_libexecdir;
 };
 
-sqlrnotifications::sqlrnotifications(sqlrpaths *sqlrpth) :
-						sqlrservermodules(NULL) {
+sqlrnotifications::sqlrnotifications(sqlrpaths *sqlrpth,
+					domnode *parameters) :
+					sqlrservermodules(NULL,parameters) {
 	pvt=new sqlrnotificationsprivate;
 	pvt->_libexecdir=sqlrpth->getLibExecDir();
 }

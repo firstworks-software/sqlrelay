@@ -308,10 +308,11 @@ class SQLRUTIL_DLLSPEC sqlrpwdenc {
 
 class SQLRUTIL_DLLSPEC sqlrpwdencs {
 	public:
-		sqlrpwdencs(sqlrpaths *sqlrpth, bool debug);
+		sqlrpwdencs(sqlrpaths *sqlrpth, bool debug,
+						domnode *parameters);
 		~sqlrpwdencs();
 
-		bool		load(domnode *parameters);
+		bool		load();
 		sqlrpwdenc	*getPasswordEncryptionById(const char *id);
 
 	#include <sqlrelay/private/sqlrpwdencs.h>

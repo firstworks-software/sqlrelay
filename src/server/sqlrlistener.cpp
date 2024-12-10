@@ -331,15 +331,15 @@ bool sqlrlistener::init(int argc, const char **argv) {
 
 	domnode	*loggers=pvt->_cfg->getLoggers();
 	if (!loggers->isNullNode()) {
-		pvt->_sqlrlg=new sqlrloggers(pvt->_sqlrpth);
-		pvt->_sqlrlg->load(loggers);
+		pvt->_sqlrlg=new sqlrloggers(pvt->_sqlrpth,loggers);
+		pvt->_sqlrlg->load();
 		pvt->_sqlrlg->init(this,NULL);
 	}
 
 	domnode	*notifications=pvt->_cfg->getNotifications();
 	if (!notifications->isNullNode()) {
-		pvt->_sqlrn=new sqlrnotifications(pvt->_sqlrpth);
-		pvt->_sqlrn->load(notifications);
+		pvt->_sqlrn=new sqlrnotifications(pvt->_sqlrpth,notifications);
+		pvt->_sqlrn->load();
 	}
 
 	pvt->_idleclienttimeout=pvt->_cfg->getIdleClientTimeout();

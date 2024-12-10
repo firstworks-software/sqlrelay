@@ -17,7 +17,7 @@ sqlrlogger::~sqlrlogger() {
 	delete pvt;
 }
 
-bool sqlrlogger::init(sqlrlistener *sqlrl, sqlrserverconnection *sqlrcon) {
+bool sqlrlogger::init(sqlrlistener *sqlrl, sqlrservercontroller *sqlrc) {
 	return true;
 }
 

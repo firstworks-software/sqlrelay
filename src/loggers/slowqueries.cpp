@@ -14,7 +14,7 @@ class SQLRSERVER_DLLSPEC sqlrlogger_slowqueries : public sqlrlogger {
 		~sqlrlogger_slowqueries();
 
 		bool	init(sqlrlistener *sqlrl,
-					sqlrserverconnection *sqlrcon);
+					sqlrservercontroller *sqlrc);
 		bool	write(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
@@ -54,10 +54,10 @@ sqlrlogger_slowqueries::~sqlrlogger_slowqueries() {
 }
 
 bool sqlrlogger_slowqueries::init(sqlrlistener *sqlrl,
-					sqlrserverconnection *sqlrcon) {
+					sqlrservercontroller *sqlrc) {
 
 	// don't log anything for the listener
-	if (!sqlrcon) {
+	if (!sqlrc) {
 		return true;
 	}
 
@@ -68,8 +68,8 @@ bool sqlrlogger_slowqueries::init(sqlrlistener *sqlrl,
 	delete[] querylogname;
 	charstring::printf(&querylogname,
 				"%s/sqlr-connection-%s-querylog.%ld",
-				sqlrcon->cont->getPaths()->getLogDir(),
-				sqlrcon->cont->getId(),(long)pid);
+				sqlrc->getPaths()->getLogDir(),
+				sqlrc->getId(),(long)pid);
 
 	// remove any old log file
 	file::remove(querylogname);
@@ -115,7 +115,7 @@ bool sqlrlogger_slowqueries::write(sqlrlistener *sqlrl,
 		if (inode1!=inode2) {
 			querylog.flushWriteBuffer(-1,-1);
 			querylog.close();
-			init(sqlrl,sqlrcon);
+			init(sqlrl,sqlrcon->cont);
 		}
 	}
 

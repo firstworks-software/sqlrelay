@@ -13,7 +13,7 @@ class SQLRSERVER_DLLSPEC sqlrlogger_stalecursors : public sqlrlogger {
 		sqlrlogger_stalecursors(domnode *parameters);
 		~sqlrlogger_stalecursors();
 
-		bool	init(sqlrlistener *sqlrl, sqlrserverconnection *sqlrcon);
+		bool	init(sqlrlistener *sqlrl, sqlrservercontroller *sqlrc);
 		bool	write(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
@@ -61,10 +61,10 @@ sqlrlogger_stalecursors::~sqlrlogger_stalecursors() {
 }
 
 bool sqlrlogger_stalecursors::init(sqlrlistener *sqlrl,
-					sqlrserverconnection *sqlrcon) {
+					sqlrservercontroller *sqlrc) {
 
 	// don't do anything for the listener
-	if (!sqlrcon) {
+	if (!sqlrc) {
 		return true;
 	}
 

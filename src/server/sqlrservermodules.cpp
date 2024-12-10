@@ -9,13 +9,29 @@
 
 #include <config.h>
 
-sqlrservermodules::sqlrservermodules(sqlrservercontroller *cont) :
-							sqlrserverbase() {
+class sqlrservermodulesprivate {
+	friend class sqlrservermodules;
+	private:
+		domnode		*_parameters;
+		stringbuffer	_logbuffer;
+};
+
+sqlrservermodules::sqlrservermodules(sqlrservercontroller *cont,
+						domnode *parameters) :
+						sqlrserverbase() {
+	pvt=new sqlrservermodulesprivate;
 	this->cont=cont;
+	pvt->_parameters=parameters;
+	setDebug(parameters->getAttributeValue("debug"));
 }
 
 sqlrservermodules::~sqlrservermodules() {
 	unload();
+	delete pvt;
+}
+
+domnode *sqlrservermodules::getParameters() {
+	return pvt->_parameters;
 }
 
 bool sqlrservermodules::isModuleDisabled(domnode *parameters) {
@@ -27,12 +43,52 @@ bool sqlrservermodules::isModuleDisabled(domnode *parameters) {
 	return false;
 }
 
-bool sqlrservermodules::load(domnode *parameters) {
+void sqlrservermodules::debugStart(const char *title, ...) {
+	if (!getDebug()) {
+		return;
+	}
+	if (!cont) {
+		return;
+	}
+	pvt->_logbuffer.clear();
+	va_list	argp;
+	va_start(argp,title);
+	pvt->_logbuffer.printf(title,&argp);
+	va_end(argp);
+	cont->raiseDebugStartEvent(pvt->_logbuffer.getString());
+}
+
+void sqlrservermodules::debugWrite(const char *string, ...) {
+	if (!getDebug()) {
+		return;
+	}
+	if (!cont) {
+		return;
+	}
+	pvt->_logbuffer.clear();
+	va_list	argp;
+	va_start(argp,string);
+	pvt->_logbuffer.printf(string,&argp);
+	va_end(argp);
+	cont->raiseDebugWriteEvent(pvt->_logbuffer.getString());
+}
+
+void sqlrservermodules::debugEnd() {
+	if (!getDebug()) {
+		return;
+	}
+	if (!cont) {
+		return;
+	}
+	cont->raiseDebugEndEvent();
+}
+
+bool sqlrservermodules::load() {
 
 	unload();
 
 	// run through the module tags
-	for (domnode *moduledata=parameters->getFirstTagChild();
+	for (domnode *moduledata=pvt->_parameters->getFirstTagChild();
 				!moduledata->isNullNode();
 				moduledata=moduledata->getNextTagSibling()) {
 
@@ -57,7 +113,7 @@ const char *sqlrservermodules::getModuleName(domnode *parameters) {
 
 	if (charstring::isNullOrEmpty(module)) {
 		// try "file", that's what it used to be called
-		module=parameters->getAttributeValue("file");
+		module=pvt->_parameters->getAttributeValue("file");
 	}
 
 	return module;

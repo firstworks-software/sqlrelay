@@ -555,7 +555,7 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 	// process command line
 	pvt->_cmdl=new sqlrcmdline(argc,argv);
 
-	// initialize the paths
+	// initialize paths
 	pvt->_pth=new sqlrpaths(pvt->_cmdl);
 
 	// create the pid file as early as possible, but especially before
@@ -604,22 +604,32 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 	pvt->_debugsql=pvt->_cfg->getDebugSql();
 	pvt->_debugbulkload=pvt->_cfg->getDebugBulkLoad();
 
-	// get password encryptions
+	// initialize logger modules
+	domnode	*loggers=pvt->_cfg->getLoggers();
+	if (!loggers->isNullNode()) {
+		pvt->_sqlrlg=new sqlrloggers(pvt->_pth,loggers);
+		pvt->_sqlrlg->load();
+		pvt->_sqlrlg->init(NULL,this);
+	}
+
+	// initialize password encryption modules
 	domnode	*pwdencs=pvt->_cfg->getPasswordEncryptions();
 	if (!pwdencs->isNullNode()) {
 		pvt->_sqlrpe=new sqlrpwdencs(
-			pvt->_pth,pvt->_cfg->getDebugPasswordEncryptions());
-		pvt->_sqlrpe->load(pwdencs);
+				pvt->_pth,
+				pvt->_cfg->getDebugPasswordEncryptions(),
+				pwdencs);
+		pvt->_sqlrpe->load();
 	}	
 
-	// initialize auth
+	// initialize auth modules
 	domnode	*auths=pvt->_cfg->getAuths();
 	if (!auths->isNullNode()) {
-		pvt->_sqlra=new sqlrauths(this);
-		pvt->_sqlra->load(auths);
+		pvt->_sqlra=new sqlrauths(this,auths);
+		pvt->_sqlra->load();
 	}
 
-	// load database plugin
+	// initialize database connection module
 	pvt->_conn=initConnection(pvt->_cfg->getDbase());
 	if (!pvt->_conn) {
 		return false;
@@ -627,26 +637,18 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 
 	buildColumnMaps();
 
-	// get loggers
-	domnode	*loggers=pvt->_cfg->getLoggers();
-	if (!loggers->isNullNode()) {
-		pvt->_sqlrlg=new sqlrloggers(pvt->_pth);
-		pvt->_sqlrlg->load(loggers);
-		pvt->_sqlrlg->init(NULL,pvt->_conn);
-	}
-
-	// get notifications
+	// initialize notification modules
 	domnode	*notifications=pvt->_cfg->getNotifications();
 	if (!notifications->isNullNode()) {
-		pvt->_sqlrn=new sqlrnotifications(pvt->_pth);
-		pvt->_sqlrn->load(notifications);
+		pvt->_sqlrn=new sqlrnotifications(pvt->_pth,notifications);
+		pvt->_sqlrn->load();
 	}
 
-	// get schedules
+	// initialize schedule modules
 	domnode	*schedules=pvt->_cfg->getSchedules();
 	if (!schedules->isNullNode()) {
-		pvt->_sqlrs=new sqlrschedules(this);
-		pvt->_sqlrs->load(schedules);
+		pvt->_sqlrs=new sqlrschedules(this,schedules);
+		pvt->_sqlrs->load();
 	}
 
 	// wait for listener startup
@@ -723,111 +725,116 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 	// init connection stats
 	initConnStats();
 
-	// get the module datas
+	// initialize module data modules
 	pvt->_debugsqlrmoduledata=pvt->_cfg->getDebugModuleDatas();
 	domnode	*moduledatas=pvt->_cfg->getModuleDatas();
 	if (!moduledatas->isNullNode()) {
-		pvt->_sqlrmd=new sqlrmoduledatas(this);
-		pvt->_sqlrmd->load(moduledatas);
+		pvt->_sqlrmd=new sqlrmoduledatas(this,moduledatas);
+		pvt->_sqlrmd->load();
 	}
 
-	// get the query directives
+	// initialize query directive modules
 	pvt->_debugsqlrdirectives=pvt->_cfg->getDebugDirectives();
 	domnode	*directives=pvt->_cfg->getDirectives();
 	if (!directives->isNullNode()) {
-		pvt->_sqlrd=new sqlrdirectives(this);
-		pvt->_sqlrd->load(directives);
+		pvt->_sqlrd=new sqlrdirectives(this,directives);
+		pvt->_sqlrd->load();
 	}
 
-	// get the query translations
+	// initialize query translation modules
 	pvt->_debugsqlrquerytranslations=pvt->_cfg->getDebugQueryTranslations();
 	domnode	*querytranslations=pvt->_cfg->getQueryTranslations();
 	if (!querytranslations->isNullNode()) {
 		pvt->_sqlrp=newParser();
-		pvt->_sqlrt=new sqlrquerytranslations(this);
-		pvt->_sqlrt->load(querytranslations);
+		pvt->_sqlrt=new sqlrquerytranslations(this,querytranslations);
+		pvt->_sqlrt->load();
 	}
 
-	// get the query filters
+	// initialize query filter modules
 	pvt->_debugsqlrfilters=pvt->_cfg->getDebugFilters();
 	domnode	*filters=pvt->_cfg->getFilters();
 	if (!filters->isNullNode()) {
 		if (!pvt->_sqlrp) {
 			pvt->_sqlrp=newParser();
 		}
-		pvt->_sqlrf=new sqlrfilters(this);
-		pvt->_sqlrf->load(filters);
+		pvt->_sqlrf=new sqlrfilters(this,filters);
+		pvt->_sqlrf->load();
 	}
 
-	// get the bind variable translations
+	// initialize bind variable translation modules
 	pvt->_debugsqlrbindvariabletranslation=
 				pvt->_cfg->getDebugBindVariableTranslations();
 	domnode	*bindvariabletranslations=
 				pvt->_cfg->getBindVariableTranslations();
 	if (!bindvariabletranslations->isNullNode()) {
-		pvt->_sqlrbvt=new sqlrbindvariabletranslations(this);
-		pvt->_sqlrbvt->load(bindvariabletranslations);
+		pvt->_sqlrbvt=new sqlrbindvariabletranslations(
+					this,bindvariabletranslations);
+		pvt->_sqlrbvt->load();
 	}
 
-	// get the result set header translations
+	// initialize result set header translation modules
 	pvt->_debugsqlrresultsetheadertranslation=
 			pvt->_cfg->getDebugResultSetHeaderTranslations();
 	domnode	*resultsetheadertranslations=
 			pvt->_cfg->getResultSetHeaderTranslations();
 	if (!resultsetheadertranslations->isNullNode()) {
-		pvt->_sqlrrsht=new sqlrresultsetheadertranslations(this);
-		pvt->_sqlrrsht->load(resultsetheadertranslations);
+		pvt->_sqlrrsht=new sqlrresultsetheadertranslations(
+					this,resultsetheadertranslations);
+		pvt->_sqlrrsht->load();
 	}
 
-	// get the result set translations
+	// initialize result set translation modules
 	pvt->_debugsqlrresultsettranslation=
 				pvt->_cfg->getDebugResultSetTranslations();
 	domnode	*resultsettranslations=
 				pvt->_cfg->getResultSetTranslations();
 	if (!resultsettranslations->isNullNode()) {
-		pvt->_sqlrrst=new sqlrresultsettranslations(this);
-		pvt->_sqlrrst->load(resultsettranslations);
+		pvt->_sqlrrst=new sqlrresultsettranslations(
+					this,resultsettranslations);
+		pvt->_sqlrrst->load();
 	}
 
-	// get the result set row translations
+	// initialize result set row translation modules
 	pvt->_debugsqlrresultsetrowtranslation=
 				pvt->_cfg->getDebugResultSetRowTranslations();
 	domnode	*resultsetrowtranslations=
 				pvt->_cfg->getResultSetRowTranslations();
 	if (!resultsetrowtranslations->isNullNode()) {
-		pvt->_sqlrrsrt=new sqlrresultsetrowtranslations(this);
-		pvt->_sqlrrsrt->load(resultsetrowtranslations);
+		pvt->_sqlrrsrt=new sqlrresultsetrowtranslations(
+					this,resultsetrowtranslations);
+		pvt->_sqlrrsrt->load();
 	}
 
-	// get the result set row block translations
+	// initialize result set row block translation modules
 	pvt->_debugsqlrresultsetrowblocktranslation=
 			pvt->_cfg->getDebugResultSetRowBlockTranslations();
 	domnode	*resultsetrowblocktranslations=
 				pvt->_cfg->getResultSetRowBlockTranslations();
 	if (!resultsetrowblocktranslations->isNullNode()) {
-		pvt->_sqlrrsrbt=new sqlrresultsetrowblocktranslations(this);
-		pvt->_sqlrrsrbt->load(resultsetrowblocktranslations);
+		pvt->_sqlrrsrbt=new sqlrresultsetrowblocktranslations(
+					this,resultsetrowblocktranslations);
+		pvt->_sqlrrsrbt->load();
 	}
 
-	// get the error translations
+	// initialize error translation modules
 	pvt->_debugsqlrerrortranslation=
 			pvt->_cfg->getDebugErrorTranslations();
 	domnode	*errortranslations=
 			pvt->_cfg->getErrorTranslations();
 	if (!errortranslations->isNullNode()) {
-		pvt->_sqlret=new sqlrerrortranslations(this);
-		pvt->_sqlret->load(errortranslations);
+		pvt->_sqlret=new sqlrerrortranslations(this,errortranslations);
+		pvt->_sqlret->load();
 	}
 
-	// get the triggers
+	// initialize trigger modules
 	domnode	*triggers=pvt->_cfg->getTriggers();
 	if (!triggers->isNullNode()) {
 		// for triggers, we'll need an sqlrparser as well
 		if (!pvt->_sqlrp) {
 			pvt->_sqlrp=newParser();
 		}
-		pvt->_sqlrtr=new sqlrtriggers(this);
-		pvt->_sqlrtr->load(triggers);
+		pvt->_sqlrtr=new sqlrtriggers(this,triggers);
+		pvt->_sqlrtr->load();
 	}
 
 	// get fake input bind variable behavior
@@ -877,13 +884,13 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 	// get the custom query handlers
 	domnode	*queries=pvt->_cfg->getQueries();
 	if (!queries->isNullNode()) {
-		pvt->_sqlrq=new sqlrqueries(this);
-		pvt->_sqlrq->load(queries);
+		pvt->_sqlrq=new sqlrqueries(this,queries);
+		pvt->_sqlrq->load();
 	}
 
 	// init client protocols
-	pvt->_sqlrpr=new sqlrprotocols(this);
-	pvt->_sqlrpr->load(pvt->_cfg->getListeners());
+	pvt->_sqlrpr=new sqlrprotocols(this,pvt->_cfg->getListeners());
+	pvt->_sqlrpr->load();
 
 	sqlrserverbase::init();
 

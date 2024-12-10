@@ -2701,9 +2701,10 @@ bool sqlrsh::execute(int argc, const char **argv) {
 				passwordencryptionid=
 					cfg->getDefaultPasswordEncryptionId();
 				if (passwordencryptionid) {
-					sqlrpwdencs	sqlrpe(sqlrpth,false);
-					sqlrpe.load(
+					sqlrpwdencs	sqlrpe(
+						sqlrpth,false,
 						cfg->getPasswordEncryptions());
+					sqlrpe.load();
 					decryptedpassword=
 						sqlrpe.
 						getPasswordEncryptionById(

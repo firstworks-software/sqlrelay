@@ -15,7 +15,8 @@
 	}
 #endif
 
-sqlrfilters::sqlrfilters(sqlrservercontroller *cont) : sqlrservermodules(cont) {
+sqlrfilters::sqlrfilters(sqlrservercontroller *cont, domnode *parameters) :
+					sqlrservermodules(cont,parameters) {
 	pvt=NULL;
 	setDebug(cont->getConfig()->getDebugFilters());
 }
@@ -23,17 +24,17 @@ sqlrfilters::sqlrfilters(sqlrservercontroller *cont) : sqlrservermodules(cont) {
 sqlrfilters::~sqlrfilters() {
 }
 
-bool sqlrfilters::load(domnode *parameters) {
+bool sqlrfilters::load() {
 
 	unload();
 
 	// run through the module tags
-	for (domnode *moduledata=parameters->getFirstTagChild();
+	for (domnode *moduledata=getParameters()->getFirstTagChild();
 				!moduledata->isNullNode();
 				moduledata=moduledata->getNextTagSibling()) {
 
 		// skip disabled modules
-		if (isModuleDisabled(parameters)) {
+		if (isModuleDisabled(moduledata)) {
 			continue;
 		}
 

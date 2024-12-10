@@ -22,8 +22,9 @@ class sqlrresultsetheadertranslationsprivate {
 };
 
 sqlrresultsetheadertranslations::sqlrresultsetheadertranslations(
-						sqlrservercontroller *cont) :
-						sqlrservermodules(cont) {
+					sqlrservercontroller *cont,
+					domnode *parameters) :
+					sqlrservermodules(cont,parameters) {
 	pvt=new sqlrresultsetheadertranslationsprivate;
 	setDebug(cont->getConfig()->getDebugResultSetHeaderTranslations());
 	pvt->_error=NULL;

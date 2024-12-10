@@ -21,8 +21,9 @@ class sqlrerrortranslationsprivate {
 		const char	*_error;
 };
 
-sqlrerrortranslations::sqlrerrortranslations(sqlrservercontroller *cont) :
-						sqlrservermodules(cont) {
+sqlrerrortranslations::sqlrerrortranslations(
+			sqlrservercontroller *cont, domnode *parameters) :
+			sqlrservermodules(cont,parameters) {
 	pvt=new sqlrerrortranslationsprivate;
 	setDebug(cont->getConfig()->getDebugErrorTranslations());
 	pvt->_error=NULL;

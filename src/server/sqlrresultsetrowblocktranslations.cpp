@@ -24,8 +24,9 @@ class sqlrresultsetrowblocktranslationsprivate {
 };
 
 sqlrresultsetrowblocktranslations::sqlrresultsetrowblocktranslations(
-						sqlrservercontroller *cont) :
-						sqlrservermodules(cont) {
+					sqlrservercontroller *cont,
+					domnode *parameters) :
+					sqlrservermodules(cont,parameters) {
 	pvt=new sqlrresultsetrowblocktranslationsprivate;
 	setDebug(cont->getConfig()->getDebugResultSetRowBlockTranslations());
 	pvt->_rowblockcount=0;
@@ -37,16 +38,16 @@ sqlrresultsetrowblocktranslations::~sqlrresultsetrowblocktranslations() {
 	delete pvt;
 }
 
-bool sqlrresultsetrowblocktranslations::load(domnode *parameters) {
+bool sqlrresultsetrowblocktranslations::load() {
 
 	// get rowblockcount parameter
 	pvt->_rowblockcount=charstring::convertToInteger(
-			parameters->getAttributeValue("rowblockcount"));
+			getParameters()->getAttributeValue("rowblockcount"));
 
 	// try "rowblocksize", that's what it used to be called
 	if (pvt->_rowblockcount) {
 		pvt->_rowblockcount=charstring::convertToInteger(
-			parameters->getAttributeValue("rowblocksize"));
+			getParameters()->getAttributeValue("rowblocksize"));
 	}
 
 	// default to 10
@@ -54,7 +55,7 @@ bool sqlrresultsetrowblocktranslations::load(domnode *parameters) {
 		pvt->_rowblockcount=10;
 	}
 
-	return sqlrservermodules::load(parameters);
+	return sqlrservermodules::load();
 }
 
 void sqlrresultsetrowblocktranslations::loadModule(domnode *parameters) {

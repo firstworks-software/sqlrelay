@@ -14,8 +14,9 @@
 	}
 #endif
 
-sqlrschedules::sqlrschedules(sqlrservercontroller *cont) :
-					sqlrservermodules(cont) {
+sqlrschedules::sqlrschedules(sqlrservercontroller *cont,
+					domnode *parameters) :
+					sqlrservermodules(cont,parameters) {
 	pvt=NULL;
 }
 

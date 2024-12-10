@@ -14,7 +14,7 @@ class SQLRSERVER_DLLSPEC sqlrlogger_debug : public sqlrlogger {
 		~sqlrlogger_debug();
 
 		bool	init(sqlrlistener *sqlrl,
-					sqlrserverconnection *sqlrcon);
+					sqlrservercontroller *sqlrc);
 		bool	start(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
@@ -106,7 +106,7 @@ sqlrlogger_debug::~sqlrlogger_debug() {
 }
 
 bool sqlrlogger_debug::init(sqlrlistener *sqlrl,
-				sqlrserverconnection *sqlrcon) {
+				sqlrservercontroller *sqlrc) {
 
 	closeDebug();
 
@@ -115,12 +115,12 @@ bool sqlrlogger_debug::init(sqlrlistener *sqlrl,
 	if (sqlrl && !loglistener) {
 		return true;
 	}
-	if (sqlrcon && !logconnection) {
+	if (sqlrc && !logconnection) {
 		return true;
 	}
 	processname=(sqlrl)?("sqlr-listener"):("sqlr-connection");
-	debugdir=(sqlrcon)?sqlrcon->cont->getPaths()->getDebugDir():
-					sqlrl->getPaths()->getDebugDir();
+	debugdir=(sqlrc)?sqlrc->getPaths()->getDebugDir():
+				sqlrl->getPaths()->getDebugDir();
 	return true;
 }
 

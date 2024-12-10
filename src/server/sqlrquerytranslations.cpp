@@ -31,8 +31,10 @@ class sqlrquerytranslationsprivate {
 		bool		_useoriginalonerror;
 };
 
-sqlrquerytranslations::sqlrquerytranslations(sqlrservercontroller *cont) :
-						sqlrservermodules(cont) {
+sqlrquerytranslations::sqlrquerytranslations(
+				sqlrservercontroller *cont,
+				domnode *parameters) :
+				sqlrservermodules(cont,parameters) {
 	pvt=new sqlrquerytranslationsprivate;
 	setDebug(cont->getConfig()->getDebugQueryTranslations());
 	pvt->_error=NULL;
@@ -44,15 +46,15 @@ sqlrquerytranslations::~sqlrquerytranslations() {
 	delete pvt;
 }
 
-bool sqlrquerytranslations::load(domnode *parameters) {
+bool sqlrquerytranslations::load() {
 
 	// default to useoriginal-on-error
 	pvt->_useoriginalonerror=
 		!charstring::compareIgnoringCase(
-				parameters->getAttributeValue("onerror"),
+				getParameters()->getAttributeValue("onerror"),
 				"original");
 
-	return sqlrservermodules::load(parameters);
+	return sqlrservermodules::load();
 }
 
 void sqlrquerytranslations::loadModule(domnode *parameters) {

@@ -8,14 +8,22 @@ class SQLRSERVER_DLLSPEC sqlrmoduleplugin {
 		const char		*module;
 };
 
+class sqlrservermodulesprivate;
+
 class SQLRSERVER_DLLSPEC sqlrservermodules : public sqlrserverbase {
 	public:
-		sqlrservermodules(sqlrservercontroller *cont);
+		sqlrservermodules(sqlrservercontroller *cont,
+						domnode *parameters);
 		virtual	~sqlrservermodules();
 
+		domnode	*getParameters();
 		bool	isModuleDisabled(domnode *parameters);
 
-		virtual bool	load(domnode *parameters);
+		void	debugStart(const char *title, ...);
+		void	debugWrite(const char *string, ...);
+		void	debugEnd();
+
+		virtual bool	load();
 		virtual void	unload();
 		virtual void	endTransaction(bool commit);
 		virtual void	endSession();
@@ -28,14 +36,16 @@ class SQLRSERVER_DLLSPEC sqlrservermodules : public sqlrserverbase {
 		singlylinkedlist< sqlrmoduleplugin * >	alist;
 
 		sqlrservercontroller	*cont;
+
+		sqlrservermodulesprivate	*pvt;
 };
 
 class SQLRSERVER_DLLSPEC sqlrprotocols : public sqlrservermodules {
 	public:
-		sqlrprotocols(sqlrservercontroller *cont);
+		sqlrprotocols(sqlrservercontroller *cont, domnode *parameters);
 		~sqlrprotocols();
 
-		bool	load(domnode *listeners);
+		bool	load();
 		sqlrprotocol	*getProtocol(uint16_t port);
 
 	private:
@@ -46,10 +56,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocols : public sqlrservermodules {
 
 class SQLRSERVER_DLLSPEC sqlrauths : public sqlrservermodules {
 	public:
-		sqlrauths(sqlrservercontroller *cont);
+		sqlrauths(sqlrservercontroller *cont, domnode *parameters);
 		~sqlrauths();
 
-		bool	load(domnode *parameters);
+		bool	load();
 		const char	*auth(sqlrcredentials *cred);
 
 	private:
@@ -60,11 +70,11 @@ class SQLRSERVER_DLLSPEC sqlrauths : public sqlrservermodules {
 
 class SQLRSERVER_DLLSPEC sqlrloggers : public sqlrservermodules {
 	public:
-		sqlrloggers(sqlrpaths *sqlrpth);
+		sqlrloggers(sqlrpaths *sqlrpth, domnode *parameters);
 		~sqlrloggers();
 
 		void	init(sqlrlistener *sqlrl,
-				sqlrserverconnection *sqlrcon);
+				sqlrservercontroller *sqlrc);
 		void	start(sqlrlistener *sqlrl,
 				sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
@@ -91,7 +101,7 @@ class SQLRSERVER_DLLSPEC sqlrloggers : public sqlrservermodules {
 
 class SQLRSERVER_DLLSPEC sqlrnotifications : public sqlrservermodules {
 	public:
-		sqlrnotifications(sqlrpaths *sqlrpth);
+		sqlrnotifications(sqlrpaths *sqlrpth, domnode *parameters);
 		~sqlrnotifications();
 
 		void	run(sqlrlistener *sqlrl,
@@ -108,7 +118,7 @@ class SQLRSERVER_DLLSPEC sqlrnotifications : public sqlrservermodules {
 
 class SQLRSERVER_DLLSPEC sqlrschedules : public sqlrservermodules {
 	public:
-		sqlrschedules(sqlrservercontroller *cont);
+		sqlrschedules(sqlrservercontroller *cont, domnode *parameters);
 		~sqlrschedules();
 
 		bool	allowed(sqlrserverconnection *sqlrcon,
@@ -122,7 +132,7 @@ class SQLRSERVER_DLLSPEC sqlrschedules : public sqlrservermodules {
 
 class SQLRSERVER_DLLSPEC sqlrdirectives : public sqlrservermodules {
 	public:
-		sqlrdirectives(sqlrservercontroller *cont);
+		sqlrdirectives(sqlrservercontroller *cont, domnode *parameters);
 		~sqlrdirectives();
 
 		bool	run(sqlrserverconnection *sqlrcon,
@@ -137,10 +147,11 @@ class SQLRSERVER_DLLSPEC sqlrdirectives : public sqlrservermodules {
 
 class SQLRSERVER_DLLSPEC sqlrquerytranslations : public sqlrservermodules {
 	public:
-		sqlrquerytranslations(sqlrservercontroller *cont);
+		sqlrquerytranslations(sqlrservercontroller *cont,
+						domnode *parameters);
 		~sqlrquerytranslations();
 
-		bool	load(domnode *parameters);
+		bool	load();
 		bool	run(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur,
 						sqlrparser *sqlrp,
@@ -183,10 +194,10 @@ typedef sqlrquerytranslations sqlrtranslations;
 
 class SQLRSERVER_DLLSPEC sqlrfilters : public sqlrservermodules {
 	public:
-		sqlrfilters(sqlrservercontroller *cont);
+		sqlrfilters(sqlrservercontroller *cont, domnode *parameters);
 		~sqlrfilters();
 
-		bool	load(domnode *parameters);
+		bool	load();
 		bool	runBeforeFilters(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur,
 						sqlrparser *sqlrp,
@@ -217,7 +228,8 @@ class SQLRSERVER_DLLSPEC sqlrfilters : public sqlrservermodules {
 class SQLRSERVER_DLLSPEC sqlrbindvariabletranslations :
 						public sqlrservermodules {
 	public:
-		sqlrbindvariabletranslations(sqlrservercontroller *cont);
+		sqlrbindvariabletranslations(sqlrservercontroller *cont,
+							domnode *parameters);
 		~sqlrbindvariabletranslations();
 
 		bool	run(sqlrserverconnection *sqlrcon,
@@ -232,7 +244,8 @@ class SQLRSERVER_DLLSPEC sqlrbindvariabletranslations :
 
 class SQLRSERVER_DLLSPEC sqlrresultsettranslations : public sqlrservermodules {
 	public:
-		sqlrresultsettranslations(sqlrservercontroller *cont);
+		sqlrresultsettranslations(sqlrservercontroller *cont,
+							domnode *parameters);
 		~sqlrresultsettranslations();
 
 		bool	run(sqlrserverconnection *sqlrcon,
@@ -253,7 +266,8 @@ class SQLRSERVER_DLLSPEC sqlrresultsettranslations : public sqlrservermodules {
 class SQLRSERVER_DLLSPEC sqlrresultsetrowtranslations :
 						public sqlrservermodules {
 	public:
-		sqlrresultsetrowtranslations(sqlrservercontroller *cont);
+		sqlrresultsetrowtranslations(sqlrservercontroller *cont,
+							domnode *parameters);
 		~sqlrresultsetrowtranslations();
 
 		bool	run(sqlrserverconnection *sqlrcon,
@@ -274,10 +288,11 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowtranslations :
 class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslations :
 						public sqlrservermodules {
 	public:
-		sqlrresultsetrowblocktranslations(sqlrservercontroller *cont);
+		sqlrresultsetrowblocktranslations(sqlrservercontroller *cont,
+							domnode *parameters);
 		~sqlrresultsetrowblocktranslations();
 
-		bool	load(domnode *parameters);
+		bool	load();
 
 		uint64_t	getRowBlockCount();
 
@@ -312,7 +327,8 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslations :
 class SQLRSERVER_DLLSPEC sqlrresultsetheadertranslations :
 						public sqlrservermodules {
 	public:
-		sqlrresultsetheadertranslations(sqlrservercontroller *cont);
+		sqlrresultsetheadertranslations(sqlrservercontroller *cont,
+							domnode *parameters);
 		~sqlrresultsetheadertranslations();
 
 		bool	run(sqlrserverconnection *sqlrcon,
@@ -347,7 +363,8 @@ class SQLRSERVER_DLLSPEC sqlrresultsetheadertranslations :
 
 class SQLRSERVER_DLLSPEC sqlrerrortranslations : public sqlrservermodules {
 	public:
-		sqlrerrortranslations(sqlrservercontroller *cont);
+		sqlrerrortranslations(sqlrservercontroller *cont,
+						domnode *parameters);
 		~sqlrerrortranslations();
 
 		bool	run(sqlrserverconnection *sqlrcon,
@@ -368,10 +385,10 @@ class SQLRSERVER_DLLSPEC sqlrerrortranslations : public sqlrservermodules {
 
 class SQLRSERVER_DLLSPEC sqlrtriggers : public sqlrservermodules {
 	public:
-		sqlrtriggers(sqlrservercontroller *cont);
+		sqlrtriggers(sqlrservercontroller *cont, domnode *parameters);
 		~sqlrtriggers();
 
-		bool	load(domnode *parameters);
+		bool	load();
 		bool	runBeforeTriggers(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur);
 		bool	runAfterTriggers(sqlrserverconnection *sqlrcon,
@@ -391,7 +408,7 @@ class SQLRSERVER_DLLSPEC sqlrtriggers : public sqlrservermodules {
 
 class SQLRSERVER_DLLSPEC sqlrqueries : public sqlrservermodules {
 	public:
-		sqlrqueries(sqlrservercontroller *cont);
+		sqlrqueries(sqlrservercontroller *cont, domnode *parameters);
 		~sqlrqueries();
 
 		sqlrquerycursor	*match(sqlrserverconnection *sqlrcon,
@@ -407,7 +424,8 @@ class SQLRSERVER_DLLSPEC sqlrqueries : public sqlrservermodules {
 
 class SQLRSERVER_DLLSPEC sqlrmoduledatas : public sqlrservermodules {
 	public:
-		sqlrmoduledatas(sqlrservercontroller *cont);
+		sqlrmoduledatas(sqlrservercontroller *cont,
+						domnode *parameters);
 		~sqlrmoduledatas();
 
 		sqlrmoduledata	*getModuleData(const char *id);

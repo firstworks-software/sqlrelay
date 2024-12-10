@@ -27,15 +27,17 @@ class sqlrpwdencplugin {
 class sqlrpwdencsprivate {
 	friend class sqlrpwdencs;
 	private:
+		domnode		*_parameters;
 		const char	*_libexecdir;
 		bool		_debug;
 
 		singlylinkedlist< sqlrpwdencplugin * >	_llist;
 };
 
-sqlrpwdencs::sqlrpwdencs(sqlrpaths *sqlrpth, bool debug) {
+sqlrpwdencs::sqlrpwdencs(sqlrpaths *sqlrpth, bool debug, domnode *parameters) {
 	debugFunction();
 	pvt=new sqlrpwdencsprivate;
+	pvt->_parameters=parameters;
 	pvt->_libexecdir=sqlrpth->getLibExecDir();
 	pvt->_debug=debug;
 }
@@ -46,13 +48,13 @@ sqlrpwdencs::~sqlrpwdencs() {
 	delete pvt;
 }
 
-bool sqlrpwdencs::load(domnode *parameters) {
+bool sqlrpwdencs::load() {
 	debugFunction();
 
 	unload();
 
 	// run through the password encryption list
-	for (domnode *pwdenc=parameters->getFirstTagChild();
+	for (domnode *pwdenc=pvt->_parameters->getFirstTagChild();
 		!pwdenc->isNullNode(); pwdenc=pwdenc->getNextTagSibling()) {
 
 		debugPrintf("loading password encryption ...\n");

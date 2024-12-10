@@ -26,8 +26,9 @@ class sqlrroutersprivate {
 sqlrrouters::sqlrrouters(sqlrservercontroller *cont,
 				sqlrconnection **connections,
 				const char **connectionids,
-				uint16_t connectioncount) :
-				sqlrservermodules(cont) {
+				uint16_t connectioncount,
+				domnode *parameters) :
+				sqlrservermodules(cont,parameters) {
 	pvt=new sqlrroutersprivate;
 	setDebug(cont->getConfig()->getDebugRouters());
 	pvt->_conns=connections;

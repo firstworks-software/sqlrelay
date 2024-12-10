@@ -13,8 +13,9 @@
 	}
 #endif
 
-sqlrdirectives::sqlrdirectives(sqlrservercontroller *cont) :
-						sqlrservermodules(cont) {
+sqlrdirectives::sqlrdirectives(sqlrservercontroller *cont,
+	       				domnode *parameters) :
+					sqlrservermodules(cont,parameters) {
 	pvt=NULL;
 	setDebug(cont->getConfig()->getDebugDirectives());
 }

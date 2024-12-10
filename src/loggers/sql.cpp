@@ -14,8 +14,7 @@ class SQLRSERVER_DLLSPEC sqlrlogger_sql : public sqlrlogger {
 		sqlrlogger_sql(domnode *parameters);
 		~sqlrlogger_sql();
 
-		bool	init(sqlrlistener *sqlrl,
-					sqlrserverconnection *sqlrcon);
+		bool	init(sqlrlistener *sqlrl, sqlrservercontroller *sqlrc);
 		bool	write(sqlrlistener *sqlrl,
 					sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur,
@@ -57,11 +56,10 @@ sqlrlogger_sql::~sqlrlogger_sql() {
 	delete[] querylogname;
 }
 
-bool sqlrlogger_sql::init(sqlrlistener *sqlrl,
-					sqlrserverconnection *sqlrcon) {
+bool sqlrlogger_sql::init(sqlrlistener *sqlrl, sqlrservercontroller *sqlrc) {
 
 	// don't log anything for the listener
-	if (!sqlrcon) {
+	if (!sqlrc) {
 		return true;
 	}
 
@@ -72,8 +70,8 @@ bool sqlrlogger_sql::init(sqlrlistener *sqlrl,
 	delete[] querylogname;
 	charstring::printf(&querylogname,
 				"%s/sqlr-connection-%s-querylog.%ld",
-				sqlrcon->cont->getPaths()->getLogDir(),
-				sqlrcon->cont->getId(),(long)pid);
+				sqlrc->getPaths()->getLogDir(),
+				sqlrc->getId(),(long)pid);
 
 	// remove any old log file
 	file::remove(querylogname);
@@ -120,7 +118,7 @@ bool sqlrlogger_sql::write(sqlrlistener *sqlrl,
 		if (inode1!=inode2) {
 			querylog.flushWriteBuffer(-1,-1);
 			querylog.close();
-			init(sqlrl,sqlrcon);
+			init(sqlrl,sqlrcon->cont);
 		}
 	}
 
