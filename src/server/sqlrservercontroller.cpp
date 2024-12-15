@@ -1210,14 +1210,15 @@ void sqlrservercontroller::logOut() {
 
 void sqlrservercontroller::setAutoCommit(bool ac) {
 	debugStart("set autocommit");
-	debugWrite("ac: %d",ac);
 	if (ac) {
+		debugWrite("on");
 		if (!setAutoCommitOn()) {
 			debugWrite("failed");
 			stderror.printf("Couldn't set autocommit on.\n");
 			return;
 		}
 	} else {
+		debugWrite("off");
 		if (!setAutoCommitOff()) {
 			debugWrite("failed");
 			stderror.printf("Couldn't set autocommit off.\n");
@@ -2158,12 +2159,15 @@ sqlrservercursor *sqlrservercontroller::getCursor(uint16_t id) {
 
 sqlrservercursor *sqlrservercontroller::getCursor() {
 
+	debugStart("get cursor");
+
 	// find an available cursor
 	for (uint16_t i=0; i<pvt->_cursorcount; i++) {
 		if (pvt->_cur[i]->getState()==SQLRCURSORSTATE_AVAILABLE) {
 			debugWrite("available cursor: %hd",i);
 			pvt->_cur[i]->setState(SQLRCURSORSTATE_BUSY);
 			incrementTimesNewCursorUsed();
+			debugEnd();
 			return pvt->_cur[i];
 		}
 	}
@@ -2181,6 +2185,7 @@ sqlrservercursor *sqlrservercontroller::getCursor() {
 			debugWrite("cursor %hd: %.*s",i,querysize,
 						pvt->_cur[i]->getQueryBuffer());
 		}
+		debugEnd();
 		return NULL;
 	}
 
@@ -2205,6 +2210,7 @@ sqlrservercursor *sqlrservercontroller::getCursor() {
 	// return the first new cursor that we created
 	pvt->_cur[firstnewcursor]->setState(SQLRCURSORSTATE_BUSY);
 	incrementTimesNewCursorUsed();
+	debugEnd();
 	return pvt->_cur[firstnewcursor];
 }
 
@@ -4294,19 +4300,19 @@ void sqlrservercontroller::translateBindVariablesFromMappings(
 	}
 	debugStart("remapping bind variables");
 	if (getLoggingEnabled()) {
-		debugStart("input binds:");
+		debugStart("input binds");
 		for (i=0; i<cursor->getInputBindCount(); i++) {
 			debugWrite(
 				cursor->getInputBinds()[i].variable);
 		}
 		debugEnd();
-		debugStart("output binds:");
+		debugStart("output binds");
 		for (i=0; i<cursor->getOutputBindCount(); i++) {
 			debugWrite(
 				cursor->getOutputBinds()[i].variable);
 		}
 		debugEnd();
-		debugStart("input/output binds:");
+		debugStart("input/output binds");
 		for (i=0; i<cursor->getInputOutputBindCount(); i++) {
 			debugWrite(
 				cursor->getInputOutputBinds()[i].variable);
@@ -4379,19 +4385,19 @@ void sqlrservercontroller::translateBindVariablesFromMappings(
 		stdoutput.printf("\n");
 	}
 	if (getLoggingEnabled()) {
-		debugStart("remapped input binds:");
+		debugStart("remapped input binds");
 		for (i=0; i<cursor->getInputBindCount(); i++) {
 			debugWrite(
 				cursor->getInputBinds()[i].variable);
 		}
 		debugEnd();
-		debugStart("remapped output binds:");
+		debugStart("remapped output binds");
 		for (i=0; i<cursor->getOutputBindCount(); i++) {
 			debugWrite(
 				cursor->getOutputBinds()[i].variable);
 		}
 		debugEnd();
-		debugStart("remapped input/output binds:");
+		debugStart("remapped input/output binds");
 		for (i=0; i<cursor->getInputOutputBindCount(); i++) {
 			debugWrite(
 				cursor->getInputOutputBinds()[i].variable);
