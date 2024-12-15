@@ -1926,6 +1926,27 @@ void sqlrconfig_xmldom::normalizeTree() {
 		}
 	}
 
+	// convert listener="yes" and connection="yes" in a debug logger to
+	// debug="yes" in listeners/connections tags
+	domnode	*logger=instance->getFirstTagChild("loggers")->
+				getFirstTagChild("logger","module","debug");
+	if (!logger->isNullNode()) {
+		if (charstring::isYes(
+				logger->getAttributeValue("listener"))) {
+			domnode	*listeners=
+				instance->getFirstTagChild("listeners");
+			if (listeners->isNullNode()) {
+				listeners=instance->appendTag("listeners");
+			}
+			listeners->setAttributeValue("debug","yes");
+		}
+		if (charstring::isYes(
+				logger->getAttributeValue("connection"))) {
+			instance->getFirstTagChild("connections")->
+					setAttributeValue("debug","yes");
+		}
+	}
+
 	// handle protocols specially - it's the listeners tag that needs
 	// debug="yes" for it
 	if (hasDebug(debug,"protocols")) {
