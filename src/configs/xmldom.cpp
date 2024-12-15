@@ -2147,9 +2147,14 @@ void sqlrconfig_xmldom::getTreeValues() {
 
 
 	// debug...
+	// Set various debug* variables, based on the values of the debug
+	// attribute of various tags.  If the value of the debug attribute
+	// of the instance tag is yes then set all debug* variables to true.
+	bool	debugyes=false;
 	attr=instance->getAttribute("debug");
 	if (!attr->isNullNode()) {
 		debug=attr->getValue();
+		debugyes=charstring::isYes(debug);
 		debugsql=hasDebug(debug,"sql");
 		debugbulkload=hasDebug(debug,"bulkload");
 		debugbindtranslations=hasDebug(debug,"bindtranslations");
@@ -2260,6 +2265,32 @@ void sqlrconfig_xmldom::getTreeValues() {
 		debugmoduledatas=charstring::isYes(
 					moduledatasxml->
 					getAttributeValue("debug"));
+	}
+	if (debugyes) {
+		debugconnections=true;
+		debuglisteners=true;
+		debugsql=true;
+		debugbulkload=true;
+		debugbindtranslations=true;
+		debugparser=true;
+		debugdirectives=true;
+		debugquerytranslations=true;
+		debugfilters=true;
+		debugtriggers=true;
+		debugbindvariabletranslations=true;
+		debugresultsettranslations=true;
+		debugresultsetrowtranslations=true;
+		debugresultsetrowblocktranslations=true;
+		debugresultsetheadertranslations=true;
+		debugerrortranslations=true;
+		debugauths=true;
+		debugpwdencs=true;
+		debugloggers=true;
+		debugnotifications=true;
+		debugschedules=true;
+		debugrouters=true;
+		debugqueries=true;
+		debugmoduledatas=true;
 	}
 
 
