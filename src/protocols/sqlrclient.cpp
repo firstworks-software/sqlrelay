@@ -203,6 +203,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 		bool	getTranslatedQueryCommand(sqlrservercursor *cursor);
 		bool	nextResultSetCommand(sqlrservercursor *cursor);
 
+		void	debugCommand(uint16_t command);
+
 		stringbuffer	debugstr;
 
 		filedescriptor	*clientsock;
@@ -260,6 +262,61 @@ sqlrprotocol_sqlrclient::sqlrprotocol_sqlrclient(
 	} else {
 		ctx=NULL;
 	}
+
+	debugStart("parameters");
+	debugWrite("idleclienttimeout: %d",idleclienttimeout);
+	debugWrite("maxclientinfosize: %lld",maxclientinfosize);
+	debugWrite("maxquerysize: %d",maxquerysize);
+	debugWrite("maxbindcount: %hd",maxbindcount);
+	debugWrite("maxbindnamesize: %hd",maxbindnamesize);
+	debugWrite("maxstringbindvaluesize: %d",maxstringbindvaluesize);
+	debugWrite("maxlobbindvaluesize: %d",maxlobbindvaluesize);
+	debugWrite("waitfordowndb: %d",waitfordowndb);
+	if (useKrb()) {
+		debugWrite("krb: yes");
+		debugWrite("krb keytab: %s",
+			getGssContext()->getCredentials()->getKeytab());
+		debugWrite("krb service: %s",
+			getGssContext()->getService());
+		debugStart("krb mechs");
+		for (uint64_t i=0;
+			i<getGssContext()->getCredentials()->
+					getActualMechanismCount();
+			i++) {
+			debugWrite("%s",getGssContext()->
+						getCredentials()->
+						getActualMechanism(i)->
+						getString());
+		}
+		debugEnd();
+		// FIXME: print as bits or something
+		debugWrite("krb flags: %d",
+			getGssContext()->getActualFlags());
+	} else {
+		debugWrite("krb: no");
+	}
+	if (useTls()) {
+		debugWrite("tls: yes");
+		debugWrite("tls version: %s",
+			getTlsContext()->getProtocolVersion());
+		debugWrite("tls cert: %s",
+			getTlsContext()->getCertificateChainFile());
+		debugWrite("tls key: %s",
+			getTlsContext()->getPrivateKeyFile());
+		debugWrite("tls password: %s",
+			getTlsContext()->getPrivateKeyPassword());
+		debugWrite("tls validate: %d",
+			getTlsContext()->getValidatePeer());
+		debugWrite("tls ca: %s",
+			getTlsContext()->getCertificateAuthority());
+		debugWrite("tls ciphers: %s",
+			getTlsContext()->getCiphers());
+		debugWrite("tls depth: %d",
+			getTlsContext()->getValidationDepth());
+	} else {
+		debugWrite("tls: no");
+	}
+	debugEnd();
 
 	protocolversion=0;
 	endresultset=END_RESULT_SET;
@@ -331,7 +388,6 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 
 		// handle bad commands
 		if (command>MAXCOMMAND) {
-			debugWrite("bad command: %hd",command);
 			endsession=true;
 			break;
 		} else
@@ -620,7 +676,7 @@ bool sqlrprotocol_sqlrclient::acceptSecurityContext() {
 
 bool sqlrprotocol_sqlrclient::getCommand(uint16_t *command) {
 
-	debugStart("getting command");
+	debugStart("get command");
 
 	cont->setState(GET_COMMAND);
 
@@ -632,6 +688,7 @@ bool sqlrprotocol_sqlrclient::getCommand(uint16_t *command) {
 		// timeout or a 0 (meaning that the client closed the socket)
 		// as either would be natural to do here.
 		if (result!=RESULT_TIMEOUT && result!=0) {
+			debugWrite("get command failed");
 			cont->raiseClientProtocolErrorEvent(
 				NULL,result,"get command failed");
 		}
@@ -640,8 +697,9 @@ bool sqlrprotocol_sqlrclient::getCommand(uint16_t *command) {
 		return false;
 	}
 
-	debugWrite("command: %hd",*command);
+	debugCommand(*command);
 	debugEnd();
+
 	return true;
 }
 
@@ -767,8 +825,11 @@ void sqlrprotocol_sqlrclient::noAvailableCursors(uint16_t command) {
 
 bool sqlrprotocol_sqlrclient::authCommand() {
 
+	debugStart("auth");
+
 	// get the user/password from the client
 	if (!getUserFromClient() || !getPasswordFromClient()) {
+		debugEnd();
 		return false;
 	}
 
@@ -819,6 +880,9 @@ bool sqlrprotocol_sqlrclient::authCommand() {
 	// auth
 	bool	success=cont->auth(cred);
 
+	debugWrite("auth %s",(success)?"success":"failed");
+	debugEnd();
+
 	// clean up
 	delete cred;
 
@@ -834,6 +898,7 @@ bool sqlrprotocol_sqlrclient::authCommand() {
 				SQLR_ERROR_AUTHENTICATIONERROR_STRING));
 	clientsock->write(SQLR_ERROR_AUTHENTICATIONERROR_STRING);
 	clientsock->flushWriteBuffer(-1,-1);
+
 	return false;
 }
 
@@ -841,24 +906,29 @@ bool sqlrprotocol_sqlrclient::getUserFromClient() {
 	uint32_t	size=0;
 	ssize_t		result=clientsock->read(&size,idleclienttimeout,0);
 	if (result!=sizeof(uint32_t)) {
+		debugWrite("failed to get user size");
 		cont->raiseClientProtocolErrorEvent(NULL,result,
-						"authentication failed: "
-						"failed to get user size");
+					"authentication failed: "
+					"failed to get user size");
 		return false;
 	}
 	if (size>=sizeof(userbuffer)) {
+		debugWrite("user size too long: %d",size);
 		cont->raiseClientConnectionRefusedEvent(
-			"authentication failed: user size too long: %d",size);
+				"authentication failed: "
+				"user size too long: %d",size);
 		return false;
 	}
 	result=clientsock->read(userbuffer,size,idleclienttimeout,0);
 	if ((uint32_t)result!=size) {
+		debugWrite("failed to get user");
 		cont->raiseClientProtocolErrorEvent(NULL,result,
-						"authentication failed: "
-						"failed to get user");
+					"authentication failed: "
+					"failed to get user");
 		return false;
 	}
 	userbuffer[size]='\0';
+	debugWrite("username: \"%s\"",userbuffer);
 	return true;
 }
 
@@ -866,12 +936,14 @@ bool sqlrprotocol_sqlrclient::getPasswordFromClient() {
 	uint32_t	size=0;
 	ssize_t		result=clientsock->read(&size,idleclienttimeout,0);
 	if (result!=sizeof(uint32_t)) {
+		debugWrite("failed to get password size");
 		cont->raiseClientProtocolErrorEvent(NULL,result,
-						"authentication failed: "
-						"failed to get password size");
+					"authentication failed: "
+					"failed to get password size");
 		return false;
 	}
 	if (size>=sizeof(passwordbuffer)) {
+		debugWrite("password size too long: %d",size);
 		cont->raiseClientConnectionRefusedEvent(
 				"authentication failed: "
 				"password size too long: %d",size);
@@ -879,12 +951,14 @@ bool sqlrprotocol_sqlrclient::getPasswordFromClient() {
 	}
 	result=clientsock->read(passwordbuffer,size,idleclienttimeout,0);
 	if ((uint32_t)result!=size) {
+		debugWrite("failed to get password");
 		cont->raiseClientProtocolErrorEvent(NULL,result,
-						"authentication failed: "
-						"failed to get password");
+					"authentication failed: "
+					"failed to get password");
 		return false;
 	}
 	passwordbuffer[size]='\0';
+	debugWrite("password: \"%s\"",passwordbuffer);
 	return true;
 }
 
@@ -4205,6 +4279,141 @@ bool sqlrprotocol_sqlrclient::getTranslatedQueryCommand(
 
 	debugEnd();
 	return true;
+}
+
+void sqlrprotocol_sqlrclient::debugCommand(uint16_t command) {
+	debugWrite("command: %hd",command);
+	switch (command) {
+		case PROTOCOLVERSION:
+			debugWrite("PROTOCOLVERSION");
+			break;
+		case NEW_QUERY:
+			debugWrite("NEW_QUERY");
+			break;
+		case FETCH_RESULT_SET:
+			debugWrite("FETCH_RESULT_SET");
+			break;
+		case ABORT_RESULT_SET:
+			debugWrite("ABORT_RESULT_SET");
+			break;
+		case SUSPEND_RESULT_SET:
+			debugWrite("SUSPEND_RESULT_SET");
+			break;
+		case RESUME_RESULT_SET:
+			debugWrite("RESUME_RESULT_SET");
+			break;
+		case SUSPEND_SESSION:
+			debugWrite("SUSPEND_SESSION");
+			break;
+		case END_SESSION:
+			debugWrite("END_SESSION");
+			break;
+		case PING:
+			debugWrite("PING");
+			break;
+		case IDENTIFY:
+			debugWrite("IDENTIFY");
+			break;
+		case COMMIT:
+			debugWrite("COMMIT");
+			break;
+		case ROLLBACK:
+			debugWrite("ROLLBACK");
+			break;
+		case AUTH:
+			debugWrite("AUTH");
+			break;
+		case AUTOCOMMIT:
+			debugWrite("AUTOCOMMIT");
+			break;
+		case REEXECUTE_QUERY:
+			debugWrite("REEXECUTE_QUERY");
+			break;
+		case FETCH_FROM_BIND_CURSOR:
+			debugWrite("FETCH_FROM_BIND_CURSOR");
+			break;
+		case DBVERSION:
+			debugWrite("DBVERSION");
+			break;
+		case BINDFORMAT:
+			debugWrite("BINDFORMAT");
+			break;
+		case SERVERVERSION:
+			debugWrite("SERVERVERSION");
+			break;
+		case GETDBLIST:
+			debugWrite("GETDBLIST");
+			break;
+		case GETTABLELIST:
+			debugWrite("GETTABLELIST");
+			break;
+		case GETCOLUMNLIST:
+			debugWrite("GETCOLUMNLIST");
+			break;
+		case SELECT_DATABASE:
+			debugWrite("SELECT_DATABASE");
+			break;
+		case GET_CURRENT_DATABASE:
+			debugWrite("GET_CURRENT_DATABASE");
+			break;
+		case GET_LAST_INSERT_ID:
+			debugWrite("GET_LAST_INSERT_ID");
+			break;
+		case BEGIN:
+			debugWrite("BEGIN");
+			break;
+		case GET_QUERY_TREE:
+			debugWrite("GET_QUERY_TREE");
+			break;
+		case NO_COMMAND:
+			debugWrite("NO_COMMAND");
+			break;
+		case DBHOSTNAME:
+			debugWrite("DBHOSTNAME");
+			break;
+		case DBIPADDRESS:
+			debugWrite("DBIPADDRESS");
+			break;
+		case GET_TRANSLATED_QUERY:
+			debugWrite("GET_TRANSLATED_QUERY");
+			break;
+		case GETPROCEDUREBINDANDCOLUMNLIST:
+			debugWrite("GETPROCEDUREBINDANDCOLUMNLIST");
+			break;
+		case GETTYPEINFOLIST:
+			debugWrite("GETTYPEINFOLIST");
+			break;
+		case GETPROCEDURELIST:
+			debugWrite("GETPROCEDURELIST");
+			break;
+		case GETSCHEMALIST:
+			debugWrite("GETSCHEMALIST");
+			break;
+		case GETTABLETYPELIST:
+			debugWrite("GETTABLETYPELIST");
+			break;
+		case GETPRIMARYKEYLIST:
+			debugWrite("GETPRIMARYKEYLIST");
+			break;
+		case GETKEYANDINDEXLIST:
+			debugWrite("GETKEYANDINDEXLIST");
+			break;
+		case GET_CURRENT_SCHEMA:
+			debugWrite("GET_CURRENT_SCHEMA");
+			break;
+		case NEXT_RESULT_SET:
+			debugWrite("NEXT_RESULT_SET");
+			break;
+		case GETTABLELIST2:
+			debugWrite("GETTABLELIST2");
+			break;
+		case NEXTVALFORMAT:
+			debugWrite("NEXTVALFORMAT");
+			break;
+		default:
+			debugWrite("bad command");
+			break;
+	}
 }
 
 extern "C" {
