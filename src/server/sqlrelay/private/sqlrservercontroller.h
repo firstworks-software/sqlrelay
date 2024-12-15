@@ -230,4 +230,8 @@
 		bool	fakePrepareAndExecuteForApiCall(
 						sqlrservercursor *cursor);
 
+		void	debugStart(const char *title, ...);
+		void	debugWrite(const char *string, ...);
+		void	debugEnd();
+
 		sqlrservercontrollerprivate	*pvt;

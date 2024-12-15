@@ -59,6 +59,8 @@ class sqlrlistenerprivate {
 		sqlrconfigs	*_sqlrcfgs;
 		sqlrconfig	*_cfg;
 
+		bool		_debug;
+
 		sqlrloggers		*_sqlrlg;
 		sqlrnotifications	*_sqlrn;
 
@@ -124,6 +126,8 @@ sqlrlistener::sqlrlistener() : sqlrserverbase() {
 
 	pvt->_pidfile=NULL;
 	pvt->_sqlrpth=NULL;
+
+	pvt->_debug=false;
 
 	pvt->_clientsockin=NULL;
 	pvt->_clientsockinprotoindex=NULL;
@@ -328,6 +332,8 @@ bool sqlrlistener::init(int argc, const char **argv) {
 	}
 
 	handleDynamicScaling();
+
+	pvt->_debug=pvt->_cfg->getDebugListeners();
 
 	domnode	*loggers=pvt->_cfg->getLoggers();
 	if (!loggers->isNullNode()) {
@@ -2399,6 +2405,10 @@ void sqlrlistener::raiseDebugStartEvent(const char *info, ...) {
 		return;
 	}
 
+	if (!pvt->_debug) {
+		return;
+	}
+
 	pvt->_infobuffer.clear();
 	va_list	argp;
 	va_start(argp,info);
@@ -2417,6 +2427,10 @@ void sqlrlistener::raiseDebugStartEvent(const char *info, ...) {
 void sqlrlistener::raiseDebugWriteEvent(const char *info, ...) {
 
 	if (!pvt->_sqlrlg && !pvt->_sqlrn) {
+		return;
+	}
+
+	if (!pvt->_debug) {
 		return;
 	}
 
@@ -2440,6 +2454,15 @@ void sqlrlistener::raiseDebugWriteEvent(const char *info, ...) {
 }
 
 void sqlrlistener::raiseDebugEndEvent() {
+
+	if (!pvt->_sqlrlg && !pvt->_sqlrn) {
+		return;
+	}
+
+	if (!pvt->_debug) {
+		return;
+	}
+
 	if (pvt->_sqlrlg) {
 		pvt->_sqlrlg->end(this,NULL,NULL,
 				SQLRLOGGER_LOGLEVEL_DEBUG,

@@ -71,64 +71,70 @@
 // default things to debug
 #define DEFAULT_DEBUG "none"
 
-// default parser debug
+// default debug connections
+#define DEFAULT_DEBUG_CONNECTIONS false
+
+// default debug listeners
+#define DEFAULT_DEBUG_LISTENERS false
+
+// default debug parser debug
 #define DEFAULT_DEBUG_PARSER false
 
-// default directives
+// default debug directives
 #define DEFAULT_DEBUG_DIRECTIVES false
 
-// default query translations
+// default debug query translations
 #define DEFAULT_DEBUG_QUERYTRANSLATIONS false
 
-// default filters
+// default debug filters
 #define DEFAULT_DEBUG_FILTERS false
 
-// default triggers
+// default debug triggers
 #define DEFAULT_DEBUG_TRIGGERS false
 
-// default bind variable translations
+// default debug bind variable translations
 #define DEFAULT_DEBUG_BINDVARIABLETRANSLATIONS false
 
-// default result set translations
+// default debug result set translations
 #define DEFAULT_DEBUG_RESULTSETTRANSLATIONS false
 
-// default result set row translations
+// default debug result set row translations
 #define DEFAULT_DEBUG_RESULTSETROWTRANSLATIONS false
 
-// default result set row block translations
+// default debug result set row block translations
 #define DEFAULT_DEBUG_RESULTSETROWBLOCKTRANSLATIONS false
 
-// default result set header translations
+// default debug result set header translations
 #define DEFAULT_DEBUG_RESULTSETHEADERTRANSLATIONS false
 
-// default erorr translations
+// default debug erorr translations
 #define DEFAULT_DEBUG_ERRORTRANSLATIONS false
 
-// default protocols
+// default debug protocols
 #define DEFAULT_DEBUG_PROTOCOLS false
 
-// default auths
+// default debug auths
 #define DEFAULT_DEBUG_AUTHS false
 
-// default password encryptions
+// default debug password encryptions
 #define DEFAULT_DEBUG_PWDENCS false
 
-// default loggers
+// default debug loggers
 #define DEFAULT_DEBUG_LOGGERS false
 
-// default notifications
+// default debug notifications
 #define DEFAULT_DEBUG_NOTIFICATIONS false
 
-// default schedules
+// default debug schedules
 #define DEFAULT_DEBUG_SCHEDULES false
 
-// default routers
+// default debug routers
 #define DEFAULT_DEBUG_ROUTERS false
 
-// default queries
+// default debug queries
 #define DEFAULT_DEBUG_QUERIES false
 
-// default moduledatas
+// default debug moduledatas
 #define DEFAULT_DEBUG_MODULEDATAS false
 
 // default max client info size

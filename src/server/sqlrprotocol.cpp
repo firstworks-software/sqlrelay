@@ -17,7 +17,6 @@ class sqlrprotocolprivate {
 	friend class sqlrprotocol;
 	private:
 		bool			_bigendian;
-		bool			_debug;
 		bool			_usekrb;
 		bool			_usetls;
 		gsscredentials		_gcred;
@@ -31,7 +30,10 @@ sqlrprotocol::sqlrprotocol(sqlrservercontroller *cont, domnode *parameters) :
 
 	pvt=new sqlrprotocolprivate;
 	pvt->_bigendian=false;
-	pvt->_debug=cont->getConfig()->getDebugProtocols();
+
+	// unlike other modules, only set debug true if it's set for this
+	// specific module, not for all listeners
+	setDebug(charstring::isYes(parameters->getAttributeValue("debug")));
 
 	// tls initialization
 	pvt->_usetls=charstring::isYes(parameters->getAttributeValue("tls"));
@@ -196,10 +198,8 @@ bool sqlrprotocol::read(const byte_t *rp, char *value,
 						const byte_t **rpout) {
 	read(rp,value,rpout);
 	if (*value!=expected) {
-		if (pvt->_debug) {
-			stdoutput.printf("bad %s 0x%02x, expected 0x%02x\n",
-							name,*value,expected);
-		}
+		debugWrite("bad %s 0x%02x, expected 0x%02x\n",
+						name,*value,expected);
 		*rpout=rp;
 		return false;
 	}
@@ -218,10 +218,8 @@ bool sqlrprotocol::read(const byte_t *rp, byte_t *value,
 						const byte_t **rpout) {
 	read(rp,value,rpout);
 	if (*value!=expected) {
-		if (pvt->_debug) {
-			stdoutput.printf("bad %s 0x%02x, expected 0x%02x\n",
-							name,*value,expected);
-		}
+		debugWrite("bad %s 0x%02x, expected 0x%02x\n",
+						name,*value,expected);
 		*rpout=rp;
 		return false;
 	}
@@ -282,10 +280,8 @@ bool sqlrprotocol::readLE(const byte_t *rp, uint16_t *value,
 						const byte_t **rpout) {
 	readLE(rp,value,rpout);
 	if (*value!=expected) {
-		if (getDebug()) {
-			stdoutput.printf("bad %s 0x%04x, expected 0x%04x\n",
-							name,*value,expected);
-		}
+		debugWrite("bad %s 0x%04x, expected 0x%04x\n",
+						name,*value,expected);
 		*rpout=rp;
 		return false;
 	}
@@ -306,10 +302,8 @@ bool sqlrprotocol::readBE(const byte_t *rp,
 					const byte_t **rpout) {
 	readBE(rp,value,rpout);
 	if (*value!=expected) {
-		if (pvt->_debug) {
-			stdoutput.printf("bad %s 0x%04x, expected 0x%04x\n",
-							name,*value,expected);
-		}
+		debugWrite("bad %s 0x%04x, expected 0x%04x\n",
+						name,*value,expected);
 		*rpout=rp;
 		return false;
 	}
@@ -336,10 +330,8 @@ bool sqlrprotocol::readLE(const byte_t *rp, uint32_t *value,
 						const byte_t **rpout) {
 	readLE(rp,value,rpout);
 	if (*value!=expected) {
-		if (getDebug()) {
-			stdoutput.printf("bad %s 0x%08x, expected 0x%08x\n",
-							name,*value,expected);
-		}
+		debugWrite("bad %s 0x%08x, expected 0x%08x\n",
+						name,*value,expected);
 		*rpout=rp;
 		return false;
 	}
@@ -359,10 +351,8 @@ bool sqlrprotocol::readBE(const byte_t *rp, uint32_t *value,
 						const byte_t **rpout) {
 	readBE(rp,value,rpout);
 	if (*value!=expected) {
-		if (pvt->_debug) {
-			stdoutput.printf("bad %s 0x%08x, expected 0x%08x\n",
-							name,*value,expected);
-		}
+		debugWrite("bad %s 0x%08x, expected 0x%08x\n",
+						name,*value,expected);
 		*rpout=rp;
 		return false;
 	}
@@ -389,10 +379,8 @@ bool sqlrprotocol::readLE(const byte_t *rp, uint64_t *value,
 						const byte_t **rpout) {
 	readLE(rp,value,rpout);
 	if (*value!=expected) {
-		if (getDebug()) {
-			stdoutput.printf("bad %s 0x%016x, expected 0x%016x\n",
-							name,*value,expected);
-		}
+		debugWrite("bad %s 0x%016x, expected 0x%016x\n",
+						name,*value,expected);
 		*rpout=rp;
 		return false;
 	}
@@ -412,10 +400,8 @@ bool sqlrprotocol::readBE(const byte_t *rp, uint64_t *value,
 						const byte_t **rpout) {
 	readBE(rp,value,rpout);
 	if (*value!=expected) {
-		if (pvt->_debug) {
-			stdoutput.printf("bad %s 0x%016x, expected 0x%016x\n",
-							name,*value,expected);
-		}
+		debugWrite("bad %s 0x%016x, expected 0x%016x\n",
+						name,*value,expected);
 		*rpout=rp;
 		return false;
 	}

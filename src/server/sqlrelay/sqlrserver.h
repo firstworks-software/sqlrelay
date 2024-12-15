@@ -1193,6 +1193,10 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  otherwise. */
 		bool	getNotificationsEnabled();
 
+		/** Returns true if debug has been enabled at the connections
+		 *  level. */
+		bool	getDebug();
+
 		/** Raises a debug-start event with information "info", which
 		 *  may be logged, or which may trigger a notification. */
 		void	raiseDebugStartEvent(const char *info, ...);

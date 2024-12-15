@@ -74,6 +74,8 @@ class SQLRUTIL_DLLSPEC sqlrconfig_xmldom : public sqlrconfig, public xmldom {
 		const char	*getAllowedIps();
 		const char	*getDeniedIps();
 		const char	*getDebug();
+		bool		getDebugConnections();
+		bool		getDebugListeners();
 		bool		getDebugSql();
 		bool		getDebugBulkLoad();
 		bool		getDebugBindTranslations();
@@ -88,7 +90,6 @@ class SQLRUTIL_DLLSPEC sqlrconfig_xmldom : public sqlrconfig, public xmldom {
 		bool		getDebugResultSetRowBlockTranslations();
 		bool		getDebugResultSetHeaderTranslations();
 		bool		getDebugErrorTranslations();
-		bool		getDebugProtocols();
 		bool		getDebugAuths();
 		bool		getDebugPasswordEncryptions();
 		bool		getDebugLoggers();
@@ -215,6 +216,8 @@ class SQLRUTIL_DLLSPEC sqlrconfig_xmldom : public sqlrconfig, public xmldom {
 		const char	*allowedips;
 		const char	*deniedips;
 		const char	*debug;
+		bool		debugconnections;
+		bool		debuglisteners;
 		bool		debugsql;
 		bool		debugbulkload;
 		bool		debugbindtranslations;
@@ -229,7 +232,6 @@ class SQLRUTIL_DLLSPEC sqlrconfig_xmldom : public sqlrconfig, public xmldom {
 		bool		debugresultsetrowblocktranslations;
 		bool		debugresultsetheadertranslations;
 		bool		debugerrortranslations;
-		bool		debugprotocols;
 		bool		debugauths;
 		bool		debugpwdencs;
 		bool		debugloggers;
@@ -266,6 +268,7 @@ class SQLRUTIL_DLLSPEC sqlrconfig_xmldom : public sqlrconfig, public xmldom {
 		linkedlist< char *>	sessionstartqueries;
 		linkedlist< char *>	sessionendqueries;
 
+		domnode	*connectionsxml;
 		domnode	*listenersxml;
 		domnode	*parserxml;
 		domnode	*directivesxml;
@@ -362,6 +365,8 @@ void sqlrconfig_xmldom::init() {
 	allowedips=DEFAULT_DENIEDIPS;
 	deniedips=DEFAULT_DENIEDIPS;
 	debug=DEFAULT_DEBUG;
+	debugconnections=DEFAULT_DEBUG_CONNECTIONS;
+	debuglisteners=DEFAULT_DEBUG_LISTENERS;
 	debugsql=hasDebug(debug,"sql");
 	debugbulkload=hasDebug(debug,"bulkload");
 	debugbindtranslations=hasDebug(debug,"bindtranslations");
@@ -378,7 +383,6 @@ void sqlrconfig_xmldom::init() {
 	debugresultsetheadertranslations=
 				DEFAULT_DEBUG_RESULTSETHEADERTRANSLATIONS;
 	debugerrortranslations=DEFAULT_DEBUG_ERRORTRANSLATIONS;
-	debugprotocols=DEFAULT_DEBUG_PROTOCOLS;
 	debugauths=DEFAULT_DEBUG_AUTHS;
 	debugpwdencs=DEFAULT_DEBUG_PWDENCS;
 	debugloggers=DEFAULT_DEBUG_LOGGERS;
@@ -613,6 +617,14 @@ const char *sqlrconfig_xmldom::getDebug() {
 	return debug;
 }
 
+bool sqlrconfig_xmldom::getDebugConnections() {
+	return debugconnections;
+}
+
+bool sqlrconfig_xmldom::getDebugListeners() {
+	return debuglisteners;
+}
+
 bool sqlrconfig_xmldom::getDebugSql() {
 	return debugsql;
 }
@@ -667,10 +679,6 @@ bool sqlrconfig_xmldom::getDebugResultSetHeaderTranslations() {
 
 bool sqlrconfig_xmldom::getDebugErrorTranslations() {
 	return debugerrortranslations;
-}
-
-bool sqlrconfig_xmldom::getDebugProtocols() {
-	return debugprotocols;
 }
 
 bool sqlrconfig_xmldom::getDebugAuths() {
@@ -1865,6 +1873,8 @@ void sqlrconfig_xmldom::normalizeTree() {
 
 	// debug="..." to <... debug="yes/no">
 	const char	*debuggables[]={
+		"listeners",
+		"connections",
 		"parser",
 		"directives",
 		"querytranslations",
@@ -2107,6 +2117,7 @@ void sqlrconfig_xmldom::getTreeValues() {
 
 
 	// xmls...
+	connectionsxml=instance->getFirstTagChild("connections");
 	listenersxml=instance->getFirstTagChild("listeners");
 	parserxml=instance->getFirstTagChild("parser");
 	directivesxml=instance->getFirstTagChild("directives");
@@ -2142,63 +2153,110 @@ void sqlrconfig_xmldom::getTreeValues() {
 		debugsql=hasDebug(debug,"sql");
 		debugbulkload=hasDebug(debug,"bulkload");
 		debugbindtranslations=hasDebug(debug,"bindtranslations");
+	}
+	if (!connectionsxml->getAttribute("debug")->isNullNode()) {
+		debugconnections=charstring::isYes(
+					connectionsxml->
+					getAttributeValue("debug"));
+	}
+	if (!listenersxml->getAttribute("debug")->isNullNode()) {
+		debuglisteners=charstring::isYes(
+					listenersxml->
+					getAttributeValue("debug"));
+	}
+	if (!parserxml->getAttribute("debug")->isNullNode()) {
 		debugparser=charstring::isYes(
 					parserxml->
 					getAttributeValue("debug"));
+	}
+	if (!directivesxml->getAttribute("debug")->isNullNode()) {
 		debugdirectives=charstring::isYes(
 					directivesxml->
 					getAttributeValue("debug"));
+	}
+	if (!querytranslationsxml->getAttribute("debug")->isNullNode()) {
 		debugquerytranslations=charstring::isYes(
 					querytranslationsxml->
 					getAttributeValue("debug"));
+	}
+	if (!filtersxml->getAttribute("debug")->isNullNode()) {
 		debugfilters=charstring::isYes(
 					filtersxml->
 					getAttributeValue("debug"));
+	}
+	if (!triggersxml->getAttribute("debug")->isNullNode()) {
 		debugtriggers=charstring::isYes(
 					triggersxml->
 					getAttributeValue("debug"));
+	}
+	if (!bindvariabletranslationsxml->getAttribute("debug")->isNullNode()) {
 		debugbindvariabletranslations=charstring::isYes(
 					bindvariabletranslationsxml->
 					getAttributeValue("debug"));
+	}
+	if (!resultsettranslationsxml->getAttribute("debug")->isNullNode()) {
 		debugresultsettranslations=charstring::isYes(
 					resultsettranslationsxml->
 					getAttributeValue("debug"));
+	}
+	if (!resultsetrowtranslationsxml->getAttribute("debug")->isNullNode()) {
 		debugresultsetrowtranslations=charstring::isYes(
 					resultsetrowtranslationsxml->
 					getAttributeValue("debug"));
+	}
+	if (!resultsetrowblocktranslationsxml->
+				getAttribute("debug")->isNullNode()) {
 		debugresultsetrowblocktranslations=charstring::isYes(
 					resultsetrowblocktranslationsxml->
 					getAttributeValue("debug"));
+	}
+	if (!resultsetheadertranslationsxml->
+				getAttribute("debug")->isNullNode()) {
 		debugresultsetheadertranslations=charstring::isYes(
 					resultsetheadertranslationsxml->
 					getAttributeValue("debug"));
+	}
+	if (!errortranslationsxml->getAttribute("debug")->isNullNode()) {
 		debugerrortranslations=charstring::isYes(
 					errortranslationsxml->
 					getAttributeValue("debug"));
-		debugprotocols=charstring::isYes(
-					listenersxml->
-					getAttributeValue("debug"));
+	}
+	if (!authsxml->getAttribute("debug")->isNullNode()) {
 		debugauths=charstring::isYes(
 					authsxml->
 					getAttributeValue("debug"));
+	}
+	if (!pwdencsxml->getAttribute("debug")->isNullNode()) {
 		debugpwdencs=charstring::isYes(
 					pwdencsxml->
 					getAttributeValue("debug"));
+	}
+	if (!loggersxml->getAttribute("debug")->isNullNode()) {
 		debugloggers=charstring::isYes(
 					loggersxml->
 					getAttributeValue("debug"));
+	}
+	if (!notificationsxml->getAttribute("debug")->isNullNode()) {
 		debugnotifications=charstring::isYes(
 					notificationsxml->
 					getAttributeValue("debug"));
+	}
+	if (!schedulesxml->getAttribute("debug")->isNullNode()) {
 		debugschedules=charstring::isYes(
 					schedulesxml->
 					getAttributeValue("debug"));
+	}
+	if (!routersxml->getAttribute("debug")->isNullNode()) {
 		debugrouters=charstring::isYes(
 					routersxml->
 					getAttributeValue("debug"));
+	}
+	if (!queriesxml->getAttribute("debug")->isNullNode()) {
 		debugqueries=charstring::isYes(
 					queriesxml->
 					getAttributeValue("debug"));
+	}
+	if (!moduledatasxml->getAttribute("debug")->isNullNode()) {
 		debugmoduledatas=charstring::isYes(
 					moduledatasxml->
 					getAttributeValue("debug"));

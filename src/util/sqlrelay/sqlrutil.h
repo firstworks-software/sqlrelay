@@ -180,6 +180,8 @@ class SQLRUTIL_DLLSPEC sqlrconfig {
 		virtual const char	*getDeniedIps()=0;
 
 		virtual const char	*getDebug()=0;
+		virtual bool		getDebugConnections()=0;
+		virtual bool		getDebugListeners()=0;
 		virtual bool		getDebugSql()=0;
 		virtual bool		getDebugBulkLoad()=0;
 		virtual bool		getDebugBindTranslations()=0;
@@ -194,7 +196,6 @@ class SQLRUTIL_DLLSPEC sqlrconfig {
 		virtual bool		getDebugResultSetRowBlockTranslations()=0;
 		virtual bool		getDebugResultSetHeaderTranslations()=0;
 		virtual bool		getDebugErrorTranslations()=0;
-		virtual bool		getDebugProtocols()=0;
 		virtual bool		getDebugAuths()=0;
 		virtual bool		getDebugPasswordEncryptions()=0;
 		virtual bool		getDebugLoggers()=0;
