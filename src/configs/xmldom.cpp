@@ -1901,6 +1901,31 @@ void sqlrconfig_xmldom::normalizeTree() {
 					setAttributeValue("debug","yes");
 		}
 	}
+
+	// if anything is being debugged, and there is no debug logger, then
+	// add a debug/stdout logger
+	bool	hasdebug=false;
+	for (domnode *node=instance;
+			!node->isNullNode();
+			node=node->getNextTag(node)) {
+		if (charstring::isYes(node->getAttributeValue("debug"))) {
+			hasdebug=true;
+			break;
+		}
+	}
+	if (hasdebug) {
+		domnode	*loggers=instance->getFirstTagChild("loggers");
+		if (loggers->isNullNode()) {
+			loggers=instance->appendTag("loggers");
+		}
+		if (loggers->getFirstTagChild(
+				"logger","module","debug")->isNullNode()) {
+			domnode	*logger=loggers->appendTag("logger");
+			logger->setAttributeValue("module","debug");
+			logger->setAttributeValue("stdout","yes");
+		}
+	}
+
 	// handle protocols specially - it's the listeners tag that needs
 	// debug="yes" for it
 	if (hasDebug(debug,"protocols")) {

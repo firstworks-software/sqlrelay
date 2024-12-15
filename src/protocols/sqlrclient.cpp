@@ -408,6 +408,8 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 			endsession=false;
 			break;
 		} else if (command==END_SESSION) {
+			debugStart("end session");
+			debugEnd();
 			cont->incrementEndSessionCount();
 			status=CLIENTSESSIONEXITSTATUS_ENDED_SESSION;
 			break;
@@ -623,14 +625,19 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 				// reading 2 bytes at a time
 				)/2;
 
+	debugStart("close client connection");
 	debugWrite("absorbing %d bytes",bytecount);
 
 	cont->closeClientConnection(bytecount);
+
+	debugWrite("absorbed %d bytes",bytecount);
 
 	// end the session if necessary
 	if (endsession) {
 		cont->endSession();
 	}
+
+	debugEnd();
 
 	// return the exit status
 	return status;
@@ -649,12 +656,16 @@ bool sqlrprotocol_sqlrclient::acceptSecurityContext() {
 				"failed to accept gss security "
 				"context (kerberos requested but "
 				"not supported)");
+		debugWrite("failed: kerberos requested but not supported");
+		debugEnd();
 		return false;
 	} else if (useTls() && !tls::isSupported()) {
 		cont->raiseInternalErrorEvent(NULL,
 				"failed to accept tls security "
 				"context (tls requested but "
 				"not supported)");
+		debugWrite("failed: tls requested but not supported");
+		debugEnd();
 		return false;
 	}
 
@@ -667,10 +678,13 @@ bool sqlrprotocol_sqlrclient::acceptSecurityContext() {
 	if (!retval) {
 		cont->raiseInternalErrorEvent(NULL,
 			"failed to accept security context");
+		debugWrite("failed");
+	} else {
+		debugWrite("success");
 	}
 
-	debugWrite("success");
 	debugEnd();
+
 	return retval;
 }
 
@@ -688,12 +702,15 @@ bool sqlrprotocol_sqlrclient::getCommand(uint16_t *command) {
 		// timeout or a 0 (meaning that the client closed the socket)
 		// as either would be natural to do here.
 		if (result!=RESULT_TIMEOUT && result!=0) {
-			debugWrite("get command failed");
 			cont->raiseClientProtocolErrorEvent(
 				NULL,result,"get command failed");
 		}
 
 		*command=NO_COMMAND;
+
+		debugWrite("get command failed");
+		debugEnd();
+
 		return false;
 	}
 
@@ -731,6 +748,9 @@ sqlrservercursor *sqlrprotocol_sqlrclient::getCursor(uint16_t command) {
 					"get cursor failed: "
 					"failed to get whether client "
 					"needs  new cursor or not");
+			debugWrite("failed to get whether client "
+					"needs  new cursor or not");
+			debugEnd();
 			return NULL;
 		}
 	}
@@ -747,6 +767,8 @@ sqlrservercursor *sqlrprotocol_sqlrclient::getCursor(uint16_t command) {
 			cont->raiseClientProtocolErrorEvent(NULL,result,
 						"get cursor failed: "
 						"failed to get cursor id");
+			debugWrite("failed to get cursor id");
+			debugEnd();
 			return NULL;
 		}
 
@@ -760,12 +782,14 @@ sqlrservercursor *sqlrprotocol_sqlrclient::getCursor(uint16_t command) {
 	}
 
 	debugWrite("cursor id: %hd",cont->getId(cursor));
-	debugWrite("success");
 	debugEnd();
+
 	return cursor;
 }
 
 void sqlrprotocol_sqlrclient::noAvailableCursors(uint16_t command) {
+
+	debugStart("no available cursors");
 
 	// If no cursor was available, the client
 	// could send an entire query and bind vars
@@ -799,6 +823,7 @@ void sqlrprotocol_sqlrclient::noAvailableCursors(uint16_t command) {
 				sizeof(uint16_t)+
 				// skip/fetch
 				2*sizeof(uint32_t));
+
 	debugWrite("absorbing %d bytes",size);
 
 	clientsock->setNonBlockingMode(true);
@@ -821,6 +846,8 @@ void sqlrprotocol_sqlrclient::noAvailableCursors(uint16_t command) {
 	clientsock->write(errsize);
 	clientsock->write(SQLR_ERROR_NOCURSORS_STRING,errsize);
 	clientsock->flushWriteBuffer(-1,-1);
+
+	debugEnd();
 }
 
 bool sqlrprotocol_sqlrclient::authCommand() {
@@ -906,25 +933,25 @@ bool sqlrprotocol_sqlrclient::getUserFromClient() {
 	uint32_t	size=0;
 	ssize_t		result=clientsock->read(&size,idleclienttimeout,0);
 	if (result!=sizeof(uint32_t)) {
-		debugWrite("failed to get user size");
 		cont->raiseClientProtocolErrorEvent(NULL,result,
 					"authentication failed: "
 					"failed to get user size");
+		debugWrite("failed to get user size");
 		return false;
 	}
 	if (size>=sizeof(userbuffer)) {
-		debugWrite("user size too long: %d",size);
 		cont->raiseClientConnectionRefusedEvent(
 				"authentication failed: "
 				"user size too long: %d",size);
+		debugWrite("user size too long: %d",size);
 		return false;
 	}
 	result=clientsock->read(userbuffer,size,idleclienttimeout,0);
 	if ((uint32_t)result!=size) {
-		debugWrite("failed to get user");
 		cont->raiseClientProtocolErrorEvent(NULL,result,
 					"authentication failed: "
 					"failed to get user");
+		debugWrite("failed to get user");
 		return false;
 	}
 	userbuffer[size]='\0';
@@ -936,25 +963,25 @@ bool sqlrprotocol_sqlrclient::getPasswordFromClient() {
 	uint32_t	size=0;
 	ssize_t		result=clientsock->read(&size,idleclienttimeout,0);
 	if (result!=sizeof(uint32_t)) {
-		debugWrite("failed to get password size");
 		cont->raiseClientProtocolErrorEvent(NULL,result,
 					"authentication failed: "
 					"failed to get password size");
+		debugWrite("failed to get password size");
 		return false;
 	}
 	if (size>=sizeof(passwordbuffer)) {
-		debugWrite("password size too long: %d",size);
 		cont->raiseClientConnectionRefusedEvent(
 				"authentication failed: "
 				"password size too long: %d",size);
+		debugWrite("password size too long: %d",size);
 		return false;
 	}
 	result=clientsock->read(passwordbuffer,size,idleclienttimeout,0);
 	if ((uint32_t)result!=size) {
-		debugWrite("failed to get password");
 		cont->raiseClientProtocolErrorEvent(NULL,result,
 					"authentication failed: "
 					"failed to get password");
+		debugWrite("failed to get password");
 		return false;
 	}
 	passwordbuffer[size]='\0';
@@ -976,7 +1003,6 @@ void sqlrprotocol_sqlrclient::suspendSessionCommand() {
 	debugWrite("inet port number: %hd",inetportnumber);
 
 	// pass the socket info to the client
-	debugStart("passing socket info to client");
 	clientsock->write((uint16_t)NO_ERROR_OCCURRED);
 	clientsock->write(unixsocketsize);
 	if (unixsocketsize) {
@@ -984,16 +1010,18 @@ void sqlrprotocol_sqlrclient::suspendSessionCommand() {
 	}
 	clientsock->write(inetportnumber);
 	clientsock->flushWriteBuffer(-1,-1);
-	debugWrite("success");
-	debugEnd();
 
-	debugWrite("success");
 	debugEnd();
 }
 
 void sqlrprotocol_sqlrclient::pingCommand() {
+
 	debugStart("ping");
+
+	// ping the database
 	bool	pingresult=cont->ping();
+
+	// send result to the client
 	if (pingresult) {
 		debugWrite("success");
 		clientsock->write((uint16_t)NO_ERROR_OCCURRED);
@@ -1002,10 +1030,15 @@ void sqlrprotocol_sqlrclient::pingCommand() {
 		debugWrite("failed");
 		returnError(false);
 	}
-	debugEnd();
+
+	// if the ping failed, re-login
 	if (!pingresult) {
+		debugStart("re-login");
 		cont->reLogIn();
+		debugEnd();
 	}
+
+	debugEnd();
 }
 
 void sqlrprotocol_sqlrclient::identifyCommand() {
@@ -1027,15 +1060,22 @@ void sqlrprotocol_sqlrclient::identifyCommand() {
 }
 
 void sqlrprotocol_sqlrclient::autoCommitCommand() {
+
 	debugStart("autocommit");
+
+	// get on/off
 	bool	on;
 	ssize_t	result=clientsock->read(&on,idleclienttimeout,0);
 	if (result!=sizeof(bool)) {
 		cont->raiseClientProtocolErrorEvent(NULL,result,
 					"get autocommit failed: "
 					"failed to get autocommit setting");
+		debugWrite("failed to get autocommit setting");
+		debugEnd();
 		return;
 	}
+
+	// set autocommit on/off
 	bool	success=false;
 	if (on) {
 		debugWrite("on");
@@ -1044,6 +1084,8 @@ void sqlrprotocol_sqlrclient::autoCommitCommand() {
 		debugWrite("off");
 		success=cont->setAutoCommitOff();
 	}
+
+	// send result to the client
 	if (success) {
 		debugWrite("success");
 		clientsock->write((uint16_t)NO_ERROR_OCCURRED);
@@ -1052,6 +1094,7 @@ void sqlrprotocol_sqlrclient::autoCommitCommand() {
 		debugWrite("failed");
 		returnError(false);
 	}
+
 	debugEnd();
 }
 
@@ -1144,7 +1187,8 @@ void sqlrprotocol_sqlrclient::getNextvalFormatCommand() {
 	clientsock->write(nf,nfsize);
 	clientsock->flushWriteBuffer(-1,-1);
 
-	debugWrite("nextval format: %.*s",nfsize,nf);
+	// FIXME: dangerous to print because it has a %s in it
+	//debugWrite("nextval format: %.*s",nfsize,nf);
 	debugEnd();
 }
 
@@ -1178,6 +1222,8 @@ void sqlrprotocol_sqlrclient::selectDatabaseCommand() {
 		cont->raiseClientProtocolErrorEvent(NULL,result,
 						"select database failed: "
 						"failed to get db size");
+		debugWrite("failed to get db size");
+		debugEnd();
 		return;
 	}
 
@@ -1188,6 +1234,7 @@ void sqlrprotocol_sqlrclient::selectDatabaseCommand() {
 					"select database failed: "
 					"client sent bad db size: %d",
 					dbsize);
+		debugWrite("client sent bad db size: %d",dbsize);
 		debugEnd();
 		return;
 	}
@@ -1203,6 +1250,7 @@ void sqlrprotocol_sqlrclient::selectDatabaseCommand() {
 			cont->raiseClientProtocolErrorEvent(NULL,result,
 						"select database failed: "
 						"failed to get database name");
+			debugWrite("failed to get database name");
 			debugEnd();
 			return;
 		}
@@ -1211,20 +1259,19 @@ void sqlrprotocol_sqlrclient::selectDatabaseCommand() {
 
 	debugWrite("db: %.*s\n",dbsize,db);
 	
-	// Select the db and send back the result.
+	// select the db and send back the result.
 	if (cont->selectDatabase(db)) {
+		debugWrite("success");
 		clientsock->write((uint16_t)NO_ERROR_OCCURRED);
 		clientsock->flushWriteBuffer(-1,-1);
-		debugWrite("success");
 	} else {
-		returnError(false);
 		debugWrite("failed");
+		returnError(false);
 	}
 
 	delete[] db;
 
 	debugEnd();
-	return;
 }
 
 void sqlrprotocol_sqlrclient::getCurrentDatabaseCommand() {
@@ -1277,10 +1324,10 @@ void sqlrprotocol_sqlrclient::getLastInsertIdCommand() {
 
 	uint64_t	id;
 	if (cont->getLastInsertId(&id)) {
+		debugWrite("success");
 		clientsock->write((uint16_t)NO_ERROR_OCCURRED);
 		clientsock->write(id);
 		clientsock->flushWriteBuffer(-1,-1);
-		debugWrite("success");
 	} else {
 		returnError(false);
 		debugWrite("failed");
@@ -1293,8 +1340,11 @@ void sqlrprotocol_sqlrclient::dbHostNameCommand() {
 
 	debugStart("getting db host name");
 
+	// get the db host name
 	const char	*hostname=cont->getDbHostName();
 	clientsock->write((uint16_t)NO_ERROR_OCCURRED);
+
+	// send it to the client
 	uint16_t	hostnamesize=charstring::getLength(hostname);
 	clientsock->write(hostnamesize);
 	clientsock->write(hostname,hostnamesize);
@@ -1309,8 +1359,11 @@ void sqlrprotocol_sqlrclient::dbIpAddressCommand() {
 
 	debugWrite("getting db host name");
 
+	// get the db ip address
 	const char	*ipaddress=cont->getDbIpAddress();
 	clientsock->write((uint16_t)NO_ERROR_OCCURRED);
+
+	// send it to the client
 	uint16_t	ipaddresssize=charstring::getLength(ipaddress);
 	clientsock->write(ipaddresssize);
 	clientsock->write(ipaddress,ipaddresssize);
@@ -1623,6 +1676,7 @@ bool sqlrprotocol_sqlrclient::getClientInfo(sqlrservercursor *cursor) {
 		cont->raiseClientProtocolErrorEvent(cursor,result,
 					"get client info failed: "
 					"failed to get clientinfo size");
+		debugWrite("failed to get clientinfo size");
 		debugEnd();
 		return false;
 	}
@@ -1641,6 +1695,8 @@ bool sqlrprotocol_sqlrclient::getClientInfo(sqlrservercursor *cursor) {
 				"get client info failed: "
 				"client sent bad client info size: %lld",
 				clientinfosize);
+		debugWrite("client sent bad client info size: %lld",
+							clientinfosize);
 		debugEnd();
 		return false;
 	}
@@ -1651,6 +1707,7 @@ bool sqlrprotocol_sqlrclient::getClientInfo(sqlrservercursor *cursor) {
 		cont->raiseClientProtocolErrorEvent(cursor,result,
 						"get client info failed: "
 						"failed to get client info");
+		debugWrite("failed to get client info");
 		debugEnd();
 		return false;
 	}
@@ -1662,8 +1719,8 @@ bool sqlrprotocol_sqlrclient::getClientInfo(sqlrservercursor *cursor) {
 	// update the stats with the client info
 	cont->setClientInfo(clientinfo,clientinfosize);
 
-	debugWrite("success");
 	debugEnd();
+
 	return true;
 }
 
@@ -1683,6 +1740,7 @@ bool sqlrprotocol_sqlrclient::getQuery(sqlrservercursor *cursor) {
 		cont->raiseClientProtocolErrorEvent(cursor,result,
 						"get query failed: "
 						"failed to get query size");
+		debugWrite("failed to get query size");
 		debugEnd();
 		return false;
 	}
@@ -1701,6 +1759,7 @@ bool sqlrprotocol_sqlrclient::getQuery(sqlrservercursor *cursor) {
 					"get query failed: "
 					"client sent bad query size: %d",
 					querysize);
+		debugWrite("client sent bad query size: %d",querysize);
 		debugEnd();
 		return false;
 	}
@@ -1714,6 +1773,7 @@ bool sqlrprotocol_sqlrclient::getQuery(sqlrservercursor *cursor) {
 		cont->raiseClientProtocolErrorEvent(cursor,result,
 						"get query failed: "
 						"failed to get query");
+		debugWrite("failed to get query");
 		debugEnd();
 		return false;
 	}
@@ -1722,14 +1782,17 @@ bool sqlrprotocol_sqlrclient::getQuery(sqlrservercursor *cursor) {
 	querybuffer[querysize]='\0';
 	cont->setQuerySize(cursor,querysize);
 
-	debugWrite("query: %.*s",querysize,querybuffer);
+	debugstr.clear();
+	debugstr.safePrint(querybuffer,querysize);
+	debugWrite("query: \"%.*s\"",debugstr.getSize(),debugstr.getString());
+	debugWrite("query size: %d",debugstr.getSize());
 
 	// FIXME: push up?
 	// update the stats with the current query
 	cont->setCurrentQuery(querybuffer,querysize);
 
-	debugWrite("success");
 	debugEnd();
+
 	return true;
 }
 
@@ -1969,11 +2032,12 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 							idleclienttimeout,0);
 			if ((uint32_t)result!=(uint32_t)(bv->valuesize)) {
 				bv->value.stringval[0]='\0';
-				const char	*info="get binds failed: "
-							"failed to get bind "
-							"value";
 				cont->raiseClientProtocolErrorEvent(
-							cursor,result,info);
+							cursor,result,
+							"get binds failed: "
+							"failed to get bind "
+							"value");
+				debugWrite("failed to get bind value");
 				debugEnd();
 				return false;
 			}
@@ -1986,11 +2050,12 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 			ssize_t	result=clientsock->read(&(bv->value.integerval),
 							idleclienttimeout,0);
 			if (result!=sizeof(uint64_t)) {
-				const char	*info="get binds failed: "
-							"failed to get bind "
-							"value";
 				cont->raiseClientProtocolErrorEvent(
-							cursor,result,info);
+							cursor,result,
+							"get binds failed: "
+							"failed to get bind "
+							"value");
+				debugWrite("failed to get bind value");
 				debugEnd();
 				return false;
 			}
@@ -2003,11 +2068,12 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 					&(bv->value.doubleval.value),
 					idleclienttimeout,0);
 			if ((uint32_t)result!=(uint32_t)sizeof(double)) {
-				const char	*info="get binds failed: "
-							"failed to get bind "
-							"value";
 				cont->raiseClientProtocolErrorEvent(
-							cursor,result,info);
+							cursor,result,
+							"get binds failed: "
+							"failed to get bind "
+							"value");
+				debugWrite("failed to get bind value");
 				debugEnd();
 				return false;
 			}
@@ -2017,11 +2083,12 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 					&(bv->value.doubleval.precision),
 					idleclienttimeout,0);
 			if ((uint32_t)result!=(uint32_t)sizeof(uint32_t)) {
-				const char	*info="get binds failed: "
-							"failed to get "
-							"precision";
 				cont->raiseClientProtocolErrorEvent(
-							cursor,result,info);
+							cursor,result,
+							"get binds failed: "
+							"failed to get "
+							"precision");
+				debugWrite("failed to get precision");
 				debugEnd();
 				return false;
 			}
@@ -2031,11 +2098,12 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 					&(bv->value.doubleval.scale),
 					idleclienttimeout,0);
 			if ((uint32_t)result!=(uint32_t)sizeof(uint32_t)) {
-				const char	*info="get binds failed: "
-							"failed to get "
-							"scale";
 				cont->raiseClientProtocolErrorEvent(
-							cursor,result,info);
+							cursor,result,
+							"get binds failed: "
+							"failed to get "
+							"scale");
+				debugWrite("failed to get scale");
 				debugEnd();
 				return false;
 			}
@@ -2049,11 +2117,12 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 					&(bv->value.dateval.year),
 					idleclienttimeout,0);
 			if ((uint32_t)result!=(uint32_t)sizeof(uint16_t)) {
-				const char	*info="get binds failed: "
-							"failed to get bind "
-							"year";
 				cont->raiseClientProtocolErrorEvent(
-							cursor,result,info);
+							cursor,result,
+							"get binds failed: "
+							"failed to get bind "
+							"year");
+				debugWrite("failed to get bind year");
 				debugEnd();
 				return false;
 			}
@@ -2063,11 +2132,12 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 					&(bv->value.dateval.month),
 					idleclienttimeout,0);
 			if ((uint32_t)result!=(uint32_t)sizeof(uint16_t)) {
-				const char	*info="get binds failed: "
-							"failed to get bind "
-							"month";
 				cont->raiseClientProtocolErrorEvent(
-							cursor,result,info);
+							cursor,result,
+							"get binds failed: "
+							"failed to get bind "
+							"month");
+				debugWrite("failed to get bind month");
 				debugEnd();
 				return false;
 			}
@@ -2077,11 +2147,12 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 					&(bv->value.dateval.day),
 					idleclienttimeout,0);
 			if ((uint32_t)result!=(uint32_t)sizeof(uint16_t)) {
-				const char	*info="get binds failed: "
-							"failed to get bind "
-							"day";
 				cont->raiseClientProtocolErrorEvent(
-							cursor,result,info);
+							cursor,result,
+							"get binds failed: "
+							"failed to get bind "
+							"day");
+				debugWrite("failed to get bind day");
 				debugEnd();
 				return false;
 			}
@@ -2091,11 +2162,12 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 					&(bv->value.dateval.hour),
 					idleclienttimeout,0);
 			if ((uint32_t)result!=(uint32_t)sizeof(uint16_t)) {
-				const char	*info="get binds failed: "
-							"failed to get bind "
-							"hour";
 				cont->raiseClientProtocolErrorEvent(
-							cursor,result,info);
+							cursor,result,
+							"get binds failed: "
+							"failed to get bind "
+							"hour");
+				debugWrite("failed to get bind hour");
 				debugEnd();
 				return false;
 			}
@@ -2105,11 +2177,12 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 					&(bv->value.dateval.minute),
 					idleclienttimeout,0);
 			if ((uint32_t)result!=(uint32_t)sizeof(uint16_t)) {
-				const char	*info="get binds failed: "
-							"failed to get bind "
-							"minute";
 				cont->raiseClientProtocolErrorEvent(
-							cursor,result,info);
+							cursor,result,
+							"get binds failed: "
+							"failed to get bind "
+							"minute");
+				debugWrite("failed to get bind minute");
 				debugEnd();
 				return false;
 			}
@@ -2119,11 +2192,12 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 					&(bv->value.dateval.second),
 					idleclienttimeout,0);
 			if ((uint32_t)result!=(uint32_t)sizeof(uint16_t)) {
-				const char	*info="get binds failed: "
-							"failed to get bind "
-							"second";
 				cont->raiseClientProtocolErrorEvent(
-							cursor,result,info);
+							cursor,result,
+							"get binds failed: "
+							"failed to get bind "
+							"second");
+				debugWrite("failed to get bind second");
 				debugEnd();
 				return false;
 			}
@@ -2133,11 +2207,12 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 					&(bv->value.dateval.microsecond),
 					idleclienttimeout,0);
 			if ((uint32_t)result!=(uint32_t)sizeof(uint32_t)) {
-				const char	*info="get binds failed: "
-							"failed to get bind "
-							"microsecond";
 				cont->raiseClientProtocolErrorEvent(
-							cursor,result,info);
+							cursor,result,
+							"get binds failed: "
+							"failed to get bind "
+							"microsecond");
+				debugWrite("failed to get bind microsecond");
 				debugEnd();
 				return false;
 			}
@@ -2146,11 +2221,12 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 			uint16_t	tzsize=0;
 			result=clientsock->read(&tzsize,idleclienttimeout,0);
 			if ((uint32_t)result!=(uint32_t)sizeof(uint16_t)) {
-				const char	*info="get binds failed: "
-							"failed to get bind "
-							"tz size";
 				cont->raiseClientProtocolErrorEvent(
-							cursor,result,info);
+							cursor,result,
+							"get binds failed: "
+							"failed to get bind "
+							"tz size");
+				debugWrite("failed to get bind tz size");
 				debugEnd();
 				return false;
 			}
@@ -2161,11 +2237,12 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 						idleclienttimeout,0);
 			if ((uint32_t)result!=(uint32_t)tzsize) {
 				bv->value.dateval.tz[0]='\0';
-				const char	*info="get binds failed: "
-							"failed to get bind "
-							"tz";
 				cont->raiseClientProtocolErrorEvent(
-							cursor,result,info);
+							cursor,result,
+							"get binds failed: "
+							"failed to get bind "
+							"tz");
+				debugWrite("failed to get bind tz");
 				debugEnd();
 				return false;
 			}
@@ -2174,11 +2251,12 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 			result=clientsock->read(&bv->value.dateval.isnegative,
 							idleclienttimeout,0);
 			if (result!=sizeof(bool)) {
-				const char	*info="get binds failed: "
-							"failed to get "
-							"is-negative flag";
 				cont->raiseClientProtocolErrorEvent(
-							cursor,result,info);
+							cursor,result,
+							"get binds failed: "
+							"failed to get "
+							"is-negative flag");
+				debugWrite("failed to get is-negative flag");
 				debugEnd();
 				return false;
 			}
@@ -2216,6 +2294,7 @@ bool sqlrprotocol_sqlrclient::getBindVarCount(sqlrservercursor *cursor,
 		cont->raiseClientProtocolErrorEvent(cursor,result,
 						"get binds failed: "
 						"failed to get bind count");
+		debugWrite("failed to get bind count");
 		*count=0;
 		return false;
 	}
@@ -2233,6 +2312,7 @@ bool sqlrprotocol_sqlrclient::getBindVarCount(sqlrservercursor *cursor,
 		cont->raiseClientProtocolErrorEvent(cursor,1,
 			"get binds failed: "
 			"client tried to send too many binds: %hd",*count);
+		debugWrite("client tried to send too many binds: %hd",*count);
 
 		*count=0;
 		return false;
@@ -2389,9 +2469,10 @@ bool sqlrprotocol_sqlrclient::getStringBind(sqlrservercursor *cursor,
 					idleclienttimeout,0);
 	if ((uint32_t)result!=(uint32_t)(bv->valuesize)) {
 		bv->value.stringval[0]='\0';
-		const char	*info="get binds failed: "
-					"failed to get bind value";
-		cont->raiseClientProtocolErrorEvent(cursor,result,info);
+		cont->raiseClientProtocolErrorEvent(cursor,result,
+						"get binds failed: "
+						"failed to get bind value");
+		debugWrite("failed to get bind value");
 		return false;
 	}
 	bv->value.stringval[bv->valuesize]='\0';
@@ -2414,6 +2495,7 @@ bool sqlrprotocol_sqlrclient::getIntegerBind(sqlrserverbindvar *bv) {
 		cont->raiseClientProtocolErrorEvent(NULL,result,
 						"get binds failed: "
 						"failed to get bind value");
+		debugWrite("failed to get bind value");
 		return false;
 	}
 
@@ -2438,6 +2520,7 @@ bool sqlrprotocol_sqlrclient::getDoubleBind(sqlrserverbindvar *bv) {
 		cont->raiseClientProtocolErrorEvent(NULL,result,
 						"get binds failed: "
 						"failed to get bind value");
+		debugWrite("failed to get bind value");
 		return false;
 	}
 
@@ -2448,6 +2531,7 @@ bool sqlrprotocol_sqlrclient::getDoubleBind(sqlrserverbindvar *bv) {
 		cont->raiseClientProtocolErrorEvent(NULL,result,
 						"get binds failed: "
 						"failed to get precision");
+		debugWrite("failed to get precision");
 		return false;
 	}
 
@@ -2458,6 +2542,7 @@ bool sqlrprotocol_sqlrclient::getDoubleBind(sqlrserverbindvar *bv) {
 		cont->raiseClientProtocolErrorEvent(NULL,result,
 						"get binds failed: "
 						"failed to get scale");
+		debugWrite("failed to get scale");
 		return false;
 	}
 
@@ -2484,6 +2569,7 @@ bool sqlrprotocol_sqlrclient::getDateBind(sqlrserverbindvar *bv,
 		cont->raiseClientProtocolErrorEvent(NULL,result,
 						"get binds failed: "
 						"failed to get year");
+		debugWrite("failed to get year");
 		return false;
 	}
 	bv->value.dateval.year=(int16_t)temp;
@@ -2494,6 +2580,7 @@ bool sqlrprotocol_sqlrclient::getDateBind(sqlrserverbindvar *bv,
 		cont->raiseClientProtocolErrorEvent(NULL,result,
 						"get binds failed: "
 						"failed to get month");
+		debugWrite("failed to get month");
 		return false;
 	}
 	bv->value.dateval.month=(int16_t)temp;
@@ -2504,6 +2591,7 @@ bool sqlrprotocol_sqlrclient::getDateBind(sqlrserverbindvar *bv,
 		cont->raiseClientProtocolErrorEvent(NULL,result,
 						"get binds failed: "
 						"failed to get day");
+		debugWrite("failed to get day");
 		return false;
 	}
 	bv->value.dateval.day=(int16_t)temp;
@@ -2514,6 +2602,7 @@ bool sqlrprotocol_sqlrclient::getDateBind(sqlrserverbindvar *bv,
 		cont->raiseClientProtocolErrorEvent(NULL,result,
 						"get binds failed: "
 						"failed to get hour");
+		debugWrite("failed to get hour");
 		return false;
 	}
 	bv->value.dateval.hour=(int16_t)temp;
@@ -2524,6 +2613,7 @@ bool sqlrprotocol_sqlrclient::getDateBind(sqlrserverbindvar *bv,
 		cont->raiseClientProtocolErrorEvent(NULL,result,
 						"get binds failed: "
 						"failed to get minute");
+		debugWrite("failed to get minute");
 		return false;
 	}
 	bv->value.dateval.minute=(int16_t)temp;
@@ -2534,6 +2624,7 @@ bool sqlrprotocol_sqlrclient::getDateBind(sqlrserverbindvar *bv,
 		cont->raiseClientProtocolErrorEvent(NULL,result,
 						"get binds failed: "
 						"failed to get second");
+		debugWrite("failed to get second");
 		return false;
 	}
 	bv->value.dateval.second=(int16_t)temp;
@@ -2545,6 +2636,7 @@ bool sqlrprotocol_sqlrclient::getDateBind(sqlrserverbindvar *bv,
 		cont->raiseClientProtocolErrorEvent(NULL,result,
 						"get binds failed: "
 						"failed to get microsecond");
+		debugWrite("failed to get microsecond");
 		return false;
 	}
 	bv->value.dateval.microsecond=(int32_t)temp32;
@@ -2556,6 +2648,7 @@ bool sqlrprotocol_sqlrclient::getDateBind(sqlrserverbindvar *bv,
 		cont->raiseClientProtocolErrorEvent(NULL,result,
 						"get binds failed: "
 						"failed to get timezone size");
+		debugWrite("failed to get timezone size");
 		return false;
 	}
 
@@ -2572,6 +2665,7 @@ bool sqlrprotocol_sqlrclient::getDateBind(sqlrserverbindvar *bv,
 		cont->raiseClientProtocolErrorEvent(NULL,result,
 						"get binds failed: "
 						"failed to get timezone");
+		debugWrite("failed to get timezone");
 		return false;
 	}
 	bv->value.dateval.tz[size]='\0';
@@ -2583,6 +2677,7 @@ bool sqlrprotocol_sqlrclient::getDateBind(sqlrserverbindvar *bv,
 		cont->raiseClientProtocolErrorEvent(NULL,result,
 					"get binds failed: "
 					"failed to get is-negative flag");
+		debugWrite("failed to get is-negative flag");
 		return false;
 	}
 	bv->value.dateval.isnegative=tempbool;
@@ -2634,6 +2729,7 @@ bool sqlrprotocol_sqlrclient::getLobBind(sqlrservercursor *cursor,
 		bv->value.stringval[0]='\0';
 		cont->raiseClientProtocolErrorEvent(cursor,result,
 						"get binds failed: bad value");
+		debugWrite("bad value");
 		return false;
 	}
 
@@ -2656,6 +2752,8 @@ bool sqlrprotocol_sqlrclient::getSendColumnInfo() {
 	if (result!=sizeof(uint16_t)) {
 		cont->raiseClientProtocolErrorEvent(NULL,result,
 					"get send column info failed");
+		debugWrite("get send column info failed");
+		debugEnd();
 		return false;
 	}
 
@@ -2686,6 +2784,7 @@ bool sqlrprotocol_sqlrclient::getSkipAndFetch(bool initial,
 			cont->raiseClientProtocolErrorEvent(cursor,result,
 					"return result set data failed: "
 					"failed to get flags");
+			debugWrite("failed to get flags");
 			debugEnd();
 			return false;
 		}
@@ -2704,6 +2803,7 @@ bool sqlrprotocol_sqlrclient::getSkipAndFetch(bool initial,
 			cont->raiseClientProtocolErrorEvent(cursor,result,
 					"return result set data failed: "
 					"failed to get rows to skip");
+			debugWrite("failed to get rows to skip");
 			debugEnd();
 			return false;
 		}
@@ -2715,6 +2815,7 @@ bool sqlrprotocol_sqlrclient::getSkipAndFetch(bool initial,
 		cont->raiseClientProtocolErrorEvent(cursor,result,
 				"return result set data failed: "
 				"failed to get rows to fetch");
+		debugWrite("failed to get rows to fetch");
 		debugEnd();
 		return false;
 	}
@@ -2744,8 +2845,8 @@ void sqlrprotocol_sqlrclient::returnResultSetHeader(sqlrservercursor *cursor) {
 	clientsock->write((sendcolumninfo)?
 				(uint16_t)SEND_COLUMN_INFO:
 				(uint16_t)DONT_SEND_COLUMN_INFO);
-	debugWrite((sendcolumninfo)?"column info will be sent":
-					"column info will not be sent");
+	debugWrite("column info: %s",(sendcolumninfo)?"will be sent":
+							"will not be sent");
 
 	// return the column count
 	uint32_t	colcount=cont->colCount(cursor);
@@ -2907,8 +3008,8 @@ void sqlrprotocol_sqlrclient::sendRowCounts(bool knowsactual,
 
 void sqlrprotocol_sqlrclient::returnOutputBindValues(sqlrservercursor *cursor) {
 
-	debugStart("returning %hd output bind values",
-			cont->getOutputBindCount(cursor));
+	debugStart("returning output bind values");
+	debugWrite("count: %hd",cont->getOutputBindCount(cursor));
 
 	// run through the output bind values, sending them back
 	for (uint16_t i=0; i<cont->getOutputBindCount(cursor); i++) {
@@ -3133,8 +3234,9 @@ void sqlrprotocol_sqlrclient::sendLobOutputBind(sqlrservercursor *cursor,
 
 void sqlrprotocol_sqlrclient::returnInputOutputBindValues(
 						sqlrservercursor *cursor) {
-	debugStart("returning %hd input/output bind values",
-			cont->getInputOutputBindCount(cursor));
+
+	debugStart("returning input/output bind values");
+	debugWrite("count: %hd",cont->getInputOutputBindCount(cursor));
 
 	if (protocolversion<2) {
 		debugWrite("client protocol too old");
