@@ -8427,7 +8427,7 @@ http://www.gnu.org/software/src-highlite -->
 	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
 		...
 		<b><font color="#0000FF">&lt;loggers&gt;</font></b>
-			<b><font color="#0000FF">&lt;logger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"debug"</font> <font color="#009900">listener</font><font color="#990000">=</font><font color="#FF0000">"yes"</font> <font color="#009900">connection</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;logger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"debug"</font> <font color="#009900">stdout</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">/&gt;</font></b>
 		<b><font color="#0000FF">&lt;/loggers&gt;</font></b>
 		...
 	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
@@ -8439,7 +8439,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.</p>
 
-<p>Different modules may have different parameters.  In this example, listener="yes" tells the module to log debug info for the sqlr-listener processes and connection="yes" tells the module to log debug info for the sqlr-connection processes.</p>
+<p>Different modules may have different parameters.  In this example, stdout="yes" tells the module to log debug info to standard output.</p>
 
 <p>All logger modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
 
@@ -8462,7 +8462,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <br/><a name="debug"/><h3>debug</h3>
 
-<p>The <b>debug</b> module logs a great deal of information to about the internal operation of the SQL Relay server to log files in the "debug directory", usually /usr/local/firstworks/var/log/sqlrelay/debug, /usr/local/firstworks/var/sqlrelay/debug, or /var/log/sqlrelay/debug.  It creates files named sqlr-listener."pid" and sqlr-connection."pid" where "pid" is replaced with the process id of the process that is being logged.  As new processes are forked, new files are created with debug information about those processes.</p>
+<p>The <b>debug</b> module logs a great deal of information to about the internal operation of the SQL Relay server.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -8474,7 +8474,7 @@ http://www.gnu.org/software/src-highlite -->
 	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
 		...
 		<b><font color="#0000FF">&lt;loggers&gt;</font></b>
-			<b><font color="#0000FF">&lt;logger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"debug"</font> <font color="#009900">listener</font><font color="#990000">=</font><font color="#FF0000">"yes"</font> <font color="#009900">connection</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;logger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"debug"</font> <font color="#009900">stdout</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">/&gt;</font></b>
 		<b><font color="#0000FF">&lt;/loggers&gt;</font></b>
 		...
 	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
@@ -8482,18 +8482,17 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>This module takes three attributes: <b>listener</b>, <b>connection</b> and <b>perms</b>.  The <b>listener</b> attribute may be set to "no" to disable logging of the sqlr-listener processes.  The <b>connection</b> attribute may be set to "no" to disable logging of the sqlr-connection processes.  Logging is enabled if either attribute is omitted or set to any other value.  The <b>perms</b> attribute may be set to any ls -l style permissions string.  The default is "rw-------" which translates to read/write for owner only.</p>
+<p>This module takes four attributes: <b>stdout</b>, <b>stderr</b>, <b>file</b>, and <b>perms</b>.</p>
 
-<p>The general log format is:</p>
+<p>If <b>stdout</b> is set to "yes" then the module will log to standard output.</p>
 
-<blockquote>
-  <pre>mm/dd/yyyy hh:mm:ss TZ processname [pid] : info
-</pre>
+<p>If <b>stderr</b> is set to "yes" then the module will log to standard error.</p>
 
-</blockquote>
-<p>Sample log for main listener process: <a href="sqlr-listener.1869.html">sqlr-listener.1869</a><br/>
-Sample log for child listener process: <a href="sqlr-listener.1886.html">sqlr-listener.1886</a><br/>
-Sample log for connecton process: <a href="sqlr-connection.1871.html">sqlr-connection.1871</a><br/></p>
+<p>If <b>file</b> is set to "yes" (or not set to "no" and neither of <b>stdout</b> nor <b>stderr</b> are set to "yes") then the module will log to files in the "debug directory", usually /usr/local/firstworks/var/log/sqlrelay/debug, /usr/local/firstworks/var/sqlrelay/debug, or /var/log/sqlrelay/debug.  It creates files named sqlr-listener."pid" and sqlr-connection."pid" where "pid" is replaced with the process id of the process that is being logged.  As new processes are forked, new files are created with debug information about those processes.</p>
+
+<p>The <b>perms</b> attribute may be set to any ls -l style permissions string, and will set the permissions of the debug files, if <b>file</b> is also set to "yes".  The default is "rw-------" which translates to read/write for owner only.</p>
+
+<p>The <b>stdout</b>, <b>stderr</b>, and <b>file</b> parameters are not mutually exclusive.  Any combination of them may be set to "yes".</p>
 
 <br/><a name="sql"/><h3>sql</h3>
 

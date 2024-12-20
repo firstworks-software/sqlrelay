@@ -38,14 +38,12 @@ class SQLRSERVER_DLLSPEC sqlrlogger_debug : public sqlrlogger {
 
 		bool			logtostdout;
 		bool			logtostderr;
-		bool			logtosyslog;
 		bool			logtofile;
 
 		logger			*debuglogger;
 
 		stdoutdestination	*stdoutdest;
 		stderrdestination	*stderrdest;
-		syslogdestination	*syslogdest;
 		filedestination		*filedest;
 
 		const char		*debugdir;
@@ -61,13 +59,12 @@ sqlrlogger_debug::sqlrlogger_debug(domnode *parameters) :
 
 	logtostdout=charstring::isYes(parameters->getAttributeValue("stdout"));
 	logtostderr=charstring::isYes(parameters->getAttributeValue("stderr"));
-	logtosyslog=charstring::isYes(parameters->getAttributeValue("syslog"));
 
 	// If file="..." isn't specified at all, then enable it, if nothing
 	// else was enabled.  Otherwise, only enable it if it's set to "yes".
 	const char	*fileattr=parameters->getAttributeValue("file");
 	if (charstring::isNullOrEmpty(fileattr)) {
-		logtofile=!logtostdout && !logtostderr && !logtosyslog;
+		logtofile=!logtostdout && !logtostderr;
 	} else {
 		logtofile=charstring::isYes(
 				parameters->getAttributeValue("file"));
@@ -82,7 +79,6 @@ sqlrlogger_debug::sqlrlogger_debug(domnode *parameters) :
 
 	stdoutdest=NULL;
 	stderrdest=NULL;
-	syslogdest=NULL;
 	filedest=NULL;
 
 	debugdir=NULL;
@@ -193,15 +189,6 @@ bool sqlrlogger_debug::openDebug() {
 		debuglogger->addLogDestination(stderrdest);
 	}
 	
-	if (logtosyslog) {
-		syslogdest=new syslogdestination();
-		if (getDebug()) {
-			stdoutput.printf("Debugging to: syslog\n");
-		}
-		syslogdest->open(processname,LOG_CONS,LOG_USER,LOG_DEBUG);
-		debuglogger->addLogDestination(syslogdest);
-	}
-
 	if (logtofile) {
 
 		// build the debug file name
@@ -243,12 +230,6 @@ void sqlrlogger_debug::closeDebug() {
 
 	delete stderrdest;
 	stderrdest=NULL;
-
-	if (syslogdest) {
-		syslogdest->close();
-		delete syslogdest;
-		syslogdest=NULL;
-	}
 
 	if (filedest) {
 		filedest->close();

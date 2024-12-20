@@ -5537,7 +5537,7 @@ The //module// attribute specifies which module to load.
 
 Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.
 
-Different modules may have different parameters.  In this example, listener="yes" tells the module to log debug info for the sqlr-listener processes and connection="yes" tells the module to log debug info for the sqlr-connection processes.
+Different modules may have different parameters.  In this example, stdout="yes" tells the module to log debug info to standard output.
 
 All logger modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
 
@@ -5560,7 +5560,7 @@ Custom modules may also be developed.  For more information, please contact [mai
 [[br]][=#debug]
 === debug ===
 
-The '''debug''' module logs a great deal of information to about the internal operation of the SQL Relay server to log files in the "debug directory", usually /usr/local/firstworks/var/log/sqlrelay/debug, /usr/local/firstworks/var/sqlrelay/debug, or /var/log/sqlrelay/debug.  It creates files named sqlr-listener."pid" and sqlr-connection."pid" where "pid" is replaced with the process id of the process that is being logged.  As new processes are forked, new files are created with debug information about those processes.
+The '''debug''' module logs a great deal of information to about the internal operation of the SQL Relay server.
 
 {{{#!blockquote
 {{{#!code
@@ -5568,19 +5568,17 @@ The '''debug''' module logs a great deal of information to about the internal op
 }}}
 }}}
 
-This module takes three attributes: '''listener''', '''connection''' and '''perms'''.  The '''listener''' attribute may be set to "no" to disable logging of the sqlr-listener processes.  The '''connection''' attribute may be set to "no" to disable logging of the sqlr-connection processes.  Logging is enabled if either attribute is omitted or set to any other value.  The '''perms''' attribute may be set to any ls -l style permissions string.  The default is "rw-------" which translates to read/write for owner only.
+This module takes four attributes: '''stdout''', '''stderr''', '''file''', and '''perms'''.
 
-The general log format is:
+If '''stdout''' is set to "yes" then the module will log to standard output.
 
-{{{#!blockquote
-{{{
-mm/dd/yyyy hh:mm:ss TZ processname [pid] : info
-}}}
-}}}
+If '''stderr''' is set to "yes" then the module will log to standard error.
 
-Sample log for main listener process: [sqlr-listener.1869.html sqlr-listener.1869][[br]]
-Sample log for child listener process: [sqlr-listener.1886.html sqlr-listener.1886][[br]]
-Sample log for connecton process: [sqlr-connection.1871.html sqlr-connection.1871][[br]]
+If '''file''' is set to "yes" (or not set to "no" and neither of '''stdout''' nor '''stderr''' are set to "yes") then the module will log to files in the "debug directory", usually /usr/local/firstworks/var/log/sqlrelay/debug, /usr/local/firstworks/var/sqlrelay/debug, or /var/log/sqlrelay/debug.  It creates files named sqlr-listener."pid" and sqlr-connection."pid" where "pid" is replaced with the process id of the process that is being logged.  As new processes are forked, new files are created with debug information about those processes.
+
+The '''perms''' attribute may be set to any ls -l style permissions string, and will set the permissions of the debug files, if '''file''' is also set to "yes".  The default is "rw-------" which translates to read/write for owner only.
+
+The '''stdout''', '''stderr''', and '''file''' parameters are not mutually exclusive.  Any combination of them may be set to "yes".
 
 
 [[br]][=#sql]
