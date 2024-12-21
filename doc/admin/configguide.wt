@@ -3774,7 +3774,7 @@ Query translation is implemented by loadable modules.  The //querytranslations//
 
 {{{#!blockquote
 {{{#!code
-@parts/sqlrelay-translations-normalize.conf@
+@parts/sqlrelay-querytranslations-normalize.conf@
 }}}
 }}}
 
@@ -3904,7 +3904,7 @@ The module is highly configurable, and capable of doing some fairly complex subs
 
 {{{#!blockquote
 {{{#!code
-@parts/sqlrelay-translations-patterns.conf@
+@parts/sqlrelay-querytranslations-patterns.conf@
 }}}
 }}}
 
@@ -3939,7 +3939,7 @@ Another powerful feature of the patterns query translation module is nested matc
 
 {{{#!blockquote
 {{{#!code
-@parts/sqlrelay-translations-patterns-nested.conf@
+@parts/sqlrelay-querytranslations-patterns-nested.conf@
 }}}
 }}}
 
@@ -3967,7 +3967,7 @@ Though more than 2 levels is rarely necessary, any level of nesting is supported
 
 {{{#!blockquote
 {{{#!code
-@parts/sqlrelay-translations-patterns-nested-multi.conf@
+@parts/sqlrelay-querytranslations-patterns-nested-multi.conf@
 }}}
 }}}
 
@@ -5593,7 +5593,9 @@ The '''stdout''', '''stderr''', and '''file''' parameters are not mutually exclu
 
 Note, that including a logger tag for the debug module doesn't enable debugging, by itself.  Rather, it just defines the destination of any debug that is otherwise enabled.  To enable debugging of a particular module or component, you must include debug="yes" attributes in other tags.
 
-For example, to enable debugging of all components of SQL Relay, include debug="yes" in the instance tag.
+For example...
+
+To enable debugging of all components of SQL Relay, include debug="yes" in the instance tag.
 
 {{{#!blockquote
 {{{#!code
@@ -5634,6 +5636,16 @@ To enable debugging of an individual module, include debug="yes" in the tag for 
 }}}
 
 And so on.
+
+Actually, it's not even explicitly necessary to include a logger tag for the debug module if you just want to log debug to standard output.  If a debug="yes" attribute is included in any valid location in the config file, then the debug module will be implicitly loaded, with the stdout="yes" option enabled.
+
+Debugging to standard output is handy in a highly constrained dev or QA environemnt.  But, if you need to debug any environment with multiple, simultaneous client sessions, debugging to standard output can become confusing, as debug from multiple processes will all be sent to standard output, interleved.  If you need to debug such an environment, it is recommended to use the file="yes" option, and debug each process to a separate file:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-debug-file.conf@
+}}}
+}}}
 
 
 [[br]][=#sql]

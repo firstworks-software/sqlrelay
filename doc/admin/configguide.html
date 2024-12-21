@@ -8507,7 +8507,9 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>Note, that including a logger tag for the debug module doesn't enable debugging, by itself.  Rather, it just defines the destination of any debug that is otherwise enabled.  To enable debugging of a particular module or component, you must include debug="yes" attributes in other tags.</p>
 
-<p>For example, to enable debugging of all components of SQL Relay, include debug="yes" in the instance tag.</p>
+<p>For example...</p>
+
+<p>To enable debugging of all components of SQL Relay, include debug="yes" in the instance tag.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -8603,7 +8605,29 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>And so on.</p>
 
-<br/><a name="sql"/><h3>sql</h3>
+<p>Actually, it's not even explicitly necessary to include a logger tag for the debug module if you just want to log debug to standard output.  If a debug="yes" attribute is included in any valid location in the config file, then the debug module will be implicitly loaded, with the stdout="yes" option enabled.</p>
+
+<p>Debugging to standard output is handy in a highly constrained dev or QA environemnt.  But, if you need to debug any environment with multiple, simultaneous client sessions, debugging to standard output can become confusing, as debug from multiple processes will all be sent to standard output, interleved.  If you need to debug such an environment, it is recommended to use the file="yes" option, and debug each process to a separate file:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;loggers&gt;</font></b>
+			<b><font color="#0000FF">&lt;logger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"debug"</font> <font color="#009900">file</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/loggers&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<br/><br/><a name="sql"/><h3>sql</h3>
 
 <p>The <b>sql</b> module logs all queries to log files in the "log directory", usually /usr/local/firstworks/var/log/sqlrelay, /usr/local/firstworks/var/sqlrelay/log, or /var/log/sqlrelay.  It creates files named sqlr-connection-"id"-querylog."pid" for each sqlr-connection process where "id" is replaced with the id of the instance from the configuration file and "pid" is replaced with the process id.</p>
 
