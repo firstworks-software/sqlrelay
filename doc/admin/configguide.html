@@ -63,7 +63,6 @@
         <li><a href="#sqlrclienttls">TLS/SSL Encryption and Authentication</a></li>
       </ul>
 
-      <li><a href="#sqlrclientlimitations">Limitations</a></li>
     </ul>
 
     <li><a href="#mysqlprotocol">MySQL Protocol</a></li>
@@ -344,9 +343,13 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>By default, SQL Relay assumes that it's connecting to an Oracle database, but database connection modules for many other databases are provided.</p>
 
-<p>The dbase attribute of the instance tag specifies which database connection module to load and the connect string options (options in the string attribute of the connection tag) specify which parameters to use when connecting to the database.  Connect string options are different for each database.</p>
+<p>The dbase attribute of the instance tag specifies which database connection module to load.</p>
 
-<p>Examples follow.</p>
+<p>The connect string options (options in the string attribute of the connection tag) specify which parameters to use when connecting to the database.  Connect string options are different for each database.</p>
+
+<p>The connections tag also supports a <i>debug</i> attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see <a href="#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+
+<p>Examples, illustrating how to connect to specific databases, follow.</p>
 
 <br/><a name="db-oracle"/><h3>Oracle</h3>
 
@@ -1473,6 +1476,8 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>If the socket option is specified but port and addresses options are not, then SQL Relay will only listen on the socket.  If addresses/port and socket options are both specified then it listens on both.</p>
 
+<p>The listeners tag also supports a <i>debug</i> attribute.  If debug="yes" is configured in the listeners tag (not in an individual listener tag) then debugging information about the listener is written to the destination of the debug logger module (if one is defined, see <a href="#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+
 <br/><a name="instances"/><h2>Multiple Instances</h2>
 
 <p>Any number of SQL Relay instances can be defined in the configuration file.</p>
@@ -1814,6 +1819,8 @@ http://www.gnu.org/software/src-highlite -->
 <p>( <b>NOTE:</b> The user that SQL Relay runs as must be able to read and write to the path of the socket.)</p>
 
 <p>If the socket option is specified but the port option is not, then SQL Relay will only listen on the socket.  If port and socket options are both specified then it listens on both.</p>
+
+<p>The SQLRClient protocol module also has a <i>debug</i> attribute.  If debug="yes" is configured in the individual listener tag (not in the listeners tag), then debugging information about the protocol is written to the destination of the debug logger module (if one is defined, see <a href="#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <a name="sqlrclientauth"/><h3>Authentication/Encryption Options</h3>
 
@@ -2458,6 +2465,8 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>If the socket option is specified but the port option is not, then SQL Relay will only listen on the socket.  If port and socket options are both specified then it listens on both.</p>
 
+<p>The MySQL protocol module also has a <i>debug</i> attribute.  If debug="yes" is configured in the individual listener tag (not in the listeners tag), then debugging information about the protocol is written to the destination of the debug logger module (if one is defined, see <a href="#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+
 <a name="mysqlauth"/><h3>Authentication/Encryption Options</h3>
 
 <p>When using the MySQL protocol, there are several options for controlling which users are allowed to access an instance of SQL Relay.</p>
@@ -3097,6 +3106,8 @@ http://www.gnu.org/software/src-highlite -->
 <p>( <b>NOTE:</b> The user that SQL Relay runs as must be able to read and write to the path of the socket.)</p>
 
 <p>If the socket option is specified but the port option is not, then SQL Relay will only listen on the socket.  If port and socket options are both specified then it listens on both.</p>
+
+<p>The PostgreSQL protocol module also has a <i>debug</i> attribute.  If debug="yes" is configured in the individual listener tag (not in the listeners tag), then debugging information about the protocol is written to the destination of the debug logger module (if one is defined, see <a href="#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <a name="postgresqlauth"/><h3>Authentication/Encryption Options</h3>
 
@@ -4879,7 +4890,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>All schedule modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
 
-<p>All schedule modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+<p>All schedule modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see <a href="#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <p>Connection schedule modules can be "stacked".  Multiple different modules may be loaded, and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
 
@@ -5175,7 +5186,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>All filter modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
 
-<p>All filter modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+<p>All filter modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see <a href="#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <p>All filter modules have an <i>when</i> attribute as well, which determines when the filter is applied.  If set to "before" then the module is executed before any query translations are executed.  If set to "after", or omitted, then the module is executed  after all query translations have been executed.  See <a href="#querytranslations">Query Translations</a> below for more information.</p>
 
@@ -5219,9 +5230,9 @@ http://www.gnu.org/software/src-highlite -->
 	...
 	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
 		...
-		<b><font color="#0000FF">&lt;translations&gt;</font></b>
-			<b><font color="#0000FF">&lt;translation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
-		<b><font color="#0000FF">&lt;/translations&gt;</font></b>
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
 		...
 		<b><font color="#0000FF">&lt;filters&gt;</font></b>
 			<b><font color="#0000FF">&lt;filter</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"regex"</font> <font color="#009900">pattern</font><font color="#990000">=</font><font color="#FF0000">" [0-9]*=[0-9]*"</font><b><font color="#0000FF">/&gt;</font></b>
@@ -5271,9 +5282,9 @@ http://www.gnu.org/software/src-highlite -->
 	...
 	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
 		...
-		<b><font color="#0000FF">&lt;translations&gt;</font></b>
-			<b><font color="#0000FF">&lt;translation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
-		<b><font color="#0000FF">&lt;/translations&gt;</font></b>
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
 		...
 		<b><font color="#0000FF">&lt;filters&gt;</font></b>
 			<b><font color="#0000FF">&lt;filter</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"patterns"</font><b><font color="#0000FF">&gt;</font></b>
@@ -5341,9 +5352,9 @@ http://www.gnu.org/software/src-highlite -->
 	...
 	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
 		...
-		<b><font color="#0000FF">&lt;translations&gt;</font></b>
-			<b><font color="#0000FF">&lt;translation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
-		<b><font color="#0000FF">&lt;/translations&gt;</font></b>
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
 		...
 		<b><font color="#0000FF">&lt;filters&gt;</font></b>
 			<b><font color="#0000FF">&lt;filter</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"regex"</font> <font color="#009900">pattern</font><font color="#990000">=</font><font color="#FF0000">" [0-9]*=[0-9]*"</font><b><font color="#0000FF">/&gt;</font></b>
@@ -5402,9 +5413,9 @@ http://www.gnu.org/software/src-highlite -->
 	...
 	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
 		...
-		<b><font color="#0000FF">&lt;translations&gt;</font></b>
-			<b><font color="#0000FF">&lt;translation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
-		<b><font color="#0000FF">&lt;/translations&gt;</font></b>
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
 		...
 		<b><font color="#0000FF">&lt;filters&gt;</font></b>
 			<b><font color="#0000FF">&lt;filter</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"string"</font> <font color="#009900">pattern</font><font color="#990000">=</font><font color="#FF0000">"hugetable"</font> <font color="#009900">ignorecase</font><font color="#990000">=</font><font color="#FF0000">"yes"</font> <font color="#009900">errornumbrer</font><font color="#990000">=</font><font color="#FF0000">"100"</font> <font color="#009900">error</font><font color="#990000">=</font><font color="#FF0000">"string filter violation"</font><b><font color="#0000FF">/&gt;</font></b>
@@ -5520,7 +5531,7 @@ http://www.gnu.org/software/src-highlite -->
 <blockquote>
 <img src="../images/translation-query.png"/>
 </blockquote>
-<p>Query translation is implemented by loadable modules.  The <i>translations</i> section of the configuration file indicates which translation modules to load and what parameters to use when executing them.</p>
+<p>Query translation is implemented by loadable modules.  The <i>querytranslations</i> section of the configuration file indicates which query translation modules to load and what parameters to use when executing them.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -5532,9 +5543,9 @@ http://www.gnu.org/software/src-highlite -->
 	...
 	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
 		...
-		<b><font color="#0000FF">&lt;translations&gt;</font></b>
-			<b><font color="#0000FF">&lt;translation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
-		<b><font color="#0000FF">&lt;/translations&gt;</font></b>
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
 		...
 	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
 	...
@@ -5548,13 +5559,13 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>All query translation modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
 
-<p>All query translation modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+<p>All query translation modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see <a href="#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <p>Query translation modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
 
-<p>At startup, the SQL Relay server creates instances of the specified translations modules and initializes them.  When a query is run, the server passes the query to each module, in the order that they were specified in the config file.  If a module modifies the query, then that modified query is passed on to the next module.</p>
+<p>At startup, the SQL Relay server creates instances of the specified query translations modules and initializes them.  When a query is run, the server passes the query to each module, in the order that they were specified in the config file.  If a module modifies the query, then that modified query is passed on to the next module.</p>
 
-<p>Currently, the following translation modules are available in the standard SQL Relay distribution:</p>
+<p>Currently, the following query translation modules are available in the standard SQL Relay distribution:</p>
 
 <ul>
   <li><b>normalize</b></li>
@@ -5724,14 +5735,14 @@ http://www.gnu.org/software/src-highlite -->
   <ul>
     <li>Most databases support <i>double-escaped</i> quotes.  For example, if a quoted string needs to contains a quote, then that would be expressed like: 'I said ''hello'' to her.'</li>
     <li>Some databases support <i>slash-escaped</i> quotes.  For example, if a quoted string needs to contains a quote, then that would be expressed like: 'I said \'hello\' to her.'</li>
-    <li>By default, the normalize translation converts slash-escaped single, double, and back-quotes to double-escaped single, double, and back-quotes.</li>
+    <li>By default, the normalize query translation converts slash-escaped single, double, and back-quotes to double-escaped single, double, and back-quotes.</li>
     <li>If slashescape is set to "no" then the slash will be ignored as an escape character, and the quote (or double/back quote) and slash will be interpreted literally, potentially affecting case conversion and quote removal.</li>
   </ul>
 
   <li><b>doubleescape</b> - "yes" or "no".  Defaults to "yes".</li>
   <ul>
     <li>Most databases support <i>double-escaped</i> quotes.  For example, if a quoted string needs to contains a quote, then that would be expressed like: 'I said ''hello'' to her.'</li>
-    <li>By default, the normalize translation interprets double-escaped single, double, and back-quotes in this manner.</li>
+    <li>By default, the normalize query translation interprets double-escaped single, double, and back-quotes in this manner.</li>
     <li>If doubleescape is set to "no" then all quotes, double-quotes, and back-quotes will be interpreted literally, potentially affecting case conversion and quote removal.</li>
   </ul>
 
@@ -5753,17 +5764,17 @@ http://www.gnu.org/software/src-highlite -->
 	...
 	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
 		...
-		<b><font color="#0000FF">&lt;translations&gt;</font></b>
-			<b><font color="#0000FF">&lt;translation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
-			<b><font color="#0000FF">&lt;translation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"patterns"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"patterns"</font><b><font color="#0000FF">&gt;</font></b>
 				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"string"</font> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"old_tablename"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"new_tablename"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"outsidequotes"</font><b><font color="#0000FF">/&gt;</font></b>
 				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"string"</font> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"David"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"Dave"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"insidequotes"</font><b><font color="#0000FF">/&gt;</font></b>
 				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"cistring"</font> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"Johnathan"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"John"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"insidequotes"</font><b><font color="#0000FF">/&gt;</font></b>
 				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"(Dan|Danny)"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"Daniel"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"insidequotes"</font><b><font color="#0000FF">/&gt;</font></b>
 				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"(Rich|Richie)"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"Richard"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"insidequotes"</font> <font color="#009900">global</font><font color="#990000">=</font><font color="#FF0000">"no"</font><b><font color="#0000FF">/&gt;</font></b>
 				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"^show tables$"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"select * from user_tables"</font><b><font color="#0000FF">/&gt;</font></b>
-			<b><font color="#0000FF">&lt;/translation&gt;</font></b>
-		<b><font color="#0000FF">&lt;/translations&gt;</font></b>
+			<b><font color="#0000FF">&lt;/querytranslation&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
 		...
 	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
 	...
@@ -5771,7 +5782,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>In this example, several pattern-translations are defined, instructing the module to:</p>
+<p>In this example, several pattern query translations are defined, instructing the module to:</p>
 
 <ul>
   <li>Convert <i>old_tablename</i> to <i>new_tablename</i>, but only outside of quoted strings.</li>
@@ -5809,9 +5820,9 @@ http://www.gnu.org/software/src-highlite -->
 
 </ul>
 
-<p>Note that in this example, the normalize translation is loaded prior to the patterns translation.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the <a href="#normalize">normalize</a> translation for more information.</p>
+<p>Note that in this example, the normalize query translation is loaded prior to the patterns query translation.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the <a href="#normalize">normalize</a> query translation for more information.</p>
 
-<p>Another powerful feature of the patterns translation module is nested matching:</p>
+<p>Another powerful feature of the patterns query translation module is nested matching:</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -5823,9 +5834,9 @@ http://www.gnu.org/software/src-highlite -->
 	...
 	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
 		...
-		<b><font color="#0000FF">&lt;translations&gt;</font></b>
-			<b><font color="#0000FF">&lt;translation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
-			<b><font color="#0000FF">&lt;translation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"patterns"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"patterns"</font><b><font color="#0000FF">&gt;</font></b>
 				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font>
 					<font color="#009900">match</font><font color="#990000">=</font><font color="#FF0000">"^create table .*"</font><b><font color="#0000FF">&gt;</font></b>
 					<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"string"</font>
@@ -5844,8 +5855,8 @@ http://www.gnu.org/software/src-highlite -->
 						<font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">",oldvalue,newvalue,"</font>
 						<font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">",to_char(oldvalue),to_char(newvalue),"</font><b><font color="#0000FF">/&gt;</font></b>
 				<b><font color="#0000FF">&lt;/pattern&gt;</font></b>
-			<b><font color="#0000FF">&lt;/translation&gt;</font></b>
-		<b><font color="#0000FF">&lt;/translations&gt;</font></b>
+			<b><font color="#0000FF">&lt;/querytranslation&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
 		...
 	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
 	...
@@ -5855,7 +5866,7 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>In this example...</p>
 
-<p>The first pattern-translation replaces:</p>
+<p>The first pattern query translation replaces:</p>
 
 <ul>
   <li>the tinytext column type with varchar2(254)</li>
@@ -5865,9 +5876,9 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>But the replacements are only done in <i>create table</i> queries.</p>
 
-<p>It's unlikely that those patterns would show up in other queries, but not impossible.  Also, the translation is made more efficient by the initial match, as it will bail immediately if the query is something other than a create table, rather than having to scan the entire rest of the query.</p>
+<p>It's unlikely that those patterns would show up in other queries, but not impossible.  Also, the query translation is made more efficient by the initial match, as it will bail immediately if the query is something other than a create table, rather than having to scan the entire rest of the query.</p>
 
-<p>The second pattern-translation basically wraps oldvalue and newvalue with to_char(), but only in a very specific query.  This is a good example of how the patterns translation can help run an app written for one type of database against a different type of database.  One-off query translations are often necessary in these cases.</p>
+<p>The second pattern query translation basically wraps oldvalue and newvalue with to_char(), but only in a very specific query.  This is a good example of how the patterns query translation can help run an app written for one type of database against a different type of database.  One-off query translations are often necessary in these cases.</p>
 
 <p>Note that in these examples, the outer pattern tags have a match attribute rather than from/to attributes.  When doing nested matching, outer tags use the match attribute to grab pieces of the query, and pass them down to nested tags.</p>
 
@@ -5887,9 +5898,9 @@ http://www.gnu.org/software/src-highlite -->
 	...
 	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
 		...
-		<b><font color="#0000FF">&lt;translations&gt;</font></b>
-			<b><font color="#0000FF">&lt;translation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
-			<b><font color="#0000FF">&lt;translation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"patterns"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"patterns"</font><b><font color="#0000FF">&gt;</font></b>
 				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font>
 					<font color="#009900">match</font><font color="#990000">=</font><font color="#FF0000">"...pattern to match in query..."</font><b><font color="#0000FF">&gt;</font></b>
 					<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font>
@@ -5905,8 +5916,8 @@ http://www.gnu.org/software/src-highlite -->
 						<b><font color="#0000FF">&lt;/pattern&gt;</font></b>
 					<b><font color="#0000FF">&lt;/pattern&gt;</font></b>
 				<b><font color="#0000FF">&lt;/pattern&gt;</font></b>
-			<b><font color="#0000FF">&lt;/translation&gt;</font></b>
-		<b><font color="#0000FF">&lt;/translations&gt;</font></b>
+			<b><font color="#0000FF">&lt;/querytranslation&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
 		...
 	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
 	...
@@ -5944,7 +5955,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>All bind variable translation modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
 
-<p>All bind variable translation modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+<p>All bind variable translation modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see <a href="#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <p>Bind variable translation modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
 
@@ -5982,7 +5993,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>All result set header translation modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
 
-<p>All result set header translation modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+<p>All result set header translation modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see <a href="#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <p>Result set header translation modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
 
@@ -6029,7 +6040,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>All result set translation modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
 
-<p>All result set translation modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+<p>All result set translation modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see <a href="#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <p>Result set translation modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
 
@@ -6191,14 +6202,14 @@ http://www.gnu.org/software/src-highlite -->
 	...
 	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
 		...
-		<b><font color="#0000FF">&lt;translations&gt;</font></b>
-			<b><font color="#0000FF">&lt;translation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"renumber"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"renumber"</font><b><font color="#0000FF">&gt;</font></b>
 				<i><font color="#9A1900">&lt;!-- table already exists --&gt;</font></i>
 				<b><font color="#0000FF">&lt;renumber</font></b> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"955"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"1050"</font><b><font color="#0000FF">/&gt;</font></b>
 				<i><font color="#9A1900">&lt;!-- table doesn't exist --&gt;</font></i>
 				<b><font color="#0000FF">&lt;renumber</font></b> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"942"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"1051"</font><b><font color="#0000FF">/&gt;</font></b>
-			<b><font color="#0000FF">&lt;/translation&gt;</font></b>
-		<b><font color="#0000FF">&lt;/translations&gt;</font></b>
+			<b><font color="#0000FF">&lt;/querytranslation&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
 		...
 	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
 	...
@@ -6213,7 +6224,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>All error translation modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
 
-<p>All error translation modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+<p>All error translation modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see <a href="#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <p>Error translation modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
 
@@ -6242,14 +6253,14 @@ http://www.gnu.org/software/src-highlite -->
 	...
 	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
 		...
-		<b><font color="#0000FF">&lt;translations&gt;</font></b>
-			<b><font color="#0000FF">&lt;translation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"renumber"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"renumber"</font><b><font color="#0000FF">&gt;</font></b>
 				<i><font color="#9A1900">&lt;!-- table already exists --&gt;</font></i>
 				<b><font color="#0000FF">&lt;renumber</font></b> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"955"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"1050"</font><b><font color="#0000FF">/&gt;</font></b>
 				<i><font color="#9A1900">&lt;!-- table doesn't exist --&gt;</font></i>
 				<b><font color="#0000FF">&lt;renumber</font></b> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"942"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"1051"</font><b><font color="#0000FF">/&gt;</font></b>
-			<b><font color="#0000FF">&lt;/translation&gt;</font></b>
-		<b><font color="#0000FF">&lt;/translations&gt;</font></b>
+			<b><font color="#0000FF">&lt;/querytranslation&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
 		...
 	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
 	...
@@ -6511,7 +6522,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>All directive modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
 
-<p>All directive modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+<p>All directive modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see <a href="#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <p>Directive modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
 
@@ -6725,7 +6736,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>All router modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
 
-<p>All router modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+<p>All router modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see <a href="#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <p>Router modules can be "stacked".  Multiple modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
 
@@ -7515,7 +7526,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>All query modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
 
-<p>All query modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+<p>All query modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see <a href="#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <p>Custom query modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
 
@@ -7758,9 +7769,9 @@ http://www.gnu.org/software/src-highlite -->
 	...
 	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
 		...
-		<b><font color="#0000FF">&lt;translations&gt;</font></b>
-			<b><font color="#0000FF">&lt;translation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
-		<b><font color="#0000FF">&lt;/translations&gt;</font></b>
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
 		<b><font color="#0000FF">&lt;triggers&gt;</font></b>
 			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"replay"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"after"</font><b><font color="#0000FF">&gt;</font></b>
 				<b><font color="#0000FF">&lt;condition</font></b> <font color="#009900">error</font><font color="#990000">=</font><font color="#FF0000">"1213"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"transaction"</font><b><font color="#0000FF">/&gt;</font></b>
@@ -7780,7 +7791,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>All trigger modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
 
-<p>All trigger modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+<p>All trigger modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see <a href="#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <p>All trigger modules also have a <i>when</i> attribute which can be set to "before", "after", or "both", indicating whether to run the trigger before the query is executed, after the query has been executed, or both.</p>
 
@@ -7816,9 +7827,9 @@ http://www.gnu.org/software/src-highlite -->
 	...
 	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
 		...
-		<b><font color="#0000FF">&lt;translations&gt;</font></b>
-			<b><font color="#0000FF">&lt;translation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
-		<b><font color="#0000FF">&lt;/translations&gt;</font></b>
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
 		<b><font color="#0000FF">&lt;triggers&gt;</font></b>
 			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"replay"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"after"</font><b><font color="#0000FF">&gt;</font></b>
 				<b><font color="#0000FF">&lt;condition</font></b> <font color="#009900">error</font><font color="#990000">=</font><font color="#FF0000">"1213"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"transaction"</font><b><font color="#0000FF">/&gt;</font></b>
@@ -7852,9 +7863,9 @@ http://www.gnu.org/software/src-highlite -->
 	...
 	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
 		...
-		<b><font color="#0000FF">&lt;translations&gt;</font></b>
-			<b><font color="#0000FF">&lt;translation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
-		<b><font color="#0000FF">&lt;/translations&gt;</font></b>
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
 		<b><font color="#0000FF">&lt;triggers&gt;</font></b>
 			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"replay"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"after"</font><b><font color="#0000FF">&gt;</font></b>
 				<b><font color="#0000FF">&lt;condition</font></b> <font color="#009900">error</font><font color="#990000">=</font><font color="#FF0000">"1213"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"transaction"</font><b><font color="#0000FF">&gt;</font></b>
@@ -8059,9 +8070,9 @@ http://www.gnu.org/software/src-highlite -->
 	...
 	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
 		...
-		<b><font color="#0000FF">&lt;translations&gt;</font></b>
-			<b><font color="#0000FF">&lt;translation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
-		<b><font color="#0000FF">&lt;/translations&gt;</font></b>
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
 		<b><font color="#0000FF">&lt;triggers&gt;</font></b>
 			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"splitmultiinsert"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"before"</font><b><font color="#0000FF">/&gt;</font></b>
 			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"replay"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"after"</font><b><font color="#0000FF">&gt;</font></b>
@@ -8199,9 +8210,9 @@ http://www.gnu.org/software/src-highlite -->
 	...
 	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
 		...
-		<b><font color="#0000FF">&lt;translations&gt;</font></b>
-			<b><font color="#0000FF">&lt;translation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
-		<b><font color="#0000FF">&lt;/translations&gt;</font></b>
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
 		<b><font color="#0000FF">&lt;triggers&gt;</font></b>
 			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"upsert"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"after"</font><b><font color="#0000FF">&gt;</font></b>
 				<b><font color="#0000FF">&lt;errors&gt;</font></b>
@@ -8330,9 +8341,9 @@ http://www.gnu.org/software/src-highlite -->
 	...
 	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
 		...
-		<b><font color="#0000FF">&lt;translations&gt;</font></b>
-			<b><font color="#0000FF">&lt;translation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
-		<b><font color="#0000FF">&lt;/translations&gt;</font></b>
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
 		<b><font color="#0000FF">&lt;triggers&gt;</font></b>
 			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"upsert"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"after"</font><b><font color="#0000FF">&gt;</font></b>
 				<b><font color="#0000FF">&lt;errors&gt;</font></b>
@@ -8367,9 +8378,9 @@ http://www.gnu.org/software/src-highlite -->
 	...
 	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
 		...
-		<b><font color="#0000FF">&lt;translations&gt;</font></b>
-			<b><font color="#0000FF">&lt;translation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
-		<b><font color="#0000FF">&lt;/translations&gt;</font></b>
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
 		<b><font color="#0000FF">&lt;triggers&gt;</font></b>
 			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"upsert"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"after"</font><b><font color="#0000FF">&gt;</font></b>
 				<b><font color="#0000FF">&lt;errors&gt;</font></b>
@@ -8443,7 +8454,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>All logger modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
 
-<p>All logger modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+<p>All logger modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see <a href="#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <p>Logger modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
 
@@ -8462,7 +8473,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <br/><a name="debug"/><h3>debug</h3>
 
-<p>The <b>debug</b> module logs a great deal of information to about the internal operation of the SQL Relay server.</p>
+<p>The <b>debug</b> module enables logging of information about the internal operation of the SQL Relay server.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -8493,6 +8504,104 @@ http://www.gnu.org/software/src-highlite -->
 <p>The <b>perms</b> attribute may be set to any ls -l style permissions string, and will set the permissions of the debug files, if <b>file</b> is also set to "yes".  The default is "rw-------" which translates to read/write for owner only.</p>
 
 <p>The <b>stdout</b>, <b>stderr</b>, and <b>file</b> parameters are not mutually exclusive.  Any combination of them may be set to "yes".</p>
+
+<p>Note, that including a logger tag for the debug module doesn't enable debugging, by itself.  Rather, it just defines the destination of any debug that is otherwise enabled.  To enable debugging of a particular module or component, you must include debug="yes" attributes in other tags.</p>
+
+<p>For example, to enable debugging of all components of SQL Relay, include debug="yes" in the instance tag.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> ... <font color="#009900">debug</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>To enable debugging of the sqlr-listener process, include debug="yes" in the listeners tag.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners</font></b> <font color="#009900">debug</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">&gt;</font></b>
+			...
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>To enable debugging of a front-end protocol, include debug="yes" in an individual listener tag.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> ... <font color="#009900">debug</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">/&gt;</font></b>
+			...
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>To enable debugging of the sqlr-connection process, include debug="yes" in the connections tag.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;connections</font></b> <font color="#009900">debug</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">&gt;</font></b>
+			...
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>To enable debugging of an individual module, include debug="yes" in the tag for an individual module.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font> ... <font color="#009900">debug</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>And so on.</p>
 
 <br/><a name="sql"/><h3>sql</h3>
 
@@ -8723,7 +8832,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>All notification modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
 
-<p>All notification modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+<p>All notification modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see <a href="#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <p>Notification modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
 

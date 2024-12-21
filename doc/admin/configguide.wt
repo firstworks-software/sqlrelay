@@ -48,7 +48,6 @@
    * [#sqlrclientproxiedauth Proxied Auth]
    * [#sqlrclientkrb Kerberos and Active Directory Encryption and Authentication]
    * [#sqlrclienttls TLS/SSL Encryption and Authentication]
-  * [#sqlrclientlimitations Limitations]
  * [#mysqlprotocol MySQL Protocol]
   * [#mysqlconfiguration Basic Configuration]
   * [#mysqllistener Listener Options]
@@ -250,9 +249,13 @@ The module that you'll most likely need to configure first is a database connect
 
 By default, SQL Relay assumes that it's connecting to an Oracle database, but database connection modules for many other databases are provided.
 
-The dbase attribute of the instance tag specifies which database connection module to load and the connect string options (options in the string attribute of the connection tag) specify which parameters to use when connecting to the database.  Connect string options are different for each database.
+The dbase attribute of the instance tag specifies which database connection module to load.
 
-Examples follow.
+The connect string options (options in the string attribute of the connection tag) specify which parameters to use when connecting to the database.  Connect string options are different for each database.
+
+The connections tag also supports a //debug// attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see [#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+
+Examples, illustrating how to connect to specific databases, follow.
 
 [[br]][=#db-oracle]
 === Oracle ===
@@ -1082,6 +1085,8 @@ When configured this way, it can be accessed on 192.168.1.50 and 192.168.1.51 bu
 
 If the socket option is specified but port and addresses options are not, then SQL Relay will only listen on the socket.  If addresses/port and socket options are both specified then it listens on both.
 
+The listeners tag also supports a //debug// attribute.  If debug="yes" is configured in the listeners tag (not in an individual listener tag) then debugging information about the listener is written to the destination of the debug logger module (if one is defined, see [#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+
 
 [[br]][=#instances]
 == Multiple Instances ==
@@ -1303,6 +1308,8 @@ It can also be configured to listen on a unix socket by adding a //socket// attr
 ( '''NOTE:''' The user that SQL Relay runs as must be able to read and write to the path of the socket.)
 
 If the socket option is specified but the port option is not, then SQL Relay will only listen on the socket.  If port and socket options are both specified then it listens on both.
+
+The SQLRClient protocol module also has a //debug// attribute.  If debug="yes" is configured in the individual listener tag (not in the listeners tag), then debugging information about the protocol is written to the destination of the debug logger module (if one is defined, see [#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 [=#sqlrclientauth]
 === Authentication/Encryption Options ===
@@ -1758,6 +1765,8 @@ It can also be configured to listen on a unix socket by adding a //socket// attr
 
 If the socket option is specified but the port option is not, then SQL Relay will only listen on the socket.  If port and socket options are both specified then it listens on both.
 
+The !MySQL protocol module also has a //debug// attribute.  If debug="yes" is configured in the individual listener tag (not in the listeners tag), then debugging information about the protocol is written to the destination of the debug logger module (if one is defined, see [#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+
 [=#mysqlauth]
 === Authentication/Encryption Options ===
 
@@ -2177,6 +2186,8 @@ It can also be configured to listen on a unix socket by adding a //socket// attr
 ( '''NOTE:''' The user that SQL Relay runs as must be able to read and write to the path of the socket.)
 
 If the socket option is specified but the port option is not, then SQL Relay will only listen on the socket.  If port and socket options are both specified then it listens on both.
+
+The !PostgreSQL protocol module also has a //debug// attribute.  If debug="yes" is configured in the individual listener tag (not in the listeners tag), then debugging information about the protocol is written to the destination of the debug logger module (if one is defined, see [#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 [=#postgresqlauth]
 === Authentication/Encryption Options ===
@@ -3377,7 +3388,7 @@ Module configurations may have attributes and/or nested tags.  How these are int
 
 All schedule modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
 
-All schedule modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+All schedule modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see [#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 Connection schedule modules can be "stacked".  Multiple different modules may be loaded, and multiple instances of the same type of module, with different configurations, may also be loaded.
 
@@ -3561,7 +3572,7 @@ Module configurations may have attributes and/or nested tags.  How these are int
 
 All filter modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
 
-All filter modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+All filter modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see [#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 All filter modules have an //when// attribute as well, which determines when the filter is applied.  If set to "before" then the module is executed before any query translations are executed.  If set to "after", or omitted, then the module is executed  after all query translations have been executed.  See [#querytranslations Query Translations] below for more information.
 
@@ -3759,7 +3770,7 @@ Query translation enables the SQL Relay server to modify queries before passing 
 
  [[Image(../images/translation-query.png,nolink)]]
 
-Query translation is implemented by loadable modules.  The //translations// section of the configuration file indicates which translation modules to load and what parameters to use when executing them.
+Query translation is implemented by loadable modules.  The //querytranslations// section of the configuration file indicates which query translation modules to load and what parameters to use when executing them.
 
 {{{#!blockquote
 {{{#!code
@@ -3773,13 +3784,13 @@ Module configurations may have attributes and/or nested tags.  How these are int
 
 All query translation modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
 
-All query translation modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+All query translation modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see [#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 Query translation modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
 
-At startup, the SQL Relay server creates instances of the specified translations modules and initializes them.  When a query is run, the server passes the query to each module, in the order that they were specified in the config file.  If a module modifies the query, then that modified query is passed on to the next module.
+At startup, the SQL Relay server creates instances of the specified query translations modules and initializes them.  When a query is run, the server passes the query to each module, in the order that they were specified in the config file.  If a module modifies the query, then that modified query is passed on to the next module.
 
-Currently, the following translation modules are available in the standard SQL Relay distribution:
+Currently, the following query translation modules are available in the standard SQL Relay distribution:
 
 * '''normalize'''
 * '''patterns'''
@@ -3876,11 +3887,11 @@ The following attributes are currently supported:
 * '''slashescape''' - "yes" or "no".  Defaults to "yes".
  * Most databases support //double-escaped// quotes.  For example, if a quoted string needs to contains a quote, then that would be expressed like: 'I said ''hello'' to her.'
  * Some databases support //slash-escaped// quotes.  For example, if a quoted string needs to contains a quote, then that would be expressed like: 'I said \'hello\' to her.'
- * By default, the normalize translation converts slash-escaped single, double, and back-quotes to double-escaped single, double, and back-quotes.
+ * By default, the normalize query translation converts slash-escaped single, double, and back-quotes to double-escaped single, double, and back-quotes.
  * If slashescape is set to "no" then the slash will be ignored as an escape character, and the quote (or double/back quote) and slash will be interpreted literally, potentially affecting case conversion and quote removal.
 * '''doubleescape''' - "yes" or "no".  Defaults to "yes".
  * Most databases support //double-escaped// quotes.  For example, if a quoted string needs to contains a quote, then that would be expressed like: 'I said ''hello'' to her.'
- * By default, the normalize translation interprets double-escaped single, double, and back-quotes in this manner.
+ * By default, the normalize query translation interprets double-escaped single, double, and back-quotes in this manner.
  * If doubleescape is set to "no" then all quotes, double-quotes, and back-quotes will be interpreted literally, potentially affecting case conversion and quote removal.
 
 
@@ -3897,7 +3908,7 @@ The module is highly configurable, and capable of doing some fairly complex subs
 }}}
 }}}
 
-In this example, several pattern-translations are defined, instructing the module to:
+In this example, several pattern query translations are defined, instructing the module to:
 
 * Convert //old_tablename// to //new_tablename//, but only outside of quoted strings.
 * Convert //David// to //Dave//, but only inside of quoted strings.
@@ -3922,9 +3933,9 @@ This example illustrates the use of several attributes of the pattern tag:
  * //yes// - find all matches - the default
  * //no// - only find the first match
 
-Note that in this example, the normalize translation is loaded prior to the patterns translation.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the [#normalize normalize] translation for more information.
+Note that in this example, the normalize query translation is loaded prior to the patterns query translation.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the [#normalize normalize] query translation for more information.
 
-Another powerful feature of the patterns translation module is nested matching:
+Another powerful feature of the patterns query translation module is nested matching:
 
 {{{#!blockquote
 {{{#!code
@@ -3934,7 +3945,7 @@ Another powerful feature of the patterns translation module is nested matching:
 
 In this example...
 
-The first pattern-translation replaces:
+The first pattern query translation replaces:
 
 * the tinytext column type with varchar2(254)
 * the mediumtext column type with varchar2(1023)
@@ -3942,9 +3953,9 @@ The first pattern-translation replaces:
 
 But the replacements are only done in //create table// queries.
 
-It's unlikely that those patterns would show up in other queries, but not impossible.  Also, the translation is made more efficient by the initial match, as it will bail immediately if the query is something other than a create table, rather than having to scan the entire rest of the query.
+It's unlikely that those patterns would show up in other queries, but not impossible.  Also, the query translation is made more efficient by the initial match, as it will bail immediately if the query is something other than a create table, rather than having to scan the entire rest of the query.
 
-The second pattern-translation basically wraps oldvalue and newvalue with to_char(), but only in a very specific query.  This is a good example of how the patterns translation can help run an app written for one type of database against a different type of database.  One-off query translations are often necessary in these cases.
+The second pattern query translation basically wraps oldvalue and newvalue with to_char(), but only in a very specific query.  This is a good example of how the patterns query translation can help run an app written for one type of database against a different type of database.  One-off query translations are often necessary in these cases.
 
 Note that in these examples, the outer pattern tags have a match attribute rather than from/to attributes.  When doing nested matching, outer tags use the match attribute to grab pieces of the query, and pass them down to nested tags.
 
@@ -3980,7 +3991,7 @@ Module configurations may have attributes and/or nested tags.  How these are int
 
 All bind variable translation modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
 
-All bind variable translation modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+All bind variable translation modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see [#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 Bind variable translation modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
 
@@ -4008,7 +4019,7 @@ Module configurations may have attributes and/or nested tags.  How these are int
 
 All result set header translation modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
 
-All result set header translation modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+All result set header translation modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see [#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 Result set header translation modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
 
@@ -4038,7 +4049,7 @@ Module configurations may have attributes and/or nested tags.  How these are int
 
 All result set translation modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
 
-All result set translation modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+All result set translation modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see [#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 Result set translation modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
 
@@ -4161,7 +4172,7 @@ Module configurations may have attributes and/or nested tags.  How these are int
 
 All error translation modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
 
-All error translation modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+All error translation modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see [#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 Error translation modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
 
@@ -4321,7 +4332,7 @@ Module configurations may have attributes and/or nested tags.  How these are int
 
 All directive modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
 
-All directive modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+All directive modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see [#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 Directive modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
 
@@ -4472,7 +4483,7 @@ Module configurations may have attributes and/or nested tags.  How these element
 
 All router modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
 
-All router modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+All router modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see [#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 Router modules can be "stacked".  Multiple modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
 
@@ -4897,7 +4908,7 @@ Module configurations may have attributes and/or nested tags.  How these are int
 
 All query modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
 
-All query modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+All query modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see [#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 Custom query modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
 
@@ -5110,7 +5121,7 @@ Module configurations may have attributes and/or nested tags.  How these are int
 
 All trigger modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
 
-All trigger modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+All trigger modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see [#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 All trigger modules also have a //when// attribute which can be set to "before", "after", or "both", indicating whether to run the trigger before the query is executed, after the query has been executed, or both.
 
@@ -5541,7 +5552,7 @@ Different modules may have different parameters.  In this example, stdout="yes" 
 
 All logger modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
 
-All logger modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+All logger modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see [#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 Logger modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
 
@@ -5560,7 +5571,7 @@ Custom modules may also be developed.  For more information, please contact [mai
 [[br]][=#debug]
 === debug ===
 
-The '''debug''' module logs a great deal of information to about the internal operation of the SQL Relay server.
+The '''debug''' module enables logging of information about the internal operation of the SQL Relay server.
 
 {{{#!blockquote
 {{{#!code
@@ -5579,6 +5590,50 @@ If '''file''' is set to "yes" (or not set to "no" and neither of '''stdout''' no
 The '''perms''' attribute may be set to any ls -l style permissions string, and will set the permissions of the debug files, if '''file''' is also set to "yes".  The default is "rw-------" which translates to read/write for owner only.
 
 The '''stdout''', '''stderr''', and '''file''' parameters are not mutually exclusive.  Any combination of them may be set to "yes".
+
+Note, that including a logger tag for the debug module doesn't enable debugging, by itself.  Rather, it just defines the destination of any debug that is otherwise enabled.  To enable debugging of a particular module or component, you must include debug="yes" attributes in other tags.
+
+For example, to enable debugging of all components of SQL Relay, include debug="yes" in the instance tag.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-debug-instance.conf@
+}}}
+}}}
+
+To enable debugging of the sqlr-listener process, include debug="yes" in the listeners tag.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-debug-listeners.conf@
+}}}
+}}}
+
+To enable debugging of a front-end protocol, include debug="yes" in an individual listener tag.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-debug-protocol.conf@
+}}}
+}}}
+
+To enable debugging of the sqlr-connection process, include debug="yes" in the connections tag.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-debug-connections.conf@
+}}}
+}}}
+
+To enable debugging of an individual module, include debug="yes" in the tag for an individual module.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-debug-module.conf@
+}}}
+}}}
+
+And so on.
 
 
 [[br]][=#sql]
@@ -5757,7 +5812,7 @@ Module configurations may have attributes and/or nested tags.  How these are int
 
 All notification modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
 
-All notification modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+All notification modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see [#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 Notification modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
 
