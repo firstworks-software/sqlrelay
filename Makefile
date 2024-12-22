@@ -113,6 +113,7 @@ distclean: clean
 		msvc/setupx86/setupx86.vdproj \
 		doc/installingpkg.wt \
 		configure.lineno \
+		configure~ \
 		test/testresults.log \
 		test/testdetails.log \
 		test/testall.fifo \
