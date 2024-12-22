@@ -2,7 +2,7 @@
 %{!?tcl_sitearch: %global tcl_sitearch %{_libdir}/tcl%{tcl_version}}
 
 Name: sqlrelay
-Version: 2.0.1
+Version: 2.1.0
 Release: 1%{?dist}
 Summary: Database proxy
 
@@ -11,7 +11,7 @@ URL: http://sqlrelay.sourceforge.net
 Source0: http://downloads.sourceforge.net/%{name}/%{name}-%{version}.tar.gz
 
 %{?systemd_requires}
-BuildRequires: gcc-c++, rudiments-devel >= 2.0.1, systemd
+BuildRequires: gcc-c++, rudiments-devel >= 2.0.2, systemd
 
 %description
 SQL Relay is a persistent database connection pooling, proxying, throttling,
@@ -750,6 +750,10 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_javadocdir}/%{name}
 
 %changelog
+* Sun Dec 21 2024 David Muse <david.muse@firstworks.com> - 2.1.0-1
+- Updated to version 2.1.0.
+- Updated to require rudiments 2.0.2.
+
 * Wed Dec 04 2024 David Muse <david.muse@firstworks.com> - 2.0.1-1
 - Updated to version 2.0.1.
 
