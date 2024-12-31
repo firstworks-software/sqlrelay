@@ -42360,24 +42360,24 @@ echo "******************************"
 
 
 
-	eval "SQLR_VERSION=\"2.0.1\""
+	eval "SQLR_VERSION=\"2.1.0\""
 
 	if ( test "SQLR_VERSION" != "SONAME_VERSION_INFO" )
 	then
 
-printf "%s\n" "#define SQLR_VERSION \"2.0.1\"" >>confdefs.h
+printf "%s\n" "#define SQLR_VERSION \"2.1.0\"" >>confdefs.h
 
 	fi
 
 
 
 
-	eval "SRV_SONAME_VERSION_INFO=\"13:0:0\""
+	eval "SRV_SONAME_VERSION_INFO=\"14:0:0\""
 
 	if ( test "SRV_SONAME_VERSION_INFO" != "SONAME_VERSION_INFO" )
 	then
 
-printf "%s\n" "#define SRV_SONAME_VERSION_INFO \"13:0:0\"" >>confdefs.h
+printf "%s\n" "#define SRV_SONAME_VERSION_INFO \"14:0:0\"" >>confdefs.h
 
 	fi
 
