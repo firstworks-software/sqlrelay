@@ -79,7 +79,8 @@ uninstall-pkgconfig:
 		$(libdir)/pkgconfig/sqlrelay-c++.pc
 
 distclean: clean
-	$(RM) config.cache \
+	$(RM) configure~ \
+		config.cache \
 		config.h \
 		config.h~ \
 		config.h.in~ \
