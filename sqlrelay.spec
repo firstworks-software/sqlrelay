@@ -449,8 +449,8 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_bindir}/sqlr-start
 %{_bindir}/sqlr-stop
 %{_bindir}/sqlr-status
-%{_libdir}/libsqlrserver.so.13
-%{_libdir}/libsqlrserver.so.13.*
+%{_libdir}/libsqlrserver.so.14
+%{_libdir}/libsqlrserver.so.14.*
 %{_libexecdir}/%{name}/sqlrauth_*
 %{_libexecdir}/%{name}/sqlrconfig_*
 %{_libexecdir}/%{name}/sqlrbindvariabletranslation_*
@@ -550,8 +550,8 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %systemd_preun sqlrcachemanager.service
 
 %files common
-%{_libdir}/libsqlrutil.so.13
-%{_libdir}/libsqlrutil.so.13.*
+%{_libdir}/libsqlrutil.so.14
+%{_libdir}/libsqlrutil.so.14.*
 %dir %{_libexecdir}/%{name}
 %{_libexecdir}/%{name}/sqlrpwdenc_*
 
@@ -750,9 +750,10 @@ cp -r %{buildroot}%{_docdir}/%{name}/api/java %{buildroot}%{_javadocdir}/%{name}
 %{_javadocdir}/%{name}
 
 %changelog
-* Sun Dec 21 2024 David Muse <david.muse@firstworks.com> - 2.1.0-1
+* Wed Jan 01 2025 David Muse <david.muse@firstworks.com> - 2.1.0-1
 - Updated to version 2.1.0.
 - Updated to require rudiments 2.0.2.
+- Updated server library version to 14.
 
 * Wed Dec 04 2024 David Muse <david.muse@firstworks.com> - 2.0.1-1
 - Updated to version 2.0.1.
