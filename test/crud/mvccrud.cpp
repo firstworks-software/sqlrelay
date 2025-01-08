@@ -208,10 +208,8 @@ bool ajaxtestview::run(bool *handled) {
 	testcontroller	*tc=factory::allocateTestController(getProperties());
 
 	// verify that we were posted json
-	if (!getRequest()->getMethodIsAllowed(
-					NULL,"POST") ||
-		!getRequest()->getContentTypeIsAllowed(
-					NULL,"application/json")) {
+	if (!getRequest()->isMethodAllowed(NULL,"POST") ||
+		!getRequest()->isContentTypeAllowed(NULL,"application/json")) {
 		*handled=false;
 		return true;
 	}
@@ -242,7 +240,7 @@ bool ajaxtestview::run(bool *handled) {
 
 		// ... reformat response as appropriate for the frontend ...
 
-		getResponse()->sendTextHtmlHeader();
+		getResponse()->writeTextHtmlHeader();
 		response.writeJson(getResponse());
 	}
 
@@ -426,7 +424,7 @@ bool httpModuleMain(httpserverapi *sapi) {
 	}
 	if (!handled) {
 		// normally an errorview would handle this
-		resp.sendTextHtmlHeader();
+		resp.writeTextHtmlHeader();
 		resp.write("URL unhandled!\n");
 	}
 	return true;
