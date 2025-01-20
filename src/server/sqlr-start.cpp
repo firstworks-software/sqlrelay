@@ -95,7 +95,7 @@ static bool startConnection(sqlrpaths *sqlrpth,
 				const char *connectionid,
 				const char *config,
 				const char *localstatedir,
-				bool strace,
+				const char *strace,
 				const char *backtrace,
 				bool disablecrashhandler) {
 
@@ -116,11 +116,12 @@ static bool startConnection(sqlrpaths *sqlrpth,
 
 	// build args
 	uint16_t	i=0;
-	const char	*args[17];
+	const char	*args[18];
 	if (strace) {
 		args[i++]="strace";
 		args[i++]="-ff";
 		args[i++]="-o";
+		args[i++]=strace;
 	}
 	args[i++]=cmdname.getString();
 	args[i++]="-id";
@@ -169,7 +170,7 @@ static bool startConnections(sqlrpaths *sqlrpth,
 				const char *id,
 				const char *config,
 				const char *localstatedir,
-				bool strace,
+				const char *strace,
 				const char *backtrace,
 				bool disablecrashhandler) {
 
@@ -441,7 +442,7 @@ int main(int argc, const char **argv) {
 
 	// get the command line args
 	const char	*localstatedir=sqlrpth.getLocalStateDir();
-	bool		strace=cmdl.isFound("-strace");
+	const char	*strace=cmdl.getValue("-strace");
 	const char	*id=cmdl.getValue("-id");
 	const char	*configurl=sqlrpth.getConfigUrl();
 	const char	*config=cmdl.getValue("-config");

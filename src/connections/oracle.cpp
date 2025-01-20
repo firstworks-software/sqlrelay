@@ -164,6 +164,7 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		bool		requiresreprepare;
 
 		const char	*home;
+		const char	*tnsadmin;
 		const char	*sid;
 		const char	*nlslang;
 		ucs2_t		*ucs2user;
@@ -442,6 +443,7 @@ oracleconnection::oracleconnection(sqlrservercontroller *cont) :
 	requiresreprepare=false;
 
 	home=NULL;
+	tnsadmin=NULL;
 	sid=NULL;
 	nlslang=NULL;
 	ucs2user=NULL;
@@ -472,6 +474,7 @@ void oracleconnection::handleConnectString() {
 
 	sid=cont->getConnectStringValue("oracle_sid");
 	home=cont->getConnectStringValue("oracle_home");
+	tnsadmin=cont->getConnectStringValue("tns_admin");
 
 	nlslang=cont->getConnectStringValue("nls_lang");
 
@@ -580,38 +583,67 @@ bool oracleconnection::logIn(const char **error, const char **warning) {
 	bool	sidtnsnameformat=(charstring::getLength(sid) &&
 					sid[charstring::getLength(sid)-1]==')');
 
-	// handle ORACLE_HOME
+	// handle ORACLE_HOME and TNS_ADMIN
 	if (home) {
 		if (!environment::setValue("ORACLE_HOME",home)) {
 			*error="Failed to set ORACLE_HOME environment variable.";
 			return false;
 		}
-	} else {
-		if (!sidtnsnameformat &&
-			!environment::getValue("ORACLE_HOME")) {
-			*error="No ORACLE_HOME environment variable set or specified in connect string.";
+	}
+	if (tnsadmin) {
+		if (!environment::setValue("TNS_ADMIN",tnsadmin)) {
+			*error="Failed to set TNS_ADMIN environment variable.";
 			return false;
 		}
+	}
+	
+	if (!home && !tnsadmin && !sidtnsnameformat &&
+			!environment::getValue("ORACLE_HOME") &&
+			!environment::getValue("TNS_ADMIN")) {
+		*error="No ORACLE_HOME or TNS_ADMIN environment "
+			"variable set or specified in connect string.";
+		return false;
 	}
 
 	// handle error reading tnsnames.ora
 	if (!sidtnsnameformat) {
-		if (!charstring::getLength(home)) {
+		if (charstring::isNullOrEmpty(home)) {
 			home=environment::getValue("ORACLE_HOME");
 		}
-		char	*tnsnamesora=NULL;
-		charstring::printf(&tnsnamesora,
-				"%s%cnetwork%cadmin%ctnsnames.ora",
-				home,
-				sys::getDirectorySeparator(),
-				sys::getDirectorySeparator(),
-				sys::getDirectorySeparator());
-		if (!file::isReadable(tnsnamesora)) {
-			stderror.printf(
-				"Warning: %s is not readable by %s:%s\n",
-				tnsnamesora,
-				cont->getConfig()->getRunAsUser(),
-				cont->getConfig()->getRunAsGroup());
+		if (!charstring::isNullOrEmpty(home)) {
+			char	*tnsnamesora=NULL;
+			charstring::printf(&tnsnamesora,
+					"%s%cnetwork%cadmin%ctnsnames.ora",
+					home,
+					sys::getDirectorySeparator(),
+					sys::getDirectorySeparator(),
+					sys::getDirectorySeparator());
+			if (!file::isReadable(tnsnamesora)) {
+				stderror.printf(
+					"Warning: %s is not "
+					"readable by %s:%s\n",
+					tnsnamesora,
+					cont->getConfig()->getRunAsUser(),
+					cont->getConfig()->getRunAsGroup());
+			}
+		}
+		if (charstring::isNullOrEmpty(tnsadmin)) {
+			tnsadmin=environment::getValue("TNS_ADMIN");
+		}
+		if (!charstring::isNullOrEmpty(tnsadmin)) {
+			char	*tnsnamesora=NULL;
+			charstring::printf(&tnsnamesora,
+					"%s%ctnsnames.ora",
+					tnsadmin,
+					sys::getDirectorySeparator());
+			if (!file::isReadable(tnsnamesora)) {
+				stderror.printf(
+					"Warning: %s is not "
+					"readable by %s:%s\n",
+					tnsnamesora,
+					cont->getConfig()->getRunAsUser(),
+					cont->getConfig()->getRunAsGroup());
+			}
 		}
 	}
 
