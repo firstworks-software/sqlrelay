@@ -105,7 +105,7 @@ static bool startConnection(sqlrpaths *sqlrpth,
 
 	// build command to spawn
 	stringbuffer	cmd;
-	if (strace) {
+	if (!charstring::isNullOrEmpty(strace)) {
 		cmd.append("strace");
 	} else {
 		cmd.append(sqlrpth->getBinDir())->append(cmdname.getString());
@@ -117,7 +117,7 @@ static bool startConnection(sqlrpaths *sqlrpth,
 	// build args
 	uint16_t	i=0;
 	const char	*args[18];
-	if (strace) {
+	if (!charstring::isNullOrEmpty(strace)) {
 		args[i++]="strace";
 		args[i++]="-ff";
 		args[i++]="-o";
@@ -145,7 +145,7 @@ static bool startConnection(sqlrpaths *sqlrpth,
 	if (disablecrashhandler) {
 		args[i++]="-disable-crash-handler";
 	}
-	if (strace) {
+	if (!charstring::isNullOrEmpty(strace)) {
 		args[i++]="&";
 	}
 	args[i]=NULL;
