@@ -40,6 +40,7 @@ public class SQLRelayConnection extends SQLRelayDebug implements Connection {
 		this.password=password;
 		sqlrcon=new SQLRConnection(host,port,socket,
 						user,password,retrytime,tries);
+sqlrcon.debugOn();
 		readonly=false;
 		clientinfo=new Properties();
 		// FIXME: defaults to repeatable read on mysql5+

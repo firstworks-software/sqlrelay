@@ -898,7 +898,40 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 
 	public ResultSet 	getTypeInfo() throws SQLException {
 		debugFunction();
-		// FIXME: implement this by calling sqlrcon.getTypeInfo()
+		// FIXME: implement this by calling sqlrcur.getTypeInfoList()
+		// TYPE_NAME
+		//	String
+		//	Name of the data type.
+		// DATA_TYPE
+		//	int
+		//	Integer value representing this datatype.
+		// PRECISION
+		//	int
+		//	Maximum precision of this datatype.
+		// LITERAL_PREFIX
+		//	String
+		//	Prefix used to quote a string literal.
+		// LITERAL_SUFFIX
+		//	String
+		//	suffix used to quote a string literal.
+		// CASE_SENSITIVE
+		//	boolean
+		//	Determines whether this datatype is case sensitive
+		// UNSIGNED_ATTRIBUTE
+		//	boolean
+		//	Determines whether this datatype is an un-signed
+		//	attribute.
+		// FIXED_PREC_SCALE
+		//	boolean
+		//	Determines whether the current datatype can be used as
+		//	a value of currency.
+		// AUTO_INCREMENT
+		//	boolean
+		//	Determines whether the current datatype can be used for
+		//	auto-increment.
+		// LOCAL_TYPE_NAME
+		//	String
+		//	Localized version of this datatype.
 		return null;
 	}
 
