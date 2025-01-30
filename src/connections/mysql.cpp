@@ -802,7 +802,7 @@ const char *mysqlconnection::getColumnListQuery(
 		"			then character_maximum_length "
 		"		else numeric_precision "
 		"	end as column_size, "
-		"	'' as buffer_length, "
+		"	null as buffer_length, "
 			// length in bytes of data transferred during fetch
 		"	numeric_scale as decimal_digits, "
 		"	10 as num_prec_radix, "
@@ -815,9 +815,9 @@ const char *mysqlconnection::getColumnListQuery(
 		"	end as nullable, "
 		"	'' as remarks, "
 		"	column_default, "
-		"	'' as sql_data_type, "
+		"	null as sql_data_type, "
 			// type (int)
-		"	'' as sql_datetime_sub, "
+		"	null as sql_datetime_sub, "
 			// subtype (int) for datetime/interval, otherwise null
 		"	character_octet_length as char_octet_length, "
 		"	ordinal_position, "

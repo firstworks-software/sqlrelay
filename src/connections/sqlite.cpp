@@ -332,13 +332,13 @@ const char *sqliteconnection::getColumnListQuery(
 					const char *table, bool wild) {
 	return "select "
 		"	'' as column_name, "
-		"	'' as data_type, "
-		"	'' as length, "
-		"	'' as precision, "
-		"	'' as scale, "
-		"	'' as nullable, "
+		"	null as data_type, "
+		"	null as length, "
+		"	null as precision, "
+		"	null as scale, "
+		"	null as nullable, "
 		"	'' as key, "
-		"	'' as column_default, "
+		"	null as column_default, "
 		"	'' as extra, "
 		"	null";
 }

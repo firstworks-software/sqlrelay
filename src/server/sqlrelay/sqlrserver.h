@@ -3554,8 +3554,8 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  * REMARKS
 		 *  * NULL
 		 *
-		 *  ...returning an empty string for any columns that the
-		 *  database is unable to provide.
+		 *  ...returning an empty string, 0, or null as appropriate for
+		 *  any columns that the database is unable to provide.
 		 */
 		virtual const char	*getDatabaseListQuery(bool wild);
 
@@ -3585,8 +3585,8 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  * REMARKS
 		 *  * NULL
 		 *
-		 *  ...returning an empty string for any columns that the
-		 *  database is unable to provide.
+		 *  ...returning an empty string, 0, or null as appropriate for
+		 *  any columns that the database is unable to provide.
 		 */
 		virtual const char	*getSchemaListQuery(
 							bool wild,
@@ -3618,8 +3618,8 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  * REMARKS
 		 *  * NULL
 		 *
-		 *  ...returning an empty string for any columns that the
-		 *  database is unable to provide.
+		 *  ...returning an empty string, 0, or null as appropriate for
+		 *  any columns that the database is unable to provide.
 		 */
 		virtual const char	*getTableListQuery(
 							bool wild,
@@ -3652,8 +3652,8 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  * REMARKS
 		 *  * NULL
 		 *
-		 *  ...returning an empty string for any columns that the
-		 *  database is unable to provide.
+		 *  ...returning an empty string, 0, or null as appropriate for
+		 *  any columns that the database is unable to provide.
 		 */
 		virtual const char	*getTableTypeListQuery(
 							bool wild,
@@ -3710,8 +3710,8 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  * IS_NULLABLE
 		 *  * NULL
 		 *
-		 *  ...returning an empty string for any columns that the
-		 *  database is unable to provide.
+		 *  ...returning an empty string, 0, or null as appropriate for
+		 *  any columns that the database is unable to provide.
 		 */
 		virtual const char	*getColumnListQuery(
 							const char *table,
@@ -3741,8 +3741,8 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  * PK_NAME
 		 *  * NULL
 		 *
-		 *  ...returning an empty string for any columns that the
-		 *  database is unable to provide.
+		 *  ...returning an empty string, 0, or null as appropriate for
+		 *  any columns that the database is unable to provide.
 		 */
 		virtual const char	*getPrimaryKeyListQuery(
 							const char *table,
@@ -3780,8 +3780,8 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  * FILTER_CONDITION
 		 *  * NULL
 		 *
-		 *  ...returning an empty string for any columns that the
-		 *  database is unable to provide.
+		 *  ...returning an empty string, 0, or null as appropriate for
+		 *  any columns that the database is unable to provide.
 		 */
 		virtual const char	*getKeyAndIndexListQuery(
 							const char *table,
@@ -3826,8 +3826,8 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  * IS_NULLABLE
 		 *  * NULL
 		 *
-		 *  ...returning an empty string for any columns that the
-		 *  database is unable to provide.
+		 *  ...returning an empty string, 0, or null as appropriate for
+		 *  any columns that the database is unable to provide.
 		 */
 		virtual const char	*getProcedureParameterListQuery(
 							const char *procedure,
@@ -3874,8 +3874,8 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  * INTERVAL_PRECISION
 		 *  * NULL
 		 *
-		 *  ...returning an empty string for any columns that the
-		 *  database is unable to provide.
+		 *  ...returning an empty string, 0, or null as appropriate for
+		 *  any columns that the database is unable to provide.
 		 */
 		virtual const char	*getTypeInfoListQuery(
 							const char *type,
@@ -3915,8 +3915,8 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  * PROCEDURE_TYPE
 		 *  * NULL
 		 *
-		 *  ...returning an empty string for any columns that the
-		 *  database is unable to provide.
+		 *  ...returning an empty string, 0, or null as appropriate for
+		 *  any columns that the database is unable to provide.
 		 */
 		virtual const char	*getProcedureListQuery(
 							bool wild,

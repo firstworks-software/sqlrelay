@@ -663,14 +663,14 @@ const char *postgresqlconnection::getColumnListQuery(
 		"	table_schema as table_schem, "
 		"	table_name as table_name, "
 		"	column_name, "
-		"	'' as data_type, " // case this...
+		"	null as data_type, " // case this...
 		"	data_type as type_name, "
 		"	case "
 		"		when numeric_scale is null "
 		"			then character_maximum_length "
 		"		else numeric_precision "
 		"	end as column_size, "
-		"	'' as buffer_length, "
+		"	null as buffer_length, "
 			// length in bytes of data transferred during fetch
 		"	numeric_scale as decimal_digits, "
 		"	numeric_precision_radix as num_prec_radix, "
@@ -683,9 +683,9 @@ const char *postgresqlconnection::getColumnListQuery(
 		"	end as nullable, "
 		"	'' as remarks, "
 		"	column_default, "
-		"	'' as sql_data_type, "
+		"	null as sql_data_type, "
 			// type (int)
-		"	'' as sql_datetime_sub, "
+		"	null as sql_datetime_sub, "
 			// subtype (int) for datetime/interval, otherwise null
 		"	character_octet_length as char_octet_length, "
 		"	ordinal_position, "
@@ -707,14 +707,14 @@ const char *postgresqlconnection::getColumnListQuery(
 		"	table_schema as table_schem, "
 		"	table_name as table_name, "
 		"	column_name, "
-		"	'' as data_type, " // case this...
+		"	null as data_type, " // case this...
 		"	data_type as type_name, "
 		"	case "
 		"		when numeric_scale is null "
 		"			then character_maximum_length "
 		"		else numeric_precision "
 		"	end as column_size, "
-		"	'' as buffer_length, "
+		"	null as buffer_length, "
 		"	numeric_scale as decimal_digits, "
 		"	numeric_precision_radix as num_prec_radix, "
 		"	case "
@@ -726,8 +726,8 @@ const char *postgresqlconnection::getColumnListQuery(
 		"	end as nullable, "
 		"	'' as remarks, "
 		"	column_default, "
-		"	'' as sql_data_type, "
-		"	'' as sql_datetime_sub, "
+		"	null as sql_data_type, "
+		"	null as sql_datetime_sub, "
 		"	character_octet_length as char_octet_length, "
 		"	ordinal_position, "
 		"	is_nullable, "
