@@ -533,18 +533,30 @@ const char *informixconnection::getDbHostNameQuery() {
 const char *informixconnection::getDatabaseListQuery(bool wild) {
 	return (wild)?
 		"select "
-		"	name, "
-		"	'' as extra "
+		"	name as table_cat, "
+		"	'' as table_schem, "
+		"	'' as table_name, "
+		"	'' as table_type, "
+		"	'' as remarks, "
+		"	null "
 		"from "
 		"	sysmaster:sysdatabases "
 		"where "
-		"	name like '%s'":
-
+		"	name like '%s' "
+		"order by "
+		"	name"
+		:
 		"select "
-		"	name, "
-		"	'' as extra "
+		"	name as table_cat, "
+		"	'' as table_schem, "
+		"	'' as table_name, "
+		"	'' as table_type, "
+		"	'' as remarks, "
+		"	null "
 		"from "
-		"	sysmaster:sysdatabases ";
+		"	sysmaster:sysdatabases "
+		"order by "
+		"	name";
 }
 
 const char *informixconnection::getTableListQuery(bool wild,
@@ -578,7 +590,7 @@ const char *informixconnection::getTableListQuery(bool wild,
 		"	tabname as table_name, "
 		"	'TABLE' as table_type, "
 		"	'' as remarks, "
-		"	'' as extra "
+		"	'' "
 		"from "
 		"	systables "
 		"where "

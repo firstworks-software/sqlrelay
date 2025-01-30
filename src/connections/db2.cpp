@@ -558,18 +558,30 @@ const char *db2connection::getDbHostNameQuery() {
 const char *db2connection::getDatabaseListQuery(bool wild) {
 	return (wild)?
 		"select "
-		"	schemaname, "
+		"	schemaname as table_cat, "
+		"	'' as table_schem, "
+		"	'' as table_name, "
+		"	'' as table_type, "
+		"	'' as remarks, "
 		"	NULL "
 		"from "
 		"	syscat.schemata "
 		"where "
-		"	schemaname like '%s'":
-
+		"	schemaname like '%s' "
+		"order by "
+		"	schemaname"
+		:
 		"select "
-		"	schemaname, "
+		"	schemaname as table_cat, "
+		"	'' as table_schem, "
+		"	'' as table_name, "
+		"	'' as table_type, "
+		"	'' as remarks, "
 		"	NULL "
 		"from "
-		"	syscat.schemata ";
+		"	syscat.schemata "
+		"order by "
+		"	schemaname";
 }
 
 const char *db2connection::getTableListQuery(bool wild,
@@ -604,12 +616,12 @@ const char *db2connection::getTableListQuery(bool wild,
 	tablelistquery.clear();
 	tablelistquery.append(
 		"select distinct "
-		"	NULL as table_cat, "
+		"	'' as table_cat, "
 		"	tabschema as table_schem, "
 		"	tabname as table_name, "
 		"	'TABLE' as table_type, "
-		"	NULL as remarks, "
-		"	NULL as extra "
+		"	'' as remarks, "
+		"	null "
 		"from "
 		"	syscat.tables "
 		"where ");
@@ -659,7 +671,7 @@ const char *db2connection::getColumnListQuery(const char *table, bool wild) {
 		"	keyseq as key, "
 		"	default, "
 		"	'' as extra, "
-		"	NULL "
+		"	null "
 		"from "
 		"	syscat.columns "
 		"where "
@@ -679,7 +691,7 @@ const char *db2connection::getColumnListQuery(const char *table, bool wild) {
 		"	keyseq as key, "
 		"	default, "
 		"	'' as extra, "
-		"	NULL "
+		"	null "
 		"from "
 		"	syscat.columns "
 		"where "

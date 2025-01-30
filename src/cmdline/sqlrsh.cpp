@@ -1163,9 +1163,22 @@ bool sqlrsh::externalCommand(sqlrconnection *sqlrcon,
 			delete[] procedure;
 			delete[] wild;
 		} else if (!charstring::compareIgnoringCase(command,
-							"show type info",14)) {
+						"show type info mysql",20)) {
 			char	*type=getType(command);
-			sqlrcur->getTypeInfoList(type,NULL);
+			sqlrcur->getTypeInfoList(type,NULL,
+					SQLRCLIENTLISTFORMAT_MYSQL);
+			delete[] type;
+		} else if (!charstring::compareIgnoringCase(command,
+						"show type info odbc",19)) {
+			char	*type=getType(command);
+			sqlrcur->getTypeInfoList(type,NULL,
+					SQLRCLIENTLISTFORMAT_ODBC);
+			delete[] type;
+		} else if (!charstring::compareIgnoringCase(command,
+						"show type info jdbc",19)) {
+			char	*type=getType(command);
+			sqlrcur->getTypeInfoList(type,NULL,
+					SQLRCLIENTLISTFORMAT_JDBC);
 			delete[] type;
 		} else if (!charstring::compareIgnoringCase(command,
 						"show procedures",15)) {

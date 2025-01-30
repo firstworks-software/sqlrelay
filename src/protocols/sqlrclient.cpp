@@ -204,6 +204,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 		bool	nextResultSetCommand(sqlrservercursor *cursor);
 
 		void	debugCommand(uint16_t command);
+		void	debugListFormat(sqlrserverlistformat_t listformat);
 
 		stringbuffer	debugstr;
 
@@ -4010,6 +4011,8 @@ bool sqlrprotocol_sqlrclient::getListCommand(sqlrservercursor *cursor,
 						"failed to get list format");
 		return false;
 	}
+
+	debugListFormat((sqlrserverlistformat_t)listformat);
 	
 	// get size of wild parameter
 	uint32_t	wildsize;
@@ -4042,6 +4045,8 @@ bool sqlrprotocol_sqlrclient::getListCommand(sqlrservercursor *cursor,
 		}
 	}
 	wild[wildsize]='\0';
+
+	debugWrite("wild: %.*s",wildsize,wild);
 
 	// read the object parameter into the buffer
 	char	*object=NULL;
@@ -4092,6 +4097,8 @@ bool sqlrprotocol_sqlrclient::getListCommand(sqlrservercursor *cursor,
 			delete[] object;
 			object=charstring::duplicate(newobject);
 		}
+
+		debugWrite("object: %s",object);
 	}
 
 	// read the object types
@@ -4105,6 +4112,8 @@ bool sqlrprotocol_sqlrclient::getListCommand(sqlrservercursor *cursor,
 					"failed to get object types");
 			return false;
 		}
+
+		debugWrite("object types: %hd",objecttypes);
 	}
 
 	// set the values that we won't get from the client
@@ -4289,6 +4298,13 @@ bool sqlrprotocol_sqlrclient::buildListQuery(sqlrservercursor *cursor,
 						const char *wild,
 						const char *object) {
 
+	debugStart("building query");
+
+	// sanity check on query
+	if (!query) {
+		query=cont->getNoopQuery();
+	}
+
 	// If the object was given like catalog.schema.object, then just
 	// get the object.
 	const char	*realobject=charstring::findLast(object,".");
@@ -4309,6 +4325,7 @@ bool sqlrprotocol_sqlrclient::buildListQuery(sqlrservercursor *cursor,
 						wildbuf.getSize()+
 						objectbuf.getSize());
 	if (cont->getQuerySize(cursor)>maxquerysize) {
+		debugEnd();
 		return false;
 	}
 
@@ -4323,6 +4340,14 @@ bool sqlrprotocol_sqlrclient::buildListQuery(sqlrservercursor *cursor,
 						query,wildbuf.getString());
 	}
 	cont->setQuerySize(cursor,charstring::getLength(querybuffer));
+
+	debugstr.clear();
+	debugstr.safePrint(cont->getQueryBuffer(cursor),
+				cont->getQuerySize(cursor));
+	debugWrite("query: \"%.*s\"",debugstr.getSize(),debugstr.getString());
+	debugWrite("query size: %d",debugstr.getSize());
+
+	debugEnd();
 	return true;
 }
 
@@ -4514,6 +4539,28 @@ void sqlrprotocol_sqlrclient::debugCommand(uint16_t command) {
 			break;
 		default:
 			debugWrite("bad command");
+			break;
+	}
+}
+
+void sqlrprotocol_sqlrclient::debugListFormat(
+				sqlrserverlistformat_t listformat) {
+	debugWrite("list format: %hd",listformat);
+	switch (listformat) {
+		case SQLRSERVERLISTFORMAT_NULL:
+			debugWrite("NULL");
+			break;
+		case SQLRSERVERLISTFORMAT_MYSQL:
+			debugWrite("MYSQL");
+			break;
+		case SQLRSERVERLISTFORMAT_ODBC:
+			debugWrite("ODBC");
+			break;
+		case SQLRSERVERLISTFORMAT_JDBC:
+			debugWrite("JDBC");
+			break;
+		default:
+			debugWrite("unknown");
 			break;
 	}
 }

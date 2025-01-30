@@ -549,30 +549,38 @@ const char *postgresqlconnection::getDbIpAddressQuery() {
 	return "select inet_server_addr()";
 }
 
+sqlrserverlistformat_t postgresqlconnection::getNativeColumnListFormat() {
+	return SQLRSERVERLISTFORMAT_ODBC;
+}
+
 const char *postgresqlconnection::getDbIpAddress() {
 	const char	*ipaddress=sqlrserverconnection::getDbIpAddress();
 	return (charstring::getLength(ipaddress))?ipaddress:"127.0.0.1";
 }
 
-sqlrserverlistformat_t postgresqlconnection::getNativeColumnListFormat() {
-	return SQLRSERVERLISTFORMAT_POSTGRESQL;
-}
-
 const char *postgresqlconnection::getDatabaseListQuery(bool wild) {
 	return (wild)?
 		"select "
-		"	datname, "
-		"	NULL "
+		"	datname as table_cat, "
+		"	'' as table_schem, "
+		"	'' as table_name, "
+		"	'' as table_type, "
+		"	'' as remarks, "
+		"	null "
 		"from "
 		"	pg_database "
 		"where "
 		"	datname like '%s' "
 		"order by "
-		"	datname":
-
+		"	datname"
+		:
 		"select "
-		"	datname, "
-		"	NULL "
+		"	datname as table_cat, "
+		"	'' as table_schem, "
+		"	'' as table_name, "
+		"	'' as table_type, "
+		"	'' as remarks, "
+		"	null "
 		"from "
 		"	pg_database "
 		"order by "
@@ -619,8 +627,8 @@ const char *postgresqlconnection::getTableListQuery(bool wild,
 		"'BASE TABLE' then 'TABLE' "
 		"		else table_type "
 		"	end as table_type, "
-		"	NULL as remarks, "
-		"	NULL as extra "
+		"	'' as remarks, "
+		"	null "
 		"from "
 		"	information_schema.tables "
 		"where ");
@@ -655,14 +663,14 @@ const char *postgresqlconnection::getColumnListQuery(
 		"	table_schema as table_schem, "
 		"	table_name as table_name, "
 		"	column_name, "
-		"	null as data_type, " // case this...
+		"	'' as data_type, " // case this...
 		"	data_type as type_name, "
 		"	case "
 		"		when numeric_scale is null "
 		"			then character_maximum_length "
 		"		else numeric_precision "
 		"	end as column_size, "
-		"	null as buffer_length, "
+		"	'' as buffer_length, "
 			// length in bytes of data transferred during fetch
 		"	numeric_scale as decimal_digits, "
 		"	numeric_precision_radix as num_prec_radix, "
@@ -673,16 +681,16 @@ const char *postgresqlconnection::getColumnListQuery(
 		"			then 1 "
 		"		else 2 "
 		"	end as nullable, "
-		"	null as remarks, "
+		"	'' as remarks, "
 		"	column_default, "
-		"	null as sql_data_type, "
+		"	'' as sql_data_type, "
 			// type (int)
-		"	null as sql_datetime_sub, "
+		"	'' as sql_datetime_sub, "
 			// subtype (int) for datetime/interval, otherwise null
 		"	character_octet_length as char_octet_length, "
 		"	ordinal_position, "
 		"	is_nullable, "
-		"	null as extra "
+		"	null "
 		"from "
 		"	information_schema.columns "
 		"where "
@@ -699,14 +707,14 @@ const char *postgresqlconnection::getColumnListQuery(
 		"	table_schema as table_schem, "
 		"	table_name as table_name, "
 		"	column_name, "
-		"	null as data_type, " // case this...
+		"	'' as data_type, " // case this...
 		"	data_type as type_name, "
 		"	case "
 		"		when numeric_scale is null "
 		"			then character_maximum_length "
 		"		else numeric_precision "
 		"	end as column_size, "
-		"	null as buffer_length, "
+		"	'' as buffer_length, "
 		"	numeric_scale as decimal_digits, "
 		"	numeric_precision_radix as num_prec_radix, "
 		"	case "
@@ -716,14 +724,14 @@ const char *postgresqlconnection::getColumnListQuery(
 		"			then 1 "
 		"		else 2 "
 		"	end as nullable, "
-		"	null as remarks, "
+		"	'' as remarks, "
 		"	column_default, "
-		"	null as sql_data_type, "
-		"	null as sql_datetime_sub, "
+		"	'' as sql_data_type, "
+		"	'' as sql_datetime_sub, "
 		"	character_octet_length as char_octet_length, "
 		"	ordinal_position, "
 		"	is_nullable, "
-		"	null as extra "
+		"	null "
 		"from "
 		"	information_schema.columns "
 		"where "

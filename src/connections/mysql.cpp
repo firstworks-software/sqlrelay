@@ -673,19 +673,32 @@ const char *mysqlconnection::getNextvalFormat() {
 }
 
 const char *mysqlconnection::getDatabaseListQuery(bool wild) {
-	return (wild)?"select "
-			"	schema_name, "
-			"	NULL "
-			"from "
-			"	information_schema.schemata "
-			"where "
-			"	schema_name like '%s'"
-			:
-			"select "
-			"	schema_name, "
-			"	NULL "
-			"from "
-			"	information_schema.schemata";
+	return (wild)?
+		"select "
+		"	schema_name as table_cat, "
+		"	'' as table_schem, "
+		"	'' as table_name, "
+		"	'' as table_type, "
+		"	'' as remarks, "
+		"	null "
+		"from "
+		"	information_schema.schemata "
+		"where "
+		"	schema_name like '%s' "
+		"order by "
+		"	schema_name"
+		:
+		"select "
+		"	schema_name as table_cat, "
+		"	'' as table_schem, "
+		"	'' as table_name, "
+		"	'' as table_type, "
+		"	'' as remarks, "
+		"	null "
+		"from "
+		"	information_schema.schemata "
+		"order by "
+		"	schema_name";
 }
 
 const char *mysqlconnection::getTableListQuery(bool wild,
@@ -728,8 +741,8 @@ const char *mysqlconnection::getTableListQuery(bool wild,
 		"'BASE TABLE' then 'TABLE' "
 		"		else table_type "
 		"	end as table_type, "
-		"	NULL as remarks, "
-		"	NULL as extra "
+		"	'' as remarks, "
+		"	null "
 		"from "
 		"	information_schema.tables "
 		"where ");

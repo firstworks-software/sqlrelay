@@ -622,11 +622,36 @@ const char *freetdsconnection::getDbHostNameQuery() {
 
 const char *freetdsconnection::getDatabaseListQuery(bool wild) {
 	if (sybasedb) {
-		return "select '' as db, NULL";
-	} else {
 		return "select "
-			"	distinct catalog_name, "
-			"	NULL "
+			" 	'' as table_cat, "
+			"	'' as table_schem, "
+			"	'' as table_name, "
+			"	'' as table_type, "
+			"	'' as remarks, "
+			"	null";
+	} else {
+		return (wild)?
+			"select distinct "
+			"	catalog_name as table_cat, "
+			"	'' as table_schem, "
+			"	'' as table_name, "
+			"	'' as table_type, "
+			"	'' as remarks, "
+			"	null "
+			"from "
+			"	information_schema.schemata "
+			"where "
+			"	catalog_name like '%s' "
+			"order by "
+			"	catalog_name"
+			:
+			"select distinct "
+			"	catalog_name as table_cat, "
+			"	'' as table_schem, "
+			"	'' as table_name, "
+			"	'' as table_type, "
+			"	'' as remarks, "
+			"	null "
 			"from "
 			"	information_schema.schemata "
 			"order by "
@@ -656,16 +681,16 @@ const char *freetdsconnection::getTableListQuery(bool wild,
 
 		tablelistquery.append(
 			"select "
-			"	NULL as table_cat, "
+			"	'' as table_cat, "
 			"	loginame as table_schem, "
 			"	name as table_name, "
 			"	'TABLE' as table_type, "
-			"	NULL as remarks, "
-			"	NULL as extra "
+			"	'' as remarks, "
+			"	null "
 			"from "
 			"	sysobjects "
 			"where "
-			"	loginame is not NULL ");
+			"	loginame is not null ");
 		if (currentschemaonly) {
 			tablelistquery.append(
 				"	and "
@@ -723,8 +748,8 @@ const char *freetdsconnection::getTableListQuery(bool wild,
 			"'BASE TABLE' then 'TABLE' "
 			"		else table_type "
 			"	end as table_type, "
-			"	NULL as remarks, "
-			"	NULL as extra "
+			"	'' as remarks, "
+			"	null "
 			"from "
 			"	information_schema.tables "
 			"where ");

@@ -333,16 +333,7 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		const char	*getNextvalFormat();
 		const char	*getLastInsertIdQuery();
 		bool		getListsByApiCalls();
-		sqlrserverlistformat_t	getNativeDatabaseListFormat();
-		sqlrserverlistformat_t	getNativeSchemaListFormat();
-		sqlrserverlistformat_t	getNativeTableListFormat();
-		sqlrserverlistformat_t	getNativeTableTypeListFormat();
 		sqlrserverlistformat_t	getNativeColumnListFormat();
-		sqlrserverlistformat_t	getNativePrimaryKeyListFormat();
-		sqlrserverlistformat_t	getNativeKeyAndIndexListFormat();
-		sqlrserverlistformat_t	getNativeProcedureParameterListFormat();
-		sqlrserverlistformat_t	getNativeTypeInfoListFormat();
-		sqlrserverlistformat_t	getNativeProcedureListFormat();
 		bool		getDatabaseList(sqlrservercursor *cursor,
 						const char *wild);
 		bool		getSchemaList(sqlrservercursor *cursor,
@@ -1206,43 +1197,7 @@ bool odbcconnection::getListsByApiCalls() {
 	return true;
 }
 
-sqlrserverlistformat_t odbcconnection::getNativeDatabaseListFormat() {
-	return SQLRSERVERLISTFORMAT_ODBC;
-}
-
-sqlrserverlistformat_t odbcconnection::getNativeSchemaListFormat() {
-	return SQLRSERVERLISTFORMAT_ODBC;
-}
-
-sqlrserverlistformat_t odbcconnection::getNativeTableListFormat() {
-	return SQLRSERVERLISTFORMAT_ODBC;
-}
-
-sqlrserverlistformat_t odbcconnection::getNativeTableTypeListFormat() {
-	return SQLRSERVERLISTFORMAT_ODBC;
-}
-
 sqlrserverlistformat_t odbcconnection::getNativeColumnListFormat() {
-	return SQLRSERVERLISTFORMAT_ODBC;
-}
-
-sqlrserverlistformat_t odbcconnection::getNativePrimaryKeyListFormat() {
-	return SQLRSERVERLISTFORMAT_ODBC;
-}
-
-sqlrserverlistformat_t odbcconnection::getNativeKeyAndIndexListFormat() {
-	return SQLRSERVERLISTFORMAT_ODBC;
-}
-
-sqlrserverlistformat_t odbcconnection::getNativeProcedureParameterListFormat() {
-	return SQLRSERVERLISTFORMAT_ODBC;
-}
-
-sqlrserverlistformat_t odbcconnection::getNativeTypeInfoListFormat() {
-	return SQLRSERVERLISTFORMAT_ODBC;
-}
-
-sqlrserverlistformat_t odbcconnection::getNativeProcedureListFormat() {
 	return SQLRSERVERLISTFORMAT_ODBC;
 }
 

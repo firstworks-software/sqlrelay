@@ -3411,38 +3411,6 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  lists via query. */
 		virtual bool	getListsByApiCalls();
 
-		/** Returns the format that the result set that database lists
-		 *  are returned in.
-		 *
-		 *  This implementation returns SQLRSERVERLISTFORMAT_MYSQL, but
-		 *  may be overridden by a child class to return a different
-		 *  result. */
-		virtual	sqlrserverlistformat_t	getNativeDatabaseListFormat();
-
-		/** Returns the format that the result set that schema lists
-		 *  are returned in.
-		 *
-		 *  This implementation returns SQLRSERVERLISTFORMAT_MYSQL, but
-		 *  may be overridden by a child class to return a different
-		 *  result. */
-		virtual	sqlrserverlistformat_t	getNativeSchemaListFormat();
-
-		/** Returns the format that the result set that table lists
-		 *  are returned in.
-		 *
-		 *  This implementation returns SQLRSERVERLISTFORMAT_MYSQL, but
-		 *  may be overridden by a child class to return a different
-		 *  result. */
-		virtual	sqlrserverlistformat_t	getNativeTableListFormat();
-
-		/** Returns the format that the result set that table type lists
-		 *  are returned in.
-		 *
-		 *  This implementation returns SQLRSERVERLISTFORMAT_MYSQL, but
-		 *  may be overridden by a child class to return a different
-		 *  result. */
-		virtual	sqlrserverlistformat_t	getNativeTableTypeListFormat();
-
 		/** Returns the format that the result set that column lists
 		 *  are returned in.
 		 *
@@ -3450,48 +3418,6 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  may be overridden by a child class to return a different
 		 *  result. */
 		virtual	sqlrserverlistformat_t	getNativeColumnListFormat();
-
-		/** Returns the format that the result set that primary key
-		 *  lists are returned in.
-		 *
-		 *  This implementation returns SQLRSERVERLISTFORMAT_MYSQL, but
-		 *  may be overridden by a child class to return a different
-		 *  result. */
-		virtual	sqlrserverlistformat_t	getNativePrimaryKeyListFormat();
-
-		/** Returns the format that the result set that key and index
-		 *  lists are returned in.
-		 *
-		 *  This implementation returns SQLRSERVERLISTFORMAT_MYSQL, but
-		 *  may be overridden by a child class to return a different
-		 *  result. */
-		virtual	sqlrserverlistformat_t
-					getNativeKeyAndIndexListFormat();
-
-		/** Returns the format that the result set that procedure
-		 *  parameter lists are returned in.
-		 *
-		 *  This implementation returns SQLRSERVERLISTFORMAT_MYSQL, but
-		 *  may be overridden by a child class to return a different
-		 *  result. */
-		virtual	sqlrserverlistformat_t
-					getNativeProcedureParameterListFormat();
-
-		/** Returns the format that the result set that type info lists
-		 *  are returned in.
-		 *
-		 *  This implementation returns SQLRSERVERLISTFORMAT_MYSQL, but
-		 *  may be overridden by a child class to return a different
-		 *  result. */
-		virtual	sqlrserverlistformat_t	getNativeTypeInfoListFormat();
-
-		/** Returns the format that the result set that procedure lists
-		 *  are returned in.
-		 *
-		 *  This implementation returns SQLRSERVERLISTFORMAT_MYSQL, but
-		 *  may be overridden by a child class to return a different
-		 *  result. */
-		virtual	sqlrserverlistformat_t	getNativeProcedureListFormat();
 
 		/** Makes the database API call to fetch the list of databases
 		 *  that are visible to the user that SQL Relay is logged in
@@ -3615,7 +3541,22 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return a database-specific
-		 *  query. */
+		 *  query.
+		 *
+		 *  Queries should return result sets with columns that match
+		 *  the columns of the result sets produced by the ODBC
+		 *  function SQLTables(), plus a trailing null column:
+		 *
+		 *  * TABLE_CAT
+		 *  * TABLE_SCHEM
+		 *  * TABLE_NAME
+		 *  * TABLE_TYPE
+		 *  * REMARKS
+		 *  * NULL
+		 *
+		 *  ...returning an empty string for any columns that the
+		 *  database is unable to provide.
+		 */
 		virtual const char	*getDatabaseListQuery(bool wild);
 
 		/** Returns a query that can be used to fetch the list of
@@ -3631,7 +3572,22 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return a database-specific
-		 *  query. */
+		 *  query.
+		 *
+		 *  Queries should return result sets with columns that match
+		 *  the columns of the result sets produced by the ODBC
+		 *  function SQLTables(), plus a trailing null column:
+		 *
+		 *  * TABLE_CAT
+		 *  * TABLE_SCHEM
+		 *  * TABLE_NAME
+		 *  * TABLE_TYPE
+		 *  * REMARKS
+		 *  * NULL
+		 *
+		 *  ...returning an empty string for any columns that the
+		 *  database is unable to provide.
+		 */
 		virtual const char	*getSchemaListQuery(
 							bool wild,
 							bool currentdbonly);
@@ -3649,7 +3605,22 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *
 		 *  This implementation returns a query against the
 		 *  information_schema, but it may be overridden by a child
-		 *  class to return a database-specific query. */
+		 *  class to return a database-specific query.
+		 *
+		 *  Queries should return result sets with columns that match
+		 *  the columns of the result sets produced by the ODBC
+		 *  function SQLTables(), plus a trailing null column:
+		 *
+		 *  * TABLE_CAT
+		 *  * TABLE_SCHEM
+		 *  * TABLE_NAME
+		 *  * TABLE_TYPE
+		 *  * REMARKS
+		 *  * NULL
+		 *
+		 *  ...returning an empty string for any columns that the
+		 *  database is unable to provide.
+		 */
 		virtual const char	*getTableListQuery(
 							bool wild,
 							uint16_t objecttypes,
@@ -3668,7 +3639,22 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return a database-specific
-		 *  query. */
+		 *  query.
+		 *
+		 *  Queries should return result sets with columns that match
+		 *  the columns of the result sets produced by the ODBC
+		 *  function SQLTables(), plus a trailing null column:
+		 *
+		 *  * TABLE_CAT
+		 *  * TABLE_SCHEM
+		 *  * TABLE_NAME
+		 *  * TABLE_TYPE
+		 *  * REMARKS
+		 *  * NULL
+		 *
+		 *  ...returning an empty string for any columns that the
+		 *  database is unable to provide.
+		 */
 		virtual const char	*getTableTypeListQuery(
 							bool wild,
 							bool currentschemaonly);
@@ -3681,7 +3667,10 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return a database-specific
-		 *  query. */
+		 *  query.
+		 *
+		 *  Queries should return result sets with a single column,
+		 *  containing the table name. */
 		virtual const char	*getGlobalTempTableListQuery(
 							bool currentschemaonly);
 
@@ -3695,7 +3684,35 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return a database-specific
-		 *  query. */
+		 *  query.
+		 *
+		 *  Queries should return result sets with columns that match
+		 *  the columns of the result sets produced by the ODBC
+		 *  function SQLColumns(), plus a trailing null column:
+		 *
+		 *  * TABLE_CAT
+		 *  * TABLE_SCHEM
+		 *  * TABLE_NAME
+		 *  * COLUMN_NAME
+		 *  * DATA_TYPE
+		 *  * TYPE_NAME
+		 *  * COLUMN_SIZE
+		 *  * BUFFER_LENGTH
+		 *  * DECIMAL_DIGITS
+		 *  * NUM_PREC_RADIX
+		 *  * NULLABLE
+		 *  * REMARKS
+		 *  * COLUMN_DEFAULT
+		 *  * SQL_DATA_TYPE
+		 *  * SQL_DATATIME_SUB
+		 *  * CHAR_OCTET_LENGTH
+		 *  * ORDINAL_POSITION
+		 *  * IS_NULLABLE
+		 *  * NULL
+		 *
+		 *  ...returning an empty string for any columns that the
+		 *  database is unable to provide.
+		 */
 		virtual const char	*getColumnListQuery(
 							const char *table,
 							bool wild);
@@ -3710,7 +3727,23 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return a database-specific
-		 *  query. */
+		 *  query.
+		 *
+		 *  Queries should return result sets with columns that match
+		 *  the columns of the result sets produced by the ODBC
+		 *  function SQLPrimaryKeys(), plus a trailing null column:
+		 *
+		 *  * TABLE_CAT
+		 *  * TABLE_SCHEM
+		 *  * TABLE_NAME
+		 *  * COLUMN_NAME
+		 *  * KEY_SEQ
+		 *  * PK_NAME
+		 *  * NULL
+		 *
+		 *  ...returning an empty string for any columns that the
+		 *  database is unable to provide.
+		 */
 		virtual const char	*getPrimaryKeyListQuery(
 							const char *table,
 							bool wild);
@@ -3726,7 +3759,30 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return a database-specific
-		 *  query. */
+		 *  query.
+		 *
+		 *  Queries should return result sets with columns that match
+		 *  the columns of the result sets produced by the ODBC
+		 *  function SQLStatistics(), plus a trailing null column:
+		 *
+		 *  * TABLE_CAT
+		 *  * TABLE_SCHEM
+		 *  * TABLE_NAME
+		 *  * NON_UNIQUE
+		 *  * INDEX_QUALIFIER
+		 *  * INDEX_NAME
+		 *  * TYPE
+		 *  * ORDINAL_POSITION
+		 *  * COLUMN_NAME
+		 *  * ASC_OR_DESC
+		 *  * CARDINALITY
+		 *  * PAGES
+		 *  * FILTER_CONDITION
+		 *  * NULL
+		 *
+		 *  ...returning an empty string for any columns that the
+		 *  database is unable to provide.
+		 */
 		virtual const char	*getKeyAndIndexListQuery(
 							const char *table,
 							bool wild);
@@ -3743,7 +3799,36 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return a database-specific
-		 *  query. */
+		 *  query.
+		 *
+		 *  Queries should return result sets with columns that match
+		 *  the columns of the result sets produced by the ODBC
+		 *  function SQLProcedureColumns(), plus a trailing null column:
+		 *
+		 *  * PROCEDURE_CAT
+		 *  * PROCEDURE_SCHEM
+		 *  * PROCEDURE_NAME
+		 *  * COLUMN_NAME
+		 *  * COLUMN_TYPE
+		 *  * DATA_TYPE
+		 *  * TYPE_NAME
+		 *  * COLUMN_SIZE
+		 *  * BUFFER_LENGTH
+		 *  * DECIMAL_DIGITS
+		 *  * NUM_PREC_RADIX
+		 *  * NULLABLE
+		 *  * REMARKS
+		 *  * COLUMN_DEF
+		 *  * SQL_DATA_TYPE
+		 *  * SQL_DATETIME_SUB
+		 *  * CHAR_OCTET_LENGTH
+		 *  * ORDINAL_POSITION
+		 *  * IS_NULLABLE
+		 *  * NULL
+		 *
+		 *  ...returning an empty string for any columns that the
+		 *  database is unable to provide.
+		 */
 		virtual const char	*getProcedureParameterListQuery(
 							const char *procedure,
 							bool wild);
@@ -3762,7 +3847,36 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return a database-specific
-		 *  query. */
+		 *  query. 
+		 *
+		 *  Queries should return result sets with columns that match
+		 *  the columns of the result sets produced by the ODBC
+		 *  function SQLGetTypeInfo(), plus a trailing null column:
+		 *
+		 *  * TYPE_NAME
+		 *  * DATA_TYPE
+		 *  * COLUMN_SIZE
+		 *  * LITERAL_PREFIX
+		 *  * LITERAL_SUFFIX
+		 *  * CREATE_PARAMS
+		 *  * NULLABLE
+		 *  * CASE_SENSITIVE
+		 *  * SEARCHABLE
+		 *  * UNSIGNED_ATTRIBUTE
+		 *  * FIXED_PREC_SCALE
+		 *  * AUTO_UNIQUE_VALUE
+		 *  * LOCAL_TYPE_NAME
+		 *  * MINIMUM_SCALE
+		 *  * MAXIMUM_SCALE
+		 *  * SQL_DATA_TYPE
+		 *  * SQL_DATETIME_SUB
+		 *  * NUM_PREC_RADIX
+		 *  * INTERVAL_PRECISION
+		 *  * NULL
+		 *
+		 *  ...returning an empty string for any columns that the
+		 *  database is unable to provide.
+		 */
 		virtual const char	*getTypeInfoListQuery(
 							const char *type,
 							bool wild,
@@ -3785,7 +3899,25 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return a database-specific
-		 *  query. */
+		 *  query.
+		 *
+		 *  Queries should return result sets with columns that match
+		 *  the columns of the result sets produced by the ODBC
+		 *  function SQLGetTypeInfo(), plus a trailing null column:
+		 *
+		 *  * PROCEDURE_CAT
+		 *  * PROCEDURE_SCHEM
+		 *  * PROCEDURE_NAME
+		 *  * NUM_INPUT_PARAMS
+		 *  * NUM_OUTPUT_PARAMS
+		 *  * NUM_RESULT_SETS
+		 *  * REMARKS
+		 *  * PROCEDURE_TYPE
+		 *  * NULL
+		 *
+		 *  ...returning an empty string for any columns that the
+		 *  database is unable to provide.
+		 */
 		virtual const char	*getProcedureListQuery(
 							bool wild,
 							bool currentschemaonly);

@@ -762,44 +762,7 @@ bool sqlrserverconnection::getListsByApiCalls() {
 	return false;
 }
 
-sqlrserverlistformat_t sqlrserverconnection::getNativeDatabaseListFormat() {
-	return SQLRSERVERLISTFORMAT_MYSQL;
-}
-
-sqlrserverlistformat_t sqlrserverconnection::getNativeSchemaListFormat() {
-	return SQLRSERVERLISTFORMAT_MYSQL;
-}
-
-sqlrserverlistformat_t sqlrserverconnection::getNativeTableListFormat() {
-	return SQLRSERVERLISTFORMAT_MYSQL;
-}
-
-sqlrserverlistformat_t sqlrserverconnection::getNativeTableTypeListFormat() {
-	return SQLRSERVERLISTFORMAT_MYSQL;
-}
-
 sqlrserverlistformat_t sqlrserverconnection::getNativeColumnListFormat() {
-	return SQLRSERVERLISTFORMAT_MYSQL;
-}
-
-sqlrserverlistformat_t sqlrserverconnection::getNativePrimaryKeyListFormat() {
-	return SQLRSERVERLISTFORMAT_MYSQL;
-}
-
-sqlrserverlistformat_t sqlrserverconnection::getNativeKeyAndIndexListFormat() {
-	return SQLRSERVERLISTFORMAT_MYSQL;
-}
-
-sqlrserverlistformat_t sqlrserverconnection::
-				getNativeProcedureParameterListFormat() {
-	return SQLRSERVERLISTFORMAT_MYSQL;
-}
-
-sqlrserverlistformat_t sqlrserverconnection::getNativeTypeInfoListFormat() {
-	return SQLRSERVERLISTFORMAT_MYSQL;
-}
-
-sqlrserverlistformat_t sqlrserverconnection::getNativeProcedureListFormat() {
 	return SQLRSERVERLISTFORMAT_MYSQL;
 }
 

@@ -551,7 +551,13 @@ const char *sapconnection::getDbHostNameQuery() {
 }
 
 const char *sapconnection::getDatabaseListQuery(bool wild) {
-	return "select '',NULL as db";
+	return "select "
+		"	'' as table_cat, "
+		"	'' as table_schem, "
+		"	'' as table_name, "
+		"	'' as table_type, "
+		"	'' as remarks, "
+		"	null";
 }
 
 const char *sapconnection::getTableListQuery(bool wild,
@@ -574,16 +580,16 @@ const char *sapconnection::getTableListQuery(bool wild,
 	tablelistquery.clear();
 	tablelistquery.append(
 		"select "
-		"	NULL as table_cat, "
+		"	'' as table_cat, "
 		"	loginame as table_schem, "
 		"	name as table_name, "
 		"	'TABLE' as table_type, "
-		"	NULL as remarks, "
-		"	NULL as extra "
+		"	'' as remarks, "
+		"	null "
 		"from "
 		"	sysobjects "
 		"where "
-		"	loginame is not NULL ");
+		"	loginame is not null ");
 	if (currentschemaonly) {
 		tablelistquery.append(
 			"	and "
@@ -619,7 +625,7 @@ const char *sapconnection::getColumnListQuery(
 		"	'' as primarykey, "
 		"	'' column_default, "
 		"	'' as extra, "
-		"	NULL "
+		"	null "
 		"from "
 		"	sysobjects, "
 		"	syscolumns, "
@@ -647,7 +653,7 @@ const char *sapconnection::getColumnListQuery(
 		"	'' as primarykey, "
 		"	'' column_default, "
 		"	'' as extra, "
-		"	NULL "
+		"	null "
 		"from "
 		"	sysobjects, "
 		"	syscolumns, "
