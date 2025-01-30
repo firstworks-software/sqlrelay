@@ -744,8 +744,8 @@ const char *informixconnection::getColumnListQuery(
 		"	and "
 		"	syscolumns.colname like '%s' "
 		"order by "
-		"	colno":
-
+		"	colno"
+		:
 		"select "
 		"	colname, "
 		COLTYPE

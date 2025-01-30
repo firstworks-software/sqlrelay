@@ -212,6 +212,7 @@ class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostName();
+		sqlrserverlistformat_t	getNativeColumnListFormat();
 #ifdef HAVE_MYSQL_STMT_PREPARE
 		const char	*getBindFormat();
 #endif
@@ -662,6 +663,10 @@ const char *mysqlconnection::getDbHostName() {
 	return dbhostname;
 }
 
+sqlrserverlistformat_t mysqlconnection::getNativeColumnListFormat() {
+	return SQLRSERVERLISTFORMAT_ODBC;
+}
+
 #ifdef HAVE_MYSQL_STMT_PREPARE
 const char *mysqlconnection::getBindFormat() {
 	return "?";
@@ -783,34 +788,55 @@ const char *mysqlconnection::getColumnListQuery(
 	cont->splitObjectName(currentdb,currentschema,table,
 				&dbname,&schemaname,&tablename);
 
-	// FIXME: use db/schema/tablename here
 	columnlistquery.clear();
 	columnlistquery.append(
-			"select "
-			"	column_name, "
-			"	data_type, "
-			"	character_maximum_length, "
-			"	numeric_precision, "
-			"	numeric_scale, "
-			"	is_nullable, "
-			"	column_key, "
-			"	column_default, "
-			"	extra, "
-			"	NULL "
-			"from "
-			"	information_schema.columns "
-			"where "
-			"	table_catalog='");
+		"select "
+		"	table_catalog as table_cat, "
+		"	table_schema as table_schem, "
+		"	table_name as table_name, "
+		"	column_name, "
+		"	'' as data_type, " // case this...
+		"	data_type as type_name, "
+		"	case "
+		"		when numeric_scale is null "
+		"			then character_maximum_length "
+		"		else numeric_precision "
+		"	end as column_size, "
+		"	'' as buffer_length, "
+			// length in bytes of data transferred during fetch
+		"	numeric_scale as decimal_digits, "
+		"	10 as num_prec_radix, "
+		"	case "
+		"		when is_nullable = 'NO' "
+		"			then 0 "
+		"		when is_nullable = 'YES' "
+		"			then 1 "
+		"		else 2 "
+		"	end as nullable, "
+		"	'' as remarks, "
+		"	column_default, "
+		"	'' as sql_data_type, "
+			// type (int)
+		"	'' as sql_datetime_sub, "
+			// subtype (int) for datetime/interval, otherwise null
+		"	character_octet_length as char_octet_length, "
+		"	ordinal_position, "
+		"	is_nullable, "
+		"	null "
+		"from "
+		"	information_schema.columns "
+		"where "
+		"	table_catalog='");
 	columnlistquery.append(dbname);
 	columnlistquery.append(
-			"' "
-			"	and "
-			"	table_schema='");
+		"' "
+		"	and "
+		"	table_schema='");
 	columnlistquery.append(schemaname);
 	columnlistquery.append(
-			"' "
-			"	and "
-			"	table_name='%s' ");
+		"' "
+		"	and "
+		"	table_name='%s' ");
 	if (wild) {
 		columnlistquery.append(
 			"	and "

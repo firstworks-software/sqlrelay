@@ -1386,8 +1386,8 @@ const char *oracleconnection::getColumnListQueryWithoutKeys(
 				"	all_tab_columns.column_name like "
 				"			upper('%s') "
 				"order by "
-				"	all_tab_columns.column_id":
-	
+				"	all_tab_columns.column_id"
+				:
 				"select "
 				"	all_tab_columns.column_name, "
 				"	all_tab_columns.data_type, "
@@ -1446,8 +1446,8 @@ const char *oracleconnection::getColumnListQueryWithoutKeys(
 				"	user_tab_columns.column_name like "
 				"			upper('%s') "
 				"order by "
-				"	user_tab_columns.column_id":
-	
+				"	user_tab_columns.column_id"
+				:
 				"select "
 				"	user_tab_columns.column_name, "
 				"	user_tab_columns.data_type, "

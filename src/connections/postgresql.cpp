@@ -700,8 +700,8 @@ const char *postgresqlconnection::getColumnListQuery(
 		"	and "
 		"	column_name like '%s' "
 		"order by "
-		"	ordinal_position":
-
+		"	ordinal_position"
+		:
 		"select "
 		"	table_catalog as table_cat, "
 		"	table_schema as table_schem, "

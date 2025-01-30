@@ -754,8 +754,8 @@ const char *firebirdconnection::getColumnListQuery(
 		"	and "
 		"	r.rdb$field_name like '%s' "
 		"order by "
-		"	rdb$field_position":
-
+		"	rdb$field_position"
+		:
 		"select "
 		"	r.rdb$field_name, "
 		"	case f.rdb$field_type "

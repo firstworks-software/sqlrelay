@@ -679,8 +679,8 @@ const char *db2connection::getColumnListQuery(const char *table, bool wild) {
 		"	and "
 		"	colname like '%s' "
 		"order by "
-		"	colno":
-
+		"	colno"
+		:
 		"select "
 		"	colname, "
 		"	typename, "

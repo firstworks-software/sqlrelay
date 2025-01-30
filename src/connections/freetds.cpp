@@ -809,8 +809,8 @@ const char *freetdsconnection::getColumnListQuery(
 			"	and "
 			"	systypes.usertype=syscolumns.usertype "
 			"order by "
-			"	syscolumns.colid":
-
+			"	syscolumns.colid"
+			:
 			"select "
 			"	syscolumns.name, "
 			"	systypes.name as type, "
