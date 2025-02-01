@@ -2868,8 +2868,13 @@ then
 			dnl works so we fake it here
 			PHPINCLUDES=`$PHPCONFIG --includes | sed -e "s|\\${prefix}|$PHPPREFIX|" | sed -e "s|\\${prefix}|$PHPPREFIX|" | sed -e "s|\\${prefix}|$PHPPREFIX|" | sed -e "s|\\${prefix}|$PHPPREFIX|"`
 			PHPEXTDIR=`$PHPCONFIG --extension-dir`
+
+			PHPMAJORVERSION="0"
 			PHPVERSION=`$PHPCONFIG --version`
-			PHPMAJORVERSION=`echo "$PHPVERSION" | cut -d'.' -f1`
+			if ( test "$?" = "0" )
+			then
+				PHPMAJORVERSION=`echo "$PHPVERSION" | cut -d'.' -f1`
+			fi
 
 			dnl for cygwin and early mac os x...
 			if ( test -n "$CYGWIN" )

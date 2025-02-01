@@ -1,6 +1,8 @@
 2.1.1 - added tns_admin support
 	fixed sqlr-start ... -strace ...
 	refactored get*List() on the server side
+	added PHPMAJORVERSION="0" default for old php-config that doesn't
+		return the version
 
 2.1.0 - refactored debugging
 
