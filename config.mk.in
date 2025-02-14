@@ -155,13 +155,13 @@ LIBEFENCE = @LIBEFENCE@
 
 # c++
 ENABLE_CPP = @ENABLE_CPP@
-CPPCPPFLAGS = $(WERROR) $(BASECPPFLAGS) -I./ -I$(top_builddir)/ -I$(top_builddir)/src/common $(RUDIMENTSINCLUDES)
+CPPCPPFLAGS = $(WERROR) $(BASECPPFLAGS) -I. -I$(top_builddir)/ -I$(top_builddir)/src/common $(RUDIMENTSINCLUDES)
 CPPLIBS = $(RUDIMENTSLIBS) $(LIBDMALLOC) $(LIBEFENCE)
 
 
 # c
 CUSERPATH = @CUSERPATH@
-CCPPFLAGS = $(WERROR) $(BASECPPFLAGS) $(WNOMISMATCHEDTAGS) -I./ -I$(top_builddir)/ -I$(top_builddir)/src/api/c++ $(RUDIMENTSINCLUDES)
+CCPPFLAGS = $(WERROR) $(BASECPPFLAGS) $(WNOMISMATCHEDTAGS) -I. -I$(top_builddir)/ -I$(top_builddir)/src/api/c++ $(RUDIMENTSINCLUDES)
 CLIBS = -L$(top_builddir)/src/api/c++ -l$(SQLR)client $(RUDIMENTSLIBS) $(LIBDMALLOC) $(LIBEFENCE)
 ifneq ($(strip $(libdir)),)
 ifeq ($(CUSERPATH),yes)
@@ -277,7 +277,7 @@ else
 RUBYSITEARCHDIR = $(OVERRIDERUBYSITEARCHDIR)
 endif
 
-RUBYCPPFLAGS = -DHAVE_CONFIG $(BASECPPFLAGS) $(RUBYCFLAGS) -I./ -I$(top_builddir)/src/api/c++ $(RUDIMENTSINCLUDES)
+RUBYCPPFLAGS = -DHAVE_CONFIG $(BASECPPFLAGS) $(RUBYCFLAGS) -I. -I$(top_builddir)/src/api/c++ $(RUDIMENTSINCLUDES)
 RUBYLIBS = $(RUBYLIB) -rpath $(RUBYSITEARCHDIR) -L$(top_builddir)/src/api/c++ -l$(SQLR)client $(RUDIMENTSLIBS) $(LIBDMALLOC) $(LIBEFENCE)
 ifneq ($(strip $(libdir)),)
 ifeq ($(RUBYUSERPATH),yes)
@@ -319,7 +319,7 @@ JAVAC = @JAVAC@
 JAR = @JAR@
 JAVAINCLUDES = @JAVAINCLUDES@
 JAVAUSERPATH = @JAVAUSERPATH@
-JAVACPPFLAGS = $(WERROR) $(WNOUNKNOWNPRAGMAS) $(BASECPPFLAGS) -I./ -I$(top_builddir) -I$(top_builddir)/src/api/c++ $(RUDIMENTSINCLUDES) $(JAVAINCLUDES)
+JAVACPPFLAGS = $(WERROR) $(WNOUNKNOWNPRAGMAS) $(BASECPPFLAGS) -I. -I$(top_builddir) -I$(top_builddir)/src/api/c++ $(RUDIMENTSINCLUDES) $(JAVAINCLUDES)
 JAVALIBS = -rpath $(javadir)/com/firstworks/sqlrelay -L$(top_builddir)/src/api/c++ -l$(SQLR)client $(RUDIMENTSLIBS)
 CURSORCLASSPATH=@CURSORCLASSPATH@
 ifneq ($(strip $(libdir)),)
@@ -566,7 +566,7 @@ STATICUTILPLUGINSRCS += sqlrconfigdeclarations.cpp \
 STATICUTILPLUGINLOBJS = $(shell ls ../configs/*.$(OBJ)) \
 			$(shell ls ../pwdencs/*.$(OBJ))
 endif
-UTILCPPFLAGS = $(WERROR) $(BASECPPFLAGS) $(DIRCPPFLAG) -I./ -I$(top_builddir)/ -I$(top_builddir)/src/common $(RUDIMENTSINCLUDES)
+UTILCPPFLAGS = $(WERROR) $(BASECPPFLAGS) $(DIRCPPFLAG) -I. -I$(top_builddir)/ -I$(top_builddir)/src/common $(RUDIMENTSINCLUDES)
 UTILLIBS = $(RUDIMENTSLIBS)
 
 
@@ -664,7 +664,7 @@ STATICPLUGINLIBS += -L$(top_builddir)/src/api/c++ -l$(SQLR)client
 endif
 
 SERVERUSERPATH = @SERVERUSERPATH@
-SERVERCPPFLAGS = $(WERROR) $(BASECPPFLAGS) -I./ -I$(top_builddir)/ -I$(top_builddir)/src/common -I$(top_builddir)/src/util $(RUDIMENTSINCLUDES)
+SERVERCPPFLAGS = $(WERROR) $(BASECPPFLAGS) -I. -I$(top_builddir)/ -I$(top_builddir)/src/common -I$(top_builddir)/src/util $(RUDIMENTSINCLUDES)
 LIBSQLRSERVERLIBS = -L$(top_builddir)/src/util -l$(SQLR)util
 SERVERLIBS = -L./ -l$(SQLR)server $(STATICPLUGINLIBS) -L$(top_builddir)/src/util -l$(SQLR)util $(RUDIMENTSLIBS) $(MATHLIB) $(EXTRALIBS) $(LIBDMALLOC) $(LIBEFENCE)
 ifneq ($(strip $(libdir)),)
