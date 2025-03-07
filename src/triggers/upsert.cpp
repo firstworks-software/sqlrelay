@@ -1,4 +1,4 @@
-// Copyright (c) 1999-2018  David Muse
+// Copyright (c) David Muse
 // All rights reserved
 
 #include <sqlrelay/sqlrserver.h>
