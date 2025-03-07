@@ -3857,19 +3857,22 @@ bool sqlrprotocol_mysql::comFieldList(sqlrservercursor *cursor) {
 	debugStart("com_field_list");
 	debugWrite("table: \"%s\"",table);
 	debugWrite("wild: \"%s\"",wild);
-	debugEnd();
 
 	// get the list
 	bool	success=true;
 	if (cont->getListsByApiCalls()) {
+		debugWrite("get list by: api call");
 		success=getListByApiCall(cursor,
 					MYSQLLISTTYPE_COLUMN_LIST,
 					table,wild);
 	} else {
+		debugWrite("get list by: query");
 		success=getListByQuery(cursor,
 					MYSQLLISTTYPE_COLUMN_LIST,
 					table,wild);
 	}
+
+	debugEnd();
 
 	// clean up
 	delete[] table;
@@ -3921,9 +3924,13 @@ bool sqlrprotocol_mysql::getListByQuery(sqlrservercursor *cursor,
 	bool		havewild=charstring::getLength(wild);
 	switch (listtype) {
 		case MYSQLLISTTYPE_DATABASE_LIST:
+			cont->setDatabaseListFormat(
+					SQLRSERVERLISTFORMAT_MYSQL);
 			query=cont->getDatabaseListQuery(havewild);
 			break;
 		case MYSQLLISTTYPE_TABLE_LIST:
+			cont->setTableListFormat(
+					SQLRSERVERLISTFORMAT_MYSQL);
 			query=cont->getTableListQuery(havewild,
 							DB_OBJECT_TABLE|
 							DB_OBJECT_VIEW|
@@ -3932,6 +3939,8 @@ bool sqlrprotocol_mysql::getListByQuery(sqlrservercursor *cursor,
 							true);
 			break;
 		case MYSQLLISTTYPE_COLUMN_LIST:
+			cont->setColumnListFormat(
+					SQLRSERVERLISTFORMAT_MYSQL);
 			query=cont->getColumnListQuery(table,havewild);
 			break;
 		default:
@@ -3943,9 +3952,36 @@ bool sqlrprotocol_mysql::getListByQuery(sqlrservercursor *cursor,
 	query=cont->getQueryBuffer(cursor);
 	querysize=cont->getQuerySize(cursor);
 
+	stringbuffer	b;
+	b.safePrint(query,(uint32_t)querysize);
+	debugWrite("query: \"%s\"",b.getString());
+	debugWrite("query size: %d",querysize);
+
 	// prepare and execute the query
-	return cont->prepareQuery(cursor,query,querysize,true,true,true) &&
-				cont->executeQuery(cursor,true,true,true,true);
+	if (!cont->prepareQuery(cursor,query,querysize,true,true,true) ||
+			!cont->executeQuery(cursor,true,true,true,true)) {
+		return false;
+	}
+
+	// set which list format to use
+	switch (listtype) {
+		case MYSQLLISTTYPE_DATABASE_LIST:
+			cont->setDatabaseListFormat(
+					SQLRSERVERLISTFORMAT_MYSQL);
+			break;
+		case MYSQLLISTTYPE_TABLE_LIST:
+			cont->setTableListFormat(
+					SQLRSERVERLISTFORMAT_MYSQL);
+			break;
+		case MYSQLLISTTYPE_COLUMN_LIST:
+			cont->setColumnListFormat(
+					SQLRSERVERLISTFORMAT_MYSQL);
+			break;
+		default:
+			break;
+	}
+
+	return true;
 }
 
 bool sqlrprotocol_mysql::buildListQuery(sqlrservercursor *cursor,

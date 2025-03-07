@@ -6083,14 +6083,14 @@ void sqlrservercontroller::buildToMySQLColumnMaps() {
 		pvt->_mysqlcolumnscolumnmap.setValue(3,6);
 		// numeric_scale <- decimal_digits
 		pvt->_mysqlcolumnscolumnmap.setValue(4,8);
-		// is_nullable <- nullable
-		pvt->_mysqlcolumnscolumnmap.setValue(5,10);
+		// is_nullable <- is_nullable
+		pvt->_mysqlcolumnscolumnmap.setValue(5,17);
 		// column_key <- NULL
 		pvt->_mysqlcolumnscolumnmap.setValue(6,18);
 		// column_default <- column_default
 		pvt->_mysqlcolumnscolumnmap.setValue(7,12);
-		// extra <- NULL
-		pvt->_mysqlcolumnscolumnmap.setValue(8,18);
+		// extra <- remarks
+		pvt->_mysqlcolumnscolumnmap.setValue(8,11);
 	} else {
 		// ...from ??? format (definitely not mysql format)
 		// FIXME: what format is this?

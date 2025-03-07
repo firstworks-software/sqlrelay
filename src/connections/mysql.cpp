@@ -797,11 +797,7 @@ const char *mysqlconnection::getColumnListQuery(
 		"	column_name, "
 		"	'' as data_type, " // case this...
 		"	data_type as type_name, "
-		"	case "
-		"		when numeric_scale is null "
-		"			then character_maximum_length "
-		"		else numeric_precision "
-		"	end as column_size, "
+		"	character_maximum_length as column_size, "
 		"	null as buffer_length, "
 			// length in bytes of data transferred during fetch
 		"	numeric_scale as decimal_digits, "
@@ -813,7 +809,7 @@ const char *mysqlconnection::getColumnListQuery(
 		"			then 1 "
 		"		else 2 "
 		"	end as nullable, "
-		"	'' as remarks, "
+		"	extra as remarks, "
 		"	column_default, "
 		"	null as sql_data_type, "
 			// type (int)

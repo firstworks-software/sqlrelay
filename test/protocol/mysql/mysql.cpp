@@ -183,6 +183,7 @@ int	main(int argc, char **argv) {
 	checkSuccess(field->catalog_length,3);
 	// Some client API's don't set this if def is NULL
 	//checkSuccess(field->def_length,0);
+stdoutput.printf("here\n");
 	checkSuccess(field->flags,NUM_FLAG);
 	checkSuccess(field->decimals,0);
 	/*if (argc==2) {
