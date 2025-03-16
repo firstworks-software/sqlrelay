@@ -18135,6 +18135,7 @@ esac
 
 
 SCO_OSR5=""
+SCO_OSR5_V=""
 SCO_OSR6=""
 SCO_UW=""
 CRTLIB=""
@@ -18156,6 +18157,7 @@ printf "%s\n" "OSR6" >&6; }
 
 			else
 		SCO_OSR5="yes"
+		SCO_OSR5_V="`uname -v`"
 
 				if ( test "`uname -v`" = "2" )
 		then
@@ -45095,6 +45097,24 @@ if ( test -r "libtool" -a -n "$DARWIN" )
 then
 	sed -e "s|print -r --|printf %s\\\\\\\\n|g" libtool > libtool.new
 	mv libtool.new libtool
+fi
+
+if ( test -r "libtool" -a -n "$SCO_OSR5" )
+then
+	if ( test "$SCO_OSR5_V" = "5.0.5" -o "$SCO_OSR5_V" = "2" )
+	then
+		sed -e "s|CC -shared|CC -G|g" libtool > libtool.new
+		mv libtool.new libtool
+	fi
+fi
+
+if ( test -r "libtool" )
+then
+	if ( test -n "$SCO_UW" -o -n "$SCO_OSR5" )
+	then
+				sed -e "s|hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=\"\"|g" libtool > libtool.new
+		mv libtool.new libtool
+	fi
 fi
 
 if ( test -r "libtool" -a -n "$SCO_UW" )

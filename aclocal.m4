@@ -10549,6 +10549,7 @@ dnl 	defines _SCO_UW
 AC_DEFUN([FW_CHECK_SCO],
 [
 SCO_OSR5=""
+SCO_OSR5_V=""
 SCO_OSR6=""
 SCO_UW=""
 CRTLIB=""
@@ -10569,6 +10570,7 @@ then
 	dnl FIXME: detect versions older than OSR5
 	else
 		SCO_OSR5="yes"
+		SCO_OSR5_V="`uname -v`"
 
 		dnl OSR 5.0.0 needs -D_SVID3
 		if ( test "`uname -v`" = "2" )
@@ -10909,6 +10911,27 @@ if ( test -r "libtool" -a -n "$DARWIN" )
 then
 	sed -e "s|print -r --|printf %s\\\\\\\\n|g" libtool > libtool.new
 	mv libtool.new libtool
+fi
+
+dnl on SCO OSR 5.0.5-
+if ( test -r "libtool" -a -n "$SCO_OSR5" )
+then
+	if ( test "$SCO_OSR5_V" = "5.0.5" -o "$SCO_OSR5_V" = "2" )
+	then
+		sed -e "s|CC -shared|CC -G|g" libtool > libtool.new
+		mv libtool.new libtool
+	fi
+fi
+
+dnl On SCO UnixWare and SCO OSR5...
+if ( test -r "libtool" )
+then
+	if ( test -n "$SCO_UW" -o -n "$SCO_OSR5" )
+	then
+		dnl The linker doesn't support -R at all
+		sed -e "s|hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=\"\"|g" libtool > libtool.new
+		mv libtool.new libtool
+	fi
 fi
 
 dnl On SCO UnixWare...
