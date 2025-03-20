@@ -3688,7 +3688,8 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *
 		 *  Queries should return result sets with columns that match
 		 *  the columns of the result sets produced by the ODBC
-		 *  function SQLColumns(), plus a trailing null column:
+		 *  function SQLColumns(), plus a few extra columns, and a
+		 *  trailing null column:
 		 *
 		 *  * TABLE_CAT
 		 *  * TABLE_SCHEM
@@ -3708,6 +3709,14 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  * CHAR_OCTET_LENGTH
 		 *  * ORDINAL_POSITION
 		 *  * IS_NULLABLE
+		 *  * NUMERIC_PRECISION
+		 *    * not included in ODBC SQLColumns()
+		 *  * COLUMN_KEY
+		 *    * not included in ODBC SQLColumns()
+		 *    * valid values are:
+		 *      * PRI - primary key
+		 *      * UNI - first column of a unique index
+		 *      * MUL - first column of a non-unique index
 		 *  * NULL
 		 *
 		 *  ...returning an empty string, 0, or null as appropriate for

@@ -818,6 +818,8 @@ const char *mysqlconnection::getColumnListQuery(
 		"	character_octet_length as char_octet_length, "
 		"	ordinal_position, "
 		"	is_nullable, "
+		"	numeric_precision, "
+		"	column_key, "
 		"	null "
 		"from "
 		"	information_schema.columns "

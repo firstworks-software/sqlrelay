@@ -690,6 +690,10 @@ const char *postgresqlconnection::getColumnListQuery(
 		"	character_octet_length as char_octet_length, "
 		"	ordinal_position, "
 		"	is_nullable, "
+		// FIXME: numeric_precision
+		"	null, "
+		// FIXME: column_key
+		"	null, "
 		"	null "
 		"from "
 		"	information_schema.columns "
