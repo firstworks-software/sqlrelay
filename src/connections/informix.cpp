@@ -244,6 +244,7 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostNameQuery();
+		sqlrserverlistformat_t	getNativeColumnListFormat();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes,
@@ -528,6 +529,10 @@ const char *informixconnection::getDbVersion() {
 const char *informixconnection::getDbHostNameQuery() {
 	return "select dbinfo('dbhostname') from sysmaster:sysdual";
 	//return "select os_nodename from sysmaster:sysmachineinfo";
+}
+
+sqlrserverlistformat_t informixconnection::getNativeColumnListFormat() {
+	return SQLRSERVERLISTFORMAT_MYSQL;
 }
 
 const char *informixconnection::getDatabaseListQuery(bool wild) {

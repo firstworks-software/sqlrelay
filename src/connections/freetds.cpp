@@ -247,6 +247,7 @@ class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostNameQuery();
+		sqlrserverlistformat_t	getNativeColumnListFormat();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes,
@@ -618,6 +619,10 @@ const char *freetdsconnection::getDbVersion() {
 
 const char *freetdsconnection::getDbHostNameQuery() {
 	return "select asehostname()";
+}
+
+sqlrserverlistformat_t freetdsconnection::getNativeColumnListFormat() {
+	return SQLRSERVERLISTFORMAT_MYSQL;
 }
 
 const char *freetdsconnection::getDatabaseListQuery(bool wild) {

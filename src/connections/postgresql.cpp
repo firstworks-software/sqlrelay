@@ -39,7 +39,6 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 		const char	*getDbHostName();
 		const char	*getDbIpAddressQuery();
 		const char	*getDbIpAddress();
-		sqlrserverlistformat_t	getNativeColumnListFormat();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes,
@@ -549,10 +548,6 @@ const char *postgresqlconnection::getDbIpAddressQuery() {
 	return "select inet_server_addr()";
 }
 
-sqlrserverlistformat_t postgresqlconnection::getNativeColumnListFormat() {
-	return SQLRSERVERLISTFORMAT_ODBC;
-}
-
 const char *postgresqlconnection::getDbIpAddress() {
 	const char	*ipaddress=sqlrserverconnection::getDbIpAddress();
 	return (charstring::getLength(ipaddress))?ipaddress:"127.0.0.1";
@@ -735,6 +730,10 @@ const char *postgresqlconnection::getColumnListQuery(
 		"	character_octet_length as char_octet_length, "
 		"	ordinal_position, "
 		"	is_nullable, "
+		// FIXME: numeric_precision
+		"	null, "
+		// FIXME: column_key
+		"	null, "
 		"	null "
 		"from "
 		"	information_schema.columns "

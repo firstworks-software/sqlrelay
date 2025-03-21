@@ -763,7 +763,7 @@ bool sqlrserverconnection::getListsByApiCalls() {
 }
 
 sqlrserverlistformat_t sqlrserverconnection::getNativeColumnListFormat() {
-	return SQLRSERVERLISTFORMAT_MYSQL;
+	return SQLRSERVERLISTFORMAT_ODBC;
 }
 
 bool sqlrserverconnection::getDatabaseList(sqlrservercursor *cursor,

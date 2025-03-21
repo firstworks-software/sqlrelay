@@ -3414,7 +3414,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		/** Returns the format that the result set that column lists
 		 *  are returned in.
 		 *
-		 *  This implementation returns SQLRSERVERLISTFORMAT_MYSQL, but
+		 *  This implementation returns SQLRSERVERLISTFORMAT_ODBC, but
 		 *  may be overridden by a child class to return a different
 		 *  result. */
 		virtual	sqlrserverlistformat_t	getNativeColumnListFormat();

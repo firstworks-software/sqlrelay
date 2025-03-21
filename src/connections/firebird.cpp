@@ -243,6 +243,7 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostName();
+		sqlrserverlistformat_t	getNativeColumnListFormat();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes,
@@ -650,6 +651,10 @@ const char *firebirdconnection::getDbVersion() {
 
 const char *firebirdconnection::getDbHostName() {
 	return host;
+}
+
+sqlrserverlistformat_t firebirdconnection::getNativeColumnListFormat() {
+	return SQLRSERVERLISTFORMAT_MYSQL;
 }
 
 const char *firebirdconnection::getDatabaseListQuery(bool wild) {

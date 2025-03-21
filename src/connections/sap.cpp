@@ -37,6 +37,7 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostNameQuery();
+		sqlrserverlistformat_t	getNativeColumnListFormat();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes,
@@ -548,6 +549,10 @@ const char *sapconnection::getDbVersion() {
 
 const char *sapconnection::getDbHostNameQuery() {
 	return "select asehostname()";
+}
+
+sqlrserverlistformat_t sapconnection::getNativeColumnListFormat() {
+	return SQLRSERVERLISTFORMAT_MYSQL;
 }
 
 const char *sapconnection::getDatabaseListQuery(bool wild) {

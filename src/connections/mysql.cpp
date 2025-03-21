@@ -212,7 +212,6 @@ class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostName();
-		sqlrserverlistformat_t	getNativeColumnListFormat();
 #ifdef HAVE_MYSQL_STMT_PREPARE
 		const char	*getBindFormat();
 #endif
@@ -661,10 +660,6 @@ const char *mysqlconnection::getDbVersion() {
 
 const char *mysqlconnection::getDbHostName() {
 	return dbhostname;
-}
-
-sqlrserverlistformat_t mysqlconnection::getNativeColumnListFormat() {
-	return SQLRSERVERLISTFORMAT_ODBC;
 }
 
 #ifdef HAVE_MYSQL_STMT_PREPARE

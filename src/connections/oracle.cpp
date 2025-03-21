@@ -119,6 +119,7 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostNameQuery();
+		sqlrserverlistformat_t	getNativeColumnListFormat();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getSchemaListQuery(bool wild,
 						bool currentdbonly);
@@ -1224,6 +1225,10 @@ const char *oracleconnection::getDbHostNameQuery() {
 		return "select sys_context('USERENV','SERVER_HOST') from dual";
 	}
 	return NULL;
+}
+
+sqlrserverlistformat_t oracleconnection::getNativeColumnListFormat() {
+	return SQLRSERVERLISTFORMAT_MYSQL;
 }
 
 const char *oracleconnection::getDatabaseListQuery(bool wild) {

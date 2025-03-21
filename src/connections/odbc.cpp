@@ -333,7 +333,6 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		const char	*getNextvalFormat();
 		const char	*getLastInsertIdQuery();
 		bool		getListsByApiCalls();
-		sqlrserverlistformat_t	getNativeColumnListFormat();
 		bool		getDatabaseList(sqlrservercursor *cursor,
 						const char *wild);
 		bool		getSchemaList(sqlrservercursor *cursor,
@@ -1195,10 +1194,6 @@ const char *odbcconnection::getLastInsertIdQuery() {
 
 bool odbcconnection::getListsByApiCalls() {
 	return true;
-}
-
-sqlrserverlistformat_t odbcconnection::getNativeColumnListFormat() {
-	return SQLRSERVERLISTFORMAT_ODBC;
 }
 
 bool odbcconnection::getDatabaseList(sqlrservercursor *cursor,

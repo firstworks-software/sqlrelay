@@ -47,6 +47,7 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostName();
+		sqlrserverlistformat_t	getNativeColumnListFormat();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes,
@@ -259,6 +260,10 @@ const char *sqliteconnection::getDbHostName() {
 		hostname=sys::getHostName();
 	}
 	return hostname;
+}
+
+sqlrserverlistformat_t sqliteconnection::getNativeColumnListFormat() {
+	return SQLRSERVERLISTFORMAT_MYSQL;
 }
 
 const char *sqliteconnection::getDatabaseListQuery(bool wild) {

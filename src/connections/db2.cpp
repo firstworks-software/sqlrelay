@@ -255,6 +255,7 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostNameQuery();
+		sqlrserverlistformat_t	getNativeColumnListFormat();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes,
@@ -553,6 +554,10 @@ const char *db2connection::getDbVersion() {
 
 const char *db2connection::getDbHostNameQuery() {
 	return dbhostnamequery;
+}
+
+sqlrserverlistformat_t db2connection::getNativeColumnListFormat() {
+	return SQLRSERVERLISTFORMAT_MYSQL;
 }
 
 const char *db2connection::getDatabaseListQuery(bool wild) {
