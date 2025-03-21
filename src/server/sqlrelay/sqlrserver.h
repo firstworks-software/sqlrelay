@@ -3705,7 +3705,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  * REMARKS
 		 *  * COLUMN_DEFAULT
 		 *  * SQL_DATA_TYPE
-		 *  * SQL_DATATIME_SUB
+		 *  * SQL_DATETIME_SUB
 		 *  * CHAR_OCTET_LENGTH
 		 *  * ORDINAL_POSITION
 		 *  * IS_NULLABLE
