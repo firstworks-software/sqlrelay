@@ -243,7 +243,6 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostName();
-		sqlrserverlistformat_t	getNativeColumnListFormat();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes,
@@ -653,10 +652,6 @@ const char *firebirdconnection::getDbHostName() {
 	return host;
 }
 
-sqlrserverlistformat_t firebirdconnection::getNativeColumnListFormat() {
-	return SQLRSERVERLISTFORMAT_MYSQL;
-}
-
 const char *firebirdconnection::getDatabaseListQuery(bool wild) {
 	return "select "
 		"	'' as table_cat, "
@@ -722,7 +717,11 @@ const char *firebirdconnection::getColumnListQuery(
 					const char *table, bool wild) {
 	return (wild)?
 		"select "
-		"	r.rdb$field_name, "
+		"	'' as table_cat, "
+		"	'' as table_schem, "
+		"	r.rdb$relation_name as table_name, "
+		"	r.rdb$field_name as column_name, "
+		"	f.rdb$field_type as data_type,"
 		"	case f.rdb$field_type "
 		"		when 261 then 'BLOB' "
 		"		when 14 then 'CHAR' "
@@ -739,14 +738,27 @@ const char *firebirdconnection::getColumnListQuery(
 		"		when 35 then 'TIMESTAMP' "
 		"		when 37 then 'VARCHAR' "
 		"		else 'UNKNOWN' "
-		"		end as field_type, "
-		"	f.rdb$field_length, "
-		"	f.rdb$field_precision, "
-		"	f.rdb$field_scale, "
-		"	r.rdb$null_flag, "
-		"	'' as primary_key, "
-		"	'' as default_value, "
-		"	'' as extra, "
+		"		end as type_name, "
+		"	f.rdb$field_length as column_size, "
+		"	f.rdb$field_length as buffer_length, "
+		"	f.rdb$field_scale as decimal_digits, "
+		"	10 as num_prec_radix, "
+		"	case r.rdb$null_flag "
+		"		when 1 then 0 "
+		"		else 1 "
+		"		end as nullable, "
+		"	r.rdb$description as remarks, "
+		"	r.rdb$default_source as column_default, "
+		"	null as sql_data_type, "
+		"	null as sql_datetime_sub, "
+		"	f.rdb$character_length as char_octet_length, "
+		"	r.rdb$field_position as ordinal_position, "
+		"	case r.rdb$null_flag "
+		"		when 1 then 'NO' "
+		"		else 'YES' "
+		"		end as is_nullable, "
+		"	f.rdb$field_precision as numeric_precision, "
+		"	null, "
 		"	null "
 		"from "
 		"	rdb$relation_fields r "
@@ -762,7 +774,11 @@ const char *firebirdconnection::getColumnListQuery(
 		"	rdb$field_position"
 		:
 		"select "
-		"	r.rdb$field_name, "
+		"	'' as table_cat, "
+		"	'' as table_schem, "
+		"	r.rdb$relation_name as table_name, "
+		"	r.rdb$field_name as column_name, "
+		"	f.rdb$field_type as data_type,"
 		"	case f.rdb$field_type "
 		"		when 261 then 'BLOB' "
 		"		when 14 then 'CHAR' "
@@ -779,14 +795,27 @@ const char *firebirdconnection::getColumnListQuery(
 		"		when 35 then 'TIMESTAMP' "
 		"		when 37 then 'VARCHAR' "
 		"		else 'UNKNOWN' "
-		"		end as field_type, "
-		"	f.rdb$field_length, "
-		"	f.rdb$field_precision, "
-		"	f.rdb$field_scale, "
-		"	r.rdb$null_flag, "
-		"	'' as primary_key, "
-		"	'' as default_value, "
-		"	'' as extra, "
+		"		end as type_name, "
+		"	f.rdb$field_length as column_size, "
+		"	f.rdb$field_length as buffer_length, "
+		"	f.rdb$field_scale as decimal_digits, "
+		"	10 as num_prec_radix, "
+		"	case r.rdb$null_flag "
+		"		when 1 then 0 "
+		"		else 1 "
+		"		end as nullable, "
+		"	r.rdb$description as remarks, "
+		"	r.rdb$default_source as column_default, "
+		"	null as sql_data_type, "
+		"	null as sql_datetime_sub, "
+		"	f.rdb$character_length as char_octet_length, "
+		"	r.rdb$field_position as ordinal_position, "
+		"	case r.rdb$null_flag "
+		"		when 1 then 'NO' "
+		"		else 'YES' "
+		"		end as is_nullable, "
+		"	f.rdb$field_precision as numeric_precision, "
+		"	null, "
 		"	null "
 		"from "
 		"	rdb$relation_fields r "

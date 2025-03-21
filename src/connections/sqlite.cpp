@@ -47,7 +47,6 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostName();
-		sqlrserverlistformat_t	getNativeColumnListFormat();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes,
@@ -262,10 +261,6 @@ const char *sqliteconnection::getDbHostName() {
 	return hostname;
 }
 
-sqlrserverlistformat_t sqliteconnection::getNativeColumnListFormat() {
-	return SQLRSERVERLISTFORMAT_MYSQL;
-}
-
 const char *sqliteconnection::getDatabaseListQuery(bool wild) {
 	//return "pragma database_list";
 	return "select "
@@ -336,15 +331,27 @@ const char *sqliteconnection::getTableListQuery(bool wild,
 const char *sqliteconnection::getColumnListQuery(
 					const char *table, bool wild) {
 	return "select "
+		"	'' as table_cat, "
+		"	'' as table_schem, "
+		"	'' as table_name, "
 		"	'' as column_name, "
 		"	null as data_type, "
-		"	null as length, "
-		"	null as precision, "
-		"	null as scale, "
+		"	'' as type_name, "
+		"	null as column_size, "
+		"	null as buffer_length, "
+		"	null as decimal_digits, "
+		"	null as num_prec_digits, "
+		"	10 as num_prec_radix, "
 		"	null as nullable, "
-		"	'' as key, "
+		"	'' as remarks, "
 		"	null as column_default, "
-		"	'' as extra, "
+		"	null as sql_data_type, "
+		"	null as sql_datetime_sub, "
+		"	null as char_octet_length, "
+		"	null as ordinal_position, "
+		"	null as is_nullable, "
+		"	null as numeric_precision, "
+		"	null as column_key, "
 		"	null";
 }
 
