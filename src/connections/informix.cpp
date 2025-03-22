@@ -244,7 +244,6 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostNameQuery();
-		sqlrserverlistformat_t	getNativeColumnListFormat();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes,
@@ -531,10 +530,6 @@ const char *informixconnection::getDbHostNameQuery() {
 	//return "select os_nodename from sysmaster:sysmachineinfo";
 }
 
-sqlrserverlistformat_t informixconnection::getNativeColumnListFormat() {
-	return SQLRSERVERLISTFORMAT_MYSQL;
-}
-
 const char *informixconnection::getDatabaseListQuery(bool wild) {
 	return (wild)?
 		"select "
@@ -646,72 +641,6 @@ const char *informixconnection::getColumnListQuery(
 	// * the default value for integer, float and date/time types has some
 	//   qualifiers prepended to it
 
-#define COLTYPE \
-		"	decode(mod(coltype,256), " \
-		"		41, " \
-		"		decode(extended_id, " \
-		"			10,'clob', " \
-		"			11,'blob', " \
-		"			'boolean'), " \
-		"		1,'smallint', " \
-		"		2,'int', " \
-		"		52,'bigint', " \
-		"		17,'int8', " \
-		"		5,'decimal', " \
-		"		8,'money', " \
-		"		4,'smallfloat', " \
-		"		3,'float', " \
-		"		0,'char', " \
-		"		15,'nchar', " \
-		"		13,'varchar', " \
-		"		16,'nvarchar', " \
-		"		40,'lvarchar', " \
-		"		7,'date', " \
-		"		10,'datetime', " \
-		"		12,'text', " \
-		"		11,'byte', " \
-		"		'unknown') as coltype, "
-
-#define COLLENGTH \
-		"	decode(mod(coltype,256), " \
-		"		5,floor(collength/256), " \
-		"		8,floor(collength/256), " \
-		"		10,8, " \
-		"		12,2147483648, "\
-		"		11,2147483648, "\
-		"		collength) as length, "
-
-#define COLPREC \
-		"	decode(mod(coltype,256), " \
-		"		5,floor(collength/256), " \
-		"		8,floor(collength/256), " \
-		"		10,8, " \
-		"		12,2147483648, "\
-		"		11,2147483648, "\
-		"		collength) as precision, "
-
-#define COLSCALE \
-		"	decode(mod(coltype,256), " \
-		"		5,mod(collength,256), " \
-		"		8,mod(collength,256), " \
-		"		0) as scale, "
-
-#define COLNULLS \
-		"	case when (coltype<256) then " \
-		"'YES' else 'NO' end as nulls, "
-
-#define COLDEFAULT \
-		"	decode(mod(coltype,256), " \
-		"		41,sysdefaults.default, " \
-		"		0,sysdefaults.default, " \
-		"		15,sysdefaults.default, " \
-		"		13,sysdefaults.default, " \
-		"		16,sysdefaults.default, " \
-		"		40,sysdefaults.default, " \
-		"		substr(sysdefaults.default," \
-		"			charindex(' '," \
-		"			sysdefaults.default)+1)) as default, "
-
 	// FIXME: primary key can be gotten from:
 	// sysconstriants.constrtype  (which should be 'P')
 	// where
@@ -725,16 +654,88 @@ const char *informixconnection::getColumnListQuery(
 
 	return (wild)?
 		"select "
-		"	colname, "
-		COLTYPE
-		COLLENGTH
-		COLPREC
-		COLSCALE
-		COLNULLS
-		"	'' as key, "
-		COLDEFAULT
-		"	'' as extra, "
-		"	'' as extra2 "
+		"	systables.owner as table_cat, "
+		"	'' as table_schem, "
+		"	systables.tabname as table_name, "
+		"	syscolumns.colname as column_name, "
+		"	syscolumns.coltype as data_type, "
+		"	decode(mod(syscolumns.coltype,256), "
+		"		41, "
+		"		decode(syscolumns.extended_id, "
+		"			10,'clob', "
+		"			11,'blob', "
+		"			'boolean'), "
+		"		1,'smallint', "
+		"		2,'int', "
+		"		52,'bigint', "
+		"		17,'int8', "
+		"		5,'decimal', "
+		"		8,'money', "
+		"		4,'smallfloat', "
+		"		3,'float', "
+		"		0,'char', "
+		"		15,'nchar', "
+		"		13,'varchar', "
+		"		16,'nvarchar', "
+		"		40,'lvarchar', "
+		"		7,'date', "
+		"		10,'datetime', "
+		"		12,'text', "
+		"		11,'byte', "
+		"		'unknown') as type_name, "
+		"	decode(mod(syscolumns.coltype,256), "
+		"		5,floor(syscolumns.collength/256), "
+		"		8,floor(syscolumns.collength/256), "
+		"		10,8, "
+		"		12,2147483648, "
+		"		11,2147483648, "
+		"		syscolumns.collength) as column_size, "
+		"	decode(mod(syscolumns.coltype,256), "
+		"		5,floor(syscolumns.collength/256), "
+		"		8,floor(syscolumns.collength/256), "
+		"		10,8, "
+		"		12,2147483648, "
+		"		11,2147483648, "
+		"		syscolumns.collength) as buffer_length, "
+		"	decode(mod(syscolumns.coltype,256), "
+		"		5,mod(syscolumns.collength,256), "
+		"		8,mod(syscolumns.collength,256), "
+		"		0) as decimal_digits, "
+		"	10 as num_prec_radix, "
+		"	case when (syscolumns.coltype<256) then "
+		"1 else 0 end as nullable, "
+		"	'' as remarks, "
+		"	decode(mod(syscolumns.coltype,256), "
+		"		41,sysdefaults.default, "
+		"		0,sysdefaults.default, "
+		"		15,sysdefaults.default, "
+		"		13,sysdefaults.default, "
+		"		16,sysdefaults.default, "
+		"		40,sysdefaults.default, "
+		"		substr(sysdefaults.default,"
+		"			charindex(' ',"
+		"			sysdefaults.default)+1)) "
+		"		as column_default, "
+		"	'' as sql_data_type, "
+		"	'' as sql_datetime_sub, "
+		"	decode(mod(syscolumns.coltype,256), "
+		"		5,floor(syscolumns.collength/256), "
+		"		8,floor(syscolumns.collength/256), "
+		"		10,8, "
+		"		12,2147483648, "
+		"		11,2147483648, "
+		"		syscolumns.collength) as char_octet_length, "
+		"	syscolumns.colno as ordinal_position, "
+		"	case when (syscolumns.coltype<256) then "
+		"'YES' else 'NO' end as is_nullable, "
+		"	decode(mod(syscolumns.coltype,256), " \
+		"		5,floor(syscolumns.collength/256), " \
+		"		8,floor(syscolumns.collength/256), " \
+		"		10,8, " \
+		"		12,2147483648, "\
+		"		11,2147483648, "\
+		"		syscolumns.collength) as numeric_precision, "
+		"	'' as column_key "
 		"from "
 		"	systables, "
 		"	syscolumns "
@@ -752,16 +753,88 @@ const char *informixconnection::getColumnListQuery(
 		"	colno"
 		:
 		"select "
-		"	colname, "
-		COLTYPE
-		COLLENGTH
-		COLPREC
-		COLSCALE
-		COLNULLS
-		"	'' as key, "
-		COLDEFAULT
-		"	'' as extra, "
-		"	'' as extra2 "
+		"	systables.owner as table_cat, "
+		"	'' as table_schem, "
+		"	systables.tabname as table_name, "
+		"	syscolumns.colname as column_name, "
+		"	syscolumns.coltype as data_type, "
+		"	decode(mod(syscolumns.coltype,256), "
+		"		41, "
+		"		decode(syscolumns.extended_id, "
+		"			10,'clob', "
+		"			11,'blob', "
+		"			'boolean'), "
+		"		1,'smallint', "
+		"		2,'int', "
+		"		52,'bigint', "
+		"		17,'int8', "
+		"		5,'decimal', "
+		"		8,'money', "
+		"		4,'smallfloat', "
+		"		3,'float', "
+		"		0,'char', "
+		"		15,'nchar', "
+		"		13,'varchar', "
+		"		16,'nvarchar', "
+		"		40,'lvarchar', "
+		"		7,'date', "
+		"		10,'datetime', "
+		"		12,'text', "
+		"		11,'byte', "
+		"		'unknown') as type_name, "
+		"	decode(mod(syscolumns.coltype,256), "
+		"		5,floor(syscolumns.collength/256), "
+		"		8,floor(syscolumns.collength/256), "
+		"		10,8, "
+		"		12,2147483648, "
+		"		11,2147483648, "
+		"		syscolumns.collength) as column_size, "
+		"	decode(mod(syscolumns.coltype,256), "
+		"		5,floor(syscolumns.collength/256), "
+		"		8,floor(syscolumns.collength/256), "
+		"		10,8, "
+		"		12,2147483648, "
+		"		11,2147483648, "
+		"		syscolumns.collength) as buffer_length, "
+		"	decode(mod(syscolumns.coltype,256), "
+		"		5,mod(syscolumns.collength,256), "
+		"		8,mod(syscolumns.collength,256), "
+		"		0) as decimal_digits, "
+		"	10 as num_prec_radix, "
+		"	case when (syscolumns.coltype<256) then "
+		"1 else 0 end as nullable, "
+		"	'' as remarks, "
+		"	decode(mod(syscolumns.coltype,256), "
+		"		41,sysdefaults.default, "
+		"		0,sysdefaults.default, "
+		"		15,sysdefaults.default, "
+		"		13,sysdefaults.default, "
+		"		16,sysdefaults.default, "
+		"		40,sysdefaults.default, "
+		"		substr(sysdefaults.default,"
+		"			charindex(' ',"
+		"			sysdefaults.default)+1)) "
+		"		as column_default, "
+		"	'' as sql_data_type, "
+		"	'' as sql_datetime_sub, "
+		"	decode(mod(syscolumns.coltype,256), "
+		"		5,floor(syscolumns.collength/256), "
+		"		8,floor(syscolumns.collength/256), "
+		"		10,8, "
+		"		12,2147483648, "
+		"		11,2147483648, "
+		"		syscolumns.collength) as char_octet_length, "
+		"	syscolumns.colno as ordinal_position, "
+		"	case when (syscolumns.coltype<256) then "
+		"'YES' else 'NO' end as is_nullable, "
+		"	decode(mod(syscolumns.coltype,256), " \
+		"		5,floor(syscolumns.collength/256), " \
+		"		8,floor(syscolumns.collength/256), " \
+		"		10,8, " \
+		"		12,2147483648, "\
+		"		11,2147483648, "\
+		"		syscolumns.collength) as numeric_precision, "
+		"	'' as column_key "
 		"from "
 		"	systables, "
 		"	syscolumns "

@@ -1786,6 +1786,7 @@ bool sqlrprotocol_sqlrclient::getQuery(sqlrservercursor *cursor) {
 	debugstr.clear();
 	debugstr.safePrint(querybuffer,querysize);
 	debugWrite("query: \"%.*s\"",debugstr.getSize(),debugstr.getString());
+	//debugWrite("query: \"%.*s\"",querysize,querybuffer);
 	debugWrite("query size: %d",debugstr.getSize());
 
 	// FIXME: push up?
@@ -3576,6 +3577,9 @@ void sqlrprotocol_sqlrclient::returnFetchError(sqlrservercursor *cursor) {
 	cont->getError(cursor,&errorstring,&errorsize,
 					&errnum,&liveconnection);
 
+	debugWrite("error number: %lld",errnum);
+	debugWrite("error string: %.*s",errorsize,errorstring);
+
 	// send the error status
 	if (!liveconnection) {
 		clientsock->write((uint16_t)ERROR_OCCURRED_DISCONNECT);
@@ -3746,6 +3750,9 @@ void sqlrprotocol_sqlrclient::returnError(bool forcedisconnect) {
 	bool		liveconnection;
 	cont->getError(&errorstring,&errorsize,&errnum,&liveconnection);
 
+	debugWrite("error number: %lld",errnum);
+	debugWrite("error string: %.*s",errorsize,errorstring);
+
 	// send the appropriate error status
 	if (forcedisconnect || !liveconnection) {
 		clientsock->write((uint16_t)ERROR_OCCURRED_DISCONNECT);
@@ -3777,6 +3784,9 @@ void sqlrprotocol_sqlrclient::returnError(sqlrservercursor *cursor,
 	bool		liveconnection;
 	cont->getError(cursor,&errorstring,&errorsize,
 					&errnum,&liveconnection);
+
+	debugWrite("error number: %lld",errnum);
+	debugWrite("error string: %.*s",errorsize,errorstring);
 
 	// send the appropriate error status
 	if (forcedisconnect || !liveconnection) {
@@ -4345,6 +4355,9 @@ bool sqlrprotocol_sqlrclient::buildListQuery(sqlrservercursor *cursor,
 	debugstr.safePrint(cont->getQueryBuffer(cursor),
 				cont->getQuerySize(cursor));
 	debugWrite("query: \"%.*s\"",debugstr.getSize(),debugstr.getString());
+	//debugWrite("query: \"%.*s\"",
+			//cont->getQuerySize(cursor),
+			//cont->getQueryBuffer(cursor));
 	debugWrite("query size: %d",debugstr.getSize());
 
 	debugEnd();
