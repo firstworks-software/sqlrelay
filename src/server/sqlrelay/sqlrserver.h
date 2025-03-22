@@ -3411,14 +3411,6 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  lists via query. */
 		virtual bool	getListsByApiCalls();
 
-		/** Returns the format that the result set that column lists
-		 *  are returned in.
-		 *
-		 *  This implementation returns SQLRSERVERLISTFORMAT_ODBC, but
-		 *  may be overridden by a child class to return a different
-		 *  result. */
-		virtual	sqlrserverlistformat_t	getNativeColumnListFormat();
-
 		/** Makes the database API call to fetch the list of databases
 		 *  that are visible to the user that SQL Relay is logged in
 		 *  as.  Only returns database names that match wildcard "wild"
