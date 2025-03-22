@@ -255,7 +255,6 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostNameQuery();
-		sqlrserverlistformat_t	getNativeColumnListFormat();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes,
@@ -556,10 +555,6 @@ const char *db2connection::getDbHostNameQuery() {
 	return dbhostnamequery;
 }
 
-sqlrserverlistformat_t db2connection::getNativeColumnListFormat() {
-	return SQLRSERVERLISTFORMAT_MYSQL;
-}
-
 const char *db2connection::getDatabaseListQuery(bool wild) {
 	return (wild)?
 		"select "
@@ -667,15 +662,32 @@ const char *db2connection::getTableListQuery(bool wild,
 const char *db2connection::getColumnListQuery(const char *table, bool wild) {
 	return (wild)?
 		"select "
-		"	colname, "
-		"	typename, "
-		"	length, "
-		"	length as precision, "
-		"	scale, "
-		"	nulls, "
-		"	keyseq as key, "
-		"	default, "
-		"	'' as extra, "
+		"	'' as table_cat, "
+		"	tabschema as table_schema, "
+		"	tabname as table_name, "
+		"	colname as column_name, "
+		"	null as data_type, "
+		"	typename as type_name, "
+		"	length as column_size, "
+		"	length as buffer_length, "
+		"	scale as buffer_length, "
+		"	10 as num_prec_radix, "
+		"	case nulls "
+		"		when 'N' then 0 "
+		"		else 1 "
+		"	end as nullable, "
+		"	remarks, "
+		"	default as column_default, "
+		"	null as sql_data_type, "
+		"	null as sql_datetime_sub, "
+		"	length as char_octet_length, "
+		"	null as ordinal_position, "
+		"	case nulls "
+		"		when 'N' then 'NO' "
+		"		else 'YES' "
+		"	end as is_nullable, "
+		"	length as numeric_precision, "
+		"	keyseq as column_key, "
 		"	null "
 		"from "
 		"	syscat.columns "
@@ -687,15 +699,32 @@ const char *db2connection::getColumnListQuery(const char *table, bool wild) {
 		"	colno"
 		:
 		"select "
-		"	colname, "
-		"	typename, "
-		"	length, "
-		"	length as precision, "
-		"	scale, "
-		"	nulls, "
-		"	keyseq as key, "
-		"	default, "
-		"	'' as extra, "
+		"	'' as table_cat, "
+		"	tabschema as table_schema, "
+		"	tabname as table_name, "
+		"	colname as column_name, "
+		"	null as data_type, "
+		"	typename as type_name, "
+		"	length as column_size, "
+		"	length as buffer_length, "
+		"	scale as buffer_length, "
+		"	10 as num_prec_radix, "
+		"	case nulls "
+		"		when 'N' then 0 "
+		"		else 1 "
+		"	end as nullable, "
+		"	remarks, "
+		"	default as column_default, "
+		"	null as sql_data_type, "
+		"	null as sql_datetime_sub, "
+		"	length as char_octet_length, "
+		"	null as ordinal_position, "
+		"	case nulls "
+		"		when 'N' then 'NO' "
+		"		else 'YES' "
+		"	end as is_nullable, "
+		"	length as numeric_precision, "
+		"	keyseq as column_key, "
 		"	null "
 		"from "
 		"	syscat.columns "
