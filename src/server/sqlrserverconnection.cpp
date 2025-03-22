@@ -762,10 +762,6 @@ bool sqlrserverconnection::getListsByApiCalls() {
 	return false;
 }
 
-sqlrserverlistformat_t sqlrserverconnection::getNativeColumnListFormat() {
-	return SQLRSERVERLISTFORMAT_ODBC;
-}
-
 bool sqlrserverconnection::getDatabaseList(sqlrservercursor *cursor,
 						const char *wild) {
 	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,

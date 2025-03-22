@@ -69,7 +69,6 @@ class SQLRSERVER_DLLSPEC routerconnection : public sqlrserverconnection {
 		const char	*getDbVersion();
 		const char	*getDbHostName();
 		const char	*getDbIpAddress();
-		sqlrserverlistformat_t	getNativeColumnListFormat();
 		bool		cacheDbHostInfo();
 		bool		getListsByApiCalls();
 		bool		getDatabaseList(sqlrservercursor *cursor,
@@ -886,10 +885,6 @@ bool  routerconnection::cacheDbHostInfo() {
 
 bool routerconnection::getListsByApiCalls() {
 	return true;
-}
-
-sqlrserverlistformat_t routerconnection::getNativeColumnListFormat() {
-	return SQLRSERVERLISTFORMAT_MYSQL;
 }
 
 bool routerconnection::getDatabaseList(sqlrservercursor *cursor,

@@ -6067,53 +6067,27 @@ void sqlrservercontroller::buildToMySQLColumnMaps() {
 	// FIXME: does mysql have anything like this?
 
 	// mysql getColumnList
-	// map to ??? format (definitely not mysql format)...
-	// FIXME: what format is this?
-	if (pvt->_conn->getNativeColumnListFormat()==
-				SQLRSERVERLISTFORMAT_ODBC) {
-		// ...from ODBC SQLColumns() format
-		//
-		// column_name <- column_name
-		pvt->_mysqlcolumnscolumnmap.setValue(0,3);
-		// data_type <- type_name
-		pvt->_mysqlcolumnscolumnmap.setValue(1,5);
-		// character_maximum_length <- column_size
-		pvt->_mysqlcolumnscolumnmap.setValue(2,6);
-		// numeric_precision <- numeric_precision
-		pvt->_mysqlcolumnscolumnmap.setValue(3,18);
-		// numeric_scale <- decimal_digits
-		pvt->_mysqlcolumnscolumnmap.setValue(4,8);
-		// is_nullable <- is_nullable
-		pvt->_mysqlcolumnscolumnmap.setValue(5,17);
-		// column_key <- column_key
-		pvt->_mysqlcolumnscolumnmap.setValue(6,19);
-		// column_default <- column_default
-		pvt->_mysqlcolumnscolumnmap.setValue(7,12);
-		// extra <- remarks
-		pvt->_mysqlcolumnscolumnmap.setValue(8,11);
-	} else {
-		// ...from ??? format (definitely not mysql format)
-		// FIXME: what format is this?
-		//
-		// column_name <- column_name
-		pvt->_mysqlcolumnscolumnmap.setValue(0,0);
-		// data_type <- data_type
-		pvt->_mysqlcolumnscolumnmap.setValue(1,1);
-		// character_maximum_length <- character_maximum_length
-		pvt->_mysqlcolumnscolumnmap.setValue(2,2);
-		// numeric_precision <- numeric_precision
-		pvt->_mysqlcolumnscolumnmap.setValue(3,3);
-		// numeric_scale <- numeric_scale
-		pvt->_mysqlcolumnscolumnmap.setValue(4,4);
-		// is_nullable <- is_nullable
-		pvt->_mysqlcolumnscolumnmap.setValue(5,5);
-		// column_key <- column_key
-		pvt->_mysqlcolumnscolumnmap.setValue(6,6);
-		// column_default <- column_default
-		pvt->_mysqlcolumnscolumnmap.setValue(7,7);
-		// extra <- extra
-		pvt->_mysqlcolumnscolumnmap.setValue(8,8);
-	}
+	// map to mysql ??? format from ODBC SQLColumns()+ format
+	// FIXME: what format is this, definitely not mysql format
+	//
+	// column_name <- column_name
+	pvt->_mysqlcolumnscolumnmap.setValue(0,3);
+	// data_type <- type_name
+	pvt->_mysqlcolumnscolumnmap.setValue(1,5);
+	// character_maximum_length <- column_size
+	pvt->_mysqlcolumnscolumnmap.setValue(2,6);
+	// numeric_precision <- numeric_precision
+	pvt->_mysqlcolumnscolumnmap.setValue(3,18);
+	// numeric_scale <- decimal_digits
+	pvt->_mysqlcolumnscolumnmap.setValue(4,8);
+	// is_nullable <- is_nullable
+	pvt->_mysqlcolumnscolumnmap.setValue(5,17);
+	// column_key <- column_key
+	pvt->_mysqlcolumnscolumnmap.setValue(6,19);
+	// column_default <- column_default
+	pvt->_mysqlcolumnscolumnmap.setValue(7,12);
+	// extra <- remarks
+	pvt->_mysqlcolumnscolumnmap.setValue(8,11);
 	pvt->_mysqlcolumnscolumnnamemap.setValue(0,"column_name");
 	pvt->_mysqlcolumnscolumnnamemap.setValue(1,"data_type");
 	pvt->_mysqlcolumnscolumnnamemap.setValue(2,"character_maximum_length");
@@ -6205,88 +6179,44 @@ void sqlrservercontroller::buildToODBCColumnMaps() {
 	// FIXME: implement this...
 
 	// ODBC getColumnList
-	// map to ODBC SQLColumns() format...
-	if (pvt->_conn->getNativeColumnListFormat()==
-				SQLRSERVERLISTFORMAT_ODBC) {
-		// ...from ODBC SQLColumns() format
-		//
-		// TABLE_CAT <- TABLE_CAT
-		pvt->_odbccolumnscolumnmap.setValue(0,0);
-		// TABLE_SCHEM <- TABLE_SCHEM
-		pvt->_odbccolumnscolumnmap.setValue(1,1);
-		// TABLE_NAME <- TABLE_NAME
-		pvt->_odbccolumnscolumnmap.setValue(2,2);
-		// COLUMN_NAME <- COLUMN_NAME
-		pvt->_odbccolumnscolumnmap.setValue(3,3);
-		// DATA_TYPE <- DATA_TYPE (numeric)
-		pvt->_odbccolumnscolumnmap.setValue(4,4);
-		// TYPE_NAME <- TYPE_NAME
-		pvt->_odbccolumnscolumnmap.setValue(5,5);
-		// COLUMN_SIZE <- COLUMN_SIZE
-		pvt->_odbccolumnscolumnmap.setValue(6,6);
-		// BUFFER_LENGTH <- BUFFER_LENGTH
-		pvt->_odbccolumnscolumnmap.setValue(7,7);
-		// DECIMAL_DIGITS <- DECIMAL_DIGITS (smallint - scale)
-		pvt->_odbccolumnscolumnmap.setValue(8,8);
-		// NUM_PREC_RADIX <- NUM_PREC_RADIX (smallint - precision)
-		pvt->_odbccolumnscolumnmap.setValue(9,9);
-		// NULLABLE <- NULLABLE
-		pvt->_odbccolumnscolumnmap.setValue(10,10);
-		// REMARKS <- REMARKS
-		pvt->_odbccolumnscolumnmap.setValue(11,11);
-		// COLUMN_DEF <- COLUMN_DEF
-		pvt->_odbccolumnscolumnmap.setValue(12,12);
-		// SQL_DATA_TYPE <- SQL_DATA_TYPE
-		pvt->_odbccolumnscolumnmap.setValue(13,13);
-		// SQL_DATETIME_SUB <- SQL_DATETIME_SUB
-		pvt->_odbccolumnscolumnmap.setValue(14,14);
-		// CHAR_OCTET_LENGTH <- CHAR_OCTET_LENGTH
-		pvt->_odbccolumnscolumnmap.setValue(15,15);
-		// ORDINAL_POSITION <- ORDINAL_POSITION
-		pvt->_odbccolumnscolumnmap.setValue(16,16);
-		// IS_NULLABLE <- IS_NULLABLE
-		pvt->_odbccolumnscolumnmap.setValue(17,17);
-	} else {
-		// ...from ??? format (definitely not mysql format)
-		// FIXME: what format is this?
-		//
-		// TABLE_CAT <- NULL
-		pvt->_odbccolumnscolumnmap.setValue(0,9);
-		// TABLE_SCHEM <- NULL
-		pvt->_odbccolumnscolumnmap.setValue(1,9);
-		// TABLE_NAME <- NULL
-		pvt->_odbccolumnscolumnmap.setValue(2,9);
-		// COLUMN_NAME <- column_name
-		pvt->_odbccolumnscolumnmap.setValue(3,0);
-		// DATA_TYPE (numeric) <- NULL
-		pvt->_odbccolumnscolumnmap.setValue(4,9);
-		// TYPE_NAME <- data_type
-		pvt->_odbccolumnscolumnmap.setValue(5,1);
-		// COLUMN_SIZE <- character_maximum_length
-		pvt->_odbccolumnscolumnmap.setValue(6,2);
-		// BUFFER_LENGTH <- character_maximum_length
-		pvt->_odbccolumnscolumnmap.setValue(7,2);
-		// DECIMAL_DIGITS - smallint - scale
-		pvt->_odbccolumnscolumnmap.setValue(8,4);
-		// NUM_PREC_RADIX - smallint - precision
-		pvt->_odbccolumnscolumnmap.setValue(9,3);
-		// NULLABLE <- NULL
-		pvt->_odbccolumnscolumnmap.setValue(10,9);
-		// REMARKS <- extra
-		pvt->_odbccolumnscolumnmap.setValue(11,8);
-		// COLUMN_DEF <- column_default
-		pvt->_odbccolumnscolumnmap.setValue(12,7);
-		// SQL_DATA_TYPE <- NULL
-		pvt->_odbccolumnscolumnmap.setValue(13,9);
-		// SQL_DATETIME_SUB <- NULL
-		pvt->_odbccolumnscolumnmap.setValue(14,9);
-		// CHAR_OCTET_LENGTH <- character_maximum_length
-		pvt->_odbccolumnscolumnmap.setValue(15,2);
-		// ORDINAL_POSITION <- NULL
-		pvt->_odbccolumnscolumnmap.setValue(16,9);
-		// IS_NULLABLE <- NULL
-		pvt->_odbccolumnscolumnmap.setValue(17,5);
-	}
+	// map to ODBC SQLColumns() format.from ODBC SQLColumns()+ format
+	//
+	// TABLE_CAT <- TABLE_CAT
+	pvt->_odbccolumnscolumnmap.setValue(0,0);
+	// TABLE_SCHEM <- TABLE_SCHEM
+	pvt->_odbccolumnscolumnmap.setValue(1,1);
+	// TABLE_NAME <- TABLE_NAME
+	pvt->_odbccolumnscolumnmap.setValue(2,2);
+	// COLUMN_NAME <- COLUMN_NAME
+	pvt->_odbccolumnscolumnmap.setValue(3,3);
+	// DATA_TYPE <- DATA_TYPE (numeric)
+	pvt->_odbccolumnscolumnmap.setValue(4,4);
+	// TYPE_NAME <- TYPE_NAME
+	pvt->_odbccolumnscolumnmap.setValue(5,5);
+	// COLUMN_SIZE <- COLUMN_SIZE
+	pvt->_odbccolumnscolumnmap.setValue(6,6);
+	// BUFFER_LENGTH <- BUFFER_LENGTH
+	pvt->_odbccolumnscolumnmap.setValue(7,7);
+	// DECIMAL_DIGITS <- DECIMAL_DIGITS (smallint - scale)
+	pvt->_odbccolumnscolumnmap.setValue(8,8);
+	// NUM_PREC_RADIX <- NUM_PREC_RADIX (smallint - precision)
+	pvt->_odbccolumnscolumnmap.setValue(9,9);
+	// NULLABLE <- NULLABLE
+	pvt->_odbccolumnscolumnmap.setValue(10,10);
+	// REMARKS <- REMARKS
+	pvt->_odbccolumnscolumnmap.setValue(11,11);
+	// COLUMN_DEF <- COLUMN_DEF
+	pvt->_odbccolumnscolumnmap.setValue(12,12);
+	// SQL_DATA_TYPE <- SQL_DATA_TYPE
+	pvt->_odbccolumnscolumnmap.setValue(13,13);
+	// SQL_DATETIME_SUB <- SQL_DATETIME_SUB
+	pvt->_odbccolumnscolumnmap.setValue(14,14);
+	// CHAR_OCTET_LENGTH <- CHAR_OCTET_LENGTH
+	pvt->_odbccolumnscolumnmap.setValue(15,15);
+	// ORDINAL_POSITION <- ORDINAL_POSITION
+	pvt->_odbccolumnscolumnmap.setValue(16,16);
+	// IS_NULLABLE <- IS_NULLABLE
+	pvt->_odbccolumnscolumnmap.setValue(17,17);
 	pvt->_odbccolumnscolumnnamemap.setValue(0,"TABLE_CAT");
 	pvt->_odbccolumnscolumnnamemap.setValue(1,"TABLE_SCHEM");
 	pvt->_odbccolumnscolumnnamemap.setValue(2,"TABLE_NAME");
@@ -6381,112 +6311,56 @@ void sqlrservercontroller::buildToJDBCColumnMaps() {
 	// FIXME: implement this...
 
 	// JDBC getColumnList
-	// map to JDBC getColumns() format...
-	if (pvt->_conn->getNativeColumnListFormat()==
-				SQLRSERVERLISTFORMAT_ODBC) {
-		// ...from ODBC SQLColumns() format
-		//
-		// TABLE_CAT <- TABLE_CAT
-		pvt->_jdbccolumnscolumnmap.setValue(0,0);
-		// TABLE_SCHEM <- TABLE_SCHEM
-		pvt->_jdbccolumnscolumnmap.setValue(1,1);
-		// TABLE_NAME <- TABLE_NAME
-		pvt->_jdbccolumnscolumnmap.setValue(2,2);
-		// COLUMN_NAME <- COLUMN_NAME
-		pvt->_jdbccolumnscolumnmap.setValue(3,3);
-		// DATA_TYPE <- DATA_TYPE (numeric)
-		pvt->_jdbccolumnscolumnmap.setValue(4,4);
-		// TYPE_NAME <- TYPE_NAME
-		pvt->_jdbccolumnscolumnmap.setValue(5,5);
-		// COLUMN_SIZE <- COLUMN_SIZE
-		pvt->_jdbccolumnscolumnmap.setValue(6,6);
-		// BUFFER_LENGTH <- BUFFER_LENGTH
-		pvt->_jdbccolumnscolumnmap.setValue(7,7);
-		// DECIMAL_DIGITS <- DECIMAL_DIGITS (smallint - scale)
-		pvt->_jdbccolumnscolumnmap.setValue(8,8);
-		// NUM_PREC_RADIX <- NUM_PREC_RADIX (smallint - precision)-
-		pvt->_jdbccolumnscolumnmap.setValue(9,9);
-		// NULLABLE <- NULLABLE
-		pvt->_jdbccolumnscolumnmap.setValue(10,10);
-		// REMARKS <- REMARKS
-		pvt->_jdbccolumnscolumnmap.setValue(11,11);
-		// COLUMN_DEF <- COLUMN_DEF
-		pvt->_jdbccolumnscolumnmap.setValue(12,12);
-		// SQL_DATA_TYPE <- SQL_DATA_TYPE
-		pvt->_jdbccolumnscolumnmap.setValue(13,13);
-		// SQL_DATETIME_SUB <- SQL_DATETIME_SUB
-		pvt->_jdbccolumnscolumnmap.setValue(14,14);
-		// CHAR_OCTET_LENGTH <- CHAR_OCTET_LENGTH
-		pvt->_jdbccolumnscolumnmap.setValue(15,15);
-		// ORDINAL_POSITION <- ORDINAL_POSITION
-		pvt->_jdbccolumnscolumnmap.setValue(16,16);
-		// IS_NULLABLE <- IS_NULLABLE
-		pvt->_jdbccolumnscolumnmap.setValue(17,17);
-		// SCOPE_CATALOG <- SCOPE_CATALOG
-		pvt->_jdbccolumnscolumnmap.setValue(18,18);
-		// SCOPE_SCHEMA <- SCOPE_SCHEMA
-		pvt->_jdbccolumnscolumnmap.setValue(19,19);
-		// SCOPE_TABLE <- SCOPE_TABLE
-		pvt->_jdbccolumnscolumnmap.setValue(20,20);
-		// SOURCE_DATA_TYPE <- SOURCE_DATA_TYPE
-		pvt->_jdbccolumnscolumnmap.setValue(21,21);
-		// IS_AUTOINCREMENT <- IS_AUTOINCREMENT
-		pvt->_jdbccolumnscolumnmap.setValue(22,22);
-		// IS_GENERATEDCOLUMN <- IS_GENERATEDCOLUMN
-		pvt->_jdbccolumnscolumnmap.setValue(23,23);
-	} else {
-		// ...from ??? format (definitely not mysql format)
-		// FIXME: what format is this?
-		//
-		// TABLE_CAT <- NULL
-		pvt->_jdbccolumnscolumnmap.setValue(0,9);
-		// TABLE_SCHEM <- NULL
-		pvt->_jdbccolumnscolumnmap.setValue(1,9);
-		// TABLE_NAME <- NULL
-		pvt->_jdbccolumnscolumnmap.setValue(2,9);
-		// COLUMN_NAME <- column_name
-		pvt->_jdbccolumnscolumnmap.setValue(3,0);
-		// DATA_TYPE (numeric) <- NULL
-		pvt->_jdbccolumnscolumnmap.setValue(4,9);
-		// TYPE_NAME <- data_type
-		pvt->_jdbccolumnscolumnmap.setValue(5,1);
-		// COLUMN_SIZE <- character_maximum_length
-		pvt->_jdbccolumnscolumnmap.setValue(6,2);
-		// BUFFER_LENGTH <- character_maximum_length
-		pvt->_jdbccolumnscolumnmap.setValue(7,2);
-		// DECIMAL_DIGITS - smallint - scale
-		pvt->_jdbccolumnscolumnmap.setValue(8,4);
-		// NUM_PREC_RADIX - smallint - precision
-		pvt->_jdbccolumnscolumnmap.setValue(9,3);
-		// NULLABLE <- NULL
-		pvt->_jdbccolumnscolumnmap.setValue(10,9);
-		// REMARKS <- extra
-		pvt->_jdbccolumnscolumnmap.setValue(11,8);
-		// COLUMN_DEF <- column_default
-		pvt->_jdbccolumnscolumnmap.setValue(12,7);
-		// SQL_DATA_TYPE <- NULL
-		pvt->_jdbccolumnscolumnmap.setValue(13,9);
-		// SQL_DATETIME_SUB <- NULL
-		pvt->_jdbccolumnscolumnmap.setValue(14,9);
-		// CHAR_OCTET_LENGTH <- character_maximum_length
-		pvt->_jdbccolumnscolumnmap.setValue(15,2);
-		// ORDINAL_POSITION <- NULL
-		pvt->_jdbccolumnscolumnmap.setValue(16,9);
-		// IS_NULLABLE <- NULL
-		pvt->_jdbccolumnscolumnmap.setValue(17,5);
-		// SCOPE_CATALOG <- NULL
-		pvt->_jdbccolumnscolumnmap.setValue(18,9);
-		// SCOPE_SCHEMA <- NULL
-		pvt->_jdbccolumnscolumnmap.setValue(19,9);
-		// SCOPE_TABLE <- NULL
-		pvt->_jdbccolumnscolumnmap.setValue(20,9);
-		// SOURCE_DATA_TYPE <- NULL
-		pvt->_jdbccolumnscolumnmap.setValue(21,9);
-		// IS_AUTOINCREMENT <- NULL
-		pvt->_jdbccolumnscolumnmap.setValue(22,9);
-		// IS_GENERATEDCOLUMN <- NULL
-		pvt->_jdbccolumnscolumnmap.setValue(23,9);
-	}
+	// map to JDBC getColumns() format from ODBC SQLColumns()+ format
+	//
+	// TABLE_CAT <- TABLE_CAT
+	pvt->_jdbccolumnscolumnmap.setValue(0,0);
+	// TABLE_SCHEM <- TABLE_SCHEM
+	pvt->_jdbccolumnscolumnmap.setValue(1,1);
+	// TABLE_NAME <- TABLE_NAME
+	pvt->_jdbccolumnscolumnmap.setValue(2,2);
+	// COLUMN_NAME <- COLUMN_NAME
+	pvt->_jdbccolumnscolumnmap.setValue(3,3);
+	// DATA_TYPE <- DATA_TYPE (numeric)
+	pvt->_jdbccolumnscolumnmap.setValue(4,4);
+	// TYPE_NAME <- TYPE_NAME
+	pvt->_jdbccolumnscolumnmap.setValue(5,5);
+	// COLUMN_SIZE <- COLUMN_SIZE
+	pvt->_jdbccolumnscolumnmap.setValue(6,6);
+	// BUFFER_LENGTH <- BUFFER_LENGTH
+	pvt->_jdbccolumnscolumnmap.setValue(7,7);
+	// DECIMAL_DIGITS <- DECIMAL_DIGITS (smallint - scale)
+	pvt->_jdbccolumnscolumnmap.setValue(8,8);
+	// NUM_PREC_RADIX <- NUM_PREC_RADIX (smallint - precision)-
+	pvt->_jdbccolumnscolumnmap.setValue(9,9);
+	// NULLABLE <- NULLABLE
+	pvt->_jdbccolumnscolumnmap.setValue(10,10);
+	// REMARKS <- REMARKS
+	pvt->_jdbccolumnscolumnmap.setValue(11,11);
+	// COLUMN_DEF <- COLUMN_DEF
+	pvt->_jdbccolumnscolumnmap.setValue(12,12);
+	// SQL_DATA_TYPE <- SQL_DATA_TYPE
+	pvt->_jdbccolumnscolumnmap.setValue(13,13);
+	// SQL_DATETIME_SUB <- SQL_DATETIME_SUB
+	pvt->_jdbccolumnscolumnmap.setValue(14,14);
+	// CHAR_OCTET_LENGTH <- CHAR_OCTET_LENGTH
+	pvt->_jdbccolumnscolumnmap.setValue(15,15);
+	// ORDINAL_POSITION <- ORDINAL_POSITION
+	pvt->_jdbccolumnscolumnmap.setValue(16,16);
+	// IS_NULLABLE <- IS_NULLABLE
+	pvt->_jdbccolumnscolumnmap.setValue(17,17);
+	// SCOPE_CATALOG <- SCOPE_CATALOG
+	pvt->_jdbccolumnscolumnmap.setValue(18,18);
+	// SCOPE_SCHEMA <- SCOPE_SCHEMA
+	pvt->_jdbccolumnscolumnmap.setValue(19,19);
+	// SCOPE_TABLE <- SCOPE_TABLE
+	pvt->_jdbccolumnscolumnmap.setValue(20,20);
+	// SOURCE_DATA_TYPE <- SOURCE_DATA_TYPE
+	pvt->_jdbccolumnscolumnmap.setValue(21,21);
+	// IS_AUTOINCREMENT <- IS_AUTOINCREMENT
+	pvt->_jdbccolumnscolumnmap.setValue(22,22);
+	// IS_GENERATEDCOLUMN <- IS_GENERATEDCOLUMN
+	pvt->_jdbccolumnscolumnmap.setValue(23,23);
 	pvt->_jdbccolumnscolumnnamemap.setValue(0,"TABLE_CAT");
 	pvt->_jdbccolumnscolumnnamemap.setValue(1,"TABLE_SCHEM");
 	pvt->_jdbccolumnscolumnnamemap.setValue(2,"TABLE_NAME");
