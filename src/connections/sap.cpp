@@ -37,7 +37,6 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostNameQuery();
-		sqlrserverlistformat_t	getNativeColumnListFormat();
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes,
@@ -551,10 +550,6 @@ const char *sapconnection::getDbHostNameQuery() {
 	return "select asehostname()";
 }
 
-sqlrserverlistformat_t sapconnection::getNativeColumnListFormat() {
-	return SQLRSERVERLISTFORMAT_MYSQL;
-}
-
 const char *sapconnection::getDatabaseListQuery(bool wild) {
 	return "select "
 		"	'' as table_cat, "
@@ -621,15 +616,29 @@ const char *sapconnection::getColumnListQuery(
 					const char *table, bool wild) {
 	return (wild)?
 		"select "
-		"	syscolumns.name, "
-		"	systypes.name as type, "
-		"	syscolumns.length, "
-		"	syscolumns.prec, "
-		"	syscolumns.scale, "
+		"	'' as table_cat, "
+		"	'' as table_schem, "
+		"	sysobjects.name as table_name, "
+		"	syscolumns.name as column_name, "
+		"	syscolumns.type as data_type, "
+		"	systypes.name as type_name, "
+		"	syscolumns.length as column_size, "
+		"	syscolumns.length as buffer_length, "
+		"	syscolumns.scale as decimal_digits, "
+		"	10 as num_prec_radix, "
 		"	(syscolumns.status&8)/8 as nullable, "
-		"	'' as primarykey, "
-		"	null column_default, "
-		"	'' as extra, "
+		"	'' as remarks, "
+		"	null as column_default, "
+		"	null as sql_data_type, "
+		"	null as sql_datetime_sub, "
+		"	syscolumns.length as char_octet_length, "
+		"	null as ordinal_position, "
+		"	case (syscolumns.status&8)/8 "
+		"		when 0 then 'YES' "
+		"		else 'YES' "
+		"		end as is_nullable, "
+		"	syscolumns.prec as numeric_precision, "
+		"	'' as column_key, "
 		"	null "
 		"from "
 		"	sysobjects, "
@@ -649,15 +658,29 @@ const char *sapconnection::getColumnListQuery(
 		"	syscolumns.colid"
 		:
 		"select "
-		"	syscolumns.name, "
-		"	systypes.name as type, "
-		"	syscolumns.length, "
-		"	syscolumns.prec, "
-		"	syscolumns.scale, "
+		"	'' as table_cat, "
+		"	'' as table_schem, "
+		"	sysobjects.name as table_name, "
+		"	syscolumns.name as column_name, "
+		"	syscolumns.type as data_type, "
+		"	systypes.name as type_name, "
+		"	syscolumns.length as column_size, "
+		"	syscolumns.length as buffer_length, "
+		"	syscolumns.scale as decimal_digits, "
+		"	10 as num_prec_radix, "
 		"	(syscolumns.status&8)/8 as nullable, "
-		"	'' as primarykey, "
-		"	null column_default, "
-		"	'' as extra, "
+		"	'' as remarks, "
+		"	null as column_default, "
+		"	null as sql_data_type, "
+		"	null as sql_datetime_sub, "
+		"	syscolumns.length as char_octet_length, "
+		"	null as ordinal_position, "
+		"	case (syscolumns.status&8)/8 "
+		"		when 0 then 'YES' "
+		"		else 'YES' "
+		"		end as is_nullable, "
+		"	syscolumns.prec as numeric_precision, "
+		"	'' as column_key, "
 		"	null "
 		"from "
 		"	sysobjects, "
