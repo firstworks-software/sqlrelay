@@ -10,7 +10,8 @@ public class SQLRelayParameterMetaData extends SQLRelayDebug implements Paramete
 
 	private HashMap<Integer,SQLRelayParameter>	parameters;
 
-	public SQLRelayParameterMetaData() {
+	public SQLRelayParameterMetaData(int debugindent) {
+		setDebugIndent(debugindent);
 		debugFunction();
 		parameters=null;
 		debugEnd();

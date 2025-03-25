@@ -9,7 +9,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 
 	private SQLRelayConnection	connection;
 
-	public SQLRelayDatabaseMetaData() {
+	public SQLRelayDatabaseMetaData(int debugindent) {
+		setDebugIndent(debugindent);
 		debugFunction();
 		connection=null;
 		// FIXME: set protected member variables?
@@ -140,10 +141,10 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 			debugPrintln("colcount: "+sqlrcur.colCount());
 
 			if (sqlrcur.colCount()>0) {
-				resultset=new SQLRelayResultSet();
+				resultset=new SQLRelayResultSet(
+							getDebugIndent());
 				resultset.setStatement(stmt);
 				resultset.setSQLRCursor(sqlrcur);
-				resultset.setIndent(getIndent());
 			}
 		} else {
 			throwErrorMessageException(sqlrcur);
@@ -216,10 +217,10 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 			debugPrintln("colcount: "+sqlrcur.colCount());
 
 			if (sqlrcur.colCount()>0) {
-				resultset=new SQLRelayResultSet();
+				resultset=new SQLRelayResultSet(
+							getDebugIndent());
 				resultset.setStatement(stmt);
 				resultset.setSQLRCursor(sqlrcur);
-				resultset.setIndent(getIndent());
 			}
 		} else {
 			throwErrorMessageException(sqlrcur);
@@ -713,24 +714,25 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: some dbs do support rowid
 		RowIdLifetime	rowidlifetime=RowIdLifetime.ROWID_UNSUPPORTED;
-		debugPrint("  rowid lifetime: ");
+		String	rl="";
 		switch (rowidlifetime) {
 			case ROWID_UNSUPPORTED:
-				debugPrint("ROWID_UNSUPPORTED");
+				rl="ROWID_UNSUPPORTED";
 				break;
 			case ROWID_VALID_OTHER:
-				debugPrint("ROWID_VALID_OTHER");
+				rl="ROWID_VALID_OTHER";
 				break;
 			case ROWID_VALID_TRANSACTION:
-				debugPrint("ROWID_VALID_TRANSACTION");
+				rl="ROWID_VALID_TRANSACTION";
 				break;
 			case ROWID_VALID_SESSION:
-				debugPrint("ROWID_VALID_SESSION");
+				rl="ROWID_VALID_SESSION";
 				break;
 			case ROWID_VALID_FOREVER:
-				debugPrint("ROWID_VALID_FOREVER");
+				rl="ROWID_VALID_FOREVER";
 				break;
 		}
+		debugPrintln("rowid lifetime: "+rl);
 		debugEnd();
 		return rowidlifetime;
 	}
@@ -764,10 +766,10 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 			debugPrintln("colcount: "+sqlrcur.colCount());
 
 			if (sqlrcur.colCount()>0) {
-				resultset=new SQLRelayResultSet();
+				resultset=new SQLRelayResultSet(
+							getDebugIndent());
 				resultset.setStatement(stmt);
 				resultset.setSQLRCursor(sqlrcur);
-				resultset.setIndent(getIndent());
 			}
 		} else {
 			throwErrorMessageException(sqlrcur);
@@ -870,14 +872,14 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		String	wild=buildWild(catalog,schemaPattern,tableNamePattern);
 		debugPrintln("wild: "+wild);
 
-		debugPrint("  types: ");
 		int	objecttypes=0;
 		if (types==null) {
-			debugPrintln("null");
+			debugPrintln("types: null");
 			objecttypes=1|2|3|4;
 		} else {
+			String	t="";
 			for (String type: types) {
-				debugPrint(type+",");
+				t=t+type+",";
 				if (type.equals("TABLE") ||
 					type.equals("SYSTEM TABLE") ||
 					type.equals("GLOBAL TEMPORARY") ||
@@ -891,7 +893,7 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 					objecttypes|=4;
 				}
 			}
-			debugPrintln("");
+			debugPrintln(t);
 		}
 
 		SQLRelayResultSet	resultset=null;
@@ -909,10 +911,10 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 			debugPrintln("colcount: "+sqlrcur.colCount());
 
 			if (sqlrcur.colCount()>0) {
-				resultset=new SQLRelayResultSet();
+				resultset=new SQLRelayResultSet(
+							getDebugIndent());
 				resultset.setStatement(stmt);
 				resultset.setSQLRCursor(sqlrcur);
-				resultset.setIndent(getIndent());
 			}
 		} else {
 			throwErrorMessageException(sqlrcur);

@@ -76,7 +76,8 @@ public class SQLRelayParameter extends SQLRelayDebug {
 	private Calendar	cal;
 	private	BindType	bindtype;
 
-	public SQLRelayParameter() {
+	public SQLRelayParameter(int debugindent) {
+		setDebugIndent(debugindent);
 		debugFunction();
 		classname=null;
 		mode=ParameterMetaData.parameterModeIn;

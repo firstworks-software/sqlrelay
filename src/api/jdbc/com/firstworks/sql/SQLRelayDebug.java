@@ -6,11 +6,11 @@ public class SQLRelayDebug {
 
 	private int	indent=0;
 
-	public void setIndent(int indent) {
+	public void setDebugIndent(int indent) {
 		this.indent=indent;
 	}
 
-	public int getIndent() {
+	public int getDebugIndent() {
 		return indent;
 	}
 
@@ -48,14 +48,6 @@ public class SQLRelayDebug {
 		}
 		debugStart(this.getClass().getSimpleName()+"."+
 			new Throwable().getStackTrace()[1].getMethodName());
-	}
-
-	public void debugPrint(String str) {
-		if (!debug) {
-			return;
-		}
-		debugPrintIndent();
-		System.out.print(str);
 	}
 
 	public void debugPrintln(String str) {

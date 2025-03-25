@@ -15,7 +15,13 @@ public class SQLRelayCallableStatement
 		extends SQLRelayPreparedStatement
 		implements CallableStatement {
 
-	public Array 	getArray(int parameterIndex) throws SQLException {
+	public SQLRelayCallableStatement(int debugindent) throws SQLException {
+		super(debugindent);
+		debugFunction();
+		debugEnd();
+	}
+
+	public Array getArray(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -23,7 +29,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public Array 	getArray(String parameterName) throws SQLException {
+	public Array getArray(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -31,7 +37,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public BigDecimal 	getBigDecimal(int parameterIndex)
+	public BigDecimal getBigDecimal(int parameterIndex)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -40,7 +46,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public BigDecimal 	getBigDecimal(int parameterIndex, int scale)
+	public BigDecimal getBigDecimal(int parameterIndex, int scale)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -49,7 +55,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public BigDecimal 	getBigDecimal(String parameterName)
+	public BigDecimal getBigDecimal(String parameterName)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -58,7 +64,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public Blob 	getBlob(int parameterIndex) throws SQLException {
+	public Blob getBlob(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -66,7 +72,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public Blob 	getBlob(String parameterName) throws SQLException {
+	public Blob getBlob(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -74,7 +80,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public boolean 	getBoolean(int parameterIndex) throws SQLException {
+	public boolean getBoolean(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -82,7 +88,7 @@ public class SQLRelayCallableStatement
 		return false;
 	}
 
-	public boolean 	getBoolean(String parameterName) throws SQLException {
+	public boolean getBoolean(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -90,7 +96,7 @@ public class SQLRelayCallableStatement
 		return false;
 	}
 
-	public byte 	getByte(int parameterIndex) throws SQLException {
+	public byte getByte(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -98,7 +104,7 @@ public class SQLRelayCallableStatement
 		return 0;
 	}
 
-	public byte 	getByte(String parameterName) throws SQLException {
+	public byte getByte(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -106,7 +112,7 @@ public class SQLRelayCallableStatement
 		return 0;
 	}
 
-	public byte[] 	getBytes(int parameterIndex) throws SQLException {
+	public byte[] getBytes(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -114,7 +120,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public byte[] 	getBytes(String parameterName) throws SQLException {
+	public byte[] getBytes(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -122,7 +128,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public Reader 	getCharacterStream(int parameterIndex)
+	public Reader getCharacterStream(int parameterIndex)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -131,7 +137,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public Reader 	getCharacterStream(String parameterName)
+	public Reader getCharacterStream(String parameterName)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -140,7 +146,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public Clob 	getClob(int parameterIndex) throws SQLException {
+	public Clob getClob(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -148,7 +154,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public Clob 	getClob(String parameterName) throws SQLException {
+	public Clob getClob(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -156,7 +162,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public Date 	getDate(int parameterIndex) throws SQLException {
+	public Date getDate(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -164,7 +170,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public Date 	getDate(int parameterIndex, Calendar cal)
+	public Date getDate(int parameterIndex, Calendar cal)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -173,7 +179,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public Date 	getDate(String parameterName) throws SQLException {
+	public Date getDate(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -181,7 +187,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public Date 	getDate(String parameterName, Calendar cal)
+	public Date getDate(String parameterName, Calendar cal)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -190,7 +196,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public double 	getDouble(int parameterIndex) throws SQLException {
+	public double getDouble(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -198,7 +204,7 @@ public class SQLRelayCallableStatement
 		return 0.0;
 	}
 
-	public double 	getDouble(String parameterName) throws SQLException {
+	public double getDouble(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -206,7 +212,7 @@ public class SQLRelayCallableStatement
 		return 0.0;
 	}
 
-	public float 	getFloat(int parameterIndex) throws SQLException {
+	public float getFloat(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -214,7 +220,7 @@ public class SQLRelayCallableStatement
 		return 0.0f;
 	}
 
-	public float 	getFloat(String parameterName) throws SQLException {
+	public float getFloat(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -222,7 +228,7 @@ public class SQLRelayCallableStatement
 		return 0.0f;
 	}
 
-	public int 	getInt(int parameterIndex) throws SQLException {
+	public int getInt(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -230,7 +236,7 @@ public class SQLRelayCallableStatement
 		return 0;
 	}
 
-	public int 	getInt(String parameterName) throws SQLException {
+	public int getInt(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -238,7 +244,7 @@ public class SQLRelayCallableStatement
 		return 0;
 	}
 
-	public long 	getLong(int parameterIndex) throws SQLException {
+	public long getLong(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -246,7 +252,7 @@ public class SQLRelayCallableStatement
 		return 0;
 	}
 
-	public long 	getLong(String parameterName) throws SQLException {
+	public long getLong(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -254,7 +260,7 @@ public class SQLRelayCallableStatement
 		return 0;
 	}
 
-	public Reader 	getNCharacterStream(int parameterIndex)
+	public Reader getNCharacterStream(int parameterIndex)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -263,7 +269,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public Reader 	getNCharacterStream(String parameterName)
+	public Reader getNCharacterStream(String parameterName)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -272,7 +278,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public NClob 	getNClob(int parameterIndex) throws SQLException {
+	public NClob getNClob(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -280,7 +286,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public NClob 	getNClob(String parameterName) throws SQLException {
+	public NClob getNClob(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -288,7 +294,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public String 	getNString(int parameterIndex) throws SQLException {
+	public String getNString(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -296,7 +302,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public String 	getNString(String parameterName) throws SQLException {
+	public String getNString(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -304,7 +310,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public Object 	getObject(int parameterIndex) throws SQLException {
+	public Object getObject(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -312,7 +318,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public <T> T 	getObject(int parameterIndex, Class<T> type)
+	public <T> T getObject(int parameterIndex, Class<T> type)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -321,7 +327,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public Object 	getObject(int parameterIndex, Map<String,Class<?>> map)
+	public Object getObject(int parameterIndex, Map<String,Class<?>> map)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -330,7 +336,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public Object 	getObject(String parameterName) throws SQLException {
+	public Object getObject(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -338,7 +344,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public <T> T 	getObject(String parameterName, Class<T> type)
+	public <T> T getObject(String parameterName, Class<T> type)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -347,7 +353,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public Object 	getObject(String parameterName,
+	public Object getObject(String parameterName,
 						Map<String,Class<?>> map)
 						throws SQLException {
 		debugFunction();
@@ -357,7 +363,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public Ref 	getRef(int parameterIndex) throws SQLException {
+	public Ref getRef(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -365,7 +371,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public Ref 	getRef(String parameterName) throws SQLException {
+	public Ref getRef(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -373,7 +379,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public RowId 	getRowId(int parameterIndex) throws SQLException {
+	public RowId getRowId(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -381,7 +387,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public RowId 	getRowId(String parameterName) throws SQLException {
+	public RowId getRowId(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -389,7 +395,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public short 	getShort(int parameterIndex) throws SQLException {
+	public short getShort(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -397,7 +403,7 @@ public class SQLRelayCallableStatement
 		return 0;
 	}
 
-	public short 	getShort(String parameterName) throws SQLException {
+	public short getShort(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -405,7 +411,7 @@ public class SQLRelayCallableStatement
 		return 0;
 	}
 
-	public SQLXML 	getSQLXML(int parameterIndex) throws SQLException {
+	public SQLXML getSQLXML(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -413,7 +419,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public SQLXML 	getSQLXML(String parameterName) throws SQLException {
+	public SQLXML getSQLXML(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -421,7 +427,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public String 	getString(int parameterIndex) throws SQLException {
+	public String getString(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -429,7 +435,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public String 	getString(String parameterName) throws SQLException {
+	public String getString(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -437,7 +443,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public Time 	getTime(int parameterIndex) throws SQLException {
+	public Time getTime(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -445,7 +451,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public Time 	getTime(int parameterIndex, Calendar cal)
+	public Time getTime(int parameterIndex, Calendar cal)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -454,7 +460,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public Time 	getTime(String parameterName) throws SQLException {
+	public Time getTime(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -462,7 +468,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public Time 	getTime(String parameterName, Calendar cal)
+	public Time getTime(String parameterName, Calendar cal)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -471,7 +477,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public Timestamp 	getTimestamp(int parameterIndex)
+	public Timestamp getTimestamp(int parameterIndex)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -480,7 +486,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public Timestamp 	getTimestamp(int parameterIndex,
+	public Timestamp getTimestamp(int parameterIndex,
 							Calendar cal)
 							throws SQLException {
 		debugFunction();
@@ -490,7 +496,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public Timestamp 	getTimestamp(String parameterName)
+	public Timestamp getTimestamp(String parameterName)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -499,7 +505,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public Timestamp 	getTimestamp(String parameterName,
+	public Timestamp getTimestamp(String parameterName,
 							Calendar cal)
 							throws SQLException {
 		debugFunction();
@@ -509,7 +515,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public URL 	getURL(int parameterIndex) throws SQLException {
+	public URL getURL(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -517,7 +523,7 @@ public class SQLRelayCallableStatement
 		return null;
 	}
 
-	public URL 	getURL(String parameterName) throws SQLException {
+	public URL getURL(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
@@ -583,7 +589,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setAsciiStream(String parameterName,
+	public void setAsciiStream(String parameterName,
 							InputStream x)
 							throws SQLException {
 		debugFunction();
@@ -592,7 +598,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setAsciiStream(String parameterName,
+	public void setAsciiStream(String parameterName,
 							InputStream x,
 							int length)
 							throws SQLException {
@@ -602,7 +608,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setAsciiStream(String parameterName,
+	public void setAsciiStream(String parameterName,
 							InputStream x,
 							long length)
 							throws SQLException {
@@ -612,7 +618,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setBigDecimal(String parameterName, BigDecimal x)
+	public void setBigDecimal(String parameterName, BigDecimal x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -620,7 +626,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setBinaryStream(String parameterName, InputStream x)
+	public void setBinaryStream(String parameterName, InputStream x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -628,7 +634,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setBinaryStream(String parameterName,
+	public void setBinaryStream(String parameterName,
 							InputStream x,
 							int length)
 							throws SQLException {
@@ -638,7 +644,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setBinaryStream(String parameterName,
+	public void setBinaryStream(String parameterName,
 							InputStream x,
 							long length)
 							throws SQLException {
@@ -648,7 +654,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setBlob(String parameterName, Blob x)
+	public void setBlob(String parameterName, Blob x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -656,7 +662,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setBlob(String parameterName, InputStream inputStream)
+	public void setBlob(String parameterName, InputStream inputStream)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -664,17 +670,17 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setBlob(String parameterName,
-						InputStream inputStream,
-						long length)
-						throws SQLException {
+	public void setBlob(String parameterName,
+					InputStream inputStream,
+					long length)
+					throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		debugEnd();
 	}
 
-	public void 	setBoolean(String parameterName, boolean x)
+	public void setBoolean(String parameterName, boolean x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -682,7 +688,14 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setByte(String parameterName, byte x)
+	public void setByte(String parameterName, byte x) throws SQLException {
+		debugFunction();
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		debugEnd();
+	}
+
+	public void setBytes(String parameterName, byte[] x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -690,15 +703,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setBytes(String parameterName, byte[] x)
-							throws SQLException {
-		debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		debugEnd();
-	}
-
-	public void 	setCharacterStream(String parameterName,
+	public void setCharacterStream(String parameterName,
 							Reader reader)
 							throws SQLException {
 		debugFunction();
@@ -707,7 +712,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setCharacterStream(String parameterName,
+	public void setCharacterStream(String parameterName,
 							Reader reader,
 							int length)
 							throws SQLException {
@@ -717,7 +722,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setCharacterStream(String parameterName,
+	public void setCharacterStream(String parameterName,
 							Reader reader,
 							long length)
 							throws SQLException {
@@ -727,7 +732,14 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setClob(String parameterName, Clob x)
+	public void setClob(String parameterName, Clob x) throws SQLException {
+		debugFunction();
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		debugEnd();
+	}
+
+	public void setClob(String parameterName, Reader reader)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -735,15 +747,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setClob(String parameterName, Reader reader)
-							throws SQLException {
-		debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		debugEnd();
-	}
-
-	public void 	setClob(String parameterName, Reader reader,
+	public void setClob(String parameterName, Reader reader,
 							long length)
 							throws SQLException {
 		debugFunction();
@@ -752,7 +756,14 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setDate(String parameterName, Date x)
+	public void setDate(String parameterName, Date x) throws SQLException {
+		debugFunction();
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		debugEnd();
+	}
+
+	public void setDate(String parameterName, Date x, Calendar cal)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -760,7 +771,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setDate(String parameterName, Date x, Calendar cal)
+	public void setDouble(String parameterName, double x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -768,7 +779,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setDouble(String parameterName, double x)
+	public void setFloat(String parameterName, float x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -776,7 +787,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setFloat(String parameterName, float x)
+	public void setInt(String parameterName, int x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -784,7 +795,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setInt(String parameterName, int x)
+	public void setLong(String parameterName, long x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -792,15 +803,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setLong(String parameterName, long x)
-							throws SQLException {
-		debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		debugEnd();
-	}
-
-	public void 	setNCharacterStream(String parameterName,
+	public void setNCharacterStream(String parameterName,
 							Reader value)
 							throws SQLException {
 		debugFunction();
@@ -809,7 +812,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setNCharacterStream(String parameterName,
+	public void setNCharacterStream(String parameterName,
 							Reader value,
 							long length)
 							throws SQLException {
@@ -819,7 +822,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setNClob(String parameterName, NClob value)
+	public void setNClob(String parameterName, NClob value)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -827,7 +830,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setNClob(String parameterName, Reader reader)
+	public void setNClob(String parameterName, Reader reader)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -835,7 +838,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setNClob(String parameterName, Reader reader,
+	public void setNClob(String parameterName, Reader reader,
 							long length)
 							throws SQLException {
 		debugFunction();
@@ -844,7 +847,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setNString(String parameterName, String value)
+	public void setNString(String parameterName, String value)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -852,7 +855,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setNull(String parameterName, int sqlType)
+	public void setNull(String parameterName, int sqlType)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -860,7 +863,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setNull(String parameterName, int sqlType,
+	public void setNull(String parameterName, int sqlType,
 							String typeName)
 							throws SQLException {
 		debugFunction();
@@ -869,7 +872,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setObject(String parameterName, Object x)
+	public void setObject(String parameterName, Object x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -877,7 +880,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setObject(String parameterName, Object x,
+	public void setObject(String parameterName, Object x,
 							int targetSqlType)
 							throws SQLException {
 		debugFunction();
@@ -886,7 +889,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setObject(String parameterName, Object x,
+	public void setObject(String parameterName, Object x,
 							int targetSqlType,
 							int scale)
 							throws SQLException {
@@ -896,7 +899,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setRowId(String parameterName, RowId x)
+	public void setRowId(String parameterName, RowId x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -904,7 +907,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setShort(String parameterName, short x)
+	public void setShort(String parameterName, short x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -912,7 +915,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setSQLXML(String parameterName, SQLXML xmlObject)
+	public void setSQLXML(String parameterName, SQLXML xmlObject)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -920,7 +923,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setString(String parameterName, String x)
+	public void setString(String parameterName, String x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -928,7 +931,14 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setTime(String parameterName, Time x)
+	public void setTime(String parameterName, Time x) throws SQLException {
+		debugFunction();
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		debugEnd();
+	}
+
+	public void setTime(String parameterName, Time x, Calendar cal)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -936,8 +946,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setTime(String parameterName, Time x,
-							Calendar cal)
+	public void setTimestamp(String parameterName, Timestamp x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
@@ -945,15 +954,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setTimestamp(String parameterName, Timestamp x)
-							throws SQLException {
-		debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		debugEnd();
-	}
-
-	public void 	setTimestamp(String parameterName,
+	public void setTimestamp(String parameterName,
 						Timestamp x,
 						Calendar cal)
 						throws SQLException {
@@ -963,8 +964,7 @@ public class SQLRelayCallableStatement
 		debugEnd();
 	}
 
-	public void 	setURL(String parameterName, URL val)
-							throws SQLException {
+	public void setURL(String parameterName, URL val) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();

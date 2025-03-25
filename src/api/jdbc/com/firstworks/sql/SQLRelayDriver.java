@@ -39,8 +39,8 @@ public class SQLRelayDriver extends SQLRelayDebug implements Driver {
 		if (validConnectInfo(ci)) {
 			conn=new SQLRelayConnection(ci.host,ci.port,ci.socket,
 							ci.user,ci.password,
-							ci.retrytime,ci.tries);
-			((SQLRelayConnection)conn).setIndent(getIndent());
+							ci.retrytime,ci.tries,
+							getDebugIndent());
 		}
 		debugEnd();
 		return conn;

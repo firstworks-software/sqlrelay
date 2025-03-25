@@ -30,7 +30,10 @@ public class SQLRelayConnection extends SQLRelayDebug implements Connection {
 					String user,
 					String password,
 					int retrytime,
-					int tries) throws SQLException {
+					int tries,
+					int debugindent) throws SQLException {
+		setDebugIndent(debugindent);
+
 		debugFunction();
 
 		this.host=host;
@@ -218,11 +221,11 @@ sqlrcon.debugOn();
 		}
 
 		// create a statement, attach the cursor to the statement
-		SQLRelayStatement	sqlrstmt=new SQLRelayStatement();
+		SQLRelayStatement	sqlrstmt=
+					new SQLRelayStatement(getDebugIndent());
 		sqlrstmt.setConnection(this);
 		sqlrstmt.setSQLRConnection(sqlrcon);
 		sqlrstmt.setSQLRCursor(sqlrcur);
-		sqlrstmt.setIndent(getIndent());
 
 		debugEnd();
 		return sqlrstmt;
@@ -277,9 +280,8 @@ sqlrcon.debugOn();
 		debugFunction();
 		throwExceptionIfClosed();
 		SQLRelayDatabaseMetaData	metadata=
-						new SQLRelayDatabaseMetaData();
+				new SQLRelayDatabaseMetaData(getDebugIndent());
 		metadata.setConnection(this);
-		metadata.setIndent(getIndent());
 		debugEnd();
 		return metadata;
 	}
@@ -368,11 +370,10 @@ sqlrcon.debugOn();
 		sqlrcur.getNullsAsNulls();
 		sqlrcur.prepareQuery(sql);
 		SQLRelayCallableStatement	sqlrstmt=
-						new SQLRelayCallableStatement();
+				new SQLRelayCallableStatement(getDebugIndent());
 		sqlrstmt.setConnection(this);
 		sqlrstmt.setSQLRConnection(sqlrcon);
 		sqlrstmt.setSQLRCursor(sqlrcur);
-		sqlrstmt.setIndent(getIndent());
 		debugEnd();
 		return sqlrstmt;
 	}
@@ -408,11 +409,10 @@ sqlrcon.debugOn();
 		sqlrcur.getNullsAsNulls();
 		sqlrcur.prepareQuery(sql);
 		SQLRelayPreparedStatement	sqlrstmt=
-						new SQLRelayPreparedStatement();
+				new SQLRelayPreparedStatement(getDebugIndent());
 		sqlrstmt.setConnection(this);
 		sqlrstmt.setSQLRConnection(sqlrcon);
 		sqlrstmt.setSQLRCursor(sqlrcur);
-		sqlrstmt.setIndent(getIndent());
 		debugEnd();
 		return sqlrstmt;
 	}
@@ -668,10 +668,9 @@ sqlrcon.debugOn();
 	}
 
 	private void throwExceptionIfClosed() throws SQLException {
-		if (sqlrcon!=null) {
-			return;
+		if (sqlrcon==null) {
+			throwException("connection is closed");
 		}
-		throwException("connection is closed");
 	}
 
 	private void throwErrorMessageException() throws SQLException {

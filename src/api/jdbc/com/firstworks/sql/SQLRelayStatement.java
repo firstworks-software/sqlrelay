@@ -21,7 +21,8 @@ public class SQLRelayStatement extends SQLRelayDebug implements Statement {
 	protected int			updatecount;
 	private boolean			escapeprocessing;
 
-	public SQLRelayStatement() {
+	public SQLRelayStatement(int debugindent) {
+		setDebugIndent(debugindent);
 		debugFunction();
 		reset();
 		debugEnd();
@@ -128,10 +129,10 @@ public class SQLRelayStatement extends SQLRelayDebug implements Statement {
 			debugPrintln("colcount: "+sqlrcur.colCount());
 
 			if (sqlrcur.colCount()>0) {
-				resultset=new SQLRelayResultSet();
+				resultset=new SQLRelayResultSet(
+							getDebugIndent());
 				resultset.setStatement(this);
 				resultset.setSQLRCursor(sqlrcur);
-				resultset.setIndent(getIndent());
 			}
 		} else {
 			throwErrorMessageException();
@@ -187,10 +188,9 @@ public class SQLRelayStatement extends SQLRelayDebug implements Statement {
 		resultset=null;
 		updatecount=-1;
 		if (sqlrcur.sendQuery(sql)) {
-			resultset=new SQLRelayResultSet();
+			resultset=new SQLRelayResultSet(getDebugIndent());
 			resultset.setStatement(this);
 			resultset.setSQLRCursor(sqlrcur);
-			resultset.setIndent(getIndent());
 		} else {
 			throw new SQLException(sqlrcur.errorMessage());
 		}
@@ -469,10 +469,9 @@ public class SQLRelayStatement extends SQLRelayDebug implements Statement {
 	}
 
 	protected void throwExceptionIfClosed() throws SQLException {
-		if (sqlrcur!=null) {
-			return;
+		if (sqlrcur==null) {
+			throwException("statement is closed");
 		}
-		throwException("statement is closed");
 	}
 
 	protected void throwErrorMessageException() throws SQLException {
