@@ -56,47 +56,56 @@ sqlrcon.debugOn();
 		if (debug) {
 			//sqlrcon.debugOn();
 		}
+		debugEnd();
 	}
 
 	public String getHost() {
 		debugFunction();
+		debugEnd();
 		return host;
 	}
 
 	public short getPort() {
 		debugFunction();
+		debugEnd();
 		return port;
 	}
 
 	public String getSocket() {
 		debugFunction();
+		debugEnd();
 		return socket;
 	}
 
 	public String getUser() {
 		debugFunction();
+		debugEnd();
 		return user;
 	}
 
 	public String getPassword() {
 		debugFunction();
+		debugEnd();
 		return password;
 	}
 
 	public void	abort(Executor executor) throws SQLException {
 		debugFunction();
 		close();
+		debugEnd();
 	}
 
 	public void	clearWarnings() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
+		debugEnd();
 	}
 
 	public void	close() throws SQLException {
 		debugFunction();
 		sqlrcon.endSession();
 		sqlrcon=null;
+		debugEnd();
 	}
 
 	public void	commit() throws SQLException {
@@ -105,6 +114,7 @@ sqlrcon.debugOn();
 		if (!sqlrcon.commit()) {
 			throwErrorMessageException();
 		}
+		debugEnd();
 	}
 
 	public Array	createArrayOf(String typeName,
@@ -112,55 +122,66 @@ sqlrcon.debugOn();
 					throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public Blob	createBlob() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this...
+		debugEnd();
 		return null;
 	}
 
 	public Clob	createClob() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this...
+		debugEnd();
 		return null;
 	}
 
 	public NClob	createNClob() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this...
+		debugEnd();
 		return null;
 	}
 
 	public SQLXML	createSQLXML() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public Statement	createStatement() throws SQLException {
 		debugFunction();
-		return createStatement(ResultSet.TYPE_FORWARD_ONLY,
+		Statement	stmt=createStatement(
+					ResultSet.TYPE_FORWARD_ONLY,
 					ResultSet.CONCUR_READ_ONLY,
 					ResultSet.HOLD_CURSORS_OVER_COMMIT);
+		debugEnd();
+		return stmt;
 	}
 
 	public Statement	createStatement(int resultSetType,
 						int resultSetConcurrency)
 						throws SQLException {
 		debugFunction();
-		return createStatement(resultSetType,
+		Statement	stmt=createStatement(
+					resultSetType,
 					resultSetConcurrency,
 					ResultSet.HOLD_CURSORS_OVER_COMMIT);
+		debugEnd();
+		return stmt;
 	}
 
 	public Statement	createStatement(int resultSetType,
@@ -177,7 +198,7 @@ sqlrcon.debugOn();
 				ResultSet.CONCUR_UPDATABLE ||
 			resultSetHoldability==
 				ResultSet.CLOSE_CURSORS_AT_COMMIT) {
-			throwNotSupportedException();
+			throwFeatureNotSupportedException();
 		}
 
 		// create a cursor
@@ -201,6 +222,8 @@ sqlrcon.debugOn();
 		sqlrstmt.setConnection(this);
 		sqlrstmt.setSQLRConnection(sqlrcon);
 		sqlrstmt.setSQLRCursor(sqlrcur);
+
+		debugEnd();
 		return sqlrstmt;
 	}
 
@@ -209,38 +232,43 @@ sqlrcon.debugOn();
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		return null;
 	}
 
 	public boolean	getAutoCommit() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
+		debugEnd();
 		return autocommit;
 	}
 
 	public String	getCatalog() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
+		debugEnd();
 		return sqlrcon.getCurrentDatabase();
 	}
 
 	public Properties	getClientInfo() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
+		debugEnd();
 		return clientinfo;
 	}
 
 	public String	getClientInfo(String name) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		Properties	prop=getClientInfo();
-		return prop.getProperty(name);
+		String	prop=getClientInfo().getProperty(name);
+		debugEnd();
+		return prop;
 	}
 
 	public int	getHoldability() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
+		debugEnd();
 		return ResultSet.HOLD_CURSORS_OVER_COMMIT;
 	}
 
@@ -250,6 +278,7 @@ sqlrcon.debugOn();
 		SQLRelayDatabaseMetaData	metadata=
 						new SQLRelayDatabaseMetaData();
 		metadata.setConnection(this);
+		debugEnd();
 		return metadata;
 	}
 
@@ -259,24 +288,29 @@ sqlrcon.debugOn();
 		// FIXME: the timeout can also be set using an environment
 		// variable, so we should get this from the underlying api
 		// instead of tracking it here
+		debugEnd();
 		return networktimeout;
 	}
 
 	public String	getSchema() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		return sqlrcon.getCurrentSchema();
+		String	schema=sqlrcon.getCurrentSchema();
+		debugEnd();
+		return schema;
 	}
 
 	public int	getTransactionIsolation() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
+		debugEnd();
 		return txisolevel;
 	}
 
 	public Map<String,Class<?>>	getTypeMap() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
+		debugEnd();
 		return typemap;
 	}
 
@@ -284,35 +318,43 @@ sqlrcon.debugOn();
 		debugFunction();
 		throwExceptionIfClosed();
 		// sqlrelay doesn't support anything like this
+		debugEnd();
 		return null;
 	}
 
 	public boolean	isClosed() throws SQLException {
 		debugFunction();
-		return sqlrcon==null;
+		boolean	isclosed=(sqlrcon==null);
+		debugEnd();
+		return isclosed;
 	}
 
 	public boolean	isReadOnly() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
+		debugEnd();
 		return readonly;
 	}
 
 	public boolean	isValid(int timeout) throws SQLException {
 		debugFunction();
 		if (isClosed()) {
+			debugEnd();
 			return false;
 		}
 		// FIXME: need to get the current response timeout pre-ping
 		// and reset it post-ping, but the java api doesn't currently
 		// have getResponseTimeout methods
 		sqlrcon.setResponseTimeout(timeout,0);
-		return sqlrcon.ping();
+		boolean	ping=sqlrcon.ping();
+		debugEnd();
+		return ping;
 	}
 
 	public String	nativeSQL(String sql) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
+		debugEnd();
 		return sql;
 	}
 
@@ -328,6 +370,7 @@ sqlrcon.debugOn();
 		sqlrstmt.setConnection(this);
 		sqlrstmt.setSQLRConnection(sqlrcon);
 		sqlrstmt.setSQLRCursor(sqlrcur);
+		debugEnd();
 		return sqlrstmt;
 	}
 
@@ -337,7 +380,8 @@ sqlrcon.debugOn();
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
@@ -348,7 +392,8 @@ sqlrcon.debugOn();
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
@@ -364,6 +409,7 @@ sqlrcon.debugOn();
 		sqlrstmt.setConnection(this);
 		sqlrstmt.setSQLRConnection(sqlrcon);
 		sqlrstmt.setSQLRCursor(sqlrcur);
+		debugEnd();
 		return sqlrstmt;
 	}
 
@@ -372,7 +418,8 @@ sqlrcon.debugOn();
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
@@ -381,7 +428,8 @@ sqlrcon.debugOn();
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
@@ -391,7 +439,8 @@ sqlrcon.debugOn();
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
@@ -402,7 +451,8 @@ sqlrcon.debugOn();
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
@@ -411,7 +461,8 @@ sqlrcon.debugOn();
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
@@ -419,7 +470,8 @@ sqlrcon.debugOn();
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void	rollback() throws SQLException {
@@ -428,12 +480,14 @@ sqlrcon.debugOn();
 		if (!sqlrcon.rollback()) {
 			throwErrorMessageException();
 		}
+		debugEnd();
 	}
 
 	public void	rollback(Savepoint savepoint) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void	setAutoCommit(boolean autocommit) throws SQLException {
@@ -444,6 +498,7 @@ sqlrcon.debugOn();
 			throwErrorMessageException();
 		}
 		this.autocommit=autocommit;
+		debugEnd();
 	}
 
 	public void	setCatalog(String catalog) throws SQLException {
@@ -452,27 +507,30 @@ sqlrcon.debugOn();
 		if (!sqlrcon.selectDatabase(catalog)) {
 			throwErrorMessageException();
 		}
+		debugEnd();
 	}
 
 	public void	setClientInfo(Properties properties)
 						throws SQLClientInfoException {
 		debugFunction();
 		if (sqlrcon==null) {
-			throw new SQLClientInfoException();
+			throwClientInfoException();
 		}
 		clientinfo.clear();
 		clientinfo.putAll(properties);
 		setClientInfo();
+		debugEnd();
 	}
 
 	public void	setClientInfo(String name, String value)
 						throws SQLClientInfoException {
 		debugFunction();
 		if (sqlrcon==null) {
-			throw new SQLClientInfoException();
+			throwClientInfoException();
 		}
 		clientinfo.setProperty(name,value);
 		setClientInfo();
+		debugEnd();
 	}
 
 	private void	setClientInfo() {
@@ -488,13 +546,15 @@ sqlrcon.debugOn();
 			info+=name+":"+clientinfo.getProperty(name);
 		}
 		sqlrcon.setClientInfo(info);
+		debugEnd();
 	}
 
 	public void	setHoldability(int holdability) throws SQLException {
 		debugFunction();
 		if (holdability!=ResultSet.HOLD_CURSORS_OVER_COMMIT) {
-			throwNotSupportedException();
+			throwFeatureNotSupportedException();
 		}
+		debugEnd();
 	}
 
 	public void	setNetworkTimeout(Executor executor,
@@ -517,6 +577,7 @@ sqlrcon.debugOn();
 		// variable, so we should get this from the underlying api
 		// instead of tracking it here
 		networktimeout=milliseconds;
+		debugEnd();
 	}
 
 	public void	setReadOnly(boolean readonly) throws SQLException {
@@ -524,19 +585,22 @@ sqlrcon.debugOn();
 		throwExceptionIfClosed();
 		// FIXME: implement this somehow
 		this.readonly=readonly;
+		debugEnd();
 	}
 
 	public Savepoint	setSavepoint() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public Savepoint	setSavepoint(String name) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
@@ -544,6 +608,7 @@ sqlrcon.debugOn();
 		debugFunction();
 		throwExceptionIfClosed();
 		// FIXME: implement this somehow
+		debugEnd();
 	}
 
 	public void	setTransactionIsolation(int level) throws SQLException {
@@ -567,6 +632,7 @@ sqlrcon.debugOn();
 						"isolation level " + level);
 		}
 		txisolevel=level;
+		debugEnd();
 	}
 
 	public void	setTypeMap(Map<String,Class<?>> map)
@@ -575,41 +641,52 @@ sqlrcon.debugOn();
 		throwExceptionIfClosed();
 		// FIXME: do something with this
 		typemap=map;
+		debugEnd();
 	}
 
 	public boolean	isWrapperFor(Class<?> iface) throws SQLException {
 		debugFunction();
+		debugEnd();
 		return (iface==SQLRConnection.class);
 	}
 
 	@SuppressWarnings({"unchecked"})
 	public <T> T	unwrap(Class<T> iface) throws SQLException {
 		debugFunction();
+		debugEnd();
 		return (T)((iface==SQLRConnection.class)?sqlrcon:null);
 	}
 
+	protected void	throwClientInfoException()
+					throws SQLClientInfoException {
+		debugZeroIndent();
+		throw new SQLClientInfoException();
+	}
+
 	private void throwExceptionIfClosed() throws SQLException {
-		if (sqlrcon==null) {
-			throwException("Connection is closed");
+		if (sqlrcon!=null) {
+			return;
 		}
+		throwException("connection is closed");
 	}
 
 	private void throwErrorMessageException() throws SQLException {
-		debugFunction();
 		throwException(sqlrcon.errorMessage());
 	}
 
-	private void throwNotSupportedException() throws SQLException {
-		debugFunction();
+	private void throwFeatureNotSupportedException() throws SQLException {
+		debugZeroIndent();
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	private void throwException(String reason) throws SQLException {
-		debugFunction();
+		debugZeroIndent();
 		throw new SQLException(reason);
 	}
 
 	public SQLRConnection getSQLRConnection() {
+		debugFunction();
+		debugEnd();
 		return sqlrcon;
 	}
 }

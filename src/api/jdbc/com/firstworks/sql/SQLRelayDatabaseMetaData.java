@@ -13,11 +13,13 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		connection=null;
 		// FIXME: set protected member variables?
+		debugEnd();
 	}
 
 	public void setConnection(SQLRelayConnection connection) {
 		debugFunction();
 		this.connection=connection;
+		debugEnd();
 	}
 
 	public boolean 	allProceduresAreCallable() throws SQLException {
@@ -25,7 +27,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		// Retrieves whether the current user can call all the
 		// procedures returned by the method getProcedures.
 		boolean	result=false;
-		debugPrintln("  result: "+result);
+		debugPrintln("result: "+result);
+		debugEnd();
 		return result;
 	}
 
@@ -34,7 +37,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		// Retrieves whether the current user can use all the tables
 		// returned by the method getTables in a SELECT statement.
 		boolean	result=false;
-		debugPrintln("  result: "+result);
+		debugPrintln("result: "+result);
+		debugEnd();
 		return result;
 	}
 
@@ -46,7 +50,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		// that are holdable.
 		// FIXME: no idea if this is true or not
 		boolean	result=false;
-		debugPrintln("  result: "+result);
+		debugPrintln("result: "+result);
+		debugEnd();
 		return result;
 	}
 
@@ -55,7 +60,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	result=false;
-		debugPrintln("  result: "+result);
+		debugPrintln("result: "+result);
+		debugEnd();
 		return result;
 	}
 
@@ -64,7 +70,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	result=false;
-		debugPrintln("  result: "+result);
+		debugPrintln("result: "+result);
+		debugEnd();
 		return result;
 	}
 
@@ -72,21 +79,24 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// SQL Relay doesn't currenlty support ResultSet.RowDelete
 		boolean	result=false;
-		debugPrintln("  result: "+result);
+		debugPrintln("result: "+result);
+		debugEnd();
 		return result;
 	}
 
 	public boolean 	doesMaxRowSizeIncludeBlobs() throws SQLException {
 		debugFunction();
 		boolean	result=false;
-		debugPrintln("  result: "+result);
+		debugPrintln("result: "+result);
+		debugEnd();
 		return result;
 	}
 
 	public boolean 	generatedKeyAlwaysReturned() throws SQLException {
 		debugFunction();
 		boolean	result=true;
-		debugPrintln("  result: "+result);
+		debugPrintln("result: "+result);
+		debugEnd();
 		return result;
 	}
 
@@ -97,6 +107,7 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						throws SQLException {
 		debugFunction();
 		// FIXME: implement this somehow...
+		debugEnd();
 		return null;
 	}
 
@@ -108,6 +119,7 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 							throws SQLException {
 		debugFunction();
 		// FIXME: implement this somehow...
+		debugEnd();
 		return null;
 	}
 
@@ -121,11 +133,11 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 
 		boolean	result=sqlrcur.getDatabaseListWithFormat(null,3);
 
-		debugPrintln("  result: "+result);
+		debugPrintln("result: "+result);
 
 		if (result) {
 
-			debugPrintln("  colcount: "+sqlrcur.colCount());
+			debugPrintln("colcount: "+sqlrcur.colCount());
 
 			if (sqlrcur.colCount()>0) {
 				resultset=new SQLRelayResultSet();
@@ -136,6 +148,7 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 			throwErrorMessageException(sqlrcur);
 		}
 		
+		debugEnd();
 		return resultset;
 	}
 
@@ -143,7 +156,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: oracle uses @
 		String	separator=".";
-		debugPrintln("  separator: "+separator);
+		debugPrintln("separator: "+separator);
+		debugEnd();
 		return separator;
 	}
 
@@ -151,13 +165,15 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: I think SQL Server uses catalog, maybe sybase
 		String	term="database";
-		debugPrintln("  term: "+term);
+		debugPrintln("term: "+term);
+		debugEnd();
 		return term;
 	}
 
 	public ResultSet 	getClientInfoProperties() throws SQLException {
 		debugFunction();
 		// FIXME: free form in SQL Relay
+		debugEnd();
 		return null;
 	}
 
@@ -169,6 +185,7 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						throws SQLException {
 		debugFunction();
 		// FIXME: implement this somehow
+		debugEnd();
 		return null;
 	}
 
@@ -180,8 +197,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 
 		String	wild=buildWild(catalog,schemaPattern,tableNamePattern);
-		debugPrintln("  wild: "+wild);
-		debugPrintln("  column name pattern: "+columnNamePattern);
+		debugPrintln("wild: "+wild);
+		debugPrintln("column name pattern: "+columnNamePattern);
 
 		SQLRelayResultSet	resultset=null;
 		SQLRelayStatement	stmt=(SQLRelayStatement)
@@ -191,11 +208,11 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		boolean	result=sqlrcur.getColumnListWithFormat(
 						wild,columnNamePattern,3);
 
-		debugPrintln("  result: "+result);
+		debugPrintln("result: "+result);
 
 		if (result) {
 
-			debugPrintln("  colcount: "+sqlrcur.colCount());
+			debugPrintln("colcount: "+sqlrcur.colCount());
 
 			if (sqlrcur.colCount()>0) {
 				resultset=new SQLRelayResultSet();
@@ -206,11 +223,13 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 			throwErrorMessageException(sqlrcur);
 		}
 		
+		debugEnd();
 		return resultset;
 	}
 
 	public Connection 	getConnection() throws SQLException {
 		debugFunction();
+		debugEnd();
 		return connection;
 	}
 
@@ -223,20 +242,23 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						throws SQLException {
 		debugFunction();
 		// FIXME: implement this somehow...
+		debugEnd();
 		return null;
 	}
 
 	public int 	getDatabaseMajorVersion() throws SQLException {
 		debugFunction();
 		int	majorversion=getDatabaseVersion(true);
-		debugPrintln("  major version: "+majorversion);
+		debugPrintln("major version: "+majorversion);
+		debugEnd();
 		return majorversion;
 	}
 
 	public int 	getDatabaseMinorVersion() throws SQLException {
 		debugFunction();
 		int	minorversion=getDatabaseVersion(false);
-		debugPrintln("  minor version: "+minorversion);
+		debugPrintln("minor version: "+minorversion);
+		debugEnd();
 		return minorversion;
 	}
 
@@ -247,9 +269,11 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		if (matcher.find()) {
 			String[]	parts=matcher.group().split("\\.");
 			if (parts!=null && parts.length>((major)?0:1)) {
+				debugEnd();
 				return Integer.parseInt(parts[(major)?0:1]);
 			}
 		}
+		debugEnd();
 		return -1;
 	}
 
@@ -257,7 +281,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: cache/fetch identify
 		String	id=connection.getSQLRConnection().identify();
-		debugPrintln("  id: "+id);
+		debugPrintln("id: "+id);
+		debugEnd();
 		return id;
 	}
 
@@ -266,7 +291,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		// FIXME: cache/fetch dbVersion
 		String	productversion=
 				connection.getSQLRConnection().dbVersion();
-		debugPrintln("  product version: "+productversion);
+		debugPrintln("product version: "+productversion);
+		debugEnd();
 		return productversion;
 	}
 
@@ -275,7 +301,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		int	isolation=(getDatabaseProductName().equals("mysql"))?
 					Connection.TRANSACTION_REPEATABLE_READ:
 					Connection.TRANSACTION_READ_COMMITTED;
-		debugPrintln("  isolation: "+isolation);
+		debugPrintln("isolation: "+isolation);
+		debugEnd();
 		return isolation;
 	}
 
@@ -288,7 +315,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		if (parts!=null && parts.length>0) {
 			majorversion=Integer.parseInt(parts[0]);
 		}
-		debugPrintln("  major version: "+majorversion);
+		debugPrintln("major version: "+majorversion);
+		debugEnd();
 		return majorversion;
 	}
 
@@ -301,14 +329,16 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		if (parts!=null && parts.length>1) {
 			minorversion=Integer.parseInt(parts[1]);
 		}
-		debugPrintln("  minor version: "+minorversion);
+		debugPrintln("minor version: "+minorversion);
+		debugEnd();
 		return minorversion;
 	}
 
 	public String 	getDriverName() throws SQLException {
 		debugFunction();
 		String	drivername="sqlrelay";
-		debugPrintln("  driver name: "+drivername);
+		debugPrintln("driver name: "+drivername);
+		debugEnd();
 		return drivername;
 	}
 
@@ -317,7 +347,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		String	driverversion=connection.
 					getSQLRConnection().
 					clientVersion();
-		debugPrintln("  driver version: "+driverversion);
+		debugPrintln("driver version: "+driverversion);
+		debugEnd();
 		return driverversion;
 	}
 
@@ -330,6 +361,7 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		// reference the given table's primary key columns (the foreign
 		// keys exported by a table).
 		// FIXME: implement this somehow
+		debugEnd();
 		return null;
 	}
 
@@ -337,7 +369,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		String	extranamechars="#@";
-		debugPrintln("  extra name characters: "+extranamechars);
+		debugPrintln("extra name characters: "+extranamechars);
+		debugEnd();
 		return extranamechars;
 	}
 
@@ -350,6 +383,7 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: implement with
 		// sqlrcur.getProcedureBindAndColumnList()?
+		debugEnd();
 		return null;
 	}
 
@@ -359,6 +393,7 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						throws SQLException {
 		debugFunction();
 		// FIXME: implement this by calling sqlrcur.getProcedures()?
+		debugEnd();
 		return null;
 	}
 
@@ -368,8 +403,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		// * sqlserver uses braces
 		String	identifierquotestring=
 			(getDatabaseProductName().equals("mysql"))?"`":"\"";
-		debugPrintln("  identifier quote string: "+
+		debugPrintln("identifier quote string: "+
 					identifierquotestring);
+		debugEnd();
 		return identifierquotestring;
 	}
 
@@ -382,6 +418,7 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		// referenced by the given table's foreign key columns (the
 		// primary keys imported by a table).
 		// FIXME: implement this somehow
+		debugEnd();
 		return null;
 	}
 
@@ -393,6 +430,7 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						throws SQLException {
 		debugFunction();
 		// FIXME: implement using sqlrcur.getKeyAndIndexList() ?
+		debugEnd();
 		return null;
 	}
 
@@ -400,7 +438,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: get this from ???
 		int	jdbcmajorversion=4;
-		debugPrintln("  jdbc major version: "+jdbcmajorversion);
+		debugPrintln("jdbc major version: "+jdbcmajorversion);
+		debugEnd();
 		return jdbcmajorversion;
 	}
 
@@ -408,7 +447,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: get this from ???
 		int	jdbcminorversion=3;
-		debugPrintln("  jdbc minor version: "+jdbcminorversion);
+		debugPrintln("jdbc minor version: "+jdbcminorversion);
+		debugEnd();
 		return jdbcminorversion;
 	}
 
@@ -416,8 +456,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxbinaryliterallength=0;
-		debugPrintln("  max binary literal length: "+
+		debugPrintln("max binary literal length: "+
 						maxbinaryliterallength);
+		debugEnd();
 		return maxbinaryliterallength;
 	}
 
@@ -425,8 +466,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxcatalognamelength=0;
-		debugPrintln("  max catalog name length: "+
+		debugPrintln("max catalog name length: "+
 						maxcatalognamelength);
+		debugEnd();
 		return maxcatalognamelength;
 	}
 
@@ -434,8 +476,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxcharliterallength=0;
-		debugPrintln("  max char literal length: "+
+		debugPrintln("max char literal length: "+
 						maxcharliterallength);
+		debugEnd();
 		return maxcharliterallength;
 	}
 
@@ -443,8 +486,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxcolumnnamelength=0;
-		debugPrintln("  max column name length: "+
+		debugPrintln("max column name length: "+
 						maxcolumnnamelength);
+		debugEnd();
 		return maxcolumnnamelength;
 	}
 
@@ -452,7 +496,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxcolumnsingroup=0;
-		debugPrintln("  max columns in group: "+maxcolumnsingroup);
+		debugPrintln("max columns in group: "+maxcolumnsingroup);
+		debugEnd();
 		return maxcolumnsingroup;
 	}
 
@@ -460,7 +505,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxcolumnsinindex=0;
-		debugPrintln("  max columns in index: "+maxcolumnsinindex);
+		debugPrintln("max columns in index: "+maxcolumnsinindex);
+		debugEnd();
 		return maxcolumnsinindex;
 	}
 
@@ -468,7 +514,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxcolumnsinorderby=0;
-		debugPrintln("  max columns in order by: "+maxcolumnsinorderby);
+		debugPrintln("max columns in order by: "+maxcolumnsinorderby);
+		debugEnd();
 		return maxcolumnsinorderby;
 	}
 
@@ -476,7 +523,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxcolumnsinselect=0;
-		debugPrintln("  max columns in select: "+maxcolumnsinselect);
+		debugPrintln("max columns in select: "+maxcolumnsinselect);
+		debugEnd();
 		return maxcolumnsinselect;
 	}
 
@@ -484,7 +532,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxcolumnsintable=0;
-		debugPrintln("  max columns in table: "+maxcolumnsintable);
+		debugPrintln("max columns in table: "+maxcolumnsintable);
+		debugEnd();
 		return maxcolumnsintable;
 	}
 
@@ -492,15 +541,17 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxconnections=0;
-		debugPrintln("  max connections: "+maxconnections);
+		debugPrintln("max connections: "+maxconnections);
+		debugEnd();
 		return maxconnections;
 	}
 
 	public int 	getMaxCursorNameLength() throws SQLException {
 		debugFunction();
 		int	maxcursornamelength=0;
-		debugPrintln("  max cursor name length: "+
+		debugPrintln("max cursor name length: "+
 						maxcursornamelength);
+		debugEnd();
 		return maxcursornamelength;
 	}
 
@@ -508,7 +559,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxindexlength=0;
-		debugPrintln("  max index length: "+maxindexlength);
+		debugPrintln("max index length: "+maxindexlength);
+		debugEnd();
 		return maxindexlength;
 	}
 
@@ -516,8 +568,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxprocedurenamelength=0;
-		debugPrintln("  max procedure name length: "+
+		debugPrintln("max procedure name length: "+
 						maxprocedurenamelength);
+		debugEnd();
 		return maxprocedurenamelength;
 	}
 
@@ -525,7 +578,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxrowsize=0;
-		debugPrintln("  max row size: "+maxrowsize);
+		debugPrintln("max row size: "+maxrowsize);
+		debugEnd();
 		return maxrowsize;
 	}
 
@@ -533,7 +587,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxschemanamelength=0;
-		debugPrintln("  max schema name length: "+maxschemanamelength);
+		debugPrintln("max schema name length: "+maxschemanamelength);
+		debugEnd();
 		return maxschemanamelength;
 	}
 
@@ -541,7 +596,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxstatementlength=0;
-		debugPrintln("  max statement length: "+maxstatementlength);
+		debugPrintln("max statement length: "+maxstatementlength);
+		debugEnd();
 		return maxstatementlength;
 	}
 
@@ -549,7 +605,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxstatements=0;
-		debugPrintln("  max statements: "+maxstatements);
+		debugPrintln("max statements: "+maxstatements);
+		debugEnd();
 		return maxstatements;
 	}
 
@@ -557,7 +614,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxtablenamelength=0;
-		debugPrintln("  max table name length: "+maxtablenamelength);
+		debugPrintln("max table name length: "+maxtablenamelength);
+		debugEnd();
 		return maxtablenamelength;
 	}
 
@@ -565,7 +623,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxtablesinselect=0;
-		debugPrintln("  max tables in select: "+maxtablesinselect);
+		debugPrintln("max tables in select: "+maxtablesinselect);
+		debugEnd();
 		return maxtablesinselect;
 	}
 
@@ -573,7 +632,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxusernamelength=0;
-		debugPrintln("  max user name length: "+maxusernamelength);
+		debugPrintln("max user name length: "+maxusernamelength);
+		debugEnd();
 		return maxusernamelength;
 	}
 
@@ -581,7 +641,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		String	numericfunctions=null;
-		debugPrintln("  numeric functions: "+numericfunctions);
+		debugPrintln("numeric functions: "+numericfunctions);
+		debugEnd();
 		return numericfunctions;
 	}
 
@@ -591,6 +652,7 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						throws SQLException {
 		debugFunction();
 		// FIXME: implement this by calling sqlrcon.getPrimaryKeysList()
+		debugEnd();
 		return null;
 	}
 
@@ -603,6 +665,7 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: implement this by calling
 		// sqlrcon.getProcedureBindAndColumnList()
+		debugEnd();
 		return null;
 	}
 
@@ -612,13 +675,15 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						throws SQLException {
 		debugFunction();
 		// FIXME: implement this by calling sqlrcon.getProcedureList()
+		debugEnd();
 		return null;
 	}
 
 	public String 	getProcedureTerm() throws SQLException {
 		debugFunction();
 		String	procedureterm="procedure";
-		debugPrintln("  procedure term: "+procedureterm);
+		debugPrintln("procedure term: "+procedureterm);
+		debugEnd();
 		return procedureterm;
 	}
 
@@ -629,6 +694,7 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						throws SQLException {
 		debugFunction();
 		// FIXME: implement this somehow
+		debugEnd();
 		return null;
 	}
 
@@ -636,7 +702,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: is this correct?
 		int	resultsetholdability=ResultSet.CLOSE_CURSORS_AT_COMMIT;
-		debugPrintln("  result set holdability: "+resultsetholdability);
+		debugPrintln("result set holdability: "+resultsetholdability);
+		debugEnd();
 		return resultsetholdability;
 	}
 
@@ -662,11 +729,13 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 				debugPrint("ROWID_VALID_FOREVER");
 				break;
 		}
+		debugEnd();
 		return rowidlifetime;
 	}
 
 	public ResultSet 	getSchemas() throws SQLException {
 		debugFunction();
+		debugEnd();
 		return getSchemas(null,null);
 	}
 
@@ -676,8 +745,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 
 		// FIXME: use catalog
-		debugPrintln("  catalog: "+catalog);
-		debugPrintln("  schema pattern: "+schemaPattern);
+		debugPrintln("catalog: "+catalog);
+		debugPrintln("schema pattern: "+schemaPattern);
 
 		SQLRelayResultSet	resultset=null;
 		SQLRelayStatement	stmt=(SQLRelayStatement)
@@ -686,11 +755,11 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 
 		boolean	result=sqlrcur.getSchemaListWithFormat(schemaPattern,3);
 
-		debugPrintln("  result: "+result);
+		debugPrintln("result: "+result);
 
 		if (result) {
 
-			debugPrintln("  colcount: "+sqlrcur.colCount());
+			debugPrintln("colcount: "+sqlrcur.colCount());
 
 			if (sqlrcur.colCount()>0) {
 				resultset=new SQLRelayResultSet();
@@ -701,13 +770,15 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 			throwErrorMessageException(sqlrcur);
 		}
 		
+		debugEnd();
 		return resultset;
 	}
 
 	public String 	getSchemaTerm() throws SQLException {
 		debugFunction();
 		String	schematerm="schema";
-		debugPrintln("  schema term: "+schematerm);
+		debugPrintln("schema term: "+schematerm);
+		debugEnd();
 		return schematerm;
 	}
 
@@ -715,7 +786,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		String	searchstringescape="\\";
-		debugPrintln("  search string escape: "+searchstringescape);
+		debugPrintln("search string escape: "+searchstringescape);
+		debugEnd();
 		return searchstringescape;
 	}
 
@@ -723,7 +795,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		String	sqlkeywords=null;
-		debugPrintln("  sql keywords: "+sqlkeywords);
+		debugPrintln("sql keywords: "+sqlkeywords);
+		debugEnd();
 		return sqlkeywords;
 	}
 
@@ -731,7 +804,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: no idea
 		int	sqlstatetype=sqlStateSQL;
-		debugPrintln("  sql state type: "+sqlstatetype);
+		debugPrintln("sql state type: "+sqlstatetype);
+		debugEnd();
 		return sqlstatetype;
 	}
 
@@ -739,7 +813,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		String	stringfunctions=null;
-		debugPrintln("  string functions: "+stringfunctions);
+		debugPrintln("string functions: "+stringfunctions);
+		debugEnd();
 		return stringfunctions;
 	}
 
@@ -749,6 +824,7 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						throws SQLException {
 		debugFunction();
 		// FIXME: implement this somehow
+		debugEnd();
 		return null;
 	}
 
@@ -758,6 +834,7 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						throws SQLException {
 		debugFunction();
 		// FIXME: implement this somehow
+		debugEnd();
 		return null;
 	}
 
@@ -765,7 +842,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: implement this somehow
 		String	systemfunctions=null;
-		debugPrintln("  system functions: "+systemfunctions);
+		debugPrintln("system functions: "+systemfunctions);
+		debugEnd();
 		return systemfunctions;
 	}
 
@@ -775,6 +853,7 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						throws SQLException {
 		debugFunction();
 		// FIXME: implement this somehow
+		debugEnd();
 		return null;
 	}
 
@@ -786,7 +865,7 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 
 		String	wild=buildWild(catalog,schemaPattern,tableNamePattern);
-		debugPrintln("  wild: "+wild);
+		debugPrintln("wild: "+wild);
 
 		debugPrint("  types: ");
 		int	objecttypes=0;
@@ -820,11 +899,11 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		boolean	result=sqlrcur.getTableListWithFormat(
 						tableNamePattern,3,objecttypes);
 
-		debugPrintln("  result: "+result);
+		debugPrintln("result: "+result);
 
 		if (result) {
 
-			debugPrintln("  colcount: "+sqlrcur.colCount());
+			debugPrintln("colcount: "+sqlrcur.colCount());
 
 			if (sqlrcur.colCount()>0) {
 				resultset=new SQLRelayResultSet();
@@ -835,16 +914,19 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 			throwErrorMessageException(sqlrcur);
 		}
 		
+		debugEnd();
 		return resultset;
 	}
 
 	private String 	buildWild(String catalog,
 					String schema,
 					String object) {
+		debugFunction();
 
 		// If object already contains a . then just use it
 		// as-is.
 		if (object.contains(".")) {
+			debugEnd();
 			return object;
 		}
 
@@ -879,12 +961,14 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		} else {
 			wild.append('%');
 		}
+		debugEnd();
 		return wild.toString();
 	}
 
 	public ResultSet 	getTableTypes() throws SQLException {
 		debugFunction();
 		// FIXME: implement this somehow
+		debugEnd();
 		return null;
 	}
 
@@ -892,7 +976,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		String	timedatefunctions=null;
-		debugPrintln("  timedate functions: "+timedatefunctions);
+		debugPrintln("timedate functions: "+timedatefunctions);
+		debugEnd();
 		return timedatefunctions;
 	}
 
@@ -932,6 +1017,7 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		// LOCAL_TYPE_NAME
 		//	String
 		//	Localized version of this datatype.
+		debugEnd();
 		return null;
 	}
 
@@ -942,6 +1028,7 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						throws SQLException {
 		debugFunction();
 		// FIXME: implement this somehow
+		debugEnd();
 		return null;
 	}
 
@@ -967,15 +1054,17 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 			url=url+":"+socket;
 		}
 
-		debugPrintln("  url: "+url);
+		debugPrintln("url: "+url);
 
+		debugEnd();
 		return url;
 	}
 
 	public String 	getUserName() throws SQLException {
 		debugFunction();
 		String	username=connection.getUser();
-		debugPrintln("  user name: "+username);
+		debugPrintln("user name: "+username);
+		debugEnd();
 		return username;
 	}
 
@@ -985,14 +1074,16 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 							throws SQLException {
 		debugFunction();
 		// FIXME: implement this somehow
+		debugEnd();
 		return null;
 	}
 
 	public boolean 	insertsAreDetected(int type) throws SQLException {
 		debugFunction();
 		boolean	insertsaredetected=false;
-		debugPrintln("  type: "+type);
-		debugPrintln("  inserts are detected: "+insertsaredetected);
+		debugPrintln("type: "+type);
+		debugPrintln("inserts are detected: "+insertsaredetected);
+		debugEnd();
 		return insertsaredetected;
 	}
 
@@ -1000,7 +1091,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: not in oracle
 		boolean	iscatalogatstart=true;
-		debugPrintln("  is catalog at start: "+iscatalogatstart);
+		debugPrintln("is catalog at start: "+iscatalogatstart);
+		debugEnd();
 		return iscatalogatstart;
 	}
 
@@ -1008,7 +1100,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: implement this somehow
 		boolean	isreadonly=false;
-		debugPrintln("  is read only: "+isreadonly);
+		debugPrintln("is read only: "+isreadonly);
+		debugEnd();
 		return isreadonly;
 	}
 
@@ -1016,7 +1109,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: no idea, probably db-specific
 		boolean	locatorsupdatecopy=false;
-		debugPrintln("  locators update copy: "+locatorsupdatecopy);
+		debugPrintln("locators update copy: "+locatorsupdatecopy);
+		debugEnd();
 		return locatorsupdatecopy;
 	}
 
@@ -1024,8 +1118,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: generally true, but probably db-specific
 		boolean	nullplusnonnullisnull=true;
-		debugPrintln("  null plus non null is null: "+
+		debugPrintln("null plus non null is null: "+
 						nullplusnonnullisnull);
+		debugEnd();
 		return nullplusnonnullisnull;
 	}
 
@@ -1033,8 +1128,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: generally true, but probably db-specific
 		boolean	nullsaresortedatend=true;
-		debugPrintln("  nulls are sorted at end: "+
+		debugPrintln("nulls are sorted at end: "+
 						nullsaresortedatend);
+		debugEnd();
 		return nullsaresortedatend;
 	}
 
@@ -1042,8 +1138,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: generally false, but probably db-specific
 		boolean	nullsaresortedatstart=false;
-		debugPrintln("  nulls are sorted at start: "+
+		debugPrintln("nulls are sorted at start: "+
 						nullsaresortedatstart);
+		debugEnd();
 		return nullsaresortedatstart;
 	}
 
@@ -1051,8 +1148,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: generally true, but probably db-specific
 		boolean	nullsaresortedhigh=true;
-		debugPrintln("  nulls are sorted high: "+
+		debugPrintln("nulls are sorted high: "+
 						nullsaresortedhigh);
+		debugEnd();
 		return nullsaresortedhigh;
 	}
 
@@ -1060,56 +1158,63 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: generally false, but probably db-specific
 		boolean	nullsaresortedlow=false;
-		debugPrintln("  nulls are sorted low: "+
+		debugPrintln("nulls are sorted low: "+
 						nullsaresortedlow);
+		debugEnd();
 		return nullsaresortedlow;
 	}
 
 	public boolean 	othersDeletesAreVisible(int type) throws SQLException {
 		debugFunction();
 		boolean	othersdeletesarevisible=false;
-		debugPrintln("  others deletes are visible: "+
+		debugPrintln("others deletes are visible: "+
 						othersdeletesarevisible);
+		debugEnd();
 		return othersdeletesarevisible;
 	}
 
 	public boolean 	othersInsertsAreVisible(int type) throws SQLException {
 		debugFunction();
 		boolean	othersinsertssarevisible=false;
-		debugPrintln("  others inserts are visible: "+
+		debugPrintln("others inserts are visible: "+
 						othersinsertssarevisible);
+		debugEnd();
 		return othersinsertssarevisible;
 	}
 
 	public boolean 	othersUpdatesAreVisible(int type) throws SQLException {
 		debugFunction();
 		boolean	othersupdatessarevisible=false;
-		debugPrintln("  others updates are visible: "+
+		debugPrintln("others updates are visible: "+
 						othersupdatessarevisible);
+		debugEnd();
 		return othersupdatessarevisible;
 	}
 
 	public boolean 	ownDeletesAreVisible(int type) throws SQLException {
 		debugFunction();
 		boolean	owndeletesarevisible=false;
-		debugPrintln("  own deletes are visible: "+
+		debugPrintln("own deletes are visible: "+
 						owndeletesarevisible);
+		debugEnd();
 		return owndeletesarevisible;
 	}
 
 	public boolean 	ownInsertsAreVisible(int type) throws SQLException {
 		debugFunction();
 		boolean	owninsertsarevisible=false;
-		debugPrintln("  own inserts are visible: "+
+		debugPrintln("own inserts are visible: "+
 						owninsertsarevisible);
+		debugEnd();
 		return owninsertsarevisible;
 	}
 
 	public boolean 	ownUpdatesAreVisible(int type) throws SQLException {
 		debugFunction();
 		boolean	ownupdatesarevisible=false;
-		debugPrintln("  own updates are visible: "+
+		debugPrintln("own updates are visible: "+
 						ownupdatesarevisible);
+		debugEnd();
 		return ownupdatesarevisible;
 	}
 
@@ -1119,8 +1224,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		// oracle stores upper case identifiers
 		// other db's store mixed case identifiers
 		boolean	storeslowercaseidentifiers=false;
-		debugPrintln("  stores lower case identifiers: "+
+		debugPrintln("stores lower case identifiers: "+
 						storeslowercaseidentifiers);
+		debugEnd();
 		return storeslowercaseidentifiers;
 	}
 
@@ -1128,8 +1234,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	storeslowercasequotedidentifiers=false;
-		debugPrintln("  stores lower case quoted identifiers: "+
+		debugPrintln("stores lower case quoted identifiers: "+
 					storeslowercasequotedidentifiers);
+		debugEnd();
 		return storeslowercasequotedidentifiers;
 	}
 
@@ -1137,8 +1244,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: generally true, but db-specific, false for oracle
 		boolean	storesmixedcaseidentifiers=true;
-		debugPrintln("  stores mixed case identifiers: "+
+		debugPrintln("stores mixed case identifiers: "+
 						storesmixedcaseidentifiers);
+		debugEnd();
 		return storesmixedcaseidentifiers;
 	}
 
@@ -1146,8 +1254,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	storesmixedcasequotedidentifiers=true;
-		debugPrintln("  stores mixed case quoted identifiers: "+
+		debugPrintln("stores mixed case quoted identifiers: "+
 					storesmixedcasequotedidentifiers);
+		debugEnd();
 		return storesmixedcasequotedidentifiers;
 	}
 
@@ -1157,8 +1266,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		// oracle stores upper case identifiers
 		// other db's store mixed case identifiers
 		boolean	storesuppercaseidentifiers=false;
-		debugPrintln("  stores upper case identifiers: "+
+		debugPrintln("stores upper case identifiers: "+
 						storesuppercaseidentifiers);
+		debugEnd();
 		return storesuppercaseidentifiers;
 	}
 
@@ -1166,8 +1276,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	storesuppercasequotedidentifiers=true;
-		debugPrintln("  stores upper case quoted identifiers: "+
+		debugPrintln("stores upper case quoted identifiers: "+
 					storesuppercasequotedidentifiers);
+		debugEnd();
 		return storesuppercasequotedidentifiers;
 	}
 
@@ -1175,8 +1286,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsaltertablewithaddcommand=true;
-		debugPrintln("  supports alter table with add command: "+
+		debugPrintln("supports alter table with add command: "+
 					supportsaltertablewithaddcommand);
+		debugEnd();
 		return supportsaltertablewithaddcommand;
 	}
 
@@ -1184,8 +1296,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsaltertablewithdropcommand=true;
-		debugPrintln("  supports alter table with drop command: "+
+		debugPrintln("supports alter table with drop command: "+
 					supportsaltertablewithdropcommand);
+		debugEnd();
 		return supportsaltertablewithdropcommand;
 	}
 
@@ -1193,8 +1306,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsansi92entrylevelsql=true;
-		debugPrintln("  supports ansi92 entry level sql: "+
+		debugPrintln("supports ansi92 entry level sql: "+
 						supportsansi92entrylevelsql);
+		debugEnd();
 		return supportsansi92entrylevelsql;
 	}
 
@@ -1202,8 +1316,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsansi92fullsql=true;
-		debugPrintln("  supports ansi92 full sql: "+
+		debugPrintln("supports ansi92 full sql: "+
 						supportsansi92fullsql);
+		debugEnd();
 		return supportsansi92fullsql;
 	}
 
@@ -1211,8 +1326,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsansi92intermediatesql=true;
-		debugPrintln("  supports ansi92 intermediate sql: "+
+		debugPrintln("supports ansi92 intermediate sql: "+
 						supportsansi92intermediatesql);
+		debugEnd();
 		return supportsansi92intermediatesql;
 	}
 
@@ -1220,7 +1336,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsbatchupdates=false;
-		debugPrintln("  supports batch updates: "+supportsbatchupdates);
+		debugPrintln("supports batch updates: "+supportsbatchupdates);
+		debugEnd();
 		return supportsbatchupdates;
 	}
 
@@ -1229,8 +1346,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportscatalogsindatamanipulation=true;
-		debugPrintln("  supports catalogs in data manipulations: "+
+		debugPrintln("supports catalogs in data manipulations: "+
 					supportscatalogsindatamanipulation);
+		debugEnd();
 		return supportscatalogsindatamanipulation;
 	}
 
@@ -1239,8 +1357,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportscatalogsinindexdefinitions=true;
-		debugPrintln("  supports catalogs in index definitions: "+
+		debugPrintln("supports catalogs in index definitions: "+
 					supportscatalogsinindexdefinitions);
+		debugEnd();
 		return supportscatalogsinindexdefinitions;
 	}
 
@@ -1249,8 +1368,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportscatalogsinprivilegedefinitions=true;
-		debugPrintln("  supports catalogs in privilege definitions: "+
+		debugPrintln("supports catalogs in privilege definitions: "+
 					supportscatalogsinprivilegedefinitions);
+		debugEnd();
 		return supportscatalogsinprivilegedefinitions;
 	}
 
@@ -1259,8 +1379,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportscatalogsinprocedurecalls=true;
-		debugPrintln("  supports catalogs in procedure calls: "+
+		debugPrintln("supports catalogs in procedure calls: "+
 					supportscatalogsinprocedurecalls);
+		debugEnd();
 		return supportscatalogsinprocedurecalls;
 	}
 
@@ -1269,8 +1390,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportscatalogsintabledefinitions=true;
-		debugPrintln("  supports catalogs in table definitions: "+
+		debugPrintln("supports catalogs in table definitions: "+
 					supportscatalogsintabledefinitions);
+		debugEnd();
 		return supportscatalogsintabledefinitions;
 	}
 
@@ -1278,8 +1400,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportscolumnaliasing=true;
-		debugPrintln("  supports column aliasing: "+
+		debugPrintln("supports column aliasing: "+
 					supportscolumnaliasing);
+		debugEnd();
 		return supportscolumnaliasing;
 	}
 
@@ -1287,7 +1410,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsconvert=true;
-		debugPrintln("  supports convert: "+supportsconvert);
+		debugPrintln("supports convert: "+supportsconvert);
+		debugEnd();
 		return supportsconvert;
 	}
 
@@ -1296,9 +1420,10 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-and-type-specific
 		boolean	supportsconvert=true;
-		debugPrintln("  from type: "+fromType);
-		debugPrintln("  to type: "+toType);
-		debugPrintln("  supports convert: "+supportsconvert);
+		debugPrintln("from type: "+fromType);
+		debugPrintln("to type: "+toType);
+		debugPrintln("supports convert: "+supportsconvert);
+		debugEnd();
 		return supportsconvert;
 	}
 
@@ -1306,8 +1431,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportscoresqlgrammar=true;
-		debugPrintln("  supports core sql grammar: "+
+		debugPrintln("supports core sql grammar: "+
 						supportscoresqlgrammar);
+		debugEnd();
 		return supportscoresqlgrammar;
 	}
 
@@ -1315,8 +1441,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportscorrelatedsubqueries=true;
-		debugPrintln("  supports correlated subqueries: "+
+		debugPrintln("supports correlated subqueries: "+
 						supportscorrelatedsubqueries);
+		debugEnd();
 		return supportscorrelatedsubqueries;
 	}
 
@@ -1325,8 +1452,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	sddadmt=true;
-		debugPrintln("  supports data definition "+
+		debugPrintln("supports data definition "+
 			"and data manipulation transactions: "+sddadmt);
+		debugEnd();
 		return sddadmt;
 	}
 
@@ -1335,8 +1463,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	sdmto=false;
-		debugPrintln("  supports data manipulation "+
+		debugPrintln("supports data manipulation "+
 				"transactions only: "+sdmto);
+		debugEnd();
 		return sdmto;
 	}
 
@@ -1345,8 +1474,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	sdtcn=true;
-		debugPrintln("  supports different table "+
+		debugPrintln("supports different table "+
 				"correlation names: "+sdtcn);
+		debugEnd();
 		return sdtcn;
 	}
 
@@ -1354,8 +1484,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsexpressionsinorderby=true;
-		debugPrintln("  supports expressions in order by: "+
+		debugPrintln("supports expressions in order by: "+
 						supportsexpressionsinorderby);
+		debugEnd();
 		return supportsexpressionsinorderby;
 	}
 
@@ -1363,8 +1494,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsextendedsqlgrammar=true;
-		debugPrintln("  supports extended sql grammar: "+
+		debugPrintln("supports extended sql grammar: "+
 						supportsextendedsqlgrammar);
+		debugEnd();
 		return supportsextendedsqlgrammar;
 	}
 
@@ -1372,8 +1504,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsfullouterjoins=true;
-		debugPrintln("  supports full outer joins: "+
+		debugPrintln("supports full outer joins: "+
 						supportsfullouterjoins);
+		debugEnd();
 		return supportsfullouterjoins;
 	}
 
@@ -1381,8 +1514,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsgetgeneratedkeys=true;
-		debugPrintln("  supports get generated keys: "+
+		debugPrintln("supports get generated keys: "+
 						supportsgetgeneratedkeys);
+		debugEnd();
 		return supportsgetgeneratedkeys;
 	}
 
@@ -1390,7 +1524,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsgroupby=true;
-		debugPrintln("  supports group by: "+supportsgroupby);
+		debugPrintln("supports group by: "+supportsgroupby);
+		debugEnd();
 		return supportsgroupby;
 	}
 
@@ -1398,8 +1533,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsgroupbybeyondselect=true;
-		debugPrintln("  supports group by beyond select: "+
+		debugPrintln("supports group by beyond select: "+
 						supportsgroupbybeyondselect);
+		debugEnd();
 		return supportsgroupbybeyondselect;
 	}
 
@@ -1407,8 +1543,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsgroupbyunrelated=true;
-		debugPrintln("  supports group by unrelated: "+
+		debugPrintln("supports group by unrelated: "+
 						supportsgroupbyunrelated);
+		debugEnd();
 		return supportsgroupbyunrelated;
 	}
 
@@ -1417,8 +1554,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsintegrityenhancementfacility=false;
-		debugPrintln("  supports integrity enhancement facility: "+
+		debugPrintln("supports integrity enhancement facility: "+
 					supportsintegrityenhancementfacility);
+		debugEnd();
 		return supportsintegrityenhancementfacility;
 	}
 
@@ -1426,8 +1564,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportslikeescapeclause=true;
-		debugPrintln("  supports like escape clause: "+
+		debugPrintln("supports like escape clause: "+
 						supportslikeescapeclause);
+		debugEnd();
 		return supportslikeescapeclause;
 	}
 
@@ -1435,8 +1574,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportslimitedouterjoins=true;
-		debugPrintln("  supports limited outer joins: "+
+		debugPrintln("supports limited outer joins: "+
 						supportslimitedouterjoins);
+		debugEnd();
 		return supportslimitedouterjoins;
 	}
 
@@ -1444,8 +1584,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsminimumsqlgrammar=true;
-		debugPrintln("  supports minimum sql grammar: "+
+		debugPrintln("supports minimum sql grammar: "+
 						supportsminimumsqlgrammar);
+		debugEnd();
 		return supportsminimumsqlgrammar;
 	}
 
@@ -1453,8 +1594,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific, oracle doesn't
 		boolean	supportsmixedcaseidentifiers=true;
-		debugPrintln("  supports mixed case identifiers: "+
+		debugPrintln("supports mixed case identifiers: "+
 						supportsmixedcaseidentifiers);
+		debugEnd();
 		return supportsmixedcaseidentifiers;
 	}
 
@@ -1463,16 +1605,18 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsmixedcasequotedidentifiers=true;
-		debugPrintln("  supports mixed case quoted identifiers: "+
+		debugPrintln("supports mixed case quoted identifiers: "+
 					supportsmixedcasequotedidentifiers);
+		debugEnd();
 		return supportsmixedcasequotedidentifiers;
 	}
 
 	public boolean 	supportsMultipleOpenResults() throws SQLException {
 		debugFunction();
 		boolean	supportsmultipleopenresults=true;
-		debugPrintln("  supports multiple open results: "+
+		debugPrintln("supports multiple open results: "+
 						supportsmultipleopenresults);
+		debugEnd();
 		return supportsmultipleopenresults;
 	}
 
@@ -1480,16 +1624,18 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: in progress...
 		boolean	supportsmultipleresultsets=false;
-		debugPrintln("  supports multiple result sets: "+
+		debugPrintln("supports multiple result sets: "+
 						supportsmultipleresultsets);
+		debugEnd();
 		return supportsmultipleresultsets;
 	}
 
 	public boolean 	supportsMultipleTransactions() throws SQLException {
 		debugFunction();
 		boolean	supportsmultipletransactions=false;
-		debugPrintln("  supports multiple transactions: "+
+		debugPrintln("supports multiple transactions: "+
 						supportsmultipletransactions);
+		debugEnd();
 		return supportsmultipletransactions;
 	}
 
@@ -1497,8 +1643,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsnamedparameters=true;
-		debugPrintln("  supports named parameters: "+
+		debugPrintln("supports named parameters: "+
 						supportsnamedparameters);
+		debugEnd();
 		return supportsnamedparameters;
 	}
 
@@ -1506,8 +1653,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsnonnullablecolumns=true;
-		debugPrintln("  supports non-nullable columns: "+
+		debugPrintln("supports non-nullable columns: "+
 						supportsnonnullablecolumns);
+		debugEnd();
 		return supportsnonnullablecolumns;
 	}
 
@@ -1516,8 +1664,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: not sure
 		boolean	supportsopencursorsacrosscommit=false;
-		debugPrintln("  supports open cursors across commit: "+
+		debugPrintln("supports open cursors across commit: "+
 					supportsopencursorsacrosscommit);
+		debugEnd();
 		return supportsopencursorsacrosscommit;
 	}
 
@@ -1526,8 +1675,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: not sure
 		boolean	supportsopencursorsacrossrollback=false;
-		debugPrintln("  supports open cursors across rollback: "+
+		debugPrintln("supports open cursors across rollback: "+
 					supportsopencursorsacrossrollback);
+		debugEnd();
 		return supportsopencursorsacrossrollback;
 	}
 
@@ -1536,8 +1686,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: not sure
 		boolean	supportsopenstatementsacrosscommit=false;
-		debugPrintln("  supports open statements across commit: "+
+		debugPrintln("supports open statements across commit: "+
 					supportsopenstatementsacrosscommit);
+		debugEnd();
 		return supportsopenstatementsacrosscommit;
 	}
 
@@ -1546,8 +1697,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: not sure
 		boolean	supportsopenstatementsacrossrollback=false;
-		debugPrintln("  supports open statements across rollback: "+
+		debugPrintln("supports open statements across rollback: "+
 					supportsopenstatementsacrossrollback);
+		debugEnd();
 		return supportsopenstatementsacrossrollback;
 	}
 
@@ -1555,8 +1707,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsorderbyunrelated=true;
-		debugPrintln("  supports order by unrelated: "+
+		debugPrintln("supports order by unrelated: "+
 					supportsorderbyunrelated);
+		debugEnd();
 		return supportsorderbyunrelated;
 	}
 
@@ -1564,23 +1717,26 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsouterjoins=true;
-		debugPrintln("  supports outer joins: "+supportsouterjoins);
+		debugPrintln("supports outer joins: "+supportsouterjoins);
+		debugEnd();
 		return supportsouterjoins;
 	}
 
 	public boolean 	supportsPositionedDelete() throws SQLException {
 		debugFunction();
 		boolean	supportspositioneddelete=false;
-		debugPrintln("  supports positioned delete: "+
+		debugPrintln("supports positioned delete: "+
 						supportspositioneddelete);
+		debugEnd();
 		return supportspositioneddelete;
 	}
 
 	public boolean 	supportsPositionedUpdate() throws SQLException {
 		debugFunction();
 		boolean	supportspositionedupdate=false;
-		debugPrintln("  supports positioned update: "+
+		debugPrintln("supports positioned update: "+
 						supportspositionedupdate);
+		debugEnd();
 		return supportspositionedupdate;
 	}
 
@@ -1591,8 +1747,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		boolean	supportsresultsetconcurrency=
 				(type==ResultSet.TYPE_FORWARD_ONLY &&
 				concurrency==ResultSet.CONCUR_READ_ONLY);
-		debugPrintln("  supports result set concurrency: "+
+		debugPrintln("supports result set concurrency: "+
 						supportsresultsetconcurrency);
+		debugEnd();
 		return supportsresultsetconcurrency;
 	}
 
@@ -1601,8 +1758,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		boolean	supportsresultsetholdability=
 			(holdability==ResultSet.CLOSE_CURSORS_AT_COMMIT);
-		debugPrintln("  supports result set holdability: "+
+		debugPrintln("supports result set holdability: "+
 						supportsresultsetholdability);
+		debugEnd();
 		return supportsresultsetholdability;
 	}
 
@@ -1610,15 +1768,17 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		boolean	supportsresultsettype=
 			(type==ResultSet.TYPE_FORWARD_ONLY);
-		debugPrintln("  supports result set type: "+
+		debugPrintln("supports result set type: "+
 						supportsresultsettype);
+		debugEnd();
 		return supportsresultsettype;
 	}
 
 	public boolean 	supportsSavepoints() throws SQLException {
 		debugFunction();
 		boolean	supportssavepoints=false;
-		debugPrintln("  supports savepoints: "+supportssavepoints);
+		debugPrintln("supports savepoints: "+supportssavepoints);
+		debugEnd();
 		return supportssavepoints;
 	}
 
@@ -1627,8 +1787,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsschemasindatamanipulation=true;
-		debugPrintln("  supports schemas in data manipulation: "+
+		debugPrintln("supports schemas in data manipulation: "+
 					supportsschemasindatamanipulation);
+		debugEnd();
 		return supportsschemasindatamanipulation;
 	}
 
@@ -1637,8 +1798,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsschemasinindexdefinitions=true;
-		debugPrintln("  supports schemas in index definitions: "+
+		debugPrintln("supports schemas in index definitions: "+
 					supportsschemasinindexdefinitions);
+		debugEnd();
 		return supportsschemasinindexdefinitions;
 	}
 
@@ -1647,8 +1809,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsschemasinprivilegedefinitions=true;
-		debugPrintln("  supports schemas in privilege definitions: "+
+		debugPrintln("supports schemas in privilege definitions: "+
 					supportsschemasinprivilegedefinitions);
+		debugEnd();
 		return supportsschemasinprivilegedefinitions;
 	}
 
@@ -1657,8 +1820,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsschemasinprocedurecalls=true;
-		debugPrintln("  supports schemas in procedure calls: "+
+		debugPrintln("supports schemas in procedure calls: "+
 					supportsschemasinprocedurecalls);
+		debugEnd();
 		return supportsschemasinprocedurecalls;
 	}
 
@@ -1667,24 +1831,27 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsschemasintabledefinitions=true;
-		debugPrintln("  supports schemas in table definitions: "+
+		debugPrintln("supports schemas in table definitions: "+
 					supportsschemasintabledefinitions);
+		debugEnd();
 		return supportsschemasintabledefinitions;
 	}
 
 	public boolean 	supportsSelectForUpdate() throws SQLException {
 		debugFunction();
 		boolean	supportsselectforupdate=false;
-		debugPrintln("  supports select for update: "+
+		debugPrintln("supports select for update: "+
 						supportsselectforupdate);
+		debugEnd();
 		return supportsselectforupdate;
 	}
 
 	public boolean 	supportsStatementPooling() throws SQLException {
 		debugFunction();
 		boolean	supportsstatementpooling=false;
-		debugPrintln("  supports statement pooling: "+
+		debugPrintln("supports statement pooling: "+
 						supportsstatementpooling);
+		debugEnd();
 		return supportsstatementpooling;
 	}
 
@@ -1693,8 +1860,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	ssfucs=false;
-		debugPrintln("  supports stored functions "+
+		debugPrintln("supports stored functions "+
 					"using call syntax: "+ssfucs);
+		debugEnd();
 		return ssfucs;
 	}
 
@@ -1702,8 +1870,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsstoredprocedures=true;
-		debugPrintln("  supports stored procedures: "+
+		debugPrintln("supports stored procedures: "+
 						supportsstoredprocedures);
+		debugEnd();
 		return supportsstoredprocedures;
 	}
 
@@ -1711,8 +1880,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportssubqueriesincomparisons=true;
-		debugPrintln("  supports subqueries in comparisons: "+
+		debugPrintln("supports subqueries in comparisons: "+
 					supportssubqueriesincomparisons);
+		debugEnd();
 		return supportssubqueriesincomparisons;
 	}
 
@@ -1720,8 +1890,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportssubqueriesinexists=true;
-		debugPrintln("  supports subqueries in exists: "+
+		debugPrintln("supports subqueries in exists: "+
 						supportssubqueriesinexists);
+		debugEnd();
 		return supportssubqueriesinexists;
 	}
 
@@ -1729,8 +1900,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportssubqueriesinins=true;
-		debugPrintln("  supports subqueries in ins: "+
+		debugPrintln("supports subqueries in ins: "+
 						supportssubqueriesinins);
+		debugEnd();
 		return supportssubqueriesinins;
 	}
 
@@ -1738,8 +1910,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportssubqueriesinquantifieds=true;
-		debugPrintln("  supports subqueries in quantifieds: "+
+		debugPrintln("supports subqueries in quantifieds: "+
 					supportssubqueriesinquantifieds);
+		debugEnd();
 		return supportssubqueriesinquantifieds;
 	}
 
@@ -1747,8 +1920,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportssubqueriesincorrelationnames=true;
-		debugPrintln("  supports subqueries in correlation names: "+
+		debugPrintln("supports subqueries in correlation names: "+
 					supportssubqueriesincorrelationnames);
+		debugEnd();
 		return supportssubqueriesincorrelationnames;
 	}
 
@@ -1757,8 +1931,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportstransactionisolationlevel=true;
-		debugPrintln("  supports transaction isolation level: "+
+		debugPrintln("supports transaction isolation level: "+
 					supportstransactionisolationlevel);
+		debugEnd();
 		return supportstransactionisolationlevel;
 	}
 
@@ -1766,7 +1941,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportstransactions=true;
-		debugPrintln("  supports transactions: "+supportstransactions);
+		debugPrintln("supports transactions: "+supportstransactions);
+		debugEnd();
 		return supportstransactions;
 	}
 
@@ -1774,7 +1950,8 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsunion=true;
-		debugPrintln("  supports union: "+supportsunion);
+		debugPrintln("supports union: "+supportsunion);
+		debugEnd();
 		return supportsunion;
 	}
 
@@ -1782,45 +1959,51 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		debugFunction();
 		// FIXME: db-specific
 		boolean	supportsunionall=true;
-		debugPrintln("  supports union all: "+supportsunionall);
+		debugPrintln("supports union all: "+supportsunionall);
+		debugEnd();
 		return supportsunionall;
 	}
 
 	public boolean 	updatesAreDetected(int type) throws SQLException {
 		debugFunction();
 		boolean	updatesaredetected=false;
-		debugPrintln("  updates are detected: "+updatesaredetected);
+		debugPrintln("updates are detected: "+updatesaredetected);
+		debugEnd();
 		return updatesaredetected;
 	}
 
 	public boolean 	usesLocalFilePerTable() throws SQLException {
 		debugFunction();
 		boolean	useslocalfilepertable=false;
-		debugPrintln("  uses local file per table: "+
+		debugPrintln("uses local file per table: "+
 						useslocalfilepertable);
+		debugEnd();
 		return useslocalfilepertable;
 	}
 
 	public boolean 	usesLocalFiles() throws SQLException {
 		debugFunction();
 		boolean	useslocalfiles=false;
-		debugPrintln("  uses local files: "+useslocalfiles);
+		debugPrintln("uses local files: "+useslocalfiles);
+		debugEnd();
 		return useslocalfiles;
 	}
 
 	protected void throwErrorMessageException(SQLRCursor sqlrcur)
 							throws SQLException {
-		debugFunction();
+		debugZeroIndent();
 		throw new SQLException(sqlrcur.errorMessage());
 	}
 
 	public boolean	isWrapperFor(Class<?> iface) throws SQLException {
 		debugFunction();
+		debugEnd();
 		return false;
 	}
 
 	public <T> T	unwrap(Class<T> iface) throws SQLException {
 		debugFunction();
+		debugEnd();
 		return null;
 	}
 };

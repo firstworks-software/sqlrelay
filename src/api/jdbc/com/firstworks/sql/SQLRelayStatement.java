@@ -24,6 +24,7 @@ public class SQLRelayStatement extends SQLRelayDebug implements Statement {
 	public SQLRelayStatement() {
 		debugFunction();
 		reset();
+		debugEnd();
 	}
 
 	private void	reset() {
@@ -40,45 +41,53 @@ public class SQLRelayStatement extends SQLRelayDebug implements Statement {
 		poolable=false;
 		updatecount=-1;
 		escapeprocessing=true;
+		debugEnd();
 	}
 
 	public void	setConnection(Connection connection) {
 		debugFunction();
 		this.connection=connection;
+		debugEnd();
 	}
 
 	public void	setSQLRConnection(SQLRConnection sqlrcon) {
 		debugFunction();
 		this.sqlrcon=sqlrcon;
+		debugEnd();
 	}
 
 	public void	setSQLRCursor(SQLRCursor sqlrcur) {
 		debugFunction();
 		this.sqlrcur=sqlrcur;
+		debugEnd();
 	}
 
 	public void 	addBatch(String sql) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		batch.add(sql);
+		debugEnd();
 	}
 
 	public void 	cancel() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: maybe we can support this somehow?
+		debugEnd();
 	}
 
 	public void 	clearBatch() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		batch.clear();
+		debugEnd();
 	}
 
 	public void 	clearWarnings() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
+		debugEnd();
 	}
 
 	public void 	close() throws SQLException {
@@ -87,17 +96,19 @@ public class SQLRelayStatement extends SQLRelayDebug implements Statement {
 			resultset.close();
 		}
 		reset();
+		debugEnd();
 	}
 
 	public void 	closeOnCompletion() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		closeoncompletion=true;
+		debugEnd();
 	}
 
 	public boolean 	execute(String sql) throws SQLException {
 		debugFunction();
-		debugPrintln("  sql: "+sql);
+		debugPrintln("sql: "+sql);
 
 		throwExceptionIfClosed();
 
@@ -107,14 +118,14 @@ public class SQLRelayStatement extends SQLRelayDebug implements Statement {
 
 		boolean	result=sqlrcur.sendQuery(sql);
 
-		debugPrintln("  result: "+result);
+		debugPrintln("result: "+result);
 
 		if (result) {
 
 			updatecount=(int)sqlrcur.affectedRows();
 
-			debugPrintln("  updatecount: "+updatecount);
-			debugPrintln("  colcount: "+sqlrcur.colCount());
+			debugPrintln("updatecount: "+updatecount);
+			debugPrintln("colcount: "+sqlrcur.colCount());
 
 			if (sqlrcur.colCount()>0) {
 				resultset=new SQLRelayResultSet();
@@ -124,6 +135,7 @@ public class SQLRelayStatement extends SQLRelayDebug implements Statement {
 		} else {
 			throwErrorMessageException();
 		}
+		debugEnd();
 		return result;
 	}
 
@@ -131,7 +143,8 @@ public class SQLRelayStatement extends SQLRelayDebug implements Statement {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return false;
 	}
 
@@ -139,7 +152,8 @@ public class SQLRelayStatement extends SQLRelayDebug implements Statement {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return false;
 	}
 
@@ -147,7 +161,8 @@ public class SQLRelayStatement extends SQLRelayDebug implements Statement {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return false;
 	}
 
@@ -160,6 +175,7 @@ public class SQLRelayStatement extends SQLRelayDebug implements Statement {
 		for (String sql: batch) {
 			results[count++]=executeUpdate(sql);
 		}
+		debugEnd();
 		return results;
 	}
 
@@ -176,6 +192,7 @@ public class SQLRelayStatement extends SQLRelayDebug implements Statement {
 		} else {
 			throw new SQLException(sqlrcur.errorMessage());
 		}
+		debugEnd();
 		return resultset;
 	}
 
@@ -190,6 +207,7 @@ public class SQLRelayStatement extends SQLRelayDebug implements Statement {
 		} else {
 			throwErrorMessageException();
 		}
+		debugEnd();
 		return updatecount;
 	}
 
@@ -197,7 +215,8 @@ public class SQLRelayStatement extends SQLRelayDebug implements Statement {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return 0;
 	}
 
@@ -205,7 +224,8 @@ public class SQLRelayStatement extends SQLRelayDebug implements Statement {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return 0;
 	}
 
@@ -213,51 +233,61 @@ public class SQLRelayStatement extends SQLRelayDebug implements Statement {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return 0;
 	}
 
 	public Connection 	getConnection() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
+		debugEnd();
 		return connection;
 	}
 
 	public int 	getFetchDirection() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
+		debugEnd();
 		return fetchdirection;
 	}
 
 	public int 	getFetchSize() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		return (int)sqlrcur.getResultSetBufferSize();
+		int	rsbs=(int)sqlrcur.getResultSetBufferSize();
+		debugEnd();
+		return rsbs;
 	}
 
 	public ResultSet 	getGeneratedKeys() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: maybe we can support this somehow?
+		debugEnd();
 		return null;
 	}
 
 	public int 	getMaxFieldSize() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
+		debugEnd();
 		return maxfieldsize;
 	}
 
 	public int 	getMaxRows() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
+		debugEnd();
 		return maxrows;
 	}
 
 	public boolean 	getMoreResults() throws SQLException {
 		debugFunction();
-		return getMoreResults(Statement.CLOSE_CURRENT_RESULT);
+		boolean	gmr=getMoreResults(Statement.CLOSE_CURRENT_RESULT);
+		debugEnd();
+		return gmr;
 	}
 
 	public boolean 	getMoreResults(int current) throws SQLException {
@@ -271,15 +301,19 @@ public class SQLRelayStatement extends SQLRelayDebug implements Statement {
 					updatecount=-1;
 				}
 				// FIXME: we could support this...
+				debugEnd();
 				return false;
 			case Statement.KEEP_CURRENT_RESULT:
-				throwNotSupportedException();
+				throwFeatureNotSupportedException();
+				debugEnd();
 				return false;
 			case Statement.CLOSE_ALL_RESULTS:
-				throwNotSupportedException();
+				throwFeatureNotSupportedException();
+				debugEnd();
 				return false;
 			default:
-				throwNotSupportedException();
+				throwFeatureNotSupportedException();
+				debugEnd();
 				return false;
 		}
 	}
@@ -287,15 +321,17 @@ public class SQLRelayStatement extends SQLRelayDebug implements Statement {
 	public int 	getQueryTimeout() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: this can be supported
 		//return sqlrcon.getResponseTimeout();
+		debugEnd();
 		return 0;
 	}
 
 	public ResultSet 	getResultSet() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
+		debugEnd();
 		return resultset;
 	}
 
@@ -303,6 +339,7 @@ public class SQLRelayStatement extends SQLRelayDebug implements Statement {
 		debugFunction();
 		throwExceptionIfClosed();
 		// FIXME: is this correct?
+		debugEnd();
 		return ResultSet.CONCUR_READ_ONLY;
 	}
 
@@ -310,49 +347,58 @@ public class SQLRelayStatement extends SQLRelayDebug implements Statement {
 		debugFunction();
 		throwExceptionIfClosed();
 		// FIXME: is this correct?
+		debugEnd();
 		return ResultSet.CLOSE_CURSORS_AT_COMMIT;
 	}
 
 	public int 	getResultSetType() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
+		debugEnd();
 		return ResultSet.TYPE_FORWARD_ONLY;
 	}
 
 	public int 	getUpdateCount() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		debugPrintln("	updatecount="+updatecount);
+		debugPrintln("updatecount="+updatecount);
+		debugEnd();
 		return updatecount;
 	}
 
 	public SQLWarning 	getWarnings() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
+		debugEnd();
 		return null;
 	}
 
 	public boolean 	isClosed() throws SQLException {
 		debugFunction();
-		return sqlrcur==null;
+		boolean	closed=(sqlrcur==null);
+		debugEnd();
+		return closed;
 	}
 
 	public boolean 	isCloseOnCompletion() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
+		debugEnd();
 		return false;
 	}
 
 	public boolean 	isPoolable() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
+		debugEnd();
 		return poolable;
 	}
 
 	public void 	setCursorName(String name) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setEscapeProcessing(boolean enable)
@@ -361,36 +407,42 @@ public class SQLRelayStatement extends SQLRelayDebug implements Statement {
 		throwExceptionIfClosed();
 		escapeprocessing=enable;
 		// FIXME: do something with this...
+		debugEnd();
 	}
 
 	public void 	setFetchDirection(int direction) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		fetchdirection=direction;
+		debugEnd();
 	}
 
 	public void 	setFetchSize(int rows) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		sqlrcur.setResultSetBufferSize(rows);
+		debugEnd();
 	}
 
 	public void 	setMaxFieldSize(int max) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		maxfieldsize=max;
+		debugEnd();
 	}
 
 	public void 	setMaxRows(int max) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		maxrows=max;
+		debugEnd();
 	}
 
 	public void 	setPoolable(boolean poolable) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
 		this.poolable=poolable;
+		debugEnd();
 	}
 
 	public void 	setQueryTimeout(int seconds) throws SQLException {
@@ -398,37 +450,46 @@ public class SQLRelayStatement extends SQLRelayDebug implements Statement {
 		throwExceptionIfClosed();
 		// FIXME: hmm... this is at the connection level
 		sqlrcon.setResponseTimeout(seconds,0);
+		debugEnd();
 	}
 
 	public boolean	isWrapperFor(Class<?> iface) throws SQLException {
 		debugFunction();
+		debugEnd();
 		return (iface==SQLRCursor.class);
-
 	}
 
 	@SuppressWarnings({"unchecked"})
 	public <T> T	unwrap(Class<T> iface) throws SQLException {
 		debugFunction();
+		debugEnd();
 		return (T)((iface==SQLRCursor.class)?sqlrcur:null);
 	}
 
 	protected void throwExceptionIfClosed() throws SQLException {
-		if (sqlrcur==null) {
-			throw new SQLException("FIXME: Statement is closed");
+		if (sqlrcur!=null) {
+			return;
 		}
+		throwException("statement is closed");
 	}
 
 	protected void throwErrorMessageException() throws SQLException {
-		debugFunction();
-		throw new SQLException(sqlrcur.errorMessage());
+		throwException(sqlrcur.errorMessage());
 	}
 
-	protected void throwNotSupportedException() throws SQLException {
-		debugFunction();
+	protected void throwFeatureNotSupportedException() throws SQLException {
+		debugZeroIndent();
 		throw new SQLFeatureNotSupportedException();
 	}
 
+	protected void throwException(String reason) throws SQLException {
+		debugZeroIndent();
+		throw new SQLException(reason);
+	}
+
 	public SQLRCursor getSQLRCursor() {
+		debugFunction();
+		debugEnd();
 		return sqlrcur;
 	}
 };

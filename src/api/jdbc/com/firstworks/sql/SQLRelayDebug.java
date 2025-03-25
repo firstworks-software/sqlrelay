@@ -4,14 +4,42 @@ public class SQLRelayDebug {
 
 	public static final boolean	debug=true;
 
+	private int	indent=0;
+
+	public void debugStart(String str) {
+		if (!debug) {
+			return;
+		}
+		printIndent();
+		System.out.println(str + "{");
+		indent++;
+	}
+
+	public void debugEnd() {
+		if (!debug) {
+			return;
+		}
+		printIndent();
+		System.out.println("}");
+		indent--;
+	}
+
+	public void debugZeroIndent() {
+		indent=0;
+	}
+
+	private void printIndent() {
+		for (int i=0; i<indent; i++) {
+			System.out.print("	");
+		}
+	}
+
 	public void debugFunction() {
 		if (!debug) {
 			return;
 		}
-		System.out.println("\n"+this.getClass(). getSimpleName()+"."+
-					new Throwable().
-						getStackTrace()[1].
-						getMethodName()+"...");
+		debugStart(this.getClass().getSimpleName()+"."+
+			new Throwable().getStackTrace()[1].getMethodName());
 	}
 
 	public void debugPrint(String str) {

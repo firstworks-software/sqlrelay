@@ -28,6 +28,7 @@ public class SQLRelayPreparedStatement
 		debugFunction();
 		batch=new ArrayList<HashMap<Integer,SQLRelayParameter>>();
 		parameters=new HashMap<Integer,SQLRelayParameter>();
+		debugEnd();
 	}
 
 	public void 	addBatch() throws SQLException {
@@ -35,6 +36,7 @@ public class SQLRelayPreparedStatement
 		throwExceptionIfClosed();
 		batch.add(parameters);
 		parameters=new HashMap<Integer,SQLRelayParameter>();
+		debugEnd();
 	}
 
 	public void 	clearParameters() throws SQLException {
@@ -43,6 +45,7 @@ public class SQLRelayPreparedStatement
 		sqlrcur.clearBinds();
 		batch.clear();
 		parameters.clear();
+		debugEnd();
 	}
 
 	public boolean 	execute() throws SQLException {
@@ -65,6 +68,7 @@ public class SQLRelayPreparedStatement
 		} else {
 			throwErrorMessageException();
 		}
+		debugEnd();
 		return result;
 	}
 
@@ -79,6 +83,7 @@ public class SQLRelayPreparedStatement
 			bind(params);
 			results[count++]=executeUpdate();
 		}
+		debugEnd();
 		return results;
 	}
 
@@ -101,6 +106,7 @@ public class SQLRelayPreparedStatement
 		} else {
 			throwErrorMessageException();
 		}
+		debugEnd();
 		return resultset;
 	}
 
@@ -121,6 +127,7 @@ public class SQLRelayPreparedStatement
 		} else {
 			throwErrorMessageException();
 		}
+		debugEnd();
 		return updatecount;
 	}
 
@@ -129,6 +136,7 @@ public class SQLRelayPreparedStatement
 		debugFunction();
 
 		if (params==null) {
+			debugEnd();
 			return;
 		}
 
@@ -439,12 +447,16 @@ public class SQLRelayPreparedStatement
 					break;
 			}
 		}
+		debugEnd();
 	}
 
 	public ResultSetMetaData 	getMetaData() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		return (resultset!=null)?resultset.getMetaData():null;
+		ResultSetMetaData	rsmd=
+				(resultset!=null)?resultset.getMetaData():null;
+		debugEnd();
+		return rsmd;
 	}
 
 	public ParameterMetaData 	getParameterMetaData()
@@ -458,6 +470,7 @@ public class SQLRelayPreparedStatement
 		} else {
 			pmd.setParameters(batch.get(0));
 		}
+		debugEnd();
 		return pmd;
 	}
 
@@ -465,7 +478,8 @@ public class SQLRelayPreparedStatement
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setAsciiStream(int parameterIndex, InputStream x)
@@ -488,6 +502,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(SQLRelayParameter.BindType.AsciiStream);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setAsciiStream(int parameterIndex,
@@ -513,6 +528,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.AsciiStreamWithIntLength);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setAsciiStream(int parameterIndex,
@@ -538,6 +554,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.AsciiStreamWithLongLength);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setBigDecimal(int parameterIndex,
@@ -562,6 +579,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.BigDecimal);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setBinaryStream(int parameterIndex,
@@ -586,6 +604,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.BinaryStream);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setBinaryStream(int parameterIndex,
@@ -611,6 +630,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.BinaryStreamWithIntLength);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setBinaryStream(int parameterIndex,
@@ -636,6 +656,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.BinaryStreamWithLongLength);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setBlob(int parameterIndex, Blob x)
@@ -659,6 +680,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.Blob);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setBlob(int parameterIndex,
@@ -683,6 +705,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.BlobInputStream);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setBlob(int parameterIndex,
@@ -709,6 +732,7 @@ public class SQLRelayPreparedStatement
 			SQLRelayParameter.BindType.
 				BlobInputStreamWithLongLength);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setBoolean(int parameterIndex,
@@ -733,6 +757,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.Boolean);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setByte(int parameterIndex,
@@ -757,6 +782,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.Byte);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setBytes(int parameterIndex,
@@ -785,6 +811,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.Bytes);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setCharacterStream(int parameterIndex,
@@ -809,6 +836,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.CharacterStream);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setCharacterStream(int parameterIndex,
@@ -835,6 +863,7 @@ public class SQLRelayPreparedStatement
 			SQLRelayParameter.BindType.
 				CharacterStreamWithIntLength);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setCharacterStream(int parameterIndex,
@@ -861,6 +890,7 @@ public class SQLRelayPreparedStatement
 			SQLRelayParameter.BindType.
 				CharacterStreamWithLongLength);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setClob(int parameterIndex,
@@ -885,6 +915,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.Clob);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setClob(int parameterIndex,
@@ -909,6 +940,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.ClobReader);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setClob(int parameterIndex,
@@ -934,6 +966,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.ClobReaderWithLength);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setDate(int parameterIndex,
@@ -941,7 +974,7 @@ public class SQLRelayPreparedStatement
 					throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: support this...
 		/*SQLRelayParameter	param=new SQLRelayParameter();
 		param.setClassName("FIXME");
@@ -960,6 +993,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.Date);
 		parameters.put(parameterIndex,param);*/
+		debugEnd();
 	}
 
 	public void 	setDate(int parameterIndex,
@@ -968,7 +1002,7 @@ public class SQLRelayPreparedStatement
 					throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: support this...
 		/*SQLRelayParameter	param=new SQLRelayParameter();
 		param.setClassName("FIXME");
@@ -987,6 +1021,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.DateWithCalendar);
 		parameters.put(parameterIndex,param);*/
+		debugEnd();
 	}
 
 	public void 	setDouble(int parameterIndex,
@@ -1011,6 +1046,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.Double);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setFloat(int parameterIndex,
@@ -1035,6 +1071,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.Float);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setInt(int parameterIndex,
@@ -1059,6 +1096,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.Int);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setLong(int parameterIndex,
@@ -1083,6 +1121,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.Long);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setNCharacterStream(int parameterIndex,
@@ -1107,6 +1146,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.NCharStream);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setNCharacterStream(int parameterIndex,
@@ -1132,6 +1172,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.NCharStreamWithLength);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setNClob(int parameterIndex,
@@ -1156,6 +1197,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.NClob);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setNClob(int parameterIndex,
@@ -1180,6 +1222,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.NClobReader);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setNClob(int parameterIndex,
@@ -1205,6 +1248,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.NClobReaderWithLength);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setNString(int parameterIndex,
@@ -1229,6 +1273,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.NString);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setNull(int parameterIndex,
@@ -1253,6 +1298,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.Null);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setNull(int parameterIndex,
@@ -1278,6 +1324,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.NullWithTypeName);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setObject(int parameterIndex,
@@ -1285,7 +1332,8 @@ public class SQLRelayPreparedStatement
 					throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setObject(int parameterIndex,
@@ -1294,7 +1342,8 @@ public class SQLRelayPreparedStatement
 					throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setObject(int parameterIndex,
@@ -1304,21 +1353,24 @@ public class SQLRelayPreparedStatement
 					throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setRef(int parameterIndex, Ref x)
 					throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setRowId(int parameterIndex, RowId x)
 					throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setShort(int parameterIndex, short x)
@@ -1342,6 +1394,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.Short);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setString(int parameterIndex, String x)
@@ -1365,6 +1418,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.String);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setSQLXML(int parameterIndex,
@@ -1372,14 +1426,15 @@ public class SQLRelayPreparedStatement
 					throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setTime(int parameterIndex, Time x)
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: support this...
 		/*SQLRelayParameter	param=new SQLRelayParameter();
 		param.setClassName("FIXME");
@@ -1398,6 +1453,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.Time);
 		parameters.put(parameterIndex,param);*/
+		debugEnd();
 	}
 
 	public void 	setTime(int parameterIndex,
@@ -1406,7 +1462,7 @@ public class SQLRelayPreparedStatement
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: support this...
 		/*SQLRelayParameter	param=new SQLRelayParameter();
 		param.setClassName("FIXME");
@@ -1425,6 +1481,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.TimeWithCalendar);
 		parameters.put(parameterIndex,param);*/
+		debugEnd();
 	}
 
 	public void 	setTimestamp(int parameterIndex,
@@ -1432,7 +1489,7 @@ public class SQLRelayPreparedStatement
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: support this...
 		/*SQLRelayParameter	param=new SQLRelayParameter();
 		param.setClassName("FIXME");
@@ -1451,6 +1508,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.Timestamp);
 		parameters.put(parameterIndex,param);*/
+		debugEnd();
 	}
 
 	public void 	setTimestamp(int parameterIndex,
@@ -1459,7 +1517,7 @@ public class SQLRelayPreparedStatement
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: support this...
 		/*SQLRelayParameter	param=new SQLRelayParameter();
 		param.setClassName("FIXME");
@@ -1478,6 +1536,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.TimestampWithCalendar);
 		parameters.put(parameterIndex,param);*/
+		debugEnd();
 	}
 
 	public void 	setUnicodeStream(int parameterIndex,
@@ -1503,103 +1562,130 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.UnicodeStream);
 		parameters.put(parameterIndex,param);
+		debugEnd();
 	}
 
 	public void 	setURL(int parameterIndex, URL x)
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public String	asciiStreamToString(InputStream stream) {
 		debugFunction();
-		return streamToString(stream,"US-ASCII");
+		String	s=streamToString(stream,"US-ASCII");
+		debugEnd();
+		return s;
 	}
 
 	public String	asciiStreamToString(InputStream stream, long length) {
 		debugFunction();
-		return streamToString(stream,length,"US-ASCII");
+		String	s=streamToString(stream,length,"US-ASCII");
+		debugEnd();
+		return s;
 	}
 
 	public String	unicodeStreamToString(InputStream stream, long length) {
 		debugFunction();
-		return streamToString(stream,length,"UTF-8");
+		String	s=streamToString(stream,length,"UTF-8");
+		debugEnd();
+		return s;
 	}
 
 	public String	streamToString(InputStream stream, String encoding) {
 		debugFunction();
+		String	s;
 		try {
-			return readerToString(new BufferedReader(
+			s=readerToString(new BufferedReader(
 						new InputStreamReader(
 							stream,encoding)));
 		} catch (Exception ex) {
-			return new String("");
+			s=new String("");
 		}
+		debugEnd();
+		return s;
 	}
 
 	public String	streamToString(InputStream stream,
 						long length,
 						String encoding) {
 		debugFunction();
+		String	s;
 		try {
-			return readerToString(new BufferedReader(
+			s=readerToString(new BufferedReader(
 						new InputStreamReader(
 							stream,encoding)),
 							length);
 		} catch (Exception ex) {
-			return new String("");
+			s=new String("");
 		}
+		debugEnd();
+		return s;
 	}
 
 	public String	readerToString(Reader reader) {
 		debugFunction();
+		String	s;
 		try {
 			StringBuilder	stringbuilder=new StringBuilder();
 			int	c=0;
 			while ((c=reader.read())!=-1) {
 				stringbuilder.append((char)c);
 			}
-			return stringbuilder.toString();
+			s=stringbuilder.toString();
 		} catch (Exception ex) {
-			return new String("");
+			s=new String("");
 		}
+		debugEnd();
+		return s;
 	}
 
 	public String	readerToString(Reader reader, long length) {
 		debugFunction();
+		String	s;
 		try {
 			StringBuilder	stringbuilder=new StringBuilder();
 			int	c=0;
 			for (int i=0; i<length && (c=reader.read())!=-1; i++) {
 				stringbuilder.append((char)c);
 			}
-			return stringbuilder.toString();
+			s=stringbuilder.toString();
 		} catch (Exception ex) {
-			return new String("");
+			s=new String("");
 		}
+		debugEnd();
+		return s;
 	}
 
 	public String	clobToString(Clob clob) {
 		debugFunction();
+		String	s;
 		try {
-			return asciiStreamToString(clob.getAsciiStream());
+			s=asciiStreamToString(clob.getAsciiStream());
 		} catch (Exception ex) {
-			return new String("");
+			s=new String("");
 		}
+		debugEnd();
+		return s;
 	}
 
 	public String	nClobToUnicodeString(NClob clob) {
 		debugFunction();
+		String	s;
 		try {
-			return readerToString(clob.getCharacterStream());
+			s=readerToString(clob.getCharacterStream());
 		} catch (Exception ex) {
-			return new String("");
+			s=new String("");
 		}
+		debugEnd();
+		return s;
 	}
 
 	public byte[]	binaryStreamToBytes(InputStream stream) {
 		debugFunction();
+		byte[]	b;
 		try {
 			ByteArrayOutputStream	output=
 						new ByteArrayOutputStream();
@@ -1610,14 +1696,17 @@ public class SQLRelayPreparedStatement
 				output.write(buffer,0,bytesread);
 			}
 			output.flush();
-			return output.toByteArray();
+			b=output.toByteArray();
 		} catch (Exception ex) {
-			return new byte[]{0};
+			b=new byte[]{0};
 		}
+		debugEnd();
+		return b;
 	}
 
 	public byte[]	binaryStreamToBytes(InputStream stream, long length) {
 		debugFunction();
+		byte[]	b;
 		try {
 			ByteArrayOutputStream	output=
 						new ByteArrayOutputStream();
@@ -1631,18 +1720,23 @@ public class SQLRelayPreparedStatement
 				output.write(buffer,0,bytesread);
 			}
 			output.flush();
-			return output.toByteArray();
+			b=output.toByteArray();
 		} catch (Exception ex) {
-			return new byte[]{0};
+			b=new byte[]{0};
 		} 
+		debugEnd();
+		return b;
 	}
 
 	public byte[]	blobToBytes(Blob blob) {
 		debugFunction();
+		byte[]	b;
 		try {
-			return binaryStreamToBytes(blob.getBinaryStream());
+			b=binaryStreamToBytes(blob.getBinaryStream());
 		} catch (Exception ex) {
-			return new byte[]{0};
+			b=new byte[]{0};
 		} 
+		debugEnd();
+		return b;
 	}
 }

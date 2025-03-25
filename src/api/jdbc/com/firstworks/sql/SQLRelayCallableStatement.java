@@ -18,14 +18,16 @@ public class SQLRelayCallableStatement
 	public Array 	getArray(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public Array 	getArray(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
@@ -33,7 +35,8 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
@@ -41,7 +44,8 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
@@ -49,63 +53,72 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public Blob 	getBlob(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public Blob 	getBlob(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public boolean 	getBoolean(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return false;
 	}
 
 	public boolean 	getBoolean(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return false;
 	}
 
 	public byte 	getByte(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return 0;
 	}
 
 	public byte 	getByte(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return 0;
 	}
 
 	public byte[] 	getBytes(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public byte[] 	getBytes(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
@@ -113,7 +126,8 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
@@ -121,28 +135,32 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public Clob 	getClob(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public Clob 	getClob(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public Date 	getDate(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
@@ -150,14 +168,16 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public Date 	getDate(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
@@ -165,63 +185,72 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public double 	getDouble(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return 0.0;
 	}
 
 	public double 	getDouble(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return 0.0;
 	}
 
 	public float 	getFloat(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return 0.0f;
 	}
 
 	public float 	getFloat(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return 0.0f;
 	}
 
 	public int 	getInt(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return 0;
 	}
 
 	public int 	getInt(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return 0;
 	}
 
 	public long 	getLong(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return 0;
 	}
 
 	public long 	getLong(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return 0;
 	}
 
@@ -229,7 +258,8 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
@@ -237,42 +267,48 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public NClob 	getNClob(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public NClob 	getNClob(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public String 	getNString(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public String 	getNString(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public Object 	getObject(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
@@ -280,7 +316,8 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
@@ -288,14 +325,16 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public Object 	getObject(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
@@ -303,7 +342,8 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
@@ -312,84 +352,96 @@ public class SQLRelayCallableStatement
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public Ref 	getRef(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public Ref 	getRef(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public RowId 	getRowId(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public RowId 	getRowId(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public short 	getShort(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return 0;
 	}
 
 	public short 	getShort(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return 0;
 	}
 
 	public SQLXML 	getSQLXML(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public SQLXML 	getSQLXML(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public String 	getString(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public String 	getString(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public Time 	getTime(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
@@ -397,14 +449,16 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public Time 	getTime(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
@@ -412,7 +466,8 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
@@ -420,7 +475,8 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
@@ -429,7 +485,8 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
@@ -437,7 +494,8 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
@@ -446,21 +504,24 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public URL 	getURL(int parameterIndex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
 	public URL 	getURL(String parameterName) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return null;
 	}
 
@@ -469,7 +530,8 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	registerOutParameter(int parameterIndex,
@@ -478,7 +540,8 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	registerOutParameter(int parameterIndex,
@@ -487,7 +550,8 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	registerOutParameter(String parameterName,
@@ -495,7 +559,8 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	registerOutParameter(String parameterName,
@@ -504,7 +569,8 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	registerOutParameter(String parameterName,
@@ -513,7 +579,8 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setAsciiStream(String parameterName,
@@ -521,7 +588,8 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setAsciiStream(String parameterName,
@@ -530,7 +598,8 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setAsciiStream(String parameterName,
@@ -539,21 +608,24 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setBigDecimal(String parameterName, BigDecimal x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setBinaryStream(String parameterName, InputStream x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setBinaryStream(String parameterName,
@@ -562,7 +634,8 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setBinaryStream(String parameterName,
@@ -571,21 +644,24 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setBlob(String parameterName, Blob x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setBlob(String parameterName, InputStream inputStream)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setBlob(String parameterName,
@@ -594,28 +670,32 @@ public class SQLRelayCallableStatement
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setBoolean(String parameterName, boolean x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setByte(String parameterName, byte x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setBytes(String parameterName, byte[] x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setCharacterStream(String parameterName,
@@ -623,7 +703,8 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setCharacterStream(String parameterName,
@@ -632,7 +713,8 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setCharacterStream(String parameterName,
@@ -641,21 +723,24 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setClob(String parameterName, Clob x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setClob(String parameterName, Reader reader)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setClob(String parameterName, Reader reader,
@@ -663,49 +748,56 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setDate(String parameterName, Date x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setDate(String parameterName, Date x, Calendar cal)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setDouble(String parameterName, double x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setFloat(String parameterName, float x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setInt(String parameterName, int x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setLong(String parameterName, long x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setNCharacterStream(String parameterName,
@@ -713,7 +805,8 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setNCharacterStream(String parameterName,
@@ -722,21 +815,24 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setNClob(String parameterName, NClob value)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setNClob(String parameterName, Reader reader)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setNClob(String parameterName, Reader reader,
@@ -744,21 +840,24 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setNString(String parameterName, String value)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setNull(String parameterName, int sqlType)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setNull(String parameterName, int sqlType,
@@ -766,14 +865,16 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setObject(String parameterName, Object x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setObject(String parameterName, Object x,
@@ -781,7 +882,8 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setObject(String parameterName, Object x,
@@ -790,42 +892,48 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setRowId(String parameterName, RowId x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setShort(String parameterName, short x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setSQLXML(String parameterName, SQLXML xmlObject)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setString(String parameterName, String x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setTime(String parameterName, Time x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setTime(String parameterName, Time x,
@@ -833,14 +941,16 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setTimestamp(String parameterName, Timestamp x)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setTimestamp(String parameterName,
@@ -849,20 +959,23 @@ public class SQLRelayCallableStatement
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public void 	setURL(String parameterName, URL val)
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 	}
 
 	public boolean 	wasNull() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
 		return false;
 	}
 }

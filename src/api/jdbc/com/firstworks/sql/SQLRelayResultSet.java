@@ -113,7 +113,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 	public void	cancelRowUpdates() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	clearWarnings() throws SQLException {
@@ -132,7 +132,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 	public void	deleteRow() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public int	findColumn(String columnlabel) throws SQLException {
@@ -158,7 +158,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		return null;
 	}
 
@@ -166,7 +166,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		return null;
 	}
 
@@ -294,7 +294,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: we could theoretically support this, but currently
 		// SQLRelayResultSetMetaData.getColumnType/getColumnClassName
 		// don't return any lob types, so it's not currently necessary
@@ -305,7 +305,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: we could theoretically support this, but currently
 		// SQLRelayResultSetMetaData.getColumnType/getColumnClassName
 		// don't return any lob types, so it's not currently necessary
@@ -414,7 +414,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: we could theoretically support this, but currently
 		// SQLRelayResultSetMetaData.getColumnType/getColumnClassName
 		// don't return any lob types, so it's not currently necessary
@@ -425,7 +425,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: we could theoretically support this, but currently
 		// SQLRelayResultSetMetaData.getColumnType/getColumnClassName
 		// don't return any lob types, so it's not currently necessary
@@ -656,7 +656,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: we could theoretically support this, but currently
 		// SQLRelayResultSetMetaData.getColumnType/getColumnClassName
 		// don't return any lob types, so it's not currently necessary
@@ -667,7 +667,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: we could theoretically support this, but currently
 		// SQLRelayResultSetMetaData.getColumnType/getColumnClassName
 		// don't return any lob types, so it's not currently necessary
@@ -714,7 +714,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this somehow...
 		return null;
 	}
@@ -724,7 +724,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this somehow...
 		return null;
 	}
@@ -734,7 +734,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this somehow...
 		return null;
 	}
@@ -743,7 +743,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this somehow...
 		return null;
 	}
@@ -753,7 +753,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this somehow...
 		return null;
 	}
@@ -763,7 +763,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this somehow...
 		return null;
 	}
@@ -772,7 +772,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this somehow...
 		return null;
 	}
@@ -781,7 +781,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this somehow...
 		return null;
 	}
@@ -797,7 +797,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this somehow...
 		return null;
 	}
@@ -806,7 +806,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this somehow...
 		return null;
 	}
@@ -837,7 +837,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this somehow...
 		return null;
 	}
@@ -846,7 +846,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this somehow...
 		return null;
 	}
@@ -997,7 +997,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
 		wasnull=(field==null);
 		debugPrintln("  field: "+field);
@@ -1016,7 +1016,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 		debugFunction();
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		String	field=sqlrcur.getField(currentrow-1,columnlabel);
 		wasnull=(field==null);
 		debugPrintln("  field: "+field);
@@ -1040,7 +1040,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 	public void	insertRow() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public boolean	isAfterLast() throws SQLException {
@@ -1094,7 +1094,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 	public void	moveToInsertRow() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public boolean	next() throws SQLException {
@@ -1110,7 +1110,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 	public void	refreshRow() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public boolean	relative(int rows) throws SQLException {
@@ -1132,21 +1132,21 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 	public boolean	rowDeleted() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		return false;
 	}
 
 	public boolean	rowInserted() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		return false;
 	}
 
 	public boolean	rowUpdated() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 		return false;
 	}
 
@@ -1168,14 +1168,14 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateArray(String columnlabel, Array x)
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateAsciiStream(int columnindex,
@@ -1183,7 +1183,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateAsciiStream(int columnindex,
@@ -1192,7 +1192,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateAsciiStream(int columnindex,
@@ -1201,7 +1201,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateAsciiStream(String columnlabel,
@@ -1209,7 +1209,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateAsciiStream(String columnlabel,
@@ -1218,7 +1218,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateAsciiStream(String columnlabel,
@@ -1227,7 +1227,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateBigDecimal(int columnindex,
@@ -1235,7 +1235,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateBigDecimal(String columnlabel,
@@ -1243,7 +1243,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateBinaryStream(int columnindex,
@@ -1251,7 +1251,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateBinaryStream(int columnindex,
@@ -1260,7 +1260,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateBinaryStream(int columnindex,
@@ -1269,7 +1269,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateBinaryStream(String columnlabel,
@@ -1277,7 +1277,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateBinaryStream(String columnlabel,
@@ -1286,7 +1286,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateBinaryStream(String columnlabel,
@@ -1295,14 +1295,14 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateBlob(int columnindex, Blob x)
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateBlob(int columnindex,
@@ -1310,7 +1310,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 					throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateBlob(int columnindex,
@@ -1319,7 +1319,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 					throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateBlob(String columnlabel,
@@ -1327,7 +1327,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 					throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateBlob(String columnlabel,
@@ -1335,7 +1335,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 					throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateBlob(String columnlabel,
@@ -1344,7 +1344,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 					throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateBoolean(int columnindex,
@@ -1352,7 +1352,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateBoolean(String columnlabel,
@@ -1360,7 +1360,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateByte(int columnindex,
@@ -1368,7 +1368,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateByte(String columnlabel,
@@ -1376,7 +1376,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateBytes(int columnindex,
@@ -1384,7 +1384,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateBytes(String columnlabel,
@@ -1392,7 +1392,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateCharacterStream(int columnindex,
@@ -1400,7 +1400,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateCharacterStream(int columnindex,
@@ -1409,7 +1409,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateCharacterStream(int columnindex,
@@ -1418,7 +1418,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateCharacterStream(String columnlabel,
@@ -1426,7 +1426,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateCharacterStream(String columnlabel,
@@ -1435,7 +1435,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateCharacterStream(String columnlabel,
@@ -1444,7 +1444,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateClob(int columnindex,
@@ -1452,7 +1452,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 					throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateClob(int columnindex,
@@ -1460,7 +1460,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 					throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateClob(int columnindex,
@@ -1469,7 +1469,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 					throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateClob(String columnlabel,
@@ -1477,7 +1477,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateClob(String columnlabel,
@@ -1485,7 +1485,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateClob(String columnlabel,
@@ -1494,77 +1494,77 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateDate(int columnindex, Date x)
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateDate(String columnlabel, Date x)
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateDouble(int columnindex, double x)
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateDouble(String columnlabel, double x)
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateFloat(int columnindex, float x)
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateFloat(String columnlabel, float x)
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateInt(int columnindex, int x)
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateInt(String columnlabel, int x)
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateLong(int columnindex, long x)
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateLong(String columnlabel, long x)
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateNCharacterStream(int columnindex,
@@ -1572,7 +1572,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateNCharacterStream(int columnindex,
@@ -1581,7 +1581,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateNCharacterStream(String columnlabel,
@@ -1589,7 +1589,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateNCharacterStream(String columnlabel,
@@ -1598,7 +1598,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 							throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateNClob(int columnindex,
@@ -1606,7 +1606,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateNClob(int columnindex,
@@ -1614,7 +1614,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateNClob(int columnindex,
@@ -1623,7 +1623,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateNClob(String columnlabel,
@@ -1631,7 +1631,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateNClob(String columnlabel,
@@ -1639,7 +1639,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateNClob(String columnlabel,
@@ -1648,7 +1648,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateNString(int columnindex,
@@ -1656,7 +1656,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateNString(String columnlabel,
@@ -1664,19 +1664,19 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateNull(int columnindex) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateNull(String columnlabel) throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateObject(int columnindex,
@@ -1684,7 +1684,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateObject(int columnindex,
@@ -1693,7 +1693,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateObject(String columnlabel,
@@ -1701,7 +1701,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateObject(String columnlabel,
@@ -1710,55 +1710,55 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateRef(int columnindex, Ref x)
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateRef(String columnlabel, Ref x)
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateRow() throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateRowId(int columnindex, RowId x)
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateRowId(String columnlabel, RowId x)
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateShort(int columnindex, short x)
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateShort(String columnlabel, short x)
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateSQLXML(int columnindex,
@@ -1766,7 +1766,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateSQLXML(String columnlabel,
@@ -1774,7 +1774,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateString(int columnindex,
@@ -1782,7 +1782,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateString(String columnlabel,
@@ -1790,7 +1790,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateTime(int columnindex,
@@ -1798,7 +1798,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateTime(String columnlabel,
@@ -1806,7 +1806,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateTimestamp(int columnindex,
@@ -1814,7 +1814,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public void	updateTimestamp(String columnlabel,
@@ -1822,7 +1822,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 						throws SQLException {
 		debugFunction();
 		throwExceptionIfClosed();
-		throwNotSupportedException();
+		throwFeatureNotSupportedException();
 	}
 
 	public boolean	wasNull() throws SQLException {
@@ -1876,7 +1876,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 		throw new SQLException(sqlrcur.errorMessage());
 	}
 
-	private void throwNotSupportedException() throws SQLException {
+	private void throwFeatureNotSupportedException() throws SQLException {
 		debugFunction();
 		throw new SQLFeatureNotSupportedException();
 	}

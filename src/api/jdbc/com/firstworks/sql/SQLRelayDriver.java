@@ -24,6 +24,7 @@ public class SQLRelayDriver extends SQLRelayDebug implements Driver {
 
 	public SQLRelayDriver() throws SQLException {
 		debugFunction();
+		debugEnd();
 	}
 
 	/**
@@ -34,11 +35,13 @@ public class SQLRelayDriver extends SQLRelayDebug implements Driver {
 					throws SQLException {
 		debugFunction();
 		SQLRelayConnectInfo	ci=parseConnectInfo(url,info);
-		return (validConnectInfo(ci))?
+		Connection	conn=(validConnectInfo(ci))?
 			new SQLRelayConnection(ci.host,ci.port,ci.socket,
 							ci.user,ci.password,
 							ci.retrytime,ci.tries):
 			null;
+		debugEnd();
+		return conn;
 	}
 
 	public SQLRelayConnectInfo parseConnectInfo(String url,
@@ -158,23 +161,27 @@ public class SQLRelayDriver extends SQLRelayDebug implements Driver {
 		ci.triesstr = triesstr;
 		ci.tries = tries;
 
-		debugPrintln("  host: "+host);
-		debugPrintln("  portstr: "+portstr);
-		debugPrintln("  port: "+port);
-		debugPrintln("  socket: "+socket);
-		debugPrintln("  user: "+user);
-		debugPrintln("  password: "+password);
-		debugPrintln("  retrytimestr: "+retrytimestr);
-		debugPrintln("  retrytime: "+retrytime);
-		debugPrintln("  triesstr: "+triesstr);
-		debugPrintln("  tries: "+tries);
+		debugPrintln("host: "+host);
+		debugPrintln("portstr: "+portstr);
+		debugPrintln("port: "+port);
+		debugPrintln("socket: "+socket);
+		debugPrintln("user: "+user);
+		debugPrintln("password: "+password);
+		debugPrintln("retrytimestr: "+retrytimestr);
+		debugPrintln("retrytime: "+retrytime);
+		debugPrintln("triesstr: "+triesstr);
+		debugPrintln("tries: "+tries);
 
+		debugEnd();
 		return ci;
 	}
 
 	private boolean validConnectInfo(SQLRelayConnectInfo ci) {
 		debugFunction();
-		return ((ci.host!=null && ci.port>0) || ci.socket!=null);
+		boolean valid=
+			((ci.host!=null && ci.port>0) || ci.socket!=null);
+		debugEnd();
+		return valid;
 	}
 
 	/**
@@ -183,7 +190,9 @@ public class SQLRelayDriver extends SQLRelayDebug implements Driver {
 	 */
 	public boolean acceptsURL(String url) throws SQLException {
 		debugFunction();
-		return validConnectInfo(parseConnectInfo(url,null));
+		boolean	valid=validConnectInfo(parseConnectInfo(url,null));
+		debugEnd();
+		return valid;
 	}
 
 	/**
@@ -251,7 +260,11 @@ public class SQLRelayDriver extends SQLRelayDebug implements Driver {
 			dpilist.add(dpi);
 		}
 
-		return dpilist.toArray(new DriverPropertyInfo[dpilist.size()]);
+		DriverPropertyInfo[]	dpiarray=
+			dpilist.toArray(new DriverPropertyInfo[dpilist.size()]);
+
+		debugEnd();
+		return dpiarray;
 	}
 
 	/**
@@ -259,6 +272,7 @@ public class SQLRelayDriver extends SQLRelayDebug implements Driver {
 	 */
 	public int getMajorVersion() {
 		debugFunction();
+		debugEnd();
 		return MAJOR_VERSION;
 	}
 
@@ -267,6 +281,7 @@ public class SQLRelayDriver extends SQLRelayDebug implements Driver {
 	 */
 	public int getMinorVersion() {
 		debugFunction();
+		debugEnd();
 		return MINOR_VERSION;
 	}
 
@@ -280,6 +295,7 @@ public class SQLRelayDriver extends SQLRelayDebug implements Driver {
 	 */
 	public boolean jdbcCompliant() {
 		debugFunction();
+		debugEnd();
 		return false;
 	}
 }
