@@ -59,6 +59,7 @@ while ( test "$#" -gt "0" ); do
 			;;
 		--version)
 			echo $version
+			exit 0
 			;;
 		--cflags)
 			echo_cflags=yes

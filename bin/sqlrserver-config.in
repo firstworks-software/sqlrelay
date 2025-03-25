@@ -5,6 +5,7 @@
 
 prefix=@prefix@
 exec_prefix=@exec_prefix@
+sysconfdir=@sysconfdir@
 version=@SQLR_VERSION@
 
 # fake out rpmlint
@@ -31,6 +32,7 @@ Options:
 	[--libs]
 	[--with-$rp$ath]
 	[--cflags]
+	[--sysconfdir]
 EOF
 	exit $1
 }
@@ -59,6 +61,7 @@ while ( test "$#" -gt "0" ); do
 			;;
 		--version)
 			echo $version
+			exit 0
 			;;
 		--cflags)
 			echo_cflags=yes
@@ -68,6 +71,10 @@ while ( test "$#" -gt "0" ); do
 			;;
 		--with-$rp$ath)
 			with_rpath=yes
+			;;
+		--sysconfdir)
+			echo $sysconfdir
+			exit 0
 			;;
 		*)
 			usage 1 1>&2

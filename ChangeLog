@@ -4,6 +4,7 @@
 	added PHPMAJORVERSION="0" default for old php-config that doesn't
 		return the version
 	replaced -I./ with -I. for older compilers
+	added --sysconfdir option to sqlrserver-config
 
 2.1.0 - refactored debugging
 
