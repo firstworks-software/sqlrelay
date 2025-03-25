@@ -143,6 +143,7 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 				resultset=new SQLRelayResultSet();
 				resultset.setStatement(stmt);
 				resultset.setSQLRCursor(sqlrcur);
+				resultset.setIndent(getIndent());
 			}
 		} else {
 			throwErrorMessageException(sqlrcur);
@@ -218,6 +219,7 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 				resultset=new SQLRelayResultSet();
 				resultset.setStatement(stmt);
 				resultset.setSQLRCursor(sqlrcur);
+				resultset.setIndent(getIndent());
 			}
 		} else {
 			throwErrorMessageException(sqlrcur);
@@ -765,6 +767,7 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 				resultset=new SQLRelayResultSet();
 				resultset.setStatement(stmt);
 				resultset.setSQLRCursor(sqlrcur);
+				resultset.setIndent(getIndent());
 			}
 		} else {
 			throwErrorMessageException(sqlrcur);
@@ -909,6 +912,7 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 				resultset=new SQLRelayResultSet();
 				resultset.setStatement(stmt);
 				resultset.setSQLRCursor(sqlrcur);
+				resultset.setIndent(getIndent());
 			}
 		} else {
 			throwErrorMessageException(sqlrcur);

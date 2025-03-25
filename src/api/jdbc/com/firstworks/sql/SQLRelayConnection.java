@@ -222,6 +222,7 @@ sqlrcon.debugOn();
 		sqlrstmt.setConnection(this);
 		sqlrstmt.setSQLRConnection(sqlrcon);
 		sqlrstmt.setSQLRCursor(sqlrcur);
+		sqlrstmt.setIndent(getIndent());
 
 		debugEnd();
 		return sqlrstmt;
@@ -278,6 +279,7 @@ sqlrcon.debugOn();
 		SQLRelayDatabaseMetaData	metadata=
 						new SQLRelayDatabaseMetaData();
 		metadata.setConnection(this);
+		metadata.setIndent(getIndent());
 		debugEnd();
 		return metadata;
 	}
@@ -370,6 +372,7 @@ sqlrcon.debugOn();
 		sqlrstmt.setConnection(this);
 		sqlrstmt.setSQLRConnection(sqlrcon);
 		sqlrstmt.setSQLRCursor(sqlrcur);
+		sqlrstmt.setIndent(getIndent());
 		debugEnd();
 		return sqlrstmt;
 	}
@@ -409,6 +412,7 @@ sqlrcon.debugOn();
 		sqlrstmt.setConnection(this);
 		sqlrstmt.setSQLRConnection(sqlrcon);
 		sqlrstmt.setSQLRCursor(sqlrcur);
+		sqlrstmt.setIndent(getIndent());
 		debugEnd();
 		return sqlrstmt;
 	}

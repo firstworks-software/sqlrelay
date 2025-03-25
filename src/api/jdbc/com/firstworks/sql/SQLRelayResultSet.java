@@ -615,6 +615,7 @@ public class SQLRelayResultSet extends SQLRelayDebug implements ResultSet {
 		SQLRelayResultSetMetaData	metadata=
 						new SQLRelayResultSetMetaData();
 		metadata.setSQLRCursor(sqlrcur);
+		metadata.setIndent(getIndent());
 		return metadata;
 	}
 

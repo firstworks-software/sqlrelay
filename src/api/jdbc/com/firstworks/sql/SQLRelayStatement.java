@@ -131,6 +131,7 @@ public class SQLRelayStatement extends SQLRelayDebug implements Statement {
 				resultset=new SQLRelayResultSet();
 				resultset.setStatement(this);
 				resultset.setSQLRCursor(sqlrcur);
+				resultset.setIndent(getIndent());
 			}
 		} else {
 			throwErrorMessageException();
@@ -189,6 +190,7 @@ public class SQLRelayStatement extends SQLRelayDebug implements Statement {
 			resultset=new SQLRelayResultSet();
 			resultset.setStatement(this);
 			resultset.setSQLRCursor(sqlrcur);
+			resultset.setIndent(getIndent());
 		} else {
 			throw new SQLException(sqlrcur.errorMessage());
 		}

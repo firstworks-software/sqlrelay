@@ -6,6 +6,14 @@ public class SQLRelayDebug {
 
 	private int	indent=0;
 
+	public void setIndent(int indent) {
+		this.indent=indent;
+	}
+
+	public int getIndent() {
+		return indent;
+	}
+
 	public void debugStart(String str) {
 		if (!debug) {
 			return;
