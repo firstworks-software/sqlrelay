@@ -10,7 +10,7 @@ public class SQLRelayDebug {
 		if (!debug) {
 			return;
 		}
-		printIndent();
+		debugPrintIndent();
 		System.out.println(str + " {");
 		indent++;
 	}
@@ -20,7 +20,7 @@ public class SQLRelayDebug {
 			return;
 		}
 		indent--;
-		printIndent();
+		debugPrintIndent();
 		System.out.println("}");
 	}
 
@@ -28,7 +28,7 @@ public class SQLRelayDebug {
 		indent=0;
 	}
 
-	private void printIndent() {
+	private void debugPrintIndent() {
 		for (int i=0; i<indent; i++) {
 			System.out.print("	");
 		}
@@ -46,6 +46,7 @@ public class SQLRelayDebug {
 		if (!debug) {
 			return;
 		}
+		debugPrintIndent();
 		System.out.print(str);
 	}
 
@@ -53,6 +54,7 @@ public class SQLRelayDebug {
 		if (!debug) {
 			return;
 		}
+		debugPrintIndent();
 		System.out.println(str);
 	}
 
