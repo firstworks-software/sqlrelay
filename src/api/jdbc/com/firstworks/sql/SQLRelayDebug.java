@@ -19,9 +19,9 @@ public class SQLRelayDebug {
 		if (!debug) {
 			return;
 		}
+		indent--;
 		printIndent();
 		System.out.println("}");
-		indent--;
 	}
 
 	public void debugZeroIndent() {
