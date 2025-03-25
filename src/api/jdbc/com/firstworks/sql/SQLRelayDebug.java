@@ -11,7 +11,7 @@ public class SQLRelayDebug {
 			return;
 		}
 		printIndent();
-		System.out.println(str + "{");
+		System.out.println(str + " {");
 		indent++;
 	}
 
