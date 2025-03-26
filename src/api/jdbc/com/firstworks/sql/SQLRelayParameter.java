@@ -6,7 +6,7 @@ import java.util.Calendar;
 
 import com.firstworks.sqlrelay.*;
 
-public class SQLRelayParameter extends SQLRelayDebug {
+public class SQLRelayParameter {
 
 	public enum BindType {
 		Array,
