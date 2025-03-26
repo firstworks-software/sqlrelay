@@ -13,7 +13,7 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 
 	public SQLRelayParameterMetaData(SQLRelayDriver driver) {
 		this.driver=driver;
-		driver.debugFunction();
+		driver.debugStart("SQLRelayParameterMetaData");
 		parameters=null;
 		driver.debugEnd();
 	}

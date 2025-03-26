@@ -18,7 +18,7 @@ public class SQLRelayCallableStatement
 	public SQLRelayCallableStatement(SQLRelayDriver driver)
 							throws SQLException {
 		super(driver);
-		driver.debugFunction();
+		driver.debugStart("SQLRelayCallableStatement");
 		driver.debugEnd();
 	}
 

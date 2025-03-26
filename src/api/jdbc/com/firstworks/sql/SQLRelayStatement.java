@@ -24,7 +24,7 @@ public class SQLRelayStatement implements Statement {
 
 	public SQLRelayStatement(SQLRelayDriver driver) {
 		this.driver=driver;
-		driver.debugFunction();
+		driver.debugStart("SQLRelayStatement");
 		reset();
 		driver.debugEnd();
 	}

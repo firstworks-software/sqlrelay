@@ -23,9 +23,9 @@ public class SQLRelayPreparedStatement
 	private ArrayList<HashMap<Integer,SQLRelayParameter>>	batch;
 	private HashMap<Integer,SQLRelayParameter>		parameters;
 
-	SQLRelayPreparedStatement(SQLRelayDriver driver) {
+	public SQLRelayPreparedStatement(SQLRelayDriver driver) {
 		super(driver);
-		driver.debugFunction();
+		driver.debugStart("SQLRelayPreparedStatement");
 		batch=new ArrayList<HashMap<Integer,SQLRelayParameter>>();
 		parameters=new HashMap<Integer,SQLRelayParameter>();
 		driver.debugEnd();

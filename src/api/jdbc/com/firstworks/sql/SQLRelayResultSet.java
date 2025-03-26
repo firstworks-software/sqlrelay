@@ -31,7 +31,7 @@ public class SQLRelayResultSet implements ResultSet {
 
 	public SQLRelayResultSet(SQLRelayDriver driver) {
 		this.driver=driver;
-		driver.debugFunction();
+		driver.debugStart("SQLRelayResultSet");
 		reset();
 		driver.debugEnd();
 	}
