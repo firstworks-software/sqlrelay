@@ -4,38 +4,39 @@ import java.sql.*;
 
 import com.firstworks.sqlrelay.*;
 
-public class SQLRelayResultSetMetaData extends SQLRelayDebug implements ResultSetMetaData {
+public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 
 	private	SQLRCursor	sqlrcur;
+	private	SQLRelayDriver	driver;
 
-	public SQLRelayResultSetMetaData(int debugindent) {
-		setDebugIndent(debugindent);
-		debugFunction();
+	public SQLRelayResultSetMetaData(SQLRelayDriver driver) {
+		this.driver=driver;
+		driver.debugFunction();
 		sqlrcur=null;
-		debugEnd();
+		driver.debugEnd();
 	}
 
 	public void	setSQLRCursor(SQLRCursor sqlrcur) {
-		debugFunction();
+		driver.debugFunction();
 		this.sqlrcur=sqlrcur;
-		debugEnd();
+		driver.debugEnd();
 	}
 
 	public String 	getCatalogName(int column) {
-		debugFunction();
+		driver.debugFunction();
 		String	catalogname="";
-		debugPrintln("column: "+column);
-		debugPrintln("catalog name: "+catalogname);
-		debugEnd();
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("catalog name: "+catalogname);
+		driver.debugEnd();
 		return catalogname;
 	}
 
 	public String 	getColumnClassName(int column) {
-		debugFunction();
-		debugPrintln("column: "+column);
+		driver.debugFunction();
+		driver.debugPrintln("column: "+column);
 		String	retval=null;
 		String	ctype=sqlrcur.getColumnType(column-1).toUpperCase();
-		debugPrintln("ctype: "+ctype);
+		driver.debugPrintln("ctype: "+ctype);
 		if (ctype.equals("UNKNOWN")) {
 			retval=null;
 		}
@@ -182,7 +183,7 @@ public class SQLRelayResultSetMetaData extends SQLRelayDebug implements ResultSe
 			ctype.equals("LONGBLOB") ||
 			ctype.equals("BLOB")) {
 			boolean	binary=sqlrcur.getColumnIsBinary(column-1);
-			debugPrintln("is binary: "+binary);
+			driver.debugPrintln("is binary: "+binary);
 			retval=(binary)?"java.lang.Byte":"java.lang.String";
 		}
 	
@@ -633,56 +634,56 @@ public class SQLRelayResultSetMetaData extends SQLRelayDebug implements ResultSe
 		if (ctype.equals("DATETIMEOFFSET")) {
 			retval="java.sql.Timestamp";
 		}
-		debugPrintln("class type: "+retval);
-		debugEnd();
+		driver.debugPrintln("class type: "+retval);
+		driver.debugEnd();
 		return retval;
 	}
 
 	public int 	getColumnCount() {
-		debugFunction();
+		driver.debugFunction();
 		int	colcount=sqlrcur.colCount();
-		debugPrintln("colcount: "+colcount);
-		debugEnd();
+		driver.debugPrintln("colcount: "+colcount);
+		driver.debugEnd();
 		return colcount;
 	}
 
 	public int 	getColumnDisplaySize(int column) {
-		debugFunction();
+		driver.debugFunction();
 		int	longest=sqlrcur.getLongest(column-1);
-		debugPrintln("column: "+column);
-		debugPrintln("longest (before): "+longest);
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("longest (before): "+longest);
 		if (longest==-1) {
 			longest=2147483647;
 		}
-		debugPrintln("longest (after): "+longest);
-		debugEnd();
+		driver.debugPrintln("longest (after): "+longest);
+		driver.debugEnd();
 		return longest;
 	}
 
 	public String 	getColumnLabel(int column) {
-		debugFunction();
+		driver.debugFunction();
 		String	label=sqlrcur.getColumnName(column-1);
-		debugPrintln("column: "+column);
-		debugPrintln("label: "+label);
-		debugEnd();
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("label: "+label);
+		driver.debugEnd();
 		return label;
 	}
 
 	public String 	getColumnName(int column) {
-		debugFunction();
+		driver.debugFunction();
 		String	columnname=sqlrcur.getColumnName(column-1);
-		debugPrintln("column: "+column);
-		debugPrintln("column name: "+columnname);
-		debugEnd();
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("column name: "+columnname);
+		driver.debugEnd();
 		return columnname;
 	}
 
 	public int 	getColumnType(int column) {
-		debugFunction();
-		debugPrintln("column: "+column);
+		driver.debugFunction();
+		driver.debugPrintln("column: "+column);
 		int	retval=0;
 		String	ctype=sqlrcur.getColumnType(column-1).toUpperCase();
-		debugPrintln("ctype: "+ctype);
+		driver.debugPrintln("ctype: "+ctype);
 		if (ctype.equals("UNKNOWN")) {
 			retval=Types.OTHER;
 		}
@@ -829,7 +830,7 @@ public class SQLRelayResultSetMetaData extends SQLRelayDebug implements ResultSe
 			ctype.equals("LONGBLOB") ||
 			ctype.equals("BLOB")) {
 			boolean	binary=sqlrcur.getColumnIsBinary(column-1);
-			debugPrintln("is binary: "+binary);
+			driver.debugPrintln("is binary: "+binary);
 			retval=(binary)?Types.BINARY:Types.LONGVARCHAR;
 		}
 	
@@ -1280,159 +1281,159 @@ public class SQLRelayResultSetMetaData extends SQLRelayDebug implements ResultSe
 		if (ctype.equals("DATETIMEOFFSET")) {
 			retval=Types.TIMESTAMP;
 		}
-		debugPrintln("sql type: "+retval);
-		debugEnd();
+		driver.debugPrintln("sql type: "+retval);
+		driver.debugEnd();
 		return retval;
 	}
 
 	public String 	getColumnTypeName(int column) {
-		debugFunction();
+		driver.debugFunction();
 		String	typename=sqlrcur.getColumnType(column-1);
-		debugPrintln("column: "+column);
-		debugPrintln("type name: "+typename);
-		debugEnd();
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("type name: "+typename);
+		driver.debugEnd();
 		return typename;
 	}
 
 	public int 	getPrecision(int column) {
-		debugFunction();
+		driver.debugFunction();
 		int	precision=(int)sqlrcur.getColumnPrecision(column-1);
-		debugPrintln("column: "+column);
-		debugPrintln("precision (before): "+precision);
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("precision (before): "+precision);
 		if (precision==-1) {
 			precision=2147483647;
 		}
-		debugPrintln("precision (after): "+precision);
-		debugEnd();
+		driver.debugPrintln("precision (after): "+precision);
+		driver.debugEnd();
 		return precision;
 	}
 
 	public int 	getScale(int column) {
-		debugFunction();
+		driver.debugFunction();
 		int	scale=(int)sqlrcur.getColumnScale(column-1);
-		debugPrintln("column: "+column);
-		debugPrintln("scale: "+scale);
-		debugEnd();
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("scale: "+scale);
+		driver.debugEnd();
 		return scale;
 	}
 
 	public String 	getSchemaName(int column) {
-		debugFunction();
+		driver.debugFunction();
 		String	schemaname="";
-		debugPrintln("column: "+column);
-		debugPrintln("schema name: "+schemaname);
-		debugEnd();
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("schema name: "+schemaname);
+		driver.debugEnd();
 		return schemaname;
 	}
 
 	public String 	getTableName(int column) {
-		debugFunction();
+		driver.debugFunction();
 		String	tablename="";
-		debugPrintln("column: "+column);
-		debugPrintln("table name: "+tablename);
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("table name: "+tablename);
 		// FIXME: this could be implemented if
 		// getColumnTable was exposed
-		debugEnd();
+		driver.debugEnd();
 		return tablename;
 	}
 
 	public boolean 	isAutoIncrement(int column) {
-		debugFunction();
+		driver.debugFunction();
 		boolean	isautoinc=sqlrcur.getColumnIsAutoIncrement(column-1);
-		debugPrintln("column: "+column);
-		debugPrintln("is auto increment: "+isautoinc);
-		debugEnd();
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("is auto increment: "+isautoinc);
+		driver.debugEnd();
 		return isautoinc;
 	}
 
 	public boolean 	isCaseSensitive(int column) {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: can db type tell us this?
 		boolean	iscasesensitive=false;
-		debugPrintln("column: "+column);
-		debugPrintln("is case sensitive: "+iscasesensitive);
-		debugEnd();
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("is case sensitive: "+iscasesensitive);
+		driver.debugEnd();
 		return iscasesensitive;
 	}
 
 	public boolean 	isCurrency(int column) {
-		debugFunction();
+		driver.debugFunction();
 		String	ctype=sqlrcur.getColumnType(column-1).toUpperCase();
 		boolean	iscurrency=ctype.equals("MONEY") ||
 					ctype.equals("SMALLMONEY") ||
 					ctype.equals("MONEY_ARRAY");
-		debugPrintln("column: "+column);
-		debugPrintln("ctype: "+ctype);
-		debugPrintln("is currency: "+iscurrency);
-		debugEnd();
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("ctype: "+ctype);
+		driver.debugPrintln("is currency: "+iscurrency);
+		driver.debugEnd();
 		return iscurrency;
 	}
 
 	public boolean 	isDefinitelyWritable(int column) {
-		debugFunction();
+		driver.debugFunction();
 		boolean	isdefinitelywriteable=false;
-		debugPrintln("column: "+column);
-		debugPrintln("is definitely writeable: "+
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("is definitely writeable: "+
 					isdefinitelywriteable);
-		debugEnd();
+		driver.debugEnd();
 		return isdefinitelywriteable;
 	}
 
 	public int 	isNullable(int column) {
-		debugFunction();
+		driver.debugFunction();
 		int	isnullable=(sqlrcur.getColumnIsNullable(column-1))?
 						columnNullable:columnNoNulls;
-		debugPrintln("column: "+column);
-		debugPrintln("is nullable: "+isnullable);
-		debugEnd();
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("is nullable: "+isnullable);
+		driver.debugEnd();
 		return isnullable;
 	}
 
 	public boolean 	isReadOnly(int column) {
-		debugFunction();
+		driver.debugFunction();
 		boolean	isreadonly=false;
-		debugPrintln("column: "+column);
-		debugPrintln("is read-only: "+isreadonly);
-		debugEnd();
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("is read-only: "+isreadonly);
+		driver.debugEnd();
 		return isreadonly;
 	}
 
 	public boolean 	isSearchable(int column) {
-		debugFunction();
+		driver.debugFunction();
 		boolean	issearchable=true;
-		debugPrintln("column: "+column);
-		debugPrintln("is searchable: "+issearchable);
-		debugEnd();
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("is searchable: "+issearchable);
+		driver.debugEnd();
 		return issearchable;
 	}
 
 	public boolean 	isSigned(int column) {
-		debugFunction();
+		driver.debugFunction();
 		boolean	issigned=!sqlrcur.getColumnIsUnsigned(column-1);
-		debugPrintln("column: "+column);
-		debugPrintln("is signed: "+issigned);
-		debugEnd();
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("is signed: "+issigned);
+		driver.debugEnd();
 		return issigned;
 	}
 
 	public boolean 	isWritable(int column) {
-		debugFunction();
+		driver.debugFunction();
 		boolean	iswriteable=true;
-		debugPrintln("column: "+column);
-		debugPrintln("is writeable: "+iswriteable);
-		debugEnd();
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("is writeable: "+iswriteable);
+		driver.debugEnd();
 		return iswriteable;
 	}
 
 	public boolean	isWrapperFor(Class<?> iface) throws SQLException {
-		debugFunction();
-		debugEnd();
+		driver.debugFunction();
+		driver.debugEnd();
 		return false;
 	}
 
 	public <T> T	unwrap(Class<T> iface) throws SQLException {
-		debugFunction();
-		debugEnd();
+		driver.debugFunction();
+		driver.debugEnd();
 		return null;
 	}
 }

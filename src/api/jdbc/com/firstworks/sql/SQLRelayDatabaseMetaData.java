@@ -5,99 +5,100 @@ import java.util.regex.*;
 
 import com.firstworks.sqlrelay.*;
 	
-public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseMetaData {
+public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 	private SQLRelayConnection	connection;
+	private	SQLRelayDriver		driver;
 
-	public SQLRelayDatabaseMetaData(int debugindent) {
-		setDebugIndent(debugindent);
-		debugFunction();
+	public SQLRelayDatabaseMetaData(SQLRelayDriver driver) {
+		this.driver=driver;
+		driver.debugFunction();
 		connection=null;
 		// FIXME: set protected member variables?
-		debugEnd();
+		driver.debugEnd();
 	}
 
 	public void setConnection(SQLRelayConnection connection) {
-		debugFunction();
+		driver.debugFunction();
 		this.connection=connection;
-		debugEnd();
+		driver.debugEnd();
 	}
 
 	public boolean 	allProceduresAreCallable() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// Retrieves whether the current user can call all the
 		// procedures returned by the method getProcedures.
 		boolean	result=false;
-		debugPrintln("result: "+result);
-		debugEnd();
+		driver.debugPrintln("result: "+result);
+		driver.debugEnd();
 		return result;
 	}
 
 	public boolean 	allTablesAreSelectable() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// Retrieves whether the current user can use all the tables
 		// returned by the method getTables in a SELECT statement.
 		boolean	result=false;
-		debugPrintln("result: "+result);
-		debugEnd();
+		driver.debugPrintln("result: "+result);
+		driver.debugEnd();
 		return result;
 	}
 
 	public boolean 	autoCommitFailureClosesAllResultSets()
 							throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// Retrieves whether a SQLException while autoCommit is true
 		// inidcates that all open ResultSets are closed, even ones
 		// that are holdable.
 		// FIXME: no idea if this is true or not
 		boolean	result=false;
-		debugPrintln("result: "+result);
-		debugEnd();
+		driver.debugPrintln("result: "+result);
+		driver.debugEnd();
 		return result;
 	}
 
 	public boolean 	dataDefinitionCausesTransactionCommit()
 							throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	result=false;
-		debugPrintln("result: "+result);
-		debugEnd();
+		driver.debugPrintln("result: "+result);
+		driver.debugEnd();
 		return result;
 	}
 
 	public boolean 	dataDefinitionIgnoredInTransactions()
 							throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	result=false;
-		debugPrintln("result: "+result);
-		debugEnd();
+		driver.debugPrintln("result: "+result);
+		driver.debugEnd();
 		return result;
 	}
 
 	public boolean 	deletesAreDetected(int type) throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// SQL Relay doesn't currenlty support ResultSet.RowDelete
 		boolean	result=false;
-		debugPrintln("result: "+result);
-		debugEnd();
+		driver.debugPrintln("result: "+result);
+		driver.debugEnd();
 		return result;
 	}
 
 	public boolean 	doesMaxRowSizeIncludeBlobs() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		boolean	result=false;
-		debugPrintln("result: "+result);
-		debugEnd();
+		driver.debugPrintln("result: "+result);
+		driver.debugEnd();
 		return result;
 	}
 
 	public boolean 	generatedKeyAlwaysReturned() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		boolean	result=true;
-		debugPrintln("result: "+result);
-		debugEnd();
+		driver.debugPrintln("result: "+result);
+		driver.debugEnd();
 		return result;
 	}
 
@@ -106,9 +107,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						String typeNamePattern,
 						String attributeNamePattern)
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: implement this somehow...
-		debugEnd();
+		driver.debugEnd();
 		return null;
 	}
 
@@ -118,14 +119,14 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 							int scope,
 							boolean nullable)
 							throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: implement this somehow...
-		debugEnd();
+		driver.debugEnd();
 		return null;
 	}
 
 	public ResultSet 	getCatalogs() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 
 		SQLRelayResultSet	resultset=null;
 		SQLRelayStatement	stmt=(SQLRelayStatement)
@@ -134,15 +135,14 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 
 		boolean	result=sqlrcur.getDatabaseListWithFormat(null,3);
 
-		debugPrintln("result: "+result);
+		driver.debugPrintln("result: "+result);
 
 		if (result) {
 
-			debugPrintln("colcount: "+sqlrcur.colCount());
+			driver.debugPrintln("colcount: "+sqlrcur.colCount());
 
 			if (sqlrcur.colCount()>0) {
-				resultset=new SQLRelayResultSet(
-							getDebugIndent());
+				resultset=new SQLRelayResultSet(driver);
 				resultset.setStatement(stmt);
 				resultset.setSQLRCursor(sqlrcur);
 			}
@@ -150,32 +150,32 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 			throwErrorMessageException(sqlrcur);
 		}
 		
-		debugEnd();
+		driver.debugEnd();
 		return resultset;
 	}
 
 	public String 	getCatalogSeparator() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: oracle uses @
 		String	separator=".";
-		debugPrintln("separator: "+separator);
-		debugEnd();
+		driver.debugPrintln("separator: "+separator);
+		driver.debugEnd();
 		return separator;
 	}
 
 	public String 	getCatalogTerm() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: I think SQL Server uses catalog, maybe sybase
 		String	term="database";
-		debugPrintln("term: "+term);
-		debugEnd();
+		driver.debugPrintln("term: "+term);
+		driver.debugEnd();
 		return term;
 	}
 
 	public ResultSet 	getClientInfoProperties() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: free form in SQL Relay
-		debugEnd();
+		driver.debugEnd();
 		return null;
 	}
 
@@ -185,9 +185,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						String table,
 						String columnNamePattern)
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: implement this somehow
-		debugEnd();
+		driver.debugEnd();
 		return null;
 	}
 
@@ -196,11 +196,11 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						String tableNamePattern,
 						String columnNamePattern)
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 
 		String	wild=buildWild(catalog,schemaPattern,tableNamePattern);
-		debugPrintln("wild: "+wild);
-		debugPrintln("column name pattern: "+columnNamePattern);
+		driver.debugPrintln("wild: "+wild);
+		driver.debugPrintln("column name pattern: "+columnNamePattern);
 
 		SQLRelayResultSet	resultset=null;
 		SQLRelayStatement	stmt=(SQLRelayStatement)
@@ -210,15 +210,14 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		boolean	result=sqlrcur.getColumnListWithFormat(
 						wild,columnNamePattern,3);
 
-		debugPrintln("result: "+result);
+		driver.debugPrintln("result: "+result);
 
 		if (result) {
 
-			debugPrintln("colcount: "+sqlrcur.colCount());
+			driver.debugPrintln("colcount: "+sqlrcur.colCount());
 
 			if (sqlrcur.colCount()>0) {
-				resultset=new SQLRelayResultSet(
-							getDebugIndent());
+				resultset=new SQLRelayResultSet(driver);
 				resultset.setStatement(stmt);
 				resultset.setSQLRCursor(sqlrcur);
 			}
@@ -226,13 +225,13 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 			throwErrorMessageException(sqlrcur);
 		}
 		
-		debugEnd();
+		driver.debugEnd();
 		return resultset;
 	}
 
 	public Connection 	getConnection() throws SQLException {
-		debugFunction();
-		debugEnd();
+		driver.debugFunction();
+		driver.debugEnd();
 		return connection;
 	}
 
@@ -243,25 +242,25 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						String foreignSchema,
 						String foreignTable)
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: implement this somehow...
-		debugEnd();
+		driver.debugEnd();
 		return null;
 	}
 
 	public int 	getDatabaseMajorVersion() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		int	majorversion=getDatabaseVersion(true);
-		debugPrintln("major version: "+majorversion);
-		debugEnd();
+		driver.debugPrintln("major version: "+majorversion);
+		driver.debugEnd();
 		return majorversion;
 	}
 
 	public int 	getDatabaseMinorVersion() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		int	minorversion=getDatabaseVersion(false);
-		debugPrintln("minor version: "+minorversion);
-		debugEnd();
+		driver.debugPrintln("minor version: "+minorversion);
+		driver.debugEnd();
 		return minorversion;
 	}
 
@@ -272,45 +271,45 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		if (matcher.find()) {
 			String[]	parts=matcher.group().split("\\.");
 			if (parts!=null && parts.length>((major)?0:1)) {
-				debugEnd();
+				driver.debugEnd();
 				return Integer.parseInt(parts[(major)?0:1]);
 			}
 		}
-		debugEnd();
+		driver.debugEnd();
 		return -1;
 	}
 
 	public String 	getDatabaseProductName() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: cache/fetch identify
 		String	id=connection.getSQLRConnection().identify();
-		debugPrintln("id: "+id);
-		debugEnd();
+		driver.debugPrintln("id: "+id);
+		driver.debugEnd();
 		return id;
 	}
 
 	public String 	getDatabaseProductVersion() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: cache/fetch dbVersion
 		String	productversion=
 				connection.getSQLRConnection().dbVersion();
-		debugPrintln("product version: "+productversion);
-		debugEnd();
+		driver.debugPrintln("product version: "+productversion);
+		driver.debugEnd();
 		return productversion;
 	}
 
 	public int 	getDefaultTransactionIsolation() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		int	isolation=(getDatabaseProductName().equals("mysql"))?
 					Connection.TRANSACTION_REPEATABLE_READ:
 					Connection.TRANSACTION_READ_COMMITTED;
-		debugPrintln("isolation: "+isolation);
-		debugEnd();
+		driver.debugPrintln("isolation: "+isolation);
+		driver.debugEnd();
 		return isolation;
 	}
 
 	public int 	getDriverMajorVersion() {
-		debugFunction();
+		driver.debugFunction();
 		int		majorversion=-1;
 		String[]	parts=connection.
 					getSQLRConnection().
@@ -318,13 +317,13 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		if (parts!=null && parts.length>0) {
 			majorversion=Integer.parseInt(parts[0]);
 		}
-		debugPrintln("major version: "+majorversion);
-		debugEnd();
+		driver.debugPrintln("major version: "+majorversion);
+		driver.debugEnd();
 		return majorversion;
 	}
 
 	public int 	getDriverMinorVersion() {
-		debugFunction();
+		driver.debugFunction();
 		int		minorversion=-1;
 		String[]	parts=connection.
 					getSQLRConnection().
@@ -332,26 +331,26 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		if (parts!=null && parts.length>1) {
 			minorversion=Integer.parseInt(parts[1]);
 		}
-		debugPrintln("minor version: "+minorversion);
-		debugEnd();
+		driver.debugPrintln("minor version: "+minorversion);
+		driver.debugEnd();
 		return minorversion;
 	}
 
 	public String 	getDriverName() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		String	drivername="sqlrelay";
-		debugPrintln("driver name: "+drivername);
-		debugEnd();
+		driver.debugPrintln("driver name: "+drivername);
+		driver.debugEnd();
 		return drivername;
 	}
 
 	public String 	getDriverVersion() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		String	driverversion=connection.
 					getSQLRConnection().
 					clientVersion();
-		debugPrintln("driver version: "+driverversion);
-		debugEnd();
+		driver.debugPrintln("driver version: "+driverversion);
+		driver.debugEnd();
 		return driverversion;
 	}
 
@@ -359,21 +358,21 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						String schema,
 						String table)
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// Retrieves a description of the foreign key columns that
 		// reference the given table's primary key columns (the foreign
 		// keys exported by a table).
 		// FIXME: implement this somehow
-		debugEnd();
+		driver.debugEnd();
 		return null;
 	}
 
 	public String 	getExtraNameCharacters() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		String	extranamechars="#@";
-		debugPrintln("extra name characters: "+extranamechars);
-		debugEnd();
+		driver.debugPrintln("extra name characters: "+extranamechars);
+		driver.debugEnd();
 		return extranamechars;
 	}
 
@@ -383,10 +382,10 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						String functionNamePattern,
 						String columnNamePattern)
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: implement with
 		// sqlrcur.getProcedureBindAndColumnList()?
-		debugEnd();
+		driver.debugEnd();
 		return null;
 	}
 
@@ -394,21 +393,21 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						String schemaPattern,
 						String functionNamePattern)
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: implement this by calling sqlrcur.getProcedures()?
-		debugEnd();
+		driver.debugEnd();
 		return null;
 	}
 
 	public String 	getIdentifierQuoteString() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		// * sqlserver uses braces
 		String	identifierquotestring=
 			(getDatabaseProductName().equals("mysql"))?"`":"\"";
-		debugPrintln("identifier quote string: "+
+		driver.debugPrintln("identifier quote string: "+
 					identifierquotestring);
-		debugEnd();
+		driver.debugEnd();
 		return identifierquotestring;
 	}
 
@@ -416,12 +415,12 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						String schema,
 						String table)
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// Retrieves a description of the primary key columns that are
 		// referenced by the given table's foreign key columns (the
 		// primary keys imported by a table).
 		// FIXME: implement this somehow
-		debugEnd();
+		driver.debugEnd();
 		return null;
 	}
 
@@ -431,221 +430,221 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						boolean unique,
 						boolean approximate)
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: implement using sqlrcur.getKeyAndIndexList() ?
-		debugEnd();
+		driver.debugEnd();
 		return null;
 	}
 
 	public int 	getJDBCMajorVersion() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: get this from ???
 		int	jdbcmajorversion=4;
-		debugPrintln("jdbc major version: "+jdbcmajorversion);
-		debugEnd();
+		driver.debugPrintln("jdbc major version: "+jdbcmajorversion);
+		driver.debugEnd();
 		return jdbcmajorversion;
 	}
 
 	public int 	getJDBCMinorVersion() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: get this from ???
 		int	jdbcminorversion=3;
-		debugPrintln("jdbc minor version: "+jdbcminorversion);
-		debugEnd();
+		driver.debugPrintln("jdbc minor version: "+jdbcminorversion);
+		driver.debugEnd();
 		return jdbcminorversion;
 	}
 
 	public int 	getMaxBinaryLiteralLength() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxbinaryliterallength=0;
-		debugPrintln("max binary literal length: "+
+		driver.debugPrintln("max binary literal length: "+
 						maxbinaryliterallength);
-		debugEnd();
+		driver.debugEnd();
 		return maxbinaryliterallength;
 	}
 
 	public int 	getMaxCatalogNameLength() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxcatalognamelength=0;
-		debugPrintln("max catalog name length: "+
+		driver.debugPrintln("max catalog name length: "+
 						maxcatalognamelength);
-		debugEnd();
+		driver.debugEnd();
 		return maxcatalognamelength;
 	}
 
 	public int 	getMaxCharLiteralLength() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxcharliterallength=0;
-		debugPrintln("max char literal length: "+
+		driver.debugPrintln("max char literal length: "+
 						maxcharliterallength);
-		debugEnd();
+		driver.debugEnd();
 		return maxcharliterallength;
 	}
 
 	public int 	getMaxColumnNameLength() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxcolumnnamelength=0;
-		debugPrintln("max column name length: "+
+		driver.debugPrintln("max column name length: "+
 						maxcolumnnamelength);
-		debugEnd();
+		driver.debugEnd();
 		return maxcolumnnamelength;
 	}
 
 	public int 	getMaxColumnsInGroupBy() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxcolumnsingroup=0;
-		debugPrintln("max columns in group: "+maxcolumnsingroup);
-		debugEnd();
+		driver.debugPrintln("max columns in group: "+maxcolumnsingroup);
+		driver.debugEnd();
 		return maxcolumnsingroup;
 	}
 
 	public int 	getMaxColumnsInIndex() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxcolumnsinindex=0;
-		debugPrintln("max columns in index: "+maxcolumnsinindex);
-		debugEnd();
+		driver.debugPrintln("max columns in index: "+maxcolumnsinindex);
+		driver.debugEnd();
 		return maxcolumnsinindex;
 	}
 
 	public int 	getMaxColumnsInOrderBy() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxcolumnsinorderby=0;
-		debugPrintln("max columns in order by: "+maxcolumnsinorderby);
-		debugEnd();
+		driver.debugPrintln("max columns in order by: "+maxcolumnsinorderby);
+		driver.debugEnd();
 		return maxcolumnsinorderby;
 	}
 
 	public int 	getMaxColumnsInSelect() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxcolumnsinselect=0;
-		debugPrintln("max columns in select: "+maxcolumnsinselect);
-		debugEnd();
+		driver.debugPrintln("max columns in select: "+maxcolumnsinselect);
+		driver.debugEnd();
 		return maxcolumnsinselect;
 	}
 
 	public int 	getMaxColumnsInTable() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxcolumnsintable=0;
-		debugPrintln("max columns in table: "+maxcolumnsintable);
-		debugEnd();
+		driver.debugPrintln("max columns in table: "+maxcolumnsintable);
+		driver.debugEnd();
 		return maxcolumnsintable;
 	}
 
 	public int 	getMaxConnections() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxconnections=0;
-		debugPrintln("max connections: "+maxconnections);
-		debugEnd();
+		driver.debugPrintln("max connections: "+maxconnections);
+		driver.debugEnd();
 		return maxconnections;
 	}
 
 	public int 	getMaxCursorNameLength() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		int	maxcursornamelength=0;
-		debugPrintln("max cursor name length: "+
+		driver.debugPrintln("max cursor name length: "+
 						maxcursornamelength);
-		debugEnd();
+		driver.debugEnd();
 		return maxcursornamelength;
 	}
 
 	public int 	getMaxIndexLength() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxindexlength=0;
-		debugPrintln("max index length: "+maxindexlength);
-		debugEnd();
+		driver.debugPrintln("max index length: "+maxindexlength);
+		driver.debugEnd();
 		return maxindexlength;
 	}
 
 	public int 	getMaxProcedureNameLength() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxprocedurenamelength=0;
-		debugPrintln("max procedure name length: "+
+		driver.debugPrintln("max procedure name length: "+
 						maxprocedurenamelength);
-		debugEnd();
+		driver.debugEnd();
 		return maxprocedurenamelength;
 	}
 
 	public int 	getMaxRowSize() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxrowsize=0;
-		debugPrintln("max row size: "+maxrowsize);
-		debugEnd();
+		driver.debugPrintln("max row size: "+maxrowsize);
+		driver.debugEnd();
 		return maxrowsize;
 	}
 
 	public int 	getMaxSchemaNameLength() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxschemanamelength=0;
-		debugPrintln("max schema name length: "+maxschemanamelength);
-		debugEnd();
+		driver.debugPrintln("max schema name length: "+maxschemanamelength);
+		driver.debugEnd();
 		return maxschemanamelength;
 	}
 
 	public int 	getMaxStatementLength() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxstatementlength=0;
-		debugPrintln("max statement length: "+maxstatementlength);
-		debugEnd();
+		driver.debugPrintln("max statement length: "+maxstatementlength);
+		driver.debugEnd();
 		return maxstatementlength;
 	}
 
 	public int 	getMaxStatements() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxstatements=0;
-		debugPrintln("max statements: "+maxstatements);
-		debugEnd();
+		driver.debugPrintln("max statements: "+maxstatements);
+		driver.debugEnd();
 		return maxstatements;
 	}
 
 	public int 	getMaxTableNameLength() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxtablenamelength=0;
-		debugPrintln("max table name length: "+maxtablenamelength);
-		debugEnd();
+		driver.debugPrintln("max table name length: "+maxtablenamelength);
+		driver.debugEnd();
 		return maxtablenamelength;
 	}
 
 	public int 	getMaxTablesInSelect() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxtablesinselect=0;
-		debugPrintln("max tables in select: "+maxtablesinselect);
-		debugEnd();
+		driver.debugPrintln("max tables in select: "+maxtablesinselect);
+		driver.debugEnd();
 		return maxtablesinselect;
 	}
 
 	public int 	getMaxUserNameLength() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxusernamelength=0;
-		debugPrintln("max user name length: "+maxusernamelength);
-		debugEnd();
+		driver.debugPrintln("max user name length: "+maxusernamelength);
+		driver.debugEnd();
 		return maxusernamelength;
 	}
 
 	public String 	getNumericFunctions() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		String	numericfunctions=null;
-		debugPrintln("numeric functions: "+numericfunctions);
-		debugEnd();
+		driver.debugPrintln("numeric functions: "+numericfunctions);
+		driver.debugEnd();
 		return numericfunctions;
 	}
 
@@ -653,9 +652,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						String schema,
 						String table)
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: implement this by calling sqlrcon.getPrimaryKeysList()
-		debugEnd();
+		driver.debugEnd();
 		return null;
 	}
 
@@ -665,10 +664,10 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						String procedureNamePattern,
 						String columnNamePattern)
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: implement this by calling
 		// sqlrcon.getProcedureBindAndColumnList()
-		debugEnd();
+		driver.debugEnd();
 		return null;
 	}
 
@@ -676,17 +675,17 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						String schemaPattern,
 						String procedureNamePattern)
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: implement this by calling sqlrcon.getProcedureList()
-		debugEnd();
+		driver.debugEnd();
 		return null;
 	}
 
 	public String 	getProcedureTerm() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		String	procedureterm="procedure";
-		debugPrintln("procedure term: "+procedureterm);
-		debugEnd();
+		driver.debugPrintln("procedure term: "+procedureterm);
+		driver.debugEnd();
 		return procedureterm;
 	}
 
@@ -695,23 +694,23 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						String tableNamePattern,
 						String columnNamePattern)
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: implement this somehow
-		debugEnd();
+		driver.debugEnd();
 		return null;
 	}
 
 	public int 	getResultSetHoldability() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: is this correct?
 		int	resultsetholdability=ResultSet.CLOSE_CURSORS_AT_COMMIT;
-		debugPrintln("result set holdability: "+resultsetholdability);
-		debugEnd();
+		driver.debugPrintln("result set holdability: "+resultsetholdability);
+		driver.debugEnd();
 		return resultsetholdability;
 	}
 
 	public RowIdLifetime 	getRowIdLifetime() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: some dbs do support rowid
 		RowIdLifetime	rowidlifetime=RowIdLifetime.ROWID_UNSUPPORTED;
 		String	rl="";
@@ -732,25 +731,25 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 				rl="ROWID_VALID_FOREVER";
 				break;
 		}
-		debugPrintln("rowid lifetime: "+rl);
-		debugEnd();
+		driver.debugPrintln("rowid lifetime: "+rl);
+		driver.debugEnd();
 		return rowidlifetime;
 	}
 
 	public ResultSet 	getSchemas() throws SQLException {
-		debugFunction();
-		debugEnd();
+		driver.debugFunction();
+		driver.debugEnd();
 		return getSchemas(null,null);
 	}
 
 	public ResultSet 	getSchemas(String catalog,
 						String schemaPattern)
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 
 		// FIXME: use catalog
-		debugPrintln("catalog: "+catalog);
-		debugPrintln("schema pattern: "+schemaPattern);
+		driver.debugPrintln("catalog: "+catalog);
+		driver.debugPrintln("schema pattern: "+schemaPattern);
 
 		SQLRelayResultSet	resultset=null;
 		SQLRelayStatement	stmt=(SQLRelayStatement)
@@ -759,15 +758,14 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 
 		boolean	result=sqlrcur.getSchemaListWithFormat(schemaPattern,3);
 
-		debugPrintln("result: "+result);
+		driver.debugPrintln("result: "+result);
 
 		if (result) {
 
-			debugPrintln("colcount: "+sqlrcur.colCount());
+			driver.debugPrintln("colcount: "+sqlrcur.colCount());
 
 			if (sqlrcur.colCount()>0) {
-				resultset=new SQLRelayResultSet(
-							getDebugIndent());
+				resultset=new SQLRelayResultSet(driver);
 				resultset.setStatement(stmt);
 				resultset.setSQLRCursor(sqlrcur);
 			}
@@ -775,51 +773,51 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 			throwErrorMessageException(sqlrcur);
 		}
 		
-		debugEnd();
+		driver.debugEnd();
 		return resultset;
 	}
 
 	public String 	getSchemaTerm() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		String	schematerm="schema";
-		debugPrintln("schema term: "+schematerm);
-		debugEnd();
+		driver.debugPrintln("schema term: "+schematerm);
+		driver.debugEnd();
 		return schematerm;
 	}
 
 	public String 	getSearchStringEscape() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		String	searchstringescape="\\";
-		debugPrintln("search string escape: "+searchstringescape);
-		debugEnd();
+		driver.debugPrintln("search string escape: "+searchstringescape);
+		driver.debugEnd();
 		return searchstringescape;
 	}
 
 	public String 	getSQLKeywords() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		String	sqlkeywords=null;
-		debugPrintln("sql keywords: "+sqlkeywords);
-		debugEnd();
+		driver.debugPrintln("sql keywords: "+sqlkeywords);
+		driver.debugEnd();
 		return sqlkeywords;
 	}
 
 	public int 	getSQLStateType() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: no idea
 		int	sqlstatetype=sqlStateSQL;
-		debugPrintln("sql state type: "+sqlstatetype);
-		debugEnd();
+		driver.debugPrintln("sql state type: "+sqlstatetype);
+		driver.debugEnd();
 		return sqlstatetype;
 	}
 
 	public String 	getStringFunctions() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		String	stringfunctions=null;
-		debugPrintln("string functions: "+stringfunctions);
-		debugEnd();
+		driver.debugPrintln("string functions: "+stringfunctions);
+		driver.debugEnd();
 		return stringfunctions;
 	}
 
@@ -827,9 +825,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						String schemaPattern,
 						String tableNamePattern)
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: implement this somehow
-		debugEnd();
+		driver.debugEnd();
 		return null;
 	}
 
@@ -837,18 +835,18 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						String schemaPattern,
 						String typeNamePattern)
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: implement this somehow
-		debugEnd();
+		driver.debugEnd();
 		return null;
 	}
 
 	public String 	getSystemFunctions() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: implement this somehow
 		String	systemfunctions=null;
-		debugPrintln("system functions: "+systemfunctions);
-		debugEnd();
+		driver.debugPrintln("system functions: "+systemfunctions);
+		driver.debugEnd();
 		return systemfunctions;
 	}
 
@@ -856,9 +854,9 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						String schemaPattern,
 						String tableNamePattern)
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: implement this somehow
-		debugEnd();
+		driver.debugEnd();
 		return null;
 	}
 
@@ -867,14 +865,14 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						String tableNamePattern,
 						String[] types)
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 
 		String	wild=buildWild(catalog,schemaPattern,tableNamePattern);
-		debugPrintln("wild: "+wild);
+		driver.debugPrintln("wild: "+wild);
 
 		int	objecttypes=0;
 		if (types==null) {
-			debugPrintln("types: null");
+			driver.debugPrintln("types: null");
 			objecttypes=1|2|3|4;
 		} else {
 			String	t="";
@@ -893,7 +891,7 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 					objecttypes|=4;
 				}
 			}
-			debugPrintln(t);
+			driver.debugPrintln(t);
 		}
 
 		SQLRelayResultSet	resultset=null;
@@ -904,15 +902,14 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		boolean	result=sqlrcur.getTableListWithFormat(
 						tableNamePattern,3,objecttypes);
 
-		debugPrintln("result: "+result);
+		driver.debugPrintln("result: "+result);
 
 		if (result) {
 
-			debugPrintln("colcount: "+sqlrcur.colCount());
+			driver.debugPrintln("colcount: "+sqlrcur.colCount());
 
 			if (sqlrcur.colCount()>0) {
-				resultset=new SQLRelayResultSet(
-							getDebugIndent());
+				resultset=new SQLRelayResultSet(driver);
 				resultset.setStatement(stmt);
 				resultset.setSQLRCursor(sqlrcur);
 			}
@@ -920,19 +917,19 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 			throwErrorMessageException(sqlrcur);
 		}
 		
-		debugEnd();
+		driver.debugEnd();
 		return resultset;
 	}
 
 	private String 	buildWild(String catalog,
 					String schema,
 					String object) {
-		debugFunction();
+		driver.debugFunction();
 
 		// If object already contains a . then just use it
 		// as-is.
 		if (object.contains(".")) {
-			debugEnd();
+			driver.debugEnd();
 			return object;
 		}
 
@@ -967,28 +964,28 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		} else {
 			wild.append('%');
 		}
-		debugEnd();
+		driver.debugEnd();
 		return wild.toString();
 	}
 
 	public ResultSet 	getTableTypes() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: implement this somehow
-		debugEnd();
+		driver.debugEnd();
 		return null;
 	}
 
 	public String 	getTimeDateFunctions() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		String	timedatefunctions=null;
-		debugPrintln("timedate functions: "+timedatefunctions);
-		debugEnd();
+		driver.debugPrintln("timedate functions: "+timedatefunctions);
+		driver.debugEnd();
 		return timedatefunctions;
 	}
 
 	public ResultSet 	getTypeInfo() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: implement this by calling sqlrcur.getTypeInfoList()
 		// TYPE_NAME
 		//	String
@@ -1023,7 +1020,7 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 		// LOCAL_TYPE_NAME
 		//	String
 		//	Localized version of this datatype.
-		debugEnd();
+		driver.debugEnd();
 		return null;
 	}
 
@@ -1032,14 +1029,14 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 						String typeNamePattern,
 						int[] types)
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: implement this somehow
-		debugEnd();
+		driver.debugEnd();
 		return null;
 	}
 
 	public String 	getURL() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 
 		String	host=connection.getHost();
 		short	port=connection.getPort();
@@ -1060,17 +1057,17 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 			url=url+":"+socket;
 		}
 
-		debugPrintln("url: "+url);
+		driver.debugPrintln("url: "+url);
 
-		debugEnd();
+		driver.debugEnd();
 		return url;
 	}
 
 	public String 	getUserName() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		String	username=connection.getUser();
-		debugPrintln("user name: "+username);
-		debugEnd();
+		driver.debugPrintln("user name: "+username);
+		driver.debugEnd();
 		return username;
 	}
 
@@ -1078,938 +1075,938 @@ public class SQLRelayDatabaseMetaData extends SQLRelayDebug implements DatabaseM
 							String schema,
 							String table)
 							throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: implement this somehow
-		debugEnd();
+		driver.debugEnd();
 		return null;
 	}
 
 	public boolean 	insertsAreDetected(int type) throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		boolean	insertsaredetected=false;
-		debugPrintln("type: "+type);
-		debugPrintln("inserts are detected: "+insertsaredetected);
-		debugEnd();
+		driver.debugPrintln("type: "+type);
+		driver.debugPrintln("inserts are detected: "+insertsaredetected);
+		driver.debugEnd();
 		return insertsaredetected;
 	}
 
 	public boolean 	isCatalogAtStart() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: not in oracle
 		boolean	iscatalogatstart=true;
-		debugPrintln("is catalog at start: "+iscatalogatstart);
-		debugEnd();
+		driver.debugPrintln("is catalog at start: "+iscatalogatstart);
+		driver.debugEnd();
 		return iscatalogatstart;
 	}
 
 	public boolean 	isReadOnly() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: implement this somehow
 		boolean	isreadonly=false;
-		debugPrintln("is read only: "+isreadonly);
-		debugEnd();
+		driver.debugPrintln("is read only: "+isreadonly);
+		driver.debugEnd();
 		return isreadonly;
 	}
 
 	public boolean 	locatorsUpdateCopy() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: no idea, probably db-specific
 		boolean	locatorsupdatecopy=false;
-		debugPrintln("locators update copy: "+locatorsupdatecopy);
-		debugEnd();
+		driver.debugPrintln("locators update copy: "+locatorsupdatecopy);
+		driver.debugEnd();
 		return locatorsupdatecopy;
 	}
 
 	public boolean 	nullPlusNonNullIsNull() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: generally true, but probably db-specific
 		boolean	nullplusnonnullisnull=true;
-		debugPrintln("null plus non null is null: "+
+		driver.debugPrintln("null plus non null is null: "+
 						nullplusnonnullisnull);
-		debugEnd();
+		driver.debugEnd();
 		return nullplusnonnullisnull;
 	}
 
 	public boolean 	nullsAreSortedAtEnd() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: generally true, but probably db-specific
 		boolean	nullsaresortedatend=true;
-		debugPrintln("nulls are sorted at end: "+
+		driver.debugPrintln("nulls are sorted at end: "+
 						nullsaresortedatend);
-		debugEnd();
+		driver.debugEnd();
 		return nullsaresortedatend;
 	}
 
 	public boolean 	nullsAreSortedAtStart() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: generally false, but probably db-specific
 		boolean	nullsaresortedatstart=false;
-		debugPrintln("nulls are sorted at start: "+
+		driver.debugPrintln("nulls are sorted at start: "+
 						nullsaresortedatstart);
-		debugEnd();
+		driver.debugEnd();
 		return nullsaresortedatstart;
 	}
 
 	public boolean 	nullsAreSortedHigh() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: generally true, but probably db-specific
 		boolean	nullsaresortedhigh=true;
-		debugPrintln("nulls are sorted high: "+
+		driver.debugPrintln("nulls are sorted high: "+
 						nullsaresortedhigh);
-		debugEnd();
+		driver.debugEnd();
 		return nullsaresortedhigh;
 	}
 
 	public boolean 	nullsAreSortedLow() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: generally false, but probably db-specific
 		boolean	nullsaresortedlow=false;
-		debugPrintln("nulls are sorted low: "+
+		driver.debugPrintln("nulls are sorted low: "+
 						nullsaresortedlow);
-		debugEnd();
+		driver.debugEnd();
 		return nullsaresortedlow;
 	}
 
 	public boolean 	othersDeletesAreVisible(int type) throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		boolean	othersdeletesarevisible=false;
-		debugPrintln("others deletes are visible: "+
+		driver.debugPrintln("others deletes are visible: "+
 						othersdeletesarevisible);
-		debugEnd();
+		driver.debugEnd();
 		return othersdeletesarevisible;
 	}
 
 	public boolean 	othersInsertsAreVisible(int type) throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		boolean	othersinsertssarevisible=false;
-		debugPrintln("others inserts are visible: "+
+		driver.debugPrintln("others inserts are visible: "+
 						othersinsertssarevisible);
-		debugEnd();
+		driver.debugEnd();
 		return othersinsertssarevisible;
 	}
 
 	public boolean 	othersUpdatesAreVisible(int type) throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		boolean	othersupdatessarevisible=false;
-		debugPrintln("others updates are visible: "+
+		driver.debugPrintln("others updates are visible: "+
 						othersupdatessarevisible);
-		debugEnd();
+		driver.debugEnd();
 		return othersupdatessarevisible;
 	}
 
 	public boolean 	ownDeletesAreVisible(int type) throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		boolean	owndeletesarevisible=false;
-		debugPrintln("own deletes are visible: "+
+		driver.debugPrintln("own deletes are visible: "+
 						owndeletesarevisible);
-		debugEnd();
+		driver.debugEnd();
 		return owndeletesarevisible;
 	}
 
 	public boolean 	ownInsertsAreVisible(int type) throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		boolean	owninsertsarevisible=false;
-		debugPrintln("own inserts are visible: "+
+		driver.debugPrintln("own inserts are visible: "+
 						owninsertsarevisible);
-		debugEnd();
+		driver.debugEnd();
 		return owninsertsarevisible;
 	}
 
 	public boolean 	ownUpdatesAreVisible(int type) throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		boolean	ownupdatesarevisible=false;
-		debugPrintln("own updates are visible: "+
+		driver.debugPrintln("own updates are visible: "+
 						ownupdatesarevisible);
-		debugEnd();
+		driver.debugEnd();
 		return ownupdatesarevisible;
 	}
 
 	public boolean 	storesLowerCaseIdentifiers() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific but generally false
 		// oracle stores upper case identifiers
 		// other db's store mixed case identifiers
 		boolean	storeslowercaseidentifiers=false;
-		debugPrintln("stores lower case identifiers: "+
+		driver.debugPrintln("stores lower case identifiers: "+
 						storeslowercaseidentifiers);
-		debugEnd();
+		driver.debugEnd();
 		return storeslowercaseidentifiers;
 	}
 
 	public boolean 	storesLowerCaseQuotedIdentifiers() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	storeslowercasequotedidentifiers=false;
-		debugPrintln("stores lower case quoted identifiers: "+
+		driver.debugPrintln("stores lower case quoted identifiers: "+
 					storeslowercasequotedidentifiers);
-		debugEnd();
+		driver.debugEnd();
 		return storeslowercasequotedidentifiers;
 	}
 
 	public boolean 	storesMixedCaseIdentifiers() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: generally true, but db-specific, false for oracle
 		boolean	storesmixedcaseidentifiers=true;
-		debugPrintln("stores mixed case identifiers: "+
+		driver.debugPrintln("stores mixed case identifiers: "+
 						storesmixedcaseidentifiers);
-		debugEnd();
+		driver.debugEnd();
 		return storesmixedcaseidentifiers;
 	}
 
 	public boolean 	storesMixedCaseQuotedIdentifiers() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	storesmixedcasequotedidentifiers=true;
-		debugPrintln("stores mixed case quoted identifiers: "+
+		driver.debugPrintln("stores mixed case quoted identifiers: "+
 					storesmixedcasequotedidentifiers);
-		debugEnd();
+		driver.debugEnd();
 		return storesmixedcasequotedidentifiers;
 	}
 
 	public boolean 	storesUpperCaseIdentifiers() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific but generally false
 		// oracle stores upper case identifiers
 		// other db's store mixed case identifiers
 		boolean	storesuppercaseidentifiers=false;
-		debugPrintln("stores upper case identifiers: "+
+		driver.debugPrintln("stores upper case identifiers: "+
 						storesuppercaseidentifiers);
-		debugEnd();
+		driver.debugEnd();
 		return storesuppercaseidentifiers;
 	}
 
 	public boolean 	storesUpperCaseQuotedIdentifiers() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	storesuppercasequotedidentifiers=true;
-		debugPrintln("stores upper case quoted identifiers: "+
+		driver.debugPrintln("stores upper case quoted identifiers: "+
 					storesuppercasequotedidentifiers);
-		debugEnd();
+		driver.debugEnd();
 		return storesuppercasequotedidentifiers;
 	}
 
 	public boolean 	supportsAlterTableWithAddColumn() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsaltertablewithaddcommand=true;
-		debugPrintln("supports alter table with add command: "+
+		driver.debugPrintln("supports alter table with add command: "+
 					supportsaltertablewithaddcommand);
-		debugEnd();
+		driver.debugEnd();
 		return supportsaltertablewithaddcommand;
 	}
 
 	public boolean 	supportsAlterTableWithDropColumn() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsaltertablewithdropcommand=true;
-		debugPrintln("supports alter table with drop command: "+
+		driver.debugPrintln("supports alter table with drop command: "+
 					supportsaltertablewithdropcommand);
-		debugEnd();
+		driver.debugEnd();
 		return supportsaltertablewithdropcommand;
 	}
 
 	public boolean 	supportsANSI92EntryLevelSQL() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsansi92entrylevelsql=true;
-		debugPrintln("supports ansi92 entry level sql: "+
+		driver.debugPrintln("supports ansi92 entry level sql: "+
 						supportsansi92entrylevelsql);
-		debugEnd();
+		driver.debugEnd();
 		return supportsansi92entrylevelsql;
 	}
 
 	public boolean 	supportsANSI92FullSQL() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsansi92fullsql=true;
-		debugPrintln("supports ansi92 full sql: "+
+		driver.debugPrintln("supports ansi92 full sql: "+
 						supportsansi92fullsql);
-		debugEnd();
+		driver.debugEnd();
 		return supportsansi92fullsql;
 	}
 
 	public boolean 	supportsANSI92IntermediateSQL() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsansi92intermediatesql=true;
-		debugPrintln("supports ansi92 intermediate sql: "+
+		driver.debugPrintln("supports ansi92 intermediate sql: "+
 						supportsansi92intermediatesql);
-		debugEnd();
+		driver.debugEnd();
 		return supportsansi92intermediatesql;
 	}
 
 	public boolean 	supportsBatchUpdates() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsbatchupdates=false;
-		debugPrintln("supports batch updates: "+supportsbatchupdates);
-		debugEnd();
+		driver.debugPrintln("supports batch updates: "+supportsbatchupdates);
+		driver.debugEnd();
 		return supportsbatchupdates;
 	}
 
 	public boolean 	supportsCatalogsInDataManipulation()
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportscatalogsindatamanipulation=true;
-		debugPrintln("supports catalogs in data manipulations: "+
+		driver.debugPrintln("supports catalogs in data manipulations: "+
 					supportscatalogsindatamanipulation);
-		debugEnd();
+		driver.debugEnd();
 		return supportscatalogsindatamanipulation;
 	}
 
 	public boolean 	supportsCatalogsInIndexDefinitions()
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportscatalogsinindexdefinitions=true;
-		debugPrintln("supports catalogs in index definitions: "+
+		driver.debugPrintln("supports catalogs in index definitions: "+
 					supportscatalogsinindexdefinitions);
-		debugEnd();
+		driver.debugEnd();
 		return supportscatalogsinindexdefinitions;
 	}
 
 	public boolean 	supportsCatalogsInPrivilegeDefinitions()
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportscatalogsinprivilegedefinitions=true;
-		debugPrintln("supports catalogs in privilege definitions: "+
+		driver.debugPrintln("supports catalogs in privilege definitions: "+
 					supportscatalogsinprivilegedefinitions);
-		debugEnd();
+		driver.debugEnd();
 		return supportscatalogsinprivilegedefinitions;
 	}
 
 	public boolean 	supportsCatalogsInProcedureCalls()
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportscatalogsinprocedurecalls=true;
-		debugPrintln("supports catalogs in procedure calls: "+
+		driver.debugPrintln("supports catalogs in procedure calls: "+
 					supportscatalogsinprocedurecalls);
-		debugEnd();
+		driver.debugEnd();
 		return supportscatalogsinprocedurecalls;
 	}
 
 	public boolean 	supportsCatalogsInTableDefinitions()
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportscatalogsintabledefinitions=true;
-		debugPrintln("supports catalogs in table definitions: "+
+		driver.debugPrintln("supports catalogs in table definitions: "+
 					supportscatalogsintabledefinitions);
-		debugEnd();
+		driver.debugEnd();
 		return supportscatalogsintabledefinitions;
 	}
 
 	public boolean 	supportsColumnAliasing() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportscolumnaliasing=true;
-		debugPrintln("supports column aliasing: "+
+		driver.debugPrintln("supports column aliasing: "+
 					supportscolumnaliasing);
-		debugEnd();
+		driver.debugEnd();
 		return supportscolumnaliasing;
 	}
 
 	public boolean 	supportsConvert() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsconvert=true;
-		debugPrintln("supports convert: "+supportsconvert);
-		debugEnd();
+		driver.debugPrintln("supports convert: "+supportsconvert);
+		driver.debugEnd();
 		return supportsconvert;
 	}
 
 	public boolean 	supportsConvert(int fromType, int toType)
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-and-type-specific
 		boolean	supportsconvert=true;
-		debugPrintln("from type: "+fromType);
-		debugPrintln("to type: "+toType);
-		debugPrintln("supports convert: "+supportsconvert);
-		debugEnd();
+		driver.debugPrintln("from type: "+fromType);
+		driver.debugPrintln("to type: "+toType);
+		driver.debugPrintln("supports convert: "+supportsconvert);
+		driver.debugEnd();
 		return supportsconvert;
 	}
 
 	public boolean 	supportsCoreSQLGrammar() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportscoresqlgrammar=true;
-		debugPrintln("supports core sql grammar: "+
+		driver.debugPrintln("supports core sql grammar: "+
 						supportscoresqlgrammar);
-		debugEnd();
+		driver.debugEnd();
 		return supportscoresqlgrammar;
 	}
 
 	public boolean 	supportsCorrelatedSubqueries() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportscorrelatedsubqueries=true;
-		debugPrintln("supports correlated subqueries: "+
+		driver.debugPrintln("supports correlated subqueries: "+
 						supportscorrelatedsubqueries);
-		debugEnd();
+		driver.debugEnd();
 		return supportscorrelatedsubqueries;
 	}
 
 	public boolean 	supportsDataDefinitionAndDataManipulationTransactions()
 							throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	sddadmt=true;
-		debugPrintln("supports data definition "+
+		driver.debugPrintln("supports data definition "+
 			"and data manipulation transactions: "+sddadmt);
-		debugEnd();
+		driver.debugEnd();
 		return sddadmt;
 	}
 
 	public boolean 	supportsDataManipulationTransactionsOnly()
 							throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	sdmto=false;
-		debugPrintln("supports data manipulation "+
+		driver.debugPrintln("supports data manipulation "+
 				"transactions only: "+sdmto);
-		debugEnd();
+		driver.debugEnd();
 		return sdmto;
 	}
 
 	public boolean 	supportsDifferentTableCorrelationNames()
 							throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	sdtcn=true;
-		debugPrintln("supports different table "+
+		driver.debugPrintln("supports different table "+
 				"correlation names: "+sdtcn);
-		debugEnd();
+		driver.debugEnd();
 		return sdtcn;
 	}
 
 	public boolean 	supportsExpressionsInOrderBy() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsexpressionsinorderby=true;
-		debugPrintln("supports expressions in order by: "+
+		driver.debugPrintln("supports expressions in order by: "+
 						supportsexpressionsinorderby);
-		debugEnd();
+		driver.debugEnd();
 		return supportsexpressionsinorderby;
 	}
 
 	public boolean 	supportsExtendedSQLGrammar() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsextendedsqlgrammar=true;
-		debugPrintln("supports extended sql grammar: "+
+		driver.debugPrintln("supports extended sql grammar: "+
 						supportsextendedsqlgrammar);
-		debugEnd();
+		driver.debugEnd();
 		return supportsextendedsqlgrammar;
 	}
 
 	public boolean 	supportsFullOuterJoins() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsfullouterjoins=true;
-		debugPrintln("supports full outer joins: "+
+		driver.debugPrintln("supports full outer joins: "+
 						supportsfullouterjoins);
-		debugEnd();
+		driver.debugEnd();
 		return supportsfullouterjoins;
 	}
 
 	public boolean 	supportsGetGeneratedKeys() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsgetgeneratedkeys=true;
-		debugPrintln("supports get generated keys: "+
+		driver.debugPrintln("supports get generated keys: "+
 						supportsgetgeneratedkeys);
-		debugEnd();
+		driver.debugEnd();
 		return supportsgetgeneratedkeys;
 	}
 
 	public boolean 	supportsGroupBy() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsgroupby=true;
-		debugPrintln("supports group by: "+supportsgroupby);
-		debugEnd();
+		driver.debugPrintln("supports group by: "+supportsgroupby);
+		driver.debugEnd();
 		return supportsgroupby;
 	}
 
 	public boolean 	supportsGroupByBeyondSelect() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsgroupbybeyondselect=true;
-		debugPrintln("supports group by beyond select: "+
+		driver.debugPrintln("supports group by beyond select: "+
 						supportsgroupbybeyondselect);
-		debugEnd();
+		driver.debugEnd();
 		return supportsgroupbybeyondselect;
 	}
 
 	public boolean 	supportsGroupByUnrelated() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsgroupbyunrelated=true;
-		debugPrintln("supports group by unrelated: "+
+		driver.debugPrintln("supports group by unrelated: "+
 						supportsgroupbyunrelated);
-		debugEnd();
+		driver.debugEnd();
 		return supportsgroupbyunrelated;
 	}
 
 	public boolean 	supportsIntegrityEnhancementFacility()
 							throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsintegrityenhancementfacility=false;
-		debugPrintln("supports integrity enhancement facility: "+
+		driver.debugPrintln("supports integrity enhancement facility: "+
 					supportsintegrityenhancementfacility);
-		debugEnd();
+		driver.debugEnd();
 		return supportsintegrityenhancementfacility;
 	}
 
 	public boolean 	supportsLikeEscapeClause() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportslikeescapeclause=true;
-		debugPrintln("supports like escape clause: "+
+		driver.debugPrintln("supports like escape clause: "+
 						supportslikeescapeclause);
-		debugEnd();
+		driver.debugEnd();
 		return supportslikeescapeclause;
 	}
 
 	public boolean 	supportsLimitedOuterJoins() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportslimitedouterjoins=true;
-		debugPrintln("supports limited outer joins: "+
+		driver.debugPrintln("supports limited outer joins: "+
 						supportslimitedouterjoins);
-		debugEnd();
+		driver.debugEnd();
 		return supportslimitedouterjoins;
 	}
 
 	public boolean 	supportsMinimumSQLGrammar() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsminimumsqlgrammar=true;
-		debugPrintln("supports minimum sql grammar: "+
+		driver.debugPrintln("supports minimum sql grammar: "+
 						supportsminimumsqlgrammar);
-		debugEnd();
+		driver.debugEnd();
 		return supportsminimumsqlgrammar;
 	}
 
 	public boolean 	supportsMixedCaseIdentifiers() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific, oracle doesn't
 		boolean	supportsmixedcaseidentifiers=true;
-		debugPrintln("supports mixed case identifiers: "+
+		driver.debugPrintln("supports mixed case identifiers: "+
 						supportsmixedcaseidentifiers);
-		debugEnd();
+		driver.debugEnd();
 		return supportsmixedcaseidentifiers;
 	}
 
 	public boolean 	supportsMixedCaseQuotedIdentifiers()
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsmixedcasequotedidentifiers=true;
-		debugPrintln("supports mixed case quoted identifiers: "+
+		driver.debugPrintln("supports mixed case quoted identifiers: "+
 					supportsmixedcasequotedidentifiers);
-		debugEnd();
+		driver.debugEnd();
 		return supportsmixedcasequotedidentifiers;
 	}
 
 	public boolean 	supportsMultipleOpenResults() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		boolean	supportsmultipleopenresults=true;
-		debugPrintln("supports multiple open results: "+
+		driver.debugPrintln("supports multiple open results: "+
 						supportsmultipleopenresults);
-		debugEnd();
+		driver.debugEnd();
 		return supportsmultipleopenresults;
 	}
 
 	public boolean 	supportsMultipleResultSets() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: in progress...
 		boolean	supportsmultipleresultsets=false;
-		debugPrintln("supports multiple result sets: "+
+		driver.debugPrintln("supports multiple result sets: "+
 						supportsmultipleresultsets);
-		debugEnd();
+		driver.debugEnd();
 		return supportsmultipleresultsets;
 	}
 
 	public boolean 	supportsMultipleTransactions() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		boolean	supportsmultipletransactions=false;
-		debugPrintln("supports multiple transactions: "+
+		driver.debugPrintln("supports multiple transactions: "+
 						supportsmultipletransactions);
-		debugEnd();
+		driver.debugEnd();
 		return supportsmultipletransactions;
 	}
 
 	public boolean 	supportsNamedParameters() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsnamedparameters=true;
-		debugPrintln("supports named parameters: "+
+		driver.debugPrintln("supports named parameters: "+
 						supportsnamedparameters);
-		debugEnd();
+		driver.debugEnd();
 		return supportsnamedparameters;
 	}
 
 	public boolean 	supportsNonNullableColumns() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsnonnullablecolumns=true;
-		debugPrintln("supports non-nullable columns: "+
+		driver.debugPrintln("supports non-nullable columns: "+
 						supportsnonnullablecolumns);
-		debugEnd();
+		driver.debugEnd();
 		return supportsnonnullablecolumns;
 	}
 
 	public boolean 	supportsOpenCursorsAcrossCommit()
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: not sure
 		boolean	supportsopencursorsacrosscommit=false;
-		debugPrintln("supports open cursors across commit: "+
+		driver.debugPrintln("supports open cursors across commit: "+
 					supportsopencursorsacrosscommit);
-		debugEnd();
+		driver.debugEnd();
 		return supportsopencursorsacrosscommit;
 	}
 
 	public boolean 	supportsOpenCursorsAcrossRollback()
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: not sure
 		boolean	supportsopencursorsacrossrollback=false;
-		debugPrintln("supports open cursors across rollback: "+
+		driver.debugPrintln("supports open cursors across rollback: "+
 					supportsopencursorsacrossrollback);
-		debugEnd();
+		driver.debugEnd();
 		return supportsopencursorsacrossrollback;
 	}
 
 	public boolean 	supportsOpenStatementsAcrossCommit()
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: not sure
 		boolean	supportsopenstatementsacrosscommit=false;
-		debugPrintln("supports open statements across commit: "+
+		driver.debugPrintln("supports open statements across commit: "+
 					supportsopenstatementsacrosscommit);
-		debugEnd();
+		driver.debugEnd();
 		return supportsopenstatementsacrosscommit;
 	}
 
 	public boolean 	supportsOpenStatementsAcrossRollback()
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: not sure
 		boolean	supportsopenstatementsacrossrollback=false;
-		debugPrintln("supports open statements across rollback: "+
+		driver.debugPrintln("supports open statements across rollback: "+
 					supportsopenstatementsacrossrollback);
-		debugEnd();
+		driver.debugEnd();
 		return supportsopenstatementsacrossrollback;
 	}
 
 	public boolean 	supportsOrderByUnrelated() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsorderbyunrelated=true;
-		debugPrintln("supports order by unrelated: "+
+		driver.debugPrintln("supports order by unrelated: "+
 					supportsorderbyunrelated);
-		debugEnd();
+		driver.debugEnd();
 		return supportsorderbyunrelated;
 	}
 
 	public boolean 	supportsOuterJoins() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsouterjoins=true;
-		debugPrintln("supports outer joins: "+supportsouterjoins);
-		debugEnd();
+		driver.debugPrintln("supports outer joins: "+supportsouterjoins);
+		driver.debugEnd();
 		return supportsouterjoins;
 	}
 
 	public boolean 	supportsPositionedDelete() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		boolean	supportspositioneddelete=false;
-		debugPrintln("supports positioned delete: "+
+		driver.debugPrintln("supports positioned delete: "+
 						supportspositioneddelete);
-		debugEnd();
+		driver.debugEnd();
 		return supportspositioneddelete;
 	}
 
 	public boolean 	supportsPositionedUpdate() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		boolean	supportspositionedupdate=false;
-		debugPrintln("supports positioned update: "+
+		driver.debugPrintln("supports positioned update: "+
 						supportspositionedupdate);
-		debugEnd();
+		driver.debugEnd();
 		return supportspositionedupdate;
 	}
 
 	public boolean 	supportsResultSetConcurrency(int type,
 							int concurrency)
 							throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		boolean	supportsresultsetconcurrency=
 				(type==ResultSet.TYPE_FORWARD_ONLY &&
 				concurrency==ResultSet.CONCUR_READ_ONLY);
-		debugPrintln("supports result set concurrency: "+
+		driver.debugPrintln("supports result set concurrency: "+
 						supportsresultsetconcurrency);
-		debugEnd();
+		driver.debugEnd();
 		return supportsresultsetconcurrency;
 	}
 
 	public boolean 	supportsResultSetHoldability(int holdability)
 							throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		boolean	supportsresultsetholdability=
 			(holdability==ResultSet.CLOSE_CURSORS_AT_COMMIT);
-		debugPrintln("supports result set holdability: "+
+		driver.debugPrintln("supports result set holdability: "+
 						supportsresultsetholdability);
-		debugEnd();
+		driver.debugEnd();
 		return supportsresultsetholdability;
 	}
 
 	public boolean 	supportsResultSetType(int type) throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		boolean	supportsresultsettype=
 			(type==ResultSet.TYPE_FORWARD_ONLY);
-		debugPrintln("supports result set type: "+
+		driver.debugPrintln("supports result set type: "+
 						supportsresultsettype);
-		debugEnd();
+		driver.debugEnd();
 		return supportsresultsettype;
 	}
 
 	public boolean 	supportsSavepoints() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		boolean	supportssavepoints=false;
-		debugPrintln("supports savepoints: "+supportssavepoints);
-		debugEnd();
+		driver.debugPrintln("supports savepoints: "+supportssavepoints);
+		driver.debugEnd();
 		return supportssavepoints;
 	}
 
 	public boolean 	supportsSchemasInDataManipulation()
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsschemasindatamanipulation=true;
-		debugPrintln("supports schemas in data manipulation: "+
+		driver.debugPrintln("supports schemas in data manipulation: "+
 					supportsschemasindatamanipulation);
-		debugEnd();
+		driver.debugEnd();
 		return supportsschemasindatamanipulation;
 	}
 
 	public boolean 	supportsSchemasInIndexDefinitions()
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsschemasinindexdefinitions=true;
-		debugPrintln("supports schemas in index definitions: "+
+		driver.debugPrintln("supports schemas in index definitions: "+
 					supportsschemasinindexdefinitions);
-		debugEnd();
+		driver.debugEnd();
 		return supportsschemasinindexdefinitions;
 	}
 
 	public boolean 	supportsSchemasInPrivilegeDefinitions()
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsschemasinprivilegedefinitions=true;
-		debugPrintln("supports schemas in privilege definitions: "+
+		driver.debugPrintln("supports schemas in privilege definitions: "+
 					supportsschemasinprivilegedefinitions);
-		debugEnd();
+		driver.debugEnd();
 		return supportsschemasinprivilegedefinitions;
 	}
 
 	public boolean 	supportsSchemasInProcedureCalls()
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsschemasinprocedurecalls=true;
-		debugPrintln("supports schemas in procedure calls: "+
+		driver.debugPrintln("supports schemas in procedure calls: "+
 					supportsschemasinprocedurecalls);
-		debugEnd();
+		driver.debugEnd();
 		return supportsschemasinprocedurecalls;
 	}
 
 	public boolean 	supportsSchemasInTableDefinitions()
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsschemasintabledefinitions=true;
-		debugPrintln("supports schemas in table definitions: "+
+		driver.debugPrintln("supports schemas in table definitions: "+
 					supportsschemasintabledefinitions);
-		debugEnd();
+		driver.debugEnd();
 		return supportsschemasintabledefinitions;
 	}
 
 	public boolean 	supportsSelectForUpdate() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		boolean	supportsselectforupdate=false;
-		debugPrintln("supports select for update: "+
+		driver.debugPrintln("supports select for update: "+
 						supportsselectforupdate);
-		debugEnd();
+		driver.debugEnd();
 		return supportsselectforupdate;
 	}
 
 	public boolean 	supportsStatementPooling() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		boolean	supportsstatementpooling=false;
-		debugPrintln("supports statement pooling: "+
+		driver.debugPrintln("supports statement pooling: "+
 						supportsstatementpooling);
-		debugEnd();
+		driver.debugEnd();
 		return supportsstatementpooling;
 	}
 
 	public boolean 	supportsStoredFunctionsUsingCallSyntax()
 						throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	ssfucs=false;
-		debugPrintln("supports stored functions "+
+		driver.debugPrintln("supports stored functions "+
 					"using call syntax: "+ssfucs);
-		debugEnd();
+		driver.debugEnd();
 		return ssfucs;
 	}
 
 	public boolean 	supportsStoredProcedures() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsstoredprocedures=true;
-		debugPrintln("supports stored procedures: "+
+		driver.debugPrintln("supports stored procedures: "+
 						supportsstoredprocedures);
-		debugEnd();
+		driver.debugEnd();
 		return supportsstoredprocedures;
 	}
 
 	public boolean 	supportsSubqueriesInComparisons() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportssubqueriesincomparisons=true;
-		debugPrintln("supports subqueries in comparisons: "+
+		driver.debugPrintln("supports subqueries in comparisons: "+
 					supportssubqueriesincomparisons);
-		debugEnd();
+		driver.debugEnd();
 		return supportssubqueriesincomparisons;
 	}
 
 	public boolean 	supportsSubqueriesInExists() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportssubqueriesinexists=true;
-		debugPrintln("supports subqueries in exists: "+
+		driver.debugPrintln("supports subqueries in exists: "+
 						supportssubqueriesinexists);
-		debugEnd();
+		driver.debugEnd();
 		return supportssubqueriesinexists;
 	}
 
 	public boolean 	supportsSubqueriesInIns() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportssubqueriesinins=true;
-		debugPrintln("supports subqueries in ins: "+
+		driver.debugPrintln("supports subqueries in ins: "+
 						supportssubqueriesinins);
-		debugEnd();
+		driver.debugEnd();
 		return supportssubqueriesinins;
 	}
 
 	public boolean 	supportsSubqueriesInQuantifieds() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportssubqueriesinquantifieds=true;
-		debugPrintln("supports subqueries in quantifieds: "+
+		driver.debugPrintln("supports subqueries in quantifieds: "+
 					supportssubqueriesinquantifieds);
-		debugEnd();
+		driver.debugEnd();
 		return supportssubqueriesinquantifieds;
 	}
 
 	public boolean 	supportsTableCorrelationNames() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportssubqueriesincorrelationnames=true;
-		debugPrintln("supports subqueries in correlation names: "+
+		driver.debugPrintln("supports subqueries in correlation names: "+
 					supportssubqueriesincorrelationnames);
-		debugEnd();
+		driver.debugEnd();
 		return supportssubqueriesincorrelationnames;
 	}
 
 	public boolean 	supportsTransactionIsolationLevel(int level)
 							throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportstransactionisolationlevel=true;
-		debugPrintln("supports transaction isolation level: "+
+		driver.debugPrintln("supports transaction isolation level: "+
 					supportstransactionisolationlevel);
-		debugEnd();
+		driver.debugEnd();
 		return supportstransactionisolationlevel;
 	}
 
 	public boolean 	supportsTransactions() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportstransactions=true;
-		debugPrintln("supports transactions: "+supportstransactions);
-		debugEnd();
+		driver.debugPrintln("supports transactions: "+supportstransactions);
+		driver.debugEnd();
 		return supportstransactions;
 	}
 
 	public boolean 	supportsUnion() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsunion=true;
-		debugPrintln("supports union: "+supportsunion);
-		debugEnd();
+		driver.debugPrintln("supports union: "+supportsunion);
+		driver.debugEnd();
 		return supportsunion;
 	}
 
 	public boolean 	supportsUnionAll() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsunionall=true;
-		debugPrintln("supports union all: "+supportsunionall);
-		debugEnd();
+		driver.debugPrintln("supports union all: "+supportsunionall);
+		driver.debugEnd();
 		return supportsunionall;
 	}
 
 	public boolean 	updatesAreDetected(int type) throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		boolean	updatesaredetected=false;
-		debugPrintln("updates are detected: "+updatesaredetected);
-		debugEnd();
+		driver.debugPrintln("updates are detected: "+updatesaredetected);
+		driver.debugEnd();
 		return updatesaredetected;
 	}
 
 	public boolean 	usesLocalFilePerTable() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		boolean	useslocalfilepertable=false;
-		debugPrintln("uses local file per table: "+
+		driver.debugPrintln("uses local file per table: "+
 						useslocalfilepertable);
-		debugEnd();
+		driver.debugEnd();
 		return useslocalfilepertable;
 	}
 
 	public boolean 	usesLocalFiles() throws SQLException {
-		debugFunction();
+		driver.debugFunction();
 		boolean	useslocalfiles=false;
-		debugPrintln("uses local files: "+useslocalfiles);
-		debugEnd();
+		driver.debugPrintln("uses local files: "+useslocalfiles);
+		driver.debugEnd();
 		return useslocalfiles;
 	}
 
 	protected void throwErrorMessageException(SQLRCursor sqlrcur)
 							throws SQLException {
-		debugZeroIndent();
+		driver.debugZeroIndent();
 		throw new SQLException(sqlrcur.errorMessage());
 	}
 
 	public boolean	isWrapperFor(Class<?> iface) throws SQLException {
-		debugFunction();
-		debugEnd();
+		driver.debugFunction();
+		driver.debugEnd();
 		return false;
 	}
 
 	public <T> T	unwrap(Class<T> iface) throws SQLException {
-		debugFunction();
-		debugEnd();
+		driver.debugFunction();
+		driver.debugEnd();
 		return null;
 	}
 };
