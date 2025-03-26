@@ -337,8 +337,8 @@ public class SQLRelayDriver implements Driver {
 		if (!debug) {
 			return;
 		}
-		debugStart(this.getClass().getSimpleName()+"."+
-			new Throwable().getStackTrace()[1].getMethodName());
+		StackTraceElement	ste=new Throwable().getStackTrace()[1];
+		debugStart(ste.getClassName()+"."+ste.getMethodName());
 	}
 
 	public void debugPrintln(String str) {
