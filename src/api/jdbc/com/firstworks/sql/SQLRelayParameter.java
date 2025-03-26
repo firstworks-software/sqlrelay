@@ -80,7 +80,7 @@ public class SQLRelayParameter extends SQLRelayDebug {
 
 	public SQLRelayParameter(SQLRelayDriver driver) {
 		this.driver=driver;
-		driver.debugStart("SQLRelayParameter");
+		driver.debugFunction();
 		classname=null;
 		mode=ParameterMetaData.parameterModeIn;
 		type=0;

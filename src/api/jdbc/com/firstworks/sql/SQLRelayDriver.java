@@ -27,7 +27,7 @@ public class SQLRelayDriver implements Driver {
 	}
 
 	public SQLRelayDriver() throws SQLException {
-		debugStart("SQLRelayDriver");
+		debugFunction();
 		debugEnd();
 	}
 
@@ -338,9 +338,7 @@ public class SQLRelayDriver implements Driver {
 			return;
 		}
 		StackTraceElement	ste=new Throwable().getStackTrace()[1];
-		String[]	classnameparts=ste.getClassName().split(".");
-		debugStart(classnameparts[classnameparts.length-1]+"."+
-							ste.getMethodName());
+		debugStart(ste.getClassName()+"."+ste.getMethodName());
 	}
 
 	public void debugPrintln(String str) {

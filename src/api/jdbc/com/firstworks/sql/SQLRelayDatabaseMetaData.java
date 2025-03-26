@@ -12,7 +12,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 	public SQLRelayDatabaseMetaData(SQLRelayDriver driver) {
 		this.driver=driver;
-		driver.debugStart("SQLRelayDatabaseMetaData");
+		driver.debugFunction();
 		connection=null;
 		// FIXME: set protected member variables?
 		driver.debugEnd();

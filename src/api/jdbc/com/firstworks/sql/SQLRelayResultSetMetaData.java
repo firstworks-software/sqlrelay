@@ -11,7 +11,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 
 	public SQLRelayResultSetMetaData(SQLRelayDriver driver) {
 		this.driver=driver;
-		driver.debugStart("SQLRelayResultSetMetaData");
+		driver.debugFunction();
 		sqlrcur=null;
 		driver.debugEnd();
 	}

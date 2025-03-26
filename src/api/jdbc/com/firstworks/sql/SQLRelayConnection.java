@@ -38,7 +38,7 @@ public class SQLRelayConnection implements Connection {
 
 		this.driver=driver;
 
-		driver.debugStart("SQLRelayConnection");
+		driver.debugFunction();
 
 		this.host=host;
 		this.port=port;
