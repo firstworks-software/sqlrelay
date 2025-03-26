@@ -27,7 +27,7 @@ public class SQLRelayDriver implements Driver {
 	}
 
 	public SQLRelayDriver() throws SQLException {
-		debugFunction();
+		debugStart("SQLRelayDriver");
 		debugEnd();
 	}
 
