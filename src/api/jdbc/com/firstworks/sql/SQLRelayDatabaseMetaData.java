@@ -19,9 +19,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	}
 
 	public void setConnection(SQLRelayConnection connection) {
-		driver.debugFunction();
 		this.connection=connection;
-		driver.debugEnd();
 	}
 
 	public boolean 	allProceduresAreCallable() throws SQLException {
@@ -29,7 +27,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		// Retrieves whether the current user can call all the
 		// procedures returned by the method getProcedures.
 		boolean	result=false;
-		driver.debugPrintln("result: "+result);
+		driver.debugPrintln("all procedures are callable: ",result);
 		driver.debugEnd();
 		return result;
 	}
@@ -39,7 +37,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		// Retrieves whether the current user can use all the tables
 		// returned by the method getTables in a SELECT statement.
 		boolean	result=false;
-		driver.debugPrintln("result: "+result);
+		driver.debugPrintln("all tables are selectable: ",result);
 		driver.debugEnd();
 		return result;
 	}
@@ -52,7 +50,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		// that are holdable.
 		// FIXME: no idea if this is true or not
 		boolean	result=false;
-		driver.debugPrintln("result: "+result);
+		driver.debugPrintln("auto commit failures closes "+
+						"all result sets: ",result);
 		driver.debugEnd();
 		return result;
 	}
@@ -62,7 +61,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	result=false;
-		driver.debugPrintln("result: "+result);
+		driver.debugPrintln("data definition causes "+
+					"transaction commit: ",result);
 		driver.debugEnd();
 		return result;
 	}
@@ -72,7 +72,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	result=false;
-		driver.debugPrintln("result: "+result);
+		driver.debugPrintln("data definition ignored "+
+					"in transactions: ",result);
 		driver.debugEnd();
 		return result;
 	}
@@ -81,7 +82,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// SQL Relay doesn't currenlty support ResultSet.RowDelete
 		boolean	result=false;
-		driver.debugPrintln("result: "+result);
+		driver.debugPrintln("deletes are detected: ",result);
 		driver.debugEnd();
 		return result;
 	}
@@ -89,7 +90,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public boolean 	doesMaxRowSizeIncludeBlobs() throws SQLException {
 		driver.debugFunction();
 		boolean	result=false;
-		driver.debugPrintln("result: "+result);
+		driver.debugPrintln("does max row size include blobs: ",result);
 		driver.debugEnd();
 		return result;
 	}
@@ -97,7 +98,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public boolean 	generatedKeyAlwaysReturned() throws SQLException {
 		driver.debugFunction();
 		boolean	result=true;
-		driver.debugPrintln("result: "+result);
+		driver.debugPrintln("generated key always returned: ",result);
 		driver.debugEnd();
 		return result;
 	}
@@ -108,7 +109,15 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 						String attributeNamePattern)
 						throws SQLException {
 		driver.debugFunction();
+		driver.debugPrintln("catalog: ",catalog);
+		driver.debugPrintln("schema pattern: ",
+						schemaPattern);
+		driver.debugPrintln("type name pattern: ",
+						typeNamePattern);
+		driver.debugPrintln("attribute name pattern: ",
+						attributeNamePattern);
 		// FIXME: implement this somehow...
+		driver.debugPrintln("FIXME: implement this");
 		driver.debugEnd();
 		return null;
 	}
@@ -120,7 +129,12 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 							boolean nullable)
 							throws SQLException {
 		driver.debugFunction();
+		driver.debugPrintln("schema: ",schema);
+		driver.debugPrintln("table: ",table);
+		driver.debugPrintln("scope: ",scope);
+		driver.debugPrintln("nullable: ",nullable);
 		// FIXME: implement this somehow...
+		driver.debugPrintln("FIXME: implement this");
 		driver.debugEnd();
 		return null;
 	}
@@ -135,11 +149,9 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 		boolean	result=sqlrcur.getDatabaseListWithFormat(null,3);
 
-		driver.debugPrintln("result: "+result);
-
 		if (result) {
 
-			driver.debugPrintln("colcount: "+sqlrcur.colCount());
+			driver.debugPrintln("colcount: ",sqlrcur.colCount());
 
 			if (sqlrcur.colCount()>0) {
 				resultset=new SQLRelayResultSet(driver);
@@ -158,7 +170,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: oracle uses @
 		String	separator=".";
-		driver.debugPrintln("separator: "+separator);
+		driver.debugPrintln("catalog separator: ",separator);
 		driver.debugEnd();
 		return separator;
 	}
@@ -167,7 +179,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: I think SQL Server uses catalog, maybe sybase
 		String	term="database";
-		driver.debugPrintln("term: "+term);
+		driver.debugPrintln("catalog term: ",term);
 		driver.debugEnd();
 		return term;
 	}
@@ -186,7 +198,12 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 						String columnNamePattern)
 						throws SQLException {
 		driver.debugFunction();
+		driver.debugPrintln("catalog: ",catalog);
+		driver.debugPrintln("schema: ",schema);
+		driver.debugPrintln("table: ",table);
+		driver.debugPrintln("column name pattern: ",columnNamePattern);
 		// FIXME: implement this somehow
+		driver.debugPrintln("FIXME: implement this");
 		driver.debugEnd();
 		return null;
 	}
@@ -198,9 +215,17 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 						throws SQLException {
 		driver.debugFunction();
 
+		driver.debugPrintln("catalog: ",catalog);
+		driver.debugPrintln("schema pattern: ",
+						schemaPattern);
+		driver.debugPrintln("table name pattern: ",
+						tableNamePattern);
+		driver.debugPrintln("column name pattern: ",
+						columnNamePattern);
+
 		String	wild=buildWild(catalog,schemaPattern,tableNamePattern);
-		driver.debugPrintln("wild: "+wild);
-		driver.debugPrintln("column name pattern: "+columnNamePattern);
+		driver.debugPrintln("wild: ",wild);
+		driver.debugPrintln("column name pattern: ",columnNamePattern);
 
 		SQLRelayResultSet	resultset=null;
 		SQLRelayStatement	stmt=(SQLRelayStatement)
@@ -210,11 +235,9 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		boolean	result=sqlrcur.getColumnListWithFormat(
 						wild,columnNamePattern,3);
 
-		driver.debugPrintln("result: "+result);
-
 		if (result) {
 
-			driver.debugPrintln("colcount: "+sqlrcur.colCount());
+			driver.debugPrintln("colcount: ",sqlrcur.colCount());
 
 			if (sqlrcur.colCount()>0) {
 				resultset=new SQLRelayResultSet(driver);
@@ -243,7 +266,16 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 						String foreignTable)
 						throws SQLException {
 		driver.debugFunction();
+
+		driver.debugPrintln("parent catalog: ",parentCatalog);
+		driver.debugPrintln("parent schema: ",parentSchema);
+		driver.debugPrintln("parent table: ",parentTable);
+		driver.debugPrintln("foreign catalog: ",foreignCatalog);
+		driver.debugPrintln("foreign schema: ",foreignSchema);
+		driver.debugPrintln("foreign table: ",foreignTable);
+
 		// FIXME: implement this somehow...
+		driver.debugPrintln("FIXME: implement this");
 		driver.debugEnd();
 		return null;
 	}
@@ -251,7 +283,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public int 	getDatabaseMajorVersion() throws SQLException {
 		driver.debugFunction();
 		int	majorversion=getDatabaseVersion(true);
-		driver.debugPrintln("major version: "+majorversion);
+		driver.debugPrintln("major version: ",majorversion);
 		driver.debugEnd();
 		return majorversion;
 	}
@@ -259,7 +291,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public int 	getDatabaseMinorVersion() throws SQLException {
 		driver.debugFunction();
 		int	minorversion=getDatabaseVersion(false);
-		driver.debugPrintln("minor version: "+minorversion);
+		driver.debugPrintln("minor version: ",minorversion);
 		driver.debugEnd();
 		return minorversion;
 	}
@@ -283,7 +315,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: cache/fetch identify
 		String	id=connection.getSQLRConnection().identify();
-		driver.debugPrintln("id: "+id);
+		driver.debugPrintln("product name: ",id);
 		driver.debugEnd();
 		return id;
 	}
@@ -293,7 +325,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		// FIXME: cache/fetch dbVersion
 		String	productversion=
 				connection.getSQLRConnection().dbVersion();
-		driver.debugPrintln("product version: "+productversion);
+		driver.debugPrintln("product version: ",productversion);
 		driver.debugEnd();
 		return productversion;
 	}
@@ -303,7 +335,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		int	isolation=(getDatabaseProductName().equals("mysql"))?
 					Connection.TRANSACTION_REPEATABLE_READ:
 					Connection.TRANSACTION_READ_COMMITTED;
-		driver.debugPrintln("isolation: "+isolation);
+		driver.debugPrintln("isolation: ",isolation);
 		driver.debugEnd();
 		return isolation;
 	}
@@ -317,7 +349,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		if (parts!=null && parts.length>0) {
 			majorversion=Integer.parseInt(parts[0]);
 		}
-		driver.debugPrintln("major version: "+majorversion);
+		driver.debugPrintln("major version: ",majorversion);
 		driver.debugEnd();
 		return majorversion;
 	}
@@ -331,7 +363,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		if (parts!=null && parts.length>1) {
 			minorversion=Integer.parseInt(parts[1]);
 		}
-		driver.debugPrintln("minor version: "+minorversion);
+		driver.debugPrintln("minor version: ",minorversion);
 		driver.debugEnd();
 		return minorversion;
 	}
@@ -339,7 +371,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public String 	getDriverName() throws SQLException {
 		driver.debugFunction();
 		String	drivername="sqlrelay";
-		driver.debugPrintln("driver name: "+drivername);
+		driver.debugPrintln("driver name: ",drivername);
 		driver.debugEnd();
 		return drivername;
 	}
@@ -349,7 +381,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		String	driverversion=connection.
 					getSQLRConnection().
 					clientVersion();
-		driver.debugPrintln("driver version: "+driverversion);
+		driver.debugPrintln("driver version: ",driverversion);
 		driver.debugEnd();
 		return driverversion;
 	}
@@ -359,10 +391,16 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 						String table)
 						throws SQLException {
 		driver.debugFunction();
+
+		driver.debugPrintln("catalog: ",catalog);
+		driver.debugPrintln("schema: ",schema);
+		driver.debugPrintln("table: ",table);
+
 		// Retrieves a description of the foreign key columns that
 		// reference the given table's primary key columns (the foreign
 		// keys exported by a table).
 		// FIXME: implement this somehow
+		driver.debugPrintln("FIXME: implement this");
 		driver.debugEnd();
 		return null;
 	}
@@ -371,7 +409,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		String	extranamechars="#@";
-		driver.debugPrintln("extra name characters: "+extranamechars);
+		driver.debugPrintln("extra name characters: ",extranamechars);
 		driver.debugEnd();
 		return extranamechars;
 	}
@@ -383,7 +421,17 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 						String columnNamePattern)
 						throws SQLException {
 		driver.debugFunction();
+
+		driver.debugPrintln("catalog: ",catalog);
+		driver.debugPrintln("schema pattern: ",
+						schemaPattern);
+		driver.debugPrintln("function name pattern: ",
+						functionNamePattern);
+		driver.debugPrintln("column name pattern: ",
+						columnNamePattern);
+
 		// FIXME: implement with
+		driver.debugPrintln("FIXME: implement this");
 		// sqlrcur.getProcedureBindAndColumnList()?
 		driver.debugEnd();
 		return null;
@@ -394,7 +442,15 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 						String functionNamePattern)
 						throws SQLException {
 		driver.debugFunction();
+
+		driver.debugPrintln("catalog: ",catalog);
+		driver.debugPrintln("schema pattern: ",
+						schemaPattern);
+		driver.debugPrintln("function name pattern: ",
+						functionNamePattern);
+
 		// FIXME: implement this by calling sqlrcur.getProcedures()?
+		driver.debugPrintln("FIXME: implement this");
 		driver.debugEnd();
 		return null;
 	}
@@ -405,7 +461,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		// * sqlserver uses braces
 		String	identifierquotestring=
 			(getDatabaseProductName().equals("mysql"))?"`":"\"";
-		driver.debugPrintln("identifier quote string: "+
+		driver.debugPrintln("identifier quote string: ",
 					identifierquotestring);
 		driver.debugEnd();
 		return identifierquotestring;
@@ -416,10 +472,16 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 						String table)
 						throws SQLException {
 		driver.debugFunction();
+
+		driver.debugPrintln("catalog: ",catalog);
+		driver.debugPrintln("schema: ",schema);
+		driver.debugPrintln("table: ",table);
+
 		// Retrieves a description of the primary key columns that are
 		// referenced by the given table's foreign key columns (the
 		// primary keys imported by a table).
 		// FIXME: implement this somehow
+		driver.debugPrintln("FIXME: implement this");
 		driver.debugEnd();
 		return null;
 	}
@@ -431,7 +493,15 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 						boolean approximate)
 						throws SQLException {
 		driver.debugFunction();
+
+		driver.debugPrintln("catalog: ",catalog);
+		driver.debugPrintln("schema: ",schema);
+		driver.debugPrintln("table: ",table);
+		driver.debugPrintln("unique: ",unique);
+		driver.debugPrintln("approximate: ",approximate);
+
 		// FIXME: implement using sqlrcur.getKeyAndIndexList() ?
+		driver.debugPrintln("FIXME: implement this");
 		driver.debugEnd();
 		return null;
 	}
@@ -440,7 +510,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: get this from ???
 		int	jdbcmajorversion=4;
-		driver.debugPrintln("jdbc major version: "+jdbcmajorversion);
+		driver.debugPrintln("jdbc major version: ",jdbcmajorversion);
 		driver.debugEnd();
 		return jdbcmajorversion;
 	}
@@ -449,7 +519,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: get this from ???
 		int	jdbcminorversion=3;
-		driver.debugPrintln("jdbc minor version: "+jdbcminorversion);
+		driver.debugPrintln("jdbc minor version: ",jdbcminorversion);
 		driver.debugEnd();
 		return jdbcminorversion;
 	}
@@ -458,7 +528,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxbinaryliterallength=0;
-		driver.debugPrintln("max binary literal length: "+
+		driver.debugPrintln("max binary literal length: ",
 						maxbinaryliterallength);
 		driver.debugEnd();
 		return maxbinaryliterallength;
@@ -468,7 +538,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxcatalognamelength=0;
-		driver.debugPrintln("max catalog name length: "+
+		driver.debugPrintln("max catalog name length: ",
 						maxcatalognamelength);
 		driver.debugEnd();
 		return maxcatalognamelength;
@@ -478,7 +548,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxcharliterallength=0;
-		driver.debugPrintln("max char literal length: "+
+		driver.debugPrintln("max char literal length: ",
 						maxcharliterallength);
 		driver.debugEnd();
 		return maxcharliterallength;
@@ -488,7 +558,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxcolumnnamelength=0;
-		driver.debugPrintln("max column name length: "+
+		driver.debugPrintln("max column name length: ",
 						maxcolumnnamelength);
 		driver.debugEnd();
 		return maxcolumnnamelength;
@@ -498,7 +568,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxcolumnsingroup=0;
-		driver.debugPrintln("max columns in group: "+maxcolumnsingroup);
+		driver.debugPrintln("max columns in group: ",
+						maxcolumnsingroup);
 		driver.debugEnd();
 		return maxcolumnsingroup;
 	}
@@ -507,7 +578,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxcolumnsinindex=0;
-		driver.debugPrintln("max columns in index: "+maxcolumnsinindex);
+		driver.debugPrintln("max columns in index: ",
+						maxcolumnsinindex);
 		driver.debugEnd();
 		return maxcolumnsinindex;
 	}
@@ -516,7 +588,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxcolumnsinorderby=0;
-		driver.debugPrintln("max columns in order by: "+maxcolumnsinorderby);
+		driver.debugPrintln("max columns in order by: ",
+						maxcolumnsinorderby);
 		driver.debugEnd();
 		return maxcolumnsinorderby;
 	}
@@ -525,7 +598,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxcolumnsinselect=0;
-		driver.debugPrintln("max columns in select: "+maxcolumnsinselect);
+		driver.debugPrintln("max columns in select: ",
+						maxcolumnsinselect);
 		driver.debugEnd();
 		return maxcolumnsinselect;
 	}
@@ -534,7 +608,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxcolumnsintable=0;
-		driver.debugPrintln("max columns in table: "+maxcolumnsintable);
+		driver.debugPrintln("max columns in table: ",
+						maxcolumnsintable);
 		driver.debugEnd();
 		return maxcolumnsintable;
 	}
@@ -543,7 +618,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxconnections=0;
-		driver.debugPrintln("max connections: "+maxconnections);
+		driver.debugPrintln("max connections: ",maxconnections);
 		driver.debugEnd();
 		return maxconnections;
 	}
@@ -551,7 +626,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public int 	getMaxCursorNameLength() throws SQLException {
 		driver.debugFunction();
 		int	maxcursornamelength=0;
-		driver.debugPrintln("max cursor name length: "+
+		driver.debugPrintln("max cursor name length: ",
 						maxcursornamelength);
 		driver.debugEnd();
 		return maxcursornamelength;
@@ -561,7 +636,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxindexlength=0;
-		driver.debugPrintln("max index length: "+maxindexlength);
+		driver.debugPrintln("max index length: ",maxindexlength);
 		driver.debugEnd();
 		return maxindexlength;
 	}
@@ -570,7 +645,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxprocedurenamelength=0;
-		driver.debugPrintln("max procedure name length: "+
+		driver.debugPrintln("max procedure name length: ",
 						maxprocedurenamelength);
 		driver.debugEnd();
 		return maxprocedurenamelength;
@@ -580,7 +655,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxrowsize=0;
-		driver.debugPrintln("max row size: "+maxrowsize);
+		driver.debugPrintln("max row size: ",maxrowsize);
 		driver.debugEnd();
 		return maxrowsize;
 	}
@@ -589,7 +664,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxschemanamelength=0;
-		driver.debugPrintln("max schema name length: "+maxschemanamelength);
+		driver.debugPrintln("max schema name length: ",
+						maxschemanamelength);
 		driver.debugEnd();
 		return maxschemanamelength;
 	}
@@ -598,7 +674,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxstatementlength=0;
-		driver.debugPrintln("max statement length: "+maxstatementlength);
+		driver.debugPrintln("max statement length: ",
+						maxstatementlength);
 		driver.debugEnd();
 		return maxstatementlength;
 	}
@@ -607,7 +684,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxstatements=0;
-		driver.debugPrintln("max statements: "+maxstatements);
+		driver.debugPrintln("max statements: ",maxstatements);
 		driver.debugEnd();
 		return maxstatements;
 	}
@@ -616,7 +693,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxtablenamelength=0;
-		driver.debugPrintln("max table name length: "+maxtablenamelength);
+		driver.debugPrintln("max table name length: ",
+						maxtablenamelength);
 		driver.debugEnd();
 		return maxtablenamelength;
 	}
@@ -625,7 +703,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxtablesinselect=0;
-		driver.debugPrintln("max tables in select: "+maxtablesinselect);
+		driver.debugPrintln("max tables in select: ",
+						maxtablesinselect);
 		driver.debugEnd();
 		return maxtablesinselect;
 	}
@@ -634,7 +713,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific (0 means no limit or unknown)
 		int	maxusernamelength=0;
-		driver.debugPrintln("max user name length: "+maxusernamelength);
+		driver.debugPrintln("max user name length: ",maxusernamelength);
 		driver.debugEnd();
 		return maxusernamelength;
 	}
@@ -643,7 +722,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		String	numericfunctions=null;
-		driver.debugPrintln("numeric functions: "+numericfunctions);
+		driver.debugPrintln("numeric functions: ",numericfunctions);
 		driver.debugEnd();
 		return numericfunctions;
 	}
@@ -653,7 +732,13 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 						String table)
 						throws SQLException {
 		driver.debugFunction();
+
+		driver.debugPrintln("catalog: ",catalog);
+		driver.debugPrintln("schema: ",schema);
+		driver.debugPrintln("table: ",table);
+
 		// FIXME: implement this by calling sqlrcon.getPrimaryKeysList()
+		driver.debugPrintln("FIXME: implement this");
 		driver.debugEnd();
 		return null;
 	}
@@ -665,7 +750,17 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 						String columnNamePattern)
 						throws SQLException {
 		driver.debugFunction();
+
+		driver.debugPrintln("catalog: ",catalog);
+		driver.debugPrintln("schema pattern: ",
+						schemaPattern);
+		driver.debugPrintln("procedure name pattern: ",
+						procedureNamePattern);
+		driver.debugPrintln("column name pattern: ",
+						columnNamePattern);
+
 		// FIXME: implement this by calling
+		driver.debugPrintln("FIXME: implement this");
 		// sqlrcon.getProcedureBindAndColumnList()
 		driver.debugEnd();
 		return null;
@@ -676,7 +771,15 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 						String procedureNamePattern)
 						throws SQLException {
 		driver.debugFunction();
+
+		driver.debugPrintln("catalog: ",catalog);
+		driver.debugPrintln("schema pattern: ",
+						schemaPattern);
+		driver.debugPrintln("procedure name pattern: ",
+						procedureNamePattern);
+
 		// FIXME: implement this by calling sqlrcon.getProcedureList()
+		driver.debugPrintln("FIXME: implement this");
 		driver.debugEnd();
 		return null;
 	}
@@ -684,7 +787,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public String 	getProcedureTerm() throws SQLException {
 		driver.debugFunction();
 		String	procedureterm="procedure";
-		driver.debugPrintln("procedure term: "+procedureterm);
+		driver.debugPrintln("procedure term: ",procedureterm);
 		driver.debugEnd();
 		return procedureterm;
 	}
@@ -695,7 +798,14 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 						String columnNamePattern)
 						throws SQLException {
 		driver.debugFunction();
+
+		driver.debugPrintln("catalog: ",catalog);
+		driver.debugPrintln("schema pattern: ",schemaPattern);
+		driver.debugPrintln("table name pattern: ",tableNamePattern);
+		driver.debugPrintln("column name pattern: ",columnNamePattern);
+
 		// FIXME: implement this somehow
+		driver.debugPrintln("FIXME: implement this");
 		driver.debugEnd();
 		return null;
 	}
@@ -704,7 +814,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: is this correct?
 		int	resultsetholdability=ResultSet.CLOSE_CURSORS_AT_COMMIT;
-		driver.debugPrintln("result set holdability: "+resultsetholdability);
+		driver.debugPrintln("result set holdability: ",
+						resultsetholdability);
 		driver.debugEnd();
 		return resultsetholdability;
 	}
@@ -713,25 +824,28 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: some dbs do support rowid
 		RowIdLifetime	rowidlifetime=RowIdLifetime.ROWID_UNSUPPORTED;
-		String	rl="";
 		switch (rowidlifetime) {
 			case ROWID_UNSUPPORTED:
-				rl="ROWID_UNSUPPORTED";
+				driver.debugPrintln("rowid lifetime: ",
+							"ROWID_UNSUPPORTED");
 				break;
 			case ROWID_VALID_OTHER:
-				rl="ROWID_VALID_OTHER";
+				driver.debugPrintln("rowid lifetime: ",
+							"ROWID_VALID_OTHER");
 				break;
 			case ROWID_VALID_TRANSACTION:
-				rl="ROWID_VALID_TRANSACTION";
+				driver.debugPrintln("rowid lifetime: ",
+						"ROWID_VALID_TRANSACTION");
 				break;
 			case ROWID_VALID_SESSION:
-				rl="ROWID_VALID_SESSION";
+				driver.debugPrintln("rowid lifetime: ",
+							"ROWID_VALID_SESSION");
 				break;
 			case ROWID_VALID_FOREVER:
-				rl="ROWID_VALID_FOREVER";
+				driver.debugPrintln("rowid lifetime: ",
+							"ROWID_VALID_FOREVER");
 				break;
 		}
-		driver.debugPrintln("rowid lifetime: "+rl);
 		driver.debugEnd();
 		return rowidlifetime;
 	}
@@ -748,8 +862,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 
 		// FIXME: use catalog
-		driver.debugPrintln("catalog: "+catalog);
-		driver.debugPrintln("schema pattern: "+schemaPattern);
+		driver.debugPrintln("catalog: ",catalog);
+		driver.debugPrintln("schema pattern: ",schemaPattern);
 
 		SQLRelayResultSet	resultset=null;
 		SQLRelayStatement	stmt=(SQLRelayStatement)
@@ -758,11 +872,9 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 		boolean	result=sqlrcur.getSchemaListWithFormat(schemaPattern,3);
 
-		driver.debugPrintln("result: "+result);
-
 		if (result) {
 
-			driver.debugPrintln("colcount: "+sqlrcur.colCount());
+			driver.debugPrintln("colcount: ",sqlrcur.colCount());
 
 			if (sqlrcur.colCount()>0) {
 				resultset=new SQLRelayResultSet(driver);
@@ -780,7 +892,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public String 	getSchemaTerm() throws SQLException {
 		driver.debugFunction();
 		String	schematerm="schema";
-		driver.debugPrintln("schema term: "+schematerm);
+		driver.debugPrintln("schema term: ",schematerm);
 		driver.debugEnd();
 		return schematerm;
 	}
@@ -789,7 +901,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		String	searchstringescape="\\";
-		driver.debugPrintln("search string escape: "+searchstringescape);
+		driver.debugPrintln("search string escape: ",
+						searchstringescape);
 		driver.debugEnd();
 		return searchstringescape;
 	}
@@ -798,7 +911,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		String	sqlkeywords=null;
-		driver.debugPrintln("sql keywords: "+sqlkeywords);
+		driver.debugPrintln("sql keywords: ",sqlkeywords);
 		driver.debugEnd();
 		return sqlkeywords;
 	}
@@ -807,7 +920,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: no idea
 		int	sqlstatetype=sqlStateSQL;
-		driver.debugPrintln("sql state type: "+sqlstatetype);
+		driver.debugPrintln("sql state type: ",sqlstatetype);
 		driver.debugEnd();
 		return sqlstatetype;
 	}
@@ -816,7 +929,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		String	stringfunctions=null;
-		driver.debugPrintln("string functions: "+stringfunctions);
+		driver.debugPrintln("string functions: ",stringfunctions);
 		driver.debugEnd();
 		return stringfunctions;
 	}
@@ -826,7 +939,13 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 						String tableNamePattern)
 						throws SQLException {
 		driver.debugFunction();
+
+		driver.debugPrintln("catalog: ",catalog);
+		driver.debugPrintln("schema pattern: ",schemaPattern);
+		driver.debugPrintln("table name pattern: ",tableNamePattern);
+
 		// FIXME: implement this somehow
+		driver.debugPrintln("FIXME: implement this");
 		driver.debugEnd();
 		return null;
 	}
@@ -836,7 +955,13 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 						String typeNamePattern)
 						throws SQLException {
 		driver.debugFunction();
+
+		driver.debugPrintln("catalog: ",catalog);
+		driver.debugPrintln("schema pattern: ",schemaPattern);
+		driver.debugPrintln("type name pattern: ",typeNamePattern);
+
 		// FIXME: implement this somehow
+		driver.debugPrintln("FIXME: implement this");
 		driver.debugEnd();
 		return null;
 	}
@@ -844,8 +969,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public String 	getSystemFunctions() throws SQLException {
 		driver.debugFunction();
 		// FIXME: implement this somehow
+		driver.debugPrintln("FIXME: implement this");
 		String	systemfunctions=null;
-		driver.debugPrintln("system functions: "+systemfunctions);
 		driver.debugEnd();
 		return systemfunctions;
 	}
@@ -855,7 +980,13 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 						String tableNamePattern)
 						throws SQLException {
 		driver.debugFunction();
+
+		driver.debugPrintln("catalog: ",catalog);
+		driver.debugPrintln("schema pattern: ",schemaPattern);
+		driver.debugPrintln("table name pattern: ",tableNamePattern);
+
 		// FIXME: implement this somehow
+		driver.debugPrintln("FIXME: implement this");
 		driver.debugEnd();
 		return null;
 	}
@@ -867,8 +998,9 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 						throws SQLException {
 		driver.debugFunction();
 
-		String	wild=buildWild(catalog,schemaPattern,tableNamePattern);
-		driver.debugPrintln("wild: "+wild);
+		driver.debugPrintln("catalog: ",catalog);
+		driver.debugPrintln("schema pattern: ",schemaPattern);
+		driver.debugPrintln("table name pattern: ",tableNamePattern);
 
 		int	objecttypes=0;
 		if (types==null) {
@@ -891,8 +1023,11 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 					objecttypes|=4;
 				}
 			}
-			driver.debugPrintln(t);
+			driver.debugPrintln("types: ",t);
 		}
+
+		String	wild=buildWild(catalog,schemaPattern,tableNamePattern);
+		driver.debugPrintln("wild: ",wild);
 
 		SQLRelayResultSet	resultset=null;
 		SQLRelayStatement	stmt=(SQLRelayStatement)
@@ -902,11 +1037,9 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		boolean	result=sqlrcur.getTableListWithFormat(
 						tableNamePattern,3,objecttypes);
 
-		driver.debugPrintln("result: "+result);
-
 		if (result) {
 
-			driver.debugPrintln("colcount: "+sqlrcur.colCount());
+			driver.debugPrintln("colcount: ",sqlrcur.colCount());
 
 			if (sqlrcur.colCount()>0) {
 				resultset=new SQLRelayResultSet(driver);
@@ -971,6 +1104,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public ResultSet 	getTableTypes() throws SQLException {
 		driver.debugFunction();
 		// FIXME: implement this somehow
+		driver.debugPrintln("FIXME: implement this");
 		driver.debugEnd();
 		return null;
 	}
@@ -979,7 +1113,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		String	timedatefunctions=null;
-		driver.debugPrintln("timedate functions: "+timedatefunctions);
+		driver.debugPrintln("timedate functions: ",timedatefunctions);
 		driver.debugEnd();
 		return timedatefunctions;
 	}
@@ -1020,6 +1154,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		// LOCAL_TYPE_NAME
 		//	String
 		//	Localized version of this datatype.
+		driver.debugPrintln("FIXME: implement this");
 		driver.debugEnd();
 		return null;
 	}
@@ -1030,7 +1165,14 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 						int[] types)
 						throws SQLException {
 		driver.debugFunction();
+
+		driver.debugPrintln("catalog: ",catalog);
+		driver.debugPrintln("schema pattern: ",schemaPattern);
+		driver.debugPrintln("type name pattern: ",typeNamePattern);
+		// FIXME: debug types...
+
 		// FIXME: implement this somehow
+		driver.debugPrintln("FIXME: implement this");
 		driver.debugEnd();
 		return null;
 	}
@@ -1057,7 +1199,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 			url=url+":"+socket;
 		}
 
-		driver.debugPrintln("url: "+url);
+		driver.debugPrintln("url: ",url);
 
 		driver.debugEnd();
 		return url;
@@ -1066,7 +1208,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public String 	getUserName() throws SQLException {
 		driver.debugFunction();
 		String	username=connection.getUser();
-		driver.debugPrintln("user name: "+username);
+		driver.debugPrintln("user name: ",username);
 		driver.debugEnd();
 		return username;
 	}
@@ -1076,7 +1218,13 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 							String table)
 							throws SQLException {
 		driver.debugFunction();
+
+		driver.debugPrintln("catalog: ",catalog);
+		driver.debugPrintln("schema: ",schema);
+		driver.debugPrintln("table: ",table);
+
 		// FIXME: implement this somehow
+		driver.debugPrintln("FIXME: implement this");
 		driver.debugEnd();
 		return null;
 	}
@@ -1084,8 +1232,9 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public boolean 	insertsAreDetected(int type) throws SQLException {
 		driver.debugFunction();
 		boolean	insertsaredetected=false;
-		driver.debugPrintln("type: "+type);
-		driver.debugPrintln("inserts are detected: "+insertsaredetected);
+		driver.debugPrintln("type: ",type);
+		driver.debugPrintln("inserts are detected: ",
+						insertsaredetected);
 		driver.debugEnd();
 		return insertsaredetected;
 	}
@@ -1094,7 +1243,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: not in oracle
 		boolean	iscatalogatstart=true;
-		driver.debugPrintln("is catalog at start: "+iscatalogatstart);
+		driver.debugPrintln("is catalog at start: ",iscatalogatstart);
 		driver.debugEnd();
 		return iscatalogatstart;
 	}
@@ -1102,8 +1251,9 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public boolean 	isReadOnly() throws SQLException {
 		driver.debugFunction();
 		// FIXME: implement this somehow
+		driver.debugPrintln("FIXME: implement this");
 		boolean	isreadonly=false;
-		driver.debugPrintln("is read only: "+isreadonly);
+		driver.debugPrintln("is read only: ",isreadonly);
 		driver.debugEnd();
 		return isreadonly;
 	}
@@ -1112,7 +1262,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: no idea, probably db-specific
 		boolean	locatorsupdatecopy=false;
-		driver.debugPrintln("locators update copy: "+locatorsupdatecopy);
+		driver.debugPrintln("locators update copy: ",
+						locatorsupdatecopy);
 		driver.debugEnd();
 		return locatorsupdatecopy;
 	}
@@ -1121,7 +1272,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: generally true, but probably db-specific
 		boolean	nullplusnonnullisnull=true;
-		driver.debugPrintln("null plus non null is null: "+
+		driver.debugPrintln("null plus non null is null: ",
 						nullplusnonnullisnull);
 		driver.debugEnd();
 		return nullplusnonnullisnull;
@@ -1131,7 +1282,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: generally true, but probably db-specific
 		boolean	nullsaresortedatend=true;
-		driver.debugPrintln("nulls are sorted at end: "+
+		driver.debugPrintln("nulls are sorted at end: ",
 						nullsaresortedatend);
 		driver.debugEnd();
 		return nullsaresortedatend;
@@ -1141,7 +1292,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: generally false, but probably db-specific
 		boolean	nullsaresortedatstart=false;
-		driver.debugPrintln("nulls are sorted at start: "+
+		driver.debugPrintln("nulls are sorted at start: ",
 						nullsaresortedatstart);
 		driver.debugEnd();
 		return nullsaresortedatstart;
@@ -1151,7 +1302,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: generally true, but probably db-specific
 		boolean	nullsaresortedhigh=true;
-		driver.debugPrintln("nulls are sorted high: "+
+		driver.debugPrintln("nulls are sorted high: ",
 						nullsaresortedhigh);
 		driver.debugEnd();
 		return nullsaresortedhigh;
@@ -1161,7 +1312,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: generally false, but probably db-specific
 		boolean	nullsaresortedlow=false;
-		driver.debugPrintln("nulls are sorted low: "+
+		driver.debugPrintln("nulls are sorted low: ",
 						nullsaresortedlow);
 		driver.debugEnd();
 		return nullsaresortedlow;
@@ -1170,7 +1321,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public boolean 	othersDeletesAreVisible(int type) throws SQLException {
 		driver.debugFunction();
 		boolean	othersdeletesarevisible=false;
-		driver.debugPrintln("others deletes are visible: "+
+		driver.debugPrintln("others deletes are visible: ",
 						othersdeletesarevisible);
 		driver.debugEnd();
 		return othersdeletesarevisible;
@@ -1179,7 +1330,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public boolean 	othersInsertsAreVisible(int type) throws SQLException {
 		driver.debugFunction();
 		boolean	othersinsertssarevisible=false;
-		driver.debugPrintln("others inserts are visible: "+
+		driver.debugPrintln("others inserts are visible: ",
 						othersinsertssarevisible);
 		driver.debugEnd();
 		return othersinsertssarevisible;
@@ -1188,7 +1339,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public boolean 	othersUpdatesAreVisible(int type) throws SQLException {
 		driver.debugFunction();
 		boolean	othersupdatessarevisible=false;
-		driver.debugPrintln("others updates are visible: "+
+		driver.debugPrintln("others updates are visible: ",
 						othersupdatessarevisible);
 		driver.debugEnd();
 		return othersupdatessarevisible;
@@ -1197,7 +1348,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public boolean 	ownDeletesAreVisible(int type) throws SQLException {
 		driver.debugFunction();
 		boolean	owndeletesarevisible=false;
-		driver.debugPrintln("own deletes are visible: "+
+		driver.debugPrintln("own deletes are visible: ",
 						owndeletesarevisible);
 		driver.debugEnd();
 		return owndeletesarevisible;
@@ -1206,7 +1357,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public boolean 	ownInsertsAreVisible(int type) throws SQLException {
 		driver.debugFunction();
 		boolean	owninsertsarevisible=false;
-		driver.debugPrintln("own inserts are visible: "+
+		driver.debugPrintln("own inserts are visible: ",
 						owninsertsarevisible);
 		driver.debugEnd();
 		return owninsertsarevisible;
@@ -1215,7 +1366,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public boolean 	ownUpdatesAreVisible(int type) throws SQLException {
 		driver.debugFunction();
 		boolean	ownupdatesarevisible=false;
-		driver.debugPrintln("own updates are visible: "+
+		driver.debugPrintln("own updates are visible: ",
 						ownupdatesarevisible);
 		driver.debugEnd();
 		return ownupdatesarevisible;
@@ -1227,7 +1378,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		// oracle stores upper case identifiers
 		// other db's store mixed case identifiers
 		boolean	storeslowercaseidentifiers=false;
-		driver.debugPrintln("stores lower case identifiers: "+
+		driver.debugPrintln("stores lower case identifiers: ",
 						storeslowercaseidentifiers);
 		driver.debugEnd();
 		return storeslowercaseidentifiers;
@@ -1237,7 +1388,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	storeslowercasequotedidentifiers=false;
-		driver.debugPrintln("stores lower case quoted identifiers: "+
+		driver.debugPrintln("stores lower case quoted identifiers: ",
 					storeslowercasequotedidentifiers);
 		driver.debugEnd();
 		return storeslowercasequotedidentifiers;
@@ -1247,7 +1398,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: generally true, but db-specific, false for oracle
 		boolean	storesmixedcaseidentifiers=true;
-		driver.debugPrintln("stores mixed case identifiers: "+
+		driver.debugPrintln("stores mixed case identifiers: ",
 						storesmixedcaseidentifiers);
 		driver.debugEnd();
 		return storesmixedcaseidentifiers;
@@ -1257,7 +1408,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	storesmixedcasequotedidentifiers=true;
-		driver.debugPrintln("stores mixed case quoted identifiers: "+
+		driver.debugPrintln("stores mixed case quoted identifiers: ",
 					storesmixedcasequotedidentifiers);
 		driver.debugEnd();
 		return storesmixedcasequotedidentifiers;
@@ -1269,7 +1420,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		// oracle stores upper case identifiers
 		// other db's store mixed case identifiers
 		boolean	storesuppercaseidentifiers=false;
-		driver.debugPrintln("stores upper case identifiers: "+
+		driver.debugPrintln("stores upper case identifiers: ",
 						storesuppercaseidentifiers);
 		driver.debugEnd();
 		return storesuppercaseidentifiers;
@@ -1279,7 +1430,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	storesuppercasequotedidentifiers=true;
-		driver.debugPrintln("stores upper case quoted identifiers: "+
+		driver.debugPrintln("stores upper case quoted identifiers: ",
 					storesuppercasequotedidentifiers);
 		driver.debugEnd();
 		return storesuppercasequotedidentifiers;
@@ -1289,7 +1440,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsaltertablewithaddcommand=true;
-		driver.debugPrintln("supports alter table with add command: "+
+		driver.debugPrintln("supports alter table with add command: ",
 					supportsaltertablewithaddcommand);
 		driver.debugEnd();
 		return supportsaltertablewithaddcommand;
@@ -1299,7 +1450,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsaltertablewithdropcommand=true;
-		driver.debugPrintln("supports alter table with drop command: "+
+		driver.debugPrintln("supports alter table with drop command: ",
 					supportsaltertablewithdropcommand);
 		driver.debugEnd();
 		return supportsaltertablewithdropcommand;
@@ -1309,7 +1460,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsansi92entrylevelsql=true;
-		driver.debugPrintln("supports ansi92 entry level sql: "+
+		driver.debugPrintln("supports ansi92 entry level sql: ",
 						supportsansi92entrylevelsql);
 		driver.debugEnd();
 		return supportsansi92entrylevelsql;
@@ -1319,7 +1470,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsansi92fullsql=true;
-		driver.debugPrintln("supports ansi92 full sql: "+
+		driver.debugPrintln("supports ansi92 full sql: ",
 						supportsansi92fullsql);
 		driver.debugEnd();
 		return supportsansi92fullsql;
@@ -1329,7 +1480,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsansi92intermediatesql=true;
-		driver.debugPrintln("supports ansi92 intermediate sql: "+
+		driver.debugPrintln("supports ansi92 intermediate sql: ",
 						supportsansi92intermediatesql);
 		driver.debugEnd();
 		return supportsansi92intermediatesql;
@@ -1339,7 +1490,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsbatchupdates=false;
-		driver.debugPrintln("supports batch updates: "+supportsbatchupdates);
+		driver.debugPrintln("supports batch updates: ",
+						supportsbatchupdates);
 		driver.debugEnd();
 		return supportsbatchupdates;
 	}
@@ -1349,7 +1501,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportscatalogsindatamanipulation=true;
-		driver.debugPrintln("supports catalogs in data manipulations: "+
+		driver.debugPrintln("supports catalogs in data manipulations: ",
 					supportscatalogsindatamanipulation);
 		driver.debugEnd();
 		return supportscatalogsindatamanipulation;
@@ -1360,7 +1512,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportscatalogsinindexdefinitions=true;
-		driver.debugPrintln("supports catalogs in index definitions: "+
+		driver.debugPrintln("supports catalogs in index definitions: ",
 					supportscatalogsinindexdefinitions);
 		driver.debugEnd();
 		return supportscatalogsinindexdefinitions;
@@ -1371,7 +1523,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportscatalogsinprivilegedefinitions=true;
-		driver.debugPrintln("supports catalogs in privilege definitions: "+
+		driver.debugPrintln("supports catalogs in "+
+					"privilege definitions: ",
 					supportscatalogsinprivilegedefinitions);
 		driver.debugEnd();
 		return supportscatalogsinprivilegedefinitions;
@@ -1382,7 +1535,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportscatalogsinprocedurecalls=true;
-		driver.debugPrintln("supports catalogs in procedure calls: "+
+		driver.debugPrintln("supports catalogs in procedure calls: ",
 					supportscatalogsinprocedurecalls);
 		driver.debugEnd();
 		return supportscatalogsinprocedurecalls;
@@ -1393,7 +1546,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportscatalogsintabledefinitions=true;
-		driver.debugPrintln("supports catalogs in table definitions: "+
+		driver.debugPrintln("supports catalogs in table definitions: ",
 					supportscatalogsintabledefinitions);
 		driver.debugEnd();
 		return supportscatalogsintabledefinitions;
@@ -1403,7 +1556,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportscolumnaliasing=true;
-		driver.debugPrintln("supports column aliasing: "+
+		driver.debugPrintln("supports column aliasing: ",
 					supportscolumnaliasing);
 		driver.debugEnd();
 		return supportscolumnaliasing;
@@ -1413,7 +1566,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsconvert=true;
-		driver.debugPrintln("supports convert: "+supportsconvert);
+		driver.debugPrintln("supports convert: ",supportsconvert);
 		driver.debugEnd();
 		return supportsconvert;
 	}
@@ -1423,9 +1576,9 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-and-type-specific
 		boolean	supportsconvert=true;
-		driver.debugPrintln("from type: "+fromType);
-		driver.debugPrintln("to type: "+toType);
-		driver.debugPrintln("supports convert: "+supportsconvert);
+		driver.debugPrintln("from type: ",fromType);
+		driver.debugPrintln("to type: ",toType);
+		driver.debugPrintln("supports convert: ",supportsconvert);
 		driver.debugEnd();
 		return supportsconvert;
 	}
@@ -1434,7 +1587,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportscoresqlgrammar=true;
-		driver.debugPrintln("supports core sql grammar: "+
+		driver.debugPrintln("supports core sql grammar: ",
 						supportscoresqlgrammar);
 		driver.debugEnd();
 		return supportscoresqlgrammar;
@@ -1444,7 +1597,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportscorrelatedsubqueries=true;
-		driver.debugPrintln("supports correlated subqueries: "+
+		driver.debugPrintln("supports correlated subqueries: ",
 						supportscorrelatedsubqueries);
 		driver.debugEnd();
 		return supportscorrelatedsubqueries;
@@ -1455,8 +1608,9 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	sddadmt=true;
-		driver.debugPrintln("supports data definition "+
-			"and data manipulation transactions: "+sddadmt);
+		driver.debugPrintln("supports data definition ",
+					"and data manipulation transactions: ",
+					sddadmt);
 		driver.debugEnd();
 		return sddadmt;
 	}
@@ -1466,8 +1620,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	sdmto=false;
-		driver.debugPrintln("supports data manipulation "+
-				"transactions only: "+sdmto);
+		driver.debugPrintln("supports data manipulation ",
+					"transactions only: ",sdmto);
 		driver.debugEnd();
 		return sdmto;
 	}
@@ -1477,8 +1631,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	sdtcn=true;
-		driver.debugPrintln("supports different table "+
-				"correlation names: "+sdtcn);
+		driver.debugPrintln("supports different table ",
+					"correlation names: ",sdtcn);
 		driver.debugEnd();
 		return sdtcn;
 	}
@@ -1487,7 +1641,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsexpressionsinorderby=true;
-		driver.debugPrintln("supports expressions in order by: "+
+		driver.debugPrintln("supports expressions in order by: ",
 						supportsexpressionsinorderby);
 		driver.debugEnd();
 		return supportsexpressionsinorderby;
@@ -1497,7 +1651,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsextendedsqlgrammar=true;
-		driver.debugPrintln("supports extended sql grammar: "+
+		driver.debugPrintln("supports extended sql grammar: ",
 						supportsextendedsqlgrammar);
 		driver.debugEnd();
 		return supportsextendedsqlgrammar;
@@ -1507,7 +1661,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsfullouterjoins=true;
-		driver.debugPrintln("supports full outer joins: "+
+		driver.debugPrintln("supports full outer joins: ",
 						supportsfullouterjoins);
 		driver.debugEnd();
 		return supportsfullouterjoins;
@@ -1517,7 +1671,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsgetgeneratedkeys=true;
-		driver.debugPrintln("supports get generated keys: "+
+		driver.debugPrintln("supports get generated keys: ",
 						supportsgetgeneratedkeys);
 		driver.debugEnd();
 		return supportsgetgeneratedkeys;
@@ -1527,7 +1681,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsgroupby=true;
-		driver.debugPrintln("supports group by: "+supportsgroupby);
+		driver.debugPrintln("supports group by: ",supportsgroupby);
 		driver.debugEnd();
 		return supportsgroupby;
 	}
@@ -1536,7 +1690,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsgroupbybeyondselect=true;
-		driver.debugPrintln("supports group by beyond select: "+
+		driver.debugPrintln("supports group by beyond select: ",
 						supportsgroupbybeyondselect);
 		driver.debugEnd();
 		return supportsgroupbybeyondselect;
@@ -1546,7 +1700,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsgroupbyunrelated=true;
-		driver.debugPrintln("supports group by unrelated: "+
+		driver.debugPrintln("supports group by unrelated: ",
 						supportsgroupbyunrelated);
 		driver.debugEnd();
 		return supportsgroupbyunrelated;
@@ -1557,7 +1711,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsintegrityenhancementfacility=false;
-		driver.debugPrintln("supports integrity enhancement facility: "+
+		driver.debugPrintln("supports integrity enhancement facility: ",
 					supportsintegrityenhancementfacility);
 		driver.debugEnd();
 		return supportsintegrityenhancementfacility;
@@ -1567,7 +1721,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportslikeescapeclause=true;
-		driver.debugPrintln("supports like escape clause: "+
+		driver.debugPrintln("supports like escape clause: ",
 						supportslikeescapeclause);
 		driver.debugEnd();
 		return supportslikeescapeclause;
@@ -1577,7 +1731,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportslimitedouterjoins=true;
-		driver.debugPrintln("supports limited outer joins: "+
+		driver.debugPrintln("supports limited outer joins: ",
 						supportslimitedouterjoins);
 		driver.debugEnd();
 		return supportslimitedouterjoins;
@@ -1587,7 +1741,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsminimumsqlgrammar=true;
-		driver.debugPrintln("supports minimum sql grammar: "+
+		driver.debugPrintln("supports minimum sql grammar: ",
 						supportsminimumsqlgrammar);
 		driver.debugEnd();
 		return supportsminimumsqlgrammar;
@@ -1597,7 +1751,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific, oracle doesn't
 		boolean	supportsmixedcaseidentifiers=true;
-		driver.debugPrintln("supports mixed case identifiers: "+
+		driver.debugPrintln("supports mixed case identifiers: ",
 						supportsmixedcaseidentifiers);
 		driver.debugEnd();
 		return supportsmixedcaseidentifiers;
@@ -1608,7 +1762,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsmixedcasequotedidentifiers=true;
-		driver.debugPrintln("supports mixed case quoted identifiers: "+
+		driver.debugPrintln("supports mixed case quoted identifiers: ",
 					supportsmixedcasequotedidentifiers);
 		driver.debugEnd();
 		return supportsmixedcasequotedidentifiers;
@@ -1617,7 +1771,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public boolean 	supportsMultipleOpenResults() throws SQLException {
 		driver.debugFunction();
 		boolean	supportsmultipleopenresults=true;
-		driver.debugPrintln("supports multiple open results: "+
+		driver.debugPrintln("supports multiple open results: ",
 						supportsmultipleopenresults);
 		driver.debugEnd();
 		return supportsmultipleopenresults;
@@ -1627,7 +1781,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: in progress...
 		boolean	supportsmultipleresultsets=false;
-		driver.debugPrintln("supports multiple result sets: "+
+		driver.debugPrintln("supports multiple result sets: ",
 						supportsmultipleresultsets);
 		driver.debugEnd();
 		return supportsmultipleresultsets;
@@ -1636,7 +1790,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public boolean 	supportsMultipleTransactions() throws SQLException {
 		driver.debugFunction();
 		boolean	supportsmultipletransactions=false;
-		driver.debugPrintln("supports multiple transactions: "+
+		driver.debugPrintln("supports multiple transactions: ",
 						supportsmultipletransactions);
 		driver.debugEnd();
 		return supportsmultipletransactions;
@@ -1646,7 +1800,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsnamedparameters=true;
-		driver.debugPrintln("supports named parameters: "+
+		driver.debugPrintln("supports named parameters: ",
 						supportsnamedparameters);
 		driver.debugEnd();
 		return supportsnamedparameters;
@@ -1656,7 +1810,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsnonnullablecolumns=true;
-		driver.debugPrintln("supports non-nullable columns: "+
+		driver.debugPrintln("supports non-nullable columns: ",
 						supportsnonnullablecolumns);
 		driver.debugEnd();
 		return supportsnonnullablecolumns;
@@ -1667,7 +1821,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: not sure
 		boolean	supportsopencursorsacrosscommit=false;
-		driver.debugPrintln("supports open cursors across commit: "+
+		driver.debugPrintln("supports open cursors across commit: ",
 					supportsopencursorsacrosscommit);
 		driver.debugEnd();
 		return supportsopencursorsacrosscommit;
@@ -1678,7 +1832,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: not sure
 		boolean	supportsopencursorsacrossrollback=false;
-		driver.debugPrintln("supports open cursors across rollback: "+
+		driver.debugPrintln("supports open cursors across rollback: ",
 					supportsopencursorsacrossrollback);
 		driver.debugEnd();
 		return supportsopencursorsacrossrollback;
@@ -1689,7 +1843,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: not sure
 		boolean	supportsopenstatementsacrosscommit=false;
-		driver.debugPrintln("supports open statements across commit: "+
+		driver.debugPrintln("supports open statements across commit: ",
 					supportsopenstatementsacrosscommit);
 		driver.debugEnd();
 		return supportsopenstatementsacrosscommit;
@@ -1700,7 +1854,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: not sure
 		boolean	supportsopenstatementsacrossrollback=false;
-		driver.debugPrintln("supports open statements across rollback: "+
+		driver.debugPrintln("supports open statements "+
+					"across rollback: ",
 					supportsopenstatementsacrossrollback);
 		driver.debugEnd();
 		return supportsopenstatementsacrossrollback;
@@ -1710,7 +1865,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsorderbyunrelated=true;
-		driver.debugPrintln("supports order by unrelated: "+
+		driver.debugPrintln("supports order by unrelated: ",
 					supportsorderbyunrelated);
 		driver.debugEnd();
 		return supportsorderbyunrelated;
@@ -1720,7 +1875,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsouterjoins=true;
-		driver.debugPrintln("supports outer joins: "+supportsouterjoins);
+		driver.debugPrintln("supports outer joins: ",
+						supportsouterjoins);
 		driver.debugEnd();
 		return supportsouterjoins;
 	}
@@ -1728,7 +1884,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public boolean 	supportsPositionedDelete() throws SQLException {
 		driver.debugFunction();
 		boolean	supportspositioneddelete=false;
-		driver.debugPrintln("supports positioned delete: "+
+		driver.debugPrintln("supports positioned delete: ",
 						supportspositioneddelete);
 		driver.debugEnd();
 		return supportspositioneddelete;
@@ -1737,7 +1893,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public boolean 	supportsPositionedUpdate() throws SQLException {
 		driver.debugFunction();
 		boolean	supportspositionedupdate=false;
-		driver.debugPrintln("supports positioned update: "+
+		driver.debugPrintln("supports positioned update: ",
 						supportspositionedupdate);
 		driver.debugEnd();
 		return supportspositionedupdate;
@@ -1750,7 +1906,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		boolean	supportsresultsetconcurrency=
 				(type==ResultSet.TYPE_FORWARD_ONLY &&
 				concurrency==ResultSet.CONCUR_READ_ONLY);
-		driver.debugPrintln("supports result set concurrency: "+
+		driver.debugPrintln("supports result set concurrency: ",
 						supportsresultsetconcurrency);
 		driver.debugEnd();
 		return supportsresultsetconcurrency;
@@ -1761,7 +1917,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		boolean	supportsresultsetholdability=
 			(holdability==ResultSet.CLOSE_CURSORS_AT_COMMIT);
-		driver.debugPrintln("supports result set holdability: "+
+		driver.debugPrintln("supports result set holdability: ",
 						supportsresultsetholdability);
 		driver.debugEnd();
 		return supportsresultsetholdability;
@@ -1771,7 +1927,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		boolean	supportsresultsettype=
 			(type==ResultSet.TYPE_FORWARD_ONLY);
-		driver.debugPrintln("supports result set type: "+
+		driver.debugPrintln("supports result set type: ",
 						supportsresultsettype);
 		driver.debugEnd();
 		return supportsresultsettype;
@@ -1780,7 +1936,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public boolean 	supportsSavepoints() throws SQLException {
 		driver.debugFunction();
 		boolean	supportssavepoints=false;
-		driver.debugPrintln("supports savepoints: "+supportssavepoints);
+		driver.debugPrintln("supports savepoints: ",supportssavepoints);
 		driver.debugEnd();
 		return supportssavepoints;
 	}
@@ -1790,7 +1946,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsschemasindatamanipulation=true;
-		driver.debugPrintln("supports schemas in data manipulation: "+
+		driver.debugPrintln("supports schemas in data manipulation: ",
 					supportsschemasindatamanipulation);
 		driver.debugEnd();
 		return supportsschemasindatamanipulation;
@@ -1801,7 +1957,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsschemasinindexdefinitions=true;
-		driver.debugPrintln("supports schemas in index definitions: "+
+		driver.debugPrintln("supports schemas in index definitions: ",
 					supportsschemasinindexdefinitions);
 		driver.debugEnd();
 		return supportsschemasinindexdefinitions;
@@ -1812,7 +1968,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsschemasinprivilegedefinitions=true;
-		driver.debugPrintln("supports schemas in privilege definitions: "+
+		driver.debugPrintln("supports schemas in "+
+					"privilege definitions: ",
 					supportsschemasinprivilegedefinitions);
 		driver.debugEnd();
 		return supportsschemasinprivilegedefinitions;
@@ -1823,7 +1980,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsschemasinprocedurecalls=true;
-		driver.debugPrintln("supports schemas in procedure calls: "+
+		driver.debugPrintln("supports schemas in procedure calls: ",
 					supportsschemasinprocedurecalls);
 		driver.debugEnd();
 		return supportsschemasinprocedurecalls;
@@ -1834,7 +1991,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsschemasintabledefinitions=true;
-		driver.debugPrintln("supports schemas in table definitions: "+
+		driver.debugPrintln("supports schemas in table definitions: ",
 					supportsschemasintabledefinitions);
 		driver.debugEnd();
 		return supportsschemasintabledefinitions;
@@ -1843,7 +2000,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public boolean 	supportsSelectForUpdate() throws SQLException {
 		driver.debugFunction();
 		boolean	supportsselectforupdate=false;
-		driver.debugPrintln("supports select for update: "+
+		driver.debugPrintln("supports select for update: ",
 						supportsselectforupdate);
 		driver.debugEnd();
 		return supportsselectforupdate;
@@ -1852,7 +2009,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public boolean 	supportsStatementPooling() throws SQLException {
 		driver.debugFunction();
 		boolean	supportsstatementpooling=false;
-		driver.debugPrintln("supports statement pooling: "+
+		driver.debugPrintln("supports statement pooling: ",
 						supportsstatementpooling);
 		driver.debugEnd();
 		return supportsstatementpooling;
@@ -1864,7 +2021,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		// FIXME: db-specific
 		boolean	ssfucs=false;
 		driver.debugPrintln("supports stored functions "+
-					"using call syntax: "+ssfucs);
+					"using call syntax: ",ssfucs);
 		driver.debugEnd();
 		return ssfucs;
 	}
@@ -1873,7 +2030,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsstoredprocedures=true;
-		driver.debugPrintln("supports stored procedures: "+
+		driver.debugPrintln("supports stored procedures: ",
 						supportsstoredprocedures);
 		driver.debugEnd();
 		return supportsstoredprocedures;
@@ -1883,7 +2040,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportssubqueriesincomparisons=true;
-		driver.debugPrintln("supports subqueries in comparisons: "+
+		driver.debugPrintln("supports subqueries in comparisons: ",
 					supportssubqueriesincomparisons);
 		driver.debugEnd();
 		return supportssubqueriesincomparisons;
@@ -1893,7 +2050,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportssubqueriesinexists=true;
-		driver.debugPrintln("supports subqueries in exists: "+
+		driver.debugPrintln("supports subqueries in exists: ",
 						supportssubqueriesinexists);
 		driver.debugEnd();
 		return supportssubqueriesinexists;
@@ -1903,7 +2060,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportssubqueriesinins=true;
-		driver.debugPrintln("supports subqueries in ins: "+
+		driver.debugPrintln("supports subqueries in ins: ",
 						supportssubqueriesinins);
 		driver.debugEnd();
 		return supportssubqueriesinins;
@@ -1913,7 +2070,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportssubqueriesinquantifieds=true;
-		driver.debugPrintln("supports subqueries in quantifieds: "+
+		driver.debugPrintln("supports subqueries in quantifieds: ",
 					supportssubqueriesinquantifieds);
 		driver.debugEnd();
 		return supportssubqueriesinquantifieds;
@@ -1923,7 +2080,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportssubqueriesincorrelationnames=true;
-		driver.debugPrintln("supports subqueries in correlation names: "+
+		driver.debugPrintln("supports subqueries in "+
+					"correlation names: ",
 					supportssubqueriesincorrelationnames);
 		driver.debugEnd();
 		return supportssubqueriesincorrelationnames;
@@ -1934,7 +2092,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportstransactionisolationlevel=true;
-		driver.debugPrintln("supports transaction isolation level: "+
+		driver.debugPrintln("supports transaction isolation level: ",
 					supportstransactionisolationlevel);
 		driver.debugEnd();
 		return supportstransactionisolationlevel;
@@ -1944,7 +2102,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportstransactions=true;
-		driver.debugPrintln("supports transactions: "+supportstransactions);
+		driver.debugPrintln("supports transactions: ",
+						supportstransactions);
 		driver.debugEnd();
 		return supportstransactions;
 	}
@@ -1953,7 +2112,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsunion=true;
-		driver.debugPrintln("supports union: "+supportsunion);
+		driver.debugPrintln("supports union: ",supportsunion);
 		driver.debugEnd();
 		return supportsunion;
 	}
@@ -1962,7 +2121,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugFunction();
 		// FIXME: db-specific
 		boolean	supportsunionall=true;
-		driver.debugPrintln("supports union all: "+supportsunionall);
+		driver.debugPrintln("supports union all: ",supportsunionall);
 		driver.debugEnd();
 		return supportsunionall;
 	}
@@ -1970,7 +2129,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public boolean 	updatesAreDetected(int type) throws SQLException {
 		driver.debugFunction();
 		boolean	updatesaredetected=false;
-		driver.debugPrintln("updates are detected: "+updatesaredetected);
+		driver.debugPrintln("updates are detected: ",
+						updatesaredetected);
 		driver.debugEnd();
 		return updatesaredetected;
 	}
@@ -1978,7 +2138,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public boolean 	usesLocalFilePerTable() throws SQLException {
 		driver.debugFunction();
 		boolean	useslocalfilepertable=false;
-		driver.debugPrintln("uses local file per table: "+
+		driver.debugPrintln("uses local file per table: ",
 						useslocalfilepertable);
 		driver.debugEnd();
 		return useslocalfilepertable;
@@ -1987,7 +2147,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public boolean 	usesLocalFiles() throws SQLException {
 		driver.debugFunction();
 		boolean	useslocalfiles=false;
-		driver.debugPrintln("uses local files: "+useslocalfiles);
+		driver.debugPrintln("uses local files: ",useslocalfiles);
 		driver.debugEnd();
 		return useslocalfiles;
 	}

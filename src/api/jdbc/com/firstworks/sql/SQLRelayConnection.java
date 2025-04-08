@@ -45,6 +45,15 @@ public class SQLRelayConnection implements Connection {
 		this.socket=socket;
 		this.user=user;
 		this.password=password;
+
+		driver.debugPrintln("host: ",host);
+		driver.debugPrintln("port: ",port);
+		driver.debugPrintln("socket: ",socket);
+		driver.debugPrintln("user: ",user);
+		driver.debugPrintln("password: ",password);
+		driver.debugPrintln("retrytime: ",retrytime);
+		driver.debugPrintln("tries: ",tries);
+
 		sqlrcon=new SQLRConnection(host,port,socket,
 						user,password,retrytime,tries);
 		readonly=false;
@@ -60,37 +69,42 @@ public class SQLRelayConnection implements Connection {
 		typemap=null;
 
 		if (driver.debug) {
-			sqlrcon.debugOn();
+			//sqlrcon.debugOn();
 		}
 		driver.debugEnd();
 	}
 
 	public String getHost() {
 		driver.debugFunction();
+		driver.debugPrintln("host: ",host);
 		driver.debugEnd();
 		return host;
 	}
 
 	public short getPort() {
 		driver.debugFunction();
+		driver.debugPrintln("port: ",port);
 		driver.debugEnd();
 		return port;
 	}
 
 	public String getSocket() {
 		driver.debugFunction();
+		driver.debugPrintln("socket: ",socket);
 		driver.debugEnd();
 		return socket;
 	}
 
 	public String getUser() {
 		driver.debugFunction();
+		driver.debugPrintln("user: ",user);
 		driver.debugEnd();
 		return user;
 	}
 
 	public String getPassword() {
 		driver.debugFunction();
+		driver.debugPrintln("password: ",password);
 		driver.debugEnd();
 		return password;
 	}
@@ -198,12 +212,19 @@ public class SQLRelayConnection implements Connection {
 		throwExceptionIfClosed();
 
 		// unsupported options
-		if (resultSetType==
-				ResultSet.TYPE_SCROLL_SENSITIVE ||
-			resultSetConcurrency==
-				ResultSet.CONCUR_UPDATABLE ||
-			resultSetHoldability==
-				ResultSet.CLOSE_CURSORS_AT_COMMIT) {
+		if (resultSetType==ResultSet.TYPE_SCROLL_SENSITIVE) {
+			driver.debugPrintln("result set type: ",
+						"TYPE_SCROLL_SENSITIVE");
+			throwFeatureNotSupportedException();
+		}
+		if (resultSetConcurrency==ResultSet.CONCUR_UPDATABLE) {
+			driver.debugPrintln("result set concurrency: ",
+						"CONCUR_UPDATABLE");
+			throwFeatureNotSupportedException();
+		}
+		if (resultSetHoldability==ResultSet.CLOSE_CURSORS_AT_COMMIT) {
+			driver.debugPrintln("result set holdability: ",
+						"CLOSE_CURSORS_AT_COMMIT");
 			throwFeatureNotSupportedException();
 		}
 
@@ -214,14 +235,22 @@ public class SQLRelayConnection implements Connection {
 		// set result set buffer size as appropriate
 		switch (resultSetType) {
 			case ResultSet.TYPE_FORWARD_ONLY:
+				driver.debugPrintln("result set type: ",
+						"TYPE_FORWARD_ONLY");
 				// FIXME: this can probably be set
 				// to something bigger than 1
 				sqlrcur.setResultSetBufferSize(1);
 				break;
 			case ResultSet.TYPE_SCROLL_INSENSITIVE:
+				driver.debugPrintln("result set type: ",
+						"TYPE_SCROLL_INSENSITIVE");
 				sqlrcur.setResultSetBufferSize(0);
 				break;
 		}
+		driver.debugPrintln("result set concurrency: ",
+						"CONCUR_READ_ONLY");
+		driver.debugPrintln("result set holdability: ",
+						"HOLD_CURSORS_OVER_COMMIT");
 
 		// create a statement, attach the cursor to the statement
 		SQLRelayStatement	sqlrstmt=
@@ -246,6 +275,7 @@ public class SQLRelayConnection implements Connection {
 	public boolean	getAutoCommit() throws SQLException {
 		driver.debugFunction();
 		throwExceptionIfClosed();
+		driver.debugPrintln("autocommit: ",autocommit);
 		driver.debugEnd();
 		return autocommit;
 	}
@@ -253,13 +283,16 @@ public class SQLRelayConnection implements Connection {
 	public String	getCatalog() throws SQLException {
 		driver.debugFunction();
 		throwExceptionIfClosed();
+		String	catalog=sqlrcon.getCurrentDatabase();
+		driver.debugPrintln("catalog: ",catalog);
 		driver.debugEnd();
-		return sqlrcon.getCurrentDatabase();
+		return catalog;
 	}
 
 	public Properties	getClientInfo() throws SQLException {
 		driver.debugFunction();
 		throwExceptionIfClosed();
+		driver.debugPrintln("clientinfo: ",clientinfo);
 		driver.debugEnd();
 		return clientinfo;
 	}
@@ -268,6 +301,7 @@ public class SQLRelayConnection implements Connection {
 		driver.debugFunction();
 		throwExceptionIfClosed();
 		String	prop=getClientInfo().getProperty(name);
+		driver.debugPrintln(name,": ",prop);
 		driver.debugEnd();
 		return prop;
 	}
@@ -275,6 +309,7 @@ public class SQLRelayConnection implements Connection {
 	public int	getHoldability() throws SQLException {
 		driver.debugFunction();
 		throwExceptionIfClosed();
+		driver.debugPrintln("holdability: HOLD_CURSORS_OVER_COMMIT");
 		driver.debugEnd();
 		return ResultSet.HOLD_CURSORS_OVER_COMMIT;
 	}
@@ -303,6 +338,7 @@ public class SQLRelayConnection implements Connection {
 		driver.debugFunction();
 		throwExceptionIfClosed();
 		String	schema=sqlrcon.getCurrentSchema();
+		driver.debugPrintln("schema: ",schema);
 		driver.debugEnd();
 		return schema;
 	}
@@ -310,6 +346,7 @@ public class SQLRelayConnection implements Connection {
 	public int	getTransactionIsolation() throws SQLException {
 		driver.debugFunction();
 		throwExceptionIfClosed();
+		driver.debugPrintln("isolation level: ",txisolevel);
 		driver.debugEnd();
 		return txisolevel;
 	}
@@ -332,6 +369,7 @@ public class SQLRelayConnection implements Connection {
 	public boolean	isClosed() throws SQLException {
 		driver.debugFunction();
 		boolean	isclosed=(sqlrcon==null);
+		driver.debugPrintln("isclosed: ",isclosed);
 		driver.debugEnd();
 		return isclosed;
 	}
@@ -339,6 +377,7 @@ public class SQLRelayConnection implements Connection {
 	public boolean	isReadOnly() throws SQLException {
 		driver.debugFunction();
 		throwExceptionIfClosed();
+		driver.debugPrintln("read only: ",readonly);
 		driver.debugEnd();
 		return readonly;
 	}
@@ -354,6 +393,7 @@ public class SQLRelayConnection implements Connection {
 		// have getResponseTimeout methods
 		sqlrcon.setResponseTimeout(timeout,0);
 		boolean	ping=sqlrcon.ping();
+		driver.debugPrintln("ping: ",ping);
 		driver.debugEnd();
 		return ping;
 	}
@@ -361,6 +401,7 @@ public class SQLRelayConnection implements Connection {
 	public String	nativeSQL(String sql) throws SQLException {
 		driver.debugFunction();
 		throwExceptionIfClosed();
+		driver.debugPrintln("sql: ",sql);
 		driver.debugEnd();
 		return sql;
 	}
@@ -500,10 +541,12 @@ public class SQLRelayConnection implements Connection {
 	public void	setAutoCommit(boolean autocommit) throws SQLException {
 		driver.debugFunction();
 		throwExceptionIfClosed();
+		driver.debugPrintln("autocommit: ",autocommit);
 		if (!((autocommit)?sqlrcon.autoCommitOn():
 					sqlrcon.autoCommitOff())) {
 			throwErrorMessageException();
 		}
+		driver.debugPrintln("success");
 		this.autocommit=autocommit;
 		driver.debugEnd();
 	}
@@ -511,9 +554,11 @@ public class SQLRelayConnection implements Connection {
 	public void	setCatalog(String catalog) throws SQLException {
 		driver.debugFunction();
 		throwExceptionIfClosed();
+		driver.debugPrintln("catalog: ",catalog);
 		if (!sqlrcon.selectDatabase(catalog)) {
 			throwErrorMessageException();
 		}
+		driver.debugPrintln("success");
 		driver.debugEnd();
 	}
 
@@ -551,6 +596,8 @@ public class SQLRelayConnection implements Connection {
 				info+=",";
 			}
 			info+=name+":"+clientinfo.getProperty(name);
+			driver.debugPrintln(name,": ",
+					clientinfo.getProperty(name));
 		}
 		sqlrcon.setClientInfo(info);
 		driver.debugEnd();
@@ -561,6 +608,7 @@ public class SQLRelayConnection implements Connection {
 		if (holdability!=ResultSet.HOLD_CURSORS_OVER_COMMIT) {
 			throwFeatureNotSupportedException();
 		}
+		driver.debugPrintln("holdability: HOLD_CURSORS_OVER_COMMIT");
 		driver.debugEnd();
 	}
 
@@ -569,6 +617,7 @@ public class SQLRelayConnection implements Connection {
 						throws SQLException {
 		driver.debugFunction();
 		throwExceptionIfClosed();
+		driver.debugPrintln("milliseconds: ",milliseconds);
 		// we can ignore executor because we have an internal
 		// timeout implementation
 		if (milliseconds<0) {
@@ -592,6 +641,8 @@ public class SQLRelayConnection implements Connection {
 		throwExceptionIfClosed();
 		// FIXME: implement this somehow
 		this.readonly=readonly;
+		driver.debugPrintln("FIXME: implement this");
+		driver.debugPrintln("readonly: ",readonly);
 		driver.debugEnd();
 	}
 
@@ -615,6 +666,8 @@ public class SQLRelayConnection implements Connection {
 		driver.debugFunction();
 		throwExceptionIfClosed();
 		// FIXME: implement this somehow
+		driver.debugPrintln("FIXME: implement this");
+		driver.debugPrintln("schema: ",schema);
 		driver.debugEnd();
 	}
 
@@ -624,15 +677,27 @@ public class SQLRelayConnection implements Connection {
 		switch (level) {
 			case Connection.TRANSACTION_READ_UNCOMMITTED:
 				// FIXME: implement this somehow
+				driver.debugPrintln("FIXME: implement this");
+				driver.debugPrintln("isolation level: ",
+						"TRANSACTION_READ_UNCOMMITTED");
 				break;
 			case Connection.TRANSACTION_READ_COMMITTED:
 				// FIXME: implement this somehow
+				driver.debugPrintln("FIXME: implement this");
+				driver.debugPrintln("isolation level: ",
+						"TRANSACTION_READ_COMMITTED");
 				break;
 			case Connection.TRANSACTION_REPEATABLE_READ:
 				// FIXME: implement this somehow
+				driver.debugPrintln("FIXME: implement this");
+				driver.debugPrintln("isolation level: ",
+						"TRANSACTION_REPEATABLE_READ");
 				break;
 			case Connection.TRANSACTION_SERIALIZABLE:
 				// FIXME: implement this somehow
+				driver.debugPrintln("FIXME: implement this");
+				driver.debugPrintln("isolation level: ",
+						"TRANSACTION_SERIALIZABLE");
 				break;
 			default:
 				throwException("Invalid transaction " +
@@ -691,8 +756,6 @@ public class SQLRelayConnection implements Connection {
 	}
 
 	public SQLRConnection getSQLRConnection() {
-		driver.debugFunction();
-		driver.debugEnd();
 		return sqlrcon;
 	}
 }

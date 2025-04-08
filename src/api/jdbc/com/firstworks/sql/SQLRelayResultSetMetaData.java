@@ -17,26 +17,24 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	}
 
 	public void	setSQLRCursor(SQLRCursor sqlrcur) {
-		driver.debugFunction();
 		this.sqlrcur=sqlrcur;
-		driver.debugEnd();
 	}
 
 	public String 	getCatalogName(int column) {
 		driver.debugFunction();
 		String	catalogname="";
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("catalog name: "+catalogname);
+		driver.debugPrintln("column: ",column);
+		driver.debugPrintln("catalog name: ",catalogname);
 		driver.debugEnd();
 		return catalogname;
 	}
 
 	public String 	getColumnClassName(int column) {
 		driver.debugFunction();
-		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("column: ",column);
 		String	retval=null;
 		String	ctype=sqlrcur.getColumnType(column-1).toUpperCase();
-		driver.debugPrintln("ctype: "+ctype);
+		driver.debugPrintln("ctype: ",ctype);
 		if (ctype.equals("UNKNOWN")) {
 			retval=null;
 		}
@@ -183,7 +181,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 			ctype.equals("LONGBLOB") ||
 			ctype.equals("BLOB")) {
 			boolean	binary=sqlrcur.getColumnIsBinary(column-1);
-			driver.debugPrintln("is binary: "+binary);
+			driver.debugPrintln("is binary: ",binary);
 			retval=(binary)?"java.lang.Byte":"java.lang.String";
 		}
 	
@@ -634,7 +632,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		if (ctype.equals("DATETIMEOFFSET")) {
 			retval="java.sql.Timestamp";
 		}
-		driver.debugPrintln("class type: "+retval);
+		driver.debugPrintln("class type: ",retval);
 		driver.debugEnd();
 		return retval;
 	}
@@ -642,7 +640,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	public int 	getColumnCount() {
 		driver.debugFunction();
 		int	colcount=sqlrcur.colCount();
-		driver.debugPrintln("colcount: "+colcount);
+		driver.debugPrintln("colcount: ",colcount);
 		driver.debugEnd();
 		return colcount;
 	}
@@ -650,12 +648,12 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	public int 	getColumnDisplaySize(int column) {
 		driver.debugFunction();
 		int	longest=sqlrcur.getLongest(column-1);
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("longest (before): "+longest);
+		driver.debugPrintln("column: ",column);
+		driver.debugPrintln("longest (before): ",longest);
 		if (longest==-1) {
 			longest=2147483647;
 		}
-		driver.debugPrintln("longest (after): "+longest);
+		driver.debugPrintln("longest (after): ",longest);
 		driver.debugEnd();
 		return longest;
 	}
@@ -663,8 +661,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	public String 	getColumnLabel(int column) {
 		driver.debugFunction();
 		String	label=sqlrcur.getColumnName(column-1);
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("label: "+label);
+		driver.debugPrintln("column: ",column);
+		driver.debugPrintln("label: ",label);
 		driver.debugEnd();
 		return label;
 	}
@@ -672,18 +670,18 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	public String 	getColumnName(int column) {
 		driver.debugFunction();
 		String	columnname=sqlrcur.getColumnName(column-1);
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("column name: "+columnname);
+		driver.debugPrintln("column: ",column);
+		driver.debugPrintln("column name: ",columnname);
 		driver.debugEnd();
 		return columnname;
 	}
 
 	public int 	getColumnType(int column) {
 		driver.debugFunction();
-		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("column: ",column);
 		int	retval=0;
 		String	ctype=sqlrcur.getColumnType(column-1).toUpperCase();
-		driver.debugPrintln("ctype: "+ctype);
+		driver.debugPrintln("ctype: ",ctype);
 		if (ctype.equals("UNKNOWN")) {
 			retval=Types.OTHER;
 		}
@@ -830,7 +828,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 			ctype.equals("LONGBLOB") ||
 			ctype.equals("BLOB")) {
 			boolean	binary=sqlrcur.getColumnIsBinary(column-1);
-			driver.debugPrintln("is binary: "+binary);
+			driver.debugPrintln("is binary: ",binary);
 			retval=(binary)?Types.BINARY:Types.LONGVARCHAR;
 		}
 	
@@ -1281,7 +1279,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		if (ctype.equals("DATETIMEOFFSET")) {
 			retval=Types.TIMESTAMP;
 		}
-		driver.debugPrintln("sql type: "+retval);
+		driver.debugPrintln("sql type: ",retval);
 		driver.debugEnd();
 		return retval;
 	}
@@ -1289,8 +1287,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	public String 	getColumnTypeName(int column) {
 		driver.debugFunction();
 		String	typename=sqlrcur.getColumnType(column-1);
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("type name: "+typename);
+		driver.debugPrintln("column: ",column);
+		driver.debugPrintln("type name: ",typename);
 		driver.debugEnd();
 		return typename;
 	}
@@ -1298,12 +1296,12 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	public int 	getPrecision(int column) {
 		driver.debugFunction();
 		int	precision=(int)sqlrcur.getColumnPrecision(column-1);
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("precision (before): "+precision);
+		driver.debugPrintln("column: ",column);
+		driver.debugPrintln("precision (before): ",precision);
 		if (precision==-1) {
 			precision=2147483647;
 		}
-		driver.debugPrintln("precision (after): "+precision);
+		driver.debugPrintln("precision (after): ",precision);
 		driver.debugEnd();
 		return precision;
 	}
@@ -1311,8 +1309,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	public int 	getScale(int column) {
 		driver.debugFunction();
 		int	scale=(int)sqlrcur.getColumnScale(column-1);
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("scale: "+scale);
+		driver.debugPrintln("column: ",column);
+		driver.debugPrintln("scale: ",scale);
 		driver.debugEnd();
 		return scale;
 	}
@@ -1320,8 +1318,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	public String 	getSchemaName(int column) {
 		driver.debugFunction();
 		String	schemaname="";
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("schema name: "+schemaname);
+		driver.debugPrintln("column: ",column);
+		driver.debugPrintln("schema name: ",schemaname);
 		driver.debugEnd();
 		return schemaname;
 	}
@@ -1329,8 +1327,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	public String 	getTableName(int column) {
 		driver.debugFunction();
 		String	tablename="";
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("table name: "+tablename);
+		driver.debugPrintln("column: ",column);
+		driver.debugPrintln("table name: ",tablename);
 		// FIXME: this could be implemented if
 		// getColumnTable was exposed
 		driver.debugEnd();
@@ -1340,8 +1338,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	public boolean 	isAutoIncrement(int column) {
 		driver.debugFunction();
 		boolean	isautoinc=sqlrcur.getColumnIsAutoIncrement(column-1);
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("is auto increment: "+isautoinc);
+		driver.debugPrintln("column: ",column);
+		driver.debugPrintln("is auto increment: ",isautoinc);
 		driver.debugEnd();
 		return isautoinc;
 	}
@@ -1350,8 +1348,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		driver.debugFunction();
 		// FIXME: can db type tell us this?
 		boolean	iscasesensitive=false;
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("is case sensitive: "+iscasesensitive);
+		driver.debugPrintln("column: ",column);
+		driver.debugPrintln("is case sensitive: ",iscasesensitive);
 		driver.debugEnd();
 		return iscasesensitive;
 	}
@@ -1362,9 +1360,9 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		boolean	iscurrency=ctype.equals("MONEY") ||
 					ctype.equals("SMALLMONEY") ||
 					ctype.equals("MONEY_ARRAY");
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("ctype: "+ctype);
-		driver.debugPrintln("is currency: "+iscurrency);
+		driver.debugPrintln("column: ",column);
+		driver.debugPrintln("ctype: ",ctype);
+		driver.debugPrintln("is currency: ",iscurrency);
 		driver.debugEnd();
 		return iscurrency;
 	}
@@ -1372,8 +1370,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	public boolean 	isDefinitelyWritable(int column) {
 		driver.debugFunction();
 		boolean	isdefinitelywriteable=false;
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("is definitely writeable: "+
+		driver.debugPrintln("column: ",column);
+		driver.debugPrintln("is definitely writeable: ",
 					isdefinitelywriteable);
 		driver.debugEnd();
 		return isdefinitelywriteable;
@@ -1383,8 +1381,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		driver.debugFunction();
 		int	isnullable=(sqlrcur.getColumnIsNullable(column-1))?
 						columnNullable:columnNoNulls;
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("is nullable: "+isnullable);
+		driver.debugPrintln("column: ",column);
+		driver.debugPrintln("is nullable: ",isnullable);
 		driver.debugEnd();
 		return isnullable;
 	}
@@ -1392,8 +1390,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	public boolean 	isReadOnly(int column) {
 		driver.debugFunction();
 		boolean	isreadonly=false;
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("is read-only: "+isreadonly);
+		driver.debugPrintln("column: ",column);
+		driver.debugPrintln("is read-only: ",isreadonly);
 		driver.debugEnd();
 		return isreadonly;
 	}
@@ -1401,8 +1399,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	public boolean 	isSearchable(int column) {
 		driver.debugFunction();
 		boolean	issearchable=true;
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("is searchable: "+issearchable);
+		driver.debugPrintln("column: ",column);
+		driver.debugPrintln("is searchable: ",issearchable);
 		driver.debugEnd();
 		return issearchable;
 	}
@@ -1410,8 +1408,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	public boolean 	isSigned(int column) {
 		driver.debugFunction();
 		boolean	issigned=!sqlrcur.getColumnIsUnsigned(column-1);
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("is signed: "+issigned);
+		driver.debugPrintln("column: ",column);
+		driver.debugPrintln("is signed: ",issigned);
 		driver.debugEnd();
 		return issigned;
 	}
@@ -1419,8 +1417,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	public boolean 	isWritable(int column) {
 		driver.debugFunction();
 		boolean	iswriteable=true;
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("is writeable: "+iswriteable);
+		driver.debugPrintln("column: ",column);
+		driver.debugPrintln("is writeable: ",iswriteable);
 		driver.debugEnd();
 		return iswriteable;
 	}

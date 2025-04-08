@@ -167,16 +167,16 @@ public class SQLRelayDriver implements Driver {
 		ci.triesstr = triesstr;
 		ci.tries = tries;
 
-		debugPrintln("host: "+host);
-		debugPrintln("portstr: "+portstr);
-		debugPrintln("port: "+port);
-		debugPrintln("socket: "+socket);
-		debugPrintln("user: "+user);
-		debugPrintln("password: "+password);
-		debugPrintln("retrytimestr: "+retrytimestr);
-		debugPrintln("retrytime: "+retrytime);
-		debugPrintln("triesstr: "+triesstr);
-		debugPrintln("tries: "+tries);
+		debugPrintln("host: ",host);
+		debugPrintln("portstr: ",portstr);
+		debugPrintln("port: ",port);
+		debugPrintln("socket: ",socket);
+		debugPrintln("user: ",user);
+		debugPrintln("password: ",password);
+		debugPrintln("retrytimestr: ",retrytimestr);
+		debugPrintln("retrytime: ",retrytime);
+		debugPrintln("triesstr: ",triesstr);
+		debugPrintln("tries: ",tries);
 
 		debugEnd();
 		return ci;
@@ -184,8 +184,12 @@ public class SQLRelayDriver implements Driver {
 
 	private boolean validConnectInfo(SQLRelayConnectInfo ci) {
 		debugFunction();
+		debugPrintln("host not null: ",ci.host!=null);
+		debugPrintln("port > 0: ",ci.port>0);
+		debugPrintln("socket not null: ",ci.socket!=null);
 		boolean valid=
 			((ci.host!=null && ci.port>0) || ci.socket!=null);
+		debugPrintln("valid: ",valid);
 		debugEnd();
 		return valid;
 	}
@@ -338,15 +342,22 @@ public class SQLRelayDriver implements Driver {
 			return;
 		}
 		StackTraceElement	ste=new Throwable().getStackTrace()[1];
-		debugStart(ste.getClassName()+"."+ste.getMethodName());
+		debugStart(Thread.currentThread().getId()+"|"+
+				System.identityHashCode(this)+": "+
+				ste.getClassName().substring(
+					ste.getClassName().lastIndexOf(".")+1)+
+				"."+ste.getMethodName());
 	}
 
-	public void debugPrintln(String str) {
+	public <T> void debugPrintln(T... elements) {
 		if (!debug) {
 			return;
 		}
 		debugPrintIndent();
-		System.out.println(str);
+		for (T e: elements) {
+			System.out.print(e);
+		}
+		System.out.print("\n");
 	}
 
 	private static final char[] hexarray="0123456789ABCDEF".toCharArray();

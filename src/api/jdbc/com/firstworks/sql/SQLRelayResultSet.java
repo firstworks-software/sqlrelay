@@ -50,25 +50,20 @@ public class SQLRelayResultSet implements ResultSet {
 	}
 
 	public void setStatement(Statement statement) {
-		driver.debugFunction();
 		this.statement=statement;
-		driver.debugEnd();
 	}
 
 	public void setSQLRCursor(SQLRCursor sqlrcur) {
-		driver.debugFunction();
 		this.sqlrcur=sqlrcur;
-		driver.debugEnd();
 	}
 
 	public boolean absolute(int row) throws SQLException {
 		driver.debugFunction();
 		throwExceptionIfClosed();
-		driver.debugPrintln("row: "+row);
+		driver.debugPrintln("row: ",row);
 		if (row<currentrow) {
-			String	ex="FIXME: ResultSet "+
-					"type is Forward-Only";
-			driver.debugPrintln("exception: "+ex);
+			String	ex="FIXME: ResultSet type is Forward-Only";
+			driver.debugPrintln("exception: ",ex);
 			throw new SQLException(ex);
 		} else if (row==0) {
 			beforefirst=true;
@@ -98,7 +93,7 @@ public class SQLRelayResultSet implements ResultSet {
 			// FIXME: implement this...
 			// position relative to end of result set
 			String	ex="FIXME: negative row not supported";
-			driver.debugPrintln("exception: "+ex);
+			driver.debugPrintln("exception: ",ex);
 			throw new SQLException(ex);
 		}
 		driver.debugPrintln("success");
@@ -154,7 +149,7 @@ public class SQLRelayResultSet implements ResultSet {
 		throwExceptionIfClosed();
 		for (int i=0; i<sqlrcur.colCount(); i++) {
 			if (sqlrcur.getColumnName(i).equals(columnlabel)) {
-				driver.debugPrintln("column: "+(i+1));
+				driver.debugPrintln("column: ",(i+1));
 				driver.debugEnd();
 				return i+1;
 			}
@@ -196,8 +191,9 @@ public class SQLRelayResultSet implements ResultSet {
 		throwInvalidColumn(columnindex);
 		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column index: ",columnindex);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		// FIXME: not sure this is correct, how do we ensure it's ascii?
 		InputStream	is=new StringBufferInputStream(field);
 		driver.debugEnd();
@@ -211,8 +207,9 @@ public class SQLRelayResultSet implements ResultSet {
 		throwInvalidColumn(columnlabel);
 		String	field=sqlrcur.getField(currentrow-1,columnlabel);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column: ",columnlabel);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		// FIXME: not sure this is correct, how do we ensure it's ascii?
 		InputStream	is=new StringBufferInputStream(field);
 		driver.debugEnd();
@@ -226,8 +223,9 @@ public class SQLRelayResultSet implements ResultSet {
 		throwInvalidColumn(columnindex);
 		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column index: ",columnindex);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		if (wasnull) {
 			driver.debugEnd();
 			return null;
@@ -244,8 +242,9 @@ public class SQLRelayResultSet implements ResultSet {
 		throwInvalidColumn(columnindex);
 		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column index: ",columnindex);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		if (wasnull) {
 			driver.debugEnd();
 			return null;
@@ -264,8 +263,9 @@ public class SQLRelayResultSet implements ResultSet {
 		throwInvalidColumn(columnlabel);
 		String	field=sqlrcur.getField(currentrow-1,columnlabel);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column: ",columnlabel);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		if (wasnull) {
 			driver.debugEnd();
 			return null;
@@ -282,8 +282,9 @@ public class SQLRelayResultSet implements ResultSet {
 		throwInvalidColumn(columnlabel);
 		String	field=sqlrcur.getField(currentrow-1,columnlabel);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column: ",columnlabel);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		if (wasnull) {
 			driver.debugEnd();
 			return null;
@@ -303,8 +304,9 @@ public class SQLRelayResultSet implements ResultSet {
 		byte[]	field=sqlrcur.getFieldAsByteArray(
 					currentrow-1,columnindex-1);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column index: ",columnindex);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		InputStream	is=new ByteArrayInputStream(field);
 		driver.debugEnd();
 		return is;
@@ -318,8 +320,9 @@ public class SQLRelayResultSet implements ResultSet {
 		byte[]	field=sqlrcur.getFieldAsByteArray(
 					currentrow-1,columnlabel);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column: ",columnlabel);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		InputStream	is=new ByteArrayInputStream(field);
 		driver.debugEnd();
 		return is;
@@ -355,8 +358,9 @@ public class SQLRelayResultSet implements ResultSet {
 		throwInvalidColumn(columnindex);
 		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column index: ",columnindex);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		boolean	eq=field.equals("1");
 		driver.debugEnd();
 		return eq;
@@ -368,8 +372,9 @@ public class SQLRelayResultSet implements ResultSet {
 		throwInvalidColumn(columnlabel);
 		String	field=sqlrcur.getField(currentrow-1,columnlabel);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column: ",columnlabel);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		boolean	eq=field.equals("1");
 		driver.debugEnd();
 		return eq;
@@ -382,8 +387,9 @@ public class SQLRelayResultSet implements ResultSet {
 		long	field=sqlrcur.getFieldAsInteger(
 					currentrow-1,columnindex-1);
 		wasnull=(sqlrcur.getField(currentrow-1,columnindex-1)==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column index: ",columnindex);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		driver.debugEnd();
 		return (byte)field;
 	}
@@ -395,8 +401,9 @@ public class SQLRelayResultSet implements ResultSet {
 		long	field=sqlrcur.getFieldAsInteger(
 					currentrow-1,columnlabel);
 		wasnull=(sqlrcur.getField(currentrow-1,columnlabel)==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column: ",columnlabel);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		driver.debugEnd();
 		return (byte)field;
 	}
@@ -408,8 +415,9 @@ public class SQLRelayResultSet implements ResultSet {
 		byte[]	field=sqlrcur.getFieldAsByteArray(
 					currentrow-1,columnindex-1);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column index: ",columnindex);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		driver.debugEnd();
 		return field;
 	}
@@ -421,8 +429,9 @@ public class SQLRelayResultSet implements ResultSet {
 		byte[]	field=sqlrcur.getFieldAsByteArray(
 					currentrow-1,columnlabel);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column: ",columnlabel);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		driver.debugEnd();
 		return field;
 	}
@@ -434,8 +443,9 @@ public class SQLRelayResultSet implements ResultSet {
 		throwInvalidColumn(columnindex);
 		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column index: ",columnindex);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		driver.debugEnd();
 		return (wasnull)?null:(new StringReader(field));
 	}
@@ -447,8 +457,9 @@ public class SQLRelayResultSet implements ResultSet {
 		throwInvalidColumn(columnlabel);
 		String	field=sqlrcur.getField(currentrow-1,columnlabel);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column: ",columnlabel);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		driver.debugEnd();
 		return (wasnull)?null:(new StringReader(field));
 	}
@@ -481,7 +492,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugFunction();
 		throwExceptionIfClosed();
 		int	concurrency=ResultSet.CONCUR_READ_ONLY;
-		driver.debugPrintln("concurrency: "+concurrency);
+		driver.debugPrintln("concurrency: ",concurrency);
 		driver.debugEnd();
 		return concurrency;
 	}
@@ -490,7 +501,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugFunction();
 		throwExceptionIfClosed();
 		String	cursorname=null;
-		driver.debugPrintln("cursor name: "+cursorname);
+		driver.debugPrintln("cursor name: ",cursorname);
 		driver.debugEnd();
 		return cursorname;
 	}
@@ -510,8 +521,9 @@ public class SQLRelayResultSet implements ResultSet {
 		throwInvalidColumn(columnindex);
 		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("wasnull: "+wasnull);
+		driver.debugPrintln("column index: ",columnindex);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		// FIXME: use cal
 		// FIXME: field isn't guaranteed to be in iso format
 		Date	dt=null;
@@ -537,8 +549,9 @@ public class SQLRelayResultSet implements ResultSet {
 		throwInvalidColumn(columnlabel);
 		String	field=sqlrcur.getField(currentrow-1,columnlabel);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("wasnull: "+wasnull);
+		driver.debugPrintln("column: ",columnlabel);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		// FIXME: use cal
 		// FIXME: field isn't guaranteed to be in iso format
 		Date	dt=null;
@@ -556,8 +569,9 @@ public class SQLRelayResultSet implements ResultSet {
 		double	field=sqlrcur.getFieldAsDouble(
 					currentrow-1,columnindex-1);
 		wasnull=(sqlrcur.getField(currentrow-1,columnindex-1)==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column index: ",columnindex);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		driver.debugEnd();
 		return field;
 	}
@@ -569,8 +583,9 @@ public class SQLRelayResultSet implements ResultSet {
 		double	field=sqlrcur.getFieldAsDouble(
 					currentrow-1,columnlabel);
 		wasnull=(sqlrcur.getField(currentrow-1,columnlabel)==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column: ",columnlabel);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		driver.debugEnd();
 		return field;
 	}
@@ -579,7 +594,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugFunction();
 		throwExceptionIfClosed();
 		int	direction=ResultSet.FETCH_FORWARD;
-		driver.debugPrintln("direction: "+direction);
+		driver.debugPrintln("direction: ",direction);
 		driver.debugEnd();
 		return direction;
 	}
@@ -588,7 +603,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugFunction();
 		throwExceptionIfClosed();
 		int	size=(int)sqlrcur.getResultSetBufferSize();
-		driver.debugPrintln("size: "+size);
+		driver.debugPrintln("size: ",size);
 		driver.debugEnd();
 		return size;
 	}
@@ -600,8 +615,9 @@ public class SQLRelayResultSet implements ResultSet {
 		float	field=(float)sqlrcur.getFieldAsDouble(
 					currentrow-1,columnindex-1);
 		wasnull=(sqlrcur.getField(currentrow-1,columnindex-1)==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column index: ",columnindex);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		driver.debugEnd();
 		return field;
 	}
@@ -613,8 +629,9 @@ public class SQLRelayResultSet implements ResultSet {
 		float	field=(float)sqlrcur.getFieldAsDouble(
 					currentrow-1,columnlabel);
 		wasnull=(sqlrcur.getField(currentrow-1,columnlabel)==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column: ",columnlabel);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		driver.debugEnd();
 		return field;
 	}
@@ -624,7 +641,7 @@ public class SQLRelayResultSet implements ResultSet {
 		throwExceptionIfClosed();
 		// FIXME: is this correct?
 		int	holdability=ResultSet.CLOSE_CURSORS_AT_COMMIT;
-		driver.debugPrintln("holdability: "+holdability);
+		driver.debugPrintln("holdability: ",holdability);
 		driver.debugEnd();
 		return holdability;
 	}
@@ -636,8 +653,9 @@ public class SQLRelayResultSet implements ResultSet {
 		int	field=(int)sqlrcur.getFieldAsInteger(
 					currentrow-1,columnindex-1);
 		wasnull=(sqlrcur.getField(currentrow-1,columnindex-1)==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column index: ",columnindex);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		driver.debugEnd();
 		return field;
 	}
@@ -649,8 +667,9 @@ public class SQLRelayResultSet implements ResultSet {
 		int	field=(int)sqlrcur.getFieldAsInteger(
 					currentrow-1,columnlabel);
 		wasnull=(sqlrcur.getField(currentrow-1,columnlabel)==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column: ",columnlabel);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		driver.debugEnd();
 		return field;
 	}
@@ -662,8 +681,9 @@ public class SQLRelayResultSet implements ResultSet {
 		long	field=(long)sqlrcur.getFieldAsInteger(
 					currentrow-1,columnindex-1);
 		wasnull=(sqlrcur.getField(currentrow-1,columnindex-1)==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column index: ",columnindex);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		driver.debugEnd();
 		return field;
 	}
@@ -675,8 +695,9 @@ public class SQLRelayResultSet implements ResultSet {
 		long	field=(long)sqlrcur.getFieldAsInteger(
 					currentrow-1,columnlabel);
 		wasnull=(sqlrcur.getField(currentrow-1,columnlabel)==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column: ",columnlabel);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		driver.debugEnd();
 		return field;
 	}
@@ -699,8 +720,9 @@ public class SQLRelayResultSet implements ResultSet {
 		byte[]	field=sqlrcur.getFieldAsByteArray(
 						currentrow-1,columnindex-1);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column index: ",columnindex);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		Reader	r=null;
 		if (!wasnull) {
 			r=(new InputStreamReader(
@@ -718,8 +740,9 @@ public class SQLRelayResultSet implements ResultSet {
 		byte[]	field=sqlrcur.getFieldAsByteArray(
 						currentrow-1,columnlabel);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column: ",columnlabel);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		Reader	r=null;
 		if (!wasnull) {
 			r=(new InputStreamReader(
@@ -760,8 +783,9 @@ public class SQLRelayResultSet implements ResultSet {
 		byte[]	field=sqlrcur.getFieldAsByteArray(
 						currentrow-1,columnindex-1);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column index: ",columnindex);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		try {
 			String	str=null;
 			if (!wasnull) {
@@ -781,8 +805,9 @@ public class SQLRelayResultSet implements ResultSet {
 		byte[]	field=sqlrcur.getFieldAsByteArray(
 						currentrow-1,columnlabel);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("was null: "+wasnull);
+		driver.debugPrintln("column: ",columnlabel);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		try {
 			String	str=null;
 			if (!wasnull) {
@@ -881,7 +906,7 @@ public class SQLRelayResultSet implements ResultSet {
 	public int	getRow() throws SQLException {
 		driver.debugFunction();
 		throwExceptionIfClosed();
-		driver.debugPrintln("current row: "+currentrow);
+		driver.debugPrintln("current row: ",currentrow);
 		driver.debugEnd();
 		return (int)currentrow;
 	}
@@ -912,8 +937,9 @@ public class SQLRelayResultSet implements ResultSet {
 		short	field=(short)sqlrcur.getFieldAsInteger(
 						currentrow-1,columnindex-1);
 		wasnull=(sqlrcur.getField(currentrow-1,columnindex-1)==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("wasnull: "+wasnull);
+		driver.debugPrintln("column index: ",columnindex);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		driver.debugEnd();
 		return field;
 	}
@@ -924,8 +950,9 @@ public class SQLRelayResultSet implements ResultSet {
 		short	field=(short)sqlrcur.getFieldAsInteger(
 						currentrow-1,columnlabel);
 		wasnull=(sqlrcur.getField(currentrow-1,columnlabel)==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("wasnull: "+wasnull);
+		driver.debugPrintln("column: ",columnlabel);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		driver.debugEnd();
 		return field;
 	}
@@ -962,8 +989,9 @@ public class SQLRelayResultSet implements ResultSet {
 		throwInvalidColumn(columnindex);
 		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("wasnull: "+wasnull);
+		driver.debugPrintln("column index: ",columnindex);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		driver.debugEnd();
 		return field;
 	}
@@ -974,8 +1002,9 @@ public class SQLRelayResultSet implements ResultSet {
 		throwInvalidColumn(columnlabel);
 		String	field=sqlrcur.getField(currentrow-1,columnlabel);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("wasnull: "+wasnull);
+		driver.debugPrintln("column: ",columnlabel);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		driver.debugEnd();
 		return field;
 	}
@@ -995,8 +1024,9 @@ public class SQLRelayResultSet implements ResultSet {
 		throwInvalidColumn(columnindex);
 		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("wasnull: "+wasnull);
+		driver.debugPrintln("column index: ",columnindex);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		// FIXME: use cal
 		// FIXME: not guaranteed to be in iso format
 		Time	t=null;
@@ -1022,8 +1052,9 @@ public class SQLRelayResultSet implements ResultSet {
 		throwInvalidColumn(columnlabel);
 		String	field=sqlrcur.getField(currentrow-1,columnlabel);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("wasnull: "+wasnull);
+		driver.debugPrintln("column: ",columnlabel);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		// FIXME: use cal
 		// FIXME: not guaranteed to be in iso format
 		Time	t=null;
@@ -1050,8 +1081,9 @@ public class SQLRelayResultSet implements ResultSet {
 		throwInvalidColumn(columnindex);
 		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("wasnull: "+wasnull);
+		driver.debugPrintln("column index: ",columnindex);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		// FIXME: use cal
 		// FIXME: not guaranteed to be in iso format
 		// FIXME: postgresql ends with timezone offset (eg. -04)
@@ -1079,8 +1111,9 @@ public class SQLRelayResultSet implements ResultSet {
 		throwInvalidColumn(columnlabel);
 		String	field=sqlrcur.getField(currentrow-1,columnlabel);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("wasnull: "+wasnull);
+		driver.debugPrintln("column: ",columnlabel);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		// FIXME: use cal
 		// FIXME: not guaranteed to be in iso format
 		Timestamp	t=null;
@@ -1095,7 +1128,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugFunction();
 		throwExceptionIfClosed();
 		int	type=ResultSet.TYPE_FORWARD_ONLY;
-		driver.debugPrintln("type: "+type);
+		driver.debugPrintln("type: ",type);
 		driver.debugEnd();
 		return type;
 	}
@@ -1107,8 +1140,9 @@ public class SQLRelayResultSet implements ResultSet {
 		throwInvalidColumn(columnindex);
 		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("wasnull: "+wasnull);
+		driver.debugPrintln("column index: ",columnindex);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		InputStream	is=new StringBufferInputStream(field);
 		driver.debugEnd();
 		return is;
@@ -1121,8 +1155,9 @@ public class SQLRelayResultSet implements ResultSet {
 		throwInvalidColumn(columnlabel);
 		String	field=sqlrcur.getField(currentrow-1,columnlabel);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("wasnull: "+wasnull);
+		driver.debugPrintln("column: ",columnlabel);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		InputStream	is=new StringBufferInputStream(field);
 		driver.debugEnd();
 		return is;
@@ -1135,8 +1170,9 @@ public class SQLRelayResultSet implements ResultSet {
 		throwFeatureNotSupportedException();
 		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("wasnull: "+wasnull);
+		driver.debugPrintln("column index: ",columnindex);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		if (wasnull) {
 			driver.debugEnd();
 			return null;
@@ -1158,8 +1194,9 @@ public class SQLRelayResultSet implements ResultSet {
 		throwFeatureNotSupportedException();
 		String	field=sqlrcur.getField(currentrow-1,columnlabel);
 		wasnull=(field==null);
-		driver.debugPrintln("field: "+field);
-		driver.debugPrintln("wasnull: "+wasnull);
+		driver.debugPrintln("column: ",columnlabel);
+		driver.debugPrintln("field: ",field);
+		driver.debugPrintln("was null: ",wasnull);
 		if (wasnull) {
 			driver.debugEnd();
 			return null;
@@ -1191,7 +1228,7 @@ public class SQLRelayResultSet implements ResultSet {
 	public boolean	isAfterLast() throws SQLException {
 		driver.debugFunction();
 		throwExceptionIfClosed();
-		driver.debugPrintln("after last: "+afterlast);
+		driver.debugPrintln("after last: ",afterlast);
 		driver.debugEnd();
 		return afterlast;
 	}
@@ -1199,7 +1236,7 @@ public class SQLRelayResultSet implements ResultSet {
 	public boolean	isBeforeFirst() throws SQLException {
 		driver.debugFunction();
 		throwExceptionIfClosed();
-		driver.debugPrintln("before first: "+beforefirst);
+		driver.debugPrintln("before first: ",beforefirst);
 		driver.debugEnd();
 		return beforefirst;
 	}
@@ -1207,7 +1244,7 @@ public class SQLRelayResultSet implements ResultSet {
 	public boolean	isClosed() throws SQLException {
 		driver.debugFunction();
 		boolean	isclosed=(sqlrcur==null);
-		driver.debugPrintln("is closed: "+isclosed);
+		driver.debugPrintln("is closed: ",isclosed);
 		driver.debugEnd();
 		return isclosed;
 	}
@@ -1216,7 +1253,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugFunction();
 		throwExceptionIfClosed();
 		boolean	isfirst=(currentrow==0);
-		driver.debugPrintln("is first: "+isfirst);
+		driver.debugPrintln("is first: ",isfirst);
 		driver.debugEnd();
 		return isfirst;
 	}
@@ -1224,7 +1261,7 @@ public class SQLRelayResultSet implements ResultSet {
 	public boolean	isLast() throws SQLException {
 		driver.debugFunction();
 		throwExceptionIfClosed();
-		driver.debugPrintln("is last: "+islast);
+		driver.debugPrintln("is last: ",islast);
 		driver.debugEnd();
 		return islast;
 	}
@@ -1275,17 +1312,17 @@ public class SQLRelayResultSet implements ResultSet {
 	public boolean	relative(int rows) throws SQLException {
 		driver.debugFunction();
 		throwExceptionIfClosed();
-		driver.debugPrintln("rows: "+rows);
+		driver.debugPrintln("rows: ",rows);
 		if (rows==0) {
 			driver.debugEnd();
 			return true;
 		}
 		int	newrow=(int)(currentrow+rows);
-		driver.debugPrintln("newrow (before): "+newrow);
+		driver.debugPrintln("newrow (before): ",newrow);
 		if (newrow<1) {
 			newrow=1;
 		}
-		driver.debugPrintln("newrow (after): "+newrow);
+		driver.debugPrintln("newrow (after): ",newrow);
 		boolean	abs=absolute(newrow);
 		driver.debugEnd();
 		return abs;
@@ -1318,7 +1355,7 @@ public class SQLRelayResultSet implements ResultSet {
 	public void setFetchDirection(int direction) throws SQLException {
 		driver.debugFunction();
 		throwExceptionIfClosed();
-		driver.debugPrintln("direction: "+direction);
+		driver.debugPrintln("direction: ",direction);
 		fetchdirection=direction;
 		driver.debugEnd();
 	}
@@ -1326,7 +1363,7 @@ public class SQLRelayResultSet implements ResultSet {
 	public void setFetchSize(int rows) throws SQLException {
 		driver.debugFunction();
 		throwExceptionIfClosed();
-		driver.debugPrintln("fetch size: "+rows);
+		driver.debugPrintln("fetch size: ",rows);
 		sqlrcur.setResultSetBufferSize(rows);
 		driver.debugEnd();
 	}
@@ -2078,6 +2115,7 @@ public class SQLRelayResultSet implements ResultSet {
 	public boolean	wasNull() throws SQLException {
 		driver.debugFunction();
 		throwExceptionIfClosed();
+		driver.debugPrintln("was null: ",wasnull);
 		driver.debugEnd();
 		return wasnull;
 	}
