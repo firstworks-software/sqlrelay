@@ -5,6 +5,8 @@
 		return the version
 	replaced -I./ with -I. for older compilers
 	added --sysconfdir option to sqlrserver-config
+	updated oracleatruntime to load libclntsh into its own namespace, if
+		possible, to work around an openldap conflict
 
 2.1.0 - refactored debugging
 

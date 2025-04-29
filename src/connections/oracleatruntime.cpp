@@ -450,9 +450,22 @@ static bool loadLibraries(stringbuffer *errormessage) {
 	}
 
 	// attempt to open the first library
+	// Use a separate namespace, if possible.  Some versions of libclntsh
+	// have an entire implementation of libldap inside of them, and if we
+	// open it in the default namespace of the app, then it will end up
+	// calling functions from libldap that rudiments was linked against as
+	// part of support for libcurl.  If the versions aren't compatible,
+	// then this can lead to chaos when attempting to use Oracle Unified
+	// Directory.
 	const char	*libname=libnames.getFirst()->getValue();
-	if (!lib.open(libname,true,true)) {
-		goto error;
+	if (dynamiclib::supportsNamespaces()) {
+		if (!lib.openInNewNamespace(libname,true,false)) {
+			goto error;
+		}
+	} else {
+		if (!lib.open(libname,true,true)) {
+			goto error;
+		}
 	}
 
 	// get the functions we need
