@@ -1329,6 +1329,7 @@ void sqlrconfig_xmldom::normalizeTree() {
 		if (!hasprotocol) {
 			listener->setAttributeValue(
 					"protocol",DEFAULT_PROTOCOL);
+			hasprotocol=true;
 		}
 
 		// if various params are missing, but existed in the instance
@@ -1336,14 +1337,17 @@ void sqlrconfig_xmldom::normalizeTree() {
 		if (!hasaddresses && !addresses->isNullNode()) {
 			listener->setAttributeValue("addresses",
 						addresses->getValue());
+			hasaddresses=true;
 		}
 		if (!hassocket && !socket->isNullNode()) {
 			listener->setAttributeValue("socket",
 						socket->getValue());
+			hassocket=true;
 		}
 		if (!hasport && !port->isNullNode()) {
 			listener->setAttributeValue("port",
 						port->getValue());
+			hasport=true;
 		}
 		if (listener->getAttribute("krb")->isNullNode() &&
 						!krb->isNullNode()) {
