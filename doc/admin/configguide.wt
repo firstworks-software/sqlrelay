@@ -276,9 +276,9 @@ C:\\Oracle\\ora12.1
 }}}
 }}}
 
-The oracle_home option is often unnecessary though, as the $ORACLE_HOME environment variable is usually set system-wide.
+The oracle_home option is often unnecessary though, as the ORACLE_HOME environment variable is usually set system-wide.  Also, since Oracle 10g, the TNS_ADMIN environment variable is preferred to ORACLE_HOME, and the tns_admin option can be used to serve the same purpose.  See the [configreference.html#oracle SQL Relay Configuration Reference] for details on the tns_admin option.
 
-The oracle_sid option refers to an entry in the tnsnames.ora file (usually $ORACLE_HOME/network/admin/tnsnames.ora) similar to:
+The oracle_sid option refers to an entry in the tnsnames.ora file (usually $ORACLE_HOME/network/admin/tnsnames.ora or $TNS_ADMIN/tnsnames.ora) similar to:
 
 {{{#!blockquote
 {{{#!code
@@ -295,7 +295,7 @@ ORCL =
 
 ( '''NOTE:''' The tnsnames.ora file must be readable by the user that the instance of SQL Relay runs as.)
 
-If you are using Oracle Instant Client, then it's likely that you don't have an $ORACLE_HOME or a tnsnames.ora file.  In that case, the oracle_sid can be set directly to a tnsnames-style expression and the oracle_home option can be omitted.
+If you are using Oracle Instant Client, then it's likely that you don't have an ORACLE_HOME/TNS_ADMIN, or a tnsnames.ora file.  In that case, the oracle_sid can be set directly to a tnsnames-style expression and the oracle_home/tns_admin option can be omitted.
 
 {{{#!blockquote
 {{{#!code
@@ -403,7 +403,7 @@ C:\\SAP
 }}}
 }}}
 
-The sybase option is often unnecessary though, as the $SYBASE environment variable is usually set system-wide.
+The sybase option is often unnecessary though, as the SYBASE environment variable is usually set system-wide.
 
 On Linux/Unix platforms, the server option refers to an entry in the interfaces (usually $SYBASE/interfaces) file which identifies the database server, similar to:
 
@@ -493,7 +493,7 @@ C:\\Program Files\\IBM Informix Software Bundle
 }}}
 }}}
 
-The informixdir option is often unnecessary, as the $INFORMIXDIR environment variable is usually set system-wide.
+The informixdir option is often unnecessary, as the INFORMIXDIR environment variable is usually set system-wide.
 
 On Linux and Unix platforms, the servername option refers to an entry in the sqlhosts file (usually $INFORMIXDIR/etc/sqlhosts) which identifies the database server, similar to:
 

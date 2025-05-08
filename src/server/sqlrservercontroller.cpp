@@ -5568,8 +5568,8 @@ void sqlrservercontroller::setDatabaseListFormat(
 					sqlrserverlistformat_t listformat) {
 
 	// FIXME: for now, don't remap columns if api calls are used to get
-	// lists, as the the columns won't come back in the "native" format,
-	// but rather the ODBC format
+	// lists, as the the columns won't have an extra NULL at the end that
+	// unsupported columns can be mapped to.
 	//
 	// this "happens to work" for odbc passthrough:
 	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
@@ -5614,8 +5614,8 @@ void sqlrservercontroller::setSchemaListFormat(
 					sqlrserverlistformat_t listformat) {
 
 	// FIXME: for now, don't remap columns if api calls are used to get
-	// lists, as the the columns won't come back in the "native" format,
-	// but rather the ODBC format
+	// lists, as the the columns won't have an extra NULL at the end that
+	// unsupported columns can be mapped to.
 	//
 	// this "happens to work" for odbc passthrough:
 	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
@@ -5661,8 +5661,8 @@ void sqlrservercontroller::setTableListFormat(
 					sqlrserverlistformat_t listformat) {
 
 	// FIXME: for now, don't remap columns if api calls are used to get
-	// lists, as the the columns won't come back in the "native" format,
-	// but rather the ODBC format
+	// lists, as the the columns won't have an extra NULL at the end that
+	// unsupported columns can be mapped to.
 	//
 	// this "happens to work" for odbc passthrough:
 	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
@@ -5707,8 +5707,8 @@ void sqlrservercontroller::setTableTypeListFormat(
 					sqlrserverlistformat_t listformat) {
 
 	// FIXME: for now, don't remap columns if api calls are used to get
-	// lists, as the the columns won't come back in the "native" format,
-	// but rather the ODBC format
+	// lists, as the the columns won't have an extra NULL at the end that
+	// unsupported columns can be mapped to.
 	//
 	// this "happens to work" for odbc passthrough:
 	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
@@ -5754,8 +5754,8 @@ void sqlrservercontroller::setColumnListFormat(
 					sqlrserverlistformat_t listformat) {
 
 	// FIXME: for now, don't remap columns if api calls are used to get
-	// lists, as the the columns won't come back in the "native" format,
-	// but rather the ODBC format
+	// lists, as the the columns won't have an extra NULL at the end that
+	// unsupported columns can be mapped to.
 	//
 	// this "happens to work" for odbc passthrough:
 	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
@@ -5800,8 +5800,8 @@ void sqlrservercontroller::setPrimaryKeyListFormat(
 					sqlrserverlistformat_t listformat) {
 
 	// FIXME: for now, don't remap columns if api calls are used to get
-	// lists, as the the columns won't come back in the "native" format,
-	// but rather the ODBC format
+	// lists, as the the columns won't have an extra NULL at the end that
+	// unsupported columns can be mapped to.
 	//
 	// this "happens to work" for odbc passthrough:
 	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
@@ -5847,8 +5847,8 @@ void sqlrservercontroller::setKeyAndIndexListFormat(
 					sqlrserverlistformat_t listformat) {
 
 	// FIXME: for now, don't remap columns if api calls are used to get
-	// lists, as the the columns won't come back in the "native" format,
-	// but rather the ODBC format
+	// lists, as the the columns won't have an extra NULL at the end that
+	// unsupported columns can be mapped to.
 	//
 	// this "happens to work" for odbc passthrough:
 	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
@@ -5894,8 +5894,8 @@ void sqlrservercontroller::setProcedureParameterListFormat(
 					sqlrserverlistformat_t listformat) {
 
 	// FIXME: for now, don't remap columns if api calls are used to get
-	// lists, as the the columns won't come back in the "native" format,
-	// but rather the ODBC format
+	// lists, as the the columns won't have an extra NULL at the end that
+	// unsupported columns can be mapped to.
 	//
 	// this "happens to work" for odbc passthrough:
 	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
@@ -5941,8 +5941,8 @@ void sqlrservercontroller::setTypeInfoListFormat(
 					sqlrserverlistformat_t listformat) {
 
 	// FIXME: for now, don't remap columns if api calls are used to get
-	// lists, as the the columns won't come back in the "native" format,
-	// but rather the ODBC format
+	// lists, as the the columns won't have an extra NULL at the end that
+	// unsupported columns can be mapped to.
 	//
 	// this "happens to work" for odbc passthrough:
 	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db
@@ -5988,8 +5988,8 @@ void sqlrservercontroller::setProcedureListFormat(
 					sqlrserverlistformat_t listformat) {
 
 	// FIXME: for now, don't remap columns if api calls are used to get
-	// lists, as the the columns won't come back in the "native" format,
-	// but rather the ODBC format
+	// lists, as the the columns won't have an extra NULL at the end that
+	// unsupported columns can be mapped to.
 	//
 	// this "happens to work" for odbc passthrough:
 	// ODBC -> sqlrelay client -> sqlrelay server -> ODBC -> some db

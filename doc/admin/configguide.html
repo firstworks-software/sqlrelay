@@ -381,9 +381,9 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>C<font color="#990000">:\\</font>Oracle<font color="#990000">\\</font>ora12<font color="#990000">.</font><font color="#993399">1</font></tt></pre>
 
 </blockquote>
-<p>The oracle_home option is often unnecessary though, as the $ORACLE_HOME environment variable is usually set system-wide.</p>
+<p>The oracle_home option is often unnecessary though, as the ORACLE_HOME environment variable is usually set system-wide.  Also, since Oracle 10g, the TNS_ADMIN environment variable is preferred to ORACLE_HOME, and the tns_admin option can be used to serve the same purpose.  See the <a href="configreference.html#oracle">SQL Relay Configuration Reference</a> for details on the tns_admin option.</p>
 
-<p>The oracle_sid option refers to an entry in the tnsnames.ora file (usually $ORACLE_HOME/network/admin/tnsnames.ora) similar to:</p>
+<p>The oracle_sid option refers to an entry in the tnsnames.ora file (usually $ORACLE_HOME/network/admin/tnsnames.ora or $TNS_ADMIN/tnsnames.ora) similar to:</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -402,7 +402,7 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>( <b>NOTE:</b> The tnsnames.ora file must be readable by the user that the instance of SQL Relay runs as.)</p>
 
-<p>If you are using Oracle Instant Client, then it's likely that you don't have an $ORACLE_HOME or a tnsnames.ora file.  In that case, the oracle_sid can be set directly to a tnsnames-style expression and the oracle_home option can be omitted.</p>
+<p>If you are using Oracle Instant Client, then it's likely that you don't have an ORACLE_HOME/TNS_ADMIN, or a tnsnames.ora file.  In that case, the oracle_sid can be set directly to a tnsnames-style expression and the oracle_home/tns_admin option can be omitted.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -555,7 +555,7 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>C<font color="#990000">:\\</font>SAP</tt></pre>
 
 </blockquote>
-<p>The sybase option is often unnecessary though, as the $SYBASE environment variable is usually set system-wide.</p>
+<p>The sybase option is often unnecessary though, as the SYBASE environment variable is usually set system-wide.</p>
 
 <p>On Linux/Unix platforms, the server option refers to an entry in the interfaces (usually $SYBASE/interfaces) file which identifies the database server, similar to:</p>
 
@@ -678,7 +678,7 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>C<font color="#990000">:\\</font><font color="#008080">Program</font> Files<font color="#990000">\\</font>IBM Informix Software Bundle</tt></pre>
 
 </blockquote>
-<p>The informixdir option is often unnecessary, as the $INFORMIXDIR environment variable is usually set system-wide.</p>
+<p>The informixdir option is often unnecessary, as the INFORMIXDIR environment variable is usually set system-wide.</p>
 
 <p>On Linux and Unix platforms, the servername option refers to an entry in the sqlhosts file (usually $INFORMIXDIR/etc/sqlhosts) which identifies the database server, similar to:</p>
 

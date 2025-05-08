@@ -213,7 +213,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <a name="connectstring"/><h3>Connect String Options</h3>
 
-<a name="oracle"/><p>For <b>oracle</b> databases, the connect string syntax is "user=USER;password=PASSWORD;oracle_sid=ORACLE_SID;oracle_home=ORACLE_HOME;nls_lang=NLS_LANG;autocommit=yes/no/default;fetchatonce=FETCHATONCE;maxcolumncount=MAXCOLUMNCOUNT;maxfieldsize=MAXFIELDSIZE;faketransactionblocks=yes/no;droptemptables=yes/no;globaltemptables=TABLELIST;lastinsertidfunction=LASTINSERTIDFUNCTION;stmtcachesize=0;rejectduplicatebinds=yes/no;disablekeylookup=yes/no;dbtype=ID"</p>
+<a name="oracle"/><p>For <b>oracle</b> databases, the connect string syntax is "user=USER;password=PASSWORD;oracle_sid=ORACLE_SID;tns_admin=TNS_ADMIN;oracle_home=ORACLE_HOME;nls_lang=NLS_LANG;autocommit=yes/no/default;fetchatonce=FETCHATONCE;maxcolumncount=MAXCOLUMNCOUNT;maxfieldsize=MAXFIELDSIZE;faketransactionblocks=yes/no;droptemptables=yes/no;globaltemptables=TABLELIST;lastinsertidfunction=LASTINSERTIDFUNCTION;stmtcachesize=0;rejectduplicatebinds=yes/no;disablekeylookup=yes/no;dbtype=ID"</p>
 
 <ul>
   <li><b>user</b>: The username SQL Relay should use to log into the database.  Required.</li>
@@ -228,7 +228,8 @@ or a tnsnames-style expression such as:
 <i>oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = localhost.localdomain)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)))</i>
   </blockquote>
 </li>
-  <li><b>oracle_home</b>: The base directory of the Oracle installation to use.  Optional if the ORACLE_HOME environment variable is set.  The SID will be looked up in $ORACLE_HOME/network/admin/tnsnames.ora.  If SQL Relay was built to load the Oracle client libraries at runtime, then the lib subdirectory of this directory will be searched for the client libraries.</li>
+  <li><b>tns_admin</b>: The directory to look for oracle configuration files in.  Optional if the TNS_ADMIN environment variable is set, if the ORACLE_HOME environment varialbe is set, or if the oracle_home parameter is set.  The SID will be looked up in $TNS_ADMIN/tnsnames.ora.</li>
+  <li><b>oracle_home</b>: The base directory of the Oracle installation to use.  Optional if the ORACLE_HOME environment variable is set.  The SID will be looked up in $ORACLE_HOME/network/admin/tnsnames.ora.  If SQL Relay was built to load the Oracle client libraries at runtime, then the lib subdirectory of this directory will be searched for the client libraries.  As such it might be necessary to specify both oracle_home and tns_admin (or both environment variables).</li>
   <li><b>nls_lang</b>: The NLS_LANG to use.  Optional if the NLS_LANG environment variable is set.  Overrides the NLS_LANG environment variable.</li>
   <li><b>autocommit</b>: If set to yes, then each insert, update, or delete is committed immediately.  If set to no, then each insert, update, or delete is only committed when a commit statement is executed.  If set to default then the default behavior (autocommit-off) is observed.  Optional, defaults to default.</li>
   <li><b>fetchatonce</b>: The number of rows that SQL Relay fetches from the database in each round trip.  Defaults to 10. (see <a href="tuning.html#memoryusage">here</a> for more info on this parameter)</li>
