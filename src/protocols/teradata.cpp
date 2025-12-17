@@ -28,20 +28,18 @@
 //		backend that just opens a socket to the server and implements
 //		send() and recv()
 //
-// hybrid - handles the initialHandshake() internally (not fully implemented
+// disabled - handles the initialHandshake() internally (not fully implemented
 //		yet), then afterwards processes and interprets packets and uses
 //		the sqlrelay server API to execute SQL and other commands
 //
-// disabled - handles the initialHandshake() via the teradata_sidechannel auth
+// hybrid - handles the initialHandshake() via the teradata_sidechannel auth
 //		module (which internally does passthrough), but then afterwards
 //		processes and interprets packets and uses the sqlrelay server
 //		API to execute SQL and other commands, the default
-//
-// FIXME: arguably, the naming of disabled and hybrid should be switched
 enum passthroughmode_t {
 	PASSTHROUGHMODE_ENABLED,
-	PASSTHROUGHMODE_HYBRID,
-	PASSTHROUGHMODE_DISABLED
+	PASSTHROUGHMODE_DISABLED,
+	PASSTHROUGHMODE_HYBRID
 };
 
 
@@ -891,22 +889,26 @@ sqlrprotocol_teradata::sqlrprotocol_teradata(sqlrservercontroller *cont,
 
 	// configure passthrough mode
 	debugWrite("passthrough mode - ");
-	if (charstring::compare(cont->getDbType(),"teradata")) {
-		passthroughmode=PASSTHROUGHMODE_DISABLED;
-		debugWrite("disabled...");
-	} else {
-		if (!charstring::compare(
-			parameters->getAttributeValue("passthrough"),"yes")) {
+	if (!charstring::compare(
+		parameters->getAttributeValue("passthrough"),"enabled")) {
+
+		if (!charstring::compare(cont->getDbType(),"teradata")) {
 			passthroughmode=PASSTHROUGHMODE_ENABLED;
 			debugWrite("enabled...");
-		} else if (!charstring::compare(
-			parameters->getAttributeValue("passthrough"),"no")) {
-			passthroughmode=PASSTHROUGHMODE_DISABLED;
-			debugWrite("disabled...");
 		} else {
 			passthroughmode=PASSTHROUGHMODE_HYBRID;
-			debugWrite("hybrid...");
+			debugWrite("disabled (db!=teradata)...");
 		}
+
+	} else if (!charstring::compare(
+		parameters->getAttributeValue("passthrough"),"disabled")) {
+
+		passthroughmode=PASSTHROUGHMODE_DISABLED;
+		debugWrite("disabled...");
+
+	} else {
+		passthroughmode=PASSTHROUGHMODE_HYBRID;
+		debugWrite("hybrid...");
 	}
 
 	// request buffers
@@ -1165,7 +1167,7 @@ clientsessionexitstatus_t sqlrprotocol_teradata::clientSession(
 
 bool sqlrprotocol_teradata::initialHandshake() {
 
-	if (passthroughmode==PASSTHROUGHMODE_DISABLED) {
+	if (passthroughmode==PASSTHROUGHMODE_HYBRID) {
 
 		// FIXME: presumes we're using teradata_sidechannel auth
 		sqlrteradatacredentials	cred;

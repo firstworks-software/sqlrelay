@@ -13,9 +13,9 @@
 		</connections>
 	</instance>
 
-	<instance id="teradatahybridtest" dbase="odbc" translatebindvariables="yes">
+	<instance id="teradataauthtest" dbase="odbc" translatebindvariables="yes">
 		<listeners>
-			<listener protocol="teradata" port="1025" passthrough="hybrid" debug="yes"/>
+			<listener protocol="teradata" port="1025" passthrough="disabled" debug="yes"/>
 		</listeners>
 		<auths>
 			<auth module="sqlrclient_userlist">
