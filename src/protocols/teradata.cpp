@@ -23,6 +23,21 @@
 #endif
 
 // passthrough modes
+//
+// enabled - sends all packets through to the backend, requires a "teradata"
+//		backend that just opens a socket to the server and implements
+//		send() and recv()
+//
+// hybrid - handles the initialHandshake() internally (not fully implemented
+//		yet), then afterwards processes and interprets packets and uses
+//		the sqlrelay server API to execute SQL and other commands
+//
+// disabled - handles the initialHandshake() via the teradata_sidechannel auth
+//		module (which internally does passthrough), but then afterwards
+//		processes and interprets packets and uses the sqlrelay server
+//		API to execute SQL and other commands, the default
+//
+// FIXME: arguably, the naming of disabled and hybrid should be switched
 enum passthroughmode_t {
 	PASSTHROUGHMODE_ENABLED,
 	PASSTHROUGHMODE_HYBRID,
@@ -1152,6 +1167,7 @@ bool sqlrprotocol_teradata::initialHandshake() {
 
 	if (passthroughmode==PASSTHROUGHMODE_DISABLED) {
 
+		// FIXME: presumes we're using teradata_sidechannel auth
 		sqlrteradatacredentials	cred;
 		cred.setClientFileDescriptor(clientsock);
 		return cont->auth(&cred);

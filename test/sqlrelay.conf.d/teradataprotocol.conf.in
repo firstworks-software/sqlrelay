@@ -3,8 +3,25 @@
 
 	<instance id="teradatatest" dbase="odbc" translatebindvariables="yes">
 		<listeners>
-			<listener protocol="teradata" port="1025"/>
+			<listener protocol="teradata" port="1025" debug="yes"/>
 		</listeners>
+		<auths>
+			<auth module="teradata_sidechannel" host="teradata" port="1025"/>
+		</auths>
+		<connections>
+			<connection string="dsn=teradata;user=testuser;password=testpassword;autocommit=yes"/>
+		</connections>
+	</instance>
+
+	<instance id="teradatahybridtest" dbase="odbc" translatebindvariables="yes">
+		<listeners>
+			<listener protocol="teradata" port="1025" passthrough="hybrid" debug="yes"/>
+		</listeners>
+		<auths>
+			<auth module="sqlrclient_userlist">
+				<user user="testuser" password="testpassword"/>
+			</auth>
+		</auths>
 		<auths>
 			<auth module="teradata_sidechannel" host="teradata" port="1025"/>
 		</auths>
