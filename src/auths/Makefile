@@ -137,6 +137,28 @@ installsharedlib-sqlrelay:
 	$(RM) $(libexecdir)/$(SQLR)auth_sqlrclient_sqlrelay.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)auth_sqlrclient_sqlrelay.so so $(MODULESUFFIX)
 
+installsharedlib-oracle:
+	$(MKINSTALLDIRS) $(libexecdir)
+	$(LTINSTALL) $(CP) $(SQLR)auth_oracle_connectstrings.$(LIBEXT) $(libexecdir)
+	$(RM) $(libexecdir)/$(SQLR)auth_oracle_connectstrings.a
+	$(RM) $(libexecdir)/$(SQLR)auth_oracle_connectstrings.$(LIBEXT)
+	$(MODULERENAME) $(libexecdir)/$(SQLR)auth_oracle_connectstrings.so so $(MODULESUFFIX)
+	$(LTINSTALL) $(CP) $(SQLR)auth_oracle_database.$(LIBEXT) $(libexecdir)
+	$(RM) $(libexecdir)/$(SQLR)auth_oracle_database.a
+	$(RM) $(libexecdir)/$(SQLR)auth_oracle_database.$(LIBEXT)
+	$(MODULERENAME) $(libexecdir)/$(SQLR)auth_oracle_database.so so $(MODULESUFFIX)
+	$(LTINSTALL) $(CP) $(SQLR)auth_oracle_userlist.$(LIBEXT) $(libexecdir)
+	$(RM) $(libexecdir)/$(SQLR)auth_oracle_userlist.a
+	$(RM) $(libexecdir)/$(SQLR)auth_oracle_userlist.$(LIBEXT)
+	$(MODULERENAME) $(libexecdir)/$(SQLR)auth_oracle_userlist.so so $(MODULESUFFIX)
+
+installsharedlib-teradata:
+	$(MKINSTALLDIRS) $(libexecdir)
+	$(LTINSTALL) $(CP) $(SQLR)auth_teradata_sidechannel.$(LIBEXT) $(libexecdir)
+	$(RM) $(libexecdir)/$(SQLR)auth_teradata_sidechannel.a
+	$(RM) $(libexecdir)/$(SQLR)auth_teradata_sidechannel.$(LIBEXT)
+	$(MODULERENAME) $(libexecdir)/$(SQLR)auth_teradata_sidechannel.so so $(MODULESUFFIX)
+
 uninstall:
 	$(RM) $(libexecdir)/$(SQLR)auth_default.* \
 		$(libexecdir)/$(SQLR)auth_sqlrclient_connectstrings.* \
@@ -152,6 +174,10 @@ uninstall:
 		$(libexecdir)/$(SQLR)auth_mysql_database.* \
 		$(libexecdir)/$(SQLR)auth_postgresql_connectstrings.* \
 		$(libexecdir)/$(SQLR)auth_postgresql_userlist.* \
+		$(libexecdir)/$(SQLR)auth_oracle_connectstrings.* \
+		$(libexecdir)/$(SQLR)auth_oracle_database.* \
+		$(libexecdir)/$(SQLR)auth_oracle_userlist.* \
+		$(libexecdir)/$(SQLR)auth_teradata_sidechannel.* \
 		$(libexecdir)/$(SQLR)auth_connectstrings.* \
 		$(libexecdir)/$(SQLR)auth_userlist.* \
 		$(libexecdir)/$(SQLR)auth_database.* \

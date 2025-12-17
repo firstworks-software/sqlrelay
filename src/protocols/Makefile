@@ -73,9 +73,33 @@ installsharedlib:
 	$(RM) $(libexecdir)/$(SQLR)protocol_firebird.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)protocol_firebird.so so $(MODULESUFFIX)
 
+installsharedlib-oracle:
+	$(MKINSTALLDIRS) $(libexecdir)
+	$(LTINSTALL) $(CP) $(SQLR)protocol_oracle.$(LIBEXT) $(libexecdir)
+	$(RM) $(libexecdir)/$(SQLR)protocol_oracle.a
+	$(RM) $(libexecdir)/$(SQLR)protocol_oracle.$(LIBEXT)
+	$(MODULERENAME) $(libexecdir)/$(SQLR)protocol_oracle.so so $(MODULESUFFIX)
+
+installsharedlib-tds:
+	$(MKINSTALLDIRS) $(libexecdir)
+	$(LTINSTALL) $(CP) $(SQLR)protocol_tds.$(LIBEXT) $(libexecdir)
+	$(RM) $(libexecdir)/$(SQLR)protocol_tds.a
+	$(RM) $(libexecdir)/$(SQLR)protocol_tds.$(LIBEXT)
+	$(MODULERENAME) $(libexecdir)/$(SQLR)protocol_tds.so so $(MODULESUFFIX)
+
+installsharedlib-teradata:
+	$(MKINSTALLDIRS) $(libexecdir)
+	$(LTINSTALL) $(CP) $(SQLR)protocol_teradata.$(LIBEXT) $(libexecdir)
+	$(RM) $(libexecdir)/$(SQLR)protocol_teradata.a
+	$(RM) $(libexecdir)/$(SQLR)protocol_teradata.$(LIBEXT)
+	$(MODULERENAME) $(libexecdir)/$(SQLR)protocol_teradata.so so $(MODULESUFFIX)
+
 uninstall:
 	$(RM) $(libexecdir)/$(SQLR)protocol_sqlrclient.* \
 		$(libexecdir)/sqlrprotocol_sqlrclient.* \
 		$(libexecdir)/sqlrprotocol_mysql.* \
 		$(libexecdir)/sqlrprotocol_postgresql.* \
-		$(libexecdir)/sqlrprotocol_firebird.*
+		$(libexecdir)/sqlrprotocol_firebird.* \
+		$(libexecdir)/sqlrprotocol_oracle.* \
+		$(libexecdir)/sqlrprotocol_tds.* \
+		$(libexecdir)/sqlrprotocol_teradata.*
