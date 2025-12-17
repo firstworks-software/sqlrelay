@@ -9,6 +9,7 @@
 		possible, to work around an openldap conflict
 	fixed a bug invoved in handling the port specified in instance tag
 	added some install targets for unfinished modules
+	fixed some subtle debug attritbute-related problems
 
 2.1.0 - refactored debugging
 

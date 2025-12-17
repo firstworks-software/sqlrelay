@@ -110,9 +110,6 @@
 // default debug erorr translations
 #define DEFAULT_DEBUG_ERRORTRANSLATIONS false
 
-// default debug protocols
-#define DEFAULT_DEBUG_PROTOCOLS false
-
 // default debug auths
 #define DEFAULT_DEBUG_AUTHS false
 

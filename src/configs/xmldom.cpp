@@ -1899,10 +1899,24 @@ void sqlrconfig_xmldom::normalizeTree() {
 		"queries",
 		NULL
 	};
-	for (const char * const *d=debuggables; *d; d++) {
-		if (hasDebug(debug,*d)) {
-			instance->getFirstTagChild(*d)->
+	for (const char * const *dbg=debuggables; *dbg; dbg++) {
+		if (hasDebug(d,*dbg)) {
+			instance->getFirstTagChild(*dbg)->
 					setAttributeValue("debug","yes");
+		}
+	}
+
+	// handle protocols differently...
+	// We don't want to enable debug on the entire listeners tag, or the
+	// listener itself will also spew debug.  Rather, we need to enable
+	// debug for each individual listener tag of the listeners tag.
+	if (hasDebug(d,"protocols")) {
+		for (domnode *listener=instance->
+					getFirstTagChild("listeners")->
+					getFirstTagChild("listener");
+			!listener->isNullNode();
+			listener=listener->getNextTagSibling("listener")) {
+			listener->setAttributeValue("debug","yes");
 		}
 	}
 
@@ -1949,13 +1963,6 @@ void sqlrconfig_xmldom::normalizeTree() {
 			instance->getFirstTagChild("connections")->
 					setAttributeValue("debug","yes");
 		}
-	}
-
-	// handle protocols specially - it's the listeners tag that needs
-	// debug="yes" for it
-	if (hasDebug(debug,"protocols")) {
-		instance->getFirstTagChild("listeners")->
-					setAttributeValue("debug","yes");
 	}
 }
 

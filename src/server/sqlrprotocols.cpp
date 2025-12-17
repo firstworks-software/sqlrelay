@@ -22,6 +22,8 @@ class sqlrprotocolsprivate {
 sqlrprotocols::sqlrprotocols(sqlrservercontroller *cont, domnode *parameters) :
 					sqlrservermodules(cont,parameters) {
 	pvt=new sqlrprotocolsprivate;
+stdoutput.printf("debug protocols: %d\n",cont->getConfig()->getDebugListeners());
+	setDebug(cont->getConfig()->getDebugListeners());
 }
 
 sqlrprotocols::~sqlrprotocols() {
