@@ -13,6 +13,8 @@
 #include <rudiments/sys.h>
 #include <rudiments/sha256.h>
 
+//#define DEBUG_CLIENT_SEND_RECV 1
+
 //#define DECRYPT 1
 
 #ifdef DECRYPT
@@ -1217,7 +1219,10 @@ bool sqlrprotocol_teradata::copKindCfg() {
 		debugEnd();
 		return false;
 	}
-	parseConfigParcel(parcel,&parcel);
+	if (!parseConfigParcel(parcel,&parcel)) {
+		debugEnd();
+		return false;
+	}
 
 	// if passthrough is enabled then just do that
 	if (passthroughmode==PASSTHROUGHMODE_ENABLED) {
@@ -1322,14 +1327,12 @@ bool sqlrprotocol_teradata::copKindConnect() {
 	// appears to be encrypted with the server's private key
 	// always appears to be 410 bytes for bteq
 	// always appears to be 664 bytes for jdbc
-	debugStart("request");
+	debugWrite("request:");
 	debugHexDump(clientreqdata,clientreqdatasize);
-	debugEnd();
 	bytebuffer	decdata;
 	decrypt(clientreqdata,clientreqdatasize,&decdata);
-	debugStart("decrypted request");
+	debugWrite("decrypted request:");
 	debugHexDump(decdata.getBuffer(),decdata.getSize());
-	debugEnd();
 #endif
 
 	// if passthrough is enabled then just do that
@@ -2117,6 +2120,7 @@ bool sqlrprotocol_teradata::recvRequestFromClient() {
 	clientreqdatasize=(((uint32_t)highordermessagesize)<<16)|
 					((uint32_t)lowordermessagesize);
 
+#ifdef DEBUG_CLIENT_SEND_RECV
 	debugStart("client recv header");
 	debugWrite("version: %d",(int)version);
 	debugWrite("class: %d",(int)messageclass);
@@ -2148,6 +2152,7 @@ bool sqlrprotocol_teradata::recvRequestFromClient() {
 	debugWrite("clientreqdatasize: %d",(int)clientreqdatasize);
 	debugHexDump(clientreqheader,LAN_HEADER_SIZE);
 	debugEnd();
+#endif
 
 
 	// receive lan data
@@ -2158,9 +2163,11 @@ bool sqlrprotocol_teradata::recvRequestFromClient() {
 		return false;
 	}
 
+#ifdef DEBUG_CLIENT_SEND_RECV
 	debugStart("client recv data");
 	debugHexDump(clientreqdata,clientreqdatasize);
 	debugEnd();
+#endif
 
 	return true;
 }
@@ -2285,6 +2292,7 @@ bool sqlrprotocol_teradata::sendResponseToClient() {
 	write(&respheader,hostcharset);
 	write(&respheader,spare,sizeof(spare));
 
+#ifdef DEBUG_CLIENT_SEND_RECV
 	debugStart("client send header");
 	debugWrite("version: %d",(int)version);
 	debugWrite("class: %d",(int)messageclass);
@@ -2316,6 +2324,7 @@ bool sqlrprotocol_teradata::sendResponseToClient() {
 	debugWrite("messagesize: %d",(int)messagesize);
 	debugHexDump(respheader.getBuffer(),respheader.getSize());
 	debugEnd();
+#endif
 
 	// send lan header
 	if (clientsock->write(respheader.getBuffer(),
@@ -2325,10 +2334,12 @@ bool sqlrprotocol_teradata::sendResponseToClient() {
 		return false;
 	}
 
+#ifdef DEBUG_CLIENT_SEND_RECV
 	debugStart("client send data");
 	debugWrite("size: %d",respdata.getSize());
 	debugHexDump(respdata.getBuffer(),respdata.getSize());
 	debugEnd();
+#endif
 
 	if (clientsock->write(respdata.getBuffer(),
 				respdata.getSize())!=
@@ -2469,14 +2480,18 @@ bool sqlrprotocol_teradata::recvResponseFromBackend() {
 bool sqlrprotocol_teradata::forwardBackendResponseToClient() {
 
 	// send whatever we received from the backend to the client
-	/*debugStart("client send header");
+
+#ifdef DEBUG_CLIENT_SEND_RECV
+	debugStart("client send header");
 	debugWrite("size: %d",LAN_HEADER_SIZE);
 	debugHexDump(backendreqheader,LAN_HEADER_SIZE);
 	debugEnd();
 	debugStart("client send data");
 	debugWrite("size: %d",backendreqdatasize);
 	debugHexDump(backendreqdata,backendreqdatasize);
-	debugEnd();*/
+	debugEnd();
+#endif
+
 	if (clientsock->write(backendreqheader,
 				LAN_HEADER_SIZE)!=LAN_HEADER_SIZE) {
 		debugWrite("clientsock write failed");
@@ -3040,14 +3055,6 @@ bool sqlrprotocol_teradata::parseSsoParcel(const byte_t *parcel,
 	}
 	read(ptr,clientpubkey,clientpubkeysize,&ptr);
 
-	if (passthroughmode!=PASSTHROUGHMODE_ENABLED) {
-#ifdef ENCRYPT
-		if (!generateSharedSecret()) {
-			// FIXME: fail somehow
-		}
-#endif
-	}
-
 	debugWrite("unknown1: %d",unknown1);
 	debugWrite("unknown2: %d",unknown2);
 	debugWrite("token:");
@@ -3061,12 +3068,14 @@ bool sqlrprotocol_teradata::parseSsoParcel(const byte_t *parcel,
 		debugWrite("trailing bytes:");
 		debugHexDump(ptr,parceldata+parceldatasize-ptr);
 	}
-	if (passthroughmode!=PASSTHROUGHMODE_ENABLED) {
-		debugWrite("shared secret:");
-		debugHexDump(sharedsecret,sharedsecretsize);
-		debugWrite("sha2 of shared secret:");
-		debugHexDump(sha2sharedsecret,sizeof(sha2sharedsecret));
+
+#ifdef DECRYPT
+	// now that we have the client public key,
+	// we can genrate the shared secret
+	if (!generateSharedSecret()) {
+		return false;
 	}
+#endif
 
 	// return next parcel
 	*parcelout=parceldata+parceldatasize;
@@ -7370,14 +7379,13 @@ void sqlrprotocol_teradata::debugParcelStart(const char *direction,
 						const char *flavorname,
 						uint16_t parcelflavor,
 						uint32_t parceldatasize) {
-	if (getDebug()) {
-		debugStart("%s %s parcel - %d (%d)",
+	debugStart("%s %s parcel - %d (%d)",
 			direction,flavorname,parcelflavor,parceldatasize);
-	}
 }
 
 void sqlrprotocol_teradata::debugParcelEnd(const byte_t *parceldata,
 						uint32_t parceldatasize) {
+	debugWrite("parcel was:");
 	debugHexDump(parceldata,parceldatasize);
 	debugEnd();
 }
@@ -7406,13 +7414,53 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 						bytebuffer *decdata) {
 
 	// FIXME: push down to rudiments
-	debugWrite("decrypting...");
+	debugStart("decrypting");
+
+	// chose a cipher (libcrypto enables PKCS5 padding by default)
+	const EVP_CIPHER	*cipher=NULL;
+	size_t			ivsize=0;
+	switch (negotiatedqop) {
+		case QOP_AES_K128_GCM_PKCS5Padding_SHA2:
+			cipher=EVP_aes_128_gcm();
+			ivsize=12;
+			break;
+		case QOP_AES_K128_CBC_PKCS5Padding_SHA1:
+			cipher=EVP_aes_128_cbc();
+			ivsize=16;
+			break;
+		case QOP_AES_K192_GCM_PKCS5Padding_SHA2:
+			cipher=EVP_aes_192_gcm();
+			ivsize=12;
+			break;
+		case QOP_AES_K192_CBC_PKCS5Padding_SHA1:
+			cipher=EVP_aes_192_cbc();
+			ivsize=16;
+			break;
+		case QOP_AES_K256_GCM_PKCS5Padding_SHA2:
+			cipher=EVP_aes_256_gcm();
+			ivsize=12;
+			break;
+		case QOP_AES_K256_CBC_PKCS5Padding_SHA1:
+			cipher=EVP_aes_256_cbc();
+			ivsize=16;
+			break;
+	}
 
 	// validate the encdata
-	if (encdatasize<16) {
+	if (encdatasize<ivsize) {
 		debugWrite("encdata too small");
+		debugEnd();
 		return false;
 	}
+
+	// get the key...
+	// * presumably from the shared secret, somehow
+	// * needs to be 16/24/32 bytes for AES128/192/256
+	//  * try...
+	//   * left x bits of sha256 hash
+	//   * pbkdf2
+	const byte_t	*key=sha2sharedsecret;
+	uint32_t	keysize=sizeof(sha2sharedsecret);
 
 	// initialize cipher context
 	EVP_CIPHER_CTX	*ctx=EVP_CIPHER_CTX_new();
@@ -7421,76 +7469,17 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 			debugWrite("init cipher context failed");
 			ERR_print_errors_fp(stdout);
 		}
+		debugEnd();
 		return false;
 	}
-
-	// chose a cipher (libcrypto enables PKCS5 padding by default)
-	const EVP_CIPHER	*cipher=NULL;
-	switch (negotiatedqop) {
-		case QOP_AES_K128_GCM_PKCS5Padding_SHA2:
-			cipher=EVP_aes_128_gcm();
-			break;
-		case QOP_AES_K128_CBC_PKCS5Padding_SHA1:
-			cipher=EVP_aes_128_cbc();
-			break;
-		case QOP_AES_K192_GCM_PKCS5Padding_SHA2:
-			cipher=EVP_aes_192_gcm();
-			break;
-		case QOP_AES_K192_CBC_PKCS5Padding_SHA1:
-			cipher=EVP_aes_192_cbc();
-			break;
-		case QOP_AES_K256_GCM_PKCS5Padding_SHA2:
-			cipher=EVP_aes_256_gcm();
-			break;
-		case QOP_AES_K256_CBC_PKCS5Padding_SHA1:
-			cipher=EVP_aes_256_cbc();
-			break;
-	}
-
-	// get the key
-	// * not sure how to generate it
-	// * presumably generated from the shared secret
-	// * needs to be 16/24/32 bytes for AES128/192/256
-	//  * try...
-	//   * left x bits of sha256 hash
-	//   * pbkdf2
-	const byte_t	*key=sha2sharedsecret;
-	uint32_t	keysize=sizeof(sha2sharedsecret);
 	
 	// get the initialization vector
-	//
-	// we need between 12 and 16 bytes for this, depending on the mode
-	//
-	// In this particular packet, request auth, request no, gateway byte,
-	// and host charset are very different than in other packets (and the
-	// request no, gateway byte, and host charset are nonsensical).
-	// Together, these add up to 14 bytes, so it seems likely that they
-	// combine (somehow) to form the iv.  We still need 2 more bytes though.
-	// Maybe the non-zero bytes of the session number?
-	//
-	// Even if these are correct, who knows what order they go in...
-// FIXME: hey... apparently it's semi-conventional to generate a random IV and
-// send it to the other side as the first 16 bytes of the data
-	byte_t		iv[16];
-	byte_t		*ptr=iv;
-	uint16_t	temp16=hostToBE((uint16_t)sessionno);
-	bytestring::copy(ptr,&temp16,sizeof(temp16));
-	ptr+=sizeof(temp16);
-	bytestring::copy(ptr,requestauth,sizeof(requestauth));
-	ptr+=sizeof(requestauth);
-	uint32_t	temp32=hostToBE(requestno);
-	bytestring::copy(ptr,&temp32,sizeof(temp32));
-	ptr+=sizeof(temp32);
-	bytestring::copy(ptr,&gtwbyte,sizeof(gtwbyte));
-	ptr+=sizeof(gtwbyte);
-	bytestring::copy(ptr,&hostcharset,sizeof(hostcharset));
-	ptr+=sizeof(hostcharset);
-	// FIXME: these probably shouldn't be 0
-	/**ptr=0;
-	ptr++;
-	*ptr=0;*/
-
-	// FIXME: SHA1/256 is somehow involved here, maybe as an hmac?
+	// apparently it's semi-conventional to generate a random IV and send
+	// it to the other side, preceding the data
+	byte_t	*iv=new byte_t[ivsize];
+	bytestring::copy(iv,encdata,ivsize);
+	encdata+=ivsize;
+	encdatasize-=ivsize;
 	
 	// initialize the decryption process
 	if (!EVP_DecryptInit_ex(ctx,cipher,NULL,key,iv)) {
@@ -7498,16 +7487,23 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 			debugWrite("decrypt-init failed");
 			ERR_print_errors_fp(stdout);
 		}
+		debugEnd();
 		return false;
 	}
 
-debugWrite("iv:");
-debugHexDump(iv,sizeof(iv));
-debugWrite("block size: %d",EVP_CIPHER_CTX_block_size(ctx));
+debugWrite("cipher: %s",qopstr[negotiatedqop]);
 debugWrite("cipher key size: %d",EVP_CIPHER_CTX_key_length(ctx));
 debugWrite("provided key size: %d",keysize);
+debugWrite("key:");
+debugHexDump(key,keysize);
 debugWrite("cipher iv size: %d",EVP_CIPHER_CTX_iv_length(ctx));
+debugWrite("provided iv size: %d",ivsize);
+debugWrite("iv:");
+debugHexDump(iv,ivsize);
+debugWrite("block size: %d",EVP_CIPHER_CTX_block_size(ctx));
 debugWrite("enc data size: %d",encdatasize);
+
+	// FIXME: SHA1/256 is somehow involved here, maybe as an hmac?
 
 	// begin decrypting
 	// (This assumes that the decrypted data will fit in "out", which is
@@ -7552,6 +7548,9 @@ debugHexDump(out,outsize);
 
 	// clean up
 	EVP_CIPHER_CTX_free(ctx);
+	delete[] iv;
+
+	debugEnd();
 
 	return success;
 }
@@ -7660,6 +7659,9 @@ bool sqlrprotocol_teradata::generateSharedSecret() {
 		sharedsecretsize=result;
 	}
 
+	debugWrite("shared secret:");
+	debugHexDump(sharedsecret,sharedsecretsize);
+
 	// get sha2 hash of the sharedsecret
 	sha256		s256;
 	if (!s256.append(sharedsecret,sharedsecretsize)) {
@@ -7672,6 +7674,10 @@ bool sqlrprotocol_teradata::generateSharedSecret() {
 		return false;
 	}
 	bytestring::copy(sha2sharedsecret,hash,32);
+
+	debugWrite("sha2 of shared secret:");
+	debugHexDump(sha2sharedsecret,sizeof(sha2sharedsecret));
+
 	return true;
 }
 #endif
