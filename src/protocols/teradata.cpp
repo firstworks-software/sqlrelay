@@ -1317,12 +1317,12 @@ bool sqlrprotocol_teradata::copKindConnect() {
 
 #ifdef DECRYPT
 	// FIXME: parse request, it should contain:
-	// * logon parcel - 36
-	// * session option parcel - 114
-	// * connect parcel - 88
-	// * data parcel - 3
+	// * logon parcel - 36 (Teradata CLIv2, page 269)
+	// * session option parcel - 114 (Teradata CLIv2, page 299)
+	// * connect parcel - 88 (Teradata CLIv2, page 251)
+	// * data parcel - 3 (Teradata CLIv2, page 253)
 	// * client attribute parcel - 189
-	// * sso username request parcel - 136
+	// * sso username request parcel - 136 (Teradata CLIv2, page 314)
 	//
 	// appears to be encrypted with the server's private key
 	// always appears to be 410 bytes for bteq
@@ -1343,7 +1343,7 @@ bool sqlrprotocol_teradata::copKindConnect() {
 
 	// FIXME: build response, it should contain:
 	// * success parcel - 8
-	// * sso username response parcel - 137
+	// * sso username response parcel - 137 (Teradata CLIv2, page 314)
 	// * end request parcel - 12
 	//
 	// appears to be encrypted with the client's private key
@@ -2549,6 +2549,7 @@ void sqlrprotocol_teradata::parseParcelHeader(const byte_t *parcel,
 bool sqlrprotocol_teradata::parseClientConfigParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
+	// Teradata CLIv2, page ???
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -2595,6 +2596,7 @@ bool sqlrprotocol_teradata::parseClientConfigParcel(
 bool sqlrprotocol_teradata::parseConfigParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
+	// Teradata CLIv2, page ???
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -2624,6 +2626,7 @@ bool sqlrprotocol_teradata::parseConfigParcel(
 bool sqlrprotocol_teradata::parseAssignParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
+	// Teradata CLIv2, page 248
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -2658,6 +2661,7 @@ bool sqlrprotocol_teradata::parseAssignParcel(
 bool sqlrprotocol_teradata::parseSsoRequestParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
+	// Teradata CLIv2, page ???
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -3021,6 +3025,9 @@ void sqlrprotocol_teradata::kexAlgKeySize(byte_t kex, uint16_t val) {
 
 bool sqlrprotocol_teradata::parseSsoParcel(const byte_t *parcel,
 						const byte_t **parcelout) {
+	// Teradata CLIv2, page ???
+	// FIXME: shouldn't this be the same as parseSsoRequestParcel,
+	// the parcel flavor is the same
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -3088,6 +3095,7 @@ bool sqlrprotocol_teradata::parseSsoParcel(const byte_t *parcel,
 bool sqlrprotocol_teradata::parseLogoffParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
+	// Teradata CLIv2, page 269
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -3117,6 +3125,7 @@ bool sqlrprotocol_teradata::parseLogoffParcel(
 bool sqlrprotocol_teradata::parseOptionsParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
+	// Teradata CLIv2, page 277
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -3242,6 +3251,10 @@ bool sqlrprotocol_teradata::parseOptionsParcel(
 bool sqlrprotocol_teradata::parseGenericReqParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
+	// req - Teradata CLIv2, page 292
+	// fmreq - Teradata CLIv2, page 264
+	// indicreq - Teradata CLIv2, page 266
+	// multipartrequest - Teradata CLIv2, page 274
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -3534,6 +3547,8 @@ void sqlrprotocol_teradata::translateInsertToSelect() {
 bool sqlrprotocol_teradata::parseGenericRunStartupParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
+	// runstartup - Teradata CLIv2, page 299
+	// fmrunstartup - Teradata CLIv2, page 264
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -3566,6 +3581,9 @@ bool sqlrprotocol_teradata::parseGenericRunStartupParcel(
 bool sqlrprotocol_teradata::parseGenericRespParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
+	// resp - Teradata CLIv2, page 293
+	// bigpresp - Teradata CLIv2, page 362
+	// bigkeepresp - Teradata CLIv2, page 362
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -3582,7 +3600,7 @@ bool sqlrprotocol_teradata::parseGenericRespParcel(
 
 	debugParcelStart("recv",
 			(parcelflavor==4)?"resp":
-			((parcelflavor==153)?"bigpresp":"bigkeepresp"),
+			((parcelflavor==153)?"bigresp":"bigkeepresp"),
 			parcelflavor,parceldatasize);
 
 	// parse parcel data...
@@ -3619,6 +3637,7 @@ bool sqlrprotocol_teradata::isBulkLoadData(const byte_t *parcel) {
 bool sqlrprotocol_teradata::parseSetPositionParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
+	// Teradata CLIv2, page 301
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -3649,6 +3668,7 @@ bool sqlrprotocol_teradata::parseSetPositionParcel(
 bool sqlrprotocol_teradata::parseDataParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
+	// Teradata CLIv2, page 253
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -4037,6 +4057,7 @@ void sqlrprotocol_teradata::parseTimestampBind(const byte_t *ptr,
 bool sqlrprotocol_teradata::parseStatementInfoParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
+	// Teradata CLIv2, page 303
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -4280,6 +4301,7 @@ bool sqlrprotocol_teradata::parseParameterExtension(
 bool sqlrprotocol_teradata::parseStatementInfoEndParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
+	// Teradata CLIv2, page 303
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -4309,6 +4331,7 @@ bool sqlrprotocol_teradata::parseStatementInfoEndParcel(
 bool sqlrprotocol_teradata::parseMultipartIndicDataParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
+	// Teradata CLIv2, page 271
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -4448,6 +4471,7 @@ bool sqlrprotocol_teradata::parseMultipartIndicDataParcel(
 bool sqlrprotocol_teradata::parseEndMultipartIndicDataParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
+	// Teradata CLIv2, page 257
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -4476,6 +4500,7 @@ bool sqlrprotocol_teradata::parseEndMultipartIndicDataParcel(
 
 bool sqlrprotocol_teradata::parse215Parcel(const byte_t *parcel,
 						const byte_t **parcelout) {
+	// Teradata CLIv2, page ???
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -4591,6 +4616,7 @@ bool sqlrprotocol_teradata::executeQuery() {
 
 bool sqlrprotocol_teradata::parseCancelParcel(const byte_t *parcel,
 						const byte_t **parcelout) {
+	// Teradata CLIv2, page 250
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -4683,6 +4709,8 @@ void sqlrprotocol_teradata::endParcel() {
 }
 
 void sqlrprotocol_teradata::appendConfigResponseParcel() {
+
+	// Teradata CLIv2, page ???
 
 	debugParcelStart("send","config response",43);
 
@@ -5206,7 +5234,9 @@ void sqlrprotocol_teradata::appendConfigResponseField6() {
 
 void sqlrprotocol_teradata::appendGatewayConfigParcel() {
 
-	debugParcelStart("send","gateway config",43);
+	// Teradata CLIv2, page ???
+
+	debugParcelStart("send","gateway config",165);
 
 	appendSmallParcelHeader(165,66);
 
@@ -5321,6 +5351,8 @@ void sqlrprotocol_teradata::appendGatewayConfigParcel() {
 
 void sqlrprotocol_teradata::appendTd2MechanismParcel() {
 
+	// Teradata CLIv2, page ???
+
 	// bail if disabled
 	if (!td2mechenabled) {
 		return;
@@ -5366,6 +5398,8 @@ void sqlrprotocol_teradata::appendTd2MechanismParcel() {
 
 void sqlrprotocol_teradata::appendTdNegoMechanismParcel() {
 
+	// Teradata CLIv2, page ???
+
 	// bail if disabled
 	if (!tdnegomechenabled) {
 		return;
@@ -5399,6 +5433,8 @@ void sqlrprotocol_teradata::appendTdNegoMechanismParcel() {
 }
 
 void sqlrprotocol_teradata::appendLdapMechanismParcel() {
+
+	// Teradata CLIv2, page ???
 
 	// bail if disabled
 	if (!ldapmechenabled) {
@@ -5434,6 +5470,8 @@ void sqlrprotocol_teradata::appendLdapMechanismParcel() {
 
 void sqlrprotocol_teradata::appendKrbMechanismParcel() {
 
+	// Teradata CLIv2, page ???
+
 	// bail if disabled
 	if (!krbmechenabled) {
 		return;
@@ -5467,6 +5505,8 @@ void sqlrprotocol_teradata::appendKrbMechanismParcel() {
 }
 
 void sqlrprotocol_teradata::appendKrbCompatMechanismParcel() {
+
+	// Teradata CLIv2, page ???
 
 	// bail if disabled
 	if (!krbcompatmechenabled) {
@@ -5502,6 +5542,8 @@ void sqlrprotocol_teradata::appendKrbCompatMechanismParcel() {
 
 void sqlrprotocol_teradata::appendLogonFailureParcel(const char *errorstring) {
 
+	// Teradata CLIv2, page 261
+
 	debugParcelStart("send","failure",9);
 	debugWrite("error: %s",errorstring);
 	debugParcelEnd();
@@ -5527,34 +5569,44 @@ void sqlrprotocol_teradata::setSessionNumber() {
 
 void sqlrprotocol_teradata::appendAssignResponseParcel() {
 
+	// Teradata CLIv2, page 249
+
 	debugParcelStart("send","assign response",101);
 
 	appendSmallParcelHeader(101,94);
 
-	const char	*unknownspaces1="        ";
-	byte_t		unknowndata1[]={
+	const char	*publickey="        ";
+	byte_t		sescopaddr[]={
 		0x01, 0x04, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	};
-	const char	*unknownspaces2="                "
+	const char	*publickeyn="                "
 					"                ";
-	const char	*releaseandversion="16.20.16.20.12.01   ";
+	const char	*relarray="16.20.";
+	const char	*verarray="16.20.12.01   ";
 	uint16_t	hostid=(!getProtocolIsBigEndian())?1025:2049;
-	write(&respdata,unknownspaces1);
-	write(&respdata,unknowndata1,sizeof(unknowndata1));
-	write(&respdata,unknownspaces2);
-	write(&respdata,releaseandversion);
+	write(&respdata,publickey);
+	write(&respdata,sescopaddr,sizeof(sescopaddr));
+	write(&respdata,publickeyn);
+	write(&respdata,relarray);
+	write(&respdata,verarray);
 	write(&respdata,hostid);
-	debugWrite("release and version: %s",
-						releaseandversion);
+	debugWrite("public key exponent: %s",publickey);
+	debugWrite("sescopaddr:");
+	debugHexDump(sescopaddr,sizeof(sescopaddr));
+	debugWrite("public key modulus: %s",publickeyn);
+	debugWrite("release: %s",relarray);
+	debugWrite("version: %s",verarray);
 	debugWrite("host id: %d",hostid);
 
 	debugParcelEnd();
 }
 
 void sqlrprotocol_teradata::appendSsoResponseParcel() {
+
+	// Teradata CLIv2, page ???
 
 	debugParcelStart("send","sso response",134);
 
@@ -5701,6 +5753,10 @@ void sqlrprotocol_teradata::appendSsoResponseParcel() {
 
 void sqlrprotocol_teradata::appendSsoParcel() {
 
+	// Teradata CLIv2, page ???
+	// FIXME: shouldn't this be the same as appendSsoRequestParcel,
+	// the parcel flavor is the same
+
 	debugParcelStart("send","sso",134);
 
 	appendSmallParcelHeader(134,7);
@@ -5716,6 +5772,8 @@ void sqlrprotocol_teradata::appendSsoParcel() {
 }
 
 void sqlrprotocol_teradata::appendSuccessParcel() {
+
+	// Teradata CLIv2, page 312
 
 	// statement number (FIXME: see note in appendEndStatementParcel)
 	uint16_t	statementnumber=(req)?1:0;
@@ -5804,6 +5862,7 @@ void sqlrprotocol_teradata::appendStatementStatusParcel() {
 
 void sqlrprotocol_teradata::appendStatementStatusParcel(
 						uint32_t statementnumber) {
+	// Teradata CLIv2, page 310
 
 	bool	includeext=(req->activity==SQL_SELECT && req->requestmode!='R');
 
@@ -5982,6 +6041,9 @@ void sqlrprotocol_teradata::getFieldFormat(bytebuffer *fieldformat,
 }
 
 void sqlrprotocol_teradata::appendFieldParcel(const char *data, uint16_t size) {
+
+	// Teradata CLIv2, page 262
+
 	debugParcelStart("send","field",18);
 	debugHexDump((const byte_t *)data,size);
 	debugParcelEnd();
@@ -5990,6 +6052,8 @@ void sqlrprotocol_teradata::appendFieldParcel(const char *data, uint16_t size) {
 }
 
 void sqlrprotocol_teradata::appendDataInfoParcel() {
+
+	// Teradata CLIv2, page 253
 
 	uint16_t	fieldcount=cont->colCount(req->cur);
 
@@ -6021,6 +6085,8 @@ void sqlrprotocol_teradata::appendDataInfoParcel() {
 }
 
 void sqlrprotocol_teradata::appendStatementInfoParcel() {
+
+	// Teradata CLIv2, page 303
 
 	appendParcelHeader(169);
 	debugParcelStart("send","statementinformation",169);
@@ -6430,6 +6496,7 @@ void sqlrprotocol_teradata::appendEndQueryExtension() {
 }
 
 void sqlrprotocol_teradata::appendStatementInfoEndParcel() {
+	// Teradata CLIv2, page 310
 	appendParcelHeader(170,0);
 	debugParcelStart("send","statementinformationend",170);
 	debugParcelEnd();
@@ -6511,42 +6578,49 @@ void sqlrprotocol_teradata::backpatchActivityCount() {
 }
 
 void sqlrprotocol_teradata::appendTitleStartParcel() {
+	// Teradata CLIv2, page 313
 	debugParcelStart("send","title start",20);
 	debugParcelEnd();
 	appendParcelHeader(20,0);
 }
 
 void sqlrprotocol_teradata::appendTitleEndParcel() {
+	// Teradata CLIv2, page 313
 	debugParcelStart("send","title end",21);
 	debugParcelEnd();
 	appendParcelHeader(21,0);
 }
 
 void sqlrprotocol_teradata::appendFormatStartParcel() {
+	// Teradata CLIv2, page 265
 	debugParcelStart("send","format start",22);
 	debugParcelEnd();
 	appendParcelHeader(22,0);
 }
 
 void sqlrprotocol_teradata::appendFormatEndParcel() {
+	// Teradata CLIv2, page 265
 	debugParcelStart("send","format end",23);
 	debugParcelEnd();
 	appendParcelHeader(23,0);
 }
 
 void sqlrprotocol_teradata::appendSizeStartParcel() {
+	// Teradata CLIv2, page 302
 	debugParcelStart("send","size start",24);
 	debugParcelEnd();
 	appendParcelHeader(24,0);
 }
 
 void sqlrprotocol_teradata::appendSizeEndParcel() {
+	// Teradata CLIv2, page 301
 	debugParcelStart("send","size end",25);
 	debugParcelEnd();
 	appendParcelHeader(25,0);
 }
 
 void sqlrprotocol_teradata::appendSizeParcel(uint16_t size) {
+	// Teradata CLIv2, page 301
 	debugParcelStart("send","size",26);
 	debugWrite("size: %d",size);
 	debugParcelEnd();
@@ -6555,12 +6629,14 @@ void sqlrprotocol_teradata::appendSizeParcel(uint16_t size) {
 }
 
 void sqlrprotocol_teradata::appendRecStartParcel() {
+	// Teradata CLIv2, page 292
 	debugParcelStart("send","rec start",27);
 	debugParcelEnd();
 	appendParcelHeader(27,0);
 }
 
 void sqlrprotocol_teradata::appendRecEndParcel() {
+	// Teradata CLIv2, page 287
 	debugParcelStart("send","rec end",28);
 	debugParcelEnd();
 	appendParcelHeader(28,0);
@@ -6893,6 +6969,9 @@ void sqlrprotocol_teradata::appendIndicatorModeField(uint16_t col,
 
 void sqlrprotocol_teradata::appendRecordParcel() {
 
+	// record - Teradata CLIv2, page 287
+	// multipartrecord - Teradata CLIv2, page 272
+
 	// FIXME: There's something that's supposed to be different about
 	// multipart records...  Like, if the row is bigger than some
 	// particular size, then the data needs to be split across multiple
@@ -6945,6 +7024,7 @@ void sqlrprotocol_teradata::appendRecordParcel() {
 
 void sqlrprotocol_teradata::appendFailureParcel(const char *errorstring,
 						uint16_t errorsize) {
+	// Teradata CLIv2, page 261
 
 	debugParcelStart("send","failure",9);
 	debugWrite("error: %.*s",errorsize,errorstring);
@@ -6982,6 +7062,8 @@ void sqlrprotocol_teradata::appendFailureParcel(const char *errorstring,
 }
 
 void sqlrprotocol_teradata::appendErrorParcel(const char *errorstring) {
+
+	// Teradata CLIv2, page 259
 
 	uint16_t	errorsize=charstring::getLength(errorstring);
 
@@ -7028,6 +7110,8 @@ void sqlrprotocol_teradata::appendEndStatementParcel() {
 
 void sqlrprotocol_teradata::appendEndStatementParcel(uint16_t statementnumber) {
 
+	// Teradata CLIv2, page 258
+
 	debugParcelStart("send","end statement",11);
 	debugWrite("statement number: %d",statementnumber);
 	debugParcelEnd();
@@ -7038,6 +7122,7 @@ void sqlrprotocol_teradata::appendEndStatementParcel(uint16_t statementnumber) {
 }
 
 void sqlrprotocol_teradata::appendEndRequestParcel() {
+	// Teradata CLIv2, page 257
 	debugParcelStart("send","end request",12);
 	debugParcelEnd();
 	appendParcelHeader(12,0);
@@ -7423,26 +7508,32 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 		case QOP_AES_K128_GCM_PKCS5Padding_SHA2:
 			cipher=EVP_aes_128_gcm();
 			ivsize=12;
+			// FIXME: SHA256 hmac?
 			break;
 		case QOP_AES_K128_CBC_PKCS5Padding_SHA1:
 			cipher=EVP_aes_128_cbc();
 			ivsize=16;
+			// FIXME: SHA1 hmac?
 			break;
 		case QOP_AES_K192_GCM_PKCS5Padding_SHA2:
 			cipher=EVP_aes_192_gcm();
 			ivsize=12;
+			// FIXME: SHA256 hmac?
 			break;
 		case QOP_AES_K192_CBC_PKCS5Padding_SHA1:
 			cipher=EVP_aes_192_cbc();
 			ivsize=16;
+			// FIXME: SHA1 hmac?
 			break;
 		case QOP_AES_K256_GCM_PKCS5Padding_SHA2:
 			cipher=EVP_aes_256_gcm();
 			ivsize=12;
+			// FIXME: SHA256 hmac?
 			break;
 		case QOP_AES_K256_CBC_PKCS5Padding_SHA1:
 			cipher=EVP_aes_256_cbc();
 			ivsize=16;
+			// FIXME: SHA1 hmac?
 			break;
 	}
 
@@ -7456,11 +7547,19 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 	// get the key...
 	// * presumably from the shared secret, somehow
 	// * needs to be 16/24/32 bytes for AES128/192/256
-	//  * try...
-	//   * left x bits of sha256 hash
-	//   * pbkdf2
+	// * FIXME: try...
+	//  * left x bits of sha256 hash (current try)
+	//  * pbkdf2
 	const byte_t	*key=sha2sharedsecret;
 	uint32_t	keysize=sizeof(sha2sharedsecret);
+
+	// get the initialization vector...
+	// apparently it's semi-conventional to generate a random IV and send
+	// it to the other side, preceding the data
+	byte_t	*iv=new byte_t[ivsize];
+	bytestring::copy(iv,encdata,ivsize);
+	encdata+=ivsize;
+	encdatasize-=ivsize;
 
 	// initialize cipher context
 	EVP_CIPHER_CTX	*ctx=EVP_CIPHER_CTX_new();
@@ -7472,14 +7571,6 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 		debugEnd();
 		return false;
 	}
-	
-	// get the initialization vector
-	// apparently it's semi-conventional to generate a random IV and send
-	// it to the other side, preceding the data
-	byte_t	*iv=new byte_t[ivsize];
-	bytestring::copy(iv,encdata,ivsize);
-	encdata+=ivsize;
-	encdatasize-=ivsize;
 	
 	// initialize the decryption process
 	if (!EVP_DecryptInit_ex(ctx,cipher,NULL,key,iv)) {
@@ -7502,8 +7593,6 @@ debugWrite("iv:");
 debugHexDump(iv,ivsize);
 debugWrite("block size: %d",EVP_CIPHER_CTX_block_size(ctx));
 debugWrite("enc data size: %d",encdatasize);
-
-	// FIXME: SHA1/256 is somehow involved here, maybe as an hmac?
 
 	// begin decrypting
 	// (This assumes that the decrypted data will fit in "out", which is
