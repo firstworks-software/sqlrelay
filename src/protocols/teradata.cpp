@@ -13,6 +13,23 @@
 #include <rudiments/sys.h>
 #include <rudiments/sha256.h>
 
+// NOTE:
+// Teradata CLIv2 refers to:
+// Teradata Call-Level Interface Version 2 Release 16.10 B035-2418-058K May 2017
+//
+// Teradata CLIv2 Debug Facility and Wire Protocol refers to:
+// https://downloads.teradata.com/connectivity/articles/cliv2-debug-facility-and-wire-protocol (no longer available)
+//
+// parcel.h refers to:
+// /opt/teradata/client/16.20/include/parcel.h
+//
+// TdgssLibraryConfigFile.xml refers to:
+// /opt/teradata/tdat/tdgss/16.20.12.01/etc/TdgssLibraryConfigFile.xml
+//
+// TdgssUserConfigFile.xml refers to:
+// /opt/teradata/tdat/tdgss/site/TdgssUserConfigFile.xml
+
+
 //#define DEBUG_CLIENT_SEND_RECV 1
 //#define DEBUG_PARCEL_END 1
 
@@ -46,7 +63,96 @@ enum passthroughmode_t {
 };
 
 
-// auth mechs
+// algorithm names
+// see TdgssLibraryConfigFile.xml <LegalValues><AlgorithmName>
+#define	ALG_NONE	0
+#define	ALG_BLOWFISH	1
+#define	ALG_AES		2
+#define	ALG_MD5		3
+#define	ALG_SHA1	4
+#define	ALG_DH		5
+#define	ALG_SHA256	6
+#define	ALG_SHA512	7
+const char	*algstr[]={
+	"none",
+	"Blowfish",
+	"AES",
+	"MD5",
+	"SHA1",
+	"DH",
+	"SHA256",
+	"SHA512"
+};
+
+// confidentiality algorithm modes
+// see TdgssLibraryConfigFile.xml <LegalValues><Mode>
+#define	CONF_ALG_MODE_NONE	0
+#define	CONF_ALG_MODE_CBC	1
+#define	CONF_ALG_MODE_CFB	2
+#define	CONF_ALG_MODE_ECB	3
+#define	CONF_ALG_MODE_OFB	4
+#define	CONF_ALG_MODE_GCM	5
+#define	CONF_ALG_MODE_CCM	6
+#define	CONF_ALG_MODE_CTR	7
+const char	*confalgmodestr[]={
+	"none",
+	"CBC",
+	"CFB",
+	"ECB",
+	"OFB",
+	"GCM",
+	"CCM",
+	"CTR"
+};
+
+// confidentiality algorithm pading
+// see TdgssLibraryConfigFile.xml <LegalValues><Padding>
+#define	CONF_ALG_PADDING_NONE		0
+#define	CONF_ALG_PADDING_OAEP		1
+#define	CONF_ALG_PADDING_PKCS1		3
+#define	CONF_ALG_PADDING_PKCS5		4
+#define	CONF_ALG_PADDING_SSL3		5
+const char	*confalgpaddingstr[]={
+	"none",
+	"OAEP with digest and MGF padding",
+	"",
+	"PKCS1 padding",
+	"PKCS5 padding",
+	"SSL3 padding"
+};
+
+// auth mechanism fields
+// see TdgssLibraryConfigFile.xml <LegalValues><MechanismProperties>
+// many more are defined, but these are the ones we use
+#define MECHCONFIGFIELD_DEFAULT	16
+#define MECHCONFIGFIELD_RANK	17
+
+// Quality-of-Protections
+// where did I get these from?
+// these (and more) are sort-of defined in TdgssLibraryConfigFile.xml
+// <GlobalQOPs>, but without corresponding ids
+#define	QOP_NONE				0
+#define	QOP_AES_K128_GCM_PKCS5Padding_SHA2	1
+#define	QOP_AES_K128_CBC_PKCS5Padding_SHA1	2
+#define	QOP_AES_K192_GCM_PKCS5Padding_SHA2	3
+#define	QOP_AES_K192_CBC_PKCS5Padding_SHA1	4
+#define	QOP_AES_K256_GCM_PKCS5Padding_SHA2	5
+#define	QOP_AES_K256_CBC_PKCS5Padding_SHA1	6
+const char	*qopstr[]={
+	"NONE",
+	"AES_K128_GCM_PKCS5Padding_SHA2",
+	"AES_K128_CBC_PKCS5Padding_SHA1",
+	"AES_K192_GCM_PKCS5Padding_SHA2",
+	"AES_K192_CBC_PKCS5Padding_SHA1",
+	"AES_K256_GCM_PKCS5Padding_SHA2",
+	"AES_K256_CBC_PKCS5Padding_SHA1"
+};
+
+
+// mechanisms
+// where did I get these from?
+// these (and more) are sort-of defined in TdgssLibraryConfigFile.xml
+// <Mechanisms>, but without corresponding ids
 #define	MECH_NONE	0
 #define	MECH_TD2	1
 #define	MECH_TDNEGO	2
@@ -82,102 +188,11 @@ byte_t	krbcompatmechoid[]={
 };
 
 
-// encryption
-#define	SUPPORTED_ALGORITHMS	0xE1
-#define	SUPPORTED_ALGORITHM	0xE2
-
-#define CONF_ALG		0xD0
-#define INT_ALG			0xD1
-#define KEX_ALG			0xD2
-#define CONF_ALG_MODE		0xD3
-#define CONF_ALG_PADDING	0xD4
-#define CONF_ALG_KEY_SIZE	0xD5
-#define KEX_ALG_KEY_SIZE	0xD6
-const char	*algfieldname[]={
-	"conf alg",		// 0xD0
-	"int alg",		// 0xD1
-	"kex alg",		// 0xD2
-	"mode",			// 0xD3
-	"padding",		// 0xD4
-	"conf alg key size",	// 0xD5
-	"kex alg key size"	// 0xD6
-};
-
-
-// (values correspond to <LegalValues> section of TdgssLibraryConfigFile.xml)
-#define	ALG_NONE	0x00
-#define	ALG_BLOWFISH	0x01
-#define	ALG_AES		0x02
-#define	ALG_MD5		0x03
-#define	ALG_SHA1	0x04
-#define	ALG_DH		0x05
-#define	ALG_SHA256	0x06
-#define	ALG_SHA512	0x07
-const char	*algstr[]={
-	"none",
-	"Blowfish",
-	"AES",
-	"MD5",
-	"SHA1",
-	"DH",
-	"SHA256",
-	"SHA512"
-};
-#define	CONF_ALG_MODE_NONE	0x00
-#define	CONF_ALG_MODE_CBC	0x01
-#define	CONF_ALG_MODE_CFB	0x02
-#define	CONF_ALG_MODE_ECB	0x03
-#define	CONF_ALG_MODE_OFB	0x04
-#define	CONF_ALG_MODE_GCM	0x05
-#define	CONF_ALG_MODE_CCM	0x06
-#define	CONF_ALG_MODE_CTR	0x07
-const char	*confalgmodestr[]={
-	"none",
-	"CBC",
-	"CFB",
-	"ECB",
-	"OFB",
-	"GCM",
-	"CCM",
-	"CTR"
-};
-#define	CONF_ALG_PADDING_NONE		0x00
-#define	CONF_ALG_PADDING_OAEP		0x01
-#define	CONF_ALG_PADDING_UNKNOWN	0x02
-#define	CONF_ALG_PADDING_PKCS1		0x03
-#define	CONF_ALG_PADDING_PKCS5		0x04
-#define	CONF_ALG_PADDING_SSL3		0x05
-const char	*confalgpaddingstr[]={
-	"none",
-	"OAEP with digest and MGF padding",
-	"???",
-	"PKCS1 padding",
-	"PKCS5 padding",
-	"SSL3 padding"
-};
-#define	QOP_NONE				0
-#define	QOP_AES_K128_GCM_PKCS5Padding_SHA2	1
-#define	QOP_AES_K128_CBC_PKCS5Padding_SHA1	2
-#define	QOP_AES_K192_GCM_PKCS5Padding_SHA2	3
-#define	QOP_AES_K192_CBC_PKCS5Padding_SHA1	4
-#define	QOP_AES_K256_GCM_PKCS5Padding_SHA2	5
-#define	QOP_AES_K256_CBC_PKCS5Padding_SHA1	6
-const char	*qopstr[]={
-	"NONE",
-	"AES_K128_GCM_PKCS5Padding_SHA2",
-	"AES_K128_CBC_PKCS5Padding_SHA1",
-	"AES_K192_GCM_PKCS5Padding_SHA2",
-	"AES_K192_CBC_PKCS5Padding_SHA1",
-	"AES_K256_GCM_PKCS5Padding_SHA2",
-	"AES_K256_CBC_PKCS5Padding_SHA1"
-};
-
-
 #define LAN_HEADER_SIZE	52
 
 
 // kinds of messages
-// from Teradata CLIv2 Debug Facility and Wire Protocol
+// see Teradata CLIv2 Debug Facility and Wire Protocol
 #define COPKIND_ASSIGN		1
 #define COPKIND_REASSIGN	2
 #define COPKIND_CONNECT		3
@@ -196,6 +211,7 @@ const char	*qopstr[]={
 
 
 // client config fields
+// see pachet.h
 #define	CLIENTCONFIGFIELD_VERSION		1
 #define	CLIENTCONFIGFIELD_GSS			2
 #define	CLIENTCONFIGFIELD_RECOVERABLE_PROTOCOL	3
@@ -206,6 +222,7 @@ const char	*qopstr[]={
 #define	CLIENTCONFIGFIELD_NEGOTIATE_MECH	11
 
 // gateway config fields
+// see pachet.h
 #define	GWCONFIGFIELD_SSO			1
 #define	GWCONFIGFIELD_GSS			2
 #define	GWCONFIGFIELD_UTF			3
@@ -217,9 +234,31 @@ const char	*qopstr[]={
 #define	GWCONFIGFIELD_NEGOTIATE_MECH		12
 
 
+// sso request fields
+// where did I get these from?  did I just figure them out from the trace?
+#define	SUPPORTED_ALGORITHMS	0xE1
+#define	SUPPORTED_ALGORITHM	0xE2
+
+#define CONF_ALG		0xD0
+#define INT_ALG			0xD1
+#define KEX_ALG			0xD2
+#define CONF_ALG_MODE		0xD3
+#define CONF_ALG_PADDING	0xD4
+#define CONF_ALG_KEY_SIZE	0xD5
+#define KEX_ALG_KEY_SIZE	0xD6
+const char	*algfieldname[]={
+	"conf alg",
+	"int alg",
+	"kex alg",
+	"mode",
+	"padding",
+	"conf alg key size",
+	"kex alg key size"
+};
+
 
 // activity types
-// from Teradata CLIv2 doc
+// see Teradata CLIv2
 #define NOT_AVAILABLE 0
 #define SQL_SELECT 1
 #define SQL_INSERT 2
@@ -706,7 +745,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		bool	parseEndMultipartIndicDataParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout);
-		bool	parse215Parcel(const byte_t *parcel,
+		bool	parseSlobResponseParcel(const byte_t *parcel,
 					const byte_t **parcelout);
 		void	parseUsing();
 		void	translateInsertToSelect();
@@ -727,8 +766,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		void	appendParcelHeader(uint16_t flavor);
 		void	endParcel();
 		void	appendConfigResponseParcel();
-		void	appendConfigResponseParcelHeader();
-		void	appendConfigResponseField78();
+		void	appendConfigResponseFixedPortion();
+		void	appendConfigResponseIFPs();
+		void	appendConfigResponseAMPs();
+		void	appendConfigResponseCharSets();
+		void	appendConfigResponseInDoubtAndHasFields();
 		void	appendConfigResponseField84();
 		void	appendConfigResponseField49();
 		void	appendConfigResponseField9();
@@ -736,13 +778,16 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		void	appendConfigResponseField11();
 		void	appendConfigResponseField12();
 		void	appendConfigResponseField13();
-		void	appendConfigResponseVersions();
 		void	appendConfigResponseField14();
 		void	appendConfigResponseField15();
 		void	appendConfigResponseField16();
 		void	appendConfigResponseField6();
 		void	appendGatewayConfigParcel();
+		void	appendHasFields();
 		void	appendTd2MechanismParcel();
+		void	appendMechOid(byte_t *oid, uint32_t size);
+		void	appendDefaultMech();
+		void	appendMechRank(uint32_t rank);
 		void	appendTdNegoMechanismParcel();
 		void	appendLdapMechanismParcel();
 		void	appendKrbMechanismParcel();
@@ -1261,11 +1306,21 @@ bool sqlrprotocol_teradata::copKindCfg() {
 
 	appendConfigResponseParcel();
 	appendGatewayConfigParcel();
-	appendTd2MechanismParcel();
-	appendTdNegoMechanismParcel();
-	appendLdapMechanismParcel();
-	appendKrbMechanismParcel();
-	appendKrbCompatMechanismParcel();
+	if (td2mechenabled) {
+		appendTd2MechanismParcel();
+	}
+	if (tdnegomechenabled) {
+		appendTdNegoMechanismParcel();
+	}
+	if (ldapmechenabled) {
+		appendLdapMechanismParcel();
+	}
+	if (krbmechenabled) {
+		appendKrbMechanismParcel();
+	}
+	if (krbcompatmechenabled) {
+		appendKrbCompatMechanismParcel();
+	}
 
 	debugEnd();
 
@@ -1341,16 +1396,16 @@ bool sqlrprotocol_teradata::copKindConnect() {
 	// parse request
 	debugStart("copkind_connect");
 
-#ifdef DECRYPT
 	// FIXME: parse request, it should contain:
-	// * logon parcel - 36 (Teradata CLIv2, page 269)
-	// * session option parcel - 114 (Teradata CLIv2, page 299)
-	// * connect parcel - 88 (Teradata CLIv2, page 251)
-	// * data parcel - 3 (Teradata CLIv2, page 253)
+	// * logon parcel - 36 (see Teradata CLIv2, page 269)
+	// * session option parcel - 114 (see Teradata CLIv2, page 299)
+	// * connect parcel - 88 (see Teradata CLIv2, page 251)
+	// * data parcel - 3 (see Teradata CLIv2, page 253)
 	// * client attribute parcel - 189
-	// * sso username request parcel - 136 (Teradata CLIv2, page 314)
-	//
-	// appears to be encrypted with the server's private key
+	// * sso username request parcel - 136 (see Teradata CLIv2, page 314)
+
+#ifdef DECRYPT
+	// appears to be encrypted (with the client's private key?)
 	// always appears to be 410 bytes for bteq
 	// always appears to be 664 bytes for jdbc
 	debugWrite("request:");
@@ -1368,11 +1423,11 @@ bool sqlrprotocol_teradata::copKindConnect() {
 	}
 
 	// FIXME: build response, it should contain:
-	// * success parcel - 8
-	// * sso username response parcel - 137 (Teradata CLIv2, page 314)
-	// * end request parcel - 12
+	// * success parcel - 8 (see Teradata CLIv2, page 312)
+	// * sso username response parcel - 137 (see Teradata CLIv2, page 314)
+	// * end request parcel - 12 (see Teradata CLIv2, page 257)
 	//
-	// appears to be encrypted with the client's private key
+	// appears to be encrypted (with the server's private key?)
 	// always appears to be 205 bytes
 	respdata.clear();
 
@@ -1714,7 +1769,7 @@ bool sqlrprotocol_teradata::copKindStart() {
 			// to implement this.
 		}
 
-		parse215Parcel(parcel,&parcel);
+		parseSlobResponseParcel(parcel,&parcel);
 
 		if (!parseGenericRespParcel(parcel,&parcel)) {
 			retval=false;
@@ -2575,7 +2630,8 @@ void sqlrprotocol_teradata::parseParcelHeader(const byte_t *parcel,
 bool sqlrprotocol_teradata::parseClientConfigParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
-	// see parcel.h
+
+	// see parcel.h  - pclclientconfig_t
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -2656,7 +2712,8 @@ bool sqlrprotocol_teradata::parseClientConfigParcel(
 bool sqlrprotocol_teradata::parseConfigParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
-	// Teradata CLIv2, page ???
+
+	// see parcel.h - PclConfigType
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -2673,7 +2730,7 @@ bool sqlrprotocol_teradata::parseConfigParcel(
 
 	debugParcelStart("recv","config",parcelflavor,parceldatasize);
 
-	// no parcel data to parse (may not always be the case though)
+	// no parcel data to parse
 
 	// return next parcel
 	*parcelout=parceldata+parceldatasize;
@@ -2686,7 +2743,7 @@ bool sqlrprotocol_teradata::parseConfigParcel(
 bool sqlrprotocol_teradata::parseAssignParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
-	// Teradata CLIv2, page 248
+	// see Teradata CLIv2, page 248
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -2721,8 +2778,8 @@ bool sqlrprotocol_teradata::parseAssignParcel(
 bool sqlrprotocol_teradata::parseSsoRequestParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
-	// Teradata CLIv2, page ???
-	// FIXME: how'd I even figure out the stuff that I did figure out here?
+
+	// see parcel.h - pclssoreq_t
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -3086,10 +3143,11 @@ void sqlrprotocol_teradata::kexAlgKeySize(byte_t kex, uint16_t val) {
 
 bool sqlrprotocol_teradata::parseSsoParcel(const byte_t *parcel,
 						const byte_t **parcelout) {
-	// Teradata CLIv2, page ???
+
+	// see parcel.h - pclssoreq_t
+	//
 	// FIXME: shouldn't this be the same as parseSsoRequestParcel,
 	// the parcel flavor is the same
-	// FIXME: how'd I even figure out the stuff that I did figure out here?
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -3157,7 +3215,7 @@ bool sqlrprotocol_teradata::parseSsoParcel(const byte_t *parcel,
 bool sqlrprotocol_teradata::parseLogoffParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
-	// Teradata CLIv2, page 269
+	// see Teradata CLIv2, page 269
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -3187,7 +3245,7 @@ bool sqlrprotocol_teradata::parseLogoffParcel(
 bool sqlrprotocol_teradata::parseOptionsParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
-	// Teradata CLIv2, page 277
+	// see Teradata CLIv2, page 277
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -3313,10 +3371,10 @@ bool sqlrprotocol_teradata::parseOptionsParcel(
 bool sqlrprotocol_teradata::parseGenericReqParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
-	// req - Teradata CLIv2, page 292
-	// fmreq - Teradata CLIv2, page 264
-	// indicreq - Teradata CLIv2, page 266
-	// multipartrequest - Teradata CLIv2, page 274
+	// req - see Teradata CLIv2, page 292
+	// fmreq - see Teradata CLIv2, page 264
+	// indicreq - see Teradata CLIv2, page 266
+	// multipartrequest - see Teradata CLIv2, page 274
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -3609,8 +3667,9 @@ void sqlrprotocol_teradata::translateInsertToSelect() {
 bool sqlrprotocol_teradata::parseGenericRunStartupParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
-	// runstartup - Teradata CLIv2, page 299
-	// fmrunstartup - Teradata CLIv2, page 264
+
+	// runstartup - see Teradata CLIv2, page 299
+	// fmrunstartup - see Teradata CLIv2, page 264
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -3643,9 +3702,10 @@ bool sqlrprotocol_teradata::parseGenericRunStartupParcel(
 bool sqlrprotocol_teradata::parseGenericRespParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
-	// resp - Teradata CLIv2, page 293
-	// bigpresp - Teradata CLIv2, page 362
-	// bigkeepresp - Teradata CLIv2, page 362
+
+	// resp - see Teradata CLIv2, page 293
+	// bigpresp - see Teradata CLIv2, page 362
+	// bigkeepresp - see Teradata CLIv2, page 362
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -3699,7 +3759,7 @@ bool sqlrprotocol_teradata::isBulkLoadData(const byte_t *parcel) {
 bool sqlrprotocol_teradata::parseSetPositionParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
-	// Teradata CLIv2, page 301
+	// see Teradata CLIv2, page 301
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -3730,7 +3790,7 @@ bool sqlrprotocol_teradata::parseSetPositionParcel(
 bool sqlrprotocol_teradata::parseDataParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
-	// Teradata CLIv2, page 253
+	// see Teradata CLIv2, page 253
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -4119,7 +4179,7 @@ void sqlrprotocol_teradata::parseTimestampBind(const byte_t *ptr,
 bool sqlrprotocol_teradata::parseStatementInfoParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
-	// Teradata CLIv2, page 303
+	// see Teradata CLIv2, page 303
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -4363,7 +4423,7 @@ bool sqlrprotocol_teradata::parseParameterExtension(
 bool sqlrprotocol_teradata::parseStatementInfoEndParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
-	// Teradata CLIv2, page 303
+	// see Teradata CLIv2, page 303
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -4393,7 +4453,7 @@ bool sqlrprotocol_teradata::parseStatementInfoEndParcel(
 bool sqlrprotocol_teradata::parseMultipartIndicDataParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
-	// Teradata CLIv2, page 271
+	// see Teradata CLIv2, page 271
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -4533,7 +4593,7 @@ bool sqlrprotocol_teradata::parseMultipartIndicDataParcel(
 bool sqlrprotocol_teradata::parseEndMultipartIndicDataParcel(
 					const byte_t *parcel,
 					const byte_t **parcelout) {
-	// Teradata CLIv2, page 257
+	// see Teradata CLIv2, page 257
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -4560,9 +4620,9 @@ bool sqlrprotocol_teradata::parseEndMultipartIndicDataParcel(
 	return true;
 }
 
-bool sqlrprotocol_teradata::parse215Parcel(const byte_t *parcel,
+bool sqlrprotocol_teradata::parseSlobResponseParcel(const byte_t *parcel,
 						const byte_t **parcelout) {
-	// Teradata CLIv2, page ???
+	// see parcel.h - PclSLOBResponse
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -4678,7 +4738,7 @@ bool sqlrprotocol_teradata::executeQuery() {
 
 bool sqlrprotocol_teradata::parseCancelParcel(const byte_t *parcel,
 						const byte_t **parcelout) {
-	// Teradata CLIv2, page 250
+	// see Teradata CLIv2, page 250
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -4772,14 +4832,17 @@ void sqlrprotocol_teradata::endParcel() {
 
 void sqlrprotocol_teradata::appendConfigResponseParcel() {
 
-	// Teradata CLIv2, page ???
+	// see parcel.h - PclConfigRspType
 
 	debugParcelStart("send","config response",43);
 
 	appendSmallParcelHeader(43,538);
 
-	appendConfigResponseParcelHeader();
-	appendConfigResponseField78();
+	appendConfigResponseFixedPortion();
+	appendConfigResponseIFPs();
+	appendConfigResponseAMPs();
+	appendConfigResponseCharSets();
+	appendConfigResponseInDoubtAndHasFields();
 	appendConfigResponseField84();
 	appendConfigResponseField49();
 	appendConfigResponseField9();
@@ -4787,7 +4850,6 @@ void sqlrprotocol_teradata::appendConfigResponseParcel() {
 	appendConfigResponseField11();
 	appendConfigResponseField12();
 	appendConfigResponseField13();
-	appendConfigResponseVersions();
 	appendConfigResponseField14();
 	appendConfigResponseField15();
 	appendConfigResponseField16();
@@ -4796,115 +4858,151 @@ void sqlrprotocol_teradata::appendConfigResponseParcel() {
 	debugParcelEnd();
 }
 
-void sqlrprotocol_teradata::appendConfigResponseParcelHeader() {
+void sqlrprotocol_teradata::appendConfigResponseFixedPortion() {
 
-	// Values corresponding to settings in TdgssUserConfigFile.xml?
+	// see parcel.h - PclConfigRspType
 
-	// header...
-	uint32_t	unknown1=1000;
-	uint32_t	unknown2=1000;
-	uint16_t	unknown3=120;
-	uint16_t	unknown4=1;
-	// maybe?  0-30719 is the range for vprocids
-	uint16_t	vprocid=30719;
-	uint16_t	unknown5=0;
-	uint16_t	unknown6=2;
-	uint16_t	unknown7=0;
-	uint16_t	unknown8=1;
+	// session/request numbers...
+	uint32_t	firstsessionno=1000;
+	uint32_t	firstrequestno=1000;
+	uint16_t	maxsessioncount=120;
+	write(&respdata,firstsessionno);
+	write(&respdata,firstrequestno);
+	write(&respdata,maxsessioncount);
+	debugWrite("first session number: %d",firstsessionno);
+	debugWrite("first request number: %d",firstrequestno);
+	debugWrite("max session count: %d",maxsessioncount);
+}
+
+void sqlrprotocol_teradata::appendConfigResponseIFPs() {
+
+	// see parcel.h - PclConfigRspType, IFPrec
+
+	// IFP count...
+	// (FIXME: variable number of these sometimes?)
+	uint16_t	ifpcount=1;
+	write(&respdata,ifpcount);
+
+	// (v)IFP ((virtual) interface processor) record(s)...
+	uint16_t	ifpid=30719;
+	byte_t		ifpstate=0;
+	byte_t		ifppad=0;
+	write(&respdata,ifpid);
+	write(&respdata,ifpstate);
+	write(&respdata,ifppad);
+	debugStart("IFP %d",ifpid);
+	debugWrite("state: %d",ifpstate);
+	debugEnd();
+}
+
+void sqlrprotocol_teradata::appendConfigResponseAMPs() {
+
+	// see parcel.h - PclConfigRspType, AMPArray
+
+	// AMP (access module processor) count...
+	// (FIXME: variable number of these sometimes?)
+	uint16_t	ampcount=2;
+	write(&respdata,ampcount);
+
+	// AMP records...
+	uint16_t	amp[]={0,1};
+	debugStart("AMPs");
+	for (uint16_t i=0; i<ampcount; i++) {
+		write(&respdata,amp[i]);
+		debugWrite("%d",amp[i]);
+	}
+	debugEnd();
+
+
+	// FIXME: not sure what this is, maybe another AMP?
 	byte_t		unknown9=(!getProtocolIsBigEndian())?0x7F:0xFF;
 	byte_t		unknown10=0;
-	write(&respdata,unknown1);
-	write(&respdata,unknown2);
-	write(&respdata,unknown3);
-	write(&respdata,unknown4);
-	write(&respdata,vprocid);
-	write(&respdata,unknown5);
-	write(&respdata,unknown6);
-	write(&respdata,unknown7);
-	write(&respdata,unknown8);
 	write(&respdata,unknown9);
 	write(&respdata,unknown10);
-
-	debugStart("header");
-	debugWrite("unknown1: %d",unknown1);
-	debugWrite("unknown2: %d",unknown2);
-	debugWrite("unknown3: %d",unknown3);
-	debugWrite("unknown4: %d",unknown4);
-	debugWrite("vprocid: %d",vprocid);
-	debugWrite("unknown5: %d",unknown5);
-	debugWrite("unknown6: %d",unknown6);
-	debugWrite("unknown7: %d",unknown7);
-	debugWrite("unknown8: %d",unknown8);
 	debugWrite("unknown9: %d (0x%02x)",unknown9,unknown9);
 	debugWrite("unknown10: %d",unknown10);
+}
 
-	// supported character sets...
-	uint16_t	count=4;
-	byte_t		codes1[]={
+
+void sqlrprotocol_teradata::appendConfigResponseCharSets() {
+
+	// see parcel.h - PclConfigRspType, FltCharArrayNameCodeType
+
+	// character set count...
+	uint16_t	cscount=4;
+	write(&respdata,cscount);
+
+	// character set records
+	byte_t		lecscodes[]={
 		0x3e, 0x3f, 0x7f, 0x40
 	};
-	byte_t		codes2[]={
+	byte_t		becscodes[]={
 		0xbe, 0xbf, 0xff, 0xc0
 	};
-	const byte_t		*codes=
-				(!getProtocolIsBigEndian())?codes1:codes2;
-	byte_t		marker=0;
-	const char	*strings[]={
+	const byte_t	*cscodes=
+			(!getProtocolIsBigEndian())?lecscodes:becscodes;
+	byte_t		cspad=0;
+	const char	*csnames[]={
 		"UTF16                         ",
 		"UTF8                          ",
 		"ASCII                         ",
 		"EBCDIC                        "
 	};
-	write(&respdata,count);
-	for (uint16_t i=0; i<count; i++) {
-		write(&respdata,codes[i]);
-		write(&respdata,marker);
-		write(&respdata,strings[i],30);
-	}
-	if (getDebug()) {
-		debugStart("charsets:");
-		for (uint16_t i=0; i<count; i++) {
-			debugWrite("0x%02x - '%s'",codes[i],strings[i]);
-		}
-		debugEnd();
+	debugStart("charsets:");
+	for (uint16_t i=0; i<cscount; i++) {
+		write(&respdata,cscodes[i]);
+		write(&respdata,cspad);
+		write(&respdata,csnames[i],30);
+		debugWrite("0x%02x - '%s'",cscodes[i],csnames[i]);
 	}
 	debugEnd();
 }
 
-void sqlrprotocol_teradata::appendConfigResponseField78() {
+void sqlrprotocol_teradata::appendConfigResponseInDoubtAndHasFields() {
 
-	// Values corresponding to settings in TdgssUserConfigFile.xml?
+	// see parcel.h - PclConfigRspType
 
-	// ???
-	byte_t		field=78;
-	byte_t		unknown1=1;
+	// in-doubt sessions exist ('Y'/'N')...
+	// see parcel.h - PclConfigRspType, InDoubt
+	char		indoubt='N';
+	write(&respdata,indoubt);
+	debugWrite("in doubt sessions: %c",indoubt);
+
+	// has fields...
+	byte_t		hasfields=1;
+	write(&respdata,hasfields);
+	debugWrite("has fields: %d",hasfields);
+
+	// fields...
+	// PclCfgExtendType, PclCfgNDMFeatureType?
+	// FIXME:: implemnt this...
+
 	uint16_t	unknown2=1;
 	uint16_t	unknown3=1;
-	write(&respdata,field);
-	write(&respdata,unknown1);
+
 	write(&respdata,unknown2);
 	write(&respdata,unknown3);
 
-	debugStart("field: %d (0x%02x)",field,field);
-	debugWrite("unknown1: %d",unknown1);
 	debugWrite("unknown2: %d",unknown2);
 	debugWrite("unknown3: %d",unknown3);
-	debugEnd();
 }
 
 void sqlrprotocol_teradata::appendConfigResponseField84() {
 
-	// Values corresponding to settings in TdgssUserConfigFile.xml?
+	// see parcel.h - PclConfigRspType
 
 	// ???
 	byte_t		field=84;
+
+	// ... or is this field 7 with 140 bytes to follow
+	// "field 49" sends about 140 bytes, and the field after "48" is 9
 	uint16_t	unknown1=7;
 	uint16_t	unknown2=140;
 	write(&respdata,field);
 	write(&respdata,unknown1);
 	write(&respdata,unknown2);
 
-	debugStart("field: %d (0x%02x)",field,field);
+	debugStart("field %d (0x%02x) ???",field,field);
 	debugWrite("unknown1: %d",unknown1);
 	debugWrite("unknown2: %d",unknown2);
 	debugEnd();
@@ -4912,7 +5010,7 @@ void sqlrprotocol_teradata::appendConfigResponseField84() {
 
 void sqlrprotocol_teradata::appendConfigResponseField49() {
 
-	// Values corresponding to settings in TdgssUserConfigFile.xml?
+	// see parcel.h - PclConfigRspType
 
 	// ???
 	byte_t		field=49;
@@ -5077,7 +5175,7 @@ void sqlrprotocol_teradata::appendConfigResponseField49() {
 	write(&respdata,unknown63);
 	write(&respdata,unknown64);
 
-	debugStart("field: %d (0x%02x)",field,field);
+	debugStart("field %d (0x%02x) ???",field,field);
 	debugWrite("unknown1: %d",unknown1);
 	debugWrite("unknown2: %d",unknown2);
 	debugWrite("unknown3: %d",unknown3);
@@ -5159,7 +5257,7 @@ void sqlrprotocol_teradata::appendConfigResponseField49() {
 
 void sqlrprotocol_teradata::appendConfigResponseField9() {
 
-	// Values corresponding to settings in TdgssUserConfigFile.xml?
+	// see parcel.h - PclConfigRspType
 
 	// ???
 	uint16_t	field=9;
@@ -5170,7 +5268,7 @@ void sqlrprotocol_teradata::appendConfigResponseField9() {
 	write(&respdata,unknown1);
 	write(&respdata,unknown2);
 
-	debugStart("field: %d (0x%02x)",field,field);
+	debugStart("field %d (0x%02x) ???",field,field);
 	debugWrite("unknown1: %d",unknown1);
 	debugWrite("unknown2: %d",unknown2);
 	debugEnd();
@@ -5178,7 +5276,7 @@ void sqlrprotocol_teradata::appendConfigResponseField9() {
 
 void sqlrprotocol_teradata::appendConfigResponseField10() {
 
-	// Values corresponding to settings in TdgssUserConfigFile.xml?
+	// see parcel.h - PclConfigRspType
 
 	// ???
 	uint16_t	field=10;
@@ -5192,7 +5290,7 @@ void sqlrprotocol_teradata::appendConfigResponseField10() {
 	write(&respdata,(uint16_t)sizeof(data));
 	write(&respdata,data,sizeof(data));
 
-	debugStart("field: %d (0x%02x)",field,field);
+	debugStart("field %d (0x%02x) ???",field,field);
 	debugWrite("size: %d",sizeof(data));
 	debugWrite("data:");
 	debugHexDump(data,sizeof(data));
@@ -5201,7 +5299,7 @@ void sqlrprotocol_teradata::appendConfigResponseField10() {
 
 void sqlrprotocol_teradata::appendConfigResponseField11() {
 
-	// Values corresponding to settings in TdgssUserConfigFile.xml?
+	// see parcel.h - PclConfigRspType
 
 	// ???
 	uint16_t	field=11;
@@ -5216,7 +5314,7 @@ void sqlrprotocol_teradata::appendConfigResponseField11() {
 	write(&respdata,(uint16_t)sizeof(data));
 	write(&respdata,data,sizeof(data));
 
-	debugStart("field: %d (0x%02x)",field,field);
+	debugStart("field %d (0x%02x) ???",field,field);
 	debugWrite("size: %d",sizeof(data));
 	debugWrite("data:");
 	debugHexDump(data,sizeof(data));
@@ -5225,7 +5323,7 @@ void sqlrprotocol_teradata::appendConfigResponseField11() {
 
 void sqlrprotocol_teradata::appendConfigResponseField12() {
 
-	// Values corresponding to settings in TdgssUserConfigFile.xml?
+	// see parcel.h - PclConfigRspType
 
 	// ???
 	uint16_t	field=12;
@@ -5236,7 +5334,7 @@ void sqlrprotocol_teradata::appendConfigResponseField12() {
 	write(&respdata,(uint16_t)sizeof(data));
 	write(&respdata,data,sizeof(data));
 
-	debugStart("field: %d (0x%02x)",field,field);
+	debugStart("field %d (0x%02x) ???",field,field);
 	debugWrite("size: %d",sizeof(data));
 	debugWrite("data:");
 	debugHexDump(data,sizeof(data));
@@ -5245,36 +5343,27 @@ void sqlrprotocol_teradata::appendConfigResponseField12() {
 
 void sqlrprotocol_teradata::appendConfigResponseField13() {
 
-	// Values corresponding to settings in TdgssUserConfigFile.xml?
+	// see parcel.h - PclConfigRspType
 
-	// ???
+	// appears to be version strings...
 	uint16_t	field=13;
-	write(&respdata,field);
-	debugWrite("field: %d (0x%02x)",field,field);
-}
-
-void sqlrprotocol_teradata::appendConfigResponseVersions() {
-
-	// Values corresponding to settings in TdgssUserConfigFile.xml?
-
-	uint16_t	field=62;
 	const char	*version1="16.20.12.01                   ";
+	size_t		version1size=charstring::getLength(version1);
 	const char	*version2="16.20.12.01                     ";
+	size_t		version2size=charstring::getLength(version2);
 	write(&respdata,field);
-	write(&respdata,version1,30);
-	write(&respdata,version2,32);
-
-	debugStart("versions");
-	debugStart("field: %d (0x%02x)",field,field);
+	write(&respdata,(uint16_t)(version1size+version2size));
+	write(&respdata,version1,version1size);
+	write(&respdata,version2,version2size);
+	debugStart("field 13");
 	debugWrite("version1: '%s'",version1);
 	debugWrite("version2: '%s'",version2);
-	debugEnd();
 	debugEnd();
 }
 
 void sqlrprotocol_teradata::appendConfigResponseField14() {
 
-	// Values corresponding to settings in TdgssUserConfigFile.xml?
+	// see parcel.h - PclConfigRspType
 
 	// ???
 	uint16_t	field=14;
@@ -5285,7 +5374,7 @@ void sqlrprotocol_teradata::appendConfigResponseField14() {
 	write(&respdata,(uint16_t)sizeof(data));
 	write(&respdata,data,sizeof(data));
 
-	debugStart("field: %d (0x%02x)",field,field);
+	debugStart("field %d (0x%02x) ???",field,field);
 	debugWrite("size: %d",sizeof(data));
 	debugWrite("data:");
 	debugHexDump(data,sizeof(data));
@@ -5294,7 +5383,7 @@ void sqlrprotocol_teradata::appendConfigResponseField14() {
 
 void sqlrprotocol_teradata::appendConfigResponseField15() {
 
-	// Values corresponding to settings in TdgssUserConfigFile.xml?
+	// see parcel.h - PclConfigRspType
 
 	// ???
 	uint16_t	field=15;
@@ -5309,7 +5398,7 @@ void sqlrprotocol_teradata::appendConfigResponseField15() {
 	write(&respdata,(uint16_t)sizeof(data));
 	write(&respdata,data,sizeof(data));
 
-	debugStart("field: %d (0x%02x)",field,field);
+	debugStart("field %d (0x%02x) ???",field,field);
 	debugWrite("size: %d",sizeof(data));
 	debugWrite("data:");
 	debugHexDump(data,sizeof(data));
@@ -5318,7 +5407,7 @@ void sqlrprotocol_teradata::appendConfigResponseField15() {
 
 void sqlrprotocol_teradata::appendConfigResponseField16() {
 
-	// Values corresponding to settings in TdgssUserConfigFile.xml?
+	// see parcel.h - PclConfigRspType
 
 	// ???
 	uint16_t	field=16;
@@ -5337,7 +5426,7 @@ void sqlrprotocol_teradata::appendConfigResponseField16() {
 	write(&respdata,unknown2);
 	write(&respdata,data2,sizeof(data2));
 
-	debugStart("field: %d (0x%02x)",field,field);
+	debugStart("field %d (0x%02x) ???",field,field);
 	debugWrite("unknown1: %d (0x%02x)",unknown1,unknown1);
 	debugWrite("data1:");
 	debugHexDump(data1,sizeof(data1));
@@ -5349,7 +5438,7 @@ void sqlrprotocol_teradata::appendConfigResponseField16() {
 
 void sqlrprotocol_teradata::appendConfigResponseField6() {
 
-	// Values corresponding to settings in TdgssUserConfigFile.xml?
+	// see parcel.h - PclConfigRspType
 
 	// ???
 	uint16_t	field=6;
@@ -5360,7 +5449,7 @@ void sqlrprotocol_teradata::appendConfigResponseField6() {
 	write(&respdata,(uint16_t)sizeof(data));
 	write(&respdata,data,sizeof(data));
 
-	debugStart("field: %d (0x%02x)",field,field);
+	debugStart("field %d (0x%02x) ???",field,field);
 	debugWrite("size: %d",sizeof(data));
 	debugWrite("data:");
 	debugHexDump(data,sizeof(data));
@@ -5369,26 +5458,24 @@ void sqlrprotocol_teradata::appendConfigResponseField6() {
 
 void sqlrprotocol_teradata::appendGatewayConfigParcel() {
 
-	// see parcel.h
+	// see parcel.h - pclgtwconfig_t
 
 	debugParcelStart("send","gateway config",165);
 
 	appendSmallParcelHeader(165,66);
 
 
-	// NOTE that in each case below, when sending the size of the data,
+	// has fields
+	uint32_t	hasfields=1;
+	write(&respdata,hasfields);
+	debugWrite("has fields: %d",hasfields);
+
+
+
+	// NOTE that for each field below, when sending the size of the data,
 	// we're sending 4 bytes, plus the size of the data.  Even when there's
 	// no data, we're still sending 4 bytes.  I'm not sure why we need to
 	// do this, but it appears to be the correct thing to do.
-
-
-	// has fields
-	uint32_t	hasfields=1;
-
-	write(&respdata,hasfields);
-
-	debugWrite("has fields: %d",hasfields);
-
 
 
 	// SSO field
@@ -5470,23 +5557,27 @@ void sqlrprotocol_teradata::appendGatewayConfigParcel() {
 
 
 
-	// ???
+	// unknown field 8
+	// ...and client complains about this:
+	// ncs_bld_cache: unrecognized PclGTWCONFIG feature 8 (length 4)
 	uint16_t	field8=8;
 
 	write(&respdata,field8);
 	write(&respdata,(uint16_t)(sizeof(uint32_t)));
 
-	debugWrite("field 8 ???: true");
+	debugWrite("unknown field 8: true");
 
 
 
-	// ???
+	// unknown field 9
+	// ...and client complains about this:
+	// ncs_bld_cache: unrecognized PclGTWCONFIG feature 9 (length 4)
 	uint16_t	field9=9;
 
 	write(&respdata,field9);
 	write(&respdata,(uint16_t)(sizeof(uint32_t)));
 
-	debugWrite("field 9 ???: true");
+	debugWrite("unknown field 9: true");
 
 
 
@@ -5503,7 +5594,9 @@ void sqlrprotocol_teradata::appendGatewayConfigParcel() {
 
 
 
-	// ???
+	// unknown field 11
+	// ...and client complains about this:
+	// ncs_bld_cache: unrecognized PclGTWCONFIG feature 11 (length 5)
 	uint16_t	field11=11;
 	byte_t		field11level=1;
 
@@ -5511,7 +5604,7 @@ void sqlrprotocol_teradata::appendGatewayConfigParcel() {
 	write(&respdata,(uint16_t)(sizeof(uint32_t)+sizeof(field11level)));
 	write(&respdata,field11level);
 
-	debugWrite("field 11 level: %d",field11level);
+	debugWrite("unknown field 11 level: %d",field11level);
 
 
 
@@ -5528,234 +5621,150 @@ void sqlrprotocol_teradata::appendGatewayConfigParcel() {
 
 
 
-	// ???
+	// unknown field 14
+	// ...and client complains about this:
+	// ncs_bld_cache: unrecognized PclGTWCONFIG feature 14 (length 4)
 	uint16_t	field14=14;
 
 	write(&respdata,field14);
 	write(&respdata,(uint16_t)(sizeof(uint32_t)));
 
-	debugWrite("field 14 ???: true");
+	debugWrite("unknown field 14: true");
 
 
 
 	debugParcelEnd();
 }
 
+void sqlrprotocol_teradata::appendHasFields() {
+	write(&respdata,(uint32_t)1);
+	debugWrite("has fields: 1");
+}
+
 void sqlrprotocol_teradata::appendTd2MechanismParcel() {
 
-	// see parcel.h
-
-	// bail if disabled
-	if (!td2mechenabled) {
-		return;
-	}
+	// see parcel.h - pclauthmech_t
 
 	// teradata2 mechanism
 	debugParcelStart("send","auth mechanism (td2)",167);
 
 	appendSmallParcelHeader(167,45);
-
-	// has fields
-	uint32_t	hasfields=1;
-	write(&respdata,hasfields);
-	debugWrite("has fields: %d",hasfields);
-
-	// mech oid
-	write(&respdata,(uint32_t)sizeof(td2mechoid));
-	write(&respdata,td2mechoid,sizeof(td2mechoid));
-	debugWrite("mech oid:");
-	debugHexDump(td2mechoid,sizeof(td2mechoid));
-
-	// field 16???
-	uint16_t	field16=16;
-	uint32_t	field16data1=3;
-	uint32_t	field16data2=1;
-	write(&respdata,field16);
-	write(&respdata,(uint16_t)(sizeof(uint32_t)+
-					sizeof(field16data1)+
-					sizeof(field16data2)));
-	write(&respdata,field16data1);
-	write(&respdata,field16data2);
-	debugWrite("field 16 ???: %d,%d",field16data1,field16data2);
-
-	// field 17???
-	uint16_t	field17=17;
-	uint32_t	field17data1=1;
-	uint32_t	field17data2=20;
-	write(&respdata,field17);
-	write(&respdata,(uint16_t)(sizeof(uint32_t)+
-					sizeof(field17data1)+
-					sizeof(field17data2)));
-	write(&respdata,field17data1);
-	write(&respdata,field17data2);
-	debugWrite("field 17 ???: %d,%d",field17data1,field17data2);
+	appendHasFields();
+	appendMechOid(td2mechoid,sizeof(td2mechoid));
+	appendDefaultMech();
+	appendMechRank(20);
 
 	debugParcelEnd();
 }
 
+void sqlrprotocol_teradata::appendMechOid(byte_t *oid, uint32_t size) {
+	write(&respdata,size);
+	write(&respdata,oid,size);
+	debugWrite("mech oid:");
+	debugHexDump(oid,size);
+}
+
+void sqlrprotocol_teradata::appendDefaultMech() {
+
+	// NOTE that when sending the size of the data, we're sending 4 bytes,
+	// plus the size of the data.  I'm not sure why we need to do this,
+	// but it appears to be the correct thing to do.
+
+	// FIXME: what do 3 and 1 mean in the context of
+	// this being the default mech?
+	uint32_t	value1=3;
+	uint32_t	value2=1;
+	write(&respdata,(uint16_t)MECHCONFIGFIELD_DEFAULT);
+	write(&respdata,(uint16_t)(sizeof(uint32_t)+
+					sizeof(value1)+sizeof(value2)));
+	write(&respdata,value1);
+	write(&respdata,value2);
+	debugWrite("default mech: %d,%d",value1,value2);
+}
+
+void sqlrprotocol_teradata::appendMechRank(uint32_t rank) {
+
+	// NOTE that when sending the size of the data, we're sending 4 bytes,
+	// plus the size of the data.  I'm not sure why we need to do this,
+	// but it appears to be the correct thing to do.
+
+	// FIXME: what is this 1?
+	uint32_t	value=1;
+	write(&respdata,(uint16_t)MECHCONFIGFIELD_RANK);
+	write(&respdata,(uint16_t)(sizeof(uint32_t)+
+					sizeof(value)+sizeof(rank)));
+	write(&respdata,value);
+	write(&respdata,rank);
+	debugWrite("mech rank: %d,%d",value,rank);
+}
+
 void sqlrprotocol_teradata::appendTdNegoMechanismParcel() {
 
-	// see parcel.h
-
-	// bail if disabled
-	if (!tdnegomechenabled) {
-		return;
-	}
+	// see parcel.h - pclauthmech_t
 
 	// teradata negotiation mechanism
 	debugParcelStart("send","auth mechanism (tdnego)",167);
 
 	appendSmallParcelHeader(167,32);
-
-	// has fields
-	uint32_t	hasfields=1;
-	write(&respdata,hasfields);
-	debugWrite("has fields: %d",hasfields);
-
-	// mech oid
-	write(&respdata,(uint32_t)sizeof(tdnegomechoid));
-	write(&respdata,tdnegomechoid,sizeof(tdnegomechoid));
-	debugWrite("mech oid:");
-	debugHexDump(tdnegomechoid,sizeof(tdnegomechoid));
-
-	// field 17???
-	uint16_t	field17=17;
-	uint32_t	field17data1=1;
-	uint32_t	field17data2=70;
-	write(&respdata,field17);
-	write(&respdata,(uint16_t)(sizeof(uint32_t)+
-					sizeof(field17data1)+
-					sizeof(field17data2)));
-	write(&respdata,field17data1);
-	write(&respdata,field17data2);
-	debugWrite("field 17 ???: %d,%d",field17data1,field17data2);
+	appendHasFields();
+	appendMechOid(tdnegomechoid,sizeof(tdnegomechoid));
+	// NOTE: doesn't match rank in TdgssLibraryConfigFile.xml for this mech
+	appendMechRank(70);
 
 	debugParcelEnd();
 }
 
 void sqlrprotocol_teradata::appendLdapMechanismParcel() {
 
-	// see parcel.h
-
-	// bail if disabled
-	if (!ldapmechenabled) {
-		return;
-	}
+	// see parcel.h - pclauthmech_t
 
 	// ldap mechanism
 	debugParcelStart("send","auth mechanism (ldap)",167);
 
 	appendSmallParcelHeader(167,29);
-
-	// has fields
-	uint32_t	hasfields=1;
-	write(&respdata,hasfields);
-	debugWrite("has fields: %d",hasfields);
-
-	// mech oid
-	write(&respdata,(uint32_t)sizeof(ldapmechoid));
-	write(&respdata,ldapmechoid,sizeof(ldapmechoid));
-	debugWrite("mech oid:");
-	debugHexDump(ldapmechoid,sizeof(ldapmechoid));
-
-	// field 17???
-	uint16_t	field17=17;
-	uint32_t	field17data1=1;
-	uint32_t	field17data2=40;
-	write(&respdata,field17);
-	write(&respdata,(uint16_t)(sizeof(uint32_t)+
-					sizeof(field17data1)+
-					sizeof(field17data2)));
-	write(&respdata,field17data1);
-	write(&respdata,field17data2);
-	debugWrite("field 17 ???: %d,%d",field17data1,field17data2);
+	appendHasFields();
+	appendMechOid(ldapmechoid,sizeof(ldapmechoid));
+	// NOTE: doesn't match rank in TdgssLibraryConfigFile.xml for this mech
+	appendMechRank(40);
 
 	debugParcelEnd();
 }
 
 void sqlrprotocol_teradata::appendKrbMechanismParcel() {
 
-	// see parcel.h
-
-	// bail if disabled
-	if (!krbmechenabled) {
-		return;
-	}
+	// see parcel.h - pclauthmech_t
 
 	// kerberos mechanism
 	debugParcelStart("send","auth mechanism (krb)",167);
 
 	appendSmallParcelHeader(167,26);
-
-	// has fields
-	uint32_t	hasfields=1;
-	write(&respdata,hasfields);
-	debugWrite("has fields: %d",hasfields);
-
-	// mech oid
-	write(&respdata,(uint32_t)sizeof(krbmechoid));
-	write(&respdata,krbmechoid,sizeof(krbmechoid));
-	debugWrite("mech oid:");
-	debugHexDump(krbmechoid,sizeof(krbmechoid));
-
-	// field 17???
-	uint16_t	field17=17;
-	uint32_t	field17data1=1;
-	uint32_t	field17data2=65;
-	write(&respdata,field17);
-	write(&respdata,(uint16_t)(sizeof(uint32_t)+
-					sizeof(field17data1)+
-					sizeof(field17data2)));
-	write(&respdata,field17data1);
-	write(&respdata,field17data2);
-	debugWrite("field 17 ???: %d,%d",field17data1,field17data2);
+	appendHasFields();
+	appendMechOid(krbmechoid,sizeof(krbmechoid));
+	// NOTE: doesn't match rank in TdgssLibraryConfigFile.xml for this mech
+	appendMechRank(65);
 
 	debugParcelEnd();
 }
 
 void sqlrprotocol_teradata::appendKrbCompatMechanismParcel() {
 
-	// see parcel.h
-
-	// bail if disabled
-	if (!krbcompatmechenabled) {
-		return;
-	}
+	// see parcel.h - pclauthmech_t
 
 	// kerberos compatibility mechanism
 	debugParcelStart("send","auth mechanism (krbcompat)",167);
 
 	appendSmallParcelHeader(167,33);
-
-	// has fields
-	uint32_t	hasfields=1;
-	write(&respdata,hasfields);
-	debugWrite("has fields: %d",hasfields);
-
-	// mech oid
-	write(&respdata,(uint32_t)sizeof(krbcompatmechoid));
-	write(&respdata,krbcompatmechoid,sizeof(krbcompatmechoid));
-	debugWrite("mech oid:");
-	debugHexDump(krbcompatmechoid,sizeof(krbcompatmechoid));
-
-	// field 17???
-	uint16_t	field17=17;
-	uint32_t	field17data1=1;
-	uint32_t	field17data2=10;
-	write(&respdata,field17);
-	write(&respdata,(uint16_t)(sizeof(uint32_t)+
-					sizeof(field17data1)+
-					sizeof(field17data2)));
-	write(&respdata,field17data1);
-	write(&respdata,field17data2);
-	debugWrite("field 17 ???: %d,%d",field17data1,field17data2);
+	appendHasFields();
+	appendMechOid(krbcompatmechoid,sizeof(krbcompatmechoid));
+	// NOTE: doesn't match rank in TdgssLibraryConfigFile.xml for this mech
+	appendMechRank(10);
 
 	debugParcelEnd();
 }
 
 void sqlrprotocol_teradata::appendLogonFailureParcel(const char *errorstring) {
 
-	// Teradata CLIv2, page 261
+	// see Teradata CLIv2, page 261
 
 	debugParcelStart("send","failure",9);
 	debugWrite("error: %s",errorstring);
@@ -5782,7 +5791,7 @@ void sqlrprotocol_teradata::setSessionNumber() {
 
 void sqlrprotocol_teradata::appendAssignResponseParcel() {
 
-	// Teradata CLIv2, page 249
+	// see Teradata CLIv2, page 249
 
 	debugParcelStart("send","assign response",101);
 
@@ -5820,8 +5829,7 @@ void sqlrprotocol_teradata::appendAssignResponseParcel() {
 
 void sqlrprotocol_teradata::appendSsoResponseParcel() {
 
-	// Teradata CLIv2, page ???
-	// FIXME: how'd I even figure out the stuff that I did figure out here?
+	// see parcel.h - pclssorsp_t
 
 	debugParcelStart("send","sso response",134);
 
@@ -5968,7 +5976,8 @@ void sqlrprotocol_teradata::appendSsoResponseParcel() {
 
 void sqlrprotocol_teradata::appendSsoParcel() {
 
-	// Teradata CLIv2, page ???
+	// see parcel.h - pclssprsp_t
+	//
 	// FIXME: shouldn't this be the same as appendSsoResponseParcel,
 	// the parcel flavor is the same
 
@@ -5989,7 +5998,7 @@ void sqlrprotocol_teradata::appendSsoParcel() {
 
 void sqlrprotocol_teradata::appendSuccessParcel() {
 
-	// Teradata CLIv2, page 312
+	// see Teradata CLIv2, page 312
 
 	// statement number (FIXME: see note in appendEndStatementParcel)
 	uint16_t	statementnumber=(req)?1:0;
@@ -6078,7 +6087,7 @@ void sqlrprotocol_teradata::appendStatementStatusParcel() {
 
 void sqlrprotocol_teradata::appendStatementStatusParcel(
 						uint32_t statementnumber) {
-	// Teradata CLIv2, page 310
+	// see Teradata CLIv2, page 310
 
 	bool	includeext=(req->activity==SQL_SELECT && req->requestmode!='R');
 
@@ -6258,7 +6267,7 @@ void sqlrprotocol_teradata::getFieldFormat(bytebuffer *fieldformat,
 
 void sqlrprotocol_teradata::appendFieldParcel(const char *data, uint16_t size) {
 
-	// Teradata CLIv2, page 262
+	// see Teradata CLIv2, page 262
 
 	debugParcelStart("send","field",18);
 	debugHexDump((const byte_t *)data,size);
@@ -6269,7 +6278,7 @@ void sqlrprotocol_teradata::appendFieldParcel(const char *data, uint16_t size) {
 
 void sqlrprotocol_teradata::appendDataInfoParcel() {
 
-	// Teradata CLIv2, page 253
+	// see Teradata CLIv2, page 253
 
 	uint16_t	fieldcount=cont->colCount(req->cur);
 
@@ -6302,7 +6311,7 @@ void sqlrprotocol_teradata::appendDataInfoParcel() {
 
 void sqlrprotocol_teradata::appendStatementInfoParcel() {
 
-	// Teradata CLIv2, page 303
+	// see Teradata CLIv2, page 303
 
 	appendParcelHeader(169);
 	debugParcelStart("send","statementinformation",169);
@@ -6712,7 +6721,7 @@ void sqlrprotocol_teradata::appendEndQueryExtension() {
 }
 
 void sqlrprotocol_teradata::appendStatementInfoEndParcel() {
-	// Teradata CLIv2, page 310
+	// see Teradata CLIv2, page 310
 	appendParcelHeader(170,0);
 	debugParcelStart("send","statementinformationend",170);
 	debugParcelEnd();
@@ -6794,49 +6803,49 @@ void sqlrprotocol_teradata::backpatchActivityCount() {
 }
 
 void sqlrprotocol_teradata::appendTitleStartParcel() {
-	// Teradata CLIv2, page 313
+	// see Teradata CLIv2, page 313
 	debugParcelStart("send","title start",20);
 	debugParcelEnd();
 	appendParcelHeader(20,0);
 }
 
 void sqlrprotocol_teradata::appendTitleEndParcel() {
-	// Teradata CLIv2, page 313
+	// see Teradata CLIv2, page 313
 	debugParcelStart("send","title end",21);
 	debugParcelEnd();
 	appendParcelHeader(21,0);
 }
 
 void sqlrprotocol_teradata::appendFormatStartParcel() {
-	// Teradata CLIv2, page 265
+	// see Teradata CLIv2, page 265
 	debugParcelStart("send","format start",22);
 	debugParcelEnd();
 	appendParcelHeader(22,0);
 }
 
 void sqlrprotocol_teradata::appendFormatEndParcel() {
-	// Teradata CLIv2, page 265
+	// see Teradata CLIv2, page 265
 	debugParcelStart("send","format end",23);
 	debugParcelEnd();
 	appendParcelHeader(23,0);
 }
 
 void sqlrprotocol_teradata::appendSizeStartParcel() {
-	// Teradata CLIv2, page 302
+	// see Teradata CLIv2, page 302
 	debugParcelStart("send","size start",24);
 	debugParcelEnd();
 	appendParcelHeader(24,0);
 }
 
 void sqlrprotocol_teradata::appendSizeEndParcel() {
-	// Teradata CLIv2, page 301
+	// see Teradata CLIv2, page 301
 	debugParcelStart("send","size end",25);
 	debugParcelEnd();
 	appendParcelHeader(25,0);
 }
 
 void sqlrprotocol_teradata::appendSizeParcel(uint16_t size) {
-	// Teradata CLIv2, page 301
+	// see Teradata CLIv2, page 301
 	debugParcelStart("send","size",26);
 	debugWrite("size: %d",size);
 	debugParcelEnd();
@@ -6845,14 +6854,14 @@ void sqlrprotocol_teradata::appendSizeParcel(uint16_t size) {
 }
 
 void sqlrprotocol_teradata::appendRecStartParcel() {
-	// Teradata CLIv2, page 292
+	// see Teradata CLIv2, page 292
 	debugParcelStart("send","rec start",27);
 	debugParcelEnd();
 	appendParcelHeader(27,0);
 }
 
 void sqlrprotocol_teradata::appendRecEndParcel() {
-	// Teradata CLIv2, page 287
+	// see Teradata CLIv2, page 287
 	debugParcelStart("send","rec end",28);
 	debugParcelEnd();
 	appendParcelHeader(28,0);
@@ -7185,8 +7194,8 @@ void sqlrprotocol_teradata::appendIndicatorModeField(uint16_t col,
 
 void sqlrprotocol_teradata::appendRecordParcel() {
 
-	// record - Teradata CLIv2, page 287
-	// multipartrecord - Teradata CLIv2, page 272
+	// record - see Teradata CLIv2, page 287
+	// multipartrecord - see Teradata CLIv2, page 272
 
 	// FIXME: There's something that's supposed to be different about
 	// multipart records...  Like, if the row is bigger than some
@@ -7240,7 +7249,7 @@ void sqlrprotocol_teradata::appendRecordParcel() {
 
 void sqlrprotocol_teradata::appendFailureParcel(const char *errorstring,
 						uint16_t errorsize) {
-	// Teradata CLIv2, page 261
+	// see Teradata CLIv2, page 261
 
 	debugParcelStart("send","failure",9);
 	debugWrite("error: %.*s",errorsize,errorstring);
@@ -7279,7 +7288,7 @@ void sqlrprotocol_teradata::appendFailureParcel(const char *errorstring,
 
 void sqlrprotocol_teradata::appendErrorParcel(const char *errorstring) {
 
-	// Teradata CLIv2, page 259
+	// see Teradata CLIv2, page 259
 
 	uint16_t	errorsize=charstring::getLength(errorstring);
 
@@ -7326,7 +7335,7 @@ void sqlrprotocol_teradata::appendEndStatementParcel() {
 
 void sqlrprotocol_teradata::appendEndStatementParcel(uint16_t statementnumber) {
 
-	// Teradata CLIv2, page 258
+	// see Teradata CLIv2, page 258
 
 	debugParcelStart("send","end statement",11);
 	debugWrite("statement number: %d",statementnumber);
@@ -7338,7 +7347,7 @@ void sqlrprotocol_teradata::appendEndStatementParcel(uint16_t statementnumber) {
 }
 
 void sqlrprotocol_teradata::appendEndRequestParcel() {
-	// Teradata CLIv2, page 257
+	// see Teradata CLIv2, page 257
 	debugParcelStart("send","end request",12);
 	debugParcelEnd();
 	appendParcelHeader(12,0);
