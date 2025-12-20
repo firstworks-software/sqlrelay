@@ -180,7 +180,7 @@ bool sqlrprotocol::useTls() {
 }
 
 void sqlrprotocol::setProtocolIsBigEndian(bool bigendian) {
-	bigendian=pvt->_bigendian;
+	pvt->_bigendian=bigendian;
 }
 
 bool sqlrprotocol::getProtocolIsBigEndian() {

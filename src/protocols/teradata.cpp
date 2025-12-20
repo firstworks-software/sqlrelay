@@ -128,31 +128,31 @@ const char	*confalgpaddingstr[]={
 #define MECHCONFIGFIELD_RANK	17
 
 // Quality-of-Protections
-// where did I get these from?
+// no known reference (just had to study the trace)
 // these (and more) are sort-of defined in TdgssLibraryConfigFile.xml
 // <GlobalQOPs>, but without corresponding ids
-#define	QOP_NONE				0
-#define	QOP_AES_K128_GCM_PKCS5Padding_SHA2	1
-#define	QOP_AES_K128_CBC_PKCS5Padding_SHA1	2
-#define	QOP_AES_K192_GCM_PKCS5Padding_SHA2	3
-#define	QOP_AES_K192_CBC_PKCS5Padding_SHA1	4
-#define	QOP_AES_K256_GCM_PKCS5Padding_SHA2	5
-#define	QOP_AES_K256_CBC_PKCS5Padding_SHA1	6
+#define	QOP_NONE			0
+#define	QOP_AES128_GCM_PKCS5_SHA256	1
+#define	QOP_AES128_CBC_PKCS5_SHA1	2
+#define	QOP_AES192_GCM_PKCS5_SHA256	3
+#define	QOP_AES192_CBC_PKCS5_SHA1	4
+#define	QOP_AES256_GCM_PKCS5_SHA256	5
+#define	QOP_AES256_CBC_PKCS5_SHA1	6
 const char	*qopstr[]={
 	"NONE",
-	"AES_K128_GCM_PKCS5Padding_SHA2",
-	"AES_K128_CBC_PKCS5Padding_SHA1",
-	"AES_K192_GCM_PKCS5Padding_SHA2",
-	"AES_K192_CBC_PKCS5Padding_SHA1",
-	"AES_K256_GCM_PKCS5Padding_SHA2",
-	"AES_K256_CBC_PKCS5Padding_SHA1"
+	"AES128_GCM_PKCS5_SHA256",
+	"AES128_CBC_PKCS5_SHA1",
+	"AES192_GCM_PKCS5_SHA256",
+	"AES192_CBC_PKCS5_SHA1",
+	"AES256_GCM_PKCS5_SHA256",
+	"AES256_CBC_PKCS5_SHA1"
 };
 
 
 // mechanisms
-// where did I get these from?
+// no known reference (just had to study the trace)
 // these (and more) are sort-of defined in TdgssLibraryConfigFile.xml
-// <Mechanisms>, but without corresponding ids
+// <Mechanisms>, but not in this order, and without corresponding ids
 #define	MECH_NONE	0
 #define	MECH_TD2	1
 #define	MECH_TDNEGO	2
@@ -234,10 +234,17 @@ byte_t	krbcompatmechoid[]={
 #define	GWCONFIGFIELD_NEGOTIATE_MECH		12
 
 
-// sso request fields
-// where did I get these from?  did I just figure them out from the trace?
-#define	SUPPORTED_ALGORITHMS	0xE1
-#define	SUPPORTED_ALGORITHM	0xE2
+// sso request authdata fields
+// no known reference (just had to study the trace)
+#define	SSOREQ_SUPPORTED_ALGORITHMS	0xE1
+#define	SSOREQ_SUPPORTED_ALGORITHM	0xE2
+#define	SSOREQ_REQUESTED_MECH		0x06
+
+#define	SSORESP_NEGOTIATED_QOPS	0xE3
+#define	SSORESP_NEGOTIATED_QOP1	0xE4
+#define	SSORESP_NEGOTIATED_QOP2	0xE5
+#define	SSORESP_NEGOTIATED_QOP3	0xE6
+#define	SSORESP_NEGOTIATED_QOP4	0xE7
 
 #define CONF_ALG		0xD0
 #define INT_ALG			0xD1
@@ -246,7 +253,7 @@ byte_t	krbcompatmechoid[]={
 #define CONF_ALG_PADDING	0xD4
 #define CONF_ALG_KEY_SIZE	0xD5
 #define KEX_ALG_KEY_SIZE	0xD6
-const char	*algfieldname[]={
+const char	*algdfieldname[]={
 	"conf alg",
 	"int alg",
 	"kex alg",
@@ -663,8 +670,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 					const byte_t **parcelout);
 		bool	parseAssignParcel(const byte_t *parcel,
 					const byte_t **parcelout);
-		bool	parseSsoRequestParcel(const byte_t *parcel,
-					const byte_t **parcelout);
 		void	confAlg(byte_t val);
 		void	intAlg(byte_t val);
 		void	kexAlg(byte_t val);
@@ -672,7 +677,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		void	confAlgPadding(byte_t val);
 		void	confAlgKeySize(byte_t conf, uint16_t val);
 		void	kexAlgKeySize(byte_t kex, uint16_t val);
-		bool	parseSsoParcel(const byte_t *parcel,
+		bool	parseSsoRequestParcel(const byte_t *parcel,
 					const byte_t **parcelout);
 		bool	parseLogoffParcel(const byte_t *parcel,
 					const byte_t **parcelout);
@@ -770,9 +775,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		void	appendConfigResponseIFPs();
 		void	appendConfigResponseAMPs();
 		void	appendConfigResponseCharSets();
-		void	appendConfigResponseInDoubtAndHasFields();
-		void	appendConfigResponseField84();
-		void	appendConfigResponseField49();
+		void	appendConfigResponseInDoubt();
+		void	appendConfigResponseHasFields();
+		void	appendConfigResponseTransactionSemantics();
+		void	appendConfigResponseField7();
 		void	appendConfigResponseField9();
 		void	appendConfigResponseField10();
 		void	appendConfigResponseField11();
@@ -795,8 +801,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		void	appendLogonFailureParcel(const char *errorstring);
 		void	setSessionNumber();
 		void	appendAssignResponseParcel();
-		void	appendSsoResponseParcel();
-		void	appendSsoParcel();
+		void	appendSsoResponseParcel(byte_t trip);
 		void	appendSuccessParcel();
 		void	updateActivityCount();
 		void	appendStatementStatusParcel(uint32_t statementnumber);
@@ -873,7 +878,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		bool	encrypt(const byte_t *decdata,
 					uint64_t decdatasize,
 					bytebuffer *encdata);
-		bool	generateServerPublicKey();
+		bool	generateEphemeralKeys();
 		bool	generateSharedSecret();
 #endif
 
@@ -947,13 +952,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		byte_t		dhp[256];
 		byte_t		dhg[256];
 		byte_t		serverpubkey[256];
+		byte_t		serverprivkey[256];
 		byte_t		clientpubkey[256];
 #ifdef DECRYPT
 		DH		*dh;
 #endif
 		unsigned  char	*sharedsecret;
 		uint32_t	sharedsecretsize;
-		unsigned  char	sha2sharedsecret[32];
+		unsigned  char	sharedkey[32];
 };
 
 sqlrprotocol_teradata::sqlrprotocol_teradata(sqlrservercontroller *cont,
@@ -1048,7 +1054,7 @@ sqlrprotocol_teradata::sqlrprotocol_teradata(sqlrservercontroller *cont,
 		// /opt/teradata/tdgss/etc/TdgssLibraryConfigFile.xml
 		// or
 		// /opt/teradata/tdgss/etc/TdgssUserConfigFile.xml
-		// (DH prime "p")
+		// (DH prime modulus ("p"))
 		// FIXME: make this configurable
 		0x8A, 0xB3, 0xF8, 0x6E, 0x8D, 0x37, 0x4B, 0x78,
 		0x2F, 0x31, 0xDA, 0xD5, 0xF2, 0x7D, 0x6A, 0xFD,
@@ -1090,7 +1096,7 @@ sqlrprotocol_teradata::sqlrprotocol_teradata(sqlrservercontroller *cont,
 		// /opt/teradata/tdgss/etc/TdgssLibraryConfigFile.xml
 		// or
 		// /opt/teradata/tdgss/etc/TdgssUserConfigFile.xml
-		// (DH prime root modulo of "p" - "g")
+		// (DH generator/base ("g"))
 		// FIXME: make this configurable
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -1132,7 +1138,7 @@ sqlrprotocol_teradata::sqlrprotocol_teradata(sqlrservercontroller *cont,
 #endif
 	sharedsecret=NULL;
 	sharedsecretsize=0;
-	bytestring::zero(sha2sharedsecret,sizeof(sha2sharedsecret));
+	bytestring::zero(sharedkey,sizeof(sharedkey));
 
 	init();
 }
@@ -1286,11 +1292,8 @@ bool sqlrprotocol_teradata::copKindCfg() {
 
 	// parse parcels
 	const byte_t	*parcel=clientreqdata;
-	if (!parseClientConfigParcel(parcel,&parcel)) {
-		debugEnd();
-		return false;
-	}
-	if (!parseConfigParcel(parcel,&parcel)) {
+	if (!parseClientConfigParcel(parcel,&parcel) ||
+		!parseConfigParcel(parcel,&parcel)) {
 		debugEnd();
 		return false;
 	}
@@ -1334,8 +1337,8 @@ bool sqlrprotocol_teradata::copKindAssign() {
 
 	// parse parcels
 	const byte_t	*parcel=clientreqdata;
-	parseAssignParcel(parcel,&parcel);
-	if (!parseSsoRequestParcel(parcel,&parcel)) {
+	if (!parseAssignParcel(parcel,&parcel) ||
+		!parseSsoRequestParcel(parcel,&parcel)) {
 		debugEnd();
 		return false;
 	}
@@ -1346,6 +1349,13 @@ bool sqlrprotocol_teradata::copKindAssign() {
 		return passthrough();
 	}
 
+#ifdef DECRYPT
+	if (!generateEphemeralKeys()) {
+		debugEnd();
+		return false;
+	}
+#endif
+
 	// build response
 	respdata.clear();
 
@@ -1355,7 +1365,7 @@ bool sqlrprotocol_teradata::copKindAssign() {
 	} else {
 		setSessionNumber();
 		appendAssignResponseParcel();
-		appendSsoResponseParcel();
+		appendSsoResponseParcel(1);
 	}
 
 	debugEnd();
@@ -1370,7 +1380,7 @@ bool sqlrprotocol_teradata::copKindSsoReq() {
 
 	// parse parcels
 	const byte_t	*parcel=clientreqdata;
-	if (!parseSsoParcel(parcel,&parcel)) {
+	if (!parseSsoRequestParcel(parcel,&parcel)) {
 		debugEnd();
 		return false;
 	}
@@ -1381,10 +1391,19 @@ bool sqlrprotocol_teradata::copKindSsoReq() {
 		return passthrough();
 	}
 
+#ifdef DECRYPT
+	// now that we have the client public key,
+	// we can genrate the shared secret
+	if (!generateSharedSecret()) {
+		debugEnd();
+		return false;
+	}
+#endif
+
 	// build response
 	respdata.clear();
 
-	appendSsoParcel();
+	appendSsoResponseParcel(3);
 
 	debugEnd();
 
@@ -1405,9 +1424,9 @@ bool sqlrprotocol_teradata::copKindConnect() {
 	// * sso username request parcel - 136 (see Teradata CLIv2, page 314)
 
 #ifdef DECRYPT
-	// appears to be encrypted (with the client's private key?)
-	// always appears to be 410 bytes for bteq
-	// always appears to be 664 bytes for jdbc
+	// appears to be encrypted
+	// always appears to be 410 bytes from bteq
+	// always appears to be 664 bytes from jdbc
 	debugWrite("request:");
 	debugHexDump(clientreqdata,clientreqdatasize);
 	bytebuffer	decdata;
@@ -1427,7 +1446,7 @@ bool sqlrprotocol_teradata::copKindConnect() {
 	// * sso username response parcel - 137 (see Teradata CLIv2, page 314)
 	// * end request parcel - 12 (see Teradata CLIv2, page 257)
 	//
-	// appears to be encrypted (with the server's private key?)
+	// appears to be encrypted
 	// always appears to be 205 bytes
 	respdata.clear();
 
@@ -2775,261 +2794,6 @@ bool sqlrprotocol_teradata::parseAssignParcel(
 	return true;
 }
 
-bool sqlrprotocol_teradata::parseSsoRequestParcel(
-					const byte_t *parcel,
-					const byte_t **parcelout) {
-
-	// see parcel.h - pclssoreq_t
-
-	// parse parcel header
-	uint16_t	parcelflavor;
-	const byte_t	*parceldata;
-	uint32_t	parceldatasize;
-	parseParcelHeader(parcel,&parcelflavor,
-					&parceldatasize,
-					&parceldata);
-	if (parcelflavor!=132) {
-		unexpectedParcel(parcelflavor);
-		*parcelout=parcel;
-		return false;
-	}
-
-	debugParcelStart("recv","sso request",parcelflavor,parceldatasize);
-
-	// parse parcel data
-	const byte_t	*ptr=parceldata;
-	const byte_t	*end=parceldata+parceldatasize;
-
-	uint16_t	marker;
-	uint16_t	postmarkersize;
-	const byte_t	*unknown1;
-	byte_t		bodysize;
-	const byte_t	*unknown2;
-	const byte_t	*unknown3;
-	//const byte_t	*padding1;
-	byte_t		fieldssize;
-	//const byte_t	*padding2;
-	read(ptr,&marker,&ptr);
-	read(ptr,&postmarkersize,&ptr);
-	unknown1=ptr;
-	ptr+=7;
-	read(ptr,&bodysize,&ptr);
-	unknown2=ptr;
-	ptr+=10;
-	unknown3=ptr;
-	ptr+=2;
-	//padding1=ptr;
-	ptr+=19;
-	read(ptr,&fieldssize,&ptr);
-	//padding2=ptr;
-	ptr+=40;
-
-	// fudge sizes
-	bodysize+=8;
-	fieldssize--;
-
-	debugWrite("marker: %d",marker);
-	debugWrite("post-marker size: %d",postmarkersize);
-	debugWrite("unknown1:");
-	debugHexDump(unknown1,7);
-	debugWrite("body size: %d",bodysize);
-	debugWrite("unknown2:");
-	debugHexDump(unknown2,10);
-	debugWrite("unknown3:");
-	debugHexDump(unknown3,2);
-	debugWrite("fields size: %d",fieldssize);
-
-	// parse supported algorithms...
-	const byte_t	*fieldsend=ptr+fieldssize;
-	while (ptr<fieldsend) {
-
-		// get supported algorithms field
-		byte_t	algs;
-		read(ptr,&algs,&ptr);
-		if (algs!=SUPPORTED_ALGORITHMS) {
-			break;
-		}
-		byte_t	algslen;
-		read(ptr,&algslen,&ptr);
-
-		debugStart("supported algorithms");
-
-		// parse each supported algorithm
-		const byte_t	*algsend=ptr+algslen;
-		while (ptr<algsend) {
-
-			// get supported algorithm
-			byte_t	alg;
-			read(ptr,&alg,&ptr);
-			if (alg!=SUPPORTED_ALGORITHM) {
-				break;
-			}
-			byte_t	alglen;
-			read(ptr,&alglen,&ptr);
-
-			debugStart("supported algorithm");
-
-			// get algorithm details
-			const byte_t	*algend=ptr+alglen;
-			byte_t		currentconf=ALG_NONE;
-			byte_t		currentkex=ALG_NONE;
-			while (ptr<algend) {
-
-				// get algorithm details field
-				byte_t	algfield;
-				read(ptr,&algfield,&ptr);
-				byte_t	dlen;
-				read(ptr,&dlen,&ptr);
-
-				debugWrite("%s: ",algfieldname[algfield-0xd0]);
-
-				if (dlen==1) {
-
-					byte_t	val;
-					read(ptr,&val,&ptr);
-
-					switch (algfield) {
-						case CONF_ALG:
-							currentconf=val;
-							confAlg(val);
-							break;
-						case INT_ALG:
-							intAlg(val);
-							break;
-						case KEX_ALG:
-							currentkex=val;
-							kexAlg(val);
-							break;
-						case CONF_ALG_MODE:
-							confAlgMode(val);
-							break;
-						case CONF_ALG_PADDING:
-							confAlgPadding(val);
-							break;
-						default:
-							// error
-							break;
-					}
-
-				} else if (dlen==2) {
-
-					uint16_t	val;
-					readBE(ptr,&val,&ptr);
-
-					switch (algfield) {
-						case CONF_ALG_KEY_SIZE:
-							confAlgKeySize(
-								currentconf,
-								val);
-							break;
-						case KEX_ALG_KEY_SIZE:
-							kexAlgKeySize(
-								currentkex,
-								val);
-							break;
-						default:
-							// error
-							break;
-					}
-				}
-			}
-			// FIXME: sanity check on location...
-
-			debugEnd();
-		}
-		// FIXME: sanity check on location...
-
-		debugEnd();
-	}
-	// FIXME: sanity check on location...
-
-	// parse requested mech...
-	byte_t		reqmechfield;
-	byte_t		reqmechsize;
-	const byte_t	*reqmech;
-	read(ptr,&reqmechfield,&ptr);
-	read(ptr,&reqmechsize,&ptr);
-	reqmech=ptr;
-	ptr+=reqmechsize;
-	debugWrite("requested mech oid:");
-	debugHexDump(reqmech,reqmechsize);
-
-	// negotiate mech
-	// (for now we only support TD2)
-	negotiatedmech=MECH_NONE;
-	if (reqmechsize==sizeof(td2mechoid) &&
-			!bytestring::compare(reqmech,
-				td2mechoid,sizeof(td2mechoid))) {
-		negotiatedmech=MECH_TD2;
-	} else if (reqmechsize==sizeof(tdnegomechoid) &&
-			!bytestring::compare(reqmech,
-				tdnegomechoid,sizeof(tdnegomechoid))) {
-		negotiatedmech=MECH_TDNEGO;
-	} else if (reqmechsize==sizeof(ldapmechoid) &&
-			!bytestring::compare(reqmech,
-				ldapmechoid,sizeof(ldapmechoid))) {
-		negotiatedmech=MECH_LDAP;
-	} else if (reqmechsize==sizeof(krbmechoid) &&
-			!bytestring::compare(reqmech,
-				krbmechoid,sizeof(krbmechoid))) {
-		negotiatedmech=MECH_KRB;
-	} else if (reqmechsize==sizeof(krbcompatmechoid) &&
-			!bytestring::compare(reqmech,
-				krbcompatmechoid,sizeof(krbcompatmechoid))) {
-		negotiatedmech=MECH_KRBCOMPAT;
-	}
-	debugWrite("negotiated mech: %s",mechstr[negotiatedmech]);
-	if (negotiatedmech!=MECH_NONE && negotiatedmech!=MECH_TD2) {
-		debugWrite("(unsupported)");
-		negotiatedmech=MECH_NONE;
-	}
-
-	// negotiate qop
-	// (for now, we require dh2048, aes, and pkcs5 padding)
-	negotiatedqop=QOP_NONE;
-	if (dhsupported && dh2048supported && aessupported && pkcs5supported) {
-		if (aes128supported) {
-			if (gcmsupported && sha256supported) {
-				negotiatedqop=
-				QOP_AES_K128_GCM_PKCS5Padding_SHA2;
-			} else if (cbcsupported && sha1supported) {
-				negotiatedqop=
-				QOP_AES_K128_CBC_PKCS5Padding_SHA1;
-			}
-		} else if (aes192supported) {
-			if (gcmsupported && sha256supported) {
-				negotiatedqop=
-				QOP_AES_K192_GCM_PKCS5Padding_SHA2;
-			} else if (cbcsupported && sha1supported) {
-				negotiatedqop=
-				QOP_AES_K192_CBC_PKCS5Padding_SHA1;
-			}
-		} else if (aes256supported) {
-			if (gcmsupported && sha256supported) {
-				negotiatedqop=
-				QOP_AES_K256_GCM_PKCS5Padding_SHA2;
-			} else if (cbcsupported && sha1supported) {
-				negotiatedqop=
-				QOP_AES_K256_CBC_PKCS5Padding_SHA1;
-			}
-		}
-	}
-	debugWrite("negotiated qop: %s",qopstr[negotiatedqop]);
-
-	// trailer...
-	const byte_t	*trailer=ptr;
-	uint16_t	trailersize=end-trailer;
-	debugWrite("trailer:");
-	debugHexDump(trailer,trailersize);
-
-	// return next parcel
-	*parcelout=parceldata+parceldatasize;
-
-	debugParcelEnd(parceldata,parceldatasize);
-
-	return true;
-}
-
 void sqlrprotocol_teradata::confAlg(byte_t val) {
 	switch (val) {
 		case ALG_BLOWFISH:
@@ -3141,13 +2905,10 @@ void sqlrprotocol_teradata::kexAlgKeySize(byte_t kex, uint16_t val) {
 	debugWrite("%d",val);
 }
 
-bool sqlrprotocol_teradata::parseSsoParcel(const byte_t *parcel,
+bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 						const byte_t **parcelout) {
 
 	// see parcel.h - pclssoreq_t
-	//
-	// FIXME: shouldn't this be the same as parseSsoRequestParcel,
-	// the parcel flavor is the same
 
 	// parse parcel header
 	uint16_t	parcelflavor;
@@ -3162,47 +2923,282 @@ bool sqlrprotocol_teradata::parseSsoParcel(const byte_t *parcel,
 		return false;
 	}
 
-	debugParcelStart("recv","sso",parcelflavor,parceldatasize);
+	debugParcelStart("recv","sso request",parcelflavor,parceldatasize);
 
 	// parse parcel data
 	const byte_t	*ptr=parceldata;
-	//const byte_t	*end=parceldata+parceldatasize;
+	const byte_t	*end=parceldata+parceldatasize;
 
-	uint16_t	unknown1;
-	byte_t		unknown2;
-	const byte_t	*token;
-	readBE(ptr,&unknown1,&ptr);
-	read(ptr,&unknown2,&ptr);
-	token=ptr;
-	ptr+=17;
+	byte_t		method;
+	byte_t		trip;
+	uint16_t	authdatalen;
 
-	uint16_t	clientpubkeysize=sizeof(clientpubkey);
-	if (clientpubkeysize>parceldata+parceldatasize-ptr) {
-		clientpubkeysize=parceldata+parceldatasize-ptr;
-	}
-	read(ptr,clientpubkey,clientpubkeysize,&ptr);
+	read(ptr,&method,&ptr);
+	read(ptr,&trip,&ptr);
+	// appears to always be LE
+	readLE(ptr,&authdatalen,&ptr);
 
-	debugWrite("unknown1: %d",unknown1);
-	debugWrite("unknown2: %d",unknown2);
-	debugWrite("token:");
-	debugHexDump(token,17);
-	debugWrite("client public key:");
-	if (clientpubkeysize<sizeof(clientpubkey)) {
-		debugWrite("(shorter than expected)");
-	}
-	debugHexDump(clientpubkey,clientpubkeysize);
-	if (ptr!=parceldata+parceldatasize) {
-		debugWrite("trailing bytes:");
-		debugHexDump(ptr,parceldata+parceldatasize-ptr);
-	}
+	debugWrite("method: %d",method);
+	debugWrite("trip: %d",trip);
+	debugWrite("auth data len: %d",authdatalen);
 
-#ifdef DECRYPT
-	// now that we have the client public key,
-	// we can genrate the shared secret
-	if (!generateSharedSecret()) {
-		return false;
+	// parse the authdata
+	if (trip==0) {
+
+		// no known reference (just had to study the trace)
+
+		// not sure what this is
+		// FIXME: bytes 16-20 appear to be 16.20.12.01 in binary,
+		// which we then send back in the same position in the
+		// trip 1 sso response
+		//
+		// NOTE: we receive 80 bytes at the beginning of the auth data
+		// here, and send 80 bytes at the beginning of the auth data
+		// in the trip 1 response
+		//
+		// NOTE: Bytes 16-20 appear to be a binary representation of
+		// 16.20.12.01 both here and in the response.  In the gateway
+		// config parcel, the same binary version is the "gss version".
+		byte_t	unknown[80];
+		read(ptr,unknown,sizeof(unknown),&ptr);
+
+		debugWrite("unknown:");
+		debugHexDump(unknown,sizeof(unknown));
+
+
+
+		// the next bit appears to be the supported algorithms...
+
+		// get field and size
+		byte_t	algs;
+		byte_t	algssize;
+		read(ptr,&algs,&ptr);
+		read(ptr,&algssize,&ptr);
+		if (algs!=SSOREQ_SUPPORTED_ALGORITHMS) {
+			// FIXME: bail somehow
+		}
+
+		debugStart("supported algorithms");
+
+		// parse each supported algorithm
+		const byte_t	*algsend=ptr+algssize;
+		while (ptr<algsend) {
+
+			// FIXME: bail if we run off the end of the parcel
+
+			// get field and size
+			byte_t	alg;
+			byte_t	algsize;
+			read(ptr,&alg,&ptr);
+			read(ptr,&algsize,&ptr);
+			if (alg!=SSOREQ_SUPPORTED_ALGORITHM) {
+				// FIXME: bail somehow
+			}
+
+			debugStart("supported algorithm");
+
+			// get algorithm details
+			const byte_t	*algend=ptr+algsize;
+			byte_t		currentconf=ALG_NONE;
+			byte_t		currentkex=ALG_NONE;
+			while (ptr<algend) {
+
+				// FIXME: bail if we run off
+				// the end of the parcel
+
+				// get field and size
+				byte_t	algdfield;
+				read(ptr,&algdfield,&ptr);
+				byte_t	algdsize;
+				read(ptr,&algdsize,&ptr);
+
+				debugWrite("%s: ",
+					algdfieldname[algdfield-0xd0]);
+
+				if (algdsize==1) {
+
+					byte_t	val;
+					read(ptr,&val,&ptr);
+
+					switch (algdfield) {
+						case CONF_ALG:
+							currentconf=val;
+							confAlg(val);
+							break;
+						case INT_ALG:
+							intAlg(val);
+							break;
+						case KEX_ALG:
+							currentkex=val;
+							kexAlg(val);
+							break;
+						case CONF_ALG_MODE:
+							confAlgMode(val);
+							break;
+						case CONF_ALG_PADDING:
+							confAlgPadding(val);
+							break;
+						default:
+							// FIXME: bail somehow
+							break;
+					}
+
+				} else if (algdsize==2) {
+
+					uint16_t	val;
+					readBE(ptr,&val,&ptr);
+
+					switch (algdfield) {
+						case CONF_ALG_KEY_SIZE:
+							confAlgKeySize(
+								currentconf,
+								val);
+							break;
+						case KEX_ALG_KEY_SIZE:
+							kexAlgKeySize(
+								currentkex,
+								val);
+							break;
+						default:
+							// FIXME: bail somehow
+							break;
+					}
+				}
+			}
+			debugEnd();
+		}
+		debugEnd();
+
+
+
+		// the next bit appears to be the requested mech...
+
+		// get field and size
+		byte_t		reqmechfield;
+		byte_t		reqmechsize;
+		const byte_t	*reqmech;
+		read(ptr,&reqmechfield,&ptr);
+		read(ptr,&reqmechsize,&ptr);
+		if (reqmechfield!=SSOREQ_REQUESTED_MECH) {
+			// FIXME: bail somehow
+		}
+
+		// get the requested mech
+		reqmech=ptr;
+		ptr+=reqmechsize;
+
+		debugWrite("requested mech field: %d (%04x)",
+					reqmechfield,reqmechfield);
+		debugWrite("requested mech oid:");
+		debugHexDump(reqmech,reqmechsize);
+
+
+
+		// not sure what this is
+		const byte_t	*trailer=ptr;
+		uint16_t	trailersize=end-trailer;
+		debugWrite("unknown:");
+		debugHexDump(trailer,trailersize);
+
+
+
+		// negotiate mech
+		// (for now we only support TD2)
+		negotiatedmech=MECH_NONE;
+		if (reqmechsize==sizeof(td2mechoid) &&
+				!bytestring::compare(reqmech,
+					td2mechoid,sizeof(td2mechoid))) {
+			negotiatedmech=MECH_TD2;
+		} else if (reqmechsize==sizeof(tdnegomechoid) &&
+				!bytestring::compare(reqmech,
+					tdnegomechoid,sizeof(tdnegomechoid))) {
+			negotiatedmech=MECH_TDNEGO;
+		} else if (reqmechsize==sizeof(ldapmechoid) &&
+				!bytestring::compare(reqmech,
+					ldapmechoid,sizeof(ldapmechoid))) {
+			negotiatedmech=MECH_LDAP;
+		} else if (reqmechsize==sizeof(krbmechoid) &&
+				!bytestring::compare(reqmech,
+					krbmechoid,sizeof(krbmechoid))) {
+			negotiatedmech=MECH_KRB;
+		} else if (reqmechsize==sizeof(krbcompatmechoid) &&
+				!bytestring::compare(reqmech,
+					krbcompatmechoid,
+					sizeof(krbcompatmechoid))) {
+			negotiatedmech=MECH_KRBCOMPAT;
+		}
+		debugWrite("negotiated mech: %s",mechstr[negotiatedmech]);
+		if (negotiatedmech!=MECH_NONE && negotiatedmech!=MECH_TD2) {
+			debugWrite("(unsupported)");
+			negotiatedmech=MECH_NONE;
+		}
+
+		// negotiate qop
+		// (for now, we require dh2048, aes, and pkcs5 padding)
+		negotiatedqop=QOP_NONE;
+		if (dhsupported && dh2048supported &&
+				aessupported && pkcs5supported) {
+			if (aes128supported) {
+				if (gcmsupported && sha256supported) {
+					negotiatedqop=
+					QOP_AES128_GCM_PKCS5_SHA256;
+				} else if (cbcsupported && sha1supported) {
+					negotiatedqop=
+					QOP_AES128_CBC_PKCS5_SHA1;
+				}
+			} else if (aes192supported) {
+				if (gcmsupported && sha256supported) {
+					negotiatedqop=
+					QOP_AES192_GCM_PKCS5_SHA256;
+				} else if (cbcsupported && sha1supported) {
+					negotiatedqop=
+					QOP_AES192_CBC_PKCS5_SHA1;
+				}
+			} else if (aes256supported) {
+				if (gcmsupported && sha256supported) {
+					negotiatedqop=
+					QOP_AES256_GCM_PKCS5_SHA256;
+				} else if (cbcsupported && sha1supported) {
+					negotiatedqop=
+					QOP_AES256_CBC_PKCS5_SHA1;
+				}
+			}
+		}
+		debugWrite("negotiated qop: %s",qopstr[negotiatedqop]);
+
+	} else {
+
+		// no known reference (just had to study the trace)
+
+		// not sure what this is
+		byte_t	unknown[16];
+		read(ptr,unknown,sizeof(unknown),&ptr);
+
+		// the next bit appears to be the client public key...
+
+		// sanity check
+		size_t	bytesremaining=authdatalen-sizeof(unknown);
+		size_t	bytestoread=bytesremaining;
+		if (bytestoread>sizeof(clientpubkey)) {
+			bytestoread=sizeof(clientpubkey);
+		}
+
+		// read the key
+		read(ptr,clientpubkey,bytestoread,&ptr);
+
+		debugWrite("unknown:");
+		debugHexDump(unknown,sizeof(unknown));
+		if (bytesremaining!=sizeof(clientpubkey)) {
+			debugWrite("NOTE: bytes remaining = %d but "
+					"sizeof(clientpubkey) = %d, "
+					"we read %d bytes",
+					bytesremaining,
+					sizeof(clientpubkey),
+					bytestoread);
+		}
+		debugWrite("client pub key (%d bytes):",bytestoread);
+		debugHexDump(clientpubkey,bytestoread);
 	}
-#endif
 
 	// return next parcel
 	*parcelout=parceldata+parceldatasize;
@@ -4842,9 +4838,10 @@ void sqlrprotocol_teradata::appendConfigResponseParcel() {
 	appendConfigResponseIFPs();
 	appendConfigResponseAMPs();
 	appendConfigResponseCharSets();
-	appendConfigResponseInDoubtAndHasFields();
-	appendConfigResponseField84();
-	appendConfigResponseField49();
+	appendConfigResponseInDoubt();
+	appendConfigResponseHasFields();
+	appendConfigResponseTransactionSemantics();
+	appendConfigResponseField7();
 	appendConfigResponseField9();
 	appendConfigResponseField10();
 	appendConfigResponseField11();
@@ -4958,62 +4955,50 @@ void sqlrprotocol_teradata::appendConfigResponseCharSets() {
 	debugEnd();
 }
 
-void sqlrprotocol_teradata::appendConfigResponseInDoubtAndHasFields() {
+void sqlrprotocol_teradata::appendConfigResponseInDoubt() {
 
 	// see parcel.h - PclConfigRspType
 
 	// in-doubt sessions exist ('Y'/'N')...
 	// see parcel.h - PclConfigRspType, InDoubt
-	char		indoubt='N';
+	char	indoubt='N';
 	write(&respdata,indoubt);
 	debugWrite("in doubt sessions: %c",indoubt);
+}
+
+void sqlrprotocol_teradata::appendConfigResponseHasFields() {
+
+	// see parcel.h - PclConfigRspType
 
 	// has fields...
 	byte_t		hasfields=1;
 	write(&respdata,hasfields);
 	debugWrite("has fields: %d",hasfields);
-
-	// fields...
-	// PclCfgExtendType, PclCfgNDMFeatureType?
-	// FIXME:: implemnt this...
-
-	uint16_t	unknown2=1;
-	uint16_t	unknown3=1;
-
-	write(&respdata,unknown2);
-	write(&respdata,unknown3);
-
-	debugWrite("unknown2: %d",unknown2);
-	debugWrite("unknown3: %d",unknown3);
 }
 
-void sqlrprotocol_teradata::appendConfigResponseField84() {
+void sqlrprotocol_teradata::appendConfigResponseTransactionSemantics() {
 
-	// see parcel.h - PclConfigRspType
+	// see parcel.h - PclConfigRspType, PclCfgNDMFeatureType
 
-	// ???
-	byte_t		field=84;
+	// Transaction semantics
+	// 'T' - Teradata
+	// 'A' - ANSI
+	char	ts='T';
 
-	// ... or is this field 7 with 140 bytes to follow
-	// "field 49" sends about 140 bytes, and the field after "48" is 9
-	uint16_t	unknown1=7;
-	uint16_t	unknown2=140;
-	write(&respdata,field);
-	write(&respdata,unknown1);
-	write(&respdata,unknown2);
+	write(&respdata,(uint16_t)1);
+	write(&respdata,(uint16_t)sizeof(ts));
+	write(&respdata,ts);
 
-	debugStart("field %d (0x%02x) ???",field,field);
-	debugWrite("unknown1: %d",unknown1);
-	debugWrite("unknown2: %d",unknown2);
-	debugEnd();
+	debugWrite("transaction semantics: %c",ts);
 }
 
-void sqlrprotocol_teradata::appendConfigResponseField49() {
+void sqlrprotocol_teradata::appendConfigResponseField7() {
 
-	// see parcel.h - PclConfigRspType
+	// see parcel.h - PclConfigRspType, PclCfgExtendType
+	// FIXME: what is this field?
+	// none of these values appear to match anything in dbscontrol:display
 
-	// ???
-	byte_t		field=49;
+	byte_t		unknown0=49;
 	byte_t		unknown1=0;
 	uint16_t	unknown2=100;
 	byte_t		unknown3=0;
@@ -5056,9 +5041,9 @@ void sqlrprotocol_teradata::appendConfigResponseField49() {
 	uint16_t	unknown19=0;
 	uint16_t	unknown20=65535;
 	uint16_t	unknown21=0;
-	uint16_t	unknown22=2048;
+	uint16_t	unknown22=2048;  // DH_p/g size?
 	uint16_t	unknown23=0;
-	uint16_t	unknown24=128;
+	uint16_t	unknown24=128;   // AES keys size?
 	uint16_t	unknown25=0;
 	uint16_t	unknown26=64;
 	uint16_t	unknown27=0;
@@ -5103,7 +5088,9 @@ void sqlrprotocol_teradata::appendConfigResponseField49() {
 	uint16_t	unknown63=250;
 	byte_t		unknown64=0;
 
-	write(&respdata,field);
+	write(&respdata,(uint16_t)7);
+	write(&respdata,(uint16_t)140);
+	write(&respdata,unknown0);
 	write(&respdata,unknown1);
 	write(&respdata,unknown2);
 	write(&respdata,unknown3);
@@ -5175,7 +5162,8 @@ void sqlrprotocol_teradata::appendConfigResponseField49() {
 	write(&respdata,unknown63);
 	write(&respdata,unknown64);
 
-	debugStart("field %d (0x%02x) ???",field,field);
+	debugStart("unknown field 7");
+	debugWrite("unknown0: %d",unknown0);
 	debugWrite("unknown1: %d",unknown1);
 	debugWrite("unknown2: %d",unknown2);
 	debugWrite("unknown3: %d",unknown3);
@@ -5257,41 +5245,37 @@ void sqlrprotocol_teradata::appendConfigResponseField49() {
 
 void sqlrprotocol_teradata::appendConfigResponseField9() {
 
-	// see parcel.h - PclConfigRspType
+	// see parcel.h - PclConfigRspType, PclCfgExtendType
+	// FIXME: what is this field?
 
-	// ???
-	uint16_t	field=9;
-	// size? (1 byte)
-	uint16_t	unknown1=1;
-	byte_t		unknown2=1;
-	write(&respdata,field);
-	write(&respdata,unknown1);
-	write(&respdata,unknown2);
+	byte_t		data=1;
 
-	debugStart("field %d (0x%02x) ???",field,field);
-	debugWrite("unknown1: %d",unknown1);
-	debugWrite("unknown2: %d",unknown2);
+	write(&respdata,(uint16_t)9);
+	write(&respdata,(uint16_t)sizeof(data));
+	write(&respdata,data);
+
+	debugStart("unknown field 9");
+	debugWrite("data: %d",data);
 	debugEnd();
 }
 
 void sqlrprotocol_teradata::appendConfigResponseField10() {
 
-	// see parcel.h - PclConfigRspType
+	// see parcel.h - PclConfigRspType, PclCfgExtendType
+	// FIXME: what is this field?
 
-	// ???
-	uint16_t	field=10;
 	byte_t		data[]={
 		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x02,
 		0x01, 0x00, 0x01, 0x01, 0x00, 0x01, 0x01, 0x01,
 		0x01, 0x00, 0x01, 0x01, 0x00, 0x01, 0x01, 0x01,
 		0x01, 0x01, 0x01, 0x02
 	};
-	write(&respdata,field);
+
+	write(&respdata,(uint16_t)10);
 	write(&respdata,(uint16_t)sizeof(data));
 	write(&respdata,data,sizeof(data));
 
-	debugStart("field %d (0x%02x) ???",field,field);
-	debugWrite("size: %d",sizeof(data));
+	debugStart("unknown field 10");
 	debugWrite("data:");
 	debugHexDump(data,sizeof(data));
 	debugEnd();
@@ -5299,10 +5283,9 @@ void sqlrprotocol_teradata::appendConfigResponseField10() {
 
 void sqlrprotocol_teradata::appendConfigResponseField11() {
 
-	// see parcel.h - PclConfigRspType
+	// see parcel.h - PclConfigRspType, PclCfgExtendType
+	// FIXME: what is this field?
 
-	// ???
-	uint16_t	field=11;
 	byte_t		data[]={
 		0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x01, 0x01,
 		0x01, 0x01, 0x01, 0x01, 0x02, 0x01, 0x01, 0x01,
@@ -5310,12 +5293,12 @@ void sqlrprotocol_teradata::appendConfigResponseField11() {
 		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
 		0x00, 0x01
 	};
-	write(&respdata,field);
+
+	write(&respdata,(uint16_t)11);
 	write(&respdata,(uint16_t)sizeof(data));
 	write(&respdata,data,sizeof(data));
 
-	debugStart("field %d (0x%02x) ???",field,field);
-	debugWrite("size: %d",sizeof(data));
+	debugStart("unknown field 11");
 	debugWrite("data:");
 	debugHexDump(data,sizeof(data));
 	debugEnd();
@@ -5323,19 +5306,18 @@ void sqlrprotocol_teradata::appendConfigResponseField11() {
 
 void sqlrprotocol_teradata::appendConfigResponseField12() {
 
-	// see parcel.h - PclConfigRspType
+	// see parcel.h - PclConfigRspType, PclCfgExtendType
+	// FIXME: what is this field?
 
-	// ???
-	uint16_t	field=12;
 	byte_t		data[]={
 		0x01, 0x01, 0x01, 0x02, 0x01, 0x01
 	};
-	write(&respdata,field);
+
+	write(&respdata,(uint16_t)12);
 	write(&respdata,(uint16_t)sizeof(data));
 	write(&respdata,data,sizeof(data));
 
-	debugStart("field %d (0x%02x) ???",field,field);
-	debugWrite("size: %d",sizeof(data));
+	debugStart("unknown field 12");
 	debugWrite("data:");
 	debugHexDump(data,sizeof(data));
 	debugEnd();
@@ -5343,19 +5325,21 @@ void sqlrprotocol_teradata::appendConfigResponseField12() {
 
 void sqlrprotocol_teradata::appendConfigResponseField13() {
 
-	// see parcel.h - PclConfigRspType
+	// see parcel.h - PclConfigRspType, PclCfgExtendType
+	// FIXME: what is this field?
 
 	// appears to be version strings...
-	uint16_t	field=13;
 	const char	*version1="16.20.12.01                   ";
 	size_t		version1size=charstring::getLength(version1);
 	const char	*version2="16.20.12.01                     ";
 	size_t		version2size=charstring::getLength(version2);
-	write(&respdata,field);
+
+	write(&respdata,(uint16_t)13);
 	write(&respdata,(uint16_t)(version1size+version2size));
 	write(&respdata,version1,version1size);
 	write(&respdata,version2,version2size);
-	debugStart("field 13");
+
+	debugStart("unknown field 13");
 	debugWrite("version1: '%s'",version1);
 	debugWrite("version2: '%s'",version2);
 	debugEnd();
@@ -5363,19 +5347,18 @@ void sqlrprotocol_teradata::appendConfigResponseField13() {
 
 void sqlrprotocol_teradata::appendConfigResponseField14() {
 
-	// see parcel.h - PclConfigRspType
+	// see parcel.h - PclConfigRspType, PclCfgExtendType
+	// FIXME: what is this field?
 
-	// ???
-	uint16_t	field=14;
 	byte_t		data[]={
 		0x03, 0x03, 0x02, 0x03
 	};
-	write(&respdata,field);
+
+	write(&respdata,(uint16_t)14);
 	write(&respdata,(uint16_t)sizeof(data));
 	write(&respdata,data,sizeof(data));
 
-	debugStart("field %d (0x%02x) ???",field,field);
-	debugWrite("size: %d",sizeof(data));
+	debugStart("unknown field 14");
 	debugWrite("data:");
 	debugHexDump(data,sizeof(data));
 	debugEnd();
@@ -5383,10 +5366,9 @@ void sqlrprotocol_teradata::appendConfigResponseField14() {
 
 void sqlrprotocol_teradata::appendConfigResponseField15() {
 
-	// see parcel.h - PclConfigRspType
+	// see parcel.h - PclConfigRspType, PclCfgExtendType
+	// FIXME: what is this field?
 
-	// ???
-	uint16_t	field=15;
 	byte_t		data[]={
 		0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01,
 		0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01,
@@ -5394,12 +5376,12 @@ void sqlrprotocol_teradata::appendConfigResponseField15() {
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
 		0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x01
 	};
-	write(&respdata,field);
+
+	write(&respdata,(uint16_t)15);
 	write(&respdata,(uint16_t)sizeof(data));
 	write(&respdata,data,sizeof(data));
 
-	debugStart("field %d (0x%02x) ???",field,field);
-	debugWrite("size: %d",sizeof(data));
+	debugStart("unknown field 15");
 	debugWrite("data:");
 	debugHexDump(data,sizeof(data));
 	debugEnd();
@@ -5407,50 +5389,47 @@ void sqlrprotocol_teradata::appendConfigResponseField15() {
 
 void sqlrprotocol_teradata::appendConfigResponseField16() {
 
-	// see parcel.h - PclConfigRspType
+	// see parcel.h - PclConfigRspType, PclCfgExtendType
+	// FIXME: what is this field?
 
-	// ???
-	uint16_t	field=16;
-	uint16_t	unknown1=20;
 	byte_t		data1[]={
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00
 	};
-	uint16_t	unknown2=32770;
-	byte_t		data2[]={
+	uint16_t	data2=32770;
+	byte_t		data3[]={
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	};
-	write(&respdata,field);
-	write(&respdata,unknown1);
-	write(&respdata,data1,sizeof(data1));
-	write(&respdata,unknown2);
-	write(&respdata,data2,sizeof(data2));
 
-	debugStart("field %d (0x%02x) ???",field,field);
-	debugWrite("unknown1: %d (0x%02x)",unknown1,unknown1);
+	write(&respdata,(uint16_t)16);
+	write(&respdata,(uint16_t)(sizeof(data1)+sizeof(data2)+sizeof(data3)));
+	write(&respdata,data1,sizeof(data1));
+	write(&respdata,data2);
+	write(&respdata,data3,sizeof(data3));
+
+	debugStart("unknown field 16");
 	debugWrite("data1:");
 	debugHexDump(data1,sizeof(data1));
-	debugWrite("unknown2: %d (0x%02x)",unknown2,unknown2);
-	debugWrite("data2:");
-	debugHexDump(data2,sizeof(data2));
+	debugWrite("data2: %d (0x%02x)",data2,data2);
+	debugWrite("data3:");
+	debugHexDump(data3,sizeof(data3));
 	debugEnd();
 }
 
 void sqlrprotocol_teradata::appendConfigResponseField6() {
 
-	// see parcel.h - PclConfigRspType
+	// see parcel.h - PclConfigRspType, PclCfgExtendType
+	// FIXME: what is this field?
 
-	// ???
-	uint16_t	field=6;
 	byte_t		data[]={
 		0x01, 0x49
 	};
-	write(&respdata,field);
+
+	write(&respdata,(uint16_t)6);
 	write(&respdata,(uint16_t)sizeof(data));
 	write(&respdata,data,sizeof(data));
 
-	debugStart("field %d (0x%02x) ???",field,field);
-	debugWrite("size: %d",sizeof(data));
+	debugStart("unknown field 6");
 	debugWrite("data:");
 	debugHexDump(data,sizeof(data));
 	debugEnd();
@@ -5827,171 +5806,192 @@ void sqlrprotocol_teradata::appendAssignResponseParcel() {
 	debugParcelEnd();
 }
 
-void sqlrprotocol_teradata::appendSsoResponseParcel() {
+void sqlrprotocol_teradata::appendSsoResponseParcel(byte_t trip) {
 
 	// see parcel.h - pclssorsp_t
 
 	debugParcelStart("send","sso response",134);
 
-	appendSmallParcelHeader(134,956);
+	appendSmallParcelHeader(134,(trip==1)?956:7);
 
-	byte_t		marker[]={
-		0x00, 0x00, 0x01, 0x00
-	};
-	uint16_t	postmarkersize=950;
-	byte_t		unknown[]={
-		0x03, 0x02, 0x01, 0x01, 0x00, 0x00, 0x03, 0xA6,
-		0x00, 0x00, 0x00, 0x15, 0x00, 0x00, 0x00, 0x00,
-		0x10, 0x14, 0x0C, 0x01, 0x00, 0x00, 0x01, 0x00,
-		0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x66,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-	};
-#ifdef DECRYPT
-	if (!generateServerPublicKey()) {
-		// FIXME: fail somehow
-	}
-#endif
+	byte_t	method=0;
+	byte_t	code=(trip==1)?0:1;
+	byte_t	mustbezero=0;
+	write(&respdata,method);
+	write(&respdata,code);
+	write(&respdata,trip);
+	write(&respdata,mustbezero);
 
-	write(&respdata,marker,sizeof(marker));
-	write(&respdata,postmarkersize);
-	write(&respdata,unknown,sizeof(unknown));
-	write(&respdata,dhp,sizeof(dhp));
-	write(&respdata,dhg,sizeof(dhg));
-	write(&respdata,serverpubkey,sizeof(serverpubkey));
+	debugWrite("method: %d",method);
+	debugWrite("code: %d",code);
+	debugWrite("trip: %d",trip);
+	debugWrite("mustbezero: %d",mustbezero);
 
-	debugWrite("marker:");
-	debugHexDump(marker,sizeof(marker));
-	debugWrite("unknown:");
-	debugHexDump(unknown,sizeof(unknown));
-	debugWrite("dh \"p\":");
-	debugHexDump(dhp,sizeof(dhp));
-	debugWrite("dh \"g\":");
-	debugHexDump(dhg,sizeof(dhg));
-	debugWrite("server public key:");
-	debugHexDump(serverpubkey,sizeof(serverpubkey));
+	if (trip==1) {
 
-	// get qop parameters
-	byte_t		confalg=ALG_AES;
-	byte_t		mode=CONF_ALG_MODE_GCM;
-	byte_t		padding=CONF_ALG_PADDING_PKCS5;
-	uint16_t	confalgkeysize=128;
-	byte_t		intalg=ALG_SHA256;
-	byte_t		kexalg=ALG_DH;
-	uint16_t	kexalgkeysize=2048;
-	switch (negotiatedqop) {
-		case QOP_AES_K128_GCM_PKCS5Padding_SHA2:
-			break;
-		case QOP_AES_K128_CBC_PKCS5Padding_SHA1:
-			mode=CONF_ALG_MODE_CBC;
-			intalg=ALG_SHA1;
-			break;
-		case QOP_AES_K192_GCM_PKCS5Padding_SHA2:
-			confalgkeysize=192;
-			break;
-		case QOP_AES_K192_CBC_PKCS5Padding_SHA1:
-			mode=CONF_ALG_MODE_CBC;
-			confalgkeysize=192;
-			intalg=ALG_SHA1;
-			break;
-		case QOP_AES_K256_GCM_PKCS5Padding_SHA2:
-			confalgkeysize=256;
-			break;
-		case QOP_AES_K256_CBC_PKCS5Padding_SHA1:
-			mode=CONF_ALG_MODE_CBC;
-			confalgkeysize=256;
-			intalg=ALG_SHA1;
-			break;
-	}
+		// no known reference (just had to study the trace)
 
-	// supported QOPs (Quality of Protection)
-	write(&respdata,(byte_t)0xe3);
-	write(&respdata,(byte_t)100);
+		uint16_t	authdatalen=950;
 
-	debugStart("supported QOPs");
+		// unknown
+		// FIXME: is the negotiated mech in here somewhere?
+		// NOTE: interesting that we also receive 80 bytes in the
+		// trip 0 request, and the binary version is in the same
+		// position (bytes 16-20)
+		//
+		// NOTE: We send 80 bytes at the beginning of the auth data
+		// here, and received 80 bytes at the beginning of the auth data
+		// in the trip 0 request.
+		//
+		// NOTE: Bytes 16-20 appear to be a binary representation of
+		// 16.20.12.01 both here and in the response.  In the gateway
+		// config parcel, the same binary version is the "gss version".
+		byte_t		unknown[]={
+			0x03, 0x02, 0x01, 0x01, 0x00, 0x00, 0x03, 0xA6,
+			0x00, 0x00, 0x00, 0x15, 0x00, 0x00, 0x00, 0x00,
+			// 16.20.12.01
+			0x10, 0x14, 0x0C, 0x01,
+			0x00, 0x00, 0x01, 0x00,
+			0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x66,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+		};
+		write(&respdata,authdatalen);
+		write(&respdata,unknown,sizeof(unknown));
 
-	// the server sends 4 QOPs, and for some reason all 4 are the same...
-	byte_t	qops[]={
-		0xe4, 0xe5, 0xe6, 0xe7
-	};
-	for (byte_t i=0; i<4; i++) {
+		debugWrite("unknown:");
+		debugHexDump(unknown,sizeof(unknown));
 
-		// QOP
-		write(&respdata,qops[i]);
-		write(&respdata,(byte_t)23);
 
-		// confidentiality algorithm
-		write(&respdata,(byte_t)CONF_ALG);
-		write(&respdata,(byte_t)1);
-		write(&respdata,confalg);
+		// dh g and p
+		write(&respdata,dhp,sizeof(dhp));
+		write(&respdata,dhg,sizeof(dhg));
 
-		// mode
-		write(&respdata,(byte_t)CONF_ALG_MODE);
-		write(&respdata,(byte_t)1);
-		write(&respdata,mode);
+		debugWrite("dh \"p\":");
+		debugHexDump(dhp,sizeof(dhp));
+		debugWrite("dh \"g\":");
+		debugHexDump(dhg,sizeof(dhg));
 
-		// padding
-		write(&respdata,(byte_t)CONF_ALG_PADDING);
-		write(&respdata,(byte_t)1);
-		write(&respdata,padding);
 
-		// confidentiality algorithm key size
-		write(&respdata,(byte_t)CONF_ALG_KEY_SIZE);
-		write(&respdata,(byte_t)2);
-		writeBE(&respdata,confalgkeysize);
+		// server public key
+		write(&respdata,serverpubkey,sizeof(serverpubkey));
 
-		// integrity algorithm
-		write(&respdata,(byte_t)INT_ALG);
-		write(&respdata,(byte_t)1);
-		write(&respdata,intalg);
+		debugWrite("server public key (%d bytes):",
+					sizeof(serverpubkey));
+		debugHexDump(serverpubkey,sizeof(serverpubkey));
 
-		// key exchange algorithm
-		write(&respdata,(byte_t)KEX_ALG);
-		write(&respdata,(byte_t)1);
-		write(&respdata,kexalg);
 
-		// key exchange algorithm key size
-		write(&respdata,(byte_t)KEX_ALG_KEY_SIZE);
-		write(&respdata,(byte_t)2);
-		writeBE(&respdata,kexalgkeysize);
+		// negotiated QOPs (Quality of Protection)
+		write(&respdata,(byte_t)SSORESP_NEGOTIATED_QOPS);
+		write(&respdata,(byte_t)100);
 
-		debugStart("QOP %d",i);
-		debugWrite("conf alg: %s",algstr[confalg]);
-		debugWrite("mode: %s",confalgmodestr[mode]);
-		debugWrite("padding: %s",confalgpaddingstr[padding]);
-		debugWrite("conf alg key size: %d",confalgkeysize);
-		debugWrite("integrity alg: %s",algstr[intalg]);
-		debugWrite("kex alg: %s",algstr[kexalg]);
-		debugWrite("kex alg key size: %d",kexalgkeysize);
+		// get QOP parameters
+		byte_t		confalg=ALG_AES;
+		byte_t		mode=CONF_ALG_MODE_GCM;
+		byte_t		padding=CONF_ALG_PADDING_PKCS5;
+		uint16_t	confalgkeysize=128;
+		byte_t		intalg=ALG_SHA256;
+		byte_t		kexalg=ALG_DH;
+		uint16_t	kexalgkeysize=2048;
+		switch (negotiatedqop) {
+			case QOP_AES128_GCM_PKCS5_SHA256:
+				break;
+			case QOP_AES128_CBC_PKCS5_SHA1:
+				mode=CONF_ALG_MODE_CBC;
+				intalg=ALG_SHA1;
+				break;
+			case QOP_AES192_GCM_PKCS5_SHA256:
+				confalgkeysize=192;
+				break;
+			case QOP_AES192_CBC_PKCS5_SHA1:
+				mode=CONF_ALG_MODE_CBC;
+				confalgkeysize=192;
+				intalg=ALG_SHA1;
+				break;
+			case QOP_AES256_GCM_PKCS5_SHA256:
+				confalgkeysize=256;
+				break;
+			case QOP_AES256_CBC_PKCS5_SHA1:
+				mode=CONF_ALG_MODE_CBC;
+				confalgkeysize=256;
+				intalg=ALG_SHA1;
+				break;
+		}
+
+		debugStart("negotiated QOPs");
+
+		// the server sends 4 QOPs, and for some
+		// reason all 4 are the same...
+		byte_t	qops[]={
+			SSORESP_NEGOTIATED_QOP1,
+			SSORESP_NEGOTIATED_QOP2,
+			SSORESP_NEGOTIATED_QOP3,
+			SSORESP_NEGOTIATED_QOP4
+		};
+		for (byte_t i=0; i<sizeof(qops); i++) {
+
+			// QOP
+			write(&respdata,qops[i]);
+			write(&respdata,(byte_t)23);
+
+			// confidentiality algorithm
+			write(&respdata,(byte_t)CONF_ALG);
+			write(&respdata,(byte_t)1);
+			write(&respdata,confalg);
+
+			// mode
+			write(&respdata,(byte_t)CONF_ALG_MODE);
+			write(&respdata,(byte_t)1);
+			write(&respdata,mode);
+
+			// padding
+			write(&respdata,(byte_t)CONF_ALG_PADDING);
+			write(&respdata,(byte_t)1);
+			write(&respdata,padding);
+
+			// confidentiality algorithm key size
+			write(&respdata,(byte_t)CONF_ALG_KEY_SIZE);
+			write(&respdata,(byte_t)2);
+			writeBE(&respdata,confalgkeysize);
+
+			// integrity algorithm
+			write(&respdata,(byte_t)INT_ALG);
+			write(&respdata,(byte_t)1);
+			write(&respdata,intalg);
+
+			// key exchange algorithm
+			write(&respdata,(byte_t)KEX_ALG);
+			write(&respdata,(byte_t)1);
+			write(&respdata,kexalg);
+
+			// key exchange algorithm key size
+			write(&respdata,(byte_t)KEX_ALG_KEY_SIZE);
+			write(&respdata,(byte_t)2);
+			writeBE(&respdata,kexalgkeysize);
+
+			debugStart("QOP %d",i+1);
+			debugWrite("conf alg: %s",algstr[confalg]);
+			debugWrite("mode: %s",confalgmodestr[mode]);
+			debugWrite("padding: %s",confalgpaddingstr[padding]);
+			debugWrite("conf alg key size: %d",confalgkeysize);
+			debugWrite("integrity alg: %s",algstr[intalg]);
+			debugWrite("kex alg: %s",algstr[kexalg]);
+			debugWrite("kex alg key size: %d",kexalgkeysize);
+			debugEnd();
+		}
 		debugEnd();
+
+	} else {
+
+		// no known reference (just had to study the trace)
+
+		uint16_t	authdatalen=0;
+		write(&respdata,authdatalen);
 	}
-	debugEnd();
-
-	debugParcelEnd();
-}
-
-void sqlrprotocol_teradata::appendSsoParcel() {
-
-	// see parcel.h - pclssprsp_t
-	//
-	// FIXME: shouldn't this be the same as appendSsoResponseParcel,
-	// the parcel flavor is the same
-
-	debugParcelStart("send","sso",134);
-
-	appendSmallParcelHeader(134,7);
-
-	byte_t	data[]={
-		0x00, 0x01, 0x03, 0x00, 0x00, 0x00
-	};
-	write(&respdata,data,sizeof(data));
-
-	debugWrite("data:");
-	debugHexDump(data,sizeof(data));
 
 	debugParcelEnd();
 }
@@ -7726,43 +7726,35 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 						bytebuffer *decdata) {
 
 	// FIXME: push down to rudiments
+	// rudiments currently has aes128, but only with cbc, not gcm
+
 	debugStart("decrypting");
 
 	// chose a cipher (libcrypto enables PKCS5 padding by default)
 	const EVP_CIPHER	*cipher=NULL;
-	size_t			ivsize=0;
 	switch (negotiatedqop) {
-		case QOP_AES_K128_GCM_PKCS5Padding_SHA2:
+		case QOP_AES128_GCM_PKCS5_SHA256:
 			cipher=EVP_aes_128_gcm();
-			ivsize=12;
-			// FIXME: SHA256 hmac?
 			break;
-		case QOP_AES_K128_CBC_PKCS5Padding_SHA1:
+		case QOP_AES128_CBC_PKCS5_SHA1:
 			cipher=EVP_aes_128_cbc();
-			ivsize=16;
-			// FIXME: SHA1 hmac?
 			break;
-		case QOP_AES_K192_GCM_PKCS5Padding_SHA2:
+		case QOP_AES192_GCM_PKCS5_SHA256:
 			cipher=EVP_aes_192_gcm();
-			ivsize=12;
-			// FIXME: SHA256 hmac?
 			break;
-		case QOP_AES_K192_CBC_PKCS5Padding_SHA1:
+		case QOP_AES192_CBC_PKCS5_SHA1:
 			cipher=EVP_aes_192_cbc();
-			ivsize=16;
-			// FIXME: SHA1 hmac?
 			break;
-		case QOP_AES_K256_GCM_PKCS5Padding_SHA2:
+		case QOP_AES256_GCM_PKCS5_SHA256:
 			cipher=EVP_aes_256_gcm();
-			ivsize=12;
-			// FIXME: SHA256 hmac?
 			break;
-		case QOP_AES_K256_CBC_PKCS5Padding_SHA1:
+		case QOP_AES256_CBC_PKCS5_SHA1:
 			cipher=EVP_aes_256_cbc();
-			ivsize=16;
-			// FIXME: SHA1 hmac?
 			break;
 	}
+
+	// get the initializaton vector size
+	size_t	ivsize=EVP_CIPHER_iv_length(cipher);
 
 	// validate the encdata
 	if (encdatasize<ivsize) {
@@ -7771,24 +7763,15 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 		return false;
 	}
 
-	// get the key...
-	// * presumably from the shared secret, somehow
-	// * needs to be 16/24/32 bytes for AES128/192/256
-	// * FIXME: try...
-	//  * left x bits of sha256 hash (current try)
-	//  * pbkdf2
-	const byte_t	*key=sha2sharedsecret;
-	uint32_t	keysize=sizeof(sha2sharedsecret);
-
 	// get the initialization vector...
-	// apparently it's semi-conventional to generate a random IV and send
-	// it to the other side, preceding the data
+	// (it's conventional to generate a random IV and
+	// send it to the other side, preceding the data)
 	byte_t	*iv=new byte_t[ivsize];
 	bytestring::copy(iv,encdata,ivsize);
 	encdata+=ivsize;
 	encdatasize-=ivsize;
 
-	// initialize cipher context
+	// initialize the cipher context
 	EVP_CIPHER_CTX	*ctx=EVP_CIPHER_CTX_new();
 	if (!ctx) {
 		if (getDebug()) {
@@ -7798,9 +7781,9 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 		debugEnd();
 		return false;
 	}
-	
+
 	// initialize the decryption process
-	if (!EVP_DecryptInit_ex(ctx,cipher,NULL,key,iv)) {
+	if (!EVP_DecryptInit_ex(ctx,cipher,NULL,sharedkey,iv)) {
 		if (getDebug()) {
 			debugWrite("decrypt-init failed");
 			ERR_print_errors_fp(stdout);
@@ -7811,9 +7794,9 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 
 debugWrite("cipher: %s",qopstr[negotiatedqop]);
 debugWrite("cipher key size: %d",EVP_CIPHER_CTX_key_length(ctx));
-debugWrite("provided key size: %d",keysize);
+debugWrite("provided key size: %d",sizeof(sharedkey));
 debugWrite("key:");
-debugHexDump(key,keysize);
+debugHexDump(sharedkey,EVP_CIPHER_CTX_key_length(ctx));
 debugWrite("cipher iv size: %d",EVP_CIPHER_CTX_iv_length(ctx));
 debugWrite("provided iv size: %d",ivsize);
 debugWrite("iv:");
@@ -7855,6 +7838,8 @@ debugHexDump(out,outsize);
 		totaloutsize+=outsize;
 	}
 
+	// FIXME: HMAC the result with SHA256???
+
 	// copy out
 	if (success) {
 		decdata->append(out,totaloutsize);
@@ -7875,15 +7860,47 @@ bool sqlrprotocol_teradata::encrypt(const byte_t *decdata,
 						uint64_t decdatasize,
 						bytebuffer *encdata) {
 	// FIXME: push down to rudiments
+	// rudiments currently has aes128, but only with cbc, not gcm
 	return true;
 }
 
-bool sqlrprotocol_teradata::generateServerPublicKey() {
+bool sqlrprotocol_teradata::generateEphemeralKeys() {
+
+	// Diffie-Hellman Key Exchange...
+	//
+	// * I use DHp (DH prime modulus (large prime number)) and
+	//   DHg (DH generator AKA base) to generate my private/public key
+	//   pair
+	// * I send DHp, DHg, and my public key to the client
+	// * The client uses my DHp and DHg to generate their private/public
+	//   key pair
+	// * The client sends me their public key
+	// * I use my private key and their public key to generate a secret
+	// * They use their private key and my public key to generate a secret
+	// * These secrets should be the same (shared secret)
+	// * We negotiate a cipher (eg. AES128_GCM_PKCS5_SHA256)
+	// * We negotiate a Key Derivation Function (KDF) (hashing algorithm)
+	//   (eg. SHA256) (Note that in AES128_GCM_PKCS5_SHA256, SHA256 refers
+	//   to the Hash-based Message Authentication Code (HMAC) not the KDF)
+	// * We both hash the shared secret using the agreed upon KDF
+	//   * If the KDF generates a larger key than required (eg. SHA256
+	//     generates a 256-bit (32-byte) key but AES128 only requires a
+	//     128-bit (16-byte) key) then the key is typically just
+	//     truncated to the necessary length
+	//   * There are other strategies, though
+	//   * The client and server have to agree on a strategy
+	// * This hash should also be the same
+	// * We both use the hash as the key for our cipher
+	// * We both use the cipher for symmetric encryption and decryption
 
 	// FIXME: push down to rudiments
+	// rudiments doesn't currently have diffie-hellman
+
+	debugStart("generate server keys");
 
 	// clear the server public key buffer
 	bytestring::zero(serverpubkey,sizeof(serverpubkey));
+	bytestring::zero(serverprivkey,sizeof(serverprivkey));
 
 	// reset the dh
 	DH_free(dh);
@@ -7904,6 +7921,7 @@ bool sqlrprotocol_teradata::generateServerPublicKey() {
 			debugWrite("DH parameter check failed");
 			ERR_print_errors_fp(stdout);
 		}
+		debugEnd();
 		return false;
 	}
 	if (codes) {
@@ -7911,6 +7929,7 @@ bool sqlrprotocol_teradata::generateServerPublicKey() {
 			debugWrite("invalid DH parameters");
 			ERR_print_errors_fp(stdout);
 		}
+		debugEnd();
 		return false;
 	}
 
@@ -7919,45 +7938,73 @@ bool sqlrprotocol_teradata::generateServerPublicKey() {
 
 		// get the public key
 		const BIGNUM	*pubkey=NULL;
+		const BIGNUM	*privkey=NULL;
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L && !defined(LIBRESSL_VERSION_NUMBER)
-		DH_get0_key(dh,&pubkey,NULL);
+		DH_get0_key(dh,&pubkey,&privkey);
 #else
 		pubkey=dh->pub_key;
+		privkey=dh->priv_key;
 #endif
 
-		// verify that the key isn't too big for the buffer
+		// copy out the public key (if it isn't too big for the buffer)
 		if ((uint64_t)BN_num_bytes(pubkey)<=
 				(uint64_t)sizeof(serverpubkey)) {
 
-			// copy out the key
 			BN_bn2bin(pubkey,serverpubkey);
 
 		} else {
 			debugWrite("public key too large");
+			debugEnd();
 			return false;
 		}
+
+		// copy out the private key (if it isn't too big for the buffer)
+		if ((uint64_t)BN_num_bytes(privkey)<=
+				(uint64_t)sizeof(serverprivkey)) {
+
+			BN_bn2bin(privkey,serverprivkey);
+
+		} else {
+			debugWrite("private key too large");
+			debugEnd();
+			return false;
+		}
+
+		debugWrite("server public key (%d bytes):",
+					sizeof(serverpubkey));
+		debugHexDump(serverpubkey,sizeof(serverpubkey));
+		debugWrite("server private key (%d bytes):",
+					sizeof(serverprivkey));
+		debugHexDump(serverprivkey,sizeof(serverprivkey));
+
 	} else {
-		debugWrite("generate key failed");
+		debugWrite("generate keys failed");
+		debugEnd();
 		return false;
 	}
+
+	debugEnd();
 	return true;
 }
 
 bool sqlrprotocol_teradata::generateSharedSecret() {
 
+	// See generateEphemeralKeys() for an explanation of
+	// Diffie-Hellman Key Exchange
+
 	// FIXME: push down to rudiments
+
+	debugStart("generate shared secret");
 
 	// convert the client public key to a BIGNUM
 	BIGNUM	*cpkbn=BN_bin2bn(clientpubkey,sizeof(clientpubkey),NULL);
 
-	// reallocate the shared secret buffers
+	// reallocate the shared secret buffer
 	delete[] sharedsecret;
 	sharedsecret=new byte_t[DH_size(dh)];
-	bytestring::zero(sha2sharedsecret,sizeof(sha2sharedsecret));
 
 	// compute the shared secret
-	// (NOTE: sharedsecretsize might be less
-	// than the size allocated for the buffer)
+	// (NOTE: result might be less than the size returned by DH_size(dh))
 	int	result=DH_compute_key(sharedsecret,cpkbn,dh);
 
 	// clean up
@@ -7970,30 +8017,38 @@ bool sqlrprotocol_teradata::generateSharedSecret() {
 		sharedsecretsize=0;
 
 		debugWrite("generate shared secret failed");
+		debugEnd();
 		return false;
 	} else {
 		sharedsecretsize=result;
 	}
 
-	debugWrite("shared secret:");
+	debugWrite("shared secret (%d bytes):",sharedsecretsize);
 	debugHexDump(sharedsecret,sharedsecretsize);
 
-	// get sha2 hash of the sharedsecret
+	// get sha256 hash of the shared secret
+	// FIXME: IDK if this is correct, we don't negotiate a KDF at all,
+	// I'm just assuming that we use sha256
+	bytestring::zero(sharedkey,sizeof(sharedkey));
 	sha256		s256;
 	if (!s256.append(sharedsecret,sharedsecretsize)) {
-		debugWrite("sha2-append failed");
+		debugWrite("s256.append() failed");
+		debugEnd();
 		return false;
 	}
 	const byte_t	*hash=s256.getHash();
 	if (!hash) {
-		debugWrite("sha2-getHash failed");
+		debugWrite("s256.getHash() failed");
+		debugEnd();
 		return false;
 	}
-	bytestring::copy(sha2sharedsecret,hash,32);
+	bytestring::copy(sharedkey,hash,sizeof(sharedkey));
 
-	debugWrite("sha2 of shared secret:");
-	debugHexDump(sha2sharedsecret,sizeof(sha2sharedsecret));
+	debugWrite("shared key (%d bytes):",
+				sizeof(sharedkey));
+	debugHexDump(sharedkey,sizeof(sharedkey));
 
+	debugEnd();
 	return true;
 }
 #endif
