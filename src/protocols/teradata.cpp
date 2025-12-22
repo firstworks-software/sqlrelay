@@ -33,7 +33,7 @@
 //#define DEBUG_CLIENT_SEND_RECV 1
 //#define DEBUG_PARCEL_END 1
 
-//#define DECRYPT 1
+#define DECRYPT 1
 
 #ifdef DECRYPT
 	#include <openssl/conf.h>
@@ -660,6 +660,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		bool	recvResponseFromBackend();
 		bool	forwardBackendResponseToClient();
 
+		uint16_t	getParcelFlavor(const byte_t *parcel);
+
 		void	parseParcelHeader(const byte_t *parcel,
 					uint16_t *flavor,
 					uint32_t *datasize,
@@ -851,6 +853,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		void	appendConnectionErrorParcel();
 
 		void	unexpectedParcel(uint16_t parcelflavor);
+		bool	noParcelFound(const byte_t *parcel);
+		bool	noParcelFound(const byte_t *parcel,
+						const char *expected);
 
 		uint16_t	getActivity();
 		bool		activityReturnsResults();
@@ -1292,10 +1297,18 @@ bool sqlrprotocol_teradata::copKindCfg() {
 
 	// parse parcels
 	const byte_t	*parcel=clientreqdata;
-	if (!parseClientConfigParcel(parcel,&parcel) ||
-		!parseConfigParcel(parcel,&parcel)) {
+	if (!parseClientConfigParcel(parcel,&parcel)) {
 		debugEnd();
 		return false;
+	}
+
+	// The config parcel is optional.  When we do receive it, it's
+	// generally empty.  Some clients (JDBC) just don't sent it at all.
+	if (!noParcelFound(parcel,"config (42)")) {
+		if (!parseConfigParcel(parcel,&parcel)) {
+			debugEnd();
+			return false;
+		}
 	}
 
 	// if passthrough is enabled then just do that
@@ -1335,12 +1348,24 @@ bool sqlrprotocol_teradata::copKindAssign() {
 	// parse request
 	debugStart("copkind_assign");
 
-	// parse parcels
+	// parse parcels (in whatever order they occur)
 	const byte_t	*parcel=clientreqdata;
-	if (!parseAssignParcel(parcel,&parcel) ||
-		!parseSsoRequestParcel(parcel,&parcel)) {
-		debugEnd();
-		return false;
+	for (;;) {
+		if (noParcelFound(parcel)) {
+			break;
+		}
+		uint16_t	flavor=getParcelFlavor(parcel);
+		if (flavor==100) {
+			if (!parseAssignParcel(parcel,&parcel)) {
+				debugEnd();
+				return false;
+			}
+		} else if (flavor==132) {
+			if (!parseSsoRequestParcel(parcel,&parcel)) {
+				debugEnd();
+				return false;
+			}
+		}
 	}
 
 	// if passthrough is enabled then just do that
@@ -2606,6 +2631,14 @@ bool sqlrprotocol_teradata::forwardBackendResponseToClient() {
 	return true;
 }
 
+uint16_t sqlrprotocol_teradata::getParcelFlavor(const byte_t *parcel) {
+	uint16_t	parcelflavor;
+	const byte_t	*parceldata;
+	uint32_t	parceldatasize;
+	parseParcelHeader(parcel,&parcelflavor,&parceldatasize,&parceldata);
+	return parcelflavor;
+}
+
 void sqlrprotocol_teradata::parseParcelHeader(const byte_t *parcel,
 					uint16_t *flavor,
 					uint32_t *datasize,
@@ -2935,8 +2968,7 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 
 	read(ptr,&method,&ptr);
 	read(ptr,&trip,&ptr);
-	// appears to always be LE
-	readLE(ptr,&authdatalen,&ptr);
+	read(ptr,&authdatalen,&ptr);
 
 	debugWrite("method: %d",method);
 	debugWrite("trip: %d",trip);
@@ -3045,6 +3077,8 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 
 				} else if (algdsize==2) {
 
+					// odd that these are always BE
+					// but they appear to be
 					uint16_t	val;
 					readBE(ptr,&val,&ptr);
 
@@ -7383,6 +7417,25 @@ void sqlrprotocol_teradata::unexpectedParcel(uint16_t parcelflavor) {
 	debugWrite("recv unexpected parcel: %d",parcelflavor);
 }
 
+bool sqlrprotocol_teradata::noParcelFound(const byte_t *parcel) {
+
+	// if we've run off the end of the clientreqdata,
+	// then no parcel was found
+	return (parcel>=(clientreqdata+clientreqdatasize));
+}
+
+bool sqlrprotocol_teradata::noParcelFound(const byte_t *parcel,
+						const char *expected) {
+
+	// if we've run off the end of the clientreqdata,
+	// then no parcel was found
+	if (parcel>=(clientreqdata+clientreqdatasize)) {
+		debugWrite("no parcel found, expected %s",expected);
+		return true;
+	}
+	return false;
+}
+
 uint16_t sqlrprotocol_teradata::getActivity() {
 
 	// skip whitespace and comments
@@ -7689,8 +7742,9 @@ void sqlrprotocol_teradata::debugParcelStart(const char *direction,
 						const char *flavorname,
 						uint16_t parcelflavor,
 						uint32_t parceldatasize) {
-	debugStart("%s %s parcel - %d (%d)",
-			direction,flavorname,parcelflavor,parceldatasize);
+	debugStart("%s %s parcel - %d (%d bytes) (%s)",
+			direction,flavorname,parcelflavor,parceldatasize,
+			(getProtocolIsBigEndian())?"BE":"LE");
 }
 
 void sqlrprotocol_teradata::debugParcelEnd(const byte_t *parceldata,
