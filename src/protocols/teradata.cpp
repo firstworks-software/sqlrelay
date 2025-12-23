@@ -30,7 +30,7 @@
 // /opt/teradata/tdat/tdgss/site/TdgssUserConfigFile.xml
 
 
-//#define DEBUG_CLIENT_SEND_RECV 1
+#define DEBUG_CLIENT_SEND_RECV 1
 //#define DEBUG_PARCEL_END 1
 
 #define DECRYPT 1
@@ -5031,100 +5031,51 @@ void sqlrprotocol_teradata::appendConfigResponseField7() {
 	// see parcel.h - PclConfigRspType, PclCfgExtendType
 	// FIXME: what is this field?
 	// none of these values appear to match anything in dbscontrol:display
+	// (double-check that, I have more accurate values for them now)
 
-	byte_t		unknown0=49;
-	byte_t		unknown1=0;
-	uint16_t	unknown2=100;
-	byte_t		unknown3=0;
-	uint16_t	unknown4=250;
-	byte_t		unknown5=0;
-	byte_t		unknown6=(!getProtocolIsBigEndian())?64:0;
-	uint16_t	unknown7=3906;
-	byte_t		unknown8_1[]={
-		0x00, 0x00, 0x06
-	};
-	byte_t		unknown8_2[]={
-		0x40, 0x00, 0x00, 0x00, 0x00
-	};
-	const byte_t	*unknown8=(!getProtocolIsBigEndian())?
-							unknown8_1:unknown8_2;
-	uint16_t	unknown8size=(!getProtocolIsBigEndian())?
-							sizeof(unknown8_1):
-							sizeof(unknown8_2);
-	uint16_t	unknown9=31999;
-	byte_t		unknown10_1[]={
-		0x00, 0x00, 0x00, 0x00, 0x00
-	};
-	byte_t		unknown10_2[]={
-		0x06, 0x00, 0x00
-	};
-	const byte_t	*unknown10=(!getProtocolIsBigEndian())?
-							unknown10_1:
-							unknown10_2;
-	uint16_t	unknown10size=(!getProtocolIsBigEndian())?
-							sizeof(unknown10_1):
-							sizeof(unknown10_2);
-	uint16_t	unknown11=28672;
-	uint16_t	unknown12=0;
-	uint16_t	unknown13=65528;
-	uint16_t	unknown14=0;
-	uint16_t	unknown15=1;
-	byte_t		unknown16=0;
-	uint32_t	unknown17=191;
-	uint32_t	unknown18=16;
-	uint16_t	unknown19=0;
-	uint16_t	unknown20=65535;
-	uint16_t	unknown21=0;
-	uint16_t	unknown22=2048;  // DH_p/g size?
-	uint16_t	unknown23=0;
-	uint16_t	unknown24=128;   // AES keys size?
-	uint16_t	unknown25=0;
-	uint16_t	unknown26=64;
-	uint16_t	unknown27=0;
 
-	uint16_t	unknown28=2536;
-	byte_t		unknown29=0;
-	uint32_t	unknown30=262144000;
-	byte_t		unknown31=0;
-	uint16_t	unknown32=62000;
-	uint16_t	unknown32a=0;
-	uint16_t	unknown33=31000;
-	uint16_t	unknown34=0;
-	uint16_t	unknown35=38;
-	uint16_t	unknown35a=0;
-	byte_t		unknown36=0;
-	uint16_t	unknown37=250;
-	uint16_t	unknown38=0;
-	uint16_t	unknown39=250;
-	uint16_t	unknown40=0;
-	uint16_t	unknown41=250;
-	uint16_t	unknown42=0;
-	uint16_t	unknown43=125;
-	uint16_t	unknown44=0;
-	uint16_t	unknown45=125;
-	uint16_t	unknown46=0;
-	uint16_t	unknown47=250;
-	uint16_t	unknown48=0;
-	uint16_t	unknown49=250;
-	byte_t		unknown50=0;
-	uint32_t	unknown51=2536;
-	uint32_t	unknown52=6;
-	uint32_t	unknown53=6;
-	uint32_t	unknown54=6;
-	uint32_t	unknown55=1000;
-	byte_t		unknown56=0;
-	uint16_t	unknown57=4000;
-	uint16_t	unknown58=0;
-	uint16_t	unknown59=65532;
-	byte_t		unknown60=0;
-	uint32_t	unknown61=1048500;
-	byte_t		unknown62=0;
-	uint16_t	unknown63=250;
-	byte_t		unknown64=0;
+	// (hex values below are in big endian)
+	// FIXME: double check that these first two aren't just the
+	// 16 bit number 0x310 in BE and 0x0031 in LE
+	byte_t	unknown1=31;
+	byte_t	unknown2=0;
+	uint16_t	unknown3=100;
+	uint32_t	unknown4=64000;
+	uint32_t	unknown5=1000000;
+	uint64_t	unknown6=2080377344;
+	uint32_t	unknown7=7340032;
+	uint32_t	unknown8=16775168;
+	uint32_t	unknown9=4096;
+	uint32_t	unknown10=191;
+	uint32_t	unknown11=16;
+	uint32_t	unknown12=65535;
+	uint32_t	unknown13=2048;
+	uint32_t	unknown14=128;
+	uint32_t	unknown15=64;
+	uint32_t	unknown16=2536;
+	uint32_t	unknown17=1024000;
+	uint32_t	unknown18=62000;
+	uint32_t	unknown19=31000;
+	uint32_t	unknown20=38;
+	uint32_t	unknown21=64000;
+	uint32_t	unknown22=64000;
+	uint32_t	unknown23=64000;
+	uint32_t	unknown24=32000;
+	uint32_t	unknown25=32000;
+	uint32_t	unknown26=64000;
+	uint32_t	unknown27=64000;
+	uint32_t	unknown28=2536;
+	uint32_t	unknown29=6;
+	uint32_t	unknown30=6;
+	uint32_t	unknown31=6;
+	uint32_t	unknown32=1000;
+	uint32_t	unknown33=1024000;
+	uint32_t	unknown34=16776192;
+	uint32_t	unknown35=1048500;
+	uint32_t	unknown36=64000;
 
 	write(&respdata,(uint16_t)7);
 	write(&respdata,(uint16_t)140);
-	write(&respdata,unknown0);
 	write(&respdata,unknown1);
 	write(&respdata,unknown2);
 	write(&respdata,unknown3);
@@ -5132,9 +5083,9 @@ void sqlrprotocol_teradata::appendConfigResponseField7() {
 	write(&respdata,unknown5);
 	write(&respdata,unknown6);
 	write(&respdata,unknown7);
-	write(&respdata,unknown8,unknown8size);
+	write(&respdata,unknown8);
 	write(&respdata,unknown9);
-	write(&respdata,unknown10,unknown10size);
+	write(&respdata,unknown10);
 	write(&respdata,unknown11);
 	write(&respdata,unknown12);
 	write(&respdata,unknown13);
@@ -5143,9 +5094,7 @@ void sqlrprotocol_teradata::appendConfigResponseField7() {
 	write(&respdata,unknown16);
 	write(&respdata,unknown17);
 	write(&respdata,unknown18);
-	if (getProtocolIsBigEndian()) {
-		write(&respdata,unknown19);
-	}
+	write(&respdata,unknown19);
 	write(&respdata,unknown20);
 	write(&respdata,unknown21);
 	write(&respdata,unknown22);
@@ -5159,70 +5108,31 @@ void sqlrprotocol_teradata::appendConfigResponseField7() {
 	write(&respdata,unknown30);
 	write(&respdata,unknown31);
 	write(&respdata,unknown32);
-	write(&respdata,unknown32a);
 	write(&respdata,unknown33);
 	write(&respdata,unknown34);
 	write(&respdata,unknown35);
-	if (!getProtocolIsBigEndian()) {
-		write(&respdata,unknown35a);
-	}
 	write(&respdata,unknown36);
-	write(&respdata,unknown37);
-	write(&respdata,unknown38);
-	write(&respdata,unknown39);
-	write(&respdata,unknown40);
-	write(&respdata,unknown41);
-	write(&respdata,unknown42);
-	write(&respdata,unknown43);
-	write(&respdata,unknown44);
-	write(&respdata,unknown45);
-	write(&respdata,unknown46);
-	write(&respdata,unknown47);
-	write(&respdata,unknown48);
-	write(&respdata,unknown49);
-	write(&respdata,unknown50);
-	write(&respdata,unknown51);
-	write(&respdata,unknown52);
-	write(&respdata,unknown53);
-	write(&respdata,unknown54);
-	write(&respdata,unknown55);
-	write(&respdata,unknown56);
-	write(&respdata,unknown57);
-	write(&respdata,unknown58);
-	write(&respdata,unknown59);
-	write(&respdata,unknown60);
-	write(&respdata,unknown61);
-	write(&respdata,unknown62);
-	write(&respdata,unknown63);
-	write(&respdata,unknown64);
 
 	debugStart("unknown field 7");
-	debugWrite("unknown0: %d",unknown0);
-	debugWrite("unknown1: %d",unknown1);
-	debugWrite("unknown2: %d",unknown2);
-	debugWrite("unknown3: %d",unknown3);
+	debugWrite("unknown1: 0x%02x",unknown1);
+	debugWrite("unknown2: 0x%02x",unknown2);
+	debugWrite("unknown3: %hd",unknown3);
 	debugWrite("unknown4: %d",unknown4);
 	debugWrite("unknown5: %d",unknown5);
-	debugWrite("unknown6: %d",unknown6);
-	debugWrite("unknown7: %d (0x%04x)",unknown7,unknown7);
-	debugWrite("unknown8:");
-	debugHexDump(unknown8,unknown8size);
-	debugWrite("unknown9: %d (0x%04x)",unknown9,unknown9);
-	debugWrite("unknown10:");
-	debugHexDump(unknown10,unknown10size);
-	debugWrite("unknown11: %d (0x%04x)",unknown11,unknown11);
+	debugWrite("unknown6: %lld",unknown6);
+	debugWrite("unknown7: %d",unknown7);
+	debugWrite("unknown8: %d",unknown8);
+	debugWrite("unknown9: %d",unknown9);
+	debugWrite("unknown10: %d",unknown10);
+	debugWrite("unknown11: %d",unknown11);
 	debugWrite("unknown12: %d",unknown12);
-	debugWrite("unknown13: %d (0x%04x)",unknown13,unknown13);
+	debugWrite("unknown13: %d",unknown13);
 	debugWrite("unknown14: %d",unknown14);
 	debugWrite("unknown15: %d",unknown15);
 	debugWrite("unknown16: %d",unknown16);
 	debugWrite("unknown17: %d",unknown17);
 	debugWrite("unknown18: %d",unknown18);
-	if (getProtocolIsBigEndian()) {
-		debugWrite("unknown19: %d",unknown19);
-	} else {
-		debugWrite("unknown19: omitted");
-	}
+	debugWrite("unknown19: %d",unknown19);
 	debugWrite("unknown20: %d",unknown20);
 	debugWrite("unknown21: %d",unknown21);
 	debugWrite("unknown22: %d",unknown22);
@@ -5231,49 +5141,15 @@ void sqlrprotocol_teradata::appendConfigResponseField7() {
 	debugWrite("unknown25: %d",unknown25);
 	debugWrite("unknown26: %d",unknown26);
 	debugWrite("unknown27: %d",unknown27);
-	debugWrite("unknown28: %d (0x%04x)",unknown28,unknown28);
+	debugWrite("unknown28: %d",unknown28);
 	debugWrite("unknown29: %d",unknown29);
-	debugWrite("unknown30: %d (0x%04x)",unknown30,unknown30);
+	debugWrite("unknown30: %d",unknown30);
 	debugWrite("unknown31: %d",unknown31);
 	debugWrite("unknown32: %d",unknown32);
-	debugWrite("unknown32a: %d",unknown32a);
 	debugWrite("unknown33: %d",unknown33);
 	debugWrite("unknown34: %d",unknown34);
 	debugWrite("unknown35: %d",unknown35);
-	if (!getProtocolIsBigEndian()) {
-		debugWrite("unknown35a: %d",unknown35a);
-	} else {
-		debugWrite("unknown35a: omitted");
-	}
 	debugWrite("unknown36: %d",unknown36);
-	debugWrite("unknown37: %d",unknown37);
-	debugWrite("unknown38: %d",unknown38);
-	debugWrite("unknown39: %d",unknown39);
-	debugWrite("unknown40: %d",unknown40);
-	debugWrite("unknown41: %d",unknown41);
-	debugWrite("unknown42: %d",unknown42);
-	debugWrite("unknown43: %d",unknown43);
-	debugWrite("unknown44: %d",unknown44);
-	debugWrite("unknown45: %d",unknown45);
-	debugWrite("unknown46: %d",unknown46);
-	debugWrite("unknown47: %d",unknown47);
-	debugWrite("unknown48: %d",unknown48);
-	debugWrite("unknown49: %d",unknown49);
-	debugWrite("unknown50: %d",unknown50);
-	debugWrite("unknown51: %d",unknown51);
-	debugWrite("unknown52: %d",unknown52);
-	debugWrite("unknown53: %d",unknown53);
-	debugWrite("unknown54: %d",unknown54);
-	debugWrite("unknown55: %d",unknown55);
-	debugWrite("unknown56: %d",unknown56);
-	debugWrite("unknown57: %d",unknown57);
-	debugWrite("unknown58: %d",unknown58);
-	debugWrite("unknown59: %d",unknown59);
-	debugWrite("unknown60: %d",unknown60);
-	debugWrite("unknown61: %d",unknown61);
-	debugWrite("unknown62: %d",unknown62);
-	debugWrite("unknown63: %d",unknown63);
-	debugWrite("unknown64: %d",unknown64);
 	debugEnd();
 }
 
@@ -5298,6 +5174,7 @@ void sqlrprotocol_teradata::appendConfigResponseField10() {
 	// see parcel.h - PclConfigRspType, PclCfgExtendType
 	// FIXME: what is this field?
 
+	// FIXME: double-check this
 	byte_t		data[]={
 		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x02,
 		0x01, 0x00, 0x01, 0x01, 0x00, 0x01, 0x01, 0x01,
@@ -5320,6 +5197,7 @@ void sqlrprotocol_teradata::appendConfigResponseField11() {
 	// see parcel.h - PclConfigRspType, PclCfgExtendType
 	// FIXME: what is this field?
 
+	// FIXME: double-check this
 	byte_t		data[]={
 		0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x01, 0x01,
 		0x01, 0x01, 0x01, 0x01, 0x02, 0x01, 0x01, 0x01,
@@ -5343,6 +5221,7 @@ void sqlrprotocol_teradata::appendConfigResponseField12() {
 	// see parcel.h - PclConfigRspType, PclCfgExtendType
 	// FIXME: what is this field?
 
+	// FIXME: double-check this
 	byte_t		data[]={
 		0x01, 0x01, 0x01, 0x02, 0x01, 0x01
 	};
@@ -5384,6 +5263,7 @@ void sqlrprotocol_teradata::appendConfigResponseField14() {
 	// see parcel.h - PclConfigRspType, PclCfgExtendType
 	// FIXME: what is this field?
 
+	// FIXME: double-check this
 	byte_t		data[]={
 		0x03, 0x03, 0x02, 0x03
 	};
@@ -5403,6 +5283,7 @@ void sqlrprotocol_teradata::appendConfigResponseField15() {
 	// see parcel.h - PclConfigRspType, PclCfgExtendType
 	// FIXME: what is this field?
 
+	// FIXME: double-check this
 	byte_t		data[]={
 		0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01,
 		0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01,
@@ -5426,13 +5307,14 @@ void sqlrprotocol_teradata::appendConfigResponseField16() {
 	// see parcel.h - PclConfigRspType, PclCfgExtendType
 	// FIXME: what is this field?
 
+	// FIXME: double-check this
 	byte_t		data1[]={
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00
 	};
 	uint16_t	data2=32770;
 	byte_t		data3[]={
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 	};
 
 	write(&respdata,(uint16_t)16);
@@ -5988,6 +5870,7 @@ void sqlrprotocol_teradata::appendSsoResponseParcel(byte_t trip) {
 			write(&respdata,padding);
 
 			// confidentiality algorithm key size
+			// (odd that these are always BE but they appear to be)
 			write(&respdata,(byte_t)CONF_ALG_KEY_SIZE);
 			write(&respdata,(byte_t)2);
 			writeBE(&respdata,confalgkeysize);
@@ -6003,6 +5886,7 @@ void sqlrprotocol_teradata::appendSsoResponseParcel(byte_t trip) {
 			write(&respdata,kexalg);
 
 			// key exchange algorithm key size
+			// (odd that these are always BE but they appear to be)
 			write(&respdata,(byte_t)KEX_ALG_KEY_SIZE);
 			write(&respdata,(byte_t)2);
 			writeBE(&respdata,kexalgkeysize);
