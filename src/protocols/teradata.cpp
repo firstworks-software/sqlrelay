@@ -11,6 +11,7 @@
 #include <rudiments/process.h>
 #include <rudiments/character.h>
 #include <rudiments/sys.h>
+#include <rudiments/sha1.h>
 #include <rudiments/sha256.h>
 
 // NOTE:
@@ -30,15 +31,15 @@
 // /opt/teradata/tdat/tdgss/site/TdgssUserConfigFile.xml
 
 
-#define DEBUG_CLIENT_SEND_RECV 1
+//#define DEBUG_CLIENT_SEND_RECV 1
 //#define DEBUG_PARCEL_END 1
 
-#define DECRYPT 1
+//#define DECRYPT
 
 #ifdef DECRYPT
+	#include <rudiments/aes128.h>
 	#include <openssl/conf.h>
 	#include <openssl/dh.h>
-	#include <openssl/evp.h>
 	#include <openssl/err.h>
 #endif
 
@@ -965,6 +966,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		unsigned  char	*sharedsecret;
 		uint32_t	sharedsecretsize;
 		unsigned  char	sharedkey[32];
+		uint32_t	sharedkeysize;
 };
 
 sqlrprotocol_teradata::sqlrprotocol_teradata(sqlrservercontroller *cont,
@@ -1418,7 +1420,7 @@ bool sqlrprotocol_teradata::copKindSsoReq() {
 
 #ifdef DECRYPT
 	// now that we have the client public key,
-	// we can genrate the shared secret
+	// we can generate the shared secret
 	if (!generateSharedSecret()) {
 		debugEnd();
 		return false;
@@ -3168,7 +3170,12 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 		}
 
 		// negotiate qop
-		// (for now, we require dh2048, aes, and pkcs5 padding)
+		// for now, we support:
+		// * dh2048
+		// * aes128
+		// * cbc and gcm
+		// * pkcs5 padding
+		// * sha1 and sha256
 		negotiatedqop=QOP_NONE;
 		if (dhsupported && dh2048supported &&
 				aessupported && pkcs5supported) {
@@ -3180,23 +3187,8 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 					negotiatedqop=
 					QOP_AES128_CBC_PKCS5_SHA1;
 				}
-			} else if (aes192supported) {
-				if (gcmsupported && sha256supported) {
-					negotiatedqop=
-					QOP_AES192_GCM_PKCS5_SHA256;
-				} else if (cbcsupported && sha1supported) {
-					negotiatedqop=
-					QOP_AES192_CBC_PKCS5_SHA1;
-				}
-			} else if (aes256supported) {
-				if (gcmsupported && sha256supported) {
-					negotiatedqop=
-					QOP_AES256_GCM_PKCS5_SHA256;
-				} else if (cbcsupported && sha1supported) {
-					negotiatedqop=
-					QOP_AES256_CBC_PKCS5_SHA1;
-				}
 			}
+			// FIXME: support other qops
 		}
 		debugWrite("negotiated qop: %s",qopstr[negotiatedqop]);
 
@@ -7687,36 +7679,23 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 						uint64_t encdatasize,
 						bytebuffer *decdata) {
 
-	// FIXME: push down to rudiments
-	// rudiments currently has aes128, but only with cbc, not gcm
-
 	debugStart("decrypting");
 
-	// chose a cipher (libcrypto enables PKCS5 padding by default)
-	const EVP_CIPHER	*cipher=NULL;
+	// create the decryptor (aes128 uses PKCS5)
+	aes128	a;
+
+	// use gcm if we need to (aes128 defaults to cbc)
+debugWrite("QOP: %s",qopstr[negotiatedqop]);
 	switch (negotiatedqop) {
 		case QOP_AES128_GCM_PKCS5_SHA256:
-			cipher=EVP_aes_128_gcm();
-			break;
-		case QOP_AES128_CBC_PKCS5_SHA1:
-			cipher=EVP_aes_128_cbc();
-			break;
 		case QOP_AES192_GCM_PKCS5_SHA256:
-			cipher=EVP_aes_192_gcm();
-			break;
-		case QOP_AES192_CBC_PKCS5_SHA1:
-			cipher=EVP_aes_192_cbc();
-			break;
 		case QOP_AES256_GCM_PKCS5_SHA256:
-			cipher=EVP_aes_256_gcm();
-			break;
-		case QOP_AES256_CBC_PKCS5_SHA1:
-			cipher=EVP_aes_256_cbc();
+			a.setUseGcm(true);
 			break;
 	}
 
 	// get the initializaton vector size
-	size_t	ivsize=EVP_CIPHER_iv_length(cipher);
+	size_t	ivsize=a.getIvSize();
 
 	// validate the encdata
 	if (encdatasize<ivsize) {
@@ -7725,97 +7704,53 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 		return false;
 	}
 
+	// validate the key
+	if (sharedkeysize<a.getKeySize()) {
+		debugWrite("shared key too small");
+		debugEnd();
+		return false;
+	}
+
 	// get the initialization vector...
 	// (it's conventional to generate a random IV and
 	// send it to the other side, preceding the data)
-	byte_t	*iv=new byte_t[ivsize];
-	bytestring::copy(iv,encdata,ivsize);
+	a.setIv(encdata,ivsize);
+debugWrite("cipher/provided iv size: %d/%d",a.getIvSize(),ivsize);
+debugWrite("iv:");
+debugHexDump(encdata,ivsize);
 	encdata+=ivsize;
 	encdatasize-=ivsize;
 
-	// initialize the cipher context
-	EVP_CIPHER_CTX	*ctx=EVP_CIPHER_CTX_new();
-	if (!ctx) {
-		if (getDebug()) {
-			debugWrite("init cipher context failed");
-			ERR_print_errors_fp(stdout);
-		}
-		debugEnd();
-		return false;
-	}
-
-	// initialize the decryption process
-	if (!EVP_DecryptInit_ex(ctx,cipher,NULL,sharedkey,iv)) {
-		if (getDebug()) {
-			debugWrite("decrypt-init failed");
-			ERR_print_errors_fp(stdout);
-		}
-		debugEnd();
-		return false;
-	}
-
-debugWrite("cipher: %s",qopstr[negotiatedqop]);
-debugWrite("cipher key size: %d",EVP_CIPHER_CTX_key_length(ctx));
-debugWrite("provided key size: %d",sizeof(sharedkey));
+	// set the key
+	a.setKey(sharedkey,a.getKeySize());
+debugWrite("cipher/provided key size: %d/%d",a.getKeySize(),sharedkeysize);
 debugWrite("key:");
-debugHexDump(sharedkey,EVP_CIPHER_CTX_key_length(ctx));
-debugWrite("cipher iv size: %d",EVP_CIPHER_CTX_iv_length(ctx));
-debugWrite("provided iv size: %d",ivsize);
-debugWrite("iv:");
-debugHexDump(iv,ivsize);
-debugWrite("block size: %d",EVP_CIPHER_CTX_block_size(ctx));
+debugHexDump(sharedkey,a.getKeySize());
+
+	// set the data to decrypt
 debugWrite("enc data size: %d",encdatasize);
-
-	// begin decrypting
-	// (This assumes that the decrypted data will fit in "out", which is
-	// probably true in this appliation, but not in general.
-	// It's not immediately clear how to detect if the decrypted data won't
-	// fit in "out", or what to do in that case.
-	// I imagine maybe EVP_DecryptUpdate will fail, and maybe outsize will
-	// contain the necessary size, but that's just a guess.)
-	byte_t		out[1024];
-	int		outsize=0;
-	int		totaloutsize=0;
-	bool		success=true;
-	if (!EVP_DecryptUpdate(ctx,out,&outsize,encdata,encdatasize)) {
-		if (getDebug()) {
-			debugWrite("decrypt-update failed");
-			ERR_print_errors_fp(stdout);
-		}
-		success=false;
-	}
-	if (success) {
-		totaloutsize+=outsize;
-		debugWrite("decrypted %d bytes",outsize);
-debugHexDump(out,outsize);
-
-		// finish decrypting
-		if (!EVP_DecryptFinal_ex(ctx,out+outsize,&outsize)) {
-			if (getDebug()) {
-				debugWrite("decrypt-final failed");
-				ERR_print_errors_fp(stdout);
-			}
-			success=false;
-		}
-		totaloutsize+=outsize;
+	if (!a.append(encdata,encdatasize)) {
+		debugWrite("append failed: %d",a.getError());
+		debugEnd();
+		return false;
 	}
 
-	// FIXME: HMAC the result with SHA256???
-
-	// copy out
-	if (success) {
-		decdata->append(out,totaloutsize);
-
-		debugWrite("decryption succeeded");
+	// get the decrypted data
+	const byte_t	*ddata=a.getDecryptedData();
+	uint64_t	ddatasize=a.getDecryptedDataSize();
+	if (!ddata) {
+		debugWrite("decryption failed: %d",a.getError());
+		debugEnd();
+		return false;
 	}
 
-	// clean up
-	EVP_CIPHER_CTX_free(ctx);
-	delete[] iv;
+	// copy out the decrypted data
+	decdata->append(ddata,ddatasize);
 
+	debugWrite("decryption succeeded (%d decrypted bytes)",ddatasize);
 	debugEnd();
 
-	return success;
+	return true;
 }
 
 bool sqlrprotocol_teradata::encrypt(const byte_t *decdata,
@@ -7954,7 +7889,7 @@ bool sqlrprotocol_teradata::generateSharedSecret() {
 	// See generateEphemeralKeys() for an explanation of
 	// Diffie-Hellman Key Exchange
 
-	// FIXME: push down to rudiments
+	// FIXME: push DH stuff down to rudiments
 
 	debugStart("generate shared secret");
 
@@ -7988,27 +7923,55 @@ bool sqlrprotocol_teradata::generateSharedSecret() {
 	debugWrite("shared secret (%d bytes):",sharedsecretsize);
 	debugHexDump(sharedsecret,sharedsecretsize);
 
-	// get sha256 hash of the shared secret
-	// FIXME: IDK if this is correct, we don't negotiate a KDF at all,
-	// I'm just assuming that we use sha256
+	// generate the shared key, using the appropriate KDF
 	bytestring::zero(sharedkey,sizeof(sharedkey));
-	sha256		s256;
-	if (!s256.append(sharedsecret,sharedsecretsize)) {
-		debugWrite("s256.append() failed");
-		debugEnd();
-		return false;
+	switch (negotiatedqop) {
+		case QOP_AES128_GCM_PKCS5_SHA256:
+		case QOP_AES192_GCM_PKCS5_SHA256:
+		case QOP_AES256_GCM_PKCS5_SHA256:
+			{
+			debugWrite("kdf: sha256");
+			sha256		s256;
+			if (!s256.append(sharedsecret,sharedsecretsize)) {
+				debugWrite("s256.append() failed");
+				debugEnd();
+				return false;
+			}
+			const byte_t	*hash=s256.getHash();
+			if (!hash) {
+				debugWrite("s256.getHash() failed");
+				debugEnd();
+				return false;
+			}
+			sharedkeysize=s256.getHashSize();
+			bytestring::copy(sharedkey,hash,sharedkeysize);
+			}
+			break;
+		case QOP_AES128_CBC_PKCS5_SHA1:
+		case QOP_AES192_CBC_PKCS5_SHA1:
+		case QOP_AES256_CBC_PKCS5_SHA1:
+			debugWrite("kdf: sha1");
+			{
+			sha1		s1;
+			if (!s1.append(sharedsecret,sharedsecretsize)) {
+				debugWrite("s1.append() failed");
+				debugEnd();
+				return false;
+			}
+			const byte_t	*hash=s1.getHash();
+			if (!hash) {
+				debugWrite("s1.getHash() failed");
+				debugEnd();
+				return false;
+			}
+			sharedkeysize=s1.getHashSize();
+			bytestring::copy(sharedkey,hash,sharedkeysize);
+			}
+			break;
 	}
-	const byte_t	*hash=s256.getHash();
-	if (!hash) {
-		debugWrite("s256.getHash() failed");
-		debugEnd();
-		return false;
-	}
-	bytestring::copy(sharedkey,hash,sizeof(sharedkey));
 
-	debugWrite("shared key (%d bytes):",
-				sizeof(sharedkey));
-	debugHexDump(sharedkey,sizeof(sharedkey));
+	debugWrite("shared key (%d bytes):",sharedkeysize);
+	debugHexDump(sharedkey,sharedkeysize);
 
 	debugEnd();
 	return true;
