@@ -5030,22 +5030,23 @@ void sqlrprotocol_teradata::appendConfigResponseField7() {
 
 	// see parcel.h - PclConfigRspType, PclCfgExtendType
 	// FIXME: what is this field?
-	// none of these values appear to match anything in dbscontrol:display
-	// (double-check that, I have more accurate values for them now)
 	//
-	// they look like max sizes or max values for things, but it's not
-	// clear exactly what
+	// they look like max sizes or max values for things,
+	// but it's not clear exactly what
 	//
-	// eg. 64000 - max varchar length
-	//      2536 - maybe max bind count
+	// some possibilities...
+	// 64000 - long varchar max length for latin, kanji1
+	// 32000 - long varchar max length for unicode, graphic, kanjsjis
 	//
-	//      191, 38 and 6 stand out as oddly specific
+	// 2536 - maybe max bind count - error 5793 suggests this
 	//
-	//      191 was historically the default varchar length in some dbs
-	//      because larger lengths caused perfomance to decline with their
-	//      indexing algorithms
+	// 191 was historically the default varchar length in some dbs
+	// because larger lengths caused perfomance to decline with their
+	// indexing algorithms
 	//
-	//      38 is the max numeric column precision in some dbs
+	// 38 is the max numeric column precision in some dbs
+	//
+	// 6 ???
 
 
 	// FIXME: double check that these first two aren't just the
@@ -5170,6 +5171,8 @@ void sqlrprotocol_teradata::appendConfigResponseField9() {
 
 	// see parcel.h - PclConfigRspType, PclCfgExtendType
 	// FIXME: what is this field?
+	// something enabled/disabled?
+	// 0=off, 1=on?
 
 	byte_t		data=1;
 
@@ -5186,6 +5189,8 @@ void sqlrprotocol_teradata::appendConfigResponseField10() {
 
 	// see parcel.h - PclConfigRspType, PclCfgExtendType
 	// FIXME: what is this field?
+	// something set of things enabled/disabled?
+	// 0=off, 1=on, 2=third option?
 
 	// FIXME: double-check this
 	byte_t		data[]={
@@ -5209,6 +5214,8 @@ void sqlrprotocol_teradata::appendConfigResponseField11() {
 
 	// see parcel.h - PclConfigRspType, PclCfgExtendType
 	// FIXME: what is this field?
+	// something set of things enabled/disabled?
+	// 0=off, 1=on, 2=third option?
 
 	// FIXME: double-check this
 	byte_t		data[]={
@@ -5233,6 +5240,8 @@ void sqlrprotocol_teradata::appendConfigResponseField12() {
 
 	// see parcel.h - PclConfigRspType, PclCfgExtendType
 	// FIXME: what is this field?
+	// something set of things enabled/disabled?
+	// 0=off, 1=on, 2=third option?
 
 	// FIXME: double-check this
 	byte_t		data[]={
@@ -5252,9 +5261,9 @@ void sqlrprotocol_teradata::appendConfigResponseField12() {
 void sqlrprotocol_teradata::appendConfigResponseField13() {
 
 	// see parcel.h - PclConfigRspType, PclCfgExtendType
-	// FIXME: what is this field?
 
 	// appears to be version strings...
+	// FIXME: of what?
 	const char	*version1="16.20.12.01                   ";
 	size_t		version1size=charstring::getLength(version1);
 	const char	*version2="16.20.12.01                     ";
@@ -5295,6 +5304,8 @@ void sqlrprotocol_teradata::appendConfigResponseField15() {
 
 	// see parcel.h - PclConfigRspType, PclCfgExtendType
 	// FIXME: what is this field?
+	// something set of things enabled/disabled?
+	// 0=off, 1=on?
 
 	// FIXME: double-check this
 	byte_t		data[]={
