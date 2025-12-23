@@ -5032,9 +5032,22 @@ void sqlrprotocol_teradata::appendConfigResponseField7() {
 	// FIXME: what is this field?
 	// none of these values appear to match anything in dbscontrol:display
 	// (double-check that, I have more accurate values for them now)
+	//
+	// they look like max sizes or max values for things, but it's not
+	// clear exactly what
+	//
+	// eg. 64000 - max varchar length
+	//      2536 - maybe max bind count
+	//
+	//      191, 38 and 6 stand out as oddly specific
+	//
+	//      191 was historically the default varchar length in some dbs
+	//      because larger lengths caused perfomance to decline with their
+	//      indexing algorithms
+	//
+	//      38 is the max numeric column precision in some dbs
 
 
-	// (hex values below are in big endian)
 	// FIXME: double check that these first two aren't just the
 	// 16 bit number 0x310 in BE and 0x0031 in LE
 	byte_t	unknown1=31;
