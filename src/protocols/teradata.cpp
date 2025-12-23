@@ -7924,6 +7924,9 @@ bool sqlrprotocol_teradata::generateSharedSecret() {
 	debugHexDump(sharedsecret,sharedsecretsize);
 
 	// generate the shared key, using the appropriate KDF
+	// FIXME: I don't think this is the correcy way to do this.
+	// I'll have to try pdkdf2
+	// (10000 was a common number of iterations, what salt to use?)
 	bytestring::zero(sharedkey,sizeof(sharedkey));
 	switch (negotiatedqop) {
 		case QOP_AES128_GCM_PKCS5_SHA256:
