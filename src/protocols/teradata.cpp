@@ -168,20 +168,27 @@ const char	*mechstr[]={
 	"krb",
 	"krbcompat"
 };
+// NOTE: if I convert the oids from TdgssLibraryConfigFile.xml,
+// I don't get these same values.
+//
+// These are the values that the server sends for supported mechs, though.
+// The first 3 are the values that the client sends as the requested mech
+// if I set logmech=td2, logmech=tdnego, or logmech=ldap.
 byte_t	td2mechoid[]={
 	0x2B, 0x06, 0x01, 0x04, 0x01, 0x81, 0x3F, 0x01,
 	0x87, 0x74, 0x01, 0x01, 0x09
 };
 byte_t	tdnegomechoid[]={
+	0x2B, 0x06, 0x01, 0x05, 0x05, 0x02
+};
+byte_t	ldapmechoid[]={
 	0x2B, 0x06, 0x01, 0x04, 0x01, 0x81, 0x3F, 0x01,
 	0x87, 0x74, 0x01, 0x14
 };
-byte_t	ldapmechoid[]={
+// not 100% sure these are correct...
+byte_t	krbmechoid[]={
 	0x2A, 0x86, 0x48, 0x86, 0xF7, 0x12, 0x01, 0x02,
 	0x02
-};
-byte_t	krbmechoid[]={
-	0x2B, 0x06, 0x01, 0x05, 0x05, 0x02
 };
 byte_t	krbcompatmechoid[]={
 	0x2B, 0x06, 0x01, 0x04, 0x01, 0x81, 0xE0, 0x1A,
@@ -214,7 +221,7 @@ byte_t	krbcompatmechoid[]={
 // client config fields
 // see pachet.h
 #define	CLIENTCONFIGFIELD_VERSION		1
-#define	CLIENTCONFIGFIELD_GSS			2
+#define	CLIENTCONFIGFIELD_GSS_VERSION		2
 #define	CLIENTCONFIGFIELD_RECOVERABLE_PROTOCOL	3
 #define	CLIENTCONFIGFIELD_CONTROL_DATA		4
 #define	CLIENTCONFIGFIELD_REDRIVE		5
@@ -225,7 +232,7 @@ byte_t	krbcompatmechoid[]={
 // gateway config fields
 // see pachet.h
 #define	GWCONFIGFIELD_SSO			1
-#define	GWCONFIGFIELD_GSS			2
+#define	GWCONFIGFIELD_GSS_VERSION		2
 #define	GWCONFIGFIELD_UTF			3
 #define	GWCONFIGFIELD_SESSION_ID		4
 #define	GWCONFIGFIELD_RECOVERABLE_PROTOCOL	5
@@ -2722,8 +2729,8 @@ bool sqlrprotocol_teradata::parseClientConfigParcel(
 			case CLIENTCONFIGFIELD_VERSION:
 				debugWrite("version: %.*s",size,ptr);
 				break;
-			case CLIENTCONFIGFIELD_GSS:
-				debugWrite("gss:");
+			case CLIENTCONFIGFIELD_GSS_VERSION:
+				debugWrite("gss version:");
 				debugHexDump(ptr,size);
 				break;
 			case CLIENTCONFIGFIELD_RECOVERABLE_PROTOCOL:
@@ -2820,6 +2827,7 @@ bool sqlrprotocol_teradata::parseAssignParcel(
 
 	// debug
 	debugWrite("username: %.*s",usernamesize,username);
+	debugHexDump((const byte_t *)username,usernamesize);
 
 	// return next parcel
 	*parcelout=parceldata+parceldatasize;
@@ -2982,17 +2990,91 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 		// no known reference (just had to study the trace)
 
 		// not sure what this is
-		// FIXME: bytes 16-20 appear to be 16.20.12.01 in binary,
-		// which we then send back in the same position in the
-		// trip 1 sso response
+		// varies with logmech
 		//
-		// NOTE: we receive 80 bytes at the beginning of the auth data
-		// here, and send 80 bytes at the beginning of the auth data
-		// in the trip 1 response
+		// .logmech=td2
+		// bteq/odbc:
+		// 01  01  01  00  00  00  00  83
+		// 00  00  00  15  00  00  00  00
+		// 10  14  0a  01 (gss version)
+		// 00  00  00  00
+		// 00  00  00  00  00  00  00  00
+		// 00  00  00  00  00  00  00  43
+		// 00  00  00  00  00  00  00  00
+		// 00  00  00  00  00  00  00  00
+		// 00  00  00  00  00  00  00  00
+		// 00  00  00  00  00  00  00  00
+		// 00  00  00  00  00  00  00  00
 		//
-		// NOTE: Bytes 16-20 appear to be a binary representation of
-		// 16.20.12.01 both here and in the response.  In the gateway
-		// config parcel, the same binary version is the "gss version".
+		// jdbc:
+		// 01  01  01  00  00  00  00  71
+		// 00  00  00  05  02  00  00  00
+		// 10  00  00  01 (gss version)
+		// 00  00  00  00
+		// 00  00  00  00  00  00  00  00
+		// 00  00  00  00  00  00  00  31
+		// 00  00  00  00  00  00  00  00
+		// 00  00  00  00  00  00  00  00
+		// 00  00  00  00  00  00  00  00
+		// 00  00  00  00  00  00  00  00
+		// 00  00  00  00  00  00  00  00 
+		//
+		//
+		// .logmech=ldap
+		// bteq/odbc:
+		// 01  01  01  00  00  00  00  83
+		// 00  00  00  1D  00  00  00  00
+		// 10  14  0A  01  00  00  00  00
+		// 00  00  00  00  00  00  00  00
+		// 00  00  00  00  00  00  00  43
+		// 00  00  00  00  00  00  00  00
+		// 00  00  00  00  00  00  00  00
+		// 00  00  00  00  00  00  00  00
+		// 00  00  00  00  00  00  00  00
+		// 00  00  00  00  00  00  00  00
+		//
+		// .logmech=tdnego
+		// bteq/odbc:
+		// (some structure, here!)
+		// (in ASN.1 81 means "the size is in the next byte" and 82
+		// means "the size is in the next two bytes", I think the
+		// 81s and 82s below may have meaning similar to this, like
+		// "the value is in the next byte or next two bytes")
+		// E0  82  01(size)  BD
+		// E0  82  01(size)  AC
+		// E0  4F
+		// C0  09(size)
+		// 2A  86  48  86  F7  12  01  02  02 (krb mech id)
+		// C1  01(size)  03
+		// C2  01(size)  02
+		// C3  03(size)  02  00  00
+		// C4  04(size)  96  C7  3A  E0
+		// C5  31(size)
+		// 43  6F  6E  66  69  67  75  72 Configur
+		// 61  74  69  6F  6E  20  66  69 ation fi
+		// 6C  65  20  64  6F  65  73  20 le does 
+		// 6E  6F  74  20  73  70  65  63 not spec
+		// 69  66  79  20  64  65  66  61 ify defa
+		// 75  6C  74  20  72  65  61  6C ult real
+		// 6D                             m
+		// E0  81  AA
+		// C0  0C(size)
+		// 2B  06  01  04  01  81  3F  01  87  74  01  14 (ldap mech id)
+		// C1  01(size)  01
+		// C2  01(size)  01
+		// C6  81  93
+		// (the rest is the same as logmech=ldap)
+		// 01  01  01  00  00  00  00  83
+		// 00  00  00  1D  00  00  00  00
+		// 10  14  0A  01 (gss version)
+		// 00  00  00  00
+		// 00  00  00  00  00  00  00  00
+		// 00  00  00  00  00  00  00  43
+		// 00  00  00  00  00  00  00  00
+		// 00  00  00  00  00  00  00  00
+		// 00  00  00  00  00  00  00  00
+		// 00  00  00  00  00  00  00  00
+		// 00  00  00  00  00  00  00  00
 		byte_t	unknown[80];
 		read(ptr,unknown,sizeof(unknown),&ptr);
 
@@ -3123,18 +3205,32 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 		reqmech=ptr;
 		ptr+=reqmechsize;
 
-		debugWrite("requested mech field: %d (%04x)",
-					reqmechfield,reqmechfield);
 		debugWrite("requested mech oid:");
 		debugHexDump(reqmech,reqmechsize);
 
 
 
-		// not sure what this is
-		const byte_t	*trailer=ptr;
-		uint16_t	trailersize=end-trailer;
-		debugWrite("unknown:");
-		debugHexDump(trailer,trailersize);
+		// mech-specfic parameters?
+		//
+		// .logmech=td2
+		// appears to be the same from bteq/odbc/jdbc
+		// 46  08  00  02  81  00  04  04
+		// 04  00  01  00  00  00  1f  01
+		//
+		// .logmech=ldap
+		// 46  08  00  01  81  00  03  00
+		// 00  00  01  00  00  00  1E  01 
+		//
+		// .logmech=tdnego
+		// (some structure, here!)
+		// C1  01(size?)  03
+		// C2  01(size?)  03
+		// C1  01(size?)  02
+		// C3  01(size?)  01
+		const byte_t	*mechparams=ptr;
+		uint16_t	mechparamssize=end-mechparams;
+		debugWrite("mech parameters:");
+		debugHexDump(mechparams,mechparamssize);
 
 
 
@@ -3197,6 +3293,32 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 		// no known reference (just had to study the trace)
 
 		// not sure what this is
+		// varies with logmech
+		//
+		// .logmech=td2 or .logmech=tdnego
+		// bteq/odbc:
+		// 03  01  02  00  00  00  01  00
+		// 00  00  00  00  00  00  00  00
+		//
+		// jdbc:
+		// 03  01  02  00  00  00  01  00
+		// 00  00  00  00  02  00  00  00
+		// (note the 0x02 in byte 13)
+		//
+		//
+		// .logmech=ldap
+		// bteq/odbc:
+		// 03  05  02  00  00  00  01  B2
+		// 00  00  00  00  00  00  00  00
+		// 10  14  0A  01 (gss version)
+		// 00  00  00  00
+		// 00  00  00  00  00  00  01  00
+		// 00  00  00  00  00  00  00  00
+		// 00  00  00  72  00  00  00  00
+		// 00  00  00  00  00  00  00  00
+		// 00  00  00  00  00  00  00  00
+		// 00  00  00  00  00  00  00  00
+		// 00  00  00  00  00  00  00  00
 		byte_t	unknown[16];
 		read(ptr,unknown,sizeof(unknown),&ptr);
 
@@ -5402,7 +5524,7 @@ void sqlrprotocol_teradata::appendGatewayConfigParcel() {
 
 
 	// GSS field
-	uint16_t	gssfield=GWCONFIGFIELD_GSS;
+	uint16_t	gssfield=GWCONFIGFIELD_GSS_VERSION;
 	byte_t		gssversion[]={
 		// 16.20.12.01
 		0x10, 0x14, 0x0C, 0x01
@@ -5412,7 +5534,7 @@ void sqlrprotocol_teradata::appendGatewayConfigParcel() {
 	write(&respdata,(uint16_t)(sizeof(uint32_t)+sizeof(gssversion)));
 	write(&respdata,gssversion,sizeof(gssversion));
 
-	debugWrite("gss:");
+	debugWrite("gss version:");
 	debugHexDump(gssversion,sizeof(gssversion));
 
 
@@ -5727,10 +5849,10 @@ void sqlrprotocol_teradata::appendAssignResponseParcel() {
 	write(&respdata,verarray);
 	write(&respdata,hostid);
 
-	debugWrite("public key exponent: %s",publickey);
+	debugWrite("public key exponent: '%s'",publickey);
 	debugWrite("sescopaddr:");
 	debugHexDump(sescopaddr,sizeof(sescopaddr));
-	debugWrite("public key modulus: %s",publickeyn);
+	debugWrite("public key modulus: '%s'",publickeyn);
 	debugWrite("release: %s",relarray);
 	debugWrite("version: %s",verarray);
 	debugWrite("host id: %d",hostid);
@@ -5765,19 +5887,14 @@ void sqlrprotocol_teradata::appendSsoResponseParcel(byte_t trip) {
 
 		uint16_t	authdatalen=950;
 
-		// unknown
-		// FIXME: is the negotiated mech in here somewhere?
-		// NOTE: interesting that we also receive 80 bytes in the
-		// trip 0 request, and the binary version is in the same
-		// position (bytes 16-20)
+		// not sure what this is
+		// probably varies with logmech
 		//
-		// NOTE: We send 80 bytes at the beginning of the auth data
-		// here, and received 80 bytes at the beginning of the auth data
-		// in the trip 0 request.
+		// See notes in parseSsoRequestParcel
 		//
-		// NOTE: Bytes 16-20 appear to be a binary representation of
-		// 16.20.12.01 both here and in the response.  In the gateway
-		// config parcel, the same binary version is the "gss version".
+		// This is what the server would send back to bteq.  I'm not
+		// sure what it would send back to jdbc.  Perhaps it's
+		// different.
 		byte_t		unknown[]={
 			0x03, 0x02, 0x01, 0x01, 0x00, 0x00, 0x03, 0xA6,
 			0x00, 0x00, 0x00, 0x15, 0x00, 0x00, 0x00, 0x00,
@@ -5854,7 +5971,7 @@ void sqlrprotocol_teradata::appendSsoResponseParcel(byte_t trip) {
 				break;
 		}
 
-		debugStart("negotiated QOPs");
+		debugStart("negotiated qops");
 
 		// the server sends 4 QOPs, and for some
 		// reason all 4 are the same...
