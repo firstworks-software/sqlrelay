@@ -1389,12 +1389,9 @@ bool sqlrprotocol_teradata::copKindCfg() {
 
 	appendConfigResponseParcel();
 	appendGatewayConfigParcel();
-	// FIXME: server sends, in this order:
-	// TD2 - 1.3.6.1.4.1.191.1.1012.1.1.9
-	// ldap - 1.3.6.1.4.1.191.1.1012.1.20
-	// KRB5 - 1.2.840.113554.1.2.2
-	// SPNEGO - 1.3.6.1.5.5.2
-	// TDNEGO - 1.3.6.1.4.1.28698.4.302.1.3
+
+	// We send a set of supported mechs, here.  The
+	// client will choose one in SSO Request - trip 0.
 	if (td1mechenabled) {
 		appendTd1MechanismParcel();
 	}
@@ -3157,6 +3154,10 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 
 
 		// the next bit appears to be the supported algorithms...
+		//
+		// The client sends a set of supported algorithms here,
+		// we'll send a set of supported combinations of them in the
+		// SSO Response - trip 1.
 
 		// get field and size
 		byte_t	algs;
@@ -3262,24 +3263,27 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 
 
 
-		// the next bit appears to be the requested mech...
+		// the next bit appears to be the chosen mech...
+		//
+		// After the config response parcel, we sent a set of
+		// supported mechs.  The client will choose one here.
 
 		// get field and size
-		byte_t		reqmechfield;
-		byte_t		reqmechsize;
-		const byte_t	*reqmech;
-		read(ptr,&reqmechfield,&ptr);
-		read(ptr,&reqmechsize,&ptr);
-		if (reqmechfield!=SSOREQ_REQUESTED_MECH) {
+		byte_t		mechfield;
+		byte_t		mechsize;
+		const byte_t	*mech;
+		read(ptr,&mechfield,&ptr);
+		read(ptr,&mechsize,&ptr);
+		if (mechfield!=SSOREQ_REQUESTED_MECH) {
 			// FIXME: bail somehow
 		}
 
-		// get the requested mech
-		reqmech=ptr;
-		ptr+=reqmechsize;
+		// get the chosen mech
+		mech=ptr;
+		ptr+=mechsize;
 
-		debugWrite("requested mech oid:");
-		debugHexDump(reqmech,reqmechsize);
+		debugWrite("chosen mech oid:");
+		debugHexDump(mech,mechsize);
 
 
 
@@ -3310,36 +3314,36 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 		// negotiate mech
 		// (for now we only support TD2)
 		negotiatedmech=MECH_NONE;
-		if (reqmechsize==sizeof(td1mechoid) &&
-				!bytestring::compare(reqmech,
+		if (mechsize==sizeof(td1mechoid) &&
+				!bytestring::compare(mech,
 					td1mechoid,sizeof(td1mechoid))) {
 			negotiatedmech=MECH_TD1;
-		} else if (reqmechsize==sizeof(td2mechoid) &&
-				!bytestring::compare(reqmech,
+		} else if (mechsize==sizeof(td2mechoid) &&
+				!bytestring::compare(mech,
 					td2mechoid,sizeof(td2mechoid))) {
 			negotiatedmech=MECH_TD2;
-		} else if (reqmechsize==sizeof(krb5mechoid) &&
-				!bytestring::compare(reqmech,
+		} else if (mechsize==sizeof(krb5mechoid) &&
+				!bytestring::compare(mech,
 					krb5mechoid,sizeof(krb5mechoid))) {
 			negotiatedmech=MECH_KRB5;
-		} else if (reqmechsize==sizeof(spnegomechoid) &&
-				!bytestring::compare(reqmech,
+		} else if (mechsize==sizeof(spnegomechoid) &&
+				!bytestring::compare(mech,
 					spnegomechoid,sizeof(spnegomechoid))) {
 			negotiatedmech=MECH_SPNEGO;
-		} else if (reqmechsize==sizeof(ldapmechoid) &&
-				!bytestring::compare(reqmech,
+		} else if (mechsize==sizeof(ldapmechoid) &&
+				!bytestring::compare(mech,
 					ldapmechoid,sizeof(ldapmechoid))) {
 			negotiatedmech=MECH_LDAP;
-		} else if (reqmechsize==sizeof(proxymechoid) &&
-				!bytestring::compare(reqmech,
+		} else if (mechsize==sizeof(proxymechoid) &&
+				!bytestring::compare(mech,
 					proxymechoid,sizeof(proxymechoid))) {
 			negotiatedmech=MECH_PROXY;
-		} else if (reqmechsize==sizeof(tdnegomechoid) &&
-				!bytestring::compare(reqmech,
+		} else if (mechsize==sizeof(tdnegomechoid) &&
+				!bytestring::compare(mech,
 					tdnegomechoid,sizeof(tdnegomechoid))) {
 			negotiatedmech=MECH_TDNEGO;
-		} else if (reqmechsize==sizeof(jwtmechoid) &&
-				!bytestring::compare(reqmech,
+		} else if (mechsize==sizeof(jwtmechoid) &&
+				!bytestring::compare(mech,
 					jwtmechoid,sizeof(jwtmechoid))) {
 			negotiatedmech=MECH_JWT;
 		}
@@ -6066,11 +6070,11 @@ void sqlrprotocol_teradata::appendSsoResponseParcel(byte_t trip) {
 		debugHexDump(serverpubkey,sizeof(serverpubkey));
 
 
-		// negotiated QOPs (Quality of Protection)
+		// negotiated qops (Quality of Protection)
 		write(&respdata,(byte_t)SSORESP_NEGOTIATED_QOPS);
 		write(&respdata,(byte_t)100);
 
-		// get QOP parameters
+		// get qop parameters
 		byte_t		confalg=ALG_NONE;
 		uint16_t	confalgkeysize=0;
 		byte_t		mode=CONF_ALG_MODE_NONE;
@@ -6203,8 +6207,18 @@ void sqlrprotocol_teradata::appendSsoResponseParcel(byte_t trip) {
 
 		debugStart("negotiated qops");
 
-		// the server sends 4 QOPs, and for some
+		// the server sends 4 qops, and for some
 		// reason all 4 are the same...
+		//
+		// The client sent a set of supported algorithms in the
+		// SSO Request - trip 0, we'll send a set of supported
+		// combinations of them in them here.
+		//
+		// Presumably the client has to select one, but it's not clea
+		// where that happens, if that's even how it works.
+		//
+		// Maybe it doens't work that way?  Maybe this is the chosen
+		// qop, and we just send it 4 times, for some reason?
 		byte_t	qops[]={
 			SSORESP_NEGOTIATED_QOP1,
 			SSORESP_NEGOTIATED_QOP2,
@@ -6213,7 +6227,7 @@ void sqlrprotocol_teradata::appendSsoResponseParcel(byte_t trip) {
 		};
 		for (byte_t i=0; i<sizeof(qops); i++) {
 
-			// QOP
+			// qop
 			write(&respdata,qops[i]);
 			write(&respdata,(byte_t)23);
 
@@ -6254,7 +6268,7 @@ void sqlrprotocol_teradata::appendSsoResponseParcel(byte_t trip) {
 			write(&respdata,(byte_t)2);
 			writeBE(&respdata,kexalgkeysize);
 
-			debugStart("QOP %d",i+1);
+			debugStart("qop %d",i+1);
 			debugWrite("conf alg: %s",algstr[confalg]);
 			debugWrite("mode: %s",confalgmodestr[mode]);
 			debugWrite("padding: %s",confalgpaddingstr[padding]);
@@ -8032,7 +8046,7 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 	aes128	a;
 
 	// use gcm if we need to (aes128 defaults to cbc)
-debugWrite("QOP: %s",qopstr[negotiatedqop]);
+debugWrite("qop: %s",qopstr[negotiatedqop]);
 	switch (negotiatedqop) {
 		case QOP_AES128_GCM_PKCS5_SHA256:
 		case QOP_AES192_GCM_PKCS5_SHA256:
