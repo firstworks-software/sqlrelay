@@ -130,22 +130,37 @@ const char	*confalgpaddingstr[]={
 
 // Quality-of-Protections
 // see TdgssLibraryConfigFile.xml <GlobalQOPs>
-#define	QOP_NONE			0
-// FIXME: add the rest
-#define	QOP_AES128_GCM_PKCS5_SHA256	1
-#define	QOP_AES128_CBC_PKCS5_SHA1	2
-#define	QOP_AES192_GCM_PKCS5_SHA256	3
-#define	QOP_AES192_CBC_PKCS5_SHA1	4
-#define	QOP_AES256_GCM_PKCS5_SHA256	5
-#define	QOP_AES256_CBC_PKCS5_SHA1	6
+#define	QOP_NONE				0
+#define	QOP_GLOBAL_QOP_0			1
+#define	QOP_GLOBAL_QOP_1			2
+#define	QOP_AES128_CBC_PKCS5_SHA1_DH2048	3
+#define	QOP_AES192_CBC_PKCS5_SHA1_DH2048	4
+#define	QOP_AES256_CBC_PKCS5_SHA1_DH2048	5
+#define	QOP_AES128_GCM_PKCS5_SHA2_DH2048	6
+#define	QOP_AES192_GCM_PKCS5_SHA2_DH2048	7
+#define	QOP_AES256_GCM_PKCS5_SHA2_DH2048	8
+#define	QOP_AES128_CCM_PKCS5_SHA2_DH2048	9
+#define	QOP_AES192_CCM_PKCS5_SHA2_DH2048	10
+#define	QOP_AES256_CCM_PKCS5_SHA2_DH2048	11
+#define	QOP_AES128_CTR_PKCS5_SHA2_DH2048	12
+#define	QOP_AES192_CTR_PKCS5_SHA2_DH2048	13
+#define	QOP_AES256_CTR_PKCS5_SHA2_DH2048	14
 const char	*qopstr[]={
 	"NONE",
-	"AES128_GCM_PKCS5_SHA256",
-	"AES128_CBC_PKCS5_SHA1",
-	"AES192_GCM_PKCS5_SHA256",
-	"AES192_CBC_PKCS5_SHA1",
-	"AES256_GCM_PKCS5_SHA256",
-	"AES256_CBC_PKCS5_SHA1"
+	"GLOBAL_QOP_0",
+	"GLOBAL_QOP_1",
+	"AES128_CBC_PKCS5_SHA1_DH2048",
+	"AES192_CBC_PKCS5_SHA1_DH2048",
+	"AES256_CBC_PKCS5_SHA1_DH2048",
+	"AES128_GCM_PKCS5_SHA2_DH2048",
+	"AES192_GCM_PKCS5_SHA2_DH2048",
+	"AES256_GCM_PKCS5_SHA2_DH2048",
+	"AES128_CCM_PKCS5_SHA2_DH2048",
+	"AES192_CCM_PKCS5_SHA2_DH2048",
+	"AES256_CCM_PKCS5_SHA2_DH2048",
+	"AES128_CTR_PKCS5_SHA2_DH2048",
+	"AES192_CTR_PKCS5_SHA2_DH2048",
+	"AES256_CTR_PKCS5_SHA2_DH2048"
 };
 
 
@@ -3347,10 +3362,10 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 			if (aes128supported) {
 				if (gcmsupported && sha256supported) {
 					negotiatedqop=
-					QOP_AES128_GCM_PKCS5_SHA256;
+					QOP_AES128_GCM_PKCS5_SHA2_DH2048;
 				} else if (cbcsupported && sha1supported) {
 					negotiatedqop=
-					QOP_AES128_CBC_PKCS5_SHA1;
+					QOP_AES128_CBC_PKCS5_SHA1_DH2048;
 				}
 			}
 			// FIXME: support other qops
@@ -6056,35 +6071,133 @@ void sqlrprotocol_teradata::appendSsoResponseParcel(byte_t trip) {
 		write(&respdata,(byte_t)100);
 
 		// get QOP parameters
-		byte_t		confalg=ALG_AES;
-		byte_t		mode=CONF_ALG_MODE_GCM;
-		byte_t		padding=CONF_ALG_PADDING_PKCS5;
-		uint16_t	confalgkeysize=128;
-		byte_t		intalg=ALG_SHA256;
-		byte_t		kexalg=ALG_DH;
-		uint16_t	kexalgkeysize=2048;
+		byte_t		confalg=ALG_NONE;
+		uint16_t	confalgkeysize=0;
+		byte_t		mode=CONF_ALG_MODE_NONE;
+		byte_t		padding=CONF_ALG_PADDING_NONE;
+		byte_t		intalg=ALG_NONE;
+		byte_t		kexalg=ALG_NONE;
+		uint16_t	kexalgkeysize=0;
 		switch (negotiatedqop) {
-			case QOP_AES128_GCM_PKCS5_SHA256:
+			case QOP_GLOBAL_QOP_0:
+				confalg=ALG_BLOWFISH;
+				confalgkeysize=128;
+				mode=CONF_ALG_MODE_ECB;
 				break;
-			case QOP_AES128_CBC_PKCS5_SHA1:
-				mode=CONF_ALG_MODE_CBC;
+			case QOP_GLOBAL_QOP_1:
+				confalg=ALG_AES;
+				confalgkeysize=128;
+				mode=CONF_ALG_MODE_OFB;
+				padding=CONF_ALG_PADDING_PKCS5;
 				intalg=ALG_SHA1;
 				break;
-			case QOP_AES192_GCM_PKCS5_SHA256:
+			case QOP_AES128_CBC_PKCS5_SHA1_DH2048:
+				confalg=ALG_AES;
+				confalgkeysize=128;
+				mode=CONF_ALG_MODE_CBC;
+				padding=CONF_ALG_PADDING_PKCS5;
+				intalg=ALG_SHA1;
+				kexalg=ALG_DH;
+				kexalgkeysize=2048;
+				break;
+			case QOP_AES192_CBC_PKCS5_SHA1_DH2048:
+				confalg=ALG_AES;
 				confalgkeysize=192;
-				break;
-			case QOP_AES192_CBC_PKCS5_SHA1:
 				mode=CONF_ALG_MODE_CBC;
+				padding=CONF_ALG_PADDING_PKCS5;
+				intalg=ALG_SHA1;
+				kexalg=ALG_DH;
+				kexalgkeysize=2048;
+				break;
+			case QOP_AES256_CBC_PKCS5_SHA1_DH2048:
+				confalg=ALG_AES;
+				confalgkeysize=256;
+				mode=CONF_ALG_MODE_CBC;
+				padding=CONF_ALG_PADDING_PKCS5;
+				intalg=ALG_SHA1;
+				kexalg=ALG_DH;
+				kexalgkeysize=2048;
+				break;
+			case QOP_AES128_GCM_PKCS5_SHA2_DH2048:
+				confalg=ALG_AES;
+				confalgkeysize=128;
+				mode=CONF_ALG_MODE_GCM;
+				padding=CONF_ALG_PADDING_PKCS5;
+				intalg=ALG_SHA256;
+				kexalg=ALG_DH;
+				kexalgkeysize=2048;
+				break;
+			case QOP_AES192_GCM_PKCS5_SHA2_DH2048:
+				confalg=ALG_AES;
 				confalgkeysize=192;
-				intalg=ALG_SHA1;
+				mode=CONF_ALG_MODE_GCM;
+				padding=CONF_ALG_PADDING_PKCS5;
+				intalg=ALG_SHA256;
+				kexalg=ALG_DH;
+				kexalgkeysize=2048;
 				break;
-			case QOP_AES256_GCM_PKCS5_SHA256:
+			case QOP_AES256_GCM_PKCS5_SHA2_DH2048:
+				confalg=ALG_AES;
 				confalgkeysize=256;
+				mode=CONF_ALG_MODE_GCM;
+				padding=CONF_ALG_PADDING_PKCS5;
+				intalg=ALG_SHA256;
+				kexalg=ALG_DH;
+				kexalgkeysize=2048;
 				break;
-			case QOP_AES256_CBC_PKCS5_SHA1:
-				mode=CONF_ALG_MODE_CBC;
+			case QOP_AES128_CCM_PKCS5_SHA2_DH2048:
+				confalg=ALG_AES;
+				confalgkeysize=128;
+				mode=CONF_ALG_MODE_CCM;
+				padding=CONF_ALG_PADDING_PKCS5;
+				intalg=ALG_SHA256;
+				kexalg=ALG_DH;
+				kexalgkeysize=2048;
+				break;
+			case QOP_AES192_CCM_PKCS5_SHA2_DH2048:
+				confalg=ALG_AES;
+				confalgkeysize=192;
+				mode=CONF_ALG_MODE_CCM;
+				padding=CONF_ALG_PADDING_PKCS5;
+				intalg=ALG_SHA256;
+				kexalg=ALG_DH;
+				kexalgkeysize=2048;
+				break;
+			case QOP_AES256_CCM_PKCS5_SHA2_DH2048:
+				confalg=ALG_AES;
 				confalgkeysize=256;
-				intalg=ALG_SHA1;
+				mode=CONF_ALG_MODE_CCM;
+				padding=CONF_ALG_PADDING_PKCS5;
+				intalg=ALG_SHA256;
+				kexalg=ALG_DH;
+				kexalgkeysize=2048;
+				break;
+			case QOP_AES128_CTR_PKCS5_SHA2_DH2048:
+				confalg=ALG_AES;
+				confalgkeysize=128;
+				mode=CONF_ALG_MODE_CTR;
+				padding=CONF_ALG_PADDING_PKCS5;
+				intalg=ALG_SHA256;
+				kexalg=ALG_DH;
+				kexalgkeysize=2048;
+				break;
+			case QOP_AES192_CTR_PKCS5_SHA2_DH2048:
+				confalg=ALG_AES;
+				confalgkeysize=192;
+				mode=CONF_ALG_MODE_CTR;
+				padding=CONF_ALG_PADDING_PKCS5;
+				intalg=ALG_SHA256;
+				kexalg=ALG_DH;
+				kexalgkeysize=2048;
+				break;
+			case QOP_AES256_CTR_PKCS5_SHA2_DH2048:
+				confalg=ALG_AES;
+				confalgkeysize=256;
+				mode=CONF_ALG_MODE_CTR;
+				padding=CONF_ALG_PADDING_PKCS5;
+				intalg=ALG_SHA256;
+				kexalg=ALG_DH;
+				kexalgkeysize=2048;
 				break;
 		}
 
