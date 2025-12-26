@@ -129,10 +129,9 @@ const char	*confalgpaddingstr[]={
 #define MECHCONFIGFIELD_RANK	17
 
 // Quality-of-Protections
-// no known reference (just had to study the trace)
-// these (and more) are sort-of defined in TdgssLibraryConfigFile.xml
-// <GlobalQOPs>, but without corresponding ids
+// see TdgssLibraryConfigFile.xml <GlobalQOPs>
 #define	QOP_NONE			0
+// FIXME: add the rest
 #define	QOP_AES128_GCM_PKCS5_SHA256	1
 #define	QOP_AES128_CBC_PKCS5_SHA1	2
 #define	QOP_AES192_GCM_PKCS5_SHA256	3
@@ -151,48 +150,83 @@ const char	*qopstr[]={
 
 
 // mechanisms
-// no known reference (just had to study the trace)
-// these (and more) are sort-of defined in TdgssLibraryConfigFile.xml
-// <Mechanisms>, but not in this order, and without corresponding ids
+// see TdgssLibraryConfigFile.xml <Mechanisms>
 #define	MECH_NONE	0
-#define	MECH_TD2	1
-#define	MECH_TDNEGO	2
-#define	MECH_LDAP	3
-#define	MECH_KRB	4
-#define	MECH_KRBCOMPAT	5
+#define	MECH_TD1	1
+#define	MECH_TD2	2
+#define	MECH_KRB5	4
+#define	MECH_SPNEGO	5
+#define	MECH_LDAP	6
+#define	MECH_PROXY	7
+#define	MECH_TDNEGO	8
+#define	MECH_JWT	9
 const char	*mechstr[]={
 	"none",
+	"td1",
 	"td2",
-	"tdnego",
+	"krb5",
+	"spnego",
 	"ldap",
-	"krb",
-	"krbcompat"
+	"proxy",
+	"tdnego",
+	"jwt"
 };
-// NOTE: if I convert the oids from TdgssLibraryConfigFile.xml,
-// I don't get these same values.
+// per TdgssLibraryConfigFile.xml
+//	TD1     1.3.6.1.4.1.191.1.1012.1.1.8
+//	TD2     1.3.6.1.4.1.191.1.1012.1.1.9
+//	KRB5    1.2.840.113554.1.2.2
+//	SPNEGO  1.3.6.1.5.5.2
+//	ldap    1.3.6.1.4.1.191.1.1012.1.20
+//	PROXY   1.3.6.1.4.1.28698.4.302.1.2
+//	TDNEGO  1.3.6.1.4.1.28698.4.302.1.3
+//	JWT	1.3.6.1.4.1.28698.4.302.1.4
 //
-// These are the values that the server sends for supported mechs, though.
-// The first 3 are the values that the client sends as the requested mech
-// if I set logmech=td2, logmech=tdnego, or logmech=ldap.
+// per setting logmech:
+// logmech=td2
+//	0x2B, 0x06, 0x01, 0x04, 0x01, 0x81, 0x3F, 0x01,
+//	0x87, 0x74, 0x01, 0x01, 0x09
+// logmech=ldap.
+//	0x2B, 0x06, 0x01, 0x04, 0x01, 0x81, 0x3F, 0x01,
+//	0x87, 0x74, 0x01, 0x14
+// logmech=tdnego (which actually sends the spnego oid)
+//	0x2B, 0x06, 0x01, 0x05, 0x05, 0x02
+//
+// per jdbc debug:
+//	TD2     1.3.6.1.4.1.191.1.1012.1.1.9
+//	ldap    1.3.6.1.4.1.191.1.1012.1.20
+//	KRB5    1.2.840.113554.1.2.2
+//	SPNEGO  1.3.6.1.5.5.2
+//	TDNEGO  1.3.6.1.4.1.28698.4.302.1.3
+byte_t	td1mechoid[]={
+	0x2B, 0x06, 0x01, 0x04, 0x01, 0x81, 0x3F, 0x01,
+	0x87, 0x74, 0x01, 0x01, 0x08
+};
 byte_t	td2mechoid[]={
 	0x2B, 0x06, 0x01, 0x04, 0x01, 0x81, 0x3F, 0x01,
 	0x87, 0x74, 0x01, 0x01, 0x09
 };
-byte_t	tdnegomechoid[]={
+byte_t	krb5mechoid[]={
+	0x2A, 0x86, 0x48, 0x86, 0xF7, 0x12, 0x01, 0x02,
+	0x02
+};
+byte_t	spnegomechoid[]={
 	0x2B, 0x06, 0x01, 0x05, 0x05, 0x02
 };
 byte_t	ldapmechoid[]={
 	0x2B, 0x06, 0x01, 0x04, 0x01, 0x81, 0x3F, 0x01,
 	0x87, 0x74, 0x01, 0x14
 };
-// not 100% sure these are correct...
-byte_t	krbmechoid[]={
-	0x2A, 0x86, 0x48, 0x86, 0xF7, 0x12, 0x01, 0x02,
-	0x02
-};
-byte_t	krbcompatmechoid[]={
+byte_t	proxymechoid[]={
 	0x2B, 0x06, 0x01, 0x04, 0x01, 0x81, 0xE0, 0x1A,
-	0x04, 0x82, 0x2E, 0x01, 0x03,
+	0x04, 0x82, 0x2E, 0x01, 0x02
+};
+byte_t	tdnegomechoid[]={
+	0x2B, 0x06, 0x01, 0x04, 0x01, 0x81, 0xE0, 0x1A,
+	0x04, 0x82, 0x2E, 0x01, 0x03
+};
+byte_t	jwtmechoid[]={
+	0x2B, 0x06, 0x01, 0x04, 0x01, 0x81, 0xE0, 0x1A,
+	0x04, 0x82, 0x2E, 0x01, 0x04
 };
 
 
@@ -800,14 +834,17 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		void	appendConfigResponseField6();
 		void	appendGatewayConfigParcel();
 		void	appendHasFields();
-		void	appendTd2MechanismParcel();
+		void	appendTd1MechanismParcel();
 		void	appendMechOid(byte_t *oid, uint32_t size);
 		void	appendDefaultMech();
 		void	appendMechRank(uint32_t rank);
-		void	appendTdNegoMechanismParcel();
+		void	appendTd2MechanismParcel();
+		void	appendKrb5MechanismParcel();
+		void	appendSpnegoMechanismParcel();
 		void	appendLdapMechanismParcel();
-		void	appendKrbMechanismParcel();
-		void	appendKrbCompatMechanismParcel();
+		void	appendProxyMechanismParcel();
+		void	appendTdnegoMechanismParcel();
+		void	appendJwtMechanismParcel();
 		void	appendLogonFailureParcel(const char *errorstring);
 		void	setSessionNumber();
 		void	appendAssignResponseParcel();
@@ -931,11 +968,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		uint32_t	maxmessagesize;
 
 		// auth mechs
+		bool		td1mechenabled;
 		bool		td2mechenabled;
-		bool		tdnegomechenabled;
+		bool		krb5mechenabled;
+		bool		spnegomechenabled;
 		bool		ldapmechenabled;
-		bool		krbmechenabled;
-		bool		krbcompatmechenabled;
+		bool		proxymechenabled;
+		bool		tdnegomechenabled;
+		bool		jwtmechenabled;
 
 		// encryption
 		bool		blowfishsupported;
@@ -1032,11 +1072,14 @@ sqlrprotocol_teradata::sqlrprotocol_teradata(sqlrservercontroller *cont,
 
 	// auth mechs
 	// FIXME: make these configurable (and support non-td2)
+	td1mechenabled=false;
 	td2mechenabled=true;
-	tdnegomechenabled=false;
+	krb5mechenabled=false;
+	spnegomechenabled=false;
 	ldapmechenabled=false;
-	krbmechenabled=false;
-	krbcompatmechenabled=false;
+	proxymechenabled=false;
+	tdnegomechenabled=false;
+	jwtmechenabled=false;
 
 	// encryption
 	blowfishsupported=false;
@@ -1331,20 +1374,35 @@ bool sqlrprotocol_teradata::copKindCfg() {
 
 	appendConfigResponseParcel();
 	appendGatewayConfigParcel();
+	// FIXME: server sends, in this order:
+	// TD2 - 1.3.6.1.4.1.191.1.1012.1.1.9
+	// ldap - 1.3.6.1.4.1.191.1.1012.1.20
+	// KRB5 - 1.2.840.113554.1.2.2
+	// SPNEGO - 1.3.6.1.5.5.2
+	// TDNEGO - 1.3.6.1.4.1.28698.4.302.1.3
+	if (td1mechenabled) {
+		appendTd1MechanismParcel();
+	}
 	if (td2mechenabled) {
 		appendTd2MechanismParcel();
 	}
-	if (tdnegomechenabled) {
-		appendTdNegoMechanismParcel();
+	if (krb5mechenabled) {
+		appendKrb5MechanismParcel();
+	}
+	if (spnegomechenabled) {
+		appendSpnegoMechanismParcel();
 	}
 	if (ldapmechenabled) {
 		appendLdapMechanismParcel();
 	}
-	if (krbmechenabled) {
-		appendKrbMechanismParcel();
+	if (proxymechenabled) {
+		appendProxyMechanismParcel();
 	}
-	if (krbcompatmechenabled) {
-		appendKrbCompatMechanismParcel();
+	if (tdnegomechenabled) {
+		appendTdnegoMechanismParcel();
+	}
+	if (jwtmechenabled) {
+		appendJwtMechanismParcel();
 	}
 
 	debugEnd();
@@ -3033,7 +3091,7 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 		// 00  00  00  00  00  00  00  00
 		// 00  00  00  00  00  00  00  00
 		//
-		// .logmech=tdnego
+		// .logmech=tdnego (which actually sends the spnego oid)
 		// bteq/odbc:
 		// (some structure, here!)
 		// (in ASN.1 81 means "the size is in the next byte" and 82
@@ -3044,7 +3102,7 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 		// E0  82  01(size)  AC
 		// E0  4F
 		// C0  09(size)
-		// 2A  86  48  86  F7  12  01  02  02 (krb mech id)
+		// 2A  86  48  86  F7  12  01  02  02 (krb5 mech id)
 		// C1  01(size)  03
 		// C2  01(size)  02
 		// C3  03(size)  02  00  00
@@ -3221,7 +3279,7 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 		// 46  08  00  01  81  00  03  00
 		// 00  00  01  00  00  00  1E  01 
 		//
-		// .logmech=tdnego
+		// .logmech=tdnego (which actually sends the spnego oid)
 		// (some structure, here!)
 		// C1  01(size?)  03
 		// C2  01(size?)  03
@@ -3237,27 +3295,38 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 		// negotiate mech
 		// (for now we only support TD2)
 		negotiatedmech=MECH_NONE;
-		if (reqmechsize==sizeof(td2mechoid) &&
+		if (reqmechsize==sizeof(td1mechoid) &&
+				!bytestring::compare(reqmech,
+					td1mechoid,sizeof(td1mechoid))) {
+			negotiatedmech=MECH_TD1;
+		} else if (reqmechsize==sizeof(td2mechoid) &&
 				!bytestring::compare(reqmech,
 					td2mechoid,sizeof(td2mechoid))) {
 			negotiatedmech=MECH_TD2;
-		} else if (reqmechsize==sizeof(tdnegomechoid) &&
+		} else if (reqmechsize==sizeof(krb5mechoid) &&
 				!bytestring::compare(reqmech,
-					tdnegomechoid,sizeof(tdnegomechoid))) {
-			negotiatedmech=MECH_TDNEGO;
+					krb5mechoid,sizeof(krb5mechoid))) {
+			negotiatedmech=MECH_KRB5;
+		} else if (reqmechsize==sizeof(spnegomechoid) &&
+				!bytestring::compare(reqmech,
+					spnegomechoid,sizeof(spnegomechoid))) {
+			negotiatedmech=MECH_SPNEGO;
 		} else if (reqmechsize==sizeof(ldapmechoid) &&
 				!bytestring::compare(reqmech,
 					ldapmechoid,sizeof(ldapmechoid))) {
 			negotiatedmech=MECH_LDAP;
-		} else if (reqmechsize==sizeof(krbmechoid) &&
+		} else if (reqmechsize==sizeof(proxymechoid) &&
 				!bytestring::compare(reqmech,
-					krbmechoid,sizeof(krbmechoid))) {
-			negotiatedmech=MECH_KRB;
-		} else if (reqmechsize==sizeof(krbcompatmechoid) &&
+					proxymechoid,sizeof(proxymechoid))) {
+			negotiatedmech=MECH_PROXY;
+		} else if (reqmechsize==sizeof(tdnegomechoid) &&
 				!bytestring::compare(reqmech,
-					krbcompatmechoid,
-					sizeof(krbcompatmechoid))) {
-			negotiatedmech=MECH_KRBCOMPAT;
+					tdnegomechoid,sizeof(tdnegomechoid))) {
+			negotiatedmech=MECH_TDNEGO;
+		} else if (reqmechsize==sizeof(jwtmechoid) &&
+				!bytestring::compare(reqmech,
+					jwtmechoid,sizeof(jwtmechoid))) {
+			negotiatedmech=MECH_JWT;
 		}
 		debugWrite("negotiated mech: %s",mechstr[negotiatedmech]);
 		if (negotiatedmech!=MECH_NONE && negotiatedmech!=MECH_TD2) {
@@ -3295,7 +3364,7 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 		// not sure what this is
 		// varies with logmech
 		//
-		// .logmech=td2 or .logmech=tdnego
+		// .logmech=td2
 		// bteq/odbc:
 		// 03  01  02  00  00  00  01  00
 		// 00  00  00  00  00  00  00  00
@@ -3304,6 +3373,12 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 		// 03  01  02  00  00  00  01  00
 		// 00  00  00  00  02  00  00  00
 		// (note the 0x02 in byte 13)
+		//
+		//
+		// .logmech=tdnego (which actually sends the spnego oid)
+		// bteq/odbc:
+		// 03  01  02  00  00  00  01  00
+		// 00  00  00  00  00  00  00  00
 		//
 		//
 		// .logmech=ldap
@@ -5674,18 +5749,18 @@ void sqlrprotocol_teradata::appendHasFields() {
 	debugWrite("has fields: 1");
 }
 
-void sqlrprotocol_teradata::appendTd2MechanismParcel() {
+void sqlrprotocol_teradata::appendTd1MechanismParcel() {
 
 	// see parcel.h - pclauthmech_t
 
 	// teradata2 mechanism
-	debugParcelStart("send","auth mechanism (td2)",167);
+	debugParcelStart("send","auth mechanism (td1)",167);
 
-	appendSmallParcelHeader(167,45);
+	appendSmallParcelHeader(167,45); // FIXME: size is probably wrong
 	appendHasFields();
-	appendMechOid(td2mechoid,sizeof(td2mechoid));
+	appendMechOid(td1mechoid,sizeof(td1mechoid));
 	appendDefaultMech();
-	appendMechRank(20);
+	appendMechRank(10);
 
 	debugParcelEnd();
 }
@@ -5731,18 +5806,48 @@ void sqlrprotocol_teradata::appendMechRank(uint32_t rank) {
 	debugWrite("mech rank: %d,%d",value,rank);
 }
 
-void sqlrprotocol_teradata::appendTdNegoMechanismParcel() {
+void sqlrprotocol_teradata::appendTd2MechanismParcel() {
+
+	// see parcel.h - pclauthmech_t
+
+	// teradata2 mechanism
+	debugParcelStart("send","auth mechanism (td2)",167);
+
+	appendSmallParcelHeader(167,45);
+	appendHasFields();
+	appendMechOid(td2mechoid,sizeof(td2mechoid));
+	appendDefaultMech();
+	appendMechRank(20);
+
+	debugParcelEnd();
+}
+
+void sqlrprotocol_teradata::appendKrb5MechanismParcel() {
+
+	// see parcel.h - pclauthmech_t
+
+	// kerberos mechanism
+	debugParcelStart("send","auth mechanism (krb5)",167);
+
+	appendSmallParcelHeader(167,26); // FIXME: size is probably wrong
+	appendHasFields();
+	appendMechOid(krb5mechoid,sizeof(krb5mechoid));
+	appendMechRank(40);
+
+	debugParcelEnd();
+}
+
+void sqlrprotocol_teradata::appendSpnegoMechanismParcel() {
 
 	// see parcel.h - pclauthmech_t
 
 	// teradata negotiation mechanism
-	debugParcelStart("send","auth mechanism (tdnego)",167);
+	debugParcelStart("send","auth mechanism (spnego)",167);
 
-	appendSmallParcelHeader(167,32);
+	appendSmallParcelHeader(167,32); // FIXME: size is probably wrong
 	appendHasFields();
-	appendMechOid(tdnegomechoid,sizeof(tdnegomechoid));
-	// NOTE: doesn't match rank in TdgssLibraryConfigFile.xml for this mech
-	appendMechRank(70);
+	appendMechOid(spnegomechoid,sizeof(spnegomechoid));
+	appendMechRank(65);
 
 	debugParcelEnd();
 }
@@ -5754,43 +5859,55 @@ void sqlrprotocol_teradata::appendLdapMechanismParcel() {
 	// ldap mechanism
 	debugParcelStart("send","auth mechanism (ldap)",167);
 
-	appendSmallParcelHeader(167,29);
+	appendSmallParcelHeader(167,29); // FIXME: size is probably wrong
 	appendHasFields();
 	appendMechOid(ldapmechoid,sizeof(ldapmechoid));
-	// NOTE: doesn't match rank in TdgssLibraryConfigFile.xml for this mech
-	appendMechRank(40);
+	appendMechRank(70);
 
 	debugParcelEnd();
 }
 
-void sqlrprotocol_teradata::appendKrbMechanismParcel() {
+void sqlrprotocol_teradata::appendProxyMechanismParcel() {
 
 	// see parcel.h - pclauthmech_t
 
-	// kerberos mechanism
-	debugParcelStart("send","auth mechanism (krb)",167);
+	// teradata negotiation mechanism
+	debugParcelStart("send","auth mechanism (proxy)",167);
 
-	appendSmallParcelHeader(167,26);
+	appendSmallParcelHeader(167,32); // FIXME: size is probably wrong
 	appendHasFields();
-	appendMechOid(krbmechoid,sizeof(krbmechoid));
-	// NOTE: doesn't match rank in TdgssLibraryConfigFile.xml for this mech
-	appendMechRank(65);
+	appendMechOid(proxymechoid,sizeof(proxymechoid));
+	appendMechRank(70);
 
 	debugParcelEnd();
 }
 
-void sqlrprotocol_teradata::appendKrbCompatMechanismParcel() {
+void sqlrprotocol_teradata::appendTdnegoMechanismParcel() {
 
 	// see parcel.h - pclauthmech_t
 
-	// kerberos compatibility mechanism
-	debugParcelStart("send","auth mechanism (krbcompat)",167);
+	// teradata negotiation mechanism
+	debugParcelStart("send","auth mechanism (tdnego)",167);
 
-	appendSmallParcelHeader(167,33);
+	appendSmallParcelHeader(167,32); // FIXME: size is probably wrong
 	appendHasFields();
-	appendMechOid(krbcompatmechoid,sizeof(krbcompatmechoid));
-	// NOTE: doesn't match rank in TdgssLibraryConfigFile.xml for this mech
+	appendMechOid(tdnegomechoid,sizeof(tdnegomechoid));
 	appendMechRank(10);
+
+	debugParcelEnd();
+}
+
+void sqlrprotocol_teradata::appendJwtMechanismParcel() {
+
+	// see parcel.h - pclauthmech_t
+
+	// teradata negotiation mechanism
+	debugParcelStart("send","auth mechanism (jwt)",167);
+
+	appendSmallParcelHeader(167,32); // FIXME: size is probably wrong
+	appendHasFields();
+	appendMechOid(tdnegomechoid,sizeof(tdnegomechoid));
+	appendMechRank(30);
 
 	debugParcelEnd();
 }
