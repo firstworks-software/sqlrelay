@@ -455,6 +455,7 @@ bool sqlrprotocol::readBerEncInt(const byte_t *rp, uint64_t *value,
 	// if < 128 then just return it directly
 	if (*rp<128) {
 		*value=*rp;
+		*rpout=rp+1;
 		return true;
 	}
 
@@ -473,9 +474,9 @@ bool sqlrprotocol::readBerEncInt(const byte_t *rp, uint64_t *value,
 	*value=0;
 
 	// shift in the next n bytes
-	const byte_t	*ptr=rp;
+	const byte_t	*ptr=rp+1;
 	for (uint8_t i=0; i<n; i++) {
-		(*value) <<= 1;
+		(*value) <<= 8;
 		(*value) |= (uint64_t)(*ptr);
 		ptr++;
 	}

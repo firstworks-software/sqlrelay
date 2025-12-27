@@ -31,7 +31,7 @@
 // /opt/teradata/tdat/tdgss/site/TdgssUserConfigFile.xml
 
 
-#define DEBUG_CLIENT_SEND_RECV 1
+//#define DEBUG_CLIENT_SEND_RECV 1
 //#define DEBUG_PARCEL_END 1
 
 //#define DECRYPT
@@ -3073,6 +3073,7 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 		//
 		// * mech-specific data (field 0x01 or 0x0E)
 		// * supported qop algorithms (field 0xE1)
+		//  * may not be present for tnego/spnego
 		// * requested mech (field 0x06)
 		// * more mech-specific data (the rest of the data)
 		//
@@ -3098,7 +3099,7 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 						debugEnd();
 					}
 					break;
-				case SSOREQ_NESTED_MECH:
+				case SSOREQ_MECH:
 					if (!parseSsoMech(ptr,&ptr)) {
 						debugEnd();
 					}
@@ -3208,7 +3209,7 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 		// read the key
 		read(ptr,clientpubkey,bytestoread,&ptr);
 
-		debugWrite("unknown:");
+		debugWrite("unknown mech data:");
 		debugHexDump(unknown,sizeof(unknown));
 		if (bytesremaining!=sizeof(clientpubkey)) {
 			debugWrite("NOTE: bytes remaining = %d but "
@@ -3293,9 +3294,11 @@ bool sqlrprotocol_teradata::parseSsoUnknownData(const byte_t *ptr,
 	// 00  00  00  00  00  00  00  00 
 
 	byte_t	unknown[80];
-	read(ptr,unknown,&ptr);
-	debugWrite("unknown:");
+	read(ptr,unknown,sizeof(unknown),&ptr);
+	debugWrite("unknown mech data:");
 	debugHexDump(unknown,sizeof(unknown));
+
+	*ptrout=ptr;
 
 	return true;
 }
@@ -3452,14 +3455,15 @@ bool sqlrprotocol_teradata::parseSsoSet(const byte_t *ptr,
         //     c2  08  74  65  73  74  75  73  65  72 (testuser)
         // }
 
-
 	debugStart("sso set");
+
+	// FIXME: how do we use all of this data?
 
 	// get the field
 	byte_t	field;
 	read(ptr,&field,&ptr);
 	if (field!=SSOREQ_SET) {
-		debugWrite("unexpected field: 0x%02x",field);
+		debugWrite("unexpected field: 0x%02x (expected sso set)",field);
 		debugEnd();
 		*ptrout=ptr;
 		return false;
@@ -3485,53 +3489,62 @@ bool sqlrprotocol_teradata::parseSsoSet(const byte_t *ptr,
 			case SSOREQ_SET:
 				if (!parseSsoSet(ptr,&ptr)) {
 					debugEnd();
+					*ptrout=ptr;
 					return false;
 				}
 				break;
 			case SSOREQ_NESTED_MECH:
 				if (!parseMechField(ptr,&ptr)) {
 					debugEnd();
+					*ptrout=ptr;
 					return false;
 				}
 				break;
 			case SSOREQ_NESTED_C1:
 				if (!parseGenericCField(ptr,&ptr)) {
 					debugEnd();
+					*ptrout=ptr;
 					return false;
 				}
 				break;
 			case SSOREQ_NESTED_C2:
 				if (!parseGenericCField(ptr,&ptr)) {
 					debugEnd();
+					*ptrout=ptr;
 					return false;
 				}
 				break;
 			case SSOREQ_NESTED_C3:
 				if (!parseGenericCField(ptr,&ptr)) {
 					debugEnd();
+					*ptrout=ptr;
 					return false;
 				}
 				break;
 			case SSOREQ_NESTED_C4:
 				if (!parseGenericCField(ptr,&ptr)) {
 					debugEnd();
+					*ptrout=ptr;
 					return false;
 				}
 				break;
 			case SSOREQ_NESTED_C5:
 				if (!parseGenericCField(ptr,&ptr)) {
 					debugEnd();
+					*ptrout=ptr;
 					return false;
 				}
 				break;
 			case SSOREQ_NESTED_C6:
 				if (!parseC6Field(ptr,&ptr)) {
 					debugEnd();
+					*ptrout=ptr;
 					return false;
 				}
 				break;
 			default:
-				debugWrite("unexpected field: 0x%02x",field);
+				debugWrite("unexpected field: 0x%02x "
+					"(expected 0xe0 or 0xc*)",*ptr);
 				debugEnd();
 				*ptrout=ptr;
 				return false;
@@ -3539,6 +3552,8 @@ bool sqlrprotocol_teradata::parseSsoSet(const byte_t *ptr,
 	}
 
 	debugEnd();
+
+	*ptrout=ptr;
 	return true;
 }
 
@@ -3551,7 +3566,9 @@ bool sqlrprotocol_teradata::parseMechField(const byte_t *ptr,
 	read(ptr,&field,&ptr);
 	read(ptr,&mechsize,&ptr);
 	if (field!=SSOREQ_MECH && field!=SSOREQ_NESTED_MECH) {
-		debugWrite("unexpected field: 0x%02x",field);
+		debugWrite("unexpected field: 0x%02x "
+				"(expected ssoreq_mech or "
+				"ssoreq_nested_mech)",field);
 		*ptrout=ptr;
 		return false;
 	}
@@ -3562,6 +3579,8 @@ bool sqlrprotocol_teradata::parseMechField(const byte_t *ptr,
 
 	debugWrite("mech oid:");
 	debugHexDump(mech,mechsize);
+
+	*ptrout=ptr;
 
 	// negotiate mech
 	// (for now we only support TD2)
@@ -3601,7 +3620,7 @@ bool sqlrprotocol_teradata::parseMechField(const byte_t *ptr,
 				jwtmechoid,sizeof(jwtmechoid))) {
 		negotiatedmech=MECH_JWT;
 	}
-	debugWrite("negotiated mech: %s",mechstr[negotiatedmech]);
+	debugWrite("mech: %s",mechstr[negotiatedmech]);
 	if (negotiatedmech!=MECH_NONE && negotiatedmech!=MECH_TD2) {
 		debugWrite("(unsupported)");
 		negotiatedmech=MECH_NONE;
@@ -3619,22 +3638,24 @@ bool sqlrprotocol_teradata::parseGenericCField(const byte_t *ptr,
 	read(ptr,&field,&ptr);
 	read(ptr,&size,&ptr);
 	if (field<SSOREQ_NESTED_C1 || field>SSOREQ_NESTED_C5) {
-		debugWrite("unexpected field: 0x%02x",field);
+		debugWrite("unexpected field: 0x%02x (expected 0xc*)",field);
 		*ptrout=ptr;
 		return false;
 	}
 
 	// get the data
-	// FIXME: what is this?
+	// FIXME: what are these?
 	const byte_t	*data=ptr;
 	ptr+=size;
 
 	if (size==1) {
-		debugWrite("data: 0x%02x",*data);
+		debugWrite("0x%02x data: 0x%02x",field,*data);
 	} else {
-		debugWrite("data:");
+		debugWrite("0x%02x data:",field);
 		debugHexDump(data,size);
 	}
+
+	*ptrout=ptr;
 
 	return true;
 }
@@ -3645,7 +3666,7 @@ bool sqlrprotocol_teradata::parseC6Field(const byte_t *ptr,
 	byte_t	field;
 	read(ptr,&field,&ptr);
 	if (field<SSOREQ_NESTED_C6) {
-		debugWrite("unexpected field: 0x%02x",field);
+		debugWrite("unexpected field: 0x%02x (expected 0xc6)",field);
 		*ptrout=ptr;
 		return false;
 	}
@@ -3666,12 +3687,14 @@ bool sqlrprotocol_teradata::parseC6Field(const byte_t *ptr,
 	if (!parseSsoAlgorithms(ptr,&ptr)) {
 		return false;
 	}
+
+	*ptrout=ptr;
+
 	return true;
 }
 
 bool sqlrprotocol_teradata::parseSsoAlgorithms(const byte_t *ptr,
 						const byte_t **ptrout) {
-
 
 	// the next bit appears to be the supported qop algorithms...
 	//
@@ -3687,7 +3710,8 @@ bool sqlrprotocol_teradata::parseSsoAlgorithms(const byte_t *ptr,
 	read(ptr,&algs,&ptr);
 	read(ptr,&algssize,&ptr);
 	if (algs!=SSOREQ_ALGORITHMS) {
-		debugWrite("unexpected field: 0x%02x",algs);
+		debugWrite("unexpected field: 0x%02x "
+				"(expected ssoreq_algorithms)",algs);
 		debugEnd();
 		*ptrout=ptr;
 		return false;
@@ -3707,7 +3731,8 @@ bool sqlrprotocol_teradata::parseSsoAlgorithms(const byte_t *ptr,
 		read(ptr,&alg,&ptr);
 		read(ptr,&algsize,&ptr);
 		if (alg!=SSOREQ_ALGORITHM) {
-			debugWrite("unexpected field: 0x%02x",alg);
+			debugWrite("unexpected field: 0x%02x "
+					"(expected ssoreq_algorithm)",alg);
 			debugEnd();
 			debugEnd();
 			*ptrout=ptr;
@@ -3731,7 +3756,8 @@ bool sqlrprotocol_teradata::parseSsoAlgorithms(const byte_t *ptr,
 
 			// sanity check
 			if (algdfield<0xd0 || algdfield>0xd6) {
-				debugWrite("unexpected field: 0x%02x",
+				debugWrite("unexpected field: 0x%02x "
+						"(expected ssoreq_algdfield)",
 								algdfield);
 				debugEnd();
 				debugEnd();
@@ -3788,6 +3814,8 @@ bool sqlrprotocol_teradata::parseSsoAlgorithms(const byte_t *ptr,
 		debugEnd();
 	}
 	debugEnd();
+
+	*ptrout=ptr;
 
 	return true;
 }
@@ -6408,9 +6436,9 @@ void sqlrprotocol_teradata::appendSsoResponseParcel(byte_t trip) {
 		//
 		// See notes in parseSsoRequestParcel
 		//
-		// This is what the server would send back to bteq.  I'm not
-		// sure what it would send back to jdbc.  Perhaps it's
-		// different.
+		// This is what the server would send back to bteq for td2.
+		// I'm not sure what it would send back to jdbc, or for other
+		// mechs.  Perhaps it's different.
 		byte_t		unknown[]={
 			0x03, 0x02, 0x01, 0x01, 0x00, 0x00, 0x03, 0xA6,
 			0x00, 0x00, 0x00, 0x15, 0x00, 0x00, 0x00, 0x00,
