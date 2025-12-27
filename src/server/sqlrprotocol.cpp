@@ -449,6 +449,40 @@ uint64_t sqlrprotocol::readLenEncInt(const byte_t *rp, const byte_t **rpout) {
 	return retval;
 }
 
+bool sqlrprotocol::readBerEncInt(const byte_t *rp, uint64_t *value,
+							const byte_t **rpout) {
+
+	// if < 128 then just return it directly
+	if (*rp<128) {
+		*value=*rp;
+		return true;
+	}
+
+	// mask off the 0x80
+	byte_t	n=(*rp)&0x7f;
+
+	// technically we could have anything from 0x81 (indicating that the
+	// next 1 byte contains the number) to 0x7F (indicating that the next
+	// 127 bytes could contain the number) we only support numbers that
+	// will fit in a 64-bit integer (0x81 through 0x88), so bail if r > 8
+	if (n>8) {
+		return false;
+	}
+
+	// initialize value
+	*value=0;
+
+	// shift in the next n bytes
+	const byte_t	*ptr=rp;
+	for (uint8_t i=0; i<n; i++) {
+		(*value) <<= 1;
+		(*value) |= (uint64_t)(*ptr);
+		ptr++;
+	}
+	*rpout=ptr;
+	return true;
+}
+
 void sqlrprotocol::write(bytebuffer *buffer, char value) {
 	buffer->append(value);
 }

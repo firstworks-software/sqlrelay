@@ -5910,6 +5910,28 @@ class SQLRSERVER_DLLSPEC sqlrprotocol : public sqlrservermodule {
 		uint64_t	readLenEncInt(const byte_t *in,
 						const byte_t **out);
 
+		/** Reads a BER-encoded integer from byte string "rp" into
+		 *  buffer "value".
+		 *
+		 *  In BER-encoding:
+		 *
+		 *  * if *rp < 128 then it contains the number
+		 *  * if *rp == 0x81 then the next byte contains the number
+		 *  * if *rp == 0x82 then the next 2 bytes contain the number
+		 *  * if *rp == 0x83 then the next 3 bytes contain the number
+		 *  * if *rp == 0x84 then the next 4 bytes contain the number
+		 *  * etc.
+		 *
+		 *  Since this routine returns a 64-bit integer, then we only
+		 *  support 0x81 through 0x88.
+		 *
+		 *  Returns true if the value appears to be a BER-encoded
+		 *  integer and fits in a 64-bit integer and
+		 *  false otherwise. */
+		bool	readBerEncInt(const byte_t *rp,
+					uint64_t *value,
+					const byte_t **rpout);
+
 		/** Writes "value" to byte buffer "buffer". */
 		void	write(bytebuffer *buffer, char value);
 

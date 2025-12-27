@@ -31,7 +31,7 @@
 // /opt/teradata/tdat/tdgss/site/TdgssUserConfigFile.xml
 
 
-//#define DEBUG_CLIENT_SEND_RECV 1
+#define DEBUG_CLIENT_SEND_RECV 1
 //#define DEBUG_PARCEL_END 1
 
 //#define DECRYPT
@@ -169,12 +169,12 @@ const char	*qopstr[]={
 #define	MECH_NONE	0
 #define	MECH_TD1	1
 #define	MECH_TD2	2
-#define	MECH_KRB5	4
-#define	MECH_SPNEGO	5
-#define	MECH_LDAP	6
-#define	MECH_PROXY	7
-#define	MECH_TDNEGO	8
-#define	MECH_JWT	9
+#define	MECH_KRB5	3
+#define	MECH_SPNEGO	4
+#define	MECH_LDAP	5
+#define	MECH_PROXY	6
+#define	MECH_TDNEGO	7
+#define	MECH_JWT	8
 const char	*mechstr[]={
 	"none",
 	"td1",
@@ -186,32 +186,6 @@ const char	*mechstr[]={
 	"tdnego",
 	"jwt"
 };
-// per TdgssLibraryConfigFile.xml
-//	TD1     1.3.6.1.4.1.191.1.1012.1.1.8
-//	TD2     1.3.6.1.4.1.191.1.1012.1.1.9
-//	KRB5    1.2.840.113554.1.2.2
-//	SPNEGO  1.3.6.1.5.5.2
-//	ldap    1.3.6.1.4.1.191.1.1012.1.20
-//	PROXY   1.3.6.1.4.1.28698.4.302.1.2
-//	TDNEGO  1.3.6.1.4.1.28698.4.302.1.3
-//	JWT	1.3.6.1.4.1.28698.4.302.1.4
-//
-// per setting logmech:
-// logmech=td2
-//	0x2B, 0x06, 0x01, 0x04, 0x01, 0x81, 0x3F, 0x01,
-//	0x87, 0x74, 0x01, 0x01, 0x09
-// logmech=ldap.
-//	0x2B, 0x06, 0x01, 0x04, 0x01, 0x81, 0x3F, 0x01,
-//	0x87, 0x74, 0x01, 0x14
-// logmech=tdnego (which actually sends the spnego oid)
-//	0x2B, 0x06, 0x01, 0x05, 0x05, 0x02
-//
-// per jdbc debug:
-//	TD2     1.3.6.1.4.1.191.1.1012.1.1.9
-//	ldap    1.3.6.1.4.1.191.1.1012.1.20
-//	KRB5    1.2.840.113554.1.2.2
-//	SPNEGO  1.3.6.1.5.5.2
-//	TDNEGO  1.3.6.1.4.1.28698.4.302.1.3
 byte_t	td1mechoid[]={
 	0x2B, 0x06, 0x01, 0x04, 0x01, 0x81, 0x3F, 0x01,
 	0x87, 0x74, 0x01, 0x01, 0x08
@@ -293,9 +267,20 @@ byte_t	jwtmechoid[]={
 
 // sso request authdata fields
 // no known reference (just had to study the trace)
-#define	SSOREQ_SUPPORTED_ALGORITHMS	0xE1
-#define	SSOREQ_SUPPORTED_ALGORITHM	0xE2
-#define	SSOREQ_REQUESTED_MECH		0x06
+#define	SSOREQ_UNKNOWN_DATA	0x01
+#define	SSOREQ_SET		0xE0
+#define	SSOREQ_ALGORITHMS	0xE1
+#define	SSOREQ_ALGORITHM	0xE2
+
+#define SSOREQ_NESTED_MECH	0xC0
+#define SSOREQ_NESTED_C1	0xC1
+#define SSOREQ_NESTED_C2	0xC2
+#define SSOREQ_NESTED_C3	0xC3
+#define SSOREQ_NESTED_C4	0xC4
+#define SSOREQ_NESTED_C5	0xC5
+#define SSOREQ_NESTED_C6	0xC6
+
+#define	SSOREQ_MECH		0x06
 
 #define	SSORESP_NEGOTIATED_QOPS	0xE3
 #define	SSORESP_NEGOTIATED_QOP1	0xE4
@@ -737,7 +722,24 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		void	confAlgKeySize(byte_t conf, uint16_t val);
 		void	kexAlgKeySize(byte_t kex, uint16_t val);
 		bool	parseSsoRequestParcel(const byte_t *parcel,
-					const byte_t **parcelout);
+						const byte_t **parcelout);
+		bool	parseSsoUnknownData(const byte_t *ptr,
+						const byte_t **ptrout);
+		bool	parseSsoSet(const byte_t *ptr,
+						const byte_t **ptrout);
+		bool	parseMechField(const byte_t *ptr,
+						const byte_t **ptrout);
+		bool	parseGenericCField(const byte_t *ptr,
+						const byte_t **ptrout);
+		bool	parseC6Field(const byte_t *ptr,
+						const byte_t **ptrout);
+		bool	parseSsoAlgorithms(const byte_t *ptr,
+						const byte_t **ptrout);
+		bool	parseSsoMech(const byte_t *ptr,
+						const byte_t **ptrout);
+		bool	parseSsoMechParameters(const byte_t *ptr,
+						const byte_t *end,
+						const byte_t **ptrout);
 		bool	parseLogoffParcel(const byte_t *parcel,
 					const byte_t **parcelout);
 		bool	parseOptionsParcel(const byte_t *parcel,
@@ -1095,6 +1097,14 @@ sqlrprotocol_teradata::sqlrprotocol_teradata(sqlrservercontroller *cont,
 	proxymechenabled=false;
 	tdnegomechenabled=false;
 	jwtmechenabled=false;
+td1mechenabled=true;
+td2mechenabled=true;
+krb5mechenabled=true;
+spnegomechenabled=true;
+ldapmechenabled=true;
+proxymechenabled=true;
+tdnegomechenabled=true;
+jwtmechenabled=true;
 
 	// encryption
 	blowfishsupported=false;
@@ -3059,298 +3069,47 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 
 		// no known reference (just had to study the trace)
 
-		// not sure what this is
-		// varies with logmech
+		// The authdata appears to be structured like:
 		//
-		// .logmech=td2
-		// bteq/odbc:
-		// 01  01  01  00  00  00  00  83
-		// 00  00  00  15  00  00  00  00
-		// 10  14  0a  01 (gss version)
-		// 00  00  00  00
-		// 00  00  00  00  00  00  00  00
-		// 00  00  00  00  00  00  00  43
-		// 00  00  00  00  00  00  00  00
-		// 00  00  00  00  00  00  00  00
-		// 00  00  00  00  00  00  00  00
-		// 00  00  00  00  00  00  00  00
-		// 00  00  00  00  00  00  00  00
+		// * mech-specific data (field 0x01 or 0x0E)
+		// * supported qop algorithms (field 0xE1)
+		// * requested mech (field 0x06)
+		// * more mech-specific data (the rest of the data)
 		//
-		// jdbc:
-		// 01  01  01  00  00  00  00  71
-		// 00  00  00  05  02  00  00  00
-		// 10  00  00  01 (gss version)
-		// 00  00  00  00
-		// 00  00  00  00  00  00  00  00
-		// 00  00  00  00  00  00  00  31
-		// 00  00  00  00  00  00  00  00
-		// 00  00  00  00  00  00  00  00
-		// 00  00  00  00  00  00  00  00
-		// 00  00  00  00  00  00  00  00
-		// 00  00  00  00  00  00  00  00 
-		//
-		//
-		// .logmech=ldap
-		// bteq/odbc:
-		// 01  01  01  00  00  00  00  83
-		// 00  00  00  1D  00  00  00  00
-		// 10  14  0A  01  00  00  00  00
-		// 00  00  00  00  00  00  00  00
-		// 00  00  00  00  00  00  00  43
-		// 00  00  00  00  00  00  00  00
-		// 00  00  00  00  00  00  00  00
-		// 00  00  00  00  00  00  00  00
-		// 00  00  00  00  00  00  00  00
-		// 00  00  00  00  00  00  00  00
-		//
-		// .logmech=tdnego (which actually sends the spnego oid)
-		// bteq/odbc:
-		// (some structure, here!)
-		// (in ASN.1 81 means "the size is in the next byte" and 82
-		// means "the size is in the next two bytes", I think the
-		// 81s and 82s below may have meaning similar to this, like
-		// "the value is in the next byte or next two bytes")
-		// E0  82  01(size)  BD
-		// E0  82  01(size)  AC
-		// E0  4F
-		// C0  09(size)
-		// 2A  86  48  86  F7  12  01  02  02 (krb5 mech id)
-		// C1  01(size)  03
-		// C2  01(size)  02
-		// C3  03(size)  02  00  00
-		// C4  04(size)  96  C7  3A  E0
-		// C5  31(size)
-		// 43  6F  6E  66  69  67  75  72 Configur
-		// 61  74  69  6F  6E  20  66  69 ation fi
-		// 6C  65  20  64  6F  65  73  20 le does 
-		// 6E  6F  74  20  73  70  65  63 not spec
-		// 69  66  79  20  64  65  66  61 ify defa
-		// 75  6C  74  20  72  65  61  6C ult real
-		// 6D                             m
-		// E0  81  AA
-		// C0  0C(size)
-		// 2B  06  01  04  01  81  3F  01  87  74  01  14 (ldap mech id)
-		// C1  01(size)  01
-		// C2  01(size)  01
-		// C6  81  93
-		// (the rest is the same as logmech=ldap)
-		// 01  01  01  00  00  00  00  83
-		// 00  00  00  1D  00  00  00  00
-		// 10  14  0A  01 (gss version)
-		// 00  00  00  00
-		// 00  00  00  00  00  00  00  00
-		// 00  00  00  00  00  00  00  43
-		// 00  00  00  00  00  00  00  00
-		// 00  00  00  00  00  00  00  00
-		// 00  00  00  00  00  00  00  00
-		// 00  00  00  00  00  00  00  00
-		// 00  00  00  00  00  00  00  00
-		byte_t	unknown[80];
-		read(ptr,unknown,sizeof(unknown),&ptr);
+		// The first block of mech-specific data may start with
+		// 0x01 (for most mechs) or 0x0E (for negotiation mechs like
+		// TDNEGO/SPNEGO).
 
-		debugWrite("unknown:");
-		debugHexDump(unknown,sizeof(unknown));
+		while (ptr!=end) {
 
-
-
-		// the next bit appears to be the supported algorithms...
-		//
-		// The client sends a set of supported algorithms here,
-		// we'll send a set of supported combinations of them in the
-		// SSO Response - trip 1.
-
-		// get field and size
-		byte_t	algs;
-		byte_t	algssize;
-		read(ptr,&algs,&ptr);
-		read(ptr,&algssize,&ptr);
-		if (algs!=SSOREQ_SUPPORTED_ALGORITHMS) {
-			// FIXME: bail somehow
-		}
-
-		debugStart("supported algorithms");
-
-		// parse each supported algorithm
-		const byte_t	*algsend=ptr+algssize;
-		while (ptr<algsend) {
-
-			// FIXME: bail if we run off the end of the parcel
-
-			// get field and size
-			byte_t	alg;
-			byte_t	algsize;
-			read(ptr,&alg,&ptr);
-			read(ptr,&algsize,&ptr);
-			if (alg!=SSOREQ_SUPPORTED_ALGORITHM) {
-				// FIXME: bail somehow
-			}
-
-			debugStart("supported algorithm");
-
-			// get algorithm details
-			const byte_t	*algend=ptr+algsize;
-			byte_t		currentconf=ALG_NONE;
-			byte_t		currentkex=ALG_NONE;
-			while (ptr<algend) {
-
-				// FIXME: bail if we run off
-				// the end of the parcel
-
-				// get field and size
-				byte_t	algdfield;
-				read(ptr,&algdfield,&ptr);
-				byte_t	algdsize;
-				read(ptr,&algdsize,&ptr);
-
-				debugWrite("%s: ",
-					algdfieldname[algdfield-0xd0]);
-
-				if (algdsize==1) {
-
-					byte_t	val;
-					read(ptr,&val,&ptr);
-
-					switch (algdfield) {
-						case CONF_ALG:
-							currentconf=val;
-							confAlg(val);
-							break;
-						case INT_ALG:
-							intAlg(val);
-							break;
-						case KEX_ALG:
-							currentkex=val;
-							kexAlg(val);
-							break;
-						case CONF_ALG_MODE:
-							confAlgMode(val);
-							break;
-						case CONF_ALG_PADDING:
-							confAlgPadding(val);
-							break;
-						default:
-							// FIXME: bail somehow
-							break;
+			switch (*ptr) {
+				case SSOREQ_UNKNOWN_DATA:
+					if (!parseSsoUnknownData(ptr,&ptr)) {
+						debugEnd();
 					}
-
-				} else if (algdsize==2) {
-
-					// odd that these are always BE
-					// but they appear to be
-					uint16_t	val;
-					readBE(ptr,&val,&ptr);
-
-					switch (algdfield) {
-						case CONF_ALG_KEY_SIZE:
-							confAlgKeySize(
-								currentconf,
-								val);
-							break;
-						case KEX_ALG_KEY_SIZE:
-							kexAlgKeySize(
-								currentkex,
-								val);
-							break;
-						default:
-							// FIXME: bail somehow
-							break;
+					break;
+				case SSOREQ_SET:
+					if (!parseSsoSet(ptr,&ptr)) {
+						debugEnd();
 					}
-				}
+					break;
+				case SSOREQ_ALGORITHMS:
+					if (!parseSsoAlgorithms(ptr,&ptr)) {
+						debugEnd();
+					}
+					break;
+				case SSOREQ_NESTED_MECH:
+					if (!parseSsoMech(ptr,&ptr)) {
+						debugEnd();
+					}
+					break;
+				default:
+					if (!parseSsoMechParameters(
+							ptr,end,&ptr)) {
+						debugEnd();
+					}
+					break;
 			}
-			debugEnd();
-		}
-		debugEnd();
-
-
-
-		// the next bit appears to be the chosen mech...
-		//
-		// After the config response parcel, we sent a set of
-		// supported mechs.  The client will choose one here.
-
-		// get field and size
-		byte_t		mechfield;
-		byte_t		mechsize;
-		const byte_t	*mech;
-		read(ptr,&mechfield,&ptr);
-		read(ptr,&mechsize,&ptr);
-		if (mechfield!=SSOREQ_REQUESTED_MECH) {
-			// FIXME: bail somehow
-		}
-
-		// get the chosen mech
-		mech=ptr;
-		ptr+=mechsize;
-
-		debugWrite("chosen mech oid:");
-		debugHexDump(mech,mechsize);
-
-
-
-		// mech-specfic parameters?
-		//
-		// .logmech=td2
-		// appears to be the same from bteq/odbc/jdbc
-		// 46  08  00  02  81  00  04  04
-		// 04  00  01  00  00  00  1f  01
-		//
-		// .logmech=ldap
-		// 46  08  00  01  81  00  03  00
-		// 00  00  01  00  00  00  1E  01 
-		//
-		// .logmech=tdnego (which actually sends the spnego oid)
-		// (some structure, here!)
-		// C1  01(size?)  03
-		// C2  01(size?)  03
-		// C1  01(size?)  02
-		// C3  01(size?)  01
-		const byte_t	*mechparams=ptr;
-		uint16_t	mechparamssize=end-mechparams;
-		debugWrite("mech parameters:");
-		debugHexDump(mechparams,mechparamssize);
-
-
-
-		// negotiate mech
-		// (for now we only support TD2)
-		negotiatedmech=MECH_NONE;
-		if (mechsize==sizeof(td1mechoid) &&
-				!bytestring::compare(mech,
-					td1mechoid,sizeof(td1mechoid))) {
-			negotiatedmech=MECH_TD1;
-		} else if (mechsize==sizeof(td2mechoid) &&
-				!bytestring::compare(mech,
-					td2mechoid,sizeof(td2mechoid))) {
-			negotiatedmech=MECH_TD2;
-		} else if (mechsize==sizeof(krb5mechoid) &&
-				!bytestring::compare(mech,
-					krb5mechoid,sizeof(krb5mechoid))) {
-			negotiatedmech=MECH_KRB5;
-		} else if (mechsize==sizeof(spnegomechoid) &&
-				!bytestring::compare(mech,
-					spnegomechoid,sizeof(spnegomechoid))) {
-			negotiatedmech=MECH_SPNEGO;
-		} else if (mechsize==sizeof(ldapmechoid) &&
-				!bytestring::compare(mech,
-					ldapmechoid,sizeof(ldapmechoid))) {
-			negotiatedmech=MECH_LDAP;
-		} else if (mechsize==sizeof(proxymechoid) &&
-				!bytestring::compare(mech,
-					proxymechoid,sizeof(proxymechoid))) {
-			negotiatedmech=MECH_PROXY;
-		} else if (mechsize==sizeof(tdnegomechoid) &&
-				!bytestring::compare(mech,
-					tdnegomechoid,sizeof(tdnegomechoid))) {
-			negotiatedmech=MECH_TDNEGO;
-		} else if (mechsize==sizeof(jwtmechoid) &&
-				!bytestring::compare(mech,
-					jwtmechoid,sizeof(jwtmechoid))) {
-			negotiatedmech=MECH_JWT;
-		}
-		debugWrite("negotiated mech: %s",mechstr[negotiatedmech]);
-		if (negotiatedmech!=MECH_NONE && negotiatedmech!=MECH_TD2) {
-			debugWrite("(unsupported)");
-			negotiatedmech=MECH_NONE;
 		}
 
 		// negotiate qop
@@ -3399,6 +3158,9 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 		// 03  01  02  00  00  00  01  00
 		// 00  00  00  00  00  00  00  00
 		//
+		// jdbc:
+		// ???
+		//
 		//
 		// .logmech=ldap
 		// bteq/odbc:
@@ -3413,6 +3175,24 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 		// 00  00  00  00  00  00  00  00
 		// 00  00  00  00  00  00  00  00
 		// 00  00  00  00  00  00  00  00
+		//
+		// jdbc:
+		// ???
+		//
+		// I feel like the 2nd byte (0x02 or 0x05) somehow corresponds
+		// to the size of the rest of the data.
+		//
+		// If the client chooses one of the combinations of qop
+		// algorithms that we sent in trip 1, then that must be in
+		// here somewhere, too.  Could the 0x01 in byte 7 be the index
+		// of that set?
+		//
+		// I feel like the first 16 bytes above must indicate which
+		// qop, otherwise we wouldn't know how many total bytes to read
+		// before the key, how large the key should be, or whether
+		// there should even be a key.
+
+		// FIXME: this size depends on the negotiated mech
 		byte_t	unknown[16];
 		read(ptr,unknown,sizeof(unknown),&ptr);
 
@@ -3447,6 +3227,607 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 
 	debugParcelEnd(parceldata,parceldatasize);
 
+	return true;
+}
+
+bool sqlrprotocol_teradata::parseSsoUnknownData(const byte_t *ptr,
+						const byte_t **ptrout) {
+
+	// FIXME: what is this?
+	//
+	// it varies with mech and platform
+
+	// .logmech=td2
+	// bteq/odbc:
+	// 01  01  01  00  00  00  00  83
+	// 00  00  00  15  00  00  00  00
+	// 10  14  0a  01 (gss version)
+	// 00  00  00  00
+	// 00  00  00  00  00  00  00  00
+	// 00  00  00  00  00  00  00  43
+	// 00  00  00  00  00  00  00  00
+	// 00  00  00  00  00  00  00  00
+	// 00  00  00  00  00  00  00  00
+	// 00  00  00  00  00  00  00  00
+	// 00  00  00  00  00  00  00  00
+	//
+	// jdbc:
+	// 01  01  01  00  00  00  00  71
+	// 00  00  00  05  02  00  00  00
+	// 10  00  00  01 (gss version)
+	// 00  00  00  00
+	// 00  00  00  00  00  00  00  00
+	// 00  00  00  00  00  00  00  31
+	// 00  00  00  00  00  00  00  00
+	// 00  00  00  00  00  00  00  00
+	// 00  00  00  00  00  00  00  00
+	// 00  00  00  00  00  00  00  00
+	// 00  00  00  00  00  00  00  00 
+	//
+	//
+	// .logmech=ldap
+	// bteq/odbc:
+	// 01  01  01  00  00  00  00  83
+	// 00  00  00  1D  00  00  00  00
+	// 10  14  0A  01 (gss version)
+	// 00  00  00  00
+	// 00  00  00  00  00  00  00  00
+	// 00  00  00  00  00  00  00  43
+	// 00  00  00  00  00  00  00  00
+	// 00  00  00  00  00  00  00  00
+	// 00  00  00  00  00  00  00  00
+	// 00  00  00  00  00  00  00  00
+	// 00  00  00  00  00  00  00  00
+	//
+	// jdbc:
+	// 01  01  01  00  00  00  00  71
+	// 00  00  00  0d  02  00  00  00
+	// 10  00  00  01 (gss version)
+	// 00  00  00  00
+	// 00  00  00  00  00  00  00  00
+	// 00  00  00  00  00  00  00  31
+	// 00  00  00  00  00  00  00  00
+	// 00  00  00  00  00  00  00  00
+	// 00  00  00  00  00  00  00  00
+	// 00  00  00  00  00  00  00  00
+	// 00  00  00  00  00  00  00  00 
+
+	byte_t	unknown[80];
+	read(ptr,unknown,&ptr);
+	debugWrite("unknown:");
+	debugHexDump(unknown,sizeof(unknown));
+
+	return true;
+}
+
+bool sqlrprotocol_teradata::parseSsoSet(const byte_t *ptr,
+						const byte_t **ptrout) {
+
+	// .logmech=tdnego (which actually sends the spnego oid)
+	// bteq/odbc:
+	// (some structure, here!)
+	// E0  82  01  BD (BER size) {
+	//     E0  82  01  AC (BER size) {
+	//         E0  4F (BER SIZE) {
+	//             C0  09(size)
+	//             2A  86  48  86  F7  12  01  02  02
+	//             (krb5 mech id)
+	//             C1  01(size)  03
+	//             C2  01(size)  02
+	//             C3  03(size)  02  00  00
+	//             C4  04(size)  96  C7  3A  E0
+	//             C5  31(size) {
+	//                 43  6F  6E  66  69  67  75  72 Configur
+	//                 61  74  69  6F  6E  20  66  69 ation fi
+	//                 6C  65  20  64  6F  65  73  20 le does 
+	//                 6E  6F  74  20  73  70  65  63 not spec
+	//                 69  66  79  20  64  65  66  61 ify defa
+	//                 75  6C  74  20  72  65  61  6C ult real
+	//                 6D                             m
+	//             }
+	//         }
+	//         E0  81  AA (BER size) {
+	//             C0  0C(size)
+	//             2B  06  01  04  01  81  3F  01  87  74  01  14
+	//             (ldap mech id)
+	//             C1  01(size)  01
+	//             C2  01(size)  01
+	//             C6  81(asn.1 size)  93 {
+	//                 (the rest is the same as logmech=ldap)
+	//                 01  01  01  00  00  00  00  83
+	//                 00  00  00  1D  00  00  00  00
+	//                 10  14  0A  01 (gss version)
+	//                 00  00  00  00
+	//                 00  00  00  00  00  00  00  00
+	//                 00  00  00  00  00  00  00  43
+	//                 00  00  00  00  00  00  00  00
+	//                 00  00  00  00  00  00  00  00
+	//                 00  00  00  00  00  00  00  00
+	//                 00  00  00  00  00  00  00  00
+	//                 00  00  00  00  00  00  00  00
+	//             }
+	//         }
+	//         ... probably more that I didn't capture ...
+	//     }
+	//     ... probably more that I didn't capture ...
+	// }
+	//        
+	//
+	// jdbc:
+        // e0  82  01  48(328) {
+        //     e0  82  01  37(311) {
+        //         e0  81  98(152) {
+	//
+	//             // mech
+	//             c0  0c
+	//             2b  06  01  04  01  81  3f  01  87  74  01  14
+	//             (ldap oid)
+	//
+	//             // qop?
+	//             c1  01  01
+	//             c2  01  01
+	//             c6  81  81 {
+	//                 // ???
+	//                 01  01  01  00  00  00  00  71
+	//                 00  00  00  0d  02  00  00  00
+	//                 10  00  00  01 (gss version)
+	//                 00  00  00  00
+	//                 00  00  00  00  00  00  00  00
+	//                 00  00  00  00  00  00  00  31
+	//                 00  00  00  00  00  00  00  00
+	//                 00  00  00  00  00  00  00  00
+	//                 00  00  00  00  00  00  00  00
+	//                 00  00  00  00  00  00  00  00
+	//                 00  00  00  00  00  00  00  00
+	//
+	//                 // supported qop algs with this mech
+	//                 e1  2f
+	//                 e2  15
+	//                 d0  01  02
+	//                 d3  01  01
+	//                 d4  01  04
+	//                 d5  02  00  80
+	//                 d5  02  00  c0
+	//                 d5  02  01  00
+	//                 e2  03
+	//                 d1  01  04
+	//                 e2  03
+	//                 d1  01  06
+	//                 e2  03
+	//                 d1  01  07
+	//                 e2  07
+	//                 d2  01  05
+	//                 d6  02  08  00
+	//             }
+	//         }
+	//
+	//         e0  81  99(153) {
+	//
+	//             // mech
+	//             c0  0d
+	//             2b  06  01  04  01  81  3f  01     87  74  01  01  09
+	//             (td2 oid)
+	//
+	//             // qop?
+	//             c1  01  01
+	//             c2  01  01
+	//             c6  81  81 {
+	//
+	//                 // ???
+	//                 01  01  01  00  00  00  00  71
+	//                 00  00  00  05  02  00  00  00
+	//                 10  00  00  01 (gss version)
+	//                 00  00  00  00
+	//                 00  00  00  00  00  00  00  00
+	//                 00  00  00  00  00  00  00  31
+	//                 00  00  00  00  00  00  00  00
+	//                 00  00  00  00  00  00  00  00
+	//                 00  00  00  00  00  00  00  00
+	//                 00  00  00  00  00  00  00  00
+	//                 00  00  00  00  00  00  00  00
+	//
+	//                 // supported qop algs with this mech
+	//                 e1  2f
+	//                 e2  15
+	//                 d0  01  02
+	//                 d3  01  01
+	//                 d4  01  04
+	//                 d5  02  00  80
+	//                 d5  02  00  c0
+	//                 d5  02  01  00
+	//                 e2  03
+	//                 d1  01  04
+	//                 e2  03
+	//                 d1  01  06
+	//                 e2  03
+	//                 d1  01  07
+	//                 e2  07
+	//                 d2  01  05
+	//                 d6  02  08  00
+	//             }
+	//         }
+	//     }
+	//
+        //     c1  01  02
+        //     c2  08  74  65  73  74  75  73  65  72 (testuser)
+        // }
+
+
+	debugStart("sso set");
+
+	// get the field
+	byte_t	field;
+	read(ptr,&field,&ptr);
+	if (field!=SSOREQ_SET) {
+		debugWrite("unexpected field: 0x%02x",field);
+		debugEnd();
+		*ptrout=ptr;
+		return false;
+	}
+
+	// get the BER-encoded size
+	uint64_t	size;
+	if (!readBerEncInt(ptr,&size,&ptr)) {
+		debugWrite("get ber-encoded len failed");
+		debugEnd();
+		*ptrout=ptr;
+		return false;
+	}
+
+	// get the end of the data
+	const byte_t	*end=ptr+size;
+	
+	// the data should be composed of a bunch of NEGO fields or possibly
+	// another nested SSOREQ_SET
+	while (ptr!=end) {
+
+		switch (*ptr) {
+			case SSOREQ_SET:
+				if (!parseSsoSet(ptr,&ptr)) {
+					debugEnd();
+					return false;
+				}
+				break;
+			case SSOREQ_NESTED_MECH:
+				if (!parseMechField(ptr,&ptr)) {
+					debugEnd();
+					return false;
+				}
+				break;
+			case SSOREQ_NESTED_C1:
+				if (!parseGenericCField(ptr,&ptr)) {
+					debugEnd();
+					return false;
+				}
+				break;
+			case SSOREQ_NESTED_C2:
+				if (!parseGenericCField(ptr,&ptr)) {
+					debugEnd();
+					return false;
+				}
+				break;
+			case SSOREQ_NESTED_C3:
+				if (!parseGenericCField(ptr,&ptr)) {
+					debugEnd();
+					return false;
+				}
+				break;
+			case SSOREQ_NESTED_C4:
+				if (!parseGenericCField(ptr,&ptr)) {
+					debugEnd();
+					return false;
+				}
+				break;
+			case SSOREQ_NESTED_C5:
+				if (!parseGenericCField(ptr,&ptr)) {
+					debugEnd();
+					return false;
+				}
+				break;
+			case SSOREQ_NESTED_C6:
+				if (!parseC6Field(ptr,&ptr)) {
+					debugEnd();
+					return false;
+				}
+				break;
+			default:
+				debugWrite("unexpected field: 0x%02x",field);
+				debugEnd();
+				*ptrout=ptr;
+				return false;
+		}
+	}
+
+	debugEnd();
+	return true;
+}
+
+bool sqlrprotocol_teradata::parseMechField(const byte_t *ptr,
+						const byte_t **ptrout) {
+
+	// get field and size
+	byte_t	field;
+	byte_t	mechsize;
+	read(ptr,&field,&ptr);
+	read(ptr,&mechsize,&ptr);
+	if (field!=SSOREQ_MECH && field!=SSOREQ_NESTED_MECH) {
+		debugWrite("unexpected field: 0x%02x",field);
+		*ptrout=ptr;
+		return false;
+	}
+
+	// get the chosen mech
+	const byte_t	*mech=ptr;
+	ptr+=mechsize;
+
+	debugWrite("mech oid:");
+	debugHexDump(mech,mechsize);
+
+	// negotiate mech
+	// (for now we only support TD2)
+	// FIXME: push this up, this gets called for each nested mech,
+	// not just the one at the top level
+	negotiatedmech=MECH_NONE;
+	if (mechsize==sizeof(td1mechoid) &&
+			!bytestring::compare(mech,
+				td1mechoid,sizeof(td1mechoid))) {
+		negotiatedmech=MECH_TD1;
+	} else if (mechsize==sizeof(td2mechoid) &&
+			!bytestring::compare(mech,
+				td2mechoid,sizeof(td2mechoid))) {
+		negotiatedmech=MECH_TD2;
+	} else if (mechsize==sizeof(krb5mechoid) &&
+			!bytestring::compare(mech,
+				krb5mechoid,sizeof(krb5mechoid))) {
+		negotiatedmech=MECH_KRB5;
+	} else if (mechsize==sizeof(spnegomechoid) &&
+			!bytestring::compare(mech,
+				spnegomechoid,sizeof(spnegomechoid))) {
+		negotiatedmech=MECH_SPNEGO;
+	} else if (mechsize==sizeof(ldapmechoid) &&
+			!bytestring::compare(mech,
+				ldapmechoid,sizeof(ldapmechoid))) {
+		negotiatedmech=MECH_LDAP;
+	} else if (mechsize==sizeof(proxymechoid) &&
+			!bytestring::compare(mech,
+				proxymechoid,sizeof(proxymechoid))) {
+		negotiatedmech=MECH_PROXY;
+	} else if (mechsize==sizeof(tdnegomechoid) &&
+			!bytestring::compare(mech,
+				tdnegomechoid,sizeof(tdnegomechoid))) {
+		negotiatedmech=MECH_TDNEGO;
+	} else if (mechsize==sizeof(jwtmechoid) &&
+			!bytestring::compare(mech,
+				jwtmechoid,sizeof(jwtmechoid))) {
+		negotiatedmech=MECH_JWT;
+	}
+	debugWrite("negotiated mech: %s",mechstr[negotiatedmech]);
+	if (negotiatedmech!=MECH_NONE && negotiatedmech!=MECH_TD2) {
+		debugWrite("(unsupported)");
+		negotiatedmech=MECH_NONE;
+	}
+
+	return true;
+}
+
+bool sqlrprotocol_teradata::parseGenericCField(const byte_t *ptr,
+						const byte_t **ptrout) {
+
+	// get field and size
+	byte_t	field;
+	byte_t	size;
+	read(ptr,&field,&ptr);
+	read(ptr,&size,&ptr);
+	if (field<SSOREQ_NESTED_C1 || field>SSOREQ_NESTED_C5) {
+		debugWrite("unexpected field: 0x%02x",field);
+		*ptrout=ptr;
+		return false;
+	}
+
+	// get the data
+	// FIXME: what is this?
+	const byte_t	*data=ptr;
+	ptr+=size;
+
+	if (size==1) {
+		debugWrite("data: 0x%02x",*data);
+	} else {
+		debugWrite("data:");
+		debugHexDump(data,size);
+	}
+
+	return true;
+}
+
+bool sqlrprotocol_teradata::parseC6Field(const byte_t *ptr,
+						const byte_t **ptrout) {
+	// get the field
+	byte_t	field;
+	read(ptr,&field,&ptr);
+	if (field<SSOREQ_NESTED_C6) {
+		debugWrite("unexpected field: 0x%02x",field);
+		*ptrout=ptr;
+		return false;
+	}
+
+	// get the BER-encoded size
+	uint64_t	size;
+	if (!readBerEncInt(ptr,&size,&ptr)) {
+		debugWrite("get ber-encoded len failed");
+		*ptrout=ptr;
+		return false;
+	}
+
+	// FIXME: I guess it's possible that these
+	// might come in a different order
+	if (!parseSsoUnknownData(ptr,&ptr)) {
+		return false;
+	}
+	if (!parseSsoAlgorithms(ptr,&ptr)) {
+		return false;
+	}
+	return true;
+}
+
+bool sqlrprotocol_teradata::parseSsoAlgorithms(const byte_t *ptr,
+						const byte_t **ptrout) {
+
+
+	// the next bit appears to be the supported qop algorithms...
+	//
+	// The client sends a set of supported qop algorithms here,
+	// we'll send a set of supported combinations of them in the
+	// SSO Response - trip 1.
+
+	debugStart("supported qop algorithms");
+
+	// get field and size
+	byte_t	algs;
+	byte_t	algssize;
+	read(ptr,&algs,&ptr);
+	read(ptr,&algssize,&ptr);
+	if (algs!=SSOREQ_ALGORITHMS) {
+		debugWrite("unexpected field: 0x%02x",algs);
+		debugEnd();
+		*ptrout=ptr;
+		return false;
+	}
+
+	// parse each supported qop algorithm
+	const byte_t	*algsend=ptr+algssize;
+	while (ptr<algsend) {
+
+		// FIXME: bail if we run off the end of the parcel
+
+		debugStart("supported qop algorithm");
+
+		// get field and size
+		byte_t	alg;
+		byte_t	algsize;
+		read(ptr,&alg,&ptr);
+		read(ptr,&algsize,&ptr);
+		if (alg!=SSOREQ_ALGORITHM) {
+			debugWrite("unexpected field: 0x%02x",alg);
+			debugEnd();
+			debugEnd();
+			*ptrout=ptr;
+			return false;
+		}
+
+		// get algorithm details
+		const byte_t	*algend=ptr+algsize;
+		byte_t		currentconf=ALG_NONE;
+		byte_t		currentkex=ALG_NONE;
+		while (ptr<algend) {
+
+			// FIXME: bail if we run off
+			// the end of the parcel
+
+			// get field and size
+			byte_t	algdfield;
+			read(ptr,&algdfield,&ptr);
+			byte_t	algdsize;
+			read(ptr,&algdsize,&ptr);
+
+			// sanity check
+			if (algdfield<0xd0 || algdfield>0xd6) {
+				debugWrite("unexpected field: 0x%02x",
+								algdfield);
+				debugEnd();
+				debugEnd();
+				*ptrout=ptr;
+				return false;
+			}
+
+			debugWrite("%s: ",algdfieldname[algdfield-0xd0]);
+
+			if (algdsize==1) {
+
+				byte_t	val;
+				read(ptr,&val,&ptr);
+
+				switch (algdfield) {
+					case CONF_ALG:
+						currentconf=val;
+						confAlg(val);
+						break;
+					case INT_ALG:
+						intAlg(val);
+						break;
+					case KEX_ALG:
+						currentkex=val;
+						kexAlg(val);
+						break;
+					case CONF_ALG_MODE:
+						confAlgMode(val);
+						break;
+					case CONF_ALG_PADDING:
+						confAlgPadding(val);
+						break;
+				}
+
+			} else if (algdsize==2) {
+
+				// odd that these are always BE
+				// but they appear to be
+				uint16_t	val;
+				readBE(ptr,&val,&ptr);
+
+				switch (algdfield) {
+					case CONF_ALG_KEY_SIZE:
+						confAlgKeySize(
+							currentconf,val);
+						break;
+					case KEX_ALG_KEY_SIZE:
+						kexAlgKeySize(
+							currentkex,val);
+						break;
+				}
+			}
+		}
+		debugEnd();
+	}
+	debugEnd();
+
+	return true;
+}
+
+bool sqlrprotocol_teradata::parseSsoMech(const byte_t *ptr,
+						const byte_t **ptrout) {
+
+	// the next bit appears to be the chosen mech...
+	//
+	// After the gateway config parcel, we sent a set of
+	// supported mechs.  The client will choose one here.
+
+	return parseMechField(ptr,ptrout);
+}
+
+bool sqlrprotocol_teradata::parseSsoMechParameters(const byte_t *ptr,
+						const byte_t *end,
+						const byte_t **ptrout) {
+
+	// mech parameters
+	//
+	// .logmech=td2
+	// bteq/odbc/jdbc:
+	// 46  08  00  02  81  00  04  04
+	// 04  00  01  00  00  00  1f  01
+	//
+	// .logmech=ldap
+	// bteq/odbc:
+	// 46  08  00  01  81  00  03  00
+	// 00  00  01  00  00  00  1E  01 
+	//
+	// jdbc:
+	// ???
+
+	const byte_t	*mechparams=ptr;
+	uint16_t	mechparamssize=end-mechparams;
+	debugWrite("mech parameters:");
+	debugHexDump(mechparams,mechparamssize);
+
+	*ptrout=end;
 	return true;
 }
 
@@ -5775,10 +6156,9 @@ void sqlrprotocol_teradata::appendTd1MechanismParcel() {
 	// teradata2 mechanism
 	debugParcelStart("send","auth mechanism (td1)",167);
 
-	appendSmallParcelHeader(167,45); // FIXME: size is probably wrong
+	appendSmallParcelHeader(167,33);
 	appendHasFields();
 	appendMechOid(td1mechoid,sizeof(td1mechoid));
-	appendDefaultMech();
 	appendMechRank(10);
 
 	debugParcelEnd();
@@ -5848,7 +6228,7 @@ void sqlrprotocol_teradata::appendKrb5MechanismParcel() {
 	// kerberos mechanism
 	debugParcelStart("send","auth mechanism (krb5)",167);
 
-	appendSmallParcelHeader(167,26); // FIXME: size is probably wrong
+	appendSmallParcelHeader(167,29);
 	appendHasFields();
 	appendMechOid(krb5mechoid,sizeof(krb5mechoid));
 	appendMechRank(40);
@@ -5863,7 +6243,7 @@ void sqlrprotocol_teradata::appendSpnegoMechanismParcel() {
 	// teradata negotiation mechanism
 	debugParcelStart("send","auth mechanism (spnego)",167);
 
-	appendSmallParcelHeader(167,32); // FIXME: size is probably wrong
+	appendSmallParcelHeader(167,26);
 	appendHasFields();
 	appendMechOid(spnegomechoid,sizeof(spnegomechoid));
 	appendMechRank(65);
@@ -5878,7 +6258,7 @@ void sqlrprotocol_teradata::appendLdapMechanismParcel() {
 	// ldap mechanism
 	debugParcelStart("send","auth mechanism (ldap)",167);
 
-	appendSmallParcelHeader(167,29); // FIXME: size is probably wrong
+	appendSmallParcelHeader(167,32);
 	appendHasFields();
 	appendMechOid(ldapmechoid,sizeof(ldapmechoid));
 	appendMechRank(70);
@@ -5893,7 +6273,7 @@ void sqlrprotocol_teradata::appendProxyMechanismParcel() {
 	// teradata negotiation mechanism
 	debugParcelStart("send","auth mechanism (proxy)",167);
 
-	appendSmallParcelHeader(167,32); // FIXME: size is probably wrong
+	appendSmallParcelHeader(167,33);
 	appendHasFields();
 	appendMechOid(proxymechoid,sizeof(proxymechoid));
 	appendMechRank(70);
@@ -5908,7 +6288,7 @@ void sqlrprotocol_teradata::appendTdnegoMechanismParcel() {
 	// teradata negotiation mechanism
 	debugParcelStart("send","auth mechanism (tdnego)",167);
 
-	appendSmallParcelHeader(167,32); // FIXME: size is probably wrong
+	appendSmallParcelHeader(167,33);
 	appendHasFields();
 	appendMechOid(tdnegomechoid,sizeof(tdnegomechoid));
 	appendMechRank(10);
@@ -5923,7 +6303,7 @@ void sqlrprotocol_teradata::appendJwtMechanismParcel() {
 	// teradata negotiation mechanism
 	debugParcelStart("send","auth mechanism (jwt)",167);
 
-	appendSmallParcelHeader(167,32); // FIXME: size is probably wrong
+	appendSmallParcelHeader(167,33);
 	appendHasFields();
 	appendMechOid(tdnegomechoid,sizeof(tdnegomechoid));
 	appendMechRank(30);
@@ -6210,15 +6590,16 @@ void sqlrprotocol_teradata::appendSsoResponseParcel(byte_t trip) {
 		// the server sends 4 qops, and for some
 		// reason all 4 are the same...
 		//
-		// The client sent a set of supported algorithms in the
+		// The client sent a set of supported qop algorithms in the
 		// SSO Request - trip 0, we'll send a set of supported
 		// combinations of them in them here.
 		//
 		// Presumably the client has to select one, but it's not clea
 		// where that happens, if that's even how it works.
 		//
-		// Maybe it doens't work that way?  Maybe this is the chosen
-		// qop, and we just send it 4 times, for some reason?
+		// Maybe it doens't work that way?  Maybe we choose the qop,
+		// this IS the chosen qop, and we just send it 4 times, for
+		// some reason?
 		byte_t	qops[]={
 			SSORESP_NEGOTIATED_QOP1,
 			SSORESP_NEGOTIATED_QOP2,
