@@ -31,7 +31,7 @@
 // /opt/teradata/tdat/tdgss/site/TdgssUserConfigFile.xml
 
 
-//#define DEBUG_CLIENT_SEND_RECV 1
+#define DEBUG_CLIENT_SEND_RECV 1
 //#define DEBUG_PARCEL_END 1
 
 //#define DECRYPT
@@ -267,10 +267,10 @@ byte_t	jwtmechoid[]={
 
 // sso request authdata fields
 // no known reference (just had to study the trace)
-#define	SSOREQ_UNKNOWN_DATA	0x01
-#define	SSOREQ_SET		0xE0
-#define	SSOREQ_ALGORITHMS	0xE1
-#define	SSOREQ_ALGORITHM	0xE2
+#define	SSOREQ_FAKE_PACKET_HEADER	0x01
+#define	SSOREQ_SET			0xE0
+#define	SSOREQ_ALGORITHMS		0xE1
+#define	SSOREQ_ALGORITHM		0xE2
 
 #define SSOREQ_NESTED_MECH	0xC0
 #define SSOREQ_NESTED_C1	0xC1
@@ -723,7 +723,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		void	kexAlgKeySize(byte_t kex, uint16_t val);
 		bool	parseSsoRequestParcel(const byte_t *parcel,
 						const byte_t **parcelout);
-		bool	parseSsoUnknownData(const byte_t *ptr,
+		bool	parseSsoFakePacketHeader(const byte_t *ptr,
 						const byte_t **ptrout);
 		bool	parseSsoSet(const byte_t *ptr,
 						const byte_t **ptrout);
@@ -1470,17 +1470,24 @@ bool sqlrprotocol_teradata::copKindAssign() {
 	}
 #endif
 
-	// build response
+	// build and send responses
 	respdata.clear();
 
+	setSessionNumber();
+
+#if 0
+	// handle failure to negotiate mech or qop
 	if (negotiatedmech==MECH_NONE || negotiatedqop==QOP_NONE) {
+		respdata.clear();
 		appendLogonFailureParcel(
 			"UserId, Password or Account is invalid.");
-	} else {
-		setSessionNumber();
-		appendAssignResponseParcel();
-		appendSsoResponseParcel(1);
+		debugEnd();
+		return sendResponseToClient();
 	}
+#endif
+
+	appendAssignResponseParcel();
+	appendSsoResponseParcel(1);
 
 	debugEnd();
 
@@ -3072,8 +3079,11 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 		// The authdata appears to be structured like:
 		//
 		// * mech-specific data (field 0x01 or 0x0E)
+		//  * 0x0E is common for tdnego
+		//    and contains lots of structure
+		//  * 0x01 is common for other mechs
 		// * supported qop algorithms (field 0xE1)
-		//  * may not be present for tnego/spnego
+		//  * not be present for tdnego
 		// * requested mech (field 0x06)
 		// * more mech-specific data (the rest of the data)
 		//
@@ -3084,30 +3094,41 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 		while (ptr!=end) {
 
 			switch (*ptr) {
-				case SSOREQ_UNKNOWN_DATA:
-					if (!parseSsoUnknownData(ptr,&ptr)) {
-						debugEnd();
+				case SSOREQ_FAKE_PACKET_HEADER:
+					if (!parseSsoFakePacketHeader(
+								ptr,&ptr)) {
+						debugParcelEnd(
+							parceldata,
+							parceldatasize);
 					}
 					break;
 				case SSOREQ_SET:
 					if (!parseSsoSet(ptr,&ptr)) {
-						debugEnd();
+						debugParcelEnd(
+							parceldata,
+							parceldatasize);
 					}
 					break;
 				case SSOREQ_ALGORITHMS:
 					if (!parseSsoAlgorithms(ptr,&ptr)) {
-						debugEnd();
+						debugParcelEnd(
+							parceldata,
+							parceldatasize);
 					}
 					break;
 				case SSOREQ_MECH:
 					if (!parseSsoMech(ptr,&ptr)) {
-						debugEnd();
+						debugParcelEnd(
+							parceldata,
+							parceldatasize);
 					}
 					break;
 				default:
 					if (!parseSsoMechParameters(
 							ptr,end,&ptr)) {
-						debugEnd();
+						debugParcelEnd(
+							parceldata,
+							parceldatasize);
 					}
 					break;
 			}
@@ -3140,87 +3161,22 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 
 		// no known reference (just had to study the trace)
 
-		// not sure what this is
-		// varies with logmech
-		//
-		// .logmech=td2
-		// bteq/odbc:
-		// 03  01  02  00  00  00  01  00
-		// 00  00  00  00  00  00  00  00
-		//
-		// jdbc:
-		// 03  01  02  00  00  00  01  00
-		// 00  00  00  00  02  00  00  00
-		// (note the 0x02 in byte 13)
-		//
-		//
-		// .logmech=tdnego (which actually sends the spnego oid)
-		// bteq/odbc:
-		// 03  01  02  00  00  00  01  00
-		// 00  00  00  00  00  00  00  00
-		//
-		// jdbc:
-		// ???
-		//
-		//
-		// .logmech=ldap
-		// bteq/odbc:
-		// 03  05  02  00  00  00  01  B2
-		// 00  00  00  00  00  00  00  00
-		// 10  14  0A  01 (gss version)
-		// 00  00  00  00
-		// 00  00  00  00  00  00  01  00
-		// 00  00  00  00  00  00  00  00
-		// 00  00  00  72  00  00  00  00
-		// 00  00  00  00  00  00  00  00
-		// 00  00  00  00  00  00  00  00
-		// 00  00  00  00  00  00  00  00
-		// 00  00  00  00  00  00  00  00
-		//
-		// jdbc:
-		// ???
-		//
-		// I feel like the 2nd byte (0x02 or 0x05) somehow corresponds
-		// to the size of the rest of the data.
-		//
-		// If the client chooses one of the combinations of qop
-		// algorithms that we sent in trip 1, then that must be in
-		// here somewhere, too.  Could the 0x01 in byte 7 be the index
-		// of that set?
-		//
-		// I feel like the first 16 bytes above must indicate which
-		// qop, otherwise we wouldn't know how many total bytes to read
-		// before the key, how large the key should be, or whether
-		// there should even be a key.
-
-		// FIXME: this size depends on the negotiated mech
-		byte_t	unknown[16];
-		read(ptr,unknown,sizeof(unknown),&ptr);
+		// the first bit appears to be a fake packet header...
+		if (!parseSsoFakePacketHeader(ptr,&ptr)) {
+			debugParcelEnd(parceldata,parceldatasize);
+			return false;
+		}
 
 		// the next bit appears to be the client public key...
 
-		// sanity check
-		size_t	bytesremaining=authdatalen-sizeof(unknown);
-		size_t	bytestoread=bytesremaining;
-		if (bytestoread>sizeof(clientpubkey)) {
-			bytestoread=sizeof(clientpubkey);
-		}
-
 		// read the key
-		read(ptr,clientpubkey,bytestoread,&ptr);
+		// FIXME: can we be sure this will always be 256 bytes?
+		// maybe the wordvar from the fake packet header tells us
+		// how long it is
+		read(ptr,clientpubkey,sizeof(clientpubkey),&ptr);
 
-		debugWrite("unknown mech data:");
-		debugHexDump(unknown,sizeof(unknown));
-		if (bytesremaining!=sizeof(clientpubkey)) {
-			debugWrite("NOTE: bytes remaining = %d but "
-					"sizeof(clientpubkey) = %d, "
-					"we read %d bytes",
-					bytesremaining,
-					sizeof(clientpubkey),
-					bytestoread);
-		}
-		debugWrite("client pub key (%d bytes):",bytestoread);
-		debugHexDump(clientpubkey,bytestoread);
+		debugWrite("client pub key (%d bytes):",sizeof(clientpubkey));
+		debugHexDump(clientpubkey,sizeof(clientpubkey));
 	}
 
 	// return next parcel
@@ -3231,229 +3187,116 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 	return true;
 }
 
-bool sqlrprotocol_teradata::parseSsoUnknownData(const byte_t *ptr,
+bool sqlrprotocol_teradata::parseSsoFakePacketHeader(
+						const byte_t *ptr,
 						const byte_t **ptrout) {
 
-	// FIXME: what is this?
-	//
-	// it varies with mech and platform
+	debugStart("fake packet header");
 
-	// .logmech=td2
-	// bteq/odbc:
-	// 01  01  01  00  00  00  00  83
-	// 00  00  00  15  00  00  00  00
-	// 10  14  0a  01 (gss version)
-	// 00  00  00  00
-	// 00  00  00  00  00  00  00  00
-	// 00  00  00  00  00  00  00  43
-	// 00  00  00  00  00  00  00  00
-	// 00  00  00  00  00  00  00  00
-	// 00  00  00  00  00  00  00  00
-	// 00  00  00  00  00  00  00  00
-	// 00  00  00  00  00  00  00  00
-	//
-	// jdbc:
-	// 01  01  01  00  00  00  00  71
-	// 00  00  00  05  02  00  00  00
-	// 10  00  00  01 (gss version)
-	// 00  00  00  00
-	// 00  00  00  00  00  00  00  00
-	// 00  00  00  00  00  00  00  31
-	// 00  00  00  00  00  00  00  00
-	// 00  00  00  00  00  00  00  00
-	// 00  00  00  00  00  00  00  00
-	// 00  00  00  00  00  00  00  00
-	// 00  00  00  00  00  00  00  00 
-	//
-	//
-	// .logmech=ldap
-	// bteq/odbc:
-	// 01  01  01  00  00  00  00  83
-	// 00  00  00  1D  00  00  00  00
-	// 10  14  0A  01 (gss version)
-	// 00  00  00  00
-	// 00  00  00  00  00  00  00  00
-	// 00  00  00  00  00  00  00  43
-	// 00  00  00  00  00  00  00  00
-	// 00  00  00  00  00  00  00  00
-	// 00  00  00  00  00  00  00  00
-	// 00  00  00  00  00  00  00  00
-	// 00  00  00  00  00  00  00  00
-	//
-	// jdbc:
-	// 01  01  01  00  00  00  00  71
-	// 00  00  00  0d  02  00  00  00
-	// 10  00  00  01 (gss version)
-	// 00  00  00  00
-	// 00  00  00  00  00  00  00  00
-	// 00  00  00  00  00  00  00  31
-	// 00  00  00  00  00  00  00  00
-	// 00  00  00  00  00  00  00  00
-	// 00  00  00  00  00  00  00  00
-	// 00  00  00  00  00  00  00  00
-	// 00  00  00  00  00  00  00  00 
+	// handle the part that's the same for all classes...
+	byte_t		version;
+	byte_t		messageclass;
+	byte_t		messagekind;
+	uint16_t	highordermessagesize;
+	byte_t		bytevar;
+	uint16_t	wordvar;
+	uint16_t	lowordermessagesize;
+	uint16_t 	resforexpan[3];
+	read(ptr,&version,&ptr);
+	read(ptr,&messageclass,&ptr);
+	read(ptr,&messagekind,&ptr);
+	readBE(ptr,&highordermessagesize,&ptr);
+	read(ptr,&bytevar,&ptr);
+	readBE(ptr,&wordvar,&ptr);
+	readBE(ptr,&lowordermessagesize,&ptr);
+	read(ptr,(byte_t *)resforexpan,sizeof(resforexpan),&ptr);
 
-	byte_t	unknown[80];
-	read(ptr,unknown,sizeof(unknown),&ptr);
-	debugWrite("unknown mech data:");
-	debugHexDump(unknown,sizeof(unknown));
+	debugWrite("version: %d",(int)version);
+	debugWrite("class: %d",(int)messageclass);
+	debugWrite("kind: %d",(int)messagekind);
+	debugWrite("high order message size: %d",
+				(int)highordermessagesize);
+	debugWrite("bytevar: %d",(int)bytevar);
+	// FIXME: this varies with platform
+	debugWrite("wordvar: %d",(int)wordvar);
+	debugWrite("low order message size: %d",
+				(int)lowordermessagesize);
+	stringbuffer	b;
+	b.safePrint((byte_t *)resforexpan,sizeof(resforexpan));
+	// FIXME: this varies with logmech and platform
+	debugWrite("res for expan: %s",b.getString());
+
+	// bail for unsupported kinds
+	if (messagekind!=1 && messagekind!=2 && messagekind!=5) {
+		debugWrite("unsupported kind");
+		debugEnd();
+		return false;
+	}
+
+	// for kind 2, there's no more data
+	if (messagekind==2) {
+		*ptrout=ptr;
+		debugEnd();
+		return true;
+	}
+
+	// get the rest of the data
+	uint16_t	corrtag[2];
+	uint32_t	sessionno;
+	byte_t		requestauth[8];
+	uint32_t	requestno;
+	byte_t		gtwbyte;
+	byte_t		hostcharset;
+	read(ptr,(byte_t *)corrtag,sizeof(corrtag),&ptr);
+	readBE(ptr,&sessionno,&ptr);
+	read(ptr,(byte_t *)requestauth,sizeof(requestauth),&ptr);
+	readBE(ptr,&requestno,&ptr);
+	read(ptr,&gtwbyte,&ptr);
+	read(ptr,&hostcharset,&ptr);
+
+	b.clear();
+	b.safePrint((byte_t *)corrtag,sizeof(corrtag));
+	// FIXME: always the client's gss version
+	debugWrite("correlation tag: %s",b.getString());
+	debugWrite("session no: %d",(int)sessionno);
+	debugWrite("request auth: %03d.%03d.%03d.%03d.%03d.%03d.%03d.%03d",
+					requestauth[0],requestauth[1],
+					requestauth[2],requestauth[3],
+					requestauth[4],requestauth[5],
+					requestauth[6],requestauth[7]);
+	debugWrite("request auth: %02x.%02x.%02x.%02x.%02x.%02x.%02x.%02x",
+					requestauth[0],requestauth[1],
+					requestauth[2],requestauth[3],
+					requestauth[4],requestauth[5],
+					requestauth[6],requestauth[7]);
+	debugWrite("request no: %d",(int)requestno);
+	debugWrite("gateway byte: %d",(int)gtwbyte);
+	debugWrite("host charset: %d",(int)hostcharset);
+
+
+	// kind 1 are padded to 80 bytes
+	if (messagekind==1) {
+		byte_t		pad[42];
+		read(ptr,(byte_t *)pad,sizeof(pad),&ptr);
+		debugWrite("padding:");
+		debugHexDump(pad,sizeof(pad));
+	}
+	
+	// kind 5 are padded to 48 bytes
+	else if (messagekind==5) {
+		byte_t		pad[14];
+		read(ptr,(byte_t *)pad,sizeof(pad),&ptr);
+		debugWrite("padding:");
+		debugHexDump(pad,sizeof(pad));
+	}
 
 	*ptrout=ptr;
-
+	debugEnd();
 	return true;
 }
 
 bool sqlrprotocol_teradata::parseSsoSet(const byte_t *ptr,
 						const byte_t **ptrout) {
-
-	// .logmech=tdnego (which actually sends the spnego oid)
-	// bteq/odbc:
-	// (some structure, here!)
-	// E0  82  01  BD (BER size) {
-	//     E0  82  01  AC (BER size) {
-	//         E0  4F (BER SIZE) {
-	//             C0  09(size)
-	//             2A  86  48  86  F7  12  01  02  02
-	//             (krb5 mech id)
-	//             C1  01(size)  03
-	//             C2  01(size)  02
-	//             C3  03(size)  02  00  00
-	//             C4  04(size)  96  C7  3A  E0
-	//             C5  31(size) {
-	//                 43  6F  6E  66  69  67  75  72 Configur
-	//                 61  74  69  6F  6E  20  66  69 ation fi
-	//                 6C  65  20  64  6F  65  73  20 le does 
-	//                 6E  6F  74  20  73  70  65  63 not spec
-	//                 69  66  79  20  64  65  66  61 ify defa
-	//                 75  6C  74  20  72  65  61  6C ult real
-	//                 6D                             m
-	//             }
-	//         }
-	//         E0  81  AA (BER size) {
-	//             C0  0C(size)
-	//             2B  06  01  04  01  81  3F  01  87  74  01  14
-	//             (ldap mech id)
-	//             C1  01(size)  01
-	//             C2  01(size)  01
-	//             C6  81(asn.1 size)  93 {
-	//                 (the rest is the same as logmech=ldap)
-	//                 01  01  01  00  00  00  00  83
-	//                 00  00  00  1D  00  00  00  00
-	//                 10  14  0A  01 (gss version)
-	//                 00  00  00  00
-	//                 00  00  00  00  00  00  00  00
-	//                 00  00  00  00  00  00  00  43
-	//                 00  00  00  00  00  00  00  00
-	//                 00  00  00  00  00  00  00  00
-	//                 00  00  00  00  00  00  00  00
-	//                 00  00  00  00  00  00  00  00
-	//                 00  00  00  00  00  00  00  00
-	//             }
-	//         }
-	//         ... probably more that I didn't capture ...
-	//     }
-	//     ... probably more that I didn't capture ...
-	// }
-	//        
-	//
-	// jdbc:
-        // e0  82  01  48(328) {
-        //     e0  82  01  37(311) {
-        //         e0  81  98(152) {
-	//
-	//             // mech
-	//             c0  0c
-	//             2b  06  01  04  01  81  3f  01  87  74  01  14
-	//             (ldap oid)
-	//
-	//             // qop?
-	//             c1  01  01
-	//             c2  01  01
-	//             c6  81  81 {
-	//                 // ???
-	//                 01  01  01  00  00  00  00  71
-	//                 00  00  00  0d  02  00  00  00
-	//                 10  00  00  01 (gss version)
-	//                 00  00  00  00
-	//                 00  00  00  00  00  00  00  00
-	//                 00  00  00  00  00  00  00  31
-	//                 00  00  00  00  00  00  00  00
-	//                 00  00  00  00  00  00  00  00
-	//                 00  00  00  00  00  00  00  00
-	//                 00  00  00  00  00  00  00  00
-	//                 00  00  00  00  00  00  00  00
-	//
-	//                 // supported qop algs with this mech
-	//                 e1  2f
-	//                 e2  15
-	//                 d0  01  02
-	//                 d3  01  01
-	//                 d4  01  04
-	//                 d5  02  00  80
-	//                 d5  02  00  c0
-	//                 d5  02  01  00
-	//                 e2  03
-	//                 d1  01  04
-	//                 e2  03
-	//                 d1  01  06
-	//                 e2  03
-	//                 d1  01  07
-	//                 e2  07
-	//                 d2  01  05
-	//                 d6  02  08  00
-	//             }
-	//         }
-	//
-	//         e0  81  99(153) {
-	//
-	//             // mech
-	//             c0  0d
-	//             2b  06  01  04  01  81  3f  01     87  74  01  01  09
-	//             (td2 oid)
-	//
-	//             // qop?
-	//             c1  01  01
-	//             c2  01  01
-	//             c6  81  81 {
-	//
-	//                 // ???
-	//                 01  01  01  00  00  00  00  71
-	//                 00  00  00  05  02  00  00  00
-	//                 10  00  00  01 (gss version)
-	//                 00  00  00  00
-	//                 00  00  00  00  00  00  00  00
-	//                 00  00  00  00  00  00  00  31
-	//                 00  00  00  00  00  00  00  00
-	//                 00  00  00  00  00  00  00  00
-	//                 00  00  00  00  00  00  00  00
-	//                 00  00  00  00  00  00  00  00
-	//                 00  00  00  00  00  00  00  00
-	//
-	//                 // supported qop algs with this mech
-	//                 e1  2f
-	//                 e2  15
-	//                 d0  01  02
-	//                 d3  01  01
-	//                 d4  01  04
-	//                 d5  02  00  80
-	//                 d5  02  00  c0
-	//                 d5  02  01  00
-	//                 e2  03
-	//                 d1  01  04
-	//                 e2  03
-	//                 d1  01  06
-	//                 e2  03
-	//                 d1  01  07
-	//                 e2  07
-	//                 d2  01  05
-	//                 d6  02  08  00
-	//             }
-	//         }
-	//     }
-	//
-        //     c1  01  02
-        //     c2  08  74  65  73  74  75  73  65  72 (testuser)
-        // }
 
 	debugStart("sso set");
 
@@ -3681,7 +3524,7 @@ bool sqlrprotocol_teradata::parseC6Field(const byte_t *ptr,
 
 	// FIXME: I guess it's possible that these
 	// might come in a different order
-	if (!parseSsoUnknownData(ptr,&ptr)) {
+	if (!parseSsoFakePacketHeader(ptr,&ptr)) {
 		return false;
 	}
 	if (!parseSsoAlgorithms(ptr,&ptr)) {
@@ -3837,18 +3680,19 @@ bool sqlrprotocol_teradata::parseSsoMechParameters(const byte_t *ptr,
 
 	// mech parameters
 	//
-	// .logmech=td2
+	// .logmech td2
 	// bteq/odbc/jdbc:
 	// 46  08  00  02  81  00  04  04
 	// 04  00  01  00  00  00  1f  01
 	//
-	// .logmech=ldap
-	// bteq/odbc:
+	// .logmech ldap
+	// bteq/odbc/jdbc:
 	// 46  08  00  01  81  00  03  00
 	// 00  00  01  00  00  00  1E  01 
 	//
-	// jdbc:
-	// ???
+	// .logmech tdnego
+	// bteq/odbc/jdbc:
+	// 00  00  00  00  15  01
 
 	const byte_t	*mechparams=ptr;
 	uint16_t	mechparamssize=end-mechparams;
@@ -6410,7 +6254,7 @@ void sqlrprotocol_teradata::appendSsoResponseParcel(byte_t trip) {
 
 	debugParcelStart("send","sso response",134);
 
-	appendSmallParcelHeader(134,(trip==1)?956:7);
+	appendSmallParcelHeader(134,(trip==1)?960:7);
 
 	byte_t	method=0;
 	byte_t	code=(trip==1)?0:1;
@@ -6430,34 +6274,80 @@ void sqlrprotocol_teradata::appendSsoResponseParcel(byte_t trip) {
 		// no known reference (just had to study the trace)
 
 		uint16_t	authdatalen=950;
+		write(&respdata,authdatalen);
 
-		// not sure what this is
-		// probably varies with logmech
-		//
-		// See notes in parseSsoRequestParcel
-		//
-		// This is what the server would send back to bteq for td2.
-		// I'm not sure what it would send back to jdbc, or for other
-		// mechs.  Perhaps it's different.
-		byte_t		unknown[]={
-			0x03, 0x02, 0x01, 0x01, 0x00, 0x00, 0x03, 0xA6,
-			0x00, 0x00, 0x00, 0x15, 0x00, 0x00, 0x00, 0x00,
-			// 16.20.12.01
-			0x10, 0x14, 0x0C, 0x01,
+		// fake packet header
+		// FIXME: write these values out separately
+		// and write out debug for them separately
+		byte_t	fakepacketheader[]={
+			// version
+			0x03,
+
+			// class
+			0x02,
+
+			// kind
+			0x01,
+
+			// high order message size
+			// FIXME: 256 bytes for DH p, DH g, and key?
+			0x01, 0x00,
+
+			// bytevar
+			0x00,
+
+			// wordvar
+			// FIXME: what does this mean?
+			0x03, 0xa6,
+
+			// low order message size
+			0x00, 0x00,
+
+			// res for expan
+			// FIXME: the 0x15 varies with logmech and platform
+			// (endianness of protocol?)
+			//
+			// .logmech td2
+			// bteq: 0x15
+			// jdbc: 0x05
+			//
+			// .logmech ldap/tdnego
+			// bteq: 0x1d
+			// jdbc: 0x0d
+			0x00, 0x15, 0x00, 0x00, 0x00, 0x00,
+
+			// correlation tag
+			// FIXME: insert whatever our gss version is set to here
+			0x10, 0x14, 0x0c, 0x01,
+
+			// session no
 			0x00, 0x00, 0x01, 0x00,
-			0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x66,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+
+			// request auth
+			0x00, 0x00, 0x01, 0x00,
+
+			// request no
+			0x00, 0x00, 0x01, 0x00,
+
+			// gateway byte
+			0x00,
+
+			// host charset
+			0x00,
+
+			// padding (to 80 bytes, (because kind==1))
+			// FIXME: what does this mean?
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x66, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 		};
-		write(&respdata,authdatalen);
-		write(&respdata,unknown,sizeof(unknown));
+		write(&respdata,fakepacketheader,sizeof(fakepacketheader));
 
-		debugWrite("unknown:");
-		debugHexDump(unknown,sizeof(unknown));
+		debugWrite("fake packet header:");
+		debugHexDump(fakepacketheader,sizeof(fakepacketheader));
 
 
 		// dh g and p
