@@ -2506,9 +2506,7 @@ bool sqlrprotocol_teradata::sendResponseToClient() {
 	write(&respheader,bytevar);
 	writeBE(&respheader,wordvar);
 	writeBE(&respheader,lowordermessagesize);
-	// FIXME: host-to-net this?
 	write(&respheader,(byte_t *)resforexpan,sizeof(resforexpan));
-	// FIXME: host-to-net this?
 	write(&respheader,(byte_t *)corrtag,sizeof(corrtag));
 	writeBE(&respheader,sessionno);
 	write(&respheader,responseauth,sizeof(responseauth));
@@ -3209,7 +3207,8 @@ bool sqlrprotocol_teradata::parseSsoGssHeader(const byte_t *ptr,
 	byte_t		bytevar;
 	uint16_t	wordvar;
 	uint16_t	lowordermessagesize;
-	byte_t		resforexpan[6];
+	byte_t		mech[2];
+	uint32_t	unknown;
 
 	read(ptr,&version,&ptr);
 	read(ptr,&messageclass,&ptr);
@@ -3218,20 +3217,20 @@ bool sqlrprotocol_teradata::parseSsoGssHeader(const byte_t *ptr,
 	read(ptr,&bytevar,&ptr);
 	readBE(ptr,&wordvar,&ptr);
 	readBE(ptr,&lowordermessagesize,&ptr);
-	read(ptr,resforexpan,sizeof(resforexpan),&ptr);
+	read(ptr,mech,sizeof(mech),&ptr);
+	readBE(ptr,&unknown,&ptr);
 
 	debugWrite("version: %d",(int)version);
 	debugWrite("class: %d",(int)messageclass);
 	debugWrite("kind: %d",(int)messagekind);
-	debugWrite("high order message size: %d", (int)highordermessagesize);
+	debugWrite("high order message size: %d",(int)highordermessagesize);
 	debugWrite("bytevar: %d",(int)bytevar);
-	// FIXME: this varies with platform
-	// (I think it tells us the length of the thing that follows)
 	debugWrite("wordvar: %d",(int)wordvar);
-	debugWrite("low order message size: %d", (int)lowordermessagesize);
-	// FIXME: this varies with logmech and platform
-	debugWrite("res for expan:");
-	debugHexDump(resforexpan,sizeof(resforexpan));
+	debugWrite("low order message size: %d",(int)lowordermessagesize);
+	// really this is endianness + mech
+	debugWrite("mech:");
+	debugHexDump(mech,sizeof(mech));
+	debugWrite("unknown: %d",(int)unknown);
 
 	// bail for unsupported kinds
 	if (messagekind!=1 && messagekind!=2 && messagekind!=5) {
@@ -6311,6 +6310,7 @@ void sqlrprotocol_teradata::appendSsoGssHeader() {
 
 	uint16_t	lowordermessagesize=0;
 
+	// really this is endianness + mech
 	byte_t	mech[2]={ 0x00, 0x00 };
 	if (!getProtocolIsBigEndian()) {
 		mech[1]|=0x10;
@@ -6320,6 +6320,7 @@ void sqlrprotocol_teradata::appendSsoGssHeader() {
 	} else {
 		mech[1]|=0x0d;
 	}
+
 	uint32_t	unknown=0;
 
 	byte_t		gssversion[]={
