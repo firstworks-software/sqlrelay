@@ -31,7 +31,7 @@
 // /opt/teradata/tdat/tdgss/site/TdgssUserConfigFile.xml
 
 
-#define DEBUG_CLIENT_SEND_RECV 1
+//#define DEBUG_CLIENT_SEND_RECV 1
 //#define DEBUG_PARCEL_END 1
 
 //#define DECRYPT
@@ -265,12 +265,15 @@ byte_t	jwtmechoid[]={
 #define	GWCONFIGFIELD_NEGOTIATE_MECH		12
 
 
-// sso request authdata fields
+// sso authdata fields
 // no known reference (just had to study the trace)
-#define	SSOREQ_FAKE_PACKET_HEADER	0x01
-#define	SSOREQ_SET			0xE0
-#define	SSOREQ_ALGORITHMS		0xE1
-#define	SSOREQ_ALGORITHM		0xE2
+#define	SSO_GSS_VERSION_1	0x01
+#define	SSO_GSS_VERSION_2	0x02
+#define	SSO_GSS_VERSION_3	0x03
+
+#define	SSOREQ_SET		0xE0
+#define	SSOREQ_ALGORITHMS	0xE1
+#define	SSOREQ_ALGORITHM	0xE2
 
 #define SSOREQ_NESTED_MECH	0xC0
 #define SSOREQ_NESTED_C1	0xC1
@@ -723,7 +726,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		void	kexAlgKeySize(byte_t kex, uint16_t val);
 		bool	parseSsoRequestParcel(const byte_t *parcel,
 						const byte_t **parcelout);
-		bool	parseSsoFakePacketHeader(const byte_t *ptr,
+		bool	parseSsoGssHeader(const byte_t *ptr,
 						const byte_t **ptrout);
 		bool	parseSsoSet(const byte_t *ptr,
 						const byte_t **ptrout);
@@ -866,6 +869,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		void	setSessionNumber();
 		void	appendAssignResponseParcel();
 		void	appendSsoResponseParcel(byte_t trip);
+		void	appendSsoGssHeader();
+		void	appendSsoGssKeys();
+		void	appendSsoGssQops();
 		void	appendSuccessParcel();
 		void	updateActivityCount();
 		void	appendStatementStatusParcel(uint32_t statementnumber);
@@ -3081,22 +3087,21 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 		// * mech-specific data (field 0x01 or 0x0E)
 		//  * 0x0E is common for tdnego
 		//    and contains lots of structure
-		//  * 0x01 is common for other mechs
+		//  * 0x01 (gss header) is common for other mechs
 		// * supported qop algorithms (field 0xE1)
 		//  * not be present for tdnego
 		// * requested mech (field 0x06)
 		// * more mech-specific data (the rest of the data)
 		//
 		// The first block of mech-specific data may start with
-		// 0x01 (for most mechs) or 0x0E (for negotiation mechs like
-		// TDNEGO/SPNEGO).
+		// 0x01 (for most mechs (gss header)) or 0x0E (for negotiation
+		// mechs like TDNEGO/SPNEGO).
 
 		while (ptr!=end) {
 
 			switch (*ptr) {
-				case SSOREQ_FAKE_PACKET_HEADER:
-					if (!parseSsoFakePacketHeader(
-								ptr,&ptr)) {
+				case SSO_GSS_VERSION_1:
+					if (!parseSsoGssHeader(ptr,&ptr)) {
 						debugParcelEnd(
 							parceldata,
 							parceldatasize);
@@ -3161,8 +3166,8 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 
 		// no known reference (just had to study the trace)
 
-		// the first bit appears to be a fake packet header...
-		if (!parseSsoFakePacketHeader(ptr,&ptr)) {
+		// the first bit appears to be a gss header...
+		if (!parseSsoGssHeader(ptr,&ptr)) {
 			debugParcelEnd(parceldata,parceldatasize);
 			return false;
 		}
@@ -3171,8 +3176,8 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 
 		// read the key
 		// FIXME: can we be sure this will always be 256 bytes?
-		// maybe the wordvar from the fake packet header tells us
-		// how long it is
+		// maybe the wordvar from the gss header tells us how
+		// long it is
 		read(ptr,clientpubkey,sizeof(clientpubkey),&ptr);
 
 		debugWrite("client pub key (%d bytes):",sizeof(clientpubkey));
@@ -3187,13 +3192,16 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 	return true;
 }
 
-bool sqlrprotocol_teradata::parseSsoFakePacketHeader(
-						const byte_t *ptr,
+bool sqlrprotocol_teradata::parseSsoGssHeader(const byte_t *ptr,
 						const byte_t **ptrout) {
 
-	debugStart("fake packet header");
+	// no known reference (just had to study the trace)
+	// (looks similar to packet header)
 
-	// handle the part that's the same for all classes...
+	debugStart("gss header");
+
+	// handle the part that's the same for all kinds...
+
 	byte_t		version;
 	byte_t		messageclass;
 	byte_t		messagekind;
@@ -3201,7 +3209,8 @@ bool sqlrprotocol_teradata::parseSsoFakePacketHeader(
 	byte_t		bytevar;
 	uint16_t	wordvar;
 	uint16_t	lowordermessagesize;
-	uint16_t 	resforexpan[3];
+	byte_t		resforexpan[6];
+
 	read(ptr,&version,&ptr);
 	read(ptr,&messageclass,&ptr);
 	read(ptr,&messagekind,&ptr);
@@ -3209,22 +3218,20 @@ bool sqlrprotocol_teradata::parseSsoFakePacketHeader(
 	read(ptr,&bytevar,&ptr);
 	readBE(ptr,&wordvar,&ptr);
 	readBE(ptr,&lowordermessagesize,&ptr);
-	read(ptr,(byte_t *)resforexpan,sizeof(resforexpan),&ptr);
+	read(ptr,resforexpan,sizeof(resforexpan),&ptr);
 
 	debugWrite("version: %d",(int)version);
 	debugWrite("class: %d",(int)messageclass);
 	debugWrite("kind: %d",(int)messagekind);
-	debugWrite("high order message size: %d",
-				(int)highordermessagesize);
+	debugWrite("high order message size: %d", (int)highordermessagesize);
 	debugWrite("bytevar: %d",(int)bytevar);
 	// FIXME: this varies with platform
+	// (I think it tells us the length of the thing that follows)
 	debugWrite("wordvar: %d",(int)wordvar);
-	debugWrite("low order message size: %d",
-				(int)lowordermessagesize);
-	stringbuffer	b;
-	b.safePrint((byte_t *)resforexpan,sizeof(resforexpan));
+	debugWrite("low order message size: %d", (int)lowordermessagesize);
 	// FIXME: this varies with logmech and platform
-	debugWrite("res for expan: %s",b.getString());
+	debugWrite("res for expan:");
+	debugHexDump(resforexpan,sizeof(resforexpan));
 
 	// bail for unsupported kinds
 	if (messagekind!=1 && messagekind!=2 && messagekind!=5) {
@@ -3240,54 +3247,45 @@ bool sqlrprotocol_teradata::parseSsoFakePacketHeader(
 		return true;
 	}
 
-	// get the rest of the data
-	uint16_t	corrtag[2];
-	uint32_t	sessionno;
-	byte_t		requestauth[8];
-	uint32_t	requestno;
-	byte_t		gtwbyte;
-	byte_t		hostcharset;
-	read(ptr,(byte_t *)corrtag,sizeof(corrtag),&ptr);
-	readBE(ptr,&sessionno,&ptr);
-	read(ptr,(byte_t *)requestauth,sizeof(requestauth),&ptr);
-	readBE(ptr,&requestno,&ptr);
-	read(ptr,&gtwbyte,&ptr);
-	read(ptr,&hostcharset,&ptr);
+	// handle the part that depends on the kind...
 
-	b.clear();
-	b.safePrint((byte_t *)corrtag,sizeof(corrtag));
-	// FIXME: always the client's gss version
-	debugWrite("correlation tag: %s",b.getString());
-	debugWrite("session no: %d",(int)sessionno);
-	debugWrite("request auth: %03d.%03d.%03d.%03d.%03d.%03d.%03d.%03d",
-					requestauth[0],requestauth[1],
-					requestauth[2],requestauth[3],
-					requestauth[4],requestauth[5],
-					requestauth[6],requestauth[7]);
-	debugWrite("request auth: %02x.%02x.%02x.%02x.%02x.%02x.%02x.%02x",
-					requestauth[0],requestauth[1],
-					requestauth[2],requestauth[3],
-					requestauth[4],requestauth[5],
-					requestauth[6],requestauth[7]);
-	debugWrite("request no: %d",(int)requestno);
-	debugWrite("gateway byte: %d",(int)gtwbyte);
-	debugWrite("host charset: %d",(int)hostcharset);
+	byte_t		gssversion[4];
+	uint32_t	dhpsize;
+	uint32_t	dhgsize;
+	uint32_t	publickeysize;
+	uint32_t	unknownsize;
+	uint32_t	qopssize;
+
+	read(ptr,gssversion,sizeof(gssversion),&ptr);
+	readBE(ptr,&dhpsize,&ptr);
+	readBE(ptr,&dhgsize,&ptr);
+	readBE(ptr,&publickeysize,&ptr);
+	readBE(ptr,&unknownsize,&ptr);
+	readBE(ptr,&qopssize,&ptr);
+
+	debugWrite("gss version:");
+	debugHexDump(gssversion,sizeof(gssversion));
+	debugWrite("dh \"p\" size: %d",(int)dhpsize);
+	debugWrite("dh \"g\" size: %d",(int)dhgsize);
+	debugWrite("public key size: %d",(int)publickeysize);
+	debugWrite("unknown size: %d",(int)unknownsize);
+	debugWrite("qops size: %d",(int)qopssize);
 
 
 	// kind 1 are padded to 80 bytes
 	if (messagekind==1) {
-		byte_t		pad[42];
+		byte_t		pad[40];
 		read(ptr,(byte_t *)pad,sizeof(pad),&ptr);
-		debugWrite("padding:");
-		debugHexDump(pad,sizeof(pad));
+		//debugWrite("padding:");
+		//debugHexDump(pad,sizeof(pad));
 	}
 	
 	// kind 5 are padded to 48 bytes
 	else if (messagekind==5) {
 		byte_t		pad[14];
 		read(ptr,(byte_t *)pad,sizeof(pad),&ptr);
-		debugWrite("padding:");
-		debugHexDump(pad,sizeof(pad));
+		//debugWrite("padding:");
+		//debugHexDump(pad,sizeof(pad));
 	}
 
 	*ptrout=ptr;
@@ -3524,7 +3522,7 @@ bool sqlrprotocol_teradata::parseC6Field(const byte_t *ptr,
 
 	// FIXME: I guess it's possible that these
 	// might come in a different order
-	if (!parseSsoFakePacketHeader(ptr,&ptr)) {
+	if (!parseSsoGssHeader(ptr,&ptr)) {
 		return false;
 	}
 	if (!parseSsoAlgorithms(ptr,&ptr)) {
@@ -6276,308 +6274,9 @@ void sqlrprotocol_teradata::appendSsoResponseParcel(byte_t trip) {
 		uint16_t	authdatalen=950;
 		write(&respdata,authdatalen);
 
-		// fake packet header
-		// FIXME: write these values out separately
-		// and write out debug for them separately
-		byte_t	fakepacketheader[]={
-			// version
-			0x03,
-
-			// class
-			0x02,
-
-			// kind
-			0x01,
-
-			// high order message size
-			// FIXME: 256 bytes for DH p, DH g, and key?
-			0x01, 0x00,
-
-			// bytevar
-			0x00,
-
-			// wordvar
-			// FIXME: what does this mean?
-			0x03, 0xa6,
-
-			// low order message size
-			0x00, 0x00,
-
-			// res for expan
-			// FIXME: the 0x15 varies with logmech and platform
-			// (endianness of protocol?)
-			//
-			// .logmech td2
-			// bteq: 0x15
-			// jdbc: 0x05
-			//
-			// .logmech ldap/tdnego
-			// bteq: 0x1d
-			// jdbc: 0x0d
-			0x00, 0x15, 0x00, 0x00, 0x00, 0x00,
-
-			// correlation tag
-			// FIXME: insert whatever our gss version is set to here
-			0x10, 0x14, 0x0c, 0x01,
-
-			// session no
-			0x00, 0x00, 0x01, 0x00,
-
-			// request auth
-			0x00, 0x00, 0x01, 0x00,
-
-			// request no
-			0x00, 0x00, 0x01, 0x00,
-
-			// gateway byte
-			0x00,
-
-			// host charset
-			0x00,
-
-			// padding (to 80 bytes, (because kind==1))
-			// FIXME: what does this mean?
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x66, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-		};
-		write(&respdata,fakepacketheader,sizeof(fakepacketheader));
-
-		debugWrite("fake packet header:");
-		debugHexDump(fakepacketheader,sizeof(fakepacketheader));
-
-
-		// dh g and p
-		write(&respdata,dhp,sizeof(dhp));
-		write(&respdata,dhg,sizeof(dhg));
-
-		debugWrite("dh \"p\":");
-		debugHexDump(dhp,sizeof(dhp));
-		debugWrite("dh \"g\":");
-		debugHexDump(dhg,sizeof(dhg));
-
-
-		// server public key
-		write(&respdata,serverpubkey,sizeof(serverpubkey));
-
-		debugWrite("server public key (%d bytes):",
-					sizeof(serverpubkey));
-		debugHexDump(serverpubkey,sizeof(serverpubkey));
-
-
-		// negotiated qops (Quality of Protection)
-		write(&respdata,(byte_t)SSORESP_NEGOTIATED_QOPS);
-		write(&respdata,(byte_t)100);
-
-		// get qop parameters
-		byte_t		confalg=ALG_NONE;
-		uint16_t	confalgkeysize=0;
-		byte_t		mode=CONF_ALG_MODE_NONE;
-		byte_t		padding=CONF_ALG_PADDING_NONE;
-		byte_t		intalg=ALG_NONE;
-		byte_t		kexalg=ALG_NONE;
-		uint16_t	kexalgkeysize=0;
-		switch (negotiatedqop) {
-			case QOP_GLOBAL_QOP_0:
-				confalg=ALG_BLOWFISH;
-				confalgkeysize=128;
-				mode=CONF_ALG_MODE_ECB;
-				break;
-			case QOP_GLOBAL_QOP_1:
-				confalg=ALG_AES;
-				confalgkeysize=128;
-				mode=CONF_ALG_MODE_OFB;
-				padding=CONF_ALG_PADDING_PKCS5;
-				intalg=ALG_SHA1;
-				break;
-			case QOP_AES128_CBC_PKCS5_SHA1_DH2048:
-				confalg=ALG_AES;
-				confalgkeysize=128;
-				mode=CONF_ALG_MODE_CBC;
-				padding=CONF_ALG_PADDING_PKCS5;
-				intalg=ALG_SHA1;
-				kexalg=ALG_DH;
-				kexalgkeysize=2048;
-				break;
-			case QOP_AES192_CBC_PKCS5_SHA1_DH2048:
-				confalg=ALG_AES;
-				confalgkeysize=192;
-				mode=CONF_ALG_MODE_CBC;
-				padding=CONF_ALG_PADDING_PKCS5;
-				intalg=ALG_SHA1;
-				kexalg=ALG_DH;
-				kexalgkeysize=2048;
-				break;
-			case QOP_AES256_CBC_PKCS5_SHA1_DH2048:
-				confalg=ALG_AES;
-				confalgkeysize=256;
-				mode=CONF_ALG_MODE_CBC;
-				padding=CONF_ALG_PADDING_PKCS5;
-				intalg=ALG_SHA1;
-				kexalg=ALG_DH;
-				kexalgkeysize=2048;
-				break;
-			case QOP_AES128_GCM_PKCS5_SHA2_DH2048:
-				confalg=ALG_AES;
-				confalgkeysize=128;
-				mode=CONF_ALG_MODE_GCM;
-				padding=CONF_ALG_PADDING_PKCS5;
-				intalg=ALG_SHA256;
-				kexalg=ALG_DH;
-				kexalgkeysize=2048;
-				break;
-			case QOP_AES192_GCM_PKCS5_SHA2_DH2048:
-				confalg=ALG_AES;
-				confalgkeysize=192;
-				mode=CONF_ALG_MODE_GCM;
-				padding=CONF_ALG_PADDING_PKCS5;
-				intalg=ALG_SHA256;
-				kexalg=ALG_DH;
-				kexalgkeysize=2048;
-				break;
-			case QOP_AES256_GCM_PKCS5_SHA2_DH2048:
-				confalg=ALG_AES;
-				confalgkeysize=256;
-				mode=CONF_ALG_MODE_GCM;
-				padding=CONF_ALG_PADDING_PKCS5;
-				intalg=ALG_SHA256;
-				kexalg=ALG_DH;
-				kexalgkeysize=2048;
-				break;
-			case QOP_AES128_CCM_PKCS5_SHA2_DH2048:
-				confalg=ALG_AES;
-				confalgkeysize=128;
-				mode=CONF_ALG_MODE_CCM;
-				padding=CONF_ALG_PADDING_PKCS5;
-				intalg=ALG_SHA256;
-				kexalg=ALG_DH;
-				kexalgkeysize=2048;
-				break;
-			case QOP_AES192_CCM_PKCS5_SHA2_DH2048:
-				confalg=ALG_AES;
-				confalgkeysize=192;
-				mode=CONF_ALG_MODE_CCM;
-				padding=CONF_ALG_PADDING_PKCS5;
-				intalg=ALG_SHA256;
-				kexalg=ALG_DH;
-				kexalgkeysize=2048;
-				break;
-			case QOP_AES256_CCM_PKCS5_SHA2_DH2048:
-				confalg=ALG_AES;
-				confalgkeysize=256;
-				mode=CONF_ALG_MODE_CCM;
-				padding=CONF_ALG_PADDING_PKCS5;
-				intalg=ALG_SHA256;
-				kexalg=ALG_DH;
-				kexalgkeysize=2048;
-				break;
-			case QOP_AES128_CTR_PKCS5_SHA2_DH2048:
-				confalg=ALG_AES;
-				confalgkeysize=128;
-				mode=CONF_ALG_MODE_CTR;
-				padding=CONF_ALG_PADDING_PKCS5;
-				intalg=ALG_SHA256;
-				kexalg=ALG_DH;
-				kexalgkeysize=2048;
-				break;
-			case QOP_AES192_CTR_PKCS5_SHA2_DH2048:
-				confalg=ALG_AES;
-				confalgkeysize=192;
-				mode=CONF_ALG_MODE_CTR;
-				padding=CONF_ALG_PADDING_PKCS5;
-				intalg=ALG_SHA256;
-				kexalg=ALG_DH;
-				kexalgkeysize=2048;
-				break;
-			case QOP_AES256_CTR_PKCS5_SHA2_DH2048:
-				confalg=ALG_AES;
-				confalgkeysize=256;
-				mode=CONF_ALG_MODE_CTR;
-				padding=CONF_ALG_PADDING_PKCS5;
-				intalg=ALG_SHA256;
-				kexalg=ALG_DH;
-				kexalgkeysize=2048;
-				break;
-		}
-
-		debugStart("negotiated qops");
-
-		// the server sends 4 qops, and for some
-		// reason all 4 are the same...
-		//
-		// The client sent a set of supported qop algorithms in the
-		// SSO Request - trip 0, we'll send a set of supported
-		// combinations of them in them here.
-		//
-		// Presumably the client has to select one, but it's not clea
-		// where that happens, if that's even how it works.
-		//
-		// Maybe it doens't work that way?  Maybe we choose the qop,
-		// this IS the chosen qop, and we just send it 4 times, for
-		// some reason?
-		byte_t	qops[]={
-			SSORESP_NEGOTIATED_QOP1,
-			SSORESP_NEGOTIATED_QOP2,
-			SSORESP_NEGOTIATED_QOP3,
-			SSORESP_NEGOTIATED_QOP4
-		};
-		for (byte_t i=0; i<sizeof(qops); i++) {
-
-			// qop
-			write(&respdata,qops[i]);
-			write(&respdata,(byte_t)23);
-
-			// confidentiality algorithm
-			write(&respdata,(byte_t)CONF_ALG);
-			write(&respdata,(byte_t)1);
-			write(&respdata,confalg);
-
-			// mode
-			write(&respdata,(byte_t)CONF_ALG_MODE);
-			write(&respdata,(byte_t)1);
-			write(&respdata,mode);
-
-			// padding
-			write(&respdata,(byte_t)CONF_ALG_PADDING);
-			write(&respdata,(byte_t)1);
-			write(&respdata,padding);
-
-			// confidentiality algorithm key size
-			// (odd that these are always BE but they appear to be)
-			write(&respdata,(byte_t)CONF_ALG_KEY_SIZE);
-			write(&respdata,(byte_t)2);
-			writeBE(&respdata,confalgkeysize);
-
-			// integrity algorithm
-			write(&respdata,(byte_t)INT_ALG);
-			write(&respdata,(byte_t)1);
-			write(&respdata,intalg);
-
-			// key exchange algorithm
-			write(&respdata,(byte_t)KEX_ALG);
-			write(&respdata,(byte_t)1);
-			write(&respdata,kexalg);
-
-			// key exchange algorithm key size
-			// (odd that these are always BE but they appear to be)
-			write(&respdata,(byte_t)KEX_ALG_KEY_SIZE);
-			write(&respdata,(byte_t)2);
-			writeBE(&respdata,kexalgkeysize);
-
-			debugStart("qop %d",i+1);
-			debugWrite("conf alg: %s",algstr[confalg]);
-			debugWrite("mode: %s",confalgmodestr[mode]);
-			debugWrite("padding: %s",confalgpaddingstr[padding]);
-			debugWrite("conf alg key size: %d",confalgkeysize);
-			debugWrite("integrity alg: %s",algstr[intalg]);
-			debugWrite("kex alg: %s",algstr[kexalg]);
-			debugWrite("kex alg key size: %d",kexalgkeysize);
-			debugEnd();
-		}
-		debugEnd();
+		appendSsoGssHeader();
+		appendSsoGssKeys();
+		appendSsoGssQops();
 
 	} else {
 
@@ -6588,6 +6287,333 @@ void sqlrprotocol_teradata::appendSsoResponseParcel(byte_t trip) {
 	}
 
 	debugParcelEnd();
+}
+
+void sqlrprotocol_teradata::appendSsoGssHeader() {
+
+	// no known reference (just had to study the trace)
+	// (looks similar to packet header)
+
+	debugStart("gss header");
+
+	byte_t		version=SSO_GSS_VERSION_3;
+	byte_t		messageclass=2;
+	byte_t		messagekind=1;
+
+	// FIXME: server key length?
+	uint16_t	highordermessagesize=256;
+
+	byte_t		bytevar=0;
+
+	// FIXME: length of something?
+	// this varies with platform
+	uint16_t	wordvar=934;  // 0x03, 0xa6
+
+	uint16_t	lowordermessagesize=0;
+
+	byte_t	mech[2]={ 0x00, 0x00 };
+	if (!getProtocolIsBigEndian()) {
+		mech[1]|=0x10;
+	}
+	if (negotiatedmech==MECH_TD2) {
+		mech[1]|=0x05;
+	} else {
+		mech[1]|=0x0d;
+	}
+	uint32_t	unknown=0;
+
+	byte_t		gssversion[]={
+		// 16.20.12.01
+		0x10, 0x14, 0x0c, 0x01
+	};
+
+	uint32_t	dhpsize=sizeof(dhp);
+	uint32_t	dhgsize=sizeof(dhg);
+	uint32_t	publickeysize=sizeof(serverpubkey);
+	uint32_t	unknownsize=0;
+	uint32_t	qopssize=102;
+
+	// padding (to 80 bytes, (because kind==1))
+	const byte_t	pad[]={
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	};
+
+	write(&respdata,version);
+	write(&respdata,messageclass);
+	write(&respdata,messagekind);
+	writeBE(&respdata,highordermessagesize);
+	write(&respdata,bytevar);
+	writeBE(&respdata,wordvar);
+	writeBE(&respdata,lowordermessagesize);
+	write(&respdata,mech,sizeof(mech));
+	writeBE(&respdata,unknown);
+	write(&respdata,gssversion,sizeof(gssversion));
+	writeBE(&respdata,dhpsize);
+	writeBE(&respdata,dhgsize);
+	writeBE(&respdata,publickeysize);
+	writeBE(&respdata,unknownsize);
+	writeBE(&respdata,qopssize);
+	write(&respdata,pad,sizeof(pad));
+
+	debugWrite("version: %d",(int)version);
+	debugWrite("class: %d",(int)messageclass);
+	debugWrite("kind: %d",(int)messagekind);
+	debugWrite("high order message size: %d",(int)highordermessagesize);
+	debugWrite("bytevar: %d",(int)bytevar);
+	debugWrite("wordvar: %d",(int)wordvar);
+	debugWrite("low order message size: %d",(int)lowordermessagesize);
+	debugWrite("mech:");
+	debugHexDump(mech,sizeof(mech));
+	debugWrite("unknown: %d",(int)unknown);
+	debugWrite("gss version:");
+	debugHexDump(gssversion,sizeof(gssversion));
+	debugWrite("dh \"p\" size: %d",(int)dhpsize);
+	debugWrite("dh \"g\" size: %d",(int)dhgsize);
+	debugWrite("public key size: %d",(int)publickeysize);
+	debugWrite("unknown size: %d",(int)unknownsize);
+	debugWrite("qops size: %d",(int)qopssize);
+	//debugWrite("padding:");
+	//debugHexDump(pad,sizeof(pad));
+
+	debugEnd();
+}
+
+void sqlrprotocol_teradata::appendSsoGssKeys() {
+
+	// dh g and p
+	write(&respdata,dhp,sizeof(dhp));
+	write(&respdata,dhg,sizeof(dhg));
+
+	debugWrite("dh \"p\" (%d bytes):",sizeof(dhp));
+	debugHexDump(dhp,sizeof(dhp));
+	debugWrite("dh \"g\" (%d bytes):",sizeof(dhg));
+	debugHexDump(dhg,sizeof(dhg));
+
+
+	// server public key
+	write(&respdata,serverpubkey,sizeof(serverpubkey));
+
+	debugWrite("server public key (%d bytes):",
+				sizeof(serverpubkey));
+	debugHexDump(serverpubkey,sizeof(serverpubkey));
+}
+
+void sqlrprotocol_teradata::appendSsoGssQops() {
+
+	// negotiated qops (Quality of Protection)
+	write(&respdata,(byte_t)SSORESP_NEGOTIATED_QOPS);
+	write(&respdata,(byte_t)100);
+
+	// get qop parameters
+	byte_t		confalg=ALG_NONE;
+	uint16_t	confalgkeysize=0;
+	byte_t		mode=CONF_ALG_MODE_NONE;
+	byte_t		padding=CONF_ALG_PADDING_NONE;
+	byte_t		intalg=ALG_NONE;
+	byte_t		kexalg=ALG_NONE;
+	uint16_t	kexalgkeysize=0;
+	switch (negotiatedqop) {
+		case QOP_GLOBAL_QOP_0:
+			confalg=ALG_BLOWFISH;
+			confalgkeysize=128;
+			mode=CONF_ALG_MODE_ECB;
+			break;
+		case QOP_GLOBAL_QOP_1:
+			confalg=ALG_AES;
+			confalgkeysize=128;
+			mode=CONF_ALG_MODE_OFB;
+			padding=CONF_ALG_PADDING_PKCS5;
+			intalg=ALG_SHA1;
+			break;
+		case QOP_AES128_CBC_PKCS5_SHA1_DH2048:
+			confalg=ALG_AES;
+			confalgkeysize=128;
+			mode=CONF_ALG_MODE_CBC;
+			padding=CONF_ALG_PADDING_PKCS5;
+			intalg=ALG_SHA1;
+			kexalg=ALG_DH;
+			kexalgkeysize=2048;
+			break;
+		case QOP_AES192_CBC_PKCS5_SHA1_DH2048:
+			confalg=ALG_AES;
+			confalgkeysize=192;
+			mode=CONF_ALG_MODE_CBC;
+			padding=CONF_ALG_PADDING_PKCS5;
+			intalg=ALG_SHA1;
+			kexalg=ALG_DH;
+			kexalgkeysize=2048;
+			break;
+		case QOP_AES256_CBC_PKCS5_SHA1_DH2048:
+			confalg=ALG_AES;
+			confalgkeysize=256;
+			mode=CONF_ALG_MODE_CBC;
+			padding=CONF_ALG_PADDING_PKCS5;
+			intalg=ALG_SHA1;
+			kexalg=ALG_DH;
+			kexalgkeysize=2048;
+			break;
+		case QOP_AES128_GCM_PKCS5_SHA2_DH2048:
+			confalg=ALG_AES;
+			confalgkeysize=128;
+			mode=CONF_ALG_MODE_GCM;
+			padding=CONF_ALG_PADDING_PKCS5;
+			intalg=ALG_SHA256;
+			kexalg=ALG_DH;
+			kexalgkeysize=2048;
+			break;
+		case QOP_AES192_GCM_PKCS5_SHA2_DH2048:
+			confalg=ALG_AES;
+			confalgkeysize=192;
+			mode=CONF_ALG_MODE_GCM;
+			padding=CONF_ALG_PADDING_PKCS5;
+			intalg=ALG_SHA256;
+			kexalg=ALG_DH;
+			kexalgkeysize=2048;
+			break;
+		case QOP_AES256_GCM_PKCS5_SHA2_DH2048:
+			confalg=ALG_AES;
+			confalgkeysize=256;
+			mode=CONF_ALG_MODE_GCM;
+			padding=CONF_ALG_PADDING_PKCS5;
+			intalg=ALG_SHA256;
+			kexalg=ALG_DH;
+			kexalgkeysize=2048;
+			break;
+		case QOP_AES128_CCM_PKCS5_SHA2_DH2048:
+			confalg=ALG_AES;
+			confalgkeysize=128;
+			mode=CONF_ALG_MODE_CCM;
+			padding=CONF_ALG_PADDING_PKCS5;
+			intalg=ALG_SHA256;
+			kexalg=ALG_DH;
+			kexalgkeysize=2048;
+			break;
+		case QOP_AES192_CCM_PKCS5_SHA2_DH2048:
+			confalg=ALG_AES;
+			confalgkeysize=192;
+			mode=CONF_ALG_MODE_CCM;
+			padding=CONF_ALG_PADDING_PKCS5;
+			intalg=ALG_SHA256;
+			kexalg=ALG_DH;
+			kexalgkeysize=2048;
+			break;
+		case QOP_AES256_CCM_PKCS5_SHA2_DH2048:
+			confalg=ALG_AES;
+			confalgkeysize=256;
+			mode=CONF_ALG_MODE_CCM;
+			padding=CONF_ALG_PADDING_PKCS5;
+			intalg=ALG_SHA256;
+			kexalg=ALG_DH;
+			kexalgkeysize=2048;
+			break;
+		case QOP_AES128_CTR_PKCS5_SHA2_DH2048:
+			confalg=ALG_AES;
+			confalgkeysize=128;
+			mode=CONF_ALG_MODE_CTR;
+			padding=CONF_ALG_PADDING_PKCS5;
+			intalg=ALG_SHA256;
+			kexalg=ALG_DH;
+			kexalgkeysize=2048;
+			break;
+		case QOP_AES192_CTR_PKCS5_SHA2_DH2048:
+			confalg=ALG_AES;
+			confalgkeysize=192;
+			mode=CONF_ALG_MODE_CTR;
+			padding=CONF_ALG_PADDING_PKCS5;
+			intalg=ALG_SHA256;
+			kexalg=ALG_DH;
+			kexalgkeysize=2048;
+			break;
+		case QOP_AES256_CTR_PKCS5_SHA2_DH2048:
+			confalg=ALG_AES;
+			confalgkeysize=256;
+			mode=CONF_ALG_MODE_CTR;
+			padding=CONF_ALG_PADDING_PKCS5;
+			intalg=ALG_SHA256;
+			kexalg=ALG_DH;
+			kexalgkeysize=2048;
+			break;
+	}
+
+	debugStart("negotiated qops");
+
+	// the server sends 4 qops, and for some
+	// reason all 4 are the same...
+	//
+	// The client sent a set of supported qop algorithms in the
+	// SSO Request - trip 0, we'll send a set of supported
+	// combinations of them in them here.
+	//
+	// Presumably the client has to select one, but it's not clea
+	// where that happens, if that's even how it works.
+	//
+	// Maybe it doens't work that way?  Maybe we choose the qop,
+	// this IS the chosen qop, and we just send it 4 times, for
+	// some reason?
+	byte_t	qops[]={
+		SSORESP_NEGOTIATED_QOP1,
+		SSORESP_NEGOTIATED_QOP2,
+		SSORESP_NEGOTIATED_QOP3,
+		SSORESP_NEGOTIATED_QOP4
+	};
+	for (byte_t i=0; i<sizeof(qops); i++) {
+
+		// qop
+		write(&respdata,qops[i]);
+		write(&respdata,(byte_t)23);
+
+		// confidentiality algorithm
+		write(&respdata,(byte_t)CONF_ALG);
+		write(&respdata,(byte_t)1);
+		write(&respdata,confalg);
+
+		// mode
+		write(&respdata,(byte_t)CONF_ALG_MODE);
+		write(&respdata,(byte_t)1);
+		write(&respdata,mode);
+
+		// padding
+		write(&respdata,(byte_t)CONF_ALG_PADDING);
+		write(&respdata,(byte_t)1);
+		write(&respdata,padding);
+
+		// confidentiality algorithm key size
+		// (odd that these are always BE but they appear to be)
+		write(&respdata,(byte_t)CONF_ALG_KEY_SIZE);
+		write(&respdata,(byte_t)2);
+		writeBE(&respdata,confalgkeysize);
+
+		// integrity algorithm
+		write(&respdata,(byte_t)INT_ALG);
+		write(&respdata,(byte_t)1);
+		write(&respdata,intalg);
+
+		// key exchange algorithm
+		write(&respdata,(byte_t)KEX_ALG);
+		write(&respdata,(byte_t)1);
+		write(&respdata,kexalg);
+
+		// key exchange algorithm key size
+		// (odd that these are always BE but they appear to be)
+		write(&respdata,(byte_t)KEX_ALG_KEY_SIZE);
+		write(&respdata,(byte_t)2);
+		writeBE(&respdata,kexalgkeysize);
+
+		debugStart("qop %d",i+1);
+		debugWrite("conf alg: %s",algstr[confalg]);
+		debugWrite("mode: %s",confalgmodestr[mode]);
+		debugWrite("padding: %s",confalgpaddingstr[padding]);
+		debugWrite("conf alg key size: %d",confalgkeysize);
+		debugWrite("integrity alg: %s",algstr[intalg]);
+		debugWrite("kex alg: %s",algstr[kexalg]);
+		debugWrite("kex alg key size: %d",kexalgkeysize);
+		debugEnd();
+	}
+	debugEnd();
 }
 
 void sqlrprotocol_teradata::appendSuccessParcel() {
