@@ -34,7 +34,7 @@
 //#define DEBUG_CLIENT_SEND_RECV 1
 //#define DEBUG_PARCEL_END 1
 
-//#define DECRYPT
+#define DECRYPT
 
 #ifdef DECRYPT
 	#include <rudiments/aes128.h>
@@ -271,17 +271,19 @@ byte_t	jwtmechoid[]={
 #define	SSO_GSS_VERSION_2	0x02
 #define	SSO_GSS_VERSION_3	0x03
 
-#define	SSOREQ_SET		0xE0
-#define	SSOREQ_ALGORITHMS	0xE1
-#define	SSOREQ_ALGORITHM	0xE2
+#define	SSO_SET		0xE0
+#define	SSORESP_SET	0xE1
 
-#define SSOREQ_NESTED_MECH	0xC0
-#define SSOREQ_NESTED_C1	0xC1
-#define SSOREQ_NESTED_C2	0xC2
-#define SSOREQ_NESTED_C3	0xC3
-#define SSOREQ_NESTED_C4	0xC4
-#define SSOREQ_NESTED_C5	0xC5
-#define SSOREQ_NESTED_C6	0xC6
+#define	SSO_ALGORITHMS	0xE1
+#define	SSO_ALGORITHM	0xE2
+
+#define SSO_MECH	0xC0
+#define SSO_C1		0xC1
+#define SSO_C2		0xC2
+#define SSO_C3		0xC3
+#define SSO_C4		0xC4
+#define SSO_C5		0xC5
+#define SSO_C6		0xC6
 
 #define	SSOREQ_MECH		0x06
 
@@ -869,7 +871,18 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		void	setSessionNumber();
 		void	appendAssignResponseParcel();
 		void	appendSsoResponseParcel(byte_t trip);
-		void	appendSsoGssHeader();
+		void	appendSsoTdnegoSet();
+		void	appendSsoResponseSet(uint64_t size);
+		void	appendSsoSet(uint64_t size);
+		void	appendSsoSpnegoSet();
+		void	appendSsoLdapSet();
+		void	appendSsoTd2Set();
+		void	appendSsoMech(const byte_t *mech, size_t mechsize);
+		void	appendGenericCField(byte_t field,
+						const byte_t *value,
+						uint64_t size);
+		void	appendC6Field(byte_t mech);
+		void	appendSsoGssHeader(byte_t mech);
 		void	appendSsoGssKeys();
 		void	appendSsoGssQops();
 		void	appendSuccessParcel();
@@ -3082,17 +3095,17 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 
 		// The authdata appears to be structured like:
 		//
-		// * mech-specific data (field 0x01 or 0x0E)
-		//  * 0x0E is common for tdnego
+		// * mech-specific data (field 0x01 or 0xE0)
+		//  * 0xE0 is common for tdnego
 		//    and contains lots of structure
 		//  * 0x01 (gss header) is common for other mechs
-		// * supported qop algorithms (field 0xE1)
+		// * supported qop algorithms (field 0xE3)
 		//  * not be present for tdnego
 		// * requested mech (field 0x06)
 		// * more mech-specific data (the rest of the data)
 		//
 		// The first block of mech-specific data may start with
-		// 0x01 (for most mechs (gss header)) or 0x0E (for negotiation
+		// 0x01 (for most mechs (gss header)) or 0xE0 (for negotiation
 		// mechs like TDNEGO/SPNEGO).
 
 		while (ptr!=end) {
@@ -3105,14 +3118,14 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 							parceldatasize);
 					}
 					break;
-				case SSOREQ_SET:
+				case SSO_SET:
 					if (!parseSsoSet(ptr,&ptr)) {
 						debugParcelEnd(
 							parceldata,
 							parceldatasize);
 					}
 					break;
-				case SSOREQ_ALGORITHMS:
+				case SSO_ALGORITHMS:
 					if (!parseSsoAlgorithms(ptr,&ptr)) {
 						debugParcelEnd(
 							parceldata,
@@ -3203,33 +3216,27 @@ bool sqlrprotocol_teradata::parseSsoGssHeader(const byte_t *ptr,
 	byte_t		version;
 	byte_t		messageclass;
 	byte_t		messagekind;
-	uint16_t	highordermessagesize;
-	byte_t		bytevar;
-	uint16_t	wordvar;
-	uint16_t	lowordermessagesize;
-	byte_t		mech[2];
+	byte_t		flag;
+	uint32_t	wordvar;
+	byte_t		endianmech[4];
 	uint32_t	unknown;
 
 	read(ptr,&version,&ptr);
 	read(ptr,&messageclass,&ptr);
 	read(ptr,&messagekind,&ptr);
-	readBE(ptr,&highordermessagesize,&ptr);
-	read(ptr,&bytevar,&ptr);
+	read(ptr,&flag,&ptr);
 	readBE(ptr,&wordvar,&ptr);
-	readBE(ptr,&lowordermessagesize,&ptr);
-	read(ptr,mech,sizeof(mech),&ptr);
+	read(ptr,endianmech,sizeof(endianmech),&ptr);
 	readBE(ptr,&unknown,&ptr);
 
 	debugWrite("version: %d",(int)version);
 	debugWrite("class: %d",(int)messageclass);
 	debugWrite("kind: %d",(int)messagekind);
-	debugWrite("high order message size: %d",(int)highordermessagesize);
-	debugWrite("bytevar: %d",(int)bytevar);
+	// FIXME: is this flag the sso level?
+	debugWrite("flag: %d",(int)flag);
 	debugWrite("wordvar: %d",(int)wordvar);
-	debugWrite("low order message size: %d",(int)lowordermessagesize);
-	// really this is endianness + mech
-	debugWrite("mech:");
-	debugHexDump(mech,sizeof(mech));
+	debugWrite("endianness/mech:");
+	debugHexDump(endianmech,sizeof(endianmech));
 	debugWrite("unknown: %d",(int)unknown);
 
 	// bail for unsupported kinds
@@ -3240,6 +3247,7 @@ bool sqlrprotocol_teradata::parseSsoGssHeader(const byte_t *ptr,
 	}
 
 	// for kind 2, there's no more data
+	// (we often see these in sso request - trip 2)
 	if (messagekind==2) {
 		*ptrout=ptr;
 		debugEnd();
@@ -3272,6 +3280,7 @@ bool sqlrprotocol_teradata::parseSsoGssHeader(const byte_t *ptr,
 
 
 	// kind 1 are padded to 80 bytes
+	// (we often see these in sso request - trip 1)
 	if (messagekind==1) {
 		byte_t		pad[40];
 		read(ptr,(byte_t *)pad,sizeof(pad),&ptr);
@@ -3280,6 +3289,7 @@ bool sqlrprotocol_teradata::parseSsoGssHeader(const byte_t *ptr,
 	}
 	
 	// kind 5 are padded to 48 bytes
+	// FIXME: what did I do to cause the client to generate these?
 	else if (messagekind==5) {
 		byte_t		pad[14];
 		read(ptr,(byte_t *)pad,sizeof(pad),&ptr);
@@ -3302,7 +3312,7 @@ bool sqlrprotocol_teradata::parseSsoSet(const byte_t *ptr,
 	// get the field
 	byte_t	field;
 	read(ptr,&field,&ptr);
-	if (field!=SSOREQ_SET) {
+	if (field!=SSO_SET) {
 		debugWrite("unexpected field: 0x%02x (expected sso set)",field);
 		debugEnd();
 		*ptrout=ptr;
@@ -3322,60 +3332,60 @@ bool sqlrprotocol_teradata::parseSsoSet(const byte_t *ptr,
 	const byte_t	*end=ptr+size;
 	
 	// the data should be composed of a bunch of NEGO fields or possibly
-	// another nested SSOREQ_SET
+	// another nested SSO_SET
 	while (ptr!=end) {
 
 		switch (*ptr) {
-			case SSOREQ_SET:
+			case SSO_SET:
 				if (!parseSsoSet(ptr,&ptr)) {
 					debugEnd();
 					*ptrout=ptr;
 					return false;
 				}
 				break;
-			case SSOREQ_NESTED_MECH:
+			case SSO_MECH:
 				if (!parseMechField(ptr,&ptr)) {
 					debugEnd();
 					*ptrout=ptr;
 					return false;
 				}
 				break;
-			case SSOREQ_NESTED_C1:
+			case SSO_C1:
 				if (!parseGenericCField(ptr,&ptr)) {
 					debugEnd();
 					*ptrout=ptr;
 					return false;
 				}
 				break;
-			case SSOREQ_NESTED_C2:
+			case SSO_C2:
 				if (!parseGenericCField(ptr,&ptr)) {
 					debugEnd();
 					*ptrout=ptr;
 					return false;
 				}
 				break;
-			case SSOREQ_NESTED_C3:
+			case SSO_C3:
 				if (!parseGenericCField(ptr,&ptr)) {
 					debugEnd();
 					*ptrout=ptr;
 					return false;
 				}
 				break;
-			case SSOREQ_NESTED_C4:
+			case SSO_C4:
 				if (!parseGenericCField(ptr,&ptr)) {
 					debugEnd();
 					*ptrout=ptr;
 					return false;
 				}
 				break;
-			case SSOREQ_NESTED_C5:
+			case SSO_C5:
 				if (!parseGenericCField(ptr,&ptr)) {
 					debugEnd();
 					*ptrout=ptr;
 					return false;
 				}
 				break;
-			case SSOREQ_NESTED_C6:
+			case SSO_C6:
 				if (!parseC6Field(ptr,&ptr)) {
 					debugEnd();
 					*ptrout=ptr;
@@ -3405,7 +3415,7 @@ bool sqlrprotocol_teradata::parseMechField(const byte_t *ptr,
 	byte_t	mechsize;
 	read(ptr,&field,&ptr);
 	read(ptr,&mechsize,&ptr);
-	if (field!=SSOREQ_MECH && field!=SSOREQ_NESTED_MECH) {
+	if (field!=SSOREQ_MECH && field!=SSO_MECH) {
 		debugWrite("unexpected field: 0x%02x "
 				"(expected ssoreq_mech or "
 				"ssoreq_nested_mech)",field);
@@ -3460,11 +3470,14 @@ bool sqlrprotocol_teradata::parseMechField(const byte_t *ptr,
 				jwtmechoid,sizeof(jwtmechoid))) {
 		negotiatedmech=MECH_JWT;
 	}
-	debugWrite("mech: %s",mechstr[negotiatedmech]);
+	debugWrite("negotiated mech: %s",mechstr[negotiatedmech]);
+
+#if 0
 	if (negotiatedmech!=MECH_NONE && negotiatedmech!=MECH_TD2) {
 		debugWrite("(unsupported)");
 		negotiatedmech=MECH_NONE;
 	}
+#endif
 
 	return true;
 }
@@ -3477,7 +3490,7 @@ bool sqlrprotocol_teradata::parseGenericCField(const byte_t *ptr,
 	byte_t	size;
 	read(ptr,&field,&ptr);
 	read(ptr,&size,&ptr);
-	if (field<SSOREQ_NESTED_C1 || field>SSOREQ_NESTED_C5) {
+	if (field<SSO_C1 || field>SSO_C5) {
 		debugWrite("unexpected field: 0x%02x (expected 0xc*)",field);
 		*ptrout=ptr;
 		return false;
@@ -3505,7 +3518,7 @@ bool sqlrprotocol_teradata::parseC6Field(const byte_t *ptr,
 	// get the field
 	byte_t	field;
 	read(ptr,&field,&ptr);
-	if (field<SSOREQ_NESTED_C6) {
+	if (field<SSO_C6) {
 		debugWrite("unexpected field: 0x%02x (expected 0xc6)",field);
 		*ptrout=ptr;
 		return false;
@@ -3519,8 +3532,6 @@ bool sqlrprotocol_teradata::parseC6Field(const byte_t *ptr,
 		return false;
 	}
 
-	// FIXME: I guess it's possible that these
-	// might come in a different order
 	if (!parseSsoGssHeader(ptr,&ptr)) {
 		return false;
 	}
@@ -3549,7 +3560,7 @@ bool sqlrprotocol_teradata::parseSsoAlgorithms(const byte_t *ptr,
 	byte_t	algssize;
 	read(ptr,&algs,&ptr);
 	read(ptr,&algssize,&ptr);
-	if (algs!=SSOREQ_ALGORITHMS) {
+	if (algs!=SSO_ALGORITHMS) {
 		debugWrite("unexpected field: 0x%02x "
 				"(expected ssoreq_algorithms)",algs);
 		debugEnd();
@@ -3570,7 +3581,7 @@ bool sqlrprotocol_teradata::parseSsoAlgorithms(const byte_t *ptr,
 		byte_t	algsize;
 		read(ptr,&alg,&ptr);
 		read(ptr,&algsize,&ptr);
-		if (alg!=SSOREQ_ALGORITHM) {
+		if (alg!=SSO_ALGORITHM) {
 			debugWrite("unexpected field: 0x%02x "
 					"(expected ssoreq_algorithm)",alg);
 			debugEnd();
@@ -6251,7 +6262,23 @@ void sqlrprotocol_teradata::appendSsoResponseParcel(byte_t trip) {
 
 	debugParcelStart("send","sso response",134);
 
-	appendSmallParcelHeader(134,(trip==1)?960:7);
+	// determine datasize and authdatalen
+	uint32_t	datasize=0;
+	uint16_t	authdatalen=0;
+	if (trip==1) {
+		if (negotiatedmech==MECH_TDNEGO) {
+			datasize=1993;
+			authdatalen=1987;
+		} else {
+			datasize=960;
+			authdatalen=950;
+		}
+	} else {
+		datasize=7;
+		authdatalen=0;
+	}
+
+	appendSmallParcelHeader(134,datasize);
 
 	byte_t	method=0;
 	byte_t	code=(trip==1)?0:1;
@@ -6266,32 +6293,151 @@ void sqlrprotocol_teradata::appendSsoResponseParcel(byte_t trip) {
 	debugWrite("trip: %d",trip);
 	debugWrite("mustbezero: %d",mustbezero);
 
+	// no known reference (just had to study the trace)
+
 	if (trip==1) {
-
-		// no known reference (just had to study the trace)
-
-		uint16_t	authdatalen=950;
-		write(&respdata,authdatalen);
-
-		appendSsoGssHeader();
-		appendSsoGssKeys();
-		appendSsoGssQops();
-
+		if (negotiatedmech==MECH_TDNEGO) {
+			// FIXME: bteq doesn't like something
+			// about what I'm sending in this case.
+			write(&respdata,authdatalen);
+			appendSsoTdnegoSet();
+		} else {
+			write(&respdata,authdatalen);
+			appendSsoGssHeader(negotiatedmech);
+			appendSsoGssKeys();
+			appendSsoGssQops();
+		}
 	} else {
-
-		// no known reference (just had to study the trace)
-
-		uint16_t	authdatalen=0;
 		write(&respdata,authdatalen);
 	}
 
 	debugParcelEnd();
 }
 
-void sqlrprotocol_teradata::appendSsoGssHeader() {
+void sqlrprotocol_teradata::appendSsoTdnegoSet() {
 
 	// no known reference (just had to study the trace)
-	// (looks similar to packet header)
+
+	byte_t	c1data[]={
+		0x02
+	};
+	byte_t	c3data[]={
+		0x01
+	};
+
+	appendSsoResponseSet(1938);
+	appendSsoSet(1973);
+	appendSsoSpnegoSet();
+	appendSsoLdapSet();
+	appendSsoTd2Set();
+	debugEnd();
+	appendGenericCField(SSO_C1,c1data,sizeof(c1data));
+	appendGenericCField(SSO_C3,c3data,sizeof(c3data));
+	debugEnd();
+}
+
+void sqlrprotocol_teradata::appendSsoSpnegoSet() {
+
+	byte_t	c1data[]={
+		0x03
+	};
+	byte_t	c2data[]={
+		0x03
+	};
+
+	appendSsoSet(14);
+	appendSsoMech(spnegomechoid,sizeof(spnegomechoid));
+	appendGenericCField(SSO_C1,c1data,sizeof(c1data));
+	appendGenericCField(SSO_C2,c2data,sizeof(c2data));
+	debugEnd();
+}
+
+void sqlrprotocol_teradata::appendSsoLdapSet() {
+
+	byte_t	c1data[]={
+		0x01
+	};
+	byte_t	c2data[]={
+		0x01
+	};
+
+	appendSsoSet(974);
+	appendSsoMech(ldapmechoid,sizeof(ldapmechoid));
+	appendGenericCField(SSO_C1,c1data,sizeof(c1data));
+	appendGenericCField(SSO_C2,c2data,sizeof(c2data));
+	appendC6Field(MECH_LDAP);
+	debugEnd();
+}
+
+void sqlrprotocol_teradata::appendSsoTd2Set() {
+
+	byte_t	c1data[]={
+		0x01
+	};
+	byte_t	c2data[]={
+		0x01
+	};
+
+	appendSsoSet(975);
+	appendSsoMech(td2mechoid,sizeof(td2mechoid));
+	appendGenericCField(SSO_C1,c1data,sizeof(c1data));
+	appendGenericCField(SSO_C2,c2data,sizeof(c2data));
+	appendC6Field(MECH_TD2);
+	debugEnd();
+}
+
+void sqlrprotocol_teradata::appendSsoResponseSet(uint64_t size) {
+	debugStart("sso response set");
+	write(&respdata,(byte_t)SSORESP_SET);
+	writeBerEncInt(&respdata,size);
+}
+
+void sqlrprotocol_teradata::appendSsoSet(uint64_t size) {
+	debugStart("sso set");
+	write(&respdata,(byte_t)SSO_SET);
+	writeBerEncInt(&respdata,size);
+}
+
+void sqlrprotocol_teradata::appendSsoMech(const byte_t *mech, size_t mechsize) {
+
+	debugWrite("mech oid:");
+	debugHexDump(mech,mechsize);
+
+	write(&respdata,(byte_t)SSO_MECH);
+	writeBerEncInt(&respdata,mechsize);
+	write(&respdata,mech,mechsize);
+}
+
+void sqlrprotocol_teradata::appendGenericCField(byte_t field,
+							const byte_t *data,
+							uint64_t size) {
+
+	if (size==1) {
+		debugWrite("0x%02x data: 0x%02x",field,*data);
+	} else {
+		debugWrite("0x%02x data:",field);
+		debugHexDump(data,size);
+	}
+
+	write(&respdata,field);
+	writeBerEncInt(&respdata,size);
+	write(&respdata,data,size);
+}
+
+void sqlrprotocol_teradata::appendC6Field(byte_t mech) {
+	write(&respdata,(byte_t)SSO_C6);
+	writeBerEncInt(&respdata,950);
+	appendSsoGssHeader(mech);
+	// FIXME: in a working trace, the data in the space that I'm using to
+	// send the public key doesn't look like the public key that I'm
+	// sending...
+	appendSsoGssKeys();
+	appendSsoGssQops();
+}
+
+void sqlrprotocol_teradata::appendSsoGssHeader(byte_t mech) {
+
+	// no known reference (just had to study the trace)
 
 	debugStart("gss header");
 
@@ -6299,26 +6445,21 @@ void sqlrprotocol_teradata::appendSsoGssHeader() {
 	byte_t		messageclass=2;
 	byte_t		messagekind=1;
 
-	// FIXME: server key length?
-	uint16_t	highordermessagesize=256;
-
-	byte_t		bytevar=0;
+	// FIXME: is this flag the sso level?
+	byte_t		flag=1;
 
 	// FIXME: length of something?
 	// this varies with platform
-	uint16_t	wordvar=934;  // 0x03, 0xa6
+	uint32_t	wordvar=934;  // 0x00, 0x00, 0x03, 0xa6
 
-	uint16_t	lowordermessagesize=0;
-
-	// really this is endianness + mech
-	byte_t	mech[2]={ 0x00, 0x00 };
+	byte_t	endianmech[]={ 0x00, 0x00, 0x00, 0x00 };
 	if (!getProtocolIsBigEndian()) {
-		mech[1]|=0x10;
+		endianmech[3]|=0x10;
 	}
-	if (negotiatedmech==MECH_TD2) {
-		mech[1]|=0x05;
+	if (mech==MECH_TD2) {
+		endianmech[3]|=0x05;
 	} else {
-		mech[1]|=0x0d;
+		endianmech[3]|=0x0d;
 	}
 
 	uint32_t	unknown=0;
@@ -6335,22 +6476,15 @@ void sqlrprotocol_teradata::appendSsoGssHeader() {
 	uint32_t	qopssize=102;
 
 	// padding (to 80 bytes, (because kind==1))
-	const byte_t	pad[]={
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-	};
+	byte_t	pad[40];
+	bytestring::zero(pad,sizeof(pad));
 
 	write(&respdata,version);
 	write(&respdata,messageclass);
 	write(&respdata,messagekind);
-	writeBE(&respdata,highordermessagesize);
-	write(&respdata,bytevar);
+	write(&respdata,flag);
 	writeBE(&respdata,wordvar);
-	writeBE(&respdata,lowordermessagesize);
-	write(&respdata,mech,sizeof(mech));
+	write(&respdata,endianmech,sizeof(endianmech));
 	writeBE(&respdata,unknown);
 	write(&respdata,gssversion,sizeof(gssversion));
 	writeBE(&respdata,dhpsize);
@@ -6363,12 +6497,10 @@ void sqlrprotocol_teradata::appendSsoGssHeader() {
 	debugWrite("version: %d",(int)version);
 	debugWrite("class: %d",(int)messageclass);
 	debugWrite("kind: %d",(int)messagekind);
-	debugWrite("high order message size: %d",(int)highordermessagesize);
-	debugWrite("bytevar: %d",(int)bytevar);
+	debugWrite("flag: %d",(int)flag);
 	debugWrite("wordvar: %d",(int)wordvar);
-	debugWrite("low order message size: %d",(int)lowordermessagesize);
-	debugWrite("mech:");
-	debugHexDump(mech,sizeof(mech));
+	debugWrite("endianness/mech:");
+	debugHexDump(endianmech,sizeof(endianmech));
 	debugWrite("unknown: %d",(int)unknown);
 	debugWrite("gss version:");
 	debugHexDump(gssversion,sizeof(gssversion));
@@ -8374,9 +8506,9 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 	// use gcm if we need to (aes128 defaults to cbc)
 debugWrite("qop: %s",qopstr[negotiatedqop]);
 	switch (negotiatedqop) {
-		case QOP_AES128_GCM_PKCS5_SHA256:
-		case QOP_AES192_GCM_PKCS5_SHA256:
-		case QOP_AES256_GCM_PKCS5_SHA256:
+		case QOP_AES128_GCM_PKCS5_SHA2_DH2048:
+		case QOP_AES192_GCM_PKCS5_SHA2_DH2048:
+		case QOP_AES256_GCM_PKCS5_SHA2_DH2048:
 			a.setUseGcm(true);
 			break;
 	}
@@ -8616,9 +8748,9 @@ bool sqlrprotocol_teradata::generateSharedSecret() {
 	// (10000 was a common number of iterations, what salt to use?)
 	bytestring::zero(sharedkey,sizeof(sharedkey));
 	switch (negotiatedqop) {
-		case QOP_AES128_GCM_PKCS5_SHA256:
-		case QOP_AES192_GCM_PKCS5_SHA256:
-		case QOP_AES256_GCM_PKCS5_SHA256:
+		case QOP_AES128_GCM_PKCS5_SHA2_DH2048:
+		case QOP_AES192_GCM_PKCS5_SHA2_DH2048:
+		case QOP_AES256_GCM_PKCS5_SHA2_DH2048:
 			{
 			debugWrite("kdf: sha256");
 			sha256		s256;
@@ -8637,9 +8769,9 @@ bool sqlrprotocol_teradata::generateSharedSecret() {
 			bytestring::copy(sharedkey,hash,sharedkeysize);
 			}
 			break;
-		case QOP_AES128_CBC_PKCS5_SHA1:
-		case QOP_AES192_CBC_PKCS5_SHA1:
-		case QOP_AES256_CBC_PKCS5_SHA1:
+		case QOP_AES128_CBC_PKCS5_SHA1_DH2048:
+		case QOP_AES192_CBC_PKCS5_SHA1_DH2048:
+		case QOP_AES256_CBC_PKCS5_SHA1_DH2048:
 			debugWrite("kdf: sha1");
 			{
 			sha1		s1;

@@ -6016,6 +6016,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol : public sqlrservermodule {
 						const char *string,
 						uint64_t size);
 
+		/** Writes BER-encoded-integer "value" to byte buffer
+		 *  "buffer". */
+		void	writeBerEncInt(bytebuffer *buffer, uint64_t value);
+
 		/** Converts "value" from host byte order to big-endian, then
 		 *  writes the first 3 bytes of it to byte buffer "buffer". */
 		void	writeTriplet(bytebuffer *buffer, uint32_t value);

@@ -588,6 +588,37 @@ void sqlrprotocol::writeLenEncStr(bytebuffer *buffer,
 	buffer->append(string,size);
 }
 
+void sqlrprotocol::writeBerEncInt(bytebuffer *buffer, uint64_t value) {
+
+	// if the value is < 128 then write it directly
+	if (value<128) {
+		buffer->append((uint8_t)value);
+		return;
+	}
+	if (value<=0x000000FF) {
+		buffer->append((byte_t)0x81);
+		buffer->append((uint8_t)value);
+		return;
+	}
+	if (value<=0x0000FFFF) {
+		buffer->append((byte_t)0x82);
+		buffer->append(hostToBE((uint16_t)value));
+		return;
+	}
+	if (value<=0x00FFFFFF) {
+		buffer->append((byte_t)0x83);
+		writeTriplet(buffer,hostToBE((uint32_t)value));
+		return;
+	}
+	if (value<=0xFFFFFFFF) {
+		buffer->append((byte_t)0x84);
+		buffer->append(hostToBE((uint32_t)value));
+		return;
+	}
+	// FIXME: implement 0x85+
+	return;
+}
+
 uint16_t sqlrprotocol::toHost(uint16_t value) {
 	return (getProtocolIsBigEndian())?beToHost(value):leToHost(value);
 }
