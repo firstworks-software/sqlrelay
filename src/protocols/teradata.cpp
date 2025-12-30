@@ -34,7 +34,7 @@
 //#define DEBUG_CLIENT_SEND_RECV 1
 //#define DEBUG_PARCEL_END 1
 
-#define DECRYPT
+//#define DECRYPT
 
 #ifdef DECRYPT
 	#include <rudiments/aes128.h>
@@ -3470,7 +3470,7 @@ bool sqlrprotocol_teradata::parseMechField(const byte_t *ptr,
 				jwtmechoid,sizeof(jwtmechoid))) {
 		negotiatedmech=MECH_JWT;
 	}
-	debugWrite("negotiated mech: %s",mechstr[negotiatedmech]);
+	debugWrite("mech: %s",mechstr[negotiatedmech]);
 
 #if 0
 	if (negotiatedmech!=MECH_NONE && negotiatedmech!=MECH_TD2) {
@@ -6297,10 +6297,19 @@ void sqlrprotocol_teradata::appendSsoResponseParcel(byte_t trip) {
 
 	if (trip==1) {
 		if (negotiatedmech==MECH_TDNEGO) {
-			// FIXME: bteq doesn't like something
-			// about what I'm sending in this case.
 			write(&respdata,authdatalen);
 			appendSsoTdnegoSet();
+			// FIXME: something bad is happening in this case.
+			// After sending this response...
+			//
+			// To the server, it looks like the client has closed
+			// the connection before sending the next packet:
+			// "read header from client failed"
+			//
+			// The client belives that it has sent the next packet
+			// but server has closed the connection and it can't
+			// receive the response from it:
+			// "OsRecv: connid 7 Link down, received = 0 error = 0"
 		} else {
 			write(&respdata,authdatalen);
 			appendSsoGssHeader(negotiatedmech);
@@ -6325,7 +6334,7 @@ void sqlrprotocol_teradata::appendSsoTdnegoSet() {
 		0x01
 	};
 
-	appendSsoResponseSet(1938);
+	appendSsoResponseSet(1983);
 	appendSsoSet(1973);
 	appendSsoSpnegoSet();
 	appendSsoLdapSet();
