@@ -13,7 +13,7 @@
 		</connections>
 	</instance>
 
-	<instance id="teradataauthtest" dbase="odbc" translatebindvariables="yes">
+	<instance id="teradataauthtest" dbase="odbc" translatebindvariables="yes" connections="1">
 		<listeners>
 			<listener protocol="teradata" port="1025" passthrough="disabled" debug="yes"/>
 		</listeners>
