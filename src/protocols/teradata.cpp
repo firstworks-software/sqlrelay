@@ -34,7 +34,7 @@
 //#define DEBUG_CLIENT_SEND_RECV 1
 //#define DEBUG_PARCEL_END 1
 
-//#define DECRYPT
+#define DECRYPT
 
 #ifdef DECRYPT
 	#include <rudiments/aes128.h>
@@ -3141,6 +3141,10 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 						parceldatasize);
 				}
 				break;
+			// FIXME: if we run into a 0xE1 in here, I'm not sure
+			// it's really a gss reply structure.  It has 0xC fields
+			// but I don't think they have the same meanings as the
+			// 0xC fields in a 0xE0 structure.
 			case SSO_GSS_REPLY_STRUCTURE:
 				if (!parseSsoGssStructure(ptr,true,&ptr)) {
 					*parcelout=parceldata+parceldatasize;
@@ -3299,17 +3303,17 @@ bool sqlrprotocol_teradata::parseSsoGssData(const byte_t *ptr,
 	uint32_t	dhpsize;
 	uint32_t	dhgsize;
 	uint32_t	publickeysize;
-	uint32_t	unknown1size;
+	uint32_t	unknownsize;
 	uint32_t	qopssize;
-	uint32_t	unknown2size;
+	uint32_t	gssstructuresize;
 
 	read(ptr,gssversion,sizeof(gssversion),&ptr);
 	readBE(ptr,&dhpsize,&ptr);
 	readBE(ptr,&dhgsize,&ptr);
 	readBE(ptr,&publickeysize,&ptr);
-	readBE(ptr,&unknown1size,&ptr);
+	readBE(ptr,&unknownsize,&ptr);
 	readBE(ptr,&qopssize,&ptr);
-	readBE(ptr,&unknown2size,&ptr);
+	readBE(ptr,&gssstructuresize,&ptr);
 
 	debugStart("gss data block sizes");
 	debugWrite("gss version:");
@@ -3317,9 +3321,9 @@ bool sqlrprotocol_teradata::parseSsoGssData(const byte_t *ptr,
 	debugWrite("dh \"p\" size: %d",(int)dhpsize);
 	debugWrite("dh \"g\" size: %d",(int)dhgsize);
 	debugWrite("public key size: %d",(int)publickeysize);
-	debugWrite("unknown 1 size: %d",(int)unknown1size);
+	debugWrite("unknown size: %d",(int)unknownsize);
 	debugWrite("qops size: %d",(int)qopssize);
-	debugWrite("unknown 2 size: %d",(int)unknown2size);
+	debugWrite("gssstructure size: %d",(int)gssstructuresize);
 
 	// class-1/2/kind-1
 	// (we see these in sso request - trip 0)
@@ -3345,10 +3349,10 @@ bool sqlrprotocol_teradata::parseSsoGssData(const byte_t *ptr,
 	}
 
 	// parse whatever this is, if provided
-	if (unknown1size) {
-		debugWrite("unknown 1 data:");
-		debugHexDump(ptr,unknown1size);
-		ptr+=unknown1size;
+	if (unknownsize) {
+		debugWrite("unknown data:");
+		debugHexDump(ptr,unknownsize);
+		ptr+=unknownsize;
 	}
 
 	// parse the algorithms, if provided
@@ -3358,50 +3362,14 @@ bool sqlrprotocol_teradata::parseSsoGssData(const byte_t *ptr,
 		return false;
 	}
 
-	// parse whatever this is, if provided
-	if (unknown2size) {
-#if 1
-		debugWrite("unknown 2 data:");
-		debugHexDump(ptr,unknown2size);
-		ptr+=unknown2size;
-#else
-		// FIXME: this looks like a gss structure (0xE0), but it
-		// contains stuff we can't currently parse, too.
-		// I think that e1 might be giving us trouble...
-		// e0  70 {
-		//	c0  26 {
-		//		15  dc  d2  00  e1  46  1c  74
-		//		3d  aa  da  26  ea  28  37  4d
-		//		22  8d  ba  a5  60  d5  f9  44
-		//		cd  a4  d2  ba  80  a4  0c  a9
-		//		fc  19  40  48  39  c5
-		//	}
-		//	e1  12 {
-		//    		c0  01  03
-		//    		c1  01  07
-		//    		c2  01  04
-		//    		c3  01  00
-		//	}
-		//	c4  01  36
-		//	c5  01  01
-		//	c2  20 {
-		//		39  2c  92  67  25  b8  26  34
-		//		9f  2e  50  75  e9  0a  40  ea
-		//		e6  4a  2d  91  68  ba  1e  05
-		//		f1  e0  b6  c4  12  1c  16  36
-		//	}
-		//	c3  10 {
-		//		d3  dc  76  3c  48  d3  8f  a0
-		//		4e  b7  7f  43  f6  b9 7b  b9
-		//	}
-		//}
-
-		if (!parseSsoGssStructure(ptr,false,&ptr)) {
-			debugEnd();
-			*ptrout=ptr;
-			return false;
-		}
-#endif
+	// parse the gss structure, if provided
+	// FIXME: I'm not sure this is really a gss structure, it starts with
+	// 0xE0 and contains 0xC and 0xE1 fields, but they don't appear to be
+	// the same thing as the stuff in a regular gss structure
+	if (gssstructuresize && !parseSsoGssStructure(ptr,false,&ptr)) {
+		debugEnd();
+		*ptrout=ptr;
+		return false;
 	}
 
 	debugEnd();
@@ -3472,12 +3440,19 @@ bool sqlrprotocol_teradata::parseSsoGssStructure(const byte_t *ptr,
 	const byte_t	*end=ptr+size;
 	
 	// the data should be composed of a bunch of NEGO fields or possibly
-	// another nested SSO_GSS_STRUCTURE
+	// another nested SSO_GSS_STRUCTURE/SSO_GSS_REPLY_STRUCTURE
 	while (ptr!=end) {
 
 		switch (*ptr) {
 			case SSO_GSS_STRUCTURE:
 				if (!parseSsoGssStructure(ptr,false,&ptr)) {
+					debugEnd();
+					*ptrout=ptr;
+					return false;
+				}
+				break;
+			case SSO_GSS_REPLY_STRUCTURE:
+				if (!parseSsoGssStructure(ptr,true,&ptr)) {
 					debugEnd();
 					*ptrout=ptr;
 					return false;
@@ -6631,9 +6606,9 @@ void sqlrprotocol_teradata::appendSsoGssData(byte_t mech) {
 	uint32_t	dhpsize=sizeof(dhp);
 	uint32_t	dhgsize=sizeof(dhg);
 	uint32_t	publickeysize=sizeof(serverpubkey);
-	uint32_t	unknown1size=0;
+	uint32_t	unknownsize=0;
 	uint32_t	qopssize=102;
-	uint32_t	unknown2size=0;
+	uint32_t	gssstructuresize=0;
 
 	// padding to 80 bytes
 	// (this is probably space for the sizes of other data blocks)
@@ -6644,9 +6619,9 @@ void sqlrprotocol_teradata::appendSsoGssData(byte_t mech) {
 	writeBE(&respdata,dhpsize);
 	writeBE(&respdata,dhgsize);
 	writeBE(&respdata,publickeysize);
-	writeBE(&respdata,unknown1size);
+	writeBE(&respdata,unknownsize);
 	writeBE(&respdata,qopssize);
-	writeBE(&respdata,unknown2size);
+	writeBE(&respdata,gssstructuresize);
 	write(&respdata,pad,sizeof(pad));
 
 	debugStart("gss data block sizes");
@@ -6655,9 +6630,9 @@ void sqlrprotocol_teradata::appendSsoGssData(byte_t mech) {
 	debugWrite("dh \"p\" size: %d",(int)dhpsize);
 	debugWrite("dh \"g\" size: %d",(int)dhgsize);
 	debugWrite("public key size: %d",(int)publickeysize);
-	debugWrite("unknown 1 size: %d",(int)unknown1size);
+	debugWrite("unknown size: %d",(int)unknownsize);
 	debugWrite("qops size: %d",(int)qopssize);
-	debugWrite("unknown 2 size: %d",(int)unknown2size);
+	debugWrite("gssstructure size: %d",(int)gssstructuresize);
 	//debugWrite("padding:");
 	//debugHexDump(pad,sizeof(pad));
 	debugEnd();
