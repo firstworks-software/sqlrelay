@@ -38,6 +38,7 @@
 
 #ifdef DECRYPT
 	#include <rudiments/aes128.h>
+	#include <openssl/evp.h>
 	#include <openssl/conf.h>
 	#include <openssl/dh.h>
 	#include <openssl/err.h>
@@ -162,6 +163,23 @@ const char	*qopstr[]={
 	"AES192_CTR_PKCS5_SHA2_DH2048",
 	"AES256_CTR_PKCS5_SHA2_DH2048"
 };
+uint32_t	qopsharedkeysize[]={
+	0,
+	0, // probably not correct
+	0, // probably not correct
+	16,
+	24,
+	32,
+	16,
+	24,
+	32,
+	16,
+	24,
+	32,
+	16,
+	24,
+	32
+};
 
 
 // mechanisms
@@ -272,10 +290,10 @@ byte_t	jwtmechoid[]={
 
 #define	SSO_GSS_CLASS_1		0x01
 #define	SSO_GSS_CLASS_2		0x02
+#define	SSO_GSS_CLASS_5		0x05
 
 #define	SSO_GSS_KIND_1		0x01
 #define	SSO_GSS_KIND_2		0x02
-#define	SSO_GSS_KIND_5		0x05
 
 #define	SSO_GSS_STRUCTURE	0xE0
 #define	SSO_GSS_REPLY_STRUCTURE	0xE1
@@ -1057,9 +1075,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 #ifdef DECRYPT
 		DH		*dh;
 #endif
-		unsigned  char	*sharedsecret;
+		byte_t		*sharedsecret;
 		uint32_t	sharedsecretsize;
-		unsigned  char	sharedkey[32];
+		byte_t		salt[16];
+		byte_t		sharedkey[32];
 		uint32_t	sharedkeysize;
 };
 
@@ -1541,16 +1560,6 @@ bool sqlrprotocol_teradata::copKindSsoReq() {
 		debugEnd();
 		return passthrough();
 	}
-
-#ifdef DECRYPT
-	// now that we have the client public key,
-	// we can generate the shared secret
-	// FIXME: we should only do this after trip 0, not after trip 2
-	if (!generateSharedSecret()) {
-		debugEnd();
-		return false;
-	}
-#endif
 
 	// build response
 	respdata.clear();
@@ -3106,20 +3115,19 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 
 	// The authdata appears to be structured like:
 	//
-	// * gss data (field 0x01) or structured gss data (field 0xE0)
-	//  * gss data (0x01) is common for td2, ldap, etc.
-	//  * structured gss data (0xE0) is common for tdnego and contains
-	//    nested structure
-	// * requested mech (field 0x06)
+	// * gss data or structured gss data
+	//  * gss data (0x01) is common in trip 0 for td2, ldap, etc.
+	//  * gss data (0x03) is common in trip 2 for td2, ldap, etc.
+	//  * structured gss data (0xE0) is common in trip 0 for tdnego
+	//  * structured gss data (0xE1) is common in trip 2 for tdnego
 	// * more mech-specific data (the rest of the data)
-	//
-	// FIXME: looks like we can get different structured gss data (0xE1)
-	// in trip 2, with tdnego...
 	while (ptr!=end) {
 
 		switch (*ptr) {
 			case SSO_GSS_DATA_VERSION_1:
+			case SSO_GSS_DATA_VERSION_3:
 				if (!parseSsoGssData(ptr,&ptr)) {
+					*parcelout=parceldata+parceldatasize;
 					debugParcelEnd(
 						parceldata,
 						parceldatasize);
@@ -3127,6 +3135,7 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 				break;
 			case SSO_GSS_STRUCTURE:
 				if (!parseSsoGssStructure(ptr,false,&ptr)) {
+					*parcelout=parceldata+parceldatasize;
 					debugParcelEnd(
 						parceldata,
 						parceldatasize);
@@ -3134,6 +3143,7 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 				break;
 			case SSO_GSS_REPLY_STRUCTURE:
 				if (!parseSsoGssStructure(ptr,true,&ptr)) {
+					*parcelout=parceldata+parceldatasize;
 					debugParcelEnd(
 						parceldata,
 						parceldatasize);
@@ -3141,6 +3151,7 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 				break;
 			case SSOREQ_MECH:
 				if (!parseSsoMech(ptr,&ptr)) {
+					*parcelout=parceldata+parceldatasize;
 					debugParcelEnd(
 						parceldata,
 						parceldatasize);
@@ -3148,6 +3159,7 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 				break;
 			default:
 				if (!parseSsoMechParameters(ptr,end,&ptr)) {
+					*parcelout=parceldata+parceldatasize;
 					debugParcelEnd(
 						parceldata,
 						parceldatasize);
@@ -3180,6 +3192,19 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 			// FIXME: support other qops
 		}
 		debugWrite("negotiated qop: %s",qopstr[negotiatedqop]);
+
+	} else if (trip==2) {
+
+#ifdef DECRYPT
+		// now that we have the client public key,
+		// we can generate the shared secret
+		// FIXME: we should only do this after trip 0, not after trip 2
+		if (!generateSharedSecret()) {
+			*parcelout=parceldata+parceldatasize;
+			debugParcelEnd(parceldata,parceldatasize);
+			return false;
+		}
+#endif
 	}
 
 	// return next parcel
@@ -3229,18 +3254,26 @@ bool sqlrprotocol_teradata::parseSsoGssData(const byte_t *ptr,
 
 	// bail if we got an unsupported kind
 	if (messagekind!=SSO_GSS_KIND_1 &&
-		messagekind!=SSO_GSS_KIND_2 &&
-		messagekind!=SSO_GSS_KIND_5) {
+		messagekind!=SSO_GSS_KIND_2) {
 		debugWrite("unsupported kind");
 		*ptrout=ptr;
 		return false;
 	}
 
+	// bail if we got an unsupported class 
+	if (messageclass!=SSO_GSS_CLASS_1 &&
+		messageclass!=SSO_GSS_CLASS_2 &&
+		messageclass!=SSO_GSS_CLASS_5) {
+		debugWrite("unsupported class");
+		*ptrout=ptr;
+		return false;
+	}
 
-	// kind 2 has no gss data block sizes, only a
-	// gss data block - the client's public key
-	// (we often see these in sso request - trip 2)
-	if (messagekind==SSO_GSS_KIND_2) {
+
+	// class-1/kind-2 has no gss data block sizes,
+	// only a gss data block - the client's public key
+	// (we see these in sso request - trip 2 for td2)
+	if (messageclass==SSO_GSS_CLASS_1 && messagekind==SSO_GSS_KIND_2) {
 
 		// gss data blocks...
 		debugStart("gss data blocks");
@@ -3258,22 +3291,25 @@ bool sqlrprotocol_teradata::parseSsoGssData(const byte_t *ptr,
 	}
 
 
-	// kinds 1 and 5 have gss data block sizes and gss data blocks...
+	// other class/kind combinations have
+	// gss data block sizes and gss data blocks...
 
 	// gss data block sizes...
 	byte_t		gssversion[4];
 	uint32_t	dhpsize;
 	uint32_t	dhgsize;
 	uint32_t	publickeysize;
-	uint32_t	unknownsize;
+	uint32_t	unknown1size;
 	uint32_t	qopssize;
+	uint32_t	unknown2size;
 
 	read(ptr,gssversion,sizeof(gssversion),&ptr);
 	readBE(ptr,&dhpsize,&ptr);
 	readBE(ptr,&dhgsize,&ptr);
 	readBE(ptr,&publickeysize,&ptr);
-	readBE(ptr,&unknownsize,&ptr);
+	readBE(ptr,&unknown1size,&ptr);
 	readBE(ptr,&qopssize,&ptr);
+	readBE(ptr,&unknown2size,&ptr);
 
 	debugStart("gss data block sizes");
 	debugWrite("gss version:");
@@ -3281,42 +3317,91 @@ bool sqlrprotocol_teradata::parseSsoGssData(const byte_t *ptr,
 	debugWrite("dh \"p\" size: %d",(int)dhpsize);
 	debugWrite("dh \"g\" size: %d",(int)dhgsize);
 	debugWrite("public key size: %d",(int)publickeysize);
-	debugWrite("unknown size: %d",(int)unknownsize);
+	debugWrite("unknown 1 size: %d",(int)unknown1size);
 	debugWrite("qops size: %d",(int)qopssize);
+	debugWrite("unknown 2 size: %d",(int)unknown2size);
 
-	if (messagekind==SSO_GSS_KIND_1) {
-
-		// kind 1 are padded to 80 bytes
-		// (this might be space for the sizes of 10 more data blocks)
-		// (we often see these in sso request - trip 1)
-		byte_t		pad[40];
-		read(ptr,(byte_t *)pad,sizeof(pad),&ptr);
-		//debugWrite("padding:");
-		//debugHexDump(pad,sizeof(pad));
-	}
-	
-	else if (messagekind==SSO_GSS_KIND_5) {
-
-		// kind 5 are padded to 48 bytes
-		// (this might be space for the sizes of 2 more data blocks)
-		// FIXME: what did I do to cause the client to generate these?
-		byte_t		pad[8];
-		read(ptr,(byte_t *)pad,sizeof(pad),&ptr);
-		//debugWrite("padding:");
-		//debugHexDump(pad,sizeof(pad));
-	}
+	// class-1/2/kind-1
+	// (we see these in sso request - trip 0)
+	// and class-5/kind-2
+	// (we see these in sso request - trip 2 for tdnego)
+	// are padded to 80 bytes
+	// (this is probably space for the sizes of other data blocks)
+	byte_t		pad[36];
+	read(ptr,(byte_t *)pad,sizeof(pad),&ptr);
+	//debugWrite("padding:");
+	//debugHexDump(pad,sizeof(pad));
 
 	debugEnd();
-
 
 	// gss data blocks...
 	debugStart("gss data blocks");
 
-	// parse the algorithms (if provided)
+	// parse the client public key, if provided
+	if (publickeysize && !parseSsoClientPublicKey(ptr,publickeysize,&ptr)) {
+		debugEnd();
+		*ptrout=ptr;
+		return false;
+	}
+
+	// parse whatever this is, if provided
+	if (unknown1size) {
+		debugWrite("unknown 1 data:");
+		debugHexDump(ptr,unknown1size);
+		ptr+=unknown1size;
+	}
+
+	// parse the algorithms, if provided
 	if (qopssize && !parseSsoAlgorithms(ptr,qopssize,&ptr)) {
 		debugEnd();
 		*ptrout=ptr;
 		return false;
+	}
+
+	// parse whatever this is, if provided
+	if (unknown2size) {
+#if 1
+		debugWrite("unknown 2 data:");
+		debugHexDump(ptr,unknown2size);
+		ptr+=unknown2size;
+#else
+		// FIXME: this looks like a gss structure (0xE0), but it
+		// contains stuff we can't currently parse, too.
+		// I think that e1 might be giving us trouble...
+		// e0  70 {
+		//	c0  26 {
+		//		15  dc  d2  00  e1  46  1c  74
+		//		3d  aa  da  26  ea  28  37  4d
+		//		22  8d  ba  a5  60  d5  f9  44
+		//		cd  a4  d2  ba  80  a4  0c  a9
+		//		fc  19  40  48  39  c5
+		//	}
+		//	e1  12 {
+		//    		c0  01  03
+		//    		c1  01  07
+		//    		c2  01  04
+		//    		c3  01  00
+		//	}
+		//	c4  01  36
+		//	c5  01  01
+		//	c2  20 {
+		//		39  2c  92  67  25  b8  26  34
+		//		9f  2e  50  75  e9  0a  40  ea
+		//		e6  4a  2d  91  68  ba  1e  05
+		//		f1  e0  b6  c4  12  1c  16  36
+		//	}
+		//	c3  10 {
+		//		d3  dc  76  3c  48  d3  8f  a0
+		//		4e  b7  7f  43  f6  b9 7b  b9
+		//	}
+		//}
+
+		if (!parseSsoGssStructure(ptr,false,&ptr)) {
+			debugEnd();
+			*ptrout=ptr;
+			return false;
+		}
+#endif
 	}
 
 	debugEnd();
@@ -3761,6 +3846,10 @@ bool sqlrprotocol_teradata::parseSsoMechParameters(const byte_t *ptr,
 	uint16_t	mechparamssize=end-mechparams;
 	debugWrite("mech parameters:");
 	debugHexDump(mechparams,mechparamssize);
+
+	if (mechparamssize==16) {
+		bytestring::copy(salt,mechparams,mechparamssize);
+	}
 
 	*ptrout=end;
 	return true;
@@ -6088,7 +6177,7 @@ void sqlrprotocol_teradata::appendTd1MechanismParcel() {
 
 	// see parcel.h - pclauthmech_t
 
-	// teradata2 mechanism
+	// teradata1 mechanism
 	debugParcelStart("send","auth mechanism (td1)",167);
 
 	appendSmallParcelHeader(167,33);
@@ -6329,6 +6418,7 @@ void sqlrprotocol_teradata::appendSsoResponseParcel(byte_t trip) {
 			authdatalen=950;
 		}
 	} else {
+		// FIXME: this is apparently not correct for tdnego
 		datasize=7;
 		authdatalen=0;
 	}
@@ -6354,20 +6444,10 @@ void sqlrprotocol_teradata::appendSsoResponseParcel(byte_t trip) {
 		if (negotiatedmech==MECH_TDNEGO) {
 			write(&respdata,authdatalen);
 			appendSsoTdnegoSet();
-			// FIXME: something bad is happening in this case.
-			// After sending this response...
-			//
-			// To the server, it looks like the client has closed
-			// the connection before sending the next packet:
-			// "read header from client failed"
-			//
-			// The client belives that it has sent the next packet
-			// but server has closed the connection and it can't
-			// receive the response from it:
-			// "OsRecv: connid 7 Link down, received = 0 error = 0"
 		} else {
 			write(&respdata,authdatalen);
 			appendSsoGssData(negotiatedmech);
+			// FIXME: jdbc doesn't appear to like this response
 		}
 	} else {
 		write(&respdata,authdatalen);
@@ -6551,19 +6631,22 @@ void sqlrprotocol_teradata::appendSsoGssData(byte_t mech) {
 	uint32_t	dhpsize=sizeof(dhp);
 	uint32_t	dhgsize=sizeof(dhg);
 	uint32_t	publickeysize=sizeof(serverpubkey);
-	uint32_t	unknownsize=0;
+	uint32_t	unknown1size=0;
 	uint32_t	qopssize=102;
+	uint32_t	unknown2size=0;
 
-	// padding (to 80 bytes, (because kind==1))
-	byte_t	pad[40];
+	// padding to 80 bytes
+	// (this is probably space for the sizes of other data blocks)
+	byte_t	pad[36];
 	bytestring::zero(pad,sizeof(pad));
 
 	write(&respdata,gssversion,sizeof(gssversion));
 	writeBE(&respdata,dhpsize);
 	writeBE(&respdata,dhgsize);
 	writeBE(&respdata,publickeysize);
-	writeBE(&respdata,unknownsize);
+	writeBE(&respdata,unknown1size);
 	writeBE(&respdata,qopssize);
+	writeBE(&respdata,unknown2size);
 	write(&respdata,pad,sizeof(pad));
 
 	debugStart("gss data block sizes");
@@ -6572,8 +6655,9 @@ void sqlrprotocol_teradata::appendSsoGssData(byte_t mech) {
 	debugWrite("dh \"p\" size: %d",(int)dhpsize);
 	debugWrite("dh \"g\" size: %d",(int)dhgsize);
 	debugWrite("public key size: %d",(int)publickeysize);
-	debugWrite("unknown size: %d",(int)unknownsize);
+	debugWrite("unknown 1 size: %d",(int)unknown1size);
 	debugWrite("qops size: %d",(int)qopssize);
+	debugWrite("unknown 2 size: %d",(int)unknown2size);
 	//debugWrite("padding:");
 	//debugHexDump(pad,sizeof(pad));
 	debugEnd();
@@ -8647,7 +8731,6 @@ bool sqlrprotocol_teradata::encrypt(const byte_t *decdata,
 						uint64_t decdatasize,
 						bytebuffer *encdata) {
 	// FIXME: push down to rudiments
-	// rudiments currently has aes128, but only with cbc, not gcm
 	return true;
 }
 
@@ -8667,15 +8750,15 @@ bool sqlrprotocol_teradata::generateEphemeralKeys() {
 	// * These secrets should be the same (shared secret)
 	// * We negotiate a cipher (eg. AES128_GCM_PKCS5_SHA256)
 	// * We negotiate a Key Derivation Function (KDF) (hashing algorithm)
-	//   (eg. SHA256) (Note that in AES128_GCM_PKCS5_SHA256, SHA256 refers
-	//   to the Hash-based Message Authentication Code (HMAC) not the KDF)
-	// * We both hash the shared secret using the agreed upon KDF
+	//   (eg. SHA1, SHA256, or PBKDF2)
+	//   (Note that in AES128_GCM_PKCS5_SHA256, SHA256 refers to the
+	//   Hash-based Message Authentication Code (HMAC) not the KDF)
+	// * If the KDF requires a salt then we have to negotiate a salt as well
+	// * We both hash the shared secret using the agreed upon KDF (and salt)
 	//   * If the KDF generates a larger key than required (eg. SHA256
 	//     generates a 256-bit (32-byte) key but AES128 only requires a
 	//     128-bit (16-byte) key) then the key is typically just
 	//     truncated to the necessary length
-	//   * There are other strategies, though
-	//   * The client and server have to agree on a strategy
 	// * This hash should also be the same
 	// * We both use the hash as the key for our cipher
 	// * We both use the cipher for symmetric encryption and decryption
@@ -8813,10 +8896,8 @@ bool sqlrprotocol_teradata::generateSharedSecret() {
 	debugWrite("shared secret (%d bytes):",sharedsecretsize);
 	debugHexDump(sharedsecret,sharedsecretsize);
 
+#if 0
 	// generate the shared key, using the appropriate KDF
-	// FIXME: I don't think this is the correcy way to do this.
-	// I'll have to try pdkdf2
-	// (10000 was a common number of iterations, what salt to use?)
 	bytestring::zero(sharedkey,sizeof(sharedkey));
 	switch (negotiatedqop) {
 		case QOP_AES128_GCM_PKCS5_SHA2_DH2048:
@@ -8862,6 +8943,33 @@ bool sqlrprotocol_teradata::generateSharedSecret() {
 			}
 			break;
 	}
+#else
+
+	// generate the shared key, using pbkdf2
+
+	debugWrite("kdf: pbkdf2/sha256");
+
+	// FIXME: What should I use for the salt?
+	// Currently, I'm using the mech parameters,
+	// but I don't think that's right.
+	debugWrite("salt (%d bytes):",sizeof(salt));
+	debugHexDump(salt,sizeof(salt));
+
+	sharedkeysize=qopsharedkeysize[negotiatedqop];
+
+	if (!PKCS5_PBKDF2_HMAC((const char *)sharedsecret,
+				sharedsecretsize,
+				salt,
+				sizeof(salt),
+				10000,
+				EVP_sha256(),
+				sharedkeysize,
+				sharedkey)) {
+		debugWrite("get shared key failed");
+		debugEnd();
+		return false;
+	}
+#endif
 
 	debugWrite("shared key (%d bytes):",sharedkeysize);
 	debugHexDump(sharedkey,sharedkeysize);
