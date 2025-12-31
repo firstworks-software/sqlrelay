@@ -34,7 +34,7 @@
 //#define DEBUG_CLIENT_SEND_RECV 1
 //#define DEBUG_PARCEL_END 1
 
-#define DECRYPT
+//#define DECRYPT
 
 #ifdef DECRYPT
 	#include <rudiments/aes128.h>
@@ -6422,7 +6422,6 @@ void sqlrprotocol_teradata::appendSsoResponseParcel(byte_t trip) {
 		} else {
 			write(&respdata,authdatalen);
 			appendSsoGssData(negotiatedmech);
-			// FIXME: jdbc doesn't appear to like this response
 		}
 	} else {
 		write(&respdata,authdatalen);
@@ -6817,6 +6816,78 @@ void sqlrprotocol_teradata::appendSsoGssQops() {
 	// Maybe it doens't work that way?  Maybe we choose the qop,
 	// this IS the chosen qop, and we just send it 4 times, for
 	// some reason?
+	//
+	//
+	// FIXME: jdbc doesn't like these qops...
+	//
+	// teradata sends:
+	// e3 64
+	// 	e4 17
+	// 		d0 01 02
+	// 		d3 01 01
+	// 		d4 01 04
+	// 		d5 02 00 80
+	//		d1 01 04
+	//		d2 01 05
+	//		d6 02 08 00
+	//	e5 17
+	//		d0 01 02
+	//		d3 01 01
+	//		d4 01 04
+	//		d5 02 00 80
+	//		d1 01 04
+	//		d2 01 05
+	//		d6 02 08 00
+	//	e6 17
+	//		d0 01 02
+	//		d3 01 01
+	//		d4 01 04
+	//		d5 02 00 80
+	//		d1 01 04
+	//		d2 01 05
+	//		d6 02 08 00
+	//	e7 17
+	//		d0 01 02
+	//		d3 01 01
+	//		d4 01 04 
+	//		d5 02 00 80
+	//		d1 01 04
+	//		d2 01 05
+	//		d6 02 08 00
+	//
+	// we're sending:
+	// e3 64
+	// 	e4 17
+	// 		d0 01 02
+	// 		d3 01 05 // gcm, not cbc
+	// 		d4 01 04
+	// 		d5 02 00 80
+	// 		d1 01 06
+	// 		d2 01 05
+	// 		d6 02 08 00
+	// 	e5 17
+	// 		d0 01 02
+	//		d3 01 05 // gcm, not cbc
+	//		d4 01 04
+	//		d5 02 00 80
+	//		d1 01 06
+	//		d2 01 05
+	//		d6 02 08 00
+	// 	e6 17
+	// 		d0 01 02
+	// 		d3 01 05 // gcm, not cbc
+	// 		d4 01 04
+	// 		d5 02 00 80
+	// 		d1 01 06
+	// 		d2 01 05
+	// 		d6 02 08 00
+	// 	e7 17
+	// 		d0 01 02
+	// 		d3 01 05 // gcm, not cbc
+	// 		d4 01 04 
+	// 		d5 02 00 80
+	// 		d1 01 06
+	//		d6 02 08 00
 	byte_t	qops[]={
 		SSORESP_NEGOTIATED_QOP1,
 		SSORESP_NEGOTIATED_QOP2,
