@@ -8634,7 +8634,7 @@ debugWrite("qop: %s",qopstr[negotiatedqop]);
 		case QOP_AES128_GCM_PKCS5_SHA2_DH2048:
 		case QOP_AES192_GCM_PKCS5_SHA2_DH2048:
 		case QOP_AES256_GCM_PKCS5_SHA2_DH2048:
-			a.setUseGcm(true);
+			a.setBlockCipherMode(BLOCK_CIPHER_MODE_GCM);
 			break;
 	}
 
