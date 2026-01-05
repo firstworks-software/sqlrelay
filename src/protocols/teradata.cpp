@@ -766,7 +766,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 						const byte_t **ptrout);
 		bool	parseC6Field(const byte_t *ptr,
 						const byte_t **ptrout);
-		bool	parseSsoAlgorithms(const byte_t *ptr,
+		bool	parseSsoQops(const byte_t *ptr,
 						uint32_t size,
 						const byte_t **ptrout);
 		bool	parseSsoMech(const byte_t *ptr,
@@ -3141,10 +3141,6 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 						parceldatasize);
 				}
 				break;
-			// FIXME: if we run into a 0xE1 in here, I'm not sure
-			// it's really a gss reply structure.  It has 0xC fields
-			// but I don't think they have the same meanings as the
-			// 0xC fields in a 0xE0 structure.
 			case SSO_GSS_REPLY_STRUCTURE:
 				if (!parseSsoGssStructure(ptr,true,&ptr)) {
 					*parcelout=parceldata+parceldatasize;
@@ -3355,8 +3351,8 @@ bool sqlrprotocol_teradata::parseSsoGssData(const byte_t *ptr,
 		ptr+=unknownsize;
 	}
 
-	// parse the algorithms, if provided
-	if (qopssize && !parseSsoAlgorithms(ptr,qopssize,&ptr)) {
+	// parse the qops, if provided
+	if (qopssize && !parseSsoQops(ptr,qopssize,&ptr)) {
 		debugEnd();
 		*ptrout=ptr;
 		return false;
@@ -3451,6 +3447,10 @@ bool sqlrprotocol_teradata::parseSsoGssStructure(const byte_t *ptr,
 					return false;
 				}
 				break;
+			// FIXME: if we run into a 0xE1 in here, I'm not sure
+			// it's really a gss reply structure.  It has 0xC fields
+			// but I don't think they have the same meanings as the
+			// 0xC fields in a 0xE0 structure.
 			case SSO_GSS_REPLY_STRUCTURE:
 				if (!parseSsoGssStructure(ptr,true,&ptr)) {
 					debugEnd();
@@ -3656,7 +3656,7 @@ bool sqlrprotocol_teradata::parseC6Field(const byte_t *ptr,
 	return true;
 }
 
-bool sqlrprotocol_teradata::parseSsoAlgorithms(const byte_t *ptr,
+bool sqlrprotocol_teradata::parseSsoQops(const byte_t *ptr,
 						uint32_t size,
 						const byte_t **ptrout) {
 
@@ -3803,18 +3803,15 @@ bool sqlrprotocol_teradata::parseSsoMechParameters(const byte_t *ptr,
 
 	// mech parameters
 	//
-	// .logmech td2
-	// bteq/odbc/jdbc:
+	// .logmech td2 (all platforms)
 	// 46  08  00  02  81  00  04  04
 	// 04  00  01  00  00  00  1f  01
 	//
-	// .logmech ldap
-	// bteq/odbc/jdbc:
+	// .logmech ldap (all platforms)
 	// 46  08  00  01  81  00  03  00
 	// 00  00  01  00  00  00  1E  01 
 	//
-	// .logmech tdnego
-	// bteq/odbc/jdbc:
+	// .logmech tdnego (all platforms)
 	// 00  00  00  00  15  01
 
 	const byte_t	*mechparams=ptr;
@@ -6816,78 +6813,6 @@ void sqlrprotocol_teradata::appendSsoGssQops() {
 	// Maybe it doens't work that way?  Maybe we choose the qop,
 	// this IS the chosen qop, and we just send it 4 times, for
 	// some reason?
-	//
-	//
-	// FIXME: jdbc doesn't like these qops...
-	//
-	// teradata sends:
-	// e3 64
-	// 	e4 17
-	// 		d0 01 02
-	// 		d3 01 01
-	// 		d4 01 04
-	// 		d5 02 00 80
-	//		d1 01 04
-	//		d2 01 05
-	//		d6 02 08 00
-	//	e5 17
-	//		d0 01 02
-	//		d3 01 01
-	//		d4 01 04
-	//		d5 02 00 80
-	//		d1 01 04
-	//		d2 01 05
-	//		d6 02 08 00
-	//	e6 17
-	//		d0 01 02
-	//		d3 01 01
-	//		d4 01 04
-	//		d5 02 00 80
-	//		d1 01 04
-	//		d2 01 05
-	//		d6 02 08 00
-	//	e7 17
-	//		d0 01 02
-	//		d3 01 01
-	//		d4 01 04 
-	//		d5 02 00 80
-	//		d1 01 04
-	//		d2 01 05
-	//		d6 02 08 00
-	//
-	// we're sending:
-	// e3 64
-	// 	e4 17
-	// 		d0 01 02
-	// 		d3 01 05 // gcm, not cbc
-	// 		d4 01 04
-	// 		d5 02 00 80
-	// 		d1 01 06
-	// 		d2 01 05
-	// 		d6 02 08 00
-	// 	e5 17
-	// 		d0 01 02
-	//		d3 01 05 // gcm, not cbc
-	//		d4 01 04
-	//		d5 02 00 80
-	//		d1 01 06
-	//		d2 01 05
-	//		d6 02 08 00
-	// 	e6 17
-	// 		d0 01 02
-	// 		d3 01 05 // gcm, not cbc
-	// 		d4 01 04
-	// 		d5 02 00 80
-	// 		d1 01 06
-	// 		d2 01 05
-	// 		d6 02 08 00
-	// 	e7 17
-	// 		d0 01 02
-	// 		d3 01 05 // gcm, not cbc
-	// 		d4 01 04 
-	// 		d5 02 00 80
-	// 		d1 01 06
-	//		d6 02 08 00
 	byte_t	qops[]={
 		SSORESP_NEGOTIATED_QOP1,
 		SSORESP_NEGOTIATED_QOP2,
@@ -6902,6 +6827,7 @@ void sqlrprotocol_teradata::appendSsoGssQops() {
 
 		// confidentiality algorithm
 		write(&respdata,(byte_t)CONF_ALG);
+		// FIXME: use sizeof(confalg) instead of 1, and similar for all
 		write(&respdata,(byte_t)1);
 		write(&respdata,confalg);
 
@@ -6916,7 +6842,6 @@ void sqlrprotocol_teradata::appendSsoGssQops() {
 		write(&respdata,padding);
 
 		// confidentiality algorithm key size
-		// (odd that these are always BE but they appear to be)
 		write(&respdata,(byte_t)CONF_ALG_KEY_SIZE);
 		write(&respdata,(byte_t)2);
 		writeBE(&respdata,confalgkeysize);
@@ -6932,7 +6857,6 @@ void sqlrprotocol_teradata::appendSsoGssQops() {
 		write(&respdata,kexalg);
 
 		// key exchange algorithm key size
-		// (odd that these are always BE but they appear to be)
 		write(&respdata,(byte_t)KEX_ALG_KEY_SIZE);
 		write(&respdata,(byte_t)2);
 		writeBE(&respdata,kexalgkeysize);
