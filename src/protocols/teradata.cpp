@@ -11,8 +11,6 @@
 #include <rudiments/process.h>
 #include <rudiments/character.h>
 #include <rudiments/sys.h>
-#include <rudiments/sha1.h>
-#include <rudiments/sha256.h>
 
 // NOTE:
 // Teradata CLIv2 refers to:
@@ -34,15 +32,12 @@
 //#define DEBUG_CLIENT_SEND_RECV 1
 //#define DEBUG_PARCEL_END 1
 
-//#define DECRYPT
 
-#ifdef DECRYPT
-	#include <rudiments/aes128.h>
-	#include <openssl/evp.h>
-	#include <openssl/conf.h>
-	#include <openssl/dh.h>
-	#include <openssl/err.h>
-#endif
+#include <rudiments/sha1.h>
+#include <rudiments/sha256.h>
+#include <rudiments/pbkdf2.h>
+#include <rudiments/aes128.h>
+#include <rudiments/dh.h>
 
 // passthrough modes
 //
@@ -986,7 +981,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		void	debugExtStart(const char *extname);
 		void	debugExtEnd();
 
-#ifdef DECRYPT
 		bool	decrypt(const byte_t *encdata,
 					uint64_t encdatasize,
 					bytebuffer *decdata);
@@ -995,7 +989,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 					bytebuffer *encdata);
 		bool	generateEphemeralKeys();
 		bool	generateSharedSecret();
-#endif
 
 		passthroughmode_t	passthroughmode;
 
@@ -1069,13 +1062,13 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		uint16_t	negotiatedqop;
 		byte_t		dhp[256];
 		byte_t		dhg[256];
-		byte_t		serverpubkey[256];
-		byte_t		serverprivkey[256];
+		const byte_t	*serverpubkey;
+		size_t		serverpubkeysize;
+		const byte_t	*serverprivkey;
+		size_t		serverprivkeysize;
 		byte_t		clientpubkey[256];
-#ifdef DECRYPT
-		DH		*dh;
-#endif
-		byte_t		*sharedsecret;
+		class dh	dh;
+		const byte_t	*sharedsecret;
 		uint32_t	sharedsecretsize;
 		byte_t		salt[16];
 		byte_t		sharedkey[32];
@@ -1264,9 +1257,10 @@ jwtmechenabled=true;
 	};
 	bytestring::copy(dhg,dhgdefault,sizeof(dhgdefault));
 
-#ifdef DECRYPT
-	dh=NULL;
-#endif
+	serverpubkey=NULL;
+	serverpubkeysize=0;
+	serverprivkey=NULL;
+	serverprivkeysize=0;
 	sharedsecret=NULL;
 	sharedsecretsize=0;
 	bytestring::zero(sharedkey,sizeof(sharedkey));
@@ -1275,10 +1269,6 @@ jwtmechenabled=true;
 }
 
 sqlrprotocol_teradata::~sqlrprotocol_teradata() {
-	delete[] sharedsecret;
-#ifdef DECRYPT
-	DH_free(dh);
-#endif
 	free();
 	delete clientreqmessagepool;
 	delete backendreqmessagepool;
@@ -1512,12 +1502,10 @@ bool sqlrprotocol_teradata::copKindAssign() {
 		return passthrough();
 	}
 
-#ifdef DECRYPT
 	if (!generateEphemeralKeys()) {
 		debugEnd();
 		return false;
 	}
-#endif
 
 	// build and send responses
 	respdata.clear();
@@ -1584,7 +1572,6 @@ bool sqlrprotocol_teradata::copKindConnect() {
 	// * client attribute parcel - 189
 	// * sso username request parcel - 136 (see Teradata CLIv2, page 314)
 
-#ifdef DECRYPT
 	// appears to be encrypted
 	// always appears to be 410 bytes from bteq
 	// always appears to be 664 bytes from jdbc
@@ -1594,7 +1581,6 @@ bool sqlrprotocol_teradata::copKindConnect() {
 	decrypt(clientreqdata,clientreqdatasize,&decdata);
 	debugWrite("decrypted request:");
 	debugHexDump(decdata.getBuffer(),decdata.getSize());
-#endif
 
 	// if passthrough is enabled then just do that
 	if (passthroughmode==PASSTHROUGHMODE_ENABLED) {
@@ -3195,7 +3181,6 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 
 	} else if (trip==2) {
 
-#ifdef DECRYPT
 		// now that we have the client public key,
 		// we can generate the shared secret
 		// FIXME: we should only do this after trip 0, not after trip 2
@@ -3204,7 +3189,6 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 			debugParcelEnd(parceldata,parceldatasize);
 			return false;
 		}
-#endif
 	}
 
 	// return next parcel
@@ -6601,7 +6585,6 @@ void sqlrprotocol_teradata::appendSsoGssData(byte_t mech) {
 
 	uint32_t	dhpsize=sizeof(dhp);
 	uint32_t	dhgsize=sizeof(dhg);
-	uint32_t	publickeysize=sizeof(serverpubkey);
 	uint32_t	unknownsize=0;
 	uint32_t	qopssize=102;
 	uint32_t	gssstructuresize=0;
@@ -6614,7 +6597,7 @@ void sqlrprotocol_teradata::appendSsoGssData(byte_t mech) {
 	write(&respdata,gssversion,sizeof(gssversion));
 	writeBE(&respdata,dhpsize);
 	writeBE(&respdata,dhgsize);
-	writeBE(&respdata,publickeysize);
+	writeBE(&respdata,(uint32_t)serverpubkeysize);
 	writeBE(&respdata,unknownsize);
 	writeBE(&respdata,qopssize);
 	writeBE(&respdata,gssstructuresize);
@@ -6625,7 +6608,7 @@ void sqlrprotocol_teradata::appendSsoGssData(byte_t mech) {
 	debugHexDump(gssversion,sizeof(gssversion));
 	debugWrite("dh \"p\" size: %d",(int)dhpsize);
 	debugWrite("dh \"g\" size: %d",(int)dhgsize);
-	debugWrite("public key size: %d",(int)publickeysize);
+	debugWrite("public key size: %d",(int)serverpubkeysize);
 	debugWrite("unknown size: %d",(int)unknownsize);
 	debugWrite("qops size: %d",(int)qopssize);
 	debugWrite("gssstructure size: %d",(int)gssstructuresize);
@@ -6654,11 +6637,10 @@ void sqlrprotocol_teradata::appendSsoGssKeys() {
 
 
 	// server public key
-	write(&respdata,serverpubkey,sizeof(serverpubkey));
+	write(&respdata,serverpubkey,serverpubkeysize);
 
-	debugWrite("server public key (%d bytes):",
-				sizeof(serverpubkey));
-	debugHexDump(serverpubkey,sizeof(serverpubkey));
+	debugWrite("server public key (%d bytes):",serverpubkeysize);
+	debugHexDump(serverpubkey,serverpubkeysize);
 }
 
 void sqlrprotocol_teradata::appendSsoGssQops() {
@@ -8618,7 +8600,6 @@ void sqlrprotocol_teradata::debugExtEnd() {
 	debugEnd();
 }
 
-#ifdef DECRYPT
 bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 						uint64_t encdatasize,
 						bytebuffer *decdata) {
@@ -8739,89 +8720,34 @@ bool sqlrprotocol_teradata::generateEphemeralKeys() {
 	debugStart("generate server keys");
 
 	// clear the server public key buffer
-	bytestring::zero(serverpubkey,sizeof(serverpubkey));
-	bytestring::zero(serverprivkey,sizeof(serverprivkey));
+	serverpubkey=NULL;
+	serverpubkeysize=0;
+	serverprivkey=NULL;
+	serverprivkeysize=0;
 
 	// reset the dh
-	DH_free(dh);
-	dh=DH_new();
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L && !defined(LIBRESSL_VERSION_NUMBER)
-	DH_set0_pqg(dh,BN_bin2bn(dhp,sizeof(dhp),NULL),
-			NULL,
-			BN_bin2bn(dhg,sizeof(dhg),NULL));
-#else
-	BN_free(dh->p);
-	dh->p=BN_bin2bn(dhp,sizeof(dhp),NULL);
-	BN_free(dh->g);
-	dh->g=BN_bin2bn(dhg,sizeof(dhg),NULL);
-#endif
-	int	codes=0;
-	if (!DH_check(dh,&codes)) {
-		if (getDebug()) {
-			debugWrite("DH parameter check failed");
-			ERR_print_errors_fp(stdout);
-		}
-		debugEnd();
-		return false;
-	}
-	if (codes) {
-		if (getDebug()) {
-			debugWrite("invalid DH parameters");
-			ERR_print_errors_fp(stdout);
-		}
-		debugEnd();
-		return false;
-	}
+	dh.reset();
+	dh.setPrimeModulus(dhp,sizeof(dhp));
+	dh.setGenerator(dhg,sizeof(dhg));
 
 	// generate new public/private keys
-	if (DH_generate_key(dh)) {
-
-		// get the public key
-		const BIGNUM	*pubkey=NULL;
-		const BIGNUM	*privkey=NULL;
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L && !defined(LIBRESSL_VERSION_NUMBER)
-		DH_get0_key(dh,&pubkey,&privkey);
-#else
-		pubkey=dh->pub_key;
-		privkey=dh->priv_key;
-#endif
-
-		// copy out the public key (if it isn't too big for the buffer)
-		if ((uint64_t)BN_num_bytes(pubkey)<=
-				(uint64_t)sizeof(serverpubkey)) {
-
-			BN_bn2bin(pubkey,serverpubkey);
-
-		} else {
-			debugWrite("public key too large");
-			debugEnd();
-			return false;
-		}
-
-		// copy out the private key (if it isn't too big for the buffer)
-		if ((uint64_t)BN_num_bytes(privkey)<=
-				(uint64_t)sizeof(serverprivkey)) {
-
-			BN_bn2bin(privkey,serverprivkey);
-
-		} else {
-			debugWrite("private key too large");
-			debugEnd();
-			return false;
-		}
-
-		debugWrite("server public key (%d bytes):",
-					sizeof(serverpubkey));
-		debugHexDump(serverpubkey,sizeof(serverpubkey));
-		debugWrite("server private key (%d bytes):",
-					sizeof(serverprivkey));
-		debugHexDump(serverprivkey,sizeof(serverprivkey));
-
-	} else {
+	if (!dh.generateKeys()) {
 		debugWrite("generate keys failed");
 		debugEnd();
 		return false;
 	}
+
+	// get the server pub/priv keys
+	serverpubkey=dh.getPublicKey();
+	serverpubkeysize=dh.getPublicKeySize();
+
+	serverprivkey=dh.getPrivateKey();
+	serverprivkeysize=dh.getPrivateKeySize();
+
+	debugWrite("server public key (%d bytes):",serverpubkeysize);
+	debugHexDump(serverpubkey,serverpubkeysize);
+	debugWrite("server private key (%d bytes):",serverprivkeysize);
+	debugHexDump(serverprivkey,serverprivkeysize);
 
 	debugEnd();
 	return true;
@@ -8832,26 +8758,15 @@ bool sqlrprotocol_teradata::generateSharedSecret() {
 	// See generateEphemeralKeys() for an explanation of
 	// Diffie-Hellman Key Exchange
 
-	// FIXME: push DH stuff down to rudiments
-
 	debugStart("generate shared secret");
 
-	// convert the client public key to a BIGNUM
-	BIGNUM	*cpkbn=BN_bin2bn(clientpubkey,sizeof(clientpubkey),NULL);
-
-	// reallocate the shared secret buffer
-	delete[] sharedsecret;
-	sharedsecret=new byte_t[DH_size(dh)];
-
-	// compute the shared secret
-	// (NOTE: result might be less than the size returned by DH_size(dh))
-	int	result=DH_compute_key(sharedsecret,cpkbn,dh);
-
-	// clean up
-	BN_free(cpkbn);
+	// set the client public key
+	// FIXME: is the key guaranteed to be sizeof(clientpubkey) bytes,
+	// or could it be shorter?
+	dh.setPeerPublicKey(clientpubkey,sizeof(clientpubkey));
 
 	// handle success/failure
-	if (result==-1) {
+	if (!dh.generateSharedSecret()) {
 		delete[] sharedsecret;
 		sharedsecret=NULL;
 		sharedsecretsize=0;
@@ -8859,9 +8774,11 @@ bool sqlrprotocol_teradata::generateSharedSecret() {
 		debugWrite("generate shared secret failed");
 		debugEnd();
 		return false;
-	} else {
-		sharedsecretsize=result;
 	}
+
+	// get the shared secret
+	sharedsecret=dh.getSharedSecret();
+	sharedsecretsize=dh.getSharedSecretSize();
 
 	debugWrite("shared secret (%d bytes):",sharedsecretsize);
 	debugHexDump(sharedsecret,sharedsecretsize);
@@ -8927,18 +8844,19 @@ bool sqlrprotocol_teradata::generateSharedSecret() {
 
 	sharedkeysize=qopsharedkeysize[negotiatedqop];
 
-	if (!PKCS5_PBKDF2_HMAC((const char *)sharedsecret,
-				sharedsecretsize,
-				salt,
-				sizeof(salt),
-				10000,
-				EVP_sha256(),
-				sharedkeysize,
-				sharedkey)) {
+	pbkdf2	p;
+	p.append(sharedsecret,sharedsecretsize);
+	p.setSalt(salt,sizeof(salt));
+	p.setIterations(10000);
+	p.setAlgorithm(PBKDF2_ALGORITHM_SHA256);
+	p.setKeySize(sharedkeysize);
+	const byte_t	*hash=p.getHash();
+	if (!hash) {
 		debugWrite("get shared key failed");
 		debugEnd();
 		return false;
 	}
+	bytestring::copy(sharedkey,hash,sharedkeysize);
 #endif
 
 	debugWrite("shared key (%d bytes):",sharedkeysize);
@@ -8947,7 +8865,6 @@ bool sqlrprotocol_teradata::generateSharedSecret() {
 	debugEnd();
 	return true;
 }
-#endif
 
 extern "C" {
 	SQLRSERVER_DLLSPEC sqlrprotocol	*new_sqlrprotocol_teradata(
