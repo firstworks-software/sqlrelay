@@ -11,6 +11,10 @@
 #include <rudiments/process.h>
 #include <rudiments/character.h>
 #include <rudiments/sys.h>
+#include <rudiments/sha1.h>
+#include <rudiments/sha256.h>
+#include <rudiments/aes128.h>
+#include <rudiments/dh.h>
 
 // NOTE:
 // Teradata CLIv2 refers to:
@@ -32,12 +36,6 @@
 //#define DEBUG_CLIENT_SEND_RECV 1
 //#define DEBUG_PARCEL_END 1
 
-
-#include <rudiments/sha1.h>
-#include <rudiments/sha256.h>
-#include <rudiments/pbkdf2.h>
-#include <rudiments/aes128.h>
-#include <rudiments/dh.h>
 
 // passthrough modes
 //
@@ -1573,8 +1571,6 @@ bool sqlrprotocol_teradata::copKindConnect() {
 	// * sso username request parcel - 136 (see Teradata CLIv2, page 314)
 
 	// appears to be encrypted
-	// always appears to be 410 bytes from bteq
-	// always appears to be 664 bytes from jdbc
 	debugWrite("request:");
 	debugHexDump(clientreqdata,clientreqdatasize);
 	bytebuffer	decdata;
@@ -3303,7 +3299,7 @@ bool sqlrprotocol_teradata::parseSsoGssData(const byte_t *ptr,
 	debugWrite("public key size: %d",(int)publickeysize);
 	debugWrite("unknown size: %d",(int)unknownsize);
 	debugWrite("qops size: %d",(int)qopssize);
-	debugWrite("gssstructure size: %d",(int)gssstructuresize);
+	debugWrite("gss structure size: %d",(int)gssstructuresize);
 
 	// class-1/2/kind-1
 	// (we see these in sso request - trip 0)
@@ -6611,7 +6607,7 @@ void sqlrprotocol_teradata::appendSsoGssData(byte_t mech) {
 	debugWrite("public key size: %d",(int)serverpubkeysize);
 	debugWrite("unknown size: %d",(int)unknownsize);
 	debugWrite("qops size: %d",(int)qopssize);
-	debugWrite("gssstructure size: %d",(int)gssstructuresize);
+	debugWrite("gss structure size: %d",(int)gssstructuresize);
 	//debugWrite("padding:");
 	//debugHexDump(pad,sizeof(pad));
 	debugEnd();
@@ -8606,11 +8602,11 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 
 	debugStart("decrypting");
 
-	// create the decryptor (aes128 uses PKCS5)
+	// create the decryptor
+	// (aes128 uses PKCS5 by default, so we don't need to set that anywhere)
 	aes128	a;
 
 	// use gcm if we need to (aes128 defaults to cbc)
-debugWrite("qop: %s",qopstr[negotiatedqop]);
 	switch (negotiatedqop) {
 		case QOP_AES128_GCM_PKCS5_SHA2_DH2048:
 		case QOP_AES192_GCM_PKCS5_SHA2_DH2048:
@@ -8618,6 +8614,7 @@ debugWrite("qop: %s",qopstr[negotiatedqop]);
 			a.setBlockCipherMode(BLOCK_CIPHER_MODE_GCM);
 			break;
 	}
+	// FIXME: bail if we don't support GCM
 
 	// get the initializaton vector size
 	size_t	ivsize=a.getIvSize();
@@ -8636,24 +8633,27 @@ debugWrite("qop: %s",qopstr[negotiatedqop]);
 		return false;
 	}
 
-	// get the initialization vector...
-	// (it's conventional to generate a random IV and
-	// send it to the other side, preceding the data)
-	a.setIv(encdata,ivsize);
-debugWrite("cipher/provided iv size: %d/%d",a.getIvSize(),ivsize);
-debugWrite("iv:");
-debugHexDump(encdata,ivsize);
-	encdata+=ivsize;
+	// the last N bytes of the encdata are the initialization vector
+	const byte_t	*iv=encdata+encdatasize-ivsize;
+	a.setIv(iv,ivsize);
 	encdatasize-=ivsize;
 
 	// set the key
+	// sharedkeysize might be larger than a.getKeySize()
+	// (eg. SHA1 generates a 20 byte hash, but AES 128 only needs a 16 byte
+	// key) so we'll use a.getKeySize() here, rather than sharedkeysize
 	a.setKey(sharedkey,a.getKeySize());
+
+debugWrite("qop: %s",qopstr[negotiatedqop]);
+debugWrite("cipher/provided iv size: %d/%d",a.getIvSize(),ivsize);
+debugWrite("iv:");
+debugHexDump(iv,ivsize);
 debugWrite("cipher/provided key size: %d/%d",a.getKeySize(),sharedkeysize);
 debugWrite("key:");
 debugHexDump(sharedkey,a.getKeySize());
+debugWrite("enc data size: %d",encdatasize);
 
 	// set the data to decrypt
-debugWrite("enc data size: %d",encdatasize);
 	if (!a.append(encdata,encdatasize)) {
 		debugWrite("append failed: %d",a.getError());
 		debugEnd();
@@ -8713,9 +8713,6 @@ bool sqlrprotocol_teradata::generateEphemeralKeys() {
 	// * This hash should also be the same
 	// * We both use the hash as the key for our cipher
 	// * We both use the cipher for symmetric encryption and decryption
-
-	// FIXME: push down to rudiments
-	// rudiments doesn't currently have diffie-hellman
 
 	debugStart("generate server keys");
 
@@ -8783,8 +8780,7 @@ bool sqlrprotocol_teradata::generateSharedSecret() {
 	debugWrite("shared secret (%d bytes):",sharedsecretsize);
 	debugHexDump(sharedsecret,sharedsecretsize);
 
-#if 0
-	// generate the shared key, using the appropriate KDF
+	// generate the shared key, using SHA1 or SHA256, as appropriate
 	bytestring::zero(sharedkey,sizeof(sharedkey));
 	switch (negotiatedqop) {
 		case QOP_AES128_GCM_PKCS5_SHA2_DH2048:
@@ -8806,6 +8802,9 @@ bool sqlrprotocol_teradata::generateSharedSecret() {
 			}
 			sharedkeysize=s256.getHashSize();
 			bytestring::copy(sharedkey,hash,sharedkeysize);
+
+			debugWrite("shared key (%d bytes):",sharedkeysize);
+			debugHexDump(sharedkey,sharedkeysize);
 			}
 			break;
 		case QOP_AES128_CBC_PKCS5_SHA1_DH2048:
@@ -8813,8 +8812,16 @@ bool sqlrprotocol_teradata::generateSharedSecret() {
 		case QOP_AES256_CBC_PKCS5_SHA1_DH2048:
 			debugWrite("kdf: sha1");
 			{
+			// At least when using SHA1, it looks like only the
+			// first 16 bytes of the shared secret are hashed, and
+			// it looks like the client (jdbc at least) generates
+			// 4 hashes, one each of the 1st, 2nd, 3rd, and 4th set
+			// of 16 bytes of the shared secret.  It only appears
+			// to use the first one and it's not clear what it does
+			// with the other 3, if anything, so we'll just
+			// generate the first one.
 			sha1		s1;
-			if (!s1.append(sharedsecret,sharedsecretsize)) {
+			if (!s1.append(sharedsecret,16)) {
 				debugWrite("s1.append() failed");
 				debugEnd();
 				return false;
@@ -8827,40 +8834,12 @@ bool sqlrprotocol_teradata::generateSharedSecret() {
 			}
 			sharedkeysize=s1.getHashSize();
 			bytestring::copy(sharedkey,hash,sharedkeysize);
+
+			debugWrite("shared key (%d bytes):",sharedkeysize);
+			debugHexDump(sharedkey,sharedkeysize);
 			}
 			break;
 	}
-#else
-
-	// generate the shared key, using pbkdf2
-
-	debugWrite("kdf: pbkdf2/sha256");
-
-	// FIXME: What should I use for the salt?
-	// Currently, I'm using the mech parameters,
-	// but I don't think that's right.
-	debugWrite("salt (%d bytes):",sizeof(salt));
-	debugHexDump(salt,sizeof(salt));
-
-	sharedkeysize=qopsharedkeysize[negotiatedqop];
-
-	pbkdf2	p;
-	p.append(sharedsecret,sharedsecretsize);
-	p.setSalt(salt,sizeof(salt));
-	p.setIterations(10000);
-	p.setAlgorithm(PBKDF2_ALGORITHM_SHA256);
-	p.setKeySize(sharedkeysize);
-	const byte_t	*hash=p.getHash();
-	if (!hash) {
-		debugWrite("get shared key failed");
-		debugEnd();
-		return false;
-	}
-	bytestring::copy(sharedkey,hash,sharedkeysize);
-#endif
-
-	debugWrite("shared key (%d bytes):",sharedkeysize);
-	debugHexDump(sharedkey,sharedkeysize);
 
 	debugEnd();
 	return true;
