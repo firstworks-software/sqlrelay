@@ -979,14 +979,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		void	debugExtStart(const char *extname);
 		void	debugExtEnd();
 
+		bool	generateEphemeralKeys();
+		bool	generateSharedSecretAndKey();
 		bool	decrypt(const byte_t *encdata,
 					uint64_t encdatasize,
 					bytebuffer *decdata);
 		bool	encrypt(const byte_t *decdata,
 					uint64_t decdatasize,
 					bytebuffer *encdata);
-		bool	generateEphemeralKeys();
-		bool	generateSharedSecret();
 
 		passthroughmode_t	passthroughmode;
 
@@ -1562,6 +1562,10 @@ bool sqlrprotocol_teradata::copKindConnect() {
 	// parse request
 	debugStart("copkind_connect");
 
+	// decrypt the request
+	bytebuffer	decdata;
+	decrypt(clientreqdata,clientreqdatasize,&decdata);
+
 	// FIXME: parse request, it should contain:
 	// * logon parcel - 36 (see Teradata CLIv2, page 269)
 	// * session option parcel - 114 (see Teradata CLIv2, page 299)
@@ -1569,14 +1573,6 @@ bool sqlrprotocol_teradata::copKindConnect() {
 	// * data parcel - 3 (see Teradata CLIv2, page 253)
 	// * client attribute parcel - 189
 	// * sso username request parcel - 136 (see Teradata CLIv2, page 314)
-
-	// appears to be encrypted
-	debugWrite("request:");
-	debugHexDump(clientreqdata,clientreqdatasize);
-	bytebuffer	decdata;
-	decrypt(clientreqdata,clientreqdatasize,&decdata);
-	debugWrite("decrypted request:");
-	debugHexDump(decdata.getBuffer(),decdata.getSize());
 
 	// if passthrough is enabled then just do that
 	if (passthroughmode==PASSTHROUGHMODE_ENABLED) {
@@ -1588,14 +1584,9 @@ bool sqlrprotocol_teradata::copKindConnect() {
 	// * success parcel - 8 (see Teradata CLIv2, page 312)
 	// * sso username response parcel - 137 (see Teradata CLIv2, page 314)
 	// * end request parcel - 12 (see Teradata CLIv2, page 257)
-	//
-	// appears to be encrypted
-	// always appears to be 205 bytes
 	respdata.clear();
 
-	// ideally we'd encrypt this with the same secret that we used to
-	// generate serverpubkey, but for now, we'll just use matching canned
-	// responses for both (still doesn't work though)
+	// FIXME: encrypt the response
 	byte_t	response[]={
 		0x18, 0xe1, 0xaf, 0xc0, 0xa6, 0xe8, 0xad, 0x83,
 		0xf7, 0x17, 0xa2, 0xf7, 0x18, 0x18, 0x21, 0xfe,
@@ -3180,7 +3171,7 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 		// now that we have the client public key,
 		// we can generate the shared secret
 		// FIXME: we should only do this after trip 0, not after trip 2
-		if (!generateSharedSecret()) {
+		if (!generateSharedSecretAndKey()) {
 			*parcelout=parceldata+parceldatasize;
 			debugParcelEnd(parceldata,parceldatasize);
 			return false;
@@ -6653,6 +6644,7 @@ void sqlrprotocol_teradata::appendSsoGssQops() {
 	byte_t		intalg=ALG_NONE;
 	byte_t		kexalg=ALG_NONE;
 	uint16_t	kexalgkeysize=0;
+	// FIXME: do this with arrays
 	switch (negotiatedqop) {
 		case QOP_GLOBAL_QOP_0:
 			confalg=ALG_BLOWFISH;
@@ -8596,95 +8588,6 @@ void sqlrprotocol_teradata::debugExtEnd() {
 	debugEnd();
 }
 
-bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
-						uint64_t encdatasize,
-						bytebuffer *decdata) {
-
-	debugStart("decrypting");
-
-	// create the decryptor
-	// (aes128 uses PKCS5 by default, so we don't need to set that anywhere)
-	aes128	a;
-
-	// use gcm if we need to (aes128 defaults to cbc)
-	switch (negotiatedqop) {
-		case QOP_AES128_GCM_PKCS5_SHA2_DH2048:
-		case QOP_AES192_GCM_PKCS5_SHA2_DH2048:
-		case QOP_AES256_GCM_PKCS5_SHA2_DH2048:
-			a.setBlockCipherMode(BLOCK_CIPHER_MODE_GCM);
-			break;
-	}
-	// FIXME: bail if we don't support GCM
-
-	// get the initializaton vector size
-	size_t	ivsize=a.getIvSize();
-
-	// validate the encdata
-	if (encdatasize<ivsize) {
-		debugWrite("encdata too small");
-		debugEnd();
-		return false;
-	}
-
-	// validate the key
-	if (sharedkeysize<a.getKeySize()) {
-		debugWrite("shared key too small");
-		debugEnd();
-		return false;
-	}
-
-	// the last N bytes of the encdata are the initialization vector
-	const byte_t	*iv=encdata+encdatasize-ivsize;
-	a.setIv(iv,ivsize);
-	encdatasize-=ivsize;
-
-	// set the key
-	// sharedkeysize might be larger than a.getKeySize()
-	// (eg. SHA1 generates a 20 byte hash, but AES 128 only needs a 16 byte
-	// key) so we'll use a.getKeySize() here, rather than sharedkeysize
-	a.setKey(sharedkey,a.getKeySize());
-
-debugWrite("qop: %s",qopstr[negotiatedqop]);
-debugWrite("cipher/provided iv size: %d/%d",a.getIvSize(),ivsize);
-debugWrite("iv:");
-debugHexDump(iv,ivsize);
-debugWrite("cipher/provided key size: %d/%d",a.getKeySize(),sharedkeysize);
-debugWrite("key:");
-debugHexDump(sharedkey,a.getKeySize());
-debugWrite("enc data size: %d",encdatasize);
-
-	// set the data to decrypt
-	if (!a.append(encdata,encdatasize)) {
-		debugWrite("append failed: %d",a.getError());
-		debugEnd();
-		return false;
-	}
-
-	// get the decrypted data
-	const byte_t	*ddata=a.getDecryptedData();
-	uint64_t	ddatasize=a.getDecryptedDataSize();
-	if (!ddata) {
-		debugWrite("decryption failed: %d",a.getError());
-		debugEnd();
-		return false;
-	}
-
-	// copy out the decrypted data
-	decdata->append(ddata,ddatasize);
-
-	debugWrite("decryption succeeded (%d decrypted bytes)",ddatasize);
-	debugEnd();
-
-	return true;
-}
-
-bool sqlrprotocol_teradata::encrypt(const byte_t *decdata,
-						uint64_t decdatasize,
-						bytebuffer *encdata) {
-	// FIXME: push down to rudiments
-	return true;
-}
-
 bool sqlrprotocol_teradata::generateEphemeralKeys() {
 
 	// Diffie-Hellman Key Exchange...
@@ -8700,21 +8603,19 @@ bool sqlrprotocol_teradata::generateEphemeralKeys() {
 	// * They use their private key and my public key to generate a secret
 	// * These secrets should be the same (shared secret)
 	// * We negotiate a cipher (eg. AES128_GCM_PKCS5_SHA256)
-	// * We negotiate a Key Derivation Function (KDF) (hashing algorithm)
-	//   (eg. SHA1, SHA256, or PBKDF2)
-	//   (Note that in AES128_GCM_PKCS5_SHA256, SHA256 refers to the
-	//   Hash-based Message Authentication Code (HMAC) not the KDF)
+	// * We negotiate a Key Derivation Function (KDF) - usually a hash like
+	//   MD5, SHA1, or SHA256 but could be PBKDF2, or something else.
 	// * If the KDF requires a salt then we have to negotiate a salt as well
-	// * We both hash the shared secret using the agreed upon KDF (and salt)
+	// * We both use the KDF to generate a shared key
 	//   * If the KDF generates a larger key than required (eg. SHA256
 	//     generates a 256-bit (32-byte) key but AES128 only requires a
 	//     128-bit (16-byte) key) then the key is typically just
 	//     truncated to the necessary length
-	// * This hash should also be the same
-	// * We both use the hash as the key for our cipher
+	// * The shared key should also be the same
+	// * We both use the shared key as the key for our cipher
 	// * We both use the cipher for symmetric encryption and decryption
 
-	debugStart("generate server keys");
+	debugStart("generate ephemeral keys");
 
 	// clear the server public key buffer
 	serverpubkey=NULL;
@@ -8750,12 +8651,12 @@ bool sqlrprotocol_teradata::generateEphemeralKeys() {
 	return true;
 }
 
-bool sqlrprotocol_teradata::generateSharedSecret() {
+bool sqlrprotocol_teradata::generateSharedSecretAndKey() {
 
 	// See generateEphemeralKeys() for an explanation of
 	// Diffie-Hellman Key Exchange
 
-	debugStart("generate shared secret");
+	debugStart("generate shared secret and key");
 
 	// set the client public key
 	// FIXME: is the key guaranteed to be sizeof(clientpubkey) bytes,
@@ -8780,12 +8681,75 @@ bool sqlrprotocol_teradata::generateSharedSecret() {
 	debugWrite("shared secret (%d bytes):",sharedsecretsize);
 	debugHexDump(sharedsecret,sharedsecretsize);
 
-	// generate the shared key, using SHA1 or SHA256, as appropriate
+	// determine the shared key size
+	// FIXME: do this with an array
+	switch (negotiatedqop) {
+		case QOP_AES128_CBC_PKCS5_SHA1_DH2048:
+		case QOP_AES128_GCM_PKCS5_SHA2_DH2048:
+		case QOP_AES128_CCM_PKCS5_SHA2_DH2048:
+		case QOP_AES128_CTR_PKCS5_SHA2_DH2048:
+			sharedkeysize=16;
+			break;
+		case QOP_AES192_CBC_PKCS5_SHA1_DH2048:
+		case QOP_AES192_GCM_PKCS5_SHA2_DH2048:
+		case QOP_AES192_CCM_PKCS5_SHA2_DH2048:
+		case QOP_AES192_CTR_PKCS5_SHA2_DH2048:
+			sharedkeysize=24;
+			break;
+		case QOP_AES256_CBC_PKCS5_SHA1_DH2048:
+		case QOP_AES256_GCM_PKCS5_SHA2_DH2048:
+		case QOP_AES256_CCM_PKCS5_SHA2_DH2048:
+		case QOP_AES256_CTR_PKCS5_SHA2_DH2048:
+			sharedkeysize=32;
+			break;
+	}
+
+	// get the shared key (first N bytes of the shared secret)
+	bytestring::copy(sharedkey,sharedsecret,sharedkeysize);
+	debugWrite("shared key (%d bytes):",sharedkeysize);
+	debugHexDump(sharedkey,sharedkeysize);
+
+#if 0
+	// Generate hashes of the shared key, presumably for HMAC, but it's not
+	// clear how these are used yet.
+	//
+	// It looks like only the first 16 bytes of the shared secret are
+	// hashed (when using SHA1 at least), and it looks like the client
+	// (jdbc at least) generates 4 hashes, one each of the 1st, 2nd, 3rd,
+	// and 4th set of 16 bytes of the shared secret.  It only appears to
+	// use the first one and it's not clear what it does with the other 3,
+	// if anything, so we'll just generate the first one.
+	//
+	// Except that this code needs work because I originally assumed that
+	// this was the shared key, and used those buffers, but it's not, so
+	// it needs its own buffers.
 	bytestring::zero(sharedkey,sizeof(sharedkey));
 	switch (negotiatedqop) {
-		case QOP_AES128_GCM_PKCS5_SHA2_DH2048:
-		case QOP_AES192_GCM_PKCS5_SHA2_DH2048:
-		case QOP_AES256_GCM_PKCS5_SHA2_DH2048:
+		case QOP_AES128_CBC_PKCS5_SHA1_DH2048:
+		case QOP_AES192_CBC_PKCS5_SHA1_DH2048:
+		case QOP_AES256_CBC_PKCS5_SHA1_DH2048:
+			debugWrite("kdf: sha1");
+			{
+			sha1		s1;
+			if (!s1.append(sharedsecret,16)) {
+				debugWrite("s1.append() failed");
+				debugEnd();
+				return false;
+			}
+			const byte_t	*hash=s1.getHash();
+			if (!hash) {
+				debugWrite("s1.getHash() failed");
+				debugEnd();
+				return false;
+			}
+			sharedkeysize=s1.getHashSize();
+			bytestring::copy(sharedkey,hash,sharedkeysize);
+
+			debugWrite("shared key (%d bytes):",sharedkeysize);
+			debugHexDump(sharedkey,sharedkeysize);
+			}
+			break;
+		default:
 			{
 			debugWrite("kdf: sha256");
 			sha256		s256;
@@ -8807,41 +8771,124 @@ bool sqlrprotocol_teradata::generateSharedSecret() {
 			debugHexDump(sharedkey,sharedkeysize);
 			}
 			break;
+	}
+#endif
+
+	debugEnd();
+	return true;
+}
+
+bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
+						uint64_t encdatasize,
+						bytebuffer *decdata) {
+
+	debugStart("decrypt");
+
+	// create the decryptor
+	// (aes128 uses PKCS5 by default, so we don't need to set that anywhere)
+	aes128	a;
+
+	// use gcm if we need to (aes128 defaults to cbc)
+	// FIXME: do this with an array
+	switch (negotiatedqop) {
+		case QOP_AES128_GCM_PKCS5_SHA2_DH2048:
+		case QOP_AES192_GCM_PKCS5_SHA2_DH2048:
+		case QOP_AES256_GCM_PKCS5_SHA2_DH2048:
+			// FIXME: bail if we don't support GCM
+			a.setBlockCipherMode(BLOCK_CIPHER_MODE_GCM);
+			break;
+	}
+	// FIXME: bail if we got something other than CBC/GCM
+
+	// get the initializaton vector size
+	size_t	ivsize=a.getIvSize();
+
+	// validate the encdata
+	if (encdatasize<ivsize) {
+		debugWrite("encdata too small");
+		debugEnd();
+		return false;
+	}
+
+	// validate the key
+	if (sharedkeysize<a.getKeySize()) {
+		debugWrite("shared key too small");
+		debugEnd();
+		return false;
+	}
+
+	// the last N bytes of the encdata are the initialization vector
+	const byte_t	*iv=encdata+encdatasize-ivsize;
+	a.setIv(iv,ivsize);
+	encdatasize-=ivsize;
+
+	// set the key
+	// sharedkeysize might be larger than a.getKeySize()
+	// (eg. SHA1 generates a 20 byte hash, but AES 128 only needs a 16 byte
+	// key) so we'll use a.getKeySize() here, rather than sharedkeysize
+	a.setKey(sharedkey,a.getKeySize());
+
+	// the first N bytes of the encdata are the HMAC (hash of the data and
+	// something else, maybe the shared key, or one or more hashes of it)
+	const byte_t	*hmac=encdata;
+	size_t		hmacsize=0;
+	// FIXME: do this with an array
+	switch (negotiatedqop) {
 		case QOP_AES128_CBC_PKCS5_SHA1_DH2048:
 		case QOP_AES192_CBC_PKCS5_SHA1_DH2048:
 		case QOP_AES256_CBC_PKCS5_SHA1_DH2048:
-			debugWrite("kdf: sha1");
-			{
-			// At least when using SHA1, it looks like only the
-			// first 16 bytes of the shared secret are hashed, and
-			// it looks like the client (jdbc at least) generates
-			// 4 hashes, one each of the 1st, 2nd, 3rd, and 4th set
-			// of 16 bytes of the shared secret.  It only appears
-			// to use the first one and it's not clear what it does
-			// with the other 3, if anything, so we'll just
-			// generate the first one.
-			sha1		s1;
-			if (!s1.append(sharedsecret,16)) {
-				debugWrite("s1.append() failed");
-				debugEnd();
-				return false;
-			}
-			const byte_t	*hash=s1.getHash();
-			if (!hash) {
-				debugWrite("s1.getHash() failed");
-				debugEnd();
-				return false;
-			}
-			sharedkeysize=s1.getHashSize();
-			bytestring::copy(sharedkey,hash,sharedkeysize);
-
-			debugWrite("shared key (%d bytes):",sharedkeysize);
-			debugHexDump(sharedkey,sharedkeysize);
-			}
+			hmacsize=20;
+			break;
+		default:
+			hmacsize=32;
 			break;
 	}
+	encdata+=hmacsize;
+	encdatasize-=hmacsize;
+
+	debugWrite("qop: %s",qopstr[negotiatedqop]);
+	debugWrite("iv (%d bytes):",ivsize);
+	debugHexDump(iv,ivsize);
+	debugWrite("key (%d/%d bytes):",a.getKeySize(),sharedkeysize);
+	debugHexDump(sharedkey,a.getKeySize());
+	debugWrite("hmac size: %d",hmacsize);
+	debugWrite("hmac:");
+	debugHexDump(hmac,hmacsize);
+	debugWrite("encrypted data (%d bytes):",encdatasize);
+	debugHexDump(encdata,encdatasize);
+
+	// set the data to decrypt
+	if (!a.append(encdata,encdatasize)) {
+		debugWrite("append failed: %d",a.getError());
+		debugEnd();
+		return false;
+	}
+
+	// get the decrypted data
+	const byte_t	*ddata=a.getDecryptedData();
+	uint64_t	ddatasize=a.getDecryptedDataSize();
+	if (!ddata) {
+		debugWrite("decryption failed: %d",a.getError());
+		debugEnd();
+		return false;
+	}
+
+	// copy out the decrypted data
+	decdata->append(ddata,ddatasize);
+
+	// FIXME: HMAC the decrypted data
+
+	debugWrite("decrypted data (%d bytes)",ddatasize);
+	debugHexDump(decdata->getBuffer(),decdata->getSize());
 
 	debugEnd();
+
+	return true;
+}
+
+bool sqlrprotocol_teradata::encrypt(const byte_t *decdata,
+						uint64_t decdatasize,
+						bytebuffer *encdata) {
 	return true;
 }
 
