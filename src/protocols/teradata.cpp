@@ -889,7 +889,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		void	appendProxyMechanismParcel();
 		void	appendTdnegoMechanismParcel();
 		void	appendJwtMechanismParcel();
-		void	appendLogonFailureParcel(const char *errorstring);
+		void	appendLogonFailureParcel(uint16_t code,
+						const char *errorstring);
 		void	setSessionNumber();
 		void	appendAssignResponseParcel();
 		void	appendSsoResponseParcel(byte_t trip);
@@ -978,6 +979,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		void	debugParcelEnd();
 		void	debugExtStart(const char *extname);
 		void	debugExtEnd();
+		void	debugMech(const byte_t *oid, size_t size);
 
 		bool	generateEphemeralKeys();
 		bool	generateSharedSecretAndKey();
@@ -1024,14 +1026,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		uint32_t	maxmessagesize;
 
 		// auth mechs
-		bool		td1mechenabled;
-		bool		td2mechenabled;
-		bool		krb5mechenabled;
-		bool		spnegomechenabled;
-		bool		ldapmechenabled;
-		bool		proxymechenabled;
-		bool		tdnegomechenabled;
-		bool		jwtmechenabled;
+		bool		td1enabled;
+		bool		td2enabled;
+		bool		krb5enabled;
+		bool		spnegoenabled;
+		bool		ldapenabled;
+		bool		proxyenabled;
+		bool		tdnegoenabled;
+		bool		jwtenabled;
 
 		// encryption
 		bool		blowfishsupported;
@@ -1128,23 +1130,15 @@ sqlrprotocol_teradata::sqlrprotocol_teradata(sqlrservercontroller *cont,
 	maxmessagesize=0;
 
 	// auth mechs
-	// FIXME: make these configurable (and support non-td2)
-	td1mechenabled=false;
-	td2mechenabled=true;
-	krb5mechenabled=false;
-	spnegomechenabled=false;
-	ldapmechenabled=false;
-	proxymechenabled=false;
-	tdnegomechenabled=false;
-	jwtmechenabled=false;
-td1mechenabled=true;
-td2mechenabled=true;
-krb5mechenabled=true;
-spnegomechenabled=true;
-ldapmechenabled=true;
-proxymechenabled=true;
-tdnegomechenabled=true;
-jwtmechenabled=true;
+	// (currently, we only support TD2)
+	td1enabled=false;
+	td2enabled=true;
+	krb5enabled=false;
+	spnegoenabled=false;
+	ldapenabled=false;
+	proxyenabled=false;
+	tdnegoenabled=false;
+	jwtenabled=false;
 
 	// encryption
 	blowfishsupported=false;
@@ -1439,28 +1433,28 @@ bool sqlrprotocol_teradata::copKindCfg() {
 
 	// We send a set of supported mechs, here.  The
 	// client will choose one in SSO Request - trip 0.
-	if (td1mechenabled) {
+	if (td1enabled) {
 		appendTd1MechanismParcel();
 	}
-	if (td2mechenabled) {
+	if (td2enabled) {
 		appendTd2MechanismParcel();
 	}
-	if (krb5mechenabled) {
+	if (krb5enabled) {
 		appendKrb5MechanismParcel();
 	}
-	if (spnegomechenabled) {
+	if (spnegoenabled) {
 		appendSpnegoMechanismParcel();
 	}
-	if (ldapmechenabled) {
+	if (ldapenabled) {
 		appendLdapMechanismParcel();
 	}
-	if (proxymechenabled) {
+	if (proxyenabled) {
 		appendProxyMechanismParcel();
 	}
-	if (tdnegomechenabled) {
+	if (tdnegoenabled) {
 		appendTdnegoMechanismParcel();
 	}
-	if (jwtmechenabled) {
+	if (jwtenabled) {
 		appendJwtMechanismParcel();
 	}
 
@@ -1510,16 +1504,19 @@ bool sqlrprotocol_teradata::copKindAssign() {
 
 	setSessionNumber();
 
-#if 0
-	// handle failure to negotiate mech or qop
-	if (negotiatedmech==MECH_NONE || negotiatedqop==QOP_NONE) {
-		respdata.clear();
+	// handle failure to negotiate mech
+	if (negotiatedmech==MECH_NONE) {
 		appendLogonFailureParcel(
-			"UserId, Password or Account is invalid.");
+			507,"Requested logon mechanism is not available.");
 		debugEnd();
 		return sendResponseToClient();
 	}
-#endif
+	if (negotiatedqop==QOP_NONE) {
+		appendLogonFailureParcel(
+			507,"Requested QOP not supported.");
+		debugEnd();
+		return sendResponseToClient();
+	}
 
 	appendAssignResponseParcel();
 	appendSsoResponseParcel(1);
@@ -2340,9 +2337,7 @@ bool sqlrprotocol_teradata::recvRequestFromClient() {
 	read(ptr,&bytevar,&ptr);
 	readBE(ptr,&wordvar,&ptr);
 	readBE(ptr,&lowordermessagesize,&ptr);
-	// FIXME: net-to-host these?
 	read(ptr,(byte_t *)resforexpan,sizeof(resforexpan),&ptr);
-	// FIXME: net-to-host these?
 	read(ptr,(byte_t *)corrtag,sizeof(corrtag),&ptr);
 	readBE(ptr,&sessionno,&ptr);
 	read(ptr,(byte_t *)requestauth,sizeof(requestauth),&ptr);
@@ -2648,9 +2643,7 @@ bool sqlrprotocol_teradata::recvResponseFromBackend() {
 	read(ptr,&bytevar,&ptr);
 	readBE(ptr,&wordvar,&ptr);
 	readBE(ptr,&lowordermessagesize,&ptr);
-	// FIXME: net-to-host this?
 	read(ptr,(byte_t *)resforexpan,sizeof(resforexpan),&ptr);
-	// FIXME: net-to-host this?
 	read(ptr,(byte_t *)corrtag,sizeof(corrtag),&ptr);
 	readBE(ptr,&sessionno,&ptr);
 	read(ptr,(byte_t *)responseauth,sizeof(responseauth),&ptr);
@@ -2822,7 +2815,6 @@ bool sqlrprotocol_teradata::parseClientConfigParcel(
 		read(ptr,&field,&ptr);
 		read(ptr,&size,&ptr);
 
-		// FIXME: do something with these
 		switch (field) {
 			case CLIENTCONFIGFIELD_VERSION:
 				debugWrite("version: %.*s",size,ptr);
@@ -3086,14 +3078,23 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 
 	// no known reference (just had to study the trace)
 
-	// The authdata appears to be structured like:
+	// If we get a gss data (0x01) then the client has selected a mech.
+	// We'll get a gss data, mainly containing supported qops, followed by
+	// the mech oid and mech parameters.  In the subsequent response, we'll
+	// get another gss data (0x03) containing the client's shared key.
 	//
-	// * gss data or structured gss data
-	//  * gss data (0x01) is common in trip 0 for td2, ldap, etc.
-	//  * gss data (0x03) is common in trip 2 for td2, ldap, etc.
-	//  * structured gss data (0xE0) is common in trip 0 for tdnego
-	//  * structured gss data (0xE1) is common in trip 2 for tdnego
-	// * more mech-specific data (the rest of the data)
+	// If we get a gss data structure (0xE0) then the client has selected
+	// the tdnego or spnego mech and will go through a negotiation process
+	// over the next several trips.  The gss data structure will contain
+	// nested data about all mechs the client supports, and will be followed
+	// by the mech oid and mech parameters of the tdnego/spnego mech.
+	// Subsequent responses are somehow involved in further negotiation.
+	// I assume that ultimately, when the final mech has been selected,
+	// we'll get a gss data (0x01) and follow that flow from there, but I
+	// haven't sorted that process out yet.
+	//
+	// This code can kind-of parse whatever we get, but for now we only
+	// support TD2.
 	while (ptr!=end) {
 
 		switch (*ptr) {
@@ -3141,36 +3142,10 @@ bool sqlrprotocol_teradata::parseSsoRequestParcel(const byte_t *parcel,
 		}
 	}
 
-	if (trip==0) {
-
-		// negotiate qop
-		// for now, we support:
-		// * dh2048
-		// * aes128
-		// * cbc and gcm
-		// * pkcs5 padding
-		// * sha1 and sha256
-		negotiatedqop=QOP_NONE;
-		if (dhsupported && dh2048supported &&
-				aessupported && pkcs5supported) {
-			if (aes128supported) {
-				if (gcmsupported && sha256supported) {
-					negotiatedqop=
-					QOP_AES128_GCM_PKCS5_SHA2_DH2048;
-				} else if (cbcsupported && sha1supported) {
-					negotiatedqop=
-					QOP_AES128_CBC_PKCS5_SHA1_DH2048;
-				}
-			}
-			// FIXME: support other qops
-		}
-		debugWrite("negotiated qop: %s",qopstr[negotiatedqop]);
-
-	} else if (trip==2) {
+	if (trip==2) {
 
 		// now that we have the client public key,
 		// we can generate the shared secret
-		// FIXME: we should only do this after trip 0, not after trip 2
 		if (!generateSharedSecretAndKey()) {
 			*parcelout=parceldata+parceldatasize;
 			debugParcelEnd(parceldata,parceldatasize);
@@ -3327,6 +3302,21 @@ bool sqlrprotocol_teradata::parseSsoGssData(const byte_t *ptr,
 		debugEnd();
 		*ptrout=ptr;
 		return false;
+	}
+
+	// for version-1, negotiate qop
+	if (version==SSO_GSS_DATA_VERSION_1) {
+
+		// currently, we only support dh2048 and
+		// QOP_AES128_CBC_PKCS5_SHA1_DH2048
+		negotiatedqop=QOP_NONE;
+		if (dhsupported && dh2048supported &&
+				aessupported && aes128supported &&
+				cbcsupported && pkcs5supported &&
+				sha1supported) {
+			negotiatedqop=QOP_AES128_CBC_PKCS5_SHA1_DH2048;
+		}
+		debugWrite("negotiated qop: %s",qopstr[negotiatedqop]);
 	}
 
 	// parse the gss structure, if provided
@@ -3498,72 +3488,71 @@ bool sqlrprotocol_teradata::parseMechField(const byte_t *ptr,
 
 	// get field and size
 	byte_t	field;
-	byte_t	mechsize;
+	byte_t	mechoidsize;
 	read(ptr,&field,&ptr);
-	read(ptr,&mechsize,&ptr);
+	read(ptr,&mechoidsize,&ptr);
 	if (field!=SSOREQ_MECH && field!=SSO_MECH) {
 		debugWrite("unexpected field: 0x%02x "
-				"(expected ssoreq_mech or "
-				"ssoreq_nested_mech)",field);
+				"(expected ssoreq_mech or sso_mech)",field);
 		*ptrout=ptr;
 		return false;
 	}
 
-	// get the chosen mech
-	const byte_t	*mech=ptr;
-	ptr+=mechsize;
+	// get the mech oid
+	const byte_t	*mechoid=ptr;
+	ptr+=mechoidsize;
 
-	debugWrite("mech oid:");
-	debugHexDump(mech,mechsize);
+	// get the mech by oid
+	uint8_t	mech=MECH_NONE;
+	if (mechoidsize==sizeof(td1mechoid) &&
+			!bytestring::compare(mechoid,
+				td1mechoid,sizeof(td1mechoid))) {
+		mech=MECH_TD1;
+	} else if (mechoidsize==sizeof(td2mechoid) &&
+			!bytestring::compare(mechoid,
+				td2mechoid,sizeof(td2mechoid))) {
+		mech=MECH_TD2;
+	} else if (mechoidsize==sizeof(krb5mechoid) &&
+			!bytestring::compare(mechoid,
+				krb5mechoid,sizeof(krb5mechoid))) {
+		mech=MECH_KRB5;
+	} else if (mechoidsize==sizeof(spnegomechoid) &&
+			!bytestring::compare(mechoid,
+				spnegomechoid,sizeof(spnegomechoid))) {
+		mech=MECH_SPNEGO;
+	} else if (mechoidsize==sizeof(ldapmechoid) &&
+			!bytestring::compare(mechoid,
+				ldapmechoid,sizeof(ldapmechoid))) {
+		mech=MECH_LDAP;
+	} else if (mechoidsize==sizeof(proxymechoid) &&
+			!bytestring::compare(mechoid,
+				proxymechoid,sizeof(proxymechoid))) {
+		mech=MECH_PROXY;
+	} else if (mechoidsize==sizeof(tdnegomechoid) &&
+			!bytestring::compare(mechoid,
+				tdnegomechoid,sizeof(tdnegomechoid))) {
+		mech=MECH_TDNEGO;
+	} else if (mechoidsize==sizeof(jwtmechoid) &&
+			!bytestring::compare(mechoid,
+				jwtmechoid,sizeof(jwtmechoid))) {
+		mech=MECH_JWT;
+	}
+
+	debugWrite("mech oid (%s):",mechstr[mech]);
+	debugHexDump(mechoid,mechoidsize);
+
+	// for SSOREQ_MECH, negotiate mech
+	if (field==SSOREQ_MECH) {
+
+		// currently, we only support TD2
+		negotiatedmech=MECH_NONE;
+		if (mech==MECH_TD2) {
+			negotiatedmech=mech;
+		}
+		debugWrite("negotiated mech: %s",mechstr[mech]);
+	}
 
 	*ptrout=ptr;
-
-	// negotiate mech
-	// (for now we only support TD2)
-	// FIXME: push this up, this gets called for each nested mech,
-	// not just the one at the top level
-	negotiatedmech=MECH_NONE;
-	if (mechsize==sizeof(td1mechoid) &&
-			!bytestring::compare(mech,
-				td1mechoid,sizeof(td1mechoid))) {
-		negotiatedmech=MECH_TD1;
-	} else if (mechsize==sizeof(td2mechoid) &&
-			!bytestring::compare(mech,
-				td2mechoid,sizeof(td2mechoid))) {
-		negotiatedmech=MECH_TD2;
-	} else if (mechsize==sizeof(krb5mechoid) &&
-			!bytestring::compare(mech,
-				krb5mechoid,sizeof(krb5mechoid))) {
-		negotiatedmech=MECH_KRB5;
-	} else if (mechsize==sizeof(spnegomechoid) &&
-			!bytestring::compare(mech,
-				spnegomechoid,sizeof(spnegomechoid))) {
-		negotiatedmech=MECH_SPNEGO;
-	} else if (mechsize==sizeof(ldapmechoid) &&
-			!bytestring::compare(mech,
-				ldapmechoid,sizeof(ldapmechoid))) {
-		negotiatedmech=MECH_LDAP;
-	} else if (mechsize==sizeof(proxymechoid) &&
-			!bytestring::compare(mech,
-				proxymechoid,sizeof(proxymechoid))) {
-		negotiatedmech=MECH_PROXY;
-	} else if (mechsize==sizeof(tdnegomechoid) &&
-			!bytestring::compare(mech,
-				tdnegomechoid,sizeof(tdnegomechoid))) {
-		negotiatedmech=MECH_TDNEGO;
-	} else if (mechsize==sizeof(jwtmechoid) &&
-			!bytestring::compare(mech,
-				jwtmechoid,sizeof(jwtmechoid))) {
-		negotiatedmech=MECH_JWT;
-	}
-	debugWrite("mech: %s",mechstr[negotiatedmech]);
-
-#if 0
-	if (negotiatedmech!=MECH_NONE && negotiatedmech!=MECH_TD2) {
-		debugWrite("(unsupported)");
-		negotiatedmech=MECH_NONE;
-	}
-#endif
 
 	return true;
 }
@@ -3646,7 +3635,7 @@ bool sqlrprotocol_teradata::parseSsoQops(const byte_t *ptr,
 	read(ptr,&algssize,&ptr);
 	if (algs!=SSO_ALGORITHMS) {
 		debugWrite("unexpected field: 0x%02x "
-				"(expected ssoreq_algorithms)",algs);
+				"(expected sso_algorithms)",algs);
 		debugEnd();
 		*ptrout=ptr;
 		return false;
@@ -3669,7 +3658,7 @@ bool sqlrprotocol_teradata::parseSsoQops(const byte_t *ptr,
 		read(ptr,&algsize,&ptr);
 		if (alg!=SSO_ALGORITHM) {
 			debugWrite("unexpected field: 0x%02x "
-					"(expected ssoreq_algorithm)",alg);
+					"(expected sso_algorithm)",alg);
 			debugEnd();
 			debugEnd();
 			*ptrout=ptr;
@@ -3694,7 +3683,7 @@ bool sqlrprotocol_teradata::parseSsoQops(const byte_t *ptr,
 			// sanity check
 			if (algdfield<0xd0 || algdfield>0xd6) {
 				debugWrite("unexpected field: 0x%02x "
-						"(expected ssoreq_algdfield)",
+						"(expected sso_algdfield)",
 								algdfield);
 				debugEnd();
 				debugEnd();
@@ -6278,7 +6267,8 @@ void sqlrprotocol_teradata::appendJwtMechanismParcel() {
 	debugParcelEnd();
 }
 
-void sqlrprotocol_teradata::appendLogonFailureParcel(const char *errorstring) {
+void sqlrprotocol_teradata::appendLogonFailureParcel(uint16_t code,
+						const char *errorstring) {
 
 	// see Teradata CLIv2, page 261
 
@@ -6286,8 +6276,14 @@ void sqlrprotocol_teradata::appendLogonFailureParcel(const char *errorstring) {
 	debugWrite("error: %s",errorstring);
 	debugParcelEnd();
 
+	// get the length of the errorstring, limit it to 255 bytes
+	uint16_t	errorstringlength=charstring::getLength(errorstring);
+	if (errorstringlength>255) {
+		errorstringlength=255;
+	}
+
 	// failure parcel
-	appendParcelHeader(9,2+2+charstring::getLength(errorstring));
+	appendParcelHeader(9,2+2+2+2+errorstringlength);
 
 	// statement number
 	write(&respdata,(uint16_t)0);
@@ -6295,8 +6291,14 @@ void sqlrprotocol_teradata::appendLogonFailureParcel(const char *errorstring) {
 	// info ???
 	write(&respdata,(uint16_t)0);
 
+	// code
+	write(&respdata,code);
+
+	// length
+	write(&respdata,errorstringlength);
+
 	// msg
-	write(&respdata,errorstring);
+	write(&respdata,errorstring,errorstringlength);
 }
 
 void sqlrprotocol_teradata::setSessionNumber() {
@@ -6636,137 +6638,16 @@ void sqlrprotocol_teradata::appendSsoGssQops() {
 	write(&respdata,(byte_t)SSORESP_NEGOTIATED_QOPS);
 	write(&respdata,(byte_t)100);
 
-	// get qop parameters
-	byte_t		confalg=ALG_NONE;
-	uint16_t	confalgkeysize=0;
-	byte_t		mode=CONF_ALG_MODE_NONE;
-	byte_t		padding=CONF_ALG_PADDING_NONE;
-	byte_t		intalg=ALG_NONE;
-	byte_t		kexalg=ALG_NONE;
-	uint16_t	kexalgkeysize=0;
-	// FIXME: do this with arrays
-	switch (negotiatedqop) {
-		case QOP_GLOBAL_QOP_0:
-			confalg=ALG_BLOWFISH;
-			confalgkeysize=128;
-			mode=CONF_ALG_MODE_ECB;
-			break;
-		case QOP_GLOBAL_QOP_1:
-			confalg=ALG_AES;
-			confalgkeysize=128;
-			mode=CONF_ALG_MODE_OFB;
-			padding=CONF_ALG_PADDING_PKCS5;
-			intalg=ALG_SHA1;
-			break;
-		case QOP_AES128_CBC_PKCS5_SHA1_DH2048:
-			confalg=ALG_AES;
-			confalgkeysize=128;
-			mode=CONF_ALG_MODE_CBC;
-			padding=CONF_ALG_PADDING_PKCS5;
-			intalg=ALG_SHA1;
-			kexalg=ALG_DH;
-			kexalgkeysize=2048;
-			break;
-		case QOP_AES192_CBC_PKCS5_SHA1_DH2048:
-			confalg=ALG_AES;
-			confalgkeysize=192;
-			mode=CONF_ALG_MODE_CBC;
-			padding=CONF_ALG_PADDING_PKCS5;
-			intalg=ALG_SHA1;
-			kexalg=ALG_DH;
-			kexalgkeysize=2048;
-			break;
-		case QOP_AES256_CBC_PKCS5_SHA1_DH2048:
-			confalg=ALG_AES;
-			confalgkeysize=256;
-			mode=CONF_ALG_MODE_CBC;
-			padding=CONF_ALG_PADDING_PKCS5;
-			intalg=ALG_SHA1;
-			kexalg=ALG_DH;
-			kexalgkeysize=2048;
-			break;
-		case QOP_AES128_GCM_PKCS5_SHA2_DH2048:
-			confalg=ALG_AES;
-			confalgkeysize=128;
-			mode=CONF_ALG_MODE_GCM;
-			padding=CONF_ALG_PADDING_PKCS5;
-			intalg=ALG_SHA256;
-			kexalg=ALG_DH;
-			kexalgkeysize=2048;
-			break;
-		case QOP_AES192_GCM_PKCS5_SHA2_DH2048:
-			confalg=ALG_AES;
-			confalgkeysize=192;
-			mode=CONF_ALG_MODE_GCM;
-			padding=CONF_ALG_PADDING_PKCS5;
-			intalg=ALG_SHA256;
-			kexalg=ALG_DH;
-			kexalgkeysize=2048;
-			break;
-		case QOP_AES256_GCM_PKCS5_SHA2_DH2048:
-			confalg=ALG_AES;
-			confalgkeysize=256;
-			mode=CONF_ALG_MODE_GCM;
-			padding=CONF_ALG_PADDING_PKCS5;
-			intalg=ALG_SHA256;
-			kexalg=ALG_DH;
-			kexalgkeysize=2048;
-			break;
-		case QOP_AES128_CCM_PKCS5_SHA2_DH2048:
-			confalg=ALG_AES;
-			confalgkeysize=128;
-			mode=CONF_ALG_MODE_CCM;
-			padding=CONF_ALG_PADDING_PKCS5;
-			intalg=ALG_SHA256;
-			kexalg=ALG_DH;
-			kexalgkeysize=2048;
-			break;
-		case QOP_AES192_CCM_PKCS5_SHA2_DH2048:
-			confalg=ALG_AES;
-			confalgkeysize=192;
-			mode=CONF_ALG_MODE_CCM;
-			padding=CONF_ALG_PADDING_PKCS5;
-			intalg=ALG_SHA256;
-			kexalg=ALG_DH;
-			kexalgkeysize=2048;
-			break;
-		case QOP_AES256_CCM_PKCS5_SHA2_DH2048:
-			confalg=ALG_AES;
-			confalgkeysize=256;
-			mode=CONF_ALG_MODE_CCM;
-			padding=CONF_ALG_PADDING_PKCS5;
-			intalg=ALG_SHA256;
-			kexalg=ALG_DH;
-			kexalgkeysize=2048;
-			break;
-		case QOP_AES128_CTR_PKCS5_SHA2_DH2048:
-			confalg=ALG_AES;
-			confalgkeysize=128;
-			mode=CONF_ALG_MODE_CTR;
-			padding=CONF_ALG_PADDING_PKCS5;
-			intalg=ALG_SHA256;
-			kexalg=ALG_DH;
-			kexalgkeysize=2048;
-			break;
-		case QOP_AES192_CTR_PKCS5_SHA2_DH2048:
-			confalg=ALG_AES;
-			confalgkeysize=192;
-			mode=CONF_ALG_MODE_CTR;
-			padding=CONF_ALG_PADDING_PKCS5;
-			intalg=ALG_SHA256;
-			kexalg=ALG_DH;
-			kexalgkeysize=2048;
-			break;
-		case QOP_AES256_CTR_PKCS5_SHA2_DH2048:
-			confalg=ALG_AES;
-			confalgkeysize=256;
-			mode=CONF_ALG_MODE_CTR;
-			padding=CONF_ALG_PADDING_PKCS5;
-			intalg=ALG_SHA256;
-			kexalg=ALG_DH;
-			kexalgkeysize=2048;
-			break;
-	}
+	// qop parameters
+	// (currently, we only support QOP_AES128_CBC_PKCS5_SHA1_DH2048,
+	// so these are the values for that)
+	byte_t		confalg=ALG_AES;
+	uint16_t	confalgkeysize=128;
+	byte_t		mode=CONF_ALG_MODE_CBC;
+	byte_t		padding=CONF_ALG_PADDING_PKCS5;
+	byte_t		intalg=ALG_SHA1;
+	byte_t		kexalg=ALG_DH;
+	uint16_t	kexalgkeysize=2048;
 
 	debugStart("negotiated qops");
 
@@ -8588,6 +8469,13 @@ void sqlrprotocol_teradata::debugExtEnd() {
 	debugEnd();
 }
 
+void sqlrprotocol_teradata::debugMech(const byte_t *oid, size_t size) {
+
+	if (!getDebug()) {
+		return;
+	}
+}
+
 bool sqlrprotocol_teradata::generateEphemeralKeys() {
 
 	// Diffie-Hellman Key Exchange...
@@ -8682,27 +8570,9 @@ bool sqlrprotocol_teradata::generateSharedSecretAndKey() {
 	debugHexDump(sharedsecret,sharedsecretsize);
 
 	// determine the shared key size
-	// FIXME: do this with an array
-	switch (negotiatedqop) {
-		case QOP_AES128_CBC_PKCS5_SHA1_DH2048:
-		case QOP_AES128_GCM_PKCS5_SHA2_DH2048:
-		case QOP_AES128_CCM_PKCS5_SHA2_DH2048:
-		case QOP_AES128_CTR_PKCS5_SHA2_DH2048:
-			sharedkeysize=16;
-			break;
-		case QOP_AES192_CBC_PKCS5_SHA1_DH2048:
-		case QOP_AES192_GCM_PKCS5_SHA2_DH2048:
-		case QOP_AES192_CCM_PKCS5_SHA2_DH2048:
-		case QOP_AES192_CTR_PKCS5_SHA2_DH2048:
-			sharedkeysize=24;
-			break;
-		case QOP_AES256_CBC_PKCS5_SHA1_DH2048:
-		case QOP_AES256_GCM_PKCS5_SHA2_DH2048:
-		case QOP_AES256_CCM_PKCS5_SHA2_DH2048:
-		case QOP_AES256_CTR_PKCS5_SHA2_DH2048:
-			sharedkeysize=32;
-			break;
-	}
+	// (currently, we only support QOP_AES128_CBC_PKCS5_SHA1_DH2048,
+	// so the shared key size is always 16)
+	sharedkeysize=16;
 
 	// get the shared key (first N bytes of the shared secret)
 	bytestring::copy(sharedkey,sharedsecret,sharedkeysize);
@@ -8713,6 +8583,9 @@ bool sqlrprotocol_teradata::generateSharedSecretAndKey() {
 	// Generate hashes of the shared key, presumably for HMAC, but it's not
 	// clear how these are used yet.
 	//
+	// (currently, we only support QOP_AES128_CBC_PKCS5_SHA1_DH2048,
+	// so we'll generate a sha1 hash)
+	//
 	// It looks like only the first 16 bytes of the shared secret are
 	// hashed (when using SHA1 at least), and it looks like the client
 	// (jdbc at least) generates 4 hashes, one each of the 1st, 2nd, 3rd,
@@ -8720,58 +8593,32 @@ bool sqlrprotocol_teradata::generateSharedSecretAndKey() {
 	// use the first one and it's not clear what it does with the other 3,
 	// if anything, so we'll just generate the first one.
 	//
-	// Except that this code needs work because I originally assumed that
-	// this was the shared key, and used those buffers, but it's not, so
-	// it needs its own buffers.
+	// (I wonder if the four hashes have something to do with the 4
+	// negotiated qops that we send back in the sso response parcel,
+	// trip1...)
+	//
+	// This code needs work because I originally assumed that SHA1 was the
+	// KDF so it uses those buffers, but it's not, so it needs its own
+	// buffers.
 	bytestring::zero(sharedkey,sizeof(sharedkey));
-	switch (negotiatedqop) {
-		case QOP_AES128_CBC_PKCS5_SHA1_DH2048:
-		case QOP_AES192_CBC_PKCS5_SHA1_DH2048:
-		case QOP_AES256_CBC_PKCS5_SHA1_DH2048:
-			debugWrite("kdf: sha1");
-			{
-			sha1		s1;
-			if (!s1.append(sharedsecret,16)) {
-				debugWrite("s1.append() failed");
-				debugEnd();
-				return false;
-			}
-			const byte_t	*hash=s1.getHash();
-			if (!hash) {
-				debugWrite("s1.getHash() failed");
-				debugEnd();
-				return false;
-			}
-			sharedkeysize=s1.getHashSize();
-			bytestring::copy(sharedkey,hash,sharedkeysize);
-
-			debugWrite("shared key (%d bytes):",sharedkeysize);
-			debugHexDump(sharedkey,sharedkeysize);
-			}
-			break;
-		default:
-			{
-			debugWrite("kdf: sha256");
-			sha256		s256;
-			if (!s256.append(sharedsecret,sharedsecretsize)) {
-				debugWrite("s256.append() failed");
-				debugEnd();
-				return false;
-			}
-			const byte_t	*hash=s256.getHash();
-			if (!hash) {
-				debugWrite("s256.getHash() failed");
-				debugEnd();
-				return false;
-			}
-			sharedkeysize=s256.getHashSize();
-			bytestring::copy(sharedkey,hash,sharedkeysize);
-
-			debugWrite("shared key (%d bytes):",sharedkeysize);
-			debugHexDump(sharedkey,sharedkeysize);
-			}
-			break;
+	debugWrite("kdf: sha1");
+	sha1		s1;
+	if (!s1.append(sharedsecret,16)) {
+		debugWrite("s1.append() failed");
+		debugEnd();
+		return false;
 	}
+	const byte_t	*hash=s1.getHash();
+	if (!hash) {
+		debugWrite("s1.getHash() failed");
+		debugEnd();
+		return false;
+	}
+	sharedkeysize=s1.getHashSize();
+	bytestring::copy(sharedkey,hash,sharedkeysize);
+
+	debugWrite("shared key (%d bytes):",sharedkeysize);
+	debugHexDump(sharedkey,sharedkeysize);
 #endif
 
 	debugEnd();
@@ -8785,20 +8632,9 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 	debugStart("decrypt");
 
 	// create the decryptor
-	// (aes128 uses PKCS5 by default, so we don't need to set that anywhere)
+	// (aes128 uses CBC and PKCS5 by default,
+	// so we don't need to set those anywhere)
 	aes128	a;
-
-	// use gcm if we need to (aes128 defaults to cbc)
-	// FIXME: do this with an array
-	switch (negotiatedqop) {
-		case QOP_AES128_GCM_PKCS5_SHA2_DH2048:
-		case QOP_AES192_GCM_PKCS5_SHA2_DH2048:
-		case QOP_AES256_GCM_PKCS5_SHA2_DH2048:
-			// FIXME: bail if we don't support GCM
-			a.setBlockCipherMode(BLOCK_CIPHER_MODE_GCM);
-			break;
-	}
-	// FIXME: bail if we got something other than CBC/GCM
 
 	// get the initializaton vector size
 	size_t	ivsize=a.getIvSize();
@@ -8830,19 +8666,10 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 
 	// the first N bytes of the encdata are the HMAC (hash of the data and
 	// something else, maybe the shared key, or one or more hashes of it)
+	// (currently, we only support QOP_AES128_CBC_PKCS5_SHA1_DH2048,
+	// so the HMAC size is always 20)
 	const byte_t	*hmac=encdata;
-	size_t		hmacsize=0;
-	// FIXME: do this with an array
-	switch (negotiatedqop) {
-		case QOP_AES128_CBC_PKCS5_SHA1_DH2048:
-		case QOP_AES192_CBC_PKCS5_SHA1_DH2048:
-		case QOP_AES256_CBC_PKCS5_SHA1_DH2048:
-			hmacsize=20;
-			break;
-		default:
-			hmacsize=32;
-			break;
-	}
+	size_t		hmacsize=20;
 	encdata+=hmacsize;
 	encdatasize-=hmacsize;
 
