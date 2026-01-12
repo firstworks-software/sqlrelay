@@ -33,7 +33,7 @@
 // /opt/teradata/tdat/tdgss/site/TdgssUserConfigFile.xml
 
 
-//#define DEBUG_CLIENT_SEND_RECV 1
+#define DEBUG_CLIENT_SEND_RECV 1
 //#define DEBUG_PARCEL_END 1
 
 
@@ -3186,7 +3186,7 @@ bool sqlrprotocol_teradata::parseSsoGssData(const byte_t *ptr,
 	// size of gss data block sizes + gss data blocks
 	uint32_t	datasize;
 
-	byte_t		endianmech[4];
+	byte_t		capabilities[4];
 	byte_t		unknown[4];
 
 	read(ptr,&version,&ptr);
@@ -3194,7 +3194,26 @@ bool sqlrprotocol_teradata::parseSsoGssData(const byte_t *ptr,
 	read(ptr,&messagekind,&ptr);
 	read(ptr,&flag,&ptr);
 	readBE(ptr,&datasize,&ptr);
-	read(ptr,endianmech,sizeof(endianmech),&ptr);
+	// For capabilities...
+	//
+	// In sso request parcel (trip 0), we get:
+	// td2:
+	// 00 00 00 15 from bteq
+	// 00 00 00 05 from jdbc
+	// other mechs:
+	// 00 00 00 1D from bteq
+	// 00 00 00 0D from jdbc
+	// See notes in appendSsoGssData()
+	//
+	// In sso request parcel (trip 2), we get:
+	// 00 00 00 00 from bteq
+	// 00 00 00 00 from jdbc
+	read(ptr,capabilities,sizeof(capabilities),&ptr);
+	// More capabilities?
+	//
+	// in sso request parcel (trip 0 and 2), we get:
+	// 00 00 00 00 from bteq
+	// 02 00 00 00 from jdbc
 	read(ptr,unknown,sizeof(unknown),&ptr);
 
 	debugStart("gss data header");
@@ -3203,20 +3222,8 @@ bool sqlrprotocol_teradata::parseSsoGssData(const byte_t *ptr,
 	debugWrite("kind: %d",(int)messagekind);
 	debugWrite("flag: %d",(int)flag);
 	debugWrite("data size: %d",(int)datasize);
-	// in sso request parcel (trip 0), we get:
-	// 00 00 00 15 from bteq
-	// 00 00 00 05 from jdbc
-	// in sso response parcel (trip 1), we return the same
-	// in sso request parcel (trip 2), we get:
-	// 00 00 00 00 from bteq
-	// 00 00 00 00 from jdbc
-	debugWrite("endianness/mech:");
-	debugHexDump(endianmech,sizeof(endianmech));
-	// in sso request parcel (trip 0 and 2), we get:
-	// 00 00 00 00 from bteq
-	// 02 00 00 00 from jdbc
-	// in sso response parcel (trip 1) we always return:
-	// 00 00 00 00
+	debugWrite("capabilities:");
+	debugHexDump(capabilities,sizeof(capabilities));
 	debugWrite("unknown:");
 	debugHexDump(unknown,sizeof(unknown));
 	debugEnd();
@@ -3281,6 +3288,9 @@ bool sqlrprotocol_teradata::parseSsoGssData(const byte_t *ptr,
 	readBE(ptr,&gssstructuresize,&ptr);
 
 	debugStart("gss data block sizes");
+	// in sso request parcel (trip 0), we get:
+	// 10 14 0c 01 from bteq
+	// 10 00 00 01 from jdbc
 	debugWrite("gss version:");
 	debugHexDump(gssversion,sizeof(gssversion));
 	debugWrite("dh \"p\" size: %d",(int)dhpsize);
@@ -6555,18 +6565,33 @@ void sqlrprotocol_teradata::appendSsoGssData(byte_t mech) {
 	// size of data block sizes + data blocks
 	uint32_t	datasize=934;
 
-	byte_t		endianmech[]={
+	// For capabilities...
+	//
+	// I'm not sure what 0x10 vs 0x00 means in capabilities[3], but we tend
+	// to get 0x10 from bteq and 0x00 from jdbc.  0x10 appears to indicate
+	// something that we don't know how to do.  If we send 0x10 to bteq
+	// then it sends us data that we can't decrypt.  If we send 0x00 to
+	// bteq, it recognizes that we don't support whatever it means, and
+	// sends us data we can decrypt.  It doesn't matter what we send to
+	// jdbc - it doesn't support whatever 0x10 means, never does it, and
+	// always sends us data that we can decrypt.
+	//
+	// I'm not sure what 0x05 vs 0x0d means, but we tend to get 0x05 with
+	// TD2 and 0x0d with other mechs, so we'll go ahead and return it too.
+	//
+	// See notes in parseSsoGssData().
+	byte_t		capabilities[]={
 		0x00, 0x00, 0x00, 0x00
 	};
-	if (!getProtocolIsBigEndian()) {
-		endianmech[3]|=0x10;
-	}
 	if (mech==MECH_TD2) {
-		endianmech[3]|=0x05;
+		capabilities[3]|=0x05;
 	} else {
-		endianmech[3]|=0x0d;
+		capabilities[3]|=0x0d;
 	}
 
+	// More capabilities?
+	//
+	// See notes in parseSsoGssData().
 	byte_t		unknown[]={
 		0x00, 0x00, 0x00, 0x00
 	};
@@ -6576,7 +6601,7 @@ void sqlrprotocol_teradata::appendSsoGssData(byte_t mech) {
 	write(&respdata,messagekind);
 	write(&respdata,flag);
 	writeBE(&respdata,datasize);
-	write(&respdata,endianmech,sizeof(endianmech));
+	write(&respdata,capabilities,sizeof(capabilities));
 	write(&respdata,unknown,sizeof(unknown));
 
 	debugStart("gss data header");
@@ -6585,8 +6610,8 @@ void sqlrprotocol_teradata::appendSsoGssData(byte_t mech) {
 	debugWrite("kind: %d",(int)messagekind);
 	debugWrite("flag: %d",(int)flag);
 	debugWrite("data size: %d",(int)datasize);
-	debugWrite("endianness/mech:");
-	debugHexDump(endianmech,sizeof(endianmech));
+	debugWrite("capabilities:");
+	debugHexDump(capabilities,sizeof(capabilities));
 	debugWrite("unknown:");
 	debugHexDump(unknown,sizeof(unknown));
 	debugEnd();
