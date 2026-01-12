@@ -2319,6 +2319,11 @@ bool sqlrprotocol_teradata::recvRequestFromClient() {
 
 	// lan header fields
 	byte_t		version;
+	// message classes:
+	// 0x01 = request?
+	// 0x02 = response?
+	// 0x81 = encrypted request?
+	// 0x82 = encrypted response?
 	byte_t		messageclass;
 	uint16_t	highordermessagesize;
 	byte_t		bytevar;
@@ -2405,6 +2410,11 @@ bool sqlrprotocol_teradata::sendResponseToClient() {
 
 	// lan header fields
 	byte_t		version=3;
+	// message classes:
+	// 0x01 = request?
+	// 0x02 = response?
+	// 0x81 = encrypted request?
+	// 0x82 = encrypted response?
 	byte_t		messageclass=2;
 	uint32_t	messagesize=respdata.getSize();
 	uint16_t	highordermessagesize=(messagesize>>16);
@@ -3177,7 +3187,7 @@ bool sqlrprotocol_teradata::parseSsoGssData(const byte_t *ptr,
 	uint32_t	datasize;
 
 	byte_t		endianmech[4];
-	uint32_t	unknown;
+	byte_t		unknown[4];
 
 	read(ptr,&version,&ptr);
 	read(ptr,&messageclass,&ptr);
@@ -3185,7 +3195,7 @@ bool sqlrprotocol_teradata::parseSsoGssData(const byte_t *ptr,
 	read(ptr,&flag,&ptr);
 	readBE(ptr,&datasize,&ptr);
 	read(ptr,endianmech,sizeof(endianmech),&ptr);
-	readBE(ptr,&unknown,&ptr);
+	read(ptr,unknown,sizeof(unknown),&ptr);
 
 	debugStart("gss data header");
 	debugWrite("version: %d",(int)version);
@@ -3193,9 +3203,22 @@ bool sqlrprotocol_teradata::parseSsoGssData(const byte_t *ptr,
 	debugWrite("kind: %d",(int)messagekind);
 	debugWrite("flag: %d",(int)flag);
 	debugWrite("data size: %d",(int)datasize);
+	// in sso request parcel (trip 0), we get:
+	// 00 00 00 15 from bteq
+	// 00 00 00 05 from jdbc
+	// in sso response parcel (trip 1), we return the same
+	// in sso request parcel (trip 2), we get:
+	// 00 00 00 00 from bteq
+	// 00 00 00 00 from jdbc
 	debugWrite("endianness/mech:");
 	debugHexDump(endianmech,sizeof(endianmech));
-	debugWrite("unknown: %d",(int)unknown);
+	// in sso request parcel (trip 0 and 2), we get:
+	// 00 00 00 00 from bteq
+	// 02 00 00 00 from jdbc
+	// in sso response parcel (trip 1) we always return:
+	// 00 00 00 00
+	debugWrite("unknown:");
+	debugHexDump(unknown,sizeof(unknown));
 	debugEnd();
 
 	// bail if we got an unsupported kind
@@ -6544,7 +6567,9 @@ void sqlrprotocol_teradata::appendSsoGssData(byte_t mech) {
 		endianmech[3]|=0x0d;
 	}
 
-	uint32_t	unknown=0;
+	byte_t		unknown[]={
+		0x00, 0x00, 0x00, 0x00
+	};
 
 	write(&respdata,version);
 	write(&respdata,messageclass);
@@ -6552,7 +6577,7 @@ void sqlrprotocol_teradata::appendSsoGssData(byte_t mech) {
 	write(&respdata,flag);
 	writeBE(&respdata,datasize);
 	write(&respdata,endianmech,sizeof(endianmech));
-	writeBE(&respdata,unknown);
+	write(&respdata,unknown,sizeof(unknown));
 
 	debugStart("gss data header");
 	debugWrite("version: %d",(int)version);
@@ -6562,7 +6587,8 @@ void sqlrprotocol_teradata::appendSsoGssData(byte_t mech) {
 	debugWrite("data size: %d",(int)datasize);
 	debugWrite("endianness/mech:");
 	debugHexDump(endianmech,sizeof(endianmech));
-	debugWrite("unknown: %d",(int)unknown);
+	debugWrite("unknown:");
+	debugHexDump(unknown,sizeof(unknown));
 	debugEnd();
 
 
@@ -8629,7 +8655,9 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 						uint64_t encdatasize,
 						bytebuffer *decdata) {
 
-	debugStart("decrypt");
+	// from bteq - 375 bytes
+	// from jdbc - 676 bytes
+	debugStart("decrypt (%lld bytes)",encdatasize);
 
 	// create the decryptor
 	// (aes128 uses CBC and PKCS5 by default,
