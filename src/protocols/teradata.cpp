@@ -3989,6 +3989,7 @@ bool sqlrprotocol_teradata::parseConnectParcel(
 	debugParcelStart("recv","connect",parcelflavor,parceldatasize);
 
 	// parse parcel data
+	// FIXME: do something with these...
 	const byte_t	*ptr=parceldata;
 	char		partitionname[16];
 	byte_t		logonsequencenumber[4];
@@ -4034,10 +4035,37 @@ bool sqlrprotocol_teradata::parseConnectDataParcel(
 
 	debugParcelStart("recv","connect data",parcelflavor,parceldatasize);
 
-debugWrite("parcel:");
-debugHexDump(parceldata,parceldatasize);
+	// parse parcel data
+	// FIXME: do something with these...
+	const byte_t	*ptr=parceldata;
+	const byte_t	*end=ptr+parceldatasize;
 
-	// FIXME: parse parcel data
+	// appears to be a space-delimited string
+	char		**list;
+	uint64_t	listcount;
+	charstring::split((const char *)ptr,end-ptr,
+				" ",1,true,&list,&listcount);
+
+	const char	*server=list[0];
+	const char	*pid=list[1];
+	const char	*osuser=list[2];
+	const char	*clientprogram=list[3];
+	const char	*unknown1=list[4];
+	const char	*unknown2=list[5];
+
+	// debug
+	debugWrite("server: %s",server);
+	debugWrite("pid: %s",pid);
+	debugWrite("os user: %s",osuser);
+	debugWrite("client program: %s",clientprogram);
+	debugWrite("unknown 1: %s",unknown1);
+	debugWrite("unknown 2: %s",unknown2);
+
+	// clean up
+	for (uint64_t i=0; i<listcount; i++) {
+		delete[] list[i];
+	}
+	delete[] list;
 
 	// return next parcel
 	*parcelout=parceldata+parceldatasize;
@@ -4079,34 +4107,6 @@ bool sqlrprotocol_teradata::parseClientAttributeParcel(
 
 		// FIXME: do something with these...
 
-		// from bteq:
-		// field 8 - 28322.4157421264 - ???
-		// field 9 - root - os user?
-		// field 10 - bteq - client identifier?
-		// field 11 - Linux 3.0...x86_64 - os version and arch
-		// field 24 - 16.20.00.07 - client program version?
-		// field 31 - 10.0.2.23 - ???
-		// field 32 - 0x96 0xe6 - ???
-		// field 33 - 10.0.4.105 - ???
-		// field 34 - 0x04 0x01 - ???
-		// field 7 - fedora29x64 - server name?
-		// field 45 - fedora29x64COP1 - ???
-		//
-		// from jdbc:
-		// field 7 - fedora29x64 - server name?
-		// field 8 - 29292@teradata - ???
-		// field 9 - root - os user?
-		// field 10 - org.eclipse.core.internal.jobs.Worker.run(Worker.java:55) - client identifier?
-		// field 11 - Linux 3.0...x86_64 - os version and arch
-		// field 22 - Oracle Corporation Java HotSpot(TM) 64-Bit Server VM 25.172-b31 mixed mode - JVM?
-		// field 28 - J - ???
-		// field 29 - 16.20.00.06 - ???
-		// field 30 - JAVA=1.8.0_172;MEM=518979584;TZ=-05:00;CID=2b694ff9;TYPE=DEFAULT;GOV=Y;SCS=UTF8;CCS=UTF8;LOB=Y;SIP=Y;TM=A;ENC=N;SE=N;RED=3,3; - ???
-		// field 31 - 10.0.2.23 - ???
-		// field 33 - 10.0.4.105 - ???
-		// field 34 - 0x04 0x01 - ???
-		// field 45 - fedora29x64 - server name again?
-
 		uint16_t	field;
 		uint16_t	size;
 		read(ptr,&field,&ptr);
@@ -4117,13 +4117,57 @@ bool sqlrprotocol_teradata::parseClientAttributeParcel(
 			break;
 		}
 
+		const char	*fieldname=NULL;
+		switch (field) {
+			case 7:
+				fieldname="server name";
+				break;
+			case 9:
+				fieldname="os user";
+				break;
+			case 10:
+				fieldname="client identifier";
+				break;
+			case 11:
+				fieldname="os version";
+				break;
+			case 22:
+				fieldname="vm";
+				break;
+			case 28:
+				fieldname="vm type";
+				break;
+			case 30:
+				fieldname="vm config";
+				break;
+			case 24:
+			case 29:
+			case 31:
+			case 33:
+				fieldname="unknown version";
+				break;
+			case 45:
+				fieldname="comm processor name";
+				break;
+		}
+
 		if (*ptr==isstring) {
 			// if the first byte of the value
 			// is 0x00(LE) or 0xbf(BE) then the value is a string
-			debugWrite("field %hd: %.*s",field,size-1,ptr+1);
+			if (fieldname) {
+				debugWrite("%s: %.*s",
+						fieldname,size-1,ptr+1);
+			} else {
+				debugWrite("unknown field %hd: %.*s",
+						field,size-1,ptr+1);
+			}
 		} else {
 			// otherwise, it's binary
-			debugWrite("field %hd:",field);
+			if (fieldname) {
+				debugWrite("%s:",fieldname);
+			} else {
+				debugWrite("unknown field %hd:",field);
+			}
 			debugHexDump(ptr,size);
 		}
 		ptr+=size;
