@@ -7002,6 +7002,13 @@ void sqlrprotocol_teradata::appendSsoGssData(byte_t mech) {
 	// jdbc - it doesn't support whatever 0x10 means, never does it, and
 	// always sends us data that we can decrypt.
 	//
+	// ...actually it looks like the 0x00/0x10 may have something to do
+	// with the iv.  When set to 0x00, the client appends an obvious iv to
+	// the encrypted data, that appears to have been derived from the lan
+	// header.  When set to 0x10, I don't see any obvious iv appended to
+	// the encrypted data.  It may be that it's derived some other way if
+	// it's set to 0x10.
+	//
 	// I'm not sure what 0x05 vs 0x0d means, but we tend to get 0x05 with
 	// TD2 and 0x0d with other mechs, so we'll go ahead and return it too.
 	//
