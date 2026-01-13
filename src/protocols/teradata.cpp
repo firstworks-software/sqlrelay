@@ -1577,24 +1577,40 @@ bool sqlrprotocol_teradata::copKindConnect() {
 
 	// decrypt the request
 	bytebuffer	decdata;
-	decrypt(clientreqdata,clientreqdatasize,&decdata);
+	if (!decrypt(clientreqdata,clientreqdatasize,&decdata)) {
+		debugEnd();
+		return false;
+	}
 	
-
 	// parse decrypted request
 	const byte_t	*parcel=decdata.getBuffer();
 	const byte_t	*end=parcel+decdata.getSize();
 
-	// it looks like the first 19 bytes are not a parcel
-	// FIXME: what is this?
-	debugWrite("unknown header:");
-	debugHexDump(parcel,19);
-	parcel+=19;
+	// it looks like the first N bytes are obfuscated, somehow
+	// find the first "88", if we can.  That's the start of the first
+	// unobfuscated parcel.
+	for (const byte_t *ptr=parcel; ptr!=end; ptr++) {
+		if (*ptr==88) {
+			debugWrite("\"header\":");
+			debugHexDump(parcel,ptr-parcel);
+			parcel=ptr;
+			break;
+		}
+	}
 
-	// it looks like the last 36 bytes are also not a parcel
-	// FIXME: what is this?
+	// it looks like the last 36 bytes are also special
+	// the first 20 bytes of that look obfuscated
 	end-=36;
-	debugWrite("unknown footer:");
-	debugHexDump(end,36);
+	debugWrite("\"footer\":");
+	debugHexDump(end,20);
+	end+=20;
+
+	// the last 16 bytes are the same as the iv that was appended to the 
+	// encrypted data
+	// (is it really embedded in there, or did I append it, accidentally)
+	debugWrite("iv:");
+	debugHexDump(end,16);
+	end-=36;
 
 	// parse parcels (in whatever order they occur)
 	for (;;) {
@@ -1604,12 +1620,14 @@ bool sqlrprotocol_teradata::copKindConnect() {
 		uint16_t	flavor=getParcelFlavor(parcel);
 		switch (flavor) {
 			case 36:
+				// we don't seem to get this
 				if (!parseLogonParcel(parcel,&parcel)) {
 					debugEnd();
 					return false;
 				}
 				break;
 			case 114:
+				// we don't seem to get this
 				if (!parseSessionOptionParcel(
 							parcel,&parcel)) {
 					debugEnd();
@@ -1617,21 +1635,21 @@ bool sqlrprotocol_teradata::copKindConnect() {
 				}
 				break;
 			case 88:
-				// we get this
+				// we do get this
 				if (!parseConnectParcel(parcel,&parcel)) {
 					debugEnd();
 					return false;
 				}
 				break;
 			case 3:
-				// we get this
+				// we do get this
 				if (!parseConnectDataParcel(parcel,&parcel)) {
 					debugEnd();
 					return false;
 				}
 				break;
 			case 189:
-				// we get this
+				// we do get this
 				if (!parseClientAttributeParcel(
 							parcel,&parcel)) {
 					debugEnd();
@@ -1639,6 +1657,7 @@ bool sqlrprotocol_teradata::copKindConnect() {
 				}
 				break;
 			case 136:
+				// we don't seem to get this
 				if (!parseSsoUsernameRequestParcel(
 							parcel,&parcel)) {
 					debugEnd();
@@ -1658,13 +1677,23 @@ bool sqlrprotocol_teradata::copKindConnect() {
 		return passthrough();
 	}
 
-	// FIXME: build response, it should contain:
+	// build response
+	respdata.clear();
+
+#if 0
+	// FIXME: append header (what should it contain?)
+
+	// FIXME: append:
 	// * success parcel - 8 (see Teradata CLIv2, page 312)
 	// * sso username response parcel - 137 (see Teradata CLIv2, page 314)
 	// * end request parcel - 12 (see Teradata CLIv2, page 257)
-	respdata.clear();
 
-	// FIXME: encrypt the response
+	// FIXME: append footer (what should it contain?)
+
+	// FIXME: encrypt all of that
+#else
+
+	// FIXME: don't just send this...
 	byte_t	response[]={
 		0x18, 0xe1, 0xaf, 0xc0, 0xa6, 0xe8, 0xad, 0x83,
 		0xf7, 0x17, 0xa2, 0xf7, 0x18, 0x18, 0x21, 0xfe,
@@ -1697,6 +1726,7 @@ bool sqlrprotocol_teradata::copKindConnect() {
 	debugStart("response");
 	debugHexDump(response,sizeof(response));
 	debugEnd();
+#endif
 
 	debugEnd();
 
@@ -9028,7 +9058,7 @@ bool sqlrprotocol_teradata::generateSharedSecretAndKey() {
 	debugHexDump(sharedkey,sharedkeysize);
 
 #if 0
-	// Generate hashes of the shared key, presumably for HMAC, but it's not
+	// Generate hashes of the shared key, presumably for hmac, but it's not
 	// clear how these are used yet.
 	//
 	// (currently, we only support QOP_AES128_CBC_PKCS5_SHA1_DH2048,
@@ -9114,10 +9144,10 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 	// key) so we'll use a.getKeySize() here, rather than sharedkeysize
 	a.setKey(sharedkey,a.getKeySize());
 
-	// the first N bytes of the encdata are the HMAC (hash of the data and
+	// the first N bytes of the encdata are the hmac (hash of the data and
 	// something else, maybe the shared key, or one or more hashes of it)
 	// (currently, we only support QOP_AES128_CBC_PKCS5_SHA1_DH2048,
-	// so the HMAC size is always 20)
+	// so the hmac size is always 20)
 	const byte_t	*hmac=encdata;
 	size_t		hmacsize=20;
 	encdata+=hmacsize;
@@ -9153,7 +9183,7 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 	// copy out the decrypted data
 	decdata->append(ddata,ddatasize);
 
-	// FIXME: HMAC the decrypted data
+	// FIXME: hmac the decrypted data (not sure what to hash, yet)
 
 	debugWrite("decrypted data (%d bytes)",ddatasize);
 	debugHexDump(decdata->getBuffer(),decdata->getSize());
@@ -9166,6 +9196,15 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 bool sqlrprotocol_teradata::encrypt(const byte_t *decdata,
 						uint64_t decdatasize,
 						bytebuffer *encdata) {
+
+	// FIXME: implement this
+
+	// presumably this should be formatted the same
+	// way as the encrypted data that we received:
+	// * the first 20 bytes should be the hmac (not what to hash, yet)
+	// * the next N bytes should be encrypted using the shared key
+	// * the last 16 bytes should be the iv
+
 	return true;
 }
 
