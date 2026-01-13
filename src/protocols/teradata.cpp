@@ -1591,6 +1591,10 @@ bool sqlrprotocol_teradata::copKindConnect() {
 	// unobfuscated parcel.
 	for (const byte_t *ptr=parcel; ptr!=end; ptr++) {
 		if (*ptr==88) {
+			// back up 1 byte if we're speaking big endian
+			if (getProtocolIsBigEndian()) {
+				ptr--;
+			}
 			debugWrite("\"header\":");
 			debugHexDump(parcel,ptr-parcel);
 			parcel=ptr;
@@ -1607,7 +1611,6 @@ bool sqlrprotocol_teradata::copKindConnect() {
 
 	// the last 16 bytes are the same as the iv that was appended to the 
 	// encrypted data
-	// (is it really embedded in there, or did I append it, accidentally)
 	debugWrite("iv:");
 	debugHexDump(end,16);
 	end-=36;
@@ -7016,6 +7019,55 @@ void sqlrprotocol_teradata::appendSsoGssData(byte_t mech) {
 	byte_t		capabilities[]={
 		0x00, 0x00, 0x00, 0x00
 	};
+
+	// It's not immediately clear what low bits mean in capabilites[3],
+	// but from the jdbc trace, when using TD2 mech, I can glean that:
+	//
+	// If I set it to D (1101) then:
+	// * jdbc hashes each of the first 4 lines of the shared key
+	// * the encrypted data is 676 bytes
+	// * IV:
+	//   03  07  04  00  00  00  02  b0  00  00  00  00  00  00  00  01
+	// * decryption succeeds
+	//  * kdf is "grab the first 16 bytes of the shared secret
+	// 
+	// If I set it to 5 (0101) then:
+	// * jdbc hashes each of the first 4 lines of the shared key
+	// * the encrypted data is 676 bytes
+	// * IV:
+	//   03  07  04  00  00  00  02  b0  00  00  00  00  00  00  00  01
+	// * decryption succeeds
+	//  * kdf is "grab the first 16 bytes of the shared secret
+	// 
+	// If I set it to 4 (0100) then:
+	// * jdbc throws an "Unknown peer capabilities" error
+	// 
+	// If I set it to 1 (0001) then:
+	// * jdbc hashes the entire shared key
+	// * the encrypted data is 676 bytes
+	// * IV:
+	//   03  07  04  00  00  00  02  b0  00  00  00  00  00  00  00  01
+	// * decryption fails
+	//  * maybe kdf is different
+	// 
+	// If I set it to 0 (0000) then:
+	// * jdbc doesn't generate any hash of the shared key
+	// * the encrypted data is 660 bytes
+	// * IV:
+	//   01  03  02  00  00  00  02  a0  00  00  00  00  06  00  00  00
+	// * decryption fails
+	//  * maybe kdf is different
+	//
+	//  I'm guessing that D and 5 have the same behavior with TD2 because
+	//  whatever the 8's place indicates is just ignore for TD2.
+	//
+	//  I'd think that the 1's place means "supports hmac", and that the
+	//  hmac would be omitted from the beginning of the encrypted data,
+	//  if it's set to 0, but that doesn't appear to be the case.
+	//  Something is omitted, but it's 16, not 20 bytes.
+	//
+	//  It seems like the 4's place means "supports more complex hmac",
+	//  thus the 4 different hashes, but it's not clear how they're used.
 	if (mech==MECH_TD2) {
 		capabilities[3]|=0x05;
 	} else {
