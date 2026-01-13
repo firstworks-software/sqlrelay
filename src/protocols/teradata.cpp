@@ -33,7 +33,7 @@
 // /opt/teradata/tdat/tdgss/site/TdgssUserConfigFile.xml
 
 
-#define DEBUG_CLIENT_SEND_RECV 1
+//#define DEBUG_CLIENT_SEND_RECV 1
 //#define DEBUG_PARCEL_END 1
 
 
@@ -767,6 +767,22 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 		bool	parseSsoMechParameters(const byte_t *ptr,
 						const byte_t *end,
 						const byte_t **ptrout);
+		bool	parseLogonParcel(const byte_t *parcel,
+					const byte_t **parcelout);
+		bool	parseSessionOptionParcel(
+					const byte_t *parcel,
+					const byte_t **parcelout);
+		bool	parseConnectParcel(const byte_t *parcel,
+					const byte_t **parcelout);
+		bool	parseConnectDataParcel(
+					const byte_t *parcel,
+					const byte_t **parcelout);
+		bool	parseClientAttributeParcel(
+					const byte_t *parcel,
+					const byte_t **parcelout);
+		bool	parseSsoUsernameRequestParcel(
+					const byte_t *parcel,
+					const byte_t **parcelout);
 		bool	parseLogoffParcel(const byte_t *parcel,
 					const byte_t **parcelout);
 		bool	parseOptionsParcel(const byte_t *parcel,
@@ -1562,14 +1578,79 @@ bool sqlrprotocol_teradata::copKindConnect() {
 	// decrypt the request
 	bytebuffer	decdata;
 	decrypt(clientreqdata,clientreqdatasize,&decdata);
+	
 
-	// FIXME: parse request, it should contain:
-	// * logon parcel - 36 (see Teradata CLIv2, page 269)
-	// * session option parcel - 114 (see Teradata CLIv2, page 299)
-	// * connect parcel - 88 (see Teradata CLIv2, page 251)
-	// * data parcel - 3 (see Teradata CLIv2, page 253)
-	// * client attribute parcel - 189
-	// * sso username request parcel - 136 (see Teradata CLIv2, page 314)
+	// parse decrypted request
+	const byte_t	*parcel=decdata.getBuffer();
+	const byte_t	*end=parcel+decdata.getSize();
+
+	// it looks like the first 19 bytes are not a parcel
+	// FIXME: what is this?
+	debugWrite("unknown header:");
+	debugHexDump(parcel,19);
+	parcel+=19;
+
+	// it looks like the last 36 bytes are also not a parcel
+	// FIXME: what is this?
+	end-=36;
+	debugWrite("unknown footer:");
+	debugHexDump(end,36);
+
+	// parse parcels (in whatever order they occur)
+	for (;;) {
+		if (parcel>=end) {
+			break;
+		}
+		uint16_t	flavor=getParcelFlavor(parcel);
+		switch (flavor) {
+			case 36:
+				if (!parseLogonParcel(parcel,&parcel)) {
+					debugEnd();
+					return false;
+				}
+				break;
+			case 114:
+				if (!parseSessionOptionParcel(
+							parcel,&parcel)) {
+					debugEnd();
+					return false;
+				}
+				break;
+			case 88:
+				// we get this
+				if (!parseConnectParcel(parcel,&parcel)) {
+					debugEnd();
+					return false;
+				}
+				break;
+			case 3:
+				// we get this
+				if (!parseConnectDataParcel(parcel,&parcel)) {
+					debugEnd();
+					return false;
+				}
+				break;
+			case 189:
+				// we get this
+				if (!parseClientAttributeParcel(
+							parcel,&parcel)) {
+					debugEnd();
+					return false;
+				}
+				break;
+			case 136:
+				if (!parseSsoUsernameRequestParcel(
+							parcel,&parcel)) {
+					debugEnd();
+					return false;
+				}
+				break;
+			default:
+				unexpectedParcel(flavor);
+				debugEnd();
+				return false;
+		}
+	}
 
 	// if passthrough is enabled then just do that
 	if (passthroughmode==PASSTHROUGHMODE_ENABLED) {
@@ -3817,6 +3898,277 @@ bool sqlrprotocol_teradata::parseSsoMechParameters(const byte_t *ptr,
 	}
 
 	*ptrout=end;
+	return true;
+}
+
+bool sqlrprotocol_teradata::parseLogonParcel(
+					const byte_t *parcel,
+					const byte_t **parcelout) {
+
+	// see Teradata CLIv2, page 269
+
+	// parse parcel header
+	uint16_t	parcelflavor;
+	const byte_t	*parceldata;
+	uint32_t	parceldatasize;
+	parseParcelHeader(parcel,&parcelflavor,
+					&parceldatasize,
+					&parceldata);
+	if (parcelflavor!=36) {
+		unexpectedParcel(parcelflavor);
+		*parcelout=parcel;
+		return false;
+	}
+
+	debugParcelStart("recv","logon",parcelflavor,parceldatasize);
+
+debugWrite("parcel:");
+debugHexDump(parceldata,parceldatasize);
+
+	// return next parcel
+	*parcelout=parceldata+parceldatasize;
+
+	debugParcelEnd(parceldata,parceldatasize);
+
+	return true;
+}
+
+bool sqlrprotocol_teradata::parseSessionOptionParcel(
+					const byte_t *parcel,
+					const byte_t **parcelout) {
+
+	// see Teradata CLIv2, page 299
+
+	// parse parcel header
+	uint16_t	parcelflavor;
+	const byte_t	*parceldata;
+	uint32_t	parceldatasize;
+	parseParcelHeader(parcel,&parcelflavor,
+					&parceldatasize,
+					&parceldata);
+	if (parcelflavor!=114) {
+		unexpectedParcel(parcelflavor);
+		*parcelout=parcel;
+		return false;
+	}
+
+	debugParcelStart("recv","sesion option",parcelflavor,parceldatasize);
+
+debugWrite("parcel:");
+debugHexDump(parceldata,parceldatasize);
+
+	// FIXME: parse parcel data
+
+	// return next parcel
+	*parcelout=parceldata+parceldatasize;
+
+	debugParcelEnd(parceldata,parceldatasize);
+
+	return true;
+}
+
+bool sqlrprotocol_teradata::parseConnectParcel(
+					const byte_t *parcel,
+					const byte_t **parcelout) {
+
+	// see Teradata CLIv2, page 251
+
+	// parse parcel header
+	uint16_t	parcelflavor;
+	const byte_t	*parceldata;
+	uint32_t	parceldatasize;
+	parseParcelHeader(parcel,&parcelflavor,
+					&parceldatasize,
+					&parceldata);
+	if (parcelflavor!=88) {
+		unexpectedParcel(parcelflavor);
+		*parcelout=parcel;
+		return false;
+	}
+
+	debugParcelStart("recv","connect",parcelflavor,parceldatasize);
+
+	// parse parcel data
+	const byte_t	*ptr=parceldata;
+	char		partitionname[16];
+	byte_t		logonsequencenumber[4];
+	uint16_t	function;
+	uint16_t	pad;
+	read(ptr,partitionname,sizeof(partitionname),&ptr);
+	read(ptr,logonsequencenumber,sizeof(logonsequencenumber),&ptr);
+	readBE(ptr,&function,&ptr);
+	readBE(ptr,&pad,&ptr);
+
+	// debug
+	debugWrite("partition name: %.*s",
+			sizeof(partitionname),partitionname);
+	debugWrite("logon sequence number:");
+	debugHexDump(logonsequencenumber,sizeof(logonsequencenumber));
+	debugWrite("function: %hd",function);
+
+	// return next parcel
+	*parcelout=parceldata+parceldatasize;
+
+	debugParcelEnd(parceldata,parceldatasize);
+
+	return true;
+}
+
+bool sqlrprotocol_teradata::parseConnectDataParcel(
+					const byte_t *parcel,
+					const byte_t **parcelout) {
+	// see Teradata CLIv2, page 253
+
+	// parse parcel header
+	uint16_t	parcelflavor;
+	const byte_t	*parceldata;
+	uint32_t	parceldatasize;
+	parseParcelHeader(parcel,&parcelflavor,
+					&parceldatasize,
+					&parceldata);
+	if (parcelflavor!=3) {
+		unexpectedParcel(parcelflavor);
+		*parcelout=parcel;
+		return false;
+	}
+
+	debugParcelStart("recv","connect data",parcelflavor,parceldatasize);
+
+debugWrite("parcel:");
+debugHexDump(parceldata,parceldatasize);
+
+	// FIXME: parse parcel data
+
+	// return next parcel
+	*parcelout=parceldata+parceldatasize;
+
+	debugParcelEnd(parceldata,parceldatasize);
+
+	return true;
+}
+
+bool sqlrprotocol_teradata::parseClientAttributeParcel(
+					const byte_t *parcel,
+					const byte_t **parcelout) {
+
+	// no known reference (just had to study the trace)
+
+	// parse parcel header
+	uint16_t	parcelflavor;
+	const byte_t	*parceldata;
+	uint32_t	parceldatasize;
+	parseParcelHeader(parcel,&parcelflavor,
+					&parceldatasize,
+					&parceldata);
+	if (parcelflavor!=189) {
+		unexpectedParcel(parcelflavor);
+		*parcelout=parcel;
+		return false;
+	}
+
+	debugParcelStart("recv","client attribute",parcelflavor,parceldatasize);
+
+	// parse parcel data
+	const byte_t	*ptr=parceldata;
+	const byte_t	*end=ptr+parceldatasize;
+
+	// the string marker appears to depend on whether we're talking BE or LE
+	byte_t		isstring=(getProtocolIsBigEndian())?0xbf:0x00;
+
+	while (ptr<end) {
+
+		// FIXME: do something with these...
+
+		// from bteq:
+		// field 8 - 28322.4157421264 - ???
+		// field 9 - root - os user?
+		// field 10 - bteq - client identifier?
+		// field 11 - Linux 3.0...x86_64 - os version and arch
+		// field 24 - 16.20.00.07 - client program version?
+		// field 31 - 10.0.2.23 - ???
+		// field 32 - 0x96 0xe6 - ???
+		// field 33 - 10.0.4.105 - ???
+		// field 34 - 0x04 0x01 - ???
+		// field 7 - fedora29x64 - server name?
+		// field 45 - fedora29x64COP1 - ???
+		//
+		// from jdbc:
+		// field 7 - fedora29x64 - server name?
+		// field 8 - 29292@teradata - ???
+		// field 9 - root - os user?
+		// field 10 - org.eclipse.core.internal.jobs.Worker.run(Worker.java:55) - client identifier?
+		// field 11 - Linux 3.0...x86_64 - os version and arch
+		// field 22 - Oracle Corporation Java HotSpot(TM) 64-Bit Server VM 25.172-b31 mixed mode - JVM?
+		// field 28 - J - ???
+		// field 29 - 16.20.00.06 - ???
+		// field 30 - JAVA=1.8.0_172;MEM=518979584;TZ=-05:00;CID=2b694ff9;TYPE=DEFAULT;GOV=Y;SCS=UTF8;CCS=UTF8;LOB=Y;SIP=Y;TM=A;ENC=N;SE=N;RED=3,3; - ???
+		// field 31 - 10.0.2.23 - ???
+		// field 33 - 10.0.4.105 - ???
+		// field 34 - 0x04 0x01 - ???
+		// field 45 - fedora29x64 - server name again?
+
+		uint16_t	field;
+		uint16_t	size;
+		read(ptr,&field,&ptr);
+		read(ptr,&size,&ptr);
+
+		if (field==0x7FFF) {
+			debugWrite("field: terminator");
+			break;
+		}
+
+		if (*ptr==isstring) {
+			// if the first byte of the value
+			// is 0x00(LE) or 0xbf(BE) then the value is a string
+			debugWrite("field %hd: %.*s",field,size-1,ptr+1);
+		} else {
+			// otherwise, it's binary
+			debugWrite("field %hd:",field);
+			debugHexDump(ptr,size);
+		}
+		ptr+=size;
+	}
+
+	// return next parcel
+	*parcelout=parceldata+parceldatasize;
+
+	debugParcelEnd(parceldata,parceldatasize);
+
+	return true;
+}
+
+bool sqlrprotocol_teradata::parseSsoUsernameRequestParcel(
+					const byte_t *parcel,
+					const byte_t **parcelout) {
+
+	// see Teradata CLIv2, page 314
+
+	// parse parcel header
+	uint16_t	parcelflavor;
+	const byte_t	*parceldata;
+	uint32_t	parceldatasize;
+	parseParcelHeader(parcel,&parcelflavor,
+					&parceldatasize,
+					&parceldata);
+	if (parcelflavor!=136) {
+		unexpectedParcel(parcelflavor);
+		*parcelout=parcel;
+		return false;
+	}
+
+	debugParcelStart("recv","sso username request",
+					parcelflavor,parceldatasize);
+
+debugWrite("parcel:");
+debugHexDump(parceldata,parceldatasize);
+
+	// FIXME: parse parcel data
+
+	// return next parcel
+	*parcelout=parceldata+parceldatasize;
+
+	debugParcelEnd(parceldata,parceldatasize);
+
 	return true;
 }
 
@@ -8161,6 +8513,7 @@ void sqlrprotocol_teradata::appendConnectionErrorParcel() {
 
 void sqlrprotocol_teradata::unexpectedParcel(uint16_t parcelflavor) {
 	debugWrite("recv unexpected parcel: %d",parcelflavor);
+snooze::macrosnooze(10);
 }
 
 bool sqlrprotocol_teradata::noParcelFound(const byte_t *parcel) {
