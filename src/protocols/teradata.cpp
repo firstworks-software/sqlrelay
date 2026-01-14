@@ -1586,8 +1586,9 @@ bool sqlrprotocol_teradata::copKindConnect() {
 	const byte_t	*parcel=decdata.getBuffer();
 	const byte_t	*end=parcel+decdata.getSize();
 
-	// it looks like the first N bytes are obfuscated, somehow
-	// find the first "88", if we can.  That's the start of the first
+	// It looks like the first N bytes are obfuscated, somehow.
+	// FIXME: actually, they're not, we're just not using the right iv!
+	// Find the first "88", if we can.  That's the start of the first
 	// unobfuscated parcel.
 	for (const byte_t *ptr=parcel; ptr!=end; ptr++) {
 		if (*ptr==88) {
@@ -1604,6 +1605,7 @@ bool sqlrprotocol_teradata::copKindConnect() {
 
 	// it looks like the last 36 bytes are also special
 	// the first 20 bytes of that look obfuscated
+	// FIXME: actually, they're not, we're just not using the right iv!
 	end-=36;
 	debugWrite("\"footer\":");
 	debugHexDump(end,20);
@@ -7026,18 +7028,20 @@ void sqlrprotocol_teradata::appendSsoGssData(byte_t mech) {
 	// If I set it to D (1101) then:
 	// * jdbc hashes each of the first 4 lines of the shared key
 	// * the encrypted data is 676 bytes
-	// * IV:
+	// * uses negotiated block cipher mode
+	// * key is first 16 bytes of the shared secret
+	// * generates hmac
+	// * iv:
 	//   03  07  04  00  00  00  02  b0  00  00  00  00  00  00  00  01
-	// * decryption succeeds
-	//  * kdf is "grab the first 16 bytes of the shared secret
 	// 
 	// If I set it to 5 (0101) then:
 	// * jdbc hashes each of the first 4 lines of the shared key
 	// * the encrypted data is 676 bytes
-	// * IV:
+	// * uses negotiated block cipher mode
+	// * key is first 16 bytes of the shared secret
+	// * generates hmac
+	// * iv:
 	//   03  07  04  00  00  00  02  b0  00  00  00  00  00  00  00  01
-	// * decryption succeeds
-	//  * kdf is "grab the first 16 bytes of the shared secret
 	// 
 	// If I set it to 4 (0100) then:
 	// * jdbc throws an "Unknown peer capabilities" error
@@ -7045,29 +7049,23 @@ void sqlrprotocol_teradata::appendSsoGssData(byte_t mech) {
 	// If I set it to 1 (0001) then:
 	// * jdbc hashes the entire shared key
 	// * the encrypted data is 676 bytes
-	// * IV:
+	// * uses OFB block cipher mode (despite negotiating CBC)
+	// * key is the entire shared secret
+	// * generates hmac
+	// * iv:
 	//   03  07  04  00  00  00  02  b0  00  00  00  00  00  00  00  01
-	// * decryption fails
-	//  * maybe kdf is different
 	// 
 	// If I set it to 0 (0000) then:
 	// * jdbc doesn't generate any hash of the shared key
 	// * the encrypted data is 660 bytes
-	// * IV:
+	// * uses OFB block cipher mode (despite negotiating CBC)
+	// * key is the entire shared secret
+	// * doesn't generates hmac
+	// * iv:
 	//   01  03  02  00  00  00  02  a0  00  00  00  00  06  00  00  00
-	// * decryption fails
-	//  * maybe kdf is different
 	//
 	//  I'm guessing that D and 5 have the same behavior with TD2 because
 	//  whatever the 8's place indicates is just ignore for TD2.
-	//
-	//  I'd think that the 1's place means "supports hmac", and that the
-	//  hmac would be omitted from the beginning of the encrypted data,
-	//  if it's set to 0, but that doesn't appear to be the case.
-	//  Something is omitted, but it's 16, not 20 bytes.
-	//
-	//  It seems like the 4's place means "supports more complex hmac",
-	//  thus the 4 different hashes, but it's not clear how they're used.
 	if (mech==MECH_TD2) {
 		capabilities[3]|=0x05;
 	} else {
