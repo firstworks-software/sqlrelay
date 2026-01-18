@@ -13,20 +13,21 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 
 	public SQLRelayParameterMetaData(SQLRelayDriver driver) {
 		this.driver=driver;
-		driver.debugFunction();
+		driver.debugFunction(this);
 		parameters=null;
 		driver.debugEnd();
 	}
 
-	public void	setParameters(
-				HashMap<Integer,SQLRelayParameter> parameters) {
-		driver.debugFunction();
+	public synchronized
+	void setParameters(HashMap<Integer,SQLRelayParameter> parameters) {
+		driver.debugFunction(this);
 		this.parameters=parameters;
 		driver.debugEnd();
 	}
 
-	public String 	getParameterClassName(int param) {
-		driver.debugFunction();
+	public synchronized
+	String getParameterClassName(int param) {
+		driver.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
 		String	name=(p!=null)?p.getClassName():null;
 		driver.debugEnd();
@@ -34,84 +35,94 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 	}
 
 	private SQLRelayParameter getParameter(int param) {
-		driver.debugFunction();
+		driver.debugFunction(this);
 		SQLRelayParameter	p=
 			(parameters!=null)?parameters.get(param):null;
 		driver.debugEnd();
 		return p;
 	}
 
-	public int 	getParameterCount() {
-		driver.debugFunction();
+	public synchronized
+	int getParameterCount() {
+		driver.debugFunction(this);
 		int	p=(parameters!=null)?parameters.size():0;
 		driver.debugEnd();
 		return p;
 	}
 
-	public int 	getParameterMode(int param) {
-		driver.debugFunction();
+	public synchronized
+	int getParameterMode(int param) {
+		driver.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
 		int	mode=(p!=null)?p.getMode():parameterModeUnknown;
 		driver.debugEnd();
 		return mode;
 	}
 
-	public int 	getParameterType(int param) {
-		driver.debugFunction();
+	public synchronized
+	int getParameterType(int param) {
+		driver.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
 		int	type=(p!=null)?p.getType():0;
 		driver.debugEnd();
 		return type;
 	}
 
-	public String 	getParameterTypeName(int param) {
-		driver.debugFunction();
+	public synchronized
+	String getParameterTypeName(int param) {
+		driver.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
 		String	name=(p!=null)?p.getTypeName():null;
 		driver.debugEnd();
 		return name;
 	}
 
-	public int 	getPrecision(int param) {
-		driver.debugFunction();
+	public synchronized
+	int getPrecision(int param) {
+		driver.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
 		int	precision=(p!=null)?p.getPrecision():0;
 		driver.debugEnd();
 		return precision;
 	}
 
-	public int 	getScale(int param) {
-		driver.debugFunction();
+	public synchronized
+	int getScale(int param) {
+		driver.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
 		int	scale=(p!=null)?p.getScale():0;
 		driver.debugEnd();
 		return scale;
 	}
 
-	public int 	isNullable(int param) {
-		driver.debugFunction();
+	public synchronized
+	int isNullable(int param) {
+		driver.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
 		int	in=(p!=null)?p.getIsNullable():parameterNullableUnknown;
 		driver.debugEnd();
 		return in;
 	}
 
-	public boolean 	isSigned(int param) {
-		driver.debugFunction();
+	public synchronized
+	boolean isSigned(int param) {
+		driver.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
 		boolean	is=(p!=null)?p.getIsSigned():true;
 		driver.debugEnd();
 		return is;
 	}
 
-	public boolean	isWrapperFor(Class<?> iface) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	boolean isWrapperFor(Class<?> iface) throws SQLException {
+		driver.debugFunction(this);
 		driver.debugEnd();
 		return false;
 	}
 
-	public <T> T	unwrap(Class<T> iface) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	<T> T unwrap(Class<T> iface) throws SQLException {
+		driver.debugFunction(this);
 		driver.debugEnd();
 		return null;
 	}

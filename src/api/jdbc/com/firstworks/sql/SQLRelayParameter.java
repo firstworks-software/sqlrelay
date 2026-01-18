@@ -80,7 +80,7 @@ public class SQLRelayParameter {
 
 	public SQLRelayParameter(SQLRelayDriver driver) {
 		this.driver=driver;
-		driver.debugFunction();
+		driver.debugFunction(this);
 		classname=null;
 		mode=ParameterMetaData.parameterModeIn;
 		type=0;
@@ -99,182 +99,212 @@ public class SQLRelayParameter {
 		driver.debugEnd();
 	}
 
-	public String 	getClassName() {
-		driver.debugFunction();
+	public synchronized
+	String getClassName() {
+		driver.debugFunction(this);
 		driver.debugEnd();
 		return classname;
 	}
 
-	public int 	getMode() {
-		driver.debugFunction();
+	public synchronized
+	int getMode() {
+		driver.debugFunction(this);
 		driver.debugEnd();
 		return mode;
 	}
 
-	public int 	getType() {
-		driver.debugFunction();
+	public synchronized
+	int getType() {
+		driver.debugFunction(this);
 		driver.debugEnd();
 		return type;
 	}
 
-	public String 	getTypeName() {
-		driver.debugFunction();
+	public synchronized
+	String getTypeName() {
+		driver.debugFunction(this);
 		driver.debugEnd();
 		return typename;
 	}
 
-	public int 	getPrecision() {
-		driver.debugFunction();
+	public synchronized
+	int getPrecision() {
+		driver.debugFunction(this);
 		driver.debugEnd();
 		return precision;
 	}
 
-	public int 	getScale() {
-		driver.debugFunction();
+	public synchronized
+	int getScale() {
+		driver.debugFunction(this);
 		driver.debugEnd();
 		return scale;
 	}
 
-	public int 	getIsNullable() {
-		driver.debugFunction();
+	public synchronized
+	int getIsNullable() {
+		driver.debugFunction(this);
 		driver.debugEnd();
 		return nullable;
 	}
 
-	public boolean 	getIsSigned() {
-		driver.debugFunction();
+	public synchronized
+	boolean getIsSigned() {
+		driver.debugFunction(this);
 		driver.debugEnd();
 		return signed;
 	}
 
-	public Object	getObject() {
-		driver.debugFunction();
+	public synchronized
+	Object getObject() {
+		driver.debugFunction(this);
 		driver.debugEnd();
 		return object;
 	}
 
-	public long	getLength() {
-		driver.debugFunction();
+	public synchronized
+	long getLength() {
+		driver.debugFunction(this);
 		driver.debugEnd();
 		return length;
 	}
 
-	public boolean	getIsBinary() {
-		driver.debugFunction();
+	public synchronized
+	boolean getIsBinary() {
+		driver.debugFunction(this);
 		driver.debugEnd();
 		return binary;
 	}
 
-	public boolean	getIsLob() {
-		driver.debugFunction();
+	public synchronized
+	boolean getIsLob() {
+		driver.debugFunction(this);
 		driver.debugEnd();
 		return lob;
 	}
 
-	public boolean	getIsAscii() {
-		driver.debugFunction();
+	public synchronized
+	boolean getIsAscii() {
+		driver.debugFunction(this);
 		driver.debugEnd();
 		return ascii;
 	}
 
-	public Calendar getCalendar() {
-		driver.debugFunction();
+	public synchronized
+	Calendar getCalendar() {
+		driver.debugFunction(this);
 		driver.debugEnd();
 		return cal;
 	}
 
-	public BindType getBindType() {
-		driver.debugFunction();
+	public synchronized
+	BindType getBindType() {
+		driver.debugFunction(this);
 		driver.debugEnd();
 		return bindtype;
 	}
 
-	public void 	setClassName(String classname) {
-		driver.debugFunction();
+	public synchronized
+	void setClassName(String classname) {
+		driver.debugFunction(this);
 		this.classname=classname;
 		driver.debugEnd();
 	}
 
-	public void 	setMode(int mode) {
-		driver.debugFunction();
+	public synchronized
+	void setMode(int mode) {
+		driver.debugFunction(this);
 		this.mode=mode;
 		driver.debugEnd();
 	}
 
-	public void 	setType(int type) {
-		driver.debugFunction();
+	public synchronized
+	void setType(int type) {
+		driver.debugFunction(this);
 		this.type=type;
 		driver.debugEnd();
 	}
 
-	public void 	setTypeName(String typename) {
-		driver.debugFunction();
+	public synchronized
+	void setTypeName(String typename) {
+		driver.debugFunction(this);
 		this.typename=typename;
 		driver.debugEnd();
 	}
 
-	public void 	setPrecision(int precision) {
-		driver.debugFunction();
+	public synchronized
+	void setPrecision(int precision) {
+		driver.debugFunction(this);
 		this.precision=precision;
 		driver.debugEnd();
 	}
 
-	public void 	setScale(int scale) {
-		driver.debugFunction();
+	public synchronized
+	void setScale(int scale) {
+		driver.debugFunction(this);
 		this.scale=scale;
 		driver.debugEnd();
 	}
 
-	public void 	setIsNullable(int nullable) {
-		driver.debugFunction();
+	public synchronized
+	void setIsNullable(int nullable) {
+		driver.debugFunction(this);
 		this.nullable=nullable;
 		driver.debugEnd();
 	}
 
-	public void 	setIsSigned(boolean signed) {
-		driver.debugFunction();
+	public synchronized
+	void setIsSigned(boolean signed) {
+		driver.debugFunction(this);
 		this.signed=signed;
 		driver.debugEnd();
 	}
 
-	public void	setObject(Object object) {
-		driver.debugFunction();
+	public synchronized
+	void setObject(Object object) {
+		driver.debugFunction(this);
 		this.object=object;
 		driver.debugEnd();
 	}
 
-	public void	setLength(long length) {
-		driver.debugFunction();
+	public synchronized
+	void setLength(long length) {
+		driver.debugFunction(this);
 		this.length=length;
 		driver.debugEnd();
 	}
 
-	public void	setIsBinary(boolean binary) {
-		driver.debugFunction();
+	public synchronized
+	void setIsBinary(boolean binary) {
+		driver.debugFunction(this);
 		this.binary=binary;
 		driver.debugEnd();
 	}
 
-	public void	setIsLob(boolean lob) {
-		driver.debugFunction();
+	public synchronized
+	void setIsLob(boolean lob) {
+		driver.debugFunction(this);
 		this.lob=lob;
 		driver.debugEnd();
 	}
 
-	public void	setIsAscii(boolean ascii) {
-		driver.debugFunction();
+	public synchronized
+	void setIsAscii(boolean ascii) {
+		driver.debugFunction(this);
 		this.ascii=ascii;
 		driver.debugEnd();
 	}
 
-	public void	setCalendar(Calendar cal) {
-		driver.debugFunction();
+	public synchronized
+	void setCalendar(Calendar cal) {
+		driver.debugFunction(this);
 		this.cal=cal;
 		driver.debugEnd();
 	}
 
-	public void	setBindType(BindType bindtype) {
-		driver.debugFunction();
+	public synchronized
+	void setBindType(BindType bindtype) {
+		driver.debugFunction(this);
 		this.bindtype=bindtype;
 		driver.debugEnd();
 	}

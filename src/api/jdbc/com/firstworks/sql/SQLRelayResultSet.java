@@ -31,13 +31,13 @@ public class SQLRelayResultSet implements ResultSet {
 
 	public SQLRelayResultSet(SQLRelayDriver driver) {
 		this.driver=driver;
-		driver.debugFunction();
+		driver.debugFunction(this);
 		reset();
 		driver.debugEnd();
 	}
 
 	private void reset() {
-		driver.debugFunction();
+		driver.debugFunction(this);
 		statement=null;
 		sqlrcur=null;
 		currentrow=0;
@@ -49,16 +49,24 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public void setStatement(Statement statement) {
+	public synchronized
+	void setStatement(Statement statement) {
 		this.statement=statement;
 	}
 
-	public void setSQLRCursor(SQLRCursor sqlrcur) {
+	public synchronized
+	void setSQLRCursor(SQLRCursor sqlrcur) {
 		this.sqlrcur=sqlrcur;
 	}
 
-	public boolean absolute(int row) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	SQLRCursor getSQLRCursor() {
+		return sqlrcur;
+	}
+
+	public synchronized
+	boolean absolute(int row) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		driver.debugPrintln("row: ",row);
 		if (row<currentrow) {
@@ -101,35 +109,40 @@ public class SQLRelayResultSet implements ResultSet {
 		return true;
 	}
 
-	public void afterLast() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void afterLast() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		afterlast=true;
 		driver.debugEnd();
 	}
 
-	public void beforeFirst() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void beforeFirst() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		beforefirst=true;
 		driver.debugEnd();
 	}
 
-	public void cancelRowUpdates() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void cancelRowUpdates() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void clearWarnings() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void clearWarnings() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		driver.debugEnd();
 	}
 
-	public void close() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void close() throws SQLException {
+		driver.debugFunction(this);
 		if (sqlrcur!=null) {
 			sqlrcur.closeResultSet();
 		}
@@ -137,15 +150,17 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public void deleteRow() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void deleteRow() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public int findColumn(String columnlabel) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	int findColumn(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		for (int i=0; i<sqlrcur.colCount(); i++) {
 			if (sqlrcur.getColumnName(i).equals(columnlabel)) {
@@ -159,15 +174,17 @@ public class SQLRelayResultSet implements ResultSet {
 		throw new SQLException(ex);
 	}
 
-	public boolean first() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	boolean first() throws SQLException {
+		driver.debugFunction(this);
 		boolean	abs=absolute(1);
 		driver.debugEnd();
 		return abs;
 	}
 
-	public Array	getArray(int columnindex) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Array getArray(int columnindex) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		throwFeatureNotSupportedException();
@@ -175,8 +192,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public Array	getArray(String columnlabel) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Array getArray(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		throwFeatureNotSupportedException();
@@ -184,9 +202,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public InputStream	getAsciiStream(int columnindex)
-							throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	InputStream getAsciiStream(int columnindex) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
@@ -200,9 +218,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return is;
 	}
 
-	public InputStream	getAsciiStream(String columnlabel)
-							throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	InputStream getAsciiStream(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		String	field=sqlrcur.getField(currentrow-1,columnlabel);
@@ -216,9 +234,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return is;
 	}
 
-	public BigDecimal	getBigDecimal(int columnindex)
-							throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	BigDecimal getBigDecimal(int columnindex) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
@@ -235,9 +253,10 @@ public class SQLRelayResultSet implements ResultSet {
 		return bd;
 	}
 
-	public BigDecimal	getBigDecimal(int columnindex, int scale)
-							throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	BigDecimal getBigDecimal(int columnindex, int scale)
+						throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
@@ -256,9 +275,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return bd;
 	}
 
-	public BigDecimal	getBigDecimal(String columnlabel)
-							throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	BigDecimal getBigDecimal(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		String	field=sqlrcur.getField(currentrow-1,columnlabel);
@@ -275,9 +294,10 @@ public class SQLRelayResultSet implements ResultSet {
 		return bd;
 	}
 
-	public BigDecimal	getBigDecimal(String columnlabel, int scale)
-							throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	BigDecimal getBigDecimal(String columnlabel, int scale)
+						throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		String	field=sqlrcur.getField(currentrow-1,columnlabel);
@@ -296,9 +316,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return bd;
 	}
 
-	public InputStream	getBinaryStream(int columnindex)
-							throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	InputStream getBinaryStream(int columnindex) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		byte[]	field=sqlrcur.getFieldAsByteArray(
@@ -312,9 +332,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return is;
 	}
 
-	public InputStream	getBinaryStream(String columnlabel)
-							throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	InputStream getBinaryStream(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		byte[]	field=sqlrcur.getFieldAsByteArray(
@@ -328,8 +348,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return is;
 	}
 
-	public Blob	getBlob(int columnindex) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Blob getBlob(int columnindex) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		throwFeatureNotSupportedException();
@@ -340,8 +361,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public Blob	getBlob(String columnlabel) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Blob getBlob(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		throwFeatureNotSupportedException();
@@ -352,8 +374,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public boolean	getBoolean(int columnindex) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	boolean getBoolean(int columnindex) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
@@ -366,8 +389,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return eq;
 	}
 
-	public boolean	getBoolean(String columnlabel) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	boolean getBoolean(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		String	field=sqlrcur.getField(currentrow-1,columnlabel);
@@ -380,8 +404,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return eq;
 	}
 
-	public byte	getByte(int columnindex) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	byte getByte(int columnindex) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		long	field=sqlrcur.getFieldAsInteger(
@@ -394,8 +419,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return (byte)field;
 	}
 
-	public byte	getByte(String columnlabel) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	byte getByte(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		long	field=sqlrcur.getFieldAsInteger(
@@ -408,8 +434,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return (byte)field;
 	}
 
-	public byte[]	getBytes(int columnindex) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	byte[] getBytes(int columnindex) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		byte[]	field=sqlrcur.getFieldAsByteArray(
@@ -422,8 +449,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public byte[]	getBytes(String columnlabel) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	byte[] getBytes(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		byte[]	field=sqlrcur.getFieldAsByteArray(
@@ -436,9 +464,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public Reader	getCharacterStream(int columnindex)
-						throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Reader getCharacterStream(int columnindex) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
@@ -450,9 +478,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return (wasnull)?null:(new StringReader(field));
 	}
 
-	public Reader	getCharacterStream(String columnlabel)
-						throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Reader getCharacterStream(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		String	field=sqlrcur.getField(currentrow-1,columnlabel);
@@ -464,8 +492,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return (wasnull)?null:(new StringReader(field));
 	}
 
-	public Clob	getClob(int columnindex) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Clob getClob(int columnindex) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		throwFeatureNotSupportedException();
@@ -476,8 +505,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public Clob	getClob(String columnlabel) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Clob getClob(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		throwFeatureNotSupportedException();
@@ -488,8 +518,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public int	getConcurrency() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	int getConcurrency() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		int	concurrency=ResultSet.CONCUR_READ_ONLY;
 		driver.debugPrintln("concurrency: ",concurrency);
@@ -497,8 +528,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return concurrency;
 	}
 
-	public String	getCursorName() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	String getCursorName() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		String	cursorname=null;
 		driver.debugPrintln("cursor name: ",cursorname);
@@ -506,17 +538,18 @@ public class SQLRelayResultSet implements ResultSet {
 		return cursorname;
 	}
 
-	public Date	getDate(int columnindex) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Date getDate(int columnindex) throws SQLException {
+		driver.debugFunction(this);
 		// FIXME: pass in some default calendar
 		Date	dt=getDate(columnindex,null);
 		driver.debugEnd();
 		return dt;
 	}
 
-	public Date	getDate(int columnindex, Calendar cal)
-						throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Date getDate(int columnindex, Calendar cal) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
@@ -534,17 +567,18 @@ public class SQLRelayResultSet implements ResultSet {
 		return dt;
 	}
 
-	public Date	getDate(String columnlabel) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Date getDate(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		// FIXME: pass in some default calendar
 		Date	dt=getDate(columnlabel,null);
 		driver.debugEnd();
 		return dt;
 	}
 
-	public Date	getDate(String columnlabel, Calendar cal)
-						throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Date getDate(String columnlabel, Calendar cal) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		String	field=sqlrcur.getField(currentrow-1,columnlabel);
@@ -562,8 +596,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return dt;
 	}
 
-	public double	getDouble(int columnindex) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	double getDouble(int columnindex) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		double	field=sqlrcur.getFieldAsDouble(
@@ -576,8 +611,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public double	getDouble(String columnlabel) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	double getDouble(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		double	field=sqlrcur.getFieldAsDouble(
@@ -590,8 +626,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public int	getFetchDirection() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	int getFetchDirection() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		int	direction=ResultSet.FETCH_FORWARD;
 		driver.debugPrintln("direction: ",direction);
@@ -599,8 +636,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return direction;
 	}
 
-	public int	getFetchSize() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	int getFetchSize() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		int	size=(int)sqlrcur.getResultSetBufferSize();
 		driver.debugPrintln("size: ",size);
@@ -608,8 +646,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return size;
 	}
 
-	public float	getFloat(int columnindex) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	float getFloat(int columnindex) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		float	field=(float)sqlrcur.getFieldAsDouble(
@@ -622,8 +661,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public float	getFloat(String columnlabel) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	float getFloat(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		float	field=(float)sqlrcur.getFieldAsDouble(
@@ -636,8 +676,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public int	getHoldability() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	int getHoldability() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		// FIXME: is this correct?
 		int	holdability=ResultSet.CLOSE_CURSORS_AT_COMMIT;
@@ -646,8 +687,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return holdability;
 	}
 
-	public int	getInt(int columnindex) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	int getInt(int columnindex) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		int	field=(int)sqlrcur.getFieldAsInteger(
@@ -660,8 +702,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public int	getInt(String columnlabel) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	int getInt(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		int	field=(int)sqlrcur.getFieldAsInteger(
@@ -674,8 +717,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public long	getLong(int columnindex) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	long getLong(int columnindex) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		long	field=(long)sqlrcur.getFieldAsInteger(
@@ -688,8 +732,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public long	getLong(String columnlabel) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	long getLong(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		long	field=(long)sqlrcur.getFieldAsInteger(
@@ -702,8 +747,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public ResultSetMetaData	getMetaData() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	ResultSetMetaData getMetaData() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		SQLRelayResultSetMetaData	metadata=
 				new SQLRelayResultSetMetaData(driver);
@@ -712,9 +758,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return metadata;
 	}
 
-	public Reader	getNCharacterStream(int columnindex)
-						throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Reader getNCharacterStream(int columnindex) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		byte[]	field=sqlrcur.getFieldAsByteArray(
@@ -732,9 +778,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return r;
 	}
 
-	public Reader	getNCharacterStream(String columnlabel)
-						throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Reader getNCharacterStream(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		byte[]	field=sqlrcur.getFieldAsByteArray(
@@ -752,8 +798,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return r;
 	}
 
-	public NClob	getNClob(int columnindex) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	NClob getNClob(int columnindex) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		throwFeatureNotSupportedException();
@@ -764,8 +811,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public NClob	getNClob(String columnlabel) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	NClob getNClob(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		throwFeatureNotSupportedException();
@@ -776,8 +824,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public String	getNString(int columnindex) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	String getNString(int columnindex) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		byte[]	field=sqlrcur.getFieldAsByteArray(
@@ -798,8 +847,9 @@ public class SQLRelayResultSet implements ResultSet {
 		}
 	}
 
-	public String	getNString(String columnlabel) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	String getNString(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		byte[]	field=sqlrcur.getFieldAsByteArray(
@@ -820,8 +870,9 @@ public class SQLRelayResultSet implements ResultSet {
 		}
 	}
 
-	public Object	getObject(int columnindex) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Object getObject(int columnindex) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		throwFeatureNotSupportedException();
@@ -830,9 +881,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public <T> T	getObject(int columnindex, Class<T> type)
-							throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	<T> T getObject(int columnindex, Class<T> type) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		throwFeatureNotSupportedException();
@@ -840,51 +891,10 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public Object	getObject(int columnindex, Map<String,Class<?>> map)
+	public synchronized
+	Object getObject(int columnindex, Map<String,Class<?>> map)
 							throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwInvalidColumn(columnindex);
-		throwFeatureNotSupportedException();
-		// FIXME: we might be able to support this somehow...
-		driver.debugEnd();
-		return null;
-	}
-
-	public Object	getObject(String columnlabel) throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwInvalidColumn(columnlabel);
-		throwFeatureNotSupportedException();
-		// FIXME: we might be able to support this somehow...
-		driver.debugEnd();
-		return null;
-	}
-
-	public <T> T	getObject(String columnlabel, Class<T> type)
-							throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwInvalidColumn(columnlabel);
-		throwFeatureNotSupportedException();
-		// FIXME: we might be able to support this somehow...
-		driver.debugEnd();
-		return null;
-	}
-
-	public Object	getObject(String columnlabel, Map<String,Class<?>> map)
-							throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwInvalidColumn(columnlabel);
-		throwFeatureNotSupportedException();
-		// FIXME: we might be able to support this somehow...
-		driver.debugEnd();
-		return null;
-	}
-
-	public Ref	getRef(int columnindex) throws SQLException {
-		driver.debugFunction();
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		throwFeatureNotSupportedException();
@@ -893,8 +903,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public Ref	getRef(String columnlabel) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Object getObject(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		throwFeatureNotSupportedException();
@@ -903,16 +914,63 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public int	getRow() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	<T> T getObject(String columnlabel, Class<T> type) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwInvalidColumn(columnlabel);
+		throwFeatureNotSupportedException();
+		// FIXME: we might be able to support this somehow...
+		driver.debugEnd();
+		return null;
+	}
+
+	public synchronized
+	Object getObject(String columnlabel, Map<String,Class<?>> map)
+							throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwInvalidColumn(columnlabel);
+		throwFeatureNotSupportedException();
+		// FIXME: we might be able to support this somehow...
+		driver.debugEnd();
+		return null;
+	}
+
+	public synchronized
+	Ref getRef(int columnindex) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwInvalidColumn(columnindex);
+		throwFeatureNotSupportedException();
+		// FIXME: we might be able to support this somehow...
+		driver.debugEnd();
+		return null;
+	}
+
+	public synchronized
+	Ref getRef(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwInvalidColumn(columnlabel);
+		throwFeatureNotSupportedException();
+		// FIXME: we might be able to support this somehow...
+		driver.debugEnd();
+		return null;
+	}
+
+	public synchronized
+	int getRow() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		driver.debugPrintln("current row: ",currentrow);
 		driver.debugEnd();
 		return (int)currentrow;
 	}
 
-	public RowId	getRowId(int columnindex) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	RowId getRowId(int columnindex) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		throwFeatureNotSupportedException();
@@ -921,8 +979,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public RowId	getRowId(String columnlabel) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	RowId getRowId(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		throwFeatureNotSupportedException();
@@ -931,8 +990,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public short	getShort(int columnindex) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	short getShort(int columnindex) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		short	field=(short)sqlrcur.getFieldAsInteger(
 						currentrow-1,columnindex-1);
@@ -944,8 +1004,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public short	getShort(String columnlabel) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	short getShort(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		short	field=(short)sqlrcur.getFieldAsInteger(
 						currentrow-1,columnlabel);
@@ -957,8 +1018,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public SQLXML	getSQLXML(int columnindex) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	SQLXML getSQLXML(int columnindex) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		throwFeatureNotSupportedException();
@@ -967,8 +1029,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public SQLXML	getSQLXML(String columnlabel) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	SQLXML getSQLXML(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		throwFeatureNotSupportedException();
@@ -977,14 +1040,16 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public Statement	getStatement() throws SQLException {
-		driver.debugFunction();
-		driver.debugEnd();
+	public synchronized
+	Statement getStatement() throws SQLException {
+		//driver.debugFunction(this);
+		//driver.debugEnd();
 		return statement;
 	}
 
-	public String	getString(int columnindex) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	String getString(int columnindex) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
@@ -996,8 +1061,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public String	getString(String columnlabel) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	String getString(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		String	field=sqlrcur.getField(currentrow-1,columnlabel);
@@ -1009,17 +1075,18 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public Time	getTime(int columnindex) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Time getTime(int columnindex) throws SQLException {
+		driver.debugFunction(this);
 		// FIXME: pass in some default calendar
 		Time	t=getTime(columnindex,null);
 		driver.debugEnd();
 		return t;
 	}
 
-	public Time	getTime(int columnindex, Calendar cal)
-						throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Time getTime(int columnindex, Calendar cal) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
@@ -1037,17 +1104,18 @@ public class SQLRelayResultSet implements ResultSet {
 		return t;
 	}
 
-	public Time	getTime(String columnlabel) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Time getTime(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		// FIXME: pass in some default calendar
 		Time	t=getTime(columnlabel,null);
 		driver.debugEnd();
 		return t;
 	}
 
-	public Time	getTime(String columnlabel, Calendar cal)
-						throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Time getTime(String columnlabel, Calendar cal) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		String	field=sqlrcur.getField(currentrow-1,columnlabel);
@@ -1065,18 +1133,19 @@ public class SQLRelayResultSet implements ResultSet {
 		return t;
 	}
 
-	public Timestamp	getTimestamp(int columnindex)
-						throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Timestamp getTimestamp(int columnindex) throws SQLException {
+		driver.debugFunction(this);
 		// FIXME: pass in some default calendar
 		Timestamp	t=getTimestamp(columnindex,null);
 		driver.debugEnd();
 		return t;
 	}
 
-	public Timestamp	getTimestamp(int columnindex, Calendar cal)
-							throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Timestamp getTimestamp(int columnindex, Calendar cal)
+						throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
@@ -1095,18 +1164,19 @@ public class SQLRelayResultSet implements ResultSet {
 		return t;
 	}
 
-	public Timestamp	getTimestamp(String columnlabel)
-							throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Timestamp getTimestamp(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		// FIXME: pass in some default calendar
 		Timestamp	t=getTimestamp(columnlabel,null);
 		driver.debugEnd();
 		return t;
 	}
 
-	public Timestamp	getTimestamp(String columnlabel, Calendar cal)
-							throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Timestamp getTimestamp(String columnlabel, Calendar cal)
+						throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		String	field=sqlrcur.getField(currentrow-1,columnlabel);
@@ -1124,8 +1194,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return t;
 	}
 
-	public int	getType() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	int getType() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		int	type=ResultSet.TYPE_FORWARD_ONLY;
 		driver.debugPrintln("type: ",type);
@@ -1133,9 +1204,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return type;
 	}
 
-	public InputStream	getUnicodeStream(int columnindex)
-							throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	InputStream getUnicodeStream(int columnindex) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
@@ -1148,9 +1219,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return is;
 	}
 
-	public InputStream	getUnicodeStream(String columnlabel)
-							throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	InputStream getUnicodeStream(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		String	field=sqlrcur.getField(currentrow-1,columnlabel);
@@ -1163,8 +1234,9 @@ public class SQLRelayResultSet implements ResultSet {
 		return is;
 	}
 
-	public URL	getURL(int columnindex) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	URL getURL(int columnindex) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		throwFeatureNotSupportedException();
@@ -1187,8 +1259,9 @@ public class SQLRelayResultSet implements ResultSet {
 		}
 	}
 
-	public URL	getURL(String columnlabel) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	URL getURL(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		throwFeatureNotSupportedException();
@@ -1211,46 +1284,52 @@ public class SQLRelayResultSet implements ResultSet {
 		}
 	}
 
-	public SQLWarning	getWarnings() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	SQLWarning getWarnings() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		driver.debugEnd();
 		return null;
 	}
 
-	public void	insertRow() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void insertRow() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public boolean	isAfterLast() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	boolean isAfterLast() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		driver.debugPrintln("after last: ",afterlast);
 		driver.debugEnd();
 		return afterlast;
 	}
 
-	public boolean	isBeforeFirst() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	boolean isBeforeFirst() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		driver.debugPrintln("before first: ",beforefirst);
 		driver.debugEnd();
 		return beforefirst;
 	}
 
-	public boolean	isClosed() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	boolean isClosed() throws SQLException {
+		driver.debugFunction(this);
 		boolean	isclosed=(sqlrcur==null);
 		driver.debugPrintln("is closed: ",isclosed);
 		driver.debugEnd();
 		return isclosed;
 	}
 
-	public boolean	isFirst() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	boolean isFirst() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		boolean	isfirst=(currentrow==0);
 		driver.debugPrintln("is first: ",isfirst);
@@ -1258,59 +1337,67 @@ public class SQLRelayResultSet implements ResultSet {
 		return isfirst;
 	}
 
-	public boolean	isLast() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	boolean isLast() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		driver.debugPrintln("is last: ",islast);
 		driver.debugEnd();
 		return islast;
 	}
 
-	public boolean	last() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	boolean last() throws SQLException {
+		driver.debugFunction(this);
 		boolean	abs=absolute(-1);
 		driver.debugEnd();
 		return abs;
 	}
 
-	public void	moveToCurrentRow() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void moveToCurrentRow() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		// since we don't support updating result sets, then we can't
 		// be on the insert row, and we're always on the current row
 		driver.debugEnd();
 	}
 
-	public void	moveToInsertRow() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void moveToInsertRow() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public boolean	next() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	boolean next() throws SQLException {
+		driver.debugFunction(this);
 		boolean	rel=relative(1);
 		driver.debugEnd();
 		return rel;
 	}
 
-	public boolean	previous() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	boolean previous() throws SQLException {
+		driver.debugFunction(this);
 		boolean	rel=relative(-1);
 		driver.debugEnd();
 		return rel;
 	}
 
-	public void	refreshRow() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void refreshRow() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public boolean	relative(int rows) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	boolean relative(int rows) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		driver.debugPrintln("rows: ",rows);
 		if (rows==0) {
@@ -1328,807 +1415,775 @@ public class SQLRelayResultSet implements ResultSet {
 		return abs;
 	}
 
-	public boolean	rowDeleted() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	boolean rowDeleted() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 		return false;
 	}
 
-	public boolean	rowInserted() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	boolean rowInserted() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 		return false;
 	}
 
-	public boolean	rowUpdated() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	boolean rowUpdated() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 		return false;
 	}
 
-	public void setFetchDirection(int direction) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void setFetchDirection(int direction) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		driver.debugPrintln("direction: ",direction);
 		fetchdirection=direction;
 		driver.debugEnd();
 	}
 
-	public void setFetchSize(int rows) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void setFetchSize(int rows) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		driver.debugPrintln("fetch size: ",rows);
 		sqlrcur.setResultSetBufferSize(rows);
 		driver.debugEnd();
 	}
 
-	public void	updateArray(int columnindex, Array x)
+	public synchronized
+	void updateArray(int columnindex, Array x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateArray(String columnlabel, Array x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateAsciiStream(int columnindex, InputStream x)
 						throws SQLException {
-		driver.debugFunction();
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void	updateArray(String columnlabel, Array x)
+	public synchronized
+	void updateAsciiStream(int columnindex, InputStream x,
+					int length) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateAsciiStream(int columnindex, InputStream x,
+					long length) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateAsciiStream(String columnlabel, InputStream x)
 						throws SQLException {
-		driver.debugFunction();
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void	updateAsciiStream(int columnindex,
-						InputStream x)
+	public synchronized
+	void updateAsciiStream(String columnlabel,InputStream x,
+					int length) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateAsciiStream(String columnlabel, InputStream x,
+					long length) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateBigDecimal(int columnindex, BigDecimal x)
 						throws SQLException {
-		driver.debugFunction();
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void	updateAsciiStream(int columnindex,
-						InputStream x,
-						int length)
+	public synchronized
+	void updateBigDecimal(String columnlabel, BigDecimal x)
 						throws SQLException {
-		driver.debugFunction();
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void	updateAsciiStream(int columnindex,
-						InputStream x,
-						long length)
+	public synchronized
+	void updateBinaryStream(int columnindex, InputStream x)
 						throws SQLException {
-		driver.debugFunction();
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void	updateAsciiStream(String columnlabel,
-						InputStream x)
+	public synchronized
+	void updateBinaryStream(int columnindex, InputStream x,
+					int length) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateBinaryStream(int columnindex, InputStream x,
+					long length) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateBinaryStream(String columnlabel, InputStream x)
 						throws SQLException {
-		driver.debugFunction();
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void	updateAsciiStream(String columnlabel,
-						InputStream x,
-						int length)
+	public synchronized
+	void updateBinaryStream(String columnlabel, InputStream x,
+					int length) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateBinaryStream(String columnlabel, InputStream x,
+					long length) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateBlob(int columnindex, Blob x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateBlob(int columnindex, InputStream inputStream)
 						throws SQLException {
-		driver.debugFunction();
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void	updateAsciiStream(String columnlabel,
-						InputStream x,
-						long length)
+	public synchronized
+	void updateBlob(int columnindex, InputStream inputStream,
+					long length) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateBlob(String columnlabel, Blob x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateBlob(String columnlabel, InputStream inputStream)
 						throws SQLException {
-		driver.debugFunction();
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void	updateBigDecimal(int columnindex,
-						BigDecimal x)
+	public synchronized
+	void updateBlob(String columnlabel, InputStream inputStream,
+					long length) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateBoolean(int columnindex, boolean x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateBoolean(String columnlabel, boolean x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateByte(int columnindex, byte x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateByte(String columnlabel, byte x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateBytes(int columnindex, byte[] x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateBytes(String columnlabel, byte[] x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateCharacterStream(int columnindex, Reader x)
 						throws SQLException {
-		driver.debugFunction();
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void	updateBigDecimal(String columnlabel,
-						BigDecimal x)
-						throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void updateCharacterStream(int columnindex, Reader x,
+					int length) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void	updateBinaryStream(int columnindex,
-						InputStream x)
-						throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void updateCharacterStream(int columnindex, Reader x,
+					long length) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void	updateBinaryStream(int columnindex,
-						InputStream x,
-						int length)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateBinaryStream(int columnindex,
-						InputStream x,
-						long length)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateBinaryStream(String columnlabel,
-						InputStream x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateBinaryStream(String columnlabel,
-						InputStream x,
-						int length)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateBinaryStream(String columnlabel,
-						InputStream x,
-						long length)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateBlob(int columnindex, Blob x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateBlob(int columnindex,
-					InputStream inputStream)
-					throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateBlob(int columnindex,
-					InputStream inputStream,
-					long length)
-					throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateBlob(String columnlabel,
-					Blob x)
-					throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateBlob(String columnlabel,
-					InputStream inputStream)
-					throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateBlob(String columnlabel,
-					InputStream inputStream,
-					long length)
-					throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateBoolean(int columnindex,
-						boolean x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateBoolean(String columnlabel,
-						boolean x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateByte(int columnindex,
-						byte x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateByte(String columnlabel,
-						byte x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateBytes(int columnindex,
-						byte[] x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateBytes(String columnlabel,
-						byte[] x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateCharacterStream(int columnindex,
-						Reader x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateCharacterStream(int columnindex,
-							Reader x,
-							int length)
+	public synchronized
+	void updateCharacterStream(String columnlabel, Reader reader)
 							throws SQLException {
-		driver.debugFunction();
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void	updateCharacterStream(int columnindex,
-							Reader x,
-							long length)
+	public synchronized
+	void updateCharacterStream(String columnlabel, Reader reader,
+					int length) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateCharacterStream(String columnlabel, Reader reader,
+					long length) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateClob(int columnindex, Clob x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateClob(int columnindex, Reader reader) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateClob(int columnindex, Reader reader,
+					long length) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateClob(String columnlabel, Clob x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateClob(String columnlabel, Reader reader) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateClob(String columnlabel, Reader reader,
+					long length) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateDate(int columnindex, Date x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateDate(String columnlabel, Date x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateDouble(int columnindex, double x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateDouble(String columnlabel, double x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateFloat(int columnindex, float x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateFloat(String columnlabel, float x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateInt(int columnindex, int x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateInt(String columnlabel, int x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateLong(int columnindex, long x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateLong(String columnlabel, long x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateNCharacterStream(int columnindex, Reader x)
 							throws SQLException {
-		driver.debugFunction();
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void	updateCharacterStream(String columnlabel,
-							Reader reader)
+	public synchronized
+	void updateNCharacterStream(int columnindex, Reader x,
+					long length) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateNCharacterStream(String columnlabel, Reader reader)
 							throws SQLException {
-		driver.debugFunction();
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void	updateCharacterStream(String columnlabel,
-							Reader reader,
-							int length)
-							throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void updateNCharacterStream(String columnlabel, Reader reader,
+					long length) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void	updateCharacterStream(String columnlabel,
-							Reader reader,
-							long length)
-							throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void updateNClob(int columnindex, NClob nClob) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void	updateClob(int columnindex,
-					Clob x)
-					throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void updateNClob(int columnindex, Reader reader) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void	updateClob(int columnindex,
-					Reader reader)
-					throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void updateNClob(int columnindex, Reader reader,
+					long length) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void	updateClob(int columnindex,
-					Reader reader,
-					long length)
-					throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void updateNClob(String columnlabel, NClob nClob) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void	updateClob(String columnlabel,
-						Clob x)
+	public synchronized
+	void updateNClob(String columnlabel, Reader reader)
 						throws SQLException {
-		driver.debugFunction();
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void	updateClob(String columnlabel,
-						Reader reader)
+	public synchronized
+	void updateNClob(String columnlabel, Reader reader,
+					long length) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateNString(int columnindex, String nString)
 						throws SQLException {
-		driver.debugFunction();
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void	updateClob(String columnlabel,
-						Reader reader,
-						long length)
+	public synchronized
+	void updateNString(String columnlabel, String nString)
 						throws SQLException {
-		driver.debugFunction();
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void	updateDate(int columnindex, Date x)
+	public synchronized
+	void updateNull(int columnindex) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateNull(String columnlabel) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateObject(int columnindex, Object x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateObject(int columnindex, Object x,
+					int scaleOrLength) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateObject(String columnlabel, Object x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateObject(String columnlabel, Object x,
+					int scaleOrLength) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateRef(int columnindex, Ref x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateRef(String columnlabel, Ref x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateRow() throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateRowId(int columnindex, RowId x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateRowId(String columnlabel, RowId x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateShort(int columnindex, short x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateShort(String columnlabel, short x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateSQLXML(int columnindex, SQLXML xmlObject)
 						throws SQLException {
-		driver.debugFunction();
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void	updateDate(String columnlabel, Date x)
+	public synchronized
+	void updateSQLXML(String columnlabel, SQLXML xmlObject)
 						throws SQLException {
-		driver.debugFunction();
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void	updateDouble(int columnindex, double x)
+	public synchronized
+	void updateString(int columnindex, String x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateString(String columnlabel, String x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateTime(int columnindex, Time x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateTime(String columnlabel, Time x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateTimestamp(int columnindex, Timestamp x) throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		driver.debugEnd();
+	}
+
+	public synchronized
+	void updateTimestamp(String columnlabel, Timestamp x)
 						throws SQLException {
-		driver.debugFunction();
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void	updateDouble(String columnlabel, double x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateFloat(int columnindex, float x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateFloat(String columnlabel, float x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateInt(int columnindex, int x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateInt(String columnlabel, int x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateLong(int columnindex, long x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateLong(String columnlabel, long x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateNCharacterStream(int columnindex,
-							Reader x)
-							throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateNCharacterStream(int columnindex,
-							Reader x,
-							long length)
-							throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateNCharacterStream(String columnlabel,
-							Reader reader)
-							throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateNCharacterStream(String columnlabel,
-							Reader reader,
-							long length)
-							throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateNClob(int columnindex,
-						NClob nClob)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateNClob(int columnindex,
-						Reader reader)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateNClob(int columnindex,
-						Reader reader,
-						long length)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateNClob(String columnlabel,
-						NClob nClob)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateNClob(String columnlabel,
-						Reader reader)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateNClob(String columnlabel,
-						Reader reader,
-						long length)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateNString(int columnindex,
-						String nString)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateNString(String columnlabel,
-						String nString)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateNull(int columnindex) throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateNull(String columnlabel) throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateObject(int columnindex,
-						Object x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateObject(int columnindex,
-						Object x,
-						int scaleOrLength)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateObject(String columnlabel,
-						Object x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateObject(String columnlabel,
-						Object x,
-						int scaleOrLength)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateRef(int columnindex, Ref x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateRef(String columnlabel, Ref x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateRow() throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateRowId(int columnindex, RowId x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateRowId(String columnlabel, RowId x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateShort(int columnindex, short x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateShort(String columnlabel, short x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateSQLXML(int columnindex,
-						SQLXML xmlObject)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateSQLXML(String columnlabel,
-						SQLXML xmlObject)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateString(int columnindex,
-						String x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateString(String columnlabel,
-						String x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateTime(int columnindex,
-						Time x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateTime(String columnlabel,
-						Time x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateTimestamp(int columnindex,
-						Timestamp x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public void	updateTimestamp(String columnlabel,
-						Timestamp x)
-						throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
-	}
-
-	public boolean	wasNull() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	boolean wasNull() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		driver.debugPrintln("was null: ",wasnull);
 		driver.debugEnd();
 		return wasnull;
 	}
 
-	public boolean	isWrapperFor(Class<?> iface) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	boolean isWrapperFor(Class<?> iface) throws SQLException {
+		driver.debugFunction(this);
 		driver.debugEnd();
 		return (iface==SQLRCursor.class);
 	}
 
 	@SuppressWarnings({"unchecked"})
-	public <T> T	unwrap(Class<T> iface) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	<T> T unwrap(Class<T> iface) throws SQLException {
+		driver.debugFunction(this);
 		driver.debugEnd();
 		return (T)((iface==SQLRCursor.class)?sqlrcur:null);
 	}

@@ -9,6 +9,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 
+import java.lang.StackWalker;
+import java.lang.StackWalker.*;
+import java.lang.reflect.*;
+import com.firstworks.sqlrelay.*;
+
 public class SQLRelayDriver implements Driver {
 
 	private static final int	MAJOR_VERSION=1;
@@ -17,6 +22,9 @@ public class SQLRelayDriver implements Driver {
 	public static final boolean	debug=true;
 
 	private int	indent=0;
+
+	private static final	StackWalker	walker=
+		StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE);
 
 	static {
 		try {
@@ -27,17 +35,16 @@ public class SQLRelayDriver implements Driver {
 	}
 
 	public SQLRelayDriver() throws SQLException {
-		debugFunction();
+		debugFunction(this);
 		debugEnd();
 	}
 
 	/**
 	 *   Try to make a database connection to the given URL.
 	 */
-	public Connection connect(String url,
-					Properties info)
-					throws SQLException {
-		debugFunction();
+	public synchronized
+	Connection connect(String url, Properties info) throws SQLException {
+		debugFunction(this);
 		SQLRelayConnectInfo	ci=parseConnectInfo(url,info);
 		Connection	conn=null;
 		if (validConnectInfo(ci)) {
@@ -50,9 +57,9 @@ public class SQLRelayDriver implements Driver {
 		return conn;
 	}
 
-	public SQLRelayConnectInfo parseConnectInfo(String url,
-						Properties info) {
-		debugFunction();
+	public synchronized
+	SQLRelayConnectInfo parseConnectInfo(String url, Properties info) {
+		debugFunction(this);
 
 		String	host=null;
 		String	portstr=null;
@@ -183,7 +190,7 @@ public class SQLRelayDriver implements Driver {
 	}
 
 	private boolean validConnectInfo(SQLRelayConnectInfo ci) {
-		debugFunction();
+		debugFunction(this);
 		debugPrintln("host not null: ",ci.host!=null);
 		debugPrintln("port > 0: ",ci.port>0);
 		debugPrintln("socket not null: ",ci.socket!=null);
@@ -198,8 +205,9 @@ public class SQLRelayDriver implements Driver {
 	 *  Returns true if the driver thinks that it can open a connection to
 	 *  the given URL.
 	 */
-	public boolean acceptsURL(String url) throws SQLException {
-		debugFunction();
+	public synchronized
+	boolean acceptsURL(String url) throws SQLException {
+		debugFunction(this);
 		boolean	valid=validConnectInfo(parseConnectInfo(url,null));
 		debugEnd();
 		return valid;
@@ -210,10 +218,11 @@ public class SQLRelayDriver implements Driver {
 	 *  to discover what properties it should prompt a human for in order
 	 *  to get enough information to connect to a database. 
 	 */
-	public DriverPropertyInfo[] getPropertyInfo(String url,
+	public synchronized
+	DriverPropertyInfo[] getPropertyInfo(String url,
 							Properties info)
 							throws SQLException {
-		debugFunction();
+		debugFunction(this);
 
 		SQLRelayConnectInfo	ci=parseConnectInfo(url,info);
 
@@ -280,8 +289,9 @@ public class SQLRelayDriver implements Driver {
 	/**
 	 *   Get the driver's major version number.
 	 */
-	public int getMajorVersion() {
-		debugFunction();
+	public synchronized
+	int getMajorVersion() {
+		debugFunction(this);
 		debugEnd();
 		return MAJOR_VERSION;
 	}
@@ -289,27 +299,31 @@ public class SQLRelayDriver implements Driver {
 	/**
 	 *   Get the driver's minor version number.
 	 */
-	public int getMinorVersion() {
-		debugFunction();
+	public synchronized
+	int getMinorVersion() {
+		debugFunction(this);
 		debugEnd();
 		return MINOR_VERSION;
 	}
 
-	public Logger getParentLogger() throws SQLFeatureNotSupportedException {
-		debugFunction();
+	public synchronized
+	Logger getParentLogger() throws SQLFeatureNotSupportedException {
+		debugFunction(this);
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	/**
 	 *  Report whether the Driver is a genuine JDBC COMPLIANT (tm) driver. 
 	 */
-	public boolean jdbcCompliant() {
-		debugFunction();
+	public synchronized
+	boolean jdbcCompliant() {
+		debugFunction(this);
 		debugEnd();
 		return false;
 	}
 
-	public void debugStart(String str) {
+	public synchronized
+	void debugStart(String str) {
 		if (!debug) {
 			return;
 		}
@@ -318,7 +332,8 @@ public class SQLRelayDriver implements Driver {
 		indent++;
 	}
 
-	public void debugEnd() {
+	public synchronized
+	void debugEnd() {
 		if (!debug) {
 			return;
 		}
@@ -327,7 +342,8 @@ public class SQLRelayDriver implements Driver {
 		System.out.println("}");
 	}
 
-	public void debugZeroIndent() {
+	public synchronized
+	void debugZeroIndent() {
 		indent=0;
 	}
 
@@ -337,19 +353,65 @@ public class SQLRelayDriver implements Driver {
 		}
 	}
 
-	public void debugFunction() {
+	public synchronized
+	void debugFunction(Object obj) {
 		if (!debug) {
 			return;
 		}
 		StackTraceElement	ste=new Throwable().getStackTrace()[1];
-		debugStart(Thread.currentThread().getId()+"|"+
-				System.identityHashCode(this)+": "+
+		debugStart(
+				Thread.currentThread().getId()+
+				/*"|"+
+				System.identityHashCode(this)+*/
+				": "+
 				ste.getClassName().substring(
 					ste.getClassName().lastIndexOf(".")+1)+
 				"."+ste.getMethodName());
+
+		try {
+			switch (obj.getClass().getSimpleName()) {
+				case "SQLRelayConnection":
+					debugPrintln("Connection: "+
+					System.identityHashCode(obj));
+					break;
+				case "SQLRelayStatement":
+					debugPrintln("Connection: "+
+					System.identityHashCode(
+					((SQLRelayStatement)obj).
+					getConnection()));
+					break;
+				case "SQLRelayCallableStatement":
+					debugPrintln("Connection: "+
+					System.identityHashCode(
+					((SQLRelayCallableStatement)obj).
+					getConnection()));
+					break;
+				case "SQLRelayPreparedStatement":
+					debugPrintln("Connection: "+
+					System.identityHashCode(
+					((SQLRelayPreparedStatement)obj).
+					getConnection()));
+					break;
+				case "SQLRelayDatabaseMetaData":
+					debugPrintln("Connection: "+
+					System.identityHashCode(
+					((SQLRelayDatabaseMetaData)obj).
+					getConnection()));
+					break;
+				case "SQLRelayResultSet":
+					debugPrintln("Connection: "+
+					System.identityHashCode(
+					((SQLRelayResultSet)obj).
+					getStatement().getConnection()));
+					break;
+			}
+		} catch (Exception ex) {
+			debugPrintln(ex.getMessage());
+		}
 	}
 
-	public <T> void debugPrintln(T... elements) {
+	public synchronized
+	<T> void debugPrintln(T... elements) {
 		if (!debug) {
 			return;
 		}
@@ -361,7 +423,9 @@ public class SQLRelayDriver implements Driver {
 	}
 
 	private static final char[] hexarray="0123456789ABCDEF".toCharArray();
-	public void debugPrint(byte[] bytes) {
+
+	public synchronized
+	void debugPrint(byte[] bytes) {
 		if (!debug) {
 			return;
 		}

@@ -38,7 +38,7 @@ public class SQLRelayConnection implements Connection {
 
 		this.driver=driver;
 
-		driver.debugFunction();
+		driver.debugFunction(this);
 
 		this.host=host;
 		this.port=port;
@@ -74,62 +74,71 @@ public class SQLRelayConnection implements Connection {
 		driver.debugEnd();
 	}
 
-	public String getHost() {
-		driver.debugFunction();
+	public synchronized
+	String getHost() {
+		driver.debugFunction(this);
 		driver.debugPrintln("host: ",host);
 		driver.debugEnd();
 		return host;
 	}
 
-	public short getPort() {
-		driver.debugFunction();
+	public synchronized
+	short getPort() {
+		driver.debugFunction(this);
 		driver.debugPrintln("port: ",port);
 		driver.debugEnd();
 		return port;
 	}
 
-	public String getSocket() {
-		driver.debugFunction();
+	public synchronized
+	String getSocket() {
+		driver.debugFunction(this);
 		driver.debugPrintln("socket: ",socket);
 		driver.debugEnd();
 		return socket;
 	}
 
-	public String getUser() {
-		driver.debugFunction();
+	public synchronized
+	String getUser() {
+		driver.debugFunction(this);
 		driver.debugPrintln("user: ",user);
 		driver.debugEnd();
 		return user;
 	}
 
-	public String getPassword() {
-		driver.debugFunction();
+	public synchronized
+	String getPassword() {
+		driver.debugFunction(this);
 		driver.debugPrintln("password: ",password);
 		driver.debugEnd();
 		return password;
 	}
 
-	public void	abort(Executor executor) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void abort(Executor executor) throws SQLException {
+		driver.debugFunction(this);
 		close();
 		driver.debugEnd();
 	}
 
-	public void	clearWarnings() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void clearWarnings() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		driver.debugEnd();
 	}
 
-	public void	close() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void close() throws SQLException {
+		driver.debugFunction(this);
 		sqlrcon.endSession();
 		sqlrcon=null;
 		driver.debugEnd();
 	}
 
-	public void	commit() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void commit() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		if (!sqlrcon.commit()) {
 			throwErrorMessageException();
@@ -137,27 +146,20 @@ public class SQLRelayConnection implements Connection {
 		driver.debugEnd();
 	}
 
-	public Array	createArrayOf(String typeName,
+	public synchronized
+	Array createArrayOf(String typeName,
 					Object[] elements)
 					throws SQLException {
-		driver.debugFunction();
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 		return null;
 	}
 
-	public Blob	createBlob() throws SQLException {
-		driver.debugFunction();
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		// FIXME: we might be able to support this...
-		driver.debugEnd();
-		return null;
-	}
-
-	public Clob	createClob() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Blob createBlob() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this...
@@ -165,8 +167,9 @@ public class SQLRelayConnection implements Connection {
 		return null;
 	}
 
-	public NClob	createNClob() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Clob createClob() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this...
@@ -174,16 +177,28 @@ public class SQLRelayConnection implements Connection {
 		return null;
 	}
 
-	public SQLXML	createSQLXML() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	NClob createNClob() throws SQLException {
+		driver.debugFunction(this);
+		throwExceptionIfClosed();
+		throwFeatureNotSupportedException();
+		// FIXME: we might be able to support this...
+		driver.debugEnd();
+		return null;
+	}
+
+	public synchronized
+	SQLXML createSQLXML() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 		return null;
 	}
 
-	public Statement	createStatement() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Statement createStatement() throws SQLException {
+		driver.debugFunction(this);
 		Statement	stmt=createStatement(
 					ResultSet.TYPE_FORWARD_ONLY,
 					ResultSet.CONCUR_READ_ONLY,
@@ -192,10 +207,11 @@ public class SQLRelayConnection implements Connection {
 		return stmt;
 	}
 
-	public Statement	createStatement(int resultSetType,
-						int resultSetConcurrency)
-						throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Statement createStatement(int resultSetType,
+					int resultSetConcurrency)
+					throws SQLException {
+		driver.debugFunction(this);
 		Statement	stmt=createStatement(
 					resultSetType,
 					resultSetConcurrency,
@@ -204,11 +220,12 @@ public class SQLRelayConnection implements Connection {
 		return stmt;
 	}
 
-	public Statement	createStatement(int resultSetType,
+	public synchronized
+	Statement createStatement(int resultSetType,
 						int resultSetConcurrency,
 						int resultSetHoldability)
 						throws SQLException {
-		driver.debugFunction();
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 
 		// unsupported options
@@ -263,25 +280,27 @@ public class SQLRelayConnection implements Connection {
 		return sqlrstmt;
 	}
 
-	public Struct	createStruct(String typeName,
-						Object[] attributes)
+	public synchronized
+	Struct createStruct(String typeName, Object[] attributes)
 						throws SQLException {
-		driver.debugFunction();
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		return null;
 	}
 
-	public boolean	getAutoCommit() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	boolean getAutoCommit() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		driver.debugPrintln("autocommit: ",autocommit);
 		driver.debugEnd();
 		return autocommit;
 	}
 
-	public String	getCatalog() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	String getCatalog() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		String	catalog=sqlrcon.getCurrentDatabase();
 		driver.debugPrintln("catalog: ",catalog);
@@ -289,16 +308,18 @@ public class SQLRelayConnection implements Connection {
 		return catalog;
 	}
 
-	public Properties	getClientInfo() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Properties getClientInfo() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		driver.debugPrintln("clientinfo: ",clientinfo);
 		driver.debugEnd();
 		return clientinfo;
 	}
 
-	public String	getClientInfo(String name) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	String getClientInfo(String name) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		String	prop=getClientInfo().getProperty(name);
 		driver.debugPrintln(name,": ",prop);
@@ -306,16 +327,18 @@ public class SQLRelayConnection implements Connection {
 		return prop;
 	}
 
-	public int	getHoldability() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	int getHoldability() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		driver.debugPrintln("holdability: HOLD_CURSORS_OVER_COMMIT");
 		driver.debugEnd();
 		return ResultSet.HOLD_CURSORS_OVER_COMMIT;
 	}
 
-	public DatabaseMetaData	getMetaData() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	DatabaseMetaData getMetaData() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		SQLRelayDatabaseMetaData	metadata=
 				new SQLRelayDatabaseMetaData(driver);
@@ -324,8 +347,9 @@ public class SQLRelayConnection implements Connection {
 		return metadata;
 	}
 
-	public int	getNetworkTimeout() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	int getNetworkTimeout() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		// FIXME: the timeout can also be set using an environment
 		// variable, so we should get this from the underlying api
@@ -334,8 +358,9 @@ public class SQLRelayConnection implements Connection {
 		return networktimeout;
 	}
 
-	public String	getSchema() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	String getSchema() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		String	schema=sqlrcon.getCurrentSchema();
 		driver.debugPrintln("schema: ",schema);
@@ -343,47 +368,53 @@ public class SQLRelayConnection implements Connection {
 		return schema;
 	}
 
-	public int	getTransactionIsolation() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	int getTransactionIsolation() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		driver.debugPrintln("isolation level: ",txisolevel);
 		driver.debugEnd();
 		return txisolevel;
 	}
 
-	public Map<String,Class<?>>	getTypeMap() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Map<String,Class<?>> getTypeMap() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		driver.debugEnd();
 		return typemap;
 	}
 
-	public SQLWarning	getWarnings() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	SQLWarning getWarnings() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		// sqlrelay doesn't support anything like this
 		driver.debugEnd();
 		return null;
 	}
 
-	public boolean	isClosed() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	boolean isClosed() throws SQLException {
+		driver.debugFunction(this);
 		boolean	isclosed=(sqlrcon==null);
 		driver.debugPrintln("isclosed: ",isclosed);
 		driver.debugEnd();
 		return isclosed;
 	}
 
-	public boolean	isReadOnly() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	boolean isReadOnly() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		driver.debugPrintln("read only: ",readonly);
 		driver.debugEnd();
 		return readonly;
 	}
 
-	public boolean	isValid(int timeout) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	boolean isValid(int timeout) throws SQLException {
+		driver.debugFunction(this);
 		if (isClosed()) {
 			driver.debugEnd();
 			return false;
@@ -398,17 +429,18 @@ public class SQLRelayConnection implements Connection {
 		return ping;
 	}
 
-	public String	nativeSQL(String sql) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	String nativeSQL(String sql) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		driver.debugPrintln("sql: ",sql);
 		driver.debugEnd();
 		return sql;
 	}
 
-	public CallableStatement	prepareCall(String sql)
-						throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	CallableStatement prepareCall(String sql) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		SQLRCursor	sqlrcur=new SQLRCursor(sqlrcon);
 		sqlrcur.getNullsAsNulls();
@@ -422,32 +454,35 @@ public class SQLRelayConnection implements Connection {
 		return sqlrstmt;
 	}
 
-	public CallableStatement	prepareCall(String sql,
-						int resultSetType,
-						int resultSetConcurrency)
-						throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	CallableStatement prepareCall(String sql,
+					int resultSetType,
+					int resultSetConcurrency)
+					throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 		return null;
 	}
 
-	public CallableStatement	prepareCall(String sql,
-						int resultSetType,
-						int resultSetConcurrency,
-						int resultSetHoldability)
-						throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	CallableStatement prepareCall(String sql,
+					int resultSetType,
+					int resultSetConcurrency,
+					int resultSetHoldability)
+					throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 		return null;
 	}
 
-	public PreparedStatement	prepareStatement(String sql)
-						throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	PreparedStatement prepareStatement(String sql)
+					throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		SQLRCursor	sqlrcur=new SQLRCursor(sqlrcon);
 		sqlrcur.getNullsAsNulls();
@@ -461,69 +496,75 @@ public class SQLRelayConnection implements Connection {
 		return sqlrstmt;
 	}
 
-	public PreparedStatement	prepareStatement(String sql,
-						int autoGeneratedKeys)
-						throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	PreparedStatement prepareStatement(String sql,
+					int autoGeneratedKeys)
+					throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 		return null;
 	}
 
-	public PreparedStatement	prepareStatement(String sql,
-						int[] columnIndexes)
-						throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	PreparedStatement prepareStatement(String sql,
+					int[] columnIndexes)
+					throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 		return null;
 	}
 
-	public PreparedStatement	prepareStatement(String sql,
-						int resultSetType,
-						int resultSetConcurrency)
-						throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	PreparedStatement prepareStatement(String sql,
+					int resultSetType,
+					int resultSetConcurrency)
+					throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 		return null;
 	}
 
-	public PreparedStatement	prepareStatement(String sql,
-						int resultSetType,
-						int resultSetConcurrency,
-						int resultSetHoldability)
-						throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	PreparedStatement prepareStatement(String sql,
+					int resultSetType,
+					int resultSetConcurrency,
+					int resultSetHoldability)
+					throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 		return null;
 	}
 
-	public PreparedStatement	prepareStatement(String sql,
-						String[] columnNames)
-						throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	PreparedStatement prepareStatement(String sql,
+					String[] columnNames)
+					throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 		return null;
 	}
 
-	public void	releaseSavepoint(Savepoint savepoint)
-						throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void releaseSavepoint(Savepoint savepoint) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void	rollback() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void rollback() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		if (!sqlrcon.rollback()) {
 			throwErrorMessageException();
@@ -531,15 +572,17 @@ public class SQLRelayConnection implements Connection {
 		driver.debugEnd();
 	}
 
-	public void	rollback(Savepoint savepoint) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void rollback(Savepoint savepoint) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 	}
 
-	public void	setAutoCommit(boolean autocommit) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void setAutoCommit(boolean autocommit) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		driver.debugPrintln("autocommit: ",autocommit);
 		if (!((autocommit)?sqlrcon.autoCommitOn():
@@ -551,8 +594,9 @@ public class SQLRelayConnection implements Connection {
 		driver.debugEnd();
 	}
 
-	public void	setCatalog(String catalog) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void setCatalog(String catalog) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		driver.debugPrintln("catalog: ",catalog);
 		if (!sqlrcon.selectDatabase(catalog)) {
@@ -562,9 +606,10 @@ public class SQLRelayConnection implements Connection {
 		driver.debugEnd();
 	}
 
-	public void	setClientInfo(Properties properties)
-						throws SQLClientInfoException {
-		driver.debugFunction();
+	public synchronized
+	void setClientInfo(Properties properties)
+					throws SQLClientInfoException {
+		driver.debugFunction(this);
 		if (sqlrcon==null) {
 			throwClientInfoException();
 		}
@@ -574,9 +619,10 @@ public class SQLRelayConnection implements Connection {
 		driver.debugEnd();
 	}
 
-	public void	setClientInfo(String name, String value)
-						throws SQLClientInfoException {
-		driver.debugFunction();
+	public synchronized
+	void setClientInfo(String name, String value)
+					throws SQLClientInfoException {
+		driver.debugFunction(this);
 		if (sqlrcon==null) {
 			throwClientInfoException();
 		}
@@ -585,8 +631,8 @@ public class SQLRelayConnection implements Connection {
 		driver.debugEnd();
 	}
 
-	private void	setClientInfo() {
-		driver.debugFunction();
+	private void setClientInfo() {
+		driver.debugFunction(this);
 		String	info=new String();
 		boolean	first=true;
 		for (String name: clientinfo.stringPropertyNames()) {
@@ -603,8 +649,9 @@ public class SQLRelayConnection implements Connection {
 		driver.debugEnd();
 	}
 
-	public void	setHoldability(int holdability) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void setHoldability(int holdability) throws SQLException {
+		driver.debugFunction(this);
 		if (holdability!=ResultSet.HOLD_CURSORS_OVER_COMMIT) {
 			throwFeatureNotSupportedException();
 		}
@@ -612,10 +659,11 @@ public class SQLRelayConnection implements Connection {
 		driver.debugEnd();
 	}
 
-	public void	setNetworkTimeout(Executor executor,
-						int milliseconds)
-						throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void setNetworkTimeout(Executor executor,
+					int milliseconds)
+					throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		driver.debugPrintln("milliseconds: ",milliseconds);
 		// we can ignore executor because we have an internal
@@ -636,8 +684,9 @@ public class SQLRelayConnection implements Connection {
 		driver.debugEnd();
 	}
 
-	public void	setReadOnly(boolean readonly) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void setReadOnly(boolean readonly) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		// FIXME: implement this somehow
 		this.readonly=readonly;
@@ -646,24 +695,27 @@ public class SQLRelayConnection implements Connection {
 		driver.debugEnd();
 	}
 
-	public Savepoint	setSavepoint() throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Savepoint setSavepoint() throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 		return null;
 	}
 
-	public Savepoint	setSavepoint(String name) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	Savepoint setSavepoint(String name) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
 		driver.debugEnd();
 		return null;
 	}
 
-	public void	setSchema(String schema) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void setSchema(String schema) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		// FIXME: implement this somehow
 		driver.debugPrintln("FIXME: implement this");
@@ -671,8 +723,9 @@ public class SQLRelayConnection implements Connection {
 		driver.debugEnd();
 	}
 
-	public void	setTransactionIsolation(int level) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void setTransactionIsolation(int level) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		switch (level) {
 			case Connection.TRANSACTION_READ_UNCOMMITTED:
@@ -707,29 +760,31 @@ public class SQLRelayConnection implements Connection {
 		driver.debugEnd();
 	}
 
-	public void	setTypeMap(Map<String,Class<?>> map)
-						throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	void setTypeMap(Map<String,Class<?>> map) throws SQLException {
+		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		// FIXME: do something with this
 		typemap=map;
 		driver.debugEnd();
 	}
 
-	public boolean	isWrapperFor(Class<?> iface) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	boolean isWrapperFor(Class<?> iface) throws SQLException {
+		driver.debugFunction(this);
 		driver.debugEnd();
 		return (iface==SQLRConnection.class);
 	}
 
 	@SuppressWarnings({"unchecked"})
-	public <T> T	unwrap(Class<T> iface) throws SQLException {
-		driver.debugFunction();
+	public synchronized
+	<T> T unwrap(Class<T> iface) throws SQLException {
+		driver.debugFunction(this);
 		driver.debugEnd();
 		return (T)((iface==SQLRConnection.class)?sqlrcon:null);
 	}
 
-	protected void	throwClientInfoException()
+	protected void throwClientInfoException()
 					throws SQLClientInfoException {
 		driver.debugZeroIndent();
 		throw new SQLClientInfoException();
@@ -755,7 +810,8 @@ public class SQLRelayConnection implements Connection {
 		throw new SQLException(reason);
 	}
 
-	public SQLRConnection getSQLRConnection() {
+	public synchronized
+	SQLRConnection getSQLRConnection() {
 		return sqlrcon;
 	}
 }
