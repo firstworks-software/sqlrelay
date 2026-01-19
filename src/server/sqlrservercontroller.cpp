@@ -245,33 +245,39 @@ class sqlrservercontrollerprivate {
 	dictionary< uint32_t, uint32_t >	_mysqldatabasescolumnmap;
 	dictionary< uint32_t, uint32_t >	_mysqlschemascolumnmap;
 	dictionary< uint32_t, uint32_t >	_mysqltablescolumnmap;
+	dictionary< uint32_t, uint32_t >	_mysqltabletypescolumnmap;
 	dictionary< uint32_t, uint32_t >	_mysqlcolumnscolumnmap;
 	dictionary< uint32_t, uint32_t >	_mysqltypeinfocolumnmap;
 	dictionary< uint32_t, const char * >	_mysqldatabasescolumnnamemap;
 	dictionary< uint32_t, const char * >	_mysqlschemascolumnnamemap;
 	dictionary< uint32_t, const char * >	_mysqltablescolumnnamemap;
+	dictionary< uint32_t, const char * >	_mysqltabletypescolumnnamemap;
 	dictionary< uint32_t, const char * >	_mysqlcolumnscolumnnamemap;
 	dictionary< uint32_t, const char * >	_mysqltypeinfocolumnnamemap;
 
 	dictionary< uint32_t, uint32_t >	_odbcdatabasescolumnmap;
 	dictionary< uint32_t, uint32_t >	_odbcschemascolumnmap;
 	dictionary< uint32_t, uint32_t >	_odbctablescolumnmap;
+	dictionary< uint32_t, uint32_t >	_odbctabletypescolumnmap;
 	dictionary< uint32_t, uint32_t >	_odbccolumnscolumnmap;
 	dictionary< uint32_t, uint32_t >	_odbctypeinfocolumnmap;
 	dictionary< uint32_t, const char * >	_odbcdatabasescolumnnamemap;
 	dictionary< uint32_t, const char * >	_odbcschemascolumnnamemap;
 	dictionary< uint32_t, const char * >	_odbctablescolumnnamemap;
+	dictionary< uint32_t, const char * >	_odbctabletypescolumnnamemap;
 	dictionary< uint32_t, const char * >	_odbccolumnscolumnnamemap;
 	dictionary< uint32_t, const char * >	_odbctypeinfocolumnnamemap;
 
 	dictionary< uint32_t, uint32_t >	_jdbcdatabasescolumnmap;
 	dictionary< uint32_t, uint32_t >	_jdbcschemascolumnmap;
 	dictionary< uint32_t, uint32_t >	_jdbctablescolumnmap;
+	dictionary< uint32_t, uint32_t >	_jdbctabletypescolumnmap;
 	dictionary< uint32_t, uint32_t >	_jdbccolumnscolumnmap;
 	dictionary< uint32_t, uint32_t >	_jdbctypeinfocolumnmap;
 	dictionary< uint32_t, const char * >	_jdbcdatabasescolumnnamemap;
 	dictionary< uint32_t, const char * >	_jdbcschemascolumnnamemap;
 	dictionary< uint32_t, const char * >	_jdbctablescolumnnamemap;
+	dictionary< uint32_t, const char * >	_jdbctabletypescolumnnamemap;
 	dictionary< uint32_t, const char * >	_jdbccolumnscolumnnamemap;
 	dictionary< uint32_t, const char * >	_jdbctypeinfocolumnnamemap;
 
@@ -5626,29 +5632,30 @@ void sqlrservercontroller::setSchemaListFormat(
 		return;
 	}
 
-	// FIXME: currently, the only connection that implements
-	// getSchemaList() is the odbc connection, which gets lists by api
-	// calls, but eventually we should implement it for other connections
-	// too...
+	// currently only iplemented for oracle
+	// FIXME: ...and probably not correctly
 	switch (listformat) {
 		case SQLRSERVERLISTFORMAT_NULL:
 			pvt->_columnmap=NULL;
 			pvt->_columnnamemap=NULL;
 			break;
 		case SQLRSERVERLISTFORMAT_MYSQL:
-			// FIXME: implement this
-			pvt->_columnmap=NULL;
-			pvt->_columnnamemap=NULL;
+			pvt->_columnmap=
+				&(pvt->_mysqlschemascolumnmap);
+			pvt->_columnnamemap=
+				&(pvt->_mysqlschemascolumnnamemap);
 			break;
 		case SQLRSERVERLISTFORMAT_ODBC:
-			// FIXME: implement this
-			pvt->_columnmap=NULL;
-			pvt->_columnnamemap=NULL;
+			pvt->_columnmap=
+				&(pvt->_odbcschemascolumnmap);
+			pvt->_columnnamemap=
+				&(pvt->_odbcschemascolumnnamemap);
 			break;
 		case SQLRSERVERLISTFORMAT_JDBC:
-			// FIXME: implement this
-			pvt->_columnmap=NULL;
-			pvt->_columnnamemap=NULL;
+			pvt->_columnmap=
+				&(pvt->_jdbcschemascolumnmap);
+			pvt->_columnnamemap=
+				&(pvt->_jdbcschemascolumnnamemap);
 			break;
 		default:
 			pvt->_columnmap=NULL;
@@ -5719,29 +5726,29 @@ void sqlrservercontroller::setTableTypeListFormat(
 		return;
 	}
 
-	// FIXME: currently, the only connection that implements
-	// getTableTypeList() is the odbc connection, which gets lists by api
-	// calls, but eventually we should implement it for other connections
-	// too...
+	// currently only implemented for oracle
 	switch (listformat) {
 		case SQLRSERVERLISTFORMAT_NULL:
 			pvt->_columnmap=NULL;
 			pvt->_columnnamemap=NULL;
 			break;
 		case SQLRSERVERLISTFORMAT_MYSQL:
-			// FIXME: implement this
-			pvt->_columnmap=NULL;
-			pvt->_columnnamemap=NULL;
+			pvt->_columnmap=
+				&(pvt->_mysqltabletypescolumnmap);
+			pvt->_columnnamemap=
+				&(pvt->_mysqltabletypescolumnnamemap);
 			break;
 		case SQLRSERVERLISTFORMAT_ODBC:
-			// FIXME: implement this
-			pvt->_columnmap=NULL;
-			pvt->_columnnamemap=NULL;
+			pvt->_columnmap=
+				&(pvt->_odbctabletypescolumnmap);
+			pvt->_columnnamemap=
+				&(pvt->_odbctabletypescolumnnamemap);
 			break;
 		case SQLRSERVERLISTFORMAT_JDBC:
-			// FIXME: implement this
-			pvt->_columnmap=NULL;
-			pvt->_columnnamemap=NULL;
+			pvt->_columnmap=
+				&(pvt->_jdbctabletypescolumnmap);
+			pvt->_columnnamemap=
+				&(pvt->_jdbctabletypescolumnnamemap);
 			break;
 		default:
 			pvt->_columnmap=NULL;
@@ -5812,10 +5819,7 @@ void sqlrservercontroller::setPrimaryKeyListFormat(
 		return;
 	}
 
-	// FIXME: currently, the only connection that implements
-	// getPrimaryKeyList() is the odbc connection, which gets lists by api
-	// calls, but eventually we should implement it for other connections
-	// too...
+	// FIXME: not implemented for any dbs yet
 	switch (listformat) {
 		case SQLRSERVERLISTFORMAT_NULL:
 			pvt->_columnmap=NULL;
@@ -5859,10 +5863,7 @@ void sqlrservercontroller::setKeyAndIndexListFormat(
 		return;
 	}
 
-	// FIXME: currently, the only connection that implements
-	// getKeyAndIndexList() is the odbc connection, which gets lists by api
-	// calls, but eventually we should implement it for other connections
-	// too...
+	// FIXME: not implemented for any dbs yet
 	switch (listformat) {
 		case SQLRSERVERLISTFORMAT_NULL:
 			pvt->_columnmap=NULL;
@@ -5906,10 +5907,7 @@ void sqlrservercontroller::setProcedureParameterListFormat(
 		return;
 	}
 
-	// FIXME: currently, the only connection that implements
-	// getProcedureParameterList() is the odbc connection, which gets lists
-	// by api calls, but eventually we should implement it for other
-	// connections too...
+	// FIXME: not implemented for any dbs yet
 	switch (listformat) {
 		case SQLRSERVERLISTFORMAT_NULL:
 			pvt->_columnmap=NULL;
@@ -5953,10 +5951,7 @@ void sqlrservercontroller::setTypeInfoListFormat(
 		return;
 	}
 
-	// FIXME: currently, the only connection that implements
-	// getTypeInfoList() is the odbc connection, which gets lists by api
-	// calls, but eventually we should implement it for other connections
-	// too...
+	// FIXME: not implemented for any dbs yet
 	switch (listformat) {
 		case SQLRSERVERLISTFORMAT_NULL:
 			pvt->_columnmap=NULL;
@@ -6000,10 +5995,7 @@ void sqlrservercontroller::setProcedureListFormat(
 		return;
 	}
 
-	// FIXME: currently, the only connection that implements
-	// getProcedureList() is the odbc connection, which gets lists by api
-	// calls, but eventually we should implement it for other connections
-	// too...
+	// FIXME: not implemented for any dbs yet
 	switch (listformat) {
 		case SQLRSERVERLISTFORMAT_NULL:
 			pvt->_columnmap=NULL;
@@ -6040,7 +6032,7 @@ void sqlrservercontroller::buildColumnMaps() {
 void sqlrservercontroller::buildToMySQLColumnMaps() {
 
 	// mysql getDatabaseList
-	// map to mysql "show databases" format from ODBC SQLTables() format
+	// map from ODBC SQLTables() format to mysql "show databases" format
 	// (all backends return ODBC SQLTables() format)
 	//
 	// Database <- TABLE_CAT
@@ -6048,7 +6040,7 @@ void sqlrservercontroller::buildToMySQLColumnMaps() {
 	pvt->_mysqldatabasescolumnnamemap.setValue(0,"Database");
 
 	// mysql getSchemaList
-	// map to mysql "show schemas" format from ODBC SQLTables() format
+	// map from ODBC SQLTables() format to mysql "show schemas" format
 	// (all backends return ODBC SQLTables() format)
 	//
 	// Database <- TABLE_SCHEM
@@ -6056,7 +6048,7 @@ void sqlrservercontroller::buildToMySQLColumnMaps() {
 	pvt->_mysqlschemascolumnnamemap.setValue(0,"Database");
 
 	// mysql getTableList
-	// map to mysql "show tables" format from ODBC SQLTables() format
+	// map from ODBC SQLTables() format to mysql "show tables" format
 	// (all backends return ODBC SQLTables() format)
 	//
 	// Tables_in_xxx <- TABLE_NAME
@@ -6064,11 +6056,19 @@ void sqlrservercontroller::buildToMySQLColumnMaps() {
 	pvt->_mysqltablescolumnnamemap.setValue(0,"Tables_in_xxx");
 
 	// mysql getTableTypeList
-	// FIXME: does mysql have anything like this?
+	// map from ODBC SQLTables() format to mysql
+	// "select distinct table_type from information_schema.tables" format
+	// (mysql doesn't have a built-in get table types query)
+	// (all backends return ODBC SQLTables() format)
+	//
+	// table_type <- TABLE_TYPE_NAME
+	pvt->_mysqltabletypescolumnmap.setValue(0,3);
+	pvt->_mysqltabletypescolumnnamemap.setValue(0,"table_type");
 
 	// mysql getColumnList
-	// map to mysql ??? format from ODBC SQLColumns()+ format
+	// map from ODBC SQLColumns()+ format to mysql ??? format
 	// FIXME: what format is this, definitely not mysql format
+	// (all backends return ODBC SQLColumns()+ format)
 	//
 	// column_name <- column_name
 	pvt->_mysqlcolumnscolumnmap.setValue(0,3);
@@ -6117,7 +6117,7 @@ void sqlrservercontroller::buildToMySQLColumnMaps() {
 void sqlrservercontroller::buildToODBCColumnMaps() {
 
 	// ODBC getDatabaseList
-	// map to ODBC SQLTables() format from ODBC SQLTables() format
+	// all backends return ODBC SQLTables() format, so just map 1 to 1
 	//
 	// TABLE_CAT <- TABLE_CAT
 	pvt->_odbcdatabasescolumnmap.setValue(0,0);
@@ -6136,8 +6136,7 @@ void sqlrservercontroller::buildToODBCColumnMaps() {
 	pvt->_odbcdatabasescolumnnamemap.setValue(4,"REMARKS");
 
 	// ODBC getSchemaList
-	// map from ODBC SQLTables() format to ODBC SQLTables() format
-	// (all backends return ODBC SQLTables() format)
+	// all backends return ODBC SQLTables() format, so just map 1 to 1
 	//
 	// TABLE_CAT <- TABLE_CAT
 	pvt->_odbcschemascolumnmap.setValue(0,0);
@@ -6156,8 +6155,7 @@ void sqlrservercontroller::buildToODBCColumnMaps() {
 	pvt->_odbcschemascolumnnamemap.setValue(4,"REMARKS");
 
 	// ODBC getTableList
-	// map from ODBC SQLTables() format to ODBC SQLTables() format
-	// (all backends return ODBC SQLTables() format)
+	// all backends return ODBC SQLTables() format, so just map 1 to 1
 	//
 	// TABLE_CAT <- TABLE_CAT
 	pvt->_odbctablescolumnmap.setValue(0,0);
@@ -6176,10 +6174,27 @@ void sqlrservercontroller::buildToODBCColumnMaps() {
 	pvt->_odbctablescolumnnamemap.setValue(4,"REMARKS");
 
 	// ODBC getTableTypeList
-	// FIXME: implement this...
+	// all backends return ODBC SQLTables() format, so just map 1 to 1
+	//
+	// TABLE_CAT <- TABLE_CAT
+	pvt->_odbctabletypescolumnmap.setValue(0,0);
+	// TABLE_SCHEM <- TABLE_SCHEM
+	pvt->_odbctabletypescolumnmap.setValue(1,1);
+	// TABLE_NAME <- TABLE_NAME
+	pvt->_odbctabletypescolumnmap.setValue(2,2);
+	// TABLE_TYPE <- TABLE_TYPE
+	pvt->_odbctabletypescolumnmap.setValue(3,3);
+	// REMARKS <- REMARKS
+	pvt->_odbctabletypescolumnmap.setValue(4,4);
+	pvt->_odbctabletypescolumnnamemap.setValue(0,"TABLE_CAT");
+	pvt->_odbctabletypescolumnnamemap.setValue(1,"TABLE_SCHEM");
+	pvt->_odbctabletypescolumnnamemap.setValue(2,"TABLE_NAME");
+	pvt->_odbctabletypescolumnnamemap.setValue(3,"TABLE_TYPE");
+	pvt->_odbctabletypescolumnnamemap.setValue(4,"REMARKS");
 
 	// ODBC getColumnList
-	// map to ODBC SQLColumns() format.from ODBC SQLColumns()+ format
+	// map from ODBC SQLColumns()+ format to ODBC SQLColumns() format
+	// (all backends return ODBC SQLColumns()+ format)
 	//
 	// TABLE_CAT <- TABLE_CAT
 	pvt->_odbccolumnscolumnmap.setValue(0,0);
@@ -6255,7 +6270,8 @@ void sqlrservercontroller::buildToODBCColumnMaps() {
 void sqlrservercontroller::buildToJDBCColumnMaps() {
 
 	// JDBC getDatabaseList
-	// map to JDBC getCatalogs() format from ODBC SQLTables() format
+	// map from ODBC SQLTables() format to JDBC getCatalogs() format
+	// (all backends return ODBC SQLTables() format)
 	//
 	// TABLE_CAT <- TABLE_CAT
 	pvt->_jdbcdatabasescolumnmap.setValue(0,0);
@@ -6308,10 +6324,16 @@ void sqlrservercontroller::buildToJDBCColumnMaps() {
 	pvt->_jdbctablescolumnnamemap.setValue(9,"REF_GENERATION");
 
 	// JDBC getTableTypeList
-	// FIXME: implement this...
+	// map from ODBC SQLTables() format to JDBC getTableTypes() format
+	// (all backends return ODBC SQLTables() format)
+	//
+	// TABLE_TYPE <- TABLE_TYPE
+	pvt->_jdbctabletypescolumnmap.setValue(0,3);
+	pvt->_jdbctabletypescolumnnamemap.setValue(0,"TABLE_TYPE");
 
 	// JDBC getColumnList
-	// map to JDBC getColumns() format from ODBC SQLColumns()+ format
+	// map from ODBC SQLColumns()+ format to JDBC getColumns() format
+	// (all backends return ODBC SQLColumns()+ format)
 	//
 	// TABLE_CAT <- TABLE_CAT
 	pvt->_jdbccolumnscolumnmap.setValue(0,0);

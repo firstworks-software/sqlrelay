@@ -1588,7 +1588,7 @@ bool sqlrprotocol_sqlrclient::processQueryOrBindCursor(
 								listformat);
 					break;
 				case SQLRCLIENTQUERYTYPE_TABLE_TYPE_LIST:
-					cont->setTableListFormat(
+					cont->setTableTypeListFormat(
 								listformat);
 					break;
 				case SQLRCLIENTQUERYTYPE_COLUMN_LIST:

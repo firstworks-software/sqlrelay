@@ -1099,6 +1099,24 @@ bool sqlrsh::externalCommand(sqlrconnection *sqlrcon,
 			sqlrcur->getTableList(wild);
 			delete[] wild;
 		} else if (!charstring::compareIgnoringCase(command,
+						"show table types mysql",22)) {
+			char	*wild=getWild(command);
+			sqlrcur->getTableTypeList(wild,
+					SQLRCLIENTLISTFORMAT_MYSQL);
+			delete[] wild;
+		} else if (!charstring::compareIgnoringCase(command,
+						"show table types odbc",21)) {
+			char	*wild=getWild(command);
+			sqlrcur->getTableTypeList(wild,
+					SQLRCLIENTLISTFORMAT_ODBC);
+			delete[] wild;
+		} else if (!charstring::compareIgnoringCase(command,
+						"show table types jdbc",21)) {
+			char	*wild=getWild(command);
+			sqlrcur->getTableTypeList(wild,
+					SQLRCLIENTLISTFORMAT_JDBC);
+			delete[] wild;
+		} else if (!charstring::compareIgnoringCase(command,
 						"show table types",16)) {
 			char	*wild=getWild(command);
 			sqlrcur->getTableTypeList(wild);

@@ -125,6 +125,8 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes,
 						bool currentschemaonly);
+		const char	*getTableTypeListQuery(bool wild,
+						bool currentschemaonly);
 		const char	*getGlobalTempTableListQuery(
 						bool currentschemaonly);
 		const char	*getColumnListQuery(
@@ -186,6 +188,7 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		bool		disablekeylookup;
 
 		stringbuffer	tablelistquery;
+		stringbuffer	tabletypelistquery;
 
 		stringbuffer	alltypeinfoquery;
 };
@@ -1227,6 +1230,7 @@ const char *oracleconnection::getDbHostNameQuery() {
 }
 
 const char *oracleconnection::getDatabaseListQuery(bool wild) {
+	// FIXME: should I return the username as the table_schem too?
 	return (wild)?
 		"select "
 		"	username as table_cat, "
@@ -1257,13 +1261,40 @@ const char *oracleconnection::getDatabaseListQuery(bool wild) {
 
 const char *oracleconnection::getSchemaListQuery(bool wild,
 						bool currentdbonly) {
-	return "select 'test' from dual";
+	// FIXME: should I return the username as the table_cat too?
+	return (wild)?
+		"select "
+		"	'' as table_cat, "
+		"	user as table_schem, "
+		"	'' as table_name, "
+		"	'' as table_type, "
+		"	'' as remarks, "
+		"	null "
+		"from "
+		"	dual "
+		"where "
+		"	username like upper('%s') "
+		"order by "
+		"	table_schem"
+		:
+		"select "
+		"	'' as table_cat, "
+		"	user as table_schem, "
+		"	'' as table_name, "
+		"	'' as table_type, "
+		"	'' as remarks, "
+		"	null "
+		"from "
+		"	dual "
+		"order by "
+		"	table_schem";
 }
 
 const char *oracleconnection::getTableListQuery(bool wild,
 						uint16_t objecttypes,
 						bool currentschemaonly) {
 
+	// FIXME: should I return the owner as the table_cat too?
 	tablelistquery.clear();
 	tablelistquery.append(
 		"select "
@@ -1311,11 +1342,59 @@ const char *oracleconnection::getTableListQuery(bool wild,
 	return tablelistquery.getString();
 }
 
+const char *oracleconnection::getTableTypeListQuery(bool wild,
+						bool currentschemaonly) {
+
+	tabletypelistquery.clear();
+	tabletypelistquery.append(
+		"(select "
+		"	'' as TABLE_CAT, "
+		"	'' as TABLE_SCHEM, "
+		"	'' as TABLE_NAME, "
+		"	'TABLE' as TABLE_TYPE, "
+		"	'' as REMARKS, "
+		"	null "
+		"from "
+		"	dual) "
+		"union "
+		"(select "
+		"	'' as TABLE_CAT, "
+		"	'' as TABLE_SCHEM, "
+		"	'' as TABLE_NAME, "
+		"	'VIEW' as TABLE_TYPE, "
+		"	'' as REMARKS, "
+		"	null "
+		"from "
+		"	dual) "
+		"union "
+		"(select "
+		"	'' as TABLE_CAT, "
+		"	'' as TABLE_SCHEM, "
+		"	'' as TABLE_NAME, "
+		"	'SYNONYM' as TABLE_TYPE, "
+		"	'' as REMARKS, "
+		"	null "
+		"from "
+		"	dual) "
+		"union "
+		"(select "
+		"	'' as TABLE_CAT, "
+		"	'' as TABLE_SCHEM, "
+		"	'' as TABLE_NAME, "
+		"	'MATERIALIZED VIEW' as TABLE_TYPE, "
+		"	'' as REMARKS, "
+		"	null "
+		"from "
+		"	dual)");
+	return tabletypelistquery.getString();
+}
+
 const char *oracleconnection::getGlobalTempTableListQuery(
 						bool currentschemaonly) {
 	if (supportssyscontext) {
 		return "select "
-			"	table_name "
+			"	table_name, "
+			"	null "
 			"from "
 			"	all_tables "
 			"where "
@@ -1348,6 +1427,7 @@ const char *oracleconnection::getColumnListQueryWithoutKeys(
 	// to see if the object is a synonym though, so we'll do that first
 	// and only spend the extra time if it is.
 
+	// FIXME: should I return the owner as the table_schem too?
 	if (isSynonym(table)) {
 		if (supportssyscontext) {
 			return (wild)?
@@ -1729,6 +1809,7 @@ const char *oracleconnection::getColumnListQueryWithKeys(
 	// to see if the object is a synonym though, so we'll do that first
 	// and only spend the extra time if it is.
 
+	// FIXME: should I return the owner as the table_schem too?
 	if (isSynonym(table)) {
 		if (supportssyscontext) {
 			return (wild)?
