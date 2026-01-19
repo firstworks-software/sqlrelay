@@ -1257,7 +1257,7 @@ const char *oracleconnection::getDatabaseListQuery(bool wild) {
 
 const char *oracleconnection::getSchemaListQuery(bool wild,
 						bool currentdbonly) {
-	return "select test from dual";
+	return "select 'test' from dual";
 }
 
 const char *oracleconnection::getTableListQuery(bool wild,

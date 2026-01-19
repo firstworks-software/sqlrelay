@@ -21,7 +21,7 @@ public class SQLRelayDriver implements Driver {
 
 	public static final boolean	debug=true;
 
-	private int	indent=0;
+	Map<Long,Integer>	indents=new HashMap<>();
 
 	private static final	StackWalker	walker=
 		StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE);
@@ -42,7 +42,7 @@ public class SQLRelayDriver implements Driver {
 	/**
 	 *   Try to make a database connection to the given URL.
 	 */
-	public synchronized
+	public
 	Connection connect(String url, Properties info) throws SQLException {
 		debugFunction(this);
 		SQLRelayConnectInfo	ci=parseConnectInfo(url,info);
@@ -57,7 +57,7 @@ public class SQLRelayDriver implements Driver {
 		return conn;
 	}
 
-	public synchronized
+	public
 	SQLRelayConnectInfo parseConnectInfo(String url, Properties info) {
 		debugFunction(this);
 
@@ -205,7 +205,7 @@ public class SQLRelayDriver implements Driver {
 	 *  Returns true if the driver thinks that it can open a connection to
 	 *  the given URL.
 	 */
-	public synchronized
+	public
 	boolean acceptsURL(String url) throws SQLException {
 		debugFunction(this);
 		boolean	valid=validConnectInfo(parseConnectInfo(url,null));
@@ -218,7 +218,7 @@ public class SQLRelayDriver implements Driver {
 	 *  to discover what properties it should prompt a human for in order
 	 *  to get enough information to connect to a database. 
 	 */
-	public synchronized
+	public
 	DriverPropertyInfo[] getPropertyInfo(String url,
 							Properties info)
 							throws SQLException {
@@ -289,7 +289,7 @@ public class SQLRelayDriver implements Driver {
 	/**
 	 *   Get the driver's major version number.
 	 */
-	public synchronized
+	public
 	int getMajorVersion() {
 		debugFunction(this);
 		debugEnd();
@@ -299,23 +299,24 @@ public class SQLRelayDriver implements Driver {
 	/**
 	 *   Get the driver's minor version number.
 	 */
-	public synchronized
+	public
 	int getMinorVersion() {
 		debugFunction(this);
 		debugEnd();
 		return MINOR_VERSION;
 	}
 
-	public synchronized
+	public
 	Logger getParentLogger() throws SQLFeatureNotSupportedException {
 		debugFunction(this);
+		debugPrintln("exception: SQLFeatureNotSupportedException()");
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	/**
 	 *  Report whether the Driver is a genuine JDBC COMPLIANT (tm) driver. 
 	 */
-	public synchronized
+	public
 	boolean jdbcCompliant() {
 		debugFunction(this);
 		debugEnd();
@@ -329,7 +330,13 @@ public class SQLRelayDriver implements Driver {
 		}
 		debugPrintIndent();
 		System.out.println(str + " {");
-		indent++;
+
+		long	id=Thread.currentThread().getId();
+		Integer	indent=indents.get(id);
+		if (indent==null) {
+			indent=0;
+		}
+		indents.put(id,indent+1);
 	}
 
 	public synchronized
@@ -337,17 +344,28 @@ public class SQLRelayDriver implements Driver {
 		if (!debug) {
 			return;
 		}
-		indent--;
+
+		long	id=Thread.currentThread().getId();
+		Integer	indent=indents.get(id);
+		if (indent==null) {
+			indent=1;
+		}
+		indents.put(id,indent-1);
+
 		debugPrintIndent();
-		System.out.println("}");
+		System.out.println(id+": }");
 	}
 
 	public synchronized
 	void debugZeroIndent() {
-		indent=0;
+		indents.put(Thread.currentThread().getId(),0);
 	}
 
 	private void debugPrintIndent() {
+		Integer	indent=indents.get(Thread.currentThread().getId());
+		if (indent==null) {
+			indent=0;
+		}
 		for (int i=0; i<indent; i++) {
 			System.out.print("	");
 		}
@@ -355,58 +373,61 @@ public class SQLRelayDriver implements Driver {
 
 	public synchronized
 	void debugFunction(Object obj) {
+
 		if (!debug) {
 			return;
 		}
+
 		StackTraceElement	ste=new Throwable().getStackTrace()[1];
-		debugStart(
-				Thread.currentThread().getId()+
-				/*"|"+
-				System.identityHashCode(this)+*/
-				": "+
-				ste.getClassName().substring(
-					ste.getClassName().lastIndexOf(".")+1)+
-				"."+ste.getMethodName());
+
+		String	classname=ste.getClassName().substring(
+					ste.getClassName().lastIndexOf(".")+1);
+		String	methodname=ste.getMethodName();
+		debugStart(Thread.currentThread().getId()+": "+
+						classname+"."+methodname);
 
 		try {
+			int	code=0;
 			switch (obj.getClass().getSimpleName()) {
 				case "SQLRelayConnection":
-					debugPrintln("Connection: "+
-					System.identityHashCode(obj));
+					code=System.identityHashCode(obj);
 					break;
 				case "SQLRelayStatement":
-					debugPrintln("Connection: "+
-					System.identityHashCode(
+					code=System.identityHashCode(
 					((SQLRelayStatement)obj).
-					getConnection()));
+					getConnection());
 					break;
 				case "SQLRelayCallableStatement":
-					debugPrintln("Connection: "+
-					System.identityHashCode(
+					code=System.identityHashCode(
 					((SQLRelayCallableStatement)obj).
-					getConnection()));
+					getConnection());
 					break;
 				case "SQLRelayPreparedStatement":
-					debugPrintln("Connection: "+
-					System.identityHashCode(
+					code=System.identityHashCode(
 					((SQLRelayPreparedStatement)obj).
-					getConnection()));
+					getConnection());
 					break;
 				case "SQLRelayDatabaseMetaData":
-					debugPrintln("Connection: "+
-					System.identityHashCode(
+					code=System.identityHashCode(
 					((SQLRelayDatabaseMetaData)obj).
-					getConnection()));
+					getConnection());
 					break;
 				case "SQLRelayResultSet":
-					debugPrintln("Connection: "+
-					System.identityHashCode(
-					((SQLRelayResultSet)obj).
-					getStatement().getConnection()));
+					Statement	stmt=
+						((SQLRelayResultSet)obj).
+						getStatement();
+					if (stmt!=null) {
+						code=System.identityHashCode(
+							stmt.getConnection());
+					}
 					break;
 			}
+			if (code!=0) {
+				debugPrintln("Connection: "+code);
+			}
 		} catch (Exception ex) {
-			debugPrintln(ex.getMessage());
+			debugPrintln("exception: "+ex.getMessage());
+			ex.printStackTrace();
 		}
 	}
 

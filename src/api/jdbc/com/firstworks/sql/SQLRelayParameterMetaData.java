@@ -18,14 +18,14 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setParameters(HashMap<Integer,SQLRelayParameter> parameters) {
 		driver.debugFunction(this);
 		this.parameters=parameters;
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	String getParameterClassName(int param) {
 		driver.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
@@ -42,7 +42,7 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 		return p;
 	}
 
-	public synchronized
+	public
 	int getParameterCount() {
 		driver.debugFunction(this);
 		int	p=(parameters!=null)?parameters.size():0;
@@ -50,7 +50,7 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 		return p;
 	}
 
-	public synchronized
+	public
 	int getParameterMode(int param) {
 		driver.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
@@ -59,7 +59,7 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 		return mode;
 	}
 
-	public synchronized
+	public
 	int getParameterType(int param) {
 		driver.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
@@ -68,7 +68,7 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 		return type;
 	}
 
-	public synchronized
+	public
 	String getParameterTypeName(int param) {
 		driver.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
@@ -77,7 +77,7 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 		return name;
 	}
 
-	public synchronized
+	public
 	int getPrecision(int param) {
 		driver.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
@@ -86,7 +86,7 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 		return precision;
 	}
 
-	public synchronized
+	public
 	int getScale(int param) {
 		driver.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
@@ -95,7 +95,7 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 		return scale;
 	}
 
-	public synchronized
+	public
 	int isNullable(int param) {
 		driver.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
@@ -104,7 +104,7 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 		return in;
 	}
 
-	public synchronized
+	public
 	boolean isSigned(int param) {
 		driver.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
@@ -113,14 +113,14 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 		return is;
 	}
 
-	public synchronized
+	public
 	boolean isWrapperFor(Class<?> iface) throws SQLException {
 		driver.debugFunction(this);
 		driver.debugEnd();
 		return false;
 	}
 
-	public synchronized
+	public
 	<T> T unwrap(Class<T> iface) throws SQLException {
 		driver.debugFunction(this);
 		driver.debugEnd();

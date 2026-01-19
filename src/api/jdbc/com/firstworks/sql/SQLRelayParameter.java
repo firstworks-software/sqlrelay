@@ -99,210 +99,210 @@ public class SQLRelayParameter {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	String getClassName() {
 		driver.debugFunction(this);
 		driver.debugEnd();
 		return classname;
 	}
 
-	public synchronized
+	public
 	int getMode() {
 		driver.debugFunction(this);
 		driver.debugEnd();
 		return mode;
 	}
 
-	public synchronized
+	public
 	int getType() {
 		driver.debugFunction(this);
 		driver.debugEnd();
 		return type;
 	}
 
-	public synchronized
+	public
 	String getTypeName() {
 		driver.debugFunction(this);
 		driver.debugEnd();
 		return typename;
 	}
 
-	public synchronized
+	public
 	int getPrecision() {
 		driver.debugFunction(this);
 		driver.debugEnd();
 		return precision;
 	}
 
-	public synchronized
+	public
 	int getScale() {
 		driver.debugFunction(this);
 		driver.debugEnd();
 		return scale;
 	}
 
-	public synchronized
+	public
 	int getIsNullable() {
 		driver.debugFunction(this);
 		driver.debugEnd();
 		return nullable;
 	}
 
-	public synchronized
+	public
 	boolean getIsSigned() {
 		driver.debugFunction(this);
 		driver.debugEnd();
 		return signed;
 	}
 
-	public synchronized
+	public
 	Object getObject() {
 		driver.debugFunction(this);
 		driver.debugEnd();
 		return object;
 	}
 
-	public synchronized
+	public
 	long getLength() {
 		driver.debugFunction(this);
 		driver.debugEnd();
 		return length;
 	}
 
-	public synchronized
+	public
 	boolean getIsBinary() {
 		driver.debugFunction(this);
 		driver.debugEnd();
 		return binary;
 	}
 
-	public synchronized
+	public
 	boolean getIsLob() {
 		driver.debugFunction(this);
 		driver.debugEnd();
 		return lob;
 	}
 
-	public synchronized
+	public
 	boolean getIsAscii() {
 		driver.debugFunction(this);
 		driver.debugEnd();
 		return ascii;
 	}
 
-	public synchronized
+	public
 	Calendar getCalendar() {
 		driver.debugFunction(this);
 		driver.debugEnd();
 		return cal;
 	}
 
-	public synchronized
+	public
 	BindType getBindType() {
 		driver.debugFunction(this);
 		driver.debugEnd();
 		return bindtype;
 	}
 
-	public synchronized
+	public
 	void setClassName(String classname) {
 		driver.debugFunction(this);
 		this.classname=classname;
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setMode(int mode) {
 		driver.debugFunction(this);
 		this.mode=mode;
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setType(int type) {
 		driver.debugFunction(this);
 		this.type=type;
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setTypeName(String typename) {
 		driver.debugFunction(this);
 		this.typename=typename;
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setPrecision(int precision) {
 		driver.debugFunction(this);
 		this.precision=precision;
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setScale(int scale) {
 		driver.debugFunction(this);
 		this.scale=scale;
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setIsNullable(int nullable) {
 		driver.debugFunction(this);
 		this.nullable=nullable;
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setIsSigned(boolean signed) {
 		driver.debugFunction(this);
 		this.signed=signed;
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setObject(Object object) {
 		driver.debugFunction(this);
 		this.object=object;
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setLength(long length) {
 		driver.debugFunction(this);
 		this.length=length;
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setIsBinary(boolean binary) {
 		driver.debugFunction(this);
 		this.binary=binary;
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setIsLob(boolean lob) {
 		driver.debugFunction(this);
 		this.lob=lob;
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setIsAscii(boolean ascii) {
 		driver.debugFunction(this);
 		this.ascii=ascii;
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setCalendar(Calendar cal) {
 		driver.debugFunction(this);
 		this.cal=cal;
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setBindType(BindType bindtype) {
 		driver.debugFunction(this);
 		this.bindtype=bindtype;

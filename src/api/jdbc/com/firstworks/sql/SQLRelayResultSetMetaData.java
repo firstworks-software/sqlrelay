@@ -16,17 +16,17 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setSQLRCursor(SQLRCursor sqlrcur) {
 		this.sqlrcur=sqlrcur;
 	}
 
-	public synchronized
+	public
 	SQLRCursor getSQLRCursor() {
 		return sqlrcur;
 	}
 
-	public synchronized
+	public
 	String getCatalogName(int column) {
 		driver.debugFunction(this);
 		String	catalogname="";
@@ -36,7 +36,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		return catalogname;
 	}
 
-	public synchronized
+	public
 	String getColumnClassName(int column) {
 		driver.debugFunction(this);
 		driver.debugPrintln("column: ",column);
@@ -645,7 +645,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		return retval;
 	}
 
-	public synchronized
+	public
 	int getColumnCount() {
 		driver.debugFunction(this);
 		int	colcount=sqlrcur.colCount();
@@ -654,7 +654,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		return colcount;
 	}
 
-	public synchronized
+	public
 	int getColumnDisplaySize(int column) {
 		driver.debugFunction(this);
 		int	longest=sqlrcur.getLongest(column-1);
@@ -668,7 +668,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		return longest;
 	}
 
-	public synchronized
+	public
 	String getColumnLabel(int column) {
 		driver.debugFunction(this);
 		String	label=sqlrcur.getColumnName(column-1);
@@ -678,7 +678,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		return label;
 	}
 
-	public synchronized
+	public
 	String getColumnName(int column) {
 		driver.debugFunction(this);
 		String	columnname=sqlrcur.getColumnName(column-1);
@@ -688,7 +688,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		return columnname;
 	}
 
-	public synchronized
+	public
 	int getColumnType(int column) {
 		driver.debugFunction(this);
 		driver.debugPrintln("column: ",column);
@@ -1297,7 +1297,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		return retval;
 	}
 
-	public synchronized
+	public
 	String getColumnTypeName(int column) {
 		driver.debugFunction(this);
 		String	typename=sqlrcur.getColumnType(column-1);
@@ -1307,7 +1307,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		return typename;
 	}
 
-	public synchronized
+	public
 	int getPrecision(int column) {
 		driver.debugFunction(this);
 		int	precision=(int)sqlrcur.getColumnPrecision(column-1);
@@ -1321,7 +1321,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		return precision;
 	}
 
-	public synchronized
+	public
 	int getScale(int column) {
 		driver.debugFunction(this);
 		int	scale=(int)sqlrcur.getColumnScale(column-1);
@@ -1331,7 +1331,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		return scale;
 	}
 
-	public synchronized
+	public
 	String getSchemaName(int column) {
 		driver.debugFunction(this);
 		String	schemaname="";
@@ -1341,7 +1341,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		return schemaname;
 	}
 
-	public synchronized
+	public
 	String getTableName(int column) {
 		driver.debugFunction(this);
 		String	tablename="";
@@ -1353,7 +1353,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		return tablename;
 	}
 
-	public synchronized
+	public
 	boolean isAutoIncrement(int column) {
 		driver.debugFunction(this);
 		boolean	isautoinc=sqlrcur.getColumnIsAutoIncrement(column-1);
@@ -1363,7 +1363,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		return isautoinc;
 	}
 
-	public synchronized
+	public
 	boolean isCaseSensitive(int column) {
 		driver.debugFunction(this);
 		// FIXME: can db type tell us this?
@@ -1374,7 +1374,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		return iscasesensitive;
 	}
 
-	public synchronized
+	public
 	boolean isCurrency(int column) {
 		driver.debugFunction(this);
 		String	ctype=sqlrcur.getColumnType(column-1).toUpperCase();
@@ -1388,7 +1388,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		return iscurrency;
 	}
 
-	public synchronized
+	public
 	boolean isDefinitelyWritable(int column) {
 		driver.debugFunction(this);
 		boolean	isdefinitelywriteable=false;
@@ -1399,7 +1399,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		return isdefinitelywriteable;
 	}
 
-	public synchronized
+	public
 	int isNullable(int column) {
 		driver.debugFunction(this);
 		int	isnullable=(sqlrcur.getColumnIsNullable(column-1))?
@@ -1410,7 +1410,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		return isnullable;
 	}
 
-	public synchronized
+	public
 	boolean isReadOnly(int column) {
 		driver.debugFunction(this);
 		boolean	isreadonly=false;
@@ -1420,7 +1420,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		return isreadonly;
 	}
 
-	public synchronized
+	public
 	boolean isSearchable(int column) {
 		driver.debugFunction(this);
 		boolean	issearchable=true;
@@ -1430,7 +1430,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		return issearchable;
 	}
 
-	public synchronized
+	public
 	boolean isSigned(int column) {
 		driver.debugFunction(this);
 		boolean	issigned=!sqlrcur.getColumnIsUnsigned(column-1);
@@ -1440,7 +1440,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		return issigned;
 	}
 
-	public synchronized
+	public
 	boolean isWritable(int column) {
 		driver.debugFunction(this);
 		boolean	iswriteable=true;
@@ -1450,14 +1450,14 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		return iswriteable;
 	}
 
-	public synchronized
+	public
 	boolean isWrapperFor(Class<?> iface) throws SQLException {
 		driver.debugFunction(this);
 		driver.debugEnd();
 		return false;
 	}
 
-	public synchronized
+	public
 	<T> T unwrap(Class<T> iface) throws SQLException {
 		driver.debugFunction(this);
 		driver.debugEnd();

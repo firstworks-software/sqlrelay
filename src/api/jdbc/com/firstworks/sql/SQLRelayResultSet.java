@@ -19,6 +19,7 @@ import com.firstworks.sqlrelay.*;
 
 public class SQLRelayResultSet implements ResultSet {
 
+	private Object		networklock;
 	private Statement	statement;
 	private SQLRCursor	sqlrcur;
 	private long		currentrow;
@@ -38,6 +39,7 @@ public class SQLRelayResultSet implements ResultSet {
 
 	private void reset() {
 		driver.debugFunction(this);
+		networklock=null;
 		statement=null;
 		sqlrcur=null;
 		currentrow=0;
@@ -49,30 +51,33 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
+	void setNetworkLock(Object networklock) {
+		this.networklock=networklock;
+	}
+
+	public
 	void setStatement(Statement statement) {
 		this.statement=statement;
 	}
 
-	public synchronized
+	public
 	void setSQLRCursor(SQLRCursor sqlrcur) {
 		this.sqlrcur=sqlrcur;
 	}
 
-	public synchronized
+	public
 	SQLRCursor getSQLRCursor() {
 		return sqlrcur;
 	}
 
-	public synchronized
+	public
 	boolean absolute(int row) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		driver.debugPrintln("row: ",row);
 		if (row<currentrow) {
-			String	ex="FIXME: ResultSet type is Forward-Only";
-			driver.debugPrintln("exception: ",ex);
-			throw new SQLException(ex);
+			throwException("FIXME: ResultSet type is Forward-Only");
 		} else if (row==0) {
 			beforefirst=true;
 			currentrow=0;
@@ -83,7 +88,9 @@ public class SQLRelayResultSet implements ResultSet {
 			currentrow=row;
 			// FIXME: we can evaulate the result set buffer size
 			// to decide whether or not we need to call getField()
-			sqlrcur.getField(currentrow-1,0);
+			synchronized (networklock) {
+				sqlrcur.getField(currentrow-1,0);
+			}
 			long	rowcount=sqlrcur.rowCount();
 			if (sqlrcur.endOfResultSet()) {
 				if (currentrow-1==rowcount-1) {
@@ -100,16 +107,14 @@ public class SQLRelayResultSet implements ResultSet {
 		} else if (row<0) {
 			// FIXME: implement this...
 			// position relative to end of result set
-			String	ex="FIXME: negative row not supported";
-			driver.debugPrintln("exception: ",ex);
-			throw new SQLException(ex);
+			throwException("FIXME: negative row not supported");
 		}
 		driver.debugPrintln("success");
 		driver.debugEnd();
 		return true;
 	}
 
-	public synchronized
+	public
 	void afterLast() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -117,7 +122,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void beforeFirst() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -125,7 +130,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void cancelRowUpdates() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -133,24 +138,26 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void clearWarnings() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void close() throws SQLException {
 		driver.debugFunction(this);
 		if (sqlrcur!=null) {
-			sqlrcur.closeResultSet();
+			synchronized (networklock) {
+				sqlrcur.closeResultSet();
+			}
 		}
 		reset();
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void deleteRow() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -158,7 +165,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	int findColumn(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -169,12 +176,11 @@ public class SQLRelayResultSet implements ResultSet {
 				return i+1;
 			}
 		}
-		String	ex=("Column not found");
-		driver.debugPrintln(ex);
-		throw new SQLException(ex);
+		throwException("Column not found");
+		return 0;
 	}
 
-	public synchronized
+	public
 	boolean first() throws SQLException {
 		driver.debugFunction(this);
 		boolean	abs=absolute(1);
@@ -182,7 +188,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return abs;
 	}
 
-	public synchronized
+	public
 	Array getArray(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -192,7 +198,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public synchronized
+	public
 	Array getArray(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -202,12 +208,15 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public synchronized
+	public
 	InputStream getAsciiStream(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
+		String	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getField(currentrow-1,columnindex-1);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column index: ",columnindex);
 		driver.debugPrintln("field: ",field);
@@ -218,12 +227,15 @@ public class SQLRelayResultSet implements ResultSet {
 		return is;
 	}
 
-	public synchronized
+	public
 	InputStream getAsciiStream(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		String	field=sqlrcur.getField(currentrow-1,columnlabel);
+		String	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getField(currentrow-1,columnlabel);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column: ",columnlabel);
 		driver.debugPrintln("field: ",field);
@@ -234,12 +246,15 @@ public class SQLRelayResultSet implements ResultSet {
 		return is;
 	}
 
-	public synchronized
+	public
 	BigDecimal getBigDecimal(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
+		String	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getField(currentrow-1,columnindex-1);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column index: ",columnindex);
 		driver.debugPrintln("field: ",field);
@@ -253,13 +268,16 @@ public class SQLRelayResultSet implements ResultSet {
 		return bd;
 	}
 
-	public synchronized
+	public
 	BigDecimal getBigDecimal(int columnindex, int scale)
 						throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
+		String	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getField(currentrow-1,columnindex-1);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column index: ",columnindex);
 		driver.debugPrintln("field: ",field);
@@ -275,12 +293,15 @@ public class SQLRelayResultSet implements ResultSet {
 		return bd;
 	}
 
-	public synchronized
+	public
 	BigDecimal getBigDecimal(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		String	field=sqlrcur.getField(currentrow-1,columnlabel);
+		String	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getField(currentrow-1,columnlabel);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column: ",columnlabel);
 		driver.debugPrintln("field: ",field);
@@ -294,13 +315,16 @@ public class SQLRelayResultSet implements ResultSet {
 		return bd;
 	}
 
-	public synchronized
+	public
 	BigDecimal getBigDecimal(String columnlabel, int scale)
 						throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		String	field=sqlrcur.getField(currentrow-1,columnlabel);
+		String	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getField(currentrow-1,columnlabel);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column: ",columnlabel);
 		driver.debugPrintln("field: ",field);
@@ -316,13 +340,16 @@ public class SQLRelayResultSet implements ResultSet {
 		return bd;
 	}
 
-	public synchronized
+	public
 	InputStream getBinaryStream(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		byte[]	field=sqlrcur.getFieldAsByteArray(
+		byte[]	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getFieldAsByteArray(
 					currentrow-1,columnindex-1);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column index: ",columnindex);
 		driver.debugPrintln("field: ",field);
@@ -332,13 +359,16 @@ public class SQLRelayResultSet implements ResultSet {
 		return is;
 	}
 
-	public synchronized
+	public
 	InputStream getBinaryStream(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		byte[]	field=sqlrcur.getFieldAsByteArray(
+		byte[]	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getFieldAsByteArray(
 					currentrow-1,columnlabel);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column: ",columnlabel);
 		driver.debugPrintln("field: ",field);
@@ -348,7 +378,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return is;
 	}
 
-	public synchronized
+	public
 	Blob getBlob(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -361,7 +391,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public synchronized
+	public
 	Blob getBlob(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -374,12 +404,15 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public synchronized
+	public
 	boolean getBoolean(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
+		String	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getField(currentrow-1,columnindex-1);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column index: ",columnindex);
 		driver.debugPrintln("field: ",field);
@@ -389,12 +422,15 @@ public class SQLRelayResultSet implements ResultSet {
 		return eq;
 	}
 
-	public synchronized
+	public
 	boolean getBoolean(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		String	field=sqlrcur.getField(currentrow-1,columnlabel);
+		String	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getField(currentrow-1,columnlabel);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column: ",columnlabel);
 		driver.debugPrintln("field: ",field);
@@ -404,14 +440,18 @@ public class SQLRelayResultSet implements ResultSet {
 		return eq;
 	}
 
-	public synchronized
+	public
 	byte getByte(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		long	field=sqlrcur.getFieldAsInteger(
+		long	field=0;
+		synchronized (networklock) {
+			field=sqlrcur.getFieldAsInteger(
 					currentrow-1,columnindex-1);
-		wasnull=(sqlrcur.getField(currentrow-1,columnindex-1)==null);
+			wasnull=(sqlrcur.getField(
+					currentrow-1,columnindex-1)==null);
+		}
 		driver.debugPrintln("column index: ",columnindex);
 		driver.debugPrintln("field: ",field);
 		driver.debugPrintln("was null: ",wasnull);
@@ -419,14 +459,18 @@ public class SQLRelayResultSet implements ResultSet {
 		return (byte)field;
 	}
 
-	public synchronized
+	public
 	byte getByte(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		long	field=sqlrcur.getFieldAsInteger(
+		long	field=0;
+		synchronized (networklock) {
+			field=sqlrcur.getFieldAsInteger(
 					currentrow-1,columnlabel);
-		wasnull=(sqlrcur.getField(currentrow-1,columnlabel)==null);
+			wasnull=(sqlrcur.getField(
+					currentrow-1,columnlabel)==null);
+		}
 		driver.debugPrintln("column: ",columnlabel);
 		driver.debugPrintln("field: ",field);
 		driver.debugPrintln("was null: ",wasnull);
@@ -434,13 +478,16 @@ public class SQLRelayResultSet implements ResultSet {
 		return (byte)field;
 	}
 
-	public synchronized
+	public
 	byte[] getBytes(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		byte[]	field=sqlrcur.getFieldAsByteArray(
+		byte[]	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getFieldAsByteArray(
 					currentrow-1,columnindex-1);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column index: ",columnindex);
 		driver.debugPrintln("field: ",field);
@@ -449,13 +496,16 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public synchronized
+	public
 	byte[] getBytes(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		byte[]	field=sqlrcur.getFieldAsByteArray(
+		byte[]	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getFieldAsByteArray(
 					currentrow-1,columnlabel);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column: ",columnlabel);
 		driver.debugPrintln("field: ",field);
@@ -464,12 +514,15 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public synchronized
+	public
 	Reader getCharacterStream(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
+		String	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getField(currentrow-1,columnindex-1);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column index: ",columnindex);
 		driver.debugPrintln("field: ",field);
@@ -478,12 +531,15 @@ public class SQLRelayResultSet implements ResultSet {
 		return (wasnull)?null:(new StringReader(field));
 	}
 
-	public synchronized
+	public
 	Reader getCharacterStream(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		String	field=sqlrcur.getField(currentrow-1,columnlabel);
+		String	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getField(currentrow-1,columnlabel);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column: ",columnlabel);
 		driver.debugPrintln("field: ",field);
@@ -492,7 +548,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return (wasnull)?null:(new StringReader(field));
 	}
 
-	public synchronized
+	public
 	Clob getClob(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -505,7 +561,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public synchronized
+	public
 	Clob getClob(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -518,7 +574,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public synchronized
+	public
 	int getConcurrency() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -528,7 +584,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return concurrency;
 	}
 
-	public synchronized
+	public
 	String getCursorName() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -538,7 +594,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return cursorname;
 	}
 
-	public synchronized
+	public
 	Date getDate(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		// FIXME: pass in some default calendar
@@ -547,12 +603,15 @@ public class SQLRelayResultSet implements ResultSet {
 		return dt;
 	}
 
-	public synchronized
+	public
 	Date getDate(int columnindex, Calendar cal) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
+		String	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getField(currentrow-1,columnindex-1);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column index: ",columnindex);
 		driver.debugPrintln("field: ",field);
@@ -567,7 +626,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return dt;
 	}
 
-	public synchronized
+	public
 	Date getDate(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		// FIXME: pass in some default calendar
@@ -576,12 +635,15 @@ public class SQLRelayResultSet implements ResultSet {
 		return dt;
 	}
 
-	public synchronized
+	public
 	Date getDate(String columnlabel, Calendar cal) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		String	field=sqlrcur.getField(currentrow-1,columnlabel);
+		String	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getField(currentrow-1,columnlabel);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column: ",columnlabel);
 		driver.debugPrintln("field: ",field);
@@ -596,14 +658,18 @@ public class SQLRelayResultSet implements ResultSet {
 		return dt;
 	}
 
-	public synchronized
+	public
 	double getDouble(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		double	field=sqlrcur.getFieldAsDouble(
+		double	field=0.0;
+		synchronized (networklock) {
+			field=sqlrcur.getFieldAsDouble(
 					currentrow-1,columnindex-1);
-		wasnull=(sqlrcur.getField(currentrow-1,columnindex-1)==null);
+			wasnull=(sqlrcur.getField(
+					currentrow-1,columnindex-1)==null);
+		}
 		driver.debugPrintln("column index: ",columnindex);
 		driver.debugPrintln("field: ",field);
 		driver.debugPrintln("was null: ",wasnull);
@@ -611,14 +677,18 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public synchronized
+	public
 	double getDouble(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		double	field=sqlrcur.getFieldAsDouble(
+		double	field=0.0;
+		synchronized (networklock) {
+			field=sqlrcur.getFieldAsDouble(
 					currentrow-1,columnlabel);
-		wasnull=(sqlrcur.getField(currentrow-1,columnlabel)==null);
+			wasnull=(sqlrcur.getField(
+					currentrow-1,columnlabel)==null);
+		}
 		driver.debugPrintln("column: ",columnlabel);
 		driver.debugPrintln("field: ",field);
 		driver.debugPrintln("was null: ",wasnull);
@@ -626,7 +696,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public synchronized
+	public
 	int getFetchDirection() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -636,7 +706,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return direction;
 	}
 
-	public synchronized
+	public
 	int getFetchSize() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -646,14 +716,18 @@ public class SQLRelayResultSet implements ResultSet {
 		return size;
 	}
 
-	public synchronized
+	public
 	float getFloat(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		float	field=(float)sqlrcur.getFieldAsDouble(
+		float	field=0.0f;
+		synchronized (networklock) {
+			field=(float)sqlrcur.getFieldAsDouble(
 					currentrow-1,columnindex-1);
-		wasnull=(sqlrcur.getField(currentrow-1,columnindex-1)==null);
+			wasnull=(sqlrcur.getField(
+					currentrow-1,columnindex-1)==null);
+		}
 		driver.debugPrintln("column index: ",columnindex);
 		driver.debugPrintln("field: ",field);
 		driver.debugPrintln("was null: ",wasnull);
@@ -661,14 +735,18 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public synchronized
+	public
 	float getFloat(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		float	field=(float)sqlrcur.getFieldAsDouble(
+		float	field=0.0f;
+		synchronized (networklock) {
+			field=(float)sqlrcur.getFieldAsDouble(
 					currentrow-1,columnlabel);
-		wasnull=(sqlrcur.getField(currentrow-1,columnlabel)==null);
+			wasnull=(sqlrcur.getField(
+					currentrow-1,columnlabel)==null);
+		}
 		driver.debugPrintln("column: ",columnlabel);
 		driver.debugPrintln("field: ",field);
 		driver.debugPrintln("was null: ",wasnull);
@@ -676,7 +754,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public synchronized
+	public
 	int getHoldability() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -687,14 +765,18 @@ public class SQLRelayResultSet implements ResultSet {
 		return holdability;
 	}
 
-	public synchronized
+	public
 	int getInt(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		int	field=(int)sqlrcur.getFieldAsInteger(
+		int	field=0;
+		synchronized (networklock) {
+			field=(int)sqlrcur.getFieldAsInteger(
 					currentrow-1,columnindex-1);
-		wasnull=(sqlrcur.getField(currentrow-1,columnindex-1)==null);
+			wasnull=(sqlrcur.getField(
+					currentrow-1,columnindex-1)==null);
+		}
 		driver.debugPrintln("column index: ",columnindex);
 		driver.debugPrintln("field: ",field);
 		driver.debugPrintln("was null: ",wasnull);
@@ -702,14 +784,18 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public synchronized
+	public
 	int getInt(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		int	field=(int)sqlrcur.getFieldAsInteger(
+		int	field=0;
+		synchronized (networklock) {
+			field=(int)sqlrcur.getFieldAsInteger(
 					currentrow-1,columnlabel);
-		wasnull=(sqlrcur.getField(currentrow-1,columnlabel)==null);
+			wasnull=(sqlrcur.getField(
+					currentrow-1,columnlabel)==null);
+		}
 		driver.debugPrintln("column: ",columnlabel);
 		driver.debugPrintln("field: ",field);
 		driver.debugPrintln("was null: ",wasnull);
@@ -717,14 +803,18 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public synchronized
+	public
 	long getLong(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		long	field=(long)sqlrcur.getFieldAsInteger(
+		long	field=0;
+		synchronized (networklock) {
+			field=(long)sqlrcur.getFieldAsInteger(
 					currentrow-1,columnindex-1);
-		wasnull=(sqlrcur.getField(currentrow-1,columnindex-1)==null);
+			wasnull=(sqlrcur.getField(
+					currentrow-1,columnindex-1)==null);
+		}
 		driver.debugPrintln("column index: ",columnindex);
 		driver.debugPrintln("field: ",field);
 		driver.debugPrintln("was null: ",wasnull);
@@ -732,14 +822,18 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public synchronized
+	public
 	long getLong(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		long	field=(long)sqlrcur.getFieldAsInteger(
+		long	field=0;
+		synchronized (networklock) {
+			field=(long)sqlrcur.getFieldAsInteger(
 					currentrow-1,columnlabel);
-		wasnull=(sqlrcur.getField(currentrow-1,columnlabel)==null);
+			wasnull=(sqlrcur.getField(
+					currentrow-1,columnlabel)==null);
+		}
 		driver.debugPrintln("column: ",columnlabel);
 		driver.debugPrintln("field: ",field);
 		driver.debugPrintln("was null: ",wasnull);
@@ -747,7 +841,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public synchronized
+	public
 	ResultSetMetaData getMetaData() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -758,13 +852,16 @@ public class SQLRelayResultSet implements ResultSet {
 		return metadata;
 	}
 
-	public synchronized
+	public
 	Reader getNCharacterStream(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		byte[]	field=sqlrcur.getFieldAsByteArray(
+		byte[]	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getFieldAsByteArray(
 						currentrow-1,columnindex-1);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column index: ",columnindex);
 		driver.debugPrintln("field: ",field);
@@ -778,13 +875,16 @@ public class SQLRelayResultSet implements ResultSet {
 		return r;
 	}
 
-	public synchronized
+	public
 	Reader getNCharacterStream(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		byte[]	field=sqlrcur.getFieldAsByteArray(
+		byte[]	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getFieldAsByteArray(
 						currentrow-1,columnlabel);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column: ",columnlabel);
 		driver.debugPrintln("field: ",field);
@@ -798,7 +898,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return r;
 	}
 
-	public synchronized
+	public
 	NClob getNClob(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -811,7 +911,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public synchronized
+	public
 	NClob getNClob(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -824,53 +924,59 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public synchronized
+	public
 	String getNString(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		byte[]	field=sqlrcur.getFieldAsByteArray(
+		byte[]	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getFieldAsByteArray(
 						currentrow-1,columnindex-1);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column index: ",columnindex);
 		driver.debugPrintln("field: ",field);
 		driver.debugPrintln("was null: ",wasnull);
+		String	str=null;
 		try {
-			String	str=null;
 			if (!wasnull) {
 				str=new String(field,"UTF-8");
 			}
 			driver.debugEnd();
-			return str;
 		} catch (Exception ex) {
-			throw new SQLException(ex.getMessage());
+			throwException(ex.getMessage());
 		}
+		return str;
 	}
 
-	public synchronized
+	public
 	String getNString(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		byte[]	field=sqlrcur.getFieldAsByteArray(
+		byte[]	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getFieldAsByteArray(
 						currentrow-1,columnlabel);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column: ",columnlabel);
 		driver.debugPrintln("field: ",field);
 		driver.debugPrintln("was null: ",wasnull);
+		String	str=null;
 		try {
-			String	str=null;
 			if (!wasnull) {
 				str=new String(field,"UTF-8");
 			}
 			driver.debugEnd();
-			return str;
 		} catch (Exception ex) {
-			throw new SQLException(ex.getMessage());
+			throwException(ex.getMessage());
 		}
+		return str;
 	}
 
-	public synchronized
+	public
 	Object getObject(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -881,7 +987,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public synchronized
+	public
 	<T> T getObject(int columnindex, Class<T> type) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -891,7 +997,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public synchronized
+	public
 	Object getObject(int columnindex, Map<String,Class<?>> map)
 							throws SQLException {
 		driver.debugFunction(this);
@@ -903,7 +1009,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public synchronized
+	public
 	Object getObject(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -914,7 +1020,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public synchronized
+	public
 	<T> T getObject(String columnlabel, Class<T> type) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -925,7 +1031,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public synchronized
+	public
 	Object getObject(String columnlabel, Map<String,Class<?>> map)
 							throws SQLException {
 		driver.debugFunction(this);
@@ -937,7 +1043,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public synchronized
+	public
 	Ref getRef(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -948,7 +1054,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public synchronized
+	public
 	Ref getRef(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -959,7 +1065,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public synchronized
+	public
 	int getRow() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -968,7 +1074,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return (int)currentrow;
 	}
 
-	public synchronized
+	public
 	RowId getRowId(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -979,7 +1085,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public synchronized
+	public
 	RowId getRowId(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -990,13 +1096,17 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public synchronized
+	public
 	short getShort(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
-		short	field=(short)sqlrcur.getFieldAsInteger(
-						currentrow-1,columnindex-1);
-		wasnull=(sqlrcur.getField(currentrow-1,columnindex-1)==null);
+		short	field=0;
+		synchronized (networklock) {
+			field=(short)sqlrcur.getFieldAsInteger(
+					currentrow-1,columnindex-1);
+			wasnull=(sqlrcur.getField(
+					currentrow-1,columnindex-1)==null);
+		}
 		driver.debugPrintln("column index: ",columnindex);
 		driver.debugPrintln("field: ",field);
 		driver.debugPrintln("was null: ",wasnull);
@@ -1004,13 +1114,17 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public synchronized
+	public
 	short getShort(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
-		short	field=(short)sqlrcur.getFieldAsInteger(
-						currentrow-1,columnlabel);
-		wasnull=(sqlrcur.getField(currentrow-1,columnlabel)==null);
+		short	field=0;
+		synchronized (networklock) {
+			field=(short)sqlrcur.getFieldAsInteger(
+					currentrow-1,columnlabel);
+			wasnull=(sqlrcur.getField(
+					currentrow-1,columnlabel)==null);
+		}
 		driver.debugPrintln("column: ",columnlabel);
 		driver.debugPrintln("field: ",field);
 		driver.debugPrintln("was null: ",wasnull);
@@ -1018,7 +1132,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public synchronized
+	public
 	SQLXML getSQLXML(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1029,7 +1143,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public synchronized
+	public
 	SQLXML getSQLXML(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1040,19 +1154,22 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public synchronized
+	public
 	Statement getStatement() throws SQLException {
 		//driver.debugFunction(this);
 		//driver.debugEnd();
 		return statement;
 	}
 
-	public synchronized
+	public
 	String getString(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
+		String	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getField(currentrow-1,columnindex-1);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column index: ",columnindex);
 		driver.debugPrintln("field: ",field);
@@ -1061,12 +1178,15 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public synchronized
+	public
 	String getString(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		String	field=sqlrcur.getField(currentrow-1,columnlabel);
+		String	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getField(currentrow-1,columnlabel);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column: ",columnlabel);
 		driver.debugPrintln("field: ",field);
@@ -1075,7 +1195,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return field;
 	}
 
-	public synchronized
+	public
 	Time getTime(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		// FIXME: pass in some default calendar
@@ -1084,12 +1204,15 @@ public class SQLRelayResultSet implements ResultSet {
 		return t;
 	}
 
-	public synchronized
+	public
 	Time getTime(int columnindex, Calendar cal) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
+		String	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getField(currentrow-1,columnindex-1);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column index: ",columnindex);
 		driver.debugPrintln("field: ",field);
@@ -1104,7 +1227,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return t;
 	}
 
-	public synchronized
+	public
 	Time getTime(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		// FIXME: pass in some default calendar
@@ -1113,12 +1236,15 @@ public class SQLRelayResultSet implements ResultSet {
 		return t;
 	}
 
-	public synchronized
+	public
 	Time getTime(String columnlabel, Calendar cal) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		String	field=sqlrcur.getField(currentrow-1,columnlabel);
+		String	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getField(currentrow-1,columnlabel);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column: ",columnlabel);
 		driver.debugPrintln("field: ",field);
@@ -1133,7 +1259,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return t;
 	}
 
-	public synchronized
+	public
 	Timestamp getTimestamp(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		// FIXME: pass in some default calendar
@@ -1142,13 +1268,16 @@ public class SQLRelayResultSet implements ResultSet {
 		return t;
 	}
 
-	public synchronized
+	public
 	Timestamp getTimestamp(int columnindex, Calendar cal)
 						throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
+		String	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getField(currentrow-1,columnindex-1);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column index: ",columnindex);
 		driver.debugPrintln("field: ",field);
@@ -1164,7 +1293,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return t;
 	}
 
-	public synchronized
+	public
 	Timestamp getTimestamp(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		// FIXME: pass in some default calendar
@@ -1173,13 +1302,16 @@ public class SQLRelayResultSet implements ResultSet {
 		return t;
 	}
 
-	public synchronized
+	public
 	Timestamp getTimestamp(String columnlabel, Calendar cal)
 						throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		String	field=sqlrcur.getField(currentrow-1,columnlabel);
+		String	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getField(currentrow-1,columnlabel);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column: ",columnlabel);
 		driver.debugPrintln("field: ",field);
@@ -1194,7 +1326,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return t;
 	}
 
-	public synchronized
+	public
 	int getType() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1204,12 +1336,15 @@ public class SQLRelayResultSet implements ResultSet {
 		return type;
 	}
 
-	public synchronized
+	public
 	InputStream getUnicodeStream(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
-		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
+		String	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getField(currentrow-1,columnindex-1);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column index: ",columnindex);
 		driver.debugPrintln("field: ",field);
@@ -1219,12 +1354,15 @@ public class SQLRelayResultSet implements ResultSet {
 		return is;
 	}
 
-	public synchronized
+	public
 	InputStream getUnicodeStream(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
-		String	field=sqlrcur.getField(currentrow-1,columnlabel);
+		String	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getField(currentrow-1,columnlabel);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column: ",columnlabel);
 		driver.debugPrintln("field: ",field);
@@ -1234,13 +1372,16 @@ public class SQLRelayResultSet implements ResultSet {
 		return is;
 	}
 
-	public synchronized
+	public
 	URL getURL(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnindex);
 		throwFeatureNotSupportedException();
-		String	field=sqlrcur.getField(currentrow-1,columnindex-1);
+		String	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getField(currentrow-1,columnindex-1);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column index: ",columnindex);
 		driver.debugPrintln("field: ",field);
@@ -1259,13 +1400,16 @@ public class SQLRelayResultSet implements ResultSet {
 		}
 	}
 
-	public synchronized
+	public
 	URL getURL(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		throwInvalidColumn(columnlabel);
 		throwFeatureNotSupportedException();
-		String	field=sqlrcur.getField(currentrow-1,columnlabel);
+		String	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getField(currentrow-1,columnlabel);
+		}
 		wasnull=(field==null);
 		driver.debugPrintln("column: ",columnlabel);
 		driver.debugPrintln("field: ",field);
@@ -1284,7 +1428,7 @@ public class SQLRelayResultSet implements ResultSet {
 		}
 	}
 
-	public synchronized
+	public
 	SQLWarning getWarnings() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1292,7 +1436,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return null;
 	}
 
-	public synchronized
+	public
 	void insertRow() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1300,7 +1444,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	boolean isAfterLast() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1309,7 +1453,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return afterlast;
 	}
 
-	public synchronized
+	public
 	boolean isBeforeFirst() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1318,7 +1462,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return beforefirst;
 	}
 
-	public synchronized
+	public
 	boolean isClosed() throws SQLException {
 		driver.debugFunction(this);
 		boolean	isclosed=(sqlrcur==null);
@@ -1327,7 +1471,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return isclosed;
 	}
 
-	public synchronized
+	public
 	boolean isFirst() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1337,7 +1481,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return isfirst;
 	}
 
-	public synchronized
+	public
 	boolean isLast() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1346,7 +1490,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return islast;
 	}
 
-	public synchronized
+	public
 	boolean last() throws SQLException {
 		driver.debugFunction(this);
 		boolean	abs=absolute(-1);
@@ -1354,7 +1498,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return abs;
 	}
 
-	public synchronized
+	public
 	void moveToCurrentRow() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1363,7 +1507,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void moveToInsertRow() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1371,7 +1515,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	boolean next() throws SQLException {
 		driver.debugFunction(this);
 		boolean	rel=relative(1);
@@ -1379,7 +1523,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return rel;
 	}
 
-	public synchronized
+	public
 	boolean previous() throws SQLException {
 		driver.debugFunction(this);
 		boolean	rel=relative(-1);
@@ -1387,7 +1531,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return rel;
 	}
 
-	public synchronized
+	public
 	void refreshRow() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1395,7 +1539,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	boolean relative(int rows) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1415,7 +1559,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return abs;
 	}
 
-	public synchronized
+	public
 	boolean rowDeleted() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1424,7 +1568,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return false;
 	}
 
-	public synchronized
+	public
 	boolean rowInserted() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1433,7 +1577,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return false;
 	}
 
-	public synchronized
+	public
 	boolean rowUpdated() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1442,7 +1586,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return false;
 	}
 
-	public synchronized
+	public
 	void setFetchDirection(int direction) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1451,7 +1595,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setFetchSize(int rows) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1460,7 +1604,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateArray(int columnindex, Array x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1468,7 +1612,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateArray(String columnlabel, Array x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1476,7 +1620,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateAsciiStream(int columnindex, InputStream x)
 						throws SQLException {
 		driver.debugFunction(this);
@@ -1485,7 +1629,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateAsciiStream(int columnindex, InputStream x,
 					int length) throws SQLException {
 		driver.debugFunction(this);
@@ -1494,7 +1638,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateAsciiStream(int columnindex, InputStream x,
 					long length) throws SQLException {
 		driver.debugFunction(this);
@@ -1503,7 +1647,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateAsciiStream(String columnlabel, InputStream x)
 						throws SQLException {
 		driver.debugFunction(this);
@@ -1512,7 +1656,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateAsciiStream(String columnlabel,InputStream x,
 					int length) throws SQLException {
 		driver.debugFunction(this);
@@ -1521,7 +1665,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateAsciiStream(String columnlabel, InputStream x,
 					long length) throws SQLException {
 		driver.debugFunction(this);
@@ -1530,7 +1674,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateBigDecimal(int columnindex, BigDecimal x)
 						throws SQLException {
 		driver.debugFunction(this);
@@ -1539,7 +1683,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateBigDecimal(String columnlabel, BigDecimal x)
 						throws SQLException {
 		driver.debugFunction(this);
@@ -1548,7 +1692,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateBinaryStream(int columnindex, InputStream x)
 						throws SQLException {
 		driver.debugFunction(this);
@@ -1557,7 +1701,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateBinaryStream(int columnindex, InputStream x,
 					int length) throws SQLException {
 		driver.debugFunction(this);
@@ -1566,7 +1710,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateBinaryStream(int columnindex, InputStream x,
 					long length) throws SQLException {
 		driver.debugFunction(this);
@@ -1575,7 +1719,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateBinaryStream(String columnlabel, InputStream x)
 						throws SQLException {
 		driver.debugFunction(this);
@@ -1584,7 +1728,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateBinaryStream(String columnlabel, InputStream x,
 					int length) throws SQLException {
 		driver.debugFunction(this);
@@ -1593,7 +1737,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateBinaryStream(String columnlabel, InputStream x,
 					long length) throws SQLException {
 		driver.debugFunction(this);
@@ -1602,7 +1746,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateBlob(int columnindex, Blob x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1610,7 +1754,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateBlob(int columnindex, InputStream inputStream)
 						throws SQLException {
 		driver.debugFunction(this);
@@ -1619,7 +1763,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateBlob(int columnindex, InputStream inputStream,
 					long length) throws SQLException {
 		driver.debugFunction(this);
@@ -1628,7 +1772,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateBlob(String columnlabel, Blob x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1636,7 +1780,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateBlob(String columnlabel, InputStream inputStream)
 						throws SQLException {
 		driver.debugFunction(this);
@@ -1645,7 +1789,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateBlob(String columnlabel, InputStream inputStream,
 					long length) throws SQLException {
 		driver.debugFunction(this);
@@ -1654,7 +1798,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateBoolean(int columnindex, boolean x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1662,7 +1806,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateBoolean(String columnlabel, boolean x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1670,7 +1814,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateByte(int columnindex, byte x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1678,7 +1822,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateByte(String columnlabel, byte x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1686,7 +1830,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateBytes(int columnindex, byte[] x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1694,7 +1838,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateBytes(String columnlabel, byte[] x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1702,7 +1846,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateCharacterStream(int columnindex, Reader x)
 						throws SQLException {
 		driver.debugFunction(this);
@@ -1711,7 +1855,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateCharacterStream(int columnindex, Reader x,
 					int length) throws SQLException {
 		driver.debugFunction(this);
@@ -1720,7 +1864,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateCharacterStream(int columnindex, Reader x,
 					long length) throws SQLException {
 		driver.debugFunction(this);
@@ -1729,7 +1873,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateCharacterStream(String columnlabel, Reader reader)
 							throws SQLException {
 		driver.debugFunction(this);
@@ -1738,7 +1882,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateCharacterStream(String columnlabel, Reader reader,
 					int length) throws SQLException {
 		driver.debugFunction(this);
@@ -1747,7 +1891,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateCharacterStream(String columnlabel, Reader reader,
 					long length) throws SQLException {
 		driver.debugFunction(this);
@@ -1756,7 +1900,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateClob(int columnindex, Clob x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1764,7 +1908,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateClob(int columnindex, Reader reader) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1772,7 +1916,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateClob(int columnindex, Reader reader,
 					long length) throws SQLException {
 		driver.debugFunction(this);
@@ -1781,7 +1925,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateClob(String columnlabel, Clob x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1789,7 +1933,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateClob(String columnlabel, Reader reader) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1797,7 +1941,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateClob(String columnlabel, Reader reader,
 					long length) throws SQLException {
 		driver.debugFunction(this);
@@ -1806,7 +1950,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateDate(int columnindex, Date x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1814,7 +1958,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateDate(String columnlabel, Date x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1822,7 +1966,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateDouble(int columnindex, double x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1830,7 +1974,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateDouble(String columnlabel, double x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1838,7 +1982,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateFloat(int columnindex, float x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1846,7 +1990,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateFloat(String columnlabel, float x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1854,7 +1998,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateInt(int columnindex, int x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1862,7 +2006,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateInt(String columnlabel, int x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1870,7 +2014,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateLong(int columnindex, long x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1878,7 +2022,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateLong(String columnlabel, long x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1886,7 +2030,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateNCharacterStream(int columnindex, Reader x)
 							throws SQLException {
 		driver.debugFunction(this);
@@ -1895,7 +2039,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateNCharacterStream(int columnindex, Reader x,
 					long length) throws SQLException {
 		driver.debugFunction(this);
@@ -1904,7 +2048,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateNCharacterStream(String columnlabel, Reader reader)
 							throws SQLException {
 		driver.debugFunction(this);
@@ -1913,7 +2057,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateNCharacterStream(String columnlabel, Reader reader,
 					long length) throws SQLException {
 		driver.debugFunction(this);
@@ -1922,7 +2066,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateNClob(int columnindex, NClob nClob) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1930,7 +2074,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateNClob(int columnindex, Reader reader) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1938,7 +2082,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateNClob(int columnindex, Reader reader,
 					long length) throws SQLException {
 		driver.debugFunction(this);
@@ -1947,7 +2091,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateNClob(String columnlabel, NClob nClob) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1955,7 +2099,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateNClob(String columnlabel, Reader reader)
 						throws SQLException {
 		driver.debugFunction(this);
@@ -1964,7 +2108,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateNClob(String columnlabel, Reader reader,
 					long length) throws SQLException {
 		driver.debugFunction(this);
@@ -1973,7 +2117,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateNString(int columnindex, String nString)
 						throws SQLException {
 		driver.debugFunction(this);
@@ -1982,7 +2126,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateNString(String columnlabel, String nString)
 						throws SQLException {
 		driver.debugFunction(this);
@@ -1991,7 +2135,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateNull(int columnindex) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1999,7 +2143,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateNull(String columnlabel) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -2007,7 +2151,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateObject(int columnindex, Object x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -2015,7 +2159,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateObject(int columnindex, Object x,
 					int scaleOrLength) throws SQLException {
 		driver.debugFunction(this);
@@ -2024,7 +2168,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateObject(String columnlabel, Object x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -2032,7 +2176,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateObject(String columnlabel, Object x,
 					int scaleOrLength) throws SQLException {
 		driver.debugFunction(this);
@@ -2041,7 +2185,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateRef(int columnindex, Ref x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -2049,7 +2193,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateRef(String columnlabel, Ref x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -2057,7 +2201,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateRow() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -2065,7 +2209,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateRowId(int columnindex, RowId x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -2073,7 +2217,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateRowId(String columnlabel, RowId x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -2081,7 +2225,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateShort(int columnindex, short x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -2089,7 +2233,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateShort(String columnlabel, short x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -2097,7 +2241,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateSQLXML(int columnindex, SQLXML xmlObject)
 						throws SQLException {
 		driver.debugFunction(this);
@@ -2106,7 +2250,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateSQLXML(String columnlabel, SQLXML xmlObject)
 						throws SQLException {
 		driver.debugFunction(this);
@@ -2115,7 +2259,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateString(int columnindex, String x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -2123,7 +2267,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateString(String columnlabel, String x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -2131,7 +2275,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateTime(int columnindex, Time x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -2139,7 +2283,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateTime(String columnlabel, Time x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -2147,7 +2291,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateTimestamp(int columnindex, Timestamp x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -2155,7 +2299,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void updateTimestamp(String columnlabel, Timestamp x)
 						throws SQLException {
 		driver.debugFunction(this);
@@ -2164,7 +2308,7 @@ public class SQLRelayResultSet implements ResultSet {
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	boolean wasNull() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -2173,7 +2317,7 @@ public class SQLRelayResultSet implements ResultSet {
 		return wasnull;
 	}
 
-	public synchronized
+	public
 	boolean isWrapperFor(Class<?> iface) throws SQLException {
 		driver.debugFunction(this);
 		driver.debugEnd();
@@ -2181,7 +2325,7 @@ public class SQLRelayResultSet implements ResultSet {
 	}
 
 	@SuppressWarnings({"unchecked"})
-	public synchronized
+	public
 	<T> T unwrap(Class<T> iface) throws SQLException {
 		driver.debugFunction(this);
 		driver.debugEnd();
@@ -2190,13 +2334,13 @@ public class SQLRelayResultSet implements ResultSet {
 
 	private void throwExceptionIfClosed() throws SQLException {
 		if (sqlrcur==null) {
-			throw new SQLException("ResultSet is closed");
+			throwException("ResultSet is closed");
 		}
 	}
 
 	private void throwInvalidColumn(int columnindex) throws SQLException {
 		if (columnindex<1 || columnindex>sqlrcur.colCount()) {
-			throw new SQLException("invalid column index");
+			throwException("invalid column index");
 		}
 	}
 
@@ -2208,14 +2352,23 @@ public class SQLRelayResultSet implements ResultSet {
 				return;
 			}
 		}
-		throw new SQLException("invalid column label");
+		throwException("invalid column label");
 	}
 
 	private void throwErrorMessageException() throws SQLException {
-		throw new SQLException(sqlrcur.errorMessage());
+		throwException(sqlrcur.errorMessage());
+	}
+
+	private void throwException(String reason) throws SQLException {
+		driver.debugPrintln("exception: "+reason);
+		driver.debugZeroIndent();
+		throw new SQLException(reason);
 	}
 
 	private void throwFeatureNotSupportedException() throws SQLException {
+		driver.debugPrintln(
+			"exception: SQLFeatureNotSupportedException");
+		driver.debugZeroIndent();
 		throw new SQLFeatureNotSupportedException();
 	}
 }

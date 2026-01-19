@@ -31,7 +31,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void addBatch() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -40,7 +40,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void clearParameters() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -50,7 +50,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	boolean execute() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -63,9 +63,13 @@ public class SQLRelayPreparedStatement
 		} else {
 			bind(batch.get(0));
 		}
-		boolean	result=sqlrcur.executeQuery();
+		boolean	result=false;
+		synchronized (networklock) {
+			result=sqlrcur.executeQuery();
+		}
 		if (result) {
 			resultset=new SQLRelayResultSet(driver);
+			resultset.setNetworkLock(networklock);
 			resultset.setStatement(this);
 			resultset.setSQLRCursor(sqlrcur);
 		} else {
@@ -75,7 +79,7 @@ public class SQLRelayPreparedStatement
 		return result;
 	}
 
-	public synchronized
+	public
 	int[] executeBatch() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -91,7 +95,7 @@ public class SQLRelayPreparedStatement
 		return results;
 	}
 
-	public synchronized
+	public
 	ResultSet executeQuery() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -104,8 +108,13 @@ public class SQLRelayPreparedStatement
 		} else {
 			bind(batch.get(0));
 		}
-		if (sqlrcur.executeQuery()) {
+		boolean	success=false;
+		synchronized (networklock) {
+			success=sqlrcur.executeQuery();
+		}
+		if (success) {
 			resultset=new SQLRelayResultSet(driver);
+			resultset.setNetworkLock(networklock);
 			resultset.setStatement(this);
 			resultset.setSQLRCursor(sqlrcur);
 		} else {
@@ -115,7 +124,7 @@ public class SQLRelayPreparedStatement
 		return resultset;
 	}
 
-	public synchronized
+	public
 	int executeUpdate() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -128,7 +137,11 @@ public class SQLRelayPreparedStatement
 		} else {
 			bind(batch.get(0));
 		}
-		if (sqlrcur.executeQuery()) {
+		boolean	success=false;
+		synchronized (networklock) {
+			success=sqlrcur.executeQuery();
+		}
+		if (success) {
 			updatecount=(int)sqlrcur.affectedRows();
 		} else {
 			throwErrorMessageException();
@@ -456,7 +469,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	ResultSetMetaData getMetaData() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -466,7 +479,7 @@ public class SQLRelayPreparedStatement
 		return rsmd;
 	}
 
-	public synchronized
+	public
 	ParameterMetaData getParameterMetaData() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -481,7 +494,7 @@ public class SQLRelayPreparedStatement
 		return pmd;
 	}
 
-	public synchronized
+	public
 	void setArray(int parameterIndex, Array x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -489,7 +502,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setAsciiStream(int parameterIndex, InputStream x)
 							throws SQLException {
 		driver.debugFunction(this);
@@ -513,7 +526,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setAsciiStream(int parameterIndex, InputStream x,
 					int length) throws SQLException {
 		driver.debugFunction(this);
@@ -538,7 +551,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setAsciiStream(int parameterIndex, InputStream x,
 					long length) throws SQLException {
 		driver.debugFunction(this);
@@ -563,7 +576,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setBigDecimal(int parameterIndex, BigDecimal x)
 						throws SQLException {
 		driver.debugFunction(this);
@@ -588,7 +601,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setBinaryStream(int parameterIndex, InputStream x)
 						throws SQLException {
 		driver.debugFunction(this);
@@ -613,7 +626,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setBinaryStream(int parameterIndex, InputStream x,
 					int length) throws SQLException {
 		driver.debugFunction(this);
@@ -638,7 +651,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setBinaryStream(int parameterIndex, InputStream x,
 					long length) throws SQLException {
 		driver.debugFunction(this);
@@ -663,7 +676,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setBlob(int parameterIndex, Blob x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -687,7 +700,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setBlob(int parameterIndex, InputStream inputStream)
 						throws SQLException {
 		driver.debugFunction(this);
@@ -712,7 +725,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setBlob(int parameterIndex, InputStream inputStream,
 					long length) throws SQLException {
 		driver.debugFunction(this);
@@ -738,7 +751,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setBoolean(int parameterIndex, boolean x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -762,7 +775,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setByte(int parameterIndex, byte x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -786,7 +799,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setBytes(int parameterIndex, byte[] x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -814,7 +827,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setCharacterStream(int parameterIndex, Reader reader)
 						throws SQLException {
 		driver.debugFunction(this);
@@ -839,7 +852,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setCharacterStream(int parameterIndex, Reader reader,
 					int length) throws SQLException {
 		driver.debugFunction(this);
@@ -865,7 +878,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setCharacterStream(int parameterIndex, Reader reader,
 					long length) throws SQLException {
 		driver.debugFunction(this);
@@ -891,7 +904,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setClob(int parameterIndex, Clob x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -915,7 +928,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setClob(int parameterIndex, Reader reader) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -939,7 +952,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setClob(int parameterIndex, Reader reader,
 					long length) throws SQLException {
 		driver.debugFunction(this);
@@ -964,7 +977,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setDate(int parameterIndex, Date x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -990,7 +1003,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setDate(int parameterIndex, Date x, Calendar cal)
 						throws SQLException {
 		driver.debugFunction(this);
@@ -1017,7 +1030,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setDouble(int parameterIndex, double x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1041,7 +1054,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setFloat(int parameterIndex, float x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1065,7 +1078,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setInt(int parameterIndex, int x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1089,7 +1102,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setLong(int parameterIndex, long x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1113,7 +1126,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setNCharacterStream(int parameterIndex, Reader value)
 						throws SQLException {
 		driver.debugFunction(this);
@@ -1138,7 +1151,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setNCharacterStream(int parameterIndex, Reader value,
 					long length) throws SQLException {
 		driver.debugFunction(this);
@@ -1163,7 +1176,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setNClob(int parameterIndex, NClob value) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1187,7 +1200,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setNClob(int parameterIndex, Reader reader) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1211,7 +1224,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setNClob(int parameterIndex, Reader reader,
 					long length) throws SQLException {
 		driver.debugFunction(this);
@@ -1236,7 +1249,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setNString(int parameterIndex, String value) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1260,7 +1273,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setNull(int parameterIndex, int sqlType) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1284,7 +1297,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void 	setNull(int parameterIndex, int sqlType,
 				String typeName) throws SQLException {
 		driver.debugFunction(this);
@@ -1309,7 +1322,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setObject(int parameterIndex, Object x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1317,7 +1330,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setObject(int parameterIndex, Object x,
 				int targetSqlType) throws SQLException {
 		driver.debugFunction(this);
@@ -1326,7 +1339,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setObject(int parameterIndex, Object x,
 				int targetSqlType, int scaleOrLength)
 							throws SQLException {
@@ -1336,7 +1349,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setRef(int parameterIndex, Ref x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1344,7 +1357,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setRowId(int parameterIndex, RowId x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1352,7 +1365,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setShort(int parameterIndex, short x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1376,7 +1389,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setString(int parameterIndex, String x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1400,7 +1413,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setSQLXML(int parameterIndex, SQLXML xmlObject)
 						throws SQLException {
 		driver.debugFunction(this);
@@ -1409,7 +1422,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setTime(int parameterIndex, Time x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1435,7 +1448,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setTime(int parameterIndex, Time x,
 					Calendar cal) throws SQLException {
 		driver.debugFunction(this);
@@ -1462,7 +1475,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setTimestamp(int parameterIndex, Timestamp x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1488,7 +1501,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setTimestamp(int parameterIndex, Timestamp x,
 					Calendar cal) throws SQLException {
 		driver.debugFunction(this);
@@ -1515,7 +1528,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setUnicodeStream(int parameterIndex, InputStream x,
 					int length) throws SQLException {
 		driver.debugFunction(this);
@@ -1540,7 +1553,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	void setURL(int parameterIndex, URL x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
@@ -1548,7 +1561,7 @@ public class SQLRelayPreparedStatement
 		driver.debugEnd();
 	}
 
-	public synchronized
+	public
 	String asciiStreamToString(InputStream stream) {
 		driver.debugFunction(this);
 		String	s=streamToString(stream,"US-ASCII");
@@ -1556,7 +1569,7 @@ public class SQLRelayPreparedStatement
 		return s;
 	}
 
-	public synchronized
+	public
 	String asciiStreamToString(InputStream stream, long length) {
 		driver.debugFunction(this);
 		String	s=streamToString(stream,length,"US-ASCII");
@@ -1564,7 +1577,7 @@ public class SQLRelayPreparedStatement
 		return s;
 	}
 
-	public synchronized
+	public
 	String unicodeStreamToString(InputStream stream, long length) {
 		driver.debugFunction(this);
 		String	s=streamToString(stream,length,"UTF-8");
@@ -1572,7 +1585,7 @@ public class SQLRelayPreparedStatement
 		return s;
 	}
 
-	public synchronized
+	public
 	String streamToString(InputStream stream, String encoding) {
 		driver.debugFunction(this);
 		String	s;
@@ -1587,7 +1600,7 @@ public class SQLRelayPreparedStatement
 		return s;
 	}
 
-	public synchronized
+	public
 	String streamToString(InputStream stream, long length,
 						String encoding) {
 		driver.debugFunction(this);
@@ -1604,7 +1617,7 @@ public class SQLRelayPreparedStatement
 		return s;
 	}
 
-	public synchronized
+	public
 	String readerToString(Reader reader) {
 		driver.debugFunction(this);
 		String	s;
@@ -1622,7 +1635,7 @@ public class SQLRelayPreparedStatement
 		return s;
 	}
 
-	public synchronized
+	public
 	String readerToString(Reader reader, long length) {
 		driver.debugFunction(this);
 		String	s;
@@ -1640,7 +1653,7 @@ public class SQLRelayPreparedStatement
 		return s;
 	}
 
-	public synchronized
+	public
 	String clobToString(Clob clob) {
 		driver.debugFunction(this);
 		String	s;
@@ -1653,7 +1666,7 @@ public class SQLRelayPreparedStatement
 		return s;
 	}
 
-	public synchronized
+	public
 	String nClobToUnicodeString(NClob clob) {
 		driver.debugFunction(this);
 		String	s;
@@ -1666,7 +1679,7 @@ public class SQLRelayPreparedStatement
 		return s;
 	}
 
-	public synchronized
+	public
 	byte[] binaryStreamToBytes(InputStream stream) {
 		driver.debugFunction(this);
 		byte[]	b;
@@ -1688,7 +1701,7 @@ public class SQLRelayPreparedStatement
 		return b;
 	}
 
-	public synchronized
+	public
 	byte[] binaryStreamToBytes(InputStream stream, long length) {
 		driver.debugFunction(this);
 		byte[]	b;
@@ -1713,7 +1726,7 @@ public class SQLRelayPreparedStatement
 		return b;
 	}
 
-	public synchronized
+	public
 	byte[] blobToBytes(Blob blob) {
 		driver.debugFunction(this);
 		byte[]	b;
