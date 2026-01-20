@@ -1279,7 +1279,6 @@ const char *oracleconnection::getTableListQuery(bool wild,
 						uint16_t objecttypes,
 						bool currentschemaonly) {
 
-	// FIXME: should I return the owner as the table_cat too?
 	tablelistquery.clear();
 	tablelistquery.append(
 		"select "
@@ -1294,30 +1293,24 @@ const char *oracleconnection::getTableListQuery(bool wild,
 		"where ");
 	bool	prevclause=false;
 	if (currentschemaonly) {
-		tablelistquery.append(
-			"	upper(owner)=upper('");
-		tablelistquery.append(cont->getUser());
-		tablelistquery.append(
-			"') ");
+		if (supportssyscontext) {
+			tablelistquery.append(
+				"	owner=sys_context("
+					"'userenv','current_schema') ");
+		} else {
+			tablelistquery.append(
+				"	upper(owner)=upper('");
+			tablelistquery.append(cont->getUser());
+			tablelistquery.append("') ");
+		}
 		prevclause=true;
 	}
 	if (wild) {
 		if (prevclause) {
-			tablelistquery.append(
-				"	and ");
+			tablelistquery.append("	and ");
 		}
-		tablelistquery.append(
-			"	table_name like upper('%s') ");
+		tablelistquery.append("	table_name like upper('%s') ");
 		prevclause=true;
-	}
-	if (supportssyscontext) {
-		if (prevclause) {
-			tablelistquery.append(
-				"	and ");
-		}
-		tablelistquery.append(
-			"	owner=sys_context("
-					"'userenv','current_schema') ");
 	}
 	tablelistquery.append(
 		"order by "
@@ -1402,7 +1395,7 @@ const char *oracleconnection::getColumnListQueryWithoutKeys(
 	// to see if the object is a synonym though, so we'll do that first
 	// and only spend the extra time if it is.
 
-	// FIXME: should I return the owner as the table_schem too?
+	// FIXME: I think I should return the owner as the table_schem, not cat
 	if (isSynonym(table)) {
 		if (supportssyscontext) {
 			return (wild)?
@@ -1784,7 +1777,7 @@ const char *oracleconnection::getColumnListQueryWithKeys(
 	// to see if the object is a synonym though, so we'll do that first
 	// and only spend the extra time if it is.
 
-	// FIXME: should I return the owner as the table_schem too?
+	// FIXME: I think I should return the owner as the table_schem, not cat
 	if (isSynonym(table)) {
 		if (supportssyscontext) {
 			return (wild)?
