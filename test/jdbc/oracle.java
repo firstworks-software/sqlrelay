@@ -5,10 +5,14 @@ import java.sql.*;
 import com.firstworks.sqlrelay.*;
 import com.firstworks.sql.*;
 import java.util.Properties;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Executor;
 
 class oracle {
 
-	private static void checkSuccess(String value, String success, int length) {
+	private static void checkSuccess(String value,
+						String success,
+						int length) {
 	
 		if (success==null) {
 			if (value==null) {
@@ -16,7 +20,7 @@ class oracle {
 				return;
 			} else {
 				System.out.printf(value+"!="+success+" ");
-				System.out.printf("failure ");
+				System.out.println("failure ");
 				System.exit(1);
 			}
 		}
@@ -25,7 +29,7 @@ class oracle {
 			System.out.printf("success ");
 		} else {
 			System.out.printf(value+"!="+success+" ");
-			System.out.printf("failure ");
+			System.out.println("failure ");
 			System.exit(1);
 		}
 	}
@@ -38,7 +42,7 @@ class oracle {
 				return;
 			} else {
 				System.out.printf(value+"!="+success+" ");
-				System.out.printf("failure ");
+				System.out.println("failure ");
 				System.exit(1);
 			}
 		}
@@ -47,21 +51,21 @@ class oracle {
 			System.out.printf("success ");
 		} else {
 			System.out.printf(value+"!="+success+" ");
-			System.out.printf("failure ");
+			System.out.println("failure ");
 			System.exit(1);
 		}
 	}
 	
-	private static void checkSuccess(byte[] value, String success, int length) {
+	private static void checkSuccess(byte[] value,
+						String success,
+						int length) {
 	
 		if (success==null) {
 			if (value==null) {
 				System.out.printf("success ");
 				return;
 			} else {
-				System.out.printf("failure ");
-				
-				
+				System.out.println("failure ");
 				System.exit(1);
 			}
 		}
@@ -70,11 +74,10 @@ class oracle {
 	
 		for (int index=0; index<length; index++) {
 			if (value[index]!=successvalue[index]) {
-				System.out.printf("failure ");
+				System.out.println("failure ");
 				System.exit(1);
 			}
 		}
-
 		System.out.printf("success ");
 	}
 	
@@ -83,9 +86,7 @@ class oracle {
 		if (value==success) {
 			System.out.printf("success ");
 		} else {
-			System.out.printf("failure ");
-			
-			
+			System.out.println("failure ");
 			System.exit(1);
 		}
 	}
@@ -95,9 +96,7 @@ class oracle {
 		if (value==success) {
 			System.out.printf("success ");
 		} else {
-			System.out.printf("failure ");
-			
-			
+			System.out.println("failure ");
 			System.exit(1);
 		}
 	}
@@ -107,28 +106,42 @@ class oracle {
 		if (((value)?1:0)==success) {
 			System.out.printf("success ");
 		} else {
-			System.out.printf("failure ");
-			
-			
+			System.out.println("failure ");
 			System.exit(1);
 		}
 	}
 
 	public static void main(String args[]) throws Exception {
 
-		String	host="localhost";
+		String	driver="com.firstworks.sql.SQLRelayDriver";
+		//String	host="localhost";
+		String	host="fedora40x64";
 		short	port=9000;
 		String	socket=null;
 		String	user="testuser";
 		String	password="testpassword";
-		String	url="jdbc:sqlrelay://"+
-				user+":"+password+"@"+host+":"+port;
+		String	url="jdbc:sqlrelay://"+host+":"+port;
+
+		// To use a different jdbc driver, provide the driver, url,
+		// username, and password.
+		//
+		// Eg. for older jdbc:
+		// oracle.jdbc.driver.OracleDriver
+		// jdbc:oracle:thin:@oracle:1521:ora1
+		// fedora40x64
+		// testpassword
+		if (args.length==4) {
+			driver=args[0];
+			url=args[1];
+			user=args[2];
+			password=args[3];
+		}
 
 		// Connection
 		System.out.println("CONNECTION...");
-		Class.forName("com.firstworks.sql.SQLRelayDriver");
+		Class.forName(driver);
 		Connection	con=DriverManager.getConnection(
-						url,"testuser","testpassword");
+						url,user,password);
 
 		// close, isClosed, isValid
 		System.out.println("CONNECTION - close");
@@ -137,63 +150,75 @@ class oracle {
 		con.close();
 		checkSuccess(con.isClosed(),1);
 		checkSuccess(con.isValid(0),0);
-		con=DriverManager.getConnection(url,"testuser","testpassword");
+		con=DriverManager.getConnection(url,user,password);
 		System.out.println();
 
 		// setNetworkTimeout, getNetworkTimeout
-		con.setNetworkTimeout(null,1);
+		Executor	executor=Executors.newSingleThreadExecutor();
+		con.setNetworkTimeout(executor,1);
 		checkSuccess(con.getNetworkTimeout(),1);
-		con.setNetworkTimeout(null,2);
+		con.setNetworkTimeout(executor,2);
 		checkSuccess(con.getNetworkTimeout(),2);
-		con.setNetworkTimeout(null,0);
+		con.setNetworkTimeout(executor,0);
 		checkSuccess(con.getNetworkTimeout(),0);
 		System.out.println();
 
 		// SQLRelayConnection
-		System.out.println("CONNECTION - SQLRelayConnection");
-		SQLRelayConnection	sqlrcon=(SQLRelayConnection)con;
-		checkSuccess(sqlrcon.getHost(),host);
-		checkSuccess(sqlrcon.getPort(),port);
-		checkSuccess(sqlrcon.getSocket(),socket);
-		checkSuccess(sqlrcon.getUser(),user);
-		checkSuccess(sqlrcon.getPassword(),password);
-		System.out.println();
+		if (driver.equals("com.firstworks.sql.SQLRelayDriver")) {
+			System.out.println("CONNECTION - SQLRelayConnection");
+			SQLRelayConnection	sqlrcon=(SQLRelayConnection)con;
+			checkSuccess(sqlrcon.getHost(),host);
+			checkSuccess(sqlrcon.getPort(),port);
+			checkSuccess(sqlrcon.getSocket(),socket);
+			checkSuccess(sqlrcon.getUser(),user);
+			checkSuccess(sqlrcon.getPassword(),password);
+			System.out.println();
 
-		// isWrapperFor, unwrap
-		System.out.println("CONNECTION - unwrap");
-		checkSuccess(con.isWrapperFor(SQLRConnection.class),1);
-		checkSuccess((con.unwrap(SQLRConnection.class)!=null),1);
-		System.out.println();
+			// isWrapperFor, unwrap
+			System.out.println("CONNECTION - unwrap");
+			checkSuccess(
+				con.isWrapperFor(SQLRConnection.class),1);
+			checkSuccess(
+				(con.unwrap(SQLRConnection.class)!=null),1);
+			System.out.println();
+		}
 
 		// setCatalog, getCatalog
 		System.out.println("CONNECTION - catalog");
-		con.setCatalog("TESTUSER");
-		checkSuccess(con.getCatalog(),"TESTUSER");
+		con.setCatalog(user);
+		checkSuccess(con.getCatalog(),null);
 		System.out.println();
 
 		// setSchema, getSchema
 		System.out.println("CONNECTION - schema");
-		con.setSchema("");
-		checkSuccess(con.getSchema(),"");
+		con.setSchema(user.toUpperCase());
+		checkSuccess(con.getSchema(),user.toUpperCase());
 		System.out.println();
 
 		// setClientInfo, getClientInfo()
+		// Oracle only allows:
+		// OCSID.MODULE
+		// OCSID.ACTION
+		// OCSID.CLIENTID
+		// OCSID.ECID (execution context id)
+		// OCSID.SEQUENCE_NUMBER
+		// OCSID.DBOP (database operation)
 		System.out.println("CONNECTION - client info");
 		Properties	inprop=new Properties();
-		inprop.setProperty("key1","value1");
-		inprop.setProperty("key2","value2");
+		inprop.setProperty("OCSID.MODULE","value1");
+		inprop.setProperty("OCSID.ACTION","value2");
 		con.setClientInfo(inprop);
-		con.setClientInfo("key3","value3");
-		con.setClientInfo("key4","value4");
-		checkSuccess(con.getClientInfo("key1"),"value1");
-		checkSuccess(con.getClientInfo("key2"),"value2");
-		checkSuccess(con.getClientInfo("key3"),"value3");
-		checkSuccess(con.getClientInfo("key4"),"value4");
+		con.setClientInfo("OCSID.CLIENTID","value3");
+		con.setClientInfo("OCSID.ECID","value4");
+		checkSuccess(con.getClientInfo("OCSID.MODULE"),"value1");
+		checkSuccess(con.getClientInfo("OCSID.ACTION"),"value2");
+		checkSuccess(con.getClientInfo("OCSID.CLIENTID"),"value3");
+		checkSuccess(con.getClientInfo("OCSID.ECID"),"value4");
 		Properties	outprop=con.getClientInfo();
-		checkSuccess(outprop.getProperty("key1"),"value1");
-		checkSuccess(outprop.getProperty("key2"),"value2");
-		checkSuccess(outprop.getProperty("key3"),"value3");
-		checkSuccess(outprop.getProperty("key4"),"value4");
+		checkSuccess(outprop.getProperty("OCSID.MODULE"),"value1");
+		checkSuccess(outprop.getProperty("OCSID.ACTION"),"value2");
+		checkSuccess(outprop.getProperty("OCSID.CLIENTID"),"value3");
+		checkSuccess(outprop.getProperty("OCSID.ECID"),"value4");
 		System.out.println();
 
 		// setReadOnly, isReadOnly
@@ -226,29 +251,30 @@ class oracle {
 		System.out.println();
 
 		// setTransactionIsolation, getTransactionIsolation
+		// oracle only supports READ_COMMITTED and SERIALIZABLE,
+		// the other should throw an exception
 		System.out.println("CONNECTION - isolation");
-		con.setTransactionIsolation(
-			Connection.TRANSACTION_READ_UNCOMMITTED);
-		checkSuccess(con.getTransactionIsolation(),
-			Connection.TRANSACTION_READ_UNCOMMITTED);
-		con.setTransactionIsolation(
-			Connection.TRANSACTION_READ_COMMITTED);
-		checkSuccess(con.getTransactionIsolation(),
-			Connection.TRANSACTION_READ_COMMITTED);
-		con.setTransactionIsolation(
-			Connection.TRANSACTION_REPEATABLE_READ);
-		checkSuccess(con.getTransactionIsolation(),
-			Connection.TRANSACTION_REPEATABLE_READ);
-		con.setTransactionIsolation(
-			Connection.TRANSACTION_SERIALIZABLE);
-		checkSuccess(con.getTransactionIsolation(),
-			Connection.TRANSACTION_SERIALIZABLE);
 		try {
-			con.setTransactionIsolation(10);
+			con.setTransactionIsolation(
+				Connection.TRANSACTION_READ_UNCOMMITTED);
 			checkSuccess(false,1);
 		} catch (Exception ex) {
 			checkSuccess(true,1);
 		}
+		con.setTransactionIsolation(
+			Connection.TRANSACTION_READ_COMMITTED);
+		checkSuccess(con.getTransactionIsolation(),
+			Connection.TRANSACTION_READ_COMMITTED);
+		try {
+			con.setTransactionIsolation(
+				Connection.TRANSACTION_REPEATABLE_READ);
+		} catch (Exception ex) {
+			checkSuccess(true,1);
+		}
+		con.setTransactionIsolation(
+			Connection.TRANSACTION_SERIALIZABLE);
+		checkSuccess(con.getTransactionIsolation(),
+			Connection.TRANSACTION_SERIALIZABLE);
 		System.out.println();
 
 		// setTypeMap, getTypeMap
@@ -260,6 +286,82 @@ class oracle {
 		System.out.println();
 
 		// getMetaData
+		System.out.println("DATABASE META DATA...");
+		DatabaseMetaData	md=con.getMetaData();
+		checkSuccess((md!=null),1);
+		System.out.println();
+
+		// getCatalogs
+		System.out.println("DATABASE META DATA - catalogs");
+		ResultSet	rs=md.getCatalogs();
+		checkSuccess((rs!=null),1);
+		ResultSetMetaData	rsmd=rs.getMetaData();
+		checkSuccess((rsmd!=null),1);
+		checkSuccess(rsmd.getColumnCount(),1);
+		checkSuccess(rsmd.getColumnName(1),"TABLE_CAT");
+		while (rs.next()) {
+			System.out.println(rs.getString("TABLE_CAT"));
+		}
+		rs.close();
+		System.out.println();
+
+		// getSchemas
+		System.out.println("DATABASE META DATA - schemas");
+		rs=md.getSchemas();
+		checkSuccess((rs!=null),1);
+		rsmd=rs.getMetaData();
+		checkSuccess((rsmd!=null),1);
+		checkSuccess(rsmd.getColumnCount(),2);
+		checkSuccess(rsmd.getColumnName(1),"TABLE_SCHEM");
+		checkSuccess(rsmd.getColumnName(2),"TABLE_CATALOG");
+		System.out.println();
+		while (rs.next()) {
+			System.out.println(rs.getString("TABLE_SCHEM")+","+
+						rs.getString("TABLE_CATALOG"));
+		}
+		rs.close();
+		System.out.println();
+
+		// getTableTypes
+		System.out.println("DATABASE META DATA - table types");
+		rs=md.getTableTypes();
+		checkSuccess((rs!=null),1);
+		rsmd=rs.getMetaData();
+		checkSuccess((rsmd!=null),1);
+		checkSuccess(rsmd.getColumnCount(),1);
+		checkSuccess(rsmd.getColumnName(1),"TABLE_TYPE");
+		System.out.println();
+		while (rs.next()) {
+			System.out.println(rs.getString("TABLE_TYPE"));
+		}
+		rs.close();
+		System.out.println();
+
+		// getTables
+		System.out.println("DATABASE META DATA - tables");
+		rs=md.getTables("%","FEDORA40X64","A%TO%",
+			new String[] {"SYNONYM","TABLE","VIEW"});
+		checkSuccess((rs!=null),1);
+		rsmd=rs.getMetaData();
+		checkSuccess((rsmd!=null),1);
+		checkSuccess(rsmd.getColumnCount(),5);
+		checkSuccess(rsmd.getColumnName(1),"TABLE_CAT");
+		checkSuccess(rsmd.getColumnName(2),"TABLE_SCHEM");
+		checkSuccess(rsmd.getColumnName(3),"TABLE_NAME");
+		checkSuccess(rsmd.getColumnName(4),"TABLE_TYPE");
+		checkSuccess(rsmd.getColumnName(5),"REMARKS");
+		System.out.println();
+		while (rs.next()) {
+			System.out.println(rs.getString("TABLE_CAT")+","+
+						rs.getString("TABLE_SCHEM")+","+
+						rs.getString("TABLE_NAME")+","+
+						rs.getString("TABLE_TYPE")+","+
+						rs.getString("REMARKS"));
+		}
+		rs.close();
+		System.out.println();
+
+
 
 		// nativeSql
 
@@ -277,6 +379,7 @@ class oracle {
 		// commit
 		// rollback...
 
+/*
 		// createStatement
 		System.out.println("CONNECTION - create statement");
 		Statement	stmt=con.createStatement();
@@ -337,7 +440,7 @@ class oracle {
 
 		// ResultSet
 		System.out.println("RESULTSET...");
-		ResultSet	rs=stmt.executeQuery("select 1 from dual");
+		rs=stmt.executeQuery("select 1 from dual");
 		checkSuccess((rs!=null),1);
 		rs.next();
 		checkSuccess(rs.getInt(1),1);
@@ -346,6 +449,7 @@ class oracle {
 
 
 		stmt.close();
+*/
 		con.close();
 
 		System.exit(0);

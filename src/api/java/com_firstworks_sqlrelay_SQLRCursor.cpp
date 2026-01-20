@@ -1606,7 +1606,7 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getTableListW
 /*
  * Class:     com_firstworks_sqlrelay_SQLRCursor
  * Method:    getTableTypeListWithFormat
- * Signature: (Ljava/lang/String;I;S;)Z
+ * Signature: (Ljava/lang/String;I;)Z
  */
 JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getTableTypeListWithFormat
   (JNIEnv *env, jobject self, jstring wild, jint listformat) {

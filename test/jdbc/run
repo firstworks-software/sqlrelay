@@ -1,5 +1,13 @@
 #!/bin/sh
 
-export CLASSPATH=$CLASSPATH:/usr/local/firstworks/java/sqlrelay.jar:/usr/local/firstworks/java/sqlrelayjdbc.jar
+if ( test -z "$2" )
+then
+	export CLASSPATH=$CLASSPATH:/usr/local/firstworks/java/sqlrelay.jar:/usr/local/firstworks/java/sqlrelayjdbc.jar
+	export LD_LIBRARY_PATH="/usr/local/firstworks/java/com/firstworks/sqlrelay:/usr/local/firstworks/lib"
 
-java -Djava.library.path="/usr/local/firstworks/java/com/firstworks/sqlrelay" $1
+elif ( test "$1" = "oracle" )
+then
+	export CLASSPATH=$CLASSPATH:/home/dmuse/software/ojdbc8.jar
+fi
+
+java $1 $2 $3 $4 $5

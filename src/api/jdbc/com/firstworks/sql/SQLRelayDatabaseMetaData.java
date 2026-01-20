@@ -164,7 +164,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 		boolean	result=false;
 		synchronized (networklock) {
-			result=sqlrcur.getDatabaseListWithFormat(null,3);
+			result=sqlrcur.getDatabaseListWithFormat(null,4);
 		}
 
 		if (result) {
@@ -255,7 +255,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		boolean	result=false;
 		synchronized (networklock) {
 			result=sqlrcur.getColumnListWithFormat(
-						wild,columnNamePattern,3);
+						wild,columnNamePattern,4);
 		}
 
 		if (result) {
@@ -957,7 +957,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 		boolean	result=false;
 		synchronized (networklock) {
-			result=sqlrcur.getSchemaListWithFormat(schemaPattern,3);
+			result=sqlrcur.getSchemaListWithFormat(schemaPattern,4);
 		}
 
 		if (result) {
@@ -1136,7 +1136,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		boolean	result=false;
 		synchronized (networklock) {
 			result=sqlrcur.getTableListWithFormat(
-					tableNamePattern,3,objecttypes);
+					tableNamePattern,4,objecttypes);
 		}
 
 		if (result) {
@@ -1162,9 +1162,13 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 					String object) {
 		driver.debugFunction(this);
 
+		driver.debugPrintln("catalog: "+catalog);
+		driver.debugPrintln("schema: "+schema);
+		driver.debugPrintln("object: "+object);
+
 		// If object already contains a . then just use it
 		// as-is.
-		if (object.contains(".")) {
+		if (object!=null && object.contains(".")) {
 			driver.debugEnd();
 			return object;
 		}
@@ -1207,10 +1211,33 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	ResultSet getTableTypes() throws SQLException {
 		driver.debugFunction(this);
-		// FIXME: implement this somehow
-		driver.debugPrintln("FIXME: implement this");
+
+		SQLRelayResultSet	resultset=null;
+		SQLRelayStatement	stmt=(SQLRelayStatement)
+						connection.createStatement();
+		SQLRCursor		sqlrcur=stmt.getSQLRCursor();
+
+		boolean	result=false;
+		synchronized (networklock) {
+			result=sqlrcur.getTableTypeListWithFormat(null,4);
+		}
+
+		if (result) {
+
+			driver.debugPrintln("colcount: ",sqlrcur.colCount());
+
+			if (sqlrcur.colCount()>0) {
+				resultset=new SQLRelayResultSet(driver);
+				resultset.setNetworkLock(networklock);
+				resultset.setStatement(stmt);
+				resultset.setSQLRCursor(sqlrcur);
+			}
+		} else {
+			throwErrorMessageException(sqlrcur);
+		}
+	
 		driver.debugEnd();
-		return null;
+		return resultset;
 	}
 
 	public
