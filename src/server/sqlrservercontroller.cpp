@@ -6282,7 +6282,7 @@ void sqlrservercontroller::buildToJDBCColumnMaps() {
 	// (all backends return ODBC SQLTables() format)
 	//
 	// TABLE_SCHEM <- TABLE_SCHEM
-	pvt->_jdbcschemascolumnmap.setValue(0,0);
+	pvt->_jdbcschemascolumnmap.setValue(0,1);
 	// TABLE_CATALOG <- TABLE_CAT
 	pvt->_jdbcschemascolumnmap.setValue(1,0);
 	pvt->_jdbcschemascolumnnamemap.setValue(0,"TABLE_SCHEM");

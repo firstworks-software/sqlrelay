@@ -1230,11 +1230,27 @@ const char *oracleconnection::getDbHostNameQuery() {
 }
 
 const char *oracleconnection::getDatabaseListQuery(bool wild) {
-	// FIXME: should I return the username as the table_schem too?
+	// oracle doesn't really have "databases", just schemas,
+	// so return an empty result set with specific column names
+	return "select "
+		"	'' as table_cat, "
+		"	'' as table_schem, "
+		"	'' as table_name, "
+		"	'' as table_type, "
+		"	'' as remarks, "
+		"	null "
+		"from "
+		"	dual "
+		"where "
+		"	1=0";
+}
+
+const char *oracleconnection::getSchemaListQuery(bool wild,
+						bool currentdbonly) {
 	return (wild)?
 		"select "
-		"	username as table_cat, "
-		"	'' as table_schem, "
+		"	'' as table_cat, "
+		"	username as table_schem, "
 		"	'' as table_name, "
 		"	'' as table_type, "
 		"	'' as remarks, "
@@ -1247,8 +1263,8 @@ const char *oracleconnection::getDatabaseListQuery(bool wild) {
 		"	username"
 		:
 		"select "
-		"	username as table_cat, "
-		"	'' as table_schem, "
+		"	'' as table_cat, "
+		"	username as table_schem, "
 		"	'' as table_name, "
 		"	'' as table_type, "
 		"	'' as remarks, "
@@ -1257,37 +1273,6 @@ const char *oracleconnection::getDatabaseListQuery(bool wild) {
 		"	all_users "
 		"order by "
 		"	username";
-}
-
-const char *oracleconnection::getSchemaListQuery(bool wild,
-						bool currentdbonly) {
-	// FIXME: should I return the username as the table_cat too?
-	return (wild)?
-		"select "
-		"	'' as table_cat, "
-		"	user as table_schem, "
-		"	'' as table_name, "
-		"	'' as table_type, "
-		"	'' as remarks, "
-		"	null "
-		"from "
-		"	dual "
-		"where "
-		"	username like upper('%s') "
-		"order by "
-		"	table_schem"
-		:
-		"select "
-		"	'' as table_cat, "
-		"	user as table_schem, "
-		"	'' as table_name, "
-		"	'' as table_type, "
-		"	'' as remarks, "
-		"	null "
-		"from "
-		"	dual "
-		"order by "
-		"	table_schem";
 }
 
 const char *oracleconnection::getTableListQuery(bool wild,
@@ -1351,6 +1336,16 @@ const char *oracleconnection::getTableTypeListQuery(bool wild,
 		"	'' as TABLE_CAT, "
 		"	'' as TABLE_SCHEM, "
 		"	'' as TABLE_NAME, "
+		"	'SYNONYM' as TABLE_TYPE, "
+		"	'' as REMARKS, "
+		"	null "
+		"from "
+		"	dual) "
+		"union "
+		"(select "
+		"	'' as TABLE_CAT, "
+		"	'' as TABLE_SCHEM, "
+		"	'' as TABLE_NAME, "
 		"	'TABLE' as TABLE_TYPE, "
 		"	'' as REMARKS, "
 		"	null "
@@ -1362,26 +1357,6 @@ const char *oracleconnection::getTableTypeListQuery(bool wild,
 		"	'' as TABLE_SCHEM, "
 		"	'' as TABLE_NAME, "
 		"	'VIEW' as TABLE_TYPE, "
-		"	'' as REMARKS, "
-		"	null "
-		"from "
-		"	dual) "
-		"union "
-		"(select "
-		"	'' as TABLE_CAT, "
-		"	'' as TABLE_SCHEM, "
-		"	'' as TABLE_NAME, "
-		"	'SYNONYM' as TABLE_TYPE, "
-		"	'' as REMARKS, "
-		"	null "
-		"from "
-		"	dual) "
-		"union "
-		"(select "
-		"	'' as TABLE_CAT, "
-		"	'' as TABLE_SCHEM, "
-		"	'' as TABLE_NAME, "
-		"	'MATERIALIZED VIEW' as TABLE_TYPE, "
 		"	'' as REMARKS, "
 		"	null "
 		"from "
