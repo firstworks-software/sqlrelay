@@ -763,7 +763,7 @@ public class SQLRelayPreparedStatement
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
 		param.setIsSigned(false);
-		param.setObject(new Boolean(x));
+		param.setObject(Boolean.valueOf(x));
 		param.setLength(-1);
 		param.setIsBinary(false);
 		param.setIsLob(false);
@@ -787,7 +787,7 @@ public class SQLRelayPreparedStatement
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
 		param.setIsSigned(false);
-		param.setObject(new Byte(x));
+		param.setObject(Byte.valueOf(x));
 		param.setLength(-1);
 		param.setIsBinary(true);
 		param.setIsLob(false);
@@ -1042,7 +1042,7 @@ public class SQLRelayPreparedStatement
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
 		param.setIsSigned(true);
-		param.setObject(new Double(x));
+		param.setObject(Double.valueOf(x));
 		param.setLength(-1);
 		param.setIsBinary(false);
 		param.setIsLob(false);
@@ -1066,7 +1066,7 @@ public class SQLRelayPreparedStatement
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
 		param.setIsSigned(true);
-		param.setObject(new Float(x));
+		param.setObject(Float.valueOf(x));
 		param.setLength(-1);
 		param.setIsBinary(false);
 		param.setIsLob(false);
@@ -1090,7 +1090,7 @@ public class SQLRelayPreparedStatement
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
 		param.setIsSigned(true);
-		param.setObject(new Integer(x));
+		param.setObject(Integer.valueOf(x));
 		param.setLength(-1);
 		param.setIsBinary(false);
 		param.setIsLob(false);
@@ -1114,7 +1114,7 @@ public class SQLRelayPreparedStatement
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
 		param.setIsSigned(true);
-		param.setObject(new Long(x));
+		param.setObject(Long.valueOf(x));
 		param.setLength(-1);
 		param.setIsBinary(false);
 		param.setIsLob(false);
@@ -1377,7 +1377,7 @@ public class SQLRelayPreparedStatement
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
 		param.setIsSigned(true);
-		param.setObject(new Short(x));
+		param.setObject(Short.valueOf(x));
 		param.setLength(-1);
 		param.setIsBinary(false);
 		param.setIsLob(false);
