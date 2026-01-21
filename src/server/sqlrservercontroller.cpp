@@ -5951,26 +5951,29 @@ void sqlrservercontroller::setTypeInfoListFormat(
 		return;
 	}
 
-	// FIXME: not implemented for any dbs yet
+	// currently only implemented for oracle
 	switch (listformat) {
 		case SQLRSERVERLISTFORMAT_NULL:
 			pvt->_columnmap=NULL;
 			pvt->_columnnamemap=NULL;
 			break;
 		case SQLRSERVERLISTFORMAT_MYSQL:
-			// FIXME: implement this
-			pvt->_columnmap=NULL;
-			pvt->_columnnamemap=NULL;
+			pvt->_columnmap=
+				&(pvt->_mysqltypeinfocolumnmap);
+			pvt->_columnnamemap=
+				&(pvt->_mysqltypeinfocolumnnamemap);
 			break;
 		case SQLRSERVERLISTFORMAT_ODBC:
-			// FIXME: implement this
-			pvt->_columnmap=NULL;
-			pvt->_columnnamemap=NULL;
+			pvt->_columnmap=
+				&(pvt->_odbctypeinfocolumnmap);
+			pvt->_columnnamemap=
+				&(pvt->_odbctypeinfocolumnnamemap);
 			break;
 		case SQLRSERVERLISTFORMAT_JDBC:
-			// FIXME: implement this
-			pvt->_columnmap=NULL;
-			pvt->_columnnamemap=NULL;
+			pvt->_columnmap=
+				&(pvt->_jdbctypeinfocolumnmap);
+			pvt->_columnnamemap=
+				&(pvt->_jdbctypeinfocolumnnamemap);
 			break;
 		default:
 			pvt->_columnmap=NULL;
@@ -6108,7 +6111,67 @@ void sqlrservercontroller::buildToMySQLColumnMaps() {
 	// FIXME: does mysql have anything like this?
 
 	// mysql getTypeInfoList
-	// FIXME: does mysql have anything like this?
+	// mysql doesn't have anything like this, and all backends return
+	// ODBC SQLGetTypeInfo() format, so just map 1 to 1 and lowercase the
+	// column names for consistency with other mysql tables
+	//
+	// TYPE_NAME <- TYPE_NAME
+	pvt->_mysqltypeinfocolumnmap.setValue(0,0);
+	// DATA_TYPE <- DATA_TYPE
+	pvt->_mysqltypeinfocolumnmap.setValue(1,1);
+	// COLUMN_SIZE <- COLUMN_SIZE
+	pvt->_mysqltypeinfocolumnmap.setValue(2,2);
+	// LITERAL_PREFIX <- LITERAL_PREFIX
+	pvt->_mysqltypeinfocolumnmap.setValue(3,3);
+	// LITERAL_SUFFIX <- LITERAL_SUFFIX
+	pvt->_mysqltypeinfocolumnmap.setValue(4,4);
+	// CREATE_PARAMS <- CREATE_PARAMS
+	pvt->_mysqltypeinfocolumnmap.setValue(5,5);
+	// NULLABLE <- NULLABLE
+	pvt->_mysqltypeinfocolumnmap.setValue(6,6);
+	// CASE_SENSITIVE <- CASE_SENSITIVE
+	pvt->_mysqltypeinfocolumnmap.setValue(7,7);
+	// SEARCHABLE <- SEARCHABLE
+	pvt->_mysqltypeinfocolumnmap.setValue(8,8);
+	// UNSIGNED_ATTRIBUTE <- UNSIGNED_ATTRIBUTE
+	pvt->_mysqltypeinfocolumnmap.setValue(9,9);
+	// FIXED_PREC_SCALE <- FIXED_PREC_SCALE
+	pvt->_mysqltypeinfocolumnmap.setValue(10,10);
+	// AUTO_UNIQUE_VALUE <- AUTO_UNIQUE_VALUE
+	pvt->_mysqltypeinfocolumnmap.setValue(11,11);
+	// LOCAL_TYPE_NAME <- LOCAL_TYPE_NAME
+	pvt->_mysqltypeinfocolumnmap.setValue(12,12);
+	// MINIMUM_SCALE <- MINIMUM_SCALE
+	pvt->_mysqltypeinfocolumnmap.setValue(13,13);
+	// MAXIMUM_SCALE <- MAXIMUM_SCALE
+	pvt->_mysqltypeinfocolumnmap.setValue(14,14);
+	// SQL_DATA_TYPE <- SQL_DATA_TYPE
+	pvt->_mysqltypeinfocolumnmap.setValue(15,15);
+	// SQL_DATETIME_SUB <- SQL_DATETIME_SUB
+	pvt->_mysqltypeinfocolumnmap.setValue(16,16);
+	// NUM_PREC_RADIX <- NUM_PREC_RADIX
+	pvt->_mysqltypeinfocolumnmap.setValue(17,17);
+	// INTERVAL_PRECISION <- INTERVAL_PRECISION
+	pvt->_mysqltypeinfocolumnmap.setValue(18,18);
+	pvt->_mysqltypeinfocolumnnamemap.setValue(0,"type_name");
+	pvt->_mysqltypeinfocolumnnamemap.setValue(1,"data_type");
+	pvt->_mysqltypeinfocolumnnamemap.setValue(2,"precision");
+	pvt->_mysqltypeinfocolumnnamemap.setValue(3,"literal_prefix");
+	pvt->_mysqltypeinfocolumnnamemap.setValue(4,"literal_suffix");
+	pvt->_mysqltypeinfocolumnnamemap.setValue(5,"create_params");
+	pvt->_mysqltypeinfocolumnnamemap.setValue(6,"nullable");
+	pvt->_mysqltypeinfocolumnnamemap.setValue(7,"case_sensitive");
+	pvt->_mysqltypeinfocolumnnamemap.setValue(8,"searchable");
+	pvt->_mysqltypeinfocolumnnamemap.setValue(9,"unsigned_attribute");
+	pvt->_mysqltypeinfocolumnnamemap.setValue(10,"fixed_prec_scale");
+	pvt->_mysqltypeinfocolumnnamemap.setValue(11,"auto_increment");
+	pvt->_mysqltypeinfocolumnnamemap.setValue(12,"local_type_name");
+	pvt->_mysqltypeinfocolumnnamemap.setValue(13,"minumum_scale");
+	pvt->_mysqltypeinfocolumnnamemap.setValue(14,"maxiumm_scale");
+	pvt->_mysqltypeinfocolumnnamemap.setValue(15,"sql_data_type");
+	pvt->_mysqltypeinfocolumnnamemap.setValue(16,"sql_datetime_sub");
+	pvt->_mysqltypeinfocolumnnamemap.setValue(17,"num_prec_radix");
+	pvt->_mysqltypeinfocolumnnamemap.setValue(18,"interval_precision");
 
 	// mysql getProcedureList
 	// FIXME: does mysql have anything like this?
@@ -6261,7 +6324,65 @@ void sqlrservercontroller::buildToODBCColumnMaps() {
 	// FIXME: implement this...
 
 	// ODBC getTypeInfoList
-	// FIXME: implement this...
+	// all backends return ODBC SQLGetTypeInfo() format, so just map 1 to 1
+	//
+	// TYPE_NAME <- TYPE_NAME
+	pvt->_odbctypeinfocolumnmap.setValue(0,0);
+	// DATA_TYPE <- DATA_TYPE
+	pvt->_odbctypeinfocolumnmap.setValue(1,1);
+	// COLUMN_SIZE <- COLUMN_SIZE
+	pvt->_odbctypeinfocolumnmap.setValue(2,2);
+	// LITERAL_PREFIX <- LITERAL_PREFIX
+	pvt->_odbctypeinfocolumnmap.setValue(3,3);
+	// LITERAL_SUFFIX <- LITERAL_SUFFIX
+	pvt->_odbctypeinfocolumnmap.setValue(4,4);
+	// CREATE_PARAMS <- CREATE_PARAMS
+	pvt->_odbctypeinfocolumnmap.setValue(5,5);
+	// NULLABLE <- NULLABLE
+	pvt->_odbctypeinfocolumnmap.setValue(6,6);
+	// CASE_SENSITIVE <- CASE_SENSITIVE
+	pvt->_odbctypeinfocolumnmap.setValue(7,7);
+	// SEARCHABLE <- SEARCHABLE
+	pvt->_odbctypeinfocolumnmap.setValue(8,8);
+	// UNSIGNED_ATTRIBUTE <- UNSIGNED_ATTRIBUTE
+	pvt->_odbctypeinfocolumnmap.setValue(9,9);
+	// FIXED_PREC_SCALE <- FIXED_PREC_SCALE
+	pvt->_odbctypeinfocolumnmap.setValue(10,10);
+	// AUTO_UNIQUE_VALUE <- AUTO_UNIQUE_VALUE
+	pvt->_odbctypeinfocolumnmap.setValue(11,11);
+	// LOCAL_TYPE_NAME <- LOCAL_TYPE_NAME
+	pvt->_odbctypeinfocolumnmap.setValue(12,12);
+	// MINIMUM_SCALE <- MINIMUM_SCALE
+	pvt->_odbctypeinfocolumnmap.setValue(13,13);
+	// MAXIMUM_SCALE <- MAXIMUM_SCALE
+	pvt->_odbctypeinfocolumnmap.setValue(14,14);
+	// SQL_DATA_TYPE <- SQL_DATA_TYPE
+	pvt->_odbctypeinfocolumnmap.setValue(15,15);
+	// SQL_DATETIME_SUB <- SQL_DATETIME_SUB
+	pvt->_odbctypeinfocolumnmap.setValue(16,16);
+	// NUM_PREC_RADIX <- NUM_PREC_RADIX
+	pvt->_odbctypeinfocolumnmap.setValue(17,17);
+	// INTERVAL_PRECISION <- INTERVAL_PRECISION
+	pvt->_odbctypeinfocolumnmap.setValue(18,18);
+	pvt->_odbctypeinfocolumnnamemap.setValue(0,"TYPE_NAME");
+	pvt->_odbctypeinfocolumnnamemap.setValue(1,"DATA_TYPE");
+	pvt->_odbctypeinfocolumnnamemap.setValue(2,"PRECISION");
+	pvt->_odbctypeinfocolumnnamemap.setValue(3,"LITERAL_PREFIX");
+	pvt->_odbctypeinfocolumnnamemap.setValue(4,"LITERAL_SUFFIX");
+	pvt->_odbctypeinfocolumnnamemap.setValue(5,"CREATE_PARAMS");
+	pvt->_odbctypeinfocolumnnamemap.setValue(6,"NULLABLE");
+	pvt->_odbctypeinfocolumnnamemap.setValue(7,"CASE_SENSITIVE");
+	pvt->_odbctypeinfocolumnnamemap.setValue(8,"SEARCHABLE");
+	pvt->_odbctypeinfocolumnnamemap.setValue(9,"UNSIGNED_ATTRIBUTE");
+	pvt->_odbctypeinfocolumnnamemap.setValue(10,"FIXED_PREC_SCALE");
+	pvt->_odbctypeinfocolumnnamemap.setValue(11,"AUTO_INCREMENT");
+	pvt->_odbctypeinfocolumnnamemap.setValue(12,"LOCAL_TYPE_NAME");
+	pvt->_odbctypeinfocolumnnamemap.setValue(13,"MINIMUM_SCALE");
+	pvt->_odbctypeinfocolumnnamemap.setValue(14,"MAXIMUM_SCALE");
+	pvt->_odbctypeinfocolumnnamemap.setValue(15,"SQL_DATA_TYPE");
+	pvt->_odbctypeinfocolumnnamemap.setValue(16,"SQL_DATETIME_SUB");
+	pvt->_odbctypeinfocolumnnamemap.setValue(17,"NUM_PREC_RADIX");
+	pvt->_odbctypeinfocolumnnamemap.setValue(18,"INTERVAL_PRECISION");
 
 	// ODBC getProcedureList
 	// FIXME: implement this...
@@ -6418,7 +6539,63 @@ void sqlrservercontroller::buildToJDBCColumnMaps() {
 	// FIXME: implement this...
 
 	// JDBC getTypeInfoList
-	// FIXME: implement this...
+	// map from ODBC SQLGetTypeInfo() format to JDBC getTypeInf() format
+	// (all backends return ODBC SQLGetTypeInfo() format)
+	//
+	// TYPE_NAME <- TYPE_NAME
+	pvt->_jdbctypeinfocolumnmap.setValue(0,0);
+	// DATA_TYPE <- DATA_TYPE
+	pvt->_jdbctypeinfocolumnmap.setValue(1,1);
+	// PRECISION <- COLUMN_SIZE
+	pvt->_jdbctypeinfocolumnmap.setValue(2,2);
+	// LITERAL_PREFIX <- LITERAL_PREFIX
+	pvt->_jdbctypeinfocolumnmap.setValue(3,3);
+	// LITERAL_SUFFIX <- LITERAL_SUFFIX
+	pvt->_jdbctypeinfocolumnmap.setValue(4,4);
+	// CREATE_PARAMS <- CREATE_PARAMS
+	pvt->_jdbctypeinfocolumnmap.setValue(5,5);
+	// NULLABLE <- NULLABLE
+	pvt->_jdbctypeinfocolumnmap.setValue(6,6);
+	// CASE_SENSITIVE <- CASE_SENSITIVE
+	pvt->_jdbctypeinfocolumnmap.setValue(7,7);
+	// SEARCHABLE <- SEARCHABLE
+	pvt->_jdbctypeinfocolumnmap.setValue(8,8);
+	// UNSIGNED_ATTRIBUTE <- UNSIGNED_ATTRIBUTE
+	pvt->_jdbctypeinfocolumnmap.setValue(9,9);
+	// FIXED_PREC_SCALE <- FIXED_PREC_SCALE
+	pvt->_jdbctypeinfocolumnmap.setValue(10,10);
+	// AUTO_INCREMENT <- AUTO_UNIQUE_VALUE
+	pvt->_jdbctypeinfocolumnmap.setValue(11,11);
+	// LOCAL_TYPE_NAME <- LOCAL_TYPE_NAME
+	pvt->_jdbctypeinfocolumnmap.setValue(12,12);
+	// MINIMUM_SCALE <- MINIMUM_SCALE
+	pvt->_jdbctypeinfocolumnmap.setValue(13,13);
+	// MAXIMUM_SCALE <- MAXIMUM_SCALE
+	pvt->_jdbctypeinfocolumnmap.setValue(14,14);
+	// SQL_DATA_TYPE <- SQL_DATA_TYPE
+	pvt->_jdbctypeinfocolumnmap.setValue(15,15);
+	// SQL_DATETIME_SUB <- SQL_DATETIME_SUB
+	pvt->_jdbctypeinfocolumnmap.setValue(16,16);
+	// NUM_PREC_RADIX <- NUM_PREC_RADIX
+	pvt->_jdbctypeinfocolumnmap.setValue(17,17);
+	pvt->_jdbctypeinfocolumnnamemap.setValue(0,"TYPE_NAME");
+	pvt->_jdbctypeinfocolumnnamemap.setValue(1,"DATA_TYPE");
+	pvt->_jdbctypeinfocolumnnamemap.setValue(2,"PRECISION");
+	pvt->_jdbctypeinfocolumnnamemap.setValue(3,"LITERAL_PREFIX");
+	pvt->_jdbctypeinfocolumnnamemap.setValue(4,"LITERAL_SUFFIX");
+	pvt->_jdbctypeinfocolumnnamemap.setValue(5,"CREATE_PARAMS");
+	pvt->_jdbctypeinfocolumnnamemap.setValue(6,"NULLABLE");
+	pvt->_jdbctypeinfocolumnnamemap.setValue(7,"CASE_SENSITIVE");
+	pvt->_jdbctypeinfocolumnnamemap.setValue(8,"SEARCHABLE");
+	pvt->_jdbctypeinfocolumnnamemap.setValue(9,"UNSIGNED_ATTRIBUTE");
+	pvt->_jdbctypeinfocolumnnamemap.setValue(10,"FIXED_PREC_SCALE");
+	pvt->_jdbctypeinfocolumnnamemap.setValue(11,"AUTO_INCREMENT");
+	pvt->_jdbctypeinfocolumnnamemap.setValue(12,"LOCAL_TYPE_NAME");
+	pvt->_jdbctypeinfocolumnnamemap.setValue(13,"MINIMUM_SCALE");
+	pvt->_jdbctypeinfocolumnnamemap.setValue(14,"MAXIMUM_SCALE");
+	pvt->_jdbctypeinfocolumnnamemap.setValue(15,"SQL_DATA_TYPE");
+	pvt->_jdbctypeinfocolumnnamemap.setValue(16,"SQL_DATETIME_SUB");
+	pvt->_jdbctypeinfocolumnnamemap.setValue(17,"NUM_PREC_RADIX");
 
 	// JDBC getProcedureList
 	// FIXME: implement this...

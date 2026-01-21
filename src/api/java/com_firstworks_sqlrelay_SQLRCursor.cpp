@@ -1635,6 +1635,23 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getColumnList
 	return retval;
 }
 
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getTypeInfoListWithFormat
+ * Signature: (Ljava/lang/String;Ljava/lang/String;I;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getTypeInfoListWithFormat
+  (JNIEnv *env, jobject self, jstring type, jstring wild, jint listformat) {
+	char	*typestring=curGetStringUTFChars(env,type,0);
+	char	*wildstring=curGetStringUTFChars(env,wild,0);
+	jboolean	retval=getSqlrCursor(env,self)->
+				getTypeInfoList(typestring,wildstring,
+					(sqlrclientlistformat_t)listformat);
+	curReleaseStringUTFChars(env,wild,wildstring);
+	curReleaseStringUTFChars(env,type,typestring);
+	return retval;
+}
+
 
 #ifdef __cplusplus
 }

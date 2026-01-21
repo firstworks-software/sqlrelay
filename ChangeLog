@@ -11,6 +11,12 @@
 	added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
 	fixed setProtocolIsBingEndian() (assignment reversal)
+	jdbc driver debugging improvements
+	jdbc driver synchronzation fixes
+	fleshed out getTableTypeList(), getTypeInfoList() in the
+		sqlrservercontroller, oracle connection, and jdbc driver
+	fixed oracle connection's handling of catalog vs schema in its
+		get*List() methods
 
 2.1.0 - refactored debugging
 

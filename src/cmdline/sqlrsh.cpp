@@ -1153,6 +1153,13 @@ bool sqlrsh::externalCommand(sqlrconnection *sqlrcon,
 			delete[] table;
 			delete[] wild;
 		} else if (!charstring::compareIgnoringCase(command,
+							"describe ",9)) {
+			char	*table=getTable(command,false);
+			char	*wild=getWild(command);
+			sqlrcur->getColumnList(table,wild);
+			delete[] table;
+			delete[] wild;
+		} else if (!charstring::compareIgnoringCase(command,
 						"show primary keys",17)) {
 			char	*table=getTable(command,true);
 			char	*wild=getWild(command);
@@ -1164,13 +1171,6 @@ bool sqlrsh::externalCommand(sqlrconnection *sqlrcon,
 			char	*table=getTable(command,true);
 			char	*wild=getWild(command);
 			sqlrcur->getKeyAndIndexList(table,wild);
-			delete[] table;
-			delete[] wild;
-		} else if (!charstring::compareIgnoringCase(command,
-							"describe ",9)) {
-			char	*table=getTable(command,false);
-			char	*wild=getWild(command);
-			sqlrcur->getColumnList(table,wild);
 			delete[] table;
 			delete[] wild;
 		} else if (!charstring::compareIgnoringCase(command,
@@ -1198,6 +1198,29 @@ bool sqlrsh::externalCommand(sqlrconnection *sqlrcon,
 			sqlrcur->getTypeInfoList(type,NULL,
 					SQLRCLIENTLISTFORMAT_JDBC);
 			delete[] type;
+		} else if (!charstring::compareIgnoringCase(command,
+						"show type info",14)) {
+			char	*type=getType(command);
+			sqlrcur->getTypeInfoList(type,NULL);
+			delete[] type;
+		} else if (!charstring::compareIgnoringCase(command,
+						"show procedures mysql",21)) {
+			char	*wild=getWild(command);
+			sqlrcur->getProcedureList(wild,
+					SQLRCLIENTLISTFORMAT_MYSQL);
+			delete[] wild;
+		} else if (!charstring::compareIgnoringCase(command,
+						"show procedures odbc",20)) {
+			char	*wild=getWild(command);
+			sqlrcur->getProcedureList(wild,
+					SQLRCLIENTLISTFORMAT_ODBC);
+			delete[] wild;
+		} else if (!charstring::compareIgnoringCase(command,
+						"show procedures jdbc",20)) {
+			char	*wild=getWild(command);
+			sqlrcur->getProcedureList(wild,
+					SQLRCLIENTLISTFORMAT_JDBC);
+			delete[] wild;
 		} else if (!charstring::compareIgnoringCase(command,
 						"show procedures",15)) {
 			char	*wild=getWild(command);
@@ -1495,7 +1518,7 @@ char *sqlrsh::getProcedure(const char *command) {
 char *sqlrsh::getType(const char *command) {
 	const char	*procptr=charstring::findFirst(command," for ");
 	if (!procptr) {
-		return NULL;
+		return charstring::duplicate("*");
 	}
 	procptr=procptr+5;
 	const char	*endptr=charstring::findFirst(procptr," ");
