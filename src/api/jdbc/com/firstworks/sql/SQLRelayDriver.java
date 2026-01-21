@@ -9,9 +9,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 
-import java.lang.StackWalker;
-import java.lang.StackWalker.*;
-import java.lang.reflect.*;
 import com.firstworks.sqlrelay.*;
 
 public class SQLRelayDriver implements Driver {
@@ -22,9 +19,6 @@ public class SQLRelayDriver implements Driver {
 	public static final boolean	debug=true;
 
 	Map<Long,Integer>	indents=new HashMap<>();
-
-	private static final	StackWalker	walker=
-		StackWalker.getInstance(Option.RETAIN_CLASS_REFERENCE);
 
 	static {
 		try {
@@ -386,7 +380,9 @@ public class SQLRelayDriver implements Driver {
 		debugStart(Thread.currentThread().getId()+": "+
 						classname+"."+methodname);
 
-		try {
+		// this was helpful when tracking down synchronzation problems
+		// with apps that shared Connections across threads
+		/*try {
 			int	code=0;
 			switch (obj.getClass().getSimpleName()) {
 				case "SQLRelayConnection":
@@ -428,7 +424,7 @@ public class SQLRelayDriver implements Driver {
 		} catch (Exception ex) {
 			debugPrintln("exception: "+ex.getMessage());
 			ex.printStackTrace();
-		}
+		}*/
 	}
 
 	public synchronized
