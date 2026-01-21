@@ -339,7 +339,7 @@ class oracle {
 
 		// getTables
 		System.out.println("DATABASE META DATA - tables");
-		rs=md.getTables("%","FEDORA40X64","A%TO%",
+		rs=md.getTables("%","%","%",
 			new String[] {"SYNONYM","TABLE","VIEW"});
 		checkSuccess((rs!=null),1);
 		rsmd=rs.getMetaData();
@@ -360,6 +360,63 @@ class oracle {
 		}
 		rs.close();
 		System.out.println();
+
+		// getSuperTables (not supported in oracle jdbc)
+
+		// getTypeInfo
+		System.out.println("DATABASE META DATA - type info");
+		rs=md.getTypeInfo();
+		checkSuccess((rs!=null),1);
+		rsmd=rs.getMetaData();
+		checkSuccess((rsmd!=null),1);
+		checkSuccess(rsmd.getColumnCount(),18);
+		checkSuccess(rsmd.getColumnName(1),"TYPE_NAME");
+		checkSuccess(rsmd.getColumnName(2),"DATA_TYPE");
+		checkSuccess(rsmd.getColumnName(3),"PRECISION");
+		checkSuccess(rsmd.getColumnName(4),"LITERAL_PREFIX");
+		checkSuccess(rsmd.getColumnName(5),"LITERAL_SUFFIX");
+		checkSuccess(rsmd.getColumnName(6),"CREATE_PARAMS");
+		checkSuccess(rsmd.getColumnName(7),"NULLABLE");
+		checkSuccess(rsmd.getColumnName(8),"CASE_SENSITIVE");
+		checkSuccess(rsmd.getColumnName(9),"SEARCHABLE");
+		checkSuccess(rsmd.getColumnName(10),"UNSIGNED_ATTRIBUTE");
+		checkSuccess(rsmd.getColumnName(11),"FIXED_PREC_SCALE");
+		checkSuccess(rsmd.getColumnName(12),"AUTO_INCREMENT");
+		checkSuccess(rsmd.getColumnName(13),"LOCAL_TYPE_NAME");
+		checkSuccess(rsmd.getColumnName(14),"MINIMUM_SCALE");
+		checkSuccess(rsmd.getColumnName(15),"MAXIMUM_SCALE");
+		checkSuccess(rsmd.getColumnName(16),"SQL_DATA_TYPE");
+		checkSuccess(rsmd.getColumnName(17),"SQL_DATETIME_SUB");
+		checkSuccess(rsmd.getColumnName(18),"NUM_PREC_RADIX");
+		System.out.println();
+		while (rs.next()) {
+			System.out.println(rs.getString("TYPE_NAME")+","+
+					rs.getString("DATA_TYPE")+","+
+					rs.getString("PRECISION")+","+
+					rs.getString("LITERAL_PREFIX")+","+
+					rs.getString("LITERAL_SUFFIX")+","+
+					rs.getString("CREATE_PARAMS")+","+
+					rs.getString("NULLABLE")+","+
+					rs.getString("CASE_SENSITIVE")+","+
+					rs.getString("SEARCHABLE")+","+
+					rs.getString("UNSIGNED_ATTRIBUTE")+","+
+					rs.getString("FIXED_PREC_SCALE")+","+
+					rs.getString("AUTO_INCREMENT")+","+
+					rs.getString("LOCAL_TYPE_NAME")+","+
+					rs.getString("MINIMUM_SCALE")+","+
+					rs.getString("MAXIMUM_SCALE")+","+
+					rs.getString("SQL_DATA_TYPE")+","+
+					rs.getString("SQL_DATETIME_SUB")+","+
+					rs.getString("NUM_PREC_RADIX"));
+		}
+		rs.close();
+		System.out.println();
+
+		// getProcedures
+
+		// getFunctions
+
+		// getUDTs
 
 
 

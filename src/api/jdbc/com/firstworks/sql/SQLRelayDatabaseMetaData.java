@@ -1034,13 +1034,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 					String tableNamePattern)
 					throws SQLException {
 		driver.debugFunction(this);
-
-		driver.debugPrintln("catalog: ",catalog);
-		driver.debugPrintln("schema pattern: ",schemaPattern);
-		driver.debugPrintln("table name pattern: ",tableNamePattern);
-
-		// FIXME: implement this somehow
-		driver.debugPrintln("FIXME: implement this");
+		// few jdbc drivers (or databases) support this
+		throwFeatureNotSupportedException();
 		driver.debugEnd();
 		return null;
 	}
@@ -2355,6 +2350,13 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugPrintln("exception: "+sqlrcur.errorMessage());
 		driver.debugZeroIndent();
 		throw new SQLException(sqlrcur.errorMessage());
+	}
+
+	protected void throwFeatureNotSupportedException() throws SQLException {
+		driver.debugPrintln(
+			"exception: SQLFeatureNotSupportedException");
+		driver.debugZeroIndent();
+		throw new SQLFeatureNotSupportedException();
 	}
 
 	public
