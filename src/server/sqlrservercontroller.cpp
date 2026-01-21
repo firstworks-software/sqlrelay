@@ -248,12 +248,14 @@ class sqlrservercontrollerprivate {
 	dictionary< uint32_t, uint32_t >	_mysqltabletypescolumnmap;
 	dictionary< uint32_t, uint32_t >	_mysqlcolumnscolumnmap;
 	dictionary< uint32_t, uint32_t >	_mysqltypeinfocolumnmap;
+	dictionary< uint32_t, uint32_t >	_mysqlprocedurescolumnmap;
 	dictionary< uint32_t, const char * >	_mysqldatabasescolumnnamemap;
 	dictionary< uint32_t, const char * >	_mysqlschemascolumnnamemap;
 	dictionary< uint32_t, const char * >	_mysqltablescolumnnamemap;
 	dictionary< uint32_t, const char * >	_mysqltabletypescolumnnamemap;
 	dictionary< uint32_t, const char * >	_mysqlcolumnscolumnnamemap;
 	dictionary< uint32_t, const char * >	_mysqltypeinfocolumnnamemap;
+	dictionary< uint32_t, const char * >	_mysqlprocedurescolumnnamemap;
 
 	dictionary< uint32_t, uint32_t >	_odbcdatabasescolumnmap;
 	dictionary< uint32_t, uint32_t >	_odbcschemascolumnmap;
@@ -261,12 +263,14 @@ class sqlrservercontrollerprivate {
 	dictionary< uint32_t, uint32_t >	_odbctabletypescolumnmap;
 	dictionary< uint32_t, uint32_t >	_odbccolumnscolumnmap;
 	dictionary< uint32_t, uint32_t >	_odbctypeinfocolumnmap;
+	dictionary< uint32_t, uint32_t >	_odbcprocedurescolumnmap;
 	dictionary< uint32_t, const char * >	_odbcdatabasescolumnnamemap;
 	dictionary< uint32_t, const char * >	_odbcschemascolumnnamemap;
 	dictionary< uint32_t, const char * >	_odbctablescolumnnamemap;
 	dictionary< uint32_t, const char * >	_odbctabletypescolumnnamemap;
 	dictionary< uint32_t, const char * >	_odbccolumnscolumnnamemap;
 	dictionary< uint32_t, const char * >	_odbctypeinfocolumnnamemap;
+	dictionary< uint32_t, const char * >	_odbcprocedurescolumnnamemap;
 
 	dictionary< uint32_t, uint32_t >	_jdbcdatabasescolumnmap;
 	dictionary< uint32_t, uint32_t >	_jdbcschemascolumnmap;
@@ -274,12 +278,14 @@ class sqlrservercontrollerprivate {
 	dictionary< uint32_t, uint32_t >	_jdbctabletypescolumnmap;
 	dictionary< uint32_t, uint32_t >	_jdbccolumnscolumnmap;
 	dictionary< uint32_t, uint32_t >	_jdbctypeinfocolumnmap;
+	dictionary< uint32_t, uint32_t >	_jdbcprocedurescolumnmap;
 	dictionary< uint32_t, const char * >	_jdbcdatabasescolumnnamemap;
 	dictionary< uint32_t, const char * >	_jdbcschemascolumnnamemap;
 	dictionary< uint32_t, const char * >	_jdbctablescolumnnamemap;
 	dictionary< uint32_t, const char * >	_jdbctabletypescolumnnamemap;
 	dictionary< uint32_t, const char * >	_jdbccolumnscolumnnamemap;
 	dictionary< uint32_t, const char * >	_jdbctypeinfocolumnnamemap;
+	dictionary< uint32_t, const char * >	_jdbcprocedurescolumnnamemap;
 
 	const char	**_columnnames;
 	uint16_t	*_columnnamesizes;
@@ -5998,26 +6004,29 @@ void sqlrservercontroller::setProcedureListFormat(
 		return;
 	}
 
-	// FIXME: not implemented for any dbs yet
+	// currently only implemented for oracle
 	switch (listformat) {
 		case SQLRSERVERLISTFORMAT_NULL:
 			pvt->_columnmap=NULL;
 			pvt->_columnnamemap=NULL;
 			break;
 		case SQLRSERVERLISTFORMAT_MYSQL:
-			// FIXME: implement this
-			pvt->_columnmap=NULL;
-			pvt->_columnnamemap=NULL;
+			pvt->_columnmap=
+				&(pvt->_mysqlprocedurescolumnmap);
+			pvt->_columnnamemap=
+				&(pvt->_mysqlprocedurescolumnnamemap);
 			break;
 		case SQLRSERVERLISTFORMAT_ODBC:
-			// FIXME: implement this
-			pvt->_columnmap=NULL;
-			pvt->_columnnamemap=NULL;
+			pvt->_columnmap=
+				&(pvt->_odbcprocedurescolumnmap);
+			pvt->_columnnamemap=
+				&(pvt->_odbcprocedurescolumnnamemap);
 			break;
 		case SQLRSERVERLISTFORMAT_JDBC:
-			// FIXME: implement this
-			pvt->_columnmap=NULL;
-			pvt->_columnnamemap=NULL;
+			pvt->_columnmap=
+				&(pvt->_jdbcprocedurescolumnmap);
+			pvt->_columnnamemap=
+				&(pvt->_jdbcprocedurescolumnnamemap);
 			break;
 		default:
 			pvt->_columnmap=NULL;
@@ -6174,7 +6183,23 @@ void sqlrservercontroller::buildToMySQLColumnMaps() {
 	pvt->_mysqltypeinfocolumnnamemap.setValue(18,"interval_precision");
 
 	// mysql getProcedureList
-	// FIXME: does mysql have anything like this?
+	// map from ODBC SQLProcedures() format to mysql
+	// "select ... from information_schema.routines" format
+	// (mysql doesn't have a built-in get table types query)
+	// (all backends return ODBC SQLProcedures() format)
+	//
+	// routine_catalog <- PROCEDURE_CAT
+	pvt->_mysqlprocedurescolumnmap.setValue(0,0);
+	// routine_schema <- PROCEDURE_SCHEM
+	pvt->_mysqlprocedurescolumnmap.setValue(1,1);
+	// routine_name <- PROCEDURE_NAME
+	pvt->_mysqlprocedurescolumnmap.setValue(2,2);
+	// data_type <- PROCEDURE_TYPE
+	pvt->_mysqlprocedurescolumnmap.setValue(3,7);
+	pvt->_mysqlprocedurescolumnnamemap.setValue(0,"routine_catalog");
+	pvt->_mysqlprocedurescolumnnamemap.setValue(1,"routine_schema");
+	pvt->_mysqlprocedurescolumnnamemap.setValue(2,"routine_name");
+	pvt->_mysqlprocedurescolumnnamemap.setValue(3,"data_type");
 }
 
 void sqlrservercontroller::buildToODBCColumnMaps() {
@@ -6385,7 +6410,32 @@ void sqlrservercontroller::buildToODBCColumnMaps() {
 	pvt->_odbctypeinfocolumnnamemap.setValue(18,"INTERVAL_PRECISION");
 
 	// ODBC getProcedureList
-	// FIXME: implement this...
+	// all backends return ODBC SQLProcedurs() format, so just map 1 to 1
+	//
+	// PROCEDURE_CAT <- PROCEDURE_CAT
+	pvt->_odbcprocedurescolumnmap.setValue(0,0);
+	// PROCEDURE_SCHEM <- PROCEDURE_SCHEM
+	pvt->_odbcprocedurescolumnmap.setValue(1,1);
+	// PROCEDURE_NAME <- PROCEDURE_NAME
+	pvt->_odbcprocedurescolumnmap.setValue(2,2);
+	// NUM_INPUT_PARAMS <- NUM_INPUT_PARAMS
+	pvt->_odbcprocedurescolumnmap.setValue(3,3);
+	// NUM_OUTPUT_PARAMS <- NUM_OUTPUT_PARAMS
+	pvt->_odbcprocedurescolumnmap.setValue(4,4);
+	// NUM_RESULT_SETS <- NUM_RESULT_SETS
+	pvt->_odbcprocedurescolumnmap.setValue(5,5);
+	// REMARKS <- REMARKS
+	pvt->_odbcprocedurescolumnmap.setValue(6,6);
+	// PROCEDURE_TYPE <- PROCEDURE_TYPE
+	pvt->_odbcprocedurescolumnmap.setValue(7,7);
+	pvt->_odbcprocedurescolumnnamemap.setValue(0,"PROCEDURE_CAT");
+	pvt->_odbcprocedurescolumnnamemap.setValue(1,"PROCEDURE_SCHEM");
+	pvt->_odbcprocedurescolumnnamemap.setValue(2,"PROCEDURE_NAME");
+	pvt->_odbcprocedurescolumnnamemap.setValue(3,"NUM_INPUT_PARAMS");
+	pvt->_odbcprocedurescolumnnamemap.setValue(4,"NUM_OUTPUT_PARAMS");
+	pvt->_odbcprocedurescolumnnamemap.setValue(5,"NUM_RESULT_SETS");
+	pvt->_odbcprocedurescolumnnamemap.setValue(6,"REMARKS");
+	pvt->_odbcprocedurescolumnnamemap.setValue(7,"PROCEDURE_TYPE");
 }
 
 void sqlrservercontroller::buildToJDBCColumnMaps() {
@@ -6598,7 +6648,33 @@ void sqlrservercontroller::buildToJDBCColumnMaps() {
 	pvt->_jdbctypeinfocolumnnamemap.setValue(17,"NUM_PREC_RADIX");
 
 	// JDBC getProcedureList
-	// FIXME: implement this...
+	// map from ODBC SQLProcedures() format to JDBC getProcedures() format
+	// (all backends return ODBC SQLProcedures() format)
+	//
+	// PROCEDURE_CAT <- PROCEDURE_CAT
+	pvt->_jdbcprocedurescolumnmap.setValue(0,0);
+	// PROCEDURE_SCHEM <- PROCEDURE_SCHEM
+	pvt->_jdbcprocedurescolumnmap.setValue(1,1);
+	// PROCEDURE_NAME <- PROCEDURE_NAME
+	pvt->_jdbcprocedurescolumnmap.setValue(2,2);
+	// NUM_INPUT_PARAMS <- NUM_INPUT_PARAMS
+	pvt->_jdbcprocedurescolumnmap.setValue(3,3);
+	// NUM_OUTPUT_PARAMS <- NUM_OUTPUT_PARAMS
+	pvt->_jdbcprocedurescolumnmap.setValue(4,4);
+	// NUM_RESULT_SETS <- NUM_RESULT_SETS
+	pvt->_jdbcprocedurescolumnmap.setValue(5,5);
+	// REMARKS <- REMARKS
+	pvt->_jdbcprocedurescolumnmap.setValue(6,6);
+	// PROCEDURE_TYPE <- PROCEDURE_TYPE
+	pvt->_jdbcprocedurescolumnmap.setValue(7,7);
+	pvt->_jdbcprocedurescolumnnamemap.setValue(0,"PROCEDURE_CAT");
+	pvt->_jdbcprocedurescolumnnamemap.setValue(1,"PROCEDURE_SCHEM");
+	pvt->_jdbcprocedurescolumnnamemap.setValue(2,"PROCEDURE_NAME");
+	pvt->_jdbcprocedurescolumnnamemap.setValue(3,"NUM_INPUT_PARAMS");
+	pvt->_jdbcprocedurescolumnnamemap.setValue(4,"NUM_OUTPUT_PARAMS");
+	pvt->_jdbcprocedurescolumnnamemap.setValue(5,"NUM_RESULT_SETS");
+	pvt->_jdbcprocedurescolumnnamemap.setValue(6,"REMARKS");
+	pvt->_jdbcprocedurescolumnnamemap.setValue(7,"PROCEDURE_TYPE");
 }
 
 void sqlrservercontroller::setColumnMap() {

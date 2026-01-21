@@ -856,10 +856,37 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugPrintln("procedure name pattern: ",
 						procedureNamePattern);
 
-		// FIXME: implement this by calling sqlrcon.getProcedureList()
-		driver.debugPrintln("FIXME: implement this");
+		String	wild=buildWild(catalog,schemaPattern,
+						procedureNamePattern);
+		driver.debugPrintln("wild: ",wild);
+
+		SQLRelayResultSet	resultset=null;
+		SQLRelayStatement	stmt=(SQLRelayStatement)
+						connection.createStatement();
+		SQLRCursor		sqlrcur=stmt.getSQLRCursor();
+
+		boolean	result=false;
+		synchronized (networklock) {
+			result=sqlrcur.getProcedureListWithFormat(
+						procedureNamePattern,4);
+		}
+
+		if (result) {
+
+			driver.debugPrintln("colcount: ",sqlrcur.colCount());
+
+			if (sqlrcur.colCount()>0) {
+				resultset=new SQLRelayResultSet(driver);
+				resultset.setNetworkLock(networklock);
+				resultset.setStatement(stmt);
+				resultset.setSQLRCursor(sqlrcur);
+			}
+		} else {
+			throwErrorMessageException(sqlrcur);
+		}
+		
 		driver.debugEnd();
-		return null;
+		return resultset;
 	}
 
 	public

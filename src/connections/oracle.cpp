@@ -142,6 +142,9 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 						const char *type,
 						bool wild,
 						bool currentschemaonly);
+		const char	*getProcedureListQuery(
+						bool wild,
+						bool currentschemaonly);
 		const char	*isSynonymQuery();
 		const char	*selectDatabaseQuery();
 		const char	*getCurrentDatabaseQuery();
@@ -188,7 +191,6 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		bool		disablekeylookup;
 
 		stringbuffer	tablelistquery;
-		stringbuffer	tabletypelistquery;
 
 		stringbuffer	alltypeinfoquery;
 };
@@ -1323,9 +1325,8 @@ const char *oracleconnection::getTableListQuery(bool wild,
 const char *oracleconnection::getTableTypeListQuery(bool wild,
 						bool currentschemaonly) {
 
-	tabletypelistquery.clear();
-	tabletypelistquery.append(
-		"(select "
+	// FIXME: support wild and currentschemaonly
+	return "(select "
 		"	'' as TABLE_CAT, "
 		"	'' as TABLE_SCHEM, "
 		"	'' as TABLE_NAME, "
@@ -1353,8 +1354,7 @@ const char *oracleconnection::getTableTypeListQuery(bool wild,
 		"	'' as REMARKS, "
 		"	null "
 		"from "
-		"	dual)");
-	return tabletypelistquery.getString();
+		"	dual)";
 }
 
 const char *oracleconnection::getGlobalTempTableListQuery(
@@ -2768,6 +2768,26 @@ const char *oracleconnection::getTypeInfoListQuery(const char *type,
 		return rawtype;
 	}
 	return NULL;
+}
+
+const char *oracleconnection::getProcedureListQuery(bool wild,
+						bool currentschemaonly) {
+	// FIXME: support wild and currentschemaonly
+	return "select "
+		"	'', "
+		"	owner, "
+		"	object_name, "
+		"	0, "
+		"	0, "
+		"	0, "
+		"	'', "
+		"	'', "
+		"	null "
+		"from "
+		"	all_procedures "
+		"order by "
+		"	owner, "
+		"	object_name";
 }
 
 const char *oracleconnection::isSynonymQuery() {

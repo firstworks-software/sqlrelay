@@ -1652,6 +1652,20 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getTypeInfoLi
 	return retval;
 }
 
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getProcedureListWithFormat
+ * Signature: (Ljava/lang/String;I;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getProcedureListWithFormat
+  (JNIEnv *env, jobject self, jstring wild, jint listformat) {
+	char	*wildstring=curGetStringUTFChars(env,wild,0);
+	jboolean	retval=getSqlrCursor(env,self)->
+				getProcedureList(wildstring,
+					(sqlrclientlistformat_t)listformat);
+	curReleaseStringUTFChars(env,wild,wildstring);
+	return retval;
+}
 
 #ifdef __cplusplus
 }

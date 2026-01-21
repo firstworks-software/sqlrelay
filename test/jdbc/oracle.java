@@ -86,6 +86,7 @@ class oracle {
 		if (value==success) {
 			System.out.printf("success ");
 		} else {
+			System.out.printf(value+"!="+success+" ");
 			System.out.println("failure ");
 			System.exit(1);
 		}
@@ -96,6 +97,7 @@ class oracle {
 		if (value==success) {
 			System.out.printf("success ");
 		} else {
+			System.out.printf(value+"!="+success+" ");
 			System.out.println("failure ");
 			System.exit(1);
 		}
@@ -106,16 +108,35 @@ class oracle {
 		if (((value)?1:0)==success) {
 			System.out.printf("success ");
 		} else {
+			System.out.printf(value+"!="+success+" ");
 			System.out.println("failure ");
 			System.exit(1);
+		}
+	}
+
+	private static void printColumns(ResultSetMetaData rsmd)
+							throws Exception {
+		System.out.println();
+		for (int i=1; i<rsmd.getColumnCount()+1; i++) {
+			System.out.println(rsmd.getColumnName(i));
+		}
+	}
+
+	private static void printResultSet(ResultSet rs) throws Exception {
+		ResultSetMetaData	rsmd=rs.getMetaData();
+		System.out.println();
+		while (rs.next()) {
+			for (int i=1; i<rsmd.getColumnCount()+1; i++) {
+                        	System.out.print(rs.getString(i)+",");
+			}
+                        System.out.println();
 		}
 	}
 
 	public static void main(String args[]) throws Exception {
 
 		String	driver="com.firstworks.sql.SQLRelayDriver";
-		//String	host="localhost";
-		String	host="fedora40x64";
+		String	host="localhost";
 		short	port=9000;
 		String	socket=null;
 		String	user="testuser";
@@ -298,7 +319,8 @@ class oracle {
 		ResultSetMetaData	rsmd=rs.getMetaData();
 		checkSuccess((rsmd!=null),1);
 		checkSuccess(rsmd.getColumnCount(),1);
-		checkSuccess(rsmd.getColumnName(1),"TABLE_CAT");
+		int	col=1;
+		checkSuccess(rsmd.getColumnName(col++),"TABLE_CAT");
 		while (rs.next()) {
 			System.out.println(rs.getString("TABLE_CAT"));
 		}
@@ -312,13 +334,12 @@ class oracle {
 		rsmd=rs.getMetaData();
 		checkSuccess((rsmd!=null),1);
 		checkSuccess(rsmd.getColumnCount(),2);
-		checkSuccess(rsmd.getColumnName(1),"TABLE_SCHEM");
-		checkSuccess(rsmd.getColumnName(2),"TABLE_CATALOG");
+		col=1;
+		checkSuccess(rsmd.getColumnName(col++),"TABLE_SCHEM");
+		checkSuccess(rsmd.getColumnName(col++),"TABLE_CATALOG");
 		System.out.println();
-		while (rs.next()) {
-			System.out.println(rs.getString("TABLE_SCHEM")+","+
-						rs.getString("TABLE_CATALOG"));
-		}
+		//printColumns(rsmd);
+		//printResultSet(rs);
 		rs.close();
 		System.out.println();
 
@@ -329,11 +350,11 @@ class oracle {
 		rsmd=rs.getMetaData();
 		checkSuccess((rsmd!=null),1);
 		checkSuccess(rsmd.getColumnCount(),1);
-		checkSuccess(rsmd.getColumnName(1),"TABLE_TYPE");
+		col=1;
+		checkSuccess(rsmd.getColumnName(col++),"TABLE_TYPE");
 		System.out.println();
-		while (rs.next()) {
-			System.out.println(rs.getString("TABLE_TYPE"));
-		}
+		//printColumns(rsmd);
+		//printResultSet(rs);
 		rs.close();
 		System.out.println();
 
@@ -345,19 +366,15 @@ class oracle {
 		rsmd=rs.getMetaData();
 		checkSuccess((rsmd!=null),1);
 		checkSuccess(rsmd.getColumnCount(),5);
-		checkSuccess(rsmd.getColumnName(1),"TABLE_CAT");
-		checkSuccess(rsmd.getColumnName(2),"TABLE_SCHEM");
-		checkSuccess(rsmd.getColumnName(3),"TABLE_NAME");
-		checkSuccess(rsmd.getColumnName(4),"TABLE_TYPE");
-		checkSuccess(rsmd.getColumnName(5),"REMARKS");
+		col=1;
+		checkSuccess(rsmd.getColumnName(col++),"TABLE_CAT");
+		checkSuccess(rsmd.getColumnName(col++),"TABLE_SCHEM");
+		checkSuccess(rsmd.getColumnName(col++),"TABLE_NAME");
+		checkSuccess(rsmd.getColumnName(col++),"TABLE_TYPE");
+		checkSuccess(rsmd.getColumnName(col++),"REMARKS");
 		System.out.println();
-		while (rs.next()) {
-			System.out.println(rs.getString("TABLE_CAT")+","+
-						rs.getString("TABLE_SCHEM")+","+
-						rs.getString("TABLE_NAME")+","+
-						rs.getString("TABLE_TYPE")+","+
-						rs.getString("REMARKS"));
-		}
+		//printColumns(rsmd);
+		//printResultSet(rs);
 		rs.close();
 		System.out.println();
 
@@ -370,51 +387,85 @@ class oracle {
 		rsmd=rs.getMetaData();
 		checkSuccess((rsmd!=null),1);
 		checkSuccess(rsmd.getColumnCount(),18);
-		checkSuccess(rsmd.getColumnName(1),"TYPE_NAME");
-		checkSuccess(rsmd.getColumnName(2),"DATA_TYPE");
-		checkSuccess(rsmd.getColumnName(3),"PRECISION");
-		checkSuccess(rsmd.getColumnName(4),"LITERAL_PREFIX");
-		checkSuccess(rsmd.getColumnName(5),"LITERAL_SUFFIX");
-		checkSuccess(rsmd.getColumnName(6),"CREATE_PARAMS");
-		checkSuccess(rsmd.getColumnName(7),"NULLABLE");
-		checkSuccess(rsmd.getColumnName(8),"CASE_SENSITIVE");
-		checkSuccess(rsmd.getColumnName(9),"SEARCHABLE");
-		checkSuccess(rsmd.getColumnName(10),"UNSIGNED_ATTRIBUTE");
-		checkSuccess(rsmd.getColumnName(11),"FIXED_PREC_SCALE");
-		checkSuccess(rsmd.getColumnName(12),"AUTO_INCREMENT");
-		checkSuccess(rsmd.getColumnName(13),"LOCAL_TYPE_NAME");
-		checkSuccess(rsmd.getColumnName(14),"MINIMUM_SCALE");
-		checkSuccess(rsmd.getColumnName(15),"MAXIMUM_SCALE");
-		checkSuccess(rsmd.getColumnName(16),"SQL_DATA_TYPE");
-		checkSuccess(rsmd.getColumnName(17),"SQL_DATETIME_SUB");
-		checkSuccess(rsmd.getColumnName(18),"NUM_PREC_RADIX");
+		col=1;
+		checkSuccess(rsmd.getColumnName(col++),"TYPE_NAME");
+		checkSuccess(rsmd.getColumnName(col++),"DATA_TYPE");
+		checkSuccess(rsmd.getColumnName(col++),"PRECISION");
+		checkSuccess(rsmd.getColumnName(col++),"LITERAL_PREFIX");
+		checkSuccess(rsmd.getColumnName(col++),"LITERAL_SUFFIX");
+		checkSuccess(rsmd.getColumnName(col++),"CREATE_PARAMS");
+		checkSuccess(rsmd.getColumnName(col++),"NULLABLE");
+		checkSuccess(rsmd.getColumnName(col++),"CASE_SENSITIVE");
+		checkSuccess(rsmd.getColumnName(col++),"SEARCHABLE");
+		checkSuccess(rsmd.getColumnName(col++),"UNSIGNED_ATTRIBUTE");
+		checkSuccess(rsmd.getColumnName(col++),"FIXED_PREC_SCALE");
+		checkSuccess(rsmd.getColumnName(col++),"AUTO_INCREMENT");
+		checkSuccess(rsmd.getColumnName(col++),"LOCAL_TYPE_NAME");
+		checkSuccess(rsmd.getColumnName(col++),"MINIMUM_SCALE");
+		checkSuccess(rsmd.getColumnName(col++),"MAXIMUM_SCALE");
+		checkSuccess(rsmd.getColumnName(col++),"SQL_DATA_TYPE");
+		checkSuccess(rsmd.getColumnName(col++),"SQL_DATETIME_SUB");
+		checkSuccess(rsmd.getColumnName(col++),"NUM_PREC_RADIX");
 		System.out.println();
-		while (rs.next()) {
-			System.out.println(rs.getString("TYPE_NAME")+","+
-					rs.getString("DATA_TYPE")+","+
-					rs.getString("PRECISION")+","+
-					rs.getString("LITERAL_PREFIX")+","+
-					rs.getString("LITERAL_SUFFIX")+","+
-					rs.getString("CREATE_PARAMS")+","+
-					rs.getString("NULLABLE")+","+
-					rs.getString("CASE_SENSITIVE")+","+
-					rs.getString("SEARCHABLE")+","+
-					rs.getString("UNSIGNED_ATTRIBUTE")+","+
-					rs.getString("FIXED_PREC_SCALE")+","+
-					rs.getString("AUTO_INCREMENT")+","+
-					rs.getString("LOCAL_TYPE_NAME")+","+
-					rs.getString("MINIMUM_SCALE")+","+
-					rs.getString("MAXIMUM_SCALE")+","+
-					rs.getString("SQL_DATA_TYPE")+","+
-					rs.getString("SQL_DATETIME_SUB")+","+
-					rs.getString("NUM_PREC_RADIX"));
-		}
+		//printColumns(rsmd);
+		//printResultSet(rs);
 		rs.close();
 		System.out.println();
 
 		// getProcedures
+                System.out.println("DATABASE META DATA - procedures");
+                rs=md.getProcedures("%","%","%");
+                checkSuccess((rs!=null),1);
+                rsmd=rs.getMetaData();
+                checkSuccess((rsmd!=null),1);
+		col=1;
+		// Oracle's JDBC driver (at least v8) returns 9 columns
+                //checkSuccess(rsmd.getColumnCount(),8);
+                checkSuccess(rsmd.getColumnName(col++),"PROCEDURE_CAT");
+                checkSuccess(rsmd.getColumnName(col++),"PROCEDURE_SCHEM");
+                checkSuccess(rsmd.getColumnName(col++),"PROCEDURE_NAME");
+		// Oracle's JDBC driver (at least v8) returns
+		// NULL for these column names
+                //checkSuccess(rsmd.getColumnName(col++),"NUM_INPUT_PARAMS");
+                //checkSuccess(rsmd.getColumnName(col++),"NUM_OUTPUT_PARAMS");
+                //checkSuccess(rsmd.getColumnName(col++),"NUM_RESULT_SETS");
+		col+=3;
+                checkSuccess(rsmd.getColumnName(col++),"REMARKS");
+                checkSuccess(rsmd.getColumnName(col++),"PROCEDURE_TYPE");
+		// Oracle's JDBC driver (at least v8) returns
+		// a 9th column: SPECIFIC_NAME
+                System.out.println();
+		//printColumns(rsmd);
+		//printResultSet(rs);
+                rs.close();
+                System.out.println();
 
 		// getFunctions
+                System.out.println("DATABASE META DATA - functions");
+                rs=md.getFunctions("%","%","%");
+                checkSuccess((rs!=null),1);
+                rsmd=rs.getMetaData();
+                checkSuccess((rsmd!=null),1);
+		col=1;
+		// Oracle's JDBC driver (at least v8) returns 6 columns
+                //checkSuccess(rsmd.getColumnCount(),8);
+                checkSuccess(rsmd.getColumnName(col++),"FUNCTION_CAT");
+                checkSuccess(rsmd.getColumnName(col++),"FUNCTION_SCHEM");
+                checkSuccess(rsmd.getColumnName(col++),"FUNCTION_NAME");
+		// Oracle's JDBC driver (at least v8) doesn't return these
+		// columns at all
+                //checkSuccess(rsmd.getColumnName(col++),"NUM_INPUT_PARAMS");
+                //checkSuccess(rsmd.getColumnName(col++),"NUM_OUTPUT_PARAMS");
+                //checkSuccess(rsmd.getColumnName(col++),"NUM_RESULT_SETS");
+                checkSuccess(rsmd.getColumnName(col++),"REMARKS");
+                checkSuccess(rsmd.getColumnName(col++),"FUNCTION_TYPE");
+		// Oracle's JDBC driver (at least v8) returns
+		// a 9th column: SPECIFIC_NAME
+                System.out.println();
+		//printColumns(rsmd);
+		//printResultSet(rs);
+                rs.close();
+                System.out.println();
 
 		// getUDTs
 

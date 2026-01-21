@@ -475,4 +475,6 @@ public class SQLRCursor {
 	public native boolean	getTypeInfoListWithFormat(
 						String type, String wild,
 						int listformat);
+	public native boolean	getProcedureListWithFormat(
+						String wild, int listformat);
 }
