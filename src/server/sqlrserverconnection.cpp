@@ -456,9 +456,64 @@ const char *sqlrserverconnection::getCurrentDatabaseQuery() {
 	return getNoopQuery();
 }
 
+bool sqlrserverconnection::selectSchema(const char *schema) {
+
+	// re-init error data
+	cont->clearError();
+
+	// handle the degenerate case
+	if (!schema) {
+		return true;
+	}
+
+	// get the select schema query base
+	const char	*ssquerybase=selectSchemaQuery();
+
+	// If there is no query for this then the db we're using doesn't
+	// support switching.  Return true as if it succeeded though.
+	if (!ssquerybase) {
+		return true;
+	}
+
+	// bounds checking
+	size_t	ssquerysize=charstring::getLength(ssquerybase)+
+				charstring::getLength(schema)+1;
+	if (ssquerysize>pvt->_maxquerysize) {
+		return false;
+	}
+
+	// create the select schema query
+	char	*ssquery=new char[ssquerysize];
+	charstring::printf(ssquery,ssquerysize,ssquerybase,schema);
+	ssquerysize=charstring::getLength(ssquery);
+
+	// run the query...
+	// (enable translations, triggers, etc. for this one)
+	bool	retval=false;
+	sqlrservercursor	*sscur=cont->newCursor();
+	if (cont->open(sscur) &&
+		cont->prepareQuery(sscur,ssquery,ssquerysize,true,true,true) &&
+		cont->executeQuery(sscur,true,true,true,true)) {
+		cont->closeResultSet(sscur);
+		retval=true;
+	} else {
+		// If there was an error, copy it out.  We'll be destroying the
+		// cursor in a moment and the error will be lost otherwise.
+		cont->saveErrorFromCursor(sscur);
+	}
+	delete[] ssquery;
+	cont->close(sscur);
+	cont->deleteCursor(sscur);
+	return retval;
+}
+
+const char *sqlrserverconnection::selectSchemaQuery() {
+	return NULL;
+}
+
 char *sqlrserverconnection::getCurrentSchema() {
 
-	// get the get current database query base
+	// get the get current schema query base
 	const char	*gcsquery=getCurrentSchemaQuery();
 
 	// bail if there is no query for this

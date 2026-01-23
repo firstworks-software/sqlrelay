@@ -148,6 +148,8 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		const char	*isSynonymQuery();
 		const char	*selectDatabaseQuery();
 		const char	*getCurrentDatabaseQuery();
+		const char	*selectSchemaQuery();
+		const char	*getCurrentSchemaQuery();
 		const char	*getLastInsertIdQuery();
 		const char	*getNoopQuery();
 
@@ -1291,8 +1293,10 @@ const char *oracleconnection::getTableListQuery(bool wild,
 		"	'' as remarks, "
 		"	null "
 		"from "
-		"	all_tables "
-		"where ");
+		"	all_tables ");
+	if (wild || currentschemaonly) {
+		tablelistquery.append("where ");
+	}
 	bool	prevclause=false;
 	if (currentschemaonly) {
 		if (supportssyscontext) {
@@ -1319,6 +1323,7 @@ const char *oracleconnection::getTableListQuery(bool wild,
 		"	owner, "
 		"	table_name");
 
+stdoutput.printf("%s\n",tablelistquery.getString());
 	return tablelistquery.getString();
 }
 
@@ -2820,10 +2825,22 @@ const char *oracleconnection::isSynonymQuery() {
 }
 
 const char *oracleconnection::selectDatabaseQuery() {
+	// FIXME: this really sets the schema,
+	// oracle doesn't really have a "database" per-se
 	return "alter session set current_schema=%s";
 }
 
 const char *oracleconnection::getCurrentDatabaseQuery() {
+	// FIXME: this really gets the schema,
+	// oracle doesn't really have a "database" per-se
+	return "select sys_context('userenv','current_schema') from dual";
+}
+
+const char *oracleconnection::selectSchemaQuery() {
+	return "alter session set current_schema=%s";
+}
+
+const char *oracleconnection::getCurrentSchemaQuery() {
 	return "select sys_context('userenv','current_schema') from dual";
 }
 

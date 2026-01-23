@@ -127,6 +127,9 @@ class sqlrservercontrollerprivate {
 	bool		_dbchanged;
 	char		*_originaldb;
 
+	bool		_schemachanged;
+	char		*_originalschema;
+
 	connectstringcontainer	*_constr;
 
 	char		*_updown;
@@ -376,6 +379,9 @@ sqlrservercontroller::sqlrservercontroller() : sqlrserverbase() {
 
 	pvt->_dbchanged=false;
 	pvt->_originaldb=NULL;
+
+	pvt->_schemachanged=false;
+	pvt->_originalschema=NULL;
 
 	pvt->_serversockun=NULL;
 	pvt->_serversockin=NULL;
@@ -1626,6 +1632,9 @@ void sqlrservercontroller::reLogIn() {
 	// get the current db so we can restore it
 	char	*currentdb=pvt->_conn->getCurrentDatabase();
 
+	// get the current schema so we can restore it
+	char	*currentschema=pvt->_conn->getCurrentSchema();
+
 	// FIXME: get the isolation level so we can restore it
 
 	debugStart("relogging in");
@@ -1666,6 +1675,10 @@ void sqlrservercontroller::reLogIn() {
 	// restore the db
 	pvt->_conn->selectDatabase(currentdb);
 	delete[] currentdb;
+
+	// restore the schema
+	pvt->_conn->selectSchema(currentschema);
+	delete[] currentschema;
 
 	// restore initial autocommit behavior
 	if (pvt->_initialautocommit) {
@@ -2556,6 +2569,20 @@ bool sqlrservercontroller::selectDatabase(const char *db) {
 
 char *sqlrservercontroller::getCurrentDatabase() {
 	return pvt->_conn->getCurrentDatabase();
+}
+
+bool sqlrservercontroller::selectSchema(const char *schema) {
+	// FIXME: do we need this?
+	/*if (pvt->_cfg->getIgnoreSelectSchema()) {
+		return true;
+	}*/
+	if (pvt->_conn->selectSchema(schema)) {
+		// set a flag indicating that the schema has been changed
+		// so it can be reset at the end of the session
+		pvt->_schemachanged=true;
+		return true;
+	}
+	return false;
 }
 
 char *sqlrservercontroller::getCurrentSchema() {
@@ -6846,12 +6873,20 @@ void sqlrservercontroller::endSession() {
 	// run session-end queries
 	sessionEndQueries();
 
-	// reset database/schema
+	// reset database
 	if (pvt->_dbchanged) {
 		// FIXME: we're ignoring the result and error,
 		// should we do something if there's an error?
 		pvt->_conn->selectDatabase(pvt->_originaldb);
 		pvt->_dbchanged=false;
+	}
+
+	// reset schema
+	if (pvt->_schemachanged) {
+		// FIXME: we're ignoring the result and error,
+		// should we do something if there's an error?
+		pvt->_conn->selectSchema(pvt->_originalschema);
+		pvt->_schemachanged=false;
 	}
 
 	// reset initial autocommit behavior

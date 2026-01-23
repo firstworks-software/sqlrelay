@@ -280,14 +280,19 @@ public class SQLRConnection {
 	public native String	nextvalFormat();
 
 
-	/** Sets the current database/schema to "database" */
+	/** Sets the current database to "database" */
 	public native boolean	selectDatabase(String database);
 
-	/** Returns the database/schema that is currently in use */
+	/** Returns the database that is currently in use */
 	public native String	getCurrentDatabase();
+
+
+	/** Sets the current schema to "schema" */
+	public native boolean	selectSchema(String schema);
 
 	/** Returns the schema that is currently in use */
 	public native String	getCurrentSchema();
+
 
 	/**  Returns the value of the autoincrement
  	 *   column for the last insert */

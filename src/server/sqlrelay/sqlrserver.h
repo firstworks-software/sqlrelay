@@ -513,6 +513,15 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  deallocate this buffer. */
 		char	*getCurrentDatabase();
 
+
+
+		// schema selection...
+
+		/** Selects schema "schema".
+		 *
+		 *  Returns true if selection succeeded and false otherwise. */
+		bool	selectSchema(const char *schema);
+
 		/** Returns the current database.
 		 *
 		 *  Note that this method allocates a buffer for the return
@@ -3302,6 +3311,19 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return the query. */
 		virtual const char	*getCurrentDatabaseQuery();
+
+		/** Selects schema "schema".
+		 *  
+		 *  Returns true if selection succeeded and false otherwise. */
+		virtual bool		selectSchema(const char *schema);
+
+		/** Returns the query that the schema uses to select a
+		 *  schema, which includes a %s which can be used to
+		 *  substitute in the name of the schema to select.
+		 *
+		 *  This implementation just returns NULL, but it may be
+		 *  overridden by child class to return the query. */
+		virtual const char	*selectSchemaQuery();
 
 		/** Returns the current database.
 		 *

@@ -435,9 +435,11 @@ public class SQLRelayConnection implements Connection {
 		}
 		// FIXME: need to get the current response timeout
 		// pre-ping and reset it post-ping, but the java api
-		// doesn't currentl have getResponseTimeout methods
-		sqlrcon.setResponseTimeout(timeout,0);
-		boolean	ping=sqlrcon.ping();
+		// doesn't currently have getResponseTimeout methods
+		/*if (timeout) {
+			sqlrcon.setResponseTimeout(timeout,0);
+		}*/
+		boolean	ping=false;
 		synchronized (networklock) {
 			ping=sqlrcon.ping();
 		}
@@ -748,9 +750,15 @@ public class SQLRelayConnection implements Connection {
 	void setSchema(String schema) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
-		// FIXME: implement this somehow
-		driver.debugPrintln("FIXME: implement this");
 		driver.debugPrintln("schema: ",schema);
+		boolean	success=false;
+		synchronized (networklock) {
+			success=sqlrcon.selectSchema(schema);
+		}
+		if (!success) {
+			throwErrorMessageException();
+		}
+		driver.debugPrintln("success");
 		driver.debugEnd();
 	}
 

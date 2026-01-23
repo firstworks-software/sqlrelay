@@ -61,6 +61,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 		void	serverVersionCommand();
 		void	selectDatabaseCommand();
 		void	getCurrentDatabaseCommand();
+		void	selectSchemaCommand();
 		void	getCurrentSchemaCommand();
 		void	getLastInsertIdCommand();
 		void	dbHostNameCommand();
@@ -462,6 +463,11 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 		} else if (command==GET_CURRENT_DATABASE) {
 			cont->incrementGetCurrentDatabaseCount();
 			getCurrentDatabaseCommand();
+			continue;
+		} else if (command==SELECT_SCHEMA) {
+			// FIXME: add this
+			//cont->incrementSelectSchemaCount();
+			selectSchemaCommand();
 			continue;
 		} else if (command==GET_CURRENT_SCHEMA) {
 			// FIXME: add this
@@ -1293,6 +1299,70 @@ void sqlrprotocol_sqlrclient::getCurrentDatabaseCommand() {
 
 	// clean up
 	delete[] currentdb;
+
+	debugEnd();
+}
+
+void sqlrprotocol_sqlrclient::selectSchemaCommand() {
+
+	debugStart("select schema");
+
+	// get size of schema parameter
+	uint32_t	schsize;
+	ssize_t		result=clientsock->read(&schsize,idleclienttimeout,0);
+	if (result!=sizeof(uint32_t)) {
+		clientsock->write(false);
+		cont->raiseClientProtocolErrorEvent(NULL,result,
+						"select schema failed: "
+						"failed to get schema size");
+		debugWrite("failed to get schema size");
+		debugEnd();
+		return;
+	}
+
+	// bounds checking
+	if (schsize>maxquerysize) {
+		clientsock->write(false);
+		cont->raiseClientProtocolErrorEvent(NULL,1,
+					"select schema failed: "
+					"client sent bad schema size: %d",
+					schsize);
+		debugWrite("client sent bad schema size: %d",schsize);
+		debugEnd();
+		return;
+	}
+
+	// read the schema parameter into the buffer
+	char	*sch=new char[schsize+1];
+	if (schsize) {
+		result=clientsock->read(sch,schsize,idleclienttimeout,0);
+		if ((uint32_t)result!=schsize) {
+			clientsock->write(false);
+			clientsock->flushWriteBuffer(-1,-1);
+			delete[] sch;
+			cont->raiseClientProtocolErrorEvent(NULL,result,
+						"select schema failed: "
+						"failed to get schema name");
+			debugWrite("failed to get schema name");
+			debugEnd();
+			return;
+		}
+	}
+	sch[schsize]='\0';
+
+	debugWrite("schema: %.*s\n",schsize,sch);
+	
+	// select the schema and send back the result.
+	if (cont->selectSchema(sch)) {
+		debugWrite("success");
+		clientsock->write((uint16_t)NO_ERROR_OCCURRED);
+		clientsock->flushWriteBuffer(-1,-1);
+	} else {
+		debugWrite("failed");
+		returnError(false);
+	}
+
+	delete[] sch;
 
 	debugEnd();
 }
@@ -4537,6 +4607,9 @@ void sqlrprotocol_sqlrclient::debugCommand(uint16_t command) {
 			break;
 		case GETKEYANDINDEXLIST:
 			debugWrite("GETKEYANDINDEXLIST");
+			break;
+		case SELECT_SCHEMA:
+			debugWrite("SELECT_SCHEMA");
 			break;
 		case GET_CURRENT_SCHEMA:
 			debugWrite("GET_CURRENT_SCHEMA");

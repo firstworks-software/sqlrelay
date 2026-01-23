@@ -69,6 +69,7 @@
 		static	bool	isYes(const char *str);
 		static	bool	isNo(const char *str);
 
+		bool	selectSchema(const char *schema);
 		const	char	*getCurrentSchema();
 
 	friend class sqlrcursor;

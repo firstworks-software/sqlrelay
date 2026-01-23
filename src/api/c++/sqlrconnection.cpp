@@ -1685,6 +1685,40 @@ const char *sqlrconnection::getCurrentDatabase() {
 	return pvt->_currentdbname;
 }
 
+bool sqlrconnection::selectSchema(const char *schema) {
+
+	if (!charstring::getLength(schema)) {
+		return true;
+	}
+
+	clearError();
+
+	if (!openSession()) {
+		return 0;
+	}
+
+	if (pvt->_debug) {
+		debugPreStart();
+		debugPrint("Selecting schema ");
+		debugPrint(schema);
+		debugPrint("...\n");
+		debugPreEnd();
+	}
+
+	// tell the server we want to select a schema
+	pvt->_cs->write((uint16_t)SELECT_DATABASE);
+
+	// send the schema name
+	uint32_t	len=charstring::getLength(schema);
+	pvt->_cs->write(len);
+	if (len) {
+		pvt->_cs->write(schema,len);
+	}
+	flushWriteBuffer();
+
+	return !gotError();
+}
+
 const char *sqlrconnection::getCurrentSchema() {
 
 	if (!openSession()) {
@@ -1713,7 +1747,7 @@ const char *sqlrconnection::getCurrentSchema() {
 	uint16_t	size;
 	if (pvt->_cs->read(&size,pvt->_responsetimeoutsec,
 				pvt->_responsetimeoutusec)!=sizeof(uint16_t)) {
-		setError("Failed to get the current database.\n"
+		setError("Failed to get the current schema.\n"
 				"A network error may have occurred.");
 		return NULL;
 	}
@@ -1722,7 +1756,7 @@ const char *sqlrconnection::getCurrentSchema() {
 	delete[] pvt->_currentschemaname;
 	pvt->_currentschemaname=new char[size+1];
 	if (pvt->_cs->read(pvt->_currentschemaname,size)!=size) {
-		setError("Failed to get the current database.\n"
+		setError("Failed to get the current schema.\n"
 				"A network error may have occurred.");
 		delete[] pvt->_currentschemaname;
 		pvt->_currentschemaname=NULL;

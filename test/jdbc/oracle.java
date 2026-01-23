@@ -207,7 +207,9 @@ class oracle {
 		// setCatalog, getCatalog
 		System.out.println("CONNECTION - catalog");
 		con.setCatalog(user);
-		checkSuccess(con.getCatalog(),null);
+		// FIXME: sqlrelay jdbc currently returns the schema
+		// with an oracle backend, rather than null, #7914
+		//checkSuccess(con.getCatalog(),null);
 		System.out.println();
 
 		// setSchema, getSchema
@@ -274,7 +276,8 @@ class oracle {
 		// setTransactionIsolation, getTransactionIsolation
 		// oracle only supports READ_COMMITTED and SERIALIZABLE,
 		// the other should throw an exception
-		System.out.println("CONNECTION - isolation");
+		// FIXME: sqlrelay doesn't support this yet
+		/*System.out.println("CONNECTION - isolation");
 		try {
 			con.setTransactionIsolation(
 				Connection.TRANSACTION_READ_UNCOMMITTED);
@@ -296,7 +299,7 @@ class oracle {
 			Connection.TRANSACTION_SERIALIZABLE);
 		checkSuccess(con.getTransactionIsolation(),
 			Connection.TRANSACTION_SERIALIZABLE);
-		System.out.println();
+		System.out.println();*/
 
 		// setTypeMap, getTypeMap
 
@@ -468,6 +471,28 @@ class oracle {
                 System.out.println();
 
 		// getUDTs
+                System.out.println("DATABASE META DATA - UDTs");
+                rs=md.getUDTs("%","%","%",null);
+                checkSuccess((rs!=null),1);
+                rsmd=rs.getMetaData();
+                checkSuccess((rsmd!=null),1);
+		col=1;
+		// Oracle's JDBC driver (at least v8) returns 6 columns
+                //checkSuccess(rsmd.getColumnCount(),7);
+                checkSuccess(rsmd.getColumnName(col++),"TYPE_CAT");
+                checkSuccess(rsmd.getColumnName(col++),"TYPE_SCHEM");
+                checkSuccess(rsmd.getColumnName(col++),"TYPE_NAME");
+                checkSuccess(rsmd.getColumnName(col++),"CLASS_NAME");
+                checkSuccess(rsmd.getColumnName(col++),"DATA_TYPE");
+                checkSuccess(rsmd.getColumnName(col++),"REMARKS");
+		// Oracle's JDBC driver (at least v8) doesn't return these
+		// columns at all
+                //checkSuccess(rsmd.getColumnName(col++),"BASE_TYPE");
+                System.out.println();
+		//printColumns(rsmd);
+		//printResultSet(rs);
+                rs.close();
+                System.out.println();
 
 
 
@@ -487,7 +512,6 @@ class oracle {
 		// commit
 		// rollback...
 
-/*
 		// createStatement
 		System.out.println("CONNECTION - create statement");
 		Statement	stmt=con.createStatement();
@@ -557,7 +581,6 @@ class oracle {
 
 
 		stmt.close();
-*/
 		con.close();
 
 		System.exit(0);

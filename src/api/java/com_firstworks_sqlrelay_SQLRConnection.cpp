@@ -301,6 +301,20 @@ JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getCurrent
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRConnection
+ * Method:    selectSchema
+ * Signature: (Ljava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_selectSchema
+  (JNIEnv *env, jobject self, jstring schema) {
+	char	*schemastring=conGetStringUTFChars(env,schema,0);
+	bool	retval=getSqlrConnection(env,self)->
+				selectSchema(schemastring);
+	conReleaseStringUTFChars(env,schema,schemastring);
+	return (jboolean)retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRConnection
  * Method:    getCurrentSchema
  * Signature: ()Ljava/lang/String;
  */
