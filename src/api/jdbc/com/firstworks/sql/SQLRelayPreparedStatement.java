@@ -324,10 +324,32 @@ public class SQLRelayPreparedStatement
 					}
 					break;
 				case Date:
-					// not supported
+					{
+					Date	d=(Date)value.getObject();
+					sqlrcur.inputBind(key,
+							(short)d.getYear(),
+							(short)d.getMonth(),
+							(short)d.getDay(),
+							(short)0,
+							(short)0,
+							(short)0,
+							(short)0,
+							null,false);
+					}
 					break;
 				case DateWithCalendar:
-					// not supported
+					{
+					Date	d=(Date)value.getObject();
+					sqlrcur.inputBind(key,
+							(short)d.getYear(),
+							(short)d.getMonth(),
+							(short)d.getDay(),
+							(short)0,
+							(short)0,
+							(short)0,
+							(short)0,
+							null,false);
+					}
 					break;
 				case Double:
 					sqlrcur.inputBind(
@@ -981,9 +1003,7 @@ public class SQLRelayPreparedStatement
 	void setDate(int parameterIndex, Date x) throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		// FIXME: support this...
-		/*SQLRelayParameter	param=new SQLRelayParameter(driver);
+		SQLRelayParameter	param=new SQLRelayParameter(driver);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -999,7 +1019,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.Date);
-		parameters.put(parameterIndex,param);*/
+		parameters.put(parameterIndex,param);
 		driver.debugEnd();
 	}
 
@@ -1008,9 +1028,7 @@ public class SQLRelayPreparedStatement
 						throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		// FIXME: support this...
-		/*SQLRelayParameter	param=new SQLRelayParameter(driver);
+		SQLRelayParameter	param=new SQLRelayParameter(driver);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -1026,7 +1044,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(cal);
 		param.setBindType(
 			SQLRelayParameter.BindType.DateWithCalendar);
-		parameters.put(parameterIndex,param);*/
+		parameters.put(parameterIndex,param);
 		driver.debugEnd();
 	}
 

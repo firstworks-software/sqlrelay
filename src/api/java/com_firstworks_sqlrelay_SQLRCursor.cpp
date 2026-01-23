@@ -422,6 +422,23 @@ JNIEXPORT void JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_inputBind__Ljava_
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    inputBind
+ * Signature: (Ljava/lang/String;SSSSSSILjava/lang/String;Z)V
+ */
+JNIEXPORT void JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_inputBind__Ljava_lang_String_2SSSSSSILjava_lang_String_2Z
+  (JNIEnv *env, jobject self, jstring variable, jshort year, jshort month, jshort day, jshort hour, jshort minute, jshort second, jint microsecond, jstring tz, jboolean isnegative) {
+	char	*variablestring=curGetStringUTFChars(env,variable,0);
+	char	*tzstring=curGetStringUTFChars(env,tz,0);
+	getSqlrCursor(env,self)->inputBind(variablestring,
+				(short)year,(short)month,(short)day,
+				(short)hour,(short)minute,(short)second,
+				(int)microsecond,tzstring,(bool)isnegative);
+	curReleaseStringUTFChars(env,variable,variablestring);
+	curReleaseStringUTFChars(env,tz,tzstring);
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
  * Method:    inputBindBlob
  * Signature: (Ljava/lang/String;[BJ)V
  */

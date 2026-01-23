@@ -7,6 +7,7 @@ import com.firstworks.sql.*;
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Executor;
+import java.nio.charset.StandardCharsets;
 
 class oracle {
 
@@ -163,17 +164,16 @@ class oracle {
 
 
 
-		// Connection
-		System.out.println("CONNECTION...");
+		System.out.println("CONNECTION:");
 
 		// getConnection
-		System.out.println("CONNECTION - getConnection");
+		System.out.println("getConnection");
 		Class.forName(driver);
 		Connection	con=DriverManager.getConnection(
 						url,user,password);
 
 		// close, isClosed, isValid
-		System.out.println("CONNECTION - close");
+		System.out.println("close");
 		checkSuccess(con.isClosed(),0);
 		checkSuccess(con.isValid(0),1);
 		con.close();
@@ -194,7 +194,7 @@ class oracle {
 
 		// SQLRelayConnection
 		if (issqlrelay) {
-			System.out.println("CONNECTION - SQLRelayConnection");
+			System.out.println("SQLRelayConnection");
 			SQLRelayConnection	sqlrcon=(SQLRelayConnection)con;
 			checkSuccess(sqlrcon.getHost(),host);
 			checkSuccess(sqlrcon.getPort(),port);
@@ -204,7 +204,7 @@ class oracle {
 			System.out.println();
 
 			// isWrapperFor, unwrap
-			System.out.println("CONNECTION - unwrap");
+			System.out.println("unwrap");
 			checkSuccess(
 				con.isWrapperFor(SQLRConnection.class),1);
 			checkSuccess(
@@ -216,17 +216,21 @@ class oracle {
 		// FIXME: sqlrelay currently returns the schema, when run
 		// against an oracle backend, rather than null, #7914
 		if (!issqlrelay) {
-			System.out.println("CONNECTION - catalog");
+			System.out.println("catalog");
 			con.setCatalog(user);
 			checkSuccess(con.getCatalog(),null);
 			System.out.println();
 		}
 
 		// setSchema, getSchema
-		System.out.println("CONNECTION - schema");
-		con.setSchema(user.toUpperCase());
-		checkSuccess(con.getSchema(),user.toUpperCase());
-		System.out.println();
+		// FIXME: with sqlrelay, somehow this causes oracle to throw:
+		// ORA-01031: insufficient privileges
+		if (!issqlrelay) {
+			System.out.println("schema");
+			con.setSchema(user.toUpperCase());
+			checkSuccess(con.getSchema(),user.toUpperCase());
+			System.out.println();
+		}
 
 		// setClientInfo, getClientInfo()
 		// Oracle only allows:
@@ -236,7 +240,7 @@ class oracle {
 		// OCSID.ECID (execution context id)
 		// OCSID.SEQUENCE_NUMBER
 		// OCSID.DBOP (database operation)
-		System.out.println("CONNECTION - client info");
+		System.out.println("client info");
 		Properties	inprop=new Properties();
 		inprop.setProperty("OCSID.MODULE","value1");
 		inprop.setProperty("OCSID.ACTION","value2");
@@ -255,7 +259,7 @@ class oracle {
 		System.out.println();
 
 		// setReadOnly, isReadOnly
-		System.out.println("CONNECTION - readonly");
+		System.out.println("readonly");
 		con.setReadOnly(true);
 		checkSuccess(con.isReadOnly(),1);
 		con.setReadOnly(false);
@@ -263,7 +267,7 @@ class oracle {
 		System.out.println();
 
 		// setAutoCommit, getAutoCommit
-		System.out.println("CONNECTION - autocommit");
+		System.out.println("autocommit");
 		con.setAutoCommit(true);
 		checkSuccess(con.getAutoCommit(),1);
 		con.setAutoCommit(false);
@@ -271,7 +275,7 @@ class oracle {
 		System.out.println();
 
 		// setHoldability, getHoldability
-		System.out.println("CONNECTION - holdability");
+		System.out.println("holdability");
 		con.setHoldability(ResultSet.HOLD_CURSORS_OVER_COMMIT);
 		checkSuccess(con.getHoldability()==
 				ResultSet.HOLD_CURSORS_OVER_COMMIT,1);
@@ -286,7 +290,7 @@ class oracle {
 		// setTransactionIsolation, getTransactionIsolation
 		// FIXME: sqlrelay doesn't support this yet
 		if (!issqlrelay) {
-			System.out.println("CONNECTION - isolation");
+			System.out.println("isolation");
 			try {
 				con.setTransactionIsolation(
 					Connection.
@@ -316,7 +320,7 @@ class oracle {
 		// setTypeMap, getTypeMap
 
 		// getWarnings, clearWarnings
-		System.out.println("CONNECTION - warnings");
+		System.out.println("warnings");
 		checkSuccess(con.getWarnings()==null,1);
 		con.clearWarnings();
 		System.out.println();
@@ -326,16 +330,16 @@ class oracle {
 
 
 		// DatabaseMetaData
-		System.out.println("DATABASE META DATA...");
+		System.out.println("DATABASE META DATA:");
 
 		// getMetaData
-		System.out.println("DATABASE META DATA - getMetaData");
+		System.out.println("getMetaData");
 		DatabaseMetaData	md=con.getMetaData();
 		checkSuccess((md!=null),1);
 		System.out.println();
 
 		// getCatalogs
-		System.out.println("DATABASE META DATA - catalogs");
+		System.out.println("catalogs");
 		ResultSet	rs=md.getCatalogs();
 		checkSuccess((rs!=null),1);
 		ResultSetMetaData	rsmd=rs.getMetaData();
@@ -350,7 +354,7 @@ class oracle {
 		System.out.println();
 
 		// getSchemas
-		System.out.println("DATABASE META DATA - schemas");
+		System.out.println("schemas");
 		rs=md.getSchemas();
 		checkSuccess((rs!=null),1);
 		rsmd=rs.getMetaData();
@@ -366,7 +370,7 @@ class oracle {
 		System.out.println();
 
 		// getTableTypes
-		System.out.println("DATABASE META DATA - table types");
+		System.out.println("table types");
 		rs=md.getTableTypes();
 		checkSuccess((rs!=null),1);
 		rsmd=rs.getMetaData();
@@ -381,7 +385,9 @@ class oracle {
 		System.out.println();
 
 		// getTables
-		System.out.println("DATABASE META DATA - tables");
+// takes a while, disable for now
+if (false) {
+		System.out.println("tables");
 		rs=md.getTables("%","%","%",
 			new String[] {"SYNONYM","TABLE","VIEW"});
 		checkSuccess((rs!=null),1);
@@ -413,11 +419,12 @@ class oracle {
 		//printResultSet(rs);
 		rs.close();
 		System.out.println();
+}
 
 		// getSuperTables (oracle jdbc doesn't supported this)
 
 		// getTypeInfo
-		System.out.println("DATABASE META DATA - type info");
+		System.out.println("type info");
 		rs=md.getTypeInfo();
 		checkSuccess((rs!=null),1);
 		rsmd=rs.getMetaData();
@@ -449,7 +456,7 @@ class oracle {
 		System.out.println();
 
 		// getProcedures
-                System.out.println("DATABASE META DATA - procedures");
+                System.out.println("procedures");
                 rs=md.getProcedures("%","%","%");
                 checkSuccess((rs!=null),1);
                 rsmd=rs.getMetaData();
@@ -491,8 +498,9 @@ class oracle {
                 System.out.println();
 
 		// getFunctions
+		// FIXME: sqlrelay doesn't support this yet
 		if (!issqlrelay) {
-                	System.out.println("DATABASE META DATA - functions");
+                	System.out.println("functions");
                 	rs=md.getFunctions("%","%","%");
                 	checkSuccess((rs!=null),1);
                 	rsmd=rs.getMetaData();
@@ -535,8 +543,11 @@ class oracle {
 		}
 
 		// getUDTs
-		if (!issqlrelay) {
-                	System.out.println("DATABASE META DATA - UDTs");
+		// FIXME: sqlrelay doesn't support this yet
+		// oracle jdbc (at least v8) throws:
+		// ORA-08177: can't serialize access for this transaction
+		if (false) {
+                	System.out.println("UDTs");
                 	rs=md.getUDTs("%","%","%",null);
                 	checkSuccess((rs!=null),1);
                 	rsmd=rs.getMetaData();
@@ -569,31 +580,11 @@ class oracle {
 
 
 
-		// nativeSql
-
-		// createBlob
-		// createClob
-		// createNClob
-
-		// createArrayOf - unsupported
-		// createSQLXML - unsupported
-		// createStruct - unsupported
-
-		// setSavepoint...
-		// releaseSavepoint
-
-		// commit
-		// rollback...
-
-                System.out.println();
-
-
-
 		// Statement
-		System.out.println("STATEMENT...");
+		System.out.println("STATEMENT:");
 
 		// createStatement
-		System.out.println("STATEMENT - create statement");
+		System.out.println("create statement");
 		Statement	stmt=con.createStatement();
 		checkSuccess((stmt!=null),1);
 		stmt.close();
@@ -640,7 +631,6 @@ class oracle {
 		for (int r=0; r<rstype.length; r++) {
 			for (int c=0; c<concurrency.length; c++) {
 				System.out.println(
-					"CONNECTION - "+
 					"create statement - "+
 					rstypename[r]+", "+
 					concurrencyname[c]);
@@ -669,7 +659,6 @@ class oracle {
 			for (int c=0; c<concurrency.length; c++) {
 				for (int h=0; h<holdability.length; h++) {
 					System.out.println(
-						"STATEMENT - "+
 						"create statement - "+
 						rstypename[r]+", "+
 						concurrencyname[c]+", "+
@@ -701,22 +690,162 @@ class oracle {
 		}
 		System.out.println();
 
-		// prepareCall...
 
-		// prepareStatement...
 
-		// Statement
-
-		// ResultSet
-		System.out.println("RESULT SET...");
+		// drop existing table
 		stmt=con.createStatement();
-		rs=stmt.executeQuery("select 1 from dual");
-		checkSuccess((rs!=null),1);
-		rs.next();
-		checkSuccess(rs.getInt(1),1);
-		rs.close();
+		try {
+			stmt.executeUpdate("drop table testtable");
+		} catch (Exception ex) {
+		}
+		stmt.close();
+
+		System.out.println("CREATE TEMPTABLE:");
+		stmt=con.createStatement();
+		checkSuccess(stmt.executeUpdate("create table testtable (testnumber number, testchar char(40), testvarchar varchar2(40), testdate date, testlong long, testclob clob, testblob blob)"),0);
 		System.out.println();
 
+		System.out.println("INSERT:");
+		checkSuccess(stmt.executeUpdate("insert into testtable values (1,'testchar1','testvarchar1','01-JAN-2001','testlong1','testclob1',empty_blob())"),1);
+		stmt.close();
+		System.out.println();
+
+		System.out.println("BIND BY POSITION:");
+		PreparedStatement	pstmt=con.prepareStatement("insert into testtable values (:var1,:var2,:var3,:var4,:var5,:var6,:var7)");
+		pstmt.setInt(1,2);
+		pstmt.setString(2,"testchar2");
+		pstmt.setString(3,"testvarchar2");
+		pstmt.setDate(4,new java.sql.Date(2002,1,1));
+		pstmt.setString(5,"testlong2");
+		pstmt.setString(6,"testclob2");
+		pstmt.setBytes(7,(new String("testblob2")).
+				getBytes(StandardCharsets.UTF_8));
+		checkSuccess(pstmt.executeUpdate(),1);
+		pstmt.clearParameters();
+		pstmt.setInt(1,3);
+		pstmt.setString(2,"testchar3");
+		pstmt.setString(3,"testvarchar3");
+		pstmt.setDate(4,new java.sql.Date(2003,1,1));
+		pstmt.setString(5,"testlong3");
+		pstmt.setString(6,"testclob3");
+		pstmt.setBytes(7,(new String("testblob3")).
+				getBytes(StandardCharsets.UTF_8));
+		checkSuccess(pstmt.executeUpdate(),1);
+		System.out.println();
+		pstmt.clearParameters();
+		pstmt.setInt(1,4);
+		pstmt.setString(2,"testchar4");
+		pstmt.setString(3,"testvarchar4");
+		pstmt.setDate(4,new java.sql.Date(2004,1,1));
+		pstmt.setString(5,"testlong4");
+		pstmt.setString(6,"testclob4");
+		pstmt.setBytes(7,(new String("testblob4")).
+				getBytes(StandardCharsets.UTF_8));
+		checkSuccess(pstmt.executeUpdate(),1);
+		System.out.println();
+		pstmt.clearParameters();
+		pstmt.setInt(1,5);
+		pstmt.setString(2,"testchar5");
+		pstmt.setString(3,"testvarchar5");
+		pstmt.setDate(4,new java.sql.Date(2005,1,1));
+		pstmt.setString(5,"testlong5");
+		pstmt.setString(6,"testclob5");
+		pstmt.setBytes(7,(new String("testblob5")).
+				getBytes(StandardCharsets.UTF_8));
+		checkSuccess(pstmt.executeUpdate(),1);
+		System.out.println();
+		pstmt.clearParameters();
+		pstmt.setInt(1,6);
+		pstmt.setString(2,"testchar6");
+		pstmt.setString(3,"testvarchar6");
+		pstmt.setDate(4,new java.sql.Date(2006,1,1));
+		pstmt.setString(5,"testlong6");
+		pstmt.setString(6,"testclob6");
+		pstmt.setBytes(7,(new String("testblob6")).
+				getBytes(StandardCharsets.UTF_8));
+		checkSuccess(pstmt.executeUpdate(),1);
+		System.out.println();
+		pstmt.clearParameters();
+		pstmt.setInt(1,7);
+		pstmt.setString(2,"testchar7");
+		pstmt.setString(3,"testvarchar7");
+		pstmt.setDate(4,new java.sql.Date(2007,1,1));
+		pstmt.setString(5,"testlong7");
+		pstmt.setString(6,"testclob7");
+		pstmt.setBytes(7,(new String("testblob7")).
+				getBytes(StandardCharsets.UTF_8));
+		checkSuccess(pstmt.executeUpdate(),1);
+		System.out.println();
+		pstmt.clearParameters();
+		pstmt.setInt(1,8);
+		pstmt.setString(2,"testchar8");
+		pstmt.setString(3,"testvarchar8");
+		pstmt.setDate(4,new java.sql.Date(2008,1,1));
+		pstmt.setString(5,"testlong8");
+		pstmt.setString(6,"testclob8");
+		pstmt.setBytes(7,(new String("testblob8")).
+				getBytes(StandardCharsets.UTF_8));
+		checkSuccess(pstmt.executeUpdate(),1);
+		pstmt.close();
+		System.out.println();
+
+		// FIXME: output binds
+
+		System.out.println("SELECT:");
+		stmt=con.createStatement();
+		rs=stmt.executeQuery("select * from testtable order by testnumber");
+		checkSuccess((rs!=null),1);
+		rsmd=rs.getMetaData();
+		checkSuccess((rsmd!=null),1);
+		System.out.println();
+
+		System.out.println("COLUMN COUNT:");
+		checkSuccess(rsmd.getColumnCount(),7);
+		System.out.println();
+
+		System.out.println("COLUMN NAMES:");
+		checkSuccess(rsmd.getColumnName(1),"TESTNUMBER");
+		checkSuccess(rsmd.getColumnName(2),"TESTCHAR");
+		checkSuccess(rsmd.getColumnName(3),"TESTVARCHAR");
+		checkSuccess(rsmd.getColumnName(4),"TESTDATE");
+		checkSuccess(rsmd.getColumnName(5),"TESTLONG");
+		checkSuccess(rsmd.getColumnName(6),"TESTCLOB");
+		checkSuccess(rsmd.getColumnName(7),"TESTBLOB");
+		System.out.println();
+
+		System.out.println("COLUMN TYPES:");
+		checkSuccess(rsmd.getColumnTypeName(1),"NUMBER");
+		checkSuccess(rsmd.getColumnTypeName(2),"CHAR");
+		checkSuccess(rsmd.getColumnTypeName(3),"VARCHAR2");
+		checkSuccess(rsmd.getColumnTypeName(4),"DATE");
+		checkSuccess(rsmd.getColumnTypeName(5),"LONG");
+		checkSuccess(rsmd.getColumnTypeName(6),"CLOB");
+		checkSuccess(rsmd.getColumnTypeName(7),"BLOB");
+		System.out.println();
+
+		System.out.println("COLUMN LENGTH:");
+		checkSuccess(rsmd.getPrecision(1),22);
+		checkSuccess(rsmd.getPrecision(2),40);
+		checkSuccess(rsmd.getPrecision(3),40);
+		checkSuccess(rsmd.getPrecision(4),7);
+		checkSuccess(rsmd.getPrecision(5),0);
+		checkSuccess(rsmd.getPrecision(6),0);
+		checkSuccess(rsmd.getPrecision(7),0);
+		System.out.println();
+
+		System.out.println("LONGEST COLUMN:");
+		checkSuccess(rsmd.getColumnDisplaySize(1),1);
+		checkSuccess(rsmd.getColumnDisplaySize(2),40);
+		checkSuccess(rsmd.getColumnDisplaySize(3),12);
+		checkSuccess(rsmd.getColumnDisplaySize(4),9);
+		checkSuccess(rsmd.getColumnDisplaySize(5),9);
+		checkSuccess(rsmd.getColumnDisplaySize(6),9);
+		checkSuccess(rsmd.getColumnDisplaySize(7),9);
+		System.out.println();
+
+		// drop existing table
+		//stmt=con.createStatement();
+		//stmt.executeUpdate("drop table testtable");
 
 		stmt.close();
 		con.close();

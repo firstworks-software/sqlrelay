@@ -138,6 +138,12 @@ public class SQLRCursor {
 	public native void	inputBind(String variable, double value, 
 					int precision, int scale);
 	/** Define an input bind variable.  */
+	public native void	inputBind(String variable,
+					short year, short month, short day,
+					short hour, short minute, short second,
+					int microsecond, String tz,
+					boolean isnegative);
+	/** Define an input bind variable.  */
 	public native void	inputBindBlob(String variable, byte[] value, 
 								long size);
 	/** Define an input bind variable.  */
