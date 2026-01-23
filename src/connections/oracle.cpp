@@ -1323,7 +1323,6 @@ const char *oracleconnection::getTableListQuery(bool wild,
 		"	owner, "
 		"	table_name");
 
-stdoutput.printf("%s\n",tablelistquery.getString());
 	return tablelistquery.getString();
 }
 
