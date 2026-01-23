@@ -158,8 +158,16 @@ class oracle {
 			password=args[3];
 		}
 
+		boolean	issqlrelay=
+			driver.equals("com.firstworks.sql.SQLRelayDriver");
+
+
+
 		// Connection
 		System.out.println("CONNECTION...");
+
+		// getConnection
+		System.out.println("CONNECTION - getConnection");
 		Class.forName(driver);
 		Connection	con=DriverManager.getConnection(
 						url,user,password);
@@ -185,7 +193,7 @@ class oracle {
 		System.out.println();
 
 		// SQLRelayConnection
-		if (driver.equals("com.firstworks.sql.SQLRelayDriver")) {
+		if (issqlrelay) {
 			System.out.println("CONNECTION - SQLRelayConnection");
 			SQLRelayConnection	sqlrcon=(SQLRelayConnection)con;
 			checkSuccess(sqlrcon.getHost(),host);
@@ -205,12 +213,14 @@ class oracle {
 		}
 
 		// setCatalog, getCatalog
-		System.out.println("CONNECTION - catalog");
-		con.setCatalog(user);
-		// FIXME: sqlrelay jdbc currently returns the schema
-		// with an oracle backend, rather than null, #7914
-		//checkSuccess(con.getCatalog(),null);
-		System.out.println();
+		// FIXME: sqlrelay currently returns the schema, when run
+		// against an oracle backend, rather than null, #7914
+		if (!issqlrelay) {
+			System.out.println("CONNECTION - catalog");
+			con.setCatalog(user);
+			checkSuccess(con.getCatalog(),null);
+			System.out.println();
+		}
 
 		// setSchema, getSchema
 		System.out.println("CONNECTION - schema");
@@ -274,32 +284,34 @@ class oracle {
 		System.out.println();
 
 		// setTransactionIsolation, getTransactionIsolation
-		// oracle only supports READ_COMMITTED and SERIALIZABLE,
-		// the other should throw an exception
 		// FIXME: sqlrelay doesn't support this yet
-		/*System.out.println("CONNECTION - isolation");
-		try {
+		if (!issqlrelay) {
+			System.out.println("CONNECTION - isolation");
+			try {
+				con.setTransactionIsolation(
+					Connection.
+					TRANSACTION_READ_UNCOMMITTED);
+				checkSuccess(false,1);
+			} catch (Exception ex) {
+				checkSuccess(true,1);
+			}
 			con.setTransactionIsolation(
-				Connection.TRANSACTION_READ_UNCOMMITTED);
-			checkSuccess(false,1);
-		} catch (Exception ex) {
-			checkSuccess(true,1);
-		}
-		con.setTransactionIsolation(
-			Connection.TRANSACTION_READ_COMMITTED);
-		checkSuccess(con.getTransactionIsolation(),
-			Connection.TRANSACTION_READ_COMMITTED);
-		try {
+				Connection.TRANSACTION_READ_COMMITTED);
+			checkSuccess(con.getTransactionIsolation(),
+				Connection.TRANSACTION_READ_COMMITTED);
+			try {
+				con.setTransactionIsolation(
+					Connection.
+					TRANSACTION_REPEATABLE_READ);
+			} catch (Exception ex) {
+				checkSuccess(true,1);
+			}
 			con.setTransactionIsolation(
-				Connection.TRANSACTION_REPEATABLE_READ);
-		} catch (Exception ex) {
-			checkSuccess(true,1);
+				Connection.TRANSACTION_SERIALIZABLE);
+			checkSuccess(con.getTransactionIsolation(),
+				Connection.TRANSACTION_SERIALIZABLE);
+			System.out.println();
 		}
-		con.setTransactionIsolation(
-			Connection.TRANSACTION_SERIALIZABLE);
-		checkSuccess(con.getTransactionIsolation(),
-			Connection.TRANSACTION_SERIALIZABLE);
-		System.out.println();*/
 
 		// setTypeMap, getTypeMap
 
@@ -309,8 +321,15 @@ class oracle {
 		con.clearWarnings();
 		System.out.println();
 
-		// getMetaData
+		System.out.println();
+
+
+
+		// DatabaseMetaData
 		System.out.println("DATABASE META DATA...");
+
+		// getMetaData
+		System.out.println("DATABASE META DATA - getMetaData");
 		DatabaseMetaData	md=con.getMetaData();
 		checkSuccess((md!=null),1);
 		System.out.println();
@@ -340,7 +359,7 @@ class oracle {
 		col=1;
 		checkSuccess(rsmd.getColumnName(col++),"TABLE_SCHEM");
 		checkSuccess(rsmd.getColumnName(col++),"TABLE_CATALOG");
-		System.out.println();
+		//System.out.println();
 		//printColumns(rsmd);
 		//printResultSet(rs);
 		rs.close();
@@ -355,7 +374,7 @@ class oracle {
 		checkSuccess(rsmd.getColumnCount(),1);
 		col=1;
 		checkSuccess(rsmd.getColumnName(col++),"TABLE_TYPE");
-		System.out.println();
+		//System.out.println();
 		//printColumns(rsmd);
 		//printResultSet(rs);
 		rs.close();
@@ -368,20 +387,34 @@ class oracle {
 		checkSuccess((rs!=null),1);
 		rsmd=rs.getMetaData();
 		checkSuccess((rsmd!=null),1);
-		checkSuccess(rsmd.getColumnCount(),5);
+		if (issqlrelay) {
+                	checkSuccess(rsmd.getColumnCount(),10);
+		} else {
+			// oracle jdbc (at least v8) returns 5 columns
+                	checkSuccess(rsmd.getColumnCount(),5);
+		}
 		col=1;
 		checkSuccess(rsmd.getColumnName(col++),"TABLE_CAT");
 		checkSuccess(rsmd.getColumnName(col++),"TABLE_SCHEM");
 		checkSuccess(rsmd.getColumnName(col++),"TABLE_NAME");
 		checkSuccess(rsmd.getColumnName(col++),"TABLE_TYPE");
 		checkSuccess(rsmd.getColumnName(col++),"REMARKS");
-		System.out.println();
+		if (issqlrelay) {
+			checkSuccess(rsmd.getColumnName(col++),"TYPE_CAT");
+			checkSuccess(rsmd.getColumnName(col++),"TYPE_SCHEM");
+			checkSuccess(rsmd.getColumnName(col++),"TYPE_NAME");
+			checkSuccess(rsmd.getColumnName(col++),
+						"SELF_REFERENCING_COL_NAME");
+			checkSuccess(rsmd.getColumnName(col++),
+						"REF_GENERATION");
+		}
+		//System.out.println();
 		//printColumns(rsmd);
 		//printResultSet(rs);
 		rs.close();
 		System.out.println();
 
-		// getSuperTables (not supported in oracle jdbc)
+		// getSuperTables (oracle jdbc doesn't supported this)
 
 		// getTypeInfo
 		System.out.println("DATABASE META DATA - type info");
@@ -409,7 +442,7 @@ class oracle {
 		checkSuccess(rsmd.getColumnName(col++),"SQL_DATA_TYPE");
 		checkSuccess(rsmd.getColumnName(col++),"SQL_DATETIME_SUB");
 		checkSuccess(rsmd.getColumnName(col++),"NUM_PREC_RADIX");
-		System.out.println();
+		//System.out.println();
 		//printColumns(rsmd);
 		//printResultSet(rs);
 		rs.close();
@@ -422,77 +455,117 @@ class oracle {
                 rsmd=rs.getMetaData();
                 checkSuccess((rsmd!=null),1);
 		col=1;
-		// Oracle's JDBC driver (at least v8) returns 9 columns
-                //checkSuccess(rsmd.getColumnCount(),8);
+		if (issqlrelay) {
+                	checkSuccess(rsmd.getColumnCount(),8);
+		} else {
+			// oracle jdbc (at least v8) returns 9 columns
+                	checkSuccess(rsmd.getColumnCount(),9);
+		}
                 checkSuccess(rsmd.getColumnName(col++),"PROCEDURE_CAT");
                 checkSuccess(rsmd.getColumnName(col++),"PROCEDURE_SCHEM");
                 checkSuccess(rsmd.getColumnName(col++),"PROCEDURE_NAME");
-		// Oracle's JDBC driver (at least v8) returns
-		// NULL for these column names
-                //checkSuccess(rsmd.getColumnName(col++),"NUM_INPUT_PARAMS");
-                //checkSuccess(rsmd.getColumnName(col++),"NUM_OUTPUT_PARAMS");
-                //checkSuccess(rsmd.getColumnName(col++),"NUM_RESULT_SETS");
-		col+=3;
+		if (issqlrelay) {
+                	checkSuccess(rsmd.getColumnName(col++),
+						"NUM_INPUT_PARAMS");
+                	checkSuccess(rsmd.getColumnName(col++),
+						"NUM_OUTPUT_PARAMS");
+                	checkSuccess(rsmd.getColumnName(col++),
+						"NUM_RESULT_SETS");
+		} else {
+			// oracle jdbc (at least v8) returns
+			// NULL for these column names
+                	checkSuccess(rsmd.getColumnName(col++),"NULL");
+                	checkSuccess(rsmd.getColumnName(col++),"NULL");
+                	checkSuccess(rsmd.getColumnName(col++),"NULL");
+		}
                 checkSuccess(rsmd.getColumnName(col++),"REMARKS");
                 checkSuccess(rsmd.getColumnName(col++),"PROCEDURE_TYPE");
-		// Oracle's JDBC driver (at least v8) returns
-		// a 9th column: SPECIFIC_NAME
-                System.out.println();
+		if (!issqlrelay) {
+			// oracle jdbc (at least v8) returns a 9th column
+                	checkSuccess(rsmd.getColumnName(col++),"SPECIFIC_NAME");
+		}
+                //System.out.println();
 		//printColumns(rsmd);
 		//printResultSet(rs);
                 rs.close();
                 System.out.println();
 
 		// getFunctions
-                System.out.println("DATABASE META DATA - functions");
-                rs=md.getFunctions("%","%","%");
-                checkSuccess((rs!=null),1);
-                rsmd=rs.getMetaData();
-                checkSuccess((rsmd!=null),1);
-		col=1;
-		// Oracle's JDBC driver (at least v8) returns 6 columns
-                //checkSuccess(rsmd.getColumnCount(),8);
-                checkSuccess(rsmd.getColumnName(col++),"FUNCTION_CAT");
-                checkSuccess(rsmd.getColumnName(col++),"FUNCTION_SCHEM");
-                checkSuccess(rsmd.getColumnName(col++),"FUNCTION_NAME");
-		// Oracle's JDBC driver (at least v8) doesn't return these
-		// columns at all
-                //checkSuccess(rsmd.getColumnName(col++),"NUM_INPUT_PARAMS");
-                //checkSuccess(rsmd.getColumnName(col++),"NUM_OUTPUT_PARAMS");
-                //checkSuccess(rsmd.getColumnName(col++),"NUM_RESULT_SETS");
-                checkSuccess(rsmd.getColumnName(col++),"REMARKS");
-                checkSuccess(rsmd.getColumnName(col++),"FUNCTION_TYPE");
-		// Oracle's JDBC driver (at least v8) returns
-		// a 9th column: SPECIFIC_NAME
-                System.out.println();
-		//printColumns(rsmd);
-		//printResultSet(rs);
-                rs.close();
-                System.out.println();
+		if (!issqlrelay) {
+                	System.out.println("DATABASE META DATA - functions");
+                	rs=md.getFunctions("%","%","%");
+                	checkSuccess((rs!=null),1);
+                	rsmd=rs.getMetaData();
+                	checkSuccess((rsmd!=null),1);
+			col=1;
+			if (issqlrelay) {
+				checkSuccess(rsmd.getColumnCount(),8);
+			} else {
+				// oracle jdbc (at least v8) returns 6 columns
+				checkSuccess(rsmd.getColumnCount(),6);
+			}
+                	checkSuccess(rsmd.getColumnName(col++),
+							"FUNCTION_CAT");
+                	checkSuccess(rsmd.getColumnName(col++),
+							"FUNCTION_SCHEM");
+                	checkSuccess(rsmd.getColumnName(col++),
+							"FUNCTION_NAME");
+			// oracle jdbc (at least v8) doesn't
+			// return these columns at all
+			if (issqlrelay) {
+                		checkSuccess(rsmd.getColumnName(col++),
+							"NUM_INPUT_PARAMS");
+                		checkSuccess(rsmd.getColumnName(col++),
+							"NUM_OUTPUT_PARAMS");
+                		checkSuccess(rsmd.getColumnName(col++),
+							"NUM_RESULT_SETS");
+			}
+                	checkSuccess(rsmd.getColumnName(col++),"REMARKS");
+                	checkSuccess(rsmd.getColumnName(col++),"FUNCTION_TYPE");
+			// oracle jdbc (at least v8) returns this extra column
+			if (!issqlrelay) {
+                		checkSuccess(rsmd.getColumnName(col++),
+							"SPECIFIC_NAME");
+			}
+                	//System.out.println();
+			//printColumns(rsmd);
+			//printResultSet(rs);
+                	rs.close();
+                	System.out.println();
+		}
 
 		// getUDTs
-                System.out.println("DATABASE META DATA - UDTs");
-                rs=md.getUDTs("%","%","%",null);
-                checkSuccess((rs!=null),1);
-                rsmd=rs.getMetaData();
-                checkSuccess((rsmd!=null),1);
-		col=1;
-		// Oracle's JDBC driver (at least v8) returns 6 columns
-                //checkSuccess(rsmd.getColumnCount(),7);
-                checkSuccess(rsmd.getColumnName(col++),"TYPE_CAT");
-                checkSuccess(rsmd.getColumnName(col++),"TYPE_SCHEM");
-                checkSuccess(rsmd.getColumnName(col++),"TYPE_NAME");
-                checkSuccess(rsmd.getColumnName(col++),"CLASS_NAME");
-                checkSuccess(rsmd.getColumnName(col++),"DATA_TYPE");
-                checkSuccess(rsmd.getColumnName(col++),"REMARKS");
-		// Oracle's JDBC driver (at least v8) doesn't return these
-		// columns at all
-                //checkSuccess(rsmd.getColumnName(col++),"BASE_TYPE");
-                System.out.println();
-		//printColumns(rsmd);
-		//printResultSet(rs);
-                rs.close();
-                System.out.println();
+		if (!issqlrelay) {
+                	System.out.println("DATABASE META DATA - UDTs");
+                	rs=md.getUDTs("%","%","%",null);
+                	checkSuccess((rs!=null),1);
+                	rsmd=rs.getMetaData();
+                	checkSuccess((rsmd!=null),1);
+			col=1;
+			if (issqlrelay) {
+                		checkSuccess(rsmd.getColumnCount(),7);
+			} else {
+				// oracle jdbc (at least v8) returns 6 columns
+                		checkSuccess(rsmd.getColumnCount(),6);
+			}
+                	checkSuccess(rsmd.getColumnName(col++),"TYPE_CAT");
+                	checkSuccess(rsmd.getColumnName(col++),"TYPE_SCHEM");
+                	checkSuccess(rsmd.getColumnName(col++),"TYPE_NAME");
+                	checkSuccess(rsmd.getColumnName(col++),"CLASS_NAME");
+                	checkSuccess(rsmd.getColumnName(col++),"DATA_TYPE");
+                	checkSuccess(rsmd.getColumnName(col++),"REMARKS");
+			if (issqlrelay) {
+				// oracle jdbc (at least v8) doesn't
+				// return this column at all
+                		checkSuccess(rsmd.getColumnName(col++),
+								"BASE_TYPE");
+			}
+                	//System.out.println();
+			//printColumns(rsmd);
+			//printResultSet(rs);
+                	rs.close();
+                	System.out.println();
+		}
 
 
 
@@ -512,72 +585,137 @@ class oracle {
 		// commit
 		// rollback...
 
+                System.out.println();
+
+
+
+		// Statement
+		System.out.println("STATEMENT...");
+
 		// createStatement
-		System.out.println("CONNECTION - create statement");
+		System.out.println("STATEMENT - create statement");
 		Statement	stmt=con.createStatement();
 		checkSuccess((stmt!=null),1);
 		stmt.close();
-		stmt=con.createStatement(
-				ResultSet.TYPE_FORWARD_ONLY,
-				ResultSet.CONCUR_READ_ONLY,
-				ResultSet.HOLD_CURSORS_OVER_COMMIT);
-		checkSuccess((stmt!=null),1);
-		stmt.close();
-		stmt=con.createStatement(
-				ResultSet.TYPE_SCROLL_INSENSITIVE,
-				ResultSet.CONCUR_READ_ONLY,
-				ResultSet.HOLD_CURSORS_OVER_COMMIT);
-		checkSuccess((stmt!=null),1);
-		stmt.close();
-		try {
-			stmt=con.createStatement(
-				ResultSet.TYPE_SCROLL_SENSITIVE,
-				ResultSet.CONCUR_UPDATABLE,
-				ResultSet.HOLD_CURSORS_OVER_COMMIT);
-			checkSuccess(false,1);
-		} catch (Exception ex) {
-			checkSuccess(true,1);
+                System.out.println();
+
+		int[]	rstype={
+			ResultSet.TYPE_FORWARD_ONLY,
+			ResultSet.TYPE_SCROLL_INSENSITIVE,
+			ResultSet.TYPE_SCROLL_SENSITIVE
+		};
+		boolean[]	rstypesupported=new boolean[3];
+		rstypesupported[0]=true;
+		rstypesupported[1]=true;
+		// oracle jdbc supports scroll-sensitive cursors
+		rstypesupported[2]=(issqlrelay)?false:true;
+		String[]	rstypename={
+			"forward only",
+			"scroll insensitive",
+			"scroll sensitive"
+		};
+		int[]	concurrency={
+			ResultSet.CONCUR_READ_ONLY,
+			ResultSet.CONCUR_UPDATABLE
+		};
+		boolean[]	concurrencysupported=new boolean[2];
+		concurrencysupported[0]=true;
+		// oracle jdbc supports updatable cursors
+		concurrencysupported[1]=(issqlrelay)?false:true;
+		String[]	concurrencyname={
+			"read only",
+			"updatable"
+		};
+		int[]	holdability={
+			ResultSet.HOLD_CURSORS_OVER_COMMIT,
+			ResultSet.CLOSE_CURSORS_AT_COMMIT
+		};
+		boolean[]	holdabilitysupported={
+			true,false
+		};
+		String[]	holdabilityname={
+			"hold cursors",
+			"close cursors"
+		};
+		for (int r=0; r<rstype.length; r++) {
+			for (int c=0; c<concurrency.length; c++) {
+				System.out.println(
+					"CONNECTION - "+
+					"create statement - "+
+					rstypename[r]+", "+
+					concurrencyname[c]);
+				if (rstypesupported[r] &&
+					concurrencysupported[c]) {
+					stmt=con.createStatement(
+							rstype[r],
+							concurrency[c]);
+					checkSuccess((stmt!=null),1);
+					stmt.close();
+				} else {
+					try {
+						stmt=con.
+						createStatement(
+							rstype[r],
+							concurrency[c]);
+						checkSuccess(false,1);
+					} catch (Exception ex) {
+						checkSuccess(true,1);
+					}
+				}
+				System.out.println();
+			}
 		}
-		try {
-			stmt=con.createStatement(
-				ResultSet.TYPE_FORWARD_ONLY,
-				ResultSet.CONCUR_UPDATABLE,
-				ResultSet.HOLD_CURSORS_OVER_COMMIT);
-			checkSuccess(false,1);
-		} catch (Exception ex) {
-			checkSuccess(true,1);
-		}
-		try {
-			stmt=con.createStatement(
-				ResultSet.TYPE_FORWARD_ONLY,
-				ResultSet.CONCUR_READ_ONLY,
-				ResultSet.CLOSE_CURSORS_AT_COMMIT);
-			checkSuccess(false,1);
-		} catch (Exception ex) {
-			checkSuccess(true,1);
+		for (int r=0; r<rstype.length; r++) {
+			for (int c=0; c<concurrency.length; c++) {
+				for (int h=0; h<holdability.length; h++) {
+					System.out.println(
+						"STATEMENT - "+
+						"create statement - "+
+						rstypename[r]+", "+
+						concurrencyname[c]+", "+
+						holdabilityname[h]);
+					if (rstypesupported[r] &&
+						concurrencysupported[c] &&
+						holdabilitysupported[h]) {
+						stmt=con.createStatement(
+							rstype[r],
+							concurrency[c],
+							holdability[h]);
+						checkSuccess((stmt!=null),1);
+						stmt.close();
+					} else {
+						try {
+							stmt=con.
+							createStatement(
+								rstype[r],
+								concurrency[c],
+								holdability[h]);
+							checkSuccess(false,1);
+						} catch (Exception ex) {
+							checkSuccess(true,1);
+						}
+					}
+					System.out.println();
+				}
+			}
 		}
 		System.out.println();
 
 		// prepareCall...
 
 		// prepareStatement...
-		System.out.println("\n");
-
 
 		// Statement
-		System.out.println("STATEMENT...");
-		stmt=con.createStatement();
-		System.out.println("\n");
-
 
 		// ResultSet
-		System.out.println("RESULTSET...");
+		System.out.println("RESULT SET...");
+		stmt=con.createStatement();
 		rs=stmt.executeQuery("select 1 from dual");
 		checkSuccess((rs!=null),1);
 		rs.next();
 		checkSuccess(rs.getInt(1),1);
 		rs.close();
-		System.out.println("\n");
+		System.out.println();
 
 
 		stmt.close();
