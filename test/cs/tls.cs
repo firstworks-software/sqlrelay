@@ -12,130 +12,8 @@ using System.Runtime.InteropServices;
 
 namespace SQLRClientTest
 {
-    class SQLRAdapterTest
+    class TlsSQLRAdapterTest : SQLRAdapterTest
     {
-        private static void checkSuccess(Object value, Object success)
-        {
-            if (value == success)
-            {
-                Console.Write("success ");
-                Console.Out.Flush();
-            }
-            else
-            {
-                Console.WriteLine("failure");
-                Console.WriteLine("\"" + value + "\" != \"" + success + "\"");
-                Console.Out.Flush();
-                Environment.Exit(1);
-            }
-        }
-
-        private static void checkSuccess(String value, String success)
-        {
-            if (value == success)
-            {
-                Console.Write("success ");
-                Console.Out.Flush();
-            }
-            else
-            {
-                Console.WriteLine("failure");
-                Console.WriteLine("\"" + value + "\" != \"" + success + "\"");
-                Console.Out.Flush();
-                Environment.Exit(1);
-            }
-        }
-
-        private static void checkSuccess(String value, String success, Int32 size)
-        {
-            if (value.Substring(0,size) == success.Substring(0,size))
-            {
-                Console.Write("success ");
-                Console.Out.Flush();
-            }
-            else
-            {
-                Console.WriteLine("failure");
-                Console.WriteLine("\"" + value + "\" != \"" + success + "\"");
-                Console.Out.Flush();
-                Environment.Exit(1);
-            }
-        }
-
-        private static void checkSuccess(Int64 value, Int64 success)
-        {
-            if (value == success)
-            {
-                Console.Write("success ");
-                Console.Out.Flush();
-            }
-            else
-            {
-                Console.WriteLine("failure");
-                Console.WriteLine("\"" + value + "\" != \"" + success + "\"");
-                Console.Out.Flush();
-                Environment.Exit(1);
-            }
-        }
-
-        private static void checkSuccess(Boolean  value, Boolean  success)
-        {
-            if (value == success)
-            {
-                Console.Write("success ");
-                Console.Out.Flush();
-            }
-            else
-            {
-                Console.WriteLine("failure");
-                Console.WriteLine("\"" + value + "\" != \"" + success + "\"");
-                Console.Out.Flush();
-                Environment.Exit(1);
-            }
-        }
-
-        private static Int64 ExecuteScalar(SQLRelayCommand cmd)
-        {
-            try
-            {
-                return Convert.ToInt64(cmd.ExecuteScalar());
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                Console.Out.Flush();
-                return -1;
-            }
-        }
-
-        private static Int64 ExecuteNonQuery(SQLRelayCommand cmd)
-        {
-            try
-            {
-                return Convert.ToInt64(cmd.ExecuteNonQuery());
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                Console.Out.Flush();
-                return -1;
-            }
-        }
-
-        private static SQLRelayDataReader ExecuteReader(SQLRelayCommand cmd)
-        {
-            try
-            {
-                return (SQLRelayDataReader)cmd.ExecuteReader();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                Console.Out.Flush();
-                return null;
-            }
-        }
-
         private static String tlscert = "";
         private static String tlsca = "";
 
@@ -160,7 +38,7 @@ namespace SQLRClientTest
             Console.WriteLine("EXECUTE SCALAR:");
             sqlrcom.CommandText = "select 1 from dual";
             Int64 value = ExecuteScalar(sqlrcom);
-            checkSuccess(value, 1);
+            assertEquals(value, 1);
             Console.WriteLine("\n");
 
             // drop the table
@@ -185,7 +63,7 @@ namespace SQLRClientTest
 
             // affected rows
             Console.WriteLine("AFFECTED ROWS:");
-            checkSuccess(affectedrows, 1);
+            assertEquals(affectedrows, 1);
             Console.WriteLine("\n");
 
             // bind by position
@@ -206,7 +84,7 @@ namespace SQLRClientTest
             var7.Value = System.Text.Encoding.Default.GetBytes("testblob2");
             var7.SQLRelayType = SQLRelayType.Blob;
             sqlrcom.Parameters.Add(var7);
-            checkSuccess(ExecuteNonQuery(sqlrcom), 1);
+            assertEquals(ExecuteNonQuery(sqlrcom), 1);
             sqlrcom.Parameters.Clear();
             sqlrcom.Parameters.Add("1", 3);
             sqlrcom.Parameters.Add("2", "testchar3");
@@ -219,7 +97,7 @@ namespace SQLRClientTest
             var7.SQLRelayType = SQLRelayType.Object;
             var7.DbType = DbType.Binary;
             sqlrcom.Parameters.Add(var7);
-            checkSuccess(ExecuteNonQuery(sqlrcom), 1);
+            assertEquals(ExecuteNonQuery(sqlrcom), 1);
             sqlrcom.Parameters.Clear();
             Console.WriteLine("\n");
 
@@ -233,7 +111,7 @@ namespace SQLRClientTest
             sqlrcom.Parameters.Add(var6);
             var7.Value = System.Text.Encoding.Default.GetBytes("testblob4");
             sqlrcom.Parameters.Add(var7);
-            checkSuccess(ExecuteNonQuery(sqlrcom), 1);
+            assertEquals(ExecuteNonQuery(sqlrcom), 1);
             sqlrcom.Parameters.Clear();
             sqlrcom.Parameters.Add("var1", 5);
             sqlrcom.Parameters.Add("var2", "testchar5");
@@ -244,7 +122,7 @@ namespace SQLRClientTest
             sqlrcom.Parameters.Add(var6);
             var7.Value = System.Text.Encoding.Default.GetBytes("testblob5");
             sqlrcom.Parameters.Add(var7);
-            checkSuccess(ExecuteNonQuery(sqlrcom), 1);
+            assertEquals(ExecuteNonQuery(sqlrcom), 1);
             sqlrcom.Parameters.Clear();
             Console.WriteLine("\n");
 
@@ -257,7 +135,7 @@ namespace SQLRClientTest
             sqlrcom.Parameters.Add("5", null);
             sqlrcom.Parameters.Add("6", null);
             sqlrcom.Parameters.Add("7", null);
-            checkSuccess(ExecuteNonQuery(sqlrcom), 1);
+            assertEquals(ExecuteNonQuery(sqlrcom), 1);
             sqlrcom.Parameters.Clear();
             Console.WriteLine("\n");
 
@@ -265,319 +143,319 @@ namespace SQLRClientTest
             Console.WriteLine("SELECT:");
             sqlrcom.CommandText = "select * from testtable order by testnumber";
             System.Data.IDataReader datareader = ExecuteReader(sqlrcom);
-            checkSuccess(datareader != null, true);
+            assertTrue(datareader != null);
             Console.WriteLine("\n");
 
             // column count
             Console.WriteLine("COLUMN COUNT:");
-            checkSuccess(datareader.FieldCount, 7);
+            assertEquals(datareader.FieldCount, 7);
             Console.WriteLine("\n");
 
             // column names
             Console.WriteLine("COLUMN NAMES:");
-            checkSuccess(datareader.GetName(0), "TESTNUMBER");
-            checkSuccess(datareader.GetName(1), "TESTCHAR");
-            checkSuccess(datareader.GetName(2), "TESTVARCHAR");
-            checkSuccess(datareader.GetName(3), "TESTDATE");
-            checkSuccess(datareader.GetName(4), "TESTLONG");
-            checkSuccess(datareader.GetName(5), "TESTCLOB");
-            checkSuccess(datareader.GetName(6), "TESTBLOB");
+            assertEquals(datareader.GetName(0), "TESTNUMBER");
+            assertEquals(datareader.GetName(1), "TESTCHAR");
+            assertEquals(datareader.GetName(2), "TESTVARCHAR");
+            assertEquals(datareader.GetName(3), "TESTDATE");
+            assertEquals(datareader.GetName(4), "TESTLONG");
+            assertEquals(datareader.GetName(5), "TESTCLOB");
+            assertEquals(datareader.GetName(6), "TESTBLOB");
             Console.WriteLine("\n");
 
             // column types
             Console.WriteLine("COLUMN TYPES:");
-            checkSuccess(datareader.GetDataTypeName(0), "NUMBER");
-            checkSuccess(datareader.GetFieldType(0).ToString(), "System.Int64");
-            checkSuccess(datareader.GetDataTypeName(1), "CHAR");
-            checkSuccess(datareader.GetFieldType(1).ToString(), "System.String");
-            checkSuccess(datareader.GetDataTypeName(2), "VARCHAR2");
-            checkSuccess(datareader.GetFieldType(2).ToString(), "System.String");
-            checkSuccess(datareader.GetDataTypeName(3), "DATE");
-            checkSuccess(datareader.GetFieldType(3).ToString(), "System.DateTime");
-            checkSuccess(datareader.GetDataTypeName(4), "LONG");
-            checkSuccess(datareader.GetFieldType(4).ToString(), "System.Byte[]");
-            checkSuccess(datareader.GetDataTypeName(5), "CLOB");
-            checkSuccess(datareader.GetFieldType(5).ToString(), "System.String");
-            checkSuccess(datareader.GetDataTypeName(6), "BLOB");
-            checkSuccess(datareader.GetFieldType(6).ToString(), "System.Byte[]");
+            assertEquals(datareader.GetDataTypeName(0), "NUMBER");
+            assertEquals(datareader.GetFieldType(0).ToString(), "System.Int64");
+            assertEquals(datareader.GetDataTypeName(1), "CHAR");
+            assertEquals(datareader.GetFieldType(1).ToString(), "System.String");
+            assertEquals(datareader.GetDataTypeName(2), "VARCHAR2");
+            assertEquals(datareader.GetFieldType(2).ToString(), "System.String");
+            assertEquals(datareader.GetDataTypeName(3), "DATE");
+            assertEquals(datareader.GetFieldType(3).ToString(), "System.DateTime");
+            assertEquals(datareader.GetDataTypeName(4), "LONG");
+            assertEquals(datareader.GetFieldType(4).ToString(), "System.Byte[]");
+            assertEquals(datareader.GetDataTypeName(5), "CLOB");
+            assertEquals(datareader.GetFieldType(5).ToString(), "System.String");
+            assertEquals(datareader.GetDataTypeName(6), "BLOB");
+            assertEquals(datareader.GetFieldType(6).ToString(), "System.Byte[]");
             Console.WriteLine("\n");
 
             // schema table
             Console.WriteLine("SCHEMA TABLE:");
             DataTable schematable = datareader.GetSchemaTable();
-            checkSuccess(Convert.ToString(schematable.Rows[0]["ColumnName"]), "TESTNUMBER");
-            checkSuccess(Convert.ToInt64(schematable.Rows[0]["ColumnOrdinal"]), 0);
-            checkSuccess(Convert.ToInt64(schematable.Rows[0]["ColumnSize"]), 22);
-            checkSuccess(Convert.ToInt64(schematable.Rows[0]["NumericPrecision"]), 0);
-            checkSuccess(Convert.ToInt64(schematable.Rows[0]["NumericScale"]), 129);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[0]["IsUnique"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[0]["IsKey"]), false);
-            checkSuccess(Convert.ToString(schematable.Rows[0]["BaseServerName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[0]["BaseCatalogName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[0]["BaseColumnName"]), "TESTNUMBER");
-            checkSuccess(Convert.ToString(schematable.Rows[0]["BaseSchemaName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[0]["BaseTableName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[0]["DataType"]), "System.Int64");
-            checkSuccess(Convert.ToBoolean(schematable.Rows[0]["AllowDBNull"]), true);
-            checkSuccess(Convert.ToString(schematable.Rows[0]["ProviderType"]), "NUMBER");
-            checkSuccess(Convert.ToBoolean(schematable.Rows[0]["IsAliased"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[0]["IsExpression"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[0]["IsIdentity"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[0]["IsAutoIncrement"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[0]["IsRowVersion"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[0]["IsHidden"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[0]["IsLong"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[0]["IsReadOnly"]), false);
-            checkSuccess(Convert.ToString(schematable.Rows[0]["ProviderSpecificDataType"]), "NUMBER");
-            checkSuccess(Convert.ToString(schematable.Rows[0]["DataTypeName"]), "NUMBER");
-            checkSuccess(Convert.ToString(schematable.Rows[0]["XmlSchemaCollectionDatabase"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[0]["XmlSchemaCollectionOwningSchema"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[0]["XmlSchemaCollectionName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[0]["ColumnName"]), "TESTNUMBER");
+            assertEquals(Convert.ToInt64(schematable.Rows[0]["ColumnOrdinal"]), 0);
+            assertEquals(Convert.ToInt64(schematable.Rows[0]["ColumnSize"]), 22);
+            assertEquals(Convert.ToInt64(schematable.Rows[0]["NumericPrecision"]), 0);
+            assertEquals(Convert.ToInt64(schematable.Rows[0]["NumericScale"]), 129);
+            assertEquals(Convert.ToBoolean(schematable.Rows[0]["IsUnique"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[0]["IsKey"]), false);
+            assertEquals(Convert.ToString(schematable.Rows[0]["BaseServerName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[0]["BaseCatalogName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[0]["BaseColumnName"]), "TESTNUMBER");
+            assertEquals(Convert.ToString(schematable.Rows[0]["BaseSchemaName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[0]["BaseTableName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[0]["DataType"]), "System.Int64");
+            assertTrue(Convert.ToBoolean(schematable.Rows[0]["AllowDBNull"]));
+            assertEquals(Convert.ToString(schematable.Rows[0]["ProviderType"]), "NUMBER");
+            assertEquals(Convert.ToBoolean(schematable.Rows[0]["IsAliased"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[0]["IsExpression"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[0]["IsIdentity"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[0]["IsAutoIncrement"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[0]["IsRowVersion"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[0]["IsHidden"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[0]["IsLong"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[0]["IsReadOnly"]), false);
+            assertEquals(Convert.ToString(schematable.Rows[0]["ProviderSpecificDataType"]), "NUMBER");
+            assertEquals(Convert.ToString(schematable.Rows[0]["DataTypeName"]), "NUMBER");
+            assertEquals(Convert.ToString(schematable.Rows[0]["XmlSchemaCollectionDatabase"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[0]["XmlSchemaCollectionOwningSchema"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[0]["XmlSchemaCollectionName"]), "");
 
-            checkSuccess(Convert.ToString(schematable.Rows[1]["ColumnName"]), "TESTCHAR");
-            checkSuccess(Convert.ToInt64(schematable.Rows[1]["ColumnOrdinal"]), 1);
-            checkSuccess(Convert.ToInt64(schematable.Rows[1]["ColumnSize"]), 40);
-            checkSuccess(Convert.ToInt64(schematable.Rows[1]["NumericPrecision"]), 0);
-            checkSuccess(Convert.ToInt64(schematable.Rows[1]["NumericScale"]), 0);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[1]["IsUnique"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[1]["IsKey"]), false);
-            checkSuccess(Convert.ToString(schematable.Rows[1]["BaseServerName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[1]["BaseCatalogName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[1]["BaseColumnName"]), "TESTCHAR");
-            checkSuccess(Convert.ToString(schematable.Rows[1]["BaseSchemaName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[1]["BaseTableName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[1]["DataType"]), "System.String");
-            checkSuccess(Convert.ToBoolean(schematable.Rows[1]["AllowDBNull"]), true);
-            checkSuccess(Convert.ToString(schematable.Rows[1]["ProviderType"]), "CHAR");
-            checkSuccess(Convert.ToBoolean(schematable.Rows[1]["IsAliased"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[1]["IsExpression"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[1]["IsIdentity"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[1]["IsAutoIncrement"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[1]["IsRowVersion"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[1]["IsHidden"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[1]["IsLong"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[1]["IsReadOnly"]), false);
-            checkSuccess(Convert.ToString(schematable.Rows[1]["ProviderSpecificDataType"]), "CHAR");
-            checkSuccess(Convert.ToString(schematable.Rows[1]["DataTypeName"]), "CHAR");
-            checkSuccess(Convert.ToString(schematable.Rows[1]["XmlSchemaCollectionDatabase"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[1]["XmlSchemaCollectionOwningSchema"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[1]["XmlSchemaCollectionName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[1]["ColumnName"]), "TESTCHAR");
+            assertEquals(Convert.ToInt64(schematable.Rows[1]["ColumnOrdinal"]), 1);
+            assertEquals(Convert.ToInt64(schematable.Rows[1]["ColumnSize"]), 40);
+            assertEquals(Convert.ToInt64(schematable.Rows[1]["NumericPrecision"]), 0);
+            assertEquals(Convert.ToInt64(schematable.Rows[1]["NumericScale"]), 0);
+            assertEquals(Convert.ToBoolean(schematable.Rows[1]["IsUnique"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[1]["IsKey"]), false);
+            assertEquals(Convert.ToString(schematable.Rows[1]["BaseServerName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[1]["BaseCatalogName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[1]["BaseColumnName"]), "TESTCHAR");
+            assertEquals(Convert.ToString(schematable.Rows[1]["BaseSchemaName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[1]["BaseTableName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[1]["DataType"]), "System.String");
+            assertTrue(Convert.ToBoolean(schematable.Rows[1]["AllowDBNull"]));
+            assertEquals(Convert.ToString(schematable.Rows[1]["ProviderType"]), "CHAR");
+            assertEquals(Convert.ToBoolean(schematable.Rows[1]["IsAliased"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[1]["IsExpression"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[1]["IsIdentity"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[1]["IsAutoIncrement"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[1]["IsRowVersion"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[1]["IsHidden"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[1]["IsLong"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[1]["IsReadOnly"]), false);
+            assertEquals(Convert.ToString(schematable.Rows[1]["ProviderSpecificDataType"]), "CHAR");
+            assertEquals(Convert.ToString(schematable.Rows[1]["DataTypeName"]), "CHAR");
+            assertEquals(Convert.ToString(schematable.Rows[1]["XmlSchemaCollectionDatabase"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[1]["XmlSchemaCollectionOwningSchema"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[1]["XmlSchemaCollectionName"]), "");
 
-            checkSuccess(Convert.ToString(schematable.Rows[2]["ColumnName"]), "TESTVARCHAR");
-            checkSuccess(Convert.ToInt64(schematable.Rows[2]["ColumnOrdinal"]), 2);
-            checkSuccess(Convert.ToInt64(schematable.Rows[2]["ColumnSize"]), 40);
-            checkSuccess(Convert.ToInt64(schematable.Rows[2]["NumericPrecision"]), 0);
-            checkSuccess(Convert.ToInt64(schematable.Rows[2]["NumericScale"]), 0);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[2]["IsUnique"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[2]["IsKey"]), false);
-            checkSuccess(Convert.ToString(schematable.Rows[2]["BaseServerName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[2]["BaseCatalogName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[2]["BaseColumnName"]), "TESTVARCHAR");
-            checkSuccess(Convert.ToString(schematable.Rows[2]["BaseSchemaName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[2]["BaseTableName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[2]["DataType"]), "System.String");
-            checkSuccess(Convert.ToBoolean(schematable.Rows[2]["AllowDBNull"]), true);
-            checkSuccess(Convert.ToString(schematable.Rows[2]["ProviderType"]), "VARCHAR2");
-            checkSuccess(Convert.ToBoolean(schematable.Rows[2]["IsAliased"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[2]["IsExpression"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[2]["IsIdentity"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[2]["IsAutoIncrement"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[2]["IsRowVersion"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[2]["IsHidden"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[2]["IsLong"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[2]["IsReadOnly"]), false);
-            checkSuccess(Convert.ToString(schematable.Rows[2]["ProviderSpecificDataType"]), "VARCHAR2");
-            checkSuccess(Convert.ToString(schematable.Rows[2]["DataTypeName"]), "VARCHAR2");
-            checkSuccess(Convert.ToString(schematable.Rows[2]["XmlSchemaCollectionDatabase"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[2]["XmlSchemaCollectionOwningSchema"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[2]["XmlSchemaCollectionName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[2]["ColumnName"]), "TESTVARCHAR");
+            assertEquals(Convert.ToInt64(schematable.Rows[2]["ColumnOrdinal"]), 2);
+            assertEquals(Convert.ToInt64(schematable.Rows[2]["ColumnSize"]), 40);
+            assertEquals(Convert.ToInt64(schematable.Rows[2]["NumericPrecision"]), 0);
+            assertEquals(Convert.ToInt64(schematable.Rows[2]["NumericScale"]), 0);
+            assertEquals(Convert.ToBoolean(schematable.Rows[2]["IsUnique"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[2]["IsKey"]), false);
+            assertEquals(Convert.ToString(schematable.Rows[2]["BaseServerName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[2]["BaseCatalogName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[2]["BaseColumnName"]), "TESTVARCHAR");
+            assertEquals(Convert.ToString(schematable.Rows[2]["BaseSchemaName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[2]["BaseTableName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[2]["DataType"]), "System.String");
+            assertTrue(Convert.ToBoolean(schematable.Rows[2]["AllowDBNull"]));
+            assertEquals(Convert.ToString(schematable.Rows[2]["ProviderType"]), "VARCHAR2");
+            assertEquals(Convert.ToBoolean(schematable.Rows[2]["IsAliased"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[2]["IsExpression"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[2]["IsIdentity"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[2]["IsAutoIncrement"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[2]["IsRowVersion"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[2]["IsHidden"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[2]["IsLong"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[2]["IsReadOnly"]), false);
+            assertEquals(Convert.ToString(schematable.Rows[2]["ProviderSpecificDataType"]), "VARCHAR2");
+            assertEquals(Convert.ToString(schematable.Rows[2]["DataTypeName"]), "VARCHAR2");
+            assertEquals(Convert.ToString(schematable.Rows[2]["XmlSchemaCollectionDatabase"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[2]["XmlSchemaCollectionOwningSchema"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[2]["XmlSchemaCollectionName"]), "");
 
-            checkSuccess(Convert.ToString(schematable.Rows[3]["ColumnName"]), "TESTDATE");
-            checkSuccess(Convert.ToInt64(schematable.Rows[3]["ColumnOrdinal"]), 3);
-            checkSuccess(Convert.ToInt64(schematable.Rows[3]["ColumnSize"]), 7);
-            checkSuccess(Convert.ToInt64(schematable.Rows[3]["NumericPrecision"]), 0);
-            checkSuccess(Convert.ToInt64(schematable.Rows[3]["NumericScale"]), 0);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[3]["IsUnique"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[3]["IsKey"]), false);
-            checkSuccess(Convert.ToString(schematable.Rows[3]["BaseServerName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[3]["BaseCatalogName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[3]["BaseColumnName"]), "TESTDATE");
-            checkSuccess(Convert.ToString(schematable.Rows[3]["BaseSchemaName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[3]["BaseTableName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[3]["DataType"]), "System.DateTime");
-            checkSuccess(Convert.ToBoolean(schematable.Rows[3]["AllowDBNull"]), true);
-            checkSuccess(Convert.ToString(schematable.Rows[3]["ProviderType"]), "DATE");
-            checkSuccess(Convert.ToBoolean(schematable.Rows[3]["IsAliased"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[3]["IsExpression"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[3]["IsIdentity"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[3]["IsAutoIncrement"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[3]["IsRowVersion"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[3]["IsHidden"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[3]["IsLong"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[3]["IsReadOnly"]), false);
-            checkSuccess(Convert.ToString(schematable.Rows[3]["ProviderSpecificDataType"]), "DATE");
-            checkSuccess(Convert.ToString(schematable.Rows[3]["DataTypeName"]), "DATE");
-            checkSuccess(Convert.ToString(schematable.Rows[3]["XmlSchemaCollectionDatabase"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[3]["XmlSchemaCollectionOwningSchema"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[3]["XmlSchemaCollectionName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[3]["ColumnName"]), "TESTDATE");
+            assertEquals(Convert.ToInt64(schematable.Rows[3]["ColumnOrdinal"]), 3);
+            assertEquals(Convert.ToInt64(schematable.Rows[3]["ColumnSize"]), 7);
+            assertEquals(Convert.ToInt64(schematable.Rows[3]["NumericPrecision"]), 0);
+            assertEquals(Convert.ToInt64(schematable.Rows[3]["NumericScale"]), 0);
+            assertEquals(Convert.ToBoolean(schematable.Rows[3]["IsUnique"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[3]["IsKey"]), false);
+            assertEquals(Convert.ToString(schematable.Rows[3]["BaseServerName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[3]["BaseCatalogName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[3]["BaseColumnName"]), "TESTDATE");
+            assertEquals(Convert.ToString(schematable.Rows[3]["BaseSchemaName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[3]["BaseTableName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[3]["DataType"]), "System.DateTime");
+            assertTrue(Convert.ToBoolean(schematable.Rows[3]["AllowDBNull"]));
+            assertEquals(Convert.ToString(schematable.Rows[3]["ProviderType"]), "DATE");
+            assertEquals(Convert.ToBoolean(schematable.Rows[3]["IsAliased"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[3]["IsExpression"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[3]["IsIdentity"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[3]["IsAutoIncrement"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[3]["IsRowVersion"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[3]["IsHidden"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[3]["IsLong"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[3]["IsReadOnly"]), false);
+            assertEquals(Convert.ToString(schematable.Rows[3]["ProviderSpecificDataType"]), "DATE");
+            assertEquals(Convert.ToString(schematable.Rows[3]["DataTypeName"]), "DATE");
+            assertEquals(Convert.ToString(schematable.Rows[3]["XmlSchemaCollectionDatabase"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[3]["XmlSchemaCollectionOwningSchema"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[3]["XmlSchemaCollectionName"]), "");
 
-            checkSuccess(Convert.ToString(schematable.Rows[4]["ColumnName"]), "TESTLONG");
-            checkSuccess(Convert.ToInt64(schematable.Rows[4]["ColumnOrdinal"]), 4);
-            checkSuccess(Convert.ToInt64(schematable.Rows[4]["ColumnSize"]), 0);
-            checkSuccess(Convert.ToInt64(schematable.Rows[4]["NumericPrecision"]), 0);
-            checkSuccess(Convert.ToInt64(schematable.Rows[4]["NumericScale"]), 0);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[4]["IsUnique"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[4]["IsKey"]), false);
-            checkSuccess(Convert.ToString(schematable.Rows[4]["BaseServerName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[4]["BaseCatalogName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[4]["BaseColumnName"]), "TESTLONG");
-            checkSuccess(Convert.ToString(schematable.Rows[4]["BaseSchemaName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[4]["BaseTableName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[4]["DataType"]), "System.Byte[]");
-            checkSuccess(Convert.ToBoolean(schematable.Rows[4]["AllowDBNull"]), true);
-            checkSuccess(Convert.ToString(schematable.Rows[4]["ProviderType"]), "LONG");
-            checkSuccess(Convert.ToBoolean(schematable.Rows[4]["IsAliased"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[4]["IsExpression"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[4]["IsIdentity"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[4]["IsAutoIncrement"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[4]["IsRowVersion"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[4]["IsHidden"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[4]["IsLong"]), true);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[4]["IsReadOnly"]), false);
-            checkSuccess(Convert.ToString(schematable.Rows[4]["ProviderSpecificDataType"]), "LONG");
-            checkSuccess(Convert.ToString(schematable.Rows[4]["DataTypeName"]), "LONG");
-            checkSuccess(Convert.ToString(schematable.Rows[4]["XmlSchemaCollectionDatabase"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[4]["XmlSchemaCollectionOwningSchema"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[4]["XmlSchemaCollectionName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[4]["ColumnName"]), "TESTLONG");
+            assertEquals(Convert.ToInt64(schematable.Rows[4]["ColumnOrdinal"]), 4);
+            assertEquals(Convert.ToInt64(schematable.Rows[4]["ColumnSize"]), 0);
+            assertEquals(Convert.ToInt64(schematable.Rows[4]["NumericPrecision"]), 0);
+            assertEquals(Convert.ToInt64(schematable.Rows[4]["NumericScale"]), 0);
+            assertEquals(Convert.ToBoolean(schematable.Rows[4]["IsUnique"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[4]["IsKey"]), false);
+            assertEquals(Convert.ToString(schematable.Rows[4]["BaseServerName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[4]["BaseCatalogName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[4]["BaseColumnName"]), "TESTLONG");
+            assertEquals(Convert.ToString(schematable.Rows[4]["BaseSchemaName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[4]["BaseTableName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[4]["DataType"]), "System.Byte[]");
+            assertTrue(Convert.ToBoolean(schematable.Rows[4]["AllowDBNull"]));
+            assertEquals(Convert.ToString(schematable.Rows[4]["ProviderType"]), "LONG");
+            assertEquals(Convert.ToBoolean(schematable.Rows[4]["IsAliased"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[4]["IsExpression"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[4]["IsIdentity"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[4]["IsAutoIncrement"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[4]["IsRowVersion"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[4]["IsHidden"]), false);
+            assertTrue(Convert.ToBoolean(schematable.Rows[4]["IsLong"]));
+            assertEquals(Convert.ToBoolean(schematable.Rows[4]["IsReadOnly"]), false);
+            assertEquals(Convert.ToString(schematable.Rows[4]["ProviderSpecificDataType"]), "LONG");
+            assertEquals(Convert.ToString(schematable.Rows[4]["DataTypeName"]), "LONG");
+            assertEquals(Convert.ToString(schematable.Rows[4]["XmlSchemaCollectionDatabase"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[4]["XmlSchemaCollectionOwningSchema"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[4]["XmlSchemaCollectionName"]), "");
 
-            checkSuccess(Convert.ToString(schematable.Rows[5]["ColumnName"]), "TESTCLOB");
-            checkSuccess(Convert.ToInt64(schematable.Rows[5]["ColumnOrdinal"]), 5);
-            checkSuccess(Convert.ToInt64(schematable.Rows[5]["ColumnSize"]), 0);
-            checkSuccess(Convert.ToInt64(schematable.Rows[5]["NumericPrecision"]), 0);
-            checkSuccess(Convert.ToInt64(schematable.Rows[5]["NumericScale"]), 0);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[5]["IsUnique"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[5]["IsKey"]), false);
-            checkSuccess(Convert.ToString(schematable.Rows[5]["BaseServerName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[5]["BaseCatalogName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[5]["BaseColumnName"]), "TESTCLOB");
-            checkSuccess(Convert.ToString(schematable.Rows[5]["BaseSchemaName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[5]["BaseTableName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[5]["DataType"]), "System.String");
-            checkSuccess(Convert.ToBoolean(schematable.Rows[5]["AllowDBNull"]), true);
-            checkSuccess(Convert.ToString(schematable.Rows[5]["ProviderType"]), "CLOB");
-            checkSuccess(Convert.ToBoolean(schematable.Rows[5]["IsAliased"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[5]["IsExpression"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[5]["IsIdentity"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[5]["IsAutoIncrement"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[5]["IsRowVersion"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[5]["IsHidden"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[5]["IsLong"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[5]["IsReadOnly"]), false);
-            checkSuccess(Convert.ToString(schematable.Rows[5]["ProviderSpecificDataType"]), "CLOB");
-            checkSuccess(Convert.ToString(schematable.Rows[5]["DataTypeName"]), "CLOB");
-            checkSuccess(Convert.ToString(schematable.Rows[5]["XmlSchemaCollectionDatabase"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[5]["XmlSchemaCollectionOwningSchema"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[5]["XmlSchemaCollectionName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[5]["ColumnName"]), "TESTCLOB");
+            assertEquals(Convert.ToInt64(schematable.Rows[5]["ColumnOrdinal"]), 5);
+            assertEquals(Convert.ToInt64(schematable.Rows[5]["ColumnSize"]), 0);
+            assertEquals(Convert.ToInt64(schematable.Rows[5]["NumericPrecision"]), 0);
+            assertEquals(Convert.ToInt64(schematable.Rows[5]["NumericScale"]), 0);
+            assertEquals(Convert.ToBoolean(schematable.Rows[5]["IsUnique"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[5]["IsKey"]), false);
+            assertEquals(Convert.ToString(schematable.Rows[5]["BaseServerName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[5]["BaseCatalogName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[5]["BaseColumnName"]), "TESTCLOB");
+            assertEquals(Convert.ToString(schematable.Rows[5]["BaseSchemaName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[5]["BaseTableName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[5]["DataType"]), "System.String");
+            assertTrue(Convert.ToBoolean(schematable.Rows[5]["AllowDBNull"]));
+            assertEquals(Convert.ToString(schematable.Rows[5]["ProviderType"]), "CLOB");
+            assertEquals(Convert.ToBoolean(schematable.Rows[5]["IsAliased"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[5]["IsExpression"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[5]["IsIdentity"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[5]["IsAutoIncrement"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[5]["IsRowVersion"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[5]["IsHidden"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[5]["IsLong"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[5]["IsReadOnly"]), false);
+            assertEquals(Convert.ToString(schematable.Rows[5]["ProviderSpecificDataType"]), "CLOB");
+            assertEquals(Convert.ToString(schematable.Rows[5]["DataTypeName"]), "CLOB");
+            assertEquals(Convert.ToString(schematable.Rows[5]["XmlSchemaCollectionDatabase"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[5]["XmlSchemaCollectionOwningSchema"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[5]["XmlSchemaCollectionName"]), "");
 
-            checkSuccess(Convert.ToString(schematable.Rows[6]["ColumnName"]), "TESTBLOB");
-            checkSuccess(Convert.ToInt64(schematable.Rows[6]["ColumnOrdinal"]), 6);
-            checkSuccess(Convert.ToInt64(schematable.Rows[6]["ColumnSize"]), 0);
-            checkSuccess(Convert.ToInt64(schematable.Rows[6]["NumericPrecision"]), 0);
-            checkSuccess(Convert.ToInt64(schematable.Rows[6]["NumericScale"]), 0);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[6]["IsUnique"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[6]["IsKey"]), false);
-            checkSuccess(Convert.ToString(schematable.Rows[6]["BaseServerName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[6]["BaseCatalogName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[6]["BaseColumnName"]), "TESTBLOB");
-            checkSuccess(Convert.ToString(schematable.Rows[6]["BaseSchemaName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[6]["BaseTableName"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[6]["DataType"]), "System.Byte[]");
-            checkSuccess(Convert.ToBoolean(schematable.Rows[6]["AllowDBNull"]), true);
-            checkSuccess(Convert.ToString(schematable.Rows[6]["ProviderType"]), "BLOB");
-            checkSuccess(Convert.ToBoolean(schematable.Rows[6]["IsAliased"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[6]["IsExpression"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[6]["IsIdentity"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[6]["IsAutoIncrement"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[6]["IsRowVersion"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[6]["IsHidden"]), false);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[6]["IsLong"]), true);
-            checkSuccess(Convert.ToBoolean(schematable.Rows[6]["IsReadOnly"]), false);
-            checkSuccess(Convert.ToString(schematable.Rows[6]["ProviderSpecificDataType"]), "BLOB");
-            checkSuccess(Convert.ToString(schematable.Rows[6]["DataTypeName"]), "BLOB");
-            checkSuccess(Convert.ToString(schematable.Rows[6]["XmlSchemaCollectionDatabase"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[6]["XmlSchemaCollectionOwningSchema"]), "");
-            checkSuccess(Convert.ToString(schematable.Rows[6]["XmlSchemaCollectionName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[6]["ColumnName"]), "TESTBLOB");
+            assertEquals(Convert.ToInt64(schematable.Rows[6]["ColumnOrdinal"]), 6);
+            assertEquals(Convert.ToInt64(schematable.Rows[6]["ColumnSize"]), 0);
+            assertEquals(Convert.ToInt64(schematable.Rows[6]["NumericPrecision"]), 0);
+            assertEquals(Convert.ToInt64(schematable.Rows[6]["NumericScale"]), 0);
+            assertEquals(Convert.ToBoolean(schematable.Rows[6]["IsUnique"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[6]["IsKey"]), false);
+            assertEquals(Convert.ToString(schematable.Rows[6]["BaseServerName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[6]["BaseCatalogName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[6]["BaseColumnName"]), "TESTBLOB");
+            assertEquals(Convert.ToString(schematable.Rows[6]["BaseSchemaName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[6]["BaseTableName"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[6]["DataType"]), "System.Byte[]");
+            assertTrue(Convert.ToBoolean(schematable.Rows[6]["AllowDBNull"]));
+            assertEquals(Convert.ToString(schematable.Rows[6]["ProviderType"]), "BLOB");
+            assertEquals(Convert.ToBoolean(schematable.Rows[6]["IsAliased"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[6]["IsExpression"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[6]["IsIdentity"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[6]["IsAutoIncrement"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[6]["IsRowVersion"]), false);
+            assertEquals(Convert.ToBoolean(schematable.Rows[6]["IsHidden"]), false);
+            assertTrue(Convert.ToBoolean(schematable.Rows[6]["IsLong"]));
+            assertEquals(Convert.ToBoolean(schematable.Rows[6]["IsReadOnly"]), false);
+            assertEquals(Convert.ToString(schematable.Rows[6]["ProviderSpecificDataType"]), "BLOB");
+            assertEquals(Convert.ToString(schematable.Rows[6]["DataTypeName"]), "BLOB");
+            assertEquals(Convert.ToString(schematable.Rows[6]["XmlSchemaCollectionDatabase"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[6]["XmlSchemaCollectionOwningSchema"]), "");
+            assertEquals(Convert.ToString(schematable.Rows[6]["XmlSchemaCollectionName"]), "");
 
             Console.WriteLine("\n");
 
             // fields by index
             Console.WriteLine("FIELDS BY INDEX:");
-            checkSuccess(datareader.Read(), true);
-            checkSuccess(datareader.GetInt16(0), 1);
-            checkSuccess(datareader.GetInt32(0), 1);
-            checkSuccess(datareader.GetInt64(0), 1);
-            checkSuccess(Convert.ToInt64(datareader[0]), 1);
-            checkSuccess(datareader.GetString(1), "testchar1                               ");
-            checkSuccess(Convert.ToString(datareader[1]), "testchar1                               ");
-            checkSuccess(datareader.GetString(2), "testvarchar1");
-            checkSuccess(Convert.ToString(datareader[2]), "testvarchar1");
-            checkSuccess(datareader.GetString(3), "01-JAN-01");
-            checkSuccess(Convert.ToString(datareader[3]), "1/1/2001 12:00:00 AM");
-            checkSuccess(datareader.GetString(4), "testlong1");
-            checkSuccess(System.Text.Encoding.Default.GetString((Byte[])datareader[4]), "testlong1");
-            checkSuccess(datareader.GetString(5), "testclob1");
-            checkSuccess(Convert.ToString(datareader[5]), "testclob1");
-            checkSuccess(datareader[6], null);
+            assertTrue(datareader.Read());
+            assertEquals(datareader.GetInt16(0), 1);
+            assertEquals(datareader.GetInt32(0), 1);
+            assertEquals(datareader.GetInt64(0), 1);
+            assertEquals(Convert.ToInt64(datareader[0]), 1);
+            assertEquals(datareader.GetString(1), "testchar1                               ");
+            assertEquals(Convert.ToString(datareader[1]), "testchar1                               ");
+            assertEquals(datareader.GetString(2), "testvarchar1");
+            assertEquals(Convert.ToString(datareader[2]), "testvarchar1");
+            assertEquals(datareader.GetString(3), "01-JAN-01");
+            assertEquals(Convert.ToString(datareader[3]), "1/1/2001 12:00:00 AM");
+            assertEquals(datareader.GetString(4), "testlong1");
+            assertEquals(System.Text.Encoding.Default.GetString((Byte[])datareader[4]), "testlong1");
+            assertEquals(datareader.GetString(5), "testclob1");
+            assertEquals(Convert.ToString(datareader[5]), "testclob1");
+            assertEquals(datareader[6], null);
             Console.WriteLine("\n");
 
             // fields by name
             Console.WriteLine("FIELDS BY NAME:");
-            checkSuccess(Convert.ToInt64(datareader["TESTNUMBER"]), 1);
-            checkSuccess(datareader.GetInt16(datareader.GetOrdinal("TESTNUMBER")), 1);
-            checkSuccess(datareader.GetInt32(datareader.GetOrdinal("TESTNUMBER")), 1);
-            checkSuccess(datareader.GetInt64(datareader.GetOrdinal("TESTNUMBER")), 1);
-            checkSuccess(Convert.ToString(datareader["TESTCHAR"]), "testchar1                               ");
-            checkSuccess(datareader.GetString(datareader.GetOrdinal("TESTCHAR")), "testchar1                               ");
-            checkSuccess(Convert.ToString(datareader["TESTVARCHAR"]), "testvarchar1");
-            checkSuccess(datareader.GetString(datareader.GetOrdinal("TESTVARCHAR")), "testvarchar1");
-            checkSuccess(Convert.ToString(datareader["TESTDATE"]), "1/1/2001 12:00:00 AM");
-            checkSuccess(datareader.GetString(datareader.GetOrdinal("TESTDATE")), "01-JAN-01");
-            checkSuccess(System.Text.Encoding.Default.GetString((Byte[])datareader["TESTLONG"]), "testlong1");
-            checkSuccess(datareader.GetString(datareader.GetOrdinal("TESTLONG")), "testlong1");
-            checkSuccess(Convert.ToString(datareader["TESTCLOB"]), "testclob1");
-            checkSuccess(datareader.GetString(datareader.GetOrdinal("TESTCLOB")), "testclob1");
-            checkSuccess(datareader["TESTBLOB"], null);
-            checkSuccess(datareader.GetString(datareader.GetOrdinal("TESTBLOB")), "");
+            assertEquals(Convert.ToInt64(datareader["TESTNUMBER"]), 1);
+            assertEquals(datareader.GetInt16(datareader.GetOrdinal("TESTNUMBER")), 1);
+            assertEquals(datareader.GetInt32(datareader.GetOrdinal("TESTNUMBER")), 1);
+            assertEquals(datareader.GetInt64(datareader.GetOrdinal("TESTNUMBER")), 1);
+            assertEquals(Convert.ToString(datareader["TESTCHAR"]), "testchar1                               ");
+            assertEquals(datareader.GetString(datareader.GetOrdinal("TESTCHAR")), "testchar1                               ");
+            assertEquals(Convert.ToString(datareader["TESTVARCHAR"]), "testvarchar1");
+            assertEquals(datareader.GetString(datareader.GetOrdinal("TESTVARCHAR")), "testvarchar1");
+            assertEquals(Convert.ToString(datareader["TESTDATE"]), "1/1/2001 12:00:00 AM");
+            assertEquals(datareader.GetString(datareader.GetOrdinal("TESTDATE")), "01-JAN-01");
+            assertEquals(System.Text.Encoding.Default.GetString((Byte[])datareader["TESTLONG"]), "testlong1");
+            assertEquals(datareader.GetString(datareader.GetOrdinal("TESTLONG")), "testlong1");
+            assertEquals(Convert.ToString(datareader["TESTCLOB"]), "testclob1");
+            assertEquals(datareader.GetString(datareader.GetOrdinal("TESTCLOB")), "testclob1");
+            assertEquals(datareader["TESTBLOB"], null);
+            assertEquals(datareader.GetString(datareader.GetOrdinal("TESTBLOB")), "");
             Console.WriteLine("\n");
 
             // fields by array
             Console.WriteLine("FIELDS BY ARRAY:");
             Object[] fields = new Object[datareader.FieldCount];
-            checkSuccess((Int64)datareader.GetValues(fields), datareader.FieldCount);
-            checkSuccess(Convert.ToInt64(fields[0]), 1);
-            checkSuccess(Convert.ToString(fields[1]), "testchar1                               ");
-            checkSuccess(Convert.ToString(fields[2]), "testvarchar1");
-            checkSuccess(Convert.ToString(fields[3]), "1/1/2001 12:00:00 AM");
-            checkSuccess(System.Text.Encoding.Default.GetString((Byte[])fields[4]), "testlong1");
-            checkSuccess(Convert.ToString(fields[5]), "testclob1");
-            checkSuccess(fields[6], null);
+            assertEquals((Int64)datareader.GetValues(fields), datareader.FieldCount);
+            assertEquals(Convert.ToInt64(fields[0]), 1);
+            assertEquals(Convert.ToString(fields[1]), "testchar1                               ");
+            assertEquals(Convert.ToString(fields[2]), "testvarchar1");
+            assertEquals(Convert.ToString(fields[3]), "1/1/2001 12:00:00 AM");
+            assertEquals(System.Text.Encoding.Default.GetString((Byte[])fields[4]), "testlong1");
+            assertEquals(Convert.ToString(fields[5]), "testclob1");
+            assertEquals(fields[6], null);
             Console.WriteLine("\n");
 
             // more rows
             Console.WriteLine("MORE ROWS:");
-            checkSuccess(datareader.Read(), true);
-            checkSuccess(datareader.GetInt64(0), 2);
-            checkSuccess(System.Text.Encoding.Default.GetString((Byte[])datareader[6]), "testblob2");
-            checkSuccess(datareader.Read(), true);
-            checkSuccess(datareader.GetInt64(0), 3);
-            checkSuccess(datareader.Read(), true);
-            checkSuccess(datareader.GetInt64(0), 4);
-            checkSuccess(datareader.Read(), true);
-            checkSuccess(datareader.GetInt64(0), 5);
-            checkSuccess(datareader.Read(), true);
-            checkSuccess(datareader.GetString(0), "");
-            checkSuccess(datareader.Read(), false);
-            checkSuccess(datareader.GetString(0), null);
+            assertTrue(datareader.Read());
+            assertEquals(datareader.GetInt64(0), 2);
+            assertEquals(System.Text.Encoding.Default.GetString((Byte[])datareader[6]), "testblob2");
+            assertTrue(datareader.Read());
+            assertEquals(datareader.GetInt64(0), 3);
+            assertTrue(datareader.Read());
+            assertEquals(datareader.GetInt64(0), 4);
+            assertTrue(datareader.Read());
+            assertEquals(datareader.GetInt64(0), 5);
+            assertTrue(datareader.Read());
+            assertEquals(datareader.GetString(0), "");
+            assertEquals(datareader.Read(), false);
+            assertEquals(datareader.GetString(0), null);
             Console.WriteLine("\n");
 
             // commit and rollback
@@ -585,17 +463,17 @@ namespace SQLRClientTest
             SQLRelayConnection sqlrcon2 = new SQLRelayConnection("Data Source=sqlrelay:9000:/tmp/test.socket;Retry Time=0;Tries=1;Tls=yes;Tlscert=" + tlscert + ";Tlsvalidate=ca;Tlsca=" + tlsca + ";Debug=false");
             sqlrcon2.Open();
             SQLRelayCommand sqlrcom2 = new SQLRelayCommand("select count(*) from testtable", sqlrcon2);
-            checkSuccess(Convert.ToInt64(sqlrcom2.ExecuteScalar()), 0);
+            assertEquals(Convert.ToInt64(sqlrcom2.ExecuteScalar()), 0);
             SQLRelayTransaction sqlrtran = sqlrcon.BeginTransaction();
             sqlrtran.Commit();
-            checkSuccess(Convert.ToInt64(sqlrcom2.ExecuteScalar()), 6);
+            assertEquals(Convert.ToInt64(sqlrcom2.ExecuteScalar()), 6);
             sqlrtran = sqlrcon.BeginTransaction();
             sqlrcom.CommandText = "insert into testtable values (6, 'testchar6', 'testvarchar6', '01-JAN-2006', 'testlong6', 'testclob6', empty_blob())";
-            checkSuccess(sqlrcom.ExecuteNonQuery(), 1);
+            assertEquals(sqlrcom.ExecuteNonQuery(), 1);
             sqlrcom.CommandText = "select count(*) from testtable";
-            checkSuccess(Convert.ToInt64(sqlrcom.ExecuteScalar()), 7);
+            assertEquals(Convert.ToInt64(sqlrcom.ExecuteScalar()), 7);
             sqlrtran.Rollback();
-            checkSuccess(Convert.ToInt64(sqlrcom2.ExecuteScalar()), 6);
+            assertEquals(Convert.ToInt64(sqlrcom2.ExecuteScalar()), 6);
             sqlrcon2.Close();
             Console.WriteLine("\n");
 
@@ -623,14 +501,14 @@ namespace SQLRClientTest
             datevar.Direction = ParameterDirection.Output;
             datevar.DbType = DbType.DateTime;
             sqlrcom.Parameters.Add(datevar);
-            checkSuccess(ExecuteNonQuery(sqlrcom), 1);
-            checkSuccess(Convert.ToInt64(numvar.Value), 1);
-            checkSuccess(Convert.ToString(stringvar.Value), "hello");
-            checkSuccess(Convert.ToInt64(stringvar.Size), 5);
-            checkSuccess(Convert.ToString(floatvar.Value), "2.5");
-            checkSuccess(Convert.ToInt64(Convert.ToDateTime(datevar.Value).Year), 2001);
-            checkSuccess(Convert.ToInt64(Convert.ToDateTime(datevar.Value).Month), 2);
-            checkSuccess(Convert.ToInt64(Convert.ToDateTime(datevar.Value).Day), 3);
+            assertEquals(ExecuteNonQuery(sqlrcom), 1);
+            assertEquals(Convert.ToInt64(numvar.Value), 1);
+            assertEquals(Convert.ToString(stringvar.Value), "hello");
+            assertEquals(Convert.ToInt64(stringvar.Size), 5);
+            assertEquals(Convert.ToString(floatvar.Value), "2.5");
+            assertEquals(Convert.ToInt64(Convert.ToDateTime(datevar.Value).Year), 2001);
+            assertEquals(Convert.ToInt64(Convert.ToDateTime(datevar.Value).Month), 2);
+            assertEquals(Convert.ToInt64(Convert.ToDateTime(datevar.Value).Day), 3);
             sqlrcom.Parameters.Clear();
             Console.WriteLine("\n");
 
@@ -658,14 +536,14 @@ namespace SQLRClientTest
             datevar.Direction = ParameterDirection.Output;
             datevar.DbType = DbType.DateTime;
             sqlrcom.Parameters.Add(datevar);
-            checkSuccess(ExecuteNonQuery(sqlrcom), 1);
-            checkSuccess(Convert.ToInt64(numvar.Value), 1);
-            checkSuccess(Convert.ToString(stringvar.Value), "hello");
-            checkSuccess(Convert.ToInt64(stringvar.Size), 5);
-            checkSuccess(Convert.ToString(floatvar.Value), "2.5");
-            checkSuccess(Convert.ToInt64(Convert.ToDateTime(datevar.Value).Year), 2001);
-            checkSuccess(Convert.ToInt64(Convert.ToDateTime(datevar.Value).Month), 2);
-            checkSuccess(Convert.ToInt64(Convert.ToDateTime(datevar.Value).Day), 3);
+            assertEquals(ExecuteNonQuery(sqlrcom), 1);
+            assertEquals(Convert.ToInt64(numvar.Value), 1);
+            assertEquals(Convert.ToString(stringvar.Value), "hello");
+            assertEquals(Convert.ToInt64(stringvar.Size), 5);
+            assertEquals(Convert.ToString(floatvar.Value), "2.5");
+            assertEquals(Convert.ToInt64(Convert.ToDateTime(datevar.Value).Year), 2001);
+            assertEquals(Convert.ToInt64(Convert.ToDateTime(datevar.Value).Month), 2);
+            assertEquals(Convert.ToInt64(Convert.ToDateTime(datevar.Value).Day), 3);
             sqlrcom.Parameters.Clear();
             Console.WriteLine("\n");
 
@@ -674,9 +552,9 @@ namespace SQLRClientTest
             // cursor binds using NextResult
             Console.WriteLine("CURSOR BINDS USING NEXTRESULT:");
             sqlrcom.CommandText = "create or replace package types is type cursorType is ref cursor; end;";
-            checkSuccess(ExecuteNonQuery(sqlrcom), 0);
+            assertEquals(ExecuteNonQuery(sqlrcom), 0);
             sqlrcom.CommandText = "create or replace function sp_testtable(value in number) return types.cursortype is l_cursor    types.cursorType; begin open l_cursor for select * from testtable where testnumber>value; return l_cursor; end;";
-            checkSuccess(ExecuteNonQuery(sqlrcom), 0);
+            assertEquals(ExecuteNonQuery(sqlrcom), 0);
             sqlrcom.CommandText = "begin  :curs1:=sp_testtable(2);  :curs2:=sp_testtable(0); end;";
             SQLRelayParameter curs1 = new SQLRelayParameter();
             curs1.ParameterName = "curs1";
@@ -691,26 +569,26 @@ namespace SQLRClientTest
             curs2.Value = null;
             sqlrcom.Parameters.Add(curs2);
             datareader = ExecuteReader(sqlrcom);
-            checkSuccess(datareader != null, true);
+            assertTrue(datareader != null);
             sqlrcom.Parameters.Clear();
             datareader.Read();
-            checkSuccess(datareader.GetInt64(0), 3);
+            assertEquals(datareader.GetInt64(0), 3);
             datareader.Read();
-            checkSuccess(datareader.GetInt64(0), 4);
+            assertEquals(datareader.GetInt64(0), 4);
             datareader.Read();
-            checkSuccess(datareader.GetInt64(0), 5);
+            assertEquals(datareader.GetInt64(0), 5);
             datareader.Close();
-            checkSuccess(datareader.NextResult(), true);
+            assertTrue(datareader.NextResult());
             datareader.Read();
-            checkSuccess(datareader.GetInt64(0), 1);
+            assertEquals(datareader.GetInt64(0), 1);
             datareader.Read();
-            checkSuccess(datareader.GetInt64(0), 2);
+            assertEquals(datareader.GetInt64(0), 2);
             datareader.Read();
-            checkSuccess(datareader.GetInt64(0), 3);
+            assertEquals(datareader.GetInt64(0), 3);
             datareader.Close();
-            checkSuccess(datareader.NextResult(), false);
+            assertEquals(datareader.NextResult(), false);
             sqlrcom.CommandText = "drop package types";
-            checkSuccess(ExecuteNonQuery(sqlrcom), 0);
+            assertEquals(ExecuteNonQuery(sqlrcom), 0);
             Console.WriteLine("\n");
 
 
@@ -718,9 +596,9 @@ namespace SQLRClientTest
             // cursor binds
             Console.WriteLine("CURSOR BINDS:");
             sqlrcom.CommandText = "create or replace package types is type cursorType is ref cursor; end;";
-            checkSuccess(ExecuteNonQuery(sqlrcom), 0);
+            assertEquals(ExecuteNonQuery(sqlrcom), 0);
             sqlrcom.CommandText = "create or replace function sp_testtable(value in number) return types.cursortype is l_cursor    types.cursorType; begin open l_cursor for select * from testtable where testnumber>value; return l_cursor; end;";
-            checkSuccess(ExecuteNonQuery(sqlrcom), 0);
+            assertEquals(ExecuteNonQuery(sqlrcom), 0);
             sqlrcom.CommandText = "begin  :curs1:=sp_testtable(2);  :curs2:=sp_testtable(0); end;";
             curs1 = new SQLRelayParameter();
             curs1.ParameterName = "curs1";
@@ -734,26 +612,26 @@ namespace SQLRClientTest
             curs2.Direction = ParameterDirection.Output;
             curs2.Value = null;
             sqlrcom.Parameters.Add(curs2);
-            checkSuccess(ExecuteNonQuery(sqlrcom), 1);
+            assertEquals(ExecuteNonQuery(sqlrcom), 1);
             sqlrcom.Parameters.Clear();
             SQLRelayDataReader curs1reader = (SQLRelayDataReader)curs1.Value;
             curs1reader.Read();
-            checkSuccess(curs1reader.GetInt64(0), 3);
+            assertEquals(curs1reader.GetInt64(0), 3);
             curs1reader.Read();
-            checkSuccess(curs1reader.GetInt64(0), 4);
+            assertEquals(curs1reader.GetInt64(0), 4);
             curs1reader.Read();
-            checkSuccess(curs1reader.GetInt64(0), 5);
+            assertEquals(curs1reader.GetInt64(0), 5);
             curs1reader.Close();
             SQLRelayDataReader curs2reader = (SQLRelayDataReader)curs2.Value;
             curs2reader.Read();
-            checkSuccess(curs2reader.GetInt64(0), 1);
+            assertEquals(curs2reader.GetInt64(0), 1);
             curs2reader.Read();
-            checkSuccess(curs2reader.GetInt64(0), 2);
+            assertEquals(curs2reader.GetInt64(0), 2);
             curs2reader.Read();
-            checkSuccess(curs2reader.GetInt64(0), 3);
+            assertEquals(curs2reader.GetInt64(0), 3);
             curs2reader.Close();
             sqlrcom.CommandText = "drop package types";
-            checkSuccess(ExecuteNonQuery(sqlrcom), 0);
+            assertEquals(ExecuteNonQuery(sqlrcom), 0);
             Console.WriteLine("\n");
 
 
@@ -763,14 +641,14 @@ namespace SQLRClientTest
             sqlrcom.CommandText = "drop table testtable1";
             ExecuteNonQuery(sqlrcom);
             sqlrcom.CommandText = "create table testtable1 (testclob clob, testblob blob)";
-            checkSuccess(ExecuteNonQuery(sqlrcom), 0);
+            assertEquals(ExecuteNonQuery(sqlrcom), 0);
             sqlrcom.CommandText = "insert into testtable1 values ('hello', :var1)";
             SQLRelayParameter var1 = new SQLRelayParameter();
             var1.ParameterName = "var1";
             var1.Value = System.Text.Encoding.Default.GetBytes("hello");
             var1.SQLRelayType = SQLRelayType.Blob;
             sqlrcom.Parameters.Add(var1);
-            checkSuccess(ExecuteNonQuery(sqlrcom), 1);
+            assertEquals(ExecuteNonQuery(sqlrcom), 1);
             sqlrcom.Parameters.Clear();
             sqlrcom.CommandText = "begin select testclob into :clobvar from testtable1; select testblob into :blobvar from testtable1; end;";
             SQLRelayParameter clobvar = new SQLRelayParameter();
@@ -783,20 +661,20 @@ namespace SQLRClientTest
             blobvar.SQLRelayType = SQLRelayType.Blob;
             blobvar.Direction = ParameterDirection.Output;
             sqlrcom.Parameters.Add(blobvar);
-            checkSuccess(ExecuteNonQuery(sqlrcom), 1);
+            assertEquals(ExecuteNonQuery(sqlrcom), 1);
             sqlrcom.Parameters.Clear();
-            checkSuccess(Convert.ToString(clobvar.Value), "hello", 5);
-            checkSuccess(clobvar.Size, 5);
-            checkSuccess(System.Text.Encoding.Default.GetString((byte[])blobvar.Value), "hello");
-            checkSuccess(blobvar.Size, 5);
+            assertEquals(Convert.ToString(clobvar.Value), "hello", 5);
+            assertEquals(clobvar.Size, 5);
+            assertEquals(System.Text.Encoding.Default.GetString((byte[])blobvar.Value), "hello");
+            assertEquals(blobvar.Size, 5);
             sqlrcom.CommandText = "drop table testtable1";
-            checkSuccess(ExecuteNonQuery(sqlrcom), 0);
+            assertEquals(ExecuteNonQuery(sqlrcom), 0);
             Console.WriteLine("\n");
 
             // null and empty clobs and blobs
             Console.WriteLine("NULL AND EMPTY CLOBS AND BLOBS:");
             sqlrcom.CommandText = "create table testtable1 (testclob1 clob, testclob2 clob, testblob1 blob, testblob2 blob)";
-            checkSuccess(ExecuteNonQuery(sqlrcom), 0);
+            assertEquals(ExecuteNonQuery(sqlrcom), 0);
             sqlrcom.CommandText = "insert into testtable1 values (:testclob1, :testclob2, :testblob1, :testblob2)";
             SQLRelayParameter testclob1 = new SQLRelayParameter();
             testclob1.ParameterName = "testclob1";
@@ -818,19 +696,19 @@ namespace SQLRClientTest
             testblob2.SQLRelayType = SQLRelayType.Blob;
             testblob2.Value = null;
             sqlrcom.Parameters.Add(testblob2);
-            checkSuccess(ExecuteNonQuery(sqlrcom), 1);
+            assertEquals(ExecuteNonQuery(sqlrcom), 1);
             sqlrcom.Parameters.Clear();
             sqlrcom.CommandText = "select * from testtable1";
             datareader = ExecuteReader(sqlrcom);
-            checkSuccess(datareader != null, true);
-            checkSuccess(datareader.Read(), true);
+            assertTrue(datareader != null);
+            assertTrue(datareader.Read());
             // FIXME: I'd expect these to come out as empty strings, not null's
-            checkSuccess(datareader.GetString(0), "");
-            checkSuccess(datareader.GetString(1), "");
-            checkSuccess(datareader.GetString(2), "");
-            checkSuccess(datareader.GetString(3), "");
+            assertEquals(datareader.GetString(0), "");
+            assertEquals(datareader.GetString(1), "");
+            assertEquals(datareader.GetString(2), "");
+            assertEquals(datareader.GetString(3), "");
             sqlrcom.CommandText = "drop table testtable1";
-            checkSuccess(ExecuteNonQuery(sqlrcom), 0);
+            assertEquals(ExecuteNonQuery(sqlrcom), 0);
             Console.WriteLine("\n");
 
             // switching connection of command
@@ -840,34 +718,34 @@ namespace SQLRClientTest
             try
             {
                 sqlrcom.ExecuteScalar();
-                checkSuccess(false, true);
+                assertTrue(false);
             }
             catch
             {
                 // this should fail because sqlrcon2 was closed earlier
-                checkSuccess(true, true);
+                assertTrue(true);
             }
             sqlrcom.Connection = sqlrcon;
-            checkSuccess(ExecuteScalar(sqlrcom), 6);
+            assertEquals(ExecuteScalar(sqlrcom), 6);
             Console.WriteLine("\n");
 
             // closed datareader
             Console.WriteLine("CLOSED DATAREADER:");
             sqlrcom.CommandText = "select * from testtable";
             datareader = sqlrcom.ExecuteReader();
-            checkSuccess(datareader != null, true);
+            assertTrue(datareader != null);
             datareader.Read();
             datareader.Close();
-            checkSuccess(datareader.IsClosed, true);
+            assertTrue(datareader.IsClosed);
             try
             {
                 datareader.Read();
-                checkSuccess(false, true);
+                assertTrue(false);
             }
             catch
             {
                 // this should fail because datareader was closed earlier
-                checkSuccess(true, true);
+                assertTrue(true);
             }
             Console.WriteLine("\n");
 
@@ -875,20 +753,20 @@ namespace SQLRClientTest
             Console.WriteLine("HAS ROWS:");
             sqlrcom.CommandText = "select * from testtable";
             datareader = ExecuteReader(sqlrcom);
-            checkSuccess(datareader != null, true);
-            checkSuccess(((SQLRelayDataReader)datareader).HasRows, true);
+            assertTrue(datareader != null);
+            assertTrue(((SQLRelayDataReader)datareader).HasRows);
             sqlrcom.CommandText = "delete from testtable";
-            checkSuccess(ExecuteNonQuery(sqlrcom), 6);
+            assertEquals(ExecuteNonQuery(sqlrcom), 6);
             sqlrcom.CommandText = "select * from testtable";
             datareader = ExecuteReader(sqlrcom);
-            checkSuccess(datareader != null, true);
-            checkSuccess(((SQLRelayDataReader)datareader).HasRows, false);
+            assertTrue(datareader != null);
+            assertEquals(((SQLRelayDataReader)datareader).HasRows, false);
             Console.WriteLine("\n");
 
             // drop table
             Console.WriteLine("DROP TABLE:");
             sqlrcom.CommandText = "drop table testtable";
-            checkSuccess(ExecuteNonQuery(sqlrcom), 0);
+            assertEquals(ExecuteNonQuery(sqlrcom), 0);
             Console.WriteLine("\n");
 
 
