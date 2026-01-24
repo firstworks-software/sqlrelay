@@ -28,7 +28,7 @@ const byte_t cool16[]={0x3D,0xD8,0x0E,0xDE,'\0','\0'};
 const byte_t *emoji16[]={yo16,grin16,horn16,cool16,NULL};
 
 
-int	main(int argc, char **argv) {
+int main(int argc, char **argv) {
 
 	// instantiation
 	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",

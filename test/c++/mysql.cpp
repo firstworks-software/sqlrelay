@@ -28,7 +28,7 @@ sqlrcursor	*cur;
 sqlrconnection	*secondcon;
 sqlrcursor	*secondcur;
 
-int	main(int argc, char **argv) {
+int main(int argc, char **argv) {
 
 #ifdef PROFILING
 for (uint16_t a=0; a<50; a++) {

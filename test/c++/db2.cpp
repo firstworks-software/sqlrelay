@@ -12,7 +12,7 @@ sqlrcursor	*cur;
 sqlrconnection	*secondcon;
 sqlrcursor	*secondcur;
 
-int	main(int argc, char **argv) {
+int main(int argc, char **argv) {
 
 	const char	*bindvars[13]={"1","2","3","4","5","6","7","8","9","10","11","12",NULL};
 	const char	*bindvals[12]={"4","4","4","4.4","4.4","4.4",

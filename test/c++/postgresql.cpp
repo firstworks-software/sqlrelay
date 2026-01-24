@@ -13,7 +13,7 @@ sqlrcursor	*cur;
 sqlrconnection	*secondcon;
 sqlrcursor	*secondcur;
 
-int	main(int argc, char **argv) {
+int main(int argc, char **argv) {
 
 	const char	*subvars[4]={"var1","var2","var3",NULL};
 	const char	*subvalstrings[3]={"hi","hello","bye"};

@@ -17,7 +17,7 @@ sqlrcursor	*cur;
 sqlrconnection	*secondcon;
 sqlrcursor	*secondcur;
 
-int	main(int argc, char **argv) {
+int main(int argc, char **argv) {
 
 	// The extensionstest instance uses connections="0", so the
 	// sqlr-connection process exits after each client session.  When the

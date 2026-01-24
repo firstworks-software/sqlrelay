@@ -13,7 +13,7 @@ sqlrcursor	*cur;
 sqlrconnection	*secondcon;
 sqlrcursor	*secondcur;
 
-int	main(int argc, char **argv) {
+int main(int argc, char **argv) {
 
 	const char	*bindvars[6]={"1","2","3","4","5",NULL};
 	const char	*bindvals[5]={"4","testchar4","testvarchar4","01-JAN-2004","testlong4"};
