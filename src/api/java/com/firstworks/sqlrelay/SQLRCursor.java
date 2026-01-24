@@ -483,4 +483,10 @@ public class SQLRCursor {
 						int listformat);
 	public native boolean	getProcedureListWithFormat(
 						String wild, int listformat);
+	public native boolean	isNumberType(String type);
+	public native boolean	isDateTimeType(String type);
+	public native boolean	isBinaryType(String type);
+	public native boolean	isUnsignedType(String type);
+	public native boolean	isClobType(String type);
+	public native boolean	isBlobType(String type);
 }

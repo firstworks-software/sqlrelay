@@ -16,8 +16,8 @@ public class SQLRelayDriver implements Driver {
 	private static final int	MAJOR_VERSION=1;
 	private static final int	MINOR_VERSION=2;
 
-	//public static final boolean	debug=true;
-	public static final boolean	debug=false;
+	//public static boolean	debug=true;
+	public static boolean	debug=false;
 
 	Map<Long,Integer>	indents=new HashMap<>();
 
@@ -41,12 +41,13 @@ public class SQLRelayDriver implements Driver {
 	Connection connect(String url, Properties info) throws SQLException {
 		debugFunction(this);
 		SQLRelayConnectInfo	ci=parseConnectInfo(url,info);
-		Connection	conn=null;
+		SQLRelayConnection	conn=null;
 		if (validConnectInfo(ci)) {
 			conn=new SQLRelayConnection(ci.host,ci.port,ci.socket,
 							ci.user,ci.password,
 							ci.retrytime,ci.tries,
 							this);
+			conn.setDateToTimestamp(ci.datetotimestamp);
 		}
 		debugEnd();
 		return conn;
@@ -63,6 +64,7 @@ public class SQLRelayDriver implements Driver {
 		String	password=null;
 		String	retrytimestr=null;
 		String	triesstr=null;
+		String	datetotimestampstr=null;
 
 		// all parameters could be passed in as properties
 		if (info!=null) {
@@ -79,6 +81,8 @@ public class SQLRelayDriver implements Driver {
 			}
 			retrytimestr=info.getProperty("Retry Time");
 			triesstr=info.getProperty("Tries");
+			datetotimestampstr=info.getProperty(
+						"DATE to TimeStamp");
 		}
 
 		// override them if they were passed in in the url
@@ -156,6 +160,21 @@ public class SQLRelayDriver implements Driver {
 			tries=1;
 		}
 
+		// convert datetotimestamp string to boolean, default to false
+		boolean	datetotimestamp=false;
+		if (datetotimestampstr!=null) {
+			switch (datetotimestampstr) {
+				case "yes":
+				case "true":
+				case "on":
+				case "y":
+				case "t":
+				case "1":
+					datetotimestamp=true;
+					break;
+			}
+		}
+
 		// create, populate, return a SQLRelayConnectInfo
 		SQLRelayConnectInfo	ci=new SQLRelayConnectInfo();
 		ci.host = host;
@@ -168,17 +187,21 @@ public class SQLRelayDriver implements Driver {
 		ci.retrytime = retrytime;
 		ci.triesstr = triesstr;
 		ci.tries = tries;
+		ci.datetotimestampstr = datetotimestampstr;
+		ci.datetotimestamp = datetotimestamp;
 
-		debugPrintln("host: ",host);
-		debugPrintln("portstr: ",portstr);
-		debugPrintln("port: ",port);
-		debugPrintln("socket: ",socket);
-		debugPrintln("user: ",user);
-		debugPrintln("password: ",password);
-		debugPrintln("retrytimestr: ",retrytimestr);
-		debugPrintln("retrytime: ",retrytime);
-		debugPrintln("triesstr: ",triesstr);
-		debugPrintln("tries: ",tries);
+		debugPrintln("host: "+host);
+		debugPrintln("portstr: "+portstr);
+		debugPrintln("port: "+port);
+		debugPrintln("socket: "+socket);
+		debugPrintln("user: "+user);
+		debugPrintln("password: "+password);
+		debugPrintln("retrytimestr: "+retrytimestr);
+		debugPrintln("retrytime: "+retrytime);
+		debugPrintln("triesstr: "+triesstr);
+		debugPrintln("tries: "+tries);
+		debugPrintln("datetotimestampstr: "+datetotimestampstr);
+		debugPrintln("datetotimestamp: "+datetotimestamp);
 
 		debugEnd();
 		return ci;
@@ -186,12 +209,12 @@ public class SQLRelayDriver implements Driver {
 
 	private boolean validConnectInfo(SQLRelayConnectInfo ci) {
 		debugFunction(this);
-		debugPrintln("host not null: ",ci.host!=null);
-		debugPrintln("port > 0: ",ci.port>0);
-		debugPrintln("socket not null: ",ci.socket!=null);
+		debugPrintln("host not null: "+ci.host!=null);
+		debugPrintln("port > 0: "+(ci.port>0));
+		debugPrintln("socket not null: "+ci.socket!=null);
 		boolean valid=
 			((ci.host!=null && ci.port>0) || ci.socket!=null);
-		debugPrintln("valid: ",valid);
+		debugPrintln("valid: "+valid);
 		debugEnd();
 		return valid;
 	}
@@ -215,8 +238,8 @@ public class SQLRelayDriver implements Driver {
 	 */
 	public
 	DriverPropertyInfo[] getPropertyInfo(String url,
-							Properties info)
-							throws SQLException {
+						Properties info)
+						throws SQLException {
 		debugFunction(this);
 
 		SQLRelayConnectInfo	ci=parseConnectInfo(url,info);
@@ -270,6 +293,13 @@ public class SQLRelayDriver implements Driver {
 			dpi=new DriverPropertyInfo("Tries","1");
 			dpi.description="If connection fails, retry this "+
 					"number of times.";
+			dpi.required=false;
+			dpilist.add(dpi);
+		}
+		if (ci.datetotimestampstr==null) {
+			dpi=new DriverPropertyInfo("DATE to TimeStamp","false");
+			dpi.description="Map DATE columns to Timestamp "+
+					"instead of Date";
 			dpi.required=false;
 			dpilist.add(dpi);
 		}

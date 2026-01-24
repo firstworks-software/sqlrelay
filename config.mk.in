@@ -319,7 +319,7 @@ JAVAC = @JAVAC@
 JAR = @JAR@
 JAVAINCLUDES = @JAVAINCLUDES@
 JAVAUSERPATH = @JAVAUSERPATH@
-JAVACPPFLAGS = $(WERROR) $(WNOUNKNOWNPRAGMAS) $(BASECPPFLAGS) -I. -I$(top_builddir) -I$(top_builddir)/src/api/c++ $(RUDIMENTSINCLUDES) $(JAVAINCLUDES)
+JAVACPPFLAGS = $(WERROR) $(WNOUNKNOWNPRAGMAS) $(BASECPPFLAGS) -I. -I$(top_builddir) -I$(top_builddir)/src/common -I$(top_builddir)/src/api/c++ $(RUDIMENTSINCLUDES) $(JAVAINCLUDES)
 JAVALIBS = -rpath $(javadir)/com/firstworks/sqlrelay -L$(top_builddir)/src/api/c++ -l$(SQLR)client $(RUDIMENTSLIBS)
 CURSORCLASSPATH=@CURSORCLASSPATH@
 ifneq ($(strip $(libdir)),)

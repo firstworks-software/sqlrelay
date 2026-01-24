@@ -121,7 +121,7 @@ public class SQLRelayStatement implements Statement {
 	public
 	boolean execute(String sql) throws SQLException {
 		driver.debugFunction(this);
-		driver.debugPrintln("sql: ",sql);
+		driver.debugPrintln("sql: "+sql);
 
 		throwExceptionIfClosed();
 
@@ -134,14 +134,14 @@ public class SQLRelayStatement implements Statement {
 			result=sqlrcur.sendQuery(sql);
 		}
 
-		driver.debugPrintln("result: ",result);
+		driver.debugPrintln("result: "+result);
 
 		if (result) {
 
 			updatecount=(int)sqlrcur.affectedRows();
 
-			driver.debugPrintln("updatecount: ",updatecount);
-			driver.debugPrintln("colcount: ",sqlrcur.colCount());
+			driver.debugPrintln("updatecount: "+updatecount);
+			driver.debugPrintln("colcount: "+sqlrcur.colCount());
 
 			if (sqlrcur.colCount()>0) {
 				resultset=new SQLRelayResultSet(driver);
@@ -409,7 +409,7 @@ public class SQLRelayStatement implements Statement {
 	int getUpdateCount() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
-		driver.debugPrintln("updatecount=",updatecount);
+		driver.debugPrintln("updatecount="+updatecount);
 		driver.debugEnd();
 		return updatecount;
 	}

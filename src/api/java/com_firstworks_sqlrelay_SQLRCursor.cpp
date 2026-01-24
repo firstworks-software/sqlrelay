@@ -5,6 +5,14 @@
 	#include <windows.h>
 #endif
 
+#define NEED_IS_NUMBER_TYPE_CHAR	1
+#define NEED_IS_BLOB_TYPE_CHAR		1
+#define NEED_IS_CLOB_TYPE_CHAR		1
+#define NEED_IS_UNSIGNED_TYPE_CHAR	1
+#define NEED_IS_BINARY_TYPE_CHAR	1
+#define NEED_IS_DATETIME_TYPE_CHAR	1
+#include <datatypes.h>
+
 #include <sqlrelay/sqlrclient.h>
 #include <com_firstworks_sqlrelay_SQLRCursor.h>
 #include <config.h>
@@ -37,6 +45,15 @@ static void curReleaseStringUTFChars(JNIEnv *env, jstring string,
 
 static jstring curNewStringUTF(JNIEnv *env, const char *string) {
 	return (string)?env->NewStringUTF(string):NULL;
+}
+
+static jbyteArray curNewByteArray(JNIEnv *env, const char *value, long length) {
+	if (!value) {
+		return NULL;
+	}
+	jbyteArray	retval=env->NewByteArray(length);
+	env->SetByteArrayRegion(retval,0,length,(jbyte *)value);
+	return retval;
 }
 
 /*
@@ -1043,14 +1060,11 @@ JNIEXPORT jdouble JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDoub
  */
 JNIEXPORT jbyteArray JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsByteArray__JI
   (JNIEnv *env, jobject self, jlong row, jint col) {
-	long	length=getSqlrCursor(env,self)->
-			getFieldLength((uint64_t)row,(uint32_t)col);
-	jbyteArray	retval=env->NewByteArray(length);
-	env->SetByteArrayRegion(retval,0,length,
-				(jbyte *)getSqlrCursor(env,self)->
-						getField((uint64_t)row,
-							(uint32_t)col));
-	return retval;
+	return curNewByteArray(env,
+			getSqlrCursor(env,self)->
+				getField((uint64_t)row,(uint32_t)col),
+			getSqlrCursor(env,self)->
+				getFieldLength((uint64_t)row,(uint32_t)col));
 }
 
 /*
@@ -1060,14 +1074,12 @@ JNIEXPORT jbyteArray JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsB
  */
 JNIEXPORT jbyteArray JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsByteArray__JLjava_lang_String_2
   (JNIEnv *env, jobject self, jlong row, jstring col) {
-	char	*colstring=curGetStringUTFChars(env,col,0);
-	long	length=getSqlrCursor(env,self)->
-			getFieldLength((uint64_t)row,colstring);
-	jbyteArray	retval=env->NewByteArray(length);
-	env->SetByteArrayRegion(retval,0,length,
-				(jbyte *)getSqlrCursor(env,self)->
-						getField((uint64_t)row,
-								colstring));
+	char		*colstring=curGetStringUTFChars(env,col,0);
+	jbyteArray	retval=curNewByteArray(env,
+				getSqlrCursor(env,self)->
+				getField((uint64_t)row,colstring),
+				getSqlrCursor(env,self)->
+				getFieldLength((uint64_t)row,colstring));
 	curReleaseStringUTFChars(env,col,colstring);
 	return retval;
 }
@@ -1577,7 +1589,7 @@ JNIEXPORT void JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_closeResultSet
 /*
  * Class:     com_firstworks_sqlrelay_SQLRCursor
  * Method:    getDatabaseListWithFormat
- * Signature: (Ljava/lang/String;I;)Z
+ * Signature: (Ljava/lang/String;I)Z
  */
 JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getDatabaseListWithFormat
   (JNIEnv *env, jobject self, jstring wild, jint listformat) {
@@ -1592,7 +1604,7 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getDatabaseLi
 /*
  * Class:     com_firstworks_sqlrelay_SQLRCursor
  * Method:    getSchemaListWithFormat
- * Signature: (Ljava/lang/String;I;)Z
+ * Signature: (Ljava/lang/String;I)Z
  */
 JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getSchemaListWithFormat
   (JNIEnv *env, jobject self, jstring wild, jint listformat) {
@@ -1607,7 +1619,7 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getSchemaList
 /*
  * Class:     com_firstworks_sqlrelay_SQLRCursor
  * Method:    getTableListWithFormat
- * Signature: (Ljava/lang/String;I;S;)Z
+ * Signature: (Ljava/lang/String;IS)Z
  */
 JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getTableListWithFormat
   (JNIEnv *env, jobject self, jstring wild, jint listformat, jint objecttypes) {
@@ -1623,7 +1635,7 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getTableListW
 /*
  * Class:     com_firstworks_sqlrelay_SQLRCursor
  * Method:    getTableTypeListWithFormat
- * Signature: (Ljava/lang/String;I;)Z
+ * Signature: (Ljava/lang/String;;)Z
  */
 JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getTableTypeListWithFormat
   (JNIEnv *env, jobject self, jstring wild, jint listformat) {
@@ -1638,7 +1650,7 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getTableTypeL
 /*
  * Class:     com_firstworks_sqlrelay_SQLRCursor
  * Method:    getColumnListWithFormat
- * Signature: (Ljava/lang/String;Ljava/lang/String;I;)Z
+ * Signature: (Ljava/lang/String;Ljava/lang/String;I)Z
  */
 JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getColumnListWithFormat
   (JNIEnv *env, jobject self, jstring table, jstring wild, jint listformat) {
@@ -1655,7 +1667,7 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getColumnList
 /*
  * Class:     com_firstworks_sqlrelay_SQLRCursor
  * Method:    getTypeInfoListWithFormat
- * Signature: (Ljava/lang/String;Ljava/lang/String;I;)Z
+ * Signature: (Ljava/lang/String;Ljava/lang/String;I)Z
  */
 JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getTypeInfoListWithFormat
   (JNIEnv *env, jobject self, jstring type, jstring wild, jint listformat) {
@@ -1672,7 +1684,7 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getTypeInfoLi
 /*
  * Class:     com_firstworks_sqlrelay_SQLRCursor
  * Method:    getProcedureListWithFormat
- * Signature: (Ljava/lang/String;I;)Z
+ * Signature: (Ljava/lang/String;I)Z
  */
 JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getProcedureListWithFormat
   (JNIEnv *env, jobject self, jstring wild, jint listformat) {
@@ -1681,6 +1693,84 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getProcedureL
 				getProcedureList(wildstring,
 					(sqlrclientlistformat_t)listformat);
 	curReleaseStringUTFChars(env,wild,wildstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    isNumberType
+ * Signature: (Ljava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_isNumberType
+  (JNIEnv *env, jobject self, jstring type) {
+	char	*typestring=curGetStringUTFChars(env,type,0);
+	jboolean	retval=isNumberTypeChar(typestring);
+	curReleaseStringUTFChars(env,type,typestring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    isDateTimeType
+ * Signature: (Ljava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_isDateTimeType
+  (JNIEnv *env, jobject self, jstring type) {
+	char	*typestring=curGetStringUTFChars(env,type,0);
+	jboolean	retval=isDateTimeTypeChar(typestring);
+	curReleaseStringUTFChars(env,type,typestring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    isBinaryType
+ * Signature: (Ljava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_isBinaryType
+  (JNIEnv *env, jobject self, jstring type) {
+	char	*typestring=curGetStringUTFChars(env,type,0);
+	jboolean	retval=isBinaryTypeChar(typestring);
+	curReleaseStringUTFChars(env,type,typestring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    isUnsignedType
+ * Signature: (Ljava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_isUnsignedType
+  (JNIEnv *env, jobject self, jstring type) {
+	char	*typestring=curGetStringUTFChars(env,type,0);
+	jboolean	retval=isUnsignedTypeChar(typestring);
+	curReleaseStringUTFChars(env,type,typestring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    isClobType
+ * Signature: (Ljava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_isClobType
+  (JNIEnv *env, jobject self, jstring type) {
+	char	*typestring=curGetStringUTFChars(env,type,0);
+	jboolean	retval=isClobTypeChar(typestring);
+	curReleaseStringUTFChars(env,type,typestring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    isBlobType
+ * Signature: (Ljava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_isBlobType
+  (JNIEnv *env, jobject self, jstring type) {
+	char	*typestring=curGetStringUTFChars(env,type,0);
+	jboolean	retval=isBlobTypeChar(typestring);
+	curReleaseStringUTFChars(env,type,typestring);
 	return retval;
 }
 

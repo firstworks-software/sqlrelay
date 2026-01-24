@@ -23,6 +23,7 @@ public class SQLRelayConnection implements Connection {
 	private int		txisolevel;
 	private boolean		autocommit;
 	private int		networktimeout;
+	private boolean		datetotimestamp;
 
 	private Map<String,Class<?>>	typemap;
 
@@ -67,11 +68,22 @@ public class SQLRelayConnection implements Connection {
 		// instead of tracking it here
 		networktimeout=0;
 		typemap=null;
+		datetotimestamp=false;
 
 		if (driver.debug) {
 			//sqlrcon.debugOn();
 		}
 		driver.debugEnd();
+	}
+
+	public
+	void setDateToTimestamp(boolean datetotimestamp) {
+		this.datetotimestamp=datetotimestamp;
+	}
+
+	public
+	boolean getDateToTimestamp() {
+		return datetotimestamp;
 	}
 
 	public

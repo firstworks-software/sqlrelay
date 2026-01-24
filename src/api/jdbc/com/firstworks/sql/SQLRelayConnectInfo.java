@@ -9,8 +9,10 @@ public class SQLRelayConnectInfo {
 	public String	password;
 	public String	retrytimestr;
 	public String	triesstr;
+	public String	datetotimestampstr;
 
 	public short	port;
 	public int	retrytime;
 	public int	tries;
+	public boolean	datetotimestamp;
 }

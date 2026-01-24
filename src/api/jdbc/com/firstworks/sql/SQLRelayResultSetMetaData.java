@@ -6,19 +6,26 @@ import com.firstworks.sqlrelay.*;
 
 public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 
-	private	SQLRCursor	sqlrcur;
-	private	SQLRelayDriver	driver;
+	private	SQLRCursor		sqlrcur;
+	private	ResultSet		resultset;
+	private	SQLRelayDriver		driver;
 
 	public SQLRelayResultSetMetaData(SQLRelayDriver driver) {
 		this.driver=driver;
 		driver.debugFunction(this);
 		sqlrcur=null;
+		resultset=null;
 		driver.debugEnd();
 	}
 
 	public
 	void setSQLRCursor(SQLRCursor sqlrcur) {
 		this.sqlrcur=sqlrcur;
+	}
+
+	public
+	void setResultSet(ResultSet resultset) {
+		this.resultset=resultset;
 	}
 
 	public
@@ -30,617 +37,627 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	String getCatalogName(int column) {
 		driver.debugFunction(this);
 		String	catalogname="";
-		driver.debugPrintln("column: ",column);
-		driver.debugPrintln("catalog name: ",catalogname);
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("catalog name: "+catalogname);
 		driver.debugEnd();
 		return catalogname;
 	}
 
 	public
-	String getColumnClassName(int column) {
+	String getColumnClassName(int column) throws SQLException {
 		driver.debugFunction(this);
-		driver.debugPrintln("column: ",column);
+		driver.debugPrintln("column: "+column);
 		String	retval=null;
 		String	ctype=sqlrcur.getColumnType(column-1).toUpperCase();
-		driver.debugPrintln("ctype: ",ctype);
-		if (ctype.equals("UNKNOWN")) {
-			retval=null;
-		}
-		if (ctype.equals("CHAR")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("INT")) {
-			retval="java.lang.Integer";
-		}
-		if (ctype.equals("SMALLINT")) {
-			retval="java.lang.Integer";
-		}
-		if (ctype.equals("TINYINT")) {
-			retval="java.lang.Integer";
-		}
-		if (ctype.equals("MONEY")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("DATETIME")) {
-			// FIXME: need parameter indicating whether
-			// to map this to Types.DATE or SQL_TIMESTAMP.
-			// MySQL, for example, may use DATE for dates and
-			// TIMESTAMP for datetimes.
-			retval="java.sql.Timestamp";
-		}
-		if (ctype.equals("NUMERIC")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("DECIMAL")) {
-			retval="java.lang.BigDecimal";
-		}
-		if (ctype.equals("SMALLDATETIME")) {
-			retval="java.sql.Timestamp";
-		}
-		if (ctype.equals("SMALLMONEY")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("IMAGE")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("BINARY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("BIT")) {
-			retval="java.lang.Boolean";
-		}
-		if (ctype.equals("REAL")) {
-			retval="java.lang.Double";
-		}
-		if (ctype.equals("FLOAT")) {
-			retval="java.lang.Float";
-		}
-		if (ctype.equals("TEXT")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("VARCHAR")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("VARBINARY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("LONGCHAR")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("LONGBINARY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("LONG")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("ILLEGAL")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("SENSITIVITY")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("BOUNDARY")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("VOID")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("USHORT")) {
-			retval="java.lang.Short";
-		}
+		driver.debugPrintln("ctype: "+ctype);
+		switch (ctype) {
+			case "UNKNOWN":
+				retval=null;
+				break;
+			case "CHAR":
+				retval="java.lang.String";
+				break;
+			case "INT":
+				retval="java.lang.Integer";
+				break;
+			case "SMALLINT":
+				retval="java.lang.Integer";
+				break;
+			case "TINYINT":
+				retval="java.lang.Integer";
+				break;
+			case "MONEY":
+				retval="java.lang.String";
+				break;
+			case "DATETIME":
+				retval="java.sql.Timestamp";
+				break;
+			case "NUMERIC":
+				retval="java.lang.String";
+				break;
+			case "DECIMAL":
+				retval="java.lang.BigDecimal";
+				break;
+			case "SMALLDATETIME":
+				retval="java.sql.Timestamp";
+				break;
+			case "SMALLMONEY":
+				retval="java.lang.String";
+				break;
+			case "IMAGE":
+				retval="java.lang.Byte";
+				break;
+			case "BINARY":
+				retval="java.lang.Byte";
+				break;
+			case "BIT":
+				retval="java.lang.Boolean";
+				break;
+			case "REAL":
+				retval="java.lang.Double";
+				break;
+			case "FLOAT":
+				retval="java.lang.Float";
+				break;
+			case "TEXT":
+				retval="java.lang.String";
+				break;
+			case "VARCHAR":
+				retval="java.lang.String";
+				break;
+			case "VARBINARY":
+				retval="java.lang.Byte";
+				break;
+			case "LONGCHAR":
+				retval="java.lang.String";
+				break;
+			case "LONGBINARY":
+				retval="java.lang.Byte";
+				break;
+			case "LONG":
+				retval="java.lang.String";
+				break;
+			case "ILLEGAL":
+				retval="java.lang.String";
+				break;
+			case "SENSITIVITY":
+				retval="java.lang.String";
+				break;
+			case "BOUNDARY":
+				retval="java.lang.String";
+				break;
+			case "VOID":
+				retval="java.lang.String";
+				break;
+			case "USHORT":
+				retval="java.lang.Short";
+				break;
 	
-		// added by lago
-		if (ctype.equals("UNDEFINED")) {
-			retval=null;
-		}
-		if (ctype.equals("DOUBLE")) {
-			retval="java.lang.Double";
-		}
-		if (ctype.equals("DATE")) {
-			// FIXME: optionally map to "java.sql.Timestamp"?
-			retval="java.sql.Date";
-		}
-		if (ctype.equals("TIME")) {
-			retval="java.sql.Time";
-		}
-		if (ctype.equals("TIMESTAMP")) {
-			retval="java.sql.Timestamp";
-		}
+			// added by lago
+			case "UNDEFINED":
+				retval=null;
+				break;
+			case "DOUBLE":
+				retval="java.lang.Double";
+				break;
+			case "DATE":
+				retval=(getDateToTimestamp())?
+						"java.sql.Timestamp":
+						"java.sql.Date";
+				break;
+			case "TIME":
+				retval="java.sql.Time";
+				break;
+			case "TIMESTAMP":
+				retval="java.sql.Timestamp";
+				break;
 	
-		// added by msql
-		if (ctype.equals("UINT")) {
-			retval="java.lang.Integer";
-		}
-		if (ctype.equals("LASTREAL")) {
-			retval="java.lang.String";
-		}
+			// added by msql
+			case "UINT":
+				retval="java.lang.Integer";
+				break;
+			case "LASTREAL":
+				retval="java.lang.String";
+				break;
 	
-		// added by mysql
-		if (ctype.equals("STRING")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("VARSTRING")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("LONGLONG")) {
-			retval="java.lang.BigInteger";
-		}
-		if (ctype.equals("MEDIUMINT")) {
-			retval="java.lang.Integer";
-		}
-		if (ctype.equals("YEAR")) {
-			retval="java.lang.Short";
-		}
-		if (ctype.equals("NEWDATE")) {
-			// FIXME: optionally map to "java.sql.Timestamp"?
-			retval="java.sql.Date";
-		}
-		if (ctype.equals("NULL")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("ENUM")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("SET")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("TINYBLOB") ||
-			ctype.equals("MEDIUMBLOB") ||
-			ctype.equals("LONGBLOB") ||
-			ctype.equals("BLOB")) {
-			boolean	binary=sqlrcur.getColumnIsBinary(column-1);
-			driver.debugPrintln("is binary: ",binary);
-			retval=(binary)?"java.lang.Byte":"java.lang.String";
-		}
+			// added by mysql
+			case "STRING":
+				retval="java.lang.String";
+				break;
+			case "VARSTRING":
+				retval="java.lang.String";
+				break;
+			case "LONGLONG":
+				retval="java.lang.BigInteger";
+				break;
+			case "MEDIUMINT":
+				retval="java.lang.Integer";
+				break;
+			case "YEAR":
+				retval="java.lang.Short";
+				break;
+			case "NEWDATE":
+				retval=(getDateToTimestamp())?
+						"java.sql.Timestamp":
+						"java.sql.Date";
+				break;
+			case "NULL":
+				retval="java.lang.String";
+				break;
+			case "ENUM":
+				retval="java.lang.String";
+				break;
+			case "SET":
+				retval="java.lang.String";
+				break;
+			case "TINYBLOB":
+			case "MEDIUMBLOB":
+			case "LONGBLOB":
+			case "BLOB":
+				{
+				boolean	binary=sqlrcur.
+						getColumnIsBinary(column-1);
+				driver.debugPrintln("is binary: "+binary);
+				retval=(binary)?"java.lang.Byte":
+						"java.lang.String";
+				}
+				break;
+
+			// added by oracle
+			case "VARCHAR2":
+				retval="java.lang.String";
+				break;
+			case "NUMBER":
+				retval="java.lang.String";
+				break;
+			case "ROWID":
+				retval="java.lang.BigInteger";
+				break;
+			case "RAW":
+				retval="java.lang.Byte";
+				break;
+			case "LONG_RAW":
+				retval="java.lang.Byte";
+				break;
+			case "MLSLABEL":
+				retval="java.lang.Byte";
+				break;
+			case "CLOB":
+				retval="java.lang.String";
+				break;
+			case "BFILE":
+				retval="java.lang.Byte";
+				break;
 	
-		// added by oracle
-		if (ctype.equals("VARCHAR2")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("NUMBER")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("ROWID")) {
-			retval="java.lang.BigInteger";
-		}
-		if (ctype.equals("RAW")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("LONG_RAW")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("MLSLABEL")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("CLOB")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("BFILE")) {
-			retval="java.lang.Byte";
-		}
+			// added by odbc
+			case "BIGINT":
+				retval="java.lang.Long";
+				break;
+			case "INTEGER":
+				retval="java.lang.Integer";
+				break;
+			case "LONGVARBINARY":
+				retval="java.lang.Byte";
+				break;
+			case "LONGVARCHAR":
+				retval="java.lang.String";
+				break;
 	
-		// added by odbc
-		if (ctype.equals("BIGINT")) {
-			retval="java.lang.Long";
-		}
-		if (ctype.equals("INTEGER")) {
-			retval="java.lang.Integer";
-		}
-		if (ctype.equals("LONGVARBINARY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("LONGVARCHAR")) {
-			retval="java.lang.String";
-		}
+			// added by db2
+			case "GRAPHIC":
+				retval="java.lang.Byte";
+				break;
+			case "VARGRAPHIC":
+				retval="java.lang.Byte";
+				break;
+			case "LONGVARGRAPHIC":
+				retval="java.lang.Byte";
+				break;
+			case "DBCLOB":
+				retval="java.lang.String";
+				break;
+			case "DATALINK":
+				retval="java.lang.Byte";
+				break;
+			case "USER_DEFINED_TYPE":
+				retval="java.lang.Byte";
+				break;
+			case "SHORT_DATATYPE":
+				retval="java.lang.Short";
+				break;
+			case "TINY_DATATYPE":
+				retval="java.lang.Short";
+				break;
 	
-		// added by db2
-		if (ctype.equals("GRAPHIC")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("VARGRAPHIC")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("LONGVARGRAPHIC")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("DBCLOB")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("DATALINK")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("USER_DEFINED_TYPE")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("SHORT_DATATYPE")) {
-			retval="java.lang.Short";
-		}
-		if (ctype.equals("TINY_DATATYPE")) {
-			retval="java.lang.Short";
-		}
+			// added by firebird
+			case "D_FLOAT":
+				retval="java.lang.Double";
+				break;
+			case "ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "QUAD":
+				retval="java.lang.BigInteger";
+				break;
+			case "INT64":
+				retval="java.lang.BigInteger";
+				break;
+			case "DOUBLE PRECISION":
+				retval="java.lang.Double";
+				break;
 	
-		// added by firebird
-		if (ctype.equals("D_FLOAT")) {
-			retval="java.lang.Double";
-		}
-		if (ctype.equals("ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("QUAD")) {
-			retval="java.lang.BigInteger";
-		}
-		if (ctype.equals("INT64")) {
-			retval="java.lang.BigInteger";
-		}
-		if (ctype.equals("DOUBLE PRECISION")) {
-			retval="java.lang.Double";
-		}
-	
-		// added by postgresql
-		if (ctype.equals("BOOL")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("BYTEA")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("NAME")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("INT8")) {
-			retval="java.lang.BigInteger";
-		}
-		if (ctype.equals("INT2")) {
-			retval="java.lang.Short";
-		}
-		if (ctype.equals("INT2VECTOR")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("INT4")) {
-			retval="java.lang.Integer";
-		}
-		if (ctype.equals("REGPROC")) {
-			retval="java.lang.BigInteger";
-		}
-		if (ctype.equals("OID")) {
-			retval="java.lang.BigInteger";
-		}
-		if (ctype.equals("TID")) {
-			retval="java.lang.BigInteger";
-		}
-		if (ctype.equals("XID")) {
-			retval="java.lang.BigInteger";
-		}
-		if (ctype.equals("CID")) {
-			retval="java.lang.BigInteger";
-		}
-		if (ctype.equals("OIDVECTOR")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("SMGR")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("POINT")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("LSEG")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("PATH")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("BOX")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("POLYGON")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("LINE")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("LINE_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("FLOAT4")) {
-			retval="java.lang.Float";
-		}
-		if (ctype.equals("FLOAT8")) {
-			retval="java.lang.Double";
-		}
-		if (ctype.equals("ABSTIME")) {
-			retval="java.lang.Integer";
-		}
-		if (ctype.equals("RELTIME")) {
-			retval="java.lang.Integer";
-		}
-		if (ctype.equals("TINTERVAL")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("CIRCLE")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("CIRCLE_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("MONEY_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("MACADDR")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("INET")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("CIDR")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("BOOL_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("BYTEA_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("CHAR_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("NAME_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("INT2_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("INT2VECTOR_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("INT4_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("REGPROC_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("TEXT_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("OID_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("TID_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("XID_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("CID_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("OIDVECTOR_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("BPCHAR_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("VARCHAR_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("INT8_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("POINT_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("LSEG_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("PATH_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("BOX_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("FLOAT4_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("FLOAT8_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("ABSTIME_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("RELTIME_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("TINTERVAL_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("POLYGON_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("ACLITEM")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("ACLITEM_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("MACADDR_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("INET_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("CIDR_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("BPCHAR")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("TIMESTAMP_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("DATE_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("TIME_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("TIMESTAMPTZ")) {
-			retval="java.sql.Timestamp";
-		}
-		if (ctype.equals("TIMESTAMPTZ_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("INTERVAL")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("INTERVAL_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("NUMERIC_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("TIMETZ")) {
-			retval="java.sql.Time";
-		}
-		if (ctype.equals("TIMETZ_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("BIT_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("VARBIT")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("VARBIT_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("REFCURSOR")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("REFCURSOR_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("REGPROCEDURE")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("REGOPER")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("REGOPERATOR")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("REGCLASS")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("REGTYPE")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("REGPROCEDURE_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("REGOPER_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("REGOPERATOR_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("REGCLASS_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("REGTYPE_ARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("RECORD")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("CSTRING")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("ANY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("ANYARRAY")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("TRIGGER")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("LANGUAGE_HANDLER")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("INTERNAL")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("OPAQUE")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("ANYELEMENT")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("PG_TYPE")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("PG_ATTRIBUTE")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("PG_PROC")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("PG_CLASS")) {
-			retval="java.lang.Byte";
-		}
-		// none added by sqlite
-		// added by sqlserver
-		if (ctype.equals("UBIGINT")) {
-			retval="java.lang.BigInteger";
-		}
-		if (ctype.equals("UNIQUEIDENTIFIER")) {
-			retval="java.lang.Byte";
-		}
-		// added by informix
-		if (ctype.equals("SMALLFLOAT")) {
-			retval="java.lang.Float";
-		}
-		if (ctype.equals("BYTE")) {
-			retval="java.lang.Byte";
-		}
-		if (ctype.equals("BOOLEAN")) {
-			retval="java.lang.String";
-		}
-		// also added by mysql
-		if (ctype.equals("TINYTEXT")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("MEDIUMTEXT")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("LONGTEXT")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("JSON")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("GEOMETRY")) {
-			retval="java.lang.Byte";
-		}
-		// also added by oracle
-		if (ctype.equals("SDO_GEOMETRY")) {
-			retval="java.lang.Byte";
-		}
-		// added by mssql
-		if (ctype.equals("NCHAR")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("NVARCHAR")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("NTEXT")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("XML")) {
-			retval="java.lang.String";
-		}
-		if (ctype.equals("DATETIMEOFFSET")) {
-			retval="java.sql.Timestamp";
-		}
-		driver.debugPrintln("class type: ",retval);
+			// added by postgresql
+			case "BOOL":
+				retval="java.lang.String";
+				break;
+			case "BYTEA":
+				retval="java.lang.Byte";
+				break;
+			case "NAME":
+				retval="java.lang.String";
+				break;
+			case "INT8":
+				retval="java.lang.BigInteger";
+				break;
+			case "INT2":
+				retval="java.lang.Short";
+				break;
+			case "INT2VECTOR":
+				retval="java.lang.Byte";
+				break;
+			case "INT4":
+				retval="java.lang.Integer";
+				break;
+			case "REGPROC":
+				retval="java.lang.BigInteger";
+				break;
+			case "OID":
+				retval="java.lang.BigInteger";
+				break;
+			case "TID":
+				retval="java.lang.BigInteger";
+				break;
+			case "XID":
+				retval="java.lang.BigInteger";
+				break;
+			case "CID":
+				retval="java.lang.BigInteger";
+				break;
+			case "OIDVECTOR":
+				retval="java.lang.Byte";
+				break;
+			case "SMGR":
+				retval="java.lang.Byte";
+				break;
+			case "POINT":
+				retval="java.lang.Byte";
+				break;
+			case "LSEG":
+				retval="java.lang.Byte";
+				break;
+			case "PATH":
+				retval="java.lang.Byte";
+				break;
+			case "BOX":
+				retval="java.lang.Byte";
+				break;
+			case "POLYGON":
+				retval="java.lang.Byte";
+				break;
+			case "LINE":
+				retval="java.lang.Byte";
+				break;
+			case "LINE_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "FLOAT4":
+				retval="java.lang.Float";
+				break;
+			case "FLOAT8":
+				retval="java.lang.Double";
+				break;
+			case "ABSTIME":
+				retval="java.lang.Integer";
+				break;
+			case "RELTIME":
+				retval="java.lang.Integer";
+				break;
+			case "TINTERVAL":
+				retval="java.lang.Byte";
+				break;
+			case "CIRCLE":
+				retval="java.lang.Byte";
+				break;
+			case "CIRCLE_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "MONEY_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "MACADDR":
+				retval="java.lang.Byte";
+				break;
+			case "INET":
+				retval="java.lang.Byte";
+				break;
+			case "CIDR":
+				retval="java.lang.Byte";
+				break;
+			case "BOOL_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "BYTEA_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "CHAR_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "NAME_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "INT2_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "INT2VECTOR_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "INT4_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "REGPROC_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "TEXT_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "OID_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "TID_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "XID_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "CID_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "OIDVECTOR_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "BPCHAR_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "VARCHAR_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "INT8_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "POINT_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "LSEG_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "PATH_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "BOX_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "FLOAT4_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "FLOAT8_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "ABSTIME_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "RELTIME_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "TINTERVAL_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "POLYGON_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "ACLITEM":
+				retval="java.lang.Byte";
+				break;
+			case "ACLITEM_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "MACADDR_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "INET_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "CIDR_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "BPCHAR":
+				retval="java.lang.String";
+				break;
+			case "TIMESTAMP_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "DATE_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "TIME_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "TIMESTAMPTZ":
+				retval="java.sql.Timestamp";
+				break;
+			case "TIMESTAMPTZ_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "INTERVAL":
+				retval="java.lang.Byte";
+				break;
+			case "INTERVAL_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "NUMERIC_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "TIMETZ":
+				retval="java.sql.Time";
+				break;
+			case "TIMETZ_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "BIT_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "VARBIT":
+				retval="java.lang.Byte";
+				break;
+			case "VARBIT_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "REFCURSOR":
+				retval="java.lang.Byte";
+				break;
+			case "REFCURSOR_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "REGPROCEDURE":
+				retval="java.lang.Byte";
+				break;
+			case "REGOPER":
+				retval="java.lang.Byte";
+				break;
+			case "REGOPERATOR":
+				retval="java.lang.Byte";
+				break;
+			case "REGCLASS":
+				retval="java.lang.Byte";
+				break;
+			case "REGTYPE":
+				retval="java.lang.Byte";
+				break;
+			case "REGPROCEDURE_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "REGOPER_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "REGOPERATOR_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "REGCLASS_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "REGTYPE_ARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "RECORD":
+				retval="java.lang.Byte";
+				break;
+			case "CSTRING":
+				retval="java.lang.String";
+				break;
+			case "ANY":
+				retval="java.lang.Byte";
+				break;
+			case "ANYARRAY":
+				retval="java.lang.Byte";
+				break;
+			case "TRIGGER":
+				retval="java.lang.Byte";
+				break;
+			case "LANGUAGE_HANDLER":
+				retval="java.lang.Byte";
+				break;
+			case "INTERNAL":
+				retval="java.lang.Byte";
+				break;
+			case "OPAQUE":
+				retval="java.lang.Byte";
+				break;
+			case "ANYELEMENT":
+				retval="java.lang.Byte";
+				break;
+			case "PG_TYPE":
+				retval="java.lang.Byte";
+				break;
+			case "PG_ATTRIBUTE":
+				retval="java.lang.Byte";
+				break;
+			case "PG_PROC":
+				retval="java.lang.Byte";
+				break;
+			case "PG_CLASS":
+				retval="java.lang.Byte";
+				break;
+
+			// none added by sqlite
+
+			// added by sqlserver
+			case "UBIGINT":
+				retval="java.lang.BigInteger";
+				break;
+			case "UNIQUEIDENTIFIER":
+				retval="java.lang.Byte";
+				break;
+
+			// added by informix
+			case "SMALLFLOAT":
+				retval="java.lang.Float";
+				break;
+			case "BYTE":
+				retval="java.lang.Byte";
+				break;
+			case "BOOLEAN":
+				retval="java.lang.String";
+				break;
+
+			// also added by mysql
+			case "TINYTEXT":
+				retval="java.lang.String";
+				break;
+			case "MEDIUMTEXT":
+				retval="java.lang.String";
+				break;
+			case "LONGTEXT":
+				retval="java.lang.String";
+				break;
+			case "JSON":
+				retval="java.lang.String";
+				break;
+			case "GEOMETRY":
+				retval="java.lang.Byte";
+				break;
+
+			// also added by oracle
+			case "SDO_GEOMETRY":
+				retval="java.lang.Byte";
+				break;
+
+			// added by mssql
+			case "NCHAR":
+				retval="java.lang.String";
+				break;
+			case "NVARCHAR":
+				retval="java.lang.String";
+				break;
+			case "NTEXT":
+				retval="java.lang.String";
+				break;
+			case "XML":
+				retval="java.lang.String";
+				break;
+			case "DATETIMEOFFSET":
+				retval="java.sql.Timestamp";
+				break;
+		}
+		driver.debugPrintln("class type: "+retval);
 		driver.debugEnd();
 		return retval;
 	}
@@ -649,7 +666,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	int getColumnCount() {
 		driver.debugFunction(this);
 		int	colcount=sqlrcur.colCount();
-		driver.debugPrintln("colcount: ",colcount);
+		driver.debugPrintln("colcount: "+colcount);
 		driver.debugEnd();
 		return colcount;
 	}
@@ -657,23 +674,42 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	public
 	int getColumnDisplaySize(int column) {
 		driver.debugFunction(this);
-		int	longest=sqlrcur.getLongest(column-1);
-		driver.debugPrintln("column: ",column);
-		driver.debugPrintln("longest (before): ",longest);
-		if (longest==-1) {
-			longest=2147483647;
+		driver.debugPrintln("column: "+column);
+		String	ctype=sqlrcur.getColumnType(column-1).toUpperCase();
+		driver.debugPrintln("ctype: "+ctype);
+		int	size=0;
+		if (sqlrcur.isNumberType(ctype)) {
+			// FIXME: not sure about this for ALL number types,
+			// also this is just what oracle returns, and might
+			// not be right for other dbs
+			size=39;
+		} else if (sqlrcur.isDateTimeType(ctype)) {
+			// FIXME: probably need to discern between
+			// timestamp, date, and time
+			size=7;
+		} else if (sqlrcur.isClobType(ctype) ||
+				sqlrcur.isBlobType(ctype)) {
+			// FIXME: this matches what oracle does,
+			// but might not be right for other dbs
+			if (ctype.equals("LONG")) {
+				size=0;
+			} else {
+				size=4000;
+			}
+		} else {
+			size=sqlrcur.getColumnLength(column-1);
 		}
-		driver.debugPrintln("longest (after): ",longest);
+		driver.debugPrintln("size: "+size);
 		driver.debugEnd();
-		return longest;
+		return size;
 	}
 
 	public
 	String getColumnLabel(int column) {
 		driver.debugFunction(this);
 		String	label=sqlrcur.getColumnName(column-1);
-		driver.debugPrintln("column: ",column);
-		driver.debugPrintln("label: ",label);
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("label: "+label);
 		driver.debugEnd();
 		return label;
 	}
@@ -682,627 +718,293 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	String getColumnName(int column) {
 		driver.debugFunction(this);
 		String	columnname=sqlrcur.getColumnName(column-1);
-		driver.debugPrintln("column: ",column);
-		driver.debugPrintln("column name: ",columnname);
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("column name: "+columnname);
 		driver.debugEnd();
 		return columnname;
 	}
 
 	public
-	int getColumnType(int column) {
+	int getColumnType(int column) throws SQLException {
 		driver.debugFunction(this);
-		driver.debugPrintln("column: ",column);
+		driver.debugPrintln("column: "+column);
 		int	retval=0;
 		String	ctype=sqlrcur.getColumnType(column-1).toUpperCase();
-		driver.debugPrintln("ctype: ",ctype);
-		if (ctype.equals("UNKNOWN")) {
-			retval=Types.OTHER;
-		}
-		if (ctype.equals("CHAR")) {
-			retval=Types.CHAR;
-		}
-		if (ctype.equals("INT")) {
-			retval=Types.INTEGER;
-		}
-		if (ctype.equals("SMALLINT")) {
-			retval=Types.SMALLINT;
-		}
-		if (ctype.equals("TINYINT")) {
-			retval=Types.TINYINT;
-		}
-		if (ctype.equals("MONEY")) {
-			retval=Types.CHAR;
-		}
-		if (ctype.equals("DATETIME")) {
-			// FIXME: need parameter indicating whether
-			// to map this to Types.DATE or SQL_TIMESTAMP.
-			// MySQL, for example, may use DATE for dates and
-			// TIMESTAMP for datetimes.
-			retval=Types.TIMESTAMP;
-		}
-		if (ctype.equals("NUMERIC")) {
-			retval=Types.NUMERIC;
-		}
-		if (ctype.equals("DECIMAL")) {
-			retval=Types.DECIMAL;
-		}
-		if (ctype.equals("SMALLDATETIME")) {
-			retval=Types.TIMESTAMP;
-		}
-		if (ctype.equals("SMALLMONEY")) {
-			retval=Types.CHAR;
-		}
-		if (ctype.equals("IMAGE")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("BINARY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("BIT")) {
-			retval=Types.BIT;
-		}
-		if (ctype.equals("REAL")) {
-			retval=Types.REAL;
-		}
-		if (ctype.equals("FLOAT")) {
-			retval=Types.FLOAT;
-		}
-		if (ctype.equals("TEXT")) {
-			retval=Types.CHAR;
-		}
-		if (ctype.equals("VARCHAR")) {
-			retval=Types.VARCHAR;
-		}
-		if (ctype.equals("VARBINARY")) {
-			retval=Types.VARBINARY;
-		}
-		if (ctype.equals("LONGCHAR")) {
-			retval=Types.CHAR;
-		}
-		if (ctype.equals("LONGBINARY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("LONG")) {
-			retval=Types.CHAR;
-		}
-		if (ctype.equals("ILLEGAL")) {
-			retval=Types.CHAR;
-		}
-		if (ctype.equals("SENSITIVITY")) {
-			retval=Types.CHAR;
-		}
-		if (ctype.equals("BOUNDARY")) {
-			retval=Types.CHAR;
-		}
-		if (ctype.equals("VOID")) {
-			retval=Types.CHAR;
-		}
-		if (ctype.equals("USHORT")) {
-			retval=Types.SMALLINT;
-		}
-	
-		// added by lago
-		if (ctype.equals("UNDEFINED")) {
-			retval=Types.OTHER;
-		}
-		if (ctype.equals("DOUBLE")) {
-			retval=Types.DOUBLE;
-		}
-		if (ctype.equals("DATE")) {
-			// FIXME: optionally map to Types.TIMESTAMP?
-			retval=Types.DATE;
-		}
-		if (ctype.equals("TIME")) {
-			retval=Types.TIME;
-		}
-		if (ctype.equals("TIMESTAMP")) {
-			retval=Types.TIMESTAMP;
-		}
-	
-		// added by msql
-		if (ctype.equals("UINT")) {
-			retval=Types.INTEGER;
-		}
-		if (ctype.equals("LASTREAL")) {
-			retval=Types.REAL;
-		}
-	
-		// added by mysql
-		if (ctype.equals("STRING")) {
-			retval=Types.CHAR;
-		}
-		if (ctype.equals("VARSTRING")) {
-			retval=Types.VARCHAR;
-		}
-		if (ctype.equals("LONGLONG")) {
-			retval=Types.BIGINT;
-		}
-		if (ctype.equals("MEDIUMINT")) {
-			retval=Types.INTEGER;
-		}
-		if (ctype.equals("YEAR")) {
-			retval=Types.SMALLINT;
-		}
-		if (ctype.equals("NEWDATE")) {
-			// FIXME: optionally map to Types.TIMESTAMP?
-			retval=Types.DATE;
-		}
-		if (ctype.equals("NULL")) {
-			retval=Types.CHAR;
-		}
-		if (ctype.equals("ENUM")) {
-			retval=Types.CHAR;
-		}
-		if (ctype.equals("SET")) {
-			retval=Types.CHAR;
-		}
-		if (ctype.equals("TINYBLOB") ||
-			ctype.equals("MEDIUMBLOB") ||
-			ctype.equals("LONGBLOB") ||
-			ctype.equals("BLOB")) {
-			boolean	binary=sqlrcur.getColumnIsBinary(column-1);
-			driver.debugPrintln("is binary: ",binary);
-			retval=(binary)?Types.BINARY:Types.LONGVARCHAR;
-		}
-	
-		// added by oracle
-		if (ctype.equals("VARCHAR2")) {
-			retval=Types.VARCHAR;
-		}
-		if (ctype.equals("NUMBER")) {
-			retval=Types.NUMERIC;
-		}
-		if (ctype.equals("ROWID")) {
-			retval=Types.BIGINT;
-		}
-		if (ctype.equals("RAW")) {
-			retval=Types.VARBINARY;
-		}
-		if (ctype.equals("LONG_RAW")) {
-			retval=Types.LONGVARBINARY;
-		}
-		if (ctype.equals("MLSLABEL")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("CLOB")) {
-			retval=Types.LONGVARCHAR;
-		}
-		if (ctype.equals("BFILE")) {
-			retval=Types.LONGVARBINARY;
-		}
-	
-		// added by odbc
-		if (ctype.equals("BIGINT")) {
-			retval=Types.BIGINT;
-		}
-		if (ctype.equals("INTEGER")) {
-			retval=Types.INTEGER;
-		}
-		if (ctype.equals("LONGVARBINARY")) {
-			retval=Types.LONGVARBINARY;
-		}
-		if (ctype.equals("LONGVARCHAR")) {
-			retval=Types.LONGVARCHAR;
-		}
-	
-		// added by db2
-		if (ctype.equals("GRAPHIC")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("VARGRAPHIC")) {
-			retval=Types.VARBINARY;
-		}
-		if (ctype.equals("LONGVARGRAPHIC")) {
-			retval=Types.LONGVARBINARY;
-		}
-		if (ctype.equals("DBCLOB")) {
-			retval=Types.LONGVARCHAR;
-		}
-		if (ctype.equals("DATALINK")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("USER_DEFINED_TYPE")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("SHORT_DATATYPE")) {
-			retval=Types.SMALLINT;
-		}
-		if (ctype.equals("TINY_DATATYPE")) {
-			retval=Types.TINYINT;
-		}
-	
-		// added by firebird
-		if (ctype.equals("D_FLOAT")) {
-			retval=Types.DOUBLE;
-		}
-		if (ctype.equals("ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("QUAD")) {
-			retval=Types.BIGINT;
-		}
-		if (ctype.equals("INT64")) {
-			retval=Types.BIGINT;
-		}
-		if (ctype.equals("DOUBLE PRECISION")) {
-			retval=Types.DOUBLE;
-		}
-	
-		// added by postgresql
-		if (ctype.equals("BOOL")) {
-			retval=Types.CHAR;
-		}
-		if (ctype.equals("BYTEA")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("NAME")) {
-			retval=Types.CHAR;
-		}
-		if (ctype.equals("INT8")) {
-			retval=Types.BIGINT;
-		}
-		if (ctype.equals("INT2")) {
-			retval=Types.SMALLINT;
-		}
-		if (ctype.equals("INT2VECTOR")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("INT4")) {
-			retval=Types.INTEGER;
-		}
-		if (ctype.equals("REGPROC")) {
-			retval=Types.BIGINT;
-		}
-		if (ctype.equals("OID")) {
-			retval=Types.BIGINT;
-		}
-		if (ctype.equals("TID")) {
-			retval=Types.BIGINT;
-		}
-		if (ctype.equals("XID")) {
-			retval=Types.BIGINT;
-		}
-		if (ctype.equals("CID")) {
-			retval=Types.BIGINT;
-		}
-		if (ctype.equals("OIDVECTOR")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("SMGR")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("POINT")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("LSEG")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("PATH")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("BOX")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("POLYGON")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("LINE")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("LINE_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("FLOAT4")) {
-			retval=Types.FLOAT;
-		}
-		if (ctype.equals("FLOAT8")) {
-			retval=Types.DOUBLE;
-		}
-		if (ctype.equals("ABSTIME")) {
-			retval=Types.INTEGER;
-		}
-		if (ctype.equals("RELTIME")) {
-			retval=Types.INTEGER;
-		}
-		if (ctype.equals("TINTERVAL")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("CIRCLE")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("CIRCLE_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("MONEY_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("MACADDR")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("INET")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("CIDR")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("BOOL_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("BYTEA_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("CHAR_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("NAME_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("INT2_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("INT2VECTOR_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("INT4_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("REGPROC_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("TEXT_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("OID_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("TID_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("XID_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("CID_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("OIDVECTOR_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("BPCHAR_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("VARCHAR_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("INT8_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("POINT_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("LSEG_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("PATH_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("BOX_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("FLOAT4_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("FLOAT8_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("ABSTIME_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("RELTIME_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("TINTERVAL_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("POLYGON_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("ACLITEM")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("ACLITEM_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("MACADDR_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("INET_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("CIDR_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("BPCHAR")) {
-			retval=Types.CHAR;
-		}
-		if (ctype.equals("TIMESTAMP_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("DATE_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("TIME_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("TIMESTAMPTZ")) {
-			retval=Types.TIMESTAMP;
-		}
-		if (ctype.equals("TIMESTAMPTZ_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("INTERVAL")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("INTERVAL_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("NUMERIC_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("TIMETZ")) {
-			retval=Types.TIME;
-		}
-		if (ctype.equals("TIMETZ_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("BIT_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("VARBIT")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("VARBIT_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("REFCURSOR")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("REFCURSOR_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("REGPROCEDURE")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("REGOPER")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("REGOPERATOR")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("REGCLASS")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("REGTYPE")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("REGPROCEDURE_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("REGOPER_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("REGOPERATOR_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("REGCLASS_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("REGTYPE_ARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("RECORD")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("CSTRING")) {
-			retval=Types.CHAR;
-		}
-		if (ctype.equals("ANY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("ANYARRAY")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("TRIGGER")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("LANGUAGE_HANDLER")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("INTERNAL")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("OPAQUE")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("ANYELEMENT")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("PG_TYPE")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("PG_ATTRIBUTE")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("PG_PROC")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("PG_CLASS")) {
-			retval=Types.BINARY;
-		}
-		// none added by sqlite
-		// added by sqlserver
-		if (ctype.equals("UBIGINT")) {
-			retval=Types.BIGINT;
-		}
-		if (ctype.equals("UNIQUEIDENTIFIER")) {
-			retval=Types.BINARY;
-		}
-		// added by informix
-		if (ctype.equals("SMALLFLOAT")) {
-			retval=Types.FLOAT;
-		}
-		if (ctype.equals("BYTE")) {
-			retval=Types.BINARY;
-		}
-		if (ctype.equals("BOOLEAN")) {
-			retval=Types.CHAR;
-		}
-		// also added by mysql
-		if (ctype.equals("TINYTEXT")) {
-			retval=Types.LONGVARCHAR;
-		}
-		if (ctype.equals("MEDIUMTEXT")) {
-			retval=Types.LONGVARCHAR;
-		}
-		if (ctype.equals("LONGTEXT")) {
-			retval=Types.LONGVARCHAR;
-		}
-		if (ctype.equals("JSON")) {
-			retval=Types.LONGVARCHAR;
-		}
-		if (ctype.equals("GEOMETRY")) {
-			retval=Types.BINARY;
-		}
-		// also added by oracle
-		if (ctype.equals("SDO_GEOMETRY")) {
-			retval=Types.BINARY;
-		}
-		// added by mssql
-		if (ctype.equals("NCHAR")) {
-			retval=Types.NCHAR;
-		}
-		if (ctype.equals("NVARCHAR")) {
-			retval=Types.NVARCHAR;
-		}
-		if (ctype.equals("NTEXT")) {
-			retval=Types.LONGNVARCHAR;
-		}
-		if (ctype.equals("XML")) {
-			retval=Types.LONGVARCHAR;
-		}
-		if (ctype.equals("DATETIMEOFFSET")) {
-			retval=Types.TIMESTAMP;
-		}
-		driver.debugPrintln("sql type: ",retval);
+		driver.debugPrintln("ctype: "+ctype);
+		switch (ctype) {
+			case "UNKNOWN":
+			case "UNDEFINED":
+				retval=Types.OTHER;
+				break;
+			case "CHAR":
+			case "MONEY":
+			case "SMALLMONEY":
+			case "TEXT":
+			case "LONGCHAR":
+			case "LONG":
+			case "ILLEGAL":
+			case "SENSITIVITY":
+			case "BOUNDARY":
+			case "VOID":
+			case "STRING":
+			case "NULL":
+			case "ENUM":
+			case "SET":
+			case "BOOL":
+			case "NAME":
+			case "BPCHAR":
+			case "CSTRING":
+			case "BOOLEAN":
+				retval=Types.CHAR;
+				break;
+			case "INT":
+			case "UINT":
+			case "MEDIUMINT":
+			case "INTEGER":
+			case "INT4":
+			case "ABSTIME":
+			case "RELTIME":
+				retval=Types.INTEGER;
+				break;
+			case "SMALLINT":
+			case "USHORT":
+			case "YEAR":
+			case "SHORT_DATATYPE":
+			case "INT2":
+				retval=Types.SMALLINT;
+				break;
+			case "TINYINT":
+			case "TINY_DATATYPE":
+				retval=Types.TINYINT;
+				break;
+			case "DATETIME":
+			case "SMALLDATETIME":
+			case "TIMESTAMP":
+			case "TIMESTAMPTZ":
+			case "DATETIMEOFFSET":
+				retval=Types.TIMESTAMP;
+				break;
+			case "NUMERIC":
+			case "NUMBER":
+				retval=Types.NUMERIC;
+				break;
+			case "DECIMAL":
+				retval=Types.DECIMAL;
+				break;
+			case "IMAGE":
+			case "BINARY":
+			case "LONGBINARY":
+			case "MLSLABEL":
+			case "GRAPHIC":
+			case "DATALINK":
+			case "USER_DEFINED_TYPE":
+			case "ARRAY":
+			case "BYTEA":
+			case "INT2VECTOR":
+			case "OIDVECTOR":
+			case "SMGR":
+			case "POINT":
+			case "LSEG":
+			case "PATH":
+			case "BOX":
+			case "POLYGON":
+			case "LINE":
+			case "LINE_ARRAY":
+			case "TINTERVAL":
+			case "CIRCLE":
+			case "CIRCLE_ARRAY":
+			case "MONEY_ARRAY":
+			case "MACADDR":
+			case "INET":
+			case "CIDR":
+			case "BOOL_ARRAY":
+			case "BYTEA_ARRAY":
+			case "CHAR_ARRAY":
+			case "NAME_ARRAY":
+			case "INT2_ARRAY":
+			case "INT2VECTOR_ARRAY":
+			case "INT4_ARRAY":
+			case "REGPROC_ARRAY":
+			case "TEXT_ARRAY":
+			case "OID_ARRAY":
+			case "TID_ARRAY":
+			case "XID_ARRAY":
+			case "CID_ARRAY":
+			case "OIDVECTOR_ARRAY":
+			case "BPCHAR_ARRAY":
+			case "VARCHAR_ARRAY":
+			case "INT8_ARRAY":
+			case "POINT_ARRAY":
+			case "LSEG_ARRAY":
+			case "PATH_ARRAY":
+			case "BOX_ARRAY":
+			case "FLOAT4_ARRAY":
+			case "FLOAT8_ARRAY":
+			case "ABSTIME_ARRAY":
+			case "RELTIME_ARRAY":
+			case "TINTERVAL_ARRAY":
+			case "POLYGON_ARRAY":
+			case "ACLITEM":
+			case "ACLITEM_ARRAY":
+			case "MACADDR_ARRAY":
+			case "INET_ARRAY":
+			case "CIDR_ARRAY":
+			case "TIMESTAMP_ARRAY":
+			case "DATE_ARRAY":
+			case "TIME_ARRAY":
+			case "TIMESTAMPTZ_ARRAY":
+			case "INTERVAL":
+			case "INTERVAL_ARRAY":
+			case "NUMERIC_ARRAY":
+			case "TIMETZ_ARRAY":
+			case "BIT_ARRAY":
+			case "VARBIT":
+			case "VARBIT_ARRAY":
+			case "REFCURSOR":
+			case "REFCURSOR_ARRAY":
+			case "REGPROCEDURE":
+			case "REGOPER":
+			case "REGOPERATOR":
+			case "REGCLASS":
+			case "REGTYPE":
+			case "REGPROCEDURE_ARRAY":
+			case "REGOPER_ARRAY":
+			case "REGOPERATOR_ARRAY":
+			case "REGCLASS_ARRAY":
+			case "REGTYPE_ARRAY":
+			case "RECORD":
+			case "ANY":
+			case "ANYARRAY":
+			case "TRIGGER":
+			case "LANGUAGE_HANDLER":
+			case "INTERNAL":
+			case "OPAQUE":
+			case "ANYELEMENT":
+			case "PG_TYPE":
+			case "PG_ATTRIBUTE":
+			case "PG_PROC":
+			case "PG_CLASS":
+			case "UNIQUEIDENTIFIER":
+			case "BYTE":
+			case "GEOMETRY":
+			case "SDO_GEOMETRY":
+				retval=Types.BINARY;
+				break;
+			case "BIT":
+				retval=Types.BIT;
+				break;
+			case "REAL":
+			case "LASTREAL":
+				retval=Types.REAL;
+				break;
+			case "FLOAT":
+			case "FLOAT4":
+			case "SMALLFLOAT":
+				retval=Types.FLOAT;
+				break;
+			case "VARCHAR":
+			case "VARSTRING":
+			case "VARCHAR2":
+				retval=Types.VARCHAR;
+				break;
+			case "VARBINARY":
+			case "RAW":
+			case "VARGRAPHIC":
+				retval=Types.VARBINARY;
+				break;
+			case "DOUBLE":
+			case "D_FLOAT":
+			case "DOUBLE PRECISION":
+			case "FLOAT8":
+				retval=Types.DOUBLE;
+				break;
+			case "DATE":
+				retval=(getDateToTimestamp())?
+						Types.TIMESTAMP:
+						Types.DATE;
+				break;
+			case "NEWDATE":
+				retval=(getDateToTimestamp())?
+						Types.TIMESTAMP:
+						Types.DATE;
+				break;
+			case "TIME":
+			case "TIMETZ":
+				retval=Types.TIME;
+				break;
+			case "LONGLONG":
+			case "ROWID":
+			case "BIGINT":
+			case "QUAD":
+			case "INT64":
+			case "INT8":
+			case "REGPROC":
+			case "OID":
+			case "TID":
+			case "XID":
+			case "CID":
+			case "UBIGINT":
+				retval=Types.BIGINT;
+				break;
+			case "LONG_RAW":
+			case "BFILE":
+			case "LONGVARBINARY":
+			case "LONGVARGRAPHIC":
+				retval=Types.LONGVARBINARY;
+				break;
+			case "CLOB":
+			case "LONGVARCHAR":
+			case "DBCLOB":
+			case "TINYTEXT":
+			case "MEDIUMTEXT":
+			case "LONGTEXT":
+			case "JSON":
+			case "XML":
+				retval=Types.LONGVARCHAR;
+				break;
+			case "TINYBLOB":
+			case "MEDIUMBLOB":
+			case "LONGBLOB":
+			case "BLOB":
+				boolean	binary=sqlrcur.
+						getColumnIsBinary(column-1);
+				driver.debugPrintln("is binary: "+binary);
+				retval=(binary)?Types.BINARY:Types.LONGVARCHAR;
+				break;
+			case "NCHAR":
+				retval=Types.NCHAR;
+				break;
+			case "NVARCHAR":
+				retval=Types.NVARCHAR;
+				break;
+			case "NTEXT":
+				retval=Types.LONGNVARCHAR;
+				break;
+			default:
+				break;
+		}
+		driver.debugPrintln("sql type: "+retval);
 		driver.debugEnd();
 		return retval;
+	}
+
+	private
+	boolean getDateToTimestamp() throws SQLException {
+		SQLRelayResultSet	srs=
+				(SQLRelayResultSet)resultset;
+		SQLRelayStatement	ss=
+				(SQLRelayStatement)srs.getStatement();
+		SQLRelayConnection	sc=
+				(SQLRelayConnection)ss.getConnection();
+		return sc.getDateToTimestamp();
 	}
 
 	public
 	String getColumnTypeName(int column) {
 		driver.debugFunction(this);
 		String	typename=sqlrcur.getColumnType(column-1);
-		driver.debugPrintln("column: ",column);
-		driver.debugPrintln("type name: ",typename);
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("type name: "+typename);
 		driver.debugEnd();
 		return typename;
 	}
@@ -1310,13 +1012,29 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	public
 	int getPrecision(int column) {
 		driver.debugFunction(this);
-		int	precision=(int)sqlrcur.getColumnPrecision(column-1);
-		driver.debugPrintln("column: ",column);
-		driver.debugPrintln("precision (before): ",precision);
-		if (precision==-1) {
-			precision=2147483647;
+		driver.debugPrintln("column: "+column);
+		String	ctype=sqlrcur.getColumnType(column-1).toUpperCase();
+		driver.debugPrintln("ctype: "+ctype);
+		int	precision=0;
+		if (sqlrcur.isNumberType(ctype)) {
+			precision=(int)sqlrcur.getColumnPrecision(column-1);
+		} else if (sqlrcur.isDateTimeType(ctype)) {
+			// FIXME: probably need to discern between
+			// timestamp, date, and time
+			precision=7;
+		} else if (sqlrcur.isClobType(ctype) ||
+				sqlrcur.isBlobType(ctype)) {
+			// FIXME: this matches what oracle does,
+			// but might not be right for other dbs
+			if (ctype.equals("LONG")) {
+				precision=2147483647;
+			} else {
+				precision=-1;
+			}
+		} else {
+			precision=sqlrcur.getColumnLength(column-1);
 		}
-		driver.debugPrintln("precision (after): ",precision);
+		driver.debugPrintln("precision: "+precision);
 		driver.debugEnd();
 		return precision;
 	}
@@ -1325,8 +1043,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	int getScale(int column) {
 		driver.debugFunction(this);
 		int	scale=(int)sqlrcur.getColumnScale(column-1);
-		driver.debugPrintln("column: ",column);
-		driver.debugPrintln("scale: ",scale);
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("scale: "+scale);
 		driver.debugEnd();
 		return scale;
 	}
@@ -1335,8 +1053,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	String getSchemaName(int column) {
 		driver.debugFunction(this);
 		String	schemaname="";
-		driver.debugPrintln("column: ",column);
-		driver.debugPrintln("schema name: ",schemaname);
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("schema name: "+schemaname);
 		driver.debugEnd();
 		return schemaname;
 	}
@@ -1345,8 +1063,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	String getTableName(int column) {
 		driver.debugFunction(this);
 		String	tablename="";
-		driver.debugPrintln("column: ",column);
-		driver.debugPrintln("table name: ",tablename);
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("table name: "+tablename);
 		// FIXME: this could be implemented if
 		// getColumnTable was exposed
 		driver.debugEnd();
@@ -1357,8 +1075,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	boolean isAutoIncrement(int column) {
 		driver.debugFunction(this);
 		boolean	isautoinc=sqlrcur.getColumnIsAutoIncrement(column-1);
-		driver.debugPrintln("column: ",column);
-		driver.debugPrintln("is auto increment: ",isautoinc);
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("is auto increment: "+isautoinc);
 		driver.debugEnd();
 		return isautoinc;
 	}
@@ -1368,8 +1086,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		driver.debugFunction(this);
 		// FIXME: can db type tell us this?
 		boolean	iscasesensitive=false;
-		driver.debugPrintln("column: ",column);
-		driver.debugPrintln("is case sensitive: ",iscasesensitive);
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("is case sensitive: "+iscasesensitive);
 		driver.debugEnd();
 		return iscasesensitive;
 	}
@@ -1381,9 +1099,9 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		boolean	iscurrency=ctype.equals("MONEY") ||
 					ctype.equals("SMALLMONEY") ||
 					ctype.equals("MONEY_ARRAY");
-		driver.debugPrintln("column: ",column);
-		driver.debugPrintln("ctype: ",ctype);
-		driver.debugPrintln("is currency: ",iscurrency);
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("ctype: "+ctype);
+		driver.debugPrintln("is currency: "+iscurrency);
 		driver.debugEnd();
 		return iscurrency;
 	}
@@ -1392,8 +1110,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	boolean isDefinitelyWritable(int column) {
 		driver.debugFunction(this);
 		boolean	isdefinitelywriteable=false;
-		driver.debugPrintln("column: ",column);
-		driver.debugPrintln("is definitely writeable: ",
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("is definitely writeable: "+
 					isdefinitelywriteable);
 		driver.debugEnd();
 		return isdefinitelywriteable;
@@ -1404,8 +1122,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		driver.debugFunction(this);
 		int	isnullable=(sqlrcur.getColumnIsNullable(column-1))?
 						columnNullable:columnNoNulls;
-		driver.debugPrintln("column: ",column);
-		driver.debugPrintln("is nullable: ",isnullable);
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("is nullable: "+isnullable);
 		driver.debugEnd();
 		return isnullable;
 	}
@@ -1414,8 +1132,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	boolean isReadOnly(int column) {
 		driver.debugFunction(this);
 		boolean	isreadonly=false;
-		driver.debugPrintln("column: ",column);
-		driver.debugPrintln("is read-only: ",isreadonly);
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("is read-only: "+isreadonly);
 		driver.debugEnd();
 		return isreadonly;
 	}
@@ -1424,8 +1142,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	boolean isSearchable(int column) {
 		driver.debugFunction(this);
 		boolean	issearchable=true;
-		driver.debugPrintln("column: ",column);
-		driver.debugPrintln("is searchable: ",issearchable);
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("is searchable: "+issearchable);
 		driver.debugEnd();
 		return issearchable;
 	}
@@ -1434,8 +1152,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	boolean isSigned(int column) {
 		driver.debugFunction(this);
 		boolean	issigned=!sqlrcur.getColumnIsUnsigned(column-1);
-		driver.debugPrintln("column: ",column);
-		driver.debugPrintln("is signed: ",issigned);
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("is signed: "+issigned);
 		driver.debugEnd();
 		return issigned;
 	}
@@ -1444,8 +1162,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	boolean isWritable(int column) {
 		driver.debugFunction(this);
 		boolean	iswriteable=true;
-		driver.debugPrintln("column: ",column);
-		driver.debugPrintln("is writeable: ",iswriteable);
+		driver.debugPrintln("column: "+column);
+		driver.debugPrintln("is writeable: "+iswriteable);
 		driver.debugEnd();
 		return iswriteable;
 	}

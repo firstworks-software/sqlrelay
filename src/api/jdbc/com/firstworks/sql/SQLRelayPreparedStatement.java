@@ -325,30 +325,40 @@ public class SQLRelayPreparedStatement
 					break;
 				case Date:
 					{
-					Date	d=(Date)value.getObject();
+					Calendar	cal=
+						Calendar.getInstance();
+					cal.setTime((Date)value.getObject());
 					sqlrcur.inputBind(key,
-							(short)d.getYear(),
-							(short)d.getMonth(),
-							(short)d.getDay(),
-							(short)0,
-							(short)0,
-							(short)0,
-							(short)0,
-							null,false);
+						(short)cal.get(
+							Calendar.YEAR),
+						(short)cal.get(
+							Calendar.MONTH),
+						(short)cal.get(
+							Calendar.DAY_OF_MONTH),
+						(short)0,
+						(short)0,
+						(short)0,
+						(short)0,
+						null,false);
 					}
 					break;
 				case DateWithCalendar:
 					{
-					Date	d=(Date)value.getObject();
+					Calendar	cal=
+						Calendar.getInstance();
+					cal.setTime((Date)value.getObject());
 					sqlrcur.inputBind(key,
-							(short)d.getYear(),
-							(short)d.getMonth(),
-							(short)d.getDay(),
-							(short)0,
-							(short)0,
-							(short)0,
-							(short)0,
-							null,false);
+						(short)cal.get(
+							Calendar.YEAR),
+						(short)cal.get(
+							Calendar.MONTH),
+						(short)cal.get(
+							Calendar.DAY_OF_MONTH),
+						(short)0,
+						(short)0,
+						(short)0,
+						(short)0,
+						null,false);
 					}
 					break;
 				case Double:
