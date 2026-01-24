@@ -12,7 +12,7 @@
 semaphoreset	*sem;
 uint16_t	sessionid;
 
-void checkSuccess(const char *value, const char *success) {
+void assertEquals(const char *value, const char *success) {
 
 	if (!success) {
 		if (!value) {
@@ -48,12 +48,30 @@ void checkSuccess(const char *value, const char *success) {
 	}
 }
 
-void checkSuccess(int value, int success) {
+void assertEquals(int value, int success) {
 
 	if (value==success) {
 		stdoutput.printf("success ");
 	} else {
 		stdoutput.printf("%d!=%d\n",value,success);
+		stdoutput.printf("failure ");
+		if (!sessionid) {
+			delete sem;
+			file::remove("semkey");
+		} else if (sessionid==1) {
+			sem->signal(0);
+			sem->signal(1);
+		}
+		process::exit(1);
+	}
+}
+
+void assertTrue(bool actual) {
+
+	if (actual) {
+		stdoutput.printf("success ");
+	} else {
+		stdoutput.printf("%s!=true\n",(actual)?"true":"false");
 		stdoutput.printf("failure ");
 		if (!sessionid) {
 			delete sem;
@@ -111,18 +129,18 @@ int main(int argc, char **argv) {
 
 		// set things up
 		sqlrcur.sendQuery("drop table testtable");
-		checkSuccess(sqlrcur.sendQuery("create table testtable "
-			"(col1 int primary key auto_increment, col2 int, col3 varchar(20), col4 varchar(20))"),1);
-		checkSuccess(sqlrcur.sendQuery(
-			"insert into testtable (col2,col3,col4) values (1,'hello','hello')"),1);
-		checkSuccess(sqlrcur.sendQuery(
-			"insert into testtable (col2,col3,col4) values (1,'hello','hello')"),1);
+		assertTrue(sqlrcur.sendQuery("create table testtable "
+			"(col1 int primary key auto_increment, col2 int, col3 varchar(20), col4 varchar(20))"));
+		assertTrue(sqlrcur.sendQuery(
+			"insert into testtable (col2,col3,col4) values (1,'hello','hello')"));
+		assertTrue(sqlrcur.sendQuery(
+			"insert into testtable (col2,col3,col4) values (1,'hello','hello')"));
 		stdoutput.printf("\n");
 
 		// execute the initial update
-		checkSuccess(sqlrcon.begin(),1);
-		checkSuccess(sqlrcur.sendQuery("update testtable set "
-						"col2=col2+1 where col1=1"),1);
+		assertTrue(sqlrcon.begin());
+		assertTrue(sqlrcur.sendQuery("update testtable set "
+						"col2=col2+1 where col1=1"));
 		stdoutput.printf("\n");
 
 		// signal the second session to go
@@ -134,9 +152,9 @@ int main(int argc, char **argv) {
 		stdoutput.printf("SESSION 1...\n");
 
 		// execute the final update
-		checkSuccess(sqlrcur.sendQuery("update testtable set "
-						"col2=col2+1 where col1=2"),1);
-		checkSuccess(sqlrcon.commit(),1);
+		assertTrue(sqlrcur.sendQuery("update testtable set "
+						"col2=col2+1 where col1=2"));
+		assertTrue(sqlrcon.commit());
 		stdoutput.printf("\n");
 
 		// signal the second session to go
@@ -169,9 +187,9 @@ int main(int argc, char **argv) {
 		stdoutput.printf("SESSION 2...\n");
 
 		// execute the conflicting updates
-		checkSuccess(sqlrcon.begin(),1);
-		checkSuccess(sqlrcur.sendQuery("update testtable set "
-						"col2=col2+1 where col1=2"),1);
+		assertTrue(sqlrcon.begin());
+		assertTrue(sqlrcur.sendQuery("update testtable set "
+						"col2=col2+1 where col1=2"));
 		stdoutput.printf("\n");
 
 
@@ -186,8 +204,8 @@ int main(int argc, char **argv) {
 		sem->wait(1);
 
 		stdoutput.printf("SESSION 2...\n");
-		checkSuccess(qr,1);
-		checkSuccess(cr,1);
+		assertEquals(qr,1);
+		assertEquals(cr,1);
 
 		// done
 		process::exit(0);
@@ -205,10 +223,10 @@ int main(int argc, char **argv) {
 
 	stdoutput.printf("RESULTS: \n");
 	sqlrcur.sendQuery("select * from testtable order by col1");
-	checkSuccess(sqlrcur.getField(0,"col1"),"1");
-	checkSuccess(sqlrcur.getField(0,"col2"),"3");
-	checkSuccess(sqlrcur.getField(1,"col1"),"2");
-	checkSuccess(sqlrcur.getField(1,"col2"),"3");
+	assertEquals(sqlrcur.getField(0,"col1"),"1");
+	assertEquals(sqlrcur.getField(0,"col2"),"3");
+	assertEquals(sqlrcur.getField(1,"col1"),"2");
+	assertEquals(sqlrcur.getField(1,"col2"),"3");
 	stdoutput.printf("\n");
 
 	// clean up

@@ -21,6 +21,8 @@
 
 #include "../../config.h"
 
+#include "assert.cpp"
+
 //#define ROWS 10000
 //#define ROWS 1000
 //#define ROWS 100
@@ -34,68 +36,6 @@
 stringbuffer	createquery;
 sqlrconnection	*con;
 sqlrcursor	*cur;
-
-void checkSuccess(const char *value, const char *success) {
-
-	if (!success) {
-		if (!value) {
-			stdoutput.printf("success ");
-			stdoutput.flush();
-			return;
-		} else {
-			stdoutput.printf("\"%s\"!=\"%s\"\n",value,success);
-			stdoutput.printf("failure: %s",cur->errorMessage());
-			stdoutput.flush();
-			delete cur;
-			delete con;
-			process::exit(1);
-		}
-	}
-
-	if (!charstring::compare(value,success)) {
-		stdoutput.printf("success ");
-		stdoutput.flush();
-	} else {
-		stdoutput.printf("\"%s\"!=\"%s\"\n",value,success);
-		stdoutput.printf("failure: %s",cur->errorMessage());
-		stdoutput.flush();
-		delete cur;
-		delete con;
-		process::exit(1);
-	}
-}
-
-void checkSuccess(int value, int success) {
-
-	if (value==success) {
-		stdoutput.printf("success ");
-		stdoutput.flush();
-	} else {
-		stdoutput.printf("\"%d\"!=\"%d\"\n",value,success);
-		stdoutput.printf("failure: %s",cur->errorMessage());
-		stdoutput.flush();
-		delete cur;
-		delete con;
-		process::exit(1);
-	}
-}
-
-void checkSuccess(uint64_t value, uint64_t success) {
-
-	if (value==success) {
-		stdoutput.printf("success ");
-		stdoutput.flush();
-	} else {
-		stdoutput.printf("\"%lld\"!=\"%lld\"\n",value,success);
-		stdoutput.printf("failure: %s",cur->errorMessage());
-		stdoutput.flush();
-		delete cur;
-		delete con;
-		process::exit(1);
-	}
-}
-
-
 
 // define the fields for the table that we're going to export
 struct field_t {
@@ -1190,8 +1130,8 @@ void generateCsv(const char *option,
 
 	// create file
 	file	comparison;
-	checkSuccess(comparison.create(filename,
-				permissions::parsePermString("rw-rw-r--")),1);
+	assertTrue(comparison.create(filename,
+				permissions::parsePermString("rw-rw-r--")));
 	comparison.setWriteBufferSize(
 		filesystem::getOptimumTransferBlockSize(filename));
 
@@ -1213,7 +1153,7 @@ void generateCsv(const char *option,
 	}
 	if (!excludecolumns) {
 		header.append('\n');
-		checkSuccess((int)comparison.write(header.getString()),
+		assertEquals((int)comparison.write(header.getString()),
 					(int)header.getStringLength());
 	}
 
@@ -1261,11 +1201,11 @@ void generateCsv(const char *option,
 		if (comparison.write(record.getString(),
 					record.getStringLength())!=
 					(ssize_t)record.getStringLength()) {
-			checkSuccess(0,1);
+			assertEquals(0,1);
 		}
 		record.clear();
 	}
-	checkSuccess(1,1);
+	assertEquals(1,1);
 
 	comparison.flushWriteBuffer(-1,-1);
 
@@ -1284,8 +1224,8 @@ void generateXml(const char *option,
 
 	// create file
 	file	comparison;
-	checkSuccess(comparison.create(filename,
-				permissions::parsePermString("rw-rw-r--")),1);
+	assertTrue(comparison.create(filename,
+				permissions::parsePermString("rw-rw-r--")));
 	comparison.setWriteBufferSize(
 		filesystem::getOptimumTransferBlockSize(filename));
 
@@ -1312,7 +1252,7 @@ void generateXml(const char *option,
 						field[col].dbtype);
 		}
 		header.append("</columns>\n");
-		checkSuccess((int)comparison.write(header.getString()),
+		assertEquals((int)comparison.write(header.getString()),
 					(int)header.getStringLength());
 	}
 
@@ -1354,13 +1294,13 @@ void generateXml(const char *option,
 		if (comparison.write(record.getString(),
 					record.getStringLength())!=
 					(ssize_t)record.getStringLength()) {
-			checkSuccess(0,1);
+			assertEquals(0,1);
 		}
 		record.clear();
 	}
 	comparison.write("</rows>\n");
 	comparison.write("</table>\n");
-	checkSuccess(1,1);
+	assertEquals(1,1);
 
 	comparison.flushWriteBuffer(-1,-1);
 
@@ -1461,7 +1401,7 @@ void generateTable(const char *option,
 		}
 	}
 
-	checkSuccess(success,1);
+	assertTrue(success);
 
 	econ.commit();
 
@@ -1474,13 +1414,13 @@ void diffFiles(const char *filename1, const char *filename2) {
 
 	// open file 1
 	file	f1;
-	checkSuccess(f1.open(filename1,O_RDONLY),1);
+	assertTrue(f1.open(filename1,O_RDONLY));
 	f1.setReadBufferSize(
 		filesystem::getOptimumTransferBlockSize(filename1));
 
 	// open file 2
 	file	f2;
-	checkSuccess(f2.open(filename2,O_RDONLY),1);
+	assertTrue(f2.open(filename2,O_RDONLY));
 	f2.setReadBufferSize(
 		filesystem::getOptimumTransferBlockSize(filename2));
 
@@ -1498,14 +1438,14 @@ void diffFiles(const char *filename1, const char *filename2) {
 		if (size1!=size2) {
 			delete[] line1;
 			delete[] line2;
-			checkSuccess(0,1);
+			assertEquals(0,1);
 		}
 
 		// fail if the lines are not the same
 		if (charstring::compare(line1,line2)) {
 			delete[] line1;
 			delete[] line2;
-			checkSuccess(0,1);
+			assertEquals(0,1);
 		}
 
 		// bail if we failed to read either line
@@ -1515,7 +1455,7 @@ void diffFiles(const char *filename1, const char *filename2) {
 			break;
 		}
 	}
-	checkSuccess(1,1);
+	assertEquals(1,1);
 }
 
 void diffTables(const char *table1, const char *table2) {
@@ -1543,7 +1483,7 @@ void diffTables(const char *table1, const char *table2) {
 	cur2.sendQuery(q2.getString());
 
 	// fail if the column counts are different
-	checkSuccess((int)cur1.colCount(),(int)cur2.colCount());
+	assertEquals((int)cur1.colCount(),(int)cur2.colCount());
 
 	// run through the rows...
 	uint64_t	row=0;
@@ -1555,10 +1495,10 @@ void diffTables(const char *table1, const char *table2) {
 
 		// fail if the row counts are different
 		if (rowend1 && !rowend2) {
-			checkSuccess(0,1);
+			assertEquals(0,1);
 		}
 		if (rowend2 && !rowend1) {
-			checkSuccess(0,1);
+			assertEquals(0,1);
 		}
 
 		// bail if we're at the end of both result sets
@@ -1572,7 +1512,7 @@ void diffTables(const char *table1, const char *table2) {
 			// bail if the fields aren't the same
 			if (charstring::compare(cur1.getField(row,col),
 						cur2.getField(row,col))) {
-				checkSuccess(0,1);
+				assertEquals(0,1);
 			}
 		}
 		row++;
@@ -1619,10 +1559,10 @@ void exportTests() {
 		}
 		query.append(')');
 		if (!cur->sendQuery(query.getString())) {
-			checkSuccess(0,1);
+			assertEquals(0,1);
 		}
 	}
-	checkSuccess(1,1);
+	assertEquals(1,1);
 	stdoutput.printf("\n\n");
 
 	// set up csv export
@@ -1630,8 +1570,8 @@ void exportTests() {
 	testsqlrexportcsv	tsec;
 	tsec.setSqlrConnection(con);
 	tsec.setSqlrCursor(cur);
-	checkSuccess((uint64_t)tsec.getSqlrConnection(),(uint64_t)con);
-	checkSuccess((uint64_t)tsec.getSqlrCursor(),(uint64_t)cur);
+	assertEquals((uint64_t)tsec.getSqlrConnection(),(uint64_t)con);
+	assertEquals((uint64_t)tsec.getSqlrCursor(),(uint64_t)cur);
 	stdoutput.printf("\n\n");
 
 	// set up xml export
@@ -1639,8 +1579,8 @@ void exportTests() {
 	testsqlrexportxml	tsex;
 	tsex.setSqlrConnection(con);
 	tsex.setSqlrCursor(cur);
-	checkSuccess((uint64_t)tsex.getSqlrConnection(),(uint64_t)con);
-	checkSuccess((uint64_t)tsex.getSqlrCursor(),(uint64_t)cur);
+	assertEquals((uint64_t)tsex.getSqlrConnection(),(uint64_t)con);
+	assertEquals((uint64_t)tsex.getSqlrCursor(),(uint64_t)cur);
 	stdoutput.printf("\n\n");
 
 	// set up table export
@@ -1648,8 +1588,8 @@ void exportTests() {
 	testsqlrexporttable	tset;
 	tset.setSqlrConnection(con);
 	tset.setSqlrCursor(cur);
-	checkSuccess((uint64_t)tset.getSqlrConnection(),(uint64_t)con);
-	checkSuccess((uint64_t)tset.getSqlrCursor(),(uint64_t)cur);
+	assertEquals((uint64_t)tset.getSqlrConnection(),(uint64_t)con);
+	assertEquals((uint64_t)tset.getSqlrCursor(),(uint64_t)cur);
 	stdoutput.printf("\n\n");
 
 	// iterate through options...
@@ -1787,34 +1727,34 @@ void exportTests() {
 			e->setColumnsToExclude(columnstoexclude);
 			e->setColumnsToModify(columnstomodify);
 			e->setRowsToExclude(&rowstoexclude);
-			checkSuccess(e->getExcludeColumns(),excludecolumns);
+			assertEquals(e->getExcludeColumns(),excludecolumns);
 			if (columnstoexclude) {
 				for (uint16_t i=0;
 					i<columnstoexcludecount; i++) {
-					checkSuccess(
+					assertEquals(
 						e->getColumnsToExclude()[i],
 						columnstoexclude[i]);
 				}
-				checkSuccess(
+				assertEquals(
 					e->getColumnsToExclude()[
 						columnstoexcludecount],
 					NULL);
 			} else {
-				checkSuccess(
+				assertEquals(
 					(uint64_t)e->getColumnsToExclude(),
 					(uint64_t)0);
 			}
-			checkSuccess(cur->sendQuery(
+			assertTrue(cur->sendQuery(
 				"select * from testtable "
-				"order by testsmallint"),1);
+				"order by testsmallint"));
 			if (fiter==0) {
 				tsec.setFileName(exp);
 				tsec.setTestFileName(exp);
-				checkSuccess(tsec.exportData(),1);
+				assertTrue(tsec.exportData());
 			} else if (fiter==1) {
 				tsex.setFileName(exp);
 				tsex.setTestFileName(exp);
-				checkSuccess(tsex.exportData(),1);
+				assertTrue(tsex.exportData());
 			} else if (fiter==2) {
 				sqlrconnection	econ("sqlrelay",9000,
 							"/tmp/test.socket",
@@ -1826,7 +1766,7 @@ void exportTests() {
 				tset.setTable(exp);
 				tset.setCommitCount(500);
 				tset.setTestTable(exp);
-				checkSuccess(tset.exportData(),1);
+				assertTrue(tset.exportData());
 				econ.commit();
 			}
 			stdoutput.printf("\n\n");
@@ -1916,8 +1856,8 @@ void importTests() {
 	tsic.setSqlrConnection(con);
 	tsic.setSqlrCursor(cur);
 	tsic.setDbType(con->identify());
-	checkSuccess((uint64_t)tsic.getSqlrConnection(),(uint64_t)con);
-	checkSuccess((uint64_t)tsic.getSqlrCursor(),(uint64_t)cur);
+	assertEquals((uint64_t)tsic.getSqlrConnection(),(uint64_t)con);
+	assertEquals((uint64_t)tsic.getSqlrCursor(),(uint64_t)cur);
 	stdoutput.printf("\n\n");
 
 	// set up xml import
@@ -1926,8 +1866,8 @@ void importTests() {
 	tsix.setSqlrConnection(con);
 	tsix.setSqlrCursor(cur);
 	tsix.setDbType(con->identify());
-	checkSuccess((uint64_t)tsix.getSqlrConnection(),(uint64_t)con);
-	checkSuccess((uint64_t)tsix.getSqlrCursor(),(uint64_t)cur);
+	assertEquals((uint64_t)tsix.getSqlrConnection(),(uint64_t)con);
+	assertEquals((uint64_t)tsix.getSqlrCursor(),(uint64_t)cur);
 	stdoutput.printf("\n\n");
 
 	// iterate through options...
@@ -2006,10 +1946,10 @@ void importTests() {
 			// import file/table
 			stdoutput.printf("%sIMPORT %s: \n",option,format);
 			im->setIgnoreColumns(ignorecolumns);
-			checkSuccess(im->getIgnoreColumns(),ignorecolumns);
+			assertEquals(im->getIgnoreColumns(),ignorecolumns);
 			im->setEmptyRows(&emptyrows);
 			im->setIgnoreEmptyRows(true);
-			checkSuccess(im->importData(),1);
+			assertTrue(im->importData());
 			stdoutput.printf("\n\n");
 
 			// generate comparison table

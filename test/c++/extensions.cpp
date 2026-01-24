@@ -10,88 +10,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "assert.cpp"
+
 sqlrconnection	*con;
 sqlrcursor	*cur;
 sqlrconnection	*secondcon;
 sqlrcursor	*secondcur;
-
-void checkSuccess(const char *value, const char *success) {
-
-	if (!success) {
-		if (!value) {
-			stdoutput.printf("success ");
-			return;
-		} else {
-			stdoutput.printf("%s!=%s\n",value,success);
-			stdoutput.printf("failure ");
-			delete cur;
-			delete con;
-			process::exit(1);
-		}
-	}
-
-	if (!charstring::compare(value,success)) {
-		stdoutput.printf("success ");
-	} else {
-		stdoutput.printf("%s!=%s\n",value,success);
-		stdoutput.printf("failure ");
-		delete cur;
-		delete con;
-		process::exit(1);
-	}
-}
-
-void checkSuccess(const char *value, const char *success, size_t length) {
-
-	if (!success) {
-		if (!value) {
-			stdoutput.printf("success ");
-			return;
-		} else {
-			stdoutput.printf("%s!=%s\n",value,success);
-			stdoutput.printf("failure ");
-			delete cur;
-			delete con;
-			process::exit(1);
-		}
-	}
-
-	if (!strncmp(value,success,length)) {
-		stdoutput.printf("success ");
-	} else {
-		stdoutput.printf("%s!=%s\n",value,success);
-		stdoutput.printf("failure ");
-		delete cur;
-		delete con;
-		process::exit(1);
-	}
-}
-
-void checkSuccess(int value, int success) {
-
-	if (value==success) {
-		stdoutput.printf("success ");
-	} else {
-		stdoutput.printf("%d!=%d\n",value,success);
-		stdoutput.printf("failure ");
-		delete cur;
-		delete con;
-		process::exit(1);
-	}
-}
-
-void checkSuccess(double value, double success) {
-
-	if (value==success) {
-		stdoutput.printf("success ");
-	} else {
-		stdoutput.printf("%f!=%f\n",value,success);
-		stdoutput.printf("failure ");
-		delete cur;
-		delete con;
-		process::exit(1);
-	}
-}
 
 int	main(int argc, char **argv) {
 
@@ -119,9 +43,9 @@ int	main(int argc, char **argv) {
 
 	stdoutput.printf("IGNORE SELECT DATABASE:\n");
 	char	*originaldb=charstring::duplicate(con->getCurrentDatabase());
-	checkSuccess((originaldb!=NULL),true);
-	checkSuccess(con->selectDatabase("nonexistentdb"),true);
-	checkSuccess(con->getCurrentDatabase(),originaldb);
+	assertEquals((originaldb!=NULL),true);
+	assertEquals(con->selectDatabase("nonexistentdb"),true);
+	assertEquals(con->getCurrentDatabase(),originaldb);
 	delete[] originaldb;
 	stdoutput.printf("\n\n");
 
@@ -132,13 +56,13 @@ int	main(int argc, char **argv) {
 	cur->inputBind("1","hello");
 	cur->inputBind("2",1);
 	cur->inputBind("3",2);
-	checkSuccess(cur->validBind("1"),true);
-	checkSuccess(cur->validBind("2"),true);
-	checkSuccess(cur->validBind("3"),true);
-	checkSuccess(cur->validBind("4"),false);
-	checkSuccess(cur->countBindVariables(),3);
-	checkSuccess(cur->executeQuery(),1);
-	checkSuccess(cur->getField(0,(uint32_t)0),"hello");
+	assertEquals(cur->validBind("1"),true);
+	assertEquals(cur->validBind("2"),true);
+	assertEquals(cur->validBind("3"),true);
+	assertEquals(cur->validBind("4"),false);
+	assertEquals(cur->countBindVariables(),3);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"hello");
 	cur->clearBinds();
 	stdoutput.printf("\n");
 
@@ -147,13 +71,13 @@ int	main(int argc, char **argv) {
 	cur->inputBind("1","hello");
 	cur->inputBind("2",1);
 	cur->inputBind("3",2);
-	checkSuccess(cur->validBind("1"),true);
-	checkSuccess(cur->validBind("2"),true);
-	checkSuccess(cur->validBind("3"),true);
-	checkSuccess(cur->validBind("4"),false);
-	checkSuccess(cur->countBindVariables(),3);
-	checkSuccess(cur->executeQuery(),1);
-	checkSuccess(cur->getField(0,(uint32_t)0),"hello");
+	assertEquals(cur->validBind("1"),true);
+	assertEquals(cur->validBind("2"),true);
+	assertEquals(cur->validBind("3"),true);
+	assertEquals(cur->validBind("4"),false);
+	assertEquals(cur->countBindVariables(),3);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"hello");
 	cur->clearBinds();
 	stdoutput.printf("\n");
 
@@ -162,13 +86,13 @@ int	main(int argc, char **argv) {
 	cur->inputBind("1","hello");
 	cur->inputBind("2",1);
 	cur->inputBind("3",2);
-	checkSuccess(cur->validBind("1"),true);
-	checkSuccess(cur->validBind("2"),true);
-	checkSuccess(cur->validBind("3"),true);
-	checkSuccess(cur->validBind("4"),false);
-	checkSuccess(cur->countBindVariables(),3);
-	checkSuccess(cur->executeQuery(),1);
-	checkSuccess(cur->getField(0,(uint32_t)0),"hello");
+	assertEquals(cur->validBind("1"),true);
+	assertEquals(cur->validBind("2"),true);
+	assertEquals(cur->validBind("3"),true);
+	assertEquals(cur->validBind("4"),false);
+	assertEquals(cur->countBindVariables(),3);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"hello");
 	cur->clearBinds();
 	stdoutput.printf("\n");
 
@@ -177,13 +101,13 @@ int	main(int argc, char **argv) {
 	cur->inputBind("1","hello");
 	cur->inputBind("2",1);
 	cur->inputBind("3",2);
-	checkSuccess(cur->validBind("1"),true);
-	checkSuccess(cur->validBind("2"),true);
-	checkSuccess(cur->validBind("3"),true);
-	checkSuccess(cur->validBind("4"),false);
-	checkSuccess(cur->countBindVariables(),3);
-	checkSuccess(cur->executeQuery(),1);
-	checkSuccess(cur->getField(0,(uint32_t)0),"hello");
+	assertEquals(cur->validBind("1"),true);
+	assertEquals(cur->validBind("2"),true);
+	assertEquals(cur->validBind("3"),true);
+	assertEquals(cur->validBind("4"),false);
+	assertEquals(cur->countBindVariables(),3);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"hello");
 	cur->clearBinds();
 	stdoutput.printf("\n\n");
 
@@ -193,59 +117,59 @@ int	main(int argc, char **argv) {
 	cur->inputBind("hello","hello");
 	cur->inputBind("one","1");
 	cur->inputBind("nonexistentvar","nonexistentval");
-	checkSuccess(cur->executeQuery(),1);
-	checkSuccess(cur->getField(0,(uint32_t)0),"");
-	checkSuccess(cur->getField(0,(uint32_t)1),"1");
-	checkSuccess(cur->getField(0,(uint32_t)2),"");
-	checkSuccess(cur->getField(0,(uint32_t)3),"hello");
-	checkSuccess(cur->getField(0,(uint32_t)4),"'");
-	checkSuccess(cur->getField(0,(uint32_t)5),"'");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getField(0,(uint32_t)0),"");
+	assertEquals(cur->getField(0,(uint32_t)1),"1");
+	assertEquals(cur->getField(0,(uint32_t)2),"");
+	assertEquals(cur->getField(0,(uint32_t)3),"hello");
+	assertEquals(cur->getField(0,(uint32_t)4),"'");
+	assertEquals(cur->getField(0,(uint32_t)5),"'");
 	stdoutput.printf("\n\n");
 
 
 	stdoutput.printf("ISOLATION LEVELS: \n");
 
 	// set autocommit off
-	checkSuccess(con->autoCommitOff(),1);
+	assertTrue(con->autoCommitOff());
 
 	// create a table
 	cur->sendQuery("drop table testtable");
-	checkSuccess(cur->sendQuery("create table testtable (col1 int)"),1);
+	assertTrue(cur->sendQuery("create table testtable (col1 int)"));
 
 	// open a second connection and set autocommit off there too
 	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 							"test","test",0,1);
 	secondcur=new sqlrcursor(secondcon);
-	checkSuccess(secondcon->autoCommitOff(),1);
+	assertTrue(secondcon->autoCommitOff());
 
 	// change the isolation level
-	checkSuccess(secondcur->sendQuery("alter session set isolation_level=serializable"),1);
+	assertTrue(secondcur->sendQuery("alter session set isolation_level=serializable"));
 	stdoutput.printf("\n");
 
 	// in the second connection, select from the table, it should be empty
-	checkSuccess(secondcur->sendQuery("select * from testtable"),1);
-	checkSuccess(secondcur->rowCount(),0);
+	assertTrue(secondcur->sendQuery("select * from testtable"));
+	assertEquals(secondcur->rowCount(),0);
 
 	// in the first connection, insert a row into the table
-	checkSuccess(cur->sendQuery("insert into testtable values (1)"),1);
+	assertTrue(cur->sendQuery("insert into testtable values (1)"));
 
 	// in the second connection, select again, it should still be empty
-	checkSuccess(secondcur->sendQuery("select * from testtable"),1);
-	checkSuccess(secondcur->rowCount(),0);
+	assertTrue(secondcur->sendQuery("select * from testtable"));
+	assertEquals(secondcur->rowCount(),0);
 
 	// in the first connecton, commit
-	checkSuccess(con->commit(),1);
+	assertTrue(con->commit());
 	stdoutput.printf("\n");
 
 	// in the second connection, select again, it should STILL be empty
-	checkSuccess(secondcur->sendQuery("select * from testtable"),1);
-	checkSuccess(secondcur->rowCount(),0);
+	assertTrue(secondcur->sendQuery("select * from testtable"));
+	assertEquals(secondcur->rowCount(),0);
 
 	// end the second connections sesssion and select again,
 	// finally it should see the row
 	secondcon->endSession();
-	checkSuccess(secondcur->sendQuery("select * from testtable"),1);
-	checkSuccess(secondcur->rowCount(),1);
+	assertTrue(secondcur->sendQuery("select * from testtable"));
+	assertEquals(secondcur->rowCount(),1);
 
 	// clean up
 	delete secondcur;
@@ -255,80 +179,80 @@ int	main(int argc, char **argv) {
 	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 							"test","test",0,1);
 	cur=new sqlrcursor(con);
-	checkSuccess(cur->sendQuery("drop table testtable"),1);
+	assertTrue(cur->sendQuery("drop table testtable"));
 	con->setClientInfo("extensionstest");
 	stdoutput.printf("\n\n");
 
 
 	stdoutput.printf("SQLRCMD CSTAT: \n");
-	checkSuccess(cur->sendQuery("sqlrcmd cstat"),1);
-	checkSuccess(cur->colCount(),9);
+	assertTrue(cur->sendQuery("sqlrcmd cstat"));
+	assertEquals(cur->colCount(),9);
 	stdoutput.printf("\n");
 
-	checkSuccess(cur->getColumnName((uint32_t)0),"INDEX");
-	checkSuccess(cur->getColumnName(1),"MINE");
-	checkSuccess(cur->getColumnName(2),"PROCESSID");
-	checkSuccess(cur->getColumnName(3),"CONNECT");
-	checkSuccess(cur->getColumnName(4),"STATE");
-	checkSuccess(cur->getColumnName(5),"STATE_TIME");
-	checkSuccess(cur->getColumnName(6),"CLIENT_ADDR");
-	checkSuccess(cur->getColumnName(7),"CLIENT_INFO");
-	checkSuccess(cur->getColumnName(8),"SQL_TEXT");
+	assertEquals(cur->getColumnName((uint32_t)0),"INDEX");
+	assertEquals(cur->getColumnName(1),"MINE");
+	assertEquals(cur->getColumnName(2),"PROCESSID");
+	assertEquals(cur->getColumnName(3),"CONNECT");
+	assertEquals(cur->getColumnName(4),"STATE");
+	assertEquals(cur->getColumnName(5),"STATE_TIME");
+	assertEquals(cur->getColumnName(6),"CLIENT_ADDR");
+	assertEquals(cur->getColumnName(7),"CLIENT_INFO");
+	assertEquals(cur->getColumnName(8),"SQL_TEXT");
 	stdoutput.printf("\n");
 
-	checkSuccess(cur->getColumnType((uint32_t)0),"NUMBER");
-	checkSuccess(cur->getColumnType(1),"VARCHAR2");
-	checkSuccess(cur->getColumnType(2),"NUMBER");
-	checkSuccess(cur->getColumnType(3),"NUMBER");
-	checkSuccess(cur->getColumnType(4),"VARCHAR2");
-	checkSuccess(cur->getColumnType(5),"NUMBER");
-	checkSuccess(cur->getColumnType(6),"VARCHAR2");
-	checkSuccess(cur->getColumnType(7),"VARCHAR2");
-	checkSuccess(cur->getColumnType(8),"VARCHAR2");
+	assertEquals(cur->getColumnType((uint32_t)0),"NUMBER");
+	assertEquals(cur->getColumnType(1),"VARCHAR2");
+	assertEquals(cur->getColumnType(2),"NUMBER");
+	assertEquals(cur->getColumnType(3),"NUMBER");
+	assertEquals(cur->getColumnType(4),"VARCHAR2");
+	assertEquals(cur->getColumnType(5),"NUMBER");
+	assertEquals(cur->getColumnType(6),"VARCHAR2");
+	assertEquals(cur->getColumnType(7),"VARCHAR2");
+	assertEquals(cur->getColumnType(8),"VARCHAR2");
 	stdoutput.printf("\n");
 
-	checkSuccess(cur->getColumnLength((uint32_t)0),10);
-	checkSuccess(cur->getColumnLength(1),1);
-	checkSuccess(cur->getColumnLength(2),10);
-	checkSuccess(cur->getColumnLength(3),12);
-	checkSuccess(cur->getColumnLength(4),25);
-	checkSuccess(cur->getColumnLength(5),12);
-	checkSuccess(cur->getColumnLength(6),24);
-	checkSuccess(cur->getColumnLength(7),511);
-	checkSuccess(cur->getColumnLength(8),511);
+	assertEquals(cur->getColumnLength((uint32_t)0),10);
+	assertEquals(cur->getColumnLength(1),1);
+	assertEquals(cur->getColumnLength(2),10);
+	assertEquals(cur->getColumnLength(3),12);
+	assertEquals(cur->getColumnLength(4),25);
+	assertEquals(cur->getColumnLength(5),12);
+	assertEquals(cur->getColumnLength(6),24);
+	assertEquals(cur->getColumnLength(7),511);
+	assertEquals(cur->getColumnLength(8),511);
 	stdoutput.printf("\n");
 
-	checkSuccess(cur->getColumnPrecision((uint32_t)0),10);
-	checkSuccess(cur->getColumnPrecision(1),0);
-	checkSuccess(cur->getColumnPrecision(2),10);
-	checkSuccess(cur->getColumnPrecision(3),12);
-	checkSuccess(cur->getColumnPrecision(4),0);
-	checkSuccess(cur->getColumnPrecision(5),12);
-	checkSuccess(cur->getColumnPrecision(6),0);
-	checkSuccess(cur->getColumnPrecision(7),0);
-	checkSuccess(cur->getColumnPrecision(8),0);
+	assertEquals(cur->getColumnPrecision((uint32_t)0),10);
+	assertEquals(cur->getColumnPrecision(1),0);
+	assertEquals(cur->getColumnPrecision(2),10);
+	assertEquals(cur->getColumnPrecision(3),12);
+	assertEquals(cur->getColumnPrecision(4),0);
+	assertEquals(cur->getColumnPrecision(5),12);
+	assertEquals(cur->getColumnPrecision(6),0);
+	assertEquals(cur->getColumnPrecision(7),0);
+	assertEquals(cur->getColumnPrecision(8),0);
 	stdoutput.printf("\n");
 
-	checkSuccess(cur->getColumnScale((uint32_t)0),0);
-	checkSuccess(cur->getColumnScale(1),0);
-	checkSuccess(cur->getColumnScale(2),0);
-	checkSuccess(cur->getColumnScale(3),0);
-	checkSuccess(cur->getColumnScale(4),0);
-	checkSuccess(cur->getColumnScale(5),2);
-	checkSuccess(cur->getColumnScale(6),0);
-	checkSuccess(cur->getColumnScale(7),0);
-	checkSuccess(cur->getColumnScale(8),0);
+	assertEquals(cur->getColumnScale((uint32_t)0),0);
+	assertEquals(cur->getColumnScale(1),0);
+	assertEquals(cur->getColumnScale(2),0);
+	assertEquals(cur->getColumnScale(3),0);
+	assertEquals(cur->getColumnScale(4),0);
+	assertEquals(cur->getColumnScale(5),2);
+	assertEquals(cur->getColumnScale(6),0);
+	assertEquals(cur->getColumnScale(7),0);
+	assertEquals(cur->getColumnScale(8),0);
 	stdoutput.printf("\n");
 
-	checkSuccess(cur->getColumnIsNullable((uint32_t)0),0);
-	checkSuccess(cur->getColumnIsNullable(1),0);
-	checkSuccess(cur->getColumnIsNullable(2),0);
-	checkSuccess(cur->getColumnIsNullable(3),0);
-	checkSuccess(cur->getColumnIsNullable(4),0);
-	checkSuccess(cur->getColumnIsNullable(5),0);
-	checkSuccess(cur->getColumnIsNullable(6),0);
-	checkSuccess(cur->getColumnIsNullable(7),1);
-	checkSuccess(cur->getColumnIsNullable(8),1);
+	assertFalse(cur->getColumnIsNullable((uint32_t)0));
+	assertFalse(cur->getColumnIsNullable(1));
+	assertFalse(cur->getColumnIsNullable(2));
+	assertFalse(cur->getColumnIsNullable(3));
+	assertFalse(cur->getColumnIsNullable(4));
+	assertFalse(cur->getColumnIsNullable(5));
+	assertFalse(cur->getColumnIsNullable(6));
+	assertTrue(cur->getColumnIsNullable(7));
+	assertTrue(cur->getColumnIsNullable(8));
 	stdoutput.printf("\n");
 
 	uint64_t	row=0;
@@ -341,71 +265,71 @@ int	main(int argc, char **argv) {
 			break;
 		}
 	}
-	checkSuccess(found,true);
-	checkSuccess(cur->getField(row,(uint32_t)1),"*");
-	checkSuccess(cur->getField(row,(uint32_t)4),"RETURN_RESULT_SET");
+	assertEquals(found,true);
+	assertEquals(cur->getField(row,(uint32_t)1),"*");
+	assertEquals(cur->getField(row,(uint32_t)4),"RETURN_RESULT_SET");
 	// 127.0.0.1 on Windows
-	//checkSuccess(cur->getField(row,(uint32_t)6),"UNIX");
-	checkSuccess(cur->getField(row,(uint32_t)7),"extensionstest");
-	checkSuccess(cur->getField(row,(uint32_t)8),"sqlrcmd cstat");
+	//assertEquals(cur->getField(row,(uint32_t)6),"UNIX");
+	assertEquals(cur->getField(row,(uint32_t)7),"extensionstest");
+	assertEquals(cur->getField(row,(uint32_t)8),"sqlrcmd cstat");
 	stdoutput.printf("\n\n");
 
 
 	stdoutput.printf("SQLRCMD GSTAT: \n");
-	checkSuccess(cur->sendQuery("sqlrcmd gstat"),1);
+	assertTrue(cur->sendQuery("sqlrcmd gstat"));
 
-	checkSuccess(cur->colCount(),2);
+	assertEquals(cur->colCount(),2);
 
-	checkSuccess(cur->getColumnName((uint32_t)0),"KEY");
-	checkSuccess(cur->getColumnName(1),"VALUE");
+	assertEquals(cur->getColumnName((uint32_t)0),"KEY");
+	assertEquals(cur->getColumnName(1),"VALUE");
 
-	checkSuccess(cur->getColumnType((uint32_t)0),"VARCHAR2");
-	checkSuccess(cur->getColumnType(1),"VARCHAR2");
+	assertEquals(cur->getColumnType((uint32_t)0),"VARCHAR2");
+	assertEquals(cur->getColumnType(1),"VARCHAR2");
 
-	checkSuccess(cur->getColumnLength((uint32_t)0),40);
-	checkSuccess(cur->getColumnLength(1),40);
+	assertEquals(cur->getColumnLength((uint32_t)0),40);
+	assertEquals(cur->getColumnLength(1),40);
 
-	checkSuccess(cur->getField(0,(uint32_t)0),"start");
-	checkSuccess(cur->getField(1,(uint32_t)0),"uptime");
-	checkSuccess(cur->getField(2,(uint32_t)0),"now");
-	checkSuccess(cur->getField(3,(uint32_t)0),"access_count");
-	checkSuccess(cur->getField(4,(uint32_t)0),"query_total");
-	checkSuccess(cur->getField(5,(uint32_t)0),"qpm");
-	checkSuccess(cur->getField(6,(uint32_t)0),"qpm_1");
-	checkSuccess(cur->getField(7,(uint32_t)0),"qpm_5");
-	checkSuccess(cur->getField(8,(uint32_t)0),"qpm_15");
-	checkSuccess(cur->getField(9,(uint32_t)0),"select_1");
-	checkSuccess(cur->getField(10,(uint32_t)0),"select_5");
-	checkSuccess(cur->getField(11,(uint32_t)0),"select_15");
-	checkSuccess(cur->getField(12,(uint32_t)0),"insert_1");
-	checkSuccess(cur->getField(13,(uint32_t)0),"insert_5");
-	checkSuccess(cur->getField(14,(uint32_t)0),"insert_15");
-	checkSuccess(cur->getField(15,(uint32_t)0),"update_1");
-	checkSuccess(cur->getField(16,(uint32_t)0),"update_5");
-	checkSuccess(cur->getField(17,(uint32_t)0),"update_15");
-	checkSuccess(cur->getField(18,(uint32_t)0),"delete_1");
-	checkSuccess(cur->getField(19,(uint32_t)0),"delete_5");
-	checkSuccess(cur->getField(20,(uint32_t)0),"delete_15");
-	checkSuccess(cur->getField(21,(uint32_t)0),"etc_1");
-	checkSuccess(cur->getField(22,(uint32_t)0),"etc_5");
-	checkSuccess(cur->getField(23,(uint32_t)0),"etc_15");
-	checkSuccess(cur->getField(24,(uint32_t)0),"sqlrcmd_1");
-	checkSuccess(cur->getField(25,(uint32_t)0),"sqlrcmd_5");
-	checkSuccess(cur->getField(26,(uint32_t)0),"sqlrcmd_15");
-	checkSuccess(cur->getField(27,(uint32_t)0),"max_listener");
-	checkSuccess(cur->getField(28,(uint32_t)0),"max_listener_error");
-	checkSuccess(cur->getField(29,(uint32_t)0),"busy_listener");
-	checkSuccess(cur->getField(30,(uint32_t)0),"peak_listener");
-	checkSuccess(cur->getField(31,(uint32_t)0),"connection");
-	checkSuccess(cur->getField(32,(uint32_t)0),"session");
-	checkSuccess(cur->getField(33,(uint32_t)0),"peak_session");
-	checkSuccess(cur->getField(34,(uint32_t)0),"peak_session_1min");
-	checkSuccess(cur->getField(35,(uint32_t)0),"peak_session_1min_time");
+	assertEquals(cur->getField(0,(uint32_t)0),"start");
+	assertEquals(cur->getField(1,(uint32_t)0),"uptime");
+	assertEquals(cur->getField(2,(uint32_t)0),"now");
+	assertEquals(cur->getField(3,(uint32_t)0),"access_count");
+	assertEquals(cur->getField(4,(uint32_t)0),"query_total");
+	assertEquals(cur->getField(5,(uint32_t)0),"qpm");
+	assertEquals(cur->getField(6,(uint32_t)0),"qpm_1");
+	assertEquals(cur->getField(7,(uint32_t)0),"qpm_5");
+	assertEquals(cur->getField(8,(uint32_t)0),"qpm_15");
+	assertEquals(cur->getField(9,(uint32_t)0),"select_1");
+	assertEquals(cur->getField(10,(uint32_t)0),"select_5");
+	assertEquals(cur->getField(11,(uint32_t)0),"select_15");
+	assertEquals(cur->getField(12,(uint32_t)0),"insert_1");
+	assertEquals(cur->getField(13,(uint32_t)0),"insert_5");
+	assertEquals(cur->getField(14,(uint32_t)0),"insert_15");
+	assertEquals(cur->getField(15,(uint32_t)0),"update_1");
+	assertEquals(cur->getField(16,(uint32_t)0),"update_5");
+	assertEquals(cur->getField(17,(uint32_t)0),"update_15");
+	assertEquals(cur->getField(18,(uint32_t)0),"delete_1");
+	assertEquals(cur->getField(19,(uint32_t)0),"delete_5");
+	assertEquals(cur->getField(20,(uint32_t)0),"delete_15");
+	assertEquals(cur->getField(21,(uint32_t)0),"etc_1");
+	assertEquals(cur->getField(22,(uint32_t)0),"etc_5");
+	assertEquals(cur->getField(23,(uint32_t)0),"etc_15");
+	assertEquals(cur->getField(24,(uint32_t)0),"sqlrcmd_1");
+	assertEquals(cur->getField(25,(uint32_t)0),"sqlrcmd_5");
+	assertEquals(cur->getField(26,(uint32_t)0),"sqlrcmd_15");
+	assertEquals(cur->getField(27,(uint32_t)0),"max_listener");
+	assertEquals(cur->getField(28,(uint32_t)0),"max_listener_error");
+	assertEquals(cur->getField(29,(uint32_t)0),"busy_listener");
+	assertEquals(cur->getField(30,(uint32_t)0),"peak_listener");
+	assertEquals(cur->getField(31,(uint32_t)0),"connection");
+	assertEquals(cur->getField(32,(uint32_t)0),"session");
+	assertEquals(cur->getField(33,(uint32_t)0),"peak_session");
+	assertEquals(cur->getField(34,(uint32_t)0),"peak_session_1min");
+	assertEquals(cur->getField(35,(uint32_t)0),"peak_session_1min_time");
 	stdoutput.printf("\n\n");
 
 
 	stdoutput.printf("SESSION QUERIES: Date Format\n");
-	checkSuccess(cur->sendQuery("select sysdate from dual"),1);
+	assertTrue(cur->sendQuery("select sysdate from dual"));
 	datetime	dt;
 	dt.initFromSystemDateTime();
 	const char	*field=cur->getField(0,(uint32_t)0);
@@ -414,14 +338,14 @@ int	main(int argc, char **argv) {
 	char	*year=charstring::getSubString(field,6,9);
 	char	*hour=charstring::getSubString(field,11,12);
 	char	*minute=charstring::getSubString(field,14,15);
-	checkSuccess((int)charstring::convertToInteger(day),(int)dt.getDayOfMonth());
-	checkSuccess((int)charstring::convertToInteger(month),(int)dt.getMonth());
-	checkSuccess((int)charstring::convertToInteger(year),(int)dt.getYear());
-	checkSuccess((int)charstring::convertToInteger(hour),(int)dt.getHour());
+	assertEquals((int)charstring::convertToInteger(day),(int)dt.getDayOfMonth());
+	assertEquals((int)charstring::convertToInteger(month),(int)dt.getMonth());
+	assertEquals((int)charstring::convertToInteger(year),(int)dt.getYear());
+	assertEquals((int)charstring::convertToInteger(hour),(int)dt.getHour());
 	int	dbmin=(int)charstring::convertToInteger(minute);
 	int	min=(int)dt.getMinute();
 	bool	success=((dbmin==min) || (dbmin==min-1) || (dbmin-1==min));
-	checkSuccess(success,1);
+	assertTrue(success);
 	delete[] year;
 	delete[] day;
 	delete[] month;
@@ -431,12 +355,12 @@ int	main(int argc, char **argv) {
 
 
 	stdoutput.printf("FILTERS:\n");
-	checkSuccess(cur->sendQuery("select * from badstring"),0);
-	checkSuccess(cur->errorMessage(),"badstring encountered");
-	checkSuccess(cur->sendQuery("select * from badregex"),0);
-	checkSuccess(cur->errorMessage(),"badregex encountered");
-	checkSuccess(cur->errorNumber(),100);
-	checkSuccess(cur->sendQuery("select * from badpattern"),0);
+	assertFalse(cur->sendQuery("select * from badstring"));
+	assertEquals(cur->errorMessage(),"badstring encountered");
+	assertFalse(cur->sendQuery("select * from badregex"));
+	assertEquals(cur->errorMessage(),"badregex encountered");
+	assertEquals(cur->errorNumber(),100);
+	assertFalse(cur->sendQuery("select * from badpattern"));
 	stdoutput.printf("\n\n");
 
 	delete cur;
@@ -459,7 +383,7 @@ int	main(int argc, char **argv) {
 		con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 							*usrpwd,*usrpwd,0,1);
 		cur=new sqlrcursor(con);
-		checkSuccess(cur->sendQuery("select 1 from dual"),1);
+		assertTrue(cur->sendQuery("select 1 from dual"));
 		stdoutput.printf("\n");
 		delete cur;
 		delete con;
@@ -473,8 +397,8 @@ int	main(int argc, char **argv) {
 	secondcur=new sqlrcursor(con);
 	cur->sendQuery("drop table student");
 	cur->sendQuery("drop sequence student_id");
-	checkSuccess(cur->sendQuery("create sequence student_id"),1);
-	checkSuccess(cur->sendQuery("create table student ("
+	assertTrue(cur->sendQuery("create sequence student_id"));
+	assertTrue(cur->sendQuery("create table student ("
 					"id int, "
 					"firstname varchar(20), "
 					"lastname varchar(20), "
@@ -483,35 +407,35 @@ int	main(int argc, char **argv) {
 					"gpa varchar(20), "
 					"primary key (id), "
 					"unique (firstname,lastname) "
-					")"),1);
+					")"));
 	stdoutput.printf("\n");
 	// initial insert
-	checkSuccess(cur->sendQuery("insert into student values "
+	assertTrue(cur->sendQuery("insert into student values "
 				"(student_id.nextval,"
-				"'David','Muse','Freshman','ME','4.0')"),1);
-	checkSuccess(secondcur->sendQuery("select count(*) from student"),1);
-	checkSuccess(secondcur->getField(0,(uint32_t)0),"1");
-	checkSuccess(secondcur->sendQuery("select * from student"),1);
-	checkSuccess(secondcur->getField(0,(uint32_t)0),"1");
-	checkSuccess(secondcur->getField(0,1),"David");
-	checkSuccess(secondcur->getField(0,2),"Muse");
-	checkSuccess(secondcur->getField(0,3),"Freshman");
-	checkSuccess(secondcur->getField(0,4),"ME");
-	checkSuccess(secondcur->getField(0,5),"4.0");
+				"'David','Muse','Freshman','ME','4.0')"));
+	assertTrue(secondcur->sendQuery("select count(*) from student"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertTrue(secondcur->sendQuery("select * from student"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertEquals(secondcur->getField(0,1),"David");
+	assertEquals(secondcur->getField(0,2),"Muse");
+	assertEquals(secondcur->getField(0,3),"Freshman");
+	assertEquals(secondcur->getField(0,4),"ME");
+	assertEquals(secondcur->getField(0,5),"4.0");
 	stdoutput.printf("\n");
 	// should be converted to an update
-	checkSuccess(cur->sendQuery("insert into student values "
+	assertTrue(cur->sendQuery("insert into student values "
 				"(student_id.nextval,"
-				"'David','Muse','Sophomore','ME','3.5')"),1);
-	checkSuccess(secondcur->sendQuery("select count(*) from student"),1);
-	checkSuccess(secondcur->getField(0,(uint32_t)0),"1");
-	checkSuccess(secondcur->sendQuery("select * from student"),1);
-	checkSuccess(secondcur->getField(0,(uint32_t)0),"1");
-	checkSuccess(secondcur->getField(0,1),"David");
-	checkSuccess(secondcur->getField(0,2),"Muse");
-	checkSuccess(secondcur->getField(0,3),"Sophomore");
-	checkSuccess(secondcur->getField(0,4),"ME");
-	checkSuccess(secondcur->getField(0,5),"3.5");
+				"'David','Muse','Sophomore','ME','3.5')"));
+	assertTrue(secondcur->sendQuery("select count(*) from student"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertTrue(secondcur->sendQuery("select * from student"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertEquals(secondcur->getField(0,1),"David");
+	assertEquals(secondcur->getField(0,2),"Muse");
+	assertEquals(secondcur->getField(0,3),"Sophomore");
+	assertEquals(secondcur->getField(0,4),"ME");
+	assertEquals(secondcur->getField(0,5),"3.5");
 	stdoutput.printf("\n");
 	// with bind variables, should also be converted to an update
 	cur->prepareQuery("insert into student values "
@@ -522,16 +446,16 @@ int	main(int argc, char **argv) {
 	cur->inputBind("year","Junior");
 	cur->inputBind("major","CS");
 	cur->inputBind("gpa","3.0");
-	checkSuccess(cur->executeQuery(),1);
-	checkSuccess(secondcur->sendQuery("select count(*) from student"),1);
-	checkSuccess(secondcur->getField(0,(uint32_t)0),"1");
-	checkSuccess(secondcur->sendQuery("select * from student"),1);
-	checkSuccess(secondcur->getField(0,(uint32_t)0),"1");
-	checkSuccess(secondcur->getField(0,1),"David");
-	checkSuccess(secondcur->getField(0,2),"Muse");
-	checkSuccess(secondcur->getField(0,3),"Junior");
-	checkSuccess(secondcur->getField(0,4),"CS");
-	checkSuccess(secondcur->getField(0,5),"3.0");
+	assertTrue(cur->executeQuery());
+	assertTrue(secondcur->sendQuery("select count(*) from student"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertTrue(secondcur->sendQuery("select * from student"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertEquals(secondcur->getField(0,1),"David");
+	assertEquals(secondcur->getField(0,2),"Muse");
+	assertEquals(secondcur->getField(0,3),"Junior");
+	assertEquals(secondcur->getField(0,4),"CS");
+	assertEquals(secondcur->getField(0,5),"3.0");
 	stdoutput.printf("\n");
 	// reexecute with bind variables, should also be converted to an update
 	cur->inputBind("firstname","David");
@@ -539,26 +463,26 @@ int	main(int argc, char **argv) {
 	cur->inputBind("year","Senior");
 	cur->inputBind("major","CS");
 	cur->inputBind("gpa","2.5");
-	checkSuccess(cur->executeQuery(),1);
-	checkSuccess(secondcur->sendQuery("select count(*) from student"),1);
-	checkSuccess(secondcur->getField(0,(uint32_t)0),"1");
-	checkSuccess(secondcur->sendQuery("select * from student"),1);
-	checkSuccess(secondcur->getField(0,(uint32_t)0),"1");
-	checkSuccess(secondcur->getField(0,1),"David");
-	checkSuccess(secondcur->getField(0,2),"Muse");
-	checkSuccess(secondcur->getField(0,3),"Senior");
-	checkSuccess(secondcur->getField(0,4),"CS");
-	checkSuccess(secondcur->getField(0,5),"2.5");
+	assertTrue(cur->executeQuery());
+	assertTrue(secondcur->sendQuery("select count(*) from student"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertTrue(secondcur->sendQuery("select * from student"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertEquals(secondcur->getField(0,1),"David");
+	assertEquals(secondcur->getField(0,2),"Muse");
+	assertEquals(secondcur->getField(0,3),"Senior");
+	assertEquals(secondcur->getField(0,4),"CS");
+	assertEquals(secondcur->getField(0,5),"2.5");
 	stdoutput.printf("\n");
-	checkSuccess(cur->sendQuery("drop table student"),1);
-	checkSuccess(cur->sendQuery("drop sequence student_id"),1);
+	assertTrue(cur->sendQuery("drop table student"));
+	assertTrue(cur->sendQuery("drop sequence student_id"));
 	delete secondcur;
 	stdoutput.printf("\n\n");
 
 	stdoutput.printf("ERROR TRANSLATION:\n");
-	checkSuccess(cur->sendQuery("select 1"),0);
-	checkSuccess(cur->errorNumber(),10923);
-	checkSuccess(cur->errorMessage(),
+	assertFalse(cur->sendQuery("select 1"));
+	assertEquals(cur->errorNumber(),10923);
+	assertEquals(cur->errorMessage(),
 			"ORA-10923: fRoM kEyWoRd nOt fOuNd wHeRe eXpEcTeD");
 	stdoutput.printf("\n\n");
 

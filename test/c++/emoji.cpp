@@ -6,49 +6,12 @@
 #include <rudiments/process.h>
 #include <rudiments/stdio.h>
 
+#include "assert.cpp"
+
 sqlrconnection	*con;
 sqlrcursor	*cur;
 sqlrconnection	*secondcon;
 sqlrcursor	*secondcur;
-
-void checkSuccess(const char *value, const char *success) {
-
-	if (!success) {
-		if (!value) {
-			stdoutput.printf("success ");
-			return;
-		} else {
-			stdoutput.printf("%s!=%s\n",value,success);
-			stdoutput.printf("failure: %s\n",cur->errorMessage());
-			delete cur;
-			delete con;
-			process::exit(1);
-		}
-	}
-
-	if (!charstring::compare(value,success)) {
-		stdoutput.printf("success ");
-	} else {
-		stdoutput.printf("%s!=%s\n",value,success);
-		stdoutput.printf("failure: %s\n",cur->errorMessage());
-		delete cur;
-		delete con;
-		process::exit(1);
-	}
-}
-
-void checkSuccess(int value, int success) {
-
-	if (value==success) {
-		stdoutput.printf("success ");
-	} else {
-		stdoutput.printf("%d!=%d\n",value,success);
-		stdoutput.printf("failure: %s\n",cur->errorMessage());
-		delete cur;
-		delete con;
-		process::exit(1);
-	}
-}
 
 // utf-8
 const byte_t yo8[]={'y','o','\0'};
@@ -75,7 +38,7 @@ int	main(int argc, char **argv) {
 	cur->sendQuery("drop table testtable");
 
 	stdoutput.printf("CREATE TEMPTABLE: \n");
-	checkSuccess(cur->sendQuery("create table testtable (i int identity, emojidirect nvarchar(64), emojifrombase64 nvarchar(64), base64 varchar(64))"),1);
+	assertTrue(cur->sendQuery("create table testtable (i int identity, emojidirect nvarchar(64), emojifrombase64 nvarchar(64), base64 varchar(64))"));
 	stdoutput.printf("\n");
 	stdoutput.printf("\n");
 
@@ -92,24 +55,24 @@ int	main(int argc, char **argv) {
 		// function instead of hardcoding to 6
 		char	*b64e=charstring::base64Encode(*e16,6);
 		cur->inputBind("2",b64e);
-		checkSuccess(cur->executeQuery(),1);
+		assertTrue(cur->executeQuery());
 		delete[] b64e;
 	}
 	stdoutput.printf("\n");
 
 	stdoutput.printf("UPDATE: \n");
-	checkSuccess(cur->sendQuery("update testtable set emojifrombase64=cast(cast(N'' as xml).value('xs:base64Binary(sql:column(\"base64\"))','VARBINARY(MAX)') AS NVARCHAR(MAX))"),1);
+	assertTrue(cur->sendQuery("update testtable set emojifrombase64=cast(cast(N'' as xml).value('xs:base64Binary(sql:column(\"base64\"))','VARBINARY(MAX)') AS NVARCHAR(MAX))"));
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("SELECT: \n");
-	checkSuccess(cur->sendQuery("select * from testtable"),1);
+	assertTrue(cur->sendQuery("select * from testtable"));
 	stdoutput.printf("\n");
 	uint64_t	row=0;
 	for (const byte_t **e=emoji8; *e; e++) {
-		checkSuccess(cur->getField(row,"emojidirect"),
+		assertEquals(cur->getField(row,"emojidirect"),
 							(const char *)*e);
-		checkSuccess(cur->getField(row,"emojifrombase64"),
+		assertEquals(cur->getField(row,"emojifrombase64"),
 							(const char *)*e);
 		row++;
 	}
@@ -122,15 +85,15 @@ int	main(int argc, char **argv) {
 		cur->prepareQuery("set :output=(select emojidirect from testtable where i=$(row))");
 		cur->substitution("row",row);
 		cur->defineOutputBindString("output",100);
-		checkSuccess(cur->executeQuery(),1);
-		checkSuccess(cur->getOutputBindString("output"),
+		assertTrue(cur->executeQuery());
+		assertEquals(cur->getOutputBindString("output"),
 						(const char *)*e);
 
 		cur->prepareQuery("set :output=(select emojifrombase64 from testtable where i=$(row))");
 		cur->substitution("row",row);
 		cur->defineOutputBindString("output",100);
-		checkSuccess(cur->executeQuery(),1);
-		checkSuccess(cur->getOutputBindString("output"),
+		assertTrue(cur->executeQuery());
+		assertEquals(cur->getOutputBindString("output"),
 						(const char *)*e);
 		row++;
 	}

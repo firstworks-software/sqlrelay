@@ -856,6 +856,18 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		driver.debugPrintln("procedure name pattern: "+
 						procedureNamePattern);
 
+		// FIXME: We do have some amount of backend support for this,
+		// but currently it returns all procedures, in all schemas, in
+		// all databases, and doesn't handle wildcards at all.  This
+		// tends to generate large result sets, and slow apps down
+		// terribly, while simultaneously giving them the wrong info.
+		// For now, we'll just disable it.
+		driver.debugPrintln("FIXME: implement wildcards "
+					"correctly on the backend");
+		driver.debugEnd();
+		return null;
+
+/*
 		String	wild=buildWild(catalog,schemaPattern,
 						procedureNamePattern);
 		driver.debugPrintln("wild: "+wild);
@@ -887,6 +899,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		
 		driver.debugEnd();
 		return resultset;
+*/
 	}
 
 	public

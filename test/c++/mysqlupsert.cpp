@@ -10,88 +10,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "assert.cpp"
+
 sqlrconnection	*con;
 sqlrcursor	*cur;
 sqlrconnection	*secondcon;
 sqlrcursor	*secondcur;
-
-void checkSuccess(const char *value, const char *success) {
-
-	if (!success) {
-		if (!value) {
-			stdoutput.printf("success ");
-			return;
-		} else {
-			stdoutput.printf("%s!=%s\n",value,success);
-			stdoutput.printf("failure ");
-			delete cur;
-			delete con;
-			process::exit(1);
-		}
-	}
-
-	if (!charstring::compare(value,success)) {
-		stdoutput.printf("success ");
-	} else {
-		stdoutput.printf("%s!=%s\n",value,success);
-		stdoutput.printf("failure ");
-		delete cur;
-		delete con;
-		process::exit(1);
-	}
-}
-
-void checkSuccess(const char *value, const char *success, size_t length) {
-
-	if (!success) {
-		if (!value) {
-			stdoutput.printf("success ");
-			return;
-		} else {
-			stdoutput.printf("%s!=%s\n",value,success);
-			stdoutput.printf("failure ");
-			delete cur;
-			delete con;
-			process::exit(1);
-		}
-	}
-
-	if (!strncmp(value,success,length)) {
-		stdoutput.printf("success ");
-	} else {
-		stdoutput.printf("%s!=%s\n",value,success);
-		stdoutput.printf("failure ");
-		delete cur;
-		delete con;
-		process::exit(1);
-	}
-}
-
-void checkSuccess(int value, int success) {
-
-	if (value==success) {
-		stdoutput.printf("success ");
-	} else {
-		stdoutput.printf("%d!=%d\n",value,success);
-		stdoutput.printf("failure ");
-		delete cur;
-		delete con;
-		process::exit(1);
-	}
-}
-
-void checkSuccess(double value, double success) {
-
-	if (value==success) {
-		stdoutput.printf("success ");
-	} else {
-		stdoutput.printf("%f!=%f\n",value,success);
-		stdoutput.printf("failure ");
-		delete cur;
-		delete con;
-		process::exit(1);
-	}
-}
 
 int	main(int argc, char **argv) {
 
@@ -112,7 +36,7 @@ int	main(int argc, char **argv) {
 	cur=new sqlrcursor(con);
 	secondcur=new sqlrcursor(con);
 	cur->sendQuery("drop table student");
-	checkSuccess(cur->sendQuery("create table student ("
+	assertTrue(cur->sendQuery("create table student ("
 					"id int auto_increment, "
 					"firstname varchar(20), "
 					"lastname varchar(20), "
@@ -121,35 +45,35 @@ int	main(int argc, char **argv) {
 					"gpa varchar(20), "
 					"primary key (id), "
 					"unique (firstname,lastname) "
-					")"),1);
+					")"));
 	stdoutput.printf("\n");
 	// initial insert
-	checkSuccess(cur->sendQuery("insert into student values "
+	assertTrue(cur->sendQuery("insert into student values "
 				"(null,"
-				"'David','Muse','Freshman','ME','4.0')"),1);
-	checkSuccess(secondcur->sendQuery("select count(*) from student"),1);
-	checkSuccess(secondcur->getField(0,(uint32_t)0),"1");
-	checkSuccess(secondcur->sendQuery("select * from student"),1);
-	checkSuccess(secondcur->getField(0,(uint32_t)0),"1");
-	checkSuccess(secondcur->getField(0,1),"David");
-	checkSuccess(secondcur->getField(0,2),"Muse");
-	checkSuccess(secondcur->getField(0,3),"Freshman");
-	checkSuccess(secondcur->getField(0,4),"ME");
-	checkSuccess(secondcur->getField(0,5),"4.0");
+				"'David','Muse','Freshman','ME','4.0')"));
+	assertTrue(secondcur->sendQuery("select count(*) from student"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertTrue(secondcur->sendQuery("select * from student"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertEquals(secondcur->getField(0,1),"David");
+	assertEquals(secondcur->getField(0,2),"Muse");
+	assertEquals(secondcur->getField(0,3),"Freshman");
+	assertEquals(secondcur->getField(0,4),"ME");
+	assertEquals(secondcur->getField(0,5),"4.0");
 	stdoutput.printf("\n");
 	// should be converted to an update
-	checkSuccess(cur->sendQuery("insert into student values "
+	assertTrue(cur->sendQuery("insert into student values "
 				"(null,"
-				"'David','Muse','Sophomore','ME','3.5')"),1);
-	checkSuccess(secondcur->sendQuery("select count(*) from student"),1);
-	checkSuccess(secondcur->getField(0,(uint32_t)0),"1");
-	checkSuccess(secondcur->sendQuery("select * from student"),1);
-	checkSuccess(secondcur->getField(0,(uint32_t)0),"1");
-	checkSuccess(secondcur->getField(0,1),"David");
-	checkSuccess(secondcur->getField(0,2),"Muse");
-	checkSuccess(secondcur->getField(0,3),"Sophomore");
-	checkSuccess(secondcur->getField(0,4),"ME");
-	checkSuccess(secondcur->getField(0,5),"3.5");
+				"'David','Muse','Sophomore','ME','3.5')"));
+	assertTrue(secondcur->sendQuery("select count(*) from student"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertTrue(secondcur->sendQuery("select * from student"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertEquals(secondcur->getField(0,1),"David");
+	assertEquals(secondcur->getField(0,2),"Muse");
+	assertEquals(secondcur->getField(0,3),"Sophomore");
+	assertEquals(secondcur->getField(0,4),"ME");
+	assertEquals(secondcur->getField(0,5),"3.5");
 	stdoutput.printf("\n");
 	// with bind variables, should also be converted to an update
 	cur->prepareQuery("insert into student values (null,?,?,?,?,?)");
@@ -158,16 +82,16 @@ int	main(int argc, char **argv) {
 	cur->inputBind("3","Junior");
 	cur->inputBind("4","CS");
 	cur->inputBind("5","3.0");
-	checkSuccess(cur->executeQuery(),1);
-	checkSuccess(secondcur->sendQuery("select count(*) from student"),1);
-	checkSuccess(secondcur->getField(0,(uint32_t)0),"1");
-	checkSuccess(secondcur->sendQuery("select * from student"),1);
-	checkSuccess(secondcur->getField(0,(uint32_t)0),"1");
-	checkSuccess(secondcur->getField(0,1),"David");
-	checkSuccess(secondcur->getField(0,2),"Muse");
-	checkSuccess(secondcur->getField(0,3),"Junior");
-	checkSuccess(secondcur->getField(0,4),"CS");
-	checkSuccess(secondcur->getField(0,5),"3.0");
+	assertTrue(cur->executeQuery());
+	assertTrue(secondcur->sendQuery("select count(*) from student"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertTrue(secondcur->sendQuery("select * from student"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertEquals(secondcur->getField(0,1),"David");
+	assertEquals(secondcur->getField(0,2),"Muse");
+	assertEquals(secondcur->getField(0,3),"Junior");
+	assertEquals(secondcur->getField(0,4),"CS");
+	assertEquals(secondcur->getField(0,5),"3.0");
 	stdoutput.printf("\n");
 	// reexecute with bind variables, should also be converted to an update
 	cur->inputBind("1","David");
@@ -175,18 +99,18 @@ int	main(int argc, char **argv) {
 	cur->inputBind("3","Senior");
 	cur->inputBind("4","CS");
 	cur->inputBind("5","2.5");
-	checkSuccess(cur->executeQuery(),1);
-	checkSuccess(secondcur->sendQuery("select count(*) from student"),1);
-	checkSuccess(secondcur->getField(0,(uint32_t)0),"1");
-	checkSuccess(secondcur->sendQuery("select * from student"),1);
-	checkSuccess(secondcur->getField(0,(uint32_t)0),"1");
-	checkSuccess(secondcur->getField(0,1),"David");
-	checkSuccess(secondcur->getField(0,2),"Muse");
-	checkSuccess(secondcur->getField(0,3),"Senior");
-	checkSuccess(secondcur->getField(0,4),"CS");
-	checkSuccess(secondcur->getField(0,5),"2.5");
+	assertTrue(cur->executeQuery());
+	assertTrue(secondcur->sendQuery("select count(*) from student"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertTrue(secondcur->sendQuery("select * from student"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertEquals(secondcur->getField(0,1),"David");
+	assertEquals(secondcur->getField(0,2),"Muse");
+	assertEquals(secondcur->getField(0,3),"Senior");
+	assertEquals(secondcur->getField(0,4),"CS");
+	assertEquals(secondcur->getField(0,5),"2.5");
 	stdoutput.printf("\n");
-	checkSuccess(cur->sendQuery("drop table student"),1);
+	assertTrue(cur->sendQuery("drop table student"));
 	delete secondcur;
 	delete cur;
 	delete con;
