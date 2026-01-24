@@ -5,111 +5,11 @@
 #include <rudiments/stdio.h>
 #include <rudiments/process.h>
 
+#include "assert.cpp"
+
 sqlrconnection	*con;
 sqlrcursor	*cur;
 sqlrcrud	*crud;
-
-void checkSuccess(const char *value, const char *success) {
-
-	if (!success) {
-		if (!value) {
-			stdoutput.printf("success ");
-			return;
-		} else {
-			stdoutput.printf("%s!=%s\n",value,success);
-			stdoutput.printf("failure\n");
-			stdoutput.printf("%lld: %s\n",
-					crud->getErrorCode(),
-					crud->getErrorMessage());
-			delete crud;
-			delete cur;
-			delete con;
-			process::exit(1);
-		}
-	}
-
-	if (!charstring::compare(value,success)) {
-		stdoutput.printf("success ");
-	} else {
-		stdoutput.printf("%s!=%s\n",value,success);
-		stdoutput.printf("failure\n");
-		stdoutput.printf("%lld: %s\n",
-				crud->getErrorCode(),
-				crud->getErrorMessage());
-		delete crud;
-		delete cur;
-		delete con;
-		process::exit(1);
-	}
-}
-
-void checkSuccess(const char *value, const char *success, size_t length) {
-
-	if (!success) {
-		if (!value) {
-			stdoutput.printf("success ");
-			return;
-		} else {
-			stdoutput.printf("%s!=%s\n",value,success);
-			stdoutput.printf("failure\n");
-			stdoutput.printf("%lld: %s\n",
-					crud->getErrorCode(),
-					crud->getErrorMessage());
-			delete crud;
-			delete cur;
-			delete con;
-			process::exit(1);
-		}
-	}
-
-	if (!charstring::compare(value,success,length)) {
-		stdoutput.printf("success ");
-	} else {
-		stdoutput.printf("%s!=%s\n",value,success);
-		stdoutput.printf("failure\n");
-		stdoutput.printf("%lld: %s\n",
-				crud->getErrorCode(),
-				crud->getErrorMessage());
-		delete crud;
-		delete cur;
-		delete con;
-		process::exit(1);
-	}
-}
-
-void checkSuccess(int value, int success) {
-
-	if (value==success) {
-		stdoutput.printf("success ");
-	} else {
-		stdoutput.printf("%d!=%d\n",value,success);
-		stdoutput.printf("failure\n");
-		stdoutput.printf("%lld: %s\n",
-				crud->getErrorCode(),
-				crud->getErrorMessage());
-		delete crud;
-		delete cur;
-		delete con;
-		process::exit(1);
-	}
-}
-
-void checkSuccess(double value, double success) {
-
-	if (value==success) {
-		stdoutput.printf("success ");
-	} else {
-		stdoutput.printf("%f!=%f\n",value,success);
-		stdoutput.printf("failure\n");
-		stdoutput.printf("%lld: %s\n",
-				crud->getErrorCode(),
-				crud->getErrorMessage());
-		delete crud;
-		delete cur;
-		delete con;
-		process::exit(1);
-	}
-}
 
 int main(int argc, char **argv) {
 
@@ -123,12 +23,12 @@ int main(int argc, char **argv) {
 	cur->sendQuery("drop sequence testtable_ids");
 
 	stdoutput.printf("CREATE TESTTABLE and TESTTABLE_IDS: \n");
-	checkSuccess(cur->sendQuery("create table testtable "
+	assertTrue(cur->sendQuery("create table testtable "
 					"(testtable_id int primary key, "
 					"col1 varchar(128), "
 					"col2 int, "
-					"col3 date)"),true);
-	checkSuccess(cur->sendQuery("create sequence testtable_ids"),true);
+					"col3 date)"));
+	assertTrue(cur->sendQuery("create sequence testtable_ids"));
 	stdoutput.printf("\n\n");
 
 	// init crud
@@ -165,7 +65,7 @@ int main(int argc, char **argv) {
 		t[2]="s";
 		t[3]="s";
 		t[4]=NULL;
-		checkSuccess(crud->doCreate(cols,v,t),true);
+		assertTrue(crud->doCreate(cols,v,t));
 		delete[] v;
 		delete[] t;
 	}
@@ -219,22 +119,22 @@ int main(int argc, char **argv) {
 			sort.append("}\n");
 
 			// run the query
-			checkSuccess(crud->doRead(criteria.getString(),
-						sort.getString(),0),true);
+			assertTrue(crud->doRead(criteria.getString(),
+							sort.getString(),0));
 
 			tablecollection<const char *>	*t=
 						crud->getResultSetTable();
 
 			// check col/row counts
-			checkSuccess(t->getColumnCount(),4);
-			checkSuccess(t->getRowCount(),1);
+			assertEquals(t->getColumnCount(),4);
+			assertEquals(t->getRowCount(),1);
 			stdoutput.printf("\n");
 
 			// check results
 			for (uint16_t k=0; k<3; k++) {
-				checkSuccess(!charstring::compare(
+				assertTrue(!charstring::compare(
 							t->getValue(0,k+1),
-							vals[i][k]),true);
+							vals[i][k]));
 			}
 			stdoutput.printf("\n");
 
@@ -286,24 +186,22 @@ int main(int argc, char **argv) {
 			t[3]=NULL;
 
 			// run the query
-			checkSuccess(crud->doUpdate(
-					c,v,t,criteria.getString()),true);
+			assertTrue(crud->doUpdate(c,v,t,criteria.getString()));
 
 			// check affected rows
-			checkSuccess(crud->getAffectedRows(),1);
+			assertEquals(crud->getAffectedRows(),1);
 			stdoutput.printf("\n");
 
 			tablecollection<const char *>	*t=
 						crud->getResultSetTable();
 
 			// validate updates to the row
-			checkSuccess(crud->doRead(
-					criteria.getString(),NULL,0),true);
-			checkSuccess(t->getColumnCount(),4);
-			checkSuccess(t->getRowCount(),1);
+			assertTrue(crud->doRead(criteria.getString(),NULL,0));
+			assertEquals(t->getColumnCount(),4);
+			assertEquals(t->getRowCount(),1);
 			stdoutput.printf("\n");
 			for (uint16_t k=0; k<3; k++) {
-				checkSuccess(t->getValue(0,k+1),v[k]);
+				assertEquals(t->getValue(0,k+1),v[k]);
 			}
 			stdoutput.printf("\n");
 		}
@@ -334,16 +232,15 @@ int main(int argc, char **argv) {
 			i+1);
 
 		// run the query
-		checkSuccess(crud->doDelete(criteria.getString()),true);
+		assertTrue(crud->doDelete(criteria.getString()));
 
 		// check affected rows
-		checkSuccess(crud->getAffectedRows(),1);
+		assertEquals(crud->getAffectedRows(),1);
 
 		// validate updates to the row
-		checkSuccess(
-			cur->sendQuery("select count(*) from testtable"),true);
-		checkSuccess(charstring::convertToInteger(
-			cur->getField(0,(uint32_t)0)),4-i);
+		assertTrue(cur->sendQuery("select count(*) from testtable"));
+		assertEquals(charstring::convertToInteger(
+					cur->getField(0,(uint32_t)0)),4-i);
 		stdoutput.printf("\n");
 
 		// clean up
