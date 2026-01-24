@@ -1,6 +1,6 @@
 <html><pre><?php
-
-	print("\n");
+	# Copyright (c) David Muse
+	# See the file COPYING for more information.
 
 	$host="sqlrelay";
 	$port=9000;

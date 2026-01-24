@@ -1,6 +1,6 @@
 <html><pre><?php
-# Copyright (c) David Muse
-# See the file COPYING for more information.
+	# Copyright (c) David Muse
+	# See the file COPYING for more information.
 
 	# sqlrelay
 	$host="sqlrelay";

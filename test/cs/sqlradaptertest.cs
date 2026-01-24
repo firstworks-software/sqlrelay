@@ -8,113 +8,113 @@ namespace SQLRClientTest
 {
     class SQLRAdapterTest
     {
-        protected static void assertEquals(Object value, Object success)
+        protected static void assertEquals(Object actual, Object expected)
         {
-            if (value == success)
+            if (actual == expected)
             {
-                Console.Write("success ");
+                Console.Write("expected ");
                 Console.Out.Flush();
             }
             else
             {
                 Console.WriteLine("failure");
-                Console.WriteLine("\"" + value + "\" != \"" + success + "\"");
+                Console.WriteLine("\"" + actual + "\" != \"" + expected + "\"");
                 Console.Out.Flush();
                 Environment.Exit(1);
             }
         }
 
-        protected static void assertEquals(String value, String success)
+        protected static void assertEquals(String actual, String expected)
         {
-            if (value == success)
+            if (actual == expected)
             {
-                Console.Write("success ");
+                Console.Write("expected ");
                 Console.Out.Flush();
             }
             else
             {
                 Console.WriteLine("failure");
-                Console.WriteLine("\"" + value + "\" != \"" + success + "\"");
+                Console.WriteLine("\"" + actual + "\" != \"" + expected + "\"");
                 Console.Out.Flush();
                 Environment.Exit(1);
             }
         }
 
-        protected static void assertEquals(String value, String success, Int32 size)
+        protected static void assertEquals(String actual, String expected, Int32 size)
         {
-            if (value.Substring(0,size) == success.Substring(0,size))
+            if (actual.Substring(0,size) == expected.Substring(0,size))
             {
-                Console.Write("success ");
+                Console.Write("expected ");
                 Console.Out.Flush();
             }
             else
             {
                 Console.WriteLine("failure");
-                Console.WriteLine("\"" + value + "\" != \"" + success + "\"");
+                Console.WriteLine("\"" + actual + "\" != \"" + expected + "\"");
                 Console.Out.Flush();
                 Environment.Exit(1);
             }
         }
 
-        protected static void assertEquals(Int64 value, Int64 success)
+        protected static void assertEquals(Int64 actual, Int64 expected)
         {
-            if (value == success)
+            if (actual == expected)
             {
-                Console.Write("success ");
+                Console.Write("expected ");
                 Console.Out.Flush();
             }
             else
             {
                 Console.WriteLine("failure");
-                Console.WriteLine("\"" + value + "\" != \"" + success + "\"");
+                Console.WriteLine("\"" + actual + "\" != \"" + expected + "\"");
                 Console.Out.Flush();
                 Environment.Exit(1);
             }
         }
 
-        protected static void assertEquals(Boolean value, Boolean success)
+        protected static void assertEquals(Boolean actual, Boolean expected)
         {
-            if (value == success)
+            if (actual == expected)
             {
-                Console.Write("success ");
+                Console.Write("expected ");
                 Console.Out.Flush();
             }
             else
             {
                 Console.WriteLine("failure");
-                Console.WriteLine("\"" + value + "\" != \"" + success + "\"");
+                Console.WriteLine("\"" + actual + "\" != \"" + expected + "\"");
                 Console.Out.Flush();
                 Environment.Exit(1);
             }
         }
 
-        protected static void assertTrue(Boolean value)
+        protected static void assertTrue(Boolean actual)
         {
-            if (value)
+            if (actual)
             {
-                Console.Write("success ");
+                Console.Write("expected ");
                 Console.Out.Flush();
             }
             else
             {
                 Console.WriteLine("failure");
-                Console.WriteLine("\"" + value + "\" != \"true\"");
+                Console.WriteLine("\"" + actual + "\" != \"true\"");
                 Console.Out.Flush();
                 Environment.Exit(1);
             }
         }
 
-        protected static void assertFalse(Boolean value)
+        protected static void assertFalse(Boolean actual)
         {
-            if (!value)
+            if (!actual)
             {
-                Console.Write("success ");
+                Console.Write("expected ");
                 Console.Out.Flush();
             }
             else
             {
                 Console.WriteLine("failure");
-                Console.WriteLine("\"" + value + "\" != \"false\"");
+                Console.WriteLine("\"" + actual + "\" != \"false\"");
                 Console.Out.Flush();
                 Environment.Exit(1);
             }

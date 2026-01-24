@@ -96,4 +96,4 @@ krb.tcl: krb.tcl.in
 	$(CHMOD) 755 $@
 
 clean:
-	$(RM) *.in.in *.in.in.in *.in.in.in.in *.tcl cachefile* sqlnet.log
+	$(RM) *.in.in *.in.in.in *.in.in.in.in db2.tcl firebird.tcl freetds.tcl mysql.tcl oracle.tcl postgresql.tcl sqlite.tcl sap.tcl tls.tcl krb.tcl cachefile* sqlnet.log

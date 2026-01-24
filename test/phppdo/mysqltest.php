@@ -1,4 +1,6 @@
 <?php
+	# Copyright (c) David Muse
+	# See the file COPYING for more information.
 
 function tcPrintException($tc, $e)
 {

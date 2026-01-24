@@ -9,8 +9,8 @@ all: oracle.class \
 clean:
 	$(RM) *.class cachefile* sqlnet.log run.bat
 
-oracle.class: oracle.java
-	$(JAVAC) -classpath $(javadir)/sqlrelay.jar:$(javadir)/sqlrelayjdbc.jar oracle.java
+oracle.class: sqlrtest.java oracle.java
+	$(JAVAC) -classpath $(javadir)/sqlrelay.jar:$(javadir)/sqlrelayjdbc.jar sqlrtest.java oracle.java
 
 postgresqlbinds.class: postgresqlbinds.java
 	$(JAVAC) -classpath $(javadir)/sqlrelay.jar postgresqlbinds.java

@@ -1,61 +1,57 @@
 // Copyright (c) David Muse
 // See the file COPYING for more information.
 
-import com.firstworks.sqlrelay.SQLRConnection;
-import com.firstworks.sqlrelay.SQLRCursor;
-
-
 class sqlrtest {
 
-	protected static void assertEquals(String value, String success, int length) {
+	protected static void assertEquals(String actual, String expected, int length) {
 	
-		if (success==null) {
-			if (value==null) {
-				System.out.print("success ");
+		if (expected==null) {
+			if (actual==null) {
+				System.out.print("expected ");
 				return;
 			} else {
-				System.out.print(value+"!="+success+" ");
+				System.out.print(actual+"!="+expected+" ");
 				System.out.print("failure ");
 				System.exit(1);
 			}
 		}
 	
-		if (value.regionMatches(0,success,0,length)) {
-			System.out.print("success ");
+		if (actual.regionMatches(0,expected,0,length)) {
+			System.out.print("expected ");
 		} else {
-			System.out.print(value+"!="+success+" ");
+			System.out.print(actual+"!="+expected+" ");
 			System.out.print("failure ");
 			System.exit(1);
 		}
 	}
 	
-	protected static void assertEquals(String value, String success) {
+	protected static void assertEquals(String actual, String expected) {
 	
-		if (success==null) {
-			if (value==null) {
-				System.out.print("success ");
+		if (expected==null) {
+			if (actual==null) {
+				System.out.print("expected ");
 				return;
 			} else {
-				System.out.print(value+"!="+success+" ");
+				System.out.print(actual+"!="+expected+" ");
 				System.out.print("failure ");
 				System.exit(1);
 			}
 		}
 	
-		if (value.equals(success)) {
-			System.out.print("success ");
+		if (actual.equals(expected)) {
+			System.out.print("expected ");
 		} else {
-			System.out.print(value+"!="+success+" ");
+			System.out.print(actual+"!="+expected+" ");
 			System.out.print("failure ");
 			System.exit(1);
 		}
 	}
 	
-	protected static void assertEquals(byte[] value, String success, int length) {
+	protected static void assertEquals(byte[] actual, String expected, int length) {
 	
-		if (success==null) {
-			if (value==null) {
-				System.out.print("success ");
+		if (expected==null) {
+			if (actual==null) {
+				System.out.print("expected ");
 				return;
 			} else {
 				System.out.print("failure ");
@@ -65,22 +61,22 @@ class sqlrtest {
 			}
 		}
 
-		byte[]	successvalue=success.getBytes();
+		byte[]	successvalue=expected.getBytes();
 	
 		for (int index=0; index<length; index++) {
-			if (value[index]!=successvalue[index]) {
+			if (actual[index]!=successvalue[index]) {
 				System.out.println("failure ");
 				System.exit(1);
 			}
 		}
 
-		System.out.println("success ");
+		System.out.println("expected ");
 	}
 	
-	protected static void assertEquals(long value, int success) {
+	protected static void assertEquals(long actual, int expected) {
 	
-		if (value==success) {
-			System.out.println("success ");
+		if (actual==expected) {
+			System.out.println("expected ");
 		} else {
 			System.out.println("failure ");
 			
@@ -89,10 +85,10 @@ class sqlrtest {
 		}
 	}
 	
-	protected static void assertEquals(double value, double success) {
+	protected static void assertEquals(double actual, double expected) {
 	
-		if (value==success) {
-			System.out.println("success ");
+		if (actual==expected) {
+			System.out.println("expected ");
 		} else {
 			System.out.println("failure ");
 			
@@ -101,10 +97,10 @@ class sqlrtest {
 		}
 	}
 	
-	protected static void assertEquals(boolean value, int success) {
+	protected static void assertEquals(boolean actual, int expected) {
 
-		if (((value)?1:0)==success) {
-			System.out.println("success ");
+		if (((actual)?1:0)==expected) {
+			System.out.println("expected ");
 		} else {
 			System.out.println("failure ");
 
@@ -113,20 +109,20 @@ class sqlrtest {
 		}
 	}
 
-	protected static void assertTrue(boolean value) {
+	protected static void assertTrue(boolean actual) {
 
-		if (value) {
-			System.out.println("success ");
+		if (actual) {
+			System.out.println("expected ");
 		} else {
 			System.out.println("failure ");
 			System.exit(1);
 		}
 	}
 
-	protected static void assertFalse(boolean value) {
+	protected static void assertFalse(boolean actual) {
 
-		if (!value) {
-			System.out.println("success ");
+		if (!actual) {
+			System.out.println("expected ");
 		} else {
 			System.out.println("failure ");
 			System.exit(1);

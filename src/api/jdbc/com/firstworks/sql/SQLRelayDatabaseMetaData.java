@@ -862,7 +862,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		// tends to generate large result sets, and slow apps down
 		// terribly, while simultaneously giving them the wrong info.
 		// For now, we'll just disable it.
-		driver.debugPrintln("FIXME: implement wildcards "
+		driver.debugPrintln("FIXME: implement wildcards "+
 					"correctly on the backend");
 		driver.debugEnd();
 		return null;

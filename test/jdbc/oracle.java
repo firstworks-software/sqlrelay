@@ -10,130 +10,7 @@ import java.util.concurrent.Executor;
 import java.nio.charset.StandardCharsets;
 import java.net.InetAddress;
 
-class oracle {
-
-	private static void checkSuccess(String value,
-						String success,
-						int length) {
-	
-		if (success==null) {
-			if (value==null) {
-				System.out.printf("success ");
-				return;
-			} else {
-				System.out.printf(value+"!="+success+" ");
-				System.out.println("failure ");
-				System.exit(1);
-			}
-		}
-	
-		if (value.regionMatches(0,success,0,length)) {
-			System.out.printf("success ");
-		} else {
-			System.out.printf(value+"!="+success+" ");
-			System.out.println("failure ");
-			System.exit(1);
-		}
-	}
-	
-	private static void checkSuccess(String value, String success) {
-	
-		if (success==null) {
-			if (value==null) {
-				System.out.printf("success ");
-				return;
-			} else {
-				System.out.printf(value+"!="+success+" ");
-				System.out.println("failure ");
-				System.exit(1);
-			}
-		}
-	
-		if (value.equals(success)) {
-			System.out.printf("success ");
-		} else {
-			System.out.printf(value+"!="+success+" ");
-			System.out.println("failure ");
-			System.exit(1);
-		}
-	}
-	
-	private static void checkSuccess(byte[] value,
-						String success,
-						int length) {
-	
-		if (success==null) {
-			if (value==null) {
-				System.out.printf("success ");
-				return;
-			} else {
-				System.out.println("failure ");
-				System.exit(1);
-			}
-		}
-
-		byte[]	successvalue=success.getBytes();
-	
-		for (int index=0; index<length; index++) {
-			if (value[index]!=successvalue[index]) {
-				System.out.println("failure ");
-				System.exit(1);
-			}
-		}
-		System.out.printf("success ");
-	}
-	
-	private static void checkSuccess(long value, int success) {
-	
-		if (value==success) {
-			System.out.printf("success ");
-		} else {
-			System.out.printf(value+"!="+success+" ");
-			System.out.println("failure ");
-			System.exit(1);
-		}
-	}
-	
-	private static void checkSuccess(double value, double success) {
-	
-		if (value==success) {
-			System.out.printf("success ");
-		} else {
-			System.out.printf(value+"!="+success+" ");
-			System.out.println("failure ");
-			System.exit(1);
-		}
-	}
-	
-	private static void checkSuccess(boolean value, int success) {
-	
-		if (((value)?1:0)==success) {
-			System.out.printf("success ");
-		} else {
-			System.out.printf(value+"!="+success+" ");
-			System.out.println("failure ");
-			System.exit(1);
-		}
-	}
-
-	private static void printColumns(ResultSetMetaData rsmd)
-							throws Exception {
-		System.out.println();
-		for (int i=1; i<rsmd.getColumnCount()+1; i++) {
-			System.out.println(rsmd.getColumnName(i));
-		}
-	}
-
-	private static void printResultSet(ResultSet rs) throws Exception {
-		ResultSetMetaData	rsmd=rs.getMetaData();
-		System.out.println();
-		while (rs.next()) {
-			for (int i=1; i<rsmd.getColumnCount()+1; i++) {
-                        	System.out.print(rs.getString(i)+",");
-			}
-                        System.out.println();
-		}
-	}
+class oracle extends sqlrtest {
 
 	public static void main(String args[]) throws Exception {
 
@@ -172,46 +49,46 @@ class oracle {
 		Class.forName(driver);
 		Connection	con=DriverManager.getConnection(
 						url,user,password);
-		checkSuccess((con!=null),1);
+		assertTrue((con!=null));
 
 		// close, isClosed, isValid
 		System.out.println("close");
-		checkSuccess(con.isClosed(),0);
-		checkSuccess(con.isValid(0),1);
+		assertFalse(con.isClosed());
+		assertTrue(con.isValid(0));
 		con.close();
-		checkSuccess(con.isClosed(),1);
-		checkSuccess(con.isValid(0),0);
+		assertTrue(con.isClosed());
+		assertFalse(con.isValid(0));
 		con=DriverManager.getConnection(url,user,password);
-		checkSuccess((con!=null),1);
+		assertTrue((con!=null));
 		System.out.println();
 
 		// setNetworkTimeout, getNetworkTimeout
 		Executor	executor=Executors.newSingleThreadExecutor();
 		con.setNetworkTimeout(executor,1);
-		checkSuccess(con.getNetworkTimeout(),1);
+		assertEquals(con.getNetworkTimeout(),1);
 		con.setNetworkTimeout(executor,2);
-		checkSuccess(con.getNetworkTimeout(),2);
+		assertEquals(con.getNetworkTimeout(),2);
 		con.setNetworkTimeout(executor,0);
-		checkSuccess(con.getNetworkTimeout(),0);
+		assertEquals(con.getNetworkTimeout(),0);
 		System.out.println();
 
 		// SQLRelayConnection
 		if (issqlrelay) {
 			System.out.println("SQLRelayConnection");
 			SQLRelayConnection	sqlrcon=(SQLRelayConnection)con;
-			checkSuccess((sqlrcon!=null),1);
-			checkSuccess(sqlrcon.getHost(),host);
-			checkSuccess(sqlrcon.getPort(),port);
-			checkSuccess(sqlrcon.getSocket(),socket);
-			checkSuccess(sqlrcon.getUser(),user);
-			checkSuccess(sqlrcon.getPassword(),password);
+			assertTrue((sqlrcon!=null));
+			assertEquals(sqlrcon.getHost(),host);
+			assertEquals(sqlrcon.getPort(),port);
+			assertEquals(sqlrcon.getSocket(),socket);
+			assertEquals(sqlrcon.getUser(),user);
+			assertEquals(sqlrcon.getPassword(),password);
 			System.out.println();
 
 			// isWrapperFor, unwrap
 			System.out.println("unwrap");
-			checkSuccess(
+			assertEquals(
 				con.isWrapperFor(SQLRConnection.class),1);
-			checkSuccess(
+			assertEquals(
 				(con.unwrap(SQLRConnection.class)!=null),1);
 			System.out.println();
 		}
@@ -222,7 +99,7 @@ class oracle {
 		if (!issqlrelay) {
 			System.out.println("catalog");
 			con.setCatalog(user);
-			checkSuccess(con.getCatalog(),null);
+			assertEquals(con.getCatalog(),null);
 			System.out.println();
 		}
 
@@ -232,7 +109,7 @@ class oracle {
 		if (!issqlrelay) {
 			System.out.println("schema");
 			con.setSchema(user.toUpperCase());
-			checkSuccess(con.getSchema(),user.toUpperCase());
+			assertEquals(con.getSchema(),user.toUpperCase());
 			System.out.println();
 		}
 
@@ -251,43 +128,43 @@ class oracle {
 		con.setClientInfo(inprop);
 		con.setClientInfo("OCSID.CLIENTID","value3");
 		con.setClientInfo("OCSID.ECID","value4");
-		checkSuccess(con.getClientInfo("OCSID.MODULE"),"value1");
-		checkSuccess(con.getClientInfo("OCSID.ACTION"),"value2");
-		checkSuccess(con.getClientInfo("OCSID.CLIENTID"),"value3");
-		checkSuccess(con.getClientInfo("OCSID.ECID"),"value4");
+		assertEquals(con.getClientInfo("OCSID.MODULE"),"value1");
+		assertEquals(con.getClientInfo("OCSID.ACTION"),"value2");
+		assertEquals(con.getClientInfo("OCSID.CLIENTID"),"value3");
+		assertEquals(con.getClientInfo("OCSID.ECID"),"value4");
 		Properties	outprop=con.getClientInfo();
-		checkSuccess(outprop.getProperty("OCSID.MODULE"),"value1");
-		checkSuccess(outprop.getProperty("OCSID.ACTION"),"value2");
-		checkSuccess(outprop.getProperty("OCSID.CLIENTID"),"value3");
-		checkSuccess(outprop.getProperty("OCSID.ECID"),"value4");
+		assertEquals(outprop.getProperty("OCSID.MODULE"),"value1");
+		assertEquals(outprop.getProperty("OCSID.ACTION"),"value2");
+		assertEquals(outprop.getProperty("OCSID.CLIENTID"),"value3");
+		assertEquals(outprop.getProperty("OCSID.ECID"),"value4");
 		System.out.println();
 
 		// setReadOnly, isReadOnly
 		System.out.println("readonly");
 		con.setReadOnly(true);
-		checkSuccess(con.isReadOnly(),1);
+		assertTrue(con.isReadOnly());
 		con.setReadOnly(false);
-		checkSuccess(!con.isReadOnly(),1);
+		assertTrue(!con.isReadOnly());
 		System.out.println();
 
 		// setAutoCommit, getAutoCommit
 		System.out.println("autocommit");
 		con.setAutoCommit(true);
-		checkSuccess(con.getAutoCommit(),1);
+		assertTrue(con.getAutoCommit());
 		con.setAutoCommit(false);
-		checkSuccess(!con.getAutoCommit(),1);
+		assertTrue(!con.getAutoCommit());
 		System.out.println();
 
 		// setHoldability, getHoldability
 		System.out.println("holdability");
 		con.setHoldability(ResultSet.HOLD_CURSORS_OVER_COMMIT);
-		checkSuccess(con.getHoldability()==
+		assertEquals(con.getHoldability()==
 				ResultSet.HOLD_CURSORS_OVER_COMMIT,1);
 		try {
 			con.setHoldability(ResultSet.CLOSE_CURSORS_AT_COMMIT);
-			checkSuccess(false,1);
+			assertTrue(false);
 		} catch (Exception ex) {
-			checkSuccess(true,1);
+			assertTrue(true);
 		}
 		System.out.println();
 
@@ -299,24 +176,24 @@ class oracle {
 				con.setTransactionIsolation(
 					Connection.
 					TRANSACTION_READ_UNCOMMITTED);
-				checkSuccess(false,1);
+				assertTrue(false);
 			} catch (Exception ex) {
-				checkSuccess(true,1);
+				assertTrue(true);
 			}
 			con.setTransactionIsolation(
 				Connection.TRANSACTION_READ_COMMITTED);
-			checkSuccess(con.getTransactionIsolation(),
+			assertEquals(con.getTransactionIsolation(),
 				Connection.TRANSACTION_READ_COMMITTED);
 			try {
 				con.setTransactionIsolation(
 					Connection.
 					TRANSACTION_REPEATABLE_READ);
 			} catch (Exception ex) {
-				checkSuccess(true,1);
+				assertTrue(true);
 			}
 			con.setTransactionIsolation(
 				Connection.TRANSACTION_SERIALIZABLE);
-			checkSuccess(con.getTransactionIsolation(),
+			assertEquals(con.getTransactionIsolation(),
 				Connection.TRANSACTION_SERIALIZABLE);
 			System.out.println();
 		}
@@ -325,7 +202,7 @@ class oracle {
 
 		// getWarnings, clearWarnings
 		System.out.println("warnings");
-		checkSuccess(con.getWarnings()==null,1);
+		assertTrue(con.getWarnings()==null);
 		con.clearWarnings();
 		System.out.println();
 
@@ -339,18 +216,18 @@ class oracle {
 		// getMetaData
 		System.out.println("getMetaData");
 		DatabaseMetaData	md=con.getMetaData();
-		checkSuccess((md!=null),1);
+		assertTrue((md!=null));
 		System.out.println();
 
 		// getCatalogs
 		System.out.println("catalogs");
 		ResultSet	rs=md.getCatalogs();
-		checkSuccess((rs!=null),1);
+		assertTrue((rs!=null));
 		ResultSetMetaData	rsmd=rs.getMetaData();
-		checkSuccess((rsmd!=null),1);
-		checkSuccess(rsmd.getColumnCount(),1);
+		assertTrue((rsmd!=null));
+		assertEquals(rsmd.getColumnCount(),1);
 		int	col=1;
-		checkSuccess(rsmd.getColumnName(col++),"TABLE_CAT");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
 		while (rs.next()) {
 			System.out.println(rs.getString("TABLE_CAT"));
 		}
@@ -360,13 +237,13 @@ class oracle {
 		// getSchemas
 		System.out.println("schemas");
 		rs=md.getSchemas();
-		checkSuccess((rs!=null),1);
+		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
-		checkSuccess((rsmd!=null),1);
-		checkSuccess(rsmd.getColumnCount(),2);
+		assertTrue((rsmd!=null));
+		assertEquals(rsmd.getColumnCount(),2);
 		col=1;
-		checkSuccess(rsmd.getColumnName(col++),"TABLE_SCHEM");
-		checkSuccess(rsmd.getColumnName(col++),"TABLE_CATALOG");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_CATALOG");
 		//System.out.println();
 		//printColumns(rsmd);
 		//printResultSet(rs);
@@ -376,12 +253,12 @@ class oracle {
 		// getTableTypes
 		System.out.println("table types");
 		rs=md.getTableTypes();
-		checkSuccess((rs!=null),1);
+		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
-		checkSuccess((rsmd!=null),1);
-		checkSuccess(rsmd.getColumnCount(),1);
+		assertTrue((rsmd!=null));
+		assertEquals(rsmd.getColumnCount(),1);
 		col=1;
-		checkSuccess(rsmd.getColumnName(col++),"TABLE_TYPE");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_TYPE");
 		//System.out.println();
 		//printColumns(rsmd);
 		//printResultSet(rs);
@@ -394,28 +271,28 @@ if (false) {
 		System.out.println("tables");
 		rs=md.getTables("%","%","%",
 			new String[] {"SYNONYM","TABLE","VIEW"});
-		checkSuccess((rs!=null),1);
+		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
-		checkSuccess((rsmd!=null),1);
+		assertTrue((rsmd!=null));
 		if (issqlrelay) {
-                	checkSuccess(rsmd.getColumnCount(),10);
+                	assertEquals(rsmd.getColumnCount(),10);
 		} else {
 			// oracle jdbc (at least v8) returns 5 columns
-                	checkSuccess(rsmd.getColumnCount(),5);
+                	assertEquals(rsmd.getColumnCount(),5);
 		}
 		col=1;
-		checkSuccess(rsmd.getColumnName(col++),"TABLE_CAT");
-		checkSuccess(rsmd.getColumnName(col++),"TABLE_SCHEM");
-		checkSuccess(rsmd.getColumnName(col++),"TABLE_NAME");
-		checkSuccess(rsmd.getColumnName(col++),"TABLE_TYPE");
-		checkSuccess(rsmd.getColumnName(col++),"REMARKS");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_TYPE");
+		assertEquals(rsmd.getColumnName(col++),"REMARKS");
 		if (issqlrelay) {
-			checkSuccess(rsmd.getColumnName(col++),"TYPE_CAT");
-			checkSuccess(rsmd.getColumnName(col++),"TYPE_SCHEM");
-			checkSuccess(rsmd.getColumnName(col++),"TYPE_NAME");
-			checkSuccess(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),"TYPE_CAT");
+			assertEquals(rsmd.getColumnName(col++),"TYPE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
+			assertEquals(rsmd.getColumnName(col++),
 						"SELF_REFERENCING_COL_NAME");
-			checkSuccess(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"REF_GENERATION");
 		}
 		//System.out.println();
@@ -430,29 +307,29 @@ if (false) {
 		// getTypeInfo
 		System.out.println("type info");
 		rs=md.getTypeInfo();
-		checkSuccess((rs!=null),1);
+		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
-		checkSuccess((rsmd!=null),1);
-		checkSuccess(rsmd.getColumnCount(),18);
+		assertTrue((rsmd!=null));
+		assertEquals(rsmd.getColumnCount(),18);
 		col=1;
-		checkSuccess(rsmd.getColumnName(col++),"TYPE_NAME");
-		checkSuccess(rsmd.getColumnName(col++),"DATA_TYPE");
-		checkSuccess(rsmd.getColumnName(col++),"PRECISION");
-		checkSuccess(rsmd.getColumnName(col++),"LITERAL_PREFIX");
-		checkSuccess(rsmd.getColumnName(col++),"LITERAL_SUFFIX");
-		checkSuccess(rsmd.getColumnName(col++),"CREATE_PARAMS");
-		checkSuccess(rsmd.getColumnName(col++),"NULLABLE");
-		checkSuccess(rsmd.getColumnName(col++),"CASE_SENSITIVE");
-		checkSuccess(rsmd.getColumnName(col++),"SEARCHABLE");
-		checkSuccess(rsmd.getColumnName(col++),"UNSIGNED_ATTRIBUTE");
-		checkSuccess(rsmd.getColumnName(col++),"FIXED_PREC_SCALE");
-		checkSuccess(rsmd.getColumnName(col++),"AUTO_INCREMENT");
-		checkSuccess(rsmd.getColumnName(col++),"LOCAL_TYPE_NAME");
-		checkSuccess(rsmd.getColumnName(col++),"MINIMUM_SCALE");
-		checkSuccess(rsmd.getColumnName(col++),"MAXIMUM_SCALE");
-		checkSuccess(rsmd.getColumnName(col++),"SQL_DATA_TYPE");
-		checkSuccess(rsmd.getColumnName(col++),"SQL_DATETIME_SUB");
-		checkSuccess(rsmd.getColumnName(col++),"NUM_PREC_RADIX");
+		assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
+		assertEquals(rsmd.getColumnName(col++),"DATA_TYPE");
+		assertEquals(rsmd.getColumnName(col++),"PRECISION");
+		assertEquals(rsmd.getColumnName(col++),"LITERAL_PREFIX");
+		assertEquals(rsmd.getColumnName(col++),"LITERAL_SUFFIX");
+		assertEquals(rsmd.getColumnName(col++),"CREATE_PARAMS");
+		assertEquals(rsmd.getColumnName(col++),"NULLABLE");
+		assertEquals(rsmd.getColumnName(col++),"CASE_SENSITIVE");
+		assertEquals(rsmd.getColumnName(col++),"SEARCHABLE");
+		assertEquals(rsmd.getColumnName(col++),"UNSIGNED_ATTRIBUTE");
+		assertEquals(rsmd.getColumnName(col++),"FIXED_PREC_SCALE");
+		assertEquals(rsmd.getColumnName(col++),"AUTO_INCREMENT");
+		assertEquals(rsmd.getColumnName(col++),"LOCAL_TYPE_NAME");
+		assertEquals(rsmd.getColumnName(col++),"MINIMUM_SCALE");
+		assertEquals(rsmd.getColumnName(col++),"MAXIMUM_SCALE");
+		assertEquals(rsmd.getColumnName(col++),"SQL_DATA_TYPE");
+		assertEquals(rsmd.getColumnName(col++),"SQL_DATETIME_SUB");
+		assertEquals(rsmd.getColumnName(col++),"NUM_PREC_RADIX");
 		//System.out.println();
 		//printColumns(rsmd);
 		//printResultSet(rs);
@@ -464,38 +341,38 @@ if (false) {
 if (false) {
                 System.out.println("procedures");
                 rs=md.getProcedures("%","%","%");
-                checkSuccess((rs!=null),1);
+                assertTrue((rs!=null));
                 rsmd=rs.getMetaData();
-                checkSuccess((rsmd!=null),1);
+                assertTrue((rsmd!=null));
 		col=1;
 		if (issqlrelay) {
-                	checkSuccess(rsmd.getColumnCount(),8);
+                	assertEquals(rsmd.getColumnCount(),8);
 		} else {
 			// oracle jdbc (at least v8) returns 9 columns
-                	checkSuccess(rsmd.getColumnCount(),9);
+                	assertEquals(rsmd.getColumnCount(),9);
 		}
-                checkSuccess(rsmd.getColumnName(col++),"PROCEDURE_CAT");
-                checkSuccess(rsmd.getColumnName(col++),"PROCEDURE_SCHEM");
-                checkSuccess(rsmd.getColumnName(col++),"PROCEDURE_NAME");
+                assertEquals(rsmd.getColumnName(col++),"PROCEDURE_CAT");
+                assertEquals(rsmd.getColumnName(col++),"PROCEDURE_SCHEM");
+                assertEquals(rsmd.getColumnName(col++),"PROCEDURE_NAME");
 		if (issqlrelay) {
-                	checkSuccess(rsmd.getColumnName(col++),
+                	assertEquals(rsmd.getColumnName(col++),
 						"NUM_INPUT_PARAMS");
-                	checkSuccess(rsmd.getColumnName(col++),
+                	assertEquals(rsmd.getColumnName(col++),
 						"NUM_OUTPUT_PARAMS");
-                	checkSuccess(rsmd.getColumnName(col++),
+                	assertEquals(rsmd.getColumnName(col++),
 						"NUM_RESULT_SETS");
 		} else {
 			// oracle jdbc (at least v8) returns
 			// NULL for these column names
-                	checkSuccess(rsmd.getColumnName(col++),"NULL");
-                	checkSuccess(rsmd.getColumnName(col++),"NULL");
-                	checkSuccess(rsmd.getColumnName(col++),"NULL");
+                	assertEquals(rsmd.getColumnName(col++),"NULL");
+                	assertEquals(rsmd.getColumnName(col++),"NULL");
+                	assertEquals(rsmd.getColumnName(col++),"NULL");
 		}
-                checkSuccess(rsmd.getColumnName(col++),"REMARKS");
-                checkSuccess(rsmd.getColumnName(col++),"PROCEDURE_TYPE");
+                assertEquals(rsmd.getColumnName(col++),"REMARKS");
+                assertEquals(rsmd.getColumnName(col++),"PROCEDURE_TYPE");
 		if (!issqlrelay) {
 			// oracle jdbc (at least v8) returns a 9th column
-                	checkSuccess(rsmd.getColumnName(col++),"SPECIFIC_NAME");
+                	assertEquals(rsmd.getColumnName(col++),"SPECIFIC_NAME");
 		}
                 //System.out.println();
 		//printColumns(rsmd);
@@ -509,37 +386,37 @@ if (false) {
 		if (!issqlrelay) {
                 	System.out.println("functions");
                 	rs=md.getFunctions("%","%","%");
-                	checkSuccess((rs!=null),1);
+                	assertTrue((rs!=null));
                 	rsmd=rs.getMetaData();
-                	checkSuccess((rsmd!=null),1);
+                	assertTrue((rsmd!=null));
 			col=1;
 			if (issqlrelay) {
-				checkSuccess(rsmd.getColumnCount(),8);
+				assertEquals(rsmd.getColumnCount(),8);
 			} else {
 				// oracle jdbc (at least v8) returns 6 columns
-				checkSuccess(rsmd.getColumnCount(),6);
+				assertEquals(rsmd.getColumnCount(),6);
 			}
-                	checkSuccess(rsmd.getColumnName(col++),
+                	assertEquals(rsmd.getColumnName(col++),
 							"FUNCTION_CAT");
-                	checkSuccess(rsmd.getColumnName(col++),
+                	assertEquals(rsmd.getColumnName(col++),
 							"FUNCTION_SCHEM");
-                	checkSuccess(rsmd.getColumnName(col++),
+                	assertEquals(rsmd.getColumnName(col++),
 							"FUNCTION_NAME");
 			// oracle jdbc (at least v8) doesn't
 			// return these columns at all
 			if (issqlrelay) {
-                		checkSuccess(rsmd.getColumnName(col++),
+                		assertEquals(rsmd.getColumnName(col++),
 							"NUM_INPUT_PARAMS");
-                		checkSuccess(rsmd.getColumnName(col++),
+                		assertEquals(rsmd.getColumnName(col++),
 							"NUM_OUTPUT_PARAMS");
-                		checkSuccess(rsmd.getColumnName(col++),
+                		assertEquals(rsmd.getColumnName(col++),
 							"NUM_RESULT_SETS");
 			}
-                	checkSuccess(rsmd.getColumnName(col++),"REMARKS");
-                	checkSuccess(rsmd.getColumnName(col++),"FUNCTION_TYPE");
+                	assertEquals(rsmd.getColumnName(col++),"REMARKS");
+                	assertEquals(rsmd.getColumnName(col++),"FUNCTION_TYPE");
 			// oracle jdbc (at least v8) returns this extra column
 			if (!issqlrelay) {
-                		checkSuccess(rsmd.getColumnName(col++),
+                		assertEquals(rsmd.getColumnName(col++),
 							"SPECIFIC_NAME");
 			}
                 	//System.out.println();
@@ -556,26 +433,26 @@ if (false) {
 		if (false) {
                 	System.out.println("UDTs");
                 	rs=md.getUDTs("%","%","%",null);
-                	checkSuccess((rs!=null),1);
+                	assertTrue((rs!=null));
                 	rsmd=rs.getMetaData();
-                	checkSuccess((rsmd!=null),1);
+                	assertTrue((rsmd!=null));
 			col=1;
 			if (issqlrelay) {
-                		checkSuccess(rsmd.getColumnCount(),7);
+                		assertEquals(rsmd.getColumnCount(),7);
 			} else {
 				// oracle jdbc (at least v8) returns 6 columns
-                		checkSuccess(rsmd.getColumnCount(),6);
+                		assertEquals(rsmd.getColumnCount(),6);
 			}
-                	checkSuccess(rsmd.getColumnName(col++),"TYPE_CAT");
-                	checkSuccess(rsmd.getColumnName(col++),"TYPE_SCHEM");
-                	checkSuccess(rsmd.getColumnName(col++),"TYPE_NAME");
-                	checkSuccess(rsmd.getColumnName(col++),"CLASS_NAME");
-                	checkSuccess(rsmd.getColumnName(col++),"DATA_TYPE");
-                	checkSuccess(rsmd.getColumnName(col++),"REMARKS");
+                	assertEquals(rsmd.getColumnName(col++),"TYPE_CAT");
+                	assertEquals(rsmd.getColumnName(col++),"TYPE_SCHEM");
+                	assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
+                	assertEquals(rsmd.getColumnName(col++),"CLASS_NAME");
+                	assertEquals(rsmd.getColumnName(col++),"DATA_TYPE");
+                	assertEquals(rsmd.getColumnName(col++),"REMARKS");
 			if (issqlrelay) {
 				// oracle jdbc (at least v8) doesn't
 				// return this column at all
-                		checkSuccess(rsmd.getColumnName(col++),
+                		assertEquals(rsmd.getColumnName(col++),
 								"BASE_TYPE");
 			}
                 	//System.out.println();
@@ -593,7 +470,7 @@ if (false) {
 		// createStatement
 		System.out.println("create statement");
 		Statement	stmt=con.createStatement();
-		checkSuccess((stmt!=null),1);
+		assertTrue((stmt!=null));
 		stmt.close();
                 System.out.println();
 
@@ -646,7 +523,7 @@ if (false) {
 					stmt=con.createStatement(
 							rstype[r],
 							concurrency[c]);
-					checkSuccess((stmt!=null),1);
+					assertTrue((stmt!=null));
 					stmt.close();
 				} else {
 					try {
@@ -654,9 +531,9 @@ if (false) {
 						createStatement(
 							rstype[r],
 							concurrency[c]);
-						checkSuccess(false,1);
+						assertTrue(false);
 					} catch (Exception ex) {
-						checkSuccess(true,1);
+						assertTrue(true);
 					}
 				}
 				System.out.println();
@@ -677,7 +554,7 @@ if (false) {
 							rstype[r],
 							concurrency[c],
 							holdability[h]);
-						checkSuccess((stmt!=null),1);
+						assertTrue((stmt!=null));
 						stmt.close();
 					} else {
 						try {
@@ -686,9 +563,9 @@ if (false) {
 								rstype[r],
 								concurrency[c],
 								holdability[h]);
-							checkSuccess(false,1);
+							assertTrue(false);
 						} catch (Exception ex) {
-							checkSuccess(true,1);
+							assertTrue(true);
 						}
 					}
 					System.out.println();
@@ -707,11 +584,11 @@ if (false) {
 		}
 
 		System.out.println("CREATE TEMPTABLE:");
-		checkSuccess(stmt.executeUpdate("create table testtable (testnumber number, testchar char(40), testvarchar varchar2(40), testdate date, testlong long, testclob clob, testblob blob)"),0);
+		assertEquals(stmt.executeUpdate("create table testtable (testnumber number, testchar char(40), testvarchar varchar2(40), testdate date, testlong long, testclob clob, testblob blob)"),0);
 		System.out.println();
 
 		System.out.println("INSERT:");
-		checkSuccess(stmt.executeUpdate("insert into testtable values (1,'testchar1','testvarchar1','01-JAN-2001','testlong1','testclob1',empty_blob())"),1);
+		assertEquals(stmt.executeUpdate("insert into testtable values (1,'testchar1','testvarchar1','01-JAN-2001','testlong1','testclob1',empty_blob())"),1);
 		stmt.close();
 		System.out.println();
 
@@ -725,7 +602,7 @@ if (false) {
 		pstmt.setString(6,"testclob2");
 		pstmt.setBytes(7,(new String("testblob2")).
 				getBytes(StandardCharsets.UTF_8));
-		checkSuccess(pstmt.executeUpdate(),1);
+		assertEquals(pstmt.executeUpdate(),1);
 		pstmt.clearParameters();
 		pstmt.setInt(1,3);
 		pstmt.setString(2,"testchar3");
@@ -735,7 +612,7 @@ if (false) {
 		pstmt.setString(6,"testclob3");
 		pstmt.setBytes(7,(new String("testblob3")).
 				getBytes(StandardCharsets.UTF_8));
-		checkSuccess(pstmt.executeUpdate(),1);
+		assertEquals(pstmt.executeUpdate(),1);
 		System.out.println();
 		pstmt.clearParameters();
 		pstmt.setInt(1,4);
@@ -746,7 +623,7 @@ if (false) {
 		pstmt.setString(6,"testclob4");
 		pstmt.setBytes(7,(new String("testblob4")).
 				getBytes(StandardCharsets.UTF_8));
-		checkSuccess(pstmt.executeUpdate(),1);
+		assertEquals(pstmt.executeUpdate(),1);
 		System.out.println();
 		pstmt.clearParameters();
 		pstmt.setInt(1,5);
@@ -757,7 +634,7 @@ if (false) {
 		pstmt.setString(6,"testclob5");
 		pstmt.setBytes(7,(new String("testblob5")).
 				getBytes(StandardCharsets.UTF_8));
-		checkSuccess(pstmt.executeUpdate(),1);
+		assertEquals(pstmt.executeUpdate(),1);
 		System.out.println();
 		pstmt.clearParameters();
 		pstmt.setInt(1,6);
@@ -768,7 +645,7 @@ if (false) {
 		pstmt.setString(6,"testclob6");
 		pstmt.setBytes(7,(new String("testblob6")).
 				getBytes(StandardCharsets.UTF_8));
-		checkSuccess(pstmt.executeUpdate(),1);
+		assertEquals(pstmt.executeUpdate(),1);
 		System.out.println();
 		pstmt.clearParameters();
 		pstmt.setInt(1,7);
@@ -779,7 +656,7 @@ if (false) {
 		pstmt.setString(6,"testclob7");
 		pstmt.setBytes(7,(new String("testblob7")).
 				getBytes(StandardCharsets.UTF_8));
-		checkSuccess(pstmt.executeUpdate(),1);
+		assertEquals(pstmt.executeUpdate(),1);
 		System.out.println();
 		pstmt.clearParameters();
 		pstmt.setInt(1,8);
@@ -790,7 +667,7 @@ if (false) {
 		pstmt.setString(6,"testclob8");
 		pstmt.setBytes(7,(new String("testblob8")).
 				getBytes(StandardCharsets.UTF_8));
-		checkSuccess(pstmt.executeUpdate(),1);
+		assertEquals(pstmt.executeUpdate(),1);
 		pstmt.close();
 		System.out.println();
 
@@ -800,71 +677,71 @@ if (false) {
 
 		System.out.println("SELECT:");
 		stmt=con.createStatement();
-		checkSuccess((stmt!=null),1);
+		assertTrue((stmt!=null));
 		rs=stmt.executeQuery("select * from testtable order by testnumber");
-		checkSuccess((rs!=null),1);
+		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
-		checkSuccess((rsmd!=null),1);
+		assertTrue((rsmd!=null));
 		System.out.println();
 
 		System.out.println("COLUMN COUNT:");
-		checkSuccess(rsmd.getColumnCount(),7);
+		assertEquals(rsmd.getColumnCount(),7);
 		System.out.println();
 
 		System.out.println("COLUMN NAMES:");
-		checkSuccess(rsmd.getColumnName(1),"TESTNUMBER");
-		checkSuccess(rsmd.getColumnName(2),"TESTCHAR");
-		checkSuccess(rsmd.getColumnName(3),"TESTVARCHAR");
-		checkSuccess(rsmd.getColumnName(4),"TESTDATE");
-		checkSuccess(rsmd.getColumnName(5),"TESTLONG");
-		checkSuccess(rsmd.getColumnName(6),"TESTCLOB");
-		checkSuccess(rsmd.getColumnName(7),"TESTBLOB");
+		assertEquals(rsmd.getColumnName(1),"TESTNUMBER");
+		assertEquals(rsmd.getColumnName(2),"TESTCHAR");
+		assertEquals(rsmd.getColumnName(3),"TESTVARCHAR");
+		assertEquals(rsmd.getColumnName(4),"TESTDATE");
+		assertEquals(rsmd.getColumnName(5),"TESTLONG");
+		assertEquals(rsmd.getColumnName(6),"TESTCLOB");
+		assertEquals(rsmd.getColumnName(7),"TESTBLOB");
 		System.out.println();
 
 		System.out.println("COLUMN TYPES:");
-		checkSuccess(rsmd.getColumnTypeName(1),"NUMBER");
-		checkSuccess(rsmd.getColumnTypeName(2),"CHAR");
-		checkSuccess(rsmd.getColumnTypeName(3),"VARCHAR2");
-		checkSuccess(rsmd.getColumnTypeName(4),"DATE");
-		checkSuccess(rsmd.getColumnTypeName(5),"LONG");
-		checkSuccess(rsmd.getColumnTypeName(6),"CLOB");
-		checkSuccess(rsmd.getColumnTypeName(7),"BLOB");
+		assertEquals(rsmd.getColumnTypeName(1),"NUMBER");
+		assertEquals(rsmd.getColumnTypeName(2),"CHAR");
+		assertEquals(rsmd.getColumnTypeName(3),"VARCHAR2");
+		assertEquals(rsmd.getColumnTypeName(4),"DATE");
+		assertEquals(rsmd.getColumnTypeName(5),"LONG");
+		assertEquals(rsmd.getColumnTypeName(6),"CLOB");
+		assertEquals(rsmd.getColumnTypeName(7),"BLOB");
 		System.out.println();
 
 		System.out.println("COLUMN LENGTH:");
-		checkSuccess(rsmd.getPrecision(1),0);
-		checkSuccess(rsmd.getPrecision(2),40);
-		checkSuccess(rsmd.getPrecision(3),40);
-		checkSuccess(rsmd.getPrecision(4),7);
-		checkSuccess(rsmd.getPrecision(5),2147483647);
-		checkSuccess(rsmd.getPrecision(6),-1);
-		checkSuccess(rsmd.getPrecision(7),-1);
+		assertEquals(rsmd.getPrecision(1),0);
+		assertEquals(rsmd.getPrecision(2),40);
+		assertEquals(rsmd.getPrecision(3),40);
+		assertEquals(rsmd.getPrecision(4),7);
+		assertEquals(rsmd.getPrecision(5),2147483647);
+		assertEquals(rsmd.getPrecision(6),-1);
+		assertEquals(rsmd.getPrecision(7),-1);
 		System.out.println();
 
 		System.out.println("LONGEST COLUMN:");
-		checkSuccess(rsmd.getColumnDisplaySize(1),39);
-		checkSuccess(rsmd.getColumnDisplaySize(2),40);
-		checkSuccess(rsmd.getColumnDisplaySize(3),40);
-		checkSuccess(rsmd.getColumnDisplaySize(4),7);
-		checkSuccess(rsmd.getColumnDisplaySize(5),0);
-		checkSuccess(rsmd.getColumnDisplaySize(6),4000);
-		checkSuccess(rsmd.getColumnDisplaySize(7),4000);
+		assertEquals(rsmd.getColumnDisplaySize(1),39);
+		assertEquals(rsmd.getColumnDisplaySize(2),40);
+		assertEquals(rsmd.getColumnDisplaySize(3),40);
+		assertEquals(rsmd.getColumnDisplaySize(4),7);
+		assertEquals(rsmd.getColumnDisplaySize(5),0);
+		assertEquals(rsmd.getColumnDisplaySize(6),4000);
+		assertEquals(rsmd.getColumnDisplaySize(7),4000);
 		System.out.println();
 
 		System.out.println("FIELDS BY INDEX:");
 		rs.next();
-		checkSuccess(rs.getString(1),"1");
-		checkSuccess(rs.getString(2),"testchar1                               ");
-		checkSuccess(rs.getString(3),"testvarchar1");
+		assertEquals(rs.getString(1),"1");
+		assertEquals(rs.getString(2),"testchar1                               ");
+		assertEquals(rs.getString(3),"testvarchar1");
 		if (issqlrelay) {
-			checkSuccess(rs.getString(4),"01-JAN-01");
+			assertEquals(rs.getString(4),"01-JAN-01");
 		} else {
 			// oracle jdbc returns this format, independent
 			// of how you set NLS_DATE_FORMAT
-			checkSuccess(rs.getString(4),"2001-01-01 00:00:00");
+			assertEquals(rs.getString(4),"2001-01-01 00:00:00");
 		}
-		checkSuccess(rs.getString(5),"testlong1");
-		checkSuccess(rs.getString(6),"testclob1");
+		assertEquals(rs.getString(5),"testlong1");
+		assertEquals(rs.getString(6),"testclob1");
 		// oracle jdbc can't convert a blob directly to a string
 		Blob	bl=rs.getBlob(7);
 		byte[]	b=null;
@@ -883,49 +760,49 @@ if (false) {
 		} else {
 			b=bl.getBytes(1,(int)bl.length());
 		}
-		checkSuccess(new String(b,"UTF-8"),"");
+		assertEquals(new String(b,"UTF-8"),"");
 		System.out.println();
 		for (int i=0; i<7; i++) {
 			rs.next();
 		}
-		checkSuccess(rs.getString(1),"8");
-		checkSuccess(rs.getString(2),"testchar8                               ");
-		checkSuccess(rs.getString(3),"testvarchar8");
+		assertEquals(rs.getString(1),"8");
+		assertEquals(rs.getString(2),"testchar8                               ");
+		assertEquals(rs.getString(3),"testvarchar8");
 		if (issqlrelay) {
-			checkSuccess(rs.getString(4),"01-JAN-08");
+			assertEquals(rs.getString(4),"01-JAN-08");
 		} else {
 			// oracle jdbc returns this format, independent
 			// of how you set NLS_DATE_FORMAT
 // FIXME: some weird bug causes the date to come back as 3908-01-01 00:00:00
 if (false) {
-			checkSuccess(rs.getString(4),"2008-01-01 00:00:00");
+			assertEquals(rs.getString(4),"2008-01-01 00:00:00");
 }
 		}
-		checkSuccess(rs.getString(5),"testlong8");
-		checkSuccess(rs.getString(6),"testclob8");
+		assertEquals(rs.getString(5),"testlong8");
+		assertEquals(rs.getString(6),"testclob8");
 		// oracle jdbc can't getString() on a blob
 		bl=rs.getBlob(7);
 		b=bl.getBytes(1,(int)bl.length());
-		checkSuccess(new String(b,"UTF-8"),"testblob8");
+		assertEquals(new String(b,"UTF-8"),"testblob8");
 		System.out.println();
 
 		System.out.println("FIELDS BY NAME:");
-		checkSuccess((stmt!=null),1);
+		assertTrue((stmt!=null));
 		rs=stmt.executeQuery("select * from testtable order by testnumber");
-		checkSuccess((rs!=null),1);
+		assertTrue((rs!=null));
 		rs.next();
-		checkSuccess(rs.getString("TESTNUMBER"),"1");
-		checkSuccess(rs.getString("TESTCHAR"),"testchar1                               ");
-		checkSuccess(rs.getString("TESTVARCHAR"),"testvarchar1");
+		assertEquals(rs.getString("TESTNUMBER"),"1");
+		assertEquals(rs.getString("TESTCHAR"),"testchar1                               ");
+		assertEquals(rs.getString("TESTVARCHAR"),"testvarchar1");
 		if (issqlrelay) {
-			checkSuccess(rs.getString("TESTDATE"),"01-JAN-01");
+			assertEquals(rs.getString("TESTDATE"),"01-JAN-01");
 		} else {
 			// oracle jdbc returns this format, independent
 			// of how you set NLS_DATE_FORMAT
-			checkSuccess(rs.getString("TESTDATE"),"2001-01-01 00:00:00");
+			assertEquals(rs.getString("TESTDATE"),"2001-01-01 00:00:00");
 		}
-		checkSuccess(rs.getString("TESTLONG"),"testlong1");
-		checkSuccess(rs.getString("TESTCLOB"),"testclob1");
+		assertEquals(rs.getString("TESTLONG"),"testlong1");
+		assertEquals(rs.getString("TESTCLOB"),"testclob1");
 		// oracle jdbc can't convert a blob directly to a string
 		bl=rs.getBlob("TESTBLOB");
 		b=null;
@@ -944,34 +821,34 @@ if (false) {
 		} else {
 			b=bl.getBytes(1,(int)bl.length());
 		}
-		checkSuccess(new String(b,"UTF-8"),"");
+		assertEquals(new String(b,"UTF-8"),"");
 		System.out.println();
 		for (int i=0; i<7; i++) {
 			rs.next();
 		}
-		checkSuccess(rs.getString("TESTNUMBER"),"8");
-		checkSuccess(rs.getString("TESTCHAR"),"testchar8                               ");
-		checkSuccess(rs.getString("TESTVARCHAR"),"testvarchar8");
+		assertEquals(rs.getString("TESTNUMBER"),"8");
+		assertEquals(rs.getString("TESTCHAR"),"testchar8                               ");
+		assertEquals(rs.getString("TESTVARCHAR"),"testvarchar8");
 		if (issqlrelay) {
-			checkSuccess(rs.getString("TESTDATE"),"01-JAN-08");
+			assertEquals(rs.getString("TESTDATE"),"01-JAN-08");
 		} else {
 			// oracle jdbc returns this format, independent
 			// of how you set NLS_DATE_FORMAT
 // FIXME: some weird bug causes the date to come back as 3908-01-01 00:00:00
 if (false) {
-			checkSuccess(rs.getString("TESTDATE"),"2008-01-01 00:00:00");
+			assertEquals(rs.getString("TESTDATE"),"2008-01-01 00:00:00");
 }
 		}
-		checkSuccess(rs.getString("TESTLONG"),"testlong8");
-		checkSuccess(rs.getString("TESTCLOB"),"testclob8");
+		assertEquals(rs.getString("TESTLONG"),"testlong8");
+		assertEquals(rs.getString("TESTCLOB"),"testclob8");
 		// oracle jdbc can't getString() on a blob
 		bl=rs.getBlob("TESTBLOB");
 		b=bl.getBytes(1,(int)bl.length());
-		checkSuccess(new String(b,"UTF-8"),"testblob8");
+		assertEquals(new String(b,"UTF-8"),"testblob8");
 		System.out.println();
 
 		System.out.println("ROW COUNT:");
-		checkSuccess(rs.getRow(),8);
+		assertEquals(rs.getRow(),8);
 		rs.close();
 		System.out.println();
 
@@ -982,26 +859,26 @@ if (false) {
 		System.out.println("COMMIT AND ROLLBACK:");
 		Connection	secondcon=DriverManager.getConnection(
 							url,user,password);
-		checkSuccess((secondcon!=null),1);
+		assertTrue((secondcon!=null));
 		Statement	secondstmt=secondcon.createStatement();
-		checkSuccess((secondstmt!=null),1);
+		assertTrue((secondstmt!=null));
 		ResultSet	secondrs=secondstmt.executeQuery("select count(*) from testtable");
-		checkSuccess((secondrs!=null),1);
+		assertTrue((secondrs!=null));
 		secondrs.next();
-		checkSuccess(secondrs.getString(1),"0");
+		assertEquals(secondrs.getString(1),"0");
 		secondrs.close();
 		con.commit();
 		secondrs=secondstmt.executeQuery("select count(*) from testtable");
-		checkSuccess((secondrs!=null),1);
+		assertTrue((secondrs!=null));
 		secondrs.next();
-		checkSuccess(secondrs.getString(1),"8");
+		assertEquals(secondrs.getString(1),"8");
 		con.setAutoCommit(true);
 		secondrs.close();
-		checkSuccess(stmt.executeUpdate("insert into testtable values (10,'testchar10','testvarchar10','01-JAN-2010','testlong10','testclob10',NULL)"),1);
+		assertEquals(stmt.executeUpdate("insert into testtable values (10,'testchar10','testvarchar10','01-JAN-2010','testlong10','testclob10',NULL)"),1);
 		secondrs=secondstmt.executeQuery("select count(*) from testtable");
-		checkSuccess((secondrs!=null),1);
+		assertTrue((secondrs!=null));
 		secondrs.next();
-		checkSuccess(secondrs.getString(1),"9");
+		assertEquals(secondrs.getString(1),"9");
 		secondrs.close();
 		secondstmt.close();
 		con.setAutoCommit(false);
@@ -1018,24 +895,24 @@ if (false) {
 
 		// NULL AND EMPTY CLOBS AND BLOBS
 		System.out.println("NULL AND EMPTY CLOBS AND BLOBS:");
-		checkSuccess(stmt.executeUpdate("create table testtable1 (testclob1 clob, testclob2 clob, testblob1 blob, testblob2 blob)"),0);
+		assertEquals(stmt.executeUpdate("create table testtable1 (testclob1 clob, testclob2 clob, testblob1 blob, testblob2 blob)"),0);
 		pstmt=con.prepareStatement("insert into testtable1 values (:var1,:var2,:var3,:var4)");
-		checkSuccess((pstmt!=null),1);
+		assertTrue((pstmt!=null));
 		pstmt.setString(1,"");
 		pstmt.setString(2,null);
 		pstmt.setString(3,"");
 		pstmt.setString(4,null);
-		checkSuccess(pstmt.executeUpdate(),1);
+		assertEquals(pstmt.executeUpdate(),1);
 		pstmt.close();
 		rs=stmt.executeQuery("select * from testtable1");
-		checkSuccess((rs!=null),1);
+		assertTrue((rs!=null));
 		rs.next();
-		checkSuccess(rs.getString(1),null);
-		checkSuccess(rs.getString(2),null);
+		assertEquals(rs.getString(1),null);
+		assertEquals(rs.getString(2),null);
 		// oracle jdbc can't getString() on a blob
-		checkSuccess((rs.getBlob(3)==null),1);
-		checkSuccess((rs.getBlob(4)==null),1);
-		checkSuccess(stmt.executeUpdate("drop table testtable1"),0);
+		assertTrue((rs.getBlob(3)==null));
+		assertTrue((rs.getBlob(4)==null));
+		assertEquals(stmt.executeUpdate("drop table testtable1"),0);
 		System.out.println();
 
 
@@ -1048,9 +925,9 @@ if (false) {
 		}
 
 		System.out.println("LONG CLOB:");
-		checkSuccess(stmt.executeUpdate("create table testtable2 (testclob clob)"),0);
+		assertEquals(stmt.executeUpdate("create table testtable2 (testclob clob)"),0);
 		pstmt=con.prepareStatement("insert into testtable2 values (:clobval)");
-		checkSuccess((pstmt!=null),1);
+		assertTrue((pstmt!=null));
 		StringBuilder	clobval=new StringBuilder();
 		// oracle jdbc struggles with more than 1024 byte clobs
 		for (int i=0; i<1024; i++) {
@@ -1058,20 +935,20 @@ if (false) {
 		}
 		String	clobstr=clobval.toString();
 		pstmt.setString(1,clobstr);
-		checkSuccess(pstmt.executeUpdate(),1);
+		assertEquals(pstmt.executeUpdate(),1);
 		rs=stmt.executeQuery("select testclob from testtable2");
-		checkSuccess((rs!=null),1);
+		assertTrue((rs!=null));
 		rs.next();
 		Clob	cl=rs.getClob(1);
-		checkSuccess(clobstr,cl.getSubString(1,(int)cl.length()));
+		assertEquals(clobstr,cl.getSubString(1,(int)cl.length()));
 		rs.close();
 		// FIXME: use callable statement?
 		/*cur->prepareQuery("begin select testclob into :clobbindval from testtable2; end;");
 		cur->defineOutputBindClob("clobbindval");
-		checkSuccess(cur->executeQuery(),1);
+		assertTrue(cur->executeQuery());
 		const char	*clobbindvar=cur->getOutputBindClob("clobbindval");
-		checkSuccess(cur->getOutputBindLength("clobbindval"),8*1024);
-		checkSuccess(clobval,clobbindvar);
+		assertEquals(cur->getOutputBindLength("clobbindval"),8*1024);
+		assertEquals(clobval,clobbindvar);
 		cur->sendQuery("drop table testtable2");*/
 		System.out.println();
 
@@ -1089,21 +966,21 @@ if (false) {
 		String	hostname=InetAddress.getLocalHost().
 					getHostName().split("\\.")[0];
 		try {
-			checkSuccess(stmt.executeUpdate("drop table "+hostname+"_temptabledelete"),0);
+			assertEquals(stmt.executeUpdate("drop table "+hostname+"_temptabledelete"),0);
 		} catch (Exception ex) {
 		}
-		checkSuccess(stmt.executeUpdate("create global temporary table "+hostname+"_temptabledelete (col1 number) on commit delete rows"),0);
-		checkSuccess(stmt.executeUpdate("insert into "+hostname+"_temptabledelete values (1)"),1);
+		assertEquals(stmt.executeUpdate("create global temporary table "+hostname+"_temptabledelete (col1 number) on commit delete rows"),0);
+		assertEquals(stmt.executeUpdate("insert into "+hostname+"_temptabledelete values (1)"),1);
 		rs=stmt.executeQuery("select count(*) from "+hostname+"_temptabledelete");
-		checkSuccess((rs!=null),1);
+		assertTrue((rs!=null));
 		rs.next();
-		checkSuccess(rs.getString(1),"1");
+		assertEquals(rs.getString(1),"1");
 		con.commit();
 		rs=stmt.executeQuery("select count(*) from "+hostname+"_temptabledelete");
-		checkSuccess((rs!=null),1);
+		assertTrue((rs!=null));
 		rs.next();
-		checkSuccess(rs.getString(1),"0");
-		checkSuccess(stmt.executeUpdate("drop table "+hostname+"_temptabledelete"),0);
+		assertEquals(rs.getString(1),"0");
+		assertEquals(stmt.executeUpdate("drop table "+hostname+"_temptabledelete"),0);
 		System.out.println();
 		try {
 			stmt.executeUpdate("truncate table "+hostname+"_temptablepreserve");
@@ -1113,35 +990,35 @@ if (false) {
 			stmt.executeUpdate("drop table "+hostname+"_temptablepreserve");
 		} catch (Exception ex) {
 		}
-		checkSuccess(stmt.executeUpdate("create global temporary table "+hostname+"_temptablepreserve (col1 number) on commit preserve rows"),0);
-		checkSuccess(stmt.executeUpdate("insert into "+hostname+"_temptablepreserve values (1)"),1);
+		assertEquals(stmt.executeUpdate("create global temporary table "+hostname+"_temptablepreserve (col1 number) on commit preserve rows"),0);
+		assertEquals(stmt.executeUpdate("insert into "+hostname+"_temptablepreserve values (1)"),1);
 		rs=stmt.executeQuery("select count(*) from "+hostname+"_temptablepreserve");
-		checkSuccess((rs!=null),1);
+		assertTrue((rs!=null));
 		rs.next();
-		checkSuccess(rs.getString(1),"1");
+		assertEquals(rs.getString(1),"1");
 		con.commit();
 		rs=stmt.executeQuery("select count(*) from "+hostname+"_temptablepreserve");
-		checkSuccess((rs!=null),1);
+		assertTrue((rs!=null));
 		rs.next();
-		checkSuccess(rs.getString(1),"1");
+		assertEquals(rs.getString(1),"1");
 		con.close();
 		System.out.println();
 		con=DriverManager.getConnection(url,user,password);
-		checkSuccess((con!=null),1);
+		assertTrue((con!=null));
 		stmt=secondcon.createStatement();
-		checkSuccess((stmt!=null),1);
+		assertTrue((stmt!=null));
 		rs=stmt.executeQuery("select count(*) from "+hostname+"_temptablepreserve");
-		checkSuccess((rs!=null),1);
+		assertTrue((rs!=null));
 		rs.next();
-		checkSuccess(rs.getString(1),"0");
-		checkSuccess(stmt.executeUpdate("truncate table "+hostname+"_temptablepreserve"),0);
+		assertEquals(rs.getString(1),"0");
+		assertEquals(stmt.executeUpdate("truncate table "+hostname+"_temptablepreserve"),0);
 		Thread.sleep(2000);
-		checkSuccess(stmt.executeUpdate("drop table "+hostname+"_temptablepreserve"),0);
+		assertEquals(stmt.executeUpdate("drop table "+hostname+"_temptablepreserve"),0);
 		try {
 			stmt.executeQuery("select count(*) from "+hostname+"_temptablepreserve");
-			checkSuccess(false,1);
+			assertTrue(false);
 		} catch (Exception ex) {
-			checkSuccess(true,1);
+			assertTrue(true);
 		}
 		System.out.println();
 
@@ -1159,77 +1036,77 @@ if (false) {
 		System.out.println("INVALID QUERIES:");
 		try {
 			stmt.executeQuery("select * from testtable order by testnumber");
-			checkSuccess(false,1);
+			assertTrue(false);
 		} catch (Exception e) {
-			checkSuccess(true,1);
+			assertTrue(true);
 		}
 		try {
 			stmt.executeQuery("select * from testtable order by testnumber");
-			checkSuccess(false,1);
+			assertTrue(false);
 		} catch (Exception e) {
-			checkSuccess(true,1);
+			assertTrue(true);
 		}
 		try {
 			stmt.executeQuery("select * from testtable order by testnumber");
-			checkSuccess(false,1);
+			assertTrue(false);
 		} catch (Exception e) {
-			checkSuccess(true,1);
+			assertTrue(true);
 		}
 		try {
 			stmt.executeQuery("select * from testtable order by testnumber");
-			checkSuccess(false,1);
+			assertTrue(false);
 		} catch (Exception e) {
-			checkSuccess(true,1);
+			assertTrue(true);
 		}
 		System.out.println();
 		try {
 			stmt.executeUpdate("insert into testtable values (1,2,3,4)");
-			checkSuccess(false,1);
+			assertTrue(false);
 		} catch (Exception e) {
-			checkSuccess(true,1);
+			assertTrue(true);
 		}
 		try {
 			stmt.executeUpdate("insert into testtable values (1,2,3,4)");
-			checkSuccess(false,1);
+			assertTrue(false);
 		} catch (Exception e) {
-			checkSuccess(true,1);
+			assertTrue(true);
 		}
 		try {
 			stmt.executeUpdate("insert into testtable values (1,2,3,4)");
-			checkSuccess(false,1);
+			assertTrue(false);
 		} catch (Exception e) {
-			checkSuccess(true,1);
+			assertTrue(true);
 		}
 		try {
 			stmt.executeUpdate("insert into testtable values (1,2,3,4)");
-			checkSuccess(false,1);
+			assertTrue(false);
 		} catch (Exception e) {
-			checkSuccess(true,1);
+			assertTrue(true);
 		}
 		System.out.println();
 		try {
 			stmt.executeUpdate("create table testtable");
-			checkSuccess(false,1);
+			assertTrue(false);
 		} catch (Exception e) {
-			checkSuccess(true,1);
+			assertTrue(true);
 		}
 		try {
 			stmt.executeUpdate("create table testtable");
-			checkSuccess(false,1);
+			assertTrue(false);
 		} catch (Exception e) {
-			checkSuccess(true,1);
+			assertTrue(true);
 		}
 		try {
 			stmt.executeUpdate("create table testtable");
-			checkSuccess(false,1);
+			assertTrue(false);
 		} catch (Exception e) {
-			checkSuccess(true,1);
+			assertTrue(true);
 		}
 		try {
 			stmt.executeUpdate("create table testtable");
-			checkSuccess(false,1);
+			assertTrue(false);
 		} catch (Exception e) {
-			checkSuccess(true,1);
+			assertTrue(true);
 		}
 		System.out.println();
 

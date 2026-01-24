@@ -12,14 +12,14 @@
 semaphoreset	*sem;
 uint16_t	sessionid;
 
-void assertEquals(const char *value, const char *success) {
+void assertEquals(const char *actual, const char *expected) {
 
-	if (!success) {
-		if (!value) {
-			stdoutput.printf("success ");
+	if (!expected) {
+		if (!actual) {
+			stdoutput.printf("expected ");
 			return;
 		} else {
-			stdoutput.printf("%s!=%s\n",value,success);
+			stdoutput.printf("%s!=%s\n",actual,expected);
 			stdoutput.printf("failure ");
 			if (!sessionid) {
 				delete sem;
@@ -32,10 +32,10 @@ void assertEquals(const char *value, const char *success) {
 		}
 	}
 
-	if (!charstring::compare(value,success)) {
-		stdoutput.printf("success ");
+	if (!charstring::compare(actual,expected)) {
+		stdoutput.printf("expected ");
 	} else {
-		stdoutput.printf("%s!=%s\n",value,success);
+		stdoutput.printf("%s!=%s\n",actual,expected);
 		stdoutput.printf("failure ");
 		if (!sessionid) {
 			delete sem;
@@ -48,12 +48,12 @@ void assertEquals(const char *value, const char *success) {
 	}
 }
 
-void assertEquals(int value, int success) {
+void assertEquals(int actual, int expected) {
 
-	if (value==success) {
-		stdoutput.printf("success ");
+	if (actual==expected) {
+		stdoutput.printf("expected ");
 	} else {
-		stdoutput.printf("%d!=%d\n",value,success);
+		stdoutput.printf("%d!=%d\n",actual,expected);
 		stdoutput.printf("failure ");
 		if (!sessionid) {
 			delete sem;
@@ -69,7 +69,7 @@ void assertEquals(int value, int success) {
 void assertTrue(bool actual) {
 
 	if (actual) {
-		stdoutput.printf("success ");
+		stdoutput.printf("expected ");
 	} else {
 		stdoutput.printf("%s!=true\n",(actual)?"true":"false");
 		stdoutput.printf("failure ");

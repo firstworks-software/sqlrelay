@@ -9,14 +9,14 @@
 extern sqlrcon	con;
 extern sqlrcur	cur;
 
-void assertEqualsString(const char *value, const char *success) {
+void assertEqualsString(const char *actual, const char *expected) {
 
-	if (!success) {
-		if (!value) {
-			printf("success ");
+	if (!expected) {
+		if (!actual) {
+			printf("expected ");
 			return;
 		} else {
-			printf("\"%s\"!=\"%s\"",value,success);
+			printf("\"%s\"!=\"%s\"",actual,expected);
 			printf("failure: %s",sqlrcur_errorMessage(cur));
 			sqlrcur_free(cur);
 			sqlrcon_free(con);
@@ -24,10 +24,10 @@ void assertEqualsString(const char *value, const char *success) {
 		}
 	}
 
-	if (!strcmp(value,success)) {
-		printf("success ");
+	if (!strcmp(actual,expected)) {
+		printf("expected ");
 	} else {
-		printf("\"%s\"!=\"%s\"",value,success);
+		printf("\"%s\"!=\"%s\"",actual,expected);
 		printf("failure: %s",sqlrcur_errorMessage(cur));
 		sqlrcur_free(cur);
 		sqlrcon_free(con);
@@ -35,15 +35,15 @@ void assertEqualsString(const char *value, const char *success) {
 	}
 }
 
-void assertEqualsStringWithLength(const char *value, const char *success,
+void assertEqualsStringWithLength(const char *actual, const char *expected,
 							int length) {
 
-	if (!success) {
-		if (!value) {
-			printf("success ");
+	if (!expected) {
+		if (!actual) {
+			printf("expected ");
 			return;
 		} else {
-			printf("\"%s\"!=\"%s\"",value,success);
+			printf("\"%s\"!=\"%s\"",actual,expected);
 			printf("failure: %s",sqlrcur_errorMessage(cur));
 			sqlrcur_free(cur);
 			sqlrcon_free(con);
@@ -51,10 +51,10 @@ void assertEqualsStringWithLength(const char *value, const char *success,
 		}
 	}
 
-	if (!strncmp(value,success,length)) {
-		printf("success ");
+	if (!strncmp(actual,expected,length)) {
+		printf("expected ");
 	} else {
-		printf("\"%s\"!=\"%s\"",value,success);
+		printf("\"%s\"!=\"%s\"",actual,expected);
 		printf("failure: %s",sqlrcur_errorMessage(cur));
 		sqlrcur_free(cur);
 		sqlrcon_free(con);
@@ -62,12 +62,12 @@ void assertEqualsStringWithLength(const char *value, const char *success,
 	}
 }
 
-void assertEqualsInt(int value, int success) {
+void assertEqualsInt(int actual, int expected) {
 
-	if (value==success) {
-		printf("success ");
+	if (actual==expected) {
+		printf("expected ");
 	} else {
-		printf("\"%d\"!=\"%d\"",value,success);
+		printf("\"%d\"!=\"%d\"",actual,expected);
 		printf("failure: %s",sqlrcur_errorMessage(cur));
 		sqlrcur_free(cur);
 		sqlrcon_free(con);
@@ -75,12 +75,12 @@ void assertEqualsInt(int value, int success) {
 	}
 }
 
-void assertEqualsDouble(double value, double success) {
+void assertEqualsDouble(double actual, double expected) {
 
-	if (value==success) {
-		printf("success ");
+	if (actual==expected) {
+		printf("expected ");
 	} else {
-		printf("\"%f\"!=\"%f\"",value,success);
+		printf("\"%f\"!=\"%f\"",actual,expected);
 		printf("failure: %s",sqlrcur_errorMessage(cur));
 		sqlrcur_free(cur);
 		sqlrcon_free(con);
@@ -91,7 +91,7 @@ void assertEqualsDouble(double value, double success) {
 void assertTrue(int actual) {
 
 	if (actual) {
-		printf("success ");
+		printf("expected ");
 	} else {
 		printf("%s!=true\n",(actual)?"true":"false");
 		printf("failure: %s",sqlrcur_errorMessage(cur));
@@ -104,7 +104,7 @@ void assertTrue(int actual) {
 void assertFalse(int actual) {
 
 	if (!actual) {
-		printf("success ");
+		printf("expected ");
 	} else {
 		printf("%s!=false\n",(actual)?"true":"false");
 		printf("failure: %s",sqlrcur_errorMessage(cur));

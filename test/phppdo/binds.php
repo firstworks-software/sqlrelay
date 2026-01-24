@@ -1,17 +1,8 @@
 <html><pre><?php
-# Copyright (c) David Muse
-# See the file COPYING for more information.
+	# Copyright (c) David Muse
+	# See the file COPYING for more information.
 
-	function checkSuccess($value,$success) {
-
-		if ($value==$success) {
-			echo("success ");
-		} else {
-			echo("$value != $success ");
-			echo("failure ");
-			exit(1);
-		}
-	}
+	include("assert.php");
 
 	$host="sqlrelay";
 	$port=9000;
@@ -34,7 +25,7 @@
 		} catch (Exception $e) {
 		}
 		echo("CREATE TEMPTABLE: \n");
-		checkSuccess($dbh->exec("create table testtable (testinteger int)"),0);
+		assertEqual($dbh->exec("create table testtable (testinteger int)"),0);
 		echo("\n");
 	}
 
@@ -61,8 +52,8 @@
 	}
 	echo("queryvar: $queryvar\n");
 	$stmt=$dbh->prepare("insert into testtable (testinteger) values ($queryvar)");
-	checkSuccess($stmt->bindValue(1,2,PDO::PARAM_INT),true);
-	checkSuccess($stmt->execute(),true);
+	assertTrue($stmt->bindValue(1,2,PDO::PARAM_INT));
+	assertTrue($stmt->execute());
 	echo("\n");
 
 	echo("BIND BY NAME: \n");
@@ -92,8 +83,8 @@
 	}
 	echo("queryvar: $queryvar   bindvar: $bindvar\n");
 	$stmt=$dbh->prepare("insert into testtable (testinteger) values ($queryvar)");
-	checkSuccess($stmt->bindValue($bindvar,2,PDO::PARAM_INT),true);
-	checkSuccess($stmt->execute(),true);
+	assertTrue($stmt->bindValue($bindvar,2,PDO::PARAM_INT));
+	assertTrue($stmt->execute());
 	echo("\n");
 
 	$dbh->exec("delete from testtable");

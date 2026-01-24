@@ -1,17 +1,8 @@
 <html><pre><?php
-# Copyright (c) David Muse
-# See the file COPYING for more information.
+	# Copyright (c) David Muse
+	# See the file COPYING for more information.
 
-	function checkSuccess($value,$success) {
-
-		if ($value==$success) {
-			echo("success ");
-		} else {
-			echo("$value != $success ");
-			echo("failure ");
-			exit(1);
-		}
-	}
+	include("assert.php");
 
 	$host="sqlrelay";
 	$port=9000;
@@ -38,37 +29,37 @@
 	echo("\n");
 
 	echo("INSERT: \n");
-	checkSuccess($dbh->exec("insert into testtable values (NULL,NULL,NULL,NULL,NULL)"),1);
-	checkSuccess($dbh->exec("insert into testtable values (1,1.1,'1','1','2001-01-01')"),1);
-	checkSuccess($dbh->exec("insert into testtable values (0,0.0,'0','0','0000-01-01 00:00:00')"),1);
+	assertEqual($dbh->exec("insert into testtable values (NULL,NULL,NULL,NULL,NULL)"),1);
+	assertEqual($dbh->exec("insert into testtable values (1,1.1,'1','1','2001-01-01')"),1);
+	assertEqual($dbh->exec("insert into testtable values (0,0.0,'0','0','0000-01-01 00:00:00')"),1);
 	echo("\n");
 
 	echo("FIELDS BY INDEX (as NULL): \n");
 	$stmt=$dbh->query("select * from testtable");
 	$result=$stmt->fetch(PDO::FETCH_NUM);
-	checkSuccess($result[0],"");
-	checkSuccess($result[1],"");
-	checkSuccess($result[2],"");
-	checkSuccess(stream_get_contents($result[3]),"");
-	checkSuccess($result[4],"");
+	assertEqual($result[0],"");
+	assertEqual($result[1],"");
+	assertEqual($result[2],"");
+	assertEqual(stream_get_contents($result[3]),"");
+	assertEqual($result[4],"");
 echo("\n");
 print_r($result);
 echo("\n");
 	$result=$stmt->fetch(PDO::FETCH_NUM);
-	checkSuccess($result[0],1);
-	checkSuccess($result[1],1.1);
-	checkSuccess($result[2],"1");
-	checkSuccess(stream_get_contents($result[3]),"1");
-	checkSuccess($result[4],"2001-01-01 00:00:00");
+	assertEqual($result[0],1);
+	assertEqual($result[1],1.1);
+	assertEqual($result[2],"1");
+	assertEqual(stream_get_contents($result[3]),"1");
+	assertEqual($result[4],"2001-01-01 00:00:00");
 echo("\n");
 print_r($result);
 echo("\n");
 	$result=$stmt->fetch(PDO::FETCH_NUM);
-	checkSuccess($result[0],0);
-	checkSuccess($result[1],0.0);
-	checkSuccess($result[2],"0");
-	checkSuccess(stream_get_contents($result[3]),"0");
-	checkSuccess($result[4],"0000-01-01 00:00:00");
+	assertEqual($result[0],0);
+	assertEqual($result[1],0.0);
+	assertEqual($result[2],"0");
+	assertEqual(stream_get_contents($result[3]),"0");
+	assertEqual($result[4],"0000-01-01 00:00:00");
 echo("\n");
 print_r($result);
 echo("\n");
@@ -80,29 +71,29 @@ echo("\n");
 		PDO::SQLRELAY_ATTR_GET_NULLS_AS_EMPTY_STRINGS,false);
 	$stmt->execute();
 	$result=$stmt->fetch(PDO::FETCH_NUM);
-	checkSuccess($result[0],null);
-	checkSuccess($result[1],null);
-	checkSuccess($result[2],null);
-	checkSuccess($result[3],null);
-	checkSuccess($result[4],null);
+	assertEqual($result[0],null);
+	assertEqual($result[1],null);
+	assertEqual($result[2],null);
+	assertEqual($result[3],null);
+	assertEqual($result[4],null);
 echo("\n");
 print_r($result);
 echo("\n");
 	$result=$stmt->fetch(PDO::FETCH_NUM);
-	checkSuccess($result[0],1);
-	checkSuccess($result[1],1.1);
-	checkSuccess($result[2],"1");
-	checkSuccess(stream_get_contents($result[3]),"1");
-	checkSuccess($result[4],"2001-01-01 00:00:00");
+	assertEqual($result[0],1);
+	assertEqual($result[1],1.1);
+	assertEqual($result[2],"1");
+	assertEqual(stream_get_contents($result[3]),"1");
+	assertEqual($result[4],"2001-01-01 00:00:00");
 echo("\n");
 print_r($result);
 echo("\n");
 	$result=$stmt->fetch(PDO::FETCH_NUM);
-	checkSuccess($result[0],0);
-	checkSuccess($result[1],0.0);
-	checkSuccess($result[2],"0");
-	checkSuccess(stream_get_contents($result[3]),"0");
-	checkSuccess($result[4],"0000-00-00 00:00:00");
+	assertEqual($result[0],0);
+	assertEqual($result[1],0.0);
+	assertEqual($result[2],"0");
+	assertEqual(stream_get_contents($result[3]),"0");
+	assertEqual($result[4],"0000-00-00 00:00:00");
 echo("\n");
 print_r($result);
 echo("\n");
@@ -118,16 +109,16 @@ echo("\n");
 		PDO::SQLRELAY_ATTR_GET_NULLS_AS_EMPTY_STRINGS,true);
 	$stmt->execute();
 	$result=$stmt->fetch(PDO::FETCH_NUM);
-	checkSuccess($result[0],"");
-	checkSuccess($result[1],"");
+	assertEqual($result[0],"");
+	assertEqual($result[1],"");
 	$param1=null;
 	$param2="";
 	$stmt->setAttribute(
 		PDO::SQLRELAY_ATTR_GET_NULLS_AS_EMPTY_STRINGS,false);
 	$stmt->execute();
 	$result=$stmt->fetch(PDO::FETCH_NUM);
-	checkSuccess($result[0],null);
-	checkSuccess($result[1],null);
+	assertEqual($result[0],null);
+	assertEqual($result[1],null);
 	echo("\n");
 
 	try {

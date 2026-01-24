@@ -6,3 +6,4 @@ all:
 
 clean:
 	$(RM) cachefile* sqlnet.log
+	$(RMTREE) __pycache__
