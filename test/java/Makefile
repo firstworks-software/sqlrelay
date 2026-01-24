@@ -17,35 +17,35 @@ all: db2.class\
 clean:
 	$(RM) *.class cachefile* sqlnet.log run.bat
 
-db2.class: db2.java
-	$(JAVAC) -classpath $(javadir)/sqlrelay.jar db2.java
+db2.class: sqlrtest.java db2.java
+	$(JAVAC) -classpath $(javadir)/sqlrelay.jar sqlrtest.java db2.java
 
-freetds.class: freetds.java
-	$(JAVAC) -classpath $(javadir)/sqlrelay.jar freetds.java
+freetds.class: sqlrtest.java freetds.java
+	$(JAVAC) -classpath $(javadir)/sqlrelay.jar sqlrtest.java freetds.java
 
-firebird.class: firebird.java
-	$(JAVAC) -classpath $(javadir)/sqlrelay.jar firebird.java
+firebird.class: sqlrtest.java firebird.java
+	$(JAVAC) -classpath $(javadir)/sqlrelay.jar sqlrtest.java firebird.java
 
-mysql.class: mysql.java
-	$(JAVAC) -classpath $(javadir)/sqlrelay.jar mysql.java
+mysql.class: sqlrtest.java mysql.java
+	$(JAVAC) -classpath $(javadir)/sqlrelay.jar sqlrtest.java mysql.java
 
-oracle.class: oracle.java
-	$(JAVAC) -classpath $(javadir)/sqlrelay.jar oracle.java
+oracle.class: sqlrtest.java oracle.java
+	$(JAVAC) -classpath $(javadir)/sqlrelay.jar sqlrtest.java oracle.java
 
-postgresql.class: postgresql.java
-	$(JAVAC) -classpath $(javadir)/sqlrelay.jar postgresql.java
+postgresql.class: sqlrtest.java postgresql.java
+	$(JAVAC) -classpath $(javadir)/sqlrelay.jar sqlrtest.java postgresql.java
 
-sqlite.class: sqlite.java
-	$(JAVAC) -classpath $(javadir)/sqlrelay.jar sqlite.java
+sqlite.class: sqlrtest.java sqlite.java
+	$(JAVAC) -classpath $(javadir)/sqlrelay.jar sqlrtest.java sqlite.java
 
-sap.class: sap.java
-	$(JAVAC) -classpath $(javadir)/sqlrelay.jar sap.java
+sap.class: sqlrtest.java sap.java
+	$(JAVAC) -classpath $(javadir)/sqlrelay.jar sqlrtest.java sap.java
 
-tls.class: tls.java
-	$(JAVAC) -classpath $(javadir)/sqlrelay.jar tls.java
+tls.class: sqlrtest.java tls.java
+	$(JAVAC) -classpath $(javadir)/sqlrelay.jar sqlrtest.java tls.java
 
-krb.class: krb.java
-	$(JAVAC) -classpath $(javadir)/sqlrelay.jar krb.java
+krb.class: sqlrtest.java krb.java
+	$(JAVAC) -classpath $(javadir)/sqlrelay.jar sqlrtest.java krb.java
 
 run.bat: run.batch
 	$(CP) run.batch run.bat
