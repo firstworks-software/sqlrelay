@@ -44,6 +44,21 @@ int main(int argc, char **argv) {
 	assertTrue(sqlrcon_ping(con));
 	printf("\n");
 
+	// isolation levels
+	printf("ISOLATION LEVELS: \n");
+	{
+		const char	*isolationlevels[]={"1","0","2","3",NULL};
+		const char	**il;
+		for (il=isolationlevels; *il; il++) {
+			assertTrue(sqlrcon_setIsolationLevel(con,*il));
+			assertEqualsString(sqlrcon_getIsolationLevel(con),*il);
+			printf("\n");
+		}
+		// reset to the default isolation level
+		assertTrue(sqlrcon_setIsolationLevel(con,isolationlevels[0]));
+		printf("\n");
+	}
+
 	// drop existing table
 	sqlrcur_sendQuery(cur,"drop table testtable");
 

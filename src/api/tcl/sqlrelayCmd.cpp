@@ -1903,6 +1903,8 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     "begin",
     "commit",
     "rollback",
+    "setIsolationLevel",
+    "getIsolationLevel",
     "errorMessage",
     "errorNumber",
     "debug",
@@ -1948,6 +1950,8 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     SQLR_BEGIN,
     SQLR_COMMIT,
     SQLR_ROLLBACK,
+    SQLR_SETISOLATIONLEVEL,
+    SQLR_GETISOLATIONLEVEL,
     SQLR_ERRORMESSAGE,
     SQLR_ERRORNUMBER,
     SQLR_DEBUG,
@@ -2337,6 +2341,22 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     }
     Tcl_SetObjResult(interp, Tcl_NewIntObj(con->rollback()));
     break;
+  case SQLR_SETISOLATIONLEVEL: {
+    if (objc != 3) {
+      Tcl_WrongNumArgs(interp, 2, objv, "isolationlevel");
+      return TCL_ERROR;
+    }
+    Tcl_SetObjResult(interp, Tcl_NewIntObj(con->setIsolationLevel(Tcl_GetString(objv[2]))));
+    break;
+  }
+  case SQLR_GETISOLATIONLEVEL: {
+    if (objc > 2) {
+      Tcl_WrongNumArgs(interp, 2, objv, NULL);
+      return TCL_ERROR;
+    }
+    Tcl_SetObjResult(interp,_Tcl_NewStringObj(con->getIsolationLevel(), -1));
+    break;
+  }
   case SQLR_ERRORMESSAGE: {
     if (objc > 2) {
       Tcl_WrongNumArgs(interp, 2, objv, NULL);

@@ -26,6 +26,18 @@ print "PING: \n"
 assertTrue(con.ping())
 print "\n"
 
+# isolation levels
+print "ISOLATION LEVELS: \n"
+isolationlevels=["CS","UR","RS","RR"]
+for il in isolationlevels
+	assertTrue(con.setIsolationLevel(il))
+	assertEqual(con.getIsolationLevel(),il)
+	print "\n"
+end
+# reset to the default isolation level
+assertTrue(con.setIsolationLevel(isolationlevels[0]))
+print "\n"
+
 # drop existing table
 cur.sendQuery("drop table testtable")
 

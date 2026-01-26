@@ -410,6 +410,19 @@ int	sqlrcon_commit(sqlrcon sqlrconref);
 SQLRCLIENT_DLLSPEC
 int	sqlrcon_rollback(sqlrcon sqlrconref);
 
+/** @ingroup sqlrclientwrapper
+ *  Sets the transaction isolation level to "isolationlevel".  Returns 1 if
+ *  setting the isolation level succeeded, 0 if it failed. */
+SQLRCLIENT_DLLSPEC
+int	sqlrcon_setIsolationLevel(sqlrcon sqlrconref,
+					const char *isolationlevel);
+
+/** @ingroup sqlrclientwrapper
+ *  Returns the transaction isolation level, "UNKNOWN" if the isolation level
+ *  is unknown, or NULL if an error occurred. */
+SQLRCLIENT_DLLSPEC
+const char	*sqlrcon_getIsolationLevel(sqlrcon sqlrconref);
+
 
 
 /** @ingroup sqlrclientwrapper

@@ -16,6 +16,7 @@ sqlrcur	secondcur;
 
 int main(int argc, char **argv) {
 
+	const char	*isolationlevels[]={"READ COMMITTED","SERIALIZABLE",NULL};
 	const char	*bindvars[6]={"1","2","3","4","5",NULL};
 	const char	*bindvals[5]={"4","testchar4","testvarchar4",
 						"01-JAN-2004","testlong4"};
@@ -63,6 +64,23 @@ int main(int argc, char **argv) {
 	// ping
 	printf("PING: \n");
 	assertTrue(sqlrcon_ping(con));
+	printf("\n");
+
+	// isolation levels
+	printf("ISOLATION LEVELS: \n");
+	for (const char **il=isolationlevels; *il; il++) {
+		// oracle requires the isolation level to
+		// be the first query of the transaction
+		assertTrue(sqlrcon_commit(con));
+		// you can set the isolation level, but to get it, you have to
+		// have permissions to read from sys.v_$session and
+		// sys.v_$transaction
+		assertTrue(sqlrcon_setIsolationLevel(con,*il));
+		printf("\n");
+	}
+	// reset to the default isolation level
+	assertTrue(sqlrcon_commit(con));
+	assertTrue(sqlrcon_setIsolationLevel(con,isolationlevels[0]));
 	printf("\n");
 
 	printf("BIND VALIDATION: \n");

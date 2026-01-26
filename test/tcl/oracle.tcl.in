@@ -21,6 +21,24 @@ puts "PING: "
 assertTrue [$con ping]
 puts ""
 
+# isolation levels
+puts "ISOLATION LEVELS: "
+set isolationlevels [list "READ COMMITTED" "SERIALIZABLE"]
+foreach il $isolationlevels {
+	# oracle requires the isolation level to
+	# be the first query of the transaction
+	assertTrue [$con commit]
+	# you can set the isolation level, but to get it, you have to
+	# have permissions to read from sys.v_$session and
+	# sys.v_$transaction
+	assertTrue [$con setIsolationLevel $il]
+	puts ""
+}
+# reset to the default isolation level
+assertTrue [$con commit]
+assertTrue [$con setIsolationLevel [lindex $isolationlevels 0]]
+puts ""
+
 # drop existing table
 catch {$cur sendQuery "drop table testtable"}
 

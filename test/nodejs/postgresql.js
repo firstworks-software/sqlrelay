@@ -38,7 +38,25 @@ console.log("\n");
 console.log("PING: ");
 assertEqual(con.ping(),1);
 console.log("\n");
-	
+
+// isolation levels
+/*console.log("ISOLATION LEVELS: ");
+var	isolationlevels=["read committed","read uncommitted","repeatable read","serializable"];
+for (var i=0; i<isolationlevels.length; i++) {
+	// postgresql requires the isolation level to
+	// be the first query of the transaction
+	con.begin();
+	assertEqual(con.setIsolationLevel(isolationlevels[i]),1);
+	assertEqual(con.getIsolationLevel(),isolationlevels[i]);
+	con.commit();
+	console.log();
+}
+// reset to the default isolation level
+con.begin();
+assertEqual(con.setIsolationLevel(isolationlevels[0]),1);
+con.commit();
+console.log("\n");*/
+
 // drop existing table
 cur.sendQuery("drop table testtable");
 	

@@ -425,6 +425,30 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_rollback
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRConnection
+ * Method:    setIsolationLevel
+ * Signature: (Ljava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_setIsolationLevel
+  (JNIEnv *env, jobject self, jstring isolationlevel) {
+	char	*isolationlevelstring=conGetStringUTFChars(env,isolationlevel,0);
+	bool	retval=getSqlrConnection(env,self)->
+				setIsolationLevel(isolationlevelstring);
+	conReleaseStringUTFChars(env,isolationlevel,isolationlevelstring);
+	return (jboolean)retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRConnection
+ * Method:    getIsolationLevel
+ * Signature: ()Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getIsolationLevel
+  (JNIEnv *env, jobject self) {
+	return conNewStringUTF(env,getSqlrConnection(env,self)->getIsolationLevel());
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRConnection
  * Method:    identify
  * Signature: ()Ljava/lang/String;
  */

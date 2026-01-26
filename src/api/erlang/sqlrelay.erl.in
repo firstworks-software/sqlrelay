@@ -12,6 +12,7 @@
 -export([selectDatabase/1, getCurrentDatabase/0]).
 -export([getConnectionPort/0, getConnectionSocket/0]).
 -export([autoCommitOn/0, autoCommitOff/0, beginTransaction/0, commit/0, rollback/0]).
+-export([setIsolationLevel/1, getIsolationLevel/0]).
 -export([debugOn/0, debugOff/0, getDebug/0, setDebugFile/1]).
 -export([setClientInfo/1, getClientInfo/0]).
 -export([setResultSetBufferSize/1, getResultSetBufferSize/0]).
@@ -201,6 +202,12 @@ commit() -> call_port({commit}).
 
 %% @doc Rolls back a transaction.  Returns true if the rollback succeeded, false if it failed.
 rollback() -> call_port({rollback}).
+
+%% @doc Sets the transaction isolation level to Isolationlevel.  Returns true if setting the isolation level succeeded, false if it failed.
+setIsolationLevel(Isolationlevel) -> call_port({setIsolationLevel, Isolationlevel}).
+
+%% @doc Returns the transaction isolation level, "UNKNOWN" if the isolation level is unknown, or undefined if an error occurred.
+getIsolationLevel() -> call_port({getIsolationLevel}).
 
 %% @doc Causes verbose debugging information to be sent to standard output.  Another way to do this is to start a query with "-- debug\n".  Yet another way is to set the environment variable SQLR_CLIENT_DEBUG to "ON"
 debugOn() -> call_port({debugOn}).

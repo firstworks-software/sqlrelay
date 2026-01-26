@@ -184,6 +184,8 @@ class SQLRConnection : public ObjectWrap {
 		static RET	begin(const ARGS &args);
 		static RET	commit(const ARGS &args);
 		static RET	rollback(const ARGS &args);
+		static RET	setIsolationLevel(const ARGS &args);
+		static RET	getIsolationLevel(const ARGS &args);
 		static RET	errorMessage(const ARGS &args);
 		static RET	errorNumber(const ARGS &args);
 		static RET	debugOn(const ARGS &args);
@@ -368,6 +370,8 @@ void SQLRConnection::Init(Handle<Object> exports) {
 	NODE_SET_PROTOTYPE_METHOD(tpl,"begin",begin);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"commit",commit);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"rollback",rollback);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"setIsolationLevel",setIsolationLevel);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getIsolationLevel",getIsolationLevel);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"errorMessage",errorMessage);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"errorNumber",errorNumber);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"debugOn",debugOn);
@@ -821,6 +825,28 @@ RET SQLRConnection::rollback(const ARGS &args) {
 	bool	result=sqlrcon(args)->rollback();
 
 	returnBoolean(result);
+}
+
+RET SQLRConnection::setIsolationLevel(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,1);
+
+	bool	result=sqlrcon(args)->setIsolationLevel(toString(args[0]));
+
+	returnBoolean(result);
+}
+
+RET SQLRConnection::getIsolationLevel(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,0);
+
+	const char	*result=sqlrcon(args)->getIsolationLevel();
+
+	returnString(result);
 }
 
 RET SQLRConnection::errorMessage(const ARGS &args) {

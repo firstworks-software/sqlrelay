@@ -436,9 +436,23 @@ public class SQLRConnection : IDisposable
     {
         return (sqlrcon_rollback(sqlrconref) == 1);
     }
-    
-    
-    
+
+    /** Sets the transaction isolation level to isolationlevel.  Returns true
+     *  if setting the isolation level succeeded, false if it failed. */
+    public Boolean setIsolationLevel(String isolationlevel)
+    {
+        return (sqlrcon_setIsolationLevel(sqlrconref, isolationlevel) == 1);
+    }
+
+    /** Returns the transaction isolation level, "UNKNOWN" if the isolation
+     *  level is unknown, or null if an error occurred. */
+    public String getIsolationLevel()
+    {
+        return sqlrcon_getIsolationLevel(sqlrconref);
+    }
+
+
+
     /** If an operation failed and generated an error, the error message is
      *  available here.  If there is no error then this method returns NULL */
     public String errorMessage()
@@ -628,7 +642,13 @@ public class SQLRConnection : IDisposable
     
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int32 sqlrcon_rollback(IntPtr sqlrconref);
-    
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int32 sqlrcon_setIsolationLevel(IntPtr sqlrconref, String isolationlevel);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern String sqlrcon_getIsolationLevel(IntPtr sqlrconref);
+
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern String sqlrcon_errorMessage(IntPtr sqlrconref);
     

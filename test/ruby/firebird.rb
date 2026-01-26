@@ -26,6 +26,16 @@ print "PING: \n"
 assertTrue(con.ping())
 print "\n"
 
+# isolation levels
+print "ISOLATION LEVELS: \n"
+# though firebird does support a "set transaction ..." statement to
+# set the isolation level, it looks like, in firebird, you can really
+# only set it through the TPB at the start of a transaction, so
+# attempts to set it should fail
+assertFalse(con.setIsolationLevel("read committed"))
+assertEqual(con.getIsolationLevel(),"read committed")
+print "\n"
+
 # clear table
 cur.sendQuery("delete from testtable")
 con.commit()

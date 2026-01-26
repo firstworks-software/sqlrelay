@@ -29,6 +29,18 @@ print("PING: \n");
 assertTrue($con->ping());
 print("\n");
 
+# isolation levels
+print("ISOLATION LEVELS: \n");
+@isolationlevels=("1","0","2","3");
+foreach $il (@isolationlevels) {
+	assertTrue($con->setIsolationLevel($il));
+	assertEqualString($con->getIsolationLevel(),$il);
+	print("\n");
+}
+# reset to the default isolation level
+assertTrue($con->setIsolationLevel($isolationlevels[0]));
+print("\n");
+
 # drop existing table
 $cur->sendQuery("drop table testtable");
 

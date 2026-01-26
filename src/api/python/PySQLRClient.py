@@ -429,6 +429,21 @@ class sqlrconnection:
         """
         return CSQLRelay.rollback(self.connection)
 
+    def setIsolationLevel(self, isolationlevel):
+        """
+        Sets the transaction isolation level to isolationlevel.
+        Returns true if setting the isolation level succeeded,
+        false if it failed.
+        """
+        return CSQLRelay.setIsolationLevel(self.connection, isolationlevel)
+
+    def getIsolationLevel(self):
+        """
+        Returns the transaction isolation level, "UNKNOWN" if the
+        isolation level is unknown, or None if an error occurred.
+        """
+        return CSQLRelay.getIsolationLevel(self.connection)
+
     def errorMessage(self):
         """
         If the operation failed, the error message will be returned

@@ -1929,6 +1929,12 @@ bool sqlrconnection::rollback() {
 }
 
 bool sqlrconnection::setIsolationLevel(const char *isolationlevel) {
+	return	setIsolationLevel(isolationlevel,
+				SQLRCLIENTISOLATIONLEVELFORMAT_NATIVE);
+}
+
+bool sqlrconnection::setIsolationLevel(const char *isolationlevel,
+				sqlrclientisolationlevelformat_t format) {
 
 	clearError();
 
@@ -1947,8 +1953,11 @@ bool sqlrconnection::setIsolationLevel(const char *isolationlevel) {
 	// tell the server we want to set the isolation level
 	pvt->_cs->write((uint16_t)SET_ISOLATION_LEVEL);
 
+	// send the format
+	pvt->_cs->write((uint16_t)format);
+
 	// send the isolation level
-	uint32_t	len=charstring::getLength(isolationlevel);
+	uint16_t	len=charstring::getLength(isolationlevel);
 	pvt->_cs->write(len);
 	if (len) {
 		pvt->_cs->write(isolationlevel,len);
@@ -1959,6 +1968,11 @@ bool sqlrconnection::setIsolationLevel(const char *isolationlevel) {
 }
 
 const char *sqlrconnection::getIsolationLevel() {
+	return	getIsolationLevel(SQLRCLIENTISOLATIONLEVELFORMAT_NATIVE);
+}
+
+const char *sqlrconnection::getIsolationLevel(
+				sqlrclientisolationlevelformat_t format) {
 
 	if (!openSession()) {
 		return NULL;
@@ -1975,6 +1989,10 @@ const char *sqlrconnection::getIsolationLevel() {
 
 	// tell the server we want to set the isolation level
 	pvt->_cs->write((uint16_t)GET_ISOLATION_LEVEL);
+
+	// send the format
+	pvt->_cs->write((uint16_t)format);
+
 	flushWriteBuffer();
 
 	if (gotError()) {

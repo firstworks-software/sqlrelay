@@ -339,6 +339,14 @@ public class SQLRConnection {
 	 *  it failed. */
 	public native boolean	rollback();
 
+	/** Sets the transaction isolation level to isolationlevel.  Returns
+	 *  true if setting the isolation level succeeded, false if it failed. */
+	public native boolean	setIsolationLevel(String isolationlevel);
+
+	/** Returns the transaction isolation level, "UNKNOWN" if the isolation
+	 *  level is unknown, or null if an error occurred. */
+	public native String	getIsolationLevel();
+
 
 	/** If an operation failed and generated an error, 
 	 *  the error message is available here.  If there

@@ -28,6 +28,24 @@ print "PING: \n"
 assertTrue(con.ping())
 print "\n"
 
+# isolation levels
+print "ISOLATION LEVELS: \n"
+isolationlevels=["READ COMMITTED","SERIALIZABLE"]
+isolationlevels.each { |il|
+	# oracle requires the isolation level to
+	# be the first query of the transaction
+	assertTrue(con.commit())
+	# you can set the isolation level, but to get it, you have to
+	# have permissions to read from sys.v_$session and
+	# sys.v_$transaction
+	assertTrue(con.setIsolationLevel(il))
+	print "\n"
+}
+# reset to the default isolation level
+assertTrue(con.commit())
+assertTrue(con.setIsolationLevel(isolationlevels[0]))
+print "\n"
+
 # drop existing table
 cur.sendQuery("drop table testtable")
 

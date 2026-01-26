@@ -32,6 +32,16 @@
 	assertTrue(sqlrcon_ping($con));
 	echo("\n");
 
+	# isolation levels
+	echo("ISOLATION LEVELS: \n");
+	# though firebird does support a "set transaction ..." statement to
+	# set the isolation level, it looks like, in firebird, you can really
+	# only set it through the TPB at the start of a transaction, so
+	# attempts to set it should fail
+	assertFalse(sqlrcon_setIsolationLevel($con,"read committed"));
+	assertEqual(sqlrcon_getIsolationLevel($con),"read committed");
+	echo("\n");
+
 	# clear table
 	sqlrcur_sendQuery($cur,"delete from testtable");
 	sqlrcon_commit($con);

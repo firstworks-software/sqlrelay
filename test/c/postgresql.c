@@ -43,6 +43,27 @@ int main(int argc, char **argv) {
 	assertTrue(sqlrcon_ping(con));
 	printf("\n");
 
+	// isolation levels
+	/*printf("ISOLATION LEVELS: \n");
+	{
+		const char	*isolationlevels[]={"read committed","read uncommitted","repeatable read","serializable",NULL};
+		const char	**il;
+		for (il=isolationlevels; *il; il++) {
+			// postgresql requires the isolation level to
+			// be the first query of the transaction
+			sqlrcon_begin(con);
+			assertTrue(sqlrcon_setIsolationLevel(con,*il));
+			assertEqualsString(sqlrcon_getIsolationLevel(con),*il);
+			sqlrcon_commit(con);
+			printf("\n");
+		}
+		// reset to the default isolation level
+		sqlrcon_begin(con);
+		assertTrue(sqlrcon_setIsolationLevel(con,isolationlevels[0]));
+		sqlrcon_commit(con);
+		printf("\n");
+	}*/
+
 	// drop existing table
 	sqlrcur_sendQuery(cur,"drop table testtable");
 

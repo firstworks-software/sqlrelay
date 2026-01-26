@@ -211,6 +211,13 @@ sqlrconnection::commit()
 bool
 sqlrconnection::rollback()
 
+bool
+sqlrconnection::setIsolationLevel(isolationlevel)
+	const char *isolationlevel
+
+const char *
+sqlrconnection::getIsolationLevel()
+
 const char *
 sqlrconnection::identify()
 

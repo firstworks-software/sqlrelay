@@ -45,7 +45,17 @@ console.log("\n");
 console.log("PING: ");
 assertEqual(con.ping(),1);
 console.log("\n");
-	
+
+// isolation levels
+console.log("ISOLATION LEVELS: ");
+// though firebird does support a "set transaction ..." statement to
+// set the isolation level, it looks like, in firebird, you can really
+// only set it through the TPB at the start of a transaction, so
+// attempts to set it should fail
+assertEqual(con.setIsolationLevel("read committed"),0);
+assertEqual(con.getIsolationLevel(),"read committed");
+console.log("\n");
+
 // clear table
 cur.sendQuery("delete from testtable");
 con.commit();

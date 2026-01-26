@@ -39,6 +39,18 @@ console.log("PING: ");
 assertEqual(con.ping(),1);
 console.log("\n");
 
+// isolation levels
+console.log("ISOLATION LEVELS: ");
+var	isolationlevels=["REPEATABLE-READ","READ-UNCOMMITTED","READ-COMMITTED","SERIALIZABLE"];
+for (var i=0; i<isolationlevels.length; i++) {
+	assertEqual(con.setIsolationLevel(isolationlevels[i]),1);
+	assertEqual(con.getIsolationLevel(),isolationlevels[i]);
+	console.log();
+}
+// reset to the default isolation level
+assertEqual(con.setIsolationLevel(isolationlevels[0]),1);
+console.log("\n");
+
 // drop existing table
 cur.sendQuery("drop table testtable");
 

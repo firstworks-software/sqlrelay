@@ -29,6 +29,17 @@ def main():
 	assertTrue(con.ping())
 	print()
 
+	# isolation levels
+	print("ISOLATION LEVELS: ")
+	isolationlevels=["CS","UR","RS","RR"]
+	for il in isolationlevels:
+		assertTrue(con.setIsolationLevel(il))
+		assertEqual(con.getIsolationLevel(),il)
+		print()
+	# reset to the default isolation level
+	assertTrue(con.setIsolationLevel(isolationlevels[0]))
+	print()
+
 	# drop existing table
 	cur.sendQuery("drop table testtable")
 

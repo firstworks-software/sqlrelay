@@ -1463,11 +1463,24 @@ void sqlrprotocol_sqlrclient::setIsolationLevelCommand() {
 
 	debugStart("setting isolation level");
 
-	// get size of isolation level parameter
-	uint32_t	isolevelsize;
-	ssize_t		result=clientsock->read(&isolevelsize,
+	// get format
+	uint16_t	format;
+	ssize_t		result=clientsock->read(&format,
 						idleclienttimeout,0);
-	if (result!=sizeof(uint32_t)) {
+	if (result!=sizeof(uint16_t)) {
+		clientsock->write(false);
+		cont->raiseClientProtocolErrorEvent(NULL,result,
+					"set isolation level failed: "
+					"failed to get isolation level format");
+		debugWrite("failed to get isolation level format");
+		debugEnd();
+		return;
+	}
+
+	// get size of isolation level parameter
+	uint16_t	isolevelsize;
+	result=clientsock->read(&isolevelsize,idleclienttimeout,0);
+	if (result!=sizeof(uint16_t)) {
 		clientsock->write(false);
 		cont->raiseClientProtocolErrorEvent(NULL,result,
 					"set isolation level failed: "
@@ -1490,7 +1503,7 @@ void sqlrprotocol_sqlrclient::setIsolationLevelCommand() {
 		return;
 	}
 
-	// read the isolatio level parameter into the buffer
+	// read the isolation level parameter into the buffer
 	char	*isolevel=new char[isolevelsize+1];
 	if (isolevelsize) {
 		result=clientsock->read(isolevel,isolevelsize,
@@ -1529,6 +1542,21 @@ void sqlrprotocol_sqlrclient::setIsolationLevelCommand() {
 void sqlrprotocol_sqlrclient::getIsolationLevelCommand() {
 
 	debugStart("getting isolation level");
+
+	// get format
+	uint16_t	format;
+	ssize_t		result=clientsock->read(&format,
+						idleclienttimeout,0);
+	if (result!=sizeof(uint16_t)) {
+		clientsock->write(false);
+		cont->raiseClientProtocolErrorEvent(NULL,result,
+					"get isolation level failed: "
+					"failed to get isolation level format");
+		debugWrite("failed to get isolation level format");
+		debugEnd();
+		return;
+	}
+
 
 	// get the isolation level
 	const char	*isolevel=cont->getIsolationLevel();

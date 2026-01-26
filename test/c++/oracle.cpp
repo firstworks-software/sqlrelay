@@ -74,8 +74,10 @@ int main(int argc, char **argv) {
 		// oracle requires the isolation level to
 		// be the first query of the transaction
 		assertTrue(con->commit());
+		// you can set the isolation level, but to get it, you have to
+		// have permisisons to read from sys.v_$session and
+		// sys.v_$transaction
 		assertTrue(con->setIsolationLevel(*il));
-		assertEquals(con->getIsolationLevel(),*il);
 		stdoutput.printf("\n");
 	}
 	// reset to the default isolation level

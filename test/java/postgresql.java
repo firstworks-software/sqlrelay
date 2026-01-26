@@ -8,8 +8,9 @@ import com.firstworks.sqlrelay.SQLRCursor;
 class postgresql extends sqlrtest {
 	
 	public static void	main(String[] args) {
-	
+
 		String	dbtype;
+		String[]	isolationlevels={"read committed","read uncommitted","repeatable read","serializable"};
 		String[]	subvars={"var1","var2","var3"};
 		String[]	subvalstrings={"hi","hello","bye"};
 		long[]	subvallongs={1,2,3};
@@ -42,7 +43,24 @@ class postgresql extends sqlrtest {
 		System.out.println("PING: ");
 		assertTrue(con.ping());
 		System.out.println();
-	
+
+		// isolation levels
+		/*System.out.println("ISOLATION LEVELS: ");
+		for (String il : isolationlevels) {
+			// postgresql requires the isolation level to
+			// be the first query of the transaction
+			con.begin();
+			assertTrue(con.setIsolationLevel(il));
+			assertEquals(con.getIsolationLevel(),il);
+			con.commit();
+			System.out.println();
+		}
+		// reset to the default isolation level
+		con.begin();
+		assertTrue(con.setIsolationLevel(isolationlevels[0]));
+		con.commit();
+		System.out.println();*/
+
 		// drop existing table
 		cur.sendQuery("drop table testtable");
 	

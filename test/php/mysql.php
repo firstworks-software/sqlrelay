@@ -31,6 +31,18 @@
 	assertTrue(sqlrcon_ping($con));
 	echo("\n");
 
+	# isolation levels
+	echo("ISOLATION LEVELS: \n");
+	$isolationlevels=array("REPEATABLE-READ","READ-UNCOMMITTED","READ-COMMITTED","SERIALIZABLE");
+	foreach ($isolationlevels as $il) {
+		assertTrue(sqlrcon_setIsolationLevel($con,$il));
+		assertEqual(sqlrcon_getIsolationLevel($con),$il);
+		echo("\n");
+	}
+	# reset to the default isolation level
+	assertTrue(sqlrcon_setIsolationLevel($con,$isolationlevels[0]));
+	echo("\n");
+
 	# drop existing table
 	sqlrcur_sendQuery($cur,"drop table testtable");
 

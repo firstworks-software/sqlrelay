@@ -38,6 +38,13 @@ enum sqlrclientlistformat_t {
 	SQLRCLIENTLISTFORMAT_JDBC
 };
 
+enum sqlrclientisolationlevelformat_t {
+	SQLRCLIENTISOLATIONLEVELFORMAT_NULL=0,
+	SQLRCLIENTISOLATIONLEVELFORMAT_NATIVE,
+	SQLRCLIENTISOLATIONLEVELFORMAT_ODBC,
+	SQLRCLIENTISOLATIONLEVELFORMAT_JDBC
+};
+
 class sqlrconnectionprivate;
 class sqlrcursor;
 class sqlrcursorprivate;

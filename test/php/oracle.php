@@ -25,6 +25,24 @@
 	assertTrue(sqlrcon_ping($con));
 	echo("\n");
 
+	# isolation levels
+	echo("ISOLATION LEVELS: \n");
+	$isolationlevels=array("READ COMMITTED","SERIALIZABLE");
+	foreach ($isolationlevels as $il) {
+		# oracle requires the isolation level to
+		# be the first query of the transaction
+		assertTrue(sqlrcon_commit($con));
+		# you can set the isolation level, but to get it, you have to
+		# have permissions to read from sys.v_$session and
+		# sys.v_$transaction
+		assertTrue(sqlrcon_setIsolationLevel($con,$il));
+		echo("\n");
+	}
+	# reset to the default isolation level
+	assertTrue(sqlrcon_commit($con));
+	assertTrue(sqlrcon_setIsolationLevel($con,$isolationlevels[0]));
+	echo("\n");
+
 	# drop existing table
 	sqlrcur_sendQuery($cur,"drop table testtable");
 

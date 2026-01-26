@@ -497,6 +497,25 @@ static PyObject *rollback(PyObject *self, PyObject *args) {
   return Py_BuildValue("h", (short)rc);
 }
 
+static PyObject *setIsolationLevel(PyObject *self, PyObject *args) {
+  long sqlrcon;
+  const char *isolationlevel;
+  bool rc;
+  if (!PyArg_ParseTuple(args, "ls", &sqlrcon, &isolationlevel))
+    return NULL;
+  Py_BEGIN_ALLOW_THREADS
+  rc=((sqlrconnection *)sqlrcon)->setIsolationLevel(isolationlevel);
+  Py_END_ALLOW_THREADS
+  return Py_BuildValue("h", (short)rc);
+}
+
+static PyObject *getIsolationLevel(PyObject *self, PyObject *args) {
+  long sqlrcon;
+  if (!PyArg_ParseTuple(args, "l", &sqlrcon))
+    return NULL;
+  return Py_BuildValue("s", ((sqlrconnection *)sqlrcon)->getIsolationLevel());
+}
+
 static PyObject *connectionErrorMessage(PyObject *self, PyObject *args) {
   long sqlrcon;
   if (!PyArg_ParseTuple(args, "l", &sqlrcon))
@@ -2105,6 +2124,8 @@ static PyMethodDef SQLRMethods[] = {
   {"begin", begin, METH_VARARGS},
   {"commit", commit, METH_VARARGS},
   {"rollback", rollback, METH_VARARGS},
+  {"setIsolationLevel", setIsolationLevel, METH_VARARGS},
+  {"getIsolationLevel", getIsolationLevel, METH_VARARGS},
   {"connectionErrorMessage", connectionErrorMessage, METH_VARARGS},
   {"connectionErrorNumber", connectionErrorNumber, METH_VARARGS},
   {"debugOn", debugOn, METH_VARARGS},

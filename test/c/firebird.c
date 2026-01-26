@@ -49,6 +49,16 @@ int main(int argc, char **argv) {
 	assertTrue(sqlrcon_ping(con));
 	printf("\n");
 
+	// isolation levels
+	printf("ISOLATION LEVELS: \n");
+	// though firebird does support a "set transaction ..." statement to
+	// set the isolation level, it looks like, in firebird, you can really
+	// only set it through the TPB at the start of a transaction, so
+	// attempts to set it should fail
+	assertFalse(sqlrcon_setIsolationLevel(con,"read committed"));
+	assertEqualsString(sqlrcon_getIsolationLevel(con),"read committed");
+	printf("\n");
+
 	// clean up table
 	sqlrcur_sendQuery(cur,"delete from testtable");
 	sqlrcon_commit(con);

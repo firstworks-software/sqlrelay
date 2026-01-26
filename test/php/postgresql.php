@@ -24,6 +24,24 @@
 	assertTrue(sqlrcon_ping($con));
 	echo("\n");
 
+	# isolation levels
+	/*echo("ISOLATION LEVELS: \n");
+	$isolationlevels=array("read committed","read uncommitted","repeatable read","serializable");
+	foreach ($isolationlevels as $il) {
+		# postgresql requires the isolation level to
+		# be the first query of the transaction
+		sqlrcon_begin($con);
+		assertTrue(sqlrcon_setIsolationLevel($con,$il));
+		assertEqual(sqlrcon_getIsolationLevel($con),$il);
+		sqlrcon_commit($con);
+		echo("\n");
+	}
+	# reset to the default isolation level
+	sqlrcon_begin($con);
+	assertTrue(sqlrcon_setIsolationLevel($con,$isolationlevels[0]));
+	sqlrcon_commit($con);
+	echo("\n");*/
+
 	# drop existing table
 	sqlrcur_sendQuery($cur,"drop table testtable");
 

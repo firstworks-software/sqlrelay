@@ -693,9 +693,38 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
-			if (ei_x_encode_atom(&result, "ok") || 
+			// call function and encode result
+			if (ei_x_encode_atom(&result, "ok") ||
 				ei_x_encode_long(&result, sqlrcon_rollback(con))) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
+
+		if (strcmp("setIsolationLevel", command) == TRUE) {
+			char isolationlevel[256];
+
+			// check number of arguments
+		    	if (arity != 1) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_string(buf, &index, &isolationlevel[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// call function and encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_long(&result, sqlrcon_setIsolationLevel(con, isolationlevel))) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
+
+		if (strcmp("getIsolationLevel", command) == TRUE) {
+			// check number of arguments
+		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
+
+			// encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_string(&result, sqlrcon_getIsolationLevel(con))) {
 				return ERR_ENCODING_ARGS;
 			}
 		}

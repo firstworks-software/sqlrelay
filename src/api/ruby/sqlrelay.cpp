@@ -936,6 +936,36 @@ static VALUE sqlrcon_rollback(VALUE self) {
 	return INT2NUM(result);
 }
 
+static void setIsolationLevel(params *p) {
+	p->result.br=p->sqlrc.sqlrcon->setIsolationLevel(STR2CSTR(p->one));
+}
+/** Sets the transaction isolation level to isolationlevel.  Returns true if
+ *  setting the isolation level succeeded, false if it failed. */
+static VALUE sqlrcon_setIsolationLevel(VALUE self, VALUE isolationlevel) {
+	sqlrconnection	*sqlrcon;
+	bool		result;
+	Data_Get_Struct(self,sqlrconnection,sqlrcon);
+	RCON1(result,br,sqlrcon,setIsolationLevel,isolationlevel);
+	return INT2NUM(result);
+}
+
+static void getIsolationLevel(params *p) {
+	p->result.ccpr=p->sqlrc.sqlrcon->getIsolationLevel();
+}
+/** Returns the transaction isolation level, "UNKNOWN" if the isolation level
+ *  is unknown, or nil if an error occurred. */
+static VALUE sqlrcon_getIsolationLevel(VALUE self) {
+	sqlrconnection	*sqlrcon;
+	const char	*result;
+	Data_Get_Struct(self,sqlrconnection,sqlrcon);
+	RCON(result,ccpr,sqlrcon,getIsolationLevel);
+	if (result) {
+		return rb_str_new2(result);
+	} else {
+		return Qnil;
+	}
+}
+
 static void conErrorMessage(params *p) {
 	p->result.ccpr=p->sqlrc.sqlrcon->errorMessage();
 }
@@ -1138,6 +1168,10 @@ void Init_SQLRConnection() {
 				(CAST)sqlrcon_commit,0);
 	rb_define_method(csqlrconnection,"rollback",
 				(CAST)sqlrcon_rollback,0);
+	rb_define_method(csqlrconnection,"setIsolationLevel",
+				(CAST)sqlrcon_setIsolationLevel,1);
+	rb_define_method(csqlrconnection,"getIsolationLevel",
+				(CAST)sqlrcon_getIsolationLevel,0);
 	rb_define_method(csqlrconnection,"errorMessage",
 				(CAST)sqlrcon_errorMessage,0);
 	rb_define_method(csqlrconnection,"errorNumber",

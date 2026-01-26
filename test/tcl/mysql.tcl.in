@@ -24,6 +24,18 @@ puts "PING: "
 assertTrue [$con ping]
 puts ""
 
+# isolation levels
+puts "ISOLATION LEVELS: "
+set isolationlevels [list "REPEATABLE-READ" "READ-UNCOMMITTED" "READ-COMMITTED" "SERIALIZABLE"]
+foreach il $isolationlevels {
+	assertTrue [$con setIsolationLevel $il]
+	assertEqual [$con getIsolationLevel] $il
+	puts ""
+}
+# reset to the default isolation level
+assertTrue [$con setIsolationLevel [lindex $isolationlevels 0]]
+puts ""
+
 # drop existing table
 catch {$cur sendQuery "drop table testtable"}
 

@@ -48,7 +48,17 @@ class firebird extends sqlrtest {
 		System.out.println("PING: ");
 		assertTrue(con.ping());
 		System.out.println();
-	
+
+		// isolation levels
+		System.out.println("ISOLATION LEVELS: ");
+		// though firebird does support a "set transaction ..." statement to
+		// set the isolation level, it looks like, in firebird, you can really
+		// only set it through the TPB at the start of a transaction, so
+		// attempts to set it should fail
+		assertFalse(con.setIsolationLevel("read committed"));
+		assertEquals(con.getIsolationLevel(),"read committed");
+		System.out.println();
+
 		// clear table
 		cur.sendQuery("delete from testtable");
 		con.commit();

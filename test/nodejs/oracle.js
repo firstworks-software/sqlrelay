@@ -48,6 +48,24 @@ console.log("PING: ");
 assertEqual(con.ping(),1);
 console.log("\n");
 
+// isolation levels
+console.log("ISOLATION LEVELS: ");
+var isolationlevels=["READ COMMITTED","SERIALIZABLE"];
+for (var i=0; i<isolationlevels.length; i++) {
+	// oracle requires the isolation level to
+	// be the first query of the transaction
+	assertEqual(con.commit(),1);
+	// you can set the isolation level, but to get it, you have to
+	// have permissions to read from sys.v_$session and
+	// sys.v_$transaction
+	assertEqual(con.setIsolationLevel(isolationlevels[i]),1);
+	console.log();
+}
+// reset to the default isolation level
+assertEqual(con.commit(),1);
+assertEqual(con.setIsolationLevel(isolationlevels[0]),1);
+console.log("\n");
+
 console.log("BIND VALIDATION: ");
 cur.sendQuery("drop table testtable1");
 cur.sendQuery("create table testtable1 (col1 varchar2(20), col2 varchar2(20), col3 varchar2(20))");

@@ -332,6 +332,16 @@ __END__
             # Issues a rollback.  Returns true if the rollback
             # succeeded, false if it failed.
 
+        setIsolationLevel(isolationlevel);
+            # Sets the transaction isolation level to isolationlevel.
+            # Returns true if setting the isolation level succeeded,
+            # false if it failed.
+
+        getIsolationLevel();
+            # Returns the transaction isolation level, "UNKNOWN" if
+            # the isolation level is unknown, or undef if an error
+            # occurred.
+
 
         errorMessage();
             # If an operation failed and generated an error, the

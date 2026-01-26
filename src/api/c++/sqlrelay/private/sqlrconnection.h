@@ -72,4 +72,10 @@
 		bool	selectSchema(const char *schema);
 		const	char	*getCurrentSchema();
 
+		bool	setIsolationLevel(
+				const char *isolationlevel,
+				sqlrclientisolationlevelformat_t format);
+		const char	*getIsolationLevel(
+				sqlrclientisolationlevelformat_t format);
+
 	friend class sqlrcursor;

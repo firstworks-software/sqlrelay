@@ -10,6 +10,7 @@ class oracle extends sqlrtest {
 	public static void	main(String[] args) {
 	
 		String	dbtype;
+		String[]	isolationlevels={"READ COMMITTED","SERIALIZABLE"};
 		String[]	bindvars={"1","2","3","4","5"};
 		String[]	bindvals={"4","testchar4","testvarchar4","01-JAN-2004","testlong4"};
 		String[]	subvars={"var1","var2","var3"};
@@ -51,6 +52,23 @@ class oracle extends sqlrtest {
 		// ping
 		System.out.println("PING: ");
 		assertTrue(con.ping());
+		System.out.println();
+
+		// isolation levels
+		System.out.println("ISOLATION LEVELS: ");
+		for (String il : isolationlevels) {
+			// oracle requires the isolation level to
+			// be the first query of the transaction
+			assertTrue(con.commit());
+			// you can set the isolation level, but to get it, you have to
+			// have permissions to read from sys.v_$session and
+			// sys.v_$transaction
+			assertTrue(con.setIsolationLevel(il));
+			System.out.println();
+		}
+		// reset to the default isolation level
+		assertTrue(con.commit());
+		assertTrue(con.setIsolationLevel(isolationlevels[0]));
 		System.out.println();
 
 		System.out.println("BIND VALIDATION: ");

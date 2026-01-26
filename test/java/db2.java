@@ -8,8 +8,9 @@ import com.firstworks.sqlrelay.SQLRCursor;
 class db2 extends sqlrtest {
 	
 	public static void	main(String[] args) {
-	
+
 		String	dbtype;
+		String[]	isolationlevels={"CS","UR","RS","RR"};
 		String[]	bindvars={"1","2","3","4","5","6","7","8","9","10"};
 		String[]	bindvals={"4","4","4","4.4","4.4","4.4",
 				"testchar4","testvarchar4","01/01/2004","04:00:00"};
@@ -46,7 +47,18 @@ class db2 extends sqlrtest {
 		System.out.println("PING: ");
 		assertTrue(con.ping());
 		System.out.println();
-	
+
+		// isolation levels
+		System.out.println("ISOLATION LEVELS: ");
+		for (String il : isolationlevels) {
+			assertTrue(con.setIsolationLevel(il));
+			assertEquals(con.getIsolationLevel(),il);
+			System.out.println();
+		}
+		// reset to the default isolation level
+		assertTrue(con.setIsolationLevel(isolationlevels[0]));
+		System.out.println();
+
 		// drop existing table
 		cur.sendQuery("drop table testtable");
 	
