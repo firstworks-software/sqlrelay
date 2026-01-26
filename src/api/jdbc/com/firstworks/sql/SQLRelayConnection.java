@@ -445,15 +445,17 @@ public class SQLRelayConnection implements Connection {
 			driver.debugEnd();
 			return false;
 		}
-		// FIXME: need to get the current response timeout
-		// pre-ping and reset it post-ping, but the java api
-		// doesn't currently have getResponseTimeout methods
-		/*if (timeout) {
+		int	rtsec=sqlrcon.getResponseTimeoutSeconds();
+		int	rtusec=sqlrcon.getResponseTimeoutMicroseconds();
+		if (timeout>0) {
 			sqlrcon.setResponseTimeout(timeout,0);
-		}*/
+		}
 		boolean	ping=false;
 		synchronized (networklock) {
 			ping=sqlrcon.ping();
+		}
+		if (timeout>0) {
+			sqlrcon.setResponseTimeout(rtsec,rtusec);
 		}
 		driver.debugPrintln("ping: ",ping);
 		driver.debugEnd();
