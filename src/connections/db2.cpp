@@ -265,6 +265,7 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 		const char	*getCurrentDatabaseQuery();
 		const char	*getLastInsertIdQuery();
 		const char	*setIsolationLevelQuery();
+		const char	*getIsolationLevelQuery();
 		const char	*getNoopQuery();
 		const char	*getBindFormat();
 		const char	*getNextvalFormat();
@@ -756,6 +757,10 @@ const char *db2connection::getLastInsertIdQuery() {
 
 const char *db2connection::setIsolationLevelQuery() {
         return "set current isolation %s";
+}
+
+const char *db2connection::getIsolationLevelQuery() {
+	return "values current isolation";
 }
 
 const char *db2connection::getNoopQuery() {

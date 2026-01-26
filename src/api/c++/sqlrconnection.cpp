@@ -93,6 +93,9 @@ class sqlrconnectionprivate {
 		// db ip address
 		char		*_dbipaddress;
 
+		// isolation level
+		char		*_isolationlevel;
+
 		// server version
 		char		*_serverversion;
 
@@ -219,6 +222,9 @@ void sqlrconnection::init(const char *server, uint16_t port,
 	// db ip address
 	pvt->_dbipaddress=NULL;
 
+	// isolation level
+	pvt->_isolationlevel=NULL;
+
 	// server version
 	pvt->_serverversion=NULL;
 
@@ -300,6 +306,9 @@ sqlrconnection::~sqlrconnection() {
 
 	// deallocate db ip address
 	delete[] pvt->_dbipaddress;
+
+	// deallocate isolation level
+	delete[] pvt->_isolationlevel;
 
 	// deallocate server version
 	delete[] pvt->_serverversion;
@@ -562,7 +571,7 @@ void sqlrconnection::closeConnection() {
 bool sqlrconnection::suspendSession() {
 
 	if (!openSession()) {
-		return 0;
+		return false;
 	}
 
 	clearError();
@@ -1220,7 +1229,7 @@ bool sqlrconnection::resumeSession(uint16_t port, const char *socket) {
 bool sqlrconnection::ping() {
 
 	if (!openSession()) {
-		return 0;
+		return false;
 	}
 
 	clearError();
@@ -1622,7 +1631,7 @@ bool sqlrconnection::selectDatabase(const char *database) {
 	clearError();
 
 	if (!openSession()) {
-		return 0;
+		return false;
 	}
 
 	if (pvt->_debug) {
@@ -1710,7 +1719,7 @@ bool sqlrconnection::selectSchema(const char *schema) {
 	clearError();
 
 	if (!openSession()) {
-		return 0;
+		return false;
 	}
 
 	if (pvt->_debug) {
@@ -1917,6 +1926,89 @@ bool sqlrconnection::rollback() {
 	flushWriteBuffer();
 
 	return !gotError();
+}
+
+bool sqlrconnection::setIsolationLevel(const char *isolationlevel) {
+
+	clearError();
+
+	if (!openSession()) {
+		return false;
+	}
+
+	if (pvt->_debug) {
+		debugPreStart();
+		debugPrint("Setting isolation level ");
+		debugPrint(isolationlevel);
+		debugPrint("...\n");
+		debugPreEnd();
+	}
+
+	// tell the server we want to set the isolation level
+	pvt->_cs->write((uint16_t)SET_ISOLATION_LEVEL);
+
+	// send the isolation level
+	uint32_t	len=charstring::getLength(isolationlevel);
+	pvt->_cs->write(len);
+	if (len) {
+		pvt->_cs->write(isolationlevel,len);
+	}
+	flushWriteBuffer();
+
+	return !gotError();
+}
+
+const char *sqlrconnection::getIsolationLevel() {
+
+	if (!openSession()) {
+		return NULL;
+	}
+
+	clearError();
+
+	if (pvt->_debug) {
+		debugPreStart();
+		debugPrint("Getting isolation Level..");
+		debugPrint("\n");
+		debugPreEnd();
+	}
+
+	// tell the server we want to set the isolation level
+	pvt->_cs->write((uint16_t)GET_ISOLATION_LEVEL);
+	flushWriteBuffer();
+
+	if (gotError()) {
+		return NULL;
+	}
+
+	// get the isolation level size
+	uint16_t	size;
+	if (pvt->_cs->read(&size,pvt->_responsetimeoutsec,
+				pvt->_responsetimeoutusec)!=sizeof(uint16_t)) {
+		setError("Failed to get isolation level.\n"
+				"A network error may have occurred.");
+		return NULL;
+	}
+
+	// get the isolation level
+	delete[] pvt->_isolationlevel;
+	pvt->_isolationlevel=new char[size+1];
+	if (pvt->_cs->read(pvt->_isolationlevel,size)!=size) {
+		setError("Failed to get isolation level.\n"
+				"A network error may have occurred.");
+		delete[] pvt->_isolationlevel;
+		pvt->_isolationlevel=NULL;
+		return NULL;
+	}
+	pvt->_isolationlevel[size]='\0';
+
+	if (pvt->_debug) {
+		debugPreStart();
+		debugPrint(pvt->_isolationlevel);
+		debugPrint("\n");
+		debugPreEnd();
+	}
+	return pvt->_isolationlevel;
 }
 
 const char *sqlrconnection::errorMessage() {

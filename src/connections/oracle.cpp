@@ -151,6 +151,7 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		const char	*selectSchemaQuery();
 		const char	*getCurrentSchemaQuery();
 		const char	*getLastInsertIdQuery();
+		const char	*getIsolationLevelQuery();
 		const char	*getNoopQuery();
 
 		ub4		stmtmode;
@@ -2845,6 +2846,21 @@ const char *oracleconnection::getCurrentSchemaQuery() {
 
 const char *oracleconnection::getLastInsertIdQuery() {
 	return lastinsertidquery;
+}
+
+const char *oracleconnection::getIsolationLevelQuery() {
+	return "select "
+		"	case bitand(t.flag,power(2,28)) "
+		"		when 0 then 'READ COMMITTED' "
+		"		else 'SERIALIZABLE' "
+		"	end as isolation_level "
+		"from "
+		"	sys.v_$session s, "
+		"	sys.v_$transaction t "
+		"where "
+		"	s.sid=sys_context('userenv','sid') "
+		"	and "
+		"	t.addr=s.taddr";
 }
 
 const char *oracleconnection::getNoopQuery() {

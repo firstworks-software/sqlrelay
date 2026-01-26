@@ -8,7 +8,7 @@
 		bool	init(int argc, const char **argv);
 		bool	listen();
 
-		void	reLogIn();
+		void	reLogIn(bool deadconnection);
 
 		bool	bulkLoadBegin(const char *id,
 					const char *errorfieldtable,

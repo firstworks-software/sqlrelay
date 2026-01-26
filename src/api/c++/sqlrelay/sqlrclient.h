@@ -343,6 +343,15 @@ class SQLRCLIENT_DLLSPEC sqlrconnection : public object {
 		bool	rollback();
 
 
+		/** Sets the isolation level to "isolation level".  Returns
+		 *  true if setting the isolation level succeeded, false if
+		 *  it failed. */
+		bool	setIsolationLevel(const char *isolationlevel);
+
+		/** Returns the isolation level, "UNKOWN" if the isolation
+		 *  level is unknown, or NULL if an error occurred. */
+		const char	*getIsolationLevel();
+
 
 		/** If an operation failed and generated an
 		 *  error, the error message is available here.

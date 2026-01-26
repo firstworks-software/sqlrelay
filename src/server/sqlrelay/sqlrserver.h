@@ -601,6 +601,10 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  Returns true on success and false on failure. */
 		bool	setIsolationLevel(const char *isolevel);
 
+		/** Returns the isolation level or NULL if the isolation level
+		 *  could not be determined. */
+		const char	*getIsolationLevel();
+
 		/** If "ftb" is true then transaction blocks are faked by
 		 *  setting autocommit on and off as appropriate.  If "ftb" is
 		 *  false then begin and commit/rollback queries are run to
@@ -3371,6 +3375,10 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  Returns true on success and false if an error occurred. */
 		virtual bool	setIsolationLevel(const char *isolevel);
 
+		/** Returns the isolation level or NULL if the isolation level
+		 *  could not be determined. */
+		virtual const char	*getIsolationLevel();
+
 		/** Returns the query that the database uses to set the
 		 *  isolation level, which includes a %s that can be used to
 		 *  substitute in the name of the isolation level.
@@ -3379,6 +3387,14 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  level %s", but it may be overridden by a child class if the
 		 *  database requires a different query. */
 		virtual const char	*setIsolationLevelQuery();
+
+		/** Returns the query that the database uses to get the
+		 *  isolation level.
+		 *
+		 *  This implementation returns getNoopQuery(), but it may be
+		 *  overridden by a child class if the database requires a
+		 *  different query. */
+		virtual const char	*getIsolationLevelQuery();
 
 		/** Pings the database using the "ping query" defined by the
 		 *  database connection module.

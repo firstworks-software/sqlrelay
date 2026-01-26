@@ -30,6 +30,8 @@ class sqlrserverconnectionprivate {
 
 		bool		_detachbeforelogin;
 
+		char		*_currentisolationlevel;
+
 		stringbuffer	_tablelistquery;
 };
 
@@ -54,12 +56,15 @@ sqlrserverconnection::sqlrserverconnection(sqlrservercontroller *cont) :
 	pvt->_dbhostiploop=0;
 
 	pvt->_detachbeforelogin=false;
+
+	pvt->_currentisolationlevel=NULL;
 }
 
 sqlrserverconnection::~sqlrserverconnection() {
 	delete[] pvt->_errorbuffer;
 	delete[] pvt->_dbhostname;
 	delete[] pvt->_dbipaddress;
+	delete[] pvt->_currentisolationlevel;
 	delete pvt;
 }
 
@@ -595,7 +600,6 @@ bool sqlrserverconnection::getLastInsertId(uint64_t *id) {
 			cont->setError(
 				SQLR_ERROR_LASTINSERTIDNOTSUPPORTED_STRING,
 				SQLR_ERROR_LASTINSERTIDNOTSUPPORTED,true);
-			retval=false;
 		}
 
 	} else {
@@ -668,8 +672,66 @@ bool sqlrserverconnection::setIsolationLevel(const char *isolevel) {
 	return retval;
 }
 
+const char *sqlrserverconnection::getIsolationLevel() {
+
+	// get the set isolation level query
+	const char	*gilquery=getIsolationLevelQuery();
+
+	// If there is no query for this then the db we're using doesn't
+	// support switching.
+	if (!charstring::getLength(gilquery)) {
+		return NULL;
+	}
+
+	size_t	gilquerysize=charstring::getLength(gilquery);
+
+	// run the query...
+	char	*retval=NULL;
+	sqlrservercursor	*gilcur=cont->newCursor();
+	if (gilcur->open() &&
+		gilcur->prepareQuery(gilquery,gilquerysize) &&
+		gilcur->executeQuery(gilquery,gilquerysize)) {
+
+		bool	error=false;
+		if (!gilcur->noRowsToReturn() && gilcur->fetchRow(&error)) {
+
+			// get the first field of the row and return it
+			const char	*field=NULL;
+			uint64_t	fieldsize=0;
+			bool		lob=false;
+			bool		null=false;
+			gilcur->getField(0,&field,&fieldsize,&lob,&null);
+			delete[] pvt->_currentisolationlevel;
+			pvt->_currentisolationlevel=
+					charstring::duplicate(field,fieldsize);
+			retval=pvt->_currentisolationlevel;
+
+		}  else {
+
+			cont->setError(
+				SQLR_ERROR_LASTINSERTIDNOTSUPPORTED_STRING,
+				SQLR_ERROR_LASTINSERTIDNOTSUPPORTED,true);
+		}
+
+	} else {
+
+		// If there was an error, copy it out.  We'll be destroying the
+		// cursor in a moment and the error will be lost otherwise.
+		cont->saveErrorFromCursor(gilcur);
+	}
+
+	gilcur->closeResultSet();
+	gilcur->close();
+	cont->deleteCursor(gilcur);
+	return retval;
+}
+
 const char *sqlrserverconnection::setIsolationLevelQuery() {
 	return "set transaction isolation level %s";
+}
+
+const char *sqlrserverconnection::getIsolationLevelQuery() {
+	return getNoopQuery();
 }
 
 bool sqlrserverconnection::ping() {

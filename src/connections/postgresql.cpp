@@ -47,6 +47,7 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 					const char *table, bool wild);
 		bool		selectDatabase(const char *database);
 		const char	*getCurrentDatabaseQuery();
+		const char	*getIsolationLevelQuery();
 		bool		getLastInsertId(uint64_t *id);
 		const char	*getLastInsertIdQuery();
 		const char	*getNoopQuery();
@@ -771,6 +772,10 @@ bool postgresqlconnection::selectDatabase(const char *database) {
 
 const char *postgresqlconnection::getCurrentDatabaseQuery() {
 	return "select current_database()";
+}
+
+const char *postgresqlconnection::getIsolationLevelQuery() {
+	return "show transaction_isolation";
 }
 
 bool postgresqlconnection::getLastInsertId(uint64_t *id) {

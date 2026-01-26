@@ -66,6 +66,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 		void	getLastInsertIdCommand();
 		void	dbHostNameCommand();
 		void	dbIpAddressCommand();
+		void	setIsolationLevelCommand();
+		void	getIsolationLevelCommand();
 		bool	newQueryCommand(sqlrservercursor *cursor);
 		bool	reExecuteQueryCommand(sqlrservercursor *cursor);
 		bool	fetchFromBindCursorCommand(sqlrservercursor *cursor);
@@ -485,6 +487,14 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 		} else if (command==DBIPADDRESS) {
 			cont->incrementDbIpAddressCount();
 			dbIpAddressCommand();
+			continue;
+		} else if (command==SET_ISOLATION_LEVEL) {
+			//cont->incrementSetIsolationLevelCount();
+			setIsolationLevelCommand();
+			continue;
+		} else if (command==GET_ISOLATION_LEVEL) {
+			//cont->incrementGetIsolationLevelCount();
+			getIsolationLevelCommand();
 			continue;
 		}
 
@@ -1041,7 +1051,7 @@ void sqlrprotocol_sqlrclient::pingCommand() {
 	// if the ping failed, re-login
 	if (!pingresult) {
 		debugStart("re-login");
-		cont->reLogIn();
+		cont->reLogIn(true);
 		debugEnd();
 	}
 
@@ -1264,7 +1274,7 @@ void sqlrprotocol_sqlrclient::selectDatabaseCommand() {
 	}
 	db[dbsize]='\0';
 
-	debugWrite("db: %.*s\n",dbsize,db);
+	debugWrite("db: %.*s",dbsize,db);
 	
 	// select the db and send back the result.
 	if (cont->selectDatabase(db)) {
@@ -1288,6 +1298,8 @@ void sqlrprotocol_sqlrclient::getCurrentDatabaseCommand() {
 	// get the current database
 	char	*currentdb=cont->getCurrentDatabase();
 
+	// FIXME: this can fail
+
 	// send it to the client
 	clientsock->write((uint16_t)NO_ERROR_OCCURRED);
 	uint16_t	currentdbsize=charstring::getLength(currentdb);
@@ -1295,7 +1307,7 @@ void sqlrprotocol_sqlrclient::getCurrentDatabaseCommand() {
 	clientsock->write(currentdb,currentdbsize);
 	clientsock->flushWriteBuffer(-1,-1);
 
-	debugWrite("current db: %.*s\n",currentdbsize,currentdb);
+	debugWrite("current db: %.*s",currentdbsize,currentdb);
 
 	// clean up
 	delete[] currentdb;
@@ -1350,7 +1362,7 @@ void sqlrprotocol_sqlrclient::selectSchemaCommand() {
 	}
 	sch[schsize]='\0';
 
-	debugWrite("schema: %.*s\n",schsize,sch);
+	debugWrite("schema: %.*s",schsize,sch);
 	
 	// select the schema and send back the result.
 	if (cont->selectSchema(sch)) {
@@ -1374,6 +1386,8 @@ void sqlrprotocol_sqlrclient::getCurrentSchemaCommand() {
 	// get the current schema
 	char	*currentschema=cont->getCurrentSchema();
 
+	// FIXME: this can fail
+
 	// send it to the client
 	clientsock->write((uint16_t)NO_ERROR_OCCURRED);
 	uint16_t	currentschemasize=charstring::getLength(currentschema);
@@ -1381,7 +1395,7 @@ void sqlrprotocol_sqlrclient::getCurrentSchemaCommand() {
 	clientsock->write(currentschema,currentschemasize);
 	clientsock->flushWriteBuffer(-1,-1);
 
-	debugWrite("current schema: %.*s\n",currentschemasize,currentschema);
+	debugWrite("current schema: %.*s",currentschemasize,currentschema);
 
 	// clean up
 	delete[] currentschema;
@@ -1421,14 +1435,14 @@ void sqlrprotocol_sqlrclient::dbHostNameCommand() {
 	clientsock->write(hostname,hostnamesize);
 	clientsock->flushWriteBuffer(-1,-1);
 
-	debugWrite("host name: %.*s\n",hostnamesize,hostname);
+	debugWrite("host name: %.*s",hostnamesize,hostname);
 
 	debugEnd();
 }
 
 void sqlrprotocol_sqlrclient::dbIpAddressCommand() {
 
-	debugWrite("getting db host name");
+	debugStart("getting db host name");
 
 	// get the db ip address
 	const char	*ipaddress=cont->getDbIpAddress();
@@ -1440,7 +1454,100 @@ void sqlrprotocol_sqlrclient::dbIpAddressCommand() {
 	clientsock->write(ipaddress,ipaddresssize);
 	clientsock->flushWriteBuffer(-1,-1);
 
-	debugWrite("ip address: %.*s\n",ipaddresssize,ipaddress);
+	debugWrite("ip address: %.*s",ipaddresssize,ipaddress);
+
+	debugEnd();
+}
+
+void sqlrprotocol_sqlrclient::setIsolationLevelCommand() {
+
+	debugStart("setting isolation level");
+
+	// get size of isolation level parameter
+	uint32_t	isolevelsize;
+	ssize_t		result=clientsock->read(&isolevelsize,
+						idleclienttimeout,0);
+	if (result!=sizeof(uint32_t)) {
+		clientsock->write(false);
+		cont->raiseClientProtocolErrorEvent(NULL,result,
+					"set isolation level failed: "
+					"failed to get isolation level size");
+		debugWrite("failed to get isolation level size");
+		debugEnd();
+		return;
+	}
+
+	// bounds checking
+	if (isolevelsize>maxquerysize) {
+		clientsock->write(false);
+		cont->raiseClientProtocolErrorEvent(NULL,1,
+					"select database failed: client sent"
+					"bad isolation levelsize: %d",
+					isolevelsize);
+		debugWrite("client sent bad isolation level size: %d",
+							isolevelsize);
+		debugEnd();
+		return;
+	}
+
+	// read the isolatio level parameter into the buffer
+	char	*isolevel=new char[isolevelsize+1];
+	if (isolevelsize) {
+		result=clientsock->read(isolevel,isolevelsize,
+						idleclienttimeout,0);
+		if ((uint32_t)result!=isolevelsize) {
+			clientsock->write(false);
+			clientsock->flushWriteBuffer(-1,-1);
+			delete[] isolevel;
+			cont->raiseClientProtocolErrorEvent(NULL,result,
+					"set isolation level failed: "
+					"failed to get isolation level");
+			debugWrite("failed to get isolation level");
+			debugEnd();
+			return;
+		}
+	}
+	isolevel[isolevelsize]='\0';
+
+	debugWrite("isolation level: %.*s",isolevelsize,isolevel);
+	
+	// select the isolation level and send back the result.
+	if (cont->setIsolationLevel(isolevel)) {
+		debugWrite("success");
+		clientsock->write((uint16_t)NO_ERROR_OCCURRED);
+		clientsock->flushWriteBuffer(-1,-1);
+	} else {
+		debugWrite("failed");
+		returnError(false);
+	}
+
+	delete[] isolevel;
+
+	debugEnd();
+}
+
+void sqlrprotocol_sqlrclient::getIsolationLevelCommand() {
+
+	debugStart("getting isolation level");
+
+	// get the isolation level
+	const char	*isolevel=cont->getIsolationLevel();
+	if (isolevel) {
+		debugWrite("success");
+		clientsock->write((uint16_t)NO_ERROR_OCCURRED);
+
+		// send it to the client
+		uint16_t	isolevelsize=charstring::getLength(isolevel);
+		clientsock->write(isolevelsize);
+		clientsock->write(isolevel,isolevelsize);
+		clientsock->flushWriteBuffer(-1,-1);
+
+		debugWrite("isolation level: %.*s",isolevelsize,isolevel);
+
+	} else {
+		debugWrite("failed");
+		returnError(false);
+	}
 
 	debugEnd();
 }
@@ -1720,7 +1827,7 @@ bool sqlrprotocol_sqlrclient::processQueryOrBindCursor(
 				cont->raiseDbErrorEvent(cursor,
 						cont->getErrorBuffer(cursor));
 
-				cont->reLogIn();
+				cont->reLogIn(true);
 
 				// if we're waiting for down databases then
 				// loop back and try the query again
@@ -4622,6 +4729,12 @@ void sqlrprotocol_sqlrclient::debugCommand(uint16_t command) {
 			break;
 		case NEXTVALFORMAT:
 			debugWrite("NEXTVALFORMAT");
+			break;
+		case SET_ISOLATION_LEVEL:
+			debugWrite("SET_ISOLATION_LEVEL");
+			break;
+		case GET_ISOLATION_LEVEL:
+			debugWrite("GET_ISOLATION_LEVEL");
 			break;
 		default:
 			debugWrite("bad command");

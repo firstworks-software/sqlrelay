@@ -254,6 +254,7 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 		const char	*getCurrentDatabaseQuery();
 		const char	*getLastInsertIdQuery();
 		const char	*setIsolationLevelQuery();
+		const char	*getIsolationLevelQuery();
 		const char	*getNoopQuery();
 		const char	*getBindFormat();
 
@@ -870,6 +871,17 @@ const char *informixconnection::getLastInsertIdQuery() {
 
 const char *informixconnection::setIsolationLevelQuery() {
         return "set isolation %s";
+}
+
+const char *informixconnection::getIsolationLevelQuery() {
+	return "select "
+		"	is_level "
+		"from "
+		"	sysmaster:syssqlcurses "
+		"where "
+		"	sid=dbinfo('sessionid') "
+		"	and "
+		"	iscurrent='Y'";
 }
 
 const char *informixconnection::getNoopQuery() {

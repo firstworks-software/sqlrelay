@@ -46,6 +46,7 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 		const char	*selectDatabaseQuery();
 		const char	*getCurrentDatabaseQuery();
 		const char	*getLastInsertIdQuery();
+		const char	*getIsolationLevelQuery();
 		const char	*getNoopQuery();
 		const char	*getBindFormat();
 		const char	*beginTransactionQuery();
@@ -708,6 +709,10 @@ const char *sapconnection::getCurrentDatabaseQuery() {
 
 const char *sapconnection::getLastInsertIdQuery() {
 	return "select @@identity";
+}
+
+const char *sapconnection::getIsolationLevelQuery() {
+	return "select @@isolation";
 }
 
 const char *sapconnection::getNoopQuery() {

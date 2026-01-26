@@ -21,6 +21,7 @@
 	refactored tests a bit, replaced checkSuccess() with assert*() and
 		moved assert*() into its own shared file
 	added getConnect/ResponseTimeoutSeconds/MicroSeconds() to client apis
+	added set/getIsolationLevel
 
 2.1.0 - refactored debugging
 

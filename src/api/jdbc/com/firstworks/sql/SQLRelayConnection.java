@@ -22,7 +22,6 @@ public class SQLRelayConnection implements Connection {
 	private Properties	clientinfo;
 	private int		txisolevel;
 	private boolean		autocommit;
-	private int		networktimeout;
 	private boolean		datetotimestamp;
 
 	private Map<String,Class<?>>	typemap;
@@ -63,10 +62,6 @@ public class SQLRelayConnection implements Connection {
 		txisolevel=Connection.TRANSACTION_READ_COMMITTED;
 		// FIXME: might not be false, need to get this from server
 		autocommit=false;
-		// FIXME: the timeout can also be set using an environment
-		// variable, so we should get this from the underlying api
-		// instead of tracking it here
-		networktimeout=0;
 		typemap=null;
 		datetotimestamp=false;
 
@@ -374,11 +369,10 @@ public class SQLRelayConnection implements Connection {
 	int getNetworkTimeout() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
-		// FIXME: the timeout can also be set using an environment
-		// variable, so we should get this from the underlying api
-		// instead of tracking it here
+		int	retval=(sqlrcon.getConnectTimeoutSeconds()*1000)+
+					sqlrcon.getConnectTimeoutMilliSeconds();
 		driver.debugEnd();
-		return networktimeout;
+		return retval;
 	}
 
 	public
@@ -724,10 +718,6 @@ public class SQLRelayConnection implements Connection {
 			sqlrcon.setConnectTimeout(milliseconds/1000,
 				((milliseconds-(milliseconds/1000))*1000));
 		}
-		// FIXME: the timeout can also be set using an environment
-		// variable, so we should get this from the underlying api
-		// instead of tracking it here
-		networktimeout=milliseconds;
 		driver.debugEnd();
 	}
 

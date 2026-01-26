@@ -256,6 +256,7 @@ class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 		const char	*selectDatabaseQuery();
 		const char	*getCurrentDatabaseQuery();
 		const char	*getLastInsertIdQuery();
+		const char	*getIsolationLevelQuery();
 		const char	*getNoopQuery();
 		const char	*getBindFormat();
 		const char	*beginTransactionQuery();
@@ -1035,6 +1036,22 @@ const char *freetdsconnection::getCurrentDatabaseQuery() {
 
 const char *freetdsconnection::getLastInsertIdQuery() {
 	return "select @@identity";
+}
+
+const char *freetdsconnection::getIsolationLevelQuery() {
+	return "select "
+		"	case transaction_isolation_level "
+		"		when 0 then 'UNSPECIFIED' "
+		"		when 1 then 'READ UNCOMMITTED' "
+		"		when 2 then 'READ COMMITTED' "
+		"		when 3 then 'REPEATABLE READ' "
+		"		when 4 then 'SERIALIZABLE' "
+		"		when 5 then 'SNAPSHOT' "
+		"	end "
+		"from "
+		"	sys.dm_exec_sessions "
+		"where "
+		"	session_id=@@spid";
 }
 
 const char *freetdsconnection::getNoopQuery() {

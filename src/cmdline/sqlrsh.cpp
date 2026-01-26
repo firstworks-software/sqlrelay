@@ -209,6 +209,8 @@ class	sqlrsh {
 						sqlrshenv *env);
 		bool	dbipaddress(sqlrconnection *sqlrcon,
 						sqlrshenv *env);
+		bool	getisolationlevel(sqlrconnection *sqlrcon,
+						sqlrshenv *env);
 		void	clientversion(sqlrconnection *sqlrcon,
 						sqlrshenv *env);
 		bool	serverversion(sqlrconnection *sqlrcon,
@@ -530,6 +532,7 @@ int sqlrsh::commandType(const char *command) {
 		!charstring::compareIgnoringCase(ptr,"dbversion") ||
 		!charstring::compareIgnoringCase(ptr,"dbhostname") ||
 		!charstring::compareIgnoringCase(ptr,"dbipaddress") ||
+		!charstring::compareIgnoringCase(ptr,"isolationlevel",14) ||
 		!charstring::compareIgnoringCase(ptr,"clientversion") ||
 		!charstring::compareIgnoringCase(ptr,"serverversion") ||
 		!charstring::compareIgnoringCase(ptr,"use ",4) ||
@@ -675,6 +678,17 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 		return dbhostname(sqlrcon,env);
 	} else if (!charstring::compareIgnoringCase(ptr,"dbipaddress")) {	
 		return dbipaddress(sqlrcon,env);
+	} else if (!charstring::compareIgnoringCase(
+					ptr,"isolationlevel ",15)) {
+		if (!sqlrcon->setIsolationLevel(ptr+15)) {
+			displayError(env,NULL,
+					sqlrcon->errorMessage(),
+					sqlrcon->errorNumber());
+			return false;
+		}
+		return true;
+	} else if (!charstring::compareIgnoringCase(ptr,"isolationlevel")) {
+		return getisolationlevel(sqlrcon,env);
 	} else if (!charstring::compareIgnoringCase(ptr,"clientversion")) {	
 		clientversion(sqlrcon,env);
 		return true;
@@ -1867,6 +1881,21 @@ bool sqlrsh::dbhostname(sqlrconnection *sqlrcon, sqlrshenv *env) {
 
 bool sqlrsh::dbipaddress(sqlrconnection *sqlrcon, sqlrshenv *env) {
 	const char	*value=sqlrcon->dbIpAddress();
+	if (value) {
+		stdoutput.printf("%s\n",value);
+	} else if (sqlrcon->errorMessage()) {
+		displayError(env,NULL,
+				sqlrcon->errorMessage(),
+				sqlrcon->errorNumber());
+		return false;
+	} else {
+		stdoutput.printf("\n");
+	}
+	return true;
+}
+
+bool sqlrsh::getisolationlevel(sqlrconnection *sqlrcon, sqlrshenv *env) {
+	const char	*value=sqlrcon->getIsolationLevel();
 	if (value) {
 		stdoutput.printf("%s\n",value);
 	} else if (sqlrcon->errorMessage()) {

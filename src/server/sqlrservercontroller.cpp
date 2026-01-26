@@ -905,7 +905,7 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 		incrementConnectionCount();
 	}
 
-	// set the transaction isolation level
+	// set the isolation level
 	pvt->_isolationlevel=pvt->_cfg->getIsolationLevel();
 	pvt->_conn->setIsolationLevel(pvt->_isolationlevel);
 
@@ -1612,7 +1612,7 @@ void sqlrservercontroller::waitForAvailableDatabase() {
 
 	if (!file::exists(pvt->_updown)) {
 		debugWrite("database is not available");
-		reLogIn();
+		reLogIn(false);
 		markDatabaseAvailable();
 	}
 
@@ -1620,13 +1620,14 @@ void sqlrservercontroller::waitForAvailableDatabase() {
 	debugEnd();
 }
 
-void sqlrservercontroller::reLogIn() {
+void sqlrservercontroller::reLogIn(bool deadconnection) {
 
 	markDatabaseUnavailable();
 
-	// run the session end queries
 	// FIXME: only run these if a dead connection prompted
 	// a relogin, not if we couldn't login at startup
+
+	// run the session end queries
 	sessionEndQueries();
 
 	// get the current db so we can restore it
@@ -1635,7 +1636,8 @@ void sqlrservercontroller::reLogIn() {
 	// get the current schema so we can restore it
 	char	*currentschema=pvt->_conn->getCurrentSchema();
 
-	// FIXME: get the isolation level so we can restore it
+	// get the isolation level so we can restore it
+	const char	*isolevel=pvt->_conn->getIsolationLevel();
 
 	debugStart("relogging in");
 
@@ -1679,6 +1681,9 @@ void sqlrservercontroller::reLogIn() {
 	// restore the schema
 	pvt->_conn->selectSchema(currentschema);
 	delete[] currentschema;
+
+	// restore the isolation level
+	pvt->_conn->setIsolationLevel(isolevel);
 
 	// restore initial autocommit behavior
 	if (pvt->_initialautocommit) {
@@ -2599,6 +2604,10 @@ const char *sqlrservercontroller::getNoopQuery() {
 
 bool sqlrservercontroller::setIsolationLevel(const char *isolevel) {
 	return pvt->_conn->setIsolationLevel(isolevel);
+}
+
+const char *sqlrservercontroller::getIsolationLevel() {
+	return pvt->_conn->getIsolationLevel();
 }
 
 bool sqlrservercontroller::ping() {
@@ -7012,12 +7021,11 @@ void sqlrservercontroller::endSession() {
 	// if the db is behind a load balancer, re-login
 	// periodically to redistribute connections
 	if (pvt->_constr->getBehindLoadBalancer()) {
-		debugStart("relogging in to "
-					"redistribute connections");
+		debugStart("relogging in to redistribute connections");
 		datetime	dt;
 		if (dt.initFromSystemDateTime()) {
 			if (dt.getEpoch()>=pvt->_relogintime) {
-				reLogIn();
+				reLogIn(false);
 			}
 		}
 		debugEnd();
