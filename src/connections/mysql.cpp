@@ -226,6 +226,9 @@ class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 		const char	*getCurrentDatabaseQuery();
 		const char	*setIsolationLevelQuery();
 		const char	*getIsolationLevelQuery();
+		const char	*mapIsolationLevel(
+				const char *isolevel,
+				sqlrserverisolationlevelformat_t format);
 		bool		getLastInsertId(uint64_t *id);
 		const char	*getNoopQuery();
 		bool		setAutoCommitOn();
@@ -857,6 +860,46 @@ const char *mysqlconnection::setIsolationLevelQuery() {
 
 const char *mysqlconnection::getIsolationLevelQuery() {
 	return "select @@session.tx_isolation";
+}
+
+const char *mysqlconnection::mapIsolationLevel(
+				const char *isolevel,
+				sqlrserverisolationlevelformat_t format) {
+	switch (format) {
+		case SQLRSERVERISOLATIONLEVELFORMAT_JDBC:
+			if (!charstring::compare(isolevel,
+						"TRANSACTION_READ_UNCOMMITTED")) {
+				return "READ-UNCOMMITTED";
+			}
+			if (!charstring::compare(isolevel,
+						"TRANSACTION_READ_COMMITTED")) {
+				return "READ-COMMITTED";
+			}
+			if (!charstring::compare(isolevel,
+						"TRANSACTION_REPEATABLE_READ")) {
+				return "REPEATABLE-READ";
+			}
+			if (!charstring::compare(isolevel,
+						"TRANSACTION_SERIALIZABLE")) {
+				return "SERIALIZABLE";
+			}
+			break;
+		case SQLRSERVERISOLATIONLEVELFORMAT_NATIVE:
+			if (!charstring::compare(isolevel,"READ-UNCOMMITTED")) {
+				return "TRANSACTION_READ_UNCOMMITTED";
+			}
+			if (!charstring::compare(isolevel,"READ-COMMITTED")) {
+				return "TRANSACTION_READ_COMMITTED";
+			}
+			if (!charstring::compare(isolevel,"REPEATABLE-READ")) {
+				return "TRANSACTION_REPEATABLE_READ";
+			}
+			if (!charstring::compare(isolevel,"SERIALIZABLE")) {
+				return "TRANSACTION_SERIALIZABLE";
+			}
+			break;
+	}
+	return NULL;
 }
 
 bool mysqlconnection::getLastInsertId(uint64_t *id) {

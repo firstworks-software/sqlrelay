@@ -2602,12 +2602,20 @@ const char *sqlrservercontroller::getNoopQuery() {
 	return pvt->_conn->getNoopQuery();
 }
 
-bool sqlrservercontroller::setIsolationLevel(const char *isolevel) {
-	return pvt->_conn->setIsolationLevel(isolevel);
+bool sqlrservercontroller::setIsolationLevel(const char *isolevel,
+				sqlrserverisolationlevelformat_t format) {
+	const char	*mappedisolevel=
+			pvt->_conn->mapIsolationLevel(isolevel,format);
+	return pvt->_conn->setIsolationLevel(
+			(mappedisolevel)?mappedisolevel:isolevel);
 }
 
-const char *sqlrservercontroller::getIsolationLevel() {
-	return pvt->_conn->getIsolationLevel();
+const char *sqlrservercontroller::getIsolationLevel(
+				sqlrserverisolationlevelformat_t format) {
+	const char	*isolevel=pvt->_conn->getIsolationLevel();
+	const char	*mappedisolevel=
+			pvt->_conn->mapIsolationLevel(isolevel,format);
+	return (mappedisolevel)?mappedisolevel:isolevel;
 }
 
 bool sqlrservercontroller::ping() {

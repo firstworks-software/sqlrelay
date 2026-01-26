@@ -56,6 +56,9 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 		#ifdef SQLITE_TRANSACTIONAL
 		const char	*setIsolationLevelQuery();
 		const char	*getIsolationLevelQuery();
+		const char	*mapIsolationLevel(
+				const char *isolevel,
+				sqlrserverisolationlevelformat_t format);
 		const char	*beginTransactionQuery();
 		#endif
 		bool		selectDatabase(const char *database);
@@ -363,6 +366,35 @@ const char *sqliteconnection::setIsolationLevelQuery() {
 
 const char *sqliteconnection::getIsolationLevelQuery() {
 	return "pragma read_uncommitted";
+}
+
+const char *sqliteconnection::mapIsolationLevel(
+				const char *isolevel,
+				sqlrserverisolationlevelformat_t format) {
+	// sqlite's read_uncommitted pragma:
+	// 0 = read committed (default)
+	// 1 = read uncommitted
+	switch (format) {
+		case SQLRSERVERISOLATIONLEVELFORMAT_JDBC:
+			if (!charstring::compare(isolevel,
+						"TRANSACTION_READ_UNCOMMITTED")) {
+				return "1";
+			}
+			if (!charstring::compare(isolevel,
+						"TRANSACTION_READ_COMMITTED")) {
+				return "0";
+			}
+			break;
+		case SQLRSERVERISOLATIONLEVELFORMAT_NATIVE:
+			if (!charstring::compare(isolevel,"1")) {
+				return "TRANSACTION_READ_UNCOMMITTED";
+			}
+			if (!charstring::compare(isolevel,"0")) {
+				return "TRANSACTION_READ_COMMITTED";
+			}
+			break;
+	}
+	return NULL;
 }
 
 const char *sqliteconnection::beginTransactionQuery() {

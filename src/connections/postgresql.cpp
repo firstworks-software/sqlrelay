@@ -48,6 +48,9 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 		bool		selectDatabase(const char *database);
 		const char	*getCurrentDatabaseQuery();
 		const char	*getIsolationLevelQuery();
+		const char	*mapIsolationLevel(
+				const char *isolevel,
+				sqlrserverisolationlevelformat_t format);
 		bool		getLastInsertId(uint64_t *id);
 		const char	*getLastInsertIdQuery();
 		const char	*getNoopQuery();
@@ -776,6 +779,46 @@ const char *postgresqlconnection::getCurrentDatabaseQuery() {
 
 const char *postgresqlconnection::getIsolationLevelQuery() {
 	return "show transaction_isolation";
+}
+
+const char *postgresqlconnection::mapIsolationLevel(
+				const char *isolevel,
+				sqlrserverisolationlevelformat_t format) {
+	switch (format) {
+		case SQLRSERVERISOLATIONLEVELFORMAT_JDBC:
+			if (!charstring::compare(isolevel,
+						"TRANSACTION_READ_UNCOMMITTED")) {
+				return "read uncommitted";
+			}
+			if (!charstring::compare(isolevel,
+						"TRANSACTION_READ_COMMITTED")) {
+				return "read committed";
+			}
+			if (!charstring::compare(isolevel,
+						"TRANSACTION_REPEATABLE_READ")) {
+				return "repeatable read";
+			}
+			if (!charstring::compare(isolevel,
+						"TRANSACTION_SERIALIZABLE")) {
+				return "serializable";
+			}
+			break;
+		case SQLRSERVERISOLATIONLEVELFORMAT_NATIVE:
+			if (!charstring::compare(isolevel,"read uncommitted")) {
+				return "TRANSACTION_READ_UNCOMMITTED";
+			}
+			if (!charstring::compare(isolevel,"read committed")) {
+				return "TRANSACTION_READ_COMMITTED";
+			}
+			if (!charstring::compare(isolevel,"repeatable read")) {
+				return "TRANSACTION_REPEATABLE_READ";
+			}
+			if (!charstring::compare(isolevel,"serializable")) {
+				return "TRANSACTION_SERIALIZABLE";
+			}
+			break;
+	}
+	return NULL;
 }
 
 bool postgresqlconnection::getLastInsertId(uint64_t *id) {

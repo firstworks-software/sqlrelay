@@ -396,4 +396,7 @@ public class SQLRConnection {
 						String socket, String user, 
 						String password, 
 						int retrytime, int tries);
+	public native boolean	setIsolationLevel(String isolationlevel,
+								int format);
+	public native String	getIsolationLevel(int format);
 }

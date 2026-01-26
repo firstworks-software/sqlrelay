@@ -256,6 +256,9 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		const char	*getLastInsertIdQuery();
 		const char	*setIsolationLevelQuery();
 		const char	*getIsolationLevelQuery();
+		const char	*mapIsolationLevel(
+				const char *isolevel,
+				sqlrserverisolationlevelformat_t format);
 		const char	*getNoopQuery();
 
 		char		dpb[256];
@@ -865,6 +868,50 @@ const char *firebirdconnection::getIsolationLevelQuery() {
 		"	mon$transactions "
 		"where "
 		"	mon$transaction_id=current_transaction";
+}
+
+const char *firebirdconnection::mapIsolationLevel(
+				const char *isolevel,
+				sqlrserverisolationlevelformat_t format) {
+	// Firebird isolation levels:
+	// snapshot table stability (SERIALIZABLE)
+	// snapshot (REPEATABLE READ)
+	// read committed (READ COMMITTED)
+	// read committed no record version
+	// read consistency
+	switch (format) {
+		case SQLRSERVERISOLATIONLEVELFORMAT_JDBC:
+			if (!charstring::compare(isolevel,
+						"TRANSACTION_READ_COMMITTED")) {
+				return "read committed";
+			}
+			if (!charstring::compare(isolevel,
+						"TRANSACTION_REPEATABLE_READ")) {
+				return "snapshot";
+			}
+			if (!charstring::compare(isolevel,
+						"TRANSACTION_SERIALIZABLE")) {
+				return "snapshot table stability";
+			}
+			break;
+		case SQLRSERVERISOLATIONLEVELFORMAT_NATIVE:
+			if (!charstring::compare(isolevel,"read committed") ||
+				!charstring::compare(isolevel,
+					"read committed no record version") ||
+				!charstring::compare(isolevel,
+							"read consistency")) {
+				return "TRANSACTION_READ_COMMITTED";
+			}
+			if (!charstring::compare(isolevel,"snapshot")) {
+				return "TRANSACTION_REPEATABLE_READ";
+			}
+			if (!charstring::compare(isolevel,
+						"snapshot table stability")) {
+				return "TRANSACTION_SERIALIZABLE";
+			}
+			break;
+	}
+	return NULL;
 }
 
 const char *firebirdconnection::getNoopQuery() {

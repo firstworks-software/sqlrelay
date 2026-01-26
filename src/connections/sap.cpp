@@ -47,6 +47,9 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 		const char	*getCurrentDatabaseQuery();
 		const char	*getLastInsertIdQuery();
 		const char	*getIsolationLevelQuery();
+		const char	*mapIsolationLevel(
+				const char *isolevel,
+				sqlrserverisolationlevelformat_t format);
 		const char	*getNoopQuery();
 		const char	*getBindFormat();
 		const char	*beginTransactionQuery();
@@ -713,6 +716,51 @@ const char *sapconnection::getLastInsertIdQuery() {
 
 const char *sapconnection::getIsolationLevelQuery() {
 	return "select @@isolation";
+}
+
+const char *sapconnection::mapIsolationLevel(
+				const char *isolevel,
+				sqlrserverisolationlevelformat_t format) {
+	// SAP/Sybase isolation levels:
+	// 0 = READ UNCOMMITTED
+	// 1 = READ COMMITTED
+	// 2 = REPEATABLE READ
+	// 3 = SERIALIZABLE
+	switch (format) {
+		case SQLRSERVERISOLATIONLEVELFORMAT_JDBC:
+			if (!charstring::compare(isolevel,
+						"TRANSACTION_READ_UNCOMMITTED")) {
+				return "0";
+			}
+			if (!charstring::compare(isolevel,
+						"TRANSACTION_READ_COMMITTED")) {
+				return "1";
+			}
+			if (!charstring::compare(isolevel,
+						"TRANSACTION_REPEATABLE_READ")) {
+				return "2";
+			}
+			if (!charstring::compare(isolevel,
+						"TRANSACTION_SERIALIZABLE")) {
+				return "3";
+			}
+			break;
+		case SQLRSERVERISOLATIONLEVELFORMAT_NATIVE:
+			if (!charstring::compare(isolevel,"0")) {
+				return "TRANSACTION_READ_UNCOMMITTED";
+			}
+			if (!charstring::compare(isolevel,"1")) {
+				return "TRANSACTION_READ_COMMITTED";
+			}
+			if (!charstring::compare(isolevel,"2")) {
+				return "TRANSACTION_REPEATABLE_READ";
+			}
+			if (!charstring::compare(isolevel,"3")) {
+				return "TRANSACTION_SERIALIZABLE";
+			}
+			break;
+	}
+	return NULL;
 }
 
 const char *sapconnection::getNoopQuery() {

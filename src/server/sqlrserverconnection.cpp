@@ -734,6 +734,12 @@ const char *sqlrserverconnection::getIsolationLevelQuery() {
 	return getNoopQuery();
 }
 
+const char *sqlrserverconnection::mapIsolationLevel(
+				const char *isolevel,
+				sqlrserverisolationlevelformat_t format) {
+	return NULL;
+}
+
 bool sqlrserverconnection::ping() {
 	const char	*pingquery=pingQuery();
 	int		pingquerysize=charstring::getLength(pingquery);

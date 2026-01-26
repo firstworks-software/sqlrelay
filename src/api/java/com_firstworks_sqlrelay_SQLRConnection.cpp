@@ -428,7 +428,7 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_rollback
  * Method:    setIsolationLevel
  * Signature: (Ljava/lang/String;)Z
  */
-JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_setIsolationLevel
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_setIsolationLevel__Ljava_lang_String_2
   (JNIEnv *env, jobject self, jstring isolationlevel) {
 	char	*isolationlevelstring=conGetStringUTFChars(env,isolationlevel,0);
 	bool	retval=getSqlrConnection(env,self)->
@@ -442,9 +442,35 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_setIsolat
  * Method:    getIsolationLevel
  * Signature: ()Ljava/lang/String;
  */
-JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getIsolationLevel
+JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getIsolationLevel__
   (JNIEnv *env, jobject self) {
 	return conNewStringUTF(env,getSqlrConnection(env,self)->getIsolationLevel());
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRConnection
+ * Method:    setIsolationLevel
+ * Signature: (Ljava/lang/String;I)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_setIsolationLevel__Ljava_lang_String_2I
+  (JNIEnv *env, jobject self, jstring isolationlevel, jint format) {
+	char	*isolationlevelstring=conGetStringUTFChars(env,isolationlevel,0);
+	bool	retval=getSqlrConnection(env,self)->
+			setIsolationLevel(isolationlevelstring,
+				(sqlrclientisolationlevelformat_t)format);
+	conReleaseStringUTFChars(env,isolationlevel,isolationlevelstring);
+	return (jboolean)retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRConnection
+ * Method:    getIsolationLevel
+ * Signature: (I)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getIsolationLevel__I
+  (JNIEnv *env, jobject self, jint format) {
+	return conNewStringUTF(env,getSqlrConnection(env,self)->
+		getIsolationLevel((sqlrclientisolationlevelformat_t)format));
 }
 
 /*

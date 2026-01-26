@@ -255,6 +255,9 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 		const char	*getLastInsertIdQuery();
 		const char	*setIsolationLevelQuery();
 		const char	*getIsolationLevelQuery();
+		const char	*mapIsolationLevel(
+				const char *isolevel,
+				sqlrserverisolationlevelformat_t format);
 		const char	*getNoopQuery();
 		const char	*getBindFormat();
 
@@ -882,6 +885,51 @@ const char *informixconnection::getIsolationLevelQuery() {
 		"	sid=dbinfo('sessionid') "
 		"	and "
 		"	iscurrent='Y'";
+}
+
+const char *informixconnection::mapIsolationLevel(
+				const char *isolevel,
+				sqlrserverisolationlevelformat_t format) {
+	// Informix isolation levels:
+	// dirty read (READ UNCOMMITTED)
+	// committed read (READ COMMITTED)
+	// cursor stability (REPEATABLE READ)
+	// repeatable read (SERIALIZABLE)
+	switch (format) {
+		case SQLRSERVERISOLATIONLEVELFORMAT_JDBC:
+			if (!charstring::compare(isolevel,
+						"TRANSACTION_READ_UNCOMMITTED")) {
+				return "dirty read";
+			}
+			if (!charstring::compare(isolevel,
+						"TRANSACTION_READ_COMMITTED")) {
+				return "committed read";
+			}
+			if (!charstring::compare(isolevel,
+						"TRANSACTION_REPEATABLE_READ")) {
+				return "cursor stability";
+			}
+			if (!charstring::compare(isolevel,
+						"TRANSACTION_SERIALIZABLE")) {
+				return "repeatable read";
+			}
+			break;
+		case SQLRSERVERISOLATIONLEVELFORMAT_NATIVE:
+			if (!charstring::compare(isolevel,"dirty read")) {
+				return "TRANSACTION_READ_UNCOMMITTED";
+			}
+			if (!charstring::compare(isolevel,"committed read")) {
+				return "TRANSACTION_READ_COMMITTED";
+			}
+			if (!charstring::compare(isolevel,"cursor stability")) {
+				return "TRANSACTION_REPEATABLE_READ";
+			}
+			if (!charstring::compare(isolevel,"repeatable read")) {
+				return "TRANSACTION_SERIALIZABLE";
+			}
+			break;
+	}
+	return NULL;
 }
 
 const char *informixconnection::getNoopQuery() {

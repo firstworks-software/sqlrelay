@@ -20,7 +20,6 @@ public class SQLRelayConnection implements Connection {
 	private SQLRConnection	sqlrcon;
 	private boolean		readonly;
 	private Properties	clientinfo;
-	private int		txisolevel;
 	private boolean		autocommit;
 	private boolean		datetotimestamp;
 
@@ -58,8 +57,6 @@ public class SQLRelayConnection implements Connection {
 						user,password,retrytime,tries);
 		readonly=false;
 		clientinfo=new Properties();
-		// FIXME: defaults to repeatable read on mysql5+
-		txisolevel=Connection.TRANSACTION_READ_COMMITTED;
 		// FIXME: might not be false, need to get this from server
 		autocommit=false;
 		typemap=null;
@@ -369,8 +366,9 @@ public class SQLRelayConnection implements Connection {
 	int getNetworkTimeout() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
-		int	retval=(sqlrcon.getConnectTimeoutSeconds()*1000)+
-					sqlrcon.getConnectTimeoutMilliSeconds();
+		int	retval=
+			((sqlrcon.getConnectTimeoutSeconds()*1000000)+
+			sqlrcon.getConnectTimeoutMicroseconds())/1000;
 		driver.debugEnd();
 		return retval;
 	}
@@ -392,9 +390,32 @@ public class SQLRelayConnection implements Connection {
 	int getTransactionIsolation() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
-		driver.debugPrintln("isolation level: ",txisolevel);
+		String	level=sqlrcon.getIsolationLevel(3);
+		if (level==null) {
+			throwErrorMessageException();
+		}
+		driver.debugPrintln("isolation level: ",level);
+		int	retval=Connection.TRANSACTION_NONE;
+		switch (level) {
+			case "TRANSACTION_READ_UNCOMMITTED":
+				retval=Connection.TRANSACTION_READ_UNCOMMITTED;
+				break;
+			case "TRANSACTION_READ_COMMITTED":
+				retval=Connection.TRANSACTION_READ_COMMITTED;
+				break;
+			case "TRANSACTION_REPEATABLE_READ":
+				retval=Connection.TRANSACTION_REPEATABLE_READ;
+				break;
+			case "TRANSACTION_SERIALIZABLE":
+				retval=Connection.TRANSACTION_SERIALIZABLE;
+				break;
+			default:
+				throwException("Invalid transaction " +
+						"isolation level "+level);
+				break;
+		}
 		driver.debugEnd();
-		return txisolevel;
+		return retval;
 	}
 
 	public
@@ -772,34 +793,33 @@ public class SQLRelayConnection implements Connection {
 		throwExceptionIfClosed();
 		switch (level) {
 			case Connection.TRANSACTION_READ_UNCOMMITTED:
-				// FIXME: implement this somehow
-				driver.debugPrintln("FIXME: implement this");
-				driver.debugPrintln("isolation level: ",
-						"TRANSACTION_READ_UNCOMMITTED");
+				if (!sqlrcon.setIsolationLevel(
+					"TRANSACTION_READ_UNCOMMITTED",3)) {
+					throwErrorMessageException();
+				}
 				break;
 			case Connection.TRANSACTION_READ_COMMITTED:
-				// FIXME: implement this somehow
-				driver.debugPrintln("FIXME: implement this");
-				driver.debugPrintln("isolation level: ",
-						"TRANSACTION_READ_COMMITTED");
+				if (!sqlrcon.setIsolationLevel(
+					"TRANSACTION_READ_COMMITTED",3)) {
+					throwErrorMessageException();
+				}
 				break;
 			case Connection.TRANSACTION_REPEATABLE_READ:
-				// FIXME: implement this somehow
-				driver.debugPrintln("FIXME: implement this");
-				driver.debugPrintln("isolation level: ",
-						"TRANSACTION_REPEATABLE_READ");
+				if (!sqlrcon.setIsolationLevel(
+					"TRANSACTION_REPEATABLE_READ",3)) {
+					throwErrorMessageException();
+				}
 				break;
 			case Connection.TRANSACTION_SERIALIZABLE:
-				// FIXME: implement this somehow
-				driver.debugPrintln("FIXME: implement this");
-				driver.debugPrintln("isolation level: ",
-						"TRANSACTION_SERIALIZABLE");
+				if (!sqlrcon.setIsolationLevel(
+					"TRANSACTION_SERIALIZABLE",3)) {
+					throwErrorMessageException();
+				}
 				break;
 			default:
 				throwException("Invalid transaction " +
-						"isolation level " + level);
+						"isolation level "+level);
 		}
-		txisolevel=level;
 		driver.debugEnd();
 	}
 

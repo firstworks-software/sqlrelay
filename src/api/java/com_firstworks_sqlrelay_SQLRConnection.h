@@ -227,7 +227,7 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_rollback
  * Method:    setIsolationLevel
  * Signature: (Ljava/lang/String;)Z
  */
-JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_setIsolationLevel
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_setIsolationLevel__Ljava_lang_String_2
   (JNIEnv *, jobject, jstring);
 
 /*
@@ -235,8 +235,24 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_setIsolat
  * Method:    getIsolationLevel
  * Signature: ()Ljava/lang/String;
  */
-JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getIsolationLevel
+JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getIsolationLevel__
   (JNIEnv *, jobject);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRConnection
+ * Method:    setIsolationLevel
+ * Signature: (Ljava/lang/String;I)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_setIsolationLevel__Ljava_lang_String_2I
+  (JNIEnv *, jobject, jstring, jint);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRConnection
+ * Method:    getIsolationLevel
+ * Signature: (I)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getIsolationLevel__I
+  (JNIEnv *, jobject, jint);
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRConnection

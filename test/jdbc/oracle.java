@@ -169,7 +169,6 @@ class oracle extends sqlrtest {
 		System.out.println();
 
 		// setTransactionIsolation, getTransactionIsolation
-		// FIXME: sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			System.out.println("isolation");
 			try {

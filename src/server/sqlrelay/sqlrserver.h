@@ -604,13 +604,29 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		bool	getNeedsCommitOrRollback();
 
 		/** Sets the isolation level to "isolevel".
+		 *
+		 *  If "format" is SQLRSERVERISOLATIONLEVELFORMAT_NATIVE, then
+		 *  "isolevel" will be used directly.
+		 *
+		 *  If "format" is not SQLRSERVERISOLATIONLEVELFORMAT_NATIVE,
+		 *  then "isolevel" will be translated to a native isolation
+		 *  level as appropriate.
 		 *  
 		 *  Returns true on success and false on failure. */
-		bool	setIsolationLevel(const char *isolevel);
+		bool	setIsolationLevel(const char *isolevel,
+				sqlrserverisolationlevelformat_t format);
 
 		/** Returns the isolation level or NULL if the isolation level
-		 *  could not be determined. */
-		const char	*getIsolationLevel();
+		 *  could not be determined.
+		 *
+		 *  If "format" is SQLRSERVERISOLATIONLEVELFORMAT_NATIVE, then
+		 *  the database's native isolation level will be returned.
+		 *
+		 *  If "format" is not SQLRSERVERISOLATIONLEVELFORMAT_NATIVE,
+		 *  then "isolevel" will be translated to as appropriate and
+		 *  the translated isolation level will be returned. */
+		const char	*getIsolationLevel(
+				sqlrserverisolationlevelformat_t format);
 
 		/** If "ftb" is true then transaction blocks are faked by
 		 *  setting autocommit on and off as appropriate.  If "ftb" is
@@ -3402,6 +3418,16 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  overridden by a child class if the database requires a
 		 *  different query. */
 		virtual const char	*getIsolationLevelQuery();
+
+		/** Maps an isolation level name from the specified format
+		 *  to native format.
+		 *
+		 *  This implementation returns NULL, but it may be
+		 *  overridden by a child class to return a valid mapping
+		 *  for that database. */
+		virtual const char	*mapIsolationLevel(
+				const char *isolevel,
+				sqlrserverisolationlevelformat_t format);
 
 		/** Pings the database using the "ping query" defined by the
 		 *  database connection module.

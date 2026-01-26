@@ -152,6 +152,9 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		const char	*getCurrentSchemaQuery();
 		const char	*getLastInsertIdQuery();
 		const char	*getIsolationLevelQuery();
+		const char	*mapIsolationLevel(
+				const char *isolevel,
+				sqlrserverisolationlevelformat_t format);
 		const char	*getNoopQuery();
 
 		ub4		stmtmode;
@@ -2861,6 +2864,32 @@ const char *oracleconnection::getIsolationLevelQuery() {
 		"	s.sid=sys_context('userenv','sid') "
 		"	and "
 		"	t.addr=s.taddr";
+}
+
+const char *oracleconnection::mapIsolationLevel(
+				const char *isolevel,
+				sqlrserverisolationlevelformat_t format) {
+	switch (format) {
+		case SQLRSERVERISOLATIONLEVELFORMAT_JDBC:
+			if (!charstring::compare(isolevel,
+						"TRANSACTION_READ_COMMITTED")) {
+				return "READ COMMITTED";
+			}
+			if (!charstring::compare(isolevel,
+						"TRANSACTION_SERIALIZABLE")) {
+				return "SERIALIZABLE";
+			}
+			break;
+		case SQLRSERVERISOLATIONLEVELFORMAT_NATIVE:
+			if (!charstring::compare(isolevel,"READ COMMITTED")) {
+				return "TRANSACTION_READ_COMMITTED";
+			}
+			if (!charstring::compare(isolevel,"SERIALIZABLE")) {
+				return "TRANSACTION_SERIALIZABLE";
+			}
+			break;
+	}
+	return NULL;
 }
 
 const char *oracleconnection::getNoopQuery() {

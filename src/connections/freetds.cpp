@@ -257,6 +257,9 @@ class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 		const char	*getCurrentDatabaseQuery();
 		const char	*getLastInsertIdQuery();
 		const char	*getIsolationLevelQuery();
+		const char	*mapIsolationLevel(
+				const char *isolevel,
+				sqlrserverisolationlevelformat_t format);
 		const char	*getNoopQuery();
 		const char	*getBindFormat();
 		const char	*beginTransactionQuery();
@@ -1052,6 +1055,59 @@ const char *freetdsconnection::getIsolationLevelQuery() {
 		"	sys.dm_exec_sessions "
 		"where "
 		"	session_id=@@spid";
+}
+
+const char *freetdsconnection::mapIsolationLevel(
+				const char *isolevel,
+				sqlrserverisolationlevelformat_t format) {
+	// freetds/sql server uses numeric isolation levels:
+	// 0 = UNSPECIFIED
+	// 1 = READ UNCOMMITTED
+	// 2 = READ COMMITTED
+	// 3 = REPEATABLE READ
+	// 4 = SERIALIZABLE
+	switch (format) {
+		case SQLRSERVERISOLATIONLEVELFORMAT_JDBC:
+			if (!charstring::compare(isolevel,
+						"TRANSACTION_READ_UNCOMMITTED")) {
+				return "1";
+			}
+			if (!charstring::compare(isolevel,
+						"TRANSACTION_READ_COMMITTED")) {
+				return "2";
+			}
+			if (!charstring::compare(isolevel,
+						"TRANSACTION_REPEATABLE_READ")) {
+				return "3";
+			}
+			if (!charstring::compare(isolevel,
+						"TRANSACTION_SERIALIZABLE")) {
+				return "4";
+			}
+			break;
+		case SQLRSERVERISOLATIONLEVELFORMAT_NATIVE:
+			if (!charstring::compare(isolevel,"1") ||
+				!charstring::compare(isolevel,
+							"READ UNCOMMITTED")) {
+				return "TRANSACTION_READ_UNCOMMITTED";
+			}
+			if (!charstring::compare(isolevel,"2") ||
+				!charstring::compare(isolevel,
+							"READ COMMITTED")) {
+				return "TRANSACTION_READ_COMMITTED";
+			}
+			if (!charstring::compare(isolevel,"3") ||
+				!charstring::compare(isolevel,
+							"REPEATABLE READ")) {
+				return "TRANSACTION_REPEATABLE_READ";
+			}
+			if (!charstring::compare(isolevel,"4") ||
+				!charstring::compare(isolevel,"SERIALIZABLE")) {
+				return "TRANSACTION_SERIALIZABLE";
+			}
+			break;
+	}
+	return NULL;
 }
 
 const char *freetdsconnection::getNoopQuery() {
