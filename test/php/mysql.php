@@ -2,7 +2,7 @@
 	# Copyright (c) David Muse
 	# See the file COPYING for more information.
 
-	include("./assert.php");
+	include("./asserts.php");
 
 
 	try {
@@ -979,4 +979,7 @@
 		exit(1);
 	}
 
+	reportTestStatus();
+
+	exit($status);
 ?></pre></html>

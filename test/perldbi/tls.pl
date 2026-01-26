@@ -8,7 +8,7 @@ use DBI::Const::GetInfoType;
 use Data::Dumper;
 use Sys::Hostname;
 
-require "./assert.pl";
+require "./asserts.pl";
 
 $tlscert="../sqlrelay.conf.d/tls/client.pem";
 $tlsca="../sqlrelay.conf.d/tls/ca.pem";
@@ -697,11 +697,11 @@ $sth=$dbh->prepare_cached("select 1 from dual");
 my $sth1=$dbh->prepare_cached("select 1 from dual");
 my $sth2=$dbh->prepare_cached("select 2 from dual");
 assertEqual($sth,$sth1);
-$success="false";
+$s="false";
 if ($sth2==$sth) {
-	$success="true"
+	$s="true"
 }
-assertEqualString($success,"false");
+assertEqualString($s,"false");
 print("\n");
 
 # get info
@@ -757,4 +757,6 @@ print("\n");
 
 $dbh->disconnect();
 
-exit(0);
+reportTestStatus();
+
+exit($status);

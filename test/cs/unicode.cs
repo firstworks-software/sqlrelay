@@ -12,7 +12,7 @@ using System.Runtime.InteropServices;
 
 namespace SQLRClientTest
 {
-    class UnicodeSQLRAdapterTest : SQLRAdapterTest
+    class UnicodeSQLRAdapterTest : SQLRTest
     {
         public static void Main(String[] args)
         {
@@ -28,7 +28,7 @@ namespace SQLRClientTest
             Console.WriteLine("\n");
             sqlrcon.Close();
 
-            Environment.Exit(0);
+            Environment.Exit(status);
         }
     }
 }

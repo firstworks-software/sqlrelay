@@ -6,7 +6,7 @@
 
 use SQLRelay::Connection;
 use SQLRelay::Cursor;
-require "./assert.pl";
+require "./asserts.pl";
 
 
 
@@ -869,4 +869,6 @@ assertFalse($cur->sendQuery("create table testtable"));
 assertFalse($cur->sendQuery("create table testtable"));
 print("\n");
 
-exit(0);
+reportTestStatus();
+
+exit($status);

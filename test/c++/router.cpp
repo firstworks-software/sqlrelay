@@ -7,7 +7,7 @@
 #include <rudiments/snooze.h>
 #include <rudiments/stdio.h>
 
-#include "assert.cpp"
+#include "asserts.cpp"
 
 sqlrconnection	*con;
 sqlrcursor	*cur;
@@ -734,5 +734,7 @@ int main(int argc, char **argv) {
 
 	stdoutput.printf("\n");
 
-	return 0;
+	reportTestStatus();
+
+	return status;
 }

@@ -126,4 +126,7 @@ echo("\n");
 	} catch (Exception $e) {
 	}
 
+	reportTestStatus();
+
+	exit($status);
 ?></pre></html>

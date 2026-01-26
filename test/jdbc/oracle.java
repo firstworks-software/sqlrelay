@@ -1112,6 +1112,8 @@ if (false) {
 		stmt.close();
 		con.close();
 
-		System.exit(0);
+		reportTestStatus();
+
+		System.exit(status);
 	}
 }

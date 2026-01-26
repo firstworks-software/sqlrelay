@@ -2,7 +2,7 @@
 // See the file COPYING for more information.
 
 var	sqlrelay=require("sqlrelay");
-var	{assertEqual}=require("./assert.js");
+var	{assertEqual, getStatus, reportTestStatus}=require("./asserts.js");
 
 	
 var	bindvars=["1","2","3","4","5"];
@@ -864,4 +864,6 @@ assertEqual(cur.sendQuery("create table testtable"),0);
 assertEqual(cur.sendQuery("create table testtable"),0);
 console.log();
 
-process.exit(0);
+reportTestStatus();
+
+process.exit(getStatus());

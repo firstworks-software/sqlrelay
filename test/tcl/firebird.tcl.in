@@ -4,7 +4,7 @@
 # See the file COPYING for more information.
 
 load @TCLLIBSPATH@@SLASH@sqlrelay@SLASH@sqlrelay.@SOSUFFIX@ sqlrelay
-source ./assert.tcl
+source ./asserts.tcl
 
 # instantiation
 set con [sqlrcon -server "sqlrelay" -port 9000 -socket "/tmp/test.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
@@ -673,4 +673,6 @@ catch {assertFalse [$cur sendQuery "create table testtable"]}
 catch {assertFalse [$cur sendQuery "create table testtable"]}
 puts ""
 
-exit 0
+reportTestStatus
+
+exit $status

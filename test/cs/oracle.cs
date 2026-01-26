@@ -12,7 +12,7 @@ using System.Runtime.InteropServices;
 
 namespace SQLRClientTest
 {
-    class OracleSQLRAdapterTest : SQLRAdapterTest
+    class OracleSQLRAdapterTest : SQLRTest
     {
         public static void Main(String[] args)
         {
@@ -764,7 +764,7 @@ namespace SQLRClientTest
 
             sqlrcon.Close();
 
-            Environment.Exit(0);
+            Environment.Exit(status);
         }
     }
 }

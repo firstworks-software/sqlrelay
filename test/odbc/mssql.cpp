@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "assert.cpp"
+#include "asserts.cpp"
 
 #define USEDSN 1
 
@@ -1969,5 +1969,7 @@ int main(int argc, char **argv) {
 	printf("\n");
 #endif
 
-	return 0;
+	reportTestStatus();
+
+	return status;
 }

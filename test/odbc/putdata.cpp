@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "assert.cpp"
+#include "asserts.cpp"
 
 SQLRETURN	erg;
 SQLHENV		env;
@@ -170,5 +170,7 @@ int main(int argc, char **argv) {
 	assertEqualInt((erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO)?1:0,1);
 	printf("\n");
 
-	return 0;
+	reportTestStatus();
+
+	return status;
 }

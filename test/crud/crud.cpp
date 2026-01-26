@@ -5,7 +5,7 @@
 #include <rudiments/stdio.h>
 #include <rudiments/process.h>
 
-#include "assert.cpp"
+#include "asserts.cpp"
 
 sqlrconnection	*con;
 sqlrcursor	*cur;
@@ -257,5 +257,7 @@ int main(int argc, char **argv) {
 	delete cur;
 	delete con;
 
-	return 0;
+	reportTestStatus();
+
+	return status;
 }

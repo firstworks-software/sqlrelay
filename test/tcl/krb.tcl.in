@@ -4,7 +4,7 @@
 # See the file COPYING for more information.
 
 load @TCLLIBSPATH@@SLASH@sqlrelay@SLASH@sqlrelay.@SOSUFFIX@ sqlrelay
-source ./assert.tcl
+source ./asserts.tcl
 
 
 # instantiation
@@ -795,4 +795,6 @@ catch {assertFalse [$cur sendQuery "create table testtable"]}
 catch {assertFalse [$cur sendQuery "create table testtable"]}
 puts ""
 
-exit 0
+reportTestStatus
+
+exit $status

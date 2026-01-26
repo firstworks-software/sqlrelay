@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "assert.cpp"
+#include "asserts.cpp"
 
 sqlrconnection	*con;
 sqlrcursor	*cur;
@@ -119,5 +119,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("done\n");
 	stdoutput.printf("\n\n");
 
-	return 0;
+	reportTestStatus();
+
+	return status;
 }

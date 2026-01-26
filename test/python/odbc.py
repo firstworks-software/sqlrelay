@@ -5,7 +5,7 @@
 
 from SQLRelay import PySQLRClient
 import sys
-from assert import *
+from asserts import *
 import string
 
 
@@ -89,4 +89,5 @@ def main():
 
 if __name__ == "__main__":
 	main()
-	sys.exit(0)
+	reportTestStatus()
+	sys.exit(status)

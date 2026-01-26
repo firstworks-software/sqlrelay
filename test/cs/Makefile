@@ -11,17 +11,17 @@ local:
 	$(CP) ../../src/api/cs/SQLRClient.dll .
 	$(CP) ../../src/api/cs/SQLRClient.dll.config .
 
-oracle: sqlradaptertest.cs oracle.cs
-	$(CSC) $(CSCFLAGS) /out:oracle.exe sqlradaptertest.cs oracle.cs /reference:SQLRClient.dll
+oracle: sqlrtest.cs oracle.cs
+	$(CSC) $(CSCFLAGS) /out:oracle.exe sqlrtest.cs oracle.cs /reference:SQLRClient.dll
 
-krb: sqlradaptertest.cs krb.cs
-	$(CSC) $(CSCFLAGS) /out:krb.exe sqlradaptertest.cs krb.cs /reference:SQLRClient.dll
+krb: sqlrtest.cs krb.cs
+	$(CSC) $(CSCFLAGS) /out:krb.exe sqlrtest.cs krb.cs /reference:SQLRClient.dll
 
-tls: sqlradaptertest.cs tls.cs
-	$(CSC) $(CSCFLAGS) /out:tls.exe sqlradaptertest.cs tls.cs /reference:SQLRClient.dll
+tls: sqlrtest.cs tls.cs
+	$(CSC) $(CSCFLAGS) /out:tls.exe sqlrtest.cs tls.cs /reference:SQLRClient.dll
 
-unicode: sqlradaptertest.cs unicode.cs
-	$(CSC) $(CSCFLAGS) /out:unicode.exe sqlradaptertest.cs unicode.cs /reference:SQLRClient.dll
+unicode: sqlrtest.cs unicode.cs
+	$(CSC) $(CSCFLAGS) /out:unicode.exe sqlrtest.cs unicode.cs /reference:SQLRClient.dll
 
 postgresqlbinds: postgresqlbinds.cs
-	$(CSC) $(CSCFLAGS) /out:postgresqlbinds.exe sqlradaptertest.cs postgresqlbinds.cs /reference:Npgsql.dll
+	$(CSC) $(CSCFLAGS) /out:postgresqlbinds.exe postgresqlbinds.cs /reference:Npgsql.dll

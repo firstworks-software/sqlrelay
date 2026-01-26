@@ -2,7 +2,7 @@
 	# Copyright (c) David Muse
 	# See the file COPYING for more information.
 
-	include("./assert.php");
+	include("./asserts.php");
 
 
 	$host="sqlrelay";
@@ -709,4 +709,7 @@
 	assertFalse(sqlrcur_sendQuery($cur,"create table testtable"));
 	assertFalse(sqlrcur_sendQuery($cur,"create table testtable"));
 	echo("\n");
+	reportTestStatus();
+
+	exit($status);
 ?></pre></html>

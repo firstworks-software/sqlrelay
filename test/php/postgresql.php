@@ -2,7 +2,7 @@
 	# Copyright (c) David Muse
 	# See the file COPYING for more information.
 
-	include("./assert.php");
+	include("./asserts.php");
 
 
 	$host="sqlrelay";
@@ -702,4 +702,7 @@
 
 	sqlrcur_free($cur);
 	sqlrcon_free($con);
+	reportTestStatus();
+
+	exit($status);
 ?></pre></html>

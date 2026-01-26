@@ -21,7 +21,7 @@
 	#define stdoutput nooutput
 #endif
 
-#include "assert.cpp"
+#include "asserts.cpp"
 
 sqlrconnection	*con;
 sqlrcursor	*cur;
@@ -1380,5 +1380,7 @@ for (uint16_t a=0; a<50; a++) {
 }
 #endif
 
-	return 0;
+	reportTestStatus();
+
+	return status;
 }

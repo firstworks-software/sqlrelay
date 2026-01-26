@@ -61,4 +61,7 @@
 
 	$dbh->exec("drop table testtable");
 
+	reportTestStatus();
+
+	exit($status);
 ?></pre></html>

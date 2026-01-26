@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "assert.c"
+#include "asserts.c"
 
 sqlrcon	con;
 sqlrcur	cur;
@@ -974,5 +974,7 @@ int main(int argc, char **argv) {
 	assertFalse(sqlrcur_sendQuery(cur,"create table testtable"));
 	printf("\n");
 
-	return 0;
+	reportTestStatus();
+
+	return status;
 }

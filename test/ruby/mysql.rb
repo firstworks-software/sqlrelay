@@ -7,7 +7,7 @@
 
 require 'rbconfig'
 require 'sqlrelay'
-require './assert'
+require './asserts'
 
 
 
@@ -997,4 +997,6 @@ assertFalse(cur.sendQuery("create table testtable"))
 assertFalse(cur.sendQuery("create table testtable"))
 print "\n"
 
-exit(0)
+reportTestStatus()
+
+exit($status)

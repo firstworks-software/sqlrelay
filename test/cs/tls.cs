@@ -12,7 +12,7 @@ using System.Runtime.InteropServices;
 
 namespace SQLRClientTest
 {
-    class TlsSQLRAdapterTest : SQLRAdapterTest
+    class TlsSQLRAdapterTest : SQLRTest
     {
         private static String tlscert = "";
         private static String tlsca = "";
@@ -775,7 +775,7 @@ namespace SQLRClientTest
 
             sqlrcon.Close();
 
-            Environment.Exit(0);
+            Environment.Exit(status);
         }
     }
 }

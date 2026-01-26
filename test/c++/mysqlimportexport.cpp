@@ -21,7 +21,7 @@
 
 #include "../../config.h"
 
-#include "assert.cpp"
+#include "asserts.cpp"
 
 //#define ROWS 10000
 //#define ROWS 1000
@@ -1998,5 +1998,7 @@ int main(int argc, char **argv) {
 	delete cur;
 	delete con;
 
-	return 0;
+	reportTestStatus();
+
+	return status;
 }

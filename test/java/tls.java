@@ -882,6 +882,8 @@ class tls extends sqlrtest {
 		assertFalse(cur.sendQuery("create table testtable"));
 		System.out.println();
 
-		System.exit(0);
+		reportTestStatus();
+
+		System.exit(status);
 	}
 }

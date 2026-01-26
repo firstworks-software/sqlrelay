@@ -699,4 +699,7 @@ if (PHP_VERSION_ID < 70000) {
 	} catch (Exception $e) {
 	}
 
+	reportTestStatus();
+
+	exit($status);
 ?></pre></html>
