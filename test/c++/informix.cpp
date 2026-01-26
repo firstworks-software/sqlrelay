@@ -59,9 +59,9 @@ int main(int argc, char **argv) {
 	// isolation levels
 	stdoutput.printf("ISOLATION LEVELS: \n");
 	for (const char **il=isolationlevels; *il; il++) {
-		assertTrue(con->setIsolationLevel(*il));
 		// you can set the isolation level, but to get it, you have to
 		// have permissions to read from sysmaster:syssqlcurses
+		assertTrue(con->setIsolationLevel(*il));
 		stdoutput.printf("\n");
 	}
 	// reset to the default isolation level

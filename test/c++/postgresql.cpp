@@ -57,6 +57,8 @@ int main(int argc, char **argv) {
 	// isolation levels
 	/*stdoutput.printf("ISOLATION LEVELS: \n");
 	for (const char **il=isolationlevels; *il; il++) {
+		// postgresql requires the isolation level to
+		// be the first query of the transaction
 		con->begin();
 		assertTrue(con->setIsolationLevel(*il));
 		assertEquals(con->getIsolationLevel(),*il);
@@ -67,8 +69,7 @@ int main(int argc, char **argv) {
 	con->begin();
 	assertTrue(con->setIsolationLevel(isolationlevels[0]));
 	con->commit();
-	stdoutput.printf("\n");
-	*/
+	stdoutput.printf("\n");*/
 
 	// drop existing table
 	cur->sendQuery("drop table testtable");
