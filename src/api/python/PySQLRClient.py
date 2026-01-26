@@ -60,6 +60,18 @@ class sqlrconnection:
         """
         return CSQLRelay.setConnectTimeout(self.connection, timeoutsec, timeoutusec)
 
+    def getConnectTimeoutSeconds(self):
+        """
+        Gets the server connect timeout in seconds.
+        """
+        return CSQLRelay.getConnectTimeoutSeconds(self.connection)
+
+    def getConnectTimeoutMicroseconds(self):
+        """
+        Gets the server connect timeout in microseconds.
+        """
+        return CSQLRelay.getConnectTimeoutMicroseconds(self.connection)
+
     def setResponseTimeout(self, timeoutsec, timeoutusec):
         """
         Sets the response timeout (for queries, commits, rollbacks,
@@ -69,6 +81,18 @@ class sqlrconnection:
         environment variable.
         """
         return CSQLRelay.setResponseTimeout(self.connection, timeoutsec, timeoutusec)
+
+    def getResponseTimeoutSeconds(self):
+        """
+        Gets the response timeout in seconds.
+        """
+        return CSQLRelay.getResponseTimeoutSeconds(self.connection)
+
+    def getResponseTimeoutMicroseconds(self):
+        """
+        Gets the response timeout in microseconds.
+        """
+        return CSQLRelay.getResponseTimeoutMicroseconds(self.connection)
 
     def setBindVariableDelimiters(self, delimiters):
         """

@@ -38,12 +38,22 @@ public class SQLRConnection {
 	 *  it hasn't been ended already.  */
 	public native void	delete();
 
+
+
 	/** Sets the server connect timeout in seconds and
 	 *  milliseconds.  Setting either parameter to -1 disables the
 	 *  timeout.  You can also set this timeout using the
 	 *  SQLR_CLIENT_CONNECT_TIMEOUT environment variable. */
 	public native void	setConnectTimeout(int timeoutsec,
 							int timeoutusec);
+
+	/** Gets the server connect timeout in seconds. */
+	public native int	getConnectTimeoutSeconds();
+
+	/** Gets the server connect timeout in microseconds. */
+	public native int	getConnectTimeoutMicroseconds();
+
+
 
 	/** Sets the response timeout (for queries, commits, rollbacks,
 	 *  pings, etc.) in seconds and milliseconds.  Setting either
@@ -52,6 +62,12 @@ public class SQLRConnection {
 	 *  environment variable. */
 	public native void	setResponseTimeout(int timeoutsec,
 							int timeoutusec);
+
+	/** Gets the response timeout in seconds. */
+	public native int	getResponseTimeoutSeconds();
+
+	/** Gets the response timeout in microseconds. */
+	public native int	getResponseTimeoutMicroseconds();
 
 
 

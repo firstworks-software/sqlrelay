@@ -144,9 +144,12 @@ class SQLRConnection : public ObjectWrap {
 		explicit	SQLRConnection();
 				~SQLRConnection();
 		static RET	New(const ARGS &args);
-
 		static RET	setConnectTimeout(const ARGS &args);
+		static RET	getConnectTimeoutSeconds(const ARGS &args);
+		static RET	getConnectTimeoutMicroseconds(const ARGS &args);
 		static RET	setResponseTimeout(const ARGS &args);
+		static RET	getResponseTimeoutSeconds(const ARGS &args);
+		static RET	getResponseTimeoutMicroseconds(const ARGS &args);
 		static RET	setBindVariableDelimiters(const ARGS &args);
 		static RET	getBindVariableDelimiterQuestionMarkSupported(
 							const ARGS &args);
@@ -311,7 +314,19 @@ void SQLRConnection::Init(Handle<Object> exports) {
 	tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
 	NODE_SET_PROTOTYPE_METHOD(tpl,"setConnectTimeout",setConnectTimeout);
+	NODE_SET_PROTOTYPE_METHOD(tpl,
+			"getConnectTimeoutSeconds",
+			getConnectTimeoutSeconds);
+	NODE_SET_PROTOTYPE_METHOD(tpl,
+			"getConnectTimeoutMicroseconds",
+			getConnectTimeoutMicroseconds);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"setResponseTimeout",setResponseTimeout);
+	NODE_SET_PROTOTYPE_METHOD(tpl,
+			"getResponseTimeoutSeconds",
+			getResponseTimeoutSeconds);
+	NODE_SET_PROTOTYPE_METHOD(tpl,
+			"getResponseTimeoutMicroseconds",
+			getResponseTimeoutMicroseconds);
 	NODE_SET_PROTOTYPE_METHOD(tpl,
 			"setBindVariableDelimiters",
 			setBindVariableDelimiters);
@@ -414,6 +429,24 @@ RET SQLRConnection::setConnectTimeout(const ARGS &args) {
 	returnVoid();
 }
 
+RET SQLRConnection::getConnectTimeoutSeconds(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,0);
+
+	returnInteger(sqlrcon(args)->getConnectTimeoutSeconds());
+}
+
+RET SQLRConnection::getConnectTimeoutMicroseconds(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,0);
+
+	returnInteger(sqlrcon(args)->getConnectTimeoutMicroseconds());
+}
+
 RET SQLRConnection::setResponseTimeout(const ARGS &args) {
 
 	initLocalScope();
@@ -423,6 +456,24 @@ RET SQLRConnection::setResponseTimeout(const ARGS &args) {
 	sqlrcon(args)->setResponseTimeout(toInt32(args[0]),toInt32(args[1]));
 
 	returnVoid();
+}
+
+RET SQLRConnection::getResponseTimeoutSeconds(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,0);
+
+	returnInteger(sqlrcon(args)->getResponseTimeoutSeconds());
+}
+
+RET SQLRConnection::getResponseTimeoutMicroseconds(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,0);
+
+	returnInteger(sqlrcon(args)->getResponseTimeoutMicroseconds());
 }
 
 RET SQLRConnection::setBindVariableDelimiters(const ARGS &args) {

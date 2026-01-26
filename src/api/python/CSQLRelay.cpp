@@ -126,6 +126,20 @@ static PyObject *setConnectTimeout(PyObject *self, PyObject *args) {
   return Py_BuildValue("h", 0);
 }
 
+static PyObject *getConnectTimeoutSeconds(PyObject *self, PyObject *args) {
+  long sqlrcon;
+  if (!PyArg_ParseTuple(args, "l", &sqlrcon))
+    return NULL;
+  return Py_BuildValue("i", ((sqlrconnection *)sqlrcon)->getConnectTimeoutSeconds());
+}
+
+static PyObject *getConnectTimeoutMicroseconds(PyObject *self, PyObject *args) {
+  long sqlrcon;
+  if (!PyArg_ParseTuple(args, "l", &sqlrcon))
+    return NULL;
+  return Py_BuildValue("i", ((sqlrconnection *)sqlrcon)->getConnectTimeoutMicroseconds());
+}
+
 static PyObject *setResponseTimeout(PyObject *self, PyObject *args) {
   long sqlrcon;
   int32_t timeoutsec;
@@ -134,6 +148,20 @@ static PyObject *setResponseTimeout(PyObject *self, PyObject *args) {
     return NULL;
   ((sqlrconnection *)sqlrcon)->setResponseTimeout(timeoutsec,timeoutusec);
   return Py_BuildValue("h", 0);
+}
+
+static PyObject *getResponseTimeoutSeconds(PyObject *self, PyObject *args) {
+  long sqlrcon;
+  if (!PyArg_ParseTuple(args, "l", &sqlrcon))
+    return NULL;
+  return Py_BuildValue("i", ((sqlrconnection *)sqlrcon)->getResponseTimeoutSeconds());
+}
+
+static PyObject *getResponseTimeoutMicroseconds(PyObject *self, PyObject *args) {
+  long sqlrcon;
+  if (!PyArg_ParseTuple(args, "l", &sqlrcon))
+    return NULL;
+  return Py_BuildValue("i", ((sqlrconnection *)sqlrcon)->getResponseTimeoutMicroseconds());
 }
 
 static PyObject *setBindVariableDelimiters(PyObject *self, PyObject *args) {
@@ -2042,7 +2070,11 @@ static PyMethodDef SQLRMethods[] = {
   {"sqlrcon_alloc",  sqlrcon_alloc, METH_VARARGS},
   {"sqlrcon_free", sqlrcon_free, METH_VARARGS},
   {"setConnectTimeout", setConnectTimeout, METH_VARARGS},
+  {"getConnectTimeoutSeconds", getConnectTimeoutSeconds, METH_VARARGS},
+  {"getConnectTimeoutMicroseconds", getConnectTimeoutMicroseconds, METH_VARARGS},
   {"setResponseTimeout", setResponseTimeout, METH_VARARGS},
+  {"getResponseTimeoutSeconds", getResponseTimeoutSeconds, METH_VARARGS},
+  {"getResponseTimeoutMicroseconds", getResponseTimeoutMicroseconds, METH_VARARGS},
   {"setBindVariableDelimiters", setBindVariableDelimiters, METH_VARARGS},
   {"getBindVariableDelimiterQuestionMarkSupported", getBindVariableDelimiterQuestionMarkSupported, METH_VARARGS},
   {"getBindVariableDelimiterColonSupported", getBindVariableDelimiterColonSupported, METH_VARARGS},

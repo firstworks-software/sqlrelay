@@ -51,10 +51,12 @@ struct params {
 	VALUE		seven;
 	union {
 		bool			br;
+		int16_t			i16r;
+		int32_t			i32r;
+		int64_t			i64r;
 		uint16_t		u16r;
 		uint32_t		u32r;
 		uint64_t		u64r;
-		uint64_t		i64r;
 		const char		*ccpr;
 		const char * const	*ccpcpr;
 		uint32_t		*u32pr;
@@ -299,6 +301,70 @@ static VALUE sqlrcon_setResponseTimeout(VALUE self,
 	Data_Get_Struct(self,sqlrconnection,sqlrcon);
 	CON2(sqlrcon,setResponseTimeout,timeoutsec,timeoutusec)
 	return Qnil;
+}
+
+static void getConnectTimeoutSeconds(params *p) {
+	p->result.i32r=p->sqlrc.sqlrcon->getConnectTimeoutSeconds();
+}
+/**
+ *  call-seq:
+ *  getConnectTimeoutSeconds()
+ *
+ *  Gets the server connect timeout in seconds. */
+static VALUE sqlrcon_getConnectTimeoutSeconds(VALUE self) {
+	sqlrconnection	*sqlrcon;
+	int32_t	result;
+	Data_Get_Struct(self,sqlrconnection,sqlrcon);
+	RCON(result,i32r,sqlrcon,getConnectTimeoutSeconds)
+	return INT2NUM(result);
+}
+
+static void getConnectTimeoutMicroseconds(params *p) {
+	p->result.i32r=p->sqlrc.sqlrcon->getConnectTimeoutMicroseconds();
+}
+/**
+ *  call-seq:
+ *  getConnectTimeoutMicroseconds()
+ *
+ *  Gets the server connect timeout in microseconds. */
+static VALUE sqlrcon_getConnectTimeoutMicroseconds(VALUE self) {
+	sqlrconnection	*sqlrcon;
+	int32_t	result;
+	Data_Get_Struct(self,sqlrconnection,sqlrcon);
+	RCON(result,i32r,sqlrcon,getConnectTimeoutMicroseconds)
+	return INT2NUM(result);
+}
+
+static void getResponseTimeoutSeconds(params *p) {
+	p->result.i32r=p->sqlrc.sqlrcon->getResponseTimeoutSeconds();
+}
+/**
+ *  call-seq:
+ *  getResponseTimeoutSeconds()
+ *
+ *  Gets the response timeout in seconds. */
+static VALUE sqlrcon_getResponseTimeoutSeconds(VALUE self) {
+	sqlrconnection	*sqlrcon;
+	int32_t	result;
+	Data_Get_Struct(self,sqlrconnection,sqlrcon);
+	RCON(result,i32r,sqlrcon,getResponseTimeoutSeconds)
+	return INT2NUM(result);
+}
+
+static void getResponseTimeoutMicroseconds(params *p) {
+	p->result.i32r=p->sqlrc.sqlrcon->getResponseTimeoutMicroseconds();
+}
+/**
+ *  call-seq:
+ *  getResponseTimeoutMicroseconds()
+ *
+ *  Gets the response timeout in microseconds. */
+static VALUE sqlrcon_getResponseTimeoutMicroseconds(VALUE self) {
+	sqlrconnection	*sqlrcon;
+	int32_t	result;
+	Data_Get_Struct(self,sqlrconnection,sqlrcon);
+	RCON(result,i32r,sqlrcon,getResponseTimeoutMicroseconds)
+	return INT2NUM(result);
 }
 
 static void setBindVariableDelimiters(params *p) {
@@ -888,7 +954,7 @@ static VALUE sqlrcon_errorMessage(VALUE self) {
 }
 
 static void conErrorNumber(params *p) {
-	p->result.i64r=p->sqlrc.sqlrcon->errorNumber();
+	p->result.u64r=p->sqlrc.sqlrcon->errorNumber();
 }
 /** If an operation failed and generated an error, the error number is
  *  available here.  If there is no error then this method returns 0. */
@@ -896,7 +962,7 @@ static VALUE sqlrcon_errorNumber(VALUE self) {
 	sqlrconnection *sqlrcon;
 	int64_t		result;
 	Data_Get_Struct(self,sqlrconnection,sqlrcon);
-	RCON(result,i64r,sqlrcon,conErrorNumber);
+	RCON(result,u64r,sqlrcon,conErrorNumber);
 	return INT2NUM(result);
 }
 
@@ -998,8 +1064,16 @@ void Init_SQLRConnection() {
 				(CAST)sqlrcon_new,7);
 	rb_define_method(csqlrconnection,"setConnectTimeout",
 				(CAST)sqlrcon_setConnectTimeout,2);
+	rb_define_method(csqlrconnection,"getConnectTimeoutSeconds",
+				(CAST)sqlrcon_getConnectTimeoutSeconds,0);
+	rb_define_method(csqlrconnection,"getConnectTimeoutMicroseconds",
+				(CAST)sqlrcon_getConnectTimeoutMicroseconds,0);
 	rb_define_method(csqlrconnection,"setResponseTimeout",
 				(CAST)sqlrcon_setResponseTimeout,2);
+	rb_define_method(csqlrconnection,"getResponseTimeoutSeconds",
+				(CAST)sqlrcon_getResponseTimeoutSeconds,0);
+	rb_define_method(csqlrconnection,"getResponseTimeoutMicroseconds",
+				(CAST)sqlrcon_getResponseTimeoutMicroseconds,0);
 	rb_define_method(csqlrconnection,"setBindVariableDelimiters",
 				(CAST)sqlrcon_setBindVariableDelimiters,1);
 	rb_define_method(csqlrconnection,
@@ -1046,6 +1120,8 @@ void Init_SQLRConnection() {
 				(CAST)sqlrcon_clientVersion,0);
 	rb_define_method(csqlrconnection,"bindFormat",
 				(CAST)sqlrcon_bindFormat,0);
+	rb_define_method(csqlrconnection,"nextvalFormat",
+				(CAST)sqlrcon_nextvalFormat,0);
 	rb_define_method(csqlrconnection,"selectDatabase",
 				(CAST)sqlrcon_selectDatabase,1);
 	rb_define_method(csqlrconnection,"getCurrentDatabase",
@@ -1945,7 +2021,7 @@ static VALUE sqlrcur_getOutputBindClob(VALUE self, VALUE variable) {
 }
 
 static void getOutputBindInteger(params *p) {
-	p->result.i64r=p->sqlrc.sqlrcur->getOutputBindInteger(STR2CSTR(p->one));
+	p->result.u64r=p->sqlrc.sqlrcur->getOutputBindInteger(STR2CSTR(p->one));
 }
 /**
  *  call-seq:
@@ -1957,7 +2033,7 @@ static VALUE sqlrcur_getOutputBindInteger(VALUE self, VALUE variable) {
 	sqlrcursordata	*sqlrcurdata;
 	int64_t		result;
 	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
-	RCUR1(result,i64r,sqlrcurdata->cur,getOutputBindInteger,variable);
+	RCUR1(result,u64r,sqlrcurdata->cur,getOutputBindInteger,variable);
 	return INT2NUM(result);
 }
 
@@ -2206,11 +2282,11 @@ static VALUE sqlrcur_getField(VALUE self, VALUE row, VALUE col) {
 }
   
 static void getFieldAsIntegerStr(params *p) {
-	p->result.i64r=p->sqlrc.sqlrcur->getFieldAsInteger(
+	p->result.u64r=p->sqlrc.sqlrcur->getFieldAsInteger(
 					NUM2INT(p->one),STR2CSTR(p->two));
 }
 static void getFieldAsIntegerInt(params *p) {
-	p->result.i64r=p->sqlrc.sqlrcur->getFieldAsInteger(
+	p->result.u64r=p->sqlrc.sqlrcur->getFieldAsInteger(
 					NUM2INT(p->one),NUM2INT(p->two));
 }
 /**
@@ -2224,9 +2300,9 @@ static VALUE sqlrcur_getFieldAsInteger(VALUE self, VALUE row, VALUE col) {
 	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
 	int64_t	result;
 	if (rb_obj_is_instance_of(col,rb_cString)==Qtrue) {
-		RCUR2(result,i64r,sqlrcurdata->cur,getFieldAsIntegerStr,row,col);
+		RCUR2(result,u64r,sqlrcurdata->cur,getFieldAsIntegerStr,row,col);
 	} else {
-		RCUR2(result,i64r,sqlrcurdata->cur,getFieldAsIntegerInt,row,col);
+		RCUR2(result,u64r,sqlrcurdata->cur,getFieldAsIntegerInt,row,col);
 	}
 	return INT2NUM(result);
 }

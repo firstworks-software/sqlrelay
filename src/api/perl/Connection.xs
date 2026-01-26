@@ -114,10 +114,22 @@ sqlrconnection::setConnectTimeout(timeoutsec,timeoutusec)
 		int32_t		timeoutsec
 		int32_t		timeoutusec
 
+int32_t
+sqlrconnection::getConnectTimeoutSeconds()
+
+int32_t
+sqlrconnection::getConnectTimeoutMicroseconds()
+
 void
 sqlrconnection::setResponseTimeout(timeoutsec,timeoutusec)
 		int32_t		timeoutsec
 		int32_t		timeoutusec
+
+int32_t
+sqlrconnection::getResponseTimeoutSeconds()
+
+int32_t
+sqlrconnection::getResponseTimeoutMicroseconds()
 
 void
 sqlrconnection::setBindVariableDelimiters(delimiters)

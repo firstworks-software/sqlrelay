@@ -297,6 +297,50 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_setconnecttimeout) {
 	}
 }
 
+DLEXPORT ZEND_FUNCTION(sqlrcon_getconnecttimeoutseconds) {
+	ZVAL sqlrcon;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		RETURN_LONG(connection->getConnectTimeoutSeconds());
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcon_getconnecttimeoutmicroseconds) {
+	ZVAL sqlrcon;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		RETURN_LONG(connection->getConnectTimeoutMicroseconds());
+	}
+	RETURN_LONG(0);
+}
+
 DLEXPORT ZEND_FUNCTION(sqlrcon_setresponsetimeout) {
 	ZVAL sqlrcon;
 	ZVAL timeoutsec;
@@ -323,6 +367,50 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_setresponsetimeout) {
 		connection->setResponseTimeout(LVAL(timeoutsec),
 						LVAL(timeoutusec));
 	}
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcon_getresponsetimeoutseconds) {
+	ZVAL sqlrcon;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		RETURN_LONG(connection->getResponseTimeoutSeconds());
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcon_getresponsetimeoutmicroseconds) {
+	ZVAL sqlrcon;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		RETURN_LONG(connection->getResponseTimeoutMicroseconds());
+	}
+	RETURN_LONG(0);
 }
 
 DLEXPORT ZEND_FUNCTION(sqlrcon_setbindvariabledelimiters) {
@@ -3933,7 +4021,19 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_setconnecttimeout,0,0,0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getconnecttimeoutseconds,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getconnecttimeoutmicroseconds,0,0,0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_setresponsetimeout,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getresponsetimeoutseconds,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getresponsetimeoutmicroseconds,0,0,0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_setbindvariabledelimiters,0,0,0)
@@ -4313,8 +4413,16 @@ zend_function_entry sql_relay_functions[] = {
 		ARGINFO(arginfo_sqlrcon_free))
 	ZEND_FE(sqlrcon_setconnecttimeout,
 		ARGINFO(arginfo_sqlrcon_setconnecttimeout))
+	ZEND_FE(sqlrcon_getconnecttimeoutseconds,
+		ARGINFO(arginfo_sqlrcon_getconnecttimeoutseconds))
+	ZEND_FE(sqlrcon_getconnecttimeoutmicroseconds,
+		ARGINFO(arginfo_sqlrcon_getconnecttimeoutmicroseconds))
 	ZEND_FE(sqlrcon_setresponsetimeout,
 		ARGINFO(arginfo_sqlrcon_setresponsetimeout))
+	ZEND_FE(sqlrcon_getresponsetimeoutseconds,
+		ARGINFO(arginfo_sqlrcon_getresponsetimeoutseconds))
+	ZEND_FE(sqlrcon_getresponsetimeoutmicroseconds,
+		ARGINFO(arginfo_sqlrcon_getresponsetimeoutmicroseconds))
 	ZEND_FE(sqlrcon_setbindvariabledelimiters,
 		ARGINFO(arginfo_sqlrcon_setbindvariabledelimiters))
 	ZEND_FE(sqlrcon_getbindvariabledelimiterquestionmarksupported,

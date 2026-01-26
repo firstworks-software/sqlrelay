@@ -66,12 +66,24 @@ __END__
             # timeout.  You can also set this timeout using the
             # SQLR_CLIENT_CONNECT_TIMEOUT environment variable.
 
+        getConnectTimeoutSeconds();
+            # Gets the server connect timeout in seconds.
+
+        getConnectTimeoutMicroseconds();
+            # Gets the server connect timeout in microseconds.
+
         setResponseTimeout(timeoutsec, timeoutusec);
             # Sets the response timeout (for queries, commits, rollbacks,
             # pings, etc.) in seconds and milliseconds.  Setting either
             # parameter to -1 disables the timeout.  You can also set
             # this timeout using the SQLR_CLIENT_RESPONSE_TIMEOUT
             # environment variable.
+
+        getResponseTimeoutSeconds();
+            # Gets the response timeout in seconds.
+
+        getResponseTimeoutMicroseconds();
+            # Gets the response timeout in microseconds.
 
         setBindVariableDelimiters(delimiters);
             # Sets which delimiters are used to identify bind variables

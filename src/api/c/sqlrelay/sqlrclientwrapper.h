@@ -49,6 +49,23 @@ void	sqlrcon_setConnectTimeout(sqlrcon sqlrconref,
 				int32_t timeoutsec, int32_t timeoutusec);
 
 /** @ingroup sqlrclientwrapper
+ *  Gets the server connect timeout in seconds and microseconds. */
+SQLRCLIENT_DLLSPEC
+void	sqlrcon_getConnectTimeout(sqlrcon sqlrconref,
+				int32_t *timeoutsec, int32_t *timeoutusec);
+
+/** @ingroup sqlrclientwrapper
+ *  Gets the server connect timeout in seconds. */
+SQLRCLIENT_DLLSPEC
+int32_t	sqlrcon_getConnectTimeoutSeconds(sqlrcon sqlrconref);
+
+/** @ingroup sqlrclientwrapper
+ *  Gets the server connect timeout in microseconds. */
+SQLRCLIENT_DLLSPEC
+int32_t	sqlrcon_getConnectTimeoutMicroseconds(sqlrcon sqlrconref);
+
+
+/** @ingroup sqlrclientwrapper
  *  Sets the response timeout (for queries, commits, rollbacks,
  *  pings, etc.) in seconds and milliseconds.  Setting either
  *  parameter to -1 disables the timeout.  You can also set
@@ -58,18 +75,21 @@ SQLRCLIENT_DLLSPEC
 void	sqlrcon_setResponseTimeout(sqlrcon sqlrconref,
 				int32_t timeoutsec, int32_t timeoutusec);
 
-
-/** @ingroup sqlrclientwrapper
- *  Gets the server connect timeout in seconds and microseconds. */
-SQLRCLIENT_DLLSPEC
-void	sqlrcon_getConnectTimeout(sqlrcon sqlrconref,
-				int32_t *timeoutsec, int32_t *timeoutusec);
-
 /** @ingroup sqlrclientwrapper
  *  Gets the response timeout in seconds and microseconds. */
 SQLRCLIENT_DLLSPEC
 void	sqlrcon_getResponseTimeout(sqlrcon sqlrconref,
 				int32_t *timeoutsec, int32_t *timeoutusec);
+
+/** @ingroup sqlrclientwrapper
+ *  Gets the response timeout in seconds. */
+SQLRCLIENT_DLLSPEC
+int32_t	sqlrcon_getResponseTimeoutSeconds(sqlrcon sqlrconref);
+
+/** @ingroup sqlrclientwrapper
+ *  Gets the response timeout in microseconds. */
+SQLRCLIENT_DLLSPEC
+int32_t	sqlrcon_getResponseTimeoutMicroseconds(sqlrcon sqlrconref);
 
 
 

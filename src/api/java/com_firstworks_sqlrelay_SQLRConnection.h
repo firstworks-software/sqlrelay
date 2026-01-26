@@ -33,6 +33,38 @@ JNIEXPORT void JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_setResponseTi
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRConnection
+ * Method:    getConnectTimeoutSeconds
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getConnectTimeoutSeconds
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRConnection
+ * Method:    getConnectTimeoutMicroseconds
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getConnectTimeoutMicroseconds
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRConnection
+ * Method:    getResponseTimeoutSeconds
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getResponseTimeoutSeconds
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRConnection
+ * Method:    getResponseTimeoutMicroseconds
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getResponseTimeoutMicroseconds
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRConnection
  * Method:    endSession
  * Signature: ()V
  */

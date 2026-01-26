@@ -42,20 +42,35 @@ void sqlrcon_setConnectTimeout(sqlrcon sqlrconref,
 	sqlrconref->setConnectTimeout(timeoutsec,timeoutusec);
 }
 
-void sqlrcon_setResponseTimeout(sqlrcon sqlrconref,
-			int32_t timeoutsec, int32_t timeoutusec) {
-	sqlrconref->setResponseTimeout(timeoutsec,timeoutusec);
-}
-
-
 void sqlrcon_getConnectTimeout(sqlrcon sqlrconref,
 			int32_t *timeoutsec, int32_t *timeoutusec) {
 	sqlrconref->getConnectTimeout(timeoutsec,timeoutusec);
 }
 
+int32_t sqlrcon_getConnectTimeoutSeconds(sqlrcon sqlrconref) {
+	return sqlrconref->getConnectTimeoutSeconds();
+}
+
+int32_t sqlrcon_getConnectTimeoutMicroseconds(sqlrcon sqlrconref) {
+	return sqlrconref->getConnectTimeoutMicroseconds();
+}
+
+void sqlrcon_setResponseTimeout(sqlrcon sqlrconref,
+			int32_t timeoutsec, int32_t timeoutusec) {
+	sqlrconref->setResponseTimeout(timeoutsec,timeoutusec);
+}
+
 void sqlrcon_getResponseTimeout(sqlrcon sqlrconref,
 			int32_t *timeoutsec, int32_t *timeoutusec) {
 	sqlrconref->getResponseTimeout(timeoutsec,timeoutusec);
+}
+
+int32_t sqlrcon_getResponseTimeoutSeconds(sqlrcon sqlrconref) {
+	return sqlrconref->getResponseTimeoutSeconds();
+}
+
+int32_t sqlrcon_getResponseTimeoutMicroseconds(sqlrcon sqlrconref) {
+	return sqlrconref->getResponseTimeoutMicroseconds();
 }
 
 void sqlrcon_setBindVariableDelimiters(sqlrcon sqlrconref,

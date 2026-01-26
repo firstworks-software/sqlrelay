@@ -500,10 +500,26 @@ void sqlrconnection::getConnectTimeout(int32_t *timeoutsec,
 	*timeoutusec=pvt->_connecttimeoutusec;
 }
 
+int32_t sqlrconnection::getConnectTimeoutSeconds() {
+	return pvt->_connecttimeoutsec;
+}
+
+int32_t sqlrconnection::getConnectTimeoutMicroseconds() {
+	return pvt->_connecttimeoutusec;
+}
+
 void sqlrconnection::getResponseTimeout(int32_t *timeoutsec,
 						int32_t *timeoutusec) {
 	*timeoutsec=pvt->_responsetimeoutsec;
 	*timeoutusec=pvt->_responsetimeoutusec;
+}
+
+int32_t sqlrconnection::getResponseTimeoutSeconds() {
+	return pvt->_responsetimeoutsec;
+}
+
+int32_t sqlrconnection::getResponseTimeoutMicroseconds() {
+	return pvt->_responsetimeoutusec;
 }
 
 void sqlrconnection::endSession() {

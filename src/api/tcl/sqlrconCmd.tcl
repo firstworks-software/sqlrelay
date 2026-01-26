@@ -40,7 +40,19 @@ proc setConnectTimeout {timeoutsec timeoutusec}
 # parameter to -1 disables the timeout.  You can also set
 # this timeout using the SQLR_CLIENT_RESPONSE_TIMEOUT
 # environment variable.
-proc setResponseTimeout {timeoutsec timeoutusec} 
+proc setResponseTimeout {timeoutsec timeoutusec}
+
+# Gets the server connect timeout in seconds.
+proc getConnectTimeoutSeconds {}
+
+# Gets the server connect timeout in microseconds.
+proc getConnectTimeoutMicroseconds {}
+
+# Gets the response timeout in seconds.
+proc getResponseTimeoutSeconds {}
+
+# Gets the response timeout in microseconds.
+proc getResponseTimeoutMicroseconds {}
 
 
 

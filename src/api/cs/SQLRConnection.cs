@@ -62,7 +62,21 @@ public class SQLRConnection : IDisposable
     {
         sqlrcon_setConnectTimeout(sqlrconref, timeoutsec, timeoutusec);
     }
+
+    /** Gets the server connect timeout in seconds. */
+    public Int32 getConnectTimeoutSeconds()
+    {
+        return sqlrcon_getConnectTimeoutSeconds(sqlrconref);
+    }
+
+    /** Gets the server connect timeout in microseconds. */
+    public Int32 getConnectTimeoutMicroseconds()
+    {
+        return sqlrcon_getConnectTimeoutMicroseconds(sqlrconref);
+    }
+
     
+
     /** Sets the response timeout (for queries, commits, rollbacks, pings,
       * etc.) in seconds and milliseconds.  Setting either parameter to -1
       * disables the timeout.  You can also set this timeout using the
@@ -70,6 +84,18 @@ public class SQLRConnection : IDisposable
     public void setResponseTimeout(Int32 timeoutsec, Int32 timeoutusec)
     {
         sqlrcon_setResponseTimeout(sqlrconref, timeoutsec, timeoutusec);
+    }
+
+    /** Gets the response timeout in seconds. */
+    public Int32 getResponseTimeoutSeconds()
+    {
+        return sqlrcon_getResponseTimeoutSeconds(sqlrconref);
+    }
+
+    /** Gets the response timeout in microseconds. */
+    public Int32 getResponseTimeoutMicroseconds()
+    {
+        return sqlrcon_getResponseTimeoutMicroseconds(sqlrconref);
     }
 
 
@@ -497,9 +523,21 @@ public class SQLRConnection : IDisposable
     
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern void sqlrcon_setConnectTimeout(IntPtr sqlrconref, Int32 timeoutsec, Int32 timeoutusec);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int32 sqlrcon_getConnectTimeoutSeconds(IntPtr sqlrconref);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int32 sqlrcon_getConnectTimeoutMicroseconds(IntPtr sqlrconref);
     
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern void sqlrcon_setResponseTimeout(IntPtr sqlrconref, Int32 timeoutsec, Int32 timeoutusec);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int32 sqlrcon_getResponseTimeoutSeconds(IntPtr sqlrconref);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int32 sqlrcon_getResponseTimeoutMicroseconds(IntPtr sqlrconref);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern void sqlrcon_setBindVariableDelimiters(IntPtr sqlrconref, String delimiters);

@@ -1820,7 +1820,11 @@ void sqlrconDelete(ClientData data) {
  * Synopsis:
  *  $con free
  *  $con setConnectTimeout
+ *  $con getConnectTimeoutSeconds
+ *  $con getConnectTimeoutMicroseconds
  *  $con setResponseTimeout
+ *  $con getResponseTimeoutSeconds
+ *  $con getResponseTimeoutMicroseconds
  *  $con setBindVariableDelimiters
  *  $con getBindVariableDelimiterQuestionMarkSupported
  *  $con getBindVariableDelimiterColonSupported
@@ -1865,7 +1869,11 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
   static CONSTCHAR *options[] = {
     "free",
     "setConnectTimeout",
+    "getConnectTimeoutSeconds",
+    "getConnectTimeoutMicroseconds",
     "setResponseTimeout",
+    "getResponseTimeoutSeconds",
+    "getResponseTimeoutMicroseconds",
     "setBindVariableDelimiters",
     "getBindVariableDelimiterQuestionMarkSupported",
     "getBindVariableDelimiterColonSupported",
@@ -1906,7 +1914,11 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
   enum options {
     SQLR_FREE,
     SQLR_SETCONNECTTIMEOUT,
+    SQLR_GETCONNECTTIMEOUTSECONDS,
+    SQLR_GETCONNECTTIMEOUTMICROSECONDS,
     SQLR_SETRESPONSETIMEOUT,
+    SQLR_GETRESPONSETIMEOUTSECONDS,
+    SQLR_GETRESPONSETIMEOUTMICROSECONDS,
     SQLR_SETBINDVARIABLEDELIMITERS,
     SQLR_GETBINDVARIABLEDELIMITERQUESTIONMARKSUPPORTED,
     SQLR_GETBINDVARIABLEDELIMITERCOLONSUPPORTED,
@@ -1980,6 +1992,24 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     con->setConnectTimeout(timeoutsec,timeoutusec);
     break;
   }
+  case SQLR_GETCONNECTTIMEOUTSECONDS: {
+    if (objc > 2) {
+      Tcl_WrongNumArgs(interp, 2, objv, NULL);
+      return TCL_ERROR;
+    }
+    Tcl_SetObjResult(interp, Tcl_NewIntObj(
+			con->getConnectTimeoutSeconds()));
+    break;
+  }
+  case SQLR_GETCONNECTTIMEOUTMICROSECONDS: {
+    if (objc > 2) {
+      Tcl_WrongNumArgs(interp, 2, objv, NULL);
+      return TCL_ERROR;
+    }
+    Tcl_SetObjResult(interp, Tcl_NewIntObj(
+			con->getConnectTimeoutMicroseconds()));
+    break;
+  }
   case SQLR_SETRESPONSETIMEOUT: {
     int timeoutsec;
     int timeoutusec;
@@ -1994,6 +2024,24 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
       return TCL_ERROR;
     }
     con->setResponseTimeout(timeoutsec,timeoutusec);
+    break;
+  }
+  case SQLR_GETRESPONSETIMEOUTSECONDS: {
+    if (objc > 2) {
+      Tcl_WrongNumArgs(interp, 2, objv, NULL);
+      return TCL_ERROR;
+    }
+    Tcl_SetObjResult(interp, Tcl_NewIntObj(
+			con->getResponseTimeoutSeconds()));
+    break;
+  }
+  case SQLR_GETRESPONSETIMEOUTMICROSECONDS: {
+    if (objc > 2) {
+      Tcl_WrongNumArgs(interp, 2, objv, NULL);
+      return TCL_ERROR;
+    }
+    Tcl_SetObjResult(interp, Tcl_NewIntObj(
+			con->getResponseTimeoutMicroseconds()));
     break;
   }
   case SQLR_SETBINDVARIABLEDELIMITERS: {

@@ -265,7 +265,6 @@ int main() {
 			ENCODE_VOID;   
 		}
 
-
 		if (strcmp("setConnectTimeout", command) == TRUE) {
                 	long timeoutsec;
                 	long timeoutusec;
@@ -286,6 +285,27 @@ int main() {
 			ENCODE_VOID;   
 		}
 
+		if (strcmp("getConnectTimeoutSeconds", command) == TRUE) {
+			// check number of arguments
+		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
+
+			// call function and encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_long(&result, sqlrcon_getConnectTimeoutSeconds(con))) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
+
+		if (strcmp("getConnectTimeoutMicroseconds", command) == TRUE) {
+			// check number of arguments
+		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
+
+			// call function and encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_long(&result, sqlrcon_getConnectTimeoutMicroseconds(con))) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
 
 		if (strcmp("setResponseTimeout", command) == TRUE) {
                 	long timeoutsec;
@@ -302,9 +322,31 @@ int main() {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
+			// call function and encode result
 			sqlrcon_setResponseTimeout(con,timeoutsec,timeoutusec);
-			ENCODE_VOID;   
+			ENCODE_VOID;
+		}
+
+		if (strcmp("getResponseTimeoutSeconds", command) == TRUE) {
+			// check number of arguments
+		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
+
+			// call function and encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_long(&result, sqlrcon_getResponseTimeoutSeconds(con))) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
+
+		if (strcmp("getResponseTimeoutMicroseconds", command) == TRUE) {
+			// check number of arguments
+		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
+
+			// call function and encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_long(&result, sqlrcon_getResponseTimeoutMicroseconds(con))) {
+				return ERR_ENCODING_ARGS;
+			}
 		}
 
 		if (strcmp("setBindVariableDelimiters", command) == TRUE) {
