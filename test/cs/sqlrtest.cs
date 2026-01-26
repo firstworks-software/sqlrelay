@@ -15,33 +15,6 @@ namespace SQLRClientTest
         protected static String alltestssucceeded="\n\u001B[34mAll tests succeeded\u001B[0m";
         protected static String sometestsfailed="\n\u001B[33mSome tests failed\u001B[0m";
 
-        protected static SQLRelayConnection con;
-        protected static SQLRelayCursor cur;
-
-        protected static void printErrors()
-        {
-            if (cur != null)
-            {
-                String err=cur.errorMessage();
-                if (err != null)
-                {
-                    Console.WriteLine(err);
-                    Console.Out.Flush();
-                    return;
-                }
-            }
-            if (con != null)
-            {
-                String err=con.errorMessage();
-                if (err != null)
-                {
-                    Console.WriteLine(err);
-                    Console.Out.Flush();
-                    return;
-                }
-            }
-        }
-
         protected static void assertEquals(Object actual, Object expected)
         {
             if (actual == expected)
@@ -54,7 +27,6 @@ namespace SQLRClientTest
                 Console.WriteLine(failure);
                 Console.WriteLine("\"" + actual + "\" != \"" + expected + "\"");
                 Console.Out.Flush();
-                printErrors();
                 status=1;
             }
         }
@@ -71,7 +43,6 @@ namespace SQLRClientTest
                 Console.WriteLine(failure);
                 Console.WriteLine("\"" + actual + "\" != \"" + expected + "\"");
                 Console.Out.Flush();
-                printErrors();
                 status=1;
             }
         }
@@ -88,7 +59,6 @@ namespace SQLRClientTest
                 Console.WriteLine(failure);
                 Console.WriteLine("\"" + actual + "\" != \"" + expected + "\"");
                 Console.Out.Flush();
-                printErrors();
                 status=1;
             }
         }
@@ -105,7 +75,6 @@ namespace SQLRClientTest
                 Console.WriteLine(failure);
                 Console.WriteLine("\"" + actual + "\" != \"" + expected + "\"");
                 Console.Out.Flush();
-                printErrors();
                 status=1;
             }
         }
@@ -122,7 +91,6 @@ namespace SQLRClientTest
                 Console.WriteLine(failure);
                 Console.WriteLine("\"" + actual + "\" != \"" + expected + "\"");
                 Console.Out.Flush();
-                printErrors();
                 status=1;
             }
         }
@@ -139,7 +107,6 @@ namespace SQLRClientTest
                 Console.WriteLine(failure);
                 Console.WriteLine("\"" + actual + "\" != \"true\"");
                 Console.Out.Flush();
-                printErrors();
                 status=1;
             }
         }
@@ -156,7 +123,6 @@ namespace SQLRClientTest
                 Console.WriteLine(failure);
                 Console.WriteLine("\"" + actual + "\" != \"false\"");
                 Console.Out.Flush();
-                printErrors();
                 status=1;
             }
         }
