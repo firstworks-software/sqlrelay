@@ -358,7 +358,7 @@ const char *sqliteconnection::getColumnListQuery(
 
 #ifdef SQLITE_TRANSACTIONAL
 const char *sqliteconnection::setIsolationLevelQuery() {
-	return "pragma %s";
+	return "pragma read_uncommitted=%s";
 }
 
 const char *sqliteconnection::getIsolationLevelQuery() {

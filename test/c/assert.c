@@ -13,7 +13,7 @@ void assertEqualsString(const char *actual, const char *expected) {
 
 	if (!expected) {
 		if (!actual) {
-			printf("expected ");
+			printf("success ");
 			return;
 		} else {
 			printf("\"%s\"!=\"%s\"",actual,expected);
@@ -25,7 +25,7 @@ void assertEqualsString(const char *actual, const char *expected) {
 	}
 
 	if (!strcmp(actual,expected)) {
-		printf("expected ");
+		printf("success ");
 	} else {
 		printf("\"%s\"!=\"%s\"",actual,expected);
 		printf("failure: %s",sqlrcur_errorMessage(cur));
@@ -40,7 +40,7 @@ void assertEqualsStringWithLength(const char *actual, const char *expected,
 
 	if (!expected) {
 		if (!actual) {
-			printf("expected ");
+			printf("success ");
 			return;
 		} else {
 			printf("\"%s\"!=\"%s\"",actual,expected);
@@ -52,7 +52,7 @@ void assertEqualsStringWithLength(const char *actual, const char *expected,
 	}
 
 	if (!strncmp(actual,expected,length)) {
-		printf("expected ");
+		printf("success ");
 	} else {
 		printf("\"%s\"!=\"%s\"",actual,expected);
 		printf("failure: %s",sqlrcur_errorMessage(cur));
@@ -65,7 +65,7 @@ void assertEqualsStringWithLength(const char *actual, const char *expected,
 void assertEqualsInt(int actual, int expected) {
 
 	if (actual==expected) {
-		printf("expected ");
+		printf("success ");
 	} else {
 		printf("\"%d\"!=\"%d\"",actual,expected);
 		printf("failure: %s",sqlrcur_errorMessage(cur));
@@ -78,7 +78,7 @@ void assertEqualsInt(int actual, int expected) {
 void assertEqualsDouble(double actual, double expected) {
 
 	if (actual==expected) {
-		printf("expected ");
+		printf("success ");
 	} else {
 		printf("\"%f\"!=\"%f\"",actual,expected);
 		printf("failure: %s",sqlrcur_errorMessage(cur));
@@ -91,7 +91,7 @@ void assertEqualsDouble(double actual, double expected) {
 void assertTrue(int actual) {
 
 	if (actual) {
-		printf("expected ");
+		printf("success ");
 	} else {
 		printf("%s!=true\n",(actual)?"true":"false");
 		printf("failure: %s",sqlrcur_errorMessage(cur));
@@ -104,7 +104,7 @@ void assertTrue(int actual) {
 void assertFalse(int actual) {
 
 	if (!actual) {
-		printf("expected ");
+		printf("success ");
 	} else {
 		printf("%s!=false\n",(actual)?"true":"false");
 		printf("failure: %s",sqlrcur_errorMessage(cur));

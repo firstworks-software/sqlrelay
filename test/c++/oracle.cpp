@@ -76,6 +76,7 @@ int main(int argc, char **argv) {
 		assertTrue(con->commit());
 		assertTrue(con->setIsolationLevel(*il));
 		assertEquals(con->getIsolationLevel(),*il);
+		stdoutput.printf("\n");
 	}
 	// reset to the default isolation level
 	assertTrue(con->commit());

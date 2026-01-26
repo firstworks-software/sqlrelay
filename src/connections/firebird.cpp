@@ -254,6 +254,7 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		const char	*getBindFormat();
 		const char	*getNextvalFormat();
 		const char	*getLastInsertIdQuery();
+		const char	*setIsolationLevelQuery();
 		const char	*getIsolationLevelQuery();
 		const char	*getNoopQuery();
 
@@ -842,10 +843,28 @@ const char *firebirdconnection::getLastInsertIdQuery() {
 	return lastinsertidquery;
 }
 
+const char *firebirdconnection::setIsolationLevelQuery() {
+	return "set transaction %s";
+}
+
 const char *firebirdconnection::getIsolationLevelQuery() {
-	return "select mon$isolation_mode "
-		"from mon$transactions "
-		"where mon$transaction_id=current_transaction";
+	return "select "
+		"	case mon$isolation_mode "
+		"		when 0 then "
+		"cast('snapshot table stability' as varchar(24)) "
+		"		when 1 then "
+		"cast('snapshot' as varchar(8)) "
+		"		when 2 then "
+		"cast('read committed' as varchar(14)) "
+		"		when 3 then "
+		"cast('read committed no record version' as varchar(32)) "
+		"		when 4 then "
+		"cast('read consistency' as varchar(11)) "
+		"	end "
+		"from "
+		"	mon$transactions "
+		"where "
+		"	mon$transaction_id=current_transaction";
 }
 
 const char *firebirdconnection::getNoopQuery() {

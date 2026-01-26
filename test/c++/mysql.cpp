@@ -34,6 +34,7 @@ int main(int argc, char **argv) {
 for (uint16_t a=0; a<50; a++) {
 #endif
 
+	const char	*isolationlevels[]={"REPEATABLE-READ","READ-UNCOMMITTED","READ-COMMITTED","SERIALIZABLE",NULL};
 	const char	*subvars[4]={"var1","var2","var3",NULL};
 	const char	*subvalstrings[3]={"hi","hello","bye"};
 	int64_t		subvallongs[3]={1,2,3};
@@ -79,6 +80,17 @@ for (uint16_t a=0; a<50; a++) {
 	// nextval format
 	stdoutput.printf("NEXTVAL FORMAT: \n");
 	assertEquals(con->nextvalFormat(),"");
+	stdoutput.printf("\n");
+
+	// isolation levels
+	stdoutput.printf("ISOLATION LEVELS: \n");
+	for (const char **il=isolationlevels; *il; il++) {
+		assertTrue(con->setIsolationLevel(*il));
+		assertEquals(con->getIsolationLevel(),*il);
+		stdoutput.printf("\n");
+	}
+	// reset to the default isolation level
+	assertTrue(con->setIsolationLevel(isolationlevels[0]));
 	stdoutput.printf("\n");
 
 	// drop existing table

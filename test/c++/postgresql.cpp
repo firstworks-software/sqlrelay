@@ -15,6 +15,7 @@ sqlrcursor	*secondcur;
 
 int main(int argc, char **argv) {
 
+	const char	*isolationlevels[]={"read committed","read uncommitted","repeatable read","serializable",NULL};
 	const char	*subvars[4]={"var1","var2","var3",NULL};
 	const char	*subvalstrings[3]={"hi","hello","bye"};
 	int64_t		subvallongs[3]={1,2,3};
@@ -52,6 +53,22 @@ int main(int argc, char **argv) {
 	stdoutput.printf("NEXTVAL FORMAT: \n");
 	assertEquals(con->nextvalFormat(),"nextval('%s')");
 	stdoutput.printf("\n");
+
+	// isolation levels
+	/*stdoutput.printf("ISOLATION LEVELS: \n");
+	for (const char **il=isolationlevels; *il; il++) {
+		con->begin();
+		assertTrue(con->setIsolationLevel(*il));
+		assertEquals(con->getIsolationLevel(),*il);
+		con->commit();
+		stdoutput.printf("\n");
+	}
+	// reset to the default isolation level
+	con->begin();
+	assertTrue(con->setIsolationLevel(isolationlevels[0]));
+	con->commit();
+	stdoutput.printf("\n");
+	*/
 
 	// drop existing table
 	cur->sendQuery("drop table testtable");

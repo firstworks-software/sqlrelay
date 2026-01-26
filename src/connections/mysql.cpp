@@ -852,11 +852,11 @@ const char *mysqlconnection::getCurrentDatabaseQuery() {
 }
 
 const char *mysqlconnection::setIsolationLevelQuery() {
-	return "set session transaction isolation level %s";
+	return "set @@session.tx_isolation='%s'";
 }
 
 const char *mysqlconnection::getIsolationLevelQuery() {
-	return "select @@tx_isolation";
+	return "select @@session.tx_isolation";
 }
 
 bool mysqlconnection::getLastInsertId(uint64_t *id) {

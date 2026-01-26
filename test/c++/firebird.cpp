@@ -58,6 +58,16 @@ int main(int argc, char **argv) {
 	assertEquals(con->nextvalFormat(),"next value for %s");
 	stdoutput.printf("\n");
 
+	// isolation levels
+	stdoutput.printf("ISOLATION LEVELS: \n");
+	// though firebird does support a "set transaction ..." statement to
+	// set the isolation level, it looks like, in firebird, you can really
+	// only set it through the TPB at the start of a transaction, so
+	// attempts to set it shoud fail
+	assertFalse(con->setIsolationLevel("read committed"));
+	assertEquals(con->getIsolationLevel(),"read committed");
+	stdoutput.printf("\n");
+
 	// clean up table
 	cur->sendQuery("delete from testtable");
 	con->commit();

@@ -15,6 +15,7 @@ sqlrcursor	*secondcur;
 
 int main(int argc, char **argv) {
 
+	const char	*isolationlevels[]={"READ COMMITTED","SERIALIZABLE",NULL};
 	const char	*bindvars[6]={"1","2","3","4","5",NULL};
 	const char	*bindvals[5]={"4","testchar4","testvarchar4","01-JAN-2004","testlong4"};
 	const char	*subvars[4]={"var1","var2","var3",NULL};
@@ -49,6 +50,21 @@ int main(int argc, char **argv) {
 	// ping
 	stdoutput.printf("PING: \n");
 	assertTrue(con->ping());
+	stdoutput.printf("\n");
+
+	// isolation levels
+	stdoutput.printf("ISOLATION LEVELS: \n");
+	for (const char **il=isolationlevels; *il; il++) {
+		// oracle requires the isolation level to
+		// be the first query of the transaction
+		assertTrue(con->commit());
+		assertTrue(con->setIsolationLevel(*il));
+		assertEquals(con->getIsolationLevel(),*il);
+		stdoutput.printf("\n");
+	}
+	// reset to the default isolation level
+	assertTrue(con->commit());
+	assertTrue(con->setIsolationLevel(isolationlevels[0]));
 	stdoutput.printf("\n");
 
 	// drop existing table

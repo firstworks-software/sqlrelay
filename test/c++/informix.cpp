@@ -14,6 +14,7 @@ sqlrcursor	*secondcur;
 
 int main(int argc, char **argv) {
 
+	const char	*isolationlevels[]={"committed read","dirty read","cursor stability","repeatable read",NULL};
 	const char	*bindvars[17]={"1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16",NULL};
 	const char	*bindvals[17]={"t","4","4","4","4","4.4","4.4","4.4","4.4","testchar4","testnchar4","testvarchar4","testnvarchar4","testlvarchar4","01/01/2004","2004-01-01 04:00:00",NULL};
 	const char	*subvars[4]={"var1","var2","var3",NULL};
@@ -53,6 +54,18 @@ int main(int argc, char **argv) {
 	// nextval format
 	stdoutput.printf("NEXTVAL FORMAT: \n");
 	assertEquals(con->nextvalFormat(),"%s.nextval");
+	stdoutput.printf("\n");
+
+	// isolation levels
+	stdoutput.printf("ISOLATION LEVELS: \n");
+	for (const char **il=isolationlevels; *il; il++) {
+		assertTrue(con->setIsolationLevel(*il));
+		// you can set the isolation level, but to get it, you have to
+		// have permissions to read from sysmaster:syssqlcurses
+		stdoutput.printf("\n");
+	}
+	// reset to the default isolation level
+	assertTrue(con->setIsolationLevel(isolationlevels[0]));
 	stdoutput.printf("\n");
 
 	// drop existing table

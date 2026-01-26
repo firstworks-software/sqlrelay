@@ -14,6 +14,7 @@ sqlrcursor	*secondcur;
 
 int main(int argc, char **argv) {
 
+	const char	*isolationlevels[]={"CS","UR","RS","RR",NULL};
 	const char	*bindvars[13]={"1","2","3","4","5","6","7","8","9","10","11","12",NULL};
 	const char	*bindvals[12]={"4","4","4","4.4","4.4","4.4",
 			"testchar4","testvarchar4","01/01/2004","04:00:00","testclob4",NULL};
@@ -54,6 +55,17 @@ int main(int argc, char **argv) {
 	// nextval format
 	stdoutput.printf("NEXTVAL FORMAT: \n");
 	assertEquals(con->nextvalFormat(),"(nextval for %s)");
+	stdoutput.printf("\n");
+
+	// isolation levels
+	stdoutput.printf("ISOLATION LEVELS: \n");
+	for (const char **il=isolationlevels; *il; il++) {
+		assertTrue(con->setIsolationLevel(*il));
+		assertEquals(con->getIsolationLevel(),*il);
+		stdoutput.printf("\n");
+	}
+	// reset to the default isolation level
+	assertTrue(con->setIsolationLevel(isolationlevels[0]));
 	stdoutput.printf("\n");
 
 	// drop existing table

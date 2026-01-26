@@ -9,15 +9,33 @@
 extern sqlrconnection	*con;
 extern sqlrcursor	*cur;
 
+void printErrors() {
+	if (cur) {
+		const char	*err=cur->errorMessage();
+		if (err) {
+			stdoutput.printf("%s\n",err);
+			return;
+		}
+	}
+	if (con) {
+		const char	*err=con->errorMessage();
+		if (err) {
+			stdoutput.printf("%s\n",err);
+			return;
+		}
+	}
+}
+
 void assertEquals(const char *actual, const char *expected) {
 
 	if (!expected) {
 		if (!actual) {
-			stdoutput.printf("expected ");
+			stdoutput.printf("success ");
 			return;
 		} else {
+			stdoutput.printf("failure\n");
 			stdoutput.printf("%s!=%s\n",actual,expected);
-			stdoutput.printf("failure: %s",cur->errorMessage());
+			printErrors();
 			delete cur;
 			delete con;
 			process::exit(1);
@@ -25,10 +43,11 @@ void assertEquals(const char *actual, const char *expected) {
 	}
 
 	if (!charstring::compare(actual,expected)) {
-		stdoutput.printf("expected ");
+		stdoutput.printf("success ");
 	} else {
+		stdoutput.printf("failure\n");
 		stdoutput.printf("%s!=%s\n",actual,expected);
-		stdoutput.printf("failure: %s",cur->errorMessage());
+		printErrors();
 		delete cur;
 		delete con;
 		process::exit(1);
@@ -39,11 +58,12 @@ void assertEquals(const char *actual, const char *expected, size_t length) {
 
 	if (!expected) {
 		if (!actual) {
-			stdoutput.printf("expected ");
+			stdoutput.printf("success ");
 			return;
 		} else {
+			stdoutput.printf("failure\n");
 			stdoutput.printf("%s!=%s\n",actual,expected);
-			stdoutput.printf("failure: %s",cur->errorMessage());
+			printErrors();
 			delete cur;
 			delete con;
 			process::exit(1);
@@ -51,10 +71,11 @@ void assertEquals(const char *actual, const char *expected, size_t length) {
 	}
 
 	if (!charstring::compare(actual,expected,length)) {
-		stdoutput.printf("expected ");
+		stdoutput.printf("success ");
 	} else {
+		stdoutput.printf("failure\n");
 		stdoutput.printf("%s!=%s\n",actual,expected);
-		stdoutput.printf("failure: %s",cur->errorMessage());
+		printErrors();
 		delete cur;
 		delete con;
 		process::exit(1);
@@ -64,12 +85,11 @@ void assertEquals(const char *actual, const char *expected, size_t length) {
 void assertEquals(bool actual, bool expected) {
 
 	if (actual==expected) {
-		stdoutput.printf("expected ");
+		stdoutput.printf("success ");
 	} else {
-		stdoutput.printf("%s!=%s\n",
-				(actual)?"true":"false",
-				(expected)?"true":"false");
-		stdoutput.printf("failure: %s",cur->errorMessage());
+		stdoutput.printf("failure\n");
+		stdoutput.printf("%s!=%s\n",actual,expected);
+		printErrors();
 		delete cur;
 		delete con;
 		process::exit(1);
@@ -79,10 +99,11 @@ void assertEquals(bool actual, bool expected) {
 void assertEquals(int32_t actual, int expected) {
 
 	if (actual==expected) {
-		stdoutput.printf("expected ");
+		stdoutput.printf("success ");
 	} else {
-		stdoutput.printf("%d!=%d\n",actual,expected);
-		stdoutput.printf("failure: %s",cur->errorMessage());
+		stdoutput.printf("failure\n");
+		stdoutput.printf("%s!=%s\n",actual,expected);
+		printErrors();
 		delete cur;
 		delete con;
 		process::exit(1);
@@ -92,10 +113,11 @@ void assertEquals(int32_t actual, int expected) {
 void assertEquals(uint32_t actual, int expected) {
 
 	if (actual==(uint32_t)expected) {
-		stdoutput.printf("expected ");
+		stdoutput.printf("success ");
 	} else {
-		stdoutput.printf("%d!=%d\n",actual,expected);
-		stdoutput.printf("failure: %s",cur->errorMessage());
+		stdoutput.printf("failure\n");
+		stdoutput.printf("%s!=%s\n",actual,expected);
+		printErrors();
 		delete cur;
 		delete con;
 		process::exit(1);
@@ -105,10 +127,11 @@ void assertEquals(uint32_t actual, int expected) {
 void assertEquals(int64_t actual, int expected) {
 
 	if (actual==expected) {
-		stdoutput.printf("expected ");
+		stdoutput.printf("success ");
 	} else {
-		stdoutput.printf("%lld!=%lld\n",actual,expected);
-		stdoutput.printf("failure: %s",cur->errorMessage());
+		stdoutput.printf("failure\n");
+		stdoutput.printf("%s!=%s\n",actual,expected);
+		printErrors();
 		delete cur;
 		delete con;
 		process::exit(1);
@@ -118,10 +141,11 @@ void assertEquals(int64_t actual, int expected) {
 void assertEquals(uint64_t actual, int expected) {
 
 	if (actual==(uint64_t)expected) {
-		stdoutput.printf("expected ");
+		stdoutput.printf("success ");
 	} else {
-		stdoutput.printf("%lld!=%lld\n",actual,expected);
-		stdoutput.printf("failure: %s",cur->errorMessage());
+		stdoutput.printf("failure\n");
+		stdoutput.printf("%s!=%s\n",actual,expected);
+		printErrors();
 		delete cur;
 		delete con;
 		process::exit(1);
@@ -131,10 +155,11 @@ void assertEquals(uint64_t actual, int expected) {
 void assertEquals(double actual, double expected) {
 
 	if (actual==expected) {
-		stdoutput.printf("expected ");
+		stdoutput.printf("success ");
 	} else {
-		stdoutput.printf("%f!=%f\n",actual,expected);
-		stdoutput.printf("failure: %s",cur->errorMessage());
+		stdoutput.printf("failure\n");
+		stdoutput.printf("%s!=%s\n",actual,expected);
+		printErrors();
 		delete cur;
 		delete con;
 		process::exit(1);
@@ -144,10 +169,11 @@ void assertEquals(double actual, double expected) {
 void assertTrue(bool actual) {
 
 	if (actual) {
-		stdoutput.printf("expected ");
+		stdoutput.printf("success ");
 	} else {
+		stdoutput.printf("failure\n");
 		stdoutput.printf("%s!=true\n",(actual)?"true":"false");
-		stdoutput.printf("failure: %s",cur->errorMessage());
+		printErrors();
 		delete cur;
 		delete con;
 		process::exit(1);
@@ -157,10 +183,11 @@ void assertTrue(bool actual) {
 void assertFalse(bool actual) {
 
 	if (!actual) {
-		stdoutput.printf("expected ");
+		stdoutput.printf("success ");
 	} else {
-		stdoutput.printf("%s!=false\n",(actual)?"true":"false");
-		stdoutput.printf("failure: %s",cur->errorMessage());
+		stdoutput.printf("failure\n");
+		stdoutput.printf("%s!=true\n",(actual)?"true":"false");
+		printErrors();
 		delete cur;
 		delete con;
 		process::exit(1);
