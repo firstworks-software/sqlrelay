@@ -18,6 +18,8 @@
 		sqlrservercontroller, oracle connection, and jdbc driver
 	fixed oracle connection's handling of catalog vs schema in its
 		get*List() methods
+	refactored tests a bit, replaced checkSuccess() with assert*() and
+		moved assert*() into its own shared file
 
 2.1.0 - refactored debugging
 

@@ -3091,7 +3091,7 @@ There are several important considerations when setting runasuser/runasgroup:
 [[br]][=#deniedallowedips]
 == IP Filtering ==
 
-By default, clients from any IP address are allowed to connect to the SQL Relay srever.  However, the deinedips and allowedips attributes can be used to restrict the set of IP addresses that clients can connect from.
+By default, clients from any IP address are allowed to connect to the SQL Relay srever.  However, the deniedips and allowedips attributes can be used to restrict the set of IP addresses that clients can connect from.
 
  [[Image(../images/ip-filtering.png,nolink)]]
 
