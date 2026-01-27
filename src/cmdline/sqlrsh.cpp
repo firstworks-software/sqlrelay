@@ -209,6 +209,10 @@ class	sqlrsh {
 						sqlrshenv *env);
 		bool	dbipaddress(sqlrconnection *sqlrcon,
 						sqlrshenv *env);
+		bool	bindformat(sqlrconnection *sqlrcon,
+						sqlrshenv *env);
+		bool	nextvalformat(sqlrconnection *sqlrcon,
+						sqlrshenv *env);
 		bool	getisolationlevel(sqlrconnection *sqlrcon,
 						sqlrshenv *env);
 		void	clientversion(sqlrconnection *sqlrcon,
@@ -532,6 +536,8 @@ int sqlrsh::commandType(const char *command) {
 		!charstring::compareIgnoringCase(ptr,"dbversion") ||
 		!charstring::compareIgnoringCase(ptr,"dbhostname") ||
 		!charstring::compareIgnoringCase(ptr,"dbipaddress") ||
+		!charstring::compareIgnoringCase(ptr,"bindformat") ||
+		!charstring::compareIgnoringCase(ptr,"nextvalformat") ||
 		!charstring::compareIgnoringCase(ptr,"isolationlevel",14) ||
 		!charstring::compareIgnoringCase(ptr,"clientversion") ||
 		!charstring::compareIgnoringCase(ptr,"serverversion") ||
@@ -678,6 +684,10 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 		return dbhostname(sqlrcon,env);
 	} else if (!charstring::compareIgnoringCase(ptr,"dbipaddress")) {	
 		return dbipaddress(sqlrcon,env);
+	} else if (!charstring::compareIgnoringCase(ptr,"bindformat")) {	
+		return bindformat(sqlrcon,env);
+	} else if (!charstring::compareIgnoringCase(ptr,"nextvalformat")) {	
+		return nextvalformat(sqlrcon,env);
 	} else if (!charstring::compareIgnoringCase(
 					ptr,"isolationlevel ",15)) {
 		if (!sqlrcon->setIsolationLevel(ptr+15)) {
@@ -1881,6 +1891,36 @@ bool sqlrsh::dbhostname(sqlrconnection *sqlrcon, sqlrshenv *env) {
 
 bool sqlrsh::dbipaddress(sqlrconnection *sqlrcon, sqlrshenv *env) {
 	const char	*value=sqlrcon->dbIpAddress();
+	if (value) {
+		stdoutput.printf("%s\n",value);
+	} else if (sqlrcon->errorMessage()) {
+		displayError(env,NULL,
+				sqlrcon->errorMessage(),
+				sqlrcon->errorNumber());
+		return false;
+	} else {
+		stdoutput.printf("\n");
+	}
+	return true;
+}
+
+bool sqlrsh::bindformat(sqlrconnection *sqlrcon, sqlrshenv *env) {
+	const char	*value=sqlrcon->bindFormat();
+	if (value) {
+		stdoutput.printf("%s\n",value);
+	} else if (sqlrcon->errorMessage()) {
+		displayError(env,NULL,
+				sqlrcon->errorMessage(),
+				sqlrcon->errorNumber());
+		return false;
+	} else {
+		stdoutput.printf("\n");
+	}
+	return true;
+}
+
+bool sqlrsh::nextvalformat(sqlrconnection *sqlrcon, sqlrshenv *env) {
+	const char	*value=sqlrcon->nextvalFormat();
 	if (value) {
 		stdoutput.printf("%s\n",value);
 	} else if (sqlrcon->errorMessage()) {
