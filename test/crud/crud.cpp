@@ -36,7 +36,6 @@ int main(int argc, char **argv) {
 	crud->setSqlrConnection(con);
 	crud->setSqlrCursor(cur);
 	crud->setTable("testtable");
-	crud->setPrimaryKeyColumn("testtable_id");
 	crud->buildQueries();
 
 	// set up columns and values
