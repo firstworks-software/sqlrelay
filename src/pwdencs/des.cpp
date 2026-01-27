@@ -25,8 +25,7 @@ bool sqlrpwdenc_des::oneWay() {
 char *sqlrpwdenc_des::encrypt(const char *value) {
 
 	d.setSalt((const byte_t *)
-			getParameters()->getAttributeValue("salt"),
-			d.getSaltSize());
+			getParameters()->getAttributeValue("salt"),2);
 
 	d.append((const byte_t *)value,charstring::getLength(value));
 
