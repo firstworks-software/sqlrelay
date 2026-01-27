@@ -46,7 +46,11 @@ void sqlrcrud::setTable(const char *tbl) {
 void sqlrcrud::setIdSequence(const char *idsequence) {
 	delete[] this->idsequence;
 	if (charstring::isNullOrEmpty(idsequence)) {
-		charstring::printf(&this->idsequence,"%s_ids",this->tbl);
+		if (charstring::isNullOrEmpty(this->tbl)) {
+			this->idsequence=NULL;
+		} else {
+			charstring::printf(&this->idsequence,"%s_ids",this->tbl);
+		}
 	} else {
 		this->idsequence=charstring::duplicate(idsequence);
 	}
@@ -55,7 +59,11 @@ void sqlrcrud::setIdSequence(const char *idsequence) {
 void sqlrcrud::setPrimaryKeyColumn(const char *primarykey) {
 	delete[] this->primarykey;
 	if (charstring::isNullOrEmpty(primarykey)) {
-		charstring::printf(&this->primarykey,"%s_id",this->tbl);
+		if (charstring::isNullOrEmpty(this->tbl)) {
+			this->primarykey=NULL;
+		} else {
+			charstring::printf(&this->primarykey,"%s_id",this->tbl);
+		}
 	} else {
 		this->primarykey=charstring::duplicate(primarykey);
 	}
@@ -63,7 +71,15 @@ void sqlrcrud::setPrimaryKeyColumn(const char *primarykey) {
 
 void sqlrcrud::setAutoIncrementColumn(const char *autoinc) {
 	delete[] this->autoinc;
-	this->autoinc=charstring::duplicate(autoinc);
+	if (charstring::isNullOrEmpty(autoinc)) {
+		if (charstring::isNullOrEmpty(this->tbl)) {
+			this->autoinc=NULL;
+		} else {
+			charstring::printf(&this->autoinc,"%s_id",this->tbl);
+		}
+	} else {
+		this->autoinc=charstring::duplicate(autoinc);
+	}
 }
 
 const char *sqlrcrud::getTable() {

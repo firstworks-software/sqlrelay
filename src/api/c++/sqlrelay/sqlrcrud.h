@@ -21,7 +21,6 @@
  *  crud->setSqlrConnection(con);
  *  crud->setSqlrCursor(cur);
  *  crud->setTable("mytable");
- *  crud->setIdSequence("mytable_ids");
  *  crud->buildQueries();
  *
  *  // read data
@@ -86,23 +85,29 @@ class SQLRCLIENT_DLLSPEC sqlrcrud : public mvccrud {
 		 *
 		 *  Also sets the sequence to generate new ids from during
 		 *  create operations to "table"_ids, if the id sequence is
-		 *  NULL, either because setIdSequence() hasn't been called,
-		 *  or was called with NULL. */
+		 *  NULL or empty.
+		 *
+		 *  Also sets the primary key column to "table"_id, if the
+		 *  primary key is NULL or empty.
+		 */
 		void	setTable(const char *table);
 
 		/** Sets the sequence to generate new ids from during create
-		 *  operations (insert queries). */
+		 *  operations (insert queries).
+		 *
+		 *  If "idsequence" is NULL or empty, then the id sequence
+		 *  will be set to "table"_ids.
+		 */
 		void	setIdSequence(const char *idsequence);
 
 		/** Returns the table set by setTable(). */
 		const char	*getTable();
 
-		/** Returns the sequence set by setSequence() or setTable().
+		/** Returns the id sequence set by setIdSequence() or
+		 *  setTable().
 		 *
-		 *  Note that this may return NULL if:
-		 *  * neither setIdSequence() nor setTable() were ever called
-		 *  * setTable() was called, but then setIdSequence(NULL)
-		 *    was called later
+		 *  Note that this may return NULL if neither setIdSequence()
+		 *  nor setTable() were ever called.
 		 */
 		const char	*getIdSequence();
 
