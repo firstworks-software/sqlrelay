@@ -1692,8 +1692,6 @@ void sqlrservercontroller::reLogIn(bool deadconnection) {
 		pvt->_conn->setAutoCommitOff();
 	}
 
-	// FIXME: restore the isolation level
-
 	markDatabaseAvailable();
 }
 
@@ -2603,19 +2601,20 @@ const char *sqlrservercontroller::getNoopQuery() {
 }
 
 bool sqlrservercontroller::setIsolationLevel(const char *isolevel,
-				sqlrserverisolationlevelformat_t format) {
+				sqlrserverisolationlevelformat_t fromformat) {
 	const char	*mappedisolevel=
-			pvt->_conn->mapIsolationLevel(isolevel,format);
-	return pvt->_conn->setIsolationLevel(
-			(mappedisolevel)?mappedisolevel:isolevel);
+			pvt->_conn->mapIsolationLevel(
+					isolevel,fromformat,
+					SQLRSERVERISOLATIONLEVELFORMAT_NATIVE);
+	return pvt->_conn->setIsolationLevel(mappedisolevel);
 }
 
 const char *sqlrservercontroller::getIsolationLevel(
-				sqlrserverisolationlevelformat_t format) {
+				sqlrserverisolationlevelformat_t toformat) {
 	const char	*isolevel=pvt->_conn->getIsolationLevel();
-	const char	*mappedisolevel=
-			pvt->_conn->mapIsolationLevel(isolevel,format);
-	return (mappedisolevel)?mappedisolevel:isolevel;
+	return pvt->_conn->mapIsolationLevel(
+				isolevel,SQLRSERVERISOLATIONLEVELFORMAT_NATIVE,
+				toformat);
 }
 
 bool sqlrservercontroller::ping() {

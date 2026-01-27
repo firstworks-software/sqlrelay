@@ -258,7 +258,8 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		const char	*getIsolationLevelQuery();
 		const char	*mapIsolationLevel(
 				const char *isolevel,
-				sqlrserverisolationlevelformat_t format);
+				sqlrserverisolationlevelformat_t fromformat,
+				sqlrserverisolationlevelformat_t toformat);
 		const char	*getNoopQuery();
 
 		char		dpb[256];
@@ -872,46 +873,43 @@ const char *firebirdconnection::getIsolationLevelQuery() {
 
 const char *firebirdconnection::mapIsolationLevel(
 				const char *isolevel,
-				sqlrserverisolationlevelformat_t format) {
-	// Firebird isolation levels:
-	// snapshot table stability (SERIALIZABLE)
-	// snapshot (REPEATABLE READ)
-	// read committed (READ COMMITTED)
-	// read committed no record version
-	// read consistency
-	switch (format) {
-		case SQLRSERVERISOLATIONLEVELFORMAT_JDBC:
-			if (!charstring::compare(isolevel,
-						"TRANSACTION_READ_COMMITTED")) {
-				return "read committed";
-			}
-			if (!charstring::compare(isolevel,
-						"TRANSACTION_REPEATABLE_READ")) {
-				return "snapshot";
-			}
-			if (!charstring::compare(isolevel,
-						"TRANSACTION_SERIALIZABLE")) {
-				return "snapshot table stability";
-			}
-			break;
-		case SQLRSERVERISOLATIONLEVELFORMAT_NATIVE:
-			if (!charstring::compare(isolevel,"read committed") ||
-				!charstring::compare(isolevel,
-					"read committed no record version") ||
-				!charstring::compare(isolevel,
-							"read consistency")) {
-				return "TRANSACTION_READ_COMMITTED";
-			}
-			if (!charstring::compare(isolevel,"snapshot")) {
-				return "TRANSACTION_REPEATABLE_READ";
-			}
-			if (!charstring::compare(isolevel,
-						"snapshot table stability")) {
-				return "TRANSACTION_SERIALIZABLE";
-			}
-			break;
+				sqlrserverisolationlevelformat_t fromformat,
+				sqlrserverisolationlevelformat_t toformat) {
+	if (fromformat==toformat) {
+		return isolevel;
 	}
-	return NULL;
+	if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_JDBC &&
+			toformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE) {
+		if (!charstring::compare(isolevel,
+				"TRANSACTION_READ_COMMITTED")) {
+			return "read committed";
+		}
+		if (!charstring::compare(isolevel,
+				"TRANSACTION_REPEATABLE_READ")) {
+			return "snapshot";
+		}
+		if (!charstring::compare(isolevel,
+				"TRANSACTION_SERIALIZABLE")) {
+			return "snapshot table stability";
+		}
+	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
+			toformat==SQLRSERVERISOLATIONLEVELFORMAT_JDBC) {
+		if (!charstring::compare(isolevel,"read committed") ||
+			!charstring::compare(isolevel,
+				"read committed no record version") ||
+			!charstring::compare(isolevel,
+						"read consistency")) {
+			return "TRANSACTION_READ_COMMITTED";
+		}
+		if (!charstring::compare(isolevel,"snapshot")) {
+			return "TRANSACTION_REPEATABLE_READ";
+		}
+		if (!charstring::compare(isolevel,
+					"snapshot table stability")) {
+			return "TRANSACTION_SERIALIZABLE";
+		}
+	}
+	return isolevel;
 }
 
 const char *firebirdconnection::getNoopQuery() {

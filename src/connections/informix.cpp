@@ -257,7 +257,8 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 		const char	*getIsolationLevelQuery();
 		const char	*mapIsolationLevel(
 				const char *isolevel,
-				sqlrserverisolationlevelformat_t format);
+				sqlrserverisolationlevelformat_t fromformat,
+				sqlrserverisolationlevelformat_t toformat);
 		const char	*getNoopQuery();
 		const char	*getBindFormat();
 
@@ -889,47 +890,45 @@ const char *informixconnection::getIsolationLevelQuery() {
 
 const char *informixconnection::mapIsolationLevel(
 				const char *isolevel,
-				sqlrserverisolationlevelformat_t format) {
-	// Informix isolation levels:
-	// dirty read (READ UNCOMMITTED)
-	// committed read (READ COMMITTED)
-	// cursor stability (REPEATABLE READ)
-	// repeatable read (SERIALIZABLE)
-	switch (format) {
-		case SQLRSERVERISOLATIONLEVELFORMAT_JDBC:
-			if (!charstring::compare(isolevel,
-						"TRANSACTION_READ_UNCOMMITTED")) {
-				return "dirty read";
-			}
-			if (!charstring::compare(isolevel,
-						"TRANSACTION_READ_COMMITTED")) {
-				return "committed read";
-			}
-			if (!charstring::compare(isolevel,
-						"TRANSACTION_REPEATABLE_READ")) {
-				return "cursor stability";
-			}
-			if (!charstring::compare(isolevel,
-						"TRANSACTION_SERIALIZABLE")) {
-				return "repeatable read";
-			}
-			break;
-		case SQLRSERVERISOLATIONLEVELFORMAT_NATIVE:
-			if (!charstring::compare(isolevel,"dirty read")) {
-				return "TRANSACTION_READ_UNCOMMITTED";
-			}
-			if (!charstring::compare(isolevel,"committed read")) {
-				return "TRANSACTION_READ_COMMITTED";
-			}
-			if (!charstring::compare(isolevel,"cursor stability")) {
-				return "TRANSACTION_REPEATABLE_READ";
-			}
-			if (!charstring::compare(isolevel,"repeatable read")) {
-				return "TRANSACTION_SERIALIZABLE";
-			}
-			break;
+				sqlrserverisolationlevelformat_t fromformat,
+				sqlrserverisolationlevelformat_t toformat) {
+	if (fromformat==toformat) {
+		return isolevel;
 	}
-	return NULL;
+	if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_JDBC &&
+			toformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE) {
+		if (!charstring::compare(isolevel,
+				"TRANSACTION_READ_UNCOMMITTED")) {
+			return "dirty read";
+		}
+		if (!charstring::compare(isolevel,
+				"TRANSACTION_READ_COMMITTED")) {
+			return "committed read";
+		}
+		if (!charstring::compare(isolevel,
+				"TRANSACTION_REPEATABLE_READ")) {
+			return "cursor stability";
+		}
+		if (!charstring::compare(isolevel,
+				"TRANSACTION_SERIALIZABLE")) {
+			return "repeatable read";
+		}
+	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
+			toformat==SQLRSERVERISOLATIONLEVELFORMAT_JDBC) {
+		if (!charstring::compare(isolevel,"dirty read")) {
+			return "TRANSACTION_READ_UNCOMMITTED";
+		}
+		if (!charstring::compare(isolevel,"committed read")) {
+			return "TRANSACTION_READ_COMMITTED";
+		}
+		if (!charstring::compare(isolevel,"cursor stability")) {
+			return "TRANSACTION_REPEATABLE_READ";
+		}
+		if (!charstring::compare(isolevel,"repeatable read")) {
+			return "TRANSACTION_SERIALIZABLE";
+		}
+	}
+	return isolevel;
 }
 
 const char *informixconnection::getNoopQuery() {

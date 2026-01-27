@@ -58,7 +58,8 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 		const char	*getIsolationLevelQuery();
 		const char	*mapIsolationLevel(
 				const char *isolevel,
-				sqlrserverisolationlevelformat_t format);
+				sqlrserverisolationlevelformat_t fromformat,
+				sqlrserverisolationlevelformat_t toformat);
 		const char	*beginTransactionQuery();
 		#endif
 		bool		selectDatabase(const char *database);
@@ -370,31 +371,31 @@ const char *sqliteconnection::getIsolationLevelQuery() {
 
 const char *sqliteconnection::mapIsolationLevel(
 				const char *isolevel,
-				sqlrserverisolationlevelformat_t format) {
-	// sqlite's read_uncommitted pragma:
-	// 0 = read committed (default)
-	// 1 = read uncommitted
-	switch (format) {
-		case SQLRSERVERISOLATIONLEVELFORMAT_JDBC:
-			if (!charstring::compare(isolevel,
-						"TRANSACTION_READ_UNCOMMITTED")) {
-				return "1";
-			}
-			if (!charstring::compare(isolevel,
-						"TRANSACTION_READ_COMMITTED")) {
-				return "0";
-			}
-			break;
-		case SQLRSERVERISOLATIONLEVELFORMAT_NATIVE:
-			if (!charstring::compare(isolevel,"1")) {
-				return "TRANSACTION_READ_UNCOMMITTED";
-			}
-			if (!charstring::compare(isolevel,"0")) {
-				return "TRANSACTION_READ_COMMITTED";
-			}
-			break;
+				sqlrserverisolationlevelformat_t fromformat,
+				sqlrserverisolationlevelformat_t toformat) {
+	if (fromformat==toformat) {
+		return isolevel;
 	}
-	return NULL;
+	if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_JDBC &&
+			toformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE) {
+		if (!charstring::compare(isolevel,
+				"TRANSACTION_READ_UNCOMMITTED")) {
+			return "1";
+		}
+		if (!charstring::compare(isolevel,
+				"TRANSACTION_READ_COMMITTED")) {
+			return "0";
+		}
+	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
+			toformat==SQLRSERVERISOLATIONLEVELFORMAT_JDBC) {
+		if (!charstring::compare(isolevel,"1")) {
+			return "TRANSACTION_READ_UNCOMMITTED";
+		}
+		if (!charstring::compare(isolevel,"0")) {
+			return "TRANSACTION_READ_COMMITTED";
+		}
+	}
+	return isolevel;
 }
 
 const char *sqliteconnection::beginTransactionQuery() {

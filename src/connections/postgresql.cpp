@@ -50,7 +50,8 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 		const char	*getIsolationLevelQuery();
 		const char	*mapIsolationLevel(
 				const char *isolevel,
-				sqlrserverisolationlevelformat_t format);
+				sqlrserverisolationlevelformat_t fromformat,
+				sqlrserverisolationlevelformat_t toformat);
 		bool		getLastInsertId(uint64_t *id);
 		const char	*getLastInsertIdQuery();
 		const char	*getNoopQuery();
@@ -783,42 +784,45 @@ const char *postgresqlconnection::getIsolationLevelQuery() {
 
 const char *postgresqlconnection::mapIsolationLevel(
 				const char *isolevel,
-				sqlrserverisolationlevelformat_t format) {
-	switch (format) {
-		case SQLRSERVERISOLATIONLEVELFORMAT_JDBC:
-			if (!charstring::compare(isolevel,
-						"TRANSACTION_READ_UNCOMMITTED")) {
-				return "read uncommitted";
-			}
-			if (!charstring::compare(isolevel,
-						"TRANSACTION_READ_COMMITTED")) {
-				return "read committed";
-			}
-			if (!charstring::compare(isolevel,
-						"TRANSACTION_REPEATABLE_READ")) {
-				return "repeatable read";
-			}
-			if (!charstring::compare(isolevel,
-						"TRANSACTION_SERIALIZABLE")) {
-				return "serializable";
-			}
-			break;
-		case SQLRSERVERISOLATIONLEVELFORMAT_NATIVE:
-			if (!charstring::compare(isolevel,"read uncommitted")) {
-				return "TRANSACTION_READ_UNCOMMITTED";
-			}
-			if (!charstring::compare(isolevel,"read committed")) {
-				return "TRANSACTION_READ_COMMITTED";
-			}
-			if (!charstring::compare(isolevel,"repeatable read")) {
-				return "TRANSACTION_REPEATABLE_READ";
-			}
-			if (!charstring::compare(isolevel,"serializable")) {
-				return "TRANSACTION_SERIALIZABLE";
-			}
-			break;
+				sqlrserverisolationlevelformat_t fromformat,
+				sqlrserverisolationlevelformat_t toformat) {
+	if (fromformat==toformat) {
+		return isolevel;
 	}
-	return NULL;
+	if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_JDBC &&
+			toformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE) {
+		if (!charstring::compare(isolevel,
+				"TRANSACTION_READ_UNCOMMITTED")) {
+			return "read uncommitted";
+		}
+		if (!charstring::compare(isolevel,
+				"TRANSACTION_READ_COMMITTED")) {
+			return "read committed";
+		}
+		if (!charstring::compare(isolevel,
+				"TRANSACTION_REPEATABLE_READ")) {
+			return "repeatable read";
+		}
+		if (!charstring::compare(isolevel,
+				"TRANSACTION_SERIALIZABLE")) {
+			return "serializable";
+		}
+	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
+			toformat==SQLRSERVERISOLATIONLEVELFORMAT_JDBC) {
+		if (!charstring::compare(isolevel,"read uncommitted")) {
+			return "TRANSACTION_READ_UNCOMMITTED";
+		}
+		if (!charstring::compare(isolevel,"read committed")) {
+			return "TRANSACTION_READ_COMMITTED";
+		}
+		if (!charstring::compare(isolevel,"repeatable read")) {
+			return "TRANSACTION_REPEATABLE_READ";
+		}
+		if (!charstring::compare(isolevel,"serializable")) {
+			return "TRANSACTION_SERIALIZABLE";
+		}
+	}
+	return isolevel;
 }
 
 bool postgresqlconnection::getLastInsertId(uint64_t *id) {

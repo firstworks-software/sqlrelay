@@ -259,7 +259,8 @@ class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 		const char	*getIsolationLevelQuery();
 		const char	*mapIsolationLevel(
 				const char *isolevel,
-				sqlrserverisolationlevelformat_t format);
+				sqlrserverisolationlevelformat_t fromformat,
+				sqlrserverisolationlevelformat_t toformat);
 		const char	*getNoopQuery();
 		const char	*getBindFormat();
 		const char	*beginTransactionQuery();
@@ -1042,72 +1043,114 @@ const char *freetdsconnection::getLastInsertIdQuery() {
 }
 
 const char *freetdsconnection::getIsolationLevelQuery() {
-	return "select "
-		"	case transaction_isolation_level "
-		"		when 0 then 'UNSPECIFIED' "
-		"		when 1 then 'READ UNCOMMITTED' "
-		"		when 2 then 'READ COMMITTED' "
-		"		when 3 then 'REPEATABLE READ' "
-		"		when 4 then 'SERIALIZABLE' "
-		"		when 5 then 'SNAPSHOT' "
-		"	end "
-		"from "
-		"	sys.dm_exec_sessions "
-		"where "
-		"	session_id=@@spid";
+	if (sybasedb) {
+		return "select @@isolation";
+	} else {
+		return "select "
+			"	case transaction_isolation_level "
+			"		when 0 then 'UNSPECIFIED' "
+			"		when 1 then 'READ UNCOMMITTED' "
+			"		when 2 then 'READ COMMITTED' "
+			"		when 3 then 'REPEATABLE READ' "
+			"		when 4 then 'SERIALIZABLE' "
+			"		when 5 then 'SNAPSHOT' "
+			"	end "
+			"from "
+			"	sys.dm_exec_sessions "
+			"where "
+			"	session_id=@@spid";
+	}
 }
 
 const char *freetdsconnection::mapIsolationLevel(
 				const char *isolevel,
-				sqlrserverisolationlevelformat_t format) {
-	// freetds/sql server uses numeric isolation levels:
-	// 0 = UNSPECIFIED
-	// 1 = READ UNCOMMITTED
-	// 2 = READ COMMITTED
-	// 3 = REPEATABLE READ
-	// 4 = SERIALIZABLE
-	switch (format) {
-		case SQLRSERVERISOLATIONLEVELFORMAT_JDBC:
+				sqlrserverisolationlevelformat_t fromformat,
+				sqlrserverisolationlevelformat_t toformat) {
+	if (fromformat==toformat) {
+		return isolevel;
+	}
+	if (sybasedb) {
+		if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_JDBC &&
+			toformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE) {
 			if (!charstring::compare(isolevel,
-						"TRANSACTION_READ_UNCOMMITTED")) {
+				"TRANSACTION_READ_UNCOMMITTED")) {
+				return "0";
+			}
+			if (!charstring::compare(isolevel,
+				"TRANSACTION_READ_COMMITTED")) {
 				return "1";
 			}
 			if (!charstring::compare(isolevel,
-						"TRANSACTION_READ_COMMITTED")) {
+				"TRANSACTION_REPEATABLE_READ")) {
 				return "2";
 			}
 			if (!charstring::compare(isolevel,
-						"TRANSACTION_REPEATABLE_READ")) {
+				"TRANSACTION_SERIALIZABLE")) {
 				return "3";
 			}
-			if (!charstring::compare(isolevel,
-						"TRANSACTION_SERIALIZABLE")) {
-				return "4";
-			}
-			break;
-		case SQLRSERVERISOLATIONLEVELFORMAT_NATIVE:
-			if (!charstring::compare(isolevel,"1") ||
-				!charstring::compare(isolevel,
-							"READ UNCOMMITTED")) {
+		} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
+				toformat==SQLRSERVERISOLATIONLEVELFORMAT_JDBC) {
+			if (!charstring::compare(isolevel,"0")) {
 				return "TRANSACTION_READ_UNCOMMITTED";
 			}
-			if (!charstring::compare(isolevel,"2") ||
-				!charstring::compare(isolevel,
-							"READ COMMITTED")) {
+			if (!charstring::compare(isolevel,"1")) {
 				return "TRANSACTION_READ_COMMITTED";
 			}
-			if (!charstring::compare(isolevel,"3") ||
-				!charstring::compare(isolevel,
-							"REPEATABLE READ")) {
+			if (!charstring::compare(isolevel,"2")) {
 				return "TRANSACTION_REPEATABLE_READ";
 			}
-			if (!charstring::compare(isolevel,"4") ||
-				!charstring::compare(isolevel,"SERIALIZABLE")) {
+			if (!charstring::compare(isolevel,"3")) {
 				return "TRANSACTION_SERIALIZABLE";
 			}
-			break;
+		}
+	} else {
+		if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_JDBC &&
+			toformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE) {
+			if (!charstring::compare(isolevel,
+				"TRANSACTION_READ_UNCOMMITTED")) {
+				return "READ UNCOMMITTED";
+			}
+			if (!charstring::compare(isolevel,
+				"TRANSACTION_READ_COMMITTED")) {
+				return "READ COMMITTED";
+			}
+			if (!charstring::compare(isolevel,
+				"TRANSACTION_REPEATABLE_READ")) {
+				return "REPEATABLE READ";
+			}
+			if (!charstring::compare(isolevel,
+				"TRANSACTION_SERIALIZABLE")) {
+				return "SERIALIZABLE";
+			}
+			if (!charstring::compare(isolevel,
+				"TRANSACTION_SNAPSHOT")) {
+				return "SNAPSHOT";
+			}
+		} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
+				toformat==SQLRSERVERISOLATIONLEVELFORMAT_JDBC) {
+			if (!charstring::compare(isolevel,
+						"READ UNCOMMITTED")) {
+				return "TRANSACTION_READ_UNCOMMITTED";
+			}
+			if (!charstring::compare(isolevel,
+						"READ COMMITTED")) {
+				return "TRANSACTION_READ_COMMITTED";
+			}
+			if (!charstring::compare(isolevel,
+						"REPEATABLE READ")) {
+				return "TRANSACTION_REPEATABLE_READ";
+			}
+			if (!charstring::compare(isolevel,
+						"SERIALIZABLE")) {
+				return "TRANSACTION_SERIALIZABLE";
+			}
+			if (!charstring::compare(isolevel,
+						"SNAPSHOT")) {
+				return "TRANSACTION_SNAPSHOT";
+			}
+		}
 	}
-	return NULL;
+	return isolevel;
 }
 
 const char *freetdsconnection::getNoopQuery() {

@@ -736,7 +736,8 @@ const char *sqlrserverconnection::getIsolationLevelQuery() {
 
 const char *sqlrserverconnection::mapIsolationLevel(
 				const char *isolevel,
-				sqlrserverisolationlevelformat_t format) {
+				sqlrserverisolationlevelformat_t fromformat,
+				sqlrserverisolationlevelformat_t toformat) {
 	return NULL;
 }
 

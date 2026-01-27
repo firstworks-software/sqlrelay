@@ -268,7 +268,8 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 		const char	*getIsolationLevelQuery();
 		const char	*mapIsolationLevel(
 				const char *isolevel,
-				sqlrserverisolationlevelformat_t format);
+				sqlrserverisolationlevelformat_t fromformat,
+				sqlrserverisolationlevelformat_t toformat);
 		const char	*getNoopQuery();
 		const char	*getBindFormat();
 		const char	*getNextvalFormat();
@@ -768,47 +769,45 @@ const char *db2connection::getIsolationLevelQuery() {
 
 const char *db2connection::mapIsolationLevel(
 				const char *isolevel,
-				sqlrserverisolationlevelformat_t format) {
-	// DB2 isolation levels:
-	// UR = Uncommitted Read (READ UNCOMMITTED)
-	// CS = Cursor Stability (READ COMMITTED)
-	// RS = Read Stability (REPEATABLE READ)
-	// RR = Repeatable Read (SERIALIZABLE)
-	switch (format) {
-		case SQLRSERVERISOLATIONLEVELFORMAT_JDBC:
-			if (!charstring::compare(isolevel,
-						"TRANSACTION_READ_UNCOMMITTED")) {
-				return "UR";
-			}
-			if (!charstring::compare(isolevel,
-						"TRANSACTION_READ_COMMITTED")) {
-				return "CS";
-			}
-			if (!charstring::compare(isolevel,
-						"TRANSACTION_REPEATABLE_READ")) {
-				return "RS";
-			}
-			if (!charstring::compare(isolevel,
-						"TRANSACTION_SERIALIZABLE")) {
-				return "RR";
-			}
-			break;
-		case SQLRSERVERISOLATIONLEVELFORMAT_NATIVE:
-			if (!charstring::compare(isolevel,"UR")) {
-				return "TRANSACTION_READ_UNCOMMITTED";
-			}
-			if (!charstring::compare(isolevel,"CS")) {
-				return "TRANSACTION_READ_COMMITTED";
-			}
-			if (!charstring::compare(isolevel,"RS")) {
-				return "TRANSACTION_REPEATABLE_READ";
-			}
-			if (!charstring::compare(isolevel,"RR")) {
-				return "TRANSACTION_SERIALIZABLE";
-			}
-			break;
+				sqlrserverisolationlevelformat_t fromformat,
+				sqlrserverisolationlevelformat_t toformat) {
+	if (fromformat==toformat) {
+		return isolevel;
 	}
-	return NULL;
+	if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_JDBC &&
+			toformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE) {
+		if (!charstring::compare(isolevel,
+				"TRANSACTION_READ_UNCOMMITTED")) {
+			return "UR";
+		}
+		if (!charstring::compare(isolevel,
+				"TRANSACTION_READ_COMMITTED")) {
+			return "CS";
+		}
+		if (!charstring::compare(isolevel,
+				"TRANSACTION_REPEATABLE_READ")) {
+			return "RS";
+		}
+		if (!charstring::compare(isolevel,
+				"TRANSACTION_SERIALIZABLE")) {
+			return "RR";
+		}
+	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
+			toformat==SQLRSERVERISOLATIONLEVELFORMAT_JDBC) {
+		if (!charstring::compare(isolevel,"UR")) {
+			return "TRANSACTION_READ_UNCOMMITTED";
+		}
+		if (!charstring::compare(isolevel,"CS")) {
+			return "TRANSACTION_READ_COMMITTED";
+		}
+		if (!charstring::compare(isolevel,"RS")) {
+			return "TRANSACTION_REPEATABLE_READ";
+		}
+		if (!charstring::compare(isolevel,"RR")) {
+			return "TRANSACTION_SERIALIZABLE";
+		}
+	}
+	return isolevel;
 }
 
 const char *db2connection::getNoopQuery() {

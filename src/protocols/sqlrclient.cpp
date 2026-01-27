@@ -1525,7 +1525,8 @@ void sqlrprotocol_sqlrclient::setIsolationLevelCommand() {
 	debugWrite("isolation level: %.*s",isolevelsize,isolevel);
 	
 	// select the isolation level and send back the result.
-	if (cont->setIsolationLevel(isolevel,format)) {
+	if (cont->setIsolationLevel(isolevel,
+			(sqlrserverisolationlevelformat_t)format)) {
 		debugWrite("success");
 		clientsock->write((uint16_t)NO_ERROR_OCCURRED);
 		clientsock->flushWriteBuffer(-1,-1);
@@ -1559,7 +1560,8 @@ void sqlrprotocol_sqlrclient::getIsolationLevelCommand() {
 
 
 	// get the isolation level
-	const char	*isolevel=cont->getIsolationLevel(format);
+	const char	*isolevel=cont->getIsolationLevel(
+				(sqlrserverisolationlevelformat_t)format);
 	if (isolevel) {
 		debugWrite("success");
 		clientsock->write((uint16_t)NO_ERROR_OCCURRED);
