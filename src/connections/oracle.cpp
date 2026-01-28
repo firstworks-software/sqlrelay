@@ -200,6 +200,8 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		stringbuffer	tablelistquery;
 
 		stringbuffer	alltypeinfoquery;
+
+		stringbuffer	columnlistquery;
 };
 
 class SQLRSERVER_DLLSPEC oraclecursor : public sqlrservercursor {
@@ -1404,378 +1406,134 @@ const char *oracleconnection::getColumnListQueryWithoutKeys(
 	// to see if the object is a synonym though, so we'll do that first
 	// and only spend the extra time if it is.
 
-	// FIXME: I think I should return the owner as the table_schem, not cat
-	if (isSynonym(table)) {
+	bool	issynonym=isSynonym(table);
+
+	// determine prefixes based on supportssyscontext
+	const char	*tabcol=(supportssyscontext)?
+					"all_tab_columns":"user_tab_columns";
+	const char	*syn=(supportssyscontext)?
+					"all_synonyms":"user_synonyms";
+
+	columnlistquery.clear();
+
+	// select clause
+	columnlistquery.append("select ");
+	if (supportssyscontext) {
+		columnlistquery.append(tabcol);
+		// FIXME: I think I should return the
+		// owner as the table_schem, not cat
+		columnlistquery.append(".owner as table_cat, ");
+	} else {
+		columnlistquery.append("'' as table_cat, ");
+	}
+	columnlistquery.append(
+		"'' as table_schem, ");
+	columnlistquery.append(tabcol);
+	columnlistquery.append(".table_name, ");
+	columnlistquery.append(tabcol);
+	columnlistquery.append(".column_name, "
+		"'' as data_type, ");
+	columnlistquery.append(tabcol);
+	columnlistquery.append(".data_type as type_name, ");
+	columnlistquery.append(tabcol);
+	columnlistquery.append(".data_length, "
+		"null as buffer_length, ");
+	columnlistquery.append(tabcol);
+	columnlistquery.append(".data_scale, "
+		"10 as num_prec_radix, "
+		"case "
+			"when ");
+	columnlistquery.append(tabcol);
+	columnlistquery.append(".nullable = 'N' then 0 "
+			"else 1 "
+		"end as nullable, "
+		"case "
+			"when ");
+	columnlistquery.append(tabcol);
+	columnlistquery.append(".identity_column = 'YES' "
+				"then 'auto_increment ' "
+			"else '' "
+		"end as remarks, ");
+	columnlistquery.append(tabcol);
+	columnlistquery.append(".data_default, "
+		"null as sql_data_type, "
+		"null as sql_datetime_sub, ");
+	columnlistquery.append(tabcol);
+	columnlistquery.append(".char_length as char_octet_length, "
+		"null as ordinal_position, "
+		"case "
+			"when ");
+	columnlistquery.append(tabcol);
+	columnlistquery.append(".nullable = 'N' then 'NO' "
+			"else 'YES' "
+		"end as is_nullable, ");
+	columnlistquery.append(tabcol);
+	columnlistquery.append(".data_precision as numeric_precision, "
+		"null as column_key, "
+		"null ");
+
+	// from clause
+	columnlistquery.append("from ");
+	if (issynonym) {
+		columnlistquery.append(syn);
+		columnlistquery.append(", ");
+	}
+	columnlistquery.append(tabcol);
+	columnlistquery.append(" ");
+
+	// where clause
+	columnlistquery.append("where ");
+	if (issynonym) {
+		columnlistquery.append(syn);
+		columnlistquery.append(".synonym_name=upper('%s') and ");
 		if (supportssyscontext) {
-			return (wild)?
-				"select "
-				"	all_tab_columns.owner as table_cat, "
-				"	'' as table_schem, "
-				"	all_tab_columns.table_name, "
-				"	all_tab_columns.column_name, "
-				"	'' as data_type, " // case this
-				"	all_tab_columns.data_type as type_name, "
-				"	all_tab_columns.data_length, "
-				"	null as buffer_length, "
-				"	all_tab_columns.data_scale, "
-				"	10 as num_prec_radix, "
-				"	case "
-				"		when all_tab_columns.nullable = 'N' "
-				"			then 0 "
-				"		else 1 "
-				"	end as nullable, "
-				"	null as remarks, "
-				"	all_tab_columns.data_default, "
-				"	null as sql_data_type, "
-				"	null as sql_datetime_sub, "
-				"	all_tab_columns.char_length as char_octet_length, "
-				"	null as ordinal_position, "
-				"	case "
-				"		when all_tab_columns.nullable = 'N' "
-				"			then 'NO' "
-				"		else 'YES' "
-				"	end as is_nullable, "
-				"	all_tab_columns.data_precision as numeric_precision, "
-				"	null as column_key, "
-				"	null "
-				"from "
-				"	all_synonyms, "
-				"	all_tab_columns "
-				"where "
-				"	all_synonyms.synonym_name=upper('%s') "
-				"	and "
-				"	(all_synonyms.owner= "
-				"		sys_context( "
-				"		'userenv', "
-				"		'current_schema') "
-				"	or "
-				"	all_synonyms.owner='SYS' "
-				"	or "
-				"	all_synonyms.owner='SYSTEM') "
-				"	and "
-				"	all_tab_columns.table_name= "
-				"		all_synonyms.table_name "
-				"	and "
-				"	all_tab_columns.owner= "
-				"		all_synonyms.table_owner "
-				"	and "
-				"	all_tab_columns.column_name like "
-				"			upper('%s') "
-				"order by "
-				"	all_tab_columns.column_id"
-				:
-				"select "
-				"	all_tab_columns.owner as table_cat, "
-				"	'' as table_schem, "
-				"	all_tab_columns.table_name, "
-				"	all_tab_columns.column_name, "
-				"	'' as data_type, " // case this
-				"	all_tab_columns.data_type as type_name, "
-				"	all_tab_columns.data_length, "
-				"	null as buffer_length, "
-				"	all_tab_columns.data_scale, "
-				"	10 as num_prec_radix, "
-				"	case "
-				"		when all_tab_columns.nullable = 'N' "
-				"			then 0 "
-				"		else 1 "
-				"	end as nullable, "
-				"	null as remarks, "
-				"	all_tab_columns.data_default, "
-				"	null as sql_data_type, "
-				"	null as sql_datetime_sub, "
-				"	all_tab_columns.char_length as char_octet_length, "
-				"	null as ordinal_position, "
-				"	case "
-				"		when all_tab_columns.nullable = 'N' "
-				"			then 'NO' "
-				"		else 'YES' "
-				"	end as is_nullable, "
-				"	all_tab_columns.data_precision as numeric_precision, "
-				"	null as column_key, "
-				"	null "
-				"from "
-				"	all_synonyms, "
-				"	all_tab_columns "
-				"where "
-				"	all_synonyms.synonym_name=upper('%s') "
-				"	and "
-				"	(all_synonyms.owner= "
-				"		sys_context( "
-				"		'userenv', "
-				"		'current_schema') "
-				"	or "
-				"	all_synonyms.owner='SYS' "
-				"	or "
-				"	all_synonyms.owner='SYSTEM') "
-				"	and "
-				"	all_tab_columns.table_name= "
-				"		all_synonyms.table_name "
-				"	and "
-				"	all_tab_columns.owner= "
-				"		all_synonyms.table_owner "
-				"order by "
-				"	all_tab_columns.column_id";
-		} else {
-			return (wild)?
-				"select "
-				"	'' as table_cat, "
-				"	'' as table_schem, "
-				"	user_tab_columns.table_name, "
-				"	user_tab_columns.column_name, "
-				"	'' as data_type, " // case this
-				"	user_tab_columns.data_type as type_name, "
-				"	user_tab_columns.data_length, "
-				"	null as buffer_length, "
-				"	user_tab_columns.data_scale, "
-				"	10 as num_prec_radix, "
-				"	case "
-				"		when user_tab_columns.nullable = 'N' "
-				"			then 0 "
-				"		else 1 "
-				"	end as nullable, "
-				"	null as remarks, "
-				"	user_tab_columns.data_default, "
-				"	null as sql_data_type, "
-				"	null as sql_datetime_sub, "
-				"	user_tab_columns.char_length as char_octet_length, "
-				"	null as ordinal_position, "
-				"	case "
-				"		when user_tab_columns.nullable = 'N' "
-				"			then 'NO' "
-				"		else 'YES' "
-				"	end as is_nullable, "
-				"	user_tab_columns.data_precision as numeric_precision, "
-				"	null as column_key, "
-				"	null "
-				"from "
-				"	user_synonyms, "
-				"	user_tab_columns "
-				"where "
-				"	user_synonyms.synonym_name=upper('%s') "
-				"	and "
-				"	user_tab_columns.table_name= "
-				"		user_synonyms.table_name "
-				"	and "
-				"	user_tab_columns.column_name like "
-				"			upper('%s') "
-				"order by "
-				"	user_tab_columns.column_id"
-				:
-				"select "
-				"	'' as table_cat, "
-				"	'' as table_schem, "
-				"	user_tab_columns.table_name, "
-				"	user_tab_columns.column_name, "
-				"	'' as data_type, " // case this
-				"	user_tab_columns.data_type as type_name, "
-				"	user_tab_columns.data_length, "
-				"	null as buffer_length, "
-				"	user_tab_columns.data_scale, "
-				"	10 as num_prec_radix, "
-				"	case "
-				"		when user_tab_columns.nullable = 'N' "
-				"			then 0 "
-				"		else 1 "
-				"	end as nullable, "
-				"	null as remarks, "
-				"	user_tab_columns.data_default, "
-				"	null as sql_data_type, "
-				"	null as sql_datetime_sub, "
-				"	user_tab_columns.char_length as char_octet_length, "
-				"	null as ordinal_position, "
-				"	case "
-				"		when user_tab_columns.nullable = 'N' "
-				"			then 'NO' "
-				"		else 'YES' "
-				"	end as is_nullable, "
-				"	user_tab_columns.data_precision as numeric_precision, "
-				"	null as column_key, "
-				"	null "
-				"from "
-				"	user_synonyms, "
-				"	user_tab_columns "
-				"where "
-				"	user_synonyms.synonym_name=upper('%s') "
-				"	and "
-				"	user_tab_columns.table_name= "
-				"		user_synonyms.table_name "
-				"order by "
-				"	user_tab_columns.column_id";
+			columnlistquery.append("(");
+			columnlistquery.append(syn);
+			columnlistquery.append(".owner="
+				"sys_context('userenv','current_schema') "
+				"or ");
+			columnlistquery.append(syn);
+			columnlistquery.append(".owner='SYS' or ");
+			columnlistquery.append(syn);
+			columnlistquery.append(".owner='SYSTEM') and ");
+		}
+		columnlistquery.append(tabcol);
+		columnlistquery.append(".table_name=");
+		columnlistquery.append(syn);
+		columnlistquery.append(".table_name and ");
+		if (supportssyscontext) {
+			columnlistquery.append(tabcol);
+			columnlistquery.append(".owner=");
+			columnlistquery.append(syn);
+			columnlistquery.append(".table_owner ");
+		}
+	} else {
+		columnlistquery.append(tabcol);
+		columnlistquery.append(".table_name=upper('%s') ");
+		if (supportssyscontext) {
+			columnlistquery.append("and (");
+			columnlistquery.append(tabcol);
+			columnlistquery.append(".owner="
+				"sys_context('userenv','current_schema') "
+				"or ");
+			columnlistquery.append(tabcol);
+			columnlistquery.append(".owner='SYS' or ");
+			columnlistquery.append(tabcol);
+			columnlistquery.append(".owner='SYSTEM') ");
 		}
 	}
-
-	if (supportssyscontext) {
-		return (wild)?
-			"select "
-			"	all_tab_columns.owner as table_cat, "
-			"	'' as table_schem, "
-			"	all_tab_columns.table_name, "
-			"	all_tab_columns.column_name, "
-			"	'' as data_type, " // case this
-			"	all_tab_columns.data_type as type_name, "
-			"	all_tab_columns.data_length, "
-			"	null as buffer_length, "
-			"	all_tab_columns.data_scale, "
-			"	10 as num_prec_radix, "
-			"	case "
-			"		when all_tab_columns.nullable = 'N' "
-			"			then 0 "
-			"		else 1 "
-			"	end as nullable, "
-			"	null as remarks, "
-			"	all_tab_columns.data_default, "
-			"	null as sql_data_type, "
-			"	null as sql_datetime_sub, "
-			"	all_tab_columns.char_length as char_octet_length, "
-			"	null as ordinal_position, "
-			"	case "
-			"		when all_tab_columns.nullable = 'N' "
-			"			then 'NO' "
-			"		else 'YES' "
-			"	end as is_nullable, "
-			"	all_tab_columns.data_precision as numeric_precision, "
-			"	null as column_key, "
-			"	null "
-			"from "
-			"	all_tab_columns "
-			"where "
-			"	all_tab_columns.table_name=upper('%s') "
-			"	and "
-			"	all_tab_columns.column_name like upper('%s') "
-			"	and "
-			"	(all_tab_columns.owner="
-			"		sys_context('userenv',"
-			"				'current_schema') "
-			"	or "
-			"	all_tab_columns.owner='SYS' "
-			"	or "
-			"	all_tab_columns.owner='SYSTEM') "
-			"order by "
-			"	all_tab_columns.column_id"
-			:
-			"select "
-			"	all_tab_columns.owner as table_cat, "
-			"	'' as table_schem, "
-			"	all_tab_columns.table_name, "
-			"	all_tab_columns.column_name, "
-			"	'' as data_type, " // case this
-			"	all_tab_columns.data_type as type_name, "
-			"	all_tab_columns.data_length, "
-			"	null as buffer_length, "
-			"	all_tab_columns.data_scale, "
-			"	10 as num_prec_radix, "
-			"	case "
-			"		when all_tab_columns.nullable = 'N' "
-			"			then 0 "
-			"		else 1 "
-			"	end as nullable, "
-			"	null as remarks, "
-			"	all_tab_columns.data_default, "
-			"	null as sql_data_type, "
-			"	null as sql_datetime_sub, "
-			"	all_tab_columns.char_length as char_octet_length, "
-			"	null as ordinal_position, "
-			"	case "
-			"		when all_tab_columns.nullable = 'N' "
-			"			then 'NO' "
-			"		else 'YES' "
-			"	end as is_nullable, "
-			"	all_tab_columns.data_precision as numeric_precision, "
-			"	null as column_key, "
-			"	null "
-			"from "
-			"	all_tab_columns "
-			"where "
-			"	all_tab_columns.table_name=upper('%s') "
-			"	and "
-			"	(all_tab_columns.owner="
-			"		sys_context('userenv',"
-			"				'current_schema') "
-			"	or "
-			"	all_tab_columns.owner='SYS' "
-			"	or "
-			"	all_tab_columns.owner='SYSTEM') "
-			"order by "
-			"	all_tab_columns.column_id";
-	} else {
-		return (wild)?
-			"select "
-			"	'' as table_cat, "
-			"	'' as table_schem, "
-			"	user_tab_columns.table_name, "
-			"	user_tab_columns.column_name, "
-			"	'' as data_type, " // case this
-			"	user_tab_columns.data_type as type_name, "
-			"	user_tab_columns.data_length, "
-			"	null as buffer_length, "
-			"	user_tab_columns.data_scale, "
-			"	10 as num_prec_radix, "
-			"	case "
-			"		when user_tab_columns.nullable = 'N' "
-			"			then 0 "
-			"		else 1 "
-			"	end as nullable, "
-			"	null as remarks, "
-			"	user_tab_columns.data_default, "
-			"	null as sql_data_type, "
-			"	null as sql_datetime_sub, "
-			"	user_tab_columns.char_length as char_octet_length, "
-			"	null as ordinal_position, "
-			"	case "
-			"		when user_tab_columns.nullable = 'N' "
-			"			then 'NO' "
-			"		else 'YES' "
-			"	end as is_nullable, "
-			"	user_tab_columns.data_precision as numeric_precision, "
-			"	null as column_key, "
-			"	null "
-			"from "
-			"	user_tab_columns "
-			"where "
-			"	user_tab_columns.table_name=upper('%s') "
-			"	and "
-			"	user_tab_columns.column_name like upper('%s') "
-			"order by "
-			"	user_tab_columns.column_id"
-			:
-			"select "
-			"	'' as table_cat, "
-			"	'' as table_schem, "
-			"	user_tab_columns.table_name, "
-			"	user_tab_columns.column_name, "
-			"	'' as data_type, " // case this
-			"	user_tab_columns.data_type as type_name, "
-			"	user_tab_columns.data_length, "
-			"	null as buffer_length, "
-			"	user_tab_columns.data_scale, "
-			"	10 as num_prec_radix, "
-			"	case "
-			"		when user_tab_columns.nullable = 'N' "
-			"			then 0 "
-			"		else 1 "
-			"	end as nullable, "
-			"	null as remarks, "
-			"	user_tab_columns.data_default, "
-			"	null as sql_data_type, "
-			"	null as sql_datetime_sub, "
-			"	user_tab_columns.char_length as char_octet_length, "
-			"	null as ordinal_position, "
-			"	case "
-			"		when user_tab_columns.nullable = 'N' "
-			"			then 'NO' "
-			"		else 'YES' "
-			"	end as is_nullable, "
-			"	user_tab_columns.data_precision as numeric_precision, "
-			"	null as column_key, "
-			"	null "
-			"from "
-			"	user_tab_columns "
-			"where "
-			"	user_tab_columns.table_name=upper('%s') "
-			"order by "
-			"	user_tab_columns.column_id";
+	if (wild) {
+		columnlistquery.append("and ");
+		columnlistquery.append(tabcol);
+		columnlistquery.append(".column_name like upper('%s') ");
 	}
+
+	// order by clause
+	columnlistquery.append("order by ");
+	columnlistquery.append(tabcol);
+	columnlistquery.append(".column_id");
+
+	return columnlistquery.getString();
 }
 
 const char *oracleconnection::getColumnListQueryWithKeys(
@@ -1786,582 +1544,176 @@ const char *oracleconnection::getColumnListQueryWithKeys(
 	// to see if the object is a synonym though, so we'll do that first
 	// and only spend the extra time if it is.
 
-	// FIXME: I think I should return the owner as the table_schem, not cat
-	if (isSynonym(table)) {
+	bool	issynonym=isSynonym(table);
+
+	// determine prefixes based on supportssyscontext
+	const char	*tabcol=(supportssyscontext)?
+					"all_tab_columns":"user_tab_columns";
+	const char	*conscol=(supportssyscontext)?
+					"all_cons_columns":"user_cons_columns";
+	const char	*cons=(supportssyscontext)?
+					"all_constraints":"user_constraints";
+	const char	*syn=(supportssyscontext)?
+					"all_synonyms":"user_synonyms";
+
+	columnlistquery.clear();
+
+	// select clause
+	columnlistquery.append("select ");
+	if (supportssyscontext) {
+		columnlistquery.append(tabcol);
+		// FIXME: I think I should return the
+		// owner as the table_schem, not cat
+		columnlistquery.append(".owner as table_cat, ");
+	} else {
+		columnlistquery.append("'' as table_cat, ");
+	}
+	columnlistquery.append(
+		"'' as table_schem, ");
+	columnlistquery.append(tabcol);
+	columnlistquery.append(".table_name, ");
+	columnlistquery.append(tabcol);
+	columnlistquery.append(".column_name, "
+		"'' as data_type, ");
+	columnlistquery.append(tabcol);
+	columnlistquery.append(".data_type as type_name, ");
+	columnlistquery.append(tabcol);
+	columnlistquery.append(".data_length, "
+		"null as buffer_length, ");
+	columnlistquery.append(tabcol);
+	columnlistquery.append(".data_scale, "
+		"10 as num_prec_radix, "
+		"case "
+			"when ");
+	columnlistquery.append(tabcol);
+	columnlistquery.append(".nullable = 'N' then 0 "
+			"else 1 "
+		"end as nullable, "
+		"case "
+			"when ");
+	columnlistquery.append(tabcol);
+	columnlistquery.append(".identity_column = 'YES' "
+				"then 'auto_increment ' "
+			"else '' "
+		"end as remarks, ");
+	columnlistquery.append(tabcol);
+	columnlistquery.append(".data_default, "
+		"null as sql_data_type, "
+		"null as sql_datetime_sub, ");
+	columnlistquery.append(tabcol);
+	columnlistquery.append(".char_length as char_octet_length, "
+		"null as ordinal_position, "
+		"case "
+			"when ");
+	columnlistquery.append(tabcol);
+	columnlistquery.append(".nullable = 'N' then 'NO' "
+			"else 'YES' "
+		"end as is_nullable, ");
+	columnlistquery.append(tabcol);
+	columnlistquery.append(".data_precision as numeric_precision, "
+		"consdata.key as column_key, "
+		"null ");
+
+	// from clause
+	columnlistquery.append("from ");
+	if (issynonym) {
+		columnlistquery.append(syn);
+		columnlistquery.append(", ");
+	}
+	columnlistquery.append(tabcol);
+	columnlistquery.append(" left outer join (select ");
+	columnlistquery.append(conscol);
+	if (supportssyscontext) {
+		columnlistquery.append(".owner, ");
+		columnlistquery.append(conscol);
+	}
+	columnlistquery.append(".table_name, ");
+	columnlistquery.append(conscol);
+	columnlistquery.append(".column_name, "
+		"case ");
+	columnlistquery.append(cons);
+	columnlistquery.append(".constraint_type "
+			"when 'P' then 'PRI' "
+			"when 'U' then 'UNI' "
+			"when 'R' then 'MUL' "
+			"else null "
+		"end as key "
+		"from ");
+	columnlistquery.append(conscol);
+	columnlistquery.append(", ");
+	columnlistquery.append(cons);
+	columnlistquery.append(" where ");
+	columnlistquery.append(cons);
+	columnlistquery.append(".constraint_name=");
+	columnlistquery.append(conscol);
+	columnlistquery.append(".constraint_name and ");
+	columnlistquery.append(conscol);
+	columnlistquery.append(".position is not null) consdata on (");
+	if (supportssyscontext) {
+		columnlistquery.append("consdata.owner=");
+		columnlistquery.append(tabcol);
+		columnlistquery.append(".owner and ");
+	}
+	columnlistquery.append("consdata.table_name=");
+	columnlistquery.append(tabcol);
+	columnlistquery.append(".table_name and "
+		"consdata.column_name=");
+	columnlistquery.append(tabcol);
+	columnlistquery.append(".column_name) ");
+
+	// where clause
+	columnlistquery.append("where ");
+	if (issynonym) {
+		columnlistquery.append(syn);
+		columnlistquery.append(".synonym_name=upper('%s') and ");
 		if (supportssyscontext) {
-			return (wild)?
-				"select "
-				"	all_tab_columns.owner as table_cat, "
-				"	'' as table_schem, "
-				"	all_tab_columns.table_name, "
-				"	all_tab_columns.column_name, "
-				"	'' as data_type, " // case this
-				"	all_tab_columns.data_type as type_name, "
-				"	all_tab_columns.data_length, "
-				"	null as buffer_length, "
-				"	all_tab_columns.data_scale, "
-				"	10 as num_prec_radix, "
-				"	case "
-				"		when all_tab_columns.nullable = 'N' "
-				"			then 0 "
-				"		else 1 "
-				"	end as nullable, "
-				"	null as remarks, "
-				"	all_tab_columns.data_default, "
-				"	null as sql_data_type, "
-				"	null as sql_datetime_sub, "
-				"	all_tab_columns.char_length as char_octet_length, "
-				"	null as ordinal_position, "
-				"	case "
-				"		when all_tab_columns.nullable = 'N' "
-				"			then 'NO' "
-				"		else 'YES' "
-				"	end as is_nullable, "
-				"	all_tab_columns.data_precision as numeric_precision, "
-				"	cons.key as column_key, "
-				"	null "
-				"from "
-				"	all_synonyms, "
-				"	all_tab_columns "
-				"	left outer join "
-				"		(select "
-				"		all_cons_columns.owner, "
-				"		all_cons_columns.table_name, "
-				"		all_cons_columns.column_name, "
-				"		case "
-				"			all_constraints. "
-				"			constraint_type "
-				"			when 'P' then 'PRI' "
-				"			when 'U' then 'UNI' "
-				"			when 'R' then 'MUL' "
-				"			else null "
-				"			end as key "
-				"		from "
-				"			all_cons_columns, "
-				"			all_constraints "
-				"		where "
-				"			all_constraints."
-				"			constraint_name="
-				"			all_cons_columns."
-				"			constraint_name "
-				"			and "
-				"			all_cons_columns."
-				"			position is not null) "
-				"			cons "
-				"	on ("
-				"		cons.owner="
-				"		all_tab_columns.owner "
-				"		and "
-				"		cons.table_name="
-				"		all_tab_columns.table_name "
-				"		and "
-				"		cons.column_name="
-				"		all_tab_columns.column_name) "
-				"where "
-				"	all_synonyms.synonym_name=upper('%s') "
-				"	and "
-				"	(all_synonyms.owner= "
-				"		sys_context( "
-				"		'userenv', "
-				"		'current_schema') "
-				"	or "
-				"	all_synonyms.owner='SYS' "
-				"	or "
-				"	all_synonyms.owner='SYSTEM') "
-				"	and "
-				"	all_tab_columns.table_name= "
-				"		all_synonyms.table_name "
-				"	and "
-				"	all_tab_columns.owner= "
-				"		all_synonyms.table_owner "
-				"	and "
-				"	all_tab_columns.column_name like "
-				"			upper('%s') "
-				"order by "
-				"	all_tab_columns.column_id"
-				:
-				"select "
-				"	all_tab_columns.owner as table_cat, "
-				"	'' as table_schem, "
-				"	all_tab_columns.table_name, "
-				"	all_tab_columns.column_name, "
-				"	'' as data_type, " // case this
-				"	all_tab_columns.data_type as type_name, "
-				"	all_tab_columns.data_length, "
-				"	null as buffer_length, "
-				"	all_tab_columns.data_scale, "
-				"	10 as num_prec_radix, "
-				"	case "
-				"		when all_tab_columns.nullable = 'N' "
-				"			then 0 "
-				"		else 1 "
-				"	end as nullable, "
-				"	null as remarks, "
-				"	all_tab_columns.data_default, "
-				"	null as sql_data_type, "
-				"	null as sql_datetime_sub, "
-				"	all_tab_columns.char_length as char_octet_length, "
-				"	null as ordinal_position, "
-				"	case "
-				"		when all_tab_columns.nullable = 'N' "
-				"			then 'NO' "
-				"		else 'YES' "
-				"	end as is_nullable, "
-				"	all_tab_columns.data_precision as numeric_precision, "
-				"	cons.key as column_key, "
-				"	null "
-				"from "
-				"	all_synonyms, "
-				"	all_tab_columns "
-				"	left outer join "
-				"		(select "
-				"		all_cons_columns.owner, "
-				"		all_cons_columns.table_name, "
-				"		all_cons_columns.column_name, "
-				"		case "
-				"			all_constraints. "
-				"			constraint_type "
-				"			when 'P' then 'PRI' "
-				"			when 'U' then 'UNI' "
-				"			when 'R' then 'MUL' "
-				"			else null "
-				"		end as key "
-				"		from "
-				"			all_cons_columns, "
-				"			all_constraints "
-				"		where "
-				"			all_constraints."
-				"			constraint_name="
-				"			all_cons_columns."
-				"			constraint_name "
-				"			and "
-				"			all_cons_columns."
-				"			position is not null) "
-				"			cons "
-				"	on ("
-				"		cons.owner="
-				"		all_tab_columns.owner "
-				"		and "
-				"		cons.table_name="
-				"		all_tab_columns.table_name "
-				"		and "
-				"		cons.column_name="
-				"		all_tab_columns.column_name) "
-				"where "
-				"	all_synonyms.synonym_name=upper('%s') "
-				"	and "
-				"	(all_synonyms.owner= "
-				"		sys_context( "
-				"		'userenv', "
-				"		'current_schema') "
-				"	or "
-				"	all_synonyms.owner='SYS' "
-				"	or "
-				"	all_synonyms.owner='SYSTEM') "
-				"	and "
-				"	all_tab_columns.table_name= "
-				"		all_synonyms.table_name "
-				"	and "
-				"	all_tab_columns.owner= "
-				"		all_synonyms.table_owner "
-				"order by "
-				"	all_tab_columns.column_id";
-		} else {
-			return (wild)?
-				"select "
-				"	all_tab_columns.owner as table_cat, "
-				"	'' as table_schem, "
-				"	all_tab_columns.table_name, "
-				"	all_tab_columns.column_name, "
-				"	'' as data_type, " // case this
-				"	all_tab_columns.data_type as type_name, "
-				"	all_tab_columns.data_length, "
-				"	null as buffer_length, "
-				"	all_tab_columns.data_scale, "
-				"	10 as num_prec_radix, "
-				"	case "
-				"		when all_tab_columns.nullable = 'N' "
-				"			then 0 "
-				"		else 1 "
-				"	end as nullable, "
-				"	null as remarks, "
-				"	all_tab_columns.data_default, "
-				"	null as sql_data_type, "
-				"	null as sql_datetime_sub, "
-				"	all_tab_columns.char_length as char_octet_length, "
-				"	null as ordinal_position, "
-				"	case "
-				"		when all_tab_columns.nullable = 'N' "
-				"			then 'NO' "
-				"		else 'YES' "
-				"	end as is_nullable, "
-				"	all_tab_columns.data_precision as numeric_precision, "
-				"	cons.key as column_key, "
-				"	null "
-				"from "
-				"	all_synonyms, "
-				"	all_tab_columns "
-				"where "
-				"	all_synonyms.synonym_name=upper('%s') "
-				"	and "
-				"	all_tab_columns.table_name= "
-				"		all_synonyms.table_name "
-				"	and "
-				"	all_tab_columns.owner= "
-				"		all_synonyms.table_owner "
-				"	and "
-				"	all_tab_columns.column_name like "
-				"			upper('%s') "
-				"order by "
-				"	all_tab_columns.column_id"
-				:
-				"select "
-				"	all_tab_columns.owner as table_cat, "
-				"	'' as table_schem, "
-				"	all_tab_columns.table_name, "
-				"	all_tab_columns.column_name, "
-				"	'' as data_type, " // case this
-				"	all_tab_columns.data_type as type_name, "
-				"	all_tab_columns.data_length, "
-				"	null as buffer_length, "
-				"	all_tab_columns.data_scale, "
-				"	10 as num_prec_radix, "
-				"	case "
-				"		when all_tab_columns.nullable = 'N' "
-				"			then 0 "
-				"		else 1 "
-				"	end as nullable, "
-				"	null as remarks, "
-				"	all_tab_columns.data_default, "
-				"	null as sql_data_type, "
-				"	null as sql_datetime_sub, "
-				"	all_tab_columns.char_length as char_octet_length, "
-				"	null as ordinal_position, "
-				"	case "
-				"		when all_tab_columns.nullable = 'N' "
-				"			then 'NO' "
-				"		else 'YES' "
-				"	end as is_nullable, "
-				"	all_tab_columns.data_precision as numeric_precision, "
-				"	cons.key as column_key, "
-				"	null "
-				"from "
-				"	all_synonyms, "
-				"	all_tab_columns "
-				"where "
-				"	all_synonyms.synonym_name=upper('%s') "
-				"	and "
-				"	all_tab_columns.table_name= "
-				"		all_synonyms.table_name "
-				"	and "
-				"	all_tab_columns.owner= "
-				"		all_synonyms.table_owner "
-				"order by "
-				"	all_tab_columns.column_id";
+			columnlistquery.append("(");
+			columnlistquery.append(syn);
+			columnlistquery.append(".owner="
+				"sys_context('userenv','current_schema') "
+				"or ");
+			columnlistquery.append(syn);
+			columnlistquery.append(".owner='SYS' or ");
+			columnlistquery.append(syn);
+			columnlistquery.append(".owner='SYSTEM') and ");
+		}
+		columnlistquery.append(tabcol);
+		columnlistquery.append(".table_name=");
+		columnlistquery.append(syn);
+		columnlistquery.append(".table_name and ");
+		if (supportssyscontext) {
+			columnlistquery.append(tabcol);
+			columnlistquery.append(".owner=");
+			columnlistquery.append(syn);
+			columnlistquery.append(".table_owner ");
+		}
+	} else {
+		columnlistquery.append(tabcol);
+		columnlistquery.append(".table_name=upper('%s') ");
+		if (supportssyscontext) {
+			columnlistquery.append("and (");
+			columnlistquery.append(tabcol);
+			columnlistquery.append(".owner="
+				"sys_context('userenv','current_schema') "
+				"or ");
+			columnlistquery.append(tabcol);
+			columnlistquery.append(".owner='SYS' or ");
+			columnlistquery.append(tabcol);
+			columnlistquery.append(".owner='SYSTEM') ");
 		}
 	}
-
-	if (supportssyscontext) {
-		return (wild)?
-			"select "
-			"	all_tab_columns.owner as table_cat, "
-			"	'' as table_schem, "
-			"	all_tab_columns.table_name, "
-			"	all_tab_columns.column_name, "
-			"	'' as data_type, " // case this
-			"	all_tab_columns.data_type as type_name, "
-			"	all_tab_columns.data_length, "
-			"	null as buffer_length, "
-			"	all_tab_columns.data_scale, "
-			"	10 as num_prec_radix, "
-			"	case "
-			"		when all_tab_columns.nullable = 'N' "
-			"			then 0 "
-			"		else 1 "
-			"	end as nullable, "
-			"	null as remarks, "
-			"	all_tab_columns.data_default, "
-			"	null as sql_data_type, "
-			"	null as sql_datetime_sub, "
-			"	all_tab_columns.char_length as char_octet_length, "
-			"	null as ordinal_position, "
-			"	case "
-			"		when all_tab_columns.nullable = 'N' "
-			"			then 'NO' "
-			"		else 'YES' "
-			"	end as is_nullable, "
-			"	all_tab_columns.data_precision as numeric_precision, "
-			"	cons.key as column_key, "
-			"	null "
-			"from "
-			"	all_tab_columns "
-			"	left outer join "
-			"		(select "
-			"			all_cons_columns.owner, "
-			"			all_cons_columns.table_name, "
-			"			all_cons_columns.column_name, "
-			"			case "
-			"				all_constraints. "
-			"				constraint_type "
-			"				when 'P' then 'PRI' "
-			"				when 'U' then 'UNI' "
-			"				when 'R' then 'MUL' "
-			"				else null "
-			"			end as key "
-			"		from "
-			"			all_cons_columns, "
-			"			all_constraints "
-			"		where "
-			"			all_constraints."
-			"				constraint_name="
-			"			all_cons_columns."
-			"				constraint_name "
-			"			and "
-			"			all_cons_columns."
-			"				position is not null) "
-			"			cons "
-			"	on ("
-			"		cons.owner="
-			"			all_tab_columns.owner "
-			"		and "
-			"		cons.table_name="
-			"			all_tab_columns.table_name "
-			"		and "
-			"		cons.column_name="
-			"			all_tab_columns.column_name) "
-			"where "
-			"	all_tab_columns.table_name=upper('%s') "
-			"	and "
-			"	all_tab_columns.column_name like upper('%s') "
-			"	and "
-			"	(all_tab_columns.owner="
-			"		sys_context('userenv',"
-			"				'current_schema') "
-			"	or "
-			"	all_tab_columns.owner='SYS' "
-			"	or "
-			"	all_tab_columns.owner='SYSTEM') "
-			"order by "
-			"	all_tab_columns.column_id"
-			:
-			"select "
-			"	all_tab_columns.owner as table_cat, "
-			"	'' as table_schem, "
-			"	all_tab_columns.table_name, "
-			"	all_tab_columns.column_name, "
-			"	'' as data_type, " // case this
-			"	all_tab_columns.data_type as type_name, "
-			"	all_tab_columns.data_length, "
-			"	null as buffer_length, "
-			"	all_tab_columns.data_scale, "
-			"	10 as num_prec_radix, "
-			"	case "
-			"		when all_tab_columns.nullable = 'N' "
-			"			then 0 "
-			"		else 1 "
-			"	end as nullable, "
-			"	null as remarks, "
-			"	all_tab_columns.data_default, "
-			"	null as sql_data_type, "
-			"	null as sql_datetime_sub, "
-			"	all_tab_columns.char_length as char_octet_length, "
-			"	null as ordinal_position, "
-			"	case "
-			"		when all_tab_columns.nullable = 'N' "
-			"			then 'NO' "
-			"		else 'YES' "
-			"	end as is_nullable, "
-			"	all_tab_columns.data_precision as numeric_precision, "
-			"	cons.key as column_key, "
-			"	null "
-			"from "
-			"	all_tab_columns "
-			"	left outer join "
-			"		(select "
-			"			all_cons_columns.owner, "
-			"			all_cons_columns.table_name, "
-			"			all_cons_columns.column_name, "
-			"			case "
-			"				all_constraints. "
-			"				constraint_type "
-			"				when 'P' then 'PRI' "
-			"				when 'U' then 'UNI' "
-			"				when 'R' then 'MUL' "
-			"				else null "
-			"			end as key "
-			"		from "
-			"			all_cons_columns, "
-			"			all_constraints "
-			"		where "
-			"			all_constraints."
-			"				constraint_name="
-			"			all_cons_columns."
-			"				constraint_name "
-			"			and "
-			"			all_cons_columns."
-			"				position is not null) "
-			"			cons "
-			"	on ("
-			"		cons.owner="
-			"			all_tab_columns.owner "
-			"		and "
-			"		cons.table_name="
-			"			all_tab_columns.table_name "
-			"		and "
-			"		cons.column_name="
-			"			all_tab_columns.column_name) "
-			"where "
-			"	all_tab_columns.table_name=upper('%s') "
-			"	and "
-			"	(all_tab_columns.owner="
-			"		sys_context('userenv',"
-			"				'current_schema') "
-			"	or "
-			"	all_tab_columns.owner='SYS' "
-			"	or "
-			"	all_tab_columns.owner='SYSTEM') "
-			"order by "
-			"	all_tab_columns.column_id";
-	} else {
-		return (wild)?
-			"select "
-			"	'' as table_cat, "
-			"	'' as table_schem, "
-			"	user_tab_columns.table_name, "
-			"	user_tab_columns.column_name, "
-			"	'' as data_type, " // case this
-			"	user_tab_columns.data_type as type_name, "
-			"	user_tab_columns.data_length, "
-			"	null as buffer_length, "
-			"	user_tab_columns.data_scale, "
-			"	10 as num_prec_radix, "
-			"	case "
-			"		when user_tab_columns.nullable = 'N' "
-			"			then 0 "
-			"		else 1 "
-			"	end as nullable, "
-			"	null as remarks, "
-			"	user_tab_columns.data_default, "
-			"	null as sql_data_type, "
-			"	null as sql_datetime_sub, "
-			"	user_tab_columns.char_length as char_octet_length, "
-			"	null as ordinal_position, "
-			"	case "
-			"		when user_tab_columns.nullable = 'N' "
-			"			then 'NO' "
-			"		else 'YES' "
-			"	end as is_nullable, "
-			"	user_tab_columns.data_precision as numeric_precision, "
-			"	cons.key as column_key, "
-			"	null "
-			"from "
-			"	user_tab_columns "
-			"	left outer join "
-			"		(select "
-			"			user_cons_columns.owner, "
-			"			user_cons_columns.table_name, "
-			"			user_cons_columns.column_name, "
-			"			case "
-			"				user_constraints. "
-			"				constraint_type "
-			"				when 'P' then 'PRI' "
-			"				when 'U' then 'UNI' "
-			"				when 'R' then 'MUL' "
-			"				else null "
-			"			end as key "
-			"		from "
-			"			user_cons_columns, "
-			"			user_constraints "
-			"		where "
-			"			user_constraints."
-			"				constraint_name="
-			"			user_cons_columns."
-			"				constraint_name "
-			"			and "
-			"			user_cons_columns."
-			"				position is not null) "
-			"			cons "
-			"	on ("
-			"		cons.table_name="
-			"			user_tab_columns.table_name "
-			"		and "
-			"		cons.column_name="
-			"			user_tab_columns.column_name) "
-			"where "
-			"	user_tab_columns.table_name=upper('%s') "
-			"	and "
-			"	user_tab_columns.column_name like upper('%s') "
-			"order by "
-			"	user_tab_columns.column_id"
-			:
-			"select "
-			"	'' as table_cat, "
-			"	'' as table_schem, "
-			"	user_tab_columns.table_name, "
-			"	user_tab_columns.column_name, "
-			"	'' as data_type, " // case this
-			"	user_tab_columns.data_type as type_name, "
-			"	user_tab_columns.data_length, "
-			"	null as buffer_length, "
-			"	user_tab_columns.data_scale, "
-			"	10 as num_prec_radix, "
-			"	case "
-			"		when user_tab_columns.nullable = 'N' "
-			"			then 0 "
-			"		else 1 "
-			"	end as nullable, "
-			"	null as remarks, "
-			"	user_tab_columns.data_default, "
-			"	null as sql_data_type, "
-			"	null as sql_datetime_sub, "
-			"	user_tab_columns.char_length as char_octet_length, "
-			"	null as ordinal_position, "
-			"	case "
-			"		when user_tab_columns.nullable = 'N' "
-			"			then 'NO' "
-			"		else 'YES' "
-			"	end as is_nullable, "
-			"	user_tab_columns.data_precision as numeric_precision, "
-			"	cons.key as column_key, "
-			"	null "
-			"from "
-			"	user_tab_columns "
-			"	left outer join "
-			"		(select "
-			"			user_cons_columns.owner, "
-			"			user_cons_columns.table_name, "
-			"			user_cons_columns.column_name, "
-			"			case "
-			"				user_constraints. "
-			"				constraint_type "
-			"				when 'P' then 'PRI' "
-			"				when 'U' then 'UNI' "
-			"				when 'R' then 'MUL' "
-			"				else null "
-			"			end as key "
-			"		from "
-			"			user_cons_columns, "
-			"			user_constraints "
-			"		where "
-			"			user_constraints."
-			"				constraint_name="
-			"			user_cons_columns."
-			"				constraint_name "
-			"			and "
-			"			user_cons_columns."
-			"				position is not null) "
-			"			cons "
-			"	on ("
-			"		cons.table_name="
-			"			user_tab_columns.table_name "
-			"		and "
-			"		cons.column_name="
-			"			user_tab_columns.column_name) "
-			"where "
-			"	user_tab_columns.table_name=upper('%s') "
-			"order by "
-			"	user_tab_columns.column_id";
+	if (wild) {
+		columnlistquery.append("and ");
+		columnlistquery.append(tabcol);
+		columnlistquery.append(".column_name like upper('%s') ");
 	}
+
+	// order by clause
+	columnlistquery.append("order by ");
+	columnlistquery.append(tabcol);
+	columnlistquery.append(".column_id");
+
+	return columnlistquery.getString();
 }
 
 static const char	*chartype=
