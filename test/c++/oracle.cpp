@@ -1078,7 +1078,6 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");*/
 
 
-
 	// rebinding
 	stdoutput.printf("REBINDING: \n");
 	cur->sendQuery("drop procedure testproc");
