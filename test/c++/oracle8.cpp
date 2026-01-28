@@ -883,6 +883,17 @@ int main(int argc, char **argv) {
 	cur->sendQuery("drop procedure testproc");
 	stdoutput.printf("\n");
 
+	// column list primary key...
+	stdoutput.printf("COLUMN LIST - primary key: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("create table testtable (col1 number primary key, col2 number)"));
+	assertTrue(cur->getColumnList("testtable",NULL));
+	assertTrue(charstring::containsIgnoringCase(
+			cur->getField(0,"column_key"),"PRI"));
+	assertFalse(charstring::containsIgnoringCase(
+			cur->getField(1,"column_key"),"PRI"));
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
 
 	// invalid queries...
 	stdoutput.printf("INVALID QUERIES: \n");

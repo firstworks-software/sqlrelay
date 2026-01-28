@@ -652,6 +652,30 @@ int main(int argc, char **argv) {
 	assertFalse(charstring::isNullOrEmpty(cur->getField(0,(uint32_t)0)));
 	stdoutput.printf("\n");
 
+	// column list auto_increment and primary key...
+	stdoutput.printf("COLUMN LIST - auto_increment, primary key: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("create table testtable (col1 integer primary key autoincrement, col2 int)"));
+	assertTrue(cur->getColumnList("testtable",NULL));
+	assertTrue(charstring::containsIgnoringCase(
+			cur->getField(0,"extra"),"auto_increment"));
+	assertTrue(charstring::containsIgnoringCase(
+			cur->getField(0,"column_key"),"PRI"));
+	assertFalse(charstring::containsIgnoringCase(
+			cur->getField(1,"extra"),"auto_increment"));
+	assertFalse(charstring::containsIgnoringCase(
+			cur->getField(1,"column_key"),"PRI"));
+	stdoutput.printf("\n");
+	assertTrue(cur->sendQuery("drop table testtable"));
+	assertTrue(cur->sendQuery("create table testtable (col1 int primary key, col2 int)"));
+	assertTrue(cur->getColumnList("testtable",NULL));
+	assertFalse(charstring::containsIgnoringCase(
+			cur->getField(0,"extra"),"auto_increment"));
+	assertTrue(charstring::containsIgnoringCase(
+			cur->getField(0,"column_key"),"PRI"));
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
+
 	// invalid queries...
 	stdoutput.printf("INVALID QUERIES: \n");
 	assertFalse(cur->sendQuery("select * from testtable"));

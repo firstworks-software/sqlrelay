@@ -2,6 +2,7 @@
 // See the file COPYING for more information.
 
 #include <sqlrelay/sqlrclient.h>
+#include <rudiments/charstring.h>
 #include <rudiments/semaphoreset.h>
 #include <rudiments/file.h>
 #include <rudiments/permissions.h>
@@ -12,15 +13,18 @@
 semaphoreset	*sem;
 uint16_t	sessionid;
 
+const char *success="\033[32msuccess\033[0m";
+const char *failure="\033[31mfailure\033[0m";
+
 void assertEquals(const char *actual, const char *expected) {
 
 	if (!expected) {
 		if (!actual) {
-			stdoutput.printf("expected ");
+			stdoutput.printf("%s ",success);
 			return;
 		} else {
 			stdoutput.printf("%s!=%s\n",actual,expected);
-			stdoutput.printf("failure ");
+			stdoutput.printf("%s ",failure);
 			if (!sessionid) {
 				delete sem;
 				file::remove("semkey");
@@ -33,10 +37,10 @@ void assertEquals(const char *actual, const char *expected) {
 	}
 
 	if (!charstring::compare(actual,expected)) {
-		stdoutput.printf("expected ");
+		stdoutput.printf("%s ",success);
 	} else {
 		stdoutput.printf("%s!=%s\n",actual,expected);
-		stdoutput.printf("failure ");
+		stdoutput.printf("%s ",failure);
 		if (!sessionid) {
 			delete sem;
 			file::remove("semkey");
@@ -51,10 +55,10 @@ void assertEquals(const char *actual, const char *expected) {
 void assertEquals(int actual, int expected) {
 
 	if (actual==expected) {
-		stdoutput.printf("expected ");
+		stdoutput.printf("%s ",success);
 	} else {
 		stdoutput.printf("%d!=%d\n",actual,expected);
-		stdoutput.printf("failure ");
+		stdoutput.printf("%s ",failure);
 		if (!sessionid) {
 			delete sem;
 			file::remove("semkey");
@@ -69,10 +73,10 @@ void assertEquals(int actual, int expected) {
 void assertTrue(bool actual) {
 
 	if (actual) {
-		stdoutput.printf("expected ");
+		stdoutput.printf("%s ",success);
 	} else {
 		stdoutput.printf("%s!=true\n",(actual)?"true":"false");
-		stdoutput.printf("failure ");
+		stdoutput.printf("%s ",failure);
 		if (!sessionid) {
 			delete sem;
 			file::remove("semkey");
