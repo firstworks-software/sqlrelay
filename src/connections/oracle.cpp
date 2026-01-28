@@ -198,10 +198,8 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		bool		disablekeylookup;
 
 		stringbuffer	tablelistquery;
-
-		stringbuffer	alltypeinfoquery;
-
-		stringbuffer	columnlistquery;
+		stringbuffer	collistquery;
+		stringbuffer	typeinfolistquery;
 };
 
 class SQLRSERVER_DLLSPEC oraclecursor : public sqlrservercursor {
@@ -1409,131 +1407,112 @@ const char *oracleconnection::getColumnListQueryWithoutKeys(
 	bool	issynonym=isSynonym(table);
 
 	// determine prefixes based on supportssyscontext
-	const char	*tabcol=(supportssyscontext)?
-					"all_tab_columns":"user_tab_columns";
-	const char	*syn=(supportssyscontext)?
-					"all_synonyms":"user_synonyms";
+	const char	*tct=(supportssyscontext)?
+				"all_tab_columns":"user_tab_columns";
+	const char	*st=(supportssyscontext)?
+				"all_synonyms":"user_synonyms";
 
-	columnlistquery.clear();
+	collistquery.clear();
 
 	// select clause
-	columnlistquery.append("select ");
+	collistquery.append("select ");
 	if (supportssyscontext) {
-		columnlistquery.append(tabcol);
 		// FIXME: I think I should return the
 		// owner as the table_schem, not cat
-		columnlistquery.append(".owner as table_cat, ");
+		collistquery.append(
+			"	tc.owner as table_cat, ");
 	} else {
-		columnlistquery.append("'' as table_cat, ");
+		collistquery.append(
+			"	'' as table_cat, ");
 	}
-	columnlistquery.append(
-		"'' as table_schem, ");
-	columnlistquery.append(tabcol);
-	columnlistquery.append(".table_name, ");
-	columnlistquery.append(tabcol);
-	columnlistquery.append(".column_name, "
-		"'' as data_type, ");
-	columnlistquery.append(tabcol);
-	columnlistquery.append(".data_type as type_name, ");
-	columnlistquery.append(tabcol);
-	columnlistquery.append(".data_length, "
-		"null as buffer_length, ");
-	columnlistquery.append(tabcol);
-	columnlistquery.append(".data_scale, "
-		"10 as num_prec_radix, "
-		"case "
-			"when ");
-	columnlistquery.append(tabcol);
-	columnlistquery.append(".nullable = 'N' then 0 "
-			"else 1 "
-		"end as nullable, "
-		"case "
-			"when ");
-	columnlistquery.append(tabcol);
-	columnlistquery.append(".identity_column = 'YES' "
-				"then 'auto_increment ' "
-			"else '' "
-		"end as remarks, ");
-	columnlistquery.append(tabcol);
-	columnlistquery.append(".data_default, "
-		"null as sql_data_type, "
-		"null as sql_datetime_sub, ");
-	columnlistquery.append(tabcol);
-	columnlistquery.append(".char_length as char_octet_length, "
-		"null as ordinal_position, "
-		"case "
-			"when ");
-	columnlistquery.append(tabcol);
-	columnlistquery.append(".nullable = 'N' then 'NO' "
-			"else 'YES' "
-		"end as is_nullable, ");
-	columnlistquery.append(tabcol);
-	columnlistquery.append(".data_precision as numeric_precision, "
-		"null as column_key, "
-		"null ");
+	collistquery.append(
+			"	'' as table_schem, "
+			"	tc.table_name, "
+			"	tc.column_name, "
+			"	'' as data_type, "
+			"	tc.data_type as type_name, "
+			"	tc.data_length as column_size, "
+			"	null as buffer_length, "
+			"	tc.data_scale as decimal_digits, "
+			"	10 as num_prec_radix, "
+			"	case "
+			"		when tc.nullable='N' then 0 "
+			"		else 1 "
+			"	end as nullable, "
+			"	case "
+			"		when tc.identity_column='YES' "
+			"			then 'auto_increment ' "
+			"		else '' "
+			"	end as remarks, "
+			"	tc.data_default as column_default, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	tc.char_length as char_octet_length, "
+			"	null as ordinal_position, "
+			"	case "
+			"		when tc.nullable='N' then 'NO' "
+			"		else 'YES' "
+			"	end as is_nullable, "
+			"	tc.data_precision as numeric_precision, "
+			"	null as column_key, "
+			"	null ");
 
 	// from clause
-	columnlistquery.append("from ");
+	collistquery.append("from ");
 	if (issynonym) {
-		columnlistquery.append(syn);
-		columnlistquery.append(", ");
+		collistquery.append(st)->append(" s, ");
 	}
-	columnlistquery.append(tabcol);
-	columnlistquery.append(" ");
+	collistquery.append(tct)->append(" tc ");
 
 	// where clause
-	columnlistquery.append("where ");
+	collistquery.append("where ");
 	if (issynonym) {
-		columnlistquery.append(syn);
-		columnlistquery.append(".synonym_name=upper('%s') and ");
+		collistquery.append(
+			"	s.synonym_name=upper('%s') ");
 		if (supportssyscontext) {
-			columnlistquery.append("(");
-			columnlistquery.append(syn);
-			columnlistquery.append(".owner="
-				"sys_context('userenv','current_schema') "
-				"or ");
-			columnlistquery.append(syn);
-			columnlistquery.append(".owner='SYS' or ");
-			columnlistquery.append(syn);
-			columnlistquery.append(".owner='SYSTEM') and ");
+			collistquery.append(
+				"	and "
+				"	(s.owner=sys_context('userenv',"
+							"'current_schema') "
+				"	or "
+				"	s.owner='SYS' "
+				"	or "
+				"	s.owner='SYSTEM') ");
 		}
-		columnlistquery.append(tabcol);
-		columnlistquery.append(".table_name=");
-		columnlistquery.append(syn);
-		columnlistquery.append(".table_name and ");
+		collistquery.append(
+			"	and "
+			"	tc.table_name=s.table_name ");
 		if (supportssyscontext) {
-			columnlistquery.append(tabcol);
-			columnlistquery.append(".owner=");
-			columnlistquery.append(syn);
-			columnlistquery.append(".table_owner ");
+			collistquery.append(
+			"	and "
+			"	tc.owner=s.table_owner ");
 		}
 	} else {
-		columnlistquery.append(tabcol);
-		columnlistquery.append(".table_name=upper('%s') ");
+		collistquery.append(
+			"	tc.table_name=upper('%s') ");
 		if (supportssyscontext) {
-			columnlistquery.append("and (");
-			columnlistquery.append(tabcol);
-			columnlistquery.append(".owner="
-				"sys_context('userenv','current_schema') "
-				"or ");
-			columnlistquery.append(tabcol);
-			columnlistquery.append(".owner='SYS' or ");
-			columnlistquery.append(tabcol);
-			columnlistquery.append(".owner='SYSTEM') ");
+			collistquery.append(
+			"	and "
+			"	(tc.owner=sys_context('userenv',"
+						"'current_schema') "
+			"	or "
+			"	tc.owner='SYS' "
+			"	or "
+			"	tc.owner='SYSTEM') ");
 		}
 	}
 	if (wild) {
-		columnlistquery.append("and ");
-		columnlistquery.append(tabcol);
-		columnlistquery.append(".column_name like upper('%s') ");
+		collistquery.append(
+			"	and "
+			"	tc.column_name like upper('%s') ");
 	}
 
 	// order by clause
-	columnlistquery.append("order by ");
-	columnlistquery.append(tabcol);
-	columnlistquery.append(".column_id");
+	collistquery.append(
+			"order by "
+			"	tc.column_id");
 
-	return columnlistquery.getString();
+	return collistquery.getString();
 }
 
 const char *oracleconnection::getColumnListQueryWithKeys(
@@ -1547,173 +1526,152 @@ const char *oracleconnection::getColumnListQueryWithKeys(
 	bool	issynonym=isSynonym(table);
 
 	// determine prefixes based on supportssyscontext
-	const char	*tabcol=(supportssyscontext)?
+	const char	*tct=(supportssyscontext)?
 					"all_tab_columns":"user_tab_columns";
-	const char	*conscol=(supportssyscontext)?
+	const char	*cct=(supportssyscontext)?
 					"all_cons_columns":"user_cons_columns";
-	const char	*cons=(supportssyscontext)?
+	const char	*ct=(supportssyscontext)?
 					"all_constraints":"user_constraints";
-	const char	*syn=(supportssyscontext)?
+	const char	*st=(supportssyscontext)?
 					"all_synonyms":"user_synonyms";
 
-	columnlistquery.clear();
+	collistquery.clear();
 
 	// select clause
-	columnlistquery.append("select ");
+	collistquery.append("select ");
 	if (supportssyscontext) {
-		columnlistquery.append(tabcol);
 		// FIXME: I think I should return the
 		// owner as the table_schem, not cat
-		columnlistquery.append(".owner as table_cat, ");
+		collistquery.append(
+			"	tc.owner as table_cat, ");
 	} else {
-		columnlistquery.append("'' as table_cat, ");
+		collistquery.append(
+			"	'' as table_cat, ");
 	}
-	columnlistquery.append(
-		"'' as table_schem, ");
-	columnlistquery.append(tabcol);
-	columnlistquery.append(".table_name, ");
-	columnlistquery.append(tabcol);
-	columnlistquery.append(".column_name, "
-		"'' as data_type, ");
-	columnlistquery.append(tabcol);
-	columnlistquery.append(".data_type as type_name, ");
-	columnlistquery.append(tabcol);
-	columnlistquery.append(".data_length, "
-		"null as buffer_length, ");
-	columnlistquery.append(tabcol);
-	columnlistquery.append(".data_scale, "
-		"10 as num_prec_radix, "
-		"case "
-			"when ");
-	columnlistquery.append(tabcol);
-	columnlistquery.append(".nullable = 'N' then 0 "
-			"else 1 "
-		"end as nullable, "
-		"case "
-			"when ");
-	columnlistquery.append(tabcol);
-	columnlistquery.append(".identity_column = 'YES' "
-				"then 'auto_increment ' "
-			"else '' "
-		"end as remarks, ");
-	columnlistquery.append(tabcol);
-	columnlistquery.append(".data_default, "
-		"null as sql_data_type, "
-		"null as sql_datetime_sub, ");
-	columnlistquery.append(tabcol);
-	columnlistquery.append(".char_length as char_octet_length, "
-		"null as ordinal_position, "
-		"case "
-			"when ");
-	columnlistquery.append(tabcol);
-	columnlistquery.append(".nullable = 'N' then 'NO' "
-			"else 'YES' "
-		"end as is_nullable, ");
-	columnlistquery.append(tabcol);
-	columnlistquery.append(".data_precision as numeric_precision, "
-		"consdata.key as column_key, "
-		"null ");
+	collistquery.append(
+			"	'' as table_schem, "
+			"	tc.table_name, "
+			"	tc.column_name, "
+			"	'' as data_type, "
+			"	tc.data_type as type_name, "
+			"	tc.data_length as column_size, "
+			"	null as buffer_length, "
+			"	tc.data_scale as decimal_digits, "
+			"	10 as num_prec_radix, "
+			"	case "
+			"		when tc.nullable='N' then 0 "
+			"		else 1 "
+			"	end as nullable, "
+			"	case "
+			"		when tc.identity_column='YES' "
+			"			then 'auto_increment ' "
+			"		else '' "
+			"	end as remarks, "
+			"	tc.data_default as column_default, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	tc.char_length as char_octet_length, "
+			"	null as ordinal_position, "
+			"	case "
+			"		when tc.nullable='N' then 'NO' "
+			"		else 'YES' "
+			"	end as is_nullable, "
+			"	tc.data_precision as numeric_precision, "
+			"	consdata.key as column_key, "
+			"	null ");
 
 	// from clause
-	columnlistquery.append("from ");
+	collistquery.append("from ");
 	if (issynonym) {
-		columnlistquery.append(syn);
-		columnlistquery.append(", ");
+		collistquery.append(st)->append(" s, ");
 	}
-	columnlistquery.append(tabcol);
-	columnlistquery.append(" left outer join (select ");
-	columnlistquery.append(conscol);
+	collistquery.append(tct)->append(" tc ");
+
+	// left outer join
+	collistquery.append("left outer join "
+			"(select ");
 	if (supportssyscontext) {
-		columnlistquery.append(".owner, ");
-		columnlistquery.append(conscol);
+		collistquery.append(
+			"	cc.owner, ");
 	}
-	columnlistquery.append(".table_name, ");
-	columnlistquery.append(conscol);
-	columnlistquery.append(".column_name, "
-		"case ");
-	columnlistquery.append(cons);
-	columnlistquery.append(".constraint_type "
-			"when 'P' then 'PRI' "
-			"when 'U' then 'UNI' "
-			"when 'R' then 'MUL' "
-			"else null "
-		"end as key "
-		"from ");
-	columnlistquery.append(conscol);
-	columnlistquery.append(", ");
-	columnlistquery.append(cons);
-	columnlistquery.append(" where ");
-	columnlistquery.append(cons);
-	columnlistquery.append(".constraint_name=");
-	columnlistquery.append(conscol);
-	columnlistquery.append(".constraint_name and ");
-	columnlistquery.append(conscol);
-	columnlistquery.append(".position is not null) consdata on (");
+	collistquery.append(
+			"	cc.table_name, "
+			"	cc.column_name, "
+			"	case c.constraint_type "
+			"		when 'P' then 'PRI' "
+			"		when 'U' then 'UNI' "
+			"		when 'R' then 'MUL' "
+			"		else null "
+			"	end as key "
+			"from ");
+	collistquery.append(cct)->append(" cc, ");
+	collistquery.append(ct)->append(" c ");
+	collistquery.append(
+			"where "
+			"	c.constraint_name=cc.constraint_name "
+			"	and "
+			"	cc.position is not null) consdata "
+			"on "
+			"(");
 	if (supportssyscontext) {
-		columnlistquery.append("consdata.owner=");
-		columnlistquery.append(tabcol);
-		columnlistquery.append(".owner and ");
+		collistquery.append(
+			"consdata.owner=tc.owner "
+			"and ");
 	}
-	columnlistquery.append("consdata.table_name=");
-	columnlistquery.append(tabcol);
-	columnlistquery.append(".table_name and "
-		"consdata.column_name=");
-	columnlistquery.append(tabcol);
-	columnlistquery.append(".column_name) ");
+	collistquery.append(
+			"consdata.table_name=tc.table_name "
+			"and "
+			"consdata.column_name=tc.column_name) ");
 
 	// where clause
-	columnlistquery.append("where ");
+	collistquery.append("where ");
 	if (issynonym) {
-		columnlistquery.append(syn);
-		columnlistquery.append(".synonym_name=upper('%s') and ");
+		collistquery.append(
+			"	s.synonym_name=upper('%s') ");
 		if (supportssyscontext) {
-			columnlistquery.append("(");
-			columnlistquery.append(syn);
-			columnlistquery.append(".owner="
-				"sys_context('userenv','current_schema') "
-				"or ");
-			columnlistquery.append(syn);
-			columnlistquery.append(".owner='SYS' or ");
-			columnlistquery.append(syn);
-			columnlistquery.append(".owner='SYSTEM') and ");
+			collistquery.append(
+			"	and "
+			"	(s.owner=sys_context('userenv',"
+						"'current_schema') "
+			"	or "
+			"	s.owner='SYS' "
+			"	or "
+			"	s.owner='SYSTEM') ");
 		}
-		columnlistquery.append(tabcol);
-		columnlistquery.append(".table_name=");
-		columnlistquery.append(syn);
-		columnlistquery.append(".table_name and ");
+		collistquery.append(
+			"	and "
+			"	tc.table_name=s.table_name ");
 		if (supportssyscontext) {
-			columnlistquery.append(tabcol);
-			columnlistquery.append(".owner=");
-			columnlistquery.append(syn);
-			columnlistquery.append(".table_owner ");
+			collistquery.append(
+			"	and "
+			"	tc.owner=s.table_owner ");
 		}
 	} else {
-		columnlistquery.append(tabcol);
-		columnlistquery.append(".table_name=upper('%s') ");
+		collistquery.append(
+			"	tc.table_name=upper('%s') ");
 		if (supportssyscontext) {
-			columnlistquery.append("and (");
-			columnlistquery.append(tabcol);
-			columnlistquery.append(".owner="
-				"sys_context('userenv','current_schema') "
-				"or ");
-			columnlistquery.append(tabcol);
-			columnlistquery.append(".owner='SYS' or ");
-			columnlistquery.append(tabcol);
-			columnlistquery.append(".owner='SYSTEM') ");
+			collistquery.append(
+			"	and "
+			"	(tc.owner=sys_context('userenv',"
+			"			'current_schema') "
+			"	or "
+			"	tc.owner='SYS' "
+			"	or "
+			"	tc.owner='SYSTEM') ");
 		}
 	}
 	if (wild) {
-		columnlistquery.append("and ");
-		columnlistquery.append(tabcol);
-		columnlistquery.append(".column_name like upper('%s') ");
+		collistquery.append(
+			"	and "
+			"	tc.column_name like upper('%s') ");
 	}
 
 	// order by clause
-	columnlistquery.append("order by ");
-	columnlistquery.append(tabcol);
-	columnlistquery.append(".column_id");
+	collistquery.append(
+			"order by "
+			"	tc.column_id");
 
-	return columnlistquery.getString();
+	return collistquery.getString();
 }
 
 static const char	*chartype=
@@ -2071,36 +2029,36 @@ const char *oracleconnection::getTypeInfoListQuery(const char *type,
 						bool currentschemaonly) {
 
 	if (!charstring::compare(type,"*")) {
-		if (!alltypeinfoquery.getSize()) {
-			alltypeinfoquery.append(chartype);
-			alltypeinfoquery.append("union ");
-			alltypeinfoquery.append(nchartype);
-			alltypeinfoquery.append("union ");
-			alltypeinfoquery.append(varchar2type);
-			alltypeinfoquery.append("union ");
-			alltypeinfoquery.append(varchartype);
-			alltypeinfoquery.append("union ");
-			alltypeinfoquery.append(nvarchar2type);
-			alltypeinfoquery.append("union ");
-			alltypeinfoquery.append(clobtype);
-			alltypeinfoquery.append("union ");
-			alltypeinfoquery.append(nclobtype);
-			alltypeinfoquery.append("union ");
-			alltypeinfoquery.append(longtype);
-			alltypeinfoquery.append("union ");
-			alltypeinfoquery.append(numbertype);
-			alltypeinfoquery.append("union ");
-			alltypeinfoquery.append(datetype);
-			alltypeinfoquery.append("union ");
-			alltypeinfoquery.append(blobtype);
-			alltypeinfoquery.append("union ");
-			alltypeinfoquery.append(bfiletype);
-			alltypeinfoquery.append("union ");
-			alltypeinfoquery.append(rawtype);
-			alltypeinfoquery.append("union ");
-			alltypeinfoquery.append(longrawtype);
+		if (!typeinfolistquery.getSize()) {
+			typeinfolistquery.append(chartype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(nchartype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(varchar2type);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(varchartype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(nvarchar2type);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(clobtype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(nclobtype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(longtype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(numbertype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(datetype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(blobtype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(bfiletype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(rawtype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(longrawtype);
 		}
-		return alltypeinfoquery.getString();
+		return typeinfolistquery.getString();
 	} else if (!charstring::compareIgnoringCase(type,"char")) {
 		return chartype;
 	} else if (!charstring::compareIgnoringCase(type,"nchar")) {

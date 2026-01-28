@@ -748,7 +748,8 @@ const char *informixconnection::getColumnListQuery(
 		"		12,2147483648, "\
 		"		11,2147483648, "\
 		"		syscolumns.collength) as numeric_precision, "
-		"	'' as column_key "
+		"	'' as column_key, "
+		"	null "
 		"from "
 		"	systables, "
 		"	syscolumns "
@@ -855,7 +856,8 @@ const char *informixconnection::getColumnListQuery(
 		"		12,2147483648, "\
 		"		11,2147483648, "\
 		"		syscolumns.collength) as numeric_precision, "
-		"	'' as column_key "
+		"	'' as column_key, "
+		"	null "
 		"from "
 		"	systables, "
 		"	syscolumns "

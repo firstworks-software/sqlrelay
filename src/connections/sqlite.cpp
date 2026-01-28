@@ -345,7 +345,6 @@ const char *sqliteconnection::getColumnListQuery(
 		"	null as column_size, "
 		"	null as buffer_length, "
 		"	null as decimal_digits, "
-		"	null as num_prec_digits, "
 		"	10 as num_prec_radix, "
 		"	null as nullable, "
 		"	'' as remarks, "

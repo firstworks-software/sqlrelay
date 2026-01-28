@@ -6121,7 +6121,7 @@ void sqlrservercontroller::buildToMySQLColumnMaps() {
 	pvt->_mysqltabletypescolumnnamemap.setValue(0,"table_type");
 
 	// mysql getColumnList
-	// map from ODBC SQLColumns()+ format to mysql ??? format
+	// map from ODBC SQLColumns()+ format to ??? format
 	// FIXME: what format is this, definitely not mysql format
 	// (all backends return ODBC SQLColumns()+ format)
 	//
