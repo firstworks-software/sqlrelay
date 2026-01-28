@@ -81,42 +81,34 @@ class SQLRCLIENT_DLLSPEC sqlrcrud : public mvccrud {
 		void	setSqlrCursor(sqlrcursor *cur);
 
 
-		/** Sets the table that this instance operates on.
-		 *
-		 *  Also sets the sequence to generate new ids from during
-		 *  create operations to "table"_ids, if the id sequence is
-		 *  NULL or empty.
-		 *
-		 *  Also sets the primary key column to "table"_id, if the
-		 *  primary key is NULL or empty.
-		 */
+		/** Sets the table that this instance operates on. */
 		void	setTable(const char *table);
 
 		/** Sets the sequence to generate new ids from during create
-		 *  operations (insert queries).
-		 *
-		 *  If "idsequence" is NULL or empty, then the id sequence
-		 *  will be set to "table"_ids.
-		 */
+		 *  operations (insert queries).  */
 		void	setIdSequence(const char *idsequence);
 
 		/** Returns the table set by setTable(). */
 		const char	*getTable();
 
-		/** Returns the id sequence set by setIdSequence() or
-		 *  setTable().
+		/** Returns the id sequence set by setIdSequence().
 		 *
-		 *  Note that this may return NULL if neither setIdSequence()
-		 *  nor setTable() were ever called.
-		 */
+		 *  Note that this will return NULL if setIdSequence() was
+		 *  never called, if buildQueries() was never called, or
+		 *  if buildQueries() determined that it wasn't necessary to
+		 *  set. */
 		const char	*getIdSequence();
 
 
-		/** Uses the table set by setTable() and sequence set by
-		 *  setIdSequence() to construct template CRUD queries (insert,
-		 *  select, update, and delete queries).  Also detects the
-		 *  primary key and autoincrement columns, if the table has
-		 *  any. */
+		/** Uses the table set by setTable() to construct template CRUD
+		 *  queries (insert, select, update, and delete queries).
+		 *  If no primary key column has been set, then it detects the
+		 *  primary key column, if the table has one.  If no
+		 *  autoincrement column has been set, then it detects the
+		 *  autoincrement column, if the table has one.  If no id
+		 *  sequence has been set, and the table doesn't have an
+		 *  autoincrement column, but does have a primary key, then the
+		 *  id sequence name is set to "table"_ids. */
 		bool	buildQueries();
 
 

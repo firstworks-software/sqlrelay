@@ -31,55 +31,21 @@ void sqlrcrud::setSqlrCursor(sqlrcursor *cur) {
 void sqlrcrud::setTable(const char *tbl) {
 	delete[] this->tbl;
 	this->tbl=charstring::duplicate(tbl);
-
-	if (charstring::isNullOrEmpty(idsequence)) {
-		delete[] idsequence;
-		charstring::printf(&idsequence,"%s_ids",tbl);
-	}
-
-	if (charstring::isNullOrEmpty(primarykey)) {
-		delete[] primarykey;
-		charstring::printf(&primarykey,"%s_id",tbl);
-	}
 }
 
 void sqlrcrud::setIdSequence(const char *idsequence) {
 	delete[] this->idsequence;
-	if (charstring::isNullOrEmpty(idsequence)) {
-		if (charstring::isNullOrEmpty(this->tbl)) {
-			this->idsequence=NULL;
-		} else {
-			charstring::printf(&this->idsequence,"%s_ids",this->tbl);
-		}
-	} else {
-		this->idsequence=charstring::duplicate(idsequence);
-	}
+	this->idsequence=charstring::duplicate(idsequence);
 }
 
 void sqlrcrud::setPrimaryKeyColumn(const char *primarykey) {
 	delete[] this->primarykey;
-	if (charstring::isNullOrEmpty(primarykey)) {
-		if (charstring::isNullOrEmpty(this->tbl)) {
-			this->primarykey=NULL;
-		} else {
-			charstring::printf(&this->primarykey,"%s_id",this->tbl);
-		}
-	} else {
-		this->primarykey=charstring::duplicate(primarykey);
-	}
+	this->primarykey=charstring::duplicate(primarykey);
 }
 
 void sqlrcrud::setAutoIncrementColumn(const char *autoinc) {
 	delete[] this->autoinc;
-	if (charstring::isNullOrEmpty(autoinc)) {
-		if (charstring::isNullOrEmpty(this->tbl)) {
-			this->autoinc=NULL;
-		} else {
-			charstring::printf(&this->autoinc,"%s_id",this->tbl);
-		}
-	} else {
-		this->autoinc=charstring::duplicate(autoinc);
-	}
+	this->autoinc=charstring::duplicate(autoinc);
 }
 
 const char *sqlrcrud::getTable() {
@@ -105,22 +71,29 @@ bool sqlrcrud::buildQueries() {
 		return false;
 	}
 
-	// find the primary key and autoincrement column
-	stringbuffer	columnsquery;
-	columnsquery.append("select * from ");
-	columnsquery.append(tbl);
-	columnsquery.append(" where 1=0");
-	if (!cur->getColumnList(tbl,NULL)) {
-		return false;
+	// find the primary key and autoincrement column, if necessary
+	if (!primarykey || !autoinc) {
+		if (!cur->getColumnList(tbl,NULL)) {
+			return false;
+		}
+		for (uint32_t i=0; i<cur->rowCount(); i++) {
+			const char	*colname=cur->getField(i,"column_name");
+			if (!primarykey && charstring::containsIgnoringCase(
+						cur->getField(i,"column_key"),
+						"PRI")) {
+				primarykey=charstring::duplicate(colname);
+			}
+			if (!autoinc && charstring::containsIgnoringCase(
+						cur->getField(i,"extra"),
+						"auto_increment")) {
+				autoinc=charstring::duplicate(colname);
+			}
+		}
 	}
-	for (uint32_t i=0; i<cur->colCount(); i++) {
-		const char	*colname=cur->getColumnName(i);
-		if (cur->getColumnIsPrimaryKey(i)) {
-			setPrimaryKeyColumn(colname);
-		}
-		if (cur->getColumnIsAutoIncrement(i)) {
-			setAutoIncrementColumn(colname);
-		}
+
+	// generate the idsequence, if necessary
+	if (!idsequence && !autoinc && primarykey) {
+		charstring::printf(&idsequence,"%s_ids",tbl);
 	}
 
 	// build create (insert) query
