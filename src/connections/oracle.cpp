@@ -132,12 +132,6 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		const char	*getColumnListQuery(
 						const char *table,
 						bool wild);
-		const char	*getColumnListQueryWithoutKeys(
-						const char *table,
-						bool wild);
-		const char	*getColumnListQueryWithKeys(
-						const char *table,
-						bool wild);
 		const char	*getTypeInfoListQuery(
 						const char *type,
 						bool wild,
@@ -198,7 +192,7 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		bool		disablekeylookup;
 
 		stringbuffer	tablelistquery;
-		stringbuffer	collistquery;
+		stringbuffer	columnlistquery;
 		stringbuffer	typeinfolistquery;
 };
 
@@ -1390,15 +1384,7 @@ const char *oracleconnection::getGlobalTempTableListQuery(
 }
 
 const char *oracleconnection::getColumnListQuery(const char *table,
-						bool wild) {
-	return (disablekeylookup)?
-			getColumnListQueryWithoutKeys(table,wild):
-			getColumnListQueryWithKeys(table,wild);
-}
-
-const char *oracleconnection::getColumnListQueryWithoutKeys(
-						const char *table,
-						bool wild) {
+							bool wild) {
 
 	// It takes a lot longer to look up synonyms than tables.  It's quick
 	// to see if the object is a synonym though, so we'll do that first
@@ -1406,26 +1392,32 @@ const char *oracleconnection::getColumnListQueryWithoutKeys(
 
 	bool	issynonym=isSynonym(table);
 
-	// determine prefixes based on supportssyscontext
-	const char	*tct=(supportssyscontext)?
-				"all_tab_columns":"user_tab_columns";
-	const char	*st=(supportssyscontext)?
-				"all_synonyms":"user_synonyms";
+	// determine which tables to use
+	const char	*tct="user_tab_columns";
+	const char	*st="user_synonyms";
+	const char	*cct="user_cons_columns";
+	const char	*ct="user_constraints";
+	if (supportssyscontext) {
+		tct="all_tab_columns";
+		st="all_synonyms";
+		cct="all_cons_columns";
+		ct="all_constraints";
+	}
 
-	collistquery.clear();
+	columnlistquery.clear();
 
 	// select clause
-	collistquery.append("select ");
+	columnlistquery.append("select ");
 	if (supportssyscontext) {
 		// FIXME: I think I should return the
 		// owner as the table_schem, not cat
-		collistquery.append(
+		columnlistquery.append(
 			"	tc.owner as table_cat, ");
 	} else {
-		collistquery.append(
+		columnlistquery.append(
 			"	'' as table_cat, ");
 	}
-	collistquery.append(
+	columnlistquery.append(
 			"	'' as table_schem, "
 			"	tc.table_name, "
 			"	tc.column_name, "
@@ -1453,24 +1445,69 @@ const char *oracleconnection::getColumnListQueryWithoutKeys(
 			"		when tc.nullable='N' then 'NO' "
 			"		else 'YES' "
 			"	end as is_nullable, "
-			"	tc.data_precision as numeric_precision, "
-			"	null as column_key, "
+			"	tc.data_precision as numeric_precision, ");
+	if (!disablekeylookup) {
+		columnlistquery.append(
+			"	cd.key as column_key, ");
+	} else {
+		columnlistquery.append(
+			"	null as column_key, ");
+	}
+	columnlistquery.append(
 			"	null ");
 
 	// from clause
-	collistquery.append("from ");
+	columnlistquery.append("from ");
 	if (issynonym) {
-		collistquery.append(st)->append(" s, ");
+		columnlistquery.append(st)->append(" s, ");
 	}
-	collistquery.append(tct)->append(" tc ");
+	columnlistquery.append(tct)->append(" tc ");
+
+	// left outer join (for key lookup)
+	if (!disablekeylookup) {
+		columnlistquery.append("left outer join "
+				"(select ");
+		if (supportssyscontext) {
+			columnlistquery.append(
+				"	cc.owner, ");
+		}
+		columnlistquery.append(
+				"	cc.table_name, "
+				"	cc.column_name, "
+				"	case c.constraint_type "
+				"		when 'P' then 'PRI' "
+				"		when 'U' then 'UNI' "
+				"		when 'R' then 'MUL' "
+				"		else null "
+				"	end as key "
+				"from ");
+		columnlistquery.append(cct)->append(" cc, ");
+		columnlistquery.append(ct)->append(" c ");
+		columnlistquery.append(
+				"where "
+				"	c.constraint_name=cc.constraint_name "
+				"	and "
+				"	cc.position is not null) cd "
+				"on "
+				"(");
+		if (supportssyscontext) {
+			columnlistquery.append(
+				"cd.owner=tc.owner "
+				"and ");
+		}
+		columnlistquery.append(
+				"cd.table_name=tc.table_name "
+				"and "
+				"cd.column_name=tc.column_name) ");
+	}
 
 	// where clause
-	collistquery.append("where ");
+	columnlistquery.append("where ");
 	if (issynonym) {
-		collistquery.append(
+		columnlistquery.append(
 			"	s.synonym_name=upper('%s') ");
 		if (supportssyscontext) {
-			collistquery.append(
+			columnlistquery.append(
 				"	and "
 				"	(s.owner=sys_context('userenv',"
 							"'current_schema') "
@@ -1479,19 +1516,19 @@ const char *oracleconnection::getColumnListQueryWithoutKeys(
 				"	or "
 				"	s.owner='SYSTEM') ");
 		}
-		collistquery.append(
+		columnlistquery.append(
 			"	and "
 			"	tc.table_name=s.table_name ");
 		if (supportssyscontext) {
-			collistquery.append(
+			columnlistquery.append(
 			"	and "
 			"	tc.owner=s.table_owner ");
 		}
 	} else {
-		collistquery.append(
+		columnlistquery.append(
 			"	tc.table_name=upper('%s') ");
 		if (supportssyscontext) {
-			collistquery.append(
+			columnlistquery.append(
 			"	and "
 			"	(tc.owner=sys_context('userenv',"
 						"'current_schema') "
@@ -1502,176 +1539,17 @@ const char *oracleconnection::getColumnListQueryWithoutKeys(
 		}
 	}
 	if (wild) {
-		collistquery.append(
+		columnlistquery.append(
 			"	and "
 			"	tc.column_name like upper('%s') ");
 	}
 
 	// order by clause
-	collistquery.append(
+	columnlistquery.append(
 			"order by "
 			"	tc.column_id");
 
-	return collistquery.getString();
-}
-
-const char *oracleconnection::getColumnListQueryWithKeys(
-						const char *table,
-						bool wild) {
-
-	// It takes a lot longer to look up synonyms than tables.  It's quick
-	// to see if the object is a synonym though, so we'll do that first
-	// and only spend the extra time if it is.
-
-	bool	issynonym=isSynonym(table);
-
-	// determine prefixes based on supportssyscontext
-	const char	*tct=(supportssyscontext)?
-					"all_tab_columns":"user_tab_columns";
-	const char	*cct=(supportssyscontext)?
-					"all_cons_columns":"user_cons_columns";
-	const char	*ct=(supportssyscontext)?
-					"all_constraints":"user_constraints";
-	const char	*st=(supportssyscontext)?
-					"all_synonyms":"user_synonyms";
-
-	collistquery.clear();
-
-	// select clause
-	collistquery.append("select ");
-	if (supportssyscontext) {
-		// FIXME: I think I should return the
-		// owner as the table_schem, not cat
-		collistquery.append(
-			"	tc.owner as table_cat, ");
-	} else {
-		collistquery.append(
-			"	'' as table_cat, ");
-	}
-	collistquery.append(
-			"	'' as table_schem, "
-			"	tc.table_name, "
-			"	tc.column_name, "
-			"	'' as data_type, "
-			"	tc.data_type as type_name, "
-			"	tc.data_length as column_size, "
-			"	null as buffer_length, "
-			"	tc.data_scale as decimal_digits, "
-			"	10 as num_prec_radix, "
-			"	case "
-			"		when tc.nullable='N' then 0 "
-			"		else 1 "
-			"	end as nullable, "
-			"	case "
-			"		when tc.identity_column='YES' "
-			"			then 'auto_increment ' "
-			"		else '' "
-			"	end as remarks, "
-			"	tc.data_default as column_default, "
-			"	null as sql_data_type, "
-			"	null as sql_datetime_sub, "
-			"	tc.char_length as char_octet_length, "
-			"	null as ordinal_position, "
-			"	case "
-			"		when tc.nullable='N' then 'NO' "
-			"		else 'YES' "
-			"	end as is_nullable, "
-			"	tc.data_precision as numeric_precision, "
-			"	consdata.key as column_key, "
-			"	null ");
-
-	// from clause
-	collistquery.append("from ");
-	if (issynonym) {
-		collistquery.append(st)->append(" s, ");
-	}
-	collistquery.append(tct)->append(" tc ");
-
-	// left outer join
-	collistquery.append("left outer join "
-			"(select ");
-	if (supportssyscontext) {
-		collistquery.append(
-			"	cc.owner, ");
-	}
-	collistquery.append(
-			"	cc.table_name, "
-			"	cc.column_name, "
-			"	case c.constraint_type "
-			"		when 'P' then 'PRI' "
-			"		when 'U' then 'UNI' "
-			"		when 'R' then 'MUL' "
-			"		else null "
-			"	end as key "
-			"from ");
-	collistquery.append(cct)->append(" cc, ");
-	collistquery.append(ct)->append(" c ");
-	collistquery.append(
-			"where "
-			"	c.constraint_name=cc.constraint_name "
-			"	and "
-			"	cc.position is not null) consdata "
-			"on "
-			"(");
-	if (supportssyscontext) {
-		collistquery.append(
-			"consdata.owner=tc.owner "
-			"and ");
-	}
-	collistquery.append(
-			"consdata.table_name=tc.table_name "
-			"and "
-			"consdata.column_name=tc.column_name) ");
-
-	// where clause
-	collistquery.append("where ");
-	if (issynonym) {
-		collistquery.append(
-			"	s.synonym_name=upper('%s') ");
-		if (supportssyscontext) {
-			collistquery.append(
-			"	and "
-			"	(s.owner=sys_context('userenv',"
-						"'current_schema') "
-			"	or "
-			"	s.owner='SYS' "
-			"	or "
-			"	s.owner='SYSTEM') ");
-		}
-		collistquery.append(
-			"	and "
-			"	tc.table_name=s.table_name ");
-		if (supportssyscontext) {
-			collistquery.append(
-			"	and "
-			"	tc.owner=s.table_owner ");
-		}
-	} else {
-		collistquery.append(
-			"	tc.table_name=upper('%s') ");
-		if (supportssyscontext) {
-			collistquery.append(
-			"	and "
-			"	(tc.owner=sys_context('userenv',"
-			"			'current_schema') "
-			"	or "
-			"	tc.owner='SYS' "
-			"	or "
-			"	tc.owner='SYSTEM') ");
-		}
-	}
-	if (wild) {
-		collistquery.append(
-			"	and "
-			"	tc.column_name like upper('%s') ");
-	}
-
-	// order by clause
-	collistquery.append(
-			"order by "
-			"	tc.column_id");
-
-	return collistquery.getString();
+	return columnlistquery.getString();
 }
 
 static const char	*chartype=

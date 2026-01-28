@@ -286,7 +286,7 @@ class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 		char	*dbhostname;
 
 		stringbuffer	tablelistquery;
-		stringbuffer	collistquery;
+		stringbuffer	columnlistquery;
 
 		static const my_bool	mytrue;
 		static const my_bool	myfalse;
@@ -788,8 +788,8 @@ const char *mysqlconnection::getColumnListQuery(
 	cont->splitObjectName(currentdb,currentschema,table,
 				&dbname,&schemaname,&tablename);
 
-	collistquery.clear();
-	collistquery.append(
+	columnlistquery.clear();
+	columnlistquery.append(
 		"select "
 		"	table_catalog as table_cat, "
 		"	table_schema as table_schem, "
@@ -823,18 +823,18 @@ const char *mysqlconnection::getColumnListQuery(
 		"	information_schema.columns "
 		"where "
 		"	table_catalog='");
-	collistquery.append(dbname);
-	collistquery.append(
+	columnlistquery.append(dbname);
+	columnlistquery.append(
 		"' "
 		"	and "
 		"	table_schema='");
-	collistquery.append(schemaname);
-	collistquery.append(
+	columnlistquery.append(schemaname);
+	columnlistquery.append(
 		"' "
 		"	and "
 		"	table_name='%s' ");
 	if (wild) {
-		collistquery.append(
+		columnlistquery.append(
 			"	and "
 			"	column_name like '%s'");
 	}
@@ -842,7 +842,7 @@ const char *mysqlconnection::getColumnListQuery(
 	// clean up
 	delete[] currentschema;
 
-	return collistquery.getString();
+	return columnlistquery.getString();
 }
 
 const char *mysqlconnection::selectDatabaseQuery() {
