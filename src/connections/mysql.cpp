@@ -713,25 +713,25 @@ const char *mysqlconnection::getTableListQuery(bool wild,
 	stringbuffer	otypes;
 	otypes.append("	(");
 	if (objecttypes&DB_OBJECT_TABLE) {
-		otypes.append("	table_type = 'BASE TABLE' ");
+		otypes.append("	table_type='BASE TABLE' ");
 	}
 	if (objecttypes&DB_OBJECT_VIEW) {
 		if (otypes.getSize()) {
 			otypes.append("	or ");
 		}
-		otypes.append("	table_type = 'VIEW' ");
+		otypes.append("	table_type='VIEW' ");
 	}
 	if (objecttypes&DB_OBJECT_ALIAS) {
 		if (otypes.getSize()) {
 			otypes.append("	or ");
 		}
-		otypes.append("	table_type = 'ALIAS' ");
+		otypes.append("	table_type='ALIAS' ");
 	}
 	if (objecttypes&DB_OBJECT_SYNONYM) {
 		if (otypes.getSize()) {
 			otypes.append("	or ");
 		}
-		otypes.append("	table_type = 'SYNONYM' ");
+		otypes.append("	table_type='SYNONYM' ");
 	}
 	otypes.append(") ");
 
@@ -803,8 +803,8 @@ const char *mysqlconnection::getColumnListQuery(
 		"	numeric_scale as decimal_digits, "
 		"	10 as num_prec_radix, "
 		"	case "
-		"		when is_nullable = 'NO' then 0 "
-		"		when is_nullable = 'YES' then 1 "
+		"		when is_nullable='NO' then 0 "
+		"		when is_nullable='YES' then 1 "
 		"		else 2 "
 		"	end as nullable, "
 		"	extra as remarks, "

@@ -596,25 +596,25 @@ const char *db2connection::getTableListQuery(bool wild,
 	stringbuffer	otypes;
 	otypes.append("	(");
 	if (objecttypes&DB_OBJECT_TABLE) {
-		otypes.append("	type = 'T' or type='U' ");
+		otypes.append("	type='T' or type='U' ");
 	}
 	if (objecttypes&DB_OBJECT_VIEW) {
 		if (otypes.getSize()) {
 			otypes.append("	or ");
 		}
-		otypes.append("	type = 'V' or type='W' ");
+		otypes.append("	type='V' or type='W' ");
 	}
 	if (objecttypes&DB_OBJECT_ALIAS) {
 		if (otypes.getSize()) {
 			otypes.append("	or ");
 		}
-		otypes.append("	type = 'A' ");
+		otypes.append("	type='A' ");
 	}
 	if (objecttypes&DB_OBJECT_SYNONYM) {
 		if (otypes.getSize()) {
 			otypes.append("	or ");
 		}
-		otypes.append("	type = 'N' ");
+		otypes.append("	type='N' ");
 	}
 	otypes.append(") ");
 

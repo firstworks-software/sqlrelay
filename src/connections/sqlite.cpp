@@ -285,13 +285,13 @@ const char *sqliteconnection::getTableListQuery(bool wild,
 	stringbuffer	otypes;
 	otypes.append("	(");
 	if (objecttypes&DB_OBJECT_TABLE) {
-		otypes.append("	type = 'table' ");
+		otypes.append("	type='table' ");
 	}
 	if (objecttypes&DB_OBJECT_VIEW) {
 		if (otypes.getSize()) {
 			otypes.append("	or ");
 		}
-		otypes.append("	type = 'view' ");
+		otypes.append("	type='view' ");
 	}
 	otypes.append(") ");
 

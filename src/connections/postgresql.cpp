@@ -600,19 +600,19 @@ const char *postgresqlconnection::getTableListQuery(bool wild,
 		if (otypes.getSize()) {
 			otypes.append("	or ");
 		}
-		otypes.append("	table_type = 'VIEW' ");
+		otypes.append("	table_type='VIEW' ");
 	}
 	if (objecttypes&DB_OBJECT_ALIAS) {
 		if (otypes.getSize()) {
 			otypes.append("	or ");
 		}
-		otypes.append("	table_type = 'ALIAS' ");
+		otypes.append("	table_type='ALIAS' ");
 	}
 	if (objecttypes&DB_OBJECT_SYNONYM) {
 		if (otypes.getSize()) {
 			otypes.append("	or ");
 		}
-		otypes.append("	table_type = 'SYNONYM' ");
+		otypes.append("	table_type='SYNONYM' ");
 	}
 	otypes.append(") ");
 
@@ -623,7 +623,7 @@ const char *postgresqlconnection::getTableListQuery(bool wild,
 		"	table_schema as table_schem, "
 		"	table_name, "
 		"	case "
-		"		when table_type = "
+		"		when table_type="
 		"'BASE TABLE' then 'TABLE' "
 		"		else table_type "
 		"	end as table_type, "
@@ -674,8 +674,8 @@ const char *postgresqlconnection::getColumnListQuery(
 		"	c.numeric_scale as decimal_digits, "
 		"	c.numeric_precision_radix as num_prec_radix, "
 		"	case "
-		"		when c.is_nullable = 'NO' then 0 "
-		"		when c.is_nullable = 'YES' then 1 "
+		"		when c.is_nullable='NO' then 0 "
+		"		when c.is_nullable='YES' then 1 "
 		"		else 2 "
 		"	end as nullable, "
 		"	case "
@@ -713,17 +713,17 @@ const char *postgresqlconnection::getColumnListQuery(
 		"		information_schema.table_constraints tc "
 		"	join "
 		"		information_schema.key_column_usage kcu "
-		"		on tc.constraint_name = kcu.constraint_name "
-		"		and tc.table_schema = kcu.table_schema "
+		"		on tc.constraint_name=kcu.constraint_name "
+		"		and tc.table_schema=kcu.table_schema "
 		"	where "
 		"		tc.constraint_type in "
 		"			('PRIMARY KEY', 'UNIQUE', 'FOREIGN KEY') "
 		"	group by "
 		"		kcu.table_schema, kcu.table_name, kcu.column_name"
 		") ck "
-		"on c.table_schema = ck.table_schema "
-		"	and c.table_name = ck.table_name "
-		"	and c.column_name = ck.column_name "
+		"on c.table_schema=ck.table_schema "
+		"	and c.table_name=ck.table_name "
+		"	and c.column_name=ck.column_name "
 		"where "
 		"	c.table_schema='public' "
 		"	and "
@@ -749,8 +749,8 @@ const char *postgresqlconnection::getColumnListQuery(
 		"	c.numeric_scale as decimal_digits, "
 		"	c.numeric_precision_radix as num_prec_radix, "
 		"	case "
-		"		when c.is_nullable = 'NO' then 0 "
-		"		when c.is_nullable = 'YES' then 1 "
+		"		when c.is_nullable='NO' then 0 "
+		"		when c.is_nullable='YES' then 1 "
 		"		else 2 "
 		"	end as nullable, "
 		"	case "
@@ -788,17 +788,17 @@ const char *postgresqlconnection::getColumnListQuery(
 		"		information_schema.table_constraints tc "
 		"	join "
 		"		information_schema.key_column_usage kcu "
-		"		on tc.constraint_name = kcu.constraint_name "
-		"		and tc.table_schema = kcu.table_schema "
+		"		on tc.constraint_name=kcu.constraint_name "
+		"		and tc.table_schema=kcu.table_schema "
 		"	where "
 		"		tc.constraint_type in "
 		"			('PRIMARY KEY', 'UNIQUE', 'FOREIGN KEY') "
 		"	group by "
 		"		kcu.table_schema, kcu.table_name, kcu.column_name"
 		") ck "
-		"on c.table_schema = ck.table_schema "
-		"	and c.table_name = ck.table_name "
-		"	and c.column_name = ck.column_name "
+		"on c.table_schema=ck.table_schema "
+		"	and c.table_name=ck.table_name "
+		"	and c.column_name=ck.column_name "
 		"where "
 		"	c.table_schema='public' "
 		"	and "
