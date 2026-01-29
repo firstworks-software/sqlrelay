@@ -6,6 +6,8 @@
 #include <rudiments/stdio.h>
 #include <config.h>
 
+#include "asserts.cpp"
+
 // MySQL 8+ doesn't have my_bool, but MariaDB 10+ does
 #ifndef MARIADB_BASE_VERSION
 	#if defined(MYSQL_VERSION_ID) && MYSQL_VERSION_ID>=80000
@@ -19,41 +21,6 @@ MYSQL		mysql;
 MYSQL_RES	*result;
 MYSQL_FIELD	*field;
 MYSQL_ROW	row;
-
-void checkSuccess(const char *value, const char *success) {
-
-	if (!success) {
-		if (!value) {
-			stdoutput.printf("success ");
-			return;
-		} else {
-			stdoutput.printf("\"%s\"!=\"%s\"\n",value,success);
-			stdoutput.printf("failure ");
-stdoutput.printf("\n%s\n",mysql_error(&mysql));
-			process::exit(1);
-		}
-	}
-
-	if (!charstring::compare(value,success)) {
-		stdoutput.printf("success ");
-	} else {
-		stdoutput.printf("\"%s\"!=\"%s\"\n",value,success);
-		stdoutput.printf("failure ");
-		process::exit(1);
-	}
-}
-
-void checkSuccess(int value, int success) {
-
-	if (value==success) {
-		stdoutput.printf("success ");
-	} else {
-		stdoutput.printf("\"%d\"!=\"%d\"\n",value,success);
-		stdoutput.printf("failure ");
-stdoutput.printf("\n%s\n",mysql_error(&mysql));
-		process::exit(1);
-	}
-}
 
 int	main(int argc, char **argv) {
 
@@ -91,25 +58,25 @@ int	main(int argc, char **argv) {
 
 	#ifdef HAVE_MYSQL_REAL_CONNECT_FOR_SURE
 		stdoutput.printf("mysql_init\n");
-		checkSuccess((long)mysql_init(&mysql),(long)&mysql);
+		assertEquals((long)mysql_init(&mysql),(long)&mysql);
 		stdoutput.printf("\n");
 		stdoutput.printf("mysql_real_connect\n");
 		#if MYSQL_VERSION_ID>=32200
-			checkSuccess((long)mysql_real_connect(
+			assertEquals((long)mysql_real_connect(
 						&mysql,host,user,password,db,
 						charstring::convertToInteger(port),
 						socket,0),(long)&mysql);
 		#else
-			checkSuccess((long)mysql_real_connect(
+			assertEquals((long)mysql_real_connect(
 						&mysql,host,user,password,
 						charstring::convertToInteger(port),
 						socket,0),(long)&mysql);
 			if (!charstring::isNullOrEmpty(db)) {
-				checkSuccess(mysql_select_db(&mysql,db),0);
+				assertEquals(mysql_select_db(&mysql,db),0);
 			}
 		#endif
 	#else
-		checkSuccess((long)mysql_connect(&mysql,host,
+		assertEquals((long)mysql_connect(&mysql,host,
 						user,password),
 						(long)mysql);
 	#endif
@@ -124,7 +91,7 @@ int	main(int argc, char **argv) {
 #else
 	const char	*query="select ?,?";
 #endif
-	checkSuccess(mysql_stmt_prepare(stmt,query,charstring::getLength(query)),0);
+	assertEquals(mysql_stmt_prepare(stmt,query,charstring::getLength(query)),0);
 #ifdef FULL
 	MYSQL_BIND	bind[14];
 	unsigned long	bindlength[14];
@@ -295,34 +262,34 @@ int	main(int argc, char **argv) {
 	bind[1].is_null=&bindisnull[1];
 #endif
 
-	checkSuccess(mysql_stmt_bind_param(stmt,bind),0);
+	assertEquals(mysql_stmt_bind_param(stmt,bind),0);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("mysql_stmt_execute\n");
-	checkSuccess(mysql_stmt_execute(stmt),0);
-	checkSuccess(mysql_stmt_fetch(stmt),0);
+	assertEquals(mysql_stmt_execute(stmt),0);
+	assertEquals(mysql_stmt_fetch(stmt),0);
 	#ifdef MARIADB_BASE_VERSION
-	checkSuccess(mysql_stmt_fetch(stmt),100);
+	assertEquals(mysql_stmt_fetch(stmt),100);
 	#endif
 	stdoutput.printf("\n");
 	stdoutput.printf("mysql_stmt_execute\n");
-	checkSuccess(mysql_stmt_execute(stmt),0);
-	checkSuccess(mysql_stmt_fetch(stmt),0);
+	assertEquals(mysql_stmt_execute(stmt),0);
+	assertEquals(mysql_stmt_fetch(stmt),0);
 	#ifdef MARIADB_BASE_VERSION
-	checkSuccess(mysql_stmt_fetch(stmt),100);
+	assertEquals(mysql_stmt_fetch(stmt),100);
 	#endif
 	stdoutput.printf("\n");
 	stdoutput.printf("mysql_stmt_execute\n");
-	checkSuccess(mysql_stmt_execute(stmt),0);
-	checkSuccess(mysql_stmt_fetch(stmt),0);
+	assertEquals(mysql_stmt_execute(stmt),0);
+	assertEquals(mysql_stmt_fetch(stmt),0);
 	#ifdef MARIADB_BASE_VERSION
-	checkSuccess(mysql_stmt_fetch(stmt),100);
+	assertEquals(mysql_stmt_fetch(stmt),100);
 	#endif
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_stmt_close:\n");
-	checkSuccess(mysql_stmt_close(stmt),0);
+	assertEquals(mysql_stmt_close(stmt),0);
 	stdoutput.printf("\n");
 
 
@@ -334,5 +301,6 @@ int	main(int argc, char **argv) {
 
 	#endif
 
-	return 0;
+	reportTestStatus();
+	return status;
 }

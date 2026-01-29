@@ -7,6 +7,8 @@
 #include <rudiments/stdio.h>
 #include <config.h>
 
+#include "asserts.cpp"
+
 // MySQL 8+ doesn't have my_bool, but MariaDB 10+ does
 #ifndef MARIADB_BASE_VERSION
 	#if defined(MYSQL_VERSION_ID) && MYSQL_VERSION_ID>=80000
@@ -18,42 +20,6 @@ MYSQL		mysql;
 MYSQL_RES	*result;
 MYSQL_FIELD	*field;
 MYSQL_ROW	row;
-
-void checkSuccess(const char *value, const char *success) {
-
-	if (!success) {
-		if (!value) {
-			stdoutput.printf("success ");
-			return;
-		} else {
-			stdoutput.printf("\"%s\"!=\"%s\"\n",value,success);
-			stdoutput.printf("failure ");
-stdoutput.printf("error:\n%s\n",mysql_error(&mysql));
-			process::exit(1);
-		}
-	}
-
-	if (!charstring::compare(value,success)) {
-		stdoutput.printf("success ");
-	} else {
-		stdoutput.printf("\"%s\"!=\"%s\"\n",value,success);
-		stdoutput.printf("failure ");
-stdoutput.printf("error:\n%s\n",mysql_error(&mysql));
-		process::exit(1);
-	}
-}
-
-void checkSuccess(int value, int success) {
-
-	if (value==success) {
-		stdoutput.printf("success ");
-	} else {
-		stdoutput.printf("\"%d\"!=\"%d\"\n",value,success);
-		stdoutput.printf("failure ");
-stdoutput.printf("error:\n%s\n",mysql_error(&mysql));
-		process::exit(1);
-	}
-}
 
 int	main(int argc, char **argv) {
 
@@ -87,25 +53,25 @@ int	main(int argc, char **argv) {
 
 	#ifdef HAVE_MYSQL_REAL_CONNECT_FOR_SURE
 		stdoutput.printf("mysql_init\n");
-		checkSuccess((long)mysql_init(&mysql),(long)&mysql);
+		assertEquals((long)mysql_init(&mysql),(long)&mysql);
 		stdoutput.printf("\n");
 		stdoutput.printf("mysql_real_connect\n");
 		#if MYSQL_VERSION_ID>=32200
-			checkSuccess((long)mysql_real_connect(
+			assertEquals((long)mysql_real_connect(
 						&mysql,host,user,password,db,
 						charstring::convertToInteger(port),
 						socket,0),(long)&mysql);
 		#else
-			checkSuccess((long)mysql_real_connect(
+			assertEquals((long)mysql_real_connect(
 						&mysql,host,user,password,
 						charstring::convertToInteger(port),
 						socket,0),(long)&mysql);
 			if (!charstring::isNullOrEmpty(db)) {
-				checkSuccess(mysql_select_db(&mysql,db),0);
+				assertEquals(mysql_select_db(&mysql,db),0);
 			}
 		#endif
 	#else
-		checkSuccess((long)mysql_connect(&mysql,host,
+		assertEquals((long)mysql_connect(&mysql,host,
 						user,password),
 						(long)mysql);
 	#endif
@@ -113,23 +79,23 @@ int	main(int argc, char **argv) {
 
 	#ifdef HAVE_MYSQL_PING
 	stdoutput.printf("mysql_ping\n");
-	checkSuccess(mysql_ping(&mysql),0);
+	assertEquals(mysql_ping(&mysql),0);
 	stdoutput.printf("\n");
 	#endif
 
 	stdoutput.printf("mysql_character_set_name:\n");
 	const char	*charset=mysql_character_set_name(&mysql);
-	checkSuccess(!charstring::compare(charset,"latin1") ||
+	assertEquals(!charstring::compare(charset,"latin1") ||
 				!charstring::compare(charset,"utf8") ||
 				!charstring::compare(charset,"utf8mb4"),true);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("mysql_list_dbs\n");
 	result=mysql_list_dbs(&mysql,NULL);
-	checkSuccess(mysql_field_count(&mysql),1);
-	checkSuccess(mysql_num_fields(result),1);
+	assertEquals(mysql_field_count(&mysql),1);
+	assertEquals(mysql_num_fields(result),1);
 	field=mysql_fetch_field_direct(result,0);
-	checkSuccess(!charstring::compare(field->name,"Database") || 
+	assertEquals(!charstring::compare(field->name,"Database") || 
 			!charstring::compare(field->name,"Database (%)"),1);
 	mysql_free_result(result);
 	stdoutput.printf("\n");
@@ -139,206 +105,205 @@ int	main(int argc, char **argv) {
 
 	stdoutput.printf("mysql_real_query: create\n");
 	query="create table testtable (testtinyint tinyint, testsmallint smallint, testmediumint mediumint, testint int, testbigint bigint, testfloat float, testreal real, testdecimal decimal(2,1), testdate date, testtime time, testdatetime datetime, testyear year, testchar char(40), testtext text, testvarchar varchar(40), testtinytext tinytext, testmediumtext mediumtext, testlongtext longtext, testtimestamp timestamp)";
-	checkSuccess(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
-	checkSuccess(mysql_info(&mysql),NULL);
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+	assertEquals(mysql_info(&mysql),NULL);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("mysql_list_tables\n");
 	result=mysql_list_tables(&mysql,NULL);
-	checkSuccess(mysql_field_count(&mysql),1);
-	checkSuccess(mysql_num_fields(result),1);
+	assertEquals(mysql_field_count(&mysql),1);
+	assertEquals(mysql_num_fields(result),1);
 	field=mysql_fetch_field_direct(result,0);
-	checkSuccess(!charstring::compare(field->name,"Tables_in_",10),1);
+	assertEquals(!charstring::compare(field->name,"Tables_in_",10),1);
 	row=mysql_fetch_row(result);
-	checkSuccess(row[0],"testtable");
+	assertEquals(row[0],"testtable");
 	row=mysql_fetch_row(result);
-	checkSuccess((row==NULL),1);
+	assertEquals((row==NULL),1);
 	mysql_free_result(result);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("mysql_list_fields\n");
 	result=mysql_list_fields(&mysql,"testtable",NULL);
 	// this specific case of mysql_field_count often returns 0
-	//checkSuccess(mysql_field_count(&mysql),19);
-	checkSuccess(mysql_num_fields(result),19);
+	//assertEquals(mysql_field_count(&mysql),19);
+	assertEquals(mysql_num_fields(result),19);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("tinyint\n");
 	field=mysql_fetch_field_direct(result,0);
-	checkSuccess(field->name,"testtinyint");
+	assertEquals(field->name,"testtinyint");
 	/*if (argc==2) {
-		checkSuccess(field->org_name,"testtinyint");
-		checkSuccess(field->table,"testtable");
-		checkSuccess(field->org_table,"testtable");
+		assertEquals(field->org_name,"testtinyint");
+		assertEquals(field->table,"testtable");
+		assertEquals(field->org_table,"testtable");
 	}*/
-	checkSuccess(field->catalog,"def");
-	checkSuccess(field->def,NULL);
-	checkSuccess(field->length,4);
-	checkSuccess(field->max_length,0);
-	checkSuccess(field->name_length,11);
+	assertEquals(field->catalog,"def");
+	assertEquals(field->def,NULL);
+	assertEquals(field->length,4);
+	assertEquals(field->max_length,0);
+	assertEquals(field->name_length,11);
 	/*if (argc==2) {
-		checkSuccess(field->org_name_length,11);
-		checkSuccess(field->db_length,6);
+		assertEquals(field->org_name_length,11);
+		assertEquals(field->db_length,6);
 	}*/
-	checkSuccess(field->catalog_length,3);
+	assertEquals(field->catalog_length,3);
 	// Some client API's don't set this if def is NULL
-	//checkSuccess(field->def_length,0);
-stdoutput.printf("here\n");
-	checkSuccess(field->flags,NUM_FLAG);
-	checkSuccess(field->decimals,0);
+	//assertEquals(field->def_length,0);
+	assertEquals(field->flags,NUM_FLAG);
+	assertEquals(field->decimals,0);
 	/*if (argc==2) {
-		checkSuccess(field->charsetnr,63);
+		assertEquals(field->charsetnr,63);
 	}*/
-	checkSuccess(field->type,MYSQL_TYPE_TINY);
+	assertEquals(field->type,MYSQL_TYPE_TINY);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("smallint\n");
 	field=mysql_fetch_field_direct(result,1);
-	checkSuccess(field->name,"testsmallint");
-	checkSuccess(field->length,6);
-	checkSuccess(field->flags,NUM_FLAG);
-	checkSuccess(field->type,MYSQL_TYPE_SHORT);
+	assertEquals(field->name,"testsmallint");
+	assertEquals(field->length,6);
+	assertEquals(field->flags,NUM_FLAG);
+	assertEquals(field->type,MYSQL_TYPE_SHORT);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("mediumint\n");
 	field=mysql_fetch_field_direct(result,2);
-	checkSuccess(field->name,"testmediumint");
-	checkSuccess(field->length,9);
-	checkSuccess(field->flags,NUM_FLAG);
-	checkSuccess(field->type,MYSQL_TYPE_INT24);
+	assertEquals(field->name,"testmediumint");
+	assertEquals(field->length,9);
+	assertEquals(field->flags,NUM_FLAG);
+	assertEquals(field->type,MYSQL_TYPE_INT24);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("int\n");
 	field=mysql_fetch_field_direct(result,3);
-	checkSuccess(field->name,"testint");
-	checkSuccess(field->length,11);
-	checkSuccess(field->flags,NUM_FLAG);
-	checkSuccess(field->type,MYSQL_TYPE_LONG);
+	assertEquals(field->name,"testint");
+	assertEquals(field->length,11);
+	assertEquals(field->flags,NUM_FLAG);
+	assertEquals(field->type,MYSQL_TYPE_LONG);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("bigint\n");
 	field=mysql_fetch_field_direct(result,4);
-	checkSuccess(field->name,"testbigint");
-	checkSuccess(field->length,20);
-	checkSuccess(field->flags,NUM_FLAG);
-	checkSuccess(field->type,MYSQL_TYPE_LONGLONG);
+	assertEquals(field->name,"testbigint");
+	assertEquals(field->length,20);
+	assertEquals(field->flags,NUM_FLAG);
+	assertEquals(field->type,MYSQL_TYPE_LONGLONG);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("float\n");
 	field=mysql_fetch_field_direct(result,5);
-	checkSuccess(field->name,"testfloat");
-	checkSuccess(field->length,12);
-	checkSuccess(field->flags,NUM_FLAG);
-	checkSuccess(field->type,MYSQL_TYPE_FLOAT);
+	assertEquals(field->name,"testfloat");
+	assertEquals(field->length,12);
+	assertEquals(field->flags,NUM_FLAG);
+	assertEquals(field->type,MYSQL_TYPE_FLOAT);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("real\n");
 	field=mysql_fetch_field_direct(result,6);
-	checkSuccess(field->name,"testreal");
-	checkSuccess(field->length,22);
-	checkSuccess(field->flags,NUM_FLAG);
-	checkSuccess(field->type,MYSQL_TYPE_DOUBLE);
+	assertEquals(field->name,"testreal");
+	assertEquals(field->length,22);
+	assertEquals(field->flags,NUM_FLAG);
+	assertEquals(field->type,MYSQL_TYPE_DOUBLE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("decimal\n");
 	field=mysql_fetch_field_direct(result,7);
-	checkSuccess(field->name,"testdecimal");
-	checkSuccess(field->length,4);
+	assertEquals(field->name,"testdecimal");
+	assertEquals(field->length,4);
 	// MariaDB LGPL connector doesn't always get this right
-	//checkSuccess(field->flags,NUM_FLAG);
-	checkSuccess(field->type,MYSQL_TYPE_NEWDECIMAL);
-	checkSuccess(field->decimals,1);
+	//assertEquals(field->flags,NUM_FLAG);
+	assertEquals(field->type,MYSQL_TYPE_NEWDECIMAL);
+	assertEquals(field->decimals,1);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("date\n");
 	field=mysql_fetch_field_direct(result,8);
-	checkSuccess(field->name,"testdate");
-	checkSuccess(field->length,10);
-	checkSuccess(field->flags,BINARY_FLAG);
-	checkSuccess(field->type,MYSQL_TYPE_DATE);
+	assertEquals(field->name,"testdate");
+	assertEquals(field->length,10);
+	assertEquals(field->flags,BINARY_FLAG);
+	assertEquals(field->type,MYSQL_TYPE_DATE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("time\n");
 	field=mysql_fetch_field_direct(result,9);
-	checkSuccess(field->name,"testtime");
-	checkSuccess(field->length,10);
-	checkSuccess(field->flags,BINARY_FLAG);
-	checkSuccess(field->type,MYSQL_TYPE_TIME);
+	assertEquals(field->name,"testtime");
+	assertEquals(field->length,10);
+	assertEquals(field->flags,BINARY_FLAG);
+	assertEquals(field->type,MYSQL_TYPE_TIME);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("datetime\n");
 	field=mysql_fetch_field_direct(result,10);
-	checkSuccess(field->name,"testdatetime");
-	checkSuccess(field->length,19);
-	checkSuccess(field->flags,BINARY_FLAG);
-	checkSuccess(field->type,MYSQL_TYPE_DATETIME);
+	assertEquals(field->name,"testdatetime");
+	assertEquals(field->length,19);
+	assertEquals(field->flags,BINARY_FLAG);
+	assertEquals(field->type,MYSQL_TYPE_DATETIME);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("year\n");
 	field=mysql_fetch_field_direct(result,11);
-	checkSuccess(field->name,"testyear");
-	checkSuccess(field->length,4);
-	checkSuccess(field->flags,NUM_FLAG|UNSIGNED_FLAG|ZEROFILL_FLAG);
-	checkSuccess(field->type,MYSQL_TYPE_YEAR);
+	assertEquals(field->name,"testyear");
+	assertEquals(field->length,4);
+	assertEquals(field->flags,NUM_FLAG|UNSIGNED_FLAG|ZEROFILL_FLAG);
+	assertEquals(field->type,MYSQL_TYPE_YEAR);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("char\n");
 	field=mysql_fetch_field_direct(result,12);
-	checkSuccess(field->name,"testchar");
-	checkSuccess(field->length,40);
-	checkSuccess(field->flags,0);
-	checkSuccess(field->type,MYSQL_TYPE_STRING);
+	assertEquals(field->name,"testchar");
+	assertEquals(field->length,40);
+	assertEquals(field->flags,0);
+	assertEquals(field->type,MYSQL_TYPE_STRING);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("text\n");
 	field=mysql_fetch_field_direct(result,13);
-	checkSuccess(field->name,"testtext");
-	checkSuccess(field->length,65535);
-	checkSuccess(field->flags,BLOB_FLAG);
-	checkSuccess(field->type,MYSQL_TYPE_BLOB);
+	assertEquals(field->name,"testtext");
+	assertEquals(field->length,65535);
+	assertEquals(field->flags,BLOB_FLAG);
+	assertEquals(field->type,MYSQL_TYPE_BLOB);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("varchar\n");
 	field=mysql_fetch_field_direct(result,14);
-	checkSuccess(field->name,"testvarchar");
-	checkSuccess(field->length,40);
-	checkSuccess(field->flags,0);
-	checkSuccess(field->type,MYSQL_TYPE_VAR_STRING);
+	assertEquals(field->name,"testvarchar");
+	assertEquals(field->length,40);
+	assertEquals(field->flags,0);
+	assertEquals(field->type,MYSQL_TYPE_VAR_STRING);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("tinytext\n");
 	field=mysql_fetch_field_direct(result,15);
-	checkSuccess(field->name,"testtinytext");
-	checkSuccess(field->length,255);
-	checkSuccess(field->flags,BLOB_FLAG);
-	checkSuccess(field->type,MYSQL_TYPE_BLOB);
+	assertEquals(field->name,"testtinytext");
+	assertEquals(field->length,255);
+	assertEquals(field->flags,BLOB_FLAG);
+	assertEquals(field->type,MYSQL_TYPE_BLOB);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("mediumtext\n");
 	field=mysql_fetch_field_direct(result,16);
-	checkSuccess(field->name,"testmediumtext");
-	checkSuccess(field->length,16777215);
-	checkSuccess(field->flags,BLOB_FLAG);
-	checkSuccess(field->type,MYSQL_TYPE_BLOB);
+	assertEquals(field->name,"testmediumtext");
+	assertEquals(field->length,16777215);
+	assertEquals(field->flags,BLOB_FLAG);
+	assertEquals(field->type,MYSQL_TYPE_BLOB);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("longtext\n");
 	field=mysql_fetch_field_direct(result,17);
-	checkSuccess(field->name,"testlongtext");
+	assertEquals(field->name,"testlongtext");
 	// The length of these can be reported by the db as either
 	// 2^31-1 or 2^32-1.  It's not clear why it varies, but it can.
-	//checkSuccess(field->length,2147483647);
-	checkSuccess(field->flags,BLOB_FLAG);
-	checkSuccess(field->type,MYSQL_TYPE_BLOB);
+	//assertEquals(field->length,2147483647);
+	assertEquals(field->flags,BLOB_FLAG);
+	assertEquals(field->type,MYSQL_TYPE_BLOB);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("timestamp\n");
 	field=mysql_fetch_field_direct(result,18);
-	checkSuccess(field->name,"testtimestamp");
-	checkSuccess(field->length,19);
+	assertEquals(field->name,"testtimestamp");
+	assertEquals(field->length,19);
 #if 0
 	// not reliable on all platforms
-	checkSuccess(field->flags,
+	assertEquals(field->flags,
 			TIMESTAMP_FLAG|
 			#ifdef ON_UPDATE_NOW_FLAG
 			ON_UPDATE_NOW_FLAG|
@@ -347,42 +312,42 @@ stdoutput.printf("here\n");
 			UNSIGNED_FLAG|
 			NOT_NULL_FLAG);
 #else
-	checkSuccess(field->flags&TIMESTAMP_FLAG,TIMESTAMP_FLAG);
+	assertEquals(field->flags&TIMESTAMP_FLAG,TIMESTAMP_FLAG);
 	#ifdef ON_UPDATE_NOW_FLAG
-	checkSuccess(field->flags&ON_UPDATE_NOW_FLAG,ON_UPDATE_NOW_FLAG);
+	assertEquals(field->flags&ON_UPDATE_NOW_FLAG,ON_UPDATE_NOW_FLAG);
 	#endif
-	checkSuccess(field->flags&BINARY_FLAG,BINARY_FLAG);
-	checkSuccess(field->flags&UNSIGNED_FLAG,UNSIGNED_FLAG);
-	checkSuccess(field->flags&NOT_NULL_FLAG,NOT_NULL_FLAG);
+	assertEquals(field->flags&BINARY_FLAG,BINARY_FLAG);
+	assertEquals(field->flags&UNSIGNED_FLAG,UNSIGNED_FLAG);
+	assertEquals(field->flags&NOT_NULL_FLAG,NOT_NULL_FLAG);
 #endif
-	checkSuccess(field->type,MYSQL_TYPE_TIMESTAMP);
+	assertEquals(field->type,MYSQL_TYPE_TIMESTAMP);
 	mysql_free_result(result);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("mysql_real_query: insert\n");
 	query="insert into testtable values (1,1,1,1,1,1.1,1.1,1.1,'2001-01-01','01:00:00','2001-01-01 01:00:00','2001','char1','text1','varchar1','tinytext1','mediumtext1','longtext1',NULL)";
-	checkSuccess(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
-	checkSuccess(mysql_info(&mysql),NULL);
-	checkSuccess(mysql_affected_rows(&mysql),1);
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+	assertEquals(mysql_info(&mysql),NULL);
+	assertEquals(mysql_affected_rows(&mysql),1);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("mysql_send_query: insert\n");
 	query="insert into testtable values (2,2,2,2,2,2.1,2.1,2.1,'2002-01-01','02:00:00','2002-01-01 02:00:00','2002','char2','text2','varchar2','tinytext2','mediumtext2','longtext2',NULL)";
-	checkSuccess(mysql_send_query(&mysql,query,charstring::getLength(query)),0);
-	checkSuccess(mysql_info(&mysql),NULL);
-	checkSuccess(mysql_read_query_result(&mysql),0);
-	checkSuccess(mysql_affected_rows(&mysql),1);
+	assertEquals(mysql_send_query(&mysql,query,charstring::getLength(query)),0);
+	assertEquals(mysql_info(&mysql),NULL);
+	assertEquals(mysql_read_query_result(&mysql),0);
+	assertEquals(mysql_affected_rows(&mysql),1);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("mysql_real_query: select\n");
 	query="select * from testtable";
-	checkSuccess(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
-	checkSuccess(mysql_info(&mysql),NULL);
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+	assertEquals(mysql_info(&mysql),NULL);
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_field_count:\n");
-	checkSuccess(mysql_field_count(&mysql),19);
+	assertEquals(mysql_field_count(&mysql),19);
 	stdoutput.printf("\n");
 
 
@@ -390,228 +355,228 @@ stdoutput.printf("here\n");
 	result=mysql_store_result(&mysql);
 
 	stdoutput.printf("mysql_num_fields:\n");
-	checkSuccess(mysql_num_fields(result),19);
+	assertEquals(mysql_num_fields(result),19);
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_num_rows:\n");
-	checkSuccess(mysql_num_rows(result),2);
+	assertEquals(mysql_num_rows(result),2);
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_field_seek:\n");
-	checkSuccess(mysql_field_seek(result,0),0);
+	assertEquals(mysql_field_seek(result,0),0);
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_fetch_field/mysql_field_tell:\n");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),1);
-	checkSuccess(field->name,"testtinyint");
+	assertEquals(mysql_field_tell(result),1);
+	assertEquals(field->name,"testtinyint");
 	// FIXME: field->...
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),2);
-	checkSuccess(field->name,"testsmallint");
+	assertEquals(mysql_field_tell(result),2);
+	assertEquals(field->name,"testsmallint");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),3);
-	checkSuccess(field->name,"testmediumint");
+	assertEquals(mysql_field_tell(result),3);
+	assertEquals(field->name,"testmediumint");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),4);
-	checkSuccess(field->name,"testint");
+	assertEquals(mysql_field_tell(result),4);
+	assertEquals(field->name,"testint");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),5);
-	checkSuccess(field->name,"testbigint");
+	assertEquals(mysql_field_tell(result),5);
+	assertEquals(field->name,"testbigint");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),6);
-	checkSuccess(field->name,"testfloat");
+	assertEquals(mysql_field_tell(result),6);
+	assertEquals(field->name,"testfloat");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),7);
-	checkSuccess(field->name,"testreal");
+	assertEquals(mysql_field_tell(result),7);
+	assertEquals(field->name,"testreal");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),8);
-	checkSuccess(field->name,"testdecimal");
+	assertEquals(mysql_field_tell(result),8);
+	assertEquals(field->name,"testdecimal");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),9);
-	checkSuccess(field->name,"testdate");
+	assertEquals(mysql_field_tell(result),9);
+	assertEquals(field->name,"testdate");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),10);
-	checkSuccess(field->name,"testtime");
+	assertEquals(mysql_field_tell(result),10);
+	assertEquals(field->name,"testtime");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),11);
-	checkSuccess(field->name,"testdatetime");
+	assertEquals(mysql_field_tell(result),11);
+	assertEquals(field->name,"testdatetime");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),12);
-	checkSuccess(field->name,"testyear");
+	assertEquals(mysql_field_tell(result),12);
+	assertEquals(field->name,"testyear");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),13);
-	checkSuccess(field->name,"testchar");
+	assertEquals(mysql_field_tell(result),13);
+	assertEquals(field->name,"testchar");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),14);
-	checkSuccess(field->name,"testtext");
+	assertEquals(mysql_field_tell(result),14);
+	assertEquals(field->name,"testtext");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),15);
-	checkSuccess(field->name,"testvarchar");
+	assertEquals(mysql_field_tell(result),15);
+	assertEquals(field->name,"testvarchar");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),16);
-	checkSuccess(field->name,"testtinytext");
+	assertEquals(mysql_field_tell(result),16);
+	assertEquals(field->name,"testtinytext");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),17);
-	checkSuccess(field->name,"testmediumtext");
+	assertEquals(mysql_field_tell(result),17);
+	assertEquals(field->name,"testmediumtext");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),18);
-	checkSuccess(field->name,"testlongtext");
+	assertEquals(mysql_field_tell(result),18);
+	assertEquals(field->name,"testlongtext");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),19);
-	checkSuccess(field->name,"testtimestamp");
+	assertEquals(mysql_field_tell(result),19);
+	assertEquals(field->name,"testtimestamp");
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_field_seek:\n");
-	checkSuccess(mysql_field_seek(result,0),19);
+	assertEquals(mysql_field_seek(result,0),19);
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_fetch_field_direct:\n");
 	field=mysql_fetch_field_direct(result,0);
-	checkSuccess(field->name,"testtinyint");
+	assertEquals(field->name,"testtinyint");
 	// FIXME: field->...
 	field=mysql_fetch_field_direct(result,1);
-	checkSuccess(field->name,"testsmallint");
+	assertEquals(field->name,"testsmallint");
 	field=mysql_fetch_field_direct(result,2);
-	checkSuccess(field->name,"testmediumint");
+	assertEquals(field->name,"testmediumint");
 	field=mysql_fetch_field_direct(result,3);
-	checkSuccess(field->name,"testint");
+	assertEquals(field->name,"testint");
 	field=mysql_fetch_field_direct(result,4);
-	checkSuccess(field->name,"testbigint");
+	assertEquals(field->name,"testbigint");
 	field=mysql_fetch_field_direct(result,5);
-	checkSuccess(field->name,"testfloat");
+	assertEquals(field->name,"testfloat");
 	field=mysql_fetch_field_direct(result,6);
-	checkSuccess(field->name,"testreal");
+	assertEquals(field->name,"testreal");
 	field=mysql_fetch_field_direct(result,7);
-	checkSuccess(field->name,"testdecimal");
+	assertEquals(field->name,"testdecimal");
 	field=mysql_fetch_field_direct(result,8);
-	checkSuccess(field->name,"testdate");
+	assertEquals(field->name,"testdate");
 	field=mysql_fetch_field_direct(result,9);
-	checkSuccess(field->name,"testtime");
+	assertEquals(field->name,"testtime");
 	field=mysql_fetch_field_direct(result,10);
-	checkSuccess(field->name,"testdatetime");
+	assertEquals(field->name,"testdatetime");
 	field=mysql_fetch_field_direct(result,11);
-	checkSuccess(field->name,"testyear");
+	assertEquals(field->name,"testyear");
 	field=mysql_fetch_field_direct(result,12);
-	checkSuccess(field->name,"testchar");
+	assertEquals(field->name,"testchar");
 	field=mysql_fetch_field_direct(result,13);
-	checkSuccess(field->name,"testtext");
+	assertEquals(field->name,"testtext");
 	field=mysql_fetch_field_direct(result,14);
-	checkSuccess(field->name,"testvarchar");
+	assertEquals(field->name,"testvarchar");
 	field=mysql_fetch_field_direct(result,15);
-	checkSuccess(field->name,"testtinytext");
+	assertEquals(field->name,"testtinytext");
 	field=mysql_fetch_field_direct(result,16);
-	checkSuccess(field->name,"testmediumtext");
+	assertEquals(field->name,"testmediumtext");
 	field=mysql_fetch_field_direct(result,17);
-	checkSuccess(field->name,"testlongtext");
+	assertEquals(field->name,"testlongtext");
 	field=mysql_fetch_field_direct(result,18);
-	checkSuccess(field->name,"testtimestamp");
+	assertEquals(field->name,"testtimestamp");
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_fetch_fields:\n");
 	field=mysql_fetch_fields(result);
-	checkSuccess(field[0].name,"testtinyint");
-	checkSuccess(field[1].name,"testsmallint");
-	checkSuccess(field[2].name,"testmediumint");
-	checkSuccess(field[3].name,"testint");
-	checkSuccess(field[4].name,"testbigint");
-	checkSuccess(field[5].name,"testfloat");
-	checkSuccess(field[6].name,"testreal");
-	checkSuccess(field[7].name,"testdecimal");
-	checkSuccess(field[8].name,"testdate");
-	checkSuccess(field[9].name,"testtime");
-	checkSuccess(field[10].name,"testdatetime");
-	checkSuccess(field[11].name,"testyear");
-	checkSuccess(field[12].name,"testchar");
-	checkSuccess(field[13].name,"testtext");
-	checkSuccess(field[14].name,"testvarchar");
-	checkSuccess(field[15].name,"testtinytext");
-	checkSuccess(field[16].name,"testmediumtext");
-	checkSuccess(field[17].name,"testlongtext");
-	checkSuccess(field[18].name,"testtimestamp");
+	assertEquals(field[0].name,"testtinyint");
+	assertEquals(field[1].name,"testsmallint");
+	assertEquals(field[2].name,"testmediumint");
+	assertEquals(field[3].name,"testint");
+	assertEquals(field[4].name,"testbigint");
+	assertEquals(field[5].name,"testfloat");
+	assertEquals(field[6].name,"testreal");
+	assertEquals(field[7].name,"testdecimal");
+	assertEquals(field[8].name,"testdate");
+	assertEquals(field[9].name,"testtime");
+	assertEquals(field[10].name,"testdatetime");
+	assertEquals(field[11].name,"testyear");
+	assertEquals(field[12].name,"testchar");
+	assertEquals(field[13].name,"testtext");
+	assertEquals(field[14].name,"testvarchar");
+	assertEquals(field[15].name,"testtinytext");
+	assertEquals(field[16].name,"testmediumtext");
+	assertEquals(field[17].name,"testlongtext");
+	assertEquals(field[18].name,"testtimestamp");
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_fetch_row:\n");
 	row=mysql_fetch_row(result);
-	checkSuccess(row[0],"1");
-	checkSuccess(row[1],"1");
-	checkSuccess(row[2],"1");
-	checkSuccess(row[3],"1");
-	checkSuccess(row[4],"1");
-	//checkSuccess(row[5],"1.1");
-	//checkSuccess(row[6],"1.1");
-	checkSuccess(row[7],"1.1");
-	checkSuccess(row[8],"2001-01-01");
-	checkSuccess(row[9],"01:00:00");
-	checkSuccess(row[10],"2001-01-01 01:00:00");
-	checkSuccess(row[11],"2001");
-	checkSuccess(row[12],"char1");
-	checkSuccess(!charstring::compare(row[13],"text1",5),1);
-	checkSuccess(row[14],"varchar1");
-	checkSuccess(!charstring::compare(row[15],"tinytext1",9),1);
-	checkSuccess(!charstring::compare(row[16],"mediumtext1",11),1);
-	checkSuccess(!charstring::compare(row[17],"longtext1",9),1);
+	assertEquals(row[0],"1");
+	assertEquals(row[1],"1");
+	assertEquals(row[2],"1");
+	assertEquals(row[3],"1");
+	assertEquals(row[4],"1");
+	//assertEquals(row[5],"1.1");
+	//assertEquals(row[6],"1.1");
+	assertEquals(row[7],"1.1");
+	assertEquals(row[8],"2001-01-01");
+	assertEquals(row[9],"01:00:00");
+	assertEquals(row[10],"2001-01-01 01:00:00");
+	assertEquals(row[11],"2001");
+	assertEquals(row[12],"char1");
+	assertEquals(!charstring::compare(row[13],"text1",5),1);
+	assertEquals(row[14],"varchar1");
+	assertEquals(!charstring::compare(row[15],"tinytext1",9),1);
+	assertEquals(!charstring::compare(row[16],"mediumtext1",11),1);
+	assertEquals(!charstring::compare(row[17],"longtext1",9),1);
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_fetch_lengths:\n");
 	unsigned long	*lengths;
 	lengths=mysql_fetch_lengths(result);
-	checkSuccess(lengths[0],1);
-	checkSuccess(lengths[1],1);
-	checkSuccess(lengths[2],1);
-	checkSuccess(lengths[3],1);
-	checkSuccess(lengths[4],1);
-	//checkSuccess(lengths[5],3);
-	//checkSuccess(lengths[6],3);
-	checkSuccess(lengths[7],3);
-	checkSuccess(lengths[8],10);
-	checkSuccess(lengths[9],8);
-	checkSuccess(lengths[10],19);
-	checkSuccess(lengths[11],4);
-	checkSuccess(lengths[12],5);
-	checkSuccess(lengths[13],5);
-	checkSuccess(lengths[14],8);
-	checkSuccess(lengths[15],9);
-	checkSuccess(lengths[16],11);
-	checkSuccess(lengths[17],9);
+	assertEquals(lengths[0],1);
+	assertEquals(lengths[1],1);
+	assertEquals(lengths[2],1);
+	assertEquals(lengths[3],1);
+	assertEquals(lengths[4],1);
+	//assertEquals(lengths[5],3);
+	//assertEquals(lengths[6],3);
+	assertEquals(lengths[7],3);
+	assertEquals(lengths[8],10);
+	assertEquals(lengths[9],8);
+	assertEquals(lengths[10],19);
+	assertEquals(lengths[11],4);
+	assertEquals(lengths[12],5);
+	assertEquals(lengths[13],5);
+	assertEquals(lengths[14],8);
+	assertEquals(lengths[15],9);
+	assertEquals(lengths[16],11);
+	assertEquals(lengths[17],9);
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_fetch_row:\n");
 	row=mysql_fetch_row(result);
-	checkSuccess(row[0],"2");
-	checkSuccess(row[1],"2");
-	checkSuccess(row[2],"2");
-	checkSuccess(row[3],"2");
-	checkSuccess(row[4],"2");
-	//checkSuccess(row[5],"2.1");
-	//checkSuccess(row[6],"2.1");
-	checkSuccess(row[7],"2.1");
-	checkSuccess(row[8],"2002-01-01");
-	checkSuccess(row[9],"02:00:00");
-	checkSuccess(row[10],"2002-01-01 02:00:00");
-	checkSuccess(row[11],"2002");
-	checkSuccess(row[12],"char2");
-	checkSuccess(!charstring::compare(row[13],"text2",5),1);
-	checkSuccess(row[14],"varchar2");
-	checkSuccess(!charstring::compare(row[15],"tinytext2",9),1);
-	checkSuccess(!charstring::compare(row[16],"mediumtext2",11),1);
-	checkSuccess(!charstring::compare(row[17],"longtext2",9),1);
+	assertEquals(row[0],"2");
+	assertEquals(row[1],"2");
+	assertEquals(row[2],"2");
+	assertEquals(row[3],"2");
+	assertEquals(row[4],"2");
+	//assertEquals(row[5],"2.1");
+	//assertEquals(row[6],"2.1");
+	assertEquals(row[7],"2.1");
+	assertEquals(row[8],"2002-01-01");
+	assertEquals(row[9],"02:00:00");
+	assertEquals(row[10],"2002-01-01 02:00:00");
+	assertEquals(row[11],"2002");
+	assertEquals(row[12],"char2");
+	assertEquals(!charstring::compare(row[13],"text2",5),1);
+	assertEquals(row[14],"varchar2");
+	assertEquals(!charstring::compare(row[15],"tinytext2",9),1);
+	assertEquals(!charstring::compare(row[16],"mediumtext2",11),1);
+	assertEquals(!charstring::compare(row[17],"longtext2",9),1);
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_data_seek:\n");
 	mysql_data_seek(result,0);
 	row=mysql_fetch_row(result);
-	checkSuccess(row[0],"1");
+	assertEquals(row[0],"1");
 	stdoutput.printf("\n");
 
 
@@ -619,19 +584,19 @@ stdoutput.printf("here\n");
 	mysql_data_seek(result,0);
 	MYSQL_ROW_OFFSET	zerorowoffset=mysql_row_tell(result);
 	row=mysql_fetch_row(result);
-	checkSuccess(row[0],"1");
+	assertEquals(row[0],"1");
 	row=mysql_fetch_row(result);
-	checkSuccess(row[0],"2");
+	assertEquals(row[0],"2");
 	mysql_row_seek(result,zerorowoffset);
 	row=mysql_fetch_row(result);
-	checkSuccess(row[0],"1");
+	assertEquals(row[0],"1");
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_eof:\n");
 	mysql_data_seek(result,1);
 	row=mysql_fetch_row(result);
-	checkSuccess(mysql_eof(result),1);
+	assertEquals(mysql_eof(result),1);
 	stdoutput.printf("\n");
 
 
@@ -641,8 +606,8 @@ stdoutput.printf("here\n");
 
 	stdoutput.printf("mysql_real_query: select\n");
 	query="select * from testtable";
-	checkSuccess(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
-	checkSuccess(mysql_info(&mysql),NULL);
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+	assertEquals(mysql_info(&mysql),NULL);
 	stdoutput.printf("\n");
 
 
@@ -653,44 +618,44 @@ stdoutput.printf("here\n");
 
 	stdoutput.printf("mysql_fetch_row:\n");
 	row=mysql_fetch_row(result);
-	checkSuccess(row[0],"1");
-	checkSuccess(row[1],"1");
-	checkSuccess(row[2],"1");
-	checkSuccess(row[3],"1");
-	checkSuccess(row[4],"1");
-	//checkSuccess(row[5],"1.1");
-	//checkSuccess(row[6],"1.1");
-	checkSuccess(row[7],"1.1");
-	checkSuccess(row[8],"2001-01-01");
-	checkSuccess(row[9],"01:00:00");
-	checkSuccess(row[10],"2001-01-01 01:00:00");
-	checkSuccess(row[11],"2001");
-	checkSuccess(row[12],"char1");
-	checkSuccess(!charstring::compare(row[13],"text1",5),1);
-	checkSuccess(row[14],"varchar1");
-	checkSuccess(!charstring::compare(row[15],"tinytext1",9),1);
-	checkSuccess(!charstring::compare(row[16],"mediumtext1",11),1);
-	checkSuccess(!charstring::compare(row[17],"longtext1",9),1);
+	assertEquals(row[0],"1");
+	assertEquals(row[1],"1");
+	assertEquals(row[2],"1");
+	assertEquals(row[3],"1");
+	assertEquals(row[4],"1");
+	//assertEquals(row[5],"1.1");
+	//assertEquals(row[6],"1.1");
+	assertEquals(row[7],"1.1");
+	assertEquals(row[8],"2001-01-01");
+	assertEquals(row[9],"01:00:00");
+	assertEquals(row[10],"2001-01-01 01:00:00");
+	assertEquals(row[11],"2001");
+	assertEquals(row[12],"char1");
+	assertEquals(!charstring::compare(row[13],"text1",5),1);
+	assertEquals(row[14],"varchar1");
+	assertEquals(!charstring::compare(row[15],"tinytext1",9),1);
+	assertEquals(!charstring::compare(row[16],"mediumtext1",11),1);
+	assertEquals(!charstring::compare(row[17],"longtext1",9),1);
 	row=mysql_fetch_row(result);
-	checkSuccess(row[0],"2");
-	checkSuccess(row[1],"2");
-	checkSuccess(row[2],"2");
-	checkSuccess(row[3],"2");
-	checkSuccess(row[4],"2");
-	//checkSuccess(row[5],"2.1");
-	//checkSuccess(row[6],"2.1");
-	checkSuccess(row[7],"2.1");
-	checkSuccess(row[8],"2002-01-01");
-	checkSuccess(row[9],"02:00:00");
-	checkSuccess(row[10],"2002-01-01 02:00:00");
-	checkSuccess(row[11],"2002");
-	checkSuccess(row[12],"char2");
-	checkSuccess(!charstring::compare(row[13],"text2",5),1);
-	checkSuccess(row[14],"varchar2");
-	checkSuccess(!charstring::compare(row[15],"tinytext2",9),1);
-	checkSuccess(!charstring::compare(row[16],"mediumtext2",11),1);
-	checkSuccess(!charstring::compare(row[17],"longtext2",9),1);
-	checkSuccess((long)mysql_fetch_row(result),0);
+	assertEquals(row[0],"2");
+	assertEquals(row[1],"2");
+	assertEquals(row[2],"2");
+	assertEquals(row[3],"2");
+	assertEquals(row[4],"2");
+	//assertEquals(row[5],"2.1");
+	//assertEquals(row[6],"2.1");
+	assertEquals(row[7],"2.1");
+	assertEquals(row[8],"2002-01-01");
+	assertEquals(row[9],"02:00:00");
+	assertEquals(row[10],"2002-01-01 02:00:00");
+	assertEquals(row[11],"2002");
+	assertEquals(row[12],"char2");
+	assertEquals(!charstring::compare(row[13],"text2",5),1);
+	assertEquals(row[14],"varchar2");
+	assertEquals(!charstring::compare(row[15],"tinytext2",9),1);
+	assertEquals(!charstring::compare(row[16],"mediumtext2",11),1);
+	assertEquals(!charstring::compare(row[17],"longtext2",9),1);
+	assertEquals((long)mysql_fetch_row(result),0);
 	stdoutput.printf("\n");
 
 
@@ -699,8 +664,8 @@ stdoutput.printf("here\n");
 
 	stdoutput.printf("mysql_real_query: drop\n");
 	query="drop table testtable";
-	checkSuccess(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
-	checkSuccess(mysql_info(&mysql),NULL);
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+	assertEquals(mysql_info(&mysql),NULL);
 	stdoutput.printf("\n");
 
 
@@ -708,46 +673,46 @@ stdoutput.printf("here\n");
 	char	to[100];
 	char	from[100];
 	charstring::printf(from,sizeof(from)," ' \" \n \r \\ ; %c ",26);
-	checkSuccess(mysql_escape_string(to,from,15),21);
-	checkSuccess(to," \\' \\\" \\n \\r \\\\ ; \\Z ");
+	assertEquals(mysql_escape_string(to,from,15),21);
+	assertEquals(to," \\' \\\" \\n \\r \\\\ ; \\Z ");
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_real_escape_string:\n");
-	checkSuccess(mysql_real_escape_string(&mysql,to,from,15),21);
-	checkSuccess(to," \\' \\\" \\n \\r \\\\ ; \\Z ");
+	assertEquals(mysql_real_escape_string(&mysql,to,from,15),21);
+	assertEquals(to," \\' \\\" \\n \\r \\\\ ; \\Z ");
 	stdoutput.printf("\n");
 	
 	stdoutput.printf("mysql_insert_id\n");
 	query="create table testtable (col1 int not null primary key auto_increment, col2 int)";
-	checkSuccess(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
 	query="insert into testtable (col2) values (1)";
-	checkSuccess(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
-	checkSuccess(mysql_insert_id(&mysql),1);
-	checkSuccess(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
-	checkSuccess(mysql_insert_id(&mysql),2);
-	checkSuccess(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
-	checkSuccess(mysql_insert_id(&mysql),3);
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+	assertEquals(mysql_insert_id(&mysql),1);
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+	assertEquals(mysql_insert_id(&mysql),2);
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+	assertEquals(mysql_insert_id(&mysql),3);
 	query="drop table testtable";
-	checkSuccess(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
 	stdoutput.printf("\n");
 
 	
 	stdoutput.printf("mysql_error/mysql_errno\n");
 	query="known bad query";
-	checkSuccess(mysql_real_query(&mysql,query,charstring::getLength(query)),1);
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),1);
 	char	*error=charstring::duplicate(mysql_error(&mysql));
 	if (charstring::getLength(error)>36) {
 		error[36]='\0';
 	}
-	checkSuccess(error,"You have an error in your SQL syntax");
+	assertEquals(error,"You have an error in your SQL syntax");
 	delete[] error;
-	checkSuccess(mysql_errno(&mysql),1064);
+	assertEquals(mysql_errno(&mysql),1064);
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_thread_id\n");
-	checkSuccess((mysql_thread_id(&mysql)!=0),1);
+	assertEquals((mysql_thread_id(&mysql)!=0),1);
 	stdoutput.printf("\n");
 
 
@@ -757,26 +722,26 @@ stdoutput.printf("here\n");
 	stdoutput.printf("mysql_list_processes\n");
 	result=mysql_list_processes(&mysql);
 	uint16_t	numfields=mysql_num_fields(result);
-	checkSuccess((numfields==8 || numfields==9),1);
+	assertEquals((numfields==8 || numfields==9),1);
 	field=mysql_fetch_field_direct(result,0);
-	checkSuccess(field->name,"Id");
+	assertEquals(field->name,"Id");
 	field=mysql_fetch_field_direct(result,1);
-	checkSuccess(field->name,"User");
+	assertEquals(field->name,"User");
 	field=mysql_fetch_field_direct(result,2);
-	checkSuccess(field->name,"Host");
+	assertEquals(field->name,"Host");
 	field=mysql_fetch_field_direct(result,3);
-	checkSuccess(field->name,"db");
+	assertEquals(field->name,"db");
 	field=mysql_fetch_field_direct(result,4);
-	checkSuccess(field->name,"Command");
+	assertEquals(field->name,"Command");
 	field=mysql_fetch_field_direct(result,5);
-	checkSuccess(field->name,"Time");
+	assertEquals(field->name,"Time");
 	field=mysql_fetch_field_direct(result,6);
-	checkSuccess(field->name,"State");
+	assertEquals(field->name,"State");
 	field=mysql_fetch_field_direct(result,7);
-	checkSuccess(field->name,"Info");
+	assertEquals(field->name,"Info");
 	if (numfields==9) {
 		field=mysql_fetch_field_direct(result,8);
-		checkSuccess(field->name,"Progress");
+		assertEquals(field->name,"Progress");
 	}
 	row=mysql_fetch_row(result);
 	stdoutput.printf("\n");
@@ -798,48 +763,48 @@ stdoutput.printf("here\n");
 	stdoutput.printf("mysql_shutdown\n");
 	// should fail for lack of permissions
 	// deprecated in real mysql, and always returns 1 on error
-	checkSuccess(mysql_shutdown(&mysql,SHUTDOWN_DEFAULT),1);
+	assertEquals(mysql_shutdown(&mysql,SHUTDOWN_DEFAULT),1);
 	stdoutput.printf("\n");
 	#endif
 
 	stdoutput.printf("mysql_refresh\n");
 	// these should all fail for lack of permissions
-	checkSuccess(mysql_refresh(&mysql,REFRESH_GRANT),1);
-	checkSuccess(mysql_refresh(&mysql,REFRESH_LOG),1);
-	checkSuccess(mysql_refresh(&mysql,REFRESH_TABLES),1);
-	checkSuccess(mysql_refresh(&mysql,REFRESH_HOSTS),1);
-	checkSuccess(mysql_refresh(&mysql,REFRESH_STATUS),1);
-	checkSuccess(mysql_refresh(&mysql,REFRESH_SLAVE),1);
-	checkSuccess(mysql_refresh(&mysql,REFRESH_MASTER),1);
+	assertEquals(mysql_refresh(&mysql,REFRESH_GRANT),1);
+	assertEquals(mysql_refresh(&mysql,REFRESH_LOG),1);
+	assertEquals(mysql_refresh(&mysql,REFRESH_TABLES),1);
+	assertEquals(mysql_refresh(&mysql,REFRESH_HOSTS),1);
+	assertEquals(mysql_refresh(&mysql,REFRESH_STATUS),1);
+	assertEquals(mysql_refresh(&mysql,REFRESH_SLAVE),1);
+	assertEquals(mysql_refresh(&mysql,REFRESH_MASTER),1);
 	/*if (argc==2) {
-		checkSuccess(mysql_refresh(&mysql,REFRESH_THREADS),1);
+		assertEquals(mysql_refresh(&mysql,REFRESH_THREADS),1);
 	} else {
 		// no-op in this case
-		checkSuccess(mysql_refresh(&mysql,REFRESH_THREADS),0);
+		assertEquals(mysql_refresh(&mysql,REFRESH_THREADS),0);
 	}*/
 	stdoutput.printf("\n");
 
 	stdoutput.printf("mysql_reload\n");
 	// should fail for lack of permissions
-	checkSuccess(mysql_reload(&mysql),1);
+	assertEquals(mysql_reload(&mysql),1);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("mysql_stat\n");
 	const char	*stat=mysql_stat(&mysql);
-	checkSuccess(charstring::contains(stat,"Uptime: "),1);
-	checkSuccess(charstring::contains(stat,"Threads: "),1);
-	checkSuccess(charstring::contains(stat,"Questions: "),1);
-	checkSuccess(charstring::contains(stat,"Slow queries: "),1);
-	checkSuccess(charstring::contains(stat,"Opens: "),1);
-	checkSuccess(charstring::contains(stat,"Flush tables: "),1);
-	checkSuccess(charstring::contains(stat,"Open tables: "),1);
-	checkSuccess(charstring::contains(stat,"Queries per second avg: "),1);
+	assertEquals(charstring::contains(stat,"Uptime: "),1);
+	assertEquals(charstring::contains(stat,"Threads: "),1);
+	assertEquals(charstring::contains(stat,"Questions: "),1);
+	assertEquals(charstring::contains(stat,"Slow queries: "),1);
+	assertEquals(charstring::contains(stat,"Opens: "),1);
+	assertEquals(charstring::contains(stat,"Flush tables: "),1);
+	assertEquals(charstring::contains(stat,"Open tables: "),1);
+	assertEquals(charstring::contains(stat,"Queries per second avg: "),1);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("mysql_kill\n");
 	// should fail for lack of permissions (or invalid thread id)
 	// deprecated in real mysql, and always returns 1 on error
-	checkSuccess(mysql_kill(&mysql,0),1);
+	assertEquals(mysql_kill(&mysql,0),1);
 	stdoutput.printf("\n");
 
 	// FIXME: mysql_options
@@ -853,25 +818,25 @@ stdoutput.printf("here\n");
 	// statement api...
 	#ifdef HAVE_MYSQL_REAL_CONNECT_FOR_SURE
 		stdoutput.printf("mysql_init\n");
-		checkSuccess((long)mysql_init(&mysql),(long)&mysql);
+		assertEquals((long)mysql_init(&mysql),(long)&mysql);
 		stdoutput.printf("\n");
 		stdoutput.printf("mysql_real_connect\n");
 		#if MYSQL_VERSION_ID>=32200
-			checkSuccess((long)mysql_real_connect(
+			assertEquals((long)mysql_real_connect(
 						&mysql,host,user,password,db,
 						charstring::convertToInteger(port),
 						socket,0),(long)&mysql);
 		#else
-			checkSuccess((long)mysql_real_connect(
+			assertEquals((long)mysql_real_connect(
 						&mysql,host,user,password,
 						charstring::convertToInteger(port),
 						socket,0),(long)&mysql);
 			if (!charstring::isNullOrEmpty(db)) {
-				checkSuccess(mysql_select_db(&mysql,db),0);
+				assertEquals(mysql_select_db(&mysql,db),0);
 			}
 		#endif
 	#else
-		checkSuccess((long)mysql_connect(&mysql,host,
+		assertEquals((long)mysql_connect(&mysql,host,
 						user,password),
 						(long)mysql);
 	#endif
@@ -879,104 +844,104 @@ stdoutput.printf("here\n");
 
 	stdoutput.printf("mysql_stmt_init:\n");
 	MYSQL_STMT	*stmt=mysql_stmt_init(&mysql);
-	checkSuccess((int)(stmt!=NULL),1);
+	assertEquals((int)(stmt!=NULL),1);
 	stdoutput.printf("\n");
 	stdoutput.printf("mysql_stmt_prepare: create\n");
 	query="create table testtable (testtinyint tinyint, testsmallint smallint, testmediumint mediumint, testint int, testbigint bigint, testfloat float, testreal real, testdecimal decimal(2,1), testdate date, testtime time, testdatetime datetime, testyear year, testchar char(40), testtext text, testvarchar varchar(40), testtinytext tinytext, testmediumtext mediumtext, testlongtext longtext, testtimestamp timestamp)";
-	checkSuccess(mysql_stmt_prepare(stmt,query,
+	assertEquals(mysql_stmt_prepare(stmt,query,
 				charstring::getLength(query)),0);
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_stmt_execute: create\n");
-	checkSuccess(mysql_stmt_execute(stmt),0);
+	assertEquals(mysql_stmt_execute(stmt),0);
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_stmt_prepare/execute: insert\n");
 	query="insert into testtable values (1,1,1,1,1,1.1,1.1,1.1,'2001-01-01','01:00:00','2001-01-01 01:00:00','2001','char1','text1','varchar1','tinytext1','mediumtext1','longtext1',NULL)";
-	checkSuccess(mysql_stmt_prepare(stmt,query,charstring::getLength(query)),0);
-	checkSuccess(mysql_stmt_execute(stmt),0);
+	assertEquals(mysql_stmt_prepare(stmt,query,charstring::getLength(query)),0);
+	assertEquals(mysql_stmt_execute(stmt),0);
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_stmt_prepare/execute: insert\n");
 	query="insert into testtable values (2,2,2,2,2,2.1,2.1,2.1,'2002-01-01','02:00:00','2002-01-01 02:00:00','2002','char2','text2','varchar2','tinytext2','mediumtext2','longtext2',NULL)";
-	checkSuccess(mysql_stmt_prepare(stmt,query,charstring::getLength(query)),0);
-	checkSuccess(mysql_stmt_execute(stmt),0);
+	assertEquals(mysql_stmt_prepare(stmt,query,charstring::getLength(query)),0);
+	assertEquals(mysql_stmt_execute(stmt),0);
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_stmt_prepare: select\n");
 	query="select * from testtable";
-	checkSuccess(mysql_stmt_prepare(stmt,query,charstring::getLength(query)),0);
+	assertEquals(mysql_stmt_prepare(stmt,query,charstring::getLength(query)),0);
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_stmt_field_count:\n");
-	checkSuccess(mysql_stmt_field_count(stmt),19);
+	assertEquals(mysql_stmt_field_count(stmt),19);
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_fetch_field/mysql_field_tell:\n");
 	result=mysql_stmt_result_metadata(stmt);
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),1);
-	checkSuccess(field->name,"testtinyint");
+	assertEquals(mysql_field_tell(result),1);
+	assertEquals(field->name,"testtinyint");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),2);
-	checkSuccess(field->name,"testsmallint");
+	assertEquals(mysql_field_tell(result),2);
+	assertEquals(field->name,"testsmallint");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),3);
-	checkSuccess(field->name,"testmediumint");
+	assertEquals(mysql_field_tell(result),3);
+	assertEquals(field->name,"testmediumint");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),4);
-	checkSuccess(field->name,"testint");
+	assertEquals(mysql_field_tell(result),4);
+	assertEquals(field->name,"testint");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),5);
-	checkSuccess(field->name,"testbigint");
+	assertEquals(mysql_field_tell(result),5);
+	assertEquals(field->name,"testbigint");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),6);
-	checkSuccess(field->name,"testfloat");
+	assertEquals(mysql_field_tell(result),6);
+	assertEquals(field->name,"testfloat");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),7);
-	checkSuccess(field->name,"testreal");
+	assertEquals(mysql_field_tell(result),7);
+	assertEquals(field->name,"testreal");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),8);
-	checkSuccess(field->name,"testdecimal");
+	assertEquals(mysql_field_tell(result),8);
+	assertEquals(field->name,"testdecimal");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),9);
-	checkSuccess(field->name,"testdate");
+	assertEquals(mysql_field_tell(result),9);
+	assertEquals(field->name,"testdate");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),10);
-	checkSuccess(field->name,"testtime");
+	assertEquals(mysql_field_tell(result),10);
+	assertEquals(field->name,"testtime");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),11);
-	checkSuccess(field->name,"testdatetime");
+	assertEquals(mysql_field_tell(result),11);
+	assertEquals(field->name,"testdatetime");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),12);
-	checkSuccess(field->name,"testyear");
+	assertEquals(mysql_field_tell(result),12);
+	assertEquals(field->name,"testyear");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),13);
-	checkSuccess(field->name,"testchar");
+	assertEquals(mysql_field_tell(result),13);
+	assertEquals(field->name,"testchar");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),14);
-	checkSuccess(field->name,"testtext");
+	assertEquals(mysql_field_tell(result),14);
+	assertEquals(field->name,"testtext");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),15);
-	checkSuccess(field->name,"testvarchar");
+	assertEquals(mysql_field_tell(result),15);
+	assertEquals(field->name,"testvarchar");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),16);
-	checkSuccess(field->name,"testtinytext");
+	assertEquals(mysql_field_tell(result),16);
+	assertEquals(field->name,"testtinytext");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),17);
-	checkSuccess(field->name,"testmediumtext");
+	assertEquals(mysql_field_tell(result),17);
+	assertEquals(field->name,"testmediumtext");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),18);
-	checkSuccess(field->name,"testlongtext");
+	assertEquals(mysql_field_tell(result),18);
+	assertEquals(field->name,"testlongtext");
 	field=mysql_fetch_field(result);
-	checkSuccess(mysql_field_tell(result),19);
-	checkSuccess(field->name,"testtimestamp");
+	assertEquals(mysql_field_tell(result),19);
+	assertEquals(field->name,"testtimestamp");
 	stdoutput.printf("\n");
 
 
@@ -993,104 +958,104 @@ stdoutput.printf("here\n");
 		fieldbind[i].is_null=&fieldisnull[i];
 		fieldbind[i].length=&fieldlength[i];
 	}
-	checkSuccess(mysql_stmt_bind_result(stmt,fieldbind),0);
+	assertEquals(mysql_stmt_bind_result(stmt,fieldbind),0);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("mysql_stmt_execute: select\n");
-	checkSuccess(mysql_stmt_execute(stmt),0);
+	assertEquals(mysql_stmt_execute(stmt),0);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("mysql_stmt_fetch:\n");
-	checkSuccess(mysql_stmt_fetch(stmt),0);
-	checkSuccess((const char *)fieldbind[0].buffer,"1");
-	checkSuccess((const char *)fieldbind[1].buffer,"1");
-	checkSuccess((const char *)fieldbind[2].buffer,"1");
-	checkSuccess((const char *)fieldbind[3].buffer,"1");
-	checkSuccess((const char *)fieldbind[4].buffer,"1");
-	//checkSuccess((const char *)fieldbind[5].buffer,"1.1");
-	//checkSuccess((const char *)fieldbind[6].buffer,"1.1");
-	checkSuccess((const char *)fieldbind[7].buffer,"1.1");
-	checkSuccess((const char *)fieldbind[8].buffer,"2001-01-01");
-	checkSuccess((const char *)fieldbind[9].buffer,"01:00:00");
-	checkSuccess((const char *)fieldbind[10].buffer,"2001-01-01 01:00:00");
-	checkSuccess((const char *)fieldbind[11].buffer,"2001");
-	checkSuccess((const char *)fieldbind[12].buffer,"char1");
-	checkSuccess(!charstring::compare(
+	assertEquals(mysql_stmt_fetch(stmt),0);
+	assertEquals((const char *)fieldbind[0].buffer,"1");
+	assertEquals((const char *)fieldbind[1].buffer,"1");
+	assertEquals((const char *)fieldbind[2].buffer,"1");
+	assertEquals((const char *)fieldbind[3].buffer,"1");
+	assertEquals((const char *)fieldbind[4].buffer,"1");
+	//assertEquals((const char *)fieldbind[5].buffer,"1.1");
+	//assertEquals((const char *)fieldbind[6].buffer,"1.1");
+	assertEquals((const char *)fieldbind[7].buffer,"1.1");
+	assertEquals((const char *)fieldbind[8].buffer,"2001-01-01");
+	assertEquals((const char *)fieldbind[9].buffer,"01:00:00");
+	assertEquals((const char *)fieldbind[10].buffer,"2001-01-01 01:00:00");
+	assertEquals((const char *)fieldbind[11].buffer,"2001");
+	assertEquals((const char *)fieldbind[12].buffer,"char1");
+	assertEquals(!charstring::compare(
 			(const char *)fieldbind[13].buffer,"text1",5),1);
-	checkSuccess((const char *)fieldbind[14].buffer,"varchar1");
-	checkSuccess(!charstring::compare(
+	assertEquals((const char *)fieldbind[14].buffer,"varchar1");
+	assertEquals(!charstring::compare(
 			(const char *)fieldbind[15].buffer,"tinytext1",9),1);
-	checkSuccess(!charstring::compare(
+	assertEquals(!charstring::compare(
 			(const char *)fieldbind[16].buffer,"mediumtext1",11),1);
-	checkSuccess(!charstring::compare(
+	assertEquals(!charstring::compare(
 			(const char *)fieldbind[17].buffer,"longtext1",9),1);
 	stdoutput.printf("\n");
-	checkSuccess(mysql_stmt_fetch(stmt),0);
-	checkSuccess((const char *)fieldbind[0].buffer,"2");
-	checkSuccess((const char *)fieldbind[1].buffer,"2");
-	checkSuccess((const char *)fieldbind[2].buffer,"2");
-	checkSuccess((const char *)fieldbind[3].buffer,"2");
-	checkSuccess((const char *)fieldbind[4].buffer,"2");
-	//checkSuccess((const char *)fieldbind[5].buffer,"2.1");
-	//checkSuccess((const char *)fieldbind[6].buffer,"2.1");
-	checkSuccess((const char *)fieldbind[7].buffer,"2.1");
-	checkSuccess((const char *)fieldbind[8].buffer,"2002-01-01");
-	checkSuccess((const char *)fieldbind[9].buffer,"02:00:00");
-	checkSuccess((const char *)fieldbind[10].buffer,"2002-01-01 02:00:00");
-	checkSuccess((const char *)fieldbind[11].buffer,"2002");
-	checkSuccess((const char *)fieldbind[12].buffer,"char2");
-	checkSuccess(!charstring::compare(
+	assertEquals(mysql_stmt_fetch(stmt),0);
+	assertEquals((const char *)fieldbind[0].buffer,"2");
+	assertEquals((const char *)fieldbind[1].buffer,"2");
+	assertEquals((const char *)fieldbind[2].buffer,"2");
+	assertEquals((const char *)fieldbind[3].buffer,"2");
+	assertEquals((const char *)fieldbind[4].buffer,"2");
+	//assertEquals((const char *)fieldbind[5].buffer,"2.1");
+	//assertEquals((const char *)fieldbind[6].buffer,"2.1");
+	assertEquals((const char *)fieldbind[7].buffer,"2.1");
+	assertEquals((const char *)fieldbind[8].buffer,"2002-01-01");
+	assertEquals((const char *)fieldbind[9].buffer,"02:00:00");
+	assertEquals((const char *)fieldbind[10].buffer,"2002-01-01 02:00:00");
+	assertEquals((const char *)fieldbind[11].buffer,"2002");
+	assertEquals((const char *)fieldbind[12].buffer,"char2");
+	assertEquals(!charstring::compare(
 			(const char *)fieldbind[13].buffer,"text2",5),1);
-	checkSuccess((const char *)fieldbind[14].buffer,"varchar2");
-	checkSuccess(!charstring::compare(
+	assertEquals((const char *)fieldbind[14].buffer,"varchar2");
+	assertEquals(!charstring::compare(
 			(const char *)fieldbind[15].buffer,"tinytext2",9),1);
-	checkSuccess(!charstring::compare(
+	assertEquals(!charstring::compare(
 			(const char *)fieldbind[16].buffer,"mediumtext2",11),1);
-	checkSuccess(!charstring::compare(
+	assertEquals(!charstring::compare(
 			(const char *)fieldbind[17].buffer,"longtext2",9),1);
 	stdoutput.printf("\n");
-	checkSuccess(mysql_stmt_fetch(stmt),MYSQL_NO_DATA);
+	assertEquals(mysql_stmt_fetch(stmt),MYSQL_NO_DATA);
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_stmt_prepare/execute: drop\n");
 	query="drop table testtable";
-	checkSuccess(mysql_stmt_prepare(stmt,query,charstring::getLength(query)),0);
-	checkSuccess(mysql_stmt_execute(stmt),0);
+	assertEquals(mysql_stmt_prepare(stmt,query,charstring::getLength(query)),0);
+	assertEquals(mysql_stmt_execute(stmt),0);
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_stmt_prepare/execute: select with odd NULLS\n");
 	query="select NULL,1,NULL,1,NULL,1";
-	checkSuccess(mysql_stmt_prepare(stmt,query,charstring::getLength(query)),0);
-	checkSuccess(mysql_stmt_execute(stmt),0);
-	checkSuccess(mysql_stmt_bind_result(stmt,fieldbind),0);
-	checkSuccess(mysql_stmt_fetch(stmt),0);
-	checkSuccess(fieldisnull[0],1);
-	checkSuccess(fieldisnull[1],0);
-	checkSuccess(fieldisnull[2],1);
-	checkSuccess(fieldisnull[3],0);
-	checkSuccess(fieldisnull[4],1);
-	checkSuccess(fieldisnull[5],0);
+	assertEquals(mysql_stmt_prepare(stmt,query,charstring::getLength(query)),0);
+	assertEquals(mysql_stmt_execute(stmt),0);
+	assertEquals(mysql_stmt_bind_result(stmt,fieldbind),0);
+	assertEquals(mysql_stmt_fetch(stmt),0);
+	assertEquals(fieldisnull[0],1);
+	assertEquals(fieldisnull[1],0);
+	assertEquals(fieldisnull[2],1);
+	assertEquals(fieldisnull[3],0);
+	assertEquals(fieldisnull[4],1);
+	assertEquals(fieldisnull[5],0);
 	#ifdef MARIADB_BASE_VERSION
-	checkSuccess(mysql_stmt_fetch(stmt),100);
+	assertEquals(mysql_stmt_fetch(stmt),100);
 	#endif
 	stdoutput.printf("\n");	
 
 	stdoutput.printf("mysql_stmt_prepare/execute: select with even NULLS\n");
 	query="select 1,NULL,1,NULL,1,NULL";
-	checkSuccess(mysql_stmt_prepare(stmt,query,charstring::getLength(query)),0);
-	checkSuccess(mysql_stmt_execute(stmt),0);
-	checkSuccess(mysql_stmt_bind_result(stmt,fieldbind),0);
-	checkSuccess(mysql_stmt_fetch(stmt),0);
-	checkSuccess(fieldisnull[0],0);
-	checkSuccess(fieldisnull[1],1);
-	checkSuccess(fieldisnull[2],0);
-	checkSuccess(fieldisnull[3],1);
-	checkSuccess(fieldisnull[4],0);
-	checkSuccess(fieldisnull[5],1);
+	assertEquals(mysql_stmt_prepare(stmt,query,charstring::getLength(query)),0);
+	assertEquals(mysql_stmt_execute(stmt),0);
+	assertEquals(mysql_stmt_bind_result(stmt,fieldbind),0);
+	assertEquals(mysql_stmt_fetch(stmt),0);
+	assertEquals(fieldisnull[0],0);
+	assertEquals(fieldisnull[1],1);
+	assertEquals(fieldisnull[2],0);
+	assertEquals(fieldisnull[3],1);
+	assertEquals(fieldisnull[4],0);
+	assertEquals(fieldisnull[5],1);
 	#ifdef MARIADB_BASE_VERSION
-	checkSuccess(mysql_stmt_fetch(stmt),100);
+	assertEquals(mysql_stmt_fetch(stmt),100);
 	#endif
 	stdoutput.printf("\n");
 
@@ -1098,7 +1063,7 @@ stdoutput.printf("here\n");
 
 	stdoutput.printf("mysql_stmt_prepare/execute: select with binds\n");
 	query="select ?,?,?,?,?,?,?,?,?,?,?,?,?,?";
-	checkSuccess(mysql_stmt_prepare(stmt,query,charstring::getLength(query)),0);
+	assertEquals(mysql_stmt_prepare(stmt,query,charstring::getLength(query)),0);
 	MYSQL_BIND	bind[14];
 	unsigned long	bindlength[14];
 	my_bool		bindisnull[14];
@@ -1244,33 +1209,33 @@ stdoutput.printf("here\n");
 	bindisnull[13]=0;
 	bind[13].is_null=&bindisnull[13];
 
-	checkSuccess(mysql_stmt_bind_param(stmt,bind),0);
-	checkSuccess(mysql_stmt_execute(stmt),0);
-	checkSuccess(mysql_stmt_bind_result(stmt,fieldbind),0);
-	checkSuccess(mysql_stmt_fetch(stmt),0);
-	checkSuccess((const char *)fieldbind[0].buffer,"1");
-	checkSuccess((const char *)fieldbind[1].buffer,"1");
-	checkSuccess((const char *)fieldbind[2].buffer,"1");
-	checkSuccess((const char *)fieldbind[3].buffer,"1");
-	//checkSuccess((const char *)fieldbind[4].buffer,"1.1");
-	//checkSuccess((const char *)fieldbind[5].buffer,"1.1");
-	checkSuccess((const char *)fieldbind[6].buffer,"string1");
-	checkSuccess((const char *)fieldbind[7].buffer,"varstring1");
-	checkSuccess((const char *)fieldbind[8].buffer,"tinyblob1");
-	checkSuccess((const char *)fieldbind[9].buffer,"mediumblob1");
-	checkSuccess((const char *)fieldbind[10].buffer,"longblob1");
-	checkSuccess((const char *)fieldbind[11].buffer,"2001-01-02");
-	checkSuccess((const char *)fieldbind[12].buffer,"-36:10:11");
-	checkSuccess((const char *)fieldbind[13].buffer,"2001-01-02 12:10:11");
+	assertEquals(mysql_stmt_bind_param(stmt,bind),0);
+	assertEquals(mysql_stmt_execute(stmt),0);
+	assertEquals(mysql_stmt_bind_result(stmt,fieldbind),0);
+	assertEquals(mysql_stmt_fetch(stmt),0);
+	assertEquals((const char *)fieldbind[0].buffer,"1");
+	assertEquals((const char *)fieldbind[1].buffer,"1");
+	assertEquals((const char *)fieldbind[2].buffer,"1");
+	assertEquals((const char *)fieldbind[3].buffer,"1");
+	//assertEquals((const char *)fieldbind[4].buffer,"1.1");
+	//assertEquals((const char *)fieldbind[5].buffer,"1.1");
+	assertEquals((const char *)fieldbind[6].buffer,"string1");
+	assertEquals((const char *)fieldbind[7].buffer,"varstring1");
+	assertEquals((const char *)fieldbind[8].buffer,"tinyblob1");
+	assertEquals((const char *)fieldbind[9].buffer,"mediumblob1");
+	assertEquals((const char *)fieldbind[10].buffer,"longblob1");
+	assertEquals((const char *)fieldbind[11].buffer,"2001-01-02");
+	assertEquals((const char *)fieldbind[12].buffer,"-36:10:11");
+	assertEquals((const char *)fieldbind[13].buffer,"2001-01-02 12:10:11");
 	#ifdef MARIADB_BASE_VERSION
-	checkSuccess(mysql_stmt_fetch(stmt),100);
+	assertEquals(mysql_stmt_fetch(stmt),100);
 	#endif
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_stmt_prepare/execute: select with even null binds\n");
 	query="select ?,?,?,?";
-	checkSuccess(mysql_stmt_prepare(stmt,query,charstring::getLength(query)),0);
+	assertEquals(mysql_stmt_prepare(stmt,query,charstring::getLength(query)),0);
 	bytestring::zero(&bind,sizeof(bind));
 	bytestring::zero(&bindlength,sizeof(bindlength));
 	bytestring::zero(&bindisnull,sizeof(bindisnull));
@@ -1307,23 +1272,23 @@ stdoutput.printf("here\n");
 	bindisnull[3]=1;
 	bind[3].is_null=&bindisnull[3];
 
-	checkSuccess(mysql_stmt_bind_param(stmt,bind),0);
-	checkSuccess(mysql_stmt_execute(stmt),0);
-	checkSuccess(mysql_stmt_bind_result(stmt,fieldbind),0);
-	checkSuccess(mysql_stmt_fetch(stmt),0);
-	checkSuccess(bindisnull[0],0);
-	checkSuccess(bindisnull[1],1);
-	checkSuccess(bindisnull[2],0);
-	checkSuccess(bindisnull[3],1);
+	assertEquals(mysql_stmt_bind_param(stmt,bind),0);
+	assertEquals(mysql_stmt_execute(stmt),0);
+	assertEquals(mysql_stmt_bind_result(stmt,fieldbind),0);
+	assertEquals(mysql_stmt_fetch(stmt),0);
+	assertEquals(bindisnull[0],0);
+	assertEquals(bindisnull[1],1);
+	assertEquals(bindisnull[2],0);
+	assertEquals(bindisnull[3],1);
 	#ifdef MARIADB_BASE_VERSION
-	checkSuccess(mysql_stmt_fetch(stmt),100);
+	assertEquals(mysql_stmt_fetch(stmt),100);
 	#endif
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_stmt_prepare/execute: select with odd null binds\n");
 	query="select ?,?,?,?";
-	checkSuccess(mysql_stmt_prepare(stmt,query,charstring::getLength(query)),0);
+	assertEquals(mysql_stmt_prepare(stmt,query,charstring::getLength(query)),0);
 	bytestring::zero(&bind,sizeof(bind));
 	bytestring::zero(&bindlength,sizeof(bindlength));
 	bytestring::zero(&bindisnull,sizeof(bindisnull));
@@ -1360,37 +1325,37 @@ stdoutput.printf("here\n");
 	bindisnull[3]=0;
 	bind[3].is_null=&bindisnull[3];
 
-	checkSuccess(mysql_stmt_bind_param(stmt,bind),0);
-	checkSuccess(mysql_stmt_execute(stmt),0);
-	checkSuccess(mysql_stmt_bind_result(stmt,fieldbind),0);
-	checkSuccess(mysql_stmt_fetch(stmt),0);
-	checkSuccess(fieldisnull[0],1);
-	checkSuccess(fieldisnull[1],0);
-	checkSuccess(fieldisnull[2],1);
-	checkSuccess(fieldisnull[3],0);
+	assertEquals(mysql_stmt_bind_param(stmt,bind),0);
+	assertEquals(mysql_stmt_execute(stmt),0);
+	assertEquals(mysql_stmt_bind_result(stmt,fieldbind),0);
+	assertEquals(mysql_stmt_fetch(stmt),0);
+	assertEquals(fieldisnull[0],1);
+	assertEquals(fieldisnull[1],0);
+	assertEquals(fieldisnull[2],1);
+	assertEquals(fieldisnull[3],0);
 	#ifdef MARIADB_BASE_VERSION
-	checkSuccess(mysql_stmt_fetch(stmt),100);
+	assertEquals(mysql_stmt_fetch(stmt),100);
 	#endif
 	stdoutput.printf("\n");
 
 	stdoutput.printf("mysql_stmt_close:\n");
-	checkSuccess(mysql_stmt_close(stmt),0);
+	assertEquals(mysql_stmt_close(stmt),0);
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_stmt_prepare/execute: binary data\n");
 	query="create table testtable (col1 longblob)";
-	checkSuccess(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
 	const char	value[]={0,'"','"','\n'};
 	stringbuffer	q;
 	q.append("insert into testtable values (_binary'");
 	q.append(value,sizeof(value));
 	q.append("')");
-	checkSuccess(mysql_real_query(&mysql,q.getString(),q.getSize()),0);
+	assertEquals(mysql_real_query(&mysql,q.getString(),q.getSize()),0);
 	stmt=mysql_stmt_init(&mysql);
 	query="select col1 from testtable";
-	checkSuccess(mysql_stmt_prepare(stmt,query,charstring::getLength(query)),0);
-	checkSuccess(mysql_stmt_bind_result(stmt,fieldbind),0);
+	assertEquals(mysql_stmt_prepare(stmt,query,charstring::getLength(query)),0);
+	assertEquals(mysql_stmt_bind_result(stmt,fieldbind),0);
 	for (uint16_t i=0; i<19; i++) {
 		bytestring::zero(&fieldbind[i],sizeof(MYSQL_BIND));
 		fieldbind[i].buffer_type=MYSQL_TYPE_STRING;
@@ -1399,24 +1364,24 @@ stdoutput.printf("here\n");
 		fieldbind[i].is_null=&fieldisnull[i];
 		fieldbind[i].length=&fieldlength[i];
 	}
-	checkSuccess(mysql_stmt_execute(stmt),0);
-	checkSuccess(mysql_stmt_bind_result(stmt,fieldbind),0);
-	checkSuccess(mysql_stmt_fetch(stmt),0);
+	assertEquals(mysql_stmt_execute(stmt),0);
+	assertEquals(mysql_stmt_bind_result(stmt,fieldbind),0);
+	assertEquals(mysql_stmt_fetch(stmt),0);
 	stdoutput.printf("\n");
-	checkSuccess(fieldlength[0],sizeof(value));
-	checkSuccess(bytestring::compare(fieldbind[0].buffer,
+	assertEquals(fieldlength[0],sizeof(value));
+	assertEquals(bytestring::compare(fieldbind[0].buffer,
 					value,sizeof(value)),0);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("mysql_stmt_prepare/execute: drop\n");
 	query="drop table testtable";
-	checkSuccess(mysql_stmt_prepare(stmt,query,charstring::getLength(query)),0);
-	checkSuccess(mysql_stmt_execute(stmt),0);
+	assertEquals(mysql_stmt_prepare(stmt,query,charstring::getLength(query)),0);
+	assertEquals(mysql_stmt_execute(stmt),0);
 	stdoutput.printf("\n");
 
 
 	stdoutput.printf("mysql_stmt_close:\n");
-	checkSuccess(mysql_stmt_close(stmt),0);
+	assertEquals(mysql_stmt_close(stmt),0);
 	stdoutput.printf("\n");
 
 
@@ -1428,7 +1393,7 @@ stdoutput.printf("here\n");
 		q.append('A');
 	}
 	q.append('\'');
-	checkSuccess(mysql_real_query(&mysql,q.getString(),q.getSize()),0);
+	assertEquals(mysql_real_query(&mysql,q.getString(),q.getSize()),0);
 	stdoutput.printf("\n");
 #endif
 
@@ -1454,5 +1419,6 @@ stdoutput.printf("here\n");
 
 	#endif
 
-	return 0;
+	reportTestStatus();
+	return status;
 }

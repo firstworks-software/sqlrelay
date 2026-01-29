@@ -5,55 +5,14 @@
 #include <rudiments/stdio.h>
 #include <config.h>
 
+#include "asserts.cpp"
+
 extern "C" {
+	#define OCIVER_ORACLE
 	#include <oci.h>
 }
 
 OCIError	*err;
-
-void error() {
-	text	message[1024];
-	bytestring::zero(message,sizeof(message));
-	sb4	errcode;
-	OCIErrorGet(err,1,NULL,&errcode,
-			message,sizeof(message),OCI_HTYPE_ERROR);
-	message[1023]='\0';
-	stdoutput.printf("\n%s\n",message);
-}
-
-void checkSuccess(const char *value, const char *success) {
-
-	if (!success) {
-		if (!value) {
-			stdoutput.printf("success ");
-			return;
-		} else {
-			stdoutput.printf("\"%s\"!=\"%s\"\n",value,success);
-			stdoutput.printf("failure ");
-			process::exit(1);
-		}
-	}
-
-	if (!charstring::compare(value,success)) {
-		stdoutput.printf("success ");
-	} else {
-		stdoutput.printf("\"%s\"!=\"%s\"\n",value,success);
-		stdoutput.printf("failure ");
-		process::exit(1);
-	}
-}
-
-void checkSuccess(int value, int success) {
-
-	if (value==success) {
-		stdoutput.printf("success ");
-	} else {
-		stdoutput.printf("\"%d\"!=\"%d\"\n",value,success);
-		stdoutput.printf("failure ");
-error();
-		process::exit(1);
-	}
-}
 
 int	main(int argc, char **argv) {
 
@@ -96,57 +55,57 @@ int	main(int argc, char **argv) {
 
 	stdoutput.printf("\n================ Connect ==============\n");
 	#ifdef HAVE_OREACLE_8i
-		checkSuccess(
+		assertEquals(
 			OCIEnvCreate((OCIEnv **)&env,
 					OCI_DEFAULT|OCI_OBJECT,
 					NULL,NULL,NULL,NULL,0),
 			OCI_SUCCESS);
 	#else
-		checkSuccess(
+		assertEquals(
 			OCIInitialize(OCI_DEFAULT,NULL,NULL,NULL,NULL),
 			OCI_SUCCESS);
-		checkSuccess(
+		assertEquals(
 			OCIEnvInit((OCIEnv **)&env,OCI_DEFAULT,0,NULL),
 			OCI_SUCCESS);
 	#endif
-	checkSuccess(
+	assertEquals(
 		OCIHandleAlloc(env,(void **)&err,OCI_HTYPE_ERROR,0,NULL),
 		OCI_SUCCESS);
-	checkSuccess(
+	assertEquals(
 		OCIHandleAlloc(env,(void **)&srv,OCI_HTYPE_SERVER,0,NULL),
 		OCI_SUCCESS);
-	checkSuccess(
+	assertEquals(
 		OCIHandleAlloc(env,(void **)&svc,OCI_HTYPE_SVCCTX,0,NULL),
 		OCI_SUCCESS);
-	checkSuccess(
+	assertEquals(
 		OCIServerAttach(srv,err,(text *)sid,charstring::getLength(sid),0),
 		OCI_SUCCESS);
-	checkSuccess(
+	assertEquals(
 		OCIAttrSet(svc,OCI_HTYPE_SVCCTX,srv,0,OCI_ATTR_SERVER,err),
 		OCI_SUCCESS);
-	checkSuccess(
+	assertEquals(
 		OCIHandleAlloc(env,(void **)&session,OCI_HTYPE_SESSION,0,NULL),
 		OCI_SUCCESS);
-	checkSuccess(
+	assertEquals(
 		OCIAttrSet(session,OCI_HTYPE_SESSION,
 				(void *)user,charstring::getLength(user),
 				OCI_ATTR_USERNAME,err),
 		OCI_SUCCESS);
-	checkSuccess(
+	assertEquals(
 		OCIAttrSet(session,OCI_HTYPE_SESSION,
 				(void *)password,charstring::getLength(password),
 				OCI_ATTR_PASSWORD,err),
 		OCI_SUCCESS);
-	checkSuccess(
+	assertEquals(
 		OCISessionBegin(svc,err,session,OCI_CRED_RDBMS,OCI_DEFAULT),
 		OCI_SUCCESS);
-	checkSuccess(
+	assertEquals(
 		OCIAttrSet(svc,OCI_HTYPE_SVCCTX,session,0,OCI_ATTR_SESSION,err),
 		OCI_SUCCESS);
-	checkSuccess(
+	assertEquals(
 		OCIHandleAlloc(env,(void **)&trans,OCI_HTYPE_TRANS,0,NULL),
 		OCI_SUCCESS);
-	checkSuccess(
+	assertEquals(
 		OCIAttrSet(svc,OCI_HTYPE_SVCCTX,trans,0,OCI_ATTR_TRANS,err),
 		OCI_SUCCESS);
 	stdoutput.printf("\n\n");
@@ -154,7 +113,7 @@ int	main(int argc, char **argv) {
 
 	stdoutput.printf("\n================ Server Version =======\n");
 	char	versionbuf[512];
-	checkSuccess(
+	assertEquals(
 		OCIServerVersion(svc,err,
 				(text *)versionbuf,sizeof(versionbuf),
 				OCI_HTYPE_SVCCTX),
@@ -164,7 +123,7 @@ int	main(int argc, char **argv) {
 
 
 	stdoutput.printf("\n================ Open Cursor ==========\n");
-	checkSuccess(
+	assertEquals(
 		OCIHandleAlloc(env,(void **)&stmt,OCI_HTYPE_STMT,0,NULL),
 		OCI_SUCCESS);
 	stdoutput.printf("\n\n");
@@ -172,56 +131,56 @@ int	main(int argc, char **argv) {
 
 	stdoutput.printf("\n================ Prepare ==============\n");
 	query="select 'hello' as hello from dual";
-	checkSuccess(
+	assertEquals(
 		OCIStmtPrepare(stmt,err,
 				(text *)query,charstring::getLength(query),
 				OCI_NTV_SYNTAX,
 				//OCI_V7_SYNTAX,
 				OCI_DEFAULT),
 		OCI_SUCCESS);
-	checkSuccess(
+	assertEquals(
 		OCIStmtExecute(svc,stmt,err,0,0,NULL,NULL,OCI_PARSE_ONLY),
 		OCI_SUCCESS);
-	checkSuccess(
+	assertEquals(
 		OCIAttrGet(stmt,OCI_HTYPE_STMT,
 				&stmttype,NULL,OCI_ATTR_STMT_TYPE,err),
 		OCI_SUCCESS);
-	checkSuccess(stmttype,OCI_STMT_SELECT);
+	assertEquals(stmttype,OCI_STMT_SELECT);
 	stdoutput.printf("\n\n");
 
 
 	stdoutput.printf("\n================ Describe =============\n");
-	checkSuccess(
+	assertEquals(
 		OCIStmtExecute(svc,stmt,err,0,0,NULL,NULL,OCI_DESCRIBE_ONLY),
 		OCI_SUCCESS);
-	checkSuccess(
+	assertEquals(
 		OCIAttrGet(stmt,OCI_HTYPE_STMT,
 				&ncols,NULL,
 				OCI_ATTR_PARAM_COUNT,err),
 		OCI_SUCCESS);
-	checkSuccess(ncols,1);
-	checkSuccess(
+	assertEquals(ncols,1);
+	assertEquals(
 		OCIParamGet(stmt,OCI_HTYPE_STMT,err,(void **)&param,1),
 		OCI_SUCCESS);
-	checkSuccess(
+	assertEquals(
 		OCIAttrGet(param,OCI_DTYPE_PARAM,
 				&colname,&colnamelen,
 				OCI_ATTR_NAME,err),
 		OCI_SUCCESS);
-	checkSuccess((const char *)colname,"HELLO");
-	checkSuccess(colnamelen,5);
+	assertEquals((const char *)colname,"HELLO");
+	assertEquals(colnamelen,5);
 	stdoutput.printf("\n\n");
 
 
 	stdoutput.printf("\n================ Execute ==============\n");
-	checkSuccess(
+	assertEquals(
 		OCIStmtExecute(svc,stmt,err,0,0,NULL,NULL,OCI_DEFAULT),
 		OCI_SUCCESS);
 	stdoutput.printf("\n\n");
 
 
 	stdoutput.printf("\n================ Define ===============\n");
-	checkSuccess(
+	assertEquals(
 		OCIDefineByPos(stmt,&def,err,1,
 				field,sizeof(field),
 				SQLT_STR,
@@ -232,17 +191,18 @@ int	main(int argc, char **argv) {
 
 
 	stdoutput.printf("\n================ Fetch ================\n");
-	checkSuccess(
+	assertEquals(
 		OCIStmtFetch(stmt,err,1,OCI_FETCH_NEXT,OCI_DEFAULT),
 		OCI_SUCCESS);
-	checkSuccess(
+	assertEquals(
 		OCIAttrGet(stmt,OCI_HTYPE_STMT,
 				&currentrow,NULL,
 				OCI_ATTR_ROW_COUNT,err),
 		OCI_SUCCESS);
-	checkSuccess(currentrow,1);
-	checkSuccess((const char *)field,"hello");
+	assertEquals(currentrow,1);
+	assertEquals((const char *)field,"hello");
 	stdoutput.printf("\n\n");
 
-	return 0;
+	reportTestStatus();
+	return status;
 }
