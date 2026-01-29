@@ -96,6 +96,7 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 		stringbuffer	loginerror;
 
 		stringbuffer	tablelistquery;
+		stringbuffer	columnlistquery;
 };
 
 struct datebind {
@@ -619,44 +620,51 @@ const char *sapconnection::getTableListQuery(bool wild,
 
 const char *sapconnection::getColumnListQuery(
 					const char *table, bool wild) {
-	return (wild)?
+
+	columnlistquery.clear();
+
+	// select clause
+	columnlistquery.append(
 		"select "
 		"	'' as table_cat, "
 		"	'' as table_schem, "
-		"	so.name as table_name, "
-		"	sc.name as column_name, "
-		"	sc.type as data_type, "
-		"	st.name as type_name, "
-		"	sc.length as column_size, "
-		"	sc.length as buffer_length, "
-		"	sc.scale as decimal_digits, "
+		"	ob.name as table_name, "
+		"	co.name as column_name, "
+		"	co.type as data_type, "
+		"	ty.name as type_name, "
+		"	co.length as column_size, "
+		"	co.length as buffer_length, "
+		"	co.scale as decimal_digits, "
 		"	10 as num_prec_radix, "
-		"	(sc.status&8)/8 as nullable, "
+		"	(co.status&8)/8 as nullable, "
 		"	case "
-		"		when (sc.status&128)=128 "
+		"		when (co.status&128)=128 "
 		"			then 'auto_increment ' "
 		"		else '' "
 		"	end as remarks, "
 		"	null as column_default, "
 		"	null as sql_data_type, "
 		"	null as sql_datetime_sub, "
-		"	sc.length as char_octet_length, "
+		"	co.length as char_octet_length, "
 		"	null as ordinal_position, "
-		"	case (sc.status&8)/8 "
+		"	case (co.status&8)/8 "
 		"		when 0 then 'YES' "
 		"		else 'YES' "
 		"	end as is_nullable, "
-		"	sc.prec as numeric_precision, "
+		"	co.prec as numeric_precision, "
 		"	case ck.key_priority "
 		"		when 1 then 'PRI' "
 		"		when 2 then 'UNI' "
 		"		when 3 then 'MUL' "
 		"		else '' "
 		"	end as column_key, "
-		"	null "
+		"	null ");
+
+	// from clause
+	columnlistquery.append(
 		"from "
-		"	sysobjects so, "
-		"	syscolumns sc "
+		"	sysobjects ob, "
+		"	syscolumns co "
 		"	left outer join ( "
 		"		select "
 		"			kc.id, "
@@ -691,108 +699,33 @@ const char *sapconnection::getColumnListQuery(
 		"			kc.colno "
 		"	) ck "
 		"	on "
-		"	sc.id=ck.id "
+		"	co.id=ck.id "
 		"	and "
-		"	sc.colid=ck.colno, "
-		"	systypes st "
+		"	co.colid=ck.colno, "
+		"	systypes ty ");
+
+	// where clause
+	columnlistquery.append(
 		"where "
-		"	so.type in ('S','U','V') "
+		"	ob.type in ('S','U','V') "
 		"	and "
-		"	so.name='%s' "
+		"	ob.name='%s' "
 		"	and "
-		"	sc.id=so.id "
+		"	co.id=ob.id "
 		"	and "
-		"	sc.name like '%s' "
-		"	and "
-		"	st.usertype=sc.usertype "
+		"	ty.usertype=co.usertype ");
+	if (wild) {
+		columnlistquery.append(
+			"	and "
+			"	co.name like '%s' ");
+	}
+
+	// order by clause
+	columnlistquery.append(
 		"order by "
-		"	sc.colid"
-		:
-		"select "
-		"	'' as table_cat, "
-		"	'' as table_schem, "
-		"	so.name as table_name, "
-		"	sc.name as column_name, "
-		"	sc.type as data_type, "
-		"	st.name as type_name, "
-		"	sc.length as column_size, "
-		"	sc.length as buffer_length, "
-		"	sc.scale as decimal_digits, "
-		"	10 as num_prec_radix, "
-		"	(sc.status&8)/8 as nullable, "
-		"	case "
-		"		when (sc.status&128)=128 "
-		"			then 'auto_increment ' "
-		"		else '' "
-		"	end as remarks, "
-		"	null as column_default, "
-		"	null as sql_data_type, "
-		"	null as sql_datetime_sub, "
-		"	sc.length as char_octet_length, "
-		"	null as ordinal_position, "
-		"	case (sc.status&8)/8 "
-		"		when 0 then 'YES' "
-		"		else 'YES' "
-		"	end as is_nullable, "
-		"	sc.prec as numeric_precision, "
-		"	case ck.key_priority "
-		"		when 1 then 'PRI' "
-		"		when 2 then 'UNI' "
-		"		when 3 then 'MUL' "
-		"		else '' "
-		"	end as column_key, "
-		"	null "
-		"from "
-		"	sysobjects so, "
-		"	syscolumns sc "
-		"	left outer join ( "
-		"		select "
-		"			kc.id, "
-		"			kc.colno, "
-		"			min(case sk.type "
-		"				when 1 then 1 "
-		"				when 2 then 3 "
-		"			end) as key_priority "
-		"		from "
-		"			( "
-		"			select id, key1 as colno from syskeys where key1>0 "
-		"			union all "
-		"			select id, key2 as colno from syskeys where key2>0 "
-		"			union all "
-		"			select id, key3 as colno from syskeys where key3>0 "
-		"			union all "
-		"			select id, key4 as colno from syskeys where key4>0 "
-		"			union all "
-		"			select id, key5 as colno from syskeys where key5>0 "
-		"			union all "
-		"			select id, key6 as colno from syskeys where key6>0 "
-		"			union all "
-		"			select id, key7 as colno from syskeys where key7>0 "
-		"			union all "
-		"			select id, key8 as colno from syskeys where key8>0 "
-		"			) kc, "
-		"			syskeys sk "
-		"		where "
-		"			sk.id=kc.id "
-		"		group by "
-		"			kc.id, "
-		"			kc.colno "
-		"	) ck "
-		"	on "
-		"	sc.id=ck.id "
-		"	and "
-		"	sc.colid=ck.colno, "
-		"	systypes st "
-		"where "
-		"	so.type in ('S','U','V') "
-		"	and "
-		"	so.name='%s' "
-		"	and "
-		"	sc.id=so.id "
-		"	and "
-		"	st.usertype=sc.usertype "
-		"order by "
-		"	sc.colid";
+		"	co.colid");
+
+	return columnlistquery.getString();
 }
 
 const char *sapconnection::selectDatabaseQuery() {

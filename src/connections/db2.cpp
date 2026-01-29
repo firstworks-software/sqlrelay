@@ -290,6 +290,7 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 		uint16_t	dbmajorversion;
 
 		stringbuffer	tablelistquery;
+		stringbuffer	columnlistquery;
 		const char	*dbhostnamequery;
 
 		stringbuffer	errormsg;
@@ -665,7 +666,11 @@ const char *db2connection::getTableListQuery(bool wild,
 }
 
 const char *db2connection::getColumnListQuery(const char *table, bool wild) {
-	return (wild)?
+
+	columnlistquery.clear();
+
+	// select clause
+	columnlistquery.append(
 		"select "
 		"	'' as table_cat, "
 		"	tabschema as table_schem, "
@@ -701,58 +706,29 @@ const char *db2connection::getColumnListQuery(const char *table, bool wild) {
 		"		when keyseq is not null then 'PRI' "
 		"		else '' "
 		"	end as column_key, "
-		"	null "
+		"	null ");
+
+	// from clause
+	columnlistquery.append(
 		"from "
-		"	syscat.columns "
+		"	syscat.columns ");
+
+	// where clause
+	columnlistquery.append(
 		"where "
-		"	upper(tabname)=upper('%s') "
-		"	and "
-		"	colname like '%s' "
+		"	upper(tabname)=upper('%s') ");
+	if (wild) {
+		columnlistquery.append(
+			"	and "
+			"	colname like '%s' ");
+	}
+
+	// order by clause
+	columnlistquery.append(
 		"order by "
-		"	colno"
-		:
-		"select "
-		"	'' as table_cat, "
-		"	tabschema as table_schem, "
-		"	tabname as table_name, "
-		"	colname as column_name, "
-		"	null as data_type, "
-		"	typename as type_name, "
-		"	length as column_size, "
-		"	length as buffer_length, "
-		"	scale as decimal_digits, "
-		"	10 as num_prec_radix, "
-		"	case nulls "
-		"		when 'N' then 0 "
-		"		else 1 "
-		"	end as nullable, "
-		"	case "
-		"		when identity='Y' "
-		"			then 'auto_increment ' || "
-		"				coalesce(remarks,'') "
-		"		else coalesce(remarks,'') "
-		"	end as remarks, "
-		"	default as column_default, "
-		"	null as sql_data_type, "
-		"	null as sql_datetime_sub, "
-		"	length as char_octet_length, "
-		"	null as ordinal_position, "
-		"	case nulls "
-		"		when 'N' then 'NO' "
-		"		else 'YES' "
-		"	end as is_nullable, "
-		"	length as numeric_precision, "
-		"	case "
-		"		when keyseq is not null then 'PRI' "
-		"		else '' "
-		"	end as column_key, "
-		"	null "
-		"from "
-		"	syscat.columns "
-		"where "
-		"	upper(tabname)=upper('%s') "
-		"order by "
-		"	colno";
+		"	colno");
+
+	return columnlistquery.getString();
 }
 
 const char *db2connection::getBindFormat() {
