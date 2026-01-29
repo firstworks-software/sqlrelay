@@ -7,45 +7,45 @@ import java.text.SimpleDateFormat;
 
 class teradata {
 
-	private static void checkSuccess(String value, String success) {
-	
-		if (success==null) {
-			if (value==null) {
+	private static void assertEquals(String actual, String expected) {
+
+		if (expected==null) {
+			if (actual==null) {
 				System.out.print("success ");
 				return;
 			} else {
-				System.out.print(value+"!="+success+" ");
+				System.out.print(actual+"!="+expected+" ");
 				System.out.print("failure ");
 				System.exit(1);
 			}
 		}
-	
-		if (value.equals(success)) {
+
+		if (actual.equals(expected)) {
 			System.out.print("success ");
 		} else {
-			System.out.print(value+"!="+success+" ");
+			System.out.print(actual+"!="+expected+" ");
 			System.out.print("failure ");
 			System.exit(1);
 		}
 	}
-	
-	private static void checkSuccess(long value, int success) {
-	
-		if (value==success) {
+
+	private static void assertEquals(long actual, int expected) {
+
+		if (actual==expected) {
 			System.out.print("success ");
 		} else {
-			System.out.print(value+"!="+success+" ");
+			System.out.print(actual+"!="+expected+" ");
 			System.out.print("failure ");
 			System.exit(1);
 		}
 	}
-	
-	private static void checkSuccess(boolean value, int success) {
-	
-		if (((value)?1:0)==success) {
+
+	private static void assertEquals(boolean actual, int expected) {
+
+		if (((actual)?1:0)==expected) {
 			System.out.print("success ");
 		} else {
-			System.out.print(value+"!="+success+" ");
+			System.out.print(actual+"!="+expected+" ");
 			System.out.print("failure ");
 			System.exit(1);
 		}
@@ -73,192 +73,192 @@ if (false) {
 		System.out.println("HELP SESSION:");
 		ResultSet		rs=stmt.executeQuery("help session");
 		ResultSetMetaData	rsmd=rs.getMetaData();
-		checkSuccess(rs.next(),1);
-		checkSuccess(rsmd.getColumnCount(),129);
+		assertEquals(rs.next(),1);
+		assertEquals(rsmd.getColumnCount(),129);
 		System.out.println();
-		checkSuccess(rsmd.getColumnName(1),"User Name");
-		checkSuccess(rsmd.getColumnName(2),"Account Name");
-		checkSuccess(rsmd.getColumnName(3),"Logon Date");
-		checkSuccess(rsmd.getColumnName(4),"Logon Time");
-		checkSuccess(rsmd.getColumnName(5),"Current DataBase");
-		checkSuccess(rsmd.getColumnName(6),"Collation");
-		checkSuccess(rsmd.getColumnName(7),"Character Set");
-		checkSuccess(rsmd.getColumnName(8),"Transaction Semantics");
-		checkSuccess(rsmd.getColumnName(9),"Current DateForm");
-		checkSuccess(rsmd.getColumnName(10),"Session Time Zone");
-		checkSuccess(rsmd.getColumnName(11),"Default Character Type");
-		checkSuccess(rsmd.getColumnName(12),"Export Latin");
-		checkSuccess(rsmd.getColumnName(13),"Export Unicode");
-		checkSuccess(rsmd.getColumnName(14),"Export Unicode Adjust");
-		checkSuccess(rsmd.getColumnName(15),"Export KanjiSJIS");
-		checkSuccess(rsmd.getColumnName(16),"Export Graphic");
-		checkSuccess(rsmd.getColumnName(17),"Default Date Format");
-		checkSuccess(rsmd.getColumnName(18),"Radix Separator");
-		checkSuccess(rsmd.getColumnName(19),"Group Separator");
-		checkSuccess(rsmd.getColumnName(20),"Grouping Rule");
-		checkSuccess(rsmd.getColumnName(21),"Currency Radix Separator");
-		checkSuccess(rsmd.getColumnName(22),"Currency Group Separator");
-		checkSuccess(rsmd.getColumnName(23),"Currency Grouping Rule");
-		checkSuccess(rsmd.getColumnName(24),"Currency Name");
-		checkSuccess(rsmd.getColumnName(25),"Currency");
-		checkSuccess(rsmd.getColumnName(26),"ISOCurrency");
-		checkSuccess(rsmd.getColumnName(27),"Dual Currency Name");
-		checkSuccess(rsmd.getColumnName(28),"Dual Currency");
-		checkSuccess(rsmd.getColumnName(29),"Dual ISOCurrency");
-		checkSuccess(rsmd.getColumnName(30),"Default ByteInt format");
-		checkSuccess(rsmd.getColumnName(31),"Default Integer format");
-		checkSuccess(rsmd.getColumnName(32),"Default SmallInt format");
-		checkSuccess(rsmd.getColumnName(33),"Default Numeric format");
-		checkSuccess(rsmd.getColumnName(34),"Default Real format");
-		checkSuccess(rsmd.getColumnName(35),"Default Time format");
-		checkSuccess(rsmd.getColumnName(36),"Default Timestamp format");
-		checkSuccess(rsmd.getColumnName(37),"Current Role");
-		checkSuccess(rsmd.getColumnName(38),"Logon Account");
-		checkSuccess(rsmd.getColumnName(39),"Profile");
-		checkSuccess(rsmd.getColumnName(40),"LDAP");
-		checkSuccess(rsmd.getColumnName(41),"Audit Trail Id");
-		checkSuccess(rsmd.getColumnName(42),"Current Isolation Level");
-		checkSuccess(rsmd.getColumnName(43),"Default BigInt format");
-		checkSuccess(rsmd.getColumnName(44),"QueryBand");
-		checkSuccess(rsmd.getColumnName(45),"Proxy User");
-		checkSuccess(rsmd.getColumnName(46),"Proxy Role");
-		checkSuccess(rsmd.getColumnName(47),"Constraint1Name");
-		checkSuccess(rsmd.getColumnName(48),"Constraint1Value");
-		checkSuccess(rsmd.getColumnName(49),"Constraint2Name");
-		checkSuccess(rsmd.getColumnName(50),"Constraint2Value");
-		checkSuccess(rsmd.getColumnName(51),"Constraint3Name");
-		checkSuccess(rsmd.getColumnName(52),"Constraint3Value");
-		checkSuccess(rsmd.getColumnName(53),"Constraint4Name");
-		checkSuccess(rsmd.getColumnName(54),"Constraint4Value");
-		checkSuccess(rsmd.getColumnName(55),"Constraint5Name");
-		checkSuccess(rsmd.getColumnName(56),"Constraint5Value");
-		checkSuccess(rsmd.getColumnName(57),"Constraint6Name");
-		checkSuccess(rsmd.getColumnName(58),"Constraint6Value");
-		checkSuccess(rsmd.getColumnName(59),"Constraint7Name");
-		checkSuccess(rsmd.getColumnName(60),"Constraint7Value");
-		checkSuccess(rsmd.getColumnName(61),"Constraint8Name");
-		checkSuccess(rsmd.getColumnName(62),"Constraint8Value");
-		checkSuccess(rsmd.getColumnName(63),"Temporal Qualifier");
-		checkSuccess(rsmd.getColumnName(64),"Calendar");
-		checkSuccess(rsmd.getColumnName(65),"Export Width Rule Set");
-		checkSuccess(rsmd.getColumnName(66),"Default Number format");
-		checkSuccess(rsmd.getColumnName(67),"TTGranularity");
-		checkSuccess(rsmd.getColumnName(68),"Redrive Participation");
-		checkSuccess(rsmd.getColumnName(69),"User Dictionary Name");
-		checkSuccess(rsmd.getColumnName(70),"User SQL Name");
-		checkSuccess(rsmd.getColumnName(71),"User UEscape");
-		checkSuccess(rsmd.getColumnName(72),"Account Dictionary Name");
-		checkSuccess(rsmd.getColumnName(73),"Account SQL Name");
-		checkSuccess(rsmd.getColumnName(74),"Account UEscape");
-		checkSuccess(rsmd.getColumnName(75),
+		assertEquals(rsmd.getColumnName(1),"User Name");
+		assertEquals(rsmd.getColumnName(2),"Account Name");
+		assertEquals(rsmd.getColumnName(3),"Logon Date");
+		assertEquals(rsmd.getColumnName(4),"Logon Time");
+		assertEquals(rsmd.getColumnName(5),"Current DataBase");
+		assertEquals(rsmd.getColumnName(6),"Collation");
+		assertEquals(rsmd.getColumnName(7),"Character Set");
+		assertEquals(rsmd.getColumnName(8),"Transaction Semantics");
+		assertEquals(rsmd.getColumnName(9),"Current DateForm");
+		assertEquals(rsmd.getColumnName(10),"Session Time Zone");
+		assertEquals(rsmd.getColumnName(11),"Default Character Type");
+		assertEquals(rsmd.getColumnName(12),"Export Latin");
+		assertEquals(rsmd.getColumnName(13),"Export Unicode");
+		assertEquals(rsmd.getColumnName(14),"Export Unicode Adjust");
+		assertEquals(rsmd.getColumnName(15),"Export KanjiSJIS");
+		assertEquals(rsmd.getColumnName(16),"Export Graphic");
+		assertEquals(rsmd.getColumnName(17),"Default Date Format");
+		assertEquals(rsmd.getColumnName(18),"Radix Separator");
+		assertEquals(rsmd.getColumnName(19),"Group Separator");
+		assertEquals(rsmd.getColumnName(20),"Grouping Rule");
+		assertEquals(rsmd.getColumnName(21),"Currency Radix Separator");
+		assertEquals(rsmd.getColumnName(22),"Currency Group Separator");
+		assertEquals(rsmd.getColumnName(23),"Currency Grouping Rule");
+		assertEquals(rsmd.getColumnName(24),"Currency Name");
+		assertEquals(rsmd.getColumnName(25),"Currency");
+		assertEquals(rsmd.getColumnName(26),"ISOCurrency");
+		assertEquals(rsmd.getColumnName(27),"Dual Currency Name");
+		assertEquals(rsmd.getColumnName(28),"Dual Currency");
+		assertEquals(rsmd.getColumnName(29),"Dual ISOCurrency");
+		assertEquals(rsmd.getColumnName(30),"Default ByteInt format");
+		assertEquals(rsmd.getColumnName(31),"Default Integer format");
+		assertEquals(rsmd.getColumnName(32),"Default SmallInt format");
+		assertEquals(rsmd.getColumnName(33),"Default Numeric format");
+		assertEquals(rsmd.getColumnName(34),"Default Real format");
+		assertEquals(rsmd.getColumnName(35),"Default Time format");
+		assertEquals(rsmd.getColumnName(36),"Default Timestamp format");
+		assertEquals(rsmd.getColumnName(37),"Current Role");
+		assertEquals(rsmd.getColumnName(38),"Logon Account");
+		assertEquals(rsmd.getColumnName(39),"Profile");
+		assertEquals(rsmd.getColumnName(40),"LDAP");
+		assertEquals(rsmd.getColumnName(41),"Audit Trail Id");
+		assertEquals(rsmd.getColumnName(42),"Current Isolation Level");
+		assertEquals(rsmd.getColumnName(43),"Default BigInt format");
+		assertEquals(rsmd.getColumnName(44),"QueryBand");
+		assertEquals(rsmd.getColumnName(45),"Proxy User");
+		assertEquals(rsmd.getColumnName(46),"Proxy Role");
+		assertEquals(rsmd.getColumnName(47),"Constraint1Name");
+		assertEquals(rsmd.getColumnName(48),"Constraint1Value");
+		assertEquals(rsmd.getColumnName(49),"Constraint2Name");
+		assertEquals(rsmd.getColumnName(50),"Constraint2Value");
+		assertEquals(rsmd.getColumnName(51),"Constraint3Name");
+		assertEquals(rsmd.getColumnName(52),"Constraint3Value");
+		assertEquals(rsmd.getColumnName(53),"Constraint4Name");
+		assertEquals(rsmd.getColumnName(54),"Constraint4Value");
+		assertEquals(rsmd.getColumnName(55),"Constraint5Name");
+		assertEquals(rsmd.getColumnName(56),"Constraint5Value");
+		assertEquals(rsmd.getColumnName(57),"Constraint6Name");
+		assertEquals(rsmd.getColumnName(58),"Constraint6Value");
+		assertEquals(rsmd.getColumnName(59),"Constraint7Name");
+		assertEquals(rsmd.getColumnName(60),"Constraint7Value");
+		assertEquals(rsmd.getColumnName(61),"Constraint8Name");
+		assertEquals(rsmd.getColumnName(62),"Constraint8Value");
+		assertEquals(rsmd.getColumnName(63),"Temporal Qualifier");
+		assertEquals(rsmd.getColumnName(64),"Calendar");
+		assertEquals(rsmd.getColumnName(65),"Export Width Rule Set");
+		assertEquals(rsmd.getColumnName(66),"Default Number format");
+		assertEquals(rsmd.getColumnName(67),"TTGranularity");
+		assertEquals(rsmd.getColumnName(68),"Redrive Participation");
+		assertEquals(rsmd.getColumnName(69),"User Dictionary Name");
+		assertEquals(rsmd.getColumnName(70),"User SQL Name");
+		assertEquals(rsmd.getColumnName(71),"User UEscape");
+		assertEquals(rsmd.getColumnName(72),"Account Dictionary Name");
+		assertEquals(rsmd.getColumnName(73),"Account SQL Name");
+		assertEquals(rsmd.getColumnName(74),"Account UEscape");
+		assertEquals(rsmd.getColumnName(75),
 					"Current Database Dictionary Name");
-		checkSuccess(rsmd.getColumnName(76),
+		assertEquals(rsmd.getColumnName(76),
 					"Current Database SQL Name");
-		checkSuccess(rsmd.getColumnName(77),
+		assertEquals(rsmd.getColumnName(77),
 					"Current Database UEscape");
-		checkSuccess(rsmd.getColumnName(78),
+		assertEquals(rsmd.getColumnName(78),
 					"Current Role Dictionary Name");
-		checkSuccess(rsmd.getColumnName(79),
+		assertEquals(rsmd.getColumnName(79),
 					"Current Role SQL Name");
-		checkSuccess(rsmd.getColumnName(80),
+		assertEquals(rsmd.getColumnName(80),
 					"Current Role UEscape");
-		checkSuccess(rsmd.getColumnName(81),
+		assertEquals(rsmd.getColumnName(81),
 					"Logon Account Dictionary Name");
-		checkSuccess(rsmd.getColumnName(82),
+		assertEquals(rsmd.getColumnName(82),
 					"Logon Account SQL Name");
-		checkSuccess(rsmd.getColumnName(83),
+		assertEquals(rsmd.getColumnName(83),
 					"Logon Account UEscape");
-		checkSuccess(rsmd.getColumnName(84),
+		assertEquals(rsmd.getColumnName(84),
 					"Profile Dictionary Name");
-		checkSuccess(rsmd.getColumnName(85),
+		assertEquals(rsmd.getColumnName(85),
 					"Profile SQL Name");
-		checkSuccess(rsmd.getColumnName(86),
+		assertEquals(rsmd.getColumnName(86),
 					"Profile UEscape");
-		checkSuccess(rsmd.getColumnName(87),
+		assertEquals(rsmd.getColumnName(87),
 					"Audit Trail Id Dictionary Name");
-		checkSuccess(rsmd.getColumnName(88),
+		assertEquals(rsmd.getColumnName(88),
 					"Audit Trail Id SQL Name");
-		checkSuccess(rsmd.getColumnName(89),
+		assertEquals(rsmd.getColumnName(89),
 					"Audit Trail Id UEscape");
-		checkSuccess(rsmd.getColumnName(90),
+		assertEquals(rsmd.getColumnName(90),
 					"Proxy User Dictionary Name");
-		checkSuccess(rsmd.getColumnName(91),
+		assertEquals(rsmd.getColumnName(91),
 					"Proxy User SQL Name");
-		checkSuccess(rsmd.getColumnName(92),
+		assertEquals(rsmd.getColumnName(92),
 					"Proxy User UEscape");
-		checkSuccess(rsmd.getColumnName(93),
+		assertEquals(rsmd.getColumnName(93),
 					"Proxy Role Dictionary Name");
-		checkSuccess(rsmd.getColumnName(94),
+		assertEquals(rsmd.getColumnName(94),
 					"Proxy Role SQL Name");
-		checkSuccess(rsmd.getColumnName(95),
+		assertEquals(rsmd.getColumnName(95),
 					"Proxy Role UEscape");
-		checkSuccess(rsmd.getColumnName(96),
+		assertEquals(rsmd.getColumnName(96),
 					"Constraint1Name Dictionary Name");
-		checkSuccess(rsmd.getColumnName(97),
+		assertEquals(rsmd.getColumnName(97),
 					"Constraint1Name SQL Name");
-		checkSuccess(rsmd.getColumnName(98),
+		assertEquals(rsmd.getColumnName(98),
 					"Constraint1Name UEscape");
-		checkSuccess(rsmd.getColumnName(99),
+		assertEquals(rsmd.getColumnName(99),
 					"Constraint2Name Dictionary Name");
-		checkSuccess(rsmd.getColumnName(100),
+		assertEquals(rsmd.getColumnName(100),
 					"Constraint2Name SQL Name");
-		checkSuccess(rsmd.getColumnName(101),
+		assertEquals(rsmd.getColumnName(101),
 					"Constraint2Name UEscape");
-		checkSuccess(rsmd.getColumnName(102),
+		assertEquals(rsmd.getColumnName(102),
 					"Constraint3Name Dictionary Name");
-		checkSuccess(rsmd.getColumnName(103),
+		assertEquals(rsmd.getColumnName(103),
 					"Constraint3Name SQL Name");
-		checkSuccess(rsmd.getColumnName(104),
+		assertEquals(rsmd.getColumnName(104),
 					"Constraint3Name UEscape");
-		checkSuccess(rsmd.getColumnName(105),
+		assertEquals(rsmd.getColumnName(105),
 					"Constraint4Name Dictionary Name");
-		checkSuccess(rsmd.getColumnName(106),
+		assertEquals(rsmd.getColumnName(106),
 					"Constraint4Name SQL Name");
-		checkSuccess(rsmd.getColumnName(107),
+		assertEquals(rsmd.getColumnName(107),
 					"Constraint4Name UEscape");
-		checkSuccess(rsmd.getColumnName(108),
+		assertEquals(rsmd.getColumnName(108),
 					"Constraint5Name Dictionary Name");
-		checkSuccess(rsmd.getColumnName(109),
+		assertEquals(rsmd.getColumnName(109),
 					"Constraint5Name SQL Name");
-		checkSuccess(rsmd.getColumnName(110),
+		assertEquals(rsmd.getColumnName(110),
 					"Constraint5Name UEscape");
-		checkSuccess(rsmd.getColumnName(111),
+		assertEquals(rsmd.getColumnName(111),
 					"Constraint6Name Dictionary Name");
-		checkSuccess(rsmd.getColumnName(112),
+		assertEquals(rsmd.getColumnName(112),
 					"Constraint6Name SQL Name");
-		checkSuccess(rsmd.getColumnName(113),
+		assertEquals(rsmd.getColumnName(113),
 					"Constraint6Name UEscape");
-		checkSuccess(rsmd.getColumnName(114),
+		assertEquals(rsmd.getColumnName(114),
 					"Constraint7Name Dictionary Name");
-		checkSuccess(rsmd.getColumnName(115),
+		assertEquals(rsmd.getColumnName(115),
 					"Constraint7Name SQL Name");
-		checkSuccess(rsmd.getColumnName(116),
+		assertEquals(rsmd.getColumnName(116),
 					"Constraint7Name UEscape");
-		checkSuccess(rsmd.getColumnName(117),
+		assertEquals(rsmd.getColumnName(117),
 					"Constraint8Name Dictionary Name");
-		checkSuccess(rsmd.getColumnName(118),
+		assertEquals(rsmd.getColumnName(118),
 					"Constraint8Name SQL Name");
-		checkSuccess(rsmd.getColumnName(119),
+		assertEquals(rsmd.getColumnName(119),
 					"Constraint8Name UEscape");
-		checkSuccess(rsmd.getColumnName(120),
+		assertEquals(rsmd.getColumnName(120),
 					"Zone Name");
-		checkSuccess(rsmd.getColumnName(121),
+		assertEquals(rsmd.getColumnName(121),
 					"SearchUIFDBPath");
-		checkSuccess(rsmd.getColumnName(122),
+		assertEquals(rsmd.getColumnName(122),
 					"Transaction QueryBand");
-		checkSuccess(rsmd.getColumnName(123),
+		assertEquals(rsmd.getColumnName(123),
 					"Session QueryBand");
-		checkSuccess(rsmd.getColumnName(124),
+		assertEquals(rsmd.getColumnName(124),
 					"Profile QueryBand");
-		checkSuccess(rsmd.getColumnName(125),
+		assertEquals(rsmd.getColumnName(125),
 					"Unicode Pass Through");
-		checkSuccess(rsmd.getColumnName(126),
+		assertEquals(rsmd.getColumnName(126),
 					"Default Map Dictionary Name");
-		checkSuccess(rsmd.getColumnName(127),
+		assertEquals(rsmd.getColumnName(127),
 					"Default Map SQL Name");
-		checkSuccess(rsmd.getColumnName(128),
+		assertEquals(rsmd.getColumnName(128),
 					"Default Map UEscape");
-		checkSuccess(rsmd.getColumnName(129),
+		assertEquals(rsmd.getColumnName(129),
 					"Default Override");
 		rs.close();
 		System.out.println("\n");
@@ -273,7 +273,7 @@ if (false) {
 
 		// create
 		System.out.println("CREATE:");
-		checkSuccess(stmt.executeUpdate(
+		assertEquals(stmt.executeUpdate(
 					"create table testtable ("+
 					"	col1 byteint,"+
 					"	col2 smallint,"+
@@ -293,7 +293,7 @@ if (false) {
 
 		// insert
 		System.out.println("INSERT:");
-		checkSuccess(stmt.executeUpdate(
+		assertEquals(stmt.executeUpdate(
 					"insert into testtable values ("+
 					"1,"+
 					"1,"+
@@ -340,7 +340,7 @@ if (false) {
 					fmt.parse("200"+i+"-0"+i+"-"+
 						"0"+i+" 0"+i+":0"+i+":0"+i).
 					getTime()));
-			checkSuccess(pstmt.execute(),0);
+			assertEquals(pstmt.execute(),0);
 		}
 		System.out.println("\n");
 
@@ -352,165 +352,165 @@ if (false) {
 		System.out.println("\n");
 
 		System.out.println("SELECT - column count:");
-		checkSuccess(rsmd.getColumnCount(),12);
+		assertEquals(rsmd.getColumnCount(),12);
 		System.out.println("\n");
 
 		System.out.println("SELECT - column info:");
-		checkSuccess(rsmd.getColumnCount(),12);
+		assertEquals(rsmd.getColumnCount(),12);
 		System.out.println();
-		checkSuccess(rsmd.getColumnName(1),"col1");
-		checkSuccess(rsmd.getColumnType(1),java.sql.Types.TINYINT);
-		checkSuccess(rsmd.getColumnTypeName(1),"BYTEINT");
-		checkSuccess(rsmd.getPrecision(1),3);
-		checkSuccess(rsmd.getScale(1),0);
-		checkSuccess(rsmd.isAutoIncrement(1),0);
-		checkSuccess(rsmd.isCaseSensitive(1),0);
-		checkSuccess(rsmd.isCurrency(1),0);
-		checkSuccess(rsmd.isNullable(1),1);
-		checkSuccess(rsmd.isSigned(1),1);
+		assertEquals(rsmd.getColumnName(1),"col1");
+		assertEquals(rsmd.getColumnType(1),java.sql.Types.TINYINT);
+		assertEquals(rsmd.getColumnTypeName(1),"BYTEINT");
+		assertEquals(rsmd.getPrecision(1),3);
+		assertEquals(rsmd.getScale(1),0);
+		assertEquals(rsmd.isAutoIncrement(1),0);
+		assertEquals(rsmd.isCaseSensitive(1),0);
+		assertEquals(rsmd.isCurrency(1),0);
+		assertEquals(rsmd.isNullable(1),1);
+		assertEquals(rsmd.isSigned(1),1);
 		System.out.println();
-		checkSuccess(rsmd.getColumnName(2),"col2");
-		checkSuccess(rsmd.getColumnType(2),java.sql.Types.SMALLINT);
-		checkSuccess(rsmd.getColumnTypeName(2),"SMALLINT");
-		checkSuccess(rsmd.getPrecision(2),5);
-		checkSuccess(rsmd.getScale(2),0);
-		checkSuccess(rsmd.isAutoIncrement(2),0);
-		checkSuccess(rsmd.isCaseSensitive(2),0);
-		checkSuccess(rsmd.isCurrency(2),0);
-		checkSuccess(rsmd.isNullable(2),1);
-		checkSuccess(rsmd.isSigned(2),1);
+		assertEquals(rsmd.getColumnName(2),"col2");
+		assertEquals(rsmd.getColumnType(2),java.sql.Types.SMALLINT);
+		assertEquals(rsmd.getColumnTypeName(2),"SMALLINT");
+		assertEquals(rsmd.getPrecision(2),5);
+		assertEquals(rsmd.getScale(2),0);
+		assertEquals(rsmd.isAutoIncrement(2),0);
+		assertEquals(rsmd.isCaseSensitive(2),0);
+		assertEquals(rsmd.isCurrency(2),0);
+		assertEquals(rsmd.isNullable(2),1);
+		assertEquals(rsmd.isSigned(2),1);
 		System.out.println();
-		checkSuccess(rsmd.getColumnName(3),"col3");
-		checkSuccess(rsmd.getColumnType(3),java.sql.Types.INTEGER);
-		checkSuccess(rsmd.getColumnTypeName(3),"INTEGER");
-		checkSuccess(rsmd.getPrecision(3),10);
-		checkSuccess(rsmd.getScale(3),0);
-		checkSuccess(rsmd.isAutoIncrement(3),0);
-		checkSuccess(rsmd.isCaseSensitive(3),0);
-		checkSuccess(rsmd.isCurrency(3),0);
-		checkSuccess(rsmd.isNullable(3),1);
-		checkSuccess(rsmd.isSigned(3),1);
+		assertEquals(rsmd.getColumnName(3),"col3");
+		assertEquals(rsmd.getColumnType(3),java.sql.Types.INTEGER);
+		assertEquals(rsmd.getColumnTypeName(3),"INTEGER");
+		assertEquals(rsmd.getPrecision(3),10);
+		assertEquals(rsmd.getScale(3),0);
+		assertEquals(rsmd.isAutoIncrement(3),0);
+		assertEquals(rsmd.isCaseSensitive(3),0);
+		assertEquals(rsmd.isCurrency(3),0);
+		assertEquals(rsmd.isNullable(3),1);
+		assertEquals(rsmd.isSigned(3),1);
 		System.out.println();
-		checkSuccess(rsmd.getColumnName(4),"col4");
-		checkSuccess(rsmd.getColumnType(4),java.sql.Types.BIGINT);
-		checkSuccess(rsmd.getColumnTypeName(4),"BIGINT");
-		checkSuccess(rsmd.getPrecision(4),19);
-		checkSuccess(rsmd.getScale(4),0);
-		checkSuccess(rsmd.isAutoIncrement(4),0);
-		checkSuccess(rsmd.isCaseSensitive(4),0);
-		checkSuccess(rsmd.isCurrency(4),0);
-		checkSuccess(rsmd.isNullable(4),1);
-		checkSuccess(rsmd.isSigned(4),1);
+		assertEquals(rsmd.getColumnName(4),"col4");
+		assertEquals(rsmd.getColumnType(4),java.sql.Types.BIGINT);
+		assertEquals(rsmd.getColumnTypeName(4),"BIGINT");
+		assertEquals(rsmd.getPrecision(4),19);
+		assertEquals(rsmd.getScale(4),0);
+		assertEquals(rsmd.isAutoIncrement(4),0);
+		assertEquals(rsmd.isCaseSensitive(4),0);
+		assertEquals(rsmd.isCurrency(4),0);
+		assertEquals(rsmd.isNullable(4),1);
+		assertEquals(rsmd.isSigned(4),1);
 		System.out.println();
-		checkSuccess(rsmd.getColumnName(5),"col5");
-		checkSuccess(rsmd.getColumnType(5),java.sql.Types.DECIMAL);
-		checkSuccess(rsmd.getColumnTypeName(5),"DECIMAL");
-		checkSuccess(rsmd.getPrecision(5),10);
-		checkSuccess(rsmd.getScale(5),3);
-		checkSuccess(rsmd.isAutoIncrement(5),0);
-		checkSuccess(rsmd.isCaseSensitive(5),0);
-		checkSuccess(rsmd.isCurrency(5),0);
-		checkSuccess(rsmd.isNullable(5),1);
-		checkSuccess(rsmd.isSigned(5),1);
+		assertEquals(rsmd.getColumnName(5),"col5");
+		assertEquals(rsmd.getColumnType(5),java.sql.Types.DECIMAL);
+		assertEquals(rsmd.getColumnTypeName(5),"DECIMAL");
+		assertEquals(rsmd.getPrecision(5),10);
+		assertEquals(rsmd.getScale(5),3);
+		assertEquals(rsmd.isAutoIncrement(5),0);
+		assertEquals(rsmd.isCaseSensitive(5),0);
+		assertEquals(rsmd.isCurrency(5),0);
+		assertEquals(rsmd.isNullable(5),1);
+		assertEquals(rsmd.isSigned(5),1);
 		System.out.println();
-		checkSuccess(rsmd.getColumnName(6),"col6");
+		assertEquals(rsmd.getColumnName(6),"col6");
 		// Teradata...
-		//checkSuccess(rsmd.getColumnType(6),java.sql.Types.NUMERIC);
-		//checkSuccess(rsmd.getColumnTypeName(6),"NUMERIC");
+		//assertEquals(rsmd.getColumnType(6),java.sql.Types.NUMERIC);
+		//assertEquals(rsmd.getColumnTypeName(6),"NUMERIC");
 		// SQL Relay...
 		// (ODBC backend returns SQL_DECIMAL instead of SQL_NUMERIC)...
-		//checkSuccess(rsmd.getColumnType(6),java.sql.Types.DECIMAL);
-		//checkSuccess(rsmd.getColumnTypeName(6),"DECIMAL");
-		checkSuccess(rsmd.getPrecision(6),10);
-		checkSuccess(rsmd.getScale(6),3);
-		checkSuccess(rsmd.isAutoIncrement(6),0);
-		checkSuccess(rsmd.isCaseSensitive(6),0);
-		checkSuccess(rsmd.isCurrency(6),0);
-		checkSuccess(rsmd.isNullable(6),1);
-		checkSuccess(rsmd.isSigned(6),1);
+		//assertEquals(rsmd.getColumnType(6),java.sql.Types.DECIMAL);
+		//assertEquals(rsmd.getColumnTypeName(6),"DECIMAL");
+		assertEquals(rsmd.getPrecision(6),10);
+		assertEquals(rsmd.getScale(6),3);
+		assertEquals(rsmd.isAutoIncrement(6),0);
+		assertEquals(rsmd.isCaseSensitive(6),0);
+		assertEquals(rsmd.isCurrency(6),0);
+		assertEquals(rsmd.isNullable(6),1);
+		assertEquals(rsmd.isSigned(6),1);
 		System.out.println();
-		checkSuccess(rsmd.getColumnName(7),"col7");
-		checkSuccess(rsmd.getColumnType(7),java.sql.Types.FLOAT);
-		checkSuccess(rsmd.getColumnTypeName(7),"FLOAT");
-		checkSuccess(rsmd.getPrecision(7),15);
-		checkSuccess(rsmd.getScale(7),0);
-		checkSuccess(rsmd.isAutoIncrement(7),0);
-		checkSuccess(rsmd.isCaseSensitive(7),0);
-		checkSuccess(rsmd.isCurrency(7),0);
-		checkSuccess(rsmd.isNullable(7),1);
-		checkSuccess(rsmd.isSigned(7),1);
+		assertEquals(rsmd.getColumnName(7),"col7");
+		assertEquals(rsmd.getColumnType(7),java.sql.Types.FLOAT);
+		assertEquals(rsmd.getColumnTypeName(7),"FLOAT");
+		assertEquals(rsmd.getPrecision(7),15);
+		assertEquals(rsmd.getScale(7),0);
+		assertEquals(rsmd.isAutoIncrement(7),0);
+		assertEquals(rsmd.isCaseSensitive(7),0);
+		assertEquals(rsmd.isCurrency(7),0);
+		assertEquals(rsmd.isNullable(7),1);
+		assertEquals(rsmd.isSigned(7),1);
 		System.out.println();
-		checkSuccess(rsmd.getColumnName(8),"col8");
-		checkSuccess(rsmd.getColumnType(8),java.sql.Types.CHAR);
-		checkSuccess(rsmd.getColumnTypeName(8),"CHAR");
-		checkSuccess(rsmd.getPrecision(8),128);
-		checkSuccess(rsmd.getScale(8),0);
-		checkSuccess(rsmd.isAutoIncrement(8),0);
-		checkSuccess(rsmd.isCaseSensitive(8),0);
-		checkSuccess(rsmd.isCurrency(8),0);
-		checkSuccess(rsmd.isNullable(8),1);
-		checkSuccess(rsmd.isSigned(8),0);
+		assertEquals(rsmd.getColumnName(8),"col8");
+		assertEquals(rsmd.getColumnType(8),java.sql.Types.CHAR);
+		assertEquals(rsmd.getColumnTypeName(8),"CHAR");
+		assertEquals(rsmd.getPrecision(8),128);
+		assertEquals(rsmd.getScale(8),0);
+		assertEquals(rsmd.isAutoIncrement(8),0);
+		assertEquals(rsmd.isCaseSensitive(8),0);
+		assertEquals(rsmd.isCurrency(8),0);
+		assertEquals(rsmd.isNullable(8),1);
+		assertEquals(rsmd.isSigned(8),0);
 		System.out.println();
-		checkSuccess(rsmd.getColumnName(9),"col9");
-		checkSuccess(rsmd.getColumnType(9),java.sql.Types.VARCHAR);
-		checkSuccess(rsmd.getColumnTypeName(9),"VARCHAR");
-		checkSuccess(rsmd.getPrecision(9),128);
-		checkSuccess(rsmd.getScale(9),0);
-		checkSuccess(rsmd.isAutoIncrement(9),0);
-		checkSuccess(rsmd.isCaseSensitive(9),0);
-		checkSuccess(rsmd.isCurrency(9),0);
-		checkSuccess(rsmd.isNullable(9),1);
-		checkSuccess(rsmd.isSigned(9),0);
+		assertEquals(rsmd.getColumnName(9),"col9");
+		assertEquals(rsmd.getColumnType(9),java.sql.Types.VARCHAR);
+		assertEquals(rsmd.getColumnTypeName(9),"VARCHAR");
+		assertEquals(rsmd.getPrecision(9),128);
+		assertEquals(rsmd.getScale(9),0);
+		assertEquals(rsmd.isAutoIncrement(9),0);
+		assertEquals(rsmd.isCaseSensitive(9),0);
+		assertEquals(rsmd.isCurrency(9),0);
+		assertEquals(rsmd.isNullable(9),1);
+		assertEquals(rsmd.isSigned(9),0);
 		System.out.println();
-		checkSuccess(rsmd.getColumnName(10),"col10");
-		checkSuccess(rsmd.getColumnType(10),java.sql.Types.DATE);
-		checkSuccess(rsmd.getColumnTypeName(10),"DATE");
-		checkSuccess(rsmd.getPrecision(10),10);
-		checkSuccess(rsmd.getScale(10),0);
-		checkSuccess(rsmd.isAutoIncrement(10),0);
-		checkSuccess(rsmd.isCaseSensitive(10),0);
-		checkSuccess(rsmd.isCurrency(10),0);
-		checkSuccess(rsmd.isNullable(10),1);
-		checkSuccess(rsmd.isSigned(10),0);
+		assertEquals(rsmd.getColumnName(10),"col10");
+		assertEquals(rsmd.getColumnType(10),java.sql.Types.DATE);
+		assertEquals(rsmd.getColumnTypeName(10),"DATE");
+		assertEquals(rsmd.getPrecision(10),10);
+		assertEquals(rsmd.getScale(10),0);
+		assertEquals(rsmd.isAutoIncrement(10),0);
+		assertEquals(rsmd.isCaseSensitive(10),0);
+		assertEquals(rsmd.isCurrency(10),0);
+		assertEquals(rsmd.isNullable(10),1);
+		assertEquals(rsmd.isSigned(10),0);
 		System.out.println();
-		checkSuccess(rsmd.getColumnName(11),"col11");
-		checkSuccess(rsmd.getColumnType(11),java.sql.Types.TIME);
-		checkSuccess(rsmd.getColumnTypeName(11),"TIME");
-		checkSuccess(rsmd.getPrecision(11),15);
-		checkSuccess(rsmd.getScale(11),6);
-		checkSuccess(rsmd.isAutoIncrement(11),0);
-		checkSuccess(rsmd.isCaseSensitive(11),0);
-		checkSuccess(rsmd.isCurrency(11),0);
-		checkSuccess(rsmd.isNullable(11),1);
-		checkSuccess(rsmd.isSigned(11),0);
+		assertEquals(rsmd.getColumnName(11),"col11");
+		assertEquals(rsmd.getColumnType(11),java.sql.Types.TIME);
+		assertEquals(rsmd.getColumnTypeName(11),"TIME");
+		assertEquals(rsmd.getPrecision(11),15);
+		assertEquals(rsmd.getScale(11),6);
+		assertEquals(rsmd.isAutoIncrement(11),0);
+		assertEquals(rsmd.isCaseSensitive(11),0);
+		assertEquals(rsmd.isCurrency(11),0);
+		assertEquals(rsmd.isNullable(11),1);
+		assertEquals(rsmd.isSigned(11),0);
 		System.out.println();
-		checkSuccess(rsmd.getColumnName(12),"col12");
-		checkSuccess(rsmd.getColumnType(12),java.sql.Types.TIMESTAMP);
-		checkSuccess(rsmd.getColumnTypeName(12),"TIMESTAMP");
-		checkSuccess(rsmd.getPrecision(12),26);
-		checkSuccess(rsmd.getScale(12),6);
-		checkSuccess(rsmd.isAutoIncrement(12),0);
-		checkSuccess(rsmd.isCaseSensitive(12),0);
-		checkSuccess(rsmd.isCurrency(12),0);
-		checkSuccess(rsmd.isNullable(12),1);
-		checkSuccess(rsmd.isSigned(12),0);
+		assertEquals(rsmd.getColumnName(12),"col12");
+		assertEquals(rsmd.getColumnType(12),java.sql.Types.TIMESTAMP);
+		assertEquals(rsmd.getColumnTypeName(12),"TIMESTAMP");
+		assertEquals(rsmd.getPrecision(12),26);
+		assertEquals(rsmd.getScale(12),6);
+		assertEquals(rsmd.isAutoIncrement(12),0);
+		assertEquals(rsmd.isCaseSensitive(12),0);
+		assertEquals(rsmd.isCurrency(12),0);
+		assertEquals(rsmd.isNullable(12),1);
+		assertEquals(rsmd.isSigned(12),0);
 		System.out.println("\n");
 
 		System.out.println("SELECT - fields:");
 		for (int i=1; i<10; i++) {
-			checkSuccess(rs.next(),1);
-			checkSuccess(rs.getString(1),""+i);
-			checkSuccess(rs.getString(2),""+i);
-			checkSuccess(rs.getString(3),""+i);
-			checkSuccess(rs.getString(4),""+i);
-			checkSuccess(rs.getString(5),i+".123");
-			checkSuccess(rs.getString(6),i+".123");
-			checkSuccess(rs.getString(7),i+".123");
-			checkSuccess(rs.getString(8).trim(),"hi"+i);
-			checkSuccess(rs.getString(9),"hello"+i);
-			checkSuccess(rs.getString(10),"200"+i+"-0"+i+"-0"+i);
-			checkSuccess(rs.getString(11),"0"+i+":0"+i+":0"+i);
-			checkSuccess(rs.getString(12),"200"+i+"-0"+i+"-0"+i+
+			assertEquals(rs.next(),1);
+			assertEquals(rs.getString(1),""+i);
+			assertEquals(rs.getString(2),""+i);
+			assertEquals(rs.getString(3),""+i);
+			assertEquals(rs.getString(4),""+i);
+			assertEquals(rs.getString(5),i+".123");
+			assertEquals(rs.getString(6),i+".123");
+			assertEquals(rs.getString(7),i+".123");
+			assertEquals(rs.getString(8).trim(),"hi"+i);
+			assertEquals(rs.getString(9),"hello"+i);
+			assertEquals(rs.getString(10),"200"+i+"-0"+i+"-0"+i);
+			assertEquals(rs.getString(11),"0"+i+":0"+i+":0"+i);
+			assertEquals(rs.getString(12),"200"+i+"-0"+i+"-0"+i+
 							" "+
 							"0"+i+":0"+i+":0"+i+
 							".0");
@@ -522,22 +522,22 @@ if (false) {
 
 		// update
 		System.out.println("UPDATE:");
-		checkSuccess(stmt.executeUpdate(
+		assertEquals(stmt.executeUpdate(
 				"update testtable set col1=3 where col1=1"),1);
-		checkSuccess(stmt.executeUpdate(
+		assertEquals(stmt.executeUpdate(
 				"update testtable set col1=4 where col1=2"),1);
 		System.out.println("\n");
 
 
 		// delete
 		System.out.println("DELETE:");
-		checkSuccess(stmt.executeUpdate("delete from testtable"),9);
+		assertEquals(stmt.executeUpdate("delete from testtable"),9);
 		System.out.println("\n");
 
 
 		// even nulls
 		System.out.println("EVEN NULLS:");
-		checkSuccess(stmt.executeUpdate(
+		assertEquals(stmt.executeUpdate(
 					"insert into testtable values ("+
 					"1,"+
 					"null,"+
@@ -555,27 +555,27 @@ if (false) {
 		System.out.println();
 		rs=stmt.executeQuery("select * from testtable");
 		rsmd=rs.getMetaData();
-		checkSuccess(rs.next(),1);
-		checkSuccess(rs.getString(1),"1");
-		checkSuccess(rs.getString(2),null);
-		checkSuccess(rs.getString(3),"1");
-		checkSuccess(rs.getString(4),null);
-		checkSuccess(rs.getString(5),"1.123");
-		checkSuccess(rs.getString(6),null);
-		checkSuccess(rs.getString(7),"1.123");
-		checkSuccess(rs.getString(8),null);
-		checkSuccess(rs.getString(9),"hello1");
-		checkSuccess(rs.getString(10),null);
-		checkSuccess(rs.getString(11),"01:01:01");
-		checkSuccess(rs.getString(12),null);
+		assertEquals(rs.next(),1);
+		assertEquals(rs.getString(1),"1");
+		assertEquals(rs.getString(2),null);
+		assertEquals(rs.getString(3),"1");
+		assertEquals(rs.getString(4),null);
+		assertEquals(rs.getString(5),"1.123");
+		assertEquals(rs.getString(6),null);
+		assertEquals(rs.getString(7),"1.123");
+		assertEquals(rs.getString(8),null);
+		assertEquals(rs.getString(9),"hello1");
+		assertEquals(rs.getString(10),null);
+		assertEquals(rs.getString(11),"01:01:01");
+		assertEquals(rs.getString(12),null);
 		System.out.println();
-		checkSuccess(stmt.executeUpdate("delete from testtable"),1);
+		assertEquals(stmt.executeUpdate("delete from testtable"),1);
 		System.out.println("\n");
 
 
 		// odd nulls
 		System.out.println("ODD NULLS:");
-		checkSuccess(stmt.executeUpdate(
+		assertEquals(stmt.executeUpdate(
 					"insert into testtable values ("+
 					"null,"+
 					"1,"+
@@ -593,21 +593,21 @@ if (false) {
 		System.out.println();
 		rs=stmt.executeQuery("select * from testtable");
 		rsmd=rs.getMetaData();
-		checkSuccess(rs.next(),1);
-		checkSuccess(rs.getString(1),null);
-		checkSuccess(rs.getString(2),"1");
-		checkSuccess(rs.getString(3),null);
-		checkSuccess(rs.getString(4),"1");
-		checkSuccess(rs.getString(5),null);
-		checkSuccess(rs.getString(6),"1.123");
-		checkSuccess(rs.getString(7),null);
-		checkSuccess(rs.getString(8).trim(),"hi1");
-		checkSuccess(rs.getString(9),null);
-		checkSuccess(rs.getString(10),"2001-01-01");
-		checkSuccess(rs.getString(11),null);
-		checkSuccess(rs.getString(12),"2001-01-01 01:01:01.0");
+		assertEquals(rs.next(),1);
+		assertEquals(rs.getString(1),null);
+		assertEquals(rs.getString(2),"1");
+		assertEquals(rs.getString(3),null);
+		assertEquals(rs.getString(4),"1");
+		assertEquals(rs.getString(5),null);
+		assertEquals(rs.getString(6),"1.123");
+		assertEquals(rs.getString(7),null);
+		assertEquals(rs.getString(8).trim(),"hi1");
+		assertEquals(rs.getString(9),null);
+		assertEquals(rs.getString(10),"2001-01-01");
+		assertEquals(rs.getString(11),null);
+		assertEquals(rs.getString(12),"2001-01-01 01:01:01.0");
 		System.out.println();
-		checkSuccess(stmt.executeUpdate("delete from testtable"),1);
+		assertEquals(stmt.executeUpdate("delete from testtable"),1);
 		System.out.println("\n");
 
 
@@ -633,25 +633,25 @@ if (false) {
 					getTime()));
 		fmt=new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 		pstmt.setNull(12,java.sql.Types.TIMESTAMP);
-		checkSuccess(pstmt.execute(),0);
+		assertEquals(pstmt.execute(),0);
 		System.out.println();
 		rs=stmt.executeQuery("select * from testtable");
 		rsmd=rs.getMetaData();
-		checkSuccess(rs.next(),1);
-		checkSuccess(rs.getString(1),"1");
-		checkSuccess(rs.getString(2),null);
-		checkSuccess(rs.getString(3),"1");
-		checkSuccess(rs.getString(4),null);
-		checkSuccess(rs.getString(5),"1.123");
-		checkSuccess(rs.getString(6),null);
-		checkSuccess(rs.getString(7),"1.123");
-		checkSuccess(rs.getString(8),null);
-		checkSuccess(rs.getString(9),"hello1");
-		checkSuccess(rs.getString(10),null);
-		checkSuccess(rs.getString(11),"01:01:01");
-		checkSuccess(rs.getString(12),null);
+		assertEquals(rs.next(),1);
+		assertEquals(rs.getString(1),"1");
+		assertEquals(rs.getString(2),null);
+		assertEquals(rs.getString(3),"1");
+		assertEquals(rs.getString(4),null);
+		assertEquals(rs.getString(5),"1.123");
+		assertEquals(rs.getString(6),null);
+		assertEquals(rs.getString(7),"1.123");
+		assertEquals(rs.getString(8),null);
+		assertEquals(rs.getString(9),"hello1");
+		assertEquals(rs.getString(10),null);
+		assertEquals(rs.getString(11),"01:01:01");
+		assertEquals(rs.getString(12),null);
 		System.out.println();
-		checkSuccess(stmt.executeUpdate("delete from testtable"),1);
+		assertEquals(stmt.executeUpdate("delete from testtable"),1);
 		System.out.println("\n");
 
 
@@ -679,25 +679,25 @@ if (false) {
 		pstmt.setTimestamp(12,new java.sql.Timestamp(
 					fmt.parse("2001-01-01 01:01:01").
 					getTime()));
-		checkSuccess(pstmt.execute(),0);
+		assertEquals(pstmt.execute(),0);
 		System.out.println();
 		rs=stmt.executeQuery("select * from testtable");
 		rsmd=rs.getMetaData();
-		checkSuccess(rs.next(),1);
-		checkSuccess(rs.getString(1),null);
-		checkSuccess(rs.getString(2),"1");
-		checkSuccess(rs.getString(3),null);
-		checkSuccess(rs.getString(4),"1");
-		checkSuccess(rs.getString(5),null);
-		checkSuccess(rs.getString(6),"1.123");
-		checkSuccess(rs.getString(7),null);
-		checkSuccess(rs.getString(8).trim(),"hi1");
-		checkSuccess(rs.getString(9),null);
-		checkSuccess(rs.getString(10),"2001-01-01");
-		checkSuccess(rs.getString(11),null);
-		checkSuccess(rs.getString(12),"2001-01-01 01:01:01.0");
+		assertEquals(rs.next(),1);
+		assertEquals(rs.getString(1),null);
+		assertEquals(rs.getString(2),"1");
+		assertEquals(rs.getString(3),null);
+		assertEquals(rs.getString(4),"1");
+		assertEquals(rs.getString(5),null);
+		assertEquals(rs.getString(6),"1.123");
+		assertEquals(rs.getString(7),null);
+		assertEquals(rs.getString(8).trim(),"hi1");
+		assertEquals(rs.getString(9),null);
+		assertEquals(rs.getString(10),"2001-01-01");
+		assertEquals(rs.getString(11),null);
+		assertEquals(rs.getString(12),"2001-01-01 01:01:01.0");
 		System.out.println();
-		checkSuccess(stmt.executeUpdate("delete from testtable"),1);
+		assertEquals(stmt.executeUpdate("delete from testtable"),1);
 		System.out.println("\n");
 
 /*
@@ -749,7 +749,7 @@ if (false) {
 
 		// drop
 		System.out.println("DROP:");
-		checkSuccess(stmt.executeUpdate("drop table testtable"),26);
+		assertEquals(stmt.executeUpdate("drop table testtable"),26);
 		// (teradata returns 26 for drop-table, for some reason)
 		System.out.println("\n");
 }
