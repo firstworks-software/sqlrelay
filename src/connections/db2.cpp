@@ -289,6 +289,7 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 		char		dbversion[512];
 		uint16_t	dbmajorversion;
 
+		stringbuffer	databaselistquery;
 		stringbuffer	tablelistquery;
 		stringbuffer	columnlistquery;
 		const char	*dbhostnamequery;
@@ -562,32 +563,29 @@ const char *db2connection::getDbHostNameQuery() {
 }
 
 const char *db2connection::getDatabaseListQuery(bool wild) {
-	return (wild)?
+
+	databaselistquery.clear();
+
+	databaselistquery.append(
 		"select "
 		"	schemaname as table_cat, "
 		"	'' as table_schem, "
 		"	'' as table_name, "
 		"	'' as table_type, "
 		"	'' as remarks, "
-		"	NULL "
+		"	null "
 		"from "
-		"	syscat.schemata "
-		"where "
-		"	schemaname like '%s' "
+		"	syscat.schemata ");
+	if (wild) {
+		databaselistquery.append(
+			"where "
+			"	schemaname like '%s' ");
+	}
+	databaselistquery.append(
 		"order by "
-		"	schemaname"
-		:
-		"select "
-		"	schemaname as table_cat, "
-		"	'' as table_schem, "
-		"	'' as table_name, "
-		"	'' as table_type, "
-		"	'' as remarks, "
-		"	NULL "
-		"from "
-		"	syscat.schemata "
-		"order by "
-		"	schemaname";
+		"	schemaname");
+
+	return databaselistquery.getString();
 }
 
 const char *db2connection::getTableListQuery(bool wild,

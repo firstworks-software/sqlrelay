@@ -90,6 +90,7 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 		file	devnull;
 #endif
 
+		stringbuffer	databaselistquery;
 		stringbuffer	tablelistquery;
 		stringbuffer	columnlistquery;
 };
@@ -560,7 +561,10 @@ const char *postgresqlconnection::getDbIpAddress() {
 }
 
 const char *postgresqlconnection::getDatabaseListQuery(bool wild) {
-	return (wild)?
+
+	databaselistquery.clear();
+
+	databaselistquery.append(
 		"select "
 		"	datname as table_cat, "
 		"	'' as table_schem, "
@@ -569,23 +573,17 @@ const char *postgresqlconnection::getDatabaseListQuery(bool wild) {
 		"	'' as remarks, "
 		"	null "
 		"from "
-		"	pg_database "
-		"where "
-		"	datname like '%s' "
+		"	pg_database ");
+	if (wild) {
+		databaselistquery.append(
+			"where "
+			"	datname like '%s' ");
+	}
+	databaselistquery.append(
 		"order by "
-		"	datname"
-		:
-		"select "
-		"	datname as table_cat, "
-		"	'' as table_schem, "
-		"	'' as table_name, "
-		"	'' as table_type, "
-		"	'' as remarks, "
-		"	null "
-		"from "
-		"	pg_database "
-		"order by "
-		"	datname";
+		"	datname");
+
+	return databaselistquery.getString();
 }
 
 const char *postgresqlconnection::getTableListQuery(bool wild,

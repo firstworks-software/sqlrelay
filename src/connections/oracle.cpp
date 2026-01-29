@@ -191,6 +191,7 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		bool		rejectduplicatebinds;
 		bool		disablekeylookup;
 
+		stringbuffer	schemalistquery;
 		stringbuffer	tablelistquery;
 		stringbuffer	columnlistquery;
 		stringbuffer	typeinfolistquery;
@@ -1250,7 +1251,10 @@ const char *oracleconnection::getDatabaseListQuery(bool wild) {
 
 const char *oracleconnection::getSchemaListQuery(bool wild,
 						bool currentdbonly) {
-	return (wild)?
+
+	schemalistquery.clear();
+
+	schemalistquery.append(
 		"select "
 		"	'' as table_cat, "
 		"	username as table_schem, "
@@ -1259,23 +1263,17 @@ const char *oracleconnection::getSchemaListQuery(bool wild,
 		"	'' as remarks, "
 		"	null "
 		"from "
-		"	all_users "
-		"where "
-		"	username like upper('%s') "
+		"	all_users ");
+	if (wild) {
+		schemalistquery.append(
+			"where "
+			"	username like upper('%s') ");
+	}
+	schemalistquery.append(
 		"order by "
-		"	username"
-		:
-		"select "
-		"	'' as table_cat, "
-		"	username as table_schem, "
-		"	'' as table_name, "
-		"	'' as table_type, "
-		"	'' as remarks, "
-		"	null "
-		"from "
-		"	all_users "
-		"order by "
-		"	username";
+		"	username");
+
+	return schemalistquery.getString();
 }
 
 const char *oracleconnection::getTableListQuery(bool wild,

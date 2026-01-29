@@ -286,6 +286,7 @@ class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 		char	*dbhostname;
 
 		stringbuffer	tablelistquery;
+		stringbuffer	databaselistquery;
 		stringbuffer	columnlistquery;
 
 		static const my_bool	mytrue;
@@ -678,7 +679,10 @@ const char *mysqlconnection::getNextvalFormat() {
 }
 
 const char *mysqlconnection::getDatabaseListQuery(bool wild) {
-	return (wild)?
+
+	databaselistquery.clear();
+
+	databaselistquery.append(
 		"select "
 		"	schema_name as table_cat, "
 		"	'' as table_schem, "
@@ -687,23 +691,17 @@ const char *mysqlconnection::getDatabaseListQuery(bool wild) {
 		"	'' as remarks, "
 		"	null "
 		"from "
-		"	information_schema.schemata "
-		"where "
-		"	schema_name like '%s' "
+		"	information_schema.schemata ");
+	if (wild) {
+		databaselistquery.append(
+			"where "
+			"	schema_name like '%s' ");
+	}
+	databaselistquery.append(
 		"order by "
-		"	schema_name"
-		:
-		"select "
-		"	schema_name as table_cat, "
-		"	'' as table_schem, "
-		"	'' as table_name, "
-		"	'' as table_type, "
-		"	'' as remarks, "
-		"	null "
-		"from "
-		"	information_schema.schemata "
-		"order by "
-		"	schema_name";
+		"	schema_name");
+
+	return databaselistquery.getString();
 }
 
 const char *mysqlconnection::getTableListQuery(bool wild,

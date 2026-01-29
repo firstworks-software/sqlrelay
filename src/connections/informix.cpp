@@ -279,6 +279,7 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 
 		char		dbversion[512];
 
+		stringbuffer	databaselistquery;
 		stringbuffer	tablelistquery;
 		stringbuffer	columnlistquery;
 
@@ -538,7 +539,10 @@ const char *informixconnection::getDbHostNameQuery() {
 }
 
 const char *informixconnection::getDatabaseListQuery(bool wild) {
-	return (wild)?
+
+	databaselistquery.clear();
+
+	databaselistquery.append(
 		"select "
 		"	name as table_cat, "
 		"	'' as table_schem, "
@@ -547,23 +551,17 @@ const char *informixconnection::getDatabaseListQuery(bool wild) {
 		"	'' as remarks, "
 		"	null "
 		"from "
-		"	sysmaster:sysdatabases "
-		"where "
-		"	name like '%s' "
+		"	sysmaster:sysdatabases ");
+	if (wild) {
+		databaselistquery.append(
+			"where "
+			"	name like '%s' ");
+	}
+	databaselistquery.append(
 		"order by "
-		"	name"
-		:
-		"select "
-		"	name as table_cat, "
-		"	'' as table_schem, "
-		"	'' as table_name, "
-		"	'' as table_type, "
-		"	'' as remarks, "
-		"	null "
-		"from "
-		"	sysmaster:sysdatabases "
-		"order by "
-		"	name";
+		"	name");
+
+	return databaselistquery.getString();
 }
 
 const char *informixconnection::getTableListQuery(bool wild,
