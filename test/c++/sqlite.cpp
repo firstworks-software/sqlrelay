@@ -394,6 +394,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,1),"");
 	assertEquals(cur->getField(0,2),"");
 	cur->getNullsAsNulls();
+	cur->sendQuery("drop table testtable1");
 	stdoutput.printf("\n");
 
 	stdoutput.printf("RESULT SET BUFFER SIZE: \n");
