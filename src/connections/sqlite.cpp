@@ -97,6 +97,7 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 		char	*hostname;
 
 		stringbuffer	tablelistquery;
+		stringbuffer	columnlistquery;
 };
 
 class SQLRSERVER_DLLSPEC sqlitecursor : public sqlrservercursor {
@@ -335,28 +336,56 @@ const char *sqliteconnection::getTableListQuery(bool wild,
 
 const char *sqliteconnection::getColumnListQuery(
 					const char *table, bool wild) {
-	return "select "
+
+	columnlistquery.clear();
+
+	columnlistquery.append(
+		"select "
 		"	'' as table_cat, "
 		"	'' as table_schem, "
-		"	'' as table_name, "
-		"	'' as column_name, "
+		"	'")->append(table)->append("' as table_name, "
+		"	p.name as column_name, "
 		"	null as data_type, "
-		"	'' as type_name, "
+		"	p.type as type_name, "
 		"	null as column_size, "
 		"	null as buffer_length, "
 		"	null as decimal_digits, "
 		"	10 as num_prec_radix, "
-		"	null as nullable, "
-		"	'' as remarks, "
-		"	null as column_default, "
+		"	case "
+		"		when p.'notnull'=1 then 0 "
+		"		else 1 "
+		"	end as nullable, "
+		"	(select case when count(*)>0 then 'auto_increment' else '' end from sqlite_master where name='testtable' and instr(upper(sql),concat(' (',upper(p.name),' INTEGER PRIMARY KEY AUTOINCREMENT'))) as remarks, "
+		"	p.dflt_value as column_default, "
 		"	null as sql_data_type, "
 		"	null as sql_datetime_sub, "
 		"	null as char_octet_length, "
 		"	null as ordinal_position, "
-		"	null as is_nullable, "
+		"	case "
+		"		when p.'notnull'=1 then 'NO' "
+		"		else 'YES' "
+		"	end as is_nullable, "
 		"	null as numeric_precision, "
-		"	null as column_key, "
-		"	null";
+		"	case "
+		"		when p.pk=1 then 'PRI' "
+		"		else '' "
+		"	end as column_key, "
+		"	null "
+		"from "
+		"	(select "
+		"		* "
+		"	from "
+		"		pragma_table_info('%s')) p ");
+	if (wild) {
+		columnlistquery.append(
+			"where "
+			"	upper(p.name) like upper('%s') ");
+	}
+	columnlistquery.append(
+		"order by "
+		"	p.cid");
+
+	return columnlistquery.getString();
 }
 
 #ifdef SQLITE_TRANSACTIONAL

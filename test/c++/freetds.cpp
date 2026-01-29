@@ -922,7 +922,7 @@ int main(int argc, char **argv) {
 	// column list auto_increment and primary key...
 	stdoutput.printf("COLUMN LIST - auto_increment, primary key: \n");
 	cur->sendQuery("drop table testtable");
-	assertTrue(cur->sendQuery("create table testtable (col1 int identity(1,1) primary key, col2 int)"));
+	assertTrue(cur->sendQuery("create table testtable (col1 int identity primary key, col2 int)"));
 	assertTrue(cur->getColumnList("testtable",NULL));
 	assertTrue(charstring::containsIgnoringCase(
 			cur->getField(0,"extra"),"auto_increment"));
