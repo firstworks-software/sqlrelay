@@ -12,9 +12,6 @@
 #include <sqlext.h>
 #include <sqlucode.h>
 #include <sqltypes.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
 
 #include "asserts.cpp"
 
@@ -30,7 +27,7 @@ int main(int argc, char **argv) {
 	SQLCHAR		*password;
 
 	// env handle
-	printf("ENV HANDLE: \n");
+	stdoutput.printf("ENV HANDLE: \n");
 #if (ODBCVER >= 0x3000)
 	erg=SQLAllocHandle(SQL_HANDLE_ENV,SQL_NULL_HANDLE,&env);
 	assertSuccessEnv(env,erg);
@@ -53,11 +50,11 @@ int main(int argc, char **argv) {
 	erg=SQLAllocEnv(&env);
 	assertSuccessEnv(env,erg);
 #endif
-	printf("\n");
+	stdoutput.printf("\n");
 
 
 	// connection handle
-	printf("CONNECTION HANDLE: \n");
+	stdoutput.printf("CONNECTION HANDLE: \n");
 #if (ODBCVER >= 0x0300)
 	erg=SQLAllocHandle(SQL_HANDLE_DBC,env,&dbc);
 	assertSuccessEnv(env,erg);
@@ -65,21 +62,21 @@ int main(int argc, char **argv) {
 	erg=SQLAllocConnect(env,&dbc);
 	assertSuccessEnv(env,erg);
 #endif
-	printf("\n");
+	stdoutput.printf("\n");
 
 
 	// connect
-	printf("CONNECT: \n");
+	stdoutput.printf("CONNECT: \n");
 	dsn=(SQLCHAR *)"sqlrodbc";
 	user=(SQLCHAR *)"testuser";
 	password=(SQLCHAR *)"testpassword";
 	erg=SQLConnect(dbc,dsn,SQL_NTS,user,SQL_NTS,password,SQL_NTS);
 	assertSuccessDbc(dbc,erg);
-	printf("\n");
+	stdoutput.printf("\n");
 
 
 	// bind
-	printf("BIND: \n");
+	stdoutput.printf("BIND: \n");
 	erg=SQLAllocHandle(SQL_HANDLE_STMT,dbc,&stmt);
 	assertSuccessDbc(dbc,erg);
 
@@ -170,7 +167,7 @@ int main(int argc, char **argv) {
 
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
-	printf("\n");
+	stdoutput.printf("\n");
 
 	reportTestStatus();
 

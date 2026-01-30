@@ -24,9 +24,6 @@ SQLHSTMT	stmt;
 
 int main(int argc, char **argv) {
 
-	SQLUINTEGER	isolationlevels[]={SQL_TXN_READ_COMMITTED,
-						SQL_TXN_SERIALIZABLE,0};
-
 	// env handle
 	stdoutput.printf("ENV HANDLE: \n");
 	#if (ODBCVER >= 0x3000)
@@ -110,6 +107,8 @@ int main(int argc, char **argv) {
 
 
 	// isolation levels
+	SQLUINTEGER	isolationlevels[]={SQL_TXN_READ_COMMITTED,
+						SQL_TXN_SERIALIZABLE,0};
 	stdoutput.printf("ISOLATION LEVELS: \n");
 	for (SQLUINTEGER *il=isolationlevels; *il; il++) {
 		// oracle requires the isolation level to
@@ -189,16 +188,16 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)bindvarcount,4);
 
 	SQLINTEGER	intval=2;
-	SQLCHAR		charval[41];
-	SQLCHAR		varcharval[41];
-	SQLCHAR		dateval[12];
+	SQLCHAR		*charval;
+	SQLCHAR		*varcharval;
+	SQLCHAR		*dateval;
 	SQLLEN		charlen=SQL_NTS;
 	SQLLEN		varcharlen=SQL_NTS;
 	SQLLEN		datelen=SQL_NTS;
 
-	charstring::copy((char *)charval,"testchar2");
-	charstring::copy((char *)varcharval,"testvarchar2");
-	charstring::copy((char *)dateval,"01-JAN-2002");
+	charval=(SQLCHAR *)"testchar2";
+	varcharval=(SQLCHAR *)"testvarchar2";
+	dateval=(SQLCHAR *)"01-JAN-2002";
 	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
 				SQL_C_SLONG,SQL_INTEGER,
 				0,0,
@@ -209,27 +208,27 @@ int main(int argc, char **argv) {
 				SQL_C_CHAR,SQL_CHAR,
 				40,0,
 				(SQLPOINTER)charval,
-				sizeof(charval),&charlen);
+				0,&charlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,3,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_VARCHAR,
 				40,0,
 				(SQLPOINTER)varcharval,
-				sizeof(varcharval),&varcharlen);
+				0,&varcharlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,4,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_TYPE_DATE,
 				11,0,
 				(SQLPOINTER)dateval,
-				sizeof(dateval),&datelen);
+				0,&datelen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
 
 	intval=3;
-	charstring::copy((char *)charval,"testchar3");
-	charstring::copy((char *)varcharval,"testvarchar3");
-	charstring::copy((char *)dateval,"01-JAN-2003");
+	charval=(SQLCHAR *)"testchar3";
+	varcharval=(SQLCHAR *)"testvarchar3";
+	dateval=(SQLCHAR *)"01-JAN-2003";
 	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
 				SQL_C_SLONG,SQL_INTEGER,
 				0,0,
@@ -240,27 +239,27 @@ int main(int argc, char **argv) {
 				SQL_C_CHAR,SQL_CHAR,
 				40,0,
 				(SQLPOINTER)charval,
-				sizeof(charval),&charlen);
+				0,&charlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,3,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_VARCHAR,
 				40,0,
 				(SQLPOINTER)varcharval,
-				sizeof(varcharval),&varcharlen);
+				0,&varcharlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,4,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_TYPE_DATE,
 				11,0,
 				(SQLPOINTER)dateval,
-				sizeof(dateval),&datelen);
+				0,&datelen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
 
 	intval=4;
-	charstring::copy((char *)charval,"testchar4");
-	charstring::copy((char *)varcharval,"testvarchar4");
-	charstring::copy((char *)dateval,"01-JAN-2004");
+	charval=(SQLCHAR *)"testchar4";
+	varcharval=(SQLCHAR *)"testvarchar4";
+	dateval=(SQLCHAR *)"01-JAN-2004";
 	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
 				SQL_C_SLONG,SQL_INTEGER,
 				0,0,
@@ -271,27 +270,27 @@ int main(int argc, char **argv) {
 				SQL_C_CHAR,SQL_CHAR,
 				40,0,
 				(SQLPOINTER)charval,
-				sizeof(charval),&charlen);
+				0,&charlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,3,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_VARCHAR,
 				40,0,
 				(SQLPOINTER)varcharval,
-				sizeof(varcharval),&varcharlen);
+				0,&varcharlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,4,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_TYPE_DATE,
 				11,0,
 				(SQLPOINTER)dateval,
-				sizeof(dateval),&datelen);
+				0,&datelen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
 
 	intval=5;
-	charstring::copy((char *)charval,"testchar5");
-	charstring::copy((char *)varcharval,"testvarchar5");
-	charstring::copy((char *)dateval,"01-JAN-2005");
+	charval=(SQLCHAR *)"testchar5";
+	varcharval=(SQLCHAR *)"testvarchar5";
+	dateval=(SQLCHAR *)"01-JAN-2005";
 	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
 				SQL_C_SLONG,SQL_INTEGER,
 				0,0,
@@ -302,27 +301,27 @@ int main(int argc, char **argv) {
 				SQL_C_CHAR,SQL_CHAR,
 				40,0,
 				(SQLPOINTER)charval,
-				sizeof(charval),&charlen);
+				0,&charlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,3,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_VARCHAR,
 				40,0,
 				(SQLPOINTER)varcharval,
-				sizeof(varcharval),&varcharlen);
+				0,&varcharlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,4,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_TYPE_DATE,
 				11,0,
 				(SQLPOINTER)dateval,
-				sizeof(dateval),&datelen);
+				0,&datelen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
 
 	intval=6;
-	charstring::copy((char *)charval,"testchar6");
-	charstring::copy((char *)varcharval,"testvarchar6");
-	charstring::copy((char *)dateval,"01-JAN-2006");
+	charval=(SQLCHAR *)"testchar6";
+	varcharval=(SQLCHAR *)"testvarchar6";
+	dateval=(SQLCHAR *)"01-JAN-2006";
 	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
 				SQL_C_SLONG,SQL_INTEGER,
 				0,0,
@@ -333,27 +332,27 @@ int main(int argc, char **argv) {
 				SQL_C_CHAR,SQL_CHAR,
 				40,0,
 				(SQLPOINTER)charval,
-				sizeof(charval),&charlen);
+				0,&charlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,3,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_VARCHAR,
 				40,0,
 				(SQLPOINTER)varcharval,
-				sizeof(varcharval),&varcharlen);
+				0,&varcharlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,4,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_TYPE_DATE,
 				11,0,
 				(SQLPOINTER)dateval,
-				sizeof(dateval),&datelen);
+				0,&datelen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
 
 	intval=7;
-	charstring::copy((char *)charval,"testchar7");
-	charstring::copy((char *)varcharval,"testvarchar7");
-	charstring::copy((char *)dateval,"01-JAN-2007");
+	charval=(SQLCHAR *)"testchar7";
+	varcharval=(SQLCHAR *)"testvarchar7";
+	dateval=(SQLCHAR *)"01-JAN-2007";
 	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
 				SQL_C_SLONG,SQL_INTEGER,
 				0,0,
@@ -364,27 +363,27 @@ int main(int argc, char **argv) {
 				SQL_C_CHAR,SQL_CHAR,
 				40,0,
 				(SQLPOINTER)charval,
-				sizeof(charval),&charlen);
+				0,&charlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,3,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_VARCHAR,
 				40,0,
 				(SQLPOINTER)varcharval,
-				sizeof(varcharval),&varcharlen);
+				0,&varcharlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,4,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_TYPE_DATE,
 				11,0,
 				(SQLPOINTER)dateval,
-				sizeof(dateval),&datelen);
+				0,&datelen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);
 
 	intval=8;
-	charstring::copy((char *)charval,"testchar8");
-	charstring::copy((char *)varcharval,"testvarchar8");
-	charstring::copy((char *)dateval,"01-JAN-2008");
+	charval=(SQLCHAR *)"testchar8";
+	varcharval=(SQLCHAR *)"testvarchar8";
+	dateval=(SQLCHAR *)"01-JAN-2008";
 	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
 				SQL_C_SLONG,SQL_INTEGER,
 				0,0,
@@ -395,19 +394,19 @@ int main(int argc, char **argv) {
 				SQL_C_CHAR,SQL_CHAR,
 				40,0,
 				(SQLPOINTER)charval,
-				sizeof(charval),&charlen);
+				0,&charlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,3,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_VARCHAR,
 				40,0,
 				(SQLPOINTER)varcharval,
-				sizeof(varcharval),&varcharlen);
+				0,&varcharlen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindParameter(stmt,4,SQL_PARAM_INPUT,
 				SQL_C_CHAR,SQL_TYPE_DATE,
 				11,0,
 				(SQLPOINTER)dateval,
-				sizeof(dateval),&datelen);
+				0,&datelen);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecute(stmt);
 	assertSuccessStmt(stmt,erg);

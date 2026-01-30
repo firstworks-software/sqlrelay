@@ -2506,26 +2506,139 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 			conn->tries=(int32_t)charstring::convertToInteger(
 								conntries);
 		}
-		// FIXME: krb options
-		// FIXME: tls options
+
+		// krb options
+		const char	*connkrb=connparams->getValue("Krb");
+		if (connkrb!=NULL) {
+			charstring::safeCopy(conn->krb,
+						sizeof(conn->krb),
+						connkrb);
+		}
+		const char	*connkrbservice=
+				connparams->getValue("Krbservice");
+		if (connkrbservice!=NULL) {
+			charstring::safeCopy(conn->krbservice,
+						sizeof(conn->krbservice),
+						connkrbservice);
+		}
+		const char	*connkrbmech=connparams->getValue("Krbmech");
+		if (connkrbmech!=NULL) {
+			charstring::safeCopy(conn->krbmech,
+						sizeof(conn->krbmech),
+						connkrbmech);
+		}
+		const char	*connkrbflags=connparams->getValue("Krbflags");
+		if (connkrbflags!=NULL) {
+			charstring::safeCopy(conn->krbflags,
+						sizeof(conn->krbflags),
+						connkrbflags);
+		}
+
+		// tls options
+		const char	*conntls=connparams->getValue("Tls");
+		if (conntls!=NULL) {
+			charstring::safeCopy(conn->tls,
+						sizeof(conn->tls),
+						conntls);
+		}
+		const char	*conntlsversion=
+				connparams->getValue("Tlsversion");
+		if (conntlsversion!=NULL) {
+			charstring::safeCopy(conn->tlsversion,
+						sizeof(conn->tlsversion),
+						conntlsversion);
+		}
+		const char	*conntlscert=connparams->getValue("Tlscert");
+		if (conntlscert!=NULL) {
+			charstring::safeCopy(conn->tlscert,
+						sizeof(conn->tlscert),
+						conntlscert);
+		}
+		const char	*conntlspassword=
+				connparams->getValue("Tlspassword");
+		if (conntlspassword!=NULL) {
+			charstring::safeCopy(conn->tlspassword,
+						sizeof(conn->tlspassword),
+						conntlspassword);
+		}
+		const char	*conntlsciphers=
+				connparams->getValue("Tlsciphers");
+		if (conntlsciphers!=NULL) {
+			charstring::safeCopy(conn->tlsciphers,
+						sizeof(conn->tlsciphers),
+						conntlsciphers);
+		}
+		const char	*conntlsvalidate=
+				connparams->getValue("Tlsvalidate");
+		if (conntlsvalidate!=NULL) {
+			charstring::safeCopy(conn->tlsvalidate,
+						sizeof(conn->tlsvalidate),
+						conntlsvalidate);
+		}
+		const char	*conntlsca=connparams->getValue("Tlsca");
+		if (conntlsca!=NULL) {
+			charstring::safeCopy(conn->tlsca,
+						sizeof(conn->tlsca),
+						conntlsca);
+		}
+		const char	*conntlsdepth=connparams->getValue("Tlsdepth");
+		if (conntlsdepth!=NULL) {
+			conn->tlsdepth=(uint16_t)
+				charstring::convertToUnsignedInteger(
+							conntlsdepth);
+		}
+
+		// db
 		const char	*conn_db=connparams->getValue("Db");
 		if (conn_db!=NULL) {
 			charstring::safeCopy(conn->db,sizeof(conn->db),conn_db);
 		}
+
+		// flags
 		const char	*conndebug=connparams->getValue("Debug");
 		if (conndebug!=NULL) {
 			charstring::safeCopy(conn->debug,
 						sizeof(conn->debug),
 						conndebug);
 		}
-		// FIXME: other flags
+		const char	*conncolumnnamecase=
+				connparams->getValue("ColumnNameCase");
+		if (conncolumnnamecase!=NULL) {
+			charstring::safeCopy(conn->columnnamecase,
+						sizeof(conn->columnnamecase),
+						conncolumnnamecase);
+		}
+		const char	*connresultsetbuffersize=
+				connparams->getValue("ResultSetBufferSize");
+		if (connresultsetbuffersize!=NULL) {
+			conn->resultsetbuffersize=(uint64_t)
+				charstring::convertToInteger(
+						connresultsetbuffersize);
+		}
+		const char	*conndontgetcolumninfo=
+				connparams->getValue("DontGetColumnInfo");
+		if (conndontgetcolumninfo!=NULL) {
+			conn->dontgetcolumninfo=
+				charstring::isYes(conndontgetcolumninfo);
+		}
+		const char	*connnullsasnulls=
+				connparams->getValue("NullsAsNulls");
+		if (connnullsasnulls!=NULL) {
+			conn->nullsasnulls=charstring::isYes(connnullsasnulls);
+		}
 		const char	*connlazyconnect=
 				connparams->getValue("LazyConnect");
 		if (connlazyconnect!=NULL) {
 			conn->lazyconnect=!charstring::isNo(connlazyconnect);
 		}
-		// FIXME: other flags
+		const char	*connclearbindsduringprepare=
+				connparams->getValue("ClearBindsDuringPrepare");
+		if (connclearbindsduringprepare!=NULL) {
+			conn->clearbindsduringprepare=
+				!charstring::isNo(connclearbindsduringprepare);
+		}
 
+		// bind variable delimiters
 		const char	*conn_bindvariabledelimiters=
 				connparams->getValue("BindVariableDelimiters");
 		if (conn_bindvariabledelimiters!=NULL) {
@@ -2534,7 +2647,6 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 					conn_bindvariabledelimiters);
 		}
 	}
-
 
 	debugPrintf("  DSN: %s\n",conn->dsn);
 	debugPrintf("  DSN Length: %d\n",dsnlength);
@@ -10531,16 +10643,25 @@ static SQLRETURN SQLR_InputBindParameter(SQLHSTMT statementhandle,
 			debugPrintf("  valuetype: SQL_C_CHAR\n");
 			// FIXME: support data-at-exec with other types
 			if (dataatexec) {
+				// FIXME: we need to save the bufferlength too
 				debugPrintf("  data at exec\n");
 				stmt->dataatexec=true;
 				stmt->dataatexecdict.setValue(parameternumber,
 								parametervalue);
 			} else {
-				debugPrintf("  value: \"%s\"\n",
-							parametervalue);
-				stmt->cur->inputBind(parametername,
-					(const char *)parametervalue,
-					bufferlength);
+				if (bufferlength) {
+					debugPrintf("  value: \"%.*s\"\n",
+								bufferlength,
+								parametervalue);
+					stmt->cur->inputBind(parametername,
+						(const char *)parametervalue,
+						bufferlength);
+				} else {
+					debugPrintf("  value: \"%s\"\n",
+								parametervalue);
+					stmt->cur->inputBind(parametername,
+						(const char *)parametervalue);
+				}
 			}
 			break;
 		case SQL_C_LONG:

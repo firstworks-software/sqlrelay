@@ -12,9 +12,6 @@
 #include <sqlext.h>
 #include <sqlucode.h>
 #include <sqltypes.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
 
 #include "asserts.cpp"
 
@@ -28,7 +25,7 @@ SQLHSTMT	stmt;
 int main(int argc, char **argv) {
 
 	// env handle
-	printf("ENV HANDLE: \n");
+	stdoutput.printf("ENV HANDLE: \n");
 	#if (ODBCVER >= 0x3000)
 		erg=SQLAllocHandle(SQL_HANDLE_ENV,SQL_NULL_HANDLE,&env);
 		assertSuccessEnv(env,erg);
@@ -49,11 +46,11 @@ int main(int argc, char **argv) {
 		erg=SQLAllocEnv(&env);
 		assertSuccessEnv(env,erg);
 	#endif
-	printf("\n");
+	stdoutput.printf("\n");
 
 
 	// connection handle
-	printf("CONNECTION HANDLE: \n");
+	stdoutput.printf("CONNECTION HANDLE: \n");
 	#if (ODBCVER >= 0x0300)
 		erg=SQLAllocHandle(SQL_HANDLE_DBC,env,&dbc);
 		assertSuccessDbc(dbc,erg);
@@ -61,11 +58,11 @@ int main(int argc, char **argv) {
 		erg=SQLAllocConnect(env,&dbc);
 		assertSuccessDbc(dbc,erg);
 	#endif
-	printf("\n");
+	stdoutput.printf("\n");
 
 
 	// connect
-	printf("CONNECT: \n");
+	stdoutput.printf("CONNECT: \n");
 	#ifdef USEDSN
 		SQLCHAR	*dsn=(SQLCHAR *)"sqlrodbc";
 		SQLCHAR	*user=(SQLCHAR *)"testuser";
@@ -86,11 +83,11 @@ int main(int argc, char **argv) {
 				SQL_DRIVER_NOPROMPT);
 	#endif
 	assertSuccessDbc(dbc,erg);
-	printf("\n");
+	stdoutput.printf("\n");
 
 
 	// sqlgetinfo
-	printf("SQLGETINFO: \n");
+	stdoutput.printf("SQLGETINFO: \n");
 	SQLUSMALLINT	usmallintval;
 	SQLUINTEGER	uintval;
 	SQLULEN		ulenval;
@@ -1429,42 +1426,42 @@ int main(int argc, char **argv) {
 					"SQL_DTC_TRANSITION_COST\n");
 	assertTrue(erg==SQL_ERROR);*/
 	#endif
-	printf("\n");
+	stdoutput.printf("\n");
 
 
 	// drop existing table
-	printf("DROP EXISTING TABLE\n");
+	stdoutput.printf("DROP EXISTING TABLE\n");
 	erg=SQLAllocHandle(SQL_HANDLE_STMT,dbc,&stmt);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLExecDirect(stmt,(SQLCHAR *)"drop table testtable",SQL_NTS);
-	printf("\n");
+	stdoutput.printf("\n");
 
 
 	// create temptable
-	printf("CREATE TEMPTABLE: \n");
+	stdoutput.printf("CREATE TEMPTABLE: \n");
 	erg=SQLExecDirect(stmt,(SQLCHAR *)"create table testtable (testint int, testsmallint smallint, testtinyint tinyint, testreal real, testfloat float, testdecimal decimal(4,1), testnumeric numeric(4,1), testmoney money, testsmallmoney smallmoney, testdatetime datetime, testsmalldatetime smalldatetime, testchar char(40), testvarchar varchar(40), testbit bit)",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
-	printf("\n");
+	stdoutput.printf("\n");
 
 
 	// begin transaction
-	printf("BEGIN TRANSACTION: \n");
+	stdoutput.printf("BEGIN TRANSACTION: \n");
 	SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
 				(SQLPOINTER)SQL_AUTOCOMMIT_OFF,
 				sizeof(SQLINTEGER));
 	assertSuccessDbc(dbc,erg);
-	printf("\n");
+	stdoutput.printf("\n");
 
 
 	// insert
-	printf("INSERT: \n");
+	stdoutput.printf("INSERT: \n");
 	erg=SQLExecDirect(stmt,(SQLCHAR *)"insert into testtable values (1,1,1,1.1,1.1,1.1,1.1,1.00,1.00,'01-Jan-2001 01:00:00','01-Jan-2001 01:00:00','testchar1','testvarchar1',1)",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
-	printf("\n");
+	stdoutput.printf("\n");
 
 
 	// affected rows
-	printf("AFFECTED ROWS: \n");
+	stdoutput.printf("AFFECTED ROWS: \n");
 	#ifdef SQLROWCOUNT_SQLLEN
 	SQLLEN		affectedrows;
 	#else
@@ -1473,11 +1470,11 @@ int main(int argc, char **argv) {
 	erg=SQLRowCount(stmt,&affectedrows);
 	assertSuccessStmt(stmt,erg);
 	assertEqualStmt(stmt,(int)affectedrows,1);
-	printf("\n");
+	stdoutput.printf("\n");
 
 
 	// bind by position
-	printf("BIND BY POSITION: \n");
+	stdoutput.printf("BIND BY POSITION: \n");
 	erg=SQLPrepare(stmt,(SQLCHAR *)"insert into testtable values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	SQLSMALLINT	bindvarcount;
