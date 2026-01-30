@@ -72,7 +72,12 @@ int main(int argc, char **argv) {
 		SQLCHAR	*password=(SQLCHAR *)"testpassword";
 		erg=SQLConnect(dbc,dsn,SQL_NTS,user,SQL_NTS,password,SQL_NTS);
 	#else
-		SQLCHAR		*incstring=(SQLCHAR *)"Driver={SQL Relay};Server=localhost;Port=8000;User=test;Password=test;LazyConnect=0;Debug=1;";
+		SQLCHAR		*incstring=(SQLCHAR *)
+				"Driver={SQL Relay};"
+				"Server=localhost;Port=9000;"
+				"Socket=/tmp/test.socket;"
+				"User=test;Password=test;"
+				"LazyConnect=0;Debug=1;";
 		SQLCHAR		outcstring[1024];
 		SQLSMALLINT	outcstringlen;
 		erg=SQLDriverConnect(dbc,NULL,
