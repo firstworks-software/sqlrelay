@@ -37,12 +37,13 @@ int main(int argc, char **argv) {
 
 	cur->sendQuery("drop table testtable");
 
+	// create temptable
 	stdoutput.printf("CREATE TEMPTABLE: \n");
 	assertTrue(cur->sendQuery("create table testtable (i int identity, emojidirect nvarchar(64), emojifrombase64 nvarchar(64), base64 varchar(64))"));
-	stdoutput.printf("\n");
-	stdoutput.printf("\n");
+	stdoutput.printf("\n\n");
 
 
+	// insert
 	stdoutput.printf("INSERT: \n");
 	cur->prepareQuery("insert into testtable values (:1,null,:2)");
 	const byte_t **e16=emoji16;
@@ -58,13 +59,16 @@ int main(int argc, char **argv) {
 		assertTrue(cur->executeQuery());
 		delete[] b64e;
 	}
-	stdoutput.printf("\n");
+	stdoutput.printf("\n\n");
 
+
+	// update
 	stdoutput.printf("UPDATE: \n");
 	assertTrue(cur->sendQuery("update testtable set emojifrombase64=cast(cast(N'' as xml).value('xs:base64Binary(sql:column(\"base64\"))','VARBINARY(MAX)') AS NVARCHAR(MAX))"));
-	stdoutput.printf("\n");
+	stdoutput.printf("\n\n");
 
 
+	// select
 	stdoutput.printf("SELECT: \n");
 	assertTrue(cur->sendQuery("select * from testtable"));
 	stdoutput.printf("\n");
@@ -76,8 +80,10 @@ int main(int argc, char **argv) {
 							(const char *)*e);
 		row++;
 	}
-	stdoutput.printf("\n");
+	stdoutput.printf("\n\n");
 
+
+	// output bind
 	stdoutput.printf("OUTPUT BIND: \n");
 	row=1;
 	for (const byte_t **e=emoji8; *e; e++) {
@@ -97,8 +103,7 @@ int main(int argc, char **argv) {
 						(const char *)*e);
 		row++;
 	}
-	stdoutput.printf("\n");
-	stdoutput.printf("\n");
+	stdoutput.printf("\n\n");
 
 	delete cur;
 	delete con;

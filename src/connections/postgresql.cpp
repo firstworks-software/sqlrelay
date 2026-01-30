@@ -832,6 +832,38 @@ const char *postgresqlconnection::mapIsolationLevel(
 		if (!charstring::compare(isolevel,"serializable")) {
 			return "TRANSACTION_SERIALIZABLE";
 		}
+	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC &&
+			toformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE) {
+		if (!charstring::compare(isolevel,
+				"SQL_TXN_READ_UNCOMMITTED")) {
+			return "read uncommitted";
+		}
+		if (!charstring::compare(isolevel,
+				"SQL_TXN_READ_COMMITTED")) {
+			return "read committed";
+		}
+		if (!charstring::compare(isolevel,
+				"SQL_TXN_REPEATABLE_READ")) {
+			return "repeatable read";
+		}
+		if (!charstring::compare(isolevel,
+				"SQL_TXN_SERIALIZABLE")) {
+			return "serializable";
+		}
+	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
+			toformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC) {
+		if (!charstring::compare(isolevel,"read uncommitted")) {
+			return "SQL_TXN_READ_UNCOMMITTED";
+		}
+		if (!charstring::compare(isolevel,"read committed")) {
+			return "SQL_TXN_READ_COMMITTED";
+		}
+		if (!charstring::compare(isolevel,"repeatable read")) {
+			return "SQL_TXN_REPEATABLE_READ";
+		}
+		if (!charstring::compare(isolevel,"serializable")) {
+			return "SQL_TXN_SERIALIZABLE";
+		}
 	}
 	return isolevel;
 }

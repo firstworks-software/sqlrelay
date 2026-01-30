@@ -145,6 +145,9 @@ struct CONN {
 
 	bool				setautocommiton;
 	bool				setautocommitoff;
+
+	bool				setisolationlevel;
+	bool				isolationleveltoset;
 };
 
 struct rowdesc {
@@ -344,6 +347,7 @@ static SQLRETURN SQLR_SQLAllocHandle(SQLSMALLINT handletype,
 				conn->attrmetadataid=false;
 				conn->setautocommiton=false;
 				conn->setautocommitoff=false;
+				conn->setisolationlevel=false;
 			}
 			return SQL_SUCCESS;
 			}
@@ -2217,6 +2221,58 @@ static int SQLGetPrivateProfileString(const char *section,
 }
 #endif
 
+static bool SQLR_SetIsolationLevel(SQLHDBC connectionhandle,
+					SQLUINTEGER isolevel) {
+	debugFunction();
+
+	CONN	*conn=(CONN *)connectionhandle;
+	switch (isolevel) {
+		case SQL_TXN_READ_COMMITTED:
+			return conn->con->setIsolationLevel(
+				"SQL_TXN_READ_COMMITTED",
+				SQLRCLIENTISOLATIONLEVELFORMAT_ODBC);
+		case SQL_TXN_READ_UNCOMMITTED:
+			return conn->con->setIsolationLevel(
+				"SQL_TXN_READ_UNCOMMITTED",
+				SQLRCLIENTISOLATIONLEVELFORMAT_ODBC);
+		case SQL_TXN_REPEATABLE_READ:
+			return conn->con->setIsolationLevel(
+				"SQL_TXN_REPEATABLE_READ",
+				SQLRCLIENTISOLATIONLEVELFORMAT_ODBC);
+		case SQL_TXN_SERIALIZABLE:
+			return conn->con->setIsolationLevel(
+				"SQL_TXN_SERIALIZABLE",
+				SQLRCLIENTISOLATIONLEVELFORMAT_ODBC);
+		default:
+			// should generate an error on the backend
+			return conn->con->setIsolationLevel("",
+				SQLRCLIENTISOLATIONLEVELFORMAT_ODBC);
+	};
+}
+
+static bool SQLR_GetIsolationLevel(SQLHDBC connectionhandle,
+					SQLUINTEGER *isolevel) {
+	debugFunction();
+
+	CONN	*conn=(CONN *)connectionhandle;
+	const char	*ilstr=conn->con->getIsolationLevel(
+				SQLRCLIENTISOLATIONLEVELFORMAT_ODBC);
+	if (!charstring::compare(ilstr,"SQL_TXN_READ_COMMITTED")) {
+		*isolevel=SQL_TXN_READ_COMMITTED;
+		return true;
+	} else if (!charstring::compare(ilstr,"SQL_TXN_READ_UNCOMMITTED")) {
+		*isolevel=SQL_TXN_READ_UNCOMMITTED;
+		return true;
+	} else if (!charstring::compare(ilstr,"SQL_TXN_REPEATABLE_READ")) {
+		*isolevel=SQL_TXN_REPEATABLE_READ;
+		return true;
+	} else if (!charstring::compare(ilstr,"SQL_TXN_SERIALIZABLE")) {
+		*isolevel=SQL_TXN_SERIALIZABLE;
+		return true;
+	}
+	return false;
+}
+
 static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 					parameterstring *connparams,
 					SQLCHAR *dsn,
@@ -2357,7 +2413,8 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 					tlsdepthbuf,
 					sizeof(tlsdepthbuf),
 					ODBC_INI);
-	conn->tlsdepth=(uint16_t)charstring::convertToUnsignedInteger(tlsdepthbuf);
+	conn->tlsdepth=(uint16_t)charstring::convertToUnsignedInteger(
+								tlsdepthbuf);
 
 	// db
 	SQLGetPrivateProfileString((const char *)conn->dsn,"Db","",
@@ -2446,7 +2503,8 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 		}
 		const char	*conntries=connparams->getValue("Tries");
 		if (conntries!=NULL) {
-			conn->tries=(int32_t)charstring::convertToInteger(conntries);
+			conn->tries=(int32_t)charstring::convertToInteger(
+								conntries);
 		}
 		// FIXME: krb options
 		// FIXME: tls options
@@ -2572,6 +2630,21 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 			success=SQL_SUCCESS_WITH_INFO;
 		}
 		conn->setautocommitoff=false;
+	}
+
+	// set isolation level
+	if (conn->setisolationlevel) {
+		if (SQLR_SetIsolationLevel(connectionhandle,
+						conn->isolationleveltoset)) {
+			debugPrintf("  Set Isolation Level: success\n");
+		} else {
+			SQLR_CONNSetError(conn,
+				conn->con->errorMessage(),
+				conn->con->errorNumber(),NULL);
+			debugPrintf("  Set Isolation Level: failed\n");
+			success=SQL_SUCCESS_WITH_INFO;
+		}
+		conn->setisolationlevel=false;
 	}
 
 	// enable kerberos or tls
@@ -4286,8 +4359,19 @@ static SQLRETURN SQLR_SQLGetConnectAttr(SQLHDBC connectionhandle,
 			break;
 		case SQL_TXN_ISOLATION:
 			debugPrintf("  attribute: SQL_TXN_ISOLATION\n");
-			// FIXME: this isn't always true
-			val.uintval=SQL_TXN_READ_COMMITTED;
+			if (conn->con) {
+				if (!SQLR_GetIsolationLevel(
+					connectionhandle,&(val.uintval))) {
+					SQLR_CONNSetError(conn,
+						conn->con->errorMessage(),
+						conn->con->errorNumber(),NULL);
+					debugPrintf("  failed\n");
+					return SQL_ERROR;
+				}
+			} else {
+				// FIXME: this isn't true for all dbs
+				val.uintval=SQL_TXN_READ_COMMITTED;
+			}
 			type=1;
 			break;
 		//case SQL_ATTR_CURRENT_CATALOG:
@@ -8741,9 +8825,22 @@ static SQLRETURN SQLR_SQLSetConnectAttr(SQLHDBC connectionhandle,
 			// FIXME: implement...
 			return SQL_SUCCESS;
 		case SQL_TXN_ISOLATION:
-			debugPrintf("  attribute: SQL_TXN_ISOLATION "
-				"(unsupported but returning success)\n");
-			// FIXME: implement...
+			debugPrintf("  attribute: SQL_TXN_ISOLATION\n");
+			debugPrintf("  val: %lld\n",(uint64_t)val);
+			if (conn->con) {
+				if (!SQLR_SetIsolationLevel(
+						connectionhandle,val)) {
+					SQLR_CONNSetError(conn,
+						conn->con->errorMessage(),
+						conn->con->errorNumber(),NULL);
+					debugPrintf("  failed\n");
+					return SQL_ERROR;
+				}
+			} else {
+				conn->setisolationlevel=true;
+				conn->isolationleveltoset=val;
+			}
+			debugPrintf("  success\n");
 			return SQL_SUCCESS;
 		case SQL_ODBC_CURSORS:
 			debugPrintf("  attribute: SQL_ODBC_CURSORS "

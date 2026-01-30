@@ -24,11 +24,16 @@
 			$dbh->exec("drop table testtable");
 		} catch (Exception $e) {
 		}
+
+
+		# create temptable
 		echo("CREATE TEMPTABLE: \n");
 		assertEqual($dbh->exec("create table testtable (testinteger int)"),0);
 		echo("\n");
 	}
 
+
+	# bind by position
 	echo("BIND BY POSITION: \n");
 	$queryvar="";
 	$bindvar=1;
@@ -56,6 +61,8 @@
 	assertTrue($stmt->execute());
 	echo("\n");
 
+
+	# bind by name
 	echo("BIND BY NAME: \n");
 	$queryvar="";
 	$bindvar="";

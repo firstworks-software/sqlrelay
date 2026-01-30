@@ -18,14 +18,19 @@ $con=SQLRelay::Connection->new("sqlrelay",9000,"/tmp/test.socket",
 $cur=SQLRelay::Cursor->new($con);
 
 # get database type
+
+
+# identify
 print("IDENTIFY: \n");
 assertEqualString($con->identify(),"db2");
 print("\n");
+
 
 # ping
 print("PING: \n");
 assertTrue($con->ping());
 print("\n");
+
 
 # isolation levels
 print("ISOLATION LEVELS: \n");
@@ -42,14 +47,20 @@ print("\n");
 # drop existing table
 $cur->sendQuery("drop table testtable");
 
+
+# create temptable
 print("CREATE TEMPTABLE: \n");
 assertTrue($cur->sendQuery("create table testtable (testsmallint smallint, testint integer, testbigint bigint, testdecimal decimal(10,2), testreal real, testdouble double, testchar char(40), testvarchar varchar(40), testdate date, testtime time, testtimestamp timestamp)"));
 print("\n");
 
+
+# insert
 print("INSERT: \n");
 assertTrue($cur->sendQuery("insert into testtable values (1,1,1,1.1,1.1,1.1,'testchar1','testvarchar1','01/01/2001','01:00:00',NULL)"));
 print("\n");
 
+
+# bind by position
 print("BIND BY POSITION: \n");
 $cur->prepareQuery("insert into testtable values (?,?,?,?,?,?,?,?,?,?,NULL)");
 assertEqual($cur->countBindVariables(),10);
@@ -78,6 +89,8 @@ $cur->inputBind("10","03:00:00");
 assertTrue($cur->executeQuery());
 print("\n");
 
+
+# array of binds by position
 print("ARRAY OF BINDS BY POSITION: \n");
 $cur->clearBinds();
 @vars=("1","2","3","4","5","6","7","8","9","10");
@@ -88,6 +101,8 @@ $cur->inputBinds(\@vars,\@vals,\@precs,\@scales);
 assertTrue($cur->executeQuery());
 print("\n");
 
+
+# insert
 print("INSERT: \n");
 assertTrue($cur->sendQuery("insert into testtable values (5,5,5,5.5,5.5,5.5,'testchar5','testvarchar5','01/01/2005','05:00:00',NULL)"));
 assertTrue($cur->sendQuery("insert into testtable values (6,6,6,6.6,6.6,6.6,'testchar6','testvarchar6','01/01/2006','06:00:00',NULL)"));
@@ -95,10 +110,14 @@ assertTrue($cur->sendQuery("insert into testtable values (7,7,7,7.7,7.7,7.7,'tes
 assertTrue($cur->sendQuery("insert into testtable values (8,8,8,8.8,8.8,8.8,'testchar8','testvarchar8','01/01/2008','08:00:00',NULL)"));
 print("\n");
 
+
+# affected rows
 print("AFFECTED ROWS: \n");
 assertEqual($cur->affectedRows(),1);
 print("\n");
 
+
+# stored procedure
 print("STORED PROCEDURE: \n");
 $cur->sendQuery("drop procedure testproc");
 assertTrue($cur->sendQuery("create procedure testproc(in invar int, out outvar int) language sql begin set outvar = invar; end"));
@@ -110,14 +129,20 @@ assertEqual($cur->getOutputBindString("2"),"5");
 assertTrue($cur->sendQuery("drop procedure testproc"));
 print("\n");
 
+
+# select
 print("SELECT: \n");
 assertTrue($cur->sendQuery("select * from testtable order by testsmallint"));
 print("\n");
 
+
+# column count
 print("COLUMN COUNT: \n");
 assertEqual($cur->colCount(),11);
 print("\n");
 
+
+# column names
 print("COLUMN NAMES: \n");
 assertEqualString($cur->getColumnName(0),"TESTSMALLINT");
 assertEqualString($cur->getColumnName(1),"TESTINT");
@@ -144,6 +169,8 @@ assertEqualString($cols[9],"TESTTIME");
 assertEqualString($cols[10],"TESTTIMESTAMP");
 print("\n");
 
+
+# column types
 print("COLUMN TYPES: \n");
 assertEqualString($cur->getColumnType(0),"SMALLINT");
 assertEqualString($cur->getColumnType('TESTSMALLINT'),"SMALLINT");
@@ -169,6 +196,8 @@ assertEqualString($cur->getColumnType(10),"TIMESTAMP");
 assertEqualString($cur->getColumnType('TESTTIMESTAMP'),"TIMESTAMP");
 print("\n");
 
+
+# column length
 print("COLUMN LENGTH: \n");
 assertEqual($cur->getColumnLength(0),2);
 assertEqual($cur->getColumnLength('TESTSMALLINT'),2);
@@ -194,6 +223,8 @@ assertEqual($cur->getColumnLength(10),16);
 assertEqual($cur->getColumnLength('TESTTIMESTAMP'),16);
 print("\n");
 
+
+# longest column
 print("LONGEST COLUMN: \n");
 assertEqual($cur->getLongest(0),1);
 assertEqual($cur->getLongest('TESTSMALLINT'),1);
@@ -217,22 +248,32 @@ assertEqual($cur->getLongest(9),8);
 assertEqual($cur->getLongest('TESTTIME'),8);
 print("\n");
 
+
+# row count
 print("ROW COUNT: \n");
 assertEqual($cur->rowCount(),8);
 print("\n");
 
+
+# total rows
 print("TOTAL ROWS: \n");
 assertEqual($cur->totalRows(),0);
 print("\n");
 
+
+# first row index
 print("FIRST ROW INDEX: \n");
 assertEqual($cur->firstRowIndex(),0);
 print("\n");
 
+
+# end of result set
 print("END OF RESULT SET: \n");
 assertTrue($cur->endOfResultSet());
 print("\n");
 
+
+# fields by index
 print("FIELDS BY INDEX: \n");
 assertEqualString($cur->getField(0,0),"1");
 assertEqualString($cur->getField(0,1),"1");
@@ -257,6 +298,8 @@ assertEqualString($cur->getField(7,8),"2008-01-01");
 assertEqualString($cur->getField(7,9),"08:00:00");
 print("\n");
 
+
+# field lengths by index
 print("FIELD LENGTHS BY INDEX: \n");
 assertEqual($cur->getFieldLength(0,0),1);
 assertEqual($cur->getFieldLength(0,1),1);
@@ -281,6 +324,8 @@ assertEqual($cur->getFieldLength(7,8),10);
 assertEqual($cur->getFieldLength(7,9),8);
 print("\n");
 
+
+# fields by name
 print("FIELDS BY NAME: \n");
 assertEqualString($cur->getField(0,"TESTSMALLINT"),"1");
 assertEqualString($cur->getField(0,"TESTINT"),"1");
@@ -305,6 +350,8 @@ assertEqualString($cur->getField(7,"TESTDATE"),"2008-01-01");
 assertEqualString($cur->getField(7,"TESTTIME"),"08:00:00");
 print("\n");
 
+
+# field lengths by name
 print("FIELD LENGTHS BY NAME: \n");
 assertEqual($cur->getFieldLength(0,"TESTSMALLINT"),1);
 assertEqual($cur->getFieldLength(0,"TESTINT"),1);
@@ -329,6 +376,8 @@ assertEqual($cur->getFieldLength(7,"TESTDATE"),10);
 assertEqual($cur->getFieldLength(7,"TESTTIME"),8);
 print("\n");
 
+
+# fields by array
 print("FIELDS BY ARRAY: \n");
 @fields=$cur->getRow(0);
 assertEqual($fields[0],1);
@@ -343,6 +392,8 @@ assertEqualString($fields[8],"2001-01-01");
 assertEqualString($fields[9],"01:00:00");
 print("\n");
 
+
+# field lengths by array
 print("FIELD LENGTHS BY ARRAY: \n");
 @fieldlens=$cur->getRowLengths(0);
 assertEqual($fieldlens[0],1);
@@ -357,6 +408,8 @@ assertEqual($fieldlens[8],10);
 assertEqual($fieldlens[9],8);
 print("\n");
 
+
+# fields by hash
 print("FIELDS BY HASH: \n");
 %fields=$cur->getRowHash(0);
 assertEqual($fields{"TESTSMALLINT"},1);
@@ -383,6 +436,8 @@ assertEqualString($fields{"TESTDATE"},"2008-01-01");
 assertEqualString($fields{"TESTTIME"},"08:00:00");
 print("\n");
 
+
+# field lengths by hash
 print("FIELD LENGTHS BY HASH: \n");
 %fieldlengths=$cur->getRowLengthsHash(0);
 assertEqual($fieldlengths{"TESTSMALLINT"},1);
@@ -409,6 +464,8 @@ assertEqual($fieldlengths{"TESTDATE"},10);
 assertEqual($fieldlengths{"TESTTIME"},8);
 print("\n");
 
+
+# individual substitutions
 print("INDIVIDUAL SUBSTITUTIONS: \n");
 $cur->prepareQuery("values (\$(var1),'\$(var2)','\$(var3)')");
 $cur->substitution("var1",1);
@@ -417,12 +474,16 @@ $cur->substitution("var3",10.5556,6,4);
 assertTrue($cur->executeQuery());
 print("\n");
 
+
+# fields
 print("FIELDS: \n");
 assertEqualString($cur->getField(0,0),"1");
 assertEqualString($cur->getField(0,1),"hello");
 assertEqualString($cur->getField(0,2),"10.5556");
 print("\n");
 
+
+# array substitutions
 print("ARRAY SUBSTITUTIONS: \n");
 $cur->prepareQuery("values (\$(var1),'\$(var2)','\$(var3)')");
 @vars=("var1","var2","var3");
@@ -433,12 +494,16 @@ $cur->substitutions(\@vars,\@vals,\@precs,\@scales);
 assertTrue($cur->executeQuery());
 print("\n");
 
+
+# fields
 print("FIELDS: \n");
 assertEqualString($cur->getField(0,0),"1");
 assertEqualString($cur->getField(0,1),"hello");
 assertEqualString($cur->getField(0,2),"10.5556");
 print("\n");
 
+
+# nulls as undef
 print("NULLS as Undef: \n");
 $cur->getNullsAsUndefined();
 $cur->sendQuery("drop table testtable1");
@@ -457,6 +522,8 @@ assertTrue($cur->sendQuery("drop table testtable1"));
 $cur->getNullsAsUndefined();
 print("\n");
 
+
+# result set buffer size
 print("RESULT SET BUFFER SIZE: \n");
 assertEqual($cur->getResultSetBufferSize(),0);
 $cur->setResultSetBufferSize(2);
@@ -486,6 +553,8 @@ assertTrue($cur->endOfResultSet());
 assertEqual($cur->rowCount(),8);
 print("\n");
 
+
+# dont get column info
 print("DONT GET COLUMN INFO: \n");
 $cur->dontGetColumnInfo();
 assertTrue($cur->sendQuery("select * from testtable order by testsmallint"));
@@ -499,6 +568,8 @@ assertEqual($cur->getColumnLength(0),2);
 assertEqualString($cur->getColumnType(0),"SMALLINT");
 print("\n");
 
+
+# suspended session
 print("SUSPENDED SESSION: \n");
 assertTrue($cur->sendQuery("select * from testtable order by testsmallint"));
 $cur->suspendResultSet();
@@ -549,6 +620,8 @@ assertEqualString($cur->getField(6,0),"7");
 assertEqualString($cur->getField(7,0),"8");
 print("\n");
 
+
+# suspended result set
 print("SUSPENDED RESULT SET: \n");
 $cur->setResultSetBufferSize(2);
 assertTrue($cur->sendQuery("select * from testtable order by testsmallint"));
@@ -577,6 +650,8 @@ assertEqual($cur->rowCount(),8);
 $cur->setResultSetBufferSize(0);
 print("\n");
 
+
+# cached result set
 print("CACHED RESULT SET: \n");
 $cur->cacheToFile("cachefile1");
 $cur->setCacheTtl(200);
@@ -588,10 +663,14 @@ assertTrue($cur->openCachedResultSet($filename));
 assertEqualString($cur->getField(7,0),"8");
 print("\n");
 
+
+# column count for cached result set
 print("COLUMN COUNT FOR CACHED RESULT SET: \n");
 assertEqual($cur->colCount(),11);
 print("\n");
 
+
+# column names for cached result set
 print("COLUMN NAMES FOR CACHED RESULT SET: \n");
 assertEqualString($cur->getColumnName(0),"TESTSMALLINT");
 assertEqualString($cur->getColumnName(1),"TESTINT");
@@ -618,6 +697,8 @@ assertEqualString($cols[9],"TESTTIME");
 assertEqualString($cols[10],"TESTTIMESTAMP");
 print("\n");
 
+
+# cached result set with result set buffer size
 print("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: \n");
 $cur->setResultSetBufferSize(2);
 $cur->cacheToFile("cachefile1");
@@ -632,6 +713,8 @@ assertUndef($cur->getField(8,0));
 $cur->setResultSetBufferSize(0);
 print("\n");
 
+
+# from one cache file to another
 print("FROM ONE CACHE FILE TO ANOTHER: \n");
 $cur->cacheToFile("cachefile2");
 assertTrue($cur->openCachedResultSet("cachefile1"));
@@ -641,6 +724,8 @@ assertEqualString($cur->getField(7,0),"8");
 assertUndef($cur->getField(8,0));
 print("\n");
 
+
+# from one cache file to another with result set buffer size
 print("FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: \n");
 $cur->setResultSetBufferSize(2);
 $cur->cacheToFile("cachefile2");
@@ -652,6 +737,8 @@ assertUndef($cur->getField(8,0));
 $cur->setResultSetBufferSize(0);
 print("\n");
 
+
+# cached result set with suspend and result set buffer size
 print("CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: \n");
 $cur->setResultSetBufferSize(2);
 $cur->cacheToFile("cachefile1");
@@ -690,6 +777,8 @@ assertUndef($cur->getField(8,0));
 $cur->setResultSetBufferSize(0);
 print("\n");
 
+
+# finished suspended session
 print("FINISHED SUSPENDED SESSION: \n");
 assertTrue($cur->sendQuery("select * from testtable order by testint"));
 assertEqualString($cur->getField(4,0),"5");
@@ -715,6 +804,9 @@ $cur->sendQuery("drop table testtable");
 print("\n");
 
 # invalid queries...
+
+
+# invalid queries
 print("INVALID QUERIES: \n");
 assertFalse($cur->sendQuery("select * from testtable order by testsmallint"));
 assertFalse($cur->sendQuery("select * from testtable order by testsmallint"));

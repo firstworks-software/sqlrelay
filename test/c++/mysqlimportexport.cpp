@@ -1533,11 +1533,12 @@ void exportTests() {
 	file::remove("testtable.xml");
 	file::remove("testtable-comparison.xml");
 
-	// create a new table
+	// create testtable
 	stdoutput.printf("CREATE TESTTABLE: \n");
 	uint32_t	colcount=0;
 	createTable("testtable",NULL,NULL,&colcount);
 	stdoutput.printf("\n");
+
 
 	// insert
 	stdoutput.printf("INSERT: \n");
@@ -1565,6 +1566,7 @@ void exportTests() {
 	assertEquals(1,1);
 	stdoutput.printf("\n\n");
 
+
 	// set up csv export
 	stdoutput.printf("SET UP CSV EXPORT: \n");
 	testsqlrexportcsv	tsec;
@@ -1574,6 +1576,7 @@ void exportTests() {
 	assertEquals((uint64_t)tsec.getSqlrCursor(),(uint64_t)cur);
 	stdoutput.printf("\n\n");
 
+
 	// set up xml export
 	stdoutput.printf("SET UP XML EXPORT: \n");
 	testsqlrexportxml	tsex;
@@ -1582,6 +1585,7 @@ void exportTests() {
 	assertEquals((uint64_t)tsex.getSqlrConnection(),(uint64_t)con);
 	assertEquals((uint64_t)tsex.getSqlrCursor(),(uint64_t)cur);
 	stdoutput.printf("\n\n");
+
 
 	// set up table export
 	stdoutput.printf("SET UP TABLE EXPORT: \n");
@@ -1844,11 +1848,12 @@ void importTests() {
 	file::remove("testtable.csv");
 	file::remove("testtable.xml");
 
-	// create a new table
+	// create testtable
 	stdoutput.printf("CREATE TESTTABLE: \n");
 	uint32_t	colcount=0;
 	createTable("testtable",NULL,NULL,&colcount);
 	stdoutput.printf("\n");
+
 
 	// set up csv import
 	stdoutput.printf("SET UP CSV IMPORT: \n");
@@ -1859,6 +1864,7 @@ void importTests() {
 	assertEquals((uint64_t)tsic.getSqlrConnection(),(uint64_t)con);
 	assertEquals((uint64_t)tsic.getSqlrCursor(),(uint64_t)cur);
 	stdoutput.printf("\n\n");
+
 
 	// set up xml import
 	stdoutput.printf("SET UP XML IMPORT: \n");

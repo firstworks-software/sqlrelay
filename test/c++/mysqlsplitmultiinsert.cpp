@@ -23,11 +23,13 @@ int main(int argc, char **argv) {
 	// drop existing table
 	cur->sendQuery("drop table testtable");
 
-	// create a new table
+	// create temptable
 	stdoutput.printf("CREATE TEMPTABLE: \n");
 	assertTrue(cur->sendQuery("create table testtable (testtinyint tinyint, testsmallint smallint, testmediumint mediumint, testint int, testbigint bigint, testfloat float, testreal real, testdecimal decimal(2,1), testdate date, testtime time, testdatetime datetime, testyear year, testchar char(40), testvarchar varchar(40), testtext text, testtinytext tinytext, testmediumtext mediumtext, testlongtext longtext, testblob blob, testtinyblob tinyblob, testmediumblob mediumblob, testlongblob longblob, testtimestamp timestamp)"));
 	stdoutput.printf("\n");
 
+
+	// insert
 	stdoutput.printf("INSERT: \n");
 	stringbuffer	multiinsert;
 	multiinsert.append(
@@ -43,15 +45,21 @@ int main(int argc, char **argv) {
 	assertTrue(cur->sendQuery(multiinsert.getString()));
 	stdoutput.printf("\n");
 
+
+	// affected rows
 	stdoutput.printf("AFFECTED ROWS: \n");
 	assertEquals(cur->affectedRows(),4);
 	stdoutput.printf("\n");
 
+
+	// row count
 	stdoutput.printf("ROW COUNT: \n");
 	assertTrue(cur->sendQuery("select count(*) from testtable"));
 	assertEquals(cur->getFieldAsInteger(0,(uint32_t)0),4);
 	stdoutput.printf("\n");
 
+
+	// insert with columns
 	stdoutput.printf("INSERT WITH COLUMNS: \n");
 	multiinsert.clear();
 	multiinsert.append(
@@ -67,10 +75,14 @@ int main(int argc, char **argv) {
 	assertTrue(cur->sendQuery(multiinsert.getString()));
 	stdoutput.printf("\n");
 
+
+	// affected rows
 	stdoutput.printf("AFFECTED ROWS: \n");
 	assertEquals(cur->affectedRows(),4);
 	stdoutput.printf("\n");
 
+
+	// row count
 	stdoutput.printf("ROW COUNT: \n");
 	assertTrue(cur->sendQuery("select count(*) from testtable"));
 	assertEquals(cur->getFieldAsInteger(0,(uint32_t)0),8);

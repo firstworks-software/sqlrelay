@@ -13,10 +13,12 @@ sqlrcrud	*crud;
 
 int main(int argc, char **argv) {
 
+
 	// init connection/cursor
 	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
+
 
 	// drop existing table and sequence
 	cur->sendQuery("drop table testtable");
@@ -31,12 +33,14 @@ int main(int argc, char **argv) {
 	assertTrue(cur->sendQuery("create sequence testtable_ids"));
 	stdoutput.printf("\n\n");
 
+
 	// init crud
 	crud=new sqlrcrud;
 	crud->setSqlrConnection(con);
 	crud->setSqlrCursor(cur);
 	crud->setTable("testtable");
 	crud->buildQueries();
+
 
 	// set up columns and values
 	const char	*cols[]={
@@ -49,6 +53,7 @@ int main(int argc, char **argv) {
 		{"val4","4","04-JAN-00",NULL},
 		{"val5","5","05-JAN-00",NULL},
 	};
+
 
 	// create (insert)
 	stdoutput.printf("CREATE (insert): \n");
@@ -70,6 +75,7 @@ int main(int argc, char **argv) {
 		delete[] t;
 	}
 	stdoutput.printf("\n\n");
+
 
 	// read (select)
 	stdoutput.printf("READ (select): \n");
@@ -145,6 +151,7 @@ int main(int argc, char **argv) {
 	}
 	stdoutput.printf("\n");
 
+
 	// update
 	// replace each field with a null, one by one
 	stdoutput.printf("UPDATE: \n");
@@ -211,10 +218,12 @@ int main(int argc, char **argv) {
 	}
 	stdoutput.printf("\n");
 
+
 	// clean up
 	delete[] c;
 	delete[] v;
 	delete[] t;
+
 
 	// delete
 	stdoutput.printf("DELETE: \n");
@@ -252,6 +261,7 @@ int main(int argc, char **argv) {
 	// drop table and sequence
 	cur->sendQuery("drop table testtable");
 	cur->sendQuery("drop sequence testtable_ids");
+
 
 	// clean up
 	delete cur;

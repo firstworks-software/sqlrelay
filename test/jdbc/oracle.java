@@ -41,7 +41,7 @@ class oracle extends sqlrtest {
 			driver.equals("com.firstworks.sql.SQLRelayDriver");
 
 
-
+		// connection
 		System.out.println("CONNECTION:");
 
 		// getConnection
@@ -210,6 +210,9 @@ class oracle extends sqlrtest {
 
 
 		// DatabaseMetaData
+
+
+		// database meta data
 		System.out.println("DATABASE META DATA:");
 
 		// getMetaData
@@ -462,8 +465,7 @@ if (false) {
 		}
 
 
-
-		// Statement
+		// statement
 		System.out.println("STATEMENT:");
 
 		// createStatement
@@ -582,15 +584,21 @@ if (false) {
 		} catch (Exception ex) {
 		}
 
+
+		// create temptable
 		System.out.println("CREATE TEMPTABLE:");
 		assertEquals(stmt.executeUpdate("create table testtable (testnumber number, testchar char(40), testvarchar varchar2(40), testdate date, testlong long, testclob clob, testblob blob)"),0);
 		System.out.println();
 
+
+		// insert
 		System.out.println("INSERT:");
 		assertEquals(stmt.executeUpdate("insert into testtable values (1,'testchar1','testvarchar1','01-JAN-2001','testlong1','testclob1',empty_blob())"),1);
 		stmt.close();
 		System.out.println();
 
+
+		// bind by position
 		System.out.println("BIND BY POSITION:");
 		PreparedStatement	pstmt=con.prepareStatement("insert into testtable values (:var1,:var2,:var3,:var4,:var5,:var6,:var7)");
 		pstmt.setInt(1,2);
@@ -674,6 +682,7 @@ if (false) {
 		// OUTPUT BINDS
 
 
+		// select
 		System.out.println("SELECT:");
 		stmt=con.createStatement();
 		assertTrue((stmt!=null));
@@ -683,10 +692,14 @@ if (false) {
 		assertTrue((rsmd!=null));
 		System.out.println();
 
+
+		// column count
 		System.out.println("COLUMN COUNT:");
 		assertEquals(rsmd.getColumnCount(),7);
 		System.out.println();
 
+
+		// column names
 		System.out.println("COLUMN NAMES:");
 		assertEquals(rsmd.getColumnName(1),"TESTNUMBER");
 		assertEquals(rsmd.getColumnName(2),"TESTCHAR");
@@ -697,6 +710,8 @@ if (false) {
 		assertEquals(rsmd.getColumnName(7),"TESTBLOB");
 		System.out.println();
 
+
+		// column types
 		System.out.println("COLUMN TYPES:");
 		assertEquals(rsmd.getColumnTypeName(1),"NUMBER");
 		assertEquals(rsmd.getColumnTypeName(2),"CHAR");
@@ -707,6 +722,8 @@ if (false) {
 		assertEquals(rsmd.getColumnTypeName(7),"BLOB");
 		System.out.println();
 
+
+		// column length
 		System.out.println("COLUMN LENGTH:");
 		assertEquals(rsmd.getPrecision(1),0);
 		assertEquals(rsmd.getPrecision(2),40);
@@ -717,6 +734,8 @@ if (false) {
 		assertEquals(rsmd.getPrecision(7),-1);
 		System.out.println();
 
+
+		// longest column
 		System.out.println("LONGEST COLUMN:");
 		assertEquals(rsmd.getColumnDisplaySize(1),39);
 		assertEquals(rsmd.getColumnDisplaySize(2),40);
@@ -727,6 +746,8 @@ if (false) {
 		assertEquals(rsmd.getColumnDisplaySize(7),4000);
 		System.out.println();
 
+
+		// fields by index
 		System.out.println("FIELDS BY INDEX:");
 		rs.next();
 		assertEquals(rs.getString(1),"1");
@@ -785,6 +806,8 @@ if (false) {
 		assertEquals(new String(b,"UTF-8"),"testblob8");
 		System.out.println();
 
+
+		// fields by name
 		System.out.println("FIELDS BY NAME:");
 		assertTrue((stmt!=null));
 		rs=stmt.executeQuery("select * from testtable order by testnumber");
@@ -846,6 +869,8 @@ if (false) {
 		assertEquals(new String(b,"UTF-8"),"testblob8");
 		System.out.println();
 
+
+		// row count
 		System.out.println("ROW COUNT:");
 		assertEquals(rs.getRow(),8);
 		rs.close();
@@ -855,6 +880,7 @@ if (false) {
 		// OUTPUT BIND
 
 
+		// commit and rollback
 		System.out.println("COMMIT AND ROLLBACK:");
 		Connection	secondcon=DriverManager.getConnection(
 							url,user,password);
@@ -892,7 +918,8 @@ if (false) {
 		} catch (Exception ex) {
 		}
 
-		// NULL AND EMPTY CLOBS AND BLOBS
+
+		// null and empty clobs and blobs
 		System.out.println("NULL AND EMPTY CLOBS AND BLOBS:");
 		assertEquals(stmt.executeUpdate("create table testtable1 (testclob1 clob, testclob2 clob, testblob1 blob, testblob2 blob)"),0);
 		pstmt=con.prepareStatement("insert into testtable1 values (:var1,:var2,:var3,:var4)");
@@ -923,6 +950,8 @@ if (false) {
 		} catch (Exception ex) {
 		}
 
+
+		// long clob
 		System.out.println("LONG CLOB:");
 		assertEquals(stmt.executeUpdate("create table testtable2 (testclob clob)"),0);
 		pstmt=con.prepareStatement("insert into testtable2 values (:clobval)");
@@ -960,7 +989,7 @@ if (false) {
 		stmt.executeUpdate("drop table testtable");
 
 
-
+		// temporary tables
 		System.out.println("TEMPORARY TABLES:");
 		String	hostname=InetAddress.getLocalHost().
 					getHostName().split("\\.")[0];
@@ -1031,7 +1060,7 @@ if (false) {
 		// REBINDING
 
 
-		// INVALID QUERIES
+		// invalid queries
 		System.out.println("INVALID QUERIES:");
 		try {
 			stmt.executeQuery("select * from testtable order by testnumber");

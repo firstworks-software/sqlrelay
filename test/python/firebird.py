@@ -20,14 +20,19 @@ def main():
 	cur=PySQLRClient.sqlrcursor(con)
 
 	# get database type
+
+
+	# identify
 	print("IDENTIFY: ")
 	assertEqual(con.identify(),"firebird")
 	print()
+
 
 	# ping
 	print("PING: ")
 	assertTrue(con.ping())
 	print()
+
 
 	# isolation levels
 	print("ISOLATION LEVELS: ")
@@ -43,11 +48,14 @@ def main():
 	cur.sendQuery("delete from testtable")
 	con.commit()
 
+
+	# insert
 	print("INSERT: ")
 	assertTrue(cur.sendQuery("insert into testtable values (1,1,1.1,1.1,1.1,1.1,'01-JAN-2001','01:00:00','testchar1','testvarchar1',NULL,NULL)"))
 	print()
 
 
+	# bind by position
 	print("BIND BY POSITION: ")
 	cur.prepareQuery("insert into testtable values (?,?,?,?,?,?,?,?,?,?,?,NULL)")
 	assertEqual(cur.countBindVariables(),11)
@@ -78,6 +86,8 @@ def main():
 	assertTrue(cur.executeQuery())
 	print()
 
+
+	# array of binds by position
 	print("ARRAY OF BINDS BY POSITION: ")
 	cur.clearBinds()
 	cur.inputBinds(["1","2","3","4","5","6",
@@ -89,6 +99,8 @@ def main():
 	assertTrue(cur.executeQuery())
 	print()
 
+
+	# insert
 	print("INSERT: ")
 	assertTrue(cur.sendQuery("insert into testtable values (5,5,5.5,5.5,5.5,5.5,'01-JAN-2005','05:00:00','testchar5','testvarchar5',NULL,NULL)"))
 	assertTrue(cur.sendQuery("insert into testtable values (6,6,6.6,6.6,6.6,6.6,'01-JAN-2006','06:00:00','testchar6','testvarchar6',NULL,NULL)"))
@@ -96,10 +108,14 @@ def main():
 	assertTrue(cur.sendQuery("insert into testtable values (8,8,8.8,8.8,8.8,8.8,'01-JAN-2008','08:00:00','testchar8','testvarchar8',NULL,NULL)"))
 	print()
 
+
+	# affected rows
 	print("AFFECTED ROWS: ")
 	assertEqual(cur.affectedRows(),0)
 	print()
 
+
+	# stored procedure
 	print("STORED PROCEDURE: ")
 	cur.prepareQuery("select * from testproc(?,?,?,NULL)")
 	cur.inputBind("1",1)
@@ -123,14 +139,20 @@ def main():
 	assertEqual(cur.getOutputBindString("3"),"hello               ")
 	print()
 
+
+	# select
 	print("SELECT: ")
 	assertTrue(cur.sendQuery("select * from testtable order by testinteger"))
 	print()
 
+
+	# column count
 	print("COLUMN COUNT: ")
 	assertEqual(cur.colCount(),12)
 	print()
 
+
+	# column names
 	print("COLUMN NAMES: ")
 	assertEqual(cur.getColumnName(0),"TESTINTEGER")
 	assertEqual(cur.getColumnName(1),"TESTSMALLINT")
@@ -157,6 +179,8 @@ def main():
 	assertEqual(cols[10],"TESTTIMESTAMP")
 	print()
 
+
+	# column types
 	print("COLUMN TYPES: ")
 	assertEqual(cur.getColumnType(0),"INTEGER")
 	assertEqual(cur.getColumnType('TESTINTEGER'),"INTEGER")
@@ -182,6 +206,8 @@ def main():
 	assertEqual(cur.getColumnType('TESTTIMESTAMP'),"TIMESTAMP")
 	print()
 
+
+	# column length
 	print("COLUMN LENGTH: ")
 	assertEqual(cur.getColumnLength(0),4)
 	assertEqual(cur.getColumnLength('TESTINTEGER'),4)
@@ -207,6 +233,8 @@ def main():
 	assertEqual(cur.getColumnLength('TESTTIMESTAMP'),8)
 	print()
 
+
+	# longest column
 	print("LONGEST COLUMN: ")
 	assertEqual(cur.getLongest(0),1)
 	assertEqual(cur.getLongest('TESTINTEGER'),1)
@@ -232,22 +260,32 @@ def main():
 	assertEqual(cur.getLongest('TESTTIMESTAMP'),0)
 	print()
 
+
+	# row count
 	print("ROW COUNT: ")
 	assertEqual(cur.rowCount(),8)
 	print()
 
+
+	# total rows
 	print("TOTAL ROWS: ")
 	assertEqual(cur.totalRows(),0)
 	print()
 
+
+	# first row index
 	print("FIRST ROW INDEX: ")
 	assertEqual(cur.firstRowIndex(),0)
 	print()
 
+
+	# end of result set
 	print("END OF RESULT SET: ")
 	assertTrue(cur.endOfResultSet())
 	print()
 
+
+	# fields by index
 	print("FIELDS BY INDEX: ")
 	assertEqual(cur.getField(0,0),1)
 	assertEqual(cur.getField(0,1),1)
@@ -272,6 +310,8 @@ def main():
 	assertEqual(cur.getField(7,9),"testvarchar8")
 	print()
 
+
+	# field lengths by index
 	print("FIELD LENGTHS BY INDEX: ")
 	assertEqual(cur.getFieldLength(0,0),1)
 	assertEqual(cur.getFieldLength(0,1),1)
@@ -296,6 +336,8 @@ def main():
 	assertEqual(cur.getFieldLength(7,9),12)
 	print()
 
+
+	# fields by name
 	print("FIELDS BY NAME: ")
 	assertEqual(cur.getField(0,"TESTINTEGER"),1)
 	assertEqual(cur.getField(0,"TESTSMALLINT"),1)
@@ -320,6 +362,8 @@ def main():
 	assertEqual(cur.getField(7,"TESTVARCHAR"),"testvarchar8")
 	print()
 
+
+	# field lengths by name
 	print("FIELD LENGTHS BY NAME: ")
 	assertEqual(cur.getFieldLength(0,"TESTINTEGER"),1)
 	assertEqual(cur.getFieldLength(0,"TESTSMALLINT"),1)
@@ -344,6 +388,8 @@ def main():
 	assertEqual(cur.getFieldLength(7,"TESTVARCHAR"),12)
 	print()
 
+
+	# fields by array
 	print("FIELDS BY ARRAY: ")
 	fields=cur.getRow(0)
 	assertEqual(fields[0],1)
@@ -358,6 +404,8 @@ def main():
 	assertEqual(fields[9],"testvarchar1")
 	print()
 
+
+	# field lengths by array
 	print("FIELD LENGTHS BY ARRAY: ")
 	fieldlens=cur.getRowLengths(0)
 	assertEqual(fieldlens[0],1)
@@ -372,6 +420,8 @@ def main():
 	assertEqual(fieldlens[9],12)
 	print()
 
+
+	# fields by dictionary
 	print("FIELDS BY DICTIONARY: ")
 	fields=cur.getRowDictionary(0)
 	assertEqual(fields["TESTINTEGER"],1)
@@ -398,6 +448,8 @@ def main():
 	assertEqual(fields["TESTVARCHAR"],"testvarchar8")
 	print()
 
+
+	# field lengths by dictionary
 	print("FIELD LENGTHS BY DICTIONARY: ")
 	fieldlengths=cur.getRowLengthsDictionary(0)
 	assertEqual(fieldlengths["TESTINTEGER"],1)
@@ -423,7 +475,9 @@ def main():
 	assertEqual(fieldlengths["TESTCHAR"],50)
 	assertEqual(fieldlengths["TESTVARCHAR"],12)
 	print()
-	
+
+
+	# individual substitutions
 	print("INDIVIDUAL SUBSTITUTIONS: ")
 	cur.prepareQuery("select $(var1),'$(var2)','$(var3)' from rdb$database")
 	cur.substitution("var1",1)
@@ -432,12 +486,16 @@ def main():
 	assertTrue(cur.executeQuery())
 	print()
 
+
+	# fields
 	print("FIELDS: ")
 	assertEqual(cur.getField(0,0),1)
 	assertEqual(cur.getField(0,1),"hello")
 	assertEqual(cur.getField(0,2),"10.5556")
 	print()
 
+
+	# array substitutions
 	print("ARRAY SUBSTITUTIONS: ")
 	cur.prepareQuery("select $(var1),'$(var2)','$(var3)' from rdb$database")
 	cur.substitutions(["var1","var2","var3"],
@@ -445,12 +503,16 @@ def main():
 	assertTrue(cur.executeQuery())
 	print()
 
+
+	# fields
 	print("FIELDS: ")
 	assertEqual(cur.getField(0,0),1)
 	assertEqual(cur.getField(0,1),"hello")
 	assertEqual(cur.getField(0,2),"10.5556")
 	print()
 
+
+	# nulls as nones
 	print("NULLS as Nones: ")
 	cur.getNullsAsNone()
 	assertTrue(cur.sendQuery("select 1,NULL,NULL from rdb$database"))
@@ -465,6 +527,8 @@ def main():
 	cur.getNullsAsNone()
 	print()
 
+
+	# result set buffer size
 	print("RESULT SET BUFFER SIZE: ")
 	assertEqual(cur.getResultSetBufferSize(),0)
 	cur.setResultSetBufferSize(2)
@@ -494,6 +558,8 @@ def main():
 	assertEqual(cur.rowCount(),8)
 	print()
 
+
+	# dont get column info
 	print("DONT GET COLUMN INFO: ")
 	cur.dontGetColumnInfo()
 	assertTrue(cur.sendQuery("select * from testtable order by testinteger"))
@@ -507,6 +573,8 @@ def main():
 	assertEqual(cur.getColumnType(0),"INTEGER")
 	print()
 
+
+	# suspended session
 	print("SUSPENDED SESSION: ")
 	assertTrue(cur.sendQuery("select * from testtable order by testinteger"))
 	cur.suspendResultSet()
@@ -557,6 +625,8 @@ def main():
 	assertEqual(cur.getField(7,0),8)
 	print()
 
+
+	# suspended result set
 	print("SUSPENDED RESULT SET: ")
 	cur.setResultSetBufferSize(2)
 	assertTrue(cur.sendQuery("select * from testtable order by testinteger"))
@@ -585,6 +655,8 @@ def main():
 	cur.setResultSetBufferSize(0)
 	print()
 
+
+	# cached result set
 	print("CACHED RESULT SET: ")
 	cur.cacheToFile("cachefile1")
 	cur.setCacheTtl(200)
@@ -596,10 +668,14 @@ def main():
 	assertEqual(cur.getField(7,0),8)
 	print()
 
+
+	# column count for cached result set
 	print("COLUMN COUNT FOR CACHED RESULT SET: ")
 	assertEqual(cur.colCount(),12)
 	print()
 
+
+	# column names for cached result set
 	print("COLUMN NAMES FOR CACHED RESULT SET: ")
 	assertEqual(cur.getColumnName(0),"TESTINTEGER")
 	assertEqual(cur.getColumnName(1),"TESTSMALLINT")
@@ -626,6 +702,8 @@ def main():
 	assertEqual(cols[10],"TESTTIMESTAMP")
 	print()
 
+
+	# cached result set with result set buffer size
 	print("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: ")
 	cur.setResultSetBufferSize(2)
 	cur.cacheToFile("cachefile1")
@@ -640,6 +718,8 @@ def main():
 	cur.setResultSetBufferSize(0)
 	print()
 
+
+	# from one cache file to another
 	print("FROM ONE CACHE FILE TO ANOTHER: ")
 	cur.cacheToFile("cachefile2")
 	assertTrue(cur.openCachedResultSet("cachefile1"))
@@ -649,6 +729,8 @@ def main():
 	assertEqual(cur.getField(8,0),None)
 	print()
 
+
+	# from one cache file to another with result set buffer size
 	print("FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: ")
 	cur.setResultSetBufferSize(2)
 	cur.cacheToFile("cachefile2")
@@ -660,6 +742,8 @@ def main():
 	cur.setResultSetBufferSize(0)
 	print()
 
+
+	# cached result set with suspend and result set buffer size
 	print("CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: ")
 	cur.setResultSetBufferSize(2)
 	cur.cacheToFile("cachefile1")
@@ -715,6 +799,8 @@ def main():
 	assertTrue(con.autoCommitOff())
 	print()
 
+
+	# row range
 	print("ROW RANGE:")
 	assertTrue(cur.sendQuery("select * from testtable order by testinteger"))
 	print()
@@ -786,6 +872,8 @@ def main():
 	assertEqual(rows[5][9],"testvarchar6")
 	print()
 
+
+	# finished suspended session
 	print("FINISHED SUSPENDED SESSION: ")
 	assertTrue(cur.sendQuery("select * from testtable order by testinteger"))
 	assertEqual(cur.getField(4,0),5)
@@ -812,6 +900,9 @@ def main():
 	print()
 
 	# invalid queries...
+
+
+	# invalid queries
 	print("INVALID QUERIES: ")
 	assertFalse(cur.sendQuery("select * from testtable1 order by testinteger"))
 	assertFalse(cur.sendQuery("select * from testtable1 order by testinteger"))

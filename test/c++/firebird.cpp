@@ -38,25 +38,29 @@ int main(int argc, char **argv) {
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 
-	// get database type
+	// identify
 	stdoutput.printf("IDENTIFY: \n");
 	assertEquals(con->identify(),"firebird");
 	stdoutput.printf("\n");
+
 
 	// ping
 	stdoutput.printf("PING: \n");
 	assertTrue(con->ping());
 	stdoutput.printf("\n");
 
+
 	// bind format
 	stdoutput.printf("BIND FORMAT: \n");
 	assertEquals(con->bindFormat(),"?");
 	stdoutput.printf("\n");
 
+
 	// nextval format
 	stdoutput.printf("NEXTVAL FORMAT: \n");
 	assertEquals(con->nextvalFormat(),"next value for %s");
 	stdoutput.printf("\n");
+
 
 	// isolation levels
 	stdoutput.printf("ISOLATION LEVELS: \n");
@@ -72,10 +76,14 @@ int main(int argc, char **argv) {
 	cur->sendQuery("delete from testtable");
 	con->commit();
 
+
+	// insert
 	stdoutput.printf("INSERT: \n");
 	assertTrue(cur->sendQuery("insert into testtable values (1,1,1.1,1.1,1.1,1.1,'01-JAN-2001','01:00:00','testchar1','testvarchar1',NULL,'testblob1')"));
 	stdoutput.printf("\n");
 
+
+	// bind by position
 	stdoutput.printf("BIND BY POSITION: \n");
 	cur->prepareQuery("insert into testtable values (?,?,?,?,?,?,?,?,?,?,?,?)");
 	assertEquals(cur->countBindVariables(),12);
@@ -108,12 +116,16 @@ int main(int argc, char **argv) {
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
 
+
+	// array of binds by position
 	stdoutput.printf("ARRAY OF BINDS BY POSITION: \n");
 	cur->clearBinds();
 	cur->inputBinds(bindvars,bindvals);
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
 
+
+	// insert
 	stdoutput.printf("INSERT: \n");
 	assertTrue(cur->sendQuery("insert into testtable values (5,5,5.5,5.5,5.5,5.5,'01-JAN-2005','05:00:00','testchar5','testvarchar5',NULL,'testblob5')"));
 	assertTrue(cur->sendQuery("insert into testtable values (6,6,6.6,6.6,6.6,6.6,'01-JAN-2006','06:00:00','testchar6','testvarchar6',NULL,'testblob6')"));
@@ -121,10 +133,14 @@ int main(int argc, char **argv) {
 	assertTrue(cur->sendQuery("insert into testtable values (8,8,8.8,8.8,8.8,8.8,'01-JAN-2008','08:00:00','testchar8','testvarchar8',NULL,'testblob8')"));
 	stdoutput.printf("\n");
 
+
+	// affected rows
 	stdoutput.printf("AFFECTED ROWS: \n");
 	assertEquals(cur->affectedRows(),0);
 	stdoutput.printf("\n");
 
+
+	// stored procedure
 	stdoutput.printf("STORED PROCEDURE: \n");
 	cur->prepareQuery("select * from testproc(?,?,?,?)");
 	cur->inputBind("1",1);
@@ -152,6 +168,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getOutputBindBlob("4"),"blob");
 	stdoutput.printf("\n");
 
+
+	// long blob
 	stdoutput.printf("LONG BLOB: \n");
 	cur->sendQuery("delete from testtable1");
 	cur->prepareQuery("insert into testtable1 values (?)");
@@ -173,14 +191,20 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getOutputBindBlob("1"),blobval);
 	stdoutput.printf("\n");
 
+
+	// select
 	stdoutput.printf("SELECT: \n");
 	assertTrue(cur->sendQuery("select * from testtable order by testinteger"));
 	stdoutput.printf("\n");
 
+
+	// column count
 	stdoutput.printf("COLUMN COUNT: \n");
 	assertEquals(cur->colCount(),12);
 	stdoutput.printf("\n");
 
+
+	// column names
 	stdoutput.printf("COLUMN NAMES: \n");
 	assertEquals(cur->getColumnName(0),"TESTINTEGER");
 	assertEquals(cur->getColumnName(1),"TESTSMALLINT");
@@ -209,6 +233,8 @@ int main(int argc, char **argv) {
 	assertEquals(cols[11],"TESTBLOB");
 	stdoutput.printf("\n");
 
+
+	// column types
 	stdoutput.printf("COLUMN TYPES: \n");
 	assertEquals(cur->getColumnType((uint32_t)0),"INTEGER");
 	assertEquals(cur->getColumnType("TESTINTEGER"),"INTEGER");
@@ -236,6 +262,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnType("TESTBLOB"),"BLOB");
 	stdoutput.printf("\n");
 
+
+	// column length
 	stdoutput.printf("COLUMN LENGTH: \n");
 	assertEquals(cur->getColumnLength((uint32_t)0),4);
 	assertEquals(cur->getColumnLength("TESTINTEGER"),4);
@@ -263,6 +291,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnLength("TESTBLOB"),8);
 	stdoutput.printf("\n");
 
+
+	// longest column
 	stdoutput.printf("LONGEST COLUMN: \n");
 	assertEquals(cur->getLongest((uint32_t)0),1);
 	assertEquals(cur->getLongest("TESTINTEGER"),1);
@@ -290,22 +320,32 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getLongest("TESTBLOB"),9);
 	stdoutput.printf("\n");
 
+
+	// row count
 	stdoutput.printf("ROW COUNT: \n");
 	assertEquals(cur->rowCount(),8);
 	stdoutput.printf("\n");
 
+
+	// total rows
 	stdoutput.printf("TOTAL ROWS: \n");
 	assertEquals(cur->totalRows(),0);
 	stdoutput.printf("\n");
 
+
+	// first row index
 	stdoutput.printf("FIRST ROW INDEX: \n");
 	assertEquals(cur->firstRowIndex(),0);
 	stdoutput.printf("\n");
 
+
+	// end of result set
 	stdoutput.printf("END OF RESULT SET: \n");
 	assertTrue(cur->endOfResultSet());
 	stdoutput.printf("\n");
 
+
+	// fields by index
 	stdoutput.printf("FIELDS BY INDEX: \n");
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	assertEquals(cur->getField(0,1),"1");
@@ -332,6 +372,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(7,11),"testblob8");
 	stdoutput.printf("\n");
 
+
+	// field lengths by index
 	stdoutput.printf("FIELD LENGTHS BY INDEX: \n");
 	assertEquals(cur->getFieldLength(0,(uint32_t)0),1);
 	assertEquals(cur->getFieldLength(0,1),1);
@@ -356,6 +398,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getFieldLength(7,9),12);
 	stdoutput.printf("\n");
 
+
+	// fields by name
 	stdoutput.printf("FIELDS BY NAME: \n");
 	assertEquals(cur->getField(0,"TESTINTEGER"),"1");
 	assertEquals(cur->getField(0,"TESTSMALLINT"),"1");
@@ -382,6 +426,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(7,"TESTBLOB"),"testblob8");
 	stdoutput.printf("\n");
 
+
+	// field lengths by name
 	stdoutput.printf("FIELD LENGTHS BY NAME: \n");
 	assertEquals(cur->getFieldLength(0,"TESTINTEGER"),1);
 	assertEquals(cur->getFieldLength(0,"TESTSMALLINT"),1);
@@ -406,6 +452,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getFieldLength(7,"TESTVARCHAR"),12);
 	stdoutput.printf("\n");
 
+
+	// fields by array
 	stdoutput.printf("FIELDS BY ARRAY: \n");
 	fields=cur->getRow(0);
 	assertEquals(fields[0],"1");
@@ -421,6 +469,8 @@ int main(int argc, char **argv) {
 	assertEquals(fields[11],"testblob1");
 	stdoutput.printf("\n");
 
+
+	// field lengths by array
 	stdoutput.printf("FIELD LENGTHS BY ARRAY: \n");
 	fieldlens=cur->getRowLengths(0);
 	assertEquals(fieldlens[0],1);
@@ -435,6 +485,8 @@ int main(int argc, char **argv) {
 	assertEquals(fieldlens[9],12);
 	stdoutput.printf("\n");
 
+
+	// individual substitutions
 	stdoutput.printf("INDIVIDUAL SUBSTITUTIONS: \n");
 	cur->prepareQuery("select $(var1),'$(var2)',$(var3) from rdb$database");
 	cur->substitution("var1",1);
@@ -443,48 +495,64 @@ int main(int argc, char **argv) {
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
 
+
+	// fields
 	stdoutput.printf("FIELDS: \n");
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	assertEquals(cur->getField(0,1),"hello");
 	assertEquals(cur->getField(0,2),"10.5556");
 	stdoutput.printf("\n");
 
+
+	// array substitutions
 	stdoutput.printf("ARRAY SUBSTITUTIONS: \n");
 	cur->prepareQuery("select '$(var1)','$(var2)','$(var3)' from rdb$database");
 	cur->substitutions(subvars,subvalstrings);
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
 
+
+	// fields
 	stdoutput.printf("FIELDS: \n");
 	assertEquals(cur->getField(0,(uint32_t)0),"hi");
 	assertEquals(cur->getField(0,1),"hello");
 	assertEquals(cur->getField(0,2),"bye");
 	stdoutput.printf("\n");
 
+
+	// array substitutions
 	stdoutput.printf("ARRAY SUBSTITUTIONS: \n");
 	cur->prepareQuery("select $(var1),$(var2),$(var3) from rdb$database");
 	cur->substitutions(subvars,subvallongs);
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
 
+
+	// fields
 	stdoutput.printf("FIELDS: \n");
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	assertEquals(cur->getField(0,1),"2");
 	assertEquals(cur->getField(0,2),"3");
 	stdoutput.printf("\n");
 
+
+	// array substitutions
 	stdoutput.printf("ARRAY SUBSTITUTIONS: \n");
 	cur->prepareQuery("select $(var1),$(var2),$(var3) from rdb$database");
 	cur->substitutions(subvars,subvaldoubles,precs,scales);
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
 
+
+	// fields
 	stdoutput.printf("FIELDS: \n");
 	assertEquals(cur->getField(0,(uint32_t)0),"10.55");
 	assertEquals(cur->getField(0,1),"10.556");
 	assertEquals(cur->getField(0,2),"10.5556");
 	stdoutput.printf("\n");
 
+
+	// nulls as nulls
 	stdoutput.printf("NULLS as Nulls: \n");
 	cur->getNullsAsNulls();
 	assertTrue(cur->sendQuery("select 1,NULL,NULL from rdb$database"));
@@ -499,6 +567,8 @@ int main(int argc, char **argv) {
 	cur->getNullsAsNulls();
 	stdoutput.printf("\n");
 
+
+	// result set buffer size
 	stdoutput.printf("RESULT SET BUFFER SIZE: \n");
 	assertEquals(cur->getResultSetBufferSize(),0);
 	cur->setResultSetBufferSize(2);
@@ -528,6 +598,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->rowCount(),8);
 	stdoutput.printf("\n");
 
+
+	// dont get column info
 	stdoutput.printf("DONT GET COLUMN INFO: \n");
 	cur->dontGetColumnInfo();
 	assertTrue(cur->sendQuery("select * from testtable order by testinteger"));
@@ -541,6 +613,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnType((uint32_t)0),"INTEGER");
 	stdoutput.printf("\n");
 
+
+	// suspended session
 	stdoutput.printf("SUSPENDED SESSION: \n");
 	assertTrue(cur->sendQuery("select * from testtable order by testinteger"));
 	cur->suspendResultSet();
@@ -591,6 +665,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(7,(uint32_t)0),"8");
 	stdoutput.printf("\n");
 
+
+	// suspended result set
 	stdoutput.printf("SUSPENDED RESULT SET: \n");
 	cur->setResultSetBufferSize(2);
 	assertTrue(cur->sendQuery("select * from testtable order by testinteger"));
@@ -619,6 +695,8 @@ int main(int argc, char **argv) {
 	cur->setResultSetBufferSize(0);
 	stdoutput.printf("\n");
 
+
+	// cached result set
 	stdoutput.printf("CACHED RESULT SET: \n");
 	cur->cacheToFile("cachefile1");
 	cur->setCacheTtl(200);
@@ -631,10 +709,14 @@ int main(int argc, char **argv) {
 	delete[] filename;
 	stdoutput.printf("\n");
 
+
+	// column count for cached result set
 	stdoutput.printf("COLUMN COUNT FOR CACHED RESULT SET: \n");
 	assertEquals(cur->colCount(),12);
 	stdoutput.printf("\n");
 
+
+	// column names for cached result set
 	stdoutput.printf("COLUMN NAMES FOR CACHED RESULT SET: \n");
 	assertEquals(cur->getColumnName(0),"TESTINTEGER");
 	assertEquals(cur->getColumnName(1),"TESTSMALLINT");
@@ -663,6 +745,8 @@ int main(int argc, char **argv) {
 	assertEquals(cols[11],"TESTBLOB");
 	stdoutput.printf("\n");
 
+
+	// cached result set with result set buffer size
 	stdoutput.printf("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: \n");
 	cur->setResultSetBufferSize(2);
 	cur->cacheToFile("cachefile1");
@@ -678,6 +762,8 @@ int main(int argc, char **argv) {
 	delete[] filename;
 	stdoutput.printf("\n");
 
+
+	// from one cache file to another
 	stdoutput.printf("FROM ONE CACHE FILE TO ANOTHER: \n");
 	cur->cacheToFile("cachefile2");
 	assertTrue(cur->openCachedResultSet("cachefile1"));
@@ -687,6 +773,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(8,(uint32_t)0),NULL);
 	stdoutput.printf("\n");
 
+
+	// from one cache file to another with result set buffer size
 	stdoutput.printf("FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: \n");
 	cur->setResultSetBufferSize(2);
 	cur->cacheToFile("cachefile2");
@@ -698,6 +786,8 @@ int main(int argc, char **argv) {
 	cur->setResultSetBufferSize(0);
 	stdoutput.printf("\n");
 
+
+	// cached result set with suspend and result set buffer size
 	stdoutput.printf("CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: \n");
 	cur->setResultSetBufferSize(2);
 	cur->cacheToFile("cachefile1");
@@ -737,6 +827,8 @@ int main(int argc, char **argv) {
 	delete[] filename;
 	stdoutput.printf("\n");
 
+
+	// commit and rollback
 	stdoutput.printf("COMMIT AND ROLLBACK: \n");
 	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
@@ -753,6 +845,8 @@ int main(int argc, char **argv) {
 	assertTrue(con->autoCommitOff());
 	stdoutput.printf("\n");
 
+
+	// finished suspended session
 	stdoutput.printf("FINISHED SUSPENDED SESSION: \n");
 	assertTrue(cur->sendQuery("select * from testtable order by testinteger"));
 	assertEquals(cur->getField(4,(uint32_t)0),"5");
@@ -778,7 +872,8 @@ int main(int argc, char **argv) {
 	con->commit();
 	stdoutput.printf("\n");
 
-	// column list auto_increment and primary key...
+
+	// column list - auto_increment, primary key
 	stdoutput.printf("COLUMN LIST - auto_increment, primary key: \n");
 	assertTrue(cur->getColumnList("testtable2",NULL));
 	assertTrue(charstring::containsIgnoringCase(
@@ -797,7 +892,8 @@ int main(int argc, char **argv) {
 			cur->getField(0,"column_key"),"PRI"));
 	stdoutput.printf("\n");
 
-	// invalid queries...
+
+	// invalid queries
 	stdoutput.printf("INVALID QUERIES: \n");
 	assertFalse(cur->sendQuery("select * from testtable1 order by testinteger"));
 	assertFalse(cur->sendQuery("select * from testtable1 order by testinteger"));

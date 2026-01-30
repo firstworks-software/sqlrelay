@@ -17,6 +17,9 @@ my $dsn=$prefix.$connectstring;
 
 # parse dsn
 if ($DBI::VERSION>=1.43) {
+
+
+	# parse dsn
 	print("PARSE DSN: \n");
 	my ($scheme,$driver,$attr_string,$attr_hash,$driver_dsn)=DBI->parse_dsn($dsn);
 	assertEqualString($scheme,"dbi");
@@ -27,6 +30,7 @@ if ($DBI::VERSION>=1.43) {
 	assertEqualString($driver_dsn,$connectstring);
 	print("\n");
 }
+
 
 # connect
 print("CONNECT: \n");
@@ -52,6 +56,8 @@ print("\n");
 # drop existing table
 $dbh->do("drop table testtable");
 
+
+# create temptable
 print("CREATE TEMPTABLE: \n");
 if ($DBI::VERSION>=1.41) {
 	$dbh->{Executed}=0;
@@ -64,14 +70,20 @@ if ($DBI::VERSION>=1.41) {
 assertEqualString($dbh->{Statement},$stmt);
 print("\n");
 
+
+# insert and affected rows
 print("INSERT and AFFECTED ROWS: \n");
 assertTrue($dbh->do("insert into testtable values (1,'testchar1','testvarchar1','01-JAN-2001')"));
 print("\n");
 
+
+# do with bind values
 print("DO WITH BIND VALUES: \n");
 assertTrue($dbh->do("insert into testtable values (:var1,:var2,:var3,:var4)",undef,(2,"testchar2","testvarchar2","01-JAN-2002")));
 print("\n");
 
+
+# execute with bind values
 print("EXECUTE WITH BIND VALUES: \n");
 if ($DBI::VERSION>=1.41) {
 	$dbh->{Executed}=0;
@@ -92,10 +104,14 @@ if ($DBI::VERSION>1.41) {
 }
 print("\n");
 
+
+# affected rows
 print("AFFECTED ROWS: \n");
 assertEqual($sth->rows(),1);
 print("\n");
 
+
+# bind param by position
 print("BIND PARAM BY POSITION: \n");
 $sth->bind_param(1,4,SQL_INTEGER);
 $sth->bind_param(2,"testchar4",SQL_CHAR);
@@ -112,11 +128,16 @@ assertEqual($sth->{ParamTypes}->{"var4"},"SQL_DATETIME");
 assertTrue($sth->execute());
 print("\n");
 
+
+# param count
 print("PARAM COUNT: \n");
 assertEqual($sth->{NUM_OF_PARAMS},4);
 print("\n");
 
 if ($DBI::VERSION>=1.22) {
+
+
+	# execute array
 	print("EXECUTE ARRAY: \n");
 	@var1s=(5,6);
 	@var2s=("testchar5","testchar6");
@@ -147,6 +168,8 @@ if ($DBI::VERSION>=1.22) {
 	assertEqual($sth->{ParamArrays}->{4}->[1],"01-JAN-2006");
 	print("\n");
 
+
+	# bind param array
 	print("BIND PARAM ARRAY: \n");
 	$sth->bind_param_array(1,[7,8]);
 	$sth->bind_param_array(2,["testchar7","testchar8"]);
@@ -168,6 +191,8 @@ if ($DBI::VERSION>=1.22) {
 	$dbh->do("insert into testtable values (8,'testchar8','testvarchar8','01-JAN-2008')");
 }
 
+
+# bind by name
 print("BIND BY NAME: \n");
 $sth->bind_param("var1",9);
 $sth->bind_param("var2","testchar9");
@@ -185,6 +210,8 @@ assertEqual($sth->{ParamTypes}->{":var4"},"SQL_VARCHAR");
 assertTrue($sth->execute());
 print("\n");
 
+
+# output bind by name
 print("OUTPUT BIND BY NAME: \n");
 $sth=$dbh->prepare("begin  :numvar:=1; :stringvar:='hello'; :floatvar:=2.5; end;");
 $sth->bind_param_inout("numvar",\$numvar,10);
@@ -197,6 +224,8 @@ assertEqualString($stringvar,'hello');
 assertEqualString($floatvar,'2.5');
 print("\n");
 
+
+# output bind by position
 print("OUTPUT BIND BY POSITION: \n");
 $sth->bind_param_inout(1,\$numvar,10);
 $sth->bind_param_inout(2,\$stringvar,10);
@@ -207,15 +236,21 @@ assertEqualString($stringvar,'hello');
 assertEqualString($floatvar,'2.5');
 print("\n");
 
+
+# select
 print("SELECT: \n");
 $sth=$dbh->prepare("select * from testtable order by testnumber");
 assertEqualString($sth->execute(),"0E0");
 print("\n");
 
+
+# column count
 print("COLUMN COUNT: \n");
 assertEqual($sth->{NUM_OF_FIELDS},4);
 print("\n");
 
+
+# column names
 print("COLUMN NAMES: \n");
 assertEqualString($sth->{NAME}->[0],"TESTNUMBER");
 assertEqualString($sth->{NAME}->[1],"TESTCHAR");
@@ -223,6 +258,8 @@ assertEqualString($sth->{NAME}->[2],"TESTVARCHAR");
 assertEqualString($sth->{NAME}->[3],"TESTDATE");
 print("\n");
 
+
+# column names (lc)
 print("COLUMN NAMES (lc): \n");
 assertEqualString($sth->{NAME_lc}->[0],"testnumber");
 assertEqualString($sth->{NAME_lc}->[1],"testchar");
@@ -230,6 +267,8 @@ assertEqualString($sth->{NAME_lc}->[2],"testvarchar");
 assertEqualString($sth->{NAME_lc}->[3],"testdate");
 print("\n");
 
+
+# column names (uc)
 print("COLUMN NAMES (uc): \n");
 assertEqualString($sth->{NAME_uc}->[0],"TESTNUMBER");
 assertEqualString($sth->{NAME_uc}->[1],"TESTCHAR");
@@ -237,6 +276,8 @@ assertEqualString($sth->{NAME_uc}->[2],"TESTVARCHAR");
 assertEqualString($sth->{NAME_uc}->[3],"TESTDATE");
 print("\n");
 
+
+# column types
 print("COLUMN TYPES: \n");
 assertEqualString($sth->{TYPE}->[0],"NUMBER");
 assertEqualString($sth->{TYPE}->[1],"CHAR");
@@ -244,6 +285,8 @@ assertEqualString($sth->{TYPE}->[2],"VARCHAR2");
 assertEqualString($sth->{TYPE}->[3],"DATE");
 print("\n");
 
+
+# column indices from name_hash
 print("COLUMN INDICES FROM NAME_hash: \n");
 assertEqualString($sth->{NAME_hash}->{TESTNUMBER},0);
 assertEqualString($sth->{NAME_hash}->{TESTCHAR},1);
@@ -251,6 +294,8 @@ assertEqualString($sth->{NAME_hash}->{TESTVARCHAR},2);
 assertEqualString($sth->{NAME_hash}->{TESTDATE},3);
 print("\n");
 
+
+# column indices from name_lc_hash
 print("COLUMN INDICES FROM NAME_lc_hash: \n");
 assertEqualString($sth->{NAME_lc_hash}->{testnumber},0);
 assertEqualString($sth->{NAME_lc_hash}->{testchar},1);
@@ -258,6 +303,8 @@ assertEqualString($sth->{NAME_lc_hash}->{testvarchar},2);
 assertEqualString($sth->{NAME_lc_hash}->{testdate},3);
 print("\n");
 
+
+# column indices from name_uc_hash
 print("COLUMN INDICES FROM NAME_uc_hash: \n");
 assertEqualString($sth->{NAME_uc_hash}->{TESTNUMBER},0);
 assertEqualString($sth->{NAME_uc_hash}->{TESTCHAR},1);
@@ -265,6 +312,8 @@ assertEqualString($sth->{NAME_uc_hash}->{TESTVARCHAR},2);
 assertEqualString($sth->{NAME_uc_hash}->{TESTDATE},3);
 print("\n");
 
+
+# precision
 print("PRECISION: \n");
 assertEqualString($sth->{PRECISION}->[0],0);
 assertEqualString($sth->{PRECISION}->[1],0);
@@ -272,6 +321,8 @@ assertEqualString($sth->{PRECISION}->[2],0);
 assertEqualString($sth->{PRECISION}->[3],0);
 print("\n");
 
+
+# scale
 print("SCALE: \n");
 assertEqualString($sth->{SCALE}->[0],129);
 assertEqualString($sth->{SCALE}->[1],0);
@@ -279,6 +330,8 @@ assertEqualString($sth->{SCALE}->[2],0);
 assertEqualString($sth->{SCALE}->[3],0);
 print("\n");
 
+
+# nullable
 print("NULLABLE: \n");
 assertEqualString($sth->{NULLABLE}->[0],0);
 assertEqualString($sth->{NULLABLE}->[1],1);
@@ -292,6 +345,8 @@ print("\n");
 #print("TYPE INFO: \n");
 #print("\n");
 
+
+# fetch
 print("FETCH: \n");
 $fieldsref=$sth->fetch;
 assertEqual($$fieldsref[0],1);
@@ -300,6 +355,8 @@ assertEqualString($$fieldsref[2],"testvarchar1");
 assertEqualString($$fieldsref[3],"01-JAN-01");
 print("\n");
 
+
+# fields by arrayref
 print("FIELDS BY ARRAYREF: \n");
 $fieldsref=$sth->fetchrow_arrayref;
 assertEqual($$fieldsref[0],2);
@@ -308,6 +365,8 @@ assertEqualString($$fieldsref[2],"testvarchar2");
 assertEqualString($$fieldsref[3],"01-JAN-02");
 print("\n");
 
+
+# fields by array
 print("FIELDS BY ARRAY: \n");
 @fields=$sth->fetchrow_array;
 assertEqual($fields[0],3);
@@ -316,6 +375,8 @@ assertEqualString($fields[2],"testvarchar3");
 assertEqualString($fields[3],"01-JAN-03");
 print("\n");
 
+
+# fields by hash
 print("FIELDS BY HASH: \n");
 $fieldshashref=$sth->fetchrow_hashref;
 assertEqual($$fieldshashref{"TESTNUMBER"},4);
@@ -324,6 +385,8 @@ assertEqualString($$fieldshashref{"TESTVARCHAR"},"testvarchar4");
 assertEqualString($$fieldshashref{"TESTDATE"},"01-JAN-04");
 print("\n");
 
+
+# fetchall_arrayref
 print("FETCHALL_ARRAYREF: \n");
 $sth=$dbh->prepare("select * from testtable order by testnumber");
 assertEqualString($sth->execute(),"0E0");
@@ -354,6 +417,8 @@ assertUndef($$rows[1][0]);
 assertUndef($$rows[1][1]);
 print("\n");
 
+
+# fetchall_hashref
 print("FETCHALL_HASHREF: \n");
 $sth=$dbh->prepare("select * from testtable order by testnumber");
 assertEqualString($sth->execute(),"0E0");
@@ -376,6 +441,8 @@ assertEqualString($$rows{7}->{TESTVARCHAR},"testvarchar7");
 assertEqualString($$rows{7}->{TESTDATE},"01-JAN-07");
 print("\n");
 
+
+# selectrow_array
 print("SELECTROW_ARRAY: \n");
 @row=$dbh->selectrow_array("select * from testtable order by testnumber");
 assertEqual($row[0],1);
@@ -384,6 +451,8 @@ assertEqualString($row[2],"testvarchar1");
 assertEqualString($row[3],"01-JAN-01");
 print("\n");
 
+
+# selectrow_arrayref
 print("SELECTROW_ARRAYREF: \n");
 $row=$dbh->selectrow_arrayref("select * from testtable order by testnumber");
 assertEqual($$row[0],1);
@@ -392,6 +461,8 @@ assertEqualString($$row[2],"testvarchar1");
 assertEqualString($$row[3],"01-JAN-01");
 print("\n");
 
+
+# selectrow_hashref
 print("SELECTROW_HASHREF: \n");
 $row=$dbh->selectrow_hashref("select * from testtable order by testnumber");
 assertEqual($$row{TESTNUMBER},1);
@@ -400,6 +471,8 @@ assertEqualString($$row{TESTVARCHAR},"testvarchar1");
 assertEqualString($$row{TESTDATE},"01-JAN-01");
 print("\n");
 
+
+# selectall_arrayref
 print("SELECTALL_ARRAYREF: \n");
 $rows=$dbh->selectall_arrayref("select * from testtable order by testnumber");
 assertEqual($$rows[0][0],1);
@@ -461,6 +534,8 @@ assertUndef($$rows[6][0]);
 assertUndef($$rows[6][1]);
 print("\n");
 
+
+# selectall_hashref
 print("SELECTALL_HASHREF: \n");
 $rows=$dbh->selectall_hashref("select * from testtable order by testnumber","TESTNUMBER");
 assertEqualString($$rows{1}->{TESTCHAR},"testchar1                               ");
@@ -509,6 +584,8 @@ assertUndef($$rows{7}->{TESTVARCHAR});
 assertUndef($$rows{7}->{TESTDATE});
 print("\n");
 
+
+# selectcol_arrayref
 print("SELECTCOL_ARRAYREF: \n");
 $cols=$dbh->selectcol_arrayref("select * from testtable order by testnumber");
 assertEqual($$cols[0],1);
@@ -529,6 +606,8 @@ assertUndef($$cols[5]);
 assertUndef($$cols[6]);
 print("\n");
 
+
+# chop blanks
 print("CHOP BLANKS: \n");
 $dbh->{ChopBlanks}=1;
 $rows=$dbh->selectall_arrayref("select * from testtable order by testnumber");
@@ -552,6 +631,8 @@ assertEqualString($$rows[0][1],"testchar1                               ");
 assertEqualString($$rows[6][1],"testchar7                               ");
 print("\n");
 
+
+# commit and rollback
 print("COMMIT AND ROLLBACK: \n");
 my $dbh2=DBI->connect($dsn,"testuser","testpassword",{AutoCommit=>0}) or die DBI->errstr;
 my @row=$dbh2->selectrow_array("select count(*) from testtable");
@@ -586,6 +667,7 @@ if ($DBI::VERSION>=1.41) {
 my @row=$dbh2->selectrow_array("select count(*) from testtable");
 assertEqual($row[0],10);
 print("\n");
+
 
 # row cache size
 print("ROW CACHE SIZE: \n");
@@ -632,6 +714,7 @@ assertEqualString($sth->execute(),"0E0");
 assertEqual($#rows+1,10);
 print("\n");
 
+
 # lots of rows
 print("LOTS OF ROWS: \n");
 $dbh->do("delete from testtable");
@@ -648,6 +731,7 @@ for ($i=0; $i<200; $i++) {
 }
 assertEqual($i,200);
 print("\n");
+
 
 # null binds
 print("NULL BINDS: \n");
@@ -668,7 +752,8 @@ print("\n");
 # drop existing table
 $dbh->do("drop table testtable");
 
-# CLOB/BLOB binds
+
+# clob/blob binds
 print("CLOB/BLOB BINDS: \n");
 $dbh->do("drop table testtable");
 assertEqualString($dbh->do("create table testtable (testclob clob, testblob blob)"),"0E0");
@@ -686,6 +771,9 @@ $dbh->do("drop table testtable");
 print("\n");
 
 # prepare_cached
+
+
+# prepare cached
 print("PREPARE CACHED: \n");
 $sth=$dbh->prepare_cached("select 1 from dual");
 my $sth1=$dbh->prepare_cached("select 1 from dual");
@@ -698,6 +786,7 @@ if ($sth2==$sth) {
 assertEqualString($s,"false");
 print("\n");
 
+
 # get info
 print("GET INFO: \n");
 #assertEqualString($dbh->get_info($GetInfoType{SQL_DATA_SOURCE_NAME}),"TESTUSER");
@@ -708,6 +797,7 @@ assertEqualString($dbh->get_info($GetInfoType{SQL_IDENTIFIER_QUOTE_CHAR}),"\"");
 assertEqualString($dbh->get_info($GetInfoType{SQL_CATALOG_NAME_SEPARATOR}),"@");
 assertEqualString($dbh->get_info($GetInfoType{SQL_CATALOG_LOCATION}),2);
 print("\n");
+
 
 # quote
 print("QUOTE: \n");
@@ -720,12 +810,17 @@ assertEqualString($dbh->quote_identifier("mytable"),"\"mytable\"");
 assertEqualString($dbh->quote_identifier("mycatalog","myschema","mytable"),"\"myschema\".\"mytable\"\@\"mycatalog\"");
 print("\n");
 
+
+# non-lazy connect
 print("NON-LAZY CONNECT: \n");
 $dsn = $prefix."sqlrelay:host=invalidhost;port=0;socket=/invalidsocket;tries=1;retrytime=1;debug=0;lazyconnect=0";
 assertUndef(DBI->connect($dsn,"testuser","testpassword"));
 print("\n");
 
 # invalid queries...
+
+
+# invalid queries
 print("INVALID QUERIES: \n");
 assertEqual($dbh->do("select * from testtable order by testnumber"),0);
 assertEqual($dbh->do("select * from testtable order by testnumber"),0);

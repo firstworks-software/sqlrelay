@@ -40,8 +40,8 @@ int main(int argc, char **argv) {
 
 	con->setClientInfo("extensionstest");
 
-
-	stdoutput.printf("IGNORE SELECT DATABASE:\n");
+	// ignore select database
+	stdoutput.printf("IGNORE SELECT DATABASE: \n");
 	char	*originaldb=charstring::duplicate(con->getCurrentDatabase());
 	assertEquals((originaldb!=NULL),true);
 	assertEquals(con->selectDatabase("nonexistentdb"),true);
@@ -50,7 +50,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
-	stdoutput.printf("TRANSLATE BIND VARIABLES:\n");
+	// translate bind variables
+	stdoutput.printf("TRANSLATE BIND VARIABLES: \n");
 	cur->prepareQuery("select :1 from dual where 'hel''lo'='hel''lo' and 1=:2 and 2=:3");
 	cur->validateBinds();
 	cur->inputBind("1","hello");
@@ -112,7 +113,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
-	stdoutput.printf("FAKE INPUT BIND VARIABLES:\n");
+	// fake input bind variables
+	stdoutput.printf("FAKE INPUT BIND VARIABLES: \n");
 	cur->prepareQuery("select '',1,'',:hello,'''','\\'' from dual where 1=:one");
 	cur->inputBind("hello","hello");
 	cur->inputBind("one","1");
@@ -127,6 +129,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	// isolation levels
 	stdoutput.printf("ISOLATION LEVELS: \n");
 
 	// set autocommit off
@@ -184,6 +187,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	// sqlrcmd cstat
 	stdoutput.printf("SQLRCMD CSTAT: \n");
 	assertTrue(cur->sendQuery("sqlrcmd cstat"));
 	assertEquals(cur->colCount(),9);
@@ -275,6 +279,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	// sqlrcmd gstat
 	stdoutput.printf("SQLRCMD GSTAT: \n");
 	assertTrue(cur->sendQuery("sqlrcmd gstat"));
 
@@ -328,6 +333,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	// session queries: date format
 	stdoutput.printf("SESSION QUERIES: Date Format\n");
 	assertTrue(cur->sendQuery("select sysdate from dual"));
 	datetime	dt;
@@ -354,7 +360,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
-	stdoutput.printf("FILTERS:\n");
+	// filters
+	stdoutput.printf("FILTERS: \n");
 	assertFalse(cur->sendQuery("select * from badstring"));
 	assertEquals(cur->errorMessage(),"badstring encountered");
 	assertFalse(cur->sendQuery("select * from badregex"));
@@ -366,7 +373,9 @@ int main(int argc, char **argv) {
 	delete cur;
 	delete con;
 
-	stdoutput.printf("PWDENCS:\n");
+
+	// pwdencs
+	stdoutput.printf("PWDENCS: \n");
 	const char	*usrpwds[]={
 		"test",
 		"rot16test",
@@ -390,7 +399,9 @@ int main(int argc, char **argv) {
 	}
 	stdoutput.printf("\n");
 
-	stdoutput.printf("UPSERT:\n");
+
+	// upsert
+	stdoutput.printf("UPSERT: \n");
 	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 							"test","test",0,1);
 	cur=new sqlrcursor(con);
@@ -479,7 +490,9 @@ int main(int argc, char **argv) {
 	delete secondcur;
 	stdoutput.printf("\n\n");
 
-	stdoutput.printf("ERROR TRANSLATION:\n");
+
+	// error translation
+	stdoutput.printf("ERROR TRANSLATION: \n");
 	assertFalse(cur->sendQuery("select 1"));
 	assertEquals(cur->errorNumber(),10923);
 	assertEquals(cur->errorMessage(),

@@ -36,14 +36,19 @@ class freetds extends sqlrtest {
 		SQLRCursor cur=new SQLRCursor(con);
 	
 		// get database type
+
+
+		// identify
 		System.out.println("IDENTIFY: ");
 		assertEquals(con.identify(),"freetds");
 		System.out.println();
-	
+
+
 		// ping
 		System.out.println("PING: ");
 		assertTrue(con.ping());
 		System.out.println();
+
 
 		// isolation levels
 		System.out.println("ISOLATION LEVELS: ");
@@ -58,24 +63,33 @@ class freetds extends sqlrtest {
 
 		// drop existing table
 		cur.sendQuery("drop table testtable");
-	
-	
+
+
+		// create temptable
 		System.out.println("CREATE TEMPTABLE: ");
 		assertTrue(cur.sendQuery("create table testtable (testint int, testsmallint smallint, testtinyint tinyint, testreal real, testfloat float, testdecimal decimal(4,1), testnumeric numeric(4,1), testmoney money, testsmallmoney smallmoney, testdatetime datetime, testsmalldatetime smalldatetime, testchar char(40), testvarchar varchar(40), testbit bit)"));
 		System.out.println();
-	
+
+
+		// begin transaction
 		System.out.println("BEGIN TRANSACTION: ");
 		assertTrue(cur.sendQuery("begin tran"));
 		System.out.println();
-	
+
+
+		// insert
 		System.out.println("INSERT: ");
 		assertTrue(cur.sendQuery("insert into testtable values (1,1,1,1.1,1.1,1.1,1.1,1.00,1.00,'01-Jan-2001 01:00:00','01-Jan-2001 01:00:00','testchar1','testvarchar1',1)"));
 		System.out.println();
-	
+
+
+		// affected rows
 		System.out.println("AFFECTED ROWS: ");
 		assertEquals(cur.affectedRows(),1);
 		System.out.println();
-	
+
+
+		// bind by position
 		System.out.println("BIND BY POSITION: ");
 		cur.prepareQuery("insert into testtable values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 		assertEquals(cur.countBindVariables(),14);
@@ -127,7 +141,9 @@ class freetds extends sqlrtest {
 		cur.inputBind("14",1);
 		assertTrue(cur.executeQuery());
 		System.out.println();
-	
+
+
+		// bind by name
 		System.out.println("BIND BY NAME: ");
 		cur.clearBinds();
 		cur.prepareQuery("insert into testtable values (@var1,@var2,@var3,@var4,@var5,@var6,@var7,@var8,@var9,@var10,@var11,@var12,@var13,@var14)");
@@ -179,7 +195,9 @@ class freetds extends sqlrtest {
 		cur.inputBind("var14",1);
 		assertTrue(cur.executeQuery());
 		System.out.println();
-	
+
+
+		// bind by name with validation
 		System.out.println("BIND BY NAME WITH VALIDATION: ");
 		cur.clearBinds();
 		cur.inputBind("var1",8);
@@ -200,15 +218,21 @@ class freetds extends sqlrtest {
 		cur.validateBinds();
 		assertTrue(cur.executeQuery());
 		System.out.println();
-	
+
+
+		// select
 		System.out.println("SELECT: ");
 		assertTrue(cur.sendQuery("select * from testtable order by testint"));
 		System.out.println();
-	
+
+
+		// column count
 		System.out.println("COLUMN COUNT: ");
 		assertEquals(cur.colCount(),14);
 		System.out.println();
-	
+
+
+		// column names
 		System.out.println("COLUMN NAMES: ");
 		assertEquals(cur.getColumnName(0),"testint");
 		assertEquals(cur.getColumnName(1),"testsmallint");
@@ -240,7 +264,9 @@ class freetds extends sqlrtest {
 		assertEquals(cols[12],"testvarchar");
 		assertEquals(cols[13],"testbit");
 		System.out.println();
-	
+
+
+		// column types
 		System.out.println("COLUMN TYPES: ");
 		assertEquals(cur.getColumnType(0),"INT");
 		assertEquals(cur.getColumnType("testint"),"INT");
@@ -271,7 +297,9 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getColumnType(13),"BIT");
 		assertEquals(cur.getColumnType("testbit"),"BIT");
 		System.out.println();
-	
+
+
+		// column length
 		System.out.println("COLUMN LENGTH: ");
 		assertEquals(cur.getColumnLength(0),4);
 		assertEquals(cur.getColumnLength("testint"),4);
@@ -304,7 +332,9 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getColumnLength(13),1);
 		assertEquals(cur.getColumnLength("testbit"),1);
 		System.out.println();
-	
+
+
+		// longest column
 		System.out.println("LONGEST COLUMN: ");
 		assertEquals(cur.getLongest(0),1);
 		assertEquals(cur.getLongest("testint"),1);
@@ -335,23 +365,33 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getLongest(13),1);
 		assertEquals(cur.getLongest("testbit"),1);
 		System.out.println();
-	
+
+
+		// row count
 		System.out.println("ROW COUNT: ");
 		assertEquals(cur.rowCount(),8);
 		System.out.println();
-	
+
+
+		// total rows
 		System.out.println("TOTAL ROWS: ");
 		assertEquals(cur.totalRows(),0);
 		System.out.println();
-	
+
+
+		// first row index
 		System.out.println("FIRST ROW INDEX: ");
 		assertEquals(cur.firstRowIndex(),0);
 		System.out.println();
-	
+
+
+		// end of result set
 		System.out.println("END OF RESULT SET: ");
 		assertTrue(cur.endOfResultSet());
 		System.out.println();
-	
+
+
+		// fields by index
 		System.out.println("FIELDS BY INDEX: ");
 		assertEquals(cur.getField(0,0),"1");
 		assertEquals(cur.getField(0,1),"1");
@@ -383,7 +423,9 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getField(7,12),"testvarchar8");
 		assertEquals(cur.getField(7,13),"1");
 		System.out.println();
-	
+
+
+		// field lengths by index
 		System.out.println("FIELD LENGTHS BY INDEX: ");
 		assertEquals(cur.getFieldLength(0,0),1);
 		assertEquals(cur.getFieldLength(0,1),1);
@@ -415,7 +457,9 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getFieldLength(7,12),12);
 		assertEquals(cur.getFieldLength(7,13),1);
 		System.out.println();
-	
+
+
+		// fields by name
 		System.out.println("FIELDS BY NAME: ");
 		assertEquals(cur.getField(0,"testint"),"1");
 		assertEquals(cur.getField(0,"testsmallint"),"1");
@@ -447,7 +491,9 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getField(7,"testvarchar"),"testvarchar8");
 		assertEquals(cur.getField(7,"testbit"),"1");
 		System.out.println();
-	
+
+
+		// field lengths by name
 		System.out.println("FIELD LENGTHS BY NAME: ");
 		assertEquals(cur.getFieldLength(0,"testint"),1);
 		assertEquals(cur.getFieldLength(0,"testsmallint"),1);
@@ -479,7 +525,9 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getFieldLength(7,"testvarchar"),12);
 		assertEquals(cur.getFieldLength(7,"testbit"),1);
 		System.out.println();
-	
+
+
+		// fields by array
 		System.out.println("FIELDS BY ARRAY: ");
 		fields=cur.getRow(0);
 		assertEquals(fields[0],"1");
@@ -497,7 +545,9 @@ class freetds extends sqlrtest {
 		assertEquals(fields[12],"testvarchar1");
 		assertEquals(fields[13],"1");
 		System.out.println();
-	
+
+
+		// field lengths by array
 		System.out.println("FIELD LENGTHS BY ARRAY: ");
 		fieldlens=cur.getRowLengths(0);
 		assertEquals(fieldlens[0],1);
@@ -515,7 +565,9 @@ class freetds extends sqlrtest {
 		assertEquals(fieldlens[12],12);
 		assertEquals(fieldlens[13],1);
 		System.out.println();
-	
+
+
+		// individual substitutions
 		System.out.println("INDIVIDUAL SUBSTITUTIONS: ");
 		cur.prepareQuery("select $(var1),'$(var2)',$(var3)");
 		cur.substitution("var1",1);
@@ -523,43 +575,57 @@ class freetds extends sqlrtest {
 		cur.substitution("var3",10.5556,6,4);
 		assertTrue(cur.executeQuery());
 		System.out.println();
-	
+
+
+		// fields
 		System.out.println("FIELDS: ");
 		assertEquals(cur.getField(0,0),"1");
 		assertEquals(cur.getField(0,1),"hello");
 		assertEquals(cur.getField(0,2),"10.5556");
 		System.out.println();
-	
+
+
+		// array substitutions
 		System.out.println("ARRAY SUBSTITUTIONS: ");
 		cur.prepareQuery("select $(var1),$(var2),$(var3)");
 		cur.substitutions(subvars,subvallongs);
 		assertTrue(cur.executeQuery());
 		System.out.println();
-		
+
+
+		// fields
 		System.out.println("FIELDS: ");
 		assertEquals(cur.getField(0,0),"1");
 		assertEquals(cur.getField(0,1),"2");
 		assertEquals(cur.getField(0,2),"3");
 		System.out.println();
-		
+
+
+		// array substitutions
 		System.out.println("ARRAY SUBSTITUTIONS: ");
 		cur.prepareQuery("select '$(var1)','$(var2)','$(var3)'");
 		cur.substitutions(subvars,subvalstrings);
 		assertTrue(cur.executeQuery());
 		System.out.println();
-	
+
+
+		// fields
 		System.out.println("FIELDS: ");
 		assertEquals(cur.getField(0,0),"hi");
 		assertEquals(cur.getField(0,1),"hello");
 		assertEquals(cur.getField(0,2),"bye");
 		System.out.println();
-	
+
+
+		// array substitutions
 		System.out.println("ARRAY SUBSTITUTIONS: ");
 		cur.prepareQuery("select $(var1),$(var2),$(var3)");
 		cur.substitutions(subvars,subvaldoubles,precs,scales);
 		assertTrue(cur.executeQuery());
 		System.out.println();
-	
+
+
+		// fields
 		System.out.println("FIELDS: ");
 		assertEquals(cur.getField(0,0),"10.55");
 		assertEquals(cur.getField(0,1),"10.556");
@@ -579,7 +645,9 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getField(0,2),"");
 		cur.getNullsAsNulls();
 		System.out.println();
-	
+
+
+		// result set buffer size
 		System.out.println("RESULT SET BUFFER SIZE: ");
 		assertEquals(cur.getResultSetBufferSize(),0);
 		cur.setResultSetBufferSize(2);
@@ -608,7 +676,9 @@ class freetds extends sqlrtest {
 		assertTrue(cur.endOfResultSet());
 		assertEquals(cur.rowCount(),8);
 		System.out.println();
-	
+
+
+		// dont get column info
 		System.out.println("DONT GET COLUMN INFO: ");
 		cur.dontGetColumnInfo();
 		assertTrue(cur.sendQuery("select * from testtable order by testint"));
@@ -621,7 +691,9 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getColumnLength(0),4);
 		assertEquals(cur.getColumnType(0),"INT");
 		System.out.println();
-	
+
+
+		// suspended session
 		System.out.println("SUSPENDED SESSION: ");
 		assertTrue(cur.sendQuery("select * from testtable order by testint"));
 		cur.suspendResultSet();
@@ -670,7 +742,9 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getField(6,0),"7");
 		assertEquals(cur.getField(7,0),"8");
 		System.out.println();
-	
+
+
+		// suspended result set
 		System.out.println("SUSPENDED RESULT SET: ");
 		cur.setResultSetBufferSize(2);
 		assertTrue(cur.sendQuery("select * from testtable order by testint"));
@@ -698,7 +772,9 @@ class freetds extends sqlrtest {
 		assertEquals(cur.rowCount(),8);
 		cur.setResultSetBufferSize(0);
 		System.out.println();
-	
+
+
+		// cached result set
 		System.out.println("CACHED RESULT SET: ");
 		cur.cacheToFile("cachefile1");
 		cur.setCacheTtl(200);
@@ -709,11 +785,15 @@ class freetds extends sqlrtest {
 		assertTrue(cur.openCachedResultSet(filename));
 		assertEquals(cur.getField(7,0),"8");
 		System.out.println();
-	
+
+
+		// column count for cached result set
 		System.out.println("COLUMN COUNT FOR CACHED RESULT SET: ");
 		assertEquals(cur.colCount(),14);
 		System.out.println();
-	
+
+
+		// column names for cached result set
 		System.out.println("COLUMN NAMES FOR CACHED RESULT SET: ");
 		assertEquals(cur.getColumnName(0),"testint");
 		assertEquals(cur.getColumnName(1),"testsmallint");
@@ -745,7 +825,9 @@ class freetds extends sqlrtest {
 		assertEquals(cols[12],"testvarchar");
 		assertEquals(cols[13],"testbit");
 		System.out.println();
-	
+
+
+		// cached result set with result set buffer size
 		System.out.println("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile1");
@@ -759,7 +841,9 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getField(8,0),null);
 		cur.setResultSetBufferSize(0);
 		System.out.println();
-	
+
+
+		// from one cache file to another
 		System.out.println("FROM ONE CACHE FILE TO ANOTHER: ");
 		cur.cacheToFile("cachefile2");
 		assertTrue(cur.openCachedResultSet("cachefile1"));
@@ -768,7 +852,9 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getField(7,0),"8");
 		assertEquals(cur.getField(8,0),null);
 		System.out.println();
-	
+
+
+		// from one cache file to another with result set buffer size
 		System.out.println("FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile2");
@@ -779,7 +865,9 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getField(8,0),null);
 		cur.setResultSetBufferSize(0);
 		System.out.println();
-	
+
+
+		// cached result set with suspend and result set buffer size
 		System.out.println("CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile1");
@@ -818,6 +906,8 @@ class freetds extends sqlrtest {
 		cur.setResultSetBufferSize(0);
 		System.out.println();
 
+
+		// finished suspended session
 		System.out.println("FINISHED SUSPENDED SESSION: ");
 		assertTrue(cur.sendQuery("select * from testtable order by testint"));
 		assertEquals(cur.getField(4,0),"5");
@@ -842,6 +932,9 @@ class freetds extends sqlrtest {
 		cur.sendQuery("drop table testtable");
 	
 		// invalid queries...
+
+
+		// invalid queries
 		System.out.println("INVALID QUERIES: ");
 		assertFalse(cur.sendQuery("select * from testtable order by testint"));
 		assertFalse(cur.sendQuery("select * from testtable order by testint"));

@@ -11,9 +11,12 @@ source ./asserts.tcl
 set con [sqlrcon -server "sqlrelay" -port 9000 -socket "/tmp/test.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
 set cur [$con sqlrcur]
 
+
+# identify
 puts "IDENTIFY: "
 assertEqual [$con identify] "postgresql"
 puts ""
+
 
 # ping
 puts "PING: "
@@ -41,14 +44,20 @@ puts ""
 # drop existing table
 catch {$cur sendQuery "drop table testtable"}
 
+
+# create temptable
 puts "CREATE TEMPTABLE: "
 assertTrue [$cur sendQuery "create table testtable (testint int, testfloat float, testreal real, testsmallint smallint, testchar char(40), testvarchar varchar(40), testdate date, testtime time, testtimestamp timestamp)"]
 puts ""
 
+
+# begin transction
 puts "BEGIN TRANSCTION: "
 assertTrue [$cur sendQuery "begin"]
 puts ""
 
+
+# insert
 puts "INSERT: "
 assertTrue [$cur sendQuery "insert into testtable values (1,1.1,1.1,1,'testchar1','testvarchar1','01/01/2001','01:00:00',NULL)"]
 assertTrue [$cur sendQuery "insert into testtable values (2,2.2,2.2,2,'testchar2','testvarchar2','01/01/2002','02:00:00',NULL)"]
@@ -56,10 +65,14 @@ assertTrue [$cur sendQuery "insert into testtable values (3,3.3,3.3,3,'testchar3
 assertTrue [$cur sendQuery "insert into testtable values (4,4.4,4.4,4,'testchar4','testvarchar4','01/01/2004','04:00:00',NULL)"]
 puts ""
 
+
+# affected rows
 puts "AFFECTED ROWS: "
 assertEqual [$cur affectedRows] 1
 puts ""
 
+
+# bind by position
 puts "BIND BY POSITION: "
 $cur prepareQuery "insert into testtable values (\$1,\$2,\$3,\$4,\$5,\$6,\$7,\$8)"
 assertEqual [$cur countBindVariables] 8
@@ -84,12 +97,16 @@ $cur inputBind "8" "06:00:00"
 assertTrue [$cur executeQuery]
 puts ""
 
+
+# array of binds by position
 puts "ARRAY OF BINDS BY POSITION: "
 $cur clearBinds
 $cur inputBinds {{"1" 7} {"2" 7.7 4 2} {"3" 7.7 4 2} {"4" 7} {"5" "testchar7"} {"6" "testchar7"} {"7" "01/01/2007"} {"8" "07:00:00"}}
 assertTrue [$cur executeQuery]
 puts ""
 
+
+# bind by position with validation
 puts "BIND BY POSITION WITH VALIDATION: "
 $cur clearBinds 
 $cur inputBind "1" 8
@@ -104,14 +121,20 @@ $cur validateBinds
 assertTrue [$cur executeQuery]
 puts ""
 
+
+# select
 puts "SELECT: "
 assertTrue [$cur sendQuery "select * from testtable order by testint"]
 puts ""
 
+
+# column count
 puts "COLUMN COUNT: "
 assertEqual [$cur colCount] 9
 puts ""
 
+
+# column names
 puts "COLUMN NAMES: "
 assertEqual [$cur getColumnName 0] "testint"
 assertEqual [$cur getColumnName 1] "testfloat"
@@ -134,6 +157,8 @@ assertEqual [lindex $cols 7] "testtime"
 assertEqual [lindex $cols 8] "testtimestamp"
 puts ""
 
+
+# column types
 puts "COLUMN TYPES: "
 assertEqual [$cur getColumnTypeByIndex 0] "int4"
 assertEqual [$cur getColumnTypeByName "testint"] "int4"
@@ -155,6 +180,8 @@ assertEqual [$cur getColumnTypeByIndex 8] "timestamp"
 assertEqual [$cur getColumnTypeByName "testtimestamp"] "timestamp"
 puts ""
 
+
+# column length
 puts "COLUMN LENGTH: "
 assertEqual [$cur getColumnLengthByIndex 0] 4
 assertEqual [$cur getColumnLengthByName "testint"] 4
@@ -176,6 +203,8 @@ assertEqual [$cur getColumnLengthByIndex 8] 8
 assertEqual [$cur getColumnLengthByName "testtimestamp"] 8
 puts ""
 
+
+# longest column
 puts "LONGEST COLUMN: "
 assertEqual [$cur getLongestByIndex 0] 1
 assertEqual [$cur getLongestByName "testint"] 1
@@ -195,6 +224,8 @@ assertEqual [$cur getLongestByIndex 7] 8
 assertEqual [$cur getLongestByName "testtime"] 8
 puts ""
 
+
+# row count
 puts "ROW COUNT: "
 assertEqual [$cur rowCount] 8
 puts ""
@@ -203,14 +234,20 @@ puts ""
 #assertEqual [$cur totalRows] 8
 #puts ""
 
+
+# first row index
 puts "FIRST ROW INDEX: "
 assertEqual [$cur firstRowIndex] 0
 puts ""
 
+
+# end of result set
 puts "END OF RESULT SET: "
 assertTrue [$cur endOfResultSet]
 puts ""
 
+
+# fields by index
 puts "FIELDS BY INDEX: "
 assertEqual [$cur getFieldByIndex 0 0] "1"
 assertEqual [$cur getFieldByIndex 0 1] "1.1"
@@ -231,6 +268,8 @@ assertEqual [$cur getFieldByIndex 7 6] "2008-01-01"
 assertEqual [$cur getFieldByIndex 7 7] "08:00:00"
 puts ""
 
+
+# field lengths by index
 puts "FIELD LENGTHS BY INDEX: "
 assertEqual [$cur getFieldLengthByIndex 0 0] 1
 assertEqual [$cur getFieldLengthByIndex 0 1] 3
@@ -251,6 +290,8 @@ assertEqual [$cur getFieldLengthByIndex 7 6] 10
 assertEqual [$cur getFieldLengthByIndex 7 7] 8
 puts ""
 
+
+# fields by name
 puts "FIELDS BY NAME: "
 assertEqual [$cur getFieldByName 0 "testint"] "1"
 assertEqual [$cur getFieldByName 0 "testfloat"] "1.1"
@@ -271,6 +312,8 @@ assertEqual [$cur getFieldByName 7 "testdate"] "2008-01-01"
 assertEqual [$cur getFieldByName 7 "testtime"] "08:00:00"
 puts ""
 
+
+# field lengths by name
 puts "FIELD LENGTHS BY NAME: "
 assertEqual [$cur getFieldLengthByName 0 "testint"] 1
 assertEqual [$cur getFieldLengthByName 0 "testfloat"] 3
@@ -291,6 +334,8 @@ assertEqual [$cur getFieldLengthByName 7 "testdate"] 10
 assertEqual [$cur getFieldLengthByName 7 "testtime"] 8
 puts ""
 
+
+# fields by array
 puts "FIELDS BY ARRAY: "
 set fields [$cur getRow 0]
 assertEqual [lindex $fields 0] 1
@@ -303,6 +348,8 @@ assertEqual [lindex $fields 6] "2001-01-01"
 assertEqual [lindex $fields 7] "01:00:00"
 puts ""
 
+
+# field lengths by array
 puts "FIELD LENGTHS BY ARRAY: "
 set fieldlens [$cur getRowLengths 0]
 assertEqual [lindex $fieldlens 0] 1
@@ -315,6 +362,8 @@ assertEqual [lindex $fieldlens 6] 10
 assertEqual [lindex $fieldlens 7] 8
 puts ""
 
+
+# individual substitutions
 puts "INDIVIDUAL SUBSTITUTIONS: "
 $cur prepareQuery "select \$(var1),'\$(var2)',\$(var3)"
 $cur substitution "var1" 1
@@ -323,24 +372,32 @@ $cur substitution "var3" 10.5556 6 4
 assertTrue [$cur executeQuery]
 puts ""
 
+
+# fields
 puts "FIELDS: "
 assertEqual [$cur getFieldByIndex 0 0] "1"
 assertEqual [$cur getFieldByIndex 0 1] "hello"
 assertEqual [$cur getFieldByIndex 0 2] "10.5556"
 puts ""
 
+
+# array substitutions
 puts "ARRAY SUBSTITUTIONS: "
 $cur prepareQuery "select \$(var1),'\$(var2)',\$(var3)"
 $cur substitutions {{"var1" 1} {"var2" "hello"} {"var3" 10.5556 6 4}}
 assertTrue [$cur executeQuery]
 puts ""
 
+
+# fields
 puts "FIELDS: "
 assertEqual [$cur getFieldByIndex 0 0] "1"
 assertEqual [$cur getFieldByIndex 0 1] "hello"
 assertEqual [$cur getFieldByIndex 0 2] "10.5556"
 puts ""
 
+
+# result set buffer size
 puts "RESULT SET BUFFER SIZE: "
 assertEqual [$cur getResultSetBufferSize] 0
 $cur setResultSetBufferSize 2
@@ -370,6 +427,8 @@ assertTrue [$cur endOfResultSet]
 assertEqual [$cur rowCount] 8
 puts ""
 
+
+# dont get column info
 puts "DONT GET COLUMN INFO: "
 $cur dontGetColumnInfo 
 assertTrue [$cur sendQuery "select * from testtable order by testint"]
@@ -383,6 +442,8 @@ assertEqual [$cur getColumnLengthByIndex 0] 4
 assertEqual [$cur getColumnTypeByIndex 0] "int4"
 puts ""
 
+
+# suspended session
 puts "SUSPENDED SESSION: "
 assertTrue [$cur sendQuery "select * from testtable order by testint"]
 $cur suspendResultSet 
@@ -433,6 +494,8 @@ assertEqual [$cur getFieldByIndex 6 0] "7"
 assertEqual [$cur getFieldByIndex 7 0] "8"
 puts ""
 
+
+# suspended result set
 puts "SUSPENDED RESULT SET: "
 $cur setResultSetBufferSize 2
 assertTrue [$cur sendQuery "select * from testtable order by testint"]
@@ -461,6 +524,8 @@ assertEqual [$cur rowCount] 8
 $cur setResultSetBufferSize 0
 puts ""
 
+
+# cached result set
 puts "CACHED RESULT SET: "
 $cur cacheToFile "cachefile1"
 $cur setCacheTtl 200
@@ -472,10 +537,14 @@ assertTrue [$cur openCachedResultSet $filename]
 assertEqual [$cur getFieldByIndex 7 0] "8"
 puts ""
 
+
+# column count for cached result set
 puts "COLUMN COUNT FOR CACHED RESULT SET: "
 assertEqual [$cur colCount] 9
 puts ""
 
+
+# column names for cached result set
 puts "COLUMN NAMES FOR CACHED RESULT SET: "
 assertEqual [$cur getColumnName 0] "testint"
 assertEqual [$cur getColumnName 1] "testfloat"
@@ -498,6 +567,8 @@ assertEqual [lindex $cols 7] "testtime"
 assertEqual [lindex $cols 8] "testtimestamp"
 puts ""
 
+
+# cached result set with result set buffer size
 puts "CACHED RESULT SET WITH RESULT SET BUFFER SIZE: "
 $cur setResultSetBufferSize 2
 $cur cacheToFile "cachefile1"
@@ -512,6 +583,8 @@ assertUndef [$cur getFieldByIndex 8 0]
 $cur setResultSetBufferSize 0
 puts ""
 
+
+# from one cache file to another
 puts "FROM ONE CACHE FILE TO ANOTHER: "
 $cur cacheToFile "cachefile2"
 assertTrue [$cur openCachedResultSet "cachefile1"]
@@ -521,6 +594,8 @@ assertEqual [$cur getFieldByIndex 7 0] "8"
 assertUndef [$cur getFieldByIndex 8 0]
 puts ""
 
+
+# from one cache file to another with result set buffer size
 puts "FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: "
 $cur setResultSetBufferSize 2
 $cur cacheToFile "cachefile2"
@@ -532,6 +607,8 @@ assertUndef [$cur getFieldByIndex 8 0]
 $cur setResultSetBufferSize 0
 puts ""
 
+
+# cached result set with suspend and result set buffer size
 puts "CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: "
 $cur setResultSetBufferSize 2
 $cur cacheToFile "cachefile1"
@@ -570,6 +647,8 @@ assertUndef [$cur getFieldByIndex 8 0]
 $cur setResultSetBufferSize 0
 puts ""
 
+
+# commit and rollback
 puts "COMMIT AND ROLLBACK: "
 set secondcon [sqlrcon -server "sqlrelay" -port 9000 -socket "/tmp/test.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
 set secondcur [$secondcon sqlrcur]
@@ -586,6 +665,8 @@ assertEqual [$secondcur getFieldByIndex 0 0] "9"
 #assertEqual [$con autoCommitOff] 1
 puts ""
 
+
+# finished suspended session
 puts "FINISHED SUSPENDED SESSION: "
 assertTrue [$cur sendQuery "select * from testtable order by testint"]
 assertEqual [$cur getFieldByIndex 4 0] "5"
@@ -605,6 +686,8 @@ assertUndef [$cur getFieldByIndex 6 0]
 assertUndef [$cur getFieldByIndex 7 0]
 puts ""
 
+
+# stored procedures
 puts "STORED PROCEDURES: "
 catch {$cur sendQuery "drop function testfunc(int)"}
 assertTrue [$cur sendQuery "create function testfunc(int) returns int as ' begin return \$1; end;' language plpgsql"]
@@ -629,6 +712,9 @@ puts ""
 catch {$cur sendQuery "drop table testtable"}
 
 # invalid queries...
+
+
+# invalid queries
 puts "INVALID QUERIES: "
 catch {assertFalse [$cur sendQuery "select * from testtable order by testint"]}
 catch {assertFalse [$cur sendQuery "select * from testtable order by testint"]}

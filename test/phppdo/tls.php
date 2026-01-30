@@ -30,19 +30,28 @@
 	} catch (Exception $e) {
 	}
 
+
+	# create temptable
 	echo("CREATE TEMPTABLE: \n");
 	assertEqual($dbh->exec("create table testtable (testnumber number, testchar char(40), testvarchar varchar(40), testdate date, testlong long, testclob clob, testblob blob)"),0);
 	echo("\n");
 
+
+	# insert
 	echo("INSERT: \n");
 	assertEqual($dbh->exec("insert into testtable values (1,'testchar1','testvarchar1','01-JAN-2001','testlong1','testclob1',empty_blob())"),1);
 	echo("\n");
 
+
+	# last insert id
 	echo("LAST INSERT ID: \n");
 	assertEqual(intval($dbh->lastInsertId()),0);
 	echo("\n");
 
 	# doesn't work with oracle unless translatebindvariables="yes" is set
+
+
+	# bind by position
 	echo("BIND BY POSITION: \n");
 	$stmt=$dbh->prepare("insert into testtable values (:1,:2,:3,:4,:5,:6,:7)");
 	assertTrue($stmt->bindValue(1,2,PDO::PARAM_INT));
@@ -70,10 +79,14 @@
 	assertTrue($stmt->execute());
 	echo("\n");
 
+
+	# row count
 	echo("ROW COUNT: \n");
 	assertEqual($stmt->rowCount(),1);
 	echo("\n");
 
+
+	# array of binds by position
 	echo("ARRAY OF BINDS BY POSITION: \n");
 	$stmt=$dbh->prepare("insert into testtable values (:1,:2,:3,:4,:5,:6,empty_blob())");
 	$param1=4;
@@ -85,6 +98,8 @@
 	assertTrue($stmt->execute(array($param1,$param2,$param3,$param4,$param5,$param6)));
 	echo("\n");
 
+
+	# bind by name
 	echo("BIND BY NAME: \n");
 	$stmt=$dbh->prepare("insert into testtable values (:var1,:var2,:var3,:var4,:var5,:var6,:var7)");
 	assertTrue($stmt->bindValue("var1",5,PDO::PARAM_INT));
@@ -112,6 +127,8 @@
 	assertTrue($stmt->execute());
 	echo("\n");
 
+
+	# array of binds by name
 	echo("ARRAY OF BINDS BY NAME: \n");
 	$stmt=$dbh->prepare("insert into testtable values (:var1,:var2,:var3,:var4,:var5,:var6,empty_blob())");
 	$param1=7;
@@ -123,10 +140,14 @@
 	assertTrue($stmt->execute(array("var1"=>$param1,"var2"=>$param2,"var3"=>$param3,"var4"=>$param4,"var5"=>$param5,"var6"=>$param6)));
 	echo("\n");
 
+
+	# select
 	echo("SELECT: \n");
 	$stmt=$dbh->query("select * from testtable order by testnumber");
 	echo("\n");
-	
+
+
+	# column count
 	echo("COLUMN COUNT: \n");
 	assertEqual($stmt->columnCount(),7);
 	$meta0=$stmt->getColumnMeta(0);
@@ -138,6 +159,8 @@
 	$meta6=$stmt->getColumnMeta(6);
 	echo("\n");
 
+
+	# column names
 	echo("COLUMN NAMES: \n");
 	assertEqual($meta0["name"],"TESTNUMBER");
 	assertEqual($meta1["name"],"TESTCHAR");
@@ -148,6 +171,8 @@
 	assertEqual($meta6["name"],"TESTBLOB");
 	echo("\n");
 
+
+	# column types
 	echo("COLUMN TYPES: \n");
 	assertEqual($meta0["native_type"],"NUMBER");
 	assertEqual($meta1["native_type"],"CHAR");
@@ -165,6 +190,8 @@
 	assertEqual($meta6["pdo_type"],PDO::PARAM_LOB);
 	echo("\n");
 
+
+	# column types
 	echo("COLUMN TYPES: \n");
 	assertEqual($meta0["len"],22);
 	assertEqual($meta1["len"],40);
@@ -175,6 +202,8 @@
 	assertEqual($meta6["len"],0);
 	echo("\n");
 
+
+	# fields by index
 	echo("FIELDS BY INDEX: \n");
 	$result=$stmt->fetch(PDO::FETCH_NUM);
 	assertEqual($result[0],1);
@@ -186,6 +215,8 @@
 	assertEqual(stream_get_contents($result[6]),"");
 	echo("\n");
 
+
+	# fields by name
 	echo("FIELDS BY NAME: \n");
 	$result=$stmt->fetch(PDO::FETCH_ASSOC);
 	assertEqual($result["TESTNUMBER"],2);
@@ -197,6 +228,8 @@
 	assertEqual(stream_get_contents($result["TESTBLOB"]),"testblob2");
 	echo("\n");
 
+
+	# fields by name and index
 	echo("FIELDS BY NAME AND INDEX: \n");
 	$result=$stmt->fetch();
 	assertEqual($result[0],3);
@@ -218,12 +251,16 @@
 	assertEqual(stream_get_contents($result["TESTBLOB"]),"testblob3");
 	echo("\n");
 
+
+	# fetch column
 	echo("FETCH COLUMN: \n");
 	assertEqual($stmt->fetchColumn(0),"4");
 	assertEqual($stmt->fetchColumn(0),"5");
 	assertEqual($stmt->fetchColumn(0),"6");
 	echo("\n");
 
+
+	# fetch all
 	echo("FETCH ALL: \n");
 	$stmt=$dbh->query("select * from testtable order by testnumber");
 	$result=$stmt->fetchAll();
@@ -257,6 +294,8 @@
 	assertEqual($result[6]["TESTVARCHAR"],"testvarchar7");
 	echo("\n");
 
+
+	# fetch object
 	echo("FETCH OBJECT: \n");
 	$stmt=$dbh->query("select * from testtable order by testnumber");
 	$result=$stmt->fetchObject();
@@ -269,6 +308,8 @@
 	assertEqual(stream_get_contents($result->TESTBLOB),"");
 	echo("\n");
 
+
+	# fetch orientations
 	echo("FETCH ORIENTATIONS: \n");
 	$stmt=$dbh->query("select * from testtable order by testnumber");
 	$result=$stmt->fetch(PDO::FETCH_NUM);
@@ -295,6 +336,8 @@
 	assertEqual($result[0],"5");
 	echo("\n");
 
+
+	# fetch forward only
 	echo("FETCH FORWARD ONLY: \n");
 	$stmt=$dbh->prepare("select * from testtable order by testnumber",
 				array(PDO::ATTR_CURSOR=>PDO::CURSOR_FWDONLY));
@@ -321,6 +364,8 @@
 	assertEqual($result[0],"7");
 	echo("\n");
 
+
+	# result set buffer size
 	echo("RESULT SET BUFFER SIZE: \n");
 	$stmt=$dbh->prepare("select * from testtable order by testnumber");
 	assertEqual($stmt->setAttribute(
@@ -367,6 +412,8 @@
 	assertEqual($meta0["len"],22);
 	echo("\n");
 
+
+	# other driver-specific options
 	echo("OTHER DRIVER-SPECIFIC OPTIONS: \n");
 	assertEqual($dbh->getAttribute(PDO::SQLRELAY_ATTR_BIND_FORMAT),":*");
 	assertEqual($dbh->getAttribute(
@@ -381,6 +428,8 @@
 				PDO::SQLRELAY_ATTR_CURRENT_DB)."\n");
 	echo("\n");
 
+
+	# bound columns
 	echo("BOUND COLUMNS: \n");
 	$stmt=$dbh->prepare("select * from testtable order by testnumber");
 	$col1=0;
@@ -416,6 +465,8 @@
 	assertEqual(stream_get_contents($col7),"testblob2");
 	echo("\n");
 
+
+	# stringify
 	echo("STRINGIFY: \n");
 	assertEqual($dbh->setAttribute(PDO::ATTR_STRINGIFY_FETCHES,TRUE),1);
 	$stmt=$dbh->query("select * from testtable order by testnumber");
@@ -438,6 +489,8 @@
 	assertEqual($dbh->setAttribute(PDO::ATTR_STRINGIFY_FETCHES,FALSE),1);
 	echo("\n");
 
+
+	# suspended session
 	echo("SUSPENDED SESSION: \n");
 	$stmt=$dbh->query("select * from testtable order by testnumber");
 	$stmt->suspendResultSet();
@@ -485,6 +538,8 @@
 	assertEqual(stream_get_contents($result[6]),"");
 	echo("\n");
 
+
+	# suspended result set
 	echo("SUSPENDED RESULT SET: \n");
 	$stmt=$dbh->prepare("select * from testtable order by testnumber");
 	assertEqual($stmt->setAttribute(
@@ -511,6 +566,8 @@
 	assertEqual($result[4][0],"7");
 	echo("\n");
 
+
+	# commit and rollback
 	echo("COMMIT AND ROLLBACK: \n");
 	try {
 		$dbh->exec("drop table testtable1");
@@ -544,6 +601,8 @@
 	assertEqual($result2[0],1);
 	echo("\n");
 
+
+	# autocommit
 	echo("AUTOCOMMIT: \n");
 	if (method_exists($dbh,"inTransaction")) {
 		assertEqual($dbh->inTransaction(),0);
@@ -575,6 +634,8 @@
 	assertTrue($stmt->execute());
 	echo("\n");
 
+
+	# client and server versions
 	echo("CLIENT AND SERVER VERSIONS: \n");
 	assertEqual($dbh->getAttribute(PDO::ATTR_CLIENT_VERSION),
 			$dbh->getAttribute(PDO::ATTR_SERVER_VERSION));
@@ -592,6 +653,9 @@
 
 # output binds don't appear to work with PDO for PHP7
 if (PHP_VERSION_ID < 70000) {
+
+
+	# output bind by name
 	echo("OUTPUT BIND BY NAME: \n");
 	$stmt=$dbh->prepare("begin  :numvar:=1; :stringvar:='hello'; end;");
 	$param1=0;
@@ -603,6 +667,8 @@ if (PHP_VERSION_ID < 70000) {
 	assertEqual($param2,"hello");
 	echo("\n");
 
+
+	# output bind by position
 	echo("OUTPUT BIND BY POSITION: \n");
 	$stmt=$dbh->prepare("begin  :1:=1; :2:='hello'; end;");
 	$param1=0;
@@ -614,6 +680,8 @@ if (PHP_VERSION_ID < 70000) {
 	assertEqual($param2,"hello");
 	echo("\n");
 
+
+	# clob and blob output bind
 	echo("CLOB AND BLOB OUTPUT BIND: \n");
 	try {
 		$dbh->exec("drop table testtable1");
@@ -630,6 +698,8 @@ if (PHP_VERSION_ID < 70000) {
 	assertEqual(stream_get_contents($param1),"hello");
 	echo("\n");
 
+
+	# clob and blob output bind to and from file
 	echo("CLOB AND BLOB OUTPUT BIND TO AND FROM FILE: \n");
 	try {
 		$dbh->exec("drop table testtable1");
@@ -660,6 +730,8 @@ if (PHP_VERSION_ID < 70000) {
 	# this throws an execption and doesn't continue on PHP7
 	try {
 
+
+		# non-lazy connect
 		echo("NON-LAZY CONNECT: \n");
 		$dsn = "sqlrelay:host=invalidhost;port=0;socket=/invalidsocket;tries=1;retrytime=1;tls=yes;tlscert=$tlscert;tlsvalidate=ca;tlsca=$tlsca;debug=0;lazyconnect=0";
 		assertEqual(new PDO($dsn,$user,$password),0);
@@ -670,6 +742,8 @@ if (PHP_VERSION_ID < 70000) {
 		echo("\n");
 	}
 
+
+	# invalid queries
 	echo("INVALID QUERIES: \n");
 	assertEqual($dbh->query("select 1"),0);
 	assertEqual($dbh->errorCode(),"HY000");
@@ -686,12 +760,16 @@ if (PHP_VERSION_ID < 70000) {
 	assertEqual($info[2],"ORA-00923: FROM keyword not found where expected");
 	echo("\n");
 
+
+	# quote
 	echo("QUOTE: \n");
 	assertEqual($dbh->quote("select * from table"),"'select * from table'");
 	assertEqual($dbh->quote("Naughty ' string"),"'Naughty '' string'");
 	assertEqual($dbh->quote("Co'mpl''ex \"st'\"ring"),"'Co''mpl''''ex \"st''\"ring'");
 	echo("\n");
 
+
+	# invalid operations
 	echo("INVALID OPERATIONS: \n");
 	assertEqual($stmt->nextRowset(),0);
 	assertEqual($stmt->setAttribute(PDO::ATTR_AUTOCOMMIT,FALSE),0);

@@ -29,42 +29,44 @@ int main(int argc, char **argv) {
 	SQLCHAR		*user;
 	SQLCHAR		*password;
 
-	// allocate environemnt handle
+	// env handle
 	printf("ENV HANDLE: \n");
 #if (ODBCVER >= 0x3000)
 	erg=SQLAllocHandle(SQL_HANDLE_ENV,SQL_NULL_HANDLE,&env);
-	assertEqualInt((erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO)?1:0,1);
+	assertSuccessEnv(env,erg);
 
 #if defined(SQL_OV_ODBC3_80)
 	erg=SQLSetEnvAttr(env,SQL_ATTR_ODBC_VERSION,
 				(SQLPOINTER)SQL_OV_ODBC3_80,0);
-	assertEqualInt((erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO)?1:0,1);
+	assertSuccessEnv(env,erg);
 #elif defined(SQL_OV_ODBC3)
 	erg=SQLSetEnvAttr(env,SQL_ATTR_ODBC_VERSION,
 				(SQLPOINTER)SQL_OV_ODBC3,0);
-	assertEqualInt((erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO)?1:0,1);
+	assertSuccessEnv(env,erg);
 #else
 	erg=SQLSetEnvAttr(env,SQL_ATTR_ODBC_VERSION,
 				(SQLPOINTER)SQL_OV_ODBC2,0);
-	assertEqualInt((erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO)?1:0,1);
+	assertSuccessEnv(env,erg);
 #endif
 
 #else
 	erg=SQLAllocEnv(&env);
-	assertEqualInt((erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO)?1:0,1);
+	assertSuccessEnv(env,erg);
 #endif
 	printf("\n");
 
-	// allocate connection handle
+
+	// connection handle
 	printf("CONNECTION HANDLE: \n");
 #if (ODBCVER >= 0x0300)
 	erg=SQLAllocHandle(SQL_HANDLE_DBC,env,&dbc);
-	assertEqualInt((erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO)?1:0,1);
+	assertSuccessEnv(env,erg);
 #else
 	erg=SQLAllocConnect(env,&dbc);
-	assertEqualInt((erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO)?1:0,1);
+	assertSuccessEnv(env,erg);
 #endif
 	printf("\n");
+
 
 	// connect
 	printf("CONNECT: \n");
@@ -72,14 +74,14 @@ int main(int argc, char **argv) {
 	user=(SQLCHAR *)"testuser";
 	password=(SQLCHAR *)"testpassword";
 	erg=SQLConnect(dbc,dsn,SQL_NTS,user,SQL_NTS,password,SQL_NTS);
-	assertEqualInt((erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO)?1:0,1);
+	assertSuccessDbc(dbc,erg);
 	printf("\n");
 
 
-
+	// bind
 	printf("BIND: \n");
 	erg=SQLAllocHandle(SQL_HANDLE_STMT,dbc,&stmt);
-	assertEqualInt((erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO)?1:0,1);
+	assertSuccessDbc(dbc,erg);
 
 	SQLCHAR *placeholder1=(SQLCHAR *)"PARAM DATA1";
 	SQLLEN	strlenorindptr1=-115;
@@ -93,7 +95,7 @@ int main(int argc, char **argv) {
 				(SQLPOINTER)placeholder1,
 				0,
 				&strlenorindptr1);
-	assertEqualInt((erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO)?1:0,1);
+	assertSuccessStmt(stmt,erg);
 
 	SQLCHAR	*placeholder2=(SQLCHAR *)"PARAM DATA2";
 	SQLLEN	strlenorindptr2=-116;
@@ -107,7 +109,7 @@ int main(int argc, char **argv) {
 				(SQLPOINTER)placeholder2,
 				0,
 				&strlenorindptr2);
-	assertEqualInt((erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO)?1:0,1);
+	assertSuccessStmt(stmt,erg);
 
 	SQLCHAR	*placeholder3=(SQLCHAR *)"PARAM DATA3";
 	SQLLEN	strlenorindptr3=-118;
@@ -121,53 +123,53 @@ int main(int argc, char **argv) {
 				(SQLPOINTER)placeholder3,
 				0,
 				&strlenorindptr3);
-	assertEqualInt((erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO)?1:0,1);
+	assertSuccessStmt(stmt,erg);
 
 	erg=SQLExecDirect(stmt,(SQLCHAR *)"select ?,?,?",SQL_NTS);
-	assertEqualInt((erg==SQL_NEED_DATA)?1:0,1);
+	assertTrueStmt(stmt,erg==SQL_NEED_DATA);
 
 	SQLPOINTER	buffer=NULL;
 	erg=SQLParamData(stmt,&buffer);
-	assertEqualInt((erg==SQL_NEED_DATA)?1:0,1);
-	assertEqualString((const char *)buffer,"PARAM DATA1");
+	assertTrueStmt(stmt,erg==SQL_NEED_DATA);
+	assertEqualStmt(stmt,(const char *)buffer,"PARAM DATA1");
 
 	SQLCHAR	*val=(SQLCHAR *)"param data 1 woohoooo";
 	erg=SQLPutData(stmt,val,6);
-	assertEqualInt((erg==SQL_SUCCESS)?1:0,1);
+	assertTrueStmt(stmt,erg==SQL_SUCCESS);
 	erg=SQLPutData(stmt,val+6,6);
-	assertEqualInt((erg==SQL_SUCCESS)?1:0,1);
+	assertTrueStmt(stmt,erg==SQL_SUCCESS);
 	erg=SQLPutData(stmt,val+12,9);
-	assertEqualInt((erg==SQL_SUCCESS)?1:0,1);
+	assertTrueStmt(stmt,erg==SQL_SUCCESS);
 
 	erg=SQLParamData(stmt,&buffer);
-	assertEqualInt((erg==SQL_NEED_DATA)?1:0,1);
-	assertEqualString((const char *)buffer,"PARAM DATA2");
+	assertTrueStmt(stmt,erg==SQL_NEED_DATA);
+	assertEqualStmt(stmt,(const char *)buffer,"PARAM DATA2");
 
 	val=(SQLCHAR *)"param data 2 woohoooo";
 	erg=SQLPutData(stmt,val,6);
-	assertEqualInt((erg==SQL_SUCCESS)?1:0,1);
+	assertTrueStmt(stmt,erg==SQL_SUCCESS);
 	erg=SQLPutData(stmt,val+6,6);
-	assertEqualInt((erg==SQL_SUCCESS)?1:0,1);
+	assertTrueStmt(stmt,erg==SQL_SUCCESS);
 	erg=SQLPutData(stmt,val+12,9);
-	assertEqualInt((erg==SQL_SUCCESS)?1:0,1);
+	assertTrueStmt(stmt,erg==SQL_SUCCESS);
 
 	erg=SQLParamData(stmt,&buffer);
-	assertEqualInt((erg==SQL_NEED_DATA)?1:0,1);
-	assertEqualString((const char *)buffer,"PARAM DATA3");
+	assertTrueStmt(stmt,erg==SQL_NEED_DATA);
+	assertEqualStmt(stmt,(const char *)buffer,"PARAM DATA3");
 
 	val=(SQLCHAR *)"param data 3 woohoooo";
 	erg=SQLPutData(stmt,val,6);
-	assertEqualInt((erg==SQL_SUCCESS)?1:0,1);
+	assertTrueStmt(stmt,erg==SQL_SUCCESS);
 	erg=SQLPutData(stmt,val+6,6);
-	assertEqualInt((erg==SQL_SUCCESS)?1:0,1);
+	assertTrueStmt(stmt,erg==SQL_SUCCESS);
 	erg=SQLPutData(stmt,val+12,9);
-	assertEqualInt((erg==SQL_SUCCESS)?1:0,1);
+	assertTrueStmt(stmt,erg==SQL_SUCCESS);
 
 	erg=SQLParamData(stmt,&buffer);
-	assertEqualInt((erg==SQL_SUCCESS)?1:0,1);
+	assertTrueStmt(stmt,erg==SQL_SUCCESS);
 
 	erg=SQLFetch(stmt);
-	assertEqualInt((erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO)?1:0,1);
+	assertSuccessStmt(stmt,erg);
 	printf("\n");
 
 	reportTestStatus();

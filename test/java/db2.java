@@ -39,14 +39,19 @@ class db2 extends sqlrtest {
 		SQLRCursor cur=new SQLRCursor(con);
 	
 		// get database type
+
+
+		// identify
 		System.out.println("IDENTIFY: ");
 		assertEquals(con.identify(),"db2");
 		System.out.println();
-	
+
+
 		// ping
 		System.out.println("PING: ");
 		assertTrue(con.ping());
 		System.out.println();
+
 
 		// isolation levels
 		System.out.println("ISOLATION LEVELS: ");
@@ -61,15 +66,21 @@ class db2 extends sqlrtest {
 
 		// drop existing table
 		cur.sendQuery("drop table testtable");
-	
+
+
+		// create temptable
 		System.out.println("CREATE TEMPTABLE: ");
 		assertTrue(cur.sendQuery("create table testtable (testsmallint smallint, testint integer, testbigint bigint, testdecimal decimal(10,2), testreal real, testdouble double, testchar char(40), testvarchar varchar(40), testdate date, testtime time, testtimestamp timestamp)"));
 		System.out.println();
-	
+
+
+		// insert
 		System.out.println("INSERT: ");
 		assertTrue(cur.sendQuery("insert into testtable values (1,1,1,1.1,1.1,1.1,'testchar1','testvarchar1','01/01/2001','01:00:00',null)"));
 		System.out.println();
-	
+
+
+		// bind by position
 		System.out.println("BIND BY POSITION: ");
 		cur.prepareQuery("insert into testtable values (?,?,?,?,?,?,?,?,?,?,null)");
 		assertEquals(cur.countBindVariables(),10);
@@ -97,24 +108,32 @@ class db2 extends sqlrtest {
 		cur.inputBind("10","03:00:00");
 		assertTrue(cur.executeQuery());
 		System.out.println();
-	
+
+
+		// array of binds by position
 		System.out.println("ARRAY OF BINDS BY POSITION: ");
 		cur.clearBinds();
 		cur.inputBinds(bindvars,bindvals);
 		assertTrue(cur.executeQuery());
 		System.out.println();
-	
+
+
+		// insert
 		System.out.println("INSERT: ");
 		assertTrue(cur.sendQuery("insert into testtable values (5,5,5,5.5,5.5,5.5,'testchar5','testvarchar5','01/01/2005','05:00:00',null)"));
 		assertTrue(cur.sendQuery("insert into testtable values (6,6,6,6.6,6.6,6.6,'testchar6','testvarchar6','01/01/2006','06:00:00',null)"));
 		assertTrue(cur.sendQuery("insert into testtable values (7,7,7,7.7,7.7,7.7,'testchar7','testvarchar7','01/01/2007','07:00:00',null)"));
 		assertTrue(cur.sendQuery("insert into testtable values (8,8,8,8.8,8.8,8.8,'testchar8','testvarchar8','01/01/2008','08:00:00',null)"));
 		System.out.println();
-	
+
+
+		// affected rows
 		System.out.println("AFFECTED ROWS: ");
 		assertEquals(cur.affectedRows(),1);
 		System.out.println();
 
+
+		// stored procedure
 		System.out.println("STORED PROCEDURE: ");
 		cur.sendQuery("drop procedure testproc");
 		assertTrue(cur.sendQuery("create procedure testproc(in invar int, out outvar int) language sql begin set outvar = invar; end"));
@@ -125,15 +144,21 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getOutputBindInteger("2"),5);
 		assertTrue(cur.sendQuery("drop procedure testproc"));
 		System.out.println();
-	
+
+
+		// select
 		System.out.println("SELECT: ");
 		assertTrue(cur.sendQuery("select * from testtable order by testsmallint"));
 		System.out.println();
-	
+
+
+		// column count
 		System.out.println("COLUMN COUNT: ");
 		assertEquals(cur.colCount(),11);
 		System.out.println();
-	
+
+
+		// column names
 		System.out.println("COLUMN NAMES: ");
 		assertEquals(cur.getColumnName(0),"TESTSMALLINT");
 		assertEquals(cur.getColumnName(1),"TESTINT");
@@ -159,7 +184,9 @@ class db2 extends sqlrtest {
 		assertEquals(cols[9],"TESTTIME");
 		assertEquals(cols[10],"TESTTIMESTAMP");
 		System.out.println();
-	
+
+
+		// column types
 		System.out.println("COLUMN TYPES: ");
 		assertEquals(cur.getColumnType(0),"SMALLINT");
 		assertEquals(cur.getColumnType("TESTSMALLINT"),"SMALLINT");
@@ -184,7 +211,9 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getColumnType(10),"TIMESTAMP");
 		assertEquals(cur.getColumnType("TESTTIMESTAMP"),"TIMESTAMP");
 		System.out.println();
-	
+
+
+		// column length
 		System.out.println("COLUMN LENGTH: ");
 		assertEquals(cur.getColumnLength(0),2);
 		assertEquals(cur.getColumnLength("TESTSMALLINT"),2);
@@ -209,7 +238,9 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getColumnLength(10),16);
 		assertEquals(cur.getColumnLength("TESTTIMESTAMP"),16);
 		System.out.println();
-	
+
+
+		// longest column
 		System.out.println("LONGEST COLUMN: ");
 		assertEquals(cur.getLongest(0),1);
 		assertEquals(cur.getLongest("TESTSMALLINT"),1);
@@ -232,23 +263,33 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getLongest(9),8);
 		assertEquals(cur.getLongest("TESTTIME"),8);
 		System.out.println();
-	
+
+
+		// row count
 		System.out.println("ROW COUNT: ");
 		assertEquals(cur.rowCount(),8);
 		System.out.println();
-	
+
+
+		// total rows
 		System.out.println("TOTAL ROWS: ");
 		assertEquals(cur.totalRows(),0);
 		System.out.println();
-	
+
+
+		// first row index
 		System.out.println("FIRST ROW INDEX: ");
 		assertEquals(cur.firstRowIndex(),0);
 		System.out.println();
-	
+
+
+		// end of result set
 		System.out.println("END OF RESULT SET: ");
 		assertTrue(cur.endOfResultSet());
 		System.out.println();
-	
+
+
+		// fields by index
 		System.out.println("FIELDS BY INDEX: ");
 		assertEquals(cur.getField(0,0),"1");
 		assertEquals(cur.getField(0,1),"1");
@@ -272,7 +313,9 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getField(7,8),"2008-01-01");
 		assertEquals(cur.getField(7,9),"08:00:00");
 		System.out.println();
-	
+
+
+		// field lengths by index
 		System.out.println("FIELD LENGTHS BY INDEX: ");
 		assertEquals(cur.getFieldLength(0,0),1);
 		assertEquals(cur.getFieldLength(0,1),1);
@@ -296,7 +339,9 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getFieldLength(7,8),10);
 		assertEquals(cur.getFieldLength(7,9),8);
 		System.out.println();
-	
+
+
+		// fields by name
 		System.out.println("FIELDS BY NAME: ");
 		assertEquals(cur.getField(0,"TESTSMALLINT"),"1");
 		assertEquals(cur.getField(0,"TESTINT"),"1");
@@ -320,7 +365,9 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getField(7,"TESTDATE"),"2008-01-01");
 		assertEquals(cur.getField(7,"TESTTIME"),"08:00:00");
 		System.out.println();
-	
+
+
+		// field lengths by name
 		System.out.println("FIELD LENGTHS BY NAME: ");
 		assertEquals(cur.getFieldLength(0,"TESTSMALLINT"),1);
 		assertEquals(cur.getFieldLength(0,"TESTINT"),1);
@@ -344,7 +391,9 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getFieldLength(7,"TESTDATE"),10);
 		assertEquals(cur.getFieldLength(7,"TESTTIME"),8);
 		System.out.println();
-	
+
+
+		// fields by array
 		System.out.println("FIELDS BY ARRAY: ");
 		fields=cur.getRow(0);
 		assertEquals(fields[0],"1");
@@ -358,7 +407,9 @@ class db2 extends sqlrtest {
 		assertEquals(fields[8],"2001-01-01");
 		assertEquals(fields[9],"01:00:00");
 		System.out.println();
-	
+
+
+		// field lengths by array
 		System.out.println("FIELD LENGTHS BY ARRAY: ");
 		fieldlens=cur.getRowLengths(0);
 		assertEquals(fieldlens[0],1);
@@ -372,7 +423,9 @@ class db2 extends sqlrtest {
 		assertEquals(fieldlens[8],10);
 		assertEquals(fieldlens[9],8);
 		System.out.println();
-	
+
+
+		// individual substitutions
 		System.out.println("INDIVIDUAL SUBSTITUTIONS: ");
 		cur.prepareQuery("values ($(var1),'$(var2)','$(var3)')");
 		cur.substitution("var1",1);
@@ -380,43 +433,57 @@ class db2 extends sqlrtest {
 		cur.substitution("var3",10.5556,6,4);
 		assertTrue(cur.executeQuery());
 		System.out.println();
-	
+
+
+		// fields
 		System.out.println("FIELDS: ");
 		assertEquals(cur.getField(0,0),"1");
 		assertEquals(cur.getField(0,1),"hello");
 		assertEquals(cur.getField(0,2),"10.5556");
 		System.out.println();
-	
+
+
+		// array substitutions
 		System.out.println("ARRAY SUBSTITUTIONS: ");
 		cur.prepareQuery("values ('$(var1)','$(var2)','$(var3)')");
 		cur.substitutions(subvars,subvalstrings);
 		assertTrue(cur.executeQuery());
 		System.out.println();
-	
+
+
+		// fields
 		System.out.println("FIELDS: ");
 		assertEquals(cur.getField(0,0),"hi");
 		assertEquals(cur.getField(0,1),"hello");
 		assertEquals(cur.getField(0,2),"bye");
 		System.out.println();
-	
+
+
+		// array substitutions
 		System.out.println("ARRAY SUBSTITUTIONS: ");
 		cur.prepareQuery("values ($(var1),$(var2),$(var3))");
 		cur.substitutions(subvars,subvallongs);
 		assertTrue(cur.executeQuery());
 		System.out.println();
-	
+
+
+		// fields
 		System.out.println("FIELDS: ");
 		assertEquals(cur.getField(0,0),"1");
 		assertEquals(cur.getField(0,1),"2");
 		assertEquals(cur.getField(0,2),"3");
 		System.out.println();
-	
+
+
+		// array substitutions
 		System.out.println("ARRAY SUBSTITUTIONS: ");
 		cur.prepareQuery("values ($(var1),$(var2),$(var3))");
 		cur.substitutions(subvars,subvaldoubles,precs,scales);
 		assertTrue(cur.executeQuery());
 		System.out.println();
-	
+
+
+		// fields
 		System.out.println("FIELDS: ");
 		assertEquals(cur.getField(0,0),"10.55");
 		assertEquals(cur.getField(0,1),"10.556");
@@ -440,7 +507,9 @@ class db2 extends sqlrtest {
 		cur.sendQuery("drop table testtable1");
 		cur.getNullsAsNulls();
 		System.out.println();
-		
+
+
+		// result set buffer size
 		System.out.println("RESULT SET BUFFER SIZE: ");
 		assertEquals(cur.getResultSetBufferSize(),0);
 		cur.setResultSetBufferSize(2);
@@ -469,7 +538,9 @@ class db2 extends sqlrtest {
 		assertTrue(cur.endOfResultSet());
 		assertEquals(cur.rowCount(),8);
 		System.out.println();
-	
+
+
+		// dont get column info
 		System.out.println("DONT GET COLUMN INFO: ");
 		cur.dontGetColumnInfo();
 		assertTrue(cur.sendQuery("select * from testtable order by testsmallint"));
@@ -482,7 +553,9 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getColumnLength(0),2);
 		assertEquals(cur.getColumnType(0),"SMALLINT");
 		System.out.println();
-	
+
+
+		// suspended session
 		System.out.println("SUSPENDED SESSION: ");
 		assertTrue(cur.sendQuery("select * from testtable order by testsmallint"));
 		cur.suspendResultSet();
@@ -532,7 +605,9 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getField(6,0),"7");
 		assertEquals(cur.getField(7,0),"8");
 		System.out.println();
-	
+
+
+		// suspended result set
 		System.out.println("SUSPENDED RESULT SET: ");
 		cur.setResultSetBufferSize(2);
 		assertTrue(cur.sendQuery("select * from testtable order by testsmallint"));
@@ -560,7 +635,9 @@ class db2 extends sqlrtest {
 		assertEquals(cur.rowCount(),8);
 		cur.setResultSetBufferSize(0);
 		System.out.println();
-	
+
+
+		// cached result set
 		System.out.println("CACHED RESULT SET: ");
 		cur.cacheToFile("cachefile1");
 		cur.setCacheTtl(200);
@@ -571,11 +648,15 @@ class db2 extends sqlrtest {
 		assertTrue(cur.openCachedResultSet(filename));
 		assertEquals(cur.getField(7,0),"8");
 		System.out.println();
-	
+
+
+		// column count for cached result set
 		System.out.println("COLUMN COUNT FOR CACHED RESULT SET: ");
 		assertEquals(cur.colCount(),11);
 		System.out.println();
-	
+
+
+		// column names for cached result set
 		System.out.println("COLUMN NAMES FOR CACHED RESULT SET: ");
 		assertEquals(cur.getColumnName(0),"TESTSMALLINT");
 		assertEquals(cur.getColumnName(1),"TESTINT");
@@ -601,7 +682,9 @@ class db2 extends sqlrtest {
 		assertEquals(cols[9],"TESTTIME");
 		assertEquals(cols[10],"TESTTIMESTAMP");
 		System.out.println();
-	
+
+
+		// cached result set with result set buffer size
 		System.out.println("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile1");
@@ -615,7 +698,9 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getField(8,0),null);
 		cur.setResultSetBufferSize(0);
 		System.out.println();
-	
+
+
+		// from one cache file to another
 		System.out.println("FROM ONE CACHE FILE TO ANOTHER: ");
 		cur.cacheToFile("cachefile2");
 		assertTrue(cur.openCachedResultSet("cachefile1"));
@@ -624,7 +709,9 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getField(7,0),"8");
 		assertEquals(cur.getField(8,0),null);
 		System.out.println();
-	
+
+
+		// from one cache file to another with result set buffer size
 		System.out.println("FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile2");
@@ -635,7 +722,9 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getField(8,0),null);
 		cur.setResultSetBufferSize(0);
 		System.out.println();
-	
+
+
+		// cached result set with suspend and result set buffer size
 		System.out.println("CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile1");
@@ -674,6 +763,8 @@ class db2 extends sqlrtest {
 		cur.setResultSetBufferSize(0);
 		System.out.println();
 
+
+		// finished suspended session
 		System.out.println("FINISHED SUSPENDED SESSION: ");
 		assertTrue(cur.sendQuery("select * from testtable order by testint"));
 		assertEquals(cur.getField(4,0),"5");
@@ -699,6 +790,9 @@ class db2 extends sqlrtest {
 		System.out.println();
 	
 		// invalid queries...
+
+
+		// invalid queries
 		System.out.println("INVALID QUERIES: ");
 		assertFalse(cur.sendQuery("select * from testtable order by testsmallint"));
 		assertFalse(cur.sendQuery("select * from testtable order by testsmallint"));

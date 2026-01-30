@@ -2078,6 +2078,24 @@ const char *oracleconnection::mapIsolationLevel(
 		if (!charstring::compare(isolevel,"SERIALIZABLE")) {
 			return "TRANSACTION_SERIALIZABLE";
 		}
+	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC &&
+			toformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE) {
+		if (!charstring::compare(isolevel,
+				"SQL_TXN_READ_COMMITTED")) {
+			return "READ COMMITTED";
+		}
+		if (!charstring::compare(isolevel,
+				"SQL_TXN_SERIALIZABLE")) {
+			return "SERIALIZABLE";
+		}
+	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
+			toformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC) {
+		if (!charstring::compare(isolevel,"READ COMMITTED")) {
+			return "SQL_TXN_READ_COMMITTED";
+		}
+		if (!charstring::compare(isolevel,"SERIALIZABLE")) {
+			return "SQL_TXN_SERIALIZABLE";
+		}
 	}
 	return isolevel;
 }

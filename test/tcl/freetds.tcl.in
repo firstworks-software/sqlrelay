@@ -11,14 +11,19 @@ set con [sqlrcon -server "sqlrelay" -port 9000 -socket "/tmp/test.socket" -user 
 set cur [$con sqlrcur]
 
 # get database type
+
+
+# identify
 puts "IDENTIFY: "
 assertEqual [$con identify] "freetds"
 puts ""
+
 
 # ping
 puts "PING: "
 assertTrue [$con ping]
 puts ""
+
 
 # isolation levels
 puts "ISOLATION LEVELS: "
@@ -36,22 +41,31 @@ puts ""
 catch {$cur sendQuery "drop table testtable"]}
 
 
+# create temptable
 puts "CREATE TEMPTABLE: "
 assertTrue [$cur sendQuery "create table testtable (testint int, testsmallint smallint, testtinyint tinyint, testreal real, testfloat float, testdecimal decimal(4,1), testnumeric numeric(4,1), testmoney money, testsmallmoney smallmoney, testdatetime datetime, testsmalldatetime smalldatetime, testchar char(40), testvarchar varchar(40), testbit bit)"]
 puts ""
 
+
+# begin transaction
 puts "BEGIN TRANSACTION: "
 assertTrue [$cur sendQuery "begin tran"]
 puts ""
 
+
+# insert
 puts "INSERT: "
 assertTrue [$cur sendQuery "insert into testtable values (1,1,1,1.1,1.1,1.1,1.1,1.00,1.00,'01-Jan-2001 01:00:00','01-Jan-2001 01:00:00','testchar1','testvarchar1',1)"]
 puts ""
 
+
+# affected rows
 puts "AFFECTED ROWS: "
 assertEqual [$cur affectedRows] 1
 puts ""
 
+
+# bind by position
 puts "BIND BY POSITION: "
 $cur prepareQuery "insert into testtable values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
 assertEqual [$cur countBindVariables] 14
@@ -88,12 +102,16 @@ $cur inputBind "14" 1
 assertTrue [$cur executeQuery]
 puts ""
 
+
+# array of binds by position
 puts "ARRAY OF BINDS BY POSITION: "
 $cur clearBinds
 $cur inputBinds {{"1" 4} {"2" 4} {"3" 4} {"4" 4.4 2 1} {"5" 4.4 2 1} {"6" 4.4 2 1} {"7" 4.4 2 1} {"8" 4.00 3 2} {"9" 4.00 3 2} {"10" "01-Jan-2004 04:00:00"} {"11" "01-Jan-2004 04:00:00"} {"12" "testchar4"} {"13" "testvarchar4"} {"14" 1}}
 assertTrue [$cur executeQuery]
 puts ""
 
+
+# bind by name
 puts "BIND BY NAME: "
 $cur clearBinds
 $cur prepareQuery "insert into testtable values (\@var1,\@var2,\@var3,\@var4,\@var5,\@var6,\@var7,\@var8,\@var9,\@var10,\@var11,\@var12,\@var13,\@var14)"
@@ -130,12 +148,16 @@ $cur inputBind "var14" 1
 assertTrue [$cur executeQuery]
 puts ""
 
+
+# array of binds by name
 puts "ARRAY OF BINDS BY NAME: "
 $cur clearBinds
 $cur inputBinds {{"var1" 7} {"var2" 7} {"var3" 7} {"var4" 7.7 2 1} {"var5" 7.7 2 1} {"var6" 7.7 2 1} {"var7" 7.7 2 1} {"var8" 7.00 3 2} {"var9" 7.00 3 2} {"var10" "01-Jan-2007 07:00:00"} {"var11" "01-Jan-2007 07:00:00"} {"var12" "testchar7"} {"var13" "testvarchar7"} {"var14" 1}}
 assertTrue [$cur executeQuery]
 puts ""
 
+
+# bind by name with validation
 puts "BIND BY NAME WITH VALIDATION: "
 $cur clearBinds
 $cur inputBind "var1" 8
@@ -157,14 +179,20 @@ $cur validateBinds
 assertTrue [$cur executeQuery]
 puts ""
 
+
+# select
 puts "SELECT: "
 assertTrue [$cur sendQuery "select * from testtable order by testint"]
 puts ""
 
+
+# column count
 puts "COLUMN COUNT: "
 assertEqual [$cur colCount] 14
 puts ""
 
+
+# column names
 puts "COLUMN NAMES: "
 assertEqual [$cur getColumnName 0] "testint"
 assertEqual [$cur getColumnName 1] "testsmallint"
@@ -197,6 +225,8 @@ assertEqual [lindex $cols 12] "testvarchar"
 assertEqual [lindex $cols 13] "testbit"
 puts ""
 
+
+# column types
 puts "COLUMN TYPES: "
 assertEqual [$cur getColumnTypeByIndex 0] "INT"
 assertEqual [$cur getColumnTypeByIndex 1] "SMALLINT"
@@ -228,6 +258,8 @@ assertEqual [$cur getColumnTypeByName "testvarchar"] "CHAR"
 assertEqual [$cur getColumnTypeByName "testbit"] "BIT"
 puts ""
 
+
+# column length
 puts "COLUMN LENGTH: "
 assertEqual [$cur getColumnLengthByIndex 0] 4
 assertEqual [$cur getColumnLengthByIndex 1] 2
@@ -263,6 +295,8 @@ assertEqual [$cur getColumnLengthByName "testsmalldatetime"] 4
 assertEqual [$cur getColumnLengthByName "testbit"] 1
 puts ""
 
+
+# longest column
 puts "LONGEST COLUMN: "
 assertEqual [$cur getLongestByIndex 0] 1
 assertEqual [$cur getLongestByName "testint"] 1
@@ -294,22 +328,32 @@ assertEqual [$cur getLongestByIndex 13] 1
 assertEqual [$cur getLongestByName "testbit"] 1
 puts ""
 
+
+# row count
 puts "ROW COUNT: "
 assertEqual [$cur rowCount] 8
 puts ""
 
+
+# total rows
 puts "TOTAL ROWS: "
 assertEqual [$cur totalRows] 0
 puts ""
 
+
+# first row index
 puts "FIRST ROW INDEX: "
 assertEqual [$cur firstRowIndex] 0
 puts ""
 
+
+# end of result set
 puts "END OF RESULT SET: "
 assertTrue [$cur endOfResultSet]
 puts ""
 
+
+# fields by index
 puts "FIELDS BY INDEX: "
 assertEqual [$cur getFieldByIndex 0 0] "1"
 assertEqual [$cur getFieldByIndex 0 1] "1"
@@ -342,6 +386,8 @@ assertEqual [$cur getFieldByIndex 7 12] "testvarchar8"
 assertEqual [$cur getFieldByIndex 7 13] "1"
 puts ""
 
+
+# field lengths by index
 puts "FIELD LENGTHS BY INDEX: "
 assertEqual [$cur getFieldLengthByIndex 0 0] 1
 assertEqual [$cur getFieldLengthByIndex 0 1] 1
@@ -374,6 +420,8 @@ assertEqual [$cur getFieldLengthByIndex 7 12] 12
 assertEqual [$cur getFieldLengthByIndex 7 13] 1
 puts ""
 
+
+# fields by name
 puts "FIELDS BY NAME: "
 assertEqual [$cur getFieldByName 0 "testint"] "1"
 assertEqual [$cur getFieldByName 0 "testsmallint"] "1"
@@ -406,6 +454,8 @@ assertEqual [$cur getFieldByName 7 "testvarchar"] "testvarchar8"
 assertEqual [$cur getFieldByName 7 "testbit"] "1"
 puts ""
 
+
+# field lengths by name
 puts "FIELD LENGTHS BY NAME: "
 assertEqual [$cur getFieldLengthByName 0 "testint"] 1
 assertEqual [$cur getFieldLengthByName 0 "testsmallint"] 1
@@ -438,6 +488,8 @@ assertEqual [$cur getFieldLengthByName 7 "testvarchar"] 12
 assertEqual [$cur getFieldLengthByName 7 "testbit"] 1
 puts ""
 
+
+# fields by array
 puts "FIELDS BY ARRAY: "
 set fields [$cur getRow 0]
 assertEqual [lindex $fields 0] 1
@@ -456,6 +508,8 @@ assertEqual [lindex $fields 12] "testvarchar1"
 assertEqual [lindex $fields 13] 1
 puts ""
 
+
+# field lengths by array
 puts "FIELD LENGTHS BY ARRAY: "
 set fieldlens [$cur getRowLengths 0]
 assertEqual [lindex $fieldlens 0] 1
@@ -474,6 +528,8 @@ assertEqual [lindex $fieldlens 12] 12
 assertEqual [lindex $fieldlens 13] 1
 puts ""
 
+
+# individual substitutions
 puts "INDIVIDUAL SUBSTITUTIONS: "
 $cur prepareQuery "select \$(var1),'\$(var2)',\$(var3)"
 $cur substitution "var1" 1
@@ -482,24 +538,32 @@ $cur substitution "var3" 10.5556 6 4
 assertTrue [$cur executeQuery]
 puts ""
 
+
+# fields
 puts "FIELDS: "
 assertEqual [$cur getFieldByIndex 0 0] "1"
 assertEqual [$cur getFieldByIndex 0 1] "hello"
 assertEqual [$cur getFieldByIndex 0 2] "10.5556"
 puts ""
 
+
+# array substitutions
 puts "ARRAY SUBSTITUTIONS: "
 $cur prepareQuery "select \$(var1),'\$(var2)',\$(var3)"
 $cur substitutions {{"var1" 1} {"var2" "hello"} {"var3" 10.5556 6 4}}
 assertTrue [$cur executeQuery]
 puts ""
 
+
+# fields
 puts "FIELDS: "
 assertEqual [$cur getFieldByIndex 0 0] "1"
 assertEqual [$cur getFieldByIndex 0 1] "hello"
 assertEqual [$cur getFieldByIndex 0 2] "10.5556"
 puts ""
 
+
+# result set buffer size
 puts "RESULT SET BUFFER SIZE: "
 assertEqual [$cur getResultSetBufferSize] 0
 $cur setResultSetBufferSize 2
@@ -529,6 +593,8 @@ assertTrue [$cur endOfResultSet]
 assertEqual [$cur rowCount] 8
 puts ""
 
+
+# dont get column info
 puts "DONT GET COLUMN INFO: "
 $cur dontGetColumnInfo
 assertTrue [$cur sendQuery "select * from testtable order by testint"]
@@ -542,6 +608,8 @@ assertEqual [$cur getColumnLengthByIndex 0] 4
 assertEqual [$cur getColumnTypeByIndex 0] "INT"
 puts ""
 
+
+# suspended session
 puts "SUSPENDED SESSION: "
 assertTrue [$cur sendQuery "select * from testtable order by testint"]
 $cur suspendResultSet
@@ -591,6 +659,8 @@ assertEqual [$cur getFieldByIndex 6 0] "7"
 assertEqual [$cur getFieldByIndex 7 0] "8"
 puts ""
 
+
+# suspended result set
 puts "SUSPENDED RESULT SET: "
 $cur setResultSetBufferSize 2
 assertTrue [$cur sendQuery "select * from testtable order by testint"]
@@ -619,6 +689,8 @@ assertEqual [$cur rowCount] 8
 $cur setResultSetBufferSize 0
 puts ""
 
+
+# cached result set
 puts "CACHED RESULT SET: "
 $cur cacheToFile "cachefile1"
 $cur setCacheTtl 200
@@ -630,10 +702,14 @@ assertTrue [$cur openCachedResultSet $filename]
 assertEqual [$cur getFieldByIndex 7 0] "8"
 puts ""
 
+
+# column count for cached result set
 puts "COLUMN COUNT FOR CACHED RESULT SET: "
 assertEqual [$cur colCount] 14
 puts ""
 
+
+# column names for cached result set
 puts "COLUMN NAMES FOR CACHED RESULT SET: "
 assertEqual [$cur getColumnName 0] "testint"
 assertEqual [$cur getColumnName 1] "testsmallint"
@@ -666,6 +742,8 @@ assertEqual [lindex $cols 12] "testvarchar"
 assertEqual [lindex $cols 13] "testbit"
 puts ""
 
+
+# cached result set with result set buffer size
 puts "CACHED RESULT SET WITH RESULT SET BUFFER SIZE: "
 $cur setResultSetBufferSize 2
 $cur cacheToFile "cachefile1"
@@ -680,6 +758,8 @@ assertUndef [$cur getFieldByIndex 8 0]
 $cur setResultSetBufferSize 0
 puts ""
 
+
+# from one cache file to another
 puts "FROM ONE CACHE FILE TO ANOTHER: "
 $cur cacheToFile "cachefile2"
 assertTrue [$cur openCachedResultSet "cachefile1"]
@@ -689,6 +769,8 @@ assertEqual [$cur getFieldByIndex 7 0] "8"
 assertUndef [$cur getFieldByIndex 8 0]
 puts ""
 
+
+# from one cache file to another with result set buffer size
 puts "FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: "
 $cur setResultSetBufferSize 2
 $cur cacheToFile "cachefile2"
@@ -700,6 +782,8 @@ assertUndef [$cur getFieldByIndex 8 0]
 $cur setResultSetBufferSize 0
 puts ""
 
+
+# cached result set with suspend and result set buffer size
 puts "CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: "
 $cur setResultSetBufferSize 2
 $cur cacheToFile "cachefile1"
@@ -738,6 +822,8 @@ assertUndef [$cur getFieldByIndex 8 0]
 $cur setResultSetBufferSize 0
 puts ""
 
+
+# finished suspended session
 puts "FINISHED SUSPENDED SESSION: "
 assertTrue [$cur sendQuery "select * from testtable order by testint"]
 assertEqual [$cur getFieldByIndex 4 0] "5"
@@ -762,6 +848,9 @@ $cur sendQuery "commit tran"
 catch {$cur sendQuery "drop table testtable"}
 
 # invalid queries...
+
+
+# invalid queries
 puts "INVALID QUERIES: "
 catch {assertFalse [$cur sendQuery "select * from testtable order by testint"]}
 catch {assertFalse [$cur sendQuery "select * from testtable order by testint"]}

@@ -24,6 +24,9 @@ namespace SQLRClientTest
 
             // execute scalar
             SQLRelayCommand sqlrcom = (SQLRelayCommand)sqlrcon.CreateCommand();
+
+
+            // execute scalar
             Console.WriteLine("EXECUTE SCALAR:");
             sqlrcom.CommandText = "select 1 from dual";
             Int64 value = ExecuteScalar(sqlrcom);
@@ -31,6 +34,9 @@ namespace SQLRClientTest
             Console.WriteLine("\n");
 
             // drop the table
+
+
+            // drop table
             Console.WriteLine("DROP TABLE:");
             sqlrcom = new SQLRelayCommand("drop table testtable");
             sqlrcom.Connection = sqlrcon;
@@ -38,10 +44,14 @@ namespace SQLRClientTest
             Console.WriteLine("\n");
 
             // create the table
+
+
+            // create table
             Console.WriteLine("CREATE TABLE:");
             sqlrcom = new SQLRelayCommand("create table testtable (testnumber number, testchar char(40), testvarchar varchar2(40), testdate date, testlong long, testclob clob, testblob blob)", sqlrcon);
             ExecuteNonQuery(sqlrcom);
             Console.WriteLine("\n");
+
 
             // insert
             Console.WriteLine("INSERT:");
@@ -50,10 +60,12 @@ namespace SQLRClientTest
             Int64 affectedrows = ExecuteNonQuery(sqlrcom);
             Console.WriteLine("\n");
 
+
             // affected rows
             Console.WriteLine("AFFECTED ROWS:");
             assertEquals(affectedrows, 1);
             Console.WriteLine("\n");
+
 
             // bind by position
             Console.WriteLine("BIND BY POSITION:");
@@ -116,6 +128,9 @@ namespace SQLRClientTest
             Console.WriteLine("\n");
 
             // null and empty binds
+
+
+            // null binds
             Console.WriteLine("NULL BINDS:");
             sqlrcom.Parameters.Add("1", null);
             sqlrcom.Parameters.Add("2", null);
@@ -128,6 +143,7 @@ namespace SQLRClientTest
             sqlrcom.Parameters.Clear();
             Console.WriteLine("\n");
 
+
             // select
             Console.WriteLine("SELECT:");
             sqlrcom.CommandText = "select * from testtable order by testnumber";
@@ -135,10 +151,12 @@ namespace SQLRClientTest
             assertTrue(datareader != null);
             Console.WriteLine("\n");
 
+
             // column count
             Console.WriteLine("COLUMN COUNT:");
             assertEquals(datareader.FieldCount, 7);
             Console.WriteLine("\n");
+
 
             // column names
             Console.WriteLine("COLUMN NAMES:");
@@ -150,6 +168,7 @@ namespace SQLRClientTest
             assertEquals(datareader.GetName(5), "TESTCLOB");
             assertEquals(datareader.GetName(6), "TESTBLOB");
             Console.WriteLine("\n");
+
 
             // column types
             Console.WriteLine("COLUMN TYPES:");
@@ -168,6 +187,7 @@ namespace SQLRClientTest
             assertEquals(datareader.GetDataTypeName(6), "BLOB");
             assertEquals(datareader.GetFieldType(6).ToString(), "System.Byte[]");
             Console.WriteLine("\n");
+
 
             // schema table
             Console.WriteLine("SCHEMA TABLE:");
@@ -377,6 +397,7 @@ namespace SQLRClientTest
 
             Console.WriteLine("\n");
 
+
             // fields by index
             Console.WriteLine("FIELDS BY INDEX:");
             assertTrue(datareader.Read());
@@ -396,6 +417,7 @@ namespace SQLRClientTest
             assertEquals(Convert.ToString(datareader[5]), "testclob1");
             assertEquals(datareader[6], null);
             Console.WriteLine("\n");
+
 
             // fields by name
             Console.WriteLine("FIELDS BY NAME:");
@@ -417,6 +439,7 @@ namespace SQLRClientTest
             assertEquals(datareader.GetString(datareader.GetOrdinal("TESTBLOB")), "");
             Console.WriteLine("\n");
 
+
             // fields by array
             Console.WriteLine("FIELDS BY ARRAY:");
             Object[] fields = new Object[datareader.FieldCount];
@@ -429,6 +452,7 @@ namespace SQLRClientTest
             assertEquals(Convert.ToString(fields[5]), "testclob1");
             assertEquals(fields[6], null);
             Console.WriteLine("\n");
+
 
             // more rows
             Console.WriteLine("MORE ROWS:");
@@ -446,6 +470,7 @@ namespace SQLRClientTest
             assertEquals(datareader.Read(), false);
             assertEquals(datareader.GetString(0), null);
             Console.WriteLine("\n");
+
 
             // commit and rollback
             Console.WriteLine("COMMIT AND ROLLBACK:");
@@ -467,6 +492,9 @@ namespace SQLRClientTest
             Console.WriteLine("\n");
 
             // output bind by name
+
+
+            // output binds by name
             Console.WriteLine("OUTPUT BINDS BY NAME:");
             sqlrcom.CommandText = "begin  :numvar:=1;  :stringvar:='hello';  :floatvar:=2.5;  :datevar:='03-FEB-2001'; end;";
             SQLRelayParameter numvar = new SQLRelayParameter();
@@ -502,6 +530,9 @@ namespace SQLRClientTest
             Console.WriteLine("\n");
 
             // output bind by position
+
+
+            // output binds by position
             Console.WriteLine("OUTPUT BINDS BY POSITION:");
             sqlrcom.CommandText = "begin  :numvar:=1;  :stringvar:='hello';  :floatvar:=2.5;  :datevar:='03-FEB-2001'; end;";
             numvar = new SQLRelayParameter();
@@ -537,8 +568,7 @@ namespace SQLRClientTest
             Console.WriteLine("\n");
 
 
-
-            // cursor binds using NextResult
+            // cursor binds using nextresult
             Console.WriteLine("CURSOR BINDS USING NEXTRESULT:");
             sqlrcom.CommandText = "create or replace package types is type cursorType is ref cursor; end;";
             assertEquals(ExecuteNonQuery(sqlrcom), 0);
@@ -579,7 +609,6 @@ namespace SQLRClientTest
             sqlrcom.CommandText = "drop package types";
             assertEquals(ExecuteNonQuery(sqlrcom), 0);
             Console.WriteLine("\n");
-
 
 
             // cursor binds
@@ -626,6 +655,9 @@ namespace SQLRClientTest
 
 
             // clob and blob output bind
+
+
+            // clob and blob output binds
             Console.WriteLine("CLOB AND BLOB OUTPUT BINDS:");
             sqlrcom.CommandText = "drop table testtable1";
             ExecuteNonQuery(sqlrcom);
@@ -659,6 +691,7 @@ namespace SQLRClientTest
             sqlrcom.CommandText = "drop table testtable1";
             assertEquals(ExecuteNonQuery(sqlrcom), 0);
             Console.WriteLine("\n");
+
 
             // null and empty clobs and blobs
             Console.WriteLine("NULL AND EMPTY CLOBS AND BLOBS:");
@@ -700,6 +733,7 @@ namespace SQLRClientTest
             assertEquals(ExecuteNonQuery(sqlrcom), 0);
             Console.WriteLine("\n");
 
+
             // switching connection of command
             Console.WriteLine("SWITCHING CONNECTION OF COMMAND:");
             sqlrcom.Connection = sqlrcon2;
@@ -717,6 +751,7 @@ namespace SQLRClientTest
             sqlrcom.Connection = sqlrcon;
             assertEquals(ExecuteScalar(sqlrcom), 6);
             Console.WriteLine("\n");
+
 
             // closed datareader
             Console.WriteLine("CLOSED DATAREADER:");
@@ -738,6 +773,7 @@ namespace SQLRClientTest
             }
             Console.WriteLine("\n");
 
+
             // has rows
             Console.WriteLine("HAS ROWS:");
             sqlrcom.CommandText = "select * from testtable";
@@ -751,6 +787,7 @@ namespace SQLRClientTest
             assertTrue(datareader != null);
             assertEquals(((SQLRelayDataReader)datareader).HasRows, false);
             Console.WriteLine("\n");
+
 
             // drop table
             Console.WriteLine("DROP TABLE:");

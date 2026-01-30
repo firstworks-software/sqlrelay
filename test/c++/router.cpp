@@ -26,6 +26,7 @@ int main(int argc, char **argv) {
 	cur=new sqlrcursor(con);
 
 	// get database type
+	// identify
 	stdoutput.printf("IDENTIFY: \n");
 	assertEquals(con->identify(),"router");
 	stdoutput.printf("\n");
@@ -34,11 +35,14 @@ int main(int argc, char **argv) {
 	const char	*dbversion=con->dbVersion();
 	uint32_t	majorversion=dbversion[0]-'0';
 
+
 	// ping
 	stdoutput.printf("PING: \n");
 	assertTrue(con->ping());
 	stdoutput.printf("\n");
 
+
+	// filtered-out queries
 	stdoutput.printf("FILTERED-OUT QUERIES: \n");
 	assertFalse(cur->sendQuery("create table junktable (col1 int)"));
 	assertFalse(cur->sendQuery("insert into junktable values (1)"));
@@ -51,15 +55,21 @@ int main(int argc, char **argv) {
 	cur->sendQuery("drop table if exists testtable1");
 	cur->sendQuery("drop table if exists testtable2");
 
+
+	// create testtables
 	stdoutput.printf("CREATE TESTTABLES: \n");
 	assertTrue(cur->sendQuery("create table testtable1 (testint int, testfloat float, testreal real, testsmallint smallint, testchar char(40), testvarchar varchar(40), testdate date, testtime time, testtimestamp timestamp)"));
 	assertTrue(cur->sendQuery("create table testtable2 (testint int, testfloat float, testreal real, testsmallint smallint, testchar char(40), testvarchar varchar(40), testdate date, testtime time, testtimestamp timestamp)"));
 	stdoutput.printf("\n");
 
+
+	// begin transction
 	stdoutput.printf("BEGIN TRANSCTION: \n");
 	assertTrue(cur->sendQuery("begin"));
 	stdoutput.printf("\n");
 
+
+	// insert
 	stdoutput.printf("INSERT: \n");
 	assertTrue(cur->sendQuery("insert into testtable1 values (1,1.1,1.1,1,'testchar1','testvarchar1','2001-01-01','01:00:00',NULL)"));
 	assertTrue(cur->sendQuery("insert into testtable1 values (2,2.2,2.2,2,'testchar2','testvarchar2','2002-01-01','02:00:00',NULL)"));
@@ -72,10 +82,14 @@ int main(int argc, char **argv) {
 	assertTrue(cur->sendQuery("insert into testtable2 values (4,4.4,4.4,4,'testchar4','testvarchar4','2004-01-01','04:00:00',NULL)"));
 	stdoutput.printf("\n");
 
+
+	// affected rows
 	stdoutput.printf("AFFECTED ROWS: \n");
 	assertEquals(cur->affectedRows(),1);
 	stdoutput.printf("\n");
 
+
+	// bind by name
 	stdoutput.printf("BIND BY NAME: \n");
 	cur->prepareQuery("insert into testtable1 values (?,?,?,?,?,?,?,?,NULL)");
 	assertEquals(cur->countBindVariables(),8);
@@ -110,6 +124,8 @@ int main(int argc, char **argv) {
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
 
+
+	// bind by name with validation
 	stdoutput.printf("BIND BY NAME WITH VALIDATION: \n");
 	cur->clearBinds();
 	cur->inputBind("1",8);
@@ -125,6 +141,8 @@ int main(int argc, char **argv) {
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
 
+
+	// bind by name
 	stdoutput.printf("BIND BY NAME: \n");
 	cur->prepareQuery("insert into testtable2 values (?,?,?,?,?,?,?,?,NULL)");
 	assertEquals(cur->countBindVariables(),8);
@@ -159,6 +177,8 @@ int main(int argc, char **argv) {
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
 
+
+	// bind by name with validation
 	stdoutput.printf("BIND BY NAME WITH VALIDATION: \n");
 	cur->clearBinds();
 	cur->inputBind("1",8);
@@ -174,6 +194,8 @@ int main(int argc, char **argv) {
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
 
+
+	// select
 	stdoutput.printf("SELECT: \n");
 	// It may take some time for the replication to actually occur.
 	// Exactly how long depends on how busy everything is.  So, loop
@@ -195,14 +217,20 @@ int main(int argc, char **argv) {
 	}
 	stdoutput.printf("\n");
 
+
+	// row count
 	stdoutput.printf("ROW COUNT: \n");
 	assertEquals(rowcount,8);
 	stdoutput.printf("\n");
 
+
+	// column count
 	stdoutput.printf("COLUMN COUNT: \n");
 	assertEquals(cur->colCount(),9);
 	stdoutput.printf("\n");
 
+
+	// column names
 	stdoutput.printf("COLUMN NAMES: \n");
 	assertEquals(cur->getColumnName(0),"testint");
 	assertEquals(cur->getColumnName(1),"testfloat");
@@ -225,6 +253,8 @@ int main(int argc, char **argv) {
 	assertEquals(cols[8],"testtimestamp");
 	stdoutput.printf("\n");
 
+
+	// column types
 	stdoutput.printf("COLUMN TYPES: \n");
 	assertEquals(cur->getColumnType((uint32_t)0),"INT");
 	assertEquals(cur->getColumnType("testint"),"INT");
@@ -251,6 +281,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnType("testtimestamp"),"TIMESTAMP");
 	stdoutput.printf("\n");
 
+
+	// column length
 	stdoutput.printf("COLUMN LENGTH: \n");
 	assertEquals(cur->getColumnLength((uint32_t)0),4);
 	assertEquals(cur->getColumnLength("testint"),4);
@@ -295,18 +327,26 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getLongest("testtime"),8);
 	stdoutput.printf("\n");*/
 
+
+	// total rows
 	stdoutput.printf("TOTAL ROWS: \n");
 	assertEquals(cur->totalRows(),8);
 	stdoutput.printf("\n");
 
+
+	// first row index
 	stdoutput.printf("FIRST ROW INDEX: \n");
 	assertEquals(cur->firstRowIndex(),0);
 	stdoutput.printf("\n");
 
+
+	// end of result set
 	stdoutput.printf("END OF RESULT SET: \n");
 	assertTrue(cur->endOfResultSet());
 	stdoutput.printf("\n");
 
+
+	// fields by index
 	stdoutput.printf("FIELDS BY INDEX: \n");
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	//assertEquals(cur->getField(0,1),"1.1");
@@ -327,6 +367,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(7,7),"08:00:00");
 	stdoutput.printf("\n");
 
+
+	// field lengths by index
 	stdoutput.printf("FIELD LENGTHS BY INDEX: \n");
 	assertEquals(cur->getFieldLength(0,(uint32_t)0),1);
 	//assertEquals(cur->getFieldLength(0,1),3);
@@ -347,6 +389,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getFieldLength(7,7),8);
 	stdoutput.printf("\n");
 
+
+	// fields by name
 	stdoutput.printf("FIELDS BY NAME: \n");
 	assertEquals(cur->getField(0,"testint"),"1");
 	//assertEquals(cur->getField(0,"testfloat"),"1.1");
@@ -367,6 +411,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(7,"testtime"),"08:00:00");
 	stdoutput.printf("\n");
 
+
+	// field lengths by name
 	stdoutput.printf("FIELD LENGTHS BY NAME: \n");
 	assertEquals(cur->getFieldLength(0,"testint"),1);
 	//assertEquals(cur->getFieldLength(0,"testfloat"),3);
@@ -387,6 +433,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getFieldLength(7,"testtime"),8);
 	stdoutput.printf("\n");
 
+
+	// fields by array
 	stdoutput.printf("FIELDS BY ARRAY: \n");
 	fields=cur->getRow(0);
 	assertEquals(fields[0],"1");
@@ -399,6 +447,8 @@ int main(int argc, char **argv) {
 	assertEquals(fields[7],"01:00:00");
 	stdoutput.printf("\n");
 
+
+	// field lengths by array
 	stdoutput.printf("FIELD LENGTHS BY ARRAY: \n");
 	fieldlens=cur->getRowLengths(0);
 	assertEquals(fieldlens[0],1);
@@ -411,6 +461,8 @@ int main(int argc, char **argv) {
 	assertEquals(fieldlens[7],8);
 	stdoutput.printf("\n");
 
+
+	// select
 	stdoutput.printf("SELECT: \n");
 	// It may take some time for the replication to actually occur.
 	// Exactly how long depends on how busy everything is.  So, loop
@@ -432,14 +484,20 @@ int main(int argc, char **argv) {
 	}
 	stdoutput.printf("\n");
 
+
+	// row count
 	stdoutput.printf("ROW COUNT: \n");
 	assertEquals(rowcount,8);
 	stdoutput.printf("\n");
 
+
+	// column count
 	stdoutput.printf("COLUMN COUNT: \n");
 	assertEquals(cur->colCount(),9);
 	stdoutput.printf("\n");
 
+
+	// column names
 	stdoutput.printf("COLUMN NAMES: \n");
 	assertEquals(cur->getColumnName(0),"testint");
 	assertEquals(cur->getColumnName(1),"testfloat");
@@ -462,6 +520,8 @@ int main(int argc, char **argv) {
 	assertEquals(cols[8],"testtimestamp");
 	stdoutput.printf("\n");
 
+
+	// column types
 	stdoutput.printf("COLUMN TYPES: \n");
 	assertEquals(cur->getColumnType((uint32_t)0),"INT");
 	assertEquals(cur->getColumnType("testint"),"INT");
@@ -488,6 +548,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnType("testtimestamp"),"TIMESTAMP");
 	stdoutput.printf("\n");
 
+
+	// column length
 	stdoutput.printf("COLUMN LENGTH: \n");
 	assertEquals(cur->getColumnLength((uint32_t)0),4);
 	assertEquals(cur->getColumnLength("testint"),4);
@@ -509,6 +571,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnLength("testtimestamp"),4);
 	stdoutput.printf("\n");
 
+
+	// longest column
 	stdoutput.printf("LONGEST COLUMN: \n");
 	assertEquals(cur->getLongest((uint32_t)0),1);
 	assertEquals(cur->getLongest("testint"),1);
@@ -528,18 +592,26 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getLongest("testtime"),8);
 	stdoutput.printf("\n");
 
+
+	// total rows
 	stdoutput.printf("TOTAL ROWS: \n");
 	assertEquals(cur->totalRows(),8);
 	stdoutput.printf("\n");
 
+
+	// first row index
 	stdoutput.printf("FIRST ROW INDEX: \n");
 	assertEquals(cur->firstRowIndex(),0);
 	stdoutput.printf("\n");
 
+
+	// end of result set
 	stdoutput.printf("END OF RESULT SET: \n");
 	assertTrue(cur->endOfResultSet());
 	stdoutput.printf("\n");
 
+
+	// fields by index
 	stdoutput.printf("FIELDS BY INDEX: \n");
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	//assertEquals(cur->getField(0,1),"1.1");
@@ -560,6 +632,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(7,7),"08:00:00");
 	stdoutput.printf("\n");
 
+
+	// field lengths by index
 	stdoutput.printf("FIELD LENGTHS BY INDEX: \n");
 	assertEquals(cur->getFieldLength(0,(uint32_t)0),1);
 	//assertEquals(cur->getFieldLength(0,1),3);
@@ -580,6 +654,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getFieldLength(7,7),8);
 	stdoutput.printf("\n");
 
+
+	// fields by name
 	stdoutput.printf("FIELDS BY NAME: \n");
 	assertEquals(cur->getField(0,"testint"),"1");
 	//assertEquals(cur->getField(0,"testfloat"),"1.1");
@@ -600,6 +676,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(7,"testtime"),"08:00:00");
 	stdoutput.printf("\n");
 
+
+	// field lengths by name
 	stdoutput.printf("FIELD LENGTHS BY NAME: \n");
 	assertEquals(cur->getFieldLength(0,"testint"),1);
 	//assertEquals(cur->getFieldLength(0,"testfloat"),3);
@@ -620,6 +698,8 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getFieldLength(7,"testtime"),8);
 	stdoutput.printf("\n");
 
+
+	// fields by array
 	stdoutput.printf("FIELDS BY ARRAY: \n");
 	fields=cur->getRow(0);
 	assertEquals(fields[0],"1");
@@ -632,6 +712,8 @@ int main(int argc, char **argv) {
 	assertEquals(fields[7],"01:00:00");
 	stdoutput.printf("\n");
 
+
+	// field lengths by array
 	stdoutput.printf("FIELD LENGTHS BY ARRAY: \n");
 	fieldlens=cur->getRowLengths(0);
 	assertEquals(fieldlens[0],1);
@@ -644,6 +726,8 @@ int main(int argc, char **argv) {
 	assertEquals(fieldlens[7],8);
 	stdoutput.printf("\n");
 
+
+	// commit and rollback
 	stdoutput.printf("COMMIT AND ROLLBACK: \n");
 	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);

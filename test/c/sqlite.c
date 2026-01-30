@@ -36,14 +36,19 @@ int main(int argc, char **argv) {
 	cur=sqlrcur_alloc(con);
 
 	// get database type
+
+
+	// identify
 	printf("IDENTIFY: \n");
 	assertEqualsString(sqlrcon_identify(con),"sqlite");
 	printf("\n");
+
 
 	// ping
 	printf("PING: \n");
 	assertTrue(sqlrcon_ping(con));
 	printf("\n");
+
 
 	// isolation levels
 	printf("ISOLATION LEVELS: \n");
@@ -66,12 +71,17 @@ int main(int argc, char **argv) {
 	sqlrcon_commit(con);
 
 	// create a new table
+
+
+	// create temptable
 	printf("CREATE TEMPTABLE: \n");
 	sqlrcur_sendQuery(cur,"begin transaction");
 	assertTrue(sqlrcur_sendQuery(cur,"create table testtable (testint int, testfloat float, testchar char(40), testvarchar varchar(40))"));
 	sqlrcon_commit(con);
 	printf("\n");
 
+
+	// insert
 	printf("INSERT: \n");
 	sqlrcur_sendQuery(cur,"begin transaction");
 	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (1,1.1,'testchar1','testvarchar1')"));
@@ -80,10 +90,14 @@ int main(int argc, char **argv) {
 	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable values (4,4.4,'testchar4','testvarchar4')"));
 	printf("\n");
 
+
+	// affected rows
 	printf("AFFECTED ROWS: \n");
 	assertEqualsInt(sqlrcur_affectedRows(cur),0);
 	printf("\n");
 
+
+	// bind by name
 	printf("BIND BY NAME: \n");
 	sqlrcur_prepareQuery(cur,"insert into testtable values (:var1,:var2,:var3,:var4)");
 	assertEqualsInt(sqlrcur_countBindVariables(cur),4);
@@ -106,6 +120,8 @@ int main(int argc, char **argv) {
 	assertTrue(sqlrcur_executeQuery(cur));
 	printf("\n");
 
+
+	// bind by name with validation
 	printf("BIND BY NAME WITH VALIDATION: \n");
 	sqlrcur_clearBinds(cur);
 	sqlrcur_inputBindLong(cur,"var1",8);
@@ -116,14 +132,20 @@ int main(int argc, char **argv) {
 	assertTrue(sqlrcur_executeQuery(cur));
 	printf("\n");
 
+
+	// select
 	printf("SELECT: \n");
 	assertTrue(sqlrcur_sendQuery(cur,"select * from testtable order by testint"));
 	printf("\n");
 
+
+	// column count
 	printf("COLUMN COUNT: \n");
 	assertEqualsInt(sqlrcur_colCount(cur),4);
 	printf("\n");
 
+
+	// column names
 	printf("COLUMN NAMES: \n");
 	assertEqualsString(sqlrcur_getColumnName(cur,0),"testint");
 	assertEqualsString(sqlrcur_getColumnName(cur,1),"testfloat");
@@ -136,6 +158,8 @@ int main(int argc, char **argv) {
 	assertEqualsString(cols[3],"testvarchar");
 	printf("\n");
 
+
+	// column types
 	printf("COLUMN TYPES: \n");
 	#ifdef HAVE_SQLITE3_STMT
 	assertEqualsString(sqlrcur_getColumnTypeByIndex(cur,0),"INTEGER");
@@ -158,6 +182,8 @@ int main(int argc, char **argv) {
 	#endif
 	printf("\n");
 
+
+	// column length
 	printf("COLUMN LENGTH: \n");
 	assertEqualsInt(sqlrcur_getColumnLengthByIndex(cur,0),0);
 	assertEqualsInt(sqlrcur_getColumnLengthByName(cur,"testint"),0);
@@ -169,6 +195,8 @@ int main(int argc, char **argv) {
 	assertEqualsInt(sqlrcur_getColumnLengthByName(cur,"testvarchar"),0);
 	printf("\n");
 
+
+	// longest column
 	printf("LONGEST COLUMN: \n");
 	assertEqualsInt(sqlrcur_getLongestByIndex(cur,0),1);
 	assertEqualsInt(sqlrcur_getLongestByName(cur,"testint"),1);
@@ -180,10 +208,14 @@ int main(int argc, char **argv) {
 	assertEqualsInt(sqlrcur_getLongestByName(cur,"testvarchar"),12);
 	printf("\n");
 
+
+	// row count
 	printf("ROW COUNT: \n");
 	assertEqualsInt(sqlrcur_rowCount(cur),8);
 	printf("\n");
 
+
+	// total rows
 	printf("TOTAL ROWS: \n");
 	#ifdef HAVE_SQLITE3_STMT
 	assertEqualsInt(sqlrcur_totalRows(cur),0);
@@ -192,14 +224,20 @@ int main(int argc, char **argv) {
 	#endif
 	printf("\n");
 
+
+	// first row index
 	printf("FIRST ROW INDEX: \n");
 	assertEqualsInt(sqlrcur_firstRowIndex(cur),0);
 	printf("\n");
 
+
+	// end of result set
 	printf("END OF RESULT SET: \n");
 	assertTrue(sqlrcur_endOfResultSet(cur));
 	printf("\n");
 
+
+	// fields by index
 	printf("FIELDS BY INDEX: \n");
 	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,0),"1");
 	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,1),"1.1");
@@ -212,6 +250,8 @@ int main(int argc, char **argv) {
 	assertEqualsString(sqlrcur_getFieldByIndex(cur,7,3),"testvarchar8");
 	printf("\n");
 
+
+	// field lengths by index
 	printf("FIELD LENGTHS BY INDEX: \n");
 	assertEqualsInt(sqlrcur_getFieldLengthByIndex(cur,0,0),1);
 	assertEqualsInt(sqlrcur_getFieldLengthByIndex(cur,0,1),3);
@@ -224,6 +264,8 @@ int main(int argc, char **argv) {
 	assertEqualsInt(sqlrcur_getFieldLengthByIndex(cur,7,3),12);
 	printf("\n");
 
+
+	// fields by name
 	printf("FIELDS BY NAME: \n");
 	assertEqualsString(sqlrcur_getFieldByName(cur,0,"testint"),"1");
 	assertEqualsString(sqlrcur_getFieldByName(cur,0,"testfloat"),"1.1");
@@ -236,6 +278,8 @@ int main(int argc, char **argv) {
 	assertEqualsString(sqlrcur_getFieldByName(cur,7,"testvarchar"),"testvarchar8");
 	printf("\n");
 
+
+	// field lengths by name
 	printf("FIELD LENGTHS BY NAME: \n");
 	assertEqualsInt(sqlrcur_getFieldLengthByName(cur,0,"testint"),1);
 	assertEqualsInt(sqlrcur_getFieldLengthByName(cur,0,"testfloat"),3);
@@ -248,6 +292,8 @@ int main(int argc, char **argv) {
 	assertEqualsInt(sqlrcur_getFieldLengthByName(cur,7,"testvarchar"),12);
 	printf("\n");
 
+
+	// fields by array
 	printf("FIELDS BY ARRAY: \n");
 	fields=sqlrcur_getRow(cur,0);
 	assertEqualsString(fields[0],"1");
@@ -256,6 +302,8 @@ int main(int argc, char **argv) {
 	assertEqualsString(fields[3],"testvarchar1");
 	printf("\n");
 
+
+	// field lengths by array
 	printf("FIELD LENGTHS BY ARRAY: \n");
 	fieldlens=sqlrcur_getRowLengths(cur,0);
 	assertEqualsInt(fieldlens[0],1);
@@ -264,6 +312,8 @@ int main(int argc, char **argv) {
 	assertEqualsInt(fieldlens[3],12);
 	printf("\n");
 
+
+	// individual substitutions
 	printf("INDIVIDUAL SUBSTITUTIONS: \n");
 	sqlrcur_sendQuery(cur,"drop table testtable1");
 	assertTrue(sqlrcur_sendQuery(cur,"create table testtable1 (col1 int, col2 char, col3 float)"));
@@ -274,6 +324,8 @@ int main(int argc, char **argv) {
 	assertTrue(sqlrcur_executeQuery(cur));
 	printf("\n");
 
+
+	// fields
 	printf("FIELDS: \n");
 	assertTrue(sqlrcur_sendQuery(cur,"select * from testtable1"));
 	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,0),"1");
@@ -282,12 +334,16 @@ int main(int argc, char **argv) {
 	assertTrue(sqlrcur_sendQuery(cur,"delete from testtable1"));
 	printf("\n");
 
+
+	// array substitutions
 	printf("ARRAY SUBSTITUTIONS: \n");
 	sqlrcur_prepareQuery(cur,"insert into testtable1 values ('$(var1)','$(var2)','$(var3)')");
 	sqlrcur_subStrings(cur,subvars,subvalstrings);
 	assertTrue(sqlrcur_executeQuery(cur));
 	printf("\n");
 
+
+	// fields
 	printf("FIELDS: \n");
 	assertTrue(sqlrcur_sendQuery(cur,"select * from testtable1"));
 	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,0),"hi");
@@ -297,12 +353,15 @@ int main(int argc, char **argv) {
 	printf("\n");
 
 
+	// array substitutions
 	printf("ARRAY SUBSTITUTIONS: \n");
 	sqlrcur_prepareQuery(cur,"insert into testtable1 values ($(var1),'$(var2)',$(var3))");
 	sqlrcur_subLongs(cur,subvars,subvallongs);
 	assertTrue(sqlrcur_executeQuery(cur));
 	printf("\n");
 
+
+	// fields
 	printf("FIELDS: \n");
 	assertTrue(sqlrcur_sendQuery(cur,"select * from testtable1"));
 	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,0),"1");
@@ -312,12 +371,15 @@ int main(int argc, char **argv) {
 	printf("\n");
 
 
+	// array substitutions
 	printf("ARRAY SUBSTITUTIONS: \n");
 	sqlrcur_prepareQuery(cur,"insert into testtable1 values ($(var1),'$(var2)',$(var3))");
 	sqlrcur_subDoubles(cur,subvars,subvaldoubles,precs,scales);
 	assertTrue(sqlrcur_executeQuery(cur));
 	printf("\n");
 
+
+	// fields
 	printf("FIELDS: \n");
 	assertTrue(sqlrcur_sendQuery(cur,"select * from testtable1"));
 	assertEqualsString(sqlrcur_getFieldByIndex(cur,0,0),"10.55");
@@ -327,6 +389,7 @@ int main(int argc, char **argv) {
 	printf("\n");
 
 
+	// nulls as nulls
 	printf("NULLS as Nulls: \n");
 	sqlrcur_getNullsAsNulls(cur);
 	assertTrue(sqlrcur_sendQuery(cur,"insert into testtable1 values (1,NULL,NULL)"));
@@ -342,6 +405,8 @@ int main(int argc, char **argv) {
 	sqlrcur_getNullsAsNulls(cur);
 	printf("\n");
 
+
+	// result set buffer size
 	printf("RESULT SET BUFFER SIZE: \n");
 	assertEqualsInt(sqlrcur_getResultSetBufferSize(cur),0);
 	sqlrcur_setResultSetBufferSize(cur,2);
@@ -371,6 +436,8 @@ int main(int argc, char **argv) {
 	assertEqualsInt(sqlrcur_rowCount(cur),8);
 	printf("\n");
 
+
+	// dont get column info
 	printf("DONT GET COLUMN INFO: \n");
 	sqlrcur_dontGetColumnInfo(cur);
 	assertTrue(sqlrcur_sendQuery(cur,"select * from testtable order by testint"));
@@ -388,6 +455,8 @@ int main(int argc, char **argv) {
 	#endif
 	printf("\n");
 
+
+	// suspended session
 	printf("SUSPENDED SESSION: \n");
 	assertTrue(sqlrcur_sendQuery(cur,"select * from testtable order by testint"));
 	sqlrcur_suspendResultSet(cur);
@@ -438,6 +507,8 @@ int main(int argc, char **argv) {
 	assertEqualsString(sqlrcur_getFieldByIndex(cur,7,0),"8");
 	printf("\n");
 
+
+	// suspended result set
 	printf("SUSPENDED RESULT SET: \n");
 	sqlrcur_setResultSetBufferSize(cur,2);
 	assertTrue(sqlrcur_sendQuery(cur,"select * from testtable order by testint"));
@@ -466,6 +537,8 @@ int main(int argc, char **argv) {
 	sqlrcur_setResultSetBufferSize(cur,0);
 	printf("\n");
 
+
+	// cached result set
 	printf("CACHED RESULT SET: \n");
 	sqlrcur_cacheToFile(cur,"cachefile1");
 	sqlrcur_setCacheTtl(cur,200);
@@ -478,10 +551,14 @@ int main(int argc, char **argv) {
 	free(filename);
 	printf("\n");
 
+
+	// column count for cached result set
 	printf("COLUMN COUNT FOR CACHED RESULT SET: \n");
 	assertEqualsInt(sqlrcur_colCount(cur),4);
 	printf("\n");
 
+
+	// column names for cached result set
 	printf("COLUMN NAMES FOR CACHED RESULT SET: \n");
 	assertEqualsString(sqlrcur_getColumnName(cur,0),"testint");
 	assertEqualsString(sqlrcur_getColumnName(cur,1),"testfloat");
@@ -494,6 +571,8 @@ int main(int argc, char **argv) {
 	assertEqualsString(cols[3],"testvarchar");
 	printf("\n");
 
+
+	// cached result set with result set buffer size
 	printf("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: \n");
 	sqlrcur_setResultSetBufferSize(cur,2);
 	sqlrcur_cacheToFile(cur,"cachefile1");
@@ -509,6 +588,8 @@ int main(int argc, char **argv) {
 	free(filename);
 	printf("\n");
 
+
+	// from one cache file to another
 	printf("FROM ONE CACHE FILE TO ANOTHER: \n");
 	sqlrcur_cacheToFile(cur,"cachefile2");
 	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile1"));
@@ -518,6 +599,8 @@ int main(int argc, char **argv) {
 	assertEqualsString(sqlrcur_getFieldByIndex(cur,8,0),NULL);
 	printf("\n");
 
+
+	// from one cache file to another with result set buffer size
 	printf("FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: \n");
 	sqlrcur_setResultSetBufferSize(cur,2);
 	sqlrcur_cacheToFile(cur,"cachefile2");
@@ -529,6 +612,8 @@ int main(int argc, char **argv) {
 	sqlrcur_setResultSetBufferSize(cur,0);
 	printf("\n");
 
+
+	// cached result set with suspend and result set buffer size
 	printf("CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: \n");
 	sqlrcur_setResultSetBufferSize(cur,2);
 	sqlrcur_cacheToFile(cur,"cachefile1");
@@ -568,6 +653,8 @@ int main(int argc, char **argv) {
 	free(filename);
 	printf("\n");
 
+
+	// commit and rollback
 	printf("COMMIT AND ROLLBACK: \n");
 	secondcon=sqlrcon_alloc("sqlrelay",9000,
 			"/tmp/test.socket","testuser","testpassword",0,1);
@@ -582,6 +669,8 @@ int main(int argc, char **argv) {
 	assertEqualsString(sqlrcur_getFieldByIndex(secondcur,0,0),"9");
 	printf("\n");
 
+
+	// finished suspended session
 	printf("FINISHED SUSPENDED SESSION: \n");
 	assertTrue(sqlrcur_sendQuery(cur,"select * from testtable order by testint"));
 	assertEqualsString(sqlrcur_getFieldByIndex(cur,4,0),"5");
@@ -605,6 +694,9 @@ int main(int argc, char **argv) {
 	sqlrcur_sendQuery(cur,"drop table testtable");
 
 	// invalid queries...
+
+
+	// invalid queries
 	printf("INVALID QUERIES: \n");
 	assertFalse(sqlrcur_sendQuery(cur,"select * from testtable"));
 	assertFalse(sqlrcur_sendQuery(cur,"select * from testtable"));

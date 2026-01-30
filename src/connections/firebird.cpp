@@ -907,6 +907,36 @@ const char *firebirdconnection::mapIsolationLevel(
 					"snapshot table stability")) {
 			return "TRANSACTION_SERIALIZABLE";
 		}
+	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC &&
+			toformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE) {
+		if (!charstring::compare(isolevel,
+				"SQL_TXN_READ_COMMITTED")) {
+			return "read committed";
+		}
+		if (!charstring::compare(isolevel,
+				"SQL_TXN_REPEATABLE_READ")) {
+			return "snapshot";
+		}
+		if (!charstring::compare(isolevel,
+				"SQL_TXN_SERIALIZABLE")) {
+			return "snapshot table stability";
+		}
+	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
+			toformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC) {
+		if (!charstring::compare(isolevel,"read committed") ||
+			!charstring::compare(isolevel,
+				"read committed no record version") ||
+			!charstring::compare(isolevel,
+						"read consistency")) {
+			return "SQL_TXN_READ_COMMITTED";
+		}
+		if (!charstring::compare(isolevel,"snapshot")) {
+			return "SQL_TXN_REPEATABLE_READ";
+		}
+		if (!charstring::compare(isolevel,
+					"snapshot table stability")) {
+			return "SQL_TXN_SERIALIZABLE";
+		}
 	}
 	return isolevel;
 }

@@ -20,8 +20,12 @@ def main():
 	cur=PySQLRClient.sqlrcursor(con)
 
 	# get database type
+
+
+	# identify
 	print("IDENTIFY: ")
 	assertEqual(con.identify(),"odbc")
+
 
 	# ping
 	print("PING: ")
@@ -32,10 +36,15 @@ def main():
 	cur.sendQuery("drop table testtable")
 
 	# create a new table
+
+
+	# create temptable
 	print("CREATE TEMPTABLE: ")
 	assertTrue(cur.sendQuery("create table testtable (testint int, testchar char(40), testvarchar varchar(40), testdate date)"))
 	print()
 
+
+	# insert
 	print("INSERT: ")
 	assertTrue(cur.sendQuery("insert into testtable values (1,'testchar1','testvarchar1','01-JAN-2001')"))
 	assertTrue(cur.sendQuery("insert into testtable values (2,'testchar2','testvarchar2','02-JAN-2002')"))
@@ -47,6 +56,8 @@ def main():
 	assertTrue(cur.sendQuery("insert into testtable values (8,'testchar8','testvarchar8','08-JAN-2008')"))
 	print()
 
+
+	# finished suspended session
 	print("FINISHED SUSPENDED SESSION: ")
 	assertTrue(cur.sendQuery("select * from testtable order by testint"))
 	assertEqual(cur.getField(4,0),"5")
@@ -70,6 +81,9 @@ def main():
 	cur.sendQuery("drop table testtable")
 
 	# invalid queries...
+
+
+	# invalid queries
 	print("INVALID QUERIES: ")
 	assertFalse(cur.sendQuery("select * from testtable"))
 	assertFalse(cur.sendQuery("select * from testtable"))

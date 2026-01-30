@@ -422,6 +422,24 @@ const char *sqliteconnection::mapIsolationLevel(
 		if (!charstring::compare(isolevel,"0")) {
 			return "TRANSACTION_READ_COMMITTED";
 		}
+	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC &&
+			toformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE) {
+		if (!charstring::compare(isolevel,
+				"SQL_TXN_READ_UNCOMMITTED")) {
+			return "1";
+		}
+		if (!charstring::compare(isolevel,
+				"SQL_TXN_READ_COMMITTED")) {
+			return "0";
+		}
+	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
+			toformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC) {
+		if (!charstring::compare(isolevel,"1")) {
+			return "SQL_TXN_READ_UNCOMMITTED";
+		}
+		if (!charstring::compare(isolevel,"0")) {
+			return "SQL_TXN_READ_COMMITTED";
+		}
 	}
 	return isolevel;
 }

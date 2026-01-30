@@ -36,14 +36,19 @@ class sqlite extends sqlrtest {
 		SQLRCursor cur=new SQLRCursor(con);
 	
 		// get database type
+
+
+		// identify
 		System.out.println("IDENTIFY: ");
 		assertEquals(con.identify(),"sqlite");
 		System.out.println();
-	
+
+
 		// ping
 		System.out.println("PING: ");
 		assertTrue(con.ping());
 		System.out.println();
+
 
 		// isolation levels
 		System.out.println("ISOLATION LEVELS: ");
@@ -62,12 +67,17 @@ class sqlite extends sqlrtest {
 		con.commit();
 	
 		// create a new table
+
+
+		// create temptable
 		System.out.println("CREATE TEMPTABLE: ");
 		cur.sendQuery("begin transaction");
 		assertTrue(cur.sendQuery("create table testtable (testint int, testfloat float, testchar char(40), testvarchar varchar(40))"));
 		con.commit();
 		System.out.println();
-	
+
+
+		// insert
 		System.out.println("INSERT: ");
 		cur.sendQuery("begin transaction");
 		assertTrue(cur.sendQuery("insert into testtable values (1,1.1,'testchar1','testvarchar1')"));
@@ -75,11 +85,15 @@ class sqlite extends sqlrtest {
 		assertTrue(cur.sendQuery("insert into testtable values (3,3.3,'testchar3','testvarchar3')"));
 		assertTrue(cur.sendQuery("insert into testtable values (4,4.4,'testchar4','testvarchar4')"));
 		System.out.println();
-	
+
+
+		// affected rows
 		System.out.println("AFFECTED ROWS: ");
 		assertEquals(cur.affectedRows(),0);
 		System.out.println();
-	
+
+
+		// bind by name
 		System.out.println("BIND BY NAME: ");
 		cur.prepareQuery("insert into testtable values (:var1,:var2,:var3,:var4)");
 		assertEquals(cur.countBindVariables(),4);
@@ -101,7 +115,9 @@ class sqlite extends sqlrtest {
 		cur.inputBind("var4","testvarchar7");
 		assertTrue(cur.executeQuery());
 		System.out.println();
-	
+
+
+		// bind by name with validation
 		System.out.println("BIND BY NAME WITH VALIDATION: ");
 		cur.clearBinds();
 		cur.inputBind("var1",8);
@@ -111,15 +127,21 @@ class sqlite extends sqlrtest {
 		cur.validateBinds();
 		assertTrue(cur.executeQuery());
 		System.out.println();
-	
+
+
+		// select
 		System.out.println("SELECT: ");
 		assertTrue(cur.sendQuery("select * from testtable order by testint"));
 		System.out.println();
-	
+
+
+		// column count
 		System.out.println("COLUMN COUNT: ");
 		assertEquals(cur.colCount(),4);
 		System.out.println();
-	
+
+
+		// column names
 		System.out.println("COLUMN NAMES: ");
 		assertEquals(cur.getColumnName(0),"testint");
 		assertEquals(cur.getColumnName(1),"testfloat");
@@ -131,7 +153,9 @@ class sqlite extends sqlrtest {
 		assertEquals(cols[2],"testchar");
 		assertEquals(cols[3],"testvarchar");
 		System.out.println();
-	
+
+
+		// column types
 		System.out.println("COLUMN TYPES: ");
 		assertEquals(cur.getColumnType(0),"INTEGER");
 		assertEquals(cur.getColumnType("testint"),"INTEGER");
@@ -142,7 +166,9 @@ class sqlite extends sqlrtest {
 		assertEquals(cur.getColumnType(3),"STRING");
 		assertEquals(cur.getColumnType("testvarchar"),"STRING");
 		System.out.println();
-	
+
+
+		// column length
 		System.out.println("COLUMN LENGTH: ");
 		assertEquals(cur.getColumnLength(0),0);
 		assertEquals(cur.getColumnLength("testint"),0);
@@ -153,7 +179,9 @@ class sqlite extends sqlrtest {
 		assertEquals(cur.getColumnLength(3),0);
 		assertEquals(cur.getColumnLength("testvarchar"),0);
 		System.out.println();
-	
+
+
+		// longest column
 		System.out.println("LONGEST COLUMN: ");
 		assertEquals(cur.getLongest(0),1);
 		assertEquals(cur.getLongest("testint"),1);
@@ -164,23 +192,33 @@ class sqlite extends sqlrtest {
 		assertEquals(cur.getLongest(3),12);
 		assertEquals(cur.getLongest("testvarchar"),12);
 		System.out.println();
-	
+
+
+		// row count
 		System.out.println("ROW COUNT: ");
 		assertEquals(cur.rowCount(),8);
 		System.out.println();
-	
+
+
+		// total rows
 		System.out.println("TOTAL ROWS: ");
 		assertEquals(cur.totalRows(),0);
 		System.out.println();
-	
+
+
+		// first row index
 		System.out.println("FIRST ROW INDEX: ");
 		assertEquals(cur.firstRowIndex(),0);
 		System.out.println();
-	
+
+
+		// end of result set
 		System.out.println("END OF RESULT SET: ");
 		assertTrue(cur.endOfResultSet());
 		System.out.println();
-	
+
+
+		// fields by index
 		System.out.println("FIELDS BY INDEX: ");
 		assertEquals(cur.getField(0,0),"1");
 		assertEquals(cur.getField(0,1),"1.1");
@@ -192,7 +230,9 @@ class sqlite extends sqlrtest {
 		assertEquals(cur.getField(7,2),"testchar8");
 		assertEquals(cur.getField(7,3),"testvarchar8");
 		System.out.println();
-	
+
+
+		// field lengths by index
 		System.out.println("FIELD LENGTHS BY INDEX: ");
 		assertEquals(cur.getFieldLength(0,0),1);
 		assertEquals(cur.getFieldLength(0,1),3);
@@ -204,7 +244,9 @@ class sqlite extends sqlrtest {
 		assertEquals(cur.getFieldLength(7,2),9);
 		assertEquals(cur.getFieldLength(7,3),12);
 		System.out.println();
-	
+
+
+		// fields by name
 		System.out.println("FIELDS BY NAME: ");
 		assertEquals(cur.getField(0,"testint"),"1");
 		assertEquals(cur.getField(0,"testfloat"),"1.1");
@@ -216,7 +258,9 @@ class sqlite extends sqlrtest {
 		assertEquals(cur.getField(7,"testchar"),"testchar8");
 		assertEquals(cur.getField(7,"testvarchar"),"testvarchar8");
 		System.out.println();
-	
+
+
+		// field lengths by name
 		System.out.println("FIELD LENGTHS BY NAME: ");
 		assertEquals(cur.getFieldLength(0,"testint"),1);
 		assertEquals(cur.getFieldLength(0,"testfloat"),3);
@@ -228,7 +272,9 @@ class sqlite extends sqlrtest {
 		assertEquals(cur.getFieldLength(7,"testchar"),9);
 		assertEquals(cur.getFieldLength(7,"testvarchar"),12);
 		System.out.println();
-	
+
+
+		// fields by array
 		System.out.println("FIELDS BY ARRAY: ");
 		fields=cur.getRow(0);
 		assertEquals(fields[0],"1");
@@ -236,7 +282,9 @@ class sqlite extends sqlrtest {
 		assertEquals(fields[2],"testchar1");
 		assertEquals(fields[3],"testvarchar1");
 		System.out.println();
-	
+
+
+		// field lengths by array
 		System.out.println("FIELD LENGTHS BY ARRAY: ");
 		fieldlens=cur.getRowLengths(0);
 		assertEquals(fieldlens[0],1);
@@ -244,7 +292,9 @@ class sqlite extends sqlrtest {
 		assertEquals(fieldlens[2],9);
 		assertEquals(fieldlens[3],12);
 		System.out.println();
-	
+
+
+		// individual substitutions
 		System.out.println("INDIVIDUAL SUBSTITUTIONS: ");
 		cur.sendQuery("drop table testtable1");
 		assertTrue(cur.sendQuery("create table testtable1 (col1 int, col2 char, col3 float)"));
@@ -254,7 +304,9 @@ class sqlite extends sqlrtest {
 		cur.substitution("var3",10.5556,6,4);
 		assertTrue(cur.executeQuery());
 		System.out.println();
-	
+
+
+		// fields
 		System.out.println("FIELDS: ");
 		assertTrue(cur.sendQuery("select * from testtable1"));
 		assertEquals(cur.getField(0,0),"1");
@@ -262,13 +314,17 @@ class sqlite extends sqlrtest {
 		assertEquals(cur.getField(0,2),"10.5556");
 		assertTrue(cur.sendQuery("delete from testtable1"));
 		System.out.println();
-	
+
+
+		// array substitutions
 		System.out.println("ARRAY SUBSTITUTIONS: ");
 		cur.prepareQuery("insert into testtable1 values ('$(var1)','$(var2)','$(var3)')");
 		cur.substitutions(subvars,subvalstrings);
 		assertTrue(cur.executeQuery());
 		System.out.println();
-	
+
+
+		// fields
 		System.out.println("FIELDS: ");
 		assertTrue(cur.sendQuery("select * from testtable1"));
 		assertEquals(cur.getField(0,0),"hi");
@@ -276,14 +332,17 @@ class sqlite extends sqlrtest {
 		assertEquals(cur.getField(0,2),"bye");
 		assertTrue(cur.sendQuery("delete from testtable1"));
 		System.out.println();
-	
-	
+
+
+		// array substitutions
 		System.out.println("ARRAY SUBSTITUTIONS: ");
 		cur.prepareQuery("insert into testtable1 values ($(var1),'$(var2)',$(var3))");
 		cur.substitutions(subvars,subvallongs);
 		assertTrue(cur.executeQuery());
 		System.out.println();
-	
+
+
+		// fields
 		System.out.println("FIELDS: ");
 		assertTrue(cur.sendQuery("select * from testtable1"));
 		assertEquals(cur.getField(0,0),"1");
@@ -291,14 +350,17 @@ class sqlite extends sqlrtest {
 		assertEquals(cur.getField(0,2),"3.0");
 		assertTrue(cur.sendQuery("delete from testtable1"));
 		System.out.println();
-	
-	
+
+
+		// array substitutions
 		System.out.println("ARRAY SUBSTITUTIONS: ");
 		cur.prepareQuery("insert into testtable1 values ($(var1),'$(var2)',$(var3))");
 		cur.substitutions(subvars,subvaldoubles,precs,scales);
 		assertTrue(cur.executeQuery());
 		System.out.println();
-	
+
+
+		// fields
 		System.out.println("FIELDS: ");
 		assertTrue(cur.sendQuery("select * from testtable1"));
 		assertEquals(cur.getField(0,0),"10.55");
@@ -322,7 +384,9 @@ class sqlite extends sqlrtest {
 		assertEquals(cur.getField(0,2),"");
 		cur.getNullsAsNulls();
 		System.out.println();
-	
+
+
+		// result set buffer size
 		System.out.println("RESULT SET BUFFER SIZE: ");
 		assertEquals(cur.getResultSetBufferSize(),0);
 		cur.setResultSetBufferSize(2);
@@ -351,7 +415,9 @@ class sqlite extends sqlrtest {
 		assertTrue(cur.endOfResultSet());
 		assertEquals(cur.rowCount(),8);
 		System.out.println();
-	
+
+
+		// dont get column info
 		System.out.println("DONT GET COLUMN INFO: ");
 		cur.dontGetColumnInfo();
 		assertTrue(cur.sendQuery("select * from testtable order by testint"));
@@ -364,7 +430,9 @@ class sqlite extends sqlrtest {
 		assertEquals(cur.getColumnLength(0),0);
 		assertEquals(cur.getColumnType(0),"INTEGER");
 		System.out.println();
-	
+
+
+		// suspended session
 		System.out.println("SUSPENDED SESSION: ");
 		assertTrue(cur.sendQuery("select * from testtable order by testint"));
 		cur.suspendResultSet();
@@ -414,7 +482,9 @@ class sqlite extends sqlrtest {
 		assertEquals(cur.getField(6,0),"7");
 		assertEquals(cur.getField(7,0),"8");
 		System.out.println();
-	
+
+
+		// suspended result set
 		System.out.println("SUSPENDED RESULT SET: ");
 		cur.setResultSetBufferSize(2);
 		assertTrue(cur.sendQuery("select * from testtable order by testint"));
@@ -442,7 +512,9 @@ class sqlite extends sqlrtest {
 		assertEquals(cur.rowCount(),8);
 		cur.setResultSetBufferSize(0);
 		System.out.println();
-	
+
+
+		// cached result set
 		System.out.println("CACHED RESULT SET: ");
 		cur.cacheToFile("cachefile1");
 		cur.setCacheTtl(200);
@@ -453,11 +525,15 @@ class sqlite extends sqlrtest {
 		assertTrue(cur.openCachedResultSet(filename));
 		assertEquals(cur.getField(7,0),"8");
 		System.out.println();
-	
+
+
+		// column count for cached result set
 		System.out.println("COLUMN COUNT FOR CACHED RESULT SET: ");
 		assertEquals(cur.colCount(),4);
 		System.out.println();
-	
+
+
+		// column names for cached result set
 		System.out.println("COLUMN NAMES FOR CACHED RESULT SET: ");
 		assertEquals(cur.getColumnName(0),"testint");
 		assertEquals(cur.getColumnName(1),"testfloat");
@@ -469,7 +545,9 @@ class sqlite extends sqlrtest {
 		assertEquals(cols[2],"testchar");
 		assertEquals(cols[3],"testvarchar");
 		System.out.println();
-	
+
+
+		// cached result set with result set buffer size
 		System.out.println("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile1");
@@ -483,7 +561,9 @@ class sqlite extends sqlrtest {
 		assertEquals(cur.getField(8,0),null);
 		cur.setResultSetBufferSize(0);
 		System.out.println();
-	
+
+
+		// from one cache file to another
 		System.out.println("FROM ONE CACHE FILE TO ANOTHER: ");
 		cur.cacheToFile("cachefile2");
 		assertTrue(cur.openCachedResultSet("cachefile1"));
@@ -492,7 +572,9 @@ class sqlite extends sqlrtest {
 		assertEquals(cur.getField(7,0),"8");
 		assertEquals(cur.getField(8,0),null);
 		System.out.println();
-	
+
+
+		// from one cache file to another with result set buffer size
 		System.out.println("FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile2");
@@ -503,7 +585,9 @@ class sqlite extends sqlrtest {
 		assertEquals(cur.getField(8,0),null);
 		cur.setResultSetBufferSize(0);
 		System.out.println();
-	
+
+
+		// cached result set with suspend and result set buffer size
 		System.out.println("CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile1");
@@ -542,6 +626,8 @@ class sqlite extends sqlrtest {
 		cur.setResultSetBufferSize(0);
 		System.out.println();
 
+
+	    	// commit and rollback
 	    	System.out.println("COMMIT AND ROLLBACK: \n");
 		SQLRConnection secondcon=new SQLRConnection("sqlrelay",
 						(short)9000,
@@ -559,6 +645,7 @@ class sqlite extends sqlrtest {
 		System.out.println();
 
 
+		// finished suspended session
 		System.out.println("FINISHED SUSPENDED SESSION: ");
 		assertTrue(cur.sendQuery("select * from testtable order by testint"));
 		assertEquals(cur.getField(4,0),"5");
@@ -582,6 +669,9 @@ class sqlite extends sqlrtest {
 		cur.sendQuery("drop table testtable");
 	
 		// invalid queries...
+
+
+		// invalid queries
 		System.out.println("INVALID QUERIES: ");
 		assertFalse(cur.sendQuery("select * from testtable"));
 		assertFalse(cur.sendQuery("select * from testtable"));

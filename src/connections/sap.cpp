@@ -783,6 +783,38 @@ const char *sapconnection::mapIsolationLevel(
 		if (!charstring::compare(isolevel,"3")) {
 			return "TRANSACTION_SERIALIZABLE";
 		}
+	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC &&
+			toformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE) {
+		if (!charstring::compare(isolevel,
+				"SQL_TXN_READ_UNCOMMITTED")) {
+			return "0";
+		}
+		if (!charstring::compare(isolevel,
+				"SQL_TXN_READ_COMMITTED")) {
+			return "1";
+		}
+		if (!charstring::compare(isolevel,
+				"SQL_TXN_REPEATABLE_READ")) {
+			return "2";
+		}
+		if (!charstring::compare(isolevel,
+				"SQL_TXN_SERIALIZABLE")) {
+			return "3";
+		}
+	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
+			toformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC) {
+		if (!charstring::compare(isolevel,"0")) {
+			return "SQL_TXN_READ_UNCOMMITTED";
+		}
+		if (!charstring::compare(isolevel,"1")) {
+			return "SQL_TXN_READ_COMMITTED";
+		}
+		if (!charstring::compare(isolevel,"2")) {
+			return "SQL_TXN_REPEATABLE_READ";
+		}
+		if (!charstring::compare(isolevel,"3")) {
+			return "SQL_TXN_SERIALIZABLE";
+		}
 	}
 	return isolevel;
 }

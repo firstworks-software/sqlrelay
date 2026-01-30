@@ -24,16 +24,22 @@
 	} catch (Exception $e) {
 	}
 
+
+	# create temptable
 	echo("CREATE TEMPTABLE: \n");
 	$dbh->exec("create table testtable (testint int, testfloat float, testchar varchar(20), testblob blob, testdate datetime)");
 	echo("\n");
 
+
+	# insert
 	echo("INSERT: \n");
 	assertEqual($dbh->exec("insert into testtable values (NULL,NULL,NULL,NULL,NULL)"),1);
 	assertEqual($dbh->exec("insert into testtable values (1,1.1,'1','1','2001-01-01')"),1);
 	assertEqual($dbh->exec("insert into testtable values (0,0.0,'0','0','0000-01-01 00:00:00')"),1);
 	echo("\n");
 
+
+	# fields by index (as null)
 	echo("FIELDS BY INDEX (as NULL): \n");
 	$stmt=$dbh->query("select * from testtable");
 	$result=$stmt->fetch(PDO::FETCH_NUM);
@@ -65,6 +71,8 @@ print_r($result);
 echo("\n");
 	echo("\n");
 
+
+	# fields by index (as empty strings)
 	echo("FIELDS BY INDEX (as empty strings): \n");
 	$stmt=$dbh->prepare("select * from testtable");
 	$stmt->setAttribute(

@@ -19,14 +19,19 @@ con=SQLRConnection.new("sqlrelay",9000,"/tmp/test.socket",
 cur=SQLRCursor.new(con)
 
 # get database type
+
+
+# identify
 print "IDENTIFY: \n"
 assertEqual(con.identify(),"oracle")
 print "\n"
+
 
 # ping
 print "PING: \n"
 assertTrue(con.ping())
 print "\n"
+
 
 # isolation levels
 print "ISOLATION LEVELS: \n"
@@ -49,18 +54,26 @@ print "\n"
 # drop existing table
 cur.sendQuery("drop table testtable")
 
+
+# create temptable
 print "CREATE TEMPTABLE: \n"
 assertTrue(cur.sendQuery("create table testtable (testnumber number, testchar char(40), testvarchar varchar2(40), testdate date, testlong long, testclob clob, testblob blob)"))
 print "\n"
 
+
+# insert
 print "INSERT: \n"
 assertTrue(cur.sendQuery("insert into testtable values (1,'testchar1','testvarchar1','01-JAN-2001','testlong1','testclob1',empty_blob())"))
 print "\n"
 
+
+# affected rows
 print "AFFECTED ROWS: \n"
 assertEqual(cur.affectedRows(),1)
 print "\n"
 
+
+# bind by position
 print "BIND BY POSITION: \n"
 cur.prepareQuery("insert into testtable values (:var1,:var2,:var3,:var4,:var5,:var6,:var7)")
 assertEqual(cur.countBindVariables(),7)
@@ -83,6 +96,8 @@ cur.inputBindBlob("7","testblob3",9)
 assertTrue(cur.executeQuery())
 print "\n"
 
+
+# array of binds by position
 print "ARRAY OF BINDS BY POSITION: \n"
 cur.clearBinds()
 cur.inputBinds(["1","2","3","4","5"],
@@ -92,6 +107,8 @@ cur.inputBindBlob("7","testblob4",9)
 assertTrue(cur.executeQuery())
 print "\n"
 
+
+# bind by name
 print "BIND BY NAME: \n"
 cur.prepareQuery("insert into testtable values (:var1,:var2,:var3,:var4,:var5,:var6,:var7)")
 cur.inputBind("var1",5)
@@ -113,6 +130,8 @@ cur.inputBindBlob("var7","testblob6",9)
 assertTrue(cur.executeQuery())
 print "\n"
 
+
+# array of binds by name
 print "ARRAY OF BINDS BY NAME: \n"
 cur.clearBinds()
 cur.inputBinds(["var1","var2","var3","var4","var5"],
@@ -122,6 +141,8 @@ cur.inputBindBlob("var7","testblob7",9)
 assertTrue(cur.executeQuery())
 print "\n"
 
+
+# bind by name with validation
 print "BIND BY NAME WITH VALIDATION: \n"
 cur.clearBinds()
 cur.inputBind("var1",8)
@@ -136,6 +157,8 @@ cur.validateBinds()
 assertTrue(cur.executeQuery())
 print "\n"
 
+
+# output bind by name
 print "OUTPUT BIND BY NAME: \n"
 cur.prepareQuery("begin  :numvar:=1; :stringvar:='hello'; :floatvar:=2.5; end;")
 cur.defineOutputBindInteger("numvar")
@@ -150,6 +173,8 @@ assertEqual(stringvar,'hello')
 assertEqual(floatvar,2.5)
 print "\n"
 
+
+# output bind by name
 print "OUTPUT BIND BY NAME: \n"
 cur.clearBinds()
 cur.defineOutputBindInteger("1")
@@ -164,6 +189,8 @@ assertEqual(stringvar,'hello')
 assertEqual(floatvar,2.5)
 print "\n"
 
+
+# output bind by name with validation
 print "OUTPUT BIND BY NAME WITH VALIDATION: \n"
 cur.clearBinds()
 cur.defineOutputBindInteger("numvar")
@@ -180,14 +207,20 @@ assertEqual(stringvar,'hello')
 assertEqual(floatvar,2.5)
 print "\n"
 
+
+# select
 print "SELECT: \n"
 assertTrue(cur.sendQuery("select * from testtable order by testnumber"))
 print "\n"
 
+
+# column count
 print "COLUMN COUNT: \n"
 assertEqual(cur.colCount(),7)
 print "\n"
 
+
+# column names
 print "COLUMN NAMES: \n"
 assertEqual(cur.getColumnName(0),"TESTNUMBER")
 assertEqual(cur.getColumnName(1),"TESTCHAR")
@@ -202,6 +235,8 @@ assertEqual(cols[3],"TESTDATE")
 assertEqual(cols[4],"TESTLONG")
 print "\n"
 
+
+# column types
 print "COLUMN TYPES: \n"
 assertEqual(cur.getColumnType(0),"NUMBER")
 assertEqual(cur.getColumnType('TESTNUMBER'),"NUMBER")
@@ -215,6 +250,8 @@ assertEqual(cur.getColumnType(4),"LONG")
 assertEqual(cur.getColumnType('TESTLONG'),"LONG")
 print "\n"
 
+
+# column length
 print "COLUMN LENGTH: \n"
 assertEqual(cur.getColumnLength(0),22)
 assertEqual(cur.getColumnLength('TESTNUMBER'),22)
@@ -228,6 +265,8 @@ assertEqual(cur.getColumnLength(4),0)
 assertEqual(cur.getColumnLength('TESTLONG'),0)
 print "\n"
 
+
+# longest column
 print "LONGEST COLUMN: \n"
 assertEqual(cur.getLongest(0),1)
 assertEqual(cur.getLongest('TESTNUMBER'),1)
@@ -241,22 +280,32 @@ assertEqual(cur.getLongest(4),9)
 assertEqual(cur.getLongest('TESTLONG'),9)
 print "\n"
 
+
+# row count
 print "ROW COUNT: \n"
 assertEqual(cur.rowCount(),8)
 print "\n"
 
+
+# total rows
 print "TOTAL ROWS: \n"
 assertEqual(cur.totalRows(),0)
 print "\n"
 
+
+# first row index
 print "FIRST ROW INDEX: \n"
 assertEqual(cur.firstRowIndex(),0)
 print "\n"
 
+
+# end of result set
 print "END OF RESULT SET: \n"
 assertTrue(cur.endOfResultSet())
 print "\n"
 
+
+# fields by index
 print "FIELDS BY INDEX: \n"
 assertEqual(cur.getField(0,0),"1")
 assertEqual(cur.getField(0,1),"testchar1                               ")
@@ -275,6 +324,8 @@ assertEqual(cur.getField(7,5),"testclob8")
 assertEqual(cur.getField(7,6),"testblob8")
 print "\n"
 
+
+# field lengths by index
 print "FIELD LENGTHS BY INDEX: \n"
 assertEqual(cur.getFieldLength(0,0),1)
 assertEqual(cur.getFieldLength(0,1),40)
@@ -293,6 +344,8 @@ assertEqual(cur.getFieldLength(7,5),9)
 assertEqual(cur.getFieldLength(7,6),9)
 print "\n"
 
+
+# fields by name
 print "FIELDS BY NAME: \n"
 assertEqual(cur.getField(0,"TESTNUMBER"),"1")
 assertEqual(cur.getField(0,"TESTCHAR"),"testchar1                               ")
@@ -311,6 +364,8 @@ assertEqual(cur.getField(7,"TESTCLOB"),"testclob8")
 assertEqual(cur.getField(7,"TESTBLOB"),"testblob8")
 print "\n"
 
+
+# field lengths by name
 print "FIELD LENGTHS BY NAME: \n"
 assertEqual(cur.getFieldLength(0,"TESTNUMBER"),1)
 assertEqual(cur.getFieldLength(0,"TESTCHAR"),40)
@@ -329,6 +384,8 @@ assertEqual(cur.getFieldLength(7,"TESTCLOB"),9)
 assertEqual(cur.getFieldLength(7,"TESTBLOB"),9)
 print "\n"
 
+
+# fields by array
 print "FIELDS BY ARRAY: \n"
 fields=cur.getRow(0)
 assertEqual(fields[0],"1")
@@ -340,6 +397,8 @@ assertEqual(fields[5],"testclob1")
 assertEqual(fields[6],"")
 print "\n"
 
+
+# field lengths by array
 print "FIELD LENGTHS BY ARRAY: \n"
 fieldlens=cur.getRowLengths(0)
 assertEqual(fieldlens[0],1)
@@ -351,6 +410,8 @@ assertEqual(fieldlens[5],9)
 assertEqual(fieldlens[6],0)
 print "\n"
 
+
+# fields by hash
 print "FIELDS BY HASH: \n"
 fields=cur.getRowHash(0)
 assertEqual(fields["TESTNUMBER"],"1")
@@ -371,6 +432,8 @@ assertEqual(fields["TESTCLOB"],"testclob8")
 assertEqual(fields["TESTBLOB"],"testblob8")
 print "\n"
 
+
+# field lengths by hash
 print "FIELD LENGTHS BY HASH: \n"
 fieldlengths=cur.getRowLengthsHash(0)
 assertEqual(fieldlengths["TESTNUMBER"],1)
@@ -391,6 +454,8 @@ assertEqual(fieldlengths["TESTCLOB"],9)
 assertEqual(fieldlengths["TESTBLOB"],9)
 print "\n"
 
+
+# individual substitutions
 print "INDIVIDUAL SUBSTITUTIONS: \n"
 cur.prepareQuery("select $(var1),'$(var2)',$(var3) from dual")
 cur.substitution("var1",1)
@@ -399,12 +464,16 @@ cur.substitution("var3",10.5556,6,4)
 assertTrue(cur.executeQuery())
 print "\n"
 
+
+# fields
 print "FIELDS: \n"
 assertEqual(cur.getField(0,0),"1")
 assertEqual(cur.getField(0,1),"hello")
 assertEqual(cur.getField(0,2),"10.5556")
 print "\n"
 
+
+# output bind
 print "OUTPUT BIND: \n"
 cur.prepareQuery("begin :var1:='hello'; end;")
 cur.defineOutputBindString("var1",10)
@@ -412,6 +481,8 @@ assertTrue(cur.executeQuery())
 assertEqual(cur.getOutputBindString("var1"),"hello")
 print "\n"
 
+
+# array substitutions
 print "ARRAY SUBSTITUTIONS: \n"
 cur.prepareQuery("select $(var1),'$(var2)',$(var3) from dual")
 cur.substitutions(["var1","var2","var3"],
@@ -419,12 +490,16 @@ cur.substitutions(["var1","var2","var3"],
 assertTrue(cur.executeQuery())
 print "\n"
 
+
+# fields
 print "FIELDS: \n"
 assertEqual(cur.getField(0,0),"1")
 assertEqual(cur.getField(0,1),"hello")
 assertEqual(cur.getField(0,2),"10.5556")
 print "\n"
 
+
+# nulls as nils
 print "NULLS as nils: \n"
 cur.getNullsAsNils()
 assertTrue(cur.sendQuery("select NULL,1,NULL from dual"))
@@ -439,6 +514,8 @@ assertEqual(cur.getField(0,2),"")
 cur.getNullsAsNils()
 print "\n"
 
+
+# result set buffer size
 print "RESULT SET BUFFER SIZE: \n"
 assertEqual(cur.getResultSetBufferSize(),0)
 cur.setResultSetBufferSize(2)
@@ -468,6 +545,8 @@ assertTrue(cur.endOfResultSet())
 assertEqual(cur.rowCount(),8)
 print "\n"
 
+
+# dont get column info
 print "DONT GET COLUMN INFO: \n"
 cur.dontGetColumnInfo()
 assertTrue(cur.sendQuery("select * from testtable order by testnumber"))
@@ -481,6 +560,8 @@ assertEqual(cur.getColumnLength(0),22)
 assertEqual(cur.getColumnType(0),"NUMBER")
 print "\n"
 
+
+# suspended session
 print "SUSPENDED SESSION: \n"
 assertTrue(cur.sendQuery("select * from testtable order by testnumber"))
 cur.suspendResultSet()
@@ -531,6 +612,8 @@ assertEqual(cur.getField(6,0),"7")
 assertEqual(cur.getField(7,0),"8")
 print "\n"
 
+
+# suspended result set
 print "SUSPENDED RESULT SET: \n"
 cur.setResultSetBufferSize(2)
 assertTrue(cur.sendQuery("select * from testtable order by testnumber"))
@@ -559,6 +642,8 @@ assertEqual(cur.rowCount(),8)
 cur.setResultSetBufferSize(0)
 print "\n"
 
+
+# cached result set
 print "CACHED RESULT SET: \n"
 cur.cacheToFile("cachefile1")
 cur.setCacheTtl(200)
@@ -570,10 +655,14 @@ assertTrue(cur.openCachedResultSet(filename))
 assertEqual(cur.getField(7,0),"8")
 print "\n"
 
+
+# column count for cached result set
 print "COLUMN COUNT FOR CACHED RESULT SET: \n"
 assertEqual(cur.colCount(),7)
 print "\n"
 
+
+# column names for cached result set
 print "COLUMN NAMES FOR CACHED RESULT SET: \n"
 assertEqual(cur.getColumnName(0),"TESTNUMBER")
 assertEqual(cur.getColumnName(1),"TESTCHAR")
@@ -592,6 +681,8 @@ assertEqual(cols[5],"TESTCLOB")
 assertEqual(cols[6],"TESTBLOB")
 print "\n"
 
+
+# cached result set with result set buffer size
 print "CACHED RESULT SET WITH RESULT SET BUFFER SIZE: \n"
 cur.setResultSetBufferSize(2)
 cur.cacheToFile("cachefile1")
@@ -606,6 +697,8 @@ assertEqual(cur.getField(8,0),nil)
 cur.setResultSetBufferSize(0)
 print "\n"
 
+
+# from one cache file to another
 print "FROM ONE CACHE FILE TO ANOTHER: \n"
 cur.cacheToFile("cachefile2")
 assertTrue(cur.openCachedResultSet("cachefile1"))
@@ -615,6 +708,8 @@ assertEqual(cur.getField(7,0),"8")
 assertEqual(cur.getField(8,0),nil)
 print "\n"
 
+
+# from one cache file to another with result set buffer size
 print "FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: \n"
 cur.setResultSetBufferSize(2)
 cur.cacheToFile("cachefile2")
@@ -626,6 +721,8 @@ assertEqual(cur.getField(8,0),nil)
 cur.setResultSetBufferSize(0)
 print "\n"
 
+
+# cached result set with suspend and result set buffer size
 print "CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: \n"
 cur.setResultSetBufferSize(2)
 cur.cacheToFile("cachefile1")
@@ -664,6 +761,8 @@ assertEqual(cur.getField(8,0),nil)
 cur.setResultSetBufferSize(0)
 print "\n"
 
+
+# commit and rollback
 print "COMMIT AND ROLLBACK: \n"
 secondcon=SQLRConnection.new("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1)
@@ -680,6 +779,8 @@ assertEqual(secondcur.getField(0,0),"9")
 assertTrue(con.autoCommitOff())
 print "\n"
 
+
+# clob and blob output bind
 print "CLOB AND BLOB OUTPUT BIND: \n"
 cur.sendQuery("drop table testtable1")
 assertTrue(cur.sendQuery("create table testtable1 (testclob clob, testblob blob)"))
@@ -701,6 +802,8 @@ assertEqual(blobvarlength,5)
 cur.sendQuery("drop table testtable1")
 print "\n"
 
+
+# null and empty clobs and clobs
 print "NULL AND EMPTY CLOBS AND CLOBS: \n"
 cur.getNullsAsNils()
 cur.sendQuery("create table testtable1 (testclob1 clob, testclob2 clob, testblob1 blob, testblob2 blob)")
@@ -718,6 +821,8 @@ assertEqual(cur.getField(0,3),nil)
 cur.sendQuery("drop table testtable1")
 print "\n"
 
+
+# cursor binds
 print "CURSOR BINDS: \n"
 assertTrue(cur.sendQuery("create or replace package types as type cursorType is ref cursor; end;"))
 assertTrue(cur.sendQuery("create or replace function sp_testtable return types.cursortype as l_cursor    types.cursorType; begin open l_cursor for select * from testtable; return l_cursor; end;"))
@@ -736,6 +841,8 @@ assertEqual(bindcur.getField(6,0),"7")
 assertEqual(bindcur.getField(7,0),"8")
 print "\n"
 
+
+# long clob
 print "LONG CLOB: \n"
 cur.sendQuery("drop table testtable2")
 cur.sendQuery("create table testtable2 (testclob clob)")
@@ -757,6 +864,8 @@ assertEqual(clobval,clobbindvar)
 cur.sendQuery("drop table testtable2")
 print "\n"
 
+
+# finished suspended session
 print "FINISHED SUSPENDED SESSION: \n"
 assertTrue(cur.sendQuery("select * from testtable order by testnumber"))
 assertEqual(cur.getField(4,0),"5")
@@ -777,7 +886,7 @@ assertEqual(cur.getField(7,0),nil)
 print "\n"
 
 
-
+# bind validation
 print "BIND VALIDATION: \n"
 cur.sendQuery("drop table testtable1")
 cur.sendQuery("create table testtable1 (col1 varchar2(20), col2 varchar2(20), col3 varchar2(20))")
@@ -810,6 +919,9 @@ print "\n"
 cur.sendQuery("drop table testtable")
 
 # invalid queries...
+
+
+# invalid queries
 print "INVALID QUERIES: \n"
 assertFalse(cur.sendQuery("select * from testtable order by testnumber"))
 assertFalse(cur.sendQuery("select * from testtable order by testnumber"))

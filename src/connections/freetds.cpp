@@ -1146,6 +1146,38 @@ const char *freetdsconnection::mapIsolationLevel(
 			if (!charstring::compare(isolevel,"3")) {
 				return "TRANSACTION_SERIALIZABLE";
 			}
+		} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC &&
+				toformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE) {
+			if (!charstring::compare(isolevel,
+				"SQL_TXN_READ_UNCOMMITTED")) {
+				return "0";
+			}
+			if (!charstring::compare(isolevel,
+				"SQL_TXN_READ_COMMITTED")) {
+				return "1";
+			}
+			if (!charstring::compare(isolevel,
+				"SQL_TXN_REPEATABLE_READ")) {
+				return "2";
+			}
+			if (!charstring::compare(isolevel,
+				"SQL_TXN_SERIALIZABLE")) {
+				return "3";
+			}
+		} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
+				toformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC) {
+			if (!charstring::compare(isolevel,"0")) {
+				return "SQL_TXN_READ_UNCOMMITTED";
+			}
+			if (!charstring::compare(isolevel,"1")) {
+				return "SQL_TXN_READ_COMMITTED";
+			}
+			if (!charstring::compare(isolevel,"2")) {
+				return "SQL_TXN_REPEATABLE_READ";
+			}
+			if (!charstring::compare(isolevel,"3")) {
+				return "SQL_TXN_SERIALIZABLE";
+			}
 		}
 	} else {
 		if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_JDBC &&
@@ -1191,6 +1223,46 @@ const char *freetdsconnection::mapIsolationLevel(
 			if (!charstring::compare(isolevel,
 						"SNAPSHOT")) {
 				return "TRANSACTION_SNAPSHOT";
+			}
+		} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC &&
+				toformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE) {
+			if (!charstring::compare(isolevel,
+				"SQL_TXN_READ_UNCOMMITTED")) {
+				return "READ UNCOMMITTED";
+			}
+			if (!charstring::compare(isolevel,
+				"SQL_TXN_READ_COMMITTED")) {
+				return "READ COMMITTED";
+			}
+			if (!charstring::compare(isolevel,
+				"SQL_TXN_REPEATABLE_READ")) {
+				return "REPEATABLE READ";
+			}
+			if (!charstring::compare(isolevel,
+				"SQL_TXN_SERIALIZABLE")) {
+				return "SERIALIZABLE";
+			}
+		} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
+				toformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC) {
+			if (!charstring::compare(isolevel,
+						"READ UNCOMMITTED")) {
+				return "SQL_TXN_READ_UNCOMMITTED";
+			}
+			if (!charstring::compare(isolevel,
+						"READ COMMITTED")) {
+				return "SQL_TXN_READ_COMMITTED";
+			}
+			if (!charstring::compare(isolevel,
+						"REPEATABLE READ")) {
+				return "SQL_TXN_REPEATABLE_READ";
+			}
+			if (!charstring::compare(isolevel,
+						"SERIALIZABLE")) {
+				return "SQL_TXN_SERIALIZABLE";
+			}
+			if (!charstring::compare(isolevel,
+						"SNAPSHOT")) {
+				return "SQL_TXN_SERIALIZABLE";
 			}
 		}
 	}

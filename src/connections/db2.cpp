@@ -796,6 +796,38 @@ const char *db2connection::mapIsolationLevel(
 		if (!charstring::compare(isolevel,"RR")) {
 			return "TRANSACTION_SERIALIZABLE";
 		}
+	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC &&
+			toformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE) {
+		if (!charstring::compare(isolevel,
+				"SQL_TXN_READ_UNCOMMITTED")) {
+			return "UR";
+		}
+		if (!charstring::compare(isolevel,
+				"SQL_TXN_READ_COMMITTED")) {
+			return "CS";
+		}
+		if (!charstring::compare(isolevel,
+				"SQL_TXN_REPEATABLE_READ")) {
+			return "RS";
+		}
+		if (!charstring::compare(isolevel,
+				"SQL_TXN_SERIALIZABLE")) {
+			return "RR";
+		}
+	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
+			toformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC) {
+		if (!charstring::compare(isolevel,"UR")) {
+			return "SQL_TXN_READ_UNCOMMITTED";
+		}
+		if (!charstring::compare(isolevel,"CS")) {
+			return "SQL_TXN_READ_COMMITTED";
+		}
+		if (!charstring::compare(isolevel,"RS")) {
+			return "SQL_TXN_REPEATABLE_READ";
+		}
+		if (!charstring::compare(isolevel,"RR")) {
+			return "SQL_TXN_SERIALIZABLE";
+		}
 	}
 	return isolevel;
 }

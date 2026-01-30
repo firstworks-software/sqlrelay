@@ -225,6 +225,8 @@ int main(int argc, char **argv) {
 			"/tmp/test.socket","testuser","testpassword",0,1);
 	sqlrcursor	sqlrcur(&sqlrcon);
 
+
+	// results
 	stdoutput.printf("RESULTS: \n");
 	sqlrcur.sendQuery("select * from testtable order by col1");
 	assertEquals(sqlrcur.getField(0,"col1"),"1");
