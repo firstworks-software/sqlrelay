@@ -139,7 +139,7 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)(uintptr_t)SQL_TXN_SERIALIZABLE,0);
 	assertSuccessDbc(dbc,erg);
 
-	// reset to default
+	// reset to default isolation level
 	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
 	assertSuccessDbc(dbc,erg);
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,

@@ -108,30 +108,59 @@ int main(int argc, char **argv) {
 
 
 	// isolation levels
-	SQLUINTEGER	isolationlevels[]={SQL_TXN_REPEATABLE_READ,
-						SQL_TXN_READ_UNCOMMITTED,
-						SQL_TXN_READ_COMMITTED,
-						SQL_TXN_SERIALIZABLE,0};
 	stdoutput.printf("ISOLATION LEVELS: \n");
-	for (SQLUINTEGER *il=isolationlevels; *il; il++) {
-		erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
-		assertSuccessDbc(dbc,erg);
-		erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
-					(SQLPOINTER)(uintptr_t)*il,0);
-		assertSuccessDbc(dbc,erg);
-		SQLUINTEGER	isolevel;
-		SQLINTEGER	isolevellen;
-		erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
-					(SQLPOINTER)&isolevel,
-					sizeof(isolevel),&isolevellen);
-		assertSuccessDbc(dbc,erg);
-		assertEqualDbc(dbc,(int)isolevel,(int)*il);
-	}
+	SQLUINTEGER	isolevel;
+	SQLINTEGER	isolevellen;
+
+	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)(uintptr_t)SQL_TXN_READ_UNCOMMITTED,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+				(SQLPOINTER)&isolevel,
+				sizeof(isolevel),&isolevellen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)isolevel,(int)SQL_TXN_READ_UNCOMMITTED);
+
+	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)(uintptr_t)SQL_TXN_READ_COMMITTED,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+				(SQLPOINTER)&isolevel,
+				sizeof(isolevel),&isolevellen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)isolevel,(int)SQL_TXN_READ_COMMITTED);
+
+	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)(uintptr_t)SQL_TXN_REPEATABLE_READ,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+				(SQLPOINTER)&isolevel,
+				sizeof(isolevel),&isolevellen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)isolevel,(int)SQL_TXN_REPEATABLE_READ);
+
+	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)(uintptr_t)SQL_TXN_SERIALIZABLE,0);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+				(SQLPOINTER)&isolevel,
+				sizeof(isolevel),&isolevellen);
+	assertSuccessDbc(dbc,erg);
+	assertEqualDbc(dbc,(int)isolevel,(int)SQL_TXN_SERIALIZABLE);
+
 	// reset to the default isolation level
 	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
 	assertSuccessDbc(dbc,erg);
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
-				(SQLPOINTER)(uintptr_t)isolationlevels[0],0);
+			(SQLPOINTER)(uintptr_t)SQL_TXN_REPEATABLE_READ,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
