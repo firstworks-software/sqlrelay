@@ -22,6 +22,7 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 	void setParameters(HashMap<Integer,SQLRelayParameter> parameters) {
 		driver.debugFunction(this);
 		this.parameters=parameters;
+		driver.debugPrintln("parameter count: "+parameters.size());
 		driver.debugEnd();
 	}
 
