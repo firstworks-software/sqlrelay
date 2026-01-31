@@ -354,9 +354,15 @@ public class SQLRelayConnection implements Connection {
 	int getNetworkTimeout() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
-		int	retval=
-			((sqlrcon.getConnectTimeoutSeconds()*1000000)+
-			sqlrcon.getConnectTimeoutMicroseconds())/1000;
+		int	sec=sqlrcon.getConnectTimeoutSeconds();
+		int	usec=sqlrcon.getConnectTimeoutMicroseconds();
+		driver.debugPrintln("sec: "+sec);
+		driver.debugPrintln("usec: "+usec);
+		if (sec==-1 || usec==-1) {
+			sec=0;
+			usec=0;
+		}
+		int	retval=((sec*1000000)+usec)/1000;
 		driver.debugPrintln("timeout: "+retval);
 		driver.debugEnd();
 		return retval;
@@ -546,7 +552,7 @@ public class SQLRelayConnection implements Connection {
 		sqlrstmt.setSQLRCursor(sqlrcur);
 
 		driver.debugEnd();
-		return null;
+		return sqlrstmt;
 	}
 
 	public
@@ -621,7 +627,7 @@ public class SQLRelayConnection implements Connection {
 		sqlrstmt.setSQLRConnection(sqlrcon);
 		sqlrstmt.setSQLRCursor(sqlrcur);
 		driver.debugEnd();
-		return null;
+		return sqlrstmt;
 	}
 
 	public
@@ -810,10 +816,15 @@ public class SQLRelayConnection implements Connection {
 			throwException("timeout < 0");
 		}
 		if (milliseconds==0) {
+			driver.debugPrintln("sec: -1");
+			driver.debugPrintln("usec: -1");
 			sqlrcon.setConnectTimeout(-1,-1);
 		} else {
-			sqlrcon.setConnectTimeout(milliseconds/1000,
-				((milliseconds-(milliseconds/1000))*1000));
+			int	sec=milliseconds/1000;
+			int	usec=(milliseconds-(milliseconds/1000))*1000;
+			driver.debugPrintln("sec: "+sec);
+			driver.debugPrintln("usec: "+usec);
+			sqlrcon.setConnectTimeout(sec,usec);
 		}
 		driver.debugEnd();
 	}

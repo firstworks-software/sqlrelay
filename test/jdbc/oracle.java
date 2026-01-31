@@ -50,6 +50,7 @@ class oracle extends sqlrtest {
 		Connection	con=DriverManager.getConnection(
 						url,user,password);
 		assertTrue((con!=null));
+		System.out.println();
 
 		// close, isClosed, isValid
 		System.out.println("close");
@@ -491,6 +492,7 @@ if (false) {
 		stmt.close();
                 System.out.println();
 
+		// result set types
 		int[]	rstype={
 			ResultSet.TYPE_FORWARD_ONLY,
 			ResultSet.TYPE_SCROLL_INSENSITIVE,
@@ -506,6 +508,8 @@ if (false) {
 			"scroll insensitive",
 			"scroll sensitive"
 		};
+
+		// result set concurrency
 		int[]	concurrency={
 			ResultSet.CONCUR_READ_ONLY,
 			ResultSet.CONCUR_UPDATABLE
@@ -518,6 +522,8 @@ if (false) {
 			"read only",
 			"updatable"
 		};
+
+		// result set holdability
 		int[]	holdability={
 			ResultSet.HOLD_CURSORS_OVER_COMMIT,
 			ResultSet.CLOSE_CURSORS_AT_COMMIT
@@ -529,6 +535,8 @@ if (false) {
 			"hold cursors",
 			"close cursors"
 		};
+
+		// test all combinations
 		for (int r=0; r<rstype.length; r++) {
 			for (int c=0; c<concurrency.length; c++) {
 				System.out.println(
@@ -543,14 +551,17 @@ if (false) {
 					assertTrue((stmt!=null));
 					stmt.close();
 				} else {
+					boolean	supported=
+						(rstypesupported[c] &&
+						concurrencysupported[c]);
 					try {
 						stmt=con.
 						createStatement(
 							rstype[r],
 							concurrency[c]);
-						assertTrue(false);
+						assertTrue(supported);
 					} catch (Exception ex) {
-						assertTrue(true);
+						assertFalse(supported);
 					}
 				}
 				System.out.println();
@@ -574,15 +585,19 @@ if (false) {
 						assertTrue((stmt!=null));
 						stmt.close();
 					} else {
+						boolean	supported=
+						(rstypesupported[c] &&
+						concurrencysupported[c] &&
+						holdabilitysupported[h]);
 						try {
 							stmt=con.
 							createStatement(
 								rstype[r],
 								concurrency[c],
 								holdability[h]);
-							assertTrue(false);
+							assertTrue(supported);
 						} catch (Exception ex) {
-							assertTrue(true);
+							assertFalse(supported);
 						}
 					}
 					System.out.println();
