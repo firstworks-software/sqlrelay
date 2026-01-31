@@ -989,6 +989,7 @@ if disablenodejs=false then
 end if
 if disableodbc=false then
 	ODBCBUILD="yes"
+	TESTAPIS=TESTAPIS & """odbc"","
 end if
 ORACLE8BUILD="no     "
 MYSQLBUILD="no     "

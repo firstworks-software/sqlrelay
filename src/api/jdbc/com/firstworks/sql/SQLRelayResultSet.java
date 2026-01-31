@@ -863,7 +863,7 @@ public class SQLRelayResultSet implements ResultSet {
 		validateColumn(columnindex);
 		long	field=0;
 		synchronized (networklock) {
-			field=(long)sqlrcur.getFieldAsInteger(
+			field=sqlrcur.getFieldAsInteger(
 					currentrow-1,columnindex-1);
 			wasnull=(sqlrcur.getField(
 					currentrow-1,columnindex-1)==null);
@@ -882,7 +882,7 @@ public class SQLRelayResultSet implements ResultSet {
 		validateColumn(columnlabel);
 		long	field=0;
 		synchronized (networklock) {
-			field=(long)sqlrcur.getFieldAsInteger(
+			field=sqlrcur.getFieldAsInteger(
 					currentrow-1,columnlabel);
 			wasnull=(sqlrcur.getField(
 					currentrow-1,columnlabel)==null);

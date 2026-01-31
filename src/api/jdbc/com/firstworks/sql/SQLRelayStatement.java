@@ -364,11 +364,9 @@ public class SQLRelayStatement implements Statement {
 	int getQueryTimeout() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		// FIXME: this can be supported
-		//return sqlrcon.getResponseTimeout();
+		int	retval=sqlrcon.getResponseTimeoutSeconds();
 		driver.debugEnd();
-		return 0;
+		return retval;
 	}
 
 	public
@@ -383,8 +381,8 @@ public class SQLRelayStatement implements Statement {
 	int getResultSetConcurrency() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
-		// FIXME: is this correct?
 		driver.debugEnd();
+		// we only support CONCUR_READ_ONLY
 		return ResultSet.CONCUR_READ_ONLY;
 	}
 
@@ -392,9 +390,9 @@ public class SQLRelayStatement implements Statement {
 	int getResultSetHoldability() throws SQLException {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
-		// FIXME: is this correct?
 		driver.debugEnd();
-		return ResultSet.CLOSE_CURSORS_AT_COMMIT;
+		// we only support HOLD_CURSORS_OVER_COMMIT
+		return ResultSet.HOLD_CURSORS_OVER_COMMIT;
 	}
 
 	public
@@ -402,7 +400,9 @@ public class SQLRelayStatement implements Statement {
 		driver.debugFunction(this);
 		throwExceptionIfClosed();
 		driver.debugEnd();
-		return ResultSet.TYPE_FORWARD_ONLY;
+		return (sqlrcur.getResultSetBufferSize()==0)?
+					ResultSet.TYPE_SCROLL_INSENSITIVE:
+					ResultSet.TYPE_FORWARD_ONLY;
 	}
 
 	public

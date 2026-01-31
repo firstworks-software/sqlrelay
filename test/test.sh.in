@@ -12,6 +12,17 @@ do
 	echo
 	cd $DIR
 
+	# for odbc, verify that we have an odbcinst config for sqlrelay
+	if ( test "$DIR" = "odbc" )
+	then
+		if ( test -z "`grep '\[SQL Relay\]' /etc/odbcinst.ini 2> /dev/null`" )
+		then
+			echo "skipping odbc (no [SQL Relay] in /etc/odbcinst.ini)..."
+			echo
+			continue
+		fi
+	fi
+
 	TEST=""
 	TESTFILE=""
 	case "$DIR" in
@@ -46,6 +57,10 @@ do
 				TEST="node $1.js"
 				TESTFILE="$1.js"
 			fi
+			;;
+		odbc)
+			TEST="./$1"
+			TESTFILE="$1"
 			;;
 		perl)
 			perl --version > /dev/null 2>&1

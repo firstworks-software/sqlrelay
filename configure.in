@@ -978,6 +978,7 @@ if ( test -n "$HAVE_NODEJS" ); then
 fi
 if ( test -n "$ENABLE_ODBC_DRIVER" -a -n "$ODBCLIBS" ); then
 	ODBCDRIVERBUILD="yes"
+	TESTAPIS="$TESTAPIS odbc"
 fi
 
 ORACLEBUILD="no        "

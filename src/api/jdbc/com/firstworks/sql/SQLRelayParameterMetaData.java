@@ -30,6 +30,8 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 		driver.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
 		String	name=(p!=null)?p.getClassName():null;
+		driver.debugPrintln("param: "+param);
+		driver.debugPrintln("class name: "+name);
 		driver.debugEnd();
 		return name;
 	}
@@ -38,6 +40,8 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 		driver.debugFunction(this);
 		SQLRelayParameter	p=
 			(parameters!=null)?parameters.get(param):null;
+		driver.debugPrintln("param: "+param);
+		//FIXME: driver.debugPrintln("class name: "+name);
 		driver.debugEnd();
 		return p;
 	}
@@ -46,6 +50,7 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 	int getParameterCount() {
 		driver.debugFunction(this);
 		int	p=(parameters!=null)?parameters.size():0;
+		driver.debugPrintln("parameter count: "+p);
 		driver.debugEnd();
 		return p;
 	}
@@ -55,6 +60,8 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 		driver.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
 		int	mode=(p!=null)?p.getMode():parameterModeUnknown;
+		driver.debugPrintln("param: "+param);
+		driver.debugPrintln("mode: "+mode);
 		driver.debugEnd();
 		return mode;
 	}
@@ -64,6 +71,8 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 		driver.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
 		int	type=(p!=null)?p.getType():0;
+		driver.debugPrintln("param: "+param);
+		driver.debugPrintln("type: "+type);
 		driver.debugEnd();
 		return type;
 	}
@@ -73,6 +82,8 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 		driver.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
 		String	name=(p!=null)?p.getTypeName():null;
+		driver.debugPrintln("param: "+param);
+		driver.debugPrintln("type name: "+name);
 		driver.debugEnd();
 		return name;
 	}
@@ -82,6 +93,8 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 		driver.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
 		int	precision=(p!=null)?p.getPrecision():0;
+		driver.debugPrintln("param: "+param);
+		driver.debugPrintln("precision: "+precision);
 		driver.debugEnd();
 		return precision;
 	}
@@ -91,6 +104,8 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 		driver.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
 		int	scale=(p!=null)?p.getScale():0;
+		driver.debugPrintln("param: "+param);
+		driver.debugPrintln("scale: "+scale);
 		driver.debugEnd();
 		return scale;
 	}
@@ -100,6 +115,18 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 		driver.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
 		int	in=(p!=null)?p.getIsNullable():parameterNullableUnknown;
+		driver.debugPrintln("param: "+param);
+		switch (in) {
+			case ParameterMetaData.parameterNoNulls:
+				driver.debugPrintln("is nullable: no");
+				break;
+			case ParameterMetaData.parameterNullable:
+				driver.debugPrintln("is nullable: yes");
+				break;
+			case ParameterMetaData.parameterNullableUnknown:
+				driver.debugPrintln("is nullable: unknown");
+				break;
+		}
 		driver.debugEnd();
 		return in;
 	}
@@ -109,6 +136,8 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 		driver.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
 		boolean	is=(p!=null)?p.getIsSigned():true;
+		driver.debugPrintln("param: "+param);
+		driver.debugPrintln("is signed: "+((is)?"yes":"no"));
 		driver.debugEnd();
 		return is;
 	}

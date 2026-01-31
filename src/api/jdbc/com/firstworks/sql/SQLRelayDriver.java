@@ -16,8 +16,8 @@ public class SQLRelayDriver implements Driver {
 	private static final int	MAJOR_VERSION=1;
 	private static final int	MINOR_VERSION=2;
 
-	//public static boolean	debug=true;
-	public static boolean	debug=false;
+	//public boolean	debug=true;
+	public boolean	debug=false;
 
 	Map<Long,Integer>	indents=new HashMap<>();
 
@@ -334,8 +334,9 @@ public class SQLRelayDriver implements Driver {
 	public
 	Logger getParentLogger() throws SQLFeatureNotSupportedException {
 		debugFunction(this);
-		debugPrintln("exception: SQLFeatureNotSupportedException()");
-		throw new SQLFeatureNotSupportedException();
+		throwFeatureNotSupportedException();
+		debugEnd();
+		return null;
 	}
 
 	/**
@@ -486,5 +487,12 @@ public class SQLRelayDriver implements Driver {
 				System.out.print(hexarray[b&0x0f]);
 			}
 		}
+	}
+
+	protected void throwFeatureNotSupportedException()
+					throws SQLFeatureNotSupportedException {
+		debugPrintln("exception: SQLFeatureNotSupportedException");
+		debugZeroIndent();
+		throw new SQLFeatureNotSupportedException();
 	}
 }

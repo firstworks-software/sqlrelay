@@ -107,26 +107,43 @@ int main(int argc, char **argv) {
 
 
 	// isolation levels
-	SQLUINTEGER	isolationlevels[]={SQL_TXN_READ_COMMITTED,
-						SQL_TXN_SERIALIZABLE,0};
 	stdoutput.printf("ISOLATION LEVELS: \n");
-	for (SQLUINTEGER *il=isolationlevels; *il; il++) {
-		// oracle requires the isolation level to
-		// be the first query of the transaction
-		erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
-		assertSuccessDbc(dbc,erg);
-		// you can set the isolation level, but to get it, you have to
-		// have permisisons to read from sys.v_$session and
-		// sys.v_$transaction
-		erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
-					(SQLPOINTER)(uintptr_t)*il,0);
-		assertSuccessDbc(dbc,erg);
-		stdoutput.printf("\n");
-	}
+
+	// oracle requires the isolation level to
+	// be the first query of the transaction
+	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
+	assertSuccessDbc(dbc,erg);
+
+	// you can set the isolation level, but to get it, you
+	// have to have permisisons to read from sys.v_$session
+	// and sys.v_$transaction, so we'll just set them here
 	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
 	assertSuccessDbc(dbc,erg);
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
-				(SQLPOINTER)(uintptr_t)isolationlevels[0],0);
+			(SQLPOINTER)(uintptr_t)SQL_TXN_READ_UNCOMMITTED,0);
+	assertFailureDbc(dbc,erg);
+
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)(uintptr_t)SQL_TXN_READ_COMMITTED,0);
+	assertSuccessDbc(dbc,erg);
+
+	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)(uintptr_t)SQL_TXN_REPEATABLE_READ,0);
+	assertFailureDbc(dbc,erg);
+
+	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)(uintptr_t)SQL_TXN_SERIALIZABLE,0);
+	assertSuccessDbc(dbc,erg);
+
+	// reset to default
+	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
+	assertSuccessDbc(dbc,erg);
+	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TXN_ISOLATION,
+			(SQLPOINTER)(uintptr_t)SQL_TXN_READ_COMMITTED,0);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 

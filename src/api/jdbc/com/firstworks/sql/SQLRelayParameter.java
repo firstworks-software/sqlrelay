@@ -102,6 +102,7 @@ public class SQLRelayParameter {
 	public
 	String getClassName() {
 		driver.debugFunction(this);
+		driver.debugPrintln("class name: "+classname);
 		driver.debugEnd();
 		return classname;
 	}
@@ -109,6 +110,7 @@ public class SQLRelayParameter {
 	public
 	int getMode() {
 		driver.debugFunction(this);
+		driver.debugPrintln("mode: "+mode);
 		driver.debugEnd();
 		return mode;
 	}
@@ -116,6 +118,7 @@ public class SQLRelayParameter {
 	public
 	int getType() {
 		driver.debugFunction(this);
+		driver.debugPrintln("type: "+type);
 		driver.debugEnd();
 		return type;
 	}
@@ -123,6 +126,7 @@ public class SQLRelayParameter {
 	public
 	String getTypeName() {
 		driver.debugFunction(this);
+		driver.debugPrintln("type name: "+typename);
 		driver.debugEnd();
 		return typename;
 	}
@@ -130,6 +134,7 @@ public class SQLRelayParameter {
 	public
 	int getPrecision() {
 		driver.debugFunction(this);
+		driver.debugPrintln("precision: "+precision);
 		driver.debugEnd();
 		return precision;
 	}
@@ -137,6 +142,7 @@ public class SQLRelayParameter {
 	public
 	int getScale() {
 		driver.debugFunction(this);
+		driver.debugPrintln("scale: "+scale);
 		driver.debugEnd();
 		return scale;
 	}
@@ -144,6 +150,7 @@ public class SQLRelayParameter {
 	public
 	int getIsNullable() {
 		driver.debugFunction(this);
+		driver.debugPrintln("nullable: "+nullable);
 		driver.debugEnd();
 		return nullable;
 	}
@@ -151,6 +158,7 @@ public class SQLRelayParameter {
 	public
 	boolean getIsSigned() {
 		driver.debugFunction(this);
+		driver.debugPrintln("signed: "+signed);
 		driver.debugEnd();
 		return signed;
 	}
@@ -158,6 +166,7 @@ public class SQLRelayParameter {
 	public
 	Object getObject() {
 		driver.debugFunction(this);
+		driver.debugPrintln("object: "+object);
 		driver.debugEnd();
 		return object;
 	}
@@ -165,6 +174,7 @@ public class SQLRelayParameter {
 	public
 	long getLength() {
 		driver.debugFunction(this);
+		driver.debugPrintln("length: "+length);
 		driver.debugEnd();
 		return length;
 	}
@@ -172,6 +182,7 @@ public class SQLRelayParameter {
 	public
 	boolean getIsBinary() {
 		driver.debugFunction(this);
+		driver.debugPrintln("binary: "+binary);
 		driver.debugEnd();
 		return binary;
 	}
@@ -179,6 +190,7 @@ public class SQLRelayParameter {
 	public
 	boolean getIsLob() {
 		driver.debugFunction(this);
+		driver.debugPrintln("lob: "+lob);
 		driver.debugEnd();
 		return lob;
 	}
@@ -186,6 +198,7 @@ public class SQLRelayParameter {
 	public
 	boolean getIsAscii() {
 		driver.debugFunction(this);
+		driver.debugPrintln("ascii: "+ascii);
 		driver.debugEnd();
 		return ascii;
 	}
@@ -193,6 +206,7 @@ public class SQLRelayParameter {
 	public
 	Calendar getCalendar() {
 		driver.debugFunction(this);
+		driver.debugPrintln("calendar: "+cal);
 		driver.debugEnd();
 		return cal;
 	}
@@ -200,6 +214,7 @@ public class SQLRelayParameter {
 	public
 	BindType getBindType() {
 		driver.debugFunction(this);
+		driver.debugPrintln("bind type: "+bindtype);
 		driver.debugEnd();
 		return bindtype;
 	}
@@ -207,6 +222,7 @@ public class SQLRelayParameter {
 	public
 	void setClassName(String classname) {
 		driver.debugFunction(this);
+		driver.debugPrintln("class name: "+classname);
 		this.classname=classname;
 		driver.debugEnd();
 	}
@@ -214,6 +230,7 @@ public class SQLRelayParameter {
 	public
 	void setMode(int mode) {
 		driver.debugFunction(this);
+		driver.debugPrintln("mode: "+mode);
 		this.mode=mode;
 		driver.debugEnd();
 	}
@@ -221,6 +238,7 @@ public class SQLRelayParameter {
 	public
 	void setType(int type) {
 		driver.debugFunction(this);
+		driver.debugPrintln("type: "+type);
 		this.type=type;
 		driver.debugEnd();
 	}
@@ -228,6 +246,7 @@ public class SQLRelayParameter {
 	public
 	void setTypeName(String typename) {
 		driver.debugFunction(this);
+		driver.debugPrintln("type name: "+typename);
 		this.typename=typename;
 		driver.debugEnd();
 	}
@@ -235,6 +254,7 @@ public class SQLRelayParameter {
 	public
 	void setPrecision(int precision) {
 		driver.debugFunction(this);
+		driver.debugPrintln("precision: "+precision);
 		this.precision=precision;
 		driver.debugEnd();
 	}
@@ -242,6 +262,7 @@ public class SQLRelayParameter {
 	public
 	void setScale(int scale) {
 		driver.debugFunction(this);
+		driver.debugPrintln("scale: "+scale);
 		this.scale=scale;
 		driver.debugEnd();
 	}
@@ -249,6 +270,7 @@ public class SQLRelayParameter {
 	public
 	void setIsNullable(int nullable) {
 		driver.debugFunction(this);
+		driver.debugPrintln("nullable: "+nullable);
 		this.nullable=nullable;
 		driver.debugEnd();
 	}
@@ -256,6 +278,7 @@ public class SQLRelayParameter {
 	public
 	void setIsSigned(boolean signed) {
 		driver.debugFunction(this);
+		driver.debugPrintln("signed: "+signed);
 		this.signed=signed;
 		driver.debugEnd();
 	}
@@ -263,6 +286,7 @@ public class SQLRelayParameter {
 	public
 	void setObject(Object object) {
 		driver.debugFunction(this);
+		driver.debugPrintln("object: "+object);
 		this.object=object;
 		driver.debugEnd();
 	}
@@ -270,6 +294,7 @@ public class SQLRelayParameter {
 	public
 	void setLength(long length) {
 		driver.debugFunction(this);
+		driver.debugPrintln("length: "+length);
 		this.length=length;
 		driver.debugEnd();
 	}
@@ -277,6 +302,7 @@ public class SQLRelayParameter {
 	public
 	void setIsBinary(boolean binary) {
 		driver.debugFunction(this);
+		driver.debugPrintln("binary: "+binary);
 		this.binary=binary;
 		driver.debugEnd();
 	}
@@ -284,6 +310,7 @@ public class SQLRelayParameter {
 	public
 	void setIsLob(boolean lob) {
 		driver.debugFunction(this);
+		driver.debugPrintln("lob: "+lob);
 		this.lob=lob;
 		driver.debugEnd();
 	}
@@ -291,6 +318,7 @@ public class SQLRelayParameter {
 	public
 	void setIsAscii(boolean ascii) {
 		driver.debugFunction(this);
+		driver.debugPrintln("ascii: "+ascii);
 		this.ascii=ascii;
 		driver.debugEnd();
 	}
@@ -298,6 +326,7 @@ public class SQLRelayParameter {
 	public
 	void setCalendar(Calendar cal) {
 		driver.debugFunction(this);
+		driver.debugPrintln("calendar: "+cal);
 		this.cal=cal;
 		driver.debugEnd();
 	}
@@ -305,6 +334,7 @@ public class SQLRelayParameter {
 	public
 	void setBindType(BindType bindtype) {
 		driver.debugFunction(this);
+		driver.debugPrintln("bind type: "+bindtype);
 		this.bindtype=bindtype;
 		driver.debugEnd();
 	}

@@ -168,34 +168,50 @@ class oracle extends sqlrtest {
 		}
 		System.out.println();
 
-		// setTransactionIsolation, getTransactionIsolation
-		if (!issqlrelay) {
-			System.out.println("isolation");
-			try {
-				con.setTransactionIsolation(
-					Connection.
-					TRANSACTION_READ_UNCOMMITTED);
-				assertTrue(false);
-			} catch (Exception ex) {
-				assertTrue(true);
-			}
+		// setTransactionIsolation
+		System.out.println("isolation levels");
+
+		// oracle requires the isolation level to
+		// be the first query of the transaction
+		con.commit();
+
+		// you can set the isolation level, but to get it, you
+		// have to have permisisons to read from sys.v_$session
+		// and sys.v_$transaction, so we'll just set them here
+		try {
 			con.setTransactionIsolation(
-				Connection.TRANSACTION_READ_COMMITTED);
-			assertEquals(con.getTransactionIsolation(),
-				Connection.TRANSACTION_READ_COMMITTED);
-			try {
-				con.setTransactionIsolation(
-					Connection.
-					TRANSACTION_REPEATABLE_READ);
-			} catch (Exception ex) {
-				assertTrue(true);
-			}
-			con.setTransactionIsolation(
-				Connection.TRANSACTION_SERIALIZABLE);
-			assertEquals(con.getTransactionIsolation(),
-				Connection.TRANSACTION_SERIALIZABLE);
-			System.out.println();
+				Connection.
+				TRANSACTION_READ_UNCOMMITTED);
+			assertTrue(false);
+		} catch (Exception ex) {
+			assertTrue(true);
 		}
+
+		con.commit();
+		con.setTransactionIsolation(
+			Connection.TRANSACTION_READ_COMMITTED);
+		assertTrue(true);
+
+		con.commit();
+		try {
+			con.setTransactionIsolation(
+				Connection.
+				TRANSACTION_REPEATABLE_READ);
+			assertTrue(false);
+		} catch (Exception ex) {
+			assertTrue(true);
+		}
+
+		con.commit();
+		con.setTransactionIsolation(
+			Connection.TRANSACTION_SERIALIZABLE);
+		assertTrue(true);
+
+		con.commit();
+		con.setTransactionIsolation(
+			Connection.TRANSACTION_READ_COMMITTED);
+		assertTrue(true);
+		System.out.println();
 
 		// setTypeMap, getTypeMap
 
