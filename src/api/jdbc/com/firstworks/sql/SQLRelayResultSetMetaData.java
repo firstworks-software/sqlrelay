@@ -6,16 +6,18 @@ import com.firstworks.sqlrelay.*;
 
 public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 
+	private	SQLRelayDriver		drv;
+	private	SQLRelayResultSet	resultset;
+
 	private	SQLRCursor		sqlrcur;
-	private	ResultSet		resultset;
-	private	SQLRelayDriver		driver;
+
 
 	public SQLRelayResultSetMetaData(SQLRelayDriver driver) {
-		this.driver=driver;
-		driver.debugFunction(this);
+		this.drv=driver;
+		drv.debugFunction(this);
 		sqlrcur=null;
 		resultset=null;
-		driver.debugEnd();
+		drv.debugEnd();
 	}
 
 	public
@@ -24,7 +26,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	}
 
 	public
-	void setResultSet(ResultSet resultset) {
+	void setResultSet(SQLRelayResultSet resultset) {
 		this.resultset=resultset;
 	}
 
@@ -35,21 +37,21 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 
 	public
 	String getCatalogName(int column) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		String	catalogname="";
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("catalog name: "+catalogname);
-		driver.debugEnd();
+		drv.debugPrintln("column: "+column);
+		drv.debugPrintln("catalog name: "+catalogname);
+		drv.debugEnd();
 		return catalogname;
 	}
 
 	public
 	String getColumnClassName(int column) throws SQLException {
-		driver.debugFunction(this);
-		driver.debugPrintln("column: "+column);
+		drv.debugFunction(this);
+		drv.debugPrintln("column: "+column);
 		String	retval=null;
 		String	ctype=sqlrcur.getColumnType(column-1).toUpperCase();
-		driver.debugPrintln("ctype: "+ctype);
+		drv.debugPrintln("ctype: "+ctype);
 		switch (ctype) {
 			case "UNKNOWN":
 				retval=null;
@@ -197,7 +199,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 				{
 				boolean	binary=sqlrcur.
 						getColumnIsBinary(column-1);
-				driver.debugPrintln("is binary: "+binary);
+				drv.debugPrintln("is binary: "+binary);
 				retval=(binary)?"java.lang.Byte":
 						"java.lang.String";
 				}
@@ -657,26 +659,26 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 				retval="java.sql.Timestamp";
 				break;
 		}
-		driver.debugPrintln("class type: "+retval);
-		driver.debugEnd();
+		drv.debugPrintln("class type: "+retval);
+		drv.debugEnd();
 		return retval;
 	}
 
 	public
 	int getColumnCount() {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		int	colcount=sqlrcur.colCount();
-		driver.debugPrintln("colcount: "+colcount);
-		driver.debugEnd();
+		drv.debugPrintln("colcount: "+colcount);
+		drv.debugEnd();
 		return colcount;
 	}
 
 	public
 	int getColumnDisplaySize(int column) {
-		driver.debugFunction(this);
-		driver.debugPrintln("column: "+column);
+		drv.debugFunction(this);
+		drv.debugPrintln("column: "+column);
 		String	ctype=sqlrcur.getColumnType(column-1).toUpperCase();
-		driver.debugPrintln("ctype: "+ctype);
+		drv.debugPrintln("ctype: "+ctype);
 		int	size=0;
 		if (sqlrcur.isNumberType(ctype)) {
 			// FIXME: not sure about this for ALL number types,
@@ -699,38 +701,38 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		} else {
 			size=sqlrcur.getColumnLength(column-1);
 		}
-		driver.debugPrintln("size: "+size);
-		driver.debugEnd();
+		drv.debugPrintln("size: "+size);
+		drv.debugEnd();
 		return size;
 	}
 
 	public
 	String getColumnLabel(int column) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		String	label=sqlrcur.getColumnName(column-1);
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("label: "+label);
-		driver.debugEnd();
+		drv.debugPrintln("column: "+column);
+		drv.debugPrintln("label: "+label);
+		drv.debugEnd();
 		return label;
 	}
 
 	public
 	String getColumnName(int column) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		String	columnname=sqlrcur.getColumnName(column-1);
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("column name: "+columnname);
-		driver.debugEnd();
+		drv.debugPrintln("column: "+column);
+		drv.debugPrintln("column name: "+columnname);
+		drv.debugEnd();
 		return columnname;
 	}
 
 	public
 	int getColumnType(int column) throws SQLException {
-		driver.debugFunction(this);
-		driver.debugPrintln("column: "+column);
+		drv.debugFunction(this);
+		drv.debugPrintln("column: "+column);
 		int	retval=0;
 		String	ctype=sqlrcur.getColumnType(column-1).toUpperCase();
-		driver.debugPrintln("ctype: "+ctype);
+		drv.debugPrintln("ctype: "+ctype);
 		switch (ctype) {
 			case "UNKNOWN":
 			case "UNDEFINED":
@@ -968,7 +970,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 			case "BLOB":
 				boolean	binary=sqlrcur.
 						getColumnIsBinary(column-1);
-				driver.debugPrintln("is binary: "+binary);
+				drv.debugPrintln("is binary: "+binary);
 				retval=(binary)?Types.BINARY:Types.LONGVARCHAR;
 				break;
 			case "NCHAR":
@@ -983,38 +985,34 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 			default:
 				break;
 		}
-		driver.debugPrintln("sql type: "+retval);
-		driver.debugEnd();
+		drv.debugPrintln("sql type: "+retval);
+		drv.debugEnd();
 		return retval;
 	}
 
 	private
 	boolean getDateToTimestamp() throws SQLException {
-		SQLRelayResultSet	srs=
-				(SQLRelayResultSet)resultset;
-		SQLRelayStatement	ss=
-				(SQLRelayStatement)srs.getStatement();
-		SQLRelayConnection	sc=
-				(SQLRelayConnection)ss.getConnection();
-		return sc.getDateToTimestamp();
+		return resultset.getStatement().
+					getConnection().
+					getDateToTimestamp();
 	}
 
 	public
 	String getColumnTypeName(int column) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		String	typename=sqlrcur.getColumnType(column-1);
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("type name: "+typename);
-		driver.debugEnd();
+		drv.debugPrintln("column: "+column);
+		drv.debugPrintln("type name: "+typename);
+		drv.debugEnd();
 		return typename;
 	}
 
 	public
 	int getPrecision(int column) {
-		driver.debugFunction(this);
-		driver.debugPrintln("column: "+column);
+		drv.debugFunction(this);
+		drv.debugPrintln("column: "+column);
 		String	ctype=sqlrcur.getColumnType(column-1).toUpperCase();
-		driver.debugPrintln("ctype: "+ctype);
+		drv.debugPrintln("ctype: "+ctype);
 		int	precision=0;
 		if (sqlrcur.isNumberType(ctype)) {
 			precision=(int)sqlrcur.getColumnPrecision(column-1);
@@ -1034,151 +1032,151 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		} else {
 			precision=sqlrcur.getColumnLength(column-1);
 		}
-		driver.debugPrintln("precision: "+precision);
-		driver.debugEnd();
+		drv.debugPrintln("precision: "+precision);
+		drv.debugEnd();
 		return precision;
 	}
 
 	public
 	int getScale(int column) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		int	scale=(int)sqlrcur.getColumnScale(column-1);
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("scale: "+scale);
-		driver.debugEnd();
+		drv.debugPrintln("column: "+column);
+		drv.debugPrintln("scale: "+scale);
+		drv.debugEnd();
 		return scale;
 	}
 
 	public
 	String getSchemaName(int column) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		String	schemaname="";
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("schema name: "+schemaname);
-		driver.debugEnd();
+		drv.debugPrintln("column: "+column);
+		drv.debugPrintln("schema name: "+schemaname);
+		drv.debugEnd();
 		return schemaname;
 	}
 
 	public
 	String getTableName(int column) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		String	tablename="";
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("table name: "+tablename);
+		drv.debugPrintln("column: "+column);
+		drv.debugPrintln("table name: "+tablename);
 		// FIXME: this could be implemented if
 		// getColumnTable was exposed
-		driver.debugEnd();
+		drv.debugEnd();
 		return tablename;
 	}
 
 	public
 	boolean isAutoIncrement(int column) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		boolean	isautoinc=sqlrcur.getColumnIsAutoIncrement(column-1);
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("is auto increment: "+isautoinc);
-		driver.debugEnd();
+		drv.debugPrintln("column: "+column);
+		drv.debugPrintln("is auto increment: "+isautoinc);
+		drv.debugEnd();
 		return isautoinc;
 	}
 
 	public
 	boolean isCaseSensitive(int column) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		// FIXME: can db type tell us this?
 		boolean	iscasesensitive=false;
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("is case sensitive: "+iscasesensitive);
-		driver.debugEnd();
+		drv.debugPrintln("column: "+column);
+		drv.debugPrintln("is case sensitive: "+iscasesensitive);
+		drv.debugEnd();
 		return iscasesensitive;
 	}
 
 	public
 	boolean isCurrency(int column) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		String	ctype=sqlrcur.getColumnType(column-1).toUpperCase();
 		boolean	iscurrency=ctype.equals("MONEY") ||
 					ctype.equals("SMALLMONEY") ||
 					ctype.equals("MONEY_ARRAY");
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("ctype: "+ctype);
-		driver.debugPrintln("is currency: "+iscurrency);
-		driver.debugEnd();
+		drv.debugPrintln("column: "+column);
+		drv.debugPrintln("ctype: "+ctype);
+		drv.debugPrintln("is currency: "+iscurrency);
+		drv.debugEnd();
 		return iscurrency;
 	}
 
 	public
 	boolean isDefinitelyWritable(int column) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		boolean	isdefinitelywriteable=false;
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("is definitely writeable: "+
+		drv.debugPrintln("column: "+column);
+		drv.debugPrintln("is definitely writeable: "+
 					isdefinitelywriteable);
-		driver.debugEnd();
+		drv.debugEnd();
 		return isdefinitelywriteable;
 	}
 
 	public
 	int isNullable(int column) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		int	isnullable=(sqlrcur.getColumnIsNullable(column-1))?
 						columnNullable:columnNoNulls;
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("is nullable: "+isnullable);
-		driver.debugEnd();
+		drv.debugPrintln("column: "+column);
+		drv.debugPrintln("is nullable: "+isnullable);
+		drv.debugEnd();
 		return isnullable;
 	}
 
 	public
 	boolean isReadOnly(int column) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		boolean	isreadonly=false;
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("is read-only: "+isreadonly);
-		driver.debugEnd();
+		drv.debugPrintln("column: "+column);
+		drv.debugPrintln("is read-only: "+isreadonly);
+		drv.debugEnd();
 		return isreadonly;
 	}
 
 	public
 	boolean isSearchable(int column) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		boolean	issearchable=true;
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("is searchable: "+issearchable);
-		driver.debugEnd();
+		drv.debugPrintln("column: "+column);
+		drv.debugPrintln("is searchable: "+issearchable);
+		drv.debugEnd();
 		return issearchable;
 	}
 
 	public
 	boolean isSigned(int column) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		boolean	issigned=!sqlrcur.getColumnIsUnsigned(column-1);
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("is signed: "+issigned);
-		driver.debugEnd();
+		drv.debugPrintln("column: "+column);
+		drv.debugPrintln("is signed: "+issigned);
+		drv.debugEnd();
 		return issigned;
 	}
 
 	public
 	boolean isWritable(int column) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		boolean	iswriteable=true;
-		driver.debugPrintln("column: "+column);
-		driver.debugPrintln("is writeable: "+iswriteable);
-		driver.debugEnd();
+		drv.debugPrintln("column: "+column);
+		drv.debugPrintln("is writeable: "+iswriteable);
+		drv.debugEnd();
 		return iswriteable;
 	}
 
 	public
 	boolean isWrapperFor(Class<?> iface) throws SQLException {
-		driver.debugFunction(this);
-		driver.debugEnd();
+		drv.debugFunction(this);
+		drv.debugEnd();
 		return false;
 	}
 
 	public
 	<T> T unwrap(Class<T> iface) throws SQLException {
-		driver.debugFunction(this);
-		driver.debugEnd();
+		drv.debugFunction(this);
+		drv.debugEnd();
 		return null;
 	}
 }

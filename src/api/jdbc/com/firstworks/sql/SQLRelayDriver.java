@@ -21,6 +21,7 @@ public class SQLRelayDriver implements Driver {
 
 	Map<Long,Integer>	indents=new HashMap<>();
 
+
 	static {
 		try {
 			DriverManager.registerDriver(new SQLRelayDriver());
@@ -441,7 +442,7 @@ public class SQLRelayDriver implements Driver {
 					getConnection());
 					break;
 				case "SQLRelayResultSet":
-					Statement	stmt=
+					SQLRelayStatement	stmt=
 						((SQLRelayResultSet)obj).
 						getStatement();
 					if (stmt!=null) {

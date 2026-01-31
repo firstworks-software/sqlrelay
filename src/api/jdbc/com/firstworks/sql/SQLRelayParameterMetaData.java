@@ -8,152 +8,154 @@ import com.firstworks.sqlrelay.*;
 
 public class SQLRelayParameterMetaData implements ParameterMetaData {
 
+	private	SQLRelayDriver	drv;
+
 	private HashMap<Integer,SQLRelayParameter>	parameters;
-	private	SQLRelayDriver	driver;
+
 
 	public SQLRelayParameterMetaData(SQLRelayDriver driver) {
-		this.driver=driver;
-		driver.debugFunction(this);
+		this.drv=driver;
+		drv.debugFunction(this);
 		parameters=null;
-		driver.debugEnd();
+		drv.debugEnd();
 	}
 
 	public
 	void setParameters(HashMap<Integer,SQLRelayParameter> parameters) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		this.parameters=parameters;
-		driver.debugPrintln("parameter count: "+parameters.size());
-		driver.debugEnd();
+		drv.debugPrintln("parameter count: "+parameters.size());
+		drv.debugEnd();
 	}
 
 	public
 	String getParameterClassName(int param) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
 		String	name=(p!=null)?p.getClassName():null;
-		driver.debugPrintln("param: "+param);
-		driver.debugPrintln("class name: "+name);
-		driver.debugEnd();
+		drv.debugPrintln("param: "+param);
+		drv.debugPrintln("class name: "+name);
+		drv.debugEnd();
 		return name;
 	}
 
 	private SQLRelayParameter getParameter(int param) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		SQLRelayParameter	p=
 			(parameters!=null)?parameters.get(param):null;
-		driver.debugPrintln("param: "+param);
-		//FIXME: driver.debugPrintln("class name: "+name);
-		driver.debugEnd();
+		drv.debugPrintln("param: "+param);
+		//FIXME: drv.debugPrintln("class name: "+name);
+		drv.debugEnd();
 		return p;
 	}
 
 	public
 	int getParameterCount() {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		int	p=(parameters!=null)?parameters.size():0;
-		driver.debugPrintln("parameter count: "+p);
-		driver.debugEnd();
+		drv.debugPrintln("parameter count: "+p);
+		drv.debugEnd();
 		return p;
 	}
 
 	public
 	int getParameterMode(int param) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
 		int	mode=(p!=null)?p.getMode():parameterModeUnknown;
-		driver.debugPrintln("param: "+param);
-		driver.debugPrintln("mode: "+mode);
-		driver.debugEnd();
+		drv.debugPrintln("param: "+param);
+		drv.debugPrintln("mode: "+mode);
+		drv.debugEnd();
 		return mode;
 	}
 
 	public
 	int getParameterType(int param) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
 		int	type=(p!=null)?p.getType():0;
-		driver.debugPrintln("param: "+param);
-		driver.debugPrintln("type: "+type);
-		driver.debugEnd();
+		drv.debugPrintln("param: "+param);
+		drv.debugPrintln("type: "+type);
+		drv.debugEnd();
 		return type;
 	}
 
 	public
 	String getParameterTypeName(int param) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
 		String	name=(p!=null)?p.getTypeName():null;
-		driver.debugPrintln("param: "+param);
-		driver.debugPrintln("type name: "+name);
-		driver.debugEnd();
+		drv.debugPrintln("param: "+param);
+		drv.debugPrintln("type name: "+name);
+		drv.debugEnd();
 		return name;
 	}
 
 	public
 	int getPrecision(int param) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
 		int	precision=(p!=null)?p.getPrecision():0;
-		driver.debugPrintln("param: "+param);
-		driver.debugPrintln("precision: "+precision);
-		driver.debugEnd();
+		drv.debugPrintln("param: "+param);
+		drv.debugPrintln("precision: "+precision);
+		drv.debugEnd();
 		return precision;
 	}
 
 	public
 	int getScale(int param) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
 		int	scale=(p!=null)?p.getScale():0;
-		driver.debugPrintln("param: "+param);
-		driver.debugPrintln("scale: "+scale);
-		driver.debugEnd();
+		drv.debugPrintln("param: "+param);
+		drv.debugPrintln("scale: "+scale);
+		drv.debugEnd();
 		return scale;
 	}
 
 	public
 	int isNullable(int param) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
 		int	in=(p!=null)?p.getIsNullable():parameterNullableUnknown;
-		driver.debugPrintln("param: "+param);
+		drv.debugPrintln("param: "+param);
 		switch (in) {
 			case ParameterMetaData.parameterNoNulls:
-				driver.debugPrintln("is nullable: no");
+				drv.debugPrintln("is nullable: no");
 				break;
 			case ParameterMetaData.parameterNullable:
-				driver.debugPrintln("is nullable: yes");
+				drv.debugPrintln("is nullable: yes");
 				break;
 			case ParameterMetaData.parameterNullableUnknown:
-				driver.debugPrintln("is nullable: unknown");
+				drv.debugPrintln("is nullable: unknown");
 				break;
 		}
-		driver.debugEnd();
+		drv.debugEnd();
 		return in;
 	}
 
 	public
 	boolean isSigned(int param) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
 		boolean	is=(p!=null)?p.getIsSigned():true;
-		driver.debugPrintln("param: "+param);
-		driver.debugPrintln("is signed: "+((is)?"yes":"no"));
-		driver.debugEnd();
+		drv.debugPrintln("param: "+param);
+		drv.debugPrintln("is signed: "+((is)?"yes":"no"));
+		drv.debugEnd();
 		return is;
 	}
 
 	public
 	boolean isWrapperFor(Class<?> iface) throws SQLException {
-		driver.debugFunction(this);
-		driver.debugEnd();
+		drv.debugFunction(this);
+		drv.debugEnd();
 		return false;
 	}
 
 	public
 	<T> T unwrap(Class<T> iface) throws SQLException {
-		driver.debugFunction(this);
-		driver.debugEnd();
+		drv.debugFunction(this);
+		drv.debugEnd();
 		return null;
 	}
 }

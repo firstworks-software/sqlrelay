@@ -23,36 +23,37 @@ public class SQLRelayPreparedStatement
 	private ArrayList<HashMap<Integer,SQLRelayParameter>>	batch;
 	private HashMap<Integer,SQLRelayParameter>		parameters;
 
+
 	public SQLRelayPreparedStatement(SQLRelayDriver driver) {
 		super(driver);
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		batch=new ArrayList<HashMap<Integer,SQLRelayParameter>>();
 		parameters=new HashMap<Integer,SQLRelayParameter>();
-		driver.debugEnd();
+		drv.debugEnd();
 	}
 
 	public
 	void addBatch() throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		batch.add(parameters);
 		parameters=new HashMap<Integer,SQLRelayParameter>();
-		driver.debugEnd();
+		drv.debugEnd();
 	}
 
 	public
 	void clearParameters() throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		sqlrcur.clearBinds();
 		batch.clear();
 		parameters.clear();
-		driver.debugEnd();
+		drv.debugEnd();
 	}
 
 	public
 	boolean execute() throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		// FIXME: handle timeout
 		resultset=null;
@@ -68,20 +69,21 @@ public class SQLRelayPreparedStatement
 			result=sqlrcur.executeQuery();
 		}
 		if (result) {
-			resultset=new SQLRelayResultSet(driver);
+			resultset=new SQLRelayResultSet(drv);
 			resultset.setNetworkLock(networklock);
 			resultset.setStatement(this);
+			resultset.setConnection(conn);
 			resultset.setSQLRCursor(sqlrcur);
 		} else {
 			throwErrorMessageException();
 		}
-		driver.debugEnd();
+		drv.debugEnd();
 		return result;
 	}
 
 	public
 	int[] executeBatch() throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		// FIXME: handle timeout
 		int[]	results=new int[batch.size()];
@@ -91,13 +93,13 @@ public class SQLRelayPreparedStatement
 			bind(params);
 			results[count++]=executeUpdate();
 		}
-		driver.debugEnd();
+		drv.debugEnd();
 		return results;
 	}
 
 	public
 	ResultSet executeQuery() throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		// FIXME: handle timeout
 		resultset=null;
@@ -113,20 +115,21 @@ public class SQLRelayPreparedStatement
 			success=sqlrcur.executeQuery();
 		}
 		if (success) {
-			resultset=new SQLRelayResultSet(driver);
+			resultset=new SQLRelayResultSet(drv);
 			resultset.setNetworkLock(networklock);
 			resultset.setStatement(this);
+			resultset.setConnection(conn);
 			resultset.setSQLRCursor(sqlrcur);
 		} else {
 			throwErrorMessageException();
 		}
-		driver.debugEnd();
+		drv.debugEnd();
 		return resultset;
 	}
 
 	public
 	int executeUpdate() throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		// FIXME: handle timeout
 		resultset=null;
@@ -146,16 +149,16 @@ public class SQLRelayPreparedStatement
 		} else {
 			throwErrorMessageException();
 		}
-		driver.debugEnd();
+		drv.debugEnd();
 		return updatecount;
 	}
 
 	private void bind(HashMap<Integer,SQLRelayParameter> params)
 							throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 
 		if (params==null) {
-			driver.debugEnd();
+			drv.debugEnd();
 			return;
 		}
 
@@ -498,48 +501,57 @@ public class SQLRelayPreparedStatement
 					break;
 			}
 		}
-		driver.debugEnd();
+		drv.debugEnd();
 	}
 
 	public
 	ResultSetMetaData getMetaData() throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		ResultSetMetaData	rsmd=
 				(resultset!=null)?resultset.getMetaData():null;
-		driver.debugEnd();
+		drv.debugEnd();
 		return rsmd;
 	}
 
 	public
 	ParameterMetaData getParameterMetaData() throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		SQLRelayParameterMetaData	pmd=
-				new SQLRelayParameterMetaData(driver);
+				new SQLRelayParameterMetaData(drv);
 		if (batch.size()==0) {
 			pmd.setParameters(parameters);
 		} else {
 			pmd.setParameters(batch.get(0));
 		}
-		driver.debugEnd();
+		drv.debugEnd();
 		return pmd;
 	}
 
 	public
 	void setArray(int parameterIndex, Array x) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		conn.throwFeatureNotSupportedException();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setAsciiStream(int parameterIndex, InputStream x)
 							throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -554,16 +566,22 @@ public class SQLRelayPreparedStatement
 		param.setIsAscii(true);
 		param.setCalendar(null);
 		param.setBindType(SQLRelayParameter.BindType.AsciiStream);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setAsciiStream(int parameterIndex, InputStream x,
 					int length) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -579,16 +597,22 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.AsciiStreamWithIntLength);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setAsciiStream(int parameterIndex, InputStream x,
 					long length) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -604,16 +628,22 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.AsciiStreamWithLongLength);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setBigDecimal(int parameterIndex, BigDecimal x)
 						throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -629,16 +659,22 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.BigDecimal);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setBinaryStream(int parameterIndex, InputStream x)
 						throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -654,16 +690,22 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.BinaryStream);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setBinaryStream(int parameterIndex, InputStream x,
 					int length) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -679,16 +721,22 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.BinaryStreamWithIntLength);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setBinaryStream(int parameterIndex, InputStream x,
 					long length) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -704,15 +752,21 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.BinaryStreamWithLongLength);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setBlob(int parameterIndex, Blob x) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -728,16 +782,22 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.Blob);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setBlob(int parameterIndex, InputStream inputStream)
 						throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -753,16 +813,22 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.BlobInputStream);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setBlob(int parameterIndex, InputStream inputStream,
 					long length) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -779,15 +845,22 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.
 				BlobInputStreamWithLongLength);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setBoolean(int parameterIndex, boolean x) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("value: "+x);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -803,15 +876,22 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.Boolean);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setByte(int parameterIndex, byte x) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("value: "+x);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -827,19 +907,25 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.Byte);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setBytes(int parameterIndex, byte[] x) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
 		Byte[]	bytes=new Byte[x.length];
 		for (int i=0; i<x.length; i++) {
 			bytes[i]=x[i];
 		}
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -855,16 +941,22 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.Bytes);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setCharacterStream(int parameterIndex, Reader reader)
 						throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -880,16 +972,22 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.CharacterStream);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setCharacterStream(int parameterIndex, Reader reader,
 					int length) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -906,16 +1004,22 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.
 				CharacterStreamWithIntLength);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setCharacterStream(int parameterIndex, Reader reader,
 					long length) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -932,15 +1036,21 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.
 				CharacterStreamWithLongLength);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setClob(int parameterIndex, Clob x) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -956,15 +1066,21 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.Clob);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setClob(int parameterIndex, Reader reader) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -980,16 +1096,22 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.ClobReader);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setClob(int parameterIndex, Reader reader,
 					long length) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -1005,15 +1127,21 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.ClobReaderWithLength);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setDate(int parameterIndex, Date x) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -1029,16 +1157,22 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.Date);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setDate(int parameterIndex, Date x, Calendar cal)
 						throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -1054,15 +1188,22 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(cal);
 		param.setBindType(
 			SQLRelayParameter.BindType.DateWithCalendar);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setDouble(int parameterIndex, double x) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("value: "+x);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -1078,15 +1219,22 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.Double);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setFloat(int parameterIndex, float x) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("value: "+x);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -1102,15 +1250,22 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.Float);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setInt(int parameterIndex, int x) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("value: "+x);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -1126,15 +1281,22 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.Int);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setLong(int parameterIndex, long x) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("value: "+x);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -1150,16 +1312,22 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.Long);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setNCharacterStream(int parameterIndex, Reader value)
 						throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -1175,16 +1343,22 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.NCharStream);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setNCharacterStream(int parameterIndex, Reader value,
 					long length) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -1200,15 +1374,21 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.NCharStreamWithLength);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setNClob(int parameterIndex, NClob value) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -1224,15 +1404,21 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.NClob);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setNClob(int parameterIndex, Reader reader) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -1248,16 +1434,22 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.NClobReader);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setNClob(int parameterIndex, Reader reader,
 					long length) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -1273,15 +1465,21 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.NClobReaderWithLength);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setNString(int parameterIndex, String value) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -1297,15 +1495,21 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.NString);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setNull(int parameterIndex, int sqlType) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -1321,16 +1525,22 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.Null);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void 	setNull(int parameterIndex, int sqlType,
 				String typeName) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -1346,58 +1556,90 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.NullWithTypeName);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setObject(int parameterIndex, Object x) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		conn.throwFeatureNotSupportedException();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setObject(int parameterIndex, Object x,
 				int targetSqlType) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		conn.throwFeatureNotSupportedException();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setObject(int parameterIndex, Object x,
 				int targetSqlType, int scaleOrLength)
 							throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		conn.throwFeatureNotSupportedException();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setRef(int parameterIndex, Ref x) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		conn.throwFeatureNotSupportedException();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setRowId(int parameterIndex, RowId x) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		conn.throwFeatureNotSupportedException();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setShort(int parameterIndex, short x) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("value: "+x);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -1413,15 +1655,21 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.Short);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setString(int parameterIndex, String x) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -1437,26 +1685,38 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.String);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setSQLXML(int parameterIndex, SQLXML xmlObject)
 						throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		conn.throwFeatureNotSupportedException();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setTime(int parameterIndex, Time x) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		conn.throwFeatureNotSupportedException();
+
 		// FIXME: support this...
-		/*SQLRelayParameter	param=new SQLRelayParameter(driver);
+		/*SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -1473,17 +1733,23 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.Time);
 		parameters.put(parameterIndex,param);*/
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setTime(int parameterIndex, Time x,
 					Calendar cal) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		conn.throwFeatureNotSupportedException();
+
 		// FIXME: support this...
-		/*SQLRelayParameter	param=new SQLRelayParameter(driver);
+		/*SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -1500,16 +1766,22 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.TimeWithCalendar);
 		parameters.put(parameterIndex,param);*/
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setTimestamp(int parameterIndex, Timestamp x) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		conn.throwFeatureNotSupportedException();
+
 		// FIXME: support this...
-		/*SQLRelayParameter	param=new SQLRelayParameter(driver);
+		/*SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -1526,17 +1798,23 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.Timestamp);
 		parameters.put(parameterIndex,param);*/
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setTimestamp(int parameterIndex, Timestamp x,
 					Calendar cal) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		conn.throwFeatureNotSupportedException();
+
 		// FIXME: support this...
-		/*SQLRelayParameter	param=new SQLRelayParameter(driver);
+		/*SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -1553,15 +1831,20 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.TimestampWithCalendar);
 		parameters.put(parameterIndex,param);*/
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setUnicodeStream(int parameterIndex, InputStream x,
 					int length) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		SQLRelayParameter	param=new SQLRelayParameter(driver);
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
 		param.setMode(ParameterMetaData.parameterModeIn);
 		param.setTypeName("FIXME");
@@ -1577,45 +1860,52 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(
 			SQLRelayParameter.BindType.UnicodeStream);
+
 		parameters.put(parameterIndex,param);
-		driver.debugEnd();
+
+		drv.debugEnd();
 	}
 
 	public
 	void setURL(int parameterIndex, URL x) throws SQLException {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		driver.debugEnd();
+
+		drv.debugPrintln("parameter index: "+parameterIndex);
+
+		conn.throwFeatureNotSupportedException();
+
+		drv.debugEnd();
 	}
 
 	public
 	String asciiStreamToString(InputStream stream) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		String	s=streamToString(stream,"US-ASCII");
-		driver.debugEnd();
+		drv.debugEnd();
 		return s;
 	}
 
 	public
 	String asciiStreamToString(InputStream stream, long length) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		String	s=streamToString(stream,length,"US-ASCII");
-		driver.debugEnd();
+		drv.debugEnd();
 		return s;
 	}
 
 	public
 	String unicodeStreamToString(InputStream stream, long length) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		String	s=streamToString(stream,length,"UTF-8");
-		driver.debugEnd();
+		drv.debugEnd();
 		return s;
 	}
 
 	public
 	String streamToString(InputStream stream, String encoding) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		String	s;
 		try {
 			s=readerToString(new BufferedReader(
@@ -1624,14 +1914,14 @@ public class SQLRelayPreparedStatement
 		} catch (Exception ex) {
 			s=new String("");
 		}
-		driver.debugEnd();
+		drv.debugEnd();
 		return s;
 	}
 
 	public
 	String streamToString(InputStream stream, long length,
 						String encoding) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		String	s;
 		try {
 			s=readerToString(new BufferedReader(
@@ -1641,13 +1931,13 @@ public class SQLRelayPreparedStatement
 		} catch (Exception ex) {
 			s=new String("");
 		}
-		driver.debugEnd();
+		drv.debugEnd();
 		return s;
 	}
 
 	public
 	String readerToString(Reader reader) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		String	s;
 		try {
 			StringBuilder	stringbuilder=new StringBuilder();
@@ -1659,13 +1949,13 @@ public class SQLRelayPreparedStatement
 		} catch (Exception ex) {
 			s=new String("");
 		}
-		driver.debugEnd();
+		drv.debugEnd();
 		return s;
 	}
 
 	public
 	String readerToString(Reader reader, long length) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		String	s;
 		try {
 			StringBuilder	stringbuilder=new StringBuilder();
@@ -1677,39 +1967,39 @@ public class SQLRelayPreparedStatement
 		} catch (Exception ex) {
 			s=new String("");
 		}
-		driver.debugEnd();
+		drv.debugEnd();
 		return s;
 	}
 
 	public
 	String clobToString(Clob clob) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		String	s;
 		try {
 			s=asciiStreamToString(clob.getAsciiStream());
 		} catch (Exception ex) {
 			s=new String("");
 		}
-		driver.debugEnd();
+		drv.debugEnd();
 		return s;
 	}
 
 	public
 	String nClobToUnicodeString(NClob clob) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		String	s;
 		try {
 			s=readerToString(clob.getCharacterStream());
 		} catch (Exception ex) {
 			s=new String("");
 		}
-		driver.debugEnd();
+		drv.debugEnd();
 		return s;
 	}
 
 	public
 	byte[] binaryStreamToBytes(InputStream stream) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		byte[]	b;
 		try {
 			ByteArrayOutputStream	output=
@@ -1725,13 +2015,13 @@ public class SQLRelayPreparedStatement
 		} catch (Exception ex) {
 			b=new byte[]{0};
 		}
-		driver.debugEnd();
+		drv.debugEnd();
 		return b;
 	}
 
 	public
 	byte[] binaryStreamToBytes(InputStream stream, long length) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		byte[]	b;
 		try {
 			ByteArrayOutputStream	output=
@@ -1750,20 +2040,20 @@ public class SQLRelayPreparedStatement
 		} catch (Exception ex) {
 			b=new byte[]{0};
 		} 
-		driver.debugEnd();
+		drv.debugEnd();
 		return b;
 	}
 
 	public
 	byte[] blobToBytes(Blob blob) {
-		driver.debugFunction(this);
+		drv.debugFunction(this);
 		byte[]	b;
 		try {
 			b=binaryStreamToBytes(blob.getBinaryStream());
 		} catch (Exception ex) {
 			b=new byte[]{0};
 		} 
-		driver.debugEnd();
+		drv.debugEnd();
 		return b;
 	}
 }
