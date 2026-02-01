@@ -177,7 +177,7 @@ public class SQLRelayPreparedStatement
 
 			switch (bindtype) {
 				case Array:
-					// not supported
+					// FIXME: support this, somehow
 					break;
 				case AsciiStream:
 					sqlrcur.inputBind(
@@ -477,16 +477,16 @@ public class SQLRelayPreparedStatement
 					// not supported
 					break;
 				case Time:
-					// not supported
+					// FIXME: support this
 					break;
 				case TimeWithCalendar:
-					// not supported
+					// FIXME: support this
 					break;
 				case Timestamp:
-					// not supported
+					// FIXME: support this
 					break;
 				case TimestampWithCalendar:
-					// not supported
+					// FIXME: support this
 					break;
 				case UnicodeStream:
 					sqlrcur.inputBind(
@@ -497,7 +497,10 @@ public class SQLRelayPreparedStatement
 							value.getLength()));
 					break;
 				case URL:
-					// not supported
+					sqlrcur.inputBind(
+						key,
+						((URL)value.getObject()).
+								toString());
 					break;
 			}
 		}
@@ -1873,8 +1876,9 @@ public class SQLRelayPreparedStatement
 		throwExceptionIfClosed();
 
 		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("url: "+x.toString());
 
-		conn.throwFeatureNotSupportedException();
+		setString(parameterIndex,x.toString());
 
 		drv.debugEnd();
 	}
@@ -1883,6 +1887,7 @@ public class SQLRelayPreparedStatement
 	String asciiStreamToString(InputStream stream) {
 		drv.debugFunction(this);
 		String	s=streamToString(stream,"US-ASCII");
+		drv.debugPrintln("string: "+s);
 		drv.debugEnd();
 		return s;
 	}
@@ -1891,6 +1896,7 @@ public class SQLRelayPreparedStatement
 	String asciiStreamToString(InputStream stream, long length) {
 		drv.debugFunction(this);
 		String	s=streamToString(stream,length,"US-ASCII");
+		drv.debugPrintln("string: "+s);
 		drv.debugEnd();
 		return s;
 	}
@@ -1899,6 +1905,7 @@ public class SQLRelayPreparedStatement
 	String unicodeStreamToString(InputStream stream, long length) {
 		drv.debugFunction(this);
 		String	s=streamToString(stream,length,"UTF-8");
+		drv.debugPrintln("string: "+s);
 		drv.debugEnd();
 		return s;
 	}
@@ -1914,6 +1921,7 @@ public class SQLRelayPreparedStatement
 		} catch (Exception ex) {
 			s=new String("");
 		}
+		drv.debugPrintln("string: "+s);
 		drv.debugEnd();
 		return s;
 	}
@@ -1931,6 +1939,7 @@ public class SQLRelayPreparedStatement
 		} catch (Exception ex) {
 			s=new String("");
 		}
+		drv.debugPrintln("string: "+s);
 		drv.debugEnd();
 		return s;
 	}
@@ -1949,6 +1958,7 @@ public class SQLRelayPreparedStatement
 		} catch (Exception ex) {
 			s=new String("");
 		}
+		drv.debugPrintln("string: "+s);
 		drv.debugEnd();
 		return s;
 	}
@@ -1967,6 +1977,7 @@ public class SQLRelayPreparedStatement
 		} catch (Exception ex) {
 			s=new String("");
 		}
+		drv.debugPrintln("string: "+s);
 		drv.debugEnd();
 		return s;
 	}
@@ -1980,6 +1991,7 @@ public class SQLRelayPreparedStatement
 		} catch (Exception ex) {
 			s=new String("");
 		}
+		drv.debugPrintln("string: "+s);
 		drv.debugEnd();
 		return s;
 	}
@@ -1993,6 +2005,7 @@ public class SQLRelayPreparedStatement
 		} catch (Exception ex) {
 			s=new String("");
 		}
+		drv.debugPrintln("string: "+s);
 		drv.debugEnd();
 		return s;
 	}

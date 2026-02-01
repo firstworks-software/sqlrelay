@@ -185,6 +185,7 @@ public class SQLRelayResultSet implements ResultSet {
 	int findColumn(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		for (int i=0; i<sqlrcur.colCount(); i++) {
 			if (sqlrcur.getColumnName(i).equals(columnlabel)) {
 				drv.debugPrintln("column: "+(i+1));
@@ -208,6 +209,7 @@ public class SQLRelayResultSet implements ResultSet {
 	Array getArray(int columnindex) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
@@ -218,6 +220,7 @@ public class SQLRelayResultSet implements ResultSet {
 	Array getArray(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
@@ -228,6 +231,7 @@ public class SQLRelayResultSet implements ResultSet {
 	InputStream getAsciiStream(int columnindex) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		String	field=null;
 		synchronized (networklock) {
@@ -237,16 +241,15 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		// FIXME: not sure this is correct, how do we ensure it's ascii?
-		InputStream	is=new StringBufferInputStream(field);
 		drv.debugEnd();
-		return is;
+		return (wasnull)?null:new StringBufferInputStream(field);
 	}
 
 	public
 	InputStream getAsciiStream(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		String	field=null;
 		synchronized (networklock) {
@@ -256,16 +259,15 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		// FIXME: not sure this is correct, how do we ensure it's ascii?
-		InputStream	is=new StringBufferInputStream(field);
 		drv.debugEnd();
-		return is;
+		return (wasnull)?null:new StringBufferInputStream(field);
 	}
 
 	public
 	BigDecimal getBigDecimal(int columnindex) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		String	field=null;
 		synchronized (networklock) {
@@ -275,13 +277,8 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		if (wasnull) {
-			drv.debugEnd();
-			return null;
-		}
-		BigDecimal	bd=new BigDecimal(field);
 		drv.debugEnd();
-		return bd;
+		return (wasnull)?null:new BigDecimal(field);
 	}
 
 	public
@@ -289,6 +286,7 @@ public class SQLRelayResultSet implements ResultSet {
 						throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		String	field=null;
 		synchronized (networklock) {
@@ -298,21 +296,17 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		if (wasnull) {
-			drv.debugEnd();
-			return null;
-		}
-		BigDecimal	bd=new BigDecimal(
-				new BigInteger(field.replace("\\.","")),
-				scale);
 		drv.debugEnd();
-		return bd;
+		return (wasnull)?null:new BigDecimal(
+					new BigInteger(field.replace("\\.","")),
+					scale);
 	}
 
 	public
 	BigDecimal getBigDecimal(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		String	field=null;
 		synchronized (networklock) {
@@ -322,13 +316,8 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		if (wasnull) {
-			drv.debugEnd();
-			return null;
-		}
-		BigDecimal	bd=new BigDecimal(field);
 		drv.debugEnd();
-		return bd;
+		return (wasnull)?null:new BigDecimal(field);
 	}
 
 	public
@@ -336,6 +325,7 @@ public class SQLRelayResultSet implements ResultSet {
 						throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		String	field=null;
 		synchronized (networklock) {
@@ -345,21 +335,17 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		if (wasnull) {
-			drv.debugEnd();
-			return null;
-		}
-		BigDecimal	bd=new BigDecimal(
-				new BigInteger(field.replace("\\.","")),
-				scale);
 		drv.debugEnd();
-		return bd;
+		return (wasnull)?null:new BigDecimal(
+					new BigInteger(field.replace("\\.","")),
+					scale);
 	}
 
 	public
 	InputStream getBinaryStream(int columnindex) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		byte[]	field=null;
 		synchronized (networklock) {
@@ -370,18 +356,15 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		InputStream	is=null;
-		if (!wasnull) {
-			is=new ByteArrayInputStream(field);
-		}
 		drv.debugEnd();
-		return is;
+		return (wasnull)?null:new ByteArrayInputStream(field);
 	}
 
 	public
 	InputStream getBinaryStream(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		byte[]	field=null;
 		synchronized (networklock) {
@@ -392,18 +375,15 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		InputStream	is=null;
-		if (!wasnull) {
-			is=new ByteArrayInputStream(field);
-		}
 		drv.debugEnd();
-		return is;
+		return (wasnull)?null:new ByteArrayInputStream(field);
 	}
 
 	public
 	Blob getBlob(int columnindex) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		byte[]	field=null;
 		synchronized (networklock) {
@@ -414,18 +394,15 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		Blob	b=null;
-		if (!wasnull) {
-			b=new SerialBlob(field);
-		}
 		drv.debugEnd();
-		return b;
+		return (wasnull)?null:new SerialBlob(field);
 	}
 
 	public
 	Blob getBlob(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		byte[]	field=null;
 		synchronized (networklock) {
@@ -436,18 +413,15 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		Blob	b=null;
-		if (!wasnull) {
-			b=new SerialBlob(field);
-		}
 		drv.debugEnd();
-		return b;
+		return (wasnull)?null:new SerialBlob(field);
 	}
 
 	public
 	boolean getBoolean(int columnindex) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		String	field=null;
 		synchronized (networklock) {
@@ -466,6 +440,7 @@ public class SQLRelayResultSet implements ResultSet {
 	boolean getBoolean(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		String	field=null;
 		synchronized (networklock) {
@@ -484,6 +459,7 @@ public class SQLRelayResultSet implements ResultSet {
 	byte getByte(int columnindex) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		long	field=0;
 		synchronized (networklock) {
@@ -503,6 +479,7 @@ public class SQLRelayResultSet implements ResultSet {
 	byte getByte(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		long	field=0;
 		synchronized (networklock) {
@@ -522,6 +499,7 @@ public class SQLRelayResultSet implements ResultSet {
 	byte[] getBytes(int columnindex) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		byte[]	field=null;
 		synchronized (networklock) {
@@ -540,6 +518,7 @@ public class SQLRelayResultSet implements ResultSet {
 	byte[] getBytes(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		byte[]	field=null;
 		synchronized (networklock) {
@@ -558,6 +537,7 @@ public class SQLRelayResultSet implements ResultSet {
 	Reader getCharacterStream(int columnindex) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		String	field=null;
 		synchronized (networklock) {
@@ -575,6 +555,7 @@ public class SQLRelayResultSet implements ResultSet {
 	Reader getCharacterStream(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		String	field=null;
 		synchronized (networklock) {
@@ -592,6 +573,7 @@ public class SQLRelayResultSet implements ResultSet {
 	Clob getClob(int columnindex) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		char[]	field=null;
 		synchronized (networklock) {
@@ -606,18 +588,15 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		Clob	c=null;
-		if (!wasnull) {
-			c=new SerialClob(field);
-		}
 		drv.debugEnd();
-		return c;
+		return (wasnull)?null:new SerialClob(field);
 	}
 
 	public
 	Clob getClob(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		char[]	field=null;
 		synchronized (networklock) {
@@ -632,12 +611,8 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		Clob	c=null;
-		if (!wasnull) {
-			c=new SerialClob(field);
-		}
 		drv.debugEnd();
-		return c;
+		return (wasnull)?null:new SerialClob(field);
 	}
 
 	public
@@ -673,6 +648,7 @@ public class SQLRelayResultSet implements ResultSet {
 	Date getDate(int columnindex, Calendar cal) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		String	field=null;
 		synchronized (networklock) {
@@ -684,12 +660,8 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("was null: "+wasnull);
 		// FIXME: use cal
 		// FIXME: field isn't guaranteed to be in iso format
-		Date	dt=null;
-		if (!wasnull) {
-			dt=Date.valueOf(field);
-		}
 		drv.debugEnd();
-		return dt;
+		return (wasnull)?null:Date.valueOf(field);
 	}
 
 	public
@@ -705,6 +677,7 @@ public class SQLRelayResultSet implements ResultSet {
 	Date getDate(String columnlabel, Calendar cal) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		String	field=null;
 		synchronized (networklock) {
@@ -716,18 +689,15 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("was null: "+wasnull);
 		// FIXME: use cal
 		// FIXME: field isn't guaranteed to be in iso format
-		Date	dt=null;
-		if (!wasnull) {
-			dt=Date.valueOf(field);
-		}
 		drv.debugEnd();
-		return dt;
+		return (wasnull)?null:Date.valueOf(field);
 	}
 
 	public
 	double getDouble(int columnindex) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		double	field=0.0;
 		synchronized (networklock) {
@@ -747,6 +717,7 @@ public class SQLRelayResultSet implements ResultSet {
 	double getDouble(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		double	field=0.0;
 		synchronized (networklock) {
@@ -786,6 +757,7 @@ public class SQLRelayResultSet implements ResultSet {
 	float getFloat(int columnindex) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		float	field=0.0f;
 		synchronized (networklock) {
@@ -805,6 +777,7 @@ public class SQLRelayResultSet implements ResultSet {
 	float getFloat(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		float	field=0.0f;
 		synchronized (networklock) {
@@ -835,6 +808,7 @@ public class SQLRelayResultSet implements ResultSet {
 	int getInt(int columnindex) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		int	field=0;
 		synchronized (networklock) {
@@ -854,6 +828,7 @@ public class SQLRelayResultSet implements ResultSet {
 	int getInt(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		int	field=0;
 		synchronized (networklock) {
@@ -873,6 +848,7 @@ public class SQLRelayResultSet implements ResultSet {
 	long getLong(int columnindex) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		long	field=0;
 		synchronized (networklock) {
@@ -892,6 +868,7 @@ public class SQLRelayResultSet implements ResultSet {
 	long getLong(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		long	field=0;
 		synchronized (networklock) {
@@ -923,6 +900,7 @@ public class SQLRelayResultSet implements ResultSet {
 	Reader getNCharacterStream(int columnindex) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		byte[]	field=null;
 		synchronized (networklock) {
@@ -933,19 +911,16 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		Reader	r=null;
-		if (!wasnull) {
-			r=(new InputStreamReader(
-					new ByteArrayInputStream(field)));
-		}
 		drv.debugEnd();
-		return r;
+		return (wasnull)?null:new InputStreamReader(
+					new ByteArrayInputStream(field));
 	}
 
 	public
 	Reader getNCharacterStream(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		byte[]	field=null;
 		synchronized (networklock) {
@@ -956,19 +931,16 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		Reader	r=null;
-		if (!wasnull) {
-			r=(new InputStreamReader(
-					new ByteArrayInputStream(field)));
-		}
 		drv.debugEnd();
-		return r;
+		return (wasnull)?null:new InputStreamReader(
+					new ByteArrayInputStream(field));
 	}
 
 	public
 	NClob getNClob(int columnindex) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		conn.throwFeatureNotSupportedException();
 		// FIXME: we could theoretically support this, but currently
@@ -982,6 +954,7 @@ public class SQLRelayResultSet implements ResultSet {
 	NClob getNClob(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		conn.throwFeatureNotSupportedException();
 		// FIXME: we could theoretically support this, but currently
@@ -995,6 +968,7 @@ public class SQLRelayResultSet implements ResultSet {
 	String getNString(int columnindex) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		byte[]	field=null;
 		synchronized (networklock) {
@@ -1010,10 +984,10 @@ public class SQLRelayResultSet implements ResultSet {
 			if (!wasnull) {
 				str=new String(field,"UTF-8");
 			}
-			drv.debugEnd();
 		} catch (Exception ex) {
 			conn.throwException(ex.getMessage());
 		}
+		drv.debugEnd();
 		return str;
 	}
 
@@ -1021,6 +995,7 @@ public class SQLRelayResultSet implements ResultSet {
 	String getNString(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		byte[]	field=null;
 		synchronized (networklock) {
@@ -1036,10 +1011,10 @@ public class SQLRelayResultSet implements ResultSet {
 			if (!wasnull) {
 				str=new String(field,"UTF-8");
 			}
-			drv.debugEnd();
 		} catch (Exception ex) {
 			conn.throwException(ex.getMessage());
 		}
+		drv.debugEnd();
 		return str;
 	}
 
@@ -1047,6 +1022,7 @@ public class SQLRelayResultSet implements ResultSet {
 	Object getObject(int columnindex) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		conn.throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this somehow...
@@ -1058,6 +1034,7 @@ public class SQLRelayResultSet implements ResultSet {
 	<T> T getObject(int columnindex, Class<T> type) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		conn.throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this somehow...
@@ -1069,6 +1046,7 @@ public class SQLRelayResultSet implements ResultSet {
 							throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		conn.throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this somehow...
@@ -1080,6 +1058,7 @@ public class SQLRelayResultSet implements ResultSet {
 	Object getObject(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		conn.throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this somehow...
@@ -1091,6 +1070,7 @@ public class SQLRelayResultSet implements ResultSet {
 	<T> T getObject(String columnlabel, Class<T> type) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		conn.throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this somehow...
@@ -1103,6 +1083,7 @@ public class SQLRelayResultSet implements ResultSet {
 							throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		conn.throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this somehow...
@@ -1114,6 +1095,7 @@ public class SQLRelayResultSet implements ResultSet {
 	Ref getRef(int columnindex) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		conn.throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this somehow...
@@ -1125,6 +1107,7 @@ public class SQLRelayResultSet implements ResultSet {
 	Ref getRef(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		conn.throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this somehow...
@@ -1145,6 +1128,7 @@ public class SQLRelayResultSet implements ResultSet {
 	RowId getRowId(int columnindex) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		conn.throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this somehow...
@@ -1156,6 +1140,7 @@ public class SQLRelayResultSet implements ResultSet {
 	RowId getRowId(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		conn.throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this somehow...
@@ -1167,6 +1152,8 @@ public class SQLRelayResultSet implements ResultSet {
 	short getShort(int columnindex) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
+		validateColumn(columnindex);
 		short	field=0;
 		synchronized (networklock) {
 			field=(short)sqlrcur.getFieldAsInteger(
@@ -1174,7 +1161,6 @@ public class SQLRelayResultSet implements ResultSet {
 			wasnull=(sqlrcur.getField(
 					currentrow-1,columnindex-1)==null);
 		}
-		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
 		drv.debugEnd();
@@ -1185,6 +1171,7 @@ public class SQLRelayResultSet implements ResultSet {
 	short getShort(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		short	field=0;
 		synchronized (networklock) {
 			field=(short)sqlrcur.getFieldAsInteger(
@@ -1203,6 +1190,7 @@ public class SQLRelayResultSet implements ResultSet {
 	SQLXML getSQLXML(int columnindex) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		conn.throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this somehow...
@@ -1214,6 +1202,7 @@ public class SQLRelayResultSet implements ResultSet {
 	SQLXML getSQLXML(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		conn.throwFeatureNotSupportedException();
 		// FIXME: we might be able to support this somehow...
@@ -1232,13 +1221,13 @@ public class SQLRelayResultSet implements ResultSet {
 	String getString(int columnindex) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		String	field=null;
 		synchronized (networklock) {
 			field=sqlrcur.getField(currentrow-1,columnindex-1);
 		}
 		wasnull=(field==null);
-		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
 		drv.debugEnd();
@@ -1249,6 +1238,7 @@ public class SQLRelayResultSet implements ResultSet {
 	String getString(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		String	field=null;
 		synchronized (networklock) {
@@ -1265,6 +1255,9 @@ public class SQLRelayResultSet implements ResultSet {
 	public
 	Time getTime(int columnindex) throws SQLException {
 		drv.debugFunction(this);
+		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
+		validateColumn(columnindex);
 		// FIXME: pass in some default calendar
 		Time	t=getTime(columnindex,null);
 		drv.debugEnd();
@@ -1275,6 +1268,7 @@ public class SQLRelayResultSet implements ResultSet {
 	Time getTime(int columnindex, Calendar cal) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		String	field=null;
 		synchronized (networklock) {
@@ -1286,12 +1280,8 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("was null: "+wasnull);
 		// FIXME: use cal
 		// FIXME: not guaranteed to be in iso format
-		Time	t=null;
-		if (!wasnull) {
-			t=Time.valueOf(field);
-		}
 		drv.debugEnd();
-		return t;
+		return (wasnull)?null:Time.valueOf(field);
 	}
 
 	public
@@ -1307,6 +1297,7 @@ public class SQLRelayResultSet implements ResultSet {
 	Time getTime(String columnlabel, Calendar cal) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		String	field=null;
 		synchronized (networklock) {
@@ -1317,18 +1308,17 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
 		// FIXME: use cal
-		// FIXME: not guaranteed to be in iso format
-		Time	t=null;
-		if (!wasnull) {
-			t=Time.valueOf(field);
-		}
+		// FIXME: Time.valueOf() expects hh:mm:ss format
 		drv.debugEnd();
-		return t;
+		return (wasnull)?null:Time.valueOf(field);
 	}
 
 	public
 	Timestamp getTimestamp(int columnindex) throws SQLException {
 		drv.debugFunction(this);
+		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
+		validateColumn(columnindex);
 		// FIXME: pass in some default calendar
 		Timestamp	t=getTimestamp(columnindex,null);
 		drv.debugEnd();
@@ -1340,6 +1330,7 @@ public class SQLRelayResultSet implements ResultSet {
 						throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		String	field=null;
 		synchronized (networklock) {
@@ -1350,14 +1341,10 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
 		// FIXME: use cal
-		// FIXME: not guaranteed to be in iso format
+		// FIXME: Timestamp.valueOf() expects iso format
 		// FIXME: postgresql ends with timezone offset (eg. -04)
-		Timestamp	t=null;
-		if (!wasnull) {
-			t=Timestamp.valueOf(field);
-		}
 		drv.debugEnd();
-		return t;
+		return (wasnull)?null:Timestamp.valueOf(field);
 	}
 
 	public
@@ -1374,6 +1361,7 @@ public class SQLRelayResultSet implements ResultSet {
 						throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		String	field=null;
 		synchronized (networklock) {
@@ -1384,13 +1372,10 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
 		// FIXME: use cal
-		// FIXME: not guaranteed to be in iso format
-		Timestamp	t=null;
-		if (!wasnull) {
-			t=Timestamp.valueOf(field);
-		}
+		// FIXME: Timestamp.valueOf() expects iso format
+		// FIXME: postgresql ends with timezone offset (eg. -04)
 		drv.debugEnd();
-		return t;
+		return (wasnull)?null:Timestamp.valueOf(field);
 	}
 
 	public
@@ -1407,6 +1392,7 @@ public class SQLRelayResultSet implements ResultSet {
 	InputStream getUnicodeStream(int columnindex) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		String	field=null;
 		synchronized (networklock) {
@@ -1416,15 +1402,16 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		InputStream	is=new StringBufferInputStream(field);
 		drv.debugEnd();
-		return is;
+		// FIXME: I think StringBufferInputStream only produces ASCII
+		return (wasnull)?null:new StringBufferInputStream(field);
 	}
 
 	public
 	InputStream getUnicodeStream(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		String	field=null;
 		synchronized (networklock) {
@@ -1434,15 +1421,16 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		InputStream	is=new StringBufferInputStream(field);
 		drv.debugEnd();
-		return is;
+		// FIXME: I think StringBufferInputStream only produces ASCII
+		return (wasnull)?null:new StringBufferInputStream(field);
 	}
 
 	public
 	URL getURL(int columnindex) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		conn.throwFeatureNotSupportedException();
 		String	field=null;
@@ -1453,24 +1441,23 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		if (wasnull) {
-			drv.debugEnd();
-			return null;
+		URL	u=null;
+		if (!wasnull) {
+			try {
+				u=new URL(field);
+			} catch (MalformedURLException ex) {
+				u=null;
+			}
 		}
-		try {
-			URL	u=new URL(field);
-			drv.debugEnd();
-			return u;
-		} catch (MalformedURLException ex) {
-			drv.debugEnd();
-			return null;
-		}
+		drv.debugEnd();
+		return u;
 	}
 
 	public
 	URL getURL(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		conn.throwFeatureNotSupportedException();
 		String	field=null;
@@ -1481,18 +1468,16 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		if (wasnull) {
-			drv.debugEnd();
-			return null;
+		URL	u=null;
+		if (!wasnull) {
+			try {
+				u=new URL(field);
+			} catch (MalformedURLException ex) {
+				u=null;
+			}
 		}
-		try {
-			URL	u=new URL(field);
-			drv.debugEnd();
-			return u;
-		} catch (MalformedURLException ex) {
-			drv.debugEnd();
-			return null;
-		}
+		drv.debugEnd();
+		return u;
 	}
 
 	public
@@ -1675,6 +1660,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateArray(int columnindex, Array x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1683,6 +1669,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateArray(String columnlabel, Array x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1692,6 +1679,7 @@ public class SQLRelayResultSet implements ResultSet {
 						throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1701,6 +1689,7 @@ public class SQLRelayResultSet implements ResultSet {
 					int length) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1710,6 +1699,7 @@ public class SQLRelayResultSet implements ResultSet {
 					long length) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1719,6 +1709,7 @@ public class SQLRelayResultSet implements ResultSet {
 						throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1728,6 +1719,7 @@ public class SQLRelayResultSet implements ResultSet {
 					int length) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1737,6 +1729,7 @@ public class SQLRelayResultSet implements ResultSet {
 					long length) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1746,6 +1739,7 @@ public class SQLRelayResultSet implements ResultSet {
 						throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1755,6 +1749,7 @@ public class SQLRelayResultSet implements ResultSet {
 						throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1764,6 +1759,7 @@ public class SQLRelayResultSet implements ResultSet {
 						throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1773,6 +1769,7 @@ public class SQLRelayResultSet implements ResultSet {
 					int length) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1782,6 +1779,7 @@ public class SQLRelayResultSet implements ResultSet {
 					long length) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1791,6 +1789,7 @@ public class SQLRelayResultSet implements ResultSet {
 						throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1800,6 +1799,7 @@ public class SQLRelayResultSet implements ResultSet {
 					int length) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1809,6 +1809,7 @@ public class SQLRelayResultSet implements ResultSet {
 					long length) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1817,6 +1818,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateBlob(int columnindex, Blob x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1826,6 +1828,7 @@ public class SQLRelayResultSet implements ResultSet {
 						throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1835,6 +1838,7 @@ public class SQLRelayResultSet implements ResultSet {
 					long length) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1843,6 +1847,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateBlob(String columnlabel, Blob x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1852,6 +1857,7 @@ public class SQLRelayResultSet implements ResultSet {
 						throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1861,6 +1867,7 @@ public class SQLRelayResultSet implements ResultSet {
 					long length) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1869,6 +1876,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateBoolean(int columnindex, boolean x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1877,6 +1885,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateBoolean(String columnlabel, boolean x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1885,6 +1894,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateByte(int columnindex, byte x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1893,6 +1903,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateByte(String columnlabel, byte x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1901,6 +1912,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateBytes(int columnindex, byte[] x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1909,6 +1921,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateBytes(String columnlabel, byte[] x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1918,6 +1931,7 @@ public class SQLRelayResultSet implements ResultSet {
 						throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1927,6 +1941,7 @@ public class SQLRelayResultSet implements ResultSet {
 					int length) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1936,6 +1951,7 @@ public class SQLRelayResultSet implements ResultSet {
 					long length) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1945,6 +1961,7 @@ public class SQLRelayResultSet implements ResultSet {
 							throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1954,6 +1971,7 @@ public class SQLRelayResultSet implements ResultSet {
 					int length) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1963,6 +1981,7 @@ public class SQLRelayResultSet implements ResultSet {
 					long length) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1971,6 +1990,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateClob(int columnindex, Clob x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1979,6 +1999,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateClob(int columnindex, Reader reader) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1988,6 +2009,7 @@ public class SQLRelayResultSet implements ResultSet {
 					long length) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -1996,6 +2018,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateClob(String columnlabel, Clob x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2004,6 +2027,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateClob(String columnlabel, Reader reader) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2013,6 +2037,7 @@ public class SQLRelayResultSet implements ResultSet {
 					long length) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2021,6 +2046,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateDate(int columnindex, Date x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2029,6 +2055,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateDate(String columnlabel, Date x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2037,6 +2064,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateDouble(int columnindex, double x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2045,6 +2073,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateDouble(String columnlabel, double x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2053,6 +2082,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateFloat(int columnindex, float x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2061,6 +2091,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateFloat(String columnlabel, float x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2069,6 +2100,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateInt(int columnindex, int x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2077,6 +2109,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateInt(String columnlabel, int x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2085,6 +2118,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateLong(int columnindex, long x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2093,6 +2127,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateLong(String columnlabel, long x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2102,6 +2137,7 @@ public class SQLRelayResultSet implements ResultSet {
 							throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2111,6 +2147,7 @@ public class SQLRelayResultSet implements ResultSet {
 					long length) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2120,6 +2157,7 @@ public class SQLRelayResultSet implements ResultSet {
 							throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2129,6 +2167,7 @@ public class SQLRelayResultSet implements ResultSet {
 					long length) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2137,6 +2176,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateNClob(int columnindex, NClob nClob) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2145,6 +2185,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateNClob(int columnindex, Reader reader) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2154,6 +2195,7 @@ public class SQLRelayResultSet implements ResultSet {
 					long length) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2162,6 +2204,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateNClob(String columnlabel, NClob nClob) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2171,6 +2214,7 @@ public class SQLRelayResultSet implements ResultSet {
 						throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2180,6 +2224,7 @@ public class SQLRelayResultSet implements ResultSet {
 					long length) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2189,6 +2234,7 @@ public class SQLRelayResultSet implements ResultSet {
 						throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2198,6 +2244,7 @@ public class SQLRelayResultSet implements ResultSet {
 						throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2206,6 +2253,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateNull(int columnindex) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2214,6 +2262,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateNull(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2222,6 +2271,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateObject(int columnindex, Object x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2231,6 +2281,7 @@ public class SQLRelayResultSet implements ResultSet {
 					int scaleOrLength) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2239,6 +2290,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateObject(String columnlabel, Object x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2248,6 +2300,7 @@ public class SQLRelayResultSet implements ResultSet {
 					int scaleOrLength) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2256,6 +2309,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateRef(int columnindex, Ref x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2264,6 +2318,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateRef(String columnlabel, Ref x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2280,6 +2335,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateRowId(int columnindex, RowId x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2288,6 +2344,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateRowId(String columnlabel, RowId x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2296,6 +2353,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateShort(int columnindex, short x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2304,6 +2362,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateShort(String columnlabel, short x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2313,6 +2372,7 @@ public class SQLRelayResultSet implements ResultSet {
 						throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2322,6 +2382,7 @@ public class SQLRelayResultSet implements ResultSet {
 						throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2330,6 +2391,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateString(int columnindex, String x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2338,6 +2400,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateString(String columnlabel, String x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2346,6 +2409,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateTime(int columnindex, Time x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2354,6 +2418,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateTime(String columnlabel, Time x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2362,6 +2427,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void updateTimestamp(int columnindex, Timestamp x) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column index: "+columnindex);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}
@@ -2371,6 +2437,7 @@ public class SQLRelayResultSet implements ResultSet {
 						throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("column label: "+columnlabel);
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 	}

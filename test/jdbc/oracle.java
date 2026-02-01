@@ -552,7 +552,7 @@ if (false) {
 					stmt.close();
 				} else {
 					boolean	supported=
-						(rstypesupported[c] &&
+						(rstypesupported[r] &&
 						concurrencysupported[c]);
 					try {
 						stmt=con.
@@ -586,7 +586,7 @@ if (false) {
 						stmt.close();
 					} else {
 						boolean	supported=
-						(rstypesupported[c] &&
+						(rstypesupported[r] &&
 						concurrencysupported[c] &&
 						holdabilitysupported[h]);
 						try {
