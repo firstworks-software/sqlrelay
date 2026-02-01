@@ -52,7 +52,7 @@ class oracle extends sqlrtest {
 		assertTrue((con!=null));
 		System.out.println();
 
-		// close, isClosed, isValid
+		// close
 		System.out.println("close");
 		assertFalse(con.isClosed());
 		assertTrue(con.isValid(0));
@@ -63,7 +63,8 @@ class oracle extends sqlrtest {
 		assertTrue((con!=null));
 		System.out.println();
 
-		// setNetworkTimeout, getNetworkTimeout
+		// network timeout
+		System.out.println("network timeout");
 		Executor	executor=Executors.newSingleThreadExecutor();
 		con.setNetworkTimeout(executor,1);
 		assertEquals(con.getNetworkTimeout(),1);
@@ -73,9 +74,9 @@ class oracle extends sqlrtest {
 		assertEquals(con.getNetworkTimeout(),0);
 		System.out.println();
 
-		// SQLRelayConnection
 		if (issqlrelay) {
-			System.out.println("SQLRelayConnection");
+			// connection
+			System.out.println("connection");
 			SQLRelayConnection	sqlrcon=(SQLRelayConnection)con;
 			assertTrue((sqlrcon!=null));
 			assertEquals(sqlrcon.getHost(),host);
@@ -85,7 +86,7 @@ class oracle extends sqlrtest {
 			assertEquals(sqlrcon.getPassword(),password);
 			System.out.println();
 
-			// isWrapperFor, unwrap
+			// unwrap
 			System.out.println("unwrap");
 			assertEquals(
 				con.isWrapperFor(SQLRConnection.class),1);
@@ -94,7 +95,7 @@ class oracle extends sqlrtest {
 			System.out.println();
 		}
 
-		// setCatalog, getCatalog
+		// catalog
 		// FIXME: sqlrelay currently returns the schema, when run
 		// against an oracle backend, rather than null, #7914
 		if (!issqlrelay) {
@@ -104,7 +105,7 @@ class oracle extends sqlrtest {
 			System.out.println();
 		}
 
-		// setSchema, getSchema
+		// schema
 		// FIXME: with sqlrelay, somehow this causes oracle to throw:
 		// ORA-01031: insufficient privileges
 		if (!issqlrelay) {
@@ -114,7 +115,7 @@ class oracle extends sqlrtest {
 			System.out.println();
 		}
 
-		// setClientInfo, getClientInfo()
+		// client info
 		// Oracle only allows:
 		// OCSID.MODULE
 		// OCSID.ACTION
@@ -140,7 +141,7 @@ class oracle extends sqlrtest {
 		assertEquals(outprop.getProperty("OCSID.ECID"),"value4");
 		System.out.println();
 
-		// setReadOnly, isReadOnly
+		// readonly
 		System.out.println("readonly");
 		con.setReadOnly(true);
 		assertTrue(con.isReadOnly());
@@ -148,7 +149,7 @@ class oracle extends sqlrtest {
 		assertTrue(!con.isReadOnly());
 		System.out.println();
 
-		// setAutoCommit, getAutoCommit
+		// autocommit
 		System.out.println("autocommit");
 		con.setAutoCommit(true);
 		assertTrue(con.getAutoCommit());
@@ -156,7 +157,7 @@ class oracle extends sqlrtest {
 		assertTrue(!con.getAutoCommit());
 		System.out.println();
 
-		// setHoldability, getHoldability
+		// holdability
 		System.out.println("holdability");
 		con.setHoldability(ResultSet.HOLD_CURSORS_OVER_COMMIT);
 		assertEquals(con.getHoldability()==
@@ -169,7 +170,7 @@ class oracle extends sqlrtest {
 		}
 		System.out.println();
 
-		// setTransactionIsolation
+		// isolation levels
 		System.out.println("isolation levels");
 
 		// oracle requires the isolation level to
@@ -214,19 +215,15 @@ class oracle extends sqlrtest {
 		assertTrue(true);
 		System.out.println();
 
-		// setTypeMap, getTypeMap
+		// FIXME: type map
 
-		// getWarnings, clearWarnings
+		// warnings
 		System.out.println("warnings");
 		assertTrue(con.getWarnings()==null);
 		con.clearWarnings();
 		System.out.println();
 
 		System.out.println();
-
-
-
-		// DatabaseMetaData
 
 
 		// database meta data
@@ -237,6 +234,8 @@ class oracle extends sqlrtest {
 		DatabaseMetaData	md=con.getMetaData();
 		assertTrue((md!=null));
 		System.out.println();
+
+		// database attributes
 
 		// getCatalogs
 		System.out.println("catalogs");
@@ -607,7 +606,6 @@ if (false) {
 		System.out.println();
 
 
-
 		// drop existing table
 		stmt=con.createStatement();
 		try {
@@ -710,7 +708,7 @@ if (false) {
 		System.out.println();
 
 
-		// OUTPUT BINDS
+		// FIXME: output binds
 
 
 		// select
@@ -908,7 +906,11 @@ if (false) {
 		System.out.println();
 
 
-		// OUTPUT BIND
+		// FIXME: output bind
+
+		// FIXME: nulls as nulls
+
+		// FIXME: result set buffer size
 
 
 		// commit and rollback
@@ -941,7 +943,7 @@ if (false) {
 		System.out.println();
 
 
-		// CLOB AND BLOB OUTPUT BIND
+		// FIXME: clob and blob outpub bind
 
 
 		try {
@@ -973,7 +975,7 @@ if (false) {
 		System.out.println();
 
 
-		// CURSOR BINDS
+		// FIXME: cursor binds
 
 
 		try {
@@ -1012,8 +1014,9 @@ if (false) {
 		System.out.println();
 
 
-		// LONG OUTPUT BIND
+		// FIXME: long output bind
 
+		// FIXME: negative input bind
 
 
 		// drop existing table
@@ -1082,13 +1085,11 @@ if (false) {
 		System.out.println();
 
 
-		// STORED PROCEDURES
+		// FIXME: stored procedures
 
+		// FIXME: in/out variables
 
-		// IN/OUT VARIABLES
-
-
-		// REBINDING
+		// FIXME: rebinding
 
 
 		// invalid queries
