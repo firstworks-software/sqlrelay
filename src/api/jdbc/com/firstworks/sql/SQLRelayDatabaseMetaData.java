@@ -392,7 +392,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		int		majorversion=-1;
 		String[]	parts=conn.
 					getSQLRConnection().
-					clientVersion().split(".");
+					clientVersion().split("\\.");
 		if (parts!=null && parts.length>0) {
 			majorversion=Integer.parseInt(parts[0]);
 		}
@@ -407,7 +407,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		int		minorversion=-1;
 		String[]	parts=conn.
 					getSQLRConnection().
-					clientVersion().split(".");
+					clientVersion().split("\\.");
 		if (parts!=null && parts.length>1) {
 			minorversion=Integer.parseInt(parts[1]);
 		}
