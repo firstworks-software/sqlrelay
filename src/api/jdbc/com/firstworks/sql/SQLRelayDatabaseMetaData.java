@@ -131,8 +131,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 						typeNamePattern);
 		drv.debugPrintln("attribute name pattern: "+
 						attributeNamePattern);
-		// FIXME: implement this somehow...
-		drv.debugPrintln("FIXME: implement this");
+		// few jdbc drivers (or databases) support this
+		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 		return null;
 	}
@@ -1080,6 +1080,9 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 					String tableNamePattern)
 					throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("catalog: "+catalog);
+		drv.debugPrintln("schema pattern: "+schemaPattern);
+		drv.debugPrintln("type name pattern: "+tableNamePattern);
 		// few jdbc drivers (or databases) support this
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
@@ -1092,13 +1095,11 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 					String typeNamePattern)
 					throws SQLException {
 		drv.debugFunction(this);
-
 		drv.debugPrintln("catalog: "+catalog);
 		drv.debugPrintln("schema pattern: "+schemaPattern);
 		drv.debugPrintln("type name pattern: "+typeNamePattern);
-
-		// FIXME: implement this somehow
-		drv.debugPrintln("FIXME: implement this");
+		// few jdbc drivers (or databases) support this
+		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
 		return null;
 	}
