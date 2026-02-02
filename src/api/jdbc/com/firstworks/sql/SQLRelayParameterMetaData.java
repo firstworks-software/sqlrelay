@@ -13,7 +13,8 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 	private HashMap<Integer,SQLRelayParameter>	parameters;
 
 
-	public SQLRelayParameterMetaData(SQLRelayDriver driver) {
+	public
+	SQLRelayParameterMetaData(SQLRelayDriver driver) {
 		this.drv=driver;
 		drv.debugFunction(this);
 		parameters=null;
@@ -39,7 +40,8 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 		return name;
 	}
 
-	private SQLRelayParameter getParameter(int param) {
+	private
+	SQLRelayParameter getParameter(int param) {
 		drv.debugFunction(this);
 		SQLRelayParameter	p=
 			(parameters!=null)?parameters.get(param):null;

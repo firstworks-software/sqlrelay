@@ -12,7 +12,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	private	SQLRCursor		sqlrcur;
 
 
-	public SQLRelayResultSetMetaData(SQLRelayDriver driver) {
+	public
+	SQLRelayResultSetMetaData(SQLRelayDriver driver) {
 		this.drv=driver;
 		drv.debugFunction(this);
 		sqlrcur=null;

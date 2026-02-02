@@ -38,14 +38,16 @@ public class SQLRelayResultSet implements ResultSet {
 	private boolean		wasnull;
 
 
-	public SQLRelayResultSet(SQLRelayDriver driver) {
+	public
+	SQLRelayResultSet(SQLRelayDriver driver) {
 		this.drv=driver;
 		drv.debugFunction(this);
 		reset();
 		drv.debugEnd();
 	}
 
-	private void reset() {
+	private
+	void reset() {
 		drv.debugFunction(this);
 		networklock=null;
 		stmt=null;
@@ -2466,13 +2468,15 @@ public class SQLRelayResultSet implements ResultSet {
 		return (T)((iface==SQLRCursor.class)?sqlrcur:null);
 	}
 
-	private void validateColumn(int columnindex) throws SQLException {
+	private
+	void validateColumn(int columnindex) throws SQLException {
 		if (columnindex<1 || columnindex>sqlrcur.colCount()) {
 			conn.throwException("invalid column index");
 		}
 	}
 
-	private void validateColumn(String columnlabel) throws SQLException {
+	private
+	void validateColumn(String columnlabel) throws SQLException {
 		String[] cols=sqlrcur.getColumnNames();
 		for (int i=0; i<cols.length; i++) {
 			if (cols[i].equals(columnlabel)) {
@@ -2482,7 +2486,8 @@ public class SQLRelayResultSet implements ResultSet {
 		conn.throwException("invalid column label");
 	}
 
-	private void throwExceptionIfClosed() throws SQLException {
+	private
+	void throwExceptionIfClosed() throws SQLException {
 		if (sqlrcur==null) {
 			conn.throwException("ResultSet is closed");
 		}

@@ -78,7 +78,8 @@ public class SQLRelayParameter {
 	private	BindType	bindtype;
 
 
-	public SQLRelayParameter(SQLRelayDriver driver) {
+	public
+	SQLRelayParameter(SQLRelayDriver driver) {
 		this.drv=driver;
 		drv.debugFunction(this);
 		classname=null;

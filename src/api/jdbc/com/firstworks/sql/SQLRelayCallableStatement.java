@@ -15,7 +15,8 @@ public class SQLRelayCallableStatement
 		extends SQLRelayPreparedStatement
 		implements CallableStatement {
 
-	public SQLRelayCallableStatement(SQLRelayDriver driver)
+	public
+	SQLRelayCallableStatement(SQLRelayDriver driver)
 							throws SQLException {
 		super(driver);
 		drv.debugFunction(this);

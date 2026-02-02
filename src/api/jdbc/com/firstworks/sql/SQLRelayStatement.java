@@ -27,14 +27,16 @@ public class SQLRelayStatement implements Statement {
 	private boolean			escapeprocessing;
 
 
-	public SQLRelayStatement(SQLRelayDriver driver) {
+	public
+	SQLRelayStatement(SQLRelayDriver driver) {
 		this.drv=driver;
 		drv.debugFunction(this);
 		reset();
 		drv.debugEnd();
 	}
 
-	private void reset() {
+	private
+	void reset() {
 		drv.debugFunction(this);
 		conn=null;
 		networklock=null;
@@ -629,7 +631,8 @@ public class SQLRelayStatement implements Statement {
 		return (T)((iface==SQLRCursor.class)?sqlrcur:null);
 	}
 
-	private void debugFetchDirection(int fetchdirection) {
+	private
+	void debugFetchDirection(int fetchdirection) {
 		 switch (fetchdirection) {
 			case ResultSet.FETCH_FORWARD:
 				drv.debugPrintln("fetch direction: "+
@@ -651,7 +654,8 @@ public class SQLRelayStatement implements Statement {
 		}
 	}
 
-	private void debugResultSetHandling(int resultsethandling) {
+	private
+	void debugResultSetHandling(int resultsethandling) {
 		switch (resultsethandling) {
 			case Statement.CLOSE_CURRENT_RESULT:	
 				drv.debugPrintln("result handling: "+
@@ -673,17 +677,20 @@ public class SQLRelayStatement implements Statement {
 		}
 	}
 
-	protected void throwExceptionIfClosed() throws SQLException {
+	protected
+	void throwExceptionIfClosed() throws SQLException {
 		if (sqlrcur==null) {
 			conn.throwException("statement is closed");
 		}
 	}
 
-	public void throwErrorMessageException() throws SQLException {
+	public
+	void throwErrorMessageException() throws SQLException {
 		conn.throwException(sqlrcon.errorMessage());
 	}
 
-	private void throwResultSetHandlingNotSupportedException(
+	private
+	void throwResultSetHandlingNotSupportedException(
 						int resultsethandling)
 						throws SQLException {
 		if (resultsethandling==Statement.KEEP_CURRENT_RESULT) {

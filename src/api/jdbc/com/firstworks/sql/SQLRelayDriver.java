@@ -30,7 +30,8 @@ public class SQLRelayDriver implements Driver {
 		}
 	}
 
-	public SQLRelayDriver() throws SQLException {
+	public
+	SQLRelayDriver() throws SQLException {
 		debugFunction(this);
 		debugEnd();
 	}
@@ -208,7 +209,8 @@ public class SQLRelayDriver implements Driver {
 		return ci;
 	}
 
-	private boolean validConnectInfo(SQLRelayConnectInfo ci) {
+	private
+	boolean validConnectInfo(SQLRelayConnectInfo ci) {
 		debugFunction(this);
 		debugPrintln("host not null: "+ci.host!=null);
 		debugPrintln("port > 0: "+(ci.port>0));
@@ -388,7 +390,8 @@ public class SQLRelayDriver implements Driver {
 		indents.put(Thread.currentThread().getId(),0);
 	}
 
-	private void debugPrintIndent() {
+	private
+	void debugPrintIndent() {
 		Integer	indent=indents.get(Thread.currentThread().getId());
 		if (indent==null) {
 			indent=0;
@@ -490,7 +493,8 @@ public class SQLRelayDriver implements Driver {
 		}
 	}
 
-	protected void throwFeatureNotSupportedException()
+	protected
+	void throwFeatureNotSupportedException()
 					throws SQLFeatureNotSupportedException {
 		debugPrintln("exception: SQLFeatureNotSupportedException");
 		debugZeroIndent();

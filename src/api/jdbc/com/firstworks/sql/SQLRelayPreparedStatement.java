@@ -24,7 +24,8 @@ public class SQLRelayPreparedStatement
 	private HashMap<Integer,SQLRelayParameter>		parameters;
 
 
-	public SQLRelayPreparedStatement(SQLRelayDriver driver) {
+	public
+	SQLRelayPreparedStatement(SQLRelayDriver driver) {
 		super(driver);
 		drv.debugFunction(this);
 		batch=new ArrayList<HashMap<Integer,SQLRelayParameter>>();
@@ -153,7 +154,8 @@ public class SQLRelayPreparedStatement
 		return updatecount;
 	}
 
-	private void bind(HashMap<Integer,SQLRelayParameter> params)
+	private
+	void bind(HashMap<Integer,SQLRelayParameter> params)
 							throws SQLException {
 		drv.debugFunction(this);
 
