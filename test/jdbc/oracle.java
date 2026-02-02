@@ -265,7 +265,11 @@ class oracle extends sqlrtest {
 		System.out.println("dataDefinitionCausesTransactionCommit");
 		boolval=md.dataDefinitionCausesTransactionCommit();
 		System.out.println("  "+boolval);
-		assertFalse(boolval);
+		if (issqlrelay) {
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
 		System.out.println();
 
 		// dataDefinitionIgnoredInTransactions
@@ -286,350 +290,480 @@ class oracle extends sqlrtest {
 		System.out.println("doesMaxRowSizeIncludeBlobs");
 		boolval=md.doesMaxRowSizeIncludeBlobs();
 		System.out.println("  "+boolval);
-		assertFalse(boolval);
+		if (issqlrelay) {
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
 		System.out.println();
 
 		// generatedKeyAlwaysReturned
 		System.out.println("generatedKeyAlwaysReturned");
 		boolval=md.generatedKeyAlwaysReturned();
 		System.out.println("  "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			assertTrue(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// getCatalogSeparator
 		System.out.println("getCatalogSeparator");
 		stringval=md.getCatalogSeparator();
 		System.out.println("  "+stringval);
-		assertTrue((stringval!=null));
+		if (issqlrelay) {
+			assertEquals(stringval,".");
+		} else {
+			assertEquals(stringval,"");
+		}
 		System.out.println();
 
 		// getCatalogTerm
 		System.out.println("getCatalogTerm");
 		stringval=md.getCatalogTerm();
 		System.out.println("  "+stringval);
-		assertTrue((stringval!=null));
+		if (issqlrelay) {
+			assertEquals(stringval,"database");
+		} else {
+			assertEquals(stringval,"");
+		}
 		System.out.println();
 
 		// getDatabaseMajorVersion
 		System.out.println("getDatabaseMajorVersion");
 		intval=md.getDatabaseMajorVersion();
 		System.out.println("  "+intval);
-		assertTrue((intval>0));
+		assertEquals(intval,12);
 		System.out.println();
 
 		// getDatabaseMinorVersion
 		System.out.println("getDatabaseMinorVersion");
 		intval=md.getDatabaseMinorVersion();
 		System.out.println("  "+intval);
-		assertTrue((intval>=0));
+		assertEquals(intval,2);
 		System.out.println();
 
 		// getDatabaseProductName
 		System.out.println("getDatabaseProductName");
 		stringval=md.getDatabaseProductName();
 		System.out.println("  "+stringval);
-		assertTrue((stringval!=null));
+		if (issqlrelay) {
+			assertEquals(stringval,"oracle");
+		} else {
+			assertEquals(stringval,"Oracle");
+		}
 		System.out.println();
 
 		// getDatabaseProductVersion
 		System.out.println("getDatabaseProductVersion");
 		stringval=md.getDatabaseProductVersion();
 		System.out.println("  "+stringval);
-		assertTrue((stringval!=null));
+		assertEquals(stringval,"Oracle Database 12c Enterprise Edition Release 12.2.0.1.0 - 64bit Production");
 		System.out.println();
 
 		// getDefaultTransactionIsolation
 		System.out.println("getDefaultTransactionIsolation");
 		intval=md.getDefaultTransactionIsolation();
 		System.out.println("  "+intval);
-		assertTrue((intval>=0));
+		assertEquals(intval,2);
 		System.out.println();
 
 		// getDriverMajorVersion
 		System.out.println("getDriverMajorVersion");
 		intval=md.getDriverMajorVersion();
 		System.out.println("  "+intval);
-		assertTrue((intval!=0));
+		if (issqlrelay) {
+			assertEquals(intval,2);
+		} else {
+			assertEquals(intval,23);
+		}
 		System.out.println();
 
 		// getDriverMinorVersion
 		System.out.println("getDriverMinorVersion");
 		intval=md.getDriverMinorVersion();
 		System.out.println("  "+intval);
-		assertTrue((intval>=0));
+		if (issqlrelay) {
+			assertEquals(intval,1);
+		} else {
+			assertEquals(intval,26);
+		}
 		System.out.println();
 
 		// getDriverName
 		System.out.println("getDriverName");
 		stringval=md.getDriverName();
 		System.out.println("  "+stringval);
-		assertTrue((stringval!=null));
+		if (issqlrelay) {
+			assertEquals(stringval,"SQL Relay JDBC driver");
+		} else {
+			assertEquals(stringval,"Oracle JDBC driver");
+		}
 		System.out.println();
 
 		// getDriverVersion
 		System.out.println("getDriverVersion");
 		stringval=md.getDriverVersion();
 		System.out.println("  "+stringval);
-		assertTrue((stringval!=null));
+		if (issqlrelay) {
+			assertEquals(stringval,"2.1.1");
+		} else {
+			assertEquals(stringval,"23.26.0.0.0");
+		}
 		System.out.println();
 
 		// getExtraNameCharacters
 		System.out.println("getExtraNameCharacters");
 		stringval=md.getExtraNameCharacters();
 		System.out.println("  "+stringval);
-		assertTrue((stringval!=null));
+		if (issqlrelay) {
+			assertEquals(stringval,"#@");
+		} else {
+			assertEquals(stringval,"$#");
+		}
 		System.out.println();
 
 		// getIdentifierQuoteString
 		System.out.println("getIdentifierQuoteString");
 		stringval=md.getIdentifierQuoteString();
 		System.out.println("  "+stringval);
-		assertTrue((stringval!=null));
+		assertEquals(stringval,"\"");
 		System.out.println();
 
 		// getJDBCMajorVersion
 		System.out.println("getJDBCMajorVersion");
 		intval=md.getJDBCMajorVersion();
 		System.out.println("  "+intval);
-		assertTrue((intval>0));
+		assertEquals(intval,4);
 		System.out.println();
 
 		// getJDBCMinorVersion
 		System.out.println("getJDBCMinorVersion");
 		intval=md.getJDBCMinorVersion();
 		System.out.println("  "+intval);
-		assertTrue((intval>=0));
+		if (issqlrelay) {
+			assertEquals(intval,3);
+		} else {
+			assertEquals(intval,2);
+		}
 		System.out.println();
 
 		// getMaxBinaryLiteralLength
 		System.out.println("getMaxBinaryLiteralLength");
 		intval=md.getMaxBinaryLiteralLength();
 		System.out.println("  "+intval);
-		assertTrue((intval>=0));
+		if (issqlrelay) {
+			assertEquals(intval,0);
+		} else {
+			assertEquals(intval,1000);
+		}
 		System.out.println();
 
 		// getMaxCatalogNameLength
 		System.out.println("getMaxCatalogNameLength");
 		intval=md.getMaxCatalogNameLength();
 		System.out.println("  "+intval);
-		assertTrue((intval>=0));
+		assertEquals(intval,0);
 		System.out.println();
 
 		// getMaxCharLiteralLength
 		System.out.println("getMaxCharLiteralLength");
 		intval=md.getMaxCharLiteralLength();
 		System.out.println("  "+intval);
-		assertTrue((intval>=0));
+		if (issqlrelay) {
+			assertEquals(intval,0);
+		} else {
+			assertEquals(intval,2000);
+		}
 		System.out.println();
 
 		// getMaxColumnNameLength
 		System.out.println("getMaxColumnNameLength");
 		intval=md.getMaxColumnNameLength();
 		System.out.println("  "+intval);
-		assertTrue((intval>=0));
+		if (issqlrelay) {
+			assertEquals(intval,0);
+		} else {
+			assertEquals(intval,128);
+		}
 		System.out.println();
 
 		// getMaxColumnsInGroupBy
 		System.out.println("getMaxColumnsInGroupBy");
 		intval=md.getMaxColumnsInGroupBy();
 		System.out.println("  "+intval);
-		assertTrue((intval>=0));
+		assertEquals(intval,0);
 		System.out.println();
 
 		// getMaxColumnsInIndex
 		System.out.println("getMaxColumnsInIndex");
 		intval=md.getMaxColumnsInIndex();
 		System.out.println("  "+intval);
-		assertTrue((intval>=0));
+		if (issqlrelay) {
+			assertEquals(intval,0);
+		} else {
+			assertEquals(intval,32);
+		}
 		System.out.println();
 
 		// getMaxColumnsInOrderBy
 		System.out.println("getMaxColumnsInOrderBy");
 		intval=md.getMaxColumnsInOrderBy();
 		System.out.println("  "+intval);
-		assertTrue((intval>=0));
+		assertEquals(intval,0);
 		System.out.println();
 
 		// getMaxColumnsInSelect
 		System.out.println("getMaxColumnsInSelect");
 		intval=md.getMaxColumnsInSelect();
 		System.out.println("  "+intval);
-		assertTrue((intval>=0));
+		assertEquals(intval,0);
 		System.out.println();
 
 		// getMaxColumnsInTable
 		System.out.println("getMaxColumnsInTable");
 		intval=md.getMaxColumnsInTable();
 		System.out.println("  "+intval);
-		assertTrue((intval>=0));
+		if (issqlrelay) {
+			assertEquals(intval,0);
+		} else {
+			assertEquals(intval,1000);
+		}
 		System.out.println();
 
 		// getMaxConnections
 		System.out.println("getMaxConnections");
 		intval=md.getMaxConnections();
 		System.out.println("  "+intval);
-		assertTrue((intval>=0));
+		assertEquals(intval,0);
 		System.out.println();
 
 		// getMaxCursorNameLength
 		System.out.println("getMaxCursorNameLength");
 		intval=md.getMaxCursorNameLength();
 		System.out.println("  "+intval);
-		assertTrue((intval>=0));
+		assertEquals(intval,0);
 		System.out.println();
 
 		// getMaxIndexLength
 		System.out.println("getMaxIndexLength");
 		intval=md.getMaxIndexLength();
 		System.out.println("  "+intval);
-		assertTrue((intval>=0));
+		assertEquals(intval,0);
 		System.out.println();
 
 		// getMaxProcedureNameLength
 		System.out.println("getMaxProcedureNameLength");
 		intval=md.getMaxProcedureNameLength();
 		System.out.println("  "+intval);
-		assertTrue((intval>=0));
+		if (issqlrelay) {
+			assertEquals(intval,0);
+		} else {
+			assertEquals(intval,128);
+		}
 		System.out.println();
 
 		// getMaxRowSize
 		System.out.println("getMaxRowSize");
 		intval=md.getMaxRowSize();
 		System.out.println("  "+intval);
-		assertTrue((intval>=0));
+		assertEquals(intval,0);
 		System.out.println();
 
 		// getMaxSchemaNameLength
 		System.out.println("getMaxSchemaNameLength");
 		intval=md.getMaxSchemaNameLength();
 		System.out.println("  "+intval);
-		assertTrue((intval>=0));
+		if (issqlrelay) {
+			assertEquals(intval,0);
+		} else {
+			assertEquals(intval,128);
+		}
 		System.out.println();
 
 		// getMaxStatementLength
 		System.out.println("getMaxStatementLength");
 		intval=md.getMaxStatementLength();
 		System.out.println("  "+intval);
-		assertTrue((intval>=0));
+		if (issqlrelay) {
+			assertEquals(intval,0);
+		} else {
+			assertEquals(intval,65535);
+		}
 		System.out.println();
 
 		// getMaxStatements
 		System.out.println("getMaxStatements");
 		intval=md.getMaxStatements();
 		System.out.println("  "+intval);
-		assertTrue((intval>=0));
+		assertEquals(intval,0);
 		System.out.println();
 
 		// getMaxTableNameLength
 		System.out.println("getMaxTableNameLength");
 		intval=md.getMaxTableNameLength();
 		System.out.println("  "+intval);
-		assertTrue((intval>=0));
+		if (issqlrelay) {
+			assertEquals(intval,0);
+		} else {
+			assertEquals(intval,128);
+		}
 		System.out.println();
 
 		// getMaxTablesInSelect
 		System.out.println("getMaxTablesInSelect");
 		intval=md.getMaxTablesInSelect();
 		System.out.println("  "+intval);
-		assertTrue((intval>=0));
+		assertEquals(intval,0);
 		System.out.println();
 
 		// getMaxUserNameLength
 		System.out.println("getMaxUserNameLength");
 		intval=md.getMaxUserNameLength();
 		System.out.println("  "+intval);
-		assertTrue((intval>=0));
+		if (issqlrelay) {
+			assertEquals(intval,0);
+		} else {
+			assertEquals(intval,128);
+		}
 		System.out.println();
 
 		// getNumericFunctions
 		System.out.println("getNumericFunctions");
-		// may be null
 		stringval=md.getNumericFunctions();
 		System.out.println("  "+stringval);
+		if (issqlrelay) {
+			assertEquals(stringval,null);
+		} else {
+			assertEquals(stringval,"ABS,ACOS,ASIN,ATAN,ATAN2,CEILING,COS,EXP,FLOOR,LOG,LOG10,MOD,PI,POWER,ROUND,SIGN,SIN,SQRT,TAN,TRUNCATE");
+		}
 		System.out.println();
 
 		// getProcedureTerm
 		System.out.println("getProcedureTerm");
 		stringval=md.getProcedureTerm();
 		System.out.println("  "+stringval);
-		assertTrue((stringval!=null));
+		assertEquals(stringval,"procedure");
 		System.out.println();
 
 		// getResultSetHoldability
 		System.out.println("getResultSetHoldability");
 		intval=md.getResultSetHoldability();
 		System.out.println("  "+intval);
-		assertTrue((intval>=0));
+		if (issqlrelay) {
+			assertEquals(intval,2);
+		} else {
+			assertEquals(intval,1);
+		}
 		System.out.println();
 
 		// getRowIdLifetime
 		System.out.println("getRowIdLifetime");
 		RowIdLifetime	rowidlifetimeval=md.getRowIdLifetime();
 		System.out.println("  "+rowidlifetimeval);
-		assertTrue((rowidlifetimeval!=null));
+		if (issqlrelay) {
+			assertEquals(rowidlifetimeval.name(),
+						"ROWID_UNSUPPORTED");
+		} else {
+			assertEquals(rowidlifetimeval.name(),
+						"ROWID_VALID_FOREVER");
+		}
 		System.out.println();
 
 		// getSchemaTerm
 		System.out.println("getSchemaTerm");
 		stringval=md.getSchemaTerm();
 		System.out.println("  "+stringval);
-		assertTrue((stringval!=null));
+		assertEquals(stringval,"schema");
 		System.out.println();
 
 		// getSearchStringEscape
 		System.out.println("getSearchStringEscape");
 		stringval=md.getSearchStringEscape();
 		System.out.println("  "+stringval);
-		assertTrue((stringval!=null));
+		if (issqlrelay) {
+			assertEquals(stringval,"\\");
+		} else {
+			assertEquals(stringval,"/");
+		}
 		System.out.println();
 
 		// getSQLKeywords
 		System.out.println("getSQLKeywords");
-		// may be null
 		stringval=md.getSQLKeywords();
 		System.out.println("  "+stringval);
+		if (issqlrelay) {
+			assertEquals(stringval,null);
+		} else {
+			assertEquals(stringval,"ACCESS, ADD, ALTER, AUDIT, CLUSTER, COLUMN, COMMENT, COMPRESS, CONNECT, DATE, DROP, EXCLUSIVE, FILE, IDENTIFIED, IMMEDIATE, INCREMENT, INDEX, INITIAL, INTERSECT, LEVEL, LOCK, LONG, MAXEXTENTS, MINUS, MODE, NOAUDIT, NOCOMPRESS, NOWAIT, NUMBER, OFFLINE, ONLINE, PCTFREE, PRIOR, all_PL_SQL_reserved_ words");
+		}
 		System.out.println();
 
 		// getSQLStateType
 		System.out.println("getSQLStateType");
 		intval=md.getSQLStateType();
 		System.out.println("  "+intval);
-		assertTrue((intval>=0));
+		if (issqlrelay) {
+			assertEquals(intval,2);
+		} else {
+			assertEquals(intval,0);
+		}
 		System.out.println();
 
 		// getStringFunctions
 		System.out.println("getStringFunctions");
-		// may be null
 		stringval=md.getStringFunctions();
 		System.out.println("  "+stringval);
+		if (issqlrelay) {
+			assertEquals(stringval,null);
+		} else {
+			assertEquals(stringval,"ASCII,CHAR,CHAR_LENGTH,CHARACTER_LENGTH,CONCAT,LCASE,LENGTH,LTRIM,OCTET_LENGTH,REPLACE,RTRIM,SOUNDEX,SUBSTRING,UCASE");
+		}
 		System.out.println();
 
 		// getSystemFunctions
 		System.out.println("getSystemFunctions");
-		// may be null
 		stringval=md.getSystemFunctions();
 		System.out.println("  "+stringval);
+		if (issqlrelay) {
+			assertEquals(stringval,null);
+		} else {
+			assertEquals(stringval,"USER");
+		}
 		System.out.println();
 
 		// getTimeDateFunctions
 		System.out.println("getTimeDateFunctions");
-		// may be null
 		stringval=md.getTimeDateFunctions();
 		System.out.println("  "+stringval);
+		if (issqlrelay) {
+			assertEquals(stringval,null);
+		} else {
+			assertEquals(stringval,"CURRENT_DATE,CURRENT_TIMESTAMP,CURDATE,EXTRACT,HOUR,MINUTE,MONTH,SECOND,YEAR");
+		}
 		System.out.println();
 
 		// getURL
 		System.out.println("getURL");
 		stringval=md.getURL();
 		System.out.println("  "+stringval);
-		assertTrue((stringval!=null));
+		if (issqlrelay) {
+			assertEquals(stringval,"jdbc:sqlrelay://testuser:testpassword@localhost:9000");
+		} else {
+			assertEquals(stringval,"jdbc:oracle:thin:@oracle:1521:ora1");
+		}
 		System.out.println();
 
 		// getUserName
 		System.out.println("getUserName");
 		stringval=md.getUserName();
 		System.out.println("  "+stringval);
-		assertTrue((stringval!=null));
+		if (issqlrelay) {
+			assertEquals(stringval,"testuser");
+		} else {
+			assertEquals(stringval,"FEDORA40X64");
+		}
 		System.out.println();
 
 		// insertsAreDetected
@@ -643,7 +777,11 @@ class oracle extends sqlrtest {
 		System.out.println("isCatalogAtStart");
 		boolval=md.isCatalogAtStart();
 		System.out.println("  "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			assertTrue(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// isReadOnly
@@ -657,7 +795,11 @@ class oracle extends sqlrtest {
 		System.out.println("locatorsUpdateCopy");
 		boolval=md.locatorsUpdateCopy();
 		System.out.println("  "+boolval);
-		assertFalse(boolval);
+		if (issqlrelay) {
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
 		System.out.println();
 
 		// nullPlusNonNullIsNull
@@ -671,7 +813,11 @@ class oracle extends sqlrtest {
 		System.out.println("nullsAreSortedAtEnd");
 		boolval=md.nullsAreSortedAtEnd();
 		System.out.println("  "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			assertTrue(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// nullsAreSortedAtStart
@@ -755,7 +901,11 @@ class oracle extends sqlrtest {
 		System.out.println("storesMixedCaseIdentifiers");
 		boolval=md.storesMixedCaseIdentifiers();
 		System.out.println("  "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			assertTrue(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// storesMixedCaseQuotedIdentifiers
@@ -769,14 +919,22 @@ class oracle extends sqlrtest {
 		System.out.println("storesUpperCaseIdentifiers");
 		boolval=md.storesUpperCaseIdentifiers();
 		System.out.println("  "+boolval);
-		assertFalse(boolval);
+		if (issqlrelay) {
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
 		System.out.println();
 
 		// storesUpperCaseQuotedIdentifiers
 		System.out.println("storesUpperCaseQuotedIdentifiers");
 		boolval=md.storesUpperCaseQuotedIdentifiers();
 		System.out.println("  "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			assertTrue(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// supportsAlterTableWithAddColumn
@@ -790,7 +948,11 @@ class oracle extends sqlrtest {
 		System.out.println("supportsAlterTableWithDropColumn");
 		boolval=md.supportsAlterTableWithDropColumn();
 		System.out.println("  "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			assertTrue(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// supportsANSI92EntryLevelSQL
@@ -804,56 +966,88 @@ class oracle extends sqlrtest {
 		System.out.println("supportsANSI92FullSQL");
 		boolval=md.supportsANSI92FullSQL();
 		System.out.println("  "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			assertTrue(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// supportsANSI92IntermediateSQL
 		System.out.println("supportsANSI92IntermediateSQL");
 		boolval=md.supportsANSI92IntermediateSQL();
 		System.out.println("  "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			assertTrue(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// supportsBatchUpdates
 		System.out.println("supportsBatchUpdates");
 		boolval=md.supportsBatchUpdates();
 		System.out.println("  "+boolval);
-		assertFalse(boolval);
+		if (issqlrelay) {
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
 		System.out.println();
 
 		// supportsCatalogsInDataManipulation
 		System.out.println("supportsCatalogsInDataManipulation");
 		boolval=md.supportsCatalogsInDataManipulation();
 		System.out.println("  "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			assertTrue(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// supportsCatalogsInIndexDefinitions
 		System.out.println("supportsCatalogsInIndexDefinitions");
 		boolval=md.supportsCatalogsInIndexDefinitions();
 		System.out.println("  "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			assertTrue(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// supportsCatalogsInPrivilegeDefinitions
 		System.out.println("supportsCatalogsInPrivilegeDefinitions");
 		boolval=md.supportsCatalogsInPrivilegeDefinitions();
 		System.out.println("  "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			assertTrue(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// supportsCatalogsInProcedureCalls
 		System.out.println("supportsCatalogsInProcedureCalls");
 		boolval=md.supportsCatalogsInProcedureCalls();
 		System.out.println("  "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			assertTrue(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// supportsCatalogsInTableDefinitions
 		System.out.println("supportsCatalogsInTableDefinitions");
 		boolval=md.supportsCatalogsInTableDefinitions();
 		System.out.println("  "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			assertTrue(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// supportsColumnAliasing
@@ -867,14 +1061,22 @@ class oracle extends sqlrtest {
 		System.out.println("supportsConvert");
 		boolval=md.supportsConvert();
 		System.out.println("  "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			assertTrue(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// supportsConvert (with types)
 		System.out.println("supportsConvert (with types)");
 		boolval=md.supportsConvert(Types.INTEGER, Types.VARCHAR);
 		System.out.println("  "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			assertTrue(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// supportsCoreSQLGrammar
@@ -902,7 +1104,11 @@ class oracle extends sqlrtest {
 		System.out.println("supportsDataManipulationTransactionsOnly");
 		boolval=md.supportsDataManipulationTransactionsOnly();
 		System.out.println("  "+boolval);
-		assertFalse(boolval);
+		if (issqlrelay) {
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
 		System.out.println();
 
 		// supportsDifferentTableCorrelationNames
@@ -965,7 +1171,11 @@ class oracle extends sqlrtest {
 		System.out.println("supportsIntegrityEnhancementFacility");
 		boolval=md.supportsIntegrityEnhancementFacility();
 		System.out.println("  "+boolval);
-		assertFalse(boolval);
+		if (issqlrelay) {
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
 		System.out.println();
 
 		// supportsLikeEscapeClause
@@ -993,7 +1203,11 @@ class oracle extends sqlrtest {
 		System.out.println("supportsMixedCaseIdentifiers");
 		boolval=md.supportsMixedCaseIdentifiers();
 		System.out.println("  "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			assertTrue(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// supportsMixedCaseQuotedIdentifiers
@@ -1007,7 +1221,11 @@ class oracle extends sqlrtest {
 		System.out.println("supportsMultipleOpenResults");
 		boolval=md.supportsMultipleOpenResults();
 		System.out.println("  "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			assertTrue(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// supportsMultipleResultSets
@@ -1021,7 +1239,11 @@ class oracle extends sqlrtest {
 		System.out.println("supportsMultipleTransactions");
 		boolval=md.supportsMultipleTransactions();
 		System.out.println("  "+boolval);
-		assertFalse(boolval);
+		if (issqlrelay) {
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
 		System.out.println();
 
 		// supportsNamedParameters
@@ -1108,7 +1330,11 @@ class oracle extends sqlrtest {
 		boolval=md.supportsResultSetHoldability(
 					ResultSet.CLOSE_CURSORS_AT_COMMIT);
 		System.out.println("  "+boolval);
-		assertTrue(boolval);
+		if (issqlrelay) {
+			assertTrue(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// supportsResultSetType
@@ -1122,7 +1348,11 @@ class oracle extends sqlrtest {
 		System.out.println("supportsSavepoints");
 		boolval=md.supportsSavepoints();
 		System.out.println("  "+boolval);
-		assertFalse(boolval);
+		if (issqlrelay) {
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
 		System.out.println();
 
 		// supportsSchemasInDataManipulation
@@ -1164,21 +1394,33 @@ class oracle extends sqlrtest {
 		System.out.println("supportsSelectForUpdate");
 		boolval=md.supportsSelectForUpdate();
 		System.out.println("  "+boolval);
-		assertFalse(boolval);
+		if (issqlrelay) {
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
 		System.out.println();
 
 		// supportsStatementPooling
 		System.out.println("supportsStatementPooling");
 		boolval=md.supportsStatementPooling();
 		System.out.println("  "+boolval);
-		assertFalse(boolval);
+		if (issqlrelay) {
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
 		System.out.println();
 
 		// supportsStoredFunctionsUsingCallSyntax
 		System.out.println("supportsStoredFunctionsUsingCallSyntax");
 		boolval=md.supportsStoredFunctionsUsingCallSyntax();
 		System.out.println("  "+boolval);
-		assertFalse(boolval);
+		if (issqlrelay) {
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
 		System.out.println();
 
 		// supportsStoredProcedures

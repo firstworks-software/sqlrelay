@@ -419,7 +419,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	String getDriverName() throws SQLException {
 		drv.debugFunction(this);
-		String	drivername="sqlrelay";
+		String	drivername="SQL Relay JDBC driver";
 		drv.debugPrintln("driver name: "+drivername);
 		drv.debugEnd();
 		return drivername;
