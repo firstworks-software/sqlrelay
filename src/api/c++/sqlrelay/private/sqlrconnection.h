@@ -23,6 +23,8 @@
 		void	auth();
 		bool	getNewPort();
 
+		bool	getDatabaseFeatures();
+
 		void	clearSessionFlags();
 
 		void	debugPreStart();
@@ -77,5 +79,8 @@
 				sqlrclientisolationlevelformat_t format);
 		const char	*getIsolationLevel(
 				sqlrclientisolationlevelformat_t format);
+
+		const char	*getDatabaseFeature(uint16_t feature);
+		const char	*getDatabaseFeature(const char *feature);
 
 	friend class sqlrcursor;

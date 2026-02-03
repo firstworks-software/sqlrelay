@@ -10231,6 +10231,10 @@ const char *sqlrservercontroller::getDbVersion() {
 	return pvt->_conn->getDbVersion();
 }
 
+const char * const *sqlrservercontroller::getDatabaseFeatures() {
+	return pvt->_conn->getDatabaseFeatures();
+}
+
 sqlrdatabaseobject *sqlrservercontroller::createDatabaseObject(
 						const char *database,
 						const char *schema,

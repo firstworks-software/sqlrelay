@@ -13,166 +13,40 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	private	SQLRelayDriver		drv;
 	private SQLRelayConnection	conn;
 
-	private HashMap<String,String>	map;
-
 	public
 	SQLRelayDatabaseMetaData(SQLRelayDriver driver) {
 		this.drv=driver;
 		drv.debugFunction(this);
 		conn=null;
 		networklock=null;
-		map=new HashMap<String,String>();
 		drv.debugEnd();
 	}
 
 	private
-	String getString(String key) {
-		populateMap();
-		return map.get(key);
+	String getString(String feature) {
+		return getDatabaseFeature(feature);
 	}
 
 	private
-	int getInt(String key) {
-		populateMap();
-		String	value=map.get(key);
+	int getInt(String feature) {
+		String	value=getDatabaseFeature(feature);
 		return (value!=null)?Integer.parseInt(value):0;
 	}
 
 	private
-	boolean getBoolean(String key) {
-		populateMap();
-		String	value=map.get(key);
+	boolean getBoolean(String feature) {
+		String	value=getDatabaseFeature(feature);
 		return (value!=null)?Boolean.parseBoolean(value):false;
 	}
 
 	private
-	void populateMap() {
-
-		if (!map.isEmpty()) {
-			return;
+	String getDatabaseFeature(String feature) {
+		String	value;
+		synchronized (networklock) {
+			value=conn.getSQLRConnection().
+					getDatabaseFeature(feature);
 		}
-
-		// FIXME: these values are valid for oracle, but not for
-		// all databases.  instead of a static map here, populate
-		// the map from the backend
-		map.put("all_procedures_are_callable","false");
-		map.put("all_tables_are_selectable","false");
-		map.put("auto_commit_failure_closes_all_result_sets","false");
-		map.put("catalog_separator","");
-		map.put("catalog_term","");
-		map.put("data_definition_causes_transaction_commit","true");
-		map.put("data_definition_ignored_in_transactions","false");
-		map.put("does_max_row_size_include_blobs","true");
-		map.put("extra_name_characters","$#");
-		map.put("generated_key_always_returned","false");
-		map.put("identifier_quote_string","\"");
-		map.put("is_catalog_at_start","false");
-		map.put("is_read_only","false");
-		map.put("locators_update_copy","true");
-		map.put("max_binary_literal_length","1000");
-		map.put("max_catalog_name_length","0");
-		map.put("max_char_literal_length","2000");
-		map.put("max_column_name_length","128");
-		map.put("max_columns_in_group_by","0");
-		map.put("max_columns_in_index","32");
-		map.put("max_columns_in_order_by","0");
-		map.put("max_columns_in_select","0");
-		map.put("max_columns_in_table","1000");
-		map.put("max_connections","0");
-		map.put("max_cursor_name_length","0");
-		map.put("max_index_length","0");
-		map.put("max_procedure_name_length","128");
-		map.put("max_row_size","0");
-		map.put("max_schema_name_length","128");
-		map.put("max_statement_length","65535");
-		map.put("max_statements","0");
-		map.put("max_table_name_length","128");
-		map.put("max_tables_in_select","0");
-		map.put("max_user_name_length","128");
-		map.put("null_plus_non_null_is_null","true");
-		map.put("nulls_are_sorted_at_end","false");
-		map.put("nulls_are_sorted_at_start","false");
-		map.put("nulls_are_sorted_high","true");
-		map.put("nulls_are_sorted_low","false");
-		map.put("numeric_functions","ABS,ACOS,ASIN,ATAN,ATAN2,CEILING,COS,EXP,FLOOR,LOG,LOG10,MOD,PI,POWER,ROUND,SIGN,SIN,SQRT,TAN,TRUNCATE");
-		map.put("procedure_term","procedure");
-		map.put("result_set_holdability","1");
-		map.put("sql_keywords","ACCESS, ADD, ALTER, AUDIT, CLUSTER, COLUMN, COMMENT, COMPRESS, CONNECT, DATE, DROP, EXCLUSIVE, FILE, IDENTIFIED, IMMEDIATE, INCREMENT, INDEX, INITIAL, INTERSECT, LEVEL, LOCK, LONG, MAXEXTENTS, MINUS, MODE, NOAUDIT, NOCOMPRESS, NOWAIT, NUMBER, OFFLINE, ONLINE, PCTFREE, PRIOR, all_PL_SQL_reserved_ words");
-		map.put("sql_state_type","0");
-		map.put("schema_term","schema");
-		map.put("search_string_escape","/");
-		map.put("stores_lower_case_identifiers","false");
-		map.put("stores_lower_case_quoted_identifiers","false");
-		map.put("stores_mixed_case_identifiers","false");
-		map.put("stores_mixed_case_quoted_identifiers","true");
-		map.put("stores_upper_case_identifiers","true");
-		map.put("stores_upper_case_quoted_identifiers","false");
-		map.put("string_functions","ASCII,CHAR,CHAR_LENGTH,CHARACTER_LENGTH,CONCAT,LCASE,LENGTH,LTRIM,OCTET_LENGTH,REPLACE,RTRIM,SOUNDEX,SUBSTRING,UCASE");
-		map.put("supports_ansi92_entry_level_sql","true");
-		map.put("supports_ansi92_full_sql","false");
-		map.put("supports_ansi92_intermediate_sql","false");
-		map.put("supports_alter_table_with_add_column","true");
-		map.put("supports_alter_table_with_drop_column","false");
-		map.put("supports_batch_updates","true");
-		map.put("supports_catalogs_in_data_manipulation","false");
-		map.put("supports_catalogs_in_index_definitions","false");
-		map.put("supports_catalogs_in_privilege_definitions","false");
-		map.put("supports_catalogs_in_procedure_calls","false");
-		map.put("supports_catalogs_in_table_definitions","false");
-		map.put("supports_column_aliasing","true");
-		map.put("supports_convert","false");
-		map.put("supports_core_sql_grammar","true");
-		map.put("supports_correlated_subqueries","true");
-		map.put("supports_data_definition_and_data_manipulation_transactions","true");
-		map.put("supports_data_manipulation_transactions_only","true");
-		map.put("supports_different_table_correlation_names","true");
-		map.put("supports_expressions_in_order_by","true");
-		map.put("supports_extended_sql_grammar","true");
-		map.put("supports_full_outer_joins","true");
-		map.put("supports_get_generated_keys","true");
-		map.put("supports_group_by","true");
-		map.put("supports_group_by_beyond_select","true");
-		map.put("supports_group_by_unrelated","true");
-		map.put("supports_integrity_enhancement_facility","true");
-		map.put("supports_like_escape_clause","true");
-		map.put("supports_limited_outer_joins","true");
-		map.put("supports_minimum_sql_grammar","true");
-		map.put("supports_mixed_case_identifiers","false");
-		map.put("supports_mixed_case_quoted_identifiers","true");
-		map.put("supports_multiple_result_sets","false");
-		map.put("supports_multiple_transactions","true");
-		map.put("supports_named_parameters","true");
-		map.put("supports_non_nullable_columns","true");
-		map.put("supports_open_cursors_across_commit","false");
-		map.put("supports_open_cursors_across_rollback","false");
-		map.put("supports_open_statements_across_commit","false");
-		map.put("supports_open_statements_across_rollback","false");
-		map.put("supports_order_by_unrelated","true");
-		map.put("supports_outer_joins","true");
-		map.put("supports_positioned_delete","false");
-		map.put("supports_positioned_update","false");
-		map.put("supports_savepoints","true");
-		map.put("supports_schemas_in_data_manipulation","true");
-		map.put("supports_schemas_in_index_definitions","true");
-		map.put("supports_schemas_in_privilege_definitions","true");
-		map.put("supports_schemas_in_procedure_calls","true");
-		map.put("supports_schemas_in_table_definitions","true");
-		map.put("supports_select_for_update","true");
-		map.put("supports_stored_functions_using_call_syntax","true");
-		map.put("supports_stored_procedures","true");
-		map.put("supports_subqueries_in_comparisons","true");
-		map.put("supports_subqueries_in_exists","true");
-		map.put("supports_subqueries_in_ins","true");
-		map.put("supports_subqueries_in_quantifieds","true");
-		map.put("supports_table_correlation_names","true");
-		map.put("supports_transaction_isolation_level","true");
-		map.put("supports_transactions","true");
-		map.put("supports_union","true");
-		map.put("supports_union_all","true");
-		map.put("system_functions","USER");
-		map.put("time_date_functions","CURRENT_DATE,CURRENT_TIMESTAMP,CURDATE,EXTRACT,HOUR,MINUTE,MONTH,SECOND,YEAR");
-		map.put("uses_local_file_per_table","false");
-		map.put("uses_local_files","false");
+		return value;
 	}
 
 	public

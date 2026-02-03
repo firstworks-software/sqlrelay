@@ -399,6 +399,9 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		/** Returns the database version. */
 		const char	*getDbVersion();
 
+		/** Returns the database features. */
+		const char * const	*getDatabaseFeatures();
+
 		/** Returns the host name of the server hosting the
 		 *  database. */
 		const char	*getDbHostName();
@@ -3430,6 +3433,12 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 				const char *isolevel,
 				sqlrserverisolationlevelformat_t fromformat,
 				sqlrserverisolationlevelformat_t toformat);
+
+		/** Returns database features.
+		 *
+		 *  This implementation just returns NULL, but it may be
+		 *  overridden by a child class to return the features. */
+		virtual const char * const	*getDatabaseFeatures();
 
 		/** Pings the database using the "ping query" defined by the
 		 *  database connection module.

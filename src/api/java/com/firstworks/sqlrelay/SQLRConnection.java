@@ -399,4 +399,5 @@ public class SQLRConnection {
 	public native boolean	setIsolationLevel(String isolationlevel,
 								int format);
 	public native String	getIsolationLevel(int format);
+	public native String	getDatabaseFeature(String feature);
 }

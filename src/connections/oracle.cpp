@@ -152,6 +152,8 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 				sqlrserverisolationlevelformat_t toformat);
 		const char	*getNoopQuery();
 
+		const char * const	*getDatabaseFeatures();
+
 		ub4		stmtmode;
 
 		OCIEnv		*env;
@@ -195,6 +197,8 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		stringbuffer	tablelistquery;
 		stringbuffer	columnlistquery;
 		stringbuffer	typeinfolistquery;
+
+		char		**databasefeatures;
 };
 
 class SQLRSERVER_DLLSPEC oraclecursor : public sqlrservercursor {
@@ -468,9 +472,17 @@ oracleconnection::oracleconnection(sqlrservercontroller *cont) :
 	#endif
 	rejectduplicatebinds=false;
 	disablekeylookup=false;
+
+	databasefeatures=NULL;
 }
 
 oracleconnection::~oracleconnection() {
+
+	for (uint16_t i=0; i<MAXFEATURE; i++) {
+		delete[] databasefeatures[i];
+	}
+	delete[] databasefeatures;
+
 	delete[] lastinsertidquery;
 	delete[] ucs2user;
 	delete[] ucs2password;
@@ -2098,6 +2110,269 @@ const char *oracleconnection::mapIsolationLevel(
 		}
 	}
 	return isolevel;
+}
+
+const char * const * oracleconnection::getDatabaseFeatures() {
+
+	if (databasefeatures) {
+		return databasefeatures;
+	}
+
+	databasefeatures=new char *[MAXFEATURE+1];
+	databasefeatures[FEATURE_ALL_PROCEDURES_ARE_CALLABLE]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_ALL_TABLES_ARE_SELECTABLE]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_AUTO_COMMIT_FAILURE_CLOSES_ALL_RESULT_SETS]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_CATALOG_SEPARATOR]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_CATALOG_TERM]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_DATA_DEFINITION_CAUSES_TRANSACTION_COMMIT]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_DATA_DEFINITION_IGNORED_IN_TRANSACTIONS]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_DOES_MAX_ROW_SIZE_INCLUDE_BLOBS]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_EXTRA_NAME_CHARACTERS]=
+		charstring::duplicate("$#");
+	databasefeatures[FEATURE_GENERATED_KEY_ALWAYS_RETURNED]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_IDENTIFIER_QUOTE_STRING]=
+		charstring::duplicate("\"");
+	databasefeatures[FEATURE_IS_CATALOG_AT_START]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_IS_READ_ONLY]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_LOCATORS_UPDATE_COPY]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_MAX_BINARY_LITERAL_LENGTH]=
+		charstring::duplicate("1000");
+	databasefeatures[FEATURE_MAX_CATALOG_NAME_LENGTH]=
+		charstring::duplicate("0");
+	databasefeatures[FEATURE_MAX_CHAR_LITERAL_LENGTH]=
+		charstring::duplicate("2000");
+	databasefeatures[FEATURE_MAX_COLUMN_NAME_LENGTH]=
+		charstring::duplicate("128");
+	databasefeatures[FEATURE_MAX_COLUMNS_IN_GROUP_BY]=
+		charstring::duplicate("0");
+	databasefeatures[FEATURE_MAX_COLUMNS_IN_INDEX]=
+		charstring::duplicate("32");
+	databasefeatures[FEATURE_MAX_COLUMNS_IN_ORDER_BY]=
+		charstring::duplicate("0");
+	databasefeatures[FEATURE_MAX_COLUMNS_IN_SELECT]=
+		charstring::duplicate("0");
+	databasefeatures[FEATURE_MAX_COLUMNS_IN_TABLE]=
+		charstring::duplicate("1000");
+	databasefeatures[FEATURE_MAX_CONNECTIONS]=
+		charstring::duplicate("0");
+	databasefeatures[FEATURE_MAX_CURSOR_NAME_LENGTH]=
+		charstring::duplicate("0");
+	databasefeatures[FEATURE_MAX_INDEX_LENGTH]=
+		charstring::duplicate("0");
+	databasefeatures[FEATURE_MAX_PROCEDURE_NAME_LENGTH]=
+		charstring::duplicate("128");
+	databasefeatures[FEATURE_MAX_ROW_SIZE]=
+		charstring::duplicate("0");
+	databasefeatures[FEATURE_MAX_SCHEMA_NAME_LENGTH]=
+		charstring::duplicate("128");
+	databasefeatures[FEATURE_MAX_STATEMENT_LENGTH]=
+		charstring::duplicate("65535");
+	databasefeatures[FEATURE_MAX_STATEMENTS]=
+		charstring::duplicate("0");
+	databasefeatures[FEATURE_MAX_TABLE_NAME_LENGTH]=
+		charstring::duplicate("128");
+	databasefeatures[FEATURE_MAX_TABLES_IN_SELECT]=
+		charstring::duplicate("0");
+	databasefeatures[FEATURE_MAX_USER_NAME_LENGTH]=
+		charstring::duplicate("128");
+	databasefeatures[FEATURE_NULL_PLUS_NON_NULL_IS_NULL]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_NULLS_ARE_SORTED_AT_END]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_NULLS_ARE_SORTED_AT_START]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_NULLS_ARE_SORTED_HIGH]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_NULLS_ARE_SORTED_LOW]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_NUMERIC_FUNCTIONS]=
+		charstring::duplicate("ABS,ACOS,ASIN,ATAN,ATAN2,"
+					"CEILING,COS,EXP,FLOOR,LOG,"
+					"LOG10,MOD,PI,POWER,ROUND,"
+					"SIGN,SIN,SQRT,TAN,TRUNCATE");
+	databasefeatures[FEATURE_PROCEDURE_TERM]=
+		charstring::duplicate("procedure");
+	databasefeatures[FEATURE_RESULT_SET_HOLDABILITY]=
+		charstring::duplicate("1");
+	databasefeatures[FEATURE_SQL_KEYWORDS]=
+		charstring::duplicate(
+			"ACCESS, ADD, ALTER, AUDIT, CLUSTER, "
+			"COLUMN, COMMENT, COMPRESS, CONNECT, DATE, "
+			"DROP, EXCLUSIVE, FILE, IDENTIFIED, IMMEDIATE, "
+			"INCREMENT, INDEX, INITIAL, INTERSECT, LEVEL, "
+			"LOCK, LONG, MAXEXTENTS, MINUS, MODE, NOAUDIT, "
+			"NOCOMPRESS, NOWAIT, NUMBER, OFFLINE, ONLINE, "
+			"PCTFREE, PRIOR, all_PL_SQL_reserved_ words");
+	databasefeatures[FEATURE_SQL_STATE_TYPE]=
+		charstring::duplicate("0");
+	databasefeatures[FEATURE_SCHEMA_TERM]=
+		charstring::duplicate("schema");
+	databasefeatures[FEATURE_SEARCH_STRING_ESCAPE]=
+		charstring::duplicate("/");
+	databasefeatures[FEATURE_STORES_LOWER_CASE_IDENTIFIERS]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_STORES_LOWER_CASE_QUOTED_IDENTIFIERS]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_STORES_MIXED_CASE_IDENTIFIERS]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_STORES_MIXED_CASE_QUOTED_IDENTIFIERS]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_STORES_UPPER_CASE_IDENTIFIERS]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_STORES_UPPER_CASE_QUOTED_IDENTIFIERS]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_STRING_FUNCTIONS]=
+		charstring::duplicate(
+			"ASCII,CHAR,CHAR_LENGTH,CHARACTER_LENGTH,CONCAT,"
+			"LCASE,LENGTH,LTRIM,OCTET_LENGTH,REPLACE,"
+			"RTRIM,SOUNDEX,SUBSTRING,UCASE");
+	databasefeatures[FEATURE_SUPPORTS_ANSI92_ENTRY_LEVEL_SQL]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_ANSI92_FULL_SQL]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_SUPPORTS_ANSI92_INTERMEDIATE_SQL]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_SUPPORTS_ALTER_TABLE_WITH_ADD_COLUMN]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_ALTER_TABLE_WITH_DROP_COLUMN]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_SUPPORTS_BATCH_UPDATES]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_CATALOGS_IN_DATA_MANIPULATION]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_SUPPORTS_CATALOGS_IN_INDEX_DEFINITIONS]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_SUPPORTS_CATALOGS_IN_PRIVILEGE_DEFINITIONS]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_SUPPORTS_CATALOGS_IN_PROCEDURE_CALLS]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_SUPPORTS_CATALOGS_IN_TABLE_DEFINITIONS]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_SUPPORTS_COLUMN_ALIASING]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_CONVERT]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_SUPPORTS_CORE_SQL_GRAMMAR]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_CORRELATED_SUBQUERIES]=
+		charstring::duplicate("true");
+	databasefeatures[
+	FEATURE_SUPPORTS_DATA_DEFINITION_AND_DATA_MANIPULATION_TRANSACTIONS]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_DATA_MANIPULATION_TRANSACTIONS_ONLY]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_DIFFERENT_TABLE_CORRELATION_NAMES]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_EXPRESSIONS_IN_ORDER_BY]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_EXTENDED_SQL_GRAMMAR]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_FULL_OUTER_JOINS]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_GET_GENERATED_KEYS]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_GROUP_BY]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_GROUP_BY_BEYOND_SELECT]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_GROUP_BY_UNRELATED]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_INTEGRITY_ENHANCEMENT_FACILITY]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_LIKE_ESCAPE_CLAUSE]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_LIMITED_OUTER_JOINS]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_MINIMUM_SQL_GRAMMAR]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_MIXED_CASE_IDENTIFIERS]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_SUPPORTS_MIXED_CASE_QUOTED_IDENTIFIERS]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_MULTIPLE_RESULT_SETS]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_SUPPORTS_MULTIPLE_TRANSACTIONS]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_NAMED_PARAMETERS]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_NON_NULLABLE_COLUMNS]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_OPEN_CURSORS_ACROSS_COMMIT]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_SUPPORTS_OPEN_CURSORS_ACROSS_ROLLBACK]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_SUPPORTS_OPEN_STATEMENTS_ACROSS_COMMIT]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_SUPPORTS_OPEN_STATEMENTS_ACROSS_ROLLBACK]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_SUPPORTS_ORDER_BY_UNRELATED]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_OUTER_JOINS]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_POSITIONED_DELETE]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_SUPPORTS_POSITIONED_UPDATE]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_SUPPORTS_SAVEPOINTS]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_SCHEMAS_IN_DATA_MANIPULATION]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_SCHEMAS_IN_INDEX_DEFINITIONS]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_SCHEMAS_IN_PRIVILEGE_DEFINITIONS]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_SCHEMAS_IN_PROCEDURE_CALLS]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_SCHEMAS_IN_TABLE_DEFINITIONS]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_SELECT_FOR_UPDATE]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_STORED_FUNCTIONS_USING_CALL_SYNTAX]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_STORED_PROCEDURES]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_SUBQUERIES_IN_COMPARISONS]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_SUBQUERIES_IN_EXISTS]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_SUBQUERIES_IN_INS]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_SUBQUERIES_IN_QUANTIFIEDS]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_TABLE_CORRELATION_NAMES]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_TRANSACTION_ISOLATION_LEVEL]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_TRANSACTIONS]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_UNION]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_UNION_ALL]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SYSTEM_FUNCTIONS]=
+		charstring::duplicate("USER");
+	databasefeatures[FEATURE_TIME_DATE_FUNCTIONS]=
+		charstring::duplicate(
+			"CURRENT_DATE,CURRENT_TIMESTAMP,CURDATE,EXTRACT,"
+			"HOUR,MINUTE,MONTH,SECOND,YEAR");
+	databasefeatures[FEATURE_USES_LOCAL_FILE_PER_TABLE]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_USES_LOCAL_FILES]=
+		charstring::duplicate("false");
+
+	return databasefeatures;
 }
 
 const char *oracleconnection::getNoopQuery() {

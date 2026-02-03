@@ -473,6 +473,15 @@ JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getIsolati
 		getIsolationLevel((sqlrclientisolationlevelformat_t)format));
 }
 
+JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getDatabaseFeature
+  (JNIEnv *env, jobject self, jstring feature) {
+	const char	*featurestr=env->GetStringUTFChars(feature,0);
+	jstring	retval=conNewStringUTF(env,getSqlrConnection(env,self)->
+					getDatabaseFeature(featurestr));
+	env->ReleaseStringUTFChars(feature,featurestr);
+	return retval;
+}
+
 /*
  * Class:     com_firstworks_sqlrelay_SQLRConnection
  * Method:    identify

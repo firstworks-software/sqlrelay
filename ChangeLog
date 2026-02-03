@@ -25,6 +25,7 @@
 		moved assert*() into its own shared file
 	added getConnect/ResponseTimeoutSeconds/MicroSeconds() to client apis
 	added set/getIsolationLevel
+	added getDatabaseFeatures
 
 2.1.0 - refactored debugging
 

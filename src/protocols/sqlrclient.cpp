@@ -68,6 +68,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 		void	dbIpAddressCommand();
 		void	setIsolationLevelCommand();
 		void	getIsolationLevelCommand();
+		void	getDatabaseFeaturesCommand();
 		bool	newQueryCommand(sqlrservercursor *cursor);
 		bool	reExecuteQueryCommand(sqlrservercursor *cursor);
 		bool	fetchFromBindCursorCommand(sqlrservercursor *cursor);
@@ -495,6 +496,10 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 		} else if (command==GET_ISOLATION_LEVEL) {
 			//cont->incrementGetIsolationLevelCount();
 			getIsolationLevelCommand();
+			continue;
+		} else if (command==GET_DATABASE_FEATURES) {
+			//cont->incrementGetDatabaseFeaturesCount();
+			getDatabaseFeaturesCommand();
 			continue;
 		}
 
@@ -1573,6 +1578,43 @@ void sqlrprotocol_sqlrclient::getIsolationLevelCommand() {
 		clientsock->flushWriteBuffer(-1,-1);
 
 		debugWrite("isolation level: %.*s",isolevelsize,isolevel);
+
+	} else {
+		debugWrite("failed");
+		returnError(false);
+	}
+
+	debugEnd();
+}
+
+void sqlrprotocol_sqlrclient::getDatabaseFeaturesCommand() {
+
+	debugStart("get database features");
+
+	// get the database features
+	const char * const	*features=cont->getDatabaseFeatures();
+
+	if (features) {
+		debugWrite("success");
+		clientsock->write((uint16_t)NO_ERROR_OCCURRED);
+
+		debugWrite("%d features",(int)(MAXFEATURE+1));
+
+		// send the number of features
+		clientsock->write((uint16_t)(MAXFEATURE+1));
+
+		// send each feature
+		for (uint16_t i=0; i<=MAXFEATURE; i++) {
+
+			const char	*value=features[i];
+			uint16_t	valuesize=charstring::getLength(value);
+
+			debugWrite("%d:%.*s",i,valuesize,value);
+
+			clientsock->write(valuesize);
+			clientsock->write(value,valuesize);
+		}
+		clientsock->flushWriteBuffer(-1,-1);
 
 	} else {
 		debugWrite("failed");

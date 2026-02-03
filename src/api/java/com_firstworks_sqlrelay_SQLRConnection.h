@@ -254,6 +254,9 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_setIsolat
 JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getIsolationLevel__I
   (JNIEnv *, jobject, jint);
 
+JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getDatabaseFeature
+  (JNIEnv *, jobject, jstring);
+
 /*
  * Class:     com_firstworks_sqlrelay_SQLRConnection
  * Method:    errorMessage

@@ -14,6 +14,8 @@
 #include <rudiments/gss.h>
 #include <rudiments/tls.h>
 #include <rudiments/sys.h>
+#include <rudiments/dictionary.h>
+#define NEED_FEATURENAMES 1
 #include <defines.h>
 #include <defaults.h>
 
@@ -95,6 +97,12 @@ class sqlrconnectionprivate {
 
 		// isolation level
 		char		*_isolationlevel;
+
+		// database features
+		char		**_databasefeatures;
+		uint16_t	_databasefeaturescount;
+		dictionary<const char *, uint16_t>
+				_databasefeaturesnamemap;
 
 		// server version
 		char		*_serverversion;
@@ -225,6 +233,10 @@ void sqlrconnection::init(const char *server, uint16_t port,
 	// isolation level
 	pvt->_isolationlevel=NULL;
 
+	// database features
+	pvt->_databasefeatures=NULL;
+	pvt->_databasefeaturescount=0;
+
 	// server version
 	pvt->_serverversion=NULL;
 
@@ -309,6 +321,12 @@ sqlrconnection::~sqlrconnection() {
 
 	// deallocate isolation level
 	delete[] pvt->_isolationlevel;
+
+	// deallocate database features
+	for (uint16_t i=0; i<pvt->_databasefeaturescount; i++) {
+		delete[] pvt->_databasefeatures[i];
+	}
+	delete[] pvt->_databasefeatures;
 
 	// deallocate server version
 	delete[] pvt->_serverversion;
@@ -2027,6 +2045,107 @@ const char *sqlrconnection::getIsolationLevel(
 		debugPreEnd();
 	}
 	return pvt->_isolationlevel;
+}
+
+const char *sqlrconnection::getDatabaseFeature(const char *feature) {
+
+	// if we haven't already fetched the features, then fetch them
+	if (!pvt->_databasefeatures) {
+		if (!getDatabaseFeatures()) {
+			return NULL;
+		}
+	}
+
+	// look up the feature in the name map, bail on failure
+	uint16_t	featureid;
+	if (!pvt->_databasefeaturesnamemap.getValue(feature,&featureid)) {
+		return NULL;
+	}
+
+	// bail for an invalid feature id
+	if (featureid>=pvt->_databasefeaturescount) {
+		debugPreStart();
+		debugPrint("Invalid feature id requested: ");
+		debugPrint((int64_t)feature);
+		debugPreEnd();
+		return NULL;
+	}
+
+	// return the requested feature
+	return pvt->_databasefeatures[featureid];
+}
+
+bool sqlrconnection::getDatabaseFeatures() {
+
+	if (!openSession()) {
+		return false;
+	}
+
+	clearError();
+
+	if (pvt->_debug) {
+		debugPreStart();
+		debugPrint("Getting database features...");
+		debugPrint("\n");
+		debugPreEnd();
+	}
+
+	// tell the server we want to get the database features
+	pvt->_cs->write((uint16_t)GET_DATABASE_FEATURES);
+
+	flushWriteBuffer();
+
+	if (gotError()) {
+		return false;
+	}
+
+	// get the number of features
+	uint16_t	count;
+	if (pvt->_cs->read(&count,pvt->_responsetimeoutsec,
+				pvt->_responsetimeoutusec)!=sizeof(uint16_t)) {
+		setError("Failed to get database features.\n"
+				"A network error may have occurred.");
+		return false;
+	}
+
+	// allocate the features array
+	pvt->_databasefeatures=new char *[count];
+	pvt->_databasefeaturescount=count;
+
+	// get each feature
+	for (uint16_t i=0; i<count; i++) {
+
+		// get the size
+		uint16_t	size;
+		if (pvt->_cs->read(&size,pvt->_responsetimeoutsec,
+				pvt->_responsetimeoutusec)!=sizeof(uint16_t)) {
+			setError("Failed to get database features.\n"
+					"A network error may have occurred.");
+			return false;
+		}
+
+		// get the value
+		pvt->_databasefeatures[i]=new char[size+1];
+		if (pvt->_cs->read(pvt->_databasefeatures[i],size)!=size) {
+			setError("Failed to get database features.\n"
+					"A network error may have occurred.");
+			return false;
+		}
+		pvt->_databasefeatures[i][size]='\0';
+
+		// populate the name map
+		pvt->_databasefeaturesnamemap.setValue(featurenames[i],i);
+	}
+
+	if (pvt->_debug) {
+		debugPreStart();
+		debugPrint("Got ");
+		debugPrint((int64_t)count);
+		debugPrint(" features\n");
+		debugPreEnd();
+	}
+
+	return true;
 }
 
 const char *sqlrconnection::errorMessage() {

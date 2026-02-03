@@ -741,6 +741,10 @@ const char *sqlrserverconnection::mapIsolationLevel(
 	return NULL;
 }
 
+const char * const *sqlrserverconnection::getDatabaseFeatures() {
+	return NULL;
+}
+
 bool sqlrserverconnection::ping() {
 	const char	*pingquery=pingQuery();
 	int		pingquerysize=charstring::getLength(pingquery);
