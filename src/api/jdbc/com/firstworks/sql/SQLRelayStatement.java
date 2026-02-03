@@ -54,22 +54,18 @@ public class SQLRelayStatement implements Statement {
 		drv.debugEnd();
 	}
 
-	public
 	void setConnection(SQLRelayConnection connection) {
 		this.conn=connection;
 	}
 
-	public
 	void setNetworkLock(Object networklock) {
 		this.networklock=networklock;
 	}
 
-	public
 	void setSQLRConnection(SQLRConnection sqlrcon) {
 		this.sqlrcon=sqlrcon;
 	}
 
-	public
 	void setSQLRCursor(SQLRCursor sqlrcur) {
 		this.sqlrcur=sqlrcur;
 	}
@@ -684,7 +680,6 @@ public class SQLRelayStatement implements Statement {
 		}
 	}
 
-	public
 	void throwErrorMessageException() throws SQLException {
 		conn.throwException(sqlrcon.errorMessage());
 	}
@@ -701,12 +696,10 @@ public class SQLRelayStatement implements Statement {
 		// FIXME: handle unrecognized values
 	}
 
-	public
 	SQLRCursor getSQLRCursor() {
 		return sqlrcur;
 	}
 
-	public
 	SQLRConnection getSQLRConnection() {
 		return sqlrcon;
 	}

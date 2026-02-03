@@ -49,12 +49,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		return value;
 	}
 
-	public
 	void setConnection(SQLRelayConnection connection) {
 		this.conn=connection;
 	}
 
-	public
 	void setNetworkLock(Object networklock) {
 		this.networklock=networklock;
 	}

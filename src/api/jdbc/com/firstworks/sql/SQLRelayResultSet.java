@@ -62,27 +62,22 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugEnd();
 	}
 
-	public
 	void setNetworkLock(Object networklock) {
 		this.networklock=networklock;
 	}
 
-	public
 	void setStatement(SQLRelayStatement stmt) {
 		this.stmt=stmt;
 	}
 
-	public
 	void setConnection(SQLRelayConnection connection) {
 		this.conn=connection;
 	}
 
-	public
 	void setSQLRCursor(SQLRCursor sqlrcur) {
 		this.sqlrcur=sqlrcur;
 	}
 
-	public
 	SQLRCursor getSQLRCursor() {
 		return sqlrcur;
 	}

@@ -21,7 +21,6 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 		drv.debugEnd();
 	}
 
-	public
 	void setParameters(HashMap<Integer,SQLRelayParameter> parameters) {
 		drv.debugFunction(this);
 		this.parameters=parameters;

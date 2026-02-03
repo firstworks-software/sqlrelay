@@ -21,17 +21,14 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		drv.debugEnd();
 	}
 
-	public
 	void setSQLRCursor(SQLRCursor sqlrcur) {
 		this.sqlrcur=sqlrcur;
 	}
 
-	public
 	void setResultSet(SQLRelayResultSet resultset) {
 		this.resultset=resultset;
 	}
 
-	public
 	SQLRCursor getSQLRCursor() {
 		return sqlrcur;
 	}

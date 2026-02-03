@@ -16,8 +16,8 @@ public class SQLRelayDriver implements Driver {
 	private static final int	MAJOR_VERSION=1;
 	private static final int	MINOR_VERSION=2;
 
-	//public boolean	debug=true;
-	public boolean	debug=false;
+	//boolean	debug=true;
+	boolean	debug=false;
 
 	Map<Long,Integer>	indents=new HashMap<>();
 
@@ -36,9 +36,6 @@ public class SQLRelayDriver implements Driver {
 		debugEnd();
 	}
 
-	/**
-	 *   Try to make a database connection to the given URL.
-	 */
 	public
 	Connection connect(String url, Properties info) throws SQLException {
 		debugFunction(this);
@@ -55,7 +52,7 @@ public class SQLRelayDriver implements Driver {
 		return conn;
 	}
 
-	public
+	private
 	SQLRelayConnectInfo parseConnectInfo(String url, Properties info) {
 		debugFunction(this);
 

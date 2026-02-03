@@ -1885,7 +1885,7 @@ public class SQLRelayPreparedStatement
 		drv.debugEnd();
 	}
 
-	public
+	private
 	String asciiStreamToString(InputStream stream) {
 		drv.debugFunction(this);
 		String	s=streamToString(stream,"US-ASCII");
@@ -1894,7 +1894,7 @@ public class SQLRelayPreparedStatement
 		return s;
 	}
 
-	public
+	private
 	String asciiStreamToString(InputStream stream, long length) {
 		drv.debugFunction(this);
 		String	s=streamToString(stream,length,"US-ASCII");
@@ -1903,7 +1903,7 @@ public class SQLRelayPreparedStatement
 		return s;
 	}
 
-	public
+	private
 	String unicodeStreamToString(InputStream stream, long length) {
 		drv.debugFunction(this);
 		String	s=streamToString(stream,length,"UTF-8");
@@ -1912,7 +1912,7 @@ public class SQLRelayPreparedStatement
 		return s;
 	}
 
-	public
+	private
 	String streamToString(InputStream stream, String encoding) {
 		drv.debugFunction(this);
 		String	s;
@@ -1928,7 +1928,7 @@ public class SQLRelayPreparedStatement
 		return s;
 	}
 
-	public
+	private
 	String streamToString(InputStream stream, long length,
 						String encoding) {
 		drv.debugFunction(this);
@@ -1946,7 +1946,7 @@ public class SQLRelayPreparedStatement
 		return s;
 	}
 
-	public
+	private
 	String readerToString(Reader reader) {
 		drv.debugFunction(this);
 		String	s;
@@ -1965,7 +1965,7 @@ public class SQLRelayPreparedStatement
 		return s;
 	}
 
-	public
+	private
 	String readerToString(Reader reader, long length) {
 		drv.debugFunction(this);
 		String	s;
@@ -1984,7 +1984,7 @@ public class SQLRelayPreparedStatement
 		return s;
 	}
 
-	public
+	private
 	String clobToString(Clob clob) {
 		drv.debugFunction(this);
 		String	s;
@@ -1998,7 +1998,7 @@ public class SQLRelayPreparedStatement
 		return s;
 	}
 
-	public
+	private
 	String nClobToUnicodeString(NClob clob) {
 		drv.debugFunction(this);
 		String	s;
@@ -2012,7 +2012,7 @@ public class SQLRelayPreparedStatement
 		return s;
 	}
 
-	public
+	private
 	byte[] binaryStreamToBytes(InputStream stream) {
 		drv.debugFunction(this);
 		byte[]	b;
@@ -2034,7 +2034,7 @@ public class SQLRelayPreparedStatement
 		return b;
 	}
 
-	public
+	private
 	byte[] binaryStreamToBytes(InputStream stream, long length) {
 		drv.debugFunction(this);
 		byte[]	b;
@@ -2059,7 +2059,7 @@ public class SQLRelayPreparedStatement
 		return b;
 	}
 
-	public
+	private
 	byte[] blobToBytes(Blob blob) {
 		drv.debugFunction(this);
 		byte[]	b;
