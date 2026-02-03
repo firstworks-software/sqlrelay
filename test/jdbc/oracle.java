@@ -235,6 +235,17 @@ class oracle extends sqlrtest {
 		assertTrue((md!=null));
 		System.out.println();
 
+		System.out.println("getConnection");
+		assertEquals(md.getConnection(),con);
+		System.out.println();
+
+		if (issqlrelay) {
+			System.out.println("unwrap");
+			assertEquals(md.isWrapperFor(SQLRConnection.class),1);
+			assertEquals((md.unwrap(SQLRConnection.class)!=null),1);
+			System.out.println();
+		}
+
 		// database attributes
 		boolean		boolval;
 		int		intval;
@@ -2812,6 +2823,206 @@ if (false) {
 
 		// FIXME: rebinding
 
+		// FIXME: need tests for Connection methods...
+		// createArrayOf
+		// createBlob
+		// createClob
+		// createNClob
+		// createSQLXML
+		// createStruct
+		// nativeSQL
+		// setTypeMap
+		// getTypeMap
+		// prepareCall
+		// setSavepoint
+		// releaseSavepoint
+
+		// FIXME: need tests for DatabaseMetaData methods...
+                // isWrapperFor
+                // unwrap
+
+		// FIXME: need tests for Statement methods...
+		// addBatc
+                // cancel
+                // clearBatch
+                // clearWarning
+                // closeOnCompletion
+                // execute
+                // executeBatch
+                // getConnection
+                // getFetchDirection
+                // getFetchSize
+                // getGeneratedKeys
+                // getMaxFieldSize
+                // getMaxRows
+                // getMoreResults
+                // getQueryTimeout
+                // getResultSet
+                // getResultSetConcurrency
+                // getResultSetHoldability
+                // getResultSetType
+                // getUpdateCount
+                // getWarnings
+                // isClosed
+                // isCloseOnCompletion
+                // isPoolable
+                // isWrapperFor
+                // setCursorName
+                // setEscapeProcessing
+                // setFetchDirection
+                // setFetchSize
+                // setMaxFieldSize
+                // setMaxRows
+                // setPoolable
+                // setQueryTimeout
+                // unwrap
+
+		// FIXME: need tests for PreparedStatement methods...
+		// addBatch
+                // execute
+                // executeBatch
+                // executeQuery
+                // getMetaData
+                // getParameterMetaData
+                // setArray
+                // setAsciiStream
+                // setBigDecimal
+                // setBinaryStream
+                // setBlob
+                // setBoolean
+                // setByte
+                // setCharacterStream
+                // setClob
+                // setDouble
+                // setFloat
+                // setLong
+                // setNCharacterStream
+                // setNClob
+                // setNString
+                // setNull
+                // setObject
+                // setRef
+                // setRowId
+                // setShort
+                // setSQLXML
+                // setTime
+                // setTimestamp
+                // setUnicodeStream
+                // setURL
+
+		// FIXME: need tests for Parameter class...
+		// FIXME: need tests for ParameterMetaData class...
+
+		// FIXME: need tests for ResultSet methods...
+		// absolute
+                // afterLast
+                // beforeFirst
+                // cancelRowUpdates
+                // clearWarnings
+                // deleteRow
+                // findColumn
+                // first
+                // getArray
+                // getAsciiStream
+                // getBigDecimal
+                // getBinaryStream
+                // getBoolean
+                // getByte
+                // getBytes
+                // getCharacterStream
+                // getConcurrency
+                // getCursorName
+                // getDate
+                // getDouble
+                // getFetchDirection
+                // getFetchSize
+                // getFloat
+                // getHoldability
+                // getInt
+                // getLong
+                // getNCharacterStream
+                // getNClob
+                // getNString
+                // getObject
+                // getRef
+                // getRowId
+                // getShort
+                // getSQLXML
+                // getStatement
+                // getTime
+                // getTimestamp
+                // getType
+                // getUnicodeStream
+                // getURL
+                // getWarnings
+                // insertRow
+                // isAfterLast
+                // isBeforeFirst
+                // isClosed
+                // isFirst
+                // isLast
+                // isWrapperFor
+                // last
+                // moveToCurrentRow
+                // moveToInsertRow
+                // previous
+                // refreshRow
+                // relative
+                // rowDeleted
+                // rowInserted
+                // rowUpdated
+                // setFetchDirection
+                // setFetchSize
+                // unwrap
+                // updateArray
+                // updateAsciiStream
+                // updateBigDecimal
+                // updateBinaryStream
+                // updateBlob
+                // updateBoolean
+                // updateByte
+                // updateBytes
+                // updateCharacterStream
+                // updateClob
+                // updateDate
+                // updateDouble
+                // updateFloat
+                // updateInt
+                // updateLong
+                // updateNCharacterStream
+                // updateNClob
+                // updateNString
+                // updateNull
+                // updateObject
+                // updateRef
+                // updateRow
+                // updateRowId
+                // updateShort
+                // updateSQLXML
+                // updateString
+                // updateTime
+                // updateTimestamp
+                // wasNull
+
+		// FIXME: need tests for ResultSetMetaData methods...
+		// getCatalogName
+                // getColumnClassName
+                // getColumnLabel
+                // getColumnType
+                // getScale
+                // getSchemaName
+                // getTableName
+                // isAutoIncrement
+                // isCaseSensitive
+                // isCurrency
+                // isDefinitelyWritable
+                // isNullable
+                // isSearchable
+                // isSigned
+                // isWrapperFor
+                // isWritable
+                // unwrap
+		
 
 		// invalid queries
 		System.out.println("INVALID QUERIES:");

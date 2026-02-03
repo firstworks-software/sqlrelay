@@ -2252,13 +2252,13 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean isWrapperFor(Class<?> iface) throws SQLException {
 		drv.debugFunction(this);
 		drv.debugEnd();
-		return false;
+		return (iface==SQLRConnection.class);
 	}
 
 	public
 	<T> T unwrap(Class<T> iface) throws SQLException {
 		drv.debugFunction(this);
 		drv.debugEnd();
-		return null;
+		return (T)((iface==SQLRConnection.class)?conn:null);
 	}
 };
