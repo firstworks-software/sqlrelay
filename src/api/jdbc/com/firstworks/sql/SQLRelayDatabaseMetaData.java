@@ -924,28 +924,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		drv.debugFunction(this);
 		// FIXME: use the map, somehow
 		RowIdLifetime	rowidlifetime=RowIdLifetime.ROWID_UNSUPPORTED;
-		switch (rowidlifetime) {
-			case ROWID_UNSUPPORTED:
-				drv.debugPrintln("rowid lifetime: "+
-							"ROWID_UNSUPPORTED");
-				break;
-			case ROWID_VALID_OTHER:
-				drv.debugPrintln("rowid lifetime: "+
-							"ROWID_VALID_OTHER");
-				break;
-			case ROWID_VALID_TRANSACTION:
-				drv.debugPrintln("rowid lifetime: "+
-						"ROWID_VALID_TRANSACTION");
-				break;
-			case ROWID_VALID_SESSION:
-				drv.debugPrintln("rowid lifetime: "+
-							"ROWID_VALID_SESSION");
-				break;
-			case ROWID_VALID_FOREVER:
-				drv.debugPrintln("rowid lifetime: "+
-							"ROWID_VALID_FOREVER");
-				break;
-		}
+		debugRowIdLifetime(rowidlifetime);
 		drv.debugEnd();
 		return rowidlifetime;
 	}
@@ -2246,6 +2225,36 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		drv.debugPrintln("uses local files: "+result);
 		drv.debugEnd();
 		return result;
+	}
+
+	private
+	void debugRowIdLifetime(RowIdLifetime rowidlifetime) {
+		switch (rowidlifetime) {
+			case ROWID_UNSUPPORTED:
+				drv.debugPrintln("rowid lifetime: "+
+							"ROWID_UNSUPPORTED");
+				break;
+			case ROWID_VALID_OTHER:
+				drv.debugPrintln("rowid lifetime: "+
+							"ROWID_VALID_OTHER");
+				break;
+			case ROWID_VALID_TRANSACTION:
+				drv.debugPrintln("rowid lifetime: "+
+						"ROWID_VALID_TRANSACTION");
+				break;
+			case ROWID_VALID_SESSION:
+				drv.debugPrintln("rowid lifetime: "+
+							"ROWID_VALID_SESSION");
+				break;
+			case ROWID_VALID_FOREVER:
+				drv.debugPrintln("rowid lifetime: "+
+							"ROWID_VALID_FOREVER");
+				break;
+			default:
+				drv.debugPrintln("rowid lifetime: "+
+							"unknown - "+
+							rowidlifetime);
+		}
 	}
 
 	public

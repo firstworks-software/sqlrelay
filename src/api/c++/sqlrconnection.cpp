@@ -15,7 +15,7 @@
 #include <rudiments/tls.h>
 #include <rudiments/sys.h>
 #include <rudiments/dictionary.h>
-#define NEED_FEATURENAMES 1
+#define NEED_DBFEATURENAMES 1
 #include <defines.h>
 #include <defaults.h>
 
@@ -99,10 +99,7 @@ class sqlrconnectionprivate {
 		char		*_isolationlevel;
 
 		// database features
-		char		**_databasefeatures;
-		uint16_t	_databasefeaturescount;
-		dictionary<const char *, uint16_t>
-				_databasefeaturesnamemap;
+		dictionary<const char *, char *>	_dbfeatures;
 
 		// server version
 		char		*_serverversion;
@@ -234,8 +231,7 @@ void sqlrconnection::init(const char *server, uint16_t port,
 	pvt->_isolationlevel=NULL;
 
 	// database features
-	pvt->_databasefeatures=NULL;
-	pvt->_databasefeaturescount=0;
+	pvt->_dbfeatures.setManageArrayValues(true);
 
 	// server version
 	pvt->_serverversion=NULL;
@@ -321,12 +317,6 @@ sqlrconnection::~sqlrconnection() {
 
 	// deallocate isolation level
 	delete[] pvt->_isolationlevel;
-
-	// deallocate database features
-	for (uint16_t i=0; i<pvt->_databasefeaturescount; i++) {
-		delete[] pvt->_databasefeatures[i];
-	}
-	delete[] pvt->_databasefeatures;
 
 	// deallocate server version
 	delete[] pvt->_serverversion;
@@ -2050,29 +2040,24 @@ const char *sqlrconnection::getIsolationLevel(
 const char *sqlrconnection::getDatabaseFeature(const char *feature) {
 
 	// if we haven't already fetched the features, then fetch them
-	if (!pvt->_databasefeatures) {
+	if (!pvt->_dbfeatures.getCount()) {
 		if (!getDatabaseFeatures()) {
 			return NULL;
 		}
 	}
 
-	// look up the feature in the name map, bail on failure
-	uint16_t	featureid;
-	if (!pvt->_databasefeaturesnamemap.getValue(feature,&featureid)) {
-		return NULL;
-	}
-
-	// bail for an invalid feature id
-	if (featureid>=pvt->_databasefeaturescount) {
+	// look up the feature, bail on failure
+	char	*value;
+	if (!pvt->_dbfeatures.getValue(feature,&value)) {
 		debugPreStart();
-		debugPrint("Invalid feature id requested: ");
-		debugPrint((int64_t)feature);
+		debugPrint("Invalid feature requested: ");
+		debugPrint(feature);
 		debugPreEnd();
 		return NULL;
 	}
 
 	// return the requested feature
-	return pvt->_databasefeatures[featureid];
+	return value;
 }
 
 bool sqlrconnection::getDatabaseFeatures() {
@@ -2108,11 +2093,7 @@ bool sqlrconnection::getDatabaseFeatures() {
 		return false;
 	}
 
-	// allocate the features array
-	pvt->_databasefeatures=new char *[count];
-	pvt->_databasefeaturescount=count;
-
-	// get each feature
+	// get each feature...
 	for (uint16_t i=0; i<count; i++) {
 
 		// get the size
@@ -2125,16 +2106,16 @@ bool sqlrconnection::getDatabaseFeatures() {
 		}
 
 		// get the value
-		pvt->_databasefeatures[i]=new char[size+1];
-		if (pvt->_cs->read(pvt->_databasefeatures[i],size)!=size) {
+		char	*feature=new char[size+1];
+		if (pvt->_cs->read(feature,size)!=size) {
 			setError("Failed to get database features.\n"
 					"A network error may have occurred.");
 			return false;
 		}
-		pvt->_databasefeatures[i][size]='\0';
+		feature[size]='\0';
 
-		// populate the name map
-		pvt->_databasefeaturesnamemap.setValue(featurenames[i],i);
+		// populate the dictionary
+		pvt->_dbfeatures.setValue(dbfeaturenames[i],feature);
 	}
 
 	if (pvt->_debug) {

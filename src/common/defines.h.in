@@ -229,8 +229,8 @@
 #define FEATURE_USES_LOCAL_FILES 117
 #define MAXFEATURE 117
 
-#ifdef NEED_FEATURENAMES
-static const char *featurenames[]={
+#ifdef NEED_DBFEATURENAMES
+static const char *dbfeaturenames[]={
 	"all_procedures_are_callable",
 	"all_tables_are_selectable",
 	"auto_commit_failure_closes_all_result_sets",

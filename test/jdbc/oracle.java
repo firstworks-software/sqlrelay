@@ -597,13 +597,7 @@ class oracle extends sqlrtest {
 		System.out.println("getRowIdLifetime");
 		RowIdLifetime	rowidlifetimeval=md.getRowIdLifetime();
 		System.out.println("  "+rowidlifetimeval);
-		if (issqlrelay) {
-			assertEquals(rowidlifetimeval.name(),
-						"ROWID_UNSUPPORTED");
-		} else {
-			assertEquals(rowidlifetimeval.name(),
-						"ROWID_VALID_FOREVER");
-		}
+		assertEquals(rowidlifetimeval.name(),"ROWID_VALID_FOREVER");
 		System.out.println();
 
 		// getSchemaTerm

@@ -484,6 +484,7 @@ public class SQLRelayConnection implements Connection {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("sql: "+sql);
+		// FIXME: convert JDBC escape clauses
 		drv.debugEnd();
 		return sql;
 	}
