@@ -1,6 +1,8 @@
 package com.firstworks.sql;
 
 import java.sql.*;
+import javax.sql.rowset.serial.SerialClob;
+import javax.sql.rowset.serial.SerialBlob;
 
 import java.util.Properties;
 import java.util.Map;
@@ -174,21 +176,17 @@ public class SQLRelayConnection implements Connection {
 	public
 	Blob createBlob() throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		// FIXME: we might be able to support this...
+		Blob	retval=new SerialBlob(new byte[0]);
 		drv.debugEnd();
-		return null;
+		return retval;
 	}
 
 	public
 	Clob createClob() throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		throwFeatureNotSupportedException();
-		// FIXME: we might be able to support this...
+		Clob	retval=new SerialClob(new char[0]);
 		drv.debugEnd();
-		return null;
+		return retval;
 	}
 
 	public
@@ -1041,6 +1039,56 @@ public class SQLRelayConnection implements Connection {
 		}
 	}
 
+	boolean isResultSetTypeSupported(int resultSetType) {
+		switch (resultSetType) {
+			case ResultSet.TYPE_FORWARD_ONLY:
+				return true;
+			case ResultSet.TYPE_SCROLL_INSENSITIVE:
+				return true;
+			case ResultSet.TYPE_SCROLL_SENSITIVE:
+				drv.debugPrintln("not supported: "+
+						"TYPE_SCROLL_SENSITIVE");
+				return false;
+			default:
+				drv.debugPrintln("not supported: "+
+							"unknown - "+
+							resultSetType);
+				return false;
+		}
+	}
+
+	boolean isResultSetConcurrencySupported(int resultSetConcurrency) {
+		switch (resultSetConcurrency) {
+			case ResultSet.CONCUR_READ_ONLY:
+				return true;
+			case ResultSet.CONCUR_UPDATABLE:
+				drv.debugPrintln("not supported: "+
+						"CONCUR_UPDATABLE");
+				return false;
+			default:
+				drv.debugPrintln("not supported: "+
+							"unknown - "+
+							resultSetConcurrency);
+				return false;
+		}
+	}
+
+	boolean isResultSetHoldabilitySupported(int holdability) {
+		switch (holdability) {
+			case ResultSet.HOLD_CURSORS_OVER_COMMIT:
+				return true;
+			case ResultSet.CLOSE_CURSORS_AT_COMMIT:
+				drv.debugPrintln("not supported: "+
+						"CLOSE_CURSORS_AT_COMMIT");
+				return false;
+			default:
+				drv.debugPrintln("not supported: "+
+							"unknown - "+
+							holdability);
+				return false;
+		}
+	}
+
 	void throwExceptionIfClosed() throws SQLException {
 		if (sqlrcon==null) {
 			throwException("connection is closed");
@@ -1081,7 +1129,6 @@ public class SQLRelayConnection implements Connection {
 		}
 	}
 
-	private
 	void throwResultSetConcurrencyNotSupportedException(
 						int resultSetConcurrency)
 						throws SQLException {
@@ -1102,7 +1149,6 @@ public class SQLRelayConnection implements Connection {
 		}
 	}
 
-	private
 	void throwResultSetHoldabiltyNotSupportedException(
 						int resultSetHoldability)
 						throws SQLException {
@@ -1123,7 +1169,6 @@ public class SQLRelayConnection implements Connection {
 		}
 	}
 
-	private
 	void throwResultSetFeatureNotSupportedException(
 						int resultSetType,
 						int resultSetConcurrency,

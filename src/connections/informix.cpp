@@ -1047,6 +1047,8 @@ const char * const *informixconnection::getDatabaseFeatures() {
 		charstring::duplicate("");
 	databasefeatures[FEATURE_RESULT_SET_HOLDABILITY]=
 		charstring::duplicate("");
+	databasefeatures[FEATURE_ROW_ID_LIFETIME]=
+		charstring::duplicate("");
 	databasefeatures[FEATURE_SQL_KEYWORDS]=
 		charstring::duplicate("");
 	databasefeatures[FEATURE_SQL_STATE_TYPE]=

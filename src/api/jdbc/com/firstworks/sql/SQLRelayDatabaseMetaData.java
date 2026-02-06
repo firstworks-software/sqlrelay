@@ -112,11 +112,11 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean deletesAreDetected(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		// FIXME: should I throw an exception here?
-		conn.throwResultSetTypeNotSupportedException(type);
 		// FIXME: use the map, somehow
-		// SQL Relay doesn't currently support this
 		boolean	result=false;
+		if (!conn.isResultSetTypeSupported(type)) {
+			result=false;
+		}
 		drv.debugPrintln("deletes are detected: "+result);
 		drv.debugEnd();
 		return result;
@@ -922,8 +922,27 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	RowIdLifetime getRowIdLifetime() throws SQLException {
 		drv.debugFunction(this);
-		// FIXME: use the map, somehow
+		String	result=getString("row_id_lifetime");
+		drv.debugPrintln("rowid lifetime string: "+result);
 		RowIdLifetime	rowidlifetime=RowIdLifetime.ROWID_UNSUPPORTED;
+		switch (getString("row_id_lifetime")) {
+			case "ROWID_VALID_OTHER":
+				rowidlifetime=
+					RowIdLifetime.ROWID_VALID_OTHER;
+				break;
+			case "ROWID_VALID_TRANSACTION":
+				rowidlifetime=
+					RowIdLifetime.ROWID_VALID_TRANSACTION;
+				break;
+			case "ROWID_VALID_SESSION":
+				rowidlifetime=
+					RowIdLifetime.ROWID_VALID_SESSION;
+				break;
+			case "ROWID_VALID_FOREVER":
+				rowidlifetime=
+					RowIdLifetime.ROWID_VALID_FOREVER;
+				break;
+		}
 		debugRowIdLifetime(rowidlifetime);
 		drv.debugEnd();
 		return rowidlifetime;
@@ -1349,12 +1368,11 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean insertsAreDetected(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		// FIXME: should I throw an exception here?
-		conn.throwResultSetTypeNotSupportedException(type);
 		// FIXME: use the map, somehow
-		// SQL Relay doesn't currently support this
 		boolean	result=false;
-		drv.debugPrintln("type: "+type);
+		if (!conn.isResultSetTypeSupported(type)) {
+			result=false;
+		}
 		drv.debugPrintln("inserts are detected: "+result);
 		drv.debugEnd();
 		return result;
@@ -1436,10 +1454,11 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean othersDeletesAreVisible(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		// FIXME: should I throw an exception here?
-		conn.throwResultSetTypeNotSupportedException(type);
 		// FIXME: use the map, somehow
 		boolean	result=false;
+		if (!conn.isResultSetTypeSupported(type)) {
+			result=false;
+		}
 		drv.debugPrintln("others deletes are visible: "+result);
 		drv.debugEnd();
 		return result;
@@ -1449,10 +1468,11 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean othersInsertsAreVisible(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		// FIXME: should I throw an exception here?
-		conn.throwResultSetTypeNotSupportedException(type);
 		// FIXME: use the map, somehow
 		boolean	result=false;
+		if (!conn.isResultSetTypeSupported(type)) {
+			result=false;
+		}
 		drv.debugPrintln("others inserts are visible: "+result);
 		drv.debugEnd();
 		return result;
@@ -1462,10 +1482,11 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean othersUpdatesAreVisible(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		// FIXME: should I throw an exception here?
-		conn.throwResultSetTypeNotSupportedException(type);
 		// FIXME: use the map, somehow
 		boolean	result=false;
+		if (!conn.isResultSetTypeSupported(type)) {
+			result=false;
+		}
 		drv.debugPrintln("others updates are visible: "+result);
 		drv.debugEnd();
 		return result;
@@ -1475,10 +1496,11 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean ownDeletesAreVisible(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		// FIXME: should I throw an exception here?
-		conn.throwResultSetTypeNotSupportedException(type);
 		// FIXME: use the map, somehow
-		boolean	result=false;
+		boolean	result=(type!=ResultSet.TYPE_FORWARD_ONLY);
+		if (!conn.isResultSetTypeSupported(type)) {
+			result=false;
+		}
 		drv.debugPrintln("own deletes are visible: "+result);
 		drv.debugEnd();
 		return result;
@@ -1488,10 +1510,11 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean ownInsertsAreVisible(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		// FIXME: should I throw an exception here?
-		conn.throwResultSetTypeNotSupportedException(type);
 		// FIXME: use the map, somehow
 		boolean	result=false;
+		if (!conn.isResultSetTypeSupported(type)) {
+			result=false;
+		}
 		drv.debugPrintln("own inserts are visible: "+result);
 		drv.debugEnd();
 		return result;
@@ -1501,10 +1524,11 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean ownUpdatesAreVisible(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		// FIXME: should I throw an exception here?
-		conn.throwResultSetTypeNotSupportedException(type);
 		// FIXME: use the map, somehow
-		boolean	result=false;
+		boolean	result=true;
+		if (!conn.isResultSetTypeSupported(type)) {
+			result=false;
+		}
 		drv.debugPrintln("own updates are visible: "+result);
 		drv.debugEnd();
 		return result;
@@ -1985,12 +2009,9 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
 		conn.debugResultSetConcurrency(concurrency);
-		// SQL Relay only supports:
-		// TYPE_FORWARD_ONLY/TYPE_SCROLL_INSENSITIVE and
-		// CONCUR_READ_ONLY
-		boolean	result=((type==ResultSet.TYPE_FORWARD_ONLY ||
-				type==ResultSet.TYPE_SCROLL_INSENSITIVE) &&
-				concurrency==ResultSet.CONCUR_READ_ONLY);
+		boolean	result=
+			conn.isResultSetTypeSupported(type) &&
+			conn.isResultSetConcurrencySupported(concurrency);
 		drv.debugPrintln("supports result set concurrency: "+result);
 		drv.debugEnd();
 		return result;
@@ -2000,10 +2021,9 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean supportsResultSetHoldability(int holdability)
 							throws SQLException {
 		drv.debugFunction(this);
-		conn.debugResultSetHoldability(holdability);
-		// SQL Relay only supports HOLD_CURSORS_OVER_COMMIT
-		boolean	result=
-			(holdability==ResultSet.HOLD_CURSORS_OVER_COMMIT);
+		conn.debugResultSetType(holdability);
+		boolean	result=conn.isResultSetHoldabilitySupported(
+								holdability);
 		drv.debugPrintln("supports result set holdability: "+result);
 		drv.debugEnd();
 		return result;
@@ -2013,10 +2033,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean supportsResultSetType(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		// SQL Relay only supports TYPE_FORWARD_ONLY and
-		// TYPE_SCROLL_INSENSITIVE
-		boolean	result=(type==ResultSet.TYPE_FORWARD_ONLY ||
-				type==ResultSet.TYPE_SCROLL_INSENSITIVE);
+		boolean	result=conn.isResultSetTypeSupported(type);
 		drv.debugPrintln("supports result set type: "+result);
 		drv.debugEnd();
 		return result;
@@ -2199,11 +2216,11 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean updatesAreDetected(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		// FIXME: should I throw an exception here?
-		conn.throwResultSetTypeNotSupportedException(type);
 		// FIXME: use the map, somehow
-		// SQL Relay doesn't currently support this
 		boolean	result=false;
+		if (!conn.isResultSetTypeSupported(type)) {
+			result=false;
+		}
 		drv.debugPrintln("updates are detected: "+result);
 		drv.debugEnd();
 		return result;

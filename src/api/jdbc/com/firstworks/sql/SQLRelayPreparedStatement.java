@@ -1991,6 +1991,7 @@ public class SQLRelayPreparedStatement
 		try {
 			s=asciiStreamToString(clob.getAsciiStream());
 		} catch (Exception ex) {
+System.out.println(ex.getMessage());
 			s=new String("");
 		}
 		drv.debugPrintln("string: "+s);

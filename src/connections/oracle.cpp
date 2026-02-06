@@ -2206,6 +2206,8 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 		charstring::duplicate("procedure");
 	databasefeatures[FEATURE_RESULT_SET_HOLDABILITY]=
 		charstring::duplicate("1");
+	databasefeatures[FEATURE_ROW_ID_LIFETIME]=
+		charstring::duplicate("ROWID_VALID_FOREVER");
 	databasefeatures[FEATURE_SQL_KEYWORDS]=
 		charstring::duplicate(
 			"ACCESS, ADD, ALTER, AUDIT, CLUSTER, "

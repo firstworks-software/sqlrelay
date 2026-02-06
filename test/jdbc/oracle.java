@@ -242,6 +242,7 @@ class oracle extends sqlrtest {
 		if (issqlrelay) {
 			System.out.println("unwrap");
 			assertEquals(md.isWrapperFor(SQLRConnection.class),1);
+			System.out.println();
 			assertEquals((md.unwrap(SQLRConnection.class)!=null),1);
 			System.out.println();
 		}
@@ -287,10 +288,33 @@ class oracle extends sqlrtest {
 		System.out.println();
 
 		// deletesAreDetected
-		System.out.println("deletesAreDetected");
-		boolval=md.deletesAreDetected(ResultSet.TYPE_FORWARD_ONLY);
+		System.out.println("deletesAreDetected "+
+					"(forward only)");
+		boolval=md.deletesAreDetected(
+					ResultSet.TYPE_FORWARD_ONLY);
 		System.out.println("  "+boolval);
 		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("deletesAreDetected "+
+					"(scroll insensitive)");
+		boolval=md.deletesAreDetected(
+					ResultSet.TYPE_SCROLL_INSENSITIVE);
+		System.out.println("  "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("deletesAreDetected "+
+					"(scroll sensitive)");
+		boolval=md.deletesAreDetected(
+					ResultSet.TYPE_SCROLL_SENSITIVE);
+		System.out.println("  "+boolval);
+		if (issqlrelay) {
+			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
+			assertFalse(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// doesMaxRowSizeIncludeBlobs
@@ -672,10 +696,33 @@ class oracle extends sqlrtest {
 		System.out.println();
 
 		// insertsAreDetected
-		System.out.println("insertsAreDetected");
-		boolval=md.insertsAreDetected(ResultSet.TYPE_FORWARD_ONLY);
+		System.out.println("insertsAreDetected "+
+					"(forward only)");
+		boolval=md.insertsAreDetected(
+					ResultSet.TYPE_FORWARD_ONLY);
 		System.out.println("  "+boolval);
 		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("insertsAreDetected "+
+					"(scroll insensitive)");
+		boolval=md.insertsAreDetected(
+					ResultSet.TYPE_SCROLL_INSENSITIVE);
+		System.out.println("  "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("insertsAreDetected "+
+					"(scroll sensitive)");
+		boolval=md.insertsAreDetected(
+					ResultSet.TYPE_SCROLL_SENSITIVE);
+		System.out.println("  "+boolval);
+		if (issqlrelay) {
+			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
+			assertFalse(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// isCatalogAtStart
@@ -735,45 +782,188 @@ class oracle extends sqlrtest {
 		System.out.println();
 
 		// othersDeletesAreVisible
-		System.out.println("othersDeletesAreVisible");
-		boolval=md.othersDeletesAreVisible(ResultSet.TYPE_FORWARD_ONLY);
+		System.out.println("othersDeletesAreVisible "+
+					"(forward only)");
+		boolval=md.othersDeletesAreVisible(
+					ResultSet.TYPE_FORWARD_ONLY);
 		System.out.println("  "+boolval);
 		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("othersDeletesAreVisible "+
+					"(scroll insensitive)");
+		boolval=md.othersDeletesAreVisible(
+					ResultSet.TYPE_SCROLL_INSENSITIVE);
+		System.out.println("  "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("othersDeletesAreVisible "+
+					"(scroll sensitive)");
+		boolval=md.othersDeletesAreVisible(
+					ResultSet.TYPE_SCROLL_SENSITIVE);
+		System.out.println("  "+boolval);
+		if (issqlrelay) {
+			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
+			assertFalse(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// othersInsertsAreVisible
-		System.out.println("othersInsertsAreVisible");
-		boolval=md.othersInsertsAreVisible(ResultSet.TYPE_FORWARD_ONLY);
+		System.out.println("othersInsertsAreVisible "+
+					"(forward only)");
+		boolval=md.othersInsertsAreVisible(
+					ResultSet.TYPE_FORWARD_ONLY);
 		System.out.println("  "+boolval);
 		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("othersInsertsAreVisible "+
+					"(scroll insensitive)");
+		boolval=md.othersInsertsAreVisible(
+					ResultSet.TYPE_SCROLL_INSENSITIVE);
+		System.out.println("  "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("othersInsertsAreVisible "+
+					"(scroll sensitive)");
+		boolval=md.othersInsertsAreVisible(
+					ResultSet.TYPE_SCROLL_SENSITIVE);
+		System.out.println("  "+boolval);
+		if (issqlrelay) {
+			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
+			assertFalse(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// othersUpdatesAreVisible
-		System.out.println("othersUpdatesAreVisible");
-		boolval=md.othersUpdatesAreVisible(ResultSet.TYPE_FORWARD_ONLY);
+		System.out.println("othersUpdatesAreVisible "+
+					"(forward only)");
+		boolval=md.othersUpdatesAreVisible(
+					ResultSet.TYPE_FORWARD_ONLY);
 		System.out.println("  "+boolval);
 		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("othersUpdatesAreVisible "+
+					"(scroll insensitive)");
+		boolval=md.othersUpdatesAreVisible(
+					ResultSet.TYPE_SCROLL_INSENSITIVE);
+		System.out.println("  "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("othersUpdatesAreVisible "+
+					"(scroll sensitive)");
+		boolval=md.othersUpdatesAreVisible(
+					ResultSet.TYPE_SCROLL_SENSITIVE);
+		System.out.println("  "+boolval);
+		if (issqlrelay) {
+			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
 		System.out.println();
 
 		// ownDeletesAreVisible
-		System.out.println("ownDeletesAreVisible");
-		boolval=md.ownDeletesAreVisible(ResultSet.TYPE_FORWARD_ONLY);
+		System.out.println("ownDeletesAreVisible "+
+					"(forward only)");
+		boolval=md.ownDeletesAreVisible(
+					ResultSet.TYPE_FORWARD_ONLY);
 		System.out.println("  "+boolval);
 		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("ownDeletesAreVisible "+
+					"(scroll insensitive)");
+		boolval=md.ownDeletesAreVisible(
+					ResultSet.TYPE_SCROLL_INSENSITIVE);
+		System.out.println("  "+boolval);
+		assertTrue(boolval);
+		System.out.println();
+
+		System.out.println("ownDeletesAreVisible "+
+					"(scroll sensitive)");
+		boolval=md.ownDeletesAreVisible(
+					ResultSet.TYPE_SCROLL_SENSITIVE);
+		System.out.println("  "+boolval);
+		if (issqlrelay) {
+			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
 		System.out.println();
 
 		// ownInsertsAreVisible
-		System.out.println("ownInsertsAreVisible");
-		boolval=md.ownInsertsAreVisible(ResultSet.TYPE_FORWARD_ONLY);
+		System.out.println("ownInsertsAreVisible "+
+					"(forward only)");
+		boolval=md.ownInsertsAreVisible(
+					ResultSet.TYPE_FORWARD_ONLY);
 		System.out.println("  "+boolval);
 		assertFalse(boolval);
 		System.out.println();
 
-		// ownUpdatesAreVisible
-		System.out.println("ownUpdatesAreVisible");
-		boolval=md.ownUpdatesAreVisible(ResultSet.TYPE_FORWARD_ONLY);
+		System.out.println("ownInsertsAreVisible "+
+					"(scroll insensitive)");
+		boolval=md.ownInsertsAreVisible(
+					ResultSet.TYPE_SCROLL_INSENSITIVE);
 		System.out.println("  "+boolval);
 		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("ownInsertsAreVisible "+
+					"(scroll sensitive)");
+		boolval=md.ownInsertsAreVisible(
+					ResultSet.TYPE_SCROLL_SENSITIVE);
+		System.out.println("  "+boolval);
+		if (issqlrelay) {
+			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
+			assertFalse(boolval);
+		} else {
+			assertFalse(boolval);
+		}
+		System.out.println();
+
+		// ownUpdatesAreVisible
+		System.out.println("ownUpdatesAreVisible "+
+					"(forward only)");
+		boolval=md.ownUpdatesAreVisible(
+					ResultSet.TYPE_FORWARD_ONLY);
+		System.out.println("  "+boolval);
+		if (issqlrelay) {
+			assertTrue(boolval);
+		} else {
+			// oracle jdbc (at least v8) randomly returns
+			// true or false for this, so just don't test it
+		}
+		System.out.println();
+
+		System.out.println("ownUpdatesAreVisible "+
+					"(scroll insensitive)");
+		boolval=md.ownUpdatesAreVisible(
+					ResultSet.TYPE_SCROLL_INSENSITIVE);
+		System.out.println("  "+boolval);
+		assertTrue(boolval);
+		System.out.println();
+
+		System.out.println("ownUpdatesAreVisible "+
+					"(scroll sensitive)");
+		boolval=md.ownUpdatesAreVisible(
+					ResultSet.TYPE_SCROLL_SENSITIVE);
+		System.out.println("  "+boolval);
+		if (issqlrelay) {
+			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
+			assertFalse(boolval);
+		} else {
+			assertTrue(boolval);
+		}
 		System.out.println();
 
 		// storesLowerCaseIdentifiers
@@ -1189,6 +1379,7 @@ class oracle extends sqlrtest {
 					ResultSet.CONCUR_READ_ONLY);
 		System.out.println("  "+boolval);
 		if (issqlrelay) {
+			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
 			assertFalse(boolval);
 		} else {
 			assertTrue(boolval);
@@ -1202,6 +1393,8 @@ class oracle extends sqlrtest {
 					ResultSet.CONCUR_UPDATABLE);
 		System.out.println("  "+boolval);
 		if (issqlrelay) {
+			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
+			// or CONCUR_UPDATABLE
 			assertFalse(boolval);
 		} else {
 			assertTrue(boolval);
@@ -1226,22 +1419,29 @@ class oracle extends sqlrtest {
 		System.out.println();
 
 		// supportsResultSetType
-		System.out.println("supportsResultSetType (forward only)");
-		boolval=md.supportsResultSetType(ResultSet.TYPE_FORWARD_ONLY);
+		System.out.println("supportsResultSetType "+
+					"(forward only)");
+		boolval=md.supportsResultSetType(
+					ResultSet.TYPE_FORWARD_ONLY);
 		System.out.println("  "+boolval);
 		assertTrue(boolval);
 		System.out.println();
 
-		System.out.println("supportsResultSetType (scroll insensitive)");
-		boolval=md.supportsResultSetType(ResultSet.TYPE_SCROLL_INSENSITIVE);
+		System.out.println("supportsResultSetType "+
+					"(scroll insensitive)");
+		boolval=md.supportsResultSetType(
+					ResultSet.TYPE_SCROLL_INSENSITIVE);
 		System.out.println("  "+boolval);
 		assertTrue(boolval);
 		System.out.println();
 
-		System.out.println("supportsResultSetType (scroll sensitive)");
-		boolval=md.supportsResultSetType(ResultSet.TYPE_SCROLL_SENSITIVE);
+		System.out.println("supportsResultSetType "+
+					"(scroll sensitive)");
+		boolval=md.supportsResultSetType(
+					ResultSet.TYPE_SCROLL_SENSITIVE);
 		System.out.println("  "+boolval);
 		if (issqlrelay) {
+			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
 			assertFalse(boolval);
 		} else {
 			assertTrue(boolval);
@@ -1387,10 +1587,33 @@ class oracle extends sqlrtest {
 		System.out.println();
 
 		// updatesAreDetected
-		System.out.println("updatesAreDetected");
-		boolval=md.updatesAreDetected(ResultSet.TYPE_FORWARD_ONLY);
+		System.out.println("updatesAreDetected "+
+					"(forward only)");
+		boolval=md.updatesAreDetected(
+					ResultSet.TYPE_FORWARD_ONLY);
 		System.out.println("  "+boolval);
 		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("updatesAreDetected "+
+					"(scroll insensitive)");
+		boolval=md.updatesAreDetected(
+					ResultSet.TYPE_SCROLL_INSENSITIVE);
+		System.out.println("  "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("updatesAreDetected "+
+					"(scroll sensitive)");
+		boolval=md.updatesAreDetected(
+					ResultSet.TYPE_SCROLL_SENSITIVE);
+		System.out.println("  "+boolval);
+		if (issqlrelay) {
+			// sqlrelay doesn't support TYPE_SCROLL_SENSITIVE
+			assertFalse(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// usesLocalFilePerTable
@@ -2361,19 +2584,26 @@ if (false) {
 		pstmt.setString(3,"testvarchar2");
 		pstmt.setDate(4,new java.sql.Date(2002,1,1));
 		pstmt.setString(5,"testlong2");
-		pstmt.setString(6,"testclob2");
-		pstmt.setBytes(7,(new String("testblob2")).
-				getBytes(StandardCharsets.UTF_8));
+		Clob	clob=con.createClob();
+		clob.setString(1,"testclob2");
+		pstmt.setClob(6,clob);
+		Blob	blob=con.createBlob();
+		blob.setBytes(1,(new String("testblob2")).
+					getBytes(StandardCharsets.UTF_8));
+		pstmt.setBlob(7,blob);
 		assertEquals(pstmt.executeUpdate(),1);
+		System.out.println();
 		pstmt.clearParameters();
 		pstmt.setInt(1,3);
 		pstmt.setString(2,"testchar3");
 		pstmt.setString(3,"testvarchar3");
 		pstmt.setDate(4,new java.sql.Date(2003,1,1));
 		pstmt.setString(5,"testlong3");
-		pstmt.setString(6,"testclob3");
-		pstmt.setBytes(7,(new String("testblob3")).
-				getBytes(StandardCharsets.UTF_8));
+		clob.setString(1,"testclob3");
+		pstmt.setClob(6,clob);
+		blob.setBytes(1,(new String("testblob3")).
+					getBytes(StandardCharsets.UTF_8));
+		pstmt.setBlob(7,blob);
 		assertEquals(pstmt.executeUpdate(),1);
 		System.out.println();
 		pstmt.clearParameters();
@@ -2382,9 +2612,11 @@ if (false) {
 		pstmt.setString(3,"testvarchar4");
 		pstmt.setDate(4,new java.sql.Date(2004,1,1));
 		pstmt.setString(5,"testlong4");
-		pstmt.setString(6,"testclob4");
-		pstmt.setBytes(7,(new String("testblob4")).
-				getBytes(StandardCharsets.UTF_8));
+		clob.setString(1,"testclob4");
+		pstmt.setClob(6,clob);
+		blob.setBytes(1,(new String("testblob4")).
+					getBytes(StandardCharsets.UTF_8));
+		pstmt.setBlob(7,blob);
 		assertEquals(pstmt.executeUpdate(),1);
 		System.out.println();
 		pstmt.clearParameters();
@@ -2393,9 +2625,11 @@ if (false) {
 		pstmt.setString(3,"testvarchar5");
 		pstmt.setDate(4,new java.sql.Date(2005,1,1));
 		pstmt.setString(5,"testlong5");
-		pstmt.setString(6,"testclob5");
-		pstmt.setBytes(7,(new String("testblob5")).
-				getBytes(StandardCharsets.UTF_8));
+		clob.setString(1,"testclob5");
+		pstmt.setClob(6,clob);
+		blob.setBytes(1,(new String("testblob5")).
+					getBytes(StandardCharsets.UTF_8));
+		pstmt.setBlob(7,blob);
 		assertEquals(pstmt.executeUpdate(),1);
 		System.out.println();
 		pstmt.clearParameters();
@@ -2404,9 +2638,11 @@ if (false) {
 		pstmt.setString(3,"testvarchar6");
 		pstmt.setDate(4,new java.sql.Date(2006,1,1));
 		pstmt.setString(5,"testlong6");
-		pstmt.setString(6,"testclob6");
-		pstmt.setBytes(7,(new String("testblob6")).
-				getBytes(StandardCharsets.UTF_8));
+		clob.setString(1,"testclob6");
+		pstmt.setClob(6,clob);
+		blob.setBytes(1,(new String("testblob6")).
+					getBytes(StandardCharsets.UTF_8));
+		pstmt.setBlob(7,blob);
 		assertEquals(pstmt.executeUpdate(),1);
 		System.out.println();
 		pstmt.clearParameters();
@@ -2415,9 +2651,11 @@ if (false) {
 		pstmt.setString(3,"testvarchar7");
 		pstmt.setDate(4,new java.sql.Date(2007,1,1));
 		pstmt.setString(5,"testlong7");
-		pstmt.setString(6,"testclob7");
-		pstmt.setBytes(7,(new String("testblob7")).
-				getBytes(StandardCharsets.UTF_8));
+		clob.setString(1,"testclob7");
+		pstmt.setClob(6,clob);
+		blob.setBytes(1,(new String("testblob7")).
+					getBytes(StandardCharsets.UTF_8));
+		pstmt.setBlob(7,blob);
 		assertEquals(pstmt.executeUpdate(),1);
 		System.out.println();
 		pstmt.clearParameters();
@@ -2426,9 +2664,11 @@ if (false) {
 		pstmt.setString(3,"testvarchar8");
 		pstmt.setDate(4,new java.sql.Date(2008,1,1));
 		pstmt.setString(5,"testlong8");
-		pstmt.setString(6,"testclob8");
-		pstmt.setBytes(7,(new String("testblob8")).
-				getBytes(StandardCharsets.UTF_8));
+		clob.setString(1,"testclob8");
+		pstmt.setClob(6,clob);
+		blob.setBytes(1,(new String("testblob8")).
+					getBytes(StandardCharsets.UTF_8));
+		pstmt.setBlob(7,blob);
 		assertEquals(pstmt.executeUpdate(),1);
 		pstmt.close();
 		System.out.println();
@@ -2639,7 +2879,8 @@ if (false) {
 		// FIXME: result set buffer size
 
 
-		// commit and rollback
+		// commit
+		// FIXME: ...and rollback, setSavepoint, and releaseSavepoint
 		System.out.println("COMMIT AND ROLLBACK:");
 		Connection	secondcon=DriverManager.getConnection(
 							url,user,password);
@@ -2827,16 +3068,9 @@ if (false) {
 		// nativeSQL
 		// setTypeMap
 		// getTypeMap
-		// prepareCall
-		// setSavepoint
-		// releaseSavepoint
-
-		// FIXME: need tests for DatabaseMetaData methods...
-                // isWrapperFor
-                // unwrap
 
 		// FIXME: need tests for Statement methods...
-		// addBatc
+		// addBatch
                 // cancel
                 // clearBatch
                 // clearWarning
@@ -2906,7 +3140,8 @@ if (false) {
 
 		// FIXME: need tests for Parameter class...
 		// FIXME: need tests for ParameterMetaData class...
-		// FIXME: need tests for CallableStatement class...
+		// FIXME: need tests for CallableStatement class
+		// (and prepareCall)...
 
 		// FIXME: need tests for ResultSet methods...
 		// absolute

@@ -1,6 +1,8 @@
 package com.firstworks.sql;
 
 import java.sql.*;
+import javax.sql.rowset.serial.SerialBlob;
+import javax.sql.rowset.serial.SerialClob;
 
 import java.io.InputStream;
 import java.io.Reader;
@@ -14,8 +16,6 @@ import java.util.Calendar;
 import java.util.Map;
 import java.net.URL;
 import java.net.MalformedURLException;
-import javax.sql.rowset.serial.SerialBlob;
-import javax.sql.rowset.serial.SerialClob;
 import java.nio.charset.StandardCharsets;
 
 import com.firstworks.sqlrelay.*;
