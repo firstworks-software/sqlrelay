@@ -62,6 +62,7 @@ public class SQLRelayConnection implements Connection {
 
 		sqlrcon=new SQLRConnection(host,port,socket,
 						user,password,retrytime,tries);
+		// FIXME: might not be false, need to get this from server
 		readonly=false;
 		clientinfo=new Properties();
 		// FIXME: might not be false, need to get this from server
@@ -448,6 +449,7 @@ public class SQLRelayConnection implements Connection {
 	boolean isReadOnly() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		// FIXME: get this from the server
 		drv.debugPrintln("read only: "+readonly);
 		drv.debugEnd();
 		return readonly;
