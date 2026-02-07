@@ -472,6 +472,14 @@ const char * const *sqliteconnection::getDatabaseFeatures() {
 		charstring::duplicate("");
 	databasefeatures[FEATURE_DATA_DEFINITION_IGNORED_IN_TRANSACTIONS]=
 		charstring::duplicate("");
+	databasefeatures[FEATURE_DEFAULT_ISOLATION_LEVEL]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_DELETES_ARE_DETECTED_FO]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_DELETES_ARE_DETECTED_SI]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_DELETES_ARE_DETECTED_SS]=
+		charstring::duplicate("");
 	databasefeatures[FEATURE_DOES_MAX_ROW_SIZE_INCLUDE_BLOBS]=
 		charstring::duplicate("");
 	databasefeatures[FEATURE_EXTRA_NAME_CHARACTERS]=
@@ -479,6 +487,12 @@ const char * const *sqliteconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_GENERATED_KEY_ALWAYS_RETURNED]=
 		charstring::duplicate("");
 	databasefeatures[FEATURE_IDENTIFIER_QUOTE_STRING]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_INSERTS_ARE_DETECTED_FO]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_INSERTS_ARE_DETECTED_SI]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_INSERTS_ARE_DETECTED_SS]=
 		charstring::duplicate("");
 	databasefeatures[FEATURE_IS_CATALOG_AT_START]=
 		charstring::duplicate("");
@@ -537,6 +551,42 @@ const char * const *sqliteconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_NULLS_ARE_SORTED_LOW]=
 		charstring::duplicate("");
 	databasefeatures[FEATURE_NUMERIC_FUNCTIONS]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_OTHERS_DELETES_ARE_VISIBLE_FO]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_OTHERS_DELETES_ARE_VISIBLE_SI]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_OTHERS_DELETES_ARE_VISIBLE_SS]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_OTHERS_INSERTS_ARE_VISIBLE_FO]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_OTHERS_INSERTS_ARE_VISIBLE_SI]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_OTHERS_INSERTS_ARE_VISIBLE_SS]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_OTHERS_UPDATES_ARE_VISIBLE_FO]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_OTHERS_UPDATES_ARE_VISIBLE_SI]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_OTHERS_UPDATES_ARE_VISIBLE_SS]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_OWN_DELETES_ARE_VISIBLE_FO]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_OWN_DELETES_ARE_VISIBLE_SI]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_OWN_DELETES_ARE_VISIBLE_SS]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_OWN_INSERTS_ARE_VISIBLE_FO]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_OWN_INSERTS_ARE_VISIBLE_SI]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_OWN_INSERTS_ARE_VISIBLE_SS]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_OWN_UPDATES_ARE_VISIBLE_FO]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_OWN_UPDATES_ARE_VISIBLE_SI]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_OWN_UPDATES_ARE_VISIBLE_SS]=
 		charstring::duplicate("");
 	databasefeatures[FEATURE_PROCEDURE_TERM]=
 		charstring::duplicate("");
@@ -652,6 +702,28 @@ const char * const *sqliteconnection::getDatabaseFeatures() {
 		charstring::duplicate("");
 	databasefeatures[FEATURE_SUPPORTS_POSITIONED_UPDATE]=
 		charstring::duplicate("");
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY_FO_RO]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY_FO_U]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY_SI_RO]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY_SI_U]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY_SS_RO]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY_SS_U]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_HOLDABILITY_CCAC]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_HOLDABILITY_HCAC]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_TYPE_FO]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_TYPE_SI]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_TYPE_SS]=
+		charstring::duplicate("");
 	databasefeatures[FEATURE_SUPPORTS_SAVEPOINTS]=
 		charstring::duplicate("");
 	databasefeatures[FEATURE_SUPPORTS_SCHEMAS_IN_DATA_MANIPULATION]=
@@ -680,7 +752,15 @@ const char * const *sqliteconnection::getDatabaseFeatures() {
 		charstring::duplicate("");
 	databasefeatures[FEATURE_SUPPORTS_TABLE_CORRELATION_NAMES]=
 		charstring::duplicate("");
-	databasefeatures[FEATURE_SUPPORTS_TRANSACTION_ISOLATION_LEVEL]=
+	databasefeatures[FEATURE_SUPPORTS_TRANSACTION_ISOLATION_LEVEL_N]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_SUPPORTS_TRANSACTION_ISOLATION_LEVEL_RU]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_SUPPORTS_TRANSACTION_ISOLATION_LEVEL_RC]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_SUPPORTS_TRANSACTION_ISOLATION_LEVEL_RR]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_SUPPORTS_TRANSACTION_ISOLATION_LEVEL_S]=
 		charstring::duplicate("");
 	databasefeatures[FEATURE_SUPPORTS_TRANSACTIONS]=
 		charstring::duplicate("");
@@ -691,6 +771,12 @@ const char * const *sqliteconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_SYSTEM_FUNCTIONS]=
 		charstring::duplicate("");
 	databasefeatures[FEATURE_TIME_DATE_FUNCTIONS]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_UPDATES_ARE_DETECTED_FO]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_UPDATES_ARE_DETECTED_SI]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_UPDATES_ARE_DETECTED_SS]=
 		charstring::duplicate("");
 	databasefeatures[FEATURE_USES_LOCAL_FILE_PER_TABLE]=
 		charstring::duplicate("");

@@ -1558,9 +1558,42 @@ class oracle extends sqlrtest {
 		System.out.println();
 
 		// supportsTransactionIsolationLevel
-		System.out.println("supportsTransactionIsolationLevel");
+		System.out.println("supportsTransactionIsolationLevel "+
+							"(none)");
 		boolval=md.supportsTransactionIsolationLevel(
-					Connection.TRANSACTION_READ_COMMITTED);
+				Connection.TRANSACTION_NONE);
+		System.out.println("  "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("supportsTransactionIsolationLevel "+
+							"(read uncommitted)");
+		boolval=md.supportsTransactionIsolationLevel(
+				Connection.TRANSACTION_READ_UNCOMMITTED);
+		System.out.println("  "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("supportsTransactionIsolationLevel "+
+							"(read committed)");
+		boolval=md.supportsTransactionIsolationLevel(
+				Connection.TRANSACTION_READ_COMMITTED);
+		System.out.println("  "+boolval);
+		assertTrue(boolval);
+		System.out.println();
+
+		System.out.println("supportsTransactionIsolationLevel "+
+							"(repeatable read)");
+		boolval=md.supportsTransactionIsolationLevel(
+				Connection.TRANSACTION_REPEATABLE_READ);
+		System.out.println("  "+boolval);
+		assertFalse(boolval);
+		System.out.println();
+
+		System.out.println("supportsTransactionIsolationLevel "+
+							"(serializable)");
+		boolval=md.supportsTransactionIsolationLevel(
+				Connection.TRANSACTION_SERIALIZABLE);
 		System.out.println("  "+boolval);
 		assertTrue(boolval);
 		System.out.println();

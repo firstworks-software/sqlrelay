@@ -2133,6 +2133,14 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 		charstring::duplicate("true");
 	databasefeatures[FEATURE_DATA_DEFINITION_IGNORED_IN_TRANSACTIONS]=
 		charstring::duplicate("false");
+	databasefeatures[FEATURE_DEFAULT_ISOLATION_LEVEL]=
+		charstring::duplicate("TRANSACTION_READ_COMMITTED");
+	databasefeatures[FEATURE_DELETES_ARE_DETECTED_FO]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_DELETES_ARE_DETECTED_SI]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_DELETES_ARE_DETECTED_SS]=
+		charstring::duplicate("false");
 	databasefeatures[FEATURE_DOES_MAX_ROW_SIZE_INCLUDE_BLOBS]=
 		charstring::duplicate("true");
 	databasefeatures[FEATURE_EXTRA_NAME_CHARACTERS]=
@@ -2141,6 +2149,12 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 		charstring::duplicate("false");
 	databasefeatures[FEATURE_IDENTIFIER_QUOTE_STRING]=
 		charstring::duplicate("\"");
+	databasefeatures[FEATURE_INSERTS_ARE_DETECTED_FO]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_INSERTS_ARE_DETECTED_SI]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_INSERTS_ARE_DETECTED_SS]=
+		charstring::duplicate("false");
 	databasefeatures[FEATURE_IS_CATALOG_AT_START]=
 		charstring::duplicate("false");
 	databasefeatures[FEATURE_IS_READ_ONLY]=
@@ -2202,6 +2216,42 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 					"CEILING,COS,EXP,FLOOR,LOG,"
 					"LOG10,MOD,PI,POWER,ROUND,"
 					"SIGN,SIN,SQRT,TAN,TRUNCATE");
+	databasefeatures[FEATURE_OTHERS_DELETES_ARE_VISIBLE_FO]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_OTHERS_DELETES_ARE_VISIBLE_SI]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_OTHERS_DELETES_ARE_VISIBLE_SS]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_OTHERS_INSERTS_ARE_VISIBLE_FO]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_OTHERS_INSERTS_ARE_VISIBLE_SI]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_OTHERS_INSERTS_ARE_VISIBLE_SS]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_OTHERS_UPDATES_ARE_VISIBLE_FO]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_OTHERS_UPDATES_ARE_VISIBLE_SI]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_OTHERS_UPDATES_ARE_VISIBLE_SS]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_OWN_DELETES_ARE_VISIBLE_FO]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_OWN_DELETES_ARE_VISIBLE_SI]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_OWN_DELETES_ARE_VISIBLE_SS]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_OWN_INSERTS_ARE_VISIBLE_FO]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_OWN_INSERTS_ARE_VISIBLE_SI]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_OWN_INSERTS_ARE_VISIBLE_SS]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_OWN_UPDATES_ARE_VISIBLE_FO]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_OWN_UPDATES_ARE_VISIBLE_SI]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_OWN_UPDATES_ARE_VISIBLE_SS]=
+		charstring::duplicate("true");
 	databasefeatures[FEATURE_PROCEDURE_TERM]=
 		charstring::duplicate("procedure");
 	databasefeatures[FEATURE_RESULT_SET_HOLDABILITY]=
@@ -2327,6 +2377,28 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 		charstring::duplicate("false");
 	databasefeatures[FEATURE_SUPPORTS_POSITIONED_UPDATE]=
 		charstring::duplicate("false");
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY_FO_RO]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY_FO_U]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY_SI_RO]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY_SI_U]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY_SS_RO]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY_SS_U]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_HOLDABILITY_CCAC]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_HOLDABILITY_HCAC]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_TYPE_FO]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_TYPE_SI]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_TYPE_SS]=
+		charstring::duplicate("true");
 	databasefeatures[FEATURE_SUPPORTS_SAVEPOINTS]=
 		charstring::duplicate("true");
 	databasefeatures[FEATURE_SUPPORTS_SCHEMAS_IN_DATA_MANIPULATION]=
@@ -2355,7 +2427,15 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 		charstring::duplicate("true");
 	databasefeatures[FEATURE_SUPPORTS_TABLE_CORRELATION_NAMES]=
 		charstring::duplicate("true");
-	databasefeatures[FEATURE_SUPPORTS_TRANSACTION_ISOLATION_LEVEL]=
+	databasefeatures[FEATURE_SUPPORTS_TRANSACTION_ISOLATION_LEVEL_N]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_SUPPORTS_TRANSACTION_ISOLATION_LEVEL_RU]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_SUPPORTS_TRANSACTION_ISOLATION_LEVEL_RC]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_TRANSACTION_ISOLATION_LEVEL_RR]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_SUPPORTS_TRANSACTION_ISOLATION_LEVEL_S]=
 		charstring::duplicate("true");
 	databasefeatures[FEATURE_SUPPORTS_TRANSACTIONS]=
 		charstring::duplicate("true");
@@ -2369,6 +2449,12 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 		charstring::duplicate(
 			"CURRENT_DATE,CURRENT_TIMESTAMP,CURDATE,EXTRACT,"
 			"HOUR,MINUTE,MONTH,SECOND,YEAR");
+	databasefeatures[FEATURE_UPDATES_ARE_DETECTED_FO]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_UPDATES_ARE_DETECTED_SI]=
+		charstring::duplicate("false");
+	databasefeatures[FEATURE_UPDATES_ARE_DETECTED_SS]=
+		charstring::duplicate("false");
 	databasefeatures[FEATURE_USES_LOCAL_FILE_PER_TABLE]=
 		charstring::duplicate("false");
 	databasefeatures[FEATURE_USES_LOCAL_FILES]=

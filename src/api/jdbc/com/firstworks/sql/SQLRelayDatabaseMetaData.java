@@ -112,10 +112,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean deletesAreDetected(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		// FIXME: use the map, somehow
 		boolean	result=false;
-		if (!conn.isResultSetTypeSupported(type)) {
-			result=false;
+		if (conn.isResultSetTypeSupported(type)) {
+			result=getBoolean("deletes_are_detected_"+
+						getTypeAbbreviation(type));
 		}
 		drv.debugPrintln("deletes are detected: "+result);
 		drv.debugEnd();
@@ -399,10 +399,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	int getDefaultTransactionIsolation() throws SQLException {
 		drv.debugFunction(this);
-		// FIXME: use the map
-		int	isolation=(getDatabaseProductName().equals("mysql"))?
-					Connection.TRANSACTION_REPEATABLE_READ:
-					Connection.TRANSACTION_READ_COMMITTED;
+		int	isolation=getTransactionIsolationLevel(
+				getString("default_isolation_level"));
 		drv.debugPrintln("isolation: "+isolation);
 		drv.debugEnd();
 		return isolation;
@@ -1368,10 +1366,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean insertsAreDetected(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		// FIXME: use the map, somehow
 		boolean	result=false;
-		if (!conn.isResultSetTypeSupported(type)) {
-			result=false;
+		if (conn.isResultSetTypeSupported(type)) {
+			result=getBoolean("inserts_are_detected_"+
+						getTypeAbbreviation(type));
 		}
 		drv.debugPrintln("inserts are detected: "+result);
 		drv.debugEnd();
@@ -1454,10 +1452,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean othersDeletesAreVisible(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		// FIXME: use the map, somehow
 		boolean	result=false;
-		if (!conn.isResultSetTypeSupported(type)) {
-			result=false;
+		if (conn.isResultSetTypeSupported(type)) {
+			result=getBoolean("others_deletes_are_visible_"+
+						getTypeAbbreviation(type));
 		}
 		drv.debugPrintln("others deletes are visible: "+result);
 		drv.debugEnd();
@@ -1468,10 +1466,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean othersInsertsAreVisible(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		// FIXME: use the map, somehow
 		boolean	result=false;
-		if (!conn.isResultSetTypeSupported(type)) {
-			result=false;
+		if (conn.isResultSetTypeSupported(type)) {
+			result=getBoolean("others_inserts_are_visible_"+
+						getTypeAbbreviation(type));
 		}
 		drv.debugPrintln("others inserts are visible: "+result);
 		drv.debugEnd();
@@ -1482,10 +1480,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean othersUpdatesAreVisible(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		// FIXME: use the map, somehow
 		boolean	result=false;
-		if (!conn.isResultSetTypeSupported(type)) {
-			result=false;
+		if (conn.isResultSetTypeSupported(type)) {
+			result=getBoolean("others_updates_are_visible_"+
+						getTypeAbbreviation(type));
 		}
 		drv.debugPrintln("others updates are visible: "+result);
 		drv.debugEnd();
@@ -1496,10 +1494,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean ownDeletesAreVisible(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		// FIXME: use the map, somehow
-		boolean	result=(type!=ResultSet.TYPE_FORWARD_ONLY);
-		if (!conn.isResultSetTypeSupported(type)) {
-			result=false;
+		boolean	result=false;
+		if (conn.isResultSetTypeSupported(type)) {
+			result=getBoolean("own_deletes_are_visible_"+
+						getTypeAbbreviation(type));
 		}
 		drv.debugPrintln("own deletes are visible: "+result);
 		drv.debugEnd();
@@ -1510,10 +1508,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean ownInsertsAreVisible(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		// FIXME: use the map, somehow
 		boolean	result=false;
-		if (!conn.isResultSetTypeSupported(type)) {
-			result=false;
+		if (conn.isResultSetTypeSupported(type)) {
+			result=getBoolean("own_inserts_are_visible_"+
+						getTypeAbbreviation(type));
 		}
 		drv.debugPrintln("own inserts are visible: "+result);
 		drv.debugEnd();
@@ -1524,10 +1522,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean ownUpdatesAreVisible(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		// FIXME: use the map, somehow
-		boolean	result=true;
-		if (!conn.isResultSetTypeSupported(type)) {
-			result=false;
+		boolean	result=false;
+		if (conn.isResultSetTypeSupported(type)) {
+			result=getBoolean("own_updates_are_visible_"+
+						getTypeAbbreviation(type));
 		}
 		drv.debugPrintln("own updates are visible: "+result);
 		drv.debugEnd();
@@ -2009,9 +2007,14 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
 		conn.debugResultSetConcurrency(concurrency);
-		boolean	result=
-			conn.isResultSetTypeSupported(type) &&
-			conn.isResultSetConcurrencySupported(concurrency);
+		boolean	result=false;
+		if (conn.isResultSetTypeSupported(type) &&
+			conn.isResultSetConcurrencySupported(concurrency)) {
+			result=getBoolean(
+				"supports_result_set_concurrency_"+
+				getTypeAbbreviation(type)+"_"+
+				getConcurrencyAbbreviation(concurrency));
+		}
 		drv.debugPrintln("supports result set concurrency: "+result);
 		drv.debugEnd();
 		return result;
@@ -2022,8 +2025,12 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 							throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(holdability);
-		boolean	result=conn.isResultSetHoldabilitySupported(
-								holdability);
+		boolean	result=false;
+		if (conn.isResultSetHoldabilitySupported(holdability)) {
+			result=getBoolean(
+				"supports_result_set_holdability_"+
+				getHoldabilityAbbreviation(holdability));
+		}
 		drv.debugPrintln("supports result set holdability: "+result);
 		drv.debugEnd();
 		return result;
@@ -2032,9 +2039,12 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsResultSetType(int type) throws SQLException {
 		drv.debugFunction(this);
-		conn.debugResultSetType(type);
-		boolean	result=conn.isResultSetTypeSupported(type);
-		drv.debugPrintln("supports result set type: "+result);
+		boolean	result=false;
+		if (conn.isResultSetTypeSupported(type)) {
+			result=getBoolean("supports_result_set_type_"+
+						getTypeAbbreviation(type));
+		}
+		drv.debugPrintln("supports result set type: "+type);
 		drv.debugEnd();
 		return result;
 	}
@@ -2179,10 +2189,9 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean supportsTransactionIsolationLevel(int level)
 						throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("supports_transaction_isolation_level");
-		drv.debugPrintln("supports transaction isolation level: "+result);
-		drv.debugEnd();
-		return result;
+		return getBoolean(
+			"supports_transaction_isolation_level_"+
+			getTransactionIsolationLevelAbbreviation(level));
 	}
 
 	public
@@ -2216,10 +2225,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean updatesAreDetected(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		// FIXME: use the map, somehow
 		boolean	result=false;
-		if (!conn.isResultSetTypeSupported(type)) {
-			result=false;
+		if (conn.isResultSetTypeSupported(type)) {
+			result=getBoolean("updates_are_detected_"+
+						getTypeAbbreviation(type));
 		}
 		drv.debugPrintln("updates are detected: "+result);
 		drv.debugEnd();
@@ -2242,6 +2251,81 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		drv.debugPrintln("uses local files: "+result);
 		drv.debugEnd();
 		return result;
+	}
+
+	private
+	String getTypeAbbreviation(int type) {
+		switch (type) {
+			case ResultSet.TYPE_FORWARD_ONLY:
+				return "fo";
+			case ResultSet.TYPE_SCROLL_INSENSITIVE:
+				return "si";
+			case ResultSet.TYPE_SCROLL_SENSITIVE:
+				return "ss";
+			default:
+				return "";
+		}
+	}
+
+	private
+	String getConcurrencyAbbreviation(int concurrency) {
+		switch (concurrency) {
+			case ResultSet.CONCUR_READ_ONLY:
+				return "ro";
+			case ResultSet.CONCUR_UPDATABLE:
+				return "u";
+			default:
+				return "";
+		}
+	}
+
+	private
+	String getHoldabilityAbbreviation(int holdability) {
+		switch (holdability) {
+			case ResultSet.HOLD_CURSORS_OVER_COMMIT:
+				return "hcac";
+			case ResultSet.CLOSE_CURSORS_AT_COMMIT:
+				return "ccac";
+			default:
+				return "";
+		}
+	}
+
+	private
+	String getTransactionIsolationLevelAbbreviation(int level) {
+		switch (level) {
+			case Connection.TRANSACTION_NONE:
+				return "n";
+			case Connection.TRANSACTION_READ_UNCOMMITTED:
+				return "ru";
+			case Connection.TRANSACTION_READ_COMMITTED:
+				return "rc";
+			case Connection.TRANSACTION_REPEATABLE_READ:
+				return "rr";
+			case Connection.TRANSACTION_SERIALIZABLE:
+				return "s";
+			default:
+				return "";
+		}
+	}
+
+	private
+	int getTransactionIsolationLevel(String level) {
+		if (level==null) {
+			return Connection.TRANSACTION_NONE;
+		}
+		switch (level) {
+			case "TRANSACTION_READ_UNCOMMITTED":
+				return Connection.TRANSACTION_READ_UNCOMMITTED;
+			case "TRANSACTION_READ_COMMITTED":
+				return Connection.TRANSACTION_READ_COMMITTED;
+			case "TRANSACTION_REPEATABLE_READ":
+				return Connection.TRANSACTION_REPEATABLE_READ;
+			case "TRANSACTION_SERIALIZABLE":
+				return Connection.TRANSACTION_SERIALIZABLE;
+			default:
+				return Connection.TRANSACTION_NONE;
+		}
 	}
 
 	private

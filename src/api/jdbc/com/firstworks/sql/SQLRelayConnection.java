@@ -963,8 +963,8 @@ public class SQLRelayConnection implements Connection {
 		return (T)((iface==SQLRConnection.class)?sqlrcon:null);
 	}
 
-	void debugResultSetType(int resultSetType) {
-		switch (resultSetType) {
+	void debugResultSetType(int type) {
+		switch (type) {
 			case ResultSet.TYPE_FORWARD_ONLY:
 				drv.debugPrintln("result set type: "+
 						"TYPE_FORWARD_ONLY");
@@ -980,13 +980,13 @@ public class SQLRelayConnection implements Connection {
 			default:
 				drv.debugPrintln("result set type: "+
 							"unknown - "+
-							resultSetType);
+							type);
 				break;
 		}
 	}
 
-	void debugResultSetConcurrency(int resultSetConcurrency) {
-		switch (resultSetConcurrency) {
+	void debugResultSetConcurrency(int concurrency) {
+		switch (concurrency) {
 			case ResultSet.CONCUR_READ_ONLY:
 				drv.debugPrintln("result set concurrency: "+
 							"CONCUR_READ_ONLY");
@@ -998,13 +998,13 @@ public class SQLRelayConnection implements Connection {
 			default:
 				drv.debugPrintln("result set concurrency: "+
 							"unknown - "+
-							resultSetConcurrency);
+							concurrency);
 				break;
 		}
 	}
 
-	void debugResultSetHoldability(int resultSetHoldability) {
-		switch (resultSetHoldability) {
+	void debugResultSetHoldability(int holdability) {
+		switch (holdability) {
 			case ResultSet.HOLD_CURSORS_OVER_COMMIT:
 				drv.debugPrintln("result set holdability: "+
 						"HOLD_CURSORS_OVER_COMMIT");
@@ -1016,7 +1016,7 @@ public class SQLRelayConnection implements Connection {
 			default:
 				drv.debugPrintln("result set holdability: "+
 							"unknown - "+
-							resultSetHoldability);
+							holdability);
 				break;
 		}
 	}
@@ -1039,8 +1039,8 @@ public class SQLRelayConnection implements Connection {
 		}
 	}
 
-	boolean isResultSetTypeSupported(int resultSetType) {
-		switch (resultSetType) {
+	boolean isResultSetTypeSupported(int type) {
+		switch (type) {
 			case ResultSet.TYPE_FORWARD_ONLY:
 				return true;
 			case ResultSet.TYPE_SCROLL_INSENSITIVE:
@@ -1052,13 +1052,13 @@ public class SQLRelayConnection implements Connection {
 			default:
 				drv.debugPrintln("not supported: "+
 							"unknown - "+
-							resultSetType);
+							type);
 				return false;
 		}
 	}
 
-	boolean isResultSetConcurrencySupported(int resultSetConcurrency) {
-		switch (resultSetConcurrency) {
+	boolean isResultSetConcurrencySupported(int concurrency) {
+		switch (concurrency) {
 			case ResultSet.CONCUR_READ_ONLY:
 				return true;
 			case ResultSet.CONCUR_UPDATABLE:
@@ -1068,7 +1068,7 @@ public class SQLRelayConnection implements Connection {
 			default:
 				drv.debugPrintln("not supported: "+
 							"unknown - "+
-							resultSetConcurrency);
+							concurrency);
 				return false;
 		}
 	}
@@ -1108,9 +1108,9 @@ public class SQLRelayConnection implements Connection {
 	}
 
 	void throwResultSetTypeNotSupportedException(
-						int resultSetType)
+						int type)
 						throws SQLException {
-		switch (resultSetType) {
+		switch (type) {
 			case ResultSet.TYPE_FORWARD_ONLY:
 				break;
 			case ResultSet.TYPE_SCROLL_INSENSITIVE:
@@ -1123,16 +1123,16 @@ public class SQLRelayConnection implements Connection {
 			default:
 				drv.debugPrintln("not supported: "+
 							"unknown - "+
-							resultSetType);
+							type);
 				throwFeatureNotSupportedException();
 				break;
 		}
 	}
 
 	void throwResultSetConcurrencyNotSupportedException(
-						int resultSetConcurrency)
+						int concurrency)
 						throws SQLException {
-		switch (resultSetConcurrency) {
+		switch (concurrency) {
 			case ResultSet.CONCUR_READ_ONLY:
 				break;
 			case ResultSet.CONCUR_UPDATABLE:
@@ -1143,16 +1143,16 @@ public class SQLRelayConnection implements Connection {
 			default:
 				drv.debugPrintln("not supported: "+
 							"unknown - "+
-							resultSetConcurrency);
+							concurrency);
 				throwFeatureNotSupportedException();
 				break;
 		}
 	}
 
 	void throwResultSetHoldabiltyNotSupportedException(
-						int resultSetHoldability)
+						int holdability)
 						throws SQLException {
-		switch (resultSetHoldability) {
+		switch (holdability) {
 			case ResultSet.HOLD_CURSORS_OVER_COMMIT:
 				break;
 			case ResultSet.CLOSE_CURSORS_AT_COMMIT:
@@ -1163,23 +1163,20 @@ public class SQLRelayConnection implements Connection {
 			default:
 				drv.debugPrintln("not supported: "+
 							"unknown - "+
-							resultSetHoldability);
+							holdability);
 				throwFeatureNotSupportedException();
 				break;
 		}
 	}
 
 	void throwResultSetFeatureNotSupportedException(
-						int resultSetType,
-						int resultSetConcurrency,
-						int resultSetHoldability)
+						int type,
+						int concurrency,
+						int holdability)
 						throws SQLException {
-	 	throwResultSetTypeNotSupportedException(
-						resultSetType);
-	 	throwResultSetConcurrencyNotSupportedException(
-						resultSetConcurrency);
-		throwResultSetHoldabiltyNotSupportedException(
-						resultSetHoldability);
+	 	throwResultSetTypeNotSupportedException(type);
+	 	throwResultSetConcurrencyNotSupportedException(concurrency);
+		throwResultSetHoldabiltyNotSupportedException(holdability);
 	}
 
 	void throwAutoGeneratedKeysNotSupportedException(
