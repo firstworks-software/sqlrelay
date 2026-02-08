@@ -1989,9 +1989,8 @@ public class SQLRelayPreparedStatement
 		drv.debugFunction(this);
 		String	s;
 		try {
-			s=asciiStreamToString(clob.getAsciiStream());
+			s=readerToString(clob.getCharacterStream());
 		} catch (Exception ex) {
-System.out.println(ex.getMessage());
 			s=new String("");
 		}
 		drv.debugPrintln("string: "+s);
