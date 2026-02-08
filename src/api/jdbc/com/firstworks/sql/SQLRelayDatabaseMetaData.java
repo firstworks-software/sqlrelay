@@ -168,10 +168,12 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 						boolean nullable)
 						throws SQLException {
 		drv.debugFunction(this);
+
 		drv.debugPrintln("schema: "+schema);
 		drv.debugPrintln("table: "+table);
 		drv.debugPrintln("scope: "+scope);
 		drv.debugPrintln("nullable: "+nullable);
+
 		// FIXME: implement this somehow...
 		drv.debugPrintln("FIXME: implement this");
 		drv.debugEnd();
@@ -244,10 +246,12 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 					String columnNamePattern)
 					throws SQLException {
 		drv.debugFunction(this);
+
 		drv.debugPrintln("catalog: "+catalog);
 		drv.debugPrintln("schema: "+schema);
 		drv.debugPrintln("table: "+table);
 		drv.debugPrintln("column name pattern: "+columnNamePattern);
+
 		// FIXME: implement this somehow
 		drv.debugPrintln("FIXME: implement this");
 		drv.debugEnd();
@@ -352,7 +356,6 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	private
 	int getDatabaseVersion(boolean major) {
 		drv.debugFunction(this);
-		// FIXME: cache this
 		String	dbversion=null;
 		synchronized (networklock) {
 			dbversion=conn.getSQLRConnection().dbVersion();
@@ -373,7 +376,6 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	String getDatabaseProductName() throws SQLException {
 		drv.debugFunction(this);
-		// FIXME: cache this
 		String	id=null;
 		synchronized (networklock) {
 			id=conn.getSQLRConnection().identify();
@@ -386,7 +388,6 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	String getDatabaseProductVersion() throws SQLException {
 		drv.debugFunction(this);
-		// FIXME: cache this
 		String	result=null;
 		synchronized (networklock) {
 			result=conn.getSQLRConnection().dbVersion();
@@ -1544,8 +1545,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean storesLowerCaseQuotedIdentifiers() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("stores_lower_case_quoted_identifiers");
-		drv.debugPrintln("stores lower case quoted identifiers: "+result);
+		boolean	result=getBoolean(
+			"stores_lower_case_quoted_identifiers");
+		drv.debugPrintln(
+			"stores lower case quoted identifiers: "+result);
 		drv.debugEnd();
 		return result;
 	}
@@ -1562,8 +1565,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean storesMixedCaseQuotedIdentifiers() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("stores_mixed_case_quoted_identifiers");
-		drv.debugPrintln("stores mixed case quoted identifiers: "+result);
+		boolean	result=getBoolean(
+			"stores_mixed_case_quoted_identifiers");
+		drv.debugPrintln(
+			"stores mixed case quoted identifiers: "+result);
 		drv.debugEnd();
 		return result;
 	}
@@ -1580,8 +1585,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean storesUpperCaseQuotedIdentifiers() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("stores_upper_case_quoted_identifiers");
-		drv.debugPrintln("stores upper case quoted identifiers: "+result);
+		boolean	result=getBoolean(
+			"stores_upper_case_quoted_identifiers");
+		drv.debugPrintln(
+			"stores upper case quoted identifiers: "+result);
 		drv.debugEnd();
 		return result;
 	}
@@ -1589,8 +1596,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsAlterTableWithAddColumn() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("supports_alter_table_with_add_column");
-		drv.debugPrintln("supports alter table with add command: "+result);
+		boolean	result=getBoolean(
+			"supports_alter_table_with_add_column");
+		drv.debugPrintln(
+			"supports alter table with add command: "+result);
 		drv.debugEnd();
 		return result;
 	}
@@ -1598,8 +1607,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsAlterTableWithDropColumn() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("supports_alter_table_with_drop_column");
-		drv.debugPrintln("supports alter table with drop command: "+result);
+		boolean	result=getBoolean(
+			"supports_alter_table_with_drop_column");
+		drv.debugPrintln(
+			"supports alter table with drop command: "+result);
 		drv.debugEnd();
 		return result;
 	}
@@ -1643,8 +1654,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsCatalogsInDataManipulation() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("supports_catalogs_in_data_manipulation");
-		drv.debugPrintln("supports catalogs in data manipulations: "+result);
+		boolean	result=getBoolean(
+			"supports_catalogs_in_data_manipulation");
+		drv.debugPrintln(
+			"supports catalogs in data manipulations: "+result);
 		drv.debugEnd();
 		return result;
 	}
@@ -1652,8 +1665,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsCatalogsInIndexDefinitions() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("supports_catalogs_in_index_definitions");
-		drv.debugPrintln("supports catalogs in index definitions: "+result);
+		boolean	result=getBoolean(
+			"supports_catalogs_in_index_definitions");
+		drv.debugPrintln(
+			"supports catalogs in index definitions: "+result);
 		drv.debugEnd();
 		return result;
 	}
@@ -1661,8 +1676,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsCatalogsInPrivilegeDefinitions() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("supports_catalogs_in_privilege_definitions");
-		drv.debugPrintln("supports catalogs in privilege definitions: "+result);
+		boolean	result=getBoolean(
+			"supports_catalogs_in_privilege_definitions");
+		drv.debugPrintln(
+			"supports catalogs in privilege definitions: "+result);
 		drv.debugEnd();
 		return result;
 	}
@@ -1670,8 +1687,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsCatalogsInProcedureCalls() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("supports_catalogs_in_procedure_calls");
-		drv.debugPrintln("supports catalogs in procedure calls: "+result);
+		boolean	result=getBoolean(
+			"supports_catalogs_in_procedure_calls");
+		drv.debugPrintln(
+			"supports catalogs in procedure calls: "+result);
 		drv.debugEnd();
 		return result;
 	}
@@ -1679,8 +1698,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsCatalogsInTableDefinitions() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("supports_catalogs_in_table_definitions");
-		drv.debugPrintln("supports catalogs in table definitions: "+result);
+		boolean	result=getBoolean(
+			"supports_catalogs_in_table_definitions");
+		drv.debugPrintln(
+			"supports catalogs in table definitions: "+result);
 		drv.debugEnd();
 		return result;
 	}
@@ -1706,10 +1727,12 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsConvert(int fromType, int toType) throws SQLException {
 		drv.debugFunction(this);
-		// FIXME: query the db directly for each, cache
-		boolean	result=true;
+
 		drv.debugPrintln("from type: "+fromType);
 		drv.debugPrintln("to type: "+toType);
+
+		boolean	result=true;
+		// FIXME: query the db directly for each, cache
 		drv.debugPrintln("supports convert: "+result);
 		drv.debugEnd();
 		return result;
@@ -1739,8 +1762,9 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		drv.debugFunction(this);
 		boolean	result=getBoolean(
 		"supports_data_definition_and_data_manipulation_transactions");
-		drv.debugPrintln("supports data definition "+
-					"and data manipulation transactions: "+result);
+		drv.debugPrintln(
+		"supports data definition and data manipulation transactions: "+
+		result);
 		drv.debugEnd();
 		return result;
 	}
@@ -1748,8 +1772,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsDataManipulationTransactionsOnly() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("supports_data_manipulation_transactions_only");
-		drv.debugPrintln("supports data manipulation transactions only: "+result);
+		boolean	result=getBoolean(
+		"supports_data_manipulation_transactions_only");
+		drv.debugPrintln(
+		"supports data manipulation transactions only: "+result);
 		drv.debugEnd();
 		return result;
 	}
@@ -1757,8 +1783,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsDifferentTableCorrelationNames() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("supports_different_table_correlation_names");
-		drv.debugPrintln("supports different table correlation names: "+result);
+		boolean	result=getBoolean(
+			"supports_different_table_correlation_names");
+		drv.debugPrintln(
+			"supports different table correlation names: "+result);
 		drv.debugEnd();
 		return result;
 	}
@@ -1829,8 +1857,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsIntegrityEnhancementFacility() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("supports_integrity_enhancement_facility");
-		drv.debugPrintln("supports integrity enhancement facility: "+result);
+		boolean	result=getBoolean(
+			"supports_integrity_enhancement_facility");
+		drv.debugPrintln(
+			"supports integrity enhancement facility: "+result);
 		drv.debugEnd();
 		return result;
 	}
@@ -1874,8 +1904,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsMixedCaseQuotedIdentifiers() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("supports_mixed_case_quoted_identifiers");
-		drv.debugPrintln("supports mixed case quoted identifiers: "+result);
+		boolean	result=getBoolean(
+			"supports_mixed_case_quoted_identifiers");
+		drv.debugPrintln(
+			"supports mixed case quoted identifiers: "+result);
 		drv.debugEnd();
 		return result;
 	}
@@ -1931,8 +1963,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsOpenCursorsAcrossCommit() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("supports_open_cursors_across_commit");
-		drv.debugPrintln("supports open cursors across commit: "+result);
+		boolean	result=getBoolean(
+			"supports_open_cursors_across_commit");
+		drv.debugPrintln(
+			"supports open cursors across commit: "+result);
 		drv.debugEnd();
 		return result;
 	}
@@ -1940,8 +1974,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsOpenCursorsAcrossRollback() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("supports_open_cursors_across_rollback");
-		drv.debugPrintln("supports open cursors across rollback: "+result);
+		boolean	result=getBoolean(
+			"supports_open_cursors_across_rollback");
+		drv.debugPrintln(
+			"supports open cursors across rollback: "+result);
 		drv.debugEnd();
 		return result;
 	}
@@ -1949,8 +1985,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsOpenStatementsAcrossCommit() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("supports_open_statements_across_commit");
-		drv.debugPrintln("supports open statements across commit: "+result);
+		boolean	result=getBoolean(
+			"supports_open_statements_across_commit");
+		drv.debugPrintln(
+			"supports open statements across commit: "+result);
 		drv.debugEnd();
 		return result;
 	}
@@ -1958,8 +1996,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsOpenStatementsAcrossRollback() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("supports_open_statements_across_rollback");
-		drv.debugPrintln("supports open statements across rollback: "+result);
+		boolean	result=getBoolean(
+			"supports_open_statements_across_rollback");
+		drv.debugPrintln(
+			"supports open statements across rollback: "+result);
 		drv.debugEnd();
 		return result;
 	}
@@ -2061,8 +2101,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsSchemasInDataManipulation() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("supports_schemas_in_data_manipulation");
-		drv.debugPrintln("supports schemas in data manipulation: "+result);
+		boolean	result=getBoolean(
+			"supports_schemas_in_data_manipulation");
+		drv.debugPrintln(
+			"supports schemas in data manipulation: "+result);
 		drv.debugEnd();
 		return result;
 	}
@@ -2070,8 +2112,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsSchemasInIndexDefinitions() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("supports_schemas_in_index_definitions");
-		drv.debugPrintln("supports schemas in index definitions: "+result);
+		boolean	result=getBoolean(
+			"supports_schemas_in_index_definitions");
+		drv.debugPrintln(
+			"supports schemas in index definitions: "+result);
 		drv.debugEnd();
 		return result;
 	}
@@ -2079,8 +2123,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsSchemasInPrivilegeDefinitions() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("supports_schemas_in_privilege_definitions");
-		drv.debugPrintln("supports schemas in privilege definitions: "+result);
+		boolean	result=getBoolean(
+			"supports_schemas_in_privilege_definitions");
+		drv.debugPrintln(
+			"supports schemas in privilege definitions: "+result);
 		drv.debugEnd();
 		return result;
 	}
@@ -2088,8 +2134,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsSchemasInProcedureCalls() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("supports_schemas_in_procedure_calls");
-		drv.debugPrintln("supports schemas in procedure calls: "+result);
+		boolean	result=getBoolean(
+			"supports_schemas_in_procedure_calls");
+		drv.debugPrintln(
+			"supports schemas in procedure calls: "+result);
 		drv.debugEnd();
 		return result;
 	}
@@ -2097,8 +2145,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsSchemasInTableDefinitions() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("supports_schemas_in_table_definitions");
-		drv.debugPrintln("supports schemas in table definitions: "+result);
+		boolean	result=getBoolean(
+			"supports_schemas_in_table_definitions");
+		drv.debugPrintln(
+			"supports schemas in table definitions: "+result);
 		drv.debugEnd();
 		return result;
 	}
@@ -2115,8 +2165,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsStatementPooling() throws SQLException {
 		drv.debugFunction(this);
-		// FIXME: maybe SQL Relay can do this
-		boolean	result=false;
+		boolean	result=true;
 		drv.debugPrintln("supports statement pooling: "+result);
 		drv.debugEnd();
 		return result;
@@ -2125,8 +2174,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsStoredFunctionsUsingCallSyntax() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("supports_stored_functions_using_call_syntax");
-		drv.debugPrintln("supports stored functions using call syntax: "+result);
+		boolean	result=getBoolean(
+			"supports_stored_functions_using_call_syntax");
+		drv.debugPrintln(
+			"supports stored functions using call syntax: "+result);
 		drv.debugEnd();
 		return result;
 	}

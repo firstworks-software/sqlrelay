@@ -1501,11 +1501,7 @@ class oracle extends sqlrtest {
 		System.out.println("supportsStatementPooling");
 		boolval=md.supportsStatementPooling();
 		System.out.println("  "+boolval);
-		if (issqlrelay) {
-			assertFalse(boolval);
-		} else {
-			assertTrue(boolval);
-		}
+		assertTrue(boolval);
 		System.out.println();
 
 		// supportsStoredFunctionsUsingCallSyntax
