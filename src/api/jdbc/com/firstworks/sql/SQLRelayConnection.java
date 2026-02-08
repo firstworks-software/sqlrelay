@@ -6,6 +6,7 @@ import javax.sql.rowset.serial.SerialBlob;
 
 import java.util.Properties;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.concurrent.Executor;
 
 import com.firstworks.sqlrelay.*;
@@ -67,7 +68,7 @@ public class SQLRelayConnection implements Connection {
 		clientinfo=new Properties();
 		// FIXME: might not be false, need to get this from server
 		autocommit=false;
-		typemap=null;
+		typemap=new HashMap<String,Class<?>>();
 		datetotimestamp=false;
 
 		if (drv.debug) {
@@ -945,7 +946,6 @@ public class SQLRelayConnection implements Connection {
 	void setTypeMap(Map<String,Class<?>> map) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		// FIXME: we might be able to support this...
 		typemap=map;
 		drv.debugEnd();
 	}

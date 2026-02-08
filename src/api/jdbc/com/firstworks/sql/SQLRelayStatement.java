@@ -84,7 +84,6 @@ public class SQLRelayStatement implements Statement {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		conn.throwFeatureNotSupportedException();
-		// FIXME: maybe we can support this somehow?
 		drv.debugEnd();
 	}
 
@@ -128,9 +127,15 @@ public class SQLRelayStatement implements Statement {
 
 		drv.debugPrintln("sql: "+sql);
 
-		// FIXME: handle timeout
 		resultset=null;
 		updatecount=-1;
+
+		// translate JDBC escape sequences
+		if (escapeprocessing) {
+			sql=conn.nativeSQL(sql);
+		}
+
+		// FIXME: handle timeout
 
 		boolean	result=false;
 		synchronized (networklock) {
@@ -143,8 +148,8 @@ public class SQLRelayStatement implements Statement {
 
 			updatecount=(int)sqlrcur.affectedRows();
 
-			drv.debugPrintln("updatecount: "+updatecount);
-			drv.debugPrintln("colcount: "+sqlrcur.colCount());
+			drv.debugPrintln("update count: "+updatecount);
+			drv.debugPrintln("column count: "+sqlrcur.colCount());
 
 			if (sqlrcur.colCount()>0) {
 				resultset=new SQLRelayResultSet(drv);
@@ -232,7 +237,6 @@ public class SQLRelayStatement implements Statement {
 
 		drv.debugPrintln("batch size: "+batch.size());
 
-		// FIXME: handle timeout
 		int[]	retvals=new int[batch.size()];
 		int	count=0;
 
@@ -251,9 +255,10 @@ public class SQLRelayStatement implements Statement {
 
 		drv.debugPrintln("sql: "+sql);
 
-		// FIXME: handle timeout
 		resultset=null;
 		updatecount=-1;
+
+		// FIXME: handle timeout
 
 		boolean	result=false;
 		synchronized (networklock) {
@@ -263,6 +268,12 @@ public class SQLRelayStatement implements Statement {
 		drv.debugPrintln("result: "+result);
 
 		if (result) {
+
+			updatecount=(int)sqlrcur.affectedRows();
+
+			drv.debugPrintln("update count: "+updatecount);
+			drv.debugPrintln("column count: "+sqlrcur.colCount());
+
 			resultset=new SQLRelayResultSet(drv);
 			resultset.setNetworkLock(networklock);
 			resultset.setStatement(this);
@@ -283,9 +294,10 @@ public class SQLRelayStatement implements Statement {
 
 		drv.debugPrintln("sql: "+sql);
 
-		// FIXME: handle timeout
 		resultset=null;
 		updatecount=-1;
+
+		// FIXME: handle timeout
 
 		boolean	result=false;
 		synchronized (networklock) {
@@ -296,11 +308,11 @@ public class SQLRelayStatement implements Statement {
 
 		if (result) {
 			updatecount=(int)sqlrcur.affectedRows();
+
+			drv.debugPrintln("update count: "+updatecount);
 		} else {
 			conn.throwException(sqlrcur.errorMessage());
 		}
-
-		drv.debugPrintln("update count: "+updatecount);
 
 		drv.debugEnd();
 		return updatecount;
@@ -400,7 +412,8 @@ public class SQLRelayStatement implements Statement {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		conn.throwFeatureNotSupportedException();
-		// FIXME: maybe we can support this somehow?
+		// FIXME: get the last insert id, as a result set
+		// with a colum name of GENERATED_KEY
 		drv.debugEnd();
 		return null;
 	}
@@ -504,7 +517,7 @@ public class SQLRelayStatement implements Statement {
 	int getUpdateCount() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		drv.debugPrintln("updatecount="+updatecount);
+		drv.debugPrintln("update count: "+updatecount);
 		drv.debugEnd();
 		return updatecount;
 	}
@@ -554,7 +567,6 @@ public class SQLRelayStatement implements Statement {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		escapeprocessing=enable;
-		// FIXME: do something with this...
 		drv.debugEnd();
 	}
 
@@ -607,7 +619,8 @@ public class SQLRelayStatement implements Statement {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("timeout: "+seconds);
-		// FIXME: hmm... this is at the connection level
+		// FIXME: this sets the timeout at the connection level,
+		// SQL Relay doesn't have a per-cursor timeout
 		sqlrcon.setResponseTimeout(seconds,0);
 		drv.debugEnd();
 	}
@@ -688,12 +701,21 @@ public class SQLRelayStatement implements Statement {
 	void throwResultSetHandlingNotSupportedException(
 						int resultsethandling)
 						throws SQLException {
-		if (resultsethandling==Statement.KEEP_CURRENT_RESULT) {
-			drv.debugPrintln("not supported: "+
-						"KEEP_CURRENT_RESULT");
-			conn.throwFeatureNotSupportedException();
+		switch (resultsethandling) {
+			case Statement.CLOSE_CURRENT_RESULT:	
+				break;
+			case Statement.KEEP_CURRENT_RESULT:
+				drv.debugPrintln("not supported: "+
+							"KEEP_CURRENT_RESULT");
+				break;
+			case Statement.CLOSE_ALL_RESULTS:
+				break;
+			default:
+				drv.debugPrintln("not supported: "+
+							"unknown - "+
+							resultsethandling);
+				break;
 		}
-		// FIXME: handle unrecognized values
 	}
 
 	SQLRCursor getSQLRCursor() {

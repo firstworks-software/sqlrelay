@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Calendar;
 import java.util.Map;
+import java.util.GregorianCalendar;
 import java.net.URL;
 import java.net.MalformedURLException;
 import java.nio.charset.StandardCharsets;
@@ -391,8 +392,15 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
+		Blob	b=null;
+		if (!wasnull) {
+			b=conn.createBlob();
+			if (b!=null) {
+				b.setBytes(1,field);
+			}
+		}
 		drv.debugEnd();
-		return (wasnull)?null:new SerialBlob(field);
+		return b;
 	}
 
 	public
@@ -410,8 +418,15 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
+		Blob	b=null;
+		if (!wasnull) {
+			b=conn.createBlob();
+			if (b!=null) {
+				b.setBytes(1,field);
+			}
+		}
 		drv.debugEnd();
-		return (wasnull)?null:new SerialBlob(field);
+		return b;
 	}
 
 	public
@@ -585,8 +600,15 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
+		Clob	c=null;
+		if (!wasnull) {
+			c=conn.createClob();
+			if (c!=null) {
+				c.setString(1,new String(field));
+			}
+		}
 		drv.debugEnd();
-		return (wasnull)?null:new SerialClob(field);
+		return c;
 	}
 
 	public
@@ -608,8 +630,15 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
+		Clob	c=null;
+		if (!wasnull) {
+			c=conn.createClob();
+			if (c!=null) {
+				c.setString(1,new String(field));
+			}
+		}
 		drv.debugEnd();
-		return (wasnull)?null:new SerialClob(field);
+		return c;
 	}
 
 	public
@@ -635,8 +664,7 @@ public class SQLRelayResultSet implements ResultSet {
 	public
 	Date getDate(int columnindex) throws SQLException {
 		drv.debugFunction(this);
-		// FIXME: pass in some default calendar
-		Date	dt=getDate(columnindex,null);
+		Date	dt=getDate(columnindex,new GregorianCalendar());
 		drv.debugEnd();
 		return dt;
 	}
@@ -655,8 +683,14 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		// FIXME: use cal
-		// FIXME: field isn't guaranteed to be in iso format
+		// FIXME:
+		// * parse field (not guaranteed to be in iso format)
+		// * set members of cal
+		//   cal.set(Calendar.YEAR,year);
+		//   cal.set(Calendar.MONTH,month);
+		//   etc.
+		// * return date
+		//   return new Date(calendar.getTimeInMillis());
 		drv.debugEnd();
 		return (wasnull)?null:Date.valueOf(field);
 	}
@@ -664,8 +698,7 @@ public class SQLRelayResultSet implements ResultSet {
 	public
 	Date getDate(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
-		// FIXME: pass in some default calendar
-		Date	dt=getDate(columnlabel,null);
+		Date	dt=getDate(columnlabel,new GregorianCalendar());
 		drv.debugEnd();
 		return dt;
 	}
@@ -684,8 +717,14 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		// FIXME: use cal
-		// FIXME: field isn't guaranteed to be in iso format
+		// FIXME:
+		// * parse field (not guaranteed to be in iso format)
+		// * set members of cal
+		//   cal.set(Calendar.YEAR,year);
+		//   cal.set(Calendar.MONTH,month);
+		//   etc.
+		// * return date
+		//   return new Date(calendar.getTimeInMillis());
 		drv.debugEnd();
 		return (wasnull)?null:Date.valueOf(field);
 	}
@@ -794,8 +833,8 @@ public class SQLRelayResultSet implements ResultSet {
 	int getHoldability() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		// FIXME: is this correct?
-		int	holdability=ResultSet.CLOSE_CURSORS_AT_COMMIT;
+		// SQL Relay only supports HOLD_CURSORS_OVER_COMMIT
+		int	holdability=ResultSet.HOLD_CURSORS_OVER_COMMIT;
 		drv.debugPrintln("holdability: "+holdability);
 		drv.debugEnd();
 		return holdability;
@@ -939,12 +978,28 @@ public class SQLRelayResultSet implements ResultSet {
 		throwExceptionIfClosed();
 		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
-		conn.throwFeatureNotSupportedException();
-		// FIXME: we could theoretically support this, but currently
-		// SQLRelayResultSetMetaData.getColumnType/getColumnClassName
-		// don't return any lob types, so it's not currently necessary
+		char[]	field=null;
+		synchronized (networklock) {
+			byte[]	val=sqlrcur.getFieldAsByteArray(
+						currentrow-1,columnindex-1);
+			if (val!=null) {
+				field=(new String(val,StandardCharsets.UTF_8)).
+								toCharArray();
+			}
+		}
+		wasnull=(field==null);
+		drv.debugPrintln("column index: "+columnindex);
+		drv.debugPrintln("field: "+field);
+		drv.debugPrintln("was null: "+wasnull);
+		NClob	nc=null;
+		if (!wasnull) {
+			nc=conn.createNClob();
+			if (nc!=null) {
+				nc.setString(1,new String(field));
+			}
+		}
 		drv.debugEnd();
-		return null;
+		return nc;
 	}
 
 	public
@@ -953,12 +1008,28 @@ public class SQLRelayResultSet implements ResultSet {
 		throwExceptionIfClosed();
 		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
-		conn.throwFeatureNotSupportedException();
-		// FIXME: we could theoretically support this, but currently
-		// SQLRelayResultSetMetaData.getColumnType/getColumnClassName
-		// don't return any lob types, so it's not currently necessary
+		char[]	field=null;
+		synchronized (networklock) {
+			byte[]	val=sqlrcur.getFieldAsByteArray(
+						currentrow-1,columnlabel);
+			if (val!=null) {
+				field=(new String(val,StandardCharsets.UTF_8)).
+								toCharArray();
+			}
+		}
+		wasnull=(field==null);
+		drv.debugPrintln("column: "+columnlabel);
+		drv.debugPrintln("field: "+field);
+		drv.debugPrintln("was null: "+wasnull);
+		NClob	nc=null;
+		if (!wasnull) {
+			nc=conn.createNClob();
+			if (nc!=null) {
+				nc.setString(1,new String(field));
+			}
+		}
 		drv.debugEnd();
-		return null;
+		return nc;
 	}
 
 	public
@@ -1018,11 +1089,22 @@ public class SQLRelayResultSet implements ResultSet {
 	public
 	Object getObject(int columnindex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
+		Object	o=getObject(columnindex,conn.getTypeMap());
+		drv.debugEnd();
+		return o;
+	}
+
+	public
+	Object getObject(int columnindex, Map<String,Class<?>> map)
+							throws SQLException {
+		drv.debugFunction(this);
 		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		conn.throwFeatureNotSupportedException();
-		// FIXME: we might be able to support this somehow...
+		// FIXME: we could support this if the c++ api had
+		// getColumnDatabase() and getColumnSchema(), and if
+		// getColumnTable() was exposed.  We could them combine them,
+		// and return getObject(columnindex,map.get("..."));
 		drv.debugEnd();
 		return null;
 	}
@@ -1034,31 +1116,32 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		conn.throwFeatureNotSupportedException();
-		// FIXME: we might be able to support this somehow...
-		return null;
-	}
-
-	public
-	Object getObject(int columnindex, Map<String,Class<?>> map)
-							throws SQLException {
-		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		drv.debugPrintln("column index: "+columnindex);
-		validateColumn(columnindex);
-		conn.throwFeatureNotSupportedException();
-		// FIXME: we might be able to support this somehow...
-		drv.debugEnd();
+		// FIXME: create an instance of "type", call its readSQL()
+		// method on getField(currentrow-1,columnindex) and return it,
+		// or return a String if "type" is null
 		return null;
 	}
 
 	public
 	Object getObject(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
+		Object	o=getObject(columnlabel,conn.getTypeMap());
+		drv.debugEnd();
+		return o;
+	}
+
+	public
+	Object getObject(String columnlabel, Map<String,Class<?>> map)
+							throws SQLException {
+		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		conn.throwFeatureNotSupportedException();
-		// FIXME: we might be able to support this somehow...
+		// FIXME: we could support this if the c++ api had
+		// getColumnDatabase() and getColumnSchema(), and if
+		// getColumnTable() was exposed.  We could them combine them,
+		// and return getObject(columnindex,map.get("..."));
 		drv.debugEnd();
 		return null;
 	}
@@ -1070,20 +1153,9 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		conn.throwFeatureNotSupportedException();
-		// FIXME: we might be able to support this somehow...
-		drv.debugEnd();
-		return null;
-	}
-
-	public
-	Object getObject(String columnlabel, Map<String,Class<?>> map)
-							throws SQLException {
-		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		drv.debugPrintln("column label: "+columnlabel);
-		validateColumn(columnlabel);
-		conn.throwFeatureNotSupportedException();
-		// FIXME: we might be able to support this somehow...
+		// FIXME: create an instance of "type", call its readSQL()
+		// method on getField(currentrow-1,columnlabel) and return it,
+		// or return a String if "type" is null
 		drv.debugEnd();
 		return null;
 	}
@@ -1095,7 +1167,11 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		conn.throwFeatureNotSupportedException();
-		// FIXME: we might be able to support this somehow...
+		// FIXME: we need an SQLRelayRef implementation to support this,
+		// but basically we'd just:
+		// SQLRelayRef	r=new SQLRelayRef();
+		// r.setObject(getObject(columnindex));
+		// return r;
 		drv.debugEnd();
 		return null;
 	}
@@ -1107,7 +1183,11 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		conn.throwFeatureNotSupportedException();
-		// FIXME: we might be able to support this somehow...
+		// FIXME: we need an SQLRelayRef implementation to support this,
+		// but basically we'd just:
+		// SQLRelayRef	r=new SQLRelayRef();
+		// r.setObject(getObject(columnindex));
+		// return r;
 		drv.debugEnd();
 		return null;
 	}
@@ -1128,7 +1208,9 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		conn.throwFeatureNotSupportedException();
-		// FIXME: we might be able to support this somehow...
+		// FIXME: we need an SQLRelayRowId implementation
+		// to support this, which needs to be able to store a String
+		// and return it as a String or byte array (I think)
 		drv.debugEnd();
 		return null;
 	}
@@ -1140,7 +1222,9 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		conn.throwFeatureNotSupportedException();
-		// FIXME: we might be able to support this somehow...
+		// FIXME: we need an SQLRelayRowId implementation
+		// to support this, which needs to be able to store a String
+		// and return it as a String or byte array (I think)
 		drv.debugEnd();
 		return null;
 	}
@@ -1190,7 +1274,9 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
 		conn.throwFeatureNotSupportedException();
-		// FIXME: we might be able to support this somehow...
+		// FIXME: we need an SQLRelaySQLXML implementation
+		// to support this, which needs to be able to store a String
+		// and return it as an InputStream, Reader, Source, and String
 		drv.debugEnd();
 		return null;
 	}
@@ -1202,7 +1288,9 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
 		conn.throwFeatureNotSupportedException();
-		// FIXME: we might be able to support this somehow...
+		// FIXME: we need an SQLRelaySQLXML implementation
+		// to support this, which needs to be able to store a String
+		// and return it as an InputStream, Reader, Source, and String
 		drv.debugEnd();
 		return null;
 	}
@@ -1255,8 +1343,7 @@ public class SQLRelayResultSet implements ResultSet {
 		throwExceptionIfClosed();
 		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
-		// FIXME: pass in some default calendar
-		Time	t=getTime(columnindex,null);
+		Time	t=getTime(columnindex,new GregorianCalendar());
 		drv.debugEnd();
 		return t;
 	}
@@ -1275,8 +1362,14 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		// FIXME: use cal
-		// FIXME: not guaranteed to be in iso format
+		// FIXME:
+		// * parse field (not guaranteed to be in iso format)
+		// * set members of cal
+		//   cal.set(Calendar.YEAR,year);
+		//   cal.set(Calendar.MONTH,month);
+		//   etc.
+		// * return time
+		//   return new Time(calendar.getTimeInMillis());
 		drv.debugEnd();
 		return (wasnull)?null:Time.valueOf(field);
 	}
@@ -1284,8 +1377,7 @@ public class SQLRelayResultSet implements ResultSet {
 	public
 	Time getTime(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
-		// FIXME: pass in some default calendar
-		Time	t=getTime(columnlabel,null);
+		Time	t=getTime(columnlabel,new GregorianCalendar());
 		drv.debugEnd();
 		return t;
 	}
@@ -1304,8 +1396,14 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		// FIXME: use cal
-		// FIXME: Time.valueOf() expects hh:mm:ss format
+		// FIXME:
+		// * parse field (not guaranteed to be in iso format)
+		// * set members of cal
+		//   cal.set(Calendar.YEAR,year);
+		//   cal.set(Calendar.MONTH,month);
+		//   etc.
+		// * return time
+		//   return new Time(calendar.getTimeInMillis());
 		drv.debugEnd();
 		return (wasnull)?null:Time.valueOf(field);
 	}
@@ -1316,8 +1414,8 @@ public class SQLRelayResultSet implements ResultSet {
 		throwExceptionIfClosed();
 		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
-		// FIXME: pass in some default calendar
-		Timestamp	t=getTimestamp(columnindex,null);
+		Timestamp	t=getTimestamp(columnindex,
+						new GregorianCalendar());
 		drv.debugEnd();
 		return t;
 	}
@@ -1337,9 +1435,14 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		// FIXME: use cal
-		// FIXME: Timestamp.valueOf() expects iso format
-		// FIXME: postgresql ends with timezone offset (eg. -04)
+		// FIXME:
+		// * parse field (not guaranteed to be in iso format)
+		// * set members of cal
+		//   cal.set(Calendar.YEAR,year);
+		//   cal.set(Calendar.MONTH,month);
+		//   etc.
+		// * return time
+		//   return new Timestamp(calendar.getTimeInMillis());
 		drv.debugEnd();
 		return (wasnull)?null:Timestamp.valueOf(field);
 	}
@@ -1347,8 +1450,8 @@ public class SQLRelayResultSet implements ResultSet {
 	public
 	Timestamp getTimestamp(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
-		// FIXME: pass in some default calendar
-		Timestamp	t=getTimestamp(columnlabel,null);
+		Timestamp	t=getTimestamp(columnlabel,
+						new GregorianCalendar());
 		drv.debugEnd();
 		return t;
 	}
@@ -1368,9 +1471,14 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		// FIXME: use cal
-		// FIXME: Timestamp.valueOf() expects iso format
-		// FIXME: postgresql ends with timezone offset (eg. -04)
+		// FIXME:
+		// * parse field (not guaranteed to be in iso format)
+		// * set members of cal
+		//   cal.set(Calendar.YEAR,year);
+		//   cal.set(Calendar.MONTH,month);
+		//   etc.
+		// * return time
+		//   return new Timestamp(calendar.getTimeInMillis());
 		drv.debugEnd();
 		return (wasnull)?null:Timestamp.valueOf(field);
 	}
@@ -1400,8 +1508,8 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
 		drv.debugEnd();
-		// FIXME: I think StringBufferInputStream only produces ASCII
-		return (wasnull)?null:new StringBufferInputStream(field);
+		return (wasnull)?null:new ByteArrayInputStream(
+					field.getBytes(StandardCharsets.UTF_8));
 	}
 
 	public
@@ -1419,8 +1527,8 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
 		drv.debugEnd();
-		// FIXME: I think StringBufferInputStream only produces ASCII
-		return (wasnull)?null:new StringBufferInputStream(field);
+		return (wasnull)?null:new ByteArrayInputStream(
+					field.getBytes(StandardCharsets.UTF_8));
 	}
 
 	public

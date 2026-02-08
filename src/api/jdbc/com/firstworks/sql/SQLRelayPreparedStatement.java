@@ -13,6 +13,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.GregorianCalendar;
 
 import com.firstworks.sqlrelay.*;
 
@@ -21,7 +22,7 @@ public class SQLRelayPreparedStatement
 		implements PreparedStatement {
 
 	private ArrayList<HashMap<Integer,SQLRelayParameter>>	batch;
-	private HashMap<Integer,SQLRelayParameter>		parameters;
+	protected HashMap<Integer,SQLRelayParameter>		parameters;
 
 
 	public
@@ -56,20 +57,33 @@ public class SQLRelayPreparedStatement
 	boolean execute() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		// FIXME: handle timeout
+
 		resultset=null;
 		updatecount=-1;
+
 		sqlrcur.clearBinds();
 		if (batch.size()==0) {
 			bind(parameters);
 		} else {
 			bind(batch.get(0));
 		}
+
+		// FIXME: handle timeout
+
 		boolean	result=false;
 		synchronized (networklock) {
 			result=sqlrcur.executeQuery();
 		}
+
+		drv.debugPrintln("result: "+result);
+
 		if (result) {
+
+			updatecount=(int)sqlrcur.affectedRows();
+
+			drv.debugPrintln("update count: "+updatecount);
+			drv.debugPrintln("column count: "+sqlrcur.colCount());
+
 			resultset=new SQLRelayResultSet(drv);
 			resultset.setNetworkLock(networklock);
 			resultset.setStatement(this);
@@ -78,6 +92,7 @@ public class SQLRelayPreparedStatement
 		} else {
 			throwErrorMessageException();
 		}
+
 		drv.debugEnd();
 		return result;
 	}
@@ -86,14 +101,18 @@ public class SQLRelayPreparedStatement
 	int[] executeBatch() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		// FIXME: handle timeout
+
+		drv.debugPrintln("batch size: "+batch.size());
+
 		int[]	results=new int[batch.size()];
 		int	count=0;
+
 		for (HashMap<Integer,SQLRelayParameter> params: batch) {
 			sqlrcur.clearBinds();
 			bind(params);
 			results[count++]=executeUpdate();
 		}
+
 		drv.debugEnd();
 		return results;
 	}
@@ -102,20 +121,31 @@ public class SQLRelayPreparedStatement
 	ResultSet executeQuery() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		// FIXME: handle timeout
+
 		resultset=null;
 		updatecount=-1;
+
 		sqlrcur.clearBinds();
 		if (batch.size()==0) {
 			bind(parameters);
 		} else {
 			bind(batch.get(0));
 		}
+
+		// FIXME: handle timeout
+
 		boolean	success=false;
 		synchronized (networklock) {
 			success=sqlrcur.executeQuery();
 		}
+
 		if (success) {
+
+			updatecount=(int)sqlrcur.affectedRows();
+
+			drv.debugPrintln("update count: "+updatecount);
+			drv.debugPrintln("column count: "+sqlrcur.colCount());
+
 			resultset=new SQLRelayResultSet(drv);
 			resultset.setNetworkLock(networklock);
 			resultset.setStatement(this);
@@ -124,6 +154,7 @@ public class SQLRelayPreparedStatement
 		} else {
 			throwErrorMessageException();
 		}
+
 		drv.debugEnd();
 		return resultset;
 	}
@@ -132,24 +163,32 @@ public class SQLRelayPreparedStatement
 	int executeUpdate() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		// FIXME: handle timeout
+
 		resultset=null;
 		updatecount=-1;
+
 		sqlrcur.clearBinds();
 		if (batch.size()==0) {
 			bind(parameters);
 		} else {
 			bind(batch.get(0));
 		}
+
+		// FIXME: handle timeout
+
 		boolean	success=false;
 		synchronized (networklock) {
 			success=sqlrcur.executeQuery();
 		}
+
 		if (success) {
 			updatecount=(int)sqlrcur.affectedRows();
+
+			drv.debugPrintln("update count: "+updatecount);
 		} else {
 			throwErrorMessageException();
 		}
+
 		drv.debugEnd();
 		return updatecount;
 	}
@@ -1141,30 +1180,7 @@ public class SQLRelayPreparedStatement
 	public
 	void setDate(int parameterIndex, Date x) throws SQLException {
 		drv.debugFunction(this);
-
-		throwExceptionIfClosed();
-
-		drv.debugPrintln("parameter index: "+parameterIndex);
-
-		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
-		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
-		param.setPrecision(0);
-		param.setScale(0);
-		param.setIsNullable(ParameterMetaData.parameterNullable);
-		param.setIsSigned(false);
-		param.setObject(x);
-		param.setLength(-1);
-		param.setIsBinary(false);
-		param.setIsLob(false);
-		param.setIsAscii(false);
-		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.Date);
-
-		parameters.put(parameterIndex,param);
-
+		setDate(parameterIndex,x,new GregorianCalendar());
 		drv.debugEnd();
 	}
 
@@ -1713,32 +1729,7 @@ public class SQLRelayPreparedStatement
 	public
 	void setTime(int parameterIndex, Time x) throws SQLException {
 		drv.debugFunction(this);
-
-		throwExceptionIfClosed();
-
-		drv.debugPrintln("parameter index: "+parameterIndex);
-
-		conn.throwFeatureNotSupportedException();
-
-		// FIXME: support this...
-		/*SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
-		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
-		param.setPrecision(0);
-		param.setScale(0);
-		param.setIsNullable(ParameterMetaData.parameterNullable);
-		param.setIsSigned(false);
-		param.setObject(x);
-		param.setLength(-1);
-		param.setIsBinary(false);
-		param.setIsLob(false);
-		param.setIsAscii(false);
-		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.Time);
-		parameters.put(parameterIndex,param);*/
-
+		setTime(parameterIndex,x,new GregorianCalendar());
 		drv.debugEnd();
 	}
 
@@ -1778,32 +1769,7 @@ public class SQLRelayPreparedStatement
 	public
 	void setTimestamp(int parameterIndex, Timestamp x) throws SQLException {
 		drv.debugFunction(this);
-
-		throwExceptionIfClosed();
-
-		drv.debugPrintln("parameter index: "+parameterIndex);
-
-		conn.throwFeatureNotSupportedException();
-
-		// FIXME: support this...
-		/*SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
-		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
-		param.setPrecision(0);
-		param.setScale(0);
-		param.setIsNullable(ParameterMetaData.parameterNullable);
-		param.setIsSigned(false);
-		param.setObject(x);
-		param.setLength(-1);
-		param.setIsBinary(false);
-		param.setIsLob(false);
-		param.setIsAscii(false);
-		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.Timestamp);
-		parameters.put(parameterIndex,param);*/
-
+		setTimestamp(parameterIndex,x,new GregorianCalendar());
 		drv.debugEnd();
 	}
 
@@ -1885,7 +1851,7 @@ public class SQLRelayPreparedStatement
 		drv.debugEnd();
 	}
 
-	private
+	protected
 	String asciiStreamToString(InputStream stream) {
 		drv.debugFunction(this);
 		String	s=streamToString(stream,"US-ASCII");
@@ -1894,7 +1860,7 @@ public class SQLRelayPreparedStatement
 		return s;
 	}
 
-	private
+	protected
 	String asciiStreamToString(InputStream stream, long length) {
 		drv.debugFunction(this);
 		String	s=streamToString(stream,length,"US-ASCII");
@@ -1903,7 +1869,7 @@ public class SQLRelayPreparedStatement
 		return s;
 	}
 
-	private
+	protected
 	String unicodeStreamToString(InputStream stream, long length) {
 		drv.debugFunction(this);
 		String	s=streamToString(stream,length,"UTF-8");
@@ -1912,7 +1878,7 @@ public class SQLRelayPreparedStatement
 		return s;
 	}
 
-	private
+	protected
 	String streamToString(InputStream stream, String encoding) {
 		drv.debugFunction(this);
 		String	s;
@@ -1928,7 +1894,7 @@ public class SQLRelayPreparedStatement
 		return s;
 	}
 
-	private
+	protected
 	String streamToString(InputStream stream, long length,
 						String encoding) {
 		drv.debugFunction(this);
@@ -1946,7 +1912,7 @@ public class SQLRelayPreparedStatement
 		return s;
 	}
 
-	private
+	protected
 	String readerToString(Reader reader) {
 		drv.debugFunction(this);
 		String	s;
@@ -1965,7 +1931,7 @@ public class SQLRelayPreparedStatement
 		return s;
 	}
 
-	private
+	protected
 	String readerToString(Reader reader, long length) {
 		drv.debugFunction(this);
 		String	s;
@@ -1984,7 +1950,7 @@ public class SQLRelayPreparedStatement
 		return s;
 	}
 
-	private
+	protected
 	String clobToString(Clob clob) {
 		drv.debugFunction(this);
 		String	s;
@@ -1998,7 +1964,7 @@ public class SQLRelayPreparedStatement
 		return s;
 	}
 
-	private
+	protected
 	String nClobToUnicodeString(NClob clob) {
 		drv.debugFunction(this);
 		String	s;
@@ -2012,7 +1978,7 @@ public class SQLRelayPreparedStatement
 		return s;
 	}
 
-	private
+	protected
 	byte[] binaryStreamToBytes(InputStream stream) {
 		drv.debugFunction(this);
 		byte[]	b;
@@ -2034,7 +2000,7 @@ public class SQLRelayPreparedStatement
 		return b;
 	}
 
-	private
+	protected
 	byte[] binaryStreamToBytes(InputStream stream, long length) {
 		drv.debugFunction(this);
 		byte[]	b;
@@ -2059,7 +2025,7 @@ public class SQLRelayPreparedStatement
 		return b;
 	}
 
-	private
+	protected
 	byte[] blobToBytes(Blob blob) {
 		drv.debugFunction(this);
 		byte[]	b;

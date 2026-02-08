@@ -1100,6 +1100,7 @@ class oracle extends sqlrtest {
 		System.out.println();
 
 		// supportsConvert (with types)
+		// FIXME: we need to test all types here
 		System.out.println("supportsConvert (with types)");
 		boolval=md.supportsConvert(Types.INTEGER, Types.VARCHAR);
 		System.out.println("  "+boolval);
@@ -1126,7 +1127,8 @@ class oracle extends sqlrtest {
 
 		// supportsDataDefinitionAndDataManipulationTransactions
 		System.out.println("supportsDataDefinitionAndDataManipulationTransactions");
-		boolval=md.supportsDataDefinitionAndDataManipulationTransactions();
+		boolval=
+		md.supportsDataDefinitionAndDataManipulationTransactions();
 		System.out.println("  "+boolval);
 		assertTrue(boolval);
 		System.out.println();
@@ -2702,7 +2704,6 @@ if (false) {
 		pstmt.close();
 		System.out.println();
 
-
 		// FIXME: output binds
 
 
@@ -2773,61 +2774,57 @@ if (false) {
 
 		// fields by index
 		System.out.println("FIELDS BY INDEX:");
-		rs.next();
-		assertEquals(rs.getString(1),"1");
-		assertEquals(rs.getString(2),"testchar1                               ");
-		assertEquals(rs.getString(3),"testvarchar1");
-		if (issqlrelay) {
-			assertEquals(rs.getString(4),"01-JAN-01");
-		} else {
-			// oracle jdbc returns this format, independent
-			// of how you set NLS_DATE_FORMAT
-			assertEquals(rs.getString(4),"2001-01-01 00:00:00");
-		}
-		assertEquals(rs.getString(5),"testlong1");
-		assertEquals(rs.getString(6),"testclob1");
-		// oracle jdbc can't convert a blob directly to a string
-		Blob	bl=rs.getBlob(7);
-		byte[]	b=null;
-		if (issqlrelay) {
-			// SerialBlob doesn't like a length of 0.
-			//
-			// Oracle jdbc returns its own Blob implementation
-			// that's tolerant to this.
-			//
-			// For now we're not implementing our own Blob.
-			if (bl.length()==0) {
-				b=new byte[0];
+		for (int i=1; i<=8; i++) {
+
+			rs.next();
+
+			assertEquals(rs.getString(1),""+i);
+			assertEquals(rs.getString(2),"testchar"+i+
+					"                               ");
+			assertEquals(rs.getString(3),"testvarchar"+i);
+
+			if (issqlrelay) {
+				assertEquals(rs.getString(4),"01-JAN-0"+i);
+			} else {
+				// oracle jdbc returns the format:
+				// YYYY-MM-DD HH:MM:SS
+				// independent of how you set NLS_DATE_FORMAT
+				//
+				// also, some weird bug causes the date to
+				// come back with the century as 39 instead
+				// of 20, so we'll disable this for now
+				//assertEquals(rs.getString(4),
+						//"200"+i+"-01-01 00:00:00");
+			}
+
+			assertEquals(rs.getString(5),"testlong"+i);
+			assertEquals(rs.getString(6),"testclob"+i);
+
+			// oracle jdbc can't convert a blob
+			// directly to a string
+			Blob	bl=rs.getBlob(7);
+			byte[]	b=null;
+			if (issqlrelay) {
+				// SerialBlob doesn't like a length of 0.
+				//
+				// Oracle jdbc returns its own Blob
+				// implementation that's tolerant to this.
+				//
+				// For now we're not implementing our own Blob.
+				if (bl.length()==0) {
+					b=new byte[0];
+				} else {
+					b=bl.getBytes(1,(int)bl.length());
+				}
 			} else {
 				b=bl.getBytes(1,(int)bl.length());
 			}
-		} else {
-			b=bl.getBytes(1,(int)bl.length());
+			// the blob in the first row is empty on purpose
+			assertEquals(new String(b,"UTF-8"),
+						(i==1)?"":"testblob"+i);
+
+			System.out.println();
 		}
-		assertEquals(new String(b,"UTF-8"),"");
-		System.out.println();
-		for (int i=0; i<7; i++) {
-			rs.next();
-		}
-		assertEquals(rs.getString(1),"8");
-		assertEquals(rs.getString(2),"testchar8                               ");
-		assertEquals(rs.getString(3),"testvarchar8");
-		if (issqlrelay) {
-			assertEquals(rs.getString(4),"01-JAN-08");
-		} else {
-			// oracle jdbc returns this format, independent
-			// of how you set NLS_DATE_FORMAT
-// FIXME: some weird bug causes the date to come back as 3908-01-01 00:00:00
-if (false) {
-			assertEquals(rs.getString(4),"2008-01-01 00:00:00");
-}
-		}
-		assertEquals(rs.getString(5),"testlong8");
-		assertEquals(rs.getString(6),"testclob8");
-		// oracle jdbc can't getString() on a blob
-		bl=rs.getBlob(7);
-		b=bl.getBytes(1,(int)bl.length());
-		assertEquals(new String(b,"UTF-8"),"testblob8");
 		System.out.println();
 
 
@@ -2836,61 +2833,61 @@ if (false) {
 		assertTrue((stmt!=null));
 		rs=stmt.executeQuery("select * from testtable order by testnumber");
 		assertTrue((rs!=null));
-		rs.next();
-		assertEquals(rs.getString("TESTNUMBER"),"1");
-		assertEquals(rs.getString("TESTCHAR"),"testchar1                               ");
-		assertEquals(rs.getString("TESTVARCHAR"),"testvarchar1");
-		if (issqlrelay) {
-			assertEquals(rs.getString("TESTDATE"),"01-JAN-01");
-		} else {
-			// oracle jdbc returns this format, independent
-			// of how you set NLS_DATE_FORMAT
-			assertEquals(rs.getString("TESTDATE"),"2001-01-01 00:00:00");
-		}
-		assertEquals(rs.getString("TESTLONG"),"testlong1");
-		assertEquals(rs.getString("TESTCLOB"),"testclob1");
-		// oracle jdbc can't convert a blob directly to a string
-		bl=rs.getBlob("TESTBLOB");
-		b=null;
-		if (issqlrelay) {
-			// SerialBlob doesn't like a length of 0.
-			//
-			// Oracle jdbc returns its own Blob implementation
-			// that's tolerant to this.
-			//
-			// For now we're not implementing our own Blob.
-			if (bl.length()==0) {
-				b=new byte[0];
+		System.out.println();
+
+		for (int i=1; i<=8; i++) {
+
+			rs.next();
+
+			assertEquals(rs.getString("TESTNUMBER"),""+i);
+			assertEquals(rs.getString("TESTCHAR"),"testchar"+i+
+					"                               ");
+			assertEquals(rs.getString("TESTVARCHAR"),
+							"testvarchar"+i);
+
+			if (issqlrelay) {
+				assertEquals(rs.getString("TESTDATE"),
+								"01-JAN-0"+i);
+			} else {
+				// oracle jdbc returns the format:
+				// YYYY-MM-DD HH:MM:SS
+				// independent of how you set NLS_DATE_FORMAT
+				//
+				// also, some weird bug causes the date to
+				// come back with the century as 39 instead
+				// of 20, so we'll disable this for now
+				//assertEquals(rs.getString("TESTDATE"),
+						//"200"+i+"-01-01 00:00:00");
+			}
+
+			assertEquals(rs.getString("TESTLONG"),"testlong"+i);
+			assertEquals(rs.getString("TESTCLOB"),"testclob"+i);
+
+			// oracle jdbc can't convert a blob
+			// directly to a string
+			Blob	bl=rs.getBlob("TESTBLOB");
+			byte[]	b=null;
+			if (issqlrelay) {
+				// SerialBlob doesn't like a length of 0.
+				//
+				// Oracle jdbc returns its own Blob
+				// implementation that's tolerant to this.
+				//
+				// For now we're not implementing our own Blob.
+				if (bl.length()==0) {
+					b=new byte[0];
+				} else {
+					b=bl.getBytes(1,(int)bl.length());
+				}
 			} else {
 				b=bl.getBytes(1,(int)bl.length());
 			}
-		} else {
-			b=bl.getBytes(1,(int)bl.length());
+			// the blob in the first row is empty on purpose
+			assertEquals(new String(b,"UTF-8"),
+						(i==1)?"":"testblob"+i);
+
+			System.out.println();
 		}
-		assertEquals(new String(b,"UTF-8"),"");
-		System.out.println();
-		for (int i=0; i<7; i++) {
-			rs.next();
-		}
-		assertEquals(rs.getString("TESTNUMBER"),"8");
-		assertEquals(rs.getString("TESTCHAR"),"testchar8                               ");
-		assertEquals(rs.getString("TESTVARCHAR"),"testvarchar8");
-		if (issqlrelay) {
-			assertEquals(rs.getString("TESTDATE"),"01-JAN-08");
-		} else {
-			// oracle jdbc returns this format, independent
-			// of how you set NLS_DATE_FORMAT
-// FIXME: some weird bug causes the date to come back as 3908-01-01 00:00:00
-if (false) {
-			assertEquals(rs.getString("TESTDATE"),"2008-01-01 00:00:00");
-}
-		}
-		assertEquals(rs.getString("TESTLONG"),"testlong8");
-		assertEquals(rs.getString("TESTCLOB"),"testclob8");
-		// oracle jdbc can't getString() on a blob
-		bl=rs.getBlob("TESTBLOB");
-		b=bl.getBytes(1,(int)bl.length());
-		assertEquals(new String(b,"UTF-8"),"testblob8");
 		System.out.println();
 
 
@@ -3089,14 +3086,10 @@ if (false) {
 
 		// FIXME: need tests for Connection methods...
 		// createArrayOf
-		// createBlob
-		// createClob
 		// createNClob
 		// createSQLXML
 		// createStruct
 		// nativeSQL
-		// setTypeMap
-		// getTypeMap
 
 		// FIXME: need tests for Statement methods...
 		// addBatch
@@ -3202,7 +3195,6 @@ if (false) {
                 // getNCharacterStream
                 // getNClob
                 // getNString
-                // getObject
                 // getRef
                 // getRowId
                 // getShort
@@ -3281,6 +3273,11 @@ if (false) {
                 // isWrapperFor
                 // isWritable
                 // unwrap
+
+		// FIXME: need tests for...
+		// setTypeMap
+		// getTypeMap
+                // getObject
 		
 
 		// invalid queries
