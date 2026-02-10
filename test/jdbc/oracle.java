@@ -2774,13 +2774,11 @@ if (false) {
 			System.out.println();
 		}
 		rs.close();
-		stmt.close();
 		System.out.println();
 
 
 		// fields by name
 		System.out.println("FIELDS BY NAME:");
-		assertTrue((stmt!=null));
 		rs=stmt.executeQuery("select * from testtable order by testnumber");
 		assertTrue((rs!=null));
 		System.out.println();
@@ -2882,6 +2880,7 @@ if (false) {
 		assertEquals(secondrs.getString(1),"9");
 		secondrs.close();
 		secondstmt.close();
+		secondcon.close();
 		con.setAutoCommit(false);
 		System.out.println();
 
@@ -2914,6 +2913,7 @@ if (false) {
 		// oracle jdbc can't getString() on a blob
 		assertTrue((rs.getBlob(3)==null));
 		assertTrue((rs.getBlob(4)==null));
+		rs.close();
 		assertEquals(stmt.executeUpdate("drop table testtable1"),0);
 		System.out.println();
 
@@ -2946,6 +2946,7 @@ if (false) {
 		Clob	cl=rs.getClob(1);
 		assertEquals(clobstr,cl.getSubString(1,(int)cl.length()));
 		rs.close();
+		pstmt.close();
 		// FIXME: use callable statement?
 		/*cur->prepareQuery("begin select testclob into :clobbindval from testtable2; end;");
 		cur->defineOutputBindClob("clobbindval");
@@ -2980,11 +2981,13 @@ if (false) {
 		assertTrue((rs!=null));
 		rs.next();
 		assertEquals(rs.getString(1),"1");
+		rs.close();
 		con.commit();
 		rs=stmt.executeQuery("select count(*) from "+hostname+"_temptabledelete");
 		assertTrue((rs!=null));
 		rs.next();
 		assertEquals(rs.getString(1),"0");
+		rs.close();
 		assertEquals(stmt.executeUpdate("drop table "+hostname+"_temptabledelete"),0);
 		System.out.println();
 		try {
@@ -3001,21 +3004,25 @@ if (false) {
 		assertTrue((rs!=null));
 		rs.next();
 		assertEquals(rs.getString(1),"1");
+		rs.close();
 		con.commit();
 		rs=stmt.executeQuery("select count(*) from "+hostname+"_temptablepreserve");
 		assertTrue((rs!=null));
 		rs.next();
 		assertEquals(rs.getString(1),"1");
+		rs.close();
+		stmt.close();
 		con.close();
 		System.out.println();
 		con=DriverManager.getConnection(url,user,password);
 		assertTrue((con!=null));
-		stmt=secondcon.createStatement();
+		stmt=con.createStatement();
 		assertTrue((stmt!=null));
 		rs=stmt.executeQuery("select count(*) from "+hostname+"_temptablepreserve");
 		assertTrue((rs!=null));
 		rs.next();
 		assertEquals(rs.getString(1),"0");
+		rs.close();
 		assertEquals(stmt.executeUpdate("truncate table "+hostname+"_temptablepreserve"),0);
 		Thread.sleep(2000);
 		assertEquals(stmt.executeUpdate("drop table "+hostname+"_temptablepreserve"),0);

@@ -107,6 +107,12 @@ public class SQLRelayStatement implements Statement {
 		drv.debugFunction(this);
 		if (resultset!=null) {
 			resultset.close();
+		} else {
+			if (sqlrcur!=null) {
+				synchronized (networklock) {
+					sqlrcur.closeResultSet();
+				}
+			}
 		}
 		reset();
 		drv.debugEnd();
@@ -116,6 +122,7 @@ public class SQLRelayStatement implements Statement {
 	void closeOnCompletion() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		// FIXME: do something with this
 		closeoncompletion=true;
 		drv.debugEnd();
 	}

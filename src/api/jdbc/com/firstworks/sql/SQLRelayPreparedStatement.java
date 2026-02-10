@@ -161,7 +161,6 @@ public class SQLRelayPreparedStatement
 
 	public
 	int executeUpdate() throws SQLException {
-drv.debug=true;
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 
@@ -179,7 +178,6 @@ drv.debug=true;
 
 		boolean	success=false;
 		synchronized (networklock) {
-conn.getSQLRConnection().debugOn();
 			success=sqlrcur.executeQuery();
 		}
 
@@ -192,7 +190,6 @@ conn.getSQLRConnection().debugOn();
 		}
 
 		drv.debugEnd();
-drv.debug=false;
 		return updatecount;
 	}
 
