@@ -10,7 +10,7 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 
 	private	SQLRelayDriver	drv;
 
-	private HashMap<Integer,SQLRelayParameter>	parameters;
+	private HashMap<String,SQLRelayParameter>	parameters;
 
 
 	public
@@ -21,7 +21,7 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 		drv.debugEnd();
 	}
 
-	void setParameters(HashMap<Integer,SQLRelayParameter> parameters) {
+	void setParameters(HashMap<String,SQLRelayParameter> parameters) {
 		drv.debugFunction(this);
 		this.parameters=parameters;
 		drv.debugPrintln("parameter count: "+parameters.size());
@@ -43,7 +43,7 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 	SQLRelayParameter getParameter(int param) {
 		drv.debugFunction(this);
 		SQLRelayParameter	p=
-			(parameters!=null)?parameters.get(param):null;
+			(parameters!=null)?parameters.get(String.valueOf(param)):null;
 		drv.debugPrintln("param: "+param);
 		//FIXME: drv.debugPrintln("class name: "+name);
 		drv.debugEnd();

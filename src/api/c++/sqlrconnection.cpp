@@ -2093,6 +2093,11 @@ bool sqlrconnection::getDatabaseFeatures() {
 		return false;
 	}
 
+	// sanity check on count
+	if (count>FEATURE_COUNT) {
+		count=FEATURE_COUNT;
+	}
+
 	// get each feature...
 	for (uint16_t i=0; i<count; i++) {
 
@@ -2110,6 +2115,7 @@ bool sqlrconnection::getDatabaseFeatures() {
 		if (pvt->_cs->read(feature,size)!=size) {
 			setError("Failed to get database features.\n"
 					"A network error may have occurred.");
+			delete[] feature;
 			return false;
 		}
 		feature[size]='\0';

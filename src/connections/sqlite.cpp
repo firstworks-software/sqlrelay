@@ -194,10 +194,12 @@ sqliteconnection::sqliteconnection(sqlrservercontroller *cont) :
 sqliteconnection::~sqliteconnection() {
 	clearErrors();
 	delete[] hostname;
-	for (int i=1; i<=MAXFEATURE; i++) {
-		delete[] databasefeatures[i];
+	if (databasefeatures) {
+		for (int i=0; i<FEATURE_COUNT; i++) {
+			delete[] databasefeatures[i];
+		}
+		delete[] databasefeatures;
 	}
-	delete[] databasefeatures;
 	delete[] db;
 }
 
@@ -457,7 +459,7 @@ const char * const *sqliteconnection::getDatabaseFeatures() {
 		return databasefeatures;
 	}
 
-	databasefeatures=new char *[MAXFEATURE+1];
+	databasefeatures=new char *[FEATURE_COUNT];
 	databasefeatures[FEATURE_ALL_PROCEDURES_ARE_CALLABLE]=
 		charstring::duplicate("");
 	databasefeatures[FEATURE_ALL_TABLES_ARE_SELECTABLE]=
@@ -646,7 +648,8 @@ const char * const *sqliteconnection::getDatabaseFeatures() {
 		charstring::duplicate("");
 	databasefeatures[FEATURE_SUPPORTS_CORRELATED_SUBQUERIES]=
 		charstring::duplicate("");
-	databasefeatures[FEATURE_SUPPORTS_DATA_DEFINITION_AND_DATA_MANIPULATION_TRANSACTIONS]=
+	databasefeatures[
+	FEATURE_SUPPORTS_DATA_DEFINITION_AND_DATA_MANIPULATION_TRANSACTIONS]=
 		charstring::duplicate("");
 	databasefeatures[FEATURE_SUPPORTS_DATA_MANIPULATION_TRANSACTIONS_ONLY]=
 		charstring::duplicate("");

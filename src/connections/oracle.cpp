@@ -478,10 +478,12 @@ oracleconnection::oracleconnection(sqlrservercontroller *cont) :
 
 oracleconnection::~oracleconnection() {
 
-	for (uint16_t i=0; i<MAXFEATURE; i++) {
-		delete[] databasefeatures[i];
+	if (databasefeatures) {
+		for (uint16_t i=0; i<FEATURE_COUNT; i++) {
+			delete[] databasefeatures[i];
+		}
+		delete[] databasefeatures;
 	}
-	delete[] databasefeatures;
 
 	delete[] lastinsertidquery;
 	delete[] ucs2user;
@@ -2118,7 +2120,7 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 		return databasefeatures;
 	}
 
-	databasefeatures=new char *[MAXFEATURE+1];
+	databasefeatures=new char *[FEATURE_COUNT];
 	databasefeatures[FEATURE_ALL_PROCEDURES_ARE_CALLABLE]=
 		charstring::duplicate("false");
 	databasefeatures[FEATURE_ALL_TABLES_ARE_SELECTABLE]=

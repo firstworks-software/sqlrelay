@@ -2610,98 +2610,46 @@ if (false) {
 		// bind by position
 		System.out.println("BIND BY POSITION:");
 		PreparedStatement	pstmt=con.prepareStatement("insert into testtable values (:var1,:var2,:var3,:var4,:var5,:var6,:var7)");
-		pstmt.setInt(1,2);
-		pstmt.setString(2,"testchar2");
-		pstmt.setString(3,"testvarchar2");
-		pstmt.setDate(4,new java.sql.Date(2002,1,1));
-		pstmt.setString(5,"testlong2");
 		Clob	clob=con.createClob();
-		clob.setString(1,"testclob2");
-		pstmt.setClob(6,clob);
 		Blob	blob=con.createBlob();
-		blob.setBytes(1,(new String("testblob2")).
+		for (int i=2; i<=4; i++) {
+			pstmt.clearParameters();
+			pstmt.setInt(1,i);
+			pstmt.setString(2,"testchar"+i);
+			pstmt.setString(3,"testvarchar"+i);
+			pstmt.setDate(4,new java.sql.Date(2000+i,1,1));
+			pstmt.setString(5,"testlong"+i);
+			clob.setString(1,"testclob"+i);
+			pstmt.setClob(6,clob);
+			blob.setBytes(1,(new String("testblob"+i)).
 					getBytes(StandardCharsets.UTF_8));
-		pstmt.setBlob(7,blob);
-		assertEquals(pstmt.executeUpdate(),1);
-		System.out.println();
-		pstmt.clearParameters();
-		pstmt.setInt(1,3);
-		pstmt.setString(2,"testchar3");
-		pstmt.setString(3,"testvarchar3");
-		pstmt.setDate(4,new java.sql.Date(2003,1,1));
-		pstmt.setString(5,"testlong3");
-		clob.setString(1,"testclob3");
-		pstmt.setClob(6,clob);
-		blob.setBytes(1,(new String("testblob3")).
-					getBytes(StandardCharsets.UTF_8));
-		pstmt.setBlob(7,blob);
-		assertEquals(pstmt.executeUpdate(),1);
-		System.out.println();
-		pstmt.clearParameters();
-		pstmt.setInt(1,4);
-		pstmt.setString(2,"testchar4");
-		pstmt.setString(3,"testvarchar4");
-		pstmt.setDate(4,new java.sql.Date(2004,1,1));
-		pstmt.setString(5,"testlong4");
-		clob.setString(1,"testclob4");
-		pstmt.setClob(6,clob);
-		blob.setBytes(1,(new String("testblob4")).
-					getBytes(StandardCharsets.UTF_8));
-		pstmt.setBlob(7,blob);
-		assertEquals(pstmt.executeUpdate(),1);
-		System.out.println();
-		pstmt.clearParameters();
-		pstmt.setInt(1,5);
-		pstmt.setString(2,"testchar5");
-		pstmt.setString(3,"testvarchar5");
-		pstmt.setDate(4,new java.sql.Date(2005,1,1));
-		pstmt.setString(5,"testlong5");
-		clob.setString(1,"testclob5");
-		pstmt.setClob(6,clob);
-		blob.setBytes(1,(new String("testblob5")).
-					getBytes(StandardCharsets.UTF_8));
-		pstmt.setBlob(7,blob);
-		assertEquals(pstmt.executeUpdate(),1);
-		System.out.println();
-		pstmt.clearParameters();
-		pstmt.setInt(1,6);
-		pstmt.setString(2,"testchar6");
-		pstmt.setString(3,"testvarchar6");
-		pstmt.setDate(4,new java.sql.Date(2006,1,1));
-		pstmt.setString(5,"testlong6");
-		clob.setString(1,"testclob6");
-		pstmt.setClob(6,clob);
-		blob.setBytes(1,(new String("testblob6")).
-					getBytes(StandardCharsets.UTF_8));
-		pstmt.setBlob(7,blob);
-		assertEquals(pstmt.executeUpdate(),1);
-		System.out.println();
-		pstmt.clearParameters();
-		pstmt.setInt(1,7);
-		pstmt.setString(2,"testchar7");
-		pstmt.setString(3,"testvarchar7");
-		pstmt.setDate(4,new java.sql.Date(2007,1,1));
-		pstmt.setString(5,"testlong7");
-		clob.setString(1,"testclob7");
-		pstmt.setClob(6,clob);
-		blob.setBytes(1,(new String("testblob7")).
-					getBytes(StandardCharsets.UTF_8));
-		pstmt.setBlob(7,blob);
-		assertEquals(pstmt.executeUpdate(),1);
-		System.out.println();
-		pstmt.clearParameters();
-		pstmt.setInt(1,8);
-		pstmt.setString(2,"testchar8");
-		pstmt.setString(3,"testvarchar8");
-		pstmt.setDate(4,new java.sql.Date(2008,1,1));
-		pstmt.setString(5,"testlong8");
-		clob.setString(1,"testclob8");
-		pstmt.setClob(6,clob);
-		blob.setBytes(1,(new String("testblob8")).
-					getBytes(StandardCharsets.UTF_8));
-		pstmt.setBlob(7,blob);
-		assertEquals(pstmt.executeUpdate(),1);
+			pstmt.setBlob(7,blob);
+			assertEquals(pstmt.executeUpdate(),1);
+			System.out.println();
+		}
 		pstmt.close();
+		System.out.println();
+
+
+		// bind by name
+		System.out.println("BIND BY NAME:");
+		CallableStatement	cstmt=con.prepareCall("insert into testtable values (:var1,:var2,:var3,:var4,:var5,:var6,:var7)");
+		for (int i=5; i<=8; i++) {
+			cstmt.clearParameters();
+			cstmt.setInt("var1",i);
+			cstmt.setString("var2","testchar"+i);
+			cstmt.setString("var3","testvarchar"+i);
+			cstmt.setDate("var4",new java.sql.Date(2000+i,1,1));
+			cstmt.setString("var5","testlong"+i);
+			clob.setString(1,"testclob"+i);
+			cstmt.setClob("var6",clob);
+			blob.setBytes(1,(new String("testblob"+i)).
+					getBytes(StandardCharsets.UTF_8));
+			cstmt.setBlob("var7",blob);
+			assertEquals(cstmt.executeUpdate(),1);
+			System.out.println();
+		}
+		cstmt.close();
 		System.out.println();
 
 		// FIXME: output binds
@@ -2825,6 +2773,8 @@ if (false) {
 
 			System.out.println();
 		}
+		rs.close();
+		stmt.close();
 		System.out.println();
 
 

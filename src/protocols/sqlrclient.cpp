@@ -803,7 +803,11 @@ sqlrservercursor *sqlrprotocol_sqlrclient::getCursor(uint16_t command) {
 		cursor=cont->getCursor();
 	}
 
-	debugWrite("cursor id: %hd",cont->getId(cursor));
+	if (cursor) {
+		debugWrite("cursor id: %hd",cont->getId(cursor));
+	} else {
+		debugWrite("cursor id: not found");
+	}
 	debugEnd();
 
 	return cursor;
@@ -1598,13 +1602,13 @@ void sqlrprotocol_sqlrclient::getDatabaseFeaturesCommand() {
 		debugWrite("success");
 		clientsock->write((uint16_t)NO_ERROR_OCCURRED);
 
-		debugWrite("%d features",(int)(MAXFEATURE+1));
+		debugWrite("%d features",(int)(FEATURE_COUNT));
 
 		// send the number of features
-		clientsock->write((uint16_t)(MAXFEATURE+1));
+		clientsock->write((uint16_t)(FEATURE_COUNT));
 
 		// send each feature
-		for (uint16_t i=0; i<=MAXFEATURE; i++) {
+		for (uint16_t i=0; i<FEATURE_COUNT; i++) {
 
 			const char	*value=features[i];
 			uint16_t	valuesize=charstring::getLength(value);

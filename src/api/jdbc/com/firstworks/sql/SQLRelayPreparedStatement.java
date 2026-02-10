@@ -21,16 +21,16 @@ public class SQLRelayPreparedStatement
 		extends SQLRelayStatement
 		implements PreparedStatement {
 
-	private ArrayList<HashMap<Integer,SQLRelayParameter>>	batch;
-	protected HashMap<Integer,SQLRelayParameter>		parameters;
+	private ArrayList<HashMap<String,SQLRelayParameter>>	batch;
+	protected HashMap<String,SQLRelayParameter>		parameters;
 
 
 	public
 	SQLRelayPreparedStatement(SQLRelayDriver driver) {
 		super(driver);
 		drv.debugFunction(this);
-		batch=new ArrayList<HashMap<Integer,SQLRelayParameter>>();
-		parameters=new HashMap<Integer,SQLRelayParameter>();
+		batch=new ArrayList<HashMap<String,SQLRelayParameter>>();
+		parameters=new HashMap<String,SQLRelayParameter>();
 		drv.debugEnd();
 	}
 
@@ -39,7 +39,7 @@ public class SQLRelayPreparedStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		batch.add(parameters);
-		parameters=new HashMap<Integer,SQLRelayParameter>();
+		parameters=new HashMap<String,SQLRelayParameter>();
 		drv.debugEnd();
 	}
 
@@ -107,7 +107,7 @@ public class SQLRelayPreparedStatement
 		int[]	results=new int[batch.size()];
 		int	count=0;
 
-		for (HashMap<Integer,SQLRelayParameter> params: batch) {
+		for (HashMap<String,SQLRelayParameter> params: batch) {
 			sqlrcur.clearBinds();
 			bind(params);
 			results[count++]=executeUpdate();
@@ -161,6 +161,7 @@ public class SQLRelayPreparedStatement
 
 	public
 	int executeUpdate() throws SQLException {
+drv.debug=true;
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 
@@ -178,6 +179,7 @@ public class SQLRelayPreparedStatement
 
 		boolean	success=false;
 		synchronized (networklock) {
+conn.getSQLRConnection().debugOn();
 			success=sqlrcur.executeQuery();
 		}
 
@@ -190,11 +192,12 @@ public class SQLRelayPreparedStatement
 		}
 
 		drv.debugEnd();
+drv.debug=false;
 		return updatecount;
 	}
 
 	private
-	void bind(HashMap<Integer,SQLRelayParameter> params)
+	void bind(HashMap<String,SQLRelayParameter> params)
 							throws SQLException {
 		drv.debugFunction(this);
 
@@ -203,10 +206,10 @@ public class SQLRelayPreparedStatement
 			return;
 		}
 
-		for (Map.Entry<Integer,SQLRelayParameter> entry:
+		for (Map.Entry<String,SQLRelayParameter> entry:
 							params.entrySet()) {
 
-			String			key=entry.getKey().toString();
+			String			key=entry.getKey();
 			SQLRelayParameter	value=entry.getValue();
 
 			SQLRelayParameter.BindType	bindtype=
@@ -576,10 +579,18 @@ public class SQLRelayPreparedStatement
 	public
 	void setArray(int parameterIndex, Array x) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setArray(String.valueOf(parameterIndex),x);
+		drv.debugEnd();
+	}
+
+	public
+	void setArray(String parameterName, Array x) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		conn.throwFeatureNotSupportedException();
 
@@ -590,10 +601,19 @@ public class SQLRelayPreparedStatement
 	void setAsciiStream(int parameterIndex, InputStream x)
 							throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setAsciiStream(String.valueOf(parameterIndex),x);
+		drv.debugEnd();
+	}
+
+	public
+	void setAsciiStream(String parameterName, InputStream x)
+							throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
@@ -611,7 +631,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(null);
 		param.setBindType(SQLRelayParameter.BindType.AsciiStream);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -620,10 +640,19 @@ public class SQLRelayPreparedStatement
 	void setAsciiStream(int parameterIndex, InputStream x,
 					int length) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setAsciiStream(String.valueOf(parameterIndex),x,length);
+		drv.debugEnd();
+	}
+
+	public
+	void setAsciiStream(String parameterName, InputStream x,
+					int length) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
@@ -642,7 +671,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.AsciiStreamWithIntLength);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -651,10 +680,19 @@ public class SQLRelayPreparedStatement
 	void setAsciiStream(int parameterIndex, InputStream x,
 					long length) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setAsciiStream(String.valueOf(parameterIndex),x,length);
+		drv.debugEnd();
+	}
+
+	public
+	void setAsciiStream(String parameterName, InputStream x,
+					long length) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
@@ -673,7 +711,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.AsciiStreamWithLongLength);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -682,10 +720,19 @@ public class SQLRelayPreparedStatement
 	void setBigDecimal(int parameterIndex, BigDecimal x)
 						throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setBigDecimal(String.valueOf(parameterIndex),x);
+		drv.debugEnd();
+	}
+
+	public
+	void setBigDecimal(String parameterName, BigDecimal x)
+						throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
@@ -704,7 +751,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.BigDecimal);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -713,10 +760,19 @@ public class SQLRelayPreparedStatement
 	void setBinaryStream(int parameterIndex, InputStream x)
 						throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setBinaryStream(String.valueOf(parameterIndex),x);
+		drv.debugEnd();
+	}
+
+	public
+	void setBinaryStream(String parameterName, InputStream x)
+						throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
@@ -735,7 +791,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.BinaryStream);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -744,10 +800,19 @@ public class SQLRelayPreparedStatement
 	void setBinaryStream(int parameterIndex, InputStream x,
 					int length) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setBinaryStream(String.valueOf(parameterIndex),x,length);
+		drv.debugEnd();
+	}
+
+	public
+	void setBinaryStream(String parameterName, InputStream x,
+					int length) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
@@ -766,7 +831,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.BinaryStreamWithIntLength);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -775,10 +840,19 @@ public class SQLRelayPreparedStatement
 	void setBinaryStream(int parameterIndex, InputStream x,
 					long length) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setBinaryStream(String.valueOf(parameterIndex),x,length);
+		drv.debugEnd();
+	}
+
+	public
+	void setBinaryStream(String parameterName, InputStream x,
+					long length) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
@@ -797,7 +871,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.BinaryStreamWithLongLength);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -805,10 +879,18 @@ public class SQLRelayPreparedStatement
 	public
 	void setBlob(int parameterIndex, Blob x) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setBlob(String.valueOf(parameterIndex),x);
+		drv.debugEnd();
+	}
+
+	public
+	void setBlob(String parameterName, Blob x) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
@@ -827,7 +909,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.Blob);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -836,10 +918,19 @@ public class SQLRelayPreparedStatement
 	void setBlob(int parameterIndex, InputStream inputStream)
 						throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setBlob(String.valueOf(parameterIndex),inputStream);
+		drv.debugEnd();
+	}
+
+	public
+	void setBlob(String parameterName, InputStream inputStream)
+						throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
@@ -858,7 +949,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.BlobInputStream);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -867,10 +958,19 @@ public class SQLRelayPreparedStatement
 	void setBlob(int parameterIndex, InputStream inputStream,
 					long length) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setBlob(String.valueOf(parameterIndex),inputStream,length);
+		drv.debugEnd();
+	}
+
+	public
+	void setBlob(String parameterName, InputStream inputStream,
+					long length) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
@@ -890,7 +990,7 @@ public class SQLRelayPreparedStatement
 			SQLRelayParameter.BindType.
 				BlobInputStreamWithLongLength);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -898,10 +998,18 @@ public class SQLRelayPreparedStatement
 	public
 	void setBoolean(int parameterIndex, boolean x) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setBoolean(String.valueOf(parameterIndex),x);
+		drv.debugEnd();
+	}
+
+	public
+	void setBoolean(String parameterName, boolean x) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 		drv.debugPrintln("value: "+x);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
@@ -921,7 +1029,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.Boolean);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -929,10 +1037,18 @@ public class SQLRelayPreparedStatement
 	public
 	void setByte(int parameterIndex, byte x) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setByte(String.valueOf(parameterIndex),x);
+		drv.debugEnd();
+	}
+
+	public
+	void setByte(String parameterName, byte x) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 		drv.debugPrintln("value: "+x);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
@@ -952,7 +1068,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.Byte);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -960,10 +1076,18 @@ public class SQLRelayPreparedStatement
 	public
 	void setBytes(int parameterIndex, byte[] x) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setBytes(String.valueOf(parameterIndex),x);
+		drv.debugEnd();
+	}
+
+	public
+	void setBytes(String parameterName, byte[] x) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		Byte[]	bytes=new Byte[x.length];
 		for (int i=0; i<x.length; i++) {
@@ -986,7 +1110,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.Bytes);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -995,10 +1119,19 @@ public class SQLRelayPreparedStatement
 	void setCharacterStream(int parameterIndex, Reader reader)
 						throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setCharacterStream(String.valueOf(parameterIndex),reader);
+		drv.debugEnd();
+	}
+
+	public
+	void setCharacterStream(String parameterName, Reader reader)
+						throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
@@ -1017,7 +1150,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.CharacterStream);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -1026,10 +1159,19 @@ public class SQLRelayPreparedStatement
 	void setCharacterStream(int parameterIndex, Reader reader,
 					int length) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setCharacterStream(String.valueOf(parameterIndex),reader,length);
+		drv.debugEnd();
+	}
+
+	public
+	void setCharacterStream(String parameterName, Reader reader,
+					int length) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
@@ -1049,7 +1191,7 @@ public class SQLRelayPreparedStatement
 			SQLRelayParameter.BindType.
 				CharacterStreamWithIntLength);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -1058,10 +1200,19 @@ public class SQLRelayPreparedStatement
 	void setCharacterStream(int parameterIndex, Reader reader,
 					long length) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setCharacterStream(String.valueOf(parameterIndex),reader,length);
+		drv.debugEnd();
+	}
+
+	public
+	void setCharacterStream(String parameterName, Reader reader,
+					long length) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
@@ -1081,7 +1232,7 @@ public class SQLRelayPreparedStatement
 			SQLRelayParameter.BindType.
 				CharacterStreamWithLongLength);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -1089,10 +1240,18 @@ public class SQLRelayPreparedStatement
 	public
 	void setClob(int parameterIndex, Clob x) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setClob(String.valueOf(parameterIndex),x);
+		drv.debugEnd();
+	}
+
+	public
+	void setClob(String parameterName, Clob x) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
@@ -1111,7 +1270,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.Clob);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -1119,10 +1278,18 @@ public class SQLRelayPreparedStatement
 	public
 	void setClob(int parameterIndex, Reader reader) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setClob(String.valueOf(parameterIndex),reader);
+		drv.debugEnd();
+	}
+
+	public
+	void setClob(String parameterName, Reader reader) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
@@ -1141,7 +1308,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.ClobReader);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -1150,10 +1317,19 @@ public class SQLRelayPreparedStatement
 	void setClob(int parameterIndex, Reader reader,
 					long length) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setClob(String.valueOf(parameterIndex),reader,length);
+		drv.debugEnd();
+	}
+
+	public
+	void setClob(String parameterName, Reader reader,
+					long length) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
@@ -1172,7 +1348,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.ClobReaderWithLength);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -1180,7 +1356,15 @@ public class SQLRelayPreparedStatement
 	public
 	void setDate(int parameterIndex, Date x) throws SQLException {
 		drv.debugFunction(this);
-		setDate(parameterIndex,x,new GregorianCalendar());
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setDate(String.valueOf(parameterIndex),x);
+		drv.debugEnd();
+	}
+
+	public
+	void setDate(String parameterName, Date x) throws SQLException {
+		drv.debugFunction(this);
+		setDate(parameterName,x,new GregorianCalendar());
 		drv.debugEnd();
 	}
 
@@ -1188,10 +1372,19 @@ public class SQLRelayPreparedStatement
 	void setDate(int parameterIndex, Date x, Calendar cal)
 						throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setDate(String.valueOf(parameterIndex),x,cal);
+		drv.debugEnd();
+	}
+
+	public
+	void setDate(String parameterName, Date x, Calendar cal)
+						throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
@@ -1210,7 +1403,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.DateWithCalendar);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -1218,10 +1411,18 @@ public class SQLRelayPreparedStatement
 	public
 	void setDouble(int parameterIndex, double x) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setDouble(String.valueOf(parameterIndex),x);
+		drv.debugEnd();
+	}
+
+	public
+	void setDouble(String parameterName, double x) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 		drv.debugPrintln("value: "+x);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
@@ -1241,7 +1442,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.Double);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -1249,10 +1450,18 @@ public class SQLRelayPreparedStatement
 	public
 	void setFloat(int parameterIndex, float x) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setFloat(String.valueOf(parameterIndex),x);
+		drv.debugEnd();
+	}
+
+	public
+	void setFloat(String parameterName, float x) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 		drv.debugPrintln("value: "+x);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
@@ -1272,7 +1481,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.Float);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -1280,10 +1489,18 @@ public class SQLRelayPreparedStatement
 	public
 	void setInt(int parameterIndex, int x) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setInt(String.valueOf(parameterIndex),x);
+		drv.debugEnd();
+	}
+
+	public
+	void setInt(String parameterName, int x) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 		drv.debugPrintln("value: "+x);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
@@ -1303,7 +1520,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.Int);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -1311,10 +1528,18 @@ public class SQLRelayPreparedStatement
 	public
 	void setLong(int parameterIndex, long x) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setLong(String.valueOf(parameterIndex),x);
+		drv.debugEnd();
+	}
+
+	public
+	void setLong(String parameterName, long x) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 		drv.debugPrintln("value: "+x);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
@@ -1334,7 +1559,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.Long);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -1343,10 +1568,19 @@ public class SQLRelayPreparedStatement
 	void setNCharacterStream(int parameterIndex, Reader value)
 						throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setNCharacterStream(String.valueOf(parameterIndex),value);
+		drv.debugEnd();
+	}
+
+	public
+	void setNCharacterStream(String parameterName, Reader value)
+						throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
@@ -1365,7 +1599,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.NCharStream);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -1374,10 +1608,19 @@ public class SQLRelayPreparedStatement
 	void setNCharacterStream(int parameterIndex, Reader value,
 					long length) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setNCharacterStream(String.valueOf(parameterIndex),value,length);
+		drv.debugEnd();
+	}
+
+	public
+	void setNCharacterStream(String parameterName, Reader value,
+					long length) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
@@ -1396,7 +1639,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.NCharStreamWithLength);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -1404,10 +1647,18 @@ public class SQLRelayPreparedStatement
 	public
 	void setNClob(int parameterIndex, NClob value) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setNClob(String.valueOf(parameterIndex),value);
+		drv.debugEnd();
+	}
+
+	public
+	void setNClob(String parameterName, NClob value) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
@@ -1426,7 +1677,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.NClob);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -1434,10 +1685,18 @@ public class SQLRelayPreparedStatement
 	public
 	void setNClob(int parameterIndex, Reader reader) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setNClob(String.valueOf(parameterIndex),reader);
+		drv.debugEnd();
+	}
+
+	public
+	void setNClob(String parameterName, Reader reader) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
@@ -1456,7 +1715,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.NClobReader);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -1465,10 +1724,19 @@ public class SQLRelayPreparedStatement
 	void setNClob(int parameterIndex, Reader reader,
 					long length) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setNClob(String.valueOf(parameterIndex),reader,length);
+		drv.debugEnd();
+	}
+
+	public
+	void setNClob(String parameterName, Reader reader,
+					long length) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
@@ -1487,7 +1755,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.NClobReaderWithLength);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -1495,10 +1763,18 @@ public class SQLRelayPreparedStatement
 	public
 	void setNString(int parameterIndex, String value) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setNString(String.valueOf(parameterIndex),value);
+		drv.debugEnd();
+	}
+
+	public
+	void setNString(String parameterName, String value) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
@@ -1517,7 +1793,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.NString);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -1525,10 +1801,18 @@ public class SQLRelayPreparedStatement
 	public
 	void setNull(int parameterIndex, int sqlType) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setNull(String.valueOf(parameterIndex),sqlType);
+		drv.debugEnd();
+	}
+
+	public
+	void setNull(String parameterName, int sqlType) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
@@ -1547,7 +1831,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.Null);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -1556,10 +1840,19 @@ public class SQLRelayPreparedStatement
 	void 	setNull(int parameterIndex, int sqlType,
 				String typeName) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setNull(String.valueOf(parameterIndex),sqlType,typeName);
+		drv.debugEnd();
+	}
+
+	public
+	void 	setNull(String parameterName, int sqlType,
+				String typeName) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
@@ -1578,7 +1871,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.NullWithTypeName);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -1586,10 +1879,18 @@ public class SQLRelayPreparedStatement
 	public
 	void setObject(int parameterIndex, Object x) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setObject(String.valueOf(parameterIndex),x);
+		drv.debugEnd();
+	}
+
+	public
+	void setObject(String parameterName, Object x) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		conn.throwFeatureNotSupportedException();
 
@@ -1600,10 +1901,19 @@ public class SQLRelayPreparedStatement
 	void setObject(int parameterIndex, Object x,
 				int targetSqlType) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setObject(String.valueOf(parameterIndex),x,targetSqlType);
+		drv.debugEnd();
+	}
+
+	public
+	void setObject(String parameterName, Object x,
+				int targetSqlType) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		conn.throwFeatureNotSupportedException();
 
@@ -1615,10 +1925,20 @@ public class SQLRelayPreparedStatement
 				int targetSqlType, int scaleOrLength)
 							throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setObject(String.valueOf(parameterIndex),x,targetSqlType,scaleOrLength);
+		drv.debugEnd();
+	}
+
+	public
+	void setObject(String parameterName, Object x,
+				int targetSqlType, int scaleOrLength)
+							throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		conn.throwFeatureNotSupportedException();
 
@@ -1628,10 +1948,18 @@ public class SQLRelayPreparedStatement
 	public
 	void setRef(int parameterIndex, Ref x) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setRef(String.valueOf(parameterIndex),x);
+		drv.debugEnd();
+	}
+
+	public
+	void setRef(String parameterName, Ref x) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		conn.throwFeatureNotSupportedException();
 
@@ -1641,10 +1969,18 @@ public class SQLRelayPreparedStatement
 	public
 	void setRowId(int parameterIndex, RowId x) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setRowId(String.valueOf(parameterIndex),x);
+		drv.debugEnd();
+	}
+
+	public
+	void setRowId(String parameterName, RowId x) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		conn.throwFeatureNotSupportedException();
 
@@ -1654,10 +1990,18 @@ public class SQLRelayPreparedStatement
 	public
 	void setShort(int parameterIndex, short x) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setShort(String.valueOf(parameterIndex),x);
+		drv.debugEnd();
+	}
+
+	public
+	void setShort(String parameterName, short x) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 		drv.debugPrintln("value: "+x);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
@@ -1677,7 +2021,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.Short);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -1685,10 +2029,18 @@ public class SQLRelayPreparedStatement
 	public
 	void setString(int parameterIndex, String x) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setString(String.valueOf(parameterIndex),x);
+		drv.debugEnd();
+	}
+
+	public
+	void setString(String parameterName, String x) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
@@ -1707,7 +2059,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.String);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -1716,10 +2068,19 @@ public class SQLRelayPreparedStatement
 	void setSQLXML(int parameterIndex, SQLXML xmlObject)
 						throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setSQLXML(String.valueOf(parameterIndex),xmlObject);
+		drv.debugEnd();
+	}
+
+	public
+	void setSQLXML(String parameterName, SQLXML xmlObject)
+						throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		conn.throwFeatureNotSupportedException();
 
@@ -1729,7 +2090,15 @@ public class SQLRelayPreparedStatement
 	public
 	void setTime(int parameterIndex, Time x) throws SQLException {
 		drv.debugFunction(this);
-		setTime(parameterIndex,x,new GregorianCalendar());
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setTime(String.valueOf(parameterIndex),x);
+		drv.debugEnd();
+	}
+
+	public
+	void setTime(String parameterName, Time x) throws SQLException {
+		drv.debugFunction(this);
+		setTime(parameterName,x,new GregorianCalendar());
 		drv.debugEnd();
 	}
 
@@ -1737,10 +2106,19 @@ public class SQLRelayPreparedStatement
 	void setTime(int parameterIndex, Time x,
 					Calendar cal) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setTime(String.valueOf(parameterIndex),x,cal);
+		drv.debugEnd();
+	}
+
+	public
+	void setTime(String parameterName, Time x,
+					Calendar cal) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		conn.throwFeatureNotSupportedException();
 
@@ -1761,7 +2139,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(cal);
 		param.setBindType(
 			SQLRelayParameter.BindType.TimeWithCalendar);
-		parameters.put(parameterIndex,param);*/
+		parameters.put(parameterName,param);*/
 
 		drv.debugEnd();
 	}
@@ -1769,7 +2147,15 @@ public class SQLRelayPreparedStatement
 	public
 	void setTimestamp(int parameterIndex, Timestamp x) throws SQLException {
 		drv.debugFunction(this);
-		setTimestamp(parameterIndex,x,new GregorianCalendar());
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setTimestamp(String.valueOf(parameterIndex),x);
+		drv.debugEnd();
+	}
+
+	public
+	void setTimestamp(String parameterName, Timestamp x) throws SQLException {
+		drv.debugFunction(this);
+		setTimestamp(parameterName,x,new GregorianCalendar());
 		drv.debugEnd();
 	}
 
@@ -1777,10 +2163,19 @@ public class SQLRelayPreparedStatement
 	void setTimestamp(int parameterIndex, Timestamp x,
 					Calendar cal) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setTimestamp(String.valueOf(parameterIndex),x,cal);
+		drv.debugEnd();
+	}
+
+	public
+	void setTimestamp(String parameterName, Timestamp x,
+					Calendar cal) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		conn.throwFeatureNotSupportedException();
 
@@ -1801,7 +2196,7 @@ public class SQLRelayPreparedStatement
 		param.setCalendar(cal);
 		param.setBindType(
 			SQLRelayParameter.BindType.TimestampWithCalendar);
-		parameters.put(parameterIndex,param);*/
+		parameters.put(parameterName,param);*/
 
 		drv.debugEnd();
 	}
@@ -1810,10 +2205,19 @@ public class SQLRelayPreparedStatement
 	void setUnicodeStream(int parameterIndex, InputStream x,
 					int length) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setUnicodeStream(String.valueOf(parameterIndex),x,length);
+		drv.debugEnd();
+	}
+
+	public
+	void setUnicodeStream(String parameterName, InputStream x,
+					int length) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
 		param.setClassName("FIXME");
@@ -1832,7 +2236,7 @@ public class SQLRelayPreparedStatement
 		param.setBindType(
 			SQLRelayParameter.BindType.UnicodeStream);
 
-		parameters.put(parameterIndex,param);
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -1840,13 +2244,21 @@ public class SQLRelayPreparedStatement
 	public
 	void setURL(int parameterIndex, URL x) throws SQLException {
 		drv.debugFunction(this);
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		setURL(String.valueOf(parameterIndex),x);
+		drv.debugEnd();
+	}
+
+	public
+	void setURL(String parameterName, URL x) throws SQLException {
+		drv.debugFunction(this);
 
 		throwExceptionIfClosed();
 
-		drv.debugPrintln("parameter index: "+parameterIndex);
+		drv.debugPrintln("parameter name: "+parameterName);
 		drv.debugPrintln("url: "+x.toString());
 
-		setString(parameterIndex,x.toString());
+		setString(parameterName,x.toString());
 
 		drv.debugEnd();
 	}

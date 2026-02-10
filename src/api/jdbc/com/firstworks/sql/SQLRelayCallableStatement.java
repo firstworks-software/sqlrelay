@@ -25,11 +25,8 @@ public class SQLRelayCallableStatement
 	public
 	Array getArray(int parameterIndex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		Array	retval=(Array)
-			parameters.get(parameterIndex).getObject();
-		drv.debugPrintln("value: "+retval.getBaseTypeName());
+		Array	retval=getArray(String.valueOf(parameterIndex));
 		drv.debugEnd();
 		return retval;
 	}
@@ -38,19 +35,20 @@ public class SQLRelayCallableStatement
 	Array getArray(String parameterName) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		Array	retval=(Array)
+			parameters.get(parameterName).getObject();
+		drv.debugPrintln("value: "+retval.getBaseTypeName());
 		drv.debugEnd();
-		return null;
+		return retval;
 	}
 
 	public
 	BigDecimal getBigDecimal(int parameterIndex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		BigDecimal	retval=(BigDecimal)
-				parameters.get(parameterIndex).getObject();
-		drv.debugPrintln("value: "+retval);
+		BigDecimal	retval=
+				getBigDecimal(String.valueOf(parameterIndex));
 		drv.debugEnd();
 		return retval;
 	}
@@ -59,10 +57,9 @@ public class SQLRelayCallableStatement
 	BigDecimal getBigDecimal(int parameterIndex, int scale)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		BigDecimal	retval=(BigDecimal)
-				parameters.get(parameterIndex).getObject();
+		BigDecimal	retval=
+				getBigDecimal(String.valueOf(parameterIndex));
 		retval=(retval!=null)?retval.setScale(scale):null;
 		drv.debugPrintln("value: "+retval);
 		drv.debugEnd();
@@ -73,19 +70,19 @@ public class SQLRelayCallableStatement
 	BigDecimal getBigDecimal(String parameterName) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		BigDecimal	retval=(BigDecimal)
+			parameters.get(parameterName).getObject();
+		drv.debugPrintln("value: "+retval);
 		drv.debugEnd();
-		return null;
+		return retval;
 	}
 
 	public
 	Blob getBlob(int parameterIndex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		Blob	retval=(Blob)
-			parameters.get(parameterIndex).getObject();
-		drv.debugPrintln("value: "+new String(blobToBytes(retval)));
+		Blob	retval=getBlob(String.valueOf(parameterIndex));
 		drv.debugEnd();
 		return retval;
 	}
@@ -94,19 +91,19 @@ public class SQLRelayCallableStatement
 	Blob getBlob(String parameterName) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		Blob	retval=(Blob)
+			parameters.get(parameterName).getObject();
+		drv.debugPrintln("value: "+new String(blobToBytes(retval)));
 		drv.debugEnd();
-		return null;
+		return retval;
 	}
 
 	public
 	boolean getBoolean(int parameterIndex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		Object	obj=parameters.get(parameterIndex).getObject();
-		boolean	retval=(obj!=null)?(Boolean)obj:false;
-		drv.debugPrintln("value: "+retval);
+		boolean	retval=getBoolean(String.valueOf(parameterIndex));
 		drv.debugEnd();
 		return retval;
 	}
@@ -115,19 +112,19 @@ public class SQLRelayCallableStatement
 	boolean getBoolean(String parameterName) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		Object	obj=parameters.get(parameterName).getObject();
+		boolean	retval=(obj!=null)?(Boolean)obj:false;
+		drv.debugPrintln("value: "+retval);
 		drv.debugEnd();
-		return false;
+		return retval;
 	}
 
 	public
 	byte getByte(int parameterIndex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		Object	obj=parameters.get(parameterIndex).getObject();
-		byte	retval=(obj!=null)?(Byte)obj:0;
-		drv.debugPrintln("value: "+retval);
+		byte	retval=getByte(String.valueOf(parameterIndex));
 		drv.debugEnd();
 		return retval;
 	}
@@ -136,19 +133,19 @@ public class SQLRelayCallableStatement
 	byte getByte(String parameterName) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		Object	obj=parameters.get(parameterName).getObject();
+		byte	retval=(obj!=null)?(Byte)obj:0;
+		drv.debugPrintln("value: "+retval);
 		drv.debugEnd();
-		return 0;
+		return retval;
 	}
 
 	public
 	byte[] getBytes(int parameterIndex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		byte[]	retval=(byte[])
-			parameters.get(parameterIndex).getObject();
-		drv.debugPrintln("value: "+retval);
+		byte[]	retval=getBytes(String.valueOf(parameterIndex));
 		drv.debugEnd();
 		return retval;
 	}
@@ -157,19 +154,19 @@ public class SQLRelayCallableStatement
 	byte[] getBytes(String parameterName) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		byte[]	retval=(byte[])
+			parameters.get(parameterName).getObject();
+		drv.debugPrintln("value: "+retval);
 		drv.debugEnd();
-		return null;
+		return retval;
 	}
 
 	public
 	Reader getCharacterStream(int parameterIndex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		Reader	retval=(Reader)
-			parameters.get(parameterIndex).getObject();
-		drv.debugPrintln("value: "+readerToString(retval));
+		Reader	retval=getCharacterStream(String.valueOf(parameterIndex));
 		drv.debugEnd();
 		return retval;
 	}
@@ -178,19 +175,19 @@ public class SQLRelayCallableStatement
 	Reader getCharacterStream(String parameterName) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		Reader	retval=(Reader)
+			parameters.get(parameterName).getObject();
+		drv.debugPrintln("value: "+readerToString(retval));
 		drv.debugEnd();
-		return null;
+		return retval;
 	}
 
 	public
 	Clob getClob(int parameterIndex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		Clob	retval=(Clob)
-			parameters.get(parameterIndex).getObject();
-		drv.debugPrintln("value: "+clobToString(retval));
+		Clob	retval=getClob(String.valueOf(parameterIndex));
 		drv.debugEnd();
 		return retval;
 	}
@@ -199,19 +196,19 @@ public class SQLRelayCallableStatement
 	Clob getClob(String parameterName) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		Clob	retval=(Clob)
+			parameters.get(parameterName).getObject();
+		drv.debugPrintln("value: "+clobToString(retval));
 		drv.debugEnd();
-		return null;
+		return retval;
 	}
 
 	public
 	Date getDate(int parameterIndex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		Date	retval=(Date)
-			parameters.get(parameterIndex).getObject();
-		drv.debugPrintln("value: "+retval);
+		Date	retval=getDate(String.valueOf(parameterIndex));
 		drv.debugEnd();
 		return retval;
 	}
@@ -219,11 +216,9 @@ public class SQLRelayCallableStatement
 	public
 	Date getDate(int parameterIndex, Calendar cal) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		Date	retval=(Date)
-			parameters.get(parameterIndex).getObject();
-		drv.debugPrintln("value: "+retval);
+		// FIXME: use cal?
+		Date	retval=getDate(String.valueOf(parameterIndex),cal);
 		drv.debugEnd();
 		return retval;
 	}
@@ -232,28 +227,32 @@ public class SQLRelayCallableStatement
 	Date getDate(String parameterName) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		Date	retval=(Date)
+			parameters.get(parameterName).getObject();
+		drv.debugPrintln("value: "+retval);
 		drv.debugEnd();
-		return null;
+		return retval;
 	}
 
 	public
 	Date getDate(String parameterName, Calendar cal) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		// FIXME: use cal?
+		Date	retval=(Date)
+			parameters.get(parameterName).getObject();
+		drv.debugPrintln("value: "+retval);
 		drv.debugEnd();
-		return null;
+		return retval;
 	}
 
 	public
 	double getDouble(int parameterIndex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		Object	obj=parameters.get(parameterIndex).getObject();
-		double	retval=(obj!=null)?(Double)obj:0.0;
-		drv.debugPrintln("value: "+retval);
+		double	retval=getDouble(String.valueOf(parameterIndex));
 		drv.debugEnd();
 		return retval;
 	}
@@ -262,19 +261,19 @@ public class SQLRelayCallableStatement
 	double getDouble(String parameterName) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		Object	obj=parameters.get(parameterName).getObject();
+		double	retval=(obj!=null)?(Double)obj:0.0;
+		drv.debugPrintln("value: "+retval);
 		drv.debugEnd();
-		return 0.0;
+		return retval;
 	}
 
 	public
 	float getFloat(int parameterIndex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		Object	obj=parameters.get(parameterIndex).getObject();
-		float	retval=(obj!=null)?(Float)obj:0.0f;
-		drv.debugPrintln("value: "+retval);
+		float	retval=getFloat(String.valueOf(parameterIndex));
 		drv.debugEnd();
 		return retval;
 	}
@@ -283,19 +282,19 @@ public class SQLRelayCallableStatement
 	float getFloat(String parameterName) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		Object	obj=parameters.get(parameterName).getObject();
+		float	retval=(obj!=null)?(Float)obj:0.0f;
+		drv.debugPrintln("value: "+retval);
 		drv.debugEnd();
-		return 0.0f;
+		return retval;
 	}
 
 	public
 	int getInt(int parameterIndex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		Object	obj=parameters.get(parameterIndex).getObject();
-		int	retval=(obj!=null)?(Integer)obj:0;
-		drv.debugPrintln("value: "+retval);
+		int	retval=getInt(String.valueOf(parameterIndex));
 		drv.debugEnd();
 		return retval;
 	}
@@ -304,19 +303,19 @@ public class SQLRelayCallableStatement
 	int getInt(String parameterName) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		Object	obj=parameters.get(parameterName).getObject();
+		int	retval=(obj!=null)?(Integer)obj:0;
+		drv.debugPrintln("value: "+retval);
 		drv.debugEnd();
-		return 0;
+		return retval;
 	}
 
 	public
 	long getLong(int parameterIndex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		Object	obj=parameters.get(parameterIndex).getObject();
-		long	retval=(obj!=null)?(Long)obj:0;
-		drv.debugPrintln("value: "+retval);
+		long	retval=getLong(String.valueOf(parameterIndex));
 		drv.debugEnd();
 		return retval;
 	}
@@ -325,19 +324,20 @@ public class SQLRelayCallableStatement
 	long getLong(String parameterName) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		Object	obj=parameters.get(parameterName).getObject();
+		long	retval=(obj!=null)?(Long)obj:0;
+		drv.debugPrintln("value: "+retval);
 		drv.debugEnd();
-		return 0;
+		return retval;
 	}
 
 	public
 	Reader getNCharacterStream(int parameterIndex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		Reader	retval=(Reader)
-			parameters.get(parameterIndex).getObject();
-		drv.debugPrintln("value: "+readerToString(retval));
+		Reader	retval=
+			getNCharacterStream(String.valueOf(parameterIndex));
 		drv.debugEnd();
 		return retval;
 	}
@@ -346,19 +346,19 @@ public class SQLRelayCallableStatement
 	Reader getNCharacterStream(String parameterName) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		Reader	retval=(Reader)
+			parameters.get(parameterName).getObject();
+		drv.debugPrintln("value: "+readerToString(retval));
 		drv.debugEnd();
-		return null;
+		return retval;
 	}
 
 	public
 	NClob getNClob(int parameterIndex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		NClob	retval=(NClob)
-			parameters.get(parameterIndex).getObject();
-		drv.debugPrintln("value: "+clobToString(retval));
+		NClob	retval=getNClob(String.valueOf(parameterIndex));
 		drv.debugEnd();
 		return retval;
 	}
@@ -367,19 +367,19 @@ public class SQLRelayCallableStatement
 	NClob getNClob(String parameterName) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		NClob	retval=(NClob)
+			parameters.get(parameterName).getObject();
+		drv.debugPrintln("value: "+clobToString(retval));
 		drv.debugEnd();
-		return null;
+		return retval;
 	}
 
 	public
 	String getNString(int parameterIndex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		String	retval=(String)
-			parameters.get(parameterIndex).getObject();
-		drv.debugPrintln("value: "+retval);
+		String	retval=getNString(String.valueOf(parameterIndex));
 		drv.debugEnd();
 		return retval;
 	}
@@ -388,19 +388,19 @@ public class SQLRelayCallableStatement
 	String getNString(String parameterName) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		String	retval=(String)
+			parameters.get(parameterName).getObject();
+		drv.debugPrintln("value: "+retval);
 		drv.debugEnd();
-		return null;
+		return retval;
 	}
 
 	public
 	Object getObject(int parameterIndex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		Object	retval=
-			parameters.get(parameterIndex).getObject();
-		drv.debugPrintln("value: "+retval);
+		Object	retval=getObject(String.valueOf(parameterIndex));
 		drv.debugEnd();
 		return retval;
 	}
@@ -408,11 +408,8 @@ public class SQLRelayCallableStatement
 	public
 	<T> T getObject(int parameterIndex, Class<T> type) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		T	retval=type.cast(
-				parameters.get(parameterIndex).getObject());
-		drv.debugPrintln("value: "+retval);
+		T	retval=getObject(String.valueOf(parameterIndex),type);
 		drv.debugEnd();
 		return retval;
 	}
@@ -421,11 +418,8 @@ public class SQLRelayCallableStatement
 	Object getObject(int parameterIndex, Map<String,Class<?>> map)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		Object	retval=
-			parameters.get(parameterIndex).getObject();
-		drv.debugPrintln("value: "+retval);
+		Object	retval=getObject(String.valueOf(parameterIndex),map);
 		drv.debugEnd();
 		return retval;
 	}
@@ -434,9 +428,12 @@ public class SQLRelayCallableStatement
 	Object getObject(String parameterName) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		Object	retval=
+			parameters.get(parameterName).getObject();
+		drv.debugPrintln("value: "+retval);
 		drv.debugEnd();
-		return null;
+		return retval;
 	}
 
 	public
@@ -444,9 +441,12 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		T	retval=type.cast(
+			parameters.get(parameterName).getObject());
+		drv.debugPrintln("value: "+retval);
 		drv.debugEnd();
-		return null;
+		return retval;
 	}
 
 	public
@@ -454,19 +454,19 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		Object	retval=
+			parameters.get(parameterName).getObject();
+		drv.debugPrintln("value: "+retval);
 		drv.debugEnd();
-		return null;
+		return retval;
 	}
 
 	public
 	Ref getRef(int parameterIndex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		Ref	retval=(Ref)
-			parameters.get(parameterIndex).getObject();
-		drv.debugPrintln("value: "+retval.getBaseTypeName());
+		Ref	retval=getRef(String.valueOf(parameterIndex));
 		drv.debugEnd();
 		return retval;
 	}
@@ -475,19 +475,19 @@ public class SQLRelayCallableStatement
 	Ref getRef(String parameterName) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		Ref	retval=(Ref)
+			parameters.get(parameterName).getObject();
+		drv.debugPrintln("value: "+retval.getBaseTypeName());
 		drv.debugEnd();
-		return null;
+		return retval;
 	}
 
 	public
 	RowId getRowId(int parameterIndex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		RowId	retval=(RowId)
-			parameters.get(parameterIndex).getObject();
-		drv.debugPrintln("value: "+retval.toString());
+		RowId	retval=getRowId(String.valueOf(parameterIndex));
 		drv.debugEnd();
 		return retval;
 	}
@@ -496,19 +496,19 @@ public class SQLRelayCallableStatement
 	RowId getRowId(String parameterName) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		RowId	retval=(RowId)
+			parameters.get(parameterName).getObject();
+		drv.debugPrintln("value: "+retval.toString());
 		drv.debugEnd();
-		return null;
+		return retval;
 	}
 
 	public
 	short getShort(int parameterIndex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		Object	obj=parameters.get(parameterIndex).getObject();
-		short	retval=(obj!=null)?(Short)obj:0;
-		drv.debugPrintln("value: "+retval);
+		short	retval=getShort(String.valueOf(parameterIndex));
 		drv.debugEnd();
 		return retval;
 	}
@@ -517,19 +517,19 @@ public class SQLRelayCallableStatement
 	short getShort(String parameterName) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		Object	obj=parameters.get(parameterName).getObject();
+		short	retval=(obj!=null)?(Short)obj:0;
+		drv.debugPrintln("value: "+retval);
 		drv.debugEnd();
-		return 0;
+		return retval;
 	}
 
 	public
 	SQLXML getSQLXML(int parameterIndex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		SQLXML	retval=(SQLXML)
-			parameters.get(parameterIndex).getObject();
-		drv.debugPrintln("value: "+retval.getString());
+		SQLXML	retval=getSQLXML(String.valueOf(parameterIndex));
 		drv.debugEnd();
 		return retval;
 	}
@@ -538,19 +538,19 @@ public class SQLRelayCallableStatement
 	SQLXML getSQLXML(String parameterName) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		SQLXML	retval=(SQLXML)
+			parameters.get(parameterName).getObject();
+		drv.debugPrintln("value: "+retval.getString());
 		drv.debugEnd();
-		return null;
+		return retval;
 	}
 
 	public
 	String getString(int parameterIndex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		String	retval=(String)
-			parameters.get(parameterIndex).getObject();
-		drv.debugPrintln("value: "+retval);
+		String	retval=getString(String.valueOf(parameterIndex));
 		drv.debugEnd();
 		return retval;
 	}
@@ -559,19 +559,19 @@ public class SQLRelayCallableStatement
 	String getString(String parameterName) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		String	retval=(String)
+			parameters.get(parameterName).getObject();
+		drv.debugPrintln("value: "+retval);
 		drv.debugEnd();
-		return null;
+		return retval;
 	}
 
 	public
 	Time getTime(int parameterIndex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		Time	retval=(Time)
-			parameters.get(parameterIndex).getObject();
-		drv.debugPrintln("value: "+retval);
+		Time	retval=getTime(String.valueOf(parameterIndex));
 		drv.debugEnd();
 		return retval;
 	}
@@ -579,11 +579,9 @@ public class SQLRelayCallableStatement
 	public
 	Time getTime(int parameterIndex, Calendar cal) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		Time	retval=(Time)
-			parameters.get(parameterIndex).getObject();
-		drv.debugPrintln("value: "+retval);
+		// FIXME: use cal?
+		Time	retval=getTime(String.valueOf(parameterIndex),cal);
 		drv.debugEnd();
 		return retval;
 	}
@@ -592,28 +590,33 @@ public class SQLRelayCallableStatement
 	Time getTime(String parameterName) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		Time	retval=(Time)
+			parameters.get(parameterName).getObject();
+		drv.debugPrintln("value: "+retval);
 		drv.debugEnd();
-		return null;
+		return retval;
 	}
 
 	public
 	Time getTime(String parameterName, Calendar cal) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		// FIXME: use cal?
+		Time	retval=(Time)
+			parameters.get(parameterName).getObject();
+		drv.debugPrintln("value: "+retval);
 		drv.debugEnd();
-		return null;
+		return retval;
 	}
 
 	public
 	Timestamp getTimestamp(int parameterIndex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		Timestamp	retval=(Timestamp)
-				parameters.get(parameterIndex).getObject();
-		drv.debugPrintln("value: "+retval);
+		Timestamp	retval=
+			getTimestamp(String.valueOf(parameterIndex));
 		drv.debugEnd();
 		return retval;
 	}
@@ -622,11 +625,10 @@ public class SQLRelayCallableStatement
 	Timestamp getTimestamp(int parameterIndex, Calendar cal)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		Timestamp	retval=(Timestamp)
-				parameters.get(parameterIndex).getObject();
-		drv.debugPrintln("value: "+retval);
+		// FIXME: use cal?
+		Timestamp	retval=
+			getTimestamp(String.valueOf(parameterIndex),cal);
 		drv.debugEnd();
 		return retval;
 	}
@@ -635,9 +637,12 @@ public class SQLRelayCallableStatement
 	Timestamp getTimestamp(String parameterName) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		Timestamp	retval=(Timestamp)
+			parameters.get(parameterName).getObject();
+		drv.debugPrintln("value: "+retval);
 		drv.debugEnd();
-		return null;
+		return retval;
 	}
 
 	public
@@ -645,19 +650,20 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		// FIXME: use cal?
+		Timestamp	retval=(Timestamp)
+			parameters.get(parameterName).getObject();
+		drv.debugPrintln("value: "+retval);
 		drv.debugEnd();
-		return null;
+		return retval;
 	}
 
 	public
 	URL getURL(int parameterIndex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		URL	retval=(URL)
-			parameters.get(parameterIndex).getObject();
-		drv.debugPrintln("value: "+retval);
+		URL	retval=getURL(String.valueOf(parameterIndex));
 		drv.debugEnd();
 		return retval;
 	}
@@ -666,9 +672,12 @@ public class SQLRelayCallableStatement
 	URL getURL(String parameterName) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter name: "+parameterName);
+		URL	retval=(URL)
+			parameters.get(parameterName).getObject();
+		drv.debugPrintln("value: "+retval);
 		drv.debugEnd();
-		return null;
+		return retval;
 	}
 
 	public
@@ -733,8 +742,7 @@ public class SQLRelayCallableStatement
 	void setAsciiStream(String parameterName, InputStream x)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setAsciiStream(parameterName,x);
 		drv.debugEnd();
 	}
 
@@ -743,8 +751,7 @@ public class SQLRelayCallableStatement
 							int length)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setAsciiStream(parameterName,x,length);
 		drv.debugEnd();
 	}
 
@@ -753,8 +760,7 @@ public class SQLRelayCallableStatement
 							long length)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setAsciiStream(parameterName,x,length);
 		drv.debugEnd();
 	}
 
@@ -762,8 +768,7 @@ public class SQLRelayCallableStatement
 	void setBigDecimal(String parameterName, BigDecimal x)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setBigDecimal(parameterName,x);
 		drv.debugEnd();
 	}
 
@@ -771,8 +776,7 @@ public class SQLRelayCallableStatement
 	void setBinaryStream(String parameterName, InputStream x)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setBinaryStream(parameterName,x);
 		drv.debugEnd();
 	}
 
@@ -781,8 +785,7 @@ public class SQLRelayCallableStatement
 							int length)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setBinaryStream(parameterName,x,length);
 		drv.debugEnd();
 	}
 
@@ -791,16 +794,14 @@ public class SQLRelayCallableStatement
 							long length)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setBinaryStream(parameterName,x,length);
 		drv.debugEnd();
 	}
 
 	public
 	void setBlob(String parameterName, Blob x) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setBlob(parameterName,x);
 		drv.debugEnd();
 	}
 
@@ -808,8 +809,7 @@ public class SQLRelayCallableStatement
 	void setBlob(String parameterName, InputStream inputStream)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setBlob(parameterName,inputStream);
 		drv.debugEnd();
 	}
 
@@ -818,32 +818,28 @@ public class SQLRelayCallableStatement
 						long length)
 						throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setBlob(parameterName,inputStream,length);
 		drv.debugEnd();
 	}
 
 	public
 	void setBoolean(String parameterName, boolean x) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setBoolean(parameterName,x);
 		drv.debugEnd();
 	}
 
 	public
 	void setByte(String parameterName, byte x) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setByte(parameterName,x);
 		drv.debugEnd();
 	}
 
 	public
 	void setBytes(String parameterName, byte[] x) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setBytes(parameterName,x);
 		drv.debugEnd();
 	}
 
@@ -851,8 +847,7 @@ public class SQLRelayCallableStatement
 	void setCharacterStream(String parameterName, Reader reader)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setCharacterStream(parameterName,reader);
 		drv.debugEnd();
 	}
 
@@ -861,8 +856,7 @@ public class SQLRelayCallableStatement
 							int length)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setCharacterStream(parameterName,reader,length);
 		drv.debugEnd();
 	}
 
@@ -871,24 +865,21 @@ public class SQLRelayCallableStatement
 							long length)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setCharacterStream(parameterName,reader,length);
 		drv.debugEnd();
 	}
 
 	public
 	void setClob(String parameterName, Clob x) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setClob(parameterName,x);
 		drv.debugEnd();
 	}
 
 	public
 	void setClob(String parameterName, Reader reader) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setClob(parameterName,reader);
 		drv.debugEnd();
 	}
 
@@ -896,16 +887,14 @@ public class SQLRelayCallableStatement
 	void setClob(String parameterName, Reader reader, long length)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setClob(parameterName,reader,length);
 		drv.debugEnd();
 	}
 
 	public
 	void setDate(String parameterName, Date x) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setDate(parameterName,x);
 		drv.debugEnd();
 	}
 
@@ -913,40 +902,35 @@ public class SQLRelayCallableStatement
 	void setDate(String parameterName, Date x, Calendar cal)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setDate(parameterName,x,cal);
 		drv.debugEnd();
 	}
 
 	public
 	void setDouble(String parameterName, double x) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setDouble(parameterName,x);
 		drv.debugEnd();
 	}
 
 	public
 	void setFloat(String parameterName, float x) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setFloat(parameterName,x);
 		drv.debugEnd();
 	}
 
 	public
 	void setInt(String parameterName, int x) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setInt(parameterName,x);
 		drv.debugEnd();
 	}
 
 	public
 	void setLong(String parameterName, long x) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setLong(parameterName,x);
 		drv.debugEnd();
 	}
 
@@ -954,8 +938,7 @@ public class SQLRelayCallableStatement
 	void setNCharacterStream(String parameterName, Reader value)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setNCharacterStream(parameterName,value);
 		drv.debugEnd();
 	}
 
@@ -964,24 +947,21 @@ public class SQLRelayCallableStatement
 							long length)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setNCharacterStream(parameterName,value,length);
 		drv.debugEnd();
 	}
 
 	public
 	void setNClob(String parameterName, NClob value) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setNClob(parameterName,value);
 		drv.debugEnd();
 	}
 
 	public
 	void setNClob(String parameterName, Reader reader) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setNClob(parameterName,reader);
 		drv.debugEnd();
 	}
 
@@ -989,8 +969,7 @@ public class SQLRelayCallableStatement
 	void setNClob(String parameterName, Reader reader, long length)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setNClob(parameterName,reader,length);
 		drv.debugEnd();
 	}
 
@@ -998,16 +977,14 @@ public class SQLRelayCallableStatement
 	void setNString(String parameterName, String value)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setNString(parameterName,value);
 		drv.debugEnd();
 	}
 
 	public
 	void setNull(String parameterName, int sqlType) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setNull(parameterName,sqlType);
 		drv.debugEnd();
 	}
 
@@ -1015,16 +992,14 @@ public class SQLRelayCallableStatement
 	void setNull(String parameterName, int sqlType, String typeName)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setNull(parameterName,sqlType,typeName);
 		drv.debugEnd();
 	}
 
 	public
 	void setObject(String parameterName, Object x) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setObject(parameterName,x);
 		drv.debugEnd();
 	}
 
@@ -1032,8 +1007,7 @@ public class SQLRelayCallableStatement
 	void setObject(String parameterName, Object x, int targetSqlType)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setObject(parameterName,x,targetSqlType);
 		drv.debugEnd();
 	}
 
@@ -1042,24 +1016,21 @@ public class SQLRelayCallableStatement
 							int scale)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setObject(parameterName,x,targetSqlType,scale);
 		drv.debugEnd();
 	}
 
 	public
 	void setRowId(String parameterName, RowId x) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setRowId(parameterName,x);
 		drv.debugEnd();
 	}
 
 	public
 	void setShort(String parameterName, short x) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setShort(parameterName,x);
 		drv.debugEnd();
 	}
 
@@ -1067,24 +1038,21 @@ public class SQLRelayCallableStatement
 	void setSQLXML(String parameterName, SQLXML xmlObject)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setSQLXML(parameterName,xmlObject);
 		drv.debugEnd();
 	}
 
 	public
 	void setString(String parameterName, String x) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setString(parameterName,x);
 		drv.debugEnd();
 	}
 
 	public
 	void setTime(String parameterName, Time x) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setTime(parameterName,x);
 		drv.debugEnd();
 	}
 
@@ -1092,8 +1060,7 @@ public class SQLRelayCallableStatement
 	void setTime(String parameterName, Time x, Calendar cal)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setTime(parameterName,x,cal);
 		drv.debugEnd();
 	}
 
@@ -1101,8 +1068,7 @@ public class SQLRelayCallableStatement
 	void setTimestamp(String parameterName, Timestamp x)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setTimestamp(parameterName,x);
 		drv.debugEnd();
 	}
 
@@ -1111,16 +1077,14 @@ public class SQLRelayCallableStatement
 						Calendar cal)
 						throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setTimestamp(parameterName,x,cal);
 		drv.debugEnd();
 	}
 
 	public
 	void setURL(String parameterName, URL val) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		super.setURL(parameterName,val);
 		drv.debugEnd();
 	}
 
