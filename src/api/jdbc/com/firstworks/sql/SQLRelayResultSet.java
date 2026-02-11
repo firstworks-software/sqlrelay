@@ -2556,21 +2556,6 @@ public class SQLRelayResultSet implements ResultSet {
 		return wasnull;
 	}
 
-	public
-	boolean isWrapperFor(Class<?> iface) throws SQLException {
-		drv.debugFunction(this);
-		drv.debugEnd();
-		return (iface==SQLRCursor.class);
-	}
-
-	@SuppressWarnings({"unchecked"})
-	public
-	<T> T unwrap(Class<T> iface) throws SQLException {
-		drv.debugFunction(this);
-		drv.debugEnd();
-		return (T)((iface==SQLRCursor.class)?sqlrcur:null);
-	}
-
 	private
 	void validateColumn(int columnindex) throws SQLException {
 		if (columnindex<1 || columnindex>sqlrcur.colCount()) {
@@ -2594,5 +2579,20 @@ public class SQLRelayResultSet implements ResultSet {
 		if (sqlrcur==null) {
 			conn.throwException("ResultSet is closed");
 		}
+	}
+
+	public
+	boolean isWrapperFor(Class<?> iface) throws SQLException {
+		drv.debugFunction(this);
+		drv.debugEnd();
+		return (iface==SQLRCursor.class);
+	}
+
+	@SuppressWarnings({"unchecked"})
+	public
+	<T> T unwrap(Class<T> iface) throws SQLException {
+		drv.debugFunction(this);
+		drv.debugEnd();
+		return (T)((iface==SQLRCursor.class)?sqlrcur:null);
 	}
 }

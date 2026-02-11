@@ -2416,6 +2416,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		return (iface==SQLRConnection.class);
 	}
 
+	@SuppressWarnings({"unchecked"})
 	public
 	<T> T unwrap(Class<T> iface) throws SQLException {
 		drv.debugFunction(this);

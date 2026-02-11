@@ -70,6 +70,14 @@ public class SQLRelayStatement implements Statement {
 		this.sqlrcur=sqlrcur;
 	}
 
+	SQLRCursor getSQLRCursor() {
+		return sqlrcur;
+	}
+
+	SQLRConnection getSQLRConnection() {
+		return sqlrcon;
+	}
+
 	public
 	void addBatch(String sql) throws SQLException {
 		drv.debugFunction(this);
@@ -170,7 +178,7 @@ public class SQLRelayStatement implements Statement {
 		}
 
 		drv.debugEnd();
-		return result;
+		return resultset!=null;
 	}
 
 	public
@@ -258,38 +266,7 @@ public class SQLRelayStatement implements Statement {
 	public
 	ResultSet executeQuery(String sql) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-
-		drv.debugPrintln("sql: "+sql);
-
-		resultset=null;
-		updatecount=-1;
-
-		// FIXME: handle timeout
-
-		boolean	result=false;
-		synchronized (networklock) {
-			result=sqlrcur.sendQuery(sql);
-		}
-
-		drv.debugPrintln("result: "+result);
-
-		if (result) {
-
-			updatecount=(int)sqlrcur.affectedRows();
-
-			drv.debugPrintln("update count: "+updatecount);
-			drv.debugPrintln("column count: "+sqlrcur.colCount());
-
-			resultset=new SQLRelayResultSet(drv);
-			resultset.setNetworkLock(networklock);
-			resultset.setStatement(this);
-			resultset.setConnection(conn);
-			resultset.setSQLRCursor(sqlrcur);
-		} else {
-			conn.throwException(sqlrcur.errorMessage());
-		}
-
+		execute(sql);
 		drv.debugEnd();
 		return resultset;
 	}
@@ -297,30 +274,7 @@ public class SQLRelayStatement implements Statement {
 	public
 	int executeUpdate(String sql) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-
-		drv.debugPrintln("sql: "+sql);
-
-		resultset=null;
-		updatecount=-1;
-
-		// FIXME: handle timeout
-
-		boolean	result=false;
-		synchronized (networklock) {
-			result=sqlrcur.sendQuery(sql);
-		}
-
-		drv.debugPrintln("result: "+result);
-
-		if (result) {
-			updatecount=(int)sqlrcur.affectedRows();
-
-			drv.debugPrintln("update count: "+updatecount);
-		} else {
-			conn.throwException(sqlrcur.errorMessage());
-		}
-
+		execute(sql);
 		drv.debugEnd();
 		return updatecount;
 	}
@@ -515,6 +469,8 @@ public class SQLRelayStatement implements Statement {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugEnd();
+		// we only support ResultSet.TYPE_SCROLL_INSENSITIVE and
+		// ResultSet.TYPE_FORWARD_ONLY
 		return (sqlrcur.getResultSetBufferSize()==0)?
 					ResultSet.TYPE_SCROLL_INSENSITIVE:
 					ResultSet.TYPE_FORWARD_ONLY;
@@ -632,21 +588,6 @@ public class SQLRelayStatement implements Statement {
 		drv.debugEnd();
 	}
 
-	public
-	boolean isWrapperFor(Class<?> iface) throws SQLException {
-		drv.debugFunction(this);
-		drv.debugEnd();
-		return (iface==SQLRCursor.class);
-	}
-
-	@SuppressWarnings({"unchecked"})
-	public
-	<T> T unwrap(Class<T> iface) throws SQLException {
-		drv.debugFunction(this);
-		drv.debugEnd();
-		return (T)((iface==SQLRCursor.class)?sqlrcur:null);
-	}
-
 	private
 	void debugFetchDirection(int fetchdirection) {
 		 switch (fetchdirection) {
@@ -725,11 +666,18 @@ public class SQLRelayStatement implements Statement {
 		}
 	}
 
-	SQLRCursor getSQLRCursor() {
-		return sqlrcur;
+	public
+	boolean isWrapperFor(Class<?> iface) throws SQLException {
+		drv.debugFunction(this);
+		drv.debugEnd();
+		return (iface==SQLRCursor.class);
 	}
 
-	SQLRConnection getSQLRConnection() {
-		return sqlrcon;
+	@SuppressWarnings({"unchecked"})
+	public
+	<T> T unwrap(Class<T> iface) throws SQLException {
+		drv.debugFunction(this);
+		drv.debugEnd();
+		return (T)((iface==SQLRCursor.class)?sqlrcur:null);
 	}
 };

@@ -77,6 +77,10 @@ public class SQLRelayConnection implements Connection {
 		drv.debugEnd();
 	}
 
+	SQLRConnection getSQLRConnection() {
+		return sqlrcon;
+	}
+
 	void setDateToTimestamp(boolean datetotimestamp) {
 		this.datetotimestamp=datetotimestamp;
 	}
@@ -950,21 +954,6 @@ public class SQLRelayConnection implements Connection {
 		drv.debugEnd();
 	}
 
-	public
-	boolean isWrapperFor(Class<?> iface) throws SQLException {
-		drv.debugFunction(this);
-		drv.debugEnd();
-		return (iface==SQLRConnection.class);
-	}
-
-	@SuppressWarnings({"unchecked"})
-	public
-	<T> T unwrap(Class<T> iface) throws SQLException {
-		drv.debugFunction(this);
-		drv.debugEnd();
-		return (T)((iface==SQLRConnection.class)?sqlrcon:null);
-	}
-
 	void debugResultSetType(int type) {
 		switch (type) {
 			case ResultSet.TYPE_FORWARD_ONLY:
@@ -1214,7 +1203,18 @@ public class SQLRelayConnection implements Connection {
 		throw new SQLException(reason);
 	}
 
-	SQLRConnection getSQLRConnection() {
-		return sqlrcon;
+	public
+	boolean isWrapperFor(Class<?> iface) throws SQLException {
+		drv.debugFunction(this);
+		drv.debugEnd();
+		return (iface==SQLRConnection.class);
+	}
+
+	@SuppressWarnings({"unchecked"})
+	public
+	<T> T unwrap(Class<T> iface) throws SQLException {
+		drv.debugFunction(this);
+		drv.debugEnd();
+		return (T)((iface==SQLRConnection.class)?sqlrcon:null);
 	}
 }

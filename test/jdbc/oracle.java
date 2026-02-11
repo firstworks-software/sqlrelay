@@ -78,7 +78,6 @@ class oracle extends sqlrtest {
 			// connection
 			System.out.println("connection");
 			SQLRelayConnection	sqlrcon=(SQLRelayConnection)con;
-			assertTrue((sqlrcon!=null));
 			assertEquals(sqlrcon.getHost(),host);
 			assertEquals(sqlrcon.getPort(),port);
 			assertEquals(sqlrcon.getSocket(),socket);
@@ -215,8 +214,6 @@ class oracle extends sqlrtest {
 		assertTrue(true);
 		System.out.println();
 
-		// FIXME: type map
-
 		// warnings
 		System.out.println("warnings");
 		assertTrue(con.getWarnings()==null);
@@ -235,10 +232,12 @@ class oracle extends sqlrtest {
 		assertTrue((md!=null));
 		System.out.println();
 
+		// getConnection
 		System.out.println("getConnection");
 		assertEquals(md.getConnection(),con);
 		System.out.println();
 
+		// unwrap
 		if (issqlrelay) {
 			System.out.println("unwrap");
 			assertEquals(md.isWrapperFor(SQLRConnection.class),1);
@@ -2468,8 +2467,18 @@ if (false) {
 		System.out.println("create statement");
 		Statement	stmt=con.createStatement();
 		assertTrue((stmt!=null));
-		stmt.close();
+		assertEquals(stmt.getConnection(),con);
                 System.out.println();
+
+		// unwrap
+		if (issqlrelay) {
+			System.out.println("unwrap");
+			assertEquals(stmt.isWrapperFor(SQLRCursor.class),1);
+			System.out.println();
+			assertEquals((stmt.unwrap(SQLRCursor.class)!=null),1);
+			System.out.println();
+		}
+		stmt.close();
 
 		// result set types
 		int[]	rstype={
@@ -2661,9 +2670,30 @@ if (false) {
 		assertTrue((stmt!=null));
 		rs=stmt.executeQuery("select * from testtable order by testnumber");
 		assertTrue((rs!=null));
+		System.out.println();
+
+		// unwrap
+		if (issqlrelay) {
+			System.out.println("unwrap");
+			assertEquals(rs.isWrapperFor(SQLRCursor.class),1);
+			System.out.println();
+			assertEquals((rs.unwrap(SQLRCursor.class)!=null),1);
+			System.out.println();
+		}
+
+		// getMetaData
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
 		System.out.println();
+
+		// unwrap
+		if (issqlrelay) {
+			System.out.println("unwrap");
+			assertEquals(rsmd.isWrapperFor(SQLRCursor.class),1);
+			System.out.println();
+			assertEquals((rsmd.unwrap(SQLRCursor.class)!=null),1);
+			System.out.println();
+		}
 
 
 		// column count
@@ -3041,65 +3071,83 @@ if (false) {
 
 		// FIXME: rebinding
 
+
 		// FIXME: need tests for Connection methods...
+		// nativeSQL
+		//
 		// createArrayOf
 		// createNClob
 		// createSQLXML
 		// createStruct
-		// nativeSQL
+
 
 		// FIXME: need tests for Statement methods...
-		// addBatch
-                // cancel
-                // clearBatch
-                // clearWarning
-                // closeOnCompletion
-                // execute
-                // executeBatch
-                // getConnection
-                // getFetchDirection
-                // getFetchSize
-                // getGeneratedKeys
-                // getMaxFieldSize
-                // getMaxRows
-                // getMoreResults
-                // getQueryTimeout
+		// execute
                 // getResultSet
+                // getUpdateCount
+		//
+		// addBatch
+                // clearBatch
+                // executeBatch
+		//
+                // cancel
+		//
+                // getWarnings
+                // clearWarning
+		//
+                // closeOnCompletion
+		//
+                // setFetchDirection
+                // getFetchDirection
+		//
+                // setFetchSize
+                // getFetchSize
+		//
+                // getGeneratedKeys
+		//
+                // setMaxFieldSize
+                // getMaxFieldSize
+		//
+                // setMaxRows
+                // getMaxRows
+		//
+                // getMoreResults
+		//
+                // setQueryTimeout
+                // getQueryTimeout
+		//
                 // getResultSetConcurrency
                 // getResultSetHoldability
                 // getResultSetType
-                // getUpdateCount
-                // getWarnings
+		//
                 // isClosed
                 // isCloseOnCompletion
-                // isPoolable
-                // isWrapperFor
-                // setCursorName
-                // setEscapeProcessing
-                // setFetchDirection
-                // setFetchSize
-                // setMaxFieldSize
-                // setMaxRows
+		//
                 // setPoolable
-                // setQueryTimeout
-                // unwrap
+                // isPoolable
+		//
+                // setCursorName
+		//
+                // setEscapeProcessing
+
 
 		// FIXME: need tests for PreparedStatement methods...
-		// addBatch
                 // execute
-                // executeBatch
                 // executeQuery
+		//
+		// addBatch
+                // executeBatch
+		//
                 // getMetaData
                 // getParameterMetaData
+		//
                 // setArray
                 // setAsciiStream
                 // setBigDecimal
                 // setBinaryStream
-                // setBlob
                 // setBoolean
                 // setByte
                 // setCharacterStream
-                // setClob
                 // setDouble
                 // setFloat
                 // setLong
@@ -3117,20 +3165,40 @@ if (false) {
                 // setUnicodeStream
                 // setURL
 
+
 		// FIXME: need tests for Parameter class...
 		// FIXME: need tests for ParameterMetaData class...
 		// FIXME: need tests for CallableStatement class
 		// (and prepareCall)...
 
+
 		// FIXME: need tests for ResultSet methods...
+                // first
+                // last
+                // previous
+                // relative
 		// absolute
+		//
                 // afterLast
                 // beforeFirst
+		//
+                // moveToCurrentRow
+                // moveToInsertRow
+		//
+                // isAfterLast
+                // isBeforeFirst
+                // isClosed
+                // isFirst
+                // isLast
+		//
                 // cancelRowUpdates
+		//
                 // clearWarnings
+		//
                 // deleteRow
+		//
                 // findColumn
-                // first
+		//
                 // getArray
                 // getAsciiStream
                 // getBigDecimal
@@ -3143,8 +3211,6 @@ if (false) {
                 // getCursorName
                 // getDate
                 // getDouble
-                // getFetchDirection
-                // getFetchSize
                 // getFloat
                 // getHoldability
                 // getInt
@@ -3162,26 +3228,22 @@ if (false) {
                 // getType
                 // getUnicodeStream
                 // getURL
+		//
                 // getWarnings
+		//
                 // insertRow
-                // isAfterLast
-                // isBeforeFirst
-                // isClosed
-                // isFirst
-                // isLast
-                // isWrapperFor
-                // last
-                // moveToCurrentRow
-                // moveToInsertRow
-                // previous
+		//
                 // refreshRow
-                // relative
+		//
                 // rowDeleted
                 // rowInserted
                 // rowUpdated
+		//
+                // getFetchDirection
+                // getFetchSize
                 // setFetchDirection
                 // setFetchSize
-                // unwrap
+		//
                 // updateArray
                 // updateAsciiStream
                 // updateBigDecimal
@@ -3210,16 +3272,18 @@ if (false) {
                 // updateString
                 // updateTime
                 // updateTimestamp
+		//
                 // wasNull
+
 
 		// FIXME: need tests for ResultSetMetaData methods...
 		// getCatalogName
-                // getColumnClassName
-                // getColumnLabel
-                // getColumnType
-                // getScale
                 // getSchemaName
                 // getTableName
+                // getColumnLabel
+                // getColumnType
+                // getColumnClassName
+                // getScale
                 // isAutoIncrement
                 // isCaseSensitive
                 // isCurrency
@@ -3227,9 +3291,8 @@ if (false) {
                 // isNullable
                 // isSearchable
                 // isSigned
-                // isWrapperFor
                 // isWritable
-                // unwrap
+
 
 		// FIXME: need tests for...
 		// setTypeMap

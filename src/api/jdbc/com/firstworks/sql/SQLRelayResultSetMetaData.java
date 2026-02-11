@@ -1168,13 +1168,14 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	boolean isWrapperFor(Class<?> iface) throws SQLException {
 		drv.debugFunction(this);
 		drv.debugEnd();
-		return false;
+		return (iface==SQLRCursor.class);
 	}
 
+	@SuppressWarnings({"unchecked"})
 	public
 	<T> T unwrap(Class<T> iface) throws SQLException {
 		drv.debugFunction(this);
 		drv.debugEnd();
-		return null;
+		return (T)((iface==SQLRCursor.class)?sqlrcur:null);
 	}
 }

@@ -84,17 +84,19 @@ public class SQLRelayPreparedStatement
 			drv.debugPrintln("update count: "+updatecount);
 			drv.debugPrintln("column count: "+sqlrcur.colCount());
 
-			resultset=new SQLRelayResultSet(drv);
-			resultset.setNetworkLock(networklock);
-			resultset.setStatement(this);
-			resultset.setConnection(conn);
-			resultset.setSQLRCursor(sqlrcur);
+			if (sqlrcur.colCount()>0) {
+				resultset=new SQLRelayResultSet(drv);
+				resultset.setNetworkLock(networklock);
+				resultset.setStatement(this);
+				resultset.setConnection(conn);
+				resultset.setSQLRCursor(sqlrcur);
+			}
 		} else {
 			throwErrorMessageException();
 		}
 
 		drv.debugEnd();
-		return result;
+		return resultset!=null;
 	}
 
 	public
