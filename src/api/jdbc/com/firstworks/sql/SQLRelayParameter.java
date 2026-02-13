@@ -83,7 +83,7 @@ public class SQLRelayParameter {
 		this.drv=driver;
 		drv.debugFunction(this);
 		classname=null;
-		mode=ParameterMetaData.parameterModeIn;
+		mode=ParameterMetaData.parameterModeUnknown;
 		type=0;
 		typename=null;
 		precision=0;

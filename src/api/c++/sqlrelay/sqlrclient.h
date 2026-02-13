@@ -717,6 +717,44 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 							const char **tz,
 							bool *isnegative);
 
+		/** Get the year from a previously
+		 *  defined date output bind variable. */
+		int16_t		getOutputBindDateYear(const char *variable);
+
+		/** Get the month from a previously
+		 *  defined date output bind variable. */
+		int16_t		getOutputBindDateMonth(const char *variable);
+
+		/** Get the day from a previously
+		 *  defined date output bind variable. */
+		int16_t		getOutputBindDateDay(const char *variable);
+
+		/** Get the hour from a previously
+		 *  defined date output bind variable. */
+		int16_t		getOutputBindDateHour(const char *variable);
+
+		/** Get the minute from a previously
+		 *  defined date output bind variable. */
+		int16_t		getOutputBindDateMinute(const char *variable);
+
+		/** Get the second from a previously
+		 *  defined date output bind variable. */
+		int16_t		getOutputBindDateSecond(const char *variable);
+
+		/** Get the microsecond from a previously
+		 *  defined date output bind variable. */
+		int32_t		getOutputBindDateMicrosecond(
+							const char *variable);
+
+		/** Get the time zone from a previously
+		 *  defined date output bind variable. */
+		const char	*getOutputBindDateTz(const char *variable);
+
+		/** Get whether the value is negative from a
+		 *  previously defined date output bind variable. */
+		bool		getOutputBindDateIsNegative(
+							const char *variable);
+
 		/** Get the value stored in a previously
 		 *  defined binary lob output bind variable. */
 		const char	*getOutputBindBlob(const char *variable);

@@ -162,6 +162,8 @@ public class SQLRCursor {
 	public native void	defineOutputBindClob(String variable);
 	/** Define an output bind variable.  */
 	public native void	defineOutputBindCursor(String variable);
+	/** Define a date output bind variable.  */
+	public native void	defineOutputBindDate(String variable);
 
 	/** Define an array of substitution variables.  */
 	public native void	substitutions(String[] variables, 
@@ -230,6 +232,33 @@ public class SQLRCursor {
 	/** Get the length of the value stored in a
 	 *  previously defined output bind variable.  */
 	public native long	getOutputBindLength(String variable);
+	/** Get the year from a previously
+	 *  defined date output bind variable.  */
+	public native short	getOutputBindDateYear(String variable);
+	/** Get the month from a previously
+	 *  defined date output bind variable.  */
+	public native short	getOutputBindDateMonth(String variable);
+	/** Get the day from a previously
+	 *  defined date output bind variable.  */
+	public native short	getOutputBindDateDay(String variable);
+	/** Get the hour from a previously
+	 *  defined date output bind variable.  */
+	public native short	getOutputBindDateHour(String variable);
+	/** Get the minute from a previously
+	 *  defined date output bind variable.  */
+	public native short	getOutputBindDateMinute(String variable);
+	/** Get the second from a previously
+	 *  defined date output bind variable.  */
+	public native short	getOutputBindDateSecond(String variable);
+	/** Get the microsecond from a previously
+	 *  defined date output bind variable.  */
+	public native int	getOutputBindDateMicrosecond(String variable);
+	/** Get the time zone from a previously
+	 *  defined date output bind variable.  */
+	public native String	getOutputBindDateTz(String variable);
+	/** Get whether the value is negative from a
+	 *  previously defined date output bind variable.  */
+	public native boolean	getOutputBindDateIsNegative(String variable);
 	/** Get the cursor associated with a
 	 *  previously defined output bind variable.  */
 	public SQLRCursor	getOutputBindCursor(String variable) {

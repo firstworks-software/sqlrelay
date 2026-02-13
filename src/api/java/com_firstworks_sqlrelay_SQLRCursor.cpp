@@ -563,6 +563,18 @@ JNIEXPORT void JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_defineOutputBindC
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    defineOutputBindDate
+ * Signature: (Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_defineOutputBindDate
+  (JNIEnv *env, jobject self, jstring variable) {
+	char	*variablestring=curGetStringUTFChars(env,variable,0);
+	getSqlrCursor(env,self)->defineOutputBindDate(variablestring);
+	curReleaseStringUTFChars(env,variable,variablestring);
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
  * Method:    substitutions
  * Signature: ([Ljava/lang/String;[Ljava/lang/String;)V
  */
@@ -861,6 +873,132 @@ JNIEXPORT jlong JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getOutputBindCur
 				getOutputBindCursor(variablestring,true);
 	curReleaseStringUTFChars(env,variable,variablestring);
 	return reinterpret_cast<jlong>(bindcur);
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getOutputBindDateYear
+ * Signature: (Ljava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getOutputBindDateYear
+  (JNIEnv *env, jobject self, jstring variable) {
+	char	*variablestring=curGetStringUTFChars(env,variable,0);
+	jshort	retval=(jshort)getSqlrCursor(env,self)->
+					getOutputBindDateYear(variablestring);
+	curReleaseStringUTFChars(env,variable,variablestring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getOutputBindDateMonth
+ * Signature: (Ljava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getOutputBindDateMonth
+  (JNIEnv *env, jobject self, jstring variable) {
+	char	*variablestring=curGetStringUTFChars(env,variable,0);
+	jshort	retval=(jshort)getSqlrCursor(env,self)->
+					getOutputBindDateMonth(variablestring);
+	curReleaseStringUTFChars(env,variable,variablestring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getOutputBindDateDay
+ * Signature: (Ljava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getOutputBindDateDay
+  (JNIEnv *env, jobject self, jstring variable) {
+	char	*variablestring=curGetStringUTFChars(env,variable,0);
+	jshort	retval=(jshort)getSqlrCursor(env,self)->
+					getOutputBindDateDay(variablestring);
+	curReleaseStringUTFChars(env,variable,variablestring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getOutputBindDateHour
+ * Signature: (Ljava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getOutputBindDateHour
+  (JNIEnv *env, jobject self, jstring variable) {
+	char	*variablestring=curGetStringUTFChars(env,variable,0);
+	jshort	retval=(jshort)getSqlrCursor(env,self)->
+					getOutputBindDateHour(variablestring);
+	curReleaseStringUTFChars(env,variable,variablestring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getOutputBindDateMinute
+ * Signature: (Ljava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getOutputBindDateMinute
+  (JNIEnv *env, jobject self, jstring variable) {
+	char	*variablestring=curGetStringUTFChars(env,variable,0);
+	jshort	retval=(jshort)getSqlrCursor(env,self)->
+					getOutputBindDateMinute(variablestring);
+	curReleaseStringUTFChars(env,variable,variablestring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getOutputBindDateSecond
+ * Signature: (Ljava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getOutputBindDateSecond
+  (JNIEnv *env, jobject self, jstring variable) {
+	char	*variablestring=curGetStringUTFChars(env,variable,0);
+	jshort	retval=(jshort)getSqlrCursor(env,self)->
+					getOutputBindDateSecond(variablestring);
+	curReleaseStringUTFChars(env,variable,variablestring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getOutputBindDateMicrosecond
+ * Signature: (Ljava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getOutputBindDateMicrosecond
+  (JNIEnv *env, jobject self, jstring variable) {
+	char	*variablestring=curGetStringUTFChars(env,variable,0);
+	jint	retval=(jint)getSqlrCursor(env,self)->
+					getOutputBindDateMicrosecond(variablestring);
+	curReleaseStringUTFChars(env,variable,variablestring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getOutputBindDateTz
+ * Signature: (Ljava/lang/String;)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getOutputBindDateTz
+  (JNIEnv *env, jobject self, jstring variable) {
+	char	*variablestring=curGetStringUTFChars(env,variable,0);
+	jstring	retval=env->NewStringUTF(getSqlrCursor(env,self)->
+					getOutputBindDateTz(variablestring));
+	curReleaseStringUTFChars(env,variable,variablestring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getOutputBindDateIsNegative
+ * Signature: (Ljava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getOutputBindDateIsNegative
+  (JNIEnv *env, jobject self, jstring variable) {
+	char	*variablestring=curGetStringUTFChars(env,variable,0);
+	jboolean	retval=(jboolean)getSqlrCursor(env,self)->
+					getOutputBindDateIsNegative(variablestring);
+	curReleaseStringUTFChars(env,variable,variablestring);
+	return retval;
 }
 
 /*

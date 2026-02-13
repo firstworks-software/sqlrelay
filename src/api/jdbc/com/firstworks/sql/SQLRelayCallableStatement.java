@@ -15,6 +15,8 @@ public class SQLRelayCallableStatement
 		extends SQLRelayPreparedStatement
 		implements CallableStatement {
 
+	private boolean	wasnull=false;
+
 	public
 	SQLRelayCallableStatement(SQLRelayDriver driver) throws SQLException {
 		super(driver);
@@ -36,9 +38,11 @@ public class SQLRelayCallableStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
-		Array	retval=(Array)
-			parameters.get(parameterName).getObject();
-		drv.debugPrintln("value: "+retval.getBaseTypeName());
+		Object	obj=parameters.get(parameterName).getObject();
+		wasnull=(obj==null);
+		Array	retval=(wasnull)?null:(Array)obj;
+		drv.debugPrintln("value: "+
+			((wasnull)?"null":retval.getBaseTypeName()));
 		drv.debugEnd();
 		return retval;
 	}
@@ -57,11 +61,7 @@ public class SQLRelayCallableStatement
 	BigDecimal getBigDecimal(int parameterIndex, int scale)
 							throws SQLException {
 		drv.debugFunction(this);
-		drv.debugPrintln("parameter index: "+parameterIndex);
-		BigDecimal	retval=
-				getBigDecimal(String.valueOf(parameterIndex));
-		retval=(retval!=null)?retval.setScale(scale):null;
-		drv.debugPrintln("value: "+retval);
+		BigDecimal	retval=getBigDecimal(parameterIndex);
 		drv.debugEnd();
 		return retval;
 	}
@@ -71,9 +71,10 @@ public class SQLRelayCallableStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
-		BigDecimal	retval=(BigDecimal)
-			parameters.get(parameterName).getObject();
-		drv.debugPrintln("value: "+retval);
+		Object	obj=parameters.get(parameterName).getObject();
+		wasnull=(obj==null);
+		BigDecimal	retval=(wasnull)?null:(BigDecimal)obj;
+		drv.debugPrintln("value: "+((wasnull)?"null":""+retval));
 		drv.debugEnd();
 		return retval;
 	}
@@ -92,9 +93,11 @@ public class SQLRelayCallableStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
-		Blob	retval=(Blob)
-			parameters.get(parameterName).getObject();
-		drv.debugPrintln("value: "+new String(blobToBytes(retval)));
+		Object	obj=parameters.get(parameterName).getObject();
+		wasnull=(obj==null);
+		Blob	retval=(wasnull)?null:(Blob)obj;
+		drv.debugPrintln("value: "+
+			((wasnull)?"null":new String(blobToBytes(retval))));
 		drv.debugEnd();
 		return retval;
 	}
@@ -114,8 +117,9 @@ public class SQLRelayCallableStatement
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
 		Object	obj=parameters.get(parameterName).getObject();
-		boolean	retval=(obj!=null)?(Boolean)obj:false;
-		drv.debugPrintln("value: "+retval);
+		wasnull=(obj==null);
+		boolean	retval=(wasnull)?false:(Boolean)obj;
+		drv.debugPrintln("value: "+((wasnull)?"null":""+retval));
 		drv.debugEnd();
 		return retval;
 	}
@@ -135,8 +139,9 @@ public class SQLRelayCallableStatement
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
 		Object	obj=parameters.get(parameterName).getObject();
-		byte	retval=(obj!=null)?(Byte)obj:0;
-		drv.debugPrintln("value: "+retval);
+		wasnull=(obj==null);
+		byte	retval=(wasnull)?0:(Byte)obj;
+		drv.debugPrintln("value: "+((wasnull)?"null":""+retval));
 		drv.debugEnd();
 		return retval;
 	}
@@ -155,9 +160,10 @@ public class SQLRelayCallableStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
-		byte[]	retval=(byte[])
-			parameters.get(parameterName).getObject();
-		drv.debugPrintln("value: "+retval);
+		Object	obj=parameters.get(parameterName).getObject();
+		wasnull=(obj==null);
+		byte[]	retval=(wasnull)?null:(byte[])obj;
+		drv.debugPrintln("value: "+((wasnull)?"null":""+retval));
 		drv.debugEnd();
 		return retval;
 	}
@@ -166,7 +172,8 @@ public class SQLRelayCallableStatement
 	Reader getCharacterStream(int parameterIndex) throws SQLException {
 		drv.debugFunction(this);
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		Reader	retval=getCharacterStream(String.valueOf(parameterIndex));
+		Reader	retval=getCharacterStream(
+					String.valueOf(parameterIndex));
 		drv.debugEnd();
 		return retval;
 	}
@@ -176,9 +183,11 @@ public class SQLRelayCallableStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
-		Reader	retval=(Reader)
-			parameters.get(parameterName).getObject();
-		drv.debugPrintln("value: "+readerToString(retval));
+		Object	obj=parameters.get(parameterName).getObject();
+		wasnull=(obj==null);
+		Reader	retval=(wasnull)?null:(Reader)obj;
+		drv.debugPrintln("value: "+
+			((wasnull)?"null":readerToString(retval)));
 		drv.debugEnd();
 		return retval;
 	}
@@ -197,9 +206,11 @@ public class SQLRelayCallableStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
-		Clob	retval=(Clob)
-			parameters.get(parameterName).getObject();
-		drv.debugPrintln("value: "+clobToString(retval));
+		Object	obj=parameters.get(parameterName).getObject();
+		wasnull=(obj==null);
+		Clob	retval=(wasnull)?null:(Clob)obj;
+		drv.debugPrintln("value: "+
+			((wasnull)?"null":clobToString(retval)));
 		drv.debugEnd();
 		return retval;
 	}
@@ -217,7 +228,6 @@ public class SQLRelayCallableStatement
 	Date getDate(int parameterIndex, Calendar cal) throws SQLException {
 		drv.debugFunction(this);
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		// FIXME: use cal?
 		Date	retval=getDate(String.valueOf(parameterIndex),cal);
 		drv.debugEnd();
 		return retval;
@@ -228,9 +238,10 @@ public class SQLRelayCallableStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
-		Date	retval=(Date)
-			parameters.get(parameterName).getObject();
-		drv.debugPrintln("value: "+retval);
+		Object	obj=parameters.get(parameterName).getObject();
+		wasnull=(obj==null);
+		Date	retval=(wasnull)?null:(Date)obj;
+		drv.debugPrintln("value: "+((wasnull)?"null":""+retval));
 		drv.debugEnd();
 		return retval;
 	}
@@ -240,10 +251,29 @@ public class SQLRelayCallableStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
-		// FIXME: use cal?
-		Date	retval=(Date)
-			parameters.get(parameterName).getObject();
-		drv.debugPrintln("value: "+retval);
+		Object	obj=parameters.get(parameterName).getObject();
+		wasnull=(obj==null);
+		Date	retval=null;
+		if (!wasnull) {
+			if (cal!=null) {
+				Calendar defCal=Calendar.getInstance();
+				defCal.setTime((Date)obj);
+				cal.set(Calendar.YEAR,
+					defCal.get(Calendar.YEAR));
+				cal.set(Calendar.MONTH,
+					defCal.get(Calendar.MONTH));
+				cal.set(Calendar.DAY_OF_MONTH,
+					defCal.get(Calendar.DAY_OF_MONTH));
+				cal.set(Calendar.HOUR_OF_DAY,0);
+				cal.set(Calendar.MINUTE,0);
+				cal.set(Calendar.SECOND,0);
+				cal.set(Calendar.MILLISECOND,0);
+				retval=new Date(cal.getTimeInMillis());
+			} else {
+				retval=(Date)obj;
+			}
+		}
+		drv.debugPrintln("value: "+((wasnull)?"null":""+retval));
 		drv.debugEnd();
 		return retval;
 	}
@@ -263,8 +293,9 @@ public class SQLRelayCallableStatement
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
 		Object	obj=parameters.get(parameterName).getObject();
-		double	retval=(obj!=null)?(Double)obj:0.0;
-		drv.debugPrintln("value: "+retval);
+		wasnull=(obj==null);
+		double	retval=(wasnull)?0.0:(Double)obj;
+		drv.debugPrintln("value: "+((wasnull)?"null":""+retval));
 		drv.debugEnd();
 		return retval;
 	}
@@ -284,8 +315,9 @@ public class SQLRelayCallableStatement
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
 		Object	obj=parameters.get(parameterName).getObject();
-		float	retval=(obj!=null)?(Float)obj:0.0f;
-		drv.debugPrintln("value: "+retval);
+		wasnull=(obj==null);
+		float	retval=(wasnull)?0.0f:(Float)obj;
+		drv.debugPrintln("value: "+((wasnull)?"null":""+retval));
 		drv.debugEnd();
 		return retval;
 	}
@@ -305,8 +337,9 @@ public class SQLRelayCallableStatement
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
 		Object	obj=parameters.get(parameterName).getObject();
-		int	retval=(obj!=null)?(Integer)obj:0;
-		drv.debugPrintln("value: "+retval);
+		wasnull=(obj==null);
+		int	retval=(wasnull)?0:(Integer)obj;
+		drv.debugPrintln("value: "+((wasnull)?"null":""+retval));
 		drv.debugEnd();
 		return retval;
 	}
@@ -326,8 +359,9 @@ public class SQLRelayCallableStatement
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
 		Object	obj=parameters.get(parameterName).getObject();
-		long	retval=(obj!=null)?(Long)obj:0;
-		drv.debugPrintln("value: "+retval);
+		wasnull=(obj==null);
+		long	retval=(wasnull)?0:(Long)obj;
+		drv.debugPrintln("value: "+((wasnull)?"null":""+retval));
 		drv.debugEnd();
 		return retval;
 	}
@@ -347,9 +381,11 @@ public class SQLRelayCallableStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
-		Reader	retval=(Reader)
-			parameters.get(parameterName).getObject();
-		drv.debugPrintln("value: "+readerToString(retval));
+		Object	obj=parameters.get(parameterName).getObject();
+		wasnull=(obj==null);
+		Reader	retval=(wasnull)?null:(Reader)obj;
+		drv.debugPrintln("value: "+
+			((wasnull)?"null":readerToString(retval)));
 		drv.debugEnd();
 		return retval;
 	}
@@ -368,9 +404,11 @@ public class SQLRelayCallableStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
-		NClob	retval=(NClob)
-			parameters.get(parameterName).getObject();
-		drv.debugPrintln("value: "+clobToString(retval));
+		Object	obj=parameters.get(parameterName).getObject();
+		wasnull=(obj==null);
+		NClob	retval=(wasnull)?null:(NClob)obj;
+		drv.debugPrintln("value: "+
+			((wasnull)?"null":clobToString(retval)));
 		drv.debugEnd();
 		return retval;
 	}
@@ -389,9 +427,10 @@ public class SQLRelayCallableStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
-		String	retval=(String)
-			parameters.get(parameterName).getObject();
-		drv.debugPrintln("value: "+retval);
+		Object	obj=parameters.get(parameterName).getObject();
+		wasnull=(obj==null);
+		String	retval=(wasnull)?null:(String)obj;
+		drv.debugPrintln("value: "+((wasnull)?"null":""+retval));
 		drv.debugEnd();
 		return retval;
 	}
@@ -429,9 +468,10 @@ public class SQLRelayCallableStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
-		Object	retval=
-			parameters.get(parameterName).getObject();
-		drv.debugPrintln("value: "+retval);
+		Object	obj=parameters.get(parameterName).getObject();
+		wasnull=(obj==null);
+		Object	retval=obj;
+		drv.debugPrintln("value: "+((wasnull)?"null":""+retval));
 		drv.debugEnd();
 		return retval;
 	}
@@ -442,9 +482,10 @@ public class SQLRelayCallableStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
-		T	retval=type.cast(
-			parameters.get(parameterName).getObject());
-		drv.debugPrintln("value: "+retval);
+		Object	obj=parameters.get(parameterName).getObject();
+		wasnull=(obj==null);
+		T	retval=(wasnull)?null:type.cast(obj);
+		drv.debugPrintln("value: "+((wasnull)?"null":""+retval));
 		drv.debugEnd();
 		return retval;
 	}
@@ -455,9 +496,10 @@ public class SQLRelayCallableStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
-		Object	retval=
-			parameters.get(parameterName).getObject();
-		drv.debugPrintln("value: "+retval);
+		Object	obj=parameters.get(parameterName).getObject();
+		wasnull=(obj==null);
+		Object	retval=obj;
+		drv.debugPrintln("value: "+((wasnull)?"null":""+retval));
 		drv.debugEnd();
 		return retval;
 	}
@@ -476,9 +518,11 @@ public class SQLRelayCallableStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
-		Ref	retval=(Ref)
-			parameters.get(parameterName).getObject();
-		drv.debugPrintln("value: "+retval.getBaseTypeName());
+		Object	obj=parameters.get(parameterName).getObject();
+		wasnull=(obj==null);
+		Ref	retval=(wasnull)?null:(Ref)obj;
+		drv.debugPrintln("value: "+
+			((wasnull)?"null":retval.getBaseTypeName()));
 		drv.debugEnd();
 		return retval;
 	}
@@ -497,9 +541,11 @@ public class SQLRelayCallableStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
-		RowId	retval=(RowId)
-			parameters.get(parameterName).getObject();
-		drv.debugPrintln("value: "+retval.toString());
+		Object	obj=parameters.get(parameterName).getObject();
+		wasnull=(obj==null);
+		RowId	retval=(wasnull)?null:(RowId)obj;
+		drv.debugPrintln("value: "+
+			((wasnull)?"null":retval.toString()));
 		drv.debugEnd();
 		return retval;
 	}
@@ -519,8 +565,9 @@ public class SQLRelayCallableStatement
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
 		Object	obj=parameters.get(parameterName).getObject();
-		short	retval=(obj!=null)?(Short)obj:0;
-		drv.debugPrintln("value: "+retval);
+		wasnull=(obj==null);
+		short	retval=(wasnull)?0:(Short)obj;
+		drv.debugPrintln("value: "+((wasnull)?"null":""+retval));
 		drv.debugEnd();
 		return retval;
 	}
@@ -539,9 +586,11 @@ public class SQLRelayCallableStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
-		SQLXML	retval=(SQLXML)
-			parameters.get(parameterName).getObject();
-		drv.debugPrintln("value: "+retval.getString());
+		Object	obj=parameters.get(parameterName).getObject();
+		wasnull=(obj==null);
+		SQLXML	retval=(wasnull)?null:(SQLXML)obj;
+		drv.debugPrintln("value: "+
+			((wasnull)?"null":retval.getString()));
 		drv.debugEnd();
 		return retval;
 	}
@@ -560,9 +609,10 @@ public class SQLRelayCallableStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
-		String	retval=(String)
-			parameters.get(parameterName).getObject();
-		drv.debugPrintln("value: "+retval);
+		Object	obj=parameters.get(parameterName).getObject();
+		wasnull=(obj==null);
+		String	retval=(wasnull)?null:(String)obj;
+		drv.debugPrintln("value: "+((wasnull)?"null":""+retval));
 		drv.debugEnd();
 		return retval;
 	}
@@ -580,7 +630,6 @@ public class SQLRelayCallableStatement
 	Time getTime(int parameterIndex, Calendar cal) throws SQLException {
 		drv.debugFunction(this);
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		// FIXME: use cal?
 		Time	retval=getTime(String.valueOf(parameterIndex),cal);
 		drv.debugEnd();
 		return retval;
@@ -591,9 +640,10 @@ public class SQLRelayCallableStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
-		Time	retval=(Time)
-			parameters.get(parameterName).getObject();
-		drv.debugPrintln("value: "+retval);
+		Object	obj=parameters.get(parameterName).getObject();
+		wasnull=(obj==null);
+		Time	retval=(wasnull)?null:(Time)obj;
+		drv.debugPrintln("value: "+((wasnull)?"null":""+retval));
 		drv.debugEnd();
 		return retval;
 	}
@@ -603,10 +653,30 @@ public class SQLRelayCallableStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
-		// FIXME: use cal?
-		Time	retval=(Time)
-			parameters.get(parameterName).getObject();
-		drv.debugPrintln("value: "+retval);
+		Object	obj=parameters.get(parameterName).getObject();
+		wasnull=(obj==null);
+		Time	retval=null;
+		if (!wasnull) {
+			if (cal!=null) {
+				Calendar defCal=Calendar.getInstance();
+				defCal.setTime((Time)obj);
+				cal.set(Calendar.YEAR,1970);
+				cal.set(Calendar.MONTH,Calendar.JANUARY);
+				cal.set(Calendar.DAY_OF_MONTH,1);
+				cal.set(Calendar.HOUR_OF_DAY,
+					defCal.get(Calendar.HOUR_OF_DAY));
+				cal.set(Calendar.MINUTE,
+					defCal.get(Calendar.MINUTE));
+				cal.set(Calendar.SECOND,
+					defCal.get(Calendar.SECOND));
+				cal.set(Calendar.MILLISECOND,
+					defCal.get(Calendar.MILLISECOND));
+				retval=new Time(cal.getTimeInMillis());
+			} else {
+				retval=(Time)obj;
+			}
+		}
+		drv.debugPrintln("value: "+((wasnull)?"null":""+retval));
 		drv.debugEnd();
 		return retval;
 	}
@@ -626,7 +696,6 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		drv.debugFunction(this);
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		// FIXME: use cal?
 		Timestamp	retval=
 			getTimestamp(String.valueOf(parameterIndex),cal);
 		drv.debugEnd();
@@ -638,9 +707,10 @@ public class SQLRelayCallableStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
-		Timestamp	retval=(Timestamp)
-			parameters.get(parameterName).getObject();
-		drv.debugPrintln("value: "+retval);
+		Object	obj=parameters.get(parameterName).getObject();
+		wasnull=(obj==null);
+		Timestamp	retval=(wasnull)?null:(Timestamp)obj;
+		drv.debugPrintln("value: "+((wasnull)?"null":""+retval));
 		drv.debugEnd();
 		return retval;
 	}
@@ -651,10 +721,34 @@ public class SQLRelayCallableStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
-		// FIXME: use cal?
-		Timestamp	retval=(Timestamp)
-			parameters.get(parameterName).getObject();
-		drv.debugPrintln("value: "+retval);
+		Object	obj=parameters.get(parameterName).getObject();
+		wasnull=(obj==null);
+		Timestamp	retval=null;
+		if (!wasnull) {
+			if (cal!=null) {
+				Calendar defCal=Calendar.getInstance();
+				defCal.setTime((Timestamp)obj);
+				cal.set(Calendar.YEAR,
+					defCal.get(Calendar.YEAR));
+				cal.set(Calendar.MONTH,
+					defCal.get(Calendar.MONTH));
+				cal.set(Calendar.DAY_OF_MONTH,
+					defCal.get(Calendar.DAY_OF_MONTH));
+				cal.set(Calendar.HOUR_OF_DAY,
+					defCal.get(Calendar.HOUR_OF_DAY));
+				cal.set(Calendar.MINUTE,
+					defCal.get(Calendar.MINUTE));
+				cal.set(Calendar.SECOND,
+					defCal.get(Calendar.SECOND));
+				cal.set(Calendar.MILLISECOND,
+					defCal.get(Calendar.MILLISECOND));
+				retval=new Timestamp(cal.getTimeInMillis());
+				retval.setNanos(((Timestamp)obj).getNanos());
+			} else {
+				retval=(Timestamp)obj;
+			}
+		}
+		drv.debugPrintln("value: "+((wasnull)?"null":""+retval));
 		drv.debugEnd();
 		return retval;
 	}
@@ -673,9 +767,10 @@ public class SQLRelayCallableStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("parameter name: "+parameterName);
-		URL	retval=(URL)
-			parameters.get(parameterName).getObject();
-		drv.debugPrintln("value: "+retval);
+		Object	obj=parameters.get(parameterName).getObject();
+		wasnull=(obj==null);
+		URL	retval=(wasnull)?null:(URL)obj;
+		drv.debugPrintln("value: "+((wasnull)?"null":""+retval));
 		drv.debugEnd();
 		return retval;
 	}
@@ -684,8 +779,8 @@ public class SQLRelayCallableStatement
 	void registerOutParameter(int parameterIndex, int sqlType)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		registerOutParameter(String.valueOf(parameterIndex),sqlType);
 		drv.debugEnd();
 	}
 
@@ -694,8 +789,9 @@ public class SQLRelayCallableStatement
 							int scale)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("parameter index: "+parameterIndex);
+		registerOutParameter(String.valueOf(parameterIndex),
+							sqlType,scale);
 		drv.debugEnd();
 	}
 
@@ -704,8 +800,8 @@ public class SQLRelayCallableStatement
 							String typeName)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		registerOutParameter(String.valueOf(parameterIndex),
+							sqlType,typeName);
 		drv.debugEnd();
 	}
 
@@ -713,8 +809,7 @@ public class SQLRelayCallableStatement
 	void registerOutParameter(String parameterName, int sqlType)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		registerOutParameter(parameterName,sqlType,0);
 		drv.debugEnd();
 	}
 
@@ -724,7 +819,180 @@ public class SQLRelayCallableStatement
 							throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+
+		drv.debugPrintln("parameter name: "+parameterName);
+		drv.debugPrintln("sql type: "+sqlType);
+		drv.debugPrintln("scale: "+scale);
+
+		SQLRelayParameter.BindType	bindtype;
+		boolean				signed=false;
+		boolean				binary=false;
+		boolean				lob=false;
+		boolean				ascii=false;
+		String				classname;
+		String				typename;
+
+		switch (sqlType) {
+			case Types.ARRAY:
+				bindtype=SQLRelayParameter.BindType.Array;
+				classname="java.sql.Array";
+				typename="ARRAY";
+				break;
+			case Types.BIGINT:
+				bindtype=SQLRelayParameter.BindType.Long;
+				signed=true;
+				classname="java.lang.Long";
+				typename="BIGINT";
+				break;
+			case Types.BINARY:
+			case Types.VARBINARY:
+			case Types.LONGVARBINARY:
+				bindtype=SQLRelayParameter.BindType.Bytes;
+				binary=true;
+				classname="[B";
+				typename="VARBINARY";
+				break;
+			case Types.BIT:
+			case Types.BOOLEAN:
+				bindtype=SQLRelayParameter.BindType.Boolean;
+				classname="java.lang.Boolean";
+				typename="BOOLEAN";
+				break;
+			case Types.BLOB:
+				bindtype=SQLRelayParameter.BindType.Blob;
+				binary=true;
+				lob=true;
+				classname="java.sql.Blob";
+				typename="BLOB";
+				break;
+			case Types.CHAR:
+			case Types.VARCHAR:
+			case Types.LONGVARCHAR:
+				bindtype=SQLRelayParameter.BindType.String;
+				ascii=true;
+				classname="java.lang.String";
+				typename="VARCHAR";
+				break;
+			case Types.CLOB:
+				bindtype=SQLRelayParameter.BindType.Clob;
+				lob=true;
+				ascii=true;
+				classname="java.sql.Clob";
+				typename="CLOB";
+				break;
+			case Types.DATE:
+				bindtype=SQLRelayParameter.BindType.Date;
+				classname="java.sql.Date";
+				typename="DATE";
+				break;
+			case Types.DECIMAL:
+			case Types.NUMERIC:
+				bindtype=SQLRelayParameter.BindType.BigDecimal;
+				signed=true;
+				classname="java.math.BigDecimal";
+				typename="DECIMAL";
+				break;
+			case Types.DOUBLE:
+				bindtype=SQLRelayParameter.BindType.Double;
+				signed=true;
+				classname="java.lang.Double";
+				typename="DOUBLE";
+				break;
+			case Types.FLOAT:
+			case Types.REAL:
+				bindtype=SQLRelayParameter.BindType.Float;
+				signed=true;
+				classname="java.lang.Float";
+				typename="FLOAT";
+				break;
+			case Types.INTEGER:
+				bindtype=SQLRelayParameter.BindType.Int;
+				signed=true;
+				classname="java.lang.Integer";
+				typename="INTEGER";
+				break;
+			case Types.NCHAR:
+			case Types.NVARCHAR:
+			case Types.LONGNVARCHAR:
+				bindtype=SQLRelayParameter.BindType.NString;
+				classname="java.lang.String";
+				typename="NVARCHAR";
+				break;
+			case Types.NCLOB:
+				bindtype=SQLRelayParameter.BindType.NClob;
+				lob=true;
+				classname="java.sql.NClob";
+				typename="NCLOB";
+				break;
+			case Types.NULL:
+				bindtype=SQLRelayParameter.BindType.Null;
+				classname="java.lang.Object";
+				typename="NULL";
+				break;
+			case Types.REF:
+				bindtype=SQLRelayParameter.BindType.Ref;
+				classname="java.sql.Ref";
+				typename="REF";
+				break;
+			case Types.ROWID:
+				bindtype=SQLRelayParameter.BindType.RowId;
+				classname="java.sql.RowId";
+				typename="ROWID";
+				break;
+			case Types.SMALLINT:
+				bindtype=SQLRelayParameter.BindType.Short;
+				signed=true;
+				classname="java.lang.Short";
+				typename="SMALLINT";
+				break;
+			case Types.SQLXML:
+				bindtype=SQLRelayParameter.BindType.SQLXML;
+				classname="java.sql.SQLXML";
+				typename="SQLXML";
+				break;
+			case Types.TIME:
+				bindtype=SQLRelayParameter.BindType.Time;
+				classname="java.sql.Time";
+				typename="TIME";
+				break;
+			case Types.TIMESTAMP:
+				bindtype=SQLRelayParameter.BindType.Timestamp;
+				classname="java.sql.Timestamp";
+				typename="TIMESTAMP";
+				break;
+			case Types.TINYINT:
+				bindtype=SQLRelayParameter.BindType.Byte;
+				signed=true;
+				classname="java.lang.Byte";
+				typename="TINYINT";
+				break;
+			default:
+				bindtype=SQLRelayParameter.BindType.String;
+				ascii=true;
+				classname="java.lang.String";
+				typename="VARCHAR";
+				break;
+		}
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
+		param.setClassName(classname);
+		param.setMode(ParameterMetaData.parameterModeOut);
+		param.setType(sqlType);
+		param.setTypeName(typename);
+		param.setPrecision(0);
+		param.setScale(scale);
+		param.setIsNullable(ParameterMetaData.parameterNullable);
+		param.setIsSigned(signed);
+		param.setObject(null);
+		param.setLength(-1);
+		param.setIsBinary(binary);
+		param.setIsLob(lob);
+		param.setIsAscii(ascii);
+		param.setCalendar(null);
+		param.setBindType(bindtype);
+
+		parameters.put(parameterName,param);
+
 		drv.debugEnd();
 	}
 
@@ -733,8 +1001,8 @@ public class SQLRelayCallableStatement
 							String typeName)
 							throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		registerOutParameter(parameterName,sqlType,0);
+		parameters.get(parameterName).setTypeName(typeName);
 		drv.debugEnd();
 	}
 
@@ -1092,8 +1360,8 @@ public class SQLRelayCallableStatement
 	boolean wasNull() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln(""+wasnull);
 		drv.debugEnd();
-		return false;
+		return wasnull;
 	}
 }

@@ -140,18 +140,19 @@ public class SQLRelayStatement implements Statement {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 
+		// debug
 		drv.debugPrintln("sql: "+sql);
 
+		// initialize results
 		resultset=null;
 		updatecount=-1;
 
-		// translate JDBC escape sequences
+		// process jdbc escape sequences
 		if (escapeprocessing) {
 			sql=conn.nativeSQL(sql);
 		}
 
-		// FIXME: handle timeout
-
+		// send the query
 		boolean	result=false;
 		synchronized (networklock) {
 			result=sqlrcur.sendQuery(sql);
@@ -159,6 +160,7 @@ public class SQLRelayStatement implements Statement {
 
 		drv.debugPrintln("result: "+result);
 
+		// handle results
 		if (result) {
 
 			updatecount=(int)sqlrcur.affectedRows();
@@ -250,8 +252,10 @@ public class SQLRelayStatement implements Statement {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 
+		// debug
 		drv.debugPrintln("batch size: "+batch.size());
 
+		// execute each query in the batch
 		int[]	retvals=new int[batch.size()];
 		int	count=0;
 
@@ -266,7 +270,10 @@ public class SQLRelayStatement implements Statement {
 	public
 	ResultSet executeQuery(String sql) throws SQLException {
 		drv.debugFunction(this);
+
+		// execute
 		execute(sql);
+
 		drv.debugEnd();
 		return resultset;
 	}
@@ -274,7 +281,10 @@ public class SQLRelayStatement implements Statement {
 	public
 	int executeUpdate(String sql) throws SQLException {
 		drv.debugFunction(this);
+
+		// execute
 		execute(sql);
+
 		drv.debugEnd();
 		return updatecount;
 	}

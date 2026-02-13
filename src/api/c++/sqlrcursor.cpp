@@ -2172,6 +2172,150 @@ bool sqlrcursor::getOutputBindDate(const char *variable,
 	return false;
 }
 
+
+int16_t sqlrcursor::getOutputBindDateYear(const char *variable) {
+	int16_t	year=0;
+	int16_t	month;
+	int16_t	day;
+	int16_t	hour;
+	int16_t	minute;
+	int16_t	second;
+	int32_t	microsecond;
+	const char	*tz;
+	bool	isnegative;
+	getOutputBindDate(variable,&year,&month,&day,
+				&hour,&minute,&second,
+				&microsecond,&tz,&isnegative);
+	return year;
+}
+
+int16_t sqlrcursor::getOutputBindDateMonth(const char *variable) {
+	int16_t	year;
+	int16_t	month=0;
+	int16_t	day;
+	int16_t	hour;
+	int16_t	minute;
+	int16_t	second;
+	int32_t	microsecond;
+	const char	*tz;
+	bool	isnegative;
+	getOutputBindDate(variable,&year,&month,&day,
+				&hour,&minute,&second,
+				&microsecond,&tz,&isnegative);
+	return month;
+}
+
+int16_t sqlrcursor::getOutputBindDateDay(const char *variable) {
+	int16_t	year;
+	int16_t	month;
+	int16_t	day=0;
+	int16_t	hour;
+	int16_t	minute;
+	int16_t	second;
+	int32_t	microsecond;
+	const char	*tz;
+	bool	isnegative;
+	getOutputBindDate(variable,&year,&month,&day,
+				&hour,&minute,&second,
+				&microsecond,&tz,&isnegative);
+	return day;
+}
+
+int16_t sqlrcursor::getOutputBindDateHour(const char *variable) {
+	int16_t	year;
+	int16_t	month;
+	int16_t	day;
+	int16_t	hour=0;
+	int16_t	minute;
+	int16_t	second;
+	int32_t	microsecond;
+	const char	*tz;
+	bool	isnegative;
+	getOutputBindDate(variable,&year,&month,&day,
+				&hour,&minute,&second,
+				&microsecond,&tz,&isnegative);
+	return hour;
+}
+
+int16_t sqlrcursor::getOutputBindDateMinute(const char *variable) {
+	int16_t	year;
+	int16_t	month;
+	int16_t	day;
+	int16_t	hour;
+	int16_t	minute=0;
+	int16_t	second;
+	int32_t	microsecond;
+	const char	*tz;
+	bool	isnegative;
+	getOutputBindDate(variable,&year,&month,&day,
+				&hour,&minute,&second,
+				&microsecond,&tz,&isnegative);
+	return minute;
+}
+
+int16_t sqlrcursor::getOutputBindDateSecond(const char *variable) {
+	int16_t	year;
+	int16_t	month;
+	int16_t	day;
+	int16_t	hour;
+	int16_t	minute;
+	int16_t	second=0;
+	int32_t	microsecond;
+	const char	*tz;
+	bool	isnegative;
+	getOutputBindDate(variable,&year,&month,&day,
+				&hour,&minute,&second,
+				&microsecond,&tz,&isnegative);
+	return second;
+}
+
+int32_t sqlrcursor::getOutputBindDateMicrosecond(const char *variable) {
+	int16_t	year;
+	int16_t	month;
+	int16_t	day;
+	int16_t	hour;
+	int16_t	minute;
+	int16_t	second;
+	int32_t	microsecond=0;
+	const char	*tz;
+	bool	isnegative;
+	getOutputBindDate(variable,&year,&month,&day,
+				&hour,&minute,&second,
+				&microsecond,&tz,&isnegative);
+	return microsecond;
+}
+
+const char *sqlrcursor::getOutputBindDateTz(const char *variable) {
+	int16_t	year;
+	int16_t	month;
+	int16_t	day;
+	int16_t	hour;
+	int16_t	minute;
+	int16_t	second;
+	int32_t	microsecond;
+	const char	*tz=NULL;
+	bool	isnegative;
+	getOutputBindDate(variable,&year,&month,&day,
+				&hour,&minute,&second,
+				&microsecond,&tz,&isnegative);
+	return tz;
+}
+
+bool sqlrcursor::getOutputBindDateIsNegative(const char *variable) {
+	int16_t	year;
+	int16_t	month;
+	int16_t	day;
+	int16_t	hour;
+	int16_t	minute;
+	int16_t	second;
+	int32_t	microsecond;
+	const char	*tz;
+	bool	isnegative=false;
+	getOutputBindDate(variable,&year,&month,&day,
+				&hour,&minute,&second,
+				&microsecond,&tz,&isnegative);
+	return isnegative;
+}
 sqlrcursor *sqlrcursor::getOutputBindCursor(const char *variable) {
 	return getOutputBindCursor(variable,false);
 }

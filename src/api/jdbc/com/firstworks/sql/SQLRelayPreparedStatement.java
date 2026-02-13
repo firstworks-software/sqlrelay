@@ -58,9 +58,11 @@ public class SQLRelayPreparedStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 
+		// initialize results
 		resultset=null;
 		updatecount=-1;
 
+		// bind variables
 		sqlrcur.clearBinds();
 		if (batch.size()==0) {
 			bind(parameters);
@@ -68,8 +70,7 @@ public class SQLRelayPreparedStatement
 			bind(batch.get(0));
 		}
 
-		// FIXME: handle timeout
-
+		// execute the query
 		boolean	result=false;
 		synchronized (networklock) {
 			result=sqlrcur.executeQuery();
@@ -77,6 +78,7 @@ public class SQLRelayPreparedStatement
 
 		drv.debugPrintln("result: "+result);
 
+		// handle results
 		if (result) {
 
 			updatecount=(int)sqlrcur.affectedRows();
@@ -91,6 +93,8 @@ public class SQLRelayPreparedStatement
 				resultset.setConnection(conn);
 				resultset.setSQLRCursor(sqlrcur);
 			}
+
+			getOutputBindValues();
 		} else {
 			throwErrorMessageException();
 		}
@@ -104,8 +108,10 @@ public class SQLRelayPreparedStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 
+		// debug
 		drv.debugPrintln("batch size: "+batch.size());
 
+		// execute each query in the batch
 		int[]	results=new int[batch.size()];
 		int	count=0;
 
@@ -124,9 +130,11 @@ public class SQLRelayPreparedStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 
+		// initialize results
 		resultset=null;
 		updatecount=-1;
 
+		// bind variables
 		sqlrcur.clearBinds();
 		if (batch.size()==0) {
 			bind(parameters);
@@ -134,13 +142,13 @@ public class SQLRelayPreparedStatement
 			bind(batch.get(0));
 		}
 
-		// FIXME: handle timeout
-
+		// execute the query
 		boolean	success=false;
 		synchronized (networklock) {
 			success=sqlrcur.executeQuery();
 		}
 
+		// handle results
 		if (success) {
 
 			updatecount=(int)sqlrcur.affectedRows();
@@ -153,6 +161,8 @@ public class SQLRelayPreparedStatement
 			resultset.setStatement(this);
 			resultset.setConnection(conn);
 			resultset.setSQLRCursor(sqlrcur);
+
+			getOutputBindValues();
 		} else {
 			throwErrorMessageException();
 		}
@@ -166,9 +176,11 @@ public class SQLRelayPreparedStatement
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 
+		// initialize results
 		resultset=null;
 		updatecount=-1;
 
+		// bind variables
 		sqlrcur.clearBinds();
 		if (batch.size()==0) {
 			bind(parameters);
@@ -176,17 +188,19 @@ public class SQLRelayPreparedStatement
 			bind(batch.get(0));
 		}
 
-		// FIXME: handle timeout
-
+		// execute the query
 		boolean	success=false;
 		synchronized (networklock) {
 			success=sqlrcur.executeQuery();
 		}
 
+		// handle results
 		if (success) {
 			updatecount=(int)sqlrcur.affectedRows();
 
 			drv.debugPrintln("update count: "+updatecount);
+
+			getOutputBindValues();
 		} else {
 			throwErrorMessageException();
 		}
@@ -218,336 +232,674 @@ public class SQLRelayPreparedStatement
 				bindtype=SQLRelayParameter.BindType.Null;
 			}
 
-			switch (bindtype) {
-				case Array:
-					// FIXME: support this, somehow
+			switch (value.getMode()) {
+				case ParameterMetaData.parameterModeIn:
+					inputBind(key,value,bindtype);
 					break;
-				case AsciiStream:
-					sqlrcur.inputBind(
-						key,
-						asciiStreamToString(
-							(InputStream)
-							value.getObject()));
+				case ParameterMetaData.parameterModeInOut:
+					// FIXME: implement this...
 					break;
-				case AsciiStreamWithIntLength:
-				case AsciiStreamWithLongLength:
-					sqlrcur.inputBind(
-						key,
-						asciiStreamToString(
-							(InputStream)
-							value.getObject(),
-							value.getLength()));
+				case ParameterMetaData.parameterModeOut:
+					defineOutputBind(key,bindtype);
 					break;
-				case BigDecimal:
-					sqlrcur.inputBind(
-						key,
-						((BigDecimal)value.getObject()).
-								doubleValue(),
-								0,0);
-					// FIXME: set precision and scale
-					break;
-				case BinaryStream:
-					{
-					byte[]	bytes=binaryStreamToBytes(
-							(InputStream)
-							value.getObject(),-1);
-					sqlrcur.inputBindBlob(key,bytes,
-								bytes.length);
-					}
-					break;
-				case BinaryStreamWithIntLength:
-				case BinaryStreamWithLongLength:
-					{
-					byte[]	bytes=binaryStreamToBytes(
-							(InputStream)
-							value.getObject(),
-							value.getLength());
-					sqlrcur.inputBindBlob(key,bytes,
-								bytes.length);
-					}
-					break;
-				case Blob:
-					{
-					byte[]	bytes=blobToBytes((Blob)
-							value.getObject());
-					sqlrcur.inputBindBlob(key,bytes,
-								bytes.length);
-					}
-					break;
-				case BlobInputStream:
-					{
-					byte[]	bytes=binaryStreamToBytes(
-							(InputStream)
-							value.getObject(),-1);
-					sqlrcur.inputBindBlob(key,bytes,
-								bytes.length);
-					}
-					break;
-				case BlobInputStreamWithLongLength:
-					{
-					byte[]	bytes=binaryStreamToBytes(
-							(InputStream)
-							value.getObject(),
-							value.getLength());
-					sqlrcur.inputBindBlob(key,bytes,
-								bytes.length);
-					}
-					break;
-				case Boolean:
-					{
-					long	val=(((Boolean)value.
-							getObject()).
-							booleanValue()==true)?
-							1:0;
-					sqlrcur.inputBind(key,val);
-					}
-					break;
-				case Byte:
-					{
-					long	val=((Byte)value.
-							getObject()).
-							byteValue();
-					sqlrcur.inputBind(key,val);
-					}
-					break;
-				case Bytes:
-					{
-					Byte[]	v=(Byte[])value.getObject();
-					byte[]	val=new byte[v.length];
-					for (int i=0; i<v.length; i++) {
-						val[i]=v[i].byteValue();
-					}
-					sqlrcur.inputBindBlob(key,val,
-								val.length);
-					}
-					break;
-				case CharacterStream:
-					sqlrcur.inputBind(
-						key,
-						readerToString(
-							(Reader)
-							value.getObject(),
-							-1));
-					break;
-				case CharacterStreamWithIntLength:
-				case CharacterStreamWithLongLength:
-					sqlrcur.inputBind(
-						key,
-						readerToString(
-							(Reader)
-							value.getObject(),
-							value.getLength()));
-					break;
-				case Clob:
-					{
-					String	string=clobToString((Clob)
-							value.getObject());
-					sqlrcur.inputBindClob(
-							key,string,
-							string.length());
-					}
-					break;
-				case ClobReader:
-					{
-					String	string=readerToString(
-							(Reader)
-							value.getObject(),
-							-1);
-					sqlrcur.inputBindClob(
-							key,string,
-							string.length());
-					}
-					break;
-				case ClobReaderWithLength:
-					{
-					String	string=readerToString(
-							(Reader)
-							value.getObject(),
-							value.getLength());
-					sqlrcur.inputBindClob(
-							key,string,
-							string.length());
-					}
-					break;
-				case Date:
-					{
-					Calendar	cal=
-						Calendar.getInstance();
-					cal.setTime((Date)value.getObject());
-					sqlrcur.inputBind(key,
-						(short)cal.get(
-							Calendar.YEAR),
-						(short)cal.get(
-							Calendar.MONTH),
-						(short)cal.get(
-							Calendar.DAY_OF_MONTH),
-						(short)0,
-						(short)0,
-						(short)0,
-						(short)0,
-						null,false);
-					}
-					break;
-				case DateWithCalendar:
-					{
-					Calendar	cal=
-						Calendar.getInstance();
-					cal.setTime((Date)value.getObject());
-					sqlrcur.inputBind(key,
-						(short)cal.get(
-							Calendar.YEAR),
-						(short)cal.get(
-							Calendar.MONTH),
-						(short)cal.get(
-							Calendar.DAY_OF_MONTH),
-						(short)0,
-						(short)0,
-						(short)0,
-						(short)0,
-						null,false);
-					}
-					break;
-				case Double:
-					sqlrcur.inputBind(
-						key,
-						((Double)value.getObject()).
-								doubleValue(),
-								0,0);
-					// FIXME: set precision and scale
-					break;
-				case Float:
-					sqlrcur.inputBind(
-						key,
-						((Float)value.getObject()).
-								floatValue(),
-								0,0);
-					// FIXME: set precision and scale
-					break;
-				case Int:
-					sqlrcur.inputBind(
-						key,
-						((Integer)value.getObject()).
-								intValue());
-					break;
-				case Long:
-					sqlrcur.inputBind(
-						key,
-						((Long)value.getObject()).
-								longValue());
-					break;
-				case NCharStream:
-					sqlrcur.inputBind(
-						key,
-						readerToString(
-							(Reader)
-							value.getObject(),
-							-1));
-					break;
-				case NCharStreamWithLength:
-					sqlrcur.inputBind(
-						key,
-						readerToString(
-							(Reader)
-							value.getObject(),
-							value.getLength()));
-					break;
-				case NClob:
-					{
-					String	string=nClobToUnicodeString(
-							(NClob)
-							value.getObject());
-					sqlrcur.inputBindClob(
-							key,string,
-							string.length());
-					}
-					break;
-				case NClobReader:
-					{
-					String	string=readerToString(
-							(Reader)
-							value.getObject(),
-							-1);
-					sqlrcur.inputBindClob(
-							key,string,
-							string.length());
-					}
-					break;
-				case NClobReaderWithLength:
-					{
-					String	string=readerToString(
-							(Reader)
-							value.getObject(),
-							value.getLength());
-					sqlrcur.inputBindClob(
-							key,string,
-							string.length());
-					}
-					break;
-				case NString:
-					sqlrcur.inputBind(key,
-						(String)value.getObject());
-					break;
-				case Null:
-				case NullWithTypeName:
-					sqlrcur.inputBind(key,null);
-					break;
-				case Object:
-					// not supported
-					break;
-				case ObjectWithTargetType:
-					// not supported
-					break;
-				case ObjectWithTargetTypeAndScaleOrLength:
-					// not supported
-					break;
-				case Ref:
-					// not supported
-					break;
-				case RowId:
-					// not supported
-					break;
-				case Short:
-					sqlrcur.inputBind(
-						key,
-						((Short)value.getObject()).
-								shortValue());
-					break;
-				case String:
-					sqlrcur.inputBind(key,
-						(String)value.getObject());
-					break;
-				case SQLXML:
-					// not supported
-					break;
-				case Time:
-					// FIXME: support this
-					break;
-				case TimeWithCalendar:
-					// FIXME: support this
-					break;
-				case Timestamp:
-					// FIXME: support this
-					break;
-				case TimestampWithCalendar:
-					// FIXME: support this
-					break;
-				case UnicodeStream:
-					sqlrcur.inputBind(
-						key,
-						unicodeStreamToString(
-							(InputStream)
-							value.getObject(),
-							value.getLength()));
-					break;
-				case URL:
-					sqlrcur.inputBind(
-						key,
-						((URL)value.getObject()).
-								toString());
+				default:
 					break;
 			}
 		}
 		drv.debugEnd();
+	}
+
+	private
+	void inputBind(String key,
+			SQLRelayParameter value,
+			SQLRelayParameter.BindType bindtype)
+						throws SQLException {
+		switch (bindtype) {
+			case Array:
+				// FIXME: support this, somehow
+				break;
+			case AsciiStream:
+				sqlrcur.inputBind(key,
+					asciiStreamToString(
+						(InputStream)
+						value.getObject()));
+				break;
+			case AsciiStreamWithIntLength:
+			case AsciiStreamWithLongLength:
+				sqlrcur.inputBind(key,
+					asciiStreamToString(
+						(InputStream)
+						value.getObject(),
+						value.getLength()));
+				break;
+			case BigDecimal:
+				sqlrcur.inputBind(key,
+					((BigDecimal)value.getObject()).
+								doubleValue(),
+					((BigDecimal)value.getObject()).
+								precision(),
+					((BigDecimal)value.getObject()).
+								scale());
+				break;
+			case BinaryStream:
+				{
+				byte[]	bytes=binaryStreamToBytes(
+						(InputStream)
+						value.getObject(),-1);
+				sqlrcur.inputBindBlob(key,bytes,bytes.length);
+				}
+				break;
+			case BinaryStreamWithIntLength:
+			case BinaryStreamWithLongLength:
+				{
+				byte[]	bytes=binaryStreamToBytes(
+						(InputStream)
+						value.getObject(),
+						value.getLength());
+				sqlrcur.inputBindBlob(key,bytes,bytes.length);
+				}
+				break;
+			case Blob:
+				{
+				byte[]	bytes=blobToBytes((Blob)
+						value.getObject());
+				sqlrcur.inputBindBlob(key,bytes,bytes.length);
+				}
+				break;
+			case BlobInputStream:
+				{
+				byte[]	bytes=binaryStreamToBytes(
+						(InputStream)
+						value.getObject(),-1);
+				sqlrcur.inputBindBlob(key,bytes,bytes.length);
+				}
+				break;
+			case BlobInputStreamWithLongLength:
+				{
+				byte[]	bytes=binaryStreamToBytes(
+						(InputStream)
+						value.getObject(),
+						value.getLength());
+				sqlrcur.inputBindBlob(key,bytes,bytes.length);
+				}
+				break;
+			case Boolean:
+				{
+				long	val=(((Boolean)value.
+						getObject()).
+						booleanValue()==true)?
+						1:0;
+				sqlrcur.inputBind(key,val);
+				}
+				break;
+			case Byte:
+				{
+				long	val=((Byte)value.
+						getObject()).
+						byteValue();
+				sqlrcur.inputBind(key,val);
+				}
+				break;
+			case Bytes:
+				{
+				Byte[]	v=(Byte[])value.getObject();
+				byte[]	val=new byte[v.length];
+				for (int i=0; i<v.length; i++) {
+					val[i]=v[i].byteValue();
+				}
+				sqlrcur.inputBindBlob(key,val,val.length);
+				}
+				break;
+			case CharacterStream:
+				sqlrcur.inputBind(
+					key,
+					readerToString(
+						(Reader)
+						value.getObject(),
+						-1));
+				break;
+			case CharacterStreamWithIntLength:
+			case CharacterStreamWithLongLength:
+				sqlrcur.inputBind(key,
+					readerToString(
+						(Reader)
+						value.getObject(),
+						value.getLength()));
+				break;
+			case Clob:
+				{
+				String	string=clobToString((Clob)
+						value.getObject());
+				sqlrcur.inputBindClob(key,
+						string,string.length());
+				}
+				break;
+			case ClobReader:
+				{
+				String	string=readerToString(
+						(Reader)
+						value.getObject(),
+						-1);
+				sqlrcur.inputBindClob(key,
+						string,string.length());
+				}
+				break;
+			case ClobReaderWithLength:
+				{
+				String	string=readerToString(
+						(Reader)
+						value.getObject(),
+						value.getLength());
+				sqlrcur.inputBindClob(key,
+						string,string.length());
+				}
+				break;
+			case Date:
+				{
+				Calendar	cal=Calendar.getInstance();
+				cal.setTime((Date)value.getObject());
+				sqlrcur.inputBind(key,
+					(short)cal.get(
+						Calendar.YEAR),
+					(short)cal.get(
+						Calendar.MONTH),
+					(short)cal.get(
+						Calendar.DAY_OF_MONTH),
+					(short)0,
+					(short)0,
+					(short)0,
+					(short)0,
+					null,false);
+				}
+				break;
+			case DateWithCalendar:
+				{
+				Calendar	cal=value.getCalendar();
+				cal.setTime((Date)value.getObject());
+				sqlrcur.inputBind(key,
+					(short)cal.get(
+						Calendar.YEAR),
+					(short)cal.get(
+						Calendar.MONTH),
+					(short)cal.get(
+						Calendar.DAY_OF_MONTH),
+					(short)0,
+					(short)0,
+					(short)0,
+					(short)0,
+					null,false);
+				}
+				break;
+			case Double:
+				sqlrcur.inputBind(key,
+					((Double)value.getObject()).
+							doubleValue(),
+							15,0);
+				break;
+			case Float:
+				sqlrcur.inputBind(key,
+					((Float)value.getObject()).
+							floatValue(),
+							7,0);
+				break;
+			case Int:
+				sqlrcur.inputBind(key,
+					((Integer)value.getObject()).
+								intValue());
+				break;
+			case Long:
+				sqlrcur.inputBind(key,
+					((Long)value.getObject()).longValue());
+				break;
+			case NCharStream:
+				sqlrcur.inputBind(key,
+					readerToString(
+						(Reader)
+						value.getObject(),
+						-1));
+				break;
+			case NCharStreamWithLength:
+				sqlrcur.inputBind(key,
+					readerToString(
+						(Reader)
+						value.getObject(),
+						value.getLength()));
+				break;
+			case NClob:
+				{
+				String	string=nClobToUnicodeString(
+						(NClob)
+						value.getObject());
+				sqlrcur.inputBindClob(key,
+						string,string.length());
+				}
+				break;
+			case NClobReader:
+				{
+				String	string=readerToString(
+						(Reader)
+						value.getObject(),
+						-1);
+				sqlrcur.inputBindClob(key,
+						string,string.length());
+				}
+				break;
+			case NClobReaderWithLength:
+				{
+				String	string=readerToString(
+						(Reader)
+						value.getObject(),
+						value.getLength());
+				sqlrcur.inputBindClob(key,
+						string,string.length());
+				}
+				break;
+			case NString:
+				sqlrcur.inputBind(key,
+					(String)value.getObject());
+				break;
+			case Null:
+			case NullWithTypeName:
+				sqlrcur.inputBind(key,null);
+				break;
+			case Object:
+				// FIXME: support this
+				break;
+			case ObjectWithTargetType:
+				// FIXME: support this
+				break;
+			case ObjectWithTargetTypeAndScaleOrLength:
+				// FIXME: support this
+				break;
+			case Ref:
+				// FIXME: support this
+				break;
+			case RowId:
+				// FIXME: support this
+				break;
+			case Short:
+				sqlrcur.inputBind(key,
+					((Short)value.getObject()).
+							shortValue());
+				break;
+			case String:
+				sqlrcur.inputBind(key,
+					(String)value.getObject());
+				break;
+			case SQLXML:
+				// FIXME: support this
+				break;
+			case Time:
+				{
+				Calendar	cal=Calendar.getInstance();
+				cal.setTime((Time)value.getObject());
+				sqlrcur.inputBind(key,
+					(short)0,
+					(short)0,
+					(short)0,
+					(short)cal.get(
+						Calendar.HOUR_OF_DAY),
+					(short)cal.get(
+						Calendar.MINUTE),
+					(short)cal.get(
+						Calendar.SECOND),
+					(short)0,
+					null,false);
+				}
+				break;
+			case TimeWithCalendar:
+				{
+				Calendar	cal=value.getCalendar();
+				cal.setTime((Time)value.getObject());
+				sqlrcur.inputBind(key,
+					(short)0,
+					(short)0,
+					(short)0,
+					(short)cal.get(
+						Calendar.HOUR_OF_DAY),
+					(short)cal.get(
+						Calendar.MINUTE),
+					(short)cal.get(
+						Calendar.SECOND),
+					(short)0,
+					null,false);
+				}
+				break;
+			case Timestamp:
+				{
+				Calendar	cal=Calendar.getInstance();
+				cal.setTime((Timestamp)value.getObject());
+				sqlrcur.inputBind(key,
+					(short)cal.get(
+						Calendar.YEAR),
+					(short)cal.get(
+						Calendar.MONTH),
+					(short)cal.get(
+						Calendar.DAY_OF_MONTH),
+					(short)cal.get(
+						Calendar.HOUR_OF_DAY),
+					(short)cal.get(
+						Calendar.MINUTE),
+					(short)cal.get(
+						Calendar.SECOND),
+					(short)(((Timestamp)value.getObject()).
+						getNanos()/1000),
+					null,false);
+				}
+				break;
+			case TimestampWithCalendar:
+				{
+				Calendar	cal=value.getCalendar();
+				cal.setTime((Timestamp)value.getObject());
+				sqlrcur.inputBind(key,
+					(short)cal.get(
+						Calendar.YEAR),
+					(short)cal.get(
+						Calendar.MONTH),
+					(short)cal.get(
+						Calendar.DAY_OF_MONTH),
+					(short)cal.get(
+						Calendar.HOUR_OF_DAY),
+					(short)cal.get(
+						Calendar.MINUTE),
+					(short)cal.get(
+						Calendar.SECOND),
+					(short)(((Timestamp)value.getObject()).
+						getNanos()/1000),
+					null,false);
+				}
+				break;
+			case UnicodeStream:
+				sqlrcur.inputBind(key,
+					unicodeStreamToString(
+						(InputStream)
+						value.getObject(),
+						value.getLength()));
+				break;
+			case URL:
+				sqlrcur.inputBind(key,
+					((URL)value.getObject()).
+								toString());
+				break;
+		}
+	}
+
+	private
+	void defineOutputBind(String key,
+				SQLRelayParameter.BindType bindtype)
+							throws SQLException {
+		switch (bindtype) {
+			case Array:
+				// FIXME: support this
+				break;
+			case AsciiStream:
+			case AsciiStreamWithIntLength:
+			case AsciiStreamWithLongLength:
+				sqlrcur.defineOutputBindString(key,0);
+				break;
+			case BigDecimal:
+				sqlrcur.defineOutputBindDouble(key);
+				break;
+			case BinaryStream:
+			case BinaryStreamWithIntLength:
+			case BinaryStreamWithLongLength:
+				sqlrcur.defineOutputBindBlob(key);
+				break;
+			case Blob:
+			case BlobInputStream:
+			case BlobInputStreamWithLongLength:
+				sqlrcur.defineOutputBindBlob(key);
+				break;
+			case Boolean:
+				sqlrcur.defineOutputBindInteger(key);
+				break;
+			case Byte:
+				sqlrcur.defineOutputBindInteger(key);
+				break;
+			case Bytes:
+				sqlrcur.defineOutputBindBlob(key);
+				break;
+			case CharacterStream:
+			case CharacterStreamWithIntLength:
+			case CharacterStreamWithLongLength:
+				sqlrcur.defineOutputBindString(key,0);
+				break;
+			case Clob:
+			case ClobReader:
+			case ClobReaderWithLength:
+				sqlrcur.defineOutputBindClob(key);
+				break;
+			case Date:
+			case DateWithCalendar:
+				sqlrcur.defineOutputBindDate(key);
+				break;
+			case Double:
+				sqlrcur.defineOutputBindDouble(key);
+				break;
+			case Float:
+				sqlrcur.defineOutputBindDouble(key);
+				break;
+			case Int:
+				sqlrcur.defineOutputBindInteger(key);
+				break;
+			case Long:
+				sqlrcur.defineOutputBindInteger(key);
+				break;
+			case NCharStream:
+			case NCharStreamWithLength:
+				sqlrcur.defineOutputBindString(key,0);
+				break;
+			case NClob:
+			case NClobReader:
+			case NClobReaderWithLength:
+				sqlrcur.defineOutputBindClob(key);
+				break;
+			case NString:
+				sqlrcur.defineOutputBindString(key,0);
+				break;
+			case Null:
+			case NullWithTypeName:
+				break;
+			case Object:
+				// FIXME: support this
+				break;
+			case ObjectWithTargetType:
+				// FIXME: support this
+				break;
+			case ObjectWithTargetTypeAndScaleOrLength:
+				// FIXME: support this
+				break;
+			case Ref:
+				// FIXME: support this
+				break;
+			case RowId:
+				// FIXME: support this
+				break;
+			case Short:
+				sqlrcur.defineOutputBindInteger(key);
+				break;
+			case String:
+				sqlrcur.defineOutputBindString(key,0);
+				break;
+			case SQLXML:
+				// FIXME: support this
+				break;
+			case Time:
+			case TimeWithCalendar:
+				sqlrcur.defineOutputBindDate(key);
+				break;
+			case Timestamp:
+			case TimestampWithCalendar:
+				sqlrcur.defineOutputBindDate(key);
+				break;
+			case UnicodeStream:
+				sqlrcur.defineOutputBindString(key,0);
+				break;
+			case URL:
+				sqlrcur.defineOutputBindString(key,0);
+				break;
+		}
+	}
+
+	private
+	void getOutputBindValues() {
+
+		if (parameters==null) {
+			return;
+		}
+
+		for (Map.Entry<String,SQLRelayParameter> entry:
+							parameters.entrySet()) {
+
+			String			key=entry.getKey();
+			SQLRelayParameter	value=entry.getValue();
+
+			int	mode=value.getMode();
+			if (mode!=ParameterMetaData.parameterModeOut &&
+				mode!=ParameterMetaData.parameterModeInOut) {
+				continue;
+			}
+
+			switch (value.getBindType()) {
+				case Array:
+					// FIXME: support this
+					break;
+				case AsciiStream:
+				case AsciiStreamWithIntLength:
+				case AsciiStreamWithLongLength:
+				case CharacterStream:
+				case CharacterStreamWithIntLength:
+				case CharacterStreamWithLongLength:
+				case NCharStream:
+				case NCharStreamWithLength:
+				case NString:
+				case String:
+				case UnicodeStream:
+				case URL:
+					value.setObject(sqlrcur.
+						getOutputBindString(key));
+					break;
+				case BigDecimal:
+					value.setObject(
+						BigDecimal.valueOf(sqlrcur.
+						getOutputBindDouble(key)));
+					break;
+				case BinaryStream:
+				case BinaryStreamWithIntLength:
+				case BinaryStreamWithLongLength:
+				case Blob:
+				case BlobInputStream:
+				case BlobInputStreamWithLongLength:
+				case Bytes:
+					value.setObject(sqlrcur.
+						getOutputBindBlob(key));
+					break;
+				case Boolean:
+					value.setObject(
+						Boolean.valueOf(sqlrcur.
+						getOutputBindInteger(
+								key)!=0));
+					break;
+				case Byte:
+					value.setObject(
+						Byte.valueOf((byte)sqlrcur.
+						getOutputBindInteger(key)));
+					break;
+				case Clob:
+				case ClobReader:
+				case ClobReaderWithLength:
+					value.setObject(sqlrcur.
+						getOutputBindClob(key));
+					break;
+				case Date:
+				case DateWithCalendar:
+					value.setObject(new Date(
+						sqlrcur.
+						getOutputBindDateYear(key)-1900,
+						sqlrcur.
+						getOutputBindDateMonth(key),
+						sqlrcur.
+						getOutputBindDateDay(key)));
+					break;
+				case Double:
+					value.setObject(
+						Double.valueOf(sqlrcur.
+						getOutputBindDouble(key)));
+					break;
+				case Float:
+					value.setObject(
+						Float.valueOf((float)sqlrcur.
+						getOutputBindDouble(key)));
+					break;
+				case Int:
+					value.setObject(
+						Integer.valueOf((int)sqlrcur.
+						getOutputBindInteger(key)));
+					break;
+				case Long:
+					value.setObject(
+						Long.valueOf(sqlrcur.
+						getOutputBindInteger(key)));
+					break;
+				case NClob:
+				case NClobReader:
+				case NClobReaderWithLength:
+					value.setObject(sqlrcur.
+						getOutputBindClob(key));
+					break;
+				case Null:
+				case NullWithTypeName:
+					break;
+				case Object:
+				case ObjectWithTargetType:
+				case ObjectWithTargetTypeAndScaleOrLength:
+					// FIXME: support this
+					break;
+				case Ref:
+					// FIXME: support this
+					break;
+				case RowId:
+					// FIXME: support this
+					break;
+				case Short:
+					value.setObject(
+						Short.valueOf((short)sqlrcur.
+						getOutputBindInteger(key)));
+					break;
+				case SQLXML:
+					// FIXME: support this
+					break;
+				case Time:
+				case TimeWithCalendar:
+					value.setObject(new Time(
+						sqlrcur.
+						getOutputBindDateHour(key),
+						sqlrcur.
+						getOutputBindDateMinute(key),
+						sqlrcur.
+						getOutputBindDateSecond(key)));
+					break;
+				case Timestamp:
+				case TimestampWithCalendar:
+					value.setObject(new Timestamp(
+						sqlrcur.
+						getOutputBindDateYear(key)-1900,
+						sqlrcur.
+						getOutputBindDateMonth(key),
+						sqlrcur.
+						getOutputBindDateDay(key),
+						sqlrcur.
+						getOutputBindDateHour(key),
+						sqlrcur.
+						getOutputBindDateMinute(key),
+						sqlrcur.
+						getOutputBindDateSecond(key),
+						sqlrcur.
+						getOutputBindDateMicrosecond(
+								key)*1000));
+					break;
+			}
+		}
 	}
 
 	public
@@ -615,9 +967,10 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.lang.String");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(Types.VARCHAR);
+		param.setTypeName("VARCHAR");
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
@@ -654,9 +1007,10 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.lang.String");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(Types.VARCHAR);
+		param.setTypeName("VARCHAR");
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
@@ -667,8 +1021,8 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(false);
 		param.setIsAscii(true);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.AsciiStreamWithIntLength);
+		param.setBindType(SQLRelayParameter.
+					BindType.AsciiStreamWithIntLength);
 
 		parameters.put(parameterName,param);
 
@@ -694,9 +1048,10 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.lang.String");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(Types.VARCHAR);
+		param.setTypeName("VARCHAR");
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
@@ -707,8 +1062,8 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(false);
 		param.setIsAscii(true);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.AsciiStreamWithLongLength);
+		param.setBindType(SQLRelayParameter.
+					BindType.AsciiStreamWithLongLength);
 
 		parameters.put(parameterName,param);
 
@@ -734,11 +1089,12 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.math.BigDecimal");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
-		param.setPrecision(0);
-		param.setScale(0);
+		param.setType(Types.DECIMAL);
+		param.setTypeName("DECIMAL");
+		param.setPrecision(x.precision());
+		param.setScale(x.scale());
 		param.setIsNullable(ParameterMetaData.parameterNullable);
 		param.setIsSigned(true);
 		param.setObject(x);
@@ -747,8 +1103,7 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(false);
 		param.setIsAscii(false);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.BigDecimal);
+		param.setBindType(SQLRelayParameter.BindType.BigDecimal);
 
 		parameters.put(parameterName,param);
 
@@ -774,9 +1129,10 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("[B");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(Types.VARBINARY);
+		param.setTypeName("VARBINARY");
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
@@ -787,8 +1143,7 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(false);
 		param.setIsAscii(false);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.BinaryStream);
+		param.setBindType(SQLRelayParameter.BindType.BinaryStream);
 
 		parameters.put(parameterName,param);
 
@@ -814,9 +1169,10 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("[B");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(Types.VARBINARY);
+		param.setTypeName("VARBINARY");
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
@@ -827,8 +1183,8 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(false);
 		param.setIsAscii(false);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.BinaryStreamWithIntLength);
+		param.setBindType(SQLRelayParameter.
+					BindType.BinaryStreamWithIntLength);
 
 		parameters.put(parameterName,param);
 
@@ -854,9 +1210,10 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("[B");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(Types.VARBINARY);
+		param.setTypeName("VARBINARY");
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
@@ -867,8 +1224,8 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(false);
 		param.setIsAscii(false);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.BinaryStreamWithLongLength);
+		param.setBindType(SQLRelayParameter.
+					BindType.BinaryStreamWithLongLength);
 
 		parameters.put(parameterName,param);
 
@@ -892,9 +1249,10 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.sql.Blob");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(Types.BLOB);
+		param.setTypeName("BLOB");
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
@@ -905,8 +1263,7 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(true);
 		param.setIsAscii(false);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.Blob);
+		param.setBindType(SQLRelayParameter.BindType.Blob);
 
 		parameters.put(parameterName,param);
 
@@ -932,9 +1289,10 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.sql.Blob");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(Types.BLOB);
+		param.setTypeName("BLOB");
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
@@ -945,8 +1303,7 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(true);
 		param.setIsAscii(false);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.BlobInputStream);
+		param.setBindType(SQLRelayParameter.BindType.BlobInputStream);
 
 		parameters.put(parameterName,param);
 
@@ -972,9 +1329,10 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.sql.Blob");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(Types.BLOB);
+		param.setTypeName("BLOB");
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
@@ -985,9 +1343,8 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(true);
 		param.setIsAscii(false);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.
-				BlobInputStreamWithLongLength);
+		param.setBindType(SQLRelayParameter.
+					BindType.BlobInputStreamWithLongLength);
 
 		parameters.put(parameterName,param);
 
@@ -1012,10 +1369,11 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("value: "+x);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.lang.Boolean");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
-		param.setPrecision(0);
+		param.setType(Types.BOOLEAN);
+		param.setTypeName("BOOLEAN");
+		param.setPrecision(1);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
 		param.setIsSigned(false);
@@ -1025,8 +1383,7 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(false);
 		param.setIsAscii(false);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.Boolean);
+		param.setBindType(SQLRelayParameter.BindType.Boolean);
 
 		parameters.put(parameterName,param);
 
@@ -1051,10 +1408,11 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("value: "+x);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.lang.Byte");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
-		param.setPrecision(0);
+		param.setType(Types.TINYINT);
+		param.setTypeName("TINYINT");
+		param.setPrecision(3);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
 		param.setIsSigned(false);
@@ -1064,8 +1422,7 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(false);
 		param.setIsAscii(false);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.Byte);
+		param.setBindType(SQLRelayParameter.BindType.Byte);
 
 		parameters.put(parameterName,param);
 
@@ -1093,9 +1450,10 @@ public class SQLRelayPreparedStatement
 			bytes[i]=x[i];
 		}
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("[B");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(Types.VARBINARY);
+		param.setTypeName("VARBINARY");
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
@@ -1106,8 +1464,7 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(false);
 		param.setIsAscii(false);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.Bytes);
+		param.setBindType(SQLRelayParameter.BindType.Bytes);
 
 		parameters.put(parameterName,param);
 
@@ -1133,9 +1490,10 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.lang.String");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(Types.VARCHAR);
+		param.setTypeName("VARCHAR");
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
@@ -1146,8 +1504,7 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(false);
 		param.setIsAscii(false);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.CharacterStream);
+		param.setBindType(SQLRelayParameter.BindType.CharacterStream);
 
 		parameters.put(parameterName,param);
 
@@ -1173,9 +1530,10 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.lang.String");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(Types.VARCHAR);
+		param.setTypeName("VARCHAR");
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
@@ -1186,9 +1544,8 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(false);
 		param.setIsAscii(false);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.
-				CharacterStreamWithIntLength);
+		param.setBindType(SQLRelayParameter.
+					BindType.CharacterStreamWithIntLength);
 
 		parameters.put(parameterName,param);
 
@@ -1214,9 +1571,10 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.lang.String");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(Types.VARCHAR);
+		param.setTypeName("VARCHAR");
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
@@ -1227,9 +1585,8 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(false);
 		param.setIsAscii(false);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.
-				CharacterStreamWithLongLength);
+		param.setBindType(SQLRelayParameter.
+					BindType.CharacterStreamWithLongLength);
 
 		parameters.put(parameterName,param);
 
@@ -1253,9 +1610,10 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.sql.Clob");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(Types.CLOB);
+		param.setTypeName("CLOB");
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
@@ -1266,8 +1624,7 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(true);
 		param.setIsAscii(true);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.Clob);
+		param.setBindType(SQLRelayParameter.BindType.Clob);
 
 		parameters.put(parameterName,param);
 
@@ -1291,9 +1648,10 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.sql.Clob");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(Types.CLOB);
+		param.setTypeName("CLOB");
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
@@ -1304,8 +1662,7 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(true);
 		param.setIsAscii(true);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.ClobReader);
+		param.setBindType(SQLRelayParameter.BindType.ClobReader);
 
 		parameters.put(parameterName,param);
 
@@ -1331,9 +1688,10 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.sql.Clob");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(Types.CLOB);
+		param.setTypeName("CLOB");
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
@@ -1344,8 +1702,8 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(true);
 		param.setIsAscii(true);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.ClobReaderWithLength);
+		param.setBindType(SQLRelayParameter.
+					BindType.ClobReaderWithLength);
 
 		parameters.put(parameterName,param);
 
@@ -1363,7 +1721,29 @@ public class SQLRelayPreparedStatement
 	public
 	void setDate(String parameterName, Date x) throws SQLException {
 		drv.debugFunction(this);
-		setDate(parameterName,x,new GregorianCalendar());
+
+		throwExceptionIfClosed();
+
+		drv.debugPrintln("parameter name: "+parameterName);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
+		param.setClassName("java.sql.Date");
+		param.setMode(ParameterMetaData.parameterModeIn);
+		param.setType(Types.DATE);
+		param.setTypeName("DATE");
+		param.setPrecision(0);
+		param.setScale(0);
+		param.setIsNullable(ParameterMetaData.parameterNullable);
+		param.setIsSigned(false);
+		param.setObject(x);
+		param.setLength(-1);
+		param.setIsBinary(false);
+		param.setIsLob(false);
+		param.setIsAscii(false);
+		param.setCalendar(null);
+		param.setBindType(SQLRelayParameter.BindType.Date);
+
+		parameters.put(parameterName,param);
 		drv.debugEnd();
 	}
 
@@ -1386,9 +1766,10 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.sql.Date");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(Types.DATE);
+		param.setTypeName("DATE");
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
@@ -1399,8 +1780,7 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(false);
 		param.setIsAscii(false);
 		param.setCalendar(cal);
-		param.setBindType(
-			SQLRelayParameter.BindType.DateWithCalendar);
+		param.setBindType(SQLRelayParameter.BindType.DateWithCalendar);
 
 		parameters.put(parameterName,param);
 
@@ -1425,10 +1805,11 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("value: "+x);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.lang.Double");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
-		param.setPrecision(0);
+		param.setType(Types.DOUBLE);
+		param.setTypeName("DOUBLE");
+		param.setPrecision(15);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
 		param.setIsSigned(true);
@@ -1438,8 +1819,7 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(false);
 		param.setIsAscii(false);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.Double);
+		param.setBindType(SQLRelayParameter.BindType.Double);
 
 		parameters.put(parameterName,param);
 
@@ -1464,10 +1844,11 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("value: "+x);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.lang.Float");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
-		param.setPrecision(0);
+		param.setType(Types.FLOAT);
+		param.setTypeName("FLOAT");
+		param.setPrecision(7);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
 		param.setIsSigned(true);
@@ -1477,8 +1858,7 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(false);
 		param.setIsAscii(false);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.Float);
+		param.setBindType(SQLRelayParameter.BindType.Float);
 
 		parameters.put(parameterName,param);
 
@@ -1503,10 +1883,11 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("value: "+x);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.lang.Integer");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
-		param.setPrecision(0);
+		param.setType(Types.INTEGER);
+		param.setTypeName("INTEGER");
+		param.setPrecision(10);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
 		param.setIsSigned(true);
@@ -1516,8 +1897,7 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(false);
 		param.setIsAscii(false);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.Int);
+		param.setBindType(SQLRelayParameter.BindType.Int);
 
 		parameters.put(parameterName,param);
 
@@ -1542,10 +1922,11 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("value: "+x);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.lang.Long");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
-		param.setPrecision(0);
+		param.setType(Types.BIGINT);
+		param.setTypeName("BIGINT");
+		param.setPrecision(19);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
 		param.setIsSigned(true);
@@ -1555,8 +1936,7 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(false);
 		param.setIsAscii(false);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.Long);
+		param.setBindType(SQLRelayParameter.BindType.Long);
 
 		parameters.put(parameterName,param);
 
@@ -1582,9 +1962,10 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.lang.String");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(Types.NVARCHAR);
+		param.setTypeName("NVARCHAR");
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
@@ -1595,8 +1976,7 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(false);
 		param.setIsAscii(false);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.NCharStream);
+		param.setBindType(SQLRelayParameter.BindType.NCharStream);
 
 		parameters.put(parameterName,param);
 
@@ -1622,9 +2002,10 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.lang.String");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(Types.NVARCHAR);
+		param.setTypeName("NVARCHAR");
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
@@ -1635,8 +2016,8 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(false);
 		param.setIsAscii(false);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.NCharStreamWithLength);
+		param.setBindType(SQLRelayParameter.
+					BindType.NCharStreamWithLength);
 
 		parameters.put(parameterName,param);
 
@@ -1660,9 +2041,10 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.sql.NClob");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(Types.NCLOB);
+		param.setTypeName("NCLOB");
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
@@ -1673,8 +2055,7 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(true);
 		param.setIsAscii(false);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.NClob);
+		param.setBindType(SQLRelayParameter.BindType.NClob);
 
 		parameters.put(parameterName,param);
 
@@ -1698,9 +2079,10 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.sql.NClob");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(Types.NCLOB);
+		param.setTypeName("NCLOB");
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
@@ -1711,8 +2093,7 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(true);
 		param.setIsAscii(false);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.NClobReader);
+		param.setBindType(SQLRelayParameter.BindType.NClobReader);
 
 		parameters.put(parameterName,param);
 
@@ -1738,9 +2119,10 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.sql.NClob");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(Types.NCLOB);
+		param.setTypeName("NCLOB");
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
@@ -1751,8 +2133,8 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(true);
 		param.setIsAscii(false);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.NClobReaderWithLength);
+		param.setBindType(SQLRelayParameter.
+					BindType.NClobReaderWithLength);
 
 		parameters.put(parameterName,param);
 
@@ -1776,9 +2158,10 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.lang.String");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(Types.NVARCHAR);
+		param.setTypeName("NVARCHAR");
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
@@ -1789,8 +2172,7 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(false);
 		param.setIsAscii(false);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.NString);
+		param.setBindType(SQLRelayParameter.BindType.NString);
 
 		parameters.put(parameterName,param);
 
@@ -1812,23 +2194,150 @@ public class SQLRelayPreparedStatement
 		throwExceptionIfClosed();
 
 		drv.debugPrintln("parameter name: "+parameterName);
+		drv.debugPrintln("sql type: "+sqlType);
+
+		boolean				signed=false;
+		boolean				binary=false;
+		boolean				lob=false;
+		boolean				ascii=false;
+		String				classname;
+		String				typename;
+
+		switch (sqlType) {
+			case Types.ARRAY:
+				classname="java.sql.Array";
+				typename="ARRAY";
+				break;
+			case Types.BIGINT:
+				signed=true;
+				classname="java.lang.Long";
+				typename="BIGINT";
+				break;
+			case Types.BINARY:
+			case Types.VARBINARY:
+			case Types.LONGVARBINARY:
+				binary=true;
+				classname="[B";
+				typename="VARBINARY";
+				break;
+			case Types.BIT:
+			case Types.BOOLEAN:
+				classname="java.lang.Boolean";
+				typename="BOOLEAN";
+				break;
+			case Types.BLOB:
+				binary=true;
+				lob=true;
+				classname="java.sql.Blob";
+				typename="BLOB";
+				break;
+			case Types.CHAR:
+			case Types.VARCHAR:
+			case Types.LONGVARCHAR:
+				ascii=true;
+				classname="java.lang.String";
+				typename="VARCHAR";
+				break;
+			case Types.CLOB:
+				lob=true;
+				ascii=true;
+				classname="java.sql.Clob";
+				typename="CLOB";
+				break;
+			case Types.DATE:
+				classname="java.sql.Date";
+				typename="DATE";
+				break;
+			case Types.DECIMAL:
+			case Types.NUMERIC:
+				signed=true;
+				classname="java.math.BigDecimal";
+				typename="DECIMAL";
+				break;
+			case Types.DOUBLE:
+				signed=true;
+				classname="java.lang.Double";
+				typename="DOUBLE";
+				break;
+			case Types.FLOAT:
+			case Types.REAL:
+				signed=true;
+				classname="java.lang.Float";
+				typename="FLOAT";
+				break;
+			case Types.INTEGER:
+				signed=true;
+				classname="java.lang.Integer";
+				typename="INTEGER";
+				break;
+			case Types.NCHAR:
+			case Types.NVARCHAR:
+			case Types.LONGNVARCHAR:
+				classname="java.lang.String";
+				typename="NVARCHAR";
+				break;
+			case Types.NCLOB:
+				lob=true;
+				classname="java.sql.NClob";
+				typename="NCLOB";
+				break;
+			case Types.NULL:
+				classname="java.lang.Object";
+				typename="NULL";
+				break;
+			case Types.REF:
+				classname="java.sql.Ref";
+				typename="REF";
+				break;
+			case Types.ROWID:
+				classname="java.sql.RowId";
+				typename="ROWID";
+				break;
+			case Types.SMALLINT:
+				signed=true;
+				classname="java.lang.Short";
+				typename="SMALLINT";
+				break;
+			case Types.SQLXML:
+				classname="java.sql.SQLXML";
+				typename="SQLXML";
+				break;
+			case Types.TIME:
+				classname="java.sql.Time";
+				typename="TIME";
+				break;
+			case Types.TIMESTAMP:
+				classname="java.sql.Timestamp";
+				typename="TIMESTAMP";
+				break;
+			case Types.TINYINT:
+				signed=true;
+				classname="java.lang.Byte";
+				typename="TINYINT";
+				break;
+			default:
+				ascii=true;
+				classname="java.lang.String";
+				typename="VARCHAR";
+				break;
+		}
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName(classname);
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(sqlType);
+		param.setTypeName(typename);
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
-		param.setIsSigned(false);
+		param.setIsSigned(signed);
 		param.setObject(null);
 		param.setLength(-1);
-		param.setIsBinary(false);
-		param.setIsLob(false);
-		param.setIsAscii(false);
+		param.setIsBinary(binary);
+		param.setIsLob(lob);
+		param.setIsAscii(ascii);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.Null);
+		param.setBindType(SQLRelayParameter.BindType.Null);
 
 		parameters.put(parameterName,param);
 
@@ -1852,23 +2361,151 @@ public class SQLRelayPreparedStatement
 		throwExceptionIfClosed();
 
 		drv.debugPrintln("parameter name: "+parameterName);
+		drv.debugPrintln("sql type: "+sqlType);
+		drv.debugPrintln("type name: "+typeName);
+
+		boolean				signed=false;
+		boolean				binary=false;
+		boolean				lob=false;
+		boolean				ascii=false;
+		String				classname;
+		String				tn;
+
+		switch (sqlType) {
+			case Types.ARRAY:
+				classname="java.sql.Array";
+				tn="ARRAY";
+				break;
+			case Types.BIGINT:
+				signed=true;
+				classname="java.lang.Long";
+				tn="BIGINT";
+				break;
+			case Types.BINARY:
+			case Types.VARBINARY:
+			case Types.LONGVARBINARY:
+				binary=true;
+				classname="[B";
+				tn="VARBINARY";
+				break;
+			case Types.BIT:
+			case Types.BOOLEAN:
+				classname="java.lang.Boolean";
+				tn="BOOLEAN";
+				break;
+			case Types.BLOB:
+				binary=true;
+				lob=true;
+				classname="java.sql.Blob";
+				tn="BLOB";
+				break;
+			case Types.CHAR:
+			case Types.VARCHAR:
+			case Types.LONGVARCHAR:
+				ascii=true;
+				classname="java.lang.String";
+				tn="VARCHAR";
+				break;
+			case Types.CLOB:
+				lob=true;
+				ascii=true;
+				classname="java.sql.Clob";
+				tn="CLOB";
+				break;
+			case Types.DATE:
+				classname="java.sql.Date";
+				tn="DATE";
+				break;
+			case Types.DECIMAL:
+			case Types.NUMERIC:
+				signed=true;
+				classname="java.math.BigDecimal";
+				tn="DECIMAL";
+				break;
+			case Types.DOUBLE:
+				signed=true;
+				classname="java.lang.Double";
+				tn="DOUBLE";
+				break;
+			case Types.FLOAT:
+			case Types.REAL:
+				signed=true;
+				classname="java.lang.Float";
+				tn="FLOAT";
+				break;
+			case Types.INTEGER:
+				signed=true;
+				classname="java.lang.Integer";
+				tn="INTEGER";
+				break;
+			case Types.NCHAR:
+			case Types.NVARCHAR:
+			case Types.LONGNVARCHAR:
+				classname="java.lang.String";
+				tn="NVARCHAR";
+				break;
+			case Types.NCLOB:
+				lob=true;
+				classname="java.sql.NClob";
+				tn="NCLOB";
+				break;
+			case Types.NULL:
+				classname="java.lang.Object";
+				tn="NULL";
+				break;
+			case Types.REF:
+				classname="java.sql.Ref";
+				tn="REF";
+				break;
+			case Types.ROWID:
+				classname="java.sql.RowId";
+				tn="ROWID";
+				break;
+			case Types.SMALLINT:
+				signed=true;
+				classname="java.lang.Short";
+				tn="SMALLINT";
+				break;
+			case Types.SQLXML:
+				classname="java.sql.SQLXML";
+				tn="SQLXML";
+				break;
+			case Types.TIME:
+				classname="java.sql.Time";
+				tn="TIME";
+				break;
+			case Types.TIMESTAMP:
+				classname="java.sql.Timestamp";
+				tn="TIMESTAMP";
+				break;
+			case Types.TINYINT:
+				signed=true;
+				classname="java.lang.Byte";
+				tn="TINYINT";
+				break;
+			default:
+				ascii=true;
+				classname="java.lang.String";
+				tn="VARCHAR";
+				break;
+		}
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName(classname);
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(sqlType);
+		param.setTypeName(typeName);
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
-		param.setIsSigned(false);
+		param.setIsSigned(signed);
 		param.setObject(null);
 		param.setLength(-1);
-		param.setIsBinary(false);
-		param.setIsLob(false);
-		param.setIsAscii(false);
+		param.setIsBinary(binary);
+		param.setIsLob(lob);
+		param.setIsAscii(ascii);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.NullWithTypeName);
+		param.setBindType(SQLRelayParameter.BindType.NullWithTypeName);
 
 		parameters.put(parameterName,param);
 
@@ -1925,7 +2562,8 @@ public class SQLRelayPreparedStatement
 							throws SQLException {
 		drv.debugFunction(this);
 		drv.debugPrintln("parameter index: "+parameterIndex);
-		setObject(String.valueOf(parameterIndex),x,targetSqlType,scaleOrLength);
+		setObject(String.valueOf(parameterIndex),
+					x,targetSqlType,scaleOrLength);
 		drv.debugEnd();
 	}
 
@@ -2004,10 +2642,11 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("value: "+x);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.lang.Short");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
-		param.setPrecision(0);
+		param.setType(Types.SMALLINT);
+		param.setTypeName("SMALLINT");
+		param.setPrecision(5);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
 		param.setIsSigned(true);
@@ -2017,8 +2656,7 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(false);
 		param.setIsAscii(false);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.Short);
+		param.setBindType(SQLRelayParameter.BindType.Short);
 
 		parameters.put(parameterName,param);
 
@@ -2042,9 +2680,10 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.lang.String");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(Types.VARCHAR);
+		param.setTypeName("VARCHAR");
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
@@ -2055,8 +2694,7 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(false);
 		param.setIsAscii(false);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.String);
+		param.setBindType(SQLRelayParameter.BindType.String);
 
 		parameters.put(parameterName,param);
 
@@ -2097,7 +2735,29 @@ public class SQLRelayPreparedStatement
 	public
 	void setTime(String parameterName, Time x) throws SQLException {
 		drv.debugFunction(this);
-		setTime(parameterName,x,new GregorianCalendar());
+
+		throwExceptionIfClosed();
+
+		drv.debugPrintln("parameter name: "+parameterName);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
+		param.setClassName("java.sql.Time");
+		param.setMode(ParameterMetaData.parameterModeIn);
+		param.setType(Types.TIME);
+		param.setTypeName("TIME");
+		param.setPrecision(0);
+		param.setScale(0);
+		param.setIsNullable(ParameterMetaData.parameterNullable);
+		param.setIsSigned(false);
+		param.setObject(x);
+		param.setLength(-1);
+		param.setIsBinary(false);
+		param.setIsLob(false);
+		param.setIsAscii(false);
+		param.setCalendar(null);
+		param.setBindType(SQLRelayParameter.BindType.Time);
+
+		parameters.put(parameterName,param);
 		drv.debugEnd();
 	}
 
@@ -2119,13 +2779,11 @@ public class SQLRelayPreparedStatement
 
 		drv.debugPrintln("parameter name: "+parameterName);
 
-		conn.throwFeatureNotSupportedException();
-
-		// FIXME: support this...
-		/*SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
+		param.setClassName("java.sql.Time");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(Types.TIME);
+		param.setTypeName("TIME");
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
@@ -2136,9 +2794,9 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(false);
 		param.setIsAscii(false);
 		param.setCalendar(cal);
-		param.setBindType(
-			SQLRelayParameter.BindType.TimeWithCalendar);
-		parameters.put(parameterName,param);*/
+		param.setBindType(SQLRelayParameter.BindType.TimeWithCalendar);
+
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -2152,9 +2810,32 @@ public class SQLRelayPreparedStatement
 	}
 
 	public
-	void setTimestamp(String parameterName, Timestamp x) throws SQLException {
+	void setTimestamp(String parameterName, Timestamp x)
+							throws SQLException {
 		drv.debugFunction(this);
-		setTimestamp(parameterName,x,new GregorianCalendar());
+
+		throwExceptionIfClosed();
+
+		drv.debugPrintln("parameter name: "+parameterName);
+
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
+		param.setClassName("java.sql.Timestamp");
+		param.setMode(ParameterMetaData.parameterModeIn);
+		param.setType(Types.TIMESTAMP);
+		param.setTypeName("TIMESTAMP");
+		param.setPrecision(0);
+		param.setScale(0);
+		param.setIsNullable(ParameterMetaData.parameterNullable);
+		param.setIsSigned(false);
+		param.setObject(x);
+		param.setLength(-1);
+		param.setIsBinary(false);
+		param.setIsLob(false);
+		param.setIsAscii(false);
+		param.setCalendar(null);
+		param.setBindType(SQLRelayParameter.BindType.Timestamp);
+
+		parameters.put(parameterName,param);
 		drv.debugEnd();
 	}
 
@@ -2176,13 +2857,11 @@ public class SQLRelayPreparedStatement
 
 		drv.debugPrintln("parameter name: "+parameterName);
 
-		conn.throwFeatureNotSupportedException();
-
-		// FIXME: support this...
-		/*SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		SQLRelayParameter	param=new SQLRelayParameter(drv);
+		param.setClassName("java.sql.Timestamp");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(Types.TIMESTAMP);
+		param.setTypeName("TIMESTAMP");
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
@@ -2193,9 +2872,10 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(false);
 		param.setIsAscii(false);
 		param.setCalendar(cal);
-		param.setBindType(
-			SQLRelayParameter.BindType.TimestampWithCalendar);
-		parameters.put(parameterName,param);*/
+		param.setBindType(SQLRelayParameter.
+					BindType.TimestampWithCalendar);
+
+		parameters.put(parameterName,param);
 
 		drv.debugEnd();
 	}
@@ -2219,9 +2899,10 @@ public class SQLRelayPreparedStatement
 		drv.debugPrintln("parameter name: "+parameterName);
 
 		SQLRelayParameter	param=new SQLRelayParameter(drv);
-		param.setClassName("FIXME");
+		param.setClassName("java.lang.String");
 		param.setMode(ParameterMetaData.parameterModeIn);
-		param.setTypeName("FIXME");
+		param.setType(Types.VARCHAR);
+		param.setTypeName("VARCHAR");
 		param.setPrecision(0);
 		param.setScale(0);
 		param.setIsNullable(ParameterMetaData.parameterNullable);
@@ -2232,8 +2913,7 @@ public class SQLRelayPreparedStatement
 		param.setIsLob(false);
 		param.setIsAscii(false);
 		param.setCalendar(null);
-		param.setBindType(
-			SQLRelayParameter.BindType.UnicodeStream);
+		param.setBindType(SQLRelayParameter.BindType.UnicodeStream);
 
 		parameters.put(parameterName,param);
 

@@ -2714,6 +2714,18 @@ if (false) {
 		System.out.println();
 
 
+		// column labels
+		System.out.println("COLUMN LABELS:");
+		assertEquals(rsmd.getColumnLabel(1),"TESTNUMBER");
+		assertEquals(rsmd.getColumnLabel(2),"TESTCHAR");
+		assertEquals(rsmd.getColumnLabel(3),"TESTVARCHAR");
+		assertEquals(rsmd.getColumnLabel(4),"TESTDATE");
+		assertEquals(rsmd.getColumnLabel(5),"TESTLONG");
+		assertEquals(rsmd.getColumnLabel(6),"TESTCLOB");
+		assertEquals(rsmd.getColumnLabel(7),"TESTBLOB");
+		System.out.println();
+
+
 		// column types
 		System.out.println("COLUMN TYPES:");
 		assertEquals(rsmd.getColumnTypeName(1),"NUMBER");
@@ -3280,7 +3292,6 @@ if (false) {
 		// getCatalogName
                 // getSchemaName
                 // getTableName
-                // getColumnLabel
                 // getColumnType
                 // getColumnClassName
                 // getScale

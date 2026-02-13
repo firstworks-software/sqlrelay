@@ -647,6 +647,7 @@ public class SQLRelayConnection implements Connection {
 		sqlrstmt.setNetworkLock(networklock);
 		sqlrstmt.setSQLRConnection(sqlrcon);
 		sqlrstmt.setSQLRCursor(sqlrcur);
+
 		drv.debugEnd();
 		return sqlrstmt;
 	}
