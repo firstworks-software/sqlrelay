@@ -237,10 +237,12 @@ class oracle extends sqlrtest {
 			"	:numvar:=1; "+
 			"	:stringvar:='hello'; "+
 			"	:floatvar:=2.5; "+
+			"	:nullvar:=null; "+
 			"end;");
 		cur.defineOutputBindInteger("1");
 		cur.defineOutputBindString("2",10);
 		cur.defineOutputBindDouble("3");
+		cur.defineOutputBindString("4",10);
 		assertTrue(cur.executeQuery());
 		numvar=cur.getOutputBindInteger("1");
 		stringvar=cur.getOutputBindString("2");
@@ -248,6 +250,9 @@ class oracle extends sqlrtest {
 		assertEquals(numvar,1);
 		assertEquals(stringvar,"hello");
 		assertEquals(floatvar,2.5);
+		assertEquals(
+			cur.getOutputBindString("4"),
+			"");
 		System.out.println();
 
 
@@ -257,6 +262,7 @@ class oracle extends sqlrtest {
 		cur.defineOutputBindInteger("numvar");
 		cur.defineOutputBindString("stringvar",10);
 		cur.defineOutputBindDouble("floatvar");
+		cur.defineOutputBindString("nullvar",10);
 		assertTrue(cur.executeQuery());
 		numvar=cur.getOutputBindInteger("numvar");
 		stringvar=cur.getOutputBindString("stringvar");
@@ -264,6 +270,9 @@ class oracle extends sqlrtest {
 		assertEquals(numvar,1);
 		assertEquals(stringvar,"hello");
 		assertEquals(floatvar,2.5);
+		assertEquals(
+			cur.getOutputBindString("nullvar"),
+			"");
 		System.out.println();
 
 
@@ -273,6 +282,7 @@ class oracle extends sqlrtest {
 		cur.defineOutputBindInteger("numvar");
 		cur.defineOutputBindString("stringvar",10);
 		cur.defineOutputBindDouble("floatvar");
+		cur.defineOutputBindString("nullvar",10);
 		cur.defineOutputBindString("dummyvar",10);
 		cur.validateBinds();
 		assertTrue(cur.executeQuery());
@@ -282,6 +292,9 @@ class oracle extends sqlrtest {
 		assertEquals(numvar,1);
 		assertEquals(stringvar,"hello");
 		assertEquals(floatvar,2.5);
+		assertEquals(
+			cur.getOutputBindString("nullvar"),
+			"");
 		System.out.println();
 
 

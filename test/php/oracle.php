@@ -229,10 +229,12 @@
 		"	:numvar:=1; ".
 		"	:stringvar:='hello'; ".
 		"	:floatvar:=2.5; ".
+		"	:nullvar:=null; ".
 		"end;");
 	sqlrcur_defineOutputBindInteger($cur,"1");
 	sqlrcur_defineOutputBindString($cur,"2",10);
 	sqlrcur_defineOutputBindDouble($cur,"3");
+	sqlrcur_defineOutputBindString($cur,"4",10);
 	assertTrue(sqlrcur_executeQuery($cur));
 	$numvar=sqlrcur_getOutputBindInteger($cur,"1");
 	$stringvar=sqlrcur_getOutputBindString($cur,"2");
@@ -240,6 +242,7 @@
 	assertEqual($numvar,1);
 	assertEqual($stringvar,"hello");
 	assertEqual($floatvar,2.5);
+	assertEqual(sqlrcur_getOutputBindString($cur,"4"),"");
 	echo("\n");
 
 
@@ -251,6 +254,7 @@
 	sqlrcur_defineOutputBindInteger($cur,"numvar");
 	sqlrcur_defineOutputBindString($cur,"stringvar",10);
 	sqlrcur_defineOutputBindDouble($cur,"floatvar");
+	sqlrcur_defineOutputBindString($cur,"nullvar",10);
 	assertTrue(sqlrcur_executeQuery($cur));
 	$numvar=sqlrcur_getOutputBindInteger($cur,"numvar");
 	$stringvar=sqlrcur_getOutputBindString($cur,"stringvar");
@@ -258,6 +262,8 @@
 	assertEqual($numvar,1);
 	assertEqual($stringvar,"hello");
 	assertEqual($floatvar,2.5);
+	assertEqual(
+		sqlrcur_getOutputBindString($cur,"nullvar"),"");
 	echo("\n");
 
 
@@ -269,6 +275,7 @@
 	sqlrcur_defineOutputBindInteger($cur,"numvar");
 	sqlrcur_defineOutputBindString($cur,"stringvar",10);
 	sqlrcur_defineOutputBindDouble($cur,"floatvar");
+	sqlrcur_defineOutputBindString($cur,"nullvar",10);
 	sqlrcur_defineOutputBindString($cur,"dummyvar",10);
 	sqlrcur_validateBinds($cur);
 	assertTrue(sqlrcur_executeQuery($cur));
@@ -278,6 +285,8 @@
 	assertEqual($numvar,1);
 	assertEqual($stringvar,"hello");
 	assertEqual($floatvar,2.5);
+	assertEqual(
+		sqlrcur_getOutputBindString($cur,"nullvar"),"");
 	echo("\n");
 
 

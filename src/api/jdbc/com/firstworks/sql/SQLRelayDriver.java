@@ -16,8 +16,8 @@ public class SQLRelayDriver implements Driver {
 	private static final int	MAJOR_VERSION=1;
 	private static final int	MINOR_VERSION=2;
 
-	//boolean	debug=true;
-	boolean	debug=false;
+	boolean	debug=true;
+	//boolean	debug=false;
 
 	Map<Long,Integer>	indents=new HashMap<>();
 

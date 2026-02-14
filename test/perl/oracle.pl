@@ -205,10 +205,12 @@ $cur->prepareQuery(
 	"	:numvar:=1; ".
 	"	:stringvar:='hello'; ".
 	"	:floatvar:=2.5; ".
+	"	:nullvar:=null; ".
 	"end;");
 $cur->defineOutputBindInteger("1");
 $cur->defineOutputBindString("2",10);
 $cur->defineOutputBindDouble("3",);
+$cur->defineOutputBindString("4",10);
 assertTrue($cur->executeQuery());
 $numvar=$cur->getOutputBindInteger("1");
 $stringvar=$cur->getOutputBindString("2");
@@ -216,6 +218,7 @@ $floatvar=$cur->getOutputBindDouble("3");
 assertEqual($numvar,1);
 assertEqualString($stringvar,'hello');
 assertEqual($floatvar,2.5);
+assertEqual($cur->getOutputBindString("4"),"");
 print("\n");
 
 
@@ -225,6 +228,7 @@ $cur->clearBinds();
 $cur->defineOutputBindInteger("numvar");
 $cur->defineOutputBindString("stringvar",10);
 $cur->defineOutputBindDouble("floatvar");
+$cur->defineOutputBindString("nullvar",10);
 assertTrue($cur->executeQuery());
 $numvar=$cur->getOutputBindInteger("numvar");
 $stringvar=$cur->getOutputBindString("stringvar");
@@ -232,6 +236,8 @@ $floatvar=$cur->getOutputBindDouble("floatvar");
 assertEqual($numvar,1);
 assertEqualString($stringvar,'hello');
 assertEqual($floatvar,2.5);
+assertEqual(
+	$cur->getOutputBindString("nullvar"),"");
 print("\n");
 
 
@@ -241,6 +247,7 @@ $cur->clearBinds();
 $cur->defineOutputBindInteger("numvar");
 $cur->defineOutputBindString("stringvar",10);
 $cur->defineOutputBindDouble("floatvar");
+$cur->defineOutputBindString("nullvar",10);
 $cur->defineOutputBindString("dummyvar",10);
 $cur->validateBinds();
 assertTrue($cur->executeQuery());
@@ -250,6 +257,8 @@ $floatvar=$cur->getOutputBindDouble("floatvar");
 assertEqual($numvar,1);
 assertEqualString($stringvar,'hello');
 assertEqual($floatvar,2.5);
+assertEqual(
+	$cur->getOutputBindString("nullvar"),"");
 print("\n");
 
 

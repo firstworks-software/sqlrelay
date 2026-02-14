@@ -151,10 +151,11 @@ puts ""
 
 # output bind by position
 puts "OUTPUT BIND BY POSITION: "
-$cur prepareQuery "begin  :numvar:=1;  :stringvar:='hello';  :floatvar:=2.5;  end;"
+$cur prepareQuery "begin  :numvar:=1;  :stringvar:='hello';  :floatvar:=2.5;  :nullvar:=null;  end;"
 $cur defineOutputBindInteger "1"
 $cur defineOutputBindString "2" 10
 $cur defineOutputBindDouble "3"
+$cur defineOutputBindString "4" 10
 assertTrue [$cur executeQuery]
 set numvar [$cur getOutputBindInteger "1"]
 set stringvar [$cur getOutputBindString "2"]
@@ -162,15 +163,18 @@ set floatvar [$cur getOutputBindDouble "3"]
 assertEqual $numvar 1
 assertEqual $stringvar "hello"
 assertEqual $floatvar 2.5
+set nullvar [$cur getOutputBindString "4"]
+assertEqual $nullvar ""
 puts ""
 
 
 # output bind by name
 puts "OUTPUT BIND BY NAME: "
-$cur clearBinds 
+$cur clearBinds
 $cur defineOutputBindInteger "numvar"
 $cur defineOutputBindString "stringvar" 10
 $cur defineOutputBindDouble "floatvar"
+$cur defineOutputBindString "nullvar" 10
 assertTrue [$cur executeQuery]
 set numvar [$cur getOutputBindInteger "numvar"]
 set stringvar [$cur getOutputBindString "stringvar"]
@@ -178,17 +182,20 @@ set floatvar [$cur getOutputBindDouble "floatvar"]
 assertEqual $numvar 1
 assertEqual $stringvar "hello"
 assertEqual $floatvar 2.5
+set nullvar [$cur getOutputBindString "nullvar"]
+assertEqual $nullvar ""
 puts ""
 
 
 # output bind by name with validation
 puts "OUTPUT BIND BY NAME WITH VALIDATION: "
-$cur clearBinds 
+$cur clearBinds
 $cur defineOutputBindInteger "numvar"
 $cur defineOutputBindString "stringvar" 10
 $cur defineOutputBindDouble "floatvar"
+$cur defineOutputBindString "nullvar" 10
 $cur defineOutputBindString "dummyvar" 10
-$cur validateBinds 
+$cur validateBinds
 assertTrue [$cur executeQuery]
 set numvar [$cur getOutputBindInteger "numvar"]
 set stringvar [$cur getOutputBindString "stringvar"]
@@ -196,6 +203,8 @@ set floatvar [$cur getOutputBindDouble "floatvar"]
 assertEqual $numvar 1
 assertEqual $stringvar "hello"
 assertEqual $floatvar 2.5
+set nullvar [$cur getOutputBindString "nullvar"]
+assertEqual $nullvar ""
 puts ""
 
 

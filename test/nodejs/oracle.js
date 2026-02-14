@@ -222,10 +222,12 @@ cur.prepareQuery(
 	"	:numvar:=1; "+
 	"	:stringvar:='hello'; "+
 	"	:floatvar:=2.5; "+
+	"	:nullvar:=null; "+
 	"end;");
 cur.defineOutputBindInteger("1");
 cur.defineOutputBindString("2",10);
 cur.defineOutputBindDouble("3");
+cur.defineOutputBindString("4",10);
 assertEqual(cur.executeQuery(),1);
 numvar=cur.getOutputBindInteger("1");
 stringvar=cur.getOutputBindString("2");
@@ -233,6 +235,7 @@ floatvar=cur.getOutputBindDouble("3");
 assertEqual(numvar,1);
 assertEqual(stringvar,"hello");
 assertEqual(floatvar,2.5);
+assertEqual(cur.getOutputBindString("4"),"");
 console.log();
 
 
@@ -242,6 +245,7 @@ cur.clearBinds();
 cur.defineOutputBindInteger("numvar");
 cur.defineOutputBindString("stringvar",10);
 cur.defineOutputBindDouble("floatvar");
+cur.defineOutputBindString("nullvar",10);
 assertEqual(cur.executeQuery(),1);
 numvar=cur.getOutputBindInteger("numvar");
 stringvar=cur.getOutputBindString("stringvar");
@@ -249,6 +253,8 @@ floatvar=cur.getOutputBindDouble("floatvar");
 assertEqual(numvar,1);
 assertEqual(stringvar,"hello");
 assertEqual(floatvar,2.5);
+assertEqual(
+	cur.getOutputBindString("nullvar"),"");
 console.log();
 
 
@@ -258,6 +264,7 @@ cur.clearBinds();
 cur.defineOutputBindInteger("numvar");
 cur.defineOutputBindString("stringvar",10);
 cur.defineOutputBindDouble("floatvar");
+cur.defineOutputBindString("nullvar",10);
 cur.defineOutputBindString("dummyvar",10);
 cur.validateBinds();
 assertEqual(cur.executeQuery(),1);
@@ -267,6 +274,8 @@ floatvar=cur.getOutputBindDouble("floatvar");
 assertEqual(numvar,1);
 assertEqual(stringvar,"hello");
 assertEqual(floatvar,2.5);
+assertEqual(
+	cur.getOutputBindString("nullvar"),"");
 console.log();
 
 

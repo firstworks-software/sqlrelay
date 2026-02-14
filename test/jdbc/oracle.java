@@ -2719,24 +2719,31 @@ if (false) {
 			"	:stringvar:='hello'; "+
 			"	:floatvar:=2.5; "+
 			"	:datevar:='03-FEB-2001'; "+
+			"	:nullvar:=null; "+
 			"end;");
 		cstmt.registerOutParameter("1",Types.INTEGER);
 		cstmt.registerOutParameter("2",Types.VARCHAR);
 		cstmt.registerOutParameter("3",Types.DOUBLE);
 		cstmt.registerOutParameter("4",Types.DATE);
+		cstmt.registerOutParameter("5",Types.VARCHAR);
 		assertTrue(cstmt.execute());
 		assertEquals(cstmt.getInt("1"),1);
+		assertFalse(cstmt.wasNull());
 		assertEquals(cstmt.getString("2"),"hello");
+		assertFalse(cstmt.wasNull());
 		assertEquals(cstmt.getDouble("3"),2.5);
+		assertFalse(cstmt.wasNull());
 		datevar=cstmt.getDate("4");
+		assertFalse(cstmt.wasNull());
 		cal.setTime(datevar);
 		assertEquals(cal.get(Calendar.YEAR),2001);
-		assertEquals(cal.get(Calendar.MONTH),
-					Calendar.FEBRUARY);
+		assertEquals(cal.get(Calendar.MONTH),Calendar.FEBRUARY);
 		assertEquals(cal.get(Calendar.DAY_OF_MONTH),3);
 		assertEquals(cal.get(Calendar.HOUR_OF_DAY),0);
 		assertEquals(cal.get(Calendar.MINUTE),0);
 		assertEquals(cal.get(Calendar.SECOND),0);
+		assertEquals(cstmt.getString("5"),null);
+		assertTrue(cstmt.wasNull());
 		cstmt.close();
 		System.out.println();
 
@@ -2749,24 +2756,31 @@ if (false) {
 			"	:stringvar:='hello'; "+
 			"	:floatvar:=2.5; "+
 			"	:datevar:='03-FEB-2001'; "+
+			"	:nullvar:=null; "+
 			"end;");
 		cstmt.registerOutParameter("numvar",Types.INTEGER);
 		cstmt.registerOutParameter("stringvar",Types.VARCHAR);
 		cstmt.registerOutParameter("floatvar",Types.DOUBLE);
 		cstmt.registerOutParameter("datevar",Types.DATE);
+		cstmt.registerOutParameter("nullvar",Types.VARCHAR);
 		assertTrue(cstmt.execute());
 		assertEquals(cstmt.getInt("numvar"),1);
+		assertFalse(cstmt.wasNull());
 		assertEquals(cstmt.getString("stringvar"),"hello");
+		assertFalse(cstmt.wasNull());
 		assertEquals(cstmt.getDouble("floatvar"),2.5);
+		assertFalse(cstmt.wasNull());
 		datevar=cstmt.getDate("datevar");
+		assertFalse(cstmt.wasNull());
 		cal.setTime(datevar);
 		assertEquals(cal.get(Calendar.YEAR),2001);
-		assertEquals(cal.get(Calendar.MONTH),
-					Calendar.FEBRUARY);
+		assertEquals(cal.get(Calendar.MONTH),Calendar.FEBRUARY);
 		assertEquals(cal.get(Calendar.DAY_OF_MONTH),3);
 		assertEquals(cal.get(Calendar.HOUR_OF_DAY),0);
 		assertEquals(cal.get(Calendar.MINUTE),0);
 		assertEquals(cal.get(Calendar.SECOND),0);
+		assertEquals(cstmt.getString("nullvar"),null);
+		assertTrue(cstmt.wasNull());
 		cstmt.close();
 		System.out.println();
 
@@ -3449,6 +3463,50 @@ if (false) {
                 // setURL
 
 		// FIXME: need tests for CallableStatement methods...
+                // getArray
+                // getBigDecimal
+                // getBlob
+                // getBoolean
+                // getByte
+                // getCharacterStream
+                // getClob
+                // getFloat
+                // getLong
+                // getNCharacterStream
+                // getNClob
+                // getNString
+                // getObject
+                // getRef
+                // getRowId
+                // getShort
+                // getSQLXML
+                // getTime
+                // getTimestamp
+                // getURL
+		//
+                // setAsciiStream
+                // setBigDecimal
+                // setBinaryStream
+                // setBoolean
+                // setByte
+                // setBytes
+                // setCharacterStream
+                // setDouble
+                // setFloat
+                // setLong
+                // setNCharacterStream
+                // setNClob
+                // setNString
+                // setNull
+                // setObject
+                // setRowId
+                // setSQLXML
+                // setShort
+                // setTime
+                // setTimestamp
+                // setURL
+		//
+                // wasNull
 
 
 		// FIXME: need tests for Parameter class...

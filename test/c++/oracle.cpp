@@ -255,11 +255,13 @@ int main(int argc, char **argv) {
 		"	:stringvar:='hello'; "
 		"	:floatvar:=2.5; "
 		"	:datevar:='03-FEB-2001'; "
+		"	:nullvar:=null; "
 		"end;");
 	cur->defineOutputBindInteger("1");
 	cur->defineOutputBindString("2",10);
 	cur->defineOutputBindDouble("3");
 	cur->defineOutputBindDate("4");
+	cur->defineOutputBindString("5",10);
 	assertTrue(cur->executeQuery());
 	numvar=cur->getOutputBindInteger("1");
 	stringvar=cur->getOutputBindString("2");
@@ -278,6 +280,7 @@ int main(int argc, char **argv) {
 	assertEquals(second,0);
 	assertEquals(microsecond,0);
 	assertEquals(tz,"");
+	assertEquals(cur->getOutputBindString("5"),"");
 	stdoutput.printf("\n");
 
 
@@ -288,6 +291,7 @@ int main(int argc, char **argv) {
 	cur->defineOutputBindString("stringvar",10);
 	cur->defineOutputBindDouble("floatvar");
 	cur->defineOutputBindDate("datevar");
+	cur->defineOutputBindString("nullvar",10);
 	assertTrue(cur->executeQuery());
 	numvar=cur->getOutputBindInteger("numvar");
 	stringvar=cur->getOutputBindString("stringvar");
@@ -306,6 +310,7 @@ int main(int argc, char **argv) {
 	assertEquals(second,0);
 	assertEquals(microsecond,0);
 	assertEquals(tz,"");
+	assertEquals(cur->getOutputBindString("nullvar"),"");
 	stdoutput.printf("\n");
 
 
@@ -316,6 +321,7 @@ int main(int argc, char **argv) {
 	cur->defineOutputBindString("stringvar",10);
 	cur->defineOutputBindDouble("floatvar");
 	cur->defineOutputBindDate("datevar");
+	cur->defineOutputBindString("nullvar",10);
 	cur->defineOutputBindString("dummyvar",10);
 	cur->validateBinds();
 	assertTrue(cur->executeQuery());
@@ -336,6 +342,7 @@ int main(int argc, char **argv) {
 	assertEquals(second,0);
 	assertEquals(microsecond,0);
 	assertEquals(tz,"");
+	assertEquals(cur->getOutputBindString("nullvar"),"");
 	stdoutput.printf("\n");
 
 

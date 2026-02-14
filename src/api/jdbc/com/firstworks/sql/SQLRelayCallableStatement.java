@@ -11,6 +11,8 @@ import java.net.URL;
 
 import com.firstworks.sqlrelay.*;
 
+import com.firstworks.sql.SQLRelayParameter.*;
+
 public class SQLRelayCallableStatement
 		extends SQLRelayPreparedStatement
 		implements CallableStatement {
@@ -824,22 +826,22 @@ public class SQLRelayCallableStatement
 		drv.debugPrintln("sql type: "+sqlType);
 		drv.debugPrintln("scale: "+scale);
 
-		SQLRelayParameter.BindType	bindtype;
-		boolean				signed=false;
-		boolean				binary=false;
-		boolean				lob=false;
-		boolean				ascii=false;
-		String				classname;
-		String				typename;
+		BindType	bindtype;
+		boolean		signed=false;
+		boolean		binary=false;
+		boolean		lob=false;
+		boolean		ascii=false;
+		String		classname;
+		String		typename;
 
 		switch (sqlType) {
 			case Types.ARRAY:
-				bindtype=SQLRelayParameter.BindType.Array;
+				bindtype=BindType.Array;
 				classname="java.sql.Array";
 				typename="ARRAY";
 				break;
 			case Types.BIGINT:
-				bindtype=SQLRelayParameter.BindType.Long;
+				bindtype=BindType.Long;
 				signed=true;
 				classname="java.lang.Long";
 				typename="BIGINT";
@@ -847,19 +849,19 @@ public class SQLRelayCallableStatement
 			case Types.BINARY:
 			case Types.VARBINARY:
 			case Types.LONGVARBINARY:
-				bindtype=SQLRelayParameter.BindType.Bytes;
+				bindtype=BindType.Bytes;
 				binary=true;
 				classname="[B";
 				typename="VARBINARY";
 				break;
 			case Types.BIT:
 			case Types.BOOLEAN:
-				bindtype=SQLRelayParameter.BindType.Boolean;
+				bindtype=BindType.Boolean;
 				classname="java.lang.Boolean";
 				typename="BOOLEAN";
 				break;
 			case Types.BLOB:
-				bindtype=SQLRelayParameter.BindType.Blob;
+				bindtype=BindType.Blob;
 				binary=true;
 				lob=true;
 				classname="java.sql.Blob";
@@ -868,45 +870,45 @@ public class SQLRelayCallableStatement
 			case Types.CHAR:
 			case Types.VARCHAR:
 			case Types.LONGVARCHAR:
-				bindtype=SQLRelayParameter.BindType.String;
+				bindtype=BindType.String;
 				ascii=true;
 				classname="java.lang.String";
 				typename="VARCHAR";
 				break;
 			case Types.CLOB:
-				bindtype=SQLRelayParameter.BindType.Clob;
+				bindtype=BindType.Clob;
 				lob=true;
 				ascii=true;
 				classname="java.sql.Clob";
 				typename="CLOB";
 				break;
 			case Types.DATE:
-				bindtype=SQLRelayParameter.BindType.Date;
+				bindtype=BindType.Date;
 				classname="java.sql.Date";
 				typename="DATE";
 				break;
 			case Types.DECIMAL:
 			case Types.NUMERIC:
-				bindtype=SQLRelayParameter.BindType.BigDecimal;
+				bindtype=BindType.BigDecimal;
 				signed=true;
 				classname="java.math.BigDecimal";
 				typename="DECIMAL";
 				break;
 			case Types.DOUBLE:
-				bindtype=SQLRelayParameter.BindType.Double;
+				bindtype=BindType.Double;
 				signed=true;
 				classname="java.lang.Double";
 				typename="DOUBLE";
 				break;
 			case Types.FLOAT:
 			case Types.REAL:
-				bindtype=SQLRelayParameter.BindType.Float;
+				bindtype=BindType.Float;
 				signed=true;
 				classname="java.lang.Float";
 				typename="FLOAT";
 				break;
 			case Types.INTEGER:
-				bindtype=SQLRelayParameter.BindType.Int;
+				bindtype=BindType.Int;
 				signed=true;
 				classname="java.lang.Integer";
 				typename="INTEGER";
@@ -914,60 +916,60 @@ public class SQLRelayCallableStatement
 			case Types.NCHAR:
 			case Types.NVARCHAR:
 			case Types.LONGNVARCHAR:
-				bindtype=SQLRelayParameter.BindType.NString;
+				bindtype=BindType.NString;
 				classname="java.lang.String";
 				typename="NVARCHAR";
 				break;
 			case Types.NCLOB:
-				bindtype=SQLRelayParameter.BindType.NClob;
+				bindtype=BindType.NClob;
 				lob=true;
 				classname="java.sql.NClob";
 				typename="NCLOB";
 				break;
 			case Types.NULL:
-				bindtype=SQLRelayParameter.BindType.Null;
+				bindtype=BindType.Null;
 				classname="java.lang.Object";
 				typename="NULL";
 				break;
 			case Types.REF:
-				bindtype=SQLRelayParameter.BindType.Ref;
+				bindtype=BindType.Ref;
 				classname="java.sql.Ref";
 				typename="REF";
 				break;
 			case Types.ROWID:
-				bindtype=SQLRelayParameter.BindType.RowId;
+				bindtype=BindType.RowId;
 				classname="java.sql.RowId";
 				typename="ROWID";
 				break;
 			case Types.SMALLINT:
-				bindtype=SQLRelayParameter.BindType.Short;
+				bindtype=BindType.Short;
 				signed=true;
 				classname="java.lang.Short";
 				typename="SMALLINT";
 				break;
 			case Types.SQLXML:
-				bindtype=SQLRelayParameter.BindType.SQLXML;
+				bindtype=BindType.SQLXML;
 				classname="java.sql.SQLXML";
 				typename="SQLXML";
 				break;
 			case Types.TIME:
-				bindtype=SQLRelayParameter.BindType.Time;
+				bindtype=BindType.Time;
 				classname="java.sql.Time";
 				typename="TIME";
 				break;
 			case Types.TIMESTAMP:
-				bindtype=SQLRelayParameter.BindType.Timestamp;
+				bindtype=BindType.Timestamp;
 				classname="java.sql.Timestamp";
 				typename="TIMESTAMP";
 				break;
 			case Types.TINYINT:
-				bindtype=SQLRelayParameter.BindType.Byte;
+				bindtype=BindType.Byte;
 				signed=true;
 				classname="java.lang.Byte";
 				typename="TINYINT";
 				break;
 			default:
-				bindtype=SQLRelayParameter.BindType.String;
+				bindtype=BindType.String;
 				ascii=true;
 				classname="java.lang.String";
 				typename="VARCHAR";

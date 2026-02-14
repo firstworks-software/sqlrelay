@@ -111,7 +111,7 @@ public class SQLRelayParameter {
 	public
 	int getMode() {
 		drv.debugFunction(this);
-		drv.debugPrintln("mode: "+mode);
+		debugParameterMode(mode);
 		drv.debugEnd();
 		return mode;
 	}
@@ -338,5 +338,32 @@ public class SQLRelayParameter {
 		drv.debugPrintln("bind type: "+bindtype);
 		this.bindtype=bindtype;
 		drv.debugEnd();
+	}
+
+	private
+	void debugParameterMode(int mode) {
+		switch (mode) {
+			case ParameterMetaData.parameterModeIn:
+				drv.debugPrintln("mode: "+
+						"parameterModeIn");
+				break;
+			case ParameterMetaData.parameterModeInOut:
+				drv.debugPrintln("mode: "+
+						"parameterModeInOut");
+				break;
+			case ParameterMetaData.parameterModeOut:
+				drv.debugPrintln("mode: "+
+						"parameterModeOut");
+				break;
+			case ParameterMetaData.parameterModeUnknown:
+				drv.debugPrintln("mode: "+
+						"parameterModeUnknown");
+				break;
+			default:
+				drv.debugPrintln("mode: "+
+						"unknown - "+
+						mode);
+				break;
+		}
 	}
 }

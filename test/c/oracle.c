@@ -239,10 +239,12 @@ int main(int argc, char **argv) {
 		"	:numvar:=1; "
 		"	:stringvar:='hello'; "
 		"	:floatvar:=2.5; "
+		"	:nullvar:=null; "
 		"end;");
 	sqlrcur_defineOutputBindInteger(cur,"1");
 	sqlrcur_defineOutputBindString(cur,"2",10);
 	sqlrcur_defineOutputBindDouble(cur,"3");
+	sqlrcur_defineOutputBindString(cur,"4",10);
 	assertTrue(sqlrcur_executeQuery(cur));
 	numvar=sqlrcur_getOutputBindInteger(cur,"1");
 	stringvar=sqlrcur_getOutputBindString(cur,"2");
@@ -250,6 +252,7 @@ int main(int argc, char **argv) {
 	assertEqualsInt(numvar,1);
 	assertEqualsString(stringvar,"hello");
 	assertEqualsDouble(floatvar,2.5);
+	assertEqualsString(sqlrcur_getOutputBindString(cur,"4"),"");
 	printf("\n");
 
 
@@ -259,6 +262,7 @@ int main(int argc, char **argv) {
 	sqlrcur_defineOutputBindInteger(cur,"numvar");
 	sqlrcur_defineOutputBindString(cur,"stringvar",10);
 	sqlrcur_defineOutputBindDouble(cur,"floatvar");
+	sqlrcur_defineOutputBindString(cur,"nullvar",10);
 	assertTrue(sqlrcur_executeQuery(cur));
 	numvar=sqlrcur_getOutputBindInteger(cur,"numvar");
 	stringvar=sqlrcur_getOutputBindString(cur,"stringvar");
@@ -266,6 +270,7 @@ int main(int argc, char **argv) {
 	assertEqualsInt(numvar,1);
 	assertEqualsString(stringvar,"hello");
 	assertEqualsDouble(floatvar,2.5);
+	assertEqualsString(sqlrcur_getOutputBindString(cur,"nullvar"),"");
 	printf("\n");
 
 
@@ -275,6 +280,7 @@ int main(int argc, char **argv) {
 	sqlrcur_defineOutputBindInteger(cur,"numvar");
 	sqlrcur_defineOutputBindString(cur,"stringvar",10);
 	sqlrcur_defineOutputBindDouble(cur,"floatvar");
+	sqlrcur_defineOutputBindString(cur,"nullvar",10);
 	sqlrcur_defineOutputBindString(cur,"dummyvar",10);
 	sqlrcur_validateBinds(cur);
 	assertTrue(sqlrcur_executeQuery(cur));
@@ -284,6 +290,7 @@ int main(int argc, char **argv) {
 	assertEqualsInt(numvar,1);
 	assertEqualsString(stringvar,"hello");
 	assertEqualsDouble(floatvar,2.5);
+	assertEqualsString(sqlrcur_getOutputBindString(cur,"nullvar"),"");
 	printf("\n");
 
 

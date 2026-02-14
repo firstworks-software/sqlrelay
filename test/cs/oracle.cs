@@ -555,36 +555,68 @@ namespace SQLRClientTest
                 "	:stringvar:='hello'; " +
                 "	:floatvar:=2.5; " +
                 "	:datevar:='03-FEB-2001'; " +
+                "	:nullvar:=null; " +
                 "end;";
             SQLRelayParameter numvar = new SQLRelayParameter();
             numvar.ParameterName = "numvar";
             numvar.Direction = ParameterDirection.Output;
             numvar.DbType = DbType.Int64;
             sqlrcom.Parameters.Add(numvar);
-            SQLRelayParameter stringvar = new SQLRelayParameter();
+            SQLRelayParameter stringvar =
+                new SQLRelayParameter();
             stringvar.ParameterName = "stringvar";
-            stringvar.Direction = ParameterDirection.Output;
+            stringvar.Direction =
+                ParameterDirection.Output;
             stringvar.DbType = DbType.String;
             stringvar.Size = 20;
             sqlrcom.Parameters.Add(stringvar);
-            SQLRelayParameter floatvar = new SQLRelayParameter();
+            SQLRelayParameter floatvar =
+                new SQLRelayParameter();
             floatvar.ParameterName = "floatvar";
-            floatvar.Direction = ParameterDirection.Output;
+            floatvar.Direction =
+                ParameterDirection.Output;
             floatvar.DbType = DbType.Double;
             sqlrcom.Parameters.Add(floatvar);
-            SQLRelayParameter datevar = new SQLRelayParameter();
+            SQLRelayParameter datevar =
+                new SQLRelayParameter();
             datevar.ParameterName = "datevar";
-            datevar.Direction = ParameterDirection.Output;
+            datevar.Direction =
+                ParameterDirection.Output;
             datevar.DbType = DbType.DateTime;
             sqlrcom.Parameters.Add(datevar);
+            SQLRelayParameter nullvar =
+                new SQLRelayParameter();
+            nullvar.ParameterName = "nullvar";
+            nullvar.Direction =
+                ParameterDirection.Output;
+            nullvar.DbType = DbType.String;
+            nullvar.Size = 20;
+            sqlrcom.Parameters.Add(nullvar);
             assertEquals(ExecuteNonQuery(sqlrcom), 1);
             assertEquals(Convert.ToInt64(numvar.Value), 1);
-            assertEquals(Convert.ToString(stringvar.Value), "hello");
-            assertEquals(Convert.ToInt64(stringvar.Size), 5);
-            assertEquals(Convert.ToString(floatvar.Value), "2.5");
-            assertEquals(Convert.ToInt64(Convert.ToDateTime(datevar.Value).Year), 2001);
-            assertEquals(Convert.ToInt64(Convert.ToDateTime(datevar.Value).Month), 2);
-            assertEquals(Convert.ToInt64(Convert.ToDateTime(datevar.Value).Day), 3);
+            assertEquals(
+                Convert.ToString(stringvar.Value),
+                "hello");
+            assertEquals(
+                Convert.ToInt64(stringvar.Size), 5);
+            assertEquals(
+                Convert.ToString(floatvar.Value),
+                "2.5");
+            assertEquals(
+                Convert.ToInt64(
+                Convert.ToDateTime(
+                datevar.Value).Year), 2001);
+            assertEquals(
+                Convert.ToInt64(
+                Convert.ToDateTime(
+                datevar.Value).Month), 2);
+            assertEquals(
+                Convert.ToInt64(
+                Convert.ToDateTime(
+                datevar.Value).Day), 3);
+            assertEquals(
+                Convert.ToString(nullvar.Value),
+                "");
             sqlrcom.Parameters.Clear();
             Console.WriteLine("\n");
 
@@ -597,36 +629,65 @@ namespace SQLRClientTest
                 "	:stringvar:='hello'; " +
                 "	:floatvar:=2.5; " +
                 "	:datevar:='03-FEB-2001'; " +
+                "	:nullvar:=null; " +
                 "end;";
             numvar = new SQLRelayParameter();
             numvar.ParameterName = "1";
-            numvar.Direction = ParameterDirection.Output;
+            numvar.Direction =
+                ParameterDirection.Output;
             numvar.DbType = DbType.Int64;
             sqlrcom.Parameters.Add(numvar);
             stringvar = new SQLRelayParameter();
             stringvar.ParameterName = "2";
-            stringvar.Direction = ParameterDirection.Output;
+            stringvar.Direction =
+                ParameterDirection.Output;
             stringvar.DbType = DbType.String;
             stringvar.Size = 20;
             sqlrcom.Parameters.Add(stringvar);
             floatvar = new SQLRelayParameter();
             floatvar.ParameterName = "3";
-            floatvar.Direction = ParameterDirection.Output;
+            floatvar.Direction =
+                ParameterDirection.Output;
             floatvar.DbType = DbType.Double;
             sqlrcom.Parameters.Add(floatvar);
             datevar = new SQLRelayParameter();
             datevar.ParameterName = "4";
-            datevar.Direction = ParameterDirection.Output;
+            datevar.Direction =
+                ParameterDirection.Output;
             datevar.DbType = DbType.DateTime;
             sqlrcom.Parameters.Add(datevar);
+            nullvar = new SQLRelayParameter();
+            nullvar.ParameterName = "5";
+            nullvar.Direction =
+                ParameterDirection.Output;
+            nullvar.DbType = DbType.String;
+            nullvar.Size = 20;
+            sqlrcom.Parameters.Add(nullvar);
             assertEquals(ExecuteNonQuery(sqlrcom), 1);
             assertEquals(Convert.ToInt64(numvar.Value), 1);
-            assertEquals(Convert.ToString(stringvar.Value), "hello");
-            assertEquals(Convert.ToInt64(stringvar.Size), 5);
-            assertEquals(Convert.ToString(floatvar.Value), "2.5");
-            assertEquals(Convert.ToInt64(Convert.ToDateTime(datevar.Value).Year), 2001);
-            assertEquals(Convert.ToInt64(Convert.ToDateTime(datevar.Value).Month), 2);
-            assertEquals(Convert.ToInt64(Convert.ToDateTime(datevar.Value).Day), 3);
+            assertEquals(
+                Convert.ToString(stringvar.Value),
+                "hello");
+            assertEquals(
+                Convert.ToInt64(stringvar.Size), 5);
+            assertEquals(
+                Convert.ToString(floatvar.Value),
+                "2.5");
+            assertEquals(
+                Convert.ToInt64(
+                Convert.ToDateTime(
+                datevar.Value).Year), 2001);
+            assertEquals(
+                Convert.ToInt64(
+                Convert.ToDateTime(
+                datevar.Value).Month), 2);
+            assertEquals(
+                Convert.ToInt64(
+                Convert.ToDateTime(
+                datevar.Value).Day), 3);
+            assertEquals(
+                Convert.ToString(nullvar.Value),
+                "");
             sqlrcom.Parameters.Clear();
             Console.WriteLine("\n");
 
