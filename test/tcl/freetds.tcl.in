@@ -847,8 +847,6 @@ puts ""
 $cur sendQuery "commit tran"
 catch {$cur sendQuery "drop table testtable"}
 
-# invalid queries...
-
 
 # invalid queries
 puts "INVALID QUERIES: "

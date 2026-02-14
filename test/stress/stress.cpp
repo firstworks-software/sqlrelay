@@ -140,7 +140,7 @@ void queriesTest(void *id) {
 				}
 				delete[] cursors;
 			}
-	
+
 			// drop the table
 			stdoutput.printf("%lld: dropping table\n",threadid);
 			query.clear();

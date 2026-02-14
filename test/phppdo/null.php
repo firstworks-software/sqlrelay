@@ -26,16 +26,50 @@
 
 
 	# create temptable
+
+
 	echo("CREATE TEMPTABLE: \n");
-	$dbh->exec("create table testtable (testint int, testfloat float, testchar varchar(20), testblob blob, testdate datetime)");
+	$dbh->exec(
+		"create table testtable (".
+		"	testint int, ".
+		"	testfloat float, ".
+		"	testchar varchar(20), ".
+		"	testblob blob, ".
+		"	testdate datetime)");
 	echo("\n");
 
 
 	# insert
+
+
 	echo("INSERT: \n");
-	assertEqual($dbh->exec("insert into testtable values (NULL,NULL,NULL,NULL,NULL)"),1);
-	assertEqual($dbh->exec("insert into testtable values (1,1.1,'1','1','2001-01-01')"),1);
-	assertEqual($dbh->exec("insert into testtable values (0,0.0,'0','0','0000-01-01 00:00:00')"),1);
+	assertEqual($dbh->exec(
+		"insert into ".
+		"	testtable ".
+		"values (".
+		"	NULL, ".
+		"	NULL, ".
+		"	NULL, ".
+		"	NULL, ".
+		"	NULL)"),1);
+	assertEqual($dbh->exec(
+		"insert into ".
+		"	testtable ".
+		"values (".
+		"	1, ".
+		"	1.1, ".
+		"	'1', ".
+		"	'1', ".
+		"	'2001-01-01')"),1);
+	assertEqual($dbh->exec(
+		"insert into ".
+		"	testtable ".
+		"values (".
+		"	0, ".
+		"	0.0, ".
+		"	'0', ".
+		"	'0', ".
+		"	'0000-01-01 00:00:00')"),1);
 	echo("\n");
 
 
@@ -107,6 +141,8 @@ print_r($result);
 echo("\n");
 	echo("\n");
 
+
+	# null integer input bind
 	echo("NULL INTEGER INPUT BIND\n");
 	$stmt=$dbh->prepare("select ?,?");
 	$param1=null;

@@ -6,39 +6,39 @@ import com.firstworks.sqlrelay.SQLRCursor;
 
 
 class firebird extends sqlrtest {
-	
+
 	public static void	main(String[] args) {
-	
-		String	dbtype;
+
 		String[]	bindvars={"1","2","3","4","5","6",
 					"7","8","9","10","11"};
 		String[]	bindvals={"4","4","4.4","4.4","4.4","4.4",
 					"01-JAN-2004","04:00:00",
 					"testchar4","testvarchar4",null};
+		String[]	cols;
+		String[]	fields;
+		long[]	fieldlens;
 		String[]	subvars={"var1","var2","var3"};
-		String[]	subvalstrings={"hi","hello","bye"};
 		long[]	subvallongs={1,2,3};
+		String[]	subvalstrings={"hi","hello","bye"};
 		double[]	subvaldoubles={10.55,10.556,10.5556};
 		int[]	precs={4,5,6};
 		int[]	scales={2,3,4};
-		String	numvar;
-		String	stringvar;
-		String	floatvar;
-		String[]	cols;
-		String[]	fields;
 		short	port;
 		String	socket;
 		short	id;
 		String	filename;
-		long[]	fieldlens;
-	
+		String	numvar;
+		String	stringvar;
+		String	floatvar;
+		String	dbtype;
+
 		// instantiation
 		SQLRConnection con=new SQLRConnection("sqlrelay",
 						(short)9000,
 						"/tmp/test.socket",
 						"testuser","testpassword",0,1);
 		SQLRCursor cur=new SQLRCursor(con);
-	
+
 		// get database type
 
 
@@ -71,14 +71,44 @@ class firebird extends sqlrtest {
 
 		// insert
 		System.out.println("INSERT: ");
-		assertTrue(cur.sendQuery("insert into testtable values (1,1,1.1,1.1,1.1,1.1,'01-JAN-2001','01:00:00','testchar1','testvarchar1',null,null)"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1, "+
+			"	1, "+
+			"	1.1, "+
+			"	1.1, "+
+			"	1.1, "+
+			"	1.1, "+
+			"	'01-JAN-2001', "+
+			"	'01:00:00', "+
+			"	'testchar1', "+
+			"	'testvarchar1', "+
+			"	null, "+
+			"	null)"));
 		System.out.println();
 
 
 		// bind by position
 		System.out.println("BIND BY POSITION: ");
 
-		cur.prepareQuery("insert into testtable values (?,?,?,?,?,?,?,?,?,?,?,null)");
+		cur.prepareQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	null)");
 		assertEquals(cur.countBindVariables(),11);
 		cur.inputBind("1",2);
 		cur.inputBind("2",2);
@@ -118,10 +148,70 @@ class firebird extends sqlrtest {
 
 		// insert
 		System.out.println("INSERT: ");
-		assertTrue(cur.sendQuery("insert into testtable values (5,5,5.5,5.5,5.5,5.5,'01-JAN-2005','05:00:00','testchar5','testvarchar5',null,null)"));
-		assertTrue(cur.sendQuery("insert into testtable values (6,6,6.6,6.6,6.6,6.6,'01-JAN-2006','06:00:00','testchar6','testvarchar6',null,null)"));
-		assertTrue(cur.sendQuery("insert into testtable values (7,7,7.7,7.7,7.7,7.7,'01-JAN-2007','07:00:00','testchar7','testvarchar7',null,null)"));
-		assertTrue(cur.sendQuery("insert into testtable values (8,8,8.8,8.8,8.8,8.8,'01-JAN-2008','08:00:00','testchar8','testvarchar8',null,null)"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	5, "+
+			"	5, "+
+			"	5.5, "+
+			"	5.5, "+
+			"	5.5, "+
+			"	5.5, "+
+			"	'01-JAN-2005', "+
+			"	'05:00:00', "+
+			"	'testchar5', "+
+			"	'testvarchar5', "+
+			"	null, "+
+			"	null)"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	6, "+
+			"	6, "+
+			"	6.6, "+
+			"	6.6, "+
+			"	6.6, "+
+			"	6.6, "+
+			"	'01-JAN-2006', "+
+			"	'06:00:00', "+
+			"	'testchar6', "+
+			"	'testvarchar6', "+
+			"	null, "+
+			"	null)"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	7, "+
+			"	7, "+
+			"	7.7, "+
+			"	7.7, "+
+			"	7.7, "+
+			"	7.7, "+
+			"	'01-JAN-2007', "+
+			"	'07:00:00', "+
+			"	'testchar7', "+
+			"	'testvarchar7', "+
+			"	null, "+
+			"	null)"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	8, "+
+			"	8, "+
+			"	8.8, "+
+			"	8.8, "+
+			"	8.8, "+
+			"	8.8, "+
+			"	'01-JAN-2008', "+
+			"	'08:00:00', "+
+			"	'testchar8', "+
+			"	'testvarchar8', "+
+			"	null, "+
+			"	null)"));
 		System.out.println();
 
 
@@ -158,7 +248,13 @@ class firebird extends sqlrtest {
 
 		// select
 		System.out.println("SELECT: ");
-		assertTrue(cur.sendQuery("select * from testtable order by testinteger"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testinteger "));
 		System.out.println();
 
 
@@ -439,7 +535,13 @@ class firebird extends sqlrtest {
 
 		// individual substitutions
 		System.out.println("INDIVIDUAL SUBSTITUTIONS: ");
-		cur.prepareQuery("select $(var1),'$(var2)','$(var3)' from rdb$database");
+		cur.prepareQuery(
+			"select "+
+			"	$(var1), "+
+			"	'$(var2)', "+
+			"	'$(var3)' "+
+			"from "+
+			"	rdb$database ");
 		cur.substitution("var1",1);
 		cur.substitution("var2","hello");
 		cur.substitution("var3",10.5556,6,4);
@@ -457,7 +559,13 @@ class firebird extends sqlrtest {
 
 		// array substitutions
 		System.out.println("ARRAY SUBSTITUTIONS: ");
-		cur.prepareQuery("select '$(var1)','$(var2)','$(var3)' from rdb$database");
+		cur.prepareQuery(
+			"select "+
+			"	'$(var1)', "+
+			"	'$(var2)', "+
+			"	'$(var3)' "+
+			"from "+
+			"	rdb$database ");
 		cur.substitutions(subvars,subvalstrings);
 		assertTrue(cur.executeQuery());
 		System.out.println();
@@ -473,7 +581,13 @@ class firebird extends sqlrtest {
 
 		// array substitutions
 		System.out.println("ARRAY SUBSTITUTIONS: ");
-		cur.prepareQuery("select $(var1),$(var2),$(var3) from rdb$database");
+		cur.prepareQuery(
+			"select "+
+			"	$(var1), "+
+			"	$(var2), "+
+			"	$(var3) "+
+			"from "+
+			"	rdb$database ");
 		cur.substitutions(subvars,subvallongs);
 		assertTrue(cur.executeQuery());
 		System.out.println();
@@ -489,7 +603,13 @@ class firebird extends sqlrtest {
 
 		// array substitutions
 		System.out.println("ARRAY SUBSTITUTIONS: ");
-		cur.prepareQuery("select $(var1),$(var2),$(var3) from rdb$database");
+		cur.prepareQuery(
+			"select "+
+			"	$(var1), "+
+			"	$(var2), "+
+			"	$(var3) "+
+			"from "+
+			"	rdb$database ");
 		cur.substitutions(subvars,subvaldoubles,precs,scales);
 		assertTrue(cur.executeQuery());
 		System.out.println();
@@ -501,15 +621,27 @@ class firebird extends sqlrtest {
 		assertEquals(cur.getField(0,1),"10.556");
 		assertEquals(cur.getField(0,2),"10.5556");
 		System.out.println();
-	
+
 		System.out.println("nullS as Nulls: ");
 		cur.getNullsAsNulls();
-		assertTrue(cur.sendQuery("select 1,null,null from rdb$database"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	1, "+
+			"	null, "+
+			"	null "+
+			"from "+
+			"	rdb$database "));
 		assertEquals(cur.getField(0,0),"1");
 		assertEquals(cur.getField(0,1),null);
 		assertEquals(cur.getField(0,2),null);
 		cur.getNullsAsEmptyStrings();
-		assertTrue(cur.sendQuery("select 1,null,null from rdb$database"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	1, "+
+			"	null, "+
+			"	null "+
+			"from "+
+			"	rdb$database "));
 		assertEquals(cur.getField(0,0),"1");
 		assertEquals(cur.getField(0,1),"");
 		assertEquals(cur.getField(0,2),"");
@@ -521,7 +653,13 @@ class firebird extends sqlrtest {
 		System.out.println("RESULT SET BUFFER SIZE: ");
 		assertEquals(cur.getResultSetBufferSize(),0);
 		cur.setResultSetBufferSize(2);
-		assertTrue(cur.sendQuery("select * from testtable order by testinteger"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testinteger "));
 		assertEquals(cur.getResultSetBufferSize(),2);
 		System.out.println();
 		assertEquals(cur.firstRowIndex(),0);
@@ -551,12 +689,24 @@ class firebird extends sqlrtest {
 		// dont get column info
 		System.out.println("DONT GET COLUMN INFO: ");
 		cur.dontGetColumnInfo();
-		assertTrue(cur.sendQuery("select * from testtable order by testinteger"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testinteger "));
 		assertEquals(cur.getColumnName(0),null);
 		assertEquals(cur.getColumnLength(0),0);
 		assertEquals(cur.getColumnType(0),null);
 		cur.getColumnInfo();
-		assertTrue(cur.sendQuery("select * from testtable order by testinteger"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testinteger "));
 		assertEquals(cur.getColumnName(0),"TESTINTEGER");
 		assertEquals(cur.getColumnLength(0),4);
 		assertEquals(cur.getColumnType(0),"INTEGER");
@@ -565,7 +715,13 @@ class firebird extends sqlrtest {
 
 		// suspended session
 		System.out.println("SUSPENDED SESSION: ");
-		assertTrue(cur.sendQuery("select * from testtable order by testinteger"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testinteger "));
 		cur.suspendResultSet();
 		assertTrue(con.suspendSession());
 		port=con.getConnectionPort();
@@ -581,7 +737,13 @@ class firebird extends sqlrtest {
 		assertEquals(cur.getField(6,0),"7");
 		assertEquals(cur.getField(7,0),"8");
 		System.out.println();
-		assertTrue(cur.sendQuery("select * from testtable order by testinteger"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testinteger "));
 		cur.suspendResultSet();
 		assertTrue(con.suspendSession());
 		port=con.getConnectionPort();
@@ -597,7 +759,13 @@ class firebird extends sqlrtest {
 		assertEquals(cur.getField(6,0),"7");
 		assertEquals(cur.getField(7,0),"8");
 		System.out.println();
-		assertTrue(cur.sendQuery("select * from testtable order by testinteger"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testinteger "));
 		cur.suspendResultSet();
 		assertTrue(con.suspendSession());
 		port=con.getConnectionPort();
@@ -618,7 +786,13 @@ class firebird extends sqlrtest {
 		// suspended result set
 		System.out.println("SUSPENDED RESULT SET: ");
 		cur.setResultSetBufferSize(2);
-		assertTrue(cur.sendQuery("select * from testtable order by testinteger"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testinteger "));
 		assertEquals(cur.getField(2,0),"3");
 		id=cur.getResultSetId();
 		cur.suspendResultSet();
@@ -649,7 +823,13 @@ class firebird extends sqlrtest {
 		System.out.println("CACHED RESULT SET: ");
 		cur.cacheToFile("cachefile1");
 		cur.setCacheTtl(200);
-		assertTrue(cur.sendQuery("select * from testtable order by testinteger"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testinteger "));
 		filename=cur.getCacheFileName();
 		assertEquals(filename,"cachefile1");
 		cur.cacheOff();
@@ -697,7 +877,13 @@ class firebird extends sqlrtest {
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile1");
 		cur.setCacheTtl(200);
-		assertTrue(cur.sendQuery("select * from testtable order by testinteger"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testinteger "));
 		filename=cur.getCacheFileName();
 		assertEquals(filename,"cachefile1");
 		cur.cacheOff();
@@ -720,7 +906,8 @@ class firebird extends sqlrtest {
 
 
 		// from one cache file to another with result set buffer size
-		System.out.println("FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: ");
+		System.out.println("FROM ONE CACHE FILE TO ANOTHER "+
+					"WITH RESULT SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile2");
 		assertTrue(cur.openCachedResultSet("cachefile1"));
@@ -733,11 +920,18 @@ class firebird extends sqlrtest {
 
 
 		// cached result set with suspend and result set buffer size
-		System.out.println("CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: ");
+		System.out.println("CACHED RESULT SET WITH SUSPEND "+
+					"AND RESULT SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile1");
 		cur.setCacheTtl(200);
-		assertTrue(cur.sendQuery("select * from testtable order by testinteger"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testinteger "));
 		assertEquals(cur.getField(2,0),"3");
 		filename=cur.getCacheFileName();
 		assertEquals(filename,"cachefile1");
@@ -770,21 +964,48 @@ class firebird extends sqlrtest {
 		assertEquals(cur.getField(8,0),null);
 		cur.setResultSetBufferSize(0);
 		System.out.println();
-	
+
 		//System.out.println("COMMIT AND ROLLBACK: ");
 		SQLRConnection secondcon=new SQLRConnection("sqlrelay",
 						(short)9000,
 						"/tmp/test.socket",
 						"testuser","testpassword",0,1);
 		SQLRCursor secondcur=new SQLRCursor(secondcon);
-		assertEquals(secondcur.sendQuery("select count(*) from testtable"),1);
+		assertEquals(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable "),1);
 		assertEquals(secondcur.getField(0,0),"0");
 		assertTrue(con.commit());
-		assertEquals(secondcur.sendQuery("select count(*) from testtable"),1);
+		assertEquals(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable "),1);
 		assertEquals(secondcur.getField(0,0),"8");
 		assertTrue(con.autoCommitOn());
-		assertTrue(cur.sendQuery("insert into testtable values (10,10,10.1,10.1,10.1,10.1,'01-JAN-2010','10:00:00','testchar10','testvarchar10',null,null)"));
-		assertEquals(secondcur.sendQuery("select count(*) from testtable"),1);
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	10, "+
+			"	10, "+
+			"	10.1, "+
+			"	10.1, "+
+			"	10.1, "+
+			"	10.1, "+
+			"	'01-JAN-2010', "+
+			"	'10:00:00', "+
+			"	'testchar10', "+
+			"	'testvarchar10', "+
+			"	null, "+
+			"	null)"));
+		assertEquals(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable "),1);
 		assertEquals(secondcur.getField(0,0),"9");
 		assertTrue(con.autoCommitOff());
 		System.out.println();
@@ -792,7 +1013,13 @@ class firebird extends sqlrtest {
 
 		// finished suspended session
 		System.out.println("FINISHED SUSPENDED SESSION: ");
-		assertTrue(cur.sendQuery("select * from testtable order by testinteger"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testinteger "));
 		assertEquals(cur.getField(4,0),"5");
 		assertEquals(cur.getField(5,0),"6");
 		assertEquals(cur.getField(6,0),"7");
@@ -809,27 +1036,77 @@ class firebird extends sqlrtest {
 		assertEquals(cur.getField(6,0),null);
 		assertEquals(cur.getField(7,0),null);
 		System.out.println();
-	
+
 		// drop existing table
 		con.commit();
 		cur.sendQuery("delete from testtable");
 		con.commit();
 		System.out.println();
-	
-		// invalid queries...
 
 
 		// invalid queries
 		System.out.println("INVALID QUERIES: ");
-		assertFalse(cur.sendQuery("select * from testtable1 order by testinteger"));
-		assertFalse(cur.sendQuery("select * from testtable1 order by testinteger"));
-		assertFalse(cur.sendQuery("select * from testtable1 order by testinteger"));
-		assertFalse(cur.sendQuery("select * from testtable1 order by testinteger"));
+		assertFalse(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable1 "+
+			"order by "+
+			"	testinteger "));
+		assertFalse(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable1 "+
+			"order by "+
+			"	testinteger "));
+		assertFalse(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable1 "+
+			"order by "+
+			"	testinteger "));
+		assertFalse(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable1 "+
+			"order by "+
+			"	testinteger "));
 		System.out.println();
-		assertFalse(cur.sendQuery("insert into testtable1 values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable1 values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable1 values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable1 values (1,2,3,4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable1 "+
+			"values ("+
+			"	1, "+
+			"	2, "+
+			"	3, "+
+			"	4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable1 "+
+			"values ("+
+			"	1, "+
+			"	2, "+
+			"	3, "+
+			"	4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable1 "+
+			"values ("+
+			"	1, "+
+			"	2, "+
+			"	3, "+
+			"	4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable1 "+
+			"values ("+
+			"	1, "+
+			"	2, "+
+			"	3, "+
+			"	4)"));
 		System.out.println();
 		assertFalse(cur.sendQuery("create table testtable"));
 		assertFalse(cur.sendQuery("create table testtable"));

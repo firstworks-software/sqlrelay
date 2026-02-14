@@ -29,7 +29,17 @@ namespace SQLRClientTest
             }
 
             // open connection and command
-            SQLRelayConnection sqlrcon = new SQLRelayConnection("Data Source=sqlrelay:9000:/tmp/test.socket;Retry Time=0;Tries=1;Tls=yes;Tlscert=" + tlscert + ";Tlsvalidate=ca;Tlsca=" + tlsca + ";Debug=false");
+            SQLRelayConnection sqlrcon =
+                new SQLRelayConnection(
+                "Data Source=sqlrelay:" +
+                "9000:/tmp/test.socket;" +
+                "Retry Time=0;" +
+                "Tries=1;" +
+                "Tls=yes;" +
+                "Tlscert=" + tlscert + ";" +
+                "Tlsvalidate=ca;" +
+                "Tlsca=" + tlsca + ";" +
+                "Debug=false");
             sqlrcon.Open();
 
 
@@ -44,8 +54,6 @@ namespace SQLRClientTest
             assertEquals(value, 1);
             Console.WriteLine("\n");
 
-            // drop the table
-
 
             // drop table
             Console.WriteLine("DROP TABLE:");
@@ -54,19 +62,35 @@ namespace SQLRClientTest
             ExecuteNonQuery(sqlrcom);
             Console.WriteLine("\n");
 
-            // create the table
-
 
             // create table
             Console.WriteLine("CREATE TABLE:");
-            sqlrcom = new SQLRelayCommand("create table testtable (testnumber number, testchar char(40), testvarchar varchar2(40), testdate date, testlong long, testclob clob, testblob blob)", sqlrcon);
+            sqlrcom = new SQLRelayCommand(
+                "create table testtable (" +
+                "	testnumber number, " +
+                "	testchar char(40), " +
+                "	testvarchar varchar2(40), " +
+                "	testdate date, " +
+                "	testlong long, " +
+                "	testclob clob, " +
+                "	testblob blob)",
+                sqlrcon);
             ExecuteNonQuery(sqlrcom);
             Console.WriteLine("\n");
 
 
             // insert
             Console.WriteLine("INSERT:");
-            sqlrcom.CommandText = "insert into testtable values (1, 'testchar1', 'testvarchar1', '01-JAN-2001', 'testlong1', 'testclob1', empty_blob())";
+            sqlrcom.CommandText =
+                "insert into testtable " +
+                "values (" +
+                "	1, " +
+                "	'testchar1', " +
+                "	'testvarchar1', " +
+                "	'01-JAN-2001', " +
+                "	'testlong1', " +
+                "	'testclob1', " +
+                "	empty_blob())";
             sqlrcom.Prepare();
             Int64 affectedrows = ExecuteNonQuery(sqlrcom);
             Console.WriteLine("\n");
@@ -80,7 +104,16 @@ namespace SQLRClientTest
 
             // bind by position
             Console.WriteLine("BIND BY POSITION:");
-            sqlrcom.CommandText = "insert into testtable values (:var1, :var2, :var3, :var4, :var5, :var6, :var7)";
+            sqlrcom.CommandText =
+                "insert into testtable " +
+                "values (" +
+                "	:var1, " +
+                "	:var2, " +
+                "	:var3, " +
+                "	:var4, " +
+                "	:var5, " +
+                "	:var6, " +
+                "	:var7)";
             sqlrcom.Parameters.Add("1", 2);
             sqlrcom.Parameters.Add("2", "testchar2");
             sqlrcom.Parameters.Add("3", "testvarchar2");
@@ -138,8 +171,6 @@ namespace SQLRClientTest
             sqlrcom.Parameters.Clear();
             Console.WriteLine("\n");
 
-            // null and empty binds
-
 
             // null binds
             Console.WriteLine("NULL BINDS:");
@@ -157,7 +188,13 @@ namespace SQLRClientTest
 
             // select
             Console.WriteLine("SELECT:");
-            sqlrcom.CommandText = "select * from testtable order by testnumber";
+            sqlrcom.CommandText =
+                "select " +
+                "	* " +
+                "from " +
+                "	testtable " +
+                "order by " +
+                "	testnumber";
             System.Data.IDataReader datareader = ExecuteReader(sqlrcom);
             assertTrue(datareader != null);
             Console.WriteLine("\n");
@@ -485,15 +522,37 @@ namespace SQLRClientTest
 
             // commit and rollback
             Console.WriteLine("COMMIT AND ROLLBACK:");
-            SQLRelayConnection sqlrcon2 = new SQLRelayConnection("Data Source=sqlrelay:9000:/tmp/test.socket;Retry Time=0;Tries=1;Tls=yes;Tlscert=" + tlscert + ";Tlsvalidate=ca;Tlsca=" + tlsca + ";Debug=false");
+            SQLRelayConnection sqlrcon2 =
+                new SQLRelayConnection(
+                "Data Source=sqlrelay:" +
+                "9000:/tmp/test.socket;" +
+                "Retry Time=0;" +
+                "Tries=1;" +
+                "Tls=yes;" +
+                "Tlscert=" + tlscert + ";" +
+                "Tlsvalidate=ca;" +
+                "Tlsca=" + tlsca + ";" +
+                "Debug=false");
             sqlrcon2.Open();
-            SQLRelayCommand sqlrcom2 = new SQLRelayCommand("select count(*) from testtable", sqlrcon2);
+            SQLRelayCommand sqlrcom2 =
+                new SQLRelayCommand(
+                "select count(*) from testtable",
+                sqlrcon2);
             assertEquals(Convert.ToInt64(sqlrcom2.ExecuteScalar()), 0);
             SQLRelayTransaction sqlrtran = sqlrcon.BeginTransaction();
             sqlrtran.Commit();
             assertEquals(Convert.ToInt64(sqlrcom2.ExecuteScalar()), 6);
             sqlrtran = sqlrcon.BeginTransaction();
-            sqlrcom.CommandText = "insert into testtable values (6, 'testchar6', 'testvarchar6', '01-JAN-2006', 'testlong6', 'testclob6', empty_blob())";
+            sqlrcom.CommandText =
+                "insert into testtable " +
+                "values (" +
+                "	6, " +
+                "	'testchar6', " +
+                "	'testvarchar6', " +
+                "	'01-JAN-2006', " +
+                "	'testlong6', " +
+                "	'testclob6', " +
+                "	empty_blob())";
             assertEquals(sqlrcom.ExecuteNonQuery(), 1);
             sqlrcom.CommandText = "select count(*) from testtable";
             assertEquals(Convert.ToInt64(sqlrcom.ExecuteScalar()), 7);
@@ -502,12 +561,16 @@ namespace SQLRClientTest
             sqlrcon2.Close();
             Console.WriteLine("\n");
 
-            // output bind by name
-
 
             // output binds by name
             Console.WriteLine("OUTPUT BINDS BY NAME:");
-            sqlrcom.CommandText = "begin  :numvar:=1;  :stringvar:='hello';  :floatvar:=2.5;  :datevar:='03-FEB-2001'; end;";
+            sqlrcom.CommandText =
+                "begin " +
+                "	:numvar:=1; " +
+                "	:stringvar:='hello'; " +
+                "	:floatvar:=2.5; " +
+                "	:datevar:='03-FEB-2001'; " +
+                "end;";
             SQLRelayParameter numvar = new SQLRelayParameter();
             numvar.ParameterName = "numvar";
             numvar.Direction = ParameterDirection.Output;
@@ -540,12 +603,16 @@ namespace SQLRClientTest
             sqlrcom.Parameters.Clear();
             Console.WriteLine("\n");
 
-            // output bind by position
-
 
             // output binds by position
             Console.WriteLine("OUTPUT BINDS BY POSITION:");
-            sqlrcom.CommandText = "begin  :numvar:=1;  :stringvar:='hello';  :floatvar:=2.5;  :datevar:='03-FEB-2001'; end;";
+            sqlrcom.CommandText =
+                "begin " +
+                "	:numvar:=1; " +
+                "	:stringvar:='hello'; " +
+                "	:floatvar:=2.5; " +
+                "	:datevar:='03-FEB-2001'; " +
+                "end;";
             numvar = new SQLRelayParameter();
             numvar.ParameterName = "1";
             numvar.Direction = ParameterDirection.Output;
@@ -581,11 +648,33 @@ namespace SQLRClientTest
 
             // cursor binds using nextresult
             Console.WriteLine("CURSOR BINDS USING NEXTRESULT:");
-            sqlrcom.CommandText = "create or replace package types is type cursorType is ref cursor; end;";
+            sqlrcom.CommandText =
+                "create or replace package types is " +
+                "	type cursorType is ref cursor; " +
+                "end;";
             assertEquals(ExecuteNonQuery(sqlrcom), 0);
-            sqlrcom.CommandText = "create or replace function sp_testtable(value in number) return types.cursortype is l_cursor    types.cursorType; begin open l_cursor for select * from testtable where testnumber>value; return l_cursor; end;";
+            sqlrcom.CommandText =
+                "create or replace " +
+                "function sp_testtable(value in number) " +
+                "			return types.cursortype " +
+                "is " +
+                "	l_cursor    types.cursorType; " +
+                "begin " +
+                "	open l_cursor for " +
+                "		select " +
+                "			* " +
+                "		from " +
+                "			testtable " +
+                "		where " +
+                "			testnumber>value; " +
+                "	return l_cursor; " +
+                "end;";
             assertEquals(ExecuteNonQuery(sqlrcom), 0);
-            sqlrcom.CommandText = "begin  :curs1:=sp_testtable(2);  :curs2:=sp_testtable(0); end;";
+            sqlrcom.CommandText =
+                "begin " +
+                "	:curs1:=sp_testtable(2); " +
+                "	:curs2:=sp_testtable(0); " +
+                "end;";
             SQLRelayParameter curs1 = new SQLRelayParameter();
             curs1.ParameterName = "curs1";
             curs1.SQLRelayType = SQLRelayType.Cursor;
@@ -624,11 +713,33 @@ namespace SQLRClientTest
 
             // cursor binds
             Console.WriteLine("CURSOR BINDS:");
-            sqlrcom.CommandText = "create or replace package types is type cursorType is ref cursor; end;";
+            sqlrcom.CommandText =
+                "create or replace package types is " +
+                "	type cursorType is ref cursor; " +
+                "end;";
             assertEquals(ExecuteNonQuery(sqlrcom), 0);
-            sqlrcom.CommandText = "create or replace function sp_testtable(value in number) return types.cursortype is l_cursor    types.cursorType; begin open l_cursor for select * from testtable where testnumber>value; return l_cursor; end;";
+            sqlrcom.CommandText =
+                "create or replace " +
+                "function sp_testtable(value in number) " +
+                "			return types.cursortype " +
+                "is " +
+                "	l_cursor    types.cursorType; " +
+                "begin " +
+                "		open l_cursor for " +
+                "		select " +
+                "			* " +
+                "		from " +
+                "			testtable " +
+                "		where " +
+                "			testnumber>value; " +
+                "	return l_cursor; " +
+                "end;";
             assertEquals(ExecuteNonQuery(sqlrcom), 0);
-            sqlrcom.CommandText = "begin  :curs1:=sp_testtable(2);  :curs2:=sp_testtable(0); end;";
+            sqlrcom.CommandText =
+                "begin " +
+                "	:curs1:=sp_testtable(2); " +
+                "	:curs2:=sp_testtable(0); " +
+                "end;";
             curs1 = new SQLRelayParameter();
             curs1.ParameterName = "curs1";
             curs1.SQLRelayType = SQLRelayType.Cursor;
@@ -664,17 +775,20 @@ namespace SQLRClientTest
             Console.WriteLine("\n");
 
 
-
-            // clob and blob output bind
-
-
             // clob and blob output binds
             Console.WriteLine("CLOB AND BLOB OUTPUT BINDS:");
             sqlrcom.CommandText = "drop table testtable1";
             ExecuteNonQuery(sqlrcom);
-            sqlrcom.CommandText = "create table testtable1 (testclob clob, testblob blob)";
+            sqlrcom.CommandText =
+                "create table testtable1 (" +
+                "	testclob clob, " +
+                "	testblob blob)";
             assertEquals(ExecuteNonQuery(sqlrcom), 0);
-            sqlrcom.CommandText = "insert into testtable1 values ('hello', :var1)";
+            sqlrcom.CommandText =
+                "insert into testtable1 " +
+                "values (" +
+                "	'hello', " +
+                "	:var1)";
             SQLRelayParameter var1 = new SQLRelayParameter();
             var1.ParameterName = "var1";
             var1.Value = System.Text.Encoding.Default.GetBytes("hello");
@@ -682,7 +796,15 @@ namespace SQLRClientTest
             sqlrcom.Parameters.Add(var1);
             assertEquals(ExecuteNonQuery(sqlrcom), 1);
             sqlrcom.Parameters.Clear();
-            sqlrcom.CommandText = "begin select testclob into :clobvar from testtable1; select testblob into :blobvar from testtable1; end;";
+            sqlrcom.CommandText =
+                "begin " +
+                "	select testclob " +
+                "		into :clobvar " +
+                "		from testtable1; " +
+                "	select testblob " +
+                "		into :blobvar " +
+                "		from testtable1; " +
+                "end;";
             SQLRelayParameter clobvar = new SQLRelayParameter();
             clobvar.Direction = ParameterDirection.Output;
             clobvar.ParameterName = "clobvar";
@@ -706,9 +828,20 @@ namespace SQLRClientTest
 
             // null and empty clobs and blobs
             Console.WriteLine("NULL AND EMPTY CLOBS AND BLOBS:");
-            sqlrcom.CommandText = "create table testtable1 (testclob1 clob, testclob2 clob, testblob1 blob, testblob2 blob)";
+            sqlrcom.CommandText =
+                "create table testtable1 (" +
+                "	testclob1 clob, " +
+                "	testclob2 clob, " +
+                "	testblob1 blob, " +
+                "	testblob2 blob)";
             assertEquals(ExecuteNonQuery(sqlrcom), 0);
-            sqlrcom.CommandText = "insert into testtable1 values (:testclob1, :testclob2, :testblob1, :testblob2)";
+            sqlrcom.CommandText =
+                "insert into testtable1 " +
+                "values (" +
+                "	:testclob1, " +
+                "	:testclob2, " +
+                "	:testblob1, " +
+                "	:testblob2)";
             SQLRelayParameter testclob1 = new SQLRelayParameter();
             testclob1.ParameterName = "testclob1";
             testclob1.SQLRelayType = SQLRelayType.Clob;

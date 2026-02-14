@@ -16,14 +16,25 @@ namespace SQLRClientTest
     {
         public static void Main(String[] args)
         {
-            SQLRelayConnection sqlrcon = new SQLRelayConnection("Data Source=sqlrelay:9000:/tmp/test.socket;User ID=testuser;Password=testpassword;Retry Time=0;Tries=1;Debug=false");
+            SQLRelayConnection sqlrcon =
+                new SQLRelayConnection(
+                "Data Source=sqlrelay:" +
+                "9000:/tmp/test.socket;" +
+                "User ID=testuser;" +
+                "Password=testpassword;" +
+                "Retry Time=0;" +
+                "Tries=1;" +
+                "Debug=false");
             sqlrcon.Open();
             SQLRelayCommand sqlrcom = (SQLRelayCommand)sqlrcon.CreateCommand();
 
 
             // unicode
             Console.WriteLine("UNICODE:");
-            sqlrcom.CommandText = "select unistr('abc\\00e5\\00f1\\00f6') from dual";
+            sqlrcom.CommandText =
+                "select " +
+                "unistr('abc\\00e5\\00f1\\00f6') " +
+                "from dual";
             System.Data.IDataReader datareader = ExecuteReader(sqlrcom);
             assertTrue(datareader != null);
             assertTrue(datareader.Read());

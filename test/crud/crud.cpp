@@ -153,6 +153,8 @@ int main(int argc, char **argv) {
 
 
 	// update
+
+
 	// replace each field with a null, one by one
 	stdoutput.printf("UPDATE: \n");
 	criteria.clear();

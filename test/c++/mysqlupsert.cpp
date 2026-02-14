@@ -19,6 +19,7 @@ sqlrcursor	*secondcur;
 
 int main(int argc, char **argv) {
 
+
 	// upsert
 	stdoutput.printf("UPSERT:\n");
 	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",

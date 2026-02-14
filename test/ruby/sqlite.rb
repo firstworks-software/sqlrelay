@@ -55,7 +55,12 @@ con.commit()
 # create temptable
 print "CREATE TEMPTABLE: \n"
 cur.sendQuery("begin")
-assertTrue(cur.sendQuery("create table testtable (testint int, testfloat float, testchar char(40), testvarchar varchar(40))"))
+assertTrue(cur.sendQuery(
+	"create table testtable ("+
+	"	testint int, "+
+	"	testfloat float, "+
+	"	testchar char(40), "+
+	"	testvarchar varchar(40))"))
 con.commit()
 print "\n"
 
@@ -63,10 +68,38 @@ print "\n"
 # insert
 print "INSERT: \n"
 cur.sendQuery("begin")
-assertTrue(cur.sendQuery("insert into testtable values (1,1.1,'testchar1','testvarchar1')"))
-assertTrue(cur.sendQuery("insert into testtable values (2,2.2,'testchar2','testvarchar2')"))
-assertTrue(cur.sendQuery("insert into testtable values (3,3.3,'testchar3','testvarchar3')"))
-assertTrue(cur.sendQuery("insert into testtable values (4,4.4,'testchar4','testvarchar4')"))
+assertTrue(cur.sendQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	1, "+
+	"	1.1, "+
+	"	'testchar1', "+
+	"	'testvarchar1')"))
+assertTrue(cur.sendQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	2, "+
+	"	2.2, "+
+	"	'testchar2', "+
+	"	'testvarchar2')"))
+assertTrue(cur.sendQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	3, "+
+	"	3.3, "+
+	"	'testchar3', "+
+	"	'testvarchar3')"))
+assertTrue(cur.sendQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	4, "+
+	"	4.4, "+
+	"	'testchar4', "+
+	"	'testvarchar4')"))
 print "\n"
 
 
@@ -315,7 +348,11 @@ print "\n"
 # individual substitutions
 print "INDIVIDUAL SUBSTITUTIONS: \n"
 cur.sendQuery("drop table testtable1")
-assertTrue(cur.sendQuery("create table testtable1 (col1 int, col2 char, col3 float)"))
+assertTrue(cur.sendQuery(
+	"create table testtable1 ("+
+	"	col1 int, "+
+	"	col2 char, "+
+	"	col3 float)"))
 cur.prepareQuery("insert into testtable1 values ($(var1),'$(var2)',$(var3))")
 cur.substitution("var1",1)
 cur.substitution("var2","hello")
@@ -559,7 +596,8 @@ print "\n"
 
 
 # from one cache file to another with result set buffer size
-print "FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: \n"
+print "FROM ONE CACHE FILE TO ANOTHER "+
+	"WITH RESULT SET BUFFER SIZE: \n"
 cur.setResultSetBufferSize(2)
 cur.cacheToFile("cachefile2")
 assertTrue(cur.openCachedResultSet("cachefile1"))
@@ -572,7 +610,8 @@ print "\n"
 
 
 # cached result set with suspend and result set buffer size
-print "CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: \n"
+print "CACHED RESULT SET WITH SUSPEND "+
+	"AND RESULT SET BUFFER SIZE: \n"
 cur.setResultSetBufferSize(2)
 cur.cacheToFile("cachefile1")
 cur.setCacheTtl(200)
@@ -621,7 +660,14 @@ assertEqual(secondcur.getField(0,0),"0")
 assertTrue(con.commit())
 assertTrue(secondcur.sendQuery("select count(*) from testtable"))
 assertEqual(secondcur.getField(0,0),"8")
-assertTrue(cur.sendQuery("insert into testtable values (10,10.1,'testchar10','testvarchar10')"))
+assertTrue(cur.sendQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	10, "+
+	"	10.1, "+
+	"	'testchar10', "+
+	"	'testvarchar10')"))
 assertTrue(secondcur.sendQuery("select count(*) from testtable"))
 assertEqual(secondcur.getField(0,0),"9")
 print "\n"
@@ -649,8 +695,6 @@ print "\n"
 
 # drop existing table
 cur.sendQuery("drop table testtable")
-
-# invalid queries...
 
 
 # invalid queries

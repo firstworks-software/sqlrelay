@@ -24,6 +24,7 @@ SQLHSTMT	stmt;
 
 int main(int argc, char **argv) {
 
+
 	// env handle
 	stdoutput.printf("ENV HANDLE: \n");
 	#if (ODBCVER >= 0x3000)
@@ -160,7 +161,13 @@ int main(int argc, char **argv) {
 
 	// create temptable
 	stdoutput.printf("CREATE TEMPTABLE: \n");
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"create table testtable (testnumber number, testchar char(40), testvarchar varchar2(40), testdate date)",SQL_NTS);
+	erg=SQLExecDirect(stmt,
+		(SQLCHAR *)"create table testtable ("
+		"	testnumber number, "
+		"	testchar char(40), "
+		"	testvarchar varchar2(40), "
+		"	testdate date)",
+		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
@@ -176,7 +183,11 @@ int main(int argc, char **argv) {
 
 	// insert
 	stdoutput.printf("INSERT: \n");
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"insert into testtable values (1,'testchar1','testvarchar1','01-JAN-2001')",SQL_NTS);
+	erg=SQLExecDirect(stmt,
+		(SQLCHAR *)"insert into testtable "
+		"values (1,'testchar1',"
+		"'testvarchar1','01-JAN-2001')",
+		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
@@ -197,7 +208,10 @@ int main(int argc, char **argv) {
 	// bind by position
 	stdoutput.printf("BIND BY POSITION: \n");
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
-	erg=SQLPrepare(stmt,(SQLCHAR *)"insert into testtable values (:1,:2,:3,:4)",SQL_NTS);
+	erg=SQLPrepare(stmt,
+		(SQLCHAR *)"insert into testtable "
+		"values (:1,:2,:3,:4)",
+		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	SQLSMALLINT	bindvarcount;
 	erg=SQLNumParams(stmt,&bindvarcount);
@@ -442,7 +456,14 @@ int main(int argc, char **argv) {
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
 	erg=SQLFreeStmt(stmt,SQL_RESET_PARAMS);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"select * from testtable order by testnumber",SQL_NTS);
+	erg=SQLExecDirect(stmt,
+		(SQLCHAR *)"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testnumber",
+		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
@@ -544,11 +565,18 @@ int main(int argc, char **argv) {
 	stdoutput.printf("ROLLBACK: \n");
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"insert into testtable values (9,'testchar9','testvarchar9','01-JAN-2009')",SQL_NTS);
+	erg=SQLExecDirect(stmt,
+		(SQLCHAR *)"insert into testtable "
+		"values (9,'testchar9',"
+		"'testvarchar9','01-JAN-2009')",
+		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_ROLLBACK);
 	assertSuccessDbc(dbc,erg);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"select count(*) from testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,
+		(SQLCHAR *)"select count(*) "
+		"from testtable",
+		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	SQLINTEGER	rowcount;
 	SQLLEN		rowcountind;
@@ -567,9 +595,16 @@ int main(int argc, char **argv) {
 	assertSuccessDbc(dbc,erg);
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"insert into testtable values (9,'testchar9','testvarchar9','01-JAN-2009')",SQL_NTS);
+	erg=SQLExecDirect(stmt,
+		(SQLCHAR *)"insert into testtable "
+		"values (9,'testchar9',"
+		"'testvarchar9','01-JAN-2009')",
+		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"select count(*) from testtable",SQL_NTS);
+	erg=SQLExecDirect(stmt,
+		(SQLCHAR *)"select count(*) "
+		"from testtable",
+		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	erg=SQLBindCol(stmt,1,SQL_C_SLONG,&rowcount,sizeof(rowcount),&rowcountind);
 	erg=SQLFetch(stmt);
@@ -585,7 +620,10 @@ int main(int argc, char **argv) {
 	stdoutput.printf("NULL VALUES: \n");
 	erg=SQLFreeStmt(stmt,SQL_CLOSE);
 	erg=SQLFreeStmt(stmt,SQL_UNBIND);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"select NULL,1,NULL from dual",SQL_NTS);
+	erg=SQLExecDirect(stmt,
+		(SQLCHAR *)"select NULL,1,NULL "
+		"from dual",
+		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	SQLCHAR		nullfield1[10];
 	SQLLEN		nullind1;
@@ -615,11 +653,28 @@ int main(int argc, char **argv) {
 
 	// invalid queries
 	stdoutput.printf("INVALID QUERIES: \n");
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"select * from testtable order by testnumber",SQL_NTS);
+	erg=SQLExecDirect(stmt,
+		(SQLCHAR *)"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testnumber",
+		SQL_NTS);
 	assertEqualStmt(stmt,(int)erg,(int)SQL_ERROR);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"select * from testtable order by testnumber",SQL_NTS);
+	erg=SQLExecDirect(stmt,
+		(SQLCHAR *)"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testnumber",
+		SQL_NTS);
 	assertEqualStmt(stmt,(int)erg,(int)SQL_ERROR);
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"insert into testtable values (1,2,3,4)",SQL_NTS);
+	erg=SQLExecDirect(stmt,
+		(SQLCHAR *)"insert into testtable "
+		"values (1,2,3,4)",
+		SQL_NTS);
 	assertEqualStmt(stmt,(int)erg,(int)SQL_ERROR);
 	erg=SQLExecDirect(stmt,(SQLCHAR *)"create table testtable",SQL_NTS);
 	assertEqualStmt(stmt,(int)erg,(int)SQL_ERROR);

@@ -40,6 +40,7 @@ int main(int argc, char **argv) {
 
 	con->setClientInfo("extensionstest");
 
+
 	// ignore select database
 	stdoutput.printf("IGNORE SELECT DATABASE: \n");
 	char	*originaldb=charstring::duplicate(con->getCurrentDatabase());
@@ -52,7 +53,13 @@ int main(int argc, char **argv) {
 
 	// translate bind variables
 	stdoutput.printf("TRANSLATE BIND VARIABLES: \n");
-	cur->prepareQuery("select :1 from dual where 'hel''lo'='hel''lo' and 1=:2 and 2=:3");
+	cur->prepareQuery(
+		"select "
+		"	:1 "
+		"from "
+		"	dual "
+		"where "
+		"	'hel''lo'='hel''lo' and 1=:2 and 2=:3 ");
 	cur->validateBinds();
 	cur->inputBind("1","hello");
 	cur->inputBind("2",1);
@@ -67,7 +74,13 @@ int main(int argc, char **argv) {
 	cur->clearBinds();
 	stdoutput.printf("\n");
 
-	cur->prepareQuery("select @1 from dual where 'hel''lo'='hel''lo' and 1=@2 and 2=@3");
+	cur->prepareQuery(
+		"select "
+		"	@1 "
+		"from "
+		"	dual "
+		"where "
+		"	'hel''lo'='hel''lo' and 1=@2 and 2=@3 ");
 	cur->validateBinds();
 	cur->inputBind("1","hello");
 	cur->inputBind("2",1);
@@ -82,7 +95,13 @@ int main(int argc, char **argv) {
 	cur->clearBinds();
 	stdoutput.printf("\n");
 
-	cur->prepareQuery("select $1 from dual where 'hel''lo'='hel''lo' and 1=$2 and 2=$3");
+	cur->prepareQuery(
+		"select "
+		"	$1 "
+		"from "
+		"	dual "
+		"where "
+		"	'hel''lo'='hel''lo' and 1=$2 and 2=$3 ");
 	cur->validateBinds();
 	cur->inputBind("1","hello");
 	cur->inputBind("2",1);
@@ -97,7 +116,13 @@ int main(int argc, char **argv) {
 	cur->clearBinds();
 	stdoutput.printf("\n");
 
-	cur->prepareQuery("select ? from dual where 'hel''lo'='hel''lo' and 1=? and 2=?");
+	cur->prepareQuery(
+		"select "
+		"	? "
+		"from "
+		"	dual "
+		"where "
+		"	'hel''lo'='hel''lo' and 1=? and 2=? ");
 	cur->validateBinds();
 	cur->inputBind("1","hello");
 	cur->inputBind("2",1);
@@ -115,7 +140,18 @@ int main(int argc, char **argv) {
 
 	// fake input bind variables
 	stdoutput.printf("FAKE INPUT BIND VARIABLES: \n");
-	cur->prepareQuery("select '',1,'',:hello,'''','\\'' from dual where 1=:one");
+	cur->prepareQuery(
+		"select "
+		"	'', "
+		"	1, "
+		"	'', "
+		"	:hello, "
+		"	'''', "
+		"	'\\'' "
+		"from "
+		"	dual "
+		"where "
+		"	1=:one ");
 	cur->inputBind("hello","hello");
 	cur->inputBind("one","1");
 	cur->inputBind("nonexistentvar","nonexistentval");
@@ -146,7 +182,9 @@ int main(int argc, char **argv) {
 	assertTrue(secondcon->autoCommitOff());
 
 	// change the isolation level
-	assertTrue(secondcur->sendQuery("alter session set isolation_level=serializable"));
+	assertTrue(secondcur->sendQuery(
+		"alter session "
+		"	set isolation_level=serializable"));
 	stdoutput.printf("\n");
 
 	// in the second connection, select from the table, it should be empty

@@ -15,25 +15,28 @@ sqlrcursor	*secondcur;
 
 int main(int argc, char **argv) {
 
-	const char	*isolationlevels[]={"read committed","read uncommitted","repeatable read","serializable",NULL};
-	const char	*subvars[4]={"var1","var2","var3",NULL};
-	const char	*subvalstrings[3]={"hi","hello","bye"};
-	int64_t		subvallongs[3]={1,2,3};
-	double		subvaldoubles[3]={10.55,10.556,10.5556};
-	uint32_t	precs[3]={4,5,6};
-	uint32_t	scales[3]={2,3,4};
+	const char	*isolationlevels[]={
+				"read committed","read uncommitted",
+				"repeatable read","serializable",NULL};
 	const char * const *cols;
 	const char * const *fields;
+	uint32_t	*fieldlens;
+	const char	*subvars[]={"var1","var2","var3",NULL};
+	int64_t		subvallongs[]={1,2,3};
+	const char	*subvalstrings[]={"hi","hello","bye"};
+	double		subvaldoubles[]={10.55,10.556,10.5556};
+	uint32_t	precs[]={4,5,6};
+	uint32_t	scales[]={2,3,4};
 	uint16_t	port;
 	char		*socket;
 	uint16_t	id;
 	char		*filename;
-	uint32_t	*fieldlens;
 
 	// instantiation
 	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
+
 
 	// identify
 	stdoutput.printf("IDENTIFY: \n");
@@ -81,7 +84,19 @@ int main(int argc, char **argv) {
 
 	// create temptable
 	stdoutput.printf("CREATE TEMPTABLE: \n");
-	assertTrue(cur->sendQuery("create table testtable (testint int, testfloat float, testreal real, testsmallint smallint, testchar char(40), testvarchar varchar(40), testdate date, testtime time, testtimestamp timestamp, testtext text, testbytea bytea)"));
+	assertTrue(cur->sendQuery(
+		"create table testtable ("
+		"	testint int, "
+		"	testfloat float, "
+		"	testreal real, "
+		"	testsmallint smallint, "
+		"	testchar char(40), "
+		"	testvarchar varchar(40), "
+		"	testdate date, "
+		"	testtime time, "
+		"	testtimestamp timestamp, "
+		"	testtext text, "
+		"	testbytea bytea)"));
 	stdoutput.printf("\n");
 
 
@@ -93,10 +108,66 @@ int main(int argc, char **argv) {
 
 	// insert
 	stdoutput.printf("INSERT: \n");
-	assertTrue(cur->sendQuery("insert into testtable values (1,1.1,1.1,1,'testchar1','testvarchar1','01/01/2001','01:00:00',NULL,'testtext1','testbytea1')"));
-	assertTrue(cur->sendQuery("insert into testtable values (2,2.2,2.2,2,'testchar2','testvarchar2','01/01/2002','02:00:00',NULL,'testtext2','testbytea2')"));
-	assertTrue(cur->sendQuery("insert into testtable values (3,3.3,3.3,3,'testchar3','testvarchar3','01/01/2003','03:00:00',NULL,'testtext3','testbytea3')"));
-	assertTrue(cur->sendQuery("insert into testtable values (4,4.4,4.4,4,'testchar4','testvarchar4','01/01/2004','04:00:00',NULL,'testtext4','testbytea4')"));
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	1, "
+		"	1.1, "
+		"	1.1, "
+		"	1, "
+		"	'testchar1', "
+		"	'testvarchar1', "
+		"	'01/01/2001', "
+		"	'01:00:00', "
+		"	NULL, "
+		"	'testtext1', "
+		"	'testbytea1')"));
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	2, "
+		"	2.2, "
+		"	2.2, "
+		"	2, "
+		"	'testchar2', "
+		"	'testvarchar2', "
+		"	'01/01/2002', "
+		"	'02:00:00', "
+		"	NULL, "
+		"	'testtext2', "
+		"	'testbytea2')"));
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	3, "
+		"	3.3, "
+		"	3.3, "
+		"	3, "
+		"	'testchar3', "
+		"	'testvarchar3', "
+		"	'01/01/2003', "
+		"	'03:00:00', "
+		"	NULL, "
+		"	'testtext3', "
+		"	'testbytea3')"));
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	4, "
+		"	4.4, "
+		"	4.4, "
+		"	4, "
+		"	'testchar4', "
+		"	'testvarchar4', "
+		"	'01/01/2004', "
+		"	'04:00:00', "
+		"	NULL, "
+		"	'testtext4', "
+		"	'testbytea4')"));
 	stdoutput.printf("\n");
 
 
@@ -108,7 +179,21 @@ int main(int argc, char **argv) {
 
 	// bind by position
 	stdoutput.printf("BIND BY POSITION: \n");
-	cur->prepareQuery("insert into testtable values ($1,$2,$3,$4,$5,$6,$7,$8,NULL,$9,$10)");
+	cur->prepareQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	$1, "
+		"	$2, "
+		"	$3, "
+		"	$4, "
+		"	$5, "
+		"	$6, "
+		"	$7, "
+		"	$8, "
+		"	NULL, "
+		"	$9, "
+		"	$10)");
 	assertEquals(cur->countBindVariables(),10);
 	cur->inputBind("1",5);
 	cur->inputBind("2",5.5,4,2);
@@ -468,12 +553,14 @@ int main(int argc, char **argv) {
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
 
+
 	// fields
 	stdoutput.printf("FIELDS: \n");
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	assertEquals(cur->getField(0,1),"2");
 	assertEquals(cur->getField(0,2),"3");
 	stdoutput.printf("\n");
+
 
 	// array substitutions
 	stdoutput.printf("ARRAY SUBSTITUTIONS: \n");
@@ -724,7 +811,8 @@ int main(int argc, char **argv) {
 
 
 	// from one cache file to another with result set buffer size
-	stdoutput.printf("FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: \n");
+	stdoutput.printf("FROM ONE CACHE FILE TO ANOTHER "
+				"WITH RESULT SET BUFFER SIZE: \n");
 	cur->setResultSetBufferSize(2);
 	cur->cacheToFile("cachefile2");
 	assertTrue(cur->openCachedResultSet("cachefile1"));
@@ -737,7 +825,8 @@ int main(int argc, char **argv) {
 
 
 	// cached result set with suspend and result set buffer size
-	stdoutput.printf("CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: \n");
+	stdoutput.printf("CACHED RESULT SET WITH SUSPEND "
+				"AND RESULT SET BUFFER SIZE: \n");
 	cur->setResultSetBufferSize(2);
 	cur->cacheToFile("cachefile1");
 	cur->setCacheTtl(200);
@@ -788,7 +877,19 @@ int main(int argc, char **argv) {
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
 	assertEquals(secondcur->getField(0,(uint32_t)0),"8");
 	//assertEquals(con->autoCommitOn(),1);
-	assertTrue(cur->sendQuery("insert into testtable values (10,10.1,10.1,10,'testchar10','testvarchar10','01/01/2010','10:00:00',NULL)"));
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	10, "
+		"	10.1, "
+		"	10.1, "
+		"	10, "
+		"	'testchar10', "
+		"	'testvarchar10', "
+		"	'01/01/2010', "
+		"	'10:00:00', "
+		"	NULL)"));
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
 	assertEquals(secondcur->getField(0,(uint32_t)0),"9");
 	//assertEquals(con->autoCommitOff(),1);
@@ -838,7 +939,19 @@ int main(int argc, char **argv) {
 	stdoutput.printf("STORED PROCEDURES: \n");
 	// return no values
 	cur->sendQuery("drop function testfunc(int,float,char(20))");
-	assertTrue(cur->sendQuery("create function testfunc(int,float,char(20)) returns void as ' declare in1 int; in2 float; in3 char(20); begin in1:=$1; in2:=$2; in3:=$3; return; end;' language plpgsql"));
+	assertTrue(cur->sendQuery(
+		"create function testfunc("
+		"	int,float,char(20)) "
+		"returns void as ' "
+		"	declare in1 int; "
+		"	in2 float; "
+		"	in3 char(20); "
+		"begin "
+		"	in1:=$1; "
+		"	in2:=$2; "
+		"	in3:=$3; "
+		"	return; "
+		"end;' language plpgsql"));
 	cur->prepareQuery("select testfunc($1,$2,$3)");
 	cur->inputBind("1",1);
 	cur->inputBind("2",1.1,4,2);
@@ -848,7 +961,9 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 	// return single value
 	cur->sendQuery("drop function testfunc(int,float,char(20))");
-	assertTrue(cur->sendQuery("create function testfunc(int,float,char(20)) returns int as ' begin return $1; end;' language plpgsql"));
+	assertTrue(cur->sendQuery(
+		"create function testfunc(int,float,char(20)) returns int as "
+		"	' begin return $1; end;' language plpgsql"));
 	cur->prepareQuery("select * from testfunc($1,$2,$3)");
 	cur->inputBind("1",1);
 	cur->inputBind("2",1.1,4,2);
@@ -859,8 +974,23 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 	// return multiple values
 	cur->sendQuery("drop function testfunc(int,char(20))");
-	assertTrue(cur->sendQuery("create function testfunc(int,float,char(20)) returns record as ' declare output record; begin select $1,$2,$3 into output; return output; end;' language plpgsql"));
-	cur->prepareQuery("select * from testfunc($1,$2,$3) as (col1 int, col2 float, col3 bpchar)");
+	assertTrue(cur->sendQuery(
+		"create function testfunc("
+		"	int,float,char(20)) "
+		"returns record as ' "
+		"	declare output record; "
+		"begin "
+		"	select $1,$2,$3 into output; "
+		"	return output; "
+		"end;' language plpgsql"));
+	cur->prepareQuery(
+		"select "
+		"	* "
+		"from "
+		"	testfunc($1,$2,$3) "
+		"	as (col1 int, "
+		"		col2 float, "
+		"		col3 bpchar) ");
 	cur->inputBind("1",1);
 	cur->inputBind("2",1.1,4,2);
 	cur->inputBind("3","hello");
@@ -872,8 +1002,34 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 	// return result set
 	cur->sendQuery("drop function testfunc()");
-	assertTrue(cur->sendQuery("create function testfunc() returns setof record as ' declare output record; begin for output in select * from testtable loop return next output; end loop; return; end;' language plpgsql"));
-	assertTrue(cur->sendQuery("select * from testfunc() as (testint int, testfloat float, testreal real, testsmallint smallint, testchar char(40), testvarchar varchar(40), testdate date, testtime time, testtimestamp timestamp, testtext text, testbytea bytea)"));
+	assertTrue(cur->sendQuery(
+		"create function testfunc() "
+		"returns setof record as ' "
+		"	declare output record; "
+		"begin "
+		"	for output in "
+		"		select * from testtable "
+		"	loop "
+		"		return next output; "
+		"	end loop; "
+		"	return; "
+		"end;' language plpgsql"));
+	assertTrue(cur->sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testfunc() "
+		"	as (testint int, "
+		"		testfloat float, "
+		"		testreal real, "
+		"		testsmallint smallint, "
+		"		testchar char(40), "
+		"		testvarchar varchar(40), "
+		"		testdate date, "
+		"		testtime time, "
+		"		testtimestamp timestamp, "
+		"		testtext text, "
+		"		testbytea bytea) "));
 	assertEquals(cur->getField(4,(uint32_t)0),"5");
 	assertEquals(cur->getField(5,(uint32_t)0),"6");
 	assertEquals(cur->getField(6,(uint32_t)0),"7");
@@ -888,7 +1044,10 @@ int main(int argc, char **argv) {
 	// column list - auto_increment, primary key
 	stdoutput.printf("COLUMN LIST - auto_increment, primary key: \n");
 	cur->sendQuery("drop table if exists testtable");
-	assertTrue(cur->sendQuery("create table testtable (col1 serial primary key, col2 int)"));
+	assertTrue(cur->sendQuery(
+		"create table testtable ("
+		"	col1 serial primary key, "
+		"	col2 int)"));
 	assertTrue(cur->getColumnList("testtable",NULL));
 	assertTrue(charstring::containsIgnoringCase(
 			cur->getField(0,"extra"),"auto_increment"));
@@ -900,7 +1059,10 @@ int main(int argc, char **argv) {
 			cur->getField(1,"column_key"),"PRI"));
 	stdoutput.printf("\n");
 	assertTrue(cur->sendQuery("drop table testtable"));
-	assertTrue(cur->sendQuery("create table testtable (col1 int primary key, col2 int)"));
+	assertTrue(cur->sendQuery(
+		"create table testtable ("
+		"	col1 int primary key, "
+		"	col2 int)"));
 	assertTrue(cur->getColumnList("testtable",NULL));
 	assertFalse(charstring::containsIgnoringCase(
 			cur->getField(0,"extra"),"auto_increment"));

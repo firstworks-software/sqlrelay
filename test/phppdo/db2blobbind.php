@@ -16,7 +16,10 @@
 	}
 
 	$dbh->exec("drop table testtable");
-	$dbh->exec("create table testtable (teststring varchar(200), testblob blob)");
+	$dbh->exec(
+		"create table testtable (".
+		"	teststring varchar(200), ".
+		"	testblob blob)");
 
 	$value="data from string";
 

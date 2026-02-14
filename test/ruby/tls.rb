@@ -43,13 +43,31 @@ cur.sendQuery("drop table testtable")
 
 # create temptable
 print "CREATE TEMPTABLE: \n"
-assertTrue(cur.sendQuery("create table testtable (testnumber number, testchar char(40), testvarchar varchar2(40), testdate date, testlong long, testclob clob, testblob blob)"))
+assertTrue(cur.sendQuery(
+	"create table testtable ("+
+	"	testnumber number, "+
+	"	testchar char(40), "+
+	"	testvarchar varchar2(40), "+
+	"	testdate date, "+
+	"	testlong long, "+
+	"	testclob clob, "+
+	"	testblob blob)"))
 print "\n"
 
 
 # insert
 print "INSERT: \n"
-assertTrue(cur.sendQuery("insert into testtable values (1,'testchar1','testvarchar1','01-JAN-2001','testlong1','testclob1',empty_blob())"))
+assertTrue(cur.sendQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	1, "+
+	"	'testchar1', "+
+	"	'testvarchar1', "+
+	"	'01-JAN-2001', "+
+	"	'testlong1', "+
+	"	'testclob1', "+
+	"	empty_blob())"))
 print "\n"
 
 
@@ -61,7 +79,17 @@ print "\n"
 
 # bind by position
 print "BIND BY POSITION: \n"
-cur.prepareQuery("insert into testtable values (:var1,:var2,:var3,:var4,:var5,:var6,:var7)")
+cur.prepareQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	:var1, "+
+	"	:var2, "+
+	"	:var3, "+
+	"	:var4, "+
+	"	:var5, "+
+	"	:var6, "+
+	"	:var7)")
 assertEqual(cur.countBindVariables(),7)
 cur.inputBind("1",2)
 cur.inputBind("2","testchar2")
@@ -96,7 +124,17 @@ print "\n"
 
 # bind by name
 print "BIND BY NAME: \n"
-cur.prepareQuery("insert into testtable values (:var1,:var2,:var3,:var4,:var5,:var6,:var7)")
+cur.prepareQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	:var1, "+
+	"	:var2, "+
+	"	:var3, "+
+	"	:var4, "+
+	"	:var5, "+
+	"	:var6, "+
+	"	:var7)")
 cur.inputBind("var1",5)
 cur.inputBind("var2","testchar5")
 cur.inputBind("var3","testvarchar5")
@@ -144,16 +182,16 @@ assertTrue(cur.executeQuery())
 print "\n"
 
 
-# output bind by name
-print "OUTPUT BIND BY NAME: \n"
+# output bind by position
+print "OUTPUT BIND BY POSITION: \n"
 cur.prepareQuery("begin  :numvar:=1; :stringvar:='hello'; :floatvar:=2.5; end;")
-cur.defineOutputBindInteger("numvar")
-cur.defineOutputBindString("stringvar",10)
-cur.defineOutputBindDouble("floatvar")
+cur.defineOutputBindInteger("1")
+cur.defineOutputBindString("2",10)
+cur.defineOutputBindDouble("3")
 assertTrue(cur.executeQuery())
-numvar=cur.getOutputBindInteger("numvar")
-stringvar=cur.getOutputBindString("stringvar")
-floatvar=cur.getOutputBindDouble("floatvar")
+numvar=cur.getOutputBindInteger("1")
+stringvar=cur.getOutputBindString("2")
+floatvar=cur.getOutputBindDouble("3")
 assertEqual(numvar,1)
 assertEqual(stringvar,'hello')
 assertEqual(floatvar,2.5)
@@ -163,13 +201,13 @@ print "\n"
 # output bind by name
 print "OUTPUT BIND BY NAME: \n"
 cur.clearBinds()
-cur.defineOutputBindInteger("1")
-cur.defineOutputBindString("2",10)
-cur.defineOutputBindDouble("3")
+cur.defineOutputBindInteger("numvar")
+cur.defineOutputBindString("stringvar",10)
+cur.defineOutputBindDouble("floatvar")
 assertTrue(cur.executeQuery())
-numvar=cur.getOutputBindInteger("1")
-stringvar=cur.getOutputBindString("2")
-floatvar=cur.getOutputBindDouble("3")
+numvar=cur.getOutputBindInteger("numvar")
+stringvar=cur.getOutputBindString("stringvar")
+floatvar=cur.getOutputBindDouble("floatvar")
 assertEqual(numvar,1)
 assertEqual(stringvar,'hello')
 assertEqual(floatvar,2.5)
@@ -459,15 +497,6 @@ assertEqual(cur.getField(0,2),"10.5556")
 print "\n"
 
 
-# output bind
-print "OUTPUT BIND: \n"
-cur.prepareQuery("begin :var1:='hello'; end;")
-cur.defineOutputBindString("var1",10)
-assertTrue(cur.executeQuery())
-assertEqual(cur.getOutputBindString("var1"),"hello")
-print "\n"
-
-
 # array substitutions
 print "ARRAY SUBSTITUTIONS: \n"
 cur.prepareQuery("select $(var1),'$(var2)',$(var3) from dual")
@@ -696,7 +725,8 @@ print "\n"
 
 
 # from one cache file to another with result set buffer size
-print "FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: \n"
+print "FROM ONE CACHE FILE TO ANOTHER "+
+	"WITH RESULT SET BUFFER SIZE: \n"
 cur.setResultSetBufferSize(2)
 cur.cacheToFile("cachefile2")
 assertTrue(cur.openCachedResultSet("cachefile1"))
@@ -709,7 +739,8 @@ print "\n"
 
 
 # cached result set with suspend and result set buffer size
-print "CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: \n"
+print "CACHED RESULT SET WITH SUSPEND "+
+	"AND RESULT SET BUFFER SIZE: \n"
 cur.setResultSetBufferSize(2)
 cur.cacheToFile("cachefile1")
 cur.setCacheTtl(200)
@@ -760,7 +791,17 @@ assertTrue(con.commit())
 assertTrue(secondcur.sendQuery("select count(*) from testtable"))
 assertEqual(secondcur.getField(0,0),"8")
 assertTrue(con.autoCommitOn())
-assertTrue(cur.sendQuery("insert into testtable values (10,'testchar10','testvarchar10','01-JAN-2010','testlong10','testclob10',empty_blob())"))
+assertTrue(cur.sendQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	10, "+
+	"	'testchar10', "+
+	"	'testvarchar10', "+
+	"	'01-JAN-2010', "+
+	"	'testlong10', "+
+	"	'testclob10', "+
+	"	empty_blob())"))
 assertTrue(secondcur.sendQuery("select count(*) from testtable"))
 assertEqual(secondcur.getField(0,0),"9")
 assertTrue(con.autoCommitOff())
@@ -770,11 +811,18 @@ print "\n"
 # clob and blob output bind
 print "CLOB AND BLOB OUTPUT BIND: \n"
 cur.sendQuery("drop table testtable1")
-assertTrue(cur.sendQuery("create table testtable1 (testclob clob, testblob blob)"))
+assertTrue(cur.sendQuery(
+	"create table testtable1 ("+
+	"	testclob clob, "+
+	"	testblob blob)"))
 cur.prepareQuery("insert into testtable1 values ('hello',:var1)")
 cur.inputBindBlob("var1","hello",5)
 assertTrue(cur.executeQuery())
-cur.prepareQuery("begin select testclob into :clobvar from testtable1;  select testblob into :blobvar from testtable1; end;")
+cur.prepareQuery(
+	"begin "+
+	"	select testclob into :clobvar from testtable1; "+
+	"	select testblob into :blobvar from testtable1; "+
+	"end;")
 cur.defineOutputBindClob("clobvar")
 cur.defineOutputBindBlob("blobvar")
 assertTrue(cur.executeQuery())
@@ -793,7 +841,12 @@ print "\n"
 # null and empty clobs and clobs
 print "NULL AND EMPTY CLOBS AND CLOBS: \n"
 cur.getNullsAsNils()
-cur.sendQuery("create table testtable1 (testclob1 clob, testclob2 clob, testblob1 blob, testblob2 blob)")
+cur.sendQuery(
+	"create table testtable1 ("+
+	"	testclob1 clob, "+
+	"	testclob2 clob, "+
+	"	testblob1 blob, "+
+	"	testblob2 blob)")
 cur.prepareQuery("insert into testtable1 values (:var1,:var2,:var3,:var4)")
 cur.inputBindClob("var1","",0)
 cur.inputBindClob("var2",nil,0)
@@ -811,8 +864,23 @@ print "\n"
 
 # cursor binds
 print "CURSOR BINDS: \n"
-assertTrue(cur.sendQuery("create or replace package types as type cursorType is ref cursor; end;"))
-assertTrue(cur.sendQuery("create or replace function sp_testtable return types.cursortype as l_cursor    types.cursorType; begin open l_cursor for select * from testtable; return l_cursor; end;"))
+assertTrue(cur.sendQuery(
+	"create or replace "+
+	"package types "+
+	"as "+
+	"	type cursorType is ref cursor; "+
+	"end;"))
+assertTrue(cur.sendQuery(
+	"create or replace "+
+	"function sp_testtable "+
+	"return types.cursortype "+
+	"as "+
+	"	l_cursor types.cursorType; "+
+	"begin "+
+	"	open l_cursor for "+
+	"		select * from testtable; "+
+	"	return l_cursor; "+
+	"end;"))
 cur.prepareQuery("begin  :curs:=sp_testtable; end;")
 cur.defineOutputBindCursor("curs")
 assertTrue(cur.executeQuery())
@@ -842,7 +910,9 @@ cur.inputBindClob("clobval",clobval,8*1024)
 assertTrue(cur.executeQuery())
 cur.sendQuery("select testclob from testtable2")
 assertEqual(clobval,cur.getField(0,"TESTCLOB"))
-cur.prepareQuery("begin select testclob into :clobbindval from testtable2; end;")
+cur.prepareQuery(
+	"begin select testclob into :clobbindval from testtable2; "+
+	"	end;")
 cur.defineOutputBindClob("clobbindval")
 assertTrue(cur.executeQuery())
 clobbindvar=cur.getOutputBindClob("clobbindval")
@@ -876,7 +946,11 @@ print "\n"
 # bind validation
 print "BIND VALIDATION: \n"
 cur.sendQuery("drop table testtable1")
-cur.sendQuery("create table testtable1 (col1 varchar2(20), col2 varchar2(20), col3 varchar2(20))")
+cur.sendQuery(
+	"create table testtable1 ("+
+	"	col1 varchar2(20), "+
+	"	col2 varchar2(20), "+
+	"	col3 varchar2(20))")
 cur.prepareQuery("insert into testtable1 values ($(var1),$(var2),$(var3))")
 cur.inputBind("var1",1)
 cur.inputBind("var2",2)
@@ -904,8 +978,6 @@ print "\n"
 
 # drop existing table
 cur.sendQuery("drop table testtable")
-
-# invalid queries...
 
 
 # invalid queries

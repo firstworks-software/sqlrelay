@@ -38,7 +38,8 @@ print("\n");
 
 # isolation levels
 print("ISOLATION LEVELS: \n");
-@isolationlevels=("REPEATABLE-READ","READ-UNCOMMITTED","READ-COMMITTED","SERIALIZABLE");
+@isolationlevels=("REPEATABLE-READ","READ-UNCOMMITTED",
+		"READ-COMMITTED","SERIALIZABLE");
 foreach $il (@isolationlevels) {
 	assertTrue($con->setIsolationLevel($il));
 	assertEqualString($con->getIsolationLevel(),$il);
@@ -56,7 +57,27 @@ $cur->sendQuery("drop table testtable");
 
 # create temptable
 print("CREATE TEMPTABLE: \n");
-assertTrue($cur->sendQuery("create table testtable (testtinyint tinyint, testsmallint smallint, testmediumint mediumint, testint int, testbigint bigint, testfloat float, testreal real, testdecimal decimal(2,1), testdate date, testtime time, testdatetime datetime, testyear year, testchar char(40), testtext text, testvarchar varchar(40), testtinytext tinytext, testmediumtext mediumtext, testlongtext longtext, testtimestamp timestamp)"));
+assertTrue($cur->sendQuery(
+	"create table testtable (".
+	"	testtinyint tinyint, ".
+	"	testsmallint smallint, ".
+	"	testmediumint mediumint, ".
+	"	testint int, ".
+	"	testbigint bigint, ".
+	"	testfloat float, ".
+	"	testreal real, ".
+	"	testdecimal decimal(2,1), ".
+	"	testdate date, ".
+	"	testtime time, ".
+	"	testdatetime datetime, ".
+	"	testyear year, ".
+	"	testchar char(40), ".
+	"	testtext text, ".
+	"	testvarchar varchar(40), ".
+	"	testtinytext tinytext, ".
+	"	testmediumtext mediumtext, ".
+	"	testlongtext longtext, ".
+	"	testtimestamp timestamp)"));
 print("\n");
 
 
@@ -68,10 +89,98 @@ print("\n");
 
 # insert
 print("INSERT: \n");
-assertTrue($cur->sendQuery("insert into testtable values (1,1,1,1,1,1.1,1.1,1.1,'2001-01-01','01:00:00','2001-01-01 01:00:00','2001','char1','text1','varchar1','tinytext1','mediumtext1','longtext1',NULL)"));
-assertTrue($cur->sendQuery("insert into testtable values (2,2,2,2,2,2.1,2.1,2.1,'2002-01-01','02:00:00','2002-01-01 02:00:00','2002','char2','text2','varchar2','tinytext2','mediumtext2','longtext2',NULL)"));
-assertTrue($cur->sendQuery("insert into testtable values (3,3,3,3,3,3.1,3.1,3.1,'2003-01-01','03:00:00','2003-01-01 03:00:00','2003','char3','text3','varchar3','tinytext3','mediumtext3','longtext3',NULL)"));
-assertTrue($cur->sendQuery("insert into testtable values (4,4,4,4,4,4.1,4.1,4.1,'2004-01-01','04:00:00','2004-01-01 04:00:00','2004','char4','text4','varchar4','tinytext4','mediumtext4','longtext4',NULL)"));
+assertTrue($cur->sendQuery(
+	"insert into ".
+	"	testtable ".
+	"values (".
+	"	1, ".
+	"	1, ".
+	"	1, ".
+	"	1, ".
+	"	1, ".
+	"	1.1, ".
+	"	1.1, ".
+	"	1.1, ".
+	"	'2001-01-01', ".
+	"	'01:00:00', ".
+	"	'2001-01-01 01:00:00', ".
+	"	'2001', ".
+	"	'char1', ".
+	"	'text1', ".
+	"	'varchar1', ".
+	"	'tinytext1', ".
+	"	'mediumtext1', ".
+	"	'longtext1', ".
+	"	NULL)"));
+assertTrue($cur->sendQuery(
+	"insert into ".
+	"	testtable ".
+	"values (".
+	"	2, ".
+	"	2, ".
+	"	2, ".
+	"	2, ".
+	"	2, ".
+	"	2.1, ".
+	"	2.1, ".
+	"	2.1, ".
+	"	'2002-01-01', ".
+	"	'02:00:00', ".
+	"	'2002-01-01 02:00:00', ".
+	"	'2002', ".
+	"	'char2', ".
+	"	'text2', ".
+	"	'varchar2', ".
+	"	'tinytext2', ".
+	"	'mediumtext2', ".
+	"	'longtext2', ".
+	"	NULL)"));
+assertTrue($cur->sendQuery(
+	"insert into ".
+	"	testtable ".
+	"values (".
+	"	3, ".
+	"	3, ".
+	"	3, ".
+	"	3, ".
+	"	3, ".
+	"	3.1, ".
+	"	3.1, ".
+	"	3.1, ".
+	"	'2003-01-01', ".
+	"	'03:00:00', ".
+	"	'2003-01-01 03:00:00', ".
+	"	'2003', ".
+	"	'char3', ".
+	"	'text3', ".
+	"	'varchar3', ".
+	"	'tinytext3', ".
+	"	'mediumtext3', ".
+	"	'longtext3', ".
+	"	NULL)"));
+assertTrue($cur->sendQuery(
+	"insert into ".
+	"	testtable ".
+	"values (".
+	"	4, ".
+	"	4, ".
+	"	4, ".
+	"	4, ".
+	"	4, ".
+	"	4.1, ".
+	"	4.1, ".
+	"	4.1, ".
+	"	'2004-01-01', ".
+	"	'04:00:00', ".
+	"	'2004-01-01 04:00:00', ".
+	"	'2004', ".
+	"	'char4', ".
+	"	'text4', ".
+	"	'varchar4', ".
+	"	'tinytext4', ".
+	"	'mediumtext4', ".
+	"	'longtext4', ".
+	"	NULL)"));
 print("\n");
 
 
@@ -83,7 +192,29 @@ print("\n");
 
 # bind by position
 print("BIND BY POSITION: \n");
-$cur->prepareQuery("insert into testtable values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL)");
+$cur->prepareQuery(
+	"insert into ".
+	"	testtable ".
+	"values (".
+	"	?, ".
+	"	?, ".
+	"	?, ".
+	"	?, ".
+	"	?, ".
+	"	?, ".
+	"	?, ".
+	"	?, ".
+	"	?, ".
+	"	?, ".
+	"	?, ".
+	"	?, ".
+	"	?, ".
+	"	?, ".
+	"	?, ".
+	"	?, ".
+	"	?, ".
+	"	?, ".
+	"	NULL)");
 assertEqual($cur->countBindVariables(),18);
 $cur->inputBind("1",5);
 $cur->inputBind("2",5);
@@ -134,7 +265,10 @@ $cur->clearBinds();
 		"7","8","9","10","11","12",
 		"13","14","15",
 		"16","17","18");
-@vals=(7,7,7,7,7,7.1,7.1,7.1,'2007-01-01','07:00:00','2007-01-01 07:00:00','2007','char7','text7','varchar7','tinytext7','mediumtext7','longtext7');
+@vals=(7,7,7,7,7,7.1,7.1,7.1,
+	'2007-01-01','07:00:00','2007-01-01 07:00:00',
+	'2007','char7','text7','varchar7',
+	'tinytext7','mediumtext7','longtext7');
 @precs=(0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,0);
 @scales=(0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0);
 $cur->inputBinds(\@vars,\@vals,\@precs,\@scales);
@@ -970,7 +1104,8 @@ print("\n");
 
 
 # from one cache file to another with result set buffer size
-print("FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: \n");
+print("FROM ONE CACHE FILE TO ANOTHER ".
+	"WITH RESULT SET BUFFER SIZE: \n");
 $cur->setResultSetBufferSize(2);
 $cur->cacheToFile("cachefile2");
 assertTrue($cur->openCachedResultSet("cachefile1"));
@@ -983,7 +1118,8 @@ print("\n");
 
 
 # cached result set with suspend and result set buffer size
-print("CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: \n");
+print("CACHED RESULT SET WITH SUSPEND ".
+	"AND RESULT SET BUFFER SIZE: \n");
 $cur->setResultSetBufferSize(2);
 $cur->cacheToFile("cachefile1");
 $cur->setCacheTtl(200);
@@ -1041,7 +1177,29 @@ assertTrue($secondcon->commit());
 assertTrue($secondcur->sendQuery("select count(*) from testtable"));
 assertEqualString($secondcur->getField(0,0),"8");
 assertTrue($con->autoCommitOn());
-assertTrue($cur->sendQuery("insert into testtable values (10,10,10,10,10,10.1,10.1,1.1,'2010-01-01','10:00:00','2010-01-01 10:00:00','2010','char10','text10','varchar10','tinytext10','mediumtext10','longtext10',NULL)"));
+assertTrue($cur->sendQuery(
+	"insert into ".
+	"	testtable ".
+	"values (".
+	"	10, ".
+	"	10, ".
+	"	10, ".
+	"	10, ".
+	"	10, ".
+	"	10.1, ".
+	"	10.1, ".
+	"	1.1, ".
+	"	'2010-01-01', ".
+	"	'10:00:00', ".
+	"	'2010-01-01 10:00:00', ".
+	"	'2010', ".
+	"	'char10', ".
+	"	'text10', ".
+	"	'varchar10', ".
+	"	'tinytext10', ".
+	"	'mediumtext10', ".
+	"	'longtext10', ".
+	"	NULL)"));
 assertTrue($secondcon->commit());
 assertTrue($secondcur->sendQuery("select count(*) from testtable"));
 assertEqualString($secondcur->getField(0,0),"9");
@@ -1072,8 +1230,6 @@ print("\n");
 
 # drop existing table
 $cur->sendQuery("drop table testtable");
-
-# invalid queries...
 
 
 # invalid queries

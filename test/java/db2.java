@@ -6,38 +6,40 @@ import com.firstworks.sqlrelay.SQLRCursor;
 
 
 class db2 extends sqlrtest {
-	
+
 	public static void	main(String[] args) {
 
-		String	dbtype;
 		String[]	isolationlevels={"CS","UR","RS","RR"};
-		String[]	bindvars={"1","2","3","4","5","6","7","8","9","10"};
+		String[]	bindvars={"1","2","3","4","5","6",
+					"7","8","9","10"};
 		String[]	bindvals={"4","4","4","4.4","4.4","4.4",
-				"testchar4","testvarchar4","01/01/2004","04:00:00"};
+					"testchar4","testvarchar4",
+					"01/01/2004","04:00:00"};
+		String[]	cols;
+		String[]	fields;
+		long[]	fieldlens;
 		String[]	subvars={"var1","var2","var3"};
-		String[]	subvalstrings={"hi","hello","bye"};
 		long[]	subvallongs={1,2,3};
+		String[]	subvalstrings={"hi","hello","bye"};
 		double[]	subvaldoubles={10.55,10.556,10.5556};
 		int[]	precs={4,5,6};
 		int[]	scales={2,3,4};
-		String	numvar;
-		String	stringvar;
-		String	floatvar;
-		String[]	cols;
-		String[]	fields;
 		short	port;
 		String	socket;
 		short	id;
 		String	filename;
-		long[]	fieldlens;
-	
+		String	numvar;
+		String	stringvar;
+		String	floatvar;
+		String	dbtype;
+
 		// instantiation
 		SQLRConnection con=new SQLRConnection("sqlrelay",
 						(short)9000,
 						"/tmp/test.socket",
 						"db2inst1","testpassword",0,1);
 		SQLRCursor cur=new SQLRCursor(con);
-	
+
 		// get database type
 
 
@@ -70,19 +72,59 @@ class db2 extends sqlrtest {
 
 		// create temptable
 		System.out.println("CREATE TEMPTABLE: ");
-		assertTrue(cur.sendQuery("create table testtable (testsmallint smallint, testint integer, testbigint bigint, testdecimal decimal(10,2), testreal real, testdouble double, testchar char(40), testvarchar varchar(40), testdate date, testtime time, testtimestamp timestamp)"));
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
+			"	testsmallint smallint, "+
+			"	testint integer, "+
+			"	testbigint bigint, "+
+			"	testdecimal decimal(10,2), "+
+			"	testreal real, "+
+			"	testdouble double, "+
+			"	testchar char(40), "+
+			"	testvarchar varchar(40), "+
+			"	testdate date, "+
+			"	testtime time, "+
+			"	testtimestamp timestamp)"));
 		System.out.println();
 
 
 		// insert
 		System.out.println("INSERT: ");
-		assertTrue(cur.sendQuery("insert into testtable values (1,1,1,1.1,1.1,1.1,'testchar1','testvarchar1','01/01/2001','01:00:00',null)"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1, "+
+			"	1, "+
+			"	1, "+
+			"	1.1, "+
+			"	1.1, "+
+			"	1.1, "+
+			"	'testchar1', "+
+			"	'testvarchar1', "+
+			"	'01/01/2001', "+
+			"	'01:00:00', "+
+			"	null)"));
 		System.out.println();
 
 
 		// bind by position
 		System.out.println("BIND BY POSITION: ");
-		cur.prepareQuery("insert into testtable values (?,?,?,?,?,?,?,?,?,?,null)");
+		cur.prepareQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	null)");
 		assertEquals(cur.countBindVariables(),10);
 		cur.inputBind("1",2);
 		cur.inputBind("2",2);
@@ -120,10 +162,66 @@ class db2 extends sqlrtest {
 
 		// insert
 		System.out.println("INSERT: ");
-		assertTrue(cur.sendQuery("insert into testtable values (5,5,5,5.5,5.5,5.5,'testchar5','testvarchar5','01/01/2005','05:00:00',null)"));
-		assertTrue(cur.sendQuery("insert into testtable values (6,6,6,6.6,6.6,6.6,'testchar6','testvarchar6','01/01/2006','06:00:00',null)"));
-		assertTrue(cur.sendQuery("insert into testtable values (7,7,7,7.7,7.7,7.7,'testchar7','testvarchar7','01/01/2007','07:00:00',null)"));
-		assertTrue(cur.sendQuery("insert into testtable values (8,8,8,8.8,8.8,8.8,'testchar8','testvarchar8','01/01/2008','08:00:00',null)"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	5, "+
+			"	5, "+
+			"	5, "+
+			"	5.5, "+
+			"	5.5, "+
+			"	5.5, "+
+			"	'testchar5', "+
+			"	'testvarchar5', "+
+			"	'01/01/2005', "+
+			"	'05:00:00', "+
+			"	null)"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	6, "+
+			"	6, "+
+			"	6, "+
+			"	6.6, "+
+			"	6.6, "+
+			"	6.6, "+
+			"	'testchar6', "+
+			"	'testvarchar6', "+
+			"	'01/01/2006', "+
+			"	'06:00:00', "+
+			"	null)"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	7, "+
+			"	7, "+
+			"	7, "+
+			"	7.7, "+
+			"	7.7, "+
+			"	7.7, "+
+			"	'testchar7', "+
+			"	'testvarchar7', "+
+			"	'01/01/2007', "+
+			"	'07:00:00', "+
+			"	null)"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	8, "+
+			"	8, "+
+			"	8, "+
+			"	8.8, "+
+			"	8.8, "+
+			"	8.8, "+
+			"	'testchar8', "+
+			"	'testvarchar8', "+
+			"	'01/01/2008', "+
+			"	'08:00:00', "+
+			"	null)"));
 		System.out.println();
 
 
@@ -136,7 +234,14 @@ class db2 extends sqlrtest {
 		// stored procedure
 		System.out.println("STORED PROCEDURE: ");
 		cur.sendQuery("drop procedure testproc");
-		assertTrue(cur.sendQuery("create procedure testproc(in invar int, out outvar int) language sql begin set outvar = invar; end"));
+		assertTrue(cur.sendQuery(
+			"create procedure testproc("+
+			"	in invar int, "+
+			"	out outvar int) "+
+			"language sql "+
+			"begin "+
+			"	set outvar = invar; "+
+			"end"));
 		cur.prepareQuery("call testproc(?,?)");
 		cur.inputBind("1",5);
 		cur.defineOutputBindInteger("2");
@@ -148,7 +253,13 @@ class db2 extends sqlrtest {
 
 		// select
 		System.out.println("SELECT: ");
-		assertTrue(cur.sendQuery("select * from testtable order by testsmallint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testsmallint "));
 		System.out.println();
 
 
@@ -489,12 +600,22 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getField(0,1),"10.556");
 		assertEquals(cur.getField(0,2),"10.5556");
 		System.out.println();
-	
+
 		System.out.println("nullS as Nulls: ");
 		cur.sendQuery("drop table testtable1");
-		cur.sendQuery("create table testtable1 (col1 char(1), col2 char(1), col3 char(1))");
+		cur.sendQuery(
+			"create table testtable1 ("+
+			"	col1 char(1), "+
+			"	col2 char(1), "+
+			"	col3 char(1))");
 		cur.getNullsAsNulls();
-		assertTrue(cur.sendQuery("insert into testtable1 values ('1',null,null)"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable1 "+
+			"values ("+
+			"	'1', "+
+			"	null, "+
+			"	null)"));
 		assertTrue(cur.sendQuery("select * from testtable1"));
 		assertEquals(cur.getField(0,0),"1");
 		assertEquals(cur.getField(0,1),null);
@@ -513,7 +634,13 @@ class db2 extends sqlrtest {
 		System.out.println("RESULT SET BUFFER SIZE: ");
 		assertEquals(cur.getResultSetBufferSize(),0);
 		cur.setResultSetBufferSize(2);
-		assertTrue(cur.sendQuery("select * from testtable order by testsmallint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testsmallint "));
 		assertEquals(cur.getResultSetBufferSize(),2);
 		System.out.println();
 		assertEquals(cur.firstRowIndex(),0);
@@ -543,12 +670,24 @@ class db2 extends sqlrtest {
 		// dont get column info
 		System.out.println("DONT GET COLUMN INFO: ");
 		cur.dontGetColumnInfo();
-		assertTrue(cur.sendQuery("select * from testtable order by testsmallint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testsmallint "));
 		assertEquals(cur.getColumnName(0),null);
 		assertEquals(cur.getColumnLength(0),0);
 		assertEquals(cur.getColumnType(0),null);
 		cur.getColumnInfo();
-		assertTrue(cur.sendQuery("select * from testtable order by testsmallint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testsmallint "));
 		assertEquals(cur.getColumnName(0),"TESTSMALLINT");
 		assertEquals(cur.getColumnLength(0),2);
 		assertEquals(cur.getColumnType(0),"SMALLINT");
@@ -557,7 +696,13 @@ class db2 extends sqlrtest {
 
 		// suspended session
 		System.out.println("SUSPENDED SESSION: ");
-		assertTrue(cur.sendQuery("select * from testtable order by testsmallint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testsmallint "));
 		cur.suspendResultSet();
 		assertTrue(con.suspendSession());
 		port=con.getConnectionPort();
@@ -573,7 +718,13 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getField(6,0),"7");
 		assertEquals(cur.getField(7,0),"8");
 		System.out.println();
-		assertTrue(cur.sendQuery("select * from testtable order by testsmallint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testsmallint "));
 		cur.suspendResultSet();
 		assertTrue(con.suspendSession());
 		port=con.getConnectionPort();
@@ -589,7 +740,13 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getField(6,0),"7");
 		assertEquals(cur.getField(7,0),"8");
 		System.out.println();
-		assertTrue(cur.sendQuery("select * from testtable order by testsmallint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testsmallint "));
 		cur.suspendResultSet();
 		assertTrue(con.suspendSession());
 		port=con.getConnectionPort();
@@ -610,7 +767,13 @@ class db2 extends sqlrtest {
 		// suspended result set
 		System.out.println("SUSPENDED RESULT SET: ");
 		cur.setResultSetBufferSize(2);
-		assertTrue(cur.sendQuery("select * from testtable order by testsmallint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testsmallint "));
 		assertEquals(cur.getField(2,0),"3");
 		id=cur.getResultSetId();
 		cur.suspendResultSet();
@@ -641,7 +804,13 @@ class db2 extends sqlrtest {
 		System.out.println("CACHED RESULT SET: ");
 		cur.cacheToFile("cachefile1");
 		cur.setCacheTtl(200);
-		assertTrue(cur.sendQuery("select * from testtable order by testsmallint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testsmallint "));
 		filename=cur.getCacheFileName();
 		assertEquals(filename,"cachefile1");
 		cur.cacheOff();
@@ -689,7 +858,13 @@ class db2 extends sqlrtest {
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile1");
 		cur.setCacheTtl(200);
-		assertTrue(cur.sendQuery("select * from testtable order by testsmallint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testsmallint "));
 		filename=cur.getCacheFileName();
 		assertEquals(filename,"cachefile1");
 		cur.cacheOff();
@@ -712,7 +887,8 @@ class db2 extends sqlrtest {
 
 
 		// from one cache file to another with result set buffer size
-		System.out.println("FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: ");
+		System.out.println("FROM ONE CACHE FILE TO ANOTHER "+
+					"WITH RESULT SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile2");
 		assertTrue(cur.openCachedResultSet("cachefile1"));
@@ -725,11 +901,18 @@ class db2 extends sqlrtest {
 
 
 		// cached result set with suspend and result set buffer size
-		System.out.println("CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: ");
+		System.out.println("CACHED RESULT SET WITH SUSPEND "+
+					"AND RESULT SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile1");
 		cur.setCacheTtl(200);
-		assertTrue(cur.sendQuery("select * from testtable order by testsmallint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testsmallint "));
 		assertEquals(cur.getField(2,0),"3");
 		filename=cur.getCacheFileName();
 		assertEquals(filename,"cachefile1");
@@ -766,7 +949,13 @@ class db2 extends sqlrtest {
 
 		// finished suspended session
 		System.out.println("FINISHED SUSPENDED SESSION: ");
-		assertTrue(cur.sendQuery("select * from testtable order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		assertEquals(cur.getField(4,0),"5");
 		assertEquals(cur.getField(5,0),"6");
 		assertEquals(cur.getField(6,0),"7");
@@ -783,26 +972,76 @@ class db2 extends sqlrtest {
 		assertEquals(cur.getField(6,0),null);
 		assertEquals(cur.getField(7,0),null);
 		System.out.println();
-	
+
 		// drop existing table
 		con.commit();
 		cur.sendQuery("drop table testtable");
 		System.out.println();
-	
-		// invalid queries...
 
 
 		// invalid queries
 		System.out.println("INVALID QUERIES: ");
-		assertFalse(cur.sendQuery("select * from testtable order by testsmallint"));
-		assertFalse(cur.sendQuery("select * from testtable order by testsmallint"));
-		assertFalse(cur.sendQuery("select * from testtable order by testsmallint"));
-		assertFalse(cur.sendQuery("select * from testtable order by testsmallint"));
+		assertFalse(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testsmallint "));
+		assertFalse(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testsmallint "));
+		assertFalse(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testsmallint "));
+		assertFalse(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testsmallint "));
 		System.out.println();
-		assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1, "+
+			"	2, "+
+			"	3, "+
+			"	4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1, "+
+			"	2, "+
+			"	3, "+
+			"	4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1, "+
+			"	2, "+
+			"	3, "+
+			"	4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1, "+
+			"	2, "+
+			"	3, "+
+			"	4)"));
 		System.out.println();
 		assertFalse(cur.sendQuery("create table testtable"));
 		assertFalse(cur.sendQuery("create table testtable"));

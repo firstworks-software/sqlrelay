@@ -24,6 +24,7 @@ SQLHSTMT	stmt;
 
 int main(int argc, char **argv) {
 
+
 	// env handle
 	stdoutput.printf("ENV HANDLE: \n");
 	#if (ODBCVER >= 0x3000)
@@ -1439,7 +1440,23 @@ int main(int argc, char **argv) {
 
 	// create temptable
 	stdoutput.printf("CREATE TEMPTABLE: \n");
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"create table testtable (testint int, testsmallint smallint, testtinyint tinyint, testreal real, testfloat float, testdecimal decimal(4,1), testnumeric numeric(4,1), testmoney money, testsmallmoney smallmoney, testdatetime datetime, testsmalldatetime smalldatetime, testchar char(40), testvarchar varchar(40), testbit bit)",SQL_NTS);
+	erg=SQLExecDirect(stmt,
+		(SQLCHAR *)"create table testtable ("
+		"	testint int, "
+		"	testsmallint smallint, "
+		"	testtinyint tinyint, "
+		"	testreal real, "
+		"	testfloat float, "
+		"	testdecimal decimal(4,1), "
+		"	testnumeric numeric(4,1), "
+		"	testmoney money, "
+		"	testsmallmoney smallmoney, "
+		"	testdatetime datetime, "
+		"	testsmalldatetime smalldatetime, "
+		"	testchar char(40), "
+		"	testvarchar varchar(40), "
+		"	testbit bit)",
+		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
@@ -1455,7 +1472,14 @@ int main(int argc, char **argv) {
 
 	// insert
 	stdoutput.printf("INSERT: \n");
-	erg=SQLExecDirect(stmt,(SQLCHAR *)"insert into testtable values (1,1,1,1.1,1.1,1.1,1.1,1.00,1.00,'01-Jan-2001 01:00:00','01-Jan-2001 01:00:00','testchar1','testvarchar1',1)",SQL_NTS);
+	erg=SQLExecDirect(stmt,
+		(SQLCHAR *)"insert into testtable "
+		"values (1,1,1,1.1,1.1,1.1,1.1,"
+		"1.00,1.00,"
+		"'01-Jan-2001 01:00:00',"
+		"'01-Jan-2001 01:00:00',"
+		"'testchar1','testvarchar1',1)",
+		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	stdoutput.printf("\n");
 
@@ -1475,7 +1499,10 @@ int main(int argc, char **argv) {
 
 	// bind by position
 	stdoutput.printf("BIND BY POSITION: \n");
-	erg=SQLPrepare(stmt,(SQLCHAR *)"insert into testtable values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",SQL_NTS);
+	erg=SQLPrepare(stmt,
+		(SQLCHAR *)"insert into testtable "
+		"values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+		SQL_NTS);
 	assertSuccessStmt(stmt,erg);
 	SQLSMALLINT	bindvarcount;
 	erg=SQLNumParams(stmt,&bindvarcount);

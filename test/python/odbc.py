@@ -40,20 +40,81 @@ def main():
 
 	# create temptable
 	print("CREATE TEMPTABLE: ")
-	assertTrue(cur.sendQuery("create table testtable (testint int, testchar char(40), testvarchar varchar(40), testdate date)"))
+	assertTrue(cur.sendQuery(
+		"create table testtable ("
+		"	testint int, "
+		"	testchar char(40), "
+		"	testvarchar varchar(40), "
+		"	testdate date)"))
 	print()
 
 
 	# insert
 	print("INSERT: ")
-	assertTrue(cur.sendQuery("insert into testtable values (1,'testchar1','testvarchar1','01-JAN-2001')"))
-	assertTrue(cur.sendQuery("insert into testtable values (2,'testchar2','testvarchar2','02-JAN-2002')"))
-	assertTrue(cur.sendQuery("insert into testtable values (3,'testchar3','testvarchar3','03-JAN-2003')"))
-	assertTrue(cur.sendQuery("insert into testtable values (4,'testchar4','testvarchar4','04-JAN-2004')"))
-	assertTrue(cur.sendQuery("insert into testtable values (5,'testchar5','testvarchar5','05-JAN-2005')"))
-	assertTrue(cur.sendQuery("insert into testtable values (6,'testchar6','testvarchar6','06-JAN-2006')"))
-	assertTrue(cur.sendQuery("insert into testtable values (7,'testchar7','testvarchar7','07-JAN-2007')"))
-	assertTrue(cur.sendQuery("insert into testtable values (8,'testchar8','testvarchar8','08-JAN-2008')"))
+	assertTrue(cur.sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	1, "
+		"	'testchar1', "
+		"	'testvarchar1', "
+		"	'01-JAN-2001')"))
+	assertTrue(cur.sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	2, "
+		"	'testchar2', "
+		"	'testvarchar2', "
+		"	'02-JAN-2002')"))
+	assertTrue(cur.sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	3, "
+		"	'testchar3', "
+		"	'testvarchar3', "
+		"	'03-JAN-2003')"))
+	assertTrue(cur.sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	4, "
+		"	'testchar4', "
+		"	'testvarchar4', "
+		"	'04-JAN-2004')"))
+	assertTrue(cur.sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	5, "
+		"	'testchar5', "
+		"	'testvarchar5', "
+		"	'05-JAN-2005')"))
+	assertTrue(cur.sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	6, "
+		"	'testchar6', "
+		"	'testvarchar6', "
+		"	'06-JAN-2006')"))
+	assertTrue(cur.sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	7, "
+		"	'testchar7', "
+		"	'testvarchar7', "
+		"	'07-JAN-2007')"))
+	assertTrue(cur.sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	8, "
+		"	'testchar8', "
+		"	'testvarchar8', "
+		"	'08-JAN-2008')"))
 	print()
 
 
@@ -79,8 +140,6 @@ def main():
 
 	# drop existing table
 	cur.sendQuery("drop table testtable")
-
-	# invalid queries...
 
 
 	# invalid queries

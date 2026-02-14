@@ -139,16 +139,16 @@ assertTrue [$cur executeQuery]
 puts ""
 
 
-# output bind by name
-puts "OUTPUT BIND BY NAME: "
+# output bind by position
+puts "OUTPUT BIND BY POSITION: "
 $cur prepareQuery "begin  :numvar:=1;  :stringvar:='hello';  :floatvar:=2.5;  end;"
-$cur defineOutputBindInteger "numvar"
-$cur defineOutputBindString "stringvar" 10
-$cur defineOutputBindDouble "floatvar"
+$cur defineOutputBindInteger "1"
+$cur defineOutputBindString "2" 10
+$cur defineOutputBindDouble "3"
 assertTrue [$cur executeQuery]
-set numvar [$cur getOutputBindInteger "numvar"]
-set stringvar [$cur getOutputBindString "stringvar"]
-set floatvar [$cur getOutputBindDouble "floatvar"]
+set numvar [$cur getOutputBindInteger "1"]
+set stringvar [$cur getOutputBindString "2"]
+set floatvar [$cur getOutputBindDouble "3"]
 assertEqual $numvar 1
 assertEqual $stringvar "hello"
 assertEqual $floatvar 2.5
@@ -158,13 +158,13 @@ puts ""
 # output bind by name
 puts "OUTPUT BIND BY NAME: "
 $cur clearBinds 
-$cur defineOutputBindInteger "1"
-$cur defineOutputBindString "2" 10
-$cur defineOutputBindDouble "3"
+$cur defineOutputBindInteger "numvar"
+$cur defineOutputBindString "stringvar" 10
+$cur defineOutputBindDouble "floatvar"
 assertTrue [$cur executeQuery]
-set numvar [$cur getOutputBindInteger "1"]
-set stringvar [$cur getOutputBindString "2"]
-set floatvar [$cur getOutputBindDouble "3"]
+set numvar [$cur getOutputBindInteger "numvar"]
+set stringvar [$cur getOutputBindString "stringvar"]
+set floatvar [$cur getOutputBindDouble "floatvar"]
 assertEqual $numvar 1
 assertEqual $stringvar "hello"
 assertEqual $floatvar 2.5
@@ -407,15 +407,6 @@ puts "FIELDS: "
 assertEqual [$cur getFieldByIndex 0 0] "1"
 assertEqual [$cur getFieldByIndex 0 1] "hello"
 assertEqual [$cur getFieldByIndex 0 2] "10.5556"
-puts ""
-
-
-# output bind
-puts "OUTPUT BIND: "
-$cur prepareQuery "begin  :var1:='hello';  end;"
-$cur defineOutputBindString "var1" 10
-assertTrue [$cur executeQuery]
-assertEqual [$cur getOutputBindString "var1"] "hello"
 puts ""
 
 
@@ -888,8 +879,6 @@ puts ""
 
 # drop existing table
 catch {$cur sendQuery "drop table testtable"}
-
-# invalid queries...
 
 
 # invalid queries

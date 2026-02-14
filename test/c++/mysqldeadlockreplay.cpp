@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
 	fd.close();
 
 	// create the semaphore
-	int32_t	vals[3]={0,0,0};
+	int32_t	vals[]={0,0,0};
 	if (!sem->create(file::generateKey("semkey",1),
 			permissions::parsePermString("rw-------"),
 			3,vals)) {
@@ -136,9 +136,13 @@ int main(int argc, char **argv) {
 		assertTrue(sqlrcur.sendQuery("create table testtable "
 			"(col1 int primary key auto_increment, col2 int, col3 varchar(20), col4 varchar(20))"));
 		assertTrue(sqlrcur.sendQuery(
-			"insert into testtable (col2,col3,col4) values (1,'hello','hello')"));
+			"insert into testtable "
+			"(col2,col3,col4) "
+			"values (1,'hello','hello')"));
 		assertTrue(sqlrcur.sendQuery(
-			"insert into testtable (col2,col3,col4) values (1,'hello','hello')"));
+			"insert into testtable "
+			"(col2,col3,col4) "
+			"values (1,'hello','hello')"));
 		stdoutput.printf("\n");
 
 		// execute the initial update

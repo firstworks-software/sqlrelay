@@ -51,19 +51,59 @@ def main():
 
 	# create temptable
 	print("CREATE TEMPTABLE: ")
-	assertTrue(cur.sendQuery("create table testtable (testsmallint smallint, testint integer, testbigint bigint, testdecimal decimal(10,2), testreal real, testdouble double, testchar char(40), testvarchar varchar(40), testdate date, testtime time, testtimestamp timestamp)"))
+	assertTrue(cur.sendQuery(
+		"create table testtable ("
+		"	testsmallint smallint, "
+		"	testint integer, "
+		"	testbigint bigint, "
+		"	testdecimal decimal(10,2), "
+		"	testreal real, "
+		"	testdouble double, "
+		"	testchar char(40), "
+		"	testvarchar varchar(40), "
+		"	testdate date, "
+		"	testtime time, "
+		"	testtimestamp timestamp)"))
 	print()
 
 
 	# insert
 	print("INSERT: ")
-	assertTrue(cur.sendQuery("insert into testtable values (1,1,1,1.1,1.1,1.1,'testchar1','testvarchar1','01/01/2001','01:00:00',NULL)"))
+	assertTrue(cur.sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	1, "
+		"	1, "
+		"	1, "
+		"	1.1, "
+		"	1.1, "
+		"	1.1, "
+		"	'testchar1', "
+		"	'testvarchar1', "
+		"	'01/01/2001', "
+		"	'01:00:00', "
+		"	NULL)"))
 	print()
 
 
 	# bind by position
 	print("BIND BY POSITION: ")
-	cur.prepareQuery("insert into testtable values (?,?,?,?,?,?,?,?,?,?,NULL)")
+	cur.prepareQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	NULL)")
 	assertEqual(cur.countBindVariables(),10)
 	cur.inputBind("1",2)
 	cur.inputBind("2",2)
@@ -105,10 +145,66 @@ def main():
 
 	# insert
 	print("INSERT: ")
-	assertTrue(cur.sendQuery("insert into testtable values (5,5,5,5.5,5.5,5.5,'testchar5','testvarchar5','01/01/2005','05:00:00',NULL)"))
-	assertTrue(cur.sendQuery("insert into testtable values (6,6,6,6.6,6.6,6.6,'testchar6','testvarchar6','01/01/2006','06:00:00',NULL)"))
-	assertTrue(cur.sendQuery("insert into testtable values (7,7,7,7.7,7.7,7.7,'testchar7','testvarchar7','01/01/2007','07:00:00',NULL)"))
-	assertTrue(cur.sendQuery("insert into testtable values (8,8,8,8.8,8.8,8.8,'testchar8','testvarchar8','01/01/2008','08:00:00',NULL)"))
+	assertTrue(cur.sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	5, "
+		"	5, "
+		"	5, "
+		"	5.5, "
+		"	5.5, "
+		"	5.5, "
+		"	'testchar5', "
+		"	'testvarchar5', "
+		"	'01/01/2005', "
+		"	'05:00:00', "
+		"	NULL)"))
+	assertTrue(cur.sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	6, "
+		"	6, "
+		"	6, "
+		"	6.6, "
+		"	6.6, "
+		"	6.6, "
+		"	'testchar6', "
+		"	'testvarchar6', "
+		"	'01/01/2006', "
+		"	'06:00:00', "
+		"	NULL)"))
+	assertTrue(cur.sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	7, "
+		"	7, "
+		"	7, "
+		"	7.7, "
+		"	7.7, "
+		"	7.7, "
+		"	'testchar7', "
+		"	'testvarchar7', "
+		"	'01/01/2007', "
+		"	'07:00:00', "
+		"	NULL)"))
+	assertTrue(cur.sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	8, "
+		"	8, "
+		"	8, "
+		"	8.8, "
+		"	8.8, "
+		"	8.8, "
+		"	'testchar8', "
+		"	'testvarchar8', "
+		"	'01/01/2008', "
+		"	'08:00:00', "
+		"	NULL)"))
 	print()
 
 
@@ -121,7 +217,14 @@ def main():
 	# stored procedure
 	print("STORED PROCEDURE: ")
 	cur.sendQuery("drop procedure testproc");
-	assertTrue(cur.sendQuery("create procedure testproc(in invar int, out outvar int) language sql begin set outvar = invar; end"))
+	assertTrue(cur.sendQuery(
+		"create procedure testproc("
+		"	in invar int, "
+		"	out outvar int) "
+		"language sql "
+		"begin "
+		"	set outvar = invar; "
+		"end"))
 	cur.prepareQuery("call testproc(?,?)")
 	cur.inputBind("1",5)
 	cur.defineOutputBindString("2",10)
@@ -133,7 +236,13 @@ def main():
 
 	# select
 	print("SELECT: ")
-	assertTrue(cur.sendQuery("select * from testtable order by testsmallint"))
+	assertTrue(cur.sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testsmallint "))
 	print()
 
 
@@ -505,8 +614,18 @@ def main():
 	print("NULLS as Nones: ")
 	cur.getNullsAsNone()
 	cur.sendQuery("drop table testtable1")
-	assertTrue(cur.sendQuery("create table testtable1 (col1 char(1), col2 char(1), col3 char(1))"))
-	assertTrue(cur.sendQuery("insert into testtable1 values ('1',NULL,NULL)"))
+	assertTrue(cur.sendQuery(
+		"create table testtable1 ("
+		"	col1 char(1), "
+		"	col2 char(1), "
+		"	col3 char(1))"))
+	assertTrue(cur.sendQuery(
+		"insert into "
+		"	testtable1 "
+		"values ("
+		"	'1', "
+		"	NULL, "
+		"	NULL)"))
 	assertTrue(cur.sendQuery("select * from testtable1"))
 	assertEqual(cur.getField(0,0),"1")
 	assertEqual(cur.getField(0,1),None)
@@ -525,7 +644,13 @@ def main():
 	print("RESULT SET BUFFER SIZE: ")
 	assertEqual(cur.getResultSetBufferSize(),0)
 	cur.setResultSetBufferSize(2)
-	assertTrue(cur.sendQuery("select * from testtable order by testsmallint"))
+	assertTrue(cur.sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testsmallint "))
 	assertEqual(cur.getResultSetBufferSize(),2)
 	print()
 	assertEqual(cur.firstRowIndex(),0)
@@ -555,12 +680,24 @@ def main():
 	# dont get column info
 	print("DONT GET COLUMN INFO: ")
 	cur.dontGetColumnInfo()
-	assertTrue(cur.sendQuery("select * from testtable order by testsmallint"))
+	assertTrue(cur.sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testsmallint "))
 	assertEqual(cur.getColumnName(0),None)
 	assertEqual(cur.getColumnLength(0),0)
 	assertEqual(cur.getColumnType(0),None)
 	cur.getColumnInfo()
-	assertTrue(cur.sendQuery("select * from testtable order by testsmallint"))
+	assertTrue(cur.sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testsmallint "))
 	assertEqual(cur.getColumnName(0),"TESTSMALLINT")
 	assertEqual(cur.getColumnLength(0),2)
 	assertEqual(cur.getColumnType(0),"SMALLINT")
@@ -569,7 +706,13 @@ def main():
 
 	# suspended session
 	print("SUSPENDED SESSION: ")
-	assertTrue(cur.sendQuery("select * from testtable order by testsmallint"))
+	assertTrue(cur.sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testsmallint "))
 	cur.suspendResultSet()
 	assertTrue(con.suspendSession())
 	port=con.getConnectionPort()
@@ -585,7 +728,13 @@ def main():
 	assertEqual(cur.getField(6,0),7)
 	assertEqual(cur.getField(7,0),8)
 	print()
-	assertTrue(cur.sendQuery("select * from testtable order by testsmallint"))
+	assertTrue(cur.sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testsmallint "))
 	cur.suspendResultSet()
 	assertTrue(con.suspendSession())
 	port=con.getConnectionPort()
@@ -601,7 +750,13 @@ def main():
 	assertEqual(cur.getField(6,0),7)
 	assertEqual(cur.getField(7,0),8)
 	print()
-	assertTrue(cur.sendQuery("select * from testtable order by testsmallint"))
+	assertTrue(cur.sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testsmallint "))
 	cur.suspendResultSet()
 	assertTrue(con.suspendSession())
 	port=con.getConnectionPort()
@@ -622,7 +777,13 @@ def main():
 	# suspended result set
 	print("SUSPENDED RESULT SET: ")
 	cur.setResultSetBufferSize(2)
-	assertTrue(cur.sendQuery("select * from testtable order by testsmallint"))
+	assertTrue(cur.sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testsmallint "))
 	assertEqual(cur.getField(2,0),3)
 	id=cur.getResultSetId()
 	cur.suspendResultSet()
@@ -653,7 +814,13 @@ def main():
 	print("CACHED RESULT SET: ")
 	cur.cacheToFile("cachefile1")
 	cur.setCacheTtl(200)
-	assertTrue(cur.sendQuery("select * from testtable order by testsmallint"))
+	assertTrue(cur.sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testsmallint "))
 	filename=cur.getCacheFileName()
 	assertEqual(filename,"cachefile1")
 	cur.cacheOff()
@@ -701,7 +868,13 @@ def main():
 	cur.setResultSetBufferSize(2)
 	cur.cacheToFile("cachefile1")
 	cur.setCacheTtl(200)
-	assertTrue(cur.sendQuery("select * from testtable order by testsmallint"))
+	assertTrue(cur.sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testsmallint "))
 	filename=cur.getCacheFileName()
 	assertEqual(filename,"cachefile1")
 	cur.cacheOff()
@@ -724,7 +897,8 @@ def main():
 
 
 	# from one cache file to another with result set buffer size
-	print("FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: ")
+	print("FROM ONE CACHE FILE TO ANOTHER "
+		"WITH RESULT SET BUFFER SIZE: ")
 	cur.setResultSetBufferSize(2)
 	cur.cacheToFile("cachefile2")
 	assertTrue(cur.openCachedResultSet("cachefile1"))
@@ -737,11 +911,18 @@ def main():
 
 
 	# cached result set with suspend and result set buffer size
-	print("CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: ")
+	print("CACHED RESULT SET WITH SUSPEND "
+		"AND RESULT SET BUFFER SIZE: ")
 	cur.setResultSetBufferSize(2)
 	cur.cacheToFile("cachefile1")
 	cur.setCacheTtl(200)
-	assertTrue(cur.sendQuery("select * from testtable order by testsmallint"))
+	assertTrue(cur.sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testsmallint "))
 	assertEqual(cur.getField(2,0),3)
 	filename=cur.getCacheFileName()
 	assertEqual(filename,"cachefile1")
@@ -778,7 +959,13 @@ def main():
 
 	# row range
 	print("ROW RANGE:")
-	assertTrue(cur.sendQuery("select * from testtable order by testsmallint"))
+	assertTrue(cur.sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testsmallint "))
 	print()
 	rows=cur.getRowRange(0,5)
 	assertEqual(rows[0][0],1);
@@ -874,15 +1061,37 @@ def main():
 	cur.sendQuery("drop table testtable")
 	print()
 
-	# invalid queries...
-
 
 	# invalid queries
 	print("INVALID QUERIES: ")
-	assertFalse(cur.sendQuery("select * from testtable order by testsmallint"))
-	assertFalse(cur.sendQuery("select * from testtable order by testsmallint"))
-	assertFalse(cur.sendQuery("select * from testtable order by testsmallint"))
-	assertFalse(cur.sendQuery("select * from testtable order by testsmallint"))
+	assertFalse(cur.sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testsmallint "))
+	assertFalse(cur.sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testsmallint "))
+	assertFalse(cur.sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testsmallint "))
+	assertFalse(cur.sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testsmallint "))
 	print()
 	assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"))
 	assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"))

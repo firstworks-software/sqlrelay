@@ -37,9 +37,15 @@ int main(int argc, char **argv) {
 
 	cur->sendQuery("drop table testtable");
 
+
 	// create temptable
 	stdoutput.printf("CREATE TEMPTABLE: \n");
-	assertTrue(cur->sendQuery("create table testtable (i int identity, emojidirect nvarchar(64), emojifrombase64 nvarchar(64), base64 varchar(64))"));
+	assertTrue(cur->sendQuery(
+		"create table testtable ("
+		"	i int identity, "
+		"	emojidirect nvarchar(64), "
+		"	emojifrombase64 nvarchar(64), "
+		"	base64 varchar(64))"));
 	stdoutput.printf("\n\n");
 
 
@@ -64,7 +70,9 @@ int main(int argc, char **argv) {
 
 	// update
 	stdoutput.printf("UPDATE: \n");
-	assertTrue(cur->sendQuery("update testtable set emojifrombase64=cast(cast(N'' as xml).value('xs:base64Binary(sql:column(\"base64\"))','VARBINARY(MAX)') AS NVARCHAR(MAX))"));
+	assertTrue(cur->sendQuery(
+		"update testtable set "
+		"	emojifrombase64=cast(cast(N'' as xml).value('xs:base64Binary(sql:column(\"base64\"))','VARBINARY(MAX)') AS NVARCHAR(MAX))"));
 	stdoutput.printf("\n\n");
 
 
@@ -88,14 +96,18 @@ int main(int argc, char **argv) {
 	row=1;
 	for (const byte_t **e=emoji8; *e; e++) {
 
-		cur->prepareQuery("set :output=(select emojidirect from testtable where i=$(row))");
+		cur->prepareQuery(
+			"set :output=(select emojidirect "
+			"	from testtable where i=$(row))");
 		cur->substitution("row",row);
 		cur->defineOutputBindString("output",100);
 		assertTrue(cur->executeQuery());
 		assertEquals(cur->getOutputBindString("output"),
 						(const char *)*e);
 
-		cur->prepareQuery("set :output=(select emojifrombase64 from testtable where i=$(row))");
+		cur->prepareQuery(
+			"set :output=(select emojifrombase64 "
+			"	from testtable where i=$(row))");
 		cur->substitution("row",row);
 		cur->defineOutputBindString("output",100);
 		assertTrue(cur->executeQuery());

@@ -592,8 +592,6 @@ puts ""
 # drop existing table
 $cur sendQuery "drop table testtable"
 
-# invalid queries...
-
 
 # invalid queries
 puts "INVALID QUERIES: "

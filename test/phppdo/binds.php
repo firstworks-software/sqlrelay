@@ -27,13 +27,19 @@
 
 
 		# create temptable
+
+
 		echo("CREATE TEMPTABLE: \n");
-		assertEqual($dbh->exec("create table testtable (testinteger int)"),0);
+		assertEqual($dbh->exec(
+			"create table ".
+			"	testtable (testinteger int)"),0);
 		echo("\n");
 	}
 
 
 	# bind by position
+
+
 	echo("BIND BY POSITION: \n");
 	$queryvar="";
 	$bindvar=1;
@@ -56,13 +62,17 @@
 			break;
 	}
 	echo("queryvar: $queryvar\n");
-	$stmt=$dbh->prepare("insert into testtable (testinteger) values ($queryvar)");
+	$stmt=$dbh->prepare(
+		"insert into testtable ".
+		"	(testinteger) values ($queryvar)");
 	assertTrue($stmt->bindValue(1,2,PDO::PARAM_INT));
 	assertTrue($stmt->execute());
 	echo("\n");
 
 
 	# bind by name
+
+
 	echo("BIND BY NAME: \n");
 	$queryvar="";
 	$bindvar="";
@@ -89,7 +99,9 @@
 			break;
 	}
 	echo("queryvar: $queryvar   bindvar: $bindvar\n");
-	$stmt=$dbh->prepare("insert into testtable (testinteger) values ($queryvar)");
+	$stmt=$dbh->prepare(
+		"insert into testtable ".
+		"	(testinteger) values ($queryvar)");
 	assertTrue($stmt->bindValue($bindvar,2,PDO::PARAM_INT));
 	assertTrue($stmt->execute());
 	echo("\n");

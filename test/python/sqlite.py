@@ -57,7 +57,12 @@ def main():
 	# create temptable
 	print("CREATE TEMPTABLE: ")
 	cur.sendQuery("begin transaction")
-	assertTrue(cur.sendQuery("create table testtable (testint int, testfloat float, testchar char(40), testvarchar varchar(40))"))
+	assertTrue(cur.sendQuery(
+		"create table testtable ("
+		"	testint int, "
+		"	testfloat float, "
+		"	testchar char(40), "
+		"	testvarchar varchar(40))"))
 	con.commit()
 	print()
 
@@ -65,10 +70,38 @@ def main():
 	# insert
 	print("INSERT: ")
 	cur.sendQuery("begin transaction")
-	assertTrue(cur.sendQuery("insert into testtable values (1,1.1,'testchar1','testvarchar1')"))
-	assertTrue(cur.sendQuery("insert into testtable values (2,2.2,'testchar2','testvarchar2')"))
-	assertTrue(cur.sendQuery("insert into testtable values (3,3.3,'testchar3','testvarchar3')"))
-	assertTrue(cur.sendQuery("insert into testtable values (4,4.4,'testchar4','testvarchar4')"))
+	assertTrue(cur.sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	1, "
+		"	1.1, "
+		"	'testchar1', "
+		"	'testvarchar1')"))
+	assertTrue(cur.sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	2, "
+		"	2.2, "
+		"	'testchar2', "
+		"	'testvarchar2')"))
+	assertTrue(cur.sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	3, "
+		"	3.3, "
+		"	'testchar3', "
+		"	'testvarchar3')"))
+	assertTrue(cur.sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	4, "
+		"	4.4, "
+		"	'testchar4', "
+		"	'testvarchar4')"))
 	print()
 
 
@@ -80,7 +113,14 @@ def main():
 
 	# bind by name
 	print("BIND BY NAME: ")
-	cur.prepareQuery("insert into testtable values (:var1,:var2,:var3,:var4)")
+	cur.prepareQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	:var1, "
+		"	:var2, "
+		"	:var3, "
+		"	:var4)")
 	assertEqual(cur.countBindVariables(),4)
 	cur.inputBind("var1",5)
 	cur.inputBind("var2",Decimal("5.5"),4,1)
@@ -317,8 +357,18 @@ def main():
 	# individual substitutions
 	print("INDIVIDUAL SUBSTITUTIONS: ")
 	cur.sendQuery("drop table testtable1")
-	assertTrue(cur.sendQuery("create table testtable1 (col1 int, col2 char, col3 float)"))
-	cur.prepareQuery("insert into testtable1 values ($(var1),'$(var2)',$(var3))")
+	assertTrue(cur.sendQuery(
+		"create table testtable1 ("
+		"	col1 int, "
+		"	col2 char, "
+		"	col3 float)"))
+	cur.prepareQuery(
+		"insert into "
+		"	testtable1 "
+		"values ("
+		"	$(var1), "
+		"	'$(var2)', "
+		"	$(var3))")
 	cur.substitution("var1",1)
 	cur.substitution("var2","hello")
 	cur.substitution("var3",10.5556,6,4)
@@ -338,7 +388,13 @@ def main():
 
 	# array substitutions
 	print("ARRAY SUBSTITUTIONS: ")
-	cur.prepareQuery("insert into testtable1 values ($(var1),'$(var2)',$(var3))")
+	cur.prepareQuery(
+		"insert into "
+		"	testtable1 "
+		"values ("
+		"	$(var1), "
+		"	'$(var2)', "
+		"	$(var3))")
 	cur.substitutions(["var1","var2","var3"],
 				[1,"hello",10.5556],[0,0,6],[0,0,4])
 	assertTrue(cur.executeQuery())
@@ -561,7 +617,8 @@ def main():
 
 
 	# from one cache file to another with result set buffer size
-	print("FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: ")
+	print("FROM ONE CACHE FILE TO ANOTHER "
+		"WITH RESULT SET BUFFER SIZE: ")
 	cur.setResultSetBufferSize(2)
 	cur.cacheToFile("cachefile2")
 	assertTrue(cur.openCachedResultSet("cachefile1"))
@@ -574,7 +631,8 @@ def main():
 
 
 	# cached result set with suspend and result set buffer size
-	print("CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: ")
+	print("CACHED RESULT SET WITH SUSPEND "
+		"AND RESULT SET BUFFER SIZE: ")
 	cur.setResultSetBufferSize(2)
 	cur.cacheToFile("cachefile1")
 	cur.setCacheTtl(200)
@@ -661,7 +719,14 @@ def main():
 	assertTrue(con.commit())
 	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
 	assertEqual(secondcur.getField(0,0),8)
-	assertTrue(cur.sendQuery("insert into testtable values (10,10.1,'testchar10','testvarchar10')"))
+	assertTrue(cur.sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	10, "
+		"	10.1, "
+		"	'testchar10', "
+		"	'testvarchar10')"))
 	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
 	assertEqual(secondcur.getField(0,0),9)
 	print()
@@ -689,8 +754,6 @@ def main():
 
 	# drop existing table
 	cur.sendQuery("drop table testtable")
-
-	# invalid queries...
 
 
 	# invalid queries

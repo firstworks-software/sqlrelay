@@ -142,7 +142,7 @@ bool mysqlbenchconnection::connect() {
 	#ifdef HAVE_MYSQL_SSL_SET
 	mysql_ssl_set(&mysql,sslkey,sslcert,sslca,sslcapath,sslcipher);
 	#endif
-	
+
 	// log in
 	if (!mysql_real_connect(&mysql,host,user,password,
 						dbname,port,socket,0)) {
@@ -246,7 +246,7 @@ bool mysqlbenchcursor::query(const char *query, bool getcolumns) {
 	#endif*/
 
 #ifdef HAVE_MYSQL_STMT_PREPARE
-	if (charstring::compare(query,"create",6) && 
+	if (charstring::compare(query,"create",6) &&
 		charstring::compare(query,"drop",4)) {
 
 		// prepare the query

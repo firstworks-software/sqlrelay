@@ -24,6 +24,7 @@ SQLHSTMT	stmt;
 
 int main(int argc, char **argv) {
 
+
 	// env handle
 	stdoutput.printf("ENV HANDLE: \n");
 	#if (ODBCVER >= 0x3000)

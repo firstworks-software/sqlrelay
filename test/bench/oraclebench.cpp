@@ -130,9 +130,9 @@ bool oraclebenchconnection::connect() {
 	}
 #else
 	// initialize OCI
-	if (OCIInitialize(OCI_DEFAULT,(dvoid *)0, 
+	if (OCIInitialize(OCI_DEFAULT,(dvoid *)0,
 				(dvoid*(*)(dvoid *,size_t))0,
-				(dvoid*(*)(dvoid *,dvoid *,size_t))0, 
+				(dvoid*(*)(dvoid *,dvoid *,size_t))0,
 				(void(*)(dvoid *,dvoid *))0)!=OCI_SUCCESS) {
 		stdoutput.printf("OCIInitialize Failed\n");
 		return false;
@@ -221,7 +221,7 @@ bool oraclebenchconnection::connect() {
 		stdoutput.printf("OCIAttrSet (svc-session) Failed\n");
 		return false;
 	}
-	
+
 	// allocate a transaction handle
 	if (OCIHandleAlloc((dvoid *)env,(dvoid **)&trans,
 				OCI_HTYPE_TRANS,0,0)!=OCI_SUCCESS) {

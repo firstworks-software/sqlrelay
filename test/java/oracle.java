@@ -6,44 +6,50 @@ import com.firstworks.sqlrelay.SQLRCursor;
 
 
 class oracle extends sqlrtest {
-	
+
 	public static void	main(String[] args) {
-	
-		String	dbtype;
-		String[]	isolationlevels={"READ COMMITTED","SERIALIZABLE"};
+
+		String[]	isolationlevels={
+					"READ COMMITTED",
+					"SERIALIZABLE"};
 		String[]	bindvars={"1","2","3","4","5"};
-		String[]	bindvals={"4","testchar4","testvarchar4","01-JAN-2004","testlong4"};
-		String[]	subvars={"var1","var2","var3"};
-		String[]	subvalstrings={"hi","hello","bye"};
-		long[]	subvallongs={1,2,3};
-		double[]	subvaldoubles={10.55,10.556,10.5556};
-		int[]	precs={4,5,6};
-		int[]	scales={2,3,4};
-		String	clobvar;
-		long	clobvarlength;
-		byte[]	blobvar;
-		long	blobvarlength;
+		String[]	bindvals={"4","testchar4","testvarchar4",
+					"01-JAN-2004","testlong4"};
+		String[]	arraybindvars={"var1","var2","var3",
+					"var4","var5"};
+		String[]	arraybindvals={"7","testchar7",
+					"testvarchar7",
+					"01-JAN-2007","testlong7"};
 		long	numvar;
 		String	stringvar;
 		double	floatvar;
 		String[]	cols;
 		String[]	fields;
+		long[]	fieldlens;
+		String[]	subvars={"var1","var2","var3"};
+		long[]	subvallongs={1,2,3};
+		String[]	subvalstrings={"hi","hello","bye"};
+		double[]	subvaldoubles={10.55,10.556,10.5556};
+		int[]	precs={4,5,6};
+		int[]	scales={2,3,4};
 		short	port;
 		String	socket;
 		short	id;
 		String	filename;
-		String[]	arraybindvars={"var1","var2","var3","var4","var5"};
-		String[]	arraybindvals={"7","testchar7","testvarchar7","01-JAN-2007","testlong7"};
-		long[]	fieldlens;
-	
-	
+		String	clobvar;
+		long	clobvarlength;
+		byte[]	blobvar;
+		long	blobvarlength;
+		String	dbtype;
+
+
 		// instantiation
 		SQLRConnection con=new SQLRConnection("sqlrelay",
 						(short)9000,
 						"/tmp/test.socket",
 						"testuser","testpassword",0,1);
 		SQLRCursor cur=new SQLRCursor(con);
-	
+
 		// get database type
 
 
@@ -76,49 +82,37 @@ class oracle extends sqlrtest {
 		assertTrue(con.setIsolationLevel(isolationlevels[0]));
 		System.out.println();
 
-
-		// bind validation
-		System.out.println("BIND VALIDATION: ");
-		cur.sendQuery("drop table testtable1");
-		cur.sendQuery("create table testtable1 (col1 varchar2(20), col2 varchar2(20), col3 varchar2(20))");
-		cur.prepareQuery("insert into testtable1 values ($(var1),$(var2),$(var3))");
-		cur.inputBind("var1",1);
-		cur.inputBind("var2",2);
-		cur.inputBind("var3",3);
-		cur.substitution("var1",":var1");
-		assertTrue(cur.validBind("var1"));
-		assertFalse(cur.validBind("var2"));
-		assertFalse(cur.validBind("var3"));
-		assertFalse(cur.validBind("var4"));
-		System.out.println();
-		cur.substitution("var2",":var2");
-		assertTrue(cur.validBind("var1"));
-		assertTrue(cur.validBind("var2"));
-		assertFalse(cur.validBind("var3"));
-		assertFalse(cur.validBind("var4"));
-		System.out.println();
-		cur.substitution("var3",":var3");
-		assertTrue(cur.validBind("var1"));
-		assertTrue(cur.validBind("var2"));
-		assertTrue(cur.validBind("var3"));
-		assertFalse(cur.validBind("var4"));
-		assertTrue(cur.executeQuery());
-		cur.sendQuery("drop table testtable1");
-		System.out.println();
-	
 		// drop existing table
 		cur.sendQuery("drop table testtable");
 
 
 		// create temptable
 		System.out.println("CREATE TEMPTABLE: ");
-		assertTrue(cur.sendQuery("create table testtable (testnumber number, testchar char(40), testvarchar varchar2(40), testdate date, testlong long, testclob clob, testblob blob)"));
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
+			"	testnumber number, "+
+			"	testchar char(40), "+
+			"	testvarchar varchar2(40), "+
+			"	testdate date, "+
+			"	testlong long, "+
+			"	testclob clob, "+
+			"	testblob blob)"));
 		System.out.println();
 
 
 		// insert
 		System.out.println("INSERT: ");
-		assertTrue(cur.sendQuery("insert into testtable values (1,'testchar1','testvarchar1','01-JAN-2001','testlong1','testclob1',empty_blob())"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1, "+
+			"	'testchar1', "+
+			"	'testvarchar1', "+
+			"	'01-JAN-2001', "+
+			"	'testlong1', "+
+			"	'testclob1', "+
+			"	empty_blob())"));
 		System.out.println();
 
 
@@ -130,7 +124,17 @@ class oracle extends sqlrtest {
 
 		// bind by position
 		System.out.println("BIND BY POSITION: ");
-		cur.prepareQuery("insert into testtable values (:var1,:var2,:var3,:var4,:var5,:var6,:var7)");
+		cur.prepareQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	:var1, "+
+			"	:var2, "+
+			"	:var3, "+
+			"	:var4, "+
+			"	:var5, "+
+			"	:var6, "+
+			"	:var7)");
 		assertEquals(cur.countBindVariables(),7);
 		cur.inputBind("1",2);
 		cur.inputBind("2","testchar2");
@@ -165,7 +169,17 @@ class oracle extends sqlrtest {
 
 		// bind by name
 		System.out.println("BIND BY NAME: ");
-		cur.prepareQuery("insert into testtable values (:var1,:var2,:var3,:var4,:var5,:var6,:var7)");
+		cur.prepareQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	:var1, "+
+			"	:var2, "+
+			"	:var3, "+
+			"	:var4, "+
+			"	:var5, "+
+			"	:var6, "+
+			"	:var7)");
 		cur.inputBind("var1",5);
 		cur.inputBind("var2","testchar5");
 		cur.inputBind("var3","testvarchar5");
@@ -216,25 +230,14 @@ class oracle extends sqlrtest {
 		System.out.println();
 
 
-		// output bind by name
-		System.out.println("OUTPUT BIND BY NAME: ");
-		cur.prepareQuery("begin  :numvar:=1; :stringvar:='hello'; :floatvar:=2.5; end;");
-		cur.defineOutputBindInteger("numvar");
-		cur.defineOutputBindString("stringvar",10);
-		cur.defineOutputBindDouble("floatvar");
-		assertTrue(cur.executeQuery());
-		numvar=cur.getOutputBindInteger("numvar");
-		stringvar=cur.getOutputBindString("stringvar");
-		floatvar=cur.getOutputBindDouble("floatvar");
-		assertEquals(numvar,1);
-		assertEquals(stringvar,"hello");
-		assertEquals(floatvar,2.5);
-		System.out.println();
-
-
 		// output bind by position
 		System.out.println("OUTPUT BIND BY POSITION: ");
-		cur.clearBinds();
+		cur.prepareQuery(
+			"begin "+
+			"	:numvar:=1; "+
+			"	:stringvar:='hello'; "+
+			"	:floatvar:=2.5; "+
+			"end;");
 		cur.defineOutputBindInteger("1");
 		cur.defineOutputBindString("2",10);
 		cur.defineOutputBindDouble("3");
@@ -242,6 +245,22 @@ class oracle extends sqlrtest {
 		numvar=cur.getOutputBindInteger("1");
 		stringvar=cur.getOutputBindString("2");
 		floatvar=cur.getOutputBindDouble("3");
+		assertEquals(numvar,1);
+		assertEquals(stringvar,"hello");
+		assertEquals(floatvar,2.5);
+		System.out.println();
+
+
+		// output bind by name
+		System.out.println("OUTPUT BIND BY NAME: ");
+		cur.clearBinds();
+		cur.defineOutputBindInteger("numvar");
+		cur.defineOutputBindString("stringvar",10);
+		cur.defineOutputBindDouble("floatvar");
+		assertTrue(cur.executeQuery());
+		numvar=cur.getOutputBindInteger("numvar");
+		stringvar=cur.getOutputBindString("stringvar");
+		floatvar=cur.getOutputBindDouble("floatvar");
 		assertEquals(numvar,1);
 		assertEquals(stringvar,"hello");
 		assertEquals(floatvar,2.5);
@@ -268,7 +287,13 @@ class oracle extends sqlrtest {
 
 		// select
 		System.out.println("SELECT: ");
-		assertTrue(cur.sendQuery("select * from testtable order by testnumber"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testnumber"));
 		System.out.println();
 
 
@@ -503,15 +528,6 @@ class oracle extends sqlrtest {
 		System.out.println();
 
 
-		// output bind
-		System.out.println("OUTPUT BIND: ");
-		cur.prepareQuery("begin :var1:='hello'; end;");
-		cur.defineOutputBindString("var1",10);
-		assertTrue(cur.executeQuery());
-		assertEquals(cur.getOutputBindString("var1"),"hello");
-		System.out.println();
-
-
 		// array substitutions
 		System.out.println("ARRAY SUBSTITUTIONS: ");
 		cur.prepareQuery("select $(var1),$(var2),$(var3) from dual");
@@ -530,7 +546,13 @@ class oracle extends sqlrtest {
 
 		// array substitutions
 		System.out.println("ARRAY SUBSTITUTIONS: ");
-		cur.prepareQuery("select '$(var1)','$(var2)','$(var3)' from dual");
+		cur.prepareQuery(
+			"select "+
+			"	'$(var1)', "+
+			"	'$(var2)', "+
+			"	'$(var3)' "+
+			"from "+
+			"	dual ");
 		cur.substitutions(subvars,subvalstrings);
 		assertTrue(cur.executeQuery());
 		System.out.println();
@@ -558,7 +580,7 @@ class oracle extends sqlrtest {
 		assertEquals(cur.getField(0,1),"10.556");
 		assertEquals(cur.getField(0,2),"10.5556");
 		System.out.println();
-	
+
 		System.out.println("nullS as Nulls: ");
 		cur.getNullsAsNulls();
 		assertTrue(cur.sendQuery("select null,1,null from dual"));
@@ -578,7 +600,13 @@ class oracle extends sqlrtest {
 		System.out.println("RESULT SET BUFFER SIZE: ");
 		assertEquals(cur.getResultSetBufferSize(),0);
 		cur.setResultSetBufferSize(2);
-		assertTrue(cur.sendQuery("select * from testtable order by testnumber"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testnumber"));
 		assertEquals(cur.getResultSetBufferSize(),2);
 		System.out.println();
 		assertEquals(cur.firstRowIndex(),0);
@@ -608,12 +636,24 @@ class oracle extends sqlrtest {
 		// dont get column info
 		System.out.println("DONT GET COLUMN INFO: ");
 		cur.dontGetColumnInfo();
-		assertTrue(cur.sendQuery("select * from testtable order by testnumber"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testnumber"));
 		assertEquals(cur.getColumnName(0),null);
 		assertEquals(cur.getColumnLength(0),0);
 		assertEquals(cur.getColumnType(0),null);
 		cur.getColumnInfo();
-		assertTrue(cur.sendQuery("select * from testtable order by testnumber"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testnumber"));
 		assertEquals(cur.getColumnName(0),"TESTNUMBER");
 		assertEquals(cur.getColumnLength(0),22);
 		assertEquals(cur.getColumnType(0),"NUMBER");
@@ -622,7 +662,13 @@ class oracle extends sqlrtest {
 
 		// suspended session
 		System.out.println("SUSPENDED SESSION: ");
-		assertTrue(cur.sendQuery("select * from testtable order by testnumber"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testnumber"));
 		cur.suspendResultSet();
 		assertTrue(con.suspendSession());
 		port=con.getConnectionPort();
@@ -638,7 +684,13 @@ class oracle extends sqlrtest {
 		assertEquals(cur.getField(6,0),"7");
 		assertEquals(cur.getField(7,0),"8");
 		System.out.println();
-		assertTrue(cur.sendQuery("select * from testtable order by testnumber"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testnumber"));
 		cur.suspendResultSet();
 		assertTrue(con.suspendSession());
 		port=con.getConnectionPort();
@@ -654,7 +706,13 @@ class oracle extends sqlrtest {
 		assertEquals(cur.getField(6,0),"7");
 		assertEquals(cur.getField(7,0),"8");
 		System.out.println();
-		assertTrue(cur.sendQuery("select * from testtable order by testnumber"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testnumber"));
 		cur.suspendResultSet();
 		assertTrue(con.suspendSession());
 		port=con.getConnectionPort();
@@ -675,7 +733,13 @@ class oracle extends sqlrtest {
 		// suspended result set
 		System.out.println("SUSPENDED RESULT SET: ");
 		cur.setResultSetBufferSize(2);
-		assertTrue(cur.sendQuery("select * from testtable order by testnumber"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testnumber"));
 		assertEquals(cur.getField(2,0),"3");
 		id=cur.getResultSetId();
 		cur.suspendResultSet();
@@ -706,7 +770,13 @@ class oracle extends sqlrtest {
 		System.out.println("CACHED RESULT SET: ");
 		cur.cacheToFile("cachefile1");
 		cur.setCacheTtl(200);
-		assertTrue(cur.sendQuery("select * from testtable order by testnumber"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testnumber"));
 		filename=cur.getCacheFileName();
 		assertEquals(filename,"cachefile1");
 		cur.cacheOff();
@@ -746,7 +816,13 @@ class oracle extends sqlrtest {
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile1");
 		cur.setCacheTtl(200);
-		assertTrue(cur.sendQuery("select * from testtable order by testnumber"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testnumber"));
 		filename=cur.getCacheFileName();
 		assertEquals(filename,"cachefile1");
 		cur.cacheOff();
@@ -769,7 +845,8 @@ class oracle extends sqlrtest {
 
 
 		// from one cache file to another with result set buffer size
-		System.out.println("FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: ");
+		System.out.println("FROM ONE CACHE FILE TO ANOTHER "+
+					"WITH RESULT SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile2");
 		assertTrue(cur.openCachedResultSet("cachefile1"));
@@ -782,11 +859,18 @@ class oracle extends sqlrtest {
 
 
 		// cached result set with suspend and result set buffer size
-		System.out.println("CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: ");
+		System.out.println("CACHED RESULT SET WITH SUSPEND "+
+					"AND RESULT SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile1");
 		cur.setCacheTtl(200);
-		assertTrue(cur.sendQuery("select * from testtable order by testnumber"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testnumber"));
 		assertEquals(cur.getField(2,0),"3");
 		filename=cur.getCacheFileName();
 		assertEquals(filename,"cachefile1");
@@ -828,14 +912,36 @@ class oracle extends sqlrtest {
 						"/tmp/test.socket",
 						"testuser","testpassword",0,1);
 		SQLRCursor secondcur=new SQLRCursor(secondcon);
-		assertEquals(secondcur.sendQuery("select count(*) from testtable"),1);
+		assertEquals(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable "),1);
 		assertEquals(secondcur.getField(0,0),"0");
 		assertTrue(con.commit());
-		assertEquals(secondcur.sendQuery("select count(*) from testtable"),1);
+		assertEquals(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable "),1);
 		assertEquals(secondcur.getField(0,0),"8");
 		assertTrue(con.autoCommitOn());
-		assertTrue(cur.sendQuery("insert into testtable values (10,'testchar10','testvarchar10','01-JAN-2010','testlong10','testclob10',empty_blob())"));
-		assertEquals(secondcur.sendQuery("select count(*) from testtable"),1);
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	10, "+
+			"	'testchar10', "+
+			"	'testvarchar10', "+
+			"	'01-JAN-2010', "+
+			"	'testlong10', "+
+			"	'testclob10', "+
+			"	empty_blob())"));
+		assertEquals(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable "),1);
 		assertEquals(secondcur.getField(0,0),"9");
 		assertTrue(con.autoCommitOff());
 		System.out.println();
@@ -844,11 +950,27 @@ class oracle extends sqlrtest {
 		// clob and blob output bind
 		System.out.println("CLOB AND BLOB OUTPUT BIND:");
 		cur.sendQuery("drop table testtable1");
-		assertTrue(cur.sendQuery("create table testtable1 (testclob clob, testblob blob)"));
-		cur.prepareQuery("insert into testtable1 values ('hello',:var1)");
+		assertTrue(cur.sendQuery(
+			"create table testtable1 ("+
+			"	testclob clob, "+
+			"	testblob blob)"));
+		cur.prepareQuery(
+			"insert into "+
+			"	testtable1 "+
+			"values ("+
+			"	'hello', "+
+			"	:var1)");
 		cur.inputBindBlob("var1",(new String("hello")).getBytes(),5);
 		assertTrue(cur.executeQuery());
-		cur.prepareQuery("begin select testclob into :clobvar from testtable1;  select testblob into :blobvar from testtable1; end;");
+		cur.prepareQuery(
+			"begin "+
+			"	select testclob "+
+			"		into :clobvar "+
+			"		from testtable1; "+
+			"	select testblob "+
+			"		into :blobvar "+
+			"		from testtable1; "+
+			"end;");
 		cur.defineOutputBindClob("clobvar");
 		cur.defineOutputBindBlob("blobvar");
 		assertTrue(cur.executeQuery());
@@ -867,8 +989,20 @@ class oracle extends sqlrtest {
 		// null and empty clobs and clobs
 		System.out.println("NULL AND EMPTY CLOBS AND CLOBS:");
 		cur.getNullsAsNulls();
-		cur.sendQuery("create table testtable1 (testclob1 clob, testclob2 clob, testblob1 blob, testblob2 blob)");
-		cur.prepareQuery("insert into testtable1 values (:var1,:var2,:var3,:var4)");
+		cur.sendQuery(
+			"create table testtable1 ("+
+			"	testclob1 clob, "+
+			"	testclob2 clob, "+
+			"	testblob1 blob, "+
+			"	testblob2 blob)");
+		cur.prepareQuery(
+			"insert into "+
+			"	testtable1 "+
+			"values ("+
+			"	:var1, "+
+			"	:var2, "+
+			"	:var3, "+
+			"	:var4)");
 		cur.inputBindClob("var1","",0);
 		cur.inputBindClob("var2",null,0);
 		cur.inputBindBlob("var3",(new String("")).getBytes(),0);
@@ -885,8 +1019,21 @@ class oracle extends sqlrtest {
 
 		// cursor binds
 		System.out.println("CURSOR BINDS:");
-		assertTrue(cur.sendQuery("create or replace package types as type cursorType is ref cursor; end;"));
-		assertTrue(cur.sendQuery("create or replace function sp_testtable return types.cursortype as l_cursor    types.cursorType; begin open l_cursor for select * from testtable; return l_cursor; end;"));
+		assertTrue(cur.sendQuery(
+			"create or replace package types as "+
+			"	type cursorType is ref cursor; "+
+			"end;"));
+		assertTrue(cur.sendQuery(
+			"create or replace "+
+			"function sp_testtable "+
+			"return types.cursortype "+
+			"as "+
+			"	l_cursor    types.cursorType; "+
+			"begin "+
+			"	open l_cursor for "+
+			"		select * from testtable; "+
+			"	return l_cursor; "+
+			"end;"));
 		cur.prepareQuery("begin  :curs:=sp_testtable; end;");
 		cur.defineOutputBindCursor("curs");
 		assertTrue(cur.executeQuery());
@@ -916,7 +1063,11 @@ class oracle extends sqlrtest {
 		assertTrue(cur.executeQuery());
 		cur.sendQuery("select testclob from testtable2");
 		assertEquals(clobval.toString(),cur.getField(0,"TESTCLOB"));
-		cur.prepareQuery("begin select testclob into :clobbindval from testtable2; end;");
+		cur.prepareQuery(
+			"begin "+
+			"	select testclob into :clobbindval "+
+			"	from testtable2; "+
+			"end;");
 		cur.defineOutputBindClob("clobbindval");
 		assertTrue(cur.executeQuery());
 		String	clobbindvar=cur.getOutputBindClob("clobbindval");
@@ -928,7 +1079,9 @@ class oracle extends sqlrtest {
 
 		System.out.println("LONG OUTPUT BIND");
 		cur.sendQuery("drop table testtable2");
-		cur.sendQuery("create table testtable2 (testval varchar2(4000))");
+		cur.sendQuery(
+			"create table "+
+			"	testtable2 (testval varchar2(4000))");
 		cur.prepareQuery("insert into testtable2 values (:testval)");
 		StringBuffer	testval=new StringBuffer();
 		for (int i=0; i<4000; i++) {
@@ -963,7 +1116,13 @@ class oracle extends sqlrtest {
 
 		// finished suspended session
 		System.out.println("FINISHED SUSPENDED SESSION: ");
-		assertTrue(cur.sendQuery("select * from testtable order by testnumber"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testnumber"));
 		assertEquals(cur.getField(4,0),"5");
 		assertEquals(cur.getField(5,0),"6");
 		assertEquals(cur.getField(6,0),"7");
@@ -983,21 +1142,111 @@ class oracle extends sqlrtest {
 
 		// drop existing table
 		cur.sendQuery("drop table testtable");
-	
-		// invalid queries...
+
+
+		// bind validation
+		System.out.println("BIND VALIDATION: ");
+		cur.sendQuery("drop table testtable1");
+		cur.sendQuery(
+			"create table testtable1 ("+
+			"	col1 varchar2(20), "+
+			"	col2 varchar2(20), "+
+			"	col3 varchar2(20))");
+		cur.prepareQuery(
+			"insert into "+
+			"	testtable1 "+
+			"values ("+
+			"	$(var1), "+
+			"	$(var2), "+
+			"	$(var3))");
+		cur.inputBind("var1",1);
+		cur.inputBind("var2",2);
+		cur.inputBind("var3",3);
+		cur.substitution("var1",":var1");
+		assertTrue(cur.validBind("var1"));
+		assertFalse(cur.validBind("var2"));
+		assertFalse(cur.validBind("var3"));
+		assertFalse(cur.validBind("var4"));
+		System.out.println();
+		cur.substitution("var2",":var2");
+		assertTrue(cur.validBind("var1"));
+		assertTrue(cur.validBind("var2"));
+		assertFalse(cur.validBind("var3"));
+		assertFalse(cur.validBind("var4"));
+		System.out.println();
+		cur.substitution("var3",":var3");
+		assertTrue(cur.validBind("var1"));
+		assertTrue(cur.validBind("var2"));
+		assertTrue(cur.validBind("var3"));
+		assertFalse(cur.validBind("var4"));
+		assertTrue(cur.executeQuery());
+		cur.sendQuery("drop table testtable1");
+		System.out.println();
 
 
 		// invalid queries
 		System.out.println("INVALID QUERIES: ");
-		assertFalse(cur.sendQuery("select * from testtable order by testnumber"));
-		assertFalse(cur.sendQuery("select * from testtable order by testnumber"));
-		assertFalse(cur.sendQuery("select * from testtable order by testnumber"));
-		assertFalse(cur.sendQuery("select * from testtable order by testnumber"));
+		assertFalse(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testnumber"));
+		assertFalse(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testnumber"));
+		assertFalse(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testnumber"));
+		assertFalse(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testnumber"));
 		System.out.println();
-		assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1, "+
+			"	2, "+
+			"	3, "+
+			"	4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1, "+
+			"	2, "+
+			"	3, "+
+			"	4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1, "+
+			"	2, "+
+			"	3, "+
+			"	4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1, "+
+			"	2, "+
+			"	3, "+
+			"	4)"));
 		System.out.println();
 		assertFalse(cur.sendQuery("create table testtable"));
 		assertFalse(cur.sendQuery("create table testtable"));

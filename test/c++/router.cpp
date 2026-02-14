@@ -26,6 +26,8 @@ int main(int argc, char **argv) {
 	cur=new sqlrcursor(con);
 
 	// get database type
+
+
 	// identify
 	stdoutput.printf("IDENTIFY: \n");
 	assertEquals(con->identify(),"router");
@@ -58,8 +60,28 @@ int main(int argc, char **argv) {
 
 	// create testtables
 	stdoutput.printf("CREATE TESTTABLES: \n");
-	assertTrue(cur->sendQuery("create table testtable1 (testint int, testfloat float, testreal real, testsmallint smallint, testchar char(40), testvarchar varchar(40), testdate date, testtime time, testtimestamp timestamp)"));
-	assertTrue(cur->sendQuery("create table testtable2 (testint int, testfloat float, testreal real, testsmallint smallint, testchar char(40), testvarchar varchar(40), testdate date, testtime time, testtimestamp timestamp)"));
+	assertTrue(cur->sendQuery(
+		"create table testtable1 ("
+		"	testint int, "
+		"	testfloat float, "
+		"	testreal real, "
+		"	testsmallint smallint, "
+		"	testchar char(40), "
+		"	testvarchar varchar(40), "
+		"	testdate date, "
+		"	testtime time, "
+		"	testtimestamp timestamp)"));
+	assertTrue(cur->sendQuery(
+		"create table testtable2 ("
+		"	testint int, "
+		"	testfloat float, "
+		"	testreal real, "
+		"	testsmallint smallint, "
+		"	testchar char(40), "
+		"	testvarchar varchar(40), "
+		"	testdate date, "
+		"	testtime time, "
+		"	testtimestamp timestamp)"));
 	stdoutput.printf("\n");
 
 
@@ -71,15 +93,111 @@ int main(int argc, char **argv) {
 
 	// insert
 	stdoutput.printf("INSERT: \n");
-	assertTrue(cur->sendQuery("insert into testtable1 values (1,1.1,1.1,1,'testchar1','testvarchar1','2001-01-01','01:00:00',NULL)"));
-	assertTrue(cur->sendQuery("insert into testtable1 values (2,2.2,2.2,2,'testchar2','testvarchar2','2002-01-01','02:00:00',NULL)"));
-	assertTrue(cur->sendQuery("insert into testtable1 values (3,3.3,3.3,3,'testchar3','testvarchar3','2003-01-01','03:00:00',NULL)"));
-	assertTrue(cur->sendQuery("insert into testtable1 values (4,4.4,4.4,4,'testchar4','testvarchar4','2004-01-01','04:00:00',NULL)"));
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable1 "
+		"values ("
+		"	1, "
+		"	1.1, "
+		"	1.1, "
+		"	1, "
+		"	'testchar1', "
+		"	'testvarchar1', "
+		"	'2001-01-01', "
+		"	'01:00:00', "
+		"	NULL)"));
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable1 "
+		"values ("
+		"	2, "
+		"	2.2, "
+		"	2.2, "
+		"	2, "
+		"	'testchar2', "
+		"	'testvarchar2', "
+		"	'2002-01-01', "
+		"	'02:00:00', "
+		"	NULL)"));
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable1 "
+		"values ("
+		"	3, "
+		"	3.3, "
+		"	3.3, "
+		"	3, "
+		"	'testchar3', "
+		"	'testvarchar3', "
+		"	'2003-01-01', "
+		"	'03:00:00', "
+		"	NULL)"));
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable1 "
+		"values ("
+		"	4, "
+		"	4.4, "
+		"	4.4, "
+		"	4, "
+		"	'testchar4', "
+		"	'testvarchar4', "
+		"	'2004-01-01', "
+		"	'04:00:00', "
+		"	NULL)"));
 	stdoutput.printf("\n");
-	assertTrue(cur->sendQuery("insert into testtable2 values (1,1.1,1.1,1,'testchar1','testvarchar1','2001-01-01','01:00:00',NULL)"));
-	assertTrue(cur->sendQuery("insert into testtable2 values (2,2.2,2.2,2,'testchar2','testvarchar2','2002-01-01','02:00:00',NULL)"));
-	assertTrue(cur->sendQuery("insert into testtable2 values (3,3.3,3.3,3,'testchar3','testvarchar3','2003-01-01','03:00:00',NULL)"));
-	assertTrue(cur->sendQuery("insert into testtable2 values (4,4.4,4.4,4,'testchar4','testvarchar4','2004-01-01','04:00:00',NULL)"));
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable2 "
+		"values ("
+		"	1, "
+		"	1.1, "
+		"	1.1, "
+		"	1, "
+		"	'testchar1', "
+		"	'testvarchar1', "
+		"	'2001-01-01', "
+		"	'01:00:00', "
+		"	NULL)"));
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable2 "
+		"values ("
+		"	2, "
+		"	2.2, "
+		"	2.2, "
+		"	2, "
+		"	'testchar2', "
+		"	'testvarchar2', "
+		"	'2002-01-01', "
+		"	'02:00:00', "
+		"	NULL)"));
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable2 "
+		"values ("
+		"	3, "
+		"	3.3, "
+		"	3.3, "
+		"	3, "
+		"	'testchar3', "
+		"	'testvarchar3', "
+		"	'2003-01-01', "
+		"	'03:00:00', "
+		"	NULL)"));
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable2 "
+		"values ("
+		"	4, "
+		"	4.4, "
+		"	4.4, "
+		"	4, "
+		"	'testchar4', "
+		"	'testvarchar4', "
+		"	'2004-01-01', "
+		"	'04:00:00', "
+		"	NULL)"));
 	stdoutput.printf("\n");
 
 
@@ -91,7 +209,19 @@ int main(int argc, char **argv) {
 
 	// bind by name
 	stdoutput.printf("BIND BY NAME: \n");
-	cur->prepareQuery("insert into testtable1 values (?,?,?,?,?,?,?,?,NULL)");
+	cur->prepareQuery(
+		"insert into "
+		"	testtable1 "
+		"values ("
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	NULL)");
 	assertEquals(cur->countBindVariables(),8);
 	cur->inputBind("1",5);
 	cur->inputBind("2",5.5,4,2);
@@ -144,7 +274,19 @@ int main(int argc, char **argv) {
 
 	// bind by name
 	stdoutput.printf("BIND BY NAME: \n");
-	cur->prepareQuery("insert into testtable2 values (?,?,?,?,?,?,?,?,NULL)");
+	cur->prepareQuery(
+		"insert into "
+		"	testtable2 "
+		"values ("
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	NULL)");
 	assertEquals(cur->countBindVariables(),8);
 	cur->inputBind("1",5);
 	cur->inputBind("2",5.5,4,2);
@@ -772,8 +914,32 @@ int main(int argc, char **argv) {
 	assertEquals(secondcur->getField(0,(uint32_t)0),"8");
 	assertTrue(con->autoCommitOn());
 	assertTrue(secondcon->autoCommitOn());
-	assertTrue(cur->sendQuery("insert into testtable1 values (10,10.1,10.1,10,'testchar10','testvarchar10','2010-01-01','10:00:00',NULL)"));
-	assertTrue(cur->sendQuery("insert into testtable2 values (10,10.1,10.1,10,'testchar10','testvarchar10','2010-01-01','10:00:00',NULL)"));
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable1 "
+		"values ("
+		"	10, "
+		"	10.1, "
+		"	10.1, "
+		"	10, "
+		"	'testchar10', "
+		"	'testvarchar10', "
+		"	'2010-01-01', "
+		"	'10:00:00', "
+		"	NULL)"));
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable2 "
+		"values ("
+		"	10, "
+		"	10.1, "
+		"	10.1, "
+		"	10, "
+		"	'testchar10', "
+		"	'testvarchar10', "
+		"	'2010-01-01', "
+		"	'10:00:00', "
+		"	NULL)"));
 	// Same routine as above, but we won't commit each time because
 	// autocommit is enabled.
 	val="";

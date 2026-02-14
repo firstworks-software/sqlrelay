@@ -367,7 +367,7 @@ void sqlrbench::benchSelect(
 
 		// calculate Mbps per second
 		float	mbps=(qps*(float)bytesperquery)/1024.0/1024.0*8.0;
-		
+
 		// calculate queries per connection
 		float	qpc=(float)qcount;
 
@@ -559,7 +559,7 @@ void sqlrbench::benchDML(
 
 		// calculate Mbps per second
 		float	mbps=(qps*(float)bytesperquery)/1024.0/1024.0*8.0;
-		
+
 		// calculate queries per connection
 		float	qpc=(float)qcount;
 

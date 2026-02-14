@@ -28,7 +28,7 @@ function tcSuccess($tc, $msg = "success")
 function tcFailure($tc, $msg = "failure", $exit = TRUE)
 {
 	echo "failure - tc:{$tc}, msg:{$msg}", PHP_EOL;
-	
+
 	if ($exit)
 	{
 		exit(1);
@@ -68,7 +68,7 @@ $db = null;
 
 // ----------------------------------------------------------------------------------------------
 $tc = "connect failure test";
-try 
+try
 {
 	$db = new PDO($dsn, $user, $user, $options); // invalid password
 	tcFailure($tc, "expect expection about connect failure.. but not throw", false);
@@ -83,7 +83,7 @@ catch(PDOException $e)
 try
 {
 	$db = new PDO($dsn, $user, $user, $options); // invalid password
-	
+
 	if (empty($db))
 	{
 		tcSuccess($tc);
@@ -117,11 +117,11 @@ catch (PDOException $e)
 
 // ----------------------------------------------------------------------------------------------
 $tc = "ping test";
-try 
+try
 {
 	$stmt = $db->query("SELECT 1 AS val;");
 	$row = $stmt->fetch(PDO::FETCH_ASSOC);
-	
+
 	if ($row['val'] == 1) //
 	{
 		tcSuccess($tc);
@@ -160,12 +160,12 @@ try
 	$sql = <<<SQL
 DROP TABLE testtable;
 SQL;
-	
+
 	$db->exec($sql);
 }
 catch (PDOException $e)
 {
-	
+
 }
 
 
@@ -188,7 +188,7 @@ CREATE TABLE testtable(
 );
 SQL;
 	$rowcnt = $db->exec($sql);
-	
+
 	tcSuccess($tc);
 }
 catch (PDOException $e)
@@ -206,9 +206,9 @@ try
 INSERT INTO testtable(uid, value2, value1, value3, msg1, msg2, msg3, createAt)
    VALUES(:uid, :value2, :value1, :value3, :msg1, :msg2, :msg3, :createAt);
 SQL;
-	
+
 	$stmt = $db->prepare($sql);
-	
+
 	$value1 = 100;
 	$value2 = 200;
 	$value3 = 300;
@@ -216,10 +216,10 @@ SQL;
 	$msg2 = 'Hello2';
 	$msg3 = 'Hello3';
 	$createAt = date("Y-m-d H:i:s");
-	
+
 	for ($i = 1; $i <= 5; $i++)
 	{
-		
+
 		tcCheck('bindValue', $stmt->bindValue(':uid', $i, PDO::PARAM_INT), true);
 		tcCheck('bindValue', $stmt->bindValue(':value1', $value1, PDO::PARAM_INT), true);
 		tcCheck('bindValue', $stmt->bindValue(':value2', $value2, PDO::PARAM_INT), true);
@@ -228,11 +228,11 @@ SQL;
 		tcCheck('bindValue', $stmt->bindValue(':msg2', $msg2, PDO::PARAM_STR), true);
 		tcCheck('bindValue', $stmt->bindValue(':msg3', $msg3, PDO::PARAM_STR), true);
 		tcCheck('bindValue', $stmt->bindValue(':createAt', $createAt, PDO::PARAM_STR), true);
-		
+
 		tcCheck('execute', $stmt->execute(), true);
-		
+
 		tcCheck('rowCount', $stmt->rowCount(), 1);
-		
+
 		$last = $db->lastInsertId();
 		tcCheck('lastInsertId', (int)$last, $i);
 	}
@@ -254,11 +254,11 @@ UPDATE testtable
    SET value1 = 100
  WHERE uid = 1;
 SQL;
-	
+
 // 	$stmt = $db->query($sql);
 // 	$rowcnt = $stmt->rowCount();
 	$rowcnt = $db->exec($sql);
-	
+
 	if ($rowcnt === 1)
 	{
 		tcSuccess($tc);
@@ -286,11 +286,11 @@ UPDATE testtable
    SET value1 = 1000
  WHERE uid = 1;
 SQL;
-	
+
 	$stmt = $db->query($sql);
 	$rowcnt = $stmt->rowCount();
 //	$rowcnt = $db->exec($sql);
-	
+
 	if ($rowcnt === 1)
 	{
 		tcSuccess($tc);
@@ -318,22 +318,22 @@ SELECT *
   FROM testtable
  WHERE uid = :uid;
 SQL;
-	
+
 	$stmt = $db->query($sql);
 	$stmt->bindValue(':uid', 1, PDO::PARAM_INT);
 	$rowcnt = $stmt->rowCount();
-	
+
 	tcCheck('selectRowCount', $rowcnt, 1);
-	
+
 	$row = $stmt->fetch(PDO::FETCH_ASSOC);
-	
+
 	tcCheck('nativeType', $row['value1'], 1000);
 	tcCheck('nativeType', $row['value2'], 200);
 	tcCheck('nativeType', $row['value3'], 300);
 	tcCheck('nativeType', $row['msg1'], 'Hello1');
 	tcCheck('nativeType', $row['msg2'], 'Hello2');
 	tcCheck('nativeType', $row['msg3'], 'Hello3');
-	
+
 }
 catch (PDOException $e)
 {
@@ -356,13 +356,13 @@ SQL;
 
 	$stmt = $db->query($sql);
 	$rowcnt = $stmt->rowCount();
-	
+
 	tcCheck('selectRowCount', $rowcnt, 2);
-	
+
 	$row = $stmt->fetch(PDO::FETCH_ASSOC);
 	tcCheck('nativeType', $row['value1'], 1000);
 	tcCheck('nativeType', $row['msg1'], 'Hello1');
-	
+
 	$row = $stmt->fetch(PDO::FETCH_ASSOC);
 	tcCheck('nativeType', $row['value1'], 100);
 	tcCheck('nativeType', $row['msg1'], 'Hello1');
@@ -384,23 +384,23 @@ try
 DELETE FROM testtable
  WHERE uid IN (1,2);
 SQL;
-	
+
 	$stmt = $db->query($sql);
 	$rowcnt = $stmt->rowCount();
 //	$rowcnt = $db->exec($sql);
-	
+
 	tcCheck('selectRowCount', $rowcnt, 2);
-	
+
 	// reselect
 	$sql = <<<SQL
 SELECT *
   FROM testtable
  WHERE uid IN (1,2);
 SQL;
-	
+
 	$stmt = $db->query($sql);
 	$rowcnt = $stmt->rowCount();
-	
+
 	tcCheck('selectRowCount', $rowcnt, 0);
 }
 catch (PDOException $e)

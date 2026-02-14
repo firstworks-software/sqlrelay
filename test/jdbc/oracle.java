@@ -4,6 +4,7 @@
 import java.sql.*;
 import com.firstworks.sqlrelay.*;
 import com.firstworks.sql.*;
+import java.util.Calendar;
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Executor;
@@ -40,6 +41,22 @@ class oracle extends sqlrtest {
 		boolean	issqlrelay=
 			driver.equals("com.firstworks.sql.SQLRelayDriver");
 
+		Connection		con;
+		DatabaseMetaData	md;
+		boolean			boolval;
+		String			stringval;
+		int			intval;
+		ResultSet		rs;
+		ResultSetMetaData	rsmd;
+		int			col;
+		Statement		stmt;
+		PreparedStatement	pstmt;
+		Clob			clob;
+		Blob			blob;
+		CallableStatement	cstmt;
+		java.sql.Date		datevar;
+		Calendar		cal=Calendar.getInstance();
+
 
 		// connection
 		System.out.println("CONNECTION:");
@@ -47,8 +64,7 @@ class oracle extends sqlrtest {
 		// getConnection
 		System.out.println("getConnection");
 		Class.forName(driver);
-		Connection	con=DriverManager.getConnection(
-						url,user,password);
+		con=DriverManager.getConnection(url,user,password);
 		assertTrue((con!=null));
 		System.out.println();
 
@@ -228,7 +244,7 @@ class oracle extends sqlrtest {
 
 		// getMetaData
 		System.out.println("getMetaData");
-		DatabaseMetaData	md=con.getMetaData();
+		md=con.getMetaData();
 		assertTrue((md!=null));
 		System.out.println();
 
@@ -245,11 +261,6 @@ class oracle extends sqlrtest {
 			assertEquals((md.unwrap(SQLRConnection.class)!=null),1);
 			System.out.println();
 		}
-
-		// database attributes
-		boolean		boolval;
-		int		intval;
-		String		stringval;
 
 		// allProceduresAreCallable
 		System.out.println("allProceduresAreCallable");
@@ -1662,12 +1673,12 @@ class oracle extends sqlrtest {
 
 		// catalogs
 		System.out.println("catalogs");
-		ResultSet	rs=md.getCatalogs();
+		rs=md.getCatalogs();
 		assertTrue((rs!=null));
-		ResultSetMetaData	rsmd=rs.getMetaData();
+		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
 		assertEquals(rsmd.getColumnCount(),1);
-		int	col=1;
+		col=1;
 		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
 		while (rs.next()) {
 			System.out.println(rs.getString("TABLE_CAT"));
@@ -2465,7 +2476,7 @@ if (false) {
 
 		// createStatement
 		System.out.println("create statement");
-		Statement	stmt=con.createStatement();
+		stmt=con.createStatement();
 		assertTrue((stmt!=null));
 		assertEquals(stmt.getConnection(),con);
                 System.out.println();
@@ -2605,22 +2616,50 @@ if (false) {
 
 		// create temptable
 		System.out.println("CREATE TEMPTABLE:");
-		assertEquals(stmt.executeUpdate("create table testtable (testnumber number, testchar char(40), testvarchar varchar2(40), testdate date, testlong long, testclob clob, testblob blob)"),0);
+		assertEquals(stmt.executeUpdate(
+			"create table testtable ("+
+			"	testnumber number, "+
+			"	testchar char(40), "+
+			"	testvarchar varchar2(40), "+
+			"	testdate date, "+
+			"	testlong long, "+
+			"	testclob clob, "+
+			"	testblob blob)"),0);
 		System.out.println();
 
 
 		// insert
 		System.out.println("INSERT:");
-		assertEquals(stmt.executeUpdate("insert into testtable values (1,'testchar1','testvarchar1','01-JAN-2001','testlong1','testclob1',empty_blob())"),1);
+		assertEquals(stmt.executeUpdate(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1, "+
+			"	'testchar1', "+
+			"	'testvarchar1', "+
+			"	'01-JAN-2001', "+
+			"	'testlong1', "+
+			"	'testclob1', "+
+			"	empty_blob())"),1);
 		stmt.close();
 		System.out.println();
 
 
 		// bind by position
 		System.out.println("BIND BY POSITION:");
-		PreparedStatement	pstmt=con.prepareStatement("insert into testtable values (:var1,:var2,:var3,:var4,:var5,:var6,:var7)");
-		Clob	clob=con.createClob();
-		Blob	blob=con.createBlob();
+		pstmt=con.prepareStatement(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	:var1, "+
+			"	:var2, "+
+			"	:var3, "+
+			"	:var4, "+
+			"	:var5, "+
+			"	:var6, "+
+			"	:var7)");
+		clob=con.createClob();
+		blob=con.createBlob();
 		for (int i=2; i<=4; i++) {
 			pstmt.clearParameters();
 			pstmt.setInt(1,i);
@@ -2642,7 +2681,17 @@ if (false) {
 
 		// bind by name
 		System.out.println("BIND BY NAME:");
-		CallableStatement	cstmt=con.prepareCall("insert into testtable values (:var1,:var2,:var3,:var4,:var5,:var6,:var7)");
+		cstmt=con.prepareCall(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	:var1, "+
+			"	:var2, "+
+			"	:var3, "+
+			"	:var4, "+
+			"	:var5, "+
+			"	:var6, "+
+			"	:var7)");
 		for (int i=5; i<=8; i++) {
 			cstmt.clearParameters();
 			cstmt.setInt("var1",i);
@@ -2661,14 +2710,78 @@ if (false) {
 		cstmt.close();
 		System.out.println();
 
-		// FIXME: output binds
+
+		// output bind by position
+		System.out.println("OUTPUT BIND BY POSITION:");
+		cstmt=con.prepareCall(
+			"begin "+
+			"	:numvar:=1; "+
+			"	:stringvar:='hello'; "+
+			"	:floatvar:=2.5; "+
+			"	:datevar:='03-FEB-2001'; "+
+			"end;");
+		cstmt.registerOutParameter("1",Types.INTEGER);
+		cstmt.registerOutParameter("2",Types.VARCHAR);
+		cstmt.registerOutParameter("3",Types.DOUBLE);
+		cstmt.registerOutParameter("4",Types.DATE);
+		assertTrue(cstmt.execute());
+		assertEquals(cstmt.getInt("1"),1);
+		assertEquals(cstmt.getString("2"),"hello");
+		assertEquals(cstmt.getDouble("3"),2.5);
+		datevar=cstmt.getDate("4");
+		cal.setTime(datevar);
+		assertEquals(cal.get(Calendar.YEAR),2001);
+		assertEquals(cal.get(Calendar.MONTH),
+					Calendar.FEBRUARY);
+		assertEquals(cal.get(Calendar.DAY_OF_MONTH),3);
+		assertEquals(cal.get(Calendar.HOUR_OF_DAY),0);
+		assertEquals(cal.get(Calendar.MINUTE),0);
+		assertEquals(cal.get(Calendar.SECOND),0);
+		cstmt.close();
+		System.out.println();
+
+
+		// output bind by name
+		System.out.println("OUTPUT BIND BY NAME:");
+		cstmt=con.prepareCall(
+			"begin "+
+			"	:numvar:=1; "+
+			"	:stringvar:='hello'; "+
+			"	:floatvar:=2.5; "+
+			"	:datevar:='03-FEB-2001'; "+
+			"end;");
+		cstmt.registerOutParameter("numvar",Types.INTEGER);
+		cstmt.registerOutParameter("stringvar",Types.VARCHAR);
+		cstmt.registerOutParameter("floatvar",Types.DOUBLE);
+		cstmt.registerOutParameter("datevar",Types.DATE);
+		assertTrue(cstmt.execute());
+		assertEquals(cstmt.getInt("numvar"),1);
+		assertEquals(cstmt.getString("stringvar"),"hello");
+		assertEquals(cstmt.getDouble("floatvar"),2.5);
+		datevar=cstmt.getDate("datevar");
+		cal.setTime(datevar);
+		assertEquals(cal.get(Calendar.YEAR),2001);
+		assertEquals(cal.get(Calendar.MONTH),
+					Calendar.FEBRUARY);
+		assertEquals(cal.get(Calendar.DAY_OF_MONTH),3);
+		assertEquals(cal.get(Calendar.HOUR_OF_DAY),0);
+		assertEquals(cal.get(Calendar.MINUTE),0);
+		assertEquals(cal.get(Calendar.SECOND),0);
+		cstmt.close();
+		System.out.println();
 
 
 		// select
 		System.out.println("SELECT:");
 		stmt=con.createStatement();
 		assertTrue((stmt!=null));
-		rs=stmt.executeQuery("select * from testtable order by testnumber");
+		rs=stmt.executeQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testnumber");
 		assertTrue((rs!=null));
 		System.out.println();
 
@@ -2773,19 +2886,14 @@ if (false) {
 					"                               ");
 			assertEquals(rs.getString(3),"testvarchar"+i);
 
-			if (issqlrelay) {
-				assertEquals(rs.getString(4),"01-JAN-0"+i);
-			} else {
-				// oracle jdbc returns the format:
-				// YYYY-MM-DD HH:MM:SS
-				// independent of how you set NLS_DATE_FORMAT
-				//
-				// also, some weird bug causes the date to
-				// come back with the century as 39 instead
-				// of 20, so we'll disable this for now
-				//assertEquals(rs.getString(4),
-						//"200"+i+"-01-01 00:00:00");
-			}
+			datevar=rs.getDate(4);
+			cal.setTime(datevar);
+			assertEquals(cal.get(Calendar.YEAR),i);
+			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
+			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
+			assertEquals(cal.get(Calendar.HOUR_OF_DAY),0);
+			assertEquals(cal.get(Calendar.MINUTE),0);
+			assertEquals(cal.get(Calendar.SECOND),0);
 
 			assertEquals(rs.getString(5),"testlong"+i);
 			assertEquals(rs.getString(6),"testclob"+i);
@@ -2821,7 +2929,13 @@ if (false) {
 
 		// fields by name
 		System.out.println("FIELDS BY NAME:");
-		rs=stmt.executeQuery("select * from testtable order by testnumber");
+		rs=stmt.executeQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testnumber");
 		assertTrue((rs!=null));
 		System.out.println();
 
@@ -2835,20 +2949,14 @@ if (false) {
 			assertEquals(rs.getString("TESTVARCHAR"),
 							"testvarchar"+i);
 
-			if (issqlrelay) {
-				assertEquals(rs.getString("TESTDATE"),
-								"01-JAN-0"+i);
-			} else {
-				// oracle jdbc returns the format:
-				// YYYY-MM-DD HH:MM:SS
-				// independent of how you set NLS_DATE_FORMAT
-				//
-				// also, some weird bug causes the date to
-				// come back with the century as 39 instead
-				// of 20, so we'll disable this for now
-				//assertEquals(rs.getString("TESTDATE"),
-						//"200"+i+"-01-01 00:00:00");
-			}
+			datevar=rs.getDate("TESTDATE");
+			cal.setTime(datevar);
+			assertEquals(cal.get(Calendar.YEAR),i);
+			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
+			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
+			assertEquals(cal.get(Calendar.HOUR_OF_DAY),0);
+			assertEquals(cal.get(Calendar.MINUTE),0);
+			assertEquals(cal.get(Calendar.SECOND),0);
 
 			assertEquals(rs.getString("TESTLONG"),"testlong"+i);
 			assertEquals(rs.getString("TESTCLOB"),"testclob"+i);
@@ -2888,7 +2996,15 @@ if (false) {
 		System.out.println();
 
 
-		// FIXME: output bind
+		// output bind
+		System.out.println("OUTPUT BIND:");
+		cstmt=con.prepareCall("begin :var1:='hello'; end;");
+		cstmt.registerOutParameter("var1",Types.VARCHAR);
+		assertTrue(cstmt.execute());
+		assertEquals(cstmt.getString("var1"),"hello");
+		cstmt.close();
+		System.out.println();
+
 
 		// FIXME: nulls as nulls
 
@@ -2896,27 +3012,51 @@ if (false) {
 
 
 		// commit
-		// FIXME: ...and rollback, setSavepoint, and releaseSavepoint
+
+
+		// fixme: ...and rollback, setsavepoint, and releasesavepoint
 		System.out.println("COMMIT AND ROLLBACK:");
 		Connection	secondcon=DriverManager.getConnection(
 							url,user,password);
 		assertTrue((secondcon!=null));
 		Statement	secondstmt=secondcon.createStatement();
 		assertTrue((secondstmt!=null));
-		ResultSet	secondrs=secondstmt.executeQuery("select count(*) from testtable");
+		ResultSet	secondrs=secondstmt.executeQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable ");
 		assertTrue((secondrs!=null));
 		secondrs.next();
 		assertEquals(secondrs.getString(1),"0");
 		secondrs.close();
 		con.commit();
-		secondrs=secondstmt.executeQuery("select count(*) from testtable");
+		secondrs=secondstmt.executeQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable ");
 		assertTrue((secondrs!=null));
 		secondrs.next();
 		assertEquals(secondrs.getString(1),"8");
 		con.setAutoCommit(true);
 		secondrs.close();
-		assertEquals(stmt.executeUpdate("insert into testtable values (10,'testchar10','testvarchar10','01-JAN-2010','testlong10','testclob10',NULL)"),1);
-		secondrs=secondstmt.executeQuery("select count(*) from testtable");
+		assertEquals(stmt.executeUpdate(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	10, "+
+			"	'testchar10', "+
+			"	'testvarchar10', "+
+			"	'01-JAN-2010', "+
+			"	'testlong10', "+
+			"	'testclob10', "+
+			"	NULL)"),1);
+		secondrs=secondstmt.executeQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable ");
 		assertTrue((secondrs!=null));
 		secondrs.next();
 		assertEquals(secondrs.getString(1),"9");
@@ -2927,7 +3067,44 @@ if (false) {
 		System.out.println();
 
 
-		// FIXME: clob and blob outpub bind
+		// clob and blob output bind
+		System.out.println("CLOB AND BLOB OUTPUT BIND:");
+		try {
+			stmt.executeUpdate("drop table testtable1");
+		} catch (Exception ex) {
+		}
+		assertEquals(stmt.executeUpdate(
+			"create table testtable1 ("+
+			"	testclob clob, "+
+			"	testblob blob)"),0);
+		pstmt=con.prepareStatement(
+			"insert into "+
+			"	testtable1 "+
+			"values ("+
+			"	'hello', "+
+			"	:var1)");
+		assertTrue((pstmt!=null));
+		pstmt.setBytes(1,"hello".getBytes(StandardCharsets.UTF_8));
+		assertEquals(pstmt.executeUpdate(),1);
+		pstmt.close();
+		cstmt=con.prepareCall(
+			"begin "+
+			"	select testclob "+
+			"		into :clobvar "+
+			"		from testtable1; "+
+			"	select testblob "+
+			"		into :blobvar "+
+			"		from testtable1; "+
+			"end;");
+		cstmt.registerOutParameter("clobvar",Types.CLOB);
+		cstmt.registerOutParameter("blobvar",Types.BLOB);
+		assertTrue(cstmt.execute());
+		assertEquals(cstmt.getString("clobvar"),"hello");
+		assertEquals(new String(cstmt.getBytes("blobvar"),
+					StandardCharsets.UTF_8),"hello");
+		cstmt.close();
+		assertEquals(stmt.executeUpdate("drop table testtable1"),0);
+		System.out.println();
 
 
 		try {
@@ -2938,8 +3115,20 @@ if (false) {
 
 		// null and empty clobs and blobs
 		System.out.println("NULL AND EMPTY CLOBS AND BLOBS:");
-		assertEquals(stmt.executeUpdate("create table testtable1 (testclob1 clob, testclob2 clob, testblob1 blob, testblob2 blob)"),0);
-		pstmt=con.prepareStatement("insert into testtable1 values (:var1,:var2,:var3,:var4)");
+		assertEquals(stmt.executeUpdate(
+			"create table testtable1 ("+
+			"	testclob1 clob, "+
+			"	testclob2 clob, "+
+			"	testblob1 blob, "+
+			"	testblob2 blob)"),0);
+		pstmt=con.prepareStatement(
+			"insert into "+
+			"	testtable1 "+
+			"values ("+
+			"	:var1, "+
+			"	:var2, "+
+			"	:var3, "+
+			"	:var4)");
 		assertTrue((pstmt!=null));
 		pstmt.setString(1,"");
 		pstmt.setString(2,null);
@@ -2971,8 +3160,12 @@ if (false) {
 
 		// long clob
 		System.out.println("LONG CLOB:");
-		assertEquals(stmt.executeUpdate("create table testtable2 (testclob clob)"),0);
-		pstmt=con.prepareStatement("insert into testtable2 values (:clobval)");
+		assertEquals(stmt.executeUpdate(
+			"create table "+
+			"	testtable2 (testclob clob)"),0);
+		pstmt=con.prepareStatement(
+			"insert into "+
+			"	testtable2 values (:clobval)");
 		assertTrue((pstmt!=null));
 		StringBuilder	clobval=new StringBuilder();
 		// oracle jdbc struggles with more than 1024 byte clobs
@@ -2989,18 +3182,53 @@ if (false) {
 		assertEquals(clobstr,cl.getSubString(1,(int)cl.length()));
 		rs.close();
 		pstmt.close();
-		// FIXME: use callable statement?
-		/*cur->prepareQuery("begin select testclob into :clobbindval from testtable2; end;");
-		cur->defineOutputBindClob("clobbindval");
-		assertTrue(cur->executeQuery());
-		const char	*clobbindvar=cur->getOutputBindClob("clobbindval");
-		assertEquals(cur->getOutputBindLength("clobbindval"),8*1024);
-		assertEquals(clobval,clobbindvar);
-		cur->sendQuery("drop table testtable2");*/
+		cstmt=con.prepareCall(
+			"begin "+
+			"	select testclob into :clobbindval "+
+			"	from testtable2; "+
+			"end;");
+		cstmt.registerOutParameter("clobbindval",Types.CLOB);
+		assertTrue(cstmt.execute());
+		assertEquals(cstmt.getString("clobbindval"),clobstr);
+		cstmt.close();
+		assertEquals(stmt.executeUpdate("drop table testtable2"),0);
 		System.out.println();
 
 
-		// FIXME: long output bind
+		// long output bind
+		System.out.println("LONG OUTPUT BIND:");
+		try {
+			stmt.executeUpdate("drop table testtable2");
+		} catch (Exception ex) {
+		}
+		assertEquals(stmt.executeUpdate(
+			"create table "+
+			"	testtable2 (testval varchar2(4000))"),0);
+		StringBuilder	testval=new StringBuilder();
+		for (int i=0; i<4000; i++) {
+			testval.append('C');
+		}
+		String	teststr=testval.toString();
+		pstmt=con.prepareStatement(
+			"insert into "+
+			"	testtable2 values (:testval)");
+		assertTrue((pstmt!=null));
+		pstmt.setString(1,teststr);
+		assertEquals(pstmt.executeUpdate(),1);
+		pstmt.close();
+		rs=stmt.executeQuery("select testval from testtable2");
+		assertTrue((rs!=null));
+		rs.next();
+		assertEquals(rs.getString(1),teststr);
+		rs.close();
+		cstmt=con.prepareCall("begin :bindval:='"+teststr+"'; end;");
+		cstmt.registerOutParameter("bindval",Types.VARCHAR);
+		assertTrue(cstmt.execute());
+		assertEquals(cstmt.getString("bindval"),teststr);
+		cstmt.close();
+		assertEquals(stmt.executeUpdate("drop table testtable2"),0);
+		System.out.println();
+
 
 		// FIXME: negative input bind
 
@@ -3014,41 +3242,75 @@ if (false) {
 		String	hostname=InetAddress.getLocalHost().
 					getHostName().split("\\.")[0];
 		try {
-			assertEquals(stmt.executeUpdate("drop table "+hostname+"_temptabledelete"),0);
+			assertEquals(stmt.executeUpdate(
+				"drop table "+hostname+
+				"_temptabledelete"),0);
 		} catch (Exception ex) {
 		}
-		assertEquals(stmt.executeUpdate("create global temporary table "+hostname+"_temptabledelete (col1 number) on commit delete rows"),0);
-		assertEquals(stmt.executeUpdate("insert into "+hostname+"_temptabledelete values (1)"),1);
-		rs=stmt.executeQuery("select count(*) from "+hostname+"_temptabledelete");
+		assertEquals(stmt.executeUpdate(
+			"create global "+
+			"	temporary table "+
+			hostname+
+			"_temptabledelete "+
+			"(col1 number) "+
+			"on commit delete rows"),0);
+		assertEquals(stmt.executeUpdate(
+			"insert into "+hostname+
+			"_temptabledelete "+
+			"values (1)"),1);
+		rs=stmt.executeQuery(
+			"select count(*) from "+
+			hostname+"_temptabledelete");
 		assertTrue((rs!=null));
 		rs.next();
 		assertEquals(rs.getString(1),"1");
 		rs.close();
 		con.commit();
-		rs=stmt.executeQuery("select count(*) from "+hostname+"_temptabledelete");
+		rs=stmt.executeQuery(
+			"select count(*) from "+
+			hostname+"_temptabledelete");
 		assertTrue((rs!=null));
 		rs.next();
 		assertEquals(rs.getString(1),"0");
 		rs.close();
-		assertEquals(stmt.executeUpdate("drop table "+hostname+"_temptabledelete"),0);
+		assertEquals(stmt.executeUpdate(
+			"drop table "+hostname+
+			"_temptabledelete"),0);
 		System.out.println();
 		try {
-			stmt.executeUpdate("truncate table "+hostname+"_temptablepreserve");
+			stmt.executeUpdate(
+				"truncate table "+hostname+
+				"_temptablepreserve");
 		} catch (Exception ex) {
 		}
 		try {
-			stmt.executeUpdate("drop table "+hostname+"_temptablepreserve");
+			stmt.executeUpdate(
+				"drop table "+hostname+
+				"_temptablepreserve");
 		} catch (Exception ex) {
 		}
-		assertEquals(stmt.executeUpdate("create global temporary table "+hostname+"_temptablepreserve (col1 number) on commit preserve rows"),0);
-		assertEquals(stmt.executeUpdate("insert into "+hostname+"_temptablepreserve values (1)"),1);
-		rs=stmt.executeQuery("select count(*) from "+hostname+"_temptablepreserve");
+		assertEquals(stmt.executeUpdate(
+			"create global "+
+			"	temporary table "+
+			hostname+
+			"_temptablepreserve "+
+			"(col1 number) "+
+			"on commit preserve rows"),0);
+		assertEquals(stmt.executeUpdate(
+			"insert into "+hostname+
+			"_temptablepreserve "+
+			"values (1)"),1);
+		rs=stmt.executeQuery(
+			"select count(*) from "+
+			hostname+"_temptablepreserve");
 		assertTrue((rs!=null));
 		rs.next();
 		assertEquals(rs.getString(1),"1");
 		rs.close();
 		con.commit();
-		rs=stmt.executeQuery("select count(*) from "+hostname+"_temptablepreserve");
+		rs=stmt.executeQuery(
+			"select count(*) from "+
+			hostname+"_temptablepreserve");
 		assertTrue((rs!=null));
 		rs.next();
 		assertEquals(rs.getString(1),"1");
@@ -3060,16 +3322,25 @@ if (false) {
 		assertTrue((con!=null));
 		stmt=con.createStatement();
 		assertTrue((stmt!=null));
-		rs=stmt.executeQuery("select count(*) from "+hostname+"_temptablepreserve");
+		rs=stmt.executeQuery(
+			"select count(*) from "+
+			hostname+"_temptablepreserve");
 		assertTrue((rs!=null));
 		rs.next();
 		assertEquals(rs.getString(1),"0");
 		rs.close();
-		assertEquals(stmt.executeUpdate("truncate table "+hostname+"_temptablepreserve"),0);
+		assertEquals(stmt.executeUpdate(
+			"truncate table "+hostname+
+			"_temptablepreserve"),0);
 		Thread.sleep(2000);
-		assertEquals(stmt.executeUpdate("drop table "+hostname+"_temptablepreserve"),0);
+		assertEquals(stmt.executeUpdate(
+			"drop table "+hostname+
+			"_temptablepreserve"),0);
 		try {
-			stmt.executeQuery("select count(*) from "+hostname+"_temptablepreserve");
+			stmt.executeQuery(
+				"select count(*) from "+
+				hostname+
+				"_temptablepreserve");
 			assertTrue(false);
 		} catch (Exception ex) {
 			assertTrue(true);
@@ -3177,11 +3448,11 @@ if (false) {
                 // setUnicodeStream
                 // setURL
 
+		// FIXME: need tests for CallableStatement methods...
+
 
 		// FIXME: need tests for Parameter class...
 		// FIXME: need tests for ParameterMetaData class...
-		// FIXME: need tests for CallableStatement class
-		// (and prepareCall)...
 
 
 		// FIXME: need tests for ResultSet methods...
@@ -3309,55 +3580,107 @@ if (false) {
 		// setTypeMap
 		// getTypeMap
                 // getObject
-		
+
 
 		// invalid queries
 		System.out.println("INVALID QUERIES:");
 		try {
-			stmt.executeQuery("select * from testtable order by testnumber");
+			stmt.executeQuery(
+				"select "+
+				"	* "+
+				"from "+
+				"	testtable "+
+				"order by "+
+				"	testnumber");
 			assertTrue(false);
 		} catch (Exception e) {
 			assertTrue(true);
 		}
 		try {
-			stmt.executeQuery("select * from testtable order by testnumber");
+			stmt.executeQuery(
+				"select "+
+				"	* "+
+				"from "+
+				"	testtable "+
+				"order by "+
+				"	testnumber");
 			assertTrue(false);
 		} catch (Exception e) {
 			assertTrue(true);
 		}
 		try {
-			stmt.executeQuery("select * from testtable order by testnumber");
+			stmt.executeQuery(
+				"select "+
+				"	* "+
+				"from "+
+				"	testtable "+
+				"order by "+
+				"	testnumber");
 			assertTrue(false);
 		} catch (Exception e) {
 			assertTrue(true);
 		}
 		try {
-			stmt.executeQuery("select * from testtable order by testnumber");
+			stmt.executeQuery(
+				"select "+
+				"	* "+
+				"from "+
+				"	testtable "+
+				"order by "+
+				"	testnumber");
 			assertTrue(false);
 		} catch (Exception e) {
 			assertTrue(true);
 		}
 		System.out.println();
 		try {
-			stmt.executeUpdate("insert into testtable values (1,2,3,4)");
+			stmt.executeUpdate(
+				"insert into "+
+				"	testtable "+
+				"values ("+
+				"	1, "+
+				"	2, "+
+				"	3, "+
+				"	4)");
 			assertTrue(false);
 		} catch (Exception e) {
 			assertTrue(true);
 		}
 		try {
-			stmt.executeUpdate("insert into testtable values (1,2,3,4)");
+			stmt.executeUpdate(
+				"insert into "+
+				"	testtable "+
+				"values ("+
+				"	1, "+
+				"	2, "+
+				"	3, "+
+				"	4)");
 			assertTrue(false);
 		} catch (Exception e) {
 			assertTrue(true);
 		}
 		try {
-			stmt.executeUpdate("insert into testtable values (1,2,3,4)");
+			stmt.executeUpdate(
+				"insert into "+
+				"	testtable "+
+				"values ("+
+				"	1, "+
+				"	2, "+
+				"	3, "+
+				"	4)");
 			assertTrue(false);
 		} catch (Exception e) {
 			assertTrue(true);
 		}
 		try {
-			stmt.executeUpdate("insert into testtable values (1,2,3,4)");
+			stmt.executeUpdate(
+				"insert into "+
+				"	testtable "+
+				"values ("+
+				"	1, "+
+				"	2, "+
+				"	3, "+
+				"	4)");
 			assertTrue(false);
 		} catch (Exception e) {
 			assertTrue(true);

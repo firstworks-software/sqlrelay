@@ -6,35 +6,35 @@ import com.firstworks.sqlrelay.SQLRCursor;
 
 
 class freetds extends sqlrtest {
-	
+
 	public static void	main(String[] args) {
 
-		String	dbtype;
 		String[]	isolationlevels={"1","0","2","3"};
+		String[]	cols;
+		String[]	fields;
+		long[]	fieldlens;
 		String[]	subvars={"var1","var2","var3"};
-		String[]	subvalstrings={"hi","hello","bye"};
 		long[]	subvallongs={1,2,3};
+		String[]	subvalstrings={"hi","hello","bye"};
 		double[]	subvaldoubles={10.55,10.556,10.5556};
 		int[]	precs={4,5,6};
 		int[]	scales={2,3,4};
-		String	numvar;
-		String	stringvar;
-		String	floatvar;
-		String[]	cols;
-		String[]	fields;
 		short	port;
 		String	socket;
 		short	id;
 		String	filename;
-		long[]	fieldlens;
-	
+		String	numvar;
+		String	stringvar;
+		String	floatvar;
+		String	dbtype;
+
 		// instantiation
 		SQLRConnection con=new SQLRConnection("sqlrelay",
 						(short)9000,
 						"/tmp/test.socket",
 						"testuser","testpassword",0,1);
 		SQLRCursor cur=new SQLRCursor(con);
-	
+
 		// get database type
 
 
@@ -67,7 +67,22 @@ class freetds extends sqlrtest {
 
 		// create temptable
 		System.out.println("CREATE TEMPTABLE: ");
-		assertTrue(cur.sendQuery("create table testtable (testint int, testsmallint smallint, testtinyint tinyint, testreal real, testfloat float, testdecimal decimal(4,1), testnumeric numeric(4,1), testmoney money, testsmallmoney smallmoney, testdatetime datetime, testsmalldatetime smalldatetime, testchar char(40), testvarchar varchar(40), testbit bit)"));
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
+			"	testint int, "+
+			"	testsmallint smallint, "+
+			"	testtinyint tinyint, "+
+			"	testreal real, "+
+			"	testfloat float, "+
+			"	testdecimal decimal(4,1), "+
+			"	testnumeric numeric(4,1), "+
+			"	testmoney money, "+
+			"	testsmallmoney smallmoney, "+
+			"	testdatetime datetime, "+
+			"	testsmalldatetime smalldatetime, "+
+			"	testchar char(40), "+
+			"	testvarchar varchar(40), "+
+			"	testbit bit)"));
 		System.out.println();
 
 
@@ -79,7 +94,24 @@ class freetds extends sqlrtest {
 
 		// insert
 		System.out.println("INSERT: ");
-		assertTrue(cur.sendQuery("insert into testtable values (1,1,1,1.1,1.1,1.1,1.1,1.00,1.00,'01-Jan-2001 01:00:00','01-Jan-2001 01:00:00','testchar1','testvarchar1',1)"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1, "+
+			"	1, "+
+			"	1, "+
+			"	1.1, "+
+			"	1.1, "+
+			"	1.1, "+
+			"	1.1, "+
+			"	1.00, "+
+			"	1.00, "+
+			"	'01-Jan-2001 01:00:00', "+
+			"	'01-Jan-2001 01:00:00', "+
+			"	'testchar1', "+
+			"	'testvarchar1', "+
+			"	1)"));
 		System.out.println();
 
 
@@ -91,7 +123,24 @@ class freetds extends sqlrtest {
 
 		// bind by position
 		System.out.println("BIND BY POSITION: ");
-		cur.prepareQuery("insert into testtable values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+		cur.prepareQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?)");
 		assertEquals(cur.countBindVariables(),14);
 		cur.inputBind("1",2);
 		cur.inputBind("2",2);
@@ -146,7 +195,24 @@ class freetds extends sqlrtest {
 		// bind by name
 		System.out.println("BIND BY NAME: ");
 		cur.clearBinds();
-		cur.prepareQuery("insert into testtable values (@var1,@var2,@var3,@var4,@var5,@var6,@var7,@var8,@var9,@var10,@var11,@var12,@var13,@var14)");
+		cur.prepareQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	@var1, "+
+			"	@var2, "+
+			"	@var3, "+
+			"	@var4, "+
+			"	@var5, "+
+			"	@var6, "+
+			"	@var7, "+
+			"	@var8, "+
+			"	@var9, "+
+			"	@var10, "+
+			"	@var11, "+
+			"	@var12, "+
+			"	@var13, "+
+			"	@var14)");
 		cur.inputBind("var1",5);
 		cur.inputBind("var2",5);
 		cur.inputBind("var3",5);
@@ -222,7 +288,13 @@ class freetds extends sqlrtest {
 
 		// select
 		System.out.println("SELECT: ");
-		assertTrue(cur.sendQuery("select * from testtable order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		System.out.println();
 
 
@@ -631,7 +703,7 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getField(0,1),"10.556");
 		assertEquals(cur.getField(0,2),"10.5556");
 		System.out.println();
-	
+
 		System.out.println("nullS as Nulls: ");
 		cur.getNullsAsNulls();
 		assertTrue(cur.sendQuery("select null,1,null"));
@@ -651,7 +723,13 @@ class freetds extends sqlrtest {
 		System.out.println("RESULT SET BUFFER SIZE: ");
 		assertEquals(cur.getResultSetBufferSize(),0);
 		cur.setResultSetBufferSize(2);
-		assertTrue(cur.sendQuery("select * from testtable order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		assertEquals(cur.getResultSetBufferSize(),2);
 		System.out.println();
 		assertEquals(cur.firstRowIndex(),0);
@@ -681,12 +759,24 @@ class freetds extends sqlrtest {
 		// dont get column info
 		System.out.println("DONT GET COLUMN INFO: ");
 		cur.dontGetColumnInfo();
-		assertTrue(cur.sendQuery("select * from testtable order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		assertEquals(cur.getColumnName(0),null);
 		assertEquals(cur.getColumnLength(0),0);
 		assertEquals(cur.getColumnType(0),null);
 		cur.getColumnInfo();
-		assertTrue(cur.sendQuery("select * from testtable order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		assertEquals(cur.getColumnName(0),"testint");
 		assertEquals(cur.getColumnLength(0),4);
 		assertEquals(cur.getColumnType(0),"INT");
@@ -695,7 +785,13 @@ class freetds extends sqlrtest {
 
 		// suspended session
 		System.out.println("SUSPENDED SESSION: ");
-		assertTrue(cur.sendQuery("select * from testtable order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		cur.suspendResultSet();
 		assertTrue(con.suspendSession());
 		port=con.getConnectionPort();
@@ -711,7 +807,13 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getField(6,0),"7");
 		assertEquals(cur.getField(7,0),"8");
 		System.out.println();
-		assertTrue(cur.sendQuery("select * from testtable order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		cur.suspendResultSet();
 		assertTrue(con.suspendSession());
 		port=con.getConnectionPort();
@@ -726,7 +828,13 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getField(6,0),"7");
 		assertEquals(cur.getField(7,0),"8");
 		System.out.println();
-		assertTrue(cur.sendQuery("select * from testtable order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		cur.suspendResultSet();
 		assertTrue(con.suspendSession());
 		port=con.getConnectionPort();
@@ -747,7 +855,13 @@ class freetds extends sqlrtest {
 		// suspended result set
 		System.out.println("SUSPENDED RESULT SET: ");
 		cur.setResultSetBufferSize(2);
-		assertTrue(cur.sendQuery("select * from testtable order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		assertEquals(cur.getField(2,0),"3");
 		id=cur.getResultSetId();
 		cur.suspendResultSet();
@@ -778,7 +892,13 @@ class freetds extends sqlrtest {
 		System.out.println("CACHED RESULT SET: ");
 		cur.cacheToFile("cachefile1");
 		cur.setCacheTtl(200);
-		assertTrue(cur.sendQuery("select * from testtable order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		filename=cur.getCacheFileName();
 		assertEquals(filename,"cachefile1");
 		cur.cacheOff();
@@ -832,7 +952,13 @@ class freetds extends sqlrtest {
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile1");
 		cur.setCacheTtl(200);
-		assertTrue(cur.sendQuery("select * from testtable order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		filename=cur.getCacheFileName();
 		assertEquals(filename,"cachefile1");
 		cur.cacheOff();
@@ -855,7 +981,8 @@ class freetds extends sqlrtest {
 
 
 		// from one cache file to another with result set buffer size
-		System.out.println("FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: ");
+		System.out.println("FROM ONE CACHE FILE TO ANOTHER "+
+					"WITH RESULT SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile2");
 		assertTrue(cur.openCachedResultSet("cachefile1"));
@@ -868,11 +995,18 @@ class freetds extends sqlrtest {
 
 
 		// cached result set with suspend and result set buffer size
-		System.out.println("CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: ");
+		System.out.println("CACHED RESULT SET WITH SUSPEND "+
+					"AND RESULT SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile1");
 		cur.setCacheTtl(200);
-		assertTrue(cur.sendQuery("select * from testtable order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		assertEquals(cur.getField(2,0),"3");
 		filename=cur.getCacheFileName();
 		assertEquals(filename,"cachefile1");
@@ -909,7 +1043,13 @@ class freetds extends sqlrtest {
 
 		// finished suspended session
 		System.out.println("FINISHED SUSPENDED SESSION: ");
-		assertTrue(cur.sendQuery("select * from testtable order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		assertEquals(cur.getField(4,0),"5");
 		assertEquals(cur.getField(5,0),"6");
 		assertEquals(cur.getField(6,0),"7");
@@ -926,25 +1066,75 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getField(6,0),null);
 		assertEquals(cur.getField(7,0),null);
 		System.out.println();
-	
+
 		// drop existing table
 		cur.sendQuery("commit tran");
 		cur.sendQuery("drop table testtable");
-	
-		// invalid queries...
 
 
 		// invalid queries
 		System.out.println("INVALID QUERIES: ");
-		assertFalse(cur.sendQuery("select * from testtable order by testint"));
-		assertFalse(cur.sendQuery("select * from testtable order by testint"));
-		assertFalse(cur.sendQuery("select * from testtable order by testint"));
-		assertFalse(cur.sendQuery("select * from testtable order by testint"));
+		assertFalse(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
+		assertFalse(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
+		assertFalse(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
+		assertFalse(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		System.out.println();
-		assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1, "+
+			"	2, "+
+			"	3, "+
+			"	4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1, "+
+			"	2, "+
+			"	3, "+
+			"	4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1, "+
+			"	2, "+
+			"	3, "+
+			"	4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1, "+
+			"	2, "+
+			"	3, "+
+			"	4)"));
 		System.out.println();
 		assertFalse(cur.sendQuery("create table testtable"));
 		assertFalse(cur.sendQuery("create table testtable"));

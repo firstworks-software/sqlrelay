@@ -39,5 +39,5 @@
 	#echo(stream_get_contents($result[4])."\n");
 	#echo(stream_get_contents($result[5])."\n");
 	#echo(stream_get_contents($result[6])."\n");
-	echo("\n");		
+	echo("\n");
 ?>

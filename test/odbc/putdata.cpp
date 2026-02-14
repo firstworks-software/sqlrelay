@@ -26,6 +26,7 @@ int main(int argc, char **argv) {
 	SQLCHAR		*user;
 	SQLCHAR		*password;
 
+
 	// env handle
 	stdoutput.printf("ENV HANDLE: \n");
 #if (ODBCVER >= 0x3000)

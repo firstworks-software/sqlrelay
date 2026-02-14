@@ -50,13 +50,39 @@ $cur->sendQuery("drop table testtable");
 
 # create temptable
 print("CREATE TEMPTABLE: \n");
-assertTrue($cur->sendQuery("create table testtable (testsmallint smallint, testint integer, testbigint bigint, testdecimal decimal(10,2), testreal real, testdouble double, testchar char(40), testvarchar varchar(40), testdate date, testtime time, testtimestamp timestamp)"));
+assertTrue($cur->sendQuery(
+	"create table testtable (".
+	"	testsmallint smallint, ".
+	"	testint integer, ".
+	"	testbigint bigint, ".
+	"	testdecimal decimal(10,2), ".
+	"	testreal real, ".
+	"	testdouble double, ".
+	"	testchar char(40), ".
+	"	testvarchar varchar(40), ".
+	"	testdate date, ".
+	"	testtime time, ".
+	"	testtimestamp timestamp)"));
 print("\n");
 
 
 # insert
 print("INSERT: \n");
-assertTrue($cur->sendQuery("insert into testtable values (1,1,1,1.1,1.1,1.1,'testchar1','testvarchar1','01/01/2001','01:00:00',NULL)"));
+assertTrue($cur->sendQuery(
+	"insert into ".
+	"	testtable ".
+	"values (".
+	"	1, ".
+	"	1, ".
+	"	1, ".
+	"	1.1, ".
+	"	1.1, ".
+	"	1.1, ".
+	"	'testchar1', ".
+	"	'testvarchar1', ".
+	"	'01/01/2001', ".
+	"	'01:00:00', ".
+	"	NULL)"));
 print("\n");
 
 
@@ -104,10 +130,66 @@ print("\n");
 
 # insert
 print("INSERT: \n");
-assertTrue($cur->sendQuery("insert into testtable values (5,5,5,5.5,5.5,5.5,'testchar5','testvarchar5','01/01/2005','05:00:00',NULL)"));
-assertTrue($cur->sendQuery("insert into testtable values (6,6,6,6.6,6.6,6.6,'testchar6','testvarchar6','01/01/2006','06:00:00',NULL)"));
-assertTrue($cur->sendQuery("insert into testtable values (7,7,7,7.7,7.7,7.7,'testchar7','testvarchar7','01/01/2007','07:00:00',NULL)"));
-assertTrue($cur->sendQuery("insert into testtable values (8,8,8,8.8,8.8,8.8,'testchar8','testvarchar8','01/01/2008','08:00:00',NULL)"));
+assertTrue($cur->sendQuery(
+	"insert into ".
+	"	testtable ".
+	"values (".
+	"	5, ".
+	"	5, ".
+	"	5, ".
+	"	5.5, ".
+	"	5.5, ".
+	"	5.5, ".
+	"	'testchar5', ".
+	"	'testvarchar5', ".
+	"	'01/01/2005', ".
+	"	'05:00:00', ".
+	"	NULL)"));
+assertTrue($cur->sendQuery(
+	"insert into ".
+	"	testtable ".
+	"values (".
+	"	6, ".
+	"	6, ".
+	"	6, ".
+	"	6.6, ".
+	"	6.6, ".
+	"	6.6, ".
+	"	'testchar6', ".
+	"	'testvarchar6', ".
+	"	'01/01/2006', ".
+	"	'06:00:00', ".
+	"	NULL)"));
+assertTrue($cur->sendQuery(
+	"insert into ".
+	"	testtable ".
+	"values (".
+	"	7, ".
+	"	7, ".
+	"	7, ".
+	"	7.7, ".
+	"	7.7, ".
+	"	7.7, ".
+	"	'testchar7', ".
+	"	'testvarchar7', ".
+	"	'01/01/2007', ".
+	"	'07:00:00', ".
+	"	NULL)"));
+assertTrue($cur->sendQuery(
+	"insert into ".
+	"	testtable ".
+	"values (".
+	"	8, ".
+	"	8, ".
+	"	8, ".
+	"	8.8, ".
+	"	8.8, ".
+	"	8.8, ".
+	"	'testchar8', ".
+	"	'testvarchar8', ".
+	"	'01/01/2008', ".
+	"	'08:00:00', ".
+	"	NULL)"));
 print("\n");
 
 
@@ -120,7 +202,14 @@ print("\n");
 # stored procedure
 print("STORED PROCEDURE: \n");
 $cur->sendQuery("drop procedure testproc");
-assertTrue($cur->sendQuery("create procedure testproc(in invar int, out outvar int) language sql begin set outvar = invar; end"));
+assertTrue($cur->sendQuery(
+	"create procedure testproc(".
+	"	in invar int, ".
+	"	out outvar int) ".
+	"language sql ".
+	"begin ".
+	"	set outvar = invar; ".
+	"end"));
 $cur->prepareQuery("call testproc(?,?)");
 $cur->inputBind("1",5);
 $cur->defineOutputBindString("2",10);
@@ -507,7 +596,11 @@ print("\n");
 print("NULLS as Undef: \n");
 $cur->getNullsAsUndefined();
 $cur->sendQuery("drop table testtable1");
-assertTrue($cur->sendQuery("create table testtable1 (col1 char(1), col2 char(1), col3 char(1))"));
+assertTrue($cur->sendQuery(
+	"create table testtable1 (".
+	"	col1 char(1), ".
+	"	col2 char(1), ".
+	"	col3 char(1))"));
 assertTrue($cur->sendQuery("insert into testtable1 values ('1',NULL,NULL)"));
 assertTrue($cur->sendQuery("select * from testtable1"));
 assertEqualString($cur->getField(0,0),"1");
@@ -726,7 +819,8 @@ print("\n");
 
 
 # from one cache file to another with result set buffer size
-print("FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: \n");
+print("FROM ONE CACHE FILE TO ANOTHER ".
+	"WITH RESULT SET BUFFER SIZE: \n");
 $cur->setResultSetBufferSize(2);
 $cur->cacheToFile("cachefile2");
 assertTrue($cur->openCachedResultSet("cachefile1"));
@@ -739,7 +833,8 @@ print("\n");
 
 
 # cached result set with suspend and result set buffer size
-print("CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: \n");
+print("CACHED RESULT SET WITH SUSPEND ".
+	"AND RESULT SET BUFFER SIZE: \n");
 $cur->setResultSetBufferSize(2);
 $cur->cacheToFile("cachefile1");
 $cur->setCacheTtl(200);
@@ -802,8 +897,6 @@ print("\n");
 $con->commit();
 $cur->sendQuery("drop table testtable");
 print("\n");
-
-# invalid queries...
 
 
 # invalid queries

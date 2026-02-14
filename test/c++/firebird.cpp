@@ -14,29 +14,30 @@ sqlrcursor	*secondcur;
 
 int main(int argc, char **argv) {
 
-	const char	*bindvars[13]={"1","2","3","4","5","6",
+	const char	*bindvars[]={"1","2","3","4","5","6",
 				"7","8","9","10","11","12",NULL};
-	const char	*bindvals[12]={"4","4","4.4","4.4","4.4","4.4",
+	const char	*bindvals[]={"4","4","4.4","4.4","4.4","4.4",
 				"01-JAN-2004","04:00:00",
 				"testchar4","testvarchar4",NULL,"testblob4"};
-	const char	*subvars[4]={"var1","var2","var3",NULL};
-	const char	*subvalstrings[3]={"hi","hello","bye"};
-	int64_t		subvallongs[3]={1,2,3};
-	double		subvaldoubles[3]={10.55,10.556,10.5556};
-	uint32_t	precs[3]={4,5,6};
-	uint32_t	scales[3]={2,3,4};
 	const char * const *cols;
 	const char * const *fields;
+	uint32_t	*fieldlens;
+	const char	*subvars[]={"var1","var2","var3",NULL};
+	int64_t		subvallongs[]={1,2,3};
+	const char	*subvalstrings[]={"hi","hello","bye"};
+	double		subvaldoubles[]={10.55,10.556,10.5556};
+	uint32_t	precs[]={4,5,6};
+	uint32_t	scales[]={2,3,4};
 	uint16_t	port;
 	char		*socket;
 	uint16_t	id;
 	char		*filename;
-	uint32_t	*fieldlens;
 
 	// instantiation
 	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
+
 
 	// identify
 	stdoutput.printf("IDENTIFY: \n");
@@ -79,13 +80,43 @@ int main(int argc, char **argv) {
 
 	// insert
 	stdoutput.printf("INSERT: \n");
-	assertTrue(cur->sendQuery("insert into testtable values (1,1,1.1,1.1,1.1,1.1,'01-JAN-2001','01:00:00','testchar1','testvarchar1',NULL,'testblob1')"));
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	1, "
+		"	1, "
+		"	1.1, "
+		"	1.1, "
+		"	1.1, "
+		"	1.1, "
+		"	'01-JAN-2001', "
+		"	'01:00:00', "
+		"	'testchar1', "
+		"	'testvarchar1', "
+		"	NULL, "
+		"	'testblob1')"));
 	stdoutput.printf("\n");
 
 
 	// bind by position
 	stdoutput.printf("BIND BY POSITION: \n");
-	cur->prepareQuery("insert into testtable values (?,?,?,?,?,?,?,?,?,?,?,?)");
+	cur->prepareQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?)");
 	assertEquals(cur->countBindVariables(),12);
 	cur->inputBind("1",2);
 	cur->inputBind("2",2);
@@ -127,10 +158,70 @@ int main(int argc, char **argv) {
 
 	// insert
 	stdoutput.printf("INSERT: \n");
-	assertTrue(cur->sendQuery("insert into testtable values (5,5,5.5,5.5,5.5,5.5,'01-JAN-2005','05:00:00','testchar5','testvarchar5',NULL,'testblob5')"));
-	assertTrue(cur->sendQuery("insert into testtable values (6,6,6.6,6.6,6.6,6.6,'01-JAN-2006','06:00:00','testchar6','testvarchar6',NULL,'testblob6')"));
-	assertTrue(cur->sendQuery("insert into testtable values (7,7,7.7,7.7,7.7,7.7,'01-JAN-2007','07:00:00','testchar7','testvarchar7',NULL,'testblob7')"));
-	assertTrue(cur->sendQuery("insert into testtable values (8,8,8.8,8.8,8.8,8.8,'01-JAN-2008','08:00:00','testchar8','testvarchar8',NULL,'testblob8')"));
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	5, "
+		"	5, "
+		"	5.5, "
+		"	5.5, "
+		"	5.5, "
+		"	5.5, "
+		"	'01-JAN-2005', "
+		"	'05:00:00', "
+		"	'testchar5', "
+		"	'testvarchar5', "
+		"	NULL, "
+		"	'testblob5')"));
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	6, "
+		"	6, "
+		"	6.6, "
+		"	6.6, "
+		"	6.6, "
+		"	6.6, "
+		"	'01-JAN-2006', "
+		"	'06:00:00', "
+		"	'testchar6', "
+		"	'testvarchar6', "
+		"	NULL, "
+		"	'testblob6')"));
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	7, "
+		"	7, "
+		"	7.7, "
+		"	7.7, "
+		"	7.7, "
+		"	7.7, "
+		"	'01-JAN-2007', "
+		"	'07:00:00', "
+		"	'testchar7', "
+		"	'testvarchar7', "
+		"	NULL, "
+		"	'testblob7')"));
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	8, "
+		"	8, "
+		"	8.8, "
+		"	8.8, "
+		"	8.8, "
+		"	8.8, "
+		"	'01-JAN-2008', "
+		"	'08:00:00', "
+		"	'testchar8', "
+		"	'testvarchar8', "
+		"	NULL, "
+		"	'testblob8')"));
 	stdoutput.printf("\n");
 
 
@@ -194,7 +285,13 @@ int main(int argc, char **argv) {
 
 	// select
 	stdoutput.printf("SELECT: \n");
-	assertTrue(cur->sendQuery("select * from testtable order by testinteger"));
+	assertTrue(cur->sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testinteger "));
 	stdoutput.printf("\n");
 
 
@@ -506,7 +603,13 @@ int main(int argc, char **argv) {
 
 	// array substitutions
 	stdoutput.printf("ARRAY SUBSTITUTIONS: \n");
-	cur->prepareQuery("select '$(var1)','$(var2)','$(var3)' from rdb$database");
+	cur->prepareQuery(
+		"select "
+		"	'$(var1)', "
+		"	'$(var2)', "
+		"	'$(var3)' "
+		"from "
+		"	rdb$database ");
 	cur->substitutions(subvars,subvalstrings);
 	assertTrue(cur->executeQuery());
 	stdoutput.printf("\n");
@@ -572,7 +675,13 @@ int main(int argc, char **argv) {
 	stdoutput.printf("RESULT SET BUFFER SIZE: \n");
 	assertEquals(cur->getResultSetBufferSize(),0);
 	cur->setResultSetBufferSize(2);
-	assertTrue(cur->sendQuery("select * from testtable order by testinteger"));
+	assertTrue(cur->sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testinteger "));
 	assertEquals(cur->getResultSetBufferSize(),2);
 	stdoutput.printf("\n");
 	assertEquals(cur->firstRowIndex(),0);
@@ -602,12 +711,24 @@ int main(int argc, char **argv) {
 	// dont get column info
 	stdoutput.printf("DONT GET COLUMN INFO: \n");
 	cur->dontGetColumnInfo();
-	assertTrue(cur->sendQuery("select * from testtable order by testinteger"));
+	assertTrue(cur->sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testinteger "));
 	assertEquals(cur->getColumnName(0),NULL);
 	assertEquals(cur->getColumnLength((uint32_t)0),0);
 	assertEquals(cur->getColumnType((uint32_t)0),NULL);
 	cur->getColumnInfo();
-	assertTrue(cur->sendQuery("select * from testtable order by testinteger"));
+	assertTrue(cur->sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testinteger "));
 	assertEquals(cur->getColumnName(0),"TESTINTEGER");
 	assertEquals(cur->getColumnLength((uint32_t)0),4);
 	assertEquals(cur->getColumnType((uint32_t)0),"INTEGER");
@@ -616,7 +737,13 @@ int main(int argc, char **argv) {
 
 	// suspended session
 	stdoutput.printf("SUSPENDED SESSION: \n");
-	assertTrue(cur->sendQuery("select * from testtable order by testinteger"));
+	assertTrue(cur->sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testinteger "));
 	cur->suspendResultSet();
 	assertTrue(con->suspendSession());
 	port=con->getConnectionPort();
@@ -632,7 +759,13 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(6,(uint32_t)0),"7");
 	assertEquals(cur->getField(7,(uint32_t)0),"8");
 	stdoutput.printf("\n");
-	assertTrue(cur->sendQuery("select * from testtable order by testinteger"));
+	assertTrue(cur->sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testinteger "));
 	cur->suspendResultSet();
 	assertTrue(con->suspendSession());
 	port=con->getConnectionPort();
@@ -648,7 +781,13 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(6,(uint32_t)0),"7");
 	assertEquals(cur->getField(7,(uint32_t)0),"8");
 	stdoutput.printf("\n");
-	assertTrue(cur->sendQuery("select * from testtable order by testinteger"));
+	assertTrue(cur->sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testinteger "));
 	cur->suspendResultSet();
 	assertTrue(con->suspendSession());
 	port=con->getConnectionPort();
@@ -669,7 +808,13 @@ int main(int argc, char **argv) {
 	// suspended result set
 	stdoutput.printf("SUSPENDED RESULT SET: \n");
 	cur->setResultSetBufferSize(2);
-	assertTrue(cur->sendQuery("select * from testtable order by testinteger"));
+	assertTrue(cur->sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testinteger "));
 	assertEquals(cur->getField(2,(uint32_t)0),"3");
 	id=cur->getResultSetId();
 	cur->suspendResultSet();
@@ -700,7 +845,13 @@ int main(int argc, char **argv) {
 	stdoutput.printf("CACHED RESULT SET: \n");
 	cur->cacheToFile("cachefile1");
 	cur->setCacheTtl(200);
-	assertTrue(cur->sendQuery("select * from testtable order by testinteger"));
+	assertTrue(cur->sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testinteger "));
 	filename=charstring::duplicate(cur->getCacheFileName());
 	assertEquals(filename,"cachefile1");
 	cur->cacheOff();
@@ -751,7 +902,13 @@ int main(int argc, char **argv) {
 	cur->setResultSetBufferSize(2);
 	cur->cacheToFile("cachefile1");
 	cur->setCacheTtl(200);
-	assertTrue(cur->sendQuery("select * from testtable order by testinteger"));
+	assertTrue(cur->sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testinteger "));
 	filename=charstring::duplicate(cur->getCacheFileName());
 	assertEquals(filename,"cachefile1");
 	cur->cacheOff();
@@ -775,7 +932,8 @@ int main(int argc, char **argv) {
 
 
 	// from one cache file to another with result set buffer size
-	stdoutput.printf("FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: \n");
+	stdoutput.printf("FROM ONE CACHE FILE TO ANOTHER "
+				"WITH RESULT SET BUFFER SIZE: \n");
 	cur->setResultSetBufferSize(2);
 	cur->cacheToFile("cachefile2");
 	assertTrue(cur->openCachedResultSet("cachefile1"));
@@ -788,11 +946,18 @@ int main(int argc, char **argv) {
 
 
 	// cached result set with suspend and result set buffer size
-	stdoutput.printf("CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: \n");
+	stdoutput.printf("CACHED RESULT SET WITH SUSPEND "
+				"AND RESULT SET BUFFER SIZE: \n");
 	cur->setResultSetBufferSize(2);
 	cur->cacheToFile("cachefile1");
 	cur->setCacheTtl(200);
-	assertTrue(cur->sendQuery("select * from testtable order by testinteger"));
+	assertTrue(cur->sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testinteger "));
 	assertEquals(cur->getField(2,(uint32_t)0),"3");
 	filename=charstring::duplicate(cur->getCacheFileName());
 	assertEquals(filename,"cachefile1");
@@ -839,7 +1004,22 @@ int main(int argc, char **argv) {
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
 	assertEquals(secondcur->getField(0,(uint32_t)0),"8");
 	assertTrue(con->autoCommitOn());
-	assertTrue(cur->sendQuery("insert into testtable values (10,10,10.1,10.1,10.1,10.1,'01-JAN-2010','10:00:00','testchar10','testvarchar10',NULL,NULL)"));
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	10, "
+		"	10, "
+		"	10.1, "
+		"	10.1, "
+		"	10.1, "
+		"	10.1, "
+		"	'01-JAN-2010', "
+		"	'10:00:00', "
+		"	'testchar10', "
+		"	'testvarchar10', "
+		"	NULL, "
+		"	NULL)"));
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));
 	assertEquals(secondcur->getField(0,(uint32_t)0),"9");
 	assertTrue(con->autoCommitOff());
@@ -848,7 +1028,13 @@ int main(int argc, char **argv) {
 
 	// finished suspended session
 	stdoutput.printf("FINISHED SUSPENDED SESSION: \n");
-	assertTrue(cur->sendQuery("select * from testtable order by testinteger"));
+	assertTrue(cur->sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable "
+		"order by "
+		"	testinteger "));
 	assertEquals(cur->getField(4,(uint32_t)0),"5");
 	assertEquals(cur->getField(5,(uint32_t)0),"6");
 	assertEquals(cur->getField(6,(uint32_t)0),"7");
@@ -895,10 +1081,34 @@ int main(int argc, char **argv) {
 
 	// invalid queries
 	stdoutput.printf("INVALID QUERIES: \n");
-	assertFalse(cur->sendQuery("select * from testtable1 order by testinteger"));
-	assertFalse(cur->sendQuery("select * from testtable1 order by testinteger"));
-	assertFalse(cur->sendQuery("select * from testtable1 order by testinteger"));
-	assertFalse(cur->sendQuery("select * from testtable1 order by testinteger"));
+	assertFalse(cur->sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable1 "
+		"order by "
+		"	testinteger "));
+	assertFalse(cur->sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable1 "
+		"order by "
+		"	testinteger "));
+	assertFalse(cur->sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable1 "
+		"order by "
+		"	testinteger "));
+	assertFalse(cur->sendQuery(
+		"select "
+		"	* "
+		"from "
+		"	testtable1 "
+		"order by "
+		"	testinteger "));
 	stdoutput.printf("\n");
 	assertFalse(cur->sendQuery("insert into testtable1 values (1,2,3,4)"));
 	assertFalse(cur->sendQuery("insert into testtable1 values (1,2,3,4)"));

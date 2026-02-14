@@ -1459,7 +1459,7 @@ void diffFiles(const char *filename1, const char *filename2) {
 }
 
 void diffTables(const char *table1, const char *table2) {
-	
+
 	// select from table 1
 	sqlrconnection	con1("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
@@ -1532,6 +1532,7 @@ void exportTests() {
 	file::remove("testtable-comparison.csv");
 	file::remove("testtable.xml");
 	file::remove("testtable-comparison.xml");
+
 
 	// create testtable
 	stdoutput.printf("CREATE TESTTABLE: \n");
@@ -1813,7 +1814,7 @@ void exportTests() {
 				ccur.prepareQuery("drop table $(EXP)");
 				ccur.substitution("EXP",exp);
 				ccur.executeQuery();
-				
+
 				ccur.prepareQuery("drop table $(COMP)");
 				ccur.substitution("COMP",comp);
 				ccur.executeQuery();
@@ -1847,6 +1848,7 @@ void importTests() {
 	cur->sendQuery("drop table testtable_comparison");
 	file::remove("testtable.csv");
 	file::remove("testtable.xml");
+
 
 	// create testtable
 	stdoutput.printf("CREATE TESTTABLE: \n");

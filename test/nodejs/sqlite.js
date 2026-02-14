@@ -4,45 +4,45 @@
 var	sqlrelay=require("sqlrelay");
 var	{assertEqual, getStatus, reportTestStatus}=require("./asserts.js");
 
-	
-var	dbtype;
+
+var	cols;
+var	fields;
+var	fieldlens;
 var	subvars=["var1","var2","var3"];
-var	subvalstrings=["hi","hello","bye"];
 var	subvallongs=[1,2,3];
+var	subvalstrings=["hi","hello","bye"];
 var	subvaldoubles=[10.55,10.556,10.5556];
 var	precs=[4,5,6];
 var	scales=[2,3,4];
-var	numvar;
-var	stringvar;
-var	floatvar;
-var	cols;
-var	fields;
 var	port;
 var	socket;
 var	id;
 var	filename;
-var	fieldlens;
-	
+var	numvar;
+var	stringvar;
+var	floatvar;
+var	dbtype;
+
 // instantiation
 var	con=new sqlrelay.SQLRConnection("sqlrelay",
 				9000,
 				"/tmp/test.socket",
 				"testuser","testpassword",0,1);
 var	cur=new sqlrelay.SQLRCursor(con);
-	
+
 // get database type
 
 
 // identify
 console.log("IDENTIFY: ");
 assertEqual(con.identify(),"sqlite");
-console.log("\n");
+console.log();
 
 
 // ping
 console.log("PING: ");
 assertEqual(con.ping(),1);
-console.log("\n");
+console.log();
 
 
 // isolation levels
@@ -55,38 +55,71 @@ for (var i=0; i<isolationlevels.length; i++) {
 }
 // reset to the default isolation level
 assertEqual(con.setIsolationLevel(isolationlevels[0]),1);
-console.log("\n");
+console.log();
 
 // drop existing table
 cur.sendQuery("begin transaction");
 cur.sendQuery("drop table testtable");
 con.commit();
-	
+
 // create a new table
 
 
 // create temptable
 console.log("CREATE TEMPTABLE: ");
 cur.sendQuery("begin transaction");
-assertEqual(cur.sendQuery("create table testtable (testint int, testfloat float, testchar char(40), testvarchar varchar(40))"),1);
+assertEqual(cur.sendQuery(
+	"create table testtable ("+
+	"	testint int, "+
+	"	testfloat float, "+
+	"	testchar char(40), "+
+	"	testvarchar varchar(40))"),1);
 con.commit();
-console.log("\n");
+console.log();
 
 
 // insert
 console.log("INSERT: ");
 cur.sendQuery("begin transaction");
-assertEqual(cur.sendQuery("insert into testtable values (1,1.1,'testchar1','testvarchar1')"),1);
-assertEqual(cur.sendQuery("insert into testtable values (2,2.2,'testchar2','testvarchar2')"),1);
-assertEqual(cur.sendQuery("insert into testtable values (3,3.3,'testchar3','testvarchar3')"),1);
-assertEqual(cur.sendQuery("insert into testtable values (4,4.4,'testchar4','testvarchar4')"),1);
-console.log("\n");
+assertEqual(cur.sendQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	1, "+
+	"	1.1, "+
+	"	'testchar1', "+
+	"	'testvarchar1')"),1);
+assertEqual(cur.sendQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	2, "+
+	"	2.2, "+
+	"	'testchar2', "+
+	"	'testvarchar2')"),1);
+assertEqual(cur.sendQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	3, "+
+	"	3.3, "+
+	"	'testchar3', "+
+	"	'testvarchar3')"),1);
+assertEqual(cur.sendQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	4, "+
+	"	4.4, "+
+	"	'testchar4', "+
+	"	'testvarchar4')"),1);
+console.log();
 
 
 // affected rows
 console.log("AFFECTED ROWS: ");
 assertEqual(cur.affectedRows(),0);
-console.log("\n");
+console.log();
 
 
 // bind by name
@@ -110,7 +143,7 @@ cur.inputBind("var2",7.7,4,1);
 cur.inputBind("var3","testchar7");
 cur.inputBind("var4","testvarchar7");
 assertEqual(cur.executeQuery(),1);
-console.log("\n");
+console.log();
 
 
 // bind by name with validation
@@ -122,19 +155,19 @@ cur.inputBind("var3","testchar8");
 cur.inputBind("var4","testvarchar8");
 cur.validateBinds();
 assertEqual(cur.executeQuery(),1);
-console.log("\n");
+console.log();
 
 
 // select
 console.log("SELECT: ");
 assertEqual(cur.sendQuery("select * from testtable order by testint"),1);
-console.log("\n");
+console.log();
 
 
 // column count
 console.log("COLUMN COUNT: ");
 assertEqual(cur.colCount(),4);
-console.log("\n");
+console.log();
 
 
 // column names
@@ -148,7 +181,7 @@ assertEqual(cols[0],"testint");
 assertEqual(cols[1],"testfloat");
 assertEqual(cols[2],"testchar");
 assertEqual(cols[3],"testvarchar");
-console.log("\n");
+console.log();
 
 
 // column types
@@ -161,7 +194,7 @@ assertEqual(cur.getColumnType(2),"STRING");
 assertEqual(cur.getColumnType("testchar"),"STRING");
 assertEqual(cur.getColumnType(3),"STRING");
 assertEqual(cur.getColumnType("testvarchar"),"STRING");
-console.log("\n");
+console.log();
 
 
 // column length
@@ -174,7 +207,7 @@ assertEqual(cur.getColumnLength(2),0);
 assertEqual(cur.getColumnLength("testchar"),0);
 assertEqual(cur.getColumnLength(3),0);
 assertEqual(cur.getColumnLength("testvarchar"),0);
-console.log("\n");
+console.log();
 
 
 // longest column
@@ -187,31 +220,31 @@ assertEqual(cur.getLongest(2),9);
 assertEqual(cur.getLongest("testchar"),9);
 assertEqual(cur.getLongest(3),12);
 assertEqual(cur.getLongest("testvarchar"),12);
-console.log("\n");
+console.log();
 
 
 // row count
 console.log("ROW COUNT: ");
 assertEqual(cur.rowCount(),8);
-console.log("\n");
+console.log();
 
 
 // total rows
 console.log("TOTAL ROWS: ");
 assertEqual(cur.totalRows(),0);
-console.log("\n");
+console.log();
 
 
 // first row index
 console.log("FIRST ROW INDEX: ");
 assertEqual(cur.firstRowIndex(),0);
-console.log("\n");
+console.log();
 
 
 // end of result set
 console.log("END OF RESULT SET: ");
 assertEqual(cur.endOfResultSet(),1);
-console.log("\n");
+console.log();
 
 
 // fields by index
@@ -225,7 +258,7 @@ assertEqual(cur.getField(7,0),"8");
 assertEqual(cur.getField(7,1),"8.8");
 assertEqual(cur.getField(7,2),"testchar8");
 assertEqual(cur.getField(7,3),"testvarchar8");
-console.log("\n");
+console.log();
 
 
 // field lengths by index
@@ -239,7 +272,7 @@ assertEqual(cur.getFieldLength(7,0),1);
 assertEqual(cur.getFieldLength(7,1),3);
 assertEqual(cur.getFieldLength(7,2),9);
 assertEqual(cur.getFieldLength(7,3),12);
-console.log("\n");
+console.log();
 
 
 // fields by name
@@ -253,7 +286,7 @@ assertEqual(cur.getField(7,"testint"),"8");
 assertEqual(cur.getField(7,"testfloat"),"8.8");
 assertEqual(cur.getField(7,"testchar"),"testchar8");
 assertEqual(cur.getField(7,"testvarchar"),"testvarchar8");
-console.log("\n");
+console.log();
 
 
 // field lengths by name
@@ -267,7 +300,7 @@ assertEqual(cur.getFieldLength(7,"testint"),1);
 assertEqual(cur.getFieldLength(7,"testfloat"),3);
 assertEqual(cur.getFieldLength(7,"testchar"),9);
 assertEqual(cur.getFieldLength(7,"testvarchar"),12);
-console.log("\n");
+console.log();
 
 
 // fields by array
@@ -277,7 +310,7 @@ assertEqual(fields[0],"1");
 assertEqual(fields[1],"1.1");
 assertEqual(fields[2],"testchar1");
 assertEqual(fields[3],"testvarchar1");
-console.log("\n");
+console.log();
 
 
 // field lengths by array
@@ -287,19 +320,23 @@ assertEqual(fieldlens[0],1);
 assertEqual(fieldlens[1],3);
 assertEqual(fieldlens[2],9);
 assertEqual(fieldlens[3],12);
-console.log("\n");
+console.log();
 
 
 // individual substitutions
 console.log("INDIVIDUAL SUBSTITUTIONS: ");
 cur.sendQuery("drop table testtable1");
-assertEqual(cur.sendQuery("create table testtable1 (col1 int, col2 char, col3 float)"),1);
+assertEqual(cur.sendQuery(
+	"create table testtable1 ("+
+	"	col1 int, "+
+	"	col2 char, "+
+	"	col3 float)"),1);
 cur.prepareQuery("insert into testtable1 values ($(var1),'$(var2)',$(var3))");
 cur.substitution("var1",1);
 cur.substitution("var2","hello");
 cur.substitution("var3",10.5556,6,4);
 assertEqual(cur.executeQuery(),1);
-console.log("\n");
+console.log();
 
 
 // fields
@@ -309,15 +346,21 @@ assertEqual(cur.getField(0,0),"1");
 assertEqual(cur.getField(0,1),"hello");
 assertEqual(cur.getField(0,2),"10.5556");
 assertEqual(cur.sendQuery("delete from testtable1"),1);
-console.log("\n");
+console.log();
 
 
 // array substitutions
 console.log("ARRAY SUBSTITUTIONS: ");
-cur.prepareQuery("insert into testtable1 values ('$(var1)','$(var2)','$(var3)')");
+cur.prepareQuery(
+	"insert into "+
+	"	testtable1 "+
+	"values ("+
+	"	'$(var1)', "+
+	"	'$(var2)', "+
+	"	'$(var3)')");
 cur.substitutions(subvars,subvalstrings);
 assertEqual(cur.executeQuery(),1);
-console.log("\n");
+console.log();
 
 
 // fields
@@ -327,7 +370,7 @@ assertEqual(cur.getField(0,0),"hi");
 assertEqual(cur.getField(0,1),"hello");
 assertEqual(cur.getField(0,2),"bye");
 assertEqual(cur.sendQuery("delete from testtable1"),1);
-console.log("\n");
+console.log();
 
 
 // array substitutions
@@ -335,7 +378,7 @@ console.log("ARRAY SUBSTITUTIONS: ");
 cur.prepareQuery("insert into testtable1 values ($(var1),'$(var2)',$(var3))");
 cur.substitutions(subvars,subvallongs);
 assertEqual(cur.executeQuery(),1);
-console.log("\n");
+console.log();
 
 
 // fields
@@ -345,7 +388,7 @@ assertEqual(cur.getField(0,0),"1");
 assertEqual(cur.getField(0,1),"2");
 assertEqual(cur.getField(0,2),"3.0");
 assertEqual(cur.sendQuery("delete from testtable1"),1);
-console.log("\n");
+console.log();
 
 
 // array substitutions
@@ -353,7 +396,7 @@ console.log("ARRAY SUBSTITUTIONS: ");
 cur.prepareQuery("insert into testtable1 values ($(var1),'$(var2)',$(var3))");
 cur.substitutions(subvars,subvaldoubles,precs,scales);
 assertEqual(cur.executeQuery(),1);
-console.log("\n");
+console.log();
 
 
 // fields
@@ -363,9 +406,9 @@ assertEqual(cur.getField(0,0),"10.55");
 assertEqual(cur.getField(0,1),"10.556");
 assertEqual(cur.getField(0,2),"10.5556");
 assertEqual(cur.sendQuery("delete from testtable1"),1);
-console.log("\n");
-	
-	
+console.log();
+
+
 console.log("nullS as Nulls: ");
 cur.getNullsAsNulls();
 assertEqual(cur.sendQuery("insert into testtable1 values (1,null,null)"),1);
@@ -379,7 +422,7 @@ assertEqual(cur.getField(0,0),"1");
 assertEqual(cur.getField(0,1),"");
 assertEqual(cur.getField(0,2),"");
 cur.getNullsAsNulls();
-console.log("\n");
+console.log();
 
 
 // result set buffer size
@@ -410,7 +453,7 @@ console.log();
 assertEqual(cur.firstRowIndex(),8);
 assertEqual(cur.endOfResultSet(),1);
 assertEqual(cur.rowCount(),8);
-console.log("\n");
+console.log();
 
 
 // dont get column info
@@ -425,7 +468,7 @@ assertEqual(cur.sendQuery("select * from testtable order by testint"),1);
 assertEqual(cur.getColumnName(0),"testint");
 assertEqual(cur.getColumnLength(0),0);
 assertEqual(cur.getColumnType(0),"INTEGER");
-console.log("\n");
+console.log();
 
 
 // suspended session
@@ -477,7 +520,7 @@ assertEqual(cur.getField(4,0),"5");
 assertEqual(cur.getField(5,0),"6");
 assertEqual(cur.getField(6,0),"7");
 assertEqual(cur.getField(7,0),"8");
-console.log("\n");
+console.log();
 
 
 // suspended result set
@@ -507,7 +550,7 @@ assertEqual(cur.firstRowIndex(),8);
 assertEqual(cur.endOfResultSet(),1);
 assertEqual(cur.rowCount(),8);
 cur.setResultSetBufferSize(0);
-console.log("\n");
+console.log();
 
 
 // cached result set
@@ -520,13 +563,13 @@ assertEqual(filename,"cachefile1");
 cur.cacheOff();
 assertEqual(cur.openCachedResultSet(filename),1);
 assertEqual(cur.getField(7,0),"8");
-console.log("\n");
+console.log();
 
 
 // column count for cached result set
 console.log("COLUMN COUNT FOR CACHED RESULT SET: ");
 assertEqual(cur.colCount(),4);
-console.log("\n");
+console.log();
 
 
 // column names for cached result set
@@ -540,7 +583,7 @@ assertEqual(cols[0],"testint");
 assertEqual(cols[1],"testfloat");
 assertEqual(cols[2],"testchar");
 assertEqual(cols[3],"testvarchar");
-console.log("\n");
+console.log();
 
 
 // cached result set with result set buffer size
@@ -556,7 +599,7 @@ assertEqual(cur.openCachedResultSet(filename),1);
 assertEqual(cur.getField(7,0),"8");
 assertEqual(cur.getField(8,0),null);
 cur.setResultSetBufferSize(0);
-console.log("\n");
+console.log();
 
 
 // from one cache file to another
@@ -567,11 +610,12 @@ cur.cacheOff();
 assertEqual(cur.openCachedResultSet("cachefile2"),1);
 assertEqual(cur.getField(7,0),"8");
 assertEqual(cur.getField(8,0),null);
-console.log("\n");
+console.log();
 
 
 // from one cache file to another with result set buffer size
-console.log("FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: ");
+console.log("FROM ONE CACHE FILE TO ANOTHER "+
+		"WITH RESULT SET BUFFER SIZE: ");
 cur.setResultSetBufferSize(2);
 cur.cacheToFile("cachefile2");
 assertEqual(cur.openCachedResultSet("cachefile1"),1);
@@ -580,11 +624,12 @@ assertEqual(cur.openCachedResultSet("cachefile2"),1);
 assertEqual(cur.getField(7,0),"8");
 assertEqual(cur.getField(8,0),null);
 cur.setResultSetBufferSize(0);
-console.log("\n");
+console.log();
 
 
 // cached result set with suspend and result set buffer size
-console.log("CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: ");
+console.log("CACHED RESULT SET WITH SUSPEND "+
+		"AND RESULT SET BUFFER SIZE: ");
 cur.setResultSetBufferSize(2);
 cur.cacheToFile("cachefile1");
 cur.setCacheTtl(200);
@@ -620,7 +665,7 @@ assertEqual(cur.openCachedResultSet(filename),1);
 assertEqual(cur.getField(7,0),"8");
 assertEqual(cur.getField(8,0),null);
 cur.setResultSetBufferSize(0);
-console.log("\n");
+console.log();
 
 
 // commit and rollback
@@ -635,10 +680,17 @@ assertEqual(secondcur.getField(0,0),"0");
 assertEqual(con.commit(),1);
 assertEqual(secondcur.sendQuery("select count(*) from testtable"),1);
 assertEqual(secondcur.getField(0,0),"8");
-assertEqual(cur.sendQuery("insert into testtable values (10,10.1,'testchar10','testvarchar10')"),1);
+assertEqual(cur.sendQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	10, "+
+	"	10.1, "+
+	"	'testchar10', "+
+	"	'testvarchar10')"),1);
 assertEqual(secondcur.sendQuery("select count(*) from testtable"),1);
 assertEqual(secondcur.getField(0,0),"9");
-console.log("\n");
+console.log();
 
 
 // finished suspended session
@@ -659,12 +711,10 @@ assertEqual(cur.getField(4,0),null);
 assertEqual(cur.getField(5,0),null);
 assertEqual(cur.getField(6,0),null);
 assertEqual(cur.getField(7,0),null);
-console.log("\n");
-    	
+console.log();
+
 // drop existing table
 cur.sendQuery("drop table testtable");
-	
-// invalid queries...
 
 
 // invalid queries
@@ -683,7 +733,7 @@ assertEqual(cur.sendQuery("create table testtable"),0);
 assertEqual(cur.sendQuery("create table testtable"),0);
 assertEqual(cur.sendQuery("create table testtable"),0);
 assertEqual(cur.sendQuery("create table testtable"),0);
-console.log("\n");
+console.log();
 
 reportTestStatus();
 

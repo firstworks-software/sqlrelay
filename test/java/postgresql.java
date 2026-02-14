@@ -6,28 +6,32 @@ import com.firstworks.sqlrelay.SQLRCursor;
 
 
 class postgresql extends sqlrtest {
-	
+
 	public static void	main(String[] args) {
 
-		String	dbtype;
-		String[]	isolationlevels={"read committed","read uncommitted","repeatable read","serializable"};
+		String[]	isolationlevels={
+					"read committed",
+					"read uncommitted",
+					"repeatable read",
+					"serializable"};
+		String[]	cols;
+		String[]	fields;
+		long[]	fieldlens;
 		String[]	subvars={"var1","var2","var3"};
-		String[]	subvalstrings={"hi","hello","bye"};
 		long[]	subvallongs={1,2,3};
+		String[]	subvalstrings={"hi","hello","bye"};
 		double[]	subvaldoubles={10.55,10.556,10.5556};
 		int[]	precs={4,5,6};
 		int[]	scales={2,3,4};
-		String	numvar;
-		String	stringvar;
-		String	floatvar;
-		String[]	cols;
-		String[]	fields;
 		short	port;
 		String	socket;
 		short	id;
 		String	filename;
-		long[]	fieldlens;
-	
+		String	numvar;
+		String	stringvar;
+		String	floatvar;
+		String	dbtype;
+
 		// instantiation
 		SQLRConnection con=new SQLRConnection("sqlrelay",
 						(short)9000,
@@ -70,7 +74,17 @@ class postgresql extends sqlrtest {
 
 		// create temptable
 		System.out.println("CREATE TEMPTABLE: ");
-		assertTrue(cur.sendQuery("create table testtable (testint int, testfloat float, testreal real, testsmallint smallint, testchar char(40), testvarchar varchar(40), testdate date, testtime time, testtimestamp timestamp)"));
+		assertTrue(cur.sendQuery(
+			"create table testtable ("+
+			"	testint int, "+
+			"	testfloat float, "+
+			"	testreal real, "+
+			"	testsmallint smallint, "+
+			"	testchar char(40), "+
+			"	testvarchar varchar(40), "+
+			"	testdate date, "+
+			"	testtime time, "+
+			"	testtimestamp timestamp)"));
 		System.out.println();
 
 
@@ -82,10 +96,58 @@ class postgresql extends sqlrtest {
 
 		// insert
 		System.out.println("INSERT: ");
-		assertTrue(cur.sendQuery("insert into testtable values (1,1.1,1.1,1,'testchar1','testvarchar1','01/01/2001','01:00:00',null)"));
-		assertTrue(cur.sendQuery("insert into testtable values (2,2.2,2.2,2,'testchar2','testvarchar2','01/01/2002','02:00:00',null)"));
-		assertTrue(cur.sendQuery("insert into testtable values (3,3.3,3.3,3,'testchar3','testvarchar3','01/01/2003','03:00:00',null)"));
-		assertTrue(cur.sendQuery("insert into testtable values (4,4.4,4.4,4,'testchar4','testvarchar4','01/01/2004','04:00:00',null)"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1, "+
+			"	1.1, "+
+			"	1.1, "+
+			"	1, "+
+			"	'testchar1', "+
+			"	'testvarchar1', "+
+			"	'01/01/2001', "+
+			"	'01:00:00', "+
+			"	null)"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	2, "+
+			"	2.2, "+
+			"	2.2, "+
+			"	2, "+
+			"	'testchar2', "+
+			"	'testvarchar2', "+
+			"	'01/01/2002', "+
+			"	'02:00:00', "+
+			"	null)"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	3, "+
+			"	3.3, "+
+			"	3.3, "+
+			"	3, "+
+			"	'testchar3', "+
+			"	'testvarchar3', "+
+			"	'01/01/2003', "+
+			"	'03:00:00', "+
+			"	null)"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	4, "+
+			"	4.4, "+
+			"	4.4, "+
+			"	4, "+
+			"	'testchar4', "+
+			"	'testvarchar4', "+
+			"	'01/01/2004', "+
+			"	'04:00:00', "+
+			"	null)"));
 		System.out.println();
 
 
@@ -97,7 +159,18 @@ class postgresql extends sqlrtest {
 
 		// bind by position
 		System.out.println("BIND BY POSITION: ");
-		cur.prepareQuery("insert into testtable values ($1,$2,$3,$4,$5,$6,$7,$8)");
+		cur.prepareQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	$1, "+
+			"	$2, "+
+			"	$3, "+
+			"	$4, "+
+			"	$5, "+
+			"	$6, "+
+			"	$7, "+
+			"	$8)");
 		assertEquals(cur.countBindVariables(),8);
 		cur.inputBind("1",5);
 		cur.inputBind("2",5.5,4,2);
@@ -149,7 +222,13 @@ class postgresql extends sqlrtest {
 
 		// select
 		System.out.println("SELECT: ");
-		assertTrue(cur.sendQuery("select * from testtable order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		System.out.println();
 
 
@@ -254,7 +333,7 @@ class postgresql extends sqlrtest {
 		System.out.println("ROW COUNT: ");
 		assertEquals(cur.rowCount(),8);
 		System.out.println();
-	
+
 		/*System.out.println("TOTAL ROWS: ");
 		assertEquals(cur.totalRows(),8);
 		System.out.println();*/
@@ -452,7 +531,7 @@ class postgresql extends sqlrtest {
 		assertEquals(cur.getField(0,1),"10.556");
 		assertEquals(cur.getField(0,2),"10.5556");
 		System.out.println();
-	
+
 		System.out.println("nullS as Nulls: ");
 		cur.getNullsAsNulls();
 		assertTrue(cur.sendQuery("select null,1,null"));
@@ -472,7 +551,13 @@ class postgresql extends sqlrtest {
 		System.out.println("RESULT SET BUFFER SIZE: ");
 		assertEquals(cur.getResultSetBufferSize(),0);
 		cur.setResultSetBufferSize(2);
-		assertTrue(cur.sendQuery("select * from testtable order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		assertEquals(cur.getResultSetBufferSize(),2);
 		System.out.println();
 		assertEquals(cur.firstRowIndex(),0);
@@ -502,12 +587,24 @@ class postgresql extends sqlrtest {
 		// dont get column info
 		System.out.println("DONT GET COLUMN INFO: ");
 		cur.dontGetColumnInfo();
-		assertTrue(cur.sendQuery("select * from testtable order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		assertEquals(cur.getColumnName(0),null);
 		assertEquals(cur.getColumnLength(0),0);
 		assertEquals(cur.getColumnType(0),null);
 		cur.getColumnInfo();
-		assertTrue(cur.sendQuery("select * from testtable order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		assertEquals(cur.getColumnName(0),"testint");
 		assertEquals(cur.getColumnLength(0),4);
 		assertEquals(cur.getColumnType(0),"int4");
@@ -516,7 +613,13 @@ class postgresql extends sqlrtest {
 
 		// suspended session
 		System.out.println("SUSPENDED SESSION: ");
-		assertTrue(cur.sendQuery("select * from testtable order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		cur.suspendResultSet();
 		assertTrue(con.suspendSession());
 		port=con.getConnectionPort();
@@ -532,7 +635,13 @@ class postgresql extends sqlrtest {
 		assertEquals(cur.getField(6,0),"7");
 		assertEquals(cur.getField(7,0),"8");
 		System.out.println();
-		assertTrue(cur.sendQuery("select * from testtable order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		cur.suspendResultSet();
 		assertTrue(con.suspendSession());
 		port=con.getConnectionPort();
@@ -548,7 +657,13 @@ class postgresql extends sqlrtest {
 		assertEquals(cur.getField(6,0),"7");
 		assertEquals(cur.getField(7,0),"8");
 		System.out.println();
-		assertTrue(cur.sendQuery("select * from testtable order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		cur.suspendResultSet();
 		assertTrue(con.suspendSession());
 		port=con.getConnectionPort();
@@ -569,7 +684,13 @@ class postgresql extends sqlrtest {
 		// suspended result set
 		System.out.println("SUSPENDED RESULT SET: ");
 		cur.setResultSetBufferSize(2);
-		assertTrue(cur.sendQuery("select * from testtable order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		assertEquals(cur.getField(2,0),"3");
 		id=cur.getResultSetId();
 		cur.suspendResultSet();
@@ -600,7 +721,13 @@ class postgresql extends sqlrtest {
 		System.out.println("CACHED RESULT SET: ");
 		cur.cacheToFile("cachefile1");
 		cur.setCacheTtl(200);
-		assertTrue(cur.sendQuery("select * from testtable order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		filename=cur.getCacheFileName();
 		assertEquals(filename,"cachefile1");
 		cur.cacheOff();
@@ -644,7 +771,13 @@ class postgresql extends sqlrtest {
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile1");
 		cur.setCacheTtl(200);
-		assertTrue(cur.sendQuery("select * from testtable order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		filename=cur.getCacheFileName();
 		assertEquals(filename,"cachefile1");
 		cur.cacheOff();
@@ -667,7 +800,8 @@ class postgresql extends sqlrtest {
 
 
 		// from one cache file to another with result set buffer size
-		System.out.println("FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: ");
+		System.out.println("FROM ONE CACHE FILE TO ANOTHER "+
+					"WITH RESULT SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile2");
 		assertTrue(cur.openCachedResultSet("cachefile1"));
@@ -680,11 +814,18 @@ class postgresql extends sqlrtest {
 
 
 		// cached result set with suspend and result set buffer size
-		System.out.println("CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: ");
+		System.out.println("CACHED RESULT SET WITH SUSPEND "+
+					"AND RESULT SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
 		cur.cacheToFile("cachefile1");
 		cur.setCacheTtl(200);
-		assertTrue(cur.sendQuery("select * from testtable order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		assertEquals(cur.getField(2,0),"3");
 		filename=cur.getCacheFileName();
 		assertEquals(filename,"cachefile1");
@@ -726,14 +867,38 @@ class postgresql extends sqlrtest {
 						"/tmp/test.socket",
 						"testuser","testpassword",0,1);
 		SQLRCursor secondcur=new SQLRCursor(secondcon);
-		assertEquals(secondcur.sendQuery("select count(*) from testtable"),1);
+		assertEquals(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable "),1);
 		assertEquals(secondcur.getField(0,0),"0");
 		assertTrue(con.commit());
-		assertEquals(secondcur.sendQuery("select count(*) from testtable"),1);
+		assertEquals(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable "),1);
 		assertEquals(secondcur.getField(0,0),"8");
 		//assertTrue(con.autoCommitOn());
-		assertTrue(cur.sendQuery("insert into testtable values (10,10.1,10.1,10,'testchar10','testvarchar10','01/01/2010','10:00:00',null)"));
-		assertEquals(secondcur.sendQuery("select count(*) from testtable"),1);
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	10, "+
+			"	10.1, "+
+			"	10.1, "+
+			"	10, "+
+			"	'testchar10', "+
+			"	'testvarchar10', "+
+			"	'01/01/2010', "+
+			"	'10:00:00', "+
+			"	null)"));
+		assertEquals(secondcur.sendQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable "),1);
 		assertEquals(secondcur.getField(0,0),"9");
 		//assertTrue(con.autoCommitOff());
 		System.out.println();
@@ -741,7 +906,13 @@ class postgresql extends sqlrtest {
 
 		// finished suspended session
 		System.out.println("FINISHED SUSPENDED SESSION: ");
-		assertTrue(cur.sendQuery("select * from testtable order by testint"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		assertEquals(cur.getField(4,0),"5");
 		assertEquals(cur.getField(5,0),"6");
 		assertEquals(cur.getField(6,0),"7");
@@ -764,7 +935,19 @@ class postgresql extends sqlrtest {
 		System.out.println("STORED PROCEDURES: ");
 		// return no values
 		cur.sendQuery("drop function testfunc(int,float,char(20))");
-		assertTrue(cur.sendQuery("create function testfunc(int,float,char(20)) returns void as ' declare in1 int; in2 float; in3 char(20); begin in1:=$1; in2:=$2; in3:=$3; return; end;' language plpgsql"));
+		assertTrue(cur.sendQuery(
+			"create function testfunc("+
+			"	int,float,char(20)) "+
+			"returns void as ' "+
+			"	declare in1 int; "+
+			"	in2 float; "+
+			"	in3 char(20); "+
+			"begin "+
+			"	in1:=$1; "+
+			"	in2:=$2; "+
+			"	in3:=$3; "+
+			"	return; "+
+			"end;' language plpgsql"));
 		cur.prepareQuery("select testfunc($1,$2,$3)");
 		cur.inputBind("1",1);
 		cur.inputBind("2",1.1,4,2);
@@ -774,7 +957,12 @@ class postgresql extends sqlrtest {
 		System.out.println();
 		// return single value
 		cur.sendQuery("drop function testfunc(int,float,char(20))");
-		assertTrue(cur.sendQuery("create function testfunc(int,float,char(20)) returns int as ' begin return $1; end;' language plpgsql"));
+		assertTrue(cur.sendQuery(
+			"create function testfunc("+
+			"	int,float,char(20)) "+
+			"returns int as "+
+			"	' begin return $1; end;' "+
+			"language plpgsql"));
 		cur.prepareQuery("select * from testfunc($1,$2,$3)");
 		cur.inputBind("1",1);
 		cur.inputBind("2",1.1,4,2);
@@ -785,8 +973,23 @@ class postgresql extends sqlrtest {
 		System.out.println();
 		// return multiple values
 		cur.sendQuery("drop function testfunc(int,char(20))");
-		assertTrue(cur.sendQuery("create function testfunc(int,float,char(20)) returns record as ' declare output record; begin select $1,$2,$3 into output; return output; end;' language plpgsql"));
-		cur.prepareQuery("select * from testfunc($1,$2,$3) as (col1 int, col2 float, col3 bpchar)");
+		assertTrue(cur.sendQuery(
+			"create function testfunc("+
+			"	int,float,char(20)) "+
+			"returns record as ' "+
+			"	declare output record; "+
+			"begin "+
+			"	select $1,$2,$3 into output; "+
+			"	return output; "+
+			"end;' language plpgsql"));
+		cur.prepareQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testfunc($1,$2,$3) "+
+			"	as (col1 int, "+
+			"		col2 float, "+
+			"		col3 bpchar) ");
 		cur.inputBind("1",1);
 		cur.inputBind("2",1.1,4,2);
 		cur.inputBind("3","hello");
@@ -798,32 +1001,106 @@ class postgresql extends sqlrtest {
 		System.out.println();
 		// return result set
 		cur.sendQuery("drop function testfunc()");
-		assertTrue(cur.sendQuery("create function testfunc() returns setof record as ' declare output record; begin for output in select * from testtable loop return next output; end loop; return; end;' language plpgsql"));
-		assertTrue(cur.sendQuery("select * from testfunc() as (testint int, testfloat float, testreal real, testsmallint smallint, testchar char(40), testvarchar varchar(40), testdate date, testtime time, testtimestamp timestamp)"));
+		assertTrue(cur.sendQuery(
+			"create function testfunc() "+
+			"returns setof record as ' "+
+			"	declare output record; "+
+			"begin "+
+			"	for output in "+
+			"		select * from testtable "+
+			"	loop "+
+			"		return next output; "+
+			"	end loop; "+
+			"	return; "+
+			"end;' language plpgsql"));
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testfunc() "+
+			"	as (testint int, "+
+			"		testfloat float, "+
+			"		testreal real, "+
+			"		testsmallint smallint, "+
+			"		testchar char(40), "+
+			"		testvarchar varchar(40), "+
+			"		testdate date, "+
+			"		testtime time, "+
+			"		testtimestamp timestamp) "));
 		assertEquals(cur.getField(4,0),"5");
 		assertEquals(cur.getField(5,0),"6");
 		assertEquals(cur.getField(6,0),"7");
 		assertEquals(cur.getField(7,0),"8");
 		cur.sendQuery("drop function testfunc()");
 		System.out.println();
-	
+
 		// drop existing table
 		cur.sendQuery("drop table testtable");
-	
-		// invalid queries...
 
 
 		// invalid queries
 		System.out.println("INVALID QUERIES: ");
-		assertFalse(cur.sendQuery("select * from testtable order by testint"));
-		assertFalse(cur.sendQuery("select * from testtable order by testint"));
-		assertFalse(cur.sendQuery("select * from testtable order by testint"));
-		assertFalse(cur.sendQuery("select * from testtable order by testint"));
+		assertFalse(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
+		assertFalse(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
+		assertFalse(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
+		assertFalse(cur.sendQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testint "));
 		System.out.println();
-		assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"));
-		assertFalse(cur.sendQuery("insert into testtable values (1,2,3,4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1, "+
+			"	2, "+
+			"	3, "+
+			"	4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1, "+
+			"	2, "+
+			"	3, "+
+			"	4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1, "+
+			"	2, "+
+			"	3, "+
+			"	4)"));
+		assertFalse(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	1, "+
+			"	2, "+
+			"	3, "+
+			"	4)"));
 		System.out.println();
 		assertFalse(cur.sendQuery("create table testtable"));
 		assertFalse(cur.sendQuery("create table testtable"));

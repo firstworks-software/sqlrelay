@@ -57,7 +57,17 @@ def main():
 
 	# create temptable
 	print("CREATE TEMPTABLE: ")
-	assertTrue(cur.sendQuery("create table testtable (testint int, testfloat float, testreal real, testsmallint smallint, testchar char(40), testvarchar varchar(40), testdate date, testtime time, testtimestamp timestamp)"))
+	assertTrue(cur.sendQuery(
+		"create table testtable ("
+		"	testint int, "
+		"	testfloat float, "
+		"	testreal real, "
+		"	testsmallint smallint, "
+		"	testchar char(40), "
+		"	testvarchar varchar(40), "
+		"	testdate date, "
+		"	testtime time, "
+		"	testtimestamp timestamp)"))
 	print()
 
 
@@ -69,10 +79,58 @@ def main():
 
 	# insert
 	print("INSERT: ")
-	assertTrue(cur.sendQuery("insert into testtable values (1,1.1,1.1,1,'testchar1','testvarchar1','01/01/2001','01:00:00',NULL)"))
-	assertTrue(cur.sendQuery("insert into testtable values (2,2.2,2.2,2,'testchar2','testvarchar2','01/01/2002','02:00:00',NULL)"))
-	assertTrue(cur.sendQuery("insert into testtable values (3,3.3,3.3,3,'testchar3','testvarchar3','01/01/2003','03:00:00',NULL)"))
-	assertTrue(cur.sendQuery("insert into testtable values (4,4.4,4.4,4,'testchar4','testvarchar4','01/01/2004','04:00:00',NULL)"))
+	assertTrue(cur.sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	1, "
+		"	1.1, "
+		"	1.1, "
+		"	1, "
+		"	'testchar1', "
+		"	'testvarchar1', "
+		"	'01/01/2001', "
+		"	'01:00:00', "
+		"	NULL)"))
+	assertTrue(cur.sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	2, "
+		"	2.2, "
+		"	2.2, "
+		"	2, "
+		"	'testchar2', "
+		"	'testvarchar2', "
+		"	'01/01/2002', "
+		"	'02:00:00', "
+		"	NULL)"))
+	assertTrue(cur.sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	3, "
+		"	3.3, "
+		"	3.3, "
+		"	3, "
+		"	'testchar3', "
+		"	'testvarchar3', "
+		"	'01/01/2003', "
+		"	'03:00:00', "
+		"	NULL)"))
+	assertTrue(cur.sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	4, "
+		"	4.4, "
+		"	4.4, "
+		"	4, "
+		"	'testchar4', "
+		"	'testvarchar4', "
+		"	'01/01/2004', "
+		"	'04:00:00', "
+		"	NULL)"))
 	print()
 
 
@@ -84,7 +142,18 @@ def main():
 
 	# bind by position
 	print("BIND BY POSITION: ")
-	cur.prepareQuery("insert into testtable values ($1,$2,$3,$4,$5,$6,$7,$8)")
+	cur.prepareQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	$1, "
+		"	$2, "
+		"	$3, "
+		"	$4, "
+		"	$5, "
+		"	$6, "
+		"	$7, "
+		"	$8)")
 	assertEqual(cur.countBindVariables(),8)
 	cur.inputBind("1",5)
 	cur.inputBind("2",5.5,4,2)
@@ -675,7 +744,8 @@ def main():
 
 
 	# from one cache file to another with result set buffer size
-	print("FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: ")
+	print("FROM ONE CACHE FILE TO ANOTHER "
+		"WITH RESULT SET BUFFER SIZE: ")
 	cur.setResultSetBufferSize(2)
 	cur.cacheToFile("cachefile2")
 	assertTrue(cur.openCachedResultSet("cachefile1"))
@@ -688,7 +758,8 @@ def main():
 
 
 	# cached result set with suspend and result set buffer size
-	print("CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: ")
+	print("CACHED RESULT SET WITH SUSPEND "
+		"AND RESULT SET BUFFER SIZE: ")
 	cur.setResultSetBufferSize(2)
 	cur.cacheToFile("cachefile1")
 	cur.setCacheTtl(200)
@@ -739,7 +810,19 @@ def main():
 	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
 	assertEqual(secondcur.getField(0,0),8)
 	#assertTrue(con.autoCommitOn())
-	assertTrue(cur.sendQuery("insert into testtable values (10,10.1,10.1,10,'testchar10','testvarchar10','01/01/2010','10:00:00',NULL)"))
+	assertTrue(cur.sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	10, "
+		"	10.1, "
+		"	10.1, "
+		"	10, "
+		"	'testchar10', "
+		"	'testvarchar10', "
+		"	'01/01/2010', "
+		"	'10:00:00', "
+		"	NULL)"))
 	assertTrue(secondcur.sendQuery("select count(*) from testtable"))
 	assertEqual(secondcur.getField(0,0),9)
 	#assertTrue(con.autoCommitOff())
@@ -834,7 +917,9 @@ def main():
 	# stored procedures
 	print("STORED PROCEDURES: ")
 	cur.sendQuery("drop function testfunc(int)")
-	assertTrue(cur.sendQuery("create function testfunc(int) returns int as ' begin return $1; end;' language plpgsql"))
+	assertTrue(cur.sendQuery(
+		"create function testfunc(int) returns int as "
+		"	' begin return $1; end;' language plpgsql"))
 	cur.prepareQuery("select * from testfunc($1)")
 	cur.inputBind("1",5)
 	assertTrue(cur.executeQuery())
@@ -842,8 +927,20 @@ def main():
 	cur.sendQuery("drop function testfunc(int)")
 
 	cur.sendQuery("drop function testfunc(int,char(20))")
-	assertTrue(cur.sendQuery("create function testfunc(int, char(20)) returns record as ' declare output record; begin select $1,$2 into output; return output; end;' language plpgsql"))
-	cur.prepareQuery("select * from testfunc($1,$2) as (col1 int, col2 bpchar)")
+	assertTrue(cur.sendQuery(
+		"create function testfunc("
+		"	int, char(20)) "
+		"returns record as ' "
+		"	declare output record; "
+		"begin "
+		"	select $1,$2 into output; "
+		"	return output; "
+		"end;' language plpgsql"))
+	cur.prepareQuery(
+		"select "
+		"	* "
+		"from "
+		"	testfunc($1,$2) as (col1 int, col2 bpchar) ")
 	cur.inputBind("1",5)
 	cur.inputBind("2","hello")
 	assertTrue(cur.executeQuery())
@@ -851,8 +948,6 @@ def main():
 	assertEqual(cur.getField(0,1),"hello")
 	cur.sendQuery("drop function testfunc(int,char(20))")
 	print()
-
-	# invalid queries...
 
 
 	# invalid queries

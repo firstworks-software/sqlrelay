@@ -52,7 +52,22 @@ def main():
 
 	# create temptable
 	print("CREATE TEMPTABLE: ")
-	assertTrue(cur.sendQuery("create table testtable (testint int, testsmallint smallint, testtinyint tinyint, testreal real, testfloat float, testdecimal decimal(4,1), testnumeric numeric(4,1), testmoney money, testsmallmoney smallmoney, testdatetime datetime, testsmalldatetime smalldatetime, testchar char(40), testvarchar varchar(40), testbit bit)"))
+	assertTrue(cur.sendQuery(
+		"create table testtable ("
+		"	testint int, "
+		"	testsmallint smallint, "
+		"	testtinyint tinyint, "
+		"	testreal real, "
+		"	testfloat float, "
+		"	testdecimal decimal(4,1), "
+		"	testnumeric numeric(4,1), "
+		"	testmoney money, "
+		"	testsmallmoney smallmoney, "
+		"	testdatetime datetime, "
+		"	testsmalldatetime smalldatetime, "
+		"	testchar char(40), "
+		"	testvarchar varchar(40), "
+		"	testbit bit)"))
 	print()
 
 
@@ -64,7 +79,24 @@ def main():
 
 	# insert
 	print("INSERT: ")
-	assertTrue(cur.sendQuery("insert into testtable values (1,1,1,1.1,1.1,1.1,1.1,1.00,1.00,'01-Jan-2001 01:00:00','01-Jan-2001 01:00:00','testchar1','testvarchar1',1)"))
+	assertTrue(cur.sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	1, "
+		"	1, "
+		"	1, "
+		"	1.1, "
+		"	1.1, "
+		"	1.1, "
+		"	1.1, "
+		"	1.00, "
+		"	1.00, "
+		"	'01-Jan-2001 01:00:00', "
+		"	'01-Jan-2001 01:00:00', "
+		"	'testchar1', "
+		"	'testvarchar1', "
+		"	1)"))
 	print()
 
 
@@ -76,7 +108,24 @@ def main():
 
 	# bind by position
 	print("BIND BY POSITION: ")
-	cur.prepareQuery("insert into testtable values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+	cur.prepareQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?)")
 	assertEqual(cur.countBindVariables(),14)
 	cur.inputBind("1",2)
 	cur.inputBind("2",2)
@@ -131,7 +180,24 @@ def main():
 	# bind by name
 	print("BIND BY NAME: ")
 	cur.clearBinds()
-	cur.prepareQuery("insert into testtable values (@var1,@var2,@var3,@var4,@var5,@var6,@var7,@var8,@var9,@var10,@var11,@var12,@var13,@var14)")
+	cur.prepareQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	@var1, "
+		"	@var2, "
+		"	@var3, "
+		"	@var4, "
+		"	@var5, "
+		"	@var6, "
+		"	@var7, "
+		"	@var8, "
+		"	@var9, "
+		"	@var10, "
+		"	@var11, "
+		"	@var12, "
+		"	@var13, "
+		"	@var14)")
 	cur.inputBind("var1",5)
 	cur.inputBind("var2",5)
 	cur.inputBind("var3",5)
@@ -883,7 +949,8 @@ def main():
 
 
 	# from one cache file to another with result set buffer size
-	print("FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: ")
+	print("FROM ONE CACHE FILE TO ANOTHER "
+		"WITH RESULT SET BUFFER SIZE: ")
 	cur.setResultSetBufferSize(2)
 	cur.cacheToFile("cachefile2")
 	assertTrue(cur.openCachedResultSet("cachefile1"))
@@ -896,7 +963,8 @@ def main():
 
 
 	# cached result set with suspend and result set buffer size
-	print("CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: ")
+	print("CACHED RESULT SET WITH SUSPEND "
+		"AND RESULT SET BUFFER SIZE: ")
 	cur.setResultSetBufferSize(2)
 	cur.cacheToFile("cachefile1")
 	cur.setCacheTtl(200)
@@ -1056,8 +1124,6 @@ def main():
 	# drop existing table
 	cur.sendQuery("commit tran")
 	cur.sendQuery("drop table testtable")
-
-	# invalid queries...
 
 
 	# invalid queries

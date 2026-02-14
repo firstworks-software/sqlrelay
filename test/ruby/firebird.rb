@@ -48,7 +48,22 @@ con.commit()
 
 # insert
 print "INSERT: \n"
-assertTrue(cur.sendQuery("insert into testtable values (1,1,1.1,1.1,1.1,1.1,'01-JAN-2001','01:00:00','testchar1','testvarchar1',NULL,NULL)"))
+assertTrue(cur.sendQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	1, "+
+	"	1, "+
+	"	1.1, "+
+	"	1.1, "+
+	"	1.1, "+
+	"	1.1, "+
+	"	'01-JAN-2001', "+
+	"	'01:00:00', "+
+	"	'testchar1', "+
+	"	'testvarchar1', "+
+	"	NULL, "+
+	"	NULL)"))
 print "\n"
 
 
@@ -99,10 +114,70 @@ print "\n"
 
 # insert
 print "INSERT: \n"
-assertTrue(cur.sendQuery("insert into testtable values (5,5,5.5,5.5,5.5,5.5,'01-JAN-2005','05:00:00','testchar5','testvarchar5',NULL,NULL)"))
-assertTrue(cur.sendQuery("insert into testtable values (6,6,6.6,6.6,6.6,6.6,'01-JAN-2006','06:00:00','testchar6','testvarchar6',NULL,NULL)"))
-assertTrue(cur.sendQuery("insert into testtable values (7,7,7.7,7.7,7.7,7.7,'01-JAN-2007','07:00:00','testchar7','testvarchar7',NULL,NULL)"))
-assertTrue(cur.sendQuery("insert into testtable values (8,8,8.8,8.8,8.8,8.8,'01-JAN-2008','08:00:00','testchar8','testvarchar8',NULL,NULL)"))
+assertTrue(cur.sendQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	5, "+
+	"	5, "+
+	"	5.5, "+
+	"	5.5, "+
+	"	5.5, "+
+	"	5.5, "+
+	"	'01-JAN-2005', "+
+	"	'05:00:00', "+
+	"	'testchar5', "+
+	"	'testvarchar5', "+
+	"	NULL, "+
+	"	NULL)"))
+assertTrue(cur.sendQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	6, "+
+	"	6, "+
+	"	6.6, "+
+	"	6.6, "+
+	"	6.6, "+
+	"	6.6, "+
+	"	'01-JAN-2006', "+
+	"	'06:00:00', "+
+	"	'testchar6', "+
+	"	'testvarchar6', "+
+	"	NULL, "+
+	"	NULL)"))
+assertTrue(cur.sendQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	7, "+
+	"	7, "+
+	"	7.7, "+
+	"	7.7, "+
+	"	7.7, "+
+	"	7.7, "+
+	"	'01-JAN-2007', "+
+	"	'07:00:00', "+
+	"	'testchar7', "+
+	"	'testvarchar7', "+
+	"	NULL, "+
+	"	NULL)"))
+assertTrue(cur.sendQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	8, "+
+	"	8, "+
+	"	8.8, "+
+	"	8.8, "+
+	"	8.8, "+
+	"	8.8, "+
+	"	'01-JAN-2008', "+
+	"	'08:00:00', "+
+	"	'testchar8', "+
+	"	'testvarchar8', "+
+	"	NULL, "+
+	"	NULL)"))
 print "\n"
 
 
@@ -728,7 +803,8 @@ print "\n"
 
 
 # from one cache file to another with result set buffer size
-print "FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: \n"
+print "FROM ONE CACHE FILE TO ANOTHER "+
+	"WITH RESULT SET BUFFER SIZE: \n"
 cur.setResultSetBufferSize(2)
 cur.cacheToFile("cachefile2")
 assertTrue(cur.openCachedResultSet("cachefile1"))
@@ -741,7 +817,8 @@ print "\n"
 
 
 # cached result set with suspend and result set buffer size
-print "CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: \n"
+print "CACHED RESULT SET WITH SUSPEND "+
+	"AND RESULT SET BUFFER SIZE: \n"
 cur.setResultSetBufferSize(2)
 cur.cacheToFile("cachefile1")
 cur.setCacheTtl(200)
@@ -791,7 +868,22 @@ assertTrue(con.commit())
 assertTrue(secondcur.sendQuery("select count(*) from testtable"))
 assertEqual(secondcur.getField(0,0),"8")
 assertTrue(con.autoCommitOn())
-assertTrue(cur.sendQuery("insert into testtable values (10,10,10.1,10.1,10.1,10.1,'01-JAN-2010','10:00:00','testchar10','testvarchar10',NULL,NULL)"))
+assertTrue(cur.sendQuery(
+	"insert into "+
+	"	testtable "+
+	"values ("+
+	"	10, "+
+	"	10, "+
+	"	10.1, "+
+	"	10.1, "+
+	"	10.1, "+
+	"	10.1, "+
+	"	'01-JAN-2010', "+
+	"	'10:00:00', "+
+	"	'testchar10', "+
+	"	'testvarchar10', "+
+	"	NULL, "+
+	"	NULL)"))
 assertTrue(secondcur.sendQuery("select count(*) from testtable"))
 assertEqual(secondcur.getField(0,0),"9")
 assertTrue(con.autoCommitOff())
@@ -823,8 +915,6 @@ con.commit()
 cur.sendQuery("delete from testtable")
 con.commit()
 print "\n"
-
-# invalid queries...
 
 
 # invalid queries

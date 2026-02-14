@@ -15,9 +15,12 @@
 		$dbh->exec("drop table test");
 	} catch (Exception $e) {
 	}
-	$dbh->exec("create table test (MYID BIGINT NOT NULL IDENTITY(99999999999, 9), MYNAME NVARCHAR(100) NOT NULL)");
+	$dbh->exec(
+		"create table test (".
+		"	MYID BIGINT NOT NULL IDENTITY(99999999999, 9), ".
+		"	MYNAME NVARCHAR(100) NOT NULL)");
 	$dbh->exec("insert into test (MYNAME) values ('This is my name')");
 	echo("last insert id: " . $dbh->lastInsertId());
 	$dbh->exec("drop table test");
-	echo("\n");		
+	echo("\n");
 ?>

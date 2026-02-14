@@ -33,6 +33,7 @@ int main(int argc, char **argv) {
 	signalmanager::ignoreSignals(&set);
 	#endif
 
+
 	// upsert
 	stdoutput.printf("UPSERT:\n");
 	con=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",

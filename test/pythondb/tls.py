@@ -22,7 +22,13 @@ def main():
 
 	# instantiation
 	print("INSTANTIATION")
-	con=PySQLRDB.connect("sqlrelay",9000,"/tmp/test.socket","","",0,1,tls='yes',tlscert=tlscert,tlsvalidate='ca',tlsca=tlsca)
+	con=PySQLRDB.connect(
+		"sqlrelay",9000,
+		"/tmp/test.socket",
+		"","",0,1,tls='yes',
+		tlscert=tlscert,
+		tlsvalidate='ca',
+		tlsca=tlsca)
 	cur=con.cursor()
 	print()
 	print()
@@ -30,12 +36,18 @@ def main():
 
 	# bind functions
 	print("BIND FUNCTIONS")
-	cur.execute("select :var1,:var2,:var3 from dual",{'var1':1,'var2':'hello','var3':1.1})
+	cur.execute(
+		"select "
+		"	:var1, "
+		"	:var2, "
+		"	:var3 "
+		"from "
+		"	dual ",{'var1':1,'var2':'hello','var3':1.1})
 	print(cur.fetchone())
 	print()
 	print()
 
-	
+
 	# executemany
 	print("BIND FUNCTIONS")
 
@@ -44,11 +56,24 @@ def main():
 	except (PySQLRDB.DatabaseError):
 		print("drop table failed")
 
-	cur.execute("create table temptable (col1 number, col2 char(10), col3 number(2,1))")
+	cur.execute(
+		"create table temptable ("
+		"	col1 number, "
+		"	col2 char(10), "
+		"	col3 number(2,1))")
 	cur.execute("select * from temptable")
 	print(cur.fetchmany(1))
 
-	cur.executemany("insert into temptable values (:var1,:var2,:var3)",[{'var1':1,'var2':'hello','var3':1.1},{'var1':2,'var2':'hi','var3':2.2},{'var1':3,'var2':'bye','var3':3.3}])
+	cur.executemany(
+		"insert into "
+		"	temptable "
+		"values ("
+		"	:var1, "
+		"	:var2, "
+		"	:var3)",
+		[{'var1':1,'var2':'hello','var3':1.1},
+		{'var1':2,'var2':'hi','var3':2.2},
+		{'var1':3,'var2':'bye','var3':3.3}])
 	#cur.executemany("select :var1,:var2,:var3 from dual",[{'var1':1,'var2':'hello','var3':1.1},{'var1':2,'var2':'hi','var3':2.2},{'var1':3,'var2':'bye','var3':3.3}])
 	cur.execute("select * from temptable")
 	print(cur.fetchall())
@@ -84,7 +109,9 @@ def main():
 
 	# callproc
 	print("CALLPROC")
-	cur.callproc("select :var1,:var2,:var3 from dual",{'var1':1,'var2':'hello','var3':1.1})
+	cur.callproc(
+		"select :var1,:var2,:var3 from dual",
+		{'var1':1,'var2':'hello','var3':1.1})
 	print(cur.fetchone())
 	print()
 	print()

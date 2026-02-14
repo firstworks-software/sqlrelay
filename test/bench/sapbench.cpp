@@ -228,20 +228,20 @@ bool sapbenchconnection::disconnect() {
 	return true;
 }
 
-CS_RETCODE sapbenchconnection::csMessageCallback(CS_CONTEXT *ctxt, 
+CS_RETCODE sapbenchconnection::csMessageCallback(CS_CONTEXT *ctxt,
 							CS_CLIENTMSG *msgp) {
 	//stdoutput.printf("cs message: %s\n",msgp->msgstring);
 	return CS_SUCCEED;
 }
 
-CS_RETCODE sapbenchconnection::clientMessageCallback(CS_CONTEXT *ctxt, 
+CS_RETCODE sapbenchconnection::clientMessageCallback(CS_CONTEXT *ctxt,
 							CS_CONNECTION *cnn,
 							CS_CLIENTMSG *msgp) {
 	//stdoutput.printf("client message: %s\n",msgp->msgstring);
 	return CS_SUCCEED;
 }
 
-CS_RETCODE sapbenchconnection::serverMessageCallback(CS_CONTEXT *ctxt, 
+CS_RETCODE sapbenchconnection::serverMessageCallback(CS_CONTEXT *ctxt,
 							CS_CONNECTION *cnn,
 							CS_SERVERMSG *msgp) {
 	//stdoutput.printf("server message: %s\n",msgp->text);
@@ -365,7 +365,7 @@ bool sapbenchcursor::runQuery(const char *query, bool getcolumns) {
 
 	// for each column...
 	for (CS_INT i=0; i<ncols; i++) {
-	
+
 		column[i].datatype=CS_CHAR_TYPE;
 		column[i].format=CS_FMT_NULLTERM;
 		column[i].maxlength=SAP_MAX_ITEM_BUFFER_SIZE;
@@ -382,14 +382,14 @@ bool sapbenchcursor::runQuery(const char *query, bool getcolumns) {
 			stdoutput.printf("ct_bind failed\n");
 			return false;
 		}
-	
+
 		// get the column description
 		if (ct_describe(cmd,i+1,&column[i])!=CS_SUCCEED) {
 			stdoutput.printf("ct_describe failed\n");
 			return false;
 		}
 	}
-	
+
 	// go fetch all rows and columns
 	for (;;) {
 		if (ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
@@ -399,7 +399,7 @@ bool sapbenchcursor::runQuery(const char *query, bool getcolumns) {
 		}
 		for (CS_INT row=0; row<rowcount; row++) {
 			for (CS_INT col=0; col<ncols; col++) {
-				if (nullindicator[col][row]>-1 && 
+				if (nullindicator[col][row]>-1 &&
 						datalength[col][row]) {
 					//stdoutput.printf("%s,",data[col][row]);
 				} else {

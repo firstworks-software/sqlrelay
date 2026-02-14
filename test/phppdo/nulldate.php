@@ -19,8 +19,18 @@
 		$dbh->exec("drop table testdate");
 	} catch (Exception $e) {
 	}
-	$dbh->exec("create table testdate (date1 datetime, date2 datetime, date3 datetime)");
-	$dbh->exec("insert into testdate values (NULL,'0000-01-01 00:00:00','2001-01-01')");
+	$dbh->exec(
+		"create table testdate (".
+		"	date1 datetime, ".
+		"	date2 datetime, ".
+		"	date3 datetime)");
+	$dbh->exec(
+		"insert into ".
+		"	testdate ".
+		"values (".
+		"	NULL, ".
+		"	'0000-01-01 00:00:00', ".
+		"	'2001-01-01')");
 
 	$stmt=$dbh->query("select * from testdate");
 	$result=$stmt->fetch(PDO::FETCH_ASSOC);
