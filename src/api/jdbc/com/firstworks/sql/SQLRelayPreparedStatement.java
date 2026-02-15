@@ -380,7 +380,7 @@ public class SQLRelayPreparedStatement
 				cal.setTime((Date)o);
 				sqlrcur.inputBind(key,
 					(short)cal.get(Calendar.YEAR),
-					(short)cal.get(Calendar.MONTH),
+					(short)(cal.get(Calendar.MONTH)+1),
 					(short)cal.get(Calendar.DAY_OF_MONTH),
 					(short)0,
 					(short)0,
@@ -395,7 +395,7 @@ public class SQLRelayPreparedStatement
 				cal.setTime((Date)o);
 				sqlrcur.inputBind(key,
 					(short)cal.get(Calendar.YEAR),
-					(short)cal.get(Calendar.MONTH),
+					(short)(cal.get(Calendar.MONTH)+1),
 					(short)cal.get(Calendar.DAY_OF_MONTH),
 					(short)0,
 					(short)0,
@@ -518,7 +518,7 @@ public class SQLRelayPreparedStatement
 				cal.setTime((Timestamp)o);
 				sqlrcur.inputBind(key,
 					(short)cal.get(Calendar.YEAR),
-					(short)cal.get(Calendar.MONTH),
+					(short)(cal.get(Calendar.MONTH)+1),
 					(short)cal.get(Calendar.DAY_OF_MONTH),
 					(short)cal.get(Calendar.HOUR_OF_DAY),
 					(short)cal.get(Calendar.MINUTE),
@@ -533,7 +533,7 @@ public class SQLRelayPreparedStatement
 				cal.setTime((Timestamp)o);
 				sqlrcur.inputBind(key,
 					(short)cal.get(Calendar.YEAR),
-					(short)cal.get(Calendar.MONTH),
+					(short)(cal.get(Calendar.MONTH)+1),
 					(short)cal.get(Calendar.DAY_OF_MONTH),
 					(short)cal.get(Calendar.HOUR_OF_DAY),
 					(short)cal.get(Calendar.MINUTE),

@@ -691,7 +691,6 @@ public class SQLRelayResultSet implements ResultSet {
 
 	private
 	Date createDate(long row, int col, Calendar cal) {
-drv.debug=true;
 		drv.debugFunction(this);
 		drv.debugPrintln("row: "+row);
 		drv.debugPrintln("col: "+col);
@@ -721,13 +720,11 @@ drv.debug=true;
 			dt=new Date(year-1900,month-1,day);
 		}
 		drv.debugEnd();
-drv.debug=false;
 		return dt;
 	}
 
 	private
 	Date createDate(long row, String col, Calendar cal) {
-drv.debug=true;
 		drv.debugFunction(this);
 		drv.debugPrintln("row: "+row);
 		drv.debugPrintln("col: "+col);
@@ -757,7 +754,6 @@ drv.debug=true;
 			dt=new Date(year-1900,month-1,day);
 		}
 		drv.debugEnd();
-drv.debug=false;
 		return dt;
 	}
 

@@ -6388,9 +6388,8 @@ bool sqlrcursor::getFieldAsDate(uint64_t row, uint32_t col,
 	if (!field) {
 		return false;
 	}
-	return datetime::parse(field,ddmm,yyyyddmm,datedelimiters,
-				year,month,day,
-				hour,minute,second,
+	return datetime::parse(field,ddmm,yyyyddmm,datedelimiters,true,
+				year,month,day,hour,minute,second,
 				microsecond,isnegative);
 }
 
@@ -6447,9 +6446,8 @@ bool sqlrcursor::getFieldAsDate(uint64_t row, const char *col,
 	if (!field) {
 		return false;
 	}
-	return datetime::parse(field,ddmm,yyyyddmm,datedelimiters,
-				year,month,day,
-				hour,minute,second,
+	return datetime::parse(field,ddmm,yyyyddmm,datedelimiters,true,
+				year,month,day,hour,minute,second,
 				microsecond,isnegative);
 }
 
