@@ -652,7 +652,11 @@ public class SQLRelayStatement implements Statement {
 	}
 
 	void throwErrorMessageException() throws SQLException {
-		conn.throwException(sqlrcon.errorMessage());
+		String	err=sqlrcur.errorMessage();
+		if (err==null) {
+			err=sqlrcon.errorMessage();
+		}
+		conn.throwException(err);
 	}
 
 	private

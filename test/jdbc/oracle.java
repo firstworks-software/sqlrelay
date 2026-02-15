@@ -2726,7 +2726,7 @@ if (false) {
 		cstmt.registerOutParameter("3",Types.DOUBLE);
 		cstmt.registerOutParameter("4",Types.DATE);
 		cstmt.registerOutParameter("5",Types.VARCHAR);
-		assertTrue(cstmt.execute());
+		assertFalse(cstmt.execute());
 		assertEquals(cstmt.getInt("1"),1);
 		assertFalse(cstmt.wasNull());
 		assertEquals(cstmt.getString("2"),"hello");
@@ -2763,7 +2763,7 @@ if (false) {
 		cstmt.registerOutParameter("floatvar",Types.DOUBLE);
 		cstmt.registerOutParameter("datevar",Types.DATE);
 		cstmt.registerOutParameter("nullvar",Types.VARCHAR);
-		assertTrue(cstmt.execute());
+		assertFalse(cstmt.execute());
 		assertEquals(cstmt.getInt("numvar"),1);
 		assertFalse(cstmt.wasNull());
 		assertEquals(cstmt.getString("stringvar"),"hello");

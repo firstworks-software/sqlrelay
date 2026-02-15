@@ -664,7 +664,7 @@ public class SQLRelayResultSet implements ResultSet {
 	public
 	Date getDate(int columnindex) throws SQLException {
 		drv.debugFunction(this);
-		Date	dt=getDate(columnindex,new GregorianCalendar());
+		Date	dt=getDate(columnindex,null);
 		drv.debugEnd();
 		return dt;
 	}
@@ -683,22 +683,41 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		// FIXME:
-		// * parse field (not guaranteed to be in iso format)
-		// * set members of cal
-		//   cal.set(Calendar.YEAR,year);
-		//   cal.set(Calendar.MONTH,month);
-		//   etc.
-		// * return date
-		//   return new Date(calendar.getTimeInMillis());
+		Date	dt=(wasnull)?null:createDate(field,cal);
 		drv.debugEnd();
-		return (wasnull)?null:Date.valueOf(field);
+		return dt;
+	}
+
+	private
+	Date createDate(String field, Calendar cal) {
+drv.debug=true;
+		drv.debugFunction(this);
+		drv.debugPrintln("field: "+field);
+		drv.debugPrintln("cal: "+cal);
+		Date	dt=null;
+		if (cal!=null) {
+			// FIXME:
+			// * parse field
+			//   (not guaranteed to be in iso format)
+			// * set members of cal
+			//   cal.set(Calendar.YEAR,year);
+			//   cal.set(Calendar.MONTH,month);
+			//   etc.
+			// * return new
+			// 	Date(calendar.getTimeInMillis());
+		} else {
+			// FIXME: not guaranteed to be in iso format
+			dt=Date.valueOf(field);
+		}
+		drv.debugEnd();
+drv.debug=false;
+		return dt;
 	}
 
 	public
 	Date getDate(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
-		Date	dt=getDate(columnlabel,new GregorianCalendar());
+		Date	dt=getDate(columnlabel,null);
 		drv.debugEnd();
 		return dt;
 	}
@@ -717,16 +736,9 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		// FIXME:
-		// * parse field (not guaranteed to be in iso format)
-		// * set members of cal
-		//   cal.set(Calendar.YEAR,year);
-		//   cal.set(Calendar.MONTH,month);
-		//   etc.
-		// * return date
-		//   return new Date(calendar.getTimeInMillis());
+		Date	dt=(wasnull)?null:createDate(field,cal);
 		drv.debugEnd();
-		return (wasnull)?null:Date.valueOf(field);
+		return dt;
 	}
 
 	public
@@ -1340,10 +1352,7 @@ public class SQLRelayResultSet implements ResultSet {
 	public
 	Time getTime(int columnindex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		drv.debugPrintln("column index: "+columnindex);
-		validateColumn(columnindex);
-		Time	t=getTime(columnindex,new GregorianCalendar());
+		Time	t=getTime(columnindex,null);
 		drv.debugEnd();
 		return t;
 	}
@@ -1362,22 +1371,39 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		// FIXME:
-		// * parse field (not guaranteed to be in iso format)
-		// * set members of cal
-		//   cal.set(Calendar.YEAR,year);
-		//   cal.set(Calendar.MONTH,month);
-		//   etc.
-		// * return time
-		//   return new Time(calendar.getTimeInMillis());
+		Time	tm=(wasnull)?null:createTime(field,cal);
 		drv.debugEnd();
-		return (wasnull)?null:Time.valueOf(field);
+		return tm;
+	}
+
+	private
+	Time createTime(String field, Calendar cal) {
+		drv.debugFunction(this);
+		drv.debugPrintln("field: "+field);
+		drv.debugPrintln("cal: "+cal);
+		Time	tm=null;
+		if (cal!=null) {
+			// FIXME:
+			// * parse field
+			//   (not guaranteed to be in iso format)
+			// * set members of cal
+			//   cal.set(Calendar.YEAR,year);
+			//   cal.set(Calendar.MONTH,month);
+			//   etc.
+			// * return new
+			// 	Time(calendar.getTimeInMillis());
+		} else {
+			// FIXME: not guaranteed to be in iso format
+			tm=Time.valueOf(field);
+		}
+		drv.debugEnd();
+		return tm;
 	}
 
 	public
 	Time getTime(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
-		Time	t=getTime(columnlabel,new GregorianCalendar());
+		Time	t=getTime(columnlabel,null);
 		drv.debugEnd();
 		return t;
 	}
@@ -1396,26 +1422,15 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		// FIXME:
-		// * parse field (not guaranteed to be in iso format)
-		// * set members of cal
-		//   cal.set(Calendar.YEAR,year);
-		//   cal.set(Calendar.MONTH,month);
-		//   etc.
-		// * return time
-		//   return new Time(calendar.getTimeInMillis());
+		Time	tm=(wasnull)?null:createTime(field,cal);
 		drv.debugEnd();
-		return (wasnull)?null:Time.valueOf(field);
+		return tm;
 	}
 
 	public
 	Timestamp getTimestamp(int columnindex) throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-		drv.debugPrintln("column index: "+columnindex);
-		validateColumn(columnindex);
-		Timestamp	t=getTimestamp(columnindex,
-						new GregorianCalendar());
+		Timestamp	t=getTimestamp(columnindex,null);
 		drv.debugEnd();
 		return t;
 	}
@@ -1435,23 +1450,39 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		// FIXME:
-		// * parse field (not guaranteed to be in iso format)
-		// * set members of cal
-		//   cal.set(Calendar.YEAR,year);
-		//   cal.set(Calendar.MONTH,month);
-		//   etc.
-		// * return time
-		//   return new Timestamp(calendar.getTimeInMillis());
+		Timestamp	ts=(wasnull)?null:createTimestamp(field,cal);
 		drv.debugEnd();
-		return (wasnull)?null:Timestamp.valueOf(field);
+		return ts;
+	}
+
+	private
+	Timestamp createTimestamp(String field, Calendar cal) {
+		drv.debugFunction(this);
+		drv.debugPrintln("field: "+field);
+		drv.debugPrintln("cal: "+cal);
+		Timestamp	ts=null;
+		if (cal!=null) {
+			// FIXME:
+			// * parse field
+			//   (not guaranteed to be in iso format)
+			// * set members of cal
+			//   cal.set(Calendar.YEAR,year);
+			//   cal.set(Calendar.MONTH,month);
+			//   etc.
+			// * return new
+			// 	Timestamp(calendar.getTimeInMillis());
+		} else {
+			// FIXME: not guaranteed to be in iso format
+			ts=Timestamp.valueOf(field);
+		}
+		drv.debugEnd();
+		return ts;
 	}
 
 	public
 	Timestamp getTimestamp(String columnlabel) throws SQLException {
 		drv.debugFunction(this);
-		Timestamp	t=getTimestamp(columnlabel,
-						new GregorianCalendar());
+		Timestamp	t=getTimestamp(columnlabel,null);
 		drv.debugEnd();
 		return t;
 	}
@@ -1471,16 +1502,9 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		// FIXME:
-		// * parse field (not guaranteed to be in iso format)
-		// * set members of cal
-		//   cal.set(Calendar.YEAR,year);
-		//   cal.set(Calendar.MONTH,month);
-		//   etc.
-		// * return time
-		//   return new Timestamp(calendar.getTimeInMillis());
+		Timestamp	ts=(wasnull)?null:createTimestamp(field,cal);
 		drv.debugEnd();
-		return (wasnull)?null:Timestamp.valueOf(field);
+		return ts;
 	}
 
 	public

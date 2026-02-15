@@ -566,8 +566,8 @@ public class SQLRelayPreparedStatement
 				// FIXME: support this
 				break;
 			case AsciiStream:
-				// FIXME: length?
-				sqlrcur.defineOutputBindString(key,0);
+				// FIXME: make this length configurable
+				sqlrcur.defineOutputBindString(key,1024);
 				break;
 			case AsciiStreamWithIntLength:
 			case AsciiStreamWithLongLength:
@@ -598,8 +598,8 @@ public class SQLRelayPreparedStatement
 				sqlrcur.defineOutputBindBlob(key);
 				break;
 			case CharacterStream:
-				// FIXME: length?
-				sqlrcur.defineOutputBindString(key,0);
+				// FIXME: make this length configurable
+				sqlrcur.defineOutputBindString(key,1024);
 				break;
 			case CharacterStreamWithIntLength:
 			case CharacterStreamWithLongLength:
@@ -629,8 +629,8 @@ public class SQLRelayPreparedStatement
 				sqlrcur.defineOutputBindInteger(key);
 				break;
 			case NCharStream:
-				// FIXME: length?
-				sqlrcur.defineOutputBindString(key,0);
+				// FIXME: make this length configurable
+				sqlrcur.defineOutputBindString(key,1024);
 				break;
 			case NCharStreamWithLength:
 				// FIXME: lossy conversion to int
@@ -643,7 +643,8 @@ public class SQLRelayPreparedStatement
 				sqlrcur.defineOutputBindClob(key);
 				break;
 			case NString:
-				sqlrcur.defineOutputBindString(key,0);
+				// FIXME: make this length configurable
+				sqlrcur.defineOutputBindString(key,1024);
 				break;
 			case Null:
 			case NullWithTypeName:
@@ -667,8 +668,8 @@ public class SQLRelayPreparedStatement
 				sqlrcur.defineOutputBindInteger(key);
 				break;
 			case String:
-				// FIXME: length?
-				sqlrcur.defineOutputBindString(key,0);
+				// FIXME: make this length configurable
+				sqlrcur.defineOutputBindString(key,1024);
 				break;
 			case SQLXML:
 				// FIXME: support this
@@ -682,12 +683,12 @@ public class SQLRelayPreparedStatement
 				sqlrcur.defineOutputBindDate(key);
 				break;
 			case UnicodeStream:
-				// FIXME: length?
-				sqlrcur.defineOutputBindString(key,0);
+				// FIXME: make this length configurable
+				sqlrcur.defineOutputBindString(key,1024);
 				break;
 			case URL:
-				// FIXME: length?
-				sqlrcur.defineOutputBindString(key,0);
+				// FIXME: make this length configurable
+				sqlrcur.defineOutputBindString(key,1024);
 				break;
 		}
 		drv.debugEnd();
@@ -786,7 +787,7 @@ public class SQLRelayPreparedStatement
 					sqlrcur.
 					getOutputBindDateYear(key)-1900,
 					sqlrcur.
-					getOutputBindDateMonth(key),
+					getOutputBindDateMonth(key)-1,
 					sqlrcur.
 					getOutputBindDateDay(key)));
 				break;
@@ -854,7 +855,7 @@ public class SQLRelayPreparedStatement
 					sqlrcur.
 					getOutputBindDateYear(key)-1900,
 					sqlrcur.
-					getOutputBindDateMonth(key),
+					getOutputBindDateMonth(key)-1,
 					sqlrcur.
 					getOutputBindDateDay(key),
 					sqlrcur.
