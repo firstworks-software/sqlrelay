@@ -271,6 +271,14 @@ class SQLRCursor : public ObjectWrap {
 		static RET	getField(const ARGS &args);
 		static RET	getFieldAsInteger(const ARGS &args);
 		static RET	getFieldAsDouble(const ARGS &args);
+		static RET	getFieldAsDateYear(const ARGS &args);
+		static RET	getFieldAsDateMonth(const ARGS &args);
+		static RET	getFieldAsDateDay(const ARGS &args);
+		static RET	getFieldAsDateHour(const ARGS &args);
+		static RET	getFieldAsDateMinute(const ARGS &args);
+		static RET	getFieldAsDateSecond(const ARGS &args);
+		static RET	getFieldAsDateMicrosecond(const ARGS &args);
+		static RET	getFieldAsDateIsNegative(const ARGS &args);
 		static RET	getFieldLength(const ARGS &args);
 		static RET	getRow(const ARGS &args);
 		static RET	getRowLengths(const ARGS &args);
@@ -1031,6 +1039,22 @@ void SQLRCursor::Init(Handle<Object> exports) {
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getField",getField);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsInteger",getFieldAsInteger);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsDouble",getFieldAsDouble);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsDateYear",
+						getFieldAsDateYear);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsDateMonth",
+						getFieldAsDateMonth);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsDateDay",
+						getFieldAsDateDay);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsDateHour",
+						getFieldAsDateHour);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsDateMinute",
+						getFieldAsDateMinute);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsDateSecond",
+						getFieldAsDateSecond);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsDateMicrosecond",
+						getFieldAsDateMicrosecond);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsDateIsNegative",
+						getFieldAsDateIsNegative);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldLength",getFieldLength);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getRow",getRow);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getRowLengths",getRowLengths);
@@ -2043,6 +2067,350 @@ RET SQLRCursor::getFieldAsDouble(const ARGS &args) {
 	}
 
 	returnNumber(result);
+}
+
+RET SQLRCursor::getFieldAsDateYear(const ARGS &args) {
+
+	initLocalScope();
+
+	int16_t	result=0;
+
+	if (args.Length()==2) {
+		if (args[1]->IsNumber()) {
+			result=sqlrcur(args)->getFieldAsDateYear(
+							toInteger(args[0]),
+							toUint32(args[1]));
+		} else if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateYear(
+							toInteger(args[0]),
+							toString(args[1]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else if (args.Length()==5) {
+		if (args[1]->IsNumber()) {
+			result=sqlrcur(args)->getFieldAsDateYear(
+							toInteger(args[0]),
+							toUint32(args[1]),
+							(bool)toInt32(args[2]),
+							(bool)toInt32(args[3]),
+							toString(args[4]));
+		} else if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateYear(
+							toInteger(args[0]),
+							toString(args[1]),
+							(bool)toInt32(args[2]),
+							(bool)toInt32(args[3]),
+							toString(args[4]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else {
+		throwWrongNumberOfArguments();
+	}
+
+	returnInteger(result);
+}
+
+RET SQLRCursor::getFieldAsDateMonth(const ARGS &args) {
+
+	initLocalScope();
+
+	int16_t	result=0;
+
+	if (args.Length()==2) {
+		if (args[1]->IsNumber()) {
+			result=sqlrcur(args)->getFieldAsDateMonth(
+							toInteger(args[0]),
+							toUint32(args[1]));
+		} else if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateMonth(
+							toInteger(args[0]),
+							toString(args[1]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else if (args.Length()==5) {
+		if (args[1]->IsNumber()) {
+			result=sqlrcur(args)->getFieldAsDateMonth(
+							toInteger(args[0]),
+							toUint32(args[1]),
+							(bool)toInt32(args[2]),
+							(bool)toInt32(args[3]),
+							toString(args[4]));
+		} else if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateMonth(
+							toInteger(args[0]),
+							toString(args[1]),
+							(bool)toInt32(args[2]),
+							(bool)toInt32(args[3]),
+							toString(args[4]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else {
+		throwWrongNumberOfArguments();
+	}
+
+	returnInteger(result);
+}
+
+RET SQLRCursor::getFieldAsDateDay(const ARGS &args) {
+
+	initLocalScope();
+
+	int16_t	result=0;
+
+	if (args.Length()==2) {
+		if (args[1]->IsNumber()) {
+			result=sqlrcur(args)->getFieldAsDateDay(
+							toInteger(args[0]),
+							toUint32(args[1]));
+		} else if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateDay(
+							toInteger(args[0]),
+							toString(args[1]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else if (args.Length()==5) {
+		if (args[1]->IsNumber()) {
+			result=sqlrcur(args)->getFieldAsDateDay(
+							toInteger(args[0]),
+							toUint32(args[1]),
+							(bool)toInt32(args[2]),
+							(bool)toInt32(args[3]),
+							toString(args[4]));
+		} else if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateDay(
+							toInteger(args[0]),
+							toString(args[1]),
+							(bool)toInt32(args[2]),
+							(bool)toInt32(args[3]),
+							toString(args[4]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else {
+		throwWrongNumberOfArguments();
+	}
+
+	returnInteger(result);
+}
+
+RET SQLRCursor::getFieldAsDateHour(const ARGS &args) {
+
+	initLocalScope();
+
+	int16_t	result=0;
+
+	if (args.Length()==2) {
+		if (args[1]->IsNumber()) {
+			result=sqlrcur(args)->getFieldAsDateHour(
+							toInteger(args[0]),
+							toUint32(args[1]));
+		} else if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateHour(
+							toInteger(args[0]),
+							toString(args[1]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else if (args.Length()==5) {
+		if (args[1]->IsNumber()) {
+			result=sqlrcur(args)->getFieldAsDateHour(
+							toInteger(args[0]),
+							toUint32(args[1]),
+							(bool)toInt32(args[2]),
+							(bool)toInt32(args[3]),
+							toString(args[4]));
+		} else if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateHour(
+							toInteger(args[0]),
+							toString(args[1]),
+							(bool)toInt32(args[2]),
+							(bool)toInt32(args[3]),
+							toString(args[4]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else {
+		throwWrongNumberOfArguments();
+	}
+
+	returnInteger(result);
+}
+
+RET SQLRCursor::getFieldAsDateMinute(const ARGS &args) {
+
+	initLocalScope();
+
+	int16_t	result=0;
+
+	if (args.Length()==2) {
+		if (args[1]->IsNumber()) {
+			result=sqlrcur(args)->getFieldAsDateMinute(
+							toInteger(args[0]),
+							toUint32(args[1]));
+		} else if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateMinute(
+							toInteger(args[0]),
+							toString(args[1]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else if (args.Length()==5) {
+		if (args[1]->IsNumber()) {
+			result=sqlrcur(args)->getFieldAsDateMinute(
+							toInteger(args[0]),
+							toUint32(args[1]),
+							(bool)toInt32(args[2]),
+							(bool)toInt32(args[3]),
+							toString(args[4]));
+		} else if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateMinute(
+							toInteger(args[0]),
+							toString(args[1]),
+							(bool)toInt32(args[2]),
+							(bool)toInt32(args[3]),
+							toString(args[4]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else {
+		throwWrongNumberOfArguments();
+	}
+
+	returnInteger(result);
+}
+
+RET SQLRCursor::getFieldAsDateSecond(const ARGS &args) {
+
+	initLocalScope();
+
+	int16_t	result=0;
+
+	if (args.Length()==2) {
+		if (args[1]->IsNumber()) {
+			result=sqlrcur(args)->getFieldAsDateSecond(
+							toInteger(args[0]),
+							toUint32(args[1]));
+		} else if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateSecond(
+							toInteger(args[0]),
+							toString(args[1]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else if (args.Length()==5) {
+		if (args[1]->IsNumber()) {
+			result=sqlrcur(args)->getFieldAsDateSecond(
+							toInteger(args[0]),
+							toUint32(args[1]),
+							(bool)toInt32(args[2]),
+							(bool)toInt32(args[3]),
+							toString(args[4]));
+		} else if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateSecond(
+							toInteger(args[0]),
+							toString(args[1]),
+							(bool)toInt32(args[2]),
+							(bool)toInt32(args[3]),
+							toString(args[4]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else {
+		throwWrongNumberOfArguments();
+	}
+
+	returnInteger(result);
+}
+
+RET SQLRCursor::getFieldAsDateMicrosecond(const ARGS &args) {
+
+	initLocalScope();
+
+	int32_t	result=0;
+
+	if (args.Length()==2) {
+		if (args[1]->IsNumber()) {
+			result=sqlrcur(args)->getFieldAsDateMicrosecond(
+							toInteger(args[0]),
+							toUint32(args[1]));
+		} else if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateMicrosecond(
+							toInteger(args[0]),
+							toString(args[1]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else if (args.Length()==5) {
+		if (args[1]->IsNumber()) {
+			result=sqlrcur(args)->getFieldAsDateMicrosecond(
+							toInteger(args[0]),
+							toUint32(args[1]),
+							(bool)toInt32(args[2]),
+							(bool)toInt32(args[3]),
+							toString(args[4]));
+		} else if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateMicrosecond(
+							toInteger(args[0]),
+							toString(args[1]),
+							(bool)toInt32(args[2]),
+							(bool)toInt32(args[3]),
+							toString(args[4]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else {
+		throwWrongNumberOfArguments();
+	}
+
+	returnInt32(result);
+}
+
+RET SQLRCursor::getFieldAsDateIsNegative(const ARGS &args) {
+
+	initLocalScope();
+
+	bool	result=false;
+
+	if (args.Length()==2) {
+		if (args[1]->IsNumber()) {
+			result=sqlrcur(args)->getFieldAsDateIsNegative(
+							toInteger(args[0]),
+							toUint32(args[1]));
+		} else if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateIsNegative(
+							toInteger(args[0]),
+							toString(args[1]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else if (args.Length()==5) {
+		if (args[1]->IsNumber()) {
+			result=sqlrcur(args)->getFieldAsDateIsNegative(
+							toInteger(args[0]),
+							toUint32(args[1]),
+							(bool)toInt32(args[2]),
+							(bool)toInt32(args[3]),
+							toString(args[4]));
+		} else if (args[1]->IsString()) {
+			result=sqlrcur(args)->getFieldAsDateIsNegative(
+							toInteger(args[0]),
+							toString(args[1]),
+							(bool)toInt32(args[2]),
+							(bool)toInt32(args[3]),
+							toString(args[4]));
+		} else {
+			throwInvalidArgumentType();
+		}
+	} else {
+		throwWrongNumberOfArguments();
+	}
+
+	returnBoolean(result);
 }
 
 RET SQLRCursor::getFieldLength(const ARGS &args) {

@@ -743,6 +743,224 @@ class SQLRCursor {
 		/** Returns the specified field as a decimal. */
 		function getFieldAsDouble(var row, var col);
 
+		/** Interprets the specified field as a date
+		 *  and returns the year component. */
+		function getFieldAsDateYear(var row, var col);
+
+		/** Interprets the specified field as a date
+		 *  and returns the year component.
+		 *
+		 *  If "ddmm" is set true then the date format
+		 *  is assumed to be dd/mm/yyyy rather than
+		 *  mm/dd/yyyy when a date with a trailing year
+		 *  is encountered.
+		 *
+		 *  If "yyyyddmm" is set true then the date
+		 *  format is assumed to be yyyy/dd/mm rather
+		 *  than yyyy/mm/dd when a date with a leading
+		 *  year is encountered.
+		 *
+		 *  "datedelimiters" may be set to a set of
+		 *  valid date delimiters and may contain any
+		 *  combination of '/', '-', '.', and ':'.
+		 *  Eg. "/-" would mean that only '/' and '-'
+		 *  are valid date delimiters.  If left NULL
+		 *  then it defaults to "/-.:". */
+		function getFieldAsDateYear(var row, var col,
+					var ddmm, var yyyyddmm,
+					var datedelimiters);
+
+		/** Interprets the specified field as a date
+		 *  and returns the month component. */
+		function getFieldAsDateMonth(var row, var col);
+
+		/** Interprets the specified field as a date
+		 *  and returns the month component.
+		 *
+		 *  If "ddmm" is set true then the date format
+		 *  is assumed to be dd/mm/yyyy rather than
+		 *  mm/dd/yyyy when a date with a trailing year
+		 *  is encountered.
+		 *
+		 *  If "yyyyddmm" is set true then the date
+		 *  format is assumed to be yyyy/dd/mm rather
+		 *  than yyyy/mm/dd when a date with a leading
+		 *  year is encountered.
+		 *
+		 *  "datedelimiters" may be set to a set of
+		 *  valid date delimiters and may contain any
+		 *  combination of '/', '-', '.', and ':'.
+		 *  Eg. "/-" would mean that only '/' and '-'
+		 *  are valid date delimiters.  If left NULL
+		 *  then it defaults to "/-.:". */
+		function getFieldAsDateMonth(var row, var col,
+					var ddmm, var yyyyddmm,
+					var datedelimiters);
+
+		/** Interprets the specified field as a date
+		 *  and returns the day component. */
+		function getFieldAsDateDay(var row, var col);
+
+		/** Interprets the specified field as a date
+		 *  and returns the day component.
+		 *
+		 *  If "ddmm" is set true then the date format
+		 *  is assumed to be dd/mm/yyyy rather than
+		 *  mm/dd/yyyy when a date with a trailing year
+		 *  is encountered.
+		 *
+		 *  If "yyyyddmm" is set true then the date
+		 *  format is assumed to be yyyy/dd/mm rather
+		 *  than yyyy/mm/dd when a date with a leading
+		 *  year is encountered.
+		 *
+		 *  "datedelimiters" may be set to a set of
+		 *  valid date delimiters and may contain any
+		 *  combination of '/', '-', '.', and ':'.
+		 *  Eg. "/-" would mean that only '/' and '-'
+		 *  are valid date delimiters.  If left NULL
+		 *  then it defaults to "/-.:". */
+		function getFieldAsDateDay(var row, var col,
+					var ddmm, var yyyyddmm,
+					var datedelimiters);
+
+		/** Interprets the specified field as a date
+		 *  and returns the hour component. */
+		function getFieldAsDateHour(var row, var col);
+
+		/** Interprets the specified field as a date
+		 *  and returns the hour component.
+		 *
+		 *  If "ddmm" is set true then the date format
+		 *  is assumed to be dd/mm/yyyy rather than
+		 *  mm/dd/yyyy when a date with a trailing year
+		 *  is encountered.
+		 *
+		 *  If "yyyyddmm" is set true then the date
+		 *  format is assumed to be yyyy/dd/mm rather
+		 *  than yyyy/mm/dd when a date with a leading
+		 *  year is encountered.
+		 *
+		 *  "datedelimiters" may be set to a set of
+		 *  valid date delimiters and may contain any
+		 *  combination of '/', '-', '.', and ':'.
+		 *  Eg. "/-" would mean that only '/' and '-'
+		 *  are valid date delimiters.  If left NULL
+		 *  then it defaults to "/-.:". */
+		function getFieldAsDateHour(var row, var col,
+					var ddmm, var yyyyddmm,
+					var datedelimiters);
+
+		/** Interprets the specified field as a date
+		 *  and returns the minute component. */
+		function getFieldAsDateMinute(var row, var col);
+
+		/** Interprets the specified field as a date
+		 *  and returns the minute component.
+		 *
+		 *  If "ddmm" is set true then the date format
+		 *  is assumed to be dd/mm/yyyy rather than
+		 *  mm/dd/yyyy when a date with a trailing year
+		 *  is encountered.
+		 *
+		 *  If "yyyyddmm" is set true then the date
+		 *  format is assumed to be yyyy/dd/mm rather
+		 *  than yyyy/mm/dd when a date with a leading
+		 *  year is encountered.
+		 *
+		 *  "datedelimiters" may be set to a set of
+		 *  valid date delimiters and may contain any
+		 *  combination of '/', '-', '.', and ':'.
+		 *  Eg. "/-" would mean that only '/' and '-'
+		 *  are valid date delimiters.  If left NULL
+		 *  then it defaults to "/-.:". */
+		function getFieldAsDateMinute(var row, var col,
+					var ddmm, var yyyyddmm,
+					var datedelimiters);
+
+		/** Interprets the specified field as a date
+		 *  and returns the second component. */
+		function getFieldAsDateSecond(var row, var col);
+
+		/** Interprets the specified field as a date
+		 *  and returns the second component.
+		 *
+		 *  If "ddmm" is set true then the date format
+		 *  is assumed to be dd/mm/yyyy rather than
+		 *  mm/dd/yyyy when a date with a trailing year
+		 *  is encountered.
+		 *
+		 *  If "yyyyddmm" is set true then the date
+		 *  format is assumed to be yyyy/dd/mm rather
+		 *  than yyyy/mm/dd when a date with a leading
+		 *  year is encountered.
+		 *
+		 *  "datedelimiters" may be set to a set of
+		 *  valid date delimiters and may contain any
+		 *  combination of '/', '-', '.', and ':'.
+		 *  Eg. "/-" would mean that only '/' and '-'
+		 *  are valid date delimiters.  If left NULL
+		 *  then it defaults to "/-.:". */
+		function getFieldAsDateSecond(var row, var col,
+					var ddmm, var yyyyddmm,
+					var datedelimiters);
+
+		/** Interprets the specified field as a date
+		 *  and returns the microsecond component. */
+		function getFieldAsDateMicrosecond(var row, var col);
+
+		/** Interprets the specified field as a date
+		 *  and returns the microsecond component.
+		 *
+		 *  If "ddmm" is set true then the date format
+		 *  is assumed to be dd/mm/yyyy rather than
+		 *  mm/dd/yyyy when a date with a trailing year
+		 *  is encountered.
+		 *
+		 *  If "yyyyddmm" is set true then the date
+		 *  format is assumed to be yyyy/dd/mm rather
+		 *  than yyyy/mm/dd when a date with a leading
+		 *  year is encountered.
+		 *
+		 *  "datedelimiters" may be set to a set of
+		 *  valid date delimiters and may contain any
+		 *  combination of '/', '-', '.', and ':'.
+		 *  Eg. "/-" would mean that only '/' and '-'
+		 *  are valid date delimiters.  If left NULL
+		 *  then it defaults to "/-.:". */
+		function getFieldAsDateMicrosecond(var row, var col,
+					var ddmm, var yyyyddmm,
+					var datedelimiters);
+
+		/** Interprets the specified field as a date
+		 *  and returns whether the hour component
+		 *  is negative. */
+		function getFieldAsDateIsNegative(var row, var col);
+
+		/** Interprets the specified field as a date
+		 *  and returns whether the hour component
+		 *  is negative.
+		 *
+		 *  If "ddmm" is set true then the date format
+		 *  is assumed to be dd/mm/yyyy rather than
+		 *  mm/dd/yyyy when a date with a trailing year
+		 *  is encountered.
+		 *
+		 *  If "yyyyddmm" is set true then the date
+		 *  format is assumed to be yyyy/dd/mm rather
+		 *  than yyyy/mm/dd when a date with a leading
+		 *  year is encountered.
+		 *
+		 *  "datedelimiters" may be set to a set of
+		 *  valid date delimiters and may contain any
+		 *  combination of '/', '-', '.', and ':'.
+		 *  Eg. "/-" would mean that only '/' and '-'
+		 *  are valid date delimiters.  If left NULL
+		 *  then it defaults to "/-.:". */
+		function getFieldAsDateIsNegative(var row, var col,
+					var ddmm, var yyyyddmm,
+					var datedelimiters);
+
 
 
 		/** Returns the length of the specified field. */

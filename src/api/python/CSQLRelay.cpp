@@ -1453,6 +1453,398 @@ static PyObject *getFieldAsDouble(PyObject *self, PyObject *args) {
   return Py_BuildValue("d", rc);
 }
 
+static PyObject *getFieldAsDateYear(PyObject *self, PyObject *args) {
+  long sqlrcur;
+  int16_t rc=0;
+  uint64_t row;
+  PyObject *col;
+  int ddmm=0;
+  int yyyyddmm=0;
+  const char *datedelimiters=NULL;
+  if (PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+        "lKOiis",
+#else
+        "lLOiis",
+#endif
+        &sqlrcur, &row, &col, &ddmm, &yyyyddmm, &datedelimiters)) {
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateYear(row,
+			PyString_AsString(col),
+			ddmm!=0,yyyyddmm!=0,datedelimiters);
+    } else if (PyInt_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateYear(row,
+			PyInt_AsLong(col),
+			ddmm!=0,yyyyddmm!=0,datedelimiters);
+    }
+    Py_END_ALLOW_THREADS
+  } else {
+    PyErr_Clear();
+    if (!PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+          "lKO",
+#else
+          "lLO",
+#endif
+          &sqlrcur, &row, &col))
+      return NULL;
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateYear(row,
+			PyString_AsString(col));
+    } else if (PyInt_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateYear(row,
+			PyInt_AsLong(col));
+    }
+    Py_END_ALLOW_THREADS
+  }
+  return Py_BuildValue("h", rc);
+}
+
+static PyObject *getFieldAsDateMonth(PyObject *self, PyObject *args) {
+  long sqlrcur;
+  int16_t rc=0;
+  uint64_t row;
+  PyObject *col;
+  int ddmm=0;
+  int yyyyddmm=0;
+  const char *datedelimiters=NULL;
+  if (PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+        "lKOiis",
+#else
+        "lLOiis",
+#endif
+        &sqlrcur, &row, &col, &ddmm, &yyyyddmm, &datedelimiters)) {
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateMonth(row,
+			PyString_AsString(col),
+			ddmm!=0,yyyyddmm!=0,datedelimiters);
+    } else if (PyInt_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateMonth(row,
+			PyInt_AsLong(col),
+			ddmm!=0,yyyyddmm!=0,datedelimiters);
+    }
+    Py_END_ALLOW_THREADS
+  } else {
+    PyErr_Clear();
+    if (!PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+          "lKO",
+#else
+          "lLO",
+#endif
+          &sqlrcur, &row, &col))
+      return NULL;
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateMonth(row,
+			PyString_AsString(col));
+    } else if (PyInt_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateMonth(row,
+			PyInt_AsLong(col));
+    }
+    Py_END_ALLOW_THREADS
+  }
+  return Py_BuildValue("h", rc);
+}
+
+static PyObject *getFieldAsDateDay(PyObject *self, PyObject *args) {
+  long sqlrcur;
+  int16_t rc=0;
+  uint64_t row;
+  PyObject *col;
+  int ddmm=0;
+  int yyyyddmm=0;
+  const char *datedelimiters=NULL;
+  if (PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+        "lKOiis",
+#else
+        "lLOiis",
+#endif
+        &sqlrcur, &row, &col, &ddmm, &yyyyddmm, &datedelimiters)) {
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateDay(row,
+			PyString_AsString(col),
+			ddmm!=0,yyyyddmm!=0,datedelimiters);
+    } else if (PyInt_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateDay(row,
+			PyInt_AsLong(col),
+			ddmm!=0,yyyyddmm!=0,datedelimiters);
+    }
+    Py_END_ALLOW_THREADS
+  } else {
+    PyErr_Clear();
+    if (!PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+          "lKO",
+#else
+          "lLO",
+#endif
+          &sqlrcur, &row, &col))
+      return NULL;
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateDay(row,
+			PyString_AsString(col));
+    } else if (PyInt_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateDay(row,
+			PyInt_AsLong(col));
+    }
+    Py_END_ALLOW_THREADS
+  }
+  return Py_BuildValue("h", rc);
+}
+
+static PyObject *getFieldAsDateHour(PyObject *self, PyObject *args) {
+  long sqlrcur;
+  int16_t rc=0;
+  uint64_t row;
+  PyObject *col;
+  int ddmm=0;
+  int yyyyddmm=0;
+  const char *datedelimiters=NULL;
+  if (PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+        "lKOiis",
+#else
+        "lLOiis",
+#endif
+        &sqlrcur, &row, &col, &ddmm, &yyyyddmm, &datedelimiters)) {
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateHour(row,
+			PyString_AsString(col),
+			ddmm!=0,yyyyddmm!=0,datedelimiters);
+    } else if (PyInt_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateHour(row,
+			PyInt_AsLong(col),
+			ddmm!=0,yyyyddmm!=0,datedelimiters);
+    }
+    Py_END_ALLOW_THREADS
+  } else {
+    PyErr_Clear();
+    if (!PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+          "lKO",
+#else
+          "lLO",
+#endif
+          &sqlrcur, &row, &col))
+      return NULL;
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateHour(row,
+			PyString_AsString(col));
+    } else if (PyInt_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateHour(row,
+			PyInt_AsLong(col));
+    }
+    Py_END_ALLOW_THREADS
+  }
+  return Py_BuildValue("h", rc);
+}
+
+static PyObject *getFieldAsDateMinute(PyObject *self, PyObject *args) {
+  long sqlrcur;
+  int16_t rc=0;
+  uint64_t row;
+  PyObject *col;
+  int ddmm=0;
+  int yyyyddmm=0;
+  const char *datedelimiters=NULL;
+  if (PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+        "lKOiis",
+#else
+        "lLOiis",
+#endif
+        &sqlrcur, &row, &col, &ddmm, &yyyyddmm, &datedelimiters)) {
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateMinute(row,
+			PyString_AsString(col),
+			ddmm!=0,yyyyddmm!=0,datedelimiters);
+    } else if (PyInt_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateMinute(row,
+			PyInt_AsLong(col),
+			ddmm!=0,yyyyddmm!=0,datedelimiters);
+    }
+    Py_END_ALLOW_THREADS
+  } else {
+    PyErr_Clear();
+    if (!PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+          "lKO",
+#else
+          "lLO",
+#endif
+          &sqlrcur, &row, &col))
+      return NULL;
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateMinute(row,
+			PyString_AsString(col));
+    } else if (PyInt_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateMinute(row,
+			PyInt_AsLong(col));
+    }
+    Py_END_ALLOW_THREADS
+  }
+  return Py_BuildValue("h", rc);
+}
+
+static PyObject *getFieldAsDateSecond(PyObject *self, PyObject *args) {
+  long sqlrcur;
+  int16_t rc=0;
+  uint64_t row;
+  PyObject *col;
+  int ddmm=0;
+  int yyyyddmm=0;
+  const char *datedelimiters=NULL;
+  if (PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+        "lKOiis",
+#else
+        "lLOiis",
+#endif
+        &sqlrcur, &row, &col, &ddmm, &yyyyddmm, &datedelimiters)) {
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateSecond(row,
+			PyString_AsString(col),
+			ddmm!=0,yyyyddmm!=0,datedelimiters);
+    } else if (PyInt_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateSecond(row,
+			PyInt_AsLong(col),
+			ddmm!=0,yyyyddmm!=0,datedelimiters);
+    }
+    Py_END_ALLOW_THREADS
+  } else {
+    PyErr_Clear();
+    if (!PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+          "lKO",
+#else
+          "lLO",
+#endif
+          &sqlrcur, &row, &col))
+      return NULL;
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateSecond(row,
+			PyString_AsString(col));
+    } else if (PyInt_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateSecond(row,
+			PyInt_AsLong(col));
+    }
+    Py_END_ALLOW_THREADS
+  }
+  return Py_BuildValue("h", rc);
+}
+
+static PyObject *getFieldAsDateMicrosecond(PyObject *self, PyObject *args) {
+  long sqlrcur;
+  int32_t rc=0;
+  uint64_t row;
+  PyObject *col;
+  int ddmm=0;
+  int yyyyddmm=0;
+  const char *datedelimiters=NULL;
+  if (PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+        "lKOiis",
+#else
+        "lLOiis",
+#endif
+        &sqlrcur, &row, &col, &ddmm, &yyyyddmm, &datedelimiters)) {
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateMicrosecond(row,
+			PyString_AsString(col),
+			ddmm!=0,yyyyddmm!=0,datedelimiters);
+    } else if (PyInt_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateMicrosecond(row,
+			PyInt_AsLong(col),
+			ddmm!=0,yyyyddmm!=0,datedelimiters);
+    }
+    Py_END_ALLOW_THREADS
+  } else {
+    PyErr_Clear();
+    if (!PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+          "lKO",
+#else
+          "lLO",
+#endif
+          &sqlrcur, &row, &col))
+      return NULL;
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateMicrosecond(row,
+			PyString_AsString(col));
+    } else if (PyInt_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateMicrosecond(row,
+			PyInt_AsLong(col));
+    }
+    Py_END_ALLOW_THREADS
+  }
+  return Py_BuildValue("l", (long)rc);
+}
+
+static PyObject *getFieldAsDateIsNegative(PyObject *self, PyObject *args) {
+  long sqlrcur;
+  bool rc=false;
+  uint64_t row;
+  PyObject *col;
+  int ddmm=0;
+  int yyyyddmm=0;
+  const char *datedelimiters=NULL;
+  if (PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+        "lKOiis",
+#else
+        "lLOiis",
+#endif
+        &sqlrcur, &row, &col, &ddmm, &yyyyddmm, &datedelimiters)) {
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateIsNegative(row,
+			PyString_AsString(col),
+			ddmm!=0,yyyyddmm!=0,datedelimiters);
+    } else if (PyInt_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateIsNegative(row,
+			PyInt_AsLong(col),
+			ddmm!=0,yyyyddmm!=0,datedelimiters);
+    }
+    Py_END_ALLOW_THREADS
+  } else {
+    PyErr_Clear();
+    if (!PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+          "lKO",
+#else
+          "lLO",
+#endif
+          &sqlrcur, &row, &col))
+      return NULL;
+    Py_BEGIN_ALLOW_THREADS
+    if (PyString_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateIsNegative(row,
+			PyString_AsString(col));
+    } else if (PyInt_Check(col)) {
+      rc=((sqlrcursor *)sqlrcur)->getFieldAsDateIsNegative(row,
+			PyInt_AsLong(col));
+    }
+    Py_END_ALLOW_THREADS
+  }
+  return PyBool_FromLong(rc);
+}
+
 static PyObject *getFieldLength(PyObject *self, PyObject *args) {
   long sqlrcur;
   uint32_t rc=0;
@@ -2196,6 +2588,14 @@ static PyMethodDef SQLRMethods[] = {
   {"getField", getField, METH_VARARGS},
   {"getFieldAsInteger", getFieldAsInteger, METH_VARARGS},
   {"getFieldAsDouble", getFieldAsDouble, METH_VARARGS},
+  {"getFieldAsDateYear", getFieldAsDateYear, METH_VARARGS},
+  {"getFieldAsDateMonth", getFieldAsDateMonth, METH_VARARGS},
+  {"getFieldAsDateDay", getFieldAsDateDay, METH_VARARGS},
+  {"getFieldAsDateHour", getFieldAsDateHour, METH_VARARGS},
+  {"getFieldAsDateMinute", getFieldAsDateMinute, METH_VARARGS},
+  {"getFieldAsDateSecond", getFieldAsDateSecond, METH_VARARGS},
+  {"getFieldAsDateMicrosecond", getFieldAsDateMicrosecond, METH_VARARGS},
+  {"getFieldAsDateIsNegative", getFieldAsDateIsNegative, METH_VARARGS},
   {"getFieldLength", getFieldLength, METH_VARARGS},
   {"getRow", getRow, METH_VARARGS},
   {"getRowDictionary", getRowDictionary, METH_VARARGS},

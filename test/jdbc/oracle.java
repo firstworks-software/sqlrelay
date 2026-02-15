@@ -2665,7 +2665,16 @@ if (false) {
 			pstmt.setInt(1,i);
 			pstmt.setString(2,"testchar"+i);
 			pstmt.setString(3,"testvarchar"+i);
-			pstmt.setDate(4,new java.sql.Date(2000+i,1,1));
+
+			cal.set(Calendar.YEAR,2000+i);
+			cal.set(Calendar.MONTH,Calendar.JANUARY);
+			cal.set(Calendar.DAY_OF_MONTH,1);
+			cal.set(Calendar.HOUR_OF_DAY,0);
+			cal.set(Calendar.MINUTE,0);
+			cal.set(Calendar.SECOND,0);
+			pstmt.setDate(4,new java.sql.Date(
+						cal.getTimeInMillis()));
+
 			pstmt.setString(5,"testlong"+i);
 			clob.setString(1,"testclob"+i);
 			pstmt.setClob(6,clob);
@@ -2697,7 +2706,16 @@ if (false) {
 			cstmt.setInt("var1",i);
 			cstmt.setString("var2","testchar"+i);
 			cstmt.setString("var3","testvarchar"+i);
-			cstmt.setDate("var4",new java.sql.Date(2000+i,1,1));
+
+			cal.set(Calendar.YEAR,2000+i);
+			cal.set(Calendar.MONTH,Calendar.JANUARY);
+			cal.set(Calendar.DAY_OF_MONTH,1);
+			cal.set(Calendar.HOUR_OF_DAY,0);
+			cal.set(Calendar.MINUTE,0);
+			cal.set(Calendar.SECOND,0);
+			cstmt.setDate("var4",new java.sql.Date(
+						cal.getTimeInMillis()));
+
 			cstmt.setString("var5","testlong"+i);
 			clob.setString(1,"testclob"+i);
 			cstmt.setClob("var6",clob);
@@ -2902,7 +2920,7 @@ if (false) {
 
 			datevar=rs.getDate(4);
 			cal.setTime(datevar);
-			assertEquals(cal.get(Calendar.YEAR),i);
+			assertEquals(cal.get(Calendar.YEAR),2000+i);
 			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
 			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
 			assertEquals(cal.get(Calendar.HOUR_OF_DAY),0);
@@ -2965,7 +2983,7 @@ if (false) {
 
 			datevar=rs.getDate("TESTDATE");
 			cal.setTime(datevar);
-			assertEquals(cal.get(Calendar.YEAR),i);
+			assertEquals(cal.get(Calendar.YEAR),2000+i);
 			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
 			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
 			assertEquals(cal.get(Calendar.HOUR_OF_DAY),0);
@@ -3014,7 +3032,7 @@ if (false) {
 		System.out.println("OUTPUT BIND:");
 		cstmt=con.prepareCall("begin :var1:='hello'; end;");
 		cstmt.registerOutParameter("var1",Types.VARCHAR);
-		assertTrue(cstmt.execute());
+		assertFalse(cstmt.execute());
 		assertEquals(cstmt.getString("var1"),"hello");
 		cstmt.close();
 		System.out.println();
@@ -3112,7 +3130,7 @@ if (false) {
 			"end;");
 		cstmt.registerOutParameter("clobvar",Types.CLOB);
 		cstmt.registerOutParameter("blobvar",Types.BLOB);
-		assertTrue(cstmt.execute());
+		assertFalse(cstmt.execute());
 		assertEquals(cstmt.getString("clobvar"),"hello");
 		assertEquals(new String(cstmt.getBytes("blobvar"),
 					StandardCharsets.UTF_8),"hello");
@@ -3202,7 +3220,7 @@ if (false) {
 			"	from testtable2; "+
 			"end;");
 		cstmt.registerOutParameter("clobbindval",Types.CLOB);
-		assertTrue(cstmt.execute());
+		assertFalse(cstmt.execute());
 		assertEquals(cstmt.getString("clobbindval"),clobstr);
 		cstmt.close();
 		assertEquals(stmt.executeUpdate("drop table testtable2"),0);
@@ -3237,7 +3255,7 @@ if (false) {
 		rs.close();
 		cstmt=con.prepareCall("begin :bindval:='"+teststr+"'; end;");
 		cstmt.registerOutParameter("bindval",Types.VARCHAR);
-		assertTrue(cstmt.execute());
+		assertFalse(cstmt.execute());
 		assertEquals(cstmt.getString("bindval"),teststr);
 		cstmt.close();
 		assertEquals(stmt.executeUpdate("drop table testtable2"),0);

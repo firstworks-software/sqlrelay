@@ -1941,6 +1941,1223 @@ int main() {
 		}
 
 
+		if (strcmp("getFieldAsDateYearByIndex", command) == TRUE) {
+			long row;
+			long col;
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 2) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &col)) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateYearByIndex(cur, row, col))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateYearByName", command) == TRUE) {
+			long row;
+			char col[COL_NAME_SIZE];
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 2) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &col[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateYearByName(cur, row, col))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateYearByIndexWithDdMm", command) == TRUE) {
+			long row;
+			long col;
+			long ddmm;
+			long yyyyddmm;
+			char datedelimiters[256];
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 5) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &col)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &ddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &yyyyddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &datedelimiters[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateYearByIndexWithDdMm(cur, row, col, ddmm, yyyyddmm, datedelimiters))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateYearByNameWithDdMm", command) == TRUE) {
+			long row;
+			char col[COL_NAME_SIZE];
+			long ddmm;
+			long yyyyddmm;
+			char datedelimiters[256];
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 5) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &col[0])) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &ddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &yyyyddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &datedelimiters[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateYearByNameWithDdMm(cur, row, col, ddmm, yyyyddmm, datedelimiters))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateMonthByIndex", command) == TRUE) {
+			long row;
+			long col;
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 2) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &col)) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateMonthByIndex(cur, row, col))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateMonthByName", command) == TRUE) {
+			long row;
+			char col[COL_NAME_SIZE];
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 2) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &col[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateMonthByName(cur, row, col))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateMonthByIndexWithDdMm", command) == TRUE) {
+			long row;
+			long col;
+			long ddmm;
+			long yyyyddmm;
+			char datedelimiters[256];
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 5) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &col)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &ddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &yyyyddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &datedelimiters[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateMonthByIndexWithDdMm(cur, row, col, ddmm, yyyyddmm, datedelimiters))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateMonthByNameWithDdMm", command) == TRUE) {
+			long row;
+			char col[COL_NAME_SIZE];
+			long ddmm;
+			long yyyyddmm;
+			char datedelimiters[256];
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 5) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &col[0])) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &ddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &yyyyddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &datedelimiters[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateMonthByNameWithDdMm(cur, row, col, ddmm, yyyyddmm, datedelimiters))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateDayByIndex", command) == TRUE) {
+			long row;
+			long col;
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 2) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &col)) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateDayByIndex(cur, row, col))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateDayByName", command) == TRUE) {
+			long row;
+			char col[COL_NAME_SIZE];
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 2) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &col[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateDayByName(cur, row, col))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateDayByIndexWithDdMm", command) == TRUE) {
+			long row;
+			long col;
+			long ddmm;
+			long yyyyddmm;
+			char datedelimiters[256];
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 5) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &col)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &ddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &yyyyddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &datedelimiters[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateDayByIndexWithDdMm(cur, row, col, ddmm, yyyyddmm, datedelimiters))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateDayByNameWithDdMm", command) == TRUE) {
+			long row;
+			char col[COL_NAME_SIZE];
+			long ddmm;
+			long yyyyddmm;
+			char datedelimiters[256];
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 5) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &col[0])) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &ddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &yyyyddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &datedelimiters[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateDayByNameWithDdMm(cur, row, col, ddmm, yyyyddmm, datedelimiters))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateHourByIndex", command) == TRUE) {
+			long row;
+			long col;
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 2) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &col)) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateHourByIndex(cur, row, col))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateHourByName", command) == TRUE) {
+			long row;
+			char col[COL_NAME_SIZE];
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 2) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &col[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateHourByName(cur, row, col))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateHourByIndexWithDdMm", command) == TRUE) {
+			long row;
+			long col;
+			long ddmm;
+			long yyyyddmm;
+			char datedelimiters[256];
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 5) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &col)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &ddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &yyyyddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &datedelimiters[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateHourByIndexWithDdMm(cur, row, col, ddmm, yyyyddmm, datedelimiters))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateHourByNameWithDdMm", command) == TRUE) {
+			long row;
+			char col[COL_NAME_SIZE];
+			long ddmm;
+			long yyyyddmm;
+			char datedelimiters[256];
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 5) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &col[0])) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &ddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &yyyyddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &datedelimiters[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateHourByNameWithDdMm(cur, row, col, ddmm, yyyyddmm, datedelimiters))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateMinuteByIndex", command) == TRUE) {
+			long row;
+			long col;
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 2) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &col)) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateMinuteByIndex(cur, row, col))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateMinuteByName", command) == TRUE) {
+			long row;
+			char col[COL_NAME_SIZE];
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 2) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &col[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateMinuteByName(cur, row, col))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateMinuteByIndexWithDdMm", command) == TRUE) {
+			long row;
+			long col;
+			long ddmm;
+			long yyyyddmm;
+			char datedelimiters[256];
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 5) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &col)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &ddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &yyyyddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &datedelimiters[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateMinuteByIndexWithDdMm(cur, row, col, ddmm, yyyyddmm, datedelimiters))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateMinuteByNameWithDdMm", command) == TRUE) {
+			long row;
+			char col[COL_NAME_SIZE];
+			long ddmm;
+			long yyyyddmm;
+			char datedelimiters[256];
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 5) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &col[0])) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &ddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &yyyyddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &datedelimiters[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateMinuteByNameWithDdMm(cur, row, col, ddmm, yyyyddmm, datedelimiters))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateSecondByIndex", command) == TRUE) {
+			long row;
+			long col;
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 2) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &col)) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateSecondByIndex(cur, row, col))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateSecondByName", command) == TRUE) {
+			long row;
+			char col[COL_NAME_SIZE];
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 2) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &col[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateSecondByName(cur, row, col))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateSecondByIndexWithDdMm", command) == TRUE) {
+			long row;
+			long col;
+			long ddmm;
+			long yyyyddmm;
+			char datedelimiters[256];
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 5) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &col)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &ddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &yyyyddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &datedelimiters[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateSecondByIndexWithDdMm(cur, row, col, ddmm, yyyyddmm, datedelimiters))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateSecondByNameWithDdMm", command) == TRUE) {
+			long row;
+			char col[COL_NAME_SIZE];
+			long ddmm;
+			long yyyyddmm;
+			char datedelimiters[256];
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 5) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &col[0])) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &ddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &yyyyddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &datedelimiters[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateSecondByNameWithDdMm(cur, row, col, ddmm, yyyyddmm, datedelimiters))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateMicrosecondByIndex", command) == TRUE) {
+			long row;
+			long col;
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 2) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &col)) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateMicrosecondByIndex(cur, row, col))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateMicrosecondByName", command) == TRUE) {
+			long row;
+			char col[COL_NAME_SIZE];
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 2) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &col[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateMicrosecondByName(cur, row, col))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateMicrosecondByIndexWithDdMm", command) == TRUE) {
+			long row;
+			long col;
+			long ddmm;
+			long yyyyddmm;
+			char datedelimiters[256];
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 5) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &col)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &ddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &yyyyddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &datedelimiters[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateMicrosecondByIndexWithDdMm(cur, row, col, ddmm, yyyyddmm, datedelimiters))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateMicrosecondByNameWithDdMm", command) == TRUE) {
+			long row;
+			char col[COL_NAME_SIZE];
+			long ddmm;
+			long yyyyddmm;
+			char datedelimiters[256];
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 5) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &col[0])) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &ddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &yyyyddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &datedelimiters[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateMicrosecondByNameWithDdMm(cur, row, col, ddmm, yyyyddmm, datedelimiters))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateIsNegativeByIndex", command) == TRUE) {
+			long row;
+			long col;
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 2) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &col)) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateIsNegativeByIndex(cur, row, col))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateIsNegativeByName", command) == TRUE) {
+			long row;
+			char col[COL_NAME_SIZE];
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 2) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &col[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateIsNegativeByName(cur, row, col))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateIsNegativeByIndexWithDdMm", command) == TRUE) {
+			long row;
+			long col;
+			long ddmm;
+			long yyyyddmm;
+			char datedelimiters[256];
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 5) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &col)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &ddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &yyyyddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &datedelimiters[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateIsNegativeByIndexWithDdMm(cur, row, col, ddmm, yyyyddmm, datedelimiters))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsDateIsNegativeByNameWithDdMm", command) == TRUE) {
+			long row;
+			char col[COL_NAME_SIZE];
+			long ddmm;
+			long yyyyddmm;
+			char datedelimiters[256];
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 5) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &col[0])) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &ddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &yyyyddmm)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &datedelimiters[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsDateIsNegativeByNameWithDdMm(cur, row, col, ddmm, yyyyddmm, datedelimiters))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+
 		if (strcmp("getFieldLengthByIndex", command) == TRUE) {
 			long row;
 			long col;

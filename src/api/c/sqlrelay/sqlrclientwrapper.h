@@ -1040,6 +1040,350 @@ double	sqlrcur_getFieldAsDoubleByName(sqlrcur sqlrcurref,
 
 
 /** @ingroup sqlrclientwrapper
+ *  Returns the specified field as a date/time. */
+SQLRCLIENT_DLLSPEC
+int	sqlrcur_getFieldAsDateByIndex(sqlrcur sqlrcurref,
+					uint64_t row, uint32_t col,
+					int16_t *year, int16_t *month,
+					int16_t *day, int16_t *hour,
+					int16_t *minute, int16_t *second,
+					int32_t *microsecond,
+					int *isnegative);
+
+/** @ingroup sqlrclientwrapper
+ *  Returns the specified field as a date/time.
+ *
+ *  If "ddmm" is set true then the date format
+ *  is assumed to be dd/mm/yyyy rather than
+ *  mm/dd/yyyy when a date with a trailing year
+ *  is encountered.
+ *
+ *  If "yyyyddmm" is set true then the date
+ *  format is assumed to be yyyy/dd/mm rather
+ *  than yyyy/mm/dd when a date with a leading
+ *  year is encountered.
+ *
+ *  "datedelimiters" may be set to a set of
+ *  valid date delimiters and may contain any
+ *  combination of '/', '-', '.', and ':'.
+ *  Eg. "/-" would mean that only '/' and '-'
+ *  are valid date delimiters.  If left NULL
+ *  then it defaults to "/-.:". */
+SQLRCLIENT_DLLSPEC
+int	sqlrcur_getFieldAsDateByIndexWithDdMm(sqlrcur sqlrcurref,
+					uint64_t row, uint32_t col,
+					int ddmm, int yyyyddmm,
+					const char *datedelimiters,
+					int16_t *year, int16_t *month,
+					int16_t *day, int16_t *hour,
+					int16_t *minute, int16_t *second,
+					int32_t *microsecond,
+					int *isnegative);
+
+/** @ingroup sqlrclientwrapper
+ *  Returns the specified field as a date/time. */
+SQLRCLIENT_DLLSPEC
+int	sqlrcur_getFieldAsDateByName(sqlrcur sqlrcurref,
+					uint64_t row, const char *col,
+					int16_t *year, int16_t *month,
+					int16_t *day, int16_t *hour,
+					int16_t *minute, int16_t *second,
+					int32_t *microsecond,
+					int *isnegative);
+
+/** @ingroup sqlrclientwrapper
+ *  Returns the specified field as a date/time.
+ *
+ *  If "ddmm" is set true then the date format
+ *  is assumed to be dd/mm/yyyy rather than
+ *  mm/dd/yyyy when a date with a trailing year
+ *  is encountered.
+ *
+ *  If "yyyyddmm" is set true then the date
+ *  format is assumed to be yyyy/dd/mm rather
+ *  than yyyy/mm/dd when a date with a leading
+ *  year is encountered.
+ *
+ *  "datedelimiters" may be set to a set of
+ *  valid date delimiters and may contain any
+ *  combination of '/', '-', '.', and ':'.
+ *  Eg. "/-" would mean that only '/' and '-'
+ *  are valid date delimiters.  If left NULL
+ *  then it defaults to "/-.:". */
+SQLRCLIENT_DLLSPEC
+int	sqlrcur_getFieldAsDateByNameWithDdMm(sqlrcur sqlrcurref,
+					uint64_t row, const char *col,
+					int ddmm, int yyyyddmm,
+					const char *datedelimiters,
+					int16_t *year, int16_t *month,
+					int16_t *day, int16_t *hour,
+					int16_t *minute, int16_t *second,
+					int32_t *microsecond,
+					int *isnegative);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the year component. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getFieldAsDateYearByIndex(sqlrcur sqlrcurref,
+					uint64_t row, uint32_t col);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the year component. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getFieldAsDateYearByIndexWithDdMm(sqlrcur sqlrcurref,
+					uint64_t row, uint32_t col,
+					int ddmm, int yyyyddmm,
+					const char *datedelimiters);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the year component. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getFieldAsDateYearByName(sqlrcur sqlrcurref,
+					uint64_t row, const char *col);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the year component. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getFieldAsDateYearByNameWithDdMm(sqlrcur sqlrcurref,
+					uint64_t row, const char *col,
+					int ddmm, int yyyyddmm,
+					const char *datedelimiters);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the month component. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getFieldAsDateMonthByIndex(sqlrcur sqlrcurref,
+					uint64_t row, uint32_t col);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the month component. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getFieldAsDateMonthByIndexWithDdMm(sqlrcur sqlrcurref,
+					uint64_t row, uint32_t col,
+					int ddmm, int yyyyddmm,
+					const char *datedelimiters);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the month component. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getFieldAsDateMonthByName(sqlrcur sqlrcurref,
+					uint64_t row, const char *col);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the month component. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getFieldAsDateMonthByNameWithDdMm(sqlrcur sqlrcurref,
+					uint64_t row, const char *col,
+					int ddmm, int yyyyddmm,
+					const char *datedelimiters);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the day component. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getFieldAsDateDayByIndex(sqlrcur sqlrcurref,
+					uint64_t row, uint32_t col);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the day component. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getFieldAsDateDayByIndexWithDdMm(sqlrcur sqlrcurref,
+					uint64_t row, uint32_t col,
+					int ddmm, int yyyyddmm,
+					const char *datedelimiters);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the day component. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getFieldAsDateDayByName(sqlrcur sqlrcurref,
+					uint64_t row, const char *col);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the day component. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getFieldAsDateDayByNameWithDdMm(sqlrcur sqlrcurref,
+					uint64_t row, const char *col,
+					int ddmm, int yyyyddmm,
+					const char *datedelimiters);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the hour component. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getFieldAsDateHourByIndex(sqlrcur sqlrcurref,
+					uint64_t row, uint32_t col);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the hour component. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getFieldAsDateHourByIndexWithDdMm(sqlrcur sqlrcurref,
+					uint64_t row, uint32_t col,
+					int ddmm, int yyyyddmm,
+					const char *datedelimiters);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the hour component. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getFieldAsDateHourByName(sqlrcur sqlrcurref,
+					uint64_t row, const char *col);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the hour component. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getFieldAsDateHourByNameWithDdMm(sqlrcur sqlrcurref,
+					uint64_t row, const char *col,
+					int ddmm, int yyyyddmm,
+					const char *datedelimiters);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the minute component. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getFieldAsDateMinuteByIndex(sqlrcur sqlrcurref,
+					uint64_t row, uint32_t col);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the minute component. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getFieldAsDateMinuteByIndexWithDdMm(sqlrcur sqlrcurref,
+					uint64_t row, uint32_t col,
+					int ddmm, int yyyyddmm,
+					const char *datedelimiters);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the minute component. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getFieldAsDateMinuteByName(sqlrcur sqlrcurref,
+					uint64_t row, const char *col);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the minute component. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getFieldAsDateMinuteByNameWithDdMm(sqlrcur sqlrcurref,
+					uint64_t row, const char *col,
+					int ddmm, int yyyyddmm,
+					const char *datedelimiters);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the second component. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getFieldAsDateSecondByIndex(sqlrcur sqlrcurref,
+					uint64_t row, uint32_t col);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the second component. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getFieldAsDateSecondByIndexWithDdMm(sqlrcur sqlrcurref,
+					uint64_t row, uint32_t col,
+					int ddmm, int yyyyddmm,
+					const char *datedelimiters);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the second component. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getFieldAsDateSecondByName(sqlrcur sqlrcurref,
+					uint64_t row, const char *col);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the second component. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getFieldAsDateSecondByNameWithDdMm(sqlrcur sqlrcurref,
+					uint64_t row, const char *col,
+					int ddmm, int yyyyddmm,
+					const char *datedelimiters);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the microsecond component. */
+SQLRCLIENT_DLLSPEC
+int32_t	sqlrcur_getFieldAsDateMicrosecondByIndex(sqlrcur sqlrcurref,
+					uint64_t row, uint32_t col);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the microsecond component. */
+SQLRCLIENT_DLLSPEC
+int32_t	sqlrcur_getFieldAsDateMicrosecondByIndexWithDdMm(sqlrcur sqlrcurref,
+					uint64_t row, uint32_t col,
+					int ddmm, int yyyyddmm,
+					const char *datedelimiters);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the microsecond component. */
+SQLRCLIENT_DLLSPEC
+int32_t	sqlrcur_getFieldAsDateMicrosecondByName(sqlrcur sqlrcurref,
+					uint64_t row, const char *col);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns the microsecond component. */
+SQLRCLIENT_DLLSPEC
+int32_t	sqlrcur_getFieldAsDateMicrosecondByNameWithDdMm(sqlrcur sqlrcurref,
+					uint64_t row, const char *col,
+					int ddmm, int yyyyddmm,
+					const char *datedelimiters);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns whether the hour component
+ *  is negative. */
+SQLRCLIENT_DLLSPEC
+int	sqlrcur_getFieldAsDateIsNegativeByIndex(sqlrcur sqlrcurref,
+					uint64_t row, uint32_t col);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns whether the hour component
+ *  is negative. */
+SQLRCLIENT_DLLSPEC
+int	sqlrcur_getFieldAsDateIsNegativeByIndexWithDdMm(sqlrcur sqlrcurref,
+					uint64_t row, uint32_t col,
+					int ddmm, int yyyyddmm,
+					const char *datedelimiters);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns whether the hour component
+ *  is negative. */
+SQLRCLIENT_DLLSPEC
+int	sqlrcur_getFieldAsDateIsNegativeByName(sqlrcur sqlrcurref,
+					uint64_t row, const char *col);
+
+/** @ingroup sqlrclientwrapper
+ *  Interprets the specified field as a date
+ *  and returns whether the hour component
+ *  is negative. */
+SQLRCLIENT_DLLSPEC
+int	sqlrcur_getFieldAsDateIsNegativeByNameWithDdMm(sqlrcur sqlrcurref,
+					uint64_t row, const char *col,
+					int ddmm, int yyyyddmm,
+					const char *datedelimiters);
+
+
+
+/** @ingroup sqlrclientwrapper
  *  Returns the length of the specified row and column. */
 SQLRCLIENT_DLLSPEC
 uint32_t	sqlrcur_getFieldLengthByIndex(sqlrcur sqlrcurref,

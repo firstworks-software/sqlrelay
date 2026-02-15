@@ -2740,6 +2740,678 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdouble) {
 	RETURN_DOUBLE(0.0);
 }
 
+DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdateyear) {
+	ZVAL sqlrcur;
+	ZVAL row;
+	ZVAL col;
+	ZVAL ddmm;
+	ZVAL yyyyddmm;
+	ZVAL datedelimiters;
+	int16_t r=0;
+	if (ZEND_NUM_ARGS()==6 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzzzzz")
+				&sqlrcur,
+				&row,
+				&col,
+				&ddmm,
+				&yyyyddmm,
+				&datedelimiters) != FAILURE) {
+		convert_to_long_ex(row);
+		convert_to_long_ex(ddmm);
+		convert_to_long_ex(yyyyddmm);
+		convert_to_string_ex(datedelimiters);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_LONG) {
+				convert_to_long_ex(col);
+				r=cursor->getFieldAsDateYear(
+						LVAL(row),
+						LVAL(col),
+						LVAL(ddmm)!=0,
+						LVAL(yyyyddmm)!=0,
+						SVAL(datedelimiters));
+			} else if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateYear(
+						LVAL(row),
+						SVAL(col),
+						LVAL(ddmm)!=0,
+						LVAL(yyyyddmm)!=0,
+						SVAL(datedelimiters));
+			}
+			RETURN_LONG(r);
+		}
+	} else if (ZEND_NUM_ARGS()==3 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzz")
+				&sqlrcur,
+				&row,
+				&col) != FAILURE) {
+		convert_to_long_ex(row);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_LONG) {
+				convert_to_long_ex(col);
+				r=cursor->getFieldAsDateYear(
+						LVAL(row),
+						LVAL(col));
+			} else if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateYear(
+						LVAL(row),
+						SVAL(col));
+			}
+			RETURN_LONG(r);
+		}
+	} else {
+		WRONG_PARAM_COUNT;
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdatemonth) {
+	ZVAL sqlrcur;
+	ZVAL row;
+	ZVAL col;
+	ZVAL ddmm;
+	ZVAL yyyyddmm;
+	ZVAL datedelimiters;
+	int16_t r=0;
+	if (ZEND_NUM_ARGS()==6 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzzzzz")
+				&sqlrcur,
+				&row,
+				&col,
+				&ddmm,
+				&yyyyddmm,
+				&datedelimiters) != FAILURE) {
+		convert_to_long_ex(row);
+		convert_to_long_ex(ddmm);
+		convert_to_long_ex(yyyyddmm);
+		convert_to_string_ex(datedelimiters);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_LONG) {
+				convert_to_long_ex(col);
+				r=cursor->getFieldAsDateMonth(
+						LVAL(row),
+						LVAL(col),
+						LVAL(ddmm)!=0,
+						LVAL(yyyyddmm)!=0,
+						SVAL(datedelimiters));
+			} else if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateMonth(
+						LVAL(row),
+						SVAL(col),
+						LVAL(ddmm)!=0,
+						LVAL(yyyyddmm)!=0,
+						SVAL(datedelimiters));
+			}
+			RETURN_LONG(r);
+		}
+	} else if (ZEND_NUM_ARGS()==3 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzz")
+				&sqlrcur,
+				&row,
+				&col) != FAILURE) {
+		convert_to_long_ex(row);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_LONG) {
+				convert_to_long_ex(col);
+				r=cursor->getFieldAsDateMonth(
+						LVAL(row),
+						LVAL(col));
+			} else if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateMonth(
+						LVAL(row),
+						SVAL(col));
+			}
+			RETURN_LONG(r);
+		}
+	} else {
+		WRONG_PARAM_COUNT;
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdateday) {
+	ZVAL sqlrcur;
+	ZVAL row;
+	ZVAL col;
+	ZVAL ddmm;
+	ZVAL yyyyddmm;
+	ZVAL datedelimiters;
+	int16_t r=0;
+	if (ZEND_NUM_ARGS()==6 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzzzzz")
+				&sqlrcur,
+				&row,
+				&col,
+				&ddmm,
+				&yyyyddmm,
+				&datedelimiters) != FAILURE) {
+		convert_to_long_ex(row);
+		convert_to_long_ex(ddmm);
+		convert_to_long_ex(yyyyddmm);
+		convert_to_string_ex(datedelimiters);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_LONG) {
+				convert_to_long_ex(col);
+				r=cursor->getFieldAsDateDay(
+						LVAL(row),
+						LVAL(col),
+						LVAL(ddmm)!=0,
+						LVAL(yyyyddmm)!=0,
+						SVAL(datedelimiters));
+			} else if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateDay(
+						LVAL(row),
+						SVAL(col),
+						LVAL(ddmm)!=0,
+						LVAL(yyyyddmm)!=0,
+						SVAL(datedelimiters));
+			}
+			RETURN_LONG(r);
+		}
+	} else if (ZEND_NUM_ARGS()==3 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzz")
+				&sqlrcur,
+				&row,
+				&col) != FAILURE) {
+		convert_to_long_ex(row);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_LONG) {
+				convert_to_long_ex(col);
+				r=cursor->getFieldAsDateDay(
+						LVAL(row),
+						LVAL(col));
+			} else if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateDay(
+						LVAL(row),
+						SVAL(col));
+			}
+			RETURN_LONG(r);
+		}
+	} else {
+		WRONG_PARAM_COUNT;
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdatehour) {
+	ZVAL sqlrcur;
+	ZVAL row;
+	ZVAL col;
+	ZVAL ddmm;
+	ZVAL yyyyddmm;
+	ZVAL datedelimiters;
+	int16_t r=0;
+	if (ZEND_NUM_ARGS()==6 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzzzzz")
+				&sqlrcur,
+				&row,
+				&col,
+				&ddmm,
+				&yyyyddmm,
+				&datedelimiters) != FAILURE) {
+		convert_to_long_ex(row);
+		convert_to_long_ex(ddmm);
+		convert_to_long_ex(yyyyddmm);
+		convert_to_string_ex(datedelimiters);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_LONG) {
+				convert_to_long_ex(col);
+				r=cursor->getFieldAsDateHour(
+						LVAL(row),
+						LVAL(col),
+						LVAL(ddmm)!=0,
+						LVAL(yyyyddmm)!=0,
+						SVAL(datedelimiters));
+			} else if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateHour(
+						LVAL(row),
+						SVAL(col),
+						LVAL(ddmm)!=0,
+						LVAL(yyyyddmm)!=0,
+						SVAL(datedelimiters));
+			}
+			RETURN_LONG(r);
+		}
+	} else if (ZEND_NUM_ARGS()==3 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzz")
+				&sqlrcur,
+				&row,
+				&col) != FAILURE) {
+		convert_to_long_ex(row);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_LONG) {
+				convert_to_long_ex(col);
+				r=cursor->getFieldAsDateHour(
+						LVAL(row),
+						LVAL(col));
+			} else if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateHour(
+						LVAL(row),
+						SVAL(col));
+			}
+			RETURN_LONG(r);
+		}
+	} else {
+		WRONG_PARAM_COUNT;
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdateminute) {
+	ZVAL sqlrcur;
+	ZVAL row;
+	ZVAL col;
+	ZVAL ddmm;
+	ZVAL yyyyddmm;
+	ZVAL datedelimiters;
+	int16_t r=0;
+	if (ZEND_NUM_ARGS()==6 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzzzzz")
+				&sqlrcur,
+				&row,
+				&col,
+				&ddmm,
+				&yyyyddmm,
+				&datedelimiters) != FAILURE) {
+		convert_to_long_ex(row);
+		convert_to_long_ex(ddmm);
+		convert_to_long_ex(yyyyddmm);
+		convert_to_string_ex(datedelimiters);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_LONG) {
+				convert_to_long_ex(col);
+				r=cursor->getFieldAsDateMinute(
+						LVAL(row),
+						LVAL(col),
+						LVAL(ddmm)!=0,
+						LVAL(yyyyddmm)!=0,
+						SVAL(datedelimiters));
+			} else if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateMinute(
+						LVAL(row),
+						SVAL(col),
+						LVAL(ddmm)!=0,
+						LVAL(yyyyddmm)!=0,
+						SVAL(datedelimiters));
+			}
+			RETURN_LONG(r);
+		}
+	} else if (ZEND_NUM_ARGS()==3 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzz")
+				&sqlrcur,
+				&row,
+				&col) != FAILURE) {
+		convert_to_long_ex(row);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_LONG) {
+				convert_to_long_ex(col);
+				r=cursor->getFieldAsDateMinute(
+						LVAL(row),
+						LVAL(col));
+			} else if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateMinute(
+						LVAL(row),
+						SVAL(col));
+			}
+			RETURN_LONG(r);
+		}
+	} else {
+		WRONG_PARAM_COUNT;
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdatesecond) {
+	ZVAL sqlrcur;
+	ZVAL row;
+	ZVAL col;
+	ZVAL ddmm;
+	ZVAL yyyyddmm;
+	ZVAL datedelimiters;
+	int16_t r=0;
+	if (ZEND_NUM_ARGS()==6 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzzzzz")
+				&sqlrcur,
+				&row,
+				&col,
+				&ddmm,
+				&yyyyddmm,
+				&datedelimiters) != FAILURE) {
+		convert_to_long_ex(row);
+		convert_to_long_ex(ddmm);
+		convert_to_long_ex(yyyyddmm);
+		convert_to_string_ex(datedelimiters);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_LONG) {
+				convert_to_long_ex(col);
+				r=cursor->getFieldAsDateSecond(
+						LVAL(row),
+						LVAL(col),
+						LVAL(ddmm)!=0,
+						LVAL(yyyyddmm)!=0,
+						SVAL(datedelimiters));
+			} else if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateSecond(
+						LVAL(row),
+						SVAL(col),
+						LVAL(ddmm)!=0,
+						LVAL(yyyyddmm)!=0,
+						SVAL(datedelimiters));
+			}
+			RETURN_LONG(r);
+		}
+	} else if (ZEND_NUM_ARGS()==3 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzz")
+				&sqlrcur,
+				&row,
+				&col) != FAILURE) {
+		convert_to_long_ex(row);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_LONG) {
+				convert_to_long_ex(col);
+				r=cursor->getFieldAsDateSecond(
+						LVAL(row),
+						LVAL(col));
+			} else if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateSecond(
+						LVAL(row),
+						SVAL(col));
+			}
+			RETURN_LONG(r);
+		}
+	} else {
+		WRONG_PARAM_COUNT;
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdatemicrosecond) {
+	ZVAL sqlrcur;
+	ZVAL row;
+	ZVAL col;
+	ZVAL ddmm;
+	ZVAL yyyyddmm;
+	ZVAL datedelimiters;
+	int32_t r=0;
+	if (ZEND_NUM_ARGS()==6 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzzzzz")
+				&sqlrcur,
+				&row,
+				&col,
+				&ddmm,
+				&yyyyddmm,
+				&datedelimiters) != FAILURE) {
+		convert_to_long_ex(row);
+		convert_to_long_ex(ddmm);
+		convert_to_long_ex(yyyyddmm);
+		convert_to_string_ex(datedelimiters);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_LONG) {
+				convert_to_long_ex(col);
+				r=cursor->getFieldAsDateMicrosecond(
+						LVAL(row),
+						LVAL(col),
+						LVAL(ddmm)!=0,
+						LVAL(yyyyddmm)!=0,
+						SVAL(datedelimiters));
+			} else if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateMicrosecond(
+						LVAL(row),
+						SVAL(col),
+						LVAL(ddmm)!=0,
+						LVAL(yyyyddmm)!=0,
+						SVAL(datedelimiters));
+			}
+			RETURN_LONG(r);
+		}
+	} else if (ZEND_NUM_ARGS()==3 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzz")
+				&sqlrcur,
+				&row,
+				&col) != FAILURE) {
+		convert_to_long_ex(row);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_LONG) {
+				convert_to_long_ex(col);
+				r=cursor->getFieldAsDateMicrosecond(
+						LVAL(row),
+						LVAL(col));
+			} else if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateMicrosecond(
+						LVAL(row),
+						SVAL(col));
+			}
+			RETURN_LONG(r);
+		}
+	} else {
+		WRONG_PARAM_COUNT;
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdateisnegative) {
+	ZVAL sqlrcur;
+	ZVAL row;
+	ZVAL col;
+	ZVAL ddmm;
+	ZVAL yyyyddmm;
+	ZVAL datedelimiters;
+	bool r=false;
+	if (ZEND_NUM_ARGS()==6 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzzzzz")
+				&sqlrcur,
+				&row,
+				&col,
+				&ddmm,
+				&yyyyddmm,
+				&datedelimiters) != FAILURE) {
+		convert_to_long_ex(row);
+		convert_to_long_ex(ddmm);
+		convert_to_long_ex(yyyyddmm);
+		convert_to_string_ex(datedelimiters);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_LONG) {
+				convert_to_long_ex(col);
+				r=cursor->getFieldAsDateIsNegative(
+						LVAL(row),
+						LVAL(col),
+						LVAL(ddmm)!=0,
+						LVAL(yyyyddmm)!=0,
+						SVAL(datedelimiters));
+			} else if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateIsNegative(
+						LVAL(row),
+						SVAL(col),
+						LVAL(ddmm)!=0,
+						LVAL(yyyyddmm)!=0,
+						SVAL(datedelimiters));
+			}
+			RETURN_LONG(r);
+		}
+	} else if (ZEND_NUM_ARGS()==3 &&
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzz")
+				&sqlrcur,
+				&row,
+				&col) != FAILURE) {
+		convert_to_long_ex(row);
+		sqlrcursor *cursor=NULL;
+		ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+		if (cursor) {
+			if (TYPE(col)==IS_LONG) {
+				convert_to_long_ex(col);
+				r=cursor->getFieldAsDateIsNegative(
+						LVAL(row),
+						LVAL(col));
+			} else if (TYPE(col)==IS_STRING) {
+				convert_to_string_ex(col);
+				r=cursor->getFieldAsDateIsNegative(
+						LVAL(row),
+						SVAL(col));
+			}
+			RETURN_LONG(r);
+		}
+	} else {
+		WRONG_PARAM_COUNT;
+	}
+	RETURN_LONG(0);
+}
+
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldlength) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -4335,6 +5007,30 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldasdouble,0,0,0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldasdateyear,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldasdatemonth,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldasdateday,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldasdatehour,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldasdateminute,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldasdatesecond,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldasdatemicrosecond,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldasdateisnegative,0,0,0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldlength,0,0,0)
 ZEND_END_ARG_INFO()
 
@@ -4646,6 +5342,22 @@ zend_function_entry sql_relay_functions[] = {
 		ARGINFO(arginfo_sqlrcur_getfieldasinteger))
 	ZEND_FE(sqlrcur_getfieldasdouble,
 		ARGINFO(arginfo_sqlrcur_getfieldasdouble))
+	ZEND_FE(sqlrcur_getfieldasdateyear,
+		ARGINFO(arginfo_sqlrcur_getfieldasdateyear))
+	ZEND_FE(sqlrcur_getfieldasdatemonth,
+		ARGINFO(arginfo_sqlrcur_getfieldasdatemonth))
+	ZEND_FE(sqlrcur_getfieldasdateday,
+		ARGINFO(arginfo_sqlrcur_getfieldasdateday))
+	ZEND_FE(sqlrcur_getfieldasdatehour,
+		ARGINFO(arginfo_sqlrcur_getfieldasdatehour))
+	ZEND_FE(sqlrcur_getfieldasdateminute,
+		ARGINFO(arginfo_sqlrcur_getfieldasdateminute))
+	ZEND_FE(sqlrcur_getfieldasdatesecond,
+		ARGINFO(arginfo_sqlrcur_getfieldasdatesecond))
+	ZEND_FE(sqlrcur_getfieldasdatemicrosecond,
+		ARGINFO(arginfo_sqlrcur_getfieldasdatemicrosecond))
+	ZEND_FE(sqlrcur_getfieldasdateisnegative,
+		ARGINFO(arginfo_sqlrcur_getfieldasdateisnegative))
 	ZEND_FE(sqlrcur_getfieldlength,
 		ARGINFO(arginfo_sqlrcur_getfieldlength))
 	ZEND_FE(sqlrcur_getrow,

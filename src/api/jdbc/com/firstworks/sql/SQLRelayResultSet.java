@@ -683,31 +683,78 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		Date	dt=(wasnull)?null:createDate(field,cal);
+		Date	dt=(wasnull)?null:
+			createDate(currentrow-1,columnindex-1,cal);
 		drv.debugEnd();
 		return dt;
 	}
 
 	private
-	Date createDate(String field, Calendar cal) {
+	Date createDate(long row, int col, Calendar cal) {
 drv.debug=true;
 		drv.debugFunction(this);
-		drv.debugPrintln("field: "+field);
+		drv.debugPrintln("row: "+row);
+		drv.debugPrintln("col: "+col);
 		drv.debugPrintln("cal: "+cal);
+		short	year;
+		short	month;
+		short	day;
+		synchronized (networklock) {
+			year=sqlrcur.getFieldAsDateYear(row,col);
+			month=sqlrcur.getFieldAsDateMonth(row,col);
+			day=sqlrcur.getFieldAsDateDay(row,col);
+		}
+		drv.debugPrintln("year: "+year);
+		drv.debugPrintln("month: "+month);
+		drv.debugPrintln("day: "+day);
 		Date	dt=null;
 		if (cal!=null) {
-			// FIXME:
-			// * parse field
-			//   (not guaranteed to be in iso format)
-			// * set members of cal
-			//   cal.set(Calendar.YEAR,year);
-			//   cal.set(Calendar.MONTH,month);
-			//   etc.
-			// * return new
-			// 	Date(calendar.getTimeInMillis());
+			cal.set(Calendar.YEAR,year);
+			cal.set(Calendar.MONTH,month-1);
+			cal.set(Calendar.DAY_OF_MONTH,day);
+			cal.set(Calendar.HOUR_OF_DAY,0);
+			cal.set(Calendar.MINUTE,0);
+			cal.set(Calendar.SECOND,0);
+			cal.set(Calendar.MILLISECOND,0);
+			dt=new Date(cal.getTimeInMillis());
 		} else {
-			// FIXME: not guaranteed to be in iso format
-			dt=Date.valueOf(field);
+			dt=new Date(year-1900,month-1,day);
+		}
+		drv.debugEnd();
+drv.debug=false;
+		return dt;
+	}
+
+	private
+	Date createDate(long row, String col, Calendar cal) {
+drv.debug=true;
+		drv.debugFunction(this);
+		drv.debugPrintln("row: "+row);
+		drv.debugPrintln("col: "+col);
+		drv.debugPrintln("cal: "+cal);
+		short	year;
+		short	month;
+		short	day;
+		synchronized (networklock) {
+			year=sqlrcur.getFieldAsDateYear(row,col);
+			month=sqlrcur.getFieldAsDateMonth(row,col);
+			day=sqlrcur.getFieldAsDateDay(row,col);
+		}
+		drv.debugPrintln("year: "+year);
+		drv.debugPrintln("month: "+month);
+		drv.debugPrintln("day: "+day);
+		Date	dt=null;
+		if (cal!=null) {
+			cal.set(Calendar.YEAR,year);
+			cal.set(Calendar.MONTH,month-1);
+			cal.set(Calendar.DAY_OF_MONTH,day);
+			cal.set(Calendar.HOUR_OF_DAY,0);
+			cal.set(Calendar.MINUTE,0);
+			cal.set(Calendar.SECOND,0);
+			cal.set(Calendar.MILLISECOND,0);
+			dt=new Date(cal.getTimeInMillis());
+		} else {
+			dt=new Date(year-1900,month-1,day);
 		}
 		drv.debugEnd();
 drv.debug=false;
@@ -736,7 +783,8 @@ drv.debug=false;
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		Date	dt=(wasnull)?null:createDate(field,cal);
+		Date	dt=(wasnull)?null:
+			createDate(currentrow-1,columnlabel,cal);
 		drv.debugEnd();
 		return dt;
 	}
@@ -1371,30 +1419,75 @@ drv.debug=false;
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		Time	tm=(wasnull)?null:createTime(field,cal);
+		Time	tm=(wasnull)?null:
+			createTime(currentrow-1,columnindex-1,cal);
 		drv.debugEnd();
 		return tm;
 	}
 
 	private
-	Time createTime(String field, Calendar cal) {
+	Time createTime(long row, int col, Calendar cal) {
 		drv.debugFunction(this);
-		drv.debugPrintln("field: "+field);
+		drv.debugPrintln("row: "+row);
+		drv.debugPrintln("col: "+col);
 		drv.debugPrintln("cal: "+cal);
+		short	hour;
+		short	minute;
+		short	second;
+		synchronized (networklock) {
+			hour=sqlrcur.getFieldAsDateHour(row,col);
+			minute=sqlrcur.getFieldAsDateMinute(row,col);
+			second=sqlrcur.getFieldAsDateSecond(row,col);
+		}
+		drv.debugPrintln("hour: "+hour);
+		drv.debugPrintln("minute: "+minute);
+		drv.debugPrintln("second: "+second);
 		Time	tm=null;
 		if (cal!=null) {
-			// FIXME:
-			// * parse field
-			//   (not guaranteed to be in iso format)
-			// * set members of cal
-			//   cal.set(Calendar.YEAR,year);
-			//   cal.set(Calendar.MONTH,month);
-			//   etc.
-			// * return new
-			// 	Time(calendar.getTimeInMillis());
+			cal.set(Calendar.YEAR,1970);
+			cal.set(Calendar.MONTH,Calendar.JANUARY);
+			cal.set(Calendar.DAY_OF_MONTH,1);
+			cal.set(Calendar.HOUR_OF_DAY,hour);
+			cal.set(Calendar.MINUTE,minute);
+			cal.set(Calendar.SECOND,second);
+			cal.set(Calendar.MILLISECOND,0);
+			tm=new Time(cal.getTimeInMillis());
 		} else {
-			// FIXME: not guaranteed to be in iso format
-			tm=Time.valueOf(field);
+			tm=new Time(hour,minute,second);
+		}
+		drv.debugEnd();
+		return tm;
+	}
+
+	private
+	Time createTime(long row, String col, Calendar cal) {
+		drv.debugFunction(this);
+		drv.debugPrintln("row: "+row);
+		drv.debugPrintln("col: "+col);
+		drv.debugPrintln("cal: "+cal);
+		short	hour;
+		short	minute;
+		short	second;
+		synchronized (networklock) {
+			hour=sqlrcur.getFieldAsDateHour(row,col);
+			minute=sqlrcur.getFieldAsDateMinute(row,col);
+			second=sqlrcur.getFieldAsDateSecond(row,col);
+		}
+		drv.debugPrintln("hour: "+hour);
+		drv.debugPrintln("minute: "+minute);
+		drv.debugPrintln("second: "+second);
+		Time	tm=null;
+		if (cal!=null) {
+			cal.set(Calendar.YEAR,1970);
+			cal.set(Calendar.MONTH,Calendar.JANUARY);
+			cal.set(Calendar.DAY_OF_MONTH,1);
+			cal.set(Calendar.HOUR_OF_DAY,hour);
+			cal.set(Calendar.MINUTE,minute);
+			cal.set(Calendar.SECOND,second);
+			cal.set(Calendar.MILLISECOND,0);
+			tm=new Time(cal.getTimeInMillis());
+		} else {
+			tm=new Time(hour,minute,second);
 		}
 		drv.debugEnd();
 		return tm;
@@ -1422,7 +1515,8 @@ drv.debug=false;
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		Time	tm=(wasnull)?null:createTime(field,cal);
+		Time	tm=(wasnull)?null:
+			createTime(currentrow-1,columnlabel,cal);
 		drv.debugEnd();
 		return tm;
 	}
@@ -1450,30 +1544,105 @@ drv.debug=false;
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		Timestamp	ts=(wasnull)?null:createTimestamp(field,cal);
+		Timestamp	ts=(wasnull)?null:
+			createTimestamp(currentrow-1,columnindex-1,cal);
 		drv.debugEnd();
 		return ts;
 	}
 
 	private
-	Timestamp createTimestamp(String field, Calendar cal) {
+	Timestamp createTimestamp(long row, int col, Calendar cal) {
 		drv.debugFunction(this);
-		drv.debugPrintln("field: "+field);
+		drv.debugPrintln("row: "+row);
+		drv.debugPrintln("col: "+col);
 		drv.debugPrintln("cal: "+cal);
+		short	year;
+		short	month;
+		short	day;
+		short	hour;
+		short	minute;
+		short	second;
+		int	microsecond;
+		synchronized (networklock) {
+			year=sqlrcur.getFieldAsDateYear(row,col);
+			month=sqlrcur.getFieldAsDateMonth(row,col);
+			day=sqlrcur.getFieldAsDateDay(row,col);
+			hour=sqlrcur.getFieldAsDateHour(row,col);
+			minute=sqlrcur.getFieldAsDateMinute(row,col);
+			second=sqlrcur.getFieldAsDateSecond(row,col);
+			microsecond=sqlrcur.getFieldAsDateMicrosecond(row,col);
+		}
+		drv.debugPrintln("year: "+year);
+		drv.debugPrintln("month: "+month);
+		drv.debugPrintln("day: "+day);
+		drv.debugPrintln("hour: "+hour);
+		drv.debugPrintln("minute: "+minute);
+		drv.debugPrintln("second: "+second);
+		drv.debugPrintln("microsecond: "+microsecond);
 		Timestamp	ts=null;
 		if (cal!=null) {
-			// FIXME:
-			// * parse field
-			//   (not guaranteed to be in iso format)
-			// * set members of cal
-			//   cal.set(Calendar.YEAR,year);
-			//   cal.set(Calendar.MONTH,month);
-			//   etc.
-			// * return new
-			// 	Timestamp(calendar.getTimeInMillis());
+			cal.set(Calendar.YEAR,year);
+			cal.set(Calendar.MONTH,month-1);
+			cal.set(Calendar.DAY_OF_MONTH,day);
+			cal.set(Calendar.HOUR_OF_DAY,hour);
+			cal.set(Calendar.MINUTE,minute);
+			cal.set(Calendar.SECOND,second);
+			cal.set(Calendar.MILLISECOND,0);
+			ts=new Timestamp(cal.getTimeInMillis());
+			ts.setNanos(microsecond*1000);
 		} else {
-			// FIXME: not guaranteed to be in iso format
-			ts=Timestamp.valueOf(field);
+			ts=new Timestamp(year-1900,month-1,day,
+						hour,minute,second,
+						microsecond*1000);
+		}
+		drv.debugEnd();
+		return ts;
+	}
+
+	private
+	Timestamp createTimestamp(long row, String col, Calendar cal) {
+		drv.debugFunction(this);
+		drv.debugPrintln("row: "+row);
+		drv.debugPrintln("col: "+col);
+		drv.debugPrintln("cal: "+cal);
+		short	year;
+		short	month;
+		short	day;
+		short	hour;
+		short	minute;
+		short	second;
+		int	microsecond;
+		synchronized (networklock) {
+			year=sqlrcur.getFieldAsDateYear(row,col);
+			month=sqlrcur.getFieldAsDateMonth(row,col);
+			day=sqlrcur.getFieldAsDateDay(row,col);
+			hour=sqlrcur.getFieldAsDateHour(row,col);
+			minute=sqlrcur.getFieldAsDateMinute(row,col);
+			second=sqlrcur.getFieldAsDateSecond(row,col);
+			microsecond=sqlrcur.getFieldAsDateMicrosecond(row,col);
+		}
+		drv.debugPrintln("year: "+year);
+		drv.debugPrintln("month: "+month);
+		drv.debugPrintln("day: "+day);
+		drv.debugPrintln("hour: "+hour);
+		drv.debugPrintln("minute: "+minute);
+		drv.debugPrintln("second: "+second);
+		drv.debugPrintln("microsecond: "+microsecond);
+		Timestamp	ts=null;
+		if (cal!=null) {
+			cal.set(Calendar.YEAR,year);
+			cal.set(Calendar.MONTH,month-1);
+			cal.set(Calendar.DAY_OF_MONTH,day);
+			cal.set(Calendar.HOUR_OF_DAY,hour);
+			cal.set(Calendar.MINUTE,minute);
+			cal.set(Calendar.SECOND,second);
+			cal.set(Calendar.MILLISECOND,0);
+			ts=new Timestamp(cal.getTimeInMillis());
+			ts.setNanos(microsecond*1000);
+		} else {
+			ts=new Timestamp(year-1900,month-1,day,
+						hour,minute,second,
+						microsecond*1000);
 		}
 		drv.debugEnd();
 		return ts;
@@ -1502,7 +1671,8 @@ drv.debug=false;
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		Timestamp	ts=(wasnull)?null:createTimestamp(field,cal);
+		Timestamp	ts=(wasnull)?null:
+			createTimestamp(currentrow-1,columnlabel,cal);
 		drv.debugEnd();
 		return ts;
 	}

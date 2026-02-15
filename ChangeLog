@@ -26,6 +26,7 @@
 	added getConnect/ResponseTimeoutSeconds/MicroSeconds() to client apis
 	added set/getIsolationLevel
 	added getDatabaseFeatures
+	added getOutputBindDate*() and getFieldAsDate*() methods/functions
 
 2.1.0 - refactored debugging
 

@@ -1193,6 +1193,478 @@ JNIEXPORT jdouble JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDoub
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateYear
+ * Signature: (JI)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateYear__JI
+  (JNIEnv *env, jobject self, jlong row, jint col) {
+	return (jshort)getSqlrCursor(env,self)->
+			getFieldAsDateYear((uint64_t)row,(uint32_t)col);
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateYear
+ * Signature: (JIZZLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateYear__JIZZLjava_lang_String_2
+  (JNIEnv *env, jobject self, jlong row, jint col, jboolean ddmm, jboolean yyyyddmm, jstring datedelimiters) {
+	char	*datedelimitersstring=curGetStringUTFChars(env,datedelimiters,0);
+	jshort	retval=(jshort)getSqlrCursor(env,self)->
+			getFieldAsDateYear((uint64_t)row,(uint32_t)col,
+					(bool)ddmm,(bool)yyyyddmm,
+					datedelimitersstring);
+	curReleaseStringUTFChars(env,datedelimiters,datedelimitersstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateYear
+ * Signature: (JLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateYear__JLjava_lang_String_2
+  (JNIEnv *env, jobject self, jlong row, jstring col) {
+	char	*colstring=curGetStringUTFChars(env,col,0);
+	jshort	retval=(jshort)getSqlrCursor(env,self)->
+			getFieldAsDateYear((uint64_t)row,colstring);
+	curReleaseStringUTFChars(env,col,colstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateYear
+ * Signature: (JLjava/lang/String;ZZLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateYear__JLjava_lang_String_2ZZLjava_lang_String_2
+  (JNIEnv *env, jobject self, jlong row, jstring col, jboolean ddmm, jboolean yyyyddmm, jstring datedelimiters) {
+	char	*colstring=curGetStringUTFChars(env,col,0);
+	char	*datedelimitersstring=curGetStringUTFChars(env,datedelimiters,0);
+	jshort	retval=(jshort)getSqlrCursor(env,self)->
+			getFieldAsDateYear((uint64_t)row,colstring,
+					(bool)ddmm,(bool)yyyyddmm,
+					datedelimitersstring);
+	curReleaseStringUTFChars(env,col,colstring);
+	curReleaseStringUTFChars(env,datedelimiters,datedelimitersstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateMonth
+ * Signature: (JI)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateMonth__JI
+  (JNIEnv *env, jobject self, jlong row, jint col) {
+	return (jshort)getSqlrCursor(env,self)->
+			getFieldAsDateMonth((uint64_t)row,(uint32_t)col);
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateMonth
+ * Signature: (JIZZLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateMonth__JIZZLjava_lang_String_2
+  (JNIEnv *env, jobject self, jlong row, jint col, jboolean ddmm, jboolean yyyyddmm, jstring datedelimiters) {
+	char	*datedelimitersstring=curGetStringUTFChars(env,datedelimiters,0);
+	jshort	retval=(jshort)getSqlrCursor(env,self)->
+			getFieldAsDateMonth((uint64_t)row,(uint32_t)col,
+					(bool)ddmm,(bool)yyyyddmm,
+					datedelimitersstring);
+	curReleaseStringUTFChars(env,datedelimiters,datedelimitersstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateMonth
+ * Signature: (JLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateMonth__JLjava_lang_String_2
+  (JNIEnv *env, jobject self, jlong row, jstring col) {
+	char	*colstring=curGetStringUTFChars(env,col,0);
+	jshort	retval=(jshort)getSqlrCursor(env,self)->
+			getFieldAsDateMonth((uint64_t)row,colstring);
+	curReleaseStringUTFChars(env,col,colstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateMonth
+ * Signature: (JLjava/lang/String;ZZLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateMonth__JLjava_lang_String_2ZZLjava_lang_String_2
+  (JNIEnv *env, jobject self, jlong row, jstring col, jboolean ddmm, jboolean yyyyddmm, jstring datedelimiters) {
+	char	*colstring=curGetStringUTFChars(env,col,0);
+	char	*datedelimitersstring=curGetStringUTFChars(env,datedelimiters,0);
+	jshort	retval=(jshort)getSqlrCursor(env,self)->
+			getFieldAsDateMonth((uint64_t)row,colstring,
+					(bool)ddmm,(bool)yyyyddmm,
+					datedelimitersstring);
+	curReleaseStringUTFChars(env,col,colstring);
+	curReleaseStringUTFChars(env,datedelimiters,datedelimitersstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateDay
+ * Signature: (JI)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateDay__JI
+  (JNIEnv *env, jobject self, jlong row, jint col) {
+	return (jshort)getSqlrCursor(env,self)->
+			getFieldAsDateDay((uint64_t)row,(uint32_t)col);
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateDay
+ * Signature: (JIZZLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateDay__JIZZLjava_lang_String_2
+  (JNIEnv *env, jobject self, jlong row, jint col, jboolean ddmm, jboolean yyyyddmm, jstring datedelimiters) {
+	char	*datedelimitersstring=curGetStringUTFChars(env,datedelimiters,0);
+	jshort	retval=(jshort)getSqlrCursor(env,self)->
+			getFieldAsDateDay((uint64_t)row,(uint32_t)col,
+					(bool)ddmm,(bool)yyyyddmm,
+					datedelimitersstring);
+	curReleaseStringUTFChars(env,datedelimiters,datedelimitersstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateDay
+ * Signature: (JLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateDay__JLjava_lang_String_2
+  (JNIEnv *env, jobject self, jlong row, jstring col) {
+	char	*colstring=curGetStringUTFChars(env,col,0);
+	jshort	retval=(jshort)getSqlrCursor(env,self)->
+			getFieldAsDateDay((uint64_t)row,colstring);
+	curReleaseStringUTFChars(env,col,colstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateDay
+ * Signature: (JLjava/lang/String;ZZLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateDay__JLjava_lang_String_2ZZLjava_lang_String_2
+  (JNIEnv *env, jobject self, jlong row, jstring col, jboolean ddmm, jboolean yyyyddmm, jstring datedelimiters) {
+	char	*colstring=curGetStringUTFChars(env,col,0);
+	char	*datedelimitersstring=curGetStringUTFChars(env,datedelimiters,0);
+	jshort	retval=(jshort)getSqlrCursor(env,self)->
+			getFieldAsDateDay((uint64_t)row,colstring,
+					(bool)ddmm,(bool)yyyyddmm,
+					datedelimitersstring);
+	curReleaseStringUTFChars(env,col,colstring);
+	curReleaseStringUTFChars(env,datedelimiters,datedelimitersstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateHour
+ * Signature: (JI)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateHour__JI
+  (JNIEnv *env, jobject self, jlong row, jint col) {
+	return (jshort)getSqlrCursor(env,self)->
+			getFieldAsDateHour((uint64_t)row,(uint32_t)col);
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateHour
+ * Signature: (JIZZLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateHour__JIZZLjava_lang_String_2
+  (JNIEnv *env, jobject self, jlong row, jint col, jboolean ddmm, jboolean yyyyddmm, jstring datedelimiters) {
+	char	*datedelimitersstring=curGetStringUTFChars(env,datedelimiters,0);
+	jshort	retval=(jshort)getSqlrCursor(env,self)->
+			getFieldAsDateHour((uint64_t)row,(uint32_t)col,
+					(bool)ddmm,(bool)yyyyddmm,
+					datedelimitersstring);
+	curReleaseStringUTFChars(env,datedelimiters,datedelimitersstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateHour
+ * Signature: (JLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateHour__JLjava_lang_String_2
+  (JNIEnv *env, jobject self, jlong row, jstring col) {
+	char	*colstring=curGetStringUTFChars(env,col,0);
+	jshort	retval=(jshort)getSqlrCursor(env,self)->
+			getFieldAsDateHour((uint64_t)row,colstring);
+	curReleaseStringUTFChars(env,col,colstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateHour
+ * Signature: (JLjava/lang/String;ZZLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateHour__JLjava_lang_String_2ZZLjava_lang_String_2
+  (JNIEnv *env, jobject self, jlong row, jstring col, jboolean ddmm, jboolean yyyyddmm, jstring datedelimiters) {
+	char	*colstring=curGetStringUTFChars(env,col,0);
+	char	*datedelimitersstring=curGetStringUTFChars(env,datedelimiters,0);
+	jshort	retval=(jshort)getSqlrCursor(env,self)->
+			getFieldAsDateHour((uint64_t)row,colstring,
+					(bool)ddmm,(bool)yyyyddmm,
+					datedelimitersstring);
+	curReleaseStringUTFChars(env,col,colstring);
+	curReleaseStringUTFChars(env,datedelimiters,datedelimitersstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateMinute
+ * Signature: (JI)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateMinute__JI
+  (JNIEnv *env, jobject self, jlong row, jint col) {
+	return (jshort)getSqlrCursor(env,self)->
+			getFieldAsDateMinute((uint64_t)row,(uint32_t)col);
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateMinute
+ * Signature: (JIZZLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateMinute__JIZZLjava_lang_String_2
+  (JNIEnv *env, jobject self, jlong row, jint col, jboolean ddmm, jboolean yyyyddmm, jstring datedelimiters) {
+	char	*datedelimitersstring=curGetStringUTFChars(env,datedelimiters,0);
+	jshort	retval=(jshort)getSqlrCursor(env,self)->
+			getFieldAsDateMinute((uint64_t)row,(uint32_t)col,
+					(bool)ddmm,(bool)yyyyddmm,
+					datedelimitersstring);
+	curReleaseStringUTFChars(env,datedelimiters,datedelimitersstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateMinute
+ * Signature: (JLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateMinute__JLjava_lang_String_2
+  (JNIEnv *env, jobject self, jlong row, jstring col) {
+	char	*colstring=curGetStringUTFChars(env,col,0);
+	jshort	retval=(jshort)getSqlrCursor(env,self)->
+			getFieldAsDateMinute((uint64_t)row,colstring);
+	curReleaseStringUTFChars(env,col,colstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateMinute
+ * Signature: (JLjava/lang/String;ZZLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateMinute__JLjava_lang_String_2ZZLjava_lang_String_2
+  (JNIEnv *env, jobject self, jlong row, jstring col, jboolean ddmm, jboolean yyyyddmm, jstring datedelimiters) {
+	char	*colstring=curGetStringUTFChars(env,col,0);
+	char	*datedelimitersstring=curGetStringUTFChars(env,datedelimiters,0);
+	jshort	retval=(jshort)getSqlrCursor(env,self)->
+			getFieldAsDateMinute((uint64_t)row,colstring,
+					(bool)ddmm,(bool)yyyyddmm,
+					datedelimitersstring);
+	curReleaseStringUTFChars(env,col,colstring);
+	curReleaseStringUTFChars(env,datedelimiters,datedelimitersstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateSecond
+ * Signature: (JI)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateSecond__JI
+  (JNIEnv *env, jobject self, jlong row, jint col) {
+	return (jshort)getSqlrCursor(env,self)->
+			getFieldAsDateSecond((uint64_t)row,(uint32_t)col);
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateSecond
+ * Signature: (JIZZLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateSecond__JIZZLjava_lang_String_2
+  (JNIEnv *env, jobject self, jlong row, jint col, jboolean ddmm, jboolean yyyyddmm, jstring datedelimiters) {
+	char	*datedelimitersstring=curGetStringUTFChars(env,datedelimiters,0);
+	jshort	retval=(jshort)getSqlrCursor(env,self)->
+			getFieldAsDateSecond((uint64_t)row,(uint32_t)col,
+					(bool)ddmm,(bool)yyyyddmm,
+					datedelimitersstring);
+	curReleaseStringUTFChars(env,datedelimiters,datedelimitersstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateSecond
+ * Signature: (JLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateSecond__JLjava_lang_String_2
+  (JNIEnv *env, jobject self, jlong row, jstring col) {
+	char	*colstring=curGetStringUTFChars(env,col,0);
+	jshort	retval=(jshort)getSqlrCursor(env,self)->
+			getFieldAsDateSecond((uint64_t)row,colstring);
+	curReleaseStringUTFChars(env,col,colstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateSecond
+ * Signature: (JLjava/lang/String;ZZLjava/lang/String;)S
+ */
+JNIEXPORT jshort JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateSecond__JLjava_lang_String_2ZZLjava_lang_String_2
+  (JNIEnv *env, jobject self, jlong row, jstring col, jboolean ddmm, jboolean yyyyddmm, jstring datedelimiters) {
+	char	*colstring=curGetStringUTFChars(env,col,0);
+	char	*datedelimitersstring=curGetStringUTFChars(env,datedelimiters,0);
+	jshort	retval=(jshort)getSqlrCursor(env,self)->
+			getFieldAsDateSecond((uint64_t)row,colstring,
+					(bool)ddmm,(bool)yyyyddmm,
+					datedelimitersstring);
+	curReleaseStringUTFChars(env,col,colstring);
+	curReleaseStringUTFChars(env,datedelimiters,datedelimitersstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateMicrosecond
+ * Signature: (JI)I
+ */
+JNIEXPORT jint JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateMicrosecond__JI
+  (JNIEnv *env, jobject self, jlong row, jint col) {
+	return (jint)getSqlrCursor(env,self)->
+			getFieldAsDateMicrosecond((uint64_t)row,(uint32_t)col);
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateMicrosecond
+ * Signature: (JIZZLjava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateMicrosecond__JIZZLjava_lang_String_2
+  (JNIEnv *env, jobject self, jlong row, jint col, jboolean ddmm, jboolean yyyyddmm, jstring datedelimiters) {
+	char	*datedelimitersstring=curGetStringUTFChars(env,datedelimiters,0);
+	jint	retval=(jint)getSqlrCursor(env,self)->
+			getFieldAsDateMicrosecond((uint64_t)row,(uint32_t)col,
+					(bool)ddmm,(bool)yyyyddmm,
+					datedelimitersstring);
+	curReleaseStringUTFChars(env,datedelimiters,datedelimitersstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateMicrosecond
+ * Signature: (JLjava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateMicrosecond__JLjava_lang_String_2
+  (JNIEnv *env, jobject self, jlong row, jstring col) {
+	char	*colstring=curGetStringUTFChars(env,col,0);
+	jint	retval=(jint)getSqlrCursor(env,self)->
+			getFieldAsDateMicrosecond((uint64_t)row,colstring);
+	curReleaseStringUTFChars(env,col,colstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateMicrosecond
+ * Signature: (JLjava/lang/String;ZZLjava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateMicrosecond__JLjava_lang_String_2ZZLjava_lang_String_2
+  (JNIEnv *env, jobject self, jlong row, jstring col, jboolean ddmm, jboolean yyyyddmm, jstring datedelimiters) {
+	char	*colstring=curGetStringUTFChars(env,col,0);
+	char	*datedelimitersstring=curGetStringUTFChars(env,datedelimiters,0);
+	jint	retval=(jint)getSqlrCursor(env,self)->
+			getFieldAsDateMicrosecond((uint64_t)row,colstring,
+					(bool)ddmm,(bool)yyyyddmm,
+					datedelimitersstring);
+	curReleaseStringUTFChars(env,col,colstring);
+	curReleaseStringUTFChars(env,datedelimiters,datedelimitersstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateIsNegative
+ * Signature: (JI)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateIsNegative__JI
+  (JNIEnv *env, jobject self, jlong row, jint col) {
+	return (jboolean)getSqlrCursor(env,self)->
+			getFieldAsDateIsNegative((uint64_t)row,(uint32_t)col);
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateIsNegative
+ * Signature: (JIZZLjava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateIsNegative__JIZZLjava_lang_String_2
+  (JNIEnv *env, jobject self, jlong row, jint col, jboolean ddmm, jboolean yyyyddmm, jstring datedelimiters) {
+	char	*datedelimitersstring=curGetStringUTFChars(env,datedelimiters,0);
+	jboolean	retval=(jboolean)getSqlrCursor(env,self)->
+			getFieldAsDateIsNegative((uint64_t)row,(uint32_t)col,
+					(bool)ddmm,(bool)yyyyddmm,
+					datedelimitersstring);
+	curReleaseStringUTFChars(env,datedelimiters,datedelimitersstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateIsNegative
+ * Signature: (JLjava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateIsNegative__JLjava_lang_String_2
+  (JNIEnv *env, jobject self, jlong row, jstring col) {
+	char	*colstring=curGetStringUTFChars(env,col,0);
+	jboolean	retval=(jboolean)getSqlrCursor(env,self)->
+			getFieldAsDateIsNegative((uint64_t)row,colstring);
+	curReleaseStringUTFChars(env,col,colstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsDateIsNegative
+ * Signature: (JLjava/lang/String;ZZLjava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDateIsNegative__JLjava_lang_String_2ZZLjava_lang_String_2
+  (JNIEnv *env, jobject self, jlong row, jstring col, jboolean ddmm, jboolean yyyyddmm, jstring datedelimiters) {
+	char	*colstring=curGetStringUTFChars(env,col,0);
+	char	*datedelimitersstring=curGetStringUTFChars(env,datedelimiters,0);
+	jboolean	retval=(jboolean)getSqlrCursor(env,self)->
+			getFieldAsDateIsNegative((uint64_t)row,colstring,
+					(bool)ddmm,(bool)yyyyddmm,
+					datedelimitersstring);
+	curReleaseStringUTFChars(env,col,colstring);
+	curReleaseStringUTFChars(env,datedelimiters,datedelimitersstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
  * Method:    getFieldAsByteArray
  * Signature: (JI)[B
  */

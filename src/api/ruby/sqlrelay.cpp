@@ -203,6 +203,17 @@ struct params {
 		prms.four=pfour; \
 		CALL(function,prms) \
 	}
+#define RCUR5(result,resultmember,psqlrcur,function,pone,ptwo,pthree,pfour,pfive) \
+	{ \
+		struct params prms; \
+		prms.sqlrc.sqlrcur=psqlrcur; \
+		prms.one=pone; \
+		prms.two=ptwo; \
+		prms.three=pthree; \
+		prms.four=pfour; \
+		prms.five=pfive; \
+		RCALL(result,resultmember,function,prms) \
+	}
 #define CUR7(psqlrcur,function,pone,ptwo,pthree,pfour,pfive,psix,pseven) \
 	{ \
 		struct params prms; \
@@ -2367,6 +2378,502 @@ static VALUE sqlrcur_getFieldAsDouble(VALUE self, VALUE row, VALUE col) {
 	return rb_float_new(result);
 }
 
+static void getFieldAsDateYearStr(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateYear(
+					NUM2INT(p->one),STR2CSTR(p->two));
+}
+static void getFieldAsDateYearInt(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateYear(
+					NUM2INT(p->one),NUM2INT(p->two));
+}
+static void getFieldAsDateYearStrDdMm(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateYear(
+					NUM2INT(p->one),STR2CSTR(p->two),
+					NUM2INT(p->three)!=0,
+					NUM2INT(p->four)!=0,
+					STR2CSTR(p->five));
+}
+static void getFieldAsDateYearIntDdMm(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateYear(
+					NUM2INT(p->one),NUM2INT(p->two),
+					NUM2INT(p->three)!=0,
+					NUM2INT(p->four)!=0,
+					STR2CSTR(p->five));
+}
+/**
+ *  call-seq:
+ *  getFieldAsDateYear(row,col)
+ *  getFieldAsDateYear(row,col,ddmm,yyyyddmm,datedelimiters)
+ *
+ *  Interprets the specified field as a date and returns the year
+ *  component. */
+static VALUE sqlrcur_getFieldAsDateYear(int argc,
+					VALUE *argv, VALUE self) {
+	sqlrcursordata	*sqlrcurdata;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	int16_t	result=0;
+	if (argc==2) {
+		if (rb_obj_is_instance_of(argv[1],
+					rb_cString)==Qtrue) {
+			RCUR2(result,i16r,sqlrcurdata->cur,
+				getFieldAsDateYearStr,
+				argv[0],argv[1]);
+		} else {
+			RCUR2(result,i16r,sqlrcurdata->cur,
+				getFieldAsDateYearInt,
+				argv[0],argv[1]);
+		}
+	} else if (argc==5) {
+		if (rb_obj_is_instance_of(argv[1],
+					rb_cString)==Qtrue) {
+			RCUR5(result,i16r,sqlrcurdata->cur,
+				getFieldAsDateYearStrDdMm,
+				argv[0],argv[1],argv[2],
+				argv[3],argv[4]);
+		} else {
+			RCUR5(result,i16r,sqlrcurdata->cur,
+				getFieldAsDateYearIntDdMm,
+				argv[0],argv[1],argv[2],
+				argv[3],argv[4]);
+		}
+	}
+	return INT2NUM(result);
+}
+
+static void getFieldAsDateMonthStr(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateMonth(
+					NUM2INT(p->one),STR2CSTR(p->two));
+}
+static void getFieldAsDateMonthInt(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateMonth(
+					NUM2INT(p->one),NUM2INT(p->two));
+}
+static void getFieldAsDateMonthStrDdMm(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateMonth(
+					NUM2INT(p->one),STR2CSTR(p->two),
+					NUM2INT(p->three)!=0,
+					NUM2INT(p->four)!=0,
+					STR2CSTR(p->five));
+}
+static void getFieldAsDateMonthIntDdMm(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateMonth(
+					NUM2INT(p->one),NUM2INT(p->two),
+					NUM2INT(p->three)!=0,
+					NUM2INT(p->four)!=0,
+					STR2CSTR(p->five));
+}
+/**
+ *  call-seq:
+ *  getFieldAsDateMonth(row,col)
+ *  getFieldAsDateMonth(row,col,ddmm,yyyyddmm,datedelimiters)
+ *
+ *  Interprets the specified field as a date and returns the month
+ *  component. */
+static VALUE sqlrcur_getFieldAsDateMonth(int argc,
+					VALUE *argv, VALUE self) {
+	sqlrcursordata	*sqlrcurdata;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	int16_t	result=0;
+	if (argc==2) {
+		if (rb_obj_is_instance_of(argv[1],
+					rb_cString)==Qtrue) {
+			RCUR2(result,i16r,sqlrcurdata->cur,
+				getFieldAsDateMonthStr,
+				argv[0],argv[1]);
+		} else {
+			RCUR2(result,i16r,sqlrcurdata->cur,
+				getFieldAsDateMonthInt,
+				argv[0],argv[1]);
+		}
+	} else if (argc==5) {
+		if (rb_obj_is_instance_of(argv[1],
+					rb_cString)==Qtrue) {
+			RCUR5(result,i16r,sqlrcurdata->cur,
+				getFieldAsDateMonthStrDdMm,
+				argv[0],argv[1],argv[2],
+				argv[3],argv[4]);
+		} else {
+			RCUR5(result,i16r,sqlrcurdata->cur,
+				getFieldAsDateMonthIntDdMm,
+				argv[0],argv[1],argv[2],
+				argv[3],argv[4]);
+		}
+	}
+	return INT2NUM(result);
+}
+
+static void getFieldAsDateDayStr(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateDay(
+					NUM2INT(p->one),STR2CSTR(p->two));
+}
+static void getFieldAsDateDayInt(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateDay(
+					NUM2INT(p->one),NUM2INT(p->two));
+}
+static void getFieldAsDateDayStrDdMm(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateDay(
+					NUM2INT(p->one),STR2CSTR(p->two),
+					NUM2INT(p->three)!=0,
+					NUM2INT(p->four)!=0,
+					STR2CSTR(p->five));
+}
+static void getFieldAsDateDayIntDdMm(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateDay(
+					NUM2INT(p->one),NUM2INT(p->two),
+					NUM2INT(p->three)!=0,
+					NUM2INT(p->four)!=0,
+					STR2CSTR(p->five));
+}
+/**
+ *  call-seq:
+ *  getFieldAsDateDay(row,col)
+ *  getFieldAsDateDay(row,col,ddmm,yyyyddmm,datedelimiters)
+ *
+ *  Interprets the specified field as a date and returns the day
+ *  component. */
+static VALUE sqlrcur_getFieldAsDateDay(int argc,
+					VALUE *argv, VALUE self) {
+	sqlrcursordata	*sqlrcurdata;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	int16_t	result=0;
+	if (argc==2) {
+		if (rb_obj_is_instance_of(argv[1],
+					rb_cString)==Qtrue) {
+			RCUR2(result,i16r,sqlrcurdata->cur,
+				getFieldAsDateDayStr,
+				argv[0],argv[1]);
+		} else {
+			RCUR2(result,i16r,sqlrcurdata->cur,
+				getFieldAsDateDayInt,
+				argv[0],argv[1]);
+		}
+	} else if (argc==5) {
+		if (rb_obj_is_instance_of(argv[1],
+					rb_cString)==Qtrue) {
+			RCUR5(result,i16r,sqlrcurdata->cur,
+				getFieldAsDateDayStrDdMm,
+				argv[0],argv[1],argv[2],
+				argv[3],argv[4]);
+		} else {
+			RCUR5(result,i16r,sqlrcurdata->cur,
+				getFieldAsDateDayIntDdMm,
+				argv[0],argv[1],argv[2],
+				argv[3],argv[4]);
+		}
+	}
+	return INT2NUM(result);
+}
+
+static void getFieldAsDateHourStr(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateHour(
+					NUM2INT(p->one),STR2CSTR(p->two));
+}
+static void getFieldAsDateHourInt(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateHour(
+					NUM2INT(p->one),NUM2INT(p->two));
+}
+static void getFieldAsDateHourStrDdMm(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateHour(
+					NUM2INT(p->one),STR2CSTR(p->two),
+					NUM2INT(p->three)!=0,
+					NUM2INT(p->four)!=0,
+					STR2CSTR(p->five));
+}
+static void getFieldAsDateHourIntDdMm(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateHour(
+					NUM2INT(p->one),NUM2INT(p->two),
+					NUM2INT(p->three)!=0,
+					NUM2INT(p->four)!=0,
+					STR2CSTR(p->five));
+}
+/**
+ *  call-seq:
+ *  getFieldAsDateHour(row,col)
+ *  getFieldAsDateHour(row,col,ddmm,yyyyddmm,datedelimiters)
+ *
+ *  Interprets the specified field as a date and returns the hour
+ *  component. */
+static VALUE sqlrcur_getFieldAsDateHour(int argc,
+					VALUE *argv, VALUE self) {
+	sqlrcursordata	*sqlrcurdata;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	int16_t	result=0;
+	if (argc==2) {
+		if (rb_obj_is_instance_of(argv[1],
+					rb_cString)==Qtrue) {
+			RCUR2(result,i16r,sqlrcurdata->cur,
+				getFieldAsDateHourStr,
+				argv[0],argv[1]);
+		} else {
+			RCUR2(result,i16r,sqlrcurdata->cur,
+				getFieldAsDateHourInt,
+				argv[0],argv[1]);
+		}
+	} else if (argc==5) {
+		if (rb_obj_is_instance_of(argv[1],
+					rb_cString)==Qtrue) {
+			RCUR5(result,i16r,sqlrcurdata->cur,
+				getFieldAsDateHourStrDdMm,
+				argv[0],argv[1],argv[2],
+				argv[3],argv[4]);
+		} else {
+			RCUR5(result,i16r,sqlrcurdata->cur,
+				getFieldAsDateHourIntDdMm,
+				argv[0],argv[1],argv[2],
+				argv[3],argv[4]);
+		}
+	}
+	return INT2NUM(result);
+}
+
+static void getFieldAsDateMinuteStr(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateMinute(
+					NUM2INT(p->one),STR2CSTR(p->two));
+}
+static void getFieldAsDateMinuteInt(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateMinute(
+					NUM2INT(p->one),NUM2INT(p->two));
+}
+static void getFieldAsDateMinuteStrDdMm(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateMinute(
+					NUM2INT(p->one),STR2CSTR(p->two),
+					NUM2INT(p->three)!=0,
+					NUM2INT(p->four)!=0,
+					STR2CSTR(p->five));
+}
+static void getFieldAsDateMinuteIntDdMm(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateMinute(
+					NUM2INT(p->one),NUM2INT(p->two),
+					NUM2INT(p->three)!=0,
+					NUM2INT(p->four)!=0,
+					STR2CSTR(p->five));
+}
+/**
+ *  call-seq:
+ *  getFieldAsDateMinute(row,col)
+ *  getFieldAsDateMinute(row,col,ddmm,yyyyddmm,datedelimiters)
+ *
+ *  Interprets the specified field as a date and returns the minute
+ *  component. */
+static VALUE sqlrcur_getFieldAsDateMinute(int argc,
+					VALUE *argv, VALUE self) {
+	sqlrcursordata	*sqlrcurdata;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	int16_t	result=0;
+	if (argc==2) {
+		if (rb_obj_is_instance_of(argv[1],
+					rb_cString)==Qtrue) {
+			RCUR2(result,i16r,sqlrcurdata->cur,
+				getFieldAsDateMinuteStr,
+				argv[0],argv[1]);
+		} else {
+			RCUR2(result,i16r,sqlrcurdata->cur,
+				getFieldAsDateMinuteInt,
+				argv[0],argv[1]);
+		}
+	} else if (argc==5) {
+		if (rb_obj_is_instance_of(argv[1],
+					rb_cString)==Qtrue) {
+			RCUR5(result,i16r,sqlrcurdata->cur,
+				getFieldAsDateMinuteStrDdMm,
+				argv[0],argv[1],argv[2],
+				argv[3],argv[4]);
+		} else {
+			RCUR5(result,i16r,sqlrcurdata->cur,
+				getFieldAsDateMinuteIntDdMm,
+				argv[0],argv[1],argv[2],
+				argv[3],argv[4]);
+		}
+	}
+	return INT2NUM(result);
+}
+
+static void getFieldAsDateSecondStr(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateSecond(
+					NUM2INT(p->one),STR2CSTR(p->two));
+}
+static void getFieldAsDateSecondInt(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateSecond(
+					NUM2INT(p->one),NUM2INT(p->two));
+}
+static void getFieldAsDateSecondStrDdMm(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateSecond(
+					NUM2INT(p->one),STR2CSTR(p->two),
+					NUM2INT(p->three)!=0,
+					NUM2INT(p->four)!=0,
+					STR2CSTR(p->five));
+}
+static void getFieldAsDateSecondIntDdMm(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateSecond(
+					NUM2INT(p->one),NUM2INT(p->two),
+					NUM2INT(p->three)!=0,
+					NUM2INT(p->four)!=0,
+					STR2CSTR(p->five));
+}
+/**
+ *  call-seq:
+ *  getFieldAsDateSecond(row,col)
+ *  getFieldAsDateSecond(row,col,ddmm,yyyyddmm,datedelimiters)
+ *
+ *  Interprets the specified field as a date and returns the second
+ *  component. */
+static VALUE sqlrcur_getFieldAsDateSecond(int argc,
+					VALUE *argv, VALUE self) {
+	sqlrcursordata	*sqlrcurdata;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	int16_t	result=0;
+	if (argc==2) {
+		if (rb_obj_is_instance_of(argv[1],
+					rb_cString)==Qtrue) {
+			RCUR2(result,i16r,sqlrcurdata->cur,
+				getFieldAsDateSecondStr,
+				argv[0],argv[1]);
+		} else {
+			RCUR2(result,i16r,sqlrcurdata->cur,
+				getFieldAsDateSecondInt,
+				argv[0],argv[1]);
+		}
+	} else if (argc==5) {
+		if (rb_obj_is_instance_of(argv[1],
+					rb_cString)==Qtrue) {
+			RCUR5(result,i16r,sqlrcurdata->cur,
+				getFieldAsDateSecondStrDdMm,
+				argv[0],argv[1],argv[2],
+				argv[3],argv[4]);
+		} else {
+			RCUR5(result,i16r,sqlrcurdata->cur,
+				getFieldAsDateSecondIntDdMm,
+				argv[0],argv[1],argv[2],
+				argv[3],argv[4]);
+		}
+	}
+	return INT2NUM(result);
+}
+
+static void getFieldAsDateMicrosecondStr(params *p) {
+	p->result.i32r=p->sqlrc.sqlrcur->getFieldAsDateMicrosecond(
+					NUM2INT(p->one),STR2CSTR(p->two));
+}
+static void getFieldAsDateMicrosecondInt(params *p) {
+	p->result.i32r=p->sqlrc.sqlrcur->getFieldAsDateMicrosecond(
+					NUM2INT(p->one),NUM2INT(p->two));
+}
+static void getFieldAsDateMicrosecondStrDdMm(params *p) {
+	p->result.i32r=p->sqlrc.sqlrcur->getFieldAsDateMicrosecond(
+					NUM2INT(p->one),STR2CSTR(p->two),
+					NUM2INT(p->three)!=0,
+					NUM2INT(p->four)!=0,
+					STR2CSTR(p->five));
+}
+static void getFieldAsDateMicrosecondIntDdMm(params *p) {
+	p->result.i32r=p->sqlrc.sqlrcur->getFieldAsDateMicrosecond(
+					NUM2INT(p->one),NUM2INT(p->two),
+					NUM2INT(p->three)!=0,
+					NUM2INT(p->four)!=0,
+					STR2CSTR(p->five));
+}
+/**
+ *  call-seq:
+ *  getFieldAsDateMicrosecond(row,col)
+ *  getFieldAsDateMicrosecond(row,col,ddmm,yyyyddmm,datedelimiters)
+ *
+ *  Interprets the specified field as a date and returns the microsecond
+ *  component. */
+static VALUE sqlrcur_getFieldAsDateMicrosecond(int argc,
+					VALUE *argv, VALUE self) {
+	sqlrcursordata	*sqlrcurdata;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	int32_t	result=0;
+	if (argc==2) {
+		if (rb_obj_is_instance_of(argv[1],
+					rb_cString)==Qtrue) {
+			RCUR2(result,i32r,sqlrcurdata->cur,
+				getFieldAsDateMicrosecondStr,
+				argv[0],argv[1]);
+		} else {
+			RCUR2(result,i32r,sqlrcurdata->cur,
+				getFieldAsDateMicrosecondInt,
+				argv[0],argv[1]);
+		}
+	} else if (argc==5) {
+		if (rb_obj_is_instance_of(argv[1],
+					rb_cString)==Qtrue) {
+			RCUR5(result,i32r,sqlrcurdata->cur,
+				getFieldAsDateMicrosecondStrDdMm,
+				argv[0],argv[1],argv[2],
+				argv[3],argv[4]);
+		} else {
+			RCUR5(result,i32r,sqlrcurdata->cur,
+				getFieldAsDateMicrosecondIntDdMm,
+				argv[0],argv[1],argv[2],
+				argv[3],argv[4]);
+		}
+	}
+	return INT2NUM(result);
+}
+
+static void getFieldAsDateIsNegativeStr(params *p) {
+	p->result.br=p->sqlrc.sqlrcur->getFieldAsDateIsNegative(
+					NUM2INT(p->one),STR2CSTR(p->two));
+}
+static void getFieldAsDateIsNegativeInt(params *p) {
+	p->result.br=p->sqlrc.sqlrcur->getFieldAsDateIsNegative(
+					NUM2INT(p->one),NUM2INT(p->two));
+}
+static void getFieldAsDateIsNegativeStrDdMm(params *p) {
+	p->result.br=p->sqlrc.sqlrcur->getFieldAsDateIsNegative(
+					NUM2INT(p->one),STR2CSTR(p->two),
+					NUM2INT(p->three)!=0,
+					NUM2INT(p->four)!=0,
+					STR2CSTR(p->five));
+}
+static void getFieldAsDateIsNegativeIntDdMm(params *p) {
+	p->result.br=p->sqlrc.sqlrcur->getFieldAsDateIsNegative(
+					NUM2INT(p->one),NUM2INT(p->two),
+					NUM2INT(p->three)!=0,
+					NUM2INT(p->four)!=0,
+					STR2CSTR(p->five));
+}
+/**
+ *  call-seq:
+ *  getFieldAsDateIsNegative(row,col)
+ *  getFieldAsDateIsNegative(row,col,ddmm,yyyyddmm,datedelimiters)
+ *
+ *  Interprets the specified field as a date and returns whether the
+ *  hour component is negative. */
+static VALUE sqlrcur_getFieldAsDateIsNegative(int argc,
+					VALUE *argv, VALUE self) {
+	sqlrcursordata	*sqlrcurdata;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	bool	result=false;
+	if (argc==2) {
+		if (rb_obj_is_instance_of(argv[1],
+					rb_cString)==Qtrue) {
+			RCUR2(result,br,sqlrcurdata->cur,
+				getFieldAsDateIsNegativeStr,
+				argv[0],argv[1]);
+		} else {
+			RCUR2(result,br,sqlrcurdata->cur,
+				getFieldAsDateIsNegativeInt,
+				argv[0],argv[1]);
+		}
+	} else if (argc==5) {
+		if (rb_obj_is_instance_of(argv[1],
+					rb_cString)==Qtrue) {
+			RCUR5(result,br,sqlrcurdata->cur,
+				getFieldAsDateIsNegativeStrDdMm,
+				argv[0],argv[1],argv[2],
+				argv[3],argv[4]);
+		} else {
+			RCUR5(result,br,sqlrcurdata->cur,
+				getFieldAsDateIsNegativeIntDdMm,
+				argv[0],argv[1],argv[2],
+				argv[3],argv[4]);
+		}
+	}
+	return (result)?Qtrue:Qfalse;
+}
+
 /**
  *  call-seq:
  *  getFieldLength(row,col)
@@ -3061,6 +3568,22 @@ void Init_SQLRCursor() {
 				(CAST)sqlrcur_getFieldAsInteger,2);
 	rb_define_method(csqlrcursor,"getFieldAsDouble",
 				(CAST)sqlrcur_getFieldAsDouble,2);
+	rb_define_method(csqlrcursor,"getFieldAsDateYear",
+				(CAST)sqlrcur_getFieldAsDateYear,-1);
+	rb_define_method(csqlrcursor,"getFieldAsDateMonth",
+				(CAST)sqlrcur_getFieldAsDateMonth,-1);
+	rb_define_method(csqlrcursor,"getFieldAsDateDay",
+				(CAST)sqlrcur_getFieldAsDateDay,-1);
+	rb_define_method(csqlrcursor,"getFieldAsDateHour",
+				(CAST)sqlrcur_getFieldAsDateHour,-1);
+	rb_define_method(csqlrcursor,"getFieldAsDateMinute",
+				(CAST)sqlrcur_getFieldAsDateMinute,-1);
+	rb_define_method(csqlrcursor,"getFieldAsDateSecond",
+				(CAST)sqlrcur_getFieldAsDateSecond,-1);
+	rb_define_method(csqlrcursor,"getFieldAsDateMicrosecond",
+				(CAST)sqlrcur_getFieldAsDateMicrosecond,-1);
+	rb_define_method(csqlrcursor,"getFieldAsDateIsNegative",
+				(CAST)sqlrcur_getFieldAsDateIsNegative,-1);
 	rb_define_method(csqlrcursor,"getFieldLength",
 				(CAST)sqlrcur_getFieldLength,2);
 	rb_define_method(csqlrcursor,"getRow",

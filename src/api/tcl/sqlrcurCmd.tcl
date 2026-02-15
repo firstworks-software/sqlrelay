@@ -313,7 +313,103 @@ proc getFieldAsIntegerByName {row col}
 proc getFieldAsDoubleByIndex {row  col} 
 
 # Returns the specified field as a decimal.
-proc getFieldAsDoubleByName {row col} 
+proc getFieldAsDoubleByName {row col}
+
+# Returns the year of the specified field as a date.
+proc getFieldAsDateYearByIndex {row col}
+
+# Returns the year of the specified field as a date.
+proc getFieldAsDateYearByName {row col}
+
+# Returns the year of the specified field as a date with ddmm parameters.
+proc getFieldAsDateYearByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
+
+# Returns the year of the specified field as a date with ddmm parameters.
+proc getFieldAsDateYearByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
+
+# Returns the month of the specified field as a date.
+proc getFieldAsDateMonthByIndex {row col}
+
+# Returns the month of the specified field as a date.
+proc getFieldAsDateMonthByName {row col}
+
+# Returns the month of the specified field as a date with ddmm parameters.
+proc getFieldAsDateMonthByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
+
+# Returns the month of the specified field as a date with ddmm parameters.
+proc getFieldAsDateMonthByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
+
+# Returns the day of the specified field as a date.
+proc getFieldAsDateDayByIndex {row col}
+
+# Returns the day of the specified field as a date.
+proc getFieldAsDateDayByName {row col}
+
+# Returns the day of the specified field as a date with ddmm parameters.
+proc getFieldAsDateDayByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
+
+# Returns the day of the specified field as a date with ddmm parameters.
+proc getFieldAsDateDayByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
+
+# Returns the hour of the specified field as a date.
+proc getFieldAsDateHourByIndex {row col}
+
+# Returns the hour of the specified field as a date.
+proc getFieldAsDateHourByName {row col}
+
+# Returns the hour of the specified field as a date with ddmm parameters.
+proc getFieldAsDateHourByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
+
+# Returns the hour of the specified field as a date with ddmm parameters.
+proc getFieldAsDateHourByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
+
+# Returns the minute of the specified field as a date.
+proc getFieldAsDateMinuteByIndex {row col}
+
+# Returns the minute of the specified field as a date.
+proc getFieldAsDateMinuteByName {row col}
+
+# Returns the minute of the specified field as a date with ddmm parameters.
+proc getFieldAsDateMinuteByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
+
+# Returns the minute of the specified field as a date with ddmm parameters.
+proc getFieldAsDateMinuteByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
+
+# Returns the second of the specified field as a date.
+proc getFieldAsDateSecondByIndex {row col}
+
+# Returns the second of the specified field as a date.
+proc getFieldAsDateSecondByName {row col}
+
+# Returns the second of the specified field as a date with ddmm parameters.
+proc getFieldAsDateSecondByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
+
+# Returns the second of the specified field as a date with ddmm parameters.
+proc getFieldAsDateSecondByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
+
+# Returns the microsecond of the specified field as a date.
+proc getFieldAsDateMicrosecondByIndex {row col}
+
+# Returns the microsecond of the specified field as a date.
+proc getFieldAsDateMicrosecondByName {row col}
+
+# Returns the microsecond of the specified field as a date with ddmm parameters.
+proc getFieldAsDateMicrosecondByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
+
+# Returns the microsecond of the specified field as a date with ddmm parameters.
+proc getFieldAsDateMicrosecondByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
+
+# Returns whether the specified date field is negative.
+proc getFieldAsDateIsNegativeByIndex {row col}
+
+# Returns whether the specified date field is negative.
+proc getFieldAsDateIsNegativeByName {row col}
+
+# Returns whether the specified date field is negative with ddmm parameters.
+proc getFieldAsDateIsNegativeByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
+
+# Returns whether the specified date field is negative with ddmm parameters.
+proc getFieldAsDateIsNegativeByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
 
 

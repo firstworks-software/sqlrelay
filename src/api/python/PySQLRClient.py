@@ -989,6 +989,119 @@ class sqlrcursor:
         """
         return CSQLRelay.getFieldAsDouble(self.cursor, row, col)
 
+    def getFieldAsDateYear(self, row, col,
+			ddmm=None, yyyyddmm=None,
+			datedelimiters=None):
+        """
+        Interprets the specified field as a date
+        and returns the year component.
+        """
+        if ddmm is not None:
+            return CSQLRelay.getFieldAsDateYear(
+			self.cursor, row, col,
+			ddmm, yyyyddmm, datedelimiters)
+        return CSQLRelay.getFieldAsDateYear(
+			self.cursor, row, col)
+
+    def getFieldAsDateMonth(self, row, col,
+			ddmm=None, yyyyddmm=None,
+			datedelimiters=None):
+        """
+        Interprets the specified field as a date
+        and returns the month component.
+        """
+        if ddmm is not None:
+            return CSQLRelay.getFieldAsDateMonth(
+			self.cursor, row, col,
+			ddmm, yyyyddmm, datedelimiters)
+        return CSQLRelay.getFieldAsDateMonth(
+			self.cursor, row, col)
+
+    def getFieldAsDateDay(self, row, col,
+			ddmm=None, yyyyddmm=None,
+			datedelimiters=None):
+        """
+        Interprets the specified field as a date
+        and returns the day component.
+        """
+        if ddmm is not None:
+            return CSQLRelay.getFieldAsDateDay(
+			self.cursor, row, col,
+			ddmm, yyyyddmm, datedelimiters)
+        return CSQLRelay.getFieldAsDateDay(
+			self.cursor, row, col)
+
+    def getFieldAsDateHour(self, row, col,
+			ddmm=None, yyyyddmm=None,
+			datedelimiters=None):
+        """
+        Interprets the specified field as a date
+        and returns the hour component.
+        """
+        if ddmm is not None:
+            return CSQLRelay.getFieldAsDateHour(
+			self.cursor, row, col,
+			ddmm, yyyyddmm, datedelimiters)
+        return CSQLRelay.getFieldAsDateHour(
+			self.cursor, row, col)
+
+    def getFieldAsDateMinute(self, row, col,
+			ddmm=None, yyyyddmm=None,
+			datedelimiters=None):
+        """
+        Interprets the specified field as a date
+        and returns the minute component.
+        """
+        if ddmm is not None:
+            return CSQLRelay.getFieldAsDateMinute(
+			self.cursor, row, col,
+			ddmm, yyyyddmm, datedelimiters)
+        return CSQLRelay.getFieldAsDateMinute(
+			self.cursor, row, col)
+
+    def getFieldAsDateSecond(self, row, col,
+			ddmm=None, yyyyddmm=None,
+			datedelimiters=None):
+        """
+        Interprets the specified field as a date
+        and returns the second component.
+        """
+        if ddmm is not None:
+            return CSQLRelay.getFieldAsDateSecond(
+			self.cursor, row, col,
+			ddmm, yyyyddmm, datedelimiters)
+        return CSQLRelay.getFieldAsDateSecond(
+			self.cursor, row, col)
+
+    def getFieldAsDateMicrosecond(self, row, col,
+			ddmm=None, yyyyddmm=None,
+			datedelimiters=None):
+        """
+        Interprets the specified field as a date
+        and returns the microsecond component.
+        """
+        if ddmm is not None:
+            return CSQLRelay.getFieldAsDateMicrosecond(
+			self.cursor, row, col,
+			ddmm, yyyyddmm, datedelimiters)
+        return CSQLRelay.getFieldAsDateMicrosecond(
+			self.cursor, row, col)
+
+    def getFieldAsDateIsNegative(self, row, col,
+			ddmm=None, yyyyddmm=None,
+			datedelimiters=None):
+        """
+        Interprets the specified field as a date
+        and returns whether the hour component
+        is negative.
+        """
+        if ddmm is not None:
+            return CSQLRelay.getFieldAsDateIsNegative(
+			self.cursor, row, col,
+			ddmm, yyyyddmm, datedelimiters)
+        return CSQLRelay.getFieldAsDateIsNegative(
+			self.cursor, row, col)
+
     def getFieldLength(self, row, col):
         """
         Returns the length of the specified row and

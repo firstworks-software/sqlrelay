@@ -131,6 +131,38 @@ void sqlrcurDelete(ClientData data) {
  *   $cur getFieldAsIntegerByName row col
  *   $cur getFieldAsDoubleByIndex row col
  *   $cur getFieldAsDoubleByName row col
+ *   $cur getFieldAsDateYearByIndex row col
+ *   $cur getFieldAsDateYearByName row col
+ *   $cur getFieldAsDateYearByIndexWithDdMm row col ddmm yyyyddmm datedelimiters
+ *   $cur getFieldAsDateYearByNameWithDdMm row col ddmm yyyyddmm datedelimiters
+ *   $cur getFieldAsDateMonthByIndex row col
+ *   $cur getFieldAsDateMonthByName row col
+ *   $cur getFieldAsDateMonthByIndexWithDdMm row col ddmm yyyyddmm datedelimiters
+ *   $cur getFieldAsDateMonthByNameWithDdMm row col ddmm yyyyddmm datedelimiters
+ *   $cur getFieldAsDateDayByIndex row col
+ *   $cur getFieldAsDateDayByName row col
+ *   $cur getFieldAsDateDayByIndexWithDdMm row col ddmm yyyyddmm datedelimiters
+ *   $cur getFieldAsDateDayByNameWithDdMm row col ddmm yyyyddmm datedelimiters
+ *   $cur getFieldAsDateHourByIndex row col
+ *   $cur getFieldAsDateHourByName row col
+ *   $cur getFieldAsDateHourByIndexWithDdMm row col ddmm yyyyddmm datedelimiters
+ *   $cur getFieldAsDateHourByNameWithDdMm row col ddmm yyyyddmm datedelimiters
+ *   $cur getFieldAsDateMinuteByIndex row col
+ *   $cur getFieldAsDateMinuteByName row col
+ *   $cur getFieldAsDateMinuteByIndexWithDdMm row col ddmm yyyyddmm datedelimiters
+ *   $cur getFieldAsDateMinuteByNameWithDdMm row col ddmm yyyyddmm datedelimiters
+ *   $cur getFieldAsDateSecondByIndex row col
+ *   $cur getFieldAsDateSecondByName row col
+ *   $cur getFieldAsDateSecondByIndexWithDdMm row col ddmm yyyyddmm datedelimiters
+ *   $cur getFieldAsDateSecondByNameWithDdMm row col ddmm yyyyddmm datedelimiters
+ *   $cur getFieldAsDateMicrosecondByIndex row col
+ *   $cur getFieldAsDateMicrosecondByName row col
+ *   $cur getFieldAsDateMicrosecondByIndexWithDdMm row col ddmm yyyyddmm datedelimiters
+ *   $cur getFieldAsDateMicrosecondByNameWithDdMm row col ddmm yyyyddmm datedelimiters
+ *   $cur getFieldAsDateIsNegativeByIndex row col
+ *   $cur getFieldAsDateIsNegativeByName row col
+ *   $cur getFieldAsDateIsNegativeByIndexWithDdMm row col ddmm yyyyddmm datedelimiters
+ *   $cur getFieldAsDateIsNegativeByNameWithDdMm row col ddmm yyyyddmm datedelimiters
  *   $cur getFieldLengthByIndex row col
  *   $cur getFieldLengthByName row col
  *   $cur getRow row
@@ -236,6 +268,38 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
     "getFieldAsIntegerByName",
     "getFieldAsDoubleByIndex",
     "getFieldAsDoubleByName",
+    "getFieldAsDateYearByIndex",
+    "getFieldAsDateYearByName",
+    "getFieldAsDateYearByIndexWithDdMm",
+    "getFieldAsDateYearByNameWithDdMm",
+    "getFieldAsDateMonthByIndex",
+    "getFieldAsDateMonthByName",
+    "getFieldAsDateMonthByIndexWithDdMm",
+    "getFieldAsDateMonthByNameWithDdMm",
+    "getFieldAsDateDayByIndex",
+    "getFieldAsDateDayByName",
+    "getFieldAsDateDayByIndexWithDdMm",
+    "getFieldAsDateDayByNameWithDdMm",
+    "getFieldAsDateHourByIndex",
+    "getFieldAsDateHourByName",
+    "getFieldAsDateHourByIndexWithDdMm",
+    "getFieldAsDateHourByNameWithDdMm",
+    "getFieldAsDateMinuteByIndex",
+    "getFieldAsDateMinuteByName",
+    "getFieldAsDateMinuteByIndexWithDdMm",
+    "getFieldAsDateMinuteByNameWithDdMm",
+    "getFieldAsDateSecondByIndex",
+    "getFieldAsDateSecondByName",
+    "getFieldAsDateSecondByIndexWithDdMm",
+    "getFieldAsDateSecondByNameWithDdMm",
+    "getFieldAsDateMicrosecondByIndex",
+    "getFieldAsDateMicrosecondByName",
+    "getFieldAsDateMicrosecondByIndexWithDdMm",
+    "getFieldAsDateMicrosecondByNameWithDdMm",
+    "getFieldAsDateIsNegativeByIndex",
+    "getFieldAsDateIsNegativeByName",
+    "getFieldAsDateIsNegativeByIndexWithDdMm",
+    "getFieldAsDateIsNegativeByNameWithDdMm",
     "getFieldLengthByIndex",
     "getFieldLengthByName",
     "getRow",
@@ -335,6 +399,38 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
     SQLRCUR_getFieldAsIntegerByName,
     SQLRCUR_getFieldAsDoubleByIndex,
     SQLRCUR_getFieldAsDoubleByName,
+    SQLRCUR_getFieldAsDateYearByIndex,
+    SQLRCUR_getFieldAsDateYearByName,
+    SQLRCUR_getFieldAsDateYearByIndexWithDdMm,
+    SQLRCUR_getFieldAsDateYearByNameWithDdMm,
+    SQLRCUR_getFieldAsDateMonthByIndex,
+    SQLRCUR_getFieldAsDateMonthByName,
+    SQLRCUR_getFieldAsDateMonthByIndexWithDdMm,
+    SQLRCUR_getFieldAsDateMonthByNameWithDdMm,
+    SQLRCUR_getFieldAsDateDayByIndex,
+    SQLRCUR_getFieldAsDateDayByName,
+    SQLRCUR_getFieldAsDateDayByIndexWithDdMm,
+    SQLRCUR_getFieldAsDateDayByNameWithDdMm,
+    SQLRCUR_getFieldAsDateHourByIndex,
+    SQLRCUR_getFieldAsDateHourByName,
+    SQLRCUR_getFieldAsDateHourByIndexWithDdMm,
+    SQLRCUR_getFieldAsDateHourByNameWithDdMm,
+    SQLRCUR_getFieldAsDateMinuteByIndex,
+    SQLRCUR_getFieldAsDateMinuteByName,
+    SQLRCUR_getFieldAsDateMinuteByIndexWithDdMm,
+    SQLRCUR_getFieldAsDateMinuteByNameWithDdMm,
+    SQLRCUR_getFieldAsDateSecondByIndex,
+    SQLRCUR_getFieldAsDateSecondByName,
+    SQLRCUR_getFieldAsDateSecondByIndexWithDdMm,
+    SQLRCUR_getFieldAsDateSecondByNameWithDdMm,
+    SQLRCUR_getFieldAsDateMicrosecondByIndex,
+    SQLRCUR_getFieldAsDateMicrosecondByName,
+    SQLRCUR_getFieldAsDateMicrosecondByIndexWithDdMm,
+    SQLRCUR_getFieldAsDateMicrosecondByNameWithDdMm,
+    SQLRCUR_getFieldAsDateIsNegativeByIndex,
+    SQLRCUR_getFieldAsDateIsNegativeByName,
+    SQLRCUR_getFieldAsDateIsNegativeByIndexWithDdMm,
+    SQLRCUR_getFieldAsDateIsNegativeByNameWithDdMm,
     SQLRCUR_getFieldLengthByIndex,
     SQLRCUR_getFieldLengthByName,
     SQLRCUR_getRow,
@@ -1256,6 +1352,470 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	  return TCL_ERROR;
 	}
 	Tcl_SetObjResult(interp, Tcl_NewDoubleObj(cur->getFieldAsDouble(row, Tcl_GetString(objv[3]))));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateYearByIndex:
+      {
+	int row, col;
+	if (objc != 4) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[3], &col) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateYear(row, col)));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateYearByName:
+      {
+	int row;
+	if (objc != 4) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateYear(row, Tcl_GetString(objv[3]))));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateYearByIndexWithDdMm:
+      {
+	int row, col, ddmm, yyyyddmm;
+	if (objc != 7) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col ddmm yyyyddmm datedelimiters");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[3], &col) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[4], &ddmm) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[5], &yyyyddmm) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateYear(row, col, ddmm!=0, yyyyddmm!=0, Tcl_GetString(objv[6]))));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateYearByNameWithDdMm:
+      {
+	int row, ddmm, yyyyddmm;
+	if (objc != 7) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col ddmm yyyyddmm datedelimiters");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[4], &ddmm) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[5], &yyyyddmm) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateYear(row, Tcl_GetString(objv[3]), ddmm!=0, yyyyddmm!=0, Tcl_GetString(objv[6]))));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateMonthByIndex:
+      {
+	int row, col;
+	if (objc != 4) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[3], &col) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateMonth(row, col)));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateMonthByName:
+      {
+	int row;
+	if (objc != 4) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateMonth(row, Tcl_GetString(objv[3]))));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateMonthByIndexWithDdMm:
+      {
+	int row, col, ddmm, yyyyddmm;
+	if (objc != 7) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col ddmm yyyyddmm datedelimiters");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[3], &col) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[4], &ddmm) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[5], &yyyyddmm) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateMonth(row, col, ddmm!=0, yyyyddmm!=0, Tcl_GetString(objv[6]))));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateMonthByNameWithDdMm:
+      {
+	int row, ddmm, yyyyddmm;
+	if (objc != 7) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col ddmm yyyyddmm datedelimiters");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[4], &ddmm) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[5], &yyyyddmm) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateMonth(row, Tcl_GetString(objv[3]), ddmm!=0, yyyyddmm!=0, Tcl_GetString(objv[6]))));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateDayByIndex:
+      {
+	int row, col;
+	if (objc != 4) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[3], &col) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateDay(row, col)));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateDayByName:
+      {
+	int row;
+	if (objc != 4) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateDay(row, Tcl_GetString(objv[3]))));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateDayByIndexWithDdMm:
+      {
+	int row, col, ddmm, yyyyddmm;
+	if (objc != 7) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col ddmm yyyyddmm datedelimiters");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[3], &col) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[4], &ddmm) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[5], &yyyyddmm) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateDay(row, col, ddmm!=0, yyyyddmm!=0, Tcl_GetString(objv[6]))));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateDayByNameWithDdMm:
+      {
+	int row, ddmm, yyyyddmm;
+	if (objc != 7) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col ddmm yyyyddmm datedelimiters");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[4], &ddmm) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[5], &yyyyddmm) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateDay(row, Tcl_GetString(objv[3]), ddmm!=0, yyyyddmm!=0, Tcl_GetString(objv[6]))));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateHourByIndex:
+      {
+	int row, col;
+	if (objc != 4) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[3], &col) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateHour(row, col)));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateHourByName:
+      {
+	int row;
+	if (objc != 4) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateHour(row, Tcl_GetString(objv[3]))));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateHourByIndexWithDdMm:
+      {
+	int row, col, ddmm, yyyyddmm;
+	if (objc != 7) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col ddmm yyyyddmm datedelimiters");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[3], &col) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[4], &ddmm) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[5], &yyyyddmm) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateHour(row, col, ddmm!=0, yyyyddmm!=0, Tcl_GetString(objv[6]))));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateHourByNameWithDdMm:
+      {
+	int row, ddmm, yyyyddmm;
+	if (objc != 7) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col ddmm yyyyddmm datedelimiters");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[4], &ddmm) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[5], &yyyyddmm) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateHour(row, Tcl_GetString(objv[3]), ddmm!=0, yyyyddmm!=0, Tcl_GetString(objv[6]))));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateMinuteByIndex:
+      {
+	int row, col;
+	if (objc != 4) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[3], &col) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateMinute(row, col)));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateMinuteByName:
+      {
+	int row;
+	if (objc != 4) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateMinute(row, Tcl_GetString(objv[3]))));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateMinuteByIndexWithDdMm:
+      {
+	int row, col, ddmm, yyyyddmm;
+	if (objc != 7) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col ddmm yyyyddmm datedelimiters");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[3], &col) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[4], &ddmm) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[5], &yyyyddmm) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateMinute(row, col, ddmm!=0, yyyyddmm!=0, Tcl_GetString(objv[6]))));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateMinuteByNameWithDdMm:
+      {
+	int row, ddmm, yyyyddmm;
+	if (objc != 7) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col ddmm yyyyddmm datedelimiters");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[4], &ddmm) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[5], &yyyyddmm) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateMinute(row, Tcl_GetString(objv[3]), ddmm!=0, yyyyddmm!=0, Tcl_GetString(objv[6]))));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateSecondByIndex:
+      {
+	int row, col;
+	if (objc != 4) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[3], &col) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateSecond(row, col)));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateSecondByName:
+      {
+	int row;
+	if (objc != 4) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateSecond(row, Tcl_GetString(objv[3]))));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateSecondByIndexWithDdMm:
+      {
+	int row, col, ddmm, yyyyddmm;
+	if (objc != 7) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col ddmm yyyyddmm datedelimiters");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[3], &col) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[4], &ddmm) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[5], &yyyyddmm) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateSecond(row, col, ddmm!=0, yyyyddmm!=0, Tcl_GetString(objv[6]))));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateSecondByNameWithDdMm:
+      {
+	int row, ddmm, yyyyddmm;
+	if (objc != 7) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col ddmm yyyyddmm datedelimiters");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[4], &ddmm) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[5], &yyyyddmm) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateSecond(row, Tcl_GetString(objv[3]), ddmm!=0, yyyyddmm!=0, Tcl_GetString(objv[6]))));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateMicrosecondByIndex:
+      {
+	int row, col;
+	if (objc != 4) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[3], &col) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateMicrosecond(row, col)));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateMicrosecondByName:
+      {
+	int row;
+	if (objc != 4) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateMicrosecond(row, Tcl_GetString(objv[3]))));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateMicrosecondByIndexWithDdMm:
+      {
+	int row, col, ddmm, yyyyddmm;
+	if (objc != 7) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col ddmm yyyyddmm datedelimiters");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[3], &col) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[4], &ddmm) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[5], &yyyyddmm) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateMicrosecond(row, col, ddmm!=0, yyyyddmm!=0, Tcl_GetString(objv[6]))));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateMicrosecondByNameWithDdMm:
+      {
+	int row, ddmm, yyyyddmm;
+	if (objc != 7) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col ddmm yyyyddmm datedelimiters");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[4], &ddmm) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[5], &yyyyddmm) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(cur->getFieldAsDateMicrosecond(row, Tcl_GetString(objv[3]), ddmm!=0, yyyyddmm!=0, Tcl_GetString(objv[6]))));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateIsNegativeByIndex:
+      {
+	int row, col;
+	if (objc != 4) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[3], &col) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewBooleanObj(cur->getFieldAsDateIsNegative(row, col)));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateIsNegativeByName:
+      {
+	int row;
+	if (objc != 4) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewBooleanObj(cur->getFieldAsDateIsNegative(row, Tcl_GetString(objv[3]))));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateIsNegativeByIndexWithDdMm:
+      {
+	int row, col, ddmm, yyyyddmm;
+	if (objc != 7) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col ddmm yyyyddmm datedelimiters");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[3], &col) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[4], &ddmm) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[5], &yyyyddmm) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewBooleanObj(cur->getFieldAsDateIsNegative(row, col, ddmm!=0, yyyyddmm!=0, Tcl_GetString(objv[6]))));
+	break;
+      }
+    case SQLRCUR_getFieldAsDateIsNegativeByNameWithDdMm:
+      {
+	int row, ddmm, yyyyddmm;
+	if (objc != 7) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col ddmm yyyyddmm datedelimiters");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[4], &ddmm) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[5], &yyyyddmm) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewBooleanObj(cur->getFieldAsDateIsNegative(row, Tcl_GetString(objv[3]), ddmm!=0, yyyyddmm!=0, Tcl_GetString(objv[6]))));
 	break;
       }
     case SQLRCUR_getFieldLengthByIndex:
