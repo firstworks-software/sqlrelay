@@ -8,4 +8,4 @@ else
 	export CLASSPATH=$CLASSPATH:$2
 fi
 
-java $1 $2
+java $1

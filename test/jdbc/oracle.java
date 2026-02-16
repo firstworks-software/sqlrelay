@@ -21,7 +21,8 @@ class oracle extends sqlrtest {
 		// appropriate url and credentials for each.
 		String	classpath=System.getProperty("java.class.path");
 		String	hostname=InetAddress.getLocalHost().
-					getHostName().split("\\.")[0];
+					getHostName().split("\\.")[0].
+					toUpperCase();
 		String	driver=null;
 		String	host=null;
 		short	port=0;
@@ -696,11 +697,7 @@ class oracle extends sqlrtest {
 		System.out.println("getUserName");
 		stringval=md.getUserName();
 		System.out.println("  "+stringval);
-		if (issqlrelay) {
-			assertEquals(stringval,"testuser");
-		} else {
-			assertEquals(stringval,"FEDORA40X64");
-		}
+		assertEquals(stringval,user);
 		System.out.println();
 
 		// insertsAreDetected
@@ -948,8 +945,8 @@ class oracle extends sqlrtest {
 		if (issqlrelay) {
 			assertTrue(boolval);
 		} else {
-			// oracle jdbc (at least v8) randomly returns
-			// true or false for this, so just don't test it
+			// oracle jdbc randomly returns true or
+			// false for this, so just don't test it
 		}
 		System.out.println();
 
@@ -1354,6 +1351,7 @@ class oracle extends sqlrtest {
 					ResultSet.CONCUR_UPDATABLE);
 		System.out.println("  "+boolval);
 		if (issqlrelay) {
+			// sqlrelay doesn't support CONCUR_UPDATEABLE
 			assertFalse(boolval);
 		} else {
 			assertTrue(boolval);
@@ -1376,6 +1374,7 @@ class oracle extends sqlrtest {
 					ResultSet.CONCUR_UPDATABLE);
 		System.out.println("  "+boolval);
 		if (issqlrelay) {
+			// sqlrelay doesn't support CONCUR_UPDATEABLE
 			assertFalse(boolval);
 		} else {
 			assertTrue(boolval);
@@ -1730,7 +1729,7 @@ if (false) {
 		if (issqlrelay) {
                 	assertEquals(rsmd.getColumnCount(),10);
 		} else {
-			// oracle jdbc (at least v8) returns 5 columns
+			// oracle jdbc returns 5 columns
                 	assertEquals(rsmd.getColumnCount(),5);
 		}
 		col=1;
@@ -1799,7 +1798,7 @@ if (false) {
 		if (issqlrelay) {
                 	assertEquals(rsmd.getColumnCount(),8);
 		} else {
-			// oracle jdbc (at least v8) returns 9 columns
+			// oracle jdbc returns 9 columns
                 	assertEquals(rsmd.getColumnCount(),9);
 		}
                 assertEquals(rsmd.getColumnName(col++),"PROCEDURE_CAT");
@@ -1813,7 +1812,7 @@ if (false) {
                 	assertEquals(rsmd.getColumnName(col++),
 						"NUM_RESULT_SETS");
 		} else {
-			// oracle jdbc (at least v8) returns
+			// oracle jdbc returns
 			// NULL for these column names
                 	assertEquals(rsmd.getColumnName(col++),"NULL");
                 	assertEquals(rsmd.getColumnName(col++),"NULL");
@@ -1822,7 +1821,7 @@ if (false) {
                 assertEquals(rsmd.getColumnName(col++),"REMARKS");
                 assertEquals(rsmd.getColumnName(col++),"PROCEDURE_TYPE");
 		if (!issqlrelay) {
-			// oracle jdbc (at least v8) returns a 9th column
+			// oracle jdbc returns a 9th column
                 	assertEquals(rsmd.getColumnName(col++),"SPECIFIC_NAME");
 		}
                 //System.out.println();
@@ -1844,7 +1843,7 @@ if (false) {
 			if (issqlrelay) {
 				assertEquals(rsmd.getColumnCount(),8);
 			} else {
-				// oracle jdbc (at least v8) returns 6 columns
+				// oracle jdbc returns 6 columns
 				assertEquals(rsmd.getColumnCount(),6);
 			}
                 	assertEquals(rsmd.getColumnName(col++),
@@ -1853,8 +1852,7 @@ if (false) {
 							"FUNCTION_SCHEM");
                 	assertEquals(rsmd.getColumnName(col++),
 							"FUNCTION_NAME");
-			// oracle jdbc (at least v8) doesn't
-			// return these columns at all
+			// oracle jdbc doesn't return these columns at all
 			if (issqlrelay) {
                 		assertEquals(rsmd.getColumnName(col++),
 							"NUM_INPUT_PARAMS");
@@ -1865,7 +1863,7 @@ if (false) {
 			}
                 	assertEquals(rsmd.getColumnName(col++),"REMARKS");
                 	assertEquals(rsmd.getColumnName(col++),"FUNCTION_TYPE");
-			// oracle jdbc (at least v8) returns this extra column
+			// oracle jdbc returns this extra column
 			if (!issqlrelay) {
                 		assertEquals(rsmd.getColumnName(col++),
 							"SPECIFIC_NAME");
@@ -1880,7 +1878,7 @@ if (false) {
 		// UDTs
                 System.out.println("UDTs");
 		// FIXME: sqlrelay doesn't support this yet
-		// oracle jdbc (at least v8) throws:
+		// oracle jdbc throws:
 		// ORA-08177: can't serialize access for this transaction
 		if (false) {
                 	rs=md.getUDTs("%","%","%",null);
@@ -1891,7 +1889,7 @@ if (false) {
 			if (issqlrelay) {
                 		assertEquals(rsmd.getColumnCount(),7);
 			} else {
-				// oracle jdbc (at least v8) returns 6 columns
+				// oracle jdbc returns 6 columns
                 		assertEquals(rsmd.getColumnCount(),6);
 			}
                 	assertEquals(rsmd.getColumnName(col++),"TYPE_CAT");
@@ -1901,8 +1899,7 @@ if (false) {
                 	assertEquals(rsmd.getColumnName(col++),"DATA_TYPE");
                 	assertEquals(rsmd.getColumnName(col++),"REMARKS");
 			if (issqlrelay) {
-				// oracle jdbc (at least v8) doesn't
-				// return this column at all
+				// oracle jdbc doesn't return this column at all
                 		assertEquals(rsmd.getColumnName(col++),
 								"BASE_TYPE");
 			}
@@ -2119,7 +2116,7 @@ if (false) {
 			if (issqlrelay) {
 				assertEquals(rsmd.getColumnCount(),17);
 			} else {
-				// oracle jdbc (at least v8) returns 23 columns
+				// oracle jdbc returns 23 columns
 				assertEquals(rsmd.getColumnCount(),23);
 			}
 			assertEquals(rsmd.getColumnName(col++),
@@ -2149,8 +2146,7 @@ if (false) {
 			assertEquals(rsmd.getColumnName(col++),
 							"REMARKS");
 			if (!issqlrelay) {
-				// oracle jdbc (at least v8)
-				// returns these columns too
+				// oracle jdbc returns these columns too
 				assertEquals(rsmd.getColumnName(col++),
 							"COLUMN_DEF");
 				assertEquals(rsmd.getColumnName(col++),
@@ -2167,8 +2163,7 @@ if (false) {
 			assertEquals(rsmd.getColumnName(col++),
 							"SPECIFIC_NAME");
 			if (!issqlrelay) {
-				// oracle jdbc (at least v8)
-				// returns these columns too
+				// oracle jdbc returns these columns too
 				assertEquals(rsmd.getColumnName(col++),
 							"SEQUENCE");
 				assertEquals(rsmd.getColumnName(col++),
@@ -2218,7 +2213,7 @@ if (false) {
 		// index info
 		System.out.println("index info");
 		// FIXME: sqlrelay doesn't support this yet
-		// oracle jdbc (at least v8) throws:
+		// oracle jdbc throws:
 		// ORA-17068: Invalid arguments in call
 		if (false) {
 			rs=md.getIndexInfo("%","%","%",false,true);
@@ -2286,7 +2281,7 @@ if (false) {
 		// procedure columns
 		System.out.println("procedure columns");
 		// FIXME: sqlrelay doesn't support this yet
-		// oracle jdbc (at least v8) throws:
+		// oracle jdbc throws:
 		// ORA-00904: "ARG"."TYPE_OBJECT_TYPE": invalid identifier
 		if (false) {
 			rs=md.getProcedureColumns("%","%","%","%");

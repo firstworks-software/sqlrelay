@@ -19,6 +19,7 @@ public class SQLRelayConnection implements Connection {
 
 	private SQLRConnection	sqlrcon;
 
+	private String		url;
 	private String		host;
 	private short		port;
 	private String		socket;
@@ -33,20 +34,22 @@ public class SQLRelayConnection implements Connection {
 
 
 	public
-	SQLRelayConnection(String host,
-					short port,
-					String socket,
-					String user,
-					String password,
-					int retrytime,
-					int tries,
-					SQLRelayDriver driver)
-					throws SQLException {
+	SQLRelayConnection(String url,
+				String host,
+				short port,
+				String socket,
+				String user,
+				String password,
+				int retrytime,
+				int tries,
+				SQLRelayDriver driver)
+				throws SQLException {
 
 		this.drv=driver;
 
 		drv.debugFunction(this);
 
+		drv.debugPrintln("url: "+url);
 		drv.debugPrintln("host: "+host);
 		drv.debugPrintln("port: "+port);
 		drv.debugPrintln("socket: "+socket);
@@ -55,6 +58,7 @@ public class SQLRelayConnection implements Connection {
 		drv.debugPrintln("retrytime: "+retrytime);
 		drv.debugPrintln("tries: "+tries);
 
+		this.url=url;
 		this.host=host;
 		this.port=port;
 		this.socket=socket;
@@ -87,6 +91,13 @@ public class SQLRelayConnection implements Connection {
 
 	boolean getDateToTimestamp() {
 		return datetotimestamp;
+	}
+
+	String getURL() {
+		drv.debugFunction(this);
+		drv.debugPrintln("url: "+url);
+		drv.debugEnd();
+		return url;
 	}
 
 	public

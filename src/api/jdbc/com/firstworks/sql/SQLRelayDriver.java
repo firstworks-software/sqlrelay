@@ -42,10 +42,11 @@ public class SQLRelayDriver implements Driver {
 		SQLRelayConnectInfo	ci=parseConnectInfo(url,info);
 		SQLRelayConnection	conn=null;
 		if (validConnectInfo(ci)) {
-			conn=new SQLRelayConnection(ci.host,ci.port,ci.socket,
-							ci.user,ci.password,
-							ci.retrytime,ci.tries,
-							this);
+			conn=new SQLRelayConnection(url,
+						ci.host,ci.port,ci.socket,
+						ci.user,ci.password,
+						ci.retrytime,ci.tries,
+						this);
 			conn.setDateToTimestamp(ci.datetotimestamp);
 		}
 		debugEnd();
@@ -219,10 +220,6 @@ public class SQLRelayDriver implements Driver {
 		return valid;
 	}
 
-	/**
-	 *  Returns true if the driver thinks that it can open a connection to
-	 *  the given URL.
-	 */
 	public
 	boolean acceptsURL(String url) throws SQLException {
 		debugFunction(this);
@@ -231,11 +228,6 @@ public class SQLRelayDriver implements Driver {
 		return valid;
 	}
 
-	/**
-	 *  The getPropertyInfo method is intended to allow a generic GUI tool
-	 *  to discover what properties it should prompt a human for in order
-	 *  to get enough information to connect to a database. 
-	 */
 	public
 	DriverPropertyInfo[] getPropertyInfo(String url,
 						Properties info)
@@ -311,9 +303,6 @@ public class SQLRelayDriver implements Driver {
 		return dpiarray;
 	}
 
-	/**
-	 *   Get the driver's major version number.
-	 */
 	public
 	int getMajorVersion() {
 		debugFunction(this);
@@ -321,9 +310,6 @@ public class SQLRelayDriver implements Driver {
 		return MAJOR_VERSION;
 	}
 
-	/**
-	 *   Get the driver's minor version number.
-	 */
 	public
 	int getMinorVersion() {
 		debugFunction(this);
@@ -339,9 +325,6 @@ public class SQLRelayDriver implements Driver {
 		return null;
 	}
 
-	/**
-	 *  Report whether the Driver is a genuine JDBC COMPLIANT (tm) driver. 
-	 */
 	public
 	boolean jdbcCompliant() {
 		debugFunction(this);

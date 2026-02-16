@@ -1311,28 +1311,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	String getURL() throws SQLException {
 		drv.debugFunction(this);
-
-		String	host=conn.getHost();
-		short	port=conn.getPort();
-		String	socket=conn.getSocket();
-		String	user=conn.getUser();
-		String	password=conn.getPassword();
-
-		String	url="jdbc:sqlrelay://";
-		if (user!=null && !user.equals("")) {
-			url=url+user;
-			if (password!=null && !password.equals("")) {
-				url=url+":"+password;
-			}
-			url=url+"@";
-		}
-		url=url+host+":"+port;
-		if (socket!=null && !socket.equals("")) {
-			url=url+":"+socket;
-		}
-
-		drv.debugPrintln("url: "+url);
-
+		String	url=conn.getURL();
 		drv.debugEnd();
 		return url;
 	}
