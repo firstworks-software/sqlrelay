@@ -3038,15 +3038,11 @@ if (false) {
 		System.out.println();
 
 
-		// FIXME: nulls as nulls
-
 		// FIXME: result set buffer size
 
 
 		// commit
-
-
-		// fixme: ...and rollback, setsavepoint, and releasesavepoint
+		// FIXME: ...and rollback, setsavepoint, and releasesavepoint
 		System.out.println("COMMIT AND ROLLBACK:");
 		Connection	secondcon=DriverManager.getConnection(
 							url,user,password);
@@ -3181,9 +3177,6 @@ if (false) {
 		System.out.println();
 
 
-		// FIXME: cursor binds
-
-
 		try {
 			stmt.executeUpdate("drop table testtable2");
 		} catch (Exception ex) {
@@ -3262,7 +3255,29 @@ if (false) {
 		System.out.println();
 
 
-		// FIXME: negative input bind
+		// negative input bind
+		System.out.println("NEGATIVE INPUT BIND:");
+		try {
+			stmt.executeUpdate("drop table testtable2");
+		} catch (Exception ex) {
+		}
+		assertEquals(stmt.executeUpdate(
+			"create table "+
+			"	testtable2 (testval number)"),0);
+		pstmt=con.prepareStatement(
+			"insert into "+
+			"	testtable2 values (:testval)");
+		assertTrue((pstmt!=null));
+		pstmt.setInt(1,-1);
+		assertEquals(pstmt.executeUpdate(),1);
+		pstmt.close();
+		rs=stmt.executeQuery("select testval from testtable2");
+		assertTrue((rs!=null));
+		rs.next();
+		assertEquals(rs.getString(1),"-1");
+		rs.close();
+		assertEquals(stmt.executeUpdate("drop table testtable2"),0);
+		System.out.println();
 
 
 		// drop existing table
@@ -3380,11 +3395,173 @@ if (false) {
 		System.out.println();
 
 
-		// FIXME: stored procedures
+		// stored procedures
+		System.out.println("STORED PROCEDURES:");
+		// return no value
+		try {
+			stmt.executeUpdate("drop function testproc");
+		} catch (Exception ex) {
+		}
+		try {
+			stmt.executeUpdate("drop procedure testproc");
+		} catch (Exception ex) {
+		}
+		assertEquals(stmt.executeUpdate(
+			"create or replace "+
+			"procedure testproc("+
+			"	in1 in number, "+
+			"	in2 in number, "+
+			"	in3 in varchar2) "+
+			"is "+
+			"begin "+
+			"	return; "+
+			"end;"),0);
+		cstmt=con.prepareCall(
+			"begin "+
+			"	testproc(:in1,:in2,:in3); "+
+			"end;");
+		cstmt.setInt("in1",1);
+		cstmt.setDouble("in2",1.1);
+		cstmt.setString("in3","hello");
+		assertFalse(cstmt.execute());
+		cstmt.close();
+		System.out.println();
+		// return single value
+		try {
+			stmt.executeUpdate("drop function testproc");
+		} catch (Exception ex) {
+		}
+		try {
+			stmt.executeUpdate("drop procedure testproc");
+		} catch (Exception ex) {
+		}
+		assertEquals(stmt.executeUpdate(
+			"create or replace "+
+			"function testproc("+
+			"	in1 in number, "+
+			"	in2 in number, "+
+			"	in3 in varchar2) "+
+			"return number "+
+			"is "+
+			"begin "+
+			"	return in1; "+
+			"end;"),0);
+		pstmt=con.prepareStatement(
+			"select "+
+			"	testproc(:in1,:in2,:in3) "+
+			"from dual");
+		assertTrue((pstmt!=null));
+		pstmt.setInt(1,1);
+		pstmt.setDouble(2,1.1);
+		pstmt.setString(3,"hello");
+		rs=pstmt.executeQuery();
+		assertTrue((rs!=null));
+		rs.next();
+		assertEquals(rs.getString(1),"1");
+		rs.close();
+		pstmt.close();
+		// oracle jdbc struggles with this case, for some reason
+		if (issqlrelay) {
+			cstmt=con.prepareCall(
+				"begin "+
+				"	:out1 :=testproc(:in1,:in2,:in3); "+
+				"end;");
+			cstmt.setInt("in1",1);
+			cstmt.setDouble("in2",1.1);
+			cstmt.setString("in3","hello");
+			cstmt.registerOutParameter("out1",Types.INTEGER);
+			assertFalse(cstmt.execute());
+			assertEquals(cstmt.getInt("out1"),1);
+			cstmt.close();
+		}
+		System.out.println();
+		// return multiple values
+		try {
+			stmt.executeUpdate("drop function testproc");
+		} catch (Exception ex) {
+		}
+		try {
+			stmt.executeUpdate("drop procedure testproc");
+		} catch (Exception ex) {
+		}
+		assertEquals(stmt.executeUpdate(
+			"create or replace "+
+			"procedure testproc("+
+			"	in1 in number, "+
+			"	in2 in number, "+
+			"	in3 in varchar2, "+
+			"	out1 out number, "+
+			"	out2 out number, "+
+			"	out3 out varchar2) "+
+			"is "+
+			"begin "+
+			"	out1:=in1; "+
+			"	out2:=in2; "+
+			"	out3:=in3; "+
+			"end;"),0);
+		cstmt=con.prepareCall(
+			"begin "+
+			"	testproc(:in1,:in2,:in3,"+
+			"		:out1,:out2,:out3); "+
+			"end;");
+		cstmt.setInt("in1",1);
+		cstmt.setDouble("in2",1.1);
+		cstmt.setString("in3","hello");
+		cstmt.registerOutParameter("out1",Types.INTEGER);
+		cstmt.registerOutParameter("out2",Types.DOUBLE);
+		cstmt.registerOutParameter("out3",Types.VARCHAR);
+		assertFalse(cstmt.execute());
+		assertEquals(cstmt.getInt("out1"),1);
+		assertEquals(cstmt.getDouble("out2"),1.1);
+		assertEquals(cstmt.getString("out3"),"hello");
+		cstmt.close();
+		try {
+			stmt.executeUpdate("drop function testproc");
+		} catch (Exception ex) {
+		}
+		try {
+			stmt.executeUpdate("drop procedure testproc");
+		} catch (Exception ex) {
+		}
+		System.out.println();
 
-		// FIXME: in/out variables
 
-		// FIXME: rebinding
+		// rebinding
+		System.out.println("REBINDING:");
+		try {
+			stmt.executeUpdate("drop procedure testproc");
+		} catch (Exception ex) {
+		}
+		assertEquals(stmt.executeUpdate(
+			"create or replace "+
+			"procedure testproc("+
+			"	in1 in number, "+
+			"	out1 out number) "+
+			"is "+
+			"begin "+
+			"	out1:=in1; "+
+			"	return; "+
+			"end;"),0);
+		cstmt=con.prepareCall(
+			"begin "+
+			"	testproc(:in,:out); "+
+			"end;");
+		cstmt.setInt("in",1);
+		cstmt.registerOutParameter("out",Types.INTEGER);
+		assertFalse(cstmt.execute());
+		assertEquals(cstmt.getInt("out"),1);
+		cstmt.setInt("in",2);
+		assertFalse(cstmt.execute());
+		assertEquals(cstmt.getInt("out"),2);
+		cstmt.setInt("in",3);
+		assertFalse(cstmt.execute());
+		assertEquals(cstmt.getInt("out"),3);
+		cstmt.close();
+		try {
+			stmt.executeUpdate("drop procedure testproc");
+		} catch (Exception ex) {
+		}
+		System.out.println();
 
 
 		// FIXME: need tests for Connection methods...
@@ -3397,7 +3574,6 @@ if (false) {
 
 
 		// FIXME: need tests for Statement methods...
-		// execute
                 // getResultSet
                 // getUpdateCount
 		//
@@ -3447,7 +3623,6 @@ if (false) {
 
 
 		// FIXME: need tests for PreparedStatement methods...
-                // execute
                 // executeQuery
 		//
 		// addBatch
@@ -3523,8 +3698,6 @@ if (false) {
                 // setTime
                 // setTimestamp
                 // setURL
-		//
-                // wasNull
 
 
 		// FIXME: need tests for Parameter class...
@@ -3568,7 +3741,6 @@ if (false) {
                 // getCharacterStream
                 // getConcurrency
                 // getCursorName
-                // getDate
                 // getDouble
                 // getFloat
                 // getHoldability

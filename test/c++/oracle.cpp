@@ -1352,6 +1352,7 @@ int main(int argc, char **argv) {
 	cur->inputBind("in2",1.1,2,1);
 	cur->inputBind("in3","hello");
 	assertTrue(cur->executeQuery());
+	stdoutput.printf("\n");
 	// return single value
 	cur->sendQuery("drop function testproc");
 	cur->sendQuery("drop procedure testproc");
@@ -1372,13 +1373,17 @@ int main(int argc, char **argv) {
 	cur->inputBind("in3","hello");
 	assertTrue(cur->executeQuery());
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
-	cur->prepareQuery("begin  :out1:=testproc(:in1,:in2,:in3); end;");
+	cur->prepareQuery(
+		"begin "
+		"	:out1:=testproc(:in1,:in2,:in3); "
+		"end;");
 	cur->inputBind("in1",1);
 	cur->inputBind("in2",1.1,2,1);
 	cur->inputBind("in3","hello");
 	cur->defineOutputBindInteger("out1");
 	assertTrue(cur->executeQuery());
 	assertEquals(cur->getOutputBindInteger("out1"),1);
+	stdoutput.printf("\n");
 	// return multiple values
 	cur->sendQuery("drop function testproc");
 	cur->sendQuery("drop procedure testproc");
@@ -1398,8 +1403,9 @@ int main(int argc, char **argv) {
 		"	out3:=in3; "
 		"end;"));
 	cur->prepareQuery(
-		"begin testproc(:in1,:in2,:in3,:out1,:out2,:out3); "
-		"	end;");
+		"begin "
+		"	testproc(:in1,:in2,:in3,:out1,:out2,:out3); "
+		"end;");
 	cur->inputBind("in1",1);
 	cur->inputBind("in2",1.1,2,1);
 	cur->inputBind("in3","hello");
