@@ -567,7 +567,7 @@ public class SQLRelayPreparedStatement
 				break;
 			case AsciiStream:
 				// FIXME: make this length configurable
-				sqlrcur.defineOutputBindString(key,1024);
+				sqlrcur.defineOutputBindString(key,4096);
 				break;
 			case AsciiStreamWithIntLength:
 			case AsciiStreamWithLongLength:
@@ -599,7 +599,7 @@ public class SQLRelayPreparedStatement
 				break;
 			case CharacterStream:
 				// FIXME: make this length configurable
-				sqlrcur.defineOutputBindString(key,1024);
+				sqlrcur.defineOutputBindString(key,4096);
 				break;
 			case CharacterStreamWithIntLength:
 			case CharacterStreamWithLongLength:
@@ -630,7 +630,7 @@ public class SQLRelayPreparedStatement
 				break;
 			case NCharStream:
 				// FIXME: make this length configurable
-				sqlrcur.defineOutputBindString(key,1024);
+				sqlrcur.defineOutputBindString(key,4096);
 				break;
 			case NCharStreamWithLength:
 				// FIXME: lossy conversion to int
@@ -644,7 +644,7 @@ public class SQLRelayPreparedStatement
 				break;
 			case NString:
 				// FIXME: make this length configurable
-				sqlrcur.defineOutputBindString(key,1024);
+				sqlrcur.defineOutputBindString(key,4096);
 				break;
 			case Null:
 			case NullWithTypeName:
@@ -669,7 +669,7 @@ public class SQLRelayPreparedStatement
 				break;
 			case String:
 				// FIXME: make this length configurable
-				sqlrcur.defineOutputBindString(key,1024);
+				sqlrcur.defineOutputBindString(key,4096);
 				break;
 			case SQLXML:
 				// FIXME: support this
@@ -684,11 +684,11 @@ public class SQLRelayPreparedStatement
 				break;
 			case UnicodeStream:
 				// FIXME: make this length configurable
-				sqlrcur.defineOutputBindString(key,1024);
+				sqlrcur.defineOutputBindString(key,4096);
 				break;
 			case URL:
 				// FIXME: make this length configurable
-				sqlrcur.defineOutputBindString(key,1024);
+				sqlrcur.defineOutputBindString(key,4096);
 				break;
 		}
 		drv.debugEnd();
