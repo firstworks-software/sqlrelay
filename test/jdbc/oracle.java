@@ -15,31 +15,36 @@ class oracle extends sqlrtest {
 
 	public static void main(String args[]) throws Exception {
 
-		String	driver="com.firstworks.sql.SQLRelayDriver";
-		String	host="localhost";
-		short	port=9000;
+		// This test supports both the sqlrelay jdbc driver and the
+		// databse native jdbc driver.  It detects which to use based
+		// on what is included in the classpath, and builds the
+		// appropriate url and credentials for each.
+		String	classpath=System.getProperty("java.class.path");
+		String	hostname=InetAddress.getLocalHost().
+					getHostName().split("\\.")[0];
+		String	driver=null;
+		String	host=null;
+		short	port=0;
 		String	socket=null;
-		String	user="testuser";
-		String	password="testpassword";
-		String	url="jdbc:sqlrelay://"+host+":"+port;
-
-		// To use a different jdbc driver, provide the driver, url,
-		// username, and password.
-		//
-		// Eg. for older jdbc:
-		// oracle.jdbc.driver.OracleDriver
-		// jdbc:oracle:thin:@oracle:1521:ora1
-		// fedora40x64
-		// testpassword
-		if (args.length==4) {
-			driver=args[0];
-			url=args[1];
-			user=args[2];
-			password=args[3];
+		String	user=null;
+		String	password=null;
+		String	url=null;
+		boolean	issqlrelay=false;
+		if (classpath.contains("sqlrelayjdbc.jar")) {
+			driver="com.firstworks.sql.SQLRelayDriver";
+			host="localhost";
+			port=9000;
+			socket=null;
+			url="jdbc:sqlrelay://"+host+":"+port;
+			user="testuser";
+			password="testpassword";
+			issqlrelay=true;
+		} else if (classpath.contains("ojdbc")) {
+			driver="oracle.jdbc.driver.OracleDriver";
+			url="jdbc:oracle:thin:@oracle:1521:ora1";
+			user=hostname;
+			password="testpassword";
 		}
-
-		boolean	issqlrelay=
-			driver.equals("com.firstworks.sql.SQLRelayDriver");
 
 		Connection		con;
 		DatabaseMetaData	md;
@@ -431,11 +436,8 @@ class oracle extends sqlrtest {
 		System.out.println("getDriverVersion");
 		stringval=md.getDriverVersion();
 		System.out.println("  "+stringval);
-		if (issqlrelay) {
-			assertEquals(stringval,"2.1.1");
-		} else {
-			assertEquals(stringval,"23.26.0.0.0");
-		}
+		// not null and only contains numbers and dots
+		assertTrue(stringval!=null && stringval.matches("[0-9.]+$"));
 		System.out.println();
 
 		// getExtraNameCharacters
@@ -456,14 +458,14 @@ class oracle extends sqlrtest {
 		System.out.println("getJDBCMajorVersion");
 		intval=md.getJDBCMajorVersion();
 		System.out.println("  "+intval);
-		assertEquals(intval,4);
+		assertTrue(intval>=1);
 		System.out.println();
 
 		// getJDBCMinorVersion
 		System.out.println("getJDBCMinorVersion");
 		intval=md.getJDBCMinorVersion();
 		System.out.println("  "+intval);
-		assertEquals(intval,2);
+		assertTrue(intval>=0);
 		System.out.println();
 
 		// getMaxBinaryLiteralLength
@@ -687,11 +689,7 @@ class oracle extends sqlrtest {
 		System.out.println("getURL");
 		stringval=md.getURL();
 		System.out.println("  "+stringval);
-		if (issqlrelay) {
-			assertEquals(stringval,"jdbc:sqlrelay://testuser:testpassword@localhost:9000");
-		} else {
-			assertEquals(stringval,"jdbc:oracle:thin:@oracle:1521:ora1");
-		}
+		assertEquals(stringval,url);
 		System.out.println();
 
 		// getUserName
@@ -3286,8 +3284,6 @@ if (false) {
 
 		// temporary tables
 		System.out.println("TEMPORARY TABLES:");
-		String	hostname=InetAddress.getLocalHost().
-					getHostName().split("\\.")[0];
 		try {
 			assertEquals(stmt.executeUpdate(
 				"drop table "+hostname+

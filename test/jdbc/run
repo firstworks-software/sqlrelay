@@ -4,10 +4,8 @@ if ( test -z "$2" )
 then
 	export CLASSPATH=$CLASSPATH:/usr/local/firstworks/java/sqlrelay.jar:/usr/local/firstworks/java/sqlrelayjdbc.jar
 	export LD_LIBRARY_PATH="/usr/local/firstworks/java/com/firstworks/sqlrelay:/usr/local/firstworks/lib"
-
-elif ( test "$1" = "oracle" )
-then
-	export CLASSPATH=$CLASSPATH:/home/dmuse/software/ojdbc8.jar
+else
+	export CLASSPATH=$CLASSPATH:$2
 fi
 
-java $1 $2 $3 $4 $5
+java $1 $2
