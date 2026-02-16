@@ -25,6 +25,7 @@ public class SQLRelayStatement implements Statement {
 	private boolean			poolable;
 	protected int			updatecount;
 	private boolean			escapeprocessing;
+	private String			cursorname;
 
 
 	public
@@ -51,6 +52,7 @@ public class SQLRelayStatement implements Statement {
 		poolable=false;
 		updatecount=-1;
 		escapeprocessing=true;
+		cursorname=null;
 		drv.debugEnd();
 	}
 
@@ -440,8 +442,17 @@ public class SQLRelayStatement implements Statement {
 	int getQueryTimeout() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		int	seconds=sqlrcon.getResponseTimeoutSeconds();
-		drv.debugPrintln("timeout: "+seconds);
+		// NOTE: this gets the timeout at the connection level,
+		// SQL Relay doesn't have a per-cursor timeout
+		int	sec=sqlrcon.getResponseTimeoutSeconds();
+		int	usec=sqlrcon.getResponseTimeoutMicroseconds();
+		drv.debugPrintln("timeout seconds: "+sec);
+		drv.debugPrintln("timeout microseconds: "+usec);
+		int	seconds=sec;
+		if (sec==-1 || usec==-1) {
+			seconds=0;
+		}
+		drv.debugPrintln("seconds: "+seconds);
 		drv.debugEnd();
 		return seconds;
 	}
@@ -531,14 +542,23 @@ public class SQLRelayStatement implements Statement {
 	void setCursorName(String name) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
+		drv.debugPrintln("cursor name: "+name);
+		cursorname=name;
 		drv.debugEnd();
+	}
+
+	String getCursorName() {
+		drv.debugFunction(this);
+		drv.debugPrintln("cursor name: "+cursorname);
+		drv.debugEnd();
+		return cursorname;
 	}
 
 	public
 	void setEscapeProcessing(boolean enable) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("escape processing: "+enable);
 		escapeprocessing=enable;
 		drv.debugEnd();
 	}
@@ -565,6 +585,7 @@ public class SQLRelayStatement implements Statement {
 	void setMaxFieldSize(int max) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		// FIXME: do something with this
 		drv.debugPrintln("max field size: "+max);
 		maxfieldsize=max;
 		drv.debugEnd();
@@ -574,6 +595,7 @@ public class SQLRelayStatement implements Statement {
 	void setMaxRows(int max) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		// FIXME: do something with this
 		drv.debugPrintln("max rows: "+max);
 		maxrows=max;
 		drv.debugEnd();
@@ -583,6 +605,8 @@ public class SQLRelayStatement implements Statement {
 	void setPoolable(boolean poolable) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		// FIXME: do something with this
+		drv.debugPrintln("poolable: "+poolable);
 		this.poolable=poolable;
 		drv.debugEnd();
 	}
@@ -591,10 +615,14 @@ public class SQLRelayStatement implements Statement {
 	void setQueryTimeout(int seconds) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		drv.debugPrintln("timeout: "+seconds);
-		// FIXME: this sets the timeout at the connection level,
+		drv.debugPrintln("seconds: "+seconds);
+		// NOTE: this sets the timeout at the connection level,
 		// SQL Relay doesn't have a per-cursor timeout
-		sqlrcon.setResponseTimeout(seconds,0);
+		if (seconds==0) {
+			sqlrcon.setResponseTimeout(-1,-1);
+		} else {
+			sqlrcon.setResponseTimeout(seconds,0);
+		}
 		drv.debugEnd();
 	}
 

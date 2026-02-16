@@ -655,7 +655,7 @@ public class SQLRelayResultSet implements ResultSet {
 	String getCursorName() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		String	cursorname=null;
+		String	cursorname=(stmt!=null)?stmt.getCursorName():null;
 		drv.debugPrintln("cursor name: "+cursorname);
 		drv.debugEnd();
 		return cursorname;
@@ -706,19 +706,7 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("year: "+year);
 		drv.debugPrintln("month: "+month);
 		drv.debugPrintln("day: "+day);
-		Date	dt=null;
-		if (cal!=null) {
-			cal.set(Calendar.YEAR,year);
-			cal.set(Calendar.MONTH,month-1);
-			cal.set(Calendar.DAY_OF_MONTH,day);
-			cal.set(Calendar.HOUR_OF_DAY,0);
-			cal.set(Calendar.MINUTE,0);
-			cal.set(Calendar.SECOND,0);
-			cal.set(Calendar.MILLISECOND,0);
-			dt=new Date(cal.getTimeInMillis());
-		} else {
-			dt=new Date(year-1900,month-1,day);
-		}
+		Date	dt=createDate(year,month,day,cal);
 		drv.debugEnd();
 		return dt;
 	}
@@ -740,6 +728,17 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("year: "+year);
 		drv.debugPrintln("month: "+month);
 		drv.debugPrintln("day: "+day);
+		Date	dt=createDate(year,month,day,cal);
+		drv.debugEnd();
+		return dt;
+	}
+
+	private
+	Date createDate(short year, short month, short day, Calendar cal) {
+		drv.debugFunction(this);
+		year=(year>=0)?year:0;
+		month=(month>=0)?month:0;
+		day=(day>=0)?day:0;
 		Date	dt=null;
 		if (cal!=null) {
 			cal.set(Calendar.YEAR,year);
@@ -1438,19 +1437,7 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("hour: "+hour);
 		drv.debugPrintln("minute: "+minute);
 		drv.debugPrintln("second: "+second);
-		Time	tm=null;
-		if (cal!=null) {
-			cal.set(Calendar.YEAR,1970);
-			cal.set(Calendar.MONTH,Calendar.JANUARY);
-			cal.set(Calendar.DAY_OF_MONTH,1);
-			cal.set(Calendar.HOUR_OF_DAY,hour);
-			cal.set(Calendar.MINUTE,minute);
-			cal.set(Calendar.SECOND,second);
-			cal.set(Calendar.MILLISECOND,0);
-			tm=new Time(cal.getTimeInMillis());
-		} else {
-			tm=new Time(hour,minute,second);
-		}
+		Time	tm=createTime(hour,minute,second,cal);
 		drv.debugEnd();
 		return tm;
 	}
@@ -1472,6 +1459,17 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("hour: "+hour);
 		drv.debugPrintln("minute: "+minute);
 		drv.debugPrintln("second: "+second);
+		Time	tm=createTime(hour,minute,second,cal);
+		drv.debugEnd();
+		return tm;
+	}
+
+	private
+	Time createTime(short hour, short minute, short second, Calendar cal) {
+		drv.debugFunction(this);
+		hour=(hour>=0)?hour:0;
+		minute=(minute>=0)?minute:0;
+		second=(second>=0)?second:0;
 		Time	tm=null;
 		if (cal!=null) {
 			cal.set(Calendar.YEAR,1970);
@@ -1548,6 +1546,7 @@ public class SQLRelayResultSet implements ResultSet {
 
 	private
 	Timestamp createTimestamp(long row, int col, Calendar cal) {
+drv.debug=true;
 		drv.debugFunction(this);
 		drv.debugPrintln("row: "+row);
 		drv.debugPrintln("col: "+col);
@@ -1575,23 +1574,11 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("minute: "+minute);
 		drv.debugPrintln("second: "+second);
 		drv.debugPrintln("microsecond: "+microsecond);
-		Timestamp	ts=null;
-		if (cal!=null) {
-			cal.set(Calendar.YEAR,year);
-			cal.set(Calendar.MONTH,month-1);
-			cal.set(Calendar.DAY_OF_MONTH,day);
-			cal.set(Calendar.HOUR_OF_DAY,hour);
-			cal.set(Calendar.MINUTE,minute);
-			cal.set(Calendar.SECOND,second);
-			cal.set(Calendar.MILLISECOND,0);
-			ts=new Timestamp(cal.getTimeInMillis());
-			ts.setNanos(microsecond*1000);
-		} else {
-			ts=new Timestamp(year-1900,month-1,day,
+		Timestamp	ts=createTimestamp(year,month,day,
 						hour,minute,second,
-						microsecond*1000);
-		}
+						microsecond,cal);
 		drv.debugEnd();
+drv.debug=false;
 		return ts;
 	}
 
@@ -1624,6 +1611,34 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugPrintln("minute: "+minute);
 		drv.debugPrintln("second: "+second);
 		drv.debugPrintln("microsecond: "+microsecond);
+		Timestamp	ts=createTimestamp(year,month,day,
+						hour,minute,second,
+						microsecond,cal);
+		drv.debugEnd();
+		return ts;
+	}
+
+	public
+	Timestamp getTimestamp(String columnlabel) throws SQLException {
+		drv.debugFunction(this);
+		Timestamp	t=getTimestamp(columnlabel,null);
+		drv.debugEnd();
+		return t;
+	}
+
+	private
+	Timestamp createTimestamp(short year, short month, short day,
+					short hour, short minute,
+					short second, int microsecond,
+					Calendar cal) {
+		drv.debugFunction(this);
+		year=(year>=0)?year:0;
+		month=(month>=0)?month:0;
+		day=(day>=0)?day:0;
+		hour=(hour>=0)?hour:0;
+		minute=(minute>=0)?minute:0;
+		second=(second>=0)?second:0;
+		microsecond=(microsecond>0)?microsecond:0;
 		Timestamp	ts=null;
 		if (cal!=null) {
 			cal.set(Calendar.YEAR,year);
@@ -1642,14 +1657,6 @@ public class SQLRelayResultSet implements ResultSet {
 		}
 		drv.debugEnd();
 		return ts;
-	}
-
-	public
-	Timestamp getTimestamp(String columnlabel) throws SQLException {
-		drv.debugFunction(this);
-		Timestamp	t=getTimestamp(columnlabel,null);
-		drv.debugEnd();
-		return t;
 	}
 
 	public

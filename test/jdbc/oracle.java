@@ -61,6 +61,7 @@ class oracle extends sqlrtest {
 		Blob			blob;
 		CallableStatement	cstmt;
 		java.sql.Date		datevar;
+		Timestamp		tsvar;
 		Calendar		cal=Calendar.getInstance();
 
 
@@ -2482,6 +2483,13 @@ if (false) {
 			assertEquals((stmt.unwrap(SQLRCursor.class)!=null),1);
 			System.out.println();
 		}
+
+		// query timeouts
+		System.out.println("query timeouts");
+		stmt.setQueryTimeout(10);
+		assertEquals(stmt.getQueryTimeout(),10);
+		stmt.setQueryTimeout(0);
+		assertEquals(stmt.getQueryTimeout(),0);
 		stmt.close();
 
 		// result set types
@@ -2906,13 +2914,24 @@ if (false) {
 
 			rs.next();
 
-			assertEquals(rs.getString(1),""+i);
+			assertEquals(rs.getShort(1),i);
+			assertEquals(rs.getInt(1),i);
+			assertEquals(rs.getLong(1),i);
 			assertEquals(rs.getString(2),"testchar"+i+
 					"                               ");
 			assertEquals(rs.getString(3),"testvarchar"+i);
 
 			datevar=rs.getDate(4);
 			cal.setTime(datevar);
+			assertEquals(cal.get(Calendar.YEAR),2000+i);
+			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
+			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
+			assertEquals(cal.get(Calendar.HOUR_OF_DAY),0);
+			assertEquals(cal.get(Calendar.MINUTE),0);
+			assertEquals(cal.get(Calendar.SECOND),0);
+
+			tsvar=rs.getTimestamp(4);
+			cal.setTime(tsvar);
 			assertEquals(cal.get(Calendar.YEAR),2000+i);
 			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
 			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
@@ -2968,7 +2987,9 @@ if (false) {
 
 			rs.next();
 
-			assertEquals(rs.getString("TESTNUMBER"),""+i);
+			assertEquals(rs.getShort("TESTNUMBER"),i);
+			assertEquals(rs.getInt("TESTNUMBER"),i);
+			assertEquals(rs.getLong("TESTNUMBER"),i);
 			assertEquals(rs.getString("TESTCHAR"),"testchar"+i+
 					"                               ");
 			assertEquals(rs.getString("TESTVARCHAR"),
@@ -2976,6 +2997,15 @@ if (false) {
 
 			datevar=rs.getDate("TESTDATE");
 			cal.setTime(datevar);
+			assertEquals(cal.get(Calendar.YEAR),2000+i);
+			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
+			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
+			assertEquals(cal.get(Calendar.HOUR_OF_DAY),0);
+			assertEquals(cal.get(Calendar.MINUTE),0);
+			assertEquals(cal.get(Calendar.SECOND),0);
+
+			tsvar=rs.getTimestamp("TESTDATE");
+			cal.setTime(tsvar);
 			assertEquals(cal.get(Calendar.YEAR),2000+i);
 			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
 			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
@@ -3565,8 +3595,8 @@ if (false) {
 
 
 		// FIXME: need tests for Statement methods...
-                // getResultSet
-                // getUpdateCount
+                // execute/getResultSet
+                // execute/getUpdateCount
 		//
 		// addBatch
                 // clearBatch
@@ -3594,9 +3624,6 @@ if (false) {
                 // getMaxRows
 		//
                 // getMoreResults
-		//
-                // setQueryTimeout
-                // getQueryTimeout
 		//
                 // getResultSetConcurrency
                 // getResultSetHoldability
@@ -3696,6 +3723,21 @@ if (false) {
 
 
 		// FIXME: need tests for ResultSet methods...
+                // getStatement
+                // getCursorName
+		//
+                // getType
+                // getConcurrency
+                // getHoldability
+		//
+                // getWarnings
+		//
+                // getFetchDirection
+                // setFetchDirection
+		//
+                // getFetchSize
+                // setFetchSize
+		//
                 // first
                 // last
                 // previous
@@ -3722,49 +3764,37 @@ if (false) {
 		//
                 // findColumn
 		//
-                // getArray
-                // getAsciiStream
-                // getBigDecimal
-                // getBinaryStream
                 // getBoolean
                 // getByte
-                // getBytes
-                // getCharacterStream
-                // getConcurrency
-                // getCursorName
+		//
+                // getBigDecimal
                 // getDouble
                 // getFloat
-                // getHoldability
-                // getInt
-                // getLong
-                // getNCharacterStream
-                // getNClob
-                // getNString
-                // getRef
-                // getRowId
-                // getShort
-                // getSQLXML
-                // getStatement
+		//
                 // getTime
                 // getTimestamp
-                // getType
+		//
+                // getAsciiStream
+                // getBinaryStream
+                // getCharacterStream
+                // getNCharacterStream
                 // getUnicodeStream
+                // getBytes
+                // getNClob
+                // getNString
+		//
+                // getRef
+                // getRowId
+                // getArray
+                // getSQLXML
                 // getURL
 		//
-                // getWarnings
-		//
                 // insertRow
-		//
                 // refreshRow
 		//
                 // rowDeleted
                 // rowInserted
                 // rowUpdated
-		//
-                // getFetchDirection
-                // getFetchSize
-                // setFetchDirection
-                // setFetchSize
 		//
                 // updateArray
                 // updateAsciiStream
