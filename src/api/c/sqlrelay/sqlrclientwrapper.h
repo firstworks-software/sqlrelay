@@ -899,6 +899,69 @@ int	sqlrcur_getOutputBindDate(sqlrcur sqlrcurref,
 				int *isnegative);
 
 /** @ingroup sqlrclientwrapper
+ *  Get the year from a previously
+ *  defined date output bind variable. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getOutputBindDateYear(sqlrcur sqlrcurref,
+					const char *variable);
+
+/** @ingroup sqlrclientwrapper
+ *  Get the month from a previously
+ *  defined date output bind variable. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getOutputBindDateMonth(sqlrcur sqlrcurref,
+					const char *variable);
+
+/** @ingroup sqlrclientwrapper
+ *  Get the day from a previously
+ *  defined date output bind variable. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getOutputBindDateDay(sqlrcur sqlrcurref,
+					const char *variable);
+
+/** @ingroup sqlrclientwrapper
+ *  Get the hour from a previously
+ *  defined date output bind variable. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getOutputBindDateHour(sqlrcur sqlrcurref,
+					const char *variable);
+
+/** @ingroup sqlrclientwrapper
+ *  Get the minute from a previously
+ *  defined date output bind variable. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getOutputBindDateMinute(sqlrcur sqlrcurref,
+					const char *variable);
+
+/** @ingroup sqlrclientwrapper
+ *  Get the second from a previously
+ *  defined date output bind variable. */
+SQLRCLIENT_DLLSPEC
+int16_t	sqlrcur_getOutputBindDateSecond(sqlrcur sqlrcurref,
+					const char *variable);
+
+/** @ingroup sqlrclientwrapper
+ *  Get the microsecond from a previously
+ *  defined date output bind variable. */
+SQLRCLIENT_DLLSPEC
+int32_t	sqlrcur_getOutputBindDateMicrosecond(sqlrcur sqlrcurref,
+						const char *variable);
+
+/** @ingroup sqlrclientwrapper
+ *  Get the time zone from a previously
+ *  defined date output bind variable. */
+SQLRCLIENT_DLLSPEC
+const char	*sqlrcur_getOutputBindDateTz(sqlrcur sqlrcurref,
+						const char *variable);
+
+/** @ingroup sqlrclientwrapper
+ *  Get whether the value is negative from a
+ *  previously defined date output bind variable. */
+SQLRCLIENT_DLLSPEC
+int	sqlrcur_getOutputBindDateIsNegative(sqlrcur sqlrcurref,
+						const char *variable);
+
+/** @ingroup sqlrclientwrapper
  *  Get the value stored in a previously defined
  *  binary lob output bind variable. */
 SQLRCLIENT_DLLSPEC
@@ -971,6 +1034,12 @@ uint64_t	sqlrcur_firstRowIndex(sqlrcur sqlrcurref);
  *  called with a parameter other than 0. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_endOfResultSet(sqlrcur sqlrcurref);
+
+/** @ingroup sqlrclientwrapper
+ *  Returns true and acts like executeQuery() when there is another result set
+ *  available from the server. */
+SQLRCLIENT_DLLSPEC
+int	sqlrcur_nextResultSet(sqlrcur sqlrcurref);
 
 
 

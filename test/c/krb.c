@@ -217,61 +217,6 @@ int main(int argc, char **argv) {
 	printf("\n");
 
 
-	// output bind by position
-	printf("OUTPUT BIND BY POSITION: \n");
-	sqlrcur_prepareQuery(cur,
-		"begin "
-		"	:numvar:=1; "
-		"	:stringvar:='hello'; "
-		"	:floatvar:=2.5; "
-		"end;");
-	sqlrcur_defineOutputBindInteger(cur,"1");
-	sqlrcur_defineOutputBindString(cur,"2",10);
-	sqlrcur_defineOutputBindDouble(cur,"3");
-	assertTrue(sqlrcur_executeQuery(cur));
-	numvar=sqlrcur_getOutputBindInteger(cur,"1");
-	stringvar=sqlrcur_getOutputBindString(cur,"2");
-	floatvar=sqlrcur_getOutputBindDouble(cur,"3");
-	assertEqualsInt(numvar,1);
-	assertEqualsString(stringvar,"hello");
-	assertEqualsDouble(floatvar,2.5);
-	printf("\n");
-
-
-	// output bind by name
-	printf("OUTPUT BIND BY NAME: \n");
-	sqlrcur_clearBinds(cur);
-	sqlrcur_defineOutputBindInteger(cur,"numvar");
-	sqlrcur_defineOutputBindString(cur,"stringvar",10);
-	sqlrcur_defineOutputBindDouble(cur,"floatvar");
-	assertTrue(sqlrcur_executeQuery(cur));
-	numvar=sqlrcur_getOutputBindInteger(cur,"numvar");
-	stringvar=sqlrcur_getOutputBindString(cur,"stringvar");
-	floatvar=sqlrcur_getOutputBindDouble(cur,"floatvar");
-	assertEqualsInt(numvar,1);
-	assertEqualsString(stringvar,"hello");
-	assertEqualsDouble(floatvar,2.5);
-	printf("\n");
-
-
-	// output bind by name with validation
-	printf("OUTPUT BIND BY NAME WITH VALIDATION: \n");
-	sqlrcur_clearBinds(cur);
-	sqlrcur_defineOutputBindInteger(cur,"numvar");
-	sqlrcur_defineOutputBindString(cur,"stringvar",10);
-	sqlrcur_defineOutputBindDouble(cur,"floatvar");
-	sqlrcur_defineOutputBindString(cur,"dummyvar",10);
-	sqlrcur_validateBinds(cur);
-	assertTrue(sqlrcur_executeQuery(cur));
-	numvar=sqlrcur_getOutputBindInteger(cur,"numvar");
-	stringvar=sqlrcur_getOutputBindString(cur,"stringvar");
-	floatvar=sqlrcur_getOutputBindDouble(cur,"floatvar");
-	assertEqualsInt(numvar,1);
-	assertEqualsString(stringvar,"hello");
-	assertEqualsDouble(floatvar,2.5);
-	printf("\n");
-
-
 	// select
 	printf("SELECT: \n");
 	assertTrue(sqlrcur_sendQuery(cur,
@@ -935,6 +880,61 @@ int main(int argc, char **argv) {
 		"	testtable "));
 	assertEqualsString(sqlrcur_getFieldByIndex(secondcur,0,0),"9");
 	assertTrue(sqlrcon_autoCommitOff(con));
+	printf("\n");
+
+
+	// output bind by position
+	printf("OUTPUT BIND BY POSITION: \n");
+	sqlrcur_prepareQuery(cur,
+		"begin "
+		"	:numvar:=1; "
+		"	:stringvar:='hello'; "
+		"	:floatvar:=2.5; "
+		"end;");
+	sqlrcur_defineOutputBindInteger(cur,"1");
+	sqlrcur_defineOutputBindString(cur,"2",10);
+	sqlrcur_defineOutputBindDouble(cur,"3");
+	assertTrue(sqlrcur_executeQuery(cur));
+	numvar=sqlrcur_getOutputBindInteger(cur,"1");
+	stringvar=sqlrcur_getOutputBindString(cur,"2");
+	floatvar=sqlrcur_getOutputBindDouble(cur,"3");
+	assertEqualsInt(numvar,1);
+	assertEqualsString(stringvar,"hello");
+	assertEqualsDouble(floatvar,2.5);
+	printf("\n");
+
+
+	// output bind by name
+	printf("OUTPUT BIND BY NAME: \n");
+	sqlrcur_clearBinds(cur);
+	sqlrcur_defineOutputBindInteger(cur,"numvar");
+	sqlrcur_defineOutputBindString(cur,"stringvar",10);
+	sqlrcur_defineOutputBindDouble(cur,"floatvar");
+	assertTrue(sqlrcur_executeQuery(cur));
+	numvar=sqlrcur_getOutputBindInteger(cur,"numvar");
+	stringvar=sqlrcur_getOutputBindString(cur,"stringvar");
+	floatvar=sqlrcur_getOutputBindDouble(cur,"floatvar");
+	assertEqualsInt(numvar,1);
+	assertEqualsString(stringvar,"hello");
+	assertEqualsDouble(floatvar,2.5);
+	printf("\n");
+
+
+	// output bind by name with validation
+	printf("OUTPUT BIND BY NAME WITH VALIDATION: \n");
+	sqlrcur_clearBinds(cur);
+	sqlrcur_defineOutputBindInteger(cur,"numvar");
+	sqlrcur_defineOutputBindString(cur,"stringvar",10);
+	sqlrcur_defineOutputBindDouble(cur,"floatvar");
+	sqlrcur_defineOutputBindString(cur,"dummyvar",10);
+	sqlrcur_validateBinds(cur);
+	assertTrue(sqlrcur_executeQuery(cur));
+	numvar=sqlrcur_getOutputBindInteger(cur,"numvar");
+	stringvar=sqlrcur_getOutputBindString(cur,"stringvar");
+	floatvar=sqlrcur_getOutputBindDouble(cur,"floatvar");
+	assertEqualsInt(numvar,1);
+	assertEqualsString(stringvar,"hello");
+	assertEqualsDouble(floatvar,2.5);
 	printf("\n");
 
 

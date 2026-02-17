@@ -137,10 +137,13 @@ proc substitutions {variables values precisions scales}
 # then precision and scale may also be specified.  If you don't have the
 # precision and scale then set them both to 0.  However in that case you may
 # get unexpected rounding behavior if the server is faking binds.
-proc inputBind {variable value precision scale} 
+proc inputBind {variable value precision scale}
+
+# Defines a date input bind variable.
+proc inputBindDate {variable year month day hour minute second microsecond tz isnegative}
 
 # Defines a binary lob input bind variable.
-proc inputBindBlob {variable value size} 
+proc inputBindBlob {variable value size}
 
 # Defines a character lob input bind variable.
 proc inputBindClob {variable value size} 
@@ -161,8 +164,11 @@ proc defineOutputBindInteger {variable}
 # Defines a decimal output bind variable.
 proc defineOutputBindDouble {variable} 
 
+# Defines a date output bind variable.
+proc defineOutputBindDate {variable}
+
 # Defines a binary lob output bind variable.
-proc defineOutputBindBlob {variable} 
+proc defineOutputBindBlob {variable}
 
 # Defines a character lob output bind variable.
 proc defineOutputBindClob {variable} 
@@ -230,7 +236,43 @@ proc getOutputBindLength {variable}
 
 # Get the cursor associated with a previously
 # defined output bind variable.
-proc getOutputBindCursor {variable} 
+proc getOutputBindCursor {variable}
+
+# Get the year from a previously defined
+# date output bind variable.
+proc getOutputBindDateYear {variable}
+
+# Get the month from a previously defined
+# date output bind variable.
+proc getOutputBindDateMonth {variable}
+
+# Get the day from a previously defined
+# date output bind variable.
+proc getOutputBindDateDay {variable}
+
+# Get the hour from a previously defined
+# date output bind variable.
+proc getOutputBindDateHour {variable}
+
+# Get the minute from a previously defined
+# date output bind variable.
+proc getOutputBindDateMinute {variable}
+
+# Get the second from a previously defined
+# date output bind variable.
+proc getOutputBindDateSecond {variable}
+
+# Get the microsecond from a previously
+# defined date output bind variable.
+proc getOutputBindDateMicrosecond {variable}
+
+# Get the timezone from a previously defined
+# date output bind variable.
+proc getOutputBindDateTz {variable}
+
+# Get the is-negative flag from a previously
+# defined date output bind variable.
+proc getOutputBindDateIsNegative {variable}
 
 
 
@@ -277,11 +319,16 @@ proc firstRowIndex {}
 # This method can only return false if 
 # setResultSetBufferSize {} has been called
 # with a parameter other than 0.
-proc endOfResultSet {} 
+proc endOfResultSet {}
+
+# Returns true and acts like executeQuery {}
+# when there is another result set available
+# from the server.
+proc nextResultSet {}
 
 
 
-# If a query failed and generated an error 
+# If a query failed and generated an error
 # the error message is available here.  If 
 # the query succeeded then this method 
 # returns NULL.

@@ -9,7 +9,10 @@ import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Executor;
 import java.nio.charset.StandardCharsets;
+import java.io.InputStream;
+import java.io.StringWriter;
 import java.net.InetAddress;
+import java.net.URL;
 
 class oracle extends sqlrtest {
 
@@ -241,8 +244,6 @@ class oracle extends sqlrtest {
 		System.out.println("warnings");
 		assertTrue(con.getWarnings()==null);
 		con.clearWarnings();
-		System.out.println();
-
 		System.out.println();
 
 
@@ -1752,8 +1753,8 @@ if (false) {
 		//printColumns(rsmd);
 		//printResultSet(rs);
 		rs.close();
-}
 		System.out.println();
+}
 
 		// type info
 		System.out.println("type info");
@@ -1829,8 +1830,8 @@ if (false) {
 		//printColumns(rsmd);
 		//printResultSet(rs);
                 rs.close();
-}
                 System.out.println();
+}
 
 		// functions
                 System.out.println("functions");
@@ -1873,8 +1874,8 @@ if (false) {
 			//printColumns(rsmd);
 			//printResultSet(rs);
                 	rs.close();
+                	System.out.println();
 		}
-                System.out.println();
 
 		// UDTs
                 System.out.println("UDTs");
@@ -1899,8 +1900,8 @@ if (false) {
                 	assertEquals(rsmd.getColumnName(col++),"CLASS_NAME");
                 	assertEquals(rsmd.getColumnName(col++),"DATA_TYPE");
                 	assertEquals(rsmd.getColumnName(col++),"REMARKS");
+			// oracle jdbc doesn't return this column at all
 			if (issqlrelay) {
-				// oracle jdbc doesn't return this column at all
                 		assertEquals(rsmd.getColumnName(col++),
 								"BASE_TYPE");
 			}
@@ -1908,8 +1909,8 @@ if (false) {
 			//printColumns(rsmd);
 			//printResultSet(rs);
                 	rs.close();
+                	System.out.println();
 		}
-                System.out.println();
 
 		// attributes
 		// neither oracle, nor sqlrelay support this
@@ -1954,8 +1955,8 @@ if (false) {
 			//printColumns(rsmd);
 			//printResultSet(rs);
 			rs.close();
+			System.out.println();
 		}
-		System.out.println();
 
 		// client info properties
 		System.out.println("client info properties");
@@ -1975,8 +1976,8 @@ if (false) {
 			//printColumns(rsmd);
 			//printResultSet(rs);
 			rs.close();
+			System.out.println();
 		}
-		System.out.println();
 
 		// column privileges
 		System.out.println("column privileges");
@@ -2000,8 +2001,8 @@ if (false) {
 			//printColumns(rsmd);
 			//printResultSet(rs);
 			rs.close();
+			System.out.println();
 		}
-		System.out.println();
 
 		// columns
 		System.out.println("columns");
@@ -2069,8 +2070,8 @@ if (false) {
 			//printColumns(rsmd);
 			//printResultSet(rs);
 			rs.close();
+			System.out.println();
 		}
-		System.out.println();
 
 		// exported keys
 		System.out.println("exported keys");
@@ -2100,8 +2101,8 @@ if (false) {
 			//printColumns(rsmd);
 			//printResultSet(rs);
 			rs.close();
+			System.out.println();
 		}
-		System.out.println();
 
 		// function columns
 		System.out.println("function columns");
@@ -2176,9 +2177,9 @@ if (false) {
 			//printColumns(rsmd);
 			//printResultSet(rs);
 			rs.close();
+			System.out.println();
 		}
 }
-		System.out.println();
 
 		// imported keys
 		System.out.println("imported keys");
@@ -2208,8 +2209,8 @@ if (false) {
 			//printColumns(rsmd);
 			//printResultSet(rs);
 			rs.close();
+			System.out.println();
 		}
-		System.out.println();
 
 		// index info
 		System.out.println("index info");
@@ -2253,8 +2254,8 @@ if (false) {
 			//printColumns(rsmd);
 			//printResultSet(rs);
 			rs.close();
+			System.out.println();
 		}
-		System.out.println();
 
 		// primary keys
 		System.out.println("primary keys");
@@ -2276,8 +2277,8 @@ if (false) {
 			//printColumns(rsmd);
 			//printResultSet(rs);
 			rs.close();
+			System.out.println();
 		}
-		System.out.println();
 
 		// procedure columns
 		System.out.println("procedure columns");
@@ -2335,8 +2336,8 @@ if (false) {
 			//printColumns(rsmd);
 			//printResultSet(rs);
 			rs.close();
+			System.out.println();
 		}
-		System.out.println();
 
 		// pseudo columns
 		System.out.println("pseudo columns");
@@ -2378,9 +2379,9 @@ if (false) {
 			//printColumns(rsmd);
 			//printResultSet(rs);
 			rs.close();
+			System.out.println();
 		}
 }
-		System.out.println();
 
 		// super tables
 		// neither oracle, nor sqlrelay support this
@@ -2427,9 +2428,9 @@ if (false) {
 			//printColumns(rsmd);
 			//printResultSet(rs);
 			rs.close();
+			System.out.println();
 		}
 }
-		System.out.println();
 
 		// version columns
 		System.out.println("version columns");
@@ -2461,8 +2462,8 @@ if (false) {
 			//printColumns(rsmd);
 			//printResultSet(rs);
 			rs.close();
+			System.out.println();
 		}
-		System.out.println();
 
 
 		// statement
@@ -2604,7 +2605,6 @@ if (false) {
 				}
 			}
 		}
-		System.out.println();
 
 
 		// drop existing table
@@ -2625,13 +2625,14 @@ if (false) {
 			"	testdate date, "+
 			"	testlong long, "+
 			"	testclob clob, "+
-			"	testblob blob)"),0);
+			"	testblob blob, "+
+			"	testurl varchar2(60))"),0);
 		System.out.println();
 
 
 		// insert
 		System.out.println("INSERT:");
-		assertEquals(stmt.executeUpdate(
+		assertFalse(stmt.execute(
 			"insert into "+
 			"	testtable "+
 			"values ("+
@@ -2641,7 +2642,9 @@ if (false) {
 			"	'01-JAN-2001', "+
 			"	'testlong1', "+
 			"	'testclob1', "+
-			"	empty_blob())"),1);
+			"	empty_blob(), "+
+			"	'http://www.firstworks.com:8080/testurl1')"));
+		assertEquals(stmt.getUpdateCount(),1);
 		stmt.close();
 		System.out.println();
 
@@ -2658,7 +2661,8 @@ if (false) {
 			"	:var4, "+
 			"	:var5, "+
 			"	:var6, "+
-			"	:var7)");
+			"	:var7, "+
+			"	:var8)");
 		clob=con.createClob();
 		blob=con.createBlob();
 		for (int i=2; i<=4; i++) {
@@ -2682,11 +2686,13 @@ if (false) {
 			blob.setBytes(1,(new String("testblob"+i)).
 					getBytes(StandardCharsets.UTF_8));
 			pstmt.setBlob(7,blob);
+			pstmt.setString(8,
+				"http://www.firstworks.com:8080/"+
+				"testurl"+i);
 			assertEquals(pstmt.executeUpdate(),1);
 			System.out.println();
 		}
 		pstmt.close();
-		System.out.println();
 
 
 		// bind by name
@@ -2701,7 +2707,8 @@ if (false) {
 			"	:var4, "+
 			"	:var5, "+
 			"	:var6, "+
-			"	:var7)");
+			"	:var7, "+
+			"	:var8)");
 		for (int i=5; i<=8; i++) {
 			cstmt.clearParameters();
 			cstmt.setInt("var1",i);
@@ -2723,10 +2730,567 @@ if (false) {
 			blob.setBytes(1,(new String("testblob"+i)).
 					getBytes(StandardCharsets.UTF_8));
 			cstmt.setBlob("var7",blob);
+			cstmt.setString("var8",
+				"http://www.firstworks.com:8080/"+
+				"testurl"+i);
 			assertEquals(cstmt.executeUpdate(),1);
 			System.out.println();
 		}
 		cstmt.close();
+
+
+		// select
+		System.out.println("SELECT:");
+		stmt=con.createStatement();
+		assertTrue((stmt!=null));
+		assertTrue(stmt.execute(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testnumber"));
+		rs=stmt.getResultSet();
+		assertTrue((rs!=null));
+		System.out.println();
+
+		// unwrap
+		if (issqlrelay) {
+			System.out.println("unwrap");
+			assertEquals(rs.isWrapperFor(SQLRCursor.class),1);
+			System.out.println();
+			assertEquals((rs.unwrap(SQLRCursor.class)!=null),1);
+			System.out.println();
+		}
+
+		// getMetaData
+		rsmd=rs.getMetaData();
+		assertTrue((rsmd!=null));
+		System.out.println();
+
+		// unwrap
+		if (issqlrelay) {
+			System.out.println("unwrap");
+			assertEquals(rsmd.isWrapperFor(SQLRCursor.class),1);
+			System.out.println();
+			assertEquals((rsmd.unwrap(SQLRCursor.class)!=null),1);
+			System.out.println();
+		}
+
+
+		// column count
+		System.out.println("COLUMN COUNT:");
+		assertEquals(rsmd.getColumnCount(),8);
+		System.out.println();
+
+
+		// column names
+		System.out.println("COLUMN NAMES:");
+		assertEquals(rsmd.getColumnName(1),"TESTNUMBER");
+		assertEquals(rsmd.getColumnName(2),"TESTCHAR");
+		assertEquals(rsmd.getColumnName(3),"TESTVARCHAR");
+		assertEquals(rsmd.getColumnName(4),"TESTDATE");
+		assertEquals(rsmd.getColumnName(5),"TESTLONG");
+		assertEquals(rsmd.getColumnName(6),"TESTCLOB");
+		assertEquals(rsmd.getColumnName(7),"TESTBLOB");
+		assertEquals(rsmd.getColumnName(8),"TESTURL");
+		System.out.println();
+
+
+		// column labels
+		System.out.println("COLUMN LABELS:");
+		assertEquals(rsmd.getColumnLabel(1),"TESTNUMBER");
+		assertEquals(rsmd.getColumnLabel(2),"TESTCHAR");
+		assertEquals(rsmd.getColumnLabel(3),"TESTVARCHAR");
+		assertEquals(rsmd.getColumnLabel(4),"TESTDATE");
+		assertEquals(rsmd.getColumnLabel(5),"TESTLONG");
+		assertEquals(rsmd.getColumnLabel(6),"TESTCLOB");
+		assertEquals(rsmd.getColumnLabel(7),"TESTBLOB");
+		assertEquals(rsmd.getColumnLabel(8),"TESTURL");
+		System.out.println();
+
+
+		// column types
+		System.out.println("COLUMN TYPES:");
+		assertEquals(rsmd.getColumnTypeName(1),"NUMBER");
+		assertEquals(rsmd.getColumnTypeName(2),"CHAR");
+		assertEquals(rsmd.getColumnTypeName(3),"VARCHAR2");
+		assertEquals(rsmd.getColumnTypeName(4),"DATE");
+		assertEquals(rsmd.getColumnTypeName(5),"LONG");
+		assertEquals(rsmd.getColumnTypeName(6),"CLOB");
+		assertEquals(rsmd.getColumnTypeName(7),"BLOB");
+		assertEquals(rsmd.getColumnTypeName(8),"VARCHAR2");
+		System.out.println();
+
+
+		// column length
+		System.out.println("COLUMN LENGTH:");
+		assertEquals(rsmd.getPrecision(1),0);
+		assertEquals(rsmd.getPrecision(2),40);
+		assertEquals(rsmd.getPrecision(3),40);
+		assertEquals(rsmd.getPrecision(4),7);
+		assertEquals(rsmd.getPrecision(5),2147483647);
+		assertEquals(rsmd.getPrecision(6),-1);
+		assertEquals(rsmd.getPrecision(7),-1);
+		assertEquals(rsmd.getPrecision(8),60);
+		System.out.println();
+
+
+		// longest column
+		System.out.println("LONGEST COLUMN:");
+		assertEquals(rsmd.getColumnDisplaySize(1),39);
+		assertEquals(rsmd.getColumnDisplaySize(2),40);
+		assertEquals(rsmd.getColumnDisplaySize(3),40);
+		assertEquals(rsmd.getColumnDisplaySize(4),7);
+		assertEquals(rsmd.getColumnDisplaySize(5),0);
+		assertEquals(rsmd.getColumnDisplaySize(6),4000);
+		assertEquals(rsmd.getColumnDisplaySize(7),4000);
+		assertEquals(rsmd.getColumnDisplaySize(8),60);
+		System.out.println();
+
+
+		// fields by index
+		System.out.println("FIELDS BY INDEX:");
+		for (int i=1; i<=8; i++) {
+
+			rs.next();
+
+			// number as short
+			System.out.println("row "+i+" - number as short");
+			assertEquals(rs.getShort(1),i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// number as int
+			System.out.println("row "+i+" - number as int");
+			assertEquals(rs.getInt(1),i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// number as long
+			System.out.println("row "+i+" - number as long");
+			assertEquals(rs.getLong(1),i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// char as string
+			System.out.println("row "+i+" - char as string");
+			assertEquals(rs.getString(2),"testchar"+i+
+					"                               ");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// varchar as string
+			System.out.println("row "+i+" - varchar as string");
+			assertEquals(rs.getString(3),"testvarchar"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// date
+			System.out.println("row "+i+" - date");
+			datevar=rs.getDate(4);
+			cal.setTime(datevar);
+			assertEquals(cal.get(Calendar.YEAR),2000+i);
+			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
+			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
+			assertEquals(cal.get(Calendar.HOUR_OF_DAY),0);
+			assertEquals(cal.get(Calendar.MINUTE),0);
+			assertEquals(cal.get(Calendar.SECOND),0);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// date as timestamp
+			System.out.println("row "+i+" - date as timestamp");
+			tsvar=rs.getTimestamp(4);
+			cal.setTime(tsvar);
+			assertEquals(cal.get(Calendar.YEAR),2000+i);
+			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
+			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
+			assertEquals(cal.get(Calendar.HOUR_OF_DAY),0);
+			assertEquals(cal.get(Calendar.MINUTE),0);
+			assertEquals(cal.get(Calendar.SECOND),0);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// long as string
+			System.out.println("row "+i+" - long as string");
+			assertEquals(rs.getString(5),"testlong"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// clob
+			System.out.println("row "+i+" - clob");
+			Clob	cl=rs.getClob(6);
+			assertEquals(cl.getSubString(1,(int)cl.length()),
+								"testclob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// clob as string
+			System.out.println("row "+i+" - clob as string");
+			assertEquals(rs.getString(6),"testclob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// clob as nstring
+			System.out.println("row "+i+" - clob as nstring");
+			assertEquals(rs.getNString(6),"testclob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// clob as ascii stream
+			System.out.println("row "+i+" - clob as ascii stream");
+			assertEquals(new String(rs.getAsciiStream(6).
+							readAllBytes(),"UTF-8"),
+							"testclob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// clob as character stream
+			System.out.println("row "+i+
+					" - clob as character stream");
+			StringWriter sw=new StringWriter();
+			rs.getCharacterStream(6).transferTo(sw);
+			assertEquals(sw.toString(),"testclob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// clob as ncharacter stream
+			System.out.println("row "+i+
+					" - clob as ncharacter stream");
+			sw=new StringWriter();
+			rs.getNCharacterStream(6).transferTo(sw);
+			assertEquals(sw.toString(),"testclob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// clob as unicode stream
+			// oracle jdbc doesn't support fetching
+			// clobs or blobs as unicode streams
+			if (issqlrelay) {
+				System.out.println("row "+i+
+					" - clob as unicode stream");
+				assertEquals(new String(
+						rs.getUnicodeStream(6).
+							readAllBytes(),"UTF-8"),
+							"testclob"+i);
+				assertFalse(rs.wasNull());
+				System.out.println();
+			}
+
+			// blob
+			System.out.println("row "+i+" - blob");
+			Blob	bl=rs.getBlob(7);
+			byte[]	b=null;
+			if (issqlrelay) {
+				// SerialBlob doesn't like a length of 0.
+				//
+				// Oracle jdbc returns its own Blob
+				// implementation that's tolerant to this.
+				//
+				// For now we're not implementing our own Blob.
+				if (bl.length()==0) {
+					b=new byte[0];
+				} else {
+					b=bl.getBytes(1,(int)bl.length());
+				}
+			} else {
+				b=bl.getBytes(1,(int)bl.length());
+			}
+			// the blob in the first row is empty on purpose
+			assertEquals(new String(b,"UTF-8"),
+						(i==1)?"":"testblob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// blob as bytes
+			System.out.println("row "+i+" - blob as bytes");
+			assertEquals(new String(
+					rs.getBytes(7),"UTF-8"),
+					(i==1)?"":"testblob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// blob as binary stream
+			System.out.println("row "+i+
+					" - blob as binary stream");
+			assertEquals(new String(rs.getBinaryStream(7).
+						readAllBytes(),"UTF-8"),
+						(i==1)?"":"testblob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// url
+			System.out.println("row "+i+" - url");
+			URL	urlvar=rs.getURL(8);
+			assertEquals(urlvar.getProtocol(),"http");
+			assertEquals(urlvar.getHost(),"www.firstworks.com");
+			assertEquals(urlvar.getPort(),8080);
+			assertEquals(urlvar.getPath(),"/testurl"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+		}
+		rs.close();
+
+
+		// fields by name
+		System.out.println("FIELDS BY NAME:");
+		rs=stmt.executeQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testnumber");
+		assertTrue((rs!=null));
+		System.out.println();
+
+		for (int i=1; i<=8; i++) {
+
+			rs.next();
+
+			// number as short
+			System.out.println("row "+i+" - number as short");
+			assertEquals(rs.getShort("TESTNUMBER"),i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// number as int
+			System.out.println("row "+i+" - number as int");
+			assertEquals(rs.getInt("TESTNUMBER"),i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// number as long
+			System.out.println("row "+i+" - number as long");
+			assertEquals(rs.getLong("TESTNUMBER"),i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// char as string
+			System.out.println("row "+i+" - char as string");
+			assertEquals(rs.getString("TESTCHAR"),"testchar"+i+
+					"                               ");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// varchar as string
+			System.out.println("row "+i+" - varchar as string");
+			assertEquals(rs.getString("TESTVARCHAR"),
+							"testvarchar"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// date
+			System.out.println("row "+i+" - date");
+			datevar=rs.getDate("TESTDATE");
+			cal.setTime(datevar);
+			assertEquals(cal.get(Calendar.YEAR),2000+i);
+			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
+			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
+			assertEquals(cal.get(Calendar.HOUR_OF_DAY),0);
+			assertEquals(cal.get(Calendar.MINUTE),0);
+			assertEquals(cal.get(Calendar.SECOND),0);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// date as timestamp
+			System.out.println("row "+i+" - date as timestamp");
+			tsvar=rs.getTimestamp("TESTDATE");
+			cal.setTime(tsvar);
+			assertEquals(cal.get(Calendar.YEAR),2000+i);
+			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
+			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
+			assertEquals(cal.get(Calendar.HOUR_OF_DAY),0);
+			assertEquals(cal.get(Calendar.MINUTE),0);
+			assertEquals(cal.get(Calendar.SECOND),0);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// long as string
+			System.out.println("row "+i+" - long as string");
+			assertEquals(rs.getString("TESTLONG"),"testlong"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// clob
+			System.out.println("row "+i+" - clob");
+			Clob	cl=rs.getClob("TESTCLOB");
+			assertEquals(cl.getSubString(1,(int)cl.length()),
+								"testclob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// clob as string
+			System.out.println("row "+i+" - clob as string");
+			assertEquals(rs.getString("TESTCLOB"),"testclob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// clob as nstring
+			System.out.println("row "+i+" - clob as nstring");
+			assertEquals(rs.getNString("TESTCLOB"),"testclob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// clob as ascii stream
+			System.out.println("row "+i+
+					" - clob as ascii stream");
+			assertEquals(new String(rs.getAsciiStream("TESTCLOB").
+							readAllBytes(),"UTF-8"),
+							"testclob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// clob as character stream
+			System.out.println("row "+i+
+					" - clob as character stream");
+			StringWriter sw=new StringWriter();
+			rs.getCharacterStream("TESTCLOB").transferTo(sw);
+			assertEquals(sw.toString(),"testclob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// clob as ncharacter stream
+			System.out.println("row "+i+
+					" - clob as ncharacter stream");
+			sw=new StringWriter();
+			rs.getNCharacterStream("TESTCLOB").transferTo(sw);
+			assertEquals(sw.toString(),"testclob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// clob as unicode stream
+			// oracle jdbc doesn't support fetching
+			// clobs or blobs as unicode streams
+			if (issqlrelay) {
+				System.out.println("row "+i+
+					" - clob as unicode stream");
+				assertEquals(new String(
+						rs.getUnicodeStream("TESTCLOB").
+							readAllBytes(),"UTF-8"),
+							"testclob"+i);
+				assertFalse(rs.wasNull());
+				System.out.println();
+			}
+
+			// blob
+			System.out.println("row "+i+" - blob");
+			Blob	bl=rs.getBlob("TESTBLOB");
+			byte[]	b=null;
+			if (issqlrelay) {
+				// SerialBlob doesn't like a length of 0.
+				//
+				// Oracle jdbc returns its own Blob
+				// implementation that's tolerant to this.
+				//
+				// For now we're not implementing our own Blob.
+				if (bl.length()==0) {
+					b=new byte[0];
+				} else {
+					b=bl.getBytes(1,(int)bl.length());
+				}
+			} else {
+				b=bl.getBytes(1,(int)bl.length());
+			}
+			// the blob in the first row is empty on purpose
+			assertEquals(new String(b,"UTF-8"),
+						(i==1)?"":"testblob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// blob as bytes
+			System.out.println("row "+i+" - blob as bytes");
+			assertEquals(new String(
+					rs.getBytes("TESTBLOB"),"UTF-8"),
+					(i==1)?"":"testblob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// blob as binary stream
+			System.out.println("row "+i+
+					" - blob as binary stream");
+			assertEquals(new String(rs.getBinaryStream("TESTBLOB").
+						readAllBytes(),"UTF-8"),
+						(i==1)?"":"testblob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// url
+			System.out.println("row "+i+" - url");
+			URL	urlvar=rs.getURL("TESTURL");
+			assertEquals(urlvar.getProtocol(),"http");
+			assertEquals(urlvar.getHost(),"www.firstworks.com");
+			assertEquals(urlvar.getPort(),8080);
+			assertEquals(urlvar.getPath(),"/testurl"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+		}
+
+
+		// row count
+		System.out.println("ROW COUNT:");
+		assertEquals(rs.getRow(),8);
+		rs.close();
+		System.out.println();
+
+
+		// FIXME: result set buffer size
+
+
+		// commit
+		// FIXME: ...and rollback, setsavepoint, and releasesavepoint
+		System.out.println("COMMIT AND ROLLBACK:");
+		Connection	secondcon=DriverManager.getConnection(
+							url,user,password);
+		assertTrue((secondcon!=null));
+		Statement	secondstmt=secondcon.createStatement();
+		assertTrue((secondstmt!=null));
+		ResultSet	secondrs=secondstmt.executeQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable ");
+		assertTrue((secondrs!=null));
+		secondrs.next();
+		assertEquals(secondrs.getString(1),"0");
+		secondrs.close();
+		con.commit();
+		secondrs=secondstmt.executeQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable ");
+		assertTrue((secondrs!=null));
+		secondrs.next();
+		assertEquals(secondrs.getString(1),"8");
+		con.setAutoCommit(true);
+		secondrs.close();
+		assertEquals(stmt.executeUpdate(
+			"insert into "+
+			"	testtable "+
+			"values ("+
+			"	10, "+
+			"	'testchar10', "+
+			"	'testvarchar10', "+
+			"	'01-JAN-2010', "+
+			"	'testlong10', "+
+			"	'testclob10', "+
+			"	NULL, "+
+			"	'http://www.firstworks.com:8080/testurl10' "+
+			"	)"),1);
+		secondrs=secondstmt.executeQuery(
+			"select "+
+			"	count(*) "+
+			"from "+
+			"	testtable ");
+		assertTrue((secondrs!=null));
+		secondrs.next();
+		assertEquals(secondrs.getString(1),"9");
+		secondrs.close();
+		secondstmt.close();
+		secondcon.close();
+		con.setAutoCommit(false);
 		System.out.println();
 
 
@@ -2804,320 +3368,6 @@ if (false) {
 		System.out.println();
 
 
-		// select
-		System.out.println("SELECT:");
-		stmt=con.createStatement();
-		assertTrue((stmt!=null));
-		rs=stmt.executeQuery(
-			"select "+
-			"	* "+
-			"from "+
-			"	testtable "+
-			"order by "+
-			"	testnumber");
-		assertTrue((rs!=null));
-		System.out.println();
-
-		// unwrap
-		if (issqlrelay) {
-			System.out.println("unwrap");
-			assertEquals(rs.isWrapperFor(SQLRCursor.class),1);
-			System.out.println();
-			assertEquals((rs.unwrap(SQLRCursor.class)!=null),1);
-			System.out.println();
-		}
-
-		// getMetaData
-		rsmd=rs.getMetaData();
-		assertTrue((rsmd!=null));
-		System.out.println();
-
-		// unwrap
-		if (issqlrelay) {
-			System.out.println("unwrap");
-			assertEquals(rsmd.isWrapperFor(SQLRCursor.class),1);
-			System.out.println();
-			assertEquals((rsmd.unwrap(SQLRCursor.class)!=null),1);
-			System.out.println();
-		}
-
-
-		// column count
-		System.out.println("COLUMN COUNT:");
-		assertEquals(rsmd.getColumnCount(),7);
-		System.out.println();
-
-
-		// column names
-		System.out.println("COLUMN NAMES:");
-		assertEquals(rsmd.getColumnName(1),"TESTNUMBER");
-		assertEquals(rsmd.getColumnName(2),"TESTCHAR");
-		assertEquals(rsmd.getColumnName(3),"TESTVARCHAR");
-		assertEquals(rsmd.getColumnName(4),"TESTDATE");
-		assertEquals(rsmd.getColumnName(5),"TESTLONG");
-		assertEquals(rsmd.getColumnName(6),"TESTCLOB");
-		assertEquals(rsmd.getColumnName(7),"TESTBLOB");
-		System.out.println();
-
-
-		// column labels
-		System.out.println("COLUMN LABELS:");
-		assertEquals(rsmd.getColumnLabel(1),"TESTNUMBER");
-		assertEquals(rsmd.getColumnLabel(2),"TESTCHAR");
-		assertEquals(rsmd.getColumnLabel(3),"TESTVARCHAR");
-		assertEquals(rsmd.getColumnLabel(4),"TESTDATE");
-		assertEquals(rsmd.getColumnLabel(5),"TESTLONG");
-		assertEquals(rsmd.getColumnLabel(6),"TESTCLOB");
-		assertEquals(rsmd.getColumnLabel(7),"TESTBLOB");
-		System.out.println();
-
-
-		// column types
-		System.out.println("COLUMN TYPES:");
-		assertEquals(rsmd.getColumnTypeName(1),"NUMBER");
-		assertEquals(rsmd.getColumnTypeName(2),"CHAR");
-		assertEquals(rsmd.getColumnTypeName(3),"VARCHAR2");
-		assertEquals(rsmd.getColumnTypeName(4),"DATE");
-		assertEquals(rsmd.getColumnTypeName(5),"LONG");
-		assertEquals(rsmd.getColumnTypeName(6),"CLOB");
-		assertEquals(rsmd.getColumnTypeName(7),"BLOB");
-		System.out.println();
-
-
-		// column length
-		System.out.println("COLUMN LENGTH:");
-		assertEquals(rsmd.getPrecision(1),0);
-		assertEquals(rsmd.getPrecision(2),40);
-		assertEquals(rsmd.getPrecision(3),40);
-		assertEquals(rsmd.getPrecision(4),7);
-		assertEquals(rsmd.getPrecision(5),2147483647);
-		assertEquals(rsmd.getPrecision(6),-1);
-		assertEquals(rsmd.getPrecision(7),-1);
-		System.out.println();
-
-
-		// longest column
-		System.out.println("LONGEST COLUMN:");
-		assertEquals(rsmd.getColumnDisplaySize(1),39);
-		assertEquals(rsmd.getColumnDisplaySize(2),40);
-		assertEquals(rsmd.getColumnDisplaySize(3),40);
-		assertEquals(rsmd.getColumnDisplaySize(4),7);
-		assertEquals(rsmd.getColumnDisplaySize(5),0);
-		assertEquals(rsmd.getColumnDisplaySize(6),4000);
-		assertEquals(rsmd.getColumnDisplaySize(7),4000);
-		System.out.println();
-
-
-		// fields by index
-		System.out.println("FIELDS BY INDEX:");
-		for (int i=1; i<=8; i++) {
-
-			rs.next();
-
-			assertEquals(rs.getShort(1),i);
-			assertEquals(rs.getInt(1),i);
-			assertEquals(rs.getLong(1),i);
-			assertEquals(rs.getString(2),"testchar"+i+
-					"                               ");
-			assertEquals(rs.getString(3),"testvarchar"+i);
-
-			datevar=rs.getDate(4);
-			cal.setTime(datevar);
-			assertEquals(cal.get(Calendar.YEAR),2000+i);
-			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
-			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
-			assertEquals(cal.get(Calendar.HOUR_OF_DAY),0);
-			assertEquals(cal.get(Calendar.MINUTE),0);
-			assertEquals(cal.get(Calendar.SECOND),0);
-
-			tsvar=rs.getTimestamp(4);
-			cal.setTime(tsvar);
-			assertEquals(cal.get(Calendar.YEAR),2000+i);
-			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
-			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
-			assertEquals(cal.get(Calendar.HOUR_OF_DAY),0);
-			assertEquals(cal.get(Calendar.MINUTE),0);
-			assertEquals(cal.get(Calendar.SECOND),0);
-
-			assertEquals(rs.getString(5),"testlong"+i);
-			assertEquals(rs.getString(6),"testclob"+i);
-
-			// oracle jdbc can't convert a blob
-			// directly to a string
-			Blob	bl=rs.getBlob(7);
-			byte[]	b=null;
-			if (issqlrelay) {
-				// SerialBlob doesn't like a length of 0.
-				//
-				// Oracle jdbc returns its own Blob
-				// implementation that's tolerant to this.
-				//
-				// For now we're not implementing our own Blob.
-				if (bl.length()==0) {
-					b=new byte[0];
-				} else {
-					b=bl.getBytes(1,(int)bl.length());
-				}
-			} else {
-				b=bl.getBytes(1,(int)bl.length());
-			}
-			// the blob in the first row is empty on purpose
-			assertEquals(new String(b,"UTF-8"),
-						(i==1)?"":"testblob"+i);
-
-			System.out.println();
-		}
-		rs.close();
-		System.out.println();
-
-
-		// fields by name
-		System.out.println("FIELDS BY NAME:");
-		rs=stmt.executeQuery(
-			"select "+
-			"	* "+
-			"from "+
-			"	testtable "+
-			"order by "+
-			"	testnumber");
-		assertTrue((rs!=null));
-		System.out.println();
-
-		for (int i=1; i<=8; i++) {
-
-			rs.next();
-
-			assertEquals(rs.getShort("TESTNUMBER"),i);
-			assertEquals(rs.getInt("TESTNUMBER"),i);
-			assertEquals(rs.getLong("TESTNUMBER"),i);
-			assertEquals(rs.getString("TESTCHAR"),"testchar"+i+
-					"                               ");
-			assertEquals(rs.getString("TESTVARCHAR"),
-							"testvarchar"+i);
-
-			datevar=rs.getDate("TESTDATE");
-			cal.setTime(datevar);
-			assertEquals(cal.get(Calendar.YEAR),2000+i);
-			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
-			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
-			assertEquals(cal.get(Calendar.HOUR_OF_DAY),0);
-			assertEquals(cal.get(Calendar.MINUTE),0);
-			assertEquals(cal.get(Calendar.SECOND),0);
-
-			tsvar=rs.getTimestamp("TESTDATE");
-			cal.setTime(tsvar);
-			assertEquals(cal.get(Calendar.YEAR),2000+i);
-			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
-			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
-			assertEquals(cal.get(Calendar.HOUR_OF_DAY),0);
-			assertEquals(cal.get(Calendar.MINUTE),0);
-			assertEquals(cal.get(Calendar.SECOND),0);
-
-			assertEquals(rs.getString("TESTLONG"),"testlong"+i);
-			assertEquals(rs.getString("TESTCLOB"),"testclob"+i);
-
-			// oracle jdbc can't convert a blob
-			// directly to a string
-			Blob	bl=rs.getBlob("TESTBLOB");
-			byte[]	b=null;
-			if (issqlrelay) {
-				// SerialBlob doesn't like a length of 0.
-				//
-				// Oracle jdbc returns its own Blob
-				// implementation that's tolerant to this.
-				//
-				// For now we're not implementing our own Blob.
-				if (bl.length()==0) {
-					b=new byte[0];
-				} else {
-					b=bl.getBytes(1,(int)bl.length());
-				}
-			} else {
-				b=bl.getBytes(1,(int)bl.length());
-			}
-			// the blob in the first row is empty on purpose
-			assertEquals(new String(b,"UTF-8"),
-						(i==1)?"":"testblob"+i);
-
-			System.out.println();
-		}
-		System.out.println();
-
-
-		// row count
-		System.out.println("ROW COUNT:");
-		assertEquals(rs.getRow(),8);
-		rs.close();
-		System.out.println();
-
-
-		// output bind
-		System.out.println("OUTPUT BIND:");
-		cstmt=con.prepareCall("begin :var1:='hello'; end;");
-		cstmt.registerOutParameter("var1",Types.VARCHAR);
-		assertFalse(cstmt.execute());
-		assertEquals(cstmt.getString("var1"),"hello");
-		cstmt.close();
-		System.out.println();
-
-
-		// FIXME: result set buffer size
-
-
-		// commit
-		// FIXME: ...and rollback, setsavepoint, and releasesavepoint
-		System.out.println("COMMIT AND ROLLBACK:");
-		Connection	secondcon=DriverManager.getConnection(
-							url,user,password);
-		assertTrue((secondcon!=null));
-		Statement	secondstmt=secondcon.createStatement();
-		assertTrue((secondstmt!=null));
-		ResultSet	secondrs=secondstmt.executeQuery(
-			"select "+
-			"	count(*) "+
-			"from "+
-			"	testtable ");
-		assertTrue((secondrs!=null));
-		secondrs.next();
-		assertEquals(secondrs.getString(1),"0");
-		secondrs.close();
-		con.commit();
-		secondrs=secondstmt.executeQuery(
-			"select "+
-			"	count(*) "+
-			"from "+
-			"	testtable ");
-		assertTrue((secondrs!=null));
-		secondrs.next();
-		assertEquals(secondrs.getString(1),"8");
-		con.setAutoCommit(true);
-		secondrs.close();
-		assertEquals(stmt.executeUpdate(
-			"insert into "+
-			"	testtable "+
-			"values ("+
-			"	10, "+
-			"	'testchar10', "+
-			"	'testvarchar10', "+
-			"	'01-JAN-2010', "+
-			"	'testlong10', "+
-			"	'testclob10', "+
-			"	NULL)"),1);
-		secondrs=secondstmt.executeQuery(
-			"select "+
-			"	count(*) "+
-			"from "+
-			"	testtable ");
-		assertTrue((secondrs!=null));
-		secondrs.next();
-		assertEquals(secondrs.getString(1),"9");
-		secondrs.close();
-		secondstmt.close();
-		secondcon.close();
-		con.setAutoCommit(false);
-		System.out.println();
-
-
 		// clob and blob output bind
 		System.out.println("CLOB AND BLOB OUTPUT BIND:");
 		try {
@@ -3192,7 +3442,6 @@ if (false) {
 		rs.next();
 		assertEquals(rs.getString(1),null);
 		assertEquals(rs.getString(2),null);
-		// oracle jdbc can't getString() on a blob
 		assertTrue((rs.getBlob(3)==null));
 		assertTrue((rs.getBlob(4)==null));
 		rs.close();
@@ -3588,6 +3837,7 @@ if (false) {
 		// FIXME: need tests for Connection methods...
 		// nativeSQL
 		//
+		// not supported:
 		// createArrayOf
 		// createNClob
 		// createSQLXML
@@ -3595,14 +3845,9 @@ if (false) {
 
 
 		// FIXME: need tests for Statement methods...
-                // execute/getResultSet
-                // execute/getUpdateCount
-		//
 		// addBatch
                 // clearBatch
                 // executeBatch
-		//
-                // cancel
 		//
                 // getWarnings
                 // clearWarning
@@ -3614,8 +3859,6 @@ if (false) {
 		//
                 // setFetchSize
                 // getFetchSize
-		//
-                // getGeneratedKeys
 		//
                 // setMaxFieldSize
                 // getMaxFieldSize
@@ -3638,6 +3881,10 @@ if (false) {
                 // setCursorName
 		//
                 // setEscapeProcessing
+		//
+		// not supported:
+		// cancel
+		// getGeneratedKeys
 
 
 		// FIXME: need tests for PreparedStatement methods...
@@ -3649,7 +3896,6 @@ if (false) {
                 // getMetaData
                 // getParameterMetaData
 		//
-                // setArray
                 // setAsciiStream
                 // setBigDecimal
                 // setBinaryStream
@@ -3663,15 +3909,19 @@ if (false) {
                 // setNClob
                 // setNString
                 // setNull
-                // setObject
-                // setRef
-                // setRowId
                 // setShort
-                // setSQLXML
                 // setTime
                 // setTimestamp
                 // setUnicodeStream
                 // setURL
+		//
+		// not supported:
+		// setArray
+		// setObject
+		// setRef
+		// setRowId
+		// setSQLXML
+
 
 		// FIXME: need tests for CallableStatement methods...
                 // getArray
@@ -3680,7 +3930,6 @@ if (false) {
                 // getBoolean
                 // getByte
                 // getCharacterStream
-                // getClob
                 // getFloat
                 // getLong
                 // getNCharacterStream
@@ -3709,13 +3958,15 @@ if (false) {
                 // setNClob
                 // setNString
                 // setNull
-                // setObject
                 // setRowId
                 // setSQLXML
                 // setShort
                 // setTime
                 // setTimestamp
                 // setURL
+		//
+		// not supported:
+		// setObject
 
 
 		// FIXME: need tests for Parameter class...
@@ -3748,7 +3999,6 @@ if (false) {
                 // beforeFirst
 		//
                 // moveToCurrentRow
-                // moveToInsertRow
 		//
                 // isAfterLast
                 // isBeforeFirst
@@ -3756,11 +4006,7 @@ if (false) {
                 // isFirst
                 // isLast
 		//
-                // cancelRowUpdates
-		//
                 // clearWarnings
-		//
-                // deleteRow
 		//
                 // findColumn
 		//
@@ -3772,60 +4018,52 @@ if (false) {
                 // getFloat
 		//
                 // getTime
-                // getTimestamp
 		//
-                // getAsciiStream
-                // getBinaryStream
-                // getCharacterStream
-                // getNCharacterStream
-                // getUnicodeStream
-                // getBytes
-                // getNClob
-                // getNString
-		//
-                // getRef
-                // getRowId
-                // getArray
                 // getSQLXML
-                // getURL
 		//
-                // insertRow
-                // refreshRow
+		// not supported:
+		// moveToInsertRow
+		// cancelRowUpdates
+		// deleteRow
+		// getRef
+		// getRowId
+		// getArray
 		//
-                // rowDeleted
-                // rowInserted
-                // rowUpdated
+		// insertRow
+		// refreshRow
 		//
-                // updateArray
-                // updateAsciiStream
-                // updateBigDecimal
-                // updateBinaryStream
-                // updateBlob
-                // updateBoolean
-                // updateByte
-                // updateBytes
-                // updateCharacterStream
-                // updateClob
-                // updateDate
-                // updateDouble
-                // updateFloat
-                // updateInt
-                // updateLong
-                // updateNCharacterStream
-                // updateNClob
-                // updateNString
-                // updateNull
-                // updateObject
-                // updateRef
-                // updateRow
-                // updateRowId
-                // updateShort
-                // updateSQLXML
-                // updateString
-                // updateTime
-                // updateTimestamp
+		// rowDeleted
+		// rowInserted
+		// rowUpdated
 		//
-                // wasNull
+		// updateArray
+		// updateAsciiStream
+		// updateBigDecimal
+		// updateBinaryStream
+		// updateBlob
+		// updateBoolean
+		// updateByte
+		// updateBytes
+		// updateCharacterStream
+		// updateClob
+		// updateDate
+		// updateDouble
+		// updateFloat
+		// updateInt
+		// updateLong
+		// updateNCharacterStream
+		// updateNClob
+		// updateNString
+		// updateNull
+		// updateObject
+		// updateRef
+		// updateRow
+		// updateRowId
+		// updateShort
+		// updateSQLXML
+		// updateString
+		// updateTime
+		// updateTimestamp
 
 
 		// FIXME: need tests for ResultSetMetaData methods...

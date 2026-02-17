@@ -197,43 +197,6 @@ def main():
 	print()
 
 
-	# output bind by position
-	print("OUTPUT BIND BY POSITION: ")
-	cur.prepareQuery(
-		"begin "
-		"	:numvar:=1; "
-		"	:stringvar:='hello'; "
-		"	:floatvar:=2.5; "
-		"end;")
-	cur.defineOutputBindInteger("1")
-	cur.defineOutputBindString("2",10)
-	cur.defineOutputBindDouble("3")
-	assertTrue(cur.executeQuery())
-	numvar=cur.getOutputBindInteger("1")
-	stringvar=cur.getOutputBindString("2")
-	floatvar=cur.getOutputBindDouble("3")
-	assertEqual(numvar,1)
-	assertEqual(stringvar,'hello')
-	assertEqual(floatvar,2.5)
-	print()
-
-
-	# output bind by name
-	print("OUTPUT BIND BY NAME: ")
-	cur.clearBinds()
-	cur.defineOutputBindInteger("numvar")
-	cur.defineOutputBindString("stringvar",10)
-	cur.defineOutputBindDouble("floatvar")
-	assertTrue(cur.executeQuery())
-	numvar=cur.getOutputBindInteger("numvar")
-	stringvar=cur.getOutputBindString("stringvar")
-	floatvar=cur.getOutputBindDouble("floatvar")
-	assertEqual(numvar,1)
-	assertEqual(stringvar,'hello')
-	assertEqual(floatvar,2.5)
-	print()
-
-
 	# output bind by name with validation
 	print("OUTPUT BIND BY NAME WITH VALIDATION: ")
 	cur.clearBinds()
@@ -889,6 +852,43 @@ def main():
 	assertEqual(rows[5][2],"testvarchar6")
 	assertEqual(rows[5][3],"01-JAN-06")
 	assertEqual(rows[5][4],"testlong6")
+	print()
+
+
+	# output bind by position
+	print("OUTPUT BIND BY POSITION: ")
+	cur.prepareQuery(
+		"begin "
+		"	:numvar:=1; "
+		"	:stringvar:='hello'; "
+		"	:floatvar:=2.5; "
+		"end;")
+	cur.defineOutputBindInteger("1")
+	cur.defineOutputBindString("2",10)
+	cur.defineOutputBindDouble("3")
+	assertTrue(cur.executeQuery())
+	numvar=cur.getOutputBindInteger("1")
+	stringvar=cur.getOutputBindString("2")
+	floatvar=cur.getOutputBindDouble("3")
+	assertEqual(numvar,1)
+	assertEqual(stringvar,'hello')
+	assertEqual(floatvar,2.5)
+	print()
+
+
+	# output bind by name
+	print("OUTPUT BIND BY NAME: ")
+	cur.clearBinds()
+	cur.defineOutputBindInteger("numvar")
+	cur.defineOutputBindString("stringvar",10)
+	cur.defineOutputBindDouble("floatvar")
+	assertTrue(cur.executeQuery())
+	numvar=cur.getOutputBindInteger("numvar")
+	stringvar=cur.getOutputBindString("stringvar")
+	floatvar=cur.getOutputBindDouble("floatvar")
+	assertEqual(numvar,1)
+	assertEqual(stringvar,'hello')
+	assertEqual(floatvar,2.5)
 	print()
 
 

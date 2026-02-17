@@ -1078,6 +1078,16 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_endOfResultSe
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    nextResultSet
+ * Signature: ()Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_nextResultSet
+  (JNIEnv *env, jobject self) {
+	return (getSqlrCursor(env,self)->nextResultSet())?JNI_TRUE:JNI_FALSE;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
  * Method:    errorMessage
  * Signature: ()Ljava/lang/String;
  */

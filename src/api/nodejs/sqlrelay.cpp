@@ -241,6 +241,7 @@ class SQLRCursor : public ObjectWrap {
 		static RET	defineOutputBindString(const ARGS &args);
 		static RET	defineOutputBindInteger(const ARGS &args);
 		static RET	defineOutputBindDouble(const ARGS &args);
+		static RET	defineOutputBindDate(const ARGS &args);
 		static RET	defineOutputBindBlob(const ARGS &args);
 		static RET	defineOutputBindClob(const ARGS &args);
 		static RET	defineOutputBindCursor(const ARGS &args);
@@ -257,6 +258,15 @@ class SQLRCursor : public ObjectWrap {
 		static RET	getOutputBindClob(const ARGS &args);
 		static RET	getOutputBindLength(const ARGS &args);
 		static RET	getOutputBindCursor(const ARGS &args);
+		static RET	getOutputBindDateYear(const ARGS &args);
+		static RET	getOutputBindDateMonth(const ARGS &args);
+		static RET	getOutputBindDateDay(const ARGS &args);
+		static RET	getOutputBindDateHour(const ARGS &args);
+		static RET	getOutputBindDateMinute(const ARGS &args);
+		static RET	getOutputBindDateSecond(const ARGS &args);
+		static RET	getOutputBindDateMicrosecond(const ARGS &args);
+		static RET	getOutputBindDateTz(const ARGS &args);
+		static RET	getOutputBindDateIsNegative(const ARGS &args);
 		static RET	openCachedResultSet(const ARGS &args);
 		static RET	colCount(const ARGS &args);
 		static RET	rowCount(const ARGS &args);
@@ -264,6 +274,7 @@ class SQLRCursor : public ObjectWrap {
 		static RET	affectedRows(const ARGS &args);
 		static RET	firstRowIndex(const ARGS &args);
 		static RET	endOfResultSet(const ARGS &args);
+		static RET	nextResultSet(const ARGS &args);
 		static RET	errorMessage(const ARGS &args);
 		static RET	errorNumber(const ARGS &args);
 		static RET	getNullsAsEmptyStrings(const ARGS &args);
@@ -996,6 +1007,8 @@ void SQLRCursor::Init(Handle<Object> exports) {
 						defineOutputBindInteger);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"defineOutputBindDouble",
 						defineOutputBindDouble);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"defineOutputBindDate",
+						defineOutputBindDate);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"defineOutputBindBlob",
 						defineOutputBindBlob);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"defineOutputBindClob",
@@ -1023,6 +1036,24 @@ void SQLRCursor::Init(Handle<Object> exports) {
 						getOutputBindLength);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getOutputBindCursor",
 						getOutputBindCursor);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getOutputBindDateYear",
+						getOutputBindDateYear);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getOutputBindDateMonth",
+						getOutputBindDateMonth);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getOutputBindDateDay",
+						getOutputBindDateDay);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getOutputBindDateHour",
+						getOutputBindDateHour);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getOutputBindDateMinute",
+						getOutputBindDateMinute);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getOutputBindDateSecond",
+						getOutputBindDateSecond);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getOutputBindDateMicrosecond",
+						getOutputBindDateMicrosecond);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getOutputBindDateTz",
+						getOutputBindDateTz);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getOutputBindDateIsNegative",
+						getOutputBindDateIsNegative);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"openCachedResultSet",
 						openCachedResultSet);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"colCount",colCount);
@@ -1031,6 +1062,7 @@ void SQLRCursor::Init(Handle<Object> exports) {
 	NODE_SET_PROTOTYPE_METHOD(tpl,"affectedRows",affectedRows);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"firstRowIndex",firstRowIndex);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"endOfResultSet",endOfResultSet);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"nextResultSet",nextResultSet);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"errorMessage",errorMessage);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"errorNumber",errorNumber);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getNullsAsEmptyStrings",
@@ -1508,7 +1540,7 @@ RET SQLRCursor::inputBind(const ARGS &args) {
 						toUint32(args[2]),
 						toUint32(args[3]));
 
-	} else if (args.Length()==9) {
+	} else if (args.Length()==10) {
 
 		// date
 		sqlrcur(args)->inputBind(toString(args[0]),
@@ -1697,6 +1729,17 @@ RET SQLRCursor::defineOutputBindDouble(const ARGS &args) {
 	returnVoid();
 }
 
+RET SQLRCursor::defineOutputBindDate(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,1);
+
+	sqlrcur(args)->defineOutputBindDate(toString(args[0]));
+
+	returnVoid();
+}
+
 RET SQLRCursor::defineOutputBindBlob(const ARGS &args) {
 
 	initLocalScope();
@@ -1880,6 +1923,114 @@ RET SQLRCursor::getOutputBindCursor(const ARGS &args) {
 	returnObject(args.This());
 }
 
+RET SQLRCursor::getOutputBindDateYear(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,1);
+
+	int16_t	result=sqlrcur(args)->getOutputBindDateYear(
+						toString(args[0]));
+
+	returnInteger(result);
+}
+
+RET SQLRCursor::getOutputBindDateMonth(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,1);
+
+	int16_t	result=sqlrcur(args)->getOutputBindDateMonth(
+						toString(args[0]));
+
+	returnInteger(result);
+}
+
+RET SQLRCursor::getOutputBindDateDay(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,1);
+
+	int16_t	result=sqlrcur(args)->getOutputBindDateDay(
+						toString(args[0]));
+
+	returnInteger(result);
+}
+
+RET SQLRCursor::getOutputBindDateHour(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,1);
+
+	int16_t	result=sqlrcur(args)->getOutputBindDateHour(
+						toString(args[0]));
+
+	returnInteger(result);
+}
+
+RET SQLRCursor::getOutputBindDateMinute(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,1);
+
+	int16_t	result=sqlrcur(args)->getOutputBindDateMinute(
+						toString(args[0]));
+
+	returnInteger(result);
+}
+
+RET SQLRCursor::getOutputBindDateSecond(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,1);
+
+	int16_t	result=sqlrcur(args)->getOutputBindDateSecond(
+						toString(args[0]));
+
+	returnInteger(result);
+}
+
+RET SQLRCursor::getOutputBindDateMicrosecond(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,1);
+
+	int32_t	result=sqlrcur(args)->getOutputBindDateMicrosecond(
+						toString(args[0]));
+
+	returnInt32(result);
+}
+
+RET SQLRCursor::getOutputBindDateTz(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,1);
+
+	const char	*result=sqlrcur(args)->getOutputBindDateTz(
+						toString(args[0]));
+
+	returnString(result);
+}
+
+RET SQLRCursor::getOutputBindDateIsNegative(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,1);
+
+	bool	result=sqlrcur(args)->getOutputBindDateIsNegative(
+						toString(args[0]));
+
+	returnBoolean(result);
+}
+
 RET SQLRCursor::openCachedResultSet(const ARGS &args) {
 
 	initLocalScope();
@@ -1954,6 +2105,17 @@ RET SQLRCursor::endOfResultSet(const ARGS &args) {
 	checkArgCount(args,0);
 
 	bool	result=sqlrcur(args)->endOfResultSet();
+
+	returnBoolean(result);
+}
+
+RET SQLRCursor::nextResultSet(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,0);
+
+	bool	result=sqlrcur(args)->nextResultSet();
 
 	returnBoolean(result);
 }

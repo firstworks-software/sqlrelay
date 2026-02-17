@@ -307,8 +307,6 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 	public
 	SQLRelayConnection getConnection() throws SQLException {
-		//drv.debugFunction(this);
-		//drv.debugEnd();
 		return conn;
 	}
 

@@ -542,6 +542,51 @@ int sqlrcur_getOutputBindDate(sqlrcur sqlrcurref, const char *variable,
 	return retval;
 }
 
+int16_t sqlrcur_getOutputBindDateYear(sqlrcur sqlrcurref,
+					const char *variable) {
+	return sqlrcurref->getOutputBindDateYear(variable);
+}
+
+int16_t sqlrcur_getOutputBindDateMonth(sqlrcur sqlrcurref,
+					const char *variable) {
+	return sqlrcurref->getOutputBindDateMonth(variable);
+}
+
+int16_t sqlrcur_getOutputBindDateDay(sqlrcur sqlrcurref,
+					const char *variable) {
+	return sqlrcurref->getOutputBindDateDay(variable);
+}
+
+int16_t sqlrcur_getOutputBindDateHour(sqlrcur sqlrcurref,
+					const char *variable) {
+	return sqlrcurref->getOutputBindDateHour(variable);
+}
+
+int16_t sqlrcur_getOutputBindDateMinute(sqlrcur sqlrcurref,
+					const char *variable) {
+	return sqlrcurref->getOutputBindDateMinute(variable);
+}
+
+int16_t sqlrcur_getOutputBindDateSecond(sqlrcur sqlrcurref,
+					const char *variable) {
+	return sqlrcurref->getOutputBindDateSecond(variable);
+}
+
+int32_t sqlrcur_getOutputBindDateMicrosecond(sqlrcur sqlrcurref,
+						const char *variable) {
+	return sqlrcurref->getOutputBindDateMicrosecond(variable);
+}
+
+const char *sqlrcur_getOutputBindDateTz(sqlrcur sqlrcurref,
+					const char *variable) {
+	return sqlrcurref->getOutputBindDateTz(variable);
+}
+
+int sqlrcur_getOutputBindDateIsNegative(sqlrcur sqlrcurref,
+					const char *variable) {
+	return sqlrcurref->getOutputBindDateIsNegative(variable);
+}
+
 uint32_t sqlrcur_getOutputBindLength(sqlrcur sqlrcurref, const char *variable) {
 	return sqlrcurref->getOutputBindLength(variable);
 }
@@ -581,6 +626,10 @@ uint64_t sqlrcur_firstRowIndex(sqlrcur sqlrcurref) {
 
 int sqlrcur_endOfResultSet(sqlrcur sqlrcurref) {
 	return sqlrcurref->endOfResultSet();
+}
+
+int sqlrcur_nextResultSet(sqlrcur sqlrcurref) {
+	return sqlrcurref->nextResultSet();
 }
 
 const char *sqlrcur_errorMessage(sqlrcur sqlrcurref) {

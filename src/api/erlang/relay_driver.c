@@ -585,12 +585,34 @@ int main() {
 			}
 		}
 		
+		if (strcmp("serverVersion", command) == TRUE) {
+			// check number of arguments
+		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
+
+			// encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_string(&result, sqlrcon_serverVersion(con))) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
+
+		if (strcmp("clientVersion", command) == TRUE) {
+			// check number of arguments
+		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
+
+			// encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_string(&result, sqlrcon_clientVersion(con))) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
+
 		if (strcmp("bindFormat", command) == TRUE) {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// encode result 
-			if (ei_x_encode_atom(&result, "ok") || 
+			// encode result
+			if (ei_x_encode_atom(&result, "ok") ||
 				ei_x_encode_string(&result, sqlrcon_bindFormat(con))) {
 				return ERR_ENCODING_ARGS;
 			}
@@ -1356,6 +1378,61 @@ int main() {
 			ENCODE_VOID;
 		}
 
+		if (strcmp("inputBindDate", command) == TRUE) {
+			char variable[2000];
+			long year;
+			long month;
+			long day;
+			long hour;
+			long minute;
+			long second;
+			long microsecond;
+			char tz[2000];
+			long isnegative;
+
+			// check number of arguments
+		    	if (arity != 10) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_string(buf, &index, &variable[0])) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &year)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &month)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &day)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &hour)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &minute)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &second)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &microsecond)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &tz[0])) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &isnegative)) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// call function and encode result
+			sqlrcur_inputBindDate(cur, variable,
+				year, month, day,
+				hour, minute, second,
+				microsecond, tz, isnegative);
+			ENCODE_VOID;
+		}
+
 		if (strcmp("defineOutputBindString", command) == TRUE) {
 			char variable[2000];
 			long length;
@@ -1408,6 +1485,22 @@ int main() {
 			ENCODE_VOID;
 		}
 
+		if (strcmp("defineOutputBindDate", command) == TRUE) {
+			char variable[2000];
+
+			// check number of arguments
+		    	if (arity != 1) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_string(buf, &index, &variable[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// call function and encode result
+			sqlrcur_defineOutputBindDate(cur, variable);
+			ENCODE_VOID;
+		}
+
 		if (strcmp("defineOutputBindBlob", command) == TRUE) {
 			char variable[2000];
 
@@ -1415,12 +1508,12 @@ int main() {
 		    	if (arity != 1) return ERR_NUMBER_OF_ARGS;
 
 			// get input parameters
-			if (ei_decode_string(buf, &index, &variable[0])) { 
+			if (ei_decode_string(buf, &index, &variable[0])) {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
-			sqlrcur_defineOutputBindBlob(cur, variable); 	
+			// call function and encode result
+			sqlrcur_defineOutputBindBlob(cur, variable);
 			ENCODE_VOID;
 		}
 
@@ -1604,13 +1697,175 @@ int main() {
 		    	if (arity != 1) return ERR_NUMBER_OF_ARGS;
 
 			// get input parameters
-			if (ei_decode_string(buf, &index, &variable[0])) { 
+			if (ei_decode_string(buf, &index, &variable[0])) {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
-			if (ei_x_encode_atom(&result, "ok") || 
+			// call function and encode result
+			if (ei_x_encode_atom(&result, "ok") ||
 				ei_x_encode_long(&result, sqlrcur_getOutputBindLength(cur, variable) )) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
+
+		if (strcmp("getOutputBindDateYear", command) == TRUE) {
+			char variable[2000];
+
+			// check number of arguments
+		    	if (arity != 1) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_string(buf, &index, &variable[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// call function and encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_long(&result, sqlrcur_getOutputBindDateYear(cur, variable) )) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
+
+		if (strcmp("getOutputBindDateMonth", command) == TRUE) {
+			char variable[2000];
+
+			// check number of arguments
+		    	if (arity != 1) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_string(buf, &index, &variable[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// call function and encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_long(&result, sqlrcur_getOutputBindDateMonth(cur, variable) )) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
+
+		if (strcmp("getOutputBindDateDay", command) == TRUE) {
+			char variable[2000];
+
+			// check number of arguments
+		    	if (arity != 1) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_string(buf, &index, &variable[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// call function and encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_long(&result, sqlrcur_getOutputBindDateDay(cur, variable) )) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
+
+		if (strcmp("getOutputBindDateHour", command) == TRUE) {
+			char variable[2000];
+
+			// check number of arguments
+		    	if (arity != 1) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_string(buf, &index, &variable[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// call function and encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_long(&result, sqlrcur_getOutputBindDateHour(cur, variable) )) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
+
+		if (strcmp("getOutputBindDateMinute", command) == TRUE) {
+			char variable[2000];
+
+			// check number of arguments
+		    	if (arity != 1) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_string(buf, &index, &variable[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// call function and encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_long(&result, sqlrcur_getOutputBindDateMinute(cur, variable) )) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
+
+		if (strcmp("getOutputBindDateSecond", command) == TRUE) {
+			char variable[2000];
+
+			// check number of arguments
+		    	if (arity != 1) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_string(buf, &index, &variable[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// call function and encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_long(&result, sqlrcur_getOutputBindDateSecond(cur, variable) )) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
+
+		if (strcmp("getOutputBindDateMicrosecond", command) == TRUE) {
+			char variable[2000];
+
+			// check number of arguments
+		    	if (arity != 1) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_string(buf, &index, &variable[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// call function and encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_long(&result, sqlrcur_getOutputBindDateMicrosecond(cur, variable) )) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
+
+		if (strcmp("getOutputBindDateTz", command) == TRUE) {
+			char variable[2000];
+
+			// check number of arguments
+		    	if (arity != 1) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_string(buf, &index, &variable[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// call function and encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_string(&result, sqlrcur_getOutputBindDateTz(cur, variable) )) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
+
+		if (strcmp("getOutputBindDateIsNegative", command) == TRUE) {
+			char variable[2000];
+
+			// check number of arguments
+		    	if (arity != 1) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_string(buf, &index, &variable[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// call function and encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_long(&result, sqlrcur_getOutputBindDateIsNegative(cur, variable) )) {
 				return ERR_ENCODING_ARGS;
 			}
 		}
@@ -1692,9 +1947,20 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
-			if (ei_x_encode_atom(&result, "ok") || 
+			// call function and encode result
+			if (ei_x_encode_atom(&result, "ok") ||
 				ei_x_encode_long(&result, sqlrcur_endOfResultSet(cur) )) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
+
+		if (strcmp("nextResultSet", command) == TRUE) {
+			// check number of arguments
+		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
+
+			// call function and encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_long(&result, sqlrcur_nextResultSet(cur) )) {
 				return ERR_ENCODING_ARGS;
 			}
 		}

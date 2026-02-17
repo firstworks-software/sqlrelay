@@ -215,70 +215,6 @@ assertEqual(cur.executeQuery(),1);
 console.log();
 
 
-// output bind by position
-console.log("OUTPUT BIND BY POSITION: ");
-cur.prepareQuery(
-	"begin "+
-	"	:numvar:=1; "+
-	"	:stringvar:='hello'; "+
-	"	:floatvar:=2.5; "+
-	"	:nullvar:=null; "+
-	"end;");
-cur.defineOutputBindInteger("1");
-cur.defineOutputBindString("2",10);
-cur.defineOutputBindDouble("3");
-cur.defineOutputBindString("4",10);
-assertEqual(cur.executeQuery(),1);
-numvar=cur.getOutputBindInteger("1");
-stringvar=cur.getOutputBindString("2");
-floatvar=cur.getOutputBindDouble("3");
-assertEqual(numvar,1);
-assertEqual(stringvar,"hello");
-assertEqual(floatvar,2.5);
-assertEqual(cur.getOutputBindString("4"),"");
-console.log();
-
-
-// output bind by name
-console.log("OUTPUT BIND BY NAME: ");
-cur.clearBinds();
-cur.defineOutputBindInteger("numvar");
-cur.defineOutputBindString("stringvar",10);
-cur.defineOutputBindDouble("floatvar");
-cur.defineOutputBindString("nullvar",10);
-assertEqual(cur.executeQuery(),1);
-numvar=cur.getOutputBindInteger("numvar");
-stringvar=cur.getOutputBindString("stringvar");
-floatvar=cur.getOutputBindDouble("floatvar");
-assertEqual(numvar,1);
-assertEqual(stringvar,"hello");
-assertEqual(floatvar,2.5);
-assertEqual(
-	cur.getOutputBindString("nullvar"),"");
-console.log();
-
-
-// output bind by name with validation
-console.log("OUTPUT BIND BY NAME WITH VALIDATION: ");
-cur.clearBinds();
-cur.defineOutputBindInteger("numvar");
-cur.defineOutputBindString("stringvar",10);
-cur.defineOutputBindDouble("floatvar");
-cur.defineOutputBindString("nullvar",10);
-cur.defineOutputBindString("dummyvar",10);
-cur.validateBinds();
-assertEqual(cur.executeQuery(),1);
-numvar=cur.getOutputBindInteger("numvar");
-stringvar=cur.getOutputBindString("stringvar");
-floatvar=cur.getOutputBindDouble("floatvar");
-assertEqual(numvar,1);
-assertEqual(stringvar,"hello");
-assertEqual(floatvar,2.5);
-assertEqual(
-	cur.getOutputBindString("nullvar"),"");
-console.log();
-
-
 // select
 console.log("SELECT: ");
 assertEqual(cur.sendQuery("select * from testtable order by testnumber"),1);
@@ -574,7 +510,6 @@ assertEqual(cur.sendQuery("select null,1,null from dual"),1);
 assertEqual(cur.getField(0,0),"");
 assertEqual(cur.getField(0,1),"1");
 assertEqual(cur.getField(0,2),"");
-cur.getNullsAsNulls();
 console.log();
 
 
@@ -854,6 +789,70 @@ assertEqual(cur.sendQuery(
 assertEqual(secondcur.sendQuery("select count(*) from testtable"),1);
 assertEqual(secondcur.getField(0,0),"9");
 assertEqual(con.autoCommitOff(),1);
+console.log();
+
+
+// output bind by position
+console.log("OUTPUT BIND BY POSITION: ");
+cur.prepareQuery(
+	"begin "+
+	"	:numvar:=1; "+
+	"	:stringvar:='hello'; "+
+	"	:floatvar:=2.5; "+
+	"	:nullvar:=null; "+
+	"end;");
+cur.defineOutputBindInteger("1");
+cur.defineOutputBindString("2",10);
+cur.defineOutputBindDouble("3");
+cur.defineOutputBindString("4",10);
+assertEqual(cur.executeQuery(),1);
+numvar=cur.getOutputBindInteger("1");
+stringvar=cur.getOutputBindString("2");
+floatvar=cur.getOutputBindDouble("3");
+assertEqual(numvar,1);
+assertEqual(stringvar,"hello");
+assertEqual(floatvar,2.5);
+assertEqual(cur.getOutputBindString("4"),"");
+console.log();
+
+
+// output bind by name
+console.log("OUTPUT BIND BY NAME: ");
+cur.clearBinds();
+cur.defineOutputBindInteger("numvar");
+cur.defineOutputBindString("stringvar",10);
+cur.defineOutputBindDouble("floatvar");
+cur.defineOutputBindString("nullvar",10);
+assertEqual(cur.executeQuery(),1);
+numvar=cur.getOutputBindInteger("numvar");
+stringvar=cur.getOutputBindString("stringvar");
+floatvar=cur.getOutputBindDouble("floatvar");
+assertEqual(numvar,1);
+assertEqual(stringvar,"hello");
+assertEqual(floatvar,2.5);
+assertEqual(
+	cur.getOutputBindString("nullvar"),"");
+console.log();
+
+
+// output bind by name with validation
+console.log("OUTPUT BIND BY NAME WITH VALIDATION: ");
+cur.clearBinds();
+cur.defineOutputBindInteger("numvar");
+cur.defineOutputBindString("stringvar",10);
+cur.defineOutputBindDouble("floatvar");
+cur.defineOutputBindString("nullvar",10);
+cur.defineOutputBindString("dummyvar",10);
+cur.validateBinds();
+assertEqual(cur.executeQuery(),1);
+numvar=cur.getOutputBindInteger("numvar");
+stringvar=cur.getOutputBindString("stringvar");
+floatvar=cur.getOutputBindDouble("floatvar");
+assertEqual(numvar,1);
+assertEqual(stringvar,"hello");
+assertEqual(floatvar,2.5);
+assertEqual(
+	cur.getOutputBindString("nullvar"),"");
 console.log();
 
 

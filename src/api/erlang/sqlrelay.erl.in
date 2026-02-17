@@ -8,8 +8,8 @@
 -export([start/0, start/1, stop/0]).
 
 -export([alloc/7, connectionFree/0, cursorFree/0, setConnectTimeout/2, getConnectTimeoutSeconds/0, getConnectTimeoutMicroseconds/0, setResponseTimeout/2, getResponseTimeoutSeconds/0, getResponseTimeoutMicroseconds/0, setBindVariableDelimiters/1, getBindVariableDelimiterQuestionMarkSupported/0, getBindVariableDelimiterColonSupported/0, getBindVariableDelimiterAtSignSupported/0, getBindVariableDelimiterDollarSignSupported/0, enableKerberos/3, enableTls/7, disableEncryption/0, endSession/0, suspendSession/0, resumeSession/2]).
--export([ping/0, identify/0, dbVersion/0, dbHostName/0, dbIpAddress/0, bindFormat/0, nextvalFormat/0, connectionErrorMessage/0, connectionErrorNumber/0, errorMessage/0, errorNumber/0]).
--export([selectDatabase/1, getCurrentDatabase/0]).
+-export([ping/0, identify/0, dbVersion/0, dbHostName/0, dbIpAddress/0, serverVersion/0, clientVersion/0, bindFormat/0, nextvalFormat/0, connectionErrorMessage/0, connectionErrorNumber/0, errorMessage/0, errorNumber/0]).
+-export([selectDatabase/1, getCurrentDatabase/0, getLastInsertId/0]).
 -export([getConnectionPort/0, getConnectionSocket/0]).
 -export([autoCommitOn/0, autoCommitOff/0, beginTransaction/0, commit/0, rollback/0]).
 -export([setIsolationLevel/1, getIsolationLevel/0]).
@@ -19,21 +19,23 @@
 -export([dontGetColumnInfo/0, getColumnInfo/0]).
 -export([mixedCaseColumnNames/0, upperCaseColumnNames/0, lowerCaseColumnNames/0]).
 -export([cacheToFile/1, setCacheTtl/1, getCacheFileName/0, cacheOff/0]).
+-export([getDatabaseList/1, getTableList/1, getColumnList/2]).
 
 -export([sendQuery/1, sendQueryWithLength/2, sendFileQuery/2]).
 
 -export([prepareQuery/1, prepareQueryWithLength/2, prepareFileQuery/2]).
 -export([subString/2, subLong/2, subDouble/4]).
 -export([clearBinds/0, countBindVariables/0]).
--export([inputBindString/2, inputBindLong/2, inputBindDouble/4, inputBindBlob/3, inputBindClob/3 ]).
--export([defineOutputBindString/2, defineOutputBindInteger/1, defineOutputBindDouble/1, defineOutputBindBlob/1, defineOutputBindClob/1, defineOutputBindCursor/1]).
+-export([inputBindString/2, inputBindLong/2, inputBindDouble/4, inputBindDate/10, inputBindBlob/3, inputBindClob/3 ]).
+-export([defineOutputBindString/2, defineOutputBindInteger/1, defineOutputBindDouble/1, defineOutputBindDate/1, defineOutputBindBlob/1, defineOutputBindClob/1, defineOutputBindCursor/1]).
 -export([validateBinds/0, validBind/1]).
 -export([executeQuery/0]).
 -export([fetchFromBindCursor/0]).
 -export([getOutputBindString/1, getOutputBindInteger/1, getOutputBindDouble/1, getOutputBindBlob/1, getOutputBindClob/1, getOutputBindCursor/1, getOutputBindLength/1]).
+-export([getOutputBindDateYear/1, getOutputBindDateMonth/1, getOutputBindDateDay/1, getOutputBindDateHour/1, getOutputBindDateMinute/1, getOutputBindDateSecond/1, getOutputBindDateMicrosecond/1, getOutputBindDateTz/1, getOutputBindDateIsNegative/1]).
 -export([openCachedResultSet/1]).
 -export([colCount/0, rowCount/0, totalRows/0, affectedRows/0]).
--export([firstRowIndex/0, endOfResultSet/0]).
+-export([firstRowIndex/0, endOfResultSet/0, nextResultSet/0]).
 -export([getNullsAsEmptyStrings/0, getNullsAsNulls/0]).
 -export([getFieldByIndex/2, getFieldByName/2]).
 -export([getFieldAsIntegerByIndex/2, getFieldAsIntegerByName/2]).
@@ -192,6 +194,12 @@ dbHostName() -> call_port({dbHostName}).
 %% @doc Returns the ip address of the database.
 dbIpAddress() -> call_port({dbIpAddress}).
 
+%% @doc Returns the version of the sqlrelay server software.
+serverVersion() -> call_port({serverVersion}).
+
+%% @doc Returns the version of the sqlrelay client software.
+clientVersion() -> call_port({clientVersion}).
+
 %% @doc Returns a string representing the format of the bind variables used in the db.
 bindFormat() -> call_port({bindFormat}).
 
@@ -203,6 +211,9 @@ selectDatabase(Database) when is_list(Database) -> call_port({selectDatabase, Da
 
 %% @doc Returns the database/schema that is currently in use.
 getCurrentDatabase() -> call_port({getCurrentDatabase}).
+
+%% @doc Returns the value of the autoincrement column for the last insert.
+getLastInsertId() -> call_port({getLastInsertId}).
 
 %% @doc Instructs the database to perform a commit after every successful query.
 autoCommitOn() -> call_port({autoCommitOn}).
@@ -276,6 +287,21 @@ getCacheFileName() ->  call_port({getCacheFileName}).
 %% @doc Sets query caching off.
 cacheOff() ->  call_port({cacheOff}).
 
+%% @doc Sends a query that returns a list of databases/schemas matching "wild".  If wild is empty or nil then a list of all databases/schemas will be returned.
+getDatabaseList(Wild) when is_list(Wild) ->
+	put("cursor", "true"),
+	call_port({getDatabaseList, Wild}).
+
+%% @doc Sends a query that returns a list of tables matching "wild".  If wild is empty or nil then a list of all tables will be returned.
+getTableList(Wild) when is_list(Wild) ->
+	put("cursor", "true"),
+	call_port({getTableList, Wild}).
+
+%% @doc Sends a query that returns a list of columns in the table specified by the "table" parameter matching "wild".  If wild is empty or nil then a list of all columns will be returned.
+getColumnList(Table, Wild) when is_list(Table), is_list(Wild) ->
+	put("cursor", "true"),
+	call_port({getColumnList, Table, Wild}).
+
 %% @doc Sends "query" directly and gets a result set.
 sendQuery(Query) when is_list(Query) -> 
 	put("cursor", "true"),
@@ -334,8 +360,13 @@ inputBindDouble(Variable, Value, Precision, Scale)
 	when is_list(Variable), is_float(Value), is_integer(Precision), is_integer(Scale) ->
 	call_port({inputBindDouble, Variable, Value, Precision, Scale}).  
 
+%% @doc Defines a date input bind variable.
+inputBindDate(Variable, Year, Month, Day, Hour, Minute, Second, Microsecond, Tz, Isnegative)
+	when is_list(Variable), is_integer(Year), is_integer(Month), is_integer(Day), is_integer(Hour), is_integer(Minute), is_integer(Second), is_integer(Microsecond), is_list(Tz), is_integer(Isnegative) ->
+	call_port({inputBindDate, Variable, Year, Month, Day, Hour, Minute, Second, Microsecond, Tz, Isnegative}).
+
 %% @doc Defines a binary lob input bind variable.
-inputBindBlob(Variable, Value, Size) 
+inputBindBlob(Variable, Value, Size)
 	when is_list(Variable), is_list(Value), is_integer(Size) ->
 	call_port({inputBindBlob, Variable, Value, Size}).  
 
@@ -357,6 +388,10 @@ defineOutputBindInteger(Variable) when is_list(Variable)  ->
 %% @doc Defines a decimal output bind variable.
 defineOutputBindDouble(Variable) when is_list(Variable)  ->
 	call_port({defineOutputBindDouble, Variable}).  
+
+%% @doc Defines a date output bind variable.
+defineOutputBindDate(Variable) when is_list(Variable) ->
+	call_port({defineOutputBindDate, Variable}).
 
 %% @doc Defines a binary lob output bind variable.
 defineOutputBindBlob(Variable) when is_list(Variable)  ->
@@ -414,6 +449,42 @@ getOutputBindCursor(Variable) when is_list(Variable) ->
 	% function not implemented
 	false.
 
+%% @doc Get the year component of a previously defined date output bind variable.
+getOutputBindDateYear(Variable) when is_list(Variable) ->
+	call_port({getOutputBindDateYear, Variable}).
+
+%% @doc Get the month component of a previously defined date output bind variable.
+getOutputBindDateMonth(Variable) when is_list(Variable) ->
+	call_port({getOutputBindDateMonth, Variable}).
+
+%% @doc Get the day component of a previously defined date output bind variable.
+getOutputBindDateDay(Variable) when is_list(Variable) ->
+	call_port({getOutputBindDateDay, Variable}).
+
+%% @doc Get the hour component of a previously defined date output bind variable.
+getOutputBindDateHour(Variable) when is_list(Variable) ->
+	call_port({getOutputBindDateHour, Variable}).
+
+%% @doc Get the minute component of a previously defined date output bind variable.
+getOutputBindDateMinute(Variable) when is_list(Variable) ->
+	call_port({getOutputBindDateMinute, Variable}).
+
+%% @doc Get the second component of a previously defined date output bind variable.
+getOutputBindDateSecond(Variable) when is_list(Variable) ->
+	call_port({getOutputBindDateSecond, Variable}).
+
+%% @doc Get the microsecond component of a previously defined date output bind variable.
+getOutputBindDateMicrosecond(Variable) when is_list(Variable) ->
+	call_port({getOutputBindDateMicrosecond, Variable}).
+
+%% @doc Get the timezone component of a previously defined date output bind variable.
+getOutputBindDateTz(Variable) when is_list(Variable) ->
+	call_port({getOutputBindDateTz, Variable}).
+
+%% @doc Get whether the hour component of a previously defined date output bind variable is negative.
+getOutputBindDateIsNegative(Variable) when is_list(Variable) ->
+	call_port({getOutputBindDateIsNegative, Variable}).
+
 %% @doc Opens a cached result set.  Returns true on success and false on failure.
 openCachedResultSet(Filename) when is_list(Filename) ->
 	call_port({openCachedResultSet, Filename}).  
@@ -436,6 +507,9 @@ firstRowIndex() -> call_port({firstRowIndex}).
 
 %% @doc Returns false if part of the result set is still pending on the server and true if not.  This method can only return false if setResultSetBufferSize() has been called with a parameter other than 0.
 endOfResultSet() -> call_port({endOfResultSet}).
+
+%% @doc Returns true and acts like executeQuery() when there is another result set available from the server.
+nextResultSet() -> call_port({nextResultSet}).
 
 %% @doc If an operation failed and generated an error, the error message is available here.  If there is no error then this method returns NULL.
 connectionErrorMessage() -> call_port({connectionErrorMessage}).

@@ -203,98 +203,6 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// output bind by position
-	stdoutput.printf("OUTPUT BIND BY POSITION: \n");
-	cur->prepareQuery(
-		"begin "
-		"	:numvar:=1; "
-		"	:stringvar:='hello'; "
-		"	:floatvar:=2.5; "
-		"	:datevar:='03-FEB-01'; "
-		"end;");
-	cur->defineOutputBindInteger("1");
-	cur->defineOutputBindString("2",10);
-	cur->defineOutputBindDouble("3");
-	cur->defineOutputBindDate("4");
-	assertTrue(cur->executeQuery());
-	numvar=cur->getOutputBindInteger("1");
-	stringvar=cur->getOutputBindString("2");
-	floatvar=cur->getOutputBindDouble("3");
-	cur->getOutputBindDate("4",&year,&month,&day,
-					&hour,&minute,&second,&microsecond,&tz,
-					&isnegative);
-	assertEquals(numvar,1);
-	assertEquals(stringvar,"hello");
-	assertEquals(floatvar,2.5);
-	assertEquals(year,2001);
-	assertEquals(month,2);
-	assertEquals(day,3);
-	assertEquals(hour,0);
-	assertEquals(minute,0);
-	assertEquals(second,0);
-	assertEquals(microsecond,0);
-	assertEquals(tz,"");
-	stdoutput.printf("\n");
-
-
-	// output bind by name
-	stdoutput.printf("OUTPUT BIND BY NAME: \n");
-	cur->clearBinds();
-	cur->defineOutputBindInteger("numvar");
-	cur->defineOutputBindString("stringvar",10);
-	cur->defineOutputBindDouble("floatvar");
-	cur->defineOutputBindDate("datevar");
-	assertTrue(cur->executeQuery());
-	numvar=cur->getOutputBindInteger("numvar");
-	stringvar=cur->getOutputBindString("stringvar");
-	floatvar=cur->getOutputBindDouble("floatvar");
-	cur->getOutputBindDate("datevar",&year,&month,&day,
-					&hour,&minute,&second,&microsecond,&tz,
-					&isnegative);
-	assertEquals(numvar,1);
-	assertEquals(stringvar,"hello");
-	assertEquals(floatvar,2.5);
-	assertEquals(year,2001);
-	assertEquals(month,2);
-	assertEquals(day,3);
-	assertEquals(hour,0);
-	assertEquals(minute,0);
-	assertEquals(second,0);
-	assertEquals(microsecond,0);
-	assertEquals(tz,"");
-	stdoutput.printf("\n");
-
-
-	// output bind by name with validation
-	stdoutput.printf("OUTPUT BIND BY NAME WITH VALIDATION: \n");
-	cur->clearBinds();
-	cur->defineOutputBindInteger("numvar");
-	cur->defineOutputBindString("stringvar",10);
-	cur->defineOutputBindDouble("floatvar");
-	cur->defineOutputBindDate("datevar");
-	cur->defineOutputBindString("dummyvar",10);
-	cur->validateBinds();
-	assertTrue(cur->executeQuery());
-	numvar=cur->getOutputBindInteger("numvar");
-	stringvar=cur->getOutputBindString("stringvar");
-	floatvar=cur->getOutputBindDouble("floatvar");
-	cur->getOutputBindDate("datevar",&year,&month,&day,
-					&hour,&minute,&second,&microsecond,&tz,
-					&isnegative);
-	assertEquals(numvar,1);
-	assertEquals(stringvar,"hello");
-	assertEquals(floatvar,2.5);
-	assertEquals(year,2001);
-	assertEquals(month,2);
-	assertEquals(day,3);
-	assertEquals(hour,0);
-	assertEquals(minute,0);
-	assertEquals(second,0);
-	assertEquals(microsecond,0);
-	assertEquals(tz,"");
-	stdoutput.printf("\n");
-
-
 	// select
 	stdoutput.printf("SELECT: \n");
 	assertTrue(cur->sendQuery(
@@ -562,7 +470,6 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,(uint32_t)0),"");
 	assertEquals(cur->getField(0,1),"1");
 	assertEquals(cur->getField(0,2),"");
-	cur->getNullsAsNulls();
 	stdoutput.printf("\n");
 
 
@@ -897,6 +804,98 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(5,(uint32_t)0),NULL);
 	assertEquals(cur->getField(6,(uint32_t)0),NULL);
 	assertEquals(cur->getField(7,(uint32_t)0),NULL);
+	stdoutput.printf("\n");
+
+
+	// output bind by position
+	stdoutput.printf("OUTPUT BIND BY POSITION: \n");
+	cur->prepareQuery(
+		"begin "
+		"	:numvar:=1; "
+		"	:stringvar:='hello'; "
+		"	:floatvar:=2.5; "
+		"	:datevar:='03-FEB-01'; "
+		"end;");
+	cur->defineOutputBindInteger("1");
+	cur->defineOutputBindString("2",10);
+	cur->defineOutputBindDouble("3");
+	cur->defineOutputBindDate("4");
+	assertTrue(cur->executeQuery());
+	numvar=cur->getOutputBindInteger("1");
+	stringvar=cur->getOutputBindString("2");
+	floatvar=cur->getOutputBindDouble("3");
+	cur->getOutputBindDate("4",&year,&month,&day,
+					&hour,&minute,&second,&microsecond,&tz,
+					&isnegative);
+	assertEquals(numvar,1);
+	assertEquals(stringvar,"hello");
+	assertEquals(floatvar,2.5);
+	assertEquals(year,2001);
+	assertEquals(month,2);
+	assertEquals(day,3);
+	assertEquals(hour,0);
+	assertEquals(minute,0);
+	assertEquals(second,0);
+	assertEquals(microsecond,0);
+	assertEquals(tz,"");
+	stdoutput.printf("\n");
+
+
+	// output bind by name
+	stdoutput.printf("OUTPUT BIND BY NAME: \n");
+	cur->clearBinds();
+	cur->defineOutputBindInteger("numvar");
+	cur->defineOutputBindString("stringvar",10);
+	cur->defineOutputBindDouble("floatvar");
+	cur->defineOutputBindDate("datevar");
+	assertTrue(cur->executeQuery());
+	numvar=cur->getOutputBindInteger("numvar");
+	stringvar=cur->getOutputBindString("stringvar");
+	floatvar=cur->getOutputBindDouble("floatvar");
+	cur->getOutputBindDate("datevar",&year,&month,&day,
+					&hour,&minute,&second,&microsecond,&tz,
+					&isnegative);
+	assertEquals(numvar,1);
+	assertEquals(stringvar,"hello");
+	assertEquals(floatvar,2.5);
+	assertEquals(year,2001);
+	assertEquals(month,2);
+	assertEquals(day,3);
+	assertEquals(hour,0);
+	assertEquals(minute,0);
+	assertEquals(second,0);
+	assertEquals(microsecond,0);
+	assertEquals(tz,"");
+	stdoutput.printf("\n");
+
+
+	// output bind by name with validation
+	stdoutput.printf("OUTPUT BIND BY NAME WITH VALIDATION: \n");
+	cur->clearBinds();
+	cur->defineOutputBindInteger("numvar");
+	cur->defineOutputBindString("stringvar",10);
+	cur->defineOutputBindDouble("floatvar");
+	cur->defineOutputBindDate("datevar");
+	cur->defineOutputBindString("dummyvar",10);
+	cur->validateBinds();
+	assertTrue(cur->executeQuery());
+	numvar=cur->getOutputBindInteger("numvar");
+	stringvar=cur->getOutputBindString("stringvar");
+	floatvar=cur->getOutputBindDouble("floatvar");
+	cur->getOutputBindDate("datevar",&year,&month,&day,
+					&hour,&minute,&second,&microsecond,&tz,
+					&isnegative);
+	assertEquals(numvar,1);
+	assertEquals(stringvar,"hello");
+	assertEquals(floatvar,2.5);
+	assertEquals(year,2001);
+	assertEquals(month,2);
+	assertEquals(day,3);
+	assertEquals(hour,0);
+	assertEquals(minute,0);
+	assertEquals(second,0);
+	assertEquals(microsecond,0);
+	assertEquals(tz,"");
 	stdoutput.printf("\n");
 
 

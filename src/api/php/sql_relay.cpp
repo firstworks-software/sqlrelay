@@ -1688,6 +1688,68 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_inputbind) {
 	RETURN_LONG(0);
 }
 
+DLEXPORT ZEND_FUNCTION(sqlrcur_inputbinddate) {
+	ZVAL sqlrcur;
+	ZVAL variable;
+	ZVAL year;
+	ZVAL month;
+	ZVAL day;
+	ZVAL hour;
+	ZVAL minute;
+	ZVAL second;
+	ZVAL microsecond;
+	ZVAL tz;
+	ZVAL isnegative;
+	if (ZEND_NUM_ARGS() != 11 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzzzzzzzzzz")
+				&sqlrcur,
+				&variable,
+				&year,
+				&month,
+				&day,
+				&hour,
+				&minute,
+				&second,
+				&microsecond,
+				&tz,
+				&isnegative) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(variable);
+	convert_to_long_ex(year);
+	convert_to_long_ex(month);
+	convert_to_long_ex(day);
+	convert_to_long_ex(hour);
+	convert_to_long_ex(minute);
+	convert_to_long_ex(second);
+	convert_to_long_ex(microsecond);
+	convert_to_string_ex(tz);
+	convert_to_long_ex(isnegative);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		cursor->inputBind(SVAL(variable),
+					(int16_t)LVAL(year),
+					(int16_t)LVAL(month),
+					(int16_t)LVAL(day),
+					(int16_t)LVAL(hour),
+					(int16_t)LVAL(minute),
+					(int16_t)LVAL(second),
+					(int32_t)LVAL(microsecond),
+					SVAL(tz),
+					(bool)LVAL(isnegative));
+		RETURN_LONG(1);
+	}
+	RETURN_LONG(0);
+}
+
 DLEXPORT ZEND_FUNCTION(sqlrcur_inputbindblob) {
 	ZVAL sqlrcur;
 	ZVAL variable;
@@ -1830,6 +1892,30 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_defineoutputbinddouble) {
 				sqlrelay_cursor);
 	if (cursor) {
 		cursor->defineOutputBindDouble(SVAL(variable));
+	}
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_defineoutputbinddate) {
+	ZVAL sqlrcur;
+	ZVAL variable;
+	if (ZEND_NUM_ARGS() != 2 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcur,
+				&variable) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(variable);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		cursor->defineOutputBindDate(SVAL(variable));
 	}
 }
 
@@ -2359,11 +2445,256 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbindcursor) {
 	ZEND_REGISTER_RESOURCE(return_value,s,sqlrelay_cursor);
 }
 
+DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddateyear) {
+	ZVAL sqlrcur;
+	ZVAL variable;
+	int16_t r;
+	if (ZEND_NUM_ARGS() != 2 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcur,
+				&variable) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(variable);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		r=cursor->getOutputBindDateYear(SVAL(variable));
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddatemonth) {
+	ZVAL sqlrcur;
+	ZVAL variable;
+	int16_t r;
+	if (ZEND_NUM_ARGS() != 2 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcur,
+				&variable) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(variable);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		r=cursor->getOutputBindDateMonth(SVAL(variable));
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddateday) {
+	ZVAL sqlrcur;
+	ZVAL variable;
+	int16_t r;
+	if (ZEND_NUM_ARGS() != 2 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcur,
+				&variable) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(variable);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		r=cursor->getOutputBindDateDay(SVAL(variable));
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddatehour) {
+	ZVAL sqlrcur;
+	ZVAL variable;
+	int16_t r;
+	if (ZEND_NUM_ARGS() != 2 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcur,
+				&variable) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(variable);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		r=cursor->getOutputBindDateHour(SVAL(variable));
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddateminute) {
+	ZVAL sqlrcur;
+	ZVAL variable;
+	int16_t r;
+	if (ZEND_NUM_ARGS() != 2 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcur,
+				&variable) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(variable);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		r=cursor->getOutputBindDateMinute(SVAL(variable));
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddatesecond) {
+	ZVAL sqlrcur;
+	ZVAL variable;
+	int16_t r;
+	if (ZEND_NUM_ARGS() != 2 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcur,
+				&variable) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(variable);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		r=cursor->getOutputBindDateSecond(SVAL(variable));
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddatemicrosecond) {
+	ZVAL sqlrcur;
+	ZVAL variable;
+	int32_t r;
+	if (ZEND_NUM_ARGS() != 2 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcur,
+				&variable) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(variable);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		r=cursor->getOutputBindDateMicrosecond(SVAL(variable));
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddatetz) {
+	ZVAL sqlrcur;
+	ZVAL variable;
+	const char *r;
+	if (ZEND_NUM_ARGS() != 2 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcur,
+				&variable) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(variable);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		r=cursor->getOutputBindDateTz(SVAL(variable));
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
+	}
+	RETURN_NULL();
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getoutputbinddateisnegative) {
+	ZVAL sqlrcur;
+	ZVAL variable;
+	bool r;
+	if (ZEND_NUM_ARGS() != 2 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcur,
+				&variable) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(variable);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		r=cursor->getOutputBindDateIsNegative(SVAL(variable));
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
 DLEXPORT ZEND_FUNCTION(sqlrcur_opencachedresultset) {
 	ZVAL sqlrcur;
 	ZVAL filename;
 	bool r;
-	if (ZEND_NUM_ARGS() != 2 || 
+	if (ZEND_NUM_ARGS() != 2 ||
 		GET_PARAMETERS(
 				ZEND_NUM_ARGS() TSRMLS_CC,
 				PARAMS("zz")
@@ -2509,7 +2840,7 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_firstrowindex) {
 DLEXPORT ZEND_FUNCTION(sqlrcur_endofresultset) {
 	ZVAL sqlrcur;
 	bool r;
-	if (ZEND_NUM_ARGS() != 1 || 
+	if (ZEND_NUM_ARGS() != 1 ||
 		GET_PARAMETERS(
 				ZEND_NUM_ARGS() TSRMLS_CC,
 				PARAMS("z")
@@ -2525,6 +2856,30 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_endofresultset) {
 				sqlrelay_cursor);
 	if (cursor) {
 		r=cursor->endOfResultSet();
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_nextresultset) {
+	ZVAL sqlrcur;
+	bool r;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcur) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		r=cursor->nextResultSet();
 		RETURN_LONG(r);
 	}
 	RETURN_LONG(0);
@@ -4902,6 +5257,9 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_inputbind,0,0,0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_inputbinddate,0,0,0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_inputbindblob,0,0,0)
 ZEND_END_ARG_INFO()
 
@@ -4915,6 +5273,9 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_defineoutputbindinteger,0,0,0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_defineoutputbinddouble,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_defineoutputbinddate,0,0,0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_defineoutputbindblob,0,0,0)
@@ -4965,6 +5326,33 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getoutputbindcursor,0,0,0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getoutputbinddateyear,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getoutputbinddatemonth,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getoutputbinddateday,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getoutputbinddatehour,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getoutputbinddateminute,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getoutputbinddatesecond,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getoutputbinddatemicrosecond,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getoutputbinddatetz,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getoutputbinddateisnegative,0,0,0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_opencachedresultset,0,0,0)
 ZEND_END_ARG_INFO()
 
@@ -4984,6 +5372,9 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_firstrowindex,0,0,0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_endofresultset,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_nextresultset,0,0,0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_errormessage,0,0,0)
@@ -5272,6 +5663,8 @@ zend_function_entry sql_relay_functions[] = {
 		ARGINFO(arginfo_sqlrcur_countbindvariables))
 	ZEND_FE(sqlrcur_inputbind,
 		ARGINFO(arginfo_sqlrcur_inputbind))
+	ZEND_FE(sqlrcur_inputbinddate,
+		ARGINFO(arginfo_sqlrcur_inputbinddate))
 	ZEND_FE(sqlrcur_inputbindblob,
 		ARGINFO(arginfo_sqlrcur_inputbindblob))
 	ZEND_FE(sqlrcur_inputbindclob,
@@ -5282,6 +5675,8 @@ zend_function_entry sql_relay_functions[] = {
 		ARGINFO(arginfo_sqlrcur_defineoutputbindinteger))
 	ZEND_FE(sqlrcur_defineoutputbinddouble,
 		ARGINFO(arginfo_sqlrcur_defineoutputbinddouble))
+	ZEND_FE(sqlrcur_defineoutputbinddate,
+		ARGINFO(arginfo_sqlrcur_defineoutputbinddate))
 	ZEND_FE(sqlrcur_defineoutputbindblob,
 		ARGINFO(arginfo_sqlrcur_defineoutputbindblob))
 	ZEND_FE(sqlrcur_defineoutputbindclob,
@@ -5314,6 +5709,24 @@ zend_function_entry sql_relay_functions[] = {
 		ARGINFO(arginfo_sqlrcur_getoutputbindlength))
 	ZEND_FE(sqlrcur_getoutputbindcursor,
 		ARGINFO(arginfo_sqlrcur_getoutputbindcursor))
+	ZEND_FE(sqlrcur_getoutputbinddateyear,
+		ARGINFO(arginfo_sqlrcur_getoutputbinddateyear))
+	ZEND_FE(sqlrcur_getoutputbinddatemonth,
+		ARGINFO(arginfo_sqlrcur_getoutputbinddatemonth))
+	ZEND_FE(sqlrcur_getoutputbinddateday,
+		ARGINFO(arginfo_sqlrcur_getoutputbinddateday))
+	ZEND_FE(sqlrcur_getoutputbinddatehour,
+		ARGINFO(arginfo_sqlrcur_getoutputbinddatehour))
+	ZEND_FE(sqlrcur_getoutputbinddateminute,
+		ARGINFO(arginfo_sqlrcur_getoutputbinddateminute))
+	ZEND_FE(sqlrcur_getoutputbinddatesecond,
+		ARGINFO(arginfo_sqlrcur_getoutputbinddatesecond))
+	ZEND_FE(sqlrcur_getoutputbinddatemicrosecond,
+		ARGINFO(arginfo_sqlrcur_getoutputbinddatemicrosecond))
+	ZEND_FE(sqlrcur_getoutputbinddatetz,
+		ARGINFO(arginfo_sqlrcur_getoutputbinddatetz))
+	ZEND_FE(sqlrcur_getoutputbinddateisnegative,
+		ARGINFO(arginfo_sqlrcur_getoutputbinddateisnegative))
 	ZEND_FE(sqlrcur_opencachedresultset,
 		ARGINFO(arginfo_sqlrcur_opencachedresultset))
 	ZEND_FE(sqlrcur_colcount,
@@ -5328,6 +5741,8 @@ zend_function_entry sql_relay_functions[] = {
 		ARGINFO(arginfo_sqlrcur_firstrowindex))
 	ZEND_FE(sqlrcur_endofresultset,
 		ARGINFO(arginfo_sqlrcur_endofresultset))
+	ZEND_FE(sqlrcur_nextresultset,
+		ARGINFO(arginfo_sqlrcur_nextresultset))
 	ZEND_FE(sqlrcur_errormessage,
 		ARGINFO(arginfo_sqlrcur_errormessage))
 	ZEND_FE(sqlrcur_errornumber,

@@ -200,47 +200,6 @@
 	echo("\n");
 
 
-	# output bind by position
-
-
-	echo("OUTPUT BIND BY POSITION: \n");
-	sqlrcur_prepareQuery($cur,
-		"begin ".
-		"	:numvar:=1; ".
-		"	:stringvar:='hello'; ".
-		"	:floatvar:=2.5; ".
-		"end;");
-	sqlrcur_defineOutputBindInteger($cur,"1");
-	sqlrcur_defineOutputBindString($cur,"2",10);
-	sqlrcur_defineOutputBindDouble($cur,"3");
-	assertTrue(sqlrcur_executeQuery($cur));
-	$numvar=sqlrcur_getOutputBindInteger($cur,"1");
-	$stringvar=sqlrcur_getOutputBindString($cur,"2");
-	$floatvar=sqlrcur_getOutputBindDouble($cur,"3");
-	assertEqual($numvar,1);
-	assertEqual($stringvar,"hello");
-	assertEqual($floatvar,2.5);
-	echo("\n");
-
-
-	# output bind by name
-
-
-	echo("OUTPUT BIND BY NAME: \n");
-	sqlrcur_clearBinds($cur);
-	sqlrcur_defineOutputBindInteger($cur,"numvar");
-	sqlrcur_defineOutputBindString($cur,"stringvar",10);
-	sqlrcur_defineOutputBindDouble($cur,"floatvar");
-	assertTrue(sqlrcur_executeQuery($cur));
-	$numvar=sqlrcur_getOutputBindInteger($cur,"numvar");
-	$stringvar=sqlrcur_getOutputBindString($cur,"stringvar");
-	$floatvar=sqlrcur_getOutputBindDouble($cur,"floatvar");
-	assertEqual($numvar,1);
-	assertEqual($stringvar,"hello");
-	assertEqual($floatvar,2.5);
-	echo("\n");
-
-
 	# output bind by name with validation
 
 
@@ -994,6 +953,47 @@
 		"	testtable "));
 	assertEqual(sqlrcur_getField($secondcur,0,0),"9");
 	assertTrue(sqlrcon_autoCommitOff($con));
+	echo("\n");
+
+
+	# output bind by position
+
+
+	echo("OUTPUT BIND BY POSITION: \n");
+	sqlrcur_prepareQuery($cur,
+		"begin ".
+		"	:numvar:=1; ".
+		"	:stringvar:='hello'; ".
+		"	:floatvar:=2.5; ".
+		"end;");
+	sqlrcur_defineOutputBindInteger($cur,"1");
+	sqlrcur_defineOutputBindString($cur,"2",10);
+	sqlrcur_defineOutputBindDouble($cur,"3");
+	assertTrue(sqlrcur_executeQuery($cur));
+	$numvar=sqlrcur_getOutputBindInteger($cur,"1");
+	$stringvar=sqlrcur_getOutputBindString($cur,"2");
+	$floatvar=sqlrcur_getOutputBindDouble($cur,"3");
+	assertEqual($numvar,1);
+	assertEqual($stringvar,"hello");
+	assertEqual($floatvar,2.5);
+	echo("\n");
+
+
+	# output bind by name
+
+
+	echo("OUTPUT BIND BY NAME: \n");
+	sqlrcur_clearBinds($cur);
+	sqlrcur_defineOutputBindInteger($cur,"numvar");
+	sqlrcur_defineOutputBindString($cur,"stringvar",10);
+	sqlrcur_defineOutputBindDouble($cur,"floatvar");
+	assertTrue(sqlrcur_executeQuery($cur));
+	$numvar=sqlrcur_getOutputBindInteger($cur,"numvar");
+	$stringvar=sqlrcur_getOutputBindString($cur,"stringvar");
+	$floatvar=sqlrcur_getOutputBindDouble($cur,"floatvar");
+	assertEqual($numvar,1);
+	assertEqual($stringvar,"hello");
+	assertEqual($floatvar,2.5);
 	echo("\n");
 
 

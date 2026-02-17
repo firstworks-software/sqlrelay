@@ -171,11 +171,7 @@ public class SQLRelayStatement implements Statement {
 			drv.debugPrintln("column count: "+sqlrcur.colCount());
 
 			if (sqlrcur.colCount()>0) {
-				resultset=new SQLRelayResultSet(drv);
-				resultset.setNetworkLock(networklock);
-				resultset.setStatement(this);
-				resultset.setConnection(conn);
-				resultset.setSQLRCursor(sqlrcur);
+				createResultSet();
 			}
 		} else {
 			conn.throwException(sqlrcur.errorMessage());
@@ -183,6 +179,15 @@ public class SQLRelayStatement implements Statement {
 
 		drv.debugEnd();
 		return resultset!=null;
+	}
+
+	private
+	void createResultSet() {
+		resultset=new SQLRelayResultSet(drv);
+		resultset.setNetworkLock(networklock);
+		resultset.setStatement(this);
+		resultset.setConnection(conn);
+		resultset.setSQLRCursor(sqlrcur);
 	}
 
 	public
@@ -356,8 +361,6 @@ public class SQLRelayStatement implements Statement {
 
 	public
 	SQLRelayConnection getConnection() throws SQLException {
-		//drv.debugFunction(this);
-		//drv.debugEnd();
 		return conn;
 	}
 
@@ -428,14 +431,21 @@ public class SQLRelayStatement implements Statement {
 		// (and we handle them both the same way)
 		throwResultSetHandlingNotSupportedException(current);
 
+		boolean	retval=false;
+
 		if (resultset!=null) {
 			resultset.close();
 			resultset=null;
 		}
 		updatecount=-1;
 
+		if (sqlrcur.nextResultSet()) {
+			createResultSet();
+			retval=true;
+		}
+
 		drv.debugEnd();
-		return true;
+		return retval;
 	}
 
 	public

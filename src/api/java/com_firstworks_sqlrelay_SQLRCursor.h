@@ -513,6 +513,14 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_endOfResultSe
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    nextResultSet
+ * Signature: ()Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_nextResultSet
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
  * Method:    errorMessage
  * Signature: ()Ljava/lang/String;
  */

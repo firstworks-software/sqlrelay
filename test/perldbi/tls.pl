@@ -277,36 +277,6 @@ assertTrue($sth->execute());
 print("\n");
 
 
-# output bind by position
-print("OUTPUT BIND BY POSITION: \n");
-$sth=$dbh->prepare(
-	"begin ".
-	"	:numvar:=1; ".
-	"	:stringvar:='hello'; ".
-	"	:floatvar:=2.5; ".
-	"end;");
-$sth->bind_param_inout(1,\$numvar,10);
-$sth->bind_param_inout(2,\$stringvar,10);
-$sth->bind_param_inout(3,\$floatvar,10);
-assertTrue($sth->execute());
-assertEqualString($numvar,'1');
-assertEqualString($stringvar,'hello');
-assertEqualString($floatvar,'2.5');
-print("\n");
-
-
-# output bind by name
-print("OUTPUT BIND BY NAME: \n");
-$sth->bind_param_inout("numvar",\$numvar,10);
-$sth->bind_param_inout("stringvar",\$stringvar,10);
-$sth->bind_param_inout("floatvar",\$floatvar,10);
-assertTrue($sth->execute());
-assertEqualString($numvar,'1');
-assertEqualString($stringvar,'hello');
-assertEqualString($floatvar,'2.5');
-print("\n");
-
-
 # select
 print("SELECT: \n");
 $sth=$dbh->prepare("select * from testtable order by testnumber");
@@ -778,6 +748,36 @@ if ($DBI::VERSION>=1.41) {
 }
 my @row=$dbh2->selectrow_array("select count(*) from testtable");
 assertEqual($row[0],10);
+print("\n");
+
+
+# output bind by position
+print("OUTPUT BIND BY POSITION: \n");
+$sth=$dbh->prepare(
+	"begin ".
+	"	:numvar:=1; ".
+	"	:stringvar:='hello'; ".
+	"	:floatvar:=2.5; ".
+	"end;");
+$sth->bind_param_inout(1,\$numvar,10);
+$sth->bind_param_inout(2,\$stringvar,10);
+$sth->bind_param_inout(3,\$floatvar,10);
+assertTrue($sth->execute());
+assertEqualString($numvar,'1');
+assertEqualString($stringvar,'hello');
+assertEqualString($floatvar,'2.5');
+print("\n");
+
+
+# output bind by name
+print("OUTPUT BIND BY NAME: \n");
+$sth->bind_param_inout("numvar",\$numvar,10);
+$sth->bind_param_inout("stringvar",\$stringvar,10);
+$sth->bind_param_inout("floatvar",\$floatvar,10);
+assertTrue($sth->execute());
+assertEqualString($numvar,'1');
+assertEqualString($stringvar,'hello');
+assertEqualString($floatvar,'2.5');
 print("\n");
 
 

@@ -254,6 +254,24 @@ sqlrcursor::inputBind(variable,...)
 	OUTPUT:
 		RETVAL
 
+void
+sqlrcursor::inputBindDate(variable,year,month,day,hour,minute,second,microsecond,tz,isnegative)
+		const char *variable
+		int16_t year
+		int16_t month
+		int16_t day
+		int16_t hour
+		int16_t minute
+		int16_t second
+		int32_t microsecond
+		const char *tz
+		int isnegative
+	CODE:
+		THIS->inputBind(variable,year,month,day,
+				hour,minute,second,
+				microsecond,tz,
+				(bool)isnegative);
+
 bool
 sqlrcursor::inputBindBlob(variable,value,size)
 		const char *variable
@@ -310,6 +328,10 @@ sqlrcursor::defineOutputBindInteger(variable)
 
 void
 sqlrcursor::defineOutputBindDouble(variable)
+		const char *variable
+
+void
+sqlrcursor::defineOutputBindDate(variable)
 		const char *variable
 
 void
@@ -394,6 +416,82 @@ sqlrcursor::getOutputBindCursor(variable)
 	OUTPUT:
 		RETVAL
 
+int16_t
+sqlrcursor::getOutputBindDateYear(variable)
+		const char *variable
+	CODE:
+		int16_t	value=THIS->getOutputBindDateYear(variable);
+		ST(0)=sv_newmortal();
+		sv_setiv(ST(0),value);
+
+int16_t
+sqlrcursor::getOutputBindDateMonth(variable)
+		const char *variable
+	CODE:
+		int16_t	value=THIS->getOutputBindDateMonth(variable);
+		ST(0)=sv_newmortal();
+		sv_setiv(ST(0),value);
+
+int16_t
+sqlrcursor::getOutputBindDateDay(variable)
+		const char *variable
+	CODE:
+		int16_t	value=THIS->getOutputBindDateDay(variable);
+		ST(0)=sv_newmortal();
+		sv_setiv(ST(0),value);
+
+int16_t
+sqlrcursor::getOutputBindDateHour(variable)
+		const char *variable
+	CODE:
+		int16_t	value=THIS->getOutputBindDateHour(variable);
+		ST(0)=sv_newmortal();
+		sv_setiv(ST(0),value);
+
+int16_t
+sqlrcursor::getOutputBindDateMinute(variable)
+		const char *variable
+	CODE:
+		int16_t	value=THIS->getOutputBindDateMinute(variable);
+		ST(0)=sv_newmortal();
+		sv_setiv(ST(0),value);
+
+int16_t
+sqlrcursor::getOutputBindDateSecond(variable)
+		const char *variable
+	CODE:
+		int16_t	value=THIS->getOutputBindDateSecond(variable);
+		ST(0)=sv_newmortal();
+		sv_setiv(ST(0),value);
+
+int32_t
+sqlrcursor::getOutputBindDateMicrosecond(variable)
+		const char *variable
+	CODE:
+		int32_t	value=THIS->getOutputBindDateMicrosecond(variable);
+		ST(0)=sv_newmortal();
+		sv_setiv(ST(0),value);
+
+const char *
+sqlrcursor::getOutputBindDateTz(variable)
+		const char *variable
+	CODE:
+		const char	*value=THIS->getOutputBindDateTz(variable);
+		ST(0)=sv_newmortal();
+		if (value) {
+			sv_setpv(ST(0),value);
+		} else {
+			ST(0)=&sv_undef;
+		}
+
+bool
+sqlrcursor::getOutputBindDateIsNegative(variable)
+		const char *variable
+	CODE:
+		RETVAL=THIS->getOutputBindDateIsNegative(variable);
+	OUTPUT:
+		RETVAL
+
 bool
 sqlrcursor::openCachedResultSet(filename)
 	const char	*filename
@@ -415,6 +513,9 @@ sqlrcursor::firstRowIndex()
 
 bool
 sqlrcursor::endOfResultSet()
+
+bool
+sqlrcursor::nextResultSet()
 
 const char *
 sqlrcursor::errorMessage()
@@ -938,3 +1039,6 @@ bool
 sqlrcursor::resumeCachedResultSet(id,filename)
 		uint16_t id
 		const char *filename
+
+void
+sqlrcursor::closeResultSet()

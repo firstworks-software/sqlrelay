@@ -207,51 +207,6 @@ def main():
 	print()
 
 
-	# output bind by position
-	print("OUTPUT BIND BY POSITION: ")
-	cur.prepareQuery(
-		"begin "
-		"	:numvar:=1; "
-		"	:stringvar:='hello'; "
-		"	:floatvar:=2.5; "
-		"	:nullvar:=null; "
-		"end;")
-	cur.defineOutputBindInteger("1")
-	cur.defineOutputBindString("2",10)
-	cur.defineOutputBindDouble("3")
-	cur.defineOutputBindString("4",10)
-	assertTrue(cur.executeQuery())
-	numvar=cur.getOutputBindInteger("1")
-	stringvar=cur.getOutputBindString("2")
-	floatvar=cur.getOutputBindDouble("3")
-	assertEqual(numvar,1)
-	assertEqual(stringvar,'hello')
-	assertEqual(floatvar,2.5)
-	assertEqual(
-		cur.getOutputBindString("4"),"")
-	print()
-
-
-	# output bind by name
-	print("OUTPUT BIND BY NAME: ")
-	cur.clearBinds()
-	cur.defineOutputBindInteger("numvar")
-	cur.defineOutputBindString("stringvar",10)
-	cur.defineOutputBindDouble("floatvar")
-	cur.defineOutputBindString("nullvar",10)
-	assertTrue(cur.executeQuery())
-	numvar=cur.getOutputBindInteger("numvar")
-	stringvar=cur.getOutputBindString("stringvar")
-	floatvar=cur.getOutputBindDouble("floatvar")
-	assertEqual(numvar,1)
-	assertEqual(stringvar,'hello')
-	assertEqual(floatvar,2.5)
-	assertEqual(
-		cur.getOutputBindString("nullvar"),
-		"")
-	print()
-
-
 	# output bind by name with validation
 	print("OUTPUT BIND BY NAME WITH VALIDATION: ")
 	cur.clearBinds()
@@ -588,7 +543,6 @@ def main():
 	assertEqual(cur.getField(0,0),"")
 	assertEqual(cur.getField(0,1),1)
 	assertEqual(cur.getField(0,2),"")
-	cur.getNullsAsNone()
 	print()
 
 
@@ -910,6 +864,51 @@ def main():
 	assertEqual(rows[5][2],"testvarchar6")
 	assertEqual(rows[5][3],"01-JAN-06")
 	assertEqual(rows[5][4],"testlong6")
+	print()
+
+
+	# output bind by position
+	print("OUTPUT BIND BY POSITION: ")
+	cur.prepareQuery(
+		"begin "
+		"	:numvar:=1; "
+		"	:stringvar:='hello'; "
+		"	:floatvar:=2.5; "
+		"	:nullvar:=null; "
+		"end;")
+	cur.defineOutputBindInteger("1")
+	cur.defineOutputBindString("2",10)
+	cur.defineOutputBindDouble("3")
+	cur.defineOutputBindString("4",10)
+	assertTrue(cur.executeQuery())
+	numvar=cur.getOutputBindInteger("1")
+	stringvar=cur.getOutputBindString("2")
+	floatvar=cur.getOutputBindDouble("3")
+	assertEqual(numvar,1)
+	assertEqual(stringvar,'hello')
+	assertEqual(floatvar,2.5)
+	assertEqual(
+		cur.getOutputBindString("4"),"")
+	print()
+
+
+	# output bind by name
+	print("OUTPUT BIND BY NAME: ")
+	cur.clearBinds()
+	cur.defineOutputBindInteger("numvar")
+	cur.defineOutputBindString("stringvar",10)
+	cur.defineOutputBindDouble("floatvar")
+	cur.defineOutputBindString("nullvar",10)
+	assertTrue(cur.executeQuery())
+	numvar=cur.getOutputBindInteger("numvar")
+	stringvar=cur.getOutputBindString("stringvar")
+	floatvar=cur.getOutputBindDouble("floatvar")
+	assertEqual(numvar,1)
+	assertEqual(stringvar,'hello')
+	assertEqual(floatvar,2.5)
+	assertEqual(
+		cur.getOutputBindString("nullvar"),
+		"")
 	print()
 
 

@@ -724,6 +724,12 @@ class sqlrcursor:
         """
         return CSQLRelay.inputBind(self.cursor, variable, value, precision, scale)
 
+    def inputBindDate(self, variable, year, month, day, hour, minute, second, microsecond, tz, isnegative):
+        """
+        Define a date input bind variable.
+        """
+        return CSQLRelay.inputBindDate(self.cursor, variable, year, month, day, hour, minute, second, microsecond, tz, isnegative)
+
     def inputBindBlob(self, variable, value, length):
         """
         Define an input bind varaible.
@@ -753,6 +759,12 @@ class sqlrcursor:
         Define a double precision floating point output bind varaible.
         """
         return CSQLRelay.defineOutputBindDouble(self.cursor, variable)
+
+    def defineOutputBindDate(self, variable):
+        """
+        Define a date output bind variable.
+        """
+        return CSQLRelay.defineOutputBindDate(self.cursor, variable)
 
     def defineOutputBindBlob(self, variable):
         """
@@ -867,6 +879,69 @@ class sqlrcursor:
         """
         return CSQLRelay.getOutputBindLength(self.cursor, variable)
 
+    def getOutputBindDateYear(self, variable):
+        """
+        Get the year from a previously defined
+        date output bind variable.
+        """
+        return CSQLRelay.getOutputBindDateYear(self.cursor, variable)
+
+    def getOutputBindDateMonth(self, variable):
+        """
+        Get the month from a previously defined
+        date output bind variable.
+        """
+        return CSQLRelay.getOutputBindDateMonth(self.cursor, variable)
+
+    def getOutputBindDateDay(self, variable):
+        """
+        Get the day from a previously defined
+        date output bind variable.
+        """
+        return CSQLRelay.getOutputBindDateDay(self.cursor, variable)
+
+    def getOutputBindDateHour(self, variable):
+        """
+        Get the hour from a previously defined
+        date output bind variable.
+        """
+        return CSQLRelay.getOutputBindDateHour(self.cursor, variable)
+
+    def getOutputBindDateMinute(self, variable):
+        """
+        Get the minute from a previously defined
+        date output bind variable.
+        """
+        return CSQLRelay.getOutputBindDateMinute(self.cursor, variable)
+
+    def getOutputBindDateSecond(self, variable):
+        """
+        Get the second from a previously defined
+        date output bind variable.
+        """
+        return CSQLRelay.getOutputBindDateSecond(self.cursor, variable)
+
+    def getOutputBindDateMicrosecond(self, variable):
+        """
+        Get the microsecond from a previously defined
+        date output bind variable.
+        """
+        return CSQLRelay.getOutputBindDateMicrosecond(self.cursor, variable)
+
+    def getOutputBindDateTz(self, variable):
+        """
+        Get the timezone from a previously defined
+        date output bind variable.
+        """
+        return CSQLRelay.getOutputBindDateTz(self.cursor, variable)
+
+    def getOutputBindDateIsNegative(self, variable):
+        """
+        Get whether the value of a previously defined
+        date output bind variable is negative.
+        """
+        return CSQLRelay.getOutputBindDateIsNegative(self.cursor, variable)
+
     def getOutputBindCursor(self, variable):
         """
         Get the cursor associated with a previously
@@ -937,6 +1012,14 @@ class sqlrcursor:
         with a parameter other than 0.
         """
         return CSQLRelay.endOfResultSet(self.cursor)
+
+    def nextResultSet(self):
+        """
+        Returns true and acts like executeQuery()
+        when there is another result set available
+        from the server.
+        """
+        return CSQLRelay.nextResultSet(self.cursor)
 
     def errorMessage(self):
         """

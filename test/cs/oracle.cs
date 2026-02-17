@@ -547,6 +547,135 @@ namespace SQLRClientTest
             Console.WriteLine("\n");
 
 
+            // cursor binds using nextresult
+            Console.WriteLine("CURSOR BINDS USING NEXTRESULT:");
+            sqlrcom.CommandText =
+                "create or replace package types is " +
+                "	type cursorType is ref cursor; " +
+                "end;";
+            assertEquals(ExecuteNonQuery(sqlrcom), 0);
+            sqlrcom.CommandText =
+                "create or replace " +
+                "function sp_testtable(value in number) " +
+                "			return types.cursortype " +
+                "is " +
+                "	l_cursor    types.cursorType; " +
+                "begin " +
+                "	open l_cursor for " +
+                "		select " +
+                "			* " +
+                "		from " +
+                "			testtable " +
+                "		where " +
+                "			testnumber>value; " +
+                "	return l_cursor; " +
+                "end;";
+            assertEquals(ExecuteNonQuery(sqlrcom), 0);
+            sqlrcom.CommandText =
+                "begin " +
+                "	:curs1:=sp_testtable(2); " +
+                "	:curs2:=sp_testtable(0); " +
+                "end;";
+            SQLRelayParameter curs1 = new SQLRelayParameter();
+            curs1.ParameterName = "curs1";
+            curs1.SQLRelayType = SQLRelayType.Cursor;
+            curs1.Direction = ParameterDirection.Output;
+            curs1.Value = null;
+            sqlrcom.Parameters.Add(curs1);
+            SQLRelayParameter curs2 = new SQLRelayParameter();
+            curs2.ParameterName = "curs2";
+            curs2.SQLRelayType = SQLRelayType.Cursor;
+            curs2.Direction = ParameterDirection.Output;
+            curs2.Value = null;
+            sqlrcom.Parameters.Add(curs2);
+            datareader = ExecuteReader(sqlrcom);
+            assertTrue(datareader != null);
+            sqlrcom.Parameters.Clear();
+            datareader.Read();
+            assertEquals(datareader.GetInt64(0), 3);
+            datareader.Read();
+            assertEquals(datareader.GetInt64(0), 4);
+            datareader.Read();
+            assertEquals(datareader.GetInt64(0), 5);
+            datareader.Close();
+            assertTrue(datareader.NextResult());
+            datareader.Read();
+            assertEquals(datareader.GetInt64(0), 1);
+            datareader.Read();
+            assertEquals(datareader.GetInt64(0), 2);
+            datareader.Read();
+            assertEquals(datareader.GetInt64(0), 3);
+            datareader.Close();
+            assertEquals(datareader.NextResult(), false);
+            sqlrcom.CommandText = "drop package types";
+            assertEquals(ExecuteNonQuery(sqlrcom), 0);
+            Console.WriteLine("\n");
+
+
+            // cursor binds
+            Console.WriteLine("CURSOR BINDS:");
+            sqlrcom.CommandText =
+                "create or replace package types is " +
+                "	type cursorType is ref cursor; " +
+                "end;";
+            assertEquals(ExecuteNonQuery(sqlrcom), 0);
+            sqlrcom.CommandText =
+                "create or replace " +
+                "function sp_testtable(value in number) " +
+                "			return types.cursortype " +
+                "is " +
+                "	l_cursor    types.cursorType; " +
+                "begin " +
+                "		open l_cursor for " +
+                "		select " +
+                "			* " +
+                "		from " +
+                "			testtable " +
+                "		where " +
+                "			testnumber>value; " +
+                "	return l_cursor; " +
+                "end;";
+            assertEquals(ExecuteNonQuery(sqlrcom), 0);
+            sqlrcom.CommandText =
+                "begin " +
+                "	:curs1:=sp_testtable(2); " +
+                "	:curs2:=sp_testtable(0); " +
+                "end;";
+            curs1 = new SQLRelayParameter();
+            curs1.ParameterName = "curs1";
+            curs1.SQLRelayType = SQLRelayType.Cursor;
+            curs1.Direction = ParameterDirection.Output;
+            curs1.Value = null;
+            sqlrcom.Parameters.Add(curs1);
+            curs2 = new SQLRelayParameter();
+            curs2.ParameterName = "curs2";
+            curs2.SQLRelayType = SQLRelayType.Cursor;
+            curs2.Direction = ParameterDirection.Output;
+            curs2.Value = null;
+            sqlrcom.Parameters.Add(curs2);
+            assertEquals(ExecuteNonQuery(sqlrcom), 1);
+            sqlrcom.Parameters.Clear();
+            SQLRelayDataReader curs1reader = (SQLRelayDataReader)curs1.Value;
+            curs1reader.Read();
+            assertEquals(curs1reader.GetInt64(0), 3);
+            curs1reader.Read();
+            assertEquals(curs1reader.GetInt64(0), 4);
+            curs1reader.Read();
+            assertEquals(curs1reader.GetInt64(0), 5);
+            curs1reader.Close();
+            SQLRelayDataReader curs2reader = (SQLRelayDataReader)curs2.Value;
+            curs2reader.Read();
+            assertEquals(curs2reader.GetInt64(0), 1);
+            curs2reader.Read();
+            assertEquals(curs2reader.GetInt64(0), 2);
+            curs2reader.Read();
+            assertEquals(curs2reader.GetInt64(0), 3);
+            curs2reader.Close();
+            sqlrcom.CommandText = "drop package types";
+            assertEquals(ExecuteNonQuery(sqlrcom), 0);
+            Console.WriteLine("\n");
+
+
             // output binds by name
             Console.WriteLine("OUTPUT BINDS BY NAME:");
             sqlrcom.CommandText =
@@ -689,135 +818,6 @@ namespace SQLRClientTest
                 Convert.ToString(nullvar.Value),
                 "");
             sqlrcom.Parameters.Clear();
-            Console.WriteLine("\n");
-
-
-            // cursor binds using nextresult
-            Console.WriteLine("CURSOR BINDS USING NEXTRESULT:");
-            sqlrcom.CommandText =
-                "create or replace package types is " +
-                "	type cursorType is ref cursor; " +
-                "end;";
-            assertEquals(ExecuteNonQuery(sqlrcom), 0);
-            sqlrcom.CommandText =
-                "create or replace " +
-                "function sp_testtable(value in number) " +
-                "			return types.cursortype " +
-                "is " +
-                "	l_cursor    types.cursorType; " +
-                "begin " +
-                "	open l_cursor for " +
-                "		select " +
-                "			* " +
-                "		from " +
-                "			testtable " +
-                "		where " +
-                "			testnumber>value; " +
-                "	return l_cursor; " +
-                "end;";
-            assertEquals(ExecuteNonQuery(sqlrcom), 0);
-            sqlrcom.CommandText =
-                "begin " +
-                "	:curs1:=sp_testtable(2); " +
-                "	:curs2:=sp_testtable(0); " +
-                "end;";
-            SQLRelayParameter curs1 = new SQLRelayParameter();
-            curs1.ParameterName = "curs1";
-            curs1.SQLRelayType = SQLRelayType.Cursor;
-            curs1.Direction = ParameterDirection.Output;
-            curs1.Value = null;
-            sqlrcom.Parameters.Add(curs1);
-            SQLRelayParameter curs2 = new SQLRelayParameter();
-            curs2.ParameterName = "curs2";
-            curs2.SQLRelayType = SQLRelayType.Cursor;
-            curs2.Direction = ParameterDirection.Output;
-            curs2.Value = null;
-            sqlrcom.Parameters.Add(curs2);
-            datareader = ExecuteReader(sqlrcom);
-            assertTrue(datareader != null);
-            sqlrcom.Parameters.Clear();
-            datareader.Read();
-            assertEquals(datareader.GetInt64(0), 3);
-            datareader.Read();
-            assertEquals(datareader.GetInt64(0), 4);
-            datareader.Read();
-            assertEquals(datareader.GetInt64(0), 5);
-            datareader.Close();
-            assertTrue(datareader.NextResult());
-            datareader.Read();
-            assertEquals(datareader.GetInt64(0), 1);
-            datareader.Read();
-            assertEquals(datareader.GetInt64(0), 2);
-            datareader.Read();
-            assertEquals(datareader.GetInt64(0), 3);
-            datareader.Close();
-            assertEquals(datareader.NextResult(), false);
-            sqlrcom.CommandText = "drop package types";
-            assertEquals(ExecuteNonQuery(sqlrcom), 0);
-            Console.WriteLine("\n");
-
-
-            // cursor binds
-            Console.WriteLine("CURSOR BINDS:");
-            sqlrcom.CommandText =
-                "create or replace package types is " +
-                "	type cursorType is ref cursor; " +
-                "end;";
-            assertEquals(ExecuteNonQuery(sqlrcom), 0);
-            sqlrcom.CommandText =
-                "create or replace " +
-                "function sp_testtable(value in number) " +
-                "			return types.cursortype " +
-                "is " +
-                "	l_cursor    types.cursorType; " +
-                "begin " +
-                "		open l_cursor for " +
-                "		select " +
-                "			* " +
-                "		from " +
-                "			testtable " +
-                "		where " +
-                "			testnumber>value; " +
-                "	return l_cursor; " +
-                "end;";
-            assertEquals(ExecuteNonQuery(sqlrcom), 0);
-            sqlrcom.CommandText =
-                "begin " +
-                "	:curs1:=sp_testtable(2); " +
-                "	:curs2:=sp_testtable(0); " +
-                "end;";
-            curs1 = new SQLRelayParameter();
-            curs1.ParameterName = "curs1";
-            curs1.SQLRelayType = SQLRelayType.Cursor;
-            curs1.Direction = ParameterDirection.Output;
-            curs1.Value = null;
-            sqlrcom.Parameters.Add(curs1);
-            curs2 = new SQLRelayParameter();
-            curs2.ParameterName = "curs2";
-            curs2.SQLRelayType = SQLRelayType.Cursor;
-            curs2.Direction = ParameterDirection.Output;
-            curs2.Value = null;
-            sqlrcom.Parameters.Add(curs2);
-            assertEquals(ExecuteNonQuery(sqlrcom), 1);
-            sqlrcom.Parameters.Clear();
-            SQLRelayDataReader curs1reader = (SQLRelayDataReader)curs1.Value;
-            curs1reader.Read();
-            assertEquals(curs1reader.GetInt64(0), 3);
-            curs1reader.Read();
-            assertEquals(curs1reader.GetInt64(0), 4);
-            curs1reader.Read();
-            assertEquals(curs1reader.GetInt64(0), 5);
-            curs1reader.Close();
-            SQLRelayDataReader curs2reader = (SQLRelayDataReader)curs2.Value;
-            curs2reader.Read();
-            assertEquals(curs2reader.GetInt64(0), 1);
-            curs2reader.Read();
-            assertEquals(curs2reader.GetInt64(0), 2);
-            curs2reader.Read();
-            assertEquals(curs2reader.GetInt64(0), 3);
-            curs2reader.Close();
-            sqlrcom.CommandText = "drop package types";
-            assertEquals(ExecuteNonQuery(sqlrcom), 0);
             Console.WriteLine("\n");
 
 

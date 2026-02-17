@@ -95,11 +95,13 @@ void sqlrcurDelete(ClientData data) {
  *   $cur clearBinds
  *   $cur countBindVariables
  *   $cur inputBind
+ *   $cur inputBindDate variable year month day hour minute second microsecond tz isnegative
  *   $cur inputBindBlob variable value size
  *   $cur inputBindClob variable value size
  *   $cur defineOutputBindString variable value
  *   $cur defineOutputBindInteger variable value
  *   $cur defineOutputBindDouble variable value
+ *   $cur defineOutputBindDate variable
  *   $cur defineOutputBindBlob variable
  *   $cur defineOutputBindClob variable
  *   $cur defineOutputBindCursor variable
@@ -116,6 +118,15 @@ void sqlrcurDelete(ClientData data) {
  *   $cur getOutputBindDouble variable
  *   $cur getOutputBindLength variable
  *   $cur getOutputBindCursor variable
+ *   $cur getOutputBindDateYear variable
+ *   $cur getOutputBindDateMonth variable
+ *   $cur getOutputBindDateDay variable
+ *   $cur getOutputBindDateHour variable
+ *   $cur getOutputBindDateMinute variable
+ *   $cur getOutputBindDateSecond variable
+ *   $cur getOutputBindDateMicrosecond variable
+ *   $cur getOutputBindDateTz variable
+ *   $cur getOutputBindDateIsNegative variable
  *   $cur openCachedResultSet variable
  *   $cur colCount
  *   $cur rowCount
@@ -123,6 +134,7 @@ void sqlrcurDelete(ClientData data) {
  *   $cur affectedRows
  *   $cur firstRowIndex
  *   $cur endOfResultSet
+ *   $cur nextResultSet
  *   $cur errorMessage
  *   $cur errorNumber
  *   $cur getFieldByIndex row col
@@ -232,11 +244,13 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
     "clearBinds",
     "countBindVariables",
     "inputBind",
+    "inputBindDate",
     "inputBindBlob",
     "inputBindClob",
     "defineOutputBindString",
     "defineOutputBindInteger",
     "defineOutputBindDouble",
+    "defineOutputBindDate",
     "defineOutputBindBlob",
     "defineOutputBindClob",
     "defineOutputBindCursor",
@@ -253,6 +267,15 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
     "getOutputBindDouble",
     "getOutputBindLength",
     "getOutputBindCursor",
+    "getOutputBindDateYear",
+    "getOutputBindDateMonth",
+    "getOutputBindDateDay",
+    "getOutputBindDateHour",
+    "getOutputBindDateMinute",
+    "getOutputBindDateSecond",
+    "getOutputBindDateMicrosecond",
+    "getOutputBindDateTz",
+    "getOutputBindDateIsNegative",
     "openCachedResultSet",
     "colCount",
     "rowCount",
@@ -260,6 +283,7 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
     "affectedRows",
     "firstRowIndex",
     "endOfResultSet",
+    "nextResultSet",
     "errorMessage",
     "errorNumber",
     "getFieldByIndex",
@@ -363,11 +387,13 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
     SQLRCUR_clearBinds,
     SQLRCUR_countBindVariables,
     SQLRCUR_inputBind,
+    SQLRCUR_inputBindDate,
     SQLRCUR_inputBindBlob,
     SQLRCUR_inputBindClob,
     SQLRCUR_defineOutputBindString,
     SQLRCUR_defineOutputBindInteger,
     SQLRCUR_defineOutputBindDouble,
+    SQLRCUR_defineOutputBindDate,
     SQLRCUR_defineOutputBindBlob,
     SQLRCUR_defineOutputBindClob,
     SQLRCUR_defineOutputBindCursor,
@@ -384,6 +410,15 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
     SQLRCUR_getOutputBindDouble,
     SQLRCUR_getOutputBindLength,
     SQLRCUR_getOutputBindCursor,
+    SQLRCUR_getOutputBindDateYear,
+    SQLRCUR_getOutputBindDateMonth,
+    SQLRCUR_getOutputBindDateDay,
+    SQLRCUR_getOutputBindDateHour,
+    SQLRCUR_getOutputBindDateMinute,
+    SQLRCUR_getOutputBindDateSecond,
+    SQLRCUR_getOutputBindDateMicrosecond,
+    SQLRCUR_getOutputBindDateTz,
+    SQLRCUR_getOutputBindDateIsNegative,
     SQLRCUR_openCachedResultSet,
     SQLRCUR_colCount,
     SQLRCUR_rowCount,
@@ -391,6 +426,7 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
     SQLRCUR_affectedRows,
     SQLRCUR_firstRowIndex,
     SQLRCUR_endOfResultSet,
+    SQLRCUR_nextResultSet,
     SQLRCUR_errorMessage,
     SQLRCUR_errorNumber,
     SQLRCUR_getFieldByIndex,
@@ -824,6 +860,30 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	}
 	break;
       }
+    case SQLRCUR_inputBindDate:
+      {
+	long year, month, day, hour, minute, second, microsecond, isnegative;
+	if (objc != 12) {
+	  Tcl_WrongNumArgs(interp,2, objv, "variable year month day hour minute second microsecond tz isnegative");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetLongFromObj(interp, objv[3], &year) != TCL_OK ||
+	    Tcl_GetLongFromObj(interp, objv[4], &month) != TCL_OK ||
+	    Tcl_GetLongFromObj(interp, objv[5], &day) != TCL_OK ||
+	    Tcl_GetLongFromObj(interp, objv[6], &hour) != TCL_OK ||
+	    Tcl_GetLongFromObj(interp, objv[7], &minute) != TCL_OK ||
+	    Tcl_GetLongFromObj(interp, objv[8], &second) != TCL_OK ||
+	    Tcl_GetLongFromObj(interp, objv[9], &microsecond) != TCL_OK ||
+	    Tcl_GetLongFromObj(interp, objv[11], &isnegative) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	cur->inputBind(Tcl_GetString(objv[2]),
+			(int16_t)year, (int16_t)month, (int16_t)day,
+			(int16_t)hour, (int16_t)minute, (int16_t)second,
+			(int32_t)microsecond, Tcl_GetString(objv[10]),
+			(bool)isnegative);
+	break;
+      }
     case SQLRCUR_inputBindBlob:
       {
 	long size;
@@ -883,6 +943,15 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	  return TCL_ERROR;
 	}
 	cur->defineOutputBindDouble(Tcl_GetString(objv[2]));
+	break;
+      }
+    case SQLRCUR_defineOutputBindDate:
+      {
+	if (objc != 3) {
+	  Tcl_WrongNumArgs(interp,2, objv, "variable");
+	  return TCL_ERROR;
+	}
+	cur->defineOutputBindDate(Tcl_GetString(objv[2]));
 	break;
       }
     case SQLRCUR_defineOutputBindBlob:
@@ -1162,6 +1231,105 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	}
 	break;
       }
+    case SQLRCUR_getOutputBindDateYear:
+      {
+	Tcl_Obj *result;
+	if (objc != 3) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "variable");
+	  return TCL_ERROR;
+	}
+	result = Tcl_NewIntObj(cur->getOutputBindDateYear(Tcl_GetString(objv[2])));
+	Tcl_SetObjResult(interp, result);
+	break;
+      }
+    case SQLRCUR_getOutputBindDateMonth:
+      {
+	Tcl_Obj *result;
+	if (objc != 3) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "variable");
+	  return TCL_ERROR;
+	}
+	result = Tcl_NewIntObj(cur->getOutputBindDateMonth(Tcl_GetString(objv[2])));
+	Tcl_SetObjResult(interp, result);
+	break;
+      }
+    case SQLRCUR_getOutputBindDateDay:
+      {
+	Tcl_Obj *result;
+	if (objc != 3) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "variable");
+	  return TCL_ERROR;
+	}
+	result = Tcl_NewIntObj(cur->getOutputBindDateDay(Tcl_GetString(objv[2])));
+	Tcl_SetObjResult(interp, result);
+	break;
+      }
+    case SQLRCUR_getOutputBindDateHour:
+      {
+	Tcl_Obj *result;
+	if (objc != 3) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "variable");
+	  return TCL_ERROR;
+	}
+	result = Tcl_NewIntObj(cur->getOutputBindDateHour(Tcl_GetString(objv[2])));
+	Tcl_SetObjResult(interp, result);
+	break;
+      }
+    case SQLRCUR_getOutputBindDateMinute:
+      {
+	Tcl_Obj *result;
+	if (objc != 3) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "variable");
+	  return TCL_ERROR;
+	}
+	result = Tcl_NewIntObj(cur->getOutputBindDateMinute(Tcl_GetString(objv[2])));
+	Tcl_SetObjResult(interp, result);
+	break;
+      }
+    case SQLRCUR_getOutputBindDateSecond:
+      {
+	Tcl_Obj *result;
+	if (objc != 3) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "variable");
+	  return TCL_ERROR;
+	}
+	result = Tcl_NewIntObj(cur->getOutputBindDateSecond(Tcl_GetString(objv[2])));
+	Tcl_SetObjResult(interp, result);
+	break;
+      }
+    case SQLRCUR_getOutputBindDateMicrosecond:
+      {
+	Tcl_Obj *result;
+	if (objc != 3) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "variable");
+	  return TCL_ERROR;
+	}
+	result = Tcl_NewIntObj(cur->getOutputBindDateMicrosecond(Tcl_GetString(objv[2])));
+	Tcl_SetObjResult(interp, result);
+	break;
+      }
+    case SQLRCUR_getOutputBindDateTz:
+      {
+	Tcl_Obj *result;
+	if (objc != 3) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "variable");
+	  return TCL_ERROR;
+	}
+	result = _Tcl_NewStringObj(cur->getOutputBindDateTz(Tcl_GetString(objv[2])), -1);
+	Tcl_SetObjResult(interp, result);
+	break;
+      }
+    case SQLRCUR_getOutputBindDateIsNegative:
+      {
+	Tcl_Obj *result;
+	if (objc != 3) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "variable");
+	  return TCL_ERROR;
+	}
+	result = Tcl_NewBooleanObj(cur->getOutputBindDateIsNegative(Tcl_GetString(objv[2])));
+	Tcl_SetObjResult(interp, result);
+	break;
+      }
     case SQLRCUR_openCachedResultSet:
       {
 	Tcl_Obj *result;
@@ -1236,6 +1404,17 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	  return TCL_ERROR;
 	}
 	result = Tcl_NewBooleanObj(cur->endOfResultSet());
+	Tcl_SetObjResult(interp, result);
+	break;
+      }
+    case SQLRCUR_nextResultSet:
+      {
+	Tcl_Obj *result;
+	if (objc > 2) {
+	  Tcl_WrongNumArgs(interp, 2, objv, NULL);
+	  return TCL_ERROR;
+	}
+	result = Tcl_NewBooleanObj(cur->nextResultSet());
 	Tcl_SetObjResult(interp, result);
 	break;
       }

@@ -1328,12 +1328,23 @@ public class SQLRelayResultSet implements ResultSet {
 		throwExceptionIfClosed();
 		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
-		conn.throwFeatureNotSupportedException();
-		// FIXME: we need an SQLRelaySQLXML implementation
-		// to support this, which needs to be able to store a String
-		// and return it as an InputStream, Reader, Source, and String
+		String	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getField(currentrow-1,columnindex-1);
+		}
+		wasnull=(field==null);
+		drv.debugPrintln("column index: "+columnindex);
+		drv.debugPrintln("field: "+field);
+		drv.debugPrintln("was null: "+wasnull);
+		SQLXML	xml=null;
+		if (!wasnull) {
+			xml=conn.createSQLXML();
+			if (xml!=null) {
+				xml.setString(field);
+			}
+		}
 		drv.debugEnd();
-		return null;
+		return xml;
 	}
 
 	public
@@ -1342,18 +1353,27 @@ public class SQLRelayResultSet implements ResultSet {
 		throwExceptionIfClosed();
 		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
-		conn.throwFeatureNotSupportedException();
-		// FIXME: we need an SQLRelaySQLXML implementation
-		// to support this, which needs to be able to store a String
-		// and return it as an InputStream, Reader, Source, and String
+		String	field=null;
+		synchronized (networklock) {
+			field=sqlrcur.getField(currentrow-1,columnlabel);
+		}
+		wasnull=(field==null);
+		drv.debugPrintln("column label: "+columnlabel);
+		drv.debugPrintln("field: "+field);
+		drv.debugPrintln("was null: "+wasnull);
+		SQLXML	xml=null;
+		if (!wasnull) {
+			xml=conn.createSQLXML();
+			if (xml!=null) {
+				xml.setString(field);
+			}
+		}
 		drv.debugEnd();
-		return null;
+		return xml;
 	}
 
 	public
 	SQLRelayStatement getStatement() throws SQLException {
-		//drv.debugFunction(this);
-		//drv.debugEnd();
 		return stmt;
 	}
 
@@ -1546,7 +1566,6 @@ public class SQLRelayResultSet implements ResultSet {
 
 	private
 	Timestamp createTimestamp(long row, int col, Calendar cal) {
-drv.debug=true;
 		drv.debugFunction(this);
 		drv.debugPrintln("row: "+row);
 		drv.debugPrintln("col: "+col);
@@ -1578,7 +1597,6 @@ drv.debug=true;
 						hour,minute,second,
 						microsecond,cal);
 		drv.debugEnd();
-drv.debug=false;
 		return ts;
 	}
 
@@ -1734,7 +1752,6 @@ drv.debug=false;
 		throwExceptionIfClosed();
 		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
-		conn.throwFeatureNotSupportedException();
 		String	field=null;
 		synchronized (networklock) {
 			field=sqlrcur.getField(currentrow-1,columnindex-1);
@@ -1761,7 +1778,6 @@ drv.debug=false;
 		throwExceptionIfClosed();
 		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
-		conn.throwFeatureNotSupportedException();
 		String	field=null;
 		synchronized (networklock) {
 			field=sqlrcur.getField(currentrow-1,columnlabel);

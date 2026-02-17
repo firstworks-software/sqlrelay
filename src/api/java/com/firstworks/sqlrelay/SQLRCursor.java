@@ -306,8 +306,13 @@ public class SQLRCursor {
 	 *  with a parameter other than 0.  */
 	public native boolean	endOfResultSet();
 
+	/** Returns true and acts like executeQuery()
+	 *  when there is another result set available
+	 *  from the server.  */
+	public native boolean	nextResultSet();
 
-	/** If a query failed and generated an error, 
+
+	/** If a query failed and generated an error,
 	 *  the error message is available here.  If 
 	 *  the query succeeded then this method 
 	 *  returns NULL.  */

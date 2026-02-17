@@ -10084,8 +10084,27 @@ SQLRETURN SQL_API SQLForeignKeys(SQLHSTMT statementhandle,
 
 SQLRETURN SQL_API SQLMoreResults(SQLHSTMT statementhandle) {
 	debugFunction();
-	// only supports fetching the first result set of a query
-	return SQL_NO_DATA_FOUND;
+
+	STMT	*stmt=(STMT *)statementhandle;
+	if (statementhandle==SQL_NULL_HSTMT || !stmt || !stmt->cur) {
+		debugPrintf("  NULL stmt handle\n");
+		return SQL_INVALID_HANDLE;
+	}
+
+	// move on to the next result set
+	if (!stmt->cur->nextResultSet()) {
+		return SQL_NO_DATA_FOUND;
+	}
+
+	// reinit row indices
+	stmt->currentfetchrow=0;
+	stmt->currentstartrow=0;
+	stmt->currentgetdatarow=0;
+
+	// reset nodata
+	stmt->nodata=false;
+
+	return SQL_SUCCESS;
 }
 
 SQLRETURN SQL_API SQLNativeSql(SQLHDBC hdbc,

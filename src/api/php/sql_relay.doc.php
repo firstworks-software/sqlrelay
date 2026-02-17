@@ -499,7 +499,11 @@ function sqlrcur_inputBind($sqlrcurref, $variable, $value, $precision, $scale){}
  *  scales may also be specified */
 function sqlrcur_inputBind($sqlrcurref, $variable, $value, $precision, $scale){}
 
-/** 
+/**
+ *  Defines a date input bind variable. */
+function sqlrcur_inputBindDate($sqlrcurref, $variable, $year, $month, $day, $hour, $minute, $second, $microsecond, $tz, $isnegative){}
+
+/**
  *  Defines a binary lob input bind variable. */
 function sqlrcur_inputBindBlob($sqlrcurref, $variable, $value, $size){}
 
@@ -522,7 +526,11 @@ function sqlrcur_defineOutputBindInteger($sqlrcurref, $variable){}
  *  Defines an decimal output bind variable. */
 function sqlrcur_defineOutputBindDouble($sqlrcurref, $variable){}
 
-/** 
+/**
+ *  Defines a date output bind variable */
+function sqlrcur_defineOutputBindDate($sqlrcurref, $variable){}
+
+/**
  *  Defines a binary lob output bind variable */
 function sqlrcur_defineOutputBindBlob($sqlrcurref, $variable){}
 
@@ -598,13 +606,58 @@ function sqlrcur_getOutputBindClob($sqlrcurref, $variable){}
  *  defined output bind variable. */
 function sqlrcur_getOutputBindLength($sqlrcurref, $variable){}
 
-/** 
+/**
  *  Get the cursor associated with a previously defined output bind variable. */
 sqlrcur	sqlrcur_getOutputBindCursor($sqlrcurref, $variable){}
 
+/**
+ *  Get the year component of a previously defined
+ *  date output bind variable. */
+function sqlrcur_getOutputBindDateYear($sqlrcurref, $variable){}
+
+/**
+ *  Get the month component of a previously defined
+ *  date output bind variable. */
+function sqlrcur_getOutputBindDateMonth($sqlrcurref, $variable){}
+
+/**
+ *  Get the day component of a previously defined
+ *  date output bind variable. */
+function sqlrcur_getOutputBindDateDay($sqlrcurref, $variable){}
+
+/**
+ *  Get the hour component of a previously defined
+ *  date output bind variable. */
+function sqlrcur_getOutputBindDateHour($sqlrcurref, $variable){}
+
+/**
+ *  Get the minute component of a previously defined
+ *  date output bind variable. */
+function sqlrcur_getOutputBindDateMinute($sqlrcurref, $variable){}
+
+/**
+ *  Get the second component of a previously defined
+ *  date output bind variable. */
+function sqlrcur_getOutputBindDateSecond($sqlrcurref, $variable){}
+
+/**
+ *  Get the microsecond component of a previously defined
+ *  date output bind variable. */
+function sqlrcur_getOutputBindDateMicrosecond($sqlrcurref, $variable){}
+
+/**
+ *  Get the timezone component of a previously defined
+ *  date output bind variable. */
+function sqlrcur_getOutputBindDateTz($sqlrcurref, $variable){}
+
+/**
+ *  Get the is-negative component of a previously defined
+ *  date output bind variable. */
+function sqlrcur_getOutputBindDateIsNegative($sqlrcurref, $variable){}
 
 
-/** 
+
+/**
  *  Opens a cached result set.  Returns 1 on success and 0 on failure. */
 function sqlrcur_openCachedResultSet($sqlrcurref, $filename){}
 
@@ -643,9 +696,14 @@ function sqlrcur_firstRowIndex($sqlrcurref){}
  *  called with a parameter other than 0. */
 function sqlrcur_endOfResultSet($sqlrcurref){}
 
+/**
+ *  Returns true and acts like executeQuery() when there is another result set
+ *  available from the server. */
+function sqlrcur_nextResultSet($sqlrcurref){}
 
 
-/** 
+
+/**
  *  If a query failed and generated an error, the error message is available
  *  here.  If the query succeeded then this function returns a NULL. */
 function sqlrcur_errorMessage($sqlrcurref){}

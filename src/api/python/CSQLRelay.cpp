@@ -969,6 +969,32 @@ static PyObject *inputBind(PyObject *self, PyObject *args) {
   return Py_BuildValue("h", success);
 }
 
+static PyObject *inputBindDate(PyObject *self, PyObject *args) {
+  char *variable;
+  int16_t year;
+  int16_t month;
+  int16_t day;
+  int16_t hour;
+  int16_t minute;
+  int16_t second;
+  int32_t microsecond;
+  char *tz;
+  int isnegative;
+  long sqlrcur;
+  if (!PyArg_ParseTuple(args, "lshhhhhhhsi",
+        &sqlrcur, &variable, &year, &month, &day,
+        &hour, &minute, &second, &microsecond, &tz,
+        &isnegative))
+    return NULL;
+  Py_BEGIN_ALLOW_THREADS
+  ((sqlrcursor *)sqlrcur)->inputBind(variable,year,month,day,
+                                      hour,minute,second,
+                                      microsecond,tz,
+                                      (bool)isnegative);
+  Py_END_ALLOW_THREADS
+  Py_RETURN_NONE;
+}
+
 static PyObject *inputBindBlob(PyObject *self, PyObject *args) {
   char *variable;
   PyObject *value;
@@ -1088,6 +1114,15 @@ static PyObject *defineOutputBindDouble(PyObject *self, PyObject *args) {
   if (!PyArg_ParseTuple(args,"ls",&sqlrcur, &variable))
     return NULL;
   ((sqlrcursor *)sqlrcur)->defineOutputBindDouble(variable);
+  return Py_BuildValue("h", 0);
+}
+
+static PyObject *defineOutputBindDate(PyObject *self, PyObject *args) {
+  char *variable;
+  long sqlrcur;
+  if (!PyArg_ParseTuple(args, "ls", &sqlrcur, &variable))
+    return NULL;
+  ((sqlrcursor *)sqlrcur)->defineOutputBindDate(variable);
   return Py_BuildValue("h", 0);
 }
 
@@ -1240,6 +1275,96 @@ static PyObject *getOutputBindLength(PyObject *self, PyObject *args) {
   return Py_BuildValue("l", (long)rc);
 }
 
+static PyObject *getOutputBindDateYear(PyObject *self, PyObject *args) {
+  char *variable;
+  long sqlrcur;
+  int16_t rc;
+  if (!PyArg_ParseTuple(args, "ls", &sqlrcur, &variable))
+    return NULL;
+  rc=((sqlrcursor *)sqlrcur)->getOutputBindDateYear(variable);
+  return Py_BuildValue("h", rc);
+}
+
+static PyObject *getOutputBindDateMonth(PyObject *self, PyObject *args) {
+  char *variable;
+  long sqlrcur;
+  int16_t rc;
+  if (!PyArg_ParseTuple(args, "ls", &sqlrcur, &variable))
+    return NULL;
+  rc=((sqlrcursor *)sqlrcur)->getOutputBindDateMonth(variable);
+  return Py_BuildValue("h", rc);
+}
+
+static PyObject *getOutputBindDateDay(PyObject *self, PyObject *args) {
+  char *variable;
+  long sqlrcur;
+  int16_t rc;
+  if (!PyArg_ParseTuple(args, "ls", &sqlrcur, &variable))
+    return NULL;
+  rc=((sqlrcursor *)sqlrcur)->getOutputBindDateDay(variable);
+  return Py_BuildValue("h", rc);
+}
+
+static PyObject *getOutputBindDateHour(PyObject *self, PyObject *args) {
+  char *variable;
+  long sqlrcur;
+  int16_t rc;
+  if (!PyArg_ParseTuple(args, "ls", &sqlrcur, &variable))
+    return NULL;
+  rc=((sqlrcursor *)sqlrcur)->getOutputBindDateHour(variable);
+  return Py_BuildValue("h", rc);
+}
+
+static PyObject *getOutputBindDateMinute(PyObject *self, PyObject *args) {
+  char *variable;
+  long sqlrcur;
+  int16_t rc;
+  if (!PyArg_ParseTuple(args, "ls", &sqlrcur, &variable))
+    return NULL;
+  rc=((sqlrcursor *)sqlrcur)->getOutputBindDateMinute(variable);
+  return Py_BuildValue("h", rc);
+}
+
+static PyObject *getOutputBindDateSecond(PyObject *self, PyObject *args) {
+  char *variable;
+  long sqlrcur;
+  int16_t rc;
+  if (!PyArg_ParseTuple(args, "ls", &sqlrcur, &variable))
+    return NULL;
+  rc=((sqlrcursor *)sqlrcur)->getOutputBindDateSecond(variable);
+  return Py_BuildValue("h", rc);
+}
+
+static PyObject *getOutputBindDateMicrosecond(PyObject *self, PyObject *args) {
+  char *variable;
+  long sqlrcur;
+  int32_t rc;
+  if (!PyArg_ParseTuple(args, "ls", &sqlrcur, &variable))
+    return NULL;
+  rc=((sqlrcursor *)sqlrcur)->getOutputBindDateMicrosecond(variable);
+  return Py_BuildValue("l", (long)rc);
+}
+
+static PyObject *getOutputBindDateTz(PyObject *self, PyObject *args) {
+  char *variable;
+  long sqlrcur;
+  const char *rc;
+  if (!PyArg_ParseTuple(args, "ls", &sqlrcur, &variable))
+    return NULL;
+  rc=((sqlrcursor *)sqlrcur)->getOutputBindDateTz(variable);
+  return Py_BuildValue("s", rc);
+}
+
+static PyObject *getOutputBindDateIsNegative(PyObject *self, PyObject *args) {
+  char *variable;
+  long sqlrcur;
+  bool rc;
+  if (!PyArg_ParseTuple(args, "ls", &sqlrcur, &variable))
+    return NULL;
+  rc=((sqlrcursor *)sqlrcur)->getOutputBindDateIsNegative(variable);
+  return PyBool_FromLong(rc);
+}
+
 static PyObject *openCachedResultSet(PyObject *self, PyObject *args) {
   long sqlrcur;
   bool rc;
@@ -1308,6 +1433,17 @@ static PyObject *endOfResultSet(PyObject *self, PyObject *args) {
   if (!PyArg_ParseTuple(args, "l", &sqlrcur))
     return NULL;
   rc=((sqlrcursor *)sqlrcur)->endOfResultSet();
+  return Py_BuildValue("h", (short)rc);
+}
+
+static PyObject *nextResultSet(PyObject *self, PyObject *args) {
+  long sqlrcur;
+  bool rc;
+  if (!PyArg_ParseTuple(args, "l", &sqlrcur))
+    return NULL;
+  Py_BEGIN_ALLOW_THREADS
+  rc=((sqlrcursor *)sqlrcur)->nextResultSet();
+  Py_END_ALLOW_THREADS
   return Py_BuildValue("h", (short)rc);
 }
 
@@ -2555,12 +2691,14 @@ static PyMethodDef SQLRMethods[] = {
   {"clearBinds", clearBinds, METH_VARARGS},
   {"countBindVariables", countBindVariables, METH_VARARGS},
   {"inputBind", inputBind, METH_VARARGS},
+  {"inputBindDate", inputBindDate, METH_VARARGS},
   {"inputBindBlob", inputBindBlob, METH_VARARGS},
   {"inputBindClob", inputBindClob, METH_VARARGS},
   {"inputBinds", inputBinds, METH_VARARGS},
   {"defineOutputBindString", defineOutputBindString, METH_VARARGS},
   {"defineOutputBindInteger", defineOutputBindInteger, METH_VARARGS},
   {"defineOutputBindDouble", defineOutputBindDouble, METH_VARARGS},
+  {"defineOutputBindDate", defineOutputBindDate, METH_VARARGS},
   {"defineOutputBindBlob", defineOutputBindBlob, METH_VARARGS},
   {"defineOutputBindClob", defineOutputBindClob, METH_VARARGS},
   {"defineOutputBindCursor", defineOutputBindCursor, METH_VARARGS},
@@ -2574,6 +2712,15 @@ static PyMethodDef SQLRMethods[] = {
   {"getOutputBindInteger", getOutputBindInteger, METH_VARARGS},
   {"getOutputBindDouble", getOutputBindDouble, METH_VARARGS},
   {"getOutputBindLength", getOutputBindLength, METH_VARARGS},
+  {"getOutputBindDateYear", getOutputBindDateYear, METH_VARARGS},
+  {"getOutputBindDateMonth", getOutputBindDateMonth, METH_VARARGS},
+  {"getOutputBindDateDay", getOutputBindDateDay, METH_VARARGS},
+  {"getOutputBindDateHour", getOutputBindDateHour, METH_VARARGS},
+  {"getOutputBindDateMinute", getOutputBindDateMinute, METH_VARARGS},
+  {"getOutputBindDateSecond", getOutputBindDateSecond, METH_VARARGS},
+  {"getOutputBindDateMicrosecond", getOutputBindDateMicrosecond, METH_VARARGS},
+  {"getOutputBindDateTz", getOutputBindDateTz, METH_VARARGS},
+  {"getOutputBindDateIsNegative", getOutputBindDateIsNegative, METH_VARARGS},
   {"openCachedResultSet", openCachedResultSet, METH_VARARGS},
   {"colCount", colCount, METH_VARARGS},
   {"rowCount", rowCount, METH_VARARGS},
@@ -2581,6 +2728,7 @@ static PyMethodDef SQLRMethods[] = {
   {"affectedRows", affectedRows, METH_VARARGS},
   {"firstRowIndex", firstRowIndex, METH_VARARGS},
   {"endOfResultSet", endOfResultSet, METH_VARARGS},
+  {"nextResultSet", nextResultSet, METH_VARARGS},
   {"cursorErrorMessage", cursorErrorMessage, METH_VARARGS},
   {"cursorErrorNumber", cursorErrorNumber, METH_VARARGS},
   {"getNullsAsEmptyStrings", getNullsAsEmptyStrings, METH_VARARGS},

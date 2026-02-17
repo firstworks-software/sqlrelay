@@ -241,6 +241,7 @@ __END__
         inputBind(variable,value);
         inputBind(variable,value,length);
         inputBind(variable,value,precision,scale);
+        inputBindDate(variable,year,month,day,hour,minute,second,microsecond,tz,isnegative);
         inputBindBlob(variable,value,size);
         inputBindClob(variable,value,size);
             # Define an input bind variable.
@@ -252,6 +253,8 @@ __END__
         defineOutputBindString(variable,bufferlength);
             # Define an output bind variable.
             # "bufferlength" bytes will be reserved to store the value.
+        defineOutputBindDate(variable);
+            # Define a date output bind variable.
         defineOutputBindBlob(variable);
             # Define a BLOB output bind variable.
         defineOutputBindClob(variable);
@@ -305,6 +308,42 @@ __END__
             # Get the cursor associated with a previously
             # defined output bind variable.
 
+	getOutputBindDateYear(variable);
+            # Get the year component of a previously
+            # defined date output bind variable.
+
+	getOutputBindDateMonth(variable);
+            # Get the month component of a previously
+            # defined date output bind variable.
+
+	getOutputBindDateDay(variable);
+            # Get the day component of a previously
+            # defined date output bind variable.
+
+	getOutputBindDateHour(variable);
+            # Get the hour component of a previously
+            # defined date output bind variable.
+
+	getOutputBindDateMinute(variable);
+            # Get the minute component of a previously
+            # defined date output bind variable.
+
+	getOutputBindDateSecond(variable);
+            # Get the second component of a previously
+            # defined date output bind variable.
+
+	getOutputBindDateMicrosecond(variable);
+            # Get the microsecond component of a previously
+            # defined date output bind variable.
+
+	getOutputBindDateTz(variable);
+            # Get the time zone component of a previously
+            # defined date output bind variable.
+
+	getOutputBindDateIsNegative(variable);
+            # Get the negative flag of a previously
+            # defined date output bind variable.
+
 
 
         openCachedResultSet(filename);
@@ -347,9 +386,14 @@ __END__
         endOfResultSet();
             # Returns false if part of the result set is still
             # pending on the server and true if not.  This
-            # method can only return false if 
+            # method can only return false if
             # setResultSetBufferSize() has been called
             # with a parameter other than 0.
+
+        nextResultSet();
+            # Returns true and acts like executeQuery()
+            # when there is another result set available
+            # from the server.
 
         errorMessage();
             # If a query failed and generated an error, the

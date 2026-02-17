@@ -230,74 +230,6 @@ class oracle extends sqlrtest {
 		System.out.println();
 
 
-		// output bind by position
-		System.out.println("OUTPUT BIND BY POSITION: ");
-		cur.prepareQuery(
-			"begin "+
-			"	:numvar:=1; "+
-			"	:stringvar:='hello'; "+
-			"	:floatvar:=2.5; "+
-			"	:nullvar:=null; "+
-			"end;");
-		cur.defineOutputBindInteger("1");
-		cur.defineOutputBindString("2",10);
-		cur.defineOutputBindDouble("3");
-		cur.defineOutputBindString("4",10);
-		assertTrue(cur.executeQuery());
-		numvar=cur.getOutputBindInteger("1");
-		stringvar=cur.getOutputBindString("2");
-		floatvar=cur.getOutputBindDouble("3");
-		assertEquals(numvar,1);
-		assertEquals(stringvar,"hello");
-		assertEquals(floatvar,2.5);
-		assertEquals(
-			cur.getOutputBindString("4"),
-			"");
-		System.out.println();
-
-
-		// output bind by name
-		System.out.println("OUTPUT BIND BY NAME: ");
-		cur.clearBinds();
-		cur.defineOutputBindInteger("numvar");
-		cur.defineOutputBindString("stringvar",10);
-		cur.defineOutputBindDouble("floatvar");
-		cur.defineOutputBindString("nullvar",10);
-		assertTrue(cur.executeQuery());
-		numvar=cur.getOutputBindInteger("numvar");
-		stringvar=cur.getOutputBindString("stringvar");
-		floatvar=cur.getOutputBindDouble("floatvar");
-		assertEquals(numvar,1);
-		assertEquals(stringvar,"hello");
-		assertEquals(floatvar,2.5);
-		assertEquals(
-			cur.getOutputBindString("nullvar"),
-			"");
-		System.out.println();
-
-
-		// output bind by name with validation
-		System.out.println("OUTPUT BIND BY NAME WITH VALIDATION: ");
-		cur.clearBinds();
-		cur.defineOutputBindInteger("numvar");
-		cur.defineOutputBindString("stringvar",10);
-		cur.defineOutputBindDouble("floatvar");
-		cur.defineOutputBindString("nullvar",10);
-		cur.defineOutputBindString("dummyvar",10);
-		cur.validateBinds();
-		assertTrue(cur.executeQuery());
-		numvar=cur.getOutputBindInteger("numvar");
-		stringvar=cur.getOutputBindString("stringvar");
-		floatvar=cur.getOutputBindDouble("floatvar");
-		assertEquals(numvar,1);
-		assertEquals(stringvar,"hello");
-		assertEquals(floatvar,2.5);
-		assertEquals(
-			cur.getOutputBindString("nullvar"),
-			"");
-		System.out.println();
-
-
 		// select
 		System.out.println("SELECT: ");
 		assertTrue(cur.sendQuery(
@@ -605,7 +537,6 @@ class oracle extends sqlrtest {
 		assertEquals(cur.getField(0,0),"");
 		assertEquals(cur.getField(0,1),"1");
 		assertEquals(cur.getField(0,2),"");
-		cur.getNullsAsNulls();
 		System.out.println();
 
 
@@ -957,6 +888,74 @@ class oracle extends sqlrtest {
 			"	testtable "),1);
 		assertEquals(secondcur.getField(0,0),"9");
 		assertTrue(con.autoCommitOff());
+		System.out.println();
+
+
+		// output bind by position
+		System.out.println("OUTPUT BIND BY POSITION: ");
+		cur.prepareQuery(
+			"begin "+
+			"	:numvar:=1; "+
+			"	:stringvar:='hello'; "+
+			"	:floatvar:=2.5; "+
+			"	:nullvar:=null; "+
+			"end;");
+		cur.defineOutputBindInteger("1");
+		cur.defineOutputBindString("2",10);
+		cur.defineOutputBindDouble("3");
+		cur.defineOutputBindString("4",10);
+		assertTrue(cur.executeQuery());
+		numvar=cur.getOutputBindInteger("1");
+		stringvar=cur.getOutputBindString("2");
+		floatvar=cur.getOutputBindDouble("3");
+		assertEquals(numvar,1);
+		assertEquals(stringvar,"hello");
+		assertEquals(floatvar,2.5);
+		assertEquals(
+			cur.getOutputBindString("4"),
+			"");
+		System.out.println();
+
+
+		// output bind by name
+		System.out.println("OUTPUT BIND BY NAME: ");
+		cur.clearBinds();
+		cur.defineOutputBindInteger("numvar");
+		cur.defineOutputBindString("stringvar",10);
+		cur.defineOutputBindDouble("floatvar");
+		cur.defineOutputBindString("nullvar",10);
+		assertTrue(cur.executeQuery());
+		numvar=cur.getOutputBindInteger("numvar");
+		stringvar=cur.getOutputBindString("stringvar");
+		floatvar=cur.getOutputBindDouble("floatvar");
+		assertEquals(numvar,1);
+		assertEquals(stringvar,"hello");
+		assertEquals(floatvar,2.5);
+		assertEquals(
+			cur.getOutputBindString("nullvar"),
+			"");
+		System.out.println();
+
+
+		// output bind by name with validation
+		System.out.println("OUTPUT BIND BY NAME WITH VALIDATION: ");
+		cur.clearBinds();
+		cur.defineOutputBindInteger("numvar");
+		cur.defineOutputBindString("stringvar",10);
+		cur.defineOutputBindDouble("floatvar");
+		cur.defineOutputBindString("nullvar",10);
+		cur.defineOutputBindString("dummyvar",10);
+		cur.validateBinds();
+		assertTrue(cur.executeQuery());
+		numvar=cur.getOutputBindInteger("numvar");
+		stringvar=cur.getOutputBindString("stringvar");
+		floatvar=cur.getOutputBindDouble("floatvar");
+		assertEquals(numvar,1);
+		assertEquals(stringvar,"hello");
+		assertEquals(floatvar,2.5);
+		assertEquals(
+			cur.getOutputBindString("nullvar"),
+			"");
 		System.out.println();
 
 

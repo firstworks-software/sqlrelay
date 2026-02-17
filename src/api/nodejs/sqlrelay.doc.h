@@ -525,7 +525,8 @@ class SQLRCursor {
 		function inputBind(var variable,
 				var year, var month, var day,
 				var hour, var minute, var second,
-				var microsecond, var tz);
+				var microsecond, var tz,
+				var isnegative);
 
 		/** Defines a binary lob input bind variable. */
 		function inputBindBlob(var variable,
@@ -563,6 +564,9 @@ class SQLRCursor {
 
 		/** Defines a decimal output bind variable. */
 		function defineOutputBindDouble(var variable);
+
+		/** Defines a date output bind variable. */
+		function defineOutputBindDate(var variable);
 
 		/** Defines a date output bind variable. */
 		function defineOutputBindDate(var variable);
@@ -650,8 +654,44 @@ class SQLRCursor {
 		 *  defined output bind variable. */
 		function getOutputBindCursor(var variable);
 
+		/** Get the year from a previously defined
+		 *  date output bind variable. */
+		function getOutputBindDateYear(var variable);
 
-		
+		/** Get the month from a previously defined
+		 *  date output bind variable. */
+		function getOutputBindDateMonth(var variable);
+
+		/** Get the day from a previously defined
+		 *  date output bind variable. */
+		function getOutputBindDateDay(var variable);
+
+		/** Get the hour from a previously defined
+		 *  date output bind variable. */
+		function getOutputBindDateHour(var variable);
+
+		/** Get the minute from a previously defined
+		 *  date output bind variable. */
+		function getOutputBindDateMinute(var variable);
+
+		/** Get the second from a previously defined
+		 *  date output bind variable. */
+		function getOutputBindDateSecond(var variable);
+
+		/** Get the microsecond from a previously defined
+		 *  date output bind variable. */
+		function getOutputBindDateMicrosecond(var variable);
+
+		/** Get the time zone from a previously defined
+		 *  date output bind variable. */
+		function getOutputBindDateTz(var variable);
+
+		/** Get whether the hour is negative from a
+		 *  previously defined date output bind variable. */
+		function getOutputBindDateIsNegative(var variable);
+
+
+
 		/** Opens a cached result set.
 		 *  Returns true on success and false on failure. */
 		function openCachedResultSet(var filename);
@@ -696,10 +736,15 @@ class SQLRCursor {
 		 *  setResultSetBufferSize() has been called
 		 *  with a parameter other than 0. */
 		function endOfResultSet();
-		
-		
 
-		/** If a query failed and generated an error, 
+		/** Returns true and acts like executeQuery()
+		 *  when there is another result set available
+		 *  from the server. */
+		function nextResultSet();
+
+
+
+		/** If a query failed and generated an error,
 		 *  the error message is available here.  If 
 		 *  the query succeeded then this method 
 		 *  returns NULL. */

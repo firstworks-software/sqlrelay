@@ -49,6 +49,9 @@ struct params {
 	VALUE		five;
 	VALUE		six;
 	VALUE		seven;
+	VALUE		eight;
+	VALUE		nine;
+	VALUE		ten;
 	union {
 		bool			br;
 		int16_t			i16r;
@@ -1681,6 +1684,46 @@ static VALUE sqlrcur_inputBind(int argc, VALUE *argv, VALUE self) {
 	return INT2NUM(success);
 }
 
+static void inputBindDate(params *p) {
+	p->sqlrc.sqlrcur->inputBind(STR2CSTR(p->one),
+					(int16_t)NUM2INT(p->two),
+					(int16_t)NUM2INT(p->three),
+					(int16_t)NUM2INT(p->four),
+					(int16_t)NUM2INT(p->five),
+					(int16_t)NUM2INT(p->six),
+					(int16_t)NUM2INT(p->seven),
+					(int32_t)NUM2INT(p->eight),
+					STR2CSTR(p->nine),
+					(bool)NUM2INT(p->ten));
+}
+/**
+ *  call-seq:
+ *  inputBindDate(variable,year,month,day,hour,minute,second,microsecond,tz,isnegative)
+ *
+ *  Defines a date input bind variable. */
+static VALUE sqlrcur_inputBindDate(VALUE self, VALUE variable,
+					VALUE year, VALUE month, VALUE day,
+					VALUE hour, VALUE minute,
+					VALUE second, VALUE microsecond,
+					VALUE tz, VALUE isnegative) {
+	sqlrcursordata	*sqlrcurdata;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	struct params prms;
+	prms.sqlrc.sqlrcur=sqlrcurdata->cur;
+	prms.one=variable;
+	prms.two=year;
+	prms.three=month;
+	prms.four=day;
+	prms.five=hour;
+	prms.six=minute;
+	prms.seven=second;
+	prms.eight=microsecond;
+	prms.nine=tz;
+	prms.ten=isnegative;
+	CALL(inputBindDate,prms)
+	return Qnil;
+}
+
 static void inputBindBlob(params *p) {
 	p->sqlrc.sqlrcur->inputBindBlob(STR2CSTR(p->one),
 					STR2CSTR(p->two),
@@ -1786,6 +1829,21 @@ static VALUE sqlrcur_defineOutputBindDouble(VALUE self, VALUE variable) {
 	sqlrcursordata	*sqlrcurdata;
 	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
 	CUR1(sqlrcurdata->cur,defineOutputBindDouble,variable);
+	return Qnil;
+}
+
+static void defineOutputBindDate(params *p) {
+	p->sqlrc.sqlrcur->defineOutputBindDate(STR2CSTR(p->one));
+}
+/**
+ *  call-seq:
+ *  defineOutputBindDate(variable)
+ *
+ *  Defines a date output bind variable. */
+static VALUE sqlrcur_defineOutputBindDate(VALUE self, VALUE variable) {
+	sqlrcursordata	*sqlrcurdata;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	CUR1(sqlrcurdata->cur,defineOutputBindDate,variable);
 	return Qnil;
 }
 
@@ -2113,6 +2171,163 @@ static VALUE sqlrcur_getOutputBindLength(VALUE self, VALUE variable) {
 	return INT2NUM(result);
 }
 
+static void getOutputBindDateYear(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getOutputBindDateYear(STR2CSTR(p->one));
+}
+/**
+ *  call-seq:
+ *  getOutputBindDateYear(variable)
+ *
+ *  Get the year component of a previously defined
+ *  date output bind variable. */
+static VALUE sqlrcur_getOutputBindDateYear(VALUE self, VALUE variable) {
+	sqlrcursordata	*sqlrcurdata;
+	int16_t		result;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	RCUR1(result,i16r,sqlrcurdata->cur,getOutputBindDateYear,variable);
+	return INT2NUM(result);
+}
+
+static void getOutputBindDateMonth(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getOutputBindDateMonth(STR2CSTR(p->one));
+}
+/**
+ *  call-seq:
+ *  getOutputBindDateMonth(variable)
+ *
+ *  Get the month component of a previously defined
+ *  date output bind variable. */
+static VALUE sqlrcur_getOutputBindDateMonth(VALUE self, VALUE variable) {
+	sqlrcursordata	*sqlrcurdata;
+	int16_t		result;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	RCUR1(result,i16r,sqlrcurdata->cur,getOutputBindDateMonth,variable);
+	return INT2NUM(result);
+}
+
+static void getOutputBindDateDay(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getOutputBindDateDay(STR2CSTR(p->one));
+}
+/**
+ *  call-seq:
+ *  getOutputBindDateDay(variable)
+ *
+ *  Get the day component of a previously defined
+ *  date output bind variable. */
+static VALUE sqlrcur_getOutputBindDateDay(VALUE self, VALUE variable) {
+	sqlrcursordata	*sqlrcurdata;
+	int16_t		result;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	RCUR1(result,i16r,sqlrcurdata->cur,getOutputBindDateDay,variable);
+	return INT2NUM(result);
+}
+
+static void getOutputBindDateHour(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getOutputBindDateHour(STR2CSTR(p->one));
+}
+/**
+ *  call-seq:
+ *  getOutputBindDateHour(variable)
+ *
+ *  Get the hour component of a previously defined
+ *  date output bind variable. */
+static VALUE sqlrcur_getOutputBindDateHour(VALUE self, VALUE variable) {
+	sqlrcursordata	*sqlrcurdata;
+	int16_t		result;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	RCUR1(result,i16r,sqlrcurdata->cur,getOutputBindDateHour,variable);
+	return INT2NUM(result);
+}
+
+static void getOutputBindDateMinute(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getOutputBindDateMinute(STR2CSTR(p->one));
+}
+/**
+ *  call-seq:
+ *  getOutputBindDateMinute(variable)
+ *
+ *  Get the minute component of a previously defined
+ *  date output bind variable. */
+static VALUE sqlrcur_getOutputBindDateMinute(VALUE self, VALUE variable) {
+	sqlrcursordata	*sqlrcurdata;
+	int16_t		result;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	RCUR1(result,i16r,sqlrcurdata->cur,getOutputBindDateMinute,variable);
+	return INT2NUM(result);
+}
+
+static void getOutputBindDateSecond(params *p) {
+	p->result.i16r=p->sqlrc.sqlrcur->getOutputBindDateSecond(STR2CSTR(p->one));
+}
+/**
+ *  call-seq:
+ *  getOutputBindDateSecond(variable)
+ *
+ *  Get the second component of a previously defined
+ *  date output bind variable. */
+static VALUE sqlrcur_getOutputBindDateSecond(VALUE self, VALUE variable) {
+	sqlrcursordata	*sqlrcurdata;
+	int16_t		result;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	RCUR1(result,i16r,sqlrcurdata->cur,getOutputBindDateSecond,variable);
+	return INT2NUM(result);
+}
+
+static void getOutputBindDateMicrosecond(params *p) {
+	p->result.i32r=p->sqlrc.sqlrcur->getOutputBindDateMicrosecond(STR2CSTR(p->one));
+}
+/**
+ *  call-seq:
+ *  getOutputBindDateMicrosecond(variable)
+ *
+ *  Get the microsecond component of a previously defined
+ *  date output bind variable. */
+static VALUE sqlrcur_getOutputBindDateMicrosecond(VALUE self, VALUE variable) {
+	sqlrcursordata	*sqlrcurdata;
+	int32_t		result;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	RCUR1(result,i32r,sqlrcurdata->cur,getOutputBindDateMicrosecond,variable);
+	return INT2NUM(result);
+}
+
+static void getOutputBindDateTz(params *p) {
+	p->result.ccpr=p->sqlrc.sqlrcur->getOutputBindDateTz(STR2CSTR(p->one));
+}
+/**
+ *  call-seq:
+ *  getOutputBindDateTz(variable)
+ *
+ *  Get the timezone component of a previously defined
+ *  date output bind variable. */
+static VALUE sqlrcur_getOutputBindDateTz(VALUE self, VALUE variable) {
+	sqlrcursordata	*sqlrcurdata;
+	const char	*result;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	RCUR1(result,ccpr,sqlrcurdata->cur,getOutputBindDateTz,variable);
+	if (result) {
+		return rb_str_new2(result);
+	} else {
+		return Qnil;
+	}
+}
+
+static void getOutputBindDateIsNegative(params *p) {
+	p->result.br=p->sqlrc.sqlrcur->getOutputBindDateIsNegative(STR2CSTR(p->one));
+}
+/**
+ *  call-seq:
+ *  getOutputBindDateIsNegative(variable)
+ *
+ *  Get whether the hour component of a previously defined
+ *  date output bind variable is negative. */
+static VALUE sqlrcur_getOutputBindDateIsNegative(VALUE self, VALUE variable) {
+	sqlrcursordata	*sqlrcurdata;
+	bool		result;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	RCUR1(result,br,sqlrcurdata->cur,getOutputBindDateIsNegative,variable);
+	return (result)?Qtrue:Qfalse;
+}
+
 static void getOutputBindCursor(params *p) {
 	p->result.scr=p->sqlrc.sqlrcur->getOutputBindCursor(
 						STR2CSTR(p->one),true);
@@ -2228,6 +2443,19 @@ static VALUE sqlrcur_endOfResultSet(VALUE self) {
 	bool		result;
 	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
 	RCUR(result,br,sqlrcurdata->cur,endOfResultSet);
+	return INT2NUM(result);
+}
+
+static void nextResultSet(params *p) {
+	p->result.br=p->sqlrc.sqlrcur->nextResultSet();
+}
+/** Returns true and acts like executeQuery() when there is another result set
+ *  available from the server. */
+static VALUE sqlrcur_nextResultSet(VALUE self) {
+	sqlrcursordata	*sqlrcurdata;
+	bool		result;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	RCUR(result,br,sqlrcurdata->cur,nextResultSet);
 	return INT2NUM(result);
 }
 
@@ -3498,6 +3726,8 @@ void Init_SQLRCursor() {
 				(CAST)sqlrcur_substitution,-1);
 	rb_define_method(csqlrcursor,"inputBind",
 				(CAST)sqlrcur_inputBind,-1);
+	rb_define_method(csqlrcursor,"inputBindDate",
+				(CAST)sqlrcur_inputBindDate,10);
 	rb_define_method(csqlrcursor,"inputBindBlob",
 				(CAST)sqlrcur_inputBindBlob,3);
 	rb_define_method(csqlrcursor,"inputBindClob",
@@ -3508,6 +3738,8 @@ void Init_SQLRCursor() {
 				(CAST)sqlrcur_defineOutputBindInteger,1);
 	rb_define_method(csqlrcursor,"defineOutputBindDouble",
 				(CAST)sqlrcur_defineOutputBindDouble,1);
+	rb_define_method(csqlrcursor,"defineOutputBindDate",
+				(CAST)sqlrcur_defineOutputBindDate,1);
 	rb_define_method(csqlrcursor,"defineOutputBindBlob",
 				(CAST)sqlrcur_defineOutputBindBlob,1);
 	rb_define_method(csqlrcursor,"defineOutputBindClob",
@@ -3538,6 +3770,24 @@ void Init_SQLRCursor() {
 				(CAST)sqlrcur_getOutputBindDouble,1);
 	rb_define_method(csqlrcursor,"getOutputBindLength",
 				(CAST)sqlrcur_getOutputBindLength,1);
+	rb_define_method(csqlrcursor,"getOutputBindDateYear",
+				(CAST)sqlrcur_getOutputBindDateYear,1);
+	rb_define_method(csqlrcursor,"getOutputBindDateMonth",
+				(CAST)sqlrcur_getOutputBindDateMonth,1);
+	rb_define_method(csqlrcursor,"getOutputBindDateDay",
+				(CAST)sqlrcur_getOutputBindDateDay,1);
+	rb_define_method(csqlrcursor,"getOutputBindDateHour",
+				(CAST)sqlrcur_getOutputBindDateHour,1);
+	rb_define_method(csqlrcursor,"getOutputBindDateMinute",
+				(CAST)sqlrcur_getOutputBindDateMinute,1);
+	rb_define_method(csqlrcursor,"getOutputBindDateSecond",
+				(CAST)sqlrcur_getOutputBindDateSecond,1);
+	rb_define_method(csqlrcursor,"getOutputBindDateMicrosecond",
+				(CAST)sqlrcur_getOutputBindDateMicrosecond,1);
+	rb_define_method(csqlrcursor,"getOutputBindDateTz",
+				(CAST)sqlrcur_getOutputBindDateTz,1);
+	rb_define_method(csqlrcursor,"getOutputBindDateIsNegative",
+				(CAST)sqlrcur_getOutputBindDateIsNegative,1);
 	rb_define_method(csqlrcursor,"getOutputBindCursor",
 				(CAST)sqlrcur_getOutputBindCursor,1);
 	rb_define_method(csqlrcursor,"openCachedResultSet",
@@ -3554,6 +3804,8 @@ void Init_SQLRCursor() {
 				(CAST)sqlrcur_firstRowIndex,0);
 	rb_define_method(csqlrcursor,"endOfResultSet",
 				(CAST)sqlrcur_endOfResultSet,0);
+	rb_define_method(csqlrcursor,"nextResultSet",
+				(CAST)sqlrcur_nextResultSet,0);
 	rb_define_method(csqlrcursor,"errorMessage",
 				(CAST)sqlrcur_errorMessage,0);
 	rb_define_method(csqlrcursor,"errorNumber",

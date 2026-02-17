@@ -42,10 +42,10 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 	private
 	SQLRelayParameter getParameter(int param) {
 		drv.debugFunction(this);
-		SQLRelayParameter	p=
-			(parameters!=null)?parameters.get(String.valueOf(param)):null;
+		SQLRelayParameter	p=(parameters!=null)?
+					parameters.get(String.valueOf(param)):
+					null;
 		drv.debugPrintln("param: "+param);
-		//FIXME: drv.debugPrintln("class name: "+name);
 		drv.debugEnd();
 		return p;
 	}
