@@ -677,10 +677,10 @@ const char *sqlrserverconnection::getIsolationLevel() {
 	// get the set isolation level query
 	const char	*gilquery=getIsolationLevelQuery();
 
-	// If there is no query for this then the db we're using doesn't
-	// support switching.
+	// if there is no query for this then the db we're using doesn't
+	// support isolation levels
 	if (!charstring::getLength(gilquery)) {
-		return NULL;
+		return "unknown";
 	}
 
 	size_t	gilquerysize=charstring::getLength(gilquery);

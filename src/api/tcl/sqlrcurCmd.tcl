@@ -12,9 +12,9 @@ proc sqlrcurDelete {}
 
 
 # Sets the number of rows of the result set
-# to buffer at a time.  0  {the default}
+# to buffer at a time.  0 (the default)
 # means buffer the entire result set.
-proc setResultSetBufferSize {rows} 
+proc setResultSetBufferSize {rows}
 
 # Returns the number of result set rows that 
 # will be buffered at a time or 0 for the
@@ -24,10 +24,10 @@ proc getResultSetBufferSize {}
 
 
 # Tells the server not to send any column
-# info  {names types sizes}.  If you don't
-# need that info you should call this
+# info (names, types, sizes).  If you don't
+# need that info, you should call this
 # method to improve performance.
-proc dontGetColumnInfo {} 
+proc dontGetColumnInfo {}
 
 # Tells the server to send column info.
 proc getColumnInfo {} 
@@ -48,24 +48,24 @@ proc lowerCaseColumnNames {}
 
 # Sets query caching on.  Future queries
 # will be cached to the file "filename".
-# 
+#
 # A default time-to-live of 10 minutes is
 # also set.
-# 
-# Note that once cacheToFile is called
+#
+# Note that once cacheToFile() is called,
 # the result sets of all future queries will
-# be cached to that file until another call 
-# to cacheToFile changes which file to
-# cache to or a call to cacheOff turns off
+# be cached to that file until another call
+# to cacheToFile() changes which file to
+# cache to or a call to cacheOff() turns off
 # caching.
-proc cacheToFile {filename} 
+proc cacheToFile {filename}
 
 # Sets the time-to-live for cached result
-# sets. The sqlr-cachemanger will remove each 
-# cached result set "ttl" seconds after it's 
-# created provided it's scanning the directory
+# sets. The sqlr-cachemanger will remove each
+# cached result set "ttl" seconds after it's
+# created, provided it's scanning the directory
 # containing the cache files.
-proc setCacheTtl {ttl} 
+proc setCacheTtl {ttl}
 
 # Returns the name of the file containing the
 # cached result set.
@@ -181,18 +181,18 @@ proc defineOutputBindCursor {variable}
 # Clears all bind variables.
 proc clearBinds {} 
 
-# Parses the previously prepared query
+# Parses the previously prepared query,
 # counts the number of bind variables defined
 # in it and returns that number.
-proc countBindVariables {} 
+proc countBindVariables {}
 
-# If you are binding to any variables that 
-# might not actually be in your query call 
-# this to ensure that the database won't try 
-# to bind them unless they really are in the 
+# If you are binding to any variables that
+# might not actually be in your query, call
+# this to ensure that the database won't try
+# to bind them unless they really are in the
 # query.  There is a performance penalty for
 # calling this method.
-proc validateBinds {} 
+proc validateBinds {}
 
 # Returns true if "variable" was a valid
 # bind variable of the query.
@@ -266,12 +266,12 @@ proc getOutputBindDateSecond {variable}
 # defined date output bind variable.
 proc getOutputBindDateMicrosecond {variable}
 
-# Get the timezone from a previously defined
+# Get the time zone from a previously defined
 # date output bind variable.
 proc getOutputBindDateTz {variable}
 
-# Get the is-negative flag from a previously
-# defined date output bind variable.
+# Get whether the value is negative from a
+# previously defined date output bind variable.
 proc getOutputBindDateIsNegative {variable}
 
 
@@ -286,11 +286,11 @@ proc openCachedResultSet {filename}
 # result set.
 proc colCount {} 
 
-# Returns the number of rows in the current 
-# result set  {if the result set is being
-# stepped through this returns the number
-# of rows processed so far}.
-proc rowCount {} 
+# Returns the number of rows in the current
+# result set (if the result set is being
+# stepped through, this returns the number
+# of rows processed so far).
+proc rowCount {}
 
 # Returns the total number of rows that will 
 # be returned in the result set.  Not all 
@@ -300,14 +300,14 @@ proc rowCount {}
 # by databases which don't support this option.
 proc totalRows {} 
 
-# Returns the number of rows that were 
-# updated inserted or deleted by the query.
-# Not all databases support this call.  Don't 
-# use it for applications which are designed 
-# to be portable across databases.  0 is 
-# returned by databases which don't support 
+# Returns the number of rows that were
+# updated, inserted or deleted by the query.
+# Not all databases support this call.  Don't
+# use it for applications which are designed
+# to be portable across databases.  0 is
+# returned by databases which don't support
 # this option.
-proc affectedRows {} 
+proc affectedRows {}
 
 # Returns the index of the first buffered row.
 # This is useful when buffering only part of
@@ -316,23 +316,23 @@ proc firstRowIndex {}
 
 # Returns false if part of the result set is
 # still pending on the server and true if not.
-# This method can only return false if 
-# setResultSetBufferSize {} has been called
+# This method can only return false if
+# setResultSetBufferSize() has been called
 # with a parameter other than 0.
 proc endOfResultSet {}
 
-# Returns true and acts like executeQuery {}
+# Returns true and acts like executeQuery()
 # when there is another result set available
 # from the server.
 proc nextResultSet {}
 
 
 
-# If a query failed and generated an error
-# the error message is available here.  If 
-# the query succeeded then this method 
+# If a query failed and generated an error,
+# the error message is available here.  If
+# the query succeeded then this method
 # returns NULL.
-proc errorMessage {} 
+proc errorMessage {}
 
 
 
@@ -362,100 +362,136 @@ proc getFieldAsDoubleByIndex {row  col}
 # Returns the specified field as a decimal.
 proc getFieldAsDoubleByName {row col}
 
-# Returns the year of the specified field as a date.
+# Interprets the specified field as a date
+# and returns the year component.
 proc getFieldAsDateYearByIndex {row col}
 
-# Returns the year of the specified field as a date.
+# Interprets the specified field as a date
+# and returns the year component.
 proc getFieldAsDateYearByName {row col}
 
-# Returns the year of the specified field as a date with ddmm parameters.
+# Interprets the specified field as a date
+# and returns the year component.
 proc getFieldAsDateYearByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
-# Returns the year of the specified field as a date with ddmm parameters.
+# Interprets the specified field as a date
+# and returns the year component.
 proc getFieldAsDateYearByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
-# Returns the month of the specified field as a date.
+# Interprets the specified field as a date
+# and returns the month component.
 proc getFieldAsDateMonthByIndex {row col}
 
-# Returns the month of the specified field as a date.
+# Interprets the specified field as a date
+# and returns the month component.
 proc getFieldAsDateMonthByName {row col}
 
-# Returns the month of the specified field as a date with ddmm parameters.
+# Interprets the specified field as a date
+# and returns the month component.
 proc getFieldAsDateMonthByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
-# Returns the month of the specified field as a date with ddmm parameters.
+# Interprets the specified field as a date
+# and returns the month component.
 proc getFieldAsDateMonthByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
-# Returns the day of the specified field as a date.
+# Interprets the specified field as a date
+# and returns the day component.
 proc getFieldAsDateDayByIndex {row col}
 
-# Returns the day of the specified field as a date.
+# Interprets the specified field as a date
+# and returns the day component.
 proc getFieldAsDateDayByName {row col}
 
-# Returns the day of the specified field as a date with ddmm parameters.
+# Interprets the specified field as a date
+# and returns the day component.
 proc getFieldAsDateDayByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
-# Returns the day of the specified field as a date with ddmm parameters.
+# Interprets the specified field as a date
+# and returns the day component.
 proc getFieldAsDateDayByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
-# Returns the hour of the specified field as a date.
+# Interprets the specified field as a date
+# and returns the hour component.
 proc getFieldAsDateHourByIndex {row col}
 
-# Returns the hour of the specified field as a date.
+# Interprets the specified field as a date
+# and returns the hour component.
 proc getFieldAsDateHourByName {row col}
 
-# Returns the hour of the specified field as a date with ddmm parameters.
+# Interprets the specified field as a date
+# and returns the hour component.
 proc getFieldAsDateHourByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
-# Returns the hour of the specified field as a date with ddmm parameters.
+# Interprets the specified field as a date
+# and returns the hour component.
 proc getFieldAsDateHourByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
-# Returns the minute of the specified field as a date.
+# Interprets the specified field as a date
+# and returns the minute component.
 proc getFieldAsDateMinuteByIndex {row col}
 
-# Returns the minute of the specified field as a date.
+# Interprets the specified field as a date
+# and returns the minute component.
 proc getFieldAsDateMinuteByName {row col}
 
-# Returns the minute of the specified field as a date with ddmm parameters.
+# Interprets the specified field as a date
+# and returns the minute component.
 proc getFieldAsDateMinuteByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
-# Returns the minute of the specified field as a date with ddmm parameters.
+# Interprets the specified field as a date
+# and returns the minute component.
 proc getFieldAsDateMinuteByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
-# Returns the second of the specified field as a date.
+# Interprets the specified field as a date
+# and returns the second component.
 proc getFieldAsDateSecondByIndex {row col}
 
-# Returns the second of the specified field as a date.
+# Interprets the specified field as a date
+# and returns the second component.
 proc getFieldAsDateSecondByName {row col}
 
-# Returns the second of the specified field as a date with ddmm parameters.
+# Interprets the specified field as a date
+# and returns the second component.
 proc getFieldAsDateSecondByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
-# Returns the second of the specified field as a date with ddmm parameters.
+# Interprets the specified field as a date
+# and returns the second component.
 proc getFieldAsDateSecondByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
-# Returns the microsecond of the specified field as a date.
+# Interprets the specified field as a date
+# and returns the microsecond component.
 proc getFieldAsDateMicrosecondByIndex {row col}
 
-# Returns the microsecond of the specified field as a date.
+# Interprets the specified field as a date
+# and returns the microsecond component.
 proc getFieldAsDateMicrosecondByName {row col}
 
-# Returns the microsecond of the specified field as a date with ddmm parameters.
+# Interprets the specified field as a date
+# and returns the microsecond component.
 proc getFieldAsDateMicrosecondByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
-# Returns the microsecond of the specified field as a date with ddmm parameters.
+# Interprets the specified field as a date
+# and returns the microsecond component.
 proc getFieldAsDateMicrosecondByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
-# Returns whether the specified date field is negative.
+# Interprets the specified field as a date
+# and returns whether the hour component
+# is negative.
 proc getFieldAsDateIsNegativeByIndex {row col}
 
-# Returns whether the specified date field is negative.
+# Interprets the specified field as a date
+# and returns whether the hour component
+# is negative.
 proc getFieldAsDateIsNegativeByName {row col}
 
-# Returns whether the specified date field is negative with ddmm parameters.
+# Interprets the specified field as a date
+# and returns whether the hour component
+# is negative.
 proc getFieldAsDateIsNegativeByIndexWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
-# Returns whether the specified date field is negative with ddmm parameters.
+# Interprets the specified field as a date
+# and returns whether the hour component
+# is negative.
 proc getFieldAsDateIsNegativeByNameWithDdMm {row col ddmm yyyyddmm datedelimiters}
 
 
@@ -507,17 +543,17 @@ proc getColumnLengthByName {col}
 # column.
 # Precision is the total number of digits in
 # a number.  eg: 123.45 has a precision of 5.
-# For non-numeric types it's the number of
+# For non-numeric types, it's the number of
 # characters in the string.
-proc getColumnPrecisionByIndex {col} 
+proc getColumnPrecisionByIndex {col}
 
 # Returns the precision of the specified
 # column.
 # Precision is the total number of digits in
 # a number.  eg: 123.45 has a precision of 5.
-# For non-numeric types it's the number of
+# For non-numeric types, it's the number of
 # characters in the string.
-proc getColumnPrecisionByName {col} 
+proc getColumnPrecisionByName {col}
 
 # Returns the scale of the specified column.
 # Scale is the total number of digits to the
@@ -548,12 +584,12 @@ proc getColumnIsPrimaryKeyByIndex {col}
 proc getColumnIsPrimaryKeyByName {col} 
 
 # Returns true if the specified column is
- 	# unique and false otherwise.
-proc getColumnIsUniqueByIndex {col} 
+# unique and false otherwise.
+proc getColumnIsUniqueByIndex {col}
 
 # Returns true if the specified column is
- 	# unique and false otherwise.
-proc getColumnIsUniqueByName {col} 
+# unique and false otherwise.
+proc getColumnIsUniqueByName {col}
 
 # Returns true if the specified column is
 # part of a composite key and false otherwise.
@@ -610,30 +646,30 @@ proc getLongestByName {col}
 
 
 # Tells the server to leave this result
-# set open when the connection calls 
-# suspendSession so that another connection 
-# can connect to it using resumeResultSet 
-# after it calls resumeSession.
-proc suspendResultSet {} 
+# set open when the connection calls
+# suspendSession() so that another connection
+# can connect to it using resumeResultSet()
+# after it calls resumeSession().
+proc suspendResultSet {}
 
 # Returns the internal ID of this result set.
-# This parameter may be passed to another 
-# cursor for use in the resumeResultSet 
+# This parameter may be passed to another
+# cursor for use in the resumeResultSet()
 # method.
 # Note: The value this method returns is only
-# valid after a call to suspendResultSet.
-proc getResultSetId {} 
-
-# Resumes a result set previously left open 
-# using suspendSession.
-# Returns true on success and false on failure.
-proc resumeResultSet {id} 
+# valid after a call to suspendResultSet().
+proc getResultSetId {}
 
 # Resumes a result set previously left open
-# using suspendSession and continues caching
+# using suspendSession().
+# Returns true on success and false on failure.
+proc resumeResultSet {id}
+
+# Resumes a result set previously left open
+# using suspendSession() and continues caching
 # the result set to "filename".
 # Returns true on success and false on failure.
-proc resumeCachedResultSet {id filename} 
+proc resumeCachedResultSet {id filename}
 
 # Closes the current result set, if one is open.  Data
 # that has been fetched already is still available but

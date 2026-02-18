@@ -829,16 +829,20 @@ const char *postgresqlconnection::mapIsolationLevel(
 		}
 	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
 			toformat==SQLRSERVERISOLATIONLEVELFORMAT_JDBC) {
-		if (!charstring::compare(isolevel,"read uncommitted")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"read uncommitted")) {
 			return "TRANSACTION_READ_UNCOMMITTED";
 		}
-		if (!charstring::compare(isolevel,"read committed")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"read committed")) {
 			return "TRANSACTION_READ_COMMITTED";
 		}
-		if (!charstring::compare(isolevel,"repeatable read")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"repeatable read")) {
 			return "TRANSACTION_REPEATABLE_READ";
 		}
-		if (!charstring::compare(isolevel,"serializable")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"serializable")) {
 			return "TRANSACTION_SERIALIZABLE";
 		}
 	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC &&
@@ -861,16 +865,20 @@ const char *postgresqlconnection::mapIsolationLevel(
 		}
 	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
 			toformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC) {
-		if (!charstring::compare(isolevel,"read uncommitted")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"read uncommitted")) {
 			return "SQL_TXN_READ_UNCOMMITTED";
 		}
-		if (!charstring::compare(isolevel,"read committed")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"read committed")) {
 			return "SQL_TXN_READ_COMMITTED";
 		}
-		if (!charstring::compare(isolevel,"repeatable read")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"repeatable read")) {
 			return "SQL_TXN_REPEATABLE_READ";
 		}
-		if (!charstring::compare(isolevel,"serializable")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"serializable")) {
 			return "SQL_TXN_SERIALIZABLE";
 		}
 	}

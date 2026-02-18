@@ -1442,7 +1442,7 @@ sqlrconnectionSetAttribute(pdo_dbh_t *dbh,
 	sqlrconnection	*sqlrcon=(sqlrconnection *)sqlrdbh->sqlrcon;
 
 	// PDO handles several of these options itself.  These are the ones
-	// it doens't handle.
+	// it doesn't handle.
 	switch (attr) {
 		case PDO_ATTR_AUTOCOMMIT:
 			// use to turn on or off auto-commit mode
@@ -2028,9 +2028,11 @@ static int sqlrelayHandleFactory(pdo_dbh_t *dbh,
 
 	// set connect timeout
 	if (charstring::isNumber(connecttime)) {
-		int32_t		timeoutsec=charstring::convertToInteger(connecttime);
-		long double	dbl=charstring::convertToFloatC(connecttime)-
-						(long double)timeoutsec;
+		int32_t		timeoutsec=
+				charstring::convertToInteger(connecttime);
+		long double	dbl=
+				charstring::convertToFloatC(connecttime)-
+							(long double)timeoutsec;
 		int32_t		timeoutusec=(int32_t)(dbl*1000000.0);
 		if (timeoutsec>=0) {
 			sqlrdbh->sqlrcon->setConnectTimeout(

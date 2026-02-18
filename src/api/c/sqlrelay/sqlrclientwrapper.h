@@ -360,14 +360,24 @@ const char	*sqlrcon_nextvalFormat(sqlrcon sqlrconref);
 
 
 /** @ingroup sqlrclientwrapper
- *  Sets the current database/schema to "database" */
+ *  Sets the current database (catalog) to "database" */
 SQLRCLIENT_DLLSPEC
 int	sqlrcon_selectDatabase(sqlrcon sqlrconref, const char *database);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the database/schema that is currently in use. */
+ *  Returns the database (catalog) that is currently in use. */
 SQLRCLIENT_DLLSPEC
 const char	*sqlrcon_getCurrentDatabase(sqlrcon sqlrconref);
+
+/** @ingroup sqlrclientwrapper
+ *  Sets the current schema to "schema" */
+SQLRCLIENT_DLLSPEC
+int	sqlrcon_selectSchema(sqlrcon sqlrconref, const char *schema);
+
+/** @ingroup sqlrclientwrapper
+ *  Returns the schema that is currently in use. */
+SQLRCLIENT_DLLSPEC
+const char	*sqlrcon_getCurrentSchema(sqlrcon sqlrconref);
 
 
 
@@ -411,17 +421,191 @@ SQLRCLIENT_DLLSPEC
 int	sqlrcon_rollback(sqlrcon sqlrconref);
 
 /** @ingroup sqlrclientwrapper
- *  Sets the transaction isolation level to "isolationlevel".  Returns 1 if
- *  setting the isolation level succeeded, 0 if it failed. */
+ *  Sets the isolation level to "isolationlevel", the database-secific
+ *  isolation level.  Returns 1 if setting the isolation level succeeded,
+ *  0 if it failed. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcon_setIsolationLevel(sqlrcon sqlrconref,
 					const char *isolationlevel);
 
 /** @ingroup sqlrclientwrapper
- *  Returns the transaction isolation level, "UNKNOWN" if the isolation level
- *  is unknown, or NULL if an error occurred. */
+ *  Returns the database-specific isolation level, "unknown" if the
+ *  isolation level is unknown, or NULL if an error occurred. */
 SQLRCLIENT_DLLSPEC
 const char	*sqlrcon_getIsolationLevel(sqlrcon sqlrconref);
+
+/** @ingroup sqlrclientwrapper
+ *  Returns the value of the specified database "feature".
+ *
+ *  Valid features include:
+ *  * "all_procedures_are_callable"
+ *  * "all_tables_are_selectable"
+ *  * "auto_commit_failure_closes_all_result_sets"
+ *  * "catalog_separator"
+ *  * "catalog_term"
+ *  * "data_definition_causes_transaction_commit"
+ *  * "data_definition_ignored_in_transactions"
+ *  * "default_isolation_level"
+ *  * "deletes_are_detected_fo"
+ *  * "deletes_are_detected_si"
+ *  * "deletes_are_detected_ss"
+ *  * "does_max_row_size_include_blobs"
+ *  * "extra_name_characters"
+ *  * "generated_key_always_returned"
+ *  * "identifier_quote_string"
+ *  * "inserts_are_detected_fo"
+ *  * "inserts_are_detected_si"
+ *  * "inserts_are_detected_ss"
+ *  * "is_catalog_at_start"
+ *  * "is_read_only"
+ *  * "locators_update_copy"
+ *  * "max_binary_literal_length"
+ *  * "max_catalog_name_length"
+ *  * "max_char_literal_length"
+ *  * "max_column_name_length"
+ *  * "max_columns_in_group_by"
+ *  * "max_columns_in_index"
+ *  * "max_columns_in_order_by"
+ *  * "max_columns_in_select"
+ *  * "max_columns_in_table"
+ *  * "max_connections"
+ *  * "max_cursor_name_length"
+ *  * "max_index_length"
+ *  * "max_procedure_name_length"
+ *  * "max_row_size"
+ *  * "max_schema_name_length"
+ *  * "max_statement_length"
+ *  * "max_statements"
+ *  * "max_table_name_length"
+ *  * "max_tables_in_select"
+ *  * "max_user_name_length"
+ *  * "null_plus_non_null_is_null"
+ *  * "nulls_are_sorted_at_end"
+ *  * "nulls_are_sorted_at_start"
+ *  * "nulls_are_sorted_high"
+ *  * "nulls_are_sorted_low"
+ *  * "numeric_functions"
+ *  * "others_deletes_are_visible_fo"
+ *  * "others_deletes_are_visible_si"
+ *  * "others_deletes_are_visible_ss"
+ *  * "others_inserts_are_visible_fo"
+ *  * "others_inserts_are_visible_si"
+ *  * "others_inserts_are_visible_ss"
+ *  * "others_updates_are_visible_fo"
+ *  * "others_updates_are_visible_si"
+ *  * "others_updates_are_visible_ss"
+ *  * "own_deletes_are_visible_fo"
+ *  * "own_deletes_are_visible_si"
+ *  * "own_deletes_are_visible_ss"
+ *  * "own_inserts_are_visible_fo"
+ *  * "own_inserts_are_visible_si"
+ *  * "own_inserts_are_visible_ss"
+ *  * "own_updates_are_visible_fo"
+ *  * "own_updates_are_visible_si"
+ *  * "own_updates_are_visible_ss"
+ *  * "procedure_term"
+ *  * "result_set_holdability"
+ *  * "row_id_lifetime"
+ *  * "sql_keywords"
+ *  * "sql_state_type"
+ *  * "schema_term"
+ *  * "search_string_escape"
+ *  * "stores_lower_case_identifiers"
+ *  * "stores_lower_case_quoted_identifiers"
+ *  * "stores_mixed_case_identifiers"
+ *  * "stores_mixed_case_quoted_identifiers"
+ *  * "stores_upper_case_identifiers"
+ *  * "stores_upper_case_quoted_identifiers"
+ *  * "string_functions"
+ *  * "supports_ansi92_entry_level_sql"
+ *  * "supports_ansi92_full_sql"
+ *  * "supports_ansi92_intermediate_sql"
+ *  * "supports_alter_table_with_add_column"
+ *  * "supports_alter_table_with_drop_column"
+ *  * "supports_batch_updates"
+ *  * "supports_catalogs_in_data_manipulation"
+ *  * "supports_catalogs_in_index_definitions"
+ *  * "supports_catalogs_in_privilege_definitions"
+ *  * "supports_catalogs_in_procedure_calls"
+ *  * "supports_catalogs_in_table_definitions"
+ *  * "supports_column_aliasing"
+ *  * "supports_convert"
+ *  * "supports_core_sql_grammar"
+ *  * "supports_correlated_subqueries"
+ *  * "supports_data_definition_and_data_manipulation_transactions"
+ *  * "supports_data_manipulation_transactions_only"
+ *  * "supports_different_table_correlation_names"
+ *  * "supports_expressions_in_order_by"
+ *  * "supports_extended_sql_grammar"
+ *  * "supports_full_outer_joins"
+ *  * "supports_get_generated_keys"
+ *  * "supports_group_by"
+ *  * "supports_group_by_beyond_select"
+ *  * "supports_group_by_unrelated"
+ *  * "supports_integrity_enhancement_facility"
+ *  * "supports_like_escape_clause"
+ *  * "supports_limited_outer_joins"
+ *  * "supports_minimum_sql_grammar"
+ *  * "supports_mixed_case_identifiers"
+ *  * "supports_mixed_case_quoted_identifiers"
+ *  * "supports_multiple_result_sets"
+ *  * "supports_multiple_transactions"
+ *  * "supports_named_parameters"
+ *  * "supports_non_nullable_columns"
+ *  * "supports_open_cursors_across_commit"
+ *  * "supports_open_cursors_across_rollback"
+ *  * "supports_open_statements_across_commit"
+ *  * "supports_open_statements_across_rollback"
+ *  * "supports_order_by_unrelated"
+ *  * "supports_outer_joins"
+ *  * "supports_positioned_delete"
+ *  * "supports_positioned_update"
+ *  * "supports_result_set_concurrency_fo_ro"
+ *  * "supports_result_set_concurrency_fo_u"
+ *  * "supports_result_set_concurrency_si_ro"
+ *  * "supports_result_set_concurrency_si_u"
+ *  * "supports_result_set_concurrency_ss_ro"
+ *  * "supports_result_set_concurrency_ss_u"
+ *  * "supports_result_set_holdability_ccac"
+ *  * "supports_result_set_holdability_hcac"
+ *  * "supports_result_set_type_fo"
+ *  * "supports_result_set_type_si"
+ *  * "supports_result_set_type_ss"
+ *  * "supports_savepoints"
+ *  * "supports_schemas_in_data_manipulation"
+ *  * "supports_schemas_in_index_definitions"
+ *  * "supports_schemas_in_privilege_definitions"
+ *  * "supports_schemas_in_procedure_calls"
+ *  * "supports_schemas_in_table_definitions"
+ *  * "supports_select_for_update"
+ *  * "supports_stored_functions_using_call_syntax"
+ *  * "supports_stored_procedures"
+ *  * "supports_subqueries_in_comparisons"
+ *  * "supports_subqueries_in_exists"
+ *  * "supports_subqueries_in_ins"
+ *  * "supports_subqueries_in_quantifieds"
+ *  * "supports_table_correlation_names"
+ *  * "supports_transaction_isolation_level_n"
+ *  * "supports_transaction_isolation_level_ru"
+ *  * "supports_transaction_isolation_level_rc"
+ *  * "supports_transaction_isolation_level_rr"
+ *  * "supports_transaction_isolation_level_s"
+ *  * "supports_transactions"
+ *  * "supports_union"
+ *  * "supports_union_all"
+ *  * "system_functions"
+ *  * "time_date_functions"
+ *  * "updates_are_detected_fo"
+ *  * "updates_are_detected_si"
+ *  * "updates_are_detected_ss"
+ *  * "uses_local_file_per_table"
+ *  * "uses_local_files"
+ *
+ *  Returns the value of the feature as a string, or NULL if
+ *  an error occurred or an invalid feature was requested. */
+SQLRCLIENT_DLLSPEC
+const char	*sqlrcon_getDatabaseFeature(sqlrcon sqlrconref,
+						const char *feature);
 
 
 

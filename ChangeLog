@@ -24,10 +24,11 @@
 	refactored tests a bit, replaced checkSuccess() with assert*() and
 		moved assert*() into its own shared file
 	added getConnect/ResponseTimeoutSeconds/MicroSeconds() to client apis
-	added set/getIsolationLevel
-	added getDatabaseFeatures
+	added set/getIsolationLevel() methods/functions
+	added getDatabaseFeatures() methods/functions
 	added getOutputBindDate*() and getFieldAsDate*() methods/functions
 	added nextResultSet() to non c++ apis
+	added selectSchema()/getCurrentSchema() methods/functions
 
 2.1.0 - refactored debugging
 

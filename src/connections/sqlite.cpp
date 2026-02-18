@@ -425,10 +425,10 @@ const char *sqliteconnection::mapIsolationLevel(
 		}
 	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
 			toformat==SQLRSERVERISOLATIONLEVELFORMAT_JDBC) {
-		if (!charstring::compare(isolevel,"1")) {
+		if (!charstring::compareIgnoringCase(isolevel,"1")) {
 			return "TRANSACTION_READ_UNCOMMITTED";
 		}
-		if (!charstring::compare(isolevel,"0")) {
+		if (!charstring::compareIgnoringCase(isolevel,"0")) {
 			return "TRANSACTION_READ_COMMITTED";
 		}
 	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC &&
@@ -443,10 +443,10 @@ const char *sqliteconnection::mapIsolationLevel(
 		}
 	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
 			toformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC) {
-		if (!charstring::compare(isolevel,"1")) {
+		if (!charstring::compareIgnoringCase(isolevel,"1")) {
 			return "SQL_TXN_READ_UNCOMMITTED";
 		}
-		if (!charstring::compare(isolevel,"0")) {
+		if (!charstring::compareIgnoringCase(isolevel,"0")) {
 			return "SQL_TXN_READ_COMMITTED";
 		}
 	}

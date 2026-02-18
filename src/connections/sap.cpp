@@ -780,16 +780,16 @@ const char *sapconnection::mapIsolationLevel(
 		}
 	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
 			toformat==SQLRSERVERISOLATIONLEVELFORMAT_JDBC) {
-		if (!charstring::compare(isolevel,"0")) {
+		if (!charstring::compareIgnoringCase(isolevel,"0")) {
 			return "TRANSACTION_READ_UNCOMMITTED";
 		}
-		if (!charstring::compare(isolevel,"1")) {
+		if (!charstring::compareIgnoringCase(isolevel,"1")) {
 			return "TRANSACTION_READ_COMMITTED";
 		}
-		if (!charstring::compare(isolevel,"2")) {
+		if (!charstring::compareIgnoringCase(isolevel,"2")) {
 			return "TRANSACTION_REPEATABLE_READ";
 		}
-		if (!charstring::compare(isolevel,"3")) {
+		if (!charstring::compareIgnoringCase(isolevel,"3")) {
 			return "TRANSACTION_SERIALIZABLE";
 		}
 	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC &&
@@ -812,16 +812,16 @@ const char *sapconnection::mapIsolationLevel(
 		}
 	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
 			toformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC) {
-		if (!charstring::compare(isolevel,"0")) {
+		if (!charstring::compareIgnoringCase(isolevel,"0")) {
 			return "SQL_TXN_READ_UNCOMMITTED";
 		}
-		if (!charstring::compare(isolevel,"1")) {
+		if (!charstring::compareIgnoringCase(isolevel,"1")) {
 			return "SQL_TXN_READ_COMMITTED";
 		}
-		if (!charstring::compare(isolevel,"2")) {
+		if (!charstring::compareIgnoringCase(isolevel,"2")) {
 			return "SQL_TXN_REPEATABLE_READ";
 		}
-		if (!charstring::compare(isolevel,"3")) {
+		if (!charstring::compareIgnoringCase(isolevel,"3")) {
 			return "SQL_TXN_SERIALIZABLE";
 		}
 	}

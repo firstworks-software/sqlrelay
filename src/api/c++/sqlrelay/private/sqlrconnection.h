@@ -71,16 +71,9 @@
 		static	bool	isYes(const char *str);
 		static	bool	isNo(const char *str);
 
-		bool	selectSchema(const char *schema);
-		const	char	*getCurrentSchema();
-
-		bool	setIsolationLevel(
-				const char *isolationlevel,
+		bool	setIsolationLevel(const char *isolationlevel,
 				sqlrclientisolationlevelformat_t format);
 		const char	*getIsolationLevel(
 				sqlrclientisolationlevelformat_t format);
-
-		const char	*getDatabaseFeature(uint16_t feature);
-		const char	*getDatabaseFeature(const char *feature);
 
 	friend class sqlrcursor;

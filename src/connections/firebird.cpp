@@ -902,18 +902,20 @@ const char *firebirdconnection::mapIsolationLevel(
 		}
 	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
 			toformat==SQLRSERVERISOLATIONLEVELFORMAT_JDBC) {
-		if (!charstring::compare(isolevel,"read committed") ||
-			!charstring::compare(isolevel,
-				"read committed no record version") ||
-			!charstring::compare(isolevel,
-						"read consistency")) {
+		if (!charstring::compareIgnoringCase(
+				isolevel,"read committed") ||
+			!charstring::compareIgnoringCase(
+				isolevel,"read committed no record version") ||
+			!charstring::compareIgnoringCase(
+				isolevel,"read consistency")) {
 			return "TRANSACTION_READ_COMMITTED";
 		}
-		if (!charstring::compare(isolevel,"snapshot")) {
+		if (!charstring::compareIgnoringCase(
+				isolevel,"snapshot")) {
 			return "TRANSACTION_REPEATABLE_READ";
 		}
-		if (!charstring::compare(isolevel,
-					"snapshot table stability")) {
+		if (!charstring::compareIgnoringCase(
+				isolevel,"snapshot table stability")) {
 			return "TRANSACTION_SERIALIZABLE";
 		}
 	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC &&
@@ -932,18 +934,20 @@ const char *firebirdconnection::mapIsolationLevel(
 		}
 	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
 			toformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC) {
-		if (!charstring::compare(isolevel,"read committed") ||
-			!charstring::compare(isolevel,
-				"read committed no record version") ||
-			!charstring::compare(isolevel,
-						"read consistency")) {
+		if (!charstring::compareIgnoringCase(
+				isolevel,"read committed") ||
+			!charstring::compareIgnoringCase(
+				isolevel,"read committed no record version") ||
+			!charstring::compareIgnoringCase(
+				isolevel,"read consistency")) {
 			return "SQL_TXN_READ_COMMITTED";
 		}
-		if (!charstring::compare(isolevel,"snapshot")) {
+		if (!charstring::compareIgnoringCase(
+				isolevel,"snapshot")) {
 			return "SQL_TXN_REPEATABLE_READ";
 		}
-		if (!charstring::compare(isolevel,
-					"snapshot table stability")) {
+		if (!charstring::compareIgnoringCase(
+				isolevel,"snapshot table stability")) {
 			return "SQL_TXN_SERIALIZABLE";
 		}
 	}

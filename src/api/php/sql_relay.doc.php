@@ -11,57 +11,75 @@
  *  made to connect to each until the attempt succeeds, or there are no more
  *  hosts left to try.
  *
- *  If the "socket" parameter is nether NULL nor "" then an attempt will be made *  to connect through it before attempting to connect to "server" on "port".
+ *  If the "socket" parameter is neither NULL nor "" then an attempt will be
+ *  made to connect through it before attempting to connect to "server" on
+ *  "port".
  *  If it is NULL or "" then no attempt will be made to connect through the
  *  socket.*/
 function sqlrcon_alloc($server, $port, $socket, $user, $password, $retrytime, $tries){}
 
 /** 
- *  Disconnects and ends the session if it hasn't been terminated already. */
+ *  Disconnects and ends the session if it hasn't been ended already. */
 function sqlrcon_free($sqlrconref){}
 
 
 
 /** 
  *  Sets the server connect timeout in seconds and
- *  milliseconds.  Setting either parameter to -1 disables the
+ *  microseconds.  Setting either parameter to -1 disables the
  *  timeout.  You can also set this timeout using the
  *  SQLR_CLIENT_CONNECT_TIMEOUT environment variable. */
 function sqlrcon_setConnectTimeout($sqlrconref, $timeoutsec, $timeoutusec){}
 
 /**
+ *  Gets the server connect timeout in seconds. */
+function sqlrcon_getConnectTimeoutSeconds($sqlrconref){}
+
+/**
+ *  Gets the server connect timeout in microseconds. */
+function sqlrcon_getConnectTimeoutMicroseconds($sqlrconref){}
+
+/**
  *  Sets the response timeout (for queries, commits, rollbacks,
- *  pings, etc.) in seconds and milliseconds.  Setting either
+ *  pings, etc.) in seconds and microseconds.  Setting either
  *  parameter to -1 disables the timeout.  You can also set
  *  this timeout using the SQLR_CLIENT_RESPONSE_TIMEOUT
  *  environment variable. */
 function sqlrcon_setResponseTimeout($sqlrconref, $timeoutsec, $timeoutusec){}
 
 /**
+ *  Gets the response timeout in seconds. */
+function sqlrcon_getResponseTimeoutSeconds($sqlrconref){}
+
+/**
+ *  Gets the response timeout in microseconds. */
+function sqlrcon_getResponseTimeoutMicroseconds($sqlrconref){}
+
+/**
  *  Sets which delimiters are used to identify bind variables
  *  in countBindVariables() and validateBinds().  Valid
  *  delimiters include ?,:,@, and $.  Defaults to "?:@$" */
-function setBindVariableDelimiters($delimiters){}
+function sqlrcon_setBindVariableDelimiters($sqlrconref, $delimiters){}
 
 /**
  *  Returns true if question marks (?) are considered to be
  *  valid bind variable delimiters. */
-function getBindVariableDelimiterQuestionMarkSupported(){}
+function sqlrcon_getBindVariableDelimiterQuestionMarkSupported($sqlrconref){}
 
 /**
  *  Returns true if colons (:) are considered to be
  *  valid bind variable delimiters. */
-function getBindVariableDelimiterColonSupported(){}
+function sqlrcon_getBindVariableDelimiterColonSupported($sqlrconref){}
 
 /**
  *  Returns true if at-signs (@) are considered to be
  *  valid bind variable delimiters. */
-function getBindVariableDelimiterAtSignSupported(){}
+function sqlrcon_getBindVariableDelimiterAtSignSupported($sqlrconref){}
 
 /**
  *  Returns true if dollar signs ($) are considered to be
  *  valid bind variable delimiters. */
-function getBindVariableDelimiterDollarSignSupported(){}
+function sqlrcon_getBindVariableDelimiterDollarSignSupported($sqlrconref){}
 
 /** Enables Kerberos authentication and encryption.
  *
@@ -184,17 +202,17 @@ function sqlrcon_endSession($sqlrconref){}
  *  sqlrcon_resumeSession(). */
 function sqlrcon_suspendSession($sqlrconref){}
 
-/** 
+/**
  *  Returns the inet port that the connection is communicating over.  This
  *  parameter may be passed to another connection for use in the
- *  sqlrcon_resumeSession() command.  Note: The result this function returns
+ *  resumeSession() method.  Note: The value this method returns
  *  is only valid after a call to suspendSession(). */
 function sqlrcon_getConnectionPort($sqlrconref){}
 
-/** 
+/**
  *  Returns the unix socket that the connection is communicating over.  This
  *  parameter may be passed to another connection for use in the
- *  sqlrcon_resumeSession() command.  Note: The result this function returns
+ *  resumeSession() method.  Note: The value this method returns
  *  is only valid after a call to suspendSession(). */
 function sqlrcon_getConnectionSocket($sqlrconref){}
 
@@ -264,16 +282,24 @@ function sqlrcon_nextvalFormat($sqlrconref){}
 
 
 /** 
- *  Sets the current database/schema to "database" */
+ *  Sets the current database (catalog) to "database" */
 function sqlrcon_selectDatabase($sqlrconref, $database){}
 
-/** 
- *  Returns the database/schema that is currently in use. */
+/**
+ *  Returns the database (catalog) that is currently in use. */
 function sqlrcon_getCurrentDatabase($sqlrconref){}
 
+/**
+ *  Sets the current schema to "schema" */
+function sqlrcon_selectSchema($sqlrconref, $schema){}
+
+/**
+ *  Returns the schema that is currently in use. */
+function sqlrcon_getCurrentSchema($sqlrconref){}
 
 
-/** 
+
+/**
  *  Returns the value of the autoincrement column for the last insert */
 function sqlrcon_getLastInsertId($sqlrconref){}
 
@@ -283,27 +309,214 @@ function sqlrcon_getLastInsertId($sqlrconref){}
  *  Instructs the database to perform a commit after every successful query. */
 function sqlrcon_autoCommitOn($sqlrconref){}
 
-/** 
+/**
  *  Instructs the database to wait for the client to tell it when to commit. */
 function sqlrcon_autoCommitOff($sqlrconref){}
 
 
+/**
+ *  Begins a transaction.  Returns 1 if the begin succeeded, 0 if it failed.
+ *  If the database automatically begins a new transaction when a commit or
+ *  rollback is issued then this doesn't do anything unless SQL Relay is faking
+ *  transaction blocks. */
+function sqlrcon_begin($sqlrconref){}
 
-/** 
- *  Issues a commit.  Returns 1 if the commit succeeded, 0 if it failed and -1
- *  if an error occurred. */
+/**
+ *  Commits a transaction.  Returns 1 if the commit succeeded, 0 if it
+ *  failed. */
 function sqlrcon_commit($sqlrconref){}
 
-/** 
- *  Issues a rollback.  Returns 1 if the rollback succeeded, 0 if it failed
- *  and -1 if an error occurred. */
+/**
+ *  Rolls back a transaction.  Returns 1 if the rollback succeeded, 0 if it
+ *  failed. */
 function sqlrcon_rollback($sqlrconref){}
 
 
+/**
+ *  Sets the isolation level to "isolationlevel", the database-secific
+ *  isolation level.  Returns 1 if setting the isolation level succeeded,
+ *  0 if it failed. */
+function sqlrcon_setIsolationLevel($sqlrconref, $isolationlevel){}
 
-/** 
+/**
+ *  Returns the database-specific isolation level, "unknown" if the isolation
+ *  level is unknown, or NULL if an error occurred. */
+function sqlrcon_getIsolationLevel($sqlrconref){}
+
+/** Returns the value of the specified database "feature".
+ *
+ *  Valid features include:
+ *  * "all_procedures_are_callable"
+ *  * "all_tables_are_selectable"
+ *  * "auto_commit_failure_closes_all_result_sets"
+ *  * "catalog_separator"
+ *  * "catalog_term"
+ *  * "data_definition_causes_transaction_commit"
+ *  * "data_definition_ignored_in_transactions"
+ *  * "default_isolation_level"
+ *  * "deletes_are_detected_fo"
+ *  * "deletes_are_detected_si"
+ *  * "deletes_are_detected_ss"
+ *  * "does_max_row_size_include_blobs"
+ *  * "extra_name_characters"
+ *  * "generated_key_always_returned"
+ *  * "identifier_quote_string"
+ *  * "inserts_are_detected_fo"
+ *  * "inserts_are_detected_si"
+ *  * "inserts_are_detected_ss"
+ *  * "is_catalog_at_start"
+ *  * "is_read_only"
+ *  * "locators_update_copy"
+ *  * "max_binary_literal_length"
+ *  * "max_catalog_name_length"
+ *  * "max_char_literal_length"
+ *  * "max_column_name_length"
+ *  * "max_columns_in_group_by"
+ *  * "max_columns_in_index"
+ *  * "max_columns_in_order_by"
+ *  * "max_columns_in_select"
+ *  * "max_columns_in_table"
+ *  * "max_connections"
+ *  * "max_cursor_name_length"
+ *  * "max_index_length"
+ *  * "max_procedure_name_length"
+ *  * "max_row_size"
+ *  * "max_schema_name_length"
+ *  * "max_statement_length"
+ *  * "max_statements"
+ *  * "max_table_name_length"
+ *  * "max_tables_in_select"
+ *  * "max_user_name_length"
+ *  * "null_plus_non_null_is_null"
+ *  * "nulls_are_sorted_at_end"
+ *  * "nulls_are_sorted_at_start"
+ *  * "nulls_are_sorted_high"
+ *  * "nulls_are_sorted_low"
+ *  * "numeric_functions"
+ *  * "others_deletes_are_visible_fo"
+ *  * "others_deletes_are_visible_si"
+ *  * "others_deletes_are_visible_ss"
+ *  * "others_inserts_are_visible_fo"
+ *  * "others_inserts_are_visible_si"
+ *  * "others_inserts_are_visible_ss"
+ *  * "others_updates_are_visible_fo"
+ *  * "others_updates_are_visible_si"
+ *  * "others_updates_are_visible_ss"
+ *  * "own_deletes_are_visible_fo"
+ *  * "own_deletes_are_visible_si"
+ *  * "own_deletes_are_visible_ss"
+ *  * "own_inserts_are_visible_fo"
+ *  * "own_inserts_are_visible_si"
+ *  * "own_inserts_are_visible_ss"
+ *  * "own_updates_are_visible_fo"
+ *  * "own_updates_are_visible_si"
+ *  * "own_updates_are_visible_ss"
+ *  * "procedure_term"
+ *  * "result_set_holdability"
+ *  * "row_id_lifetime"
+ *  * "sql_keywords"
+ *  * "sql_state_type"
+ *  * "schema_term"
+ *  * "search_string_escape"
+ *  * "stores_lower_case_identifiers"
+ *  * "stores_lower_case_quoted_identifiers"
+ *  * "stores_mixed_case_identifiers"
+ *  * "stores_mixed_case_quoted_identifiers"
+ *  * "stores_upper_case_identifiers"
+ *  * "stores_upper_case_quoted_identifiers"
+ *  * "string_functions"
+ *  * "supports_ansi92_entry_level_sql"
+ *  * "supports_ansi92_full_sql"
+ *  * "supports_ansi92_intermediate_sql"
+ *  * "supports_alter_table_with_add_column"
+ *  * "supports_alter_table_with_drop_column"
+ *  * "supports_batch_updates"
+ *  * "supports_catalogs_in_data_manipulation"
+ *  * "supports_catalogs_in_index_definitions"
+ *  * "supports_catalogs_in_privilege_definitions"
+ *  * "supports_catalogs_in_procedure_calls"
+ *  * "supports_catalogs_in_table_definitions"
+ *  * "supports_column_aliasing"
+ *  * "supports_convert"
+ *  * "supports_core_sql_grammar"
+ *  * "supports_correlated_subqueries"
+ *  * "supports_data_definition_and_data_manipulation_transactions"
+ *  * "supports_data_manipulation_transactions_only"
+ *  * "supports_different_table_correlation_names"
+ *  * "supports_expressions_in_order_by"
+ *  * "supports_extended_sql_grammar"
+ *  * "supports_full_outer_joins"
+ *  * "supports_get_generated_keys"
+ *  * "supports_group_by"
+ *  * "supports_group_by_beyond_select"
+ *  * "supports_group_by_unrelated"
+ *  * "supports_integrity_enhancement_facility"
+ *  * "supports_like_escape_clause"
+ *  * "supports_limited_outer_joins"
+ *  * "supports_minimum_sql_grammar"
+ *  * "supports_mixed_case_identifiers"
+ *  * "supports_mixed_case_quoted_identifiers"
+ *  * "supports_multiple_result_sets"
+ *  * "supports_multiple_transactions"
+ *  * "supports_named_parameters"
+ *  * "supports_non_nullable_columns"
+ *  * "supports_open_cursors_across_commit"
+ *  * "supports_open_cursors_across_rollback"
+ *  * "supports_open_statements_across_commit"
+ *  * "supports_open_statements_across_rollback"
+ *  * "supports_order_by_unrelated"
+ *  * "supports_outer_joins"
+ *  * "supports_positioned_delete"
+ *  * "supports_positioned_update"
+ *  * "supports_result_set_concurrency_fo_ro"
+ *  * "supports_result_set_concurrency_fo_u"
+ *  * "supports_result_set_concurrency_si_ro"
+ *  * "supports_result_set_concurrency_si_u"
+ *  * "supports_result_set_concurrency_ss_ro"
+ *  * "supports_result_set_concurrency_ss_u"
+ *  * "supports_result_set_holdability_ccac"
+ *  * "supports_result_set_holdability_hcac"
+ *  * "supports_result_set_type_fo"
+ *  * "supports_result_set_type_si"
+ *  * "supports_result_set_type_ss"
+ *  * "supports_savepoints"
+ *  * "supports_schemas_in_data_manipulation"
+ *  * "supports_schemas_in_index_definitions"
+ *  * "supports_schemas_in_privilege_definitions"
+ *  * "supports_schemas_in_procedure_calls"
+ *  * "supports_schemas_in_table_definitions"
+ *  * "supports_select_for_update"
+ *  * "supports_stored_functions_using_call_syntax"
+ *  * "supports_stored_procedures"
+ *  * "supports_subqueries_in_comparisons"
+ *  * "supports_subqueries_in_exists"
+ *  * "supports_subqueries_in_ins"
+ *  * "supports_subqueries_in_quantifieds"
+ *  * "supports_table_correlation_names"
+ *  * "supports_transaction_isolation_level_n"
+ *  * "supports_transaction_isolation_level_ru"
+ *  * "supports_transaction_isolation_level_rc"
+ *  * "supports_transaction_isolation_level_rr"
+ *  * "supports_transaction_isolation_level_s"
+ *  * "supports_transactions"
+ *  * "supports_union"
+ *  * "supports_union_all"
+ *  * "system_functions"
+ *  * "time_date_functions"
+ *  * "updates_are_detected_fo"
+ *  * "updates_are_detected_si"
+ *  * "updates_are_detected_ss"
+ *  * "uses_local_file_per_table"
+ *  * "uses_local_files"
+ *
+ *  Returns the value of the feature as a string, or NULL if
+ *  an error occurred or an invalid feature was requested. */
+function sqlrcon_getDatabaseFeature($sqlrconref,$feature){}
+
+
+/**
  *  If an operation failed and generated an error, the error message is
- *  available here.  If there is no error then this method returns NULL */
+ *  available here.  If there is no error then this method returns NULL. */
 function sqlrcon_errorMessage($sqlrconref){}
 
 
@@ -353,7 +566,7 @@ function sqlrcon_getClientInfo($sqlrconref){}
 function sqlrcur_alloc($sqlrconref){}
 
 /** 
- *  Destroys the cursor and cleans up all associated result set data. *//
+ *  Destroys the cursor and cleans up all associated result set data. */
 function sqlrcur_free($sqlrcurref){}
 
 
@@ -416,8 +629,8 @@ function sqlrcur_cacheToFile($sqlrcurref, $filename){}
 function sqlrcur_setCacheTtl($sqlrcurref, $ttl){}
 
 /** 
- *  Returns the name of the file containing
- *  the most recently cached result set. */
+ *  Returns the name of the file containing the
+ *  cached result set. */
 function sqlrcur_getCacheFileName($sqlrcurref){}
 
 /** 
@@ -455,7 +668,7 @@ function sqlrcur_sendQuery($sqlrcurref, $query){}
 function sqlrcur_sendQueryWithLength($sqlrcurref, $query, $length){}
 
 /** 
- *  Sends the query in file "path"/"filename" and gets a result set. */
+ *  Sends the query in file "path"/"filename" directly and gets a result set. */
 function sqlrcur_sendFileQuery($sqlrcurref, $path, $filename){}
 
 
@@ -523,7 +736,7 @@ function sqlrcur_defineOutputBindString($sqlrcurref, $variable, $length){}
 function sqlrcur_defineOutputBindInteger($sqlrcurref, $variable){}
 
 /** 
- *  Defines an decimal output bind variable. */
+ *  Defines a decimal output bind variable. */
 function sqlrcur_defineOutputBindDouble($sqlrcurref, $variable){}
 
 /**
@@ -608,51 +821,51 @@ function sqlrcur_getOutputBindLength($sqlrcurref, $variable){}
 
 /**
  *  Get the cursor associated with a previously defined output bind variable. */
-sqlrcur	sqlrcur_getOutputBindCursor($sqlrcurref, $variable){}
+function sqlrcur_getOutputBindCursor($sqlrcurref, $variable){}
 
 /**
- *  Get the year component of a previously defined
+ *  Get the year from a previously defined
  *  date output bind variable. */
 function sqlrcur_getOutputBindDateYear($sqlrcurref, $variable){}
 
 /**
- *  Get the month component of a previously defined
+ *  Get the month from a previously defined
  *  date output bind variable. */
 function sqlrcur_getOutputBindDateMonth($sqlrcurref, $variable){}
 
 /**
- *  Get the day component of a previously defined
+ *  Get the day from a previously defined
  *  date output bind variable. */
 function sqlrcur_getOutputBindDateDay($sqlrcurref, $variable){}
 
 /**
- *  Get the hour component of a previously defined
+ *  Get the hour from a previously defined
  *  date output bind variable. */
 function sqlrcur_getOutputBindDateHour($sqlrcurref, $variable){}
 
 /**
- *  Get the minute component of a previously defined
+ *  Get the minute from a previously defined
  *  date output bind variable. */
 function sqlrcur_getOutputBindDateMinute($sqlrcurref, $variable){}
 
 /**
- *  Get the second component of a previously defined
+ *  Get the second from a previously defined
  *  date output bind variable. */
 function sqlrcur_getOutputBindDateSecond($sqlrcurref, $variable){}
 
 /**
- *  Get the microsecond component of a previously defined
+ *  Get the microsecond from a previously defined
  *  date output bind variable. */
 function sqlrcur_getOutputBindDateMicrosecond($sqlrcurref, $variable){}
 
 /**
- *  Get the timezone component of a previously defined
+ *  Get the time zone from a previously defined
  *  date output bind variable. */
 function sqlrcur_getOutputBindDateTz($sqlrcurref, $variable){}
 
 /**
- *  Get the is-negative component of a previously defined
- *  date output bind variable. */
+ *  Get whether the value is negative from a
+ *  previously defined date output bind variable. */
 function sqlrcur_getOutputBindDateIsNegative($sqlrcurref, $variable){}
 
 
@@ -667,21 +880,22 @@ function sqlrcur_openCachedResultSet($sqlrcurref, $filename){}
  *  Returns the number of columns in the current result set. */
 function sqlrcur_colCount($sqlrcurref){}
 
-/** 
- *  Returns the number of rows in the current result set. */
+/**
+ *  Returns the number of rows in the current result set (if the result set is
+ *  being stepped through, this returns the number of rows processed so far). */
 function sqlrcur_rowCount($sqlrcurref){}
 
-/** 
+/**
  *  Returns the total number of rows that will be returned in the result set.
  *  Not all databases support this call.  Don't use it for applications which
- *  are designed to be portable across databases.  -1 is returned by databases
+ *  are designed to be portable across databases.  0 is returned by databases
  *  which don't support this option. */
 function sqlrcur_totalRows($sqlrcurref){}
 
-/** 
+/**
  *  Returns the number of rows that were updated, inserted or deleted by the
  *  query.  Not all databases support this call.  Don't use it for applications
- *  which are designed to be portable across databases.  -1 is returned by
+ *  which are designed to be portable across databases.  0 is returned by
  *  databases which don't support this option. */
 function sqlrcur_affectedRows($sqlrcurref){}
 
@@ -721,9 +935,10 @@ function sqlrcur_errorNumber($sqlrcurref){}
  *  empty strings.  This is the default. */
 function sqlrcur_getNullsAsEmptyStrings($sqlrcurref){}
 
-/** 
+/**
  *  Tells the connection to return NULL fields
- *  and output bind variables as NULL's. */
+ *  and output bind variables as NULL's rather
+ *  than as empty strings. */
 function sqlrcur_getNullsAsNulls($sqlrcurref){}
 
 
@@ -739,13 +954,54 @@ function sqlrcur_getField($sqlrcurref, $row, $col){}
 function sqlrcur_getFieldAsInteger($sqlrcurref, $row, $col){}
 
 /** 
- *  Returns the specified field as an decimal. "col" may be specified as the
+ *  Returns the specified field as a decimal. "col" may be specified as the
  *  column name or number. */
 function sqlrcur_getFieldAsDouble($sqlrcurref, $row, $col){}
 
+/**
+ *  Interprets the specified field as a date and returns the year component.
+ *  "col" may be specified as the column name or number. */
+function sqlrcur_getFieldAsDateYear($sqlrcurref, $row, $col){}
+
+/**
+ *  Interprets the specified field as a date and returns the month component.
+ *  "col" may be specified as the column name or number. */
+function sqlrcur_getFieldAsDateMonth($sqlrcurref, $row, $col){}
+
+/**
+ *  Interprets the specified field as a date and returns the day component.
+ *  "col" may be specified as the column name or number. */
+function sqlrcur_getFieldAsDateDay($sqlrcurref, $row, $col){}
+
+/**
+ *  Interprets the specified field as a date and returns the hour component.
+ *  "col" may be specified as the column name or number. */
+function sqlrcur_getFieldAsDateHour($sqlrcurref, $row, $col){}
+
+/**
+ *  Interprets the specified field as a date and returns the minute component.
+ *  "col" may be specified as the column name or number. */
+function sqlrcur_getFieldAsDateMinute($sqlrcurref, $row, $col){}
+
+/**
+ *  Interprets the specified field as a date and returns the second component.
+ *  "col" may be specified as the column name or number. */
+function sqlrcur_getFieldAsDateSecond($sqlrcurref, $row, $col){}
+
+/**
+ *  Interprets the specified field as a date and returns the microsecond
+ *  component.  "col" may be specified as the column name or number. */
+function sqlrcur_getFieldAsDateMicrosecond($sqlrcurref, $row, $col){}
+
+/**
+ *  Interprets the specified field as a date and returns whether the hour
+ *  component is negative.  "col" may be specified as the column name or
+ *  number. */
+function sqlrcur_getFieldAsDateIsNegative($sqlrcurref, $row, $col){}
 
 
-/** 
+
+/**
  *  Returns the length of the specified row and column. "col" may be
  *  specified as the column name or number. */
 function sqlrcur_getFieldLength($sqlrcurref, $row, $col){}
@@ -763,7 +1019,7 @@ function sqlrcur_getRowAssoc($sqlrcurref, $row){}
 
 /** 
  *  Returns an array of the lengths of the fields in the specified row. */
-function *sqlrcur_getRowLengths($sqlrcurref, $row){}
+function sqlrcur_getRowLengths($sqlrcurref, $row){}
 
 /** 
  *  Returns an associative array of the
@@ -783,9 +1039,10 @@ function sqlrcur_getColumnName($sqlrcurref, $col){}
  *  column name or number. */
 function sqlrcur_getColumnType($sqlrcurref, $col){}
 
-/** 
- *  Returns the length of the specified column.  "col" may be specified as the
- *  column name or number. */
+/**
+ *  Returns the number of bytes required on the server to store the data for
+ *  the specified column.  "col" may be specified as the column name or
+ *  number. */
 function sqlrcur_getColumnLength($sqlrcurref, $col){}
 
 /** 
@@ -801,10 +1058,9 @@ function sqlrcur_getColumnPrecision($sqlrcurref, $col){}
  *  scale of 2.  "col" may be specified as the column name or number. */
 function sqlrcur_getColumnScale($sqlrcurref, $col){}
 
-/** 
- *  Returns the scale of the specified column.  Scale is the total number of
- *  digits to the right of the decimal point in a number.  eg: 123.45 has a
- *  scale of 2.  "col" may be specified as the column name or number. */
+/**
+ *  Returns 1 if the specified column can contain nulls and 0 otherwise.
+ *  "col" may be specified as the column name or number. */
 function sqlrcur_getColumnIsNullable($sqlrcurref, $col){}
 
 /** 
@@ -827,9 +1083,9 @@ function sqlrcur_getColumnIsPartOfKey($sqlrcurref, $col){}
  *  "col" may be specified as the column name or number. */
 function sqlrcur_getColumnIsUnsigned($sqlrcurref, $col){}
 
-/** 
- *  Returns 1 if the specified column is zero-filled and 0 otherwise.
- *  "col" may be specified as the with the zero-fill flag and 0 otherwise. */
+/**
+ *  Returns 1 if the specified column was created with the zero-fill flag and
+ *  0 otherwise.  "col" may be specified as the column name or number. */
 function sqlrcur_getColumnIsZeroFilled($sqlrcurref, $col){}
 
 /** 
@@ -857,9 +1113,9 @@ function sqlrcur_suspendResultSet($sqlrcurref){}
 
 /** 
  *  Returns the internal ID of this result set.  This parameter may be passed
- *  to another statement for use in the resumeResultSet() function.  Note: The
- *  value this function returns is only valid after a call to
- *  suspendResultSet().*/
+ *  to another cursor for use in the resumeResultSet() method.  Note: The
+ *  value this method returns is only valid after a call to
+ *  suspendResultSet(). */
 function sqlrcur_getResultSetId($sqlrcurref){}
 
 /** 

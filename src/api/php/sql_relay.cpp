@@ -4686,9 +4686,62 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_getcurrentdatabase) {
 	RETURN_FALSE;
 }
 
+DLEXPORT ZEND_FUNCTION(sqlrcon_selectschema) {
+	ZVAL sqlrcon;
+	ZVAL schema;
+	bool r;
+	if (ZEND_NUM_ARGS() != 2 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcon,
+				&schema) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(schema);
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->selectSchema(SVAL(schema));
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcon_getcurrentschema) {
+	ZVAL sqlrcon;
+	const char *r;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->getCurrentSchema();
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
+	}
+	RETURN_FALSE;
+}
+
 DLEXPORT ZEND_FUNCTION(sqlrcon_getlastinsertid) {
 	ZVAL sqlrcon;
-	if (ZEND_NUM_ARGS() != 1 || 
+	if (ZEND_NUM_ARGS() != 1 ||
 		GET_PARAMETERS(
 				ZEND_NUM_ARGS() TSRMLS_CC,
 				PARAMS("z")
@@ -4874,6 +4927,35 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_getIsolationLevel) {
 				sqlrelay_connection);
 	if (connection) {
 		r=connection->getIsolationLevel();
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
+	}
+	RETURN_FALSE;
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcon_getDatabaseFeature) {
+	ZVAL sqlrcon;
+	ZVAL feature;
+	const char *r;
+	if (ZEND_NUM_ARGS() != 2 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcon,
+				&feature) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(feature);
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->getDatabaseFeature(SVAL(feature));
 		if (r) {
 			RET_STRING(const_cast<char *>(r),1);
 		}
@@ -5506,6 +5588,12 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getcurrentdatabase,0,0,0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_selectschema,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getcurrentschema,0,0,0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getlastinsertid,0,0,0)
 ZEND_END_ARG_INFO()
 
@@ -5528,6 +5616,9 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_setIsolationLevel,0,0,0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getIsolationLevel,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getDatabaseFeature,0,0,0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_bindformat,0,0,0)
@@ -5829,6 +5920,10 @@ zend_function_entry sql_relay_functions[] = {
 		ARGINFO(arginfo_sqlrcon_selectdatabase))
 	ZEND_FE(sqlrcon_getcurrentdatabase,
 		ARGINFO(arginfo_sqlrcon_getcurrentdatabase))
+	ZEND_FE(sqlrcon_selectschema,
+		ARGINFO(arginfo_sqlrcon_selectschema))
+	ZEND_FE(sqlrcon_getcurrentschema,
+		ARGINFO(arginfo_sqlrcon_getcurrentschema))
 	ZEND_FE(sqlrcon_getlastinsertid,
 		ARGINFO(arginfo_sqlrcon_getlastinsertid))
 	ZEND_FE(sqlrcon_autocommiton,
@@ -5845,6 +5940,8 @@ zend_function_entry sql_relay_functions[] = {
 		ARGINFO(arginfo_sqlrcon_setIsolationLevel))
 	ZEND_FE(sqlrcon_getIsolationLevel,
 		ARGINFO(arginfo_sqlrcon_getIsolationLevel))
+	ZEND_FE(sqlrcon_getDatabaseFeature,
+		ARGINFO(arginfo_sqlrcon_getDatabaseFeature))
 	ZEND_FE(sqlrcon_bindformat,
 		ARGINFO(arginfo_sqlrcon_bindformat))
 	ZEND_FE(sqlrcon_nextvalformat,

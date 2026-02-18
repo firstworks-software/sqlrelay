@@ -186,6 +186,14 @@ const char *sqlrcon_getCurrentDatabase(sqlrcon sqlrconref) {
 	return sqlrconref->getCurrentDatabase();
 }
 
+int sqlrcon_selectSchema(sqlrcon sqlrconref, const char *schema) {
+	return sqlrconref->selectSchema(schema);
+}
+
+const char *sqlrcon_getCurrentSchema(sqlrcon sqlrconref) {
+	return sqlrconref->getCurrentSchema();
+}
+
 uint64_t sqlrcon_getLastInsertId(sqlrcon sqlrconref) {
 	return sqlrconref->getLastInsertId();
 }
@@ -216,6 +224,11 @@ int sqlrcon_setIsolationLevel(sqlrcon sqlrconref, const char *isolationlevel) {
 
 const char *sqlrcon_getIsolationLevel(sqlrcon sqlrconref) {
 	return sqlrconref->getIsolationLevel();
+}
+
+const char *sqlrcon_getDatabaseFeature(sqlrcon sqlrconref,
+						const char *feature) {
+	return sqlrconref->getDatabaseFeature(feature);
 }
 
 const char *sqlrcon_errorMessage(sqlrcon sqlrconref) {

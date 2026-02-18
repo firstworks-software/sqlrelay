@@ -910,16 +910,20 @@ const char *informixconnection::mapIsolationLevel(
 		}
 	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
 			toformat==SQLRSERVERISOLATIONLEVELFORMAT_JDBC) {
-		if (!charstring::compare(isolevel,"dirty read")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"dirty read")) {
 			return "TRANSACTION_READ_UNCOMMITTED";
 		}
-		if (!charstring::compare(isolevel,"committed read")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"committed read")) {
 			return "TRANSACTION_READ_COMMITTED";
 		}
-		if (!charstring::compare(isolevel,"cursor stability")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"cursor stability")) {
 			return "TRANSACTION_REPEATABLE_READ";
 		}
-		if (!charstring::compare(isolevel,"repeatable read")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"repeatable read")) {
 			return "TRANSACTION_SERIALIZABLE";
 		}
 	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC &&
@@ -942,16 +946,20 @@ const char *informixconnection::mapIsolationLevel(
 		}
 	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
 			toformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC) {
-		if (!charstring::compare(isolevel,"dirty read")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"dirty read")) {
 			return "SQL_TXN_READ_UNCOMMITTED";
 		}
-		if (!charstring::compare(isolevel,"committed read")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"committed read")) {
 			return "SQL_TXN_READ_COMMITTED";
 		}
-		if (!charstring::compare(isolevel,"cursor stability")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"cursor stability")) {
 			return "SQL_TXN_REPEATABLE_READ";
 		}
-		if (!charstring::compare(isolevel,"repeatable read")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"repeatable read")) {
 			return "SQL_TXN_SERIALIZABLE";
 		}
 	}

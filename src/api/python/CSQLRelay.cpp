@@ -431,6 +431,29 @@ static PyObject *getCurrentDatabase(PyObject *self, PyObject *args) {
   return Py_BuildValue("s", rc);
 }
 
+static PyObject *selectSchema(PyObject *self, PyObject *args) {
+  char *schema;
+  long sqlrcon;
+  bool rc;
+  if (!PyArg_ParseTuple(args, "ls", &sqlrcon, &schema))
+    return NULL;
+  Py_BEGIN_ALLOW_THREADS
+  rc=((sqlrconnection *)sqlrcon)->selectSchema(schema);
+  Py_END_ALLOW_THREADS
+  return Py_BuildValue("h", (short)rc);
+}
+
+static PyObject *getCurrentSchema(PyObject *self, PyObject *args) {
+  long sqlrcon;
+  const char *rc;
+  if (!PyArg_ParseTuple(args, "l", &sqlrcon))
+    return NULL;
+  Py_BEGIN_ALLOW_THREADS
+  rc=((sqlrconnection *)sqlrcon)->getCurrentSchema();
+  Py_END_ALLOW_THREADS
+  return Py_BuildValue("s", rc);
+}
+
 static PyObject *getLastInsertId(PyObject *self, PyObject *args) {
   long sqlrcon;
   uint64_t rc;
@@ -514,6 +537,14 @@ static PyObject *getIsolationLevel(PyObject *self, PyObject *args) {
   if (!PyArg_ParseTuple(args, "l", &sqlrcon))
     return NULL;
   return Py_BuildValue("s", ((sqlrconnection *)sqlrcon)->getIsolationLevel());
+}
+
+static PyObject *getDatabaseFeature(PyObject *self, PyObject *args) {
+  long sqlrcon;
+  const char *feature;
+  if (!PyArg_ParseTuple(args, "ls", &sqlrcon, &feature))
+    return NULL;
+  return Py_BuildValue("s", ((sqlrconnection *)sqlrcon)->getDatabaseFeature(feature));
 }
 
 static PyObject *connectionErrorMessage(PyObject *self, PyObject *args) {
@@ -2646,6 +2677,8 @@ static PyMethodDef SQLRMethods[] = {
   {"nextvalFormat", nextvalFormat, METH_VARARGS},
   {"selectDatabase", selectDatabase, METH_VARARGS},
   {"getCurrentDatabase", getCurrentDatabase, METH_VARARGS},
+  {"selectSchema", selectSchema, METH_VARARGS},
+  {"getCurrentSchema", getCurrentSchema, METH_VARARGS},
   {"getLastInsertId", getLastInsertId, METH_VARARGS},
   {"autoCommitOn", autoCommitOn, METH_VARARGS},
   {"autoCommitOff", autoCommitOff, METH_VARARGS},
@@ -2654,6 +2687,7 @@ static PyMethodDef SQLRMethods[] = {
   {"rollback", rollback, METH_VARARGS},
   {"setIsolationLevel", setIsolationLevel, METH_VARARGS},
   {"getIsolationLevel", getIsolationLevel, METH_VARARGS},
+  {"getDatabaseFeature", getDatabaseFeature, METH_VARARGS},
   {"connectionErrorMessage", connectionErrorMessage, METH_VARARGS},
   {"connectionErrorNumber", connectionErrorNumber, METH_VARARGS},
   {"debugOn", debugOn, METH_VARARGS},

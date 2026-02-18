@@ -193,6 +193,13 @@ sqlrconnection::selectDatabase(database)
 const char *
 sqlrconnection::getCurrentDatabase()
 
+bool
+sqlrconnection::selectSchema(schema)
+		const char	*schema
+
+const char *
+sqlrconnection::getCurrentSchema()
+
 uint64_t
 sqlrconnection::getLastInsertId()
 
@@ -217,6 +224,10 @@ sqlrconnection::setIsolationLevel(isolationlevel)
 
 const char *
 sqlrconnection::getIsolationLevel()
+
+const char *
+sqlrconnection::getDatabaseFeature(feature)
+	const char *feature
 
 const char *
 sqlrconnection::identify()

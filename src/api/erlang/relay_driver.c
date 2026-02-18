@@ -649,13 +649,40 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// encode result 
-			if (ei_x_encode_atom(&result, "ok") || 
+			// encode result
+			if (ei_x_encode_atom(&result, "ok") ||
 				ei_x_encode_string(&result, sqlrcon_getCurrentDatabase(con))) {
 				return ERR_ENCODING_ARGS;
 			}
 		}
-		
+
+		if (strcmp("selectSchema", command) == TRUE) {
+			char schema[2000];
+
+			// check number of arguments
+		    	if (arity != 1) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_string(buf, &index, &schema[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// call function and encode result
+			sqlrcon_selectSchema(con, schema);
+			ENCODE_VOID;
+		}
+
+		if (strcmp("getCurrentSchema", command) == TRUE) {
+			// check number of arguments
+		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
+
+			// encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_string(&result, sqlrcon_getCurrentSchema(con))) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
+
 		if (strcmp("getLastInsertId", command) == TRUE) {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
@@ -747,6 +774,21 @@ int main() {
 			// encode result
 			if (ei_x_encode_atom(&result, "ok") ||
 				ei_x_encode_string(&result, sqlrcon_getIsolationLevel(con))) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
+
+		if (strcmp("getDatabaseFeature", command) == TRUE) {
+			// check number of arguments
+		    	if (arity != 1) return ERR_NUMBER_OF_ARGS;
+
+			// get the arguments
+			char feature[256];
+			if (ei_decode_string(buf, &index, feature)) return ERR_DECODING_ARGS;
+
+			// encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_string(&result, sqlrcon_getDatabaseFeature(con, feature))) {
 				return ERR_ENCODING_ARGS;
 			}
 		}

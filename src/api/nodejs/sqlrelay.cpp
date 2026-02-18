@@ -178,6 +178,8 @@ class SQLRConnection : public ObjectWrap {
 		static RET	nextvalFormat(const ARGS &args);
 		static RET	selectDatabase(const ARGS &args);
 		static RET	getCurrentDatabase(const ARGS &args);
+		static RET	selectSchema(const ARGS &args);
+		static RET	getCurrentSchema(const ARGS &args);
 		static RET	getLastInsertId(const ARGS &args);
 		static RET	autoCommitOn(const ARGS &args);
 		static RET	autoCommitOff(const ARGS &args);
@@ -186,6 +188,7 @@ class SQLRConnection : public ObjectWrap {
 		static RET	rollback(const ARGS &args);
 		static RET	setIsolationLevel(const ARGS &args);
 		static RET	getIsolationLevel(const ARGS &args);
+		static RET	getDatabaseFeature(const ARGS &args);
 		static RET	errorMessage(const ARGS &args);
 		static RET	errorNumber(const ARGS &args);
 		static RET	debugOn(const ARGS &args);
@@ -383,6 +386,8 @@ void SQLRConnection::Init(Handle<Object> exports) {
 	NODE_SET_PROTOTYPE_METHOD(tpl,"nextvalFormat",nextvalFormat);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"selectDatabase",selectDatabase);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getCurrentDatabase",getCurrentDatabase);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"selectSchema",selectSchema);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getCurrentSchema",getCurrentSchema);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getLastInsertId",getLastInsertId);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"autoCommitOn",autoCommitOn);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"autoCommitOff",autoCommitOff);
@@ -391,6 +396,7 @@ void SQLRConnection::Init(Handle<Object> exports) {
 	NODE_SET_PROTOTYPE_METHOD(tpl,"rollback",rollback);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"setIsolationLevel",setIsolationLevel);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getIsolationLevel",getIsolationLevel);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getDatabaseFeature",getDatabaseFeature);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"errorMessage",errorMessage);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"errorNumber",errorNumber);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"debugOn",debugOn);
@@ -780,6 +786,28 @@ RET SQLRConnection::getCurrentDatabase(const ARGS &args) {
 	returnString(result);
 }
 
+RET SQLRConnection::selectSchema(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,1);
+
+	bool	result=sqlrcon(args)->selectSchema(toString(args[0]));
+
+	returnBoolean(result);
+}
+
+RET SQLRConnection::getCurrentSchema(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,0);
+
+	const char	*result=sqlrcon(args)->getCurrentSchema();
+
+	returnString(result);
+}
+
 RET SQLRConnection::getLastInsertId(const ARGS &args) {
 
 	initLocalScope();
@@ -864,6 +892,18 @@ RET SQLRConnection::getIsolationLevel(const ARGS &args) {
 	checkArgCount(args,0);
 
 	const char	*result=sqlrcon(args)->getIsolationLevel();
+
+	returnString(result);
+}
+
+RET SQLRConnection::getDatabaseFeature(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,1);
+
+	const char	*result=sqlrcon(args)->getDatabaseFeature(
+					toString(args[0]));
 
 	returnString(result);
 }

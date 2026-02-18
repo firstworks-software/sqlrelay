@@ -2588,6 +2588,8 @@ void sqlrconDelete(ClientData data) {
  *  $con nextvalFormat
  *  $con selectDatabase db
  *  $con getCurrentDatabase
+ *  $con selectSchema schema
+ *  $con getCurrentSchema
  *  $con getLastInsertId
  *  $con autoCommit bool
  *  $con begin
@@ -2637,6 +2639,8 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     "nextvalFormat",
     "selectDatabase",
     "getCurrentDatabase",
+    "selectSchema",
+    "getCurrentSchema",
     "getLastInsertId",
     "autoCommit",
     "begin",
@@ -2644,6 +2648,7 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     "rollback",
     "setIsolationLevel",
     "getIsolationLevel",
+    "getDatabaseFeature",
     "errorMessage",
     "errorNumber",
     "debug",
@@ -2684,6 +2689,8 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     SQLR_NEXTVALFORMAT,
     SQLR_SELECTDATABASE,
     SQLR_GETCURRENTDATABASE,
+    SQLR_SELECTSCHEMA,
+    SQLR_GETCURRENTSCHEMA,
     SQLR_GETLASTINSERTID,
     SQLR_AUTOCOMMIT,
     SQLR_BEGIN,
@@ -2691,6 +2698,7 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     SQLR_ROLLBACK,
     SQLR_SETISOLATIONLEVEL,
     SQLR_GETISOLATIONLEVEL,
+    SQLR_GETDATABASEFEATURE,
     SQLR_ERRORMESSAGE,
     SQLR_ERRORNUMBER,
     SQLR_DEBUG,
@@ -3033,6 +3041,23 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
 		     _Tcl_NewStringObj(con->getCurrentDatabase(), -1));
     break;
   }
+  case SQLR_SELECTSCHEMA: {
+    if (objc != 3) {
+      Tcl_WrongNumArgs(interp,2, objv, "schema");
+      return TCL_ERROR;
+    }
+    Tcl_SetObjResult(interp, Tcl_NewIntObj(con->selectSchema(Tcl_GetString(objv[2]))));
+    break;
+  }
+  case SQLR_GETCURRENTSCHEMA: {
+    if (objc > 2) {
+      Tcl_WrongNumArgs(interp, 2, objv, NULL);
+      return TCL_ERROR;
+    }
+    Tcl_SetObjResult(interp,
+		     _Tcl_NewStringObj(con->getCurrentSchema(), -1));
+    break;
+  }
   case SQLR_GETLASTINSERTID: {
     if (objc > 2) {
       Tcl_WrongNumArgs(interp, 2, objv, NULL);
@@ -3094,6 +3119,14 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
       return TCL_ERROR;
     }
     Tcl_SetObjResult(interp,_Tcl_NewStringObj(con->getIsolationLevel(), -1));
+    break;
+  }
+  case SQLR_GETDATABASEFEATURE: {
+    if (objc != 3) {
+      Tcl_WrongNumArgs(interp, 2, objv, "feature");
+      return TCL_ERROR;
+    }
+    Tcl_SetObjResult(interp,_Tcl_NewStringObj(con->getDatabaseFeature(Tcl_GetString(objv[2])), -1));
     break;
   }
   case SQLR_ERRORMESSAGE: {

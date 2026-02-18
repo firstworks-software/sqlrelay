@@ -895,16 +895,20 @@ const char *mysqlconnection::mapIsolationLevel(
 		}
 	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
 			toformat==SQLRSERVERISOLATIONLEVELFORMAT_JDBC) {
-		if (!charstring::compare(isolevel,"READ-UNCOMMITTED")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"READ-UNCOMMITTED")) {
 			return "TRANSACTION_READ_UNCOMMITTED";
 		}
-		if (!charstring::compare(isolevel,"READ-COMMITTED")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"READ-COMMITTED")) {
 			return "TRANSACTION_READ_COMMITTED";
 		}
-		if (!charstring::compare(isolevel,"REPEATABLE-READ")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"REPEATABLE-READ")) {
 			return "TRANSACTION_REPEATABLE_READ";
 		}
-		if (!charstring::compare(isolevel,"SERIALIZABLE")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"SERIALIZABLE")) {
 			return "TRANSACTION_SERIALIZABLE";
 		}
 	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC &&
@@ -927,16 +931,20 @@ const char *mysqlconnection::mapIsolationLevel(
 		}
 	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
 			toformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC) {
-		if (!charstring::compare(isolevel,"READ-UNCOMMITTED")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"READ-UNCOMMITTED")) {
 			return "SQL_TXN_READ_UNCOMMITTED";
 		}
-		if (!charstring::compare(isolevel,"READ-COMMITTED")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"READ-COMMITTED")) {
 			return "SQL_TXN_READ_COMMITTED";
 		}
-		if (!charstring::compare(isolevel,"REPEATABLE-READ")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"REPEATABLE-READ")) {
 			return "SQL_TXN_REPEATABLE_READ";
 		}
-		if (!charstring::compare(isolevel,"SERIALIZABLE")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"SERIALIZABLE")) {
 			return "SQL_TXN_SERIALIZABLE";
 		}
 	}

@@ -197,6 +197,7 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		stringbuffer	tablelistquery;
 		stringbuffer	columnlistquery;
 		stringbuffer	typeinfolistquery;
+		stringbuffer	numbertypequery;
 
 		char		**databasefeatures;
 };
@@ -1564,26 +1565,102 @@ const char *oracleconnection::getColumnListQuery(const char *table,
 	return columnlistquery.getString();
 }
 
-static const char	*chartype=
+static const char	*intervaldstype=
 			"(select "
-			"	'CHAR' as type_name, "
-			"	1 as data_type, "
-			"	2000 as column_size, "
-			"	'''' as literal_prefix, "
+			"	'INTERVALDS' as type_name, "
+			"	-104 as data_type, "
+			"	4 as column_size, "
+			"	'INTERVAL ''' as literal_prefix, "
 			"	'''' as literal_suffix, "
-			"	'length' as create_params, "
+			"	null as create_params, "
 			"	1 as nullable, "
-			"	1 as case_sensitive, "
+			"	0 as case_sensitive, "
 			"	3 as searchable, "
-			"	null as unsigned_attribute, "
+			"	0 as unsigned_attribute, "
 			"	0 as fixed_prec_scale, "
 			"	0 as auto_unique_value, "
-			"	'CHAR' as local_type_name, "
-			"	null as minimum_scale, "
-			"	null as maximum_scale, "
-			"	1 as sql_data_type, "
+			"	'INTERVALDS' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
 			"	null as sql_datetime_sub, "
-			"	null as num_prec_radix, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	dual) ";
+
+static const char	*intervalymtype=
+			"(select "
+			"	'INTERVALYM' as type_name, "
+			"	-103 as data_type, "
+			"	5 as column_size, "
+			"	'INTERVAL ''' as literal_prefix, "
+			"	'''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'INTERVALYM' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	dual) ";
+
+static const char	*timestampltztype=
+			"(select "
+			"	'TIMESTAMP WITH LOCAL TIME ZONE' as type_name, "
+			"	-102 as data_type, "
+			"	11 as column_size, "
+			"	'TIMESTAMP ''' as literal_prefix, "
+			"	'''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'TIMESTAMP WITH LOCAL TIME ZONE' "
+						"as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	dual) ";
+
+static const char	*timestamptztype=
+			"(select "
+			"	'TIMESTAMP WITH TIME ZONE' as type_name, "
+			"	-101 as data_type, "
+			"	13 as column_size, "
+			"	'TIMESTAMP ''' as literal_prefix, "
+			"	'''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'TIMESTAMP WITH TIME ZONE' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
@@ -1592,173 +1669,223 @@ static const char	*chartype=
 static const char	*nchartype=
 			"(select "
 			"	'NCHAR' as type_name, "
-			"	-8 as data_type, "
+			"	-15 as data_type, "
 			"	2000 as column_size, "
 			"	'''' as literal_prefix, "
 			"	'''' as literal_suffix, "
-			"	'length' as create_params, "
+			"	null as create_params, "
 			"	1 as nullable, "
 			"	1 as case_sensitive, "
 			"	3 as searchable, "
-			"	null as unsigned_attribute, "
+			"	0 as unsigned_attribute, "
 			"	0 as fixed_prec_scale, "
 			"	0 as auto_unique_value, "
 			"	'NCHAR' as local_type_name, "
-			"	null as minimum_scale, "
-			"	null as maximum_scale, "
-			"	-8 as sql_data_type, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
 			"	null as sql_datetime_sub, "
-			"	null as num_prec_radix, "
+			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
 			"	dual) ";
 
-static const char	*varchar2type=
-			"(select "
-			"	'VARCHAR2' as type_name, "
-			"	12 as data_type, "
-			"	4000 as column_size, "
-			"	'''' as literal_prefix, "
-			"	'''' as literal_suffix, "
-			"	'length' as create_params, "
-			"	1 as nullable, "
-			"	1 as case_sensitive, "
-			"	3 as searchable, "
-			"	null as unsigned_attribute, "
-			"	0 as fixed_prec_scale, "
-			"	0 as auto_unique_value, "
-			"	'VARCHAR2' as local_type_name, "
-			"	null as minimum_scale, "
-			"	null as maximum_scale, "
-			"	12 as sql_data_type, "
-			"	null as sql_datetime_sub, "
-			"	null as num_prec_radix, "
-			"	null as interval_precision, "
-			"	NULL "
-			"from "
-			"	dual) ";
-
-static const char	*varchartype=
-			"(select "
-			"	'VARCHAR' as type_name, "
-			"	12 as data_type, "
-			"	4000 as column_size, "
-			"	'''' as literal_prefix, "
-			"	'''' as literal_suffix, "
-			"	'length' as create_params, "
-			"	1 as nullable, "
-			"	1 as case_sensitive, "
-			"	3 as searchable, "
-			"	null as unsigned_attribute, "
-			"	0 as fixed_prec_scale, "
-			"	0 as auto_unique_value, "
-			"	'VARCHAR' as local_type_name, "
-			"	null as minimum_scale, "
-			"	null as maximum_scale, "
-			"	12 as sql_data_type, "
-			"	null as sql_datetime_sub, "
-			"	null as num_prec_radix, "
-			"	null as interval_precision, "
-			"	NULL "
-			"from "
-			"	dual) ";
-	
 static const char	*nvarchar2type=
 			"(select "
 			"	'NVARCHAR2' as type_name, "
 			"	-9 as data_type, "
-			"	4000 as column_size, "
+			"	32766 as column_size, "
 			"	'''' as literal_prefix, "
 			"	'''' as literal_suffix, "
-			"	'length' as create_params, "
+			"	null as create_params, "
 			"	1 as nullable, "
 			"	1 as case_sensitive, "
 			"	3 as searchable, "
-			"	null as unsigned_attribute, "
+			"	0 as unsigned_attribute, "
 			"	0 as fixed_prec_scale, "
 			"	0 as auto_unique_value, "
-			"	'NVARCHAR2' as local_type_name, "
-			"	null as minimum_scale, "
-			"	null as maximum_scale, "
-			"	-9 as sql_data_type, "
+			"	'nVARCHAR2' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
 			"	null as sql_datetime_sub, "
-			"	null as num_prec_radix, "
+			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
 			"	dual) ";
-	
-static const char	*clobtype=
+
+static const char	*numberbittype=
 			"(select "
-			"	'CLOB' as type_name, "
-			"	-1 as data_type, "
-			"	140737488355328 as column_size, "
-			"	'''' as literal_prefix, "
-			"	'''' as literal_suffix, "
-			"	'' as create_params, "
+			"	'NUMBER' as type_name, "
+			"	-7 as data_type, "
+			"	1 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	'(1)' as create_params, "
 			"	1 as nullable, "
-			"	1 as case_sensitive, "
+			"	0 as case_sensitive, "
 			"	3 as searchable, "
-			"	null as unsigned_attribute, "
-			"	0 as fixed_prec_scale, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
 			"	0 as auto_unique_value, "
-			"	'CLOB' as local_type_name, "
-			"	null as minimum_scale, "
-			"	null as maximum_scale, "
-			"	-1 as sql_data_type, "
+			"	'NUMBER' as local_type_name, "
+			"	-84 as minimum_scale, "
+			"	127 as maximum_scale, "
+			"	null as sql_data_type, "
 			"	null as sql_datetime_sub, "
-			"	null as num_prec_radix, "
+			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
 			"	dual) ";
-	
-static const char	*nclobtype=
+
+static const char	*numbertinyinttype=
 			"(select "
-			"	'NCLOB' as type_name, "
-			"	-10 as data_type, "
-			"	140737488355328 as column_size, "
-			"	'''' as literal_prefix, "
-			"	'''' as literal_suffix, "
-			"	'' as create_params, "
+			"	'NUMBER' as type_name, "
+			"	-6 as data_type, "
+			"	3 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	'(3)' as create_params, "
 			"	1 as nullable, "
-			"	1 as case_sensitive, "
+			"	0 as case_sensitive, "
 			"	3 as searchable, "
-			"	null as unsigned_attribute, "
-			"	0 as fixed_prec_scale, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
 			"	0 as auto_unique_value, "
-			"	'NCLOB' as local_type_name, "
-			"	null as minimum_scale, "
-			"	null as maximum_scale, "
-			"	-10 as sql_data_type, "
+			"	'NUMBER' as local_type_name, "
+			"	-84 as minimum_scale, "
+			"	127 as maximum_scale, "
+			"	null as sql_data_type, "
 			"	null as sql_datetime_sub, "
-			"	null as num_prec_radix, "
+			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
 			"	dual) ";
-		
+
+static const char	*numberbiginttype=
+			"(select "
+			"	'NUMBER' as type_name, "
+			"	-5 as data_type, "
+			"	38 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'NUMBER' as local_type_name, "
+			"	-84 as minimum_scale, "
+			"	127 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	dual) ";
+
+static const char	*longrawtype=
+			"(select "
+			"	'LONG RAW' as type_name, "
+			"	-4 as data_type, "
+			"	2147483647 as column_size, "
+			"	'''' as literal_prefix, "
+			"	'''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	0 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'LONG RAW' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	dual) ";
+
+static const char	*rawtype=
+			"(select "
+			"	'RAW' as type_name, "
+			"	-3 as data_type, "
+			"	32767 as column_size, "
+			"	'''' as literal_prefix, "
+			"	'''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'RAW' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	dual) ";
+
 static const char	*longtype=
 			"(select "
 			"	'LONG' as type_name, "
 			"	-1 as data_type, "
-			"	4294967295 as column_size, "
+			"	2147483647 as column_size, "
 			"	'''' as literal_prefix, "
 			"	'''' as literal_suffix, "
-			"	'' as create_params, "
+			"	null as create_params, "
 			"	1 as nullable, "
 			"	1 as case_sensitive, "
-			"	3 as searchable, "
-			"	null as unsigned_attribute, "
+			"	0 as searchable, "
+			"	0 as unsigned_attribute, "
 			"	0 as fixed_prec_scale, "
 			"	0 as auto_unique_value, "
 			"	'LONG' as local_type_name, "
-			"	null as minimum_scale, "
-			"	null as maximum_scale, "
-			"	-1 as sql_data_type, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
 			"	null as sql_datetime_sub, "
-			"	null as num_prec_radix, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	dual) ";
+
+static const char	*chartype=
+			"(select "
+			"	'CHAR' as type_name, "
+			"	1 as data_type, "
+			"	2000 as column_size, "
+			"	'''' as literal_prefix, "
+			"	'''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'CHAR' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
@@ -1769,46 +1896,270 @@ static const char	*numbertype=
 			"	'NUMBER' as type_name, "
 			"	2 as data_type, "
 			"	38 as column_size, "
-			"	'' as literal_prefix, "
-			"	'' as literal_suffix, "
-			"	'precision,scale' as create_params, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
 			"	1 as nullable, "
-			"	1 as case_sensitive, "
+			"	0 as case_sensitive, "
 			"	3 as searchable, "
 			"	0 as unsigned_attribute, "
-			"	0 as fixed_prec_scale, "
+			"	1 as fixed_prec_scale, "
 			"	0 as auto_unique_value, "
 			"	'NUMBER' as local_type_name, "
-			"	0 as minimum_scale, "
-			"	38 as maximum_scale, "
-			"	2 as sql_data_type, "
+			"	-84 as minimum_scale, "
+			"	127 as maximum_scale, "
+			"	null as sql_data_type, "
 			"	null as sql_datetime_sub, "
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
 			"	dual) ";
-	
-static const char	*datetype=
+
+static const char	*numberinttype=
 			"(select "
-			"	'DATE' as type_name, "
-			"	9 as data_type, "
-			"	26 as column_size, "
+			"	'NUMBER' as type_name, "
+			"	4 as data_type, "
+			"	10 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	'(10)' as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'NUMBER' as local_type_name, "
+			"	-84 as minimum_scale, "
+			"	127 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	dual) ";
+
+static const char	*numbersmallinttype=
+			"(select "
+			"	'NUMBER' as type_name, "
+			"	5 as data_type, "
+			"	5 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	'(5)' as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'NUMBER' as local_type_name, "
+			"	-84 as minimum_scale, "
+			"	127 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	dual) ";
+
+static const char	*floattype=
+			"(select "
+			"	'FLOAT' as type_name, "
+			"	6 as data_type, "
+			"	63 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'FLOAT' as local_type_name, "
+			"	-84 as minimum_scale, "
+			"	127 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	dual) ";
+
+static const char	*realtype=
+			"(select "
+			"	'REAL' as type_name, "
+			"	7 as data_type, "
+			"	63 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'REAL' as local_type_name, "
+			"	-84 as minimum_scale, "
+			"	127 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	dual) ";
+
+static const char	*varchar2type=
+			"(select "
+			"	'VARCHAR2' as type_name, "
+			"	12 as data_type, "
+			"	32767 as column_size, "
 			"	'''' as literal_prefix, "
 			"	'''' as literal_suffix, "
-			"	'' as create_params, "
+			"	null as create_params, "
 			"	1 as nullable, "
 			"	1 as case_sensitive, "
 			"	3 as searchable, "
-			"	null as unsigned_attribute, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'VARCHAR2' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	dual) ";
+
+static const char	*datetypes=
+			"(select "
+			"	'DATE' as type_name, "
+			"	92 as data_type, "
+			"	7 as column_size, "
+			"	'DATE ''' as literal_prefix, "
+			"	'''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
 			"	0 as fixed_prec_scale, "
 			"	0 as auto_unique_value, "
 			"	'DATE' as local_type_name, "
-			"	null as minimum_scale, "
-			"	null as maximum_scale, "
-			"	9 as sql_data_type, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
 			"	null as sql_datetime_sub, "
-			"	null as num_prec_radix, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	dual) "
+			"union "
+			"(select "
+			"	'DATE' as type_name, "
+			"	93 as data_type, "
+			"	7 as column_size, "
+			"	'DATE ''' as literal_prefix, "
+			"	'''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'DATE' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	dual) ";
+
+static const char	*timestamptype=
+			"(select "
+			"	'TIMESTAMP' as type_name, "
+			"	93 as data_type, "
+			"	11 as column_size, "
+			"	'TIMESTAMP ''' as literal_prefix, "
+			"	'''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'TIMESTAMP' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	dual) ";
+
+static const char	*structtype=
+			"(select "
+			"	'STRUCT' as type_name, "
+			"	2002 as data_type, "
+			"	0 as column_size, "
+			"	'''' as literal_prefix, "
+			"	'''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	0 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'STRUCT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	dual) ";
+
+static const char	*arraytype=
+			"(select "
+			"	'ARRAY' as type_name, "
+			"	2003 as data_type, "
+			"	0 as column_size, "
+			"	'''' as literal_prefix, "
+			"	'''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	0 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'ARRAY' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
@@ -1817,98 +2168,98 @@ static const char	*datetype=
 static const char	*blobtype=
 			"(select "
 			"	'BLOB' as type_name, "
-			"	-2 as data_type, "
-			"	140737488355328 as column_size, "
-			"	'''' as literal_prefix, "
-			"	'''' as literal_suffix, "
-			"	'' as create_params, "
+			"	2004 as data_type, "
+			"	-1 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
 			"	1 as nullable, "
-			"	1 as case_sensitive, "
-			"	3 as searchable, "
-			"	null as unsigned_attribute, "
+			"	0 as case_sensitive, "
+			"	0 as searchable, "
+			"	0 as unsigned_attribute, "
 			"	0 as fixed_prec_scale, "
 			"	0 as auto_unique_value, "
 			"	'BLOB' as local_type_name, "
-			"	null as minimum_scale, "
-			"	null as maximum_scale, "
-			"	-2 as sql_data_type, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
 			"	null as sql_datetime_sub, "
-			"	null as num_prec_radix, "
+			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
 			"	dual) ";
 
-static const char	*bfiletype=
+static const char	*clobtype=
 			"(select "
-			"	'BFILE' as type_name, "
-			"	-4 as data_type, "
-			"	8589934592 as column_size, "
+			"	'CLOB' as type_name, "
+			"	2005 as data_type, "
+			"	-1 as column_size, "
 			"	'''' as literal_prefix, "
 			"	'''' as literal_suffix, "
-			"	'' as create_params, "
+			"	null as create_params, "
 			"	1 as nullable, "
 			"	1 as case_sensitive, "
-			"	3 as searchable, "
-			"	null as unsigned_attribute, "
+			"	0 as searchable, "
+			"	0 as unsigned_attribute, "
 			"	0 as fixed_prec_scale, "
 			"	0 as auto_unique_value, "
-			"	'BFILE' as local_type_name, "
-			"	null as minimum_scale, "
-			"	null as maximum_scale, "
-			"	-4 as sql_data_type, "
+			"	'CLOB' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
 			"	null as sql_datetime_sub, "
-			"	null as num_prec_radix, "
+			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
 			"	dual) ";
 
-static const char	*rawtype=
+static const char	*reftype=
 			"(select "
-			"	'RAW' as type_name, "
-			"	-3 as data_type, "
-			"	2000 as column_size, "
+			"	'REF' as type_name, "
+			"	2006 as data_type, "
+			"	0 as column_size, "
 			"	'''' as literal_prefix, "
 			"	'''' as literal_suffix, "
-			"	'' as create_params, "
+			"	null as create_params, "
 			"	1 as nullable, "
 			"	1 as case_sensitive, "
-			"	3 as searchable, "
-			"	null as unsigned_attribute, "
+			"	0 as searchable, "
+			"	0 as unsigned_attribute, "
 			"	0 as fixed_prec_scale, "
 			"	0 as auto_unique_value, "
-			"	'RAW' as local_type_name, "
-			"	null as minimum_scale, "
-			"	null as maximum_scale, "
-			"	-3 as sql_data_type, "
+			"	'REF' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
 			"	null as sql_datetime_sub, "
-			"	null as num_prec_radix, "
+			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
 			"	dual) ";
 
-static const char	*longrawtype=
+static const char	*nclobtype=
 			"(select "
-			"	'LONGRAW' as type_name, "
-			"	-4 as data_type, "
-			"	4000 as column_size, "
+			"	'NCLOB' as type_name, "
+			"	2011 as data_type, "
+			"	-1 as column_size, "
 			"	'''' as literal_prefix, "
 			"	'''' as literal_suffix, "
-			"	'' as create_params, "
+			"	null as create_params, "
 			"	1 as nullable, "
 			"	1 as case_sensitive, "
-			"	3 as searchable, "
-			"	null as unsigned_attribute, "
+			"	0 as searchable, "
+			"	0 as unsigned_attribute, "
 			"	0 as fixed_prec_scale, "
 			"	0 as auto_unique_value, "
-			"	'LONGRAW' as local_type_name, "
-			"	null as minimum_scale, "
-			"	null as maximum_scale, "
-			"	-4 as sql_data_type, "
+			"	'NCLOB' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
 			"	null as sql_datetime_sub, "
-			"	null as num_prec_radix, "
+			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
@@ -1920,61 +2271,120 @@ const char *oracleconnection::getTypeInfoListQuery(const char *type,
 
 	if (!charstring::compare(type,"*")) {
 		if (!typeinfolistquery.getSize()) {
-			typeinfolistquery.append(chartype);
+			typeinfolistquery.append(intervaldstype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(intervalymtype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(timestampltztype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(timestamptztype);
 			typeinfolistquery.append("union ");
 			typeinfolistquery.append(nchartype);
 			typeinfolistquery.append("union ");
-			typeinfolistquery.append(varchar2type);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(varchartype);
-			typeinfolistquery.append("union ");
 			typeinfolistquery.append(nvarchar2type);
 			typeinfolistquery.append("union ");
-			typeinfolistquery.append(clobtype);
+			typeinfolistquery.append(numberbittype);
 			typeinfolistquery.append("union ");
-			typeinfolistquery.append(nclobtype);
+			typeinfolistquery.append(numbertinyinttype);
 			typeinfolistquery.append("union ");
-			typeinfolistquery.append(longtype);
+			typeinfolistquery.append(numberbiginttype);
 			typeinfolistquery.append("union ");
-			typeinfolistquery.append(numbertype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(datetype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(blobtype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(bfiletype);
+			typeinfolistquery.append(longrawtype);
 			typeinfolistquery.append("union ");
 			typeinfolistquery.append(rawtype);
 			typeinfolistquery.append("union ");
-			typeinfolistquery.append(longrawtype);
+			typeinfolistquery.append(longtype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(chartype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(numbertype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(numberinttype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(numbersmallinttype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(floattype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(realtype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(varchar2type);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(datetypes);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(timestamptype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(structtype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(arraytype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(blobtype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(clobtype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(reftype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(nclobtype);
 		}
 		return typeinfolistquery.getString();
-	} else if (!charstring::compareIgnoringCase(type,"char")) {
-		return chartype;
+	} else if (!charstring::compareIgnoringCase(type,"intervalds")) {
+		return intervaldstype;
+	} else if (!charstring::compareIgnoringCase(type,"intervalym")) {
+		return intervalymtype;
+	} else if (!charstring::compareIgnoringCase(
+				type,"timestamp with local time zone")) {
+		return timestampltztype;
+	} else if (!charstring::compareIgnoringCase(
+				type,"timestamp with time zone")) {
+		return timestamptztype;
 	} else if (!charstring::compareIgnoringCase(type,"nchar")) {
 		return nchartype;
-	} else if (!charstring::compareIgnoringCase(type,"varchar2")) {
-		return varchar2type;
-	} else if (!charstring::compareIgnoringCase(type,"varchar")) {
-		return varchartype;
 	} else if (!charstring::compareIgnoringCase(type,"nvarchar2")) {
 		return nvarchar2type;
-	} else if (!charstring::compareIgnoringCase(type,"clob")) {
-		return clobtype;
-	} else if (!charstring::compareIgnoringCase(type,"nclob")) {
-		return nclobtype;
-	} else if (!charstring::compareIgnoringCase(type,"long")) {
-		return longtype;
 	} else if (!charstring::compareIgnoringCase(type,"number")) {
-		return numbertype;
-	} else if (!charstring::compareIgnoringCase(type,"date")) {
-		return datetype;
-	} else if (!charstring::compareIgnoringCase(type,"blob")) {
-		return blobtype;
-	} else if (!charstring::compareIgnoringCase(type,"bfile")) {
-		return bfiletype;
+		if (!numbertypequery.getSize()) {
+			numbertypequery.append(numberbittype);
+			numbertypequery.append("union ");
+			numbertypequery.append(numbertinyinttype);
+			numbertypequery.append("union ");
+			numbertypequery.append(numberbiginttype);
+			numbertypequery.append("union ");
+			numbertypequery.append(numbertype);
+			numbertypequery.append("union ");
+			numbertypequery.append(numberinttype);
+			numbertypequery.append("union ");
+			numbertypequery.append(numbersmallinttype);
+		}
+		return numbertypequery.getString();
+	} else if (!charstring::compareIgnoringCase(type,"float")) {
+		return floattype;
+	} else if (!charstring::compareIgnoringCase(type,"real")) {
+		return realtype;
+	} else if (!charstring::compareIgnoringCase(type,"long raw")) {
+		return longrawtype;
 	} else if (!charstring::compareIgnoringCase(type,"raw")) {
 		return rawtype;
+	} else if (!charstring::compareIgnoringCase(type,"long")) {
+		return longtype;
+	} else if (!charstring::compareIgnoringCase(type,"char")) {
+		return chartype;
+	} else if (!charstring::compareIgnoringCase(type,"varchar2")) {
+		return varchar2type;
+	} else if (!charstring::compareIgnoringCase(type,"date")) {
+		return datetypes;
+	} else if (!charstring::compareIgnoringCase(type,"timestamp")) {
+		return timestamptype;
+	} else if (!charstring::compareIgnoringCase(type,"struct")) {
+		return structtype;
+	} else if (!charstring::compareIgnoringCase(type,"array")) {
+		return arraytype;
+	} else if (!charstring::compareIgnoringCase(type,"blob")) {
+		return blobtype;
+	} else if (!charstring::compareIgnoringCase(type,"clob")) {
+		return clobtype;
+	} else if (!charstring::compareIgnoringCase(type,"ref")) {
+		return reftype;
+	} else if (!charstring::compareIgnoringCase(type,"nclob")) {
+		return nclobtype;
 	}
 	return NULL;
 }
@@ -2076,38 +2486,42 @@ const char *oracleconnection::mapIsolationLevel(
 	}
 	if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_JDBC &&
 			toformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE) {
-		if (!charstring::compare(isolevel,
-				"TRANSACTION_READ_COMMITTED")) {
+		if (!charstring::compare(
+				isolevel,"TRANSACTION_READ_COMMITTED")) {
 			return "READ COMMITTED";
 		}
-		if (!charstring::compare(isolevel,
-				"TRANSACTION_SERIALIZABLE")) {
+		if (!charstring::compare(
+				isolevel,"TRANSACTION_SERIALIZABLE")) {
 			return "SERIALIZABLE";
 		}
 	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
 			toformat==SQLRSERVERISOLATIONLEVELFORMAT_JDBC) {
-		if (!charstring::compare(isolevel,"READ COMMITTED")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"READ COMMITTED")) {
 			return "TRANSACTION_READ_COMMITTED";
 		}
-		if (!charstring::compare(isolevel,"SERIALIZABLE")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"SERIALIZABLE")) {
 			return "TRANSACTION_SERIALIZABLE";
 		}
 	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC &&
 			toformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE) {
-		if (!charstring::compare(isolevel,
-				"SQL_TXN_READ_COMMITTED")) {
+		if (!charstring::compare(
+				isolevel,"SQL_TXN_READ_COMMITTED")) {
 			return "READ COMMITTED";
 		}
-		if (!charstring::compare(isolevel,
-				"SQL_TXN_SERIALIZABLE")) {
+		if (!charstring::compare(
+				isolevel,"SQL_TXN_SERIALIZABLE")) {
 			return "SERIALIZABLE";
 		}
 	} else if (fromformat==SQLRSERVERISOLATIONLEVELFORMAT_NATIVE &&
 			toformat==SQLRSERVERISOLATIONLEVELFORMAT_ODBC) {
-		if (!charstring::compare(isolevel,"READ COMMITTED")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"READ COMMITTED")) {
 			return "SQL_TXN_READ_COMMITTED";
 		}
-		if (!charstring::compare(isolevel,"SERIALIZABLE")) {
+		if (!charstring::compareIgnoringCase(
+					isolevel,"SERIALIZABLE")) {
 			return "SQL_TXN_SERIALIZABLE";
 		}
 	}
