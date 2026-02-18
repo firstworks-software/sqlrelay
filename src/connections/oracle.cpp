@@ -2682,7 +2682,7 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 			"INCREMENT, INDEX, INITIAL, INTERSECT, LEVEL, "
 			"LOCK, LONG, MAXEXTENTS, MINUS, MODE, NOAUDIT, "
 			"NOCOMPRESS, NOWAIT, NUMBER, OFFLINE, ONLINE, "
-			"PCTFREE, PRIOR, all_PL_SQL_reserved_ words");
+			"PCTFREE, PRIOR, all_PL_SQL_reserved_words");
 	databasefeatures[FEATURE_SQL_STATE_TYPE]=
 		charstring::duplicate("0");
 	databasefeatures[FEATURE_SCHEMA_TERM]=

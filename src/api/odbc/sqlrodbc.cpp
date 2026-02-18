@@ -6256,6 +6256,652 @@ SQLRETURN SQL_API SQLGetFunctions(SQLHDBC connectionhandle,
 	return SQLR_SQLGetFunctions(connectionhandle,functionid,supported);
 }
 
+static SQLUSMALLINT SQLR_IdentifierCase(CONN *conn) {
+	// I'm not 100% sure about this one, there is also
+	// stores_mixed_case_identifiers, and maybe that
+	// should be factored in here too
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"supports_mixed_case_identifiers"))) {
+		return SQL_IC_SENSITIVE;
+	} else if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"stores_upper_case_identifiers"))) {
+		return SQL_IC_UPPER;
+	} else if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"stores_lower_case_identifiers"))) {
+		return SQL_IC_LOWER;
+	}
+	return SQL_IC_MIXED;
+}
+
+static SQLUSMALLINT SQLR_TxnCapable(CONN *conn) {
+	if (!sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"supports_transactions"))) {
+		return SQL_TC_NONE;
+	} else if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+	"supports_data_definition_and_data_manipulation_transactions"))) {
+		return SQL_TC_ALL;
+	} else if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"data_definition_causes_transaction_commit"))) {
+		return SQL_TC_DDL_COMMIT;
+	} else if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"data_definition_ignored_in_transactions"))) {
+		return SQL_TC_DDL_IGNORE;
+	}
+	return SQL_TC_DML;
+}
+
+static SQLUINTEGER SQLR_TxnIsolationOption(CONN *conn) {
+	SQLUINTEGER	retval=0;
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"supports_transaction_isolation_level_ru"))) {
+		retval|=SQL_TXN_READ_UNCOMMITTED;
+	}
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"supports_transaction_isolation_level_rc"))) {
+		retval|=SQL_TXN_READ_COMMITTED;
+	}
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"supports_transaction_isolation_level_rr"))) {
+		retval|=SQL_TXN_REPEATABLE_READ;
+	}
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"supports_transaction_isolation_level_s"))) {
+		retval|=SQL_TXN_SERIALIZABLE;
+	}
+	return retval;
+}
+
+static SQLUSMALLINT SQLR_NullCollation(CONN *conn) {
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+					"nulls_are_sorted_high"))) {
+		return SQL_NC_HIGH;
+	} else if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+					"nulls_are_sorted_at_start"))) {
+		return SQL_NC_START;
+	} else if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+					"nulls_are_sorted_at_end"))) {
+		return SQL_NC_END;
+	}
+	return SQL_NC_LOW;
+}
+
+static SQLUINTEGER SQLR_AlterTable(CONN *conn) {
+	SQLUINTEGER	retval=0;
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+		"supports_alter_table_with_add_column"))) {
+		#if (ODBCVER >= 0x0200)
+		retval|=SQL_AT_ADD_COLUMN;
+		#endif
+		#if (ODBCVER >= 0x0300)
+		retval|=SQL_AT_ADD_COLUMN_SINGLE
+			|SQL_AT_ADD_COLUMN_DEFAULT
+			|SQL_AT_ADD_COLUMN_COLLATION
+			|SQL_AT_SET_COLUMN_DEFAULT
+			|SQL_AT_ADD_TABLE_CONSTRAINT
+			|SQL_AT_CONSTRAINT_NAME_DEFINITION
+			|SQL_AT_CONSTRAINT_INITIALLY_DEFERRED
+			|SQL_AT_CONSTRAINT_INITIALLY_IMMEDIATE
+			|SQL_AT_CONSTRAINT_DEFERRABLE
+			|SQL_AT_CONSTRAINT_NON_DEFERRABLE;
+		#endif
+	}
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+		"supports_alter_table_with_drop_column"))) {
+		#if (ODBCVER >= 0x0200)
+		retval|=SQL_AT_DROP_COLUMN;
+		#endif
+		#if (ODBCVER >= 0x0300)
+		retval|=SQL_AT_DROP_COLUMN_DEFAULT
+			|SQL_AT_DROP_COLUMN_CASCADE
+			|SQL_AT_DROP_COLUMN_RESTRICT
+			|SQL_AT_DROP_TABLE_CONSTRAINT_CASCADE
+			|SQL_AT_DROP_TABLE_CONSTRAINT_RESTRICT;
+		#endif
+	}
+	return retval;
+}
+
+static SQLUINTEGER SQLR_OjCapabilities(CONN *conn) {
+	SQLUINTEGER	retval=0;
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+				"supports_outer_joins"))) {
+		retval|=SQL_OJ_LEFT
+			|SQL_OJ_RIGHT
+			|SQL_OJ_NESTED
+			|SQL_OJ_NOT_ORDERED
+			|SQL_OJ_INNER
+			|SQL_OJ_ALL_COMPARISON_OPS;
+	} else if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+				"supports_limited_outer_joins"))) {
+		retval|=SQL_OJ_LEFT;
+	}
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+				"supports_full_outer_joins"))) {
+		retval|=SQL_OJ_FULL;
+	}
+	return retval;
+}
+
+static SQLUSMALLINT SQLR_OdbcSqlConformance(CONN *conn) {
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+				"supports_extended_sql_grammar"))) {
+		return SQL_OSC_EXTENDED;
+	} else if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+				"supports_core_sql_grammar"))) {
+		return SQL_OSC_CORE;
+	}
+	return SQL_OSC_MINIMUM;
+}
+
+static SQLUSMALLINT SQLR_ConcatNullBehavior(CONN *conn) {
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+				"null_plus_non_null_is_null"))) {
+		return SQL_CB_NULL;
+	}
+	return SQL_CB_NON_NULL;
+}
+
+static SQLUINTEGER SQLR_ConvertFunctions(CONN *conn) {
+	SQLUINTEGER	retval=SQL_FN_CVT_CAST;
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature("supports_convert"))) {
+		retval|=SQL_FN_CVT_CONVERT;
+	}
+	return retval;
+}
+
+static SQLUINTEGER SQLR_NumericFunctions(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*nf=
+		conn->con->getDatabaseFeature("numeric_functions");
+	if (!nf) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(nf,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"ABS")) {
+			retval|=SQL_FN_NUM_ABS;
+		} else if (!charstring::compare(f,"ACOS")) {
+			retval|=SQL_FN_NUM_ACOS;
+		} else if (!charstring::compare(f,"ASIN")) {
+			retval|=SQL_FN_NUM_ASIN;
+		} else if (!charstring::compare(f,"ATAN")) {
+			retval|=SQL_FN_NUM_ATAN;
+		} else if (!charstring::compare(f,"ATAN2")) {
+			retval|=SQL_FN_NUM_ATAN2;
+		} else if (!charstring::compare(f,"CEILING")) {
+			retval|=SQL_FN_NUM_CEILING;
+		} else if (!charstring::compare(f,"COS")) {
+			retval|=SQL_FN_NUM_COS;
+		} else if (!charstring::compare(f,"COT")) {
+			retval|=SQL_FN_NUM_COT;
+		} else if (!charstring::compare(f,"DEGREES")) {
+			retval|=SQL_FN_NUM_DEGREES;
+		} else if (!charstring::compare(f,"EXP")) {
+			retval|=SQL_FN_NUM_EXP;
+		} else if (!charstring::compare(f,"FLOOR")) {
+			retval|=SQL_FN_NUM_FLOOR;
+		} else if (!charstring::compare(f,"LOG")) {
+			retval|=SQL_FN_NUM_LOG;
+		} else if (!charstring::compare(f,"LOG10")) {
+			retval|=SQL_FN_NUM_LOG10;
+		} else if (!charstring::compare(f,"MOD")) {
+			retval|=SQL_FN_NUM_MOD;
+		} else if (!charstring::compare(f,"PI")) {
+			retval|=SQL_FN_NUM_PI;
+		} else if (!charstring::compare(f,"POWER")) {
+			retval|=SQL_FN_NUM_POWER;
+		} else if (!charstring::compare(f,"RADIANS")) {
+			retval|=SQL_FN_NUM_RADIANS;
+		} else if (!charstring::compare(f,"RAND")) {
+			retval|=SQL_FN_NUM_RAND;
+		} else if (!charstring::compare(f,"ROUND")) {
+			retval|=SQL_FN_NUM_ROUND;
+		} else if (!charstring::compare(f,"SIGN")) {
+			retval|=SQL_FN_NUM_SIGN;
+		} else if (!charstring::compare(f,"SIN")) {
+			retval|=SQL_FN_NUM_SIN;
+		} else if (!charstring::compare(f,"SQRT")) {
+			retval|=SQL_FN_NUM_SQRT;
+		} else if (!charstring::compare(f,"TAN")) {
+			retval|=SQL_FN_NUM_TAN;
+		} else if (!charstring::compare(f,"TRUNCATE")) {
+			retval|=SQL_FN_NUM_TRUNCATE;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_StringFunctions(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*sf=
+		conn->con->getDatabaseFeature("string_functions");
+	if (!sf) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(sf,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"CONCAT")) {
+			retval|=SQL_FN_STR_CONCAT;
+		} else if (!charstring::compare(f,"INSERT")) {
+			retval|=SQL_FN_STR_INSERT;
+		} else if (!charstring::compare(f,"LEFT")) {
+			retval|=SQL_FN_STR_LEFT;
+		} else if (!charstring::compare(f,"LTRIM")) {
+			retval|=SQL_FN_STR_LTRIM;
+		} else if (!charstring::compare(f,"LENGTH")) {
+			retval|=SQL_FN_STR_LENGTH;
+		} else if (!charstring::compare(f,"LOCATE")) {
+			retval|=SQL_FN_STR_LOCATE;
+		} else if (!charstring::compare(f,"LCASE")) {
+			retval|=SQL_FN_STR_LCASE;
+		} else if (!charstring::compare(f,"REPEAT")) {
+			retval|=SQL_FN_STR_REPEAT;
+		} else if (!charstring::compare(f,"REPLACE")) {
+			retval|=SQL_FN_STR_REPLACE;
+		} else if (!charstring::compare(f,"RIGHT")) {
+			retval|=SQL_FN_STR_RIGHT;
+		} else if (!charstring::compare(f,"RTRIM")) {
+			retval|=SQL_FN_STR_RTRIM;
+		} else if (!charstring::compare(f,"SUBSTRING")) {
+			retval|=SQL_FN_STR_SUBSTRING;
+		} else if (!charstring::compare(f,"UCASE")) {
+			retval|=SQL_FN_STR_UCASE;
+		} else if (!charstring::compare(f,"ASCII")) {
+			retval|=SQL_FN_STR_ASCII;
+		} else if (!charstring::compare(f,"CHAR")) {
+			retval|=SQL_FN_STR_CHAR;
+		} else if (!charstring::compare(f,"DIFFERENCE")) {
+			retval|=SQL_FN_STR_DIFFERENCE;
+		} else if (!charstring::compare(f,"LOCATE_2")) {
+			retval|=SQL_FN_STR_LOCATE_2;
+		} else if (!charstring::compare(f,"SOUNDEX")) {
+			retval|=SQL_FN_STR_SOUNDEX;
+		} else if (!charstring::compare(f,"SPACE")) {
+			retval|=SQL_FN_STR_SPACE;
+		#if (ODBCVER >= 0x0300)
+		} else if (!charstring::compare(f,"BIT_LENGTH")) {
+			retval|=SQL_FN_STR_BIT_LENGTH;
+		} else if (!charstring::compare(f,"CHAR_LENGTH")) {
+			retval|=SQL_FN_STR_CHAR_LENGTH;
+		} else if (!charstring::compare(f,"CHARACTER_LENGTH")) {
+			retval|=SQL_FN_STR_CHARACTER_LENGTH;
+		} else if (!charstring::compare(f,"OCTET_LENGTH")) {
+			retval|=SQL_FN_STR_OCTET_LENGTH;
+		} else if (!charstring::compare(f,"POSITION")) {
+			retval|=SQL_FN_STR_POSITION;
+		#endif
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_SystemFunctions(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*sf=
+		conn->con->getDatabaseFeature("system_functions");
+	if (!sf) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(sf,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"USER") ||
+			!charstring::compare(f,"USERNAME")) {
+			retval|=SQL_FN_SYS_USERNAME;
+		} else if (!charstring::compare(f,"DBNAME")) {
+			retval|=SQL_FN_SYS_DBNAME;
+		} else if (!charstring::compare(f,"IFNULL")) {
+			retval|=SQL_FN_SYS_IFNULL;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_TimedateFunctions(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*tf=
+		conn->con->getDatabaseFeature("time_date_functions");
+	if (!tf) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(tf,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"NOW")) {
+			retval|=SQL_FN_TD_NOW;
+		} else if (!charstring::compare(f,"CURDATE")) {
+			retval|=SQL_FN_TD_CURDATE;
+		} else if (!charstring::compare(f,"DAYOFMONTH")) {
+			retval|=SQL_FN_TD_DAYOFMONTH;
+		} else if (!charstring::compare(f,"DAYOFWEEK")) {
+			retval|=SQL_FN_TD_DAYOFWEEK;
+		} else if (!charstring::compare(f,"DAYOFYEAR")) {
+			retval|=SQL_FN_TD_DAYOFYEAR;
+		} else if (!charstring::compare(f,"MONTH")) {
+			retval|=SQL_FN_TD_MONTH;
+		} else if (!charstring::compare(f,"QUARTER")) {
+			retval|=SQL_FN_TD_QUARTER;
+		} else if (!charstring::compare(f,"WEEK")) {
+			retval|=SQL_FN_TD_WEEK;
+		} else if (!charstring::compare(f,"YEAR")) {
+			retval|=SQL_FN_TD_YEAR;
+		} else if (!charstring::compare(f,"CURTIME")) {
+			retval|=SQL_FN_TD_CURTIME;
+		} else if (!charstring::compare(f,"HOUR")) {
+			retval|=SQL_FN_TD_HOUR;
+		} else if (!charstring::compare(f,"MINUTE")) {
+			retval|=SQL_FN_TD_MINUTE;
+		} else if (!charstring::compare(f,"SECOND")) {
+			retval|=SQL_FN_TD_SECOND;
+		} else if (!charstring::compare(f,"TIMESTAMPADD")) {
+			retval|=SQL_FN_TD_TIMESTAMPADD;
+		} else if (!charstring::compare(f,"TIMESTAMPDIFF")) {
+			retval|=SQL_FN_TD_TIMESTAMPDIFF;
+		} else if (!charstring::compare(f,"DAYNAME")) {
+			retval|=SQL_FN_TD_DAYNAME;
+		} else if (!charstring::compare(f,"MONTHNAME")) {
+			retval|=SQL_FN_TD_MONTHNAME;
+		#if (ODBCVER >= 0x0300)
+		} else if (!charstring::compare(f,"CURRENT_DATE")) {
+			retval|=SQL_FN_TD_CURRENT_DATE;
+		} else if (!charstring::compare(f,"CURRENT_TIME")) {
+			retval|=SQL_FN_TD_CURRENT_TIME;
+		} else if (!charstring::compare(f,"CURRENT_TIMESTAMP")) {
+			retval|=SQL_FN_TD_CURRENT_TIMESTAMP;
+		} else if (!charstring::compare(f,"EXTRACT")) {
+			retval|=SQL_FN_TD_EXTRACT;
+		#endif
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUSMALLINT SQLR_CorrelationName(CONN *conn) {
+	if (!sqlrconnection::isYes(
+			conn->con->getDatabaseFeature(
+			"supports_table_correlation_names"))) {
+		return SQL_CN_NONE;
+	} else if (sqlrconnection::isYes(
+			conn->con->getDatabaseFeature(
+			"supports_different_table_correlation_names"))) {
+		return SQL_CN_DIFFERENT;
+	}
+	return SQL_CN_ANY;
+}
+
+static SQLUSMALLINT SQLR_NonNullableColumns(CONN *conn) {
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+				"supports_non_nullable_columns"))) {
+		return SQL_NNC_NON_NULL;
+	}
+	return SQL_NNC_NULL;
+}
+
+static SQLUINTEGER SQLR_PositionedStatements(CONN *conn) {
+	SQLUINTEGER	retval=0;
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature("supports_positioned_delete"))) {
+		retval|=SQL_PS_POSITIONED_DELETE;
+	}
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature("supports_positioned_update"))) {
+		retval|=SQL_PS_POSITIONED_UPDATE;
+	}
+	return retval;
+}
+
+static SQLUINTEGER SQLR_FileUsage(CONN *conn) {
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature("uses_local_file_per_table"))) {
+		return SQL_FILE_TABLE;
+	} else if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature("uses_local_files"))) {
+		return SQL_FILE_CATALOG;
+	}
+	return SQL_FILE_NOT_SUPPORTED;
+}
+
+static SQLUSMALLINT SQLR_GroupBy(CONN *conn) {
+	SQLUSMALLINT	retval;
+	if (!sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+				"supports_group_by"))) {
+		retval=SQL_GB_NOT_SUPPORTED;
+	} else if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+				"supports_group_by_unrelated"))) {
+		retval=SQL_GB_NO_RELATION;
+	} else if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+				"supports_group_by_beyond_select"))) {
+		retval=SQL_GB_GROUP_BY_CONTAINS_SELECT;
+	} else {
+		retval=SQL_GB_GROUP_BY_EQUALS_SELECT;
+	}
+	// FIXME: this isn't true for all dbs
+	#if (ODBCVER >= 0x0300)
+	retval|=SQL_GB_COLLATE;
+	#endif
+	return retval;
+}
+
+static SQLUINTEGER SQLR_OwnerUsage(CONN *conn) {
+	SQLUINTEGER	retval=0;
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"supports_schemas_in_data_manipulation"))) {
+		retval|=SQL_SU_DML_STATEMENTS;
+	}
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"supports_schemas_in_procedure_calls"))) {
+		retval|=SQL_SU_PROCEDURE_INVOCATION;
+	}
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"supports_schemas_in_table_definitions"))) {
+		retval|=SQL_SU_TABLE_DEFINITION;
+	}
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"supports_schemas_in_index_definitions"))) {
+		retval|=SQL_SU_INDEX_DEFINITION;
+	}
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"supports_schemas_in_privilege_definitions"))) {
+		retval|=SQL_SU_PRIVILEGE_DEFINITION;
+	}
+	return retval;
+}
+
+static SQLUINTEGER SQLR_QualifierUsage(CONN *conn) {
+	SQLUINTEGER	retval=0;
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"supports_catalogs_in_data_manipulation"))) {
+		retval|=SQL_SU_DML_STATEMENTS;
+	}
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"supports_catalogs_in_procedure_calls"))) {
+		retval|=SQL_SU_PROCEDURE_INVOCATION;
+	}
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"supports_catalogs_in_table_definitions"))) {
+		retval|=SQL_SU_TABLE_DEFINITION;
+	}
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"supports_catalogs_in_index_definitions"))) {
+		retval|=SQL_SU_INDEX_DEFINITION;
+	}
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"supports_catalogs_in_privilege_definitions"))) {
+		retval|=SQL_SU_PRIVILEGE_DEFINITION;
+	}
+	return retval;
+}
+
+static SQLUSMALLINT SQLR_QuotedIdentifierCase(CONN *conn) {
+	// I'm not 100% sure about this one, there is also
+	// stores_mixed_case_quoted_identifiers, and maybe that
+	// should be factored in here too
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"supports_mixed_case_quoted_identifiers"))) {
+		return SQL_IC_SENSITIVE;
+	} else if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"stores_upper_case_quoted_identifiers"))) {
+		return SQL_IC_UPPER;
+	} else if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"stores_lower_case_quoted_identifiers"))) {
+		return SQL_IC_LOWER;
+	}
+	return SQL_IC_MIXED;
+}
+
+static SQLUINTEGER SQLR_Subqueries(CONN *conn) {
+	SQLUINTEGER	retval=0;
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"supports_correlated_subqueries"))) {
+		retval|=SQL_SQ_CORRELATED_SUBQUERIES;
+	}
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"supports_subqueries_in_comparisons"))) {
+		retval|=SQL_SQ_COMPARISON;
+	}
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"supports_subqueries_in_exists"))) {
+		retval|=SQL_SQ_EXISTS;
+	}
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"supports_subqueries_in_ins"))) {
+		retval|=SQL_SQ_IN;
+	}
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+			"supports_subqueries_in_quantifieds"))) {
+		retval|=SQL_SQ_QUANTIFIED;
+	}
+	return retval;
+}
+
+static SQLUINTEGER SQLR_UnionSupport(CONN *conn) {
+	SQLUINTEGER	retval=0;
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature("supports_union"))) {
+		retval|=SQL_U_UNION;
+	}
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature("supports_union_all"))) {
+		retval|=SQL_U_UNION_ALL;
+	}
+	return retval;
+}
+
+static SQLUSMALLINT SQLR_QualifierLocation(CONN *conn) {
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature("is_catalog_at_start"))) {
+		return SQL_CL_START;
+	}
+	return SQL_CL_END;
+}
+
+static SQLUINTEGER SQLR_SqlConformance(CONN *conn) {
+	// FIXME: SQL_SC_FIPS127_2_TRANSITIONAL is another
+	// possiblity, but there's no good way to determine if
+	// that's supported or not
+	if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+				"supports_ansi92_full_sql"))) {
+		return SQL_SC_SQL92_FULL;
+	} else if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+				"supports_ansi92_intermediate_sql"))) {
+		return SQL_SC_SQL92_INTERMEDIATE;
+	} else if (sqlrconnection::isYes(
+		conn->con->getDatabaseFeature(
+				"supports_ansi92_entry_level_sql"))) {
+		return SQL_SC_SQL92_ENTRY;
+	}
+	return SQL_SC_SQL92_ENTRY;
+}
+
 SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 					SQLUSMALLINT infotype,
 					SQLPOINTER infovalue,
@@ -6297,19 +6943,25 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 					"SQL_ACTIVE_CONNECTIONS/"
 					"SQL_MAX_DRIVER_CONNECTIONS/"
 					"SQL_MAXIMUM_DRIVER_CONNECTIONS\n");
-			// 0 means no max or unknown
-			val.usmallintval=0;
+			val.usmallintval=
+				(SQLUSMALLINT)
+				charstring::convertToUnsignedInteger(
+					conn->con->getDatabaseFeature(
+							"max_connections"));
 			type=2;
 			break;
 		case SQL_ACTIVE_STATEMENTS:
-			// aka SQL_MAX_CONCURRENT_ACTIVITIES 
+			// aka SQL_MAX_CONCURRENT_ACTIVITIES
 			// aka SQL_MAXIMUM_CONCURRENT_ACTIVITIES
 			debugPrintf("  infotype: "
 					"SQL_ACTIVE_STATEMENTS/"
 					"SQL_MAX_CONCURRENT_ACTIVITIES/"
 					"SQL_MAXIMUM_CONCURRENT_ACTIVITIES\n");
-			// 0 means no max or unknown
-			val.usmallintval=0;
+			val.usmallintval=
+				(SQLUSMALLINT)
+				charstring::convertToUnsignedInteger(
+					conn->con->getDatabaseFeature(
+							"max_statements"));
 			type=2;
 			break;
 		case SQL_DATA_SOURCE_NAME:
@@ -6334,7 +6986,8 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_SEARCH_PATTERN_ESCAPE:
 			debugPrintf("  infotype: "
 					"SQL_SEARCH_PATTERN_ESCAPE\n");
-			val.strval="\\";
+			val.strval=conn->con->getDatabaseFeature(
+					"search_string_escape");
 			type=0;
 			break;
 		case SQL_DATABASE_NAME:
@@ -6358,16 +7011,23 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_ACCESSIBLE_TABLES:
 			debugPrintf("  infotype: "
 					"SQL_ACCESSIBLE_TABLES\n");
-			val.strval="N";
+			val.strval=sqlrconnection::isYes(
+				conn->con->getDatabaseFeature(
+						"all_tables_are_selectable"))
+							?"Y":"N";
 			type=0;
 			break;
 		case SQL_ACCESSIBLE_PROCEDURES:
 			debugPrintf("  infotype: "
 					"SQL_ACCESSIBLE_PROCEDURES\n");
-			val.strval="N";
+			val.strval=sqlrconnection::isYes(
+				conn->con->getDatabaseFeature(
+						"all_procedures_are_callable"))
+							?"Y":"N";
 			type=0;
 			break;
 		case SQL_CURSOR_COMMIT_BEHAVIOR:
+			// FIXME: supports_open_cursors_across_commit
 			debugPrintf("  infotype: "
 					"SQL_CURSOR_COMMIT_BEHAVIOR\n");
 			// FIXME: is this true for all db's?
@@ -6375,6 +7035,7 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			type=2;
 			break;
 		case SQL_DATA_SOURCE_READ_ONLY:
+			// FIXME: is_read_only
 			debugPrintf("  infotype: "
 					"SQL_DATA_SOURCE_READ_ONLY\n");
 			// FIXME: this isn't always true
@@ -6382,6 +7043,7 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			type=0;
 			break;
 		case SQL_DEFAULT_TXN_ISOLATION:
+			// FIXME: default_isolation_level
 			debugPrintf("  infotype: "
 					"SQL_DEFAULT_TXN_ISOLATION\n");
 			// FIXME: this isn't always true, especially for mysql
@@ -6391,11 +7053,11 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_IDENTIFIER_CASE:
 			debugPrintf("  infotype: "
 					"SQL_IDENTIFIER_CASE\n");
-			// FIXME: this isn't true for all db's
-			val.usmallintval=SQL_IC_MIXED;
+			val.usmallintval=SQLR_IdentifierCase(conn);
 			type=2;
 			break;
 		case SQL_IDENTIFIER_QUOTE_CHAR:
+			// FIXME: identifier_quote_string
 			debugPrintf("  infotype: "
 					"SQL_IDENTIFIER_QUOTE_CHAR\n");
 			if (!charstring::compare(conn->con->identify(),
@@ -6415,9 +7077,11 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_MAX_COLUMN_NAME_LEN/"
 					"SQL_MAXIMUM_COLUMN_NAME_LEN\n");
-			// 0 means no max or unknown
-			// FIXME: FIPS intermediate level returns >= 128
-			val.usmallintval=0;
+			val.usmallintval=
+				(SQLUSMALLINT)
+				charstring::convertToUnsignedInteger(
+					conn->con->getDatabaseFeature(
+						"max_column_name_length"));
 			type=2;
 			break;
 		case SQL_MAX_CURSOR_NAME_LEN:
@@ -6425,9 +7089,11 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_MAX_CURSOR_NAME_LEN/"
 					"SQL_MAXIMUM_CURSOR_NAME_LEN\n");
-			// 0 means no max or unknown
-			// FIXME: FIPS intermediate level returns >= 128
-			val.usmallintval=0;
+			val.usmallintval=
+				(SQLUSMALLINT)
+				charstring::convertToUnsignedInteger(
+					conn->con->getDatabaseFeature(
+						"max_cursor_name_length"));
 			type=2;
 			break;
 		case SQL_MAX_OWNER_NAME_LEN:
@@ -6437,7 +7103,12 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 					"SQL_MAX_OWNER_NAME_LEN/"
 					"SQL_MAX_SCHEMA_NAME_LEN/"
 					"SQL_MAXIMUM_SCHEMA_NAME_LEN\n");
-			// 0 means no max or unknown, which is the case.
+			val.usmallintval=
+				(SQLUSMALLINT)
+				charstring::convertToUnsignedInteger(
+					conn->con->getDatabaseFeature(
+						"max_schema_name_length"));
+			// 0 means no max or unknown, which may be the case.
 			// But, returning 0 causes some apps (Delphi):
 			// * not to call SQLGetInfo(SQL_USER_NAME)
 			// * thus not to recognize the schema name returned by
@@ -6447,25 +7118,32 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			// Hilariously, Delphi doesn't actually use this value
 			// to size the schema-name buffer.  It just doesn't
 			// call SQLGetInfo(SQL_USER_NAME) if it returns 0.
-			val.usmallintval=128;
+			// So, if we get 0 for this, then we'll fall back to
+			// 128 which causes some apps to be more well behaved.
+			if (!val.usmallintval) {
+				val.usmallintval=128;
+			}
 			type=2;
 			break;
 		case SQL_MAX_CATALOG_NAME_LEN:
 			// aka SQL_MAXIMUM_CATALOG_NAME_LENGTH
 			debugPrintf("  infotype: "
 					"SQL_MAX_CATALOG_NAME_LEN\n");
-			// 0 means no max or unknown
-			// FIXME: FIPS intermediate level returns >= 128
-			val.usmallintval=0;
+			val.usmallintval=
+				(SQLUSMALLINT)
+				charstring::convertToUnsignedInteger(
+					conn->con->getDatabaseFeature(
+						"max_catalog_name_length"));
 			type=2;
 			break;
 		case SQL_MAX_TABLE_NAME_LEN:
 			debugPrintf("  infotype: "
 					"SQL_MAX_TABLE_NAME_LEN\n");
-			// 0 means no max or unknown
-			// FIXME: FIPS entry level returns >= 18
-			// FIXME: FIPS intermediate level returns >= 128
-			val.usmallintval=0;
+			val.usmallintval=
+				(SQLUSMALLINT)
+				charstring::convertToUnsignedInteger(
+					conn->con->getDatabaseFeature(
+						"max_table_name_length"));
 			type=2;
 			break;
 		case SQL_SCROLL_CONCURRENCY:
@@ -6478,13 +7156,14 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			// aka SQL_TRANSACTION_CAPABLE
 			debugPrintf("  infotype: "
 					"SQL_TXN_CAPABLE\n");
-			// FIXME: this isn't true for all db's
-			val.usmallintval=SQL_TC_ALL;
+			val.usmallintval=SQLR_TxnCapable(conn);
 			type=2;
 			break;
 		case SQL_USER_NAME:
 			debugPrintf("  infotype: "
 					"SQL_USER_NAME\n");
+			// FIXME: the explanation below is probably only
+			// true for oracle...
 			// Really, when an app calls this, they usually
 			// want the schema, not user.  In most databases,
 			// there is 1 schema per user, so they are synonymous,
@@ -6505,11 +7184,7 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_TXN_ISOLATION_OPTION/"
 					"SQL_TRANSACTION_ISOLATION_OPTION\n");
-			// FIXME: this isn't true for all db's
-			val.uintval=SQL_TXN_READ_UNCOMMITTED|
-					SQL_TXN_READ_COMMITTED|
-					SQL_TXN_REPEATABLE_READ|
-					SQL_TXN_SERIALIZABLE;
+			val.uintval=SQLR_TxnIsolationOption(conn);
 			type=1;
 			break;
 		case SQL_INTEGRITY:
@@ -6517,8 +7192,10 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_INTEGRITY/"
 					"SQL_ODBC_SQL_OPT_IEF\n");
-			// FIXME: this isn't true for all db's
-			val.strval="Y";
+			val.strval=sqlrconnection::isYes(
+				conn->con->getDatabaseFeature(
+				"supports_integrity_enhancement_facility"))
+							?"Y":"N";
 			type=0;
 			break;
 		case SQL_GETDATA_EXTENSIONS:
@@ -6530,50 +7207,29 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_NULL_COLLATION:
 			debugPrintf("  infotype: "
 					"SQL_NULL_COLLATION\n");
-			// FIXME: is this true for all db's?
-			val.usmallintval=SQL_NC_LOW;
+			val.usmallintval=SQLR_NullCollation(conn);
 			type=2;
 			break;
 		case SQL_ALTER_TABLE:
 			debugPrintf("  infotype: "
 					"SQL_ALTER_TABLE\n");
-			// FIXME: this isn't true for all db's
-			val.uintval=0
-				#if (ODBCVER >= 0x0200)
-				|SQL_AT_ADD_COLUMN
-				|SQL_AT_DROP_COLUMN
-				#endif
-				#if (ODBCVER >= 0x0300)
-				|SQL_AT_ADD_COLUMN_SINGLE
-				|SQL_AT_ADD_COLUMN_DEFAULT
-				|SQL_AT_ADD_COLUMN_COLLATION
-				|SQL_AT_SET_COLUMN_DEFAULT
-				|SQL_AT_DROP_COLUMN_DEFAULT
-				|SQL_AT_DROP_COLUMN_CASCADE
-				|SQL_AT_DROP_COLUMN_RESTRICT
-				|SQL_AT_ADD_TABLE_CONSTRAINT
-				|SQL_AT_DROP_TABLE_CONSTRAINT_CASCADE
-				|SQL_AT_DROP_TABLE_CONSTRAINT_RESTRICT
-				|SQL_AT_CONSTRAINT_NAME_DEFINITION
-				|SQL_AT_CONSTRAINT_INITIALLY_DEFERRED
-				|SQL_AT_CONSTRAINT_INITIALLY_IMMEDIATE
-				|SQL_AT_CONSTRAINT_DEFERRABLE
-				|SQL_AT_CONSTRAINT_NON_DEFERRABLE
-				#endif
-				;
+			val.uintval=SQLR_AlterTable(conn);
 			type=1;
 			break;
 		case SQL_ORDER_BY_COLUMNS_IN_SELECT:
 			debugPrintf("  infotype: "
 					"SQL_ORDER_BY_COLUMNS_IN_SELECT\n");
-			// FIXME: is this true for all db's?
-			val.strval="N";
+			val.strval=sqlrconnection::isYes(
+				conn->con->getDatabaseFeature(
+					"supports_order_by_unrelated"))
+							?"N":"Y";
 			type=0;
 			break;
 		case SQL_SPECIAL_CHARACTERS:
 			debugPrintf("  infotype: "
 					"SQL_SPECIAL_CHARACTERS\n");
-			val.strval="#$_";
+			val.strval=conn->con->getDatabaseFeature(
+						"extra_name_characters");
 			type=0;
 			break;
 		case SQL_MAX_COLUMNS_IN_GROUP_BY:
@@ -6581,8 +7237,11 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_MAX_COLUMNS_IN_GROUP_BY/"
 					"SQL_MAXIMUM_COLUMNS_IN_GROUP_BY\n");
-			// 0 means no max or unknown
-			val.usmallintval=0;
+			val.usmallintval=
+				(SQLUSMALLINT)
+				charstring::convertToUnsignedInteger(
+					conn->con->getDatabaseFeature(
+						"max_columns_in_group_by"));
 			type=2;
 			break;
 		case SQL_MAX_COLUMNS_IN_INDEX:
@@ -6590,8 +7249,11 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_MAX_COLUMNS_IN_INDEX/"
 					"SQL_MAXIMUM_COLUMNS_IN_INDEX\n");
-			// 0 means no max or unknown
-			val.usmallintval=0;
+			val.usmallintval=
+				(SQLUSMALLINT)
+				charstring::convertToUnsignedInteger(
+					conn->con->getDatabaseFeature(
+						"max_columns_in_index"));
 			type=2;
 			break;
 		case SQL_MAX_COLUMNS_IN_ORDER_BY:
@@ -6599,8 +7261,11 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_MAX_COLUMNS_IN_ORDER_BY/"
 					"SQL_MAXIMUM_COLUMNS_IN_ORDER_BY\n");
-			// 0 means no max or unknown
-			val.usmallintval=0;
+			val.usmallintval=
+				(SQLUSMALLINT)
+				charstring::convertToUnsignedInteger(
+					conn->con->getDatabaseFeature(
+						"max_columns_in_order_by"));
 			type=2;
 			break;
 		case SQL_MAX_COLUMNS_IN_SELECT:
@@ -6608,15 +7273,21 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_MAX_COLUMNS_IN_SELECT/"
 					"SQL_MAXIMUM_COLUMNS_IN_SELECT\n");
-			// 0 means no max or unknown
-			val.usmallintval=0;
+			val.usmallintval=
+				(SQLUSMALLINT)
+				charstring::convertToUnsignedInteger(
+					conn->con->getDatabaseFeature(
+						"max_columns_in_select"));
 			type=2;
 			break;
 		case SQL_MAX_COLUMNS_IN_TABLE:
 			debugPrintf("  infotype: "
 					"SQL_MAX_COLUMNS_IN_TABLE\n");
-			// 0 means no max or unknown
-			val.usmallintval=0;
+			val.usmallintval=
+				(SQLUSMALLINT)
+				charstring::convertToUnsignedInteger(
+					conn->con->getDatabaseFeature(
+						"max_columns_in_table"));
 			type=2;
 			break;
 		case SQL_MAX_INDEX_SIZE:
@@ -6624,8 +7295,11 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_MAX_INDEX_SIZE/"
 					"SQL_MAXIMUM_INDEX_SIZE\n");
-			// 0 means no max or unknown
-			val.uintval=0;
+			val.uintval=
+				(SQLUINTEGER)
+				charstring::convertToUnsignedInteger(
+					conn->con->getDatabaseFeature(
+							"max_index_length"));
 			type=1;
 			break;
 		case SQL_MAX_ROW_SIZE:
@@ -6633,8 +7307,11 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_MAX_ROW_SIZE/"
 					"SQL_MAXIMUM_ROW_SIZE\n");
-			// 0 means no max or unknown
-			val.uintval=0;
+			val.uintval=
+				(SQLUINTEGER)
+				charstring::convertToUnsignedInteger(
+					conn->con->getDatabaseFeature(
+							"max_row_size"));
 			type=1;
 			break;
 		case SQL_MAX_STATEMENT_LEN:
@@ -6642,8 +7319,11 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_MAX_STATEMENT_LEN/"
 					"SQL_MAXIMUM_STATEMENT_LENGTH\n");
-			// 0 means no max or unknown
-			val.uintval=0;
+			val.uintval=
+				(SQLUINTEGER)
+				charstring::convertToUnsignedInteger(
+					conn->con->getDatabaseFeature(
+						"max_statement_length"));
 			type=1;
 			break;
 		case SQL_MAX_TABLES_IN_SELECT:
@@ -6651,8 +7331,11 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_MAX_TABLES_IN_SELECT/"
 					"SQL_MAXIMUM_TABLES_IN_SELECT\n");
-			// 0 means no max or unknown
-			val.usmallintval=0;
+			val.usmallintval=
+				(SQLUSMALLINT)
+				charstring::convertToUnsignedInteger(
+					conn->con->getDatabaseFeature(
+						"max_tables_in_select"));
 			type=2;
 			break;
 		case SQL_MAX_USER_NAME_LEN:
@@ -6660,8 +7343,11 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_MAX_USER_NAME_LEN/"
 					"SQL_MAXIMUM_USER_NAME_LENGTH\n");
-			// 0 means no max or unknown
-			val.usmallintval=0;
+			val.usmallintval=
+				(SQLUSMALLINT)
+				charstring::convertToUnsignedInteger(
+					conn->con->getDatabaseFeature(
+						"max_user_name_length"));
 			type=2;
 			break;
 		#if (ODBCVER >= 0x0300)
@@ -6670,14 +7356,7 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_OJ_CAPABILITIES/"
 					"SQL_OUTER_JOIN_CAPABILITIES\n");
-			// FIXME: this isn't true for all db's
-			val.uintval=SQL_OJ_LEFT|
-					SQL_OJ_RIGHT|
-					SQL_OJ_FULL|
-					SQL_OJ_NESTED|
-					SQL_OJ_NOT_ORDERED|
-					SQL_OJ_INNER|
-					SQL_OJ_ALL_COMPARISON_OPS;
+			val.uintval=SQLR_OjCapabilities(conn);
 			type=1;
 			break;
 		case SQL_XOPEN_CLI_YEAR:
@@ -6702,7 +7381,7 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_CATALOG_NAME:
 			debugPrintf("  infotype: "
 					"SQL_CATALOG_NAME\n");
-			// FIXME: is this true for all db's?
+			// FIXME: not true for all dbs (oracle)
 			val.strval="Y";
 			type=0;
 			break;
@@ -6779,24 +7458,26 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_ODBC_SQL_CONFORMANCE:
 			debugPrintf("  infotype: "
 					"SQL_ODBC_SQL_CONFORMANCE\n");
-			val.usmallintval=SQL_OSC_EXTENDED;
+			val.usmallintval=SQLR_OdbcSqlConformance(conn);
 			type=2;
 			break;
 		case SQL_PROCEDURES:
 			debugPrintf("  infotype: "
 					"SQL_PROCEDURES\n");
-			// FIXME: this isn't true for all db's
-			val.strval="Y";
+			val.strval=sqlrconnection::isYes(
+				conn->con->getDatabaseFeature(
+					"supports_stored_procedures"))
+							?"Y":"N";
 			type=0;
 			break;
 		case SQL_CONCAT_NULL_BEHAVIOR:
 			debugPrintf("  infotype: "
 					"SQL_CONCAT_NULL_BEHAVIOR\n");
-			// FIXME: is this true for all db's?
-			val.usmallintval=SQL_CB_NON_NULL;
+			val.usmallintval=SQLR_ConcatNullBehavior(conn);
 			type=2;
 			break;
 		case SQL_CURSOR_ROLLBACK_BEHAVIOR:
+			// FIXME: supports_open_cursors_across_rollback
 			debugPrintf("  infotype: "
 					"SQL_CURSOR_ROLLBACK_BEHAVIOR\n");
 			// FIXME: is this true for all db's?
@@ -6806,34 +7487,47 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_EXPRESSIONS_IN_ORDERBY:
 			debugPrintf("  infotype: "
 					"SQL_EXPRESSIONS_IN_ORDERBY\n");
-			// FIXME: is this true for all db's?
-			val.strval="Y";
+			val.strval=sqlrconnection::isYes(
+				conn->con->getDatabaseFeature(
+					"supports_expressions_in_order_by"))
+							?"Y":"N";
 			type=0;
 			break;
 		case SQL_MAX_PROCEDURE_NAME_LEN:
 			debugPrintf("  infotype: "
 					"SQL_MAX_PROCEDURE_NAME_LEN\n");
-			// 0 means no max or unknown
-			val.usmallintval=0;
+			val.usmallintval=
+				(SQLUSMALLINT)
+				charstring::convertToUnsignedInteger(
+					conn->con->getDatabaseFeature(
+						"max_procedure_name_length"));
 			type=2;
 			break;
 		case SQL_MULT_RESULT_SETS:
 			debugPrintf("  infotype: "
 					"SQL_MULT_RESULT_SETS\n");
-			val.strval="N";
+			val.strval=sqlrconnection::isYes(
+				conn->con->getDatabaseFeature(
+					"supports_multiple_result_sets"))
+							?"Y":"N";
 			type=0;
 			break;
 		case SQL_MULTIPLE_ACTIVE_TXN:
 			debugPrintf("  infotype: "
 					"SQL_MULTIPLE_ACTIVE_TXN\n");
-			val.strval="N";
+			val.strval=sqlrconnection::isYes(
+				conn->con->getDatabaseFeature(
+					"supports_multiple_transactions"))
+							?"Y":"N";
 			type=0;
 			break;
 		case SQL_OUTER_JOINS:
 			debugPrintf("  infotype: "
 					"SQL_OUTER_JOINS\n");
-			// FIXME: is this true for all db's?
-			val.strval="Y";
+			val.strval=sqlrconnection::isYes(
+				conn->con->getDatabaseFeature(
+						"supports_outer_joins"))
+							?"Y":"N";
 			type=0;
 			break;
 		case SQL_OWNER_TERM:
@@ -6841,13 +7535,15 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_OWNER_TERM/"
 					"SQL_SCHEMA_TERM\n");
-			val.strval="schema";
+			val.strval=conn->con->getDatabaseFeature(
+							"schema_term");
 			type=0;
 			break;
 		case SQL_PROCEDURE_TERM:
 			debugPrintf("  infotype: "
 					"SQL_PROCEDURE_TERM\n");
-			val.strval="stored procedure";
+			val.strval=conn->con->getDatabaseFeature(
+						"procedure_term");
 			type=0;
 			break;
 		case SQL_QUALIFIER_NAME_SEPARATOR:
@@ -6855,14 +7551,8 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_QUALIFIER_NAME_SEPARATOR/"
 					"SQL_CATALOG_NAME_SEPARATOR\n");
-			// FIXME: are there db's other than oracle where the
-			// catalog separator is an @?
-			if (!charstring::compare(conn->con->identify(),
-								"oracle")) {
-				val.strval="@";
-			} else {
-				val.strval=".";
-			}
+			val.strval=conn->con->getDatabaseFeature(
+						"catalog_separator");
 			type=0;
 			break;
 		case SQL_QUALIFIER_TERM:
@@ -6870,7 +7560,8 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_QUALIFIER_TERM/"
 					"SQL_CATALOG_TERM\n");
-			val.strval="catalog";
+			val.strval=conn->con->getDatabaseFeature(
+							"catalog_term");
 			type=0;
 			break;
 		case SQL_SCROLL_OPTIONS:
@@ -6888,104 +7579,31 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_CONVERT_FUNCTIONS:
 			debugPrintf("  infotype: "
 					"SQL_CONVERT_FUNCTIONS\n");
-			// FIXME: this isn't true for all db's
-			val.uintval=SQL_FN_CVT_CAST|SQL_FN_CVT_CONVERT;
+			val.uintval=SQLR_ConvertFunctions(conn);
 			type=1;
 			break;
 		case SQL_NUMERIC_FUNCTIONS:
 			debugPrintf("  infotype: "
 					"SQL_NUMERIC_FUNCTIONS\n");
-			// FIXME: this isn't true for all db's
-			val.uintval=SQL_FN_NUM_ABS|
-					SQL_FN_NUM_ACOS|
-					SQL_FN_NUM_ASIN|
-					SQL_FN_NUM_ATAN|
-					SQL_FN_NUM_ATAN2|
-					SQL_FN_NUM_CEILING|
-					SQL_FN_NUM_COS|
-					SQL_FN_NUM_COT|
-					SQL_FN_NUM_DEGREES|
-					SQL_FN_NUM_EXP|
-					SQL_FN_NUM_FLOOR|
-					SQL_FN_NUM_LOG|
-					SQL_FN_NUM_LOG10|
-					SQL_FN_NUM_MOD|
-					SQL_FN_NUM_PI|
-					SQL_FN_NUM_POWER|
-					SQL_FN_NUM_RADIANS|
-					SQL_FN_NUM_RAND|
-					SQL_FN_NUM_ROUND|
-					SQL_FN_NUM_SIGN|
-					SQL_FN_NUM_SIN|
-					SQL_FN_NUM_SQRT|
-					SQL_FN_NUM_TAN|
-					SQL_FN_NUM_TRUNCATE;
+			val.uintval=SQLR_NumericFunctions(conn);
 			type=1;
 			break;
 		case SQL_STRING_FUNCTIONS:
 			debugPrintf("  infotype: "
 					"SQL_STRING_FUNCTIONS\n");
-			// FIXME: this isn't true for all db's
-			val.uintval=SQL_FN_STR_CONCAT|
-					SQL_FN_STR_INSERT|
-					SQL_FN_STR_LEFT|
-					SQL_FN_STR_LTRIM|
-					SQL_FN_STR_LENGTH|
-					SQL_FN_STR_LOCATE|
-					SQL_FN_STR_LCASE|
-					SQL_FN_STR_REPEAT|
-					SQL_FN_STR_REPLACE|
-					SQL_FN_STR_RIGHT|
-					SQL_FN_STR_RTRIM|
-					SQL_FN_STR_SUBSTRING|
-					SQL_FN_STR_UCASE|
-					SQL_FN_STR_ASCII|
-					SQL_FN_STR_CHAR|
-					SQL_FN_STR_DIFFERENCE|
-					SQL_FN_STR_LOCATE_2|
-					SQL_FN_STR_SOUNDEX|
-					SQL_FN_STR_SPACE|
-					SQL_FN_STR_BIT_LENGTH|
-					SQL_FN_STR_CHAR_LENGTH|
-					SQL_FN_STR_CHARACTER_LENGTH|
-					SQL_FN_STR_OCTET_LENGTH|
-					SQL_FN_STR_POSITION;
+			val.uintval=SQLR_StringFunctions(conn);
 			type=1;
 			break;
 		case SQL_SYSTEM_FUNCTIONS:
 			debugPrintf("  infotype: "
 					"SQL_SYSTEM_FUNCTIONS\n");
-			// FIXME: this isn't true for all db's
-			val.uintval=SQL_FN_SYS_DBNAME|
-					SQL_FN_SYS_IFNULL|
-					SQL_FN_SYS_USERNAME;
+			val.uintval=SQLR_SystemFunctions(conn);
 			type=1;
 			break;
 		case SQL_TIMEDATE_FUNCTIONS:
 			debugPrintf("  infotype: "
 					"SQL_TIMEDATE_FUNCTIONS\n");
-			// FIXME: this isn't true for all db's
-			val.uintval=SQL_FN_TD_CURRENT_DATE|
-					SQL_FN_TD_CURRENT_TIME|
-					SQL_FN_TD_CURRENT_TIMESTAMP|
-					SQL_FN_TD_CURDATE|
-					SQL_FN_TD_CURTIME|
-					SQL_FN_TD_DAYNAME|
-					SQL_FN_TD_DAYOFMONTH|
-					SQL_FN_TD_DAYOFWEEK|
-					SQL_FN_TD_DAYOFYEAR|
-					SQL_FN_TD_EXTRACT|
-					SQL_FN_TD_HOUR|
-					SQL_FN_TD_MINUTE|
-					SQL_FN_TD_MONTH|
-					SQL_FN_TD_MONTHNAME|
-					SQL_FN_TD_NOW|
-					SQL_FN_TD_QUARTER|
-					SQL_FN_TD_SECOND|
-					SQL_FN_TD_TIMESTAMPADD|
-					SQL_FN_TD_TIMESTAMPDIFF|
-					SQL_FN_TD_WEEK|
-					SQL_FN_TD_YEAR;
+			val.uintval=SQLR_TimedateFunctions(conn);
 			type=1;
 			break;
 		case SQL_CONVERT_BIGINT:
@@ -7124,13 +7742,13 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_CORRELATION_NAME:
 			debugPrintf("  infotype: "
 					"SQL_CORRELATION_NAME\n");
-			val.usmallintval=SQL_CN_ANY;
+			val.usmallintval=SQLR_CorrelationName(conn);
 			type=2;
 			break;
 		case SQL_NON_NULLABLE_COLUMNS:
 			debugPrintf("  infotype: "
 					"SQL_NON_NULLABLE_COLUMNS\n");
-			val.usmallintval=SQL_NNC_NON_NULL;
+			val.usmallintval=SQLR_NonNullableColumns(conn);
 			type=2;
 			break;
 		case SQL_DRIVER_HLIB:
@@ -7168,8 +7786,7 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_POSITIONED_STATEMENTS:
 			debugPrintf("  infotype: "
 					"SQL_POSITIONED_STATEMENTS\n");
-			// none, for now...
-			val.uintval=0;
+			val.uintval=SQLR_PositionedStatements(conn);
 			type=1;
 			break;
 		case SQL_BOOKMARK_PERSISTENCE:
@@ -7188,34 +7805,29 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_FILE_USAGE:
 			debugPrintf("  infotype: "
 					"SQL_FILE_USAGE\n");
-			val.uintval=SQL_FILE_NOT_SUPPORTED;
+			val.uintval=SQLR_FileUsage(conn);
 			type=1;
 			break;
 		case SQL_COLUMN_ALIAS:
 			debugPrintf("  infotype: "
 					"SQL_COLUMN_ALIAS\n");
-			// FIXME: this isn't true for all db's
-			val.strval="Y";
+			val.strval=sqlrconnection::isYes(
+				conn->con->getDatabaseFeature(
+					"supports_column_aliasing"))
+							?"Y":"N";
 			type=0;
 			break;
 		case SQL_GROUP_BY:
 			debugPrintf("  infotype: "
 					"SQL_GROUP_BY\n");
-			// FIXME: is this true for all db's?
-			val.usmallintval=
-					#if (ODBCVER >= 0x0300)
-					SQL_GB_COLLATE
-					#else
-					SQL_GB_GROUP_BY_EQUALS_SELECT
-					#endif
-					;
+			val.usmallintval=SQLR_GroupBy(conn);
 			type=2;
 			break;
 		case SQL_KEYWORDS:
 			debugPrintf("  infotype: "
 					"SQL_KEYWORDS\n");
-			// FIXME: this isn't true for all db's
-			val.strval=SQL_ODBC_KEYWORDS;
+			val.strval=conn->con->getDatabaseFeature(
+							"sql_keywords");
 			type=0;
 			break;
 		case SQL_OWNER_USAGE:
@@ -7223,12 +7835,7 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_OWNER_USAGE/"
 					"SQL_SCHEMA_USAGE\n");
-			// FIXME: this isn't true for all db's
-			val.uintval=SQL_SU_DML_STATEMENTS|
-					SQL_SU_PROCEDURE_INVOCATION|
-					SQL_SU_TABLE_DEFINITION|
-					SQL_SU_INDEX_DEFINITION|
-					SQL_SU_PRIVILEGE_DEFINITION;
+			val.uintval=SQLR_OwnerUsage(conn);
 			type=1;
 			break;
 		case SQL_QUALIFIER_USAGE:
@@ -7236,29 +7843,19 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_QUALIFIER_USAGE/"
 					"SQL_CATALOG_USAGE\n");
-			// FIXME: this isn't true for all db's
-			val.uintval=SQL_SU_DML_STATEMENTS|
-					SQL_SU_PROCEDURE_INVOCATION|
-					SQL_SU_TABLE_DEFINITION|
-					SQL_SU_INDEX_DEFINITION|
-					SQL_SU_PRIVILEGE_DEFINITION;
+			val.uintval=SQLR_QualifierUsage(conn);
 			type=1;
 			break;
 		case SQL_QUOTED_IDENTIFIER_CASE:
 			debugPrintf("  infotype: "
 					"SQL_QUOTED_IDENTIFIER_CASE\n");
-			val.usmallintval=SQL_IC_SENSITIVE;
+			val.usmallintval=SQLR_QuotedIdentifierCase(conn);
 			type=2;
 			break;
 		case SQL_SUBQUERIES:
 			debugPrintf("  infotype: "
 					"SQL_SUBQUERIES\n");
-			// FIXME: is this true for all db's?
-			val.uintval=SQL_SQ_CORRELATED_SUBQUERIES|
-					SQL_SQ_COMPARISON|
-					SQL_SQ_EXISTS|
-					SQL_SQ_IN|
-					SQL_SQ_QUANTIFIED;
+			val.uintval=SQLR_Subqueries(conn);
 			type=1;
 			break;
 		case SQL_UNION:
@@ -7266,21 +7863,26 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_UNION/"
 					"SQL_UNION_STATEMENT\n");
-			// FIXME: this isn't true for all db's
-			val.uintval=SQL_U_UNION|SQL_U_UNION_ALL;
+			val.uintval=SQLR_UnionSupport(conn);
 			type=1;
 			break;
 		case SQL_MAX_ROW_SIZE_INCLUDES_LONG:
 			debugPrintf("  infotype: "
 					"SQL_MAX_ROW_SIZE_INCLUDES_LONG\n");
-			val.strval="N";
+			val.strval=sqlrconnection::isYes(
+				conn->con->getDatabaseFeature(
+				"does_max_row_size_include_blobs"))
+							?"Y":"N";
 			type=0;
 			break;
 		case SQL_MAX_CHAR_LITERAL_LEN:
 			debugPrintf("  infotype: "
 					"SQL_MAX_CHAR_LITERAL_LEN\n");
-			// 0 means no max or unknown
-			val.uintval=0;
+			val.uintval=
+				(SQLUINTEGER)
+				charstring::convertToUnsignedInteger(
+					conn->con->getDatabaseFeature(
+						"max_char_literal_length"));
 			type=1;
 			break;
 		case SQL_TIMEDATE_ADD_INTERVALS:
@@ -7326,14 +7928,20 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_MAX_BINARY_LITERAL_LEN:
 			debugPrintf("  infotype: "
 					"SQL_MAX_BINARY_LITERAL_LEN\n");
-			// 0 means no max or unknown
-			val.uintval=0;
+			val.uintval=
+				(SQLUINTEGER)
+				charstring::convertToUnsignedInteger(
+					conn->con->getDatabaseFeature(
+						"max_binary_literal_length"));
 			type=1;
 			break;
 		case SQL_LIKE_ESCAPE_CLAUSE:
 			debugPrintf("  infotype: "
 					"SQL_LIKE_ESCAPE_CLAUSE\n");
-			val.strval="Y";
+			val.strval=sqlrconnection::isYes(
+				conn->con->getDatabaseFeature(
+					"supports_like_escape_clause"))
+							?"Y":"N";
 			type=0;
 			break;
 		case SQL_QUALIFIER_LOCATION:
@@ -7341,14 +7949,7 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_QUALIFIER_LOCATION/"
 					"SQL_CATALOG_LOCATION\n");
-			// FIXME: are there db's other than oracle where the
-			// catalog is at the end?
-			if (!charstring::compare(conn->con->identify(),
-								"oracle")) {
-				val.usmallintval=SQL_CL_END;
-			} else {
-				val.usmallintval=SQL_CL_START;
-			}
+			val.usmallintval=SQLR_QualifierLocation(conn);
 			type=2;
 			break;
 		#if (ODBCVER >= 0x0300)
@@ -7373,11 +7974,7 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_SQL_CONFORMANCE:
 			debugPrintf("  infotype: "
 					"SQL_SQL_CONFORMANCE\n");
-			// FIXME: no idea, conservative guess...
-			val.uintval=SQL_SC_SQL92_ENTRY;
-					/*SQL_SC_FIPS127_2_TRANSITIONAL
-					SQL_SC_SQL92_FULL
-					SQL_SC_SQL92_INTERMEDIATE*/
+			val.uintval=SQLR_SqlConformance(conn);
 			type=1;
 			break;
 		case SQL_DATETIME_LITERALS:
@@ -7418,9 +8015,10 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			type=1;
 			break;
 		case SQL_BATCH_SUPPORT:
+			// FIXME: supports_batch_updates
 			debugPrintf("  infotype: "
 					"SQL_BATCH_SUPPORT\n");
-			// FIXME: this might not be correct
+			// FIXME: this isn't true for all db's
 			val.uintval=0;
 			type=1;
 			break;
