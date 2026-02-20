@@ -2195,9 +2195,22 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean supportsTransactionIsolationLevel(int level)
 						throws SQLException {
 		drv.debugFunction(this);
-		return getBoolean(
-			"supports_transaction_isolation_level_"+
-			getTransactionIsolationLevelAbbreviation(level));
+		String	value=getDatabaseFeature(
+				"supports_transaction_isolation_level");
+		if (level==Connection.TRANSACTION_NONE) {
+			return (value==null || value.isEmpty());
+		}
+		String	levelname=
+			getTransactionIsolationLevelName(level);
+		if (value==null || levelname.isEmpty()) {
+			return false;
+		}
+		for (String part : value.split(",")) {
+			if (part.trim().equals(levelname)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public
@@ -2350,18 +2363,16 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	}
 
 	private
-	String getTransactionIsolationLevelAbbreviation(int level) {
+	String getTransactionIsolationLevelName(int level) {
 		switch (level) {
-			case Connection.TRANSACTION_NONE:
-				return "n";
 			case Connection.TRANSACTION_READ_UNCOMMITTED:
-				return "ru";
+				return "READ_UNCOMMITTED";
 			case Connection.TRANSACTION_READ_COMMITTED:
-				return "rc";
+				return "READ_COMMITTED";
 			case Connection.TRANSACTION_REPEATABLE_READ:
-				return "rr";
+				return "REPEATABLE_READ";
 			case Connection.TRANSACTION_SERIALIZABLE:
-				return "s";
+				return "SERIALIZABLE";
 			default:
 				return "";
 		}
@@ -2373,13 +2384,13 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 			return Connection.TRANSACTION_NONE;
 		}
 		switch (level) {
-			case "TRANSACTION_READ_UNCOMMITTED":
+			case "READ_UNCOMMITTED":
 				return Connection.TRANSACTION_READ_UNCOMMITTED;
-			case "TRANSACTION_READ_COMMITTED":
+			case "READ_COMMITTED":
 				return Connection.TRANSACTION_READ_COMMITTED;
-			case "TRANSACTION_REPEATABLE_READ":
+			case "REPEATABLE_READ":
 				return Connection.TRANSACTION_REPEATABLE_READ;
-			case "TRANSACTION_SERIALIZABLE":
+			case "SERIALIZABLE":
 				return Connection.TRANSACTION_SERIALIZABLE;
 			default:
 				return Connection.TRANSACTION_NONE;

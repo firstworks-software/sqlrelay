@@ -6299,27 +6299,36 @@ static SQLUSMALLINT SQLR_TxnCapable(CONN *conn) {
 }
 
 static SQLUINTEGER SQLR_TxnIsolationOption(CONN *conn) {
+
 	SQLUINTEGER	retval=0;
-	if (sqlrconnection::isYes(
+
+	const char	*til=
 		conn->con->getDatabaseFeature(
-			"supports_transaction_isolation_level_ru"))) {
-		retval|=SQL_TXN_READ_UNCOMMITTED;
+			"supports_transaction_isolation_level");
+	if (!til) {
+		return retval;
 	}
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"supports_transaction_isolation_level_rc"))) {
-		retval|=SQL_TXN_READ_COMMITTED;
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(til,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"READ_UNCOMMITTED")) {
+			retval|=SQL_TXN_READ_UNCOMMITTED;
+		} else if (!charstring::compare(f,"READ_COMMITTED")) {
+			retval|=SQL_TXN_READ_COMMITTED;
+		} else if (!charstring::compare(f,"REPEATABLE_READ")) {
+			retval|=SQL_TXN_REPEATABLE_READ;
+		} else if (!charstring::compare(f,"SERIALIZABLE")) {
+			retval|=SQL_TXN_SERIALIZABLE;
+		}
+		delete[] parts[i];
 	}
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"supports_transaction_isolation_level_rr"))) {
-		retval|=SQL_TXN_REPEATABLE_READ;
-	}
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"supports_transaction_isolation_level_s"))) {
-		retval|=SQL_TXN_SERIALIZABLE;
-	}
+	delete[] parts;
+
 	return retval;
 }
 

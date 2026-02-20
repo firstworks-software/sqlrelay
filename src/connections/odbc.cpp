@@ -84,6 +84,11 @@ struct charbind {
 	uint32_t	valuesize;
 };
 
+struct flagtoname {
+	SQLUINTEGER	flag;
+	const char	*name;
+};
+
 class odbcconnection;
 
 class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
@@ -368,6 +373,9 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		bool		setIsolationLevel(const char *isolevel);
 		const char	*getDbHostNameQuery();
 		const char	*getDbIpAddressQuery();
+		void		flagsToNames(stringbuffer *sb,
+						SQLUINTEGER flags,
+						flagtoname *ftn);
 
 
 		SQLRETURN	erg;
@@ -1187,10 +1195,20 @@ const char *odbcconnection::getDbVersion() {
 	return dbversion;
 }
 
-struct flagtoname {
-	SQLUINTEGER	flag;
-	const char	*name;
-};
+void odbcconnection::flagsToNames(stringbuffer *sb,
+					SQLUINTEGER flags,
+					flagtoname *ftn) {
+	bool	first=true;
+	for (int i=0; ftn[i].name; i++) {
+		if (flags&ftn[i].flag) {
+			if (!first) {
+				sb->append(',');
+			}
+			sb->append(ftn[i].name);
+			first=false;
+		}
+	}
+}
 
 const char * const *odbcconnection::getDatabaseFeatures() {
 
@@ -1206,7 +1224,6 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	SQLUSMALLINT	usmallintbuf=0;
 	SQLSMALLINT	size=0;
 	stringbuffer	sb;
-	bool		first;
 
 	// SQL_ACCESSIBLE_PROCEDURES -> Y/N
 	strbuf[0]='\0';
@@ -1220,7 +1237,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_ALL_TABLES_ARE_SELECTABLE]=
 		charstring::duplicate((strbuf[0]=='Y')?"true":"false");
 
-	// no ODBC equivalent
+	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_AUTO_COMMIT_FAILURE_CLOSES_ALL_RESULT_SETS]=
 		charstring::duplicate("");
 
@@ -1262,17 +1279,12 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 					&uintbuf,sizeof(uintbuf),&size);
 	databasefeatures[FEATURE_DEFAULT_ISOLATION_LEVEL]=
 		charstring::duplicate(
-			(uintbuf==SQL_TXN_SERIALIZABLE)?
-				"TRANSACTION_SERIALIZABLE":
-			(uintbuf==SQL_TXN_REPEATABLE_READ)?
-				"TRANSACTION_REPEATABLE_READ":
-			(uintbuf==SQL_TXN_READ_COMMITTED)?
-				"TRANSACTION_READ_COMMITTED":
-			(uintbuf==SQL_TXN_READ_UNCOMMITTED)?
-				"TRANSACTION_READ_UNCOMMITTED":
-				"TRANSACTION_NONE");
+			(uintbuf==SQL_TXN_SERIALIZABLE)?"SERIALIZABLE":
+			(uintbuf==SQL_TXN_REPEATABLE_READ)?"REPEATABLE_READ":
+			(uintbuf==SQL_TXN_READ_COMMITTED)?"READ_COMMITTED":
+			(uintbuf==SQL_TXN_READ_UNCOMMITTED)?"UNCOMMITTED":"");
 
-	// no ODBC equivalent
+	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_DELETES_ARE_DETECTED]=
 		charstring::duplicate("");
 
@@ -1289,7 +1301,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_EXTRA_NAME_CHARACTERS]=
 		charstring::duplicate(strbuf);
 
-	// no ODBC equivalent
+	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_GENERATED_KEY_ALWAYS_RETURNED]=
 		charstring::duplicate("");
 
@@ -1300,7 +1312,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_IDENTIFIER_QUOTE_STRING]=
 		charstring::duplicate(strbuf);
 
-	// no ODBC equivalent
+	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_INSERTS_ARE_DETECTED]=
 		charstring::duplicate("");
 
@@ -1319,7 +1331,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_IS_READ_ONLY]=
 		charstring::duplicate((strbuf[0]=='Y')?"true":"false");
 
-	// no ODBC equivalent
+	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_LOCATORS_UPDATE_COPY]=
 		charstring::duplicate("");
 
@@ -1520,10 +1532,9 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		charstring::duplicate(
 			(usmallintbuf==SQL_NC_LOW)?"true":"false");
 
-	// SQL_NUMERIC_FUNCTIONS -> string (via ODBC driver)
-	strbuf[0]='\0';
+	// SQL_NUMERIC_FUNCTIONS -> bitmask
+	uintbuf=0;
 	SQLGetInfo(dbc,SQL_NUMERIC_FUNCTIONS,&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	nf[]={
 		{SQL_FN_NUM_ABS,"ABS"},
 		{SQL_FN_NUM_ACOS,"ACOS"},
@@ -1551,18 +1562,10 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{SQL_FN_NUM_TRUNCATE,"TRUNCATE"},
 		{0,NULL}
 	};
-	for (int i=0; nf[i].name; i++) {
-		if (uintbuf&nf[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(nf[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,nf);
 	databasefeatures[FEATURE_NUMERIC_FUNCTIONS]=sb.detachString();
 
-	// no ODBC equivalent
+	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_OTHERS_DELETES_ARE_VISIBLE]=
 		charstring::duplicate("");
 	databasefeatures[FEATURE_OTHERS_INSERTS_ARE_VISIBLE]=
@@ -1582,7 +1585,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_PROCEDURE_TERM]=
 		charstring::duplicate(strbuf);
 
-	// no ODBC equivalent
+	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_RESULT_SET_HOLDABILITY]=
 		charstring::duplicate("");
 	databasefeatures[FEATURE_ROW_ID_LIFETIME]=
@@ -1594,7 +1597,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_SQL_KEYWORDS]=
 		charstring::duplicate(strbuf);
 
-	// no ODBC equivalent
+	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_SQL_STATE_TYPE]=
 		charstring::duplicate("");
 
@@ -1648,7 +1651,6 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	// SQL_STRING_FUNCTIONS -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_STRING_FUNCTIONS,&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	sf[]={
 		{SQL_FN_STR_CONCAT,"CONCAT"},
 		{SQL_FN_STR_INSERT,"INSERT"},
@@ -1678,22 +1680,13 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		#endif
 		{0,NULL}
 	};
-	for (int i=0; sf[i].name; i++) {
-		if (uintbuf&sf[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(sf[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,sf);
 	databasefeatures[FEATURE_STRING_FUNCTIONS]=sb.detachString();
 
 	// SQL_SQL92_FOREIGN_KEY_DELETE_RULE -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_SQL92_FOREIGN_KEY_DELETE_RULE,
 					&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	fkdr[]={
 		{SQL_SFKD_CASCADE,"CASCADE"},
 		{SQL_SFKD_NO_ACTION,"NO_ACTION"},
@@ -1701,15 +1694,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{SQL_SFKD_SET_NULL,"SET_NULL"},
 		{0,NULL}
 	};
-	for (int i=0; fkdr[i].name; i++) {
-		if (uintbuf&fkdr[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(fkdr[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,fkdr);
 	databasefeatures[FEATURE_SUPPORTED_FOREIGN_KEY_DELETE_RULES]=
 							sb.detachString();
 
@@ -1717,7 +1702,6 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_SQL92_FOREIGN_KEY_UPDATE_RULE,
 					&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	fkur[]={
 		{SQL_SFKU_CASCADE,"CASCADE"},
 		{SQL_SFKU_NO_ACTION,"NO_ACTION"},
@@ -1725,15 +1709,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{SQL_SFKU_SET_NULL,"SET_NULL"},
 		{0,NULL}
 	};
-	for (int i=0; fkur[i].name; i++) {
-		if (uintbuf&fkur[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(fkur[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,fkur);
 	databasefeatures[FEATURE_SUPPORTED_FOREIGN_KEY_UPDATE_RULES]=
 							sb.detachString();
 
@@ -1741,7 +1717,6 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_SQL92_PREDICATES,
 					&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	sp[]={
 		{SQL_SP_BETWEEN,"BETWEEN"},
 		{SQL_SP_COMPARISON,"COMPARISON"},
@@ -1759,22 +1734,13 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{SQL_SP_UNIQUE,"UNIQUE"},
 		{0,NULL}
 	};
-	for (int i=0; sp[i].name; i++) {
-		if (uintbuf&sp[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(sp[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,sp);
 	databasefeatures[FEATURE_SUPPORTED_PREDICATES]=sb.detachString();
 
 	// SQL_SQL92_RELATIONAL_JOIN_OPERATORS -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_SQL92_RELATIONAL_JOIN_OPERATORS,
 					&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	rjo[]={
 		{SQL_SRJO_CORRESPONDING_CLAUSE,"CORRESPONDING_CLAUSE"},
 		{SQL_SRJO_CROSS_JOIN,"CROSS_JOIN"},
@@ -1788,15 +1754,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{SQL_SRJO_UNION_JOIN,"UNION_JOIN"},
 		{0,NULL}
 	};
-	for (int i=0; rjo[i].name; i++) {
-		if (uintbuf&rjo[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(rjo[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,rjo);
 	databasefeatures[FEATURE_SUPPORTED_RELATIONAL_JOIN_OPERATORS]=
 							sb.detachString();
 
@@ -1804,7 +1762,6 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_SQL92_ROW_VALUE_CONSTRUCTOR,
 					&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	rvc[]={
 		{SQL_SRVC_VALUE_EXPRESSION,"VALUE_EXPRESSION"},
 		{SQL_SRVC_NULL,"NULL"},
@@ -1812,15 +1769,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{SQL_SRVC_ROW_SUBQUERY,"ROW_SUBQUERY"},
 		{0,NULL}
 	};
-	for (int i=0; rvc[i].name; i++) {
-		if (uintbuf&rvc[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(rvc[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,rvc);
 	databasefeatures[FEATURE_SUPPORTED_ROW_VALUE_CONSTRUCTOR_EXPRESSIONS]=
 							sb.detachString();
 
@@ -1828,7 +1777,6 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_SQL92_VALUE_EXPRESSIONS,
 					&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	sve[]={
 		{SQL_SVE_CASE,"CASE"},
 		{SQL_SVE_CAST,"CAST"},
@@ -1836,22 +1784,13 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{SQL_SVE_NULLIF,"NULLIF"},
 		{0,NULL}
 	};
-	for (int i=0; sve[i].name; i++) {
-		if (uintbuf&sve[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(sve[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,sve);
 	databasefeatures[FEATURE_SUPPORTED_VALUE_EXPRESSIONS]=
 		sb.detachString();
 
 	// SQL_AGGREGATE_FUNCTIONS -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_AGGREGATE_FUNCTIONS,&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	af[]={
 		{SQL_AF_ALL,"ALL"},
 		{SQL_AF_AVG,"AVG"},
@@ -1862,22 +1801,13 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{SQL_AF_SUM,"SUM"},
 		{0,NULL}
 	};
-	for (int i=0; af[i].name; i++) {
-		if (uintbuf&af[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(af[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,af);
 	databasefeatures[FEATURE_SUPPORTS_AGGREGATE_FUNCTIONS]=
 							sb.detachString();
 
 	// SQL_ALTER_DOMAIN -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_ALTER_DOMAIN,&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	ad[]={
 		{SQL_AD_ADD_DOMAIN_CONSTRAINT,
 				"ADD_DOMAIN_CONSTRAINT"},
@@ -1891,15 +1821,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 				"DROP_DOMAIN_DEFAULT"},
 		{0,NULL}
 	};
-	for (int i=0; ad[i].name; i++) {
-		if (uintbuf&ad[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(ad[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,ad);
 	databasefeatures[FEATURE_SUPPORTS_ALTER_DOMAIN]=sb.detachString();
 
 	// SQL_SQL_CONFORMANCE -> uintval
@@ -1999,7 +1921,6 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_CREATE_ASSERTION,
 				&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	ca[]={
 		{SQL_CA_CREATE_ASSERTION,
 			"CREATE_ASSERTION"},
@@ -2013,22 +1934,13 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 			"CONSTRAINT_NON_DEFERRABLE"},
 		{0,NULL}
 	};
-	for (int i=0; ca[i].name; i++) {
-		if (uintbuf&ca[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(ca[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,ca);
 	databasefeatures[FEATURE_SUPPORTS_CREATE_ASSERTION]=sb.detachString();
 
 	// SQL_CREATE_CHARACTER_SET -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_CREATE_CHARACTER_SET,
 				&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	ccs[]={
 		{SQL_CCS_CREATE_CHARACTER_SET,
 			"CREATE_CHARACTER_SET"},
@@ -2037,15 +1949,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 			"LIMITED_COLLATION"},
 		{0,NULL}
 	};
-	for (int i=0; ccs[i].name; i++) {
-		if (uintbuf&ccs[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(ccs[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,ccs);
 	databasefeatures[FEATURE_SUPPORTS_CREATE_CHARACTER_SET]=
 							sb.detachString();
 
@@ -2053,27 +1957,17 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_CREATE_COLLATION,
 				&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	ccol[]={
 		{SQL_CCOL_CREATE_COLLATION,"CREATE_COLLATION"},
 		{0,NULL}
 	};
-	for (int i=0; ccol[i].name; i++) {
-		if (uintbuf&ccol[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(ccol[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,ccol);
 	databasefeatures[FEATURE_SUPPORTS_CREATE_COLLATION]=sb.detachString();
 
 	// SQL_CREATE_DOMAIN -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_CREATE_DOMAIN,
 				&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	cdo[]={
 		{SQL_CDO_CREATE_DOMAIN,
 			"CREATE_DOMAIN"},
@@ -2095,44 +1989,26 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 			"CONSTRAINT_NON_DEFERRABLE"},
 		{0,NULL}
 	};
-	for (int i=0; cdo[i].name; i++) {
-		if (uintbuf&cdo[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(cdo[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,cdo);
 	databasefeatures[FEATURE_SUPPORTS_CREATE_DOMAIN]=sb.detachString();
 
 	// SQL_CREATE_SCHEMA -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_CREATE_SCHEMA,
 				&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	cs[]={
 		{SQL_CS_CREATE_SCHEMA,"CREATE_SCHEMA"},
 		{SQL_CS_AUTHORIZATION,"AUTHORIZATION"},
 		{SQL_CS_DEFAULT_CHARACTER_SET,"DEFAULT_CHARACTER_SET"},
 		{0,NULL}
 	};
-	for (int i=0; cs[i].name; i++) {
-		if (uintbuf&cs[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(cs[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,cs);
 	databasefeatures[FEATURE_SUPPORTS_CREATE_SCHEMA]=sb.detachString();
 
 	// SQL_CREATE_TABLE -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_CREATE_TABLE,
 				&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	ct[]={
 		{SQL_CT_CREATE_TABLE,
 				"CREATE_TABLE"},
@@ -2164,41 +2040,23 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 				"CONSTRAINT_NON_DEFERRABLE"},
 		{0,NULL}
 	};
-	for (int i=0; ct[i].name; i++) {
-		if (uintbuf&ct[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(ct[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,ct);
 	databasefeatures[FEATURE_SUPPORTS_CREATE_TABLE]=sb.detachString();
 
 	// SQL_CREATE_TRANSLATION -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_CREATE_TRANSLATION,
 				&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	ctr[]={
 		{SQL_CTR_CREATE_TRANSLATION,"CREATE_TRANSLATION"},
 		{0,NULL}
 	};
-	for (int i=0; ctr[i].name; i++) {
-		if (uintbuf&ctr[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(ctr[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,ctr);
 	databasefeatures[FEATURE_SUPPORTS_CREATE_TRANSLATION]=sb.detachString();
 
 	// SQL_CREATE_VIEW -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_CREATE_VIEW,&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	cv[]={
 		{SQL_CV_CREATE_VIEW,"CREATE_VIEW"},
 		{SQL_CV_CHECK_OPTION,"CHECK_OPTION"},
@@ -2206,54 +2064,28 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{SQL_CV_LOCAL,"LOCAL"},
 		{0,NULL}
 	};
-	for (int i=0; cv[i].name; i++) {
-		if (uintbuf&cv[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(cv[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,cv);
 	databasefeatures[FEATURE_SUPPORTS_CREATE_VIEW]=sb.detachString();
 
 	// SQL_DROP_ASSERTION -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_DROP_ASSERTION,&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	da[]={
 		{SQL_DA_DROP_ASSERTION,"DROP_ASSERTION"},
 		{0,NULL}
 	};
-	for (int i=0; da[i].name; i++) {
-		if (uintbuf&da[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(da[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,da);
 	databasefeatures[FEATURE_SUPPORTS_DROP_ASSERTION]=sb.detachString();
 
 	// SQL_DROP_CHARACTER_SET -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_DROP_CHARACTER_SET,
 				&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	dcs[]={
 		{SQL_DCS_DROP_CHARACTER_SET,"DROP_CHARACTER_SET"},
 		{0,NULL}
 	};
-	for (int i=0; dcs[i].name; i++) {
-		if (uintbuf&dcs[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(dcs[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,dcs);
 	databasefeatures[FEATURE_SUPPORTS_DROP_CHARACTER_SET]=
 							sb.detachString();
 
@@ -2261,144 +2093,81 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_DROP_COLLATION,
 				&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	dc[]={
 		{SQL_DC_DROP_COLLATION,"DROP_COLLATION"},
 		{0,NULL}
 	};
-	for (int i=0; dc[i].name; i++) {
-		if (uintbuf&dc[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(dc[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,dc);
 	databasefeatures[FEATURE_SUPPORTS_DROP_COLLATION]=sb.detachString();
 
 	// SQL_DROP_DOMAIN -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_DROP_DOMAIN,&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	dd[]={
 		{SQL_DD_DROP_DOMAIN,"DROP_DOMAIN"},
 		{SQL_DD_CASCADE,"CASCADE"},
 		{SQL_DD_RESTRICT,"RESTRICT"},
 		{0,NULL}
 	};
-	for (int i=0; dd[i].name; i++) {
-		if (uintbuf&dd[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(dd[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,dd);
 	databasefeatures[FEATURE_SUPPORTS_DROP_DOMAIN]=sb.detachString();
 
 	// SQL_DROP_SCHEMA -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_DROP_SCHEMA,&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	ds[]={
 		{SQL_DS_DROP_SCHEMA,"DROP_SCHEMA"},
 		{SQL_DS_CASCADE,"CASCADE"},
 		{SQL_DS_RESTRICT,"RESTRICT"},
 		{0,NULL}
 	};
-	for (int i=0; ds[i].name; i++) {
-		if (uintbuf&ds[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(ds[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,ds);
 	databasefeatures[FEATURE_SUPPORTS_DROP_SCHEMA]=sb.detachString();
 
 	// SQL_DROP_TABLE -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_DROP_TABLE,&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	dt[]={
 		{SQL_DT_DROP_TABLE,"DROP_TABLE"},
 		{SQL_DT_CASCADE,"CASCADE"},
 		{SQL_DT_RESTRICT,"RESTRICT"},
 		{0,NULL}
 	};
-	for (int i=0; dt[i].name; i++) {
-		if (uintbuf&dt[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(dt[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,dt);
 	databasefeatures[FEATURE_SUPPORTS_DROP_TABLE]=sb.detachString();
 
 	// SQL_DROP_TRANSLATION -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_DROP_TRANSLATION,
 				&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	dtr[]={
 		{SQL_DTR_DROP_TRANSLATION,"DROP_TRANSLATION"},
 		{0,NULL}
 	};
-	for (int i=0; dtr[i].name; i++) {
-		if (uintbuf&dtr[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(dtr[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,dtr);
 	databasefeatures[FEATURE_SUPPORTS_DROP_TRANSLATION]=sb.detachString();
 
 	// SQL_DROP_VIEW -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_DROP_VIEW,&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	dv[]={
 		{SQL_DV_DROP_VIEW,"DROP_VIEW"},
 		{SQL_DV_CASCADE,"CASCADE"},
 		{SQL_DV_RESTRICT,"RESTRICT"},
 		{0,NULL}
 	};
-	for (int i=0; dv[i].name; i++) {
-		if (uintbuf&dv[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(dv[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,dv);
 	databasefeatures[FEATURE_SUPPORTS_DROP_VIEW]=sb.detachString();
 
 	// SQL_DDL_INDEX -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_DDL_INDEX,&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	di[]={
 		{SQL_DI_CREATE_INDEX,"CREATE_INDEX"},
 		{SQL_DI_DROP_INDEX,"DROP_INDEX"},
 		{0,NULL}
 	};
-	for (int i=0; di[i].name; i++) {
-		if (uintbuf&di[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(di[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,di);
 	databasefeatures[FEATURE_SUPPORTS_DDL_INDEX]=sb.detachString();
 
 	// SQL_TXN_CAPABLE -> enum (reuse from above)
@@ -2453,14 +2222,13 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		charstring::duplicate(
 			(uintbuf&(SQL_OJ_LEFT|SQL_OJ_RIGHT))?"true":"false");
 
-	// no ODBC equivalent
+	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_SUPPORTS_GET_GENERATED_KEYS]=
 		charstring::duplicate("");
 
 	// SQL_SQL92_GRANT -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_SQL92_GRANT,&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	sg[]={
 		{SQL_SG_DELETE_TABLE,"DELETE_TABLE"},
 		{SQL_SG_INSERT_COLUMN,"INSERT_COLUMN"},
@@ -2477,15 +2245,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{SQL_SG_WITH_GRANT_OPTION,"WITH_GRANT_OPTION"},
 		{0,NULL}
 	};
-	for (int i=0; sg[i].name; i++) {
-		if (uintbuf&sg[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(sg[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,sg);
 	databasefeatures[FEATURE_SUPPORTS_GRANT]=sb.detachString();
 
 	// SQL_GROUP_BY -> usmallint
@@ -2505,27 +2265,17 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	// SQL_INDEX_KEYWORDS -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_INDEX_KEYWORDS,&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	ik[]={
 		{SQL_IK_ASC,"ASC"},
 		{SQL_IK_DESC,"DESC"},
 		{0,NULL}
 	};
-	for (int i=0; ik[i].name; i++) {
-		if (uintbuf&ik[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(ik[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,ik);
 	databasefeatures[FEATURE_INDEX_KEYWORDS]=sb.detachString();
 
 	// SQL_INFO_SCHEMA_VIEWS -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_INFO_SCHEMA_VIEWS,&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	isv[]={
 		{SQL_ISV_ASSERTIONS,"ASSERTIONS"},
 		{SQL_ISV_CHARACTER_SETS,"CHARACTER_SETS"},
@@ -2552,36 +2302,19 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{SQL_ISV_VIEWS,"VIEWS"},
 		{0,NULL}
 	};
-	for (int i=0; isv[i].name; i++) {
-		if (uintbuf&isv[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(isv[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,isv);
 	databasefeatures[FEATURE_INFO_SCHEMA_VIEWS]=sb.detachString();
 
 	// SQL_INSERT_STATEMENT -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_INSERT_STATEMENT,&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	is[]={
 		{SQL_IS_INSERT_LITERALS,"INSERT_LITERALS"},
 		{SQL_IS_INSERT_SEARCHED,"INSERT_SEARCHED"},
 		{SQL_IS_SELECT_INTO,"SELECT_INTO"},
 		{0,NULL}
 	};
-	for (int i=0; is[i].name; i++) {
-		if (uintbuf&is[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(is[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,is);
 	databasefeatures[FEATURE_SUPPORTS_INSERT_STATEMENT]=sb.detachString();
 
 	// SQL_INTEGRITY -> Y/N
@@ -2599,22 +2332,13 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	// SQL_LOCK_TYPES -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_LOCK_TYPES,&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	lt[]={
 		{SQL_LCK_NO_CHANGE,"NO_CHANGE"},
 		{SQL_LCK_EXCLUSIVE,"EXCLUSIVE"},
 		{SQL_LCK_UNLOCK,"UNLOCK"},
 		{0,NULL}
 	};
-	for (int i=0; lt[i].name; i++) {
-		if (uintbuf&lt[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(lt[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,lt);
 	databasefeatures[FEATURE_SUPPORTS_LOCK_TYPES]=sb.detachString();
 
 	// SQL_MULT_RESULT_SETS -> Y/N
@@ -2629,7 +2353,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_SUPPORTS_MULTIPLE_TRANSACTIONS]=
 		charstring::duplicate((strbuf[0]=='Y')?"true":"false");
 
-	// no ODBC equivalent
+	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_SUPPORTS_NAMED_PARAMETERS]=
 		charstring::duplicate("");
 
@@ -2681,7 +2405,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		charstring::duplicate(
 			(uintbuf&SQL_PS_POSITIONED_UPDATE)?"true":"false");
 
-	// no ODBC equivalent
+	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY]=
 		charstring::duplicate("");
 	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_HOLDABILITY]=
@@ -2692,7 +2416,6 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	// SQL_SQL92_REVOKE -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_SQL92_REVOKE,&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	sr[]={
 		{SQL_SR_CASCADE,"CASCADE"},
 		{SQL_SR_DELETE_TABLE,"DELETE_TABLE"},
@@ -2711,21 +2434,18 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{SQL_SR_USAGE_ON_TRANSLATION,"USAGE_ON_TRANSLATION"},
 		{0,NULL}
 	};
-	for (int i=0; sr[i].name; i++) {
-		if (uintbuf&sr[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(sr[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,sr);
 	databasefeatures[FEATURE_SUPPORTS_REVOKE]=sb.detachString();
 
+	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_SUPPORTS_SAVEPOINTS]=
 		charstring::duplicate("");
+
+	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_SUPPORTS_SELECT_FOR_UPDATE]=
 		charstring::duplicate("");
+
+	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_SUPPORTS_STORED_FUNCTIONS_USING_CALL_SYNTAX]=
 		charstring::duplicate("");
 
@@ -2758,20 +2478,16 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_TXN_ISOLATION_OPTION,
 					&uintbuf,sizeof(uintbuf),&size);
-	databasefeatures[FEATURE_SUPPORTS_TRANSACTION_ISOLATION_LEVEL_N]=
-		charstring::duplicate("false");
-	databasefeatures[FEATURE_SUPPORTS_TRANSACTION_ISOLATION_LEVEL_RU]=
-		charstring::duplicate(
-		(uintbuf&SQL_TXN_READ_UNCOMMITTED)?"true":"false");
-	databasefeatures[FEATURE_SUPPORTS_TRANSACTION_ISOLATION_LEVEL_RC]=
-		charstring::duplicate(
-		(uintbuf&SQL_TXN_READ_COMMITTED)?"true":"false");
-	databasefeatures[FEATURE_SUPPORTS_TRANSACTION_ISOLATION_LEVEL_RR]=
-		charstring::duplicate(
-		(uintbuf&SQL_TXN_REPEATABLE_READ)?"true":"false");
-	databasefeatures[FEATURE_SUPPORTS_TRANSACTION_ISOLATION_LEVEL_S]=
-		charstring::duplicate(
-		(uintbuf&SQL_TXN_SERIALIZABLE)?"true":"false");
+	flagtoname	tilf[]={
+		{SQL_TXN_READ_UNCOMMITTED,"READ_UNCOMMITTED"},
+		{SQL_TXN_READ_COMMITTED,"READ_COMMITTED"},
+		{SQL_TXN_REPEATABLE_READ,"REPEATABLE_READ"},
+		{SQL_TXN_SERIALIZABLE,"SERIALIZABLE"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,tilf);
+	databasefeatures[FEATURE_SUPPORTS_TRANSACTION_ISOLATION_LEVEL]=
+		sb.detachString();
 
 	// SQL_UNION -> bitmask
 	uintbuf=0;
@@ -2786,22 +2502,13 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	// SQL_SYSTEM_FUNCTIONS -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_SYSTEM_FUNCTIONS,&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	syf[]={
 		{SQL_FN_SYS_USERNAME,"USER"},
 		{SQL_FN_SYS_DBNAME,"DBNAME"},
 		{SQL_FN_SYS_IFNULL,"IFNULL"},
 		{0,NULL}
 	};
-	for (int i=0; syf[i].name; i++) {
-		if (uintbuf&syf[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(syf[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,syf);
 	databasefeatures[FEATURE_SYSTEM_FUNCTIONS]=sb.detachString();
 
 	// SQL_TABLE_TERM -> string
@@ -2812,7 +2519,6 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	// SQL_TIMEDATE_FUNCTIONS -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_TIMEDATE_FUNCTIONS,&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	tf[]={
 		{SQL_FN_TD_NOW,"NOW"},
 		{SQL_FN_TD_CURDATE,"CURDATE"},
@@ -2839,22 +2545,13 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		#endif
 		{0,NULL}
 	};
-	for (int i=0; tf[i].name; i++) {
-		if (uintbuf&tf[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(tf[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,tf);
 	databasefeatures[FEATURE_TIME_DATE_FUNCTIONS]=sb.detachString();
 
 	// SQL_TIMEDATE_ADD_INTERVALS -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_TIMEDATE_ADD_INTERVALS,
 					&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	tdai[]={
 		{SQL_FN_TSI_FRAC_SECOND,"FRAC_SECOND"},
 		{SQL_FN_TSI_SECOND,"SECOND"},
@@ -2867,22 +2564,13 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{SQL_FN_TSI_YEAR,"YEAR"},
 		{0,NULL}
 	};
-	for (int i=0; tdai[i].name; i++) {
-		if (uintbuf&tdai[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(tdai[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,tdai);
 	databasefeatures[FEATURE_TIME_DATE_ADD_INTERVALS]=sb.detachString();
 
 	// SQL_TIMEDATE_DIFF_INTERVALS -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_TIMEDATE_DIFF_INTERVALS,
 					&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	tddi[]={
 		{SQL_FN_TSI_FRAC_SECOND,"FRAC_SECOND"},
 		{SQL_FN_TSI_SECOND,"SECOND"},
@@ -2895,21 +2583,12 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{SQL_FN_TSI_YEAR,"YEAR"},
 		{0,NULL}
 	};
-	for (int i=0; tddi[i].name; i++) {
-		if (uintbuf&tddi[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(tddi[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,tddi);
 	databasefeatures[FEATURE_TIME_DATE_DIFF_INTERVALS]=sb.detachString();
 
 	// SQL_DATETIME_LITERALS -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_DATETIME_LITERALS,&uintbuf,sizeof(uintbuf),&size);
-	first=true;
 	flagtoname	dtl[]={
 		{SQL_DL_SQL92_DATE,"DATE"},
 		{SQL_DL_SQL92_TIME,"TIME"},
@@ -2936,18 +2615,10 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 			"INTERVAL_MINUTE_TO_SECOND"},
 		{0,NULL}
 	};
-	for (int i=0; dtl[i].name; i++) {
-		if (uintbuf&dtl[i].flag) {
-			if (!first) {
-				sb.append(',');
-			}
-			sb.append(dtl[i].name);
-			first=false;
-		}
-	}
+	flagsToNames(&sb,uintbuf,dtl);
 	databasefeatures[FEATURE_TIME_DATE_LITERALS]=sb.detachString();
 
-	// no ODBC equivalent
+	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_UPDATES_ARE_DETECTED]=
 		charstring::duplicate("");
 
