@@ -8725,8 +8725,8 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_GETDATA_EXTENSIONS:
 			debugPrintf("  infotype: "
 					"SQL_GETDATA_EXTENSIONS\n");
-			// FIXME: is this correct?
-			val.uintval=SQL_GD_BLOCK;
+			val.uintval=SQL_GD_ANY_COLUMN|SQL_GD_ANY_ORDER|
+						SQL_GD_BOUND|SQL_GD_BLOCK;
 			type=1;
 			break;
 		case SQL_NULL_COLLATION:
@@ -9001,7 +9001,8 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_PROCEDURES\n");
 			val.strval=sqlrconnection::isYes(
-				conn->con->getDatabaseFeature("supports_stored_procedures"))?
+				conn->con->getDatabaseFeature(
+					"supports_stored_procedures"))?
 							"Y":"N";
 			type=0;
 			break;
@@ -9025,7 +9026,8 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_EXPRESSIONS_IN_ORDERBY\n");
 			val.strval=sqlrconnection::isYes(
-				conn->con->getDatabaseFeature("supports_expressions_in_order_by"))?
+				conn->con->getDatabaseFeature(
+					"supports_expressions_in_order_by"))?
 							"Y":"N";
 			type=0;
 			break;
@@ -9043,7 +9045,8 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_MULT_RESULT_SETS\n");
 			val.strval=sqlrconnection::isYes(
-				conn->con->getDatabaseFeature("supports_multiple_result_sets"))?
+				conn->con->getDatabaseFeature(
+					"supports_multiple_result_sets"))?
 							"Y":"N";
 			type=0;
 			break;
@@ -9051,7 +9054,8 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_MULTIPLE_ACTIVE_TXN\n");
 			val.strval=sqlrconnection::isYes(
-				conn->con->getDatabaseFeature("supports_multiple_transactions"))?
+				conn->con->getDatabaseFeature(
+					"supports_multiple_transactions"))?
 							"Y":"N";
 			type=0;
 			break;
@@ -9353,7 +9357,8 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_COLUMN_ALIAS\n");
 			val.strval=sqlrconnection::isYes(
-				conn->con->getDatabaseFeature("supports_column_aliasing"))?
+				conn->con->getDatabaseFeature(
+					"supports_column_aliasing"))?
 							"Y":"N";
 			type=0;
 			break;
@@ -9460,7 +9465,8 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_LIKE_ESCAPE_CLAUSE\n");
 			val.strval=sqlrconnection::isYes(
-				conn->con->getDatabaseFeature("supports_like_escape_clause"))?
+				conn->con->getDatabaseFeature(
+					"supports_like_escape_clause"))?
 								"Y":"N";
 			type=0;
 			break;
