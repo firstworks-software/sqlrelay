@@ -166,10 +166,10 @@
 #define FEATURE_PROCEDURE_TERM 54
 #define FEATURE_RESULT_SET_HOLDABILITY 55
 #define FEATURE_ROW_ID_LIFETIME 56
-#define FEATURE_SQL_KEYWORDS 57
-#define FEATURE_SQL_STATE_TYPE 58
-#define FEATURE_SCHEMA_TERM 59
-#define FEATURE_SEARCH_STRING_ESCAPE 60
+#define FEATURE_SCHEMA_TERM 57
+#define FEATURE_SEARCH_STRING_ESCAPE 58
+#define FEATURE_SQL_KEYWORDS 59
+#define FEATURE_SQL_STATE_TYPE 60
 #define FEATURE_STORES_LOWER_CASE_IDENTIFIERS 61
 #define FEATURE_STORES_LOWER_CASE_QUOTED_IDENTIFIERS 62
 #define FEATURE_STORES_MIXED_CASE_IDENTIFIERS 63
@@ -185,11 +185,11 @@
 #define FEATURE_SUPPORTED_VALUE_EXPRESSIONS 73
 #define FEATURE_SUPPORTS_AGGREGATE_FUNCTIONS 74
 #define FEATURE_SUPPORTS_ALTER_DOMAIN 75
-#define FEATURE_SUPPORTS_ANSI92_ENTRY_LEVEL_SQL 76
-#define FEATURE_SUPPORTS_ANSI92_FULL_SQL 77
-#define FEATURE_SUPPORTS_ANSI92_INTERMEDIATE_SQL 78
-#define FEATURE_SUPPORTS_ALTER_TABLE_WITH_ADD_COLUMN 79
-#define FEATURE_SUPPORTS_ALTER_TABLE_WITH_DROP_COLUMN 80
+#define FEATURE_SUPPORTS_ALTER_TABLE_WITH_ADD_COLUMN 76
+#define FEATURE_SUPPORTS_ALTER_TABLE_WITH_DROP_COLUMN 77
+#define FEATURE_SUPPORTS_ANSI92_ENTRY_LEVEL_SQL 78
+#define FEATURE_SUPPORTS_ANSI92_FULL_SQL 79
+#define FEATURE_SUPPORTS_ANSI92_INTERMEDIATE_SQL 80
 #define FEATURE_SUPPORTS_BATCH_UPDATES 81
 #define FEATURE_SUPPORTS_CATALOGS_IN_DATA_MANIPULATION 82
 #define FEATURE_SUPPORTS_CATALOGS_IN_INDEX_DEFINITIONS 83
@@ -341,10 +341,10 @@ static const char *dbfeaturenames[]={
 	"procedure_term",
 	"result_set_holdability",
 	"row_id_lifetime",
-	"sql_keywords",
-	"sql_state_type",
 	"schema_term",
 	"search_string_escape",
+	"sql_keywords",
+	"sql_state_type",
 	"stores_lower_case_identifiers",
 	"stores_lower_case_quoted_identifiers",
 	"stores_mixed_case_identifiers",
@@ -360,11 +360,11 @@ static const char *dbfeaturenames[]={
 	"supported_value_expressions",
 	"supports_aggregate_functions",
 	"supports_alter_domain",
+	"supports_alter_table_with_add_column",
+	"supports_alter_table_with_drop_column",
 	"supports_ansi92_entry_level_sql",
 	"supports_ansi92_full_sql",
 	"supports_ansi92_intermediate_sql",
-	"supports_alter_table_with_add_column",
-	"supports_alter_table_with_drop_column",
 	"supports_batch_updates",
 	"supports_catalogs_in_data_manipulation",
 	"supports_catalogs_in_index_definitions",

@@ -941,13 +941,13 @@ const char * const *sapconnection::getDatabaseFeatures() {
 		charstring::duplicate("");
 	databasefeatures[FEATURE_ROW_ID_LIFETIME]=
 		charstring::duplicate("");
-	databasefeatures[FEATURE_SQL_KEYWORDS]=
-		charstring::duplicate("");
-	databasefeatures[FEATURE_SQL_STATE_TYPE]=
-		charstring::duplicate("");
 	databasefeatures[FEATURE_SCHEMA_TERM]=
 		charstring::duplicate("");
 	databasefeatures[FEATURE_SEARCH_STRING_ESCAPE]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_SQL_KEYWORDS]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_SQL_STATE_TYPE]=
 		charstring::duplicate("");
 	databasefeatures[FEATURE_STORES_LOWER_CASE_IDENTIFIERS]=
 		charstring::duplicate("");
@@ -979,15 +979,15 @@ const char * const *sapconnection::getDatabaseFeatures() {
 		charstring::duplicate("");
 	databasefeatures[FEATURE_SUPPORTS_ALTER_DOMAIN]=
 		charstring::duplicate("");
+	databasefeatures[FEATURE_SUPPORTS_ALTER_TABLE_WITH_ADD_COLUMN]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_SUPPORTS_ALTER_TABLE_WITH_DROP_COLUMN]=
+		charstring::duplicate("");
 	databasefeatures[FEATURE_SUPPORTS_ANSI92_ENTRY_LEVEL_SQL]=
 		charstring::duplicate("");
 	databasefeatures[FEATURE_SUPPORTS_ANSI92_FULL_SQL]=
 		charstring::duplicate("");
 	databasefeatures[FEATURE_SUPPORTS_ANSI92_INTERMEDIATE_SQL]=
-		charstring::duplicate("");
-	databasefeatures[FEATURE_SUPPORTS_ALTER_TABLE_WITH_ADD_COLUMN]=
-		charstring::duplicate("");
-	databasefeatures[FEATURE_SUPPORTS_ALTER_TABLE_WITH_DROP_COLUMN]=
 		charstring::duplicate("");
 	databasefeatures[FEATURE_SUPPORTS_BATCH_UPDATES]=
 		charstring::duplicate("");
@@ -1030,6 +1030,12 @@ const char * const *sapconnection::getDatabaseFeatures() {
 		charstring::duplicate("");
 	databasefeatures[FEATURE_SUPPORTS_DATA_MANIPULATION_TRANSACTIONS_ONLY]=
 		charstring::duplicate("");
+	databasefeatures[FEATURE_SUPPORTS_DDL_INDEX]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_SUPPORTS_DESCRIBE_PARAMETER]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_SUPPORTS_DIFFERENT_TABLE_CORRELATION_NAMES]=
+		charstring::duplicate("");
 	databasefeatures[FEATURE_SUPPORTS_DROP_ASSERTION]=
 		charstring::duplicate("");
 	databasefeatures[FEATURE_SUPPORTS_DROP_CHARACTER_SET]=
@@ -1045,12 +1051,6 @@ const char * const *sapconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_SUPPORTS_DROP_TRANSLATION]=
 		charstring::duplicate("");
 	databasefeatures[FEATURE_SUPPORTS_DROP_VIEW]=
-		charstring::duplicate("");
-	databasefeatures[FEATURE_SUPPORTS_DDL_INDEX]=
-		charstring::duplicate("");
-	databasefeatures[FEATURE_SUPPORTS_DESCRIBE_PARAMETER]=
-		charstring::duplicate("");
-	databasefeatures[FEATURE_SUPPORTS_DIFFERENT_TABLE_CORRELATION_NAMES]=
 		charstring::duplicate("");
 	databasefeatures[FEATURE_SUPPORTS_EXPRESSIONS_IN_ORDER_BY]=
 		charstring::duplicate("");
@@ -1156,11 +1156,11 @@ const char * const *sapconnection::getDatabaseFeatures() {
 		charstring::duplicate("");
 	databasefeatures[FEATURE_TABLE_TERM]=
 		charstring::duplicate("");
-	databasefeatures[FEATURE_TIME_DATE_FUNCTIONS]=
-		charstring::duplicate("");
 	databasefeatures[FEATURE_TIME_DATE_ADD_INTERVALS]=
 		charstring::duplicate("");
 	databasefeatures[FEATURE_TIME_DATE_DIFF_INTERVALS]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_TIME_DATE_FUNCTIONS]=
 		charstring::duplicate("");
 	databasefeatures[FEATURE_TIME_DATE_LITERALS]=
 		charstring::duplicate("");

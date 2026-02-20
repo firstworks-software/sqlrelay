@@ -2656,6 +2656,10 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 		charstring::duplicate("1");
 	databasefeatures[FEATURE_ROW_ID_LIFETIME]=
 		charstring::duplicate("ROWID_VALID_FOREVER");
+	databasefeatures[FEATURE_SCHEMA_TERM]=
+		charstring::duplicate("schema");
+	databasefeatures[FEATURE_SEARCH_STRING_ESCAPE]=
+		charstring::duplicate("/");
 	databasefeatures[FEATURE_SQL_KEYWORDS]=
 		charstring::duplicate(
 			"ACCESS, ADD, ALTER, AUDIT, CLUSTER, "
@@ -2670,10 +2674,6 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 			// driver for oracle returns, so we'll go with it
 	databasefeatures[FEATURE_SQL_STATE_TYPE]=
 		charstring::duplicate("0");
-	databasefeatures[FEATURE_SCHEMA_TERM]=
-		charstring::duplicate("schema");
-	databasefeatures[FEATURE_SEARCH_STRING_ESCAPE]=
-		charstring::duplicate("/");
 	databasefeatures[FEATURE_STORES_LOWER_CASE_IDENTIFIERS]=
 		charstring::duplicate("false");
 	databasefeatures[FEATURE_STORES_LOWER_CASE_QUOTED_IDENTIFIERS]=
@@ -2714,15 +2714,15 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 		charstring::duplicate("ALL,AVG,COUNT,DISTINCT,MAX,MIN,SUM");
 	databasefeatures[FEATURE_SUPPORTS_ALTER_DOMAIN]=
 		charstring::duplicate("");
+	databasefeatures[FEATURE_SUPPORTS_ALTER_TABLE_WITH_ADD_COLUMN]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_ALTER_TABLE_WITH_DROP_COLUMN]=
+		charstring::duplicate("false");
 	databasefeatures[FEATURE_SUPPORTS_ANSI92_ENTRY_LEVEL_SQL]=
 		charstring::duplicate("true");
 	databasefeatures[FEATURE_SUPPORTS_ANSI92_FULL_SQL]=
 		charstring::duplicate("false");
 	databasefeatures[FEATURE_SUPPORTS_ANSI92_INTERMEDIATE_SQL]=
-		charstring::duplicate("false");
-	databasefeatures[FEATURE_SUPPORTS_ALTER_TABLE_WITH_ADD_COLUMN]=
-		charstring::duplicate("true");
-	databasefeatures[FEATURE_SUPPORTS_ALTER_TABLE_WITH_DROP_COLUMN]=
 		charstring::duplicate("false");
 	databasefeatures[FEATURE_SUPPORTS_BATCH_UPDATES]=
 		charstring::duplicate("true");
@@ -2769,6 +2769,12 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 		charstring::duplicate("true");
 	databasefeatures[FEATURE_SUPPORTS_DATA_MANIPULATION_TRANSACTIONS_ONLY]=
 		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_DDL_INDEX]=
+		charstring::duplicate("CREATE_INDEX,DROP_INDEX");
+	databasefeatures[FEATURE_SUPPORTS_DESCRIBE_PARAMETER]=
+		charstring::duplicate("true");
+	databasefeatures[FEATURE_SUPPORTS_DIFFERENT_TABLE_CORRELATION_NAMES]=
+		charstring::duplicate("true");
 	databasefeatures[FEATURE_SUPPORTS_DROP_ASSERTION]=
 		charstring::duplicate("");
 	databasefeatures[FEATURE_SUPPORTS_DROP_CHARACTER_SET]=
@@ -2785,12 +2791,6 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 		charstring::duplicate("");
 	databasefeatures[FEATURE_SUPPORTS_DROP_VIEW]=
 		charstring::duplicate("DROP_VIEW,CASCADE,RESTRICT");
-	databasefeatures[FEATURE_SUPPORTS_DDL_INDEX]=
-		charstring::duplicate("CREATE_INDEX,DROP_INDEX");
-	databasefeatures[FEATURE_SUPPORTS_DESCRIBE_PARAMETER]=
-		charstring::duplicate("true");
-	databasefeatures[FEATURE_SUPPORTS_DIFFERENT_TABLE_CORRELATION_NAMES]=
-		charstring::duplicate("true");
 	databasefeatures[FEATURE_SUPPORTS_EXPRESSIONS_IN_ORDER_BY]=
 		charstring::duplicate("true");
 	databasefeatures[FEATURE_SUPPORTS_EXTENDED_SQL_GRAMMAR]=
@@ -2913,16 +2913,16 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 		charstring::duplicate("USER");
 	databasefeatures[FEATURE_TABLE_TERM]=
 		charstring::duplicate("table");
-	databasefeatures[FEATURE_TIME_DATE_FUNCTIONS]=
-		charstring::duplicate(
-			"CURRENT_DATE,CURRENT_TIMESTAMP,CURDATE,EXTRACT,"
-			"HOUR,MINUTE,MONTH,SECOND,YEAR");
-	// FIXME: oracle 12+ does support intervals
 	databasefeatures[FEATURE_TIME_DATE_ADD_INTERVALS]=
 		charstring::duplicate("");
 	// FIXME: oracle 12+ does support intervals
 	databasefeatures[FEATURE_TIME_DATE_DIFF_INTERVALS]=
 		charstring::duplicate("");
+	databasefeatures[FEATURE_TIME_DATE_FUNCTIONS]=
+		charstring::duplicate(
+			"CURRENT_DATE,CURRENT_TIMESTAMP,CURDATE,EXTRACT,"
+			"HOUR,MINUTE,MONTH,SECOND,YEAR");
+	// FIXME: oracle 12+ does support intervals
 	databasefeatures[FEATURE_TIME_DATE_LITERALS]=
 		charstring::duplicate(
 			"DATE,TIMESTAMP,"
