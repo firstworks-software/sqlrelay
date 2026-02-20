@@ -1165,27 +1165,11 @@ const char * const *postgresqlconnection::getDatabaseFeatures() {
 		charstring::duplicate("");
 	databasefeatures[FEATURE_SUPPORTS_POSITIONED_UPDATE]=
 		charstring::duplicate("");
-	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY_FO_RO]=
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY]=
 		charstring::duplicate("");
-	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY_FO_U]=
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_HOLDABILITY]=
 		charstring::duplicate("");
-	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY_SI_RO]=
-		charstring::duplicate("");
-	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY_SI_U]=
-		charstring::duplicate("");
-	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY_SS_RO]=
-		charstring::duplicate("");
-	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY_SS_U]=
-		charstring::duplicate("");
-	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_HOLDABILITY_CCAC]=
-		charstring::duplicate("");
-	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_HOLDABILITY_HCAC]=
-		charstring::duplicate("");
-	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_TYPE_FO]=
-		charstring::duplicate("");
-	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_TYPE_SI]=
-		charstring::duplicate("");
-	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_TYPE_SS]=
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_TYPE]=
 		charstring::duplicate("");
 	databasefeatures[FEATURE_SUPPORTS_REVOKE]=
 		charstring::duplicate("");

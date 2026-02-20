@@ -2893,28 +2893,23 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 		charstring::duplicate("false");
 	databasefeatures[FEATURE_SUPPORTS_POSITIONED_UPDATE]=
 		charstring::duplicate("false");
-	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY_FO_RO]=
-		charstring::duplicate("true");
-	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY_FO_U]=
-		charstring::duplicate("true");
-	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY_SI_RO]=
-		charstring::duplicate("true");
-	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY_SI_U]=
-		charstring::duplicate("true");
-	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY_SS_RO]=
-		charstring::duplicate("true");
-	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY_SS_U]=
-		charstring::duplicate("true");
-	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_HOLDABILITY_CCAC]=
-		charstring::duplicate("true");
-	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_HOLDABILITY_HCAC]=
-		charstring::duplicate("true");
-	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_TYPE_FO]=
-		charstring::duplicate("true");
-	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_TYPE_SI]=
-		charstring::duplicate("true");
-	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_TYPE_SS]=
-		charstring::duplicate("true");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY]=
+		charstring::duplicate(
+			"FORWARD_ONLY/READ_ONLY,"
+			"FORWARD_ONLY/UPDATABLE,"
+			"SCROLL_INSENSITIVE/READ_ONLY,"
+			"SCROLL_INSENSITIVE/UPDATABLE,"
+			"SCROLL_SENSITIVE/READ_ONLY,"
+			"SCROLL_SENSITIVE/UPDATABLE");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_HOLDABILITY]=
+		charstring::duplicate(
+			"CLOSE_CURSORS_AT_COMMIT,HOLD_CURSORS_OVER_COMMIT");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_TYPE]=
+		charstring::duplicate(
+			"FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE");
 	// FIXME: verify this
 	databasefeatures[FEATURE_SUPPORTS_REVOKE]=
 		charstring::duplicate(

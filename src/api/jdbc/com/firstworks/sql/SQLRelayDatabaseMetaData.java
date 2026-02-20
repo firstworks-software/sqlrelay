@@ -2012,9 +2012,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		boolean	result=
 			conn.isResultSetTypeSupported(type) &&
 			conn.isResultSetConcurrencySupported(concurrency) &&
-			getBoolean("supports_result_set_concurrency_"+
-				getTypeAbbreviation(type)+"_"+
-				getConcurrencyAbbreviation(concurrency));
+			containsConcurrency("supports_result_set_concurrency",
+							type,concurrency);
 		drv.debugPrintln("supports result set concurrency: "+result);
 		drv.debugEnd();
 		return result;
@@ -2027,8 +2026,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		conn.debugResultSetType(holdability);
 		boolean	result=
 			conn.isResultSetHoldabilitySupported(holdability) &&
-			getBoolean("supports_result_set_holdability_"+
-				getHoldabilityAbbreviation(holdability));
+			containsHoldability("supports_result_set_holdability",
+								holdability);
 		drv.debugPrintln("supports result set holdability: "+result);
 		drv.debugEnd();
 		return result;
@@ -2039,8 +2038,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		drv.debugFunction(this);
 		boolean	result=
 			conn.isResultSetTypeSupported(type) &&
-			getBoolean("supports_result_set_type_"+
-						getTypeAbbreviation(type));
+			containsType("supports_result_set_type",type);
 		drv.debugPrintln("supports result set type: "+type);
 		drv.debugEnd();
 		return result;
@@ -2260,20 +2258,6 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	}
 
 	private
-	String getTypeAbbreviation(int type) {
-		switch (type) {
-			case ResultSet.TYPE_FORWARD_ONLY:
-				return "fo";
-			case ResultSet.TYPE_SCROLL_INSENSITIVE:
-				return "si";
-			case ResultSet.TYPE_SCROLL_SENSITIVE:
-				return "ss";
-			default:
-				return "";
-		}
-	}
-
-	private
 	String getTypeName(int type) {
 		switch (type) {
 			case ResultSet.TYPE_FORWARD_ONLY:
@@ -2282,6 +2266,30 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 				return "SCROLL_INSENSITIVE";
 			case ResultSet.TYPE_SCROLL_SENSITIVE:
 				return "SCROLL_SENSITIVE";
+			default:
+				return "";
+		}
+	}
+
+	private
+	String getConcurrencyName(int concurrency) {
+		switch (concurrency) {
+			case ResultSet.CONCUR_READ_ONLY:
+				return "READ_ONLY";
+			case ResultSet.CONCUR_UPDATABLE:
+				return "UPDATABLE";
+			default:
+				return "";
+		}
+	}
+
+	private
+	String getHoldabilityName(int holdability) {
+		switch (holdability) {
+			case ResultSet.HOLD_CURSORS_OVER_COMMIT:
+				return "HOLD_CURSORS_OVER_COMMIT";
+			case ResultSet.CLOSE_CURSORS_AT_COMMIT:
+				return "CLOSE_CURSORS_AT_COMMIT";
 			default:
 				return "";
 		}
@@ -2307,27 +2315,38 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	}
 
 	private
-	String getConcurrencyAbbreviation(int concurrency) {
-		switch (concurrency) {
-			case ResultSet.CONCUR_READ_ONLY:
-				return "ro";
-			case ResultSet.CONCUR_UPDATABLE:
-				return "u";
-			default:
-				return "";
+	boolean containsConcurrency(String feature,
+					int type,int concurrency) {
+		String	value=getDatabaseFeature(feature);
+		String	typename=getTypeName(type);
+		String	concurrencyname=getConcurrencyName(concurrency);
+		if (value==null ||
+			typename.isEmpty() ||
+			concurrencyname.isEmpty()) {
+			return false;
 		}
+		String	pair=typename+"/"+concurrencyname;
+		for (String part : value.split(",")) {
+			if (part.trim().equals(pair)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private
-	String getHoldabilityAbbreviation(int holdability) {
-		switch (holdability) {
-			case ResultSet.HOLD_CURSORS_OVER_COMMIT:
-				return "hcac";
-			case ResultSet.CLOSE_CURSORS_AT_COMMIT:
-				return "ccac";
-			default:
-				return "";
+	boolean containsHoldability(String feature, int holdability) {
+		String	value=getDatabaseFeature(feature);
+		String	holdabilityname=getHoldabilityName(holdability);
+		if (value==null || holdabilityname.isEmpty()) {
+			return false;
 		}
+		for (String part : value.split(",")) {
+			if (part.trim().equals(holdabilityname)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private
