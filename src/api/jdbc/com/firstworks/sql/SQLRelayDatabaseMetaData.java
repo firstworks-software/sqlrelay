@@ -112,11 +112,9 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean deletesAreDetected(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		boolean	result=false;
-		if (conn.isResultSetTypeSupported(type)) {
-			result=getBoolean("deletes_are_detected_"+
-						getTypeAbbreviation(type));
-		}
+		boolean	result=
+			conn.isResultSetTypeSupported(type) &&
+			containsType("deletes_are_detected",type);
 		drv.debugPrintln("deletes are detected: "+result);
 		drv.debugEnd();
 		return result;
@@ -674,6 +672,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 	public
 	int getMaxConnections() throws SQLException {
+		// FIXME: shouldn't this be sqlrelay's max connections?
 		drv.debugFunction(this);
 		int	result=getInt("max_connections");
 		drv.debugPrintln("max connections: "+result);
@@ -1344,11 +1343,9 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean insertsAreDetected(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		boolean	result=false;
-		if (conn.isResultSetTypeSupported(type)) {
-			result=getBoolean("inserts_are_detected_"+
-						getTypeAbbreviation(type));
-		}
+		boolean	result=
+			conn.isResultSetTypeSupported(type) &&
+			containsType("inserts_are_detected",type);
 		drv.debugPrintln("inserts are detected: "+result);
 		drv.debugEnd();
 		return result;
@@ -1430,11 +1427,9 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean othersDeletesAreVisible(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		boolean	result=false;
-		if (conn.isResultSetTypeSupported(type)) {
-			result=getBoolean("others_deletes_are_visible_"+
-						getTypeAbbreviation(type));
-		}
+		boolean	result=
+			conn.isResultSetTypeSupported(type) &&
+			containsType("others_deletes_are_visible",type);
 		drv.debugPrintln("others deletes are visible: "+result);
 		drv.debugEnd();
 		return result;
@@ -1444,11 +1439,9 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean othersInsertsAreVisible(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		boolean	result=false;
-		if (conn.isResultSetTypeSupported(type)) {
-			result=getBoolean("others_inserts_are_visible_"+
-						getTypeAbbreviation(type));
-		}
+		boolean	result=
+			conn.isResultSetTypeSupported(type) &&
+			containsType("others_inserts_are_visible",type);
 		drv.debugPrintln("others inserts are visible: "+result);
 		drv.debugEnd();
 		return result;
@@ -1458,11 +1451,9 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean othersUpdatesAreVisible(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		boolean	result=false;
-		if (conn.isResultSetTypeSupported(type)) {
-			result=getBoolean("others_updates_are_visible_"+
-						getTypeAbbreviation(type));
-		}
+		boolean	result=
+			conn.isResultSetTypeSupported(type) &&
+			containsType("others_updates_are_visible",type);
 		drv.debugPrintln("others updates are visible: "+result);
 		drv.debugEnd();
 		return result;
@@ -1472,11 +1463,9 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean ownDeletesAreVisible(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		boolean	result=false;
-		if (conn.isResultSetTypeSupported(type)) {
-			result=getBoolean("own_deletes_are_visible_"+
-						getTypeAbbreviation(type));
-		}
+		boolean	result=
+			conn.isResultSetTypeSupported(type) &&
+			containsType("own_deletes_are_visible",type);
 		drv.debugPrintln("own deletes are visible: "+result);
 		drv.debugEnd();
 		return result;
@@ -1486,11 +1475,9 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean ownInsertsAreVisible(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		boolean	result=false;
-		if (conn.isResultSetTypeSupported(type)) {
-			result=getBoolean("own_inserts_are_visible_"+
-						getTypeAbbreviation(type));
-		}
+		boolean	result=
+			conn.isResultSetTypeSupported(type) &&
+			containsType("own_inserts_are_visible",type);
 		drv.debugPrintln("own inserts are visible: "+result);
 		drv.debugEnd();
 		return result;
@@ -1500,11 +1487,9 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean ownUpdatesAreVisible(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		boolean	result=false;
-		if (conn.isResultSetTypeSupported(type)) {
-			result=getBoolean("own_updates_are_visible_"+
-						getTypeAbbreviation(type));
-		}
+		boolean	result=
+			conn.isResultSetTypeSupported(type) &&
+			containsType("own_updates_are_visible",type);
 		drv.debugPrintln("own updates are visible: "+result);
 		drv.debugEnd();
 		return result;
@@ -2024,14 +2009,12 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
 		conn.debugResultSetConcurrency(concurrency);
-		boolean	result=false;
-		if (conn.isResultSetTypeSupported(type) &&
-			conn.isResultSetConcurrencySupported(concurrency)) {
-			result=getBoolean(
-				"supports_result_set_concurrency_"+
+		boolean	result=
+			conn.isResultSetTypeSupported(type) &&
+			conn.isResultSetConcurrencySupported(concurrency) &&
+			getBoolean("supports_result_set_concurrency_"+
 				getTypeAbbreviation(type)+"_"+
 				getConcurrencyAbbreviation(concurrency));
-		}
 		drv.debugPrintln("supports result set concurrency: "+result);
 		drv.debugEnd();
 		return result;
@@ -2042,12 +2025,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 							throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(holdability);
-		boolean	result=false;
-		if (conn.isResultSetHoldabilitySupported(holdability)) {
-			result=getBoolean(
-				"supports_result_set_holdability_"+
+		boolean	result=
+			conn.isResultSetHoldabilitySupported(holdability) &&
+			getBoolean("supports_result_set_holdability_"+
 				getHoldabilityAbbreviation(holdability));
-		}
 		drv.debugPrintln("supports result set holdability: "+result);
 		drv.debugEnd();
 		return result;
@@ -2056,11 +2037,10 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsResultSetType(int type) throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=false;
-		if (conn.isResultSetTypeSupported(type)) {
-			result=getBoolean("supports_result_set_type_"+
+		boolean	result=
+			conn.isResultSetTypeSupported(type) &&
+			getBoolean("supports_result_set_type_"+
 						getTypeAbbreviation(type));
-		}
 		drv.debugPrintln("supports result set type: "+type);
 		drv.debugEnd();
 		return result;
@@ -2253,11 +2233,9 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean updatesAreDetected(int type) throws SQLException {
 		drv.debugFunction(this);
 		conn.debugResultSetType(type);
-		boolean	result=false;
-		if (conn.isResultSetTypeSupported(type)) {
-			result=getBoolean("updates_are_detected_"+
-						getTypeAbbreviation(type));
-		}
+		boolean	result=
+			conn.isResultSetTypeSupported(type) &&
+			containsType("updates_are_detected",type);
 		drv.debugPrintln("updates are detected: "+result);
 		drv.debugEnd();
 		return result;
@@ -2293,6 +2271,39 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 			default:
 				return "";
 		}
+	}
+
+	private
+	String getTypeName(int type) {
+		switch (type) {
+			case ResultSet.TYPE_FORWARD_ONLY:
+				return "FORWARD_ONLY";
+			case ResultSet.TYPE_SCROLL_INSENSITIVE:
+				return "SCROLL_INSENSITIVE";
+			case ResultSet.TYPE_SCROLL_SENSITIVE:
+				return "SCROLL_SENSITIVE";
+			default:
+				return "";
+		}
+	}
+
+	private
+	boolean containsType(String feature, int type) {
+		String	value=getDatabaseFeature(feature);
+		if (value==null || value.isEmpty()) {
+			return false;
+		}
+		String	typename=getTypeName(type);
+		if (typename.isEmpty()) {
+			return false;
+		}
+		String[]	parts=value.split(",");
+		for (String part : parts) {
+			if (part.trim().equals(typename)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private

@@ -2545,18 +2545,18 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 		charstring::duplicate("");
 	databasefeatures[FEATURE_CATALOG_TERM]=
 		charstring::duplicate("");
+	// FIXME: verify this
+	databasefeatures[FEATURE_COLLATION_SEQ]=
+		charstring::duplicate("BINARY");
 	databasefeatures[FEATURE_DATA_DEFINITION_CAUSES_TRANSACTION_COMMIT]=
 		charstring::duplicate("true");
 	databasefeatures[FEATURE_DATA_DEFINITION_IGNORED_IN_TRANSACTIONS]=
 		charstring::duplicate("false");
 	databasefeatures[FEATURE_DEFAULT_ISOLATION_LEVEL]=
 		charstring::duplicate("TRANSACTION_READ_COMMITTED");
-	databasefeatures[FEATURE_DELETES_ARE_DETECTED_FO]=
-		charstring::duplicate("false");
-	databasefeatures[FEATURE_DELETES_ARE_DETECTED_SI]=
-		charstring::duplicate("false");
-	databasefeatures[FEATURE_DELETES_ARE_DETECTED_SS]=
-		charstring::duplicate("false");
+	// FIXME: verify this
+	databasefeatures[FEATURE_DELETES_ARE_DETECTED]=
+		charstring::duplicate("");
 	databasefeatures[FEATURE_DOES_MAX_ROW_SIZE_INCLUDE_BLOBS]=
 		charstring::duplicate("true");
 	databasefeatures[FEATURE_EXTRA_NAME_CHARACTERS]=
@@ -2565,12 +2565,15 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 		charstring::duplicate("false");
 	databasefeatures[FEATURE_IDENTIFIER_QUOTE_STRING]=
 		charstring::duplicate("\"");
-	databasefeatures[FEATURE_INSERTS_ARE_DETECTED_FO]=
-		charstring::duplicate("false");
-	databasefeatures[FEATURE_INSERTS_ARE_DETECTED_SI]=
-		charstring::duplicate("false");
-	databasefeatures[FEATURE_INSERTS_ARE_DETECTED_SS]=
-		charstring::duplicate("false");
+	// FIXME: verify this
+	databasefeatures[FEATURE_INDEX_KEYWORDS]=
+		charstring::duplicate("ASC,DESC");
+	// FIXME: verify this
+	databasefeatures[FEATURE_INFO_SCHEMA_VIEWS]=
+		charstring::duplicate("");
+	// FIXME: verify this
+	databasefeatures[FEATURE_INSERTS_ARE_DETECTED]=
+		charstring::duplicate("");
 	databasefeatures[FEATURE_IS_CATALOG_AT_START]=
 		charstring::duplicate("false");
 	databasefeatures[FEATURE_IS_READ_ONLY]=
@@ -2599,6 +2602,9 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 		charstring::duplicate("0");
 	databasefeatures[FEATURE_MAX_CURSOR_NAME_LENGTH]=
 		charstring::duplicate("0");
+	// FIXME: verify this
+	databasefeatures[FEATURE_MAX_IDENTIFIER_LENGTH]=
+		charstring::duplicate("30");
 	databasefeatures[FEATURE_MAX_INDEX_LENGTH]=
 		charstring::duplicate("0");
 	databasefeatures[FEATURE_MAX_PROCEDURE_NAME_LENGTH]=
@@ -2617,6 +2623,9 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 		charstring::duplicate("0");
 	databasefeatures[FEATURE_MAX_USER_NAME_LENGTH]=
 		charstring::duplicate("128");
+	// FIXME: verify this
+	databasefeatures[FEATURE_NEED_LONG_DATA_LENGTH]=
+		charstring::duplicate("true");
 	databasefeatures[FEATURE_NULL_PLUS_NON_NULL_IS_NULL]=
 		charstring::duplicate("true");
 	databasefeatures[FEATURE_NULLS_ARE_SORTED_AT_END]=
@@ -2628,46 +2637,31 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_NULLS_ARE_SORTED_LOW]=
 		charstring::duplicate("false");
 	databasefeatures[FEATURE_NUMERIC_FUNCTIONS]=
-		charstring::duplicate("ABS,ACOS,ASIN,ATAN,ATAN2,"
-					"CEILING,COS,EXP,FLOOR,LOG,"
-					"LOG10,MOD,PI,POWER,ROUND,"
-					"SIGN,SIN,SQRT,TAN,TRUNCATE");
-	databasefeatures[FEATURE_OTHERS_DELETES_ARE_VISIBLE_FO]=
-		charstring::duplicate("false");
-	databasefeatures[FEATURE_OTHERS_DELETES_ARE_VISIBLE_SI]=
-		charstring::duplicate("false");
-	databasefeatures[FEATURE_OTHERS_DELETES_ARE_VISIBLE_SS]=
-		charstring::duplicate("false");
-	databasefeatures[FEATURE_OTHERS_INSERTS_ARE_VISIBLE_FO]=
-		charstring::duplicate("false");
-	databasefeatures[FEATURE_OTHERS_INSERTS_ARE_VISIBLE_SI]=
-		charstring::duplicate("false");
-	databasefeatures[FEATURE_OTHERS_INSERTS_ARE_VISIBLE_SS]=
-		charstring::duplicate("false");
-	databasefeatures[FEATURE_OTHERS_UPDATES_ARE_VISIBLE_FO]=
-		charstring::duplicate("false");
-	databasefeatures[FEATURE_OTHERS_UPDATES_ARE_VISIBLE_SI]=
-		charstring::duplicate("false");
-	databasefeatures[FEATURE_OTHERS_UPDATES_ARE_VISIBLE_SS]=
-		charstring::duplicate("true");
-	databasefeatures[FEATURE_OWN_DELETES_ARE_VISIBLE_FO]=
-		charstring::duplicate("false");
-	databasefeatures[FEATURE_OWN_DELETES_ARE_VISIBLE_SI]=
-		charstring::duplicate("true");
-	databasefeatures[FEATURE_OWN_DELETES_ARE_VISIBLE_SS]=
-		charstring::duplicate("true");
-	databasefeatures[FEATURE_OWN_INSERTS_ARE_VISIBLE_FO]=
-		charstring::duplicate("false");
-	databasefeatures[FEATURE_OWN_INSERTS_ARE_VISIBLE_SI]=
-		charstring::duplicate("false");
-	databasefeatures[FEATURE_OWN_INSERTS_ARE_VISIBLE_SS]=
-		charstring::duplicate("false");
-	databasefeatures[FEATURE_OWN_UPDATES_ARE_VISIBLE_FO]=
-		charstring::duplicate("true");
-	databasefeatures[FEATURE_OWN_UPDATES_ARE_VISIBLE_SI]=
-		charstring::duplicate("true");
-	databasefeatures[FEATURE_OWN_UPDATES_ARE_VISIBLE_SS]=
-		charstring::duplicate("true");
+		charstring::duplicate(
+			"ABS,ACOS,ASIN,ATAN,ATAN2,CEILING,COS,EXP,FLOOR,LOG,"
+			"LOG10,MOD,PI,POWER,ROUND,SIGN,SIN,SQRT,TAN,TRUNCATE");
+	// FIXME: verify this
+	databasefeatures[FEATURE_OTHERS_DELETES_ARE_VISIBLE]=
+		charstring::duplicate(
+			"SCROLL_SENSITIVE");
+	// FIXME: verify this
+	databasefeatures[FEATURE_OTHERS_INSERTS_ARE_VISIBLE]=
+		charstring::duplicate("");
+	// FIXME: verify this
+	databasefeatures[FEATURE_OTHERS_UPDATES_ARE_VISIBLE]=
+		charstring::duplicate("SCROLL_SENSITIVE");
+	// FIXME: verify this
+	databasefeatures[FEATURE_OWN_DELETES_ARE_VISIBLE]=
+		charstring::duplicate(
+			"SCROLL_INSENSITIVE,SCROLL_SENSITIVE");
+	// FIXME: verify this
+	databasefeatures[FEATURE_OWN_INSERTS_ARE_VISIBLE]=
+		charstring::duplicate("");
+	// FIXME: verify this
+	databasefeatures[FEATURE_OWN_UPDATES_ARE_VISIBLE]=
+		charstring::duplicate(
+			"FORWARD_ONLY,SCROLL_INSENSITIVE,"
+			"SCROLL_SENSITIVE");
 	databasefeatures[FEATURE_PROCEDURE_TERM]=
 		charstring::duplicate("procedure");
 	databasefeatures[FEATURE_RESULT_SET_HOLDABILITY]=
@@ -2682,7 +2676,10 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 			"INCREMENT, INDEX, INITIAL, INTERSECT, LEVEL, "
 			"LOCK, LONG, MAXEXTENTS, MINUS, MODE, NOAUDIT, "
 			"NOCOMPRESS, NOWAIT, NUMBER, OFFLINE, ONLINE, "
-			"PCTFREE, PRIOR, all_PL_SQL_reserved_words");
+			"PCTFREE, PRIOR, all_PL_SQL_reserved_ words");
+			// FIXME: I don't think there should be a space
+			// before "words" above, but that's what the JDBC
+			// driver for oracle returns, so we'll go with it
 	databasefeatures[FEATURE_SQL_STATE_TYPE]=
 		charstring::duplicate("0");
 	databasefeatures[FEATURE_SCHEMA_TERM]=
@@ -2706,6 +2703,37 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 			"ASCII,CHAR,CHAR_LENGTH,CHARACTER_LENGTH,CONCAT,"
 			"LCASE,LENGTH,LTRIM,OCTET_LENGTH,REPLACE,"
 			"RTRIM,SOUNDEX,SUBSTRING,UCASE");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTED_FOREIGN_KEY_DELETE_RULES]=
+		charstring::duplicate("CASCADE,NO_ACTION,SET_NULL");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTED_FOREIGN_KEY_UPDATE_RULES]=
+		charstring::duplicate("CASCADE,NO_ACTION,SET_NULL");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTED_PREDICATES]=
+		charstring::duplicate(
+			"BETWEEN,COMPARISON,EXISTS,IN,"
+			"ISNOTNULL,ISNULL,LIKE,"
+			"QUANTIFIED_COMPARISON,UNIQUE");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTED_RELATIONAL_JOIN_OPERATORS]=
+		charstring::duplicate(
+			"CROSS_JOIN,FULL_OUTER_JOIN,INNER_JOIN,"
+			"LEFT_OUTER_JOIN,NATURAL_JOIN,"
+			"RIGHT_OUTER_JOIN");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTED_ROW_VALUE_CONSTRUCTOR_EXPRESSIONS]=
+		charstring::duplicate(
+			"VALUE_EXPRESSION,NULL,DEFAULT,ROW_SUBQUERY");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTED_VALUE_EXPRESSIONS]=
+		charstring::duplicate("CASE,CAST,COALESCE,NULLIF");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTS_AGGREGATE_FUNCTIONS]=
+		charstring::duplicate("ALL,AVG,COUNT,DISTINCT,MAX,MIN,SUM");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTS_ALTER_DOMAIN]=
+		charstring::duplicate("");
 	databasefeatures[FEATURE_SUPPORTS_ANSI92_ENTRY_LEVEL_SQL]=
 		charstring::duplicate("true");
 	databasefeatures[FEATURE_SUPPORTS_ANSI92_FULL_SQL]=
@@ -2736,10 +2764,68 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 		charstring::duplicate("true");
 	databasefeatures[FEATURE_SUPPORTS_CORRELATED_SUBQUERIES]=
 		charstring::duplicate("true");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTS_CREATE_ASSERTION]=
+		charstring::duplicate("");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTS_CREATE_CHARACTER_SET]=
+		charstring::duplicate("");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTS_CREATE_COLLATION]=
+		charstring::duplicate("");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTS_CREATE_DOMAIN]=
+		charstring::duplicate("");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTS_CREATE_SCHEMA]=
+		charstring::duplicate("CREATE_SCHEMA,AUTHORIZATION");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTS_CREATE_TABLE]=
+		charstring::duplicate(
+			"CREATE_TABLE,TABLE_CONSTRAINT,"
+			"CONSTRAINT_NAME_DEFINITION,COLUMN_CONSTRAINT,"
+			"COLUMN_DEFAULT,CONSTRAINT_INITIALLY_IMMEDIATE,"
+			"CONSTRAINT_NON_DEFERRABLE");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTS_CREATE_TRANSLATION]=
+		charstring::duplicate("");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTS_CREATE_VIEW]=
+		charstring::duplicate("CREATE_VIEW,CHECK_OPTION,LOCAL");
 	databasefeatures[
 	FEATURE_SUPPORTS_DATA_DEFINITION_AND_DATA_MANIPULATION_TRANSACTIONS]=
 		charstring::duplicate("true");
 	databasefeatures[FEATURE_SUPPORTS_DATA_MANIPULATION_TRANSACTIONS_ONLY]=
+		charstring::duplicate("true");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTS_DROP_ASSERTION]=
+		charstring::duplicate("");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTS_DROP_CHARACTER_SET]=
+		charstring::duplicate("");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTS_DROP_COLLATION]=
+		charstring::duplicate("");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTS_DROP_DOMAIN]=
+		charstring::duplicate("");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTS_DROP_SCHEMA]=
+		charstring::duplicate("DROP_SCHEMA,CASCADE,RESTRICT");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTS_DROP_TABLE]=
+		charstring::duplicate("DROP_TABLE,CASCADE,RESTRICT");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTS_DROP_TRANSLATION]=
+		charstring::duplicate("");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTS_DROP_VIEW]=
+		charstring::duplicate("DROP_VIEW,CASCADE,RESTRICT");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTS_DDL_INDEX]=
+		charstring::duplicate("CREATE_INDEX,DROP_INDEX");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTS_DESCRIBE_PARAMETER]=
 		charstring::duplicate("true");
 	databasefeatures[FEATURE_SUPPORTS_DIFFERENT_TABLE_CORRELATION_NAMES]=
 		charstring::duplicate("true");
@@ -2751,18 +2837,32 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 		charstring::duplicate("true");
 	databasefeatures[FEATURE_SUPPORTS_GET_GENERATED_KEYS]=
 		charstring::duplicate("true");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTS_GRANT]=
+		charstring::duplicate(
+			"DELETE_TABLE,INSERT_COLUMN,INSERT_TABLE,"
+			"REFERENCES_TABLE,REFERENCES_COLUMN,"
+			"SELECT_TABLE,UPDATE_COLUMN,UPDATE_TABLE,"
+			"WITH_GRANT_OPTION");
 	databasefeatures[FEATURE_SUPPORTS_GROUP_BY]=
 		charstring::duplicate("true");
 	databasefeatures[FEATURE_SUPPORTS_GROUP_BY_BEYOND_SELECT]=
 		charstring::duplicate("true");
 	databasefeatures[FEATURE_SUPPORTS_GROUP_BY_UNRELATED]=
 		charstring::duplicate("true");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTS_INSERT_STATEMENT]=
+		charstring::duplicate(
+			"INSERT_LITERALS,INSERT_SEARCHED,SELECT_INTO");
 	databasefeatures[FEATURE_SUPPORTS_INTEGRITY_ENHANCEMENT_FACILITY]=
 		charstring::duplicate("true");
 	databasefeatures[FEATURE_SUPPORTS_LIKE_ESCAPE_CLAUSE]=
 		charstring::duplicate("true");
 	databasefeatures[FEATURE_SUPPORTS_LIMITED_OUTER_JOINS]=
 		charstring::duplicate("true");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTS_LOCK_TYPES]=
+		charstring::duplicate("NO_CHANGE,EXCLUSIVE,UNLOCK");
 	databasefeatures[FEATURE_SUPPORTS_MINIMUM_SQL_GRAMMAR]=
 		charstring::duplicate("true");
 	databasefeatures[FEATURE_SUPPORTS_MIXED_CASE_IDENTIFIERS]=
@@ -2815,6 +2915,14 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 		charstring::duplicate("true");
 	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_TYPE_SS]=
 		charstring::duplicate("true");
+	// FIXME: verify this
+	databasefeatures[FEATURE_SUPPORTS_REVOKE]=
+		charstring::duplicate(
+			"CASCADE,DELETE_TABLE,GRANT_OPTION_FOR,"
+			"INSERT_COLUMN,INSERT_TABLE,"
+			"REFERENCES_COLUMN,REFERENCES_TABLE,"
+			"RESTRICT,SELECT_TABLE,"
+			"UPDATE_COLUMN,UPDATE_TABLE");
 	databasefeatures[FEATURE_SUPPORTS_SAVEPOINTS]=
 		charstring::duplicate("true");
 	databasefeatures[FEATURE_SUPPORTS_SCHEMAS_IN_DATA_MANIPULATION]=
@@ -2861,16 +2969,27 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 		charstring::duplicate("true");
 	databasefeatures[FEATURE_SYSTEM_FUNCTIONS]=
 		charstring::duplicate("USER");
+	databasefeatures[FEATURE_TABLE_TERM]=
+		charstring::duplicate("table");
 	databasefeatures[FEATURE_TIME_DATE_FUNCTIONS]=
 		charstring::duplicate(
 			"CURRENT_DATE,CURRENT_TIMESTAMP,CURDATE,EXTRACT,"
 			"HOUR,MINUTE,MONTH,SECOND,YEAR");
-	databasefeatures[FEATURE_UPDATES_ARE_DETECTED_FO]=
-		charstring::duplicate("false");
-	databasefeatures[FEATURE_UPDATES_ARE_DETECTED_SI]=
-		charstring::duplicate("false");
-	databasefeatures[FEATURE_UPDATES_ARE_DETECTED_SS]=
-		charstring::duplicate("false");
+	// FIXME: verify this
+	databasefeatures[FEATURE_TIME_DATE_ADD_INTERVALS]=
+		charstring::duplicate("");
+	// FIXME: verify this
+	databasefeatures[FEATURE_TIME_DATE_DIFF_INTERVALS]=
+		charstring::duplicate("");
+	// FIXME: verify this
+	databasefeatures[FEATURE_TIME_DATE_LITERALS]=
+		charstring::duplicate(
+			"DATE,TIMESTAMP,"
+			"INTERVAL_YEAR_TO_MONTH,"
+			"INTERVAL_DAY_TO_SECOND");
+	// FIXME: verify this
+	databasefeatures[FEATURE_UPDATES_ARE_DETECTED]=
+		charstring::duplicate("");
 	databasefeatures[FEATURE_USES_LOCAL_FILE_PER_TABLE]=
 		charstring::duplicate("false");
 	databasefeatures[FEATURE_USES_LOCAL_FILES]=

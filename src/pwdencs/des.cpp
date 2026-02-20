@@ -24,8 +24,10 @@ bool sqlrpwdenc_des::oneWay() {
 
 char *sqlrpwdenc_des::encrypt(const char *value) {
 
+	size_t	saltsize=d.getRequiredSaltSize();
+
 	d.setSalt((const byte_t *)
-			getParameters()->getAttributeValue("salt"),2);
+			getParameters()->getAttributeValue("salt"),saltsize);
 
 	d.append((const byte_t *)value,charstring::getLength(value));
 
@@ -33,9 +35,9 @@ char *sqlrpwdenc_des::encrypt(const char *value) {
 
 	// the first two characters of the result string are the salt,
 	// so don't include them in the result, if possible
-	return (charstring::getLength(encrypted)<2)?
+	return (charstring::getLength(encrypted)<saltsize)?
 			charstring::duplicate(encrypted):
-			charstring::duplicate(encrypted+2);
+			charstring::duplicate(encrypted+saltsize);
 }
 
 extern "C" {
