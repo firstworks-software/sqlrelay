@@ -6257,6 +6257,44 @@ SQLRETURN SQL_API SQLGetFunctions(SQLHDBC connectionhandle,
 	return SQLR_SQLGetFunctions(connectionhandle,functionid,supported);
 }
 
+static SQLUINTEGER SQLR_FetchDirection(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	// get what the backend supports
+	const char	*rst=
+		conn->con->getDatabaseFeature("result_set_types");
+	if (!rst) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(rst,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"FORWARD_ONLY")) {
+			retval|=SQL_FD_FETCH_NEXT;
+		} else if (!charstring::compare(f,"SCROLL_INSENSITIVE") ||
+				!charstring::compare(f,"SCROLL_SENSITIVE")) {
+			retval|=SQL_FD_FETCH_FIRST|
+				SQL_FD_FETCH_LAST|
+				SQL_FD_FETCH_PRIOR|
+				SQL_FD_FETCH_ABSOLUTE|
+				SQL_FD_FETCH_RELATIVE;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	// keep only what sqlrelay currently supports
+	retval&=SQL_FD_FETCH_NEXT;
+
+	return retval;
+}
+
 static SQLUSMALLINT SQLR_IdentifierCase(CONN *conn) {
 	// I'm not 100% sure about this one, there is also
 	// stores_mixed_case_identifiers, and maybe that
@@ -6275,6 +6313,44 @@ static SQLUSMALLINT SQLR_IdentifierCase(CONN *conn) {
 		return SQL_IC_LOWER;
 	}
 	return SQL_IC_MIXED;
+}
+
+static SQLUINTEGER SQLR_ScrollConcurrency(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	// get what the backend supports
+	const char	*ssc=
+		conn->con->getDatabaseFeature(
+				"scroll_concurrencies");
+	if (!ssc) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(ssc,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"READ_ONLY")) {
+			retval|=SQL_SCCO_READ_ONLY;
+		} else if (!charstring::compare(f,"LOCK")) {
+			retval|=SQL_SCCO_LOCK;
+		} else if (!charstring::compare(f,"OPT_ROWVER")) {
+			retval|=SQL_SCCO_OPT_ROWVER;
+		} else if (!charstring::compare(f,"OPT_VALUES")) {
+			retval|=SQL_SCCO_OPT_VALUES;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	// keep only what sqlrelay currently supports
+	retval&=SQL_SCCO_READ_ONLY;
+
+	return retval;
 }
 
 static SQLUSMALLINT SQLR_TxnCapable(CONN *conn) {
@@ -6304,7 +6380,7 @@ static SQLUINTEGER SQLR_TxnIsolationOption(CONN *conn) {
 
 	const char	*til=
 		conn->con->getDatabaseFeature(
-			"supports_transaction_isolation_level");
+			"isolation_levels");
 	if (!til) {
 		return retval;
 	}
@@ -6431,6 +6507,43 @@ static SQLUSMALLINT SQLR_ConcatNullBehavior(CONN *conn) {
 		return SQL_CB_NULL;
 	}
 	return SQL_CB_NON_NULL;
+}
+
+static SQLUINTEGER SQLR_ScrollOptions(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	// get what the backend supports
+	const char	*rst=
+		conn->con->getDatabaseFeature("result_set_types");
+	if (!rst) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(rst,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"FORWARD_ONLY")) {
+			retval|=SQL_SO_FORWARD_ONLY;
+		} else if (!charstring::compare(f,"SCROLL_INSENSITIVE")) {
+			retval|=SQL_SO_STATIC;
+		} else if (!charstring::compare(f,"SCROLL_SENSITIVE")) {
+			retval|=SQL_SO_KEYSET_DRIVEN|
+				SQL_SO_DYNAMIC|
+				SQL_SO_MIXED;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	// keep only what sqlrelay currently supports
+	retval&=SQL_SO_FORWARD_ONLY|SQL_SO_STATIC;
+
+	return retval;
 }
 
 static SQLUINTEGER SQLR_ConvertFunctions(CONN *conn) {
@@ -6691,1129 +6804,26 @@ static SQLUINTEGER SQLR_TimedateFunctions(CONN *conn) {
 	return retval;
 }
 
-static SQLUINTEGER SQLR_AggregateFunctions(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*af=
-		conn->con->getDatabaseFeature("supports_aggregate_functions");
-	if (!af) {
-		return retval;
+static SQLUSMALLINT SQLR_CorrelationName(CONN *conn) {
+	if (!sqlrconnection::isYes(
+			conn->con->getDatabaseFeature(
+			"supports_table_correlation_names"))) {
+		return SQL_CN_NONE;
+	} else if (sqlrconnection::isYes(
+			conn->con->getDatabaseFeature(
+			"supports_different_table_correlation_names"))) {
+		return SQL_CN_DIFFERENT;
 	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(af,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"ALL")) {
-			retval|=SQL_AF_ALL;
-		} else if (!charstring::compare(f,"AVG")) {
-			retval|=SQL_AF_AVG;
-		} else if (!charstring::compare(f,"COUNT")) {
-			retval|=SQL_AF_COUNT;
-		} else if (!charstring::compare(f,"DISTINCT")) {
-			retval|=SQL_AF_DISTINCT;
-		} else if (!charstring::compare(f,"MAX")) {
-			retval|=SQL_AF_MAX;
-		} else if (!charstring::compare(f,"MIN")) {
-			retval|=SQL_AF_MIN;
-		} else if (!charstring::compare(f,"SUM")) {
-			retval|=SQL_AF_SUM;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
+	return SQL_CN_ANY;
 }
 
-static SQLUINTEGER SQLR_AlterDomain(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*ad=
-		conn->con->getDatabaseFeature("supports_alter_domain");
-	if (!ad) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(ad,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(
-				f,"ADD_DOMAIN_CONSTRAINT")) {
-			retval|=SQL_AD_ADD_DOMAIN_CONSTRAINT;
-		} else if (!charstring::compare(
-				f,"ADD_DOMAIN_DEFAULT")) {
-			retval|=SQL_AD_ADD_DOMAIN_DEFAULT;
-		} else if (!charstring::compare(
-				f,"CONSTRAINT_NAME_DEFINITION")) {
-			retval|=SQL_AD_CONSTRAINT_NAME_DEFINITION;
-		} else if (!charstring::compare(
-				f,"DROP_DOMAIN_CONSTRAINT")) {
-			retval|=SQL_AD_DROP_DOMAIN_CONSTRAINT;
-		} else if (!charstring::compare(
-				f,"DROP_DOMAIN_DEFAULT")) {
-			retval|=SQL_AD_DROP_DOMAIN_DEFAULT;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_CreateAssertion(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*ca=
-		conn->con->getDatabaseFeature("supports_create_assertion");
-	if (!ca) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(ca,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"CREATE_ASSERTION")) {
-			retval|=SQL_CA_CREATE_ASSERTION;
-		} else if (!charstring::compare(
-					f,"CONSTRAINT_INITIALLY_DEFERRED")) {
-			retval|=SQL_CA_CONSTRAINT_INITIALLY_DEFERRED;
-		} else if (!charstring::compare(
-					f,"CONSTRAINT_INITIALLY_IMMEDIATE")) {
-			retval|=SQL_CA_CONSTRAINT_INITIALLY_IMMEDIATE;
-		} else if (!charstring::compare(
-					f,"CONSTRAINT_DEFERRABLE")) {
-			retval|=SQL_CA_CONSTRAINT_DEFERRABLE;
-		} else if (!charstring::compare(
-					f,"CONSTRAINT_NON_DEFERRABLE")) {
-			retval|=SQL_CA_CONSTRAINT_NON_DEFERRABLE;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_CreateCharacterSet(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*ccs=
-		conn->con->getDatabaseFeature("supports_create_character_set");
-	if (!ccs) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(ccs,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"CREATE_CHARACTER_SET")) {
-			retval|=SQL_CCS_CREATE_CHARACTER_SET;
-		} else if (!charstring::compare(
-					f,"COLLATE_CLAUSE")) {
-			retval|=SQL_CCS_COLLATE_CLAUSE;
-		} else if (!charstring::compare(
-					f,"LIMITED_COLLATION")) {
-			retval|=SQL_CCS_LIMITED_COLLATION;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_CreateCollation(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*ccol=
-		conn->con->getDatabaseFeature("supports_create_collation");
-	if (!ccol) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(ccol,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"CREATE_COLLATION")) {
-			retval|=SQL_CCOL_CREATE_COLLATION;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_CreateDomain(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*cdo=
-		conn->con->getDatabaseFeature("supports_create_domain");
-	if (!cdo) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(cdo,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"CREATE_DOMAIN")) {
-			retval|=SQL_CDO_CREATE_DOMAIN;
-		} else if (!charstring::compare(
-				f,"CONSTRAINT_NAME_DEFINITION")) {
-			retval|=SQL_CDO_CONSTRAINT_NAME_DEFINITION;
-		} else if (!charstring::compare(f,"DEFAULT")) {
-			retval|=SQL_CDO_DEFAULT;
-		} else if (!charstring::compare(f,"CONSTRAINT")) {
-			retval|=SQL_CDO_CONSTRAINT;
-		} else if (!charstring::compare(f,"COLLATION")) {
-			retval|=SQL_CDO_COLLATION;
-		} else if (!charstring::compare(
-				f,"CONSTRAINT_INITIALLY_DEFERRED")) {
-			retval|=SQL_CDO_CONSTRAINT_INITIALLY_DEFERRED;
-		} else if (!charstring::compare(
-				f,"CONSTRAINT_INITIALLY_IMMEDIATE")) {
-			retval|=SQL_CDO_CONSTRAINT_INITIALLY_IMMEDIATE;
-		} else if (!charstring::compare(
-				f,"CONSTRAINT_DEFERRABLE")) {
-			retval|=SQL_CDO_CONSTRAINT_DEFERRABLE;
-		} else if (!charstring::compare(
-				f,"CONSTRAINT_NON_DEFERRABLE")) {
-			retval|=SQL_CDO_CONSTRAINT_NON_DEFERRABLE;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_CreateSchema(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*cs=
-		conn->con->getDatabaseFeature("supports_create_schema");
-	if (!cs) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(cs,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"CREATE_SCHEMA")) {
-			retval|=SQL_CS_CREATE_SCHEMA;
-		} else if (!charstring::compare(
-					f,"AUTHORIZATION")) {
-			retval|=SQL_CS_AUTHORIZATION;
-		} else if (!charstring::compare(
-				f,"DEFAULT_CHARACTER_SET")) {
-			retval|=SQL_CS_DEFAULT_CHARACTER_SET;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_CreateTable(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*ct=
-		conn->con->getDatabaseFeature("supports_create_table");
-	if (!ct) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(ct,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"CREATE_TABLE")) {
-			retval|=SQL_CT_CREATE_TABLE;
-		} else if (!charstring::compare(
-					f,"TABLE_CONSTRAINT")) {
-			retval|=SQL_CT_TABLE_CONSTRAINT;
-		} else if (!charstring::compare(
-				f,"CONSTRAINT_NAME_DEFINITION")) {
-			retval|=SQL_CT_CONSTRAINT_NAME_DEFINITION;
-		} else if (!charstring::compare(
-					f,"COMMIT_DELETE")) {
-			retval|=SQL_CT_COMMIT_DELETE;
-		} else if (!charstring::compare(
-					f,"COMMIT_PRESERVE")) {
-			retval|=SQL_CT_COMMIT_PRESERVE;
-		} else if (!charstring::compare(
-					f,"GLOBAL_TEMPORARY")) {
-			retval|=SQL_CT_GLOBAL_TEMPORARY;
-		} else if (!charstring::compare(
-					f,"LOCAL_TEMPORARY")) {
-			retval|=SQL_CT_LOCAL_TEMPORARY;
-		} else if (!charstring::compare(
-					f,"COLUMN_CONSTRAINT")) {
-			retval|=SQL_CT_COLUMN_CONSTRAINT;
-		} else if (!charstring::compare(
-					f,"COLUMN_DEFAULT")) {
-			retval|=SQL_CT_COLUMN_DEFAULT;
-		} else if (!charstring::compare(
-					f,"COLUMN_COLLATION")) {
-			retval|=SQL_CT_COLUMN_COLLATION;
-		} else if (!charstring::compare(
-				f,"CONSTRAINT_INITIALLY_DEFERRED")) {
-			retval|=SQL_CT_CONSTRAINT_INITIALLY_DEFERRED;
-		} else if (!charstring::compare(
-				f,"CONSTRAINT_INITIALLY_IMMEDIATE")) {
-			retval|=SQL_CT_CONSTRAINT_INITIALLY_IMMEDIATE;
-		} else if (!charstring::compare(
-				f,"CONSTRAINT_DEFERRABLE")) {
-			retval|=SQL_CT_CONSTRAINT_DEFERRABLE;
-		} else if (!charstring::compare(
-				f,"CONSTRAINT_NON_DEFERRABLE")) {
-			retval|=SQL_CT_CONSTRAINT_NON_DEFERRABLE;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_CreateTranslation(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*ctr=
-		conn->con->getDatabaseFeature("supports_create_translation");
-	if (!ctr) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(ctr,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"CREATE_TRANSLATION")) {
-			retval|=SQL_CTR_CREATE_TRANSLATION;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_CreateView(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*cv=
-		conn->con->getDatabaseFeature("supports_create_view");
-	if (!cv) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(cv,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"CREATE_VIEW")) {
-			retval|=SQL_CV_CREATE_VIEW;
-		} else if (!charstring::compare(
-					f,"CHECK_OPTION")) {
-			retval|=SQL_CV_CHECK_OPTION;
-		} else if (!charstring::compare(f,"CASCADED")) {
-			retval|=SQL_CV_CASCADED;
-		} else if (!charstring::compare(f,"LOCAL")) {
-			retval|=SQL_CV_LOCAL;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_DropAssertion(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*da=
-		conn->con->getDatabaseFeature("supports_drop_assertion");
-	if (!da) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(da,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"DROP_ASSERTION")) {
-			retval|=SQL_DA_DROP_ASSERTION;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_DropCharacterSet(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*dcs=
-		conn->con->getDatabaseFeature("supports_drop_character_set");
-	if (!dcs) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(dcs,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"DROP_CHARACTER_SET")) {
-			retval|=SQL_DCS_DROP_CHARACTER_SET;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_DropCollation(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*dc=
-		conn->con->getDatabaseFeature("supports_drop_collation");
-	if (!dc) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(dc,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"DROP_COLLATION")) {
-			retval|=SQL_DC_DROP_COLLATION;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_DropDomain(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*dd=
-		conn->con->getDatabaseFeature("supports_drop_domain");
-	if (!dd) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(dd,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"DROP_DOMAIN")) {
-			retval|=SQL_DD_DROP_DOMAIN;
-		} else if (!charstring::compare(f,"CASCADE")) {
-			retval|=SQL_DD_CASCADE;
-		} else if (!charstring::compare(f,"RESTRICT")) {
-			retval|=SQL_DD_RESTRICT;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_DropSchema(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*ds=
-		conn->con->getDatabaseFeature("supports_drop_schema");
-	if (!ds) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(ds,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"DROP_SCHEMA")) {
-			retval|=SQL_DS_DROP_SCHEMA;
-		} else if (!charstring::compare(f,"CASCADE")) {
-			retval|=SQL_DS_CASCADE;
-		} else if (!charstring::compare(f,"RESTRICT")) {
-			retval|=SQL_DS_RESTRICT;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_DropTable(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*dt=
-		conn->con->getDatabaseFeature("supports_drop_table");
-	if (!dt) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(dt,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"DROP_TABLE")) {
-			retval|=SQL_DT_DROP_TABLE;
-		} else if (!charstring::compare(f,"CASCADE")) {
-			retval|=SQL_DT_CASCADE;
-		} else if (!charstring::compare(f,"RESTRICT")) {
-			retval|=SQL_DT_RESTRICT;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_DropTranslation(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*dtr=
-		conn->con->getDatabaseFeature("supports_drop_translation");
-	if (!dtr) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(dtr,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"DROP_TRANSLATION")) {
-			retval|=SQL_DTR_DROP_TRANSLATION;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_DropView(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*dv=
-		conn->con->getDatabaseFeature("supports_drop_view");
-	if (!dv) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(dv,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"DROP_VIEW")) {
-			retval|=SQL_DV_DROP_VIEW;
-		} else if (!charstring::compare(f,"CASCADE")) {
-			retval|=SQL_DV_CASCADE;
-		} else if (!charstring::compare(f,"RESTRICT")) {
-			retval|=SQL_DV_RESTRICT;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_DdlIndex(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*di=
-		conn->con->getDatabaseFeature("supports_ddl_index");
-	if (!di) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(di,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"CREATE_INDEX")) {
-			retval|=SQL_DI_CREATE_INDEX;
-		} else if (!charstring::compare(
-					f,"DROP_INDEX")) {
-			retval|=SQL_DI_DROP_INDEX;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_ForeignKeyDeleteRules(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*fkdr=
+static SQLUSMALLINT SQLR_NonNullableColumns(CONN *conn) {
+	if (sqlrconnection::isYes(
 		conn->con->getDatabaseFeature(
-			"supported_foreign_key_delete_rules");
-	if (!fkdr) {
-		return retval;
+				"supports_non_nullable_columns"))) {
+		return SQL_NNC_NON_NULL;
 	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(fkdr,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"CASCADE")) {
-			retval|=SQL_SFKD_CASCADE;
-		} else if (!charstring::compare(
-					f,"NO_ACTION")) {
-			retval|=SQL_SFKD_NO_ACTION;
-		} else if (!charstring::compare(
-					f,"SET_DEFAULT")) {
-			retval|=SQL_SFKD_SET_DEFAULT;
-		} else if (!charstring::compare(
-					f,"SET_NULL")) {
-			retval|=SQL_SFKD_SET_NULL;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_ForeignKeyUpdateRules(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*fkur=
-		conn->con->getDatabaseFeature(
-			"supported_foreign_key_update_rules");
-	if (!fkur) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(fkur,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"CASCADE")) {
-			retval|=SQL_SFKU_CASCADE;
-		} else if (!charstring::compare(
-					f,"NO_ACTION")) {
-			retval|=SQL_SFKU_NO_ACTION;
-		} else if (!charstring::compare(
-					f,"SET_DEFAULT")) {
-			retval|=SQL_SFKU_SET_DEFAULT;
-		} else if (!charstring::compare(
-					f,"SET_NULL")) {
-			retval|=SQL_SFKU_SET_NULL;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_RelationalJoinOperators(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*rjo=
-		conn->con->getDatabaseFeature(
-		"supported_relational_join_operators");
-	if (!rjo) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(rjo,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(
-				f,"CORRESPONDING_CLAUSE")) {
-			retval|=SQL_SRJO_CORRESPONDING_CLAUSE;
-		} else if (!charstring::compare(
-					f,"CROSS_JOIN")) {
-			retval|=SQL_SRJO_CROSS_JOIN;
-		} else if (!charstring::compare(
-					f,"EXCEPT_JOIN")) {
-			retval|=SQL_SRJO_EXCEPT_JOIN;
-		} else if (!charstring::compare(
-				f,"FULL_OUTER_JOIN")) {
-			retval|=SQL_SRJO_FULL_OUTER_JOIN;
-		} else if (!charstring::compare(
-					f,"INNER_JOIN")) {
-			retval|=SQL_SRJO_INNER_JOIN;
-		} else if (!charstring::compare(
-				f,"INTERSECT_JOIN")) {
-			retval|=SQL_SRJO_INTERSECT_JOIN;
-		} else if (!charstring::compare(
-				f,"LEFT_OUTER_JOIN")) {
-			retval|=SQL_SRJO_LEFT_OUTER_JOIN;
-		} else if (!charstring::compare(
-				f,"NATURAL_JOIN")) {
-			retval|=SQL_SRJO_NATURAL_JOIN;
-		} else if (!charstring::compare(
-				f,"RIGHT_OUTER_JOIN")) {
-			retval|=SQL_SRJO_RIGHT_OUTER_JOIN;
-		} else if (!charstring::compare(
-					f,"UNION_JOIN")) {
-			retval|=SQL_SRJO_UNION_JOIN;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_Predicates(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*p=
-		conn->con->getDatabaseFeature("supported_predicates");
-	if (!p) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(p,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"BETWEEN")) {
-			retval|=SQL_SP_BETWEEN;
-		} else if (!charstring::compare(
-					f,"COMPARISON")) {
-			retval|=SQL_SP_COMPARISON;
-		} else if (!charstring::compare(f,"EXISTS")) {
-			retval|=SQL_SP_EXISTS;
-		} else if (!charstring::compare(f,"IN")) {
-			retval|=SQL_SP_IN;
-		} else if (!charstring::compare(
-					f,"ISNOTNULL")) {
-			retval|=SQL_SP_ISNOTNULL;
-		} else if (!charstring::compare(f,"ISNULL")) {
-			retval|=SQL_SP_ISNULL;
-		} else if (!charstring::compare(f,"LIKE")) {
-			retval|=SQL_SP_LIKE;
-		} else if (!charstring::compare(
-					f,"MATCH_FULL")) {
-			retval|=SQL_SP_MATCH_FULL;
-		} else if (!charstring::compare(
-				f,"MATCH_PARTIAL")) {
-			retval|=SQL_SP_MATCH_PARTIAL;
-		} else if (!charstring::compare(
-				f,"MATCH_UNIQUE_FULL")) {
-			retval|=SQL_SP_MATCH_UNIQUE_FULL;
-		} else if (!charstring::compare(
-				f,"MATCH_UNIQUE_PARTIAL")) {
-			retval|=SQL_SP_MATCH_UNIQUE_PARTIAL;
-		} else if (!charstring::compare(f,"OVERLAPS")) {
-			retval|=SQL_SP_OVERLAPS;
-		} else if (!charstring::compare(
-				f,"QUANTIFIED_COMPARISON")) {
-			retval|=SQL_SP_QUANTIFIED_COMPARISON;
-		} else if (!charstring::compare(f,"UNIQUE")) {
-			retval|=SQL_SP_UNIQUE;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_RowValueConstructor(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*rvc=
-		conn->con->getDatabaseFeature(
-		"supported_row_value_constructor_expressions");
-	if (!rvc) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(rvc,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(
-				f,"VALUE_EXPRESSION")) {
-			retval|=SQL_SRVC_VALUE_EXPRESSION;
-		} else if (!charstring::compare(f,"NULL")) {
-			retval|=SQL_SRVC_NULL;
-		} else if (!charstring::compare(f,"DEFAULT")) {
-			retval|=SQL_SRVC_DEFAULT;
-		} else if (!charstring::compare(
-				f,"ROW_SUBQUERY")) {
-			retval|=SQL_SRVC_ROW_SUBQUERY;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_ValueExpressions(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*ve=
-		conn->con->getDatabaseFeature(
-			"supported_value_expressions");
-	if (!ve) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(ve,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"CASE")) {
-			retval|=SQL_SVE_CASE;
-		} else if (!charstring::compare(f,"CAST")) {
-			retval|=SQL_SVE_CAST;
-		} else if (!charstring::compare(f,"COALESCE")) {
-			retval|=SQL_SVE_COALESCE;
-		} else if (!charstring::compare(f,"NULLIF")) {
-			retval|=SQL_SVE_NULLIF;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_Grant(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*g=
-		conn->con->getDatabaseFeature("supports_grant");
-	if (!g) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(g,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"DELETE_TABLE")) {
-			retval|=SQL_SG_DELETE_TABLE;
-		} else if (!charstring::compare(
-				f,"INSERT_COLUMN")) {
-			retval|=SQL_SG_INSERT_COLUMN;
-		} else if (!charstring::compare(
-				f,"INSERT_TABLE")) {
-			retval|=SQL_SG_INSERT_TABLE;
-		} else if (!charstring::compare(
-				f,"REFERENCES_TABLE")) {
-			retval|=SQL_SG_REFERENCES_TABLE;
-		} else if (!charstring::compare(
-				f,"REFERENCES_COLUMN")) {
-			retval|=SQL_SG_REFERENCES_COLUMN;
-		} else if (!charstring::compare(
-				f,"SELECT_TABLE")) {
-			retval|=SQL_SG_SELECT_TABLE;
-		} else if (!charstring::compare(
-				f,"UPDATE_COLUMN")) {
-			retval|=SQL_SG_UPDATE_COLUMN;
-		} else if (!charstring::compare(
-				f,"UPDATE_TABLE")) {
-			retval|=SQL_SG_UPDATE_TABLE;
-		} else if (!charstring::compare(
-				f,"USAGE_ON_DOMAIN")) {
-			retval|=SQL_SG_USAGE_ON_DOMAIN;
-		} else if (!charstring::compare(
-				f,"USAGE_ON_CHARACTER_SET")) {
-			retval|=SQL_SG_USAGE_ON_CHARACTER_SET;
-		} else if (!charstring::compare(
-				f,"USAGE_ON_COLLATION")) {
-			retval|=SQL_SG_USAGE_ON_COLLATION;
-		} else if (!charstring::compare(
-				f,"USAGE_ON_TRANSLATION")) {
-			retval|=SQL_SG_USAGE_ON_TRANSLATION;
-		} else if (!charstring::compare(
-				f,"WITH_GRANT_OPTION")) {
-			retval|=SQL_SG_WITH_GRANT_OPTION;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_IndexKeywords(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*ik=
-		conn->con->getDatabaseFeature("index_keywords");
-	if (!ik) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(ik,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"ASC")) {
-			retval|=SQL_IK_ASC;
-		} else if (!charstring::compare(f,"DESC")) {
-			retval|=SQL_IK_DESC;
-		} else if (!charstring::compare(f,"ALL")) {
-			retval|=SQL_IK_ALL;
-		} else if (!charstring::compare(f,"NONE")) {
-			retval|=SQL_IK_NONE;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_InfoSchemaViews(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*isv=
-		conn->con->getDatabaseFeature("info_schema_views");
-	if (!isv) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(isv,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"ASSERTIONS")) {
-			retval|=SQL_ISV_ASSERTIONS;
-		} else if (!charstring::compare(
-				f,"CHARACTER_SETS")) {
-			retval|=SQL_ISV_CHARACTER_SETS;
-		} else if (!charstring::compare(
-				f,"CHECK_CONSTRAINTS")) {
-			retval|=SQL_ISV_CHECK_CONSTRAINTS;
-		} else if (!charstring::compare(
-					f,"COLLATIONS")) {
-			retval|=SQL_ISV_COLLATIONS;
-		} else if (!charstring::compare(
-				f,"COLUMN_DOMAIN_USAGE")) {
-			retval|=SQL_ISV_COLUMN_DOMAIN_USAGE;
-		} else if (!charstring::compare(
-				f,"COLUMN_PRIVILEGES")) {
-			retval|=SQL_ISV_COLUMN_PRIVILEGES;
-		} else if (!charstring::compare(f,"COLUMNS")) {
-			retval|=SQL_ISV_COLUMNS;
-		} else if (!charstring::compare(
-				f,"CONSTRAINT_COLUMN_USAGE")) {
-			retval|=SQL_ISV_CONSTRAINT_COLUMN_USAGE;
-		} else if (!charstring::compare(
-				f,"CONSTRAINT_TABLE_USAGE")) {
-			retval|=SQL_ISV_CONSTRAINT_TABLE_USAGE;
-		} else if (!charstring::compare(
-				f,"DOMAIN_CONSTRAINTS")) {
-			retval|=SQL_ISV_DOMAIN_CONSTRAINTS;
-		} else if (!charstring::compare(f,"DOMAINS")) {
-			retval|=SQL_ISV_DOMAINS;
-		} else if (!charstring::compare(
-				f,"KEY_COLUMN_USAGE")) {
-			retval|=SQL_ISV_KEY_COLUMN_USAGE;
-		} else if (!charstring::compare(
-				f,"REFERENTIAL_CONSTRAINTS")) {
-			retval|=SQL_ISV_REFERENTIAL_CONSTRAINTS;
-		} else if (!charstring::compare(f,"SCHEMATA")) {
-			retval|=SQL_ISV_SCHEMATA;
-		} else if (!charstring::compare(
-				f,"SQL_LANGUAGES")) {
-			retval|=SQL_ISV_SQL_LANGUAGES;
-		} else if (!charstring::compare(
-				f,"TABLE_CONSTRAINTS")) {
-			retval|=SQL_ISV_TABLE_CONSTRAINTS;
-		} else if (!charstring::compare(
-				f,"TABLE_PRIVILEGES")) {
-			retval|=SQL_ISV_TABLE_PRIVILEGES;
-		} else if (!charstring::compare(f,"TABLES")) {
-			retval|=SQL_ISV_TABLES;
-		} else if (!charstring::compare(
-				f,"TRANSLATIONS")) {
-			retval|=SQL_ISV_TRANSLATIONS;
-		} else if (!charstring::compare(
-				f,"USAGE_PRIVILEGES")) {
-			retval|=SQL_ISV_USAGE_PRIVILEGES;
-		} else if (!charstring::compare(
-				f,"VIEW_COLUMN_USAGE")) {
-			retval|=SQL_ISV_VIEW_COLUMN_USAGE;
-		} else if (!charstring::compare(
-				f,"VIEW_TABLE_USAGE")) {
-			retval|=SQL_ISV_VIEW_TABLE_USAGE;
-		} else if (!charstring::compare(f,"VIEWS")) {
-			retval|=SQL_ISV_VIEWS;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_InsertStatement(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*is=
-		conn->con->getDatabaseFeature("supports_insert_statement");
-	if (!is) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(is,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"INSERT_LITERALS")) {
-			retval|=SQL_IS_INSERT_LITERALS;
-		} else if (!charstring::compare(
-					f,"INSERT_SEARCHED")) {
-			retval|=SQL_IS_INSERT_SEARCHED;
-		} else if (!charstring::compare(
-					f,"SELECT_INTO")) {
-			retval|=SQL_IS_SELECT_INTO;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
+	return SQL_NNC_NULL;
 }
 
 static SQLUINTEGER SQLR_LockTypes(CONN *conn) {
@@ -7821,7 +6831,7 @@ static SQLUINTEGER SQLR_LockTypes(CONN *conn) {
 	SQLUINTEGER	retval=0;
 
 	const char	*lt=
-		conn->con->getDatabaseFeature("supports_lock_types");
+		conn->con->getDatabaseFeature("lock_types");
 	if (!lt) {
 		return retval;
 	}
@@ -7847,251 +6857,40 @@ static SQLUINTEGER SQLR_LockTypes(CONN *conn) {
 	return retval;
 }
 
-static SQLUINTEGER SQLR_Revoke(CONN *conn) {
+static SQLUINTEGER SQLR_PosOperations(CONN *conn) {
 
 	SQLUINTEGER	retval=0;
 
-	const char	*r=
-		conn->con->getDatabaseFeature("supports_revoke");
-	if (!r) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(r,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"CASCADE")) {
-			retval|=SQL_SR_CASCADE;
-		} else if (!charstring::compare(
-				f,"DELETE_TABLE")) {
-			retval|=SQL_SR_DELETE_TABLE;
-		} else if (!charstring::compare(
-				f,"GRANT_OPTION_FOR")) {
-			retval|=SQL_SR_GRANT_OPTION_FOR;
-		} else if (!charstring::compare(
-				f,"INSERT_COLUMN")) {
-			retval|=SQL_SR_INSERT_COLUMN;
-		} else if (!charstring::compare(
-				f,"INSERT_TABLE")) {
-			retval|=SQL_SR_INSERT_TABLE;
-		} else if (!charstring::compare(
-				f,"REFERENCES_COLUMN")) {
-			retval|=SQL_SR_REFERENCES_COLUMN;
-		} else if (!charstring::compare(
-				f,"REFERENCES_TABLE")) {
-			retval|=SQL_SR_REFERENCES_TABLE;
-		} else if (!charstring::compare(f,"RESTRICT")) {
-			retval|=SQL_SR_RESTRICT;
-		} else if (!charstring::compare(
-				f,"SELECT_TABLE")) {
-			retval|=SQL_SR_SELECT_TABLE;
-		} else if (!charstring::compare(
-				f,"UPDATE_COLUMN")) {
-			retval|=SQL_SR_UPDATE_COLUMN;
-		} else if (!charstring::compare(
-				f,"UPDATE_TABLE")) {
-			retval|=SQL_SR_UPDATE_TABLE;
-		} else if (!charstring::compare(
-				f,"USAGE_ON_DOMAIN")) {
-			retval|=SQL_SR_USAGE_ON_DOMAIN;
-		} else if (!charstring::compare(
-				f,"USAGE_ON_CHARACTER_SET")) {
-			retval|=SQL_SR_USAGE_ON_CHARACTER_SET;
-		} else if (!charstring::compare(
-				f,"USAGE_ON_COLLATION")) {
-			retval|=SQL_SR_USAGE_ON_COLLATION;
-		} else if (!charstring::compare(
-				f,"USAGE_ON_TRANSLATION")) {
-			retval|=SQL_SR_USAGE_ON_TRANSLATION;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_TimeDateAddIntervals(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*tdai=
-		conn->con->getDatabaseFeature("time_date_add_intervals");
-	if (!tdai) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(tdai,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"FRAC_SECOND")) {
-			retval|=SQL_FN_TSI_FRAC_SECOND;
-		} else if (!charstring::compare(f,"SECOND")) {
-			retval|=SQL_FN_TSI_SECOND;
-		} else if (!charstring::compare(f,"MINUTE")) {
-			retval|=SQL_FN_TSI_MINUTE;
-		} else if (!charstring::compare(f,"HOUR")) {
-			retval|=SQL_FN_TSI_HOUR;
-		} else if (!charstring::compare(f,"DAY")) {
-			retval|=SQL_FN_TSI_DAY;
-		} else if (!charstring::compare(f,"WEEK")) {
-			retval|=SQL_FN_TSI_WEEK;
-		} else if (!charstring::compare(f,"MONTH")) {
-			retval|=SQL_FN_TSI_MONTH;
-		} else if (!charstring::compare(f,"QUARTER")) {
-			retval|=SQL_FN_TSI_QUARTER;
-		} else if (!charstring::compare(f,"YEAR")) {
-			retval|=SQL_FN_TSI_YEAR;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_TimeDateDiffIntervals(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*tddi=
-		conn->con->getDatabaseFeature("time_date_diff_intervals");
-	if (!tddi) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(tddi,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"FRAC_SECOND")) {
-			retval|=SQL_FN_TSI_FRAC_SECOND;
-		} else if (!charstring::compare(f,"SECOND")) {
-			retval|=SQL_FN_TSI_SECOND;
-		} else if (!charstring::compare(f,"MINUTE")) {
-			retval|=SQL_FN_TSI_MINUTE;
-		} else if (!charstring::compare(f,"HOUR")) {
-			retval|=SQL_FN_TSI_HOUR;
-		} else if (!charstring::compare(f,"DAY")) {
-			retval|=SQL_FN_TSI_DAY;
-		} else if (!charstring::compare(f,"WEEK")) {
-			retval|=SQL_FN_TSI_WEEK;
-		} else if (!charstring::compare(f,"MONTH")) {
-			retval|=SQL_FN_TSI_MONTH;
-		} else if (!charstring::compare(f,"QUARTER")) {
-			retval|=SQL_FN_TSI_QUARTER;
-		} else if (!charstring::compare(f,"YEAR")) {
-			retval|=SQL_FN_TSI_YEAR;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUINTEGER SQLR_TimeDateLiterals(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*tdl=
-		conn->con->getDatabaseFeature("time_date_literals");
-	if (!tdl) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(tdl,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"DATE")) {
-			retval|=SQL_DL_SQL92_DATE;
-		} else if (!charstring::compare(f,"TIME")) {
-			retval|=SQL_DL_SQL92_TIME;
-		} else if (!charstring::compare(
-					f,"TIMESTAMP")) {
-			retval|=SQL_DL_SQL92_TIMESTAMP;
-		} else if (!charstring::compare(
-					f,"INTERVAL_YEAR")) {
-			retval|=SQL_DL_SQL92_INTERVAL_YEAR;
-		} else if (!charstring::compare(
-					f,"INTERVAL_MONTH")) {
-			retval|=SQL_DL_SQL92_INTERVAL_MONTH;
-		} else if (!charstring::compare(
-					f,"INTERVAL_DAY")) {
-			retval|=SQL_DL_SQL92_INTERVAL_DAY;
-		} else if (!charstring::compare(
-					f,"INTERVAL_HOUR")) {
-			retval|=SQL_DL_SQL92_INTERVAL_HOUR;
-		} else if (!charstring::compare(
-					f,"INTERVAL_MINUTE")) {
-			retval|=SQL_DL_SQL92_INTERVAL_MINUTE;
-		} else if (!charstring::compare(
-					f,"INTERVAL_SECOND")) {
-			retval|=SQL_DL_SQL92_INTERVAL_SECOND;
-		} else if (!charstring::compare(
-				f,"INTERVAL_YEAR_TO_MONTH")) {
-			retval|=SQL_DL_SQL92_INTERVAL_YEAR_TO_MONTH;
-		} else if (!charstring::compare(
-				f,"INTERVAL_DAY_TO_HOUR")) {
-			retval|=SQL_DL_SQL92_INTERVAL_DAY_TO_HOUR;
-		} else if (!charstring::compare(
-				f,"INTERVAL_DAY_TO_MINUTE")) {
-			retval|=SQL_DL_SQL92_INTERVAL_DAY_TO_MINUTE;
-		} else if (!charstring::compare(
-				f,"INTERVAL_DAY_TO_SECOND")) {
-			retval|=SQL_DL_SQL92_INTERVAL_DAY_TO_SECOND;
-		} else if (!charstring::compare(
-				f,"INTERVAL_HOUR_TO_MINUTE")) {
-			retval|=SQL_DL_SQL92_INTERVAL_HOUR_TO_MINUTE;
-		} else if (!charstring::compare(
-				f,"INTERVAL_HOUR_TO_SECOND")) {
-			retval|=SQL_DL_SQL92_INTERVAL_HOUR_TO_SECOND;
-		} else if (!charstring::compare(
-				f,"INTERVAL_MINUTE_TO_SECOND")) {
-			retval|=SQL_DL_SQL92_INTERVAL_MINUTE_TO_SECOND;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
-static SQLUSMALLINT SQLR_CorrelationName(CONN *conn) {
-	if (!sqlrconnection::isYes(
-			conn->con->getDatabaseFeature(
-			"supports_table_correlation_names"))) {
-		return SQL_CN_NONE;
-	} else if (sqlrconnection::isYes(
-			conn->con->getDatabaseFeature(
-			"supports_different_table_correlation_names"))) {
-		return SQL_CN_DIFFERENT;
-	}
-	return SQL_CN_ANY;
-}
-
-static SQLUSMALLINT SQLR_NonNullableColumns(CONN *conn) {
-	if (sqlrconnection::isYes(
+	const char	*po=
 		conn->con->getDatabaseFeature(
-				"supports_non_nullable_columns"))) {
-		return SQL_NNC_NON_NULL;
+				"positioned_operations");
+	if (!po) {
+		return retval;
 	}
-	return SQL_NNC_NULL;
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(po,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"POSITION")) {
+			retval|=SQL_POS_POSITION;
+		} else if (!charstring::compare(f,"REFRESH")) {
+			retval|=SQL_POS_REFRESH;
+		} else if (!charstring::compare(f,"UPDATE")) {
+			retval|=SQL_POS_UPDATE;
+		} else if (!charstring::compare(f,"DELETE")) {
+			retval|=SQL_POS_DELETE;
+		} else if (!charstring::compare(f,"ADD")) {
+			retval|=SQL_POS_ADD;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
 }
 
 static SQLUINTEGER SQLR_PositionedStatements(CONN *conn) {
@@ -8104,6 +6903,57 @@ static SQLUINTEGER SQLR_PositionedStatements(CONN *conn) {
 		conn->con->getDatabaseFeature("supports_positioned_update"))) {
 		retval|=SQL_PS_POSITIONED_UPDATE;
 	}
+	return retval;
+}
+
+static bool SQLR_FeatureContains(CONN *conn,
+				const char *feature,
+				const char *target) {
+	const char	*value=conn->con->getDatabaseFeature(feature);
+	if (!value) {
+		return false;
+	}
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(value,",",true,&parts,&partcount);
+	bool	retval=false;
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		if (!charstring::compare(parts[i],target)) {
+			retval=true;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+	return retval;
+}
+
+static SQLUINTEGER SQLR_StaticSensitivity(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	// get what the backend detects in static cursors
+	if (SQLR_FeatureContains(conn,
+			"inserts_are_detected",
+			"SCROLL_INSENSITIVE")) {
+		retval|=SQL_SS_ADDITIONS;
+	}
+	if (SQLR_FeatureContains(conn,
+			"deletes_are_detected",
+			"SCROLL_INSENSITIVE")) {
+		retval|=SQL_SS_DELETIONS;
+	}
+	if (SQLR_FeatureContains(conn,
+			"updates_are_detected",
+			"SCROLL_INSENSITIVE")) {
+		retval|=SQL_SS_UPDATES;
+	}
+
+	// keep only what sqlrelay currently supports
+	// (sqlrelay doesn't currently support SCROLL_INSENSITIVE, so it
+	// doesn't currently support any of these sensitivity options)
+	retval&=SQL_SS_ADDITIONS|SQL_SS_DELETIONS|SQL_SS_UPDATES;
+
 	return retval;
 }
 
@@ -8265,12 +7115,138 @@ static SQLUINTEGER SQLR_UnionSupport(CONN *conn) {
 	return retval;
 }
 
+static SQLUINTEGER SQLR_TimeDateAddIntervals(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*tdai=
+		conn->con->getDatabaseFeature("time_date_add_intervals");
+	if (!tdai) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(tdai,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"FRAC_SECOND")) {
+			retval|=SQL_FN_TSI_FRAC_SECOND;
+		} else if (!charstring::compare(f,"SECOND")) {
+			retval|=SQL_FN_TSI_SECOND;
+		} else if (!charstring::compare(f,"MINUTE")) {
+			retval|=SQL_FN_TSI_MINUTE;
+		} else if (!charstring::compare(f,"HOUR")) {
+			retval|=SQL_FN_TSI_HOUR;
+		} else if (!charstring::compare(f,"DAY")) {
+			retval|=SQL_FN_TSI_DAY;
+		} else if (!charstring::compare(f,"WEEK")) {
+			retval|=SQL_FN_TSI_WEEK;
+		} else if (!charstring::compare(f,"MONTH")) {
+			retval|=SQL_FN_TSI_MONTH;
+		} else if (!charstring::compare(f,"QUARTER")) {
+			retval|=SQL_FN_TSI_QUARTER;
+		} else if (!charstring::compare(f,"YEAR")) {
+			retval|=SQL_FN_TSI_YEAR;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_TimeDateDiffIntervals(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*tddi=
+		conn->con->getDatabaseFeature("time_date_diff_intervals");
+	if (!tddi) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(tddi,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"FRAC_SECOND")) {
+			retval|=SQL_FN_TSI_FRAC_SECOND;
+		} else if (!charstring::compare(f,"SECOND")) {
+			retval|=SQL_FN_TSI_SECOND;
+		} else if (!charstring::compare(f,"MINUTE")) {
+			retval|=SQL_FN_TSI_MINUTE;
+		} else if (!charstring::compare(f,"HOUR")) {
+			retval|=SQL_FN_TSI_HOUR;
+		} else if (!charstring::compare(f,"DAY")) {
+			retval|=SQL_FN_TSI_DAY;
+		} else if (!charstring::compare(f,"WEEK")) {
+			retval|=SQL_FN_TSI_WEEK;
+		} else if (!charstring::compare(f,"MONTH")) {
+			retval|=SQL_FN_TSI_MONTH;
+		} else if (!charstring::compare(f,"QUARTER")) {
+			retval|=SQL_FN_TSI_QUARTER;
+		} else if (!charstring::compare(f,"YEAR")) {
+			retval|=SQL_FN_TSI_YEAR;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
 static SQLUSMALLINT SQLR_QualifierLocation(CONN *conn) {
 	if (sqlrconnection::isYes(
 		conn->con->getDatabaseFeature("is_catalog_at_start"))) {
 		return SQL_CL_START;
 	}
 	return SQL_CL_END;
+}
+
+static SQLUINTEGER SQLR_AlterDomain(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*ad=
+		conn->con->getDatabaseFeature("alter_domain_clauses");
+	if (!ad) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(ad,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(
+				f,"ADD_DOMAIN_CONSTRAINT")) {
+			retval|=SQL_AD_ADD_DOMAIN_CONSTRAINT;
+		} else if (!charstring::compare(
+				f,"ADD_DOMAIN_DEFAULT")) {
+			retval|=SQL_AD_ADD_DOMAIN_DEFAULT;
+		} else if (!charstring::compare(
+				f,"CONSTRAINT_NAME_DEFINITION")) {
+			retval|=SQL_AD_CONSTRAINT_NAME_DEFINITION;
+		} else if (!charstring::compare(
+				f,"DROP_DOMAIN_CONSTRAINT")) {
+			retval|=SQL_AD_DROP_DOMAIN_CONSTRAINT;
+		} else if (!charstring::compare(
+				f,"DROP_DOMAIN_DEFAULT")) {
+			retval|=SQL_AD_DROP_DOMAIN_DEFAULT;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
 }
 
 static SQLUINTEGER SQLR_SqlConformance(CONN *conn) {
@@ -8291,6 +7267,943 @@ static SQLUINTEGER SQLR_SqlConformance(CONN *conn) {
 		return SQL_SC_SQL92_ENTRY;
 	}
 	return SQL_SC_SQL92_ENTRY;
+}
+
+static SQLUINTEGER SQLR_TimeDateLiterals(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*tdl=
+		conn->con->getDatabaseFeature("time_date_literals");
+	if (!tdl) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(tdl,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"DATE")) {
+			retval|=SQL_DL_SQL92_DATE;
+		} else if (!charstring::compare(f,"TIME")) {
+			retval|=SQL_DL_SQL92_TIME;
+		} else if (!charstring::compare(
+					f,"TIMESTAMP")) {
+			retval|=SQL_DL_SQL92_TIMESTAMP;
+		} else if (!charstring::compare(
+					f,"INTERVAL_YEAR")) {
+			retval|=SQL_DL_SQL92_INTERVAL_YEAR;
+		} else if (!charstring::compare(
+					f,"INTERVAL_MONTH")) {
+			retval|=SQL_DL_SQL92_INTERVAL_MONTH;
+		} else if (!charstring::compare(
+					f,"INTERVAL_DAY")) {
+			retval|=SQL_DL_SQL92_INTERVAL_DAY;
+		} else if (!charstring::compare(
+					f,"INTERVAL_HOUR")) {
+			retval|=SQL_DL_SQL92_INTERVAL_HOUR;
+		} else if (!charstring::compare(
+					f,"INTERVAL_MINUTE")) {
+			retval|=SQL_DL_SQL92_INTERVAL_MINUTE;
+		} else if (!charstring::compare(
+					f,"INTERVAL_SECOND")) {
+			retval|=SQL_DL_SQL92_INTERVAL_SECOND;
+		} else if (!charstring::compare(
+				f,"INTERVAL_YEAR_TO_MONTH")) {
+			retval|=SQL_DL_SQL92_INTERVAL_YEAR_TO_MONTH;
+		} else if (!charstring::compare(
+				f,"INTERVAL_DAY_TO_HOUR")) {
+			retval|=SQL_DL_SQL92_INTERVAL_DAY_TO_HOUR;
+		} else if (!charstring::compare(
+				f,"INTERVAL_DAY_TO_MINUTE")) {
+			retval|=SQL_DL_SQL92_INTERVAL_DAY_TO_MINUTE;
+		} else if (!charstring::compare(
+				f,"INTERVAL_DAY_TO_SECOND")) {
+			retval|=SQL_DL_SQL92_INTERVAL_DAY_TO_SECOND;
+		} else if (!charstring::compare(
+				f,"INTERVAL_HOUR_TO_MINUTE")) {
+			retval|=SQL_DL_SQL92_INTERVAL_HOUR_TO_MINUTE;
+		} else if (!charstring::compare(
+				f,"INTERVAL_HOUR_TO_SECOND")) {
+			retval|=SQL_DL_SQL92_INTERVAL_HOUR_TO_SECOND;
+		} else if (!charstring::compare(
+				f,"INTERVAL_MINUTE_TO_SECOND")) {
+			retval|=SQL_DL_SQL92_INTERVAL_MINUTE_TO_SECOND;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_BatchRowCount(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	// get what the backend supports
+	const char	*sbrc=
+		conn->con->getDatabaseFeature(
+				"batch_row_counts");
+	if (!sbrc) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(sbrc,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"PROCEDURES")) {
+			retval|=SQL_BRC_PROCEDURES;
+		} else if (!charstring::compare(f,"EXPLICIT")) {
+			retval|=SQL_BRC_EXPLICIT;
+		} else if (!charstring::compare(f,"ROLLED_UP")) {
+			retval|=SQL_BRC_ROLLED_UP;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	// keep only what sqlrelay currently supports
+	retval&=SQL_BRC_PROCEDURES|SQL_BRC_EXPLICIT;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_BatchSupport(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	// get what the backend supports
+	const char	*sbo=
+		conn->con->getDatabaseFeature(
+				"batch_operations");
+	if (!sbo) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(sbo,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"SELECT_EXPLICIT")) {
+			retval|=SQL_BS_SELECT_EXPLICIT;
+		} else if (!charstring::compare(f,"ROW_COUNT_EXPLICIT")) {
+			retval|=SQL_BS_ROW_COUNT_EXPLICIT;
+		} else if (!charstring::compare(f,"SELECT_PROC")) {
+			retval|=SQL_BS_SELECT_PROC;
+		} else if (!charstring::compare(f,"ROW_COUNT_PROC")) {
+			retval|=SQL_BS_ROW_COUNT_PROC;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	// keep only what sqlrelay currently supports
+	retval&=SQL_BS_SELECT_EXPLICIT|
+		SQL_BS_ROW_COUNT_EXPLICIT|
+		SQL_BS_SELECT_PROC|
+		SQL_BS_ROW_COUNT_PROC;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_CreateAssertion(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*ca=
+		conn->con->getDatabaseFeature("create_assertion_clauses");
+	if (!ca) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(ca,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"CREATE_ASSERTION")) {
+			retval|=SQL_CA_CREATE_ASSERTION;
+		} else if (!charstring::compare(
+					f,"CONSTRAINT_INITIALLY_DEFERRED")) {
+			retval|=SQL_CA_CONSTRAINT_INITIALLY_DEFERRED;
+		} else if (!charstring::compare(
+					f,"CONSTRAINT_INITIALLY_IMMEDIATE")) {
+			retval|=SQL_CA_CONSTRAINT_INITIALLY_IMMEDIATE;
+		} else if (!charstring::compare(
+					f,"CONSTRAINT_DEFERRABLE")) {
+			retval|=SQL_CA_CONSTRAINT_DEFERRABLE;
+		} else if (!charstring::compare(
+					f,"CONSTRAINT_NON_DEFERRABLE")) {
+			retval|=SQL_CA_CONSTRAINT_NON_DEFERRABLE;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_CreateCharacterSet(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*ccs=
+		conn->con->getDatabaseFeature("create_character_set_clauses");
+	if (!ccs) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(ccs,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"CREATE_CHARACTER_SET")) {
+			retval|=SQL_CCS_CREATE_CHARACTER_SET;
+		} else if (!charstring::compare(
+					f,"COLLATE_CLAUSE")) {
+			retval|=SQL_CCS_COLLATE_CLAUSE;
+		} else if (!charstring::compare(
+					f,"LIMITED_COLLATION")) {
+			retval|=SQL_CCS_LIMITED_COLLATION;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_CreateCollation(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*ccol=
+		conn->con->getDatabaseFeature("create_collation_clauses");
+	if (!ccol) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(ccol,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"CREATE_COLLATION")) {
+			retval|=SQL_CCOL_CREATE_COLLATION;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_CreateDomain(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*cdo=
+		conn->con->getDatabaseFeature("create_domain_clauses");
+	if (!cdo) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(cdo,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"CREATE_DOMAIN")) {
+			retval|=SQL_CDO_CREATE_DOMAIN;
+		} else if (!charstring::compare(
+				f,"CONSTRAINT_NAME_DEFINITION")) {
+			retval|=SQL_CDO_CONSTRAINT_NAME_DEFINITION;
+		} else if (!charstring::compare(f,"DEFAULT")) {
+			retval|=SQL_CDO_DEFAULT;
+		} else if (!charstring::compare(f,"CONSTRAINT")) {
+			retval|=SQL_CDO_CONSTRAINT;
+		} else if (!charstring::compare(f,"COLLATION")) {
+			retval|=SQL_CDO_COLLATION;
+		} else if (!charstring::compare(
+				f,"CONSTRAINT_INITIALLY_DEFERRED")) {
+			retval|=SQL_CDO_CONSTRAINT_INITIALLY_DEFERRED;
+		} else if (!charstring::compare(
+				f,"CONSTRAINT_INITIALLY_IMMEDIATE")) {
+			retval|=SQL_CDO_CONSTRAINT_INITIALLY_IMMEDIATE;
+		} else if (!charstring::compare(
+				f,"CONSTRAINT_DEFERRABLE")) {
+			retval|=SQL_CDO_CONSTRAINT_DEFERRABLE;
+		} else if (!charstring::compare(
+				f,"CONSTRAINT_NON_DEFERRABLE")) {
+			retval|=SQL_CDO_CONSTRAINT_NON_DEFERRABLE;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_CreateSchema(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*cs=
+		conn->con->getDatabaseFeature("create_schema_clauses");
+	if (!cs) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(cs,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"CREATE_SCHEMA")) {
+			retval|=SQL_CS_CREATE_SCHEMA;
+		} else if (!charstring::compare(
+					f,"AUTHORIZATION")) {
+			retval|=SQL_CS_AUTHORIZATION;
+		} else if (!charstring::compare(
+				f,"DEFAULT_CHARACTER_SET")) {
+			retval|=SQL_CS_DEFAULT_CHARACTER_SET;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_CreateTable(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*ct=
+		conn->con->getDatabaseFeature("create_table_clauses");
+	if (!ct) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(ct,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"CREATE_TABLE")) {
+			retval|=SQL_CT_CREATE_TABLE;
+		} else if (!charstring::compare(
+					f,"TABLE_CONSTRAINT")) {
+			retval|=SQL_CT_TABLE_CONSTRAINT;
+		} else if (!charstring::compare(
+				f,"CONSTRAINT_NAME_DEFINITION")) {
+			retval|=SQL_CT_CONSTRAINT_NAME_DEFINITION;
+		} else if (!charstring::compare(
+					f,"COMMIT_DELETE")) {
+			retval|=SQL_CT_COMMIT_DELETE;
+		} else if (!charstring::compare(
+					f,"COMMIT_PRESERVE")) {
+			retval|=SQL_CT_COMMIT_PRESERVE;
+		} else if (!charstring::compare(
+					f,"GLOBAL_TEMPORARY")) {
+			retval|=SQL_CT_GLOBAL_TEMPORARY;
+		} else if (!charstring::compare(
+					f,"LOCAL_TEMPORARY")) {
+			retval|=SQL_CT_LOCAL_TEMPORARY;
+		} else if (!charstring::compare(
+					f,"COLUMN_CONSTRAINT")) {
+			retval|=SQL_CT_COLUMN_CONSTRAINT;
+		} else if (!charstring::compare(
+					f,"COLUMN_DEFAULT")) {
+			retval|=SQL_CT_COLUMN_DEFAULT;
+		} else if (!charstring::compare(
+					f,"COLUMN_COLLATION")) {
+			retval|=SQL_CT_COLUMN_COLLATION;
+		} else if (!charstring::compare(
+				f,"CONSTRAINT_INITIALLY_DEFERRED")) {
+			retval|=SQL_CT_CONSTRAINT_INITIALLY_DEFERRED;
+		} else if (!charstring::compare(
+				f,"CONSTRAINT_INITIALLY_IMMEDIATE")) {
+			retval|=SQL_CT_CONSTRAINT_INITIALLY_IMMEDIATE;
+		} else if (!charstring::compare(
+				f,"CONSTRAINT_DEFERRABLE")) {
+			retval|=SQL_CT_CONSTRAINT_DEFERRABLE;
+		} else if (!charstring::compare(
+				f,"CONSTRAINT_NON_DEFERRABLE")) {
+			retval|=SQL_CT_CONSTRAINT_NON_DEFERRABLE;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_CreateTranslation(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*ctr=
+		conn->con->getDatabaseFeature("create_translation_clauses");
+	if (!ctr) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(ctr,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"CREATE_TRANSLATION")) {
+			retval|=SQL_CTR_CREATE_TRANSLATION;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_CreateView(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*cv=
+		conn->con->getDatabaseFeature("create_view_clauses");
+	if (!cv) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(cv,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"CREATE_VIEW")) {
+			retval|=SQL_CV_CREATE_VIEW;
+		} else if (!charstring::compare(
+					f,"CHECK_OPTION")) {
+			retval|=SQL_CV_CHECK_OPTION;
+		} else if (!charstring::compare(f,"CASCADED")) {
+			retval|=SQL_CV_CASCADED;
+		} else if (!charstring::compare(f,"LOCAL")) {
+			retval|=SQL_CV_LOCAL;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_DropAssertion(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*da=
+		conn->con->getDatabaseFeature("drop_assertion_clauses");
+	if (!da) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(da,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"DROP_ASSERTION")) {
+			retval|=SQL_DA_DROP_ASSERTION;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_DropCharacterSet(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*dcs=
+		conn->con->getDatabaseFeature("drop_character_set_clauses");
+	if (!dcs) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(dcs,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"DROP_CHARACTER_SET")) {
+			retval|=SQL_DCS_DROP_CHARACTER_SET;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_DropCollation(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*dc=
+		conn->con->getDatabaseFeature("drop_collation_clauses");
+	if (!dc) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(dc,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"DROP_COLLATION")) {
+			retval|=SQL_DC_DROP_COLLATION;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_DropDomain(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*dd=
+		conn->con->getDatabaseFeature("drop_domain_clauses");
+	if (!dd) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(dd,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"DROP_DOMAIN")) {
+			retval|=SQL_DD_DROP_DOMAIN;
+		} else if (!charstring::compare(f,"CASCADE")) {
+			retval|=SQL_DD_CASCADE;
+		} else if (!charstring::compare(f,"RESTRICT")) {
+			retval|=SQL_DD_RESTRICT;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_DropSchema(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*ds=
+		conn->con->getDatabaseFeature("drop_schema_clauses");
+	if (!ds) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(ds,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"DROP_SCHEMA")) {
+			retval|=SQL_DS_DROP_SCHEMA;
+		} else if (!charstring::compare(f,"CASCADE")) {
+			retval|=SQL_DS_CASCADE;
+		} else if (!charstring::compare(f,"RESTRICT")) {
+			retval|=SQL_DS_RESTRICT;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_DropTable(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*dt=
+		conn->con->getDatabaseFeature("drop_table_clauses");
+	if (!dt) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(dt,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"DROP_TABLE")) {
+			retval|=SQL_DT_DROP_TABLE;
+		} else if (!charstring::compare(f,"CASCADE")) {
+			retval|=SQL_DT_CASCADE;
+		} else if (!charstring::compare(f,"RESTRICT")) {
+			retval|=SQL_DT_RESTRICT;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_DropTranslation(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*dtr=
+		conn->con->getDatabaseFeature("drop_translation_clauses");
+	if (!dtr) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(dtr,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"DROP_TRANSLATION")) {
+			retval|=SQL_DTR_DROP_TRANSLATION;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_DropView(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*dv=
+		conn->con->getDatabaseFeature("drop_view_clauses");
+	if (!dv) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(dv,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"DROP_VIEW")) {
+			retval|=SQL_DV_DROP_VIEW;
+		} else if (!charstring::compare(f,"CASCADE")) {
+			retval|=SQL_DV_CASCADE;
+		} else if (!charstring::compare(f,"RESTRICT")) {
+			retval|=SQL_DV_RESTRICT;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_ForwardOnlyCursorAttributes1(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	// get what the backend supports
+	const char	*foca=
+		conn->con->getDatabaseFeature(
+				"forward_only_cursor_attributes");
+	if (!foca) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(foca,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"NEXT")) {
+			retval|=SQL_CA1_NEXT;
+		} else if (!charstring::compare(f,"ABSOLUTE")) {
+			retval|=SQL_CA1_ABSOLUTE;
+		} else if (!charstring::compare(f,"RELATIVE")) {
+			retval|=SQL_CA1_RELATIVE;
+		} else if (!charstring::compare(f,"BOOKMARK")) {
+			retval|=SQL_CA1_BOOKMARK;
+		} else if (!charstring::compare(f,"LOCK_NO_CHANGE")) {
+			retval|=SQL_CA1_LOCK_NO_CHANGE;
+		} else if (!charstring::compare(f,"LOCK_EXCLUSIVE")) {
+			retval|=SQL_CA1_LOCK_EXCLUSIVE;
+		} else if (!charstring::compare(f,"LOCK_UNLOCK")) {
+			retval|=SQL_CA1_LOCK_UNLOCK;
+		} else if (!charstring::compare(f,"POS_POSITION")) {
+			retval|=SQL_CA1_POS_POSITION;
+		} else if (!charstring::compare(f,"POS_UPDATE")) {
+			retval|=SQL_CA1_POS_UPDATE;
+		} else if (!charstring::compare(f,"POS_DELETE")) {
+			retval|=SQL_CA1_POS_DELETE;
+		} else if (!charstring::compare(f,"POS_REFRESH")) {
+			retval|=SQL_CA1_POS_REFRESH;
+		} else if (!charstring::compare(f,"POSITIONED_UPDATE")) {
+			retval|=SQL_CA1_POSITIONED_UPDATE;
+		} else if (!charstring::compare(f,"POSITIONED_DELETE")) {
+			retval|=SQL_CA1_POSITIONED_DELETE;
+		} else if (!charstring::compare(f,"SELECT_FOR_UPDATE")) {
+			retval|=SQL_CA1_SELECT_FOR_UPDATE;
+		} else if (!charstring::compare(f,"BULK_ADD")) {
+			retval|=SQL_CA1_BULK_ADD;
+		} else if (!charstring::compare(f,"BULK_UPDATE_BY_BOOKMARK")) {
+			retval|=SQL_CA1_BULK_UPDATE_BY_BOOKMARK;
+		} else if (!charstring::compare(f,"BULK_DELETE_BY_BOOKMARK")) {
+			retval|=SQL_CA1_BULK_DELETE_BY_BOOKMARK;
+		} else if (!charstring::compare(f,"BULK_FETCH_BY_BOOKMARK")) {
+			retval|=SQL_CA1_BULK_FETCH_BY_BOOKMARK;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	// FIXME: keep only what sqlrelay currently supports
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_ForwardOnlyCursorAttributes2(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	// get what the backend supports
+	const char	*foca=
+		conn->con->getDatabaseFeature(
+				"forward_only_cursor_attributes");
+	if (!foca) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(foca,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"READ_ONLY_CONCURRENCY")) {
+			retval|=SQL_CA2_READ_ONLY_CONCURRENCY;
+		} else if (!charstring::compare(f,"LOCK_CONCURRENCY")) {
+			retval|=SQL_CA2_LOCK_CONCURRENCY;
+		} else if (!charstring::compare(f,"OPT_ROWVER_CONCURRENCY")) {
+			retval|=SQL_CA2_OPT_ROWVER_CONCURRENCY;
+		} else if (!charstring::compare(f,"OPT_VALUES_CONCURRENCY")) {
+			retval|=SQL_CA2_OPT_VALUES_CONCURRENCY;
+		} else if (!charstring::compare(f,"SENSITIVITY_ADDITIONS")) {
+			retval|=SQL_CA2_SENSITIVITY_ADDITIONS;
+		} else if (!charstring::compare(f,"SENSITIVITY_DELETIONS")) {
+			retval|=SQL_CA2_SENSITIVITY_DELETIONS;
+		} else if (!charstring::compare(f,"SENSITIVITY_UPDATES")) {
+			retval|=SQL_CA2_SENSITIVITY_UPDATES;
+		} else if (!charstring::compare(f,"MAX_ROWS_SELECT")) {
+			retval|=SQL_CA2_MAX_ROWS_SELECT;
+		} else if (!charstring::compare(f,"MAX_ROWS_INSERT")) {
+			retval|=SQL_CA2_MAX_ROWS_INSERT;
+		} else if (!charstring::compare(f,"MAX_ROWS_DELETE")) {
+			retval|=SQL_CA2_MAX_ROWS_DELETE;
+		} else if (!charstring::compare(f,"MAX_ROWS_UPDATE")) {
+			retval|=SQL_CA2_MAX_ROWS_UPDATE;
+		} else if (!charstring::compare(f,"MAX_ROWS_CATALOG")) {
+			retval|=SQL_CA2_MAX_ROWS_CATALOG;
+		} else if (!charstring::compare(f,"CRC_EXACT")) {
+			retval|=SQL_CA2_CRC_EXACT;
+		} else if (!charstring::compare(f,"CRC_APPROXIMATE")) {
+			retval|=SQL_CA2_CRC_APPROXIMATE;
+		} else if (!charstring::compare(f,"SIMULATE_NON_UNIQUE")) {
+			retval|=SQL_CA2_SIMULATE_NON_UNIQUE;
+		} else if (!charstring::compare(f,"SIMULATE_TRY_UNIQUE")) {
+			retval|=SQL_CA2_SIMULATE_TRY_UNIQUE;
+		} else if (!charstring::compare(f,"SIMULATE_UNIQUE")) {
+			retval|=SQL_CA2_SIMULATE_UNIQUE;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	// keep only what sqlrelay currently supports
+	retval&=SQL_CA2_READ_ONLY_CONCURRENCY;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_IndexKeywords(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*ik=
+		conn->con->getDatabaseFeature("index_keywords");
+	if (!ik) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(ik,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"ASC")) {
+			retval|=SQL_IK_ASC;
+		} else if (!charstring::compare(f,"DESC")) {
+			retval|=SQL_IK_DESC;
+		} else if (!charstring::compare(f,"ALL")) {
+			retval|=SQL_IK_ALL;
+		} else if (!charstring::compare(f,"NONE")) {
+			retval|=SQL_IK_NONE;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_InfoSchemaViews(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*isv=
+		conn->con->getDatabaseFeature("info_schema_views");
+	if (!isv) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(isv,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"ASSERTIONS")) {
+			retval|=SQL_ISV_ASSERTIONS;
+		} else if (!charstring::compare(
+				f,"CHARACTER_SETS")) {
+			retval|=SQL_ISV_CHARACTER_SETS;
+		} else if (!charstring::compare(
+				f,"CHECK_CONSTRAINTS")) {
+			retval|=SQL_ISV_CHECK_CONSTRAINTS;
+		} else if (!charstring::compare(
+					f,"COLLATIONS")) {
+			retval|=SQL_ISV_COLLATIONS;
+		} else if (!charstring::compare(
+				f,"COLUMN_DOMAIN_USAGE")) {
+			retval|=SQL_ISV_COLUMN_DOMAIN_USAGE;
+		} else if (!charstring::compare(
+				f,"COLUMN_PRIVILEGES")) {
+			retval|=SQL_ISV_COLUMN_PRIVILEGES;
+		} else if (!charstring::compare(f,"COLUMNS")) {
+			retval|=SQL_ISV_COLUMNS;
+		} else if (!charstring::compare(
+				f,"CONSTRAINT_COLUMN_USAGE")) {
+			retval|=SQL_ISV_CONSTRAINT_COLUMN_USAGE;
+		} else if (!charstring::compare(
+				f,"CONSTRAINT_TABLE_USAGE")) {
+			retval|=SQL_ISV_CONSTRAINT_TABLE_USAGE;
+		} else if (!charstring::compare(
+				f,"DOMAIN_CONSTRAINTS")) {
+			retval|=SQL_ISV_DOMAIN_CONSTRAINTS;
+		} else if (!charstring::compare(f,"DOMAINS")) {
+			retval|=SQL_ISV_DOMAINS;
+		} else if (!charstring::compare(
+				f,"KEY_COLUMN_USAGE")) {
+			retval|=SQL_ISV_KEY_COLUMN_USAGE;
+		} else if (!charstring::compare(
+				f,"REFERENTIAL_CONSTRAINTS")) {
+			retval|=SQL_ISV_REFERENTIAL_CONSTRAINTS;
+		} else if (!charstring::compare(f,"SCHEMATA")) {
+			retval|=SQL_ISV_SCHEMATA;
+		} else if (!charstring::compare(
+				f,"SQL_LANGUAGES")) {
+			retval|=SQL_ISV_SQL_LANGUAGES;
+		} else if (!charstring::compare(
+				f,"TABLE_CONSTRAINTS")) {
+			retval|=SQL_ISV_TABLE_CONSTRAINTS;
+		} else if (!charstring::compare(
+				f,"TABLE_PRIVILEGES")) {
+			retval|=SQL_ISV_TABLE_PRIVILEGES;
+		} else if (!charstring::compare(f,"TABLES")) {
+			retval|=SQL_ISV_TABLES;
+		} else if (!charstring::compare(
+				f,"TRANSLATIONS")) {
+			retval|=SQL_ISV_TRANSLATIONS;
+		} else if (!charstring::compare(
+				f,"USAGE_PRIVILEGES")) {
+			retval|=SQL_ISV_USAGE_PRIVILEGES;
+		} else if (!charstring::compare(
+				f,"VIEW_COLUMN_USAGE")) {
+			retval|=SQL_ISV_VIEW_COLUMN_USAGE;
+		} else if (!charstring::compare(
+				f,"VIEW_TABLE_USAGE")) {
+			retval|=SQL_ISV_VIEW_TABLE_USAGE;
+		} else if (!charstring::compare(f,"VIEWS")) {
+			retval|=SQL_ISV_VIEWS;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
 }
 
 static SQLUINTEGER SQLR_Sql92DatetimeFunctions(CONN *conn) {
@@ -8316,6 +8229,143 @@ static SQLUINTEGER SQLR_Sql92DatetimeFunctions(CONN *conn) {
 			retval|=SQL_SDF_CURRENT_TIME;
 		} else if (!charstring::compare(f,"CURRENT_TIMESTAMP")) {
 			retval|=SQL_SDF_CURRENT_TIMESTAMP;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_ForeignKeyDeleteRules(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*fkdr=
+		conn->con->getDatabaseFeature(
+			"foreign_key_delete_rules");
+	if (!fkdr) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(fkdr,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"CASCADE")) {
+			retval|=SQL_SFKD_CASCADE;
+		} else if (!charstring::compare(
+					f,"NO_ACTION")) {
+			retval|=SQL_SFKD_NO_ACTION;
+		} else if (!charstring::compare(
+					f,"SET_DEFAULT")) {
+			retval|=SQL_SFKD_SET_DEFAULT;
+		} else if (!charstring::compare(
+					f,"SET_NULL")) {
+			retval|=SQL_SFKD_SET_NULL;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_ForeignKeyUpdateRules(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*fkur=
+		conn->con->getDatabaseFeature(
+			"foreign_key_update_rules");
+	if (!fkur) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(fkur,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"CASCADE")) {
+			retval|=SQL_SFKU_CASCADE;
+		} else if (!charstring::compare(
+					f,"NO_ACTION")) {
+			retval|=SQL_SFKU_NO_ACTION;
+		} else if (!charstring::compare(
+					f,"SET_DEFAULT")) {
+			retval|=SQL_SFKU_SET_DEFAULT;
+		} else if (!charstring::compare(
+					f,"SET_NULL")) {
+			retval|=SQL_SFKU_SET_NULL;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_Grant(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*g=
+		conn->con->getDatabaseFeature("grant_clauses");
+	if (!g) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(g,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"DELETE_TABLE")) {
+			retval|=SQL_SG_DELETE_TABLE;
+		} else if (!charstring::compare(
+				f,"INSERT_COLUMN")) {
+			retval|=SQL_SG_INSERT_COLUMN;
+		} else if (!charstring::compare(
+				f,"INSERT_TABLE")) {
+			retval|=SQL_SG_INSERT_TABLE;
+		} else if (!charstring::compare(
+				f,"REFERENCES_TABLE")) {
+			retval|=SQL_SG_REFERENCES_TABLE;
+		} else if (!charstring::compare(
+				f,"REFERENCES_COLUMN")) {
+			retval|=SQL_SG_REFERENCES_COLUMN;
+		} else if (!charstring::compare(
+				f,"SELECT_TABLE")) {
+			retval|=SQL_SG_SELECT_TABLE;
+		} else if (!charstring::compare(
+				f,"UPDATE_COLUMN")) {
+			retval|=SQL_SG_UPDATE_COLUMN;
+		} else if (!charstring::compare(
+				f,"UPDATE_TABLE")) {
+			retval|=SQL_SG_UPDATE_TABLE;
+		} else if (!charstring::compare(
+				f,"USAGE_ON_DOMAIN")) {
+			retval|=SQL_SG_USAGE_ON_DOMAIN;
+		} else if (!charstring::compare(
+				f,"USAGE_ON_CHARACTER_SET")) {
+			retval|=SQL_SG_USAGE_ON_CHARACTER_SET;
+		} else if (!charstring::compare(
+				f,"USAGE_ON_COLLATION")) {
+			retval|=SQL_SG_USAGE_ON_COLLATION;
+		} else if (!charstring::compare(
+				f,"USAGE_ON_TRANSLATION")) {
+			retval|=SQL_SG_USAGE_ON_TRANSLATION;
+		} else if (!charstring::compare(
+				f,"WITH_GRANT_OPTION")) {
+			retval|=SQL_SG_WITH_GRANT_OPTION;
 		}
 		delete[] parts[i];
 	}
@@ -8380,6 +8430,226 @@ static SQLUINTEGER SQLR_Sql92NumericValueFunctions(CONN *conn) {
 	return retval;
 }
 
+static SQLUINTEGER SQLR_Predicates(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*p=
+		conn->con->getDatabaseFeature("predicates");
+	if (!p) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(p,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"BETWEEN")) {
+			retval|=SQL_SP_BETWEEN;
+		} else if (!charstring::compare(
+					f,"COMPARISON")) {
+			retval|=SQL_SP_COMPARISON;
+		} else if (!charstring::compare(f,"EXISTS")) {
+			retval|=SQL_SP_EXISTS;
+		} else if (!charstring::compare(f,"IN")) {
+			retval|=SQL_SP_IN;
+		} else if (!charstring::compare(
+					f,"ISNOTNULL")) {
+			retval|=SQL_SP_ISNOTNULL;
+		} else if (!charstring::compare(f,"ISNULL")) {
+			retval|=SQL_SP_ISNULL;
+		} else if (!charstring::compare(f,"LIKE")) {
+			retval|=SQL_SP_LIKE;
+		} else if (!charstring::compare(
+					f,"MATCH_FULL")) {
+			retval|=SQL_SP_MATCH_FULL;
+		} else if (!charstring::compare(
+				f,"MATCH_PARTIAL")) {
+			retval|=SQL_SP_MATCH_PARTIAL;
+		} else if (!charstring::compare(
+				f,"MATCH_UNIQUE_FULL")) {
+			retval|=SQL_SP_MATCH_UNIQUE_FULL;
+		} else if (!charstring::compare(
+				f,"MATCH_UNIQUE_PARTIAL")) {
+			retval|=SQL_SP_MATCH_UNIQUE_PARTIAL;
+		} else if (!charstring::compare(f,"OVERLAPS")) {
+			retval|=SQL_SP_OVERLAPS;
+		} else if (!charstring::compare(
+				f,"QUANTIFIED_COMPARISON")) {
+			retval|=SQL_SP_QUANTIFIED_COMPARISON;
+		} else if (!charstring::compare(f,"UNIQUE")) {
+			retval|=SQL_SP_UNIQUE;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_RelationalJoinOperators(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*rjo=
+		conn->con->getDatabaseFeature(
+		"relational_join_operators");
+	if (!rjo) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(rjo,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(
+				f,"CORRESPONDING_CLAUSE")) {
+			retval|=SQL_SRJO_CORRESPONDING_CLAUSE;
+		} else if (!charstring::compare(
+					f,"CROSS_JOIN")) {
+			retval|=SQL_SRJO_CROSS_JOIN;
+		} else if (!charstring::compare(
+					f,"EXCEPT_JOIN")) {
+			retval|=SQL_SRJO_EXCEPT_JOIN;
+		} else if (!charstring::compare(
+				f,"FULL_OUTER_JOIN")) {
+			retval|=SQL_SRJO_FULL_OUTER_JOIN;
+		} else if (!charstring::compare(
+					f,"INNER_JOIN")) {
+			retval|=SQL_SRJO_INNER_JOIN;
+		} else if (!charstring::compare(
+				f,"INTERSECT_JOIN")) {
+			retval|=SQL_SRJO_INTERSECT_JOIN;
+		} else if (!charstring::compare(
+				f,"LEFT_OUTER_JOIN")) {
+			retval|=SQL_SRJO_LEFT_OUTER_JOIN;
+		} else if (!charstring::compare(
+				f,"NATURAL_JOIN")) {
+			retval|=SQL_SRJO_NATURAL_JOIN;
+		} else if (!charstring::compare(
+				f,"RIGHT_OUTER_JOIN")) {
+			retval|=SQL_SRJO_RIGHT_OUTER_JOIN;
+		} else if (!charstring::compare(
+					f,"UNION_JOIN")) {
+			retval|=SQL_SRJO_UNION_JOIN;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_Revoke(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*r=
+		conn->con->getDatabaseFeature("revoke_clauses");
+	if (!r) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(r,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"CASCADE")) {
+			retval|=SQL_SR_CASCADE;
+		} else if (!charstring::compare(
+				f,"DELETE_TABLE")) {
+			retval|=SQL_SR_DELETE_TABLE;
+		} else if (!charstring::compare(
+				f,"GRANT_OPTION_FOR")) {
+			retval|=SQL_SR_GRANT_OPTION_FOR;
+		} else if (!charstring::compare(
+				f,"INSERT_COLUMN")) {
+			retval|=SQL_SR_INSERT_COLUMN;
+		} else if (!charstring::compare(
+				f,"INSERT_TABLE")) {
+			retval|=SQL_SR_INSERT_TABLE;
+		} else if (!charstring::compare(
+				f,"REFERENCES_COLUMN")) {
+			retval|=SQL_SR_REFERENCES_COLUMN;
+		} else if (!charstring::compare(
+				f,"REFERENCES_TABLE")) {
+			retval|=SQL_SR_REFERENCES_TABLE;
+		} else if (!charstring::compare(f,"RESTRICT")) {
+			retval|=SQL_SR_RESTRICT;
+		} else if (!charstring::compare(
+				f,"SELECT_TABLE")) {
+			retval|=SQL_SR_SELECT_TABLE;
+		} else if (!charstring::compare(
+				f,"UPDATE_COLUMN")) {
+			retval|=SQL_SR_UPDATE_COLUMN;
+		} else if (!charstring::compare(
+				f,"UPDATE_TABLE")) {
+			retval|=SQL_SR_UPDATE_TABLE;
+		} else if (!charstring::compare(
+				f,"USAGE_ON_DOMAIN")) {
+			retval|=SQL_SR_USAGE_ON_DOMAIN;
+		} else if (!charstring::compare(
+				f,"USAGE_ON_CHARACTER_SET")) {
+			retval|=SQL_SR_USAGE_ON_CHARACTER_SET;
+		} else if (!charstring::compare(
+				f,"USAGE_ON_COLLATION")) {
+			retval|=SQL_SR_USAGE_ON_COLLATION;
+		} else if (!charstring::compare(
+				f,"USAGE_ON_TRANSLATION")) {
+			retval|=SQL_SR_USAGE_ON_TRANSLATION;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_RowValueConstructor(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*rvc=
+		conn->con->getDatabaseFeature(
+		"row_value_constructor_expressions");
+	if (!rvc) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(rvc,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(
+				f,"VALUE_EXPRESSION")) {
+			retval|=SQL_SRVC_VALUE_EXPRESSION;
+		} else if (!charstring::compare(f,"NULL")) {
+			retval|=SQL_SRVC_NULL;
+		} else if (!charstring::compare(f,"DEFAULT")) {
+			retval|=SQL_SRVC_DEFAULT;
+		} else if (!charstring::compare(
+				f,"ROW_SUBQUERY")) {
+			retval|=SQL_SRVC_ROW_SUBQUERY;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
 static SQLUINTEGER SQLR_Sql92StringFunctions(CONN *conn) {
 
 	SQLUINTEGER	retval=0;
@@ -8420,6 +8690,280 @@ static SQLUINTEGER SQLR_Sql92StringFunctions(CONN *conn) {
 		} else if (!charstring::compare(f,"TRIM TRAILING") ||
 				!charstring::compare(f,"TRIM_TRAILING")) {
 			retval|=SQL_SSF_TRIM_TRAILING;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_ValueExpressions(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*ve=
+		conn->con->getDatabaseFeature(
+			"value_expressions");
+	if (!ve) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(ve,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"CASE")) {
+			retval|=SQL_SVE_CASE;
+		} else if (!charstring::compare(f,"CAST")) {
+			retval|=SQL_SVE_CAST;
+		} else if (!charstring::compare(f,"COALESCE")) {
+			retval|=SQL_SVE_COALESCE;
+		} else if (!charstring::compare(f,"NULLIF")) {
+			retval|=SQL_SVE_NULLIF;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_StaticCursorAttributes1(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	// get what the backend supports
+	const char	*sca=
+		conn->con->getDatabaseFeature(
+				"static_cursor_attributes");
+	if (!sca) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(sca,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"NEXT")) {
+			retval|=SQL_CA1_NEXT;
+		} else if (!charstring::compare(f,"ABSOLUTE")) {
+			retval|=SQL_CA1_ABSOLUTE;
+		} else if (!charstring::compare(f,"RELATIVE")) {
+			retval|=SQL_CA1_RELATIVE;
+		} else if (!charstring::compare(f,"BOOKMARK")) {
+			retval|=SQL_CA1_BOOKMARK;
+		} else if (!charstring::compare(f,"LOCK_NO_CHANGE")) {
+			retval|=SQL_CA1_LOCK_NO_CHANGE;
+		} else if (!charstring::compare(f,"LOCK_EXCLUSIVE")) {
+			retval|=SQL_CA1_LOCK_EXCLUSIVE;
+		} else if (!charstring::compare(f,"LOCK_UNLOCK")) {
+			retval|=SQL_CA1_LOCK_UNLOCK;
+		} else if (!charstring::compare(f,"POS_POSITION")) {
+			retval|=SQL_CA1_POS_POSITION;
+		} else if (!charstring::compare(f,"POS_UPDATE")) {
+			retval|=SQL_CA1_POS_UPDATE;
+		} else if (!charstring::compare(f,"POS_DELETE")) {
+			retval|=SQL_CA1_POS_DELETE;
+		} else if (!charstring::compare(f,"POS_REFRESH")) {
+			retval|=SQL_CA1_POS_REFRESH;
+		} else if (!charstring::compare(f,"POSITIONED_UPDATE")) {
+			retval|=SQL_CA1_POSITIONED_UPDATE;
+		} else if (!charstring::compare(f,"POSITIONED_DELETE")) {
+			retval|=SQL_CA1_POSITIONED_DELETE;
+		} else if (!charstring::compare(f,"SELECT_FOR_UPDATE")) {
+			retval|=SQL_CA1_SELECT_FOR_UPDATE;
+		} else if (!charstring::compare(f,"BULK_ADD")) {
+			retval|=SQL_CA1_BULK_ADD;
+		} else if (!charstring::compare(
+					f,"BULK_UPDATE_BY_BOOKMARK")) {
+			retval|=SQL_CA1_BULK_UPDATE_BY_BOOKMARK;
+		} else if (!charstring::compare(
+					f,"BULK_DELETE_BY_BOOKMARK")) {
+			retval|=SQL_CA1_BULK_DELETE_BY_BOOKMARK;
+		} else if (!charstring::compare(
+					f,"BULK_FETCH_BY_BOOKMARK")) {
+			retval|=SQL_CA1_BULK_FETCH_BY_BOOKMARK;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	// FIXME: keep only what sqlrelay currently supports
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_StaticCursorAttributes2(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	// get what the backend supports
+	const char	*sca=
+		conn->con->getDatabaseFeature(
+				"static_cursor_attributes");
+	if (!sca) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(sca,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"READ_ONLY_CONCURRENCY")) {
+			retval|=SQL_CA2_READ_ONLY_CONCURRENCY;
+		} else if (!charstring::compare(f,"LOCK_CONCURRENCY")) {
+			retval|=SQL_CA2_LOCK_CONCURRENCY;
+		} else if (!charstring::compare(
+					f,"OPT_ROWVER_CONCURRENCY")) {
+			retval|=SQL_CA2_OPT_ROWVER_CONCURRENCY;
+		} else if (!charstring::compare(
+					f,"OPT_VALUES_CONCURRENCY")) {
+			retval|=SQL_CA2_OPT_VALUES_CONCURRENCY;
+		} else if (!charstring::compare(
+					f,"SENSITIVITY_ADDITIONS")) {
+			retval|=SQL_CA2_SENSITIVITY_ADDITIONS;
+		} else if (!charstring::compare(
+					f,"SENSITIVITY_DELETIONS")) {
+			retval|=SQL_CA2_SENSITIVITY_DELETIONS;
+		} else if (!charstring::compare(
+					f,"SENSITIVITY_UPDATES")) {
+			retval|=SQL_CA2_SENSITIVITY_UPDATES;
+		} else if (!charstring::compare(f,"MAX_ROWS_SELECT")) {
+			retval|=SQL_CA2_MAX_ROWS_SELECT;
+		} else if (!charstring::compare(f,"MAX_ROWS_INSERT")) {
+			retval|=SQL_CA2_MAX_ROWS_INSERT;
+		} else if (!charstring::compare(f,"MAX_ROWS_DELETE")) {
+			retval|=SQL_CA2_MAX_ROWS_DELETE;
+		} else if (!charstring::compare(f,"MAX_ROWS_UPDATE")) {
+			retval|=SQL_CA2_MAX_ROWS_UPDATE;
+		} else if (!charstring::compare(f,"MAX_ROWS_CATALOG")) {
+			retval|=SQL_CA2_MAX_ROWS_CATALOG;
+		} else if (!charstring::compare(f,"CRC_EXACT")) {
+			retval|=SQL_CA2_CRC_EXACT;
+		} else if (!charstring::compare(f,"CRC_APPROXIMATE")) {
+			retval|=SQL_CA2_CRC_APPROXIMATE;
+		} else if (!charstring::compare(
+					f,"SIMULATE_NON_UNIQUE")) {
+			retval|=SQL_CA2_SIMULATE_NON_UNIQUE;
+		} else if (!charstring::compare(
+					f,"SIMULATE_TRY_UNIQUE")) {
+			retval|=SQL_CA2_SIMULATE_TRY_UNIQUE;
+		} else if (!charstring::compare(f,"SIMULATE_UNIQUE")) {
+			retval|=SQL_CA2_SIMULATE_UNIQUE;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	// FIXME: keep only what sqlrelay currently supports
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_AggregateFunctions(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*af=
+		conn->con->getDatabaseFeature("aggregate_functions");
+	if (!af) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(af,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"ALL")) {
+			retval|=SQL_AF_ALL;
+		} else if (!charstring::compare(f,"AVG")) {
+			retval|=SQL_AF_AVG;
+		} else if (!charstring::compare(f,"COUNT")) {
+			retval|=SQL_AF_COUNT;
+		} else if (!charstring::compare(f,"DISTINCT")) {
+			retval|=SQL_AF_DISTINCT;
+		} else if (!charstring::compare(f,"MAX")) {
+			retval|=SQL_AF_MAX;
+		} else if (!charstring::compare(f,"MIN")) {
+			retval|=SQL_AF_MIN;
+		} else if (!charstring::compare(f,"SUM")) {
+			retval|=SQL_AF_SUM;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_DdlIndex(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*di=
+		conn->con->getDatabaseFeature("ddl_index_operations");
+	if (!di) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(di,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"CREATE_INDEX")) {
+			retval|=SQL_DI_CREATE_INDEX;
+		} else if (!charstring::compare(
+					f,"DROP_INDEX")) {
+			retval|=SQL_DI_DROP_INDEX;
+		}
+		delete[] parts[i];
+	}
+	delete[] parts;
+
+	return retval;
+}
+
+static SQLUINTEGER SQLR_InsertStatement(CONN *conn) {
+
+	SQLUINTEGER	retval=0;
+
+	const char	*is=
+		conn->con->getDatabaseFeature("insert_operations");
+	if (!is) {
+		return retval;
+	}
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(is,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"INSERT_LITERALS")) {
+			retval|=SQL_IS_INSERT_LITERALS;
+		} else if (!charstring::compare(
+					f,"INSERT_SEARCHED")) {
+			retval|=SQL_IS_INSERT_SEARCHED;
+		} else if (!charstring::compare(
+					f,"SELECT_INTO")) {
+			retval|=SQL_IS_SELECT_INTO;
 		}
 		delete[] parts[i];
 	}
@@ -8500,9 +9044,7 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_FETCH_DIRECTION:
 			debugPrintf("  infotype: "
 					"SQL_FETCH_DIRECTION\n");
-			// sqlrelay supports various fetch directions,
-			// but this driver doesn't
-			val.uintval=SQL_FD_FETCH_NEXT;
+			val.uintval=SQLR_FetchDirection(conn);
 			type=1;
 			break;
 		case SQL_SERVER_NAME:
@@ -8671,9 +9213,7 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_SCROLL_CONCURRENCY:
 			debugPrintf("  infotype: "
 					"SQL_SCROLL_CONCURRENCY\n");
-			// FIXME: get supports_result_set_concurrency_*,
-			// then filter it by what sqlrelay supports
-			val.uintval=SQL_SCCO_READ_ONLY;
+			val.uintval=SQLR_ScrollConcurrency(conn);
 			type=1;
 			break;
 		case SQL_TXN_CAPABLE:
@@ -8892,8 +9432,6 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_CURSOR_SENSITIVITY:
 			debugPrintf("  infotype: "
 					"SQL_CURSOR_SENSITIVITY\n");
-			// FIXME: get supports_result_set_type_*,
-			// then filter it by what sqlrelay supports
 			val.uintval=SQL_UNSPECIFIED;
 			type=1;
 			break;
@@ -9105,10 +9643,7 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_SCROLL_OPTIONS:
 			debugPrintf("  infotype: "
 					"SQL_SCROLL_OPTIONS\n");
-			// FIXME: get what the backend supports,
-			// then filter it by what sqlrelay supports,
-			// currently only these
-			val.uintval=SQL_SO_FORWARD_ONLY|SQL_SO_STATIC;
+			val.uintval=SQLR_ScrollOptions(conn);
 			type=1;
 			break;
 		case SQL_TABLE_TERM:
@@ -9319,10 +9854,7 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_POS_OPERATIONS:
 			debugPrintf("  infotype: "
 					"SQL_POS_OPERATIONS\n");
-			// FIXME: get what the backend supports,
-			// then filter it by what sqlrelay supports,
-			// currently only this
-			val.usmallintval=SQL_POS_POSITION;
+			val.usmallintval=SQLR_PosOperations(conn);
 			type=2;
 			break;
 		case SQL_POSITIONED_STATEMENTS:
@@ -9341,10 +9873,7 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_STATIC_SENSITIVITY:
 			debugPrintf("  infotype: "
 					"SQL_STATIC_SENSITIVITY\n");
-			// FIXME: get supports_result_set_type_*,
-			// then filter it by what sqlrelay supports
-			// (not sure what the options are)
-			val.uintval=0;
+			val.uintval=SQLR_StaticSensitivity(conn);
 			type=1;
 			break;
 		case SQL_FILE_USAGE:
@@ -9514,16 +10043,13 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_BATCH_ROW_COUNT:
 			debugPrintf("  infotype: "
 					"SQL_BATCH_ROW_COUNT\n");
-			// FIXME: db-specific
-			val.uintval=0;
+			val.uintval=SQLR_BatchRowCount(conn);
 			type=1;
 			break;
 		case SQL_BATCH_SUPPORT:
-			// FIXME: supports_batch_updates
 			debugPrintf("  infotype: "
 					"SQL_BATCH_SUPPORT\n");
-			// FIXME: db-specific
-			val.uintval=0;
+			val.uintval=SQLR_BatchSupport(conn);
 			type=1;
 			break;
 		case SQL_CONVERT_WCHAR:
@@ -9678,17 +10204,15 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES1:
 			debugPrintf("  infotype: "
 				"SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES1\n");
-			// FIXME: get what the backend supports,
-			// then filter it by what sqlrelay supports
-			val.uintval=SQL_CA1_NEXT|SQL_CA1_POS_POSITION;
+			val.uintval=
+				SQLR_ForwardOnlyCursorAttributes1(conn);
 			type=1;
 			break;
 		case SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES2:
 			debugPrintf("  infotype: "
 				"SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES2\n");
-			// FIXME: get what the backend supports,
-			// then filter it by what sqlrelay supports
-			val.uintval=SQL_CA2_READ_ONLY_CONCURRENCY;
+			val.uintval=
+				SQLR_ForwardOnlyCursorAttributes2(conn);
 			type=1;
 			break;
 		case SQL_INDEX_KEYWORDS:
@@ -9827,17 +10351,15 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_STATIC_CURSOR_ATTRIBUTES1:
 			debugPrintf("  infotype: "
 					"SQL_STATIC_CURSOR_ATTRIBUTES1\n");
-			// FIXME: get what the backend supports,
-			// then filter it by what sqlrelay supports
-			val.uintval=SQL_CA1_NEXT|SQL_CA1_POS_POSITION;
+			val.uintval=
+				SQLR_StaticCursorAttributes1(conn);
 			type=1;
 			break;
 		case SQL_STATIC_CURSOR_ATTRIBUTES2:
 			debugPrintf("  infotype: "
 					"SQL_STATIC_CURSOR_ATTRIBUTES2\n");
-			// FIXME: get what the backend supports,
-			// then filter it by what sqlrelay supports
-			val.uintval=SQL_CA2_READ_ONLY_CONCURRENCY;
+			val.uintval=
+				SQLR_StaticCursorAttributes2(conn);
 			type=1;
 			break;
 		case SQL_AGGREGATE_FUNCTIONS:

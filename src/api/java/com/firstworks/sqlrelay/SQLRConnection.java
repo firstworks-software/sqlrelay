@@ -351,46 +351,104 @@ public class SQLRConnection {
 	/** Returns the value of the specified database "feature".
 	 *
 	 *  Valid features include:
+	 *  * aggregate_functions
+	 *   * list - ALL,AVG,COUNT,DISTINCT,MAX,MIN,SUM
 	 *  * all_procedures_are_callable
 	 *   * true/false
 	 *  * all_tables_are_selectable
 	 *   * true/false
+	 *  * alter_domain_clauses
+	 *   * list - ADD_DOMAIN_CONSTRAINT,ADD_DOMAIN_DEFAULT,...
 	 *  * auto_commit_failure_closes_all_result_sets
 	 *   * true/false
+	 *  * batch_operations
+	 *   * list - SELECT_EXPLICIT,ROW_COUNT_EXPLICIT,SELECT_PROC,...
+	 *  * batch_row_counts
+	 *   * list - PROCEDURES,EXPLICIT,ROLLED_UP
 	 *  * catalog_separator
 	 *   * string
 	 *  * catalog_term
 	 *   * string
 	 *  * collation_seq
 	 *   * string
+	 *  * create_assertion_clauses
+	 *   * list - CREATE_ASSERTION,CONSTRAINT_INITIALLY_DEFERRED,...
+	 *  * create_character_set_clauses
+	 *   * list - CREATE_CHARACTER_SET,COLLATE_CLAUSE,...
+	 *  * create_collation_clauses
+	 *   * list - CREATE_COLLATION
+	 *  * create_domain_clauses
+	 *   * list - CREATE_DOMAIN,CONSTRAINT_NAME_DEFINITION,...
+	 *  * create_schema_clauses
+	 *   * list - CREATE_SCHEMA,AUTHORIZATION,DEFAULT_CHARACTER_SET
+	 *  * create_table_clauses
+	 *   * list - CREATE_TABLE,TABLE_CONSTRAINT,...
+	 *  * create_translation_clauses
+	 *   * list - CREATE_TRANSLATION
+	 *  * create_view_clauses
+	 *   * list - CREATE_VIEW,CHECK_OPTION,CASCADED,LOCAL
 	 *  * data_definition_causes_transaction_commit
 	 *   * true/false
 	 *  * data_definition_ignored_in_transactions
 	 *   * true/false
+	 *  * ddl_index_operations
+	 *   * list - CREATE_INDEX,DROP_INDEX
 	 *  * default_isolation_level
 	 *   * string
+	 *  * default_result_set_holdability
+	 *   * string
 	 *  * deletes_are_detected
-	 *   * list
+	 *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
 	 *  * does_max_row_size_include_blobs
 	 *   * true/false
+	 *  * drop_assertion_clauses
+	 *   * list - DROP_ASSERTION
+	 *  * drop_character_set_clauses
+	 *   * list - DROP_CHARACTER_SET
+	 *  * drop_collation_clauses
+	 *   * list - DROP_COLLATION
+	 *  * drop_domain_clauses
+	 *   * list - DROP_DOMAIN,CASCADE,RESTRICT
+	 *  * drop_schema_clauses
+	 *   * list - DROP_SCHEMA,CASCADE,RESTRICT
+	 *  * drop_table_clauses
+	 *   * list - DROP_TABLE,CASCADE,RESTRICT
+	 *  * drop_translation_clauses
+	 *   * list - DROP_TRANSLATION
+	 *  * drop_view_clauses
+	 *   * list - DROP_VIEW,CASCADE,RESTRICT
 	 *  * extra_name_characters
 	 *   * string
+	 *  * foreign_key_delete_rules
+	 *   * list - CASCADE,NO_ACTION,SET_DEFAULT,SET_NULL
+	 *  * foreign_key_update_rules
+	 *   * list - CASCADE,NO_ACTION,SET_DEFAULT,SET_NULL
+	 *  * forward_only_cursor_attributes
+	 *   * list - NEXT,ABSOLUTE,RELATIVE,BOOKMARK,...
 	 *  * generated_key_always_returned
 	 *   * true/false
+	 *  * grant_clauses
+	 *   * list - DELETE_TABLE,INSERT_COLUMN,INSERT_TABLE,...
 	 *  * identifier_quote_string
 	 *   * string
 	 *  * index_keywords
 	 *   * list - ASC,DESC
 	 *  * info_schema_views
-	 *   * list
+	 *   * list - ASSERTIONS,CHARACTER_SETS,CHECK_CONSTRAINTS,...
+	 *  * insert_operations
+	 *   * list - INSERT_LITERALS,INSERT_SEARCHED,SELECT_INTO
 	 *  * inserts_are_detected
-	 *   * list
+	 *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
 	 *  * is_catalog_at_start
 	 *   * true/false
 	 *  * is_read_only
 	 *   * true/false
+	 *  * isolation_levels
+	 *   * list - READ_UNCOMMITTED,READ_COMMITTED,...
 	 *  * locators_update_copy
 	 *   * true/false
+	 *  * lock_types
+	 *   * list - NO_CHANGE,EXCLUSIVE,UNLOCK
 	 *  * max_binary_literal_length
 	 *   * number
 	 *  * max_catalog_name_length
@@ -446,33 +504,51 @@ public class SQLRConnection {
 	 *  * nulls_are_sorted_low
 	 *   * true/false
 	 *  * numeric_functions
-	 *   * list - ABS,ACOS,ASIN,ATAN,ATAN2,CEILING,COS,EXP,FLOOR,...
+	 *   * list - ABS,ACOS,ASIN,ATAN,ATAN2,CEILING,COS,COT,...
 	 *  * others_deletes_are_visible
-	 *   * list - SCROLL_SENSITIVE
+	 *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
 	 *  * others_inserts_are_visible
-	 *   * list
+	 *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
 	 *  * others_updates_are_visible
-	 *   * list - SCROLL_SENSITIVE
+	 *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
 	 *  * own_deletes_are_visible
-	 *   * list - SCROLL_INSENSITIVE,SCROLL_SENSITIVE
+	 *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
 	 *  * own_inserts_are_visible
-	 *   * list
+	 *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
 	 *  * own_updates_are_visible
 	 *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
+	 *  * positioned_operations
+	 *   * list - POSITION,REFRESH,UPDATE,DELETE,ADD
+	 *  * predicates
+	 *   * list - BETWEEN,COMPARISON,EXISTS,IN,ISNOTNULL,ISNULL,...
 	 *  * procedure_term
 	 *   * string
-	 *  * result_set_holdability
-	 *   * number
+	 *  * relational_join_operators
+	 *   * list - CORRESPONDING_CLAUSE,CROSS_JOIN,EXCEPT_JOIN,...
+	 *  * result_set_concurrencies
+	 *   * list - FORWARD_ONLY/READ_ONLY,FORWARD_ONLY/UPDATABLE,...
+	 *  * result_set_holdabilities
+	 *   * list - CLOSE_CURSORS_AT_COMMIT,HOLD_CURSORS_OVER_COMMIT
+	 *  * result_set_types
+	 *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
+	 *  * revoke_clauses
+	 *   * list - CASCADE,DELETE_TABLE,GRANT_OPTION_FOR,...
 	 *  * row_id_lifetime
 	 *   * string
+	 *  * row_value_constructor_expressions
+	 *   * list - VALUE_EXPRESSION,NULL,DEFAULT,ROW_SUBQUERY
 	 *  * schema_term
 	 *   * string
+	 *  * scroll_concurrencies
+	 *   * list - READ_ONLY,LOCK,OPT_ROWVER,OPT_VALUES
 	 *  * search_string_escape
 	 *   * string
 	 *  * sql_keywords
 	 *   * list - ACCESS,ADD,ALTER,AUDIT,CLUSTER,COLUMN,COMMENT,...
 	 *  * sql_state_type
 	 *   * number
+	 *  * static_cursor_attributes
+	 *   * list - NEXT,ABSOLUTE,RELATIVE,BOOKMARK,...
 	 *  * stores_lower_case_identifiers
 	 *   * true/false
 	 *  * stores_lower_case_quoted_identifiers
@@ -486,23 +562,7 @@ public class SQLRConnection {
 	 *  * stores_upper_case_quoted_identifiers
 	 *   * true/false
 	 *  * string_functions
-	 *   * list - ASCII,CHAR,CHAR_LENGTH,CHARACTER_LENGTH,CONCAT,...
-	 *  * supported_foreign_key_delete_rules
-	 *   * list - CASCADE,NO_ACTION,SET_NULL
-	 *  * supported_foreign_key_update_rules
-	 *   * list - CASCADE,NO_ACTION,SET_NULL
-	 *  * supported_predicates
-	 *   * list - BETWEEN,COMPARISON,EXISTS,IN,ISNOTNULL,ISNULL,...
-	 *  * supported_relational_join_operators
-	 *   * list - CROSS_JOIN,FULL_OUTER_JOIN,INNER_JOIN,...
-	 *  * supported_row_value_constructor_expressions
-	 *   * list - VALUE_EXPRESSION,NULL,DEFAULT,ROW_SUBQUERY
-	 *  * supported_value_expressions
-	 *   * list - CASE,CAST,COALESCE,NULLIF
-	 *  * supports_aggregate_functions
-	 *   * list - ALL,AVG,COUNT,DISTINCT,MAX,MIN,SUM
-	 *  * supports_alter_domain
-	 *   * list
+	 *   * list - CONCAT,INSERT,LEFT,LTRIM,LENGTH,LOCATE,LCASE,...
 	 *  * supports_alter_table_with_add_column
 	 *   * true/false
 	 *  * supports_alter_table_with_drop_column
@@ -533,48 +593,14 @@ public class SQLRConnection {
 	 *   * true/false
 	 *  * supports_correlated_subqueries
 	 *   * true/false
-	 *  * supports_create_assertion
-	 *   * list
-	 *  * supports_create_character_set
-	 *   * list
-	 *  * supports_create_collation
-	 *   * list
-	 *  * supports_create_domain
-	 *   * list
-	 *  * supports_create_schema
-	 *   * list - CREATE_SCHEMA,AUTHORIZATION
-	 *  * supports_create_table
-	 *   * list - CREATE_TABLE,TABLE_CONSTRAINT,...
-	 *  * supports_create_translation
-	 *   * list
-	 *  * supports_create_view
-	 *   * list - CREATE_VIEW,CHECK_OPTION,LOCAL
 	 *  * supports_data_definition_and_data_manipulation_transactions
 	 *   * true/false
 	 *  * supports_data_manipulation_transactions_only
 	 *   * true/false
-	 *  * supports_ddl_index
-	 *   * list - CREATE_INDEX,DROP_INDEX
 	 *  * supports_describe_parameter
 	 *   * true/false
 	 *  * supports_different_table_correlation_names
 	 *   * true/false
-	 *  * supports_drop_assertion
-	 *   * list
-	 *  * supports_drop_character_set
-	 *   * list
-	 *  * supports_drop_collation
-	 *   * list
-	 *  * supports_drop_domain
-	 *   * list
-	 *  * supports_drop_schema
-	 *   * list - DROP_SCHEMA,CASCADE,RESTRICT
-	 *  * supports_drop_table
-	 *   * list - DROP_TABLE,CASCADE,RESTRICT
-	 *  * supports_drop_translation
-	 *   * list
-	 *  * supports_drop_view
-	 *   * list - DROP_VIEW,CASCADE,RESTRICT
 	 *  * supports_expressions_in_order_by
 	 *   * true/false
 	 *  * supports_extended_sql_grammar
@@ -583,24 +609,18 @@ public class SQLRConnection {
 	 *   * true/false
 	 *  * supports_get_generated_keys
 	 *   * true/false
-	 *  * supports_grant
-	 *   * list - DELETE_TABLE,INSERT_COLUMN,INSERT_TABLE,...
 	 *  * supports_group_by
 	 *   * true/false
 	 *  * supports_group_by_beyond_select
 	 *   * true/false
 	 *  * supports_group_by_unrelated
 	 *   * true/false
-	 *  * supports_insert_statement
-	 *   * list - INSERT_LITERALS,INSERT_SEARCHED,SELECT_INTO
 	 *  * supports_integrity_enhancement_facility
 	 *   * true/false
 	 *  * supports_like_escape_clause
 	 *   * true/false
 	 *  * supports_limited_outer_joins
 	 *   * true/false
-	 *  * supports_lock_types
-	 *   * list - NO_CHANGE,EXCLUSIVE,UNLOCK
 	 *  * supports_minimum_sql_grammar
 	 *   * true/false
 	 *  * supports_mixed_case_identifiers
@@ -631,14 +651,6 @@ public class SQLRConnection {
 	 *   * true/false
 	 *  * supports_positioned_update
 	 *   * true/false
-	 *  * supports_result_set_concurrency
-	 *   * list - FORWARD_ONLY/READ_ONLY,FORWARD_ONLY/UPDATABLE,...
-	 *  * supports_result_set_holdability
-	 *   * list - CLOSE_CURSORS_AT_COMMIT,HOLD_CURSORS_OVER_COMMIT
-	 *  * supports_result_set_type
-	 *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
-	 *  * supports_revoke
-	 *   * list - CASCADE,DELETE_TABLE,GRANT_OPTION_FOR,...
 	 *  * supports_savepoints
 	 *   * true/false
 	 *  * supports_schemas_in_data_manipulation
@@ -667,8 +679,6 @@ public class SQLRConnection {
 	 *   * true/false
 	 *  * supports_table_correlation_names
 	 *   * true/false
-	 *  * supports_transaction_isolation_level
-	 *   * list - READ_COMMITTED,SERIALIZABLE
 	 *  * supports_transactions
 	 *   * true/false
 	 *  * supports_union
@@ -676,23 +686,25 @@ public class SQLRConnection {
 	 *  * supports_union_all
 	 *   * true/false
 	 *  * system_functions
-	 *   * list - USER
+	 *   * list - USER,DBNAME,IFNULL
 	 *  * table_term
 	 *   * string
 	 *  * time_date_add_intervals
-	 *   * list
+	 *   * list - FRAC_SECOND,SECOND,MINUTE,HOUR,DAY,WEEK,MONTH,...
 	 *  * time_date_diff_intervals
-	 *   * list
+	 *   * list - FRAC_SECOND,SECOND,MINUTE,HOUR,DAY,WEEK,MONTH,...
 	 *  * time_date_functions
-	 *   * list - CURRENT_DATE,CURRENT_TIMESTAMP,CURDATE,EXTRACT,...
+	 *   * list - NOW,CURDATE,DAYOFMONTH,DAYOFWEEK,DAYOFYEAR,...
 	 *  * time_date_literals
-	 *   * list - DATE,TIMESTAMP,INTERVAL_YEAR_TO_MONTH,...
+	 *   * list - DATE,TIME,TIMESTAMP,INTERVAL_YEAR,...
 	 *  * updates_are_detected
-	 *   * list
+	 *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
 	 *  * uses_local_file_per_table
 	 *   * true/false
 	 *  * uses_local_files
 	 *   * true/false
+	 *  * value_expressions
+	 *   * list - CASE,CAST,COALESCE,NULLIF
 	 *
 	 *  Returns the value of the feature as a string, or null if
 	 *  an error occurred or an invalid feature was requested. */

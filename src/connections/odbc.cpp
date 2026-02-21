@@ -1225,6 +1225,23 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	SQLSMALLINT	size=0;
 	stringbuffer	sb;
 
+	// SQL_AGGREGATE_FUNCTIONS -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_AGGREGATE_FUNCTIONS,&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	af[]={
+		{SQL_AF_ALL,"ALL"},
+		{SQL_AF_AVG,"AVG"},
+		{SQL_AF_COUNT,"COUNT"},
+		{SQL_AF_DISTINCT,"DISTINCT"},
+		{SQL_AF_MAX,"MAX"},
+		{SQL_AF_MIN,"MIN"},
+		{SQL_AF_SUM,"SUM"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,af);
+	databasefeatures[FEATURE_AGGREGATE_FUNCTIONS]=
+							sb.detachString();
+
 	// SQL_ACCESSIBLE_PROCEDURES -> Y/N
 	strbuf[0]='\0';
 	SQLGetInfo(dbc,SQL_ACCESSIBLE_PROCEDURES,strbuf,sizeof(strbuf),&size);
@@ -1237,9 +1254,55 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_ALL_TABLES_ARE_SELECTABLE]=
 		charstring::duplicate((strbuf[0]=='Y')?"true":"false");
 
+	// SQL_ALTER_DOMAIN -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_ALTER_DOMAIN,&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	ad[]={
+		{SQL_AD_ADD_DOMAIN_CONSTRAINT,
+				"ADD_DOMAIN_CONSTRAINT"},
+		{SQL_AD_ADD_DOMAIN_DEFAULT,
+				"ADD_DOMAIN_DEFAULT"},
+		{SQL_AD_CONSTRAINT_NAME_DEFINITION,
+				"CONSTRAINT_NAME_DEFINITION"},
+		{SQL_AD_DROP_DOMAIN_CONSTRAINT,
+				"DROP_DOMAIN_CONSTRAINT"},
+		{SQL_AD_DROP_DOMAIN_DEFAULT,
+				"DROP_DOMAIN_DEFAULT"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,ad);
+	databasefeatures[FEATURE_ALTER_DOMAIN_CLAUSES]=sb.detachString();
+
 	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_AUTO_COMMIT_FAILURE_CLOSES_ALL_RESULT_SETS]=
 		charstring::duplicate("");
+
+	// SQL_BATCH_SUPPORT -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_BATCH_SUPPORT,&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	bs[]={
+		{SQL_BS_SELECT_EXPLICIT,"SELECT_EXPLICIT"},
+		{SQL_BS_ROW_COUNT_EXPLICIT,"ROW_COUNT_EXPLICIT"},
+		{SQL_BS_SELECT_PROC,"SELECT_PROC"},
+		{SQL_BS_ROW_COUNT_PROC,"ROW_COUNT_PROC"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,bs);
+	databasefeatures[FEATURE_BATCH_OPERATIONS]=
+					sb.detachString();
+
+	// SQL_BATCH_ROW_COUNT -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_BATCH_ROW_COUNT,&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	brc[]={
+		{SQL_BRC_PROCEDURES,"PROCEDURES"},
+		{SQL_BRC_EXPLICIT,"EXPLICIT"},
+		{SQL_BRC_ROLLED_UP,"ROLLED_UP"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,brc);
+	databasefeatures[FEATURE_BATCH_ROW_COUNTS]=
+					sb.detachString();
 
 	// SQL_QUALIFIER_NAME_SEPARATOR -> string
 	strbuf[0]='\0';
@@ -1260,6 +1323,156 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_COLLATION_SEQ]=
 		charstring::duplicate(strbuf);
 
+	// SQL_CREATE_ASSERTION -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_CREATE_ASSERTION,
+				&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	ca[]={
+		{SQL_CA_CREATE_ASSERTION,
+			"CREATE_ASSERTION"},
+		{SQL_CA_CONSTRAINT_INITIALLY_DEFERRED,
+			"CONSTRAINT_INITIALLY_DEFERRED"},
+		{SQL_CA_CONSTRAINT_INITIALLY_IMMEDIATE,
+			"CONSTRAINT_INITIALLY_IMMEDIATE"},
+		{SQL_CA_CONSTRAINT_DEFERRABLE,
+			"CONSTRAINT_DEFERRABLE"},
+		{SQL_CA_CONSTRAINT_NON_DEFERRABLE,
+			"CONSTRAINT_NON_DEFERRABLE"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,ca);
+	databasefeatures[FEATURE_CREATE_ASSERTION_CLAUSES]=sb.detachString();
+
+	// SQL_CREATE_CHARACTER_SET -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_CREATE_CHARACTER_SET,
+				&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	ccs[]={
+		{SQL_CCS_CREATE_CHARACTER_SET,
+			"CREATE_CHARACTER_SET"},
+		{SQL_CCS_COLLATE_CLAUSE,"COLLATE_CLAUSE"},
+		{SQL_CCS_LIMITED_COLLATION,
+			"LIMITED_COLLATION"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,ccs);
+	databasefeatures[FEATURE_CREATE_CHARACTER_SET_CLAUSES]=
+							sb.detachString();
+
+	// SQL_CREATE_COLLATION -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_CREATE_COLLATION,
+				&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	ccol[]={
+		{SQL_CCOL_CREATE_COLLATION,"CREATE_COLLATION"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,ccol);
+	databasefeatures[FEATURE_CREATE_COLLATION_CLAUSES]=sb.detachString();
+
+	// SQL_CREATE_DOMAIN -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_CREATE_DOMAIN,
+				&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	cdo[]={
+		{SQL_CDO_CREATE_DOMAIN,
+			"CREATE_DOMAIN"},
+		{SQL_CDO_CONSTRAINT_NAME_DEFINITION,
+			"CONSTRAINT_NAME_DEFINITION"},
+		{SQL_CDO_DEFAULT,
+			"DEFAULT"},
+		{SQL_CDO_CONSTRAINT,
+			"CONSTRAINT"},
+		{SQL_CDO_COLLATION,
+			"COLLATION"},
+		{SQL_CDO_CONSTRAINT_INITIALLY_DEFERRED,
+			"CONSTRAINT_INITIALLY_DEFERRED"},
+		{SQL_CDO_CONSTRAINT_INITIALLY_IMMEDIATE,
+			"CONSTRAINT_INITIALLY_IMMEDIATE"},
+		{SQL_CDO_CONSTRAINT_DEFERRABLE,
+			"CONSTRAINT_DEFERRABLE"},
+		{SQL_CDO_CONSTRAINT_NON_DEFERRABLE,
+			"CONSTRAINT_NON_DEFERRABLE"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,cdo);
+	databasefeatures[FEATURE_CREATE_DOMAIN_CLAUSES]=sb.detachString();
+
+	// SQL_CREATE_SCHEMA -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_CREATE_SCHEMA,
+				&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	cs[]={
+		{SQL_CS_CREATE_SCHEMA,"CREATE_SCHEMA"},
+		{SQL_CS_AUTHORIZATION,"AUTHORIZATION"},
+		{SQL_CS_DEFAULT_CHARACTER_SET,"DEFAULT_CHARACTER_SET"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,cs);
+	databasefeatures[FEATURE_CREATE_SCHEMA_CLAUSES]=sb.detachString();
+
+	// SQL_CREATE_TABLE -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_CREATE_TABLE,
+				&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	ct[]={
+		{SQL_CT_CREATE_TABLE,
+				"CREATE_TABLE"},
+		{SQL_CT_TABLE_CONSTRAINT,
+				"TABLE_CONSTRAINT"},
+		{SQL_CT_CONSTRAINT_NAME_DEFINITION,
+				"CONSTRAINT_NAME_DEFINITION"},
+		{SQL_CT_COMMIT_DELETE,
+				"COMMIT_DELETE"},
+		{SQL_CT_COMMIT_PRESERVE,
+				"COMMIT_PRESERVE"},
+		{SQL_CT_GLOBAL_TEMPORARY,
+				"GLOBAL_TEMPORARY"},
+		{SQL_CT_LOCAL_TEMPORARY,
+				"LOCAL_TEMPORARY"},
+		{SQL_CT_COLUMN_CONSTRAINT,
+				"COLUMN_CONSTRAINT"},
+		{SQL_CT_COLUMN_DEFAULT,
+				"COLUMN_DEFAULT"},
+		{SQL_CT_COLUMN_COLLATION,
+				"COLUMN_COLLATION"},
+		{SQL_CT_CONSTRAINT_INITIALLY_DEFERRED,
+				"CONSTRAINT_INITIALLY_DEFERRED"},
+		{SQL_CT_CONSTRAINT_INITIALLY_IMMEDIATE,
+				"CONSTRAINT_INITIALLY_IMMEDIATE"},
+		{SQL_CT_CONSTRAINT_DEFERRABLE,
+				"CONSTRAINT_DEFERRABLE"},
+		{SQL_CT_CONSTRAINT_NON_DEFERRABLE,
+				"CONSTRAINT_NON_DEFERRABLE"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,ct);
+	databasefeatures[FEATURE_CREATE_TABLE_CLAUSES]=sb.detachString();
+
+	// SQL_CREATE_TRANSLATION -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_CREATE_TRANSLATION,
+				&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	ctr[]={
+		{SQL_CTR_CREATE_TRANSLATION,"CREATE_TRANSLATION"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,ctr);
+	databasefeatures[FEATURE_CREATE_TRANSLATION_CLAUSES]=sb.detachString();
+
+	// SQL_CREATE_VIEW -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_CREATE_VIEW,&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	cv[]={
+		{SQL_CV_CREATE_VIEW,"CREATE_VIEW"},
+		{SQL_CV_CHECK_OPTION,"CHECK_OPTION"},
+		{SQL_CV_CASCADED,"CASCADED"},
+		{SQL_CV_LOCAL,"LOCAL"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,cv);
+	databasefeatures[FEATURE_CREATE_VIEW_CLAUSES]=sb.detachString();
+
 	// SQL_TXN_CAPABLE -> enum, check for SQL_TC_DDL_COMMIT
 	usmallintbuf=0;
 	SQLGetInfo(dbc,SQL_TXN_CAPABLE,
@@ -1273,6 +1486,17 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		charstring::duplicate(
 			(usmallintbuf==SQL_TC_DDL_IGNORE)?"true":"false");
 
+	// SQL_DDL_INDEX -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_DDL_INDEX,&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	di[]={
+		{SQL_DI_CREATE_INDEX,"CREATE_INDEX"},
+		{SQL_DI_DROP_INDEX,"DROP_INDEX"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,di);
+	databasefeatures[FEATURE_DDL_INDEX_OPERATIONS]=sb.detachString();
+
 	// SQL_DEFAULT_TXN_ISOLATION -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_DEFAULT_TXN_ISOLATION,
@@ -1285,6 +1509,8 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 			(uintbuf==SQL_TXN_READ_UNCOMMITTED)?"UNCOMMITTED":"");
 
 	// no obvious ODBC equivalent
+	databasefeatures[FEATURE_DEFAULT_RESULT_SET_HOLDABILITY]=
+		charstring::duplicate("");
 	databasefeatures[FEATURE_DELETES_ARE_DETECTED]=
 		charstring::duplicate("");
 
@@ -1295,15 +1521,188 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_DOES_MAX_ROW_SIZE_INCLUDE_BLOBS]=
 		charstring::duplicate((strbuf[0]=='Y')?"true":"false");
 
+	// SQL_DROP_ASSERTION -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_DROP_ASSERTION,&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	da[]={
+		{SQL_DA_DROP_ASSERTION,"DROP_ASSERTION"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,da);
+	databasefeatures[FEATURE_DROP_ASSERTION_CLAUSES]=sb.detachString();
+
+	// SQL_DROP_CHARACTER_SET -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_DROP_CHARACTER_SET,
+				&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	dcs[]={
+		{SQL_DCS_DROP_CHARACTER_SET,"DROP_CHARACTER_SET"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,dcs);
+	databasefeatures[FEATURE_DROP_CHARACTER_SET_CLAUSES]=
+							sb.detachString();
+
+	// SQL_DROP_COLLATION -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_DROP_COLLATION,
+				&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	dc[]={
+		{SQL_DC_DROP_COLLATION,"DROP_COLLATION"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,dc);
+	databasefeatures[FEATURE_DROP_COLLATION_CLAUSES]=sb.detachString();
+
+	// SQL_DROP_DOMAIN -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_DROP_DOMAIN,&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	dd[]={
+		{SQL_DD_DROP_DOMAIN,"DROP_DOMAIN"},
+		{SQL_DD_CASCADE,"CASCADE"},
+		{SQL_DD_RESTRICT,"RESTRICT"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,dd);
+	databasefeatures[FEATURE_DROP_DOMAIN_CLAUSES]=sb.detachString();
+
+	// SQL_DROP_SCHEMA -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_DROP_SCHEMA,&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	ds[]={
+		{SQL_DS_DROP_SCHEMA,"DROP_SCHEMA"},
+		{SQL_DS_CASCADE,"CASCADE"},
+		{SQL_DS_RESTRICT,"RESTRICT"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,ds);
+	databasefeatures[FEATURE_DROP_SCHEMA_CLAUSES]=sb.detachString();
+
+	// SQL_DROP_TABLE -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_DROP_TABLE,&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	dt[]={
+		{SQL_DT_DROP_TABLE,"DROP_TABLE"},
+		{SQL_DT_CASCADE,"CASCADE"},
+		{SQL_DT_RESTRICT,"RESTRICT"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,dt);
+	databasefeatures[FEATURE_DROP_TABLE_CLAUSES]=sb.detachString();
+
+	// SQL_DROP_TRANSLATION -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_DROP_TRANSLATION,
+				&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	dtr[]={
+		{SQL_DTR_DROP_TRANSLATION,"DROP_TRANSLATION"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,dtr);
+	databasefeatures[FEATURE_DROP_TRANSLATION_CLAUSES]=sb.detachString();
+
+	// SQL_DROP_VIEW -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_DROP_VIEW,&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	dv[]={
+		{SQL_DV_DROP_VIEW,"DROP_VIEW"},
+		{SQL_DV_CASCADE,"CASCADE"},
+		{SQL_DV_RESTRICT,"RESTRICT"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,dv);
+	databasefeatures[FEATURE_DROP_VIEW_CLAUSES]=sb.detachString();
+
 	// SQL_SPECIAL_CHARACTERS -> string
 	strbuf[0]='\0';
 	SQLGetInfo(dbc,SQL_SPECIAL_CHARACTERS,strbuf,sizeof(strbuf),&size);
 	databasefeatures[FEATURE_EXTRA_NAME_CHARACTERS]=
 		charstring::duplicate(strbuf);
 
+	// SQL_SQL92_FOREIGN_KEY_DELETE_RULE -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_SQL92_FOREIGN_KEY_DELETE_RULE,
+					&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	fkdr[]={
+		{SQL_SFKD_CASCADE,"CASCADE"},
+		{SQL_SFKD_NO_ACTION,"NO_ACTION"},
+		{SQL_SFKD_SET_DEFAULT,"SET_DEFAULT"},
+		{SQL_SFKD_SET_NULL,"SET_NULL"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,fkdr);
+	databasefeatures[FEATURE_FOREIGN_KEY_DELETE_RULES]=
+							sb.detachString();
+
+	// SQL_SQL92_FOREIGN_KEY_UPDATE_RULE -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_SQL92_FOREIGN_KEY_UPDATE_RULE,
+					&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	fkur[]={
+		{SQL_SFKU_CASCADE,"CASCADE"},
+		{SQL_SFKU_NO_ACTION,"NO_ACTION"},
+		{SQL_SFKU_SET_DEFAULT,"SET_DEFAULT"},
+		{SQL_SFKU_SET_NULL,"SET_NULL"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,fkur);
+	databasefeatures[FEATURE_FOREIGN_KEY_UPDATE_RULES]=
+							sb.detachString();
+
+	// SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES2 -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES2,
+					&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	foca2[]={
+		{SQL_CA2_READ_ONLY_CONCURRENCY,"READ_ONLY_CONCURRENCY"},
+		{SQL_CA2_LOCK_CONCURRENCY,"LOCK_CONCURRENCY"},
+		{SQL_CA2_OPT_ROWVER_CONCURRENCY,"OPT_ROWVER_CONCURRENCY"},
+		{SQL_CA2_OPT_VALUES_CONCURRENCY,"OPT_VALUES_CONCURRENCY"},
+		{SQL_CA2_SENSITIVITY_ADDITIONS,"SENSITIVITY_ADDITIONS"},
+		{SQL_CA2_SENSITIVITY_DELETIONS,"SENSITIVITY_DELETIONS"},
+		{SQL_CA2_SENSITIVITY_UPDATES,"SENSITIVITY_UPDATES"},
+		{SQL_CA2_MAX_ROWS_SELECT,"MAX_ROWS_SELECT"},
+		{SQL_CA2_MAX_ROWS_INSERT,"MAX_ROWS_INSERT"},
+		{SQL_CA2_MAX_ROWS_DELETE,"MAX_ROWS_DELETE"},
+		{SQL_CA2_MAX_ROWS_UPDATE,"MAX_ROWS_UPDATE"},
+		{SQL_CA2_MAX_ROWS_CATALOG,"MAX_ROWS_CATALOG"},
+		{SQL_CA2_CRC_EXACT,"CRC_EXACT"},
+		{SQL_CA2_CRC_APPROXIMATE,"CRC_APPROXIMATE"},
+		{SQL_CA2_SIMULATE_NON_UNIQUE,"SIMULATE_NON_UNIQUE"},
+		{SQL_CA2_SIMULATE_TRY_UNIQUE,"SIMULATE_TRY_UNIQUE"},
+		{SQL_CA2_SIMULATE_UNIQUE,"SIMULATE_UNIQUE"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,foca2);
+
+	databasefeatures[FEATURE_FORWARD_ONLY_CURSOR_ATTRIBUTES]=
+					sb.detachString();
+
 	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_GENERATED_KEY_ALWAYS_RETURNED]=
 		charstring::duplicate("");
+
+	// SQL_SQL92_GRANT -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_SQL92_GRANT,&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	sg[]={
+		{SQL_SG_DELETE_TABLE,"DELETE_TABLE"},
+		{SQL_SG_INSERT_COLUMN,"INSERT_COLUMN"},
+		{SQL_SG_INSERT_TABLE,"INSERT_TABLE"},
+		{SQL_SG_REFERENCES_TABLE,"REFERENCES_TABLE"},
+		{SQL_SG_REFERENCES_COLUMN,"REFERENCES_COLUMN"},
+		{SQL_SG_SELECT_TABLE,"SELECT_TABLE"},
+		{SQL_SG_UPDATE_COLUMN,"UPDATE_COLUMN"},
+		{SQL_SG_UPDATE_TABLE,"UPDATE_TABLE"},
+		{SQL_SG_USAGE_ON_DOMAIN,"USAGE_ON_DOMAIN"},
+		{SQL_SG_USAGE_ON_CHARACTER_SET,"USAGE_ON_CHARACTER_SET"},
+		{SQL_SG_USAGE_ON_COLLATION,"USAGE_ON_COLLATION"},
+		{SQL_SG_USAGE_ON_TRANSLATION,"USAGE_ON_TRANSLATION"},
+		{SQL_SG_WITH_GRANT_OPTION,"WITH_GRANT_OPTION"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,sg);
+	databasefeatures[FEATURE_GRANT_CLAUSES]=sb.detachString();
 
 	// SQL_IDENTIFIER_QUOTE_CHAR -> string
 	strbuf[0]='\0';
@@ -1359,6 +1758,33 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_INSERTS_ARE_DETECTED]=
 		charstring::duplicate("");
 
+	// SQL_INSERT_STATEMENT -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_INSERT_STATEMENT,&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	is[]={
+		{SQL_IS_INSERT_LITERALS,"INSERT_LITERALS"},
+		{SQL_IS_INSERT_SEARCHED,"INSERT_SEARCHED"},
+		{SQL_IS_SELECT_INTO,"SELECT_INTO"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,is);
+	databasefeatures[FEATURE_INSERT_OPERATIONS]=sb.detachString();
+
+	// SQL_TXN_ISOLATION_OPTION -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_TXN_ISOLATION_OPTION,
+					&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	tilf[]={
+		{SQL_TXN_READ_UNCOMMITTED,"READ_UNCOMMITTED"},
+		{SQL_TXN_READ_COMMITTED,"READ_COMMITTED"},
+		{SQL_TXN_REPEATABLE_READ,"REPEATABLE_READ"},
+		{SQL_TXN_SERIALIZABLE,"SERIALIZABLE"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,tilf);
+	databasefeatures[FEATURE_ISOLATION_LEVELS]=
+		sb.detachString();
+
 	// SQL_QUALIFIER_LOCATION -> usmallint, check for SQL_CL_START
 	usmallintbuf=0;
 	SQLGetInfo(dbc,SQL_QUALIFIER_LOCATION,
@@ -1377,6 +1803,18 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_LOCATORS_UPDATE_COPY]=
 		charstring::duplicate("");
+
+	// SQL_LOCK_TYPES -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_LOCK_TYPES,&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	lt[]={
+		{SQL_LCK_NO_CHANGE,"NO_CHANGE"},
+		{SQL_LCK_EXCLUSIVE,"EXCLUSIVE"},
+		{SQL_LCK_UNLOCK,"UNLOCK"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,lt);
+	databasefeatures[FEATURE_LOCK_TYPES]=sb.detachString();
 
 	// SQL_MAX_BINARY_LITERAL_LEN -> uintval
 	uintbuf=0;
@@ -1400,14 +1838,6 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 					&uintbuf,sizeof(uintbuf),&size);
 	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)uintbuf);
 	databasefeatures[FEATURE_MAX_CHAR_LITERAL_LENGTH]=
-		charstring::duplicate(numbuf);
-
-	// SQL_MAX_COLUMN_NAME_LEN -> usmallint
-	usmallintbuf=0;
-	SQLGetInfo(dbc,SQL_MAX_COLUMN_NAME_LEN,
-				&usmallintbuf,sizeof(usmallintbuf),&size);
-	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)usmallintbuf);
-	databasefeatures[FEATURE_MAX_COLUMN_NAME_LENGTH]=
 		charstring::duplicate(numbuf);
 
 	// SQL_MAX_COLUMNS_IN_GROUP_BY -> usmallint
@@ -1448,6 +1878,14 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 				&usmallintbuf,sizeof(usmallintbuf),&size);
 	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)usmallintbuf);
 	databasefeatures[FEATURE_MAX_COLUMNS_IN_TABLE]=
+		charstring::duplicate(numbuf);
+
+	// SQL_MAX_COLUMN_NAME_LEN -> usmallint
+	usmallintbuf=0;
+	SQLGetInfo(dbc,SQL_MAX_COLUMN_NAME_LEN,
+				&usmallintbuf,sizeof(usmallintbuf),&size);
+	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)usmallintbuf);
+	databasefeatures[FEATURE_MAX_COLUMN_NAME_LENGTH]=
 		charstring::duplicate(numbuf);
 
 	// SQL_ACTIVE_CONNECTIONS -> usmallint
@@ -1504,13 +1942,6 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_SCHEMA_NAME_LENGTH]=
 		charstring::duplicate(numbuf);
 
-	// SQL_MAX_STATEMENT_LEN -> uintval
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_MAX_STATEMENT_LEN,&uintbuf,sizeof(uintbuf),&size);
-	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)uintbuf);
-	databasefeatures[FEATURE_MAX_STATEMENT_LENGTH]=
-		charstring::duplicate(numbuf);
-
 	// SQL_ACTIVE_STATEMENTS -> usmallint
 	usmallintbuf=0;
 	SQLGetInfo(dbc,SQL_ACTIVE_STATEMENTS,
@@ -1519,12 +1950,11 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_STATEMENTS]=
 		charstring::duplicate(numbuf);
 
-	// SQL_MAX_TABLE_NAME_LEN -> usmallint
-	usmallintbuf=0;
-	SQLGetInfo(dbc,SQL_MAX_TABLE_NAME_LEN,
-				&usmallintbuf,sizeof(usmallintbuf),&size);
-	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)usmallintbuf);
-	databasefeatures[FEATURE_MAX_TABLE_NAME_LENGTH]=
+	// SQL_MAX_STATEMENT_LEN -> uintval
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_MAX_STATEMENT_LEN,&uintbuf,sizeof(uintbuf),&size);
+	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)uintbuf);
+	databasefeatures[FEATURE_MAX_STATEMENT_LENGTH]=
 		charstring::duplicate(numbuf);
 
 	// SQL_MAX_TABLES_IN_SELECT -> usmallint
@@ -1533,6 +1963,14 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 				&usmallintbuf,sizeof(usmallintbuf),&size);
 	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)usmallintbuf);
 	databasefeatures[FEATURE_MAX_TABLES_IN_SELECT]=
+		charstring::duplicate(numbuf);
+
+	// SQL_MAX_TABLE_NAME_LEN -> usmallint
+	usmallintbuf=0;
+	SQLGetInfo(dbc,SQL_MAX_TABLE_NAME_LEN,
+				&usmallintbuf,sizeof(usmallintbuf),&size);
+	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)usmallintbuf);
+	databasefeatures[FEATURE_MAX_TABLE_NAME_LENGTH]=
 		charstring::duplicate(numbuf);
 
 	// SQL_MAX_USER_NAME_LEN -> usmallint
@@ -1550,14 +1988,6 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_NEED_LONG_DATA_LENGTH]=
 		charstring::duplicate((strbuf[0]=='Y')?"true":"false");
 
-	// SQL_CONCAT_NULL_BEHAVIOR -> usmallint
-	usmallintbuf=0;
-	SQLGetInfo(dbc,SQL_CONCAT_NULL_BEHAVIOR,
-				&usmallintbuf,sizeof(usmallintbuf),&size);
-	databasefeatures[FEATURE_NULL_PLUS_NON_NULL_IS_NULL]=
-		charstring::duplicate(
-			(usmallintbuf==SQL_CB_NULL)?"true":"false");
-
 	// SQL_NULL_COLLATION -> usmallint
 	usmallintbuf=0;
 	SQLGetInfo(dbc,SQL_NULL_COLLATION,
@@ -1574,6 +2004,14 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_NULLS_ARE_SORTED_LOW]=
 		charstring::duplicate(
 			(usmallintbuf==SQL_NC_LOW)?"true":"false");
+
+	// SQL_CONCAT_NULL_BEHAVIOR -> usmallint
+	usmallintbuf=0;
+	SQLGetInfo(dbc,SQL_CONCAT_NULL_BEHAVIOR,
+				&usmallintbuf,sizeof(usmallintbuf),&size);
+	databasefeatures[FEATURE_NULL_PLUS_NON_NULL_IS_NULL]=
+		charstring::duplicate(
+			(usmallintbuf==SQL_CB_NULL)?"true":"false");
 
 	// SQL_NUMERIC_FUNCTIONS -> bitmask
 	uintbuf=0;
@@ -1622,23 +2060,142 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_OWN_UPDATES_ARE_VISIBLE]=
 		charstring::duplicate("");
 
+	// SQL_POS_OPERATIONS -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_POS_OPERATIONS,&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	po[]={
+		{SQL_POS_POSITION,"POSITION"},
+		{SQL_POS_REFRESH,"REFRESH"},
+		{SQL_POS_UPDATE,"UPDATE"},
+		{SQL_POS_DELETE,"DELETE"},
+		{SQL_POS_ADD,"ADD"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,po);
+	databasefeatures[FEATURE_POSITIONED_OPERATIONS]=
+							sb.detachString();
+
+	// SQL_SQL92_PREDICATES -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_SQL92_PREDICATES,
+					&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	sp[]={
+		{SQL_SP_BETWEEN,"BETWEEN"},
+		{SQL_SP_COMPARISON,"COMPARISON"},
+		{SQL_SP_EXISTS,"EXISTS"},
+		{SQL_SP_IN,"IN"},
+		{SQL_SP_ISNOTNULL,"ISNOTNULL"},
+		{SQL_SP_ISNULL,"ISNULL"},
+		{SQL_SP_LIKE,"LIKE"},
+		{SQL_SP_MATCH_FULL,"MATCH_FULL"},
+		{SQL_SP_MATCH_PARTIAL,"MATCH_PARTIAL"},
+		{SQL_SP_MATCH_UNIQUE_FULL,"MATCH_UNIQUE_FULL"},
+		{SQL_SP_MATCH_UNIQUE_PARTIAL,"MATCH_UNIQUE_PARTIAL"},
+		{SQL_SP_OVERLAPS,"OVERLAPS"},
+		{SQL_SP_QUANTIFIED_COMPARISON,"QUANTIFIED_COMPARISON"},
+		{SQL_SP_UNIQUE,"UNIQUE"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,sp);
+	databasefeatures[FEATURE_PREDICATES]=sb.detachString();
+
 	// SQL_PROCEDURE_TERM -> string
 	strbuf[0]='\0';
 	SQLGetInfo(dbc,SQL_PROCEDURE_TERM,strbuf,sizeof(strbuf),&size);
 	databasefeatures[FEATURE_PROCEDURE_TERM]=
 		charstring::duplicate(strbuf);
 
+	// SQL_SQL92_RELATIONAL_JOIN_OPERATORS -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_SQL92_RELATIONAL_JOIN_OPERATORS,
+					&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	rjo[]={
+		{SQL_SRJO_CORRESPONDING_CLAUSE,"CORRESPONDING_CLAUSE"},
+		{SQL_SRJO_CROSS_JOIN,"CROSS_JOIN"},
+		{SQL_SRJO_EXCEPT_JOIN,"EXCEPT_JOIN"},
+		{SQL_SRJO_FULL_OUTER_JOIN,"FULL_OUTER_JOIN"},
+		{SQL_SRJO_INNER_JOIN,"INNER_JOIN"},
+		{SQL_SRJO_INTERSECT_JOIN,"INTERSECT_JOIN"},
+		{SQL_SRJO_LEFT_OUTER_JOIN,"LEFT_OUTER_JOIN"},
+		{SQL_SRJO_NATURAL_JOIN,"NATURAL_JOIN"},
+		{SQL_SRJO_RIGHT_OUTER_JOIN,"RIGHT_OUTER_JOIN"},
+		{SQL_SRJO_UNION_JOIN,"UNION_JOIN"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,rjo);
+	databasefeatures[FEATURE_RELATIONAL_JOIN_OPERATORS]=
+							sb.detachString();
+
 	// no obvious ODBC equivalent
-	databasefeatures[FEATURE_RESULT_SET_HOLDABILITY]=
+	databasefeatures[FEATURE_RESULT_SET_CONCURRENCIES]=
 		charstring::duplicate("");
+	databasefeatures[FEATURE_RESULT_SET_HOLDABILITIES]=
+		charstring::duplicate("");
+	databasefeatures[FEATURE_RESULT_SET_TYPES]=
+		charstring::duplicate("");
+
+	// SQL_SQL92_REVOKE -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_SQL92_REVOKE,&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	sr[]={
+		{SQL_SR_CASCADE,"CASCADE"},
+		{SQL_SR_DELETE_TABLE,"DELETE_TABLE"},
+		{SQL_SR_GRANT_OPTION_FOR,"GRANT_OPTION_FOR"},
+		{SQL_SR_INSERT_COLUMN,"INSERT_COLUMN"},
+		{SQL_SR_INSERT_TABLE,"INSERT_TABLE"},
+		{SQL_SR_REFERENCES_COLUMN,"REFERENCES_COLUMN"},
+		{SQL_SR_REFERENCES_TABLE,"REFERENCES_TABLE"},
+		{SQL_SR_RESTRICT,"RESTRICT"},
+		{SQL_SR_SELECT_TABLE,"SELECT_TABLE"},
+		{SQL_SR_UPDATE_COLUMN,"UPDATE_COLUMN"},
+		{SQL_SR_UPDATE_TABLE,"UPDATE_TABLE"},
+		{SQL_SR_USAGE_ON_DOMAIN,"USAGE_ON_DOMAIN"},
+		{SQL_SR_USAGE_ON_CHARACTER_SET,"USAGE_ON_CHARACTER_SET"},
+		{SQL_SR_USAGE_ON_COLLATION,"USAGE_ON_COLLATION"},
+		{SQL_SR_USAGE_ON_TRANSLATION,"USAGE_ON_TRANSLATION"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,sr);
+	databasefeatures[FEATURE_REVOKE_CLAUSES]=sb.detachString();
+
+	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_ROW_ID_LIFETIME]=
 		charstring::duplicate("");
+
+	// SQL_SQL92_ROW_VALUE_CONSTRUCTOR -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_SQL92_ROW_VALUE_CONSTRUCTOR,
+					&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	rvc[]={
+		{SQL_SRVC_VALUE_EXPRESSION,"VALUE_EXPRESSION"},
+		{SQL_SRVC_NULL,"NULL"},
+		{SQL_SRVC_DEFAULT,"DEFAULT"},
+		{SQL_SRVC_ROW_SUBQUERY,"ROW_SUBQUERY"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,rvc);
+	databasefeatures[FEATURE_ROW_VALUE_CONSTRUCTOR_EXPRESSIONS]=
+							sb.detachString();
 
 	// SQL_OWNER_TERM -> string
 	strbuf[0]='\0';
 	SQLGetInfo(dbc,SQL_OWNER_TERM,strbuf,sizeof(strbuf),&size);
 	databasefeatures[FEATURE_SCHEMA_TERM]=
 		charstring::duplicate(strbuf);
+
+	// SQL_SCROLL_CONCURRENCY -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_SCROLL_CONCURRENCY,&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	scco[]={
+		{SQL_SCCO_READ_ONLY,"READ_ONLY"},
+		{SQL_SCCO_LOCK,"LOCK"},
+		{SQL_SCCO_OPT_ROWVER,"OPT_ROWVER"},
+		{SQL_SCCO_OPT_VALUES,"OPT_VALUES"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,scco);
+	databasefeatures[FEATURE_SCROLL_CONCURRENCIES]=
+					sb.detachString();
 
 	// SQL_SEARCH_PATTERN_ESCAPE -> string
 	strbuf[0]='\0';
@@ -1656,6 +2213,35 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_SQL_STATE_TYPE]=
 		charstring::duplicate("");
+
+	// SQL_STATIC_CURSOR_ATTRIBUTES2 -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_STATIC_CURSOR_ATTRIBUTES2,
+					&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	sca2[]={
+		{SQL_CA2_READ_ONLY_CONCURRENCY,"READ_ONLY_CONCURRENCY"},
+		{SQL_CA2_LOCK_CONCURRENCY,"LOCK_CONCURRENCY"},
+		{SQL_CA2_OPT_ROWVER_CONCURRENCY,"OPT_ROWVER_CONCURRENCY"},
+		{SQL_CA2_OPT_VALUES_CONCURRENCY,"OPT_VALUES_CONCURRENCY"},
+		{SQL_CA2_SENSITIVITY_ADDITIONS,"SENSITIVITY_ADDITIONS"},
+		{SQL_CA2_SENSITIVITY_DELETIONS,"SENSITIVITY_DELETIONS"},
+		{SQL_CA2_SENSITIVITY_UPDATES,"SENSITIVITY_UPDATES"},
+		{SQL_CA2_MAX_ROWS_SELECT,"MAX_ROWS_SELECT"},
+		{SQL_CA2_MAX_ROWS_INSERT,"MAX_ROWS_INSERT"},
+		{SQL_CA2_MAX_ROWS_DELETE,"MAX_ROWS_DELETE"},
+		{SQL_CA2_MAX_ROWS_UPDATE,"MAX_ROWS_UPDATE"},
+		{SQL_CA2_MAX_ROWS_CATALOG,"MAX_ROWS_CATALOG"},
+		{SQL_CA2_CRC_EXACT,"CRC_EXACT"},
+		{SQL_CA2_CRC_APPROXIMATE,"CRC_APPROXIMATE"},
+		{SQL_CA2_SIMULATE_NON_UNIQUE,"SIMULATE_NON_UNIQUE"},
+		{SQL_CA2_SIMULATE_TRY_UNIQUE,"SIMULATE_TRY_UNIQUE"},
+		{SQL_CA2_SIMULATE_UNIQUE,"SIMULATE_UNIQUE"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,sca2);
+
+	databasefeatures[FEATURE_STATIC_CURSOR_ATTRIBUTES]=
+					sb.detachString();
 
 	// SQL_IDENTIFIER_CASE -> usmallint
 	usmallintbuf=0;
@@ -1725,147 +2311,6 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	};
 	flagsToNames(&sb,uintbuf,sf);
 	databasefeatures[FEATURE_STRING_FUNCTIONS]=sb.detachString();
-
-	// SQL_SQL92_FOREIGN_KEY_DELETE_RULE -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_SQL92_FOREIGN_KEY_DELETE_RULE,
-					&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	fkdr[]={
-		{SQL_SFKD_CASCADE,"CASCADE"},
-		{SQL_SFKD_NO_ACTION,"NO_ACTION"},
-		{SQL_SFKD_SET_DEFAULT,"SET_DEFAULT"},
-		{SQL_SFKD_SET_NULL,"SET_NULL"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,fkdr);
-	databasefeatures[FEATURE_SUPPORTED_FOREIGN_KEY_DELETE_RULES]=
-							sb.detachString();
-
-	// SQL_SQL92_FOREIGN_KEY_UPDATE_RULE -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_SQL92_FOREIGN_KEY_UPDATE_RULE,
-					&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	fkur[]={
-		{SQL_SFKU_CASCADE,"CASCADE"},
-		{SQL_SFKU_NO_ACTION,"NO_ACTION"},
-		{SQL_SFKU_SET_DEFAULT,"SET_DEFAULT"},
-		{SQL_SFKU_SET_NULL,"SET_NULL"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,fkur);
-	databasefeatures[FEATURE_SUPPORTED_FOREIGN_KEY_UPDATE_RULES]=
-							sb.detachString();
-
-	// SQL_SQL92_PREDICATES -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_SQL92_PREDICATES,
-					&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	sp[]={
-		{SQL_SP_BETWEEN,"BETWEEN"},
-		{SQL_SP_COMPARISON,"COMPARISON"},
-		{SQL_SP_EXISTS,"EXISTS"},
-		{SQL_SP_IN,"IN"},
-		{SQL_SP_ISNOTNULL,"ISNOTNULL"},
-		{SQL_SP_ISNULL,"ISNULL"},
-		{SQL_SP_LIKE,"LIKE"},
-		{SQL_SP_MATCH_FULL,"MATCH_FULL"},
-		{SQL_SP_MATCH_PARTIAL,"MATCH_PARTIAL"},
-		{SQL_SP_MATCH_UNIQUE_FULL,"MATCH_UNIQUE_FULL"},
-		{SQL_SP_MATCH_UNIQUE_PARTIAL,"MATCH_UNIQUE_PARTIAL"},
-		{SQL_SP_OVERLAPS,"OVERLAPS"},
-		{SQL_SP_QUANTIFIED_COMPARISON,"QUANTIFIED_COMPARISON"},
-		{SQL_SP_UNIQUE,"UNIQUE"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,sp);
-	databasefeatures[FEATURE_SUPPORTED_PREDICATES]=sb.detachString();
-
-	// SQL_SQL92_RELATIONAL_JOIN_OPERATORS -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_SQL92_RELATIONAL_JOIN_OPERATORS,
-					&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	rjo[]={
-		{SQL_SRJO_CORRESPONDING_CLAUSE,"CORRESPONDING_CLAUSE"},
-		{SQL_SRJO_CROSS_JOIN,"CROSS_JOIN"},
-		{SQL_SRJO_EXCEPT_JOIN,"EXCEPT_JOIN"},
-		{SQL_SRJO_FULL_OUTER_JOIN,"FULL_OUTER_JOIN"},
-		{SQL_SRJO_INNER_JOIN,"INNER_JOIN"},
-		{SQL_SRJO_INTERSECT_JOIN,"INTERSECT_JOIN"},
-		{SQL_SRJO_LEFT_OUTER_JOIN,"LEFT_OUTER_JOIN"},
-		{SQL_SRJO_NATURAL_JOIN,"NATURAL_JOIN"},
-		{SQL_SRJO_RIGHT_OUTER_JOIN,"RIGHT_OUTER_JOIN"},
-		{SQL_SRJO_UNION_JOIN,"UNION_JOIN"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,rjo);
-	databasefeatures[FEATURE_SUPPORTED_RELATIONAL_JOIN_OPERATORS]=
-							sb.detachString();
-
-	// SQL_SQL92_ROW_VALUE_CONSTRUCTOR -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_SQL92_ROW_VALUE_CONSTRUCTOR,
-					&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	rvc[]={
-		{SQL_SRVC_VALUE_EXPRESSION,"VALUE_EXPRESSION"},
-		{SQL_SRVC_NULL,"NULL"},
-		{SQL_SRVC_DEFAULT,"DEFAULT"},
-		{SQL_SRVC_ROW_SUBQUERY,"ROW_SUBQUERY"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,rvc);
-	databasefeatures[FEATURE_SUPPORTED_ROW_VALUE_CONSTRUCTOR_EXPRESSIONS]=
-							sb.detachString();
-
-	// SQL_SQL92_VALUE_EXPRESSIONS -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_SQL92_VALUE_EXPRESSIONS,
-					&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	sve[]={
-		{SQL_SVE_CASE,"CASE"},
-		{SQL_SVE_CAST,"CAST"},
-		{SQL_SVE_COALESCE,"COALESCE"},
-		{SQL_SVE_NULLIF,"NULLIF"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,sve);
-	databasefeatures[FEATURE_SUPPORTED_VALUE_EXPRESSIONS]=
-		sb.detachString();
-
-	// SQL_AGGREGATE_FUNCTIONS -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_AGGREGATE_FUNCTIONS,&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	af[]={
-		{SQL_AF_ALL,"ALL"},
-		{SQL_AF_AVG,"AVG"},
-		{SQL_AF_COUNT,"COUNT"},
-		{SQL_AF_DISTINCT,"DISTINCT"},
-		{SQL_AF_MAX,"MAX"},
-		{SQL_AF_MIN,"MIN"},
-		{SQL_AF_SUM,"SUM"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,af);
-	databasefeatures[FEATURE_SUPPORTS_AGGREGATE_FUNCTIONS]=
-							sb.detachString();
-
-	// SQL_ALTER_DOMAIN -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_ALTER_DOMAIN,&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	ad[]={
-		{SQL_AD_ADD_DOMAIN_CONSTRAINT,
-				"ADD_DOMAIN_CONSTRAINT"},
-		{SQL_AD_ADD_DOMAIN_DEFAULT,
-				"ADD_DOMAIN_DEFAULT"},
-		{SQL_AD_CONSTRAINT_NAME_DEFINITION,
-				"CONSTRAINT_NAME_DEFINITION"},
-		{SQL_AD_DROP_DOMAIN_CONSTRAINT,
-				"DROP_DOMAIN_CONSTRAINT"},
-		{SQL_AD_DROP_DOMAIN_DEFAULT,
-				"DROP_DOMAIN_DEFAULT"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,ad);
-	databasefeatures[FEATURE_SUPPORTS_ALTER_DOMAIN]=sb.detachString();
 
 	// SQL_ALTER_TABLE -> bitmask
 	uintbuf=0;
@@ -1960,156 +2405,6 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		charstring::duplicate(
 			(uintbuf&SQL_SQ_QUANTIFIED)?"true":"false");
 
-	// SQL_CREATE_ASSERTION -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_CREATE_ASSERTION,
-				&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	ca[]={
-		{SQL_CA_CREATE_ASSERTION,
-			"CREATE_ASSERTION"},
-		{SQL_CA_CONSTRAINT_INITIALLY_DEFERRED,
-			"CONSTRAINT_INITIALLY_DEFERRED"},
-		{SQL_CA_CONSTRAINT_INITIALLY_IMMEDIATE,
-			"CONSTRAINT_INITIALLY_IMMEDIATE"},
-		{SQL_CA_CONSTRAINT_DEFERRABLE,
-			"CONSTRAINT_DEFERRABLE"},
-		{SQL_CA_CONSTRAINT_NON_DEFERRABLE,
-			"CONSTRAINT_NON_DEFERRABLE"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,ca);
-	databasefeatures[FEATURE_SUPPORTS_CREATE_ASSERTION]=sb.detachString();
-
-	// SQL_CREATE_CHARACTER_SET -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_CREATE_CHARACTER_SET,
-				&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	ccs[]={
-		{SQL_CCS_CREATE_CHARACTER_SET,
-			"CREATE_CHARACTER_SET"},
-		{SQL_CCS_COLLATE_CLAUSE,"COLLATE_CLAUSE"},
-		{SQL_CCS_LIMITED_COLLATION,
-			"LIMITED_COLLATION"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,ccs);
-	databasefeatures[FEATURE_SUPPORTS_CREATE_CHARACTER_SET]=
-							sb.detachString();
-
-	// SQL_CREATE_COLLATION -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_CREATE_COLLATION,
-				&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	ccol[]={
-		{SQL_CCOL_CREATE_COLLATION,"CREATE_COLLATION"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,ccol);
-	databasefeatures[FEATURE_SUPPORTS_CREATE_COLLATION]=sb.detachString();
-
-	// SQL_CREATE_DOMAIN -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_CREATE_DOMAIN,
-				&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	cdo[]={
-		{SQL_CDO_CREATE_DOMAIN,
-			"CREATE_DOMAIN"},
-		{SQL_CDO_CONSTRAINT_NAME_DEFINITION,
-			"CONSTRAINT_NAME_DEFINITION"},
-		{SQL_CDO_DEFAULT,
-			"DEFAULT"},
-		{SQL_CDO_CONSTRAINT,
-			"CONSTRAINT"},
-		{SQL_CDO_COLLATION,
-			"COLLATION"},
-		{SQL_CDO_CONSTRAINT_INITIALLY_DEFERRED,
-			"CONSTRAINT_INITIALLY_DEFERRED"},
-		{SQL_CDO_CONSTRAINT_INITIALLY_IMMEDIATE,
-			"CONSTRAINT_INITIALLY_IMMEDIATE"},
-		{SQL_CDO_CONSTRAINT_DEFERRABLE,
-			"CONSTRAINT_DEFERRABLE"},
-		{SQL_CDO_CONSTRAINT_NON_DEFERRABLE,
-			"CONSTRAINT_NON_DEFERRABLE"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,cdo);
-	databasefeatures[FEATURE_SUPPORTS_CREATE_DOMAIN]=sb.detachString();
-
-	// SQL_CREATE_SCHEMA -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_CREATE_SCHEMA,
-				&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	cs[]={
-		{SQL_CS_CREATE_SCHEMA,"CREATE_SCHEMA"},
-		{SQL_CS_AUTHORIZATION,"AUTHORIZATION"},
-		{SQL_CS_DEFAULT_CHARACTER_SET,"DEFAULT_CHARACTER_SET"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,cs);
-	databasefeatures[FEATURE_SUPPORTS_CREATE_SCHEMA]=sb.detachString();
-
-	// SQL_CREATE_TABLE -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_CREATE_TABLE,
-				&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	ct[]={
-		{SQL_CT_CREATE_TABLE,
-				"CREATE_TABLE"},
-		{SQL_CT_TABLE_CONSTRAINT,
-				"TABLE_CONSTRAINT"},
-		{SQL_CT_CONSTRAINT_NAME_DEFINITION,
-				"CONSTRAINT_NAME_DEFINITION"},
-		{SQL_CT_COMMIT_DELETE,
-				"COMMIT_DELETE"},
-		{SQL_CT_COMMIT_PRESERVE,
-				"COMMIT_PRESERVE"},
-		{SQL_CT_GLOBAL_TEMPORARY,
-				"GLOBAL_TEMPORARY"},
-		{SQL_CT_LOCAL_TEMPORARY,
-				"LOCAL_TEMPORARY"},
-		{SQL_CT_COLUMN_CONSTRAINT,
-				"COLUMN_CONSTRAINT"},
-		{SQL_CT_COLUMN_DEFAULT,
-				"COLUMN_DEFAULT"},
-		{SQL_CT_COLUMN_COLLATION,
-				"COLUMN_COLLATION"},
-		{SQL_CT_CONSTRAINT_INITIALLY_DEFERRED,
-				"CONSTRAINT_INITIALLY_DEFERRED"},
-		{SQL_CT_CONSTRAINT_INITIALLY_IMMEDIATE,
-				"CONSTRAINT_INITIALLY_IMMEDIATE"},
-		{SQL_CT_CONSTRAINT_DEFERRABLE,
-				"CONSTRAINT_DEFERRABLE"},
-		{SQL_CT_CONSTRAINT_NON_DEFERRABLE,
-				"CONSTRAINT_NON_DEFERRABLE"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,ct);
-	databasefeatures[FEATURE_SUPPORTS_CREATE_TABLE]=sb.detachString();
-
-	// SQL_CREATE_TRANSLATION -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_CREATE_TRANSLATION,
-				&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	ctr[]={
-		{SQL_CTR_CREATE_TRANSLATION,"CREATE_TRANSLATION"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,ctr);
-	databasefeatures[FEATURE_SUPPORTS_CREATE_TRANSLATION]=sb.detachString();
-
-	// SQL_CREATE_VIEW -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_CREATE_VIEW,&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	cv[]={
-		{SQL_CV_CREATE_VIEW,"CREATE_VIEW"},
-		{SQL_CV_CHECK_OPTION,"CHECK_OPTION"},
-		{SQL_CV_CASCADED,"CASCADED"},
-		{SQL_CV_LOCAL,"LOCAL"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,cv);
-	databasefeatures[FEATURE_SUPPORTS_CREATE_VIEW]=sb.detachString();
-
 	// SQL_TXN_CAPABLE -> enum (reuse from above)
 	usmallintbuf=0;
 	SQLGetInfo(dbc,SQL_TXN_CAPABLE,
@@ -2121,17 +2416,6 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_SUPPORTS_DATA_MANIPULATION_TRANSACTIONS_ONLY]=
 		charstring::duplicate(
 			(usmallintbuf==SQL_TC_DML)?"true":"false");
-
-	// SQL_DDL_INDEX -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_DDL_INDEX,&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	di[]={
-		{SQL_DI_CREATE_INDEX,"CREATE_INDEX"},
-		{SQL_DI_DROP_INDEX,"DROP_INDEX"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,di);
-	databasefeatures[FEATURE_SUPPORTS_DDL_INDEX]=sb.detachString();
 
 	// SQL_DESCRIBE_PARAMETER -> Y/N
 	strbuf[0]='\0';
@@ -2149,98 +2433,6 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_SUPPORTS_TABLE_CORRELATION_NAMES]=
 		charstring::duplicate(
 			(usmallintbuf!=SQL_CN_NONE)?"true":"false");
-
-	// SQL_DROP_ASSERTION -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_DROP_ASSERTION,&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	da[]={
-		{SQL_DA_DROP_ASSERTION,"DROP_ASSERTION"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,da);
-	databasefeatures[FEATURE_SUPPORTS_DROP_ASSERTION]=sb.detachString();
-
-	// SQL_DROP_CHARACTER_SET -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_DROP_CHARACTER_SET,
-				&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	dcs[]={
-		{SQL_DCS_DROP_CHARACTER_SET,"DROP_CHARACTER_SET"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,dcs);
-	databasefeatures[FEATURE_SUPPORTS_DROP_CHARACTER_SET]=
-							sb.detachString();
-
-	// SQL_DROP_COLLATION -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_DROP_COLLATION,
-				&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	dc[]={
-		{SQL_DC_DROP_COLLATION,"DROP_COLLATION"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,dc);
-	databasefeatures[FEATURE_SUPPORTS_DROP_COLLATION]=sb.detachString();
-
-	// SQL_DROP_DOMAIN -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_DROP_DOMAIN,&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	dd[]={
-		{SQL_DD_DROP_DOMAIN,"DROP_DOMAIN"},
-		{SQL_DD_CASCADE,"CASCADE"},
-		{SQL_DD_RESTRICT,"RESTRICT"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,dd);
-	databasefeatures[FEATURE_SUPPORTS_DROP_DOMAIN]=sb.detachString();
-
-	// SQL_DROP_SCHEMA -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_DROP_SCHEMA,&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	ds[]={
-		{SQL_DS_DROP_SCHEMA,"DROP_SCHEMA"},
-		{SQL_DS_CASCADE,"CASCADE"},
-		{SQL_DS_RESTRICT,"RESTRICT"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,ds);
-	databasefeatures[FEATURE_SUPPORTS_DROP_SCHEMA]=sb.detachString();
-
-	// SQL_DROP_TABLE -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_DROP_TABLE,&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	dt[]={
-		{SQL_DT_DROP_TABLE,"DROP_TABLE"},
-		{SQL_DT_CASCADE,"CASCADE"},
-		{SQL_DT_RESTRICT,"RESTRICT"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,dt);
-	databasefeatures[FEATURE_SUPPORTS_DROP_TABLE]=sb.detachString();
-
-	// SQL_DROP_TRANSLATION -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_DROP_TRANSLATION,
-				&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	dtr[]={
-		{SQL_DTR_DROP_TRANSLATION,"DROP_TRANSLATION"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,dtr);
-	databasefeatures[FEATURE_SUPPORTS_DROP_TRANSLATION]=sb.detachString();
-
-	// SQL_DROP_VIEW -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_DROP_VIEW,&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	dv[]={
-		{SQL_DV_DROP_VIEW,"DROP_VIEW"},
-		{SQL_DV_CASCADE,"CASCADE"},
-		{SQL_DV_RESTRICT,"RESTRICT"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,dv);
-	databasefeatures[FEATURE_SUPPORTS_DROP_VIEW]=sb.detachString();
 
 	// SQL_EXPRESSIONS_IN_ORDERBY -> Y/N
 	strbuf[0]='\0';
@@ -2265,28 +2457,6 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_SUPPORTS_GET_GENERATED_KEYS]=
 		charstring::duplicate("");
 
-	// SQL_SQL92_GRANT -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_SQL92_GRANT,&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	sg[]={
-		{SQL_SG_DELETE_TABLE,"DELETE_TABLE"},
-		{SQL_SG_INSERT_COLUMN,"INSERT_COLUMN"},
-		{SQL_SG_INSERT_TABLE,"INSERT_TABLE"},
-		{SQL_SG_REFERENCES_TABLE,"REFERENCES_TABLE"},
-		{SQL_SG_REFERENCES_COLUMN,"REFERENCES_COLUMN"},
-		{SQL_SG_SELECT_TABLE,"SELECT_TABLE"},
-		{SQL_SG_UPDATE_COLUMN,"UPDATE_COLUMN"},
-		{SQL_SG_UPDATE_TABLE,"UPDATE_TABLE"},
-		{SQL_SG_USAGE_ON_DOMAIN,"USAGE_ON_DOMAIN"},
-		{SQL_SG_USAGE_ON_CHARACTER_SET,"USAGE_ON_CHARACTER_SET"},
-		{SQL_SG_USAGE_ON_COLLATION,"USAGE_ON_COLLATION"},
-		{SQL_SG_USAGE_ON_TRANSLATION,"USAGE_ON_TRANSLATION"},
-		{SQL_SG_WITH_GRANT_OPTION,"WITH_GRANT_OPTION"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,sg);
-	databasefeatures[FEATURE_SUPPORTS_GRANT]=sb.detachString();
-
 	// SQL_GROUP_BY -> usmallint
 	usmallintbuf=0;
 	SQLGetInfo(dbc,SQL_GROUP_BY,&usmallintbuf,sizeof(usmallintbuf),&size);
@@ -2301,18 +2471,6 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		charstring::duplicate(
 			(usmallintbuf==SQL_GB_NO_RELATION)?"true":"false");
 
-	// SQL_INSERT_STATEMENT -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_INSERT_STATEMENT,&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	is[]={
-		{SQL_IS_INSERT_LITERALS,"INSERT_LITERALS"},
-		{SQL_IS_INSERT_SEARCHED,"INSERT_SEARCHED"},
-		{SQL_IS_SELECT_INTO,"SELECT_INTO"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,is);
-	databasefeatures[FEATURE_SUPPORTS_INSERT_STATEMENT]=sb.detachString();
-
 	// SQL_INTEGRITY -> Y/N
 	strbuf[0]='\0';
 	SQLGetInfo(dbc,SQL_INTEGRITY,strbuf,sizeof(strbuf),&size);
@@ -2324,18 +2482,6 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	SQLGetInfo(dbc,SQL_LIKE_ESCAPE_CLAUSE,strbuf,sizeof(strbuf),&size);
 	databasefeatures[FEATURE_SUPPORTS_LIKE_ESCAPE_CLAUSE]=
 		charstring::duplicate((strbuf[0]=='Y')?"true":"false");
-
-	// SQL_LOCK_TYPES -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_LOCK_TYPES,&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	lt[]={
-		{SQL_LCK_NO_CHANGE,"NO_CHANGE"},
-		{SQL_LCK_EXCLUSIVE,"EXCLUSIVE"},
-		{SQL_LCK_UNLOCK,"UNLOCK"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,lt);
-	databasefeatures[FEATURE_SUPPORTS_LOCK_TYPES]=sb.detachString();
 
 	// SQL_MULT_RESULT_SETS -> Y/N
 	strbuf[0]='\0';
@@ -2402,38 +2548,6 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 			(uintbuf&SQL_PS_POSITIONED_UPDATE)?"true":"false");
 
 	// no obvious ODBC equivalent
-	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_CONCURRENCY]=
-		charstring::duplicate("");
-	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_HOLDABILITY]=
-		charstring::duplicate("");
-	databasefeatures[FEATURE_SUPPORTS_RESULT_SET_TYPE]=
-		charstring::duplicate("");
-
-	// SQL_SQL92_REVOKE -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_SQL92_REVOKE,&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	sr[]={
-		{SQL_SR_CASCADE,"CASCADE"},
-		{SQL_SR_DELETE_TABLE,"DELETE_TABLE"},
-		{SQL_SR_GRANT_OPTION_FOR,"GRANT_OPTION_FOR"},
-		{SQL_SR_INSERT_COLUMN,"INSERT_COLUMN"},
-		{SQL_SR_INSERT_TABLE,"INSERT_TABLE"},
-		{SQL_SR_REFERENCES_COLUMN,"REFERENCES_COLUMN"},
-		{SQL_SR_REFERENCES_TABLE,"REFERENCES_TABLE"},
-		{SQL_SR_RESTRICT,"RESTRICT"},
-		{SQL_SR_SELECT_TABLE,"SELECT_TABLE"},
-		{SQL_SR_UPDATE_COLUMN,"UPDATE_COLUMN"},
-		{SQL_SR_UPDATE_TABLE,"UPDATE_TABLE"},
-		{SQL_SR_USAGE_ON_DOMAIN,"USAGE_ON_DOMAIN"},
-		{SQL_SR_USAGE_ON_CHARACTER_SET,"USAGE_ON_CHARACTER_SET"},
-		{SQL_SR_USAGE_ON_COLLATION,"USAGE_ON_COLLATION"},
-		{SQL_SR_USAGE_ON_TRANSLATION,"USAGE_ON_TRANSLATION"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,sr);
-	databasefeatures[FEATURE_SUPPORTS_REVOKE]=sb.detachString();
-
-	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_SUPPORTS_SAVEPOINTS]=
 		charstring::duplicate("");
 
@@ -2469,21 +2583,6 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	SQLGetInfo(dbc,SQL_PROCEDURES,strbuf,sizeof(strbuf),&size);
 	databasefeatures[FEATURE_SUPPORTS_STORED_PROCEDURES]=
 		charstring::duplicate((strbuf[0]=='Y')?"true":"false");
-
-	// SQL_TXN_ISOLATION_OPTION -> bitmask
-	uintbuf=0;
-	SQLGetInfo(dbc,SQL_TXN_ISOLATION_OPTION,
-					&uintbuf,sizeof(uintbuf),&size);
-	flagtoname	tilf[]={
-		{SQL_TXN_READ_UNCOMMITTED,"READ_UNCOMMITTED"},
-		{SQL_TXN_READ_COMMITTED,"READ_COMMITTED"},
-		{SQL_TXN_REPEATABLE_READ,"REPEATABLE_READ"},
-		{SQL_TXN_SERIALIZABLE,"SERIALIZABLE"},
-		{0,NULL}
-	};
-	flagsToNames(&sb,uintbuf,tilf);
-	databasefeatures[FEATURE_SUPPORTS_TRANSACTION_ISOLATION_LEVEL]=
-		sb.detachString();
 
 	databasefeatures[FEATURE_SUPPORTS_TRANSACTIONS]=
 		charstring::duplicate(
@@ -2631,6 +2730,21 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_USES_LOCAL_FILES]=
 		charstring::duplicate(
 			(usmallintbuf==SQL_FILE_CATALOG)?"true":"false");
+
+	// SQL_SQL92_VALUE_EXPRESSIONS -> bitmask
+	uintbuf=0;
+	SQLGetInfo(dbc,SQL_SQL92_VALUE_EXPRESSIONS,
+					&uintbuf,sizeof(uintbuf),&size);
+	flagtoname	sve[]={
+		{SQL_SVE_CASE,"CASE"},
+		{SQL_SVE_CAST,"CAST"},
+		{SQL_SVE_COALESCE,"COALESCE"},
+		{SQL_SVE_NULLIF,"NULLIF"},
+		{0,NULL}
+	};
+	flagsToNames(&sb,uintbuf,sve);
+	databasefeatures[FEATURE_VALUE_EXPRESSIONS]=
+		sb.detachString();
 
 	return databasefeatures;
 }

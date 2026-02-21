@@ -909,7 +909,17 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	int getResultSetHoldability() throws SQLException {
 		drv.debugFunction(this);
-		int	result=getInt("result_set_holdability");
+		int	result=ResultSet.CLOSE_CURSORS_AT_COMMIT;
+		switch (getString("default_result_set_holdability")) {
+			case "HOLD_CURSORS_OVER_COMMIT":
+				result=
+					ResultSet.HOLD_CURSORS_OVER_COMMIT;
+				break;
+			case "CLOSE_CURSORS_AT_COMMIT":
+				result=
+					ResultSet.CLOSE_CURSORS_AT_COMMIT;
+				break;
+		}
 		drv.debugPrintln("result set holdability: "+result);
 		drv.debugEnd();
 		return result;
@@ -1987,7 +1997,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsPositionedDelete() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("supports_positioned_delete");
+		boolean	result=containsValue("positioned_operations","DELETE");
 		drv.debugPrintln("supports positioned delete: "+result);
 		drv.debugEnd();
 		return result;
@@ -1996,7 +2006,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsPositionedUpdate() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("supports_positioned_update");
+		boolean	result=containsValue("positioned_operations","UPDATE");
 		drv.debugPrintln("supports positioned update: "+result);
 		drv.debugEnd();
 		return result;
@@ -2012,7 +2022,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		boolean	result=
 			conn.isResultSetTypeSupported(type) &&
 			conn.isResultSetConcurrencySupported(concurrency) &&
-			containsConcurrency("supports_result_set_concurrency",
+			containsConcurrency("result_set_concurrencies",
 							type,concurrency);
 		drv.debugPrintln("supports result set concurrency: "+result);
 		drv.debugEnd();
@@ -2026,7 +2036,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		conn.debugResultSetType(holdability);
 		boolean	result=
 			conn.isResultSetHoldabilitySupported(holdability) &&
-			containsHoldability("supports_result_set_holdability",
+			containsHoldability("result_set_holdabilities",
 								holdability);
 		drv.debugPrintln("supports result set holdability: "+result);
 		drv.debugEnd();
@@ -2038,7 +2048,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		drv.debugFunction(this);
 		boolean	result=
 			conn.isResultSetTypeSupported(type) &&
-			containsType("supports_result_set_type",type);
+			containsType("result_set_types",type);
 		drv.debugPrintln("supports result set type: "+type);
 		drv.debugEnd();
 		return result;
@@ -2196,7 +2206,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 						throws SQLException {
 		drv.debugFunction(this);
 		String	value=getDatabaseFeature(
-				"supports_transaction_isolation_level");
+				"isolation_levels");
 		if (level==Connection.TRANSACTION_NONE) {
 			return (value==null || value.isEmpty());
 		}
@@ -2310,52 +2320,41 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 	private
 	boolean containsType(String feature, int type) {
-		String	value=getDatabaseFeature(feature);
-		if (value==null || value.isEmpty()) {
-			return false;
-		}
 		String	typename=getTypeName(type);
 		if (typename.isEmpty()) {
 			return false;
 		}
-		String[]	parts=value.split(",");
-		for (String part : parts) {
-			if (part.trim().equals(typename)) {
-				return true;
-			}
-		}
-		return false;
+		return containsValue(feature,typename);
 	}
 
 	private
 	boolean containsConcurrency(String feature,
 					int type,int concurrency) {
-		String	value=getDatabaseFeature(feature);
 		String	typename=getTypeName(type);
 		String	concurrencyname=getConcurrencyName(concurrency);
-		if (value==null ||
-			typename.isEmpty() ||
-			concurrencyname.isEmpty()) {
+		if (typename.isEmpty() || concurrencyname.isEmpty()) {
 			return false;
 		}
-		String	pair=typename+"/"+concurrencyname;
-		for (String part : value.split(",")) {
-			if (part.trim().equals(pair)) {
-				return true;
-			}
-		}
-		return false;
+		return containsValue(feature,typename+"/"+concurrencyname);
 	}
 
 	private
 	boolean containsHoldability(String feature, int holdability) {
-		String	value=getDatabaseFeature(feature);
 		String	holdabilityname=getHoldabilityName(holdability);
-		if (value==null || holdabilityname.isEmpty()) {
+		if (holdabilityname.isEmpty()) {
+			return false;
+		}
+		return containsValue(feature,holdabilityname);
+	}
+
+	private
+	boolean containsValue(String feature, String target) {
+		String	value=getDatabaseFeature(feature);
+		if (value==null || value.isEmpty()) {
 			return false;
 		}
 		for (String part : value.split(",")) {
-			if (part.trim().equals(holdabilityname)) {
+			if (part.trim().equals(target)) {
 				return true;
 			}
 		}
