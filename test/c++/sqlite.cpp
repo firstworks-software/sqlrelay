@@ -849,7 +849,9 @@ int main(int argc, char **argv) {
 		"create table testtable ("
 		"	col1 integer primary key autoincrement, "
 		"	col2 int)"));
+con->debugOn();
 	assertTrue(cur->getColumnList("testtable",NULL));
+con->debugOff();
 	assertTrue(charstring::containsIgnoringCase(
 			cur->getField(0,"extra"),"auto_increment"));
 	assertTrue(charstring::containsIgnoringCase(

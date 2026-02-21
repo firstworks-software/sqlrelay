@@ -364,7 +364,7 @@ const char *sqliteconnection::getColumnListQuery(
 		"		when p.'notnull'=1 then 0 "
 		"		else 1 "
 		"	end as nullable, "
-		"	(select case when count(*)>0 then 'auto_increment' else '' end from sqlite_master where name='testtable' and instr(upper(sql),concat(' (',upper(p.name),' INTEGER PRIMARY KEY AUTOINCREMENT'))) as remarks, "
+		"	(select case when count(*)>0 then 'auto_increment' else '' end from sqlite_master where name='")->append(table)->append("' and instr(upper(sql),concat(' (',upper(p.name),' INTEGER PRIMARY KEY AUTOINCREMENT'))) as remarks, "
 		"	p.dflt_value as column_default, "
 		"	null as sql_data_type, "
 		"	null as sql_datetime_sub, "
