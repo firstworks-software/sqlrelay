@@ -113,180 +113,142 @@
 #define FEATURE_ALL_PROCEDURES_ARE_CALLABLE 1
 #define FEATURE_ALL_TABLES_ARE_SELECTABLE 2
 #define FEATURE_ALTER_DOMAIN_CLAUSES 3
-#define FEATURE_AUTO_COMMIT_FAILURE_CLOSES_ALL_RESULT_SETS 4
-#define FEATURE_BATCH_OPERATIONS 5
-#define FEATURE_BATCH_ROW_COUNTS 6
-#define FEATURE_CATALOG_SEPARATOR 7
-#define FEATURE_CATALOG_TERM 8
-#define FEATURE_COLLATION_SEQ 9
-#define FEATURE_CREATE_ASSERTION_CLAUSES 10
-#define FEATURE_CREATE_CHARACTER_SET_CLAUSES 11
-#define FEATURE_CREATE_COLLATION_CLAUSES 12
-#define FEATURE_CREATE_DOMAIN_CLAUSES 13
-#define FEATURE_CREATE_SCHEMA_CLAUSES 14
-#define FEATURE_CREATE_TABLE_CLAUSES 15
-#define FEATURE_CREATE_TRANSLATION_CLAUSES 16
-#define FEATURE_CREATE_VIEW_CLAUSES 17
-#define FEATURE_DATA_DEFINITION_CAUSES_TRANSACTION_COMMIT 18
-#define FEATURE_DATA_DEFINITION_IGNORED_IN_TRANSACTIONS 19
-#define FEATURE_DDL_INDEX_OPERATIONS 20
-#define FEATURE_DEFAULT_ISOLATION_LEVEL 21
-#define FEATURE_DEFAULT_RESULT_SET_HOLDABILITY 22
-#define FEATURE_DELETES_ARE_DETECTED 23
-#define FEATURE_DOES_MAX_ROW_SIZE_INCLUDE_BLOBS 24
-#define FEATURE_DROP_ASSERTION_CLAUSES 25
-#define FEATURE_DROP_CHARACTER_SET_CLAUSES 26
-#define FEATURE_DROP_COLLATION_CLAUSES 27
-#define FEATURE_DROP_DOMAIN_CLAUSES 28
-#define FEATURE_DROP_SCHEMA_CLAUSES 29
-#define FEATURE_DROP_TABLE_CLAUSES 30
-#define FEATURE_DROP_TRANSLATION_CLAUSES 31
-#define FEATURE_DROP_VIEW_CLAUSES 32
-#define FEATURE_EXTRA_NAME_CHARACTERS 33
-#define FEATURE_FOREIGN_KEY_DELETE_RULES 34
-#define FEATURE_FOREIGN_KEY_UPDATE_RULES 35
-#define FEATURE_FORWARD_ONLY_CURSOR_ATTRIBUTES 36
-#define FEATURE_GENERATED_KEY_ALWAYS_RETURNED 37
-#define FEATURE_GRANT_CLAUSES 38
-#define FEATURE_IDENTIFIER_QUOTE_STRING 39
-#define FEATURE_INDEX_KEYWORDS 40
-#define FEATURE_INFO_SCHEMA_VIEWS 41
-#define FEATURE_INSERT_OPERATIONS 42
-#define FEATURE_INSERTS_ARE_DETECTED 43
-#define FEATURE_IS_CATALOG_AT_START 44
-#define FEATURE_IS_READ_ONLY 45
-#define FEATURE_ISOLATION_LEVELS 46
-#define FEATURE_LOCATORS_UPDATE_COPY 47
-#define FEATURE_LOCK_TYPES 48
-#define FEATURE_MAX_BINARY_LITERAL_LENGTH 49
-#define FEATURE_MAX_CATALOG_NAME_LENGTH 50
-#define FEATURE_MAX_CHAR_LITERAL_LENGTH 51
-#define FEATURE_MAX_COLUMN_NAME_LENGTH 52
-#define FEATURE_MAX_COLUMNS_IN_GROUP_BY 53
-#define FEATURE_MAX_COLUMNS_IN_INDEX 54
-#define FEATURE_MAX_COLUMNS_IN_ORDER_BY 55
-#define FEATURE_MAX_COLUMNS_IN_SELECT 56
-#define FEATURE_MAX_COLUMNS_IN_TABLE 57
-#define FEATURE_MAX_CONNECTIONS 58
-#define FEATURE_MAX_CURSOR_NAME_LENGTH 59
-#define FEATURE_MAX_IDENTIFIER_LENGTH 60
-#define FEATURE_MAX_INDEX_LENGTH 61
-#define FEATURE_MAX_PROCEDURE_NAME_LENGTH 62
-#define FEATURE_MAX_ROW_SIZE 63
-#define FEATURE_MAX_SCHEMA_NAME_LENGTH 64
-#define FEATURE_MAX_STATEMENT_LENGTH 65
-#define FEATURE_MAX_STATEMENTS 66
-#define FEATURE_MAX_TABLE_NAME_LENGTH 67
-#define FEATURE_MAX_TABLES_IN_SELECT 68
-#define FEATURE_MAX_USER_NAME_LENGTH 69
-#define FEATURE_NEED_LONG_DATA_LENGTH 70
-#define FEATURE_NULL_PLUS_NON_NULL_IS_NULL 71
-#define FEATURE_NULLS_ARE_SORTED_AT_END 72
-#define FEATURE_NULLS_ARE_SORTED_AT_START 73
-#define FEATURE_NULLS_ARE_SORTED_HIGH 74
-#define FEATURE_NULLS_ARE_SORTED_LOW 75
-#define FEATURE_NUMERIC_FUNCTIONS 76
-#define FEATURE_OTHERS_DELETES_ARE_VISIBLE 77
-#define FEATURE_OTHERS_INSERTS_ARE_VISIBLE 78
-#define FEATURE_OTHERS_UPDATES_ARE_VISIBLE 79
-#define FEATURE_OWN_DELETES_ARE_VISIBLE 80
-#define FEATURE_OWN_INSERTS_ARE_VISIBLE 81
-#define FEATURE_OWN_UPDATES_ARE_VISIBLE 82
-#define FEATURE_POSITIONED_OPERATIONS 83
-#define FEATURE_PREDICATES 84
-#define FEATURE_PROCEDURE_TERM 85
-#define FEATURE_RELATIONAL_JOIN_OPERATORS 86
-#define FEATURE_RESULT_SET_CONCURRENCIES 87
-#define FEATURE_RESULT_SET_HOLDABILITIES 88
-#define FEATURE_RESULT_SET_TYPES 89
-#define FEATURE_REVOKE_CLAUSES 90
-#define FEATURE_ROW_ID_LIFETIME 91
-#define FEATURE_ROW_VALUE_CONSTRUCTOR_EXPRESSIONS 92
-#define FEATURE_SCHEMA_TERM 93
-#define FEATURE_SCROLL_CONCURRENCIES 94
-#define FEATURE_SEARCH_STRING_ESCAPE 95
-#define FEATURE_SQL_KEYWORDS 96
-#define FEATURE_SQL_STATE_TYPE 97
-#define FEATURE_STATIC_CURSOR_ATTRIBUTES 98
-#define FEATURE_STORES_LOWER_CASE_IDENTIFIERS 99
-#define FEATURE_STORES_LOWER_CASE_QUOTED_IDENTIFIERS 100
-#define FEATURE_STORES_MIXED_CASE_IDENTIFIERS 101
-#define FEATURE_STORES_MIXED_CASE_QUOTED_IDENTIFIERS 102
-#define FEATURE_STORES_UPPER_CASE_IDENTIFIERS 103
-#define FEATURE_STORES_UPPER_CASE_QUOTED_IDENTIFIERS 104
-#define FEATURE_STRING_FUNCTIONS 105
-#define FEATURE_SUPPORTS_ALTER_TABLE_WITH_ADD_COLUMN 106
-#define FEATURE_SUPPORTS_ALTER_TABLE_WITH_DROP_COLUMN 107
-#define FEATURE_SUPPORTS_ANSI92_ENTRY_LEVEL_SQL 108
-#define FEATURE_SUPPORTS_ANSI92_FULL_SQL 109
-#define FEATURE_SUPPORTS_ANSI92_INTERMEDIATE_SQL 110
-#define FEATURE_SUPPORTS_BATCH_UPDATES 111
-#define FEATURE_SUPPORTS_CATALOGS_IN_DATA_MANIPULATION 112
-#define FEATURE_SUPPORTS_CATALOGS_IN_INDEX_DEFINITIONS 113
-#define FEATURE_SUPPORTS_CATALOGS_IN_PRIVILEGE_DEFINITIONS 114
-#define FEATURE_SUPPORTS_CATALOGS_IN_PROCEDURE_CALLS 115
-#define FEATURE_SUPPORTS_CATALOGS_IN_TABLE_DEFINITIONS 116
-#define FEATURE_SUPPORTS_COLUMN_ALIASING 117
-#define FEATURE_SUPPORTS_CONVERT 118
-#define FEATURE_SUPPORTS_CORE_SQL_GRAMMAR 119
-#define FEATURE_SUPPORTS_CORRELATED_SUBQUERIES 120
-#define FEATURE_SUPPORTS_DATA_DEFINITION_AND_DATA_MANIPULATION_TRANSACTIONS 121
-#define FEATURE_SUPPORTS_DATA_MANIPULATION_TRANSACTIONS_ONLY 122
-#define FEATURE_SUPPORTS_DESCRIBE_PARAMETER 123
-#define FEATURE_SUPPORTS_DIFFERENT_TABLE_CORRELATION_NAMES 124
-#define FEATURE_SUPPORTS_EXPRESSIONS_IN_ORDER_BY 125
-#define FEATURE_SUPPORTS_EXTENDED_SQL_GRAMMAR 126
-#define FEATURE_SUPPORTS_FULL_OUTER_JOINS 127
-#define FEATURE_SUPPORTS_GET_GENERATED_KEYS 128
-#define FEATURE_SUPPORTS_GROUP_BY 129
-#define FEATURE_SUPPORTS_GROUP_BY_BEYOND_SELECT 130
-#define FEATURE_SUPPORTS_GROUP_BY_UNRELATED 131
-#define FEATURE_SUPPORTS_INTEGRITY_ENHANCEMENT_FACILITY 132
-#define FEATURE_SUPPORTS_LIKE_ESCAPE_CLAUSE 133
-#define FEATURE_SUPPORTS_LIMITED_OUTER_JOINS 134
-#define FEATURE_SUPPORTS_MINIMUM_SQL_GRAMMAR 135
-#define FEATURE_SUPPORTS_MIXED_CASE_IDENTIFIERS 136
-#define FEATURE_SUPPORTS_MIXED_CASE_QUOTED_IDENTIFIERS 137
-#define FEATURE_SUPPORTS_MULTIPLE_RESULT_SETS 138
-#define FEATURE_SUPPORTS_MULTIPLE_TRANSACTIONS 139
-#define FEATURE_SUPPORTS_NAMED_PARAMETERS 140
-#define FEATURE_SUPPORTS_NON_NULLABLE_COLUMNS 141
-#define FEATURE_SUPPORTS_OPEN_CURSORS_ACROSS_COMMIT 142
-#define FEATURE_SUPPORTS_OPEN_CURSORS_ACROSS_ROLLBACK 143
-#define FEATURE_SUPPORTS_OPEN_STATEMENTS_ACROSS_COMMIT 144
-#define FEATURE_SUPPORTS_OPEN_STATEMENTS_ACROSS_ROLLBACK 145
-#define FEATURE_SUPPORTS_ORDER_BY_UNRELATED 146
-#define FEATURE_SUPPORTS_OUTER_JOINS 147
-#define FEATURE_SUPPORTS_POSITIONED_DELETE 148
-#define FEATURE_SUPPORTS_POSITIONED_UPDATE 149
-#define FEATURE_SUPPORTS_SAVEPOINTS 150
-#define FEATURE_SUPPORTS_SCHEMAS_IN_DATA_MANIPULATION 151
-#define FEATURE_SUPPORTS_SCHEMAS_IN_INDEX_DEFINITIONS 152
-#define FEATURE_SUPPORTS_SCHEMAS_IN_PRIVILEGE_DEFINITIONS 153
-#define FEATURE_SUPPORTS_SCHEMAS_IN_PROCEDURE_CALLS 154
-#define FEATURE_SUPPORTS_SCHEMAS_IN_TABLE_DEFINITIONS 155
-#define FEATURE_SUPPORTS_SELECT_FOR_UPDATE 156
-#define FEATURE_SUPPORTS_STORED_FUNCTIONS_USING_CALL_SYNTAX 157
-#define FEATURE_SUPPORTS_STORED_PROCEDURES 158
-#define FEATURE_SUPPORTS_SUBQUERIES_IN_COMPARISONS 159
-#define FEATURE_SUPPORTS_SUBQUERIES_IN_EXISTS 160
-#define FEATURE_SUPPORTS_SUBQUERIES_IN_INS 161
-#define FEATURE_SUPPORTS_SUBQUERIES_IN_QUANTIFIEDS 162
-#define FEATURE_SUPPORTS_TABLE_CORRELATION_NAMES 163
-#define FEATURE_SUPPORTS_TRANSACTIONS 164
-#define FEATURE_SUPPORTS_UNION 165
-#define FEATURE_SUPPORTS_UNION_ALL 166
-#define FEATURE_SYSTEM_FUNCTIONS 167
-#define FEATURE_TABLE_TERM 168
-#define FEATURE_TIME_DATE_ADD_INTERVALS 169
-#define FEATURE_TIME_DATE_DIFF_INTERVALS 170
-#define FEATURE_TIME_DATE_FUNCTIONS 171
-#define FEATURE_TIME_DATE_LITERALS 172
-#define FEATURE_UPDATES_ARE_DETECTED 173
-#define FEATURE_USES_LOCAL_FILE_PER_TABLE 174
-#define FEATURE_USES_LOCAL_FILES 175
-#define FEATURE_VALUE_EXPRESSIONS 176
-#define FEATURE_COUNT 177
+#define FEATURE_ALTER_TABLE_OPERATIONS 4
+#define FEATURE_ANSI92_SQL_LEVELS 5
+#define FEATURE_AUTO_COMMIT_FAILURE_CLOSES_ALL_RESULT_SETS 6
+#define FEATURE_BATCH_OPERATIONS 7
+#define FEATURE_BATCH_ROW_COUNTS 8
+#define FEATURE_CATALOG_SEPARATOR 9
+#define FEATURE_CATALOG_TERM 10
+#define FEATURE_CATALOG_USAGE 11
+#define FEATURE_COLLATION_SEQ 12
+#define FEATURE_CREATE_ASSERTION_CLAUSES 13
+#define FEATURE_CREATE_CHARACTER_SET_CLAUSES 14
+#define FEATURE_CREATE_COLLATION_CLAUSES 15
+#define FEATURE_CREATE_DOMAIN_CLAUSES 16
+#define FEATURE_CREATE_SCHEMA_CLAUSES 17
+#define FEATURE_CREATE_TABLE_CLAUSES 18
+#define FEATURE_CREATE_TRANSLATION_CLAUSES 19
+#define FEATURE_CREATE_VIEW_CLAUSES 20
+#define FEATURE_DATA_DEFINITION_TRANSACTION_BEHAVIOR 21
+#define FEATURE_DDL_INDEX_OPERATIONS 22
+#define FEATURE_DEFAULT_ISOLATION_LEVEL 23
+#define FEATURE_DEFAULT_RESULT_SET_HOLDABILITY 24
+#define FEATURE_DELETES_ARE_DETECTED 25
+#define FEATURE_DOES_MAX_ROW_SIZE_INCLUDE_BLOBS 26
+#define FEATURE_DROP_ASSERTION_CLAUSES 27
+#define FEATURE_DROP_CHARACTER_SET_CLAUSES 28
+#define FEATURE_DROP_COLLATION_CLAUSES 29
+#define FEATURE_DROP_DOMAIN_CLAUSES 30
+#define FEATURE_DROP_SCHEMA_CLAUSES 31
+#define FEATURE_DROP_TABLE_CLAUSES 32
+#define FEATURE_DROP_TRANSLATION_CLAUSES 33
+#define FEATURE_DROP_VIEW_CLAUSES 34
+#define FEATURE_EXTRA_NAME_CHARACTERS 35
+#define FEATURE_FOREIGN_KEY_DELETE_RULES 36
+#define FEATURE_FOREIGN_KEY_UPDATE_RULES 37
+#define FEATURE_FORWARD_ONLY_CURSOR_ATTRIBUTES 38
+#define FEATURE_GENERATED_KEY_ALWAYS_RETURNED 39
+#define FEATURE_GRANT_CLAUSES 40
+#define FEATURE_GROUP_BY_SUPPORT 41
+#define FEATURE_IDENTIFIER_CASE_STORAGE 42
+#define FEATURE_IDENTIFIER_QUOTE_STRING 43
+#define FEATURE_INDEX_KEYWORDS 44
+#define FEATURE_INFO_SCHEMA_VIEWS 45
+#define FEATURE_INSERT_OPERATIONS 46
+#define FEATURE_INSERTS_ARE_DETECTED 47
+#define FEATURE_IS_CATALOG_AT_START 48
+#define FEATURE_IS_READ_ONLY 49
+#define FEATURE_ISOLATION_LEVELS 50
+#define FEATURE_LOCAL_FILE_USAGE 51
+#define FEATURE_LOCATORS_UPDATE_COPY 52
+#define FEATURE_LOCK_TYPES 53
+#define FEATURE_MAX_BINARY_LITERAL_LENGTH 54
+#define FEATURE_MAX_CATALOG_NAME_LENGTH 55
+#define FEATURE_MAX_CHAR_LITERAL_LENGTH 56
+#define FEATURE_MAX_COLUMN_NAME_LENGTH 57
+#define FEATURE_MAX_COLUMNS_IN_GROUP_BY 58
+#define FEATURE_MAX_COLUMNS_IN_INDEX 59
+#define FEATURE_MAX_COLUMNS_IN_ORDER_BY 60
+#define FEATURE_MAX_COLUMNS_IN_SELECT 61
+#define FEATURE_MAX_COLUMNS_IN_TABLE 62
+#define FEATURE_MAX_CONNECTIONS 63
+#define FEATURE_MAX_CURSOR_NAME_LENGTH 64
+#define FEATURE_MAX_IDENTIFIER_LENGTH 65
+#define FEATURE_MAX_INDEX_LENGTH 66
+#define FEATURE_MAX_PROCEDURE_NAME_LENGTH 67
+#define FEATURE_MAX_ROW_SIZE 68
+#define FEATURE_MAX_SCHEMA_NAME_LENGTH 69
+#define FEATURE_MAX_STATEMENT_LENGTH 70
+#define FEATURE_MAX_STATEMENTS 71
+#define FEATURE_MAX_TABLE_NAME_LENGTH 72
+#define FEATURE_MAX_TABLES_IN_SELECT 73
+#define FEATURE_MAX_USER_NAME_LENGTH 74
+#define FEATURE_MIXED_CASE_IDENTIFIER_SUPPORT 75
+#define FEATURE_MULTIPLE_SUPPORT 76
+#define FEATURE_NEED_LONG_DATA_LENGTH 77
+#define FEATURE_NULL_PLUS_NON_NULL_IS_NULL 78
+#define FEATURE_NULL_SORT_ORDER 79
+#define FEATURE_NUMERIC_FUNCTIONS 80
+#define FEATURE_OPEN_CURSORS_ACROSS 81
+#define FEATURE_OPEN_STATEMENTS_ACROSS 82
+#define FEATURE_OTHERS_DELETES_ARE_VISIBLE 83
+#define FEATURE_OTHERS_INSERTS_ARE_VISIBLE 84
+#define FEATURE_OTHERS_UPDATES_ARE_VISIBLE 85
+#define FEATURE_OUTER_JOIN_SUPPORT 86
+#define FEATURE_OWN_DELETES_ARE_VISIBLE 87
+#define FEATURE_OWN_INSERTS_ARE_VISIBLE 88
+#define FEATURE_OWN_UPDATES_ARE_VISIBLE 89
+#define FEATURE_POSITIONED_OPERATIONS 90
+#define FEATURE_POSITIONED_OPERATIONS_SUPPORT 91
+#define FEATURE_PREDICATES 92
+#define FEATURE_PROCEDURE_TERM 93
+#define FEATURE_QUOTED_IDENTIFIER_CASE_STORAGE 94
+#define FEATURE_RELATIONAL_JOIN_OPERATORS 95
+#define FEATURE_RESULT_SET_CONCURRENCIES 96
+#define FEATURE_RESULT_SET_HOLDABILITIES 97
+#define FEATURE_RESULT_SET_TYPES 98
+#define FEATURE_REVOKE_CLAUSES 99
+#define FEATURE_ROW_ID_LIFETIME 100
+#define FEATURE_ROW_VALUE_CONSTRUCTOR_EXPRESSIONS 101
+#define FEATURE_SCHEMA_TERM 102
+#define FEATURE_SCHEMA_USAGE 103
+#define FEATURE_SCROLL_CONCURRENCIES 104
+#define FEATURE_SEARCH_STRING_ESCAPE 105
+#define FEATURE_SQL_GRAMMAR_LEVELS 106
+#define FEATURE_SQL_KEYWORDS 107
+#define FEATURE_SQL_STATE_TYPE 108
+#define FEATURE_STATIC_CURSOR_ATTRIBUTES 109
+#define FEATURE_STORED_PROGRAM_SUPPORT 110
+#define FEATURE_STRING_FUNCTIONS 111
+#define FEATURE_SUBQUERY_USAGE 112
+#define FEATURE_SUPPORTS_BATCH_UPDATES 113
+#define FEATURE_SUPPORTS_COLUMN_ALIASING 114
+#define FEATURE_SUPPORTS_CONVERT 115
+#define FEATURE_SUPPORTS_CORRELATED_SUBQUERIES 116
+#define FEATURE_SUPPORTS_DESCRIBE_PARAMETER 117
+#define FEATURE_SUPPORTS_EXPRESSIONS_IN_ORDER_BY 118
+#define FEATURE_SUPPORTS_GET_GENERATED_KEYS 119
+#define FEATURE_SUPPORTS_INTEGRITY_ENHANCEMENT_FACILITY 120
+#define FEATURE_SUPPORTS_LIKE_ESCAPE_CLAUSE 121
+#define FEATURE_SUPPORTS_NAMED_PARAMETERS 122
+#define FEATURE_SUPPORTS_NON_NULLABLE_COLUMNS 123
+#define FEATURE_SUPPORTS_ORDER_BY_UNRELATED 124
+#define FEATURE_SUPPORTS_SAVEPOINTS 125
+#define FEATURE_SUPPORTS_SELECT_FOR_UPDATE 126
+#define FEATURE_SUPPORTS_TRANSACTIONS 127
+#define FEATURE_SYSTEM_FUNCTIONS 128
+#define FEATURE_TABLE_CORRELATION_NAME_SUPPORT 129
+#define FEATURE_TABLE_TERM 130
+#define FEATURE_TIME_DATE_ADD_INTERVALS 131
+#define FEATURE_TIME_DATE_DIFF_INTERVALS 132
+#define FEATURE_TIME_DATE_FUNCTIONS 133
+#define FEATURE_TIME_DATE_LITERALS 134
+#define FEATURE_TRANSACTION_DDL_DML_SUPPORT 135
+#define FEATURE_UNION_SUPPORT 136
+#define FEATURE_UPDATES_ARE_DETECTED 137
+#define FEATURE_VALUE_EXPRESSIONS 138
+#define FEATURE_COUNT 139
 
 #ifdef NEED_DBFEATURENAMES
 static const char *dbfeaturenames[]={
@@ -294,11 +256,14 @@ static const char *dbfeaturenames[]={
 	"all_procedures_are_callable",
 	"all_tables_are_selectable",
 	"alter_domain_clauses",
+	"alter_table_operations",
+	"ansi92_sql_levels",
 	"auto_commit_failure_closes_all_result_sets",
 	"batch_operations",
 	"batch_row_counts",
 	"catalog_separator",
 	"catalog_term",
+	"catalog_usage",
 	"collation_seq",
 	"create_assertion_clauses",
 	"create_character_set_clauses",
@@ -308,8 +273,7 @@ static const char *dbfeaturenames[]={
 	"create_table_clauses",
 	"create_translation_clauses",
 	"create_view_clauses",
-	"data_definition_causes_transaction_commit",
-	"data_definition_ignored_in_transactions",
+	"data_definition_transaction_behavior",
 	"ddl_index_operations",
 	"default_isolation_level",
 	"default_result_set_holdability",
@@ -329,6 +293,8 @@ static const char *dbfeaturenames[]={
 	"forward_only_cursor_attributes",
 	"generated_key_always_returned",
 	"grant_clauses",
+	"group_by_support",
+	"identifier_case_storage",
 	"identifier_quote_string",
 	"index_keywords",
 	"info_schema_views",
@@ -337,6 +303,7 @@ static const char *dbfeaturenames[]={
 	"is_catalog_at_start",
 	"is_read_only",
 	"isolation_levels",
+	"local_file_usage",
 	"locators_update_copy",
 	"lock_types",
 	"max_binary_literal_length",
@@ -360,22 +327,26 @@ static const char *dbfeaturenames[]={
 	"max_table_name_length",
 	"max_tables_in_select",
 	"max_user_name_length",
+	"mixed_case_identifier_support",
+	"multiple_support",
 	"need_long_data_length",
 	"null_plus_non_null_is_null",
-	"nulls_are_sorted_at_end",
-	"nulls_are_sorted_at_start",
-	"nulls_are_sorted_high",
-	"nulls_are_sorted_low",
+	"null_sort_order",
 	"numeric_functions",
+	"open_cursors_across",
+	"open_statements_across",
 	"others_deletes_are_visible",
 	"others_inserts_are_visible",
 	"others_updates_are_visible",
+	"outer_join_support",
 	"own_deletes_are_visible",
 	"own_inserts_are_visible",
 	"own_updates_are_visible",
 	"positioned_operations",
+	"positioned_operations_support",
 	"predicates",
 	"procedure_term",
+	"quoted_identifier_case_storage",
 	"relational_join_operators",
 	"result_set_concurrencies",
 	"result_set_holdabilities",
@@ -384,88 +355,41 @@ static const char *dbfeaturenames[]={
 	"row_id_lifetime",
 	"row_value_constructor_expressions",
 	"schema_term",
+	"schema_usage",
 	"scroll_concurrencies",
 	"search_string_escape",
+	"sql_grammar_levels",
 	"sql_keywords",
 	"sql_state_type",
 	"static_cursor_attributes",
-	"stores_lower_case_identifiers",
-	"stores_lower_case_quoted_identifiers",
-	"stores_mixed_case_identifiers",
-	"stores_mixed_case_quoted_identifiers",
-	"stores_upper_case_identifiers",
-	"stores_upper_case_quoted_identifiers",
+	"stored_program_support",
 	"string_functions",
-	"supports_alter_table_with_add_column",
-	"supports_alter_table_with_drop_column",
-	"supports_ansi92_entry_level_sql",
-	"supports_ansi92_full_sql",
-	"supports_ansi92_intermediate_sql",
+	"subquery_usage",
 	"supports_batch_updates",
-	"supports_catalogs_in_data_manipulation",
-	"supports_catalogs_in_index_definitions",
-	"supports_catalogs_in_privilege_definitions",
-	"supports_catalogs_in_procedure_calls",
-	"supports_catalogs_in_table_definitions",
 	"supports_column_aliasing",
 	"supports_convert",
-	"supports_core_sql_grammar",
 	"supports_correlated_subqueries",
-	"supports_data_definition_and_data_manipulation_transactions",
-	"supports_data_manipulation_transactions_only",
 	"supports_describe_parameter",
-	"supports_different_table_correlation_names",
 	"supports_expressions_in_order_by",
-	"supports_extended_sql_grammar",
-	"supports_full_outer_joins",
 	"supports_get_generated_keys",
-	"supports_group_by",
-	"supports_group_by_beyond_select",
-	"supports_group_by_unrelated",
 	"supports_integrity_enhancement_facility",
 	"supports_like_escape_clause",
-	"supports_limited_outer_joins",
-	"supports_minimum_sql_grammar",
-	"supports_mixed_case_identifiers",
-	"supports_mixed_case_quoted_identifiers",
-	"supports_multiple_result_sets",
-	"supports_multiple_transactions",
 	"supports_named_parameters",
 	"supports_non_nullable_columns",
-	"supports_open_cursors_across_commit",
-	"supports_open_cursors_across_rollback",
-	"supports_open_statements_across_commit",
-	"supports_open_statements_across_rollback",
 	"supports_order_by_unrelated",
-	"supports_outer_joins",
-	"supports_positioned_delete",
-	"supports_positioned_update",
 	"supports_savepoints",
-	"supports_schemas_in_data_manipulation",
-	"supports_schemas_in_index_definitions",
-	"supports_schemas_in_privilege_definitions",
-	"supports_schemas_in_procedure_calls",
-	"supports_schemas_in_table_definitions",
 	"supports_select_for_update",
-	"supports_stored_functions_using_call_syntax",
-	"supports_stored_procedures",
-	"supports_subqueries_in_comparisons",
-	"supports_subqueries_in_exists",
-	"supports_subqueries_in_ins",
-	"supports_subqueries_in_quantifieds",
-	"supports_table_correlation_names",
 	"supports_transactions",
-	"supports_union",
-	"supports_union_all",
 	"system_functions",
+	"table_correlation_name_support",
 	"table_term",
 	"time_date_add_intervals",
 	"time_date_diff_intervals",
 	"time_date_functions",
 	"time_date_literals",
+	"transaction_ddl_dml_support",
+	"union_support",
 	"updates_are_detected",
-	"uses_local_file_per_table",
-	"uses_local_files",
 	"value_expressions"
 };
 #endif

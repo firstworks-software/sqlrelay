@@ -6295,21 +6295,20 @@ static SQLUINTEGER SQLR_FetchDirection(CONN *conn) {
 	return retval;
 }
 
+static bool SQLR_FeatureContains(CONN *conn,
+				const char *feature,
+				const char *target);
+
 static SQLUSMALLINT SQLR_IdentifierCase(CONN *conn) {
-	// I'm not 100% sure about this one, there is also
-	// stores_mixed_case_identifiers, and maybe that
-	// should be factored in here too
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"supports_mixed_case_identifiers"))) {
+	if (SQLR_FeatureContains(conn,
+			"mixed_case_identifier_support",
+			"IDENTIFIERS")) {
 		return SQL_IC_SENSITIVE;
-	} else if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"stores_upper_case_identifiers"))) {
+	} else if (SQLR_FeatureContains(conn,
+			"identifier_case_storage","UPPER")) {
 		return SQL_IC_UPPER;
-	} else if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"stores_lower_case_identifiers"))) {
+	} else if (SQLR_FeatureContains(conn,
+			"identifier_case_storage","LOWER")) {
 		return SQL_IC_LOWER;
 	}
 	return SQL_IC_MIXED;
@@ -6358,17 +6357,17 @@ static SQLUSMALLINT SQLR_TxnCapable(CONN *conn) {
 		conn->con->getDatabaseFeature(
 			"supports_transactions"))) {
 		return SQL_TC_NONE;
-	} else if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-	"supports_data_definition_and_data_manipulation_transactions"))) {
+	} else if (SQLR_FeatureContains(conn,
+			"transaction_ddl_dml_support",
+			"DDL_AND_DML")) {
 		return SQL_TC_ALL;
-	} else if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"data_definition_causes_transaction_commit"))) {
+	} else if (SQLR_FeatureContains(conn,
+			"data_definition_transaction_behavior",
+			"CAUSES_COMMIT")) {
 		return SQL_TC_DDL_COMMIT;
-	} else if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"data_definition_ignored_in_transactions"))) {
+	} else if (SQLR_FeatureContains(conn,
+			"data_definition_transaction_behavior",
+			"IGNORED_IN_TRANSACTIONS")) {
 		return SQL_TC_DDL_IGNORE;
 	}
 	return SQL_TC_DML;
@@ -6409,17 +6408,14 @@ static SQLUINTEGER SQLR_TxnIsolationOption(CONN *conn) {
 }
 
 static SQLUSMALLINT SQLR_NullCollation(CONN *conn) {
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"nulls_are_sorted_high"))) {
+	if (SQLR_FeatureContains(conn,
+			"null_sort_order","HIGH")) {
 		return SQL_NC_HIGH;
-	} else if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"nulls_are_sorted_at_start"))) {
+	} else if (SQLR_FeatureContains(conn,
+			"null_sort_order","AT_START")) {
 		return SQL_NC_START;
-	} else if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"nulls_are_sorted_at_end"))) {
+	} else if (SQLR_FeatureContains(conn,
+			"null_sort_order","AT_END")) {
 		return SQL_NC_END;
 	}
 	return SQL_NC_LOW;
@@ -6427,9 +6423,8 @@ static SQLUSMALLINT SQLR_NullCollation(CONN *conn) {
 
 static SQLUINTEGER SQLR_AlterTable(CONN *conn) {
 	SQLUINTEGER	retval=0;
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-				"supports_alter_table_with_add_column"))) {
+	if (SQLR_FeatureContains(conn,
+			"alter_table_operations","ADD_COLUMN")) {
 		#if (ODBCVER >= 0x0200)
 		retval|=SQL_AT_ADD_COLUMN;
 		#endif
@@ -6446,9 +6441,8 @@ static SQLUINTEGER SQLR_AlterTable(CONN *conn) {
 			|SQL_AT_CONSTRAINT_NON_DEFERRABLE;
 		#endif
 	}
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-				"supports_alter_table_with_drop_column"))) {
+	if (SQLR_FeatureContains(conn,
+			"alter_table_operations","DROP_COLUMN")) {
 		#if (ODBCVER >= 0x0200)
 		retval|=SQL_AT_DROP_COLUMN;
 		#endif
@@ -6465,36 +6459,31 @@ static SQLUINTEGER SQLR_AlterTable(CONN *conn) {
 
 static SQLUINTEGER SQLR_OjCapabilities(CONN *conn) {
 	SQLUINTEGER	retval=0;
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-				"supports_outer_joins"))) {
+	if (SQLR_FeatureContains(conn,
+			"outer_join_support","BASIC")) {
 		retval|=SQL_OJ_LEFT
 			|SQL_OJ_RIGHT
-			|SQL_OJ_NESTED
 			|SQL_OJ_NOT_ORDERED
 			|SQL_OJ_INNER
 			|SQL_OJ_ALL_COMPARISON_OPS;
-	} else if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-				"supports_limited_outer_joins"))) {
-		retval|=SQL_OJ_LEFT;
 	}
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-				"supports_full_outer_joins"))) {
+	if (SQLR_FeatureContains(conn,
+			"outer_join_support","FULL")) {
 		retval|=SQL_OJ_FULL;
+	}
+	if (SQLR_FeatureContains(conn,
+			"outer_join_support","LIMITED")) {
+		retval|=SQL_OJ_NESTED;
 	}
 	return retval;
 }
 
 static SQLUSMALLINT SQLR_OdbcSqlConformance(CONN *conn) {
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-				"supports_extended_sql_grammar"))) {
+	if (SQLR_FeatureContains(conn,
+			"sql_grammar_levels","EXTENDED")) {
 		return SQL_OSC_EXTENDED;
-	} else if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-				"supports_core_sql_grammar"))) {
+	} else if (SQLR_FeatureContains(conn,
+			"sql_grammar_levels","CORE")) {
 		return SQL_OSC_CORE;
 	}
 	return SQL_OSC_MINIMUM;
@@ -6805,13 +6794,11 @@ static SQLUINTEGER SQLR_TimedateFunctions(CONN *conn) {
 }
 
 static SQLUSMALLINT SQLR_CorrelationName(CONN *conn) {
-	if (!sqlrconnection::isYes(
-			conn->con->getDatabaseFeature(
-			"supports_table_correlation_names"))) {
+	if (!SQLR_FeatureContains(conn,
+			"table_correlation_name_support","BASIC")) {
 		return SQL_CN_NONE;
-	} else if (sqlrconnection::isYes(
-			conn->con->getDatabaseFeature(
-			"supports_different_table_correlation_names"))) {
+	} else if (SQLR_FeatureContains(conn,
+			"table_correlation_name_support","DIFFERENT")) {
 		return SQL_CN_DIFFERENT;
 	}
 	return SQL_CN_ANY;
@@ -6895,12 +6882,12 @@ static SQLUINTEGER SQLR_PosOperations(CONN *conn) {
 
 static SQLUINTEGER SQLR_PositionedStatements(CONN *conn) {
 	SQLUINTEGER	retval=0;
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature("supports_positioned_delete"))) {
+	if (SQLR_FeatureContains(conn,
+			"positioned_operations_support","DELETE")) {
 		retval|=SQL_PS_POSITIONED_DELETE;
 	}
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature("supports_positioned_update"))) {
+	if (SQLR_FeatureContains(conn,
+			"positioned_operations_support","UPDATE")) {
 		retval|=SQL_PS_POSITIONED_UPDATE;
 	}
 	return retval;
@@ -6958,11 +6945,11 @@ static SQLUINTEGER SQLR_StaticSensitivity(CONN *conn) {
 }
 
 static SQLUINTEGER SQLR_FileUsage(CONN *conn) {
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature("uses_local_file_per_table"))) {
+	if (SQLR_FeatureContains(conn,
+			"local_file_usage","LOCAL_FILE_PER_TABLE")) {
 		return SQL_FILE_TABLE;
-	} else if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature("uses_local_files"))) {
+	} else if (SQLR_FeatureContains(conn,
+			"local_file_usage","LOCAL_FILES")) {
 		return SQL_FILE_CATALOG;
 	}
 	return SQL_FILE_NOT_SUPPORTED;
@@ -6970,17 +6957,14 @@ static SQLUINTEGER SQLR_FileUsage(CONN *conn) {
 
 static SQLUSMALLINT SQLR_GroupBy(CONN *conn) {
 	SQLUSMALLINT	retval;
-	if (!sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-				"supports_group_by"))) {
+	if (!SQLR_FeatureContains(conn,
+			"group_by_support","BASIC")) {
 		retval=SQL_GB_NOT_SUPPORTED;
-	} else if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-				"supports_group_by_unrelated"))) {
+	} else if (SQLR_FeatureContains(conn,
+			"group_by_support","UNRELATED")) {
 		retval=SQL_GB_NO_RELATION;
-	} else if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-				"supports_group_by_beyond_select"))) {
+	} else if (SQLR_FeatureContains(conn,
+			"group_by_support","BEYOND_SELECT")) {
 		retval=SQL_GB_GROUP_BY_CONTAINS_SELECT;
 	} else {
 		retval=SQL_GB_GROUP_BY_EQUALS_SELECT;
@@ -6993,80 +6977,85 @@ static SQLUSMALLINT SQLR_GroupBy(CONN *conn) {
 }
 
 static SQLUINTEGER SQLR_OwnerUsage(CONN *conn) {
+
 	SQLUINTEGER	retval=0;
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"supports_schemas_in_data_manipulation"))) {
-		retval|=SQL_SU_DML_STATEMENTS;
+
+	const char	*su=
+		conn->con->getDatabaseFeature("schema_usage");
+	if (!su) {
+		return retval;
 	}
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"supports_schemas_in_procedure_calls"))) {
-		retval|=SQL_SU_PROCEDURE_INVOCATION;
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(su,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"DATA_MANIPULATION")) {
+			retval|=SQL_SU_DML_STATEMENTS;
+		} else if (!charstring::compare(f,"INDEX_DEFINITIONS")) {
+			retval|=SQL_SU_INDEX_DEFINITION;
+		} else if (!charstring::compare(f,"PRIVILEGE_DEFINITIONS")) {
+			retval|=SQL_SU_PRIVILEGE_DEFINITION;
+		} else if (!charstring::compare(f,"PROCEDURE_CALLS")) {
+			retval|=SQL_SU_PROCEDURE_INVOCATION;
+		} else if (!charstring::compare(f,"TABLE_DEFINITIONS")) {
+			retval|=SQL_SU_TABLE_DEFINITION;
+		}
+		delete[] parts[i];
 	}
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"supports_schemas_in_table_definitions"))) {
-		retval|=SQL_SU_TABLE_DEFINITION;
-	}
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"supports_schemas_in_index_definitions"))) {
-		retval|=SQL_SU_INDEX_DEFINITION;
-	}
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"supports_schemas_in_privilege_definitions"))) {
-		retval|=SQL_SU_PRIVILEGE_DEFINITION;
-	}
+	delete[] parts;
+
 	return retval;
 }
 
 static SQLUINTEGER SQLR_QualifierUsage(CONN *conn) {
+
 	SQLUINTEGER	retval=0;
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"supports_catalogs_in_data_manipulation"))) {
-		retval|=SQL_SU_DML_STATEMENTS;
+
+	const char	*cu=
+		conn->con->getDatabaseFeature("catalog_usage");
+	if (!cu) {
+		return retval;
 	}
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"supports_catalogs_in_procedure_calls"))) {
-		retval|=SQL_SU_PROCEDURE_INVOCATION;
+
+	char		**parts;
+	uint64_t	partcount;
+	charstring::split(cu,",",true,&parts,&partcount);
+
+	for (uint64_t i=0; i<partcount; i++) {
+		charstring::strip(parts[i],' ');
+		const char	*f=parts[i];
+		if (!charstring::compare(f,"DATA_MANIPULATION")) {
+			retval|=SQL_CU_DML_STATEMENTS;
+		} else if (!charstring::compare(f,"INDEX_DEFINITIONS")) {
+			retval|=SQL_CU_INDEX_DEFINITION;
+		} else if (!charstring::compare(f,"PRIVILEGE_DEFINITIONS")) {
+			retval|=SQL_CU_PRIVILEGE_DEFINITION;
+		} else if (!charstring::compare(f,"PROCEDURE_CALLS")) {
+			retval|=SQL_CU_PROCEDURE_INVOCATION;
+		} else if (!charstring::compare(f,"TABLE_DEFINITIONS")) {
+			retval|=SQL_CU_TABLE_DEFINITION;
+		}
+		delete[] parts[i];
 	}
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"supports_catalogs_in_table_definitions"))) {
-		retval|=SQL_SU_TABLE_DEFINITION;
-	}
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"supports_catalogs_in_index_definitions"))) {
-		retval|=SQL_SU_INDEX_DEFINITION;
-	}
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"supports_catalogs_in_privilege_definitions"))) {
-		retval|=SQL_SU_PRIVILEGE_DEFINITION;
-	}
+	delete[] parts;
+
 	return retval;
 }
 
 static SQLUSMALLINT SQLR_QuotedIdentifierCase(CONN *conn) {
-	// I'm not 100% sure about this one, there is also
-	// stores_mixed_case_quoted_identifiers, and maybe that
-	// should be factored in here too
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"supports_mixed_case_quoted_identifiers"))) {
+	if (SQLR_FeatureContains(conn,
+			"mixed_case_identifier_support",
+			"QUOTED_IDENTIFIERS")) {
 		return SQL_IC_SENSITIVE;
-	} else if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"stores_upper_case_quoted_identifiers"))) {
+	} else if (SQLR_FeatureContains(conn,
+			"quoted_identifier_case_storage","UPPER")) {
 		return SQL_IC_UPPER;
-	} else if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"stores_lower_case_quoted_identifiers"))) {
+	} else if (SQLR_FeatureContains(conn,
+			"quoted_identifier_case_storage","LOWER")) {
 		return SQL_IC_LOWER;
 	}
 	return SQL_IC_MIXED;
@@ -7079,24 +7068,20 @@ static SQLUINTEGER SQLR_Subqueries(CONN *conn) {
 			"supports_correlated_subqueries"))) {
 		retval|=SQL_SQ_CORRELATED_SUBQUERIES;
 	}
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"supports_subqueries_in_comparisons"))) {
+	if (SQLR_FeatureContains(conn,
+			"subquery_usage","COMPARISONS")) {
 		retval|=SQL_SQ_COMPARISON;
 	}
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"supports_subqueries_in_exists"))) {
+	if (SQLR_FeatureContains(conn,
+			"subquery_usage","EXISTS")) {
 		retval|=SQL_SQ_EXISTS;
 	}
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"supports_subqueries_in_ins"))) {
+	if (SQLR_FeatureContains(conn,
+			"subquery_usage","INS")) {
 		retval|=SQL_SQ_IN;
 	}
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-			"supports_subqueries_in_quantifieds"))) {
+	if (SQLR_FeatureContains(conn,
+			"subquery_usage","QUANTIFIEDS")) {
 		retval|=SQL_SQ_QUANTIFIED;
 	}
 	return retval;
@@ -7104,12 +7089,12 @@ static SQLUINTEGER SQLR_Subqueries(CONN *conn) {
 
 static SQLUINTEGER SQLR_UnionSupport(CONN *conn) {
 	SQLUINTEGER	retval=0;
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature("supports_union"))) {
+	if (SQLR_FeatureContains(conn,
+			"union_support","UNION")) {
 		retval|=SQL_U_UNION;
 	}
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature("supports_union_all"))) {
+	if (SQLR_FeatureContains(conn,
+			"union_support","UNION_ALL")) {
 		retval|=SQL_U_UNION_ALL;
 	}
 	return retval;
@@ -7253,17 +7238,14 @@ static SQLUINTEGER SQLR_SqlConformance(CONN *conn) {
 	// FIXME: SQL_SC_FIPS127_2_TRANSITIONAL is another
 	// possiblity, but there's no good way to determine if
 	// that's supported or not
-	if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-				"supports_ansi92_full_sql"))) {
+	if (SQLR_FeatureContains(conn,
+			"ansi92_sql_levels","FULL")) {
 		return SQL_SC_SQL92_FULL;
-	} else if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-				"supports_ansi92_intermediate_sql"))) {
+	} else if (SQLR_FeatureContains(conn,
+			"ansi92_sql_levels","INTERMEDIATE")) {
 		return SQL_SC_SQL92_INTERMEDIATE;
-	} else if (sqlrconnection::isYes(
-		conn->con->getDatabaseFeature(
-				"supports_ansi92_entry_level_sql"))) {
+	} else if (SQLR_FeatureContains(conn,
+			"ansi92_sql_levels","ENTRY_LEVEL")) {
 		return SQL_SC_SQL92_ENTRY;
 	}
 	return SQL_SC_SQL92_ENTRY;
@@ -9100,9 +9082,8 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_CURSOR_COMMIT_BEHAVIOR\n");
 			val.usmallintval=
-				sqlrconnection::isYes(
-				conn->con->getDatabaseFeature(
-				"supports_open_cursors_across_commit"))?
+				SQLR_FeatureContains(conn,
+				"open_cursors_across","COMMIT")?
 					SQL_CB_PRESERVE:SQL_CB_CLOSE;
 			type=2;
 			break;
@@ -9538,9 +9519,8 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_PROCEDURES:
 			debugPrintf("  infotype: "
 					"SQL_PROCEDURES\n");
-			val.strval=sqlrconnection::isYes(
-				conn->con->getDatabaseFeature(
-					"supports_stored_procedures"))?
+			val.strval=SQLR_FeatureContains(conn,
+				"stored_program_support","PROCEDURES")?
 							"Y":"N";
 			type=0;
 			break;
@@ -9554,9 +9534,8 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_CURSOR_ROLLBACK_BEHAVIOR\n");
 			val.usmallintval=
-				sqlrconnection::isYes(
-				conn->con->getDatabaseFeature(
-				"supports_open_cursors_across_rollback"))?
+				SQLR_FeatureContains(conn,
+				"open_cursors_across","ROLLBACK")?
 					SQL_CB_PRESERVE:SQL_CB_CLOSE;
 			type=2;
 			break;
@@ -9582,27 +9561,24 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_MULT_RESULT_SETS:
 			debugPrintf("  infotype: "
 					"SQL_MULT_RESULT_SETS\n");
-			val.strval=sqlrconnection::isYes(
-				conn->con->getDatabaseFeature(
-					"supports_multiple_result_sets"))?
+			val.strval=SQLR_FeatureContains(conn,
+				"multiple_support","RESULT_SETS")?
 							"Y":"N";
 			type=0;
 			break;
 		case SQL_MULTIPLE_ACTIVE_TXN:
 			debugPrintf("  infotype: "
 					"SQL_MULTIPLE_ACTIVE_TXN\n");
-			val.strval=sqlrconnection::isYes(
-				conn->con->getDatabaseFeature(
-					"supports_multiple_transactions"))?
+			val.strval=SQLR_FeatureContains(conn,
+				"multiple_support","TRANSACTIONS")?
 							"Y":"N";
 			type=0;
 			break;
 		case SQL_OUTER_JOINS:
 			debugPrintf("  infotype: "
 					"SQL_OUTER_JOINS\n");
-			val.strval=sqlrconnection::isYes(
-				conn->con->getDatabaseFeature(
-						"supports_outer_joins"))?
+			val.strval=SQLR_FeatureContains(conn,
+				"outer_join_support","BASIC")?
 							"Y":"N";
 			type=0;
 			break;

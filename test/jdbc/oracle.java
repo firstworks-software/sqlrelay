@@ -629,7 +629,7 @@ class oracle extends sqlrtest {
 		System.out.println("getResultSetHoldability");
 		intval=md.getResultSetHoldability();
 		System.out.println("  "+intval);
-		assertEquals(intval,ResultSet.CLOSE_CURSORS_AT_COMMIT);
+		assertEquals(intval,ResultSet.HOLD_CURSORS_OVER_COMMIT);
 		System.out.println();
 
 		// getRowIdLifetime

@@ -360,6 +360,10 @@ __END__
             #   * true/false
             #  * alter_domain_clauses
             #   * list - ADD_DOMAIN_CONSTRAINT,ADD_DOMAIN_DEFAULT,...
+            #  * alter_table_operations
+            #   * list - ADD_COLUMN,DROP_COLUMN
+            #  * ansi92_sql_levels
+            #   * list - ENTRY_LEVEL,FULL,INTERMEDIATE
             #  * auto_commit_failure_closes_all_result_sets
             #   * true/false
             #  * batch_operations
@@ -370,6 +374,8 @@ __END__
             #   * string
             #  * catalog_term
             #   * string
+            #  * catalog_usage
+            #   * list - DATA_MANIPULATION,INDEX_DEFINITIONS,...
             #  * collation_seq
             #   * string
             #  * create_assertion_clauses
@@ -388,10 +394,8 @@ __END__
             #   * list - CREATE_TRANSLATION
             #  * create_view_clauses
             #   * list - CREATE_VIEW,CHECK_OPTION,CASCADED,LOCAL
-            #  * data_definition_causes_transaction_commit
-            #   * true/false
-            #  * data_definition_ignored_in_transactions
-            #   * true/false
+            #  * data_definition_transaction_behavior
+            #   * list - CAUSES_COMMIT,IGNORED_IN_TRANSACTIONS
             #  * ddl_index_operations
             #   * list - CREATE_INDEX,DROP_INDEX
             #  * default_isolation_level
@@ -430,6 +434,10 @@ __END__
             #   * true/false
             #  * grant_clauses
             #   * list - DELETE_TABLE,INSERT_COLUMN,INSERT_TABLE,...
+            #  * group_by_support
+            #   * list - BASIC,BEYOND_SELECT,UNRELATED
+            #  * identifier_case_storage
+            #   * list - LOWER,MIXED,UPPER
             #  * identifier_quote_string
             #   * string
             #  * index_keywords
@@ -446,6 +454,8 @@ __END__
             #   * true/false
             #  * isolation_levels
             #   * list - READ_UNCOMMITTED,READ_COMMITTED,...
+            #  * local_file_usage
+            #   * list - LOCAL_FILE_PER_TABLE,LOCAL_FILES
             #  * locators_update_copy
             #   * true/false
             #  * lock_types
@@ -492,26 +502,30 @@ __END__
             #   * number
             #  * max_user_name_length
             #   * number
+            #  * mixed_case_identifier_support
+            #   * list - IDENTIFIERS,QUOTED_IDENTIFIERS
+            #  * multiple_support
+            #   * list - RESULT_SETS,TRANSACTIONS
             #  * need_long_data_length
             #   * true/false
             #  * null_plus_non_null_is_null
             #   * true/false
-            #  * nulls_are_sorted_at_end
-            #   * true/false
-            #  * nulls_are_sorted_at_start
-            #   * true/false
-            #  * nulls_are_sorted_high
-            #   * true/false
-            #  * nulls_are_sorted_low
-            #   * true/false
+            #  * null_sort_order
+            #   * list - AT_END,AT_START,HIGH,LOW
             #  * numeric_functions
             #   * list - ABS,ACOS,ASIN,ATAN,ATAN2,CEILING,COS,COT,...
+            #  * open_cursors_across
+            #   * list - COMMIT,ROLLBACK
+            #  * open_statements_across
+            #   * list - COMMIT,ROLLBACK
             #  * others_deletes_are_visible
             #   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
             #  * others_inserts_are_visible
             #   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
             #  * others_updates_are_visible
             #   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
+            #  * outer_join_support
+            #   * list - BASIC,FULL,LIMITED
             #  * own_deletes_are_visible
             #   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
             #  * own_inserts_are_visible
@@ -520,10 +534,14 @@ __END__
             #   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
             #  * positioned_operations
             #   * list - POSITION,REFRESH,UPDATE,DELETE,ADD
+            #  * positioned_operations_support
+            #   * list - DELETE,UPDATE
             #  * predicates
             #   * list - BETWEEN,COMPARISON,EXISTS,IN,ISNOTNULL,ISNULL,...
             #  * procedure_term
             #   * string
+            #  * quoted_identifier_case_storage
+            #   * list - LOWER,MIXED,UPPER
             #  * relational_join_operators
             #   * list - CORRESPONDING_CLAUSE,CROSS_JOIN,EXCEPT_JOIN,...
             #  * result_set_concurrencies
@@ -540,154 +558,60 @@ __END__
             #   * list - VALUE_EXPRESSION,NULL,DEFAULT,ROW_SUBQUERY
             #  * schema_term
             #   * string
+            #  * schema_usage
+            #   * list - DATA_MANIPULATION,INDEX_DEFINITIONS,...
             #  * scroll_concurrencies
             #   * list - READ_ONLY,LOCK,OPT_ROWVER,OPT_VALUES
             #  * search_string_escape
             #   * string
+            #  * sql_grammar_levels
+            #   * list - CORE,EXTENDED,MINIMUM
             #  * sql_keywords
             #   * list - ACCESS,ADD,ALTER,AUDIT,CLUSTER,COLUMN,COMMENT,...
             #  * sql_state_type
             #   * number
             #  * static_cursor_attributes
             #   * list - NEXT,ABSOLUTE,RELATIVE,BOOKMARK,...
-            #  * stores_lower_case_identifiers
-            #   * true/false
-            #  * stores_lower_case_quoted_identifiers
-            #   * true/false
-            #  * stores_mixed_case_identifiers
-            #   * true/false
-            #  * stores_mixed_case_quoted_identifiers
-            #   * true/false
-            #  * stores_upper_case_identifiers
-            #   * true/false
-            #  * stores_upper_case_quoted_identifiers
-            #   * true/false
+            #  * stored_program_support
+            #   * list - FUNCTIONS_USING_CALL_SYNTAX,PROCEDURES
             #  * string_functions
             #   * list - CONCAT,INSERT,LEFT,LTRIM,LENGTH,LOCATE,LCASE,...
-            #  * supports_alter_table_with_add_column
-            #   * true/false
-            #  * supports_alter_table_with_drop_column
-            #   * true/false
-            #  * supports_ansi92_entry_level_sql
-            #   * true/false
-            #  * supports_ansi92_full_sql
-            #   * true/false
-            #  * supports_ansi92_intermediate_sql
-            #   * true/false
+            #  * subquery_usage
+            #   * list - COMPARISONS,EXISTS,INS,QUANTIFIEDS
             #  * supports_batch_updates
-            #   * true/false
-            #  * supports_catalogs_in_data_manipulation
-            #   * true/false
-            #  * supports_catalogs_in_index_definitions
-            #   * true/false
-            #  * supports_catalogs_in_privilege_definitions
-            #   * true/false
-            #  * supports_catalogs_in_procedure_calls
-            #   * true/false
-            #  * supports_catalogs_in_table_definitions
             #   * true/false
             #  * supports_column_aliasing
             #   * true/false
             #  * supports_convert
             #   * true/false
-            #  * supports_core_sql_grammar
-            #   * true/false
             #  * supports_correlated_subqueries
-            #   * true/false
-            #  * supports_data_definition_and_data_manipulation_transactions
-            #   * true/false
-            #  * supports_data_manipulation_transactions_only
             #   * true/false
             #  * supports_describe_parameter
             #   * true/false
-            #  * supports_different_table_correlation_names
-            #   * true/false
             #  * supports_expressions_in_order_by
             #   * true/false
-            #  * supports_extended_sql_grammar
-            #   * true/false
-            #  * supports_full_outer_joins
-            #   * true/false
             #  * supports_get_generated_keys
-            #   * true/false
-            #  * supports_group_by
-            #   * true/false
-            #  * supports_group_by_beyond_select
-            #   * true/false
-            #  * supports_group_by_unrelated
             #   * true/false
             #  * supports_integrity_enhancement_facility
             #   * true/false
             #  * supports_like_escape_clause
             #   * true/false
-            #  * supports_limited_outer_joins
-            #   * true/false
-            #  * supports_minimum_sql_grammar
-            #   * true/false
-            #  * supports_mixed_case_identifiers
-            #   * true/false
-            #  * supports_mixed_case_quoted_identifiers
-            #   * true/false
-            #  * supports_multiple_result_sets
-            #   * true/false
-            #  * supports_multiple_transactions
-            #   * true/false
             #  * supports_named_parameters
             #   * true/false
             #  * supports_non_nullable_columns
             #   * true/false
-            #  * supports_open_cursors_across_commit
-            #   * true/false
-            #  * supports_open_cursors_across_rollback
-            #   * true/false
-            #  * supports_open_statements_across_commit
-            #   * true/false
-            #  * supports_open_statements_across_rollback
-            #   * true/false
             #  * supports_order_by_unrelated
-            #   * true/false
-            #  * supports_outer_joins
-            #   * true/false
-            #  * supports_positioned_delete
-            #   * true/false
-            #  * supports_positioned_update
             #   * true/false
             #  * supports_savepoints
             #   * true/false
-            #  * supports_schemas_in_data_manipulation
-            #   * true/false
-            #  * supports_schemas_in_index_definitions
-            #   * true/false
-            #  * supports_schemas_in_privilege_definitions
-            #   * true/false
-            #  * supports_schemas_in_procedure_calls
-            #   * true/false
-            #  * supports_schemas_in_table_definitions
-            #   * true/false
             #  * supports_select_for_update
-            #   * true/false
-            #  * supports_stored_functions_using_call_syntax
-            #   * true/false
-            #  * supports_stored_procedures
-            #   * true/false
-            #  * supports_subqueries_in_comparisons
-            #   * true/false
-            #  * supports_subqueries_in_exists
-            #   * true/false
-            #  * supports_subqueries_in_ins
-            #   * true/false
-            #  * supports_subqueries_in_quantifieds
-            #   * true/false
-            #  * supports_table_correlation_names
             #   * true/false
             #  * supports_transactions
             #   * true/false
-            #  * supports_union
-            #   * true/false
-            #  * supports_union_all
-            #   * true/false
             #  * system_functions
             #   * list - USER,DBNAME,IFNULL
+            #  * table_correlation_name_support
+            #   * list - BASIC,DIFFERENT
             #  * table_term
             #   * string
             #  * time_date_add_intervals
@@ -698,12 +622,12 @@ __END__
             #   * list - NOW,CURDATE,DAYOFMONTH,DAYOFWEEK,DAYOFYEAR,...
             #  * time_date_literals
             #   * list - DATE,TIME,TIMESTAMP,INTERVAL_YEAR,...
+            #  * transaction_ddl_dml_support
+            #   * list - DDL_AND_DML,DML_ONLY
+            #  * union_support
+            #   * list - UNION,UNION_ALL
             #  * updates_are_detected
             #   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
-            #  * uses_local_file_per_table
-            #   * true/false
-            #  * uses_local_files
-            #   * true/false
             #  * value_expressions
             #   * list - CASE,CAST,COALESCE,NULLIF
             #

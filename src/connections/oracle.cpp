@@ -2548,6 +2548,12 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_ALTER_DOMAIN_CLAUSES]=
 		charstring::duplicate("");
 
+	databasefeatures[FEATURE_ALTER_TABLE_OPERATIONS]=
+		charstring::duplicate("ADD_COLUMN");
+
+	databasefeatures[FEATURE_ANSI92_SQL_LEVELS]=
+		charstring::duplicate("ENTRY_LEVEL");
+
 	databasefeatures[FEATURE_AUTO_COMMIT_FAILURE_CLOSES_ALL_RESULT_SETS]=
 		charstring::duplicate("false");
 
@@ -2561,6 +2567,9 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_CATALOG_TERM]=
+		charstring::duplicate("");
+
+	databasefeatures[FEATURE_CATALOG_USAGE]=
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_COLLATION_SEQ]=
@@ -2594,11 +2603,8 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_CREATE_VIEW_CLAUSES]=
 		charstring::duplicate("CREATE_VIEW,CHECK_OPTION,LOCAL");
 
-	databasefeatures[FEATURE_DATA_DEFINITION_CAUSES_TRANSACTION_COMMIT]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_DATA_DEFINITION_IGNORED_IN_TRANSACTIONS]=
-		charstring::duplicate("false");
+	databasefeatures[FEATURE_DATA_DEFINITION_TRANSACTION_BEHAVIOR]=
+		charstring::duplicate("CAUSES_COMMIT");
 
 	databasefeatures[FEATURE_DDL_INDEX_OPERATIONS]=
 		charstring::duplicate("CREATE_INDEX,DROP_INDEX");
@@ -2607,7 +2613,7 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 		charstring::duplicate("READ_COMMITTED");
 
 	databasefeatures[FEATURE_DEFAULT_RESULT_SET_HOLDABILITY]=
-		charstring::duplicate("CLOSE_CURSORS_AT_COMMIT");
+		charstring::duplicate("HOLD_CURSORS_OVER_COMMIT");
 
 	databasefeatures[FEATURE_DELETES_ARE_DETECTED]=
 		charstring::duplicate("");
@@ -2661,6 +2667,12 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 			"SELECT_TABLE,UPDATE_COLUMN,UPDATE_TABLE,"
 			"WITH_GRANT_OPTION");
 
+	databasefeatures[FEATURE_GROUP_BY_SUPPORT]=
+		charstring::duplicate("BASIC,BEYOND_SELECT,UNRELATED");
+
+	databasefeatures[FEATURE_IDENTIFIER_CASE_STORAGE]=
+		charstring::duplicate("UPPER");
+
 	databasefeatures[FEATURE_IDENTIFIER_QUOTE_STRING]=
 		charstring::duplicate("\"");
 
@@ -2670,21 +2682,24 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_INFO_SCHEMA_VIEWS]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_INSERTS_ARE_DETECTED]=
-		charstring::duplicate("");
-
 	databasefeatures[FEATURE_INSERT_OPERATIONS]=
 		charstring::duplicate(
 			"INSERT_LITERALS,INSERT_SEARCHED,SELECT_INTO");
 
-	databasefeatures[FEATURE_ISOLATION_LEVELS]=
-		charstring::duplicate("READ_COMMITTED,SERIALIZABLE");
+	databasefeatures[FEATURE_INSERTS_ARE_DETECTED]=
+		charstring::duplicate("");
 
 	databasefeatures[FEATURE_IS_CATALOG_AT_START]=
 		charstring::duplicate("false");
 
 	databasefeatures[FEATURE_IS_READ_ONLY]=
 		charstring::duplicate("false");
+
+	databasefeatures[FEATURE_ISOLATION_LEVELS]=
+		charstring::duplicate("READ_COMMITTED,SERIALIZABLE");
+
+	databasefeatures[FEATURE_LOCAL_FILE_USAGE]=
+		charstring::duplicate("");
 
 	databasefeatures[FEATURE_LOCATORS_UPDATE_COPY]=
 		charstring::duplicate("true");
@@ -2701,6 +2716,9 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_CHAR_LITERAL_LENGTH]=
 		charstring::duplicate("2000");
 
+	databasefeatures[FEATURE_MAX_COLUMN_NAME_LENGTH]=
+		charstring::duplicate("128");
+
 	databasefeatures[FEATURE_MAX_COLUMNS_IN_GROUP_BY]=
 		charstring::duplicate("0");
 
@@ -2715,9 +2733,6 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 
 	databasefeatures[FEATURE_MAX_COLUMNS_IN_TABLE]=
 		charstring::duplicate("1000");
-
-	databasefeatures[FEATURE_MAX_COLUMN_NAME_LENGTH]=
-		charstring::duplicate("128");
 
 	databasefeatures[FEATURE_MAX_CONNECTIONS]=
 		charstring::duplicate("0");
@@ -2742,43 +2757,46 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_SCHEMA_NAME_LENGTH]=
 		charstring::duplicate("128");
 
-	databasefeatures[FEATURE_MAX_STATEMENTS]=
-		charstring::duplicate("0");
-
 	databasefeatures[FEATURE_MAX_STATEMENT_LENGTH]=
 		charstring::duplicate("65535");
 
-	databasefeatures[FEATURE_MAX_TABLES_IN_SELECT]=
+	databasefeatures[FEATURE_MAX_STATEMENTS]=
 		charstring::duplicate("0");
 
 	databasefeatures[FEATURE_MAX_TABLE_NAME_LENGTH]=
 		charstring::duplicate("128");
 
+	databasefeatures[FEATURE_MAX_TABLES_IN_SELECT]=
+		charstring::duplicate("0");
+
 	databasefeatures[FEATURE_MAX_USER_NAME_LENGTH]=
 		charstring::duplicate("128");
+
+	databasefeatures[FEATURE_MIXED_CASE_IDENTIFIER_SUPPORT]=
+		charstring::duplicate("QUOTED_IDENTIFIERS");
+
+	databasefeatures[FEATURE_MULTIPLE_SUPPORT]=
+		charstring::duplicate("TRANSACTIONS");
 
 	databasefeatures[FEATURE_NEED_LONG_DATA_LENGTH]=
 		charstring::duplicate("true");
 
-	databasefeatures[FEATURE_NULLS_ARE_SORTED_AT_END]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_NULLS_ARE_SORTED_AT_START]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_NULLS_ARE_SORTED_HIGH]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_NULLS_ARE_SORTED_LOW]=
-		charstring::duplicate("false");
-
 	databasefeatures[FEATURE_NULL_PLUS_NON_NULL_IS_NULL]=
 		charstring::duplicate("true");
+
+	databasefeatures[FEATURE_NULL_SORT_ORDER]=
+		charstring::duplicate("HIGH");
 
 	databasefeatures[FEATURE_NUMERIC_FUNCTIONS]=
 		charstring::duplicate(
 			"ABS,ACOS,ASIN,ATAN,ATAN2,CEILING,COS,EXP,FLOOR,LOG,"
 			"LOG10,MOD,PI,POWER,ROUND,SIGN,SIN,SQRT,TAN,TRUNCATE");
+
+	databasefeatures[FEATURE_OPEN_CURSORS_ACROSS]=
+		charstring::duplicate("");
+
+	databasefeatures[FEATURE_OPEN_STATEMENTS_ACROSS]=
+		charstring::duplicate("");
 
 	databasefeatures[FEATURE_OTHERS_DELETES_ARE_VISIBLE]=
 		charstring::duplicate("SCROLL_SENSITIVE");
@@ -2788,6 +2806,9 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 
 	databasefeatures[FEATURE_OTHERS_UPDATES_ARE_VISIBLE]=
 		charstring::duplicate("SCROLL_SENSITIVE");
+
+	databasefeatures[FEATURE_OUTER_JOIN_SUPPORT]=
+		charstring::duplicate("BASIC,FULL,LIMITED");
 
 	databasefeatures[FEATURE_OWN_DELETES_ARE_VISIBLE]=
 		charstring::duplicate(
@@ -2804,6 +2825,9 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_POSITIONED_OPERATIONS]=
 		charstring::duplicate("");
 
+	databasefeatures[FEATURE_POSITIONED_OPERATIONS_SUPPORT]=
+		charstring::duplicate("");
+
 	databasefeatures[FEATURE_PREDICATES]=
 		charstring::duplicate(
 			"BETWEEN,COMPARISON,EXISTS,IN,"
@@ -2812,6 +2836,9 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 
 	databasefeatures[FEATURE_PROCEDURE_TERM]=
 		charstring::duplicate("procedure");
+
+	databasefeatures[FEATURE_QUOTED_IDENTIFIER_CASE_STORAGE]=
+		charstring::duplicate("MIXED");
 
 	databasefeatures[FEATURE_RELATIONAL_JOIN_OPERATORS]=
 		charstring::duplicate(
@@ -2854,11 +2881,20 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_SCHEMA_TERM]=
 		charstring::duplicate("schema");
 
+	databasefeatures[FEATURE_SCHEMA_USAGE]=
+		charstring::duplicate(
+			"DATA_MANIPULATION,INDEX_DEFINITIONS,"
+			"PRIVILEGE_DEFINITIONS,PROCEDURE_CALLS,"
+			"TABLE_DEFINITIONS");
+
 	databasefeatures[FEATURE_SCROLL_CONCURRENCIES]=
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_SEARCH_STRING_ESCAPE]=
 		charstring::duplicate("/");
+
+	databasefeatures[FEATURE_SQL_GRAMMAR_LEVELS]=
+		charstring::duplicate("CORE,EXTENDED,MINIMUM");
 
 	databasefeatures[FEATURE_SQL_KEYWORDS]=
 		charstring::duplicate(
@@ -2870,32 +2906,14 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 			"NOCOMPRESS, NOWAIT, NUMBER, OFFLINE, ONLINE, "
 			"PCTFREE, PRIOR, all_PL_SQL_reserved_ words");
 
-	// FIXME: I don't think there should be a space
-			// before "words" above, but that's what the JDBC
-			// driver for oracle returns, so we'll go with it
 	databasefeatures[FEATURE_SQL_STATE_TYPE]=
 		charstring::duplicate("0");
 
 	databasefeatures[FEATURE_STATIC_CURSOR_ATTRIBUTES]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_STORES_LOWER_CASE_IDENTIFIERS]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_STORES_LOWER_CASE_QUOTED_IDENTIFIERS]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_STORES_MIXED_CASE_IDENTIFIERS]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_STORES_MIXED_CASE_QUOTED_IDENTIFIERS]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_STORES_UPPER_CASE_IDENTIFIERS]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_STORES_UPPER_CASE_QUOTED_IDENTIFIERS]=
-		charstring::duplicate("false");
+	databasefeatures[FEATURE_STORED_PROGRAM_SUPPORT]=
+		charstring::duplicate("FUNCTIONS_USING_CALL_SYNTAX,PROCEDURES");
 
 	databasefeatures[FEATURE_STRING_FUNCTIONS]=
 		charstring::duplicate(
@@ -2903,38 +2921,11 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 			"LCASE,LENGTH,LTRIM,OCTET_LENGTH,REPLACE,"
 			"RTRIM,SOUNDEX,SUBSTRING,UCASE");
 
-	databasefeatures[FEATURE_SUPPORTS_ALTER_TABLE_WITH_ADD_COLUMN]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_ALTER_TABLE_WITH_DROP_COLUMN]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_SUPPORTS_ANSI92_ENTRY_LEVEL_SQL]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_ANSI92_FULL_SQL]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_SUPPORTS_ANSI92_INTERMEDIATE_SQL]=
-		charstring::duplicate("false");
+	databasefeatures[FEATURE_SUBQUERY_USAGE]=
+		charstring::duplicate("COMPARISONS,EXISTS,INS,QUANTIFIEDS");
 
 	databasefeatures[FEATURE_SUPPORTS_BATCH_UPDATES]=
 		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_CATALOGS_IN_DATA_MANIPULATION]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_SUPPORTS_CATALOGS_IN_INDEX_DEFINITIONS]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_SUPPORTS_CATALOGS_IN_PRIVILEGE_DEFINITIONS]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_SUPPORTS_CATALOGS_IN_PROCEDURE_CALLS]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_SUPPORTS_CATALOGS_IN_TABLE_DEFINITIONS]=
-		charstring::duplicate("false");
 
 	databasefeatures[FEATURE_SUPPORTS_COLUMN_ALIASING]=
 		charstring::duplicate("true");
@@ -2942,44 +2933,16 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_SUPPORTS_CONVERT]=
 		charstring::duplicate("false");
 
-	databasefeatures[FEATURE_SUPPORTS_CORE_SQL_GRAMMAR]=
-		charstring::duplicate("true");
-
 	databasefeatures[FEATURE_SUPPORTS_CORRELATED_SUBQUERIES]=
-		charstring::duplicate("true");
-
-	databasefeatures[
-	FEATURE_SUPPORTS_DATA_DEFINITION_AND_DATA_MANIPULATION_TRANSACTIONS]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_DATA_MANIPULATION_TRANSACTIONS_ONLY]=
 		charstring::duplicate("true");
 
 	databasefeatures[FEATURE_SUPPORTS_DESCRIBE_PARAMETER]=
 		charstring::duplicate("true");
 
-	databasefeatures[FEATURE_SUPPORTS_DIFFERENT_TABLE_CORRELATION_NAMES]=
-		charstring::duplicate("true");
-
 	databasefeatures[FEATURE_SUPPORTS_EXPRESSIONS_IN_ORDER_BY]=
 		charstring::duplicate("true");
 
-	databasefeatures[FEATURE_SUPPORTS_EXTENDED_SQL_GRAMMAR]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_FULL_OUTER_JOINS]=
-		charstring::duplicate("true");
-
 	databasefeatures[FEATURE_SUPPORTS_GET_GENERATED_KEYS]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_GROUP_BY]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_GROUP_BY_BEYOND_SELECT]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_GROUP_BY_UNRELATED]=
 		charstring::duplicate("true");
 
 	databasefeatures[FEATURE_SUPPORTS_INTEGRITY_ENHANCEMENT_FACILITY]=
@@ -2988,107 +2951,29 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_SUPPORTS_LIKE_ESCAPE_CLAUSE]=
 		charstring::duplicate("true");
 
-	databasefeatures[FEATURE_SUPPORTS_LIMITED_OUTER_JOINS]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_MINIMUM_SQL_GRAMMAR]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_MIXED_CASE_IDENTIFIERS]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_SUPPORTS_MIXED_CASE_QUOTED_IDENTIFIERS]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_MULTIPLE_RESULT_SETS]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_SUPPORTS_MULTIPLE_TRANSACTIONS]=
-		charstring::duplicate("true");
-
 	databasefeatures[FEATURE_SUPPORTS_NAMED_PARAMETERS]=
 		charstring::duplicate("true");
 
 	databasefeatures[FEATURE_SUPPORTS_NON_NULLABLE_COLUMNS]=
 		charstring::duplicate("true");
 
-	databasefeatures[FEATURE_SUPPORTS_OPEN_CURSORS_ACROSS_COMMIT]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_SUPPORTS_OPEN_CURSORS_ACROSS_ROLLBACK]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_SUPPORTS_OPEN_STATEMENTS_ACROSS_COMMIT]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_SUPPORTS_OPEN_STATEMENTS_ACROSS_ROLLBACK]=
-		charstring::duplicate("false");
-
 	databasefeatures[FEATURE_SUPPORTS_ORDER_BY_UNRELATED]=
 		charstring::duplicate("true");
 
-	databasefeatures[FEATURE_SUPPORTS_OUTER_JOINS]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_POSITIONED_DELETE]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_SUPPORTS_POSITIONED_UPDATE]=
-		charstring::duplicate("false");
-
 	databasefeatures[FEATURE_SUPPORTS_SAVEPOINTS]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_SCHEMAS_IN_DATA_MANIPULATION]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_SCHEMAS_IN_INDEX_DEFINITIONS]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_SCHEMAS_IN_PRIVILEGE_DEFINITIONS]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_SCHEMAS_IN_PROCEDURE_CALLS]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_SCHEMAS_IN_TABLE_DEFINITIONS]=
 		charstring::duplicate("true");
 
 	databasefeatures[FEATURE_SUPPORTS_SELECT_FOR_UPDATE]=
 		charstring::duplicate("true");
 
-	databasefeatures[FEATURE_SUPPORTS_STORED_FUNCTIONS_USING_CALL_SYNTAX]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_STORED_PROCEDURES]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_SUBQUERIES_IN_COMPARISONS]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_SUBQUERIES_IN_EXISTS]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_SUBQUERIES_IN_INS]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_SUBQUERIES_IN_QUANTIFIEDS]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_TABLE_CORRELATION_NAMES]=
-		charstring::duplicate("true");
-
 	databasefeatures[FEATURE_SUPPORTS_TRANSACTIONS]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_UNION]=
-		charstring::duplicate("true");
-
-	databasefeatures[FEATURE_SUPPORTS_UNION_ALL]=
 		charstring::duplicate("true");
 
 	databasefeatures[FEATURE_SYSTEM_FUNCTIONS]=
 		charstring::duplicate("USER");
+
+	databasefeatures[FEATURE_TABLE_CORRELATION_NAME_SUPPORT]=
+		charstring::duplicate("BASIC,DIFFERENT");
 
 	databasefeatures[FEATURE_TABLE_TERM]=
 		charstring::duplicate("table");
@@ -3112,18 +2997,17 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 			"INTERVAL_YEAR_TO_MONTH,"
 			"INTERVAL_DAY_TO_SECOND");
 
+	databasefeatures[FEATURE_TRANSACTION_DDL_DML_SUPPORT]=
+		charstring::duplicate("DDL_AND_DML,DML_ONLY");
+
+	databasefeatures[FEATURE_UNION_SUPPORT]=
+		charstring::duplicate("UNION,UNION_ALL");
+
 	databasefeatures[FEATURE_UPDATES_ARE_DETECTED]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_USES_LOCAL_FILES]=
-		charstring::duplicate("false");
-
-	databasefeatures[FEATURE_USES_LOCAL_FILE_PER_TABLE]=
-		charstring::duplicate("false");
-
 	databasefeatures[FEATURE_VALUE_EXPRESSIONS]=
 		charstring::duplicate("CASE,CAST,COALESCE,NULLIF");
-
 	return databasefeatures;
 }
 
