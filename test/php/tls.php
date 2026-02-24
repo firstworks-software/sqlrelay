@@ -995,7 +995,7 @@
 		"	l_cursor types.cursorType; ".
 		"begin ".
 		"	open l_cursor for  ".
-		"		elect * from testtable; ".
+		"		select * from testtable; ".
 		"	return l_cursor; ".
 		"end;"));
 	sqlrcur_prepareQuery($cur,"begin  :curs:=sp_testtable; end;");
