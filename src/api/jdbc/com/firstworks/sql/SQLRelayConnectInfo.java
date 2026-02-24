@@ -10,9 +10,11 @@ public class SQLRelayConnectInfo {
 	public String	retrytimestr;
 	public String	triesstr;
 	public String	datetotimestampstr;
+	public String	outputparameterbuffersizestr;
 
 	public short	port;
 	public int	retrytime;
 	public int	tries;
 	public boolean	datetotimestamp;
+	public int	outputparameterbuffersize;
 }

@@ -28,6 +28,7 @@ public class SQLRelayConnection implements Connection {
 	private boolean		readonly;
 	private Properties	clientinfo;
 	private boolean		datetotimestamp;
+	private int		outputparameterbuffersize;
 
 	private Map<String,Class<?>>	typemap;
 
@@ -87,6 +88,14 @@ public class SQLRelayConnection implements Connection {
 
 	boolean getDateToTimestamp() {
 		return datetotimestamp;
+	}
+
+	void setOutputParameterBufferSize(int outputparameterbuffersize) {
+		this.outputparameterbuffersize=outputparameterbuffersize;
+	}
+
+	int getOutputParameterBufferSize() {
+		return outputparameterbuffersize;
 	}
 
 	String getURL() {

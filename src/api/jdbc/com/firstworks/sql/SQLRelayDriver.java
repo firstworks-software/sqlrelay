@@ -48,6 +48,8 @@ public class SQLRelayDriver implements Driver {
 						ci.retrytime,ci.tries,
 						this);
 			conn.setDateToTimestamp(ci.datetotimestamp);
+			conn.setOutputParameterBufferSize(
+						ci.outputparameterbuffersize);
 		}
 		debugEnd();
 		return conn;
@@ -65,6 +67,7 @@ public class SQLRelayDriver implements Driver {
 		String	retrytimestr=null;
 		String	triesstr=null;
 		String	datetotimestampstr=null;
+		String	outputparameterbuffersizestr=null;
 
 		// all parameters could be passed in as properties
 		if (info!=null) {
@@ -83,6 +86,8 @@ public class SQLRelayDriver implements Driver {
 			triesstr=info.getProperty("Tries");
 			datetotimestampstr=info.getProperty(
 						"DATE to TimeStamp");
+			outputparameterbuffersizestr=info.getProperty(
+						"Output Parameter Buffer Size");
 		}
 
 		// override them if they were passed in in the url
@@ -175,6 +180,19 @@ public class SQLRelayDriver implements Driver {
 			}
 		}
 
+		// convert outputparameterbuffersize string to number,
+		// default to 4096
+		int	outputparameterbuffersize=4096;
+		try {
+			outputparameterbuffersize=
+				Integer.parseInt(outputparameterbuffersizestr);
+		} catch (NumberFormatException ex) {
+			outputparameterbuffersize=4096;
+		}
+		if (outputparameterbuffersize<1) {
+			outputparameterbuffersize=4096;
+		}
+
 		// create, populate, return a SQLRelayConnectInfo
 		SQLRelayConnectInfo	ci=new SQLRelayConnectInfo();
 		ci.host = host;
@@ -189,6 +207,8 @@ public class SQLRelayDriver implements Driver {
 		ci.tries = tries;
 		ci.datetotimestampstr = datetotimestampstr;
 		ci.datetotimestamp = datetotimestamp;
+		ci.outputparameterbuffersizestr = outputparameterbuffersizestr;
+		ci.outputparameterbuffersize = outputparameterbuffersize;
 
 		debugPrintln("host: "+host);
 		debugPrintln("portstr: "+portstr);
@@ -202,6 +222,10 @@ public class SQLRelayDriver implements Driver {
 		debugPrintln("tries: "+tries);
 		debugPrintln("datetotimestampstr: "+datetotimestampstr);
 		debugPrintln("datetotimestamp: "+datetotimestamp);
+		debugPrintln("outputparameterbuffersizestr: "+
+						outputparameterbuffersizestr);
+		debugPrintln("outputparameterbuffersize: "+
+						outputparameterbuffersize);
 
 		debugEnd();
 		return ci;
@@ -292,6 +316,15 @@ public class SQLRelayDriver implements Driver {
 			dpi=new DriverPropertyInfo("DATE to TimeStamp","false");
 			dpi.description="Map DATE columns to Timestamp "+
 					"instead of Date";
+			dpi.required=false;
+			dpilist.add(dpi);
+		}
+		if (ci.outputparameterbuffersizestr==null) {
+			dpi=new DriverPropertyInfo(
+					"Output Parameter Buffer Size","false");
+			dpi.description="Buffer size to use for output "+
+					"parameters when using a method "+
+					"that doesn't have a length parameter";
 			dpi.required=false;
 			dpilist.add(dpi);
 		}
