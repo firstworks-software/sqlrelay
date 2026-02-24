@@ -2667,7 +2667,7 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 			"SELECT_TABLE,UPDATE_COLUMN,UPDATE_TABLE,"
 			"WITH_GRANT_OPTION");
 
-	databasefeatures[FEATURE_GROUP_BY_SUPPORT]=
+	databasefeatures[FEATURE_GROUP_BY_CLAUSES]=
 		charstring::duplicate("BASIC,BEYOND_SELECT,UNRELATED");
 
 	databasefeatures[FEATURE_IDENTIFIER_CASE_STORAGE]=
@@ -2772,11 +2772,8 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_USER_NAME_LENGTH]=
 		charstring::duplicate("128");
 
-	databasefeatures[FEATURE_MIXED_CASE_IDENTIFIER_SUPPORT]=
+	databasefeatures[FEATURE_MIXED_CASE_IDENTIFIERS]=
 		charstring::duplicate("QUOTED_IDENTIFIERS");
-
-	databasefeatures[FEATURE_MULTIPLE_SUPPORT]=
-		charstring::duplicate("TRANSACTIONS");
 
 	databasefeatures[FEATURE_NEED_LONG_DATA_LENGTH]=
 		charstring::duplicate("true");
@@ -2807,7 +2804,7 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_OTHERS_UPDATES_ARE_VISIBLE]=
 		charstring::duplicate("SCROLL_SENSITIVE");
 
-	databasefeatures[FEATURE_OUTER_JOIN_SUPPORT]=
+	databasefeatures[FEATURE_OUTER_JOINS]=
 		charstring::duplicate("BASIC,FULL,LIMITED");
 
 	databasefeatures[FEATURE_OWN_DELETES_ARE_VISIBLE]=
@@ -2821,12 +2818,6 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 		charstring::duplicate(
 			"FORWARD_ONLY,SCROLL_INSENSITIVE,"
 			"SCROLL_SENSITIVE");
-
-	databasefeatures[FEATURE_POSITIONED_OPERATIONS]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_POSITIONED_OPERATIONS_SUPPORT]=
-		charstring::duplicate("");
 
 	databasefeatures[FEATURE_PREDICATES]=
 		charstring::duplicate(
@@ -2912,8 +2903,8 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_STATIC_CURSOR_ATTRIBUTES]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_STORED_PROGRAM_SUPPORT]=
-		charstring::duplicate("FUNCTIONS_USING_CALL_SYNTAX,PROCEDURES");
+	databasefeatures[FEATURE_STORED_PROGRAMS]=
+		charstring::duplicate("FUNCTIONS,PROCEDURES");
 
 	databasefeatures[FEATURE_STRING_FUNCTIONS]=
 		charstring::duplicate(
@@ -2951,6 +2942,12 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_SUPPORTS_LIKE_ESCAPE_CLAUSE]=
 		charstring::duplicate("true");
 
+	databasefeatures[FEATURE_SUPPORTS_MULTIPLE_RESULT_SETS]=
+		charstring::duplicate("");
+
+	databasefeatures[FEATURE_SUPPORTS_MULTIPLE_TRANSACTIONS]=
+		charstring::duplicate("true");
+
 	databasefeatures[FEATURE_SUPPORTS_NAMED_PARAMETERS]=
 		charstring::duplicate("true");
 
@@ -2972,7 +2969,7 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_SYSTEM_FUNCTIONS]=
 		charstring::duplicate("USER");
 
-	databasefeatures[FEATURE_TABLE_CORRELATION_NAME_SUPPORT]=
+	databasefeatures[FEATURE_TABLE_CORRELATION_NAMES]=
 		charstring::duplicate("BASIC,DIFFERENT");
 
 	databasefeatures[FEATURE_TABLE_TERM]=
@@ -2997,10 +2994,10 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 			"INTERVAL_YEAR_TO_MONTH,"
 			"INTERVAL_DAY_TO_SECOND");
 
-	databasefeatures[FEATURE_TRANSACTION_DDL_DML_SUPPORT]=
+	databasefeatures[FEATURE_TRANSACTION_DDL_DML]=
 		charstring::duplicate("DDL_AND_DML,DML_ONLY");
 
-	databasefeatures[FEATURE_UNION_SUPPORT]=
+	databasefeatures[FEATURE_UNION_CLAUSES]=
 		charstring::duplicate("UNION,UNION_ALL");
 
 	databasefeatures[FEATURE_UPDATES_ARE_DETECTED]=
@@ -3008,6 +3005,10 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 
 	databasefeatures[FEATURE_VALUE_EXPRESSIONS]=
 		charstring::duplicate("CASE,CAST,COALESCE,NULLIF");
+
+	databasefeatures[FEATURE_WHERE_CURRENT_OF_OPERATIONS]=
+		charstring::duplicate("");
+
 	return databasefeatures;
 }
 

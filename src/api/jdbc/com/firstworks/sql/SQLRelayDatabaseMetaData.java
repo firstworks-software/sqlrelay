@@ -1745,7 +1745,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 							throws SQLException {
 		drv.debugFunction(this);
 		boolean	result=listContains(
-		"transaction_ddl_dml_support","DDL_AND_DML");
+		"transaction_ddl_dml","DDL_AND_DML");
 		drv.debugPrintln(
 		"supports data definition and data manipulation transactions: "+
 		result);
@@ -1757,7 +1757,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean supportsDataManipulationTransactionsOnly() throws SQLException {
 		drv.debugFunction(this);
 		boolean	result=listContains(
-		"transaction_ddl_dml_support","DML_ONLY");
+		"transaction_ddl_dml","DML_ONLY");
 		drv.debugPrintln(
 		"supports data manipulation transactions only: "+result);
 		drv.debugEnd();
@@ -1768,7 +1768,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean supportsDifferentTableCorrelationNames() throws SQLException {
 		drv.debugFunction(this);
 		boolean	result=listContains(
-			"table_correlation_name_support","DIFFERENT");
+			"table_correlation_names","DIFFERENT");
 		drv.debugPrintln(
 			"supports different table correlation names: "+result);
 		drv.debugEnd();
@@ -1796,7 +1796,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsFullOuterJoins() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=listContains("outer_join_support","FULL");
+		boolean	result=listContains("outer_joins","FULL");
 		drv.debugPrintln("supports full outer joins: "+result);
 		drv.debugEnd();
 		return result;
@@ -1814,7 +1814,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsGroupBy() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=listContains("group_by_support","BASIC");
+		boolean	result=listContains("group_by_clauses","BASIC");
 		drv.debugPrintln("supports group by: "+result);
 		drv.debugEnd();
 		return result;
@@ -1823,7 +1823,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsGroupByBeyondSelect() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=listContains("group_by_support","BEYOND_SELECT");
+		boolean	result=listContains("group_by_clauses","BEYOND_SELECT");
 		drv.debugPrintln("supports group by beyond select: "+result);
 		drv.debugEnd();
 		return result;
@@ -1832,7 +1832,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsGroupByUnrelated() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=listContains("group_by_support","UNRELATED");
+		boolean	result=listContains("group_by_clauses","UNRELATED");
 		drv.debugPrintln("supports group by unrelated: "+result);
 		drv.debugEnd();
 		return result;
@@ -1861,7 +1861,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsLimitedOuterJoins() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=listContains("outer_join_support","LIMITED");
+		boolean	result=listContains("outer_joins","LIMITED");
 		drv.debugPrintln("supports limited outer joins: "+result);
 		drv.debugEnd();
 		return result;
@@ -1879,7 +1879,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsMixedCaseIdentifiers() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=listContains("mixed_case_identifier_support","IDENTIFIERS");
+		boolean	result=listContains("mixed_case_identifiers",
+								"IDENTIFIERS");
 		drv.debugPrintln("supports mixed case identifiers: "+result);
 		drv.debugEnd();
 		return result;
@@ -1889,7 +1890,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean supportsMixedCaseQuotedIdentifiers() throws SQLException {
 		drv.debugFunction(this);
 		boolean	result=listContains(
-			"mixed_case_identifier_support","QUOTED_IDENTIFIERS");
+			"mixed_case_identifiers","QUOTED_IDENTIFIERS");
 		drv.debugPrintln(
 			"supports mixed case quoted identifiers: "+result);
 		drv.debugEnd();
@@ -1911,7 +1912,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsMultipleResultSets() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=listContains("multiple_support","RESULT_SETS");
+		boolean	result=getBoolean("supports_multiple_result_sets");
 		drv.debugPrintln("supports multiple result sets: "+result);
 		drv.debugEnd();
 		return result;
@@ -1920,7 +1921,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsMultipleTransactions() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=listContains("multiple_support","TRANSACTIONS");
+		boolean	result=getBoolean("supports_multiple_transactions");
 		drv.debugPrintln("supports multiple transactions: "+result);
 		drv.debugEnd();
 		return result;
@@ -2000,7 +2001,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsOuterJoins() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=listContains("outer_join_support","BASIC");
+		boolean	result=listContains("outer_joins","BASIC");
 		drv.debugPrintln("supports outer joins: "+result);
 		drv.debugEnd();
 		return result;
@@ -2009,7 +2010,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsPositionedDelete() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=listContains("positioned_operations_support","DELETE");
+		boolean	result=listContains("where_current_of_operations",
+								"DELETE");
 		drv.debugPrintln("supports positioned delete: "+result);
 		drv.debugEnd();
 		return result;
@@ -2018,7 +2020,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsPositionedUpdate() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=listContains("positioned_operations_support","UPDATE");
+		boolean	result=listContains("where_current_of_operations",
+								"UPDATE");
 		drv.debugPrintln("supports positioned update: "+result);
 		drv.debugEnd();
 		return result;
@@ -2151,8 +2154,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsStoredFunctionsUsingCallSyntax() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=listContains(
-			"stored_program_support","FUNCTIONS_USING_CALL_SYNTAX");
+		boolean	result=listContains("stored_programs",
+						"FUNCTIONS");
 		drv.debugPrintln(
 			"supports stored functions using call syntax: "+result);
 		drv.debugEnd();
@@ -2162,7 +2165,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsStoredProcedures() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=listContains("stored_program_support","PROCEDURES");
+		boolean	result=listContains("stored_programs",
+						"PROCEDURES");
 		drv.debugPrintln("supports stored procedures: "+result);
 		drv.debugEnd();
 		return result;
@@ -2207,7 +2211,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsTableCorrelationNames() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=listContains("table_correlation_name_support","BASIC");
+		String	value=getDatabaseFeature("table_correlation_names");
+		boolean	result=(value!=null && !value.isEmpty());
 		drv.debugPrintln("supports table correlation names: "+result);
 		drv.debugEnd();
 		return result;
@@ -2247,7 +2252,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsUnion() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=listContains("union_support","UNION");
+		boolean	result=listContains("union_clauses","UNION");
 		drv.debugPrintln("supports union: "+result);
 		drv.debugEnd();
 		return result;
@@ -2256,7 +2261,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean supportsUnionAll() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=listContains("union_support","UNION_ALL");
+		boolean	result=listContains("union_clauses","UNION_ALL");
 		drv.debugPrintln("supports union all: "+result);
 		drv.debugEnd();
 		return result;
@@ -2277,7 +2282,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean usesLocalFilePerTable() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=listContains("local_file_usage","LOCAL_FILE_PER_TABLE");
+		boolean	result=listContains("local_file_usage",
+							"LOCAL_FILE_PER_TABLE");
 		drv.debugPrintln("uses local file per table: "+result);
 		drv.debugEnd();
 		return result;
@@ -2286,7 +2292,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean usesLocalFiles() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=listContains("local_file_usage","LOCAL_FILES");
+		boolean	result=listContains("local_file_usage",
+							"LOCAL_FILES");
 		drv.debugPrintln("uses local files: "+result);
 		drv.debugEnd();
 		return result;

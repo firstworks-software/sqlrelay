@@ -1081,7 +1081,7 @@ const char * const *mysqlconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_GRANT_CLAUSES]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_GROUP_BY_SUPPORT]=
+	databasefeatures[FEATURE_GROUP_BY_CLAUSES]=
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_IDENTIFIER_CASE_STORAGE]=
@@ -1183,10 +1183,7 @@ const char * const *mysqlconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_USER_NAME_LENGTH]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_MIXED_CASE_IDENTIFIER_SUPPORT]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_MULTIPLE_SUPPORT]=
+	databasefeatures[FEATURE_MIXED_CASE_IDENTIFIERS]=
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_NEED_LONG_DATA_LENGTH]=
@@ -1216,7 +1213,7 @@ const char * const *mysqlconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_OTHERS_UPDATES_ARE_VISIBLE]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_OUTER_JOIN_SUPPORT]=
+	databasefeatures[FEATURE_OUTER_JOINS]=
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_OWN_DELETES_ARE_VISIBLE]=
@@ -1226,12 +1223,6 @@ const char * const *mysqlconnection::getDatabaseFeatures() {
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_OWN_UPDATES_ARE_VISIBLE]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_POSITIONED_OPERATIONS]=
-		charstring::duplicate("");
-
-	databasefeatures[FEATURE_POSITIONED_OPERATIONS_SUPPORT]=
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_PREDICATES]=
@@ -1288,7 +1279,7 @@ const char * const *mysqlconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_STATIC_CURSOR_ATTRIBUTES]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_STORED_PROGRAM_SUPPORT]=
+	databasefeatures[FEATURE_STORED_PROGRAMS]=
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_STRING_FUNCTIONS]=
@@ -1324,6 +1315,12 @@ const char * const *mysqlconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_SUPPORTS_LIKE_ESCAPE_CLAUSE]=
 		charstring::duplicate("");
 
+	databasefeatures[FEATURE_SUPPORTS_MULTIPLE_RESULT_SETS]=
+		charstring::duplicate("");
+
+	databasefeatures[FEATURE_SUPPORTS_MULTIPLE_TRANSACTIONS]=
+		charstring::duplicate("");
+
 	databasefeatures[FEATURE_SUPPORTS_NAMED_PARAMETERS]=
 		charstring::duplicate("");
 
@@ -1345,7 +1342,7 @@ const char * const *mysqlconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_SYSTEM_FUNCTIONS]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_TABLE_CORRELATION_NAME_SUPPORT]=
+	databasefeatures[FEATURE_TABLE_CORRELATION_NAMES]=
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_TABLE_TERM]=
@@ -1363,16 +1360,19 @@ const char * const *mysqlconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_TIME_DATE_LITERALS]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_TRANSACTION_DDL_DML_SUPPORT]=
+	databasefeatures[FEATURE_TRANSACTION_DDL_DML]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_UNION_SUPPORT]=
+	databasefeatures[FEATURE_UNION_CLAUSES]=
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_UPDATES_ARE_DETECTED]=
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_VALUE_EXPRESSIONS]=
+		charstring::duplicate("");
+
+	databasefeatures[FEATURE_WHERE_CURRENT_OF_OPERATIONS]=
 		charstring::duplicate("");
 
 	return databasefeatures;

@@ -6301,7 +6301,7 @@ static bool SQLR_FeatureContains(CONN *conn,
 
 static SQLUSMALLINT SQLR_IdentifierCase(CONN *conn) {
 	if (SQLR_FeatureContains(conn,
-			"mixed_case_identifier_support",
+			"mixed_case_identifiers",
 			"IDENTIFIERS")) {
 		return SQL_IC_SENSITIVE;
 	} else if (SQLR_FeatureContains(conn,
@@ -6358,7 +6358,7 @@ static SQLUSMALLINT SQLR_TxnCapable(CONN *conn) {
 			"supports_transactions"))) {
 		return SQL_TC_NONE;
 	} else if (SQLR_FeatureContains(conn,
-			"transaction_ddl_dml_support",
+			"transaction_ddl_dml",
 			"DDL_AND_DML")) {
 		return SQL_TC_ALL;
 	} else if (SQLR_FeatureContains(conn,
@@ -6460,7 +6460,7 @@ static SQLUINTEGER SQLR_AlterTable(CONN *conn) {
 static SQLUINTEGER SQLR_OjCapabilities(CONN *conn) {
 	SQLUINTEGER	retval=0;
 	if (SQLR_FeatureContains(conn,
-			"outer_join_support","BASIC")) {
+			"outer_joins","BASIC")) {
 		retval|=SQL_OJ_LEFT
 			|SQL_OJ_RIGHT
 			|SQL_OJ_NOT_ORDERED
@@ -6468,11 +6468,11 @@ static SQLUINTEGER SQLR_OjCapabilities(CONN *conn) {
 			|SQL_OJ_ALL_COMPARISON_OPS;
 	}
 	if (SQLR_FeatureContains(conn,
-			"outer_join_support","FULL")) {
+			"outer_joins","FULL")) {
 		retval|=SQL_OJ_FULL;
 	}
 	if (SQLR_FeatureContains(conn,
-			"outer_join_support","LIMITED")) {
+			"outer_joins","LIMITED")) {
 		retval|=SQL_OJ_NESTED;
 	}
 	return retval;
@@ -6795,10 +6795,10 @@ static SQLUINTEGER SQLR_TimedateFunctions(CONN *conn) {
 
 static SQLUSMALLINT SQLR_CorrelationName(CONN *conn) {
 	if (!SQLR_FeatureContains(conn,
-			"table_correlation_name_support","BASIC")) {
+			"table_correlation_names","BASIC")) {
 		return SQL_CN_NONE;
 	} else if (SQLR_FeatureContains(conn,
-			"table_correlation_name_support","DIFFERENT")) {
+			"table_correlation_names","DIFFERENT")) {
 		return SQL_CN_DIFFERENT;
 	}
 	return SQL_CN_ANY;
@@ -6844,50 +6844,14 @@ static SQLUINTEGER SQLR_LockTypes(CONN *conn) {
 	return retval;
 }
 
-static SQLUINTEGER SQLR_PosOperations(CONN *conn) {
-
-	SQLUINTEGER	retval=0;
-
-	const char	*po=
-		conn->con->getDatabaseFeature(
-				"positioned_operations");
-	if (!po) {
-		return retval;
-	}
-
-	char		**parts;
-	uint64_t	partcount;
-	charstring::split(po,",",true,&parts,&partcount);
-
-	for (uint64_t i=0; i<partcount; i++) {
-		charstring::strip(parts[i],' ');
-		const char	*f=parts[i];
-		if (!charstring::compare(f,"POSITION")) {
-			retval|=SQL_POS_POSITION;
-		} else if (!charstring::compare(f,"REFRESH")) {
-			retval|=SQL_POS_REFRESH;
-		} else if (!charstring::compare(f,"UPDATE")) {
-			retval|=SQL_POS_UPDATE;
-		} else if (!charstring::compare(f,"DELETE")) {
-			retval|=SQL_POS_DELETE;
-		} else if (!charstring::compare(f,"ADD")) {
-			retval|=SQL_POS_ADD;
-		}
-		delete[] parts[i];
-	}
-	delete[] parts;
-
-	return retval;
-}
-
 static SQLUINTEGER SQLR_PositionedStatements(CONN *conn) {
 	SQLUINTEGER	retval=0;
 	if (SQLR_FeatureContains(conn,
-			"positioned_operations_support","DELETE")) {
+			"where_current_of_operations","DELETE")) {
 		retval|=SQL_PS_POSITIONED_DELETE;
 	}
 	if (SQLR_FeatureContains(conn,
-			"positioned_operations_support","UPDATE")) {
+			"where_current_of_operations","UPDATE")) {
 		retval|=SQL_PS_POSITIONED_UPDATE;
 	}
 	return retval;
@@ -6958,13 +6922,13 @@ static SQLUINTEGER SQLR_FileUsage(CONN *conn) {
 static SQLUSMALLINT SQLR_GroupBy(CONN *conn) {
 	SQLUSMALLINT	retval;
 	if (!SQLR_FeatureContains(conn,
-			"group_by_support","BASIC")) {
+			"group_by_clauses","BASIC")) {
 		retval=SQL_GB_NOT_SUPPORTED;
 	} else if (SQLR_FeatureContains(conn,
-			"group_by_support","UNRELATED")) {
+			"group_by_clauses","UNRELATED")) {
 		retval=SQL_GB_NO_RELATION;
 	} else if (SQLR_FeatureContains(conn,
-			"group_by_support","BEYOND_SELECT")) {
+			"group_by_clauses","BEYOND_SELECT")) {
 		retval=SQL_GB_GROUP_BY_CONTAINS_SELECT;
 	} else {
 		retval=SQL_GB_GROUP_BY_EQUALS_SELECT;
@@ -7048,7 +7012,7 @@ static SQLUINTEGER SQLR_QualifierUsage(CONN *conn) {
 
 static SQLUSMALLINT SQLR_QuotedIdentifierCase(CONN *conn) {
 	if (SQLR_FeatureContains(conn,
-			"mixed_case_identifier_support",
+			"mixed_case_identifiers",
 			"QUOTED_IDENTIFIERS")) {
 		return SQL_IC_SENSITIVE;
 	} else if (SQLR_FeatureContains(conn,
@@ -7090,11 +7054,11 @@ static SQLUINTEGER SQLR_Subqueries(CONN *conn) {
 static SQLUINTEGER SQLR_UnionSupport(CONN *conn) {
 	SQLUINTEGER	retval=0;
 	if (SQLR_FeatureContains(conn,
-			"union_support","UNION")) {
+			"union_clauses","UNION")) {
 		retval|=SQL_U_UNION;
 	}
 	if (SQLR_FeatureContains(conn,
-			"union_support","UNION_ALL")) {
+			"union_clauses","UNION_ALL")) {
 		retval|=SQL_U_UNION_ALL;
 	}
 	return retval;
@@ -9520,7 +9484,7 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_PROCEDURES\n");
 			val.strval=SQLR_FeatureContains(conn,
-				"stored_program_support","PROCEDURES")?
+				"stored_programs","PROCEDURES")?
 							"Y":"N";
 			type=0;
 			break;
@@ -9561,16 +9525,18 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_MULT_RESULT_SETS:
 			debugPrintf("  infotype: "
 					"SQL_MULT_RESULT_SETS\n");
-			val.strval=SQLR_FeatureContains(conn,
-				"multiple_support","RESULT_SETS")?
+			val.strval=sqlrconnection::isYes(
+				conn->con->getDatabaseFeature(
+					"supports_multiple_result_sets"))?
 							"Y":"N";
 			type=0;
 			break;
 		case SQL_MULTIPLE_ACTIVE_TXN:
 			debugPrintf("  infotype: "
 					"SQL_MULTIPLE_ACTIVE_TXN\n");
-			val.strval=SQLR_FeatureContains(conn,
-				"multiple_support","TRANSACTIONS")?
+			val.strval=sqlrconnection::isYes(
+				conn->con->getDatabaseFeature(
+					"supports_multiple_transactions"))?
 							"Y":"N";
 			type=0;
 			break;
@@ -9578,7 +9544,7 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_OUTER_JOINS\n");
 			val.strval=SQLR_FeatureContains(conn,
-				"outer_join_support","BASIC")?
+				"outer_joins","BASIC")?
 							"Y":"N";
 			type=0;
 			break;
@@ -9830,7 +9796,8 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_POS_OPERATIONS:
 			debugPrintf("  infotype: "
 					"SQL_POS_OPERATIONS\n");
-			val.usmallintval=SQLR_PosOperations(conn);
+			// sqlrelay only supports SQL_POS_POSITION
+			val.usmallintval=SQL_POS_POSITION;
 			type=2;
 			break;
 		case SQL_POSITIONED_STATEMENTS:

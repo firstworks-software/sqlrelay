@@ -520,7 +520,7 @@ const char	*sqlrcon_getIsolationLevel(sqlrcon sqlrconref);
  *   * true/false
  *  * grant_clauses
  *   * list - DELETE_TABLE,INSERT_COLUMN,INSERT_TABLE,...
- *  * group_by_support
+ *  * group_by_clauses
  *   * list - BASIC,BEYOND_SELECT,UNRELATED
  *  * identifier_case_storage
  *   * list - LOWER,MIXED,UPPER
@@ -588,10 +588,8 @@ const char	*sqlrcon_getIsolationLevel(sqlrcon sqlrconref);
  *   * number
  *  * max_user_name_length
  *   * number
- *  * mixed_case_identifier_support
+ *  * mixed_case_identifiers
  *   * list - IDENTIFIERS,QUOTED_IDENTIFIERS
- *  * multiple_support
- *   * list - RESULT_SETS,TRANSACTIONS
  *  * need_long_data_length
  *   * true/false
  *  * null_plus_non_null_is_null
@@ -610,7 +608,7 @@ const char	*sqlrcon_getIsolationLevel(sqlrcon sqlrconref);
  *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
  *  * others_updates_are_visible
  *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
- *  * outer_join_support
+ *  * outer_joins
  *   * list - BASIC,FULL,LIMITED
  *  * own_deletes_are_visible
  *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
@@ -618,10 +616,6 @@ const char	*sqlrcon_getIsolationLevel(sqlrcon sqlrconref);
  *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
  *  * own_updates_are_visible
  *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
- *  * positioned_operations
- *   * list - POSITION,REFRESH,UPDATE,DELETE,ADD
- *  * positioned_operations_support
- *   * list - DELETE,UPDATE
  *  * predicates
  *   * list - BETWEEN,COMPARISON,EXISTS,IN,ISNOTNULL,ISNULL,...
  *  * procedure_term
@@ -658,8 +652,8 @@ const char	*sqlrcon_getIsolationLevel(sqlrcon sqlrconref);
  *   * number
  *  * static_cursor_attributes
  *   * list - NEXT,ABSOLUTE,RELATIVE,BOOKMARK,...
- *  * stored_program_support
- *   * list - FUNCTIONS_USING_CALL_SYNTAX,PROCEDURES
+ *  * stored_programs
+ *   * list - FUNCTIONS,PROCEDURES
  *  * string_functions
  *   * list - CONCAT,INSERT,LEFT,LTRIM,LENGTH,LOCATE,LCASE,...
  *  * subquery_usage
@@ -682,6 +676,10 @@ const char	*sqlrcon_getIsolationLevel(sqlrcon sqlrconref);
  *   * true/false
  *  * supports_like_escape_clause
  *   * true/false
+ *  * supports_multiple_result_sets
+ *   * true/false
+ *  * supports_multiple_transactions
+ *   * true/false
  *  * supports_named_parameters
  *   * true/false
  *  * supports_non_nullable_columns
@@ -696,7 +694,7 @@ const char	*sqlrcon_getIsolationLevel(sqlrcon sqlrconref);
  *   * true/false
  *  * system_functions
  *   * list - USER,DBNAME,IFNULL
- *  * table_correlation_name_support
+ *  * table_correlation_names
  *   * list - BASIC,DIFFERENT
  *  * table_term
  *   * string
@@ -708,14 +706,16 @@ const char	*sqlrcon_getIsolationLevel(sqlrcon sqlrconref);
  *   * list - NOW,CURDATE,DAYOFMONTH,DAYOFWEEK,DAYOFYEAR,...
  *  * time_date_literals
  *   * list - DATE,TIME,TIMESTAMP,INTERVAL_YEAR,...
- *  * transaction_ddl_dml_support
+ *  * transaction_ddl_dml
  *   * list - DDL_AND_DML,DML_ONLY
- *  * union_support
+ *  * union_clauses
  *   * list - UNION,UNION_ALL
  *  * updates_are_detected
  *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
  *  * value_expressions
  *   * list - CASE,CAST,COALESCE,NULLIF
+ *  * where_current_of_operations
+ *   * list - DELETE,UPDATE
  *
  *  Returns the value of the feature as a string, or NULL if
  *  an error occurred or an invalid feature was requested. */
