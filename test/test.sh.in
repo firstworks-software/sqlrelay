@@ -50,6 +50,14 @@ do
 				TESTFILE="$1.class"
 			fi
 			;;
+		jdbc)
+			java -h > /dev/null 2>&1
+			if ( test "$?" = "0" )
+			then
+				TEST="./run $1"
+				TESTFILE="$1.class"
+			fi
+			;;
 		nodejs)
 			node --version > /dev/null 2>&1
 			if ( test "$?" = "0" )

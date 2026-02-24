@@ -132,6 +132,9 @@ function runapitest(db,api)
 		case "java"
 			TEST="run.bat " & db
 			TESTFILE=db & ".class"
+		case "jdbc"
+			TEST="run.bat " & db
+			TESTFILE=db & ".class"
 		case "nodejs"
 			TEST="node " & db & ".js"
 			TESTFILE=db & ".js"
