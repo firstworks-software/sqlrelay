@@ -16,6 +16,9 @@ all-cs:
 all-java:
 	cd java $(AND) $(MAKE) all
 
+all-jdbc:
+	cd jdbc $(AND) $(MAKE) all
+
 all-stress:
 	cd stress $(AND) $(MAKE) all
 
