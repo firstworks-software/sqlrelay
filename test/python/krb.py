@@ -192,24 +192,6 @@ def main():
 	print()
 
 
-	# output bind by name with validation
-	print("OUTPUT BIND BY NAME WITH VALIDATION: ")
-	cur.clearBinds()
-	cur.defineOutputBindInteger("numvar")
-	cur.defineOutputBindString("stringvar",10)
-	cur.defineOutputBindDouble("floatvar")
-	cur.defineOutputBindString("dummyvar",10)
-	cur.validateBinds()
-	assertTrue(cur.executeQuery())
-	numvar=cur.getOutputBindInteger("numvar")
-	stringvar=cur.getOutputBindString("stringvar")
-	floatvar=cur.getOutputBindDouble("floatvar")
-	assertEqual(numvar,1)
-	assertEqual(stringvar,'hello')
-	assertEqual(floatvar,2.5)
-	print()
-
-
 	# select
 	print("SELECT: ")
 	assertTrue(cur.sendQuery("select * from testtable order by testnumber"))
@@ -877,6 +859,24 @@ def main():
 	cur.defineOutputBindInteger("numvar")
 	cur.defineOutputBindString("stringvar",10)
 	cur.defineOutputBindDouble("floatvar")
+	assertTrue(cur.executeQuery())
+	numvar=cur.getOutputBindInteger("numvar")
+	stringvar=cur.getOutputBindString("stringvar")
+	floatvar=cur.getOutputBindDouble("floatvar")
+	assertEqual(numvar,1)
+	assertEqual(stringvar,'hello')
+	assertEqual(floatvar,2.5)
+	print()
+
+
+	# output bind by name with validation
+	print("OUTPUT BIND BY NAME WITH VALIDATION: ")
+	cur.clearBinds()
+	cur.defineOutputBindInteger("numvar")
+	cur.defineOutputBindString("stringvar",10)
+	cur.defineOutputBindDouble("floatvar")
+	cur.defineOutputBindString("dummyvar",10)
+	cur.validateBinds()
 	assertTrue(cur.executeQuery())
 	numvar=cur.getOutputBindInteger("numvar")
 	stringvar=cur.getOutputBindString("stringvar")

@@ -1,7 +1,6 @@
 <html><pre><?php
 	# Copyright (c) David Muse
 	# See the file COPYING for more information.
-
 	include("./asserts.php");
 
 
@@ -21,8 +20,6 @@
 
 
 	# identify
-
-
 	echo("IDENTIFY: \n");
 	assertEqual(sqlrcon_identify($con),"mysql");
 	echo("\n");
@@ -33,16 +30,12 @@
 
 
 	# ping
-
-
 	echo("PING: \n");
 	assertTrue(sqlrcon_ping($con));
 	echo("\n");
 
 
 	# isolation levels
-
-
 	echo("ISOLATION LEVELS: \n");
 	$isolationlevels=array(
 			"REPEATABLE-READ",
@@ -65,8 +58,6 @@
 
 
 	# create temptable
-
-
 	echo("CREATE TEMPTABLE: \n");
 	assertTrue(sqlrcur_sendQuery($cur,
 		"create table testtable (".
@@ -93,16 +84,12 @@
 
 
 	# begin transaction
-
-
 	echo("BEGIN TRANSACTION: \n");
 	assertTrue(sqlrcur_sendQuery($cur,"begin"));
 	echo("\n");
 
 
 	# insert
-
-
 	echo("INSERT: \n");
 	assertTrue(sqlrcur_sendQuery($cur,
 		"insert into ".
@@ -200,16 +187,12 @@
 
 
 	# affected rows
-
-
 	echo("AFFECTED ROWS: \n");
 	assertEqual(sqlrcur_affectedRows($cur),1);
 	echo("\n");
 
 
 	# bind by position
-
-
 	echo("BIND BY POSITION: \n");
 	sqlrcur_prepareQuery($cur,
 		"insert into ".
@@ -277,8 +260,6 @@
 
 
 	# array bind by position
-
-
 	echo("ARRAY BIND BY POSITION: \n");
 	sqlrcur_clearBinds($cur);
 	$bindvars=array("1","2","3","4","5","6",
@@ -298,8 +279,6 @@
 
 
 	# bind by position with validation
-
-
 	echo("BIND BY POSITION WITH VALIDATION: \n");
 	sqlrcur_clearBinds($cur);
 	sqlrcur_inputBind($cur,"1",8);
@@ -326,8 +305,6 @@
 
 
 	# select
-
-
 	echo("SELECT: \n");
 	assertTrue(sqlrcur_sendQuery($cur,
 		"select ".
@@ -340,16 +317,12 @@
 
 
 	# column count
-
-
 	echo("COLUMN COUNT: \n");
 	assertEqual(sqlrcur_colCount($cur),19);
 	echo("\n");
 
 
 	# column names
-
-
 	echo("COLUMN NAMES: \n");
 	assertEqual(sqlrcur_getColumnName($cur,0),"testtinyint");
 	assertEqual(sqlrcur_getColumnName($cur,1),"testsmallint");
@@ -394,8 +367,6 @@
 
 
 	# column types
-
-
 	echo("COLUMN TYPES: \n");
 	assertEqual(sqlrcur_getColumnType($cur,0),"TINYINT");
 	assertEqual(sqlrcur_getColumnType($cur,1),"SMALLINT");
@@ -447,8 +418,6 @@
 
 
 	# column length
-
-
 	echo("COLUMN LENGTH: \n");
 	assertEqual(sqlrcur_getColumnLength($cur,0),1);
 	assertEqual(sqlrcur_getColumnLength($cur,1),2);
@@ -492,8 +461,6 @@
 
 
 	# longest column
-
-
 	echo("LONGEST COLUMN: \n");
 	assertEqual(sqlrcur_getLongest($cur,0),1);
 	assertEqual(sqlrcur_getLongest($cur,1),1);
@@ -545,16 +512,12 @@
 
 
 	# row count
-
-
 	echo("ROW COUNT: \n");
 	assertEqual(sqlrcur_rowCount($cur),8);
 	echo("\n");
 
 
 	# total rows
-
-
 	echo("TOTAL ROWS: \n");
 	// older versions of mysql know this
 	//assertEqual(sqlrcur_totalRows($cur),0);
@@ -562,24 +525,18 @@
 
 
 	# first row index
-
-
 	echo("FIRST ROW INDEX: \n");
 	assertEqual(sqlrcur_firstRowIndex($cur),0);
 	echo("\n");
 
 
 	# end of result set
-
-
 	echo("END OF RESULT SET: \n");
 	assertTrue(sqlrcur_endOfResultSet($cur));
 	echo("\n");
 
 
 	# fields by index
-
-
 	echo("FIELDS BY INDEX: \n");
 	assertEqual(sqlrcur_getField($cur,0,0),"1");
 	assertEqual(sqlrcur_getField($cur,0,1),"1");
@@ -622,8 +579,6 @@
 
 
 	# field lengths by index
-
-
 	echo("FIELD LENGTHS BY INDEX: \n");
 	assertEqual(sqlrcur_getFieldLength($cur,0,0),1);
 	assertEqual(sqlrcur_getFieldLength($cur,0,1),1);
@@ -666,8 +621,6 @@
 
 
 	# fields by name
-
-
 	echo("FIELDS BY NAME: \n");
 	assertEqual(sqlrcur_getField($cur,0,"testtinyint"),"1");
 	assertEqual(sqlrcur_getField($cur,0,"testsmallint"),"1");
@@ -710,8 +663,6 @@
 
 
 	# field lengths by name
-
-
 	echo("FIELD LENGTHS BY NAME: \n");
 	assertEqual(sqlrcur_getFieldLength($cur,0,"testtinyint"),1);
 	assertEqual(sqlrcur_getFieldLength($cur,0,"testsmallint"),1);
@@ -754,8 +705,6 @@
 
 
 	# fields by array
-
-
 	echo("FIELDS BY ARRAY: \n");
 	$fields=sqlrcur_getRow($cur,0);
 	assertEqual($fields[0],"1");
@@ -780,8 +729,6 @@
 
 
 	# field lengths by array
-
-
 	echo("FIELD LENGTHS BY ARRAY: \n");
 	$fieldlens=sqlrcur_getRowLengths($cur,0);
 	assertEqual($fieldlens[0],1);
@@ -806,8 +753,6 @@
 
 
 	# fields by associative array
-
-
 	echo("FIELDS BY ASSOCIATIVE ARRAY: \n");
 	$fields=sqlrcur_getRowAssoc($cur,0);
 	assertEqual($fields["testtinyint"],"1");
@@ -852,8 +797,6 @@
 
 
 	# field lengths by associative array
-
-
 	echo("FIELD LENGTHS BY ASSOCIATIVE ARRAY: \n");
 	$fieldlengths=sqlrcur_getRowLengthsAssoc($cur,0);
 	assertEqual($fieldlengths["testtinyint"],1);
@@ -898,8 +841,6 @@
 
 
 	# individual substitutions
-
-
 	echo("INDIVIDUAL SUBSTITUTIONS: \n");
 	sqlrcur_prepareQuery($cur,"select $(var1),'$(var2)',$(var3)");
 	sqlrcur_substitution($cur,"var1",1);
@@ -910,8 +851,6 @@
 
 
 	# fields
-
-
 	echo("FIELDS: \n");
 	assertEqual(sqlrcur_getField($cur,0,0),"1");
 	assertEqual(sqlrcur_getField($cur,0,1),"hello");
@@ -920,8 +859,6 @@
 
 
 	# array substitutions
-
-
 	echo("ARRAY SUBSTITUTIONS: \n");
 	sqlrcur_prepareQuery($cur,"select $(var1),'$(var2)',$(var3)");
 	$vars=array("var1","var2","var3");
@@ -934,8 +871,6 @@
 
 
 	# fields
-
-
 	echo("FIELDS: \n");
 	assertEqual(sqlrcur_getField($cur,0,0),"1");
 	assertEqual(sqlrcur_getField($cur,0,1),"hello");
@@ -960,8 +895,6 @@
 
 
 	# result set buffer size
-
-
 	echo("RESULT SET BUFFER SIZE: \n");
 	assertEqual(sqlrcur_getResultSetBufferSize($cur),0);
 	sqlrcur_setResultSetBufferSize($cur,2);
@@ -999,8 +932,6 @@
 
 
 	# dont get column info
-
-
 	echo("DONT GET COLUMN INFO: \n");
 	sqlrcur_dontGetColumnInfo($cur);
 	assertTrue(sqlrcur_sendQuery($cur,
@@ -1029,8 +960,6 @@
 
 
 	# suspended session
-
-
 	echo("SUSPENDED SESSION: \n");
 	assertTrue(sqlrcur_sendQuery($cur,
 		"select ".
@@ -1101,8 +1030,6 @@
 
 
 	# suspended result set
-
-
 	echo("SUSPENDED RESULT SET: \n");
 	sqlrcur_setResultSetBufferSize($cur,2);
 	assertTrue(sqlrcur_sendQuery($cur,
@@ -1139,8 +1066,6 @@
 
 
 	# cached result set
-
-
 	echo("CACHED RESULT SET: \n");
 	sqlrcur_cacheToFile($cur,"cachefile1");
 	sqlrcur_setCacheTtl($cur,200);
@@ -1160,16 +1085,12 @@
 
 
 	# column count for cached result set
-
-
 	echo("COLUMN COUNT FOR CACHED RESULT SET: \n");
 	assertEqual(sqlrcur_colCount($cur),19);
 	echo("\n");
 
 
 	# column names for cached result set
-
-
 	echo("COLUMN NAMES FOR CACHED RESULT SET: \n");
 	assertEqual(sqlrcur_getColumnName($cur,0),"testtinyint");
 	assertEqual(sqlrcur_getColumnName($cur,1),"testsmallint");
@@ -1212,8 +1133,6 @@
 
 
 	# cached result set with result set buffer size
-
-
 	echo("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: \n");
 	sqlrcur_setResultSetBufferSize($cur,2);
 	sqlrcur_cacheToFile($cur,"cachefile1");
@@ -1236,8 +1155,6 @@
 
 
 	# from one cache file to another
-
-
 	echo("FROM ONE CACHE FILE TO ANOTHER: \n");
 	sqlrcur_cacheToFile($cur,"cachefile2");
 	assertTrue(sqlrcur_openCachedResultSet($cur,"cachefile1"));
@@ -1310,8 +1227,6 @@
 
 
 	# commit and rollback
-
-
 	echo("COMMIT AND ROLLBACK: \n");
 	$secondcon=sqlrcon_alloc($host,$port,
 					$socket,$user,$password,0,1);
@@ -1374,8 +1289,6 @@
 
 
 	# invalid queries
-
-
 	echo("INVALID QUERIES: \n");
 	assertFalse(sqlrcur_sendQuery($cur,
 		"select ".
