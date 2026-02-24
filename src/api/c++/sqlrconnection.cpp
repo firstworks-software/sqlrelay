@@ -1869,11 +1869,49 @@ bool sqlrconnection::autoCommit(bool on) {
 		debugPreEnd();
 	}
 
-	pvt->_cs->write((uint16_t)AUTOCOMMIT);
+	pvt->_cs->write((uint16_t)SET_AUTOCOMMIT);
 	pvt->_cs->write(on);
 	flushWriteBuffer();
 
 	return !gotError();
+}
+
+bool sqlrconnection::getAutoCommit() {
+
+	if (!openSession()) {
+		return false;
+	}
+
+	clearError();
+
+	if (pvt->_debug) {
+		debugPreStart();
+		debugPrint("Getting autocommit...\n");
+		debugPreEnd();
+	}
+
+	pvt->_cs->write((uint16_t)GET_AUTOCOMMIT);
+	flushWriteBuffer();
+
+	if (gotError()) {
+		return false;
+	}
+
+	bool	result;
+	if (pvt->_cs->read(&result,pvt->_responsetimeoutsec,
+				pvt->_responsetimeoutusec)!=sizeof(bool)) {
+		setError("Failed to get autocommit.\n"
+				"A network error may have occurred.");
+		return false;
+	}
+
+	if (pvt->_debug) {
+		debugPreStart();
+		debugPrint((result)?"on\n":"off\n");
+		debugPreEnd();
+	}
+
+	return result;
 }
 
 bool sqlrconnection::begin() {

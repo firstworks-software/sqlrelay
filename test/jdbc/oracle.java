@@ -538,7 +538,7 @@ class oracle extends sqlrtest {
 		System.out.println("getMaxConnections");
 		intval=md.getMaxConnections();
 		System.out.println("  "+intval);
-		assertEquals(intval,0);
+		assertTrue(intval>0);
 		System.out.println();
 
 		// getMaxCursorNameLength

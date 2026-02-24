@@ -1385,7 +1385,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean isReadOnly() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("is_read_only");
+		boolean	result=conn.isReadOnly();
 		drv.debugPrintln("is read only: "+result);
 		drv.debugEnd();
 		return result;

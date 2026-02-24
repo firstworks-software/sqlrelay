@@ -51,7 +51,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 		void	suspendSessionCommand();
 		void	pingCommand();
 		void	identifyCommand();
-		void	autoCommitCommand();
+		void	setAutoCommitCommand();
+		void	getAutoCommitCommand();
 		void	beginCommand();
 		void	commitCommand();
 		void	rollbackCommand();
@@ -426,9 +427,14 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 			cont->incrementIdentifyCount();
 			identifyCommand();
 			continue;
-		} else if (command==AUTOCOMMIT) {
-			cont->incrementAutocommitCount();
-			autoCommitCommand();
+		} else if (command==SET_AUTOCOMMIT) {
+			cont->incrementSetAutoCommitCount();
+			setAutoCommitCommand();
+			continue;
+		} else if (command==GET_AUTOCOMMIT) {
+			// FIXME: add this
+			//cont->incrementGetAutocommitCount();
+			getAutoCommitCommand();
 			continue;
 		} else if (command==BEGIN) {
 			cont->incrementBeginCount();
@@ -1085,9 +1091,9 @@ void sqlrprotocol_sqlrclient::identifyCommand() {
 	debugEnd();
 }
 
-void sqlrprotocol_sqlrclient::autoCommitCommand() {
+void sqlrprotocol_sqlrclient::setAutoCommitCommand() {
 
-	debugStart("autocommit");
+	debugStart("set autocommit");
 
 	// get on/off
 	bool	on;
@@ -1121,6 +1127,22 @@ void sqlrprotocol_sqlrclient::autoCommitCommand() {
 		returnError(false);
 	}
 
+	debugEnd();
+}
+
+void sqlrprotocol_sqlrclient::getAutoCommitCommand() {
+
+	debugStart("get autocommit");
+
+	// get the current autocommit state
+	bool	ac=cont->getAutoCommit();
+
+	// send result to the client
+	clientsock->write((uint16_t)NO_ERROR_OCCURRED);
+	clientsock->write(ac);
+	clientsock->flushWriteBuffer(-1,-1);
+
+	debugWrite((ac)?"on":"off");
 	debugEnd();
 }
 
@@ -4716,8 +4738,11 @@ void sqlrprotocol_sqlrclient::debugCommand(uint16_t command) {
 		case AUTH:
 			debugWrite("AUTH");
 			break;
-		case AUTOCOMMIT:
-			debugWrite("AUTOCOMMIT");
+		case SET_AUTOCOMMIT:
+			debugWrite("SET_AUTOCOMMIT");
+			break;
+		case GET_AUTOCOMMIT:
+			debugWrite("GET_AUTOCOMMIT");
 			break;
 		case REEXECUTE_QUERY:
 			debugWrite("REEXECUTE_QUERY");

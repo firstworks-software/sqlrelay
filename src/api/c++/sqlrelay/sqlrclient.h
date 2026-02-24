@@ -331,6 +331,10 @@ class SQLRCLIENT_DLLSPEC sqlrconnection : public object {
 		 *  client to tell it when to commit. */
 		bool	autoCommitOff();
 
+		/** Returns true if auto-commit is currently on,
+		 *  false otherwise. */
+		bool	getAutoCommit();
+
 
 
 		/** Begins a transaction.  Returns true if the begin
@@ -463,8 +467,6 @@ class SQLRCLIENT_DLLSPEC sqlrconnection : public object {
 		 *  * inserts_are_detected
 		 *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
 		 *  * is_catalog_at_start
-		 *   * true/false
-		 *  * is_read_only
 		 *   * true/false
 		 *  * isolation_levels
 		 *   * list - READ_UNCOMMITTED,READ_COMMITTED,...

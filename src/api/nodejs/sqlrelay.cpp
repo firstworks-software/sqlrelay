@@ -183,6 +183,7 @@ class SQLRConnection : public ObjectWrap {
 		static RET	getLastInsertId(const ARGS &args);
 		static RET	autoCommitOn(const ARGS &args);
 		static RET	autoCommitOff(const ARGS &args);
+		static RET	getAutoCommit(const ARGS &args);
 		static RET	begin(const ARGS &args);
 		static RET	commit(const ARGS &args);
 		static RET	rollback(const ARGS &args);
@@ -391,6 +392,7 @@ void SQLRConnection::Init(Handle<Object> exports) {
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getLastInsertId",getLastInsertId);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"autoCommitOn",autoCommitOn);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"autoCommitOff",autoCommitOff);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getAutoCommit",getAutoCommit);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"begin",begin);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"commit",commit);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"rollback",rollback);
@@ -837,6 +839,17 @@ RET SQLRConnection::autoCommitOff(const ARGS &args) {
 	checkArgCount(args,0);
 
 	bool	result=sqlrcon(args)->autoCommitOff();
+
+	returnBoolean(result);
+}
+
+RET SQLRConnection::getAutoCommit(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,0);
+
+	bool	result=sqlrcon(args)->getAutoCommit();
 
 	returnBoolean(result);
 }

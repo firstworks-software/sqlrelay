@@ -206,6 +206,10 @@ int sqlrcon_autoCommitOff(sqlrcon sqlrconref) {
 	return sqlrconref->autoCommitOff();
 }
 
+int sqlrcon_getAutoCommit(sqlrcon sqlrconref) {
+	return sqlrconref->getAutoCommit();
+}
+
 int sqlrcon_begin(sqlrcon sqlrconref) {
 	return sqlrconref->begin();
 }

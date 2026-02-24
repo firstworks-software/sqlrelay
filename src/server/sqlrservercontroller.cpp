@@ -142,6 +142,7 @@ class sqlrservercontrollerprivate {
 
 	bool		_needscommitorrollback;
 
+	bool		_autocommit;
 	bool		_initialautocommit;
 
 	bool		_fakeinputbinds;
@@ -391,6 +392,7 @@ sqlrservercontroller::sqlrservercontroller() : sqlrserverbase() {
 
 	pvt->_needscommitorrollback=false;
 
+	pvt->_autocommit=false;
 	pvt->_initialautocommit=false;
 
 	pvt->_faketransactionblocks=false;
@@ -898,6 +900,7 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 	}
 
 	// set autocommit behavior
+	pvt->_autocommit=false;
 	setAutoCommit(pvt->_initialautocommit);
 
 	// increment connection counter
@@ -2363,8 +2366,10 @@ bool sqlrservercontroller::setAutoCommitOn() {
 			raiseCommitEvent();
 		}
 		pvt->_intransaction=false;
+		pvt->_autocommit=true;
 		return true;
 	}
+	pvt->_autocommit=false;
 	return false;
 }
 
@@ -2385,8 +2390,10 @@ bool sqlrservercontroller::setAutoCommitOff() {
 		if (!wasintx) {
 			raiseBeginTransactionEvent();
 		}
+		pvt->_autocommit=false;
 		return true;
 	}
+	pvt->_autocommit=true;
 	return false;
 }
 
@@ -9117,15 +9124,15 @@ void sqlrservercontroller::incrementIdentifyCount() {
 	pvt->_connstats->nidentify++;
 }
 
-uint32_t sqlrservercontroller::getAutocommitCount() {
-	return pvt->_connstats->nautocommit;
+uint32_t sqlrservercontroller::getSetAutoCommitCount() {
+	return pvt->_connstats->nsetautocommit;
 }
 
-void sqlrservercontroller::incrementAutocommitCount() {
+void sqlrservercontroller::incrementSetAutoCommitCount() {
 	if (!pvt->_connstats) {
 		return;
 	}
-	pvt->_connstats->nautocommit++;
+	pvt->_connstats->nsetautocommit++;
 }
 
 uint32_t sqlrservercontroller::getBeginCount() {
@@ -9543,6 +9550,10 @@ void sqlrservercontroller::setInitialAutoCommit(bool iac) {
 
 bool sqlrservercontroller::getInitialAutoCommit() {
 	return pvt->_initialautocommit;
+}
+
+bool sqlrservercontroller::getAutoCommit() {
+	return pvt->_autocommit;
 }
 
 const char *sqlrservercontroller::getBindFormat() {

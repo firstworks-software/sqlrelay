@@ -667,6 +667,9 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  auto-commit-on as set by setInitialAutoCommit(). */
 		bool	getInitialAutoCommit();
 
+		/** Returns whether auto-commit is currently on or off. */
+		bool	getAutoCommit();
+
 		/** Returns true if we're currently in a transaction and false
 		 *  otherwise. */
 		bool	getInTransaction();
@@ -932,13 +935,13 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  have occurred since the instance was started. */
 		void	incrementIdentifyCount();
 
-		/** Returns the number of autocommits that have occurred
+		/** Returns the number of set-autocommits that have occurred
 		 *  since the instance was started. */
-		uint32_t	getAutocommitCount();
+		uint32_t	getSetAutoCommitCount();
 
-		/** Increments the number of autocommits that have occurred
+		/** Increments the number of set-autocommits that have occurred
 		 *  since the instance was started. */
-		void	incrementAutocommitCount();
+		void	incrementSetAutoCommitCount();
 
 		/** Returns the number of begins that have occurred
 		 *  since the instance was started. */

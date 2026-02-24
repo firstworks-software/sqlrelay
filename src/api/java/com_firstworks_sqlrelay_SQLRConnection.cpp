@@ -395,6 +395,16 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_autoCommi
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRConnection
+ * Method:    getAutoCommit
+ * Signature: ()Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getAutoCommit
+  (JNIEnv *env, jobject self) {
+	return (jboolean)getSqlrConnection(env,self)->getAutoCommit();
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRConnection
  * Method:    begin
  * Signature: ()Z
  */

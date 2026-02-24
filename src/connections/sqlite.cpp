@@ -607,8 +607,6 @@ const char * const *sqliteconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_IS_CATALOG_AT_START]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_IS_READ_ONLY]=
-		charstring::duplicate("");
 
 	databasefeatures[FEATURE_ISOLATION_LEVELS]=
 		charstring::duplicate("");
@@ -650,7 +648,7 @@ const char * const *sqliteconnection::getDatabaseFeatures() {
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_MAX_CONNECTIONS]=
-		charstring::duplicate("");
+		charstring::parseNumber(cont->getConfig()->getMaxConnections());
 
 	databasefeatures[FEATURE_MAX_CURSOR_NAME_LENGTH]=
 		charstring::duplicate("");

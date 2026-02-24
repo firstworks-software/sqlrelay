@@ -316,10 +316,14 @@ __END__
             # and false if it failed.
 
         autoCommitOff();
-            # Instructs the database to wait for the 
+            # Instructs the database to wait for the
             # client to tell it when to commit.
             # Returns true if setting autocommit off succeeded
             # and false if it failed.
+
+        getAutoCommit();
+            # Returns true if auto-commit is currently on,
+            # false otherwise.
 
         begin();
             # Begins a transaction.  Returns true if the begin
@@ -449,8 +453,6 @@ __END__
             #  * inserts_are_detected
             #   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
             #  * is_catalog_at_start
-            #   * true/false
-            #  * is_read_only
             #   * true/false
             #  * isolation_levels
             #   * list - READ_UNCOMMITTED,READ_COMMITTED,...

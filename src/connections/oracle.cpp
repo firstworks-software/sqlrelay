@@ -2692,9 +2692,6 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_IS_CATALOG_AT_START]=
 		charstring::duplicate("false");
 
-	databasefeatures[FEATURE_IS_READ_ONLY]=
-		charstring::duplicate("false");
-
 	databasefeatures[FEATURE_ISOLATION_LEVELS]=
 		charstring::duplicate("READ_COMMITTED,SERIALIZABLE");
 
@@ -2735,7 +2732,7 @@ const char * const * oracleconnection::getDatabaseFeatures() {
 		charstring::duplicate("1000");
 
 	databasefeatures[FEATURE_MAX_CONNECTIONS]=
-		charstring::duplicate("0");
+		charstring::parseNumber(cont->getConfig()->getMaxConnections());
 
 	databasefeatures[FEATURE_MAX_CURSOR_NAME_LENGTH]=
 		charstring::duplicate("0");

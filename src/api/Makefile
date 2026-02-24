@@ -123,7 +123,7 @@ install-java:
 	cd java $(AND) $(MAKE) install
 
 install-jdbc:
-	cd java $(AND) $(MAKE) install
+	cd jdbc $(AND) $(MAKE) install
 
 install-tcl:
 	cd tcl $(AND) $(MAKE) install

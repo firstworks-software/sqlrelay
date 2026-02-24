@@ -323,6 +323,10 @@ public class SQLRConnection {
 	 *  client to tell it when to commit. */
 	public native boolean	autoCommitOff();
 
+	/** Returns true if auto-commit is currently on,
+	 *  false otherwise. */
+	public native boolean	getAutoCommit();
+
 	/** Begins a transaction.  Returns true if the begin
 	 *  succeeded, false if it failed.  If the database
 	 *  automatically begins a new transaction when a
@@ -448,8 +452,6 @@ public class SQLRConnection {
 	 *  * inserts_are_detected
 	 *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
 	 *  * is_catalog_at_start
-	 *   * true/false
-	 *  * is_read_only
 	 *   * true/false
 	 *  * isolation_levels
 	 *   * list - READ_UNCOMMITTED,READ_COMMITTED,...

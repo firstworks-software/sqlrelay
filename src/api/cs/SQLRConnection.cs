@@ -425,6 +425,12 @@ public class SQLRConnection : IDisposable
         return sqlrcon_autoCommitOff(sqlrconref)!=0;
     }
 
+    /** Returns true if auto-commit is currently on, false otherwise. */
+    public Boolean getAutoCommit()
+    {
+        return sqlrcon_getAutoCommit(sqlrconref)!=0;
+    }
+
     /** Begins a transaction.  Returns true if the begin
      *  succeeded, false if it failed.  If the database
      *  automatically begins a new transaction when a
@@ -564,8 +570,6 @@ public class SQLRConnection : IDisposable
      *  * inserts_are_detected
      *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
      *  * is_catalog_at_start
-     *   * true/false
-     *  * is_read_only
      *   * true/false
      *  * isolation_levels
      *   * list - READ_UNCOMMITTED,READ_COMMITTED,...
@@ -941,6 +945,9 @@ public class SQLRConnection : IDisposable
     
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int32 sqlrcon_autoCommitOff(IntPtr sqlrconref);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int32 sqlrcon_getAutoCommit(IntPtr sqlrconref);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int32 sqlrcon_begin(IntPtr sqlrconref);

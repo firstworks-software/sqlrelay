@@ -1233,7 +1233,6 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	databasefeatures=new char *[FEATURE_COUNT];
 
 	char		strbuf[1024];
-	char		numbuf[20];
 	SQLUINTEGER	uintbuf=0;
 	SQLUSMALLINT	usmallintbuf=0;
 	SQLSMALLINT	size=0;
@@ -1253,8 +1252,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{0,NULL}
 	};
 	flagsToNames(&sb,uintbuf,af);
-	databasefeatures[FEATURE_AGGREGATE_FUNCTIONS]=
-							sb.detachString();
+	databasefeatures[FEATURE_AGGREGATE_FUNCTIONS]=sb.detachString();
 
 	// SQL_ACCESSIBLE_PROCEDURES -> Y/N
 	strbuf[0]='\0';
@@ -1308,7 +1306,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 
 	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_AUTO_COMMIT_FAILURE_CLOSES_ALL_RESULT_SETS]=
-		charstring::duplicate("");
+						charstring::duplicate("");
 
 	// SQL_BATCH_SUPPORT -> bitmask
 	uintbuf=0;
@@ -1321,8 +1319,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{0,NULL}
 	};
 	flagsToNames(&sb,uintbuf,bs);
-	databasefeatures[FEATURE_BATCH_OPERATIONS]=
-					sb.detachString();
+	databasefeatures[FEATURE_BATCH_OPERATIONS]=sb.detachString();
 
 	// SQL_BATCH_ROW_COUNT -> bitmask
 	uintbuf=0;
@@ -1334,21 +1331,19 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{0,NULL}
 	};
 	flagsToNames(&sb,uintbuf,brc);
-	databasefeatures[FEATURE_BATCH_ROW_COUNTS]=
-					sb.detachString();
+	databasefeatures[FEATURE_BATCH_ROW_COUNTS]=sb.detachString();
 
 	// SQL_QUALIFIER_NAME_SEPARATOR -> string
 	strbuf[0]='\0';
 	SQLGetInfo(dbc,SQL_QUALIFIER_NAME_SEPARATOR,
 					strbuf,sizeof(strbuf),&size);
 	databasefeatures[FEATURE_CATALOG_SEPARATOR]=
-		charstring::duplicate(strbuf);
+				charstring::duplicate(strbuf);
 
 	// SQL_QUALIFIER_TERM -> string
 	strbuf[0]='\0';
 	SQLGetInfo(dbc,SQL_QUALIFIER_TERM,strbuf,sizeof(strbuf),&size);
-	databasefeatures[FEATURE_CATALOG_TERM]=
-		charstring::duplicate(strbuf);
+	databasefeatures[FEATURE_CATALOG_TERM]=charstring::duplicate(strbuf);
 
 	// SQL_QUALIFIER_USAGE -> bitmask
 	uintbuf=0;
@@ -1362,19 +1357,16 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{0,NULL}
 	};
 	flagsToNames(&sb,uintbuf,cu);
-	databasefeatures[FEATURE_CATALOG_USAGE]=
-					sb.detachString();
+	databasefeatures[FEATURE_CATALOG_USAGE]=sb.detachString();
 
 	// SQL_COLLATION_SEQ -> string
 	strbuf[0]='\0';
 	SQLGetInfo(dbc,SQL_COLLATION_SEQ,strbuf,sizeof(strbuf),&size);
-	databasefeatures[FEATURE_COLLATION_SEQ]=
-		charstring::duplicate(strbuf);
+	databasefeatures[FEATURE_COLLATION_SEQ]=charstring::duplicate(strbuf);
 
 	// SQL_CREATE_ASSERTION -> bitmask
 	uintbuf=0;
-	SQLGetInfo(dbc,SQL_CREATE_ASSERTION,
-				&uintbuf,sizeof(uintbuf),&size);
+	SQLGetInfo(dbc,SQL_CREATE_ASSERTION,&uintbuf,sizeof(uintbuf),&size);
 	flagtoname	ca[]={
 		{SQL_CA_CREATE_ASSERTION,
 			"CREATE_ASSERTION"},
@@ -1555,9 +1547,9 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 
 	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_DEFAULT_RESULT_SET_HOLDABILITY]=
-		charstring::duplicate("");
+					charstring::duplicate("");
 	databasefeatures[FEATURE_DELETES_ARE_DETECTED]=
-		charstring::duplicate("");
+					charstring::duplicate("");
 
 	// SQL_MAX_ROW_SIZE_INCLUDES_LONG -> Y/N
 	strbuf[0]='\0';
@@ -1585,8 +1577,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{0,NULL}
 	};
 	flagsToNames(&sb,uintbuf,dcs);
-	databasefeatures[FEATURE_DROP_CHARACTER_SET_CLAUSES]=
-							sb.detachString();
+	databasefeatures[FEATURE_DROP_CHARACTER_SET_CLAUSES]=sb.detachString();
 
 	// SQL_DROP_COLLATION -> bitmask
 	uintbuf=0;
@@ -1662,7 +1653,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	strbuf[0]='\0';
 	SQLGetInfo(dbc,SQL_SPECIAL_CHARACTERS,strbuf,sizeof(strbuf),&size);
 	databasefeatures[FEATURE_EXTRA_NAME_CHARACTERS]=
-		charstring::duplicate(strbuf);
+					charstring::duplicate(strbuf);
 
 	// SQL_SQL92_FOREIGN_KEY_DELETE_RULE -> bitmask
 	uintbuf=0;
@@ -1676,8 +1667,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{0,NULL}
 	};
 	flagsToNames(&sb,uintbuf,fkdr);
-	databasefeatures[FEATURE_FOREIGN_KEY_DELETE_RULES]=
-							sb.detachString();
+	databasefeatures[FEATURE_FOREIGN_KEY_DELETE_RULES]=sb.detachString();
 
 	// SQL_SQL92_FOREIGN_KEY_UPDATE_RULE -> bitmask
 	uintbuf=0;
@@ -1691,8 +1681,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{0,NULL}
 	};
 	flagsToNames(&sb,uintbuf,fkur);
-	databasefeatures[FEATURE_FOREIGN_KEY_UPDATE_RULES]=
-							sb.detachString();
+	databasefeatures[FEATURE_FOREIGN_KEY_UPDATE_RULES]=sb.detachString();
 
 	// SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES2 -> bitmask
 	uintbuf=0;
@@ -1720,11 +1709,11 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	};
 	flagsToNames(&sb,uintbuf,foca2);
 	databasefeatures[FEATURE_FORWARD_ONLY_CURSOR_ATTRIBUTES]=
-					sb.detachString();
+							sb.detachString();
 
 	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_GENERATED_KEY_ALWAYS_RETURNED]=
-		charstring::duplicate("");
+					charstring::duplicate("");
 
 	// SQL_SQL92_GRANT -> bitmask
 	uintbuf=0;
@@ -1776,7 +1765,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	SQLGetInfo(dbc,SQL_IDENTIFIER_QUOTE_CHAR,
 					strbuf,sizeof(strbuf),&size);
 	databasefeatures[FEATURE_IDENTIFIER_QUOTE_STRING]=
-		charstring::duplicate(strbuf);
+					charstring::duplicate(strbuf);
 
 	// SQL_INDEX_KEYWORDS -> bitmask
 	uintbuf=0;
@@ -1845,13 +1834,6 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		charstring::duplicate(
 			(usmallintbuf==SQL_CL_START)?"true":"false");
 
-	// SQL_DATA_SOURCE_READ_ONLY -> Y/N
-	strbuf[0]='\0';
-	SQLGetInfo(dbc,SQL_DATA_SOURCE_READ_ONLY,
-					strbuf,sizeof(strbuf),&size);
-	databasefeatures[FEATURE_IS_READ_ONLY]=
-		charstring::duplicate((strbuf[0]=='Y')?"true":"false");
-
 	// SQL_TXN_ISOLATION_OPTION -> bitmask
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_TXN_ISOLATION_OPTION,
@@ -1864,8 +1846,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{0,NULL}
 	};
 	flagsToNames(&sb,uintbuf,tilf);
-	databasefeatures[FEATURE_ISOLATION_LEVELS]=
-		sb.detachString();
+	databasefeatures[FEATURE_ISOLATION_LEVELS]=sb.detachString();
 
 	// SQL_FILE_USAGE -> enum
 	usmallintbuf=0;
@@ -1879,7 +1860,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 
 	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_LOCATORS_UPDATE_COPY]=
-		charstring::duplicate("");
+					charstring::duplicate("");
 
 	// SQL_LOCK_TYPES -> bitmask
 	uintbuf=0;
@@ -1897,166 +1878,142 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_MAX_BINARY_LITERAL_LEN,
 					&uintbuf,sizeof(uintbuf),&size);
-	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)uintbuf);
 	databasefeatures[FEATURE_MAX_BINARY_LITERAL_LENGTH]=
-		charstring::duplicate(numbuf);
+		charstring::parseNumber(uintbuf);
 
 	// SQL_MAX_CATALOG_NAME_LEN -> usmallint
 	usmallintbuf=0;
 	SQLGetInfo(dbc,SQL_MAX_CATALOG_NAME_LEN,
 				&usmallintbuf,sizeof(usmallintbuf),&size);
-	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)usmallintbuf);
 	databasefeatures[FEATURE_MAX_CATALOG_NAME_LENGTH]=
-		charstring::duplicate(numbuf);
+		charstring::parseNumber(usmallintbuf);
 
 	// SQL_MAX_CHAR_LITERAL_LEN -> uintval
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_MAX_CHAR_LITERAL_LEN,
 					&uintbuf,sizeof(uintbuf),&size);
-	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)uintbuf);
 	databasefeatures[FEATURE_MAX_CHAR_LITERAL_LENGTH]=
-		charstring::duplicate(numbuf);
+		charstring::parseNumber(uintbuf);
 
 	// SQL_MAX_COLUMN_NAME_LEN -> usmallint
 	usmallintbuf=0;
 	SQLGetInfo(dbc,SQL_MAX_COLUMN_NAME_LEN,
 				&usmallintbuf,sizeof(usmallintbuf),&size);
-	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)usmallintbuf);
 	databasefeatures[FEATURE_MAX_COLUMN_NAME_LENGTH]=
-		charstring::duplicate(numbuf);
+		charstring::parseNumber(usmallintbuf);
 
 	// SQL_MAX_COLUMNS_IN_GROUP_BY -> usmallint
 	usmallintbuf=0;
 	SQLGetInfo(dbc,SQL_MAX_COLUMNS_IN_GROUP_BY,
 				&usmallintbuf,sizeof(usmallintbuf),&size);
-	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)usmallintbuf);
 	databasefeatures[FEATURE_MAX_COLUMNS_IN_GROUP_BY]=
-		charstring::duplicate(numbuf);
+		charstring::parseNumber(usmallintbuf);
 
 	// SQL_MAX_COLUMNS_IN_INDEX -> usmallint
 	usmallintbuf=0;
 	SQLGetInfo(dbc,SQL_MAX_COLUMNS_IN_INDEX,
 				&usmallintbuf,sizeof(usmallintbuf),&size);
-	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)usmallintbuf);
 	databasefeatures[FEATURE_MAX_COLUMNS_IN_INDEX]=
-		charstring::duplicate(numbuf);
+		charstring::parseNumber(usmallintbuf);
 
 	// SQL_MAX_COLUMNS_IN_ORDER_BY -> usmallint
 	usmallintbuf=0;
 	SQLGetInfo(dbc,SQL_MAX_COLUMNS_IN_ORDER_BY,
 				&usmallintbuf,sizeof(usmallintbuf),&size);
-	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)usmallintbuf);
 	databasefeatures[FEATURE_MAX_COLUMNS_IN_ORDER_BY]=
-		charstring::duplicate(numbuf);
+		charstring::parseNumber(usmallintbuf);
 
 	// SQL_MAX_COLUMNS_IN_SELECT -> usmallint
 	usmallintbuf=0;
 	SQLGetInfo(dbc,SQL_MAX_COLUMNS_IN_SELECT,
 				&usmallintbuf,sizeof(usmallintbuf),&size);
-	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)usmallintbuf);
 	databasefeatures[FEATURE_MAX_COLUMNS_IN_SELECT]=
-		charstring::duplicate(numbuf);
+		charstring::parseNumber(usmallintbuf);
 
 	// SQL_MAX_COLUMNS_IN_TABLE -> usmallint
 	usmallintbuf=0;
 	SQLGetInfo(dbc,SQL_MAX_COLUMNS_IN_TABLE,
 				&usmallintbuf,sizeof(usmallintbuf),&size);
-	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)usmallintbuf);
 	databasefeatures[FEATURE_MAX_COLUMNS_IN_TABLE]=
-		charstring::duplicate(numbuf);
+		charstring::parseNumber(usmallintbuf);
 
 	// SQL_ACTIVE_CONNECTIONS -> usmallint
-	usmallintbuf=0;
-	SQLGetInfo(dbc,SQL_ACTIVE_CONNECTIONS,
-				&usmallintbuf,sizeof(usmallintbuf),&size);
-	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)usmallintbuf);
 	databasefeatures[FEATURE_MAX_CONNECTIONS]=
-		charstring::duplicate(numbuf);
+		charstring::parseNumber(cont->getConfig()->getMaxConnections());
 
 	// SQL_MAX_CURSOR_NAME_LEN -> usmallint
 	usmallintbuf=0;
 	SQLGetInfo(dbc,SQL_MAX_CURSOR_NAME_LEN,
 				&usmallintbuf,sizeof(usmallintbuf),&size);
-	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)usmallintbuf);
 	databasefeatures[FEATURE_MAX_CURSOR_NAME_LENGTH]=
-		charstring::duplicate(numbuf);
+		charstring::parseNumber(usmallintbuf);
 
 	// SQL_MAX_IDENTIFIER_LEN -> usmallint
 	usmallintbuf=0;
 	SQLGetInfo(dbc,SQL_MAX_IDENTIFIER_LEN,
 				&usmallintbuf,sizeof(usmallintbuf),&size);
-	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)usmallintbuf);
 	databasefeatures[FEATURE_MAX_IDENTIFIER_LENGTH]=
-		charstring::duplicate(numbuf);
+		charstring::parseNumber(usmallintbuf);
 
 	// SQL_MAX_INDEX_SIZE -> uintval
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_MAX_INDEX_SIZE,&uintbuf,sizeof(uintbuf),&size);
-	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)uintbuf);
 	databasefeatures[FEATURE_MAX_INDEX_LENGTH]=
-		charstring::duplicate(numbuf);
+		charstring::parseNumber(uintbuf);
 
 	// SQL_MAX_PROCEDURE_NAME_LEN -> usmallint
 	usmallintbuf=0;
 	SQLGetInfo(dbc,SQL_MAX_PROCEDURE_NAME_LEN,
 				&usmallintbuf,sizeof(usmallintbuf),&size);
-	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)usmallintbuf);
 	databasefeatures[FEATURE_MAX_PROCEDURE_NAME_LENGTH]=
-		charstring::duplicate(numbuf);
+		charstring::parseNumber(usmallintbuf);
 
 	// SQL_MAX_ROW_SIZE -> uintval
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_MAX_ROW_SIZE,&uintbuf,sizeof(uintbuf),&size);
-	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)uintbuf);
 	databasefeatures[FEATURE_MAX_ROW_SIZE]=
-		charstring::duplicate(numbuf);
+		charstring::parseNumber(uintbuf);
 
 	// SQL_MAX_OWNER_NAME_LEN -> usmallint
 	usmallintbuf=0;
 	SQLGetInfo(dbc,SQL_MAX_OWNER_NAME_LEN,
 				&usmallintbuf,sizeof(usmallintbuf),&size);
-	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)usmallintbuf);
 	databasefeatures[FEATURE_MAX_SCHEMA_NAME_LENGTH]=
-		charstring::duplicate(numbuf);
+		charstring::parseNumber(usmallintbuf);
 
 	// SQL_MAX_STATEMENT_LEN -> uintval
 	uintbuf=0;
 	SQLGetInfo(dbc,SQL_MAX_STATEMENT_LEN,&uintbuf,sizeof(uintbuf),&size);
-	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)uintbuf);
 	databasefeatures[FEATURE_MAX_STATEMENT_LENGTH]=
-		charstring::duplicate(numbuf);
+		charstring::parseNumber(uintbuf);
 
 	// SQL_ACTIVE_STATEMENTS -> usmallint
 	usmallintbuf=0;
 	SQLGetInfo(dbc,SQL_ACTIVE_STATEMENTS,
 				&usmallintbuf,sizeof(usmallintbuf),&size);
-	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)usmallintbuf);
 	databasefeatures[FEATURE_MAX_STATEMENTS]=
-		charstring::duplicate(numbuf);
+		charstring::parseNumber(usmallintbuf);
 
 	// SQL_MAX_TABLE_NAME_LEN -> usmallint
 	usmallintbuf=0;
 	SQLGetInfo(dbc,SQL_MAX_TABLE_NAME_LEN,
 				&usmallintbuf,sizeof(usmallintbuf),&size);
-	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)usmallintbuf);
 	databasefeatures[FEATURE_MAX_TABLE_NAME_LENGTH]=
-		charstring::duplicate(numbuf);
+		charstring::parseNumber(usmallintbuf);
 
 	// SQL_MAX_TABLES_IN_SELECT -> usmallint
 	usmallintbuf=0;
 	SQLGetInfo(dbc,SQL_MAX_TABLES_IN_SELECT,
 				&usmallintbuf,sizeof(usmallintbuf),&size);
-	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)usmallintbuf);
 	databasefeatures[FEATURE_MAX_TABLES_IN_SELECT]=
-		charstring::duplicate(numbuf);
+		charstring::parseNumber(usmallintbuf);
 
 	// SQL_MAX_USER_NAME_LEN -> usmallint
 	usmallintbuf=0;
 	SQLGetInfo(dbc,SQL_MAX_USER_NAME_LEN,
 				&usmallintbuf,sizeof(usmallintbuf),&size);
-	charstring::printf(numbuf,sizeof(numbuf),"%d",(int)usmallintbuf);
 	databasefeatures[FEATURE_MAX_USER_NAME_LENGTH]=
-		charstring::duplicate(numbuf);
+		charstring::parseNumber(usmallintbuf);
 
 	// SQL_QUOTED_IDENTIFIER_CASE -> enum
 	usmallintbuf=0;
@@ -2155,11 +2112,11 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 
 	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_OTHERS_DELETES_ARE_VISIBLE]=
-		charstring::duplicate("");
+					charstring::duplicate("");
 	databasefeatures[FEATURE_OTHERS_INSERTS_ARE_VISIBLE]=
-		charstring::duplicate("");
+					charstring::duplicate("");
 	databasefeatures[FEATURE_OTHERS_UPDATES_ARE_VISIBLE]=
-		charstring::duplicate("");
+					charstring::duplicate("");
 
 	// SQL_OJ_CAPABILITIES -> bitmask
 	uintbuf=0;
@@ -2171,11 +2128,11 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 
 	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_OWN_DELETES_ARE_VISIBLE]=
-		charstring::duplicate("");
+					charstring::duplicate("");
 	databasefeatures[FEATURE_OWN_INSERTS_ARE_VISIBLE]=
-		charstring::duplicate("");
+					charstring::duplicate("");
 	databasefeatures[FEATURE_OWN_UPDATES_ARE_VISIBLE]=
-		charstring::duplicate("");
+					charstring::duplicate("");
 
 	// SQL_SQL92_PREDICATES -> bitmask
 	uintbuf=0;
@@ -2204,8 +2161,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	// SQL_PROCEDURE_TERM -> string
 	strbuf[0]='\0';
 	SQLGetInfo(dbc,SQL_PROCEDURE_TERM,strbuf,sizeof(strbuf),&size);
-	databasefeatures[FEATURE_PROCEDURE_TERM]=
-		charstring::duplicate(strbuf);
+	databasefeatures[FEATURE_PROCEDURE_TERM]=charstring::duplicate(strbuf);
 
 	// SQL_QUOTED_IDENTIFIER_CASE -> enum
 	usmallintbuf=0;
@@ -2235,16 +2191,15 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{0,NULL}
 	};
 	flagsToNames(&sb,uintbuf,rjo);
-	databasefeatures[FEATURE_RELATIONAL_JOIN_OPERATORS]=
-							sb.detachString();
+	databasefeatures[FEATURE_RELATIONAL_JOIN_OPERATORS]=sb.detachString();
 
 	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_RESULT_SET_CONCURRENCIES]=
-		charstring::duplicate("");
+					charstring::duplicate("");
 	databasefeatures[FEATURE_RESULT_SET_HOLDABILITIES]=
-		charstring::duplicate("");
+					charstring::duplicate("");
 	databasefeatures[FEATURE_RESULT_SET_TYPES]=
-		charstring::duplicate("");
+					charstring::duplicate("");
 
 	// SQL_SQL92_REVOKE -> bitmask
 	uintbuf=0;
@@ -2271,8 +2226,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_REVOKE_CLAUSES]=sb.detachString();
 
 	// no obvious ODBC equivalent
-	databasefeatures[FEATURE_ROW_ID_LIFETIME]=
-		charstring::duplicate("");
+	databasefeatures[FEATURE_ROW_ID_LIFETIME]=charstring::duplicate("");
 
 	// SQL_SQL92_ROW_VALUE_CONSTRUCTOR -> bitmask
 	uintbuf=0;
@@ -2292,8 +2246,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	// SQL_OWNER_TERM -> string
 	strbuf[0]='\0';
 	SQLGetInfo(dbc,SQL_OWNER_TERM,strbuf,sizeof(strbuf),&size);
-	databasefeatures[FEATURE_SCHEMA_TERM]=
-		charstring::duplicate(strbuf);
+	databasefeatures[FEATURE_SCHEMA_TERM]=charstring::duplicate(strbuf);
 
 	// SQL_OWNER_USAGE -> bitmask
 	uintbuf=0;
@@ -2320,15 +2273,14 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{0,NULL}
 	};
 	flagsToNames(&sb,uintbuf,scco);
-	databasefeatures[FEATURE_SCROLL_CONCURRENCIES]=
-					sb.detachString();
+	databasefeatures[FEATURE_SCROLL_CONCURRENCIES]=sb.detachString();
 
 	// SQL_SEARCH_PATTERN_ESCAPE -> string
 	strbuf[0]='\0';
 	SQLGetInfo(dbc,SQL_SEARCH_PATTERN_ESCAPE,
 					strbuf,sizeof(strbuf),&size);
 	databasefeatures[FEATURE_SEARCH_STRING_ESCAPE]=
-		charstring::duplicate(strbuf);
+					charstring::duplicate(strbuf);
 
 	// SQL_ODBC_SQL_CONFORMANCE -> enum
 	usmallintbuf=0;
@@ -2342,12 +2294,10 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	// SQL_KEYWORDS -> string
 	strbuf[0]='\0';
 	SQLGetInfo(dbc,SQL_KEYWORDS,strbuf,sizeof(strbuf),&size);
-	databasefeatures[FEATURE_SQL_KEYWORDS]=
-		charstring::duplicate(strbuf);
+	databasefeatures[FEATURE_SQL_KEYWORDS]=charstring::duplicate(strbuf);
 
 	// no obvious ODBC equivalent
-	databasefeatures[FEATURE_SQL_STATE_TYPE]=
-		charstring::duplicate("");
+	databasefeatures[FEATURE_SQL_STATE_TYPE]=charstring::duplicate("");
 
 	// SQL_STATIC_CURSOR_ATTRIBUTES2 -> bitmask
 	uintbuf=0;
@@ -2374,8 +2324,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{0,NULL}
 	};
 	flagsToNames(&sb,uintbuf,sca2);
-	databasefeatures[FEATURE_STATIC_CURSOR_ATTRIBUTES]=
-					sb.detachString();
+	databasefeatures[FEATURE_STATIC_CURSOR_ATTRIBUTES]=sb.detachString();
 
 	// SQL_PROCEDURES -> Y/N
 	// no obvious ODBC equivalent for call syntax
@@ -2473,7 +2422,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 
 	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_SUPPORTS_GET_GENERATED_KEYS]=
-		charstring::duplicate("");
+					charstring::duplicate("");
 
 	// SQL_INTEGRITY -> Y/N
 	strbuf[0]='\0';
@@ -2503,7 +2452,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 
 	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_SUPPORTS_NAMED_PARAMETERS]=
-		charstring::duplicate("");
+					charstring::duplicate("");
 
 	// SQL_NON_NULLABLE_COLUMNS -> usmallint
 	usmallintbuf=0;
@@ -2522,11 +2471,11 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 
 	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_SUPPORTS_SAVEPOINTS]=
-		charstring::duplicate("");
+					charstring::duplicate("");
 
 	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_SUPPORTS_SELECT_FOR_UPDATE]=
-		charstring::duplicate("");
+					charstring::duplicate("");
 
 	// SQL_TXN_CAPABLE -> enum
 	usmallintbuf=0;
@@ -2688,7 +2637,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 
 	// no obvious ODBC equivalent
 	databasefeatures[FEATURE_UPDATES_ARE_DETECTED]=
-		charstring::duplicate("");
+					charstring::duplicate("");
 
 	// SQL_SQL92_VALUE_EXPRESSIONS -> bitmask
 	uintbuf=0;
@@ -2702,8 +2651,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{0,NULL}
 	};
 	flagsToNames(&sb,uintbuf,sve);
-	databasefeatures[FEATURE_VALUE_EXPRESSIONS]=
-		sb.detachString();
+	databasefeatures[FEATURE_VALUE_EXPRESSIONS]=sb.detachString();
 
 	// SQL_POSITIONED_STATEMENTS -> bitmask
 	uintbuf=0;
@@ -2715,8 +2663,7 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 		{0,NULL}
 	};
 	flagsToNames(&sb,uintbuf,ps);
-	databasefeatures[FEATURE_WHERE_CURRENT_OF_OPERATIONS]=
-						sb.detachString();
+	databasefeatures[FEATURE_WHERE_CURRENT_OF_OPERATIONS]=sb.detachString();
 
 
 	return databasefeatures;

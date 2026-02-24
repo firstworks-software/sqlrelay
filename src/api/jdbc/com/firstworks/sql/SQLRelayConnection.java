@@ -27,7 +27,6 @@ public class SQLRelayConnection implements Connection {
 	private String		password;
 	private boolean		readonly;
 	private Properties	clientinfo;
-	private boolean		autocommit;
 	private boolean		datetotimestamp;
 
 	private Map<String,Class<?>>	typemap;
@@ -67,11 +66,8 @@ public class SQLRelayConnection implements Connection {
 
 		sqlrcon=new SQLRConnection(host,port,socket,
 						user,password,retrytime,tries);
-		// FIXME: might not be false, need to get this from server
 		readonly=false;
 		clientinfo=new Properties();
-		// FIXME: might not be false, need to get this from server
-		autocommit=false;
 		typemap=new HashMap<String,Class<?>>();
 		datetotimestamp=false;
 
@@ -316,6 +312,7 @@ public class SQLRelayConnection implements Connection {
 	boolean getAutoCommit() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		boolean	autocommit=sqlrcon.getAutoCommit();
 		drv.debugPrintln("autocommit: "+autocommit);
 		drv.debugEnd();
 		return autocommit;
@@ -467,7 +464,10 @@ public class SQLRelayConnection implements Connection {
 	boolean isReadOnly() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		// FIXME: get this from the server
+		// setReadOnly()/isReadOnly() are just hints to enable
+		// optimizations.  Addint the infrastructure to actually be
+		// able to put a session in and out of read-only mode is fairly
+		// invasive, so for now, we'll just fake this.
 		drv.debugPrintln("read only: "+readonly);
 		drv.debugEnd();
 		return readonly;
@@ -777,7 +777,6 @@ public class SQLRelayConnection implements Connection {
 			throwErrorMessageException();
 		}
 		drv.debugPrintln("success");
-		this.autocommit=autocommit;
 		drv.debugEnd();
 	}
 
@@ -882,7 +881,10 @@ public class SQLRelayConnection implements Connection {
 	void setReadOnly(boolean readonly) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		// FIXME: implement this somehow
+		// setReadOnly()/isReadOnly() are just hints to enable
+		// optimizations.  Addint the infrastructure to actually be
+		// able to put a session in and out of read-only mode is fairly
+		// invasive, so for now, we'll just fake this.
 		this.readonly=readonly;
 		drv.debugPrintln("FIXME: implement this");
 		drv.debugPrintln("readonly: "+readonly);

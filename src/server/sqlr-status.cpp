@@ -355,7 +355,7 @@ int main(int argc, const char **argv) {
 						&conn[j].clientinfo[0],
 						&conn[j].clientaddr[0],
 						&conn[j].user[0]);
-				stdoutput.printf(" nautocommit=%d "
+				stdoutput.printf(" nsetautocommit=%d "
 						"nbegin=%d "
 						"ncommit=%d "
 						"nrollback=%d "
@@ -363,7 +363,7 @@ int main(int argc, const char **argv) {
 						"nbindformat=%d "
 						"nserverversion=%d "
 						"nselectdatabase=%d\n",
-						conn[j].nautocommit,
+						conn[j].nsetautocommit,
 						conn[j].nbegin,
 						conn[j].ncommit,
 						conn[j].nrollback,

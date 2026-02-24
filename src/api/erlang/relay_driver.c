@@ -709,13 +709,24 @@ int main() {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
-			// call function and encode result 
-			if (ei_x_encode_atom(&result, "ok") || 
+			// call function and encode result
+			if (ei_x_encode_atom(&result, "ok") ||
 				ei_x_encode_long(&result, sqlrcon_autoCommitOff(con))) {
 				return ERR_ENCODING_ARGS;
 			}
 		}
-		
+
+		if (strcmp("getAutoCommit", command) == TRUE) {
+			// check number of arguments
+		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
+
+			// call function and encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_long(&result, sqlrcon_getAutoCommit(con))) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
+
 		if (strcmp("beginTransaction", command) == TRUE) {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;

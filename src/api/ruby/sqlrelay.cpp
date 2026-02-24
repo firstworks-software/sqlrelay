@@ -939,6 +939,18 @@ static VALUE sqlrcon_autoCommitOff(VALUE self) {
 	return INT2NUM(result);
 }
 
+static void getAutoCommit(params *p) {
+	p->result.br=p->sqlrc.sqlrcon->getAutoCommit();
+}
+/** Returns true if auto-commit is currently on, false otherwise. */
+static VALUE sqlrcon_getAutoCommit(VALUE self) {
+	sqlrconnection	*sqlrcon;
+	bool		result;
+	Data_Get_Struct(self,sqlrconnection,sqlrcon);
+	RCON(result,br,sqlrcon,getAutoCommit);
+	return INT2NUM(result);
+}
+
 static void begin(params *p) {
 	p->result.br=p->sqlrc.sqlrcon->begin();
 }
@@ -1117,8 +1129,6 @@ static void getDatabaseFeature(params *p) {
  *  * inserts_are_detected
  *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
  *  * is_catalog_at_start
- *   * true/false
- *  * is_read_only
  *   * true/false
  *  * isolation_levels
  *   * list - READ_UNCOMMITTED,READ_COMMITTED,...
@@ -1513,6 +1523,8 @@ void Init_SQLRConnection() {
 				(CAST)sqlrcon_autoCommitOn,0);
 	rb_define_method(csqlrconnection,"autoCommitOff",
 				(CAST)sqlrcon_autoCommitOff,0);
+	rb_define_method(csqlrconnection,"getAutoCommit",
+				(CAST)sqlrcon_getAutoCommit,0);
 	rb_define_method(csqlrconnection,"begin",
 				(CAST)sqlrcon_begin,0);
 	rb_define_method(csqlrconnection,"commit",

@@ -398,6 +398,11 @@ int	sqlrcon_autoCommitOn(sqlrcon sqlrconref);
 SQLRCLIENT_DLLSPEC
 int	sqlrcon_autoCommitOff(sqlrcon sqlrconref);
 
+/** @ingroup sqlrclientwrapper
+ *  Returns 1 if auto-commit is currently on, 0 otherwise. */
+SQLRCLIENT_DLLSPEC
+int	sqlrcon_getAutoCommit(sqlrcon sqlrconref);
+
 
 
 /** @ingroup sqlrclientwrapper
@@ -535,8 +540,6 @@ const char	*sqlrcon_getIsolationLevel(sqlrcon sqlrconref);
  *  * inserts_are_detected
  *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
  *  * is_catalog_at_start
- *   * true/false
- *  * is_read_only
  *   * true/false
  *  * isolation_levels
  *   * list - READ_UNCOMMITTED,READ_COMMITTED,...

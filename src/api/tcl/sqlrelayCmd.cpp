@@ -2643,6 +2643,7 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     "getCurrentSchema",
     "getLastInsertId",
     "autoCommit",
+    "getAutoCommit",
     "begin",
     "commit",
     "rollback",
@@ -2693,6 +2694,7 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     SQLR_GETCURRENTSCHEMA,
     SQLR_GETLASTINSERTID,
     SQLR_AUTOCOMMIT,
+    SQLR_GETAUTOCOMMIT,
     SQLR_BEGIN,
     SQLR_COMMIT,
     SQLR_ROLLBACK,
@@ -3080,6 +3082,14 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     } else {
       Tcl_SetObjResult(interp, Tcl_NewIntObj(con->autoCommitOff()));
     }
+    break;
+  }
+  case SQLR_GETAUTOCOMMIT: {
+    if (objc > 2) {
+      Tcl_WrongNumArgs(interp, 2, objv, NULL);
+      return TCL_ERROR;
+    }
+    Tcl_SetObjResult(interp, Tcl_NewIntObj(con->getAutoCommit()));
     break;
   }
   case SQLR_BEGIN: {

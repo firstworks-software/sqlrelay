@@ -411,10 +411,17 @@ class sqlrconnection:
 
     def autoCommitOff(self):
         """
-        Instructs the database to wait for the 
+        Instructs the database to wait for the
         client to tell it when to commit.
         """
         return CSQLRelay.autoCommitOff(self.connection)
+
+    def getAutoCommit(self):
+        """
+        Returns true if auto-commit is currently on,
+        false otherwise.
+        """
+        return CSQLRelay.getAutoCommit(self.connection)
 
     def begin(self):
         """
@@ -558,8 +565,6 @@ class sqlrconnection:
         * inserts_are_detected
          * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
         * is_catalog_at_start
-         * true/false
-        * is_read_only
          * true/false
         * isolation_levels
          * list - READ_UNCOMMITTED,READ_COMMITTED,...

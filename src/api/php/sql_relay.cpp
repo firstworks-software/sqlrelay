@@ -4788,7 +4788,7 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_autocommiton) {
 DLEXPORT ZEND_FUNCTION(sqlrcon_autocommitoff) {
 	ZVAL sqlrcon;
 	bool r;
-	if (ZEND_NUM_ARGS() != 1 || 
+	if (ZEND_NUM_ARGS() != 1 ||
 		GET_PARAMETERS(
 				ZEND_NUM_ARGS() TSRMLS_CC,
 				PARAMS("z")
@@ -4804,6 +4804,30 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_autocommitoff) {
 				sqlrelay_connection);
 	if (connection) {
 		r=connection->autoCommitOff();
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcon_getautocommit) {
+	ZVAL sqlrcon;
+	bool r;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->getAutoCommit();
 		RETURN_LONG(r);
 	}
 	RETURN_LONG(0);
@@ -5603,6 +5627,9 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_autocommitoff,0,0,0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getautocommit,0,0,0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_begin,0,0,0)
 ZEND_END_ARG_INFO()
 
@@ -5930,6 +5957,8 @@ zend_function_entry sql_relay_functions[] = {
 		ARGINFO(arginfo_sqlrcon_autocommiton))
 	ZEND_FE(sqlrcon_autocommitoff,
 		ARGINFO(arginfo_sqlrcon_autocommitoff))
+	ZEND_FE(sqlrcon_getautocommit,
+		ARGINFO(arginfo_sqlrcon_getautocommit))
 	ZEND_FE(sqlrcon_begin,
 		ARGINFO(arginfo_sqlrcon_begin))
 	ZEND_FE(sqlrcon_commit,

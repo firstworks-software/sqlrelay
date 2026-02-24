@@ -4443,7 +4443,10 @@ static SQLRETURN SQLR_SQLGetConnectAttr(SQLHDBC connectionhandle,
 		case SQL_AUTOCOMMIT:
 			debugPrintf("  unsupported attribute: "
 						"SQL_AUTOCOMMIT\n");
-			// FIXME: implement
+			val.uintval=(conn->con->getAutoCommit())?
+						SQL_AUTOCOMMIT_ON:
+						SQL_AUTOCOMMIT_OFF;
+			type=1;
 			break;
 		case SQL_LOGIN_TIMEOUT:
 			debugPrintf("  unsupported attribute: "
@@ -4472,18 +4475,13 @@ static SQLRETURN SQLR_SQLGetConnectAttr(SQLHDBC connectionhandle,
 			break;
 		case SQL_TXN_ISOLATION:
 			debugPrintf("  attribute: SQL_TXN_ISOLATION\n");
-			if (conn->con) {
-				if (!SQLR_GetIsolationLevel(
+			if (!SQLR_GetIsolationLevel(
 					connectionhandle,&(val.uintval))) {
-					SQLR_CONNSetError(conn,
-						conn->con->errorMessage(),
-						conn->con->errorNumber(),NULL);
-					debugPrintf("  failed\n");
-					return SQL_ERROR;
-				}
-			} else {
-				// FIXME: this isn't true for all dbs
-				val.uintval=SQL_TXN_READ_COMMITTED;
+				SQLR_CONNSetError(conn,
+					conn->con->errorMessage(),
+					conn->con->errorNumber(),NULL);
+				debugPrintf("  failed\n");
+				return SQL_ERROR;
 			}
 			type=1;
 			break;
@@ -9052,10 +9050,8 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			type=2;
 			break;
 		case SQL_DATA_SOURCE_READ_ONLY:
-			// FIXME: is_read_only
 			debugPrintf("  infotype: "
 					"SQL_DATA_SOURCE_READ_ONLY\n");
-			// FIXME: this isn't always true
 			val.strval="N";
 			type=0;
 			break;
@@ -11346,6 +11342,13 @@ static SQLRETURN SQLR_SQLSetConnectAttr(SQLHDBC connectionhandle,
 			// FIXME: implement...
 			return SQL_SUCCESS;
 		case SQL_TXN_ISOLATION:
+			// If the sqlrelay connection is valid then immediately
+			// set the isolation level.
+			//
+			// Otherwise set a flag in the CONN to that it will
+			// be set on/off when the sqlrelay connection becomes
+			// valid.
+
 			debugPrintf("  attribute: SQL_TXN_ISOLATION\n");
 			debugPrintf("  val: %lld\n",(uint64_t)val);
 			if (conn->con) {

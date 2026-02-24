@@ -313,6 +313,10 @@ function sqlrcon_autoCommitOn($sqlrconref){}
  *  Instructs the database to wait for the client to tell it when to commit. */
 function sqlrcon_autoCommitOff($sqlrconref){}
 
+/**
+ *  Returns 1 if auto-commit is currently on, 0 otherwise. */
+function sqlrcon_getAutoCommit($sqlrconref){}
+
 
 /**
  *  Begins a transaction.  Returns 1 if the begin succeeded, 0 if it failed.
@@ -443,8 +447,6 @@ function sqlrcon_getIsolationLevel($sqlrconref){}
  *  * inserts_are_detected
  *   * list - FORWARD_ONLY,SCROLL_INSENSITIVE,SCROLL_SENSITIVE
  *  * is_catalog_at_start
- *   * true/false
- *  * is_read_only
  *   * true/false
  *  * isolation_levels
  *   * list - READ_UNCOMMITTED,READ_COMMITTED,...

@@ -210,6 +210,9 @@ bool
 sqlrconnection::autoCommitOff()
 
 bool
+sqlrconnection::getAutoCommit()
+
+bool
 sqlrconnection::begin()
 
 bool

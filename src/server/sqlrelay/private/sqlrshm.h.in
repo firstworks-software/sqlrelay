@@ -41,7 +41,7 @@ struct sqlrconnstatistics {
 	uint32_t			nend_session;
 	uint32_t			nping;
 	uint32_t			nidentify;
-	uint32_t			nautocommit;
+	uint32_t			nsetautocommit;
 	uint32_t			nbegin;
 	uint32_t			ncommit;
 	uint32_t			nrollback;
