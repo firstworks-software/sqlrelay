@@ -32,8 +32,7 @@ struct gs_result_row {
 
 class sqlrquery_sqlrcmdgstatcursor : public sqlrquerycursor {
 	public:
-			sqlrquery_sqlrcmdgstatcursor(
-						sqlrserverconnection *sqlrcon,
+		sqlrquery_sqlrcmdgstatcursor(sqlrserverconnection *sqlrcon,
 						sqlrquery *q,
 						domnode *parameters,
 						uint16_t id);

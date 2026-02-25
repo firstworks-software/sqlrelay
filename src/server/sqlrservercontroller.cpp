@@ -73,6 +73,115 @@ class sqlrdatabaseobject {
 		const char	*dependency;
 };
 
+
+class sqlrquery_lastinsertidlistcursor : public sqlrquerycursor {
+	public:
+		sqlrquery_lastinsertidlistcursor(
+					sqlrserverconnection *sqlrcon,
+					sqlrquery *q,
+					domnode *parameters,
+					uint16_t id);
+		~sqlrquery_lastinsertidlistcursor();
+
+		void	setLastInsertId(uint64_t lid);
+
+		uint32_t	colCount();
+		const char	*getColumnName(uint32_t col);
+		uint16_t	getColumnType(uint32_t col);
+		uint32_t	getColumnSize(uint32_t col);
+		uint32_t	getColumnPrecision(uint32_t col);
+		uint32_t	getColumnScale(uint32_t col);
+		uint16_t	getColumnIsNullable(uint32_t col);
+		bool		noRowsToReturn();
+		bool		fetchRow(bool *error);
+		void		getField(uint32_t col,
+					const char **field,
+					uint64_t *fieldsize,
+					bool *lob, bool *null);
+	private:
+		bool		firstrow;
+		char		*lid;
+};
+
+sqlrquery_lastinsertidlistcursor::sqlrquery_lastinsertidlistcursor(
+					sqlrserverconnection *sqlrcon,
+					sqlrquery *q,
+					domnode *parameters,
+					uint16_t id) :
+				sqlrquerycursor(sqlrcon,q,parameters,id) {
+	firstrow=true;
+	lid=NULL;
+}
+
+sqlrquery_lastinsertidlistcursor::~sqlrquery_lastinsertidlistcursor() {
+	delete[] lid;
+}
+
+void sqlrquery_lastinsertidlistcursor::setLastInsertId(uint64_t lid) {
+	firstrow=true;
+	delete[] this->lid;
+	this->lid=charstring::parseNumber(lid);
+}
+
+uint32_t sqlrquery_lastinsertidlistcursor::colCount() {
+	return 1;
+}
+
+const char *sqlrquery_lastinsertidlistcursor::getColumnName(uint32_t col) {
+	return (col<1)?"LAST_INSERT_ID()":NULL;
+}
+
+uint16_t sqlrquery_lastinsertidlistcursor::getColumnType(uint32_t col) {
+	return (col<1)?NUMBER_DATATYPE:0;
+}
+
+uint32_t sqlrquery_lastinsertidlistcursor::getColumnSize(uint32_t col) {
+	return (col<1)?10:0;
+}
+
+uint32_t sqlrquery_lastinsertidlistcursor::getColumnPrecision(uint32_t col) {
+	return (col<1)?10:0;
+}
+
+uint32_t sqlrquery_lastinsertidlistcursor::getColumnScale(uint32_t col) {
+	return 0;
+}
+
+uint16_t sqlrquery_lastinsertidlistcursor::getColumnIsNullable(uint32_t col) {
+	return 0;
+}
+
+bool sqlrquery_lastinsertidlistcursor::noRowsToReturn() {
+	return false;
+}
+
+bool sqlrquery_lastinsertidlistcursor::fetchRow(bool *error) {
+	*error=false;
+	if (firstrow) {
+		firstrow=false;
+		return true;
+	}
+	return false;
+}
+
+void sqlrquery_lastinsertidlistcursor::getField(uint32_t col,
+					const char **field,
+					uint64_t *fieldsize,
+					bool *lob,
+					bool *null) {
+	*field=NULL;
+	*fieldsize=0;
+	*lob=false;
+	*null=false;
+
+	if (!col) {
+		*field=lid;
+		*fieldsize=charstring::getLength(lid);
+	} else {
+		*null=true;
+	}
+}
+
 class sqlrservercontrollerprivate {
 	friend class sqlrservercontroller;
 
@@ -2723,9 +2832,27 @@ bool sqlrservercontroller::getProcedureList(sqlrservercursor *cursor,
 }
 
 bool sqlrservercontroller::getLastInsertIdList(sqlrservercursor *cursor) {
-	return fakePrepareAndExecuteForApiCall(cursor) &&
-		pvt->_conn->getLastInsertIdList(cursor) &&
-		handleResultSetHeader(cursor);
+
+	// get the last insert id
+	uint64_t	lid;
+	if (!getLastInsertId(&lid)) {
+		return false;
+	}
+
+	// create a fake cursor that returns the last insert id
+	// as the first column of the first row
+	sqlrquery_lastinsertidlistcursor	*lidcur=new
+		sqlrquery_lastinsertidlistcursor(pvt->_conn,NULL,NULL,0);
+	lidcur->setLastInsertId(lid);
+	cursor->setCustomQueryCursor(lidcur);
+
+	// pretend that we actually executed a query
+	if (!fakePrepareAndExecuteForApiCall(lidcur)) {
+		return false;
+	}
+
+	// set up column flags, buffers, and mappings
+	return handleResultSetHeader(lidcur);
 }
 
 const char *sqlrservercontroller::getDatabaseListQuery(bool wild) {

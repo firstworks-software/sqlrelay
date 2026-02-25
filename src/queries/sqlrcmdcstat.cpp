@@ -20,12 +20,11 @@ class SQLRSERVER_DLLSPEC sqlrquery_sqlrcmdcstat : public sqlrquery {
 
 class sqlrquery_sqlrcmdcstatcursor : public sqlrquerycursor {
 	public:
-			sqlrquery_sqlrcmdcstatcursor(
-						sqlrserverconnection *sqlrcon,
+		sqlrquery_sqlrcmdcstatcursor(sqlrserverconnection *sqlrcon,
 						sqlrquery *q,
 						domnode *parameters,
 						uint16_t id);
-			~sqlrquery_sqlrcmdcstatcursor();
+		~sqlrquery_sqlrcmdcstatcursor();
 
 		bool		executeQuery(const char *query,
 						uint32_t size);

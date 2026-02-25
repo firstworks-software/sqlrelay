@@ -3119,6 +3119,14 @@ void sqlrprotocol_sqlrclient::returnResultSetHeader(sqlrservercursor *cursor) {
 
 	debugStart("returning result set header");
 
+	// decide whether to use the cursor itself
+	// or an attached custom query cursor
+	// FIXME: push up?
+	sqlrservercursor	*customcursor=cursor->getCustomQueryCursor();
+	if (customcursor) {
+		cursor=customcursor;
+	}
+
 	// return the row counts
 	debugStart("returning row counts");
 	sendRowCounts(cont->knowsRowCount(cursor),
@@ -4429,7 +4437,8 @@ bool sqlrprotocol_sqlrclient::getListCommand(sqlrservercursor *cursor,
 	// get the list and return it
 	// (we always get the last insert id list by api call)
 	bool	retval=true;
-	if (cont->getListsByApiCalls() || GETLASTINSERTIDLIST) {
+	if (cont->getListsByApiCalls() ||
+		querytype==SQLRCLIENTQUERYTYPE_LAST_INSERT_ID_LIST) {
 		retval=getListByApiCall(cursor,querytype,object,wild,
 					(sqlrserverlistformat_t)listformat,
 					objecttypes);
