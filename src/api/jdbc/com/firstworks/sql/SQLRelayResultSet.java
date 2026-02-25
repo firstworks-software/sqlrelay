@@ -1,3 +1,5 @@
+// Copyright (c) David Muse
+// See the file COPYING for more information.
 package com.firstworks.sql;
 
 import java.sql.*;
@@ -32,7 +34,7 @@ public class SQLRelayResultSet implements ResultSet {
 
 	private SQLRCursor		sqlrcur;
 
-	private long		currentrow;
+	private int		currentrow;
 	private	boolean		beforefirst;
 	private	boolean		islast;
 	private	boolean		afterlast;
@@ -100,8 +102,30 @@ public class SQLRelayResultSet implements ResultSet {
 	public
 	boolean absolute(int row) throws SQLException {
 		drv.debugFunction(this);
+
 		throwExceptionIfClosed();
+
+		// debug
 		drv.debugPrintln("row: "+row);
+		drv.debugPrintln("currentrow: "+currentrow);
+
+		// handle nonsensical row
+		if (row<0) {
+			row=0;
+		}
+
+		// handle degenerate case
+		if (row==currentrow) {
+			drv.debugPrintln("success");
+			drv.debugEnd();
+			return true;
+		}
+
+		// FIXME: the rest of these cases really need to take into
+		// account the firstRowIndex(), rowCount(),
+		// resultSetBufferSize(), and whether the result set type is
+		// explicitly Forward-Only.
+
 		if (row<currentrow) {
 			conn.throwException(
 				"FIXME: ResultSet type is Forward-Only");
@@ -113,8 +137,6 @@ public class SQLRelayResultSet implements ResultSet {
 		} else if (row>0) {
 			beforefirst=false;
 			currentrow=row;
-			// FIXME: we can evaulate the result set buffer size
-			// to decide whether or not we need to call getField()
 			synchronized (networklock) {
 				sqlrcur.getField(currentrow-1,0);
 			}
@@ -2044,17 +2066,7 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("rows: "+rows);
-		if (rows==0) {
-			drv.debugEnd();
-			return true;
-		}
-		int	newrow=(int)(currentrow+rows);
-		drv.debugPrintln("newrow (before): "+newrow);
-		if (newrow<1) {
-			newrow=1;
-		}
-		drv.debugPrintln("newrow (after): "+newrow);
-		boolean	abs=absolute(newrow);
+		boolean	abs=absolute(currentrow+rows);
 		drv.debugEnd();
 		return abs;
 	}

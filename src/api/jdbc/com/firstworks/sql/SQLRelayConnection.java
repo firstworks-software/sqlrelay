@@ -1,8 +1,9 @@
+// Copyright (c) David Muse
+// See the file COPYING for more information.
 package com.firstworks.sql;
 
 import java.sql.*;
 import javax.sql.rowset.serial.SerialClob;
-import javax.sql.rowset.serial.SerialBlob;
 
 import java.util.Properties;
 import java.util.Map;
@@ -197,7 +198,7 @@ public class SQLRelayConnection implements Connection {
 	public
 	Blob createBlob() throws SQLException {
 		drv.debugFunction(this);
-		Blob	retval=new SerialBlob(new byte[0]);
+		Blob	retval=new SQLRelayBlob(new byte[0]);
 		drv.debugEnd();
 		return retval;
 	}
@@ -895,7 +896,6 @@ public class SQLRelayConnection implements Connection {
 		// able to put a session in and out of read-only mode is fairly
 		// invasive, so for now, we'll just fake this.
 		this.readonly=readonly;
-		drv.debugPrintln("FIXME: implement this");
 		drv.debugPrintln("readonly: "+readonly);
 		drv.debugEnd();
 	}

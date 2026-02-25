@@ -2986,25 +2986,11 @@ if (false) {
 			// blob
 			System.out.println("row "+i+" - blob");
 			blob=rs.getBlob(7);
-			byte[]	b=null;
-			if (issqlrelay) {
-				// SerialBlob doesn't like a length of 0.
-				//
-				// Oracle jdbc returns its own Blob
-				// implementation that's tolerant to this.
-				//
-				// For now we're not implementing our own Blob.
-				if (blob.length()==0) {
-					b=new byte[0];
-				} else {
-					b=blob.getBytes(1,(int)blob.length());
-				}
-			} else {
-				b=blob.getBytes(1,(int)blob.length());
-			}
 			// the blob in the first row is empty on purpose
-			assertEquals(new String(b,"UTF-8"),
-						(i==1)?"":"testblob"+i);
+			assertEquals(new String(
+					blob.getBytes(1,(int)blob.length()),
+					"UTF-8"),
+					(i==1)?"":"testblob"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -3182,25 +3168,11 @@ if (false) {
 			// blob
 			System.out.println("row "+i+" - blob");
 			blob=rs.getBlob("TESTBLOB");
-			byte[]	b=null;
-			if (issqlrelay) {
-				// SerialBlob doesn't like a length of 0.
-				//
-				// Oracle jdbc returns its own Blob
-				// implementation that's tolerant to this.
-				//
-				// For now we're not implementing our own Blob.
-				if (blob.length()==0) {
-					b=new byte[0];
-				} else {
-					b=blob.getBytes(1,(int)blob.length());
-				}
-			} else {
-				b=blob.getBytes(1,(int)blob.length());
-			}
 			// the blob in the first row is empty on purpose
-			assertEquals(new String(b,"UTF-8"),
-						(i==1)?"":"testblob"+i);
+			assertEquals(new String(
+					blob.getBytes(1,(int)blob.length()),
+					"UTF-8"),
+					(i==1)?"":"testblob"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
 

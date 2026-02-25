@@ -1,3 +1,5 @@
+// Copyright (c) David Muse
+// See the file COPYING for more information.
 package com.firstworks.sql;
 
 import java.sql.*;
