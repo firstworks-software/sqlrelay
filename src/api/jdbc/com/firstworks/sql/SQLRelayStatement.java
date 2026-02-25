@@ -395,11 +395,34 @@ public class SQLRelayStatement implements Statement {
 	ResultSet getGeneratedKeys() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		conn.throwFeatureNotSupportedException();
-		// FIXME: get the last insert id, as a result set
-		// with a colum name of GENERATED_KEY
+
+		if (resultset!=null) {
+			resultset.close();
+			resultset=null;
+		}
+
+		boolean	result=false;
+		synchronized (networklock) {
+			result=sqlrcur.getLastInsertIdList();
+		}
+
+		if (result) {
+
+			drv.debugPrintln("colcount: "+sqlrcur.colCount());
+
+			if (sqlrcur.colCount()>0) {
+				resultset=new SQLRelayResultSet(drv);
+				resultset.setNetworkLock(networklock);
+				resultset.setStatement(this);
+				resultset.setConnection(conn);
+				resultset.setSQLRCursor(sqlrcur);
+			}
+		} else {
+			conn.throwException(sqlrcur.errorMessage());
+		}
+
 		drv.debugEnd();
-		return null;
+		return resultset;
 	}
 
 	public

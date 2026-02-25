@@ -2318,6 +2318,16 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getProcedureL
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getLastInsertIdList
+ * Signature: ()Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getLastInsertIdList
+  (JNIEnv *env, jobject self) {
+	return getSqlrCursor(env,self)->getLastInsertIdList();
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
  * Method:    isNumberType
  * Signature: (Ljava/lang/String;)Z
  */

@@ -645,6 +645,7 @@ public class SQLRCursor {
 						int listformat);
 	public native boolean	getProcedureListWithFormat(
 						String wild, int listformat);
+	public native boolean	getLastInsertIdList();
 	public native boolean	isNumberType(String type);
 	public native boolean	isDateTimeType(String type);
 	public native boolean	isBinaryType(String type);
