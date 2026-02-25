@@ -132,7 +132,13 @@ public class SQLRelayStatement implements Statement {
 	void closeOnCompletion() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		// FIXME: do something with this
+		// I don't see how this can be used.  If it's set true then the
+		// last ResultSet's close() should close the Statement.
+		//
+		// However, we can't know if a ResultSet is the last result set
+		// until getMoreResults() returns false.  There's no guarantee
+		// that an app will call that, and even if it does, it's likely
+		// to call close() on the current ResultSet first.
 		closeoncompletion=true;
 		drv.debugEnd();
 	}
@@ -188,6 +194,8 @@ public class SQLRelayStatement implements Statement {
 		resultset.setStatement(this);
 		resultset.setConnection(conn);
 		resultset.setSQLRCursor(sqlrcur);
+		resultset.setMaxFieldSize(maxfieldsize);
+		resultset.setMaxRows(maxrows);
 	}
 
 	public
@@ -595,7 +603,6 @@ public class SQLRelayStatement implements Statement {
 	void setMaxFieldSize(int max) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		// FIXME: do something with this
 		drv.debugPrintln("max field size: "+max);
 		maxfieldsize=max;
 		drv.debugEnd();
@@ -605,7 +612,6 @@ public class SQLRelayStatement implements Statement {
 	void setMaxRows(int max) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		// FIXME: do something with this
 		drv.debugPrintln("max rows: "+max);
 		maxrows=max;
 		drv.debugEnd();
@@ -615,7 +621,6 @@ public class SQLRelayStatement implements Statement {
 	void setPoolable(boolean poolable) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		// FIXME: do something with this
 		drv.debugPrintln("poolable: "+poolable);
 		this.poolable=poolable;
 		drv.debugEnd();

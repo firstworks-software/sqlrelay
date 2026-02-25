@@ -538,7 +538,12 @@ class oracle extends sqlrtest {
 		System.out.println("getMaxConnections");
 		intval=md.getMaxConnections();
 		System.out.println("  "+intval);
-		assertTrue(intval>0);
+		if (issqlrelay) {
+			assertTrue(intval>0);
+		} else {
+			// oracle jdbc returns 0 for this
+			assertEquals(intval,0);
+		}
 		System.out.println();
 
 		// getMaxCursorNameLength
@@ -2920,8 +2925,8 @@ if (false) {
 
 			// clob
 			System.out.println("row "+i+" - clob");
-			Clob	cl=rs.getClob(6);
-			assertEquals(cl.getSubString(1,(int)cl.length()),
+			clob=rs.getClob(6);
+			assertEquals(clob.getSubString(1,(int)clob.length()),
 								"testclob"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -2980,7 +2985,7 @@ if (false) {
 
 			// blob
 			System.out.println("row "+i+" - blob");
-			Blob	bl=rs.getBlob(7);
+			blob=rs.getBlob(7);
 			byte[]	b=null;
 			if (issqlrelay) {
 				// SerialBlob doesn't like a length of 0.
@@ -2989,13 +2994,13 @@ if (false) {
 				// implementation that's tolerant to this.
 				//
 				// For now we're not implementing our own Blob.
-				if (bl.length()==0) {
+				if (blob.length()==0) {
 					b=new byte[0];
 				} else {
-					b=bl.getBytes(1,(int)bl.length());
+					b=blob.getBytes(1,(int)blob.length());
 				}
 			} else {
-				b=bl.getBytes(1,(int)bl.length());
+				b=blob.getBytes(1,(int)blob.length());
 			}
 			// the blob in the first row is empty on purpose
 			assertEquals(new String(b,"UTF-8"),
@@ -3115,8 +3120,8 @@ if (false) {
 
 			// clob
 			System.out.println("row "+i+" - clob");
-			Clob	cl=rs.getClob("TESTCLOB");
-			assertEquals(cl.getSubString(1,(int)cl.length()),
+			clob=rs.getClob("TESTCLOB");
+			assertEquals(clob.getSubString(1,(int)clob.length()),
 								"testclob"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
@@ -3176,7 +3181,7 @@ if (false) {
 
 			// blob
 			System.out.println("row "+i+" - blob");
-			Blob	bl=rs.getBlob("TESTBLOB");
+			blob=rs.getBlob("TESTBLOB");
 			byte[]	b=null;
 			if (issqlrelay) {
 				// SerialBlob doesn't like a length of 0.
@@ -3185,13 +3190,13 @@ if (false) {
 				// implementation that's tolerant to this.
 				//
 				// For now we're not implementing our own Blob.
-				if (bl.length()==0) {
+				if (blob.length()==0) {
 					b=new byte[0];
 				} else {
-					b=bl.getBytes(1,(int)bl.length());
+					b=blob.getBytes(1,(int)blob.length());
 				}
 			} else {
-				b=bl.getBytes(1,(int)bl.length());
+				b=blob.getBytes(1,(int)blob.length());
 			}
 			// the blob in the first row is empty on purpose
 			assertEquals(new String(b,"UTF-8"),
@@ -3455,6 +3460,45 @@ if (false) {
 		}
 
 
+		// long varchar
+		System.out.println("LONG VARCHAR:");
+		assertEquals(stmt.executeUpdate(
+			"create table "+
+			"	testtable2 (testvarchar varchar2(1024))"),0);
+		pstmt=con.prepareStatement(
+			"insert into "+
+			"	testtable2 values (:stringval)");
+		assertTrue((pstmt!=null));
+		StringBuilder	sb=new StringBuilder();
+		for (int i=0; i<1024; i++) {
+			sb.append('C');
+		}
+		String	str=sb.toString();
+		pstmt.setString(1,str);
+		assertEquals(pstmt.executeUpdate(),1);
+		pstmt.close();
+		rs=stmt.executeQuery("select testvarchar from testtable2");
+		assertTrue((rs!=null));
+		rs.next();
+		stringval=rs.getString(1);
+		assertEquals(stringval.length(),1024);
+		assertEquals(stringval,str);
+		rs.close();
+		stmt.setMaxFieldSize(512);
+		assertEquals(stmt.getMaxFieldSize(),512);
+		rs=stmt.executeQuery("select testvarchar from testtable2");
+		assertTrue((rs!=null));
+		rs.next();
+		stringval=rs.getString(1);
+		assertEquals(stringval.length(),512);
+		assertEquals(stringval,str.substring(0,512));
+		rs.close();
+		stmt.setMaxFieldSize(0);
+		assertEquals(stmt.getMaxFieldSize(),0);
+		assertEquals(stmt.executeUpdate("drop table testtable2"),0);
+		System.out.println();
+
+
 		// long clob
 		System.out.println("LONG CLOB:");
 		assertEquals(stmt.executeUpdate(
@@ -3472,13 +3516,14 @@ if (false) {
 		String	clobstr=clobval.toString();
 		pstmt.setString(1,clobstr);
 		assertEquals(pstmt.executeUpdate(),1);
+		pstmt.close();
 		rs=stmt.executeQuery("select testclob from testtable2");
 		assertTrue((rs!=null));
 		rs.next();
-		Clob	cl=rs.getClob(1);
-		assertEquals(clobstr,cl.getSubString(1,(int)cl.length()));
+		clob=rs.getClob(1);
+		assertEquals(clob.length(),1024);
+		assertEquals(clob.getSubString(1,(int)clob.length()),clobstr);
 		rs.close();
-		pstmt.close();
 		cstmt=con.prepareCall(
 			"begin "+
 			"	select testclob into :clobbindval "+
@@ -3859,9 +3904,6 @@ if (false) {
 		//
                 // setFetchSize
                 // getFetchSize
-		//
-                // setMaxFieldSize
-                // getMaxFieldSize
 		//
                 // setMaxRows
                 // getMaxRows

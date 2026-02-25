@@ -12,6 +12,7 @@ import java.io.StringReader;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.GregorianCalendar;
@@ -38,12 +39,17 @@ public class SQLRelayResultSet implements ResultSet {
 	private	int		fetchdirection;
 	private boolean		wasnull;
 
+	private	int		maxfieldsize;
+	private	int		maxrows;
+
 
 	public
 	SQLRelayResultSet(SQLRelayDriver driver) {
 		this.drv=driver;
 		drv.debugFunction(this);
 		reset();
+		maxfieldsize=0;
+		maxrows=0;
 		drv.debugEnd();
 	}
 
@@ -83,6 +89,14 @@ public class SQLRelayResultSet implements ResultSet {
 		return sqlrcur;
 	}
 
+	void setMaxFieldSize(int maxfieldsize) {
+		this.maxfieldsize=maxfieldsize;
+	}
+
+	void setMaxRows(int maxrows) {
+		this.maxrows=maxrows;
+	}
+
 	public
 	boolean absolute(int row) throws SQLException {
 		drv.debugFunction(this);
@@ -105,6 +119,7 @@ public class SQLRelayResultSet implements ResultSet {
 				sqlrcur.getField(currentrow-1,0);
 			}
 			long	rowcount=sqlrcur.rowCount();
+			// FIXME: handle maxrows
 			if (sqlrcur.endOfResultSet()) {
 				if (currentrow-1==rowcount-1) {
 					islast=true;
@@ -203,6 +218,101 @@ public class SQLRelayResultSet implements ResultSet {
 		return abs;
 	}
 
+	private
+	boolean isCharBinaryCol(int columnindex) {
+		return isCharBinaryType(
+			sqlrcur.getColumnType(columnindex-1).toUpperCase());
+	}
+
+	private
+	boolean isCharBinaryCol(String columnlabel) {
+		return isCharBinaryType(
+			sqlrcur.getColumnType(columnlabel).toUpperCase());
+	}
+
+	private
+	boolean isCharBinaryType(String type) {
+		switch (type) {
+			case "CHAR":
+			case "_CHAR":
+			case "LONGCHAR":
+			case "VARCHAR":
+			case "_VARCHAR":
+			case "VARCHAR2":
+			case "LONGVARCHAR":
+			case "BINARY":
+			case "LONGBINARY":
+			case "VARBINARY":
+			case "LONGVARBINARY":
+			case "STRING":
+			case "VARSTRING":
+			case "IMAGE":
+			case "GRAPHIC":
+			case "VARGRAPHIC":
+			case "LONGVARGRAPHIC":
+			case "NCHAR":
+			case "NVARCHAR":
+			case "LONGNVARCHAR":
+				return true;
+			default:
+				return false;
+		}
+	}
+
+	private
+	String truncateField(boolean ischarbinary, String field)
+							throws SQLException {
+		if (maxfieldsize==0 || !ischarbinary || field==null) {
+			return field;
+		}
+		return truncateField(field);
+	}
+
+	private
+	String truncateField(String field) throws SQLException {
+		// we need to truncate "field" to maxfieldsize bytes, not
+		// characters, so we have to convert to byte[]s, truncate it,
+		// and convert it back
+		return new String(
+			truncateField(field.getBytes(StandardCharsets.UTF_8)),
+			StandardCharsets.UTF_8);
+	}
+
+	private
+	char[] truncateField(boolean ischarbinary, char[] field)
+							throws SQLException {
+		if (maxfieldsize==0 || !ischarbinary || field==null) {
+			return field;
+		}
+		return truncateField(field);
+	}
+
+	private
+	char[] truncateField(char[] field) throws SQLException {
+		// we need to truncate "field" to maxfieldsize bytes, not
+		// characters, so we have to convert to byte[]s, truncate it,
+		// and convert it back
+		return (new String(
+			truncateField(
+				new String(field).getBytes(
+					StandardCharsets.UTF_8)),
+			StandardCharsets.UTF_8)).toCharArray();
+	}
+
+	private
+	byte[] truncateField(boolean ischarbinary, byte[] field)
+							throws SQLException {
+		if (maxfieldsize==0 || !ischarbinary || field==null) {
+			return field;
+		}
+		return truncateField(field);
+	}
+
+	private
+	byte[] truncateField(byte[] field) throws SQLException {
+		return Arrays.copyOf(field,maxfieldsize);
+	}
+
 	public
 	Array getArray(int columnindex) throws SQLException {
 		drv.debugFunction(this);
@@ -235,6 +345,7 @@ public class SQLRelayResultSet implements ResultSet {
 		synchronized (networklock) {
 			field=sqlrcur.getField(currentrow-1,columnindex-1);
 		}
+		field=truncateField(isCharBinaryCol(columnindex),field);
 		wasnull=(field==null);
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
@@ -253,6 +364,7 @@ public class SQLRelayResultSet implements ResultSet {
 		synchronized (networklock) {
 			field=sqlrcur.getField(currentrow-1,columnlabel);
 		}
+		field=truncateField(isCharBinaryCol(columnlabel),field);
 		wasnull=(field==null);
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
@@ -350,6 +462,7 @@ public class SQLRelayResultSet implements ResultSet {
 			field=sqlrcur.getFieldAsByteArray(
 					currentrow-1,columnindex-1);
 		}
+		field=truncateField(isCharBinaryCol(columnindex),field);
 		wasnull=(field==null);
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
@@ -369,6 +482,7 @@ public class SQLRelayResultSet implements ResultSet {
 			field=sqlrcur.getFieldAsByteArray(
 					currentrow-1,columnlabel);
 		}
+		field=truncateField(isCharBinaryCol(columnlabel),field);
 		wasnull=(field==null);
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
@@ -518,6 +632,7 @@ public class SQLRelayResultSet implements ResultSet {
 			field=sqlrcur.getFieldAsByteArray(
 					currentrow-1,columnindex-1);
 		}
+		field=truncateField(isCharBinaryCol(columnindex),field);
 		wasnull=(field==null);
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
@@ -537,6 +652,7 @@ public class SQLRelayResultSet implements ResultSet {
 			field=sqlrcur.getFieldAsByteArray(
 					currentrow-1,columnlabel);
 		}
+		field=truncateField(isCharBinaryCol(columnlabel),field);
 		wasnull=(field==null);
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
@@ -555,6 +671,7 @@ public class SQLRelayResultSet implements ResultSet {
 		synchronized (networklock) {
 			field=sqlrcur.getField(currentrow-1,columnindex-1);
 		}
+		field=truncateField(isCharBinaryCol(columnindex),field);
 		wasnull=(field==null);
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
@@ -573,6 +690,7 @@ public class SQLRelayResultSet implements ResultSet {
 		synchronized (networklock) {
 			field=sqlrcur.getField(currentrow-1,columnlabel);
 		}
+		field=truncateField(isCharBinaryCol(columnlabel),field);
 		wasnull=(field==null);
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
@@ -587,14 +705,15 @@ public class SQLRelayResultSet implements ResultSet {
 		throwExceptionIfClosed();
 		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
-		char[]	field=null;
+		byte[]	val=null;
 		synchronized (networklock) {
-			byte[]	val=sqlrcur.getFieldAsByteArray(
-						currentrow-1,columnindex-1);
-			if (val!=null) {
-				field=(new String(val,StandardCharsets.UTF_8)).
-								toCharArray();
-			}
+			val=sqlrcur.getFieldAsByteArray(
+					currentrow-1,columnindex-1);
+		}
+		char[]	field=null;
+		if (val!=null) {
+			field=(new String(val,StandardCharsets.UTF_8)).
+							toCharArray();
 		}
 		wasnull=(field==null);
 		drv.debugPrintln("column index: "+columnindex);
@@ -617,14 +736,15 @@ public class SQLRelayResultSet implements ResultSet {
 		throwExceptionIfClosed();
 		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
-		char[]	field=null;
+		byte[]	val=null;
 		synchronized (networklock) {
-			byte[]	val=sqlrcur.getFieldAsByteArray(
-						currentrow-1,columnlabel);
-			if (val!=null) {
-				field=(new String(val,StandardCharsets.UTF_8)).
-								toCharArray();
-			}
+			val=sqlrcur.getFieldAsByteArray(
+					currentrow-1,columnlabel);
+		}
+		char[]	field=null;
+		if (val!=null) {
+			field=(new String(val,StandardCharsets.UTF_8)).
+							toCharArray();
 		}
 		wasnull=(field==null);
 		drv.debugPrintln("column: "+columnlabel);
@@ -998,6 +1118,7 @@ public class SQLRelayResultSet implements ResultSet {
 			field=sqlrcur.getFieldAsByteArray(
 						currentrow-1,columnindex-1);
 		}
+		field=truncateField(isCharBinaryCol(columnindex),field);
 		wasnull=(field==null);
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
@@ -1018,6 +1139,7 @@ public class SQLRelayResultSet implements ResultSet {
 			field=sqlrcur.getFieldAsByteArray(
 						currentrow-1,columnlabel);
 		}
+		field=truncateField(isCharBinaryCol(columnlabel),field);
 		wasnull=(field==null);
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
@@ -1033,14 +1155,15 @@ public class SQLRelayResultSet implements ResultSet {
 		throwExceptionIfClosed();
 		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
-		char[]	field=null;
+		byte[]	val=null;
 		synchronized (networklock) {
-			byte[]	val=sqlrcur.getFieldAsByteArray(
-						currentrow-1,columnindex-1);
-			if (val!=null) {
-				field=(new String(val,StandardCharsets.UTF_8)).
-								toCharArray();
-			}
+			val=sqlrcur.getFieldAsByteArray(
+					currentrow-1,columnindex-1);
+		}
+		char[]	field=null;
+		if (val!=null) {
+			field=(new String(val,StandardCharsets.UTF_8)).
+							toCharArray();
 		}
 		wasnull=(field==null);
 		drv.debugPrintln("column index: "+columnindex);
@@ -1063,14 +1186,15 @@ public class SQLRelayResultSet implements ResultSet {
 		throwExceptionIfClosed();
 		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
-		char[]	field=null;
+		byte[]	val=null;
 		synchronized (networklock) {
-			byte[]	val=sqlrcur.getFieldAsByteArray(
-						currentrow-1,columnlabel);
-			if (val!=null) {
-				field=(new String(val,StandardCharsets.UTF_8)).
-								toCharArray();
-			}
+			val=sqlrcur.getFieldAsByteArray(
+					currentrow-1,columnlabel);
+		}
+		char[]	field=null;
+		if (val!=null) {
+			field=(new String(val,StandardCharsets.UTF_8)).
+							toCharArray();
 		}
 		wasnull=(field==null);
 		drv.debugPrintln("column: "+columnlabel);
@@ -1098,6 +1222,7 @@ public class SQLRelayResultSet implements ResultSet {
 			field=sqlrcur.getFieldAsByteArray(
 						currentrow-1,columnindex-1);
 		}
+		field=truncateField(isCharBinaryCol(columnindex),field);
 		wasnull=(field==null);
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
@@ -1125,6 +1250,7 @@ public class SQLRelayResultSet implements ResultSet {
 			field=sqlrcur.getFieldAsByteArray(
 						currentrow-1,columnlabel);
 		}
+		field=truncateField(isCharBinaryCol(columnlabel),field);
 		wasnull=(field==null);
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
@@ -1387,6 +1513,7 @@ public class SQLRelayResultSet implements ResultSet {
 		synchronized (networklock) {
 			field=sqlrcur.getField(currentrow-1,columnindex-1);
 		}
+		field=truncateField(isCharBinaryCol(columnindex),field);
 		wasnull=(field==null);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
@@ -1404,6 +1531,7 @@ public class SQLRelayResultSet implements ResultSet {
 		synchronized (networklock) {
 			field=sqlrcur.getField(currentrow-1,columnlabel);
 		}
+		field=truncateField(isCharBinaryCol(columnlabel),field);
 		wasnull=(field==null);
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
@@ -1718,6 +1846,7 @@ public class SQLRelayResultSet implements ResultSet {
 		synchronized (networklock) {
 			field=sqlrcur.getField(currentrow-1,columnindex-1);
 		}
+		field=truncateField(isCharBinaryCol(columnindex),field);
 		wasnull=(field==null);
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
@@ -1737,6 +1866,7 @@ public class SQLRelayResultSet implements ResultSet {
 		synchronized (networklock) {
 			field=sqlrcur.getField(currentrow-1,columnlabel);
 		}
+		field=truncateField(isCharBinaryCol(columnlabel),field);
 		wasnull=(field==null);
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
