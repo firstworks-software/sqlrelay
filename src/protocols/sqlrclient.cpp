@@ -28,7 +28,8 @@ enum sqlrclientquerytype_t {
 	SQLRCLIENTQUERYTYPE_KEY_AND_INDEX_LIST,
 	SQLRCLIENTQUERYTYPE_PROCEDURE_PARAMETER_LIST,
 	SQLRCLIENTQUERYTYPE_TYPE_INFO_LIST,
-	SQLRCLIENTQUERYTYPE_PROCEDURE_LIST
+	SQLRCLIENTQUERYTYPE_PROCEDURE_LIST,
+	SQLRCLIENTQUERYTYPE_LAST_INSERT_ID_LIST
 };
 
 class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
@@ -183,6 +184,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 						sqlrservercursor *cursor);
 		bool	getTypeInfoListCommand(sqlrservercursor *cursor);
 		bool	getProcedureListCommand(sqlrservercursor *cursor);
+		bool	getLastInsertIdListCommand(sqlrservercursor *cursor);
 		bool	getListCommand(sqlrservercursor *cursor,
 					sqlrclientquerytype_t querytype,
 					bool getobject);
@@ -583,6 +585,9 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 		} else if (command==GETPROCEDURELIST) {
 			//cont->incrementGetProcedureListCount();
 			loop=getProcedureListCommand(cursor);
+		} else if (command==GETLASTINSERTIDLIST) {
+			//cont->incrementGetLastInsertIdListCount();
+			loop=getLastInsertIdListCommand(cursor);
 		} else if (command==GET_QUERY_TREE) {
 			cont->incrementGetQueryTreeCount();
 			loop=getQueryTreeCommand(cursor);
@@ -766,6 +771,7 @@ sqlrservercursor *sqlrprotocol_sqlrclient::getCursor(uint16_t command) {
 		command==GETPROCEDUREBINDANDCOLUMNLIST ||
 		command==GETTYPEINFOLIST ||
 		command==GETPROCEDURELIST ||
+		command==GETLASTINSERTIDLIST ||
 		command==ABORT_RESULT_SET ||
 		command==GET_QUERY_TREE ||
 		command==GET_TRANSLATED_QUERY) {
@@ -1890,6 +1896,10 @@ bool sqlrprotocol_sqlrclient::processQueryOrBindCursor(
 					cont->setProcedureListFormat(
 								listformat);
 					break;
+				case SQLRCLIENTQUERYTYPE_LAST_INSERT_ID_LIST:
+					// this list only has one column,
+					// so no need to remap columns,
+					// all formats are the same
 				default:
 					break;
 			}
@@ -4273,6 +4283,15 @@ bool sqlrprotocol_sqlrclient::getProcedureListCommand(
 	return retval;
 }
 
+bool sqlrprotocol_sqlrclient::getLastInsertIdListCommand(
+					sqlrservercursor *cursor) {
+	debugStart("get last insert id list");
+	bool	retval=getListCommand(cursor,
+				SQLRCLIENTQUERYTYPE_LAST_INSERT_ID_LIST,false);
+	debugEnd();
+	return retval;
+}
+
 
 bool sqlrprotocol_sqlrclient::getListCommand(sqlrservercursor *cursor,
 					sqlrclientquerytype_t querytype,
@@ -4408,8 +4427,9 @@ bool sqlrprotocol_sqlrclient::getListCommand(sqlrservercursor *cursor,
 	cont->setSendColumnInfo(true);
 
 	// get the list and return it
+	// (we always get the last insert id list by api call)
 	bool	retval=true;
-	if (cont->getListsByApiCalls()) {
+	if (cont->getListsByApiCalls() || GETLASTINSERTIDLIST) {
 		retval=getListByApiCall(cursor,querytype,object,wild,
 					(sqlrserverlistformat_t)listformat,
 					objecttypes);
@@ -4479,6 +4499,12 @@ bool sqlrprotocol_sqlrclient::getListByApiCall(sqlrservercursor *cursor,
 		case SQLRCLIENTQUERYTYPE_PROCEDURE_LIST:
 			cont->setProcedureListFormat(listformat);
 			success=cont->getProcedureList(cursor,wild);
+			break;
+		case SQLRCLIENTQUERYTYPE_LAST_INSERT_ID_LIST:
+			// this list only has one column, so no need to set
+			// the list format, all formats are the same
+			success=cont->getLastInsertIdList(cursor);
+			break;
 		default:
 			break;
 	}
@@ -4566,6 +4592,9 @@ bool sqlrprotocol_sqlrclient::getListByQuery(sqlrservercursor *cursor,
 		case SQLRCLIENTQUERYTYPE_PROCEDURE_LIST:
 			query=cont->getProcedureListQuery(havewild,
 							currentonly);
+			break;
+		case SQLRCLIENTQUERYTYPE_LAST_INSERT_ID_LIST:
+			// always handled by api call
 			break;
 		default:
 			break;
@@ -4836,6 +4865,9 @@ void sqlrprotocol_sqlrclient::debugCommand(uint16_t command) {
 			break;
 		case GET_ISOLATION_LEVEL:
 			debugWrite("GET_ISOLATION_LEVEL");
+			break;
+		case GETLASTINSERTIDLIST:
+			debugWrite("GETLASTINSERTIDLIST");
 			break;
 		default:
 			debugWrite("bad command");

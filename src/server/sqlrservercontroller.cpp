@@ -2722,6 +2722,12 @@ bool sqlrservercontroller::getProcedureList(sqlrservercursor *cursor,
 		handleResultSetHeader(cursor);
 }
 
+bool sqlrservercontroller::getLastInsertIdList(sqlrservercursor *cursor) {
+	return fakePrepareAndExecuteForApiCall(cursor) &&
+		pvt->_conn->getLastInsertIdList(cursor) &&
+		handleResultSetHeader(cursor);
+}
+
 const char *sqlrservercontroller::getDatabaseListQuery(bool wild) {
 	return pvt->_conn->getDatabaseListQuery(wild);
 }

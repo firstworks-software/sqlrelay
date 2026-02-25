@@ -2243,6 +2243,10 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		const char	*getProcedureListQuery(bool wild,
 							bool currentschemaonly);
 
+		/** Gets the last insert id as a result set.
+		 *  Returns true on success and false on failure. */
+		bool	getLastInsertIdList(sqlrservercursor *cursor);
+
 
 
 		// column info...
@@ -3607,6 +3611,12 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  Returns true on success and false on failure. */
 		virtual bool	getProcedureList(sqlrservercursor *cursor,
 							const char *wild);
+
+		/** Gets the last insert id as a result set.
+		 *
+		 *  This implementation just returns a not-implemented
+		 *  error, but it may be overridden by a child class. */
+		virtual bool	getLastInsertIdList(sqlrservercursor *cursor);
 
 		/** Returns a query that can be used to fetch the list of
 		 *  database names.

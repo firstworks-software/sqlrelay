@@ -1251,6 +1251,9 @@ bool sqlrsh::externalCommand(sqlrconnection *sqlrcon,
 			sqlrcur->getProcedureList(wild);
 			delete[] wild;
 		} else if (!charstring::compareIgnoringCase(command,
+						"show lastinsertid",17)) {
+			sqlrcur->getLastInsertIdList();
+		} else if (!charstring::compareIgnoringCase(command,
 							"reexecute")) {	
 			executeQuery(sqlrcur,env);
 		} else {

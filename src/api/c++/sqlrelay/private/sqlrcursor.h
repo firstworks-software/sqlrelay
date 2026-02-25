@@ -193,6 +193,7 @@
 		bool		getProcedureList(
 					const char *wild,
 					sqlrclientlistformat_t listformat);
+		bool		getLastInsertIdList();
 		void		clearBindsDuringPrepare();
 		void		dontClearBindsDuringPrepare();
 		void		lazyFetch();

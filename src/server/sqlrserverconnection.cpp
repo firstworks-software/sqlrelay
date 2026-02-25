@@ -967,6 +967,12 @@ bool sqlrserverconnection::getProcedureList(sqlrservercursor *cursor,
 	return false;
 }
 
+bool sqlrserverconnection::getLastInsertIdList(sqlrservercursor *cursor) {
+	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
+				SQLR_ERROR_NOTIMPLEMENTED,true);
+	return false;
+}
+
 const char *sqlrserverconnection::getDatabaseListQuery(
 						bool wild) {
 	return getNoopQuery();
