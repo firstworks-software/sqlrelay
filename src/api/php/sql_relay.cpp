@@ -3095,6 +3095,43 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdouble) {
 	RETURN_DOUBLE(0.0);
 }
 
+DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasboolean) {
+	ZVAL sqlrcur;
+	ZVAL row;
+	ZVAL col;
+	bool r=false;
+	if (ZEND_NUM_ARGS() != 3 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzz")
+				&sqlrcur,
+				&row,
+				&col) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_long_ex(row);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		if (TYPE(col)==IS_LONG) {
+			convert_to_long_ex(col);
+			r=cursor->getFieldAsBoolean(LVAL(row),
+							LVAL(col));
+		} else if (TYPE(col)==IS_STRING) {
+			convert_to_string_ex(col);
+			r=cursor->getFieldAsBoolean(LVAL(row),
+							SVAL(col));
+		}
+		RETURN_BOOL(r);
+	}
+	RETURN_BOOL(false);
+}
+
 DLEXPORT ZEND_FUNCTION(sqlrcur_getfieldasdateyear) {
 	ZVAL sqlrcur;
 	ZVAL row;
@@ -5504,6 +5541,9 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldasdouble,0,0,0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldasboolean,0,0,0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getfieldasdateyear,0,0,0)
 ZEND_END_ARG_INFO()
 
@@ -5875,6 +5915,8 @@ zend_function_entry sql_relay_functions[] = {
 		ARGINFO(arginfo_sqlrcur_getfieldasinteger))
 	ZEND_FE(sqlrcur_getfieldasdouble,
 		ARGINFO(arginfo_sqlrcur_getfieldasdouble))
+	ZEND_FE(sqlrcur_getfieldasboolean,
+		ARGINFO(arginfo_sqlrcur_getfieldasboolean))
 	ZEND_FE(sqlrcur_getfieldasdateyear,
 		ARGINFO(arginfo_sqlrcur_getfieldasdateyear))
 	ZEND_FE(sqlrcur_getfieldasdatemonth,

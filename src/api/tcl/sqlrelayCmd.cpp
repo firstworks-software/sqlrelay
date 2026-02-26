@@ -143,6 +143,8 @@ void sqlrcurDelete(ClientData data) {
  *   $cur getFieldAsIntegerByName row col
  *   $cur getFieldAsDoubleByIndex row col
  *   $cur getFieldAsDoubleByName row col
+ *   $cur getFieldAsBooleanByIndex row col
+ *   $cur getFieldAsBooleanByName row col
  *   $cur getFieldAsDateYearByIndex row col
  *   $cur getFieldAsDateYearByName row col
  *   $cur getFieldAsDateYearByIndexWithDdMm row col ddmm yyyyddmm datedelimiters
@@ -292,6 +294,8 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
     "getFieldAsIntegerByName",
     "getFieldAsDoubleByIndex",
     "getFieldAsDoubleByName",
+    "getFieldAsBooleanByIndex",
+    "getFieldAsBooleanByName",
     "getFieldAsDateYearByIndex",
     "getFieldAsDateYearByName",
     "getFieldAsDateYearByIndexWithDdMm",
@@ -435,6 +439,8 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
     SQLRCUR_getFieldAsIntegerByName,
     SQLRCUR_getFieldAsDoubleByIndex,
     SQLRCUR_getFieldAsDoubleByName,
+    SQLRCUR_getFieldAsBooleanByIndex,
+    SQLRCUR_getFieldAsBooleanByName,
     SQLRCUR_getFieldAsDateYearByIndex,
     SQLRCUR_getFieldAsDateYearByName,
     SQLRCUR_getFieldAsDateYearByIndexWithDdMm,
@@ -1531,6 +1537,33 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	  return TCL_ERROR;
 	}
 	Tcl_SetObjResult(interp, Tcl_NewDoubleObj(cur->getFieldAsDouble(row, Tcl_GetString(objv[3]))));
+	break;
+      }
+    case SQLRCUR_getFieldAsBooleanByIndex:
+      {
+	int row, col;
+	if (objc != 4) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK ||
+	    Tcl_GetIntFromObj(interp, objv[3], &col) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewBooleanObj(cur->getFieldAsBoolean(row, col)));
+	break;
+      }
+    case SQLRCUR_getFieldAsBooleanByName:
+      {
+	int row;
+	if (objc != 4) {
+	  Tcl_WrongNumArgs(interp, 2, objv, "row col");
+	  return TCL_ERROR;
+	}
+	if (Tcl_GetIntFromObj(interp, objv[2], &row) != TCL_OK) {
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewBooleanObj(cur->getFieldAsBoolean(row, Tcl_GetString(objv[3]))));
 	break;
       }
     case SQLRCUR_getFieldAsDateYearByIndex:

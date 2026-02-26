@@ -2259,6 +2259,73 @@ int main() {
 			}
 		}
 
+		if (strcmp("getFieldAsBooleanByIndex", command) == TRUE) {
+			long row;
+			long col;
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 2) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_long(buf, &index, &col)) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row and col values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+			if (checkColLimitsOK(col) == FALSE) {
+				err = ERR_COL_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_long(&result, sqlrcur_getFieldAsBooleanByIndex(cur, row, col) )) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
+		if (strcmp("getFieldAsBooleanByName", command) == TRUE) {
+			long row;
+			char col[COL_NAME_SIZE];
+			err = 0;
+
+			// check number of arguments
+		    	if (arity != 2) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_long(buf, &index, &row)) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &col[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// check sanity of row values
+			if (checkRowLimitsOK(row) == FALSE) {
+				err = ERR_ROW_OUT_OF_RANGE;
+			}
+
+			// encode result
+			if (err) {
+				signalError(&result, err);
+			} else {
+				if (ei_x_encode_atom(&result, "ok") ||
+					ei_x_encode_long(&result, sqlrcur_getFieldAsBooleanByName(cur, row, col))) {
+					return ERR_ENCODING_ARGS;
+				}
+			}
+		}
+
 
 		if (strcmp("getFieldAsDateYearByIndex", command) == TRUE) {
 			long row;

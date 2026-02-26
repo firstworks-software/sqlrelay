@@ -1409,6 +1409,18 @@ SQLRCLIENT_DLLSPEC
 double	sqlrcur_getFieldAsDoubleByName(sqlrcur sqlrcurref,
 						uint64_t row, const char *col);
 
+/** @ingroup sqlrclientwrapper
+ *  Returns the specified field as a boolean. */
+SQLRCLIENT_DLLSPEC
+int	sqlrcur_getFieldAsBooleanByIndex(sqlrcur sqlrcurref,
+						uint64_t row, uint32_t col);
+
+/** @ingroup sqlrclientwrapper
+ *  Returns the specified field as a boolean. */
+SQLRCLIENT_DLLSPEC
+int	sqlrcur_getFieldAsBooleanByName(sqlrcur sqlrcurref,
+						uint64_t row, const char *col);
+
 
 
 /** @ingroup sqlrclientwrapper

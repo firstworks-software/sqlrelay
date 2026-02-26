@@ -362,6 +362,12 @@ proc getFieldAsDoubleByIndex {row  col}
 # Returns the specified field as a decimal.
 proc getFieldAsDoubleByName {row col}
 
+# Returns the specified field as a boolean.
+proc getFieldAsBooleanByIndex {row col}
+
+# Returns the specified field as a boolean.
+proc getFieldAsBooleanByName {row col}
+
 # Interprets the specified field as a date
 # and returns the year component.
 proc getFieldAsDateYearByIndex {row col}

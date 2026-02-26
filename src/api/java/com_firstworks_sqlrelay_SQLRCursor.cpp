@@ -1203,6 +1203,31 @@ JNIEXPORT jdouble JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsDoub
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsBoolean
+ * Signature: (JI)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsBoolean__JI
+  (JNIEnv *env, jobject self, jlong row, jint col) {
+	return (jboolean)getSqlrCursor(env,self)->
+			getFieldAsBoolean((uint64_t)row,(uint32_t)col);
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getFieldAsBoolean
+ * Signature: (JLjava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getFieldAsBoolean__JLjava_lang_String_2
+  (JNIEnv *env, jobject self, jlong row, jstring col) {
+	char	*colstring=curGetStringUTFChars(env,col,0);
+	jboolean	retval=(jboolean)getSqlrCursor(env,self)->
+			getFieldAsBoolean((uint64_t)row,colstring);
+	curReleaseStringUTFChars(env,col,colstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
  * Method:    getFieldAsDateYear
  * Signature: (JI)S
  */

@@ -1077,6 +1077,11 @@ function sqlrcur_getFieldAsInteger($sqlrcurref, $row, $col){}
 function sqlrcur_getFieldAsDouble($sqlrcurref, $row, $col){}
 
 /**
+ *  Returns the specified field as a boolean. "col" may be specified as the
+ *  column name or number. */
+function sqlrcur_getFieldAsBoolean($sqlrcurref, $row, $col){}
+
+/**
  *  Interprets the specified field as a date and returns the year component.
  *  "col" may be specified as the column name or number. */
 function sqlrcur_getFieldAsDateYear($sqlrcurref, $row, $col){}

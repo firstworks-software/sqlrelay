@@ -1163,6 +1163,12 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		/** Returns the specified field as a decimal. */
 		double	getFieldAsDouble(uint64_t row, const char *col);
 
+		/** Returns the specified field as a boolean. */
+		bool	getFieldAsBoolean(uint64_t row, uint32_t col);
+
+		/** Returns the specified field as a boolean. */
+		bool	getFieldAsBoolean(uint64_t row, const char *col);
+
 		/** Interprets the specified field as a date and
 		 *  populates its broken-down parts.
 		 *

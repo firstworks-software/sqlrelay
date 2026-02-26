@@ -726,6 +726,18 @@ public class SQLRCursor : IDisposable
         return sqlrcur_getFieldAsDoubleByName(sqlrcurref, row, col);
     }
 
+    /** Returns the specified field as a boolean. */
+    public Boolean getFieldAsBoolean(UInt64 row, UInt32 col)
+    {
+        return sqlrcur_getFieldAsBooleanByIndex(sqlrcurref, row, col) != 0;
+    }
+
+    /** Returns the specified field as a boolean. */
+    public Boolean getFieldAsBoolean(UInt64 row, String col)
+    {
+        return sqlrcur_getFieldAsBooleanByName(sqlrcurref, row, col) != 0;
+    }
+
     /** Interprets the specified field as a date and returns the year component. */
     public Int16 getFieldAsDateYear(UInt64 row, UInt32 col)
     {
@@ -1466,6 +1478,12 @@ public class SQLRCursor : IDisposable
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Double sqlrcur_getFieldAsDoubleByName(IntPtr sqlrcurref, UInt64 row, String col);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int32 sqlrcur_getFieldAsBooleanByIndex(IntPtr sqlrcurref, UInt64 row, UInt32 col);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int32 sqlrcur_getFieldAsBooleanByName(IntPtr sqlrcurref, UInt64 row, String col);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int16 sqlrcur_getFieldAsDateYearByIndex(IntPtr sqlrcurref, UInt64 row, UInt32 col);

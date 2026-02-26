@@ -589,6 +589,19 @@ sqlrcursor::getFieldAsDouble(row,...)
 		} 
 		sv_setnv(ST(0),field);
 
+bool
+sqlrcursor::getFieldAsBoolean(row,...)
+		uint64_t	row
+	CODE:
+		bool	field=false;
+		ST(0)=sv_newmortal();
+		if (SvIOK(ST(2)) || SvNOK(ST(2))) {
+			field=THIS->getFieldAsBoolean(row,(uint32_t)SvIV(ST(2)));
+		} else if (SvPOK(ST(2))) {
+			field=THIS->getFieldAsBoolean(row,SvPV(ST(2),na));
+		}
+		sv_setiv(ST(0),field?1:0);
+
 int16_t
 sqlrcursor::getFieldAsDateYear(row,...)
 		uint64_t	row

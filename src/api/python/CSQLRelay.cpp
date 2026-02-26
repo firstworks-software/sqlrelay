@@ -1631,6 +1631,29 @@ static PyObject *getFieldAsDouble(PyObject *self, PyObject *args) {
   return Py_BuildValue("d", rc);
 }
 
+static PyObject *getFieldAsBoolean(PyObject *self, PyObject *args) {
+  long sqlrcur;
+  bool rc=false;
+  uint64_t row;
+  PyObject *col;
+  if (!PyArg_ParseTuple(args,
+#ifdef SUPPORTS_UNSIGNED
+        "lKO",
+#else
+        "lLO",
+#endif
+        &sqlrcur, &row, &col))
+    return NULL;
+  Py_BEGIN_ALLOW_THREADS
+  if (PyString_Check(col)) {
+    rc=((sqlrcursor *)sqlrcur)->getFieldAsBoolean(row, PyString_AsString(col));
+  } else if (PyInt_Check(col)) {
+    rc=((sqlrcursor *)sqlrcur)->getFieldAsBoolean(row, PyInt_AsLong(col));
+  }
+  Py_END_ALLOW_THREADS
+  return PyBool_FromLong(rc);
+}
+
 static PyObject *getFieldAsDateYear(PyObject *self, PyObject *args) {
   long sqlrcur;
   int16_t rc=0;
@@ -2782,6 +2805,7 @@ static PyMethodDef SQLRMethods[] = {
   {"getField", getField, METH_VARARGS},
   {"getFieldAsInteger", getFieldAsInteger, METH_VARARGS},
   {"getFieldAsDouble", getFieldAsDouble, METH_VARARGS},
+  {"getFieldAsBoolean", getFieldAsBoolean, METH_VARARGS},
   {"getFieldAsDateYear", getFieldAsDateYear, METH_VARARGS},
   {"getFieldAsDateMonth", getFieldAsDateMonth, METH_VARARGS},
   {"getFieldAsDateDay", getFieldAsDateDay, METH_VARARGS},

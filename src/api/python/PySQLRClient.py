@@ -1378,6 +1378,12 @@ class sqlrcursor:
         """
         return CSQLRelay.getFieldAsDouble(self.cursor, row, col)
 
+    def getFieldAsBoolean(self, row, col):
+        """
+        Returns the specified field as a boolean.
+        """
+        return CSQLRelay.getFieldAsBoolean(self.cursor, row, col)
+
     def getFieldAsDateYear(self, row, col,
 			ddmm=None, yyyyddmm=None,
 			datedelimiters=None):

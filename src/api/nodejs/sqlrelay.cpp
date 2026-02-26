@@ -286,6 +286,7 @@ class SQLRCursor : public ObjectWrap {
 		static RET	getField(const ARGS &args);
 		static RET	getFieldAsInteger(const ARGS &args);
 		static RET	getFieldAsDouble(const ARGS &args);
+		static RET	getFieldAsBoolean(const ARGS &args);
 		static RET	getFieldAsDateYear(const ARGS &args);
 		static RET	getFieldAsDateMonth(const ARGS &args);
 		static RET	getFieldAsDateDay(const ARGS &args);
@@ -1124,6 +1125,7 @@ void SQLRCursor::Init(Handle<Object> exports) {
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getField",getField);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsInteger",getFieldAsInteger);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsDouble",getFieldAsDouble);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsBoolean",getFieldAsBoolean);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsDateYear",
 						getFieldAsDateYear);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getFieldAsDateMonth",
@@ -2282,6 +2284,29 @@ RET SQLRCursor::getFieldAsDouble(const ARGS &args) {
 	}
 
 	returnNumber(result);
+}
+
+RET SQLRCursor::getFieldAsBoolean(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,2);
+
+	bool	result=false;
+
+	if (args[1]->IsNumber()) {
+		result=sqlrcur(args)->getFieldAsBoolean(
+						toInteger(args[0]),
+						toUint32(args[1]));
+	} else if (args[1]->IsString()) {
+		result=sqlrcur(args)->getFieldAsBoolean(
+						toInteger(args[0]),
+						toString(args[1]));
+	} else {
+		throwInvalidArgumentType();
+	}
+
+	returnBoolean(result);
 }
 
 RET SQLRCursor::getFieldAsDateYear(const ARGS &args) {

@@ -1120,6 +1120,12 @@ class SQLRCursor {
 		/** Returns the specified field as a decimal. */
 		function getFieldAsDouble(var row, var col);
 
+		/** Returns the specified field as a boolean. */
+		function getFieldAsBoolean(var row, var col);
+
+		/** Returns the specified field as a boolean. */
+		function getFieldAsBoolean(var row, var col);
+
 		/** Interprets the specified field as a date
 		 *  and returns the year component. */
 		function getFieldAsDateYear(var row, var col);

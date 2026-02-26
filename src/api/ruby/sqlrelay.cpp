@@ -2957,6 +2957,32 @@ static VALUE sqlrcur_getFieldAsDouble(VALUE self, VALUE row, VALUE col) {
 	return rb_float_new(result);
 }
 
+static void getFieldAsBooleanStr(params *p) {
+	p->result.u64r=p->sqlrc.sqlrcur->getFieldAsBoolean(
+					NUM2INT(p->one),STR2CSTR(p->two));
+}
+static void getFieldAsBooleanInt(params *p) {
+	p->result.u64r=p->sqlrc.sqlrcur->getFieldAsBoolean(
+					NUM2INT(p->one),NUM2INT(p->two));
+}
+/**
+ *  call-seq:
+ *  getFieldAsBoolean(row,col)
+ *
+ *  Returns the specified field as a boolean.  "col" may be specified as the
+ *  column name or number. */
+static VALUE sqlrcur_getFieldAsBoolean(VALUE self, VALUE row, VALUE col) {
+	sqlrcursordata	*sqlrcurdata;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	bool	result;
+	if (rb_obj_is_instance_of(col,rb_cString)==Qtrue) {
+		RCUR2(result,u64r,sqlrcurdata->cur,getFieldAsBooleanStr,row,col);
+	} else {
+		RCUR2(result,u64r,sqlrcurdata->cur,getFieldAsBooleanInt,row,col);
+	}
+	return (result)?Qtrue:Qfalse;
+}
+
 static void getFieldAsDateYearStr(params *p) {
 	p->result.i16r=p->sqlrc.sqlrcur->getFieldAsDateYear(
 					NUM2INT(p->one),STR2CSTR(p->two));
@@ -4171,6 +4197,8 @@ void Init_SQLRCursor() {
 				(CAST)sqlrcur_getFieldAsInteger,2);
 	rb_define_method(csqlrcursor,"getFieldAsDouble",
 				(CAST)sqlrcur_getFieldAsDouble,2);
+	rb_define_method(csqlrcursor,"getFieldAsBoolean",
+				(CAST)sqlrcur_getFieldAsBoolean,2);
 	rb_define_method(csqlrcursor,"getFieldAsDateYear",
 				(CAST)sqlrcur_getFieldAsDateYear,-1);
 	rb_define_method(csqlrcursor,"getFieldAsDateMonth",

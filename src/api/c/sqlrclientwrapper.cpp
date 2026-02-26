@@ -695,6 +695,16 @@ double sqlrcur_getFieldAsDoubleByName(sqlrcur sqlrcurref, uint64_t row,
 	return sqlrcurref->getFieldAsDouble(row,col);
 }
 
+int sqlrcur_getFieldAsBooleanByIndex(sqlrcur sqlrcurref, uint64_t row,
+							uint32_t col) {
+	return sqlrcurref->getFieldAsBoolean(row,col);
+}
+
+int sqlrcur_getFieldAsBooleanByName(sqlrcur sqlrcurref, uint64_t row,
+							const char *col) {
+	return sqlrcurref->getFieldAsBoolean(row,col);
+}
+
 int sqlrcur_getFieldAsDateByIndex(sqlrcur sqlrcurref,
 				uint64_t row, uint32_t col,
 				int16_t *year, int16_t *month, int16_t *day,

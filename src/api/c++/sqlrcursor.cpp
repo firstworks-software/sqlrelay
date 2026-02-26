@@ -6378,6 +6378,11 @@ double sqlrcursor::getFieldAsDouble(uint64_t row, uint32_t col) {
 	return (field)?charstring::convertToFloatC(field):0.0;
 }
 
+bool sqlrcursor::getFieldAsBoolean(uint64_t row, uint32_t col) {
+	const char	*field=getField(row,col);
+	return (field)?charstring::isYes(field):false;
+}
+
 bool sqlrcursor::getFieldAsDate(uint64_t row, uint32_t col,
 			int16_t *year, int16_t *month, int16_t *day,
 			int16_t *hour, int16_t *minute, int16_t *second,
@@ -6434,6 +6439,11 @@ int64_t sqlrcursor::getFieldAsInteger(uint64_t row, const char *col) {
 double sqlrcursor::getFieldAsDouble(uint64_t row, const char *col) {
 	const char	*field=getField(row,col);
 	return (field)?charstring::convertToFloatC(field):0.0;
+}
+
+bool sqlrcursor::getFieldAsBoolean(uint64_t row, const char *col) {
+	const char	*field=getField(row,col);
+	return (field)?charstring::isYes(field):false;
 }
 
 bool sqlrcursor::getFieldAsDate(uint64_t row, const char *col,

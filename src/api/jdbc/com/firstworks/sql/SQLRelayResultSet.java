@@ -3,7 +3,6 @@
 package com.firstworks.sql;
 
 import java.sql.*;
-import javax.sql.rowset.serial.SerialBlob;
 import javax.sql.rowset.serial.SerialClob;
 
 import java.io.InputStream;
@@ -571,17 +570,18 @@ public class SQLRelayResultSet implements ResultSet {
 		throwExceptionIfClosed();
 		drv.debugPrintln("column index: "+columnindex);
 		validateColumn(columnindex);
-		String	field=null;
+		boolean	field=false;
 		synchronized (networklock) {
-			field=sqlrcur.getField(currentrow-1,columnindex-1);
+			field=sqlrcur.getFieldAsBoolean(
+					currentrow-1,columnindex-1);
+			wasnull=(sqlrcur.getField(
+					currentrow-1,columnindex-1)==null);
 		}
-		wasnull=(field==null);
 		drv.debugPrintln("column index: "+columnindex);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		boolean	eq=field.equals("1");
 		drv.debugEnd();
-		return eq;
+		return field;
 	}
 
 	public
@@ -590,17 +590,18 @@ public class SQLRelayResultSet implements ResultSet {
 		throwExceptionIfClosed();
 		drv.debugPrintln("column label: "+columnlabel);
 		validateColumn(columnlabel);
-		String	field=null;
+		boolean	field=false;
 		synchronized (networklock) {
-			field=sqlrcur.getField(currentrow-1,columnlabel);
+			field=sqlrcur.getFieldAsBoolean(
+					currentrow-1,columnlabel);
+			wasnull=(sqlrcur.getField(
+					currentrow-1,columnlabel)==null);
 		}
-		wasnull=(field==null);
 		drv.debugPrintln("column: "+columnlabel);
 		drv.debugPrintln("field: "+field);
 		drv.debugPrintln("was null: "+wasnull);
-		boolean	eq=field.equals("1");
 		drv.debugEnd();
-		return eq;
+		return field;
 	}
 
 	public

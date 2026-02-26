@@ -349,6 +349,10 @@ public class SQLRCursor {
 	public native double	getFieldAsDouble(long row, int col);
 	/** Returns the specified field as a double floating point number */
 	public native double	getFieldAsDouble(long row, String col);
+	/** Returns the specified field as a boolean */
+	public native boolean	getFieldAsBoolean(long row, int col);
+	/** Returns the specified field as a boolean */
+	public native boolean	getFieldAsBoolean(long row, String col);
 	/** Interprets the specified field as a date
 	 *  and returns the year component. */
 	public native short	getFieldAsDateYear(long row, int col);

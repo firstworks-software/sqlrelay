@@ -431,7 +431,6 @@ static int sqlrcursorGetField(pdo_stmt_t *stmt,
 			return 1;
 		#endif
 		case PDO_PARAM_INT:
-		case PDO_PARAM_BOOL:
 			// handle NULLs/empty-strings
 			if (!sqlrcur->getFieldLength(
 					sqlrstmt->currentrow,colno)) {
@@ -442,6 +441,20 @@ static int sqlrcursorGetField(pdo_stmt_t *stmt,
 			}
 			sqlrstmt->longfield=(long)sqlrcur->
 				getFieldAsInteger(sqlrstmt->currentrow,colno);
+			*ptr=(char *)&sqlrstmt->longfield;
+			*len=sizeof(long);
+			return 1;
+		case PDO_PARAM_BOOL:
+			// handle NULLs/empty-strings
+			if (!sqlrcur->getFieldLength(
+					sqlrstmt->currentrow,colno)) {
+				*ptr=(char *)sqlrcur->getField(
+					sqlrstmt->currentrow,colno);
+				*len=0;
+				return 1;
+			}
+			sqlrstmt->longfield=(long)sqlrcur->
+				getFieldAsBoolean(sqlrstmt->currentrow,colno);
 			*ptr=(char *)&sqlrstmt->longfield;
 			*len=sizeof(long);
 			return 1;
@@ -527,7 +540,7 @@ static int sqlrcursorGetField(pdo_stmt_t *stmt,
 			ctype=PDO_PARAM_LOB;
 		} else if (isBoolTypeChar(type)) {
 			ZVAL_BOOL(result,
-				(bool)sqlrcur->getFieldAsInteger(
+				sqlrcur->getFieldAsBoolean(
 						sqlrstmt->currentrow,colno));
 			ctype=PDO_PARAM_BOOL;
 		} else {

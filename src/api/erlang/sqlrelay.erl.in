@@ -40,6 +40,7 @@
 -export([getFieldByIndex/2, getFieldByName/2]).
 -export([getFieldAsIntegerByIndex/2, getFieldAsIntegerByName/2]).
 -export([getFieldAsDoubleByIndex/2, getFieldAsDoubleByName/2]).
+-export([getFieldAsBooleanByIndex/2, getFieldAsBooleanByName/2]).
 -export([getFieldAsDateYearByIndex/2, getFieldAsDateYearByName/2]).
 -export([getFieldAsDateYearByIndexWithDdMm/5, getFieldAsDateYearByNameWithDdMm/5]).
 -export([getFieldAsDateMonthByIndex/2, getFieldAsDateMonthByName/2]).
@@ -565,6 +566,14 @@ getFieldAsDoubleByIndex(Row, Col) when is_integer(Row), is_integer(Col) ->
 %% @doc Returns the specified field as a decimal.
 getFieldAsDoubleByName(Row, Col) when is_integer(Row), is_list(Col) ->
 	call_port({getFieldAsDoubleByName, Row, Col}).
+
+%% @doc Returns the specified field as a boolean.
+getFieldAsBooleanByIndex(Row, Col) when is_integer(Row), is_integer(Col) ->
+	call_port({getFieldAsBooleanByIndex, Row, Col}).
+
+%% @doc Returns the specified field as a boolean.
+getFieldAsBooleanByName(Row, Col) when is_integer(Row), is_list(Col) ->
+	call_port({getFieldAsBooleanByName, Row, Col}).
 
 %% @doc Interprets the specified field as a date and returns the year component.
 getFieldAsDateYearByIndex(Row, Col) when is_integer(Row), is_integer(Col) ->
