@@ -828,13 +828,13 @@ const char * const *routerconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_BATCH_ROW_COUNTS]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_CATALOG_SEPARATOR]=
+	databasefeatures[FEATURE_DATABASE_SEPARATOR]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_CATALOG_TERM]=
+	databasefeatures[FEATURE_DATABASE_TERM]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_CATALOG_USAGE]=
+	databasefeatures[FEATURE_DATABASE_USAGE]=
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_COLLATION_SEQ]=
@@ -945,7 +945,7 @@ const char * const *routerconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_INSERTS_ARE_DETECTED]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_IS_CATALOG_AT_START]=
+	databasefeatures[FEATURE_IS_DATABASE_AT_START]=
 		charstring::duplicate("");
 
 
@@ -964,7 +964,7 @@ const char * const *routerconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_MAX_BINARY_LITERAL_LENGTH]=
 		charstring::duplicate("");
 
-	databasefeatures[FEATURE_MAX_CATALOG_NAME_LENGTH]=
+	databasefeatures[FEATURE_MAX_DATABASE_NAME_LENGTH]=
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_MAX_CHAR_LITERAL_LENGTH]=

@@ -935,7 +935,7 @@ bool sqlrcursor::getDatabaseList(const char *wild,
 		pvt->_sqlrc->debugPrint("\n");
 		pvt->_sqlrc->debugPreEnd();
 	}
-	return getList(GETDBLIST,listformat,NULL,wild,0);
+	return getList(GET_DB_LIST,listformat,NULL,wild,0);
 }
 
 bool sqlrcursor::getSchemaList(const char *wild) {
@@ -955,7 +955,7 @@ bool sqlrcursor::getSchemaList(const char *wild,
 		pvt->_sqlrc->debugPrint("\n");
 		pvt->_sqlrc->debugPreEnd();
 	}
-	return getList(GETSCHEMALIST,listformat,NULL,wild,0);
+	return getList(GET_SCHEMA_LIST,listformat,NULL,wild,0);
 }
 
 bool sqlrcursor::getTableList(const char *wild) {
@@ -978,7 +978,7 @@ bool sqlrcursor::getTableList(const char *wild,
 		pvt->_sqlrc->debugPrint("\n");
 		pvt->_sqlrc->debugPreEnd();
 	}
-	return getList(GETTABLELIST2,listformat,NULL,wild,objecttypes);
+	return getList(GET_TABLE_LIST_2,listformat,NULL,wild,objecttypes);
 }
 
 bool sqlrcursor::getTableTypeList(const char *wild) {
@@ -998,7 +998,7 @@ bool sqlrcursor::getTableTypeList(const char *wild,
 		pvt->_sqlrc->debugPrint("\n");
 		pvt->_sqlrc->debugPreEnd();
 	}
-	return getList(GETTABLETYPELIST,listformat,NULL,wild,0);
+	return getList(GET_TABLE_TYPE_LIST,listformat,NULL,wild,0);
 }
 
 bool sqlrcursor::getColumnList(const char *table, const char *wild) {
@@ -1021,7 +1021,7 @@ bool sqlrcursor::getColumnList(const char *table,
 		pvt->_sqlrc->debugPrint("\n");
 		pvt->_sqlrc->debugPreEnd();
 	}
-	return getList(GETCOLUMNLIST,listformat,(table)?table:"",wild,0);
+	return getList(GET_COLUMN_LIST,listformat,(table)?table:"",wild,0);
 }
 
 bool sqlrcursor::getPrimaryKeysList(const char *table, const char *wild) {
@@ -1044,7 +1044,7 @@ bool sqlrcursor::getPrimaryKeysList(const char *table,
 		pvt->_sqlrc->debugPrint("\n");
 		pvt->_sqlrc->debugPreEnd();
 	}
-	return getList(GETPRIMARYKEYLIST,listformat,(table)?table:"",wild,0);
+	return getList(GET_PRIMARY_KEY_LIST,listformat,(table)?table:"",wild,0);
 }
 
 bool sqlrcursor::getKeyAndIndexList(const char *table, const char *qualifier) {
@@ -1067,7 +1067,7 @@ bool sqlrcursor::getKeyAndIndexList(const char *table,
 		pvt->_sqlrc->debugPrint("\n");
 		pvt->_sqlrc->debugPreEnd();
 	}
-	return getList(GETKEYANDINDEXLIST,listformat,
+	return getList(GET_KEY_AND_INDEX_LIST,listformat,
 					(table)?table:"",qualifier,0);
 }
 
@@ -1096,7 +1096,7 @@ bool sqlrcursor::getProcedureParameterList(
 		pvt->_sqlrc->debugPrint("\n");
 		pvt->_sqlrc->debugPreEnd();
 	}
-	return getList(GETPROCEDUREBINDANDCOLUMNLIST,
+	return getList(GET_PROCEDURE_BIND_AND_COLUMN_LIST,
 				listformat,(procedure)?procedure:"",wild,0);
 }
 
@@ -1120,7 +1120,7 @@ bool sqlrcursor::getTypeInfoList(const char *type,
 		pvt->_sqlrc->debugPrint("\n");
 		pvt->_sqlrc->debugPreEnd();
 	}
-	return getList(GETTYPEINFOLIST,listformat,(type)?type:"",wild,0);
+	return getList(GET_TYPE_INFO_LIST,listformat,(type)?type:"",wild,0);
 }
 
 bool sqlrcursor::getProcedureList(const char *wild) {
@@ -1140,7 +1140,7 @@ bool sqlrcursor::getProcedureList(const char *wild,
 		pvt->_sqlrc->debugPrint("\n");
 		pvt->_sqlrc->debugPreEnd();
 	}
-	return getList(GETPROCEDURELIST,listformat,NULL,wild,0);
+	return getList(GET_PROCEDURE_LIST,listformat,NULL,wild,0);
 }
 
 bool sqlrcursor::getLastInsertIdList() {
@@ -1149,7 +1149,7 @@ bool sqlrcursor::getLastInsertIdList() {
 		pvt->_sqlrc->debugPrint("getting last insert id list\n");
 		pvt->_sqlrc->debugPreEnd();
 	}
-	return getList(GETLASTINSERTIDLIST,SQLRCLIENTLISTFORMAT_MYSQL,
+	return getList(GET_LAST_INSERT_ID_LIST,SQLRCLIENTLISTFORMAT_MYSQL,
 								NULL,NULL,0);
 }
 
@@ -1203,7 +1203,7 @@ bool sqlrcursor::getList(uint16_t command, sqlrclientlistformat_t listformat,
 	}
 
 	// send the objecttypes parameter
-	if (command==GETTABLELIST2) {
+	if (command==GET_TABLE_LIST_2) {
 		pvt->_cs->write(objecttypes);
 	}
 
@@ -2994,7 +2994,7 @@ bool sqlrcursor::sendQueryInternal() {
 		}
 
 		// tell the server we're sending a query
-		pvt->_cs->write((uint16_t)REEXECUTE_QUERY);
+		pvt->_cs->write((uint16_t)RE_EXECUTE_QUERY);
 
 		// send the cursor id to the server
 		pvt->_cs->write(pvt->_cursorid);

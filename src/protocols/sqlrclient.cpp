@@ -380,7 +380,7 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 		dt.initFromSystemDateTime();
 
 		// handle client protocol version as a command, for now
-		if (command==PROTOCOLVERSION) {
+		if (command==PROTOCOL_VERSION) {
 			if (clientsock->read(&protocolversion,
 						idleclienttimeout,0)==
 						sizeof(uint16_t)) {
@@ -395,7 +395,7 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 		} else
 
 		// handle bad commands
-		if (command>MAXCOMMAND) {
+		if (command>MAX_COMMAND) {
 			endsession=true;
 			break;
 		} else
@@ -429,11 +429,11 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 			cont->incrementIdentifyCount();
 			identifyCommand();
 			continue;
-		} else if (command==SET_AUTOCOMMIT) {
+		} else if (command==SET_AUTO_COMMIT) {
 			cont->incrementSetAutoCommitCount();
 			setAutoCommitCommand();
 			continue;
-		} else if (command==GET_AUTOCOMMIT) {
+		} else if (command==GET_AUTO_COMMIT) {
 			// FIXME: add this
 			//cont->incrementGetAutocommitCount();
 			getAutoCommitCommand();
@@ -450,20 +450,20 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 			cont->incrementRollbackCount();
 			rollbackCommand();
 			continue;
-		} else if (command==DBVERSION) {
+		} else if (command==DB_VERSION) {
 			cont->incrementDbVersionCount();
 			dbVersionCommand();
 			continue;
-		} else if (command==BINDFORMAT) {
+		} else if (command==BIND_FORMAT) {
 			cont->incrementGetBindFormatCount();
 			bindFormatCommand();
 			continue;
-		} else if (command==NEXTVALFORMAT) {
+		} else if (command==NEXT_VAL_FORMAT) {
 			// FIXME: add this
 			//cont->incrementNextvalFormatCount();
 			getNextvalFormatCommand();
 			continue;
-		} else if (command==SERVERVERSION) {
+		} else if (command==SERVER_VERSION) {
 			cont->incrementGetServerVersionCount();
 			serverVersionCommand();
 			continue;
@@ -489,11 +489,11 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 			cont->incrementGetLastInsertIdCount();
 			getLastInsertIdCommand();
 			continue;
-		} else if (command==DBHOSTNAME) {
+		} else if (command==DB_HOST_NAME) {
 			cont->incrementDbHostNameCount();
 			dbHostNameCommand();
 			continue;
-		} else if (command==DBIPADDRESS) {
+		} else if (command==DB_IP_ADDRESS) {
 			cont->incrementDbIpAddressCount();
 			dbIpAddressCommand();
 			continue;
@@ -534,7 +534,7 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 		if (command==NEW_QUERY) {
 			cont->incrementNewQueryCount();
 			loop=newQueryCommand(cursor);
-		} else if (command==REEXECUTE_QUERY) {
+		} else if (command==RE_EXECUTE_QUERY) {
 			cont->incrementReexecuteQueryCount();
 			loop=reExecuteQueryCommand(cursor);
 		} else if (command==FETCH_FROM_BIND_CURSOR) {
@@ -552,40 +552,40 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 		} else if (command==RESUME_RESULT_SET) {
 			cont->incrementResumeResultSetCount();
 			loop=resumeResultSetCommand(cursor);
-		} else if (command==GETDBLIST) {
+		} else if (command==GET_DB_LIST) {
 			cont->incrementGetDbListCount();
 			loop=getDatabaseListCommand(cursor);
-		} else if (command==GETSCHEMALIST) {
+		} else if (command==GET_SCHEMA_LIST) {
 			//cont->incrementGetSchemaListCount();
 			loop=getSchemaListCommand(cursor);
-		} else if (command==GETTABLELIST) {
+		} else if (command==GET_TABLE_LIST) {
 			cont->incrementGetTableListCount();
 			loop=getTableListCommand(cursor);
-		} else if (command==GETTABLELIST2) {
+		} else if (command==GET_TABLE_LIST_2) {
 			cont->incrementGetTableListCount();
 			loop=getTableList2Command(cursor);
-		} else if (command==GETTABLETYPELIST) {
+		} else if (command==GET_TABLE_TYPE_LIST) {
 			//cont->incrementGetTableTypeListCount();
 			loop=getTableTypeListCommand(cursor);
-		} else if (command==GETCOLUMNLIST) {
+		} else if (command==GET_COLUMN_LIST) {
 			cont->incrementGetColumnListCount();
 			loop=getColumnListCommand(cursor);
-		} else if (command==GETPRIMARYKEYLIST) {
+		} else if (command==GET_PRIMARY_KEY_LIST) {
 			//cont->incrementGetPrimaryKeyListCount();
 			loop=getPrimaryKeyListCommand(cursor);
-		} else if (command==GETKEYANDINDEXLIST) {
+		} else if (command==GET_KEY_AND_INDEX_LIST) {
 			//cont->incrementGetKeyAndIndexListCount();
 			loop=getKeyAndIndexListCommand(cursor);
-		} else if (command==GETPROCEDUREBINDANDCOLUMNLIST) {
+		} else if (command==GET_PROCEDURE_BIND_AND_COLUMN_LIST) {
 			//cont->incrementGetProcedureParameterListCount();
 			loop=getProcedureParameterListCommand(cursor);
-		} else if (command==GETTYPEINFOLIST) {
+		} else if (command==GET_TYPE_INFO_LIST) {
 			//cont->incrementGetTypeInfoListCount();
 			loop=getTypeInfoListCommand(cursor);
-		} else if (command==GETPROCEDURELIST) {
+		} else if (command==GET_PROCEDURE_LIST) {
 			//cont->incrementGetProcedureListCount();
 			loop=getProcedureListCommand(cursor);
-		} else if (command==GETLASTINSERTIDLIST) {
+		} else if (command==GET_LAST_INSERT_ID_LIST) {
 			//cont->incrementGetLastInsertIdListCount();
 			loop=getLastInsertIdListCommand(cursor);
 		} else if (command==GET_QUERY_TREE) {
@@ -760,18 +760,18 @@ sqlrservercursor *sqlrprotocol_sqlrclient::getCursor(uint16_t command) {
 	// does the client need a cursor or does it already have one
 	uint16_t	neednewcursor=DONT_NEED_NEW_CURSOR;
 	if (command==NEW_QUERY ||
-		command==GETDBLIST ||
-		command==GETSCHEMALIST ||
-		command==GETTABLELIST ||
-		command==GETTABLELIST2 ||
-		command==GETTABLETYPELIST ||
-		command==GETCOLUMNLIST ||
-		command==GETPRIMARYKEYLIST ||
-		command==GETKEYANDINDEXLIST ||
-		command==GETPROCEDUREBINDANDCOLUMNLIST ||
-		command==GETTYPEINFOLIST ||
-		command==GETPROCEDURELIST ||
-		command==GETLASTINSERTIDLIST ||
+		command==GET_DB_LIST ||
+		command==GET_SCHEMA_LIST ||
+		command==GET_TABLE_LIST ||
+		command==GET_TABLE_LIST_2 ||
+		command==GET_TABLE_TYPE_LIST ||
+		command==GET_COLUMN_LIST ||
+		command==GET_PRIMARY_KEY_LIST ||
+		command==GET_KEY_AND_INDEX_LIST ||
+		command==GET_PROCEDURE_BIND_AND_COLUMN_LIST ||
+		command==GET_TYPE_INFO_LIST ||
+		command==GET_PROCEDURE_LIST ||
+		command==GET_LAST_INSERT_ID_LIST ||
 		command==ABORT_RESULT_SET ||
 		command==GET_QUERY_TREE ||
 		command==GET_TRANSLATED_QUERY) {
@@ -4737,8 +4737,8 @@ bool sqlrprotocol_sqlrclient::getTranslatedQueryCommand(
 void sqlrprotocol_sqlrclient::debugCommand(uint16_t command) {
 	debugWrite("command: %hd",command);
 	switch (command) {
-		case PROTOCOLVERSION:
-			debugWrite("PROTOCOLVERSION");
+		case PROTOCOL_VERSION:
+			debugWrite("PROTOCOL_VERSION");
 			break;
 		case NEW_QUERY:
 			debugWrite("NEW_QUERY");
@@ -4776,35 +4776,35 @@ void sqlrprotocol_sqlrclient::debugCommand(uint16_t command) {
 		case AUTH:
 			debugWrite("AUTH");
 			break;
-		case SET_AUTOCOMMIT:
-			debugWrite("SET_AUTOCOMMIT");
+		case SET_AUTO_COMMIT:
+			debugWrite("SET_AUTO_COMMIT");
 			break;
-		case GET_AUTOCOMMIT:
-			debugWrite("GET_AUTOCOMMIT");
+		case GET_AUTO_COMMIT:
+			debugWrite("GET_AUTO_COMMIT");
 			break;
-		case REEXECUTE_QUERY:
-			debugWrite("REEXECUTE_QUERY");
+		case RE_EXECUTE_QUERY:
+			debugWrite("RE_EXECUTE_QUERY");
 			break;
 		case FETCH_FROM_BIND_CURSOR:
 			debugWrite("FETCH_FROM_BIND_CURSOR");
 			break;
-		case DBVERSION:
-			debugWrite("DBVERSION");
+		case DB_VERSION:
+			debugWrite("DB_VERSION");
 			break;
-		case BINDFORMAT:
-			debugWrite("BINDFORMAT");
+		case BIND_FORMAT:
+			debugWrite("BIND_FORMAT");
 			break;
-		case SERVERVERSION:
-			debugWrite("SERVERVERSION");
+		case SERVER_VERSION:
+			debugWrite("SERVER_VERSION");
 			break;
-		case GETDBLIST:
-			debugWrite("GETDBLIST");
+		case GET_DB_LIST:
+			debugWrite("GET_DB_LIST");
 			break;
-		case GETTABLELIST:
-			debugWrite("GETTABLELIST");
+		case GET_TABLE_LIST:
+			debugWrite("GET_TABLE_LIST");
 			break;
-		case GETCOLUMNLIST:
-			debugWrite("GETCOLUMNLIST");
+		case GET_COLUMN_LIST:
+			debugWrite("GET_COLUMN_LIST");
 			break;
 		case SELECT_DATABASE:
 			debugWrite("SELECT_DATABASE");
@@ -4824,35 +4824,35 @@ void sqlrprotocol_sqlrclient::debugCommand(uint16_t command) {
 		case NO_COMMAND:
 			debugWrite("NO_COMMAND");
 			break;
-		case DBHOSTNAME:
-			debugWrite("DBHOSTNAME");
+		case DB_HOST_NAME:
+			debugWrite("DB_HOST_NAME");
 			break;
-		case DBIPADDRESS:
-			debugWrite("DBIPADDRESS");
+		case DB_IP_ADDRESS:
+			debugWrite("DB_IP_ADDRESS");
 			break;
 		case GET_TRANSLATED_QUERY:
 			debugWrite("GET_TRANSLATED_QUERY");
 			break;
-		case GETPROCEDUREBINDANDCOLUMNLIST:
-			debugWrite("GETPROCEDUREBINDANDCOLUMNLIST");
+		case GET_PROCEDURE_BIND_AND_COLUMN_LIST:
+			debugWrite("GET_PROCEDURE_BIND_AND_COLUMN_LIST");
 			break;
-		case GETTYPEINFOLIST:
-			debugWrite("GETTYPEINFOLIST");
+		case GET_TYPE_INFO_LIST:
+			debugWrite("GET_TYPE_INFO_LIST");
 			break;
-		case GETPROCEDURELIST:
-			debugWrite("GETPROCEDURELIST");
+		case GET_PROCEDURE_LIST:
+			debugWrite("GET_PROCEDURE_LIST");
 			break;
-		case GETSCHEMALIST:
-			debugWrite("GETSCHEMALIST");
+		case GET_SCHEMA_LIST:
+			debugWrite("GET_SCHEMA_LIST");
 			break;
-		case GETTABLETYPELIST:
-			debugWrite("GETTABLETYPELIST");
+		case GET_TABLE_TYPE_LIST:
+			debugWrite("GET_TABLE_TYPE_LIST");
 			break;
-		case GETPRIMARYKEYLIST:
-			debugWrite("GETPRIMARYKEYLIST");
+		case GET_PRIMARY_KEY_LIST:
+			debugWrite("GET_PRIMARY_KEY_LIST");
 			break;
-		case GETKEYANDINDEXLIST:
-			debugWrite("GETKEYANDINDEXLIST");
+		case GET_KEY_AND_INDEX_LIST:
+			debugWrite("GET_KEY_AND_INDEX_LIST");
 			break;
 		case SELECT_SCHEMA:
 			debugWrite("SELECT_SCHEMA");
@@ -4863,11 +4863,11 @@ void sqlrprotocol_sqlrclient::debugCommand(uint16_t command) {
 		case NEXT_RESULT_SET:
 			debugWrite("NEXT_RESULT_SET");
 			break;
-		case GETTABLELIST2:
-			debugWrite("GETTABLELIST2");
+		case GET_TABLE_LIST_2:
+			debugWrite("GET_TABLE_LIST_2");
 			break;
-		case NEXTVALFORMAT:
-			debugWrite("NEXTVALFORMAT");
+		case NEXT_VAL_FORMAT:
+			debugWrite("NEXT_VAL_FORMAT");
 			break;
 		case SET_ISOLATION_LEVEL:
 			debugWrite("SET_ISOLATION_LEVEL");
@@ -4875,8 +4875,8 @@ void sqlrprotocol_sqlrclient::debugCommand(uint16_t command) {
 		case GET_ISOLATION_LEVEL:
 			debugWrite("GET_ISOLATION_LEVEL");
 			break;
-		case GETLASTINSERTIDLIST:
-			debugWrite("GETLASTINSERTIDLIST");
+		case GET_LAST_INSERT_ID_LIST:
+			debugWrite("GET_LAST_INSERT_ID_LIST");
 			break;
 		default:
 			debugWrite("bad command");

@@ -230,8 +230,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	String getCatalogSeparator() throws SQLException {
 		drv.debugFunction(this);
-		String	separator=getString("catalog_separator");
-		drv.debugPrintln("catalog separator: "+separator);
+		String	separator=getString("database_separator");
+		drv.debugPrintln("database separator: "+separator);
 		drv.debugEnd();
 		return separator;
 	}
@@ -239,8 +239,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	String getCatalogTerm() throws SQLException {
 		drv.debugFunction(this);
-		String	term=getString("catalog_term");
-		drv.debugPrintln("catalog term: "+term);
+		String	term=getString("database_term");
+		drv.debugPrintln("database term: "+term);
 		drv.debugEnd();
 		return term;
 	}
@@ -617,8 +617,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	int getMaxCatalogNameLength() throws SQLException {
 		drv.debugFunction(this);
-		int	result=getInt("max_catalog_name_length");
-		drv.debugPrintln("max catalog name length: "+result);
+		int	result=getInt("max_database_name_length");
+		drv.debugPrintln("max database name length: "+result);
 		drv.debugEnd();
 		return result;
 	}
@@ -1378,8 +1378,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	public
 	boolean isCatalogAtStart() throws SQLException {
 		drv.debugFunction(this);
-		boolean	result=getBoolean("is_catalog_at_start");
-		drv.debugPrintln("is catalog at start: "+result);
+		boolean	result=getBoolean("is_database_at_start");
+		drv.debugPrintln("is database at start: "+result);
 		drv.debugEnd();
 		return result;
 	}
@@ -1641,7 +1641,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean supportsCatalogsInDataManipulation() throws SQLException {
 		drv.debugFunction(this);
 		boolean	result=listContains(
-			"catalog_usage","DATA_MANIPULATION");
+			"database_usage","DATA_MANIPULATION");
 		drv.debugPrintln(
 			"supports catalogs in data manipulations: "+result);
 		drv.debugEnd();
@@ -1652,7 +1652,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean supportsCatalogsInIndexDefinitions() throws SQLException {
 		drv.debugFunction(this);
 		boolean	result=listContains(
-			"catalog_usage","INDEX_DEFINITIONS");
+			"database_usage","INDEX_DEFINITIONS");
 		drv.debugPrintln(
 			"supports catalogs in index definitions: "+result);
 		drv.debugEnd();
@@ -1663,7 +1663,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean supportsCatalogsInPrivilegeDefinitions() throws SQLException {
 		drv.debugFunction(this);
 		boolean	result=listContains(
-			"catalog_usage","PRIVILEGE_DEFINITIONS");
+			"database_usage","PRIVILEGE_DEFINITIONS");
 		drv.debugPrintln(
 			"supports catalogs in privilege definitions: "+result);
 		drv.debugEnd();
@@ -1674,7 +1674,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean supportsCatalogsInProcedureCalls() throws SQLException {
 		drv.debugFunction(this);
 		boolean	result=listContains(
-			"catalog_usage","PROCEDURE_CALLS");
+			"database_usage","PROCEDURE_CALLS");
 		drv.debugPrintln(
 			"supports catalogs in procedure calls: "+result);
 		drv.debugEnd();
@@ -1685,7 +1685,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	boolean supportsCatalogsInTableDefinitions() throws SQLException {
 		drv.debugFunction(this);
 		boolean	result=listContains(
-			"catalog_usage","TABLE_DEFINITIONS");
+			"database_usage","TABLE_DEFINITIONS");
 		drv.debugPrintln(
 			"supports catalogs in table definitions: "+result);
 		drv.debugEnd();

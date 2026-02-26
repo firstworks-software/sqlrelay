@@ -10,7 +10,7 @@
 #define HANDOFF_PROXY 2
 
 // client-server protocol...
-#define PROTOCOLVERSION 21330 // => 0x5352 => 0x53=S 0x52=R => SR => SQL Relay
+#define PROTOCOL_VERSION 21330 // => 0x5352 => 0x53=S 0x52=R => SR => SQL Relay
 #define NEW_QUERY 0
 #define FETCH_RESULT_SET 1
 #define ABORT_RESULT_SET 2
@@ -23,42 +23,42 @@
 #define COMMIT 9
 #define ROLLBACK 10
 #define AUTH 11
-#define SET_AUTOCOMMIT 12
-#define REEXECUTE_QUERY 13
+#define SET_AUTO_COMMIT 12
+#define RE_EXECUTE_QUERY 13
 #define FETCH_FROM_BIND_CURSOR 14
-#define DBVERSION 15
-#define BINDFORMAT 16
-#define SERVERVERSION 17
-#define GETDBLIST 18
-#define GETTABLELIST 19
-#define GETCOLUMNLIST 20
+#define DB_VERSION 15
+#define BIND_FORMAT 16
+#define SERVER_VERSION 17
+#define GET_DB_LIST 18
+#define GET_TABLE_LIST 19
+#define GET_COLUMN_LIST 20
 #define SELECT_DATABASE 21
 #define GET_CURRENT_DATABASE 22
 #define GET_LAST_INSERT_ID 23
 #define BEGIN 24
 #define GET_QUERY_TREE 25
 #define NO_COMMAND 26
-#define DBHOSTNAME 27
-#define DBIPADDRESS 28
+#define DB_HOST_NAME 27
+#define DB_IP_ADDRESS 28
 #define GET_TRANSLATED_QUERY 29
-#define GETPROCEDUREBINDANDCOLUMNLIST 30
-#define GETTYPEINFOLIST 31
-#define GETPROCEDURELIST 32
-#define GETSCHEMALIST 33
-#define GETTABLETYPELIST 34
-#define GETPRIMARYKEYLIST 35
-#define GETKEYANDINDEXLIST 36
+#define GET_PROCEDURE_BIND_AND_COLUMN_LIST 30
+#define GET_TYPE_INFO_LIST 31
+#define GET_PROCEDURE_LIST 32
+#define GET_SCHEMA_LIST 33
+#define GET_TABLE_TYPE_LIST 34
+#define GET_PRIMARY_KEY_LIST 35
+#define GET_KEY_AND_INDEX_LIST 36
 #define GET_CURRENT_SCHEMA 37
 #define NEXT_RESULT_SET 38
-#define GETTABLELIST2 39
-#define NEXTVALFORMAT 40
+#define GET_TABLE_LIST_2 39
+#define NEXT_VAL_FORMAT 40
 #define SELECT_SCHEMA 41
 #define SET_ISOLATION_LEVEL 42
 #define GET_ISOLATION_LEVEL 43
 #define GET_DATABASE_FEATURES 44
-#define GET_AUTOCOMMIT 45
-#define GETLASTINSERTIDLIST 46
-#define MAXCOMMAND 46
+#define GET_AUTO_COMMIT 45
+#define GET_LAST_INSERT_ID_LIST 46
+#define MAX_COMMAND 46
 
 #define SUSPENDED_RESULT_SET 1
 #define NO_SUSPENDED_RESULT_SET 0
@@ -120,9 +120,9 @@
 #define FEATURE_AUTO_COMMIT_FAILURE_CLOSES_ALL_RESULT_SETS 6
 #define FEATURE_BATCH_OPERATIONS 7
 #define FEATURE_BATCH_ROW_COUNTS 8
-#define FEATURE_CATALOG_SEPARATOR 9
-#define FEATURE_CATALOG_TERM 10
-#define FEATURE_CATALOG_USAGE 11
+#define FEATURE_DATABASE_SEPARATOR 9
+#define FEATURE_DATABASE_TERM 10
+#define FEATURE_DATABASE_USAGE 11
 #define FEATURE_COLLATION_SEQ 12
 #define FEATURE_CREATE_ASSERTION_CLAUSES 13
 #define FEATURE_CREATE_CHARACTER_SET_CLAUSES 14
@@ -159,13 +159,13 @@
 #define FEATURE_INFO_SCHEMA_VIEWS 45
 #define FEATURE_INSERT_OPERATIONS 46
 #define FEATURE_INSERTS_ARE_DETECTED 47
-#define FEATURE_IS_CATALOG_AT_START 48
+#define FEATURE_IS_DATABASE_AT_START 48
 #define FEATURE_ISOLATION_LEVELS 49
 #define FEATURE_LOCAL_FILE_USAGE 50
 #define FEATURE_LOCATORS_UPDATE_COPY 51
 #define FEATURE_LOCK_TYPES 52
 #define FEATURE_MAX_BINARY_LITERAL_LENGTH 53
-#define FEATURE_MAX_CATALOG_NAME_LENGTH 54
+#define FEATURE_MAX_DATABASE_NAME_LENGTH 54
 #define FEATURE_MAX_CHAR_LITERAL_LENGTH 55
 #define FEATURE_MAX_COLUMN_NAME_LENGTH 56
 #define FEATURE_MAX_COLUMNS_IN_GROUP_BY 57
@@ -262,9 +262,9 @@ static const char *dbfeaturenames[]={
 	"auto_commit_failure_closes_all_result_sets",
 	"batch_operations",
 	"batch_row_counts",
-	"catalog_separator",
-	"catalog_term",
-	"catalog_usage",
+	"database_separator",
+	"database_term",
+	"database_usage",
 	"collation_seq",
 	"create_assertion_clauses",
 	"create_character_set_clauses",
@@ -301,13 +301,13 @@ static const char *dbfeaturenames[]={
 	"info_schema_views",
 	"insert_operations",
 	"inserts_are_detected",
-	"is_catalog_at_start",
+	"is_database_at_start",
 	"isolation_levels",
 	"local_file_usage",
 	"locators_update_copy",
 	"lock_types",
 	"max_binary_literal_length",
-	"max_catalog_name_length",
+	"max_database_name_length",
 	"max_char_literal_length",
 	"max_column_name_length",
 	"max_columns_in_group_by",

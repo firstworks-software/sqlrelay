@@ -1025,7 +1025,7 @@ void sqlrconnection::protocol() {
 		debugPreEnd();
 	}
 
-	pvt->_cs->write((uint16_t)PROTOCOLVERSION);
+	pvt->_cs->write((uint16_t)PROTOCOL_VERSION);
 	pvt->_cs->write((uint16_t)2);
 }
 
@@ -1322,7 +1322,7 @@ const char *sqlrconnection::dbVersion() {
 	}
 
 	// tell the server we want the db version
-	pvt->_cs->write((uint16_t)DBVERSION);
+	pvt->_cs->write((uint16_t)DB_VERSION);
 	flushWriteBuffer();
 
 	if (gotError()) {
@@ -1375,7 +1375,7 @@ const char *sqlrconnection::dbHostName() {
 	}
 
 	// tell the server we want the db host name
-	pvt->_cs->write((uint16_t)DBHOSTNAME);
+	pvt->_cs->write((uint16_t)DB_HOST_NAME);
 	flushWriteBuffer();
 
 	if (gotError()) {
@@ -1428,7 +1428,7 @@ const char *sqlrconnection::dbIpAddress() {
 	}
 
 	// tell the server we want the db ip address
-	pvt->_cs->write((uint16_t)DBIPADDRESS);
+	pvt->_cs->write((uint16_t)DB_IP_ADDRESS);
 	flushWriteBuffer();
 
 	if (gotError()) {
@@ -1481,7 +1481,7 @@ const char *sqlrconnection::serverVersion() {
 	}
 
 	// tell the server we want the server version
-	pvt->_cs->write((uint16_t)SERVERVERSION);
+	pvt->_cs->write((uint16_t)SERVER_VERSION);
 	flushWriteBuffer();
 
 	if (gotError()) {
@@ -1538,7 +1538,7 @@ const char *sqlrconnection::bindFormat() {
 	}
 
 	// tell the server we want the bind format
-	pvt->_cs->write((uint16_t)BINDFORMAT);
+	pvt->_cs->write((uint16_t)BIND_FORMAT);
 	flushWriteBuffer();
 
 	if (gotError()) {
@@ -1592,7 +1592,7 @@ const char *sqlrconnection::nextvalFormat() {
 	}
 
 	// tell the server we want the nextval format
-	pvt->_cs->write((uint16_t)NEXTVALFORMAT);
+	pvt->_cs->write((uint16_t)NEXT_VAL_FORMAT);
 	flushWriteBuffer();
 
 	if (gotError()) {
@@ -1869,7 +1869,7 @@ bool sqlrconnection::autoCommit(bool on) {
 		debugPreEnd();
 	}
 
-	pvt->_cs->write((uint16_t)SET_AUTOCOMMIT);
+	pvt->_cs->write((uint16_t)SET_AUTO_COMMIT);
 	pvt->_cs->write(on);
 	flushWriteBuffer();
 
@@ -1890,7 +1890,7 @@ bool sqlrconnection::getAutoCommit() {
 		debugPreEnd();
 	}
 
-	pvt->_cs->write((uint16_t)GET_AUTOCOMMIT);
+	pvt->_cs->write((uint16_t)GET_AUTO_COMMIT);
 	flushWriteBuffer();
 
 	if (gotError()) {
