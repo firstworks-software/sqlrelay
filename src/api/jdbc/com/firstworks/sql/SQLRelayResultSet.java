@@ -104,61 +104,99 @@ public class SQLRelayResultSet implements ResultSet {
 
 		throwExceptionIfClosed();
 
-		// debug
-		drv.debugPrintln("row: "+row);
 		drv.debugPrintln("currentrow: "+currentrow);
+		drv.debugPrintln("row: "+row);
 
-		// handle nonsensical row
+		// Negative rows are offsets from one row past the end of the
+		// result set: -1 means go to the last row of the result set.
+		//
+		// Convert this to a positive row number.
+		//
+		// We can only handle a negative row if we know the total
+		// row count, and we only know that if we've already fetched
+		// all rows.
 		if (row<0) {
-			row=0;
+			if (sqlrcur.endOfResultSet()) {
+				row=(int)sqlrcur.rowCount()+row+1;
+				if (row<0) {
+					row=0;
+				}
+				drv.debugPrintln("row: "+row);
+			} else {
+				conn.throwException("Row out of range.");
+			}
 		}
 
-		// handle degenerate case
-		if (row==currentrow) {
-			drv.debugPrintln("success");
+		// If row==0 then we're trying to go "before first"
+		if (row==0) {
+
+			// we can't do that if the first row in the current
+			// block of rows isn't the first row of the entire
+			// result set, so bail if that's the case
+			if (sqlrcur.firstRowIndex()>0) {
+				conn.throwException("Row out of range.");
+			}
+
+			currentrow=row;
+			beforefirst=true;
+			islast=false;
+			afterlast=false;
+
+			drv.debugPrintln("currentrow: "+currentrow);
+			drv.debugPrintln("before first");
+			drv.debugEnd();
+			return false;
+
+		}
+
+		// get the field to move the cursor to the requested row
+		synchronized (networklock) {
+			sqlrcur.getField(row-1,0);
+		}
+
+		// get the (current) row count
+		long	rowcount=sqlrcur.rowCount();
+
+		// handle maxrows
+		if (maxrows!=0 && rowcount>maxrows) {
+			rowcount=maxrows;
+		}
+
+		// are we after the last row?
+		if (sqlrcur.endOfResultSet() && row-1>=rowcount) {
+
+			currentrow=row;
+			beforefirst=false;
+			islast=false;
+			afterlast=true;
+
+			drv.debugPrintln("currentrow: "+currentrow);
+			drv.debugPrintln("after last");
+			drv.debugEnd();
+			return false;
+		}
+
+		// are we on the last row?
+		if (sqlrcur.endOfResultSet() && row-1==rowcount-1) {
+
+			currentrow=row;
+			beforefirst=false;
+			islast=true;
+			afterlast=false;
+
+			drv.debugPrintln("currentrow: "+currentrow);
+			drv.debugPrintln("on last");
 			drv.debugEnd();
 			return true;
 		}
 
-		// FIXME: the rest of these cases really need to take into
-		// account the firstRowIndex(), rowCount(),
-		// resultSetBufferSize(), and whether the result set type is
-		// explicitly Forward-Only.
+		// ok, we're just somewhere in the middle of the result set
+		currentrow=row;
+		beforefirst=false;
+		islast=false;
+		afterlast=false;
 
-		if (row<currentrow) {
-			conn.throwException(
-				"FIXME: ResultSet type is Forward-Only");
-		} else if (row==0) {
-			beforefirst=true;
-			currentrow=0;
-			islast=false;
-			afterlast=false;
-		} else if (row>0) {
-			beforefirst=false;
-			currentrow=row;
-			synchronized (networklock) {
-				sqlrcur.getField(currentrow-1,0);
-			}
-			long	rowcount=sqlrcur.rowCount();
-			// FIXME: handle maxrows
-			if (sqlrcur.endOfResultSet()) {
-				if (currentrow-1==rowcount-1) {
-					islast=true;
-					afterlast=false;
-				} else if (currentrow-1>=rowcount) {
-					islast=false;
-					afterlast=true;
-					drv.debugPrintln("after last");
-					drv.debugEnd();
-					return false;
-				}
-			}
-		} else if (row<0) {
-			// FIXME: implement this...
-			// position relative to end of result set
-			conn.throwException(
-				"FIXME: negative row not supported");
-		}
+		drv.debugPrintln("currentrow: "+currentrow);
 		drv.debugPrintln("success");
 		drv.debugEnd();
 		return true;
