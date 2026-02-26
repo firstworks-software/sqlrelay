@@ -2285,7 +2285,7 @@ public class SQLRelayResultSet implements ResultSet {
 	}
 
 	public
-	void updateBlob(int columnindex, InputStream inputStream)
+	void updateBlob(int columnindex, InputStream inputstream)
 						throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
@@ -2295,7 +2295,7 @@ public class SQLRelayResultSet implements ResultSet {
 	}
 
 	public
-	void updateBlob(int columnindex, InputStream inputStream,
+	void updateBlob(int columnindex, InputStream inputstream,
 					long length) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
@@ -2314,7 +2314,7 @@ public class SQLRelayResultSet implements ResultSet {
 	}
 
 	public
-	void updateBlob(String columnlabel, InputStream inputStream)
+	void updateBlob(String columnlabel, InputStream inputstream)
 						throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
@@ -2324,7 +2324,7 @@ public class SQLRelayResultSet implements ResultSet {
 	}
 
 	public
-	void updateBlob(String columnlabel, InputStream inputStream,
+	void updateBlob(String columnlabel, InputStream inputstream,
 					long length) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
@@ -2634,7 +2634,7 @@ public class SQLRelayResultSet implements ResultSet {
 	}
 
 	public
-	void updateNClob(int columnindex, NClob nClob) throws SQLException {
+	void updateNClob(int columnindex, NClob nclob) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("column index: "+columnindex);
@@ -2662,7 +2662,7 @@ public class SQLRelayResultSet implements ResultSet {
 	}
 
 	public
-	void updateNClob(String columnlabel, NClob nClob) throws SQLException {
+	void updateNClob(String columnlabel, NClob nclob) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("column label: "+columnlabel);
@@ -2691,7 +2691,7 @@ public class SQLRelayResultSet implements ResultSet {
 	}
 
 	public
-	void updateNString(int columnindex, String nString)
+	void updateNString(int columnindex, String nstring)
 						throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
@@ -2701,7 +2701,7 @@ public class SQLRelayResultSet implements ResultSet {
 	}
 
 	public
-	void updateNString(String columnlabel, String nString)
+	void updateNString(String columnlabel, String nstring)
 						throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
@@ -2739,7 +2739,7 @@ public class SQLRelayResultSet implements ResultSet {
 
 	public
 	void updateObject(int columnindex, Object x,
-					int scaleOrLength) throws SQLException {
+					int scaleorlength) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("column index: "+columnindex);
@@ -2758,7 +2758,7 @@ public class SQLRelayResultSet implements ResultSet {
 
 	public
 	void updateObject(String columnlabel, Object x,
-					int scaleOrLength) throws SQLException {
+					int scaleorlength) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("column label: "+columnlabel);
@@ -2829,7 +2829,7 @@ public class SQLRelayResultSet implements ResultSet {
 	}
 
 	public
-	void updateSQLXML(int columnindex, SQLXML xmlObject)
+	void updateSQLXML(int columnindex, SQLXML xmlobject)
 						throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
@@ -2839,7 +2839,7 @@ public class SQLRelayResultSet implements ResultSet {
 	}
 
 	public
-	void updateSQLXML(String columnlabel, SQLXML xmlObject)
+	void updateSQLXML(String columnlabel, SQLXML xmlobject)
 						throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();

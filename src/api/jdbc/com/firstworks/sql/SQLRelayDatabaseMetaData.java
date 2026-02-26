@@ -156,18 +156,18 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 	public
 	ResultSet getAttributes(String catalog,
-					String schemaPattern,
-					String typeNamePattern,
-					String attributeNamePattern)
+					String schemapattern,
+					String typenamepattern,
+					String attributenamepattern)
 					throws SQLException {
 		drv.debugFunction(this);
 		drv.debugPrintln("catalog: "+catalog);
 		drv.debugPrintln("schema pattern: "+
-						schemaPattern);
+						schemapattern);
 		drv.debugPrintln("type name pattern: "+
-						typeNamePattern);
+						typenamepattern);
 		drv.debugPrintln("attribute name pattern: "+
-						attributeNamePattern);
+						attributenamepattern);
 		// few jdbc drivers (or databases) support this
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
@@ -257,14 +257,14 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	ResultSet getColumnPrivileges(String catalog,
 					String schema,
 					String table,
-					String columnNamePattern)
+					String columnnamepattern)
 					throws SQLException {
 		drv.debugFunction(this);
 
 		drv.debugPrintln("catalog: "+catalog);
 		drv.debugPrintln("schema: "+schema);
 		drv.debugPrintln("table: "+table);
-		drv.debugPrintln("column name pattern: "+columnNamePattern);
+		drv.debugPrintln("column name pattern: "+columnnamepattern);
 
 		// FIXME: implement this somehow
 		drv.debugPrintln("FIXME: implement this");
@@ -274,20 +274,20 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 	public
 	ResultSet getColumns(String catalog,
-					String schemaPattern,
-					String tableNamePattern,
-					String columnNamePattern)
+					String schemapattern,
+					String tablenamepattern,
+					String columnnamepattern)
 					throws SQLException {
 		drv.debugFunction(this);
 
 		drv.debugPrintln("catalog: "+catalog);
-		drv.debugPrintln("schema pattern: "+schemaPattern);
-		drv.debugPrintln("table name pattern: "+tableNamePattern);
-		drv.debugPrintln("column name pattern: "+columnNamePattern);
+		drv.debugPrintln("schema pattern: "+schemapattern);
+		drv.debugPrintln("table name pattern: "+tablenamepattern);
+		drv.debugPrintln("column name pattern: "+columnnamepattern);
 
-		String	wild=buildWild(catalog,schemaPattern,tableNamePattern);
+		String	wild=buildWild(catalog,schemapattern,tablenamepattern);
 		drv.debugPrintln("wild: "+wild);
-		drv.debugPrintln("column name pattern: "+columnNamePattern);
+		drv.debugPrintln("column name pattern: "+columnnamepattern);
 
 		SQLRelayResultSet	resultset=null;
 		SQLRelayStatement	stmt=(SQLRelayStatement)
@@ -297,7 +297,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		boolean	result=false;
 		synchronized (networklock) {
 			result=sqlrcur.getColumnListWithFormat(
-						wild,columnNamePattern,4);
+						wild,columnnamepattern,4);
 		}
 
 		if (result) {
@@ -325,21 +325,21 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	}
 
 	public
-	ResultSet getCrossReference(String parentCatalog,
-					String parentSchema,
-					String parentTable,
-					String foreignCatalog,
-					String foreignSchema,
-					String foreignTable)
+	ResultSet getCrossReference(String parentcatalog,
+					String parentschema,
+					String parenttable,
+					String foreigncatalog,
+					String foreignschema,
+					String foreigntable)
 					throws SQLException {
 		drv.debugFunction(this);
 
-		drv.debugPrintln("parent catalog: "+parentCatalog);
-		drv.debugPrintln("parent schema: "+parentSchema);
-		drv.debugPrintln("parent table: "+parentTable);
-		drv.debugPrintln("foreign catalog: "+foreignCatalog);
-		drv.debugPrintln("foreign schema: "+foreignSchema);
-		drv.debugPrintln("foreign table: "+foreignTable);
+		drv.debugPrintln("parent catalog: "+parentcatalog);
+		drv.debugPrintln("parent schema: "+parentschema);
+		drv.debugPrintln("parent table: "+parenttable);
+		drv.debugPrintln("foreign catalog: "+foreigncatalog);
+		drv.debugPrintln("foreign schema: "+foreignschema);
+		drv.debugPrintln("foreign table: "+foreigntable);
 
 		// FIXME: implement this somehow...
 		drv.debugPrintln("FIXME: implement this");
@@ -497,19 +497,19 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 	public
 	ResultSet getFunctionColumns(String catalog,
-					String schemaPattern,
-					String functionNamePattern,
-					String columnNamePattern)
+					String schemapattern,
+					String functionnamepattern,
+					String columnnamepattern)
 					throws SQLException {
 		drv.debugFunction(this);
 
 		drv.debugPrintln("catalog: "+catalog);
 		drv.debugPrintln("schema pattern: "+
-						schemaPattern);
+						schemapattern);
 		drv.debugPrintln("function name pattern: "+
-						functionNamePattern);
+						functionnamepattern);
 		drv.debugPrintln("column name pattern: "+
-						columnNamePattern);
+						columnnamepattern);
 
 		// FIXME: implement with
 		// sqlrcur.getProcedureBindAndColumnList()?
@@ -520,16 +520,16 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 	public
 	ResultSet getFunctions(String catalog,
-					String schemaPattern,
-					String functionNamePattern)
+					String schemapattern,
+					String functionnamepattern)
 					throws SQLException {
 		drv.debugFunction(this);
 
 		drv.debugPrintln("catalog: "+catalog);
 		drv.debugPrintln("schema pattern: "+
-						schemaPattern);
+						schemapattern);
 		drv.debugPrintln("function name pattern: "+
-						functionNamePattern);
+						functionnamepattern);
 
 		// FIXME: implement with sqlrcur.getProcedures()?
 		drv.debugPrintln("FIXME: implement this");
@@ -814,19 +814,19 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 	public
 	ResultSet getProcedureColumns(String catalog,
-					String schemaPattern,
-					String procedureNamePattern,
-					String columnNamePattern)
+					String schemapattern,
+					String procedurenamepattern,
+					String columnnamepattern)
 					throws SQLException {
 		drv.debugFunction(this);
 
 		drv.debugPrintln("catalog: "+catalog);
 		drv.debugPrintln("schema pattern: "+
-						schemaPattern);
+						schemapattern);
 		drv.debugPrintln("procedure name pattern: "+
-						procedureNamePattern);
+						procedurenamepattern);
 		drv.debugPrintln("column name pattern: "+
-						columnNamePattern);
+						columnnamepattern);
 
 		// FIXME: implement with sqlrcon.getProcedureBindAndColumnList()
 		drv.debugPrintln("FIXME: implement this");
@@ -836,16 +836,16 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 	public
 	ResultSet getProcedures(String catalog,
-					String schemaPattern,
-					String procedureNamePattern)
+					String schemapattern,
+					String procedurenamepattern)
 					throws SQLException {
 		drv.debugFunction(this);
 
 		drv.debugPrintln("catalog: "+catalog);
 		drv.debugPrintln("schema pattern: "+
-						schemaPattern);
+						schemapattern);
 		drv.debugPrintln("procedure name pattern: "+
-						procedureNamePattern);
+						procedurenamepattern);
 
 		// FIXME: We do have some amount of backend support for this,
 		// but currently it returns all procedures, in all schemas, in
@@ -859,8 +859,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		return null;
 
 /*
-		String	wild=buildWild(catalog,schemaPattern,
-						procedureNamePattern);
+		String	wild=buildWild(catalog,schemapattern,
+						procedurenamepattern);
 		drv.debugPrintln("wild: "+wild);
 
 		SQLRelayResultSet	resultset=null;
@@ -871,7 +871,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		boolean	result=false;
 		synchronized (networklock) {
 			result=sqlrcur.getProcedureListWithFormat(
-						procedureNamePattern,4);
+						procedurenamepattern,4);
 		}
 
 		if (result) {
@@ -905,16 +905,16 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 	public
 	ResultSet getPseudoColumns(String catalog,
-					String schemaPattern,
-					String tableNamePattern,
-					String columnNamePattern)
+					String schemapattern,
+					String tablenamepattern,
+					String columnnamepattern)
 					throws SQLException {
 		drv.debugFunction(this);
 
 		drv.debugPrintln("catalog: "+catalog);
-		drv.debugPrintln("schema pattern: "+schemaPattern);
-		drv.debugPrintln("table name pattern: "+tableNamePattern);
-		drv.debugPrintln("column name pattern: "+columnNamePattern);
+		drv.debugPrintln("schema pattern: "+schemapattern);
+		drv.debugPrintln("table name pattern: "+tablenamepattern);
+		drv.debugPrintln("column name pattern: "+columnnamepattern);
 
 		// FIXME: implement this somehow
 		drv.debugPrintln("FIXME: implement this");
@@ -978,13 +978,13 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 	public
 	ResultSet getSchemas(String catalog,
-					String schemaPattern)
+					String schemapattern)
 					throws SQLException {
 		drv.debugFunction(this);
 
 		// FIXME: use catalog
 		drv.debugPrintln("catalog: "+catalog);
-		drv.debugPrintln("schema pattern: "+schemaPattern);
+		drv.debugPrintln("schema pattern: "+schemapattern);
 
 		SQLRelayResultSet	resultset=null;
 		SQLRelayStatement	stmt=(SQLRelayStatement)
@@ -993,7 +993,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 		boolean	result=false;
 		synchronized (networklock) {
-			result=sqlrcur.getSchemaListWithFormat(schemaPattern,4);
+			result=sqlrcur.getSchemaListWithFormat(schemapattern,4);
 		}
 
 		if (result) {
@@ -1062,13 +1062,13 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 	public
 	ResultSet getSuperTables(String catalog,
-					String schemaPattern,
-					String tableNamePattern)
+					String schemapattern,
+					String tablenamepattern)
 					throws SQLException {
 		drv.debugFunction(this);
 		drv.debugPrintln("catalog: "+catalog);
-		drv.debugPrintln("schema pattern: "+schemaPattern);
-		drv.debugPrintln("type name pattern: "+tableNamePattern);
+		drv.debugPrintln("schema pattern: "+schemapattern);
+		drv.debugPrintln("type name pattern: "+tablenamepattern);
 		// few jdbc drivers (or databases) support this
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
@@ -1077,13 +1077,13 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 	public
 	ResultSet getSuperTypes(String catalog,
-					String schemaPattern,
-					String typeNamePattern)
+					String schemapattern,
+					String typenamepattern)
 					throws SQLException {
 		drv.debugFunction(this);
 		drv.debugPrintln("catalog: "+catalog);
-		drv.debugPrintln("schema pattern: "+schemaPattern);
-		drv.debugPrintln("type name pattern: "+typeNamePattern);
+		drv.debugPrintln("schema pattern: "+schemapattern);
+		drv.debugPrintln("type name pattern: "+typenamepattern);
 		// few jdbc drivers (or databases) support this
 		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
@@ -1101,14 +1101,14 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 	public
 	ResultSet getTablePrivileges(String catalog,
-					String schemaPattern,
-					String tableNamePattern)
+					String schemapattern,
+					String tablenamepattern)
 					throws SQLException {
 		drv.debugFunction(this);
 
 		drv.debugPrintln("catalog: "+catalog);
-		drv.debugPrintln("schema pattern: "+schemaPattern);
-		drv.debugPrintln("table name pattern: "+tableNamePattern);
+		drv.debugPrintln("schema pattern: "+schemapattern);
+		drv.debugPrintln("table name pattern: "+tablenamepattern);
 
 		// FIXME: implement this somehow
 		drv.debugPrintln("FIXME: implement this");
@@ -1118,15 +1118,15 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 	public
 	ResultSet getTables(String catalog,
-				String schemaPattern,
-				String tableNamePattern,
+				String schemapattern,
+				String tablenamepattern,
 				String[] types)
 				throws SQLException {
 		drv.debugFunction(this);
 
 		drv.debugPrintln("catalog: "+catalog);
-		drv.debugPrintln("schema pattern: "+schemaPattern);
-		drv.debugPrintln("table name pattern: "+tableNamePattern);
+		drv.debugPrintln("schema pattern: "+schemapattern);
+		drv.debugPrintln("table name pattern: "+tablenamepattern);
 
 		int	objecttypes=0;
 		if (types==null) {
@@ -1152,7 +1152,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 			drv.debugPrintln("types: "+t);
 		}
 
-		String	wild=buildWild(catalog,schemaPattern,tableNamePattern);
+		String	wild=buildWild(catalog,schemapattern,tablenamepattern);
 		drv.debugPrintln("wild: "+wild);
 
 		SQLRelayResultSet	resultset=null;
@@ -1163,7 +1163,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		boolean	result=false;
 		synchronized (networklock) {
 			result=sqlrcur.getTableListWithFormat(
-					tableNamePattern,4,objecttypes);
+					tablenamepattern,4,objecttypes);
 		}
 
 		if (result) {
@@ -1312,15 +1312,15 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 	public
 	ResultSet getUDTs(String catalog,
-				String schemaPattern,
-				String typeNamePattern,
+				String schemapattern,
+				String typenamepattern,
 				int[] types)
 				throws SQLException {
 		drv.debugFunction(this);
 
 		drv.debugPrintln("catalog: "+catalog);
-		drv.debugPrintln("schema pattern: "+schemaPattern);
-		drv.debugPrintln("type name pattern: "+typeNamePattern);
+		drv.debugPrintln("schema pattern: "+schemapattern);
+		drv.debugPrintln("type name pattern: "+typenamepattern);
 		// FIXME: debug types...
 
 		// FIXME: implement this somehow
@@ -1711,11 +1711,11 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	}
 
 	public
-	boolean supportsConvert(int fromType, int toType) throws SQLException {
+	boolean supportsConvert(int fromtype, int totype) throws SQLException {
 		drv.debugFunction(this);
 
-		drv.debugPrintln("from type: "+fromType);
-		drv.debugPrintln("to type: "+toType);
+		drv.debugPrintln("from type: "+fromtype);
+		drv.debugPrintln("to type: "+totype);
 
 		boolean	result=true;
 		// FIXME: query the db directly for each, cache

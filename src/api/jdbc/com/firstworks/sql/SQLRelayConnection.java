@@ -185,7 +185,7 @@ public class SQLRelayConnection implements Connection {
 	}
 
 	public
-	Array createArrayOf(String typeName,
+	Array createArrayOf(String typename,
 					Object[] elements)
 					throws SQLException {
 		drv.debugFunction(this);
@@ -246,30 +246,30 @@ public class SQLRelayConnection implements Connection {
 	}
 
 	public
-	Statement createStatement(int resultSetType,
-					int resultSetConcurrency)
+	Statement createStatement(int resultsettype,
+					int resultsetconcurrency)
 					throws SQLException {
 		drv.debugFunction(this);
 		Statement	stmt=createStatement(
-					resultSetType,
-					resultSetConcurrency,
+					resultsettype,
+					resultsetconcurrency,
 					ResultSet.HOLD_CURSORS_OVER_COMMIT);
 		drv.debugEnd();
 		return stmt;
 	}
 
 	public
-	Statement createStatement(int resultSetType,
-						int resultSetConcurrency,
-						int resultSetHoldability)
+	Statement createStatement(int resultsettype,
+						int resultsetconcurrency,
+						int resultsetholdability)
 						throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 
 		// debug
-		debugResultSetType(resultSetType);
-		debugResultSetConcurrency(resultSetConcurrency);
-		debugResultSetHoldability(resultSetHoldability);
+		debugResultSetType(resultsettype);
+		debugResultSetConcurrency(resultsetconcurrency);
+		debugResultSetHoldability(resultsetholdability);
 
 		// catch unsupported options
 		// we only support:
@@ -277,16 +277,16 @@ public class SQLRelayConnection implements Connection {
 		//	ResultSet.CONCUR_READ_ONLY
 		//	ResultSet.HOLD_CURSORS_OVER_COMMIT
 		throwResultSetFeatureNotSupportedException(
-						resultSetType,
-						resultSetConcurrency,
-						resultSetHoldability);
+						resultsettype,
+						resultsetconcurrency,
+						resultsetholdability);
 
 		// create a cursor
 		SQLRCursor	sqlrcur=new SQLRCursor(sqlrcon);
 		sqlrcur.getNullsAsNulls();
 
 		// set result set buffer size as appropriate
-		switch (resultSetType) {
+		switch (resultsettype) {
 			case ResultSet.TYPE_FORWARD_ONLY:
 				sqlrcur.setResultSetBufferSize(10);
 				break;
@@ -308,7 +308,7 @@ public class SQLRelayConnection implements Connection {
 	}
 
 	public
-	Struct createStruct(String typeName, Object[] attributes)
+	Struct createStruct(String typename, Object[] attributes)
 						throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
@@ -530,14 +530,14 @@ public class SQLRelayConnection implements Connection {
 
 	public
 	CallableStatement prepareCall(String sql,
-					int resultSetType,
-					int resultSetConcurrency)
+					int resultsettype,
+					int resultsetconcurrency)
 					throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		CallableStatement	stmt=prepareCall(sql,
-					resultSetType,
-					resultSetConcurrency,
+					resultsettype,
+					resultsetconcurrency,
 					ResultSet.HOLD_CURSORS_OVER_COMMIT);
 		drv.debugEnd();
 		return stmt;
@@ -545,18 +545,18 @@ public class SQLRelayConnection implements Connection {
 
 	public
 	CallableStatement prepareCall(String sql,
-					int resultSetType,
-					int resultSetConcurrency,
-					int resultSetHoldability)
+					int resultsettype,
+					int resultsetconcurrency,
+					int resultsetholdability)
 					throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 
 		// debug
 		drv.debugPrintln("sql: "+sql);
-		debugResultSetType(resultSetType);
-		debugResultSetConcurrency(resultSetConcurrency);
-		debugResultSetHoldability(resultSetHoldability);
+		debugResultSetType(resultsettype);
+		debugResultSetConcurrency(resultsetconcurrency);
+		debugResultSetHoldability(resultsetholdability);
 
 		// catch unsupported options
 		// we only support:
@@ -564,9 +564,9 @@ public class SQLRelayConnection implements Connection {
 		//	ResultSet.CONCUR_READ_ONLY
 		//	ResultSet.HOLD_CURSORS_OVER_COMMIT
 		throwResultSetFeatureNotSupportedException(
-						resultSetType,
-						resultSetConcurrency,
-						resultSetHoldability);
+						resultsettype,
+						resultsetconcurrency,
+						resultsetholdability);
 
 		// create a cursor
 		SQLRCursor	sqlrcur=new SQLRCursor(sqlrcon);
@@ -574,7 +574,7 @@ public class SQLRelayConnection implements Connection {
 		sqlrcur.prepareQuery(sql);
 
 		// set result set buffer size as appropriate
-		switch (resultSetType) {
+		switch (resultsettype) {
 			case ResultSet.TYPE_FORWARD_ONLY:
 				sqlrcur.setResultSetBufferSize(10);
 				break;
@@ -610,14 +610,14 @@ public class SQLRelayConnection implements Connection {
 
 	public
 	PreparedStatement prepareStatement(String sql,
-					int resultSetType,
-					int resultSetConcurrency)
+					int resultsettype,
+					int resultsetconcurrency)
 					throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		PreparedStatement	stmt=prepareStatement(sql,
-					resultSetType,
-					resultSetConcurrency,
+					resultsettype,
+					resultsetconcurrency,
 					ResultSet.HOLD_CURSORS_OVER_COMMIT);
 		drv.debugEnd();
 		return stmt;
@@ -625,18 +625,18 @@ public class SQLRelayConnection implements Connection {
 
 	public
 	PreparedStatement prepareStatement(String sql,
-					int resultSetType,
-					int resultSetConcurrency,
-					int resultSetHoldability)
+					int resultsettype,
+					int resultsetconcurrency,
+					int resultsetholdability)
 					throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 
 		// debug
 		drv.debugPrintln("sql: "+sql);
-		debugResultSetType(resultSetType);
-		debugResultSetConcurrency(resultSetConcurrency);
-		debugResultSetHoldability(resultSetHoldability);
+		debugResultSetType(resultsettype);
+		debugResultSetConcurrency(resultsetconcurrency);
+		debugResultSetHoldability(resultsetholdability);
 
 		// catch unsupported options
 		// we only support:
@@ -644,9 +644,9 @@ public class SQLRelayConnection implements Connection {
 		//	ResultSet.CONCUR_READ_ONLY
 		//	ResultSet.HOLD_CURSORS_OVER_COMMIT
 		throwResultSetFeatureNotSupportedException(
-						resultSetType,
-						resultSetConcurrency,
-						resultSetHoldability);
+						resultsettype,
+						resultsetconcurrency,
+						resultsetholdability);
 
 		// create a cursor
 		SQLRCursor	sqlrcur=new SQLRCursor(sqlrcon);
@@ -654,7 +654,7 @@ public class SQLRelayConnection implements Connection {
 		sqlrcur.prepareQuery(sql);
 
 		// set result set buffer size as appropriate
-		switch (resultSetType) {
+		switch (resultsettype) {
 			case ResultSet.TYPE_FORWARD_ONLY:
 				sqlrcur.setResultSetBufferSize(10);
 				break;
@@ -677,18 +677,18 @@ public class SQLRelayConnection implements Connection {
 
 	public
 	PreparedStatement prepareStatement(String sql,
-					int autoGeneratedKeys)
+					int autogeneratedkeys)
 					throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 
-		debugAutoGeneratedKeys(autoGeneratedKeys);
+		debugAutoGeneratedKeys(autogeneratedkeys);
 
 		// catch unsupported options
 		// we only support Statement.NO_GENERATED_KEYS,
-		// but we can support this call if autoGeneratedKeys isn't
+		// but we can support this call if autogeneratedkeys isn't
 		// Statement.RETURN_GENERATED_KEYS
-		throwAutoGeneratedKeysNotSupportedException(autoGeneratedKeys);
+		throwAutoGeneratedKeysNotSupportedException(autogeneratedkeys);
 
 		// create a prepared statement
 		PreparedStatement	stmt=prepareStatement(sql);
@@ -699,15 +699,15 @@ public class SQLRelayConnection implements Connection {
 
 	public
 	PreparedStatement prepareStatement(String sql,
-					int[] columnIndexes)
+					int[] columnindexes)
 					throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 
 		// catch unsupported options
 		// we only support Statement.NO_GENERATED_KEYS,
-		// but we can support this call if there are no columnIndexes
-		if (columnIndexes!=null && columnIndexes.length>0) {
+		// but we can support this call if there are no columnindexes
+		if (columnindexes!=null && columnindexes.length>0) {
 			throwAutoGeneratedKeysNotSupportedException(
 					Statement.RETURN_GENERATED_KEYS);
 		}
@@ -721,15 +721,15 @@ public class SQLRelayConnection implements Connection {
 
 	public
 	PreparedStatement prepareStatement(String sql,
-					String[] columnNames)
+					String[] columnnames)
 					throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 
 		// catch unsupported options
 		// we only support Statement.NO_GENERATED_KEYS,
-		// but we can support this call if there are no columnNames
-		if (columnNames!=null && columnNames.length>0) {
+		// but we can support this call if there are no columnnames
+		if (columnnames!=null && columnnames.length>0) {
 			throwAutoGeneratedKeysNotSupportedException(
 					Statement.RETURN_GENERATED_KEYS);
 		}
@@ -1037,8 +1037,8 @@ public class SQLRelayConnection implements Connection {
 		}
 	}
 
-	void debugAutoGeneratedKeys(int autoGeneratedKeys) {
-		switch (autoGeneratedKeys) {
+	void debugAutoGeneratedKeys(int autogeneratedkeys) {
+		switch (autogeneratedkeys) {
 			case Statement.RETURN_GENERATED_KEYS:
 				drv.debugPrintln("auto generated keys: "+
 						"RETURN_GENERATED_KEYS");
@@ -1050,7 +1050,7 @@ public class SQLRelayConnection implements Connection {
 			default:
 				drv.debugPrintln("auto generated keys: "+
 							"unknown - "+
-							autoGeneratedKeys);
+							autogeneratedkeys);
 				break;
 		}
 	}
@@ -1196,9 +1196,9 @@ public class SQLRelayConnection implements Connection {
 	}
 
 	void throwAutoGeneratedKeysNotSupportedException(
-						int autoGeneratedKeys)
+						int autogeneratedkeys)
 						throws SQLException {
-		switch (autoGeneratedKeys) {
+		switch (autogeneratedkeys) {
 			case Statement.NO_GENERATED_KEYS:
 				break;
 			case Statement.RETURN_GENERATED_KEYS:
@@ -1209,7 +1209,7 @@ public class SQLRelayConnection implements Connection {
 			default:
 				drv.debugPrintln("not supported: "+
 							"unknown - "+
-							autoGeneratedKeys);
+							autogeneratedkeys);
 				throwFeatureNotSupportedException();
 				break;
 		}
