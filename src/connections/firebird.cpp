@@ -247,6 +247,11 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes,
 						bool currentschemaonly);
+		const char	*getTableListQuery(
+						const char *db,
+						const char *schema,
+						const char *table,
+						uint16_t objecttypes);
 		const char	*getGlobalTempTableListQuery(
 						bool currentschemaonly);
 		const char	*getColumnListQuery(
@@ -708,6 +713,45 @@ const char *firebirdconnection::getTableListQuery(bool wild,
 		tablelistquery.append(
 			"	and "
 			"	rdb$relation_name like '%s' ");
+	}
+	tablelistquery.append(
+		"order by "
+		"	rdb$owner_name, "
+		"	rdb$relation_name");
+
+	return tablelistquery.getString();
+}
+
+const char *firebirdconnection::getTableListQuery(const char *db,
+						const char *schema,
+						const char *table,
+						uint16_t objecttypes) {
+	tablelistquery.clear();
+	tablelistquery.append(
+		"select "
+		"	'' as table_cat, "
+		"	rdb$owner_name as table_schem, "
+		"	rdb$relation_name as table_name, "
+		"	'TABLE' as table_type, "
+		"	'' as remarks, "
+		"	null "
+		"from "
+		"	rdb$relations "
+		"where "
+		"	rdb$system_flag=0 ");
+	if (schema) {
+		tablelistquery.append(
+			"	and "
+			"	rdb$owner_name='");
+		tablelistquery.append(schema);
+		tablelistquery.append("' ");
+	}
+	if (table) {
+		tablelistquery.append(
+			"	and "
+			"	rdb$relation_name='");
+		tablelistquery.append(table);
+		tablelistquery.append("' ");
 	}
 	tablelistquery.append(
 		"order by "

@@ -260,6 +260,11 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes,
 						bool currentschemaonly);
+		const char	*getTableListQuery(
+						const char *db,
+						const char *schema,
+						const char *table,
+						uint16_t objecttypes);
 		const char	*getColumnListQuery(
 					const char *table, bool wild);
 		const char	*selectDatabaseQuery();
@@ -668,6 +673,83 @@ const char *db2connection::getTableListQuery(bool wild,
 			"	and "
 			"	tabname like '%s' ");
 	}
+	tablelistquery.append(
+		"order by "
+		"	tabschema, "
+		"	tabname");
+
+	return tablelistquery.getString();
+}
+
+const char *db2connection::getTableListQuery(const char *db,
+						const char *schema,
+						const char *table,
+						uint16_t objecttypes) {
+
+	stringbuffer	otypes;
+	otypes.append("	(");
+	if (objecttypes&DB_OBJECT_TABLE) {
+		otypes.append("	type='T' or type='U' ");
+	}
+	if (objecttypes&DB_OBJECT_VIEW) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	type='V' or type='W' ");
+	}
+	if (objecttypes&DB_OBJECT_ALIAS) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	type='A' ");
+	}
+	if (objecttypes&DB_OBJECT_SYNONYM) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	type='N' ");
+	}
+	otypes.append(") ");
+
+	tablelistquery.clear();
+	tablelistquery.append(
+		"select distinct "
+		"	'' as table_cat, "
+		"	tabschema as table_schem, "
+		"	tabname as table_name, "
+		"	'TABLE' as table_type, "
+		"	'' as remarks, "
+		"	null "
+		"from "
+		"	syscat.tables "
+		"where ");
+	if (dbmajorversion>7) {
+		tablelistquery.append(
+			"	ownertype='U' ");
+	} else {
+		tablelistquery.append(
+			"	definer!='SYSIBM' ");
+	}
+	tablelistquery.append(
+		"	and "
+		"	tabschema!='SYSTOOLS' ");
+	if (schema) {
+		tablelistquery.append(
+			"	and "
+			"	tabschema='");
+		tablelistquery.append(schema);
+		tablelistquery.append("' ");
+	}
+	if (table) {
+		tablelistquery.append(
+			"	and "
+			"	tabname='");
+		tablelistquery.append(table);
+		tablelistquery.append("' ");
+	}
+	tablelistquery.append(
+			"	and ");
+	tablelistquery.append(otypes.getString());
 	tablelistquery.append(
 		"order by "
 		"	tabschema, "

@@ -249,6 +249,11 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes,
 						bool currentschemaonly);
+		const char	*getTableListQuery(
+						const char *db,
+						const char *schema,
+						const char *table,
+						uint16_t objecttypes);
 		const char	*getColumnListQuery(
 						const char *table,
 						bool wild);
@@ -629,6 +634,76 @@ const char *informixconnection::getTableListQuery(bool wild,
 			"	and "
 			"	tabname like '%s' ");
 	}
+	tablelistquery.append(
+		"order by "
+		"	dbname, "
+		"	owner, "
+		"	tabname");
+
+	return tablelistquery.getString();
+}
+
+const char *informixconnection::getTableListQuery(const char *db,
+						const char *schema,
+						const char *table,
+						uint16_t objecttypes) {
+
+	stringbuffer	otypes;
+	otypes.append("	(");
+	if (objecttypes&DB_OBJECT_TABLE) {
+		otypes.append("	tabtype='T' or tabtype='E' ");
+	}
+	if (objecttypes&DB_OBJECT_VIEW) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	tabtype='V' ");
+	}
+	if (objecttypes&DB_OBJECT_SYNONYM) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	tabtype='S' or tabtype='P'");
+	}
+	otypes.append(") ");
+
+	tablelistquery.clear();
+	tablelistquery.append(
+		"select distinct "
+		"	dbname as table_cat, "
+		"	owner as table_schem, "
+		"	tabname as table_name, "
+		"	'TABLE' as table_type, "
+		"	'' as remarks, "
+		"	'' "
+		"from "
+		"	systables "
+		"where "
+		"	tabid>99 ");
+	if (db) {
+		tablelistquery.append(
+			"	and "
+			"	dbname='");
+		tablelistquery.append(db);
+		tablelistquery.append("' ");
+	}
+	if (schema) {
+		tablelistquery.append(
+			"	and "
+			"	owner='");
+		tablelistquery.append(schema);
+		tablelistquery.append("' ");
+	}
+	if (table) {
+		tablelistquery.append(
+			"	and "
+			"	tabname='");
+		tablelistquery.append(table);
+		tablelistquery.append("' ");
+	}
+	tablelistquery.append(
+		"	and ");
+	tablelistquery.append(otypes.getString());
 	tablelistquery.append(
 		"order by "
 		"	dbname, "

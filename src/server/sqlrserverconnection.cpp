@@ -985,6 +985,14 @@ const char *sqlrserverconnection::getTableListQuery(
 	return getNoopQuery();
 }
 
+const char *sqlrserverconnection::getTableListQuery(
+						const char *db,
+						const char *schema,
+						const char *table,
+						uint16_t objecttypes) {
+	return getNoopQuery();
+}
+
 const char *sqlrserverconnection::getTableTypeListQuery(bool wild,
 						bool currentschemaonly) {
 	return getNoopQuery();

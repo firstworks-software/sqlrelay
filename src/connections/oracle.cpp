@@ -125,6 +125,11 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes,
 						bool currentschemaonly);
+		const char	*getTableListQuery(
+						const char *db,
+						const char *schema,
+						const char *table,
+						uint16_t objecttypes);
 		const char	*getTableTypeListQuery(bool wild,
 						bool currentschemaonly);
 		const char	*getGlobalTempTableListQuery(
@@ -1333,6 +1338,134 @@ const char *oracleconnection::getTableListQuery(bool wild,
 	tablelistquery.append(
 		"order by "
 		"	owner, "
+		"	table_name");
+
+	return tablelistquery.getString();
+}
+
+const char *oracleconnection::getTableListQuery(const char *db,
+						const char *schema,
+						const char *table,
+						uint16_t objecttypes) {
+
+	tablelistquery.clear();
+
+	bool	first=true;
+
+	if (objecttypes&DB_OBJECT_TABLE) {
+		tablelistquery.append(
+			"(select "
+			"	'' as table_cat, "
+			"	owner as table_schem, "
+			"	table_name as table_name, "
+			"	'TABLE' as table_type, "
+			"	'' as remarks, "
+			"	null "
+			"from "
+			"	all_tables ");
+		bool	prevclause=false;
+		if (schema) {
+			tablelistquery.append("where ");
+			tablelistquery.append(
+				"	owner='");
+			tablelistquery.append(schema);
+			tablelistquery.append("' ");
+			prevclause=true;
+		}
+		if (table) {
+			if (prevclause) {
+				tablelistquery.append("	and ");
+			} else {
+				tablelistquery.append("where ");
+			}
+			tablelistquery.append(
+				"	table_name='");
+			tablelistquery.append(table);
+			tablelistquery.append("' ");
+		}
+		tablelistquery.append(") ");
+		first=false;
+	}
+
+	if (objecttypes&DB_OBJECT_VIEW) {
+		if (!first) {
+			tablelistquery.append("union ");
+		}
+		tablelistquery.append(
+			"(select "
+			"	'' as table_cat, "
+			"	owner as table_schem, "
+			"	view_name as table_name, "
+			"	'VIEW' as table_type, "
+			"	'' as remarks, "
+			"	null "
+			"from "
+			"	all_views ");
+		bool	prevclause=false;
+		if (schema) {
+			tablelistquery.append("where ");
+			tablelistquery.append(
+				"	owner='");
+			tablelistquery.append(schema);
+			tablelistquery.append("' ");
+			prevclause=true;
+		}
+		if (table) {
+			if (prevclause) {
+				tablelistquery.append("	and ");
+			} else {
+				tablelistquery.append("where ");
+			}
+			tablelistquery.append(
+				"	view_name='");
+			tablelistquery.append(table);
+			tablelistquery.append("' ");
+		}
+		tablelistquery.append(") ");
+		first=false;
+	}
+
+	if (objecttypes&DB_OBJECT_SYNONYM) {
+		if (!first) {
+			tablelistquery.append("union ");
+		}
+		tablelistquery.append(
+			"(select "
+			"	'' as table_cat, "
+			"	owner as table_schem, "
+			"	synonym_name as table_name, "
+			"	'SYNONYM' as table_type, "
+			"	'' as remarks, "
+			"	null "
+			"from "
+			"	all_synonyms ");
+		bool	prevclause=false;
+		if (schema) {
+			tablelistquery.append("where ");
+			tablelistquery.append(
+				"	owner='");
+			tablelistquery.append(schema);
+			tablelistquery.append("' ");
+			prevclause=true;
+		}
+		if (table) {
+			if (prevclause) {
+				tablelistquery.append("	and ");
+			} else {
+				tablelistquery.append("where ");
+			}
+			tablelistquery.append(
+				"	synonym_name='");
+			tablelistquery.append(table);
+			tablelistquery.append("' ");
+		}
+		tablelistquery.append(") ");
+		first=false;
+	}
+
+	tablelistquery.append(
+		"order by "
+		"	table_schem, "
 		"	table_name");
 
 	return tablelistquery.getString();

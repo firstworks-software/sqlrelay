@@ -253,12 +253,27 @@ class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes,
 						bool currentschemaonly);
+		const char	*getTableListQuery(
+						const char *db,
+						const char *schema,
+						const char *table,
+						uint16_t objecttypes);
 		const char	*getTableListQuerySybase(bool wild,
 						uint16_t objecttypes,
 						bool currentschemaonly);
+		const char	*getTableListQuerySybase(
+						const char *db,
+						const char *schema,
+						const char *table,
+						uint16_t objecttypes);
 		const char	*getTableListQuerySqlServer(bool wild,
 						uint16_t objecttypes,
 						bool currentschemaonly);
+		const char	*getTableListQuerySqlServer(
+						const char *db,
+						const char *schema,
+						const char *table,
+						uint16_t objecttypes);
 		const char	*getColumnListQuery(
 						const char *table, bool wild);
 		const char	*getColumnListQuerySybase(
@@ -819,6 +834,149 @@ const char *freetdsconnection::getTableListQuerySqlServer(bool wild,
 		tablelistquery.append(
 			" and "
 			"	table_name like '%s' ");
+	}
+	tablelistquery.append(
+		"order by "
+		"	table_cat, "
+		"	table_schem, "
+		"	table_name");
+
+	return tablelistquery.getString();
+}
+
+const char *freetdsconnection::getTableListQuery(const char *db,
+						const char *schema,
+						const char *table,
+						uint16_t objecttypes) {
+	return (sybasedb)?
+		getTableListQuerySybase(db,schema,table,objecttypes):
+		getTableListQuerySqlServer(db,schema,table,objecttypes);
+}
+
+const char *freetdsconnection::getTableListQuerySybase(const char *db,
+						const char *schema,
+						const char *table,
+						uint16_t objecttypes) {
+
+	tablelistquery.clear();
+
+	stringbuffer	otypes;
+	otypes.append("	(");
+	if (objecttypes&DB_OBJECT_TABLE) {
+		otypes.append("	type='U' ");
+	}
+	if (objecttypes&DB_OBJECT_VIEW) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	type='V' ");
+	}
+	otypes.append(") ");
+
+	tablelistquery.append(
+		"select "
+		"	'' as table_cat, "
+		"	loginame as table_schem, "
+		"	name as table_name, "
+		"	'TABLE' as table_type, "
+		"	'' as remarks, "
+		"	null "
+		"from "
+		"	sysobjects "
+		"where "
+		"	loginame is not null ");
+	if (schema) {
+		tablelistquery.append(
+			"	and "
+			"	loginame='");
+		tablelistquery.append(schema);
+		tablelistquery.append("' ");
+	}
+	if (table) {
+		tablelistquery.append(
+			"	and "
+			"	name='");
+		tablelistquery.append(table);
+		tablelistquery.append("' ");
+	}
+	tablelistquery.append(
+		"	and ");
+	tablelistquery.append(otypes.getString());
+	tablelistquery.append(
+		"order by "
+		"	name");
+
+	return tablelistquery.getString();
+}
+
+const char *freetdsconnection::getTableListQuerySqlServer(const char *db,
+						const char *schema,
+						const char *table,
+						uint16_t objecttypes) {
+
+	tablelistquery.clear();
+
+	stringbuffer	otypes;
+	otypes.append("	(");
+	if (objecttypes&DB_OBJECT_TABLE) {
+		otypes.append("	table_type='BASE TABLE' ");
+	}
+	if (objecttypes&DB_OBJECT_VIEW) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	table_type='VIEW' ");
+	}
+	if (objecttypes&DB_OBJECT_ALIAS) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	table_type='ALIAS' ");
+	}
+	if (objecttypes&DB_OBJECT_SYNONYM) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	table_type='SYNONYM' ");
+	}
+	otypes.append(") ");
+
+	tablelistquery.append(
+		"select "
+		"	table_catalog as table_cat, "
+		"	table_schema as table_schem, "
+		"	table_name, "
+		"	case "
+		"		when table_type="
+		"'BASE TABLE' then 'TABLE' "
+		"		else table_type "
+		"	end as table_type, "
+		"	'' as remarks, "
+		"	null "
+		"from "
+		"	information_schema.tables "
+		"where ");
+	tablelistquery.append(otypes.getString());
+	if (db) {
+		tablelistquery.append(
+			"	and "
+			"	table_catalog='");
+		tablelistquery.append(db);
+		tablelistquery.append("' ");
+	}
+	if (schema) {
+		tablelistquery.append(
+			"	and "
+			"	table_schema='");
+		tablelistquery.append(schema);
+		tablelistquery.append("' ");
+	}
+	if (table) {
+		tablelistquery.append(
+			"	and "
+			"	table_name='");
+		tablelistquery.append(table);
+		tablelistquery.append("' ");
 	}
 	tablelistquery.append(
 		"order by "

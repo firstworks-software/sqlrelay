@@ -2873,6 +2873,14 @@ const char *sqlrservercontroller::getTableListQuery(
 							currentschemaonly);
 }
 
+const char *sqlrservercontroller::getTableListQuery(
+						const char *db,
+						const char *schema,
+						const char *table,
+						uint16_t objecttypes) {
+	return pvt->_conn->getTableListQuery(db,schema,table,objecttypes);
+}
+
 const char *sqlrservercontroller::getTableTypeListQuery(
 						bool wild,
 						bool currentschemaonly) {

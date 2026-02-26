@@ -41,6 +41,11 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes,
 						bool currentschemaonly);
+		const char	*getTableListQuery(
+						const char *db,
+						const char *schema,
+						const char *table,
+						uint16_t objecttypes);
 		const char	*getColumnListQuery(
 						const char *table, bool wild);
 		const char	*selectDatabaseQuery();
@@ -620,6 +625,61 @@ const char *sapconnection::getTableListQuery(bool wild,
 			"	and "
 			"	name like '%s' ");
 	}
+	tablelistquery.append(
+		"order by "
+		"	name");
+
+	return tablelistquery.getString();
+}
+
+const char *sapconnection::getTableListQuery(const char *db,
+						const char *schema,
+						const char *table,
+						uint16_t objecttypes) {
+
+	stringbuffer	otypes;
+	otypes.append("	(");
+	if (objecttypes&DB_OBJECT_TABLE) {
+		otypes.append("	type='U' ");
+	}
+	if (objecttypes&DB_OBJECT_VIEW) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	type='V' ");
+	}
+	otypes.append(") ");
+
+	tablelistquery.clear();
+	tablelistquery.append(
+		"select "
+		"	'' as table_cat, "
+		"	loginame as table_schem, "
+		"	name as table_name, "
+		"	'TABLE' as table_type, "
+		"	'' as remarks, "
+		"	null "
+		"from "
+		"	sysobjects "
+		"where "
+		"	loginame is not null ");
+	if (schema) {
+		tablelistquery.append(
+			"	and "
+			"	loginame='");
+		tablelistquery.append(schema);
+		tablelistquery.append("' ");
+	}
+	if (table) {
+		tablelistquery.append(
+			"	and "
+			"	name='");
+		tablelistquery.append(table);
+		tablelistquery.append("' ");
+	}
+	tablelistquery.append(
+		"	and ");
+	tablelistquery.append(otypes.getString());
 	tablelistquery.append(
 		"order by "
 		"	name");

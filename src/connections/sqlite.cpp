@@ -51,6 +51,11 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 		const char	*getTableListQuery(bool wild,
 						uint16_t objecttypes,
 						bool currentschemaonly);
+		const char	*getTableListQuery(
+						const char *db,
+						const char *schema,
+						const char *table,
+						uint16_t objecttypes);
 		const char	*getColumnListQuery(
 						const char *table, bool wild);
 		#ifdef SQLITE_TRANSACTIONAL
@@ -335,6 +340,65 @@ const char *sqliteconnection::getTableListQuery(bool wild,
 		tablelistquery.append(
 			"where "
 			"	tbl_name like '%s' ");
+	}
+	tablelistquery.append(
+		"order by "
+		"	tbl_name");
+
+	return tablelistquery.getString();
+}
+
+const char *sqliteconnection::getTableListQuery(const char *db,
+						const char *schema,
+						const char *table,
+						uint16_t objecttypes) {
+
+	stringbuffer	otypes;
+	otypes.append("	(");
+	if (objecttypes&DB_OBJECT_TABLE) {
+		otypes.append("	type='table' ");
+	}
+	if (objecttypes&DB_OBJECT_VIEW) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	type='view' ");
+	}
+	otypes.append(") ");
+
+	tablelistquery.clear();
+	tablelistquery.append(
+		"select "
+		"	'' as table_cat, "
+		"	'' as table_schem, "
+		"	tbl_name as table_name, "
+		"	'TABLE' as table_type, "
+		"	'' as remarks, "
+		"	null "
+		"from "
+		"( "
+		"select "
+		"	tbl_name "
+		"from "
+		"	sqlite_master "
+		"where ");
+	tablelistquery.append(otypes.getString());
+	tablelistquery.append(
+		"union all "
+		"select "
+		"	tbl_name "
+		"from "
+		"	sqlite_temp_master "
+		"where ");
+	tablelistquery.append(otypes.getString());
+	tablelistquery.append(
+		") ");
+	if (table) {
+		tablelistquery.append(
+			"where "
+			"	tbl_name='");
+		tablelistquery.append(table);
+		tablelistquery.append("' ");
 	}
 	tablelistquery.append(
 		"order by "

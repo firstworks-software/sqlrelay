@@ -2147,6 +2147,26 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 							bool currentschemaonly);
 
 		/** Returns a query that can be used to fetch the list of
+		 *  table names that match the provided "db", "schema", "table",
+		 *  and "objecttypes" criteria.
+		 *
+		 *  Each of "db", "schema" and "table" may be an object name,
+		 *  or may be left NULL, meaning "don't filter".
+		 *
+		 *  "objecttypes" should be an or-ed set of one or more of the
+		 *  following object types:
+		 *
+		 *  DB_OBJECT_TABLE
+		 *  DB_OBJECT_VIEW
+		 *  DB_OBJECT_ALIAS
+		 *  DB_OBJECT_SYNONYM
+		 */
+		const char	*getTableListQuery(const char *db,
+							const char *schema,
+							const char *table,
+							uint16_t objecttypes);
+
+		/** Returns a query that can be used to fetch the list of
 		 *  table types.
 		 *
 		 *  If "wild" is true the the query also includes a where
@@ -3648,8 +3668,8 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  results.
 		 *
 		 *  If "currentdbonly" is true then the query only returns
-		 *  schemas on the current database.
-
+		 *  schemas in the current database.
+		 *
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return a database-specific
 		 *  query.
@@ -3683,9 +3703,9 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  If "currentschemaonly" is true then the query only returns
 		 *  schemas on the current database.
 		 *
-		 *  This implementation returns a query against the
-		 *  information_schema, but it may be overridden by a child
-		 *  class to return a database-specific query.
+		 *  This implementation just returns getNoopQuery(), but it may
+		 *  be overridden by a child class to return a database-specific
+		 *  query.
 		 *
 		 *  Queries should return result sets with columns that match
 		 *  the columns of the result sets produced by the ODBC
@@ -3705,6 +3725,44 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 							bool wild,
 							uint16_t objecttypes,
 							bool currentschemaonly);
+
+		/** Returns a query that can be used to fetch the list of
+		 *  table names that match the provided "db", "schema", "table",
+		 *  and "objecttypes" criteria.
+		 *
+		 *  Each of "db", "schema" and "table" may be an object name,
+		 *  or may be left NULL, meaning "don't filter".
+		 *
+		 *  "objecttypes" should be an or-ed set of one or more of the
+		 *  following object types:
+		 *
+		 *  DB_OBJECT_TABLE
+		 *  DB_OBJECT_VIEW
+		 *  DB_OBJECT_ALIAS
+		 *  DB_OBJECT_SYNONYM
+		 *
+		 *  This implementation just returns getNoopQuery(), but it may
+		 *  be overridden by a child class to return a database-specific
+		 *  query.
+		 *
+		 *  Queries should return result sets with columns that match
+		 *  the columns of the result sets produced by the ODBC
+		 *  function SQLTables(), plus a trailing null column:
+		 *
+		 *  * TABLE_CAT
+		 *  * TABLE_SCHEM
+		 *  * TABLE_NAME
+		 *  * TABLE_TYPE
+		 *  * REMARKS
+		 *  * NULL
+		 *
+		 *  ...returning an empty string, 0, or null as appropriate for
+		 *  any columns that the database is unable to provide.
+		 */
+		virtual const char	*getTableListQuery(const char *db,
+							const char *schema,
+							const char *table,
+							uint16_t objecttypes);
 
 		/** Returns a query that can be used to fetch the list of
 		 *  table types.
