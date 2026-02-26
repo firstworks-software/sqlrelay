@@ -28,6 +28,7 @@ public class SQLRelayStatement implements Statement {
 	protected int			updatecount;
 	private boolean			escapeprocessing;
 	private String			cursorname;
+	private int			fetchsize;
 
 
 	public
@@ -55,6 +56,7 @@ public class SQLRelayStatement implements Statement {
 		updatecount=-1;
 		escapeprocessing=true;
 		cursorname=null;
+		fetchsize=0;
 		drv.debugEnd();
 	}
 
@@ -161,6 +163,9 @@ public class SQLRelayStatement implements Statement {
 		if (escapeprocessing) {
 			sql=conn.nativeSQL(sql);
 		}
+
+		// set the result set buffer size
+		sqlrcur.setResultSetBufferSize(fetchsize);
 
 		// send the query
 		boolean	result=false;
@@ -287,10 +292,7 @@ public class SQLRelayStatement implements Statement {
 	public
 	ResultSet executeQuery(String sql) throws SQLException {
 		drv.debugFunction(this);
-
-		// execute
 		execute(sql);
-
 		drv.debugEnd();
 		return resultset;
 	}
@@ -298,10 +300,7 @@ public class SQLRelayStatement implements Statement {
 	public
 	int executeUpdate(String sql) throws SQLException {
 		drv.debugFunction(this);
-
-		// execute
 		execute(sql);
-
 		drv.debugEnd();
 		return updatecount;
 	}
@@ -387,10 +386,9 @@ public class SQLRelayStatement implements Statement {
 	int getFetchSize() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		int	rows=(int)sqlrcur.getResultSetBufferSize();
-		drv.debugPrintln("fetch size: "+rows);
+		drv.debugPrintln("fetch size: "+fetchsize);
 		drv.debugEnd();
-		return rows;
+		return fetchsize;
 	}
 
 	public
@@ -569,8 +567,9 @@ public class SQLRelayStatement implements Statement {
 	boolean isCloseOnCompletion() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		drv.debugPrintln("close on completion: "+closeoncompletion);
 		drv.debugEnd();
-		return false;
+		return closeoncompletion;
 	}
 
 	public
@@ -620,7 +619,7 @@ public class SQLRelayStatement implements Statement {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("fetch size: "+rows);
-		sqlrcur.setResultSetBufferSize(rows);
+		fetchsize=rows;
 		drv.debugEnd();
 	}
 
@@ -707,7 +706,7 @@ public class SQLRelayStatement implements Statement {
 			default:
 				drv.debugPrintln("result handling: "+
 							"unknown - "+
-							fetchdirection);
+							resultsethandling);
 				break;
 		}
 	}
@@ -737,6 +736,7 @@ public class SQLRelayStatement implements Statement {
 			case Statement.KEEP_CURRENT_RESULT:
 				drv.debugPrintln("not supported: "+
 							"KEEP_CURRENT_RESULT");
+				conn.throwFeatureNotSupportedException();
 				break;
 			case Statement.CLOSE_ALL_RESULTS:
 				break;
@@ -744,6 +744,7 @@ public class SQLRelayStatement implements Statement {
 				drv.debugPrintln("not supported: "+
 							"unknown - "+
 							resultsethandling);
+				conn.throwFeatureNotSupportedException();
 				break;
 		}
 	}

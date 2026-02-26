@@ -216,8 +216,8 @@ public class SQLRelayConnection implements Connection {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
-                // FIXME: we need an SQLRelayNClob implementation
-                // to support this
+		// FIXME: we need an SQLRelayNClob implementation
+		// // to support this
 		drv.debugEnd();
 		return null;
 	}
@@ -227,9 +227,9 @@ public class SQLRelayConnection implements Connection {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		throwFeatureNotSupportedException();
-                // FIXME: we need an SQLRelaySQLXML implementation
-                // to support this, which needs to be able to store a String
-                // and return it as an InputStream, Reader, Source, and String
+		// FIXME: we need an SQLRelaySQLXML implementation
+		// to support this, which needs to be able to store a String
+		// and return it as an InputStream, Reader, Source, and String
 		drv.debugEnd();
 		return null;
 	}
@@ -284,16 +284,6 @@ public class SQLRelayConnection implements Connection {
 		// create a cursor
 		SQLRCursor	sqlrcur=new SQLRCursor(sqlrcon);
 		sqlrcur.getNullsAsNulls();
-
-		// set result set buffer size as appropriate
-		switch (resultsettype) {
-			case ResultSet.TYPE_FORWARD_ONLY:
-				sqlrcur.setResultSetBufferSize(10);
-				break;
-			case ResultSet.TYPE_SCROLL_INSENSITIVE:
-				sqlrcur.setResultSetBufferSize(0);
-				break;
-		}
 
 		// create a statement, attach the cursor to the statement
 		SQLRelayStatement	sqlrstmt=
@@ -475,7 +465,7 @@ public class SQLRelayConnection implements Connection {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		// setReadOnly()/isReadOnly() are just hints to enable
-		// optimizations.  Addint the infrastructure to actually be
+		// optimizations.  Adding the infrastructure to actually be
 		// able to put a session in and out of read-only mode is fairly
 		// invasive, so for now, we'll just fake this.
 		drv.debugPrintln("read only: "+readonly);
@@ -573,16 +563,6 @@ public class SQLRelayConnection implements Connection {
 		sqlrcur.getNullsAsNulls();
 		sqlrcur.prepareQuery(sql);
 
-		// set result set buffer size as appropriate
-		switch (resultsettype) {
-			case ResultSet.TYPE_FORWARD_ONLY:
-				sqlrcur.setResultSetBufferSize(10);
-				break;
-			case ResultSet.TYPE_SCROLL_INSENSITIVE:
-				sqlrcur.setResultSetBufferSize(0);
-				break;
-		}
-
 		// create a statement, attach the cursor to the statement
 		SQLRelayCallableStatement	sqlrstmt=
 				new SQLRelayCallableStatement(drv);
@@ -652,16 +632,6 @@ public class SQLRelayConnection implements Connection {
 		SQLRCursor	sqlrcur=new SQLRCursor(sqlrcon);
 		sqlrcur.getNullsAsNulls();
 		sqlrcur.prepareQuery(sql);
-
-		// set result set buffer size as appropriate
-		switch (resultsettype) {
-			case ResultSet.TYPE_FORWARD_ONLY:
-				sqlrcur.setResultSetBufferSize(10);
-				break;
-			case ResultSet.TYPE_SCROLL_INSENSITIVE:
-				sqlrcur.setResultSetBufferSize(0);
-				break;
-		}
 
 		// create a statement, attach the cursor to the statement
 		SQLRelayPreparedStatement	sqlrstmt=
@@ -879,7 +849,7 @@ public class SQLRelayConnection implements Connection {
 			sqlrcon.setConnectTimeout(-1,-1);
 		} else {
 			int	sec=milliseconds/1000;
-			int	usec=(milliseconds-(milliseconds/1000))*1000;
+			int	usec=(milliseconds%1000)*1000;
 			drv.debugPrintln("sec: "+sec);
 			drv.debugPrintln("usec: "+usec);
 			sqlrcon.setConnectTimeout(sec,usec);
@@ -892,7 +862,7 @@ public class SQLRelayConnection implements Connection {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		// setReadOnly()/isReadOnly() are just hints to enable
-		// optimizations.  Addint the infrastructure to actually be
+		// optimizations.  Adding the infrastructure to actually be
 		// able to put a session in and out of read-only mode is fairly
 		// invasive, so for now, we'll just fake this.
 		this.readonly=readonly;

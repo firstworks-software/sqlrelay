@@ -97,7 +97,8 @@ public class SQLRelayDriver implements Driver {
 		// jdbc:sqlrelay://[user:password@]host[:port][:socket]
 
 		// check for jdbc:sqlrelay://
-		if (url.substring(0,16).equals("jdbc:sqlrelay://")) {
+		if (url.length()>=16 &&
+			url.substring(0,16).equals("jdbc:sqlrelay://")) {
 
 			// split the rest of the string on @ and get the parts
 			String[]	parts=url.substring(16).split("@");
@@ -236,10 +237,10 @@ public class SQLRelayDriver implements Driver {
 	private
 	boolean validConnectInfo(SQLRelayConnectInfo ci) {
 		debugFunction(this);
-		debugPrintln("host not null: "+ci.host!=null);
+		debugPrintln("host not null: "+(ci.host!=null));
 		debugPrintln("port > 0: "+(ci.port>0));
-		debugPrintln("socket not null: "+ci.socket!=null);
-		boolean valid=
+		debugPrintln("socket not null: "+(ci.socket!=null));
+		boolean	valid=
 			((ci.host!=null && ci.port>0) || ci.socket!=null);
 		debugPrintln("valid: "+valid);
 		debugEnd();
@@ -323,7 +324,7 @@ public class SQLRelayDriver implements Driver {
 		}
 		if (ci.outputparameterbuffersizestr==null) {
 			dpi=new DriverPropertyInfo(
-					"Output Parameter Buffer Size","false");
+					"Output Parameter Buffer Size","4096");
 			dpi.description="Buffer size to use for output "+
 					"parameters when using a method "+
 					"that doesn't have a length parameter";

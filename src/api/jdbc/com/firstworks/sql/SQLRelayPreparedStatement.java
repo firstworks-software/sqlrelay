@@ -73,6 +73,9 @@ public class SQLRelayPreparedStatement
 			bind(batch.get(0));
 		}
 
+		// set the result set buffer size
+		sqlrcur.setResultSetBufferSize(getFetchSize());
+
 		// execute the query
 		boolean	result=false;
 		synchronized (networklock) {
@@ -130,44 +133,7 @@ public class SQLRelayPreparedStatement
 	public
 	ResultSet executeQuery() throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-
-		// initialize results
-		resultset=null;
-		updatecount=-1;
-
-		// bind variables
-		if (batch.size()==0) {
-			bind(parameters);
-		} else {
-			bind(batch.get(0));
-		}
-
-		// execute the query
-		boolean	success=false;
-		synchronized (networklock) {
-			success=sqlrcur.executeQuery();
-		}
-
-		// handle results
-		if (success) {
-
-			updatecount=(int)sqlrcur.affectedRows();
-
-			drv.debugPrintln("update count: "+updatecount);
-			drv.debugPrintln("column count: "+sqlrcur.colCount());
-
-			resultset=new SQLRelayResultSet(drv);
-			resultset.setNetworkLock(networklock);
-			resultset.setStatement(this);
-			resultset.setConnection(conn);
-			resultset.setSQLRCursor(sqlrcur);
-
-			getOutputBindValues();
-		} else {
-			throwErrorMessageException();
-		}
-
+		execute();
 		drv.debugEnd();
 		return resultset;
 	}
@@ -175,36 +141,7 @@ public class SQLRelayPreparedStatement
 	public
 	int executeUpdate() throws SQLException {
 		drv.debugFunction(this);
-		throwExceptionIfClosed();
-
-		// initialize results
-		resultset=null;
-		updatecount=-1;
-
-		// bind variables
-		if (batch.size()==0) {
-			bind(parameters);
-		} else {
-			bind(batch.get(0));
-		}
-
-		// execute the query
-		boolean	success=false;
-		synchronized (networklock) {
-			success=sqlrcur.executeQuery();
-		}
-
-		// handle results
-		if (success) {
-			updatecount=(int)sqlrcur.affectedRows();
-
-			drv.debugPrintln("update count: "+updatecount);
-
-			getOutputBindValues();
-		} else {
-			throwErrorMessageException();
-		}
-
+		execute();
 		drv.debugEnd();
 		return updatecount;
 	}
