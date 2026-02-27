@@ -918,133 +918,135 @@ void sqlrcursor::clearCacheDest() {
 	}
 }
 
-bool sqlrcursor::getDatabaseList(const char *wild) {
-	return getDatabaseList(wild,SQLRCLIENTLISTFORMAT_MYSQL);
+bool sqlrcursor::getDatabaseList(const char *databases) {
+	return getDatabaseList(databases,SQLRCLIENTLISTFORMAT_MYSQL);
 }
 
-bool sqlrcursor::getDatabaseList(const char *wild,
+bool sqlrcursor::getDatabaseList(const char *databases,
 					sqlrclientlistformat_t listformat) {
 	if (pvt->_sqlrc->debug()) {
 		pvt->_sqlrc->debugPreStart();
 		pvt->_sqlrc->debugPrint("getting database list");
-		if (wild) {
+		if (databases) {
 			pvt->_sqlrc->debugPrint("\"");
-			pvt->_sqlrc->debugPrint(wild);
+			pvt->_sqlrc->debugPrint(databases);
 			pvt->_sqlrc->debugPrint("\"");
 		}
 		pvt->_sqlrc->debugPrint("\n");
 		pvt->_sqlrc->debugPreEnd();
 	}
-	return getList(GET_DB_LIST,listformat,NULL,wild,0);
+	return getObjectList(GET_DB_LIST,listformat,databases,0);
 }
 
-bool sqlrcursor::getSchemaList(const char *wild) {
-	return getSchemaList(wild,SQLRCLIENTLISTFORMAT_MYSQL);
+bool sqlrcursor::getSchemaList(const char *schemas) {
+	return getSchemaList(schemas,SQLRCLIENTLISTFORMAT_MYSQL);
 }
 
-bool sqlrcursor::getSchemaList(const char *wild,
+bool sqlrcursor::getSchemaList(const char *schemas,
 					sqlrclientlistformat_t listformat) {
 	if (pvt->_sqlrc->debug()) {
 		pvt->_sqlrc->debugPreStart();
 		pvt->_sqlrc->debugPrint("getting schema list");
-		if (wild) {
+		if (schemas) {
 			pvt->_sqlrc->debugPrint("\"");
-			pvt->_sqlrc->debugPrint(wild);
+			pvt->_sqlrc->debugPrint(schemas);
 			pvt->_sqlrc->debugPrint("\"");
 		}
 		pvt->_sqlrc->debugPrint("\n");
 		pvt->_sqlrc->debugPreEnd();
 	}
-	return getList(GET_SCHEMA_LIST,listformat,NULL,wild,0);
+	return getObjectList(GET_SCHEMA_LIST,listformat,schemas,0);
 }
 
-bool sqlrcursor::getTableList(const char *wild) {
-	return getTableList(wild,SQLRCLIENTLISTFORMAT_MYSQL,
+bool sqlrcursor::getTableList(const char *tables) {
+	return getTableList(tables,SQLRCLIENTLISTFORMAT_MYSQL,
 				DB_OBJECT_TABLE|DB_OBJECT_VIEW|
 				DB_OBJECT_ALIAS|DB_OBJECT_SYNONYM);
 }
 
-bool sqlrcursor::getTableList(const char *wild,
+bool sqlrcursor::getTableList(const char *tables,
 					sqlrclientlistformat_t listformat,
 					uint16_t objecttypes) {
 	if (pvt->_sqlrc->debug()) {
 		pvt->_sqlrc->debugPreStart();
 		pvt->_sqlrc->debugPrint("getting table list ");
-		if (wild) {
+		if (tables) {
 			pvt->_sqlrc->debugPrint("\"");
-			pvt->_sqlrc->debugPrint(wild);
+			pvt->_sqlrc->debugPrint(tables);
 			pvt->_sqlrc->debugPrint("\"");
 		}
 		pvt->_sqlrc->debugPrint("\n");
 		pvt->_sqlrc->debugPreEnd();
 	}
-	return getList(GET_TABLE_LIST_2,listformat,NULL,wild,objecttypes);
+	return getObjectList(GET_TABLE_LIST_2,listformat,tables,objecttypes);
 }
 
-bool sqlrcursor::getTableTypeList(const char *wild) {
-	return getTableTypeList(wild,SQLRCLIENTLISTFORMAT_MYSQL);
+bool sqlrcursor::getTableTypeList(const char *unused) {
+	return getTableTypeList(unused,SQLRCLIENTLISTFORMAT_MYSQL);
 }
 
-bool sqlrcursor::getTableTypeList(const char *wild,
+bool sqlrcursor::getTableTypeList(const char *unused,
 					sqlrclientlistformat_t listformat) {
 	if (pvt->_sqlrc->debug()) {
 		pvt->_sqlrc->debugPreStart();
 		pvt->_sqlrc->debugPrint("getting table type list ");
-		if (wild) {
+		if (unused) {
 			pvt->_sqlrc->debugPrint("\"");
-			pvt->_sqlrc->debugPrint(wild);
+			pvt->_sqlrc->debugPrint(unused);
 			pvt->_sqlrc->debugPrint("\"");
 		}
 		pvt->_sqlrc->debugPrint("\n");
 		pvt->_sqlrc->debugPreEnd();
 	}
-	return getList(GET_TABLE_TYPE_LIST,listformat,NULL,wild,0);
+	return getObjectList(GET_TABLE_TYPE_LIST,listformat,unused,0);
 }
 
-bool sqlrcursor::getColumnList(const char *table, const char *wild) {
-	return getColumnList(table,wild,SQLRCLIENTLISTFORMAT_MYSQL);
+bool sqlrcursor::getColumnList(const char *table, const char *columns) {
+	return getColumnList(table,columns,SQLRCLIENTLISTFORMAT_MYSQL);
 }
 
 bool sqlrcursor::getColumnList(const char *table,
-				const char *wild,
+				const char *columns,
 				sqlrclientlistformat_t listformat) {
 	if (pvt->_sqlrc->debug()) {
 		pvt->_sqlrc->debugPreStart();
 		pvt->_sqlrc->debugPrint("getting column list for: \"");
 		pvt->_sqlrc->debugPrint(table);
 		pvt->_sqlrc->debugPrint("\"");
-		if (wild) {
+		if (columns) {
 			pvt->_sqlrc->debugPrint(" - \"");
-			pvt->_sqlrc->debugPrint(wild);
+			pvt->_sqlrc->debugPrint(columns);
 			pvt->_sqlrc->debugPrint("\"");
 		}
 		pvt->_sqlrc->debugPrint("\n");
 		pvt->_sqlrc->debugPreEnd();
 	}
-	return getList(GET_COLUMN_LIST,listformat,(table)?table:"",wild,0);
+	return getComponentList(GET_COLUMN_LIST,
+				listformat,(table)?table:"",columns);
 }
 
-bool sqlrcursor::getPrimaryKeysList(const char *table, const char *wild) {
-	return getPrimaryKeysList(table,wild,SQLRCLIENTLISTFORMAT_MYSQL);
+bool sqlrcursor::getPrimaryKeysList(const char *table, const char *columns) {
+	return getPrimaryKeysList(table,columns,SQLRCLIENTLISTFORMAT_MYSQL);
 }
 
 bool sqlrcursor::getPrimaryKeysList(const char *table,
-					const char *wild,
+					const char *columns,
 					sqlrclientlistformat_t listformat) {
 	if (pvt->_sqlrc->debug()) {
 		pvt->_sqlrc->debugPreStart();
 		pvt->_sqlrc->debugPrint("getting primary keys for: \"");
 		pvt->_sqlrc->debugPrint(table);
 		pvt->_sqlrc->debugPrint("\"");
-		if (wild) {
+		if (columns) {
 			pvt->_sqlrc->debugPrint(" - \"");
-			pvt->_sqlrc->debugPrint(wild);
+			pvt->_sqlrc->debugPrint(columns);
 			pvt->_sqlrc->debugPrint("\"");
 		}
 		pvt->_sqlrc->debugPrint("\n");
 		pvt->_sqlrc->debugPreEnd();
 	}
-	return getList(GET_PRIMARY_KEY_LIST,listformat,(table)?table:"",wild,0);
+	return getComponentList(GET_PRIMARY_KEY_LIST,
+				listformat,(table)?table:"",columns);
 }
 
 bool sqlrcursor::getKeyAndIndexList(const char *table, const char *qualifier) {
@@ -1067,20 +1069,20 @@ bool sqlrcursor::getKeyAndIndexList(const char *table,
 		pvt->_sqlrc->debugPrint("\n");
 		pvt->_sqlrc->debugPreEnd();
 	}
-	return getList(GET_KEY_AND_INDEX_LIST,listformat,
-					(table)?table:"",qualifier,0);
+	return getComponentList(GET_KEY_AND_INDEX_LIST,
+				listformat,(table)?table:"",qualifier);
 }
 
 bool sqlrcursor::getProcedureParameterList(
 				const char *procedure,
-				const char *wild) {
-	return getProcedureParameterList(procedure,wild,
+				const char *parameters) {
+	return getProcedureParameterList(procedure,parameters,
 					SQLRCLIENTLISTFORMAT_MYSQL);
 }
 
 bool sqlrcursor::getProcedureParameterList(
 				const char *procedure,
-				const char *wild,
+				const char *parameters,
 				sqlrclientlistformat_t listformat) {
 	if (pvt->_sqlrc->debug()) {
 		pvt->_sqlrc->debugPreStart();
@@ -1088,59 +1090,60 @@ bool sqlrcursor::getProcedureParameterList(
 					"and column list for: \"");
 		pvt->_sqlrc->debugPrint(procedure);
 		pvt->_sqlrc->debugPrint("\"");
-		if (wild) {
+		if (parameters) {
 			pvt->_sqlrc->debugPrint(" - \"");
-			pvt->_sqlrc->debugPrint(wild);
+			pvt->_sqlrc->debugPrint(parameters);
 			pvt->_sqlrc->debugPrint("\"");
 		}
 		pvt->_sqlrc->debugPrint("\n");
 		pvt->_sqlrc->debugPreEnd();
 	}
-	return getList(GET_PROCEDURE_BIND_AND_COLUMN_LIST,
-				listformat,(procedure)?procedure:"",wild,0);
+	return getComponentList(GET_PROCEDURE_BIND_AND_COLUMN_LIST,
+				listformat,(procedure)?procedure:"",parameters);
 }
 
-bool sqlrcursor::getTypeInfoList(const char *type, const char *wild) {
-	return getTypeInfoList(type,wild,SQLRCLIENTLISTFORMAT_MYSQL);
+bool sqlrcursor::getTypeInfoList(const char *type, const char *unused) {
+	return getTypeInfoList(type,unused,SQLRCLIENTLISTFORMAT_MYSQL);
 }
 
 bool sqlrcursor::getTypeInfoList(const char *type,
-				const char *wild,
+				const char *unused,
 				sqlrclientlistformat_t listformat) {
 	if (pvt->_sqlrc->debug()) {
 		pvt->_sqlrc->debugPreStart();
 		pvt->_sqlrc->debugPrint("getting type info for: \"");
 		pvt->_sqlrc->debugPrint(type);
 		pvt->_sqlrc->debugPrint("\"");
-		if (wild) {
+		if (unused) {
 			pvt->_sqlrc->debugPrint(" - \"");
-			pvt->_sqlrc->debugPrint(wild);
+			pvt->_sqlrc->debugPrint(unused);
 			pvt->_sqlrc->debugPrint("\"");
 		}
 		pvt->_sqlrc->debugPrint("\n");
 		pvt->_sqlrc->debugPreEnd();
 	}
-	return getList(GET_TYPE_INFO_LIST,listformat,(type)?type:"",wild,0);
+	return getComponentList(GET_TYPE_INFO_LIST,
+				listformat,(type)?type:"",unused);
 }
 
-bool sqlrcursor::getProcedureList(const char *wild) {
-	return getProcedureList(wild,SQLRCLIENTLISTFORMAT_MYSQL);
+bool sqlrcursor::getProcedureList(const char *procedures) {
+	return getProcedureList(procedures,SQLRCLIENTLISTFORMAT_MYSQL);
 }
 
-bool sqlrcursor::getProcedureList(const char *wild,
+bool sqlrcursor::getProcedureList(const char *procedures,
 					sqlrclientlistformat_t listformat) {
 	if (pvt->_sqlrc->debug()) {
 		pvt->_sqlrc->debugPreStart();
 		pvt->_sqlrc->debugPrint("getting procedure list ");
-		if (wild) {
+		if (procedures) {
 			pvt->_sqlrc->debugPrint("\"");
-			pvt->_sqlrc->debugPrint(wild);
+			pvt->_sqlrc->debugPrint(procedures);
 			pvt->_sqlrc->debugPrint("\"");
 		}
 		pvt->_sqlrc->debugPrint("\n");
 		pvt->_sqlrc->debugPreEnd();
 	}
-	return getList(GET_PROCEDURE_LIST,listformat,NULL,wild,0);
+	return getObjectList(GET_PROCEDURE_LIST,listformat,procedures,0);
 }
 
 bool sqlrcursor::getLastInsertIdList() {
@@ -1149,12 +1152,13 @@ bool sqlrcursor::getLastInsertIdList() {
 		pvt->_sqlrc->debugPrint("getting last insert id list\n");
 		pvt->_sqlrc->debugPreEnd();
 	}
-	return getList(GET_LAST_INSERT_ID_LIST,SQLRCLIENTLISTFORMAT_MYSQL,
-								NULL,NULL,0);
+	return getObjectList(GET_LAST_INSERT_ID_LIST,
+				SQLRCLIENTLISTFORMAT_MYSQL,NULL,0);
 }
 
-bool sqlrcursor::getList(uint16_t command, sqlrclientlistformat_t listformat,
-					const char *table, const char *wild,
+bool sqlrcursor::getObjectList(uint16_t command,
+					sqlrclientlistformat_t listformat,
+					const char *object,
 					uint16_t objecttypes) {
 
 	pvt->_reexecute=false;
@@ -1186,25 +1190,76 @@ bool sqlrcursor::getList(uint16_t command, sqlrclientlistformat_t listformat,
 	// send the list format
 	pvt->_cs->write((uint16_t)listformat);
 
-	// send the wild parameter
-	uint32_t	len=charstring::getLength(wild);
+	// send the object parameter
+	uint32_t	len=charstring::getLength(object);
 	pvt->_cs->write(len);
 	if (len) {
-		pvt->_cs->write(wild,len);
-	}
-
-	// send the table parameter
-	if (table) {
-		len=charstring::getLength(table);
-		pvt->_cs->write(len);
-		if (len) {
-			pvt->_cs->write(table,len);
-		}
+		pvt->_cs->write(object,len);
 	}
 
 	// send the objecttypes parameter
 	if (command==GET_TABLE_LIST_2) {
 		pvt->_cs->write(objecttypes);
+	}
+
+	pvt->_sqlrc->flushWriteBuffer();
+
+	// process the initial result set
+	bool	retval=processInitialResultSet();
+
+	// set up not to re-execute the same query if executeQuery is called
+	// again before calling prepareQuery on a new query
+	pvt->_reexecute=false;
+
+	return retval;
+}
+
+bool sqlrcursor::getComponentList(uint16_t command,
+					sqlrclientlistformat_t listformat,
+					const char *object,
+					const char *component) {
+
+	pvt->_reexecute=false;
+	pvt->_validatebinds=false;
+	pvt->_resumed=false;
+	clearVariables();
+
+	if (!pvt->_endofresultset) {
+		closeResultSet(false);
+	}
+	clearResultSet();
+
+	if (!pvt->_sqlrc->openSession()) {
+		return false;
+	}
+
+	pvt->_cached=false;
+	pvt->_endofresultset=false;
+
+	// refresh socket client
+	pvt->_cs=pvt->_sqlrc->cs();
+
+	// tell the server we want to get a list
+	pvt->_cs->write(command);
+
+	// tell the server whether we'll need a cursor or not
+	sendCursorStatus();
+
+	// send the list format
+	pvt->_cs->write((uint16_t)listformat);
+
+	// send the component parameter
+	uint32_t	len=charstring::getLength(component);
+	pvt->_cs->write(len);
+	if (len) {
+		pvt->_cs->write(component,len);
+	}
+
+	// send the object parameter
+	len=charstring::getLength(object);
+	pvt->_cs->write(len);
+	if (len) {
+		pvt->_cs->write(object,len);
 	}
 
 	pvt->_sqlrc->flushWriteBuffer();

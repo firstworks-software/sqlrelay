@@ -785,22 +785,21 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 
 
 
-		/** Sends a query that returns a list of
-		 *  databases/schemas matching "wild".  If wild is empty
-		 *  or NULL then a list of all databases/schemas will be
-		 *  returned. */
-		bool	getDatabaseList(const char *wild);
+		/** Sends a query that returns a list of databases matching
+		 *  "databases".  If "databases" is empty or NULL then a list
+		 *  of all databases will be returned. */
+		bool	getDatabaseList(const char *databases);
 
 		/** Sends a query that returns a list of tables
-		 *  matching "wild".  If wild is empty or NULL then
+		 *  matching "tables".  If "tables" is empty or NULL then
 		 *  a list of all tables will be returned. */
-		bool	getTableList(const char *wild);
+		bool	getTableList(const char *tables);
 
 		/** Sends a query that returns a list of columns
 		 *  in the table specified by the "table" parameter
-		 *  matching "wild".  If wild is empty or NULL then
+		 *  matching "columns".  If "columns" is empty or NULL then
 		 *  a list of all columns will be returned. */
-		bool	getColumnList(const char *table, const char *wild);
+		bool	getColumnList(const char *table, const char *columns);
 
 
 

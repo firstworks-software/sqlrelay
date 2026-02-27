@@ -20,10 +20,12 @@
 
 		void	initQueryBuffer(uint32_t querylength);
 		bool	sendQueryInternal();
-		bool	getList(uint16_t command,
+		bool	getObjectList(uint16_t command,
 				sqlrclientlistformat_t listformat,
-				const char *table, const char *wild,
-				uint16_t objecttypes);
+				const char *object, uint16_t objecttypes);
+		bool	getComponentList(uint16_t command,
+				sqlrclientlistformat_t listformat,
+				const char *object, const char *component);
 		void	sendCursorStatus();
 		void	performSubstitutions();
 		bool	performSubstitutionsInternal();
@@ -150,48 +152,48 @@
 		const char	*getQueryTree();
 		const char	*getTranslatedQuery();
 
-		bool		getDatabaseList(const char *wild,
+		bool		getDatabaseList(const char *databases,
 					sqlrclientlistformat_t listformat);
-		bool		getSchemaList(const char *wild);
-		bool		getSchemaList(const char *wild,
+		bool		getSchemaList(const char *databases);
+		bool		getSchemaList(const char *schemas,
 					sqlrclientlistformat_t listformat);
-		bool		getTableList(const char *wild,
+		bool		getTableList(const char *tables,
 					sqlrclientlistformat_t listformat,
 					uint16_t objecttypes);
-		bool		getTableTypeList(const char *wild);
-		bool		getTableTypeList(const char *wild,
+		bool		getTableTypeList(const char *unused);
+		bool		getTableTypeList(const char *unused,
 					sqlrclientlistformat_t listformat);
 		bool		getColumnList(const char *table,
-					const char *wild,
+					const char *columns,
 					sqlrclientlistformat_t listformat);
 		bool		getPrimaryKeysList(const char *table,
-					const char *wild);
+					const char *columns);
 		bool		getPrimaryKeysList(const char *table,
-					const char *wild,
+					const char *columns,
 					sqlrclientlistformat_t listformat);
 		bool		getKeyAndIndexList(const char *table,
-					const char *wild);
+					const char *qualifier);
 		bool		getKeyAndIndexList(const char *table,
-					const char *wild,
+					const char *qualifier,
 					sqlrclientlistformat_t listformat);
 		bool		getProcedureParameterList(
 					const char *procedure,
-					const char *wild);
+					const char *parameters);
 		bool		getProcedureParameterList(
 					const char *procedure,
-					const char *wild,
+					const char *parameters,
 					sqlrclientlistformat_t listformat);
 		bool		getTypeInfoList(
 					const char *type,
-					const char *wild);
+					const char *unused);
 		bool		getTypeInfoList(
 					const char *type,
-					const char *wild,
+					const char *unused,
 					sqlrclientlistformat_t listformat);
 		bool		getProcedureList(
-					const char *wild);
+					const char *procedures);
 		bool		getProcedureList(
-					const char *wild,
+					const char *procedures,
 					sqlrclientlistformat_t listformat);
 		bool		getLastInsertIdList();
 		void		clearBindsDuringPrepare();
