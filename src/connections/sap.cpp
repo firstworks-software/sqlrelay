@@ -584,19 +584,6 @@ const char *sapconnection::getTableListQuery(bool wild,
 						uint16_t objecttypes,
 						bool currentschemaonly) {
 
-	stringbuffer	otypes;
-	otypes.append("	(");
-	if (objecttypes&DB_OBJECT_TABLE) {
-		otypes.append("	type='U' ");
-	}
-	if (objecttypes&DB_OBJECT_VIEW) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
-		}
-		otypes.append("	type='V' ");
-	}
-	otypes.append(") ");
-
 	tablelistquery.clear();
 	tablelistquery.append(
 		"select "
@@ -619,6 +606,18 @@ const char *sapconnection::getTableListQuery(bool wild,
 	}
 	tablelistquery.append(
 		"	and ");
+	stringbuffer	otypes;
+	otypes.append("	(");
+	if (objecttypes&DB_OBJECT_TABLE) {
+		otypes.append("	type='U' ");
+	}
+	if (objecttypes&DB_OBJECT_VIEW) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	type='V' ");
+	}
+	otypes.append(") ");
 	tablelistquery.append(otypes.getString());
 	if (wild) {
 		tablelistquery.append(
@@ -636,19 +635,6 @@ const char *sapconnection::getTableListQuery(const char *db,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes) {
-
-	stringbuffer	otypes;
-	otypes.append("	(");
-	if (objecttypes&DB_OBJECT_TABLE) {
-		otypes.append("	type='U' ");
-	}
-	if (objecttypes&DB_OBJECT_VIEW) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
-		}
-		otypes.append("	type='V' ");
-	}
-	otypes.append(") ");
 
 	tablelistquery.clear();
 	tablelistquery.append(
@@ -679,6 +665,18 @@ const char *sapconnection::getTableListQuery(const char *db,
 	}
 	tablelistquery.append(
 		"	and ");
+	stringbuffer	otypes;
+	otypes.append("	(");
+	if (objecttypes&DB_OBJECT_TABLE) {
+		otypes.append("	type='U' ");
+	}
+	if (objecttypes&DB_OBJECT_VIEW) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	type='V' ");
+	}
+	otypes.append(") ");
 	tablelistquery.append(otypes.getString());
 	tablelistquery.append(
 		"order by "

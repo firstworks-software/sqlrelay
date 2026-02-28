@@ -1025,7 +1025,7 @@ void sqlrconnection::protocol() {
 		debugPreEnd();
 	}
 
-	pvt->_cs->write((uint16_t)PROTOCOL_VERSION);
+	pvt->_cs->write((uint16_t)SQLRCLIENT_PROTOCOL_VERSION);
 	pvt->_cs->write((uint16_t)2);
 }
 

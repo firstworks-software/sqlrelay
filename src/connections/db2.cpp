@@ -610,31 +610,6 @@ const char *db2connection::getTableListQuery(bool wild,
 						uint16_t objecttypes,
 						bool currentschemaonly) {
 
-	stringbuffer	otypes;
-	otypes.append("	(");
-	if (objecttypes&DB_OBJECT_TABLE) {
-		otypes.append("	type='T' or type='U' ");
-	}
-	if (objecttypes&DB_OBJECT_VIEW) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
-		}
-		otypes.append("	type='V' or type='W' ");
-	}
-	if (objecttypes&DB_OBJECT_ALIAS) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
-		}
-		otypes.append("	type='A' ");
-	}
-	if (objecttypes&DB_OBJECT_SYNONYM) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
-		}
-		otypes.append("	type='N' ");
-	}
-	otypes.append(") ");
-
 	tablelistquery.clear();
 	tablelistquery.append(
 		"select distinct "
@@ -667,25 +642,6 @@ const char *db2connection::getTableListQuery(bool wild,
 	}
 	tablelistquery.append(
 			"	and ");
-	tablelistquery.append(otypes.getString());
-	if (wild) {
-		tablelistquery.append(
-			"	and "
-			"	tabname like '%s' ");
-	}
-	tablelistquery.append(
-		"order by "
-		"	tabschema, "
-		"	tabname");
-
-	return tablelistquery.getString();
-}
-
-const char *db2connection::getTableListQuery(const char *db,
-						const char *schema,
-						const char *table,
-						uint16_t objecttypes) {
-
 	stringbuffer	otypes;
 	otypes.append("	(");
 	if (objecttypes&DB_OBJECT_TABLE) {
@@ -710,6 +666,24 @@ const char *db2connection::getTableListQuery(const char *db,
 		otypes.append("	type='N' ");
 	}
 	otypes.append(") ");
+	tablelistquery.append(otypes.getString());
+	if (wild) {
+		tablelistquery.append(
+			"	and "
+			"	tabname like '%s' ");
+	}
+	tablelistquery.append(
+		"order by "
+		"	tabschema, "
+		"	tabname");
+
+	return tablelistquery.getString();
+}
+
+const char *db2connection::getTableListQuery(const char *db,
+						const char *schema,
+						const char *table,
+						uint16_t objecttypes) {
 
 	tablelistquery.clear();
 	tablelistquery.append(
@@ -749,6 +723,30 @@ const char *db2connection::getTableListQuery(const char *db,
 	}
 	tablelistquery.append(
 			"	and ");
+	stringbuffer	otypes;
+	otypes.append("	(");
+	if (objecttypes&DB_OBJECT_TABLE) {
+		otypes.append("	type='T' or type='U' ");
+	}
+	if (objecttypes&DB_OBJECT_VIEW) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	type='V' or type='W' ");
+	}
+	if (objecttypes&DB_OBJECT_ALIAS) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	type='A' ");
+	}
+	if (objecttypes&DB_OBJECT_SYNONYM) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	type='N' ");
+	}
+	otypes.append(") ");
 	tablelistquery.append(otypes.getString());
 	tablelistquery.append(
 		"order by "

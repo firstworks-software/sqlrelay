@@ -586,25 +586,6 @@ const char *informixconnection::getTableListQuery(bool wild,
 						uint16_t objecttypes,
 						bool currentschemaonly) {
 
-	stringbuffer	otypes;
-	otypes.append("	(");
-	if (objecttypes&DB_OBJECT_TABLE) {
-		otypes.append("	tabtype='T' or tabtype='E' ");
-	}
-	if (objecttypes&DB_OBJECT_VIEW) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
-		}
-		otypes.append("	tabtype='V' ");
-	}
-	if (objecttypes&DB_OBJECT_SYNONYM) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
-		}
-		otypes.append("	tabtype='S' or tabtype='P'");
-	}
-	otypes.append(") ");
-
 	tablelistquery.clear();
 	tablelistquery.append(
 		"select distinct "
@@ -628,6 +609,24 @@ const char *informixconnection::getTableListQuery(bool wild,
 	}
 	tablelistquery.append(
 		"	and ");
+	stringbuffer	otypes;
+	otypes.append("	(");
+	if (objecttypes&DB_OBJECT_TABLE) {
+		otypes.append("	tabtype='T' or tabtype='E' ");
+	}
+	if (objecttypes&DB_OBJECT_VIEW) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	tabtype='V' ");
+	}
+	if (objecttypes&DB_OBJECT_SYNONYM) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	tabtype='S' or tabtype='P'");
+	}
+	otypes.append(") ");
 	tablelistquery.append(otypes.getString());
 	if (wild) {
 		tablelistquery.append(
@@ -647,25 +646,6 @@ const char *informixconnection::getTableListQuery(const char *db,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes) {
-
-	stringbuffer	otypes;
-	otypes.append("	(");
-	if (objecttypes&DB_OBJECT_TABLE) {
-		otypes.append("	tabtype='T' or tabtype='E' ");
-	}
-	if (objecttypes&DB_OBJECT_VIEW) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
-		}
-		otypes.append("	tabtype='V' ");
-	}
-	if (objecttypes&DB_OBJECT_SYNONYM) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
-		}
-		otypes.append("	tabtype='S' or tabtype='P'");
-	}
-	otypes.append(") ");
 
 	tablelistquery.clear();
 	tablelistquery.append(
@@ -703,6 +683,24 @@ const char *informixconnection::getTableListQuery(const char *db,
 	}
 	tablelistquery.append(
 		"	and ");
+	stringbuffer	otypes;
+	otypes.append("	(");
+	if (objecttypes&DB_OBJECT_TABLE) {
+		otypes.append("	tabtype='T' or tabtype='E' ");
+	}
+	if (objecttypes&DB_OBJECT_VIEW) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	tabtype='V' ");
+	}
+	if (objecttypes&DB_OBJECT_SYNONYM) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	tabtype='S' or tabtype='P'");
+	}
+	otypes.append(") ");
 	tablelistquery.append(otypes.getString());
 	tablelistquery.append(
 		"order by "

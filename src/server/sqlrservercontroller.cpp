@@ -3399,9 +3399,9 @@ void sqlrservercontroller::splitObjectName(const char *currentdb,
 	charstring::split(combinedobject,".",true,&parts,&partcount);
 
 	// the combined object might be in one of the following formats:
-	// * object
-	// * schema.object
 	// * db.schema.object
+	// * (currentdb.)schema.object/db.(defaultschema.)object
+	// * object
 	switch (partcount) {
 		case 3:
 			pvt->_db=parts[0];
@@ -3410,7 +3410,7 @@ void sqlrservercontroller::splitObjectName(const char *currentdb,
 			break;
 		case 2:
 			// If there are 2 parts the it could mean:
-			// * db(.defaultschama).object
+			// * db.(defaultschama.)object
 			//   or
 			// * (currentdb.)schema.object...
 			// If the first part is not the same as the current

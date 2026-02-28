@@ -296,19 +296,6 @@ const char *sqliteconnection::getTableListQuery(bool wild,
 						uint16_t objecttypes,
 						bool currentschemaonly) {
 
-	stringbuffer	otypes;
-	otypes.append("	(");
-	if (objecttypes&DB_OBJECT_TABLE) {
-		otypes.append("	type='table' ");
-	}
-	if (objecttypes&DB_OBJECT_VIEW) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
-		}
-		otypes.append("	type='view' ");
-	}
-	otypes.append(") ");
-
 	tablelistquery.clear();
 	tablelistquery.append(
 		"select "
@@ -325,6 +312,18 @@ const char *sqliteconnection::getTableListQuery(bool wild,
 		"from "
 		"	sqlite_master "
 		"where ");
+	stringbuffer	otypes;
+	otypes.append("	(");
+	if (objecttypes&DB_OBJECT_TABLE) {
+		otypes.append("	type='table' ");
+	}
+	if (objecttypes&DB_OBJECT_VIEW) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	type='view' ");
+	}
+	otypes.append(") ");
 	tablelistquery.append(otypes.getString());
 	tablelistquery.append(
 		"union all "
@@ -353,19 +352,6 @@ const char *sqliteconnection::getTableListQuery(const char *db,
 						const char *table,
 						uint16_t objecttypes) {
 
-	stringbuffer	otypes;
-	otypes.append("	(");
-	if (objecttypes&DB_OBJECT_TABLE) {
-		otypes.append("	type='table' ");
-	}
-	if (objecttypes&DB_OBJECT_VIEW) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
-		}
-		otypes.append("	type='view' ");
-	}
-	otypes.append(") ");
-
 	tablelistquery.clear();
 	tablelistquery.append(
 		"select "
@@ -382,6 +368,18 @@ const char *sqliteconnection::getTableListQuery(const char *db,
 		"from "
 		"	sqlite_master "
 		"where ");
+	stringbuffer	otypes;
+	otypes.append("	(");
+	if (objecttypes&DB_OBJECT_TABLE) {
+		otypes.append("	type='table' ");
+	}
+	if (objecttypes&DB_OBJECT_VIEW) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	type='view' ");
+	}
+	otypes.append(") ");
 	tablelistquery.append(otypes.getString());
 	tablelistquery.append(
 		"union all "

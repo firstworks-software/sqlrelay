@@ -395,7 +395,7 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 		dt.initFromSystemDateTime();
 
 		// handle client protocol version as a command, for now
-		if (command==PROTOCOL_VERSION) {
+		if (command==SQLRCLIENT_PROTOCOL_VERSION) {
 			if (clientsock->read(&protocolversion,
 						idleclienttimeout,0)==
 						sizeof(uint16_t)) {
@@ -4496,9 +4496,6 @@ bool sqlrprotocol_sqlrclient::getObjectListByQuery(sqlrservercursor *cursor,
 					sqlrserverlistformat_t listformat,
 					uint16_t objecttypes) {
 
-	bool	currentonly=listformat!=SQLRSERVERLISTFORMAT_ODBC &&
-				listformat!=SQLRSERVERLISTFORMAT_JDBC;
-
 	// clean up object to avoid SQL injection
 	stringbuffer	objectbuf;
 	escapeParameter(&objectbuf,object);
@@ -4511,6 +4508,14 @@ bool sqlrprotocol_sqlrclient::getObjectListByQuery(sqlrservercursor *cursor,
 	const char	*schema=NULL;
 	const char	*obj=NULL;
 	cont->splitObjectName(currentdb,currentschema,object,&db,&schema,&obj);
+
+	// when fetching lists in mysql format, we only want to fetch for
+	// the current database/schema
+	bool	currentonly=(listformat==SQLRSERVERLISTFORMAT_MYSQL);
+	if (currentonly) {
+		db=currentdb;
+		schema=currentschema;
+	}
 
 	// build the appropriate query
 	const char	*query=NULL;
@@ -4527,7 +4532,7 @@ bool sqlrprotocol_sqlrclient::getObjectListByQuery(sqlrservercursor *cursor,
 			break;
 		case SQLRCLIENTQUERYTYPE_TABLE_LIST:
 		case SQLRCLIENTQUERYTYPE_TABLE_LIST_2:
-#if 1
+#if 0
 			query=cont->getTableListQuery(havewild,
 							objecttypes,
 							currentonly);
@@ -4594,6 +4599,9 @@ bool sqlrprotocol_sqlrclient::buildObjectListQuery(sqlrservercursor *cursor,
 	//debugWrite("query: \"%.*s\"",
 			//cont->getQuerySize(cursor),
 			//cont->getQueryBuffer(cursor));
+stdoutput.printf("query: \"%.*s\"",
+			cont->getQuerySize(cursor),
+			cont->getQueryBuffer(cursor));
 	debugWrite("query size: %d",debugstr.getSize());
 
 	debugEnd();
@@ -4629,6 +4637,9 @@ bool sqlrprotocol_sqlrclient::buildObjectListQuery(sqlrservercursor *cursor,
 	//debugWrite("query: \"%.*s\"",
 			//cont->getQuerySize(cursor),
 			//cont->getQueryBuffer(cursor));
+stdoutput.printf("query: \"%.*s\"",
+			cont->getQuerySize(cursor),
+			cont->getQueryBuffer(cursor));
 	debugWrite("query size: %d",debugstr.getSize());
 
 	debugEnd();
@@ -5014,8 +5025,8 @@ bool sqlrprotocol_sqlrclient::getTranslatedQueryCommand(
 void sqlrprotocol_sqlrclient::debugCommand(uint16_t command) {
 	debugWrite("command: %hd",command);
 	switch (command) {
-		case PROTOCOL_VERSION:
-			debugWrite("PROTOCOL_VERSION");
+		case SQLRCLIENT_PROTOCOL_VERSION:
+			debugWrite("SQLRCLIENT_PROTOCOL_VERSION");
 			break;
 		case NEW_QUERY:
 			debugWrite("NEW_QUERY");

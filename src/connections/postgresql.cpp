@@ -604,31 +604,6 @@ const char *postgresqlconnection::getTableListQuery(bool wild,
 						uint16_t objecttypes,
 						bool currentschemaonly) {
 
-	stringbuffer	otypes;
-	otypes.append("	(");
-	if (objecttypes&DB_OBJECT_TABLE) {
-		otypes.append("	table_type='BASE TABLE' ");
-	}
-	if (objecttypes&DB_OBJECT_VIEW) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
-		}
-		otypes.append("	table_type='VIEW' ");
-	}
-	if (objecttypes&DB_OBJECT_ALIAS) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
-		}
-		otypes.append("	table_type='ALIAS' ");
-	}
-	if (objecttypes&DB_OBJECT_SYNONYM) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
-		}
-		otypes.append("	table_type='SYNONYM' ");
-	}
-	otypes.append(") ");
-
 	tablelistquery.clear();
 	tablelistquery.append(
 		"select "
@@ -654,25 +629,6 @@ const char *postgresqlconnection::getTableListQuery(bool wild,
 			"	table_schema='public' "
 			"	and ");
 	}
-	tablelistquery.append(otypes.getString());
-	if (wild) {
-		tablelistquery.append(
-			"	and "
-			"	table_name like '%s' ");
-	}
-	tablelistquery.append(
-		"order by "
-		"	table_cat, "
-		"	table_schem, "
-		"	table_name");
-	return tablelistquery.getString();
-}
-
-const char *postgresqlconnection::getTableListQuery(const char *db,
-						const char *schema,
-						const char *table,
-						uint16_t objecttypes) {
-
 	stringbuffer	otypes;
 	otypes.append("	(");
 	if (objecttypes&DB_OBJECT_TABLE) {
@@ -697,6 +653,24 @@ const char *postgresqlconnection::getTableListQuery(const char *db,
 		otypes.append("	table_type='SYNONYM' ");
 	}
 	otypes.append(") ");
+	tablelistquery.append(otypes.getString());
+	if (wild) {
+		tablelistquery.append(
+			"	and "
+			"	table_name like '%s' ");
+	}
+	tablelistquery.append(
+		"order by "
+		"	table_cat, "
+		"	table_schem, "
+		"	table_name");
+	return tablelistquery.getString();
+}
+
+const char *postgresqlconnection::getTableListQuery(const char *db,
+						const char *schema,
+						const char *table,
+						uint16_t objecttypes) {
 
 	tablelistquery.clear();
 	tablelistquery.append(
@@ -714,6 +688,30 @@ const char *postgresqlconnection::getTableListQuery(const char *db,
 		"from "
 		"	information_schema.tables "
 		"where ");
+	stringbuffer	otypes;
+	otypes.append("	(");
+	if (objecttypes&DB_OBJECT_TABLE) {
+		otypes.append("	table_type='BASE TABLE' ");
+	}
+	if (objecttypes&DB_OBJECT_VIEW) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	table_type='VIEW' ");
+	}
+	if (objecttypes&DB_OBJECT_ALIAS) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	table_type='ALIAS' ");
+	}
+	if (objecttypes&DB_OBJECT_SYNONYM) {
+		if (otypes.getSize()) {
+			otypes.append("	or ");
+		}
+		otypes.append("	table_type='SYNONYM' ");
+	}
+	otypes.append(") ");
 	tablelistquery.append(otypes.getString());
 	if (db) {
 		tablelistquery.append(
