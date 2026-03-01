@@ -187,31 +187,18 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 		bool	getLastInsertIdListCommand(sqlrservercursor *cursor);
 		bool	getObjectListCommand(sqlrservercursor *cursor,
 					sqlrclientquerytype_t querytype);
-		bool	getObjectListByApiCall(sqlrservercursor *cursor,
+		bool	getObjectList(sqlrservercursor *cursor,
 					sqlrclientquerytype_t querytype,
 					const char *object,
 					sqlrserverlistformat_t listformat,
 					uint16_t objecttypes);
-		bool	getObjectListByQuery(sqlrservercursor *cursor,
-					sqlrclientquerytype_t querytype,
-					const char *object,
-					sqlrserverlistformat_t listformat,
-					uint16_t objecttypes);
-		bool	populateQueryBuffer(sqlrservercursor *cursor,
-							const char *query);
 		bool	getComponentListCommand(sqlrservercursor *cursor,
 					sqlrclientquerytype_t querytype);
-		bool	getComponentListByApiCall(sqlrservercursor *cursor,
+		bool	getComponentList(sqlrservercursor *cursor,
 					sqlrclientquerytype_t querytype,
 					const char *object,
 					const char *wild,
 					sqlrserverlistformat_t listformat);
-		bool	getComponentListByQuery(sqlrservercursor *cursor,
-					sqlrclientquerytype_t querytype,
-					const char *object,
-					const char *wild,
-					sqlrserverlistformat_t listformat,
-					uint16_t objecttypes);
 		void	escapeParameter(stringbuffer *buffer,
 						const char *parameter);
 		bool	getQueryTreeCommand(sqlrservercursor *cursor);
@@ -1860,57 +1847,6 @@ bool sqlrprotocol_sqlrclient::processQueryOrBindCursor(
 			// tell the client that this is not a
 			// suspended result set
 			clientsock->write((uint16_t)NO_SUSPENDED_RESULT_SET);
-
-			// remap columns
-			switch (querytype) {
-				case SQLRCLIENTQUERYTYPE_DATABASE_LIST:
-					cont->setDatabaseListFormat(
-								listformat);
-					break;
-				case SQLRCLIENTQUERYTYPE_SCHEMA_LIST:
-					cont->setSchemaListFormat(
-								listformat);
-					break;
-				case SQLRCLIENTQUERYTYPE_TABLE_LIST:
-				case SQLRCLIENTQUERYTYPE_TABLE_LIST_2:
-					cont->setTableListFormat(
-								listformat);
-					break;
-				case SQLRCLIENTQUERYTYPE_TABLE_TYPE_LIST:
-					cont->setTableTypeListFormat(
-								listformat);
-					break;
-				case SQLRCLIENTQUERYTYPE_COLUMN_LIST:
-					cont->setColumnListFormat(
-								listformat);
-					break;
-				case SQLRCLIENTQUERYTYPE_PRIMARY_KEYS_LIST:
-					cont->setPrimaryKeyListFormat(
-								listformat);
-					break;
-				case SQLRCLIENTQUERYTYPE_KEY_AND_INDEX_LIST:
-					cont->setKeyAndIndexListFormat(
-								listformat);
-					break;
-				case SQLRCLIENTQUERYTYPE_PROCEDURE_PARAMETER_LIST:
-					cont->setProcedureParameterListFormat(
-								listformat);
-					break;
-				case SQLRCLIENTQUERYTYPE_TYPE_INFO_LIST:
-					cont->setTypeInfoListFormat(
-								listformat);
-					break;
-				case SQLRCLIENTQUERYTYPE_PROCEDURE_LIST:
-					cont->setProcedureListFormat(
-								listformat);
-					break;
-				case SQLRCLIENTQUERYTYPE_LAST_INSERT_ID_LIST:
-					// this list only has one column,
-					// so no need to remap columns,
-					// all formats are the same
-				default:
-					break;
-			}
 
 			// send a result set header
 			returnResultSetHeader(cursor);
@@ -4392,18 +4328,9 @@ bool sqlrprotocol_sqlrclient::getObjectListCommand(sqlrservercursor *cursor,
 	cont->setSendColumnInfo(true);
 
 	// get the list and return it
-	// (we always get the last insert id list by api call)
-	bool	retval=true;
-	if (cont->getListsByApiCalls() ||
-		querytype==SQLRCLIENTQUERYTYPE_LAST_INSERT_ID_LIST) {
-		retval=getObjectListByApiCall(cursor,querytype,object,
+	bool	retval=getObjectList(cursor,querytype,object,
 					(sqlrserverlistformat_t)listformat,
 					objecttypes);
-	} else {
-		retval=getObjectListByQuery(cursor,querytype,object,
-					(sqlrserverlistformat_t)listformat,
-					objecttypes);
-	}
 
 	// clean up
 	delete[] object;
@@ -4411,7 +4338,7 @@ bool sqlrprotocol_sqlrclient::getObjectListCommand(sqlrservercursor *cursor,
 	return retval;
 }
 
-bool sqlrprotocol_sqlrclient::getObjectListByApiCall(sqlrservercursor *cursor,
+bool sqlrprotocol_sqlrclient::getObjectList(sqlrservercursor *cursor,
 					sqlrclientquerytype_t querytype,
 					const char *object,
 					sqlrserverlistformat_t listformat,
@@ -4419,6 +4346,11 @@ bool sqlrprotocol_sqlrclient::getObjectListByApiCall(sqlrservercursor *cursor,
 
 	// initialize flags andbuffers
 	bool	success=false;
+
+	// clean up object to avoid SQL injection
+	stringbuffer	objectbuf;
+	escapeParameter(&objectbuf,object);
+	object=objectbuf.getString();
 
 	// split the object (db.schema.object) into db, schema, and object
 	char	*currentdb=cont->getCurrentDatabase();
@@ -4435,33 +4367,33 @@ bool sqlrprotocol_sqlrclient::getObjectListByApiCall(sqlrservercursor *cursor,
 		schema=currentschema;
 	}
 
-	// get the appropriate list
+	// get the appropriate list and set the list format
+	// (set*ListFormat must be called after get*List because prepareQuery
+	// inside the default get*List resets the column map)
 	switch (querytype) {
 		case SQLRCLIENTQUERYTYPE_DATABASE_LIST:
-			cont->setDatabaseListFormat(listformat);
 			success=cont->getDatabaseList(cursor,db);
+			cont->setDatabaseListFormat(listformat);
 			break;
 		case SQLRCLIENTQUERYTYPE_SCHEMA_LIST:
-			cont->setSchemaListFormat(listformat);
 			success=cont->getSchemaList(cursor,db,schema);
+			cont->setSchemaListFormat(listformat);
 			break;
 		case SQLRCLIENTQUERYTYPE_TABLE_LIST:
 		case SQLRCLIENTQUERYTYPE_TABLE_LIST_2:
-			cont->setTableListFormat(listformat);
 			success=cont->getTableList(cursor,db,schema,
 							obj,objecttypes);
+			cont->setTableListFormat(listformat);
 			break;
 		case SQLRCLIENTQUERYTYPE_TABLE_TYPE_LIST:
-			cont->setTableTypeListFormat(listformat);
 			success=cont->getTableTypeList(cursor,db,schema,obj);
+			cont->setTableTypeListFormat(listformat);
 			break;
 		case SQLRCLIENTQUERYTYPE_PROCEDURE_LIST:
-			cont->setProcedureListFormat(listformat);
 			success=cont->getProcedureList(cursor,db,schema,obj);
+			cont->setProcedureListFormat(listformat);
 			break;
 		case SQLRCLIENTQUERYTYPE_LAST_INSERT_ID_LIST:
-			// this list only has one column, so no need to set
-			// the list format, all formats are the same
 			success=cont->getLastInsertIdList(cursor);
 			break;
 		default:
@@ -4500,105 +4432,6 @@ bool sqlrprotocol_sqlrclient::getObjectListByApiCall(sqlrservercursor *cursor,
 	if (!returnResultSetData(cursor,false,false)) {
 		return false;
 	}
-	return true;
-}
-
-bool sqlrprotocol_sqlrclient::getObjectListByQuery(sqlrservercursor *cursor,
-					sqlrclientquerytype_t querytype,
-					const char *object,
-					sqlrserverlistformat_t listformat,
-					uint16_t objecttypes) {
-
-	// clean up object to avoid SQL injection
-	stringbuffer	objectbuf;
-	escapeParameter(&objectbuf,object);
-	object=objectbuf.getString();
-
-	// split the object (db.schema.object) into db, schema, and object
-	char	*currentdb=cont->getCurrentDatabase();
-	char	*currentschema=cont->getCurrentSchema();
-	const char	*db=NULL;
-	const char	*schema=NULL;
-	const char	*obj=NULL;
-	cont->splitObjectName(currentdb,currentschema,object,&db,&schema,&obj);
-
-	// when fetching lists in mysql format, we only want to fetch for
-	// the current database/schema
-	if (listformat==SQLRSERVERLISTFORMAT_MYSQL) {
-		db=currentdb;
-		schema=currentschema;
-	}
-
-	// build the appropriate query
-	const char	*query=NULL;
-	switch (querytype) {
-		case SQLRCLIENTQUERYTYPE_DATABASE_LIST:
-			query=cont->getDatabaseListQuery(db);
-			break;
-		case SQLRCLIENTQUERYTYPE_SCHEMA_LIST:
-			query=cont->getSchemaListQuery(db,schema);
-			break;
-		case SQLRCLIENTQUERYTYPE_TABLE_LIST:
-		case SQLRCLIENTQUERYTYPE_TABLE_LIST_2:
-			query=cont->getTableListQuery(db,schema,obj,
-							objecttypes);
-			break;
-		case SQLRCLIENTQUERYTYPE_TABLE_TYPE_LIST:
-			query=cont->getTableTypeListQuery(db,schema,obj);
-			break;
-		case SQLRCLIENTQUERYTYPE_PROCEDURE_LIST:
-			query=cont->getProcedureListQuery(db,schema,obj);
-			break;
-		case SQLRCLIENTQUERYTYPE_LAST_INSERT_ID_LIST:
-			// always handled by api call
-			break;
-		default:
-			break;
-	}
-
-	// clean up
-	delete[] currentdb;
-	delete[] currentschema;
-
-	// FIXME: this can fail
-	populateQueryBuffer(cursor,query);
-
-	return processQueryOrBindCursor(cursor,querytype,
-					listformat,false,false);
-}
-
-bool sqlrprotocol_sqlrclient::populateQueryBuffer(sqlrservercursor *cursor,
-							const char *query) {
-
-	debugStart("building query");
-
-	// sanity check on query
-	if (!query) {
-		query=cont->getNoopQuery();
-	}
-
-	// bounds checking
-	cont->setQuerySize(cursor,charstring::getLength(query));
-	if (cont->getQuerySize(cursor)>maxquerysize) {
-		debugEnd();
-		return false;
-	}
-
-	// fill the query buffer and update the size
-	char	*querybuffer=cont->getQueryBuffer(cursor);
-	charstring::safeCopy(querybuffer,maxquerysize+1,query);
-	cont->setQuerySize(cursor,charstring::getLength(querybuffer));
-
-	debugstr.clear();
-	debugstr.safePrint(cont->getQueryBuffer(cursor),
-				cont->getQuerySize(cursor));
-	debugWrite("query: \"%.*s\"",debugstr.getSize(),debugstr.getString());
-	//debugWrite("query: \"%.*s\"",
-			//cont->getQuerySize(cursor),
-			//cont->getQueryBuffer(cursor));
-	debugWrite("query size: %d",debugstr.getSize());
-
-	debugEnd();
 	return true;
 }
 
@@ -4724,18 +4557,9 @@ bool sqlrprotocol_sqlrclient::getComponentListCommand(
 	cont->setSendColumnInfo(true);
 
 	// get the list and return it
-	// (we always get the last insert id list by api call)
-	bool	retval=true;
-	if (cont->getListsByApiCalls() ||
-		querytype==SQLRCLIENTQUERYTYPE_LAST_INSERT_ID_LIST) {
-		retval=getComponentListByApiCall(cursor,querytype,
+	bool	retval=getComponentList(cursor,querytype,
 					object,component,
 					(sqlrserverlistformat_t)listformat);
-	} else {
-		retval=getComponentListByQuery(cursor,querytype,
-					object,component,
-					(sqlrserverlistformat_t)listformat,0);
-	}
 
 	// clean up
 	delete[] component;
@@ -4744,7 +4568,7 @@ bool sqlrprotocol_sqlrclient::getComponentListCommand(
 	return retval;
 }
 
-bool sqlrprotocol_sqlrclient::getComponentListByApiCall(
+bool sqlrprotocol_sqlrclient::getComponentList(
 					sqlrservercursor *cursor,
 					sqlrclientquerytype_t querytype,
 					const char *object,
@@ -4753,6 +4577,14 @@ bool sqlrprotocol_sqlrclient::getComponentListByApiCall(
 
 	// initialize flags andbuffers
 	bool	success=false;
+
+	// clean up object and component to avoid SQL injection
+	stringbuffer	objectbuf;
+	escapeParameter(&objectbuf,object);
+	object=objectbuf.getString();
+	stringbuffer	componentbuf;
+	escapeParameter(&componentbuf,component);
+	component=componentbuf.getString();
 
 	// split the object (db.schema.object) into db, schema, and object
 	char	*currentdb=cont->getCurrentDatabase();
@@ -4769,32 +4601,34 @@ bool sqlrprotocol_sqlrclient::getComponentListByApiCall(
 		schema=currentschema;
 	}
 
-	// get the appropriate list
+	// get the appropriate list and set the list format
+	// (set*ListFormat must be called after get*List because prepareQuery
+	// inside the default get*List resets the column map)
 	switch (querytype) {
 		case SQLRCLIENTQUERYTYPE_COLUMN_LIST:
-			cont->setColumnListFormat(listformat);
 			success=cont->getColumnList(cursor,
 						db,schema,obj,component);
+			cont->setColumnListFormat(listformat);
 			break;
 		case SQLRCLIENTQUERYTYPE_PRIMARY_KEYS_LIST:
-			cont->setPrimaryKeyListFormat(listformat);
 			success=cont->getPrimaryKeysList(cursor,
 							db,schema,obj);
+			cont->setPrimaryKeyListFormat(listformat);
 			break;
 		case SQLRCLIENTQUERYTYPE_KEY_AND_INDEX_LIST:
-			cont->setKeyAndIndexListFormat(listformat);
 			success=cont->getKeyAndIndexList(cursor,
 							db,schema,obj);
+			cont->setKeyAndIndexListFormat(listformat);
 			break;
 		case SQLRCLIENTQUERYTYPE_PROCEDURE_PARAMETER_LIST:
-			cont->setProcedureParameterListFormat(listformat);
 			success=cont->getProcedureParameterList(cursor,
 							db,schema,obj);
+			cont->setProcedureParameterListFormat(listformat);
 			break;
 		case SQLRCLIENTQUERYTYPE_TYPE_INFO_LIST:
-			cont->setTypeInfoListFormat(listformat);
 			success=cont->getTypeInfoList(cursor,
 							db,schema,obj);
+			cont->setTypeInfoListFormat(listformat);
 			break;
 		default:
 			break;
@@ -4833,70 +4667,6 @@ bool sqlrprotocol_sqlrclient::getComponentListByApiCall(
 		return false;
 	}
 	return true;
-}
-
-bool sqlrprotocol_sqlrclient::getComponentListByQuery(sqlrservercursor *cursor,
-					sqlrclientquerytype_t querytype,
-					const char *object,
-					const char *component,
-					sqlrserverlistformat_t listformat,
-					uint16_t objecttypes) {
-
-	// clean up object and component to avoid SQL injection
-	stringbuffer	componentbuf;
-	escapeParameter(&componentbuf,component);
-	component=componentbuf.getString();
-	stringbuffer	objectbuf;
-	escapeParameter(&objectbuf,object);
-	object=objectbuf.getString();
-
-	// split the object (db.schema.object) into db, schema, and object
-	char	*currentdb=cont->getCurrentDatabase();
-	char	*currentschema=cont->getCurrentSchema();
-	const char	*db=NULL;
-	const char	*schema=NULL;
-	const char	*obj=NULL;
-	cont->splitObjectName(currentdb,currentschema,object,&db,&schema,&obj);
-
-	// when fetching lists in mysql format, we only want to fetch for
-	// the current database/schema
-	if (listformat==SQLRSERVERLISTFORMAT_MYSQL) {
-		db=currentdb;
-		schema=currentschema;
-	}
-
-	// build the appropriate query
-	const char	*query=NULL;
-	switch (querytype) {
-		case SQLRCLIENTQUERYTYPE_TYPE_INFO_LIST:
-			query=cont->getTypeInfoListQuery(db,schema,obj);
-			break;
-		case SQLRCLIENTQUERYTYPE_COLUMN_LIST:
-			query=cont->getColumnListQuery(db,schema,obj,component);
-			break;
-		case SQLRCLIENTQUERYTYPE_PRIMARY_KEYS_LIST:
-			query=cont->getPrimaryKeysListQuery(db,schema,obj);
-			break;
-		case SQLRCLIENTQUERYTYPE_KEY_AND_INDEX_LIST:
-			query=cont->getKeyAndIndexListQuery(db,schema,obj);
-			break;
-		case SQLRCLIENTQUERYTYPE_PROCEDURE_PARAMETER_LIST:
-			query=cont->getProcedureParameterListQuery(
-							db,schema,obj);
-			break;
-		default:
-			break;
-	}
-
-	// clean up
-	delete[] currentdb;
-	delete[] currentschema;
-
-	// FIXME: this can fail
-	populateQueryBuffer(cursor,query);
-
-	return processQueryOrBindCursor(cursor,querytype,
-					listformat,false,false);
 }
 
 void sqlrprotocol_sqlrclient::escapeParameter(stringbuffer *buffer,

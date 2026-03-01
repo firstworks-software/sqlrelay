@@ -892,26 +892,62 @@ bool sqlrserverconnection::getListsByApiCalls() {
 
 bool sqlrserverconnection::getDatabaseList(sqlrservercursor *cursor,
 						const char *db) {
-	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
-				SQLR_ERROR_NOTIMPLEMENTED,true);
-	return false;
+	const char	*query=getDatabaseListQuery(db);
+	if (charstring::isNullOrEmpty(query)) {
+		cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
+					SQLR_ERROR_NOTIMPLEMENTED,true);
+		return false;
+	}
+	char	*querybuffer=cont->getQueryBuffer(cursor);
+	charstring::safeCopy(querybuffer,
+			cont->getConfig()->getMaxQuerySize()+1,query);
+	cont->setQuerySize(cursor,charstring::getLength(querybuffer));
+	return cont->prepareQuery(cursor,
+				cont->getQueryBuffer(cursor),
+				cont->getQuerySize(cursor),
+				false,false,false) &&
+		cont->executeQuery(cursor,false,false,false,false);
 }
 
 bool sqlrserverconnection::getSchemaList(sqlrservercursor *cursor,
 						const char *db,
 						const char *schema) {
-	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
-				SQLR_ERROR_NOTIMPLEMENTED,true);
-	return false;
+	const char	*query=getSchemaListQuery(db,schema);
+	if (charstring::isNullOrEmpty(query)) {
+		cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
+					SQLR_ERROR_NOTIMPLEMENTED,true);
+		return false;
+	}
+	char	*querybuffer=cont->getQueryBuffer(cursor);
+	charstring::safeCopy(querybuffer,
+			cont->getConfig()->getMaxQuerySize()+1,query);
+	cont->setQuerySize(cursor,charstring::getLength(querybuffer));
+	return cont->prepareQuery(cursor,
+				cont->getQueryBuffer(cursor),
+				cont->getQuerySize(cursor),
+				false,false,false) &&
+		cont->executeQuery(cursor,false,false,false,false);
 }
 
 bool sqlrserverconnection::getTableTypeList(sqlrservercursor *cursor,
 						const char *db,
 						const char *schema,
 						const char *tabletypes) {
-	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
-				SQLR_ERROR_NOTIMPLEMENTED,true);
-	return false;
+	const char	*query=getTableTypeListQuery(db,schema,tabletypes);
+	if (charstring::isNullOrEmpty(query)) {
+		cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
+					SQLR_ERROR_NOTIMPLEMENTED,true);
+		return false;
+	}
+	char	*querybuffer=cont->getQueryBuffer(cursor);
+	charstring::safeCopy(querybuffer,
+			cont->getConfig()->getMaxQuerySize()+1,query);
+	cont->setQuerySize(cursor,charstring::getLength(querybuffer));
+	return cont->prepareQuery(cursor,
+				cont->getQueryBuffer(cursor),
+				cont->getQuerySize(cursor),
+				false,false,false) &&
+		cont->executeQuery(cursor,false,false,false,false);
 }
 
 bool sqlrserverconnection::getTableList(sqlrservercursor *cursor,
@@ -919,18 +955,42 @@ bool sqlrserverconnection::getTableList(sqlrservercursor *cursor,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes) {
-	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
-				SQLR_ERROR_NOTIMPLEMENTED,true);
-	return false;
+	const char	*query=getTableListQuery(db,schema,table,objecttypes);
+	if (charstring::isNullOrEmpty(query)) {
+		cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
+					SQLR_ERROR_NOTIMPLEMENTED,true);
+		return false;
+	}
+	char	*querybuffer=cont->getQueryBuffer(cursor);
+	charstring::safeCopy(querybuffer,
+			cont->getConfig()->getMaxQuerySize()+1,query);
+	cont->setQuerySize(cursor,charstring::getLength(querybuffer));
+	return cont->prepareQuery(cursor,
+				cont->getQueryBuffer(cursor),
+				cont->getQuerySize(cursor),
+				false,false,false) &&
+		cont->executeQuery(cursor,false,false,false,false);
 }
 
 bool sqlrserverconnection::getTypeInfoList(sqlrservercursor *cursor,
 						const char *db,
 						const char *schema,
 						const char *type) {
-	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
-				SQLR_ERROR_NOTIMPLEMENTED,true);
-	return false;
+	const char	*query=getTypeInfoListQuery(db,schema,type);
+	if (charstring::isNullOrEmpty(query)) {
+		cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
+					SQLR_ERROR_NOTIMPLEMENTED,true);
+		return false;
+	}
+	char	*querybuffer=cont->getQueryBuffer(cursor);
+	charstring::safeCopy(querybuffer,
+			cont->getConfig()->getMaxQuerySize()+1,query);
+	cont->setQuerySize(cursor,charstring::getLength(querybuffer));
+	return cont->prepareQuery(cursor,
+				cont->getQueryBuffer(cursor),
+				cont->getQuerySize(cursor),
+				false,false,false) &&
+		cont->executeQuery(cursor,false,false,false,false);
 }
 
 bool sqlrserverconnection::getColumnList(sqlrservercursor *cursor,
@@ -938,36 +998,84 @@ bool sqlrserverconnection::getColumnList(sqlrservercursor *cursor,
 						const char *schema,
 						const char *table,
 						const char *column) {
-	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
-				SQLR_ERROR_NOTIMPLEMENTED,true);
-	return false;
+	const char	*query=getColumnListQuery(db,schema,table,column);
+	if (charstring::isNullOrEmpty(query)) {
+		cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
+					SQLR_ERROR_NOTIMPLEMENTED,true);
+		return false;
+	}
+	char	*querybuffer=cont->getQueryBuffer(cursor);
+	charstring::safeCopy(querybuffer,
+			cont->getConfig()->getMaxQuerySize()+1,query);
+	cont->setQuerySize(cursor,charstring::getLength(querybuffer));
+	return cont->prepareQuery(cursor,
+				cont->getQueryBuffer(cursor),
+				cont->getQuerySize(cursor),
+				false,false,false) &&
+		cont->executeQuery(cursor,false,false,false,false);
 }
 
 bool sqlrserverconnection::getPrimaryKeysList(sqlrservercursor *cursor,
 						const char *db,
 						const char *schema,
 						const char *table) {
-	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
-				SQLR_ERROR_NOTIMPLEMENTED,true);
-	return false;
+	const char	*query=getPrimaryKeysListQuery(db,schema,table);
+	if (charstring::isNullOrEmpty(query)) {
+		cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
+					SQLR_ERROR_NOTIMPLEMENTED,true);
+		return false;
+	}
+	char	*querybuffer=cont->getQueryBuffer(cursor);
+	charstring::safeCopy(querybuffer,
+			cont->getConfig()->getMaxQuerySize()+1,query);
+	cont->setQuerySize(cursor,charstring::getLength(querybuffer));
+	return cont->prepareQuery(cursor,
+				cont->getQueryBuffer(cursor),
+				cont->getQuerySize(cursor),
+				false,false,false) &&
+		cont->executeQuery(cursor,false,false,false,false);
 }
 
 bool sqlrserverconnection::getKeyAndIndexList(sqlrservercursor *cursor,
 						const char *db,
 						const char *schema,
 						const char *table) {
-	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
-				SQLR_ERROR_NOTIMPLEMENTED,true);
-	return false;
+	const char	*query=getKeyAndIndexListQuery(db,schema,table);
+	if (charstring::isNullOrEmpty(query)) {
+		cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
+					SQLR_ERROR_NOTIMPLEMENTED,true);
+		return false;
+	}
+	char	*querybuffer=cont->getQueryBuffer(cursor);
+	charstring::safeCopy(querybuffer,
+			cont->getConfig()->getMaxQuerySize()+1,query);
+	cont->setQuerySize(cursor,charstring::getLength(querybuffer));
+	return cont->prepareQuery(cursor,
+				cont->getQueryBuffer(cursor),
+				cont->getQuerySize(cursor),
+				false,false,false) &&
+		cont->executeQuery(cursor,false,false,false,false);
 }
 
 bool sqlrserverconnection::getProcedureList(sqlrservercursor *cursor,
 						const char *db,
 						const char *schema,
 						const char *procedure) {
-	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
-				SQLR_ERROR_NOTIMPLEMENTED,true);
-	return false;
+	const char	*query=getProcedureListQuery(db,schema,procedure);
+	if (charstring::isNullOrEmpty(query)) {
+		cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
+					SQLR_ERROR_NOTIMPLEMENTED,true);
+		return false;
+	}
+	char	*querybuffer=cont->getQueryBuffer(cursor);
+	charstring::safeCopy(querybuffer,
+			cont->getConfig()->getMaxQuerySize()+1,query);
+	cont->setQuerySize(cursor,charstring::getLength(querybuffer));
+	return cont->prepareQuery(cursor,
+				cont->getQueryBuffer(cursor),
+				cont->getQuerySize(cursor),
+				false,false,false) &&
+		cont->executeQuery(cursor,false,false,false,false);
 }
 
 bool sqlrserverconnection::getProcedureParameterList(
@@ -975,9 +1083,22 @@ bool sqlrserverconnection::getProcedureParameterList(
 						const char *db,
 						const char *schema,
 						const char *procedure) {
-	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
-				SQLR_ERROR_NOTIMPLEMENTED,true);
-	return false;
+	const char	*query=getProcedureParameterListQuery(
+						db,schema,procedure);
+	if (charstring::isNullOrEmpty(query)) {
+		cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
+					SQLR_ERROR_NOTIMPLEMENTED,true);
+		return false;
+	}
+	char	*querybuffer=cont->getQueryBuffer(cursor);
+	charstring::safeCopy(querybuffer,
+			cont->getConfig()->getMaxQuerySize()+1,query);
+	cont->setQuerySize(cursor,charstring::getLength(querybuffer));
+	return cont->prepareQuery(cursor,
+				cont->getQueryBuffer(cursor),
+				cont->getQuerySize(cursor),
+				false,false,false) &&
+		cont->executeQuery(cursor,false,false,false,false);
 }
 
 const char *sqlrserverconnection::getDatabaseListQuery(

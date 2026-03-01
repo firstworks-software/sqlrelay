@@ -778,19 +778,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_mysql : public sqlrprotocol {
 
 		// com_field_list
 		bool	comFieldList(sqlrservercursor *cursor);
-		bool	getObjectListByApiCall(sqlrservercursor *cursor,
+		bool	getObjectList(sqlrservercursor *cursor,
 					mysqlobjectlisttype_t listtype,
 					const char *object);
-		bool	getObjectListByQuery(sqlrservercursor *cursor,
-					mysqlobjectlisttype_t listtype,
-					const char *object);
-		bool	populateQueryBuffer(sqlrservercursor *cursor,
-							const char *query);
-		bool	getComponentListByApiCall(sqlrservercursor *cursor,
-					mysqlcomponentlisttype_t listtype,
-					const char *object,
-					const char *component);
-		bool	getComponentListByQuery(sqlrservercursor *cursor,
+		bool	getComponentList(sqlrservercursor *cursor,
 					mysqlcomponentlisttype_t listtype,
 					const char *object,
 					const char *component);
@@ -3866,18 +3857,9 @@ bool sqlrprotocol_mysql::comFieldList(sqlrservercursor *cursor) {
 	debugWrite("wild: \"%s\"",wild);
 
 	// get the list
-	bool	success=true;
-	if (cont->getListsByApiCalls()) {
-		debugWrite("get list by: api call");
-		success=getComponentListByApiCall(cursor,
+	bool	success=getComponentList(cursor,
 					MYSQLCOMPONENTLISTTYPE_COLUMN_LIST,
 					table,wild);
-	} else {
-		debugWrite("get list by: query");
-		success=getComponentListByQuery(cursor,
-					MYSQLCOMPONENTLISTTYPE_COLUMN_LIST,
-					table,wild);
-	}
 
 	debugEnd();
 
@@ -3895,84 +3877,7 @@ bool sqlrprotocol_mysql::comFieldList(sqlrservercursor *cursor) {
 	return sendFieldListResponse(cursor);
 }
 
-bool sqlrprotocol_mysql::getObjectListByApiCall(sqlrservercursor *cursor,
-					mysqlobjectlisttype_t listtype,
-					const char *object) {
-
-	// split the object (db.schema.object) into db, schema, and object
-	char	*currentdb=cont->getCurrentDatabase();
-	char	*currentschema=cont->getCurrentSchema();
-	const char	*db=NULL;
-	const char	*schema=NULL;
-	const char	*obj=NULL;
-	cont->splitObjectName(currentdb,currentschema,
-					object,&db,&schema,&obj);
-
-	// we only want to fetch for the current database/schema
-	db=currentdb;
-	schema=currentschema;
-
-	bool	retval=false;
-	switch (listtype) {
-		case MYSQLOBJECTLISTTYPE_DATABASE_LIST:
-			cont->setDatabaseListFormat(
-					SQLRSERVERLISTFORMAT_MYSQL);
-			retval=cont->getDatabaseList(cursor,db);
-			break;
-		case MYSQLOBJECTLISTTYPE_TABLE_LIST:
-			cont->setTableListFormat(
-					SQLRSERVERLISTFORMAT_MYSQL);
-			retval=cont->getTableList(cursor,db,schema,obj,
-							DB_OBJECT_TABLE|
-							DB_OBJECT_VIEW|
-							DB_OBJECT_ALIAS|
-							DB_OBJECT_SYNONYM);
-			break;
-	}
-
-	// clean up
-	delete[] currentdb;
-	delete[] currentschema;
-
-	return retval;
-}
-
-bool sqlrprotocol_mysql::getComponentListByApiCall(sqlrservercursor *cursor,
-					mysqlcomponentlisttype_t listtype,
-					const char *object,
-					const char *component) {
-
-	// split the object (db.schema.object) into db, schema, and object
-	char	*currentdb=cont->getCurrentDatabase();
-	char	*currentschema=cont->getCurrentSchema();
-	const char	*db=NULL;
-	const char	*schema=NULL;
-	const char	*obj=NULL;
-	cont->splitObjectName(currentdb,currentschema,
-					object,&db,&schema,&obj);
-
-	// we only want to fetch for the current database/schema
-	db=currentdb;
-	schema=currentschema;
-
-	bool	retval=false;
-	switch (listtype) {
-		case MYSQLCOMPONENTLISTTYPE_COLUMN_LIST:
-			cont->setColumnListFormat(
-					SQLRSERVERLISTFORMAT_MYSQL);
-			retval=cont->getColumnList(cursor,
-						db,schema,obj,component);
-			break;
-	}
-
-	// clean up
-	delete[] currentdb;
-	delete[] currentschema;
-
-	return retval;
-}
-
-bool sqlrprotocol_mysql::getObjectListByQuery(sqlrservercursor *cursor,
+bool sqlrprotocol_mysql::getObjectList(sqlrservercursor *cursor,
 					mysqlobjectlisttype_t listtype,
 					const char *object) {
 
@@ -3982,8 +3887,8 @@ bool sqlrprotocol_mysql::getObjectListByQuery(sqlrservercursor *cursor,
 	object=objectbuf.getString();
 
 	// split the object (db.schema.object) into db, schema, and object
-	char		*currentdb=cont->getCurrentDatabase();
-	char		*currentschema=cont->getCurrentSchema();
+	char	*currentdb=cont->getCurrentDatabase();
+	char	*currentschema=cont->getCurrentSchema();
 	const char	*db=NULL;
 	const char	*schema=NULL;
 	const char	*obj=NULL;
@@ -3994,23 +3899,21 @@ bool sqlrprotocol_mysql::getObjectListByQuery(sqlrservercursor *cursor,
 	db=currentdb;
 	schema=currentschema;
 
-	// build the appropriate query
-	const char	*query=NULL;
-	uint32_t	querysize=0;
+	bool	retval=false;
 	switch (listtype) {
 		case MYSQLOBJECTLISTTYPE_DATABASE_LIST:
-			cont->setDatabaseListFormat(SQLRSERVERLISTFORMAT_MYSQL);
-			query=cont->getDatabaseListQuery(db);
+			retval=cont->getDatabaseList(cursor,db);
+			cont->setDatabaseListFormat(
+					SQLRSERVERLISTFORMAT_MYSQL);
 			break;
 		case MYSQLOBJECTLISTTYPE_TABLE_LIST:
-			cont->setTableListFormat(SQLRSERVERLISTFORMAT_MYSQL);
-			query=cont->getTableListQuery(db,schema,obj,
+			retval=cont->getTableList(cursor,db,schema,obj,
 							DB_OBJECT_TABLE|
 							DB_OBJECT_VIEW|
 							DB_OBJECT_ALIAS|
 							DB_OBJECT_SYNONYM);
-			break;
-		default:
+			cont->setTableListFormat(
+					SQLRSERVERLISTFORMAT_MYSQL);
 			break;
 	}
 
@@ -4018,79 +3921,21 @@ bool sqlrprotocol_mysql::getObjectListByQuery(sqlrservercursor *cursor,
 	delete[] currentdb;
 	delete[] currentschema;
 
-	// FIXME: this can fail
-	populateQueryBuffer(cursor,query);
-
-	query=cont->getQueryBuffer(cursor);
-	querysize=cont->getQuerySize(cursor);
-
-	stringbuffer	b;
-	b.safePrint(query,(uint32_t)querysize);
-	debugWrite("query: \"%s\"",b.getString());
-	debugWrite("query size: %d",querysize);
-
-	// prepare and execute the query
-	if (!cont->prepareQuery(cursor,query,querysize,true,true,true) ||
-			!cont->executeQuery(cursor,true,true,true,true)) {
-		return false;
-	}
-
-	// set which list format to use
-	switch (listtype) {
-		case MYSQLOBJECTLISTTYPE_DATABASE_LIST:
-			cont->setDatabaseListFormat(
-					SQLRSERVERLISTFORMAT_MYSQL);
-			break;
-		case MYSQLOBJECTLISTTYPE_TABLE_LIST:
-			cont->setTableListFormat(
-					SQLRSERVERLISTFORMAT_MYSQL);
-			break;
-		default:
-			break;
-	}
-
-	return true;
+	return retval;
 }
 
-bool sqlrprotocol_mysql::populateQueryBuffer(sqlrservercursor *cursor,
-							const char *query) {
-
-	// sanity check on query
-	if (!query) {
-		query=cont->getNoopQuery();
-	}
-
-	// bounds checking
-	cont->setQuerySize(cursor,charstring::getLength(query));
-	if (cont->getQuerySize(cursor)>maxquerysize) {
-		stringbuffer	err;
-		err.append("Query loo large (");
-		err.append(cont->getQuerySize(cursor));
-		err.append(">");
-		err.append(maxquerysize);
-		err.append(")");
-		return sendErrPacket(1105,err.getString(),"24000");
-	}
-
-	// fill the query buffer and update the size
-	char	*querybuffer=cont->getQueryBuffer(cursor);
-	charstring::safeCopy(querybuffer,maxquerysize+1,query);
-	cont->setQuerySize(cursor,charstring::getLength(querybuffer));
-	return true;
-}
-
-bool sqlrprotocol_mysql::getComponentListByQuery(sqlrservercursor *cursor,
+bool sqlrprotocol_mysql::getComponentList(sqlrservercursor *cursor,
 					mysqlcomponentlisttype_t listtype,
 					const char *object,
 					const char *component) {
 
 	// clean up object and component to avoid SQL injection
-	stringbuffer	componentbuf;
-	escapeParameter(&componentbuf,component);
-	component=componentbuf.getString();
 	stringbuffer	objectbuf;
 	escapeParameter(&objectbuf,object);
 	object=objectbuf.getString();
+	stringbuffer	componentbuf;
+	escapeParameter(&componentbuf,component);
+	component=componentbuf.getString();
 
 	// split the object (db.schema.object) into db, schema, and object
 	char	*currentdb=cont->getCurrentDatabase();
@@ -4105,15 +3950,13 @@ bool sqlrprotocol_mysql::getComponentListByQuery(sqlrservercursor *cursor,
 	db=currentdb;
 	schema=currentschema;
 
-	// build the appropriate query
-	const char	*query=NULL;
-	uint32_t	querysize=0;
+	bool	retval=false;
 	switch (listtype) {
 		case MYSQLCOMPONENTLISTTYPE_COLUMN_LIST:
-			cont->setColumnListFormat(SQLRSERVERLISTFORMAT_MYSQL);
-			query=cont->getColumnListQuery(db,schema,obj,component);
-			break;
-		default:
+			retval=cont->getColumnList(cursor,
+						db,schema,obj,component);
+			cont->setColumnListFormat(
+					SQLRSERVERLISTFORMAT_MYSQL);
 			break;
 	}
 
@@ -4121,34 +3964,7 @@ bool sqlrprotocol_mysql::getComponentListByQuery(sqlrservercursor *cursor,
 	delete[] currentdb;
 	delete[] currentschema;
 
-	// FIXME: this can fail
-	populateQueryBuffer(cursor,query);
-
-	query=cont->getQueryBuffer(cursor);
-	querysize=cont->getQuerySize(cursor);
-
-	stringbuffer	b;
-	b.safePrint(query,(uint32_t)querysize);
-	debugWrite("query: \"%s\"",b.getString());
-	debugWrite("query size: %d",querysize);
-
-	// prepare and execute the query
-	if (!cont->prepareQuery(cursor,query,querysize,true,true,true) ||
-			!cont->executeQuery(cursor,true,true,true,true)) {
-		return false;
-	}
-
-	// set which list format to use
-	switch (listtype) {
-		case MYSQLCOMPONENTLISTTYPE_COLUMN_LIST:
-			cont->setColumnListFormat(
-					SQLRSERVERLISTFORMAT_MYSQL);
-			break;
-		default:
-			break;
-	}
-
-	return true;
+	return retval;
 }
 
 void sqlrprotocol_mysql::escapeParameter(stringbuffer *buffer,

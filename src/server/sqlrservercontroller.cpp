@@ -2891,76 +2891,8 @@ bool sqlrservercontroller::getLastInsertIdList(sqlrservercursor *cursor) {
 	return handleResultSetHeader(lidcur);
 }
 
-const char *sqlrservercontroller::getDatabaseListQuery(const char *db) {
-	return pvt->_conn->getDatabaseListQuery(db);
-}
-
-const char *sqlrservercontroller::getSchemaListQuery(
-						const char *db,
-						const char *schema) {
-	return pvt->_conn->getSchemaListQuery(db,schema);
-}
-
-const char *sqlrservercontroller::getTableTypeListQuery(
-						const char *db,
-						const char *schema,
-						const char *tabletypes) {
-	return pvt->_conn->getTableTypeListQuery(db,schema,tabletypes);
-}
-
-const char *sqlrservercontroller::getTableListQuery(
-						const char *db,
-						const char *schema,
-						const char *table,
-						uint16_t objecttypes) {
-	return pvt->_conn->getTableListQuery(db,schema,table,objecttypes);
-}
-
 const char *sqlrservercontroller::getGlobalTempTableListQuery() {
 	return pvt->_conn->getGlobalTempTableListQuery();
-}
-
-const char *sqlrservercontroller::getTypeInfoListQuery(
-						const char *db,
-						const char *schema,
-						const char *type) {
-	return pvt->_conn->getTypeInfoListQuery(db,schema,type);
-}
-
-const char *sqlrservercontroller::getColumnListQuery(
-						const char *db,
-						const char *schema,
-						const char *table,
-						const char *column) {
-	return pvt->_conn->getColumnListQuery(db,schema,table,column);
-}
-
-const char *sqlrservercontroller::getPrimaryKeysListQuery(
-						const char *db,
-						const char *schema,
-						const char *table) {
-	return pvt->_conn->getPrimaryKeysListQuery(db,schema,table);
-}
-
-const char *sqlrservercontroller::getKeyAndIndexListQuery(
-						const char *db,
-						const char *schema,
-						const char *table) {
-	return pvt->_conn->getKeyAndIndexListQuery(db,schema,table);
-}
-
-const char *sqlrservercontroller::getProcedureListQuery(
-						const char *db,
-						const char *schema,
-						const char *procedure) {
-	return pvt->_conn->getProcedureListQuery(db,schema,procedure);
-}
-
-const char *sqlrservercontroller::getProcedureParameterListQuery(
-						const char *db,
-						const char *schema,
-						const char *procedure) {
-	return pvt->_conn->getProcedureParameterListQuery(db,schema,procedure);
 }
 
 void sqlrservercontroller::saveError() {
@@ -3846,26 +3778,7 @@ void sqlrservercontroller::getColumnsInTable(const char *table,
 	sqlrservercursor        *gclcur=newCursor();
 	if (open(gclcur)) {
 
-		bool	retval=false;
-		if (getListsByApiCalls()) {
-			retval=getColumnList(gclcur,NULL,NULL,table,NULL);
-		} else {
-			const char	*q=
-				getColumnListQuery(NULL,NULL,table,NULL);
-			// FIXME: bounds checking
-			char	*querybuffer=getQueryBuffer(gclcur);
-			charstring::safeCopy(querybuffer,
-					getConfig()->getMaxQuerySize()+1,
-					q);
-			setQuerySize(gclcur,
-					charstring::getLength(querybuffer));
-			retval=prepareQuery(gclcur,
-					getQueryBuffer(gclcur),
-					getQuerySize(gclcur),
-					false,false,false) &&
-				executeQuery(gclcur,
-					false,false,false,false);
-		}
+		bool	retval=getColumnList(gclcur,NULL,NULL,table,NULL);
 		if (retval) {
 
 			setColumnListFormat(SQLRSERVERLISTFORMAT_MYSQL);
