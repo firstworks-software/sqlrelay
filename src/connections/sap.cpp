@@ -37,14 +37,27 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostNameQuery();
-		const char	*getDatabaseListQuery(bool wild);
+		const char	*getDatabaseListQuery(const char *db);
+		const char	*getSchemaListQuery(const char *db,
+						const char *schema);
+		const char	*getTableTypeListQuery(
+						const char *db,
+						const char *schema,
+						const char *tabletypes);
 		const char	*getTableListQuery(
 						const char *db,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
+		const char	*getProcedureListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure);
 		const char	*getColumnListQuery(
-						const char *table, bool wild);
+						const char *db,
+						const char *schema,
+						const char *table,
+						const char *column);
 		const char	*selectDatabaseQuery();
 		const char	*getCurrentDatabaseQuery();
 		const char	*getLastInsertIdQuery();
@@ -99,7 +112,10 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 
 		stringbuffer	loginerror;
 
+		stringbuffer	schemalistquery;
+		stringbuffer	tabletypelistquery;
 		stringbuffer	tablelistquery;
+		stringbuffer	procedurelistquery;
 		stringbuffer	columnlistquery;
 };
 
@@ -567,7 +583,7 @@ const char *sapconnection::getDbHostNameQuery() {
 	return "select asehostname()";
 }
 
-const char *sapconnection::getDatabaseListQuery(bool wild) {
+const char *sapconnection::getDatabaseListQuery(const char *db) {
 	return "select "
 		"	'' as table_cat, "
 		"	'' as table_schem, "
@@ -575,6 +591,68 @@ const char *sapconnection::getDatabaseListQuery(bool wild) {
 		"	'' as table_type, "
 		"	'' as remarks, "
 		"	null";
+}
+
+const char *sapconnection::getSchemaListQuery(const char *db,
+						const char *schema) {
+
+	schemalistquery.clear();
+
+	schemalistquery.append(
+		"select distinct "
+		"	'' as table_cat, "
+		"	loginame as table_schem, "
+		"	'' as table_name, "
+		"	'' as table_type, "
+		"	'' as remarks, "
+		"	null "
+		"from "
+		"	sysobjects "
+		"where "
+		"	loginame is not null ");
+	if (schema) {
+		schemalistquery.append(
+			"	and "
+			"	loginame like '");
+		schemalistquery.append(schema);
+		schemalistquery.append("' ");
+	}
+	schemalistquery.append(
+		"order by "
+		"	loginame");
+
+	return schemalistquery.getString();
+}
+
+const char *sapconnection::getTableTypeListQuery(const char *db,
+						const char *schema,
+						const char *tabletypes) {
+
+	tabletypelistquery.clear();
+	tabletypelistquery.append(
+		"select "
+		"	'' as table_cat, "
+		"	'' as table_schem, "
+		"	'' as table_name, "
+		"	table_type, "
+		"	'' as remarks, "
+		"	null "
+		"from "
+		"(select 'TABLE' as table_type "
+		"union "
+		"select 'VIEW' as table_type) dt ");
+	if (!charstring::isNullOrEmpty(tabletypes)) {
+		tabletypelistquery.append(
+			"where "
+			"	table_type like '");
+		tabletypelistquery.append(tabletypes);
+		tabletypelistquery.append("' ");
+	}
+	tabletypelistquery.append(
+		"order by "
+		"	table_type");
+
+	return tabletypelistquery.getString();
 }
 
 const char *sapconnection::getTableListQuery(const char *db,
@@ -598,14 +676,14 @@ const char *sapconnection::getTableListQuery(const char *db,
 	if (schema) {
 		tablelistquery.append(
 			"	and "
-			"	loginame='");
+			"	loginame like '");
 		tablelistquery.append(schema);
 		tablelistquery.append("' ");
 	}
 	if (table) {
 		tablelistquery.append(
 			"	and "
-			"	name='");
+			"	name like '");
 		tablelistquery.append(table);
 		tablelistquery.append("' ");
 	}
@@ -631,8 +709,54 @@ const char *sapconnection::getTableListQuery(const char *db,
 	return tablelistquery.getString();
 }
 
-const char *sapconnection::getColumnListQuery(
-					const char *table, bool wild) {
+const char *sapconnection::getProcedureListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure) {
+
+	procedurelistquery.clear();
+	procedurelistquery.append(
+		"select "
+		"	'' as procedure_cat, "
+		"	loginame as procedure_schem, "
+		"	name as procedure_name, "
+		"	0 as num_input_params, "
+		"	0 as num_output_params, "
+		"	0 as num_result_sets, "
+		"	'' as remarks, "
+		"	case type "
+		"		when 'P' then '1' "
+		"		when 'SF' then '2' "
+		"		else '0' "
+		"	end as procedure_type, "
+		"	null "
+		"from "
+		"	sysobjects "
+		"where "
+		"	type in ('P','SF') ");
+	if (!charstring::isNullOrEmpty(schema)) {
+		procedurelistquery.append(
+			"and loginame like '");
+		procedurelistquery.append(schema);
+		procedurelistquery.append("' ");
+	}
+	if (!charstring::isNullOrEmpty(procedure)) {
+		procedurelistquery.append(
+			"and name like '");
+		procedurelistquery.append(procedure);
+		procedurelistquery.append("' ");
+	}
+	procedurelistquery.append(
+		"order by "
+		"	loginame, "
+		"	name");
+	return procedurelistquery.getString();
+}
+
+const char *sapconnection::getColumnListQuery(const char *db,
+					const char *schema,
+					const char *table,
+					const char *column) {
 
 	columnlistquery.clear();
 
@@ -640,7 +764,7 @@ const char *sapconnection::getColumnListQuery(
 	columnlistquery.append(
 		"select "
 		"	'' as table_cat, "
-		"	'' as table_schem, "
+		"	user_name(ob.uid) as table_schem, "
 		"	ob.name as table_name, "
 		"	co.name as column_name, "
 		"	co.type as data_type, "
@@ -722,15 +846,29 @@ const char *sapconnection::getColumnListQuery(
 		"where "
 		"	ob.type in ('S','U','V') "
 		"	and "
-		"	ob.name='%s' "
-		"	and "
 		"	co.id=ob.id "
 		"	and "
 		"	ty.usertype=co.usertype ");
-	if (wild) {
+	if (!charstring::isNullOrEmpty(schema)) {
 		columnlistquery.append(
 			"	and "
-			"	co.name like '%s' ");
+			"	user_name(ob.uid) like '");
+		columnlistquery.append(schema);
+		columnlistquery.append("' ");
+	}
+	if (!charstring::isNullOrEmpty(table)) {
+		columnlistquery.append(
+			"	and "
+			"	ob.name like '");
+		columnlistquery.append(table);
+		columnlistquery.append("' ");
+	}
+	if (!charstring::isNullOrEmpty(column)) {
+		columnlistquery.append(
+			"	and "
+			"	co.name like '");
+		columnlistquery.append(column);
+		columnlistquery.append("' ");
 	}
 
 	// order by clause

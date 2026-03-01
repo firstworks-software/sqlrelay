@@ -119,28 +119,32 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostNameQuery();
-		const char	*getDatabaseListQuery(bool wild);
-		const char	*getSchemaListQuery(bool wild,
-						bool currentdbonly);
-		const char	*getTableTypeListQuery(bool wild,
-						bool currentschemaonly);
-		const char	*getGlobalTempTableListQuery(
-						bool currentschemaonly);
+		const char	*getDatabaseListQuery(const char *db);
+		const char	*getSchemaListQuery(const char *db,
+						const char *schema);
+		const char	*getTableTypeListQuery(
+						const char *db,
+						const char *schema,
+						const char *tabletypes);
+		const char	*getGlobalTempTableListQuery();
 		const char	*getTableListQuery(
 						const char *db,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
 		const char	*getTypeInfoListQuery(
-						const char *type,
-						bool wild,
-						bool currentschemaonly);
+						const char *db,
+						const char *schema,
+						const char *type);
 		const char	*getColumnListQuery(
+						const char *db,
+						const char *schema,
 						const char *table,
-						bool wild);
+						const char *column);
 		const char	*getProcedureListQuery(
-						bool wild,
-						bool currentschemaonly);
+						const char *db,
+						const char *schema,
+						const char *procedure);
 		const char	*isSynonymQuery();
 		const char	*selectDatabaseQuery();
 		const char	*getCurrentDatabaseQuery();
@@ -196,9 +200,11 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		bool		disablekeylookup;
 
 		stringbuffer	schemalistquery;
+		stringbuffer	tabletypelistquery;
 		stringbuffer	tablelistquery;
 		stringbuffer	columnlistquery;
 		stringbuffer	typeinfolistquery;
+		stringbuffer	procedurelistquery;
 		stringbuffer	numbertypequery;
 
 		char		**databasefeatures;
@@ -1250,7 +1256,7 @@ const char *oracleconnection::getDbHostNameQuery() {
 	return NULL;
 }
 
-const char *oracleconnection::getDatabaseListQuery(bool wild) {
+const char *oracleconnection::getDatabaseListQuery(const char *db) {
 	// oracle doesn't really have "databases", just schemas,
 	// so return an empty result set with specific column names
 	return "select "
@@ -1266,8 +1272,8 @@ const char *oracleconnection::getDatabaseListQuery(bool wild) {
 		"	1=0";
 }
 
-const char *oracleconnection::getSchemaListQuery(bool wild,
-						bool currentdbonly) {
+const char *oracleconnection::getSchemaListQuery(const char *db,
+						const char *schema) {
 
 	schemalistquery.clear();
 
@@ -1281,10 +1287,12 @@ const char *oracleconnection::getSchemaListQuery(bool wild,
 		"	null "
 		"from "
 		"	all_users ");
-	if (wild) {
+	if (schema) {
 		schemalistquery.append(
 			"where "
-			"	username like upper('%s') ");
+			"	username like upper('");
+		schemalistquery.append(schema);
+		schemalistquery.append("') ");
 	}
 	schemalistquery.append(
 		"order by "
@@ -1293,43 +1301,41 @@ const char *oracleconnection::getSchemaListQuery(bool wild,
 	return schemalistquery.getString();
 }
 
-const char *oracleconnection::getTableTypeListQuery(bool wild,
-						bool currentschemaonly) {
+const char *oracleconnection::getTableTypeListQuery(const char *db,
+						const char *schema,
+						const char *tabletypes) {
 
-	// FIXME: support wild and currentschemaonly
-	return "(select "
-		"	'' as TABLE_CAT, "
-		"	'' as TABLE_SCHEM, "
-		"	'' as TABLE_NAME, "
-		"	'SYNONYM' as TABLE_TYPE, "
-		"	'' as REMARKS, "
+	tabletypelistquery.clear();
+
+	tabletypelistquery.append(
+		"select "
+		"	'' as table_cat, "
+		"	'' as table_schem, "
+		"	'' as table_name, "
+		"	table_type, "
+		"	'' as remarks, "
 		"	null "
 		"from "
-		"	dual) "
+		"(select 'SYNONYM' as table_type from dual "
 		"union "
-		"(select "
-		"	'' as TABLE_CAT, "
-		"	'' as TABLE_SCHEM, "
-		"	'' as TABLE_NAME, "
-		"	'TABLE' as TABLE_TYPE, "
-		"	'' as REMARKS, "
-		"	null "
-		"from "
-		"	dual) "
+		"select 'TABLE' as table_type from dual "
 		"union "
-		"(select "
-		"	'' as TABLE_CAT, "
-		"	'' as TABLE_SCHEM, "
-		"	'' as TABLE_NAME, "
-		"	'VIEW' as TABLE_TYPE, "
-		"	'' as REMARKS, "
-		"	null "
-		"from "
-		"	dual)";
+		"select 'VIEW' as table_type from dual) ");
+	if (!charstring::isNullOrEmpty(tabletypes)) {
+		tabletypelistquery.append(
+			"where "
+			"	table_type like '");
+		tabletypelistquery.append(tabletypes);
+		tabletypelistquery.append("' ");
+	}
+	tabletypelistquery.append(
+		"order by "
+		"	table_type");
+
+	return tabletypelistquery.getString();
 }
 
-const char *oracleconnection::getGlobalTempTableListQuery(
-						bool currentschemaonly) {
+const char *oracleconnection::getGlobalTempTableListQuery() {
 	if (supportssyscontext) {
 		return "select "
 			"	table_name, "
@@ -1375,9 +1381,9 @@ const char *oracleconnection::getTableListQuery(const char *db,
 		if (schema) {
 			tablelistquery.append("where ");
 			tablelistquery.append(
-				"	owner='");
+				"	owner like upper('");
 			tablelistquery.append(schema);
-			tablelistquery.append("' ");
+			tablelistquery.append("') ");
 			prevclause=true;
 		}
 		if (table) {
@@ -1387,9 +1393,9 @@ const char *oracleconnection::getTableListQuery(const char *db,
 				tablelistquery.append("where ");
 			}
 			tablelistquery.append(
-				"	table_name='");
+				"	table_name like upper('");
 			tablelistquery.append(table);
-			tablelistquery.append("' ");
+			tablelistquery.append("') ");
 		}
 		tablelistquery.append(") ");
 		first=false;
@@ -1413,9 +1419,9 @@ const char *oracleconnection::getTableListQuery(const char *db,
 		if (schema) {
 			tablelistquery.append("where ");
 			tablelistquery.append(
-				"	owner='");
+				"	owner like upper('");
 			tablelistquery.append(schema);
-			tablelistquery.append("' ");
+			tablelistquery.append("') ");
 			prevclause=true;
 		}
 		if (table) {
@@ -1425,9 +1431,9 @@ const char *oracleconnection::getTableListQuery(const char *db,
 				tablelistquery.append("where ");
 			}
 			tablelistquery.append(
-				"	view_name='");
+				"	view_name like upper('");
 			tablelistquery.append(table);
-			tablelistquery.append("' ");
+			tablelistquery.append("') ");
 		}
 		tablelistquery.append(") ");
 		first=false;
@@ -1451,9 +1457,9 @@ const char *oracleconnection::getTableListQuery(const char *db,
 		if (schema) {
 			tablelistquery.append("where ");
 			tablelistquery.append(
-				"	owner='");
+				"	owner like upper('");
 			tablelistquery.append(schema);
-			tablelistquery.append("' ");
+			tablelistquery.append("') ");
 			prevclause=true;
 		}
 		if (table) {
@@ -1463,9 +1469,9 @@ const char *oracleconnection::getTableListQuery(const char *db,
 				tablelistquery.append("where ");
 			}
 			tablelistquery.append(
-				"	synonym_name='");
+				"	synonym_name like upper('");
 			tablelistquery.append(table);
-			tablelistquery.append("' ");
+			tablelistquery.append("') ");
 		}
 		tablelistquery.append(") ");
 		first=false;
@@ -2179,9 +2185,9 @@ static const char	*nclobtype=
 			"from "
 			"	dual) ";
 
-const char *oracleconnection::getTypeInfoListQuery(const char *type,
-						bool wild,
-						bool currentschemaonly) {
+const char *oracleconnection::getTypeInfoListQuery(const char *db,
+						const char *schema,
+						const char *type) {
 
 	if (!charstring::compare(type,"*")) {
 		if (!typeinfolistquery.getSize()) {
@@ -2303,13 +2309,14 @@ const char *oracleconnection::getTypeInfoListQuery(const char *type,
 	return NULL;
 }
 
-const char *oracleconnection::getColumnListQuery(const char *table,
-							bool wild) {
+const char *oracleconnection::getColumnListQuery(const char *db,
+						const char *schema,
+						const char *table,
+						const char *column) {
 
 	// It takes a lot longer to look up synonyms than tables.  It's quick
 	// to see if the object is a synonym though, so we'll do that first
 	// and only spend the extra time if it is.
-
 	bool	issynonym=isSynonym(table);
 
 	// determine which tables to use
@@ -2327,18 +2334,16 @@ const char *oracleconnection::getColumnListQuery(const char *table,
 	columnlistquery.clear();
 
 	// select clause
-	columnlistquery.append("select ");
+	columnlistquery.append("select "
+			"	'' as table_cat, ");
 	if (supportssyscontext) {
-		// FIXME: I think I should return the
-		// owner as the table_schem, not cat
 		columnlistquery.append(
-			"	tc.owner as table_cat, ");
+			"	tc.owner as table_schem, ");
 	} else {
 		columnlistquery.append(
-			"	'' as table_cat, ");
+			"	'' as table_schem, ");
 	}
 	columnlistquery.append(
-			"	'' as table_schem, "
 			"	tc.table_name, "
 			"	tc.column_name, "
 			"	'' as data_type, "
@@ -2423,18 +2428,35 @@ const char *oracleconnection::getColumnListQuery(const char *table,
 
 	// where clause
 	columnlistquery.append("where ");
+	bool	prevclause=false;
 	if (issynonym) {
-		columnlistquery.append(
-			"	s.synonym_name=upper('%s') ");
-		if (supportssyscontext) {
+		if (!charstring::isNullOrEmpty(table)) {
 			columnlistquery.append(
-				"	and "
-				"	(s.owner=sys_context('userenv',"
-							"'current_schema') "
-				"	or "
-				"	s.owner='SYS' "
-				"	or "
-				"	s.owner='SYSTEM') ");
+				"	s.synonym_name like upper('");
+			columnlistquery.append(table);
+			columnlistquery.append("') ");
+		} else {
+			columnlistquery.append(
+				"	1=1 ");
+		}
+		if (supportssyscontext) {
+			if (!charstring::isNullOrEmpty(schema)) {
+				columnlistquery.append(
+					"	and "
+					"	s.owner like upper('");
+				columnlistquery.append(schema);
+				columnlistquery.append("') ");
+			} else {
+				columnlistquery.append(
+					"	and "
+					"	(s.owner="
+					"sys_context('userenv',"
+						"'current_schema') "
+					"	or "
+					"	s.owner='SYS' "
+					"	or "
+					"	s.owner='SYSTEM') ");
+			}
 		}
 		columnlistquery.append(
 			"	and "
@@ -2444,24 +2466,47 @@ const char *oracleconnection::getColumnListQuery(const char *table,
 			"	and "
 			"	tc.owner=s.table_owner ");
 		}
+		prevclause=true;
 	} else {
-		columnlistquery.append(
-			"	tc.table_name=upper('%s') ");
-		if (supportssyscontext) {
+		if (!charstring::isNullOrEmpty(table)) {
 			columnlistquery.append(
-			"	and "
-			"	(tc.owner=sys_context('userenv',"
-						"'current_schema') "
-			"	or "
-			"	tc.owner='SYS' "
-			"	or "
-			"	tc.owner='SYSTEM') ");
+				"	tc.table_name like upper('");
+			columnlistquery.append(table);
+			columnlistquery.append("') ");
+			prevclause=true;
+		}
+		if (!charstring::isNullOrEmpty(schema)) {
+			if (prevclause) {
+				columnlistquery.append("and ");
+			}
+			columnlistquery.append(
+				"	tc.owner like upper('");
+			columnlistquery.append(schema);
+			columnlistquery.append("') ");
+			prevclause=true;
+		} else if (supportssyscontext) {
+			if (prevclause) {
+				columnlistquery.append("and ");
+			}
+			columnlistquery.append(
+				"	(tc.owner="
+				"sys_context('userenv',"
+					"'current_schema') "
+				"	or "
+				"	tc.owner='SYS' "
+				"	or "
+				"	tc.owner='SYSTEM') ");
+			prevclause=true;
 		}
 	}
-	if (wild) {
+	if (!charstring::isNullOrEmpty(column)) {
+		if (prevclause) {
+			columnlistquery.append("and ");
+		}
 		columnlistquery.append(
-			"	and "
-			"	tc.column_name like upper('%s') ");
+			"	tc.column_name like upper('");
+		columnlistquery.append(column);
+		columnlistquery.append("') ");
 	}
 
 	// order by clause
@@ -2472,24 +2517,47 @@ const char *oracleconnection::getColumnListQuery(const char *table,
 	return columnlistquery.getString();
 }
 
-const char *oracleconnection::getProcedureListQuery(bool wild,
-						bool currentschemaonly) {
-	// FIXME: support wild and currentschemaonly
-	return "select "
-		"	'', "
-		"	owner, "
-		"	object_name, "
-		"	0, "
-		"	0, "
-		"	0, "
-		"	'', "
-		"	'', "
+const char *oracleconnection::getProcedureListQuery(const char *db,
+						const char *schema,
+						const char *procedure) {
+
+	procedurelistquery.clear();
+	procedurelistquery.append(
+		"select "
+		"	'' as procedure_cat, "
+		"	owner as procedure_schem, "
+		"	object_name as procedure_name, "
+		"	0 as num_input_params, "
+		"	0 as num_output_params, "
+		"	0 as num_result_sets, "
+		"	'' as remarks, "
+		"	case object_type "
+		"		when 'PROCEDURE' then '1' "
+		"		when 'FUNCTION' then '2' "
+		"		else '0' "
+		"	end as procedure_type, "
 		"	null "
 		"from "
 		"	all_procedures "
+		"where "
+		"	object_type in ('PROCEDURE','FUNCTION') ");
+	if (!charstring::isNullOrEmpty(schema)) {
+		procedurelistquery.append(
+			"and owner like upper('");
+		procedurelistquery.append(schema);
+		procedurelistquery.append("') ");
+	}
+	if (!charstring::isNullOrEmpty(procedure)) {
+		procedurelistquery.append(
+			"and object_name like upper('");
+		procedurelistquery.append(procedure);
+		procedurelistquery.append("') ");
+	}
+	procedurelistquery.append(
 		"order by "
 		"	owner, "
-		"	object_name";
+		"	object_name");
+	return procedurelistquery.getString();
 }
 
 const char *oracleconnection::isSynonymQuery() {

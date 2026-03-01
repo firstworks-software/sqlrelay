@@ -2028,12 +2028,12 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  DB_OBJECT_ALIAS
 		 *  DB_OBJECT_SYNONYM
 		 *
-		 *  Only returns table names that match wildcard "wild" if
-		 *  "wild" is non-NULL.
+		 *  Only returns table type names that match pattern
+		 *  "tabletypes" if "tabletypes" is non-NULL/non-empty.
 		 *
 		 *  Returns true on success and false on failure. */
 		bool	getTableTypeList(sqlrservercursor *cursor,
-							const char *wild);
+						const char *tabletypes);
 
 		/** Makes the database API call to fetch the list of tables (and
 		 *  table-like objects), in the current database and schema,
@@ -2119,46 +2119,50 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 							const char *wild);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  database names.
+		 *  database names that match the provided "db" pattern.
 		 *
-		 *  If "wild" is true the the query also includes a where
-		 *  clause that inlcudes a %s which can be used to substitute
-		 *  in a wildcard value which can be used to filter the
-		 *  results. */
-		const char	*getDatabaseListQuery(bool wild);
+		 *  "db" can be a pattern that includes SQL wildcards
+		 *  like %.
+		 *
+		 *  If "db" is null or empty then it is simply not used
+		 *  when building the query. */
+		const char	*getDatabaseListQuery(const char *db);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  schema names.
+		 *  schema names that match the provided "db" and "schema"
+		 *  patterns.
 		 *
-		 *  If "wild" is true the the query also includes a where
-		 *  clause that inlcudes a %s which can be used to substitute
-		 *  in a wildcard value which can be use  to filter the
-		 *  results.
+		 *  "db" and "schema" can be patterns that include SQL
+		 *  wildcards like %.
 		 *
-		 *  If "currentdbonly" is true then the query only returns
-		 *  schemas on the current database. */
-		const char	*getSchemaListQuery(bool wild,
-							bool currentdbonly);
+		 *  If "db" or "schema" are null or empty then they are simply
+		 *  not used when building the query. */
+		const char	*getSchemaListQuery(const char *db,
+							const char *schema);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  table types.
+		 *  table type names that match the provided "db", "schema",
+		 *  and "tabletypes" patterns.
 		 *
-		 *  If "wild" is true the the query also includes a where
-		 *  clause that inlcudes a %s which can be used to substitute
-		 *  in a wildcard value which can be used to filter the
-		 *  results.
+		 *  "db", "schema", and "tabletypes" can be patterns that
+		 *  include SQL wildcards like %.
 		 *
-		 *  If "currentschemaonly" is true then the query only returns
-		 *  schemas on the current database. */
-		const char	*getTableTypeListQuery(bool wild,
-							bool currentschemaonly);
+		 *  If "db", "schema", or "tabletypes" are null or empty
+		 *  then they are simply not used when building the query. */
+		const char	*getTableTypeListQuery(
+						const char *db,
+						const char *schema,
+						const char *tabletypes);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  table names that match the provided "db", "schema", "table",
-		 *  and "objecttypes" criteria.
+		 *  table names that match the provided "db", "schema",
+		 *  and "table" patterns.
 		 *
-		 *  Each of "db", "schema" and "table" may be an object name,
-		 *  or may be left NULL, meaning "don't filter".
+		 *  "db", "schema", and "table" can be patterns that
+		 *  include SQL wildcards like %.
+		 *
+		 *  If "db", "schema", or "table" are null or empty
+		 *  then they are simply not used when building the query.
 		 *
 		 *  "objecttypes" should be an or-ed set of one or more of the
 		 *  following object types:
@@ -2166,96 +2170,106 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  DB_OBJECT_TABLE
 		 *  DB_OBJECT_VIEW
 		 *  DB_OBJECT_ALIAS
-		 *  DB_OBJECT_SYNONYM
-		 */
+		 *  DB_OBJECT_SYNONYM */
 		const char	*getTableListQuery(const char *db,
 							const char *schema,
 							const char *table,
 							uint16_t objecttypes);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  global temporary table names.
-		 *
-		 *  If "currentschemaonly" is true then the query only returns
-		 *  schemas on the current database. */
-		const char	*getGlobalTempTableListQuery(
-							bool currentschemaonly);
-
-		/** Returns a query that can be used to fetch info about
-		 *  datatype "type", where "type" is in the current database
-		 *  and schema.
-		 *
-		 *  If "wild" is true the the query also includes a where
-		 *  clause that inlcudes a %s which can be used to substitute
-		 *  in a wildcard value which can be used to filter the
-		 *  results.
-		 *
-		 *  If "currentschemaonly" is true then the query only returns
-		 *  schemas on the current database. */
-		const char	*getTypeInfoListQuery(const char *type,
-							bool wild,
-							bool currentschemaonly);
+		 *  global temporary table names. */
+		const char	*getGlobalTempTableListQuery();
 
 		/** Returns a query that can be used to fetch the list of
-		 *  column names from "table".
+		 *  data type names that match the provided "db", "schema",
+		 *  and "type" patterns.
 		 *
-		 *  If "wild" is true the the query also includes a where
-		 *  clause that inlcudes a %s which can be used to substitute
-		 *  in a wildcard value which can be used to filter the
-		 *  results. */
-		const char	*getColumnListQuery(const char *table,
-								bool wild);
+		 *  "db", "schema", and "type" can be patterns that
+		 *  include SQL wildcards like %.
+		 *
+		 *  If "db", "schema", or "type" are null or empty
+		 *  then they are simply not used when building the query. */
+		const char	*getTypeInfoListQuery(const char *db,
+							const char *schema,
+							const char *type);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  columns that compose the primary key of "table".
+		 *  column names that match the provided "db", "schema",
+		 *  "table", and "column" patterns.
 		 *
-		 *  If "wild" is true the the query also includes a where
-		 *  clause that inlcudes a %s which can be used to substitute
-		 *  in a wildcard value which can be used to filter the
-		 *  results. */
-		const char	*getPrimaryKeysListQuery(const char *table,
-								bool wild);
-
-		/** Returns a query that can be used to fetch the indices and
-		 *  indexed columns  of "table", where "table" is in the
-		 *  current database and schema.
+		 *  "db", "schema", "table", and "column" can be patterns
+		 *  that include SQL wildcards like %.
 		 *
-		 *  If "wild" is true the the query also includes a where
-		 *  clause that inlcudes a %s which can be used to substitute
-		 *  in a wildcard value which can be used to filter the
-		 *  results. */
-		const char	*getKeyAndIndexListQuery(const char *table,
-								bool wild);
+		 *  If "db", "schema", "table", or "column" are null or
+		 *  empty then they are simply not used when building the
+		 *  query. */
+		const char	*getColumnListQuery(
+						const char *db,
+						const char *schema,
+						const char *table,
+						const char *column);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  stored procedures in the current database and schema, and
-		 *  information about them, such as the number of input and
-		 *  output parameters, the numer of result sets that the
-		 *  procdure may retrun, a description of the procedure, and
-		 *  the procedure type (procedure or function).
+		 *  primary key column names that match the provided "db",
+		 *  "schema", and "table" patterns.
 		 *
-		 *  If "wild" is true the the query also includes a where/
-		 *  clause that inlcudes a %s which can be used to substitute
-		 *  in a wildcard value which can be used to filter the
-		 *  results.
+		 *  "db", "schema", and "table" can be patterns that
+		 *  include SQL wildcards like %.
 		 *
-		 *  If "currentschemaonly" is true then the query only returns
-		 *  schemas on the current database. */
-		const char	*getProcedureListQuery(bool wild,
-							bool currentschemaonly);
+		 *  If "db", "schema", or "table" are null or empty
+		 *  then they are simply not used when building the query. */
+		const char	*getPrimaryKeysListQuery(
+						const char *db,
+						const char *schema,
+						const char *table);
 
-		/** Returns a query that can be used to fetch the parameter
-		 *  names of "proc", where "proc" is in the current database
-		 *  and schema, and information about them, such as whether
-		 *  they are input, output, or input-output variables.
+		/** Returns a query that can be used to fetch the list of
+		 *  index and indexed column names that match the provided
+		 *  "db", "schema", and "table" patterns.
 		 *
-		 *  If "wild" is true then the query also includes a where
-		 *  clause that inlcudes a %s which can be used to substitute
-		 *  in a wildcard value which can be used to filter the
-		 *  results. */
+		 *  "db", "schema", and "table" can be patterns that
+		 *  include SQL wildcards like %.
+		 *
+		 *  If "db", "schema", or "table" are null or empty
+		 *  then they are simply not used when building the query. */
+		const char	*getKeyAndIndexListQuery(
+						const char *db,
+						const char *schema,
+						const char *table);
+
+		/** Returns a query that can be used to fetch the list of
+		 *  stored procedure names that match the provided "db",
+		 *  "schema", and "procedure" patterns, and information
+		 *  about them, such as the number of input and output
+		 *  parameters, the number of result sets that the procedure
+		 *  may return, a description of the procedure, and the
+		 *  procedure type (procedure or function).
+		 *
+		 *  "db", "schema", and "procedure" can be patterns that
+		 *  include SQL wildcards like %.
+		 *
+		 *  If "db", "schema", or "procedure" are null or empty
+		 *  then they are simply not used when building the query. */
+		const char	*getProcedureListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure);
+
+		/** Returns a query that can be used to fetch the list of
+		 *  parameter names that match the provided "db", "schema",
+		 *  and "procedure" patterns, and information about them,
+		 *  such as whether they are input, output, or input-output
+		 *  variables.
+		 *
+		 *  "db", "schema", and "procedure" can be patterns that
+		 *  include SQL wildcards like %.
+		 *
+		 *  If "db", "schema", or "procedure" are null or empty
+		 *  then they are simply not used when building the query. */
 		const char	*getProcedureParameterListQuery(
-							const char *proc,
-							bool wild);
+						const char *db,
+						const char *schema,
+						const char *procedure);
 
 		/** Gets the last insert id as a result set. */
 		bool	getLastInsertIdList(sqlrservercursor *cursor);
@@ -3534,12 +3548,12 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		/** Makes the database API call to fetch the list of table type
 		 *  names in the current database and schema, that are visible
 		 *  to the user that SQL Relay is logged in as.  Only returns
-		 *  table type names that match wildcard "wild" if "wild" is
-		 *  non-NULL.
+		 *  table type names that match pattern "tabletypes" if
+		 *  "tabletypes" is non-NULL/non-empty.
 		 *
 		 *  Returns true on success and false on failure. */
 		virtual bool	getTableTypeList(sqlrservercursor *cursor,
-							const char *wild);
+						const char *tabletypes);
 
 		/** Makes the databaase API call to fetch the list of tables
 		 *  (and table-like objects), in the current database and
@@ -3626,105 +3640,58 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 							const char *wild);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  database names.
+		 *  database names that match the provided "db" pattern.
 		 *
-		 *  If "wild" is true the the query also includes a where
-		 *  clause that inlcudes a %s which can be used to substitute
-		 *  in a wildcard value which can be used to filter the
-		 *  results.
+		 *  "db" can be a pattern that includes SQL wildcards
+		 *  like %.
 		 *
-		 *  This implementation just returns getNoopQuery(), but it may
-		 *  be overridden by a child class to return a database-specific
-		 *  query.
-		 *
-		 *  Queries should return result sets with columns that match
-		 *  the columns of the result sets produced by the ODBC
-		 *  function SQLTables(), plus a trailing null column:
-		 *
-		 *  * TABLE_CAT
-		 *  * TABLE_SCHEM
-		 *  * TABLE_NAME
-		 *  * TABLE_TYPE
-		 *  * REMARKS
-		 *  * NULL
-		 *
-		 *  ...returning an empty string, 0, or null as appropriate for
-		 *  any columns that the database is unable to provide.
-		 */
-		virtual const char	*getDatabaseListQuery(bool wild);
+		 *  This implementation just returns getNoopQuery(), but it
+		 *  may be overridden by a child class to return a
+		 *  database-specific query. */
+		virtual const char	*getDatabaseListQuery(
+							const char *db);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  schema names.
+		 *  schema names that match the provided "db" and "schema"
+		 *  patterns.
 		 *
-		 *  If "wild" is true the the query also includes a where
-		 *  clause that inlcudes a %s which can be used to substitute
-		 *  in a wildcard value which can be use  to filter the
-		 *  results.
+		 *  "db" and "schema" can be patterns that include SQL
+		 *  wildcards like %.
 		 *
-		 *  If "currentdbonly" is true then the query only returns
-		 *  schemas in the current database.
-		 *
-		 *  This implementation just returns getNoopQuery(), but it may
-		 *  be overridden by a child class to return a database-specific
-		 *  query.
-		 *
-		 *  Queries should return result sets with columns that match
-		 *  the columns of the result sets produced by the ODBC
-		 *  function SQLTables(), plus a trailing null column:
-		 *
-		 *  * TABLE_CAT
-		 *  * TABLE_SCHEM
-		 *  * TABLE_NAME
-		 *  * TABLE_TYPE
-		 *  * REMARKS
-		 *  * NULL
-		 *
-		 *  ...returning an empty string, 0, or null as appropriate for
-		 *  any columns that the database is unable to provide.
-		 */
+		 *  This implementation just returns getNoopQuery(), but it
+		 *  may be overridden by a child class to return a
+		 *  database-specific query. */
 		virtual const char	*getSchemaListQuery(
-							bool wild,
-							bool currentdbonly);
+							const char *db,
+							const char *schema);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  table types.
+		 *  table type names that match the provided "db", "schema",
+		 *  and "tabletypes" patterns.
 		 *
-		 *  If "wild" is true the the query also includes a where
-		 *  clause that inlcudes a %s which can be used to substitute
-		 *  in a wildcard value which can be used to filter the
-		 *  results.
+		 *  "db", "schema", and "tabletypes" can be patterns that
+		 *  include SQL wildcards like %.
 		 *
-		 *  If "currentschemaonly" is true then the query only returns
-		 *  schemas on the current database.
+		 *  If "db", "schema", or "tabletypes" are null or empty
+		 *  then they are simply not used when building the query.
 		 *
-		 *  This implementation just returns getNoopQuery(), but it may
-		 *  be overridden by a child class to return a database-specific
-		 *  query.
-		 *
-		 *  Queries should return result sets with columns that match
-		 *  the columns of the result sets produced by the ODBC
-		 *  function SQLTables(), plus a trailing null column:
-		 *
-		 *  * TABLE_CAT
-		 *  * TABLE_SCHEM
-		 *  * TABLE_NAME
-		 *  * TABLE_TYPE
-		 *  * REMARKS
-		 *  * NULL
-		 *
-		 *  ...returning an empty string, 0, or null as appropriate for
-		 *  any columns that the database is unable to provide.
-		 */
+		 *  This implementation just returns getNoopQuery(), but it
+		 *  may be overridden by a child class to return a
+		 *  database-specific query. */
 		virtual const char	*getTableTypeListQuery(
-							bool wild,
-							bool currentschemaonly);
+						const char *db,
+						const char *schema,
+						const char *tabletypes);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  table names that match the provided "db", "schema", "table",
-		 *  and "objecttypes" criteria.
+		 *  table names that match the provided "db", "schema",
+		 *  and "table" patterns.
 		 *
-		 *  Each of "db", "schema" and "table" may be an object name,
-		 *  or may be left NULL, meaning "don't filter".
+		 *  "db", "schema", and "table" can be patterns that
+		 *  include SQL wildcards like %.
+		 *
+		 *  If "db", "schema", or "table" are null or empty
+		 *  then they are simply not used when building the query.
 		 *
 		 *  "objecttypes" should be an or-ed set of one or more of the
 		 *  following object types:
@@ -3760,29 +3727,23 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		/** Returns a query that can be used to fetch the list of
 		 *  global temporary table names.
 		 *
-		 *  If "currentschemaonly" is true then the query only returns
-		 *  schemas on the current database.
-		 *
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return a database-specific
 		 *  query.
 		 *
 		 *  Queries should return result sets with a single column,
 		 *  containing the table name. */
-		virtual const char	*getGlobalTempTableListQuery(
-							bool currentschemaonly);
+		virtual const char	*getGlobalTempTableListQuery();
 
-		/** Returns a query that can be used to fetch info about
-		 *  datatype "type", where "type" is in the current database
-		 *  and schema.
+		/** Returns a query that can be used to fetch the list of
+		 *  data type names that match the provided "db", "schema",
+		 *  and "type" patterns.
 		 *
-		 *  If "wild" is true the the query also includes a where
-		 *  clause that inlcudes a %s which can be used to substitute
-		 *  in a wildcard value which can be used to filter the
-		 *  results.
+		 *  "db", "schema", and "type" can be patterns that
+		 *  include SQL wildcards like %.
 		 *
-		 *  If "currentschemaonly" is true then the query only returns
-		 *  schemas on the current database.
+		 *  If "db", "schema", or "type" are null or empty
+		 *  then they are simply not used when building the query.
 		 *
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return a database-specific
@@ -3817,21 +3778,24 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  any columns that the database is unable to provide.
 		 */
 		virtual const char	*getTypeInfoListQuery(
-							const char *type,
-							bool wild,
-							bool currentschemaonly);
+							const char *db,
+							const char *schema,
+							const char *type);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  column names from "table".
+		 *  column names that match the provided "db", "schema",
+		 *  "table", and "column" patterns.
 		 *
-		 *  If "wild" is true the the query also includes a where
-		 *  clause that inlcudes a %s which can be used to substitute
-		 *  in a wildcard value which can be used to filter the
-		 *  results.
+		 *  "db", "schema", "table", and "column" can be patterns
+		 *  that include SQL wildcards like %.
 		 *
-		 *  This implementation just returns getNoopQuery(), but it may
-		 *  be overridden by a child class to return a database-specific
+		 *  If "db", "schema", "table", or "column" are null or
+		 *  empty then they are simply not used when building the
 		 *  query.
+		 *
+		 *  This implementation just returns getNoopQuery(), but it
+		 *  may be overridden by a child class to return a
+		 *  database-specific query.
 		 *
 		 *  Queries should return result sets with columns that match
 		 *  the columns of the result sets produced by the ODBC
@@ -3870,16 +3834,20 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  any columns that the database is unable to provide.
 		 */
 		virtual const char	*getColumnListQuery(
-							const char *table,
-							bool wild);
+						const char *db,
+						const char *schema,
+						const char *table,
+						const char *column);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  columns that compose the primary key of "table".
+		 *  primary key column names that match the provided "db",
+		 *  "schema", and "table" patterns.
 		 *
-		 *  If "wild" is true the the query also includes a where
-		 *  clause that inlcudes a %s which can be used to substitute
-		 *  in a wildcard value which can be used to filter the
-		 *  results.
+		 *  "db", "schema", and "table" can be patterns that
+		 *  include SQL wildcards like %.
+		 *
+		 *  If "db", "schema", or "table" are null or empty
+		 *  then they are simply not used when building the query.
 		 *
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return a database-specific
@@ -3901,17 +3869,19 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  any columns that the database is unable to provide.
 		 */
 		virtual const char	*getPrimaryKeysListQuery(
-							const char *table,
-							bool wild);
+						const char *db,
+						const char *schema,
+						const char *table);
 
-		/** Returns a query that can be used to fetch the indices and
-		 *  indexed columns  of "table", where "table" is in the
-		 *  current database and schema.
+		/** Returns a query that can be used to fetch the list of
+		 *  index and indexed column names that match the provided
+		 *  "db", "schema", and "table" patterns.
 		 *
-		 *  If "wild" is true the the query also includes a where
-		 *  clause that inlcudes a %s which can be used to substitute
-		 *  in a wildcard value which can be used to filter the
-		 *  results.
+		 *  "db", "schema", and "table" can be patterns that
+		 *  include SQL wildcards like %.
+		 *
+		 *  If "db", "schema", or "table" are null or empty
+		 *  then they are simply not used when building the query.
 		 *
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return a database-specific
@@ -3940,23 +3910,23 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  any columns that the database is unable to provide.
 		 */
 		virtual const char	*getKeyAndIndexListQuery(
-							const char *table,
-							bool wild);
+						const char *db,
+						const char *schema,
+						const char *table);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  stored procedures in the current database and schema, and
-		 *  information about them, such as the number of input and
-		 *  output parameters, the numer of result sets that the
-		 *  procdure may retrun, a description of the procedure, and
-		 *  the procedure type (procedure or function).
+		 *  stored procedure names that match the provided "db",
+		 *  "schema", and "procedure" patterns, and information
+		 *  about them, such as the number of input and output
+		 *  parameters, the number of result sets that the procedure
+		 *  may return, a description of the procedure, and the
+		 *  procedure type (procedure or function).
 		 *
-		 *  If "wild" is true the the query also includes a where/
-		 *  clause that inlcudes a %s which can be used to substitute
-		 *  in a wildcard value which can be used to filter the
-		 *  results.
+		 *  "db", "schema", and "procedure" can be patterns that
+		 *  include SQL wildcards like %.
 		 *
-		 *  If "currentschemaonly" is true then the query only returns
-		 *  schemas on the current database.
+		 *  If "db", "schema", or "procedure" are null or empty
+		 *  then they are simply not used when building the query.
 		 *
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return a database-specific
@@ -3964,7 +3934,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *
 		 *  Queries should return result sets with columns that match
 		 *  the columns of the result sets produced by the ODBC
-		 *  function SQLGetTypeInfo(), plus a trailing null column:
+		 *  function SQLProcedures(), plus a trailing null column:
 		 *
 		 *  * PROCEDURE_CAT
 		 *  * PROCEDURE_SCHEM
@@ -3980,18 +3950,21 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  any columns that the database is unable to provide.
 		 */
 		virtual const char	*getProcedureListQuery(
-							bool wild,
-							bool currentschemaonly);
+						const char *db,
+						const char *schema,
+						const char *procedure);
 
-		/** Returns a query that can be used to fetch the parameter
-		 *  names of "proc", where "proc" is in the current database
-		 *  and schema, and information about them, such as whether
-		 *  they are input, output, or input-output variables.
+		/** Returns a query that can be used to fetch the list of
+		 *  parameter names that match the provided "db", "schema",
+		 *  and "procedure" patterns, and information about them,
+		 *  such as whether they are input, output, or input-output
+		 *  variables.
 		 *
-		 *  If "wild" is true then the query also includes a where
-		 *  clause that inlcudes a %s which can be used to substitute
-		 *  in a wildcard value which can be used to filter the
-		 *  results.
+		 *  "db", "schema", and "procedure" can be patterns that
+		 *  include SQL wildcards like %.
+		 *
+		 *  If "db", "schema", or "procedure" are null or empty
+		 *  then they are simply not used when building the query.
 		 *
 		 *  This implementation just returns getNoopQuery(), but it may
 		 *  be overridden by a child class to return a database-specific
@@ -4026,8 +3999,9 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  any columns that the database is unable to provide.
 		 */
 		virtual const char	*getProcedureParameterListQuery(
-							const char *procedure,
-							bool wild);
+						const char *db,
+						const char *schema,
+						const char *procedure);
 
 		/** Returns true if "table" is a synonym, rather than an actual
 		 *  table and false otherwise. */

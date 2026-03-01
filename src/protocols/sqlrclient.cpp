@@ -197,11 +197,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 					const char *object,
 					sqlrserverlistformat_t listformat,
 					uint16_t objecttypes);
-		bool	buildObjectListQuery(sqlrservercursor *cursor,
-						const char *query,
-						const char *object);
-		bool	buildObjectListQuery(sqlrservercursor *cursor,
-						const char *query);
+		bool	populateQueryBuffer(sqlrservercursor *cursor,
+							const char *query);
 		bool	getComponentListCommand(sqlrservercursor *cursor,
 					sqlrclientquerytype_t querytype);
 		bool	getComponentListByApiCall(sqlrservercursor *cursor,
@@ -215,10 +212,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 					const char *wild,
 					sqlrserverlistformat_t listformat,
 					uint16_t objecttypes);
-		bool	buildComponentListQuery(sqlrservercursor *cursor,
-						const char *query,
-						const char *wild,
-						const char *object);
 		void	escapeParameter(stringbuffer *buffer,
 						const char *parameter);
 		bool	getQueryTreeCommand(sqlrservercursor *cursor);
@@ -4511,40 +4504,30 @@ bool sqlrprotocol_sqlrclient::getObjectListByQuery(sqlrservercursor *cursor,
 
 	// when fetching lists in mysql format, we only want to fetch for
 	// the current database/schema
-	bool	currentonly=(listformat==SQLRSERVERLISTFORMAT_MYSQL);
-	if (currentonly) {
+	if (listformat==SQLRSERVERLISTFORMAT_MYSQL) {
 		db=currentdb;
 		schema=currentschema;
 	}
 
 	// build the appropriate query
 	const char	*query=NULL;
-	bool		havewild=charstring::getLength(object);
 	switch (querytype) {
 		case SQLRCLIENTQUERYTYPE_DATABASE_LIST:
-			query=cont->getDatabaseListQuery(havewild);
-			buildObjectListQuery(cursor,query,object);
+			query=cont->getDatabaseListQuery(db);
 			break;
 		case SQLRCLIENTQUERYTYPE_SCHEMA_LIST:
-			query=cont->getSchemaListQuery(havewild,
-							currentonly);
-			buildObjectListQuery(cursor,query,object);
+			query=cont->getSchemaListQuery(db,schema);
 			break;
 		case SQLRCLIENTQUERYTYPE_TABLE_LIST:
 		case SQLRCLIENTQUERYTYPE_TABLE_LIST_2:
 			query=cont->getTableListQuery(db,schema,obj,
 							objecttypes);
-			buildObjectListQuery(cursor,query);
 			break;
 		case SQLRCLIENTQUERYTYPE_TABLE_TYPE_LIST:
-			query=cont->getTableTypeListQuery(havewild,
-							currentonly);
-			buildObjectListQuery(cursor,query,object);
+			query=cont->getTableTypeListQuery(db,schema,obj);
 			break;
 		case SQLRCLIENTQUERYTYPE_PROCEDURE_LIST:
-			query=cont->getProcedureListQuery(havewild,
-							currentonly);
-			buildObjectListQuery(cursor,query,object);
+			query=cont->getProcedureListQuery(db,schema,obj);
 			break;
 		case SQLRCLIENTQUERYTYPE_LAST_INSERT_ID_LIST:
 			// always handled by api call
@@ -4557,48 +4540,14 @@ bool sqlrprotocol_sqlrclient::getObjectListByQuery(sqlrservercursor *cursor,
 	delete[] currentdb;
 	delete[] currentschema;
 
+	// FIXME: this can fail
+	populateQueryBuffer(cursor,query);
+
 	return processQueryOrBindCursor(cursor,querytype,
 					listformat,false,false);
 }
 
-bool sqlrprotocol_sqlrclient::buildObjectListQuery(sqlrservercursor *cursor,
-							const char *query,
-							const char *object) {
-
-	debugStart("building query");
-
-	// sanity check on query
-	if (!query) {
-		query=cont->getNoopQuery();
-	}
-
-	// bounds checking
-	cont->setQuerySize(cursor,charstring::getLength(query)+
-					charstring::getLength(object));
-	if (cont->getQuerySize(cursor)>maxquerysize) {
-		debugEnd();
-		return false;
-	}
-
-	// fill the query buffer and update the size
-	char	*querybuffer=cont->getQueryBuffer(cursor);
-	charstring::printf(querybuffer,maxquerysize+1,query,object);
-	cont->setQuerySize(cursor,charstring::getLength(querybuffer));
-
-	debugstr.clear();
-	debugstr.safePrint(cont->getQueryBuffer(cursor),
-				cont->getQuerySize(cursor));
-	debugWrite("query: \"%.*s\"",debugstr.getSize(),debugstr.getString());
-	//debugWrite("query: \"%.*s\"",
-			//cont->getQuerySize(cursor),
-			//cont->getQueryBuffer(cursor));
-	debugWrite("query size: %d",debugstr.getSize());
-
-	debugEnd();
-	return true;
-}
-
-bool sqlrprotocol_sqlrclient::buildObjectListQuery(sqlrservercursor *cursor,
+bool sqlrprotocol_sqlrclient::populateQueryBuffer(sqlrservercursor *cursor,
 							const char *query) {
 
 	debugStart("building query");
@@ -4854,10 +4803,7 @@ bool sqlrprotocol_sqlrclient::getComponentListByQuery(sqlrservercursor *cursor,
 					sqlrserverlistformat_t listformat,
 					uint16_t objecttypes) {
 
-	bool	currentonly=listformat!=SQLRSERVERLISTFORMAT_ODBC &&
-				listformat!=SQLRSERVERLISTFORMAT_JDBC;
-
-	// clean up buffers to avoid SQL injection
+	// clean up object and component to avoid SQL injection
 	stringbuffer	componentbuf;
 	escapeParameter(&componentbuf,component);
 	component=componentbuf.getString();
@@ -4865,91 +4811,53 @@ bool sqlrprotocol_sqlrclient::getComponentListByQuery(sqlrservercursor *cursor,
 	escapeParameter(&objectbuf,object);
 	object=objectbuf.getString();
 
+	// split the object (db.schema.object) into db, schema, and object
+	char	*currentdb=cont->getCurrentDatabase();
+	char	*currentschema=cont->getCurrentSchema();
+	const char	*db=NULL;
+	const char	*schema=NULL;
+	const char	*obj=NULL;
+	cont->splitObjectName(currentdb,currentschema,object,&db,&schema,&obj);
+
+	// when fetching lists in mysql format, we only want to fetch for
+	// the current database/schema
+	if (listformat==SQLRSERVERLISTFORMAT_MYSQL) {
+		db=currentdb;
+		schema=currentschema;
+	}
+
 	// build the appropriate query
 	const char	*query=NULL;
-	bool		havewild=charstring::getLength(component);
 	switch (querytype) {
+		case SQLRCLIENTQUERYTYPE_TYPE_INFO_LIST:
+			query=cont->getTypeInfoListQuery(db,schema,obj);
+			break;
 		case SQLRCLIENTQUERYTYPE_COLUMN_LIST:
-			query=cont->getColumnListQuery(object,havewild);
+			query=cont->getColumnListQuery(db,schema,obj,component);
 			break;
 		case SQLRCLIENTQUERYTYPE_PRIMARY_KEYS_LIST:
-			query=cont->getPrimaryKeysListQuery(object,havewild);
+			query=cont->getPrimaryKeysListQuery(db,schema,obj);
 			break;
 		case SQLRCLIENTQUERYTYPE_KEY_AND_INDEX_LIST:
-			query=cont->getKeyAndIndexListQuery(object,havewild);
+			query=cont->getKeyAndIndexListQuery(db,schema,obj);
 			break;
 		case SQLRCLIENTQUERYTYPE_PROCEDURE_PARAMETER_LIST:
 			query=cont->getProcedureParameterListQuery(
-							object,havewild);
-			break;
-		case SQLRCLIENTQUERYTYPE_TYPE_INFO_LIST:
-			query=cont->getTypeInfoListQuery(object,
-							havewild,
-							currentonly);
+							db,schema,obj);
 			break;
 		default:
 			break;
 	}
 
+	// clean up
+	delete[] currentdb;
+	delete[] currentschema;
+
 	// FIXME: this can fail
-	buildComponentListQuery(cursor,query,component,object);
+	populateQueryBuffer(cursor,query);
 
 	return processQueryOrBindCursor(cursor,querytype,
 					listformat,false,false);
-}
-
-bool sqlrprotocol_sqlrclient::buildComponentListQuery(sqlrservercursor *cursor,
-							const char *query,
-							const char *component,
-							const char *object) {
-
-	debugStart("building query");
-
-	// sanity check on query
-	if (!query) {
-		query=cont->getNoopQuery();
-	}
-
-	// If the object was given like catalog.schema.object, then just
-	// get the object.
-	const char	*realobject=charstring::findLast(object,".");
-	if (realobject) {
-		realobject++;
-	} else {
-		realobject=object;
-	}
-
-	// bounds checking
-	cont->setQuerySize(cursor,charstring::getLength(query)+
-					charstring::getLength(component)+
-					charstring::getLength(object));
-	if (cont->getQuerySize(cursor)>maxquerysize) {
-		debugEnd();
-		return false;
-	}
-
-	// fill the query buffer and update the size
-	char	*querybuffer=cont->getQueryBuffer(cursor);
-	if (!charstring::isNullOrEmpty(object)) {
-		charstring::printf(querybuffer,maxquerysize+1,
-					query,object,component);
-	} else {
-		charstring::printf(querybuffer,maxquerysize+1,
-						query,component);
-	}
-	cont->setQuerySize(cursor,charstring::getLength(querybuffer));
-
-	debugstr.clear();
-	debugstr.safePrint(cont->getQueryBuffer(cursor),
-				cont->getQuerySize(cursor));
-	debugWrite("query: \"%.*s\"",debugstr.getSize(),debugstr.getString());
-	//debugWrite("query: \"%.*s\"",
-			//cont->getQuerySize(cursor),
-			//cont->getQueryBuffer(cursor));
-	debugWrite("query size: %d",debugstr.getSize());
-
-	debugEnd();
-	return true;
 }
 
 void sqlrprotocol_sqlrclient::escapeParameter(stringbuffer *buffer,

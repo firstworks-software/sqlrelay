@@ -47,14 +47,26 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostName();
-		const char	*getDatabaseListQuery(bool wild);
+		const char	*getDatabaseListQuery(const char *db);
+		const char	*getSchemaListQuery(const char *db,
+						const char *schema);
+		const char	*getTableTypeListQuery(const char *db,
+						const char *schema,
+						const char *tabletypes);
 		const char	*getTableListQuery(
 						const char *db,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
+		const char	*getProcedureListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure);
 		const char	*getColumnListQuery(
-						const char *table, bool wild);
+						const char *db,
+						const char *schema,
+						const char *table,
+						const char *column);
 		#ifdef SQLITE_TRANSACTIONAL
 		const char	*setIsolationLevelQuery();
 		const char	*getIsolationLevelQuery();
@@ -101,6 +113,7 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 		char	**databasefeatures;
 
 		stringbuffer	tablelistquery;
+		stringbuffer	tabletypelistquery;
 		stringbuffer	columnlistquery;
 };
 
@@ -278,7 +291,7 @@ const char *sqliteconnection::getDbHostName() {
 	return hostname;
 }
 
-const char *sqliteconnection::getDatabaseListQuery(bool wild) {
+const char *sqliteconnection::getDatabaseListQuery(const char *db) {
 	//return "pragma database_list";
 	return "select "
 		"	'' as table_cat, "
@@ -287,6 +300,48 @@ const char *sqliteconnection::getDatabaseListQuery(bool wild) {
 		"	'' as table_type, "
 		"	'' as remarks, "
 		"	null";
+}
+
+const char *sqliteconnection::getSchemaListQuery(const char *db,
+						const char *schema) {
+	return "select "
+		"	'' as table_cat, "
+		"	'' as table_schem, "
+		"	'' as table_name, "
+		"	'' as table_type, "
+		"	'' as remarks, "
+		"	null "
+		"where "
+		"	1=0";
+}
+
+const char *sqliteconnection::getTableTypeListQuery(const char *db,
+						const char *schema,
+						const char *tabletypes) {
+	tabletypelistquery.clear();
+	tabletypelistquery.append(
+		"select "
+		"	'' as table_cat, "
+		"	'' as table_schem, "
+		"	'' as table_name, "
+		"	table_type, "
+		"	'' as remarks, "
+		"	null "
+		"from "
+		"(select 'TABLE' as table_type "
+		"union "
+		"select 'VIEW' as table_type) ");
+	if (!charstring::isNullOrEmpty(tabletypes)) {
+		tabletypelistquery.append(
+			"where "
+			"	table_type like '");
+		tabletypelistquery.append(tabletypes);
+		tabletypelistquery.append("' ");
+	}
+	tabletypelistquery.append(
+		"order by "
+		"	table_type");
+	return tabletypelistquery.getString();
 }
 
 const char *sqliteconnection::getTableListQuery(const char *db,
@@ -336,7 +391,7 @@ const char *sqliteconnection::getTableListQuery(const char *db,
 	if (table) {
 		tablelistquery.append(
 			"where "
-			"	tbl_name='");
+			"	tbl_name like '");
 		tablelistquery.append(table);
 		tablelistquery.append("' ");
 	}
@@ -347,8 +402,27 @@ const char *sqliteconnection::getTableListQuery(const char *db,
 	return tablelistquery.getString();
 }
 
-const char *sqliteconnection::getColumnListQuery(
-					const char *table, bool wild) {
+const char *sqliteconnection::getProcedureListQuery(const char *db,
+						const char *schema,
+						const char *procedure) {
+	return "select "
+		"	'' as procedure_cat, "
+		"	'' as procedure_schem, "
+		"	'' as procedure_name, "
+		"	0 as num_input_params, "
+		"	0 as num_output_params, "
+		"	0 as num_result_sets, "
+		"	'' as remarks, "
+		"	'' as procedure_type, "
+		"	null "
+		"where "
+		"	1=0";
+}
+
+const char *sqliteconnection::getColumnListQuery(const char *db,
+					const char *schema,
+					const char *table,
+					const char *column) {
 
 	columnlistquery.clear();
 
@@ -388,11 +462,11 @@ const char *sqliteconnection::getColumnListQuery(
 		"	(select "
 		"		* "
 		"	from "
-		"		pragma_table_info('%s')) p ");
-	if (wild) {
+		"		pragma_table_info('")->append(table)->append("')) p ");
+	if (!charstring::isNullOrEmpty(column)) {
 		columnlistquery.append(
 			"where "
-			"	upper(p.name) like upper('%s') ");
+			"	upper(p.name) like upper('")->append(column)->append("') ");
 	}
 	columnlistquery.append(
 		"order by "

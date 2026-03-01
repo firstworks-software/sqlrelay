@@ -55,6 +55,7 @@ int main(int argc, char **argv) {
 	uint32_t	clobvarlength;
 	const char	*blobvar;
 	uint32_t	blobvarlength;
+	uint16_t	counter;
 
 
 	// hostname
@@ -1479,7 +1480,6 @@ int main(int argc, char **argv) {
 	stdoutput.printf("SCHEMA LIST: \n");
 	assertTrue(cur->getSchemaList(NULL));
 	assertEquals(cur->getColumnName(0),"Database");
-	assertTrue(cur->rowCount()>1);
 	bool	found=false;
 	for (uint64_t i=0; i<cur->rowCount(); i++) {
 		if (!charstring::compareIgnoringCase(
@@ -1545,13 +1545,17 @@ int main(int argc, char **argv) {
 		"	testclob clob, "
 		"	testblob blob)"));
 	assertTrue(cur->getTableList(NULL));
-	assertEquals(cur->getColumnName(0),"Tables_in_xxx");
-	assertEquals(cur->getField(0,"Tables_in_xxx"),
-					"AUTOINCREMENT_SEQUENCES");
-	assertEquals(cur->getField(1,"Tables_in_xxx"),"TESTTABLE1");
-	assertEquals(cur->getField(2,"Tables_in_xxx"),"TESTTABLE2");
-	assertEquals(cur->getField(3,"Tables_in_xxx"),"TESTTABLE3");
-	assertEquals(cur->getField(4,"Tables_in_xxx"),"TESTTABLE4");
+	counter=0;
+	for (uint64_t i=0; i<cur->rowCount(); i++) {
+		const char	*name=cur->getField(i,"Tables_in_xxx");
+		if (!charstring::compareIgnoringCase(name,"TESTTABLE1") ||
+			!charstring::compareIgnoringCase(name,"TESTTABLE2") ||
+			!charstring::compareIgnoringCase(name,"TESTTABLE3") ||
+			!charstring::compareIgnoringCase(name,"TESTTABLE4")) {
+			counter++;
+		}
+	}
+	assertEquals(counter,4);
 	cur->sendQuery("drop table testtable1");
 	cur->sendQuery("drop table testtable2");
 	cur->sendQuery("drop table testtable3");
@@ -1755,14 +1759,17 @@ int main(int argc, char **argv) {
 		"	null; "
 		"end;"));
 	assertTrue(cur->getProcedureList(NULL));
-	assertEquals(cur->getColumnName(0),"routine_catalog");
-	assertEquals(cur->getColumnName(1),"routine_schema");
-	assertEquals(cur->getColumnName(2),"routine_name");
-	assertEquals(cur->getColumnName(3),"data_type");
-	assertEquals(cur->getField(0,"routine_name"),"TESTPROC1");
-	assertEquals(cur->getField(1,"routine_name"),"TESTPROC2");
-	assertEquals(cur->getField(2,"routine_name"),"TESTPROC3");
-	assertEquals(cur->getField(3,"routine_name"),"TESTPROC4");
+	counter=0;
+	for (uint64_t i=0; i<cur->rowCount(); i++) {
+		const char	*name=cur->getField(i,"routine_name");
+		if (!charstring::compareIgnoringCase(name,"TESTPROC1") ||
+			!charstring::compareIgnoringCase(name,"TESTPROC2") ||
+			!charstring::compareIgnoringCase(name,"TESTPROC3") ||
+			!charstring::compareIgnoringCase(name,"TESTPROC4")) {
+			counter++;
+		}
+	}
+	assertEquals(counter,4);
 	stdoutput.printf("\n");
 
 

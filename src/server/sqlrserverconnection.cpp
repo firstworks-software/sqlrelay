@@ -905,7 +905,7 @@ bool sqlrserverconnection::getSchemaList(sqlrservercursor *cursor,
 }
 
 bool sqlrserverconnection::getTableTypeList(sqlrservercursor *cursor,
-						const char *wild) {
+						const char *tabletypes) {
 	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
 				SQLR_ERROR_NOTIMPLEMENTED,true);
 	return false;
@@ -968,18 +968,20 @@ bool sqlrserverconnection::getProcedureParameterList(
 }
 
 const char *sqlrserverconnection::getDatabaseListQuery(
-						bool wild) {
+						const char *db) {
 	return getNoopQuery();
 }
 
 const char *sqlrserverconnection::getSchemaListQuery(
-						bool wild,
-						bool currentdbonly) {
+						const char *db,
+						const char *schema) {
 	return getNoopQuery();
 }
 
-const char *sqlrserverconnection::getTableTypeListQuery(bool wild,
-						bool currentschemaonly) {
+const char *sqlrserverconnection::getTableTypeListQuery(
+						const char *db,
+						const char *schema,
+						const char *tabletypes) {
 	return getNoopQuery();
 }
 
@@ -991,45 +993,50 @@ const char *sqlrserverconnection::getTableListQuery(
 	return getNoopQuery();
 }
 
-const char *sqlrserverconnection::getGlobalTempTableListQuery(
-						bool currentschemaonly) {
+const char *sqlrserverconnection::getGlobalTempTableListQuery() {
 	return getNoopQuery();
 }
 
 const char *sqlrserverconnection::getTypeInfoListQuery(
-						const char *type,
-						bool wild,
-						bool currentschemaonly) {
+						const char *db,
+						const char *schema,
+						const char *type) {
 	return getNoopQuery();
 }
 
 const char *sqlrserverconnection::getColumnListQuery(
+						const char *db,
+						const char *schema,
 						const char *table,
-						bool wild) {
+						const char *column) {
 	return getNoopQuery();
 }
 
 const char *sqlrserverconnection::getPrimaryKeysListQuery(
-						const char *table,
-						bool wild) {
+						const char *db,
+						const char *schema,
+						const char *table) {
 	return getNoopQuery();
 }
 
 const char *sqlrserverconnection::getKeyAndIndexListQuery(
-						const char *table,
-						bool wild) {
+						const char *db,
+						const char *schema,
+						const char *table) {
 	return getNoopQuery();
 }
 
 const char *sqlrserverconnection::getProcedureListQuery(
-						bool wild,
-						bool currentschemaonly) {
+						const char *db,
+						const char *schema,
+						const char *procedure) {
 	return getNoopQuery();
 }
 
 const char *sqlrserverconnection::getProcedureParameterListQuery(
-						const char *procedure,
-						bool wild) {
+						const char *db,
+						const char *schema,
+						const char *procedure) {
 	return getNoopQuery();
 }
 

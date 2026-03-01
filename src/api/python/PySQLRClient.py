@@ -921,27 +921,61 @@ class sqlrcursor:
 
     def getDatabaseList(self,wild):
         """
-        Sends a query that returns a list of
-        databases/schemas matching "wild".  If wild is empty
-        or NULL then a list of all databases/schemas will be
-        returned.
+        Sends a query that returns a result set containing
+        databases that match the pattern "wild".
+
+        The result set will contain the following columns:
+        * Database
+
+        If "wild" is empty or None then a result set containing
+        all databases will be returned.
+
+        If SQL Relay doesn't support getting a list of databases
+        for the current database backend (or the database doesn't)
+        then an empty result set will be returned.
         """
         return CSQLRelay.setDatabaseList(self.cursor,wild)
 
     def getTableList(self,wild):
         """
-        Sends a query that returns a list of tables
-        matching "wild".  If wild is empty or NULL then
-        a list of all tables will be returned.
+        Sends a query that returns a result set containing the
+        tables in the current database and schema that match the
+        pattern "wild".
+
+        The result set will contain the following columns:
+        * Tables_in_xxx
+
+        If "wild" is empty or None then a result set containing
+        all tables in the current database/schema will be returned.
+
+        If SQL Relay doesn't support getting a list of tables
+        for the current database backend (or the database doesn't)
+        then an empty result set will be returned.
         """
         return CSQLRelay.setTableList(self.cursor,wild)
 
     def getColumnList(sefl,table,wild):
         """
-        Sends a query that returns a list of columns
-        in the table specified by the "table" parameter
-        matching "wild".  If wild is empty or NULL then
-        a list of all columns will be returned.
+        Sends a query that returns a result set containing the
+        columns of "table", which match the pattern "wild".
+
+        The result set will contain the following columns:
+        * column_name
+        * data_type
+        * character_maximum_length
+        * numeric_precision
+        * numeric_scale
+        * is_nullable
+        * column_key
+        * column_default
+        * extra
+
+        If "wild" is empty or None then a list of all columns
+        of "table" will be returned.
+
+        If SQL Relay doesn't support getting a list of columns
+        for the current database backend (or the database doesn't)
+        then an empty result set will be returned.
         """
         return CSQLRelay.setColumnList(self.cursor,table,wild)
 

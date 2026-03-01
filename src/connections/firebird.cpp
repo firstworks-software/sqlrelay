@@ -243,16 +243,27 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostName();
-		const char	*getDatabaseListQuery(bool wild);
+		const char	*getDatabaseListQuery(const char *db);
+		const char	*getSchemaListQuery(const char *db,
+						const char *schema);
+		const char	*getTableTypeListQuery(const char *db,
+						const char *schema,
+						const char *tabletypes);
 		const char	*getTableListQuery(
 						const char *db,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
-		const char	*getGlobalTempTableListQuery(
-						bool currentschemaonly);
+		const char	*getProcedureListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure);
+		const char	*getGlobalTempTableListQuery();
 		const char	*getColumnListQuery(
-						const char *table, bool wild);
+						const char *db,
+						const char *schema,
+						const char *table,
+						const char *column);
 		const char	*getBindFormat();
 		const char	*getNextvalFormat();
 		const char	*getLastInsertIdQuery();
@@ -283,7 +294,10 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 
 		char		*lastinsertidquery;
 
+		stringbuffer	schemalistquery;
+		stringbuffer	tabletypelistquery;
 		stringbuffer	tablelistquery;
+		stringbuffer	procedurelistquery;
 		stringbuffer	columnlistquery;
 
 		ISC_STATUS	error[20];
@@ -670,7 +684,7 @@ const char *firebirdconnection::getDbHostName() {
 	return host;
 }
 
-const char *firebirdconnection::getDatabaseListQuery(bool wild) {
+const char *firebirdconnection::getDatabaseListQuery(const char *db) {
 	return "select "
 		"	'' as table_cat, "
 		"	'' as table_schem, "
@@ -680,6 +694,64 @@ const char *firebirdconnection::getDatabaseListQuery(bool wild) {
 		"	null "
 		"from "
 		"	rdb$database";
+}
+
+const char *firebirdconnection::getSchemaListQuery(const char *db,
+						const char *schema) {
+
+	schemalistquery.clear();
+
+	schemalistquery.append(
+		"select distinct "
+		"	'' as table_cat, "
+		"	rdb$owner_name as table_schem, "
+		"	'' as table_name, "
+		"	'' as table_type, "
+		"	'' as remarks, "
+		"	null "
+		"from "
+		"	rdb$relations "
+		"where "
+		"	rdb$system_flag=0 ");
+	if (schema) {
+		schemalistquery.append(
+			"	and "
+			"	rdb$owner_name like '");
+		schemalistquery.append(schema);
+		schemalistquery.append("' ");
+	}
+	schemalistquery.append(
+		"order by "
+		"	rdb$owner_name");
+
+	return schemalistquery.getString();
+}
+
+const char *firebirdconnection::getTableTypeListQuery(const char *db,
+						const char *schema,
+						const char *tabletypes) {
+	tabletypelistquery.clear();
+	tabletypelistquery.append(
+		"select "
+		"	'' as table_cat, "
+		"	'' as table_schem, "
+		"	'' as table_name, "
+		"	table_type, "
+		"	'' as remarks, "
+		"	null "
+		"from "
+		"(select 'TABLE' as table_type from rdb$database) ");
+	if (!charstring::isNullOrEmpty(tabletypes)) {
+		tabletypelistquery.append(
+			"where "
+			"	table_type like '");
+		tabletypelistquery.append(tabletypes);
+		tabletypelistquery.append("' ");
+	}
+	tabletypelistquery.append(
+		"order by "
+		"	table_type");
+	return tabletypelistquery.getString();
 }
 
 const char *firebirdconnection::getTableListQuery(const char *db,
@@ -702,14 +774,14 @@ const char *firebirdconnection::getTableListQuery(const char *db,
 	if (schema) {
 		tablelistquery.append(
 			"	and "
-			"	rdb$owner_name='");
+			"	rdb$owner_name like '");
 		tablelistquery.append(schema);
 		tablelistquery.append("' ");
 	}
 	if (table) {
 		tablelistquery.append(
 			"	and "
-			"	rdb$relation_name='");
+			"	rdb$relation_name like '");
 		tablelistquery.append(table);
 		tablelistquery.append("' ");
 	}
@@ -721,8 +793,54 @@ const char *firebirdconnection::getTableListQuery(const char *db,
 	return tablelistquery.getString();
 }
 
-const char *firebirdconnection::getGlobalTempTableListQuery(
-						bool currentschemaonly) {
+const char *firebirdconnection::getProcedureListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure) {
+
+	procedurelistquery.clear();
+	procedurelistquery.append(
+		"select "
+		"	'' as procedure_cat, "
+		"	rdb$owner_name as procedure_schem, "
+		"	rdb$procedure_name as procedure_name, "
+		"	0 as num_input_params, "
+		"	0 as num_output_params, "
+		"	0 as num_result_sets, "
+		"	rdb$description as remarks, "
+		"	'1' as procedure_type, "
+		"	null "
+		"from "
+		"	rdb$procedures ");
+	if (!charstring::isNullOrEmpty(schema) ||
+		!charstring::isNullOrEmpty(procedure)) {
+		procedurelistquery.append("where ");
+		bool	first=true;
+		if (!charstring::isNullOrEmpty(schema)) {
+			procedurelistquery.append(
+				"rdb$owner_name like '");
+			procedurelistquery.append(schema);
+			procedurelistquery.append("' ");
+			first=false;
+		}
+		if (!charstring::isNullOrEmpty(procedure)) {
+			if (!first) {
+				procedurelistquery.append("and ");
+			}
+			procedurelistquery.append(
+				"rdb$procedure_name like '");
+			procedurelistquery.append(procedure);
+			procedurelistquery.append("' ");
+		}
+	}
+	procedurelistquery.append(
+		"order by "
+		"	rdb$owner_name, "
+		"	rdb$procedure_name");
+	return procedurelistquery.getString();
+}
+
+const char *firebirdconnection::getGlobalTempTableListQuery() {
 	return "select "
 		"	rdb$relation_name "
 		"from "
@@ -733,8 +851,10 @@ const char *firebirdconnection::getGlobalTempTableListQuery(
 		"	rdb$relation_type=4 ";
 }
 
-const char *firebirdconnection::getColumnListQuery(
-					const char *table, bool wild) {
+const char *firebirdconnection::getColumnListQuery(const char *db,
+					const char *schema,
+					const char *table,
+					const char *column) {
 
 	columnlistquery.clear();
 
@@ -742,7 +862,7 @@ const char *firebirdconnection::getColumnListQuery(
 	columnlistquery.append(
 		"select "
 		"	'' as table_cat, "
-		"	'' as table_schem, "
+		"	rf.rdb$owner_name as table_schem, "
 		"	rf.rdb$relation_name as table_name, "
 		"	rf.rdb$field_name as column_name, "
 		"	fd.rdb$field_type as data_type,"
@@ -830,13 +950,41 @@ const char *firebirdconnection::getColumnListQuery(
 		"	rf.rdb$field_name=ck.rdb$field_name ");
 
 	// where clause
-	columnlistquery.append(
-		"where "
-		"	rf.rdb$relation_name=upper('%s') ");
-	if (wild) {
+	bool	prevclause=false;
+
+	if (!charstring::isNullOrEmpty(schema)) {
 		columnlistquery.append(
-			"	and "
-			"	rf.rdb$field_name like '%s' ");
+			"where "
+			"	rf.rdb$owner_name like upper('");
+		columnlistquery.append(schema);
+		columnlistquery.append("') ");
+		prevclause=true;
+	}
+
+	if (!charstring::isNullOrEmpty(table)) {
+		if (prevclause) {
+			columnlistquery.append("	and ");
+		} else {
+			columnlistquery.append("where ");
+			prevclause=true;
+		}
+		columnlistquery.append(
+			"	rf.rdb$relation_name like upper('");
+		columnlistquery.append(table);
+		columnlistquery.append("') ");
+	}
+
+	if (!charstring::isNullOrEmpty(column)) {
+		if (prevclause) {
+			columnlistquery.append("	and ");
+		} else {
+			columnlistquery.append("where ");
+			prevclause=true;
+		}
+		columnlistquery.append(
+			"	rf.rdb$field_name like upper('");
+		columnlistquery.append(column);
+		columnlistquery.append("') ");
 	}
 
 	// order by clause

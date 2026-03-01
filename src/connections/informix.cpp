@@ -245,15 +245,26 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostNameQuery();
-		const char	*getDatabaseListQuery(bool wild);
+		const char	*getDatabaseListQuery(const char *db);
+		const char	*getSchemaListQuery(const char *db,
+						const char *schema);
+		const char	*getTableTypeListQuery(const char *db,
+						const char *schema,
+						const char *tabletypes);
 		const char	*getTableListQuery(
 						const char *db,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
+		const char	*getProcedureListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure);
 		const char	*getColumnListQuery(
+						const char *db,
+						const char *schema,
 						const char *table,
-						bool wild);
+						const char *column);
 		const char	*selectDatabaseQuery();
 		const char	*getCurrentDatabaseQuery();
 		const char	*getLastInsertIdQuery();
@@ -285,7 +296,10 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 		char		**databasefeatures;
 
 		stringbuffer	databaselistquery;
+		stringbuffer	schemalistquery;
+		stringbuffer	tabletypelistquery;
 		stringbuffer	tablelistquery;
+		stringbuffer	procedurelistquery;
 		stringbuffer	columnlistquery;
 
 		stringbuffer	errormsg;
@@ -553,7 +567,7 @@ const char *informixconnection::getDbHostNameQuery() {
 	//return "select os_nodename from sysmaster:sysmachineinfo";
 }
 
-const char *informixconnection::getDatabaseListQuery(bool wild) {
+const char *informixconnection::getDatabaseListQuery(const char *db) {
 
 	databaselistquery.clear();
 
@@ -567,16 +581,89 @@ const char *informixconnection::getDatabaseListQuery(bool wild) {
 		"	null "
 		"from "
 		"	sysmaster:sysdatabases ");
-	if (wild) {
+	if (db) {
 		databaselistquery.append(
 			"where "
-			"	name like '%s' ");
+			"	name like '");
+		databaselistquery.append(db);
+		databaselistquery.append("' ");
 	}
 	databaselistquery.append(
 		"order by "
 		"	name");
 
 	return databaselistquery.getString();
+}
+
+const char *informixconnection::getSchemaListQuery(const char *db,
+						const char *schema) {
+
+	schemalistquery.clear();
+
+	schemalistquery.append(
+		"select distinct "
+		"	dbname as table_cat, "
+		"	owner as table_schem, "
+		"	'' as table_name, "
+		"	'' as table_type, "
+		"	'' as remarks, "
+		"	'' "
+		"from "
+		"	systables "
+		"where "
+		"	tabid>99 ");
+	if (db) {
+		schemalistquery.append(
+			"	and "
+			"	dbname like '");
+		schemalistquery.append(db);
+		schemalistquery.append("' ");
+	}
+	if (schema) {
+		schemalistquery.append(
+			"	and "
+			"	owner like '");
+		schemalistquery.append(schema);
+		schemalistquery.append("' ");
+	}
+	schemalistquery.append(
+		"order by "
+		"	dbname, "
+		"	owner");
+
+	return schemalistquery.getString();
+}
+
+const char *informixconnection::getTableTypeListQuery(const char *db,
+						const char *schema,
+						const char *tabletypes) {
+
+	tabletypelistquery.clear();
+	tabletypelistquery.append(
+		"select "
+		"	'' as table_cat, "
+		"	'' as table_schem, "
+		"	'' as table_name, "
+		"	table_type, "
+		"	'' as remarks, "
+		"	'' "
+		"from "
+		"(select 'SYNONYM' as table_type from systables where tabid=1 "
+		"union "
+		"select 'TABLE' as table_type from systables where tabid=1 "
+		"union "
+		"select 'VIEW' as table_type from systables where tabid=1) ");
+	if (!charstring::isNullOrEmpty(tabletypes)) {
+		tabletypelistquery.append(
+			"where "
+			"	table_type like '");
+		tabletypelistquery.append(tabletypes);
+		tabletypelistquery.append("' ");
+	}
+	tabletypelistquery.append(
+		"order by "
+		"	table_type");
+	return tabletypelistquery.getString();
 }
 
 const char *informixconnection::getTableListQuery(const char *db,
@@ -600,21 +687,21 @@ const char *informixconnection::getTableListQuery(const char *db,
 	if (db) {
 		tablelistquery.append(
 			"	and "
-			"	dbname='");
+			"	dbname like '");
 		tablelistquery.append(db);
 		tablelistquery.append("' ");
 	}
 	if (schema) {
 		tablelistquery.append(
 			"	and "
-			"	owner='");
+			"	owner like '");
 		tablelistquery.append(schema);
 		tablelistquery.append("' ");
 	}
 	if (table) {
 		tablelistquery.append(
 			"	and "
-			"	tabname='");
+			"	tabname like '");
 		tablelistquery.append(table);
 		tablelistquery.append("' ");
 	}
@@ -648,37 +735,68 @@ const char *informixconnection::getTableListQuery(const char *db,
 	return tablelistquery.getString();
 }
 
-const char *informixconnection::getColumnListQuery(
-					const char *table, bool wild) {
+const char *informixconnection::getProcedureListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure) {
 
-	// informix has the most ridiculous column info...
-	// * if coltype > 256 then nulls are not allowed
-	// * coltype mod 256 is the actual column type,
-	// 	but it's a number that has to be decoded
-	// * for decimal and money:
-	//  * collength/256 is the precision
-	//  * collength mod 256 is the scale
-	// * the size of datetimes can vary widely depending on the interval
-	//   but 8 is the max (I think)
-	// * text and byte types can store 2^31 bytes but
-	//   collength is given as 56
-	// * clob and blob types can store any number of bytes but
-	//   collength is given as 72
-	// * boolean, clob and blob columns are all given as type 41, but
-	//   blobs have an extended_id of 10 and clobs 11
-	// * the default value for integer, float and date/time types has some
-	//   qualifiers prepended to it
-	//
-	// Note also that we're returning '' instead of null in various places.
-	// Informix has trouble with literal nulls.
+	procedurelistquery.clear();
+	procedurelistquery.append(
+		"select "
+		"	'' as procedure_cat, "
+		"	owner as procedure_schem, "
+		"	procname as procedure_name, "
+		"	0 as num_input_params, "
+		"	0 as num_output_params, "
+		"	0 as num_result_sets, "
+		"	'' as remarks, "
+		"	case isproc "
+		"		when 'f' then '2' "
+		"		else '1' "
+		"	end as procedure_type, "
+		"	null "
+		"from "
+		"	sysprocedures ");
+	if (!charstring::isNullOrEmpty(schema) ||
+		!charstring::isNullOrEmpty(procedure)) {
+		procedurelistquery.append("where ");
+		bool	first=true;
+		if (!charstring::isNullOrEmpty(schema)) {
+			procedurelistquery.append(
+				"owner like '");
+			procedurelistquery.append(schema);
+			procedurelistquery.append("' ");
+			first=false;
+		}
+		if (!charstring::isNullOrEmpty(procedure)) {
+			if (!first) {
+				procedurelistquery.append("and ");
+			}
+			procedurelistquery.append(
+				"procname like '");
+			procedurelistquery.append(procedure);
+			procedurelistquery.append("' ");
+		}
+	}
+	procedurelistquery.append(
+		"order by "
+		"	owner, "
+		"	procname");
+	return procedurelistquery.getString();
+}
+
+const char *informixconnection::getColumnListQuery(const char *db,
+					const char *schema,
+					const char *table,
+					const char *column) {
 
 	columnlistquery.clear();
 
 	// select clause
 	columnlistquery.append(
 		"select "
-		"	tb.owner as table_cat, "
-		"	'' as table_schem, "
+		"	'' as table_cat, "
+		"	tb.owner as table_schem, "
 		"	tb.tabname as table_name, "
 		"	cl.colname as column_name, "
 		"	cl.coltype as data_type, "
@@ -843,13 +961,27 @@ const char *informixconnection::getColumnListQuery(
 	// where clause
 	columnlistquery.append(
 		"where "
-		"	upper(tb.tabname)=upper('%s') "
-		"	and "
-		"	cl.tabid=tb.tabid ");
-	if (wild) {
+		"	tb.tabid=cl.tabid ");
+	if (!charstring::isNullOrEmpty(schema)) {
 		columnlistquery.append(
 			"	and "
-			"	cl.colname like '%s' ");
+			"	tb.owner like '");
+		columnlistquery.append(schema);
+		columnlistquery.append("' ");
+	}
+	if (!charstring::isNullOrEmpty(table)) {
+		columnlistquery.append(
+			"	and "
+			"	upper(tb.tabname) like upper('");
+		columnlistquery.append(table);
+		columnlistquery.append("') ");
+	}
+	if (!charstring::isNullOrEmpty(column)) {
+		columnlistquery.append(
+			"	and "
+			"	cl.colname like '");
+		columnlistquery.append(column);
+		columnlistquery.append("' ");
 	}
 
 	// order by clause

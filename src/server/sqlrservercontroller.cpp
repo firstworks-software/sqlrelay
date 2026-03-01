@@ -2787,9 +2787,9 @@ bool sqlrservercontroller::getSchemaList(sqlrservercursor *cursor,
 }
 
 bool sqlrservercontroller::getTableTypeList(sqlrservercursor *cursor,
-						const char *wild) {
+						const char *tabletypes) {
 	return fakePrepareAndExecuteForApiCall(cursor) &&
-		pvt->_conn->getTableTypeList(cursor,wild) &&
+		pvt->_conn->getTableTypeList(cursor,tabletypes) &&
 		handleResultSetHeader(cursor);
 }
 
@@ -2873,20 +2873,21 @@ bool sqlrservercontroller::getLastInsertIdList(sqlrservercursor *cursor) {
 	return handleResultSetHeader(lidcur);
 }
 
-const char *sqlrservercontroller::getDatabaseListQuery(bool wild) {
-	return pvt->_conn->getDatabaseListQuery(wild);
+const char *sqlrservercontroller::getDatabaseListQuery(const char *db) {
+	return pvt->_conn->getDatabaseListQuery(db);
 }
 
 const char *sqlrservercontroller::getSchemaListQuery(
-						bool wild,
-						bool currentdbonly) {
-	return pvt->_conn->getSchemaListQuery(wild,currentdbonly);
+						const char *db,
+						const char *schema) {
+	return pvt->_conn->getSchemaListQuery(db,schema);
 }
 
 const char *sqlrservercontroller::getTableTypeListQuery(
-						bool wild,
-						bool currentschemaonly) {
-	return pvt->_conn->getTableTypeListQuery(wild,currentschemaonly);
+						const char *db,
+						const char *schema,
+						const char *tabletypes) {
+	return pvt->_conn->getTableTypeListQuery(db,schema,tabletypes);
 }
 
 const char *sqlrservercontroller::getTableListQuery(
@@ -2897,46 +2898,51 @@ const char *sqlrservercontroller::getTableListQuery(
 	return pvt->_conn->getTableListQuery(db,schema,table,objecttypes);
 }
 
-const char *sqlrservercontroller::getGlobalTempTableListQuery(
-						bool currentschemaonly) {
-	return pvt->_conn->getGlobalTempTableListQuery(currentschemaonly);
+const char *sqlrservercontroller::getGlobalTempTableListQuery() {
+	return pvt->_conn->getGlobalTempTableListQuery();
 }
 
 const char *sqlrservercontroller::getTypeInfoListQuery(
-						const char *type,
-						bool wild,
-						bool currentschemaonly) {
-	return pvt->_conn->getTypeInfoListQuery(type,wild,currentschemaonly);
+						const char *db,
+						const char *schema,
+						const char *type) {
+	return pvt->_conn->getTypeInfoListQuery(db,schema,type);
 }
 
 const char *sqlrservercontroller::getColumnListQuery(
+						const char *db,
+						const char *schema,
 						const char *table,
-						bool wild) {
-	return pvt->_conn->getColumnListQuery(table,wild);
+						const char *column) {
+	return pvt->_conn->getColumnListQuery(db,schema,table,column);
 }
 
 const char *sqlrservercontroller::getPrimaryKeysListQuery(
-						const char *table,
-						bool wild) {
-	return pvt->_conn->getPrimaryKeysListQuery(table,wild);
+						const char *db,
+						const char *schema,
+						const char *table) {
+	return pvt->_conn->getPrimaryKeysListQuery(db,schema,table);
 }
 
 const char *sqlrservercontroller::getKeyAndIndexListQuery(
-						const char *table,
-						bool wild) {
-	return pvt->_conn->getKeyAndIndexListQuery(table,wild);
+						const char *db,
+						const char *schema,
+						const char *table) {
+	return pvt->_conn->getKeyAndIndexListQuery(db,schema,table);
 }
 
 const char *sqlrservercontroller::getProcedureListQuery(
-						bool wild,
-						bool currentschemaonly) {
-	return pvt->_conn->getProcedureListQuery(wild,currentschemaonly);
+						const char *db,
+						const char *schema,
+						const char *procedure) {
+	return pvt->_conn->getProcedureListQuery(db,schema,procedure);
 }
 
 const char *sqlrservercontroller::getProcedureParameterListQuery(
-						const char *proc,
-						bool wild) {
-	return pvt->_conn->getProcedureParameterListQuery(proc,wild);
+						const char *db,
+						const char *schema,
+						const char *procedure) {
+	return pvt->_conn->getProcedureParameterListQuery(db,schema,procedure);
 }
 
 void sqlrservercontroller::saveError() {
@@ -3827,13 +3833,12 @@ void sqlrservercontroller::getColumnsInTable(const char *table,
 			retval=getColumnList(gclcur,table,NULL);
 		} else {
 			const char	*q=
-				getColumnListQuery(table,false);
-			// FIXME: clean up buffers to avoid SQL injection
+				getColumnListQuery(NULL,NULL,table,NULL);
 			// FIXME: bounds checking
 			char	*querybuffer=getQueryBuffer(gclcur);
-			charstring::printf(querybuffer,
+			charstring::safeCopy(querybuffer,
 					getConfig()->getMaxQuerySize()+1,
-					q,table);
+					q);
 			setQuerySize(gclcur,
 					charstring::getLength(querybuffer));
 			retval=prepareQuery(gclcur,
@@ -7653,7 +7658,7 @@ void sqlrservercontroller::truncateTempTables(sqlrservercursor *cursor) {
 		uint64_t	fieldsize;
 		bool		lob;
 		bool		null;
-		const char	*query=getGlobalTempTableListQuery(true);
+		const char	*query=getGlobalTempTableListQuery();
 
 		sqlrservercursor	*gttcur=newCursor();
 		if (open(gttcur) &&

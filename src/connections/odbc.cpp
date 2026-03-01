@@ -347,7 +347,7 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 						const char *wild,
 						uint16_t objecttypes);
 		bool		getTableTypeList(sqlrservercursor *cursor,
-						const char *wild);
+						const char *tabletypes);
 		bool		isCurrentCatalog(const char *name);
 		bool		getColumnList(sqlrservercursor *cursor,
 						const char *table,
@@ -2848,7 +2848,7 @@ bool odbcconnection::getTableList(sqlrservercursor *cursor,
 }
 
 bool odbcconnection::getTableTypeList(sqlrservercursor *cursor,
-					const char *wild) {
+					const char *tabletypes) {
 
 	odbccursor	*odbccur=(odbccursor *)cursor;
 
@@ -2868,11 +2868,15 @@ bool odbcconnection::getTableTypeList(sqlrservercursor *cursor,
 	odbccur->initializeRowCounts();
 
 	// get the table types
+	const char	*tt=SQL_ALL_TABLE_TYPES;
+	if (!charstring::isNullOrEmpty(tabletypes)) {
+		tt=tabletypes;
+	}
 	erg=SQLTables(odbccur->stmt,
 			(SQLCHAR *)"",SQL_NTS,
 			(SQLCHAR *)"",SQL_NTS,
 			(SQLCHAR *)"",SQL_NTS,
-			(SQLCHAR *)SQL_ALL_TABLE_TYPES,SQL_NTS);
+			(SQLCHAR *)tt,SQL_NTS);
 	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 
 	// parse the column information

@@ -809,7 +809,7 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		 *  schemas, not databases.)
 		 *
 		 *  If "schemas" is empty or NULL then a result set containing
-		 *  all schemas will be returned.
+		 *  all schemas in the current database will be returned.
 		 *
 		 *  If SQL Relay doesn't support getting a list of schemas
 		 *  for the current database backend (or the database doesn't)
@@ -817,7 +817,7 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		bool	getSchemaList(const char *schemas);
 
 		/** Sends a query that returns a result set containing
-		 *  table types.
+		 *  supported table types.
 		 *
 		 *  The result set will contain the following columns:
 		 *  * table_type
@@ -835,14 +835,14 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		 *  * Tables_in_xxx
 		 *
 		 *  If "tables" is empty or NULL then a result set containing
-		 *  all tables will be returned.
+		 *  all tables in the current database/schema will be returned.
 		 *
 		 *  If SQL Relay doesn't support getting a list of tables
 		 *  for the current database backend (or the database doesn't)
 		 *  then an empty result set will be returned. */
 		bool	getTableList(const char *tables);
 
-		/** Sends a query that returns a result set containing
+		/** Sends a query that returns a result set containing data
 		 *  type information for "type".
 		 *
 		 *  The result set will contain the following columns:
@@ -867,7 +867,8 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		 *  * interval_precision
 		 *
 		 *  If "type" is empty or NULL then a result set containing
-		 *  all types will be returned.
+		 *  all data types in the current databas/schema will be
+		 *  returned.
 		 *
 		 *  If SQL Relay doesn't support getting type info
 		 *  for the current database backend (or the database doesn't)
@@ -889,7 +890,7 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		 *  * extra
 		 *
 		 *  If "columns" is empty or NULL then a list of all columns
-		 *  will be returned.
+		 *  of "table" will be returned.
 		 *
 		 *  If SQL Relay doesn't support getting a list of columns
 		 *  for the current database backend (or the database doesn't)
@@ -916,7 +917,7 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		 *  * index_comment
 		 *
 		 *  If "columns" is empty or NULL then a result set containing
-		 *  all primary keys will be returned.
+		 *  all primary keys of "table" will be returned.
 		 *
 		 *  If SQL Relay doesn't support getting a list of primary keys
 		 *  for the current database backend (or the database doesn't)
@@ -944,7 +945,8 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		 *  * index_comment
 		 *
 		 *  If "qualifier" is empty or NULL then a result set
-		 *  containing all keys and indexes will be returned.
+		 *  containing all keys and indexes of "table" will be
+		 *  returned.
 		 *
 		 *  If SQL Relay doesn't support getting a list of keys and
 		 *  indexes for the current database backend (or the database
@@ -962,7 +964,8 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		 *  * data_type
 		 *
 		 *  If "procedures" is empty or NULL then a result set
-		 *  containing all procedures will be returned.
+		 *  containing all procedures in the current database/schema
+		 *  will be returned.
 		 *
 		 *  If SQL Relay doesn't support getting a list of procedures
 		 *  for the current database backend (or the database doesn't)
@@ -981,7 +984,7 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		 *  * ordinal_position
 		 *
 		 *  If "parameters" is empty or NULL then a result set
-		 *  containing all parameters will be returned.
+		 *  containing all parameters of "procedure" will be returned.
 		 *
 		 *  If SQL Relay doesn't support getting a list of procedure
 		 *  parameters for the current database backend (or the

@@ -256,14 +256,26 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostNameQuery();
-		const char	*getDatabaseListQuery(bool wild);
+		const char	*getDatabaseListQuery(const char *db);
+		const char	*getSchemaListQuery(const char *db,
+						const char *schema);
+		const char	*getTableTypeListQuery(const char *db,
+						const char *schema,
+						const char *tabletypes);
 		const char	*getTableListQuery(
 						const char *db,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
+		const char	*getProcedureListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure);
 		const char	*getColumnListQuery(
-					const char *table, bool wild);
+						const char *db,
+						const char *schema,
+						const char *table,
+						const char *column);
 		const char	*selectDatabaseQuery();
 		const char	*getCurrentDatabaseQuery();
 		const char	*getLastInsertIdQuery();
@@ -295,7 +307,10 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 		uint16_t	dbmajorversion;
 
 		stringbuffer	databaselistquery;
+		stringbuffer	schemalistquery;
+		stringbuffer	tabletypelistquery;
 		stringbuffer	tablelistquery;
+		stringbuffer	procedurelistquery;
 		stringbuffer	columnlistquery;
 		const char	*dbhostnamequery;
 
@@ -577,7 +592,7 @@ const char *db2connection::getDbHostNameQuery() {
 	return dbhostnamequery;
 }
 
-const char *db2connection::getDatabaseListQuery(bool wild) {
+const char *db2connection::getDatabaseListQuery(const char *db) {
 
 	databaselistquery.clear();
 
@@ -591,16 +606,81 @@ const char *db2connection::getDatabaseListQuery(bool wild) {
 		"	null "
 		"from "
 		"	syscat.schemata ");
-	if (wild) {
+	if (db) {
 		databaselistquery.append(
 			"where "
-			"	schemaname like '%s' ");
+			"	schemaname like '");
+		databaselistquery.append(db);
+		databaselistquery.append("' ");
 	}
 	databaselistquery.append(
 		"order by "
 		"	schemaname");
 
 	return databaselistquery.getString();
+}
+
+const char *db2connection::getSchemaListQuery(const char *db,
+						const char *schema) {
+
+	schemalistquery.clear();
+
+	schemalistquery.append(
+		"select "
+		"	'' as table_cat, "
+		"	schemaname as table_schem, "
+		"	'' as table_name, "
+		"	'' as table_type, "
+		"	'' as remarks, "
+		"	null "
+		"from "
+		"	syscat.schemata ");
+	if (schema) {
+		schemalistquery.append(
+			"where "
+			"	schemaname like '");
+		schemalistquery.append(schema);
+		schemalistquery.append("' ");
+	}
+	schemalistquery.append(
+		"order by "
+		"	schemaname");
+
+	return schemalistquery.getString();
+}
+
+const char *db2connection::getTableTypeListQuery(const char *db,
+						const char *schema,
+						const char *tabletypes) {
+
+	tabletypelistquery.clear();
+	tabletypelistquery.append(
+		"select "
+		"	'' as table_cat, "
+		"	'' as table_schem, "
+		"	'' as table_name, "
+		"	table_type, "
+		"	'' as remarks, "
+		"	null "
+		"from "
+		"(select 'TABLE' as table_type from sysibm.sysdummy1 "
+		"union "
+		"select 'VIEW' as table_type from sysibm.sysdummy1 "
+		"union "
+		"select 'ALIAS' as table_type from sysibm.sysdummy1 "
+		"union "
+		"select 'SYNONYM' as table_type from sysibm.sysdummy1) as t ");
+	if (!charstring::isNullOrEmpty(tabletypes)) {
+		tabletypelistquery.append(
+			"where "
+			"	table_type like '");
+		tabletypelistquery.append(tabletypes);
+		tabletypelistquery.append("' ");
+	}
+	tabletypelistquery.append(
+		"order by "
+		"	table_type");
+	return tabletypelistquery.getString();
 }
 
 const char *db2connection::getTableListQuery(const char *db,
@@ -633,14 +713,14 @@ const char *db2connection::getTableListQuery(const char *db,
 	if (schema) {
 		tablelistquery.append(
 			"	and "
-			"	tabschema='");
+			"	tabschema like '");
 		tablelistquery.append(schema);
 		tablelistquery.append("' ");
 	}
 	if (table) {
 		tablelistquery.append(
 			"	and "
-			"	tabname='");
+			"	tabname like '");
 		tablelistquery.append(table);
 		tablelistquery.append("' ");
 	}
@@ -679,7 +759,54 @@ const char *db2connection::getTableListQuery(const char *db,
 	return tablelistquery.getString();
 }
 
-const char *db2connection::getColumnListQuery(const char *table, bool wild) {
+const char *db2connection::getProcedureListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure) {
+
+	procedurelistquery.clear();
+	procedurelistquery.append(
+		"select "
+		"	'' as procedure_cat, "
+		"	routineschema as procedure_schem, "
+		"	routinename as procedure_name, "
+		"	0 as num_input_params, "
+		"	0 as num_output_params, "
+		"	0 as num_result_sets, "
+		"	remarks, "
+		"	case routinetype "
+		"		when 'P' then '1' "
+		"		when 'F' then '2' "
+		"		else '0' "
+		"	end as procedure_type, "
+		"	null "
+		"from "
+		"	syscat.routines "
+		"where "
+		"	routinetype in ('P','F') ");
+	if (!charstring::isNullOrEmpty(schema)) {
+		procedurelistquery.append(
+			"and routineschema like '");
+		procedurelistquery.append(schema);
+		procedurelistquery.append("' ");
+	}
+	if (!charstring::isNullOrEmpty(procedure)) {
+		procedurelistquery.append(
+			"and routinename like '");
+		procedurelistquery.append(procedure);
+		procedurelistquery.append("' ");
+	}
+	procedurelistquery.append(
+		"order by "
+		"	routineschema, "
+		"	routinename");
+	return procedurelistquery.getString();
+}
+
+const char *db2connection::getColumnListQuery(const char *db,
+					const char *schema,
+					const char *table,
+					const char *column) {
 
 	columnlistquery.clear();
 
@@ -728,13 +855,41 @@ const char *db2connection::getColumnListQuery(const char *table, bool wild) {
 		"	syscat.columns ");
 
 	// where clause
-	columnlistquery.append(
-		"where "
-		"	upper(tabname)=upper('%s') ");
-	if (wild) {
+	bool	prevclause=false;
+
+	if (!charstring::isNullOrEmpty(schema)) {
 		columnlistquery.append(
-			"	and "
-			"	colname like '%s' ");
+			"where "
+			"	tabschema like '");
+		columnlistquery.append(schema);
+		columnlistquery.append("' ");
+		prevclause=true;
+	}
+
+	if (!charstring::isNullOrEmpty(table)) {
+		if (prevclause) {
+			columnlistquery.append("	and ");
+		} else {
+			columnlistquery.append("where ");
+			prevclause=true;
+		}
+		columnlistquery.append(
+			"	upper(tabname) like upper('");
+		columnlistquery.append(table);
+		columnlistquery.append("') ");
+	}
+
+	if (!charstring::isNullOrEmpty(column)) {
+		if (prevclause) {
+			columnlistquery.append("	and ");
+		} else {
+			columnlistquery.append("where ");
+			prevclause=true;
+		}
+		columnlistquery.append(
+			"	colname like '");
+		columnlistquery.append(column);
+		columnlistquery.append("' ");
 	}
 
 	// order by clause

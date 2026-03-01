@@ -39,14 +39,27 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 		const char	*getDbHostName();
 		const char	*getDbIpAddressQuery();
 		const char	*getDbIpAddress();
-		const char	*getDatabaseListQuery(bool wild);
+		const char	*getDatabaseListQuery(const char *db);
+		const char	*getSchemaListQuery(const char *db,
+						const char *schema);
+		const char	*getTableTypeListQuery(
+						const char *db,
+						const char *schema,
+						const char *tabletypes);
 		const char	*getTableListQuery(
 						const char *db,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
+		const char	*getProcedureListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure);
 		const char	*getColumnListQuery(
-					const char *table, bool wild);
+					const char *db,
+					const char *schema,
+					const char *table,
+					const char *column);
 		bool		selectDatabase(const char *database);
 		const char	*getCurrentDatabaseQuery();
 		const char	*getIsolationLevelQuery();
@@ -95,7 +108,10 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 #endif
 
 		stringbuffer	databaselistquery;
+		stringbuffer	schemalistquery;
+		stringbuffer	tabletypelistquery;
 		stringbuffer	tablelistquery;
+		stringbuffer	procedurelistquery;
 		stringbuffer	columnlistquery;
 };
 
@@ -571,7 +587,7 @@ const char *postgresqlconnection::getDbIpAddress() {
 	return (charstring::getLength(ipaddress))?ipaddress:"127.0.0.1";
 }
 
-const char *postgresqlconnection::getDatabaseListQuery(bool wild) {
+const char *postgresqlconnection::getDatabaseListQuery(const char *db) {
 
 	databaselistquery.clear();
 
@@ -585,16 +601,94 @@ const char *postgresqlconnection::getDatabaseListQuery(bool wild) {
 		"	null "
 		"from "
 		"	pg_database ");
-	if (wild) {
+	if (db) {
 		databaselistquery.append(
 			"where "
-			"	datname like '%s' ");
+			"	datname like '");
+		databaselistquery.append(db);
+		databaselistquery.append("' ");
 	}
 	databaselistquery.append(
 		"order by "
 		"	datname");
 
 	return databaselistquery.getString();
+}
+
+const char *postgresqlconnection::getSchemaListQuery(const char *db,
+						const char *schema) {
+
+	schemalistquery.clear();
+
+	schemalistquery.append(
+		"select "
+		"	catalog_name as table_cat, "
+		"	schema_name as table_schem, "
+		"	'' as table_name, "
+		"	'' as table_type, "
+		"	'' as remarks, "
+		"	null "
+		"from "
+		"	information_schema.schemata ");
+	bool	prevclause=false;
+	if (db) {
+		schemalistquery.append(
+			"where "
+			"	catalog_name like '");
+		schemalistquery.append(db);
+		schemalistquery.append("' ");
+		prevclause=true;
+	}
+	if (schema) {
+		if (prevclause) {
+			schemalistquery.append("	and ");
+		} else {
+			schemalistquery.append("where ");
+		}
+		schemalistquery.append(
+			"	schema_name like '");
+		schemalistquery.append(schema);
+		schemalistquery.append("' ");
+	}
+	schemalistquery.append(
+		"order by "
+		"	catalog_name, "
+		"	schema_name");
+
+	return schemalistquery.getString();
+}
+
+const char *postgresqlconnection::getTableTypeListQuery(
+						const char *db,
+						const char *schema,
+						const char *tabletypes) {
+
+	tabletypelistquery.clear();
+
+	tabletypelistquery.append(
+		"select "
+		"	'' as table_cat, "
+		"	'' as table_schem, "
+		"	'' as table_name, "
+		"	table_type, "
+		"	'' as remarks, "
+		"	null "
+		"from "
+		"(select 'TABLE' as table_type "
+		"union "
+		"select 'VIEW' as table_type) as t ");
+	if (!charstring::isNullOrEmpty(tabletypes)) {
+		tabletypelistquery.append(
+			"where "
+			"	table_type like '");
+		tabletypelistquery.append(tabletypes);
+		tabletypelistquery.append("' ");
+	}
+	tabletypelistquery.append(
+		"order by "
+		"	table_type");
+
+	return tabletypelistquery.getString();
 }
 
 const char *postgresqlconnection::getTableListQuery(const char *db,
@@ -646,21 +740,21 @@ const char *postgresqlconnection::getTableListQuery(const char *db,
 	if (db) {
 		tablelistquery.append(
 			"	and "
-			"	table_catalog='");
+			"	table_catalog like '");
 		tablelistquery.append(db);
 		tablelistquery.append("' ");
 	}
 	if (schema) {
 		tablelistquery.append(
 			"	and "
-			"	table_schema='");
+			"	table_schema like '");
 		tablelistquery.append(schema);
 		tablelistquery.append("' ");
 	}
 	if (table) {
 		tablelistquery.append(
 			"	and "
-			"	table_name='");
+			"	table_name like '");
 		tablelistquery.append(table);
 		tablelistquery.append("' ");
 	}
@@ -672,8 +766,73 @@ const char *postgresqlconnection::getTableListQuery(const char *db,
 	return tablelistquery.getString();
 }
 
-const char *postgresqlconnection::getColumnListQuery(
-					const char *table, bool wild) {
+const char *postgresqlconnection::getProcedureListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure) {
+
+	procedurelistquery.clear();
+	procedurelistquery.append(
+		"select "
+		"	routine_catalog as procedure_cat, "
+		"	routine_schema as procedure_schem, "
+		"	routine_name as procedure_name, "
+		"	0 as num_input_params, "
+		"	0 as num_output_params, "
+		"	0 as num_result_sets, "
+		"	'' as remarks, "
+		"	case routine_type "
+		"		when 'PROCEDURE' then '1' "
+		"		when 'FUNCTION' then '2' "
+		"		else '0' "
+		"	end as procedure_type, "
+		"	null "
+		"from "
+		"	information_schema.routines ");
+	if (!charstring::isNullOrEmpty(db) ||
+		!charstring::isNullOrEmpty(schema) ||
+		!charstring::isNullOrEmpty(procedure)) {
+		procedurelistquery.append("where ");
+		bool	first=true;
+		if (!charstring::isNullOrEmpty(db)) {
+			procedurelistquery.append(
+				"routine_catalog like '");
+			procedurelistquery.append(db);
+			procedurelistquery.append("' ");
+			first=false;
+		}
+		if (!charstring::isNullOrEmpty(schema)) {
+			if (!first) {
+				procedurelistquery.append("and ");
+			}
+			procedurelistquery.append(
+				"routine_schema like '");
+			procedurelistquery.append(schema);
+			procedurelistquery.append("' ");
+			first=false;
+		}
+		if (!charstring::isNullOrEmpty(procedure)) {
+			if (!first) {
+				procedurelistquery.append("and ");
+			}
+			procedurelistquery.append(
+				"routine_name like '");
+			procedurelistquery.append(procedure);
+			procedurelistquery.append("' ");
+		}
+	}
+	procedurelistquery.append(
+		"order by "
+		"	routine_catalog, "
+		"	routine_schema, "
+		"	routine_name");
+	return procedurelistquery.getString();
+}
+
+const char *postgresqlconnection::getColumnListQuery(const char *db,
+					const char *schema,
+					const char *table,
+					const char *column) {
 
 	columnlistquery.clear();
 
@@ -756,15 +915,49 @@ const char *postgresqlconnection::getColumnListQuery(
 		"	co.column_name=ck.column_name ");
 
 	// where clause
-	columnlistquery.append(
-		"where "
-		"	co.table_schema='public' "
-		"	and "
-		"	co.table_name='%s' ");
-	if (wild) {
+	bool	prevclause=false;
+	if (!charstring::isNullOrEmpty(db)) {
+		columnlistquery.append("where ");
 		columnlistquery.append(
-			"	and "
-			"	co.column_name like '%s' ");
+			"	co.table_catalog like '");
+		columnlistquery.append(db);
+		columnlistquery.append("' ");
+		prevclause=true;
+	}
+	if (!charstring::isNullOrEmpty(schema)) {
+		if (!prevclause) {
+			columnlistquery.append("where ");
+		} else {
+			columnlistquery.append("	and ");
+		}
+		columnlistquery.append(
+			"	co.table_schema like '");
+		columnlistquery.append(schema);
+		columnlistquery.append("' ");
+		prevclause=true;
+	}
+	if (!charstring::isNullOrEmpty(table)) {
+		if (!prevclause) {
+			columnlistquery.append("where ");
+		} else {
+			columnlistquery.append("	and ");
+		}
+		columnlistquery.append(
+			"	co.table_name like '");
+		columnlistquery.append(table);
+		columnlistquery.append("' ");
+		prevclause=true;
+	}
+	if (!charstring::isNullOrEmpty(column)) {
+		if (!prevclause) {
+			columnlistquery.append("where ");
+		} else {
+			columnlistquery.append("	and ");
+		}
+		columnlistquery.append(
+			"	co.column_name like '");
+		columnlistquery.append(column);
+		columnlistquery.append("' ");
 	}
 
 	// order by clause

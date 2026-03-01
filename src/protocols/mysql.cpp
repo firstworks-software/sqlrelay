@@ -784,11 +784,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_mysql : public sqlrprotocol {
 		bool	getObjectListByQuery(sqlrservercursor *cursor,
 					mysqlobjectlisttype_t listtype,
 					const char *object);
-		bool	buildObjectListQuery(sqlrservercursor *cursor,
-					const char *query,
-					const char *object);
-		bool	buildObjectListQuery(sqlrservercursor *cursor,
-					const char *query);
+		bool	populateQueryBuffer(sqlrservercursor *cursor,
+							const char *query);
 		bool	getComponentListByApiCall(sqlrservercursor *cursor,
 					mysqlcomponentlisttype_t listtype,
 					const char *object,
@@ -797,10 +794,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_mysql : public sqlrprotocol {
 					mysqlcomponentlisttype_t listtype,
 					const char *object,
 					const char *component);
-		bool	buildComponentListQuery(sqlrservercursor *cursor,
-					const char *query,
-					const char *component,
-					const char *object);
 		void	escapeParameter(stringbuffer *buffer,
 						const char *parameter);
 		bool	sendFieldListResponse(sqlrservercursor *cursor);
@@ -3960,23 +3953,18 @@ bool sqlrprotocol_mysql::getObjectListByQuery(sqlrservercursor *cursor,
 	// build the appropriate query
 	const char	*query=NULL;
 	uint32_t	querysize=0;
-	bool		havewild=charstring::getLength(object);
 	switch (listtype) {
 		case MYSQLOBJECTLISTTYPE_DATABASE_LIST:
-			cont->setDatabaseListFormat(
-					SQLRSERVERLISTFORMAT_MYSQL);
-			query=cont->getDatabaseListQuery(havewild);
-			buildObjectListQuery(cursor,query,object);
+			cont->setDatabaseListFormat(SQLRSERVERLISTFORMAT_MYSQL);
+			query=cont->getDatabaseListQuery(db);
 			break;
 		case MYSQLOBJECTLISTTYPE_TABLE_LIST:
-			cont->setTableListFormat(
-					SQLRSERVERLISTFORMAT_MYSQL);
+			cont->setTableListFormat(SQLRSERVERLISTFORMAT_MYSQL);
 			query=cont->getTableListQuery(db,schema,obj,
 							DB_OBJECT_TABLE|
 							DB_OBJECT_VIEW|
 							DB_OBJECT_ALIAS|
 							DB_OBJECT_SYNONYM);
-			buildObjectListQuery(cursor,query);
 			break;
 		default:
 			break;
@@ -3985,6 +3973,9 @@ bool sqlrprotocol_mysql::getObjectListByQuery(sqlrservercursor *cursor,
 	// clean up
 	delete[] currentdb;
 	delete[] currentschema;
+
+	// FIXME: this can fail
+	populateQueryBuffer(cursor,query);
 
 	query=cont->getQueryBuffer(cursor);
 	querysize=cont->getQuerySize(cursor);
@@ -4017,37 +4008,8 @@ bool sqlrprotocol_mysql::getObjectListByQuery(sqlrservercursor *cursor,
 	return true;
 }
 
-bool sqlrprotocol_mysql::buildObjectListQuery(sqlrservercursor *cursor,
-						const char *query,
-						const char *object) {
-
-	// clean up buffers to avoid SQL injection
-	stringbuffer	objectbuf;
-	escapeParameter(&objectbuf,object);
-
-	// bounds checking
-	cont->setQuerySize(cursor,charstring::getLength(query)+
-						objectbuf.getSize());
-	if (cont->getQuerySize(cursor)>maxquerysize) {
-		stringbuffer	err;
-		err.append("Query loo large (");
-		err.append(cont->getQuerySize(cursor));
-		err.append(">");
-		err.append(maxquerysize);
-		err.append(")");
-		return sendErrPacket(1105,err.getString(),"24000");
-	}
-
-	// fill the query buffer and update the size
-	char	*querybuffer=cont->getQueryBuffer(cursor);
-	charstring::printf(querybuffer,maxquerysize+1,
-					query,objectbuf.getString());
-	cont->setQuerySize(cursor,charstring::getLength(querybuffer));
-	return true;
-}
-
-bool sqlrprotocol_mysql::buildObjectListQuery(sqlrservercursor *cursor,
-						const char *query) {
+bool sqlrprotocol_mysql::populateQueryBuffer(sqlrservercursor *cursor,
+							const char *query) {
 
 	// sanity check on query
 	if (!query) {
@@ -4078,22 +4040,46 @@ bool sqlrprotocol_mysql::getComponentListByQuery(sqlrservercursor *cursor,
 					const char *object,
 					const char *component) {
 
+	// clean up object and component to avoid SQL injection
+	stringbuffer	componentbuf;
+	escapeParameter(&componentbuf,component);
+	component=componentbuf.getString();
+	stringbuffer	objectbuf;
+	escapeParameter(&objectbuf,object);
+	object=objectbuf.getString();
+
+	// split the object (db.schema.object) into db, schema, and object
+	char	*currentdb=cont->getCurrentDatabase();
+	char	*currentschema=cont->getCurrentSchema();
+	const char	*db=NULL;
+	const char	*schema=NULL;
+	const char	*obj=NULL;
+	cont->splitObjectName(currentdb,currentschema,
+					object,&db,&schema,&obj);
+
+	// we only want to fetch for the current database/schema
+	db=currentdb;
+	schema=currentschema;
+
 	// build the appropriate query
 	const char	*query=NULL;
 	uint32_t	querysize=0;
-	bool		havewild=charstring::getLength(component);
 	switch (listtype) {
 		case MYSQLCOMPONENTLISTTYPE_COLUMN_LIST:
-			cont->setColumnListFormat(
-					SQLRSERVERLISTFORMAT_MYSQL);
-			query=cont->getColumnListQuery(object,havewild);
+			cont->setColumnListFormat(SQLRSERVERLISTFORMAT_MYSQL);
+			query=cont->getColumnListQuery(db,schema,obj,component);
 			break;
 		default:
 			break;
 	}
 
+	// clean up
+	delete[] currentdb;
+	delete[] currentschema;
+
 	// FIXME: this can fail
-	buildComponentListQuery(cursor,query,component,object);
+	populateQueryBuffer(cursor,query);
+
 	query=cont->getQueryBuffer(cursor);
 	querysize=cont->getQuerySize(cursor);
 
@@ -4118,54 +4104,6 @@ bool sqlrprotocol_mysql::getComponentListByQuery(sqlrservercursor *cursor,
 			break;
 	}
 
-	return true;
-}
-
-bool sqlrprotocol_mysql::buildComponentListQuery(sqlrservercursor *cursor,
-						const char *query,
-						const char *component,
-						const char *object) {
-
-	// If the object was given like catalog.schema.object, then just
-	// get the object.
-	const char	*realobject=charstring::findLast(object,".");
-	if (realobject) {
-		realobject++;
-	} else {
-		realobject=object;
-	}
-
-	// clean up buffers to avoid SQL injection
-	stringbuffer	componentbuf;
-	escapeParameter(&componentbuf,component);
-	stringbuffer	objectbuf;
-	escapeParameter(&objectbuf,object);
-
-	// bounds checking
-	cont->setQuerySize(cursor,charstring::getLength(query)+
-						componentbuf.getSize()+
-						objectbuf.getSize());
-	if (cont->getQuerySize(cursor)>maxquerysize) {
-		stringbuffer	err;
-		err.append("Query loo large (");
-		err.append(cont->getQuerySize(cursor));
-		err.append(">");
-		err.append(maxquerysize);
-		err.append(")");
-		return sendErrPacket(1105,err.getString(),"24000");
-	}
-
-	// fill the query buffer and update the size
-	char	*querybuffer=cont->getQueryBuffer(cursor);
-	if (objectbuf.getSize()) {
-		charstring::printf(querybuffer,maxquerysize+1,
-						query,objectbuf.getString(),
-						componentbuf.getString());
-	} else {
-		charstring::printf(querybuffer,maxquerysize+1,
-						query,componentbuf.getString());
-	}
-	cont->setQuerySize(cursor,charstring::getLength(querybuffer));
 	return true;
 }
 

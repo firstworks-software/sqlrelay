@@ -757,21 +757,58 @@ function sqlrcur_cacheOff($sqlrcurref){}
 
 
 
-/** 
- *  Sends a query that returns a list of databases/schemas matching "wild".
- *  If wild is empty or NULL then a list of all databases/schemas will be
- *  returned. */
+/**
+ *  Sends a query that returns a result set containing
+ *  databases that match the pattern "wild".
+ *
+ *  The result set will contain the following columns:
+ *  * Database
+ *
+ *  If "wild" is empty or NULL then a result set containing
+ *  all databases will be returned.
+ *
+ *  If SQL Relay doesn't support getting a list of databases
+ *  for the current database backend (or the database doesn't)
+ *  then an empty result set will be returned. */
 function sqlrcur_getDatabaseList($sqlrcurref, $wild){}
 
-/** 
- *  Sends a query that returns a list of tables matching "wild".  If wild is
- *  empty or NULL then a list of all tables will be returned. */
+/**
+ *  Sends a query that returns a result set containing the
+ *  tables in the current database and schema that match the
+ *  pattern "wild".
+ *
+ *  The result set will contain the following columns:
+ *  * Tables_in_xxx
+ *
+ *  If "wild" is empty or NULL then a result set containing
+ *  all tables in the current database/schema will be returned.
+ *
+ *  If SQL Relay doesn't support getting a list of tables
+ *  for the current database backend (or the database doesn't)
+ *  then an empty result set will be returned. */
 function sqlrcur_getTableList($sqlrcurref, $wild){}
 
-/** 
- *  Sends a query that returns a list of columns in the table specified by the
- *  "table" parameter matching "wild".  If wild is empty or NULL then a list of
- *  all columns will be returned. */
+/**
+ *  Sends a query that returns a result set containing the
+ *  columns of "table", which match the pattern "wild".
+ *
+ *  The result set will contain the following columns:
+ *  * column_name
+ *  * data_type
+ *  * character_maximum_length
+ *  * numeric_precision
+ *  * numeric_scale
+ *  * is_nullable
+ *  * column_key
+ *  * column_default
+ *  * extra
+ *
+ *  If "wild" is empty or NULL then a list of all columns
+ *  of "table" will be returned.
+ *
+ *  If SQL Relay doesn't support getting a list of columns
+ *  for the current database backend (or the database doesn't)
+ *  then an empty result set will be returned. */
 function sqlrcur_getColumnList($sqlrcurref, $table, $wild){}
 
 

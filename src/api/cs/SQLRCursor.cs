@@ -139,81 +139,236 @@ public class SQLRCursor : IDisposable
 
 
 
-    /** Sends a query that returns a list of databases/schemas matching
-     *  "databases".  If databases is empty or NULL then a list of all
-     *  databases/schemas will be returned. */
+    /** Sends a query that returns a result set containing
+     *  databases that match the pattern "databases".
+     *
+     *  The result set will contain the following columns:
+     *  * Database
+     *
+     *  If "databases" is empty or NULL then a result set containing
+     *  all databases will be returned.
+     *
+     *  If SQL Relay doesn't support getting a list of databases
+     *  for the current database backend (or the database doesn't)
+     *  then an empty result set will be returned. */
     public Boolean getDatabaseList(String databases)
     {
         return sqlrcur_getDatabaseList(sqlrcurref, databases) != 0;
     }
 
-    /** Sends a query that returns a list of schemas matching "schemas".
-     *  If schemas is empty or NULL then a list of all schemas will be
-     *  returned. */
+    /** Sends a query that returns a result set containing
+     *  schemas that match the pattern "schemas".
+     *
+     *  The result set will contain the following columns:
+     *  * Database
+     *
+     *  (The column name is a bit of a misnomer, the results are
+     *  schemas, not databases.)
+     *
+     *  If "schemas" is empty or NULL then a result set containing
+     *  all schemas in the current database will be returned.
+     *
+     *  If SQL Relay doesn't support getting a list of schemas
+     *  for the current database backend (or the database doesn't)
+     *  then an empty result set will be returned. */
     public Boolean getSchemaList(String schemas)
     {
         return sqlrcur_getSchemaList(sqlrcurref, schemas) != 0;
     }
 
-    /** Sends a query that returns a list of table types. */
+    /** Sends a query that returns a result set containing
+     *  supported table types.
+     *
+     *  The result set will contain the following columns:
+     *  * table_type
+     *
+     *  If SQL Relay doesn't support getting a list of table types
+     *  for the current database backend (or the database doesn't)
+     *  then an empty result set will be returned. */
     public Boolean getTableTypeList()
     {
         return sqlrcur_getTableTypeList(sqlrcurref) != 0;
     }
 
-    /** Sends a query that returns a list of tables matching "tables".
-     *  If tables is empty or NULL then a list of all tables will be
-     *  returned. */
+    /** Sends a query that returns a result set containing the
+     *  tables in the current database and schema that match the
+     *  pattern "tables".
+     *
+     *  The result set will contain the following columns:
+     *  * Tables_in_xxx
+     *
+     *  If "tables" is empty or NULL then a result set containing
+     *  all tables in the current database/schema will be returned.
+     *
+     *  If SQL Relay doesn't support getting a list of tables
+     *  for the current database backend (or the database doesn't)
+     *  then an empty result set will be returned. */
     public Boolean getTableList(String tables)
     {
         return sqlrcur_getTableList(sqlrcurref, tables) != 0;
     }
 
-    /** Sends a query that returns a list of data types matching "type".
-     *  If type is empty or NULL then a list of all data types will be
-     *  returned. */
+    /** Sends a query that returns a result set containing data
+     *  type information for "type".
+     *
+     *  The result set will contain the following columns:
+     *  * type_name
+     *  * data_type
+     *  * precision
+     *  * literal_prefix
+     *  * literal_suffix
+     *  * create_params
+     *  * nullable
+     *  * case_sensitive
+     *  * searchable
+     *  * unsigned_attribute
+     *  * fixed_prec_scale
+     *  * auto_increment
+     *  * local_type_name
+     *  * minumum_scale
+     *  * maxiumm_scale
+     *  * sql_data_type
+     *  * sql_datetime_sub
+     *  * num_prec_radix
+     *  * interval_precision
+     *
+     *  If "type" is empty or NULL then a result set containing
+     *  all data types in the current databas/schema will be
+     *  returned.
+     *
+     *  If SQL Relay doesn't support getting type info
+     *  for the current database backend (or the database doesn't)
+     *  then an empty result set will be returned. */
     public Boolean getTypeInfoList(String type)
     {
         return sqlrcur_getTypeInfoList(sqlrcurref, type) != 0;
     }
 
-    /** Sends a query that returns a list of columns in the table specified by
-     *  the "table" parameter matching "columns".  If columns is empty or NULL
-     *  then a list of all columns will be returned. */
+    /** Sends a query that returns a result set containing the
+     *  columns of "table", which match the pattern "columns".
+     *
+     *  The result set will contain the following columns:
+     *  * column_name
+     *  * data_type
+     *  * character_maximum_length
+     *  * numeric_precision
+     *  * numeric_scale
+     *  * is_nullable
+     *  * column_key
+     *  * column_default
+     *  * extra
+     *
+     *  If "columns" is empty or NULL then a list of all columns
+     *  of "table" will be returned.
+     *
+     *  If SQL Relay doesn't support getting a list of columns
+     *  for the current database backend (or the database doesn't)
+     *  then an empty result set will be returned. */
     public Boolean getColumnList(String table, String columns)
     {
         return sqlrcur_getColumnList(sqlrcurref, table, columns) != 0;
     }
 
-    /** Sends a query that returns a list of primary keys in the table
-     *  specified by the "table" parameter matching "columns".  If columns
-     *  is empty or NULL then a list of all primary keys will be returned. */
+    /** Sends a query that returns a result set containing the
+     *  primary keys of "table", which match the pattern
+     *  "columns".
+     *
+     *  The result set will contain the following columns:
+     *  * table
+     *  * non_unique
+     *  * key_name
+     *  * seq_in_index
+     *  * column_name
+     *  * collation
+     *  * cardinality
+     *  * sub_part
+     *  * packed
+     *  * null
+     *  * index_type
+     *  * comment
+     *  * index_comment
+     *
+     *  If "columns" is empty or NULL then a result set containing
+     *  all primary keys of "table" will be returned.
+     *
+     *  If SQL Relay doesn't support getting a list of primary keys
+     *  for the current database backend (or the database doesn't)
+     *  then an empty result set will be returned. */
     public Boolean getPrimaryKeysList(String table, String columns)
     {
         return sqlrcur_getPrimaryKeysList(sqlrcurref, table, columns) != 0;
     }
 
-    /** Sends a query that returns a list of keys and indexes in the table
-     *  specified by the "table" parameter matching "qualifier".  If qualifier
-     *  is empty or NULL then a list of all keys and indexes will be
-     *  returned. */
+    /** Sends a query that returns a result set containing the
+     *  keys and indexes of "table", which match the pattern
+     *  "qualifier".
+     *
+     *  The result set will contain the following columns:
+     *  * table
+     *  * non_unique
+     *  * key_name
+     *  * seq_in_index
+     *  * column_name
+     *  * collation
+     *  * cardinality
+     *  * sub_part
+     *  * packed
+     *  * null
+     *  * index_type
+     *  * comment
+     *  * index_comment
+     *
+     *  If "qualifier" is empty or NULL then a result set
+     *  containing all keys and indexes of "table" will be
+     *  returned.
+     *
+     *  If SQL Relay doesn't support getting a list of keys and
+     *  indexes for the current database backend (or the database
+     *  doesn't) then an empty result set will be returned. */
     public Boolean getKeyAndIndexList(String table, String qualifier)
     {
         return sqlrcur_getKeyAndIndexList(sqlrcurref, table, qualifier) != 0;
     }
 
-    /** Sends a query that returns a list of procedures matching
-     *  "procedures".  If procedures is empty or NULL then a list of all
-     *  procedures will be returned. */
+    /** Sends a query that returns a result set containing
+     *  procedures that match the pattern "procedures".
+     *
+     *  The result set will contain the following columns:
+     *  * routine_catalog
+     *  * routine_schema
+     *  * routine_name
+     *  * data_type
+     *
+     *  If "procedures" is empty or NULL then a result set
+     *  containing all procedures in the current database/schema
+     *  will be returned.
+     *
+     *  If SQL Relay doesn't support getting a list of procedures
+     *  for the current database backend (or the database doesn't)
+     *  then an empty result set will be returned. */
     public Boolean getProcedureList(String procedures)
     {
         return sqlrcur_getProcedureList(sqlrcurref, procedures) != 0;
     }
 
-    /** Sends a query that returns a list of procedure parameters for the
-     *  procedure specified by the "procedure" parameter matching
-     *  "parameters".  If parameters is empty or NULL then a list of all
-     *  procedure parameters will be returned. */
+    /** Sends a query that returns a result set containing the
+     *  parameters of "procedure", which match the pattern
+     *  "parameters".
+     *
+     *  The result set will contain the following columns:
+     *  * parameter_name
+     *  * parameter_mode
+     *  * data_type
+     *  * character_maximum_length
+     *  * ordinal_position
+     *
+     *  If "parameters" is empty or NULL then a result set
+     *  containing all parameters of "procedure" will be returned.
+     *
+     *  If SQL Relay doesn't support getting a list of procedure
+     *  parameters for the current database backend (or the
+     *  database doesn't) then an empty result set will be
+     *  returned. */
     public Boolean getProcedureParameterList(String procedure, String parameters)
     {
         return sqlrcur_getProcedureParameterList(sqlrcurref, procedure, parameters) != 0;

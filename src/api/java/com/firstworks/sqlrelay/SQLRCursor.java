@@ -69,51 +69,220 @@ public class SQLRCursor {
 	public native void	cacheOff();
 
 
-	/** Sends a query that returns a list of
-	 *  databases/schemas matching "databases".  If
-	 *  "databases" is empty or null then a list of all
-	 *  databases/schemas will be returned. */
+	/** Sends a query that returns a result set containing
+	 *  databases that match the pattern "databases".
+	 *
+	 *  The result set will contain the following columns:
+	 *  <ul>
+	 *  <li>Database</li>
+	 *  </ul>
+	 *
+	 *  If "databases" is empty or null then a result set containing
+	 *  all databases will be returned.
+	 *
+	 *  If SQL Relay doesn't support getting a list of databases
+	 *  for the current database backend (or the database doesn't)
+	 *  then an empty result set will be returned. */
 	public native boolean	getDatabaseList(String databases);
-	/** Sends a query that returns a list of schemas
-	 *  matching "schemas".  If "schemas" is empty or null
-	 *  then a list of all schemas will be returned. */
+	/** Sends a query that returns a result set containing
+	 *  schemas that match the pattern "schemas".
+	 *
+	 *  The result set will contain the following columns:
+	 *  <ul>
+	 *  <li>Database</li>
+	 *  </ul>
+	 *
+	 *  (The column name is a bit of a misnomer, the results are
+	 *  schemas, not databases.)
+	 *
+	 *  If "schemas" is empty or null then a result set containing
+	 *  all schemas in the current database will be returned.
+	 *
+	 *  If SQL Relay doesn't support getting a list of schemas
+	 *  for the current database backend (or the database doesn't)
+	 *  then an empty result set will be returned. */
 	public native boolean	getSchemaList(String schemas);
-	/** Sends a query that returns a list of table types. */
+	/** Sends a query that returns a result set containing
+	 *  supported table types.
+	 *
+	 *  The result set will contain the following columns:
+	 *  <ul>
+	 *  <li>table_type</li>
+	 *  </ul>
+	 *
+	 *  If SQL Relay doesn't support getting a list of table types
+	 *  for the current database backend (or the database doesn't)
+	 *  then an empty result set will be returned. */
 	public native boolean	getTableTypeList();
-	/** Sends a query that returns a list of tables
-	 *  matching "tables".  If "tables" is empty or null
-	 *  then a list of all tables will be returned. */
+	/** Sends a query that returns a result set containing the
+	 *  tables in the current database and schema that match the
+	 *  pattern "tables".
+	 *
+	 *  The result set will contain the following columns:
+	 *  <ul>
+	 *  <li>Tables_in_xxx</li>
+	 *  </ul>
+	 *
+	 *  If "tables" is empty or null then a result set containing
+	 *  all tables in the current database/schema will be returned.
+	 *
+	 *  If SQL Relay doesn't support getting a list of tables
+	 *  for the current database backend (or the database doesn't)
+	 *  then an empty result set will be returned. */
 	public native boolean	getTableList(String tables);
-	/** Sends a query that returns a list of data types
-	 *  matching "type".  If "type" is empty or null
-	 *  then a list of all data types will be returned. */
+	/** Sends a query that returns a result set containing data
+	 *  type information for "type".
+	 *
+	 *  The result set will contain the following columns:
+	 *  <ul>
+	 *  <li>type_name</li>
+	 *  <li>data_type</li>
+	 *  <li>precision</li>
+	 *  <li>literal_prefix</li>
+	 *  <li>literal_suffix</li>
+	 *  <li>create_params</li>
+	 *  <li>nullable</li>
+	 *  <li>case_sensitive</li>
+	 *  <li>searchable</li>
+	 *  <li>unsigned_attribute</li>
+	 *  <li>fixed_prec_scale</li>
+	 *  <li>auto_increment</li>
+	 *  <li>local_type_name</li>
+	 *  <li>minumum_scale</li>
+	 *  <li>maxiumm_scale</li>
+	 *  <li>sql_data_type</li>
+	 *  <li>sql_datetime_sub</li>
+	 *  <li>num_prec_radix</li>
+	 *  <li>interval_precision</li>
+	 *  </ul>
+	 *
+	 *  If "type" is empty or null then a result set containing
+	 *  all data types in the current databas/schema will be
+	 *  returned.
+	 *
+	 *  If SQL Relay doesn't support getting type info
+	 *  for the current database backend (or the database doesn't)
+	 *  then an empty result set will be returned. */
 	public native boolean	getTypeInfoList(String type);
-	/** Sends a query that returns a list of columns
-	 *  in the table specified by the "table" parameter
-	 *  matching "columns".  If "columns" is empty or null
-	 *  then a list of all columns will be returned. */
+	/** Sends a query that returns a result set containing the
+	 *  columns of "table", which match the pattern "columns".
+	 *
+	 *  The result set will contain the following columns:
+	 *  <ul>
+	 *  <li>column_name</li>
+	 *  <li>data_type</li>
+	 *  <li>character_maximum_length</li>
+	 *  <li>numeric_precision</li>
+	 *  <li>numeric_scale</li>
+	 *  <li>is_nullable</li>
+	 *  <li>column_key</li>
+	 *  <li>column_default</li>
+	 *  <li>extra</li>
+	 *  </ul>
+	 *
+	 *  If "columns" is empty or null then a list of all columns
+	 *  of "table" will be returned.
+	 *
+	 *  If SQL Relay doesn't support getting a list of columns
+	 *  for the current database backend (or the database doesn't)
+	 *  then an empty result set will be returned. */
 	public native boolean	getColumnList(String table, String columns);
-	/** Sends a query that returns a list of primary keys
-	 *  in the table specified by the "table" parameter
-	 *  matching "columns".  If "columns" is empty or null
-	 *  then a list of all primary keys will be returned. */
+	/** Sends a query that returns a result set containing the
+	 *  primary keys of "table", which match the pattern
+	 *  "columns".
+	 *
+	 *  The result set will contain the following columns:
+	 *  <ul>
+	 *  <li>table</li>
+	 *  <li>non_unique</li>
+	 *  <li>key_name</li>
+	 *  <li>seq_in_index</li>
+	 *  <li>column_name</li>
+	 *  <li>collation</li>
+	 *  <li>cardinality</li>
+	 *  <li>sub_part</li>
+	 *  <li>packed</li>
+	 *  <li>null</li>
+	 *  <li>index_type</li>
+	 *  <li>comment</li>
+	 *  <li>index_comment</li>
+	 *  </ul>
+	 *
+	 *  If "columns" is empty or null then a result set containing
+	 *  all primary keys of "table" will be returned.
+	 *
+	 *  If SQL Relay doesn't support getting a list of primary keys
+	 *  for the current database backend (or the database doesn't)
+	 *  then an empty result set will be returned. */
 	public native boolean	getPrimaryKeysList(String table, String columns);
-	/** Sends a query that returns a list of keys and
-	 *  indexes in the table specified by the "table"
-	 *  parameter matching "qualifier".  If "qualifier" is
-	 *  empty or null then a list of all keys and indexes
-	 *  will be returned. */
+	/** Sends a query that returns a result set containing the
+	 *  keys and indexes of "table", which match the pattern
+	 *  "qualifier".
+	 *
+	 *  The result set will contain the following columns:
+	 *  <ul>
+	 *  <li>table</li>
+	 *  <li>non_unique</li>
+	 *  <li>key_name</li>
+	 *  <li>seq_in_index</li>
+	 *  <li>column_name</li>
+	 *  <li>collation</li>
+	 *  <li>cardinality</li>
+	 *  <li>sub_part</li>
+	 *  <li>packed</li>
+	 *  <li>null</li>
+	 *  <li>index_type</li>
+	 *  <li>comment</li>
+	 *  <li>index_comment</li>
+	 *  </ul>
+	 *
+	 *  If "qualifier" is empty or null then a result set
+	 *  containing all keys and indexes of "table" will be
+	 *  returned.
+	 *
+	 *  If SQL Relay doesn't support getting a list of keys and
+	 *  indexes for the current database backend (or the database
+	 *  doesn't) then an empty result set will be returned. */
 	public native boolean	getKeyAndIndexList(String table, String qualifier);
-	/** Sends a query that returns a list of procedures
-	 *  matching "procedures".  If "procedures" is empty
-	 *  or null then a list of all procedures will be
-	 *  returned. */
+	/** Sends a query that returns a result set containing
+	 *  procedures that match the pattern "procedures".
+	 *
+	 *  The result set will contain the following columns:
+	 *  <ul>
+	 *  <li>routine_catalog</li>
+	 *  <li>routine_schema</li>
+	 *  <li>routine_name</li>
+	 *  <li>data_type</li>
+	 *  </ul>
+	 *
+	 *  If "procedures" is empty or null then a result set
+	 *  containing all procedures in the current database/schema
+	 *  will be returned.
+	 *
+	 *  If SQL Relay doesn't support getting a list of procedures
+	 *  for the current database backend (or the database doesn't)
+	 *  then an empty result set will be returned. */
 	public native boolean	getProcedureList(String procedures);
-	/** Sends a query that returns a list of procedure
-	 *  parameters in the procedure specified by the
-	 *  "procedure" parameter matching "parameters".
-	 *  If "parameters" is empty or null then a list of
-	 *  all procedure parameters will be returned. */
+	/** Sends a query that returns a result set containing the
+	 *  parameters of "procedure", which match the pattern
+	 *  "parameters".
+	 *
+	 *  The result set will contain the following columns:
+	 *  <ul>
+	 *  <li>parameter_name</li>
+	 *  <li>parameter_mode</li>
+	 *  <li>data_type</li>
+	 *  <li>character_maximum_length</li>
+	 *  <li>ordinal_position</li>
+	 *  </ul>
+	 *
+	 *  If "parameters" is empty or null then a result set
+	 *  containing all parameters of "procedure" will be returned.
+	 *
+	 *  If SQL Relay doesn't support getting a list of procedure
+	 *  parameters for the current database backend (or the
+	 *  database doesn't) then an empty result set will be
+	 *  returned. */
 	public native boolean	getProcedureParameterList(String procedure, String parameters);
 
 
