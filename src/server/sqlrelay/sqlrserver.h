@@ -2032,18 +2032,36 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  "wild" is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
+		bool	getTableTypeList(sqlrservercursor *cursor,
+							const char *wild);
+
+		/** Makes the database API call to fetch the list of tables (and
+		 *  table-like objects), in the current database and schema,
+		 *  that are visible to the user that SQL Relay is logged in
+		 *  as.  "objecttypes" should be an or-ed set of one or more of
+		 *  the following object types:
+		 *
+		 *  DB_OBJECT_TABLE
+		 *  DB_OBJECT_VIEW
+		 *  DB_OBJECT_ALIAS
+		 *  DB_OBJECT_SYNONYM
+		 *
+		 *  Only returns table names that match wildcard "wild" if
+		 *  "wild" is non-NULL.
+		 *
+		 *  Returns true on success and false on failure. */
 		bool	getTableList(sqlrservercursor *cursor,
 							const char *wild,
 							uint16_t objecttypes);
 
-		/** Makes the database API call to fetch the list of table type
-		 *  names in the current database and schema, that are visible
-		 *  to the user that SQL Relay is logged in as.  Only returns
-		 *  table type names that match wildcard "wild" if "wild" is
-		 *  non-NULL.
+		/** Makes the database API call to fetch the info about
+		 *  datatype "type", where "type" is in the current database
+		 *  and schema.  Only returns info for types that match
+		 *  wildcard "wild" if "wild" is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
-		bool	getTableTypeList(sqlrservercursor *cursor,
+		bool	getTypeInfoList(sqlrservercursor *cursor,
+							const char *type,
 							const char *wild);
 
 		/** Makes the database API call to fetch the list of column
@@ -2062,7 +2080,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  "wild" is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
-		bool	getPrimaryKeyList(sqlrservercursor *cursor,
+		bool	getPrimaryKeysList(sqlrservercursor *cursor,
 							const char *table,
 							const char *wild);
 
@@ -2076,27 +2094,6 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 							const char *table,
 							const char *wild);
 
-		/** Makes the database API call to fetch the parameter names of
-		 *  "proc", where "proc" is in the current database and schema,
-		 *  and information about them, such as whether they are input,
-		 *  output, or input-output variables.  Only returns parameter
-		 *  names that match wildcard "wild" if "wild" is non-NULL.
-		 *
-		 *  Returns true on success and false on failure. */
-		bool	getProcedureParameterList(sqlrservercursor *cursor,
-							const char *proc,
-							const char *wild);
-
-		/** Makes the database API call to fetch the info about
-		 *  datatype "type", where "type" is in the current database
-		 *  and schema.  Only returns info for types that match
-		 *  wildcard "wild" if "wild" is non-NULL.
-		 *
-		 *  Returns true on success and false on failure. */
-		bool	getTypeInfoList(sqlrservercursor *cursor,
-							const char *type,
-							const char *wild);
-
 		/** Makes the database API call to fetch the list of stored
 		 *  procedures in the current database and schema, and
 		 *  information about them, such as the number of input and
@@ -2108,6 +2105,17 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *
 		 *  Returns true on success and false on failure. */
 		bool	getProcedureList(sqlrservercursor *cursor,
+							const char *wild);
+
+		/** Makes the database API call to fetch the parameter names of
+		 *  "proc", where "proc" is in the current database and schema,
+		 *  and information about them, such as whether they are input,
+		 *  output, or input-output variables.  Only returns parameter
+		 *  names that match wildcard "wild" if "wild" is non-NULL.
+		 *
+		 *  Returns true on success and false on failure. */
+		bool	getProcedureParameterList(sqlrservercursor *cursor,
+							const char *proc,
 							const char *wild);
 
 		/** Returns a query that can be used to fetch the list of
@@ -2133,17 +2141,16 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 							bool currentdbonly);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  table names.
+		 *  table types.
 		 *
 		 *  If "wild" is true the the query also includes a where
 		 *  clause that inlcudes a %s which can be used to substitute
-		 *  in a wildcard value which can be used  to filter the
+		 *  in a wildcard value which can be used to filter the
 		 *  results.
 		 *
 		 *  If "currentschemaonly" is true then the query only returns
 		 *  schemas on the current database. */
-		const char	*getTableListQuery(bool wild,
-							uint16_t objecttypes,
+		const char	*getTableTypeListQuery(bool wild,
 							bool currentschemaonly);
 
 		/** Returns a query that can be used to fetch the list of
@@ -2167,7 +2174,16 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 							uint16_t objecttypes);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  table types.
+		 *  global temporary table names.
+		 *
+		 *  If "currentschemaonly" is true then the query only returns
+		 *  schemas on the current database. */
+		const char	*getGlobalTempTableListQuery(
+							bool currentschemaonly);
+
+		/** Returns a query that can be used to fetch info about
+		 *  datatype "type", where "type" is in the current database
+		 *  and schema.
 		 *
 		 *  If "wild" is true the the query also includes a where
 		 *  clause that inlcudes a %s which can be used to substitute
@@ -2176,15 +2192,8 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *
 		 *  If "currentschemaonly" is true then the query only returns
 		 *  schemas on the current database. */
-		const char	*getTableTypeListQuery(bool wild,
-							bool currentschemaonly);
-
-		/** Returns a query that can be used to fetch the list of
-		 *  global temporary table names.
-		 *
-		 *  If "currentschemaonly" is true then the query only returns
-		 *  schemas on the current database. */
-		const char	*getGlobalTempTableListQuery(
+		const char	*getTypeInfoListQuery(const char *type,
+							bool wild,
 							bool currentschemaonly);
 
 		/** Returns a query that can be used to fetch the list of
@@ -2204,7 +2213,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  clause that inlcudes a %s which can be used to substitute
 		 *  in a wildcard value which can be used to filter the
 		 *  results. */
-		const char	*getPrimaryKeyListQuery(const char *table,
+		const char	*getPrimaryKeysListQuery(const char *table,
 								bool wild);
 
 		/** Returns a query that can be used to fetch the indices and
@@ -2217,34 +2226,6 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  results. */
 		const char	*getKeyAndIndexListQuery(const char *table,
 								bool wild);
-
-		/** Returns a query that can be used to fetch the parameter
-		 *  names of "proc", where "proc" is in the current database
-		 *  and schema, and information about them, such as whether
-		 *  they are input, output, or input-output variables.
-		 *
-		 *  If "wild" is true then the query also includes a where
-		 *  clause that inlcudes a %s which can be used to substitute
-		 *  in a wildcard value which can be used to filter the
-		 *  results. */
-		const char	*getProcedureParameterListQuery(
-							const char *proc,
-							bool wild);
-
-		/** Returns a query that can be used to fetch info about
-		 *  datatype "type", where "type" is in the current database
-		 *  and schema.
-		 *
-		 *  If "wild" is true the the query also includes a where
-		 *  clause that inlcudes a %s which can be used to substitute
-		 *  in a wildcard value which can be used to filter the
-		 *  results.
-		 *
-		 *  If "currentschemaonly" is true then the query only returns
-		 *  schemas on the current database. */
-		const char	*getTypeInfoListQuery(const char *type,
-							bool wild,
-							bool currentschemaonly);
 
 		/** Returns a query that can be used to fetch the list of
 		 *  stored procedures in the current database and schema, and
@@ -2262,6 +2243,19 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  schemas on the current database. */
 		const char	*getProcedureListQuery(bool wild,
 							bool currentschemaonly);
+
+		/** Returns a query that can be used to fetch the parameter
+		 *  names of "proc", where "proc" is in the current database
+		 *  and schema, and information about them, such as whether
+		 *  they are input, output, or input-output variables.
+		 *
+		 *  If "wild" is true then the query also includes a where
+		 *  clause that inlcudes a %s which can be used to substitute
+		 *  in a wildcard value which can be used to filter the
+		 *  results. */
+		const char	*getProcedureParameterListQuery(
+							const char *proc,
+							bool wild);
 
 		/** Gets the last insert id as a result set. */
 		bool	getLastInsertIdList(sqlrservercursor *cursor);
@@ -2298,13 +2292,18 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 					sqlrserverlistformat_t listformat);
 
 		/** Sets the format to map columns to when fetching the list
+		 *  of table type names to "listformat". */
+		void	setTableTypeListFormat(
+					sqlrserverlistformat_t listformat);
+
+		/** Sets the format to map columns to when fetching the list
 		 *  of table names to "listformat". */
 		void	setTableListFormat(
 					sqlrserverlistformat_t listformat);
 
 		/** Sets the format to map columns to when fetching the list
-		 *  of table type names to "listformat". */
-		void	setTableTypeListFormat(
+		 *  of type info names to "listformat". */
+		void	setTypeInfoListFormat(
 					sqlrserverlistformat_t listformat);
 
 		/** Sets the format to map columns to when fetching the list
@@ -2323,18 +2322,13 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 					sqlrserverlistformat_t listformat);
 
 		/** Sets the format to map columns to when fetching the list
-		 *  of procedure parameter names to "listformat". */
-		void	setProcedureParameterListFormat(
-					sqlrserverlistformat_t listformat);
-
-		/** Sets the format to map columns to when fetching the list
-		 *  of type info names to "listformat". */
-		void	setTypeInfoListFormat(
-					sqlrserverlistformat_t listformat);
-
-		/** Sets the format to map columns to when fetching the list
 		 *  of procedure names to "listformat". */
 		void	setProcedureListFormat(
+					sqlrserverlistformat_t listformat);
+
+		/** Sets the format to map columns to when fetching the list
+		 *  of procedure parameter names to "listformat". */
+		void	setProcedureParameterListFormat(
 					sqlrserverlistformat_t listformat);
 
 		/** Returns the number of columns in the current result set of
@@ -3537,6 +3531,16 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		virtual bool	getSchemaList(sqlrservercursor *cursor,
 							const char *wild);
 
+		/** Makes the database API call to fetch the list of table type
+		 *  names in the current database and schema, that are visible
+		 *  to the user that SQL Relay is logged in as.  Only returns
+		 *  table type names that match wildcard "wild" if "wild" is
+		 *  non-NULL.
+		 *
+		 *  Returns true on success and false on failure. */
+		virtual bool	getTableTypeList(sqlrservercursor *cursor,
+							const char *wild);
+
 		/** Makes the databaase API call to fetch the list of tables
 		 *  (and table-like objects), in the current database and
 		 *  schema, that are visible to the user that SQL Relay is
@@ -3556,14 +3560,14 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 							const char *wild,
 							uint16_t objecttypes);
 
-		/** Makes the database API call to fetch the list of table type
-		 *  names in the current database and schema, that are visible
-		 *  to the user that SQL Relay is logged in as.  Only returns
-		 *  table type names that match wildcard "wild" if "wild" is
-		 *  non-NULL.
+		/** Makes the database API call to fetch the info about
+		 *  datatype "type", where "type" is in the current database
+		 *  and schema.  Only returns info for types that match
+		 *  wildcard "wild" if "wild" is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
-		virtual bool	getTableTypeList(sqlrservercursor *cursor,
+		virtual bool	getTypeInfoList(sqlrservercursor *cursor,
+							const char *type,
 							const char *wild);
 
 		/** Makes the database API call to fetch the list of column
@@ -3582,7 +3586,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  "wild" is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
-		virtual bool	getPrimaryKeyList(sqlrservercursor *cursor,
+		virtual bool	getPrimaryKeysList(sqlrservercursor *cursor,
 							const char *table,
 							const char *wild);
 
@@ -3596,28 +3600,6 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 							const char *table,
 							const char *wild);
 
-		/** Makes the database API call to fetch the parameter names of
-		 *  "proc", where "proc" is in the current database and schema,
-		 *  and information about them, such as whether they are input,
-		 *  output, or input-output variables.  Only returns parameter
-		 *  names that match wildcard "wild" if "wild" is non-NULL.
-		 *
-		 *  Returns true on success and false on failure. */
-		virtual bool	getProcedureParameterList(
-						sqlrservercursor *cursor,
-							const char *procedure,
-							const char *wild);
-
-		/** Makes the database API call to fetch the info about
-		 *  datatype "type", where "type" is in the current database
-		 *  and schema.  Only returns info for types that match
-		 *  wildcard "wild" if "wild" is non-NULL.
-		 *
-		 *  Returns true on success and false on failure. */
-		virtual bool	getTypeInfoList(sqlrservercursor *cursor,
-							const char *type,
-							const char *wild);
-
 		/** Makes the database API call to fetch the list of stored
 		 *  procedures in the current database and schema, and
 		 *  information about them, such as the number of input and
@@ -3629,6 +3611,18 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *
 		 *  Returns true on success and false on failure. */
 		virtual bool	getProcedureList(sqlrservercursor *cursor,
+							const char *wild);
+
+		/** Makes the database API call to fetch the parameter names of
+		 *  "proc", where "proc" is in the current database and schema,
+		 *  and information about them, such as whether they are input,
+		 *  output, or input-output variables.  Only returns parameter
+		 *  names that match wildcard "wild" if "wild" is non-NULL.
+		 *
+		 *  Returns true on success and false on failure. */
+		virtual bool	getProcedureParameterList(
+						sqlrservercursor *cursor,
+							const char *procedure,
 							const char *wild);
 
 		/** Returns a query that can be used to fetch the list of
@@ -3693,11 +3687,11 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 							bool currentdbonly);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  table names.
+		 *  table types.
 		 *
 		 *  If "wild" is true the the query also includes a where
 		 *  clause that inlcudes a %s which can be used to substitute
-		 *  in a wildcard value which can be used  to filter the
+		 *  in a wildcard value which can be used to filter the
 		 *  results.
 		 *
 		 *  If "currentschemaonly" is true then the query only returns
@@ -3721,9 +3715,8 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  ...returning an empty string, 0, or null as appropriate for
 		 *  any columns that the database is unable to provide.
 		 */
-		virtual const char	*getTableListQuery(
+		virtual const char	*getTableTypeListQuery(
 							bool wild,
-							uint16_t objecttypes,
 							bool currentschemaonly);
 
 		/** Returns a query that can be used to fetch the list of
@@ -3765,7 +3758,23 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 							uint16_t objecttypes);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  table types.
+		 *  global temporary table names.
+		 *
+		 *  If "currentschemaonly" is true then the query only returns
+		 *  schemas on the current database.
+		 *
+		 *  This implementation just returns getNoopQuery(), but it may
+		 *  be overridden by a child class to return a database-specific
+		 *  query.
+		 *
+		 *  Queries should return result sets with a single column,
+		 *  containing the table name. */
+		virtual const char	*getGlobalTempTableListQuery(
+							bool currentschemaonly);
+
+		/** Returns a query that can be used to fetch info about
+		 *  datatype "type", where "type" is in the current database
+		 *  and schema.
 		 *
 		 *  If "wild" is true the the query also includes a where
 		 *  clause that inlcudes a %s which can be used to substitute
@@ -3781,35 +3790,35 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *
 		 *  Queries should return result sets with columns that match
 		 *  the columns of the result sets produced by the ODBC
-		 *  function SQLTables(), plus a trailing null column:
+		 *  function SQLGetTypeInfo(), plus a trailing null column:
 		 *
-		 *  * TABLE_CAT
-		 *  * TABLE_SCHEM
-		 *  * TABLE_NAME
-		 *  * TABLE_TYPE
-		 *  * REMARKS
+		 *  * TYPE_NAME
+		 *  * DATA_TYPE
+		 *  * COLUMN_SIZE
+		 *  * LITERAL_PREFIX
+		 *  * LITERAL_SUFFIX
+		 *  * CREATE_PARAMS
+		 *  * NULLABLE
+		 *  * CASE_SENSITIVE
+		 *  * SEARCHABLE
+		 *  * UNSIGNED_ATTRIBUTE
+		 *  * FIXED_PREC_SCALE
+		 *  * AUTO_UNIQUE_VALUE
+		 *  * LOCAL_TYPE_NAME
+		 *  * MINIMUM_SCALE
+		 *  * MAXIMUM_SCALE
+		 *  * SQL_DATA_TYPE
+		 *  * SQL_DATETIME_SUB
+		 *  * NUM_PREC_RADIX
+		 *  * INTERVAL_PRECISION
 		 *  * NULL
 		 *
 		 *  ...returning an empty string, 0, or null as appropriate for
 		 *  any columns that the database is unable to provide.
 		 */
-		virtual const char	*getTableTypeListQuery(
+		virtual const char	*getTypeInfoListQuery(
+							const char *type,
 							bool wild,
-							bool currentschemaonly);
-
-		/** Returns a query that can be used to fetch the list of
-		 *  global temporary table names.
-		 *
-		 *  If "currentschemaonly" is true then the query only returns
-		 *  schemas on the current database.
-		 *
-		 *  This implementation just returns getNoopQuery(), but it may
-		 *  be overridden by a child class to return a database-specific
-		 *  query.
-		 *
-		 *  Queries should return result sets with a single column,
-		 *  containing the table name. */
-		virtual const char	*getGlobalTempTableListQuery(
 							bool currentschemaonly);
 
 		/** Returns a query that can be used to fetch the list of
@@ -3891,7 +3900,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  ...returning an empty string, 0, or null as appropriate for
 		 *  any columns that the database is unable to provide.
 		 */
-		virtual const char	*getPrimaryKeyListQuery(
+		virtual const char	*getPrimaryKeysListQuery(
 							const char *table,
 							bool wild);
 
@@ -3933,6 +3942,46 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		virtual const char	*getKeyAndIndexListQuery(
 							const char *table,
 							bool wild);
+
+		/** Returns a query that can be used to fetch the list of
+		 *  stored procedures in the current database and schema, and
+		 *  information about them, such as the number of input and
+		 *  output parameters, the numer of result sets that the
+		 *  procdure may retrun, a description of the procedure, and
+		 *  the procedure type (procedure or function).
+		 *
+		 *  If "wild" is true the the query also includes a where/
+		 *  clause that inlcudes a %s which can be used to substitute
+		 *  in a wildcard value which can be used to filter the
+		 *  results.
+		 *
+		 *  If "currentschemaonly" is true then the query only returns
+		 *  schemas on the current database.
+		 *
+		 *  This implementation just returns getNoopQuery(), but it may
+		 *  be overridden by a child class to return a database-specific
+		 *  query.
+		 *
+		 *  Queries should return result sets with columns that match
+		 *  the columns of the result sets produced by the ODBC
+		 *  function SQLGetTypeInfo(), plus a trailing null column:
+		 *
+		 *  * PROCEDURE_CAT
+		 *  * PROCEDURE_SCHEM
+		 *  * PROCEDURE_NAME
+		 *  * NUM_INPUT_PARAMS
+		 *  * NUM_OUTPUT_PARAMS
+		 *  * NUM_RESULT_SETS
+		 *  * REMARKS
+		 *  * PROCEDURE_TYPE
+		 *  * NULL
+		 *
+		 *  ...returning an empty string, 0, or null as appropriate for
+		 *  any columns that the database is unable to provide.
+		 */
+		virtual const char	*getProcedureListQuery(
+							bool wild,
+							bool currentschemaonly);
 
 		/** Returns a query that can be used to fetch the parameter
 		 *  names of "proc", where "proc" is in the current database
@@ -3979,95 +4028,6 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		virtual const char	*getProcedureParameterListQuery(
 							const char *procedure,
 							bool wild);
-
-		/** Returns a query that can be used to fetch info about
-		 *  datatype "type", where "type" is in the current database
-		 *  and schema.
-		 *
-		 *  If "wild" is true the the query also includes a where
-		 *  clause that inlcudes a %s which can be used to substitute
-		 *  in a wildcard value which can be used to filter the
-		 *  results.
-		 *
-		 *  If "currentschemaonly" is true then the query only returns
-		 *  schemas on the current database.
-		 *
-		 *  This implementation just returns getNoopQuery(), but it may
-		 *  be overridden by a child class to return a database-specific
-		 *  query. 
-		 *
-		 *  Queries should return result sets with columns that match
-		 *  the columns of the result sets produced by the ODBC
-		 *  function SQLGetTypeInfo(), plus a trailing null column:
-		 *
-		 *  * TYPE_NAME
-		 *  * DATA_TYPE
-		 *  * COLUMN_SIZE
-		 *  * LITERAL_PREFIX
-		 *  * LITERAL_SUFFIX
-		 *  * CREATE_PARAMS
-		 *  * NULLABLE
-		 *  * CASE_SENSITIVE
-		 *  * SEARCHABLE
-		 *  * UNSIGNED_ATTRIBUTE
-		 *  * FIXED_PREC_SCALE
-		 *  * AUTO_UNIQUE_VALUE
-		 *  * LOCAL_TYPE_NAME
-		 *  * MINIMUM_SCALE
-		 *  * MAXIMUM_SCALE
-		 *  * SQL_DATA_TYPE
-		 *  * SQL_DATETIME_SUB
-		 *  * NUM_PREC_RADIX
-		 *  * INTERVAL_PRECISION
-		 *  * NULL
-		 *
-		 *  ...returning an empty string, 0, or null as appropriate for
-		 *  any columns that the database is unable to provide.
-		 */
-		virtual const char	*getTypeInfoListQuery(
-							const char *type,
-							bool wild,
-							bool currentschemaonly);
-
-		/** Returns a query that can be used to fetch the list of
-		 *  stored procedures in the current database and schema, and
-		 *  information about them, such as the number of input and
-		 *  output parameters, the numer of result sets that the
-		 *  procdure may retrun, a description of the procedure, and
-		 *  the procedure type (procedure or function).
-		 *
-		 *  If "wild" is true the the query also includes a where/
-		 *  clause that inlcudes a %s which can be used to substitute
-		 *  in a wildcard value which can be used to filter the
-		 *  results.
-		 *
-		 *  If "currentschemaonly" is true then the query only returns
-		 *  schemas on the current database.
-		 *
-		 *  This implementation just returns getNoopQuery(), but it may
-		 *  be overridden by a child class to return a database-specific
-		 *  query.
-		 *
-		 *  Queries should return result sets with columns that match
-		 *  the columns of the result sets produced by the ODBC
-		 *  function SQLGetTypeInfo(), plus a trailing null column:
-		 *
-		 *  * PROCEDURE_CAT
-		 *  * PROCEDURE_SCHEM
-		 *  * PROCEDURE_NAME
-		 *  * NUM_INPUT_PARAMS
-		 *  * NUM_OUTPUT_PARAMS
-		 *  * NUM_RESULT_SETS
-		 *  * REMARKS
-		 *  * PROCEDURE_TYPE
-		 *  * NULL
-		 *
-		 *  ...returning an empty string, 0, or null as appropriate for
-		 *  any columns that the database is unable to provide.
-		 */
-		virtual const char	*getProcedureListQuery(
-							bool wild,
-							bool currentschemaonly);
 
 		/** Returns true if "table" is a synonym, rather than an actual
 		 *  table and false otherwise. */

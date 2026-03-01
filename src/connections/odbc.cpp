@@ -352,7 +352,7 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		bool		getColumnList(sqlrservercursor *cursor,
 						const char *table,
 						const char *wild);
-		bool		getPrimaryKeyList(sqlrservercursor *cursor,
+		bool		getPrimaryKeysList(sqlrservercursor *cursor,
 						const char *table,
 						const char *wild);
 		bool		getKeyAndIndexList(sqlrservercursor *cursor,
@@ -2952,7 +2952,7 @@ bool odbcconnection::getColumnList(sqlrservercursor *cursor,
 	return (retval)?odbccur->handleColumns(true,true):false;
 }
 
-bool odbcconnection::getPrimaryKeyList(sqlrservercursor *cursor,
+bool odbcconnection::getPrimaryKeysList(sqlrservercursor *cursor,
 						const char *table,
 						const char *wild) {
 

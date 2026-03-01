@@ -981,24 +981,17 @@ bool sqlrcursor::getTableList(const char *tables,
 	return getObjectList(GET_TABLE_LIST_2,listformat,tables,objecttypes);
 }
 
-bool sqlrcursor::getTableTypeList(const char *unused) {
-	return getTableTypeList(unused,SQLRCLIENTLISTFORMAT_MYSQL);
+bool sqlrcursor::getTableTypeList() {
+	return getTableTypeList(SQLRCLIENTLISTFORMAT_MYSQL);
 }
 
-bool sqlrcursor::getTableTypeList(const char *unused,
-					sqlrclientlistformat_t listformat) {
+bool sqlrcursor::getTableTypeList(sqlrclientlistformat_t listformat) {
 	if (pvt->_sqlrc->debug()) {
 		pvt->_sqlrc->debugPreStart();
-		pvt->_sqlrc->debugPrint("getting table type list ");
-		if (unused) {
-			pvt->_sqlrc->debugPrint("\"");
-			pvt->_sqlrc->debugPrint(unused);
-			pvt->_sqlrc->debugPrint("\"");
-		}
-		pvt->_sqlrc->debugPrint("\n");
+		pvt->_sqlrc->debugPrint("getting table type list\n");
 		pvt->_sqlrc->debugPreEnd();
 	}
-	return getObjectList(GET_TABLE_TYPE_LIST,listformat,unused,0);
+	return getObjectList(GET_TABLE_TYPE_LIST,listformat,NULL,0);
 }
 
 bool sqlrcursor::getColumnList(const char *table, const char *columns) {
@@ -1045,7 +1038,7 @@ bool sqlrcursor::getPrimaryKeysList(const char *table,
 		pvt->_sqlrc->debugPrint("\n");
 		pvt->_sqlrc->debugPreEnd();
 	}
-	return getComponentList(GET_PRIMARY_KEY_LIST,
+	return getComponentList(GET_PRIMARY_KEYS_LIST,
 				listformat,(table)?table:"",columns);
 }
 
@@ -1102,28 +1095,21 @@ bool sqlrcursor::getProcedureParameterList(
 				listformat,(procedure)?procedure:"",parameters);
 }
 
-bool sqlrcursor::getTypeInfoList(const char *type, const char *unused) {
-	return getTypeInfoList(type,unused,SQLRCLIENTLISTFORMAT_MYSQL);
+bool sqlrcursor::getTypeInfoList(const char *type) {
+	return getTypeInfoList(type,SQLRCLIENTLISTFORMAT_MYSQL);
 }
 
 bool sqlrcursor::getTypeInfoList(const char *type,
-				const char *unused,
 				sqlrclientlistformat_t listformat) {
 	if (pvt->_sqlrc->debug()) {
 		pvt->_sqlrc->debugPreStart();
 		pvt->_sqlrc->debugPrint("getting type info for: \"");
 		pvt->_sqlrc->debugPrint(type);
-		pvt->_sqlrc->debugPrint("\"");
-		if (unused) {
-			pvt->_sqlrc->debugPrint(" - \"");
-			pvt->_sqlrc->debugPrint(unused);
-			pvt->_sqlrc->debugPrint("\"");
-		}
-		pvt->_sqlrc->debugPrint("\n");
+		pvt->_sqlrc->debugPrint("\"\n");
 		pvt->_sqlrc->debugPreEnd();
 	}
 	return getComponentList(GET_TYPE_INFO_LIST,
-				listformat,(type)?type:"",unused);
+				listformat,(type)?type:"",NULL);
 }
 
 bool sqlrcursor::getProcedureList(const char *procedures) {

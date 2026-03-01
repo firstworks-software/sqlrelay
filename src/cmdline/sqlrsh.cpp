@@ -1124,27 +1124,19 @@ bool sqlrsh::externalCommand(sqlrconnection *sqlrcon,
 			delete[] wild;
 		} else if (!charstring::compareIgnoringCase(command,
 						"show table types mysql",22)) {
-			char	*wild=getWild(command);
-			sqlrcur->getTableTypeList(wild,
+			sqlrcur->getTableTypeList(
 					SQLRCLIENTLISTFORMAT_MYSQL);
-			delete[] wild;
 		} else if (!charstring::compareIgnoringCase(command,
 						"show table types odbc",21)) {
-			char	*wild=getWild(command);
-			sqlrcur->getTableTypeList(wild,
+			sqlrcur->getTableTypeList(
 					SQLRCLIENTLISTFORMAT_ODBC);
-			delete[] wild;
 		} else if (!charstring::compareIgnoringCase(command,
 						"show table types jdbc",21)) {
-			char	*wild=getWild(command);
-			sqlrcur->getTableTypeList(wild,
+			sqlrcur->getTableTypeList(
 					SQLRCLIENTLISTFORMAT_JDBC);
-			delete[] wild;
 		} else if (!charstring::compareIgnoringCase(command,
 						"show table types",16)) {
-			char	*wild=getWild(command);
-			sqlrcur->getTableTypeList(wild);
-			delete[] wild;
+			sqlrcur->getTableTypeList();
 		} else if (!charstring::compareIgnoringCase(command,
 						"show columns mysql",18)) {
 			char	*table=getTable(command,true);
@@ -1207,25 +1199,25 @@ bool sqlrsh::externalCommand(sqlrconnection *sqlrcon,
 		} else if (!charstring::compareIgnoringCase(command,
 						"show type info mysql",20)) {
 			char	*type=getType(command);
-			sqlrcur->getTypeInfoList(type,NULL,
+			sqlrcur->getTypeInfoList(type,
 					SQLRCLIENTLISTFORMAT_MYSQL);
 			delete[] type;
 		} else if (!charstring::compareIgnoringCase(command,
 						"show type info odbc",19)) {
 			char	*type=getType(command);
-			sqlrcur->getTypeInfoList(type,NULL,
+			sqlrcur->getTypeInfoList(type,
 					SQLRCLIENTLISTFORMAT_ODBC);
 			delete[] type;
 		} else if (!charstring::compareIgnoringCase(command,
 						"show type info jdbc",19)) {
 			char	*type=getType(command);
-			sqlrcur->getTypeInfoList(type,NULL,
+			sqlrcur->getTypeInfoList(type,
 					SQLRCLIENTLISTFORMAT_JDBC);
 			delete[] type;
 		} else if (!charstring::compareIgnoringCase(command,
 						"show type info",14)) {
 			char	*type=getType(command);
-			sqlrcur->getTypeInfoList(type,NULL);
+			sqlrcur->getTypeInfoList(type);
 			delete[] type;
 		} else if (!charstring::compareIgnoringCase(command,
 						"show procedures mysql",21)) {

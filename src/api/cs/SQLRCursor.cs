@@ -139,27 +139,84 @@ public class SQLRCursor : IDisposable
 
 
 
-    /** Sends a query that returns a list of databases/schemas matching "wild".
-     *  If wild is empty or NULL then a list of all databases/schemas will be
-     *  returned. */
-    public Boolean getDatabaseList(String wild)
+    /** Sends a query that returns a list of databases/schemas matching
+     *  "databases".  If databases is empty or NULL then a list of all
+     *  databases/schemas will be returned. */
+    public Boolean getDatabaseList(String databases)
     {
-        return sqlrcur_getDatabaseList(sqlrcurref, wild) != 0;
+        return sqlrcur_getDatabaseList(sqlrcurref, databases) != 0;
     }
 
-    /** Sends a query that returns a list of tables matching "wild".  If wild is
-     *  empty or NULL then a list of all tables will be returned. */
-    public Boolean getTableList(String wild)
+    /** Sends a query that returns a list of schemas matching "schemas".
+     *  If schemas is empty or NULL then a list of all schemas will be
+     *  returned. */
+    public Boolean getSchemaList(String schemas)
     {
-        return sqlrcur_getTableList(sqlrcurref, wild) != 0;
+        return sqlrcur_getSchemaList(sqlrcurref, schemas) != 0;
+    }
+
+    /** Sends a query that returns a list of table types. */
+    public Boolean getTableTypeList()
+    {
+        return sqlrcur_getTableTypeList(sqlrcurref) != 0;
+    }
+
+    /** Sends a query that returns a list of tables matching "tables".
+     *  If tables is empty or NULL then a list of all tables will be
+     *  returned. */
+    public Boolean getTableList(String tables)
+    {
+        return sqlrcur_getTableList(sqlrcurref, tables) != 0;
+    }
+
+    /** Sends a query that returns a list of data types matching "type".
+     *  If type is empty or NULL then a list of all data types will be
+     *  returned. */
+    public Boolean getTypeInfoList(String type)
+    {
+        return sqlrcur_getTypeInfoList(sqlrcurref, type) != 0;
     }
 
     /** Sends a query that returns a list of columns in the table specified by
-     *  the "table" parameter matching "wild".  If wild is empty or NULL then a
-     *  list of all columns will be returned. */
-    public Boolean getColumnList(String table, String wild)
+     *  the "table" parameter matching "columns".  If columns is empty or NULL
+     *  then a list of all columns will be returned. */
+    public Boolean getColumnList(String table, String columns)
     {
-        return sqlrcur_getColumnList(sqlrcurref, table, wild) != 0;
+        return sqlrcur_getColumnList(sqlrcurref, table, columns) != 0;
+    }
+
+    /** Sends a query that returns a list of primary keys in the table
+     *  specified by the "table" parameter matching "columns".  If columns
+     *  is empty or NULL then a list of all primary keys will be returned. */
+    public Boolean getPrimaryKeysList(String table, String columns)
+    {
+        return sqlrcur_getPrimaryKeysList(sqlrcurref, table, columns) != 0;
+    }
+
+    /** Sends a query that returns a list of keys and indexes in the table
+     *  specified by the "table" parameter matching "qualifier".  If qualifier
+     *  is empty or NULL then a list of all keys and indexes will be
+     *  returned. */
+    public Boolean getKeyAndIndexList(String table, String qualifier)
+    {
+        return sqlrcur_getKeyAndIndexList(sqlrcurref, table, qualifier) != 0;
+    }
+
+    /** Sends a query that returns a list of procedures matching
+     *  "procedures".  If procedures is empty or NULL then a list of all
+     *  procedures will be returned. */
+    public Boolean getProcedureList(String procedures)
+    {
+        return sqlrcur_getProcedureList(sqlrcurref, procedures) != 0;
+    }
+
+    /** Sends a query that returns a list of procedure parameters for the
+     *  procedure specified by the "procedure" parameter matching
+     *  "parameters".  If parameters is empty or NULL then a list of all
+     *  procedure parameters will be returned. */
+    public Boolean getProcedureParameterList(String procedure, String parameters)
+    {
+        return sqlrcur_getProcedureParameterList(sqlrcurref, procedure, parameters) != 0;
     }
 
 
@@ -1279,13 +1336,34 @@ public class SQLRCursor : IDisposable
     private static extern void sqlrcur_cacheOff(IntPtr sqlrcurref);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern Int32 sqlrcur_getDatabaseList(IntPtr sqlrcurref, String wild);
+    private static extern Int32 sqlrcur_getDatabaseList(IntPtr sqlrcurref, String databases);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern Int32 sqlrcur_getTableList(IntPtr sqlrcurref, String wild);
+    private static extern Int32 sqlrcur_getSchemaList(IntPtr sqlrcurref, String schemas);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern Int32 sqlrcur_getColumnList(IntPtr sqlrcurref, String table, String wild);
+    private static extern Int32 sqlrcur_getTableTypeList(IntPtr sqlrcurref);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int32 sqlrcur_getTableList(IntPtr sqlrcurref, String tables);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int32 sqlrcur_getTypeInfoList(IntPtr sqlrcurref, String type);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int32 sqlrcur_getColumnList(IntPtr sqlrcurref, String table, String columns);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int32 sqlrcur_getPrimaryKeysList(IntPtr sqlrcurref, String table, String columns);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int32 sqlrcur_getKeyAndIndexList(IntPtr sqlrcurref, String table, String qualifier);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int32 sqlrcur_getProcedureList(IntPtr sqlrcurref, String procedures);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int32 sqlrcur_getProcedureParameterList(IntPtr sqlrcurref, String procedure, String parameters);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int32 sqlrcur_sendQuery(IntPtr sqlrcurref, String query);

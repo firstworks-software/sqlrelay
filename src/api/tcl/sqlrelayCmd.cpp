@@ -82,9 +82,16 @@ void sqlrcurDelete(ClientData data) {
  *   $cur setCacheTtl ttl
  *   $cur getCacheFileName
  *   $cur cacheOff
- *   $cur getDatabaseList wild
- *   $cur getTableList wild
- *   $cur getColumnList table wild
+ *   $cur getDatabaseList databases
+ *   $cur getSchemaList schemas
+ *   $cur getTableTypeList
+ *   $cur getTableList tables
+ *   $cur getTypeInfoList type
+ *   $cur getColumnList table columns
+ *   $cur getPrimaryKeysList table columns
+ *   $cur getKeyAndIndexList table qualifier
+ *   $cur getProcedureList procedures
+ *   $cur getProcedureParameterList procedure parameters
  *   $cur sendQuery query
  *   $cur sendQueryWithLength query length
  *   $cur sendFileQuery path filename
@@ -234,8 +241,15 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
     "getCacheFileName",
     "cacheOff",
     "getDatabaseList",
+    "getSchemaList",
+    "getTableTypeList",
     "getTableList",
+    "getTypeInfoList",
     "getColumnList",
+    "getPrimaryKeysList",
+    "getKeyAndIndexList",
+    "getProcedureList",
+    "getProcedureParameterList",
     "sendQuery",
     "sendQueryWithLength",
     "sendFileQuery",
@@ -379,8 +393,15 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
     SQLRCUR_getCacheFileName,
     SQLRCUR_cacheOff,
     SQLRCUR_getDatabaseList,
+    SQLRCUR_getSchemaList,
+    SQLRCUR_getTableTypeList,
     SQLRCUR_getTableList,
+    SQLRCUR_getTypeInfoList,
     SQLRCUR_getColumnList,
+    SQLRCUR_getPrimaryKeysList,
+    SQLRCUR_getKeyAndIndexList,
+    SQLRCUR_getProcedureList,
+    SQLRCUR_getProcedureParameterList,
     SQLRCUR_sendQuery,
     SQLRCUR_sendQueryWithLength,
     SQLRCUR_sendFileQuery,
@@ -666,10 +687,38 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
       {
 	int result = 0;
 	if (objc != 3) {
-	  Tcl_WrongNumArgs(interp,2, objv, "wild");
+	  Tcl_WrongNumArgs(interp,2, objv, "databases");
 	  return TCL_ERROR;
 	}
 	if (!(result = cur->getDatabaseList(Tcl_GetString(objv[2])))) {
+	  Tcl_AppendResult(interp,cur->errorMessage(),(char *)NULL);
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewBooleanObj(result));
+	break;
+      }
+    case SQLRCUR_getSchemaList:
+      {
+	int result = 0;
+	if (objc != 3) {
+	  Tcl_WrongNumArgs(interp,2, objv, "schemas");
+	  return TCL_ERROR;
+	}
+	if (!(result = cur->getSchemaList(Tcl_GetString(objv[2])))) {
+	  Tcl_AppendResult(interp,cur->errorMessage(),(char *)NULL);
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewBooleanObj(result));
+	break;
+      }
+    case SQLRCUR_getTableTypeList:
+      {
+	int result = 0;
+	if (objc != 2) {
+	  Tcl_WrongNumArgs(interp,2, objv, NULL);
+	  return TCL_ERROR;
+	}
+	if (!(result = cur->getTableTypeList())) {
 	  Tcl_AppendResult(interp,cur->errorMessage(),(char *)NULL);
 	  return TCL_ERROR;
 	}
@@ -680,10 +729,24 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
       {
 	int result = 0;
 	if (objc != 3) {
-	  Tcl_WrongNumArgs(interp,2, objv, "wild");
+	  Tcl_WrongNumArgs(interp,2, objv, "tables");
 	  return TCL_ERROR;
 	}
 	if (!(result = cur->getTableList(Tcl_GetString(objv[2])))) {
+	  Tcl_AppendResult(interp,cur->errorMessage(),(char *)NULL);
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewBooleanObj(result));
+	break;
+      }
+    case SQLRCUR_getTypeInfoList:
+      {
+	int result = 0;
+	if (objc != 3) {
+	  Tcl_WrongNumArgs(interp,2, objv, "type");
+	  return TCL_ERROR;
+	}
+	if (!(result = cur->getTypeInfoList(Tcl_GetString(objv[2])))) {
 	  Tcl_AppendResult(interp,cur->errorMessage(),(char *)NULL);
 	  return TCL_ERROR;
 	}
@@ -694,10 +757,66 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
       {
 	int result = 0;
 	if (objc != 4) {
-	  Tcl_WrongNumArgs(interp,3, objv, "table wild");
+	  Tcl_WrongNumArgs(interp,2, objv, "table columns");
 	  return TCL_ERROR;
 	}
 	if (!(result = cur->getColumnList(Tcl_GetString(objv[2]),Tcl_GetString(objv[3])))) {
+	  Tcl_AppendResult(interp,cur->errorMessage(),(char *)NULL);
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewBooleanObj(result));
+	break;
+      }
+    case SQLRCUR_getPrimaryKeysList:
+      {
+	int result = 0;
+	if (objc != 4) {
+	  Tcl_WrongNumArgs(interp,2, objv, "table columns");
+	  return TCL_ERROR;
+	}
+	if (!(result = cur->getPrimaryKeysList(Tcl_GetString(objv[2]),Tcl_GetString(objv[3])))) {
+	  Tcl_AppendResult(interp,cur->errorMessage(),(char *)NULL);
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewBooleanObj(result));
+	break;
+      }
+    case SQLRCUR_getKeyAndIndexList:
+      {
+	int result = 0;
+	if (objc != 4) {
+	  Tcl_WrongNumArgs(interp,2, objv, "table qualifier");
+	  return TCL_ERROR;
+	}
+	if (!(result = cur->getKeyAndIndexList(Tcl_GetString(objv[2]),Tcl_GetString(objv[3])))) {
+	  Tcl_AppendResult(interp,cur->errorMessage(),(char *)NULL);
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewBooleanObj(result));
+	break;
+      }
+    case SQLRCUR_getProcedureList:
+      {
+	int result = 0;
+	if (objc != 3) {
+	  Tcl_WrongNumArgs(interp,2, objv, "procedures");
+	  return TCL_ERROR;
+	}
+	if (!(result = cur->getProcedureList(Tcl_GetString(objv[2])))) {
+	  Tcl_AppendResult(interp,cur->errorMessage(),(char *)NULL);
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewBooleanObj(result));
+	break;
+      }
+    case SQLRCUR_getProcedureParameterList:
+      {
+	int result = 0;
+	if (objc != 4) {
+	  Tcl_WrongNumArgs(interp,2, objv, "procedure parameters");
+	  return TCL_ERROR;
+	}
+	if (!(result = cur->getProcedureParameterList(Tcl_GetString(objv[2]),Tcl_GetString(objv[3])))) {
 	  Tcl_AppendResult(interp,cur->errorMessage(),(char *)NULL);
 	  return TCL_ERROR;
 	}

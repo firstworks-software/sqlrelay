@@ -230,8 +230,15 @@ class SQLRCursor : public ObjectWrap {
 		static RET	getCacheFileName(const ARGS &args);
 		static RET	cacheOff(const ARGS &args);
 		static RET	getDatabaseList(const ARGS &args);
+		static RET	getSchemaList(const ARGS &args);
+		static RET	getTableTypeList(const ARGS &args);
 		static RET	getTableList(const ARGS &args);
+		static RET	getTypeInfoList(const ARGS &args);
 		static RET	getColumnList(const ARGS &args);
+		static RET	getPrimaryKeysList(const ARGS &args);
+		static RET	getKeyAndIndexList(const ARGS &args);
+		static RET	getProcedureList(const ARGS &args);
+		static RET	getProcedureParameterList(const ARGS &args);
 		static RET	sendQuery(const ARGS &args);
 		static RET	sendFileQuery(const ARGS &args);
 		static RET	prepareQuery(const ARGS &args);
@@ -1043,8 +1050,16 @@ void SQLRCursor::Init(Handle<Object> exports) {
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getCacheFileName",getCacheFileName);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"cacheOff",cacheOff);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getDatabaseList",getDatabaseList);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getSchemaList",getSchemaList);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getTableTypeList",getTableTypeList);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getTableList",getTableList);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getTypeInfoList",getTypeInfoList);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getColumnList",getColumnList);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getPrimaryKeysList",getPrimaryKeysList);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getKeyAndIndexList",getKeyAndIndexList);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getProcedureList",getProcedureList);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getProcedureParameterList",
+						getProcedureParameterList);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"sendQuery",sendQuery);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"sendFileQuery",sendFileQuery);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"prepareQuery",prepareQuery);
@@ -1345,6 +1360,28 @@ RET SQLRCursor::getDatabaseList(const ARGS &args) {
 	returnBoolean(result);
 }
 
+RET SQLRCursor::getSchemaList(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,1);
+
+	bool	result=sqlrcur(args)->getSchemaList(toString(args[0]));
+
+	returnBoolean(result);
+}
+
+RET SQLRCursor::getTableTypeList(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,0);
+
+	bool	result=sqlrcur(args)->getTableTypeList();
+
+	returnBoolean(result);
+}
+
 RET SQLRCursor::getTableList(const ARGS &args) {
 
 	initLocalScope();
@@ -1356,6 +1393,17 @@ RET SQLRCursor::getTableList(const ARGS &args) {
 	returnBoolean(result);
 }
 
+RET SQLRCursor::getTypeInfoList(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,1);
+
+	bool	result=sqlrcur(args)->getTypeInfoList(toString(args[0]));
+
+	returnBoolean(result);
+}
+
 RET SQLRCursor::getColumnList(const ARGS &args) {
 
 	initLocalScope();
@@ -1363,6 +1411,54 @@ RET SQLRCursor::getColumnList(const ARGS &args) {
 	checkArgCount(args,2);
 
 	bool	result=sqlrcur(args)->getColumnList(toString(args[0]),
+							toString(args[1]));
+
+	returnBoolean(result);
+}
+
+RET SQLRCursor::getPrimaryKeysList(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,2);
+
+	bool	result=sqlrcur(args)->getPrimaryKeysList(toString(args[0]),
+							toString(args[1]));
+
+	returnBoolean(result);
+}
+
+RET SQLRCursor::getKeyAndIndexList(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,2);
+
+	bool	result=sqlrcur(args)->getKeyAndIndexList(toString(args[0]),
+							toString(args[1]));
+
+	returnBoolean(result);
+}
+
+RET SQLRCursor::getProcedureList(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,1);
+
+	bool	result=sqlrcur(args)->getProcedureList(toString(args[0]));
+
+	returnBoolean(result);
+}
+
+RET SQLRCursor::getProcedureParameterList(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,2);
+
+	bool	result=sqlrcur(args)->getProcedureParameterList(
+							toString(args[0]),
 							toString(args[1]));
 
 	returnBoolean(result);

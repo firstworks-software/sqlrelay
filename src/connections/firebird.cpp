@@ -244,9 +244,6 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		const char	*getDbVersion();
 		const char	*getDbHostName();
 		const char	*getDatabaseListQuery(bool wild);
-		const char	*getTableListQuery(bool wild,
-						uint16_t objecttypes,
-						bool currentschemaonly);
 		const char	*getTableListQuery(
 						const char *db,
 						const char *schema,
@@ -683,43 +680,6 @@ const char *firebirdconnection::getDatabaseListQuery(bool wild) {
 		"	null "
 		"from "
 		"	rdb$database";
-}
-
-const char *firebirdconnection::getTableListQuery(bool wild,
-						uint16_t objecttypes,
-						bool currentschemaonly) {
-	tablelistquery.clear();
-	tablelistquery.append(
-		"select "
-		"	'' as table_cat, "
-		"	rdb$owner_name as table_schem, "
-		"	rdb$relation_name as table_name, "
-		"	'TABLE' as table_type, "
-		"	'' as remarks, "
-		"	null "
-		"from "
-		"	rdb$relations "
-		"where "
-		"	rdb$system_flag=0 ");
-	if (currentschemaonly) {
-		tablelistquery.append(
-			"	and "
-			"	upper(rdb$owner_name)=upper('");
-		tablelistquery.append(cont->getUser());
-		tablelistquery.append(
-			"') ");
-	}
-	if (wild) {
-		tablelistquery.append(
-			"	and "
-			"	rdb$relation_name like '%s' ");
-	}
-	tablelistquery.append(
-		"order by "
-		"	rdb$owner_name, "
-		"	rdb$relation_name");
-
-	return tablelistquery.getString();
 }
 
 const char *firebirdconnection::getTableListQuery(const char *db,

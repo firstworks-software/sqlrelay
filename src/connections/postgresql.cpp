@@ -40,9 +40,6 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 		const char	*getDbIpAddressQuery();
 		const char	*getDbIpAddress();
 		const char	*getDatabaseListQuery(bool wild);
-		const char	*getTableListQuery(bool wild,
-						uint16_t objecttypes,
-						bool currentschemaonly);
 		const char	*getTableListQuery(
 						const char *db,
 						const char *schema,
@@ -598,73 +595,6 @@ const char *postgresqlconnection::getDatabaseListQuery(bool wild) {
 		"	datname");
 
 	return databaselistquery.getString();
-}
-
-const char *postgresqlconnection::getTableListQuery(bool wild,
-						uint16_t objecttypes,
-						bool currentschemaonly) {
-
-	tablelistquery.clear();
-	tablelistquery.append(
-		"select "
-		"	table_catalog as table_cat, "
-		"	table_schema as table_schem, "
-		"	table_name, "
-		"	case "
-		"		when table_type="
-		"'BASE TABLE' then 'TABLE' "
-		"		else table_type "
-		"	end as table_type, "
-		"	'' as remarks, "
-		"	null "
-		"from "
-		"	information_schema.tables "
-		"where ");
-	if (currentschemaonly) {
-		tablelistquery.append(
-			"	table_catalog='");
-		tablelistquery.append(getCurrentDatabase());
-		tablelistquery.append("' "
-			"	and "
-			"	table_schema='public' "
-			"	and ");
-	}
-	stringbuffer	otypes;
-	otypes.append("	(");
-	if (objecttypes&DB_OBJECT_TABLE) {
-		otypes.append("	table_type='BASE TABLE' ");
-	}
-	if (objecttypes&DB_OBJECT_VIEW) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
-		}
-		otypes.append("	table_type='VIEW' ");
-	}
-	if (objecttypes&DB_OBJECT_ALIAS) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
-		}
-		otypes.append("	table_type='ALIAS' ");
-	}
-	if (objecttypes&DB_OBJECT_SYNONYM) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
-		}
-		otypes.append("	table_type='SYNONYM' ");
-	}
-	otypes.append(") ");
-	tablelistquery.append(otypes.getString());
-	if (wild) {
-		tablelistquery.append(
-			"	and "
-			"	table_name like '%s' ");
-	}
-	tablelistquery.append(
-		"order by "
-		"	table_cat, "
-		"	table_schem, "
-		"	table_name");
-	return tablelistquery.getString();
 }
 
 const char *postgresqlconnection::getTableListQuery(const char *db,

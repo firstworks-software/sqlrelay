@@ -904,6 +904,13 @@ bool sqlrserverconnection::getSchemaList(sqlrservercursor *cursor,
 	return false;
 }
 
+bool sqlrserverconnection::getTableTypeList(sqlrservercursor *cursor,
+						const char *wild) {
+	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
+				SQLR_ERROR_NOTIMPLEMENTED,true);
+	return false;
+}
+
 bool sqlrserverconnection::getTableList(sqlrservercursor *cursor,
 						const char *wild,
 						uint16_t objecttypes) {
@@ -912,7 +919,8 @@ bool sqlrserverconnection::getTableList(sqlrservercursor *cursor,
 	return false;
 }
 
-bool sqlrserverconnection::getTableTypeList(sqlrservercursor *cursor,
+bool sqlrserverconnection::getTypeInfoList(sqlrservercursor *cursor,
+						const char *type,
 						const char *wild) {
 	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
 				SQLR_ERROR_NOTIMPLEMENTED,true);
@@ -927,7 +935,7 @@ bool sqlrserverconnection::getColumnList(sqlrservercursor *cursor,
 	return false;
 }
 
-bool sqlrserverconnection::getPrimaryKeyList(sqlrservercursor *cursor,
+bool sqlrserverconnection::getPrimaryKeysList(sqlrservercursor *cursor,
 						const char *table,
 						const char *wild) {
 	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
@@ -943,24 +951,16 @@ bool sqlrserverconnection::getKeyAndIndexList(sqlrservercursor *cursor,
 	return false;
 }
 
+bool sqlrserverconnection::getProcedureList(sqlrservercursor *cursor,
+						const char *wild) {
+	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
+				SQLR_ERROR_NOTIMPLEMENTED,true);
+	return false;
+}
+
 bool sqlrserverconnection::getProcedureParameterList(
 						sqlrservercursor *cursor,
 						const char *procedure,
-						const char *wild) {
-	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
-				SQLR_ERROR_NOTIMPLEMENTED,true);
-	return false;
-}
-
-bool sqlrserverconnection::getTypeInfoList(sqlrservercursor *cursor,
-						const char *type,
-						const char *wild) {
-	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
-				SQLR_ERROR_NOTIMPLEMENTED,true);
-	return false;
-}
-
-bool sqlrserverconnection::getProcedureList(sqlrservercursor *cursor,
 						const char *wild) {
 	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
 				SQLR_ERROR_NOTIMPLEMENTED,true);
@@ -978,9 +978,7 @@ const char *sqlrserverconnection::getSchemaListQuery(
 	return getNoopQuery();
 }
 
-const char *sqlrserverconnection::getTableListQuery(
-						bool wild,
-						uint16_t objecttypes,
+const char *sqlrserverconnection::getTableTypeListQuery(bool wild,
 						bool currentschemaonly) {
 	return getNoopQuery();
 }
@@ -993,12 +991,14 @@ const char *sqlrserverconnection::getTableListQuery(
 	return getNoopQuery();
 }
 
-const char *sqlrserverconnection::getTableTypeListQuery(bool wild,
+const char *sqlrserverconnection::getGlobalTempTableListQuery(
 						bool currentschemaonly) {
 	return getNoopQuery();
 }
 
-const char *sqlrserverconnection::getGlobalTempTableListQuery(
+const char *sqlrserverconnection::getTypeInfoListQuery(
+						const char *type,
+						bool wild,
 						bool currentschemaonly) {
 	return getNoopQuery();
 }
@@ -1009,7 +1009,7 @@ const char *sqlrserverconnection::getColumnListQuery(
 	return getNoopQuery();
 }
 
-const char *sqlrserverconnection::getPrimaryKeyListQuery(
+const char *sqlrserverconnection::getPrimaryKeysListQuery(
 						const char *table,
 						bool wild) {
 	return getNoopQuery();
@@ -1021,22 +1021,15 @@ const char *sqlrserverconnection::getKeyAndIndexListQuery(
 	return getNoopQuery();
 }
 
-const char *sqlrserverconnection::getProcedureParameterListQuery(
-						const char *procedure,
-						bool wild) {
-	return getNoopQuery();
-}
-
-const char *sqlrserverconnection::getTypeInfoListQuery(
-						const char *type,
-						bool wild,
-						bool currentschemaonly) {
-	return getNoopQuery();
-}
-
 const char *sqlrserverconnection::getProcedureListQuery(
 						bool wild,
 						bool currentschemaonly) {
+	return getNoopQuery();
+}
+
+const char *sqlrserverconnection::getProcedureParameterListQuery(
+						const char *procedure,
+						bool wild) {
 	return getNoopQuery();
 }
 

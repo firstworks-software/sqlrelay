@@ -154,17 +154,47 @@ void
 sqlrcursor::cacheOff()
 
 bool
-sqlrcursor::getDatabaseList(wild)
-		const char *wild
+sqlrcursor::getDatabaseList(databases)
+		const char *databases
 
 bool
-sqlrcursor::getTableList(wild)
-		const char *wild
+sqlrcursor::getSchemaList(schemas)
+		const char *schemas
 
 bool
-sqlrcursor::getColumnList(table,wild)
+sqlrcursor::getTableTypeList()
+
+bool
+sqlrcursor::getTableList(tables)
+		const char *tables
+
+bool
+sqlrcursor::getTypeInfoList(type)
+		const char *type
+
+bool
+sqlrcursor::getColumnList(table,columns)
 		const char *table
-		const char *wild
+		const char *columns
+
+bool
+sqlrcursor::getPrimaryKeysList(table,columns)
+		const char *table
+		const char *columns
+
+bool
+sqlrcursor::getKeyAndIndexList(table,qualifier)
+		const char *table
+		const char *qualifier
+
+bool
+sqlrcursor::getProcedureList(procedures)
+		const char *procedures
+
+bool
+sqlrcursor::getProcedureParameterList(procedure,parameters)
+		const char *procedure
+		const char *parameters
 
 bool
 sqlrcursor::sendQuery(query)

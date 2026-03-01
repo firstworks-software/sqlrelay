@@ -1245,17 +1245,17 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_cacheoff) {
 
 DLEXPORT ZEND_FUNCTION(sqlrcur_getdatabaselist) {
 	ZVAL sqlrcur;
-	ZVAL wild;
+	ZVAL databases;
 	bool r;
-	if (ZEND_NUM_ARGS() != 2 || 
+	if (ZEND_NUM_ARGS() != 2 ||
 		GET_PARAMETERS(
 				ZEND_NUM_ARGS() TSRMLS_CC,
 				PARAMS("zz")
 				&sqlrcur,
-				&wild) == FAILURE) {
+				&databases) == FAILURE) {
 		WRONG_PARAM_COUNT;
 	}
-	convert_to_string_ex(wild);
+	convert_to_string_ex(databases);
 	sqlrcursor *cursor=NULL;
 	ZEND_FETCH_RESOURCE(cursor,
 				sqlrcursor *,
@@ -1264,7 +1264,58 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getdatabaselist) {
 				"sqlrelay cursor",
 				sqlrelay_cursor);
 	if (cursor) {
-		r=cursor->getDatabaseList(SVAL(wild));
+		r=cursor->getDatabaseList(SVAL(databases));
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getschemalist) {
+	ZVAL sqlrcur;
+	ZVAL schemas;
+	bool r;
+	if (ZEND_NUM_ARGS() != 2 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcur,
+				&schemas) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(schemas);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		r=cursor->getSchemaList(SVAL(schemas));
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_gettabletypelist) {
+	ZVAL sqlrcur;
+	bool r;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcur) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		r=cursor->getTableTypeList();
 		RETURN_LONG(r);
 	}
 	RETURN_LONG(0);
@@ -1272,17 +1323,17 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getdatabaselist) {
 
 DLEXPORT ZEND_FUNCTION(sqlrcur_gettablelist) {
 	ZVAL sqlrcur;
-	ZVAL wild;
+	ZVAL tables;
 	bool r;
-	if (ZEND_NUM_ARGS() != 2 || 
+	if (ZEND_NUM_ARGS() != 2 ||
 		GET_PARAMETERS(
 				ZEND_NUM_ARGS() TSRMLS_CC,
 				PARAMS("zz")
 				&sqlrcur,
-				&wild) == FAILURE) {
+				&tables) == FAILURE) {
 		WRONG_PARAM_COUNT;
 	}
-	convert_to_string_ex(wild);
+	convert_to_string_ex(tables);
 	sqlrcursor *cursor=NULL;
 	ZEND_FETCH_RESOURCE(cursor,
 				sqlrcursor *,
@@ -1291,7 +1342,34 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_gettablelist) {
 				"sqlrelay cursor",
 				sqlrelay_cursor);
 	if (cursor) {
-		r=cursor->getTableList(SVAL(wild));
+		r=cursor->getTableList(SVAL(tables));
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_gettypeinfolist) {
+	ZVAL sqlrcur;
+	ZVAL type;
+	bool r;
+	if (ZEND_NUM_ARGS() != 2 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcur,
+				&type) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(type);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		r=cursor->getTypeInfoList(SVAL(type));
 		RETURN_LONG(r);
 	}
 	RETURN_LONG(0);
@@ -1300,19 +1378,19 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_gettablelist) {
 DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnlist) {
 	ZVAL sqlrcur;
 	ZVAL table;
-	ZVAL wild;
+	ZVAL columns;
 	bool r;
-	if (ZEND_NUM_ARGS() != 3 || 
+	if (ZEND_NUM_ARGS() != 3 ||
 		GET_PARAMETERS(
 				ZEND_NUM_ARGS() TSRMLS_CC,
 				PARAMS("zzz")
 				&sqlrcur,
 				&table,
-				&wild) == FAILURE) {
+				&columns) == FAILURE) {
 		WRONG_PARAM_COUNT;
 	}
 	convert_to_string_ex(table);
-	convert_to_string_ex(wild);
+	convert_to_string_ex(columns);
 	sqlrcursor *cursor=NULL;
 	ZEND_FETCH_RESOURCE(cursor,
 				sqlrcursor *,
@@ -1322,7 +1400,127 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getcolumnlist) {
 				sqlrelay_cursor);
 	if (cursor) {
 		r=cursor->getColumnList(SVAL(table),
-					SVAL(wild));
+					SVAL(columns));
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getprimarykeyslist) {
+	ZVAL sqlrcur;
+	ZVAL table;
+	ZVAL columns;
+	bool r;
+	if (ZEND_NUM_ARGS() != 3 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzz")
+				&sqlrcur,
+				&table,
+				&columns) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(table);
+	convert_to_string_ex(columns);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		r=cursor->getPrimaryKeysList(SVAL(table),
+					SVAL(columns));
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getkeyandindexlist) {
+	ZVAL sqlrcur;
+	ZVAL table;
+	ZVAL qualifier;
+	bool r;
+	if (ZEND_NUM_ARGS() != 3 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzz")
+				&sqlrcur,
+				&table,
+				&qualifier) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(table);
+	convert_to_string_ex(qualifier);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		r=cursor->getKeyAndIndexList(SVAL(table),
+					SVAL(qualifier));
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getprocedurelist) {
+	ZVAL sqlrcur;
+	ZVAL procedures;
+	bool r;
+	if (ZEND_NUM_ARGS() != 2 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcur,
+				&procedures) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(procedures);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		r=cursor->getProcedureList(SVAL(procedures));
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcur_getprocedureparameterlist) {
+	ZVAL sqlrcur;
+	ZVAL procedure;
+	ZVAL parameters;
+	bool r;
+	if (ZEND_NUM_ARGS() != 3 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zzz")
+				&sqlrcur,
+				&procedure,
+				&parameters) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(procedure);
+	convert_to_string_ex(parameters);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		r=cursor->getProcedureParameterList(SVAL(procedure),
+					SVAL(parameters));
 		RETURN_LONG(r);
 	}
 	RETURN_LONG(0);
@@ -5364,10 +5562,31 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getdatabaselist,0,0,0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getschemalist,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_gettabletypelist,0,0,0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_gettablelist,0,0,0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_gettypeinfolist,0,0,0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getcolumnlist,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getprimarykeyslist,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getkeyandindexlist,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getprocedurelist,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getprocedureparameterlist,0,0,0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_sendquery,0,0,0)
@@ -5797,10 +6016,24 @@ zend_function_entry sql_relay_functions[] = {
 		ARGINFO(arginfo_sqlrcur_cacheoff))
 	ZEND_FE(sqlrcur_getdatabaselist,
 		ARGINFO(arginfo_sqlrcur_getdatabaselist))
+	ZEND_FE(sqlrcur_getschemalist,
+		ARGINFO(arginfo_sqlrcur_getschemalist))
+	ZEND_FE(sqlrcur_gettabletypelist,
+		ARGINFO(arginfo_sqlrcur_gettabletypelist))
 	ZEND_FE(sqlrcur_gettablelist,
 		ARGINFO(arginfo_sqlrcur_gettablelist))
+	ZEND_FE(sqlrcur_gettypeinfolist,
+		ARGINFO(arginfo_sqlrcur_gettypeinfolist))
 	ZEND_FE(sqlrcur_getcolumnlist,
 		ARGINFO(arginfo_sqlrcur_getcolumnlist))
+	ZEND_FE(sqlrcur_getprimarykeyslist,
+		ARGINFO(arginfo_sqlrcur_getprimarykeyslist))
+	ZEND_FE(sqlrcur_getkeyandindexlist,
+		ARGINFO(arginfo_sqlrcur_getkeyandindexlist))
+	ZEND_FE(sqlrcur_getprocedurelist,
+		ARGINFO(arginfo_sqlrcur_getprocedurelist))
+	ZEND_FE(sqlrcur_getprocedureparameterlist,
+		ARGINFO(arginfo_sqlrcur_getprocedureparameterlist))
 	ZEND_FE(sqlrcur_sendquery,
 		ARGINFO(arginfo_sqlrcur_sendquery))
 	ZEND_FE(sqlrcur_sendquerywithlength,

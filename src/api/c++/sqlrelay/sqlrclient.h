@@ -785,21 +785,210 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 
 
 
-		/** Sends a query that returns a list of databases matching
-		 *  "databases".  If "databases" is empty or NULL then a list
-		 *  of all databases will be returned. */
+		/** Sends a query that returns a result set containing
+		 *  databases that match the pattern "databases".
+		 *
+		 *  The result set will contain the following columns:
+		 *  * Database
+		 *
+		 *  If "databases" is empty or NULL then a result set containing
+		 *  all databases will be returned.
+		 *
+		 *  If SQL Relay doesn't support getting a list of databases
+		 *  for the current database backend (or the database doesn't)
+		 *  then an empty result set will be returned. */
 		bool	getDatabaseList(const char *databases);
 
-		/** Sends a query that returns a list of tables
-		 *  matching "tables".  If "tables" is empty or NULL then
-		 *  a list of all tables will be returned. */
+		/** Sends a query that returns a result set containing
+		 *  schemas that match the pattern "schemas".
+		 *
+		 *  The result set will contain the following columns:
+		 *  * Database
+		 *
+		 *  (The column name is a bit of a misnomer, the results are
+		 *  schemas, not databases.)
+		 *
+		 *  If "schemas" is empty or NULL then a result set containing
+		 *  all schemas will be returned.
+		 *
+		 *  If SQL Relay doesn't support getting a list of schemas
+		 *  for the current database backend (or the database doesn't)
+		 *  then an empty result set will be returned. */
+		bool	getSchemaList(const char *schemas);
+
+		/** Sends a query that returns a result set containing
+		 *  table types.
+		 *
+		 *  The result set will contain the following columns:
+		 *  * table_type
+		 *
+		 *  If SQL Relay doesn't support getting a list of table types
+		 *  for the current database backend (or the database doesn't)
+		 *  then an empty result set will be returned. */
+		bool	getTableTypeList();
+
+		/** Sends a query that returns a result set containing the
+		 *  tables in the current database and schema that match the
+		 *  pattern "tables".
+		 *
+		 *  The result set will contain the following columns:
+		 *  * Tables_in_xxx
+		 *
+		 *  If "tables" is empty or NULL then a result set containing
+		 *  all tables will be returned.
+		 *
+		 *  If SQL Relay doesn't support getting a list of tables
+		 *  for the current database backend (or the database doesn't)
+		 *  then an empty result set will be returned. */
 		bool	getTableList(const char *tables);
 
-		/** Sends a query that returns a list of columns
-		 *  in the table specified by the "table" parameter
-		 *  matching "columns".  If "columns" is empty or NULL then
-		 *  a list of all columns will be returned. */
+		/** Sends a query that returns a result set containing
+		 *  type information for "type".
+		 *
+		 *  The result set will contain the following columns:
+		 *  * type_name
+		 *  * data_type
+		 *  * precision
+		 *  * literal_prefix
+		 *  * literal_suffix
+		 *  * create_params
+		 *  * nullable
+		 *  * case_sensitive
+		 *  * searchable
+		 *  * unsigned_attribute
+		 *  * fixed_prec_scale
+		 *  * auto_increment
+		 *  * local_type_name
+		 *  * minumum_scale
+		 *  * maxiumm_scale
+		 *  * sql_data_type
+		 *  * sql_datetime_sub
+		 *  * num_prec_radix
+		 *  * interval_precision
+		 *
+		 *  If "type" is empty or NULL then a result set containing
+		 *  all types will be returned.
+		 *
+		 *  If SQL Relay doesn't support getting type info
+		 *  for the current database backend (or the database doesn't)
+		 *  then an empty result set will be returned. */
+		bool	getTypeInfoList(const char *type);
+
+		/** Sends a query that returns a result set containing the
+		 *  columns of "table", which match the pattern "columns".
+		 *
+		 *  The result set will contain the following columns:
+		 *  * column_name
+		 *  * data_type
+		 *  * character_maximum_length
+		 *  * numeric_precision
+		 *  * numeric_scale
+		 *  * is_nullable
+		 *  * column_key
+		 *  * column_default
+		 *  * extra
+		 *
+		 *  If "columns" is empty or NULL then a list of all columns
+		 *  will be returned.
+		 *
+		 *  If SQL Relay doesn't support getting a list of columns
+		 *  for the current database backend (or the database doesn't)
+		 *  then an empty result set will be returned. */
 		bool	getColumnList(const char *table, const char *columns);
+
+		/** Sends a query that returns a result set containing the
+		 *  primary keys of "table", which match the pattern
+		 *  "columns".
+		 *
+		 *  The result set will contain the following columns:
+		 *  * table
+		 *  * non_unique
+		 *  * key_name
+		 *  * seq_in_index
+		 *  * column_name
+		 *  * collation
+		 *  * cardinality
+		 *  * sub_part
+		 *  * packed
+		 *  * null
+		 *  * index_type
+		 *  * comment
+		 *  * index_comment
+		 *
+		 *  If "columns" is empty or NULL then a result set containing
+		 *  all primary keys will be returned.
+		 *
+		 *  If SQL Relay doesn't support getting a list of primary keys
+		 *  for the current database backend (or the database doesn't)
+		 *  then an empty result set will be returned. */
+		bool	getPrimaryKeysList(const char *table,
+						const char *columns);
+
+		/** Sends a query that returns a result set containing the
+		 *  keys and indexes of "table", which match the pattern
+		 *  "qualifier".
+		 *
+		 *  The result set will contain the following columns:
+		 *  * table
+		 *  * non_unique
+		 *  * key_name
+		 *  * seq_in_index
+		 *  * column_name
+		 *  * collation
+		 *  * cardinality
+		 *  * sub_part
+		 *  * packed
+		 *  * null
+		 *  * index_type
+		 *  * comment
+		 *  * index_comment
+		 *
+		 *  If "qualifier" is empty or NULL then a result set
+		 *  containing all keys and indexes will be returned.
+		 *
+		 *  If SQL Relay doesn't support getting a list of keys and
+		 *  indexes for the current database backend (or the database
+		 *  doesn't) then an empty result set will be returned. */
+		bool	getKeyAndIndexList(const char *table,
+						const char *qualifier);
+
+		/** Sends a query that returns a result set containing
+		 *  procedures that match the pattern "procedures".
+		 *
+		 *  The result set will contain the following columns:
+		 *  * routine_catalog
+		 *  * routine_schema
+		 *  * routine_name
+		 *  * data_type
+		 *
+		 *  If "procedures" is empty or NULL then a result set
+		 *  containing all procedures will be returned.
+		 *
+		 *  If SQL Relay doesn't support getting a list of procedures
+		 *  for the current database backend (or the database doesn't)
+		 *  then an empty result set will be returned. */
+		bool	getProcedureList(const char *procedures);
+
+		/** Sends a query that returns a result set containing the
+		 *  parameters of "procedure", which match the pattern
+		 *  "parameters".
+		 *
+		 *  The result set will contain the following columns:
+		 *  * parameter_name
+		 *  * parameter_mode
+		 *  * data_type
+		 *  * character_maximum_length
+		 *  * ordinal_position
+		 *
+		 *  If "parameters" is empty or NULL then a result set
+		 *  containing all parameters will be returned.
+		 *
+		 *  If SQL Relay doesn't support getting a list of procedure
+		 *  parameters for the current database backend (or the
+		 *  database doesn't) then an empty result set will be
+		 *  returned. */
+		bool	getProcedureParameterList(const char *procedure,
+							const char *parameters);
 
 
 

@@ -70,19 +70,51 @@ public class SQLRCursor {
 
 
 	/** Sends a query that returns a list of
-	 *  databases/schemas matching "wild".  If wild is empty
-	 *  or NULL then a list of all databases/schemas will be
-	 *  returned. */
-	public native boolean	getDatabaseList(String wild);
+	 *  databases/schemas matching "databases".  If
+	 *  "databases" is empty or null then a list of all
+	 *  databases/schemas will be returned. */
+	public native boolean	getDatabaseList(String databases);
+	/** Sends a query that returns a list of schemas
+	 *  matching "schemas".  If "schemas" is empty or null
+	 *  then a list of all schemas will be returned. */
+	public native boolean	getSchemaList(String schemas);
+	/** Sends a query that returns a list of table types. */
+	public native boolean	getTableTypeList();
 	/** Sends a query that returns a list of tables
-	 *  matching "wild".  If wild is empty or NULL then
-	 *  a list of all tables will be returned. */
-	public native boolean	getTableList(String wild);
+	 *  matching "tables".  If "tables" is empty or null
+	 *  then a list of all tables will be returned. */
+	public native boolean	getTableList(String tables);
+	/** Sends a query that returns a list of data types
+	 *  matching "type".  If "type" is empty or null
+	 *  then a list of all data types will be returned. */
+	public native boolean	getTypeInfoList(String type);
 	/** Sends a query that returns a list of columns
 	 *  in the table specified by the "table" parameter
-	 *  matching "wild".  If wild is empty or NULL then
-	 *  a list of all columns will be returned. */
-	public native boolean	getColumnList(String table, String wild);
+	 *  matching "columns".  If "columns" is empty or null
+	 *  then a list of all columns will be returned. */
+	public native boolean	getColumnList(String table, String columns);
+	/** Sends a query that returns a list of primary keys
+	 *  in the table specified by the "table" parameter
+	 *  matching "columns".  If "columns" is empty or null
+	 *  then a list of all primary keys will be returned. */
+	public native boolean	getPrimaryKeysList(String table, String columns);
+	/** Sends a query that returns a list of keys and
+	 *  indexes in the table specified by the "table"
+	 *  parameter matching "qualifier".  If "qualifier" is
+	 *  empty or null then a list of all keys and indexes
+	 *  will be returned. */
+	public native boolean	getKeyAndIndexList(String table, String qualifier);
+	/** Sends a query that returns a list of procedures
+	 *  matching "procedures".  If "procedures" is empty
+	 *  or null then a list of all procedures will be
+	 *  returned. */
+	public native boolean	getProcedureList(String procedures);
+	/** Sends a query that returns a list of procedure
+	 *  parameters in the procedure specified by the
+	 *  "procedure" parameter matching "parameters".
+	 *  If "parameters" is empty or null then a list of
+	 *  all procedure parameters will be returned. */
+	public native boolean	getProcedureParameterList(String procedure, String parameters);
 
 
 	/** Sends "query" and gets a result set.  */
@@ -633,22 +665,21 @@ public class SQLRCursor {
 	private native long	alloc(long con);
 	private native long	getOutputBindCursorInternal(String variable);
 	public native boolean	getDatabaseListWithFormat(
-						String wild, int listformat);
+						String databases, int listformat);
 	public native boolean	getSchemaListWithFormat(
-						String wild, int listformat);
+						String schemas, int listformat);
 	public native boolean	getTableListWithFormat(
-						String wild, int listformat,
+						String tables, int listformat,
 						int objecttypes);
 	public native boolean	getTableTypeListWithFormat(
-						String wild, int listformat);
+						int listformat);
 	public native boolean	getColumnListWithFormat(
-						String table, String wild,
+						String table, String columns,
 						int listformat);
 	public native boolean	getTypeInfoListWithFormat(
-						String type, String wild,
-						int listformat);
+						String type, int listformat);
 	public native boolean	getProcedureListWithFormat(
-						String wild, int listformat);
+						String procedures, int listformat);
 	public native boolean	getLastInsertIdList();
 	public native boolean	isNumberType(String type);
 	public native boolean	isDateTimeType(String type);

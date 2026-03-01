@@ -1750,16 +1750,50 @@ static void getDatabaseList(params *p) {
 }
 /**
  *  call-seq:
- *  getDatabaseList(wild)
+ *  getDatabaseList(databases)
  *
- *  Sends a query that returns a list of databases/schemas matching "wild".
- *  If wild is empty or nil then a list of all databases/schemas will be
+ *  Sends a query that returns a list of databases matching "databases".
+ *  If "databases" is empty or nil then a list of all databases will be
  *  returned. */
-static VALUE sqlrcur_getDatabaseList(VALUE self, VALUE wild) {
+static VALUE sqlrcur_getDatabaseList(VALUE self, VALUE databases) {
 	sqlrcursordata	*sqlrcurdata;
 	bool		result;
 	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
-	RCUR1(result,br,sqlrcurdata->cur,getDatabaseList,wild);
+	RCUR1(result,br,sqlrcurdata->cur,getDatabaseList,databases);
+	return INT2NUM(result);
+}
+
+static void getSchemaList(params *p) {
+	p->result.br=p->sqlrc.sqlrcur->getSchemaList(STR2CSTR(p->one));
+}
+/**
+ *  call-seq:
+ *  getSchemaList(schemas)
+ *
+ *  Sends a query that returns a list of schemas matching "schemas".
+ *  If "schemas" is empty or nil then a list of all schemas will be
+ *  returned. */
+static VALUE sqlrcur_getSchemaList(VALUE self, VALUE schemas) {
+	sqlrcursordata	*sqlrcurdata;
+	bool		result;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	RCUR1(result,br,sqlrcurdata->cur,getSchemaList,schemas);
+	return INT2NUM(result);
+}
+
+static void getTableTypeList(params *p) {
+	p->result.br=p->sqlrc.sqlrcur->getTableTypeList();
+}
+/**
+ *  call-seq:
+ *  getTableTypeList()
+ *
+ *  Sends a query that returns a list of table types. */
+static VALUE sqlrcur_getTableTypeList(VALUE self) {
+	sqlrcursordata	*sqlrcurdata;
+	bool		result;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	RCUR(result,br,sqlrcurdata->cur,getTableTypeList);
 	return INT2NUM(result);
 }
 
@@ -1768,15 +1802,32 @@ static void getTableList(params *p) {
 }
 /**
  *  call-seq:
- *  getTableList(wild)
+ *  getTableList(tables)
  *
- *  Sends a query that returns a list of tables matching "wild".  If wild is
- *  empty or nil then a list of all tables will be returned. */
-static VALUE sqlrcur_getTableList(VALUE self, VALUE wild) {
+ *  Sends a query that returns a list of tables matching "tables".  If "tables"
+ *  is empty or nil then a list of all tables will be returned. */
+static VALUE sqlrcur_getTableList(VALUE self, VALUE tables) {
 	sqlrcursordata	*sqlrcurdata;
 	bool		result;
 	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
-	RCUR1(result,br,sqlrcurdata->cur,getTableList,wild);
+	RCUR1(result,br,sqlrcurdata->cur,getTableList,tables);
+	return INT2NUM(result);
+}
+
+static void getTypeInfoList(params *p) {
+	p->result.br=p->sqlrc.sqlrcur->getTypeInfoList(STR2CSTR(p->one));
+}
+/**
+ *  call-seq:
+ *  getTypeInfoList(type)
+ *
+ *  Sends a query that returns type information for "type".  If "type" is empty
+ *  or nil then info for all types will be returned. */
+static VALUE sqlrcur_getTypeInfoList(VALUE self, VALUE type) {
+	sqlrcursordata	*sqlrcurdata;
+	bool		result;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	RCUR1(result,br,sqlrcurdata->cur,getTypeInfoList,type);
 	return INT2NUM(result);
 }
 
@@ -1786,16 +1837,95 @@ static void getColumnList(params *p) {
 }
 /**
  *  call-seq:
- *  getColumnList(table,wild)
+ *  getColumnList(table,columns)
  *
  *  Sends a query that returns a list of columns in the table specified by the
- *  "table" parameter matching "wild".  If wild is empty or nil then a list of
- *  all columns will be returned. */
-static VALUE sqlrcur_getColumnList(VALUE self, VALUE table, VALUE wild) {
+ *  "table" parameter matching "columns".  If "columns" is empty or nil then a
+ *  list of all columns will be returned. */
+static VALUE sqlrcur_getColumnList(VALUE self, VALUE table, VALUE columns) {
 	sqlrcursordata	*sqlrcurdata;
 	bool		result;
 	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
-	RCUR2(result,br,sqlrcurdata->cur,getColumnList,table,wild);
+	RCUR2(result,br,sqlrcurdata->cur,getColumnList,table,columns);
+	return INT2NUM(result);
+}
+
+static void getPrimaryKeysList(params *p) {
+	p->result.br=p->sqlrc.sqlrcur->getPrimaryKeysList(
+					STR2CSTR(p->one),STR2CSTR(p->two));
+}
+/**
+ *  call-seq:
+ *  getPrimaryKeysList(table,columns)
+ *
+ *  Sends a query that returns a list of primary keys in the table specified by
+ *  the "table" parameter matching "columns".  If "columns" is empty or nil
+ *  then a list of all primary keys will be returned. */
+static VALUE sqlrcur_getPrimaryKeysList(VALUE self,
+					VALUE table, VALUE columns) {
+	sqlrcursordata	*sqlrcurdata;
+	bool		result;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	RCUR2(result,br,sqlrcurdata->cur,getPrimaryKeysList,table,columns);
+	return INT2NUM(result);
+}
+
+static void getKeyAndIndexList(params *p) {
+	p->result.br=p->sqlrc.sqlrcur->getKeyAndIndexList(
+					STR2CSTR(p->one),STR2CSTR(p->two));
+}
+/**
+ *  call-seq:
+ *  getKeyAndIndexList(table,qualifier)
+ *
+ *  Sends a query that returns a list of keys and indexes in the table specified
+ *  by the "table" parameter matching "qualifier".  If "qualifier" is empty or
+ *  nil then a list of all keys and indexes will be returned. */
+static VALUE sqlrcur_getKeyAndIndexList(VALUE self,
+					VALUE table, VALUE qualifier) {
+	sqlrcursordata	*sqlrcurdata;
+	bool		result;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	RCUR2(result,br,sqlrcurdata->cur,getKeyAndIndexList,table,qualifier);
+	return INT2NUM(result);
+}
+
+static void getProcedureList(params *p) {
+	p->result.br=p->sqlrc.sqlrcur->getProcedureList(STR2CSTR(p->one));
+}
+/**
+ *  call-seq:
+ *  getProcedureList(procedures)
+ *
+ *  Sends a query that returns a list of procedures matching "procedures".
+ *  If "procedures" is empty or nil then a list of all procedures will be
+ *  returned. */
+static VALUE sqlrcur_getProcedureList(VALUE self, VALUE procedures) {
+	sqlrcursordata	*sqlrcurdata;
+	bool		result;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	RCUR1(result,br,sqlrcurdata->cur,getProcedureList,procedures);
+	return INT2NUM(result);
+}
+
+static void getProcedureParameterList(params *p) {
+	p->result.br=p->sqlrc.sqlrcur->getProcedureParameterList(
+					STR2CSTR(p->one),STR2CSTR(p->two));
+}
+/**
+ *  call-seq:
+ *  getProcedureParameterList(procedure,parameters)
+ *
+ *  Sends a query that returns a list of procedure parameters in the procedure
+ *  specified by the "procedure" parameter matching "parameters".  If
+ *  "parameters" is empty or nil then a list of all parameters will be
+ *  returned. */
+static VALUE sqlrcur_getProcedureParameterList(VALUE self,
+					VALUE procedure, VALUE parameters) {
+	sqlrcursordata	*sqlrcurdata;
+	bool		result;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	RCUR2(result,br,sqlrcurdata->cur,getProcedureParameterList,procedure,parameters);
 	return INT2NUM(result);
 }
 
@@ -4079,10 +4209,24 @@ void Init_SQLRCursor() {
 				(CAST)sqlrcur_cacheOff,0);
 	rb_define_method(csqlrcursor,"getDatabaseList",
 				(CAST)sqlrcur_getDatabaseList,1);
+	rb_define_method(csqlrcursor,"getSchemaList",
+				(CAST)sqlrcur_getSchemaList,1);
+	rb_define_method(csqlrcursor,"getTableTypeList",
+				(CAST)sqlrcur_getTableTypeList,0);
 	rb_define_method(csqlrcursor,"getTableList",
 				(CAST)sqlrcur_getTableList,1);
+	rb_define_method(csqlrcursor,"getTypeInfoList",
+				(CAST)sqlrcur_getTypeInfoList,1);
 	rb_define_method(csqlrcursor,"getColumnList",
 				(CAST)sqlrcur_getColumnList,2);
+	rb_define_method(csqlrcursor,"getPrimaryKeysList",
+				(CAST)sqlrcur_getPrimaryKeysList,2);
+	rb_define_method(csqlrcursor,"getKeyAndIndexList",
+				(CAST)sqlrcur_getKeyAndIndexList,2);
+	rb_define_method(csqlrcursor,"getProcedureList",
+				(CAST)sqlrcur_getProcedureList,1);
+	rb_define_method(csqlrcursor,"getProcedureParameterList",
+				(CAST)sqlrcur_getProcedureParameterList,2);
 	rb_define_method(csqlrcursor,"sendQuery",
 				(CAST)sqlrcur_sendQuery,1);
 	rb_define_method(csqlrcursor,"sendQueryWithLength",

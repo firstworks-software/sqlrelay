@@ -24,7 +24,7 @@ enum sqlrclientquerytype_t {
 	SQLRCLIENTQUERYTYPE_TABLE_LIST_2,
 	SQLRCLIENTQUERYTYPE_TABLE_TYPE_LIST,
 	SQLRCLIENTQUERYTYPE_COLUMN_LIST,
-	SQLRCLIENTQUERYTYPE_PRIMARY_KEY_LIST,
+	SQLRCLIENTQUERYTYPE_PRIMARY_KEYS_LIST,
 	SQLRCLIENTQUERYTYPE_KEY_AND_INDEX_LIST,
 	SQLRCLIENTQUERYTYPE_PROCEDURE_PARAMETER_LIST,
 	SQLRCLIENTQUERYTYPE_TYPE_INFO_LIST,
@@ -178,7 +178,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 		bool	getTableList2Command(sqlrservercursor *cursor);
 		bool	getTableTypeListCommand(sqlrservercursor *cursor);
 		bool	getColumnListCommand(sqlrservercursor *cursor);
-		bool	getPrimaryKeyListCommand(sqlrservercursor *cursor);
+		bool	getPrimaryKeysListCommand(sqlrservercursor *cursor);
 		bool	getKeyAndIndexListCommand(sqlrservercursor *cursor);
 		bool	getProcedureParameterListCommand(
 						sqlrservercursor *cursor);
@@ -585,9 +585,9 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 		} else if (command==GET_COLUMN_LIST) {
 			cont->incrementGetColumnListCount();
 			loop=getColumnListCommand(cursor);
-		} else if (command==GET_PRIMARY_KEY_LIST) {
+		} else if (command==GET_PRIMARY_KEYS_LIST) {
 			//cont->incrementGetPrimaryKeyListCount();
-			loop=getPrimaryKeyListCommand(cursor);
+			loop=getPrimaryKeysListCommand(cursor);
 		} else if (command==GET_KEY_AND_INDEX_LIST) {
 			//cont->incrementGetKeyAndIndexListCount();
 			loop=getKeyAndIndexListCommand(cursor);
@@ -781,7 +781,7 @@ sqlrservercursor *sqlrprotocol_sqlrclient::getCursor(uint16_t command) {
 		command==GET_TABLE_LIST_2 ||
 		command==GET_TABLE_TYPE_LIST ||
 		command==GET_COLUMN_LIST ||
-		command==GET_PRIMARY_KEY_LIST ||
+		command==GET_PRIMARY_KEYS_LIST ||
 		command==GET_KEY_AND_INDEX_LIST ||
 		command==GET_PROCEDURE_BIND_AND_COLUMN_LIST ||
 		command==GET_TYPE_INFO_LIST ||
@@ -1891,7 +1891,7 @@ bool sqlrprotocol_sqlrclient::processQueryOrBindCursor(
 					cont->setColumnListFormat(
 								listformat);
 					break;
-				case SQLRCLIENTQUERYTYPE_PRIMARY_KEY_LIST:
+				case SQLRCLIENTQUERYTYPE_PRIMARY_KEYS_LIST:
 					cont->setPrimaryKeyListFormat(
 								listformat);
 					break;
@@ -4261,11 +4261,11 @@ bool sqlrprotocol_sqlrclient::getColumnListCommand(
 	return retval;
 }
 
-bool sqlrprotocol_sqlrclient::getPrimaryKeyListCommand(
+bool sqlrprotocol_sqlrclient::getPrimaryKeysListCommand(
 					sqlrservercursor *cursor) {
 	debugStart("get primary key list");
 	bool	retval=getComponentListCommand(cursor,
-				SQLRCLIENTQUERYTYPE_PRIMARY_KEY_LIST);
+				SQLRCLIENTQUERYTYPE_PRIMARY_KEYS_LIST);
 	debugEnd();
 	return retval;
 }
@@ -4532,16 +4532,9 @@ bool sqlrprotocol_sqlrclient::getObjectListByQuery(sqlrservercursor *cursor,
 			break;
 		case SQLRCLIENTQUERYTYPE_TABLE_LIST:
 		case SQLRCLIENTQUERYTYPE_TABLE_LIST_2:
-#if 0
-			query=cont->getTableListQuery(havewild,
-							objecttypes,
-							currentonly);
-			buildObjectListQuery(cursor,query,object);
-#else
 			query=cont->getTableListQuery(db,schema,obj,
 							objecttypes);
 			buildObjectListQuery(cursor,query);
-#endif
 			break;
 		case SQLRCLIENTQUERYTYPE_TABLE_TYPE_LIST:
 			query=cont->getTableTypeListQuery(havewild,
@@ -4599,9 +4592,6 @@ bool sqlrprotocol_sqlrclient::buildObjectListQuery(sqlrservercursor *cursor,
 	//debugWrite("query: \"%.*s\"",
 			//cont->getQuerySize(cursor),
 			//cont->getQueryBuffer(cursor));
-stdoutput.printf("query: \"%.*s\"",
-			cont->getQuerySize(cursor),
-			cont->getQueryBuffer(cursor));
 	debugWrite("query size: %d",debugstr.getSize());
 
 	debugEnd();
@@ -4637,9 +4627,6 @@ bool sqlrprotocol_sqlrclient::buildObjectListQuery(sqlrservercursor *cursor,
 	//debugWrite("query: \"%.*s\"",
 			//cont->getQuerySize(cursor),
 			//cont->getQueryBuffer(cursor));
-stdoutput.printf("query: \"%.*s\"",
-			cont->getQuerySize(cursor),
-			cont->getQueryBuffer(cursor));
 	debugWrite("query size: %d",debugstr.getSize());
 
 	debugEnd();
@@ -4805,9 +4792,9 @@ bool sqlrprotocol_sqlrclient::getComponentListByApiCall(
 			success=cont->getColumnList(cursor,
 							object,component);
 			break;
-		case SQLRCLIENTQUERYTYPE_PRIMARY_KEY_LIST:
+		case SQLRCLIENTQUERYTYPE_PRIMARY_KEYS_LIST:
 			cont->setPrimaryKeyListFormat(listformat);
-			success=cont->getPrimaryKeyList(cursor,
+			success=cont->getPrimaryKeysList(cursor,
 							object,component);
 			break;
 		case SQLRCLIENTQUERYTYPE_KEY_AND_INDEX_LIST:
@@ -4885,8 +4872,8 @@ bool sqlrprotocol_sqlrclient::getComponentListByQuery(sqlrservercursor *cursor,
 		case SQLRCLIENTQUERYTYPE_COLUMN_LIST:
 			query=cont->getColumnListQuery(object,havewild);
 			break;
-		case SQLRCLIENTQUERYTYPE_PRIMARY_KEY_LIST:
-			query=cont->getPrimaryKeyListQuery(object,havewild);
+		case SQLRCLIENTQUERYTYPE_PRIMARY_KEYS_LIST:
+			query=cont->getPrimaryKeysListQuery(object,havewild);
 			break;
 		case SQLRCLIENTQUERYTYPE_KEY_AND_INDEX_LIST:
 			query=cont->getKeyAndIndexListQuery(object,havewild);
@@ -5136,8 +5123,8 @@ void sqlrprotocol_sqlrclient::debugCommand(uint16_t command) {
 		case GET_TABLE_TYPE_LIST:
 			debugWrite("GET_TABLE_TYPE_LIST");
 			break;
-		case GET_PRIMARY_KEY_LIST:
-			debugWrite("GET_PRIMARY_KEY_LIST");
+		case GET_PRIMARY_KEYS_LIST:
+			debugWrite("GET_PRIMARY_KEYS_LIST");
 			break;
 		case GET_KEY_AND_INDEX_LIST:
 			debugWrite("GET_KEY_AND_INDEX_LIST");

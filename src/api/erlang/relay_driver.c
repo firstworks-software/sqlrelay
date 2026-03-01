@@ -1014,55 +1014,172 @@ int main() {
 		}
 
 		if (strcmp("getDatabaseList", command) == TRUE) {
-			char wild[2000];
+			char databases[2000];
 
 			// check number of arguments
 		    	if (arity != 1) return ERR_NUMBER_OF_ARGS;
 
 			// get input parameters
-			if (ei_decode_string(buf, &index, &wild[0])) { 
+			if (ei_decode_string(buf, &index, &databases[0])) {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
-			sqlrcur_getDatabaseList(cur, wild); 	
-			ENCODE_VOID;   
+			// call function and encode result
+			sqlrcur_getDatabaseList(cur, databases);
+			ENCODE_VOID;
+		}
+
+		if (strcmp("getSchemaList", command) == TRUE) {
+			char schemas[2000];
+
+			// check number of arguments
+		    	if (arity != 1) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_string(buf, &index, &schemas[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// call function and encode result
+			sqlrcur_getSchemaList(cur, schemas);
+			ENCODE_VOID;
+		}
+
+		if (strcmp("getTableTypeList", command) == TRUE) {
+			// check number of arguments
+		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
+
+			// call function and encode result
+			sqlrcur_getTableTypeList(cur);
+			ENCODE_VOID;
 		}
 
 		if (strcmp("getTableList", command) == TRUE) {
-			char wild[2000];
+			char tables[2000];
 
 			// check number of arguments
 		    	if (arity != 1) return ERR_NUMBER_OF_ARGS;
 
 			// get input parameters
-			if (ei_decode_string(buf, &index, &wild[0])) { 
+			if (ei_decode_string(buf, &index, &tables[0])) {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
-			sqlrcur_getTableList(cur, wild); 	
-			ENCODE_VOID;   
+			// call function and encode result
+			sqlrcur_getTableList(cur, tables);
+			ENCODE_VOID;
+		}
+
+		if (strcmp("getTypeInfoList", command) == TRUE) {
+			char type[2000];
+
+			// check number of arguments
+		    	if (arity != 1) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_string(buf, &index, &type[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// call function and encode result
+			sqlrcur_getTypeInfoList(cur, type);
+			ENCODE_VOID;
 		}
 
 		if (strcmp("getColumnList", command) == TRUE) {
 			char table[2000];
-			char wild[2000];
+			char columns[2000];
 
 			// check number of arguments
 		    	if (arity != 2) return ERR_NUMBER_OF_ARGS;
 
 			// get input parameters
-			if (ei_decode_string(buf, &index, &table[0])) { 
+			if (ei_decode_string(buf, &index, &table[0])) {
 				return ERR_DECODING_ARGS;
 			}
-			if (ei_decode_string(buf, &index, &wild[0])) { 
+			if (ei_decode_string(buf, &index, &columns[0])) {
 				return ERR_DECODING_ARGS;
 			}
 
-			// call function and encode result 
-			sqlrcur_getColumnList(cur, table, wild); 	
-			ENCODE_VOID;   
+			// call function and encode result
+			sqlrcur_getColumnList(cur, table, columns);
+			ENCODE_VOID;
+		}
+
+		if (strcmp("getPrimaryKeysList", command) == TRUE) {
+			char table[2000];
+			char columns[2000];
+
+			// check number of arguments
+		    	if (arity != 2) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_string(buf, &index, &table[0])) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &columns[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// call function and encode result
+			sqlrcur_getPrimaryKeysList(cur, table, columns);
+			ENCODE_VOID;
+		}
+
+		if (strcmp("getKeyAndIndexList", command) == TRUE) {
+			char table[2000];
+			char qualifier[2000];
+
+			// check number of arguments
+		    	if (arity != 2) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_string(buf, &index, &table[0])) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &qualifier[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// call function and encode result
+			sqlrcur_getKeyAndIndexList(cur, table, qualifier);
+			ENCODE_VOID;
+		}
+
+		if (strcmp("getProcedureList", command) == TRUE) {
+			char procedures[2000];
+
+			// check number of arguments
+		    	if (arity != 1) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_string(buf, &index, &procedures[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// call function and encode result
+			sqlrcur_getProcedureList(cur, procedures);
+			ENCODE_VOID;
+		}
+
+		if (strcmp("getProcedureParameterList", command) == TRUE) {
+			char procedure[2000];
+			char parameters[2000];
+
+			// check number of arguments
+		    	if (arity != 2) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_string(buf, &index, &procedure[0])) {
+				return ERR_DECODING_ARGS;
+			}
+			if (ei_decode_string(buf, &index, &parameters[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// call function and encode result
+			sqlrcur_getProcedureParameterList(cur, procedure, parameters);
+			ENCODE_VOID;
 		}
 
 		if (strcmp("cacheOff", command) == TRUE) {

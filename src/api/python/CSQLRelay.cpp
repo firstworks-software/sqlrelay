@@ -773,38 +773,124 @@ static PyObject *cacheOff(PyObject *self, PyObject *args) {
 }
 
 static PyObject *getDatabaseList(PyObject *self, PyObject *args) {
-  char *wild;
+  char *databases;
   long sqlrcur;
   bool rc;
-  if (!PyArg_ParseTuple(args, "ls", &sqlrcur, &wild))
+  if (!PyArg_ParseTuple(args, "ls", &sqlrcur, &databases))
     return NULL;
   Py_BEGIN_ALLOW_THREADS
-  rc=((sqlrcursor *)sqlrcur)->getDatabaseList(wild);
+  rc=((sqlrcursor *)sqlrcur)->getDatabaseList(databases);
+  Py_END_ALLOW_THREADS
+  return Py_BuildValue("h", (short)rc);
+}
+
+static PyObject *getSchemaList(PyObject *self, PyObject *args) {
+  char *schemas;
+  long sqlrcur;
+  bool rc;
+  if (!PyArg_ParseTuple(args, "ls", &sqlrcur, &schemas))
+    return NULL;
+  Py_BEGIN_ALLOW_THREADS
+  rc=((sqlrcursor *)sqlrcur)->getSchemaList(schemas);
+  Py_END_ALLOW_THREADS
+  return Py_BuildValue("h", (short)rc);
+}
+
+static PyObject *getTableTypeList(PyObject *self, PyObject *args) {
+  long sqlrcur;
+  bool rc;
+  if (!PyArg_ParseTuple(args, "l", &sqlrcur))
+    return NULL;
+  Py_BEGIN_ALLOW_THREADS
+  rc=((sqlrcursor *)sqlrcur)->getTableTypeList();
   Py_END_ALLOW_THREADS
   return Py_BuildValue("h", (short)rc);
 }
 
 static PyObject *getTableList(PyObject *self, PyObject *args) {
-  char *wild;
+  char *tables;
   long sqlrcur;
   bool rc;
-  if (!PyArg_ParseTuple(args, "ls", &sqlrcur, &wild))
+  if (!PyArg_ParseTuple(args, "ls", &sqlrcur, &tables))
     return NULL;
   Py_BEGIN_ALLOW_THREADS
-  rc=((sqlrcursor *)sqlrcur)->getTableList(wild);
+  rc=((sqlrcursor *)sqlrcur)->getTableList(tables);
+  Py_END_ALLOW_THREADS
+  return Py_BuildValue("h", (short)rc);
+}
+
+static PyObject *getTypeInfoList(PyObject *self, PyObject *args) {
+  char *type;
+  long sqlrcur;
+  bool rc;
+  if (!PyArg_ParseTuple(args, "ls", &sqlrcur, &type))
+    return NULL;
+  Py_BEGIN_ALLOW_THREADS
+  rc=((sqlrcursor *)sqlrcur)->getTypeInfoList(type);
   Py_END_ALLOW_THREADS
   return Py_BuildValue("h", (short)rc);
 }
 
 static PyObject *getColumnList(PyObject *self, PyObject *args) {
   char *table;
-  char *wild;
+  char *columns;
   long sqlrcur;
   bool rc;
-  if (!PyArg_ParseTuple(args, "lss", &sqlrcur, &table, &wild))
+  if (!PyArg_ParseTuple(args, "lss", &sqlrcur, &table, &columns))
     return NULL;
   Py_BEGIN_ALLOW_THREADS
-  rc=((sqlrcursor *)sqlrcur)->getColumnList(table, wild);
+  rc=((sqlrcursor *)sqlrcur)->getColumnList(table, columns);
+  Py_END_ALLOW_THREADS
+  return Py_BuildValue("h", (short)rc);
+}
+
+static PyObject *getPrimaryKeysList(PyObject *self, PyObject *args) {
+  char *table;
+  char *columns;
+  long sqlrcur;
+  bool rc;
+  if (!PyArg_ParseTuple(args, "lss", &sqlrcur, &table, &columns))
+    return NULL;
+  Py_BEGIN_ALLOW_THREADS
+  rc=((sqlrcursor *)sqlrcur)->getPrimaryKeysList(table, columns);
+  Py_END_ALLOW_THREADS
+  return Py_BuildValue("h", (short)rc);
+}
+
+static PyObject *getKeyAndIndexList(PyObject *self, PyObject *args) {
+  char *table;
+  char *qualifier;
+  long sqlrcur;
+  bool rc;
+  if (!PyArg_ParseTuple(args, "lss", &sqlrcur, &table, &qualifier))
+    return NULL;
+  Py_BEGIN_ALLOW_THREADS
+  rc=((sqlrcursor *)sqlrcur)->getKeyAndIndexList(table, qualifier);
+  Py_END_ALLOW_THREADS
+  return Py_BuildValue("h", (short)rc);
+}
+
+static PyObject *getProcedureList(PyObject *self, PyObject *args) {
+  char *procedures;
+  long sqlrcur;
+  bool rc;
+  if (!PyArg_ParseTuple(args, "ls", &sqlrcur, &procedures))
+    return NULL;
+  Py_BEGIN_ALLOW_THREADS
+  rc=((sqlrcursor *)sqlrcur)->getProcedureList(procedures);
+  Py_END_ALLOW_THREADS
+  return Py_BuildValue("h", (short)rc);
+}
+
+static PyObject *getProcedureParameterList(PyObject *self, PyObject *args) {
+  char *procedure;
+  char *parameters;
+  long sqlrcur;
+  bool rc;
+  if (!PyArg_ParseTuple(args, "lss", &sqlrcur, &procedure, &parameters))
+    return NULL;
+  Py_BEGIN_ALLOW_THREADS
+  rc=((sqlrcursor *)sqlrcur)->getProcedureParameterList(procedure, parameters);
   Py_END_ALLOW_THREADS
   return Py_BuildValue("h", (short)rc);
 }
@@ -2747,8 +2833,15 @@ static PyMethodDef SQLRMethods[] = {
   {"getCacheFileName", getCacheFileName, METH_VARARGS},
   {"cacheOff", cacheOff, METH_VARARGS},
   {"getDatabaseList", getDatabaseList, METH_VARARGS},
+  {"getSchemaList", getSchemaList, METH_VARARGS},
+  {"getTableTypeList", getTableTypeList, METH_VARARGS},
   {"getTableList", getTableList, METH_VARARGS},
+  {"getTypeInfoList", getTypeInfoList, METH_VARARGS},
   {"getColumnList", getColumnList, METH_VARARGS},
+  {"getPrimaryKeysList", getPrimaryKeysList, METH_VARARGS},
+  {"getKeyAndIndexList", getKeyAndIndexList, METH_VARARGS},
+  {"getProcedureList", getProcedureList, METH_VARARGS},
+  {"getProcedureParameterList", getProcedureParameterList, METH_VARARGS},
   {"sendQuery", sendQuery, METH_VARARGS},
   {"sendQueryWithLength", sendQueryWithLength, METH_VARARGS},
   {"sendFileQuery", sendFileQuery, METH_VARARGS},

@@ -330,17 +330,49 @@ void sqlrcur_cacheOff(sqlrcur sqlrcurref) {
 	sqlrcurref->cacheOff();
 }
 
-int sqlrcur_getDatabaseList(sqlrcur sqlrcurref, const char *wild) {
-	return sqlrcurref->getDatabaseList(wild);
+int sqlrcur_getDatabaseList(sqlrcur sqlrcurref, const char *databases) {
+	return sqlrcurref->getDatabaseList(databases);
 }
 
-int sqlrcur_getTableList(sqlrcur sqlrcurref, const char *wild) {
-	return sqlrcurref->getTableList(wild);
+int sqlrcur_getSchemaList(sqlrcur sqlrcurref, const char *schemas) {
+	return sqlrcurref->getSchemaList(schemas);
+}
+
+int sqlrcur_getTableTypeList(sqlrcur sqlrcurref) {
+	return sqlrcurref->getTableTypeList();
+}
+
+int sqlrcur_getTableList(sqlrcur sqlrcurref, const char *tables) {
+	return sqlrcurref->getTableList(tables);
+}
+
+int sqlrcur_getTypeInfoList(sqlrcur sqlrcurref, const char *type) {
+	return sqlrcurref->getTypeInfoList(type);
 }
 
 int sqlrcur_getColumnList(sqlrcur sqlrcurref,
-				const char *table, const char *wild) {
-	return sqlrcurref->getColumnList(table,wild);
+				const char *table, const char *columns) {
+	return sqlrcurref->getColumnList(table,columns);
+}
+
+int sqlrcur_getPrimaryKeysList(sqlrcur sqlrcurref,
+				const char *table, const char *columns) {
+	return sqlrcurref->getPrimaryKeysList(table,columns);
+}
+
+int sqlrcur_getKeyAndIndexList(sqlrcur sqlrcurref,
+				const char *table, const char *qualifier) {
+	return sqlrcurref->getKeyAndIndexList(table,qualifier);
+}
+
+int sqlrcur_getProcedureList(sqlrcur sqlrcurref, const char *procedures) {
+	return sqlrcurref->getProcedureList(procedures);
+}
+
+int sqlrcur_getProcedureParameterList(sqlrcur sqlrcurref,
+				const char *procedure,
+				const char *parameters) {
+	return sqlrcurref->getProcedureParameterList(procedure,parameters);
 }
 
 int sqlrcur_sendQuery(sqlrcur sqlrcurref, const char *query) {

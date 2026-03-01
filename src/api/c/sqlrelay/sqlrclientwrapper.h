@@ -882,25 +882,76 @@ void	sqlrcur_cacheOff(sqlrcur sqlrcurref);
 
 
 /** @ingroup sqlrclientwrapper
- *  Sends a query that returns a list of databases/schemas matching "wild".
- *  If wild is empty or NULL then a list of all databases/schemas will be
+ *  Sends a query that returns a list of databases matching "databases".
+ *  If "databases" is empty or NULL then a list of all databases will be
  *  returned. */
 SQLRCLIENT_DLLSPEC
-int	sqlrcur_getDatabaseList(sqlrcur sqlrcurref, const char *wild);
+int	sqlrcur_getDatabaseList(sqlrcur sqlrcurref, const char *databases);
 
 /** @ingroup sqlrclientwrapper
- *  Sends a query that returns a list of tables matching "wild".  If wild is
- *  empty or NULL then a list of all tables will be returned. */
+ *  Sends a query that returns a list of schemas matching "schemas".
+ *  If "schemas" is empty or NULL then a list of all schemas will be
+ *  returned. */
 SQLRCLIENT_DLLSPEC
-int	sqlrcur_getTableList(sqlrcur sqlrcurref, const char *wild);
+int	sqlrcur_getSchemaList(sqlrcur sqlrcurref, const char *schemas);
+
+/** @ingroup sqlrclientwrapper
+ *  Sends a query that returns a list of table types. */
+SQLRCLIENT_DLLSPEC
+int	sqlrcur_getTableTypeList(sqlrcur sqlrcurref);
+
+/** @ingroup sqlrclientwrapper
+ *  Sends a query that returns a list of tables matching "tables".  If "tables"
+ *  is empty or NULL then a list of all tables will be returned. */
+SQLRCLIENT_DLLSPEC
+int	sqlrcur_getTableList(sqlrcur sqlrcurref, const char *tables);
+
+/** @ingroup sqlrclientwrapper
+ *  Sends a query that returns type information for "type".  If "type" is empty
+ *  or NULL then info for all types will be returned. */
+SQLRCLIENT_DLLSPEC
+int	sqlrcur_getTypeInfoList(sqlrcur sqlrcurref, const char *type);
 
 /** @ingroup sqlrclientwrapper
  *  Sends a query that returns a list of columns in the table specified by the
- *  "table" parameter matching "wild".  If wild is empty or NULL then a list of
- *  all columns will be returned. */
+ *  "table" parameter matching "columns".  If "columns" is empty or NULL then
+ *  a list of all columns will be returned. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_getColumnList(sqlrcur sqlrcurref,
-				const char *table, const char *wild);
+				const char *table, const char *columns);
+
+/** @ingroup sqlrclientwrapper
+ *  Sends a query that returns a list of primary keys in the table specified by
+ *  the "table" parameter matching "columns".  If "columns" is empty or NULL
+ *  then a list of all primary keys will be returned. */
+SQLRCLIENT_DLLSPEC
+int	sqlrcur_getPrimaryKeysList(sqlrcur sqlrcurref,
+				const char *table, const char *columns);
+
+/** @ingroup sqlrclientwrapper
+ *  Sends a query that returns a list of keys and indexes in the table specified
+ *  by the "table" parameter matching "qualifier".  If "qualifier" is empty or
+ *  NULL then a list of all keys and indexes will be returned. */
+SQLRCLIENT_DLLSPEC
+int	sqlrcur_getKeyAndIndexList(sqlrcur sqlrcurref,
+				const char *table, const char *qualifier);
+
+/** @ingroup sqlrclientwrapper
+ *  Sends a query that returns a list of procedures matching "procedures".
+ *  If "procedures" is empty or NULL then a list of all procedures will be
+ *  returned. */
+SQLRCLIENT_DLLSPEC
+int	sqlrcur_getProcedureList(sqlrcur sqlrcurref, const char *procedures);
+
+/** @ingroup sqlrclientwrapper
+ *  Sends a query that returns a list of procedure parameters in the procedure
+ *  specified by the "procedure" parameter matching "parameters".  If
+ *  "parameters" is empty or NULL then a list of all parameters will be
+ *  returned. */
+SQLRCLIENT_DLLSPEC
+int	sqlrcur_getProcedureParameterList(sqlrcur sqlrcurref,
+				const char *procedure,
+				const char *parameters);
 
 
 

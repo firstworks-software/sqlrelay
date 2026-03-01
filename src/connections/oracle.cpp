@@ -122,25 +122,22 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		const char	*getDatabaseListQuery(bool wild);
 		const char	*getSchemaListQuery(bool wild,
 						bool currentdbonly);
-		const char	*getTableListQuery(bool wild,
-						uint16_t objecttypes,
+		const char	*getTableTypeListQuery(bool wild,
+						bool currentschemaonly);
+		const char	*getGlobalTempTableListQuery(
 						bool currentschemaonly);
 		const char	*getTableListQuery(
 						const char *db,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
-		const char	*getTableTypeListQuery(bool wild,
-						bool currentschemaonly);
-		const char	*getGlobalTempTableListQuery(
-						bool currentschemaonly);
-		const char	*getColumnListQuery(
-						const char *table,
-						bool wild);
 		const char	*getTypeInfoListQuery(
 						const char *type,
 						bool wild,
 						bool currentschemaonly);
+		const char	*getColumnListQuery(
+						const char *table,
+						bool wild);
 		const char	*getProcedureListQuery(
 						bool wild,
 						bool currentschemaonly);
@@ -1296,51 +1293,62 @@ const char *oracleconnection::getSchemaListQuery(bool wild,
 	return schemalistquery.getString();
 }
 
-const char *oracleconnection::getTableListQuery(bool wild,
-						uint16_t objecttypes,
+const char *oracleconnection::getTableTypeListQuery(bool wild,
 						bool currentschemaonly) {
 
-	tablelistquery.clear();
-	tablelistquery.append(
-		"select "
-		"	'' as table_cat, "
-		"	owner as table_schem, "
-		"	table_name as table_name, "
-		"	'TABLE' as table_type, "
-		"	'' as remarks, "
+	// FIXME: support wild and currentschemaonly
+	return "(select "
+		"	'' as TABLE_CAT, "
+		"	'' as TABLE_SCHEM, "
+		"	'' as TABLE_NAME, "
+		"	'SYNONYM' as TABLE_TYPE, "
+		"	'' as REMARKS, "
 		"	null "
 		"from "
-		"	all_tables ");
-	if (wild || currentschemaonly) {
-		tablelistquery.append("where ");
-	}
-	bool	prevclause=false;
-	if (currentschemaonly) {
-		if (supportssyscontext) {
-			tablelistquery.append(
-				"	owner=sys_context("
-					"'userenv','current_schema') ");
-		} else {
-			tablelistquery.append(
-				"	upper(owner)=upper('");
-			tablelistquery.append(cont->getUser());
-			tablelistquery.append("') ");
-		}
-		prevclause=true;
-	}
-	if (wild) {
-		if (prevclause) {
-			tablelistquery.append("	and ");
-		}
-		tablelistquery.append("	table_name like upper('%s') ");
-		prevclause=true;
-	}
-	tablelistquery.append(
-		"order by "
-		"	owner, "
-		"	table_name");
+		"	dual) "
+		"union "
+		"(select "
+		"	'' as TABLE_CAT, "
+		"	'' as TABLE_SCHEM, "
+		"	'' as TABLE_NAME, "
+		"	'TABLE' as TABLE_TYPE, "
+		"	'' as REMARKS, "
+		"	null "
+		"from "
+		"	dual) "
+		"union "
+		"(select "
+		"	'' as TABLE_CAT, "
+		"	'' as TABLE_SCHEM, "
+		"	'' as TABLE_NAME, "
+		"	'VIEW' as TABLE_TYPE, "
+		"	'' as REMARKS, "
+		"	null "
+		"from "
+		"	dual)";
+}
 
-	return tablelistquery.getString();
+const char *oracleconnection::getGlobalTempTableListQuery(
+						bool currentschemaonly) {
+	if (supportssyscontext) {
+		return "select "
+			"	table_name, "
+			"	null "
+			"from "
+			"	all_tables "
+			"where "
+			"	owner=sys_context('userenv','current_schema') "
+			"	and "
+			"	temporary='Y'";
+	} else {
+		return "select "
+			"	table_name, "
+			"	null "
+			"from "
+			"	user_tables "
+			"	and "
+			"	temporary='Y'";
+	}
 }
 
 const char *oracleconnection::getTableListQuery(const char *db,
@@ -1469,233 +1477,6 @@ const char *oracleconnection::getTableListQuery(const char *db,
 		"	table_name");
 
 	return tablelistquery.getString();
-}
-
-const char *oracleconnection::getTableTypeListQuery(bool wild,
-						bool currentschemaonly) {
-
-	// FIXME: support wild and currentschemaonly
-	return "(select "
-		"	'' as TABLE_CAT, "
-		"	'' as TABLE_SCHEM, "
-		"	'' as TABLE_NAME, "
-		"	'SYNONYM' as TABLE_TYPE, "
-		"	'' as REMARKS, "
-		"	null "
-		"from "
-		"	dual) "
-		"union "
-		"(select "
-		"	'' as TABLE_CAT, "
-		"	'' as TABLE_SCHEM, "
-		"	'' as TABLE_NAME, "
-		"	'TABLE' as TABLE_TYPE, "
-		"	'' as REMARKS, "
-		"	null "
-		"from "
-		"	dual) "
-		"union "
-		"(select "
-		"	'' as TABLE_CAT, "
-		"	'' as TABLE_SCHEM, "
-		"	'' as TABLE_NAME, "
-		"	'VIEW' as TABLE_TYPE, "
-		"	'' as REMARKS, "
-		"	null "
-		"from "
-		"	dual)";
-}
-
-const char *oracleconnection::getGlobalTempTableListQuery(
-						bool currentschemaonly) {
-	if (supportssyscontext) {
-		return "select "
-			"	table_name, "
-			"	null "
-			"from "
-			"	all_tables "
-			"where "
-			"	owner=sys_context('userenv','current_schema') "
-			"	and "
-			"	temporary='Y'";
-	} else {
-		return "select "
-			"	table_name, "
-			"	null "
-			"from "
-			"	user_tables "
-			"	and "
-			"	temporary='Y'";
-	}
-}
-
-const char *oracleconnection::getColumnListQuery(const char *table,
-							bool wild) {
-
-	// It takes a lot longer to look up synonyms than tables.  It's quick
-	// to see if the object is a synonym though, so we'll do that first
-	// and only spend the extra time if it is.
-
-	bool	issynonym=isSynonym(table);
-
-	// determine which tables to use
-	const char	*tct="user_tab_columns";
-	const char	*st="user_synonyms";
-	const char	*cct="user_cons_columns";
-	const char	*ct="user_constraints";
-	if (supportssyscontext) {
-		tct="all_tab_columns";
-		st="all_synonyms";
-		cct="all_cons_columns";
-		ct="all_constraints";
-	}
-
-	columnlistquery.clear();
-
-	// select clause
-	columnlistquery.append("select ");
-	if (supportssyscontext) {
-		// FIXME: I think I should return the
-		// owner as the table_schem, not cat
-		columnlistquery.append(
-			"	tc.owner as table_cat, ");
-	} else {
-		columnlistquery.append(
-			"	'' as table_cat, ");
-	}
-	columnlistquery.append(
-			"	'' as table_schem, "
-			"	tc.table_name, "
-			"	tc.column_name, "
-			"	'' as data_type, "
-			"	tc.data_type as type_name, "
-			"	tc.data_length as column_size, "
-			"	null as buffer_length, "
-			"	tc.data_scale as decimal_digits, "
-			"	10 as num_prec_radix, "
-			"	case "
-			"		when tc.nullable='N' then 0 "
-			"		else 1 "
-			"	end as nullable, "
-			"	case "
-			"		when tc.identity_column='YES' "
-			"			then 'auto_increment ' "
-			"		else '' "
-			"	end as remarks, "
-			"	tc.data_default as column_default, "
-			"	null as sql_data_type, "
-			"	null as sql_datetime_sub, "
-			"	tc.char_length as char_octet_length, "
-			"	null as ordinal_position, "
-			"	case "
-			"		when tc.nullable='N' then 'NO' "
-			"		else 'YES' "
-			"	end as is_nullable, "
-			"	tc.data_precision as numeric_precision, ");
-	if (!disablekeylookup) {
-		columnlistquery.append(
-			"	cd.key as column_key, ");
-	} else {
-		columnlistquery.append(
-			"	null as column_key, ");
-	}
-	columnlistquery.append(
-			"	null ");
-
-	// from clause
-	columnlistquery.append("from ");
-	if (issynonym) {
-		columnlistquery.append(st)->append(" s, ");
-	}
-	columnlistquery.append(tct)->append(" tc ");
-
-	// left outer join (for key lookup)
-	if (!disablekeylookup) {
-		columnlistquery.append("left outer join "
-				"(select ");
-		if (supportssyscontext) {
-			columnlistquery.append(
-				"	cc.owner, ");
-		}
-		columnlistquery.append(
-				"	cc.table_name, "
-				"	cc.column_name, "
-				"	case c.constraint_type "
-				"		when 'P' then 'PRI' "
-				"		when 'U' then 'UNI' "
-				"		when 'R' then 'MUL' "
-				"		else null "
-				"	end as key "
-				"from ");
-		columnlistquery.append(cct)->append(" cc, ");
-		columnlistquery.append(ct)->append(" c ");
-		columnlistquery.append(
-				"where "
-				"	c.constraint_name=cc.constraint_name "
-				"	and "
-				"	cc.position is not null) cd "
-				"on "
-				"(");
-		if (supportssyscontext) {
-			columnlistquery.append(
-				"cd.owner=tc.owner "
-				"and ");
-		}
-		columnlistquery.append(
-				"cd.table_name=tc.table_name "
-				"and "
-				"cd.column_name=tc.column_name) ");
-	}
-
-	// where clause
-	columnlistquery.append("where ");
-	if (issynonym) {
-		columnlistquery.append(
-			"	s.synonym_name=upper('%s') ");
-		if (supportssyscontext) {
-			columnlistquery.append(
-				"	and "
-				"	(s.owner=sys_context('userenv',"
-							"'current_schema') "
-				"	or "
-				"	s.owner='SYS' "
-				"	or "
-				"	s.owner='SYSTEM') ");
-		}
-		columnlistquery.append(
-			"	and "
-			"	tc.table_name=s.table_name ");
-		if (supportssyscontext) {
-			columnlistquery.append(
-			"	and "
-			"	tc.owner=s.table_owner ");
-		}
-	} else {
-		columnlistquery.append(
-			"	tc.table_name=upper('%s') ");
-		if (supportssyscontext) {
-			columnlistquery.append(
-			"	and "
-			"	(tc.owner=sys_context('userenv',"
-						"'current_schema') "
-			"	or "
-			"	tc.owner='SYS' "
-			"	or "
-			"	tc.owner='SYSTEM') ");
-		}
-	}
-	if (wild) {
-		columnlistquery.append(
-			"	and "
-			"	tc.column_name like upper('%s') ");
-	}
-
-	// order by clause
-	columnlistquery.append(
-			"order by "
-			"	tc.column_id");
-
-	return columnlistquery.getString();
 }
 
 static const char	*intervaldstype=
@@ -2520,6 +2301,175 @@ const char *oracleconnection::getTypeInfoListQuery(const char *type,
 		return nclobtype;
 	}
 	return NULL;
+}
+
+const char *oracleconnection::getColumnListQuery(const char *table,
+							bool wild) {
+
+	// It takes a lot longer to look up synonyms than tables.  It's quick
+	// to see if the object is a synonym though, so we'll do that first
+	// and only spend the extra time if it is.
+
+	bool	issynonym=isSynonym(table);
+
+	// determine which tables to use
+	const char	*tct="user_tab_columns";
+	const char	*st="user_synonyms";
+	const char	*cct="user_cons_columns";
+	const char	*ct="user_constraints";
+	if (supportssyscontext) {
+		tct="all_tab_columns";
+		st="all_synonyms";
+		cct="all_cons_columns";
+		ct="all_constraints";
+	}
+
+	columnlistquery.clear();
+
+	// select clause
+	columnlistquery.append("select ");
+	if (supportssyscontext) {
+		// FIXME: I think I should return the
+		// owner as the table_schem, not cat
+		columnlistquery.append(
+			"	tc.owner as table_cat, ");
+	} else {
+		columnlistquery.append(
+			"	'' as table_cat, ");
+	}
+	columnlistquery.append(
+			"	'' as table_schem, "
+			"	tc.table_name, "
+			"	tc.column_name, "
+			"	'' as data_type, "
+			"	tc.data_type as type_name, "
+			"	tc.data_length as column_size, "
+			"	null as buffer_length, "
+			"	tc.data_scale as decimal_digits, "
+			"	10 as num_prec_radix, "
+			"	case "
+			"		when tc.nullable='N' then 0 "
+			"		else 1 "
+			"	end as nullable, "
+			"	case "
+			"		when tc.identity_column='YES' "
+			"			then 'auto_increment ' "
+			"		else '' "
+			"	end as remarks, "
+			"	tc.data_default as column_default, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	tc.char_length as char_octet_length, "
+			"	null as ordinal_position, "
+			"	case "
+			"		when tc.nullable='N' then 'NO' "
+			"		else 'YES' "
+			"	end as is_nullable, "
+			"	tc.data_precision as numeric_precision, ");
+	if (!disablekeylookup) {
+		columnlistquery.append(
+			"	cd.key as column_key, ");
+	} else {
+		columnlistquery.append(
+			"	null as column_key, ");
+	}
+	columnlistquery.append(
+			"	null ");
+
+	// from clause
+	columnlistquery.append("from ");
+	if (issynonym) {
+		columnlistquery.append(st)->append(" s, ");
+	}
+	columnlistquery.append(tct)->append(" tc ");
+
+	// left outer join (for key lookup)
+	if (!disablekeylookup) {
+		columnlistquery.append("left outer join "
+				"(select ");
+		if (supportssyscontext) {
+			columnlistquery.append(
+				"	cc.owner, ");
+		}
+		columnlistquery.append(
+				"	cc.table_name, "
+				"	cc.column_name, "
+				"	case c.constraint_type "
+				"		when 'P' then 'PRI' "
+				"		when 'U' then 'UNI' "
+				"		when 'R' then 'MUL' "
+				"		else null "
+				"	end as key "
+				"from ");
+		columnlistquery.append(cct)->append(" cc, ");
+		columnlistquery.append(ct)->append(" c ");
+		columnlistquery.append(
+				"where "
+				"	c.constraint_name=cc.constraint_name "
+				"	and "
+				"	cc.position is not null) cd "
+				"on "
+				"(");
+		if (supportssyscontext) {
+			columnlistquery.append(
+				"cd.owner=tc.owner "
+				"and ");
+		}
+		columnlistquery.append(
+				"cd.table_name=tc.table_name "
+				"and "
+				"cd.column_name=tc.column_name) ");
+	}
+
+	// where clause
+	columnlistquery.append("where ");
+	if (issynonym) {
+		columnlistquery.append(
+			"	s.synonym_name=upper('%s') ");
+		if (supportssyscontext) {
+			columnlistquery.append(
+				"	and "
+				"	(s.owner=sys_context('userenv',"
+							"'current_schema') "
+				"	or "
+				"	s.owner='SYS' "
+				"	or "
+				"	s.owner='SYSTEM') ");
+		}
+		columnlistquery.append(
+			"	and "
+			"	tc.table_name=s.table_name ");
+		if (supportssyscontext) {
+			columnlistquery.append(
+			"	and "
+			"	tc.owner=s.table_owner ");
+		}
+	} else {
+		columnlistquery.append(
+			"	tc.table_name=upper('%s') ");
+		if (supportssyscontext) {
+			columnlistquery.append(
+			"	and "
+			"	(tc.owner=sys_context('userenv',"
+						"'current_schema') "
+			"	or "
+			"	tc.owner='SYS' "
+			"	or "
+			"	tc.owner='SYSTEM') ");
+		}
+	}
+	if (wild) {
+		columnlistquery.append(
+			"	and "
+			"	tc.column_name like upper('%s') ");
+	}
+
+	// order by clause
+	columnlistquery.append(
+			"order by "
+			"	tc.column_id");
+
+	return columnlistquery.getString();
 }
 
 const char *oracleconnection::getProcedureListQuery(bool wild,

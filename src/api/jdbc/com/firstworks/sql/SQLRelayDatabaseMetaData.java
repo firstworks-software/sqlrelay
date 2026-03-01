@@ -1246,7 +1246,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 		boolean	result=false;
 		synchronized (networklock) {
-			result=sqlrcur.getTableTypeListWithFormat(null,4);
+			result=sqlrcur.getTableTypeListWithFormat(4);
 		}
 
 		if (result) {
@@ -1288,7 +1288,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 		boolean	result=false;
 		synchronized (networklock) {
-			result=sqlrcur.getTypeInfoListWithFormat("*",null,4);
+			result=sqlrcur.getTypeInfoListWithFormat("*",4);
 		}
 
 		if (result) {

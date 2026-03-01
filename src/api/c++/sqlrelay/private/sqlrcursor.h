@@ -154,44 +154,29 @@
 
 		bool		getDatabaseList(const char *databases,
 					sqlrclientlistformat_t listformat);
-		bool		getSchemaList(const char *databases);
 		bool		getSchemaList(const char *schemas,
 					sqlrclientlistformat_t listformat);
 		bool		getTableList(const char *tables,
 					sqlrclientlistformat_t listformat,
 					uint16_t objecttypes);
-		bool		getTableTypeList(const char *unused);
-		bool		getTableTypeList(const char *unused,
+		bool		getTableTypeList(
 					sqlrclientlistformat_t listformat);
 		bool		getColumnList(const char *table,
 					const char *columns,
 					sqlrclientlistformat_t listformat);
 		bool		getPrimaryKeysList(const char *table,
-					const char *columns);
-		bool		getPrimaryKeysList(const char *table,
 					const char *columns,
 					sqlrclientlistformat_t listformat);
 		bool		getKeyAndIndexList(const char *table,
-					const char *qualifier);
-		bool		getKeyAndIndexList(const char *table,
 					const char *qualifier,
 					sqlrclientlistformat_t listformat);
-		bool		getProcedureParameterList(
-					const char *procedure,
-					const char *parameters);
 		bool		getProcedureParameterList(
 					const char *procedure,
 					const char *parameters,
 					sqlrclientlistformat_t listformat);
 		bool		getTypeInfoList(
 					const char *type,
-					const char *unused);
-		bool		getTypeInfoList(
-					const char *type,
-					const char *unused,
 					sqlrclientlistformat_t listformat);
-		bool		getProcedureList(
-					const char *procedures);
 		bool		getProcedureList(
 					const char *procedures,
 					sqlrclientlistformat_t listformat);

@@ -196,12 +196,36 @@ JNIEXPORT void JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_cacheOff
  * Signature: (Ljava/lang/String;)Z
  */
 JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getDatabaseList
-  (JNIEnv *env, jobject self, jstring wild) {
-	char	*wildstring=curGetStringUTFChars(env,wild,0);
+  (JNIEnv *env, jobject self, jstring databases) {
+	char	*databasesstring=curGetStringUTFChars(env,databases,0);
 	jboolean	retval=getSqlrCursor(env,self)->
-					getDatabaseList(wildstring);
-	curReleaseStringUTFChars(env,wild,wildstring);
+					getDatabaseList(databasesstring);
+	curReleaseStringUTFChars(env,databases,databasesstring);
 	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getSchemaList
+ * Signature: (Ljava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getSchemaList
+  (JNIEnv *env, jobject self, jstring schemas) {
+	char	*schemasstring=curGetStringUTFChars(env,schemas,0);
+	jboolean	retval=getSqlrCursor(env,self)->
+					getSchemaList(schemasstring);
+	curReleaseStringUTFChars(env,schemas,schemasstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getTableTypeList
+ * Signature: ()Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getTableTypeList
+  (JNIEnv *env, jobject self) {
+	return getSqlrCursor(env,self)->getTableTypeList();
 }
 
 /*
@@ -210,11 +234,25 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getDatabaseLi
  * Signature: (Ljava/lang/String;)Z
  */
 JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getTableList
-  (JNIEnv *env, jobject self, jstring wild) {
-	char	*wildstring=curGetStringUTFChars(env,wild,0);
+  (JNIEnv *env, jobject self, jstring tables) {
+	char	*tablesstring=curGetStringUTFChars(env,tables,0);
 	jboolean	retval=getSqlrCursor(env,self)->
-					getTableList(wildstring);
-	curReleaseStringUTFChars(env,wild,wildstring);
+					getTableList(tablesstring);
+	curReleaseStringUTFChars(env,tables,tablesstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getTypeInfoList
+ * Signature: (Ljava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getTypeInfoList
+  (JNIEnv *env, jobject self, jstring type) {
+	char	*typestring=curGetStringUTFChars(env,type,0);
+	jboolean	retval=getSqlrCursor(env,self)->
+					getTypeInfoList(typestring);
+	curReleaseStringUTFChars(env,type,typestring);
 	return retval;
 }
 
@@ -224,13 +262,75 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getTableList
  * Signature: (Ljava/lang/String;Ljava/lang/String)Z
  */
 JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getColumnList
-  (JNIEnv *env, jobject self, jstring table, jstring wild) {
+  (JNIEnv *env, jobject self, jstring table, jstring columns) {
 	char	*tablestring=curGetStringUTFChars(env,table,0);
-	char	*wildstring=curGetStringUTFChars(env,wild,0);
+	char	*columnsstring=curGetStringUTFChars(env,columns,0);
 	jboolean	retval=getSqlrCursor(env,self)->
-					getColumnList(tablestring,wildstring);
+					getColumnList(tablestring,columnsstring);
 	curReleaseStringUTFChars(env,table,tablestring);
-	curReleaseStringUTFChars(env,wild,wildstring);
+	curReleaseStringUTFChars(env,columns,columnsstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getPrimaryKeysList
+ * Signature: (Ljava/lang/String;Ljava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getPrimaryKeysList
+  (JNIEnv *env, jobject self, jstring table, jstring columns) {
+	char	*tablestring=curGetStringUTFChars(env,table,0);
+	char	*columnsstring=curGetStringUTFChars(env,columns,0);
+	jboolean	retval=getSqlrCursor(env,self)->
+					getPrimaryKeysList(tablestring,columnsstring);
+	curReleaseStringUTFChars(env,table,tablestring);
+	curReleaseStringUTFChars(env,columns,columnsstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getKeyAndIndexList
+ * Signature: (Ljava/lang/String;Ljava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getKeyAndIndexList
+  (JNIEnv *env, jobject self, jstring table, jstring qualifier) {
+	char	*tablestring=curGetStringUTFChars(env,table,0);
+	char	*qualifierstring=curGetStringUTFChars(env,qualifier,0);
+	jboolean	retval=getSqlrCursor(env,self)->
+					getKeyAndIndexList(tablestring,qualifierstring);
+	curReleaseStringUTFChars(env,table,tablestring);
+	curReleaseStringUTFChars(env,qualifier,qualifierstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getProcedureList
+ * Signature: (Ljava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getProcedureList
+  (JNIEnv *env, jobject self, jstring procedures) {
+	char	*proceduresstring=curGetStringUTFChars(env,procedures,0);
+	jboolean	retval=getSqlrCursor(env,self)->
+					getProcedureList(proceduresstring);
+	curReleaseStringUTFChars(env,procedures,proceduresstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getProcedureParameterList
+ * Signature: (Ljava/lang/String;Ljava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getProcedureParameterList
+  (JNIEnv *env, jobject self, jstring procedure, jstring parameters) {
+	char	*procedurestring=curGetStringUTFChars(env,procedure,0);
+	char	*parametersstring=curGetStringUTFChars(env,parameters,0);
+	jboolean	retval=getSqlrCursor(env,self)->
+					getProcedureParameterList(procedurestring,parametersstring);
+	curReleaseStringUTFChars(env,procedure,procedurestring);
+	curReleaseStringUTFChars(env,parameters,parametersstring);
 	return retval;
 }
 
@@ -2237,12 +2337,12 @@ JNIEXPORT void JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_closeResultSet
  * Signature: (Ljava/lang/String;I)Z
  */
 JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getDatabaseListWithFormat
-  (JNIEnv *env, jobject self, jstring wild, jint listformat) {
-	char	*wildstring=curGetStringUTFChars(env,wild,0);
+  (JNIEnv *env, jobject self, jstring databases, jint listformat) {
+	char	*databasesstring=curGetStringUTFChars(env,databases,0);
 	jboolean	retval=getSqlrCursor(env,self)->
-				getDatabaseList(wildstring,
+				getDatabaseList(databasesstring,
 					(sqlrclientlistformat_t)listformat);
-	curReleaseStringUTFChars(env,wild,wildstring);
+	curReleaseStringUTFChars(env,databases,databasesstring);
 	return retval;
 }
 
@@ -2252,12 +2352,12 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getDatabaseLi
  * Signature: (Ljava/lang/String;I)Z
  */
 JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getSchemaListWithFormat
-  (JNIEnv *env, jobject self, jstring wild, jint listformat) {
-	char	*wildstring=curGetStringUTFChars(env,wild,0);
+  (JNIEnv *env, jobject self, jstring schemas, jint listformat) {
+	char	*schemasstring=curGetStringUTFChars(env,schemas,0);
 	jboolean	retval=getSqlrCursor(env,self)->
-				getSchemaList(wildstring,
+				getSchemaList(schemasstring,
 					(sqlrclientlistformat_t)listformat);
-	curReleaseStringUTFChars(env,wild,wildstring);
+	curReleaseStringUTFChars(env,schemas,schemasstring);
 	return retval;
 }
 
@@ -2267,13 +2367,13 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getSchemaList
  * Signature: (Ljava/lang/String;IS)Z
  */
 JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getTableListWithFormat
-  (JNIEnv *env, jobject self, jstring wild, jint listformat, jint objecttypes) {
-	char	*wildstring=curGetStringUTFChars(env,wild,0);
+  (JNIEnv *env, jobject self, jstring tables, jint listformat, jint objecttypes) {
+	char	*tablesstring=curGetStringUTFChars(env,tables,0);
 	jboolean	retval=getSqlrCursor(env,self)->
-				getTableList(wildstring,
+				getTableList(tablesstring,
 					(sqlrclientlistformat_t)listformat,
 					(uint16_t)objecttypes);
-	curReleaseStringUTFChars(env,wild,wildstring);
+	curReleaseStringUTFChars(env,tables,tablesstring);
 	return retval;
 }
 
@@ -2283,13 +2383,10 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getTableListW
  * Signature: (Ljava/lang/String;;)Z
  */
 JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getTableTypeListWithFormat
-  (JNIEnv *env, jobject self, jstring wild, jint listformat) {
-	char	*wildstring=curGetStringUTFChars(env,wild,0);
-	jboolean	retval=getSqlrCursor(env,self)->
-				getTableTypeList(wildstring,
+  (JNIEnv *env, jobject self, jint listformat) {
+	return getSqlrCursor(env,self)->
+				getTableTypeList(
 					(sqlrclientlistformat_t)listformat);
-	curReleaseStringUTFChars(env,wild,wildstring);
-	return retval;
 }
 
 /*
@@ -2298,13 +2395,13 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getTableTypeL
  * Signature: (Ljava/lang/String;Ljava/lang/String;I)Z
  */
 JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getColumnListWithFormat
-  (JNIEnv *env, jobject self, jstring table, jstring wild, jint listformat) {
+  (JNIEnv *env, jobject self, jstring table, jstring columns, jint listformat) {
 	char	*tablestring=curGetStringUTFChars(env,table,0);
-	char	*wildstring=curGetStringUTFChars(env,wild,0);
+	char	*columnsstring=curGetStringUTFChars(env,columns,0);
 	jboolean	retval=getSqlrCursor(env,self)->
-				getColumnList(tablestring,wildstring,
+				getColumnList(tablestring,columnsstring,
 					(sqlrclientlistformat_t)listformat);
-	curReleaseStringUTFChars(env,wild,wildstring);
+	curReleaseStringUTFChars(env,columns,columnsstring);
 	curReleaseStringUTFChars(env,table,tablestring);
 	return retval;
 }
@@ -2315,13 +2412,11 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getColumnList
  * Signature: (Ljava/lang/String;Ljava/lang/String;I)Z
  */
 JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getTypeInfoListWithFormat
-  (JNIEnv *env, jobject self, jstring type, jstring wild, jint listformat) {
+  (JNIEnv *env, jobject self, jstring type, jint listformat) {
 	char	*typestring=curGetStringUTFChars(env,type,0);
-	char	*wildstring=curGetStringUTFChars(env,wild,0);
 	jboolean	retval=getSqlrCursor(env,self)->
-				getTypeInfoList(typestring,wildstring,
+				getTypeInfoList(typestring,
 					(sqlrclientlistformat_t)listformat);
-	curReleaseStringUTFChars(env,wild,wildstring);
 	curReleaseStringUTFChars(env,type,typestring);
 	return retval;
 }
@@ -2332,12 +2427,12 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getTypeInfoLi
  * Signature: (Ljava/lang/String;I)Z
  */
 JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getProcedureListWithFormat
-  (JNIEnv *env, jobject self, jstring wild, jint listformat) {
-	char	*wildstring=curGetStringUTFChars(env,wild,0);
+  (JNIEnv *env, jobject self, jstring procedures, jint listformat) {
+	char	*proceduresstring=curGetStringUTFChars(env,procedures,0);
 	jboolean	retval=getSqlrCursor(env,self)->
-				getProcedureList(wildstring,
+				getProcedureList(proceduresstring,
 					(sqlrclientlistformat_t)listformat);
-	curReleaseStringUTFChars(env,wild,wildstring);
+	curReleaseStringUTFChars(env,procedures,proceduresstring);
 	return retval;
 }
 

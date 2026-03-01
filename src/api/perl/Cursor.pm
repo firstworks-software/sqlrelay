@@ -179,20 +179,57 @@ __END__
         cacheOff();
             # Sets query caching off.
 
-        getDatabaseList(wild);
+        getDatabaseList(databases);
             # Sends a query that returns a list of
-            # databases/schemas matching "wild".  If wild is empty
-            # or NULL then a list of all databases/schemas will be
+            # databases matching "databases".  If databases is
+            # empty or NULL then a list of all databases will be
             # returned.
-        getTableList(wild);
+        getSchemaList(schemas);
+            # Sends a query that returns a list of
+            # schemas matching "schemas".  If schemas is empty
+            # or NULL then a list of all schemas will be
+            # returned.
+        getTableTypeList();
+            # Sends a query that returns a list of
+            # table types available for the current
+            # connection.
+        getTableList(tables);
             # Sends a query that returns a list of tables
-            # matching "wild".  If wild is empty or NULL then
+            # matching "tables".  If tables is empty or NULL then
             # a list of all tables will be returned.
-        getColumnList(table,wild);
+        getTypeInfoList(type);
+            # Sends a query that returns a list of
+            # data types matching "type".  If type is empty
+            # or NULL then a list of all data types will be
+            # returned.
+        getColumnList(table,columns);
             # Sends a query that returns a list of columns
             # in the table specified by the "table" parameter
-            # matching "wild".  If wild is empty or NULL then
-            # a list of all columns will be returned.
+            # matching "columns".  If columns is empty or NULL
+            # then a list of all columns will be returned.
+        getPrimaryKeysList(table,columns);
+            # Sends a query that returns a list of primary
+            # keys in the table specified by the "table"
+            # parameter matching "columns".  If columns is
+            # empty or NULL then a list of all primary keys
+            # will be returned.
+        getKeyAndIndexList(table,qualifier);
+            # Sends a query that returns a list of keys
+            # and indexes in the table specified by the
+            # "table" parameter matching "qualifier".  If
+            # qualifier is empty or NULL then a list of all
+            # keys and indexes will be returned.
+        getProcedureList(procedures);
+            # Sends a query that returns a list of
+            # stored procedures matching "procedures".  If
+            # procedures is empty or NULL then a list of
+            # all stored procedures will be returned.
+        getProcedureParameterList(procedure,parameters);
+            # Sends a query that returns a list of
+            # parameters of the stored procedure specified
+            # by the "procedure" parameter matching
+            # "parameters".  If parameters is empty or NULL
+            # then a list of all parameters will be returned.
 
 
         # If you don't need to use substitution or bind variables

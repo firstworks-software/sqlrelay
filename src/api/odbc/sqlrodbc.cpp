@@ -10982,7 +10982,7 @@ SQLRETURN SQL_API SQLGetTypeInfo(SQLHSTMT statementhandle,
 	}
 
 	// get the type info
-	SQLRETURN	retval=(stmt->cur->getTypeInfoList(typestring,NULL,
+	SQLRETURN	retval=(stmt->cur->getTypeInfoList(typestring,
 						SQLRCLIENTLISTFORMAT_ODBC))?
 							SQL_SUCCESS:SQL_ERROR;
 
@@ -12084,7 +12084,7 @@ SQLRETURN SQL_API SQLTables(SQLHSTMT statementhandle,
 		debugPrintf("  getting table type list...\n");
 
 		retval=
-		(stmt->cur->getTableTypeList(NULL,SQLRCLIENTLISTFORMAT_ODBC))?
+		(stmt->cur->getTableTypeList(SQLRCLIENTLISTFORMAT_ODBC))?
 							SQL_SUCCESS:SQL_ERROR;
 
 	} else {
