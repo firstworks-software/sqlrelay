@@ -2001,122 +2001,118 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 
 		/** Makes the database API call to fetch the list of databases
 		 *  that are visible to the user that SQL Relay is logged in
-		 *  as.  Only returns database names that match wildcard
-		 *  "wild" if "wild" is non-NULL.
-		 *
-		 *  Returns true on success and false on failure. */
-		bool	getDatabaseList(sqlrservercursor *cursor,
-							const char *wild);
-
-		/** Makes the database API call to fetch the list of schemas,
-		 *  in the current database, that are visible to the user that
-		 *  SQL Relay is logged in as.  Only returns schema names that
-		 *  match wildcard "wild" if "wild" is non-NULL.
-		 *
-		 *  Returns true on success and false on failure. */
-		bool	getSchemaList(sqlrservercursor *cursor,
-							const char *wild);
-
-		/** Makes the database API call to fetch the list of tables (and
-		 *  table-like objects), in the current database and schema,
-		 *  that are visible to the user that SQL Relay is logged in
-		 *  as.  "objecttypes" should be an or-ed set of one or more of
-		 *  the following object types:
-		 *
-		 *  DB_OBJECT_TABLE
-		 *  DB_OBJECT_VIEW
-		 *  DB_OBJECT_ALIAS
-		 *  DB_OBJECT_SYNONYM
-		 *
-		 *  Only returns table type names that match pattern
-		 *  "tabletypes" if "tabletypes" is non-NULL/non-empty.
-		 *
-		 *  Returns true on success and false on failure. */
-		bool	getTableTypeList(sqlrservercursor *cursor,
-						const char *tabletypes);
-
-		/** Makes the database API call to fetch the list of tables (and
-		 *  table-like objects), in the current database and schema,
-		 *  that are visible to the user that SQL Relay is logged in
-		 *  as.  "objecttypes" should be an or-ed set of one or more of
-		 *  the following object types:
-		 *
-		 *  DB_OBJECT_TABLE
-		 *  DB_OBJECT_VIEW
-		 *  DB_OBJECT_ALIAS
-		 *  DB_OBJECT_SYNONYM
-		 *
-		 *  Only returns table names that match wildcard "wild" if
-		 *  "wild" is non-NULL.
-		 *
-		 *  Returns true on success and false on failure. */
-		bool	getTableList(sqlrservercursor *cursor,
-							const char *wild,
-							uint16_t objecttypes);
-
-		/** Makes the database API call to fetch the info about
-		 *  datatype "type", where "type" is in the current database
-		 *  and schema.  Only returns info for types that match
-		 *  wildcard "wild" if "wild" is non-NULL.
-		 *
-		 *  Returns true on success and false on failure. */
-		bool	getTypeInfoList(sqlrservercursor *cursor,
-							const char *type,
-							const char *wild);
-
-		/** Makes the database API call to fetch the list of column
-		 *  names in "table", where "table" is in the current database
-		 *  and schema.  Only returns column names that match wildcard
-		 *  "wild" if "wild" is non-NULL.
-		 *
-		 *  Returns true on success and false on failure. */
-		bool	getColumnList(sqlrservercursor *cursor,
-							const char *table,
-							const char *wild);
-
-		/** Makes the database API call to fetch the list of columns
-		 *  that compose the primary key of "table".  Only returns
-		 *  primary key column names that match wildcard "wild" if
-		 *  "wild" is non-NULL.
-		 *
-		 *  Returns true on success and false on failure. */
-		bool	getPrimaryKeysList(sqlrservercursor *cursor,
-							const char *table,
-							const char *wild);
-
-		/** Makes the database API call to fetch the indices and
-		 *  indexed columns of "table", where "table" is in the current
-		 *  database and schema.  Only returns primary key column names
-		 *  that match wildcard "wild" if "wild" is non-NULL.
-		 *
-		 *  Returns true on success and false on failure. */
-		bool	getKeyAndIndexList(sqlrservercursor *cursor,
-							const char *table,
-							const char *wild);
-
-		/** Makes the database API call to fetch the list of stored
-		 *  procedures in the current database and schema, and
-		 *  information about them, such as the number of input and
-		 *  output parameters, the numer of result sets that the
-		 *  procdure may retrun, a description of the procedure, and
-		 *  the procedure type (procedure or function).  Only returns
-		 *  info for procedures that match wildcard "wild" if "wild"
+		 *  as.  Only returns database names that match "db" if "db"
 		 *  is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
+		bool	getDatabaseList(sqlrservercursor *cursor,
+							const char *db);
+
+		/** Makes the database API call to fetch the list of schemas,
+		 *  in "db", that are visible to the user that SQL Relay is
+		 *  logged in as.  Only returns schema names that match
+		 *  "schema" if "schema" is non-NULL.
+		 *
+		 *  Returns true on success and false on failure. */
+		bool	getSchemaList(sqlrservercursor *cursor,
+							const char *db,
+							const char *schema);
+
+		/** Makes the database API call to fetch the list of table
+		 *  type names in "db"."schema", that are visible to the user
+		 *  that SQL Relay is logged in as.  Only returns table type
+		 *  names that match pattern "tabletypes" if "tabletypes" is
+		 *  non-NULL/non-empty.
+		 *
+		 *  Returns true on success and false on failure. */
+		bool	getTableTypeList(sqlrservercursor *cursor,
+						const char *db,
+						const char *schema,
+						const char *tabletypes);
+
+		/** Makes the database API call to fetch the list of tables (and
+		 *  table-like objects), in "db"."schema", that are visible to
+		 *  the user that SQL Relay is logged in as.  "objecttypes"
+		 *  should be an or-ed set of one or more of the following
+		 *  object types:
+		 *
+		 *  DB_OBJECT_TABLE
+		 *  DB_OBJECT_VIEW
+		 *  DB_OBJECT_ALIAS
+		 *  DB_OBJECT_SYNONYM
+		 *
+		 *  Only returns table names that match "table" if "table"
+		 *  is non-NULL.
+		 *
+		 *  Returns true on success and false on failure. */
+		bool	getTableList(sqlrservercursor *cursor,
+							const char *db,
+							const char *schema,
+							const char *table,
+							uint16_t objecttypes);
+
+		/** Makes the database API call to fetch the info about
+		 *  datatype "type", where "type" is in "db"."schema".
+		 *
+		 *  Returns true on success and false on failure. */
+		bool	getTypeInfoList(sqlrservercursor *cursor,
+							const char *db,
+							const char *schema,
+							const char *type);
+
+		/** Makes the database API call to fetch the list of column
+		 *  names in "db"."schema"."table".  Only returns column names
+		 *  that match "column" if "column" is non-NULL.
+		 *
+		 *  Returns true on success and false on failure. */
+		bool	getColumnList(sqlrservercursor *cursor,
+							const char *db,
+							const char *schema,
+							const char *table,
+							const char *column);
+
+		/** Makes the database API call to fetch the list of columns
+		 *  that compose the primary key of "db"."schema"."table".
+		 *
+		 *  Returns true on success and false on failure. */
+		bool	getPrimaryKeysList(sqlrservercursor *cursor,
+							const char *db,
+							const char *schema,
+							const char *table);
+
+		/** Makes the database API call to fetch the indices and
+		 *  indexed columns of "db"."schema"."table".
+		 *
+		 *  Returns true on success and false on failure. */
+		bool	getKeyAndIndexList(sqlrservercursor *cursor,
+							const char *db,
+							const char *schema,
+							const char *table);
+
+		/** Makes the database API call to fetch the list of stored
+		 *  procedures in "db"."schema", and information about them,
+		 *  such as the number of input and output parameters, the
+		 *  numer of result sets that the procdure may retrun, a
+		 *  description of the procedure, and the procedure type
+		 *  (procedure or function).  Only returns info for procedures
+		 *  that match "procedure" if "procedure" is non-NULL.
+		 *
+		 *  Returns true on success and false on failure. */
 		bool	getProcedureList(sqlrservercursor *cursor,
-							const char *wild);
+							const char *db,
+							const char *schema,
+							const char *procedure);
 
 		/** Makes the database API call to fetch the parameter names of
-		 *  "proc", where "proc" is in the current database and schema,
-		 *  and information about them, such as whether they are input,
-		 *  output, or input-output variables.  Only returns parameter
-		 *  names that match wildcard "wild" if "wild" is non-NULL.
+		 *  "procedure", where "procedure" is in "db"."schema", and
+		 *  information about them, such as whether they are input,
+		 *  output, or input-output variables.
 		 *
 		 *  Returns true on success and false on failure. */
 		bool	getProcedureParameterList(sqlrservercursor *cursor,
-							const char *proc,
-							const char *wild);
+							const char *db,
+							const char *schema,
+							const char *procedure);
 
 		/** Returns a query that can be used to fetch the list of
 		 *  database names that match the provided "db" pattern.
@@ -3529,115 +3525,119 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 
 		/** Makes the database API call to fetch the list of databases
 		 *  that are visible to the user that SQL Relay is logged in
-		 *  as.  Only returns database names that match wildcard "wild"
-		 *  if "wild" is non-NULL.
+		 *  as.  Only returns database names that match "db" if "db"
+		 *  is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
 		virtual bool	getDatabaseList(sqlrservercursor *cursor,
-							const char *wild);
+							const char *db);
 
 		/** Makes the database API call to fetch the list of schemas,
-		 *  in the current database, that are visible to the user that
-		 *  SQL Relay is logged in as.  Only returns schema names that
-		 *  match wildcard "wild" if "wild" is non-NULL.
+		 *  in "db", that are visible to the user that SQL Relay is
+		 *  logged in as.  Only returns schema names that match
+		 *  "schema" if "schema" is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
 		virtual bool	getSchemaList(sqlrservercursor *cursor,
-							const char *wild);
+							const char *db,
+							const char *schema);
 
-		/** Makes the database API call to fetch the list of table type
-		 *  names in the current database and schema, that are visible
-		 *  to the user that SQL Relay is logged in as.  Only returns
-		 *  table type names that match pattern "tabletypes" if
-		 *  "tabletypes" is non-NULL/non-empty.
+		/** Makes the database API call to fetch the list of table
+		 *  type names in "db"."schema", that are visible to the user
+		 *  that SQL Relay is logged in as.  Only returns table type
+		 *  names that match pattern "tabletypes" if "tabletypes" is
+		 *  non-NULL/non-empty.
 		 *
 		 *  Returns true on success and false on failure. */
 		virtual bool	getTableTypeList(sqlrservercursor *cursor,
+						const char *db,
+						const char *schema,
 						const char *tabletypes);
 
-		/** Makes the databaase API call to fetch the list of tables
-		 *  (and table-like objects), in the current database and
-		 *  schema, that are visible to the user that SQL Relay is
-		 *  logged in as.  "objecttypes" should be an or-ed set of one
-		 *  or more of the following object types:
+		/** Makes the database API call to fetch the list of tables
+		 *  (and table-like objects), in "db"."schema", that are
+		 *  visible to the user that SQL Relay is logged in as.
+		 *  "objecttypes" should be an or-ed set of one or more of
+		 *  the following object types:
 		 *
 		 *  DB_OBJECT_TABLE
 		 *  DB_OBJECT_VIEW
 		 *  DB_OBJECT_ALIAS
 		 *  DB_OBJECT_SYNONYM
 		 *
-		 *  Only returns table names that match wildcard "wild" if
-		 *  "wild" is non-NULL.
+		 *  Only returns table names that match "table" if "table"
+		 *  is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
 		virtual bool	getTableList(sqlrservercursor *cursor,
-							const char *wild,
+							const char *db,
+							const char *schema,
+							const char *table,
 							uint16_t objecttypes);
 
 		/** Makes the database API call to fetch the info about
-		 *  datatype "type", where "type" is in the current database
-		 *  and schema.  Only returns info for types that match
-		 *  wildcard "wild" if "wild" is non-NULL.
+		 *  datatype "type", where "type" is in "db"."schema".
 		 *
 		 *  Returns true on success and false on failure. */
 		virtual bool	getTypeInfoList(sqlrservercursor *cursor,
-							const char *type,
-							const char *wild);
+							const char *db,
+							const char *schema,
+							const char *type);
 
 		/** Makes the database API call to fetch the list of column
-		 *  names in "table", where "table" is in the current database
-		 *  and schema.  Only returns column names that match wildcard
-		 *  "wild" if "wild" is non-NULL.
+		 *  names in "db"."schema"."table".  Only returns column names
+		 *  that match "column" if "column" is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
 		virtual bool	getColumnList(sqlrservercursor *cursor,
+							const char *db,
+							const char *schema,
 							const char *table,
-							const char *wild);
+							const char *column);
 
 		/** Makes the database API call to fetch the list of columns
-		 *  that compose the primary key of "table".  Only returns
-		 *  primary key column names that match wildcard "wild" if
-		 *  "wild" is non-NULL.
+		 *  that compose the primary key of "db"."schema"."table".
 		 *
 		 *  Returns true on success and false on failure. */
 		virtual bool	getPrimaryKeysList(sqlrservercursor *cursor,
-							const char *table,
-							const char *wild);
+							const char *db,
+							const char *schema,
+							const char *table);
 
 		/** Makes the database API call to fetch the indices and
-		 *  indexed columns of "table", where "table" is in the current
-		 *  database and schema.  Only returns primary key column names
-		 *  that match wildcard "wild" if "wild" is non-NULL.
+		 *  indexed columns of "db"."schema"."table".
 		 *
 		 *  Returns true on success and false on failure. */
 		virtual bool	getKeyAndIndexList(sqlrservercursor *cursor,
-							const char *table,
-							const char *wild);
+							const char *db,
+							const char *schema,
+							const char *table);
 
 		/** Makes the database API call to fetch the list of stored
-		 *  procedures in the current database and schema, and
-		 *  information about them, such as the number of input and
-		 *  output parameters, the numer of result sets that the
-		 *  procdure may retrun, a description of the procedure, and
-		 *  the procedure type (procedure or function).  Only returns
-		 *  info for procedures that match wildcard "wild" if "wild" is
-		 *  non-NULL.
+		 *  procedures in "db"."schema", and information about them,
+		 *  such as the number of input and output parameters, the
+		 *  numer of result sets that the procdure may retrun, a
+		 *  description of the procedure, and the procedure type
+		 *  (procedure or function).  Only returns info for procedures
+		 *  that match "procedure" if "procedure" is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
 		virtual bool	getProcedureList(sqlrservercursor *cursor,
-							const char *wild);
+							const char *db,
+							const char *schema,
+							const char *procedure);
 
 		/** Makes the database API call to fetch the parameter names of
-		 *  "proc", where "proc" is in the current database and schema,
-		 *  and information about them, such as whether they are input,
-		 *  output, or input-output variables.  Only returns parameter
-		 *  names that match wildcard "wild" if "wild" is non-NULL.
+		 *  "procedure", where "procedure" is in "db"."schema", and
+		 *  information about them, such as whether they are input,
+		 *  output, or input-output variables.
 		 *
 		 *  Returns true on success and false on failure. */
 		virtual bool	getProcedureParameterList(
 						sqlrservercursor *cursor,
-							const char *procedure,
-							const char *wild);
+							const char *db,
+							const char *schema,
+							const char *procedure);
 
 		/** Returns a query that can be used to fetch the list of
 		 *  database names that match the provided "db" pattern.

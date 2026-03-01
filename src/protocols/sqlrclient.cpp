@@ -4420,28 +4420,44 @@ bool sqlrprotocol_sqlrclient::getObjectListByApiCall(sqlrservercursor *cursor,
 	// initialize flags andbuffers
 	bool	success=false;
 
+	// split the object (db.schema.object) into db, schema, and object
+	char	*currentdb=cont->getCurrentDatabase();
+	char	*currentschema=cont->getCurrentSchema();
+	const char	*db=NULL;
+	const char	*schema=NULL;
+	const char	*obj=NULL;
+	cont->splitObjectName(currentdb,currentschema,object,&db,&schema,&obj);
+
+	// when fetching lists in mysql format, we only want to fetch for
+	// the current database/schema
+	if (listformat==SQLRSERVERLISTFORMAT_MYSQL) {
+		db=currentdb;
+		schema=currentschema;
+	}
+
 	// get the appropriate list
 	switch (querytype) {
 		case SQLRCLIENTQUERYTYPE_DATABASE_LIST:
 			cont->setDatabaseListFormat(listformat);
-			success=cont->getDatabaseList(cursor,object);
+			success=cont->getDatabaseList(cursor,db);
 			break;
 		case SQLRCLIENTQUERYTYPE_SCHEMA_LIST:
 			cont->setSchemaListFormat(listformat);
-			success=cont->getSchemaList(cursor,object);
+			success=cont->getSchemaList(cursor,db,schema);
 			break;
 		case SQLRCLIENTQUERYTYPE_TABLE_LIST:
 		case SQLRCLIENTQUERYTYPE_TABLE_LIST_2:
 			cont->setTableListFormat(listformat);
-			success=cont->getTableList(cursor,object,objecttypes);
+			success=cont->getTableList(cursor,db,schema,
+							obj,objecttypes);
 			break;
 		case SQLRCLIENTQUERYTYPE_TABLE_TYPE_LIST:
 			cont->setTableTypeListFormat(listformat);
-			success=cont->getTableTypeList(cursor,object);
+			success=cont->getTableTypeList(cursor,db,schema,obj);
 			break;
 		case SQLRCLIENTQUERYTYPE_PROCEDURE_LIST:
 			cont->setProcedureListFormat(listformat);
-			success=cont->getProcedureList(cursor,object);
+			success=cont->getProcedureList(cursor,db,schema,obj);
 			break;
 		case SQLRCLIENTQUERYTYPE_LAST_INSERT_ID_LIST:
 			// this list only has one column, so no need to set
@@ -4451,6 +4467,10 @@ bool sqlrprotocol_sqlrclient::getObjectListByApiCall(sqlrservercursor *cursor,
 		default:
 			break;
 	}
+
+	// clean up
+	delete[] currentdb;
+	delete[] currentschema;
 
 	if (success) {
 		success=getSkipAndFetch(true,cursor);
@@ -4734,36 +4754,55 @@ bool sqlrprotocol_sqlrclient::getComponentListByApiCall(
 	// initialize flags andbuffers
 	bool	success=false;
 
+	// split the object (db.schema.object) into db, schema, and object
+	char	*currentdb=cont->getCurrentDatabase();
+	char	*currentschema=cont->getCurrentSchema();
+	const char	*db=NULL;
+	const char	*schema=NULL;
+	const char	*obj=NULL;
+	cont->splitObjectName(currentdb,currentschema,object,&db,&schema,&obj);
+
+	// when fetching lists in mysql format, we only want to fetch for
+	// the current database/schema
+	if (listformat==SQLRSERVERLISTFORMAT_MYSQL) {
+		db=currentdb;
+		schema=currentschema;
+	}
+
 	// get the appropriate list
 	switch (querytype) {
 		case SQLRCLIENTQUERYTYPE_COLUMN_LIST:
 			cont->setColumnListFormat(listformat);
 			success=cont->getColumnList(cursor,
-							object,component);
+						db,schema,obj,component);
 			break;
 		case SQLRCLIENTQUERYTYPE_PRIMARY_KEYS_LIST:
 			cont->setPrimaryKeyListFormat(listformat);
 			success=cont->getPrimaryKeysList(cursor,
-							object,component);
+							db,schema,obj);
 			break;
 		case SQLRCLIENTQUERYTYPE_KEY_AND_INDEX_LIST:
 			cont->setKeyAndIndexListFormat(listformat);
 			success=cont->getKeyAndIndexList(cursor,
-							object,component);
+							db,schema,obj);
 			break;
 		case SQLRCLIENTQUERYTYPE_PROCEDURE_PARAMETER_LIST:
 			cont->setProcedureParameterListFormat(listformat);
 			success=cont->getProcedureParameterList(cursor,
-							object,component);
+							db,schema,obj);
 			break;
 		case SQLRCLIENTQUERYTYPE_TYPE_INFO_LIST:
 			cont->setTypeInfoListFormat(listformat);
 			success=cont->getTypeInfoList(cursor,
-							object,component);
+							db,schema,obj);
 			break;
 		default:
 			break;
 	}
+
+	// clean up
+	delete[] currentdb;
+	delete[] currentschema;
 
 	if (success) {
 		success=getSkipAndFetch(true,cursor);

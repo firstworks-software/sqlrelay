@@ -2773,79 +2773,97 @@ bool sqlrservercontroller::fakePrepareAndExecuteForApiCall(
 }
 
 bool sqlrservercontroller::getDatabaseList(sqlrservercursor *cursor,
-						const char *wild) {
+						const char *db) {
 	return fakePrepareAndExecuteForApiCall(cursor) &&
-		pvt->_conn->getDatabaseList(cursor,wild) &&
+		pvt->_conn->getDatabaseList(cursor,db) &&
 		handleResultSetHeader(cursor);
 }
 
 bool sqlrservercontroller::getSchemaList(sqlrservercursor *cursor,
-						const char *wild) {
+						const char *db,
+						const char *schema) {
 	return fakePrepareAndExecuteForApiCall(cursor) &&
-		pvt->_conn->getSchemaList(cursor,wild) &&
+		pvt->_conn->getSchemaList(cursor,db,schema) &&
 		handleResultSetHeader(cursor);
 }
 
 bool sqlrservercontroller::getTableTypeList(sqlrservercursor *cursor,
+						const char *db,
+						const char *schema,
 						const char *tabletypes) {
 	return fakePrepareAndExecuteForApiCall(cursor) &&
-		pvt->_conn->getTableTypeList(cursor,tabletypes) &&
+		pvt->_conn->getTableTypeList(cursor,db,
+						schema,tabletypes) &&
 		handleResultSetHeader(cursor);
 }
 
 bool sqlrservercontroller::getTableList(sqlrservercursor *cursor,
-						const char *wild,
+						const char *db,
+						const char *schema,
+						const char *table,
 						uint16_t objecttypes) {
 	return fakePrepareAndExecuteForApiCall(cursor) &&
-		pvt->_conn->getTableList(cursor,wild,objecttypes) &&
+		pvt->_conn->getTableList(cursor,db,schema,
+						table,objecttypes) &&
 		handleResultSetHeader(cursor);
 }
 
 bool sqlrservercontroller::getTypeInfoList(sqlrservercursor *cursor,
-						const char *type,
-						const char *wild) {
+						const char *db,
+						const char *schema,
+						const char *type) {
 	return fakePrepareAndExecuteForApiCall(cursor) &&
-		pvt->_conn->getTypeInfoList(cursor,type,wild) &&
+		pvt->_conn->getTypeInfoList(cursor,db,schema,type) &&
 		handleResultSetHeader(cursor);
 }
 
 bool sqlrservercontroller::getColumnList(sqlrservercursor *cursor,
+						const char *db,
+						const char *schema,
 						const char *table,
-						const char *wild) {
+						const char *column) {
 	return fakePrepareAndExecuteForApiCall(cursor) &&
-		pvt->_conn->getColumnList(cursor,table,wild) &&
+		pvt->_conn->getColumnList(cursor,db,schema,
+						table,column) &&
 		handleResultSetHeader(cursor);
 }
 
 bool sqlrservercontroller::getPrimaryKeysList(sqlrservercursor *cursor,
-						const char *table,
-						const char *wild) {
+						const char *db,
+						const char *schema,
+						const char *table) {
 	return fakePrepareAndExecuteForApiCall(cursor) &&
-		pvt->_conn->getPrimaryKeysList(cursor,table,wild) &&
+		pvt->_conn->getPrimaryKeysList(cursor,db,schema,table) &&
 		handleResultSetHeader(cursor);
 }
 
 bool sqlrservercontroller::getKeyAndIndexList(sqlrservercursor *cursor,
-						const char *table,
-						const char *wild) {
+						const char *db,
+						const char *schema,
+						const char *table) {
 	return fakePrepareAndExecuteForApiCall(cursor) &&
-		pvt->_conn->getKeyAndIndexList(cursor,table,wild) &&
+		pvt->_conn->getKeyAndIndexList(cursor,db,schema,table) &&
 		handleResultSetHeader(cursor);
 }
 
 bool sqlrservercontroller::getProcedureList(sqlrservercursor *cursor,
-						const char *wild) {
+						const char *db,
+						const char *schema,
+						const char *procedure) {
 	return fakePrepareAndExecuteForApiCall(cursor) &&
-		pvt->_conn->getProcedureList(cursor,wild) &&
+		pvt->_conn->getProcedureList(cursor,db,
+						schema,procedure) &&
 		handleResultSetHeader(cursor);
 }
 
 bool sqlrservercontroller::getProcedureParameterList(
 						sqlrservercursor *cursor,
-						const char *proc,
-						const char *wild) {
+						const char *db,
+						const char *schema,
+						const char *procedure) {
 	return fakePrepareAndExecuteForApiCall(cursor) &&
-		pvt->_conn->getProcedureParameterList(cursor,proc,wild) &&
+		pvt->_conn->getProcedureParameterList(
+					cursor,db,schema,procedure) &&
 		handleResultSetHeader(cursor);
 }
 
@@ -3830,7 +3848,7 @@ void sqlrservercontroller::getColumnsInTable(const char *table,
 
 		bool	retval=false;
 		if (getListsByApiCalls()) {
-			retval=getColumnList(gclcur,table,NULL);
+			retval=getColumnList(gclcur,NULL,NULL,table,NULL);
 		} else {
 			const char	*q=
 				getColumnListQuery(NULL,NULL,table,NULL);

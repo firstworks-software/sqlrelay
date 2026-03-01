@@ -340,33 +340,46 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		const char	*getLastInsertIdQuery();
 		bool		getListsByApiCalls();
 		bool		getDatabaseList(sqlrservercursor *cursor,
-						const char *wild);
+						const char *db);
 		bool		getSchemaList(sqlrservercursor *cursor,
-						const char *wild);
+						const char *db,
+						const char *schema);
 		bool		getTableList(sqlrservercursor *cursor,
-						const char *wild,
+						const char *db,
+						const char *schema,
+						const char *table,
 						uint16_t objecttypes);
 		bool		getTableTypeList(sqlrservercursor *cursor,
+						const char *db,
+						const char *schema,
 						const char *tabletypes);
 		bool		isCurrentCatalog(const char *name);
 		bool		getColumnList(sqlrservercursor *cursor,
+						const char *db,
+						const char *schema,
 						const char *table,
-						const char *wild);
+						const char *column);
 		bool		getPrimaryKeysList(sqlrservercursor *cursor,
-						const char *table,
-						const char *wild);
+						const char *db,
+						const char *schema,
+						const char *table);
 		bool		getKeyAndIndexList(sqlrservercursor *cursor,
-						const char *table,
-						const char *wild);
+						const char *db,
+						const char *schema,
+						const char *table);
 		bool		getProcedureParameterList(
 						sqlrservercursor *cursor,
-						const char *procedure,
-						const char *wild);
+						const char *db,
+						const char *schema,
+						const char *procedure);
 		bool		getTypeInfoList(sqlrservercursor *cursor,
-						const char *type,
-						const char *wild);
+						const char *db,
+						const char *schema,
+						const char *type);
 		bool		getProcedureList(sqlrservercursor *cursor,
-						const char *wild);
+						const char *db,
+						const char *schema,
+						const char *procedure);
 		const char	*selectDatabaseQuery();
 		char		*getCurrentDatabase();
 		char		*getCurrentSchema();
@@ -2688,7 +2701,7 @@ bool odbcconnection::getListsByApiCalls() {
 }
 
 bool odbcconnection::getDatabaseList(sqlrservercursor *cursor,
-						const char *wild) {
+						const char *db) {
 
 	odbccursor	*odbccur=(odbccursor *)cursor;
 
@@ -2720,7 +2733,8 @@ bool odbcconnection::getDatabaseList(sqlrservercursor *cursor,
 }
 
 bool odbcconnection::getSchemaList(sqlrservercursor *cursor,
-						const char *wild) {
+						const char *db,
+						const char *schema) {
 
 	odbccursor	*odbccur=(odbccursor *)cursor;
 
@@ -2752,7 +2766,9 @@ bool odbcconnection::getSchemaList(sqlrservercursor *cursor,
 }
 
 bool odbcconnection::getTableList(sqlrservercursor *cursor,
-					const char *wild,
+					const char *db,
+					const char *schema,
+					const char *table,
 					uint16_t objecttypes) {
 
 	odbccursor	*odbccur=(odbccursor *)cursor;
@@ -2772,44 +2788,14 @@ bool odbcconnection::getTableList(sqlrservercursor *cursor,
 	odbccur->initializeColCounts();
 	odbccur->initializeRowCounts();
 
-	// various buffers/pointers
-	char		catalogbuffer[1024];
-	const char	*catalog=NULL;
-	char		schemabuffer[1024];
-	const char	*schema="";
+	// use defaults for NULL parameters
+	const char	*catalog=db;
+	if (!schema) {
+		schema="";
+	}
 	// FIXME: should this be SQL_ALL_TABLES?
-	const char	*table="%";
-
-	// get the current catalog (instance)
-	SQLINTEGER	cataloglen=0;
-	if (SQLGetConnectAttr(dbc,
-				SQL_CURRENT_QUALIFIER,
-				catalogbuffer,
-				sizeof(catalogbuffer),
-				&cataloglen)==SQL_SUCCESS) {
-		catalogbuffer[cataloglen]='\0';
-		catalog=catalogbuffer;
-	}
-
-	// get the current user (schema)
-	if (overrideschema) {
-		schema=overrideschema;
-	} else {
-		SQLSMALLINT	schemalen=0;
-		if (SQLGetInfo(dbc,
-				SQL_USER_NAME,
-				schemabuffer,
-				sizeof(schemabuffer),
-				&schemalen)==SQL_SUCCESS) {
-			schemabuffer[schemalen]='\0';
-			schema=schemabuffer;
-		}
-	}
-
-	// split the object name
-	if (!charstring::isNullOrEmpty(wild)) {
-		cont->splitObjectName(catalogbuffer,schemabuffer,wild,
-						&catalog,&schema,&table);
+	if (!table) {
+		table="%";
 	}
 
 	stringbuffer	tabletype;
@@ -2848,6 +2834,8 @@ bool odbcconnection::getTableList(sqlrservercursor *cursor,
 }
 
 bool odbcconnection::getTableTypeList(sqlrservercursor *cursor,
+					const char *db,
+					const char *schema,
 					const char *tabletypes) {
 
 	odbccursor	*odbccur=(odbccursor *)cursor;
@@ -2884,8 +2872,10 @@ bool odbcconnection::getTableTypeList(sqlrservercursor *cursor,
 }
 
 bool odbcconnection::getColumnList(sqlrservercursor *cursor,
+					const char *db,
+					const char *schema,
 					const char *table,
-					const char *wild) {
+					const char *column) {
 
 	odbccursor	*odbccur=(odbccursor *)cursor;
 
@@ -2904,52 +2894,24 @@ bool odbcconnection::getColumnList(sqlrservercursor *cursor,
 	odbccur->initializeColCounts();
 	odbccur->initializeRowCounts();
 
-	// various buffers/pointers
-	char		catalogbuffer[1024];
-	const char	*catalog=NULL;
-	char		schemabuffer[1024];
-	const char	*schema="";
-	const char	*tablename="";
-
-	// get the current catalog (instance)
-	SQLINTEGER	cataloglen=0;
-	if (SQLGetConnectAttr(dbc,
-				SQL_CURRENT_QUALIFIER,
-				catalogbuffer,
-				sizeof(catalogbuffer),
-				&cataloglen)==SQL_SUCCESS) {
-		catalogbuffer[cataloglen]='\0';
-		catalog=catalogbuffer;
+	// use defaults for NULL parameters
+	const char	*catalog=db;
+	if (!schema) {
+		schema="";
+	}
+	if (!table) {
+		table="";
 	}
 
-	// get the current user (schema)
-	if (overrideschema) {
-		schema=overrideschema;
-	} else {
-		SQLSMALLINT	schemalen=0;
-		if (SQLGetInfo(dbc,
-				SQL_USER_NAME,
-				schemabuffer,
-				sizeof(schemabuffer),
-				&schemalen)==SQL_SUCCESS) {
-			schemabuffer[schemalen]='\0';
-			schema=schemabuffer;
-		}
-	}
+	// use % if column was empty
+	column=(!charstring::isNullOrEmpty(column))?column:"%";
 
-	// split the table name
-	cont->splitObjectName(catalogbuffer,schemabuffer,table,
-						&catalog,&schema,&tablename);
-
-	// use % if wild was empty
-	wild=(!charstring::isNullOrEmpty(wild))?wild:"%";
-		
 	// get the column list
 	erg=SQLColumns(odbccur->stmt,
 			(SQLCHAR *)catalog,SQL_NTS,
 			(SQLCHAR *)schema,SQL_NTS,
-			(SQLCHAR *)tablename,SQL_NTS,
-			(SQLCHAR *)wild,SQL_NTS);
+			(SQLCHAR *)table,SQL_NTS,
+			(SQLCHAR *)column,SQL_NTS);
 	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 
 	// parse the column information
@@ -2957,8 +2919,9 @@ bool odbcconnection::getColumnList(sqlrservercursor *cursor,
 }
 
 bool odbcconnection::getPrimaryKeysList(sqlrservercursor *cursor,
-						const char *table,
-						const char *wild) {
+						const char *db,
+						const char *schema,
+						const char *table) {
 
 	odbccursor	*odbccur=(odbccursor *)cursor;
 
@@ -2977,48 +2940,20 @@ bool odbcconnection::getPrimaryKeysList(sqlrservercursor *cursor,
 	odbccur->initializeColCounts();
 	odbccur->initializeRowCounts();
 
-	// various buffers/pointers
-	char		catalogbuffer[1024];
-	const char	*catalog=NULL;
-	char		schemabuffer[1024];
-	const char	*schema="";
-	const char	*tablename="";
-
-	// get the current catalog (instance)
-	SQLINTEGER	cataloglen=0;
-	if (SQLGetConnectAttr(dbc,
-				SQL_CURRENT_QUALIFIER,
-				catalogbuffer,
-				sizeof(catalogbuffer),
-				&cataloglen)==SQL_SUCCESS) {
-		catalogbuffer[cataloglen]='\0';
-		catalog=catalogbuffer;
+	// use defaults for NULL parameters
+	const char	*catalog=db;
+	if (!schema) {
+		schema="";
 	}
-
-	// get the current user (schema)
-	if (overrideschema) {
-		schema=overrideschema;
-	} else {
-		SQLSMALLINT	schemalen=0;
-		if (SQLGetInfo(dbc,
-				SQL_USER_NAME,
-				schemabuffer,
-				sizeof(schemabuffer),
-				&schemalen)==SQL_SUCCESS) {
-			schemabuffer[schemalen]='\0';
-			schema=schemabuffer;
-		}
+	if (!table) {
+		table="";
 	}
-
-	// split the table name
-	cont->splitObjectName(catalogbuffer,schemabuffer,table,
-						&catalog,&schema,&tablename);
 
 	// get the primary key list
 	erg=SQLPrimaryKeys(odbccur->stmt,
 			(SQLCHAR *)catalog,SQL_NTS,
 			(SQLCHAR *)schema,SQL_NTS,
-			(SQLCHAR *)tablename,SQL_NTS);
+			(SQLCHAR *)table,SQL_NTS);
 	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 
 	// parse the column information
@@ -3026,8 +2961,9 @@ bool odbcconnection::getPrimaryKeysList(sqlrservercursor *cursor,
 }
 
 bool odbcconnection::getKeyAndIndexList(sqlrservercursor *cursor,
-						const char *table,
-						const char *wild) {
+						const char *db,
+						const char *schema,
+						const char *table) {
 
 	odbccursor	*odbccur=(odbccursor *)cursor;
 
@@ -3046,62 +2982,22 @@ bool odbcconnection::getKeyAndIndexList(sqlrservercursor *cursor,
 	odbccur->initializeColCounts();
 	odbccur->initializeRowCounts();
 
-	// various buffers/pointers
-	char		catalogbuffer[1024];
-	const char	*catalog=NULL;
-	char		schemabuffer[1024];
-	const char	*schema="";
-	const char	*tablename="";
-
-	// get the current catalog (instance)
-	SQLINTEGER	cataloglen=0;
-	if (SQLGetConnectAttr(dbc,
-				SQL_CURRENT_QUALIFIER,
-				catalogbuffer,
-				sizeof(catalogbuffer),
-				&cataloglen)==SQL_SUCCESS) {
-		catalogbuffer[cataloglen]='\0';
-		catalog=catalogbuffer;
+	// use defaults for NULL parameters
+	const char	*catalog=db;
+	if (!schema) {
+		schema="";
 	}
-
-	// get the current user (schema)
-	if (overrideschema) {
-		schema=overrideschema;
-	} else {
-		SQLSMALLINT	schemalen=0;
-		if (SQLGetInfo(dbc,
-				SQL_USER_NAME,
-				schemabuffer,
-				sizeof(schemabuffer),
-				&schemalen)==SQL_SUCCESS) {
-			schemabuffer[schemalen]='\0';
-			schema=schemabuffer;
-		}
-	}
-
-	// split the table name
-	cont->splitObjectName(catalogbuffer,schemabuffer,table,
-						&catalog,&schema,&tablename);
-
-	// set uniqueness
-	SQLUSMALLINT	uniqueness=SQL_INDEX_UNIQUE;
-	if (charstring::contains(wild,"all")) {
-		uniqueness=SQL_INDEX_ALL;
-	}
-
-	// set accuracy
-	SQLUSMALLINT	accuracy=SQL_QUICK;
-	if (charstring::contains(wild,"ensure")) {
-		accuracy=SQL_ENSURE;
+	if (!table) {
+		table="";
 	}
 
 	// get the key and index list
 	erg=SQLStatistics(odbccur->stmt,
 			(SQLCHAR *)catalog,SQL_NTS,
 			(SQLCHAR *)schema,SQL_NTS,
-			(SQLCHAR *)tablename,SQL_NTS,
-			uniqueness,
-			accuracy);
+			(SQLCHAR *)table,SQL_NTS,
+			SQL_INDEX_UNIQUE,
+			SQL_QUICK);
 	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 
 	// parse the column information
@@ -3110,8 +3006,9 @@ bool odbcconnection::getKeyAndIndexList(sqlrservercursor *cursor,
 
 bool odbcconnection::getProcedureParameterList(
 					sqlrservercursor *cursor,
-					const char *procedure,
-					const char *wild) {
+					const char *db,
+					const char *schema,
+					const char *procedure) {
 
 	odbccursor	*odbccur=(odbccursor *)cursor;
 
@@ -3133,54 +3030,7 @@ bool odbcconnection::getProcedureParameterList(
 	// Unlike SQLColumns/SQLTables, SQLProcedureColumns wants NULL instead
 	// of "" for catalog/schema, to indicate the current catalog/schema.
 	// It interprets "" as meaning outside of any catalog/schema.
-	char		catalogbuffer[1024];
-	const char	*catalog=NULL;
-	char		schemabuffer[1024];
-	const char	*schema=NULL;
-	const char	*proc=NULL;
-
-	// get the current catalog (instance)
-	SQLINTEGER	cataloglen=0;
-	if (SQLGetConnectAttr(dbc,
-				SQL_CURRENT_QUALIFIER,
-				catalogbuffer,
-				sizeof(catalogbuffer),
-				&cataloglen)==SQL_SUCCESS) {
-		catalogbuffer[cataloglen]='\0';
-	}
-
-	// get the current user (schema)
-	if (overrideschema) {
-		schema=overrideschema;
-	} else {
-		SQLSMALLINT	schemalen=0;
-		if (SQLGetInfo(dbc,
-				SQL_USER_NAME,
-				schemabuffer,
-				sizeof(schemabuffer),
-				&schemalen)==SQL_SUCCESS) {
-			schemabuffer[schemalen]='\0';
-			schema=schemabuffer;
-		}
-	}
-
-	// split the procedure name
-	cont->splitObjectName(catalogbuffer,schemabuffer,procedure,
-						&catalog,&schema,&proc);
-
-	// SQLProcedureColumns takes non-const arguments, so we have to make
-	// a copy of the wild parameter.
-	char	*wildcopy=charstring::duplicate(wild);
-
-	// SQLColumns interprets an empty or NULL column name as meaning
-	// "all columns".  SQLProcedureColumns interprtes an empty column name
-	// as meaning "no columns" and a NULL as meaning "all columns".  At
-	// least with the MS SQL Server driver.  For consistency, we'll make
-	// empty work the same as NULL by mapping empty to NULL here.
-	if (wildcopy[0]=='\0') {
-		delete[] wildcopy;
-		wildcopy=NULL;
-	}
+	const char	*catalog=db;
 
 	// get the column list
 	erg=SQLProcedureColumns(odbccur->stmt,
@@ -3188,23 +3038,19 @@ bool odbcconnection::getProcedureParameterList(
 			charstring::getLength(catalog),
 			(SQLCHAR *)schema,
 			charstring::getLength(schema),
-			(SQLCHAR *)proc,
-			charstring::getLength(proc),
-			(SQLCHAR *)wildcopy,
-			charstring::getLength(wildcopy)
-			);
+			(SQLCHAR *)procedure,
+			charstring::getLength(procedure),
+			(SQLCHAR *)NULL,0);
 	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
-
-	// clean up
-	delete[] wildcopy;
 
 	// parse the column information
 	return (retval)?odbccur->handleColumns(true,true):false;
 }
 
 bool odbcconnection::getTypeInfoList(sqlrservercursor *cursor,
-					const char *type,
-					const char *wild) {
+					const char *db,
+					const char *schema,
+					const char *type) {
 
 	odbccursor	*odbccur=(odbccursor *)cursor;
 
@@ -3360,7 +3206,9 @@ bool odbcconnection::getTypeInfoList(sqlrservercursor *cursor,
 }
 
 bool odbcconnection::getProcedureList(sqlrservercursor *cursor,
-						const char *wild) {
+						const char *db,
+						const char *schema,
+						const char *procedure) {
 
 	odbccursor	*odbccur=(odbccursor *)cursor;
 
@@ -3379,43 +3227,14 @@ bool odbcconnection::getProcedureList(sqlrservercursor *cursor,
 	odbccur->initializeColCounts();
 	odbccur->initializeRowCounts();
 
-	// get the procedure list
-	char		catalogbuffer[1024];
-	const char	*catalog=NULL;
-	char		schemabuffer[1024];
-	const char	*schema="";
+	// use defaults for NULL parameters
+	const char	*catalog=db;
+	if (!schema) {
+		schema="";
+	}
 	const char	*procname="%";
-
-	// get the current catalog (instance)
-	SQLINTEGER	cataloglen=0;
-	if (SQLGetConnectAttr(dbc,
-				SQL_CURRENT_QUALIFIER,
-				catalogbuffer,
-				sizeof(catalogbuffer),
-				&cataloglen)==SQL_SUCCESS) {
-		catalogbuffer[cataloglen]='\0';
-		catalog=catalogbuffer;
-	}
-
-	// get the current user (schema)
-	if (overrideschema) {
-		schema=overrideschema;
-	} else {
-		SQLSMALLINT	schemalen=0;
-		if (SQLGetInfo(dbc,
-				SQL_USER_NAME,
-				schemabuffer,
-				sizeof(schemabuffer),
-				&schemalen)==SQL_SUCCESS) {
-			schemabuffer[schemalen]='\0';
-			schema=schemabuffer;
-		}
-	}
-
-	// split the procedure name
-	if (!charstring::isNullOrEmpty(wild)) {
-		cont->splitObjectName(catalogbuffer,schemabuffer,wild,
-						&catalog,&schema,&procname);
+	if (!charstring::isNullOrEmpty(procedure)) {
+		procname=procedure;
 	}
 
 	// get the procedure list

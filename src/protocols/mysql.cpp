@@ -3898,34 +3898,78 @@ bool sqlrprotocol_mysql::comFieldList(sqlrservercursor *cursor) {
 bool sqlrprotocol_mysql::getObjectListByApiCall(sqlrservercursor *cursor,
 					mysqlobjectlisttype_t listtype,
 					const char *object) {
+
+	// split the object (db.schema.object) into db, schema, and object
+	char	*currentdb=cont->getCurrentDatabase();
+	char	*currentschema=cont->getCurrentSchema();
+	const char	*db=NULL;
+	const char	*schema=NULL;
+	const char	*obj=NULL;
+	cont->splitObjectName(currentdb,currentschema,
+					object,&db,&schema,&obj);
+
+	// we only want to fetch for the current database/schema
+	db=currentdb;
+	schema=currentschema;
+
+	bool	retval=false;
 	switch (listtype) {
 		case MYSQLOBJECTLISTTYPE_DATABASE_LIST:
 			cont->setDatabaseListFormat(
 					SQLRSERVERLISTFORMAT_MYSQL);
-			return cont->getDatabaseList(cursor,object);
+			retval=cont->getDatabaseList(cursor,db);
+			break;
 		case MYSQLOBJECTLISTTYPE_TABLE_LIST:
 			cont->setTableListFormat(
 					SQLRSERVERLISTFORMAT_MYSQL);
-			return cont->getTableList(cursor,object,
+			retval=cont->getTableList(cursor,db,schema,obj,
 							DB_OBJECT_TABLE|
 							DB_OBJECT_VIEW|
 							DB_OBJECT_ALIAS|
 							DB_OBJECT_SYNONYM);
+			break;
 	}
-	return false;
+
+	// clean up
+	delete[] currentdb;
+	delete[] currentschema;
+
+	return retval;
 }
 
 bool sqlrprotocol_mysql::getComponentListByApiCall(sqlrservercursor *cursor,
 					mysqlcomponentlisttype_t listtype,
 					const char *object,
 					const char *component) {
+
+	// split the object (db.schema.object) into db, schema, and object
+	char	*currentdb=cont->getCurrentDatabase();
+	char	*currentschema=cont->getCurrentSchema();
+	const char	*db=NULL;
+	const char	*schema=NULL;
+	const char	*obj=NULL;
+	cont->splitObjectName(currentdb,currentschema,
+					object,&db,&schema,&obj);
+
+	// we only want to fetch for the current database/schema
+	db=currentdb;
+	schema=currentschema;
+
+	bool	retval=false;
 	switch (listtype) {
 		case MYSQLCOMPONENTLISTTYPE_COLUMN_LIST:
 			cont->setColumnListFormat(
 					SQLRSERVERLISTFORMAT_MYSQL);
-			return cont->getColumnList(cursor,object,component);
+			retval=cont->getColumnList(cursor,
+						db,schema,obj,component);
+			break;
 	}
-	return false;
+
+	// clean up
+	delete[] currentdb;
+	delete[] currentschema;
+
+	return retval;
 }
 
 bool sqlrprotocol_mysql::getObjectListByQuery(sqlrservercursor *cursor,

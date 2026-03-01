@@ -20,8 +20,8 @@
 		get*ListQuery() methods
 	improved getColumnListQuery() method to return auto_increment and key
 		for all databases
-	refactored get*ListQuery() methods to use db/schema/object/component
-		paradigm
+	refactored get*List() and get*ListQuery() methods to use
+		db/schema/object/component paradigm
 	refactored tests a bit, replaced checkSuccess() with assert*() and
 		moved assert*() into its own shared file
 	added getConnect/ResponseTimeoutSeconds/MicroSeconds() to client apis

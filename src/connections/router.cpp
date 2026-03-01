@@ -73,13 +73,17 @@ class SQLRSERVER_DLLSPEC routerconnection : public sqlrserverconnection {
 		bool		cacheDbHostInfo();
 		bool		getListsByApiCalls();
 		bool		getDatabaseList(sqlrservercursor *cursor,
-						const char *wild);
+						const char *db);
 		bool		getTableList(sqlrservercursor *cursor,
-						const char *wild,
+						const char *db,
+						const char *schema,
+						const char *table,
 						uint16_t objecttypes);
 		bool		getColumnList(sqlrservercursor *cursor,
+						const char *db,
+						const char *schema,
 						const char *table,
-						const char *wild);
+						const char *column);
 		bool		ping();
 		const char	*selectDatabaseQuery();
 		char		*getCurrentDatabase();
@@ -1322,7 +1326,7 @@ bool routerconnection::getListsByApiCalls() {
 }
 
 bool routerconnection::getDatabaseList(sqlrservercursor *cursor,
-						const char *wild) {
+						const char *db) {
 	// FIXME: implement this
 	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
 				SQLR_ERROR_NOTIMPLEMENTED,true);
@@ -1330,7 +1334,9 @@ bool routerconnection::getDatabaseList(sqlrservercursor *cursor,
 }
 
 bool routerconnection::getTableList(sqlrservercursor *cursor,
-						const char *wild,
+						const char *db,
+						const char *schema,
+						const char *table,
 						uint16_t objecttypes) {
 	// FIXME: implement this
 	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
@@ -1339,8 +1345,10 @@ bool routerconnection::getTableList(sqlrservercursor *cursor,
 }
 
 bool routerconnection::getColumnList(sqlrservercursor *cursor,
+						const char *db,
+						const char *schema,
 						const char *table,
-						const char *wild) {
+						const char *column) {
 	// FIXME: implement this
 	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
 				SQLR_ERROR_NOTIMPLEMENTED,true);
