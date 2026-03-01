@@ -31,6 +31,7 @@
 	added nextResultSet() to non c++ apis
 	added selectSchema()/getCurrentSchema() methods/functions
 	implemented ODBC driver SQLGetInfo() using getDatabaseFeature() calls
+	pushed get-list-by-api/query logic up to sqlrserverconnection
 
 2.1.0 - refactored debugging
 
