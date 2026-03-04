@@ -721,6 +721,7 @@ const char *firebirdconnection::getSchemaListQuery(const char *db,
 
 	schemalistquery.clear();
 
+	// select clause
 	schemalistquery.append(
 		"select distinct "
 		"	'' as table_cat, "
@@ -740,6 +741,8 @@ const char *firebirdconnection::getSchemaListQuery(const char *db,
 		schemalistquery.append(schema);
 		schemalistquery.append("' ");
 	}
+
+	// order by clause
 	schemalistquery.append(
 		"order by "
 		"	rdb$owner_name");
@@ -751,6 +754,8 @@ const char *firebirdconnection::getTableTypeListQuery(const char *db,
 						const char *schema,
 						const char *tabletypes) {
 	tabletypelistquery.clear();
+
+	// select clause
 	tabletypelistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -761,6 +766,8 @@ const char *firebirdconnection::getTableTypeListQuery(const char *db,
 		"	null "
 		"from "
 		"(select 'TABLE' as table_type from rdb$database) ");
+
+	// where clause
 	if (!charstring::isNullOrEmpty(tabletypes)) {
 		tabletypelistquery.append(
 			"where "
@@ -768,9 +775,12 @@ const char *firebirdconnection::getTableTypeListQuery(const char *db,
 		tabletypelistquery.append(tabletypes);
 		tabletypelistquery.append("' ");
 	}
+
+	// order by clause
 	tabletypelistquery.append(
 		"order by "
 		"	table_type");
+
 	return tabletypelistquery.getString();
 }
 
@@ -790,6 +800,8 @@ const char *firebirdconnection::getTableListQuery(const char *db,
 						const char *table,
 						uint16_t objecttypes) {
 	tablelistquery.clear();
+
+	// select clause
 	tablelistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -816,6 +828,8 @@ const char *firebirdconnection::getTableListQuery(const char *db,
 		tablelistquery.append(table);
 		tablelistquery.append("' ");
 	}
+
+	// order by clause
 	tablelistquery.append(
 		"order by "
 		"	rdb$owner_name, "
@@ -823,8 +837,6 @@ const char *firebirdconnection::getTableListQuery(const char *db,
 
 	return tablelistquery.getString();
 }
-
-
 
 static const char	*fb_booltype=
 			"(select "
@@ -1278,8 +1290,6 @@ const char *firebirdconnection::getTypeInfoListQuery(const char *db,
 	return NULL;
 }
 
-
-
 const char *firebirdconnection::getColumnListQuery(const char *db,
 					const char *schema,
 					const char *table,
@@ -1381,10 +1391,9 @@ const char *firebirdconnection::getColumnListQuery(const char *db,
 		"	rf.rdb$relation_name=ck.rdb$relation_name "
 		"	and "
 		"	rf.rdb$field_name=ck.rdb$field_name ");
-
-	// where clause
 	bool	prevclause=false;
 
+	// where clause
 	if (!charstring::isNullOrEmpty(schema)) {
 		columnlistquery.append(
 			"where "
@@ -1428,13 +1437,13 @@ const char *firebirdconnection::getColumnListQuery(const char *db,
 	return columnlistquery.getString();
 }
 
-
-
 const char *firebirdconnection::getPrimaryKeysListQuery(const char *db,
 						const char *schema,
 						const char *table) {
 
 	primarykeyslistquery.clear();
+
+	// select clause
 	primarykeyslistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -1443,10 +1452,16 @@ const char *firebirdconnection::getPrimaryKeysListQuery(const char *db,
 		"	trim(isg.rdb$field_name) as column_name, "
 		"	isg.rdb$field_position+1 as key_seq, "
 		"	trim(rc.rdb$constraint_name) as pk_name, "
-		"	null "
+		"	null ");
+
+	// from clause
+	primarykeyslistquery.append(
 		"from "
 		"	rdb$relation_constraints rc, "
-		"	rdb$index_segments isg "
+		"	rdb$index_segments isg ");
+
+	// where clause
+	primarykeyslistquery.append(
 		"where "
 		"	rc.rdb$constraint_type='PRIMARY KEY' "
 		"	and "
@@ -1458,10 +1473,13 @@ const char *firebirdconnection::getPrimaryKeysListQuery(const char *db,
 		primarykeyslistquery.append(table);
 		primarykeyslistquery.append("' ");
 	}
+
+	// order by clause
 	primarykeyslistquery.append(
 		"order by "
 		"	rc.rdb$relation_name, "
 		"	isg.rdb$field_position");
+
 	return primarykeyslistquery.getString();
 }
 
@@ -1470,6 +1488,8 @@ const char *firebirdconnection::getKeyAndIndexListQuery(const char *db,
 						const char *table) {
 
 	keyandindexlistquery.clear();
+
+	// select clause
 	keyandindexlistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -1491,10 +1511,16 @@ const char *firebirdconnection::getKeyAndIndexListQuery(const char *db,
 		"	i.rdb$statistics as cardinality, "
 		"	null as pages, "
 		"	null as filter_condition, "
-		"	null "
+		"	null ");
+
+	// from clause
+	keyandindexlistquery.append(
 		"from "
 		"	rdb$indices i, "
-		"	rdb$index_segments isg "
+		"	rdb$index_segments isg ");
+
+	// where clause
+	keyandindexlistquery.append(
 		"where "
 		"	i.rdb$index_name=isg.rdb$index_name ");
 	if (!charstring::isNullOrEmpty(table)) {
@@ -1504,14 +1530,16 @@ const char *firebirdconnection::getKeyAndIndexListQuery(const char *db,
 		keyandindexlistquery.append(table);
 		keyandindexlistquery.append("' ");
 	}
+
+	// order by clause
 	keyandindexlistquery.append(
 		"order by "
 		"	i.rdb$relation_name, "
 		"	i.rdb$index_name, "
 		"	isg.rdb$field_position");
+
 	return keyandindexlistquery.getString();
 }
-
 
 const char *firebirdconnection::getProcedureListQuery(
 						const char *db,
@@ -1519,6 +1547,8 @@ const char *firebirdconnection::getProcedureListQuery(
 						const char *procedure) {
 
 	procedurelistquery.clear();
+
+	// select clause
 	procedurelistquery.append(
 		"select "
 		"	'' as procedure_cat, "
@@ -1534,6 +1564,8 @@ const char *firebirdconnection::getProcedureListQuery(
 		"	rdb$procedures ");
 	if (!charstring::isNullOrEmpty(schema) ||
 		!charstring::isNullOrEmpty(procedure)) {
+
+	// where clause
 		procedurelistquery.append("where ");
 		bool	first=true;
 		if (!charstring::isNullOrEmpty(schema)) {
@@ -1553,13 +1585,15 @@ const char *firebirdconnection::getProcedureListQuery(
 			procedurelistquery.append("' ");
 		}
 	}
+
+	// order by clause
 	procedurelistquery.append(
 		"order by "
 		"	rdb$owner_name, "
 		"	rdb$procedure_name");
+
 	return procedurelistquery.getString();
 }
-
 
 const char *firebirdconnection::getProcedureParameterListQuery(
 					const char *db,
@@ -1567,6 +1601,8 @@ const char *firebirdconnection::getProcedureParameterListQuery(
 					const char *procedure) {
 
 	procedureparameterlistquery.clear();
+
+	// select clause
 	procedureparameterlistquery.append(
 		"select "
 		"	'' as procedure_cat, "
@@ -1605,13 +1641,18 @@ const char *firebirdconnection::getProcedureParameterListQuery(
 		"	f.rdb$character_length as char_octet_length, "
 		"	pp.rdb$parameter_number+1 as ordinal_position, "
 		"	'YES' as is_nullable, "
-		"	null "
+		"	null ");
+
+	// from clause
+	procedureparameterlistquery.append(
 		"from "
 		"	rdb$procedure_parameters pp "
 		"left join "
 		"	rdb$fields f "
 		"on "
 		"	pp.rdb$field_source=f.rdb$field_name ");
+
+	// where clause
 	if (!charstring::isNullOrEmpty(procedure)) {
 		procedureparameterlistquery.append(
 			"where "
@@ -1619,14 +1660,16 @@ const char *firebirdconnection::getProcedureParameterListQuery(
 		procedureparameterlistquery.append(procedure);
 		procedureparameterlistquery.append("' ");
 	}
+
+	// order by clause
 	procedureparameterlistquery.append(
 		"order by "
 		"	pp.rdb$procedure_name, "
 		"	pp.rdb$parameter_type, "
 		"	pp.rdb$parameter_number");
+
 	return procedureparameterlistquery.getString();
 }
-
 
 const char *firebirdconnection::getBindFormat() {
 	return "?";

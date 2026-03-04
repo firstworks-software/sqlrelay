@@ -728,6 +728,7 @@ const char *mysqlconnection::getDatabaseListQuery(const char *db) {
 
 	databaselistquery.clear();
 
+	// select clause
 	databaselistquery.append(
 		"select "
 		"	schema_name as table_cat, "
@@ -738,6 +739,8 @@ const char *mysqlconnection::getDatabaseListQuery(const char *db) {
 		"	null "
 		"from "
 		"	information_schema.schemata ");
+
+	// where clause
 	if (db) {
 		databaselistquery.append(
 			"where "
@@ -745,6 +748,8 @@ const char *mysqlconnection::getDatabaseListQuery(const char *db) {
 		databaselistquery.append(db);
 		databaselistquery.append("' ");
 	}
+
+	// order by clause
 	databaselistquery.append(
 		"order by "
 		"	schema_name");
@@ -757,6 +762,7 @@ const char *mysqlconnection::getSchemaListQuery(const char *db,
 
 	schemalistquery.clear();
 
+	// select clause
 	schemalistquery.append(
 		"select "
 		"	catalog_name as table_cat, "
@@ -768,6 +774,8 @@ const char *mysqlconnection::getSchemaListQuery(const char *db,
 		"from "
 		"	information_schema.schemata ");
 	bool	prevclause=false;
+
+	// where clause
 	if (db) {
 		schemalistquery.append(
 			"where "
@@ -787,6 +795,8 @@ const char *mysqlconnection::getSchemaListQuery(const char *db,
 		schemalistquery.append(schema);
 		schemalistquery.append("' ");
 	}
+
+	// order by clause
 	schemalistquery.append(
 		"order by "
 		"	catalog_name, "
@@ -799,6 +809,8 @@ const char *mysqlconnection::getTableTypeListQuery(const char *db,
 						const char *schema,
 						const char *tabletypes) {
 	tabletypelistquery.clear();
+
+	// select clause
 	tabletypelistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -815,6 +827,8 @@ const char *mysqlconnection::getTableTypeListQuery(const char *db,
 		"select 'ALIAS' as table_type "
 		"union "
 		"select 'SYNONYM' as table_type) as t ");
+
+	// where clause
 	if (!charstring::isNullOrEmpty(tabletypes)) {
 		tabletypelistquery.append(
 			"where "
@@ -822,9 +836,12 @@ const char *mysqlconnection::getTableTypeListQuery(const char *db,
 		tabletypelistquery.append(tabletypes);
 		tabletypelistquery.append("' ");
 	}
+
+	// order by clause
 	tabletypelistquery.append(
 		"order by "
 		"	table_type");
+
 	return tabletypelistquery.getString();
 }
 
@@ -834,6 +851,8 @@ const char *mysqlconnection::getTableListQuery(const char *db,
 						uint16_t objecttypes) {
 
 	tablelistquery.clear();
+
+	// select clause
 	tablelistquery.append(
 		"select "
 		"	table_catalog as table_cat, "
@@ -895,6 +914,8 @@ const char *mysqlconnection::getTableListQuery(const char *db,
 		tablelistquery.append(table);
 		tablelistquery.append("' ");
 	}
+
+	// order by clause
 	tablelistquery.append(
 		"order by "
 		"	table_cat, "
@@ -903,8 +924,6 @@ const char *mysqlconnection::getTableListQuery(const char *db,
 
 	return tablelistquery.getString();
 }
-
-
 
 static const char	*mysql_bittype=
 			"(select "
@@ -1651,14 +1670,14 @@ const char *mysqlconnection::getTypeInfoListQuery(const char *db,
 	return NULL;
 }
 
-
-
 const char *mysqlconnection::getColumnListQuery(const char *db,
 					const char *schema,
 					const char *table,
 					const char *column) {
 
 	columnlistquery.clear();
+
+	// select clause
 	columnlistquery.append(
 		"select "
 		"	table_catalog as table_cat, "
@@ -1694,6 +1713,7 @@ const char *mysqlconnection::getColumnListQuery(const char *db,
 
 	bool	prevclause=false;
 
+	// where clause
 	if (!charstring::isNullOrEmpty(db)) {
 		columnlistquery.append(
 			"where "
@@ -1745,13 +1765,13 @@ const char *mysqlconnection::getColumnListQuery(const char *db,
 	return columnlistquery.getString();
 }
 
-
-
 const char *mysqlconnection::getPrimaryKeysListQuery(const char *db,
 					const char *schema,
 					const char *table) {
 
 	primarykeyslistquery.clear();
+
+	// select clause
 	primarykeyslistquery.append(
 		"select "
 		"	'def' as table_cat, "
@@ -1760,10 +1780,16 @@ const char *mysqlconnection::getPrimaryKeysListQuery(const char *db,
 		"	ku.column_name, "
 		"	ku.ordinal_position as key_seq, "
 		"	tc.constraint_name as pk_name, "
-		"	null "
+		"	null ");
+
+	// from clause
+	primarykeyslistquery.append(
 		"from "
 		"	information_schema.table_constraints tc, "
-		"	information_schema.key_column_usage ku "
+		"	information_schema.key_column_usage ku ");
+
+	// where clause
+	primarykeyslistquery.append(
 		"where "
 		"	tc.constraint_type='PRIMARY KEY' "
 		"	and "
@@ -1793,10 +1819,13 @@ const char *mysqlconnection::getPrimaryKeysListQuery(const char *db,
 		primarykeyslistquery.append(table);
 		primarykeyslistquery.append("' ");
 	}
+
+	// order by clause
 	primarykeyslistquery.append(
 		"order by "
 		"	tc.table_name, "
 		"	ku.ordinal_position");
+
 	return primarykeyslistquery.getString();
 }
 
@@ -1805,6 +1834,8 @@ const char *mysqlconnection::getKeyAndIndexListQuery(const char *db,
 					const char *table) {
 
 	keyandindexlistquery.clear();
+
+	// select clause
 	keyandindexlistquery.append(
 		"select "
 		"	s.table_catalog as table_cat, "
@@ -1820,11 +1851,16 @@ const char *mysqlconnection::getKeyAndIndexListQuery(const char *db,
 		"	s.cardinality, "
 		"	null as pages, "
 		"	null as filter_condition, "
-		"	null "
+		"	null ");
+
+	// from clause
+	keyandindexlistquery.append(
 		"from "
 		"	information_schema.statistics s ");
 
 	bool	prevclause=false;
+
+	// where clause
 	if (!charstring::isNullOrEmpty(db)) {
 		keyandindexlistquery.append(
 			"where "
@@ -1856,14 +1892,16 @@ const char *mysqlconnection::getKeyAndIndexListQuery(const char *db,
 		keyandindexlistquery.append(table);
 		keyandindexlistquery.append("' ");
 	}
+
+	// order by clause
 	keyandindexlistquery.append(
 		"order by "
 		"	s.table_name, "
 		"	s.index_name, "
 		"	s.seq_in_index");
+
 	return keyandindexlistquery.getString();
 }
-
 
 const char *mysqlconnection::getProcedureListQuery(
 					const char *db,
@@ -1871,6 +1909,8 @@ const char *mysqlconnection::getProcedureListQuery(
 					const char *procedure) {
 
 	procedurelistquery.clear();
+
+	// select clause
 	procedurelistquery.append(
 		"select "
 		"	routine_catalog as procedure_cat, "
@@ -1891,6 +1931,8 @@ const char *mysqlconnection::getProcedureListQuery(
 	if (!charstring::isNullOrEmpty(db) ||
 		!charstring::isNullOrEmpty(schema) ||
 		!charstring::isNullOrEmpty(procedure)) {
+
+	// where clause
 		procedurelistquery.append("where ");
 		bool	first=true;
 		if (!charstring::isNullOrEmpty(db)) {
@@ -1920,14 +1962,16 @@ const char *mysqlconnection::getProcedureListQuery(
 			procedurelistquery.append("' ");
 		}
 	}
+
+	// order by clause
 	procedurelistquery.append(
 		"order by "
 		"	routine_catalog, "
 		"	routine_schema, "
 		"	routine_name");
+
 	return procedurelistquery.getString();
 }
-
 
 const char *mysqlconnection::getProcedureParameterListQuery(
 					const char *db,
@@ -1935,6 +1979,8 @@ const char *mysqlconnection::getProcedureParameterListQuery(
 					const char *procedure) {
 
 	procedureparameterlistquery.clear();
+
+	// select clause
 	procedureparameterlistquery.append(
 		"select "
 		"	p.specific_catalog as procedure_cat, "
@@ -1961,12 +2007,17 @@ const char *mysqlconnection::getProcedureParameterListQuery(
 		"	p.character_octet_length as char_octet_length, "
 		"	p.ordinal_position, "
 		"	'YES' as is_nullable, "
-		"	null "
+		"	null ");
+
+	// from clause
+	procedureparameterlistquery.append(
 		"from "
 		"	information_schema.parameters p ");
 	if (!charstring::isNullOrEmpty(db) ||
 		!charstring::isNullOrEmpty(schema) ||
 		!charstring::isNullOrEmpty(procedure)) {
+
+	// where clause
 		procedureparameterlistquery.append("where ");
 		bool	first=true;
 		if (!charstring::isNullOrEmpty(db)) {
@@ -1996,13 +2047,15 @@ const char *mysqlconnection::getProcedureParameterListQuery(
 			procedureparameterlistquery.append("' ");
 		}
 	}
+
+	// order by clause
 	procedureparameterlistquery.append(
 		"order by "
 		"	p.specific_name, "
 		"	p.ordinal_position");
+
 	return procedureparameterlistquery.getString();
 }
-
 
 const char *mysqlconnection::selectDatabaseQuery() {
 	return "use `%s`";

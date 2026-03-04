@@ -763,6 +763,7 @@ const char *freetdsconnection::getDatabaseListQuerySqlServer(const char *db) {
 
 	databaselistquery.clear();
 
+	// select clause
 	databaselistquery.append(
 		"select distinct "
 		"	catalog_name as table_cat, "
@@ -773,6 +774,8 @@ const char *freetdsconnection::getDatabaseListQuerySqlServer(const char *db) {
 		"	null "
 		"from "
 		"	information_schema.schemata ");
+
+	// where clause
 	if (db) {
 		databaselistquery.append(
 			"where "
@@ -780,6 +783,8 @@ const char *freetdsconnection::getDatabaseListQuerySqlServer(const char *db) {
 		databaselistquery.append(db);
 		databaselistquery.append("' ");
 	}
+
+	// order by clause
 	databaselistquery.append(
 		"order by "
 		"	catalog_name");
@@ -799,6 +804,7 @@ const char *freetdsconnection::getSchemaListQuerySybase(const char *db,
 
 	schemalistquery.clear();
 
+	// select clause
 	schemalistquery.append(
 		"select distinct "
 		"	'' as table_cat, "
@@ -818,6 +824,8 @@ const char *freetdsconnection::getSchemaListQuerySybase(const char *db,
 		schemalistquery.append(schema);
 		schemalistquery.append("' ");
 	}
+
+	// order by clause
 	schemalistquery.append(
 		"order by "
 		"	loginame");
@@ -830,6 +838,7 @@ const char *freetdsconnection::getSchemaListQuerySqlServer(const char *db,
 
 	schemalistquery.clear();
 
+	// select clause
 	schemalistquery.append(
 		"select distinct "
 		"	catalog_name as table_cat, "
@@ -841,6 +850,8 @@ const char *freetdsconnection::getSchemaListQuerySqlServer(const char *db,
 		"from "
 		"	information_schema.schemata ");
 	bool	prevclause=false;
+
+	// where clause
 	if (db) {
 		schemalistquery.append(
 			"where "
@@ -860,6 +871,8 @@ const char *freetdsconnection::getSchemaListQuerySqlServer(const char *db,
 		schemalistquery.append(schema);
 		schemalistquery.append("' ");
 	}
+
+	// order by clause
 	schemalistquery.append(
 		"order by "
 		"	catalog_name, "
@@ -884,6 +897,7 @@ const char *freetdsconnection::getTableTypeListQuerySybase(
 
 	tabletypelistquery.clear();
 
+	// select clause
 	tabletypelistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -896,6 +910,8 @@ const char *freetdsconnection::getTableTypeListQuerySybase(
 		"(select 'TABLE' as table_type "
 		"union "
 		"select 'VIEW' as table_type) as t ");
+
+	// where clause
 	if (!charstring::isNullOrEmpty(tabletypes)) {
 		tabletypelistquery.append(
 			"where "
@@ -903,6 +919,8 @@ const char *freetdsconnection::getTableTypeListQuerySybase(
 		tabletypelistquery.append(tabletypes);
 		tabletypelistquery.append("' ");
 	}
+
+	// order by clause
 	tabletypelistquery.append(
 		"order by "
 		"	table_type");
@@ -917,6 +935,7 @@ const char *freetdsconnection::getTableTypeListQuerySqlServer(
 
 	tabletypelistquery.clear();
 
+	// select clause
 	tabletypelistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -933,6 +952,8 @@ const char *freetdsconnection::getTableTypeListQuerySqlServer(
 		"select 'ALIAS' as table_type "
 		"union "
 		"select 'SYNONYM' as table_type) as t ");
+
+	// where clause
 	if (!charstring::isNullOrEmpty(tabletypes)) {
 		tabletypelistquery.append(
 			"where "
@@ -940,6 +961,8 @@ const char *freetdsconnection::getTableTypeListQuerySqlServer(
 		tabletypelistquery.append(tabletypes);
 		tabletypelistquery.append("' ");
 	}
+
+	// order by clause
 	tabletypelistquery.append(
 		"order by "
 		"	table_type");
@@ -976,6 +999,7 @@ const char *freetdsconnection::getTableListQuerySybase(const char *db,
 	}
 	otypes.append(") ");
 
+	// select clause
 	tablelistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -1005,6 +1029,8 @@ const char *freetdsconnection::getTableListQuerySybase(const char *db,
 	tablelistquery.append(
 		"	and ");
 	tablelistquery.append(otypes.getString());
+
+	// order by clause
 	tablelistquery.append(
 		"order by "
 		"	name");
@@ -1044,6 +1070,7 @@ const char *freetdsconnection::getTableListQuerySqlServer(const char *db,
 	}
 	otypes.append(") ");
 
+	// select clause
 	tablelistquery.append(
 		"select "
 		"	table_catalog as table_cat, "
@@ -1081,6 +1108,8 @@ const char *freetdsconnection::getTableListQuerySqlServer(const char *db,
 		tablelistquery.append(table);
 		tablelistquery.append("' ");
 	}
+
+	// order by clause
 	tablelistquery.append(
 		"order by "
 		"	table_cat, "
@@ -1857,8 +1886,6 @@ const char *freetdsconnection::getTypeInfoListQuery(const char *db,
 	return NULL;
 }
 
-
-
 const char *freetdsconnection::getColumnListQuery(const char *db,
 					const char *schema,
 					const char *table,
@@ -2108,9 +2135,9 @@ const char *freetdsconnection::getColumnListQuerySqlServer(const char *db,
 		"	co.table_name=ck.table_name "
 		"	and "
 		"	co.column_name=ck.column_name ");
+	bool	prevclause=false;
 
 	// where clause
-	bool	prevclause=false;
 	if (temptable) {
 		columnlistquery.append(
 			"where "
@@ -2172,8 +2199,6 @@ const char *freetdsconnection::getColumnListQuerySqlServer(const char *db,
 	return columnlistquery.getString();
 }
 
-
-
 const char *freetdsconnection::getPrimaryKeysListQuery(const char *db,
 					const char *schema,
 					const char *table) {
@@ -2188,6 +2213,8 @@ const char *freetdsconnection::getPrimaryKeysListQuerySybase(
 					const char *table) {
 
 	primarykeyslistquery.clear();
+
+	// select clause
 	primarykeyslistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -2196,11 +2223,17 @@ const char *freetdsconnection::getPrimaryKeysListQuerySybase(
 		"	index_col(o.name,i.indid,c.colid) as column_name, "
 		"	c.colid as key_seq, "
 		"	i.name as pk_name, "
-		"	null "
+		"	null ");
+
+	// from clause
+	primarykeyslistquery.append(
 		"from "
 		"	sysobjects o, "
 		"	sysindexes i, "
-		"	syscolumns c "
+		"	syscolumns c ");
+
+	// where clause
+	primarykeyslistquery.append(
 		"where "
 		"	i.status & 2048 = 2048 "
 		"	and "
@@ -2223,10 +2256,13 @@ const char *freetdsconnection::getPrimaryKeysListQuerySybase(
 		primarykeyslistquery.append(schema);
 		primarykeyslistquery.append("' ");
 	}
+
+	// order by clause
 	primarykeyslistquery.append(
 		"order by "
 		"	o.name, "
 		"	c.colid");
+
 	return primarykeyslistquery.getString();
 }
 
@@ -2236,6 +2272,8 @@ const char *freetdsconnection::getPrimaryKeysListQuerySqlServer(
 					const char *table) {
 
 	primarykeyslistquery.clear();
+
+	// select clause
 	primarykeyslistquery.append(
 		"select "
 		"	tc.table_catalog as table_cat, "
@@ -2244,10 +2282,16 @@ const char *freetdsconnection::getPrimaryKeysListQuerySqlServer(
 		"	ku.column_name, "
 		"	ku.ordinal_position as key_seq, "
 		"	tc.constraint_name as pk_name, "
-		"	null "
+		"	null ");
+
+	// from clause
+	primarykeyslistquery.append(
 		"from "
 		"	information_schema.table_constraints tc, "
-		"	information_schema.key_column_usage ku "
+		"	information_schema.key_column_usage ku ");
+
+	// where clause
+	primarykeyslistquery.append(
 		"where "
 		"	tc.constraint_type='PRIMARY KEY' "
 		"	and "
@@ -2277,10 +2321,13 @@ const char *freetdsconnection::getPrimaryKeysListQuerySqlServer(
 		primarykeyslistquery.append(table);
 		primarykeyslistquery.append("' ");
 	}
+
+	// order by clause
 	primarykeyslistquery.append(
 		"order by "
 		"	tc.table_name, "
 		"	ku.ordinal_position");
+
 	return primarykeyslistquery.getString();
 }
 
@@ -2298,6 +2345,8 @@ const char *freetdsconnection::getKeyAndIndexListQuerySybase(
 					const char *table) {
 
 	keyandindexlistquery.clear();
+
+	// select clause
 	keyandindexlistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -2316,11 +2365,17 @@ const char *freetdsconnection::getKeyAndIndexListQuerySybase(
 		"	null as cardinality, "
 		"	null as pages, "
 		"	null as filter_condition, "
-		"	null "
+		"	null ");
+
+	// from clause
+	keyandindexlistquery.append(
 		"from "
 		"	sysobjects o, "
 		"	sysindexes i, "
-		"	syscolumns c "
+		"	syscolumns c ");
+
+	// where clause
+	keyandindexlistquery.append(
 		"where "
 		"	o.type='U' "
 		"	and "
@@ -2347,11 +2402,14 @@ const char *freetdsconnection::getKeyAndIndexListQuerySybase(
 		keyandindexlistquery.append(schema);
 		keyandindexlistquery.append("' ");
 	}
+
+	// order by clause
 	keyandindexlistquery.append(
 		"order by "
 		"	o.name, "
 		"	i.name, "
 		"	c.colid");
+
 	return keyandindexlistquery.getString();
 }
 
@@ -2361,6 +2419,8 @@ const char *freetdsconnection::getKeyAndIndexListQuerySqlServer(
 					const char *table) {
 
 	keyandindexlistquery.clear();
+
+	// select clause
 	keyandindexlistquery.append(
 		"select "
 		"	db_name() as table_cat, "
@@ -2390,13 +2450,19 @@ const char *freetdsconnection::getKeyAndIndexListQuerySqlServer(
 		"			then i.filter_definition "
 		"		else null "
 		"	end as filter_condition, "
-		"	null "
+		"	null ");
+
+	// from clause
+	keyandindexlistquery.append(
 		"from "
 		"	sys.indexes i, "
 		"	sys.index_columns ic, "
 		"	sys.columns c, "
 		"	sys.tables t, "
-		"	sys.schemas s "
+		"	sys.schemas s ");
+
+	// where clause
+	keyandindexlistquery.append(
 		"where "
 		"	i.object_id=ic.object_id "
 		"	and "
@@ -2432,14 +2498,16 @@ const char *freetdsconnection::getKeyAndIndexListQuerySqlServer(
 		keyandindexlistquery.append(table);
 		keyandindexlistquery.append("' ");
 	}
+
+	// order by clause
 	keyandindexlistquery.append(
 		"order by "
 		"	t.name, "
 		"	i.name, "
 		"	ic.key_ordinal");
+
 	return keyandindexlistquery.getString();
 }
-
 
 const char *freetdsconnection::getProcedureListQuery(
 					const char *db,
@@ -2456,6 +2524,8 @@ const char *freetdsconnection::getProcedureListQuerySybase(
 					const char *procedure) {
 
 	procedurelistquery.clear();
+
+	// select clause
 	procedurelistquery.append(
 		"select "
 		"	'' as procedure_cat, "
@@ -2487,10 +2557,13 @@ const char *freetdsconnection::getProcedureListQuerySybase(
 		procedurelistquery.append(procedure);
 		procedurelistquery.append("' ");
 	}
+
+	// order by clause
 	procedurelistquery.append(
 		"order by "
 		"	loginame, "
 		"	name");
+
 	return procedurelistquery.getString();
 }
 
@@ -2500,6 +2573,8 @@ const char *freetdsconnection::getProcedureListQuerySqlServer(
 					const char *procedure) {
 
 	procedurelistquery.clear();
+
+	// select clause
 	procedurelistquery.append(
 		"select "
 		"	routine_catalog as procedure_cat, "
@@ -2520,6 +2595,8 @@ const char *freetdsconnection::getProcedureListQuerySqlServer(
 	if (!charstring::isNullOrEmpty(db) ||
 		!charstring::isNullOrEmpty(schema) ||
 		!charstring::isNullOrEmpty(procedure)) {
+
+	// where clause
 		procedurelistquery.append("where ");
 		bool	first=true;
 		if (!charstring::isNullOrEmpty(db)) {
@@ -2549,14 +2626,16 @@ const char *freetdsconnection::getProcedureListQuerySqlServer(
 			procedurelistquery.append("' ");
 		}
 	}
+
+	// order by clause
 	procedurelistquery.append(
 		"order by "
 		"	routine_catalog, "
 		"	routine_schema, "
 		"	routine_name");
+
 	return procedurelistquery.getString();
 }
-
 
 const char *freetdsconnection::getProcedureParameterListQuery(
 					const char *db,
@@ -2573,6 +2652,8 @@ const char *freetdsconnection::getProcedureParameterListQuerySybase(
 					const char *procedure) {
 
 	procedureparameterlistquery.clear();
+
+	// select clause
 	procedureparameterlistquery.append(
 		"select "
 		"	'' as procedure_cat, "
@@ -2598,11 +2679,17 @@ const char *freetdsconnection::getProcedureParameterListQuerySybase(
 		"	c.length as char_octet_length, "
 		"	c.colid as ordinal_position, "
 		"	'YES' as is_nullable, "
-		"	null "
+		"	null ");
+
+	// from clause
+	procedureparameterlistquery.append(
 		"from "
 		"	sysobjects o, "
 		"	syscolumns c, "
-		"	systypes t "
+		"	systypes t ");
+
+	// where clause
+	procedureparameterlistquery.append(
 		"where "
 		"	o.type='P' "
 		"	and "
@@ -2623,10 +2710,13 @@ const char *freetdsconnection::getProcedureParameterListQuerySybase(
 		procedureparameterlistquery.append(procedure);
 		procedureparameterlistquery.append("' ");
 	}
+
+	// order by clause
 	procedureparameterlistquery.append(
 		"order by "
 		"	o.name, "
 		"	c.colid");
+
 	return procedureparameterlistquery.getString();
 }
 
@@ -2636,6 +2726,8 @@ const char *freetdsconnection::getProcedureParameterListQuerySqlServer(
 					const char *procedure) {
 
 	procedureparameterlistquery.clear();
+
+	// select clause
 	procedureparameterlistquery.append(
 		"select "
 		"	p.specific_catalog as procedure_cat, "
@@ -2662,12 +2754,17 @@ const char *freetdsconnection::getProcedureParameterListQuerySqlServer(
 		"	p.character_octet_length as char_octet_length, "
 		"	p.ordinal_position, "
 		"	'YES' as is_nullable, "
-		"	null "
+		"	null ");
+
+	// from clause
+	procedureparameterlistquery.append(
 		"from "
 		"	information_schema.parameters p ");
 	if (!charstring::isNullOrEmpty(db) ||
 		!charstring::isNullOrEmpty(schema) ||
 		!charstring::isNullOrEmpty(procedure)) {
+
+	// where clause
 		procedureparameterlistquery.append("where ");
 		bool	first=true;
 		if (!charstring::isNullOrEmpty(db)) {
@@ -2697,13 +2794,15 @@ const char *freetdsconnection::getProcedureParameterListQuerySqlServer(
 			procedureparameterlistquery.append("' ");
 		}
 	}
+
+	// order by clause
 	procedureparameterlistquery.append(
 		"order by "
 		"	p.specific_name, "
 		"	p.ordinal_position");
+
 	return procedureparameterlistquery.getString();
 }
-
 
 const char *freetdsconnection::selectDatabaseQuery() {
 	return "use %s";

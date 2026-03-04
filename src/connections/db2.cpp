@@ -616,6 +616,7 @@ const char *db2connection::getDatabaseListQuery(const char *db) {
 
 	databaselistquery.clear();
 
+	// select clause
 	databaselistquery.append(
 		"select "
 		"	schemaname as table_cat, "
@@ -626,6 +627,8 @@ const char *db2connection::getDatabaseListQuery(const char *db) {
 		"	null "
 		"from "
 		"	syscat.schemata ");
+
+	// where clause
 	if (db) {
 		databaselistquery.append(
 			"where "
@@ -633,6 +636,8 @@ const char *db2connection::getDatabaseListQuery(const char *db) {
 		databaselistquery.append(db);
 		databaselistquery.append("' ");
 	}
+
+	// order by clause
 	databaselistquery.append(
 		"order by "
 		"	schemaname");
@@ -645,6 +650,7 @@ const char *db2connection::getSchemaListQuery(const char *db,
 
 	schemalistquery.clear();
 
+	// select clause
 	schemalistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -655,6 +661,8 @@ const char *db2connection::getSchemaListQuery(const char *db,
 		"	null "
 		"from "
 		"	syscat.schemata ");
+
+	// where clause
 	if (schema) {
 		schemalistquery.append(
 			"where "
@@ -662,6 +670,8 @@ const char *db2connection::getSchemaListQuery(const char *db,
 		schemalistquery.append(schema);
 		schemalistquery.append("' ");
 	}
+
+	// order by clause
 	schemalistquery.append(
 		"order by "
 		"	schemaname");
@@ -674,6 +684,8 @@ const char *db2connection::getTableTypeListQuery(const char *db,
 						const char *tabletypes) {
 
 	tabletypelistquery.clear();
+
+	// select clause
 	tabletypelistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -690,6 +702,8 @@ const char *db2connection::getTableTypeListQuery(const char *db,
 		"select 'ALIAS' as table_type from sysibm.sysdummy1 "
 		"union "
 		"select 'SYNONYM' as table_type from sysibm.sysdummy1) as t ");
+
+	// where clause
 	if (!charstring::isNullOrEmpty(tabletypes)) {
 		tabletypelistquery.append(
 			"where "
@@ -697,9 +711,12 @@ const char *db2connection::getTableTypeListQuery(const char *db,
 		tabletypelistquery.append(tabletypes);
 		tabletypelistquery.append("' ");
 	}
+
+	// order by clause
 	tabletypelistquery.append(
 		"order by "
 		"	table_type");
+
 	return tabletypelistquery.getString();
 }
 
@@ -709,6 +726,8 @@ const char *db2connection::getTableListQuery(const char *db,
 						uint16_t objecttypes) {
 
 	tablelistquery.clear();
+
+	// select clause
 	tablelistquery.append(
 		"select distinct "
 		"	'' as table_cat, "
@@ -771,6 +790,8 @@ const char *db2connection::getTableListQuery(const char *db,
 	}
 	otypes.append(") ");
 	tablelistquery.append(otypes.getString());
+
+	// order by clause
 	tablelistquery.append(
 		"order by "
 		"	tabschema, "
@@ -778,8 +799,6 @@ const char *db2connection::getTableListQuery(const char *db,
 
 	return tablelistquery.getString();
 }
-
-
 
 static const char	*db2_booltype=
 			"(select "
@@ -1355,8 +1374,6 @@ const char *db2connection::getTypeInfoListQuery(const char *db,
 	return NULL;
 }
 
-
-
 const char *db2connection::getColumnListQuery(const char *db,
 					const char *schema,
 					const char *table,
@@ -1407,10 +1424,9 @@ const char *db2connection::getColumnListQuery(const char *db,
 	columnlistquery.append(
 		"from "
 		"	syscat.columns ");
-
-	// where clause
 	bool	prevclause=false;
 
+	// where clause
 	if (!charstring::isNullOrEmpty(schema)) {
 		columnlistquery.append(
 			"where "
@@ -1454,13 +1470,13 @@ const char *db2connection::getColumnListQuery(const char *db,
 	return columnlistquery.getString();
 }
 
-
-
 const char *db2connection::getPrimaryKeysListQuery(const char *db,
 					const char *schema,
 					const char *table) {
 
 	primarykeyslistquery.clear();
+
+	// select clause
 	primarykeyslistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -1469,10 +1485,16 @@ const char *db2connection::getPrimaryKeysListQuery(const char *db,
 		"	trim(kcu.colname) as column_name, "
 		"	kcu.colseq as key_seq, "
 		"	trim(kcu.constname) as pk_name, "
-		"	null "
+		"	null ");
+
+	// from clause
+	primarykeyslistquery.append(
 		"from "
 		"	syscat.keycoluse kcu, "
-		"	syscat.tabconst tc "
+		"	syscat.tabconst tc ");
+
+	// where clause
+	primarykeyslistquery.append(
 		"where "
 		"	tc.type='P' "
 		"	and "
@@ -1495,10 +1517,13 @@ const char *db2connection::getPrimaryKeysListQuery(const char *db,
 		primarykeyslistquery.append(table);
 		primarykeyslistquery.append("' ");
 	}
+
+	// order by clause
 	primarykeyslistquery.append(
 		"order by "
 		"	kcu.tabname, "
 		"	kcu.colseq");
+
 	return primarykeyslistquery.getString();
 }
 
@@ -1507,6 +1532,8 @@ const char *db2connection::getKeyAndIndexListQuery(const char *db,
 					const char *table) {
 
 	keyandindexlistquery.clear();
+
+	// select clause
 	keyandindexlistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -1530,10 +1557,16 @@ const char *db2connection::getKeyAndIndexListQuery(const char *db,
 		"	i.fullkeycard as cardinality, "
 		"	i.nleaf as pages, "
 		"	null as filter_condition, "
-		"	null "
+		"	null ");
+
+	// from clause
+	keyandindexlistquery.append(
 		"from "
 		"	syscat.indexes i, "
-		"	syscat.indexcoluse ic "
+		"	syscat.indexcoluse ic ");
+
+	// where clause
+	keyandindexlistquery.append(
 		"where "
 		"	i.indschema=ic.indschema "
 		"	and "
@@ -1552,14 +1585,16 @@ const char *db2connection::getKeyAndIndexListQuery(const char *db,
 		keyandindexlistquery.append(table);
 		keyandindexlistquery.append("' ");
 	}
+
+	// order by clause
 	keyandindexlistquery.append(
 		"order by "
 		"	i.tabname, "
 		"	i.indname, "
 		"	ic.colseq");
+
 	return keyandindexlistquery.getString();
 }
-
 
 const char *db2connection::getProcedureListQuery(
 						const char *db,
@@ -1567,6 +1602,8 @@ const char *db2connection::getProcedureListQuery(
 						const char *procedure) {
 
 	procedurelistquery.clear();
+
+	// select clause
 	procedurelistquery.append(
 		"select "
 		"	'' as procedure_cat, "
@@ -1598,13 +1635,15 @@ const char *db2connection::getProcedureListQuery(
 		procedurelistquery.append(procedure);
 		procedurelistquery.append("' ");
 	}
+
+	// order by clause
 	procedurelistquery.append(
 		"order by "
 		"	routineschema, "
 		"	routinename");
+
 	return procedurelistquery.getString();
 }
-
 
 const char *db2connection::getProcedureParameterListQuery(
 					const char *db,
@@ -1612,6 +1651,8 @@ const char *db2connection::getProcedureParameterListQuery(
 					const char *procedure) {
 
 	procedureparameterlistquery.clear();
+
+	// select clause
 	procedureparameterlistquery.append(
 		"select "
 		"	'' as procedure_cat, "
@@ -1638,10 +1679,15 @@ const char *db2connection::getProcedureParameterListQuery(
 		"	length as char_octet_length, "
 		"	ordinal as ordinal_position, "
 		"	'YES' as is_nullable, "
-		"	null "
+		"	null ");
+
+	// from clause
+	procedureparameterlistquery.append(
 		"from "
 		"	syscat.procparms ");
 	bool	prevclause=false;
+
+	// where clause
 	if (!charstring::isNullOrEmpty(schema)) {
 		procedureparameterlistquery.append(
 			"where "
@@ -1661,13 +1707,15 @@ const char *db2connection::getProcedureParameterListQuery(
 		procedureparameterlistquery.append(procedure);
 		procedureparameterlistquery.append("' ");
 	}
+
+	// order by clause
 	procedureparameterlistquery.append(
 		"order by "
 		"	procname, "
 		"	ordinal");
+
 	return procedureparameterlistquery.getString();
 }
-
 
 const char *db2connection::getBindFormat() {
 	return "?";

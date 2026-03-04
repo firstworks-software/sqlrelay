@@ -611,6 +611,7 @@ const char *postgresqlconnection::getDatabaseListQuery(const char *db) {
 
 	databaselistquery.clear();
 
+	// select clause
 	databaselistquery.append(
 		"select "
 		"	datname as table_cat, "
@@ -621,6 +622,8 @@ const char *postgresqlconnection::getDatabaseListQuery(const char *db) {
 		"	null "
 		"from "
 		"	pg_database ");
+
+	// where clause
 	if (db) {
 		databaselistquery.append(
 			"where "
@@ -628,6 +631,8 @@ const char *postgresqlconnection::getDatabaseListQuery(const char *db) {
 		databaselistquery.append(db);
 		databaselistquery.append("' ");
 	}
+
+	// order by clause
 	databaselistquery.append(
 		"order by "
 		"	datname");
@@ -640,6 +645,7 @@ const char *postgresqlconnection::getSchemaListQuery(const char *db,
 
 	schemalistquery.clear();
 
+	// select clause
 	schemalistquery.append(
 		"select "
 		"	catalog_name as table_cat, "
@@ -651,6 +657,8 @@ const char *postgresqlconnection::getSchemaListQuery(const char *db,
 		"from "
 		"	information_schema.schemata ");
 	bool	prevclause=false;
+
+	// where clause
 	if (db) {
 		schemalistquery.append(
 			"where "
@@ -670,6 +678,8 @@ const char *postgresqlconnection::getSchemaListQuery(const char *db,
 		schemalistquery.append(schema);
 		schemalistquery.append("' ");
 	}
+
+	// order by clause
 	schemalistquery.append(
 		"order by "
 		"	catalog_name, "
@@ -685,6 +695,7 @@ const char *postgresqlconnection::getTableTypeListQuery(
 
 	tabletypelistquery.clear();
 
+	// select clause
 	tabletypelistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -697,6 +708,8 @@ const char *postgresqlconnection::getTableTypeListQuery(
 		"(select 'TABLE' as table_type "
 		"union "
 		"select 'VIEW' as table_type) as t ");
+
+	// where clause
 	if (!charstring::isNullOrEmpty(tabletypes)) {
 		tabletypelistquery.append(
 			"where "
@@ -704,6 +717,8 @@ const char *postgresqlconnection::getTableTypeListQuery(
 		tabletypelistquery.append(tabletypes);
 		tabletypelistquery.append("' ");
 	}
+
+	// order by clause
 	tabletypelistquery.append(
 		"order by "
 		"	table_type");
@@ -717,6 +732,8 @@ const char *postgresqlconnection::getTableListQuery(const char *db,
 						uint16_t objecttypes) {
 
 	tablelistquery.clear();
+
+	// select clause
 	tablelistquery.append(
 		"select "
 		"	table_catalog as table_cat, "
@@ -778,15 +795,16 @@ const char *postgresqlconnection::getTableListQuery(const char *db,
 		tablelistquery.append(table);
 		tablelistquery.append("' ");
 	}
+
+	// order by clause
 	tablelistquery.append(
 		"order by "
 		"	table_cat, "
 		"	table_schem, "
 		"	table_name");
+
 	return tablelistquery.getString();
 }
-
-
 
 static const char	*pg_booltype=
 			"(select "
@@ -1387,16 +1405,12 @@ const char *postgresqlconnection::getTypeInfoListQuery(const char *db,
 	return NULL;
 }
 
-
-
 const char *postgresqlconnection::getColumnListQuery(const char *db,
 					const char *schema,
 					const char *table,
 					const char *column) {
 
 	columnlistquery.clear();
-
-	// select clause
 	columnlistquery.append(
 		"select "
 		"	co.table_catalog as table_cat, "
@@ -1437,8 +1451,6 @@ const char *postgresqlconnection::getColumnListQuery(const char *db,
 		"		else null "
 		"	end as column_key, "
 		"	null ");
-
-	// from clause
 	columnlistquery.append(
 		"from "
 		"	information_schema.columns co "
@@ -1473,8 +1485,6 @@ const char *postgresqlconnection::getColumnListQuery(const char *db,
 		"	co.table_name=ck.table_name "
 		"	and "
 		"	co.column_name=ck.column_name ");
-
-	// where clause
 	bool	prevclause=false;
 	if (!charstring::isNullOrEmpty(db)) {
 		columnlistquery.append("where ");
@@ -1519,8 +1529,6 @@ const char *postgresqlconnection::getColumnListQuery(const char *db,
 		columnlistquery.append(column);
 		columnlistquery.append("' ");
 	}
-
-	// order by clause
 	columnlistquery.append(
 		"order by "
 		"	co.ordinal_position");
@@ -1528,13 +1536,13 @@ const char *postgresqlconnection::getColumnListQuery(const char *db,
 	return columnlistquery.getString();
 }
 
-
-
 const char *postgresqlconnection::getPrimaryKeysListQuery(const char *db,
 					const char *schema,
 					const char *table) {
 
 	primarykeyslistquery.clear();
+
+	// select clause
 	primarykeyslistquery.append(
 		"select "
 		"	tc.table_catalog as table_cat, "
@@ -1543,10 +1551,16 @@ const char *postgresqlconnection::getPrimaryKeysListQuery(const char *db,
 		"	ku.column_name, "
 		"	ku.ordinal_position as key_seq, "
 		"	tc.constraint_name as pk_name, "
-		"	null "
+		"	null ");
+
+	// from clause
+	primarykeyslistquery.append(
 		"from "
 		"	information_schema.table_constraints tc, "
-		"	information_schema.key_column_usage ku "
+		"	information_schema.key_column_usage ku ");
+
+	// where clause
+	primarykeyslistquery.append(
 		"where "
 		"	tc.constraint_type='PRIMARY KEY' "
 		"	and "
@@ -1576,10 +1590,13 @@ const char *postgresqlconnection::getPrimaryKeysListQuery(const char *db,
 		primarykeyslistquery.append(table);
 		primarykeyslistquery.append("' ");
 	}
+
+	// order by clause
 	primarykeyslistquery.append(
 		"order by "
 		"	tc.table_name, "
 		"	ku.ordinal_position");
+
 	return primarykeyslistquery.getString();
 }
 
@@ -1588,6 +1605,8 @@ const char *postgresqlconnection::getKeyAndIndexListQuery(const char *db,
 					const char *table) {
 
 	keyandindexlistquery.clear();
+
+	// select clause
 	keyandindexlistquery.append(
 		"select "
 		"	current_database() as table_cat, "
@@ -1609,7 +1628,10 @@ const char *postgresqlconnection::getKeyAndIndexListQuery(const char *db,
 		"	ix.indnatts as cardinality, "
 		"	null as pages, "
 		"	null as filter_condition, "
-		"	null "
+		"	null ");
+
+	// from clause
+	keyandindexlistquery.append(
 		"from "
 		"	pg_catalog.pg_class t, "
 		"	pg_catalog.pg_class i, "
@@ -1621,7 +1643,10 @@ const char *postgresqlconnection::getKeyAndIndexListQuery(const char *db,
 		"		with ordinality as u(attnum, ord) "
 		"	left join lateral ("
 		"		select unnest(ix.indoption) as option"
-		"	) o on true "
+		"	) o on true ");
+
+	// where clause
+	keyandindexlistquery.append(
 		"where "
 		"	t.oid=ix.indrelid "
 		"	and "
@@ -1653,14 +1678,16 @@ const char *postgresqlconnection::getKeyAndIndexListQuery(const char *db,
 		keyandindexlistquery.append(table);
 		keyandindexlistquery.append("' ");
 	}
+
+	// order by clause
 	keyandindexlistquery.append(
 		"order by "
 		"	t.relname, "
 		"	i.relname, "
 		"	u.ord");
+
 	return keyandindexlistquery.getString();
 }
-
 
 const char *postgresqlconnection::getProcedureListQuery(
 						const char *db,
@@ -1668,6 +1695,8 @@ const char *postgresqlconnection::getProcedureListQuery(
 						const char *procedure) {
 
 	procedurelistquery.clear();
+
+	// select clause
 	procedurelistquery.append(
 		"select "
 		"	routine_catalog as procedure_cat, "
@@ -1688,6 +1717,8 @@ const char *postgresqlconnection::getProcedureListQuery(
 	if (!charstring::isNullOrEmpty(db) ||
 		!charstring::isNullOrEmpty(schema) ||
 		!charstring::isNullOrEmpty(procedure)) {
+
+	// where clause
 		procedurelistquery.append("where ");
 		bool	first=true;
 		if (!charstring::isNullOrEmpty(db)) {
@@ -1717,14 +1748,16 @@ const char *postgresqlconnection::getProcedureListQuery(
 			procedurelistquery.append("' ");
 		}
 	}
+
+	// order by clause
 	procedurelistquery.append(
 		"order by "
 		"	routine_catalog, "
 		"	routine_schema, "
 		"	routine_name");
+
 	return procedurelistquery.getString();
 }
-
 
 const char *postgresqlconnection::getProcedureParameterListQuery(
 					const char *db,
@@ -1732,6 +1765,8 @@ const char *postgresqlconnection::getProcedureParameterListQuery(
 					const char *procedure) {
 
 	procedureparameterlistquery.clear();
+
+	// select clause
 	procedureparameterlistquery.append(
 		"select "
 		"	p.specific_catalog as procedure_cat, "
@@ -1758,10 +1793,16 @@ const char *postgresqlconnection::getProcedureParameterListQuery(
 		"	p.character_octet_length as char_octet_length, "
 		"	p.ordinal_position, "
 		"	'YES' as is_nullable, "
-		"	null "
+		"	null ");
+
+	// from clause
+	procedureparameterlistquery.append(
 		"from "
 		"	information_schema.parameters p, "
-		"	information_schema.routines r "
+		"	information_schema.routines r ");
+
+	// where clause
+	procedureparameterlistquery.append(
 		"where "
 		"	p.specific_name=r.specific_name "
 		"	and "
@@ -1787,13 +1828,15 @@ const char *postgresqlconnection::getProcedureParameterListQuery(
 		procedureparameterlistquery.append(procedure);
 		procedureparameterlistquery.append("' ");
 	}
+
+	// order by clause
 	procedureparameterlistquery.append(
 		"order by "
 		"	r.routine_name, "
 		"	p.ordinal_position");
+
 	return procedureparameterlistquery.getString();
 }
-
 
 bool postgresqlconnection::selectDatabase(const char *database) {
 

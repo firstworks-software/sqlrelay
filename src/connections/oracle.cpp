@@ -1292,6 +1292,7 @@ const char *oracleconnection::getSchemaListQuery(const char *db,
 
 	schemalistquery.clear();
 
+	// select clause
 	schemalistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -1302,6 +1303,8 @@ const char *oracleconnection::getSchemaListQuery(const char *db,
 		"	null "
 		"from "
 		"	all_users ");
+
+	// where clause
 	if (schema) {
 		schemalistquery.append(
 			"where "
@@ -1309,6 +1312,8 @@ const char *oracleconnection::getSchemaListQuery(const char *db,
 		schemalistquery.append(schema);
 		schemalistquery.append("') ");
 	}
+
+	// order by clause
 	schemalistquery.append(
 		"order by "
 		"	username");
@@ -1322,6 +1327,7 @@ const char *oracleconnection::getTableTypeListQuery(const char *db,
 
 	tabletypelistquery.clear();
 
+	// select clause
 	tabletypelistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -1336,6 +1342,8 @@ const char *oracleconnection::getTableTypeListQuery(const char *db,
 		"select 'TABLE' as table_type from dual "
 		"union "
 		"select 'VIEW' as table_type from dual) ");
+
+	// where clause
 	if (!charstring::isNullOrEmpty(tabletypes)) {
 		tabletypelistquery.append(
 			"where "
@@ -1343,6 +1351,8 @@ const char *oracleconnection::getTableTypeListQuery(const char *db,
 		tabletypelistquery.append(tabletypes);
 		tabletypelistquery.append("' ");
 	}
+
+	// order by clause
 	tabletypelistquery.append(
 		"order by "
 		"	table_type");
@@ -2601,6 +2611,8 @@ const char *oracleconnection::getPrimaryKeysListQuery(const char *db,
 			"	or "
 			"	cc.owner='SYSTEM') ");
 	}
+
+	// order by clause
 	primarykeyslistquery.append(
 		"order by "
 		"	cc.table_name, "
@@ -2690,6 +2702,8 @@ const char *oracleconnection::getKeyAndIndexListQuery(const char *db,
 			"	or "
 			"	i.owner='SYSTEM') ");
 	}
+
+	// order by clause
 	keyandindexlistquery.append(
 		"order by "
 		"	i.table_name, "
@@ -2704,6 +2718,8 @@ const char *oracleconnection::getProcedureListQuery(const char *db,
 						const char *procedure) {
 
 	procedurelistquery.clear();
+
+	// select clause
 	procedurelistquery.append(
 		"select "
 		"	'' as procedure_cat, "
@@ -2735,10 +2751,13 @@ const char *oracleconnection::getProcedureListQuery(const char *db,
 		procedurelistquery.append(procedure);
 		procedurelistquery.append("') ");
 	}
+
+	// order by clause
 	procedurelistquery.append(
 		"order by "
 		"	owner, "
 		"	object_name");
+
 	return procedurelistquery.getString();
 }
 
@@ -2787,6 +2806,8 @@ const char *oracleconnection::getProcedureParameterListQuery(const char *db,
 		"	a.position as ordinal_position, "
 		"	'YES' as is_nullable, "
 		"	null ");
+
+	// from clause
 	if (supportssyscontext) {
 		procedureparameterlistquery.append(
 			"from "
@@ -2796,6 +2817,8 @@ const char *oracleconnection::getProcedureParameterListQuery(const char *db,
 			"from "
 			"	user_arguments a ");
 	}
+
+	// where clause
 	procedureparameterlistquery.append(
 		"where "
 		"	a.data_level=0 ");
@@ -2823,6 +2846,8 @@ const char *oracleconnection::getProcedureParameterListQuery(const char *db,
 		procedureparameterlistquery.append(procedure);
 		procedureparameterlistquery.append("') ");
 	}
+
+	// order by clause
 	procedureparameterlistquery.append(
 		"order by "
 		"	a.object_name, "

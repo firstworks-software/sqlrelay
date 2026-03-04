@@ -618,6 +618,7 @@ const char *sapconnection::getSchemaListQuery(const char *db,
 
 	schemalistquery.clear();
 
+	// select clause
 	schemalistquery.append(
 		"select distinct "
 		"	'' as table_cat, "
@@ -637,6 +638,8 @@ const char *sapconnection::getSchemaListQuery(const char *db,
 		schemalistquery.append(schema);
 		schemalistquery.append("' ");
 	}
+
+	// order by clause
 	schemalistquery.append(
 		"order by "
 		"	loginame");
@@ -649,6 +652,8 @@ const char *sapconnection::getTableTypeListQuery(const char *db,
 						const char *tabletypes) {
 
 	tabletypelistquery.clear();
+
+	// select clause
 	tabletypelistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -661,6 +666,8 @@ const char *sapconnection::getTableTypeListQuery(const char *db,
 		"(select 'TABLE' as table_type "
 		"union "
 		"select 'VIEW' as table_type) dt ");
+
+	// where clause
 	if (!charstring::isNullOrEmpty(tabletypes)) {
 		tabletypelistquery.append(
 			"where "
@@ -668,6 +675,8 @@ const char *sapconnection::getTableTypeListQuery(const char *db,
 		tabletypelistquery.append(tabletypes);
 		tabletypelistquery.append("' ");
 	}
+
+	// order by clause
 	tabletypelistquery.append(
 		"order by "
 		"	table_type");
@@ -681,6 +690,8 @@ const char *sapconnection::getTableListQuery(const char *db,
 						uint16_t objecttypes) {
 
 	tablelistquery.clear();
+
+	// select clause
 	tablelistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -722,14 +733,14 @@ const char *sapconnection::getTableListQuery(const char *db,
 	}
 	otypes.append(") ");
 	tablelistquery.append(otypes.getString());
+
+	// order by clause
 	tablelistquery.append(
 		"order by "
 		"	name");
 
 	return tablelistquery.getString();
 }
-
-
 
 static const char	*sap_bittype=
 			"(select "
@@ -1416,8 +1427,6 @@ const char *sapconnection::getTypeInfoListQuery(const char *db,
 	return NULL;
 }
 
-
-
 const char *sapconnection::getColumnListQuery(const char *db,
 					const char *schema,
 					const char *table,
@@ -1544,13 +1553,13 @@ const char *sapconnection::getColumnListQuery(const char *db,
 	return columnlistquery.getString();
 }
 
-
-
 const char *sapconnection::getPrimaryKeysListQuery(const char *db,
 					const char *schema,
 					const char *table) {
 
 	primarykeyslistquery.clear();
+
+	// select clause
 	primarykeyslistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -1559,11 +1568,17 @@ const char *sapconnection::getPrimaryKeysListQuery(const char *db,
 		"	index_col(o.name,i.indid,c.colid) as column_name, "
 		"	c.colid as key_seq, "
 		"	i.name as pk_name, "
-		"	null "
+		"	null ");
+
+	// from clause
+	primarykeyslistquery.append(
 		"from "
 		"	sysobjects o, "
 		"	sysindexes i, "
-		"	syscolumns c "
+		"	syscolumns c ");
+
+	// where clause
+	primarykeyslistquery.append(
 		"where "
 		"	i.status & 2048 = 2048 "
 		"	and "
@@ -1586,10 +1601,13 @@ const char *sapconnection::getPrimaryKeysListQuery(const char *db,
 		primarykeyslistquery.append(schema);
 		primarykeyslistquery.append("' ");
 	}
+
+	// order by clause
 	primarykeyslistquery.append(
 		"order by "
 		"	o.name, "
 		"	c.colid");
+
 	return primarykeyslistquery.getString();
 }
 
@@ -1598,6 +1616,8 @@ const char *sapconnection::getKeyAndIndexListQuery(const char *db,
 					const char *table) {
 
 	keyandindexlistquery.clear();
+
+	// select clause
 	keyandindexlistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -1616,11 +1636,17 @@ const char *sapconnection::getKeyAndIndexListQuery(const char *db,
 		"	null as cardinality, "
 		"	null as pages, "
 		"	null as filter_condition, "
-		"	null "
+		"	null ");
+
+	// from clause
+	keyandindexlistquery.append(
 		"from "
 		"	sysobjects o, "
 		"	sysindexes i, "
-		"	syscolumns c "
+		"	syscolumns c ");
+
+	// where clause
+	keyandindexlistquery.append(
 		"where "
 		"	o.type='U' "
 		"	and "
@@ -1647,14 +1673,16 @@ const char *sapconnection::getKeyAndIndexListQuery(const char *db,
 		keyandindexlistquery.append(schema);
 		keyandindexlistquery.append("' ");
 	}
+
+	// order by clause
 	keyandindexlistquery.append(
 		"order by "
 		"	o.name, "
 		"	i.name, "
 		"	c.colid");
+
 	return keyandindexlistquery.getString();
 }
-
 
 const char *sapconnection::getProcedureListQuery(
 						const char *db,
@@ -1662,6 +1690,8 @@ const char *sapconnection::getProcedureListQuery(
 						const char *procedure) {
 
 	procedurelistquery.clear();
+
+	// select clause
 	procedurelistquery.append(
 		"select "
 		"	'' as procedure_cat, "
@@ -1693,13 +1723,15 @@ const char *sapconnection::getProcedureListQuery(
 		procedurelistquery.append(procedure);
 		procedurelistquery.append("' ");
 	}
+
+	// order by clause
 	procedurelistquery.append(
 		"order by "
 		"	loginame, "
 		"	name");
+
 	return procedurelistquery.getString();
 }
-
 
 const char *sapconnection::getProcedureParameterListQuery(
 					const char *db,
@@ -1707,6 +1739,8 @@ const char *sapconnection::getProcedureParameterListQuery(
 					const char *procedure) {
 
 	procedureparameterlistquery.clear();
+
+	// select clause
 	procedureparameterlistquery.append(
 		"select "
 		"	'' as procedure_cat, "
@@ -1732,11 +1766,17 @@ const char *sapconnection::getProcedureParameterListQuery(
 		"	c.length as char_octet_length, "
 		"	c.colid as ordinal_position, "
 		"	'YES' as is_nullable, "
-		"	null "
+		"	null ");
+
+	// from clause
+	procedureparameterlistquery.append(
 		"from "
 		"	sysobjects o, "
 		"	syscolumns c, "
-		"	systypes t "
+		"	systypes t ");
+
+	// where clause
+	procedureparameterlistquery.append(
 		"where "
 		"	o.type='P' "
 		"	and "
@@ -1757,13 +1797,15 @@ const char *sapconnection::getProcedureParameterListQuery(
 		procedureparameterlistquery.append(procedure);
 		procedureparameterlistquery.append("' ");
 	}
+
+	// order by clause
 	procedureparameterlistquery.append(
 		"order by "
 		"	o.name, "
 		"	c.colid");
+
 	return procedureparameterlistquery.getString();
 }
-
 
 const char *sapconnection::selectDatabaseQuery() {
 	return "use %s";

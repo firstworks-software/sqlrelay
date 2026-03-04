@@ -592,6 +592,7 @@ const char *informixconnection::getDatabaseListQuery(const char *db) {
 
 	databaselistquery.clear();
 
+	// select clause
 	databaselistquery.append(
 		"select "
 		"	trim(name) as table_cat, "
@@ -602,6 +603,8 @@ const char *informixconnection::getDatabaseListQuery(const char *db) {
 		"	'' "
 		"from "
 		"	sysmaster:sysdatabases ");
+
+	// where clause
 	if (db) {
 		databaselistquery.append(
 			"where "
@@ -609,6 +612,8 @@ const char *informixconnection::getDatabaseListQuery(const char *db) {
 		databaselistquery.append(db);
 		databaselistquery.append("' ");
 	}
+
+	// order by clause
 	databaselistquery.append(
 		"order by "
 		"	table_cat");
@@ -626,6 +631,7 @@ const char *informixconnection::getSchemaListQuery(const char *db,
 
 	schemalistquery.clear();
 
+	// select clause
 	schemalistquery.append(
 		"select distinct "
 		"	trim(dbsname) as table_cat, "
@@ -636,6 +642,8 @@ const char *informixconnection::getSchemaListQuery(const char *db,
 		"	'' "
 		"from "
 		"	sysmaster:systabnames ");
+
+	// where clause
 	if (db || schema) {
 		schemalistquery.append("where ");
 		bool	first=true;
@@ -656,6 +664,8 @@ const char *informixconnection::getSchemaListQuery(const char *db,
 			schemalistquery.append("' ");
 		}
 	}
+
+	// order by clause
 	schemalistquery.append(
 		"order by "
 		"	table_cat, "
@@ -671,6 +681,8 @@ const char *informixconnection::getTableTypeListQuery(const char *db,
 	// See notes in getCurrentSchemaQuery() about "schema" vs "owner".
 
 	tabletypelistquery.clear();
+
+	// select clause
 	tabletypelistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -694,6 +706,8 @@ const char *informixconnection::getTableTypeListQuery(const char *db,
 		"		'VIEW' as table_type "
 		"	from "
 		"	sysmaster:sysdual) t ");
+
+	// where clause
 	if (!charstring::isNullOrEmpty(tabletypes)) {
 		tabletypelistquery.append(
 			"where "
@@ -701,9 +715,12 @@ const char *informixconnection::getTableTypeListQuery(const char *db,
 		tabletypelistquery.append(tabletypes);
 		tabletypelistquery.append("' ");
 	}
+
+	// order by clause
 	tabletypelistquery.append(
 		"order by "
 		"	table_type");
+
 	return tabletypelistquery.getString();
 }
 
@@ -730,6 +747,8 @@ const char *informixconnection::getTableListQuery(const char *db,
 	// For now, we're ignoring objecttypes.
 
 	tablelistquery.clear();
+
+	// select clause
 	tablelistquery.append(
 		"select distinct "
 		"	trim(dbsname) as table_cat, "
@@ -740,6 +759,8 @@ const char *informixconnection::getTableListQuery(const char *db,
 		"	'' "
 		"from "
 		"	sysmaster:systabnames ");
+
+	// where clause
 	if (db || schema || table) {
 		tablelistquery.append("where ");
 		bool	first=true;
@@ -770,6 +791,8 @@ const char *informixconnection::getTableListQuery(const char *db,
 			tablelistquery.append("' ");
 		}
 	}
+
+	// order by clause
 	tablelistquery.append(
 		"order by "
 		"	table_cat, "
@@ -778,8 +801,6 @@ const char *informixconnection::getTableListQuery(const char *db,
 
 	return tablelistquery.getString();
 }
-
-
 
 static const char	*ifx_booltype=
 			"select "
@@ -1442,8 +1463,6 @@ const char *informixconnection::getTypeInfoListQuery(const char *db,
 	return NULL;
 }
 
-
-
 const char *informixconnection::getColumnListQuery(const char *db,
 							const char *schema,
 							const char *table,
@@ -1657,8 +1676,6 @@ const char *informixconnection::getColumnListQuery(const char *db,
 	return columnlistquery.getString();
 }
 
-
-
 const char *informixconnection::getPrimaryKeysListQuery(const char *db,
 							const char *schema,
 							const char *table) {
@@ -1670,6 +1687,8 @@ const char *informixconnection::getPrimaryKeysListQuery(const char *db,
 	// sysmaster tables that return column info.
 
 	primarykeyslistquery.clear();
+
+	// select clause
 	primarykeyslistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -1695,12 +1714,18 @@ const char *informixconnection::getPrimaryKeysListQuery(const char *db,
 		"		when sc.colno=si.part16 then 16 "
 		"	end as key_seq, "
 		"	trim(cn.constrname) as pk_name, "
-		"	'' "
+		"	'' ");
+
+	// from clause
+	primarykeyslistquery.append(
 		"from "
 		"	sysconstraints cn, "
 		"	sysindexes si, "
 		"	systables st, "
-		"	syscolumns sc "
+		"	syscolumns sc ");
+
+	// where clause
+	primarykeyslistquery.append(
 		"where "
 		"	cn.constrtype='P' "
 		"	and "
@@ -1740,10 +1765,13 @@ const char *informixconnection::getPrimaryKeysListQuery(const char *db,
 		primarykeyslistquery.append(table);
 		primarykeyslistquery.append("' ");
 	}
+
+	// order by clause
 	primarykeyslistquery.append(
 		"order by "
 		"	table_name, "
 		"	sc.colno");
+
 	return primarykeyslistquery.getString();
 }
 
@@ -1758,6 +1786,8 @@ const char *informixconnection::getKeyAndIndexListQuery(const char *db,
 	// sysmaster tables that return column info.
 
 	keyandindexlistquery.clear();
+
+	// select clause
 	keyandindexlistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -1779,11 +1809,17 @@ const char *informixconnection::getKeyAndIndexListQuery(const char *db,
 		"	si.levels as cardinality, "
 		"	si.leaves as pages, "
 		"	'' as filter_condition, "
-		"	'' "
+		"	'' ");
+
+	// from clause
+	keyandindexlistquery.append(
 		"from "
 		"	sysindexes si, "
 		"	systables st, "
-		"	syscolumns sc "
+		"	syscolumns sc ");
+
+	// where clause
+	keyandindexlistquery.append(
 		"where "
 		"	si.tabid=st.tabid "
 		"	and "
@@ -1819,14 +1855,16 @@ const char *informixconnection::getKeyAndIndexListQuery(const char *db,
 		keyandindexlistquery.append(table);
 		keyandindexlistquery.append("' ");
 	}
+
+	// order by clause
 	keyandindexlistquery.append(
 		"order by "
 		"	table_name, "
 		"	index_name, "
 		"	sc.colno");
+
 	return keyandindexlistquery.getString();
 }
-
 
 const char *informixconnection::getProcedureListQuery(
 						const char *db,
@@ -1840,6 +1878,8 @@ const char *informixconnection::getProcedureListQuery(
 	// any sysmaster tables that return procedure info.
 
 	procedurelistquery.clear();
+
+	// select clause
 	procedurelistquery.append(
 		"select "
 		"	'' as procedure_cat, "
@@ -1858,6 +1898,8 @@ const char *informixconnection::getProcedureListQuery(
 		"	sysprocedures ");
 	if (!charstring::isNullOrEmpty(schema) ||
 		!charstring::isNullOrEmpty(procedure)) {
+
+	// where clause
 		procedurelistquery.append("where ");
 		bool	first=true;
 		if (!charstring::isNullOrEmpty(schema)) {
@@ -1877,13 +1919,15 @@ const char *informixconnection::getProcedureListQuery(
 			procedurelistquery.append("' ");
 		}
 	}
+
+	// order by clause
 	procedurelistquery.append(
 		"order by "
 		"	procedure_schem, "
 		"	procedure_name");
+
 	return procedurelistquery.getString();
 }
-
 
 const char *informixconnection::getProcedureParameterListQuery(
 							const char *db,
@@ -1897,6 +1941,8 @@ const char *informixconnection::getProcedureParameterListQuery(
 	// any sysmaster tables that return procedure info.
 
 	procedureparameterlistquery.clear();
+
+	// select clause
 	procedureparameterlistquery.append(
 		"select "
 		"	'' as procedure_cat, "
@@ -1944,10 +1990,16 @@ const char *informixconnection::getProcedureParameterListQuery(
 		"	spc.paramlen as char_octet_length, "
 		"	spc.paramid+1 as ordinal_position, "
 		"	'YES' as is_nullable, "
-		"	'' "
+		"	'' ");
+
+	// from clause
+	procedureparameterlistquery.append(
 		"from "
 		"	sysproccolumns spc, "
-		"	sysprocedures sp "
+		"	sysprocedures sp ");
+
+	// where clause
+	procedureparameterlistquery.append(
 		"where "
 		"	spc.procid=sp.procid ");
 	if (!charstring::isNullOrEmpty(schema)) {
@@ -1964,13 +2016,15 @@ const char *informixconnection::getProcedureParameterListQuery(
 		procedureparameterlistquery.append(procedure);
 		procedureparameterlistquery.append("' ");
 	}
+
+	// order by clause
 	procedureparameterlistquery.append(
 		"order by "
 		"	procedure_name, "
 		"	ordinal_position");
+
 	return procedureparameterlistquery.getString();
 }
-
 
 const char *informixconnection::getBindFormat() {
 	return "?";

@@ -338,6 +338,8 @@ const char *sqliteconnection::getTableTypeListQuery(const char *db,
 						const char *schema,
 						const char *tabletypes) {
 	tabletypelistquery.clear();
+
+	// select clause
 	tabletypelistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -350,6 +352,8 @@ const char *sqliteconnection::getTableTypeListQuery(const char *db,
 		"(select 'TABLE' as table_type "
 		"union "
 		"select 'VIEW' as table_type) ");
+
+	// where clause
 	if (!charstring::isNullOrEmpty(tabletypes)) {
 		tabletypelistquery.append(
 			"where "
@@ -357,9 +361,12 @@ const char *sqliteconnection::getTableTypeListQuery(const char *db,
 		tabletypelistquery.append(tabletypes);
 		tabletypelistquery.append("' ");
 	}
+
+	// order by clause
 	tabletypelistquery.append(
 		"order by "
 		"	table_type");
+
 	return tabletypelistquery.getString();
 }
 
@@ -369,6 +376,8 @@ const char *sqliteconnection::getTableListQuery(const char *db,
 						uint16_t objecttypes) {
 
 	tablelistquery.clear();
+
+	// select clause
 	tablelistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -407,6 +416,8 @@ const char *sqliteconnection::getTableListQuery(const char *db,
 	tablelistquery.append(otypes.getString());
 	tablelistquery.append(
 		") ");
+
+	// where clause
 	if (table) {
 		tablelistquery.append(
 			"where "
@@ -414,14 +425,14 @@ const char *sqliteconnection::getTableListQuery(const char *db,
 		tablelistquery.append(table);
 		tablelistquery.append("' ");
 	}
+
+	// order by clause
 	tablelistquery.append(
 		"order by "
 		"	tbl_name");
 
 	return tablelistquery.getString();
 }
-
-
 
 static const char	*integertype=
 			"select "
@@ -893,7 +904,6 @@ const char *sqliteconnection::getTypeInfoListQuery(const char *db,
 	return NULL;
 }
 
-
 const char *sqliteconnection::getColumnListQuery(const char *db,
 					const char *schema,
 					const char *table,
@@ -950,8 +960,6 @@ const char *sqliteconnection::getColumnListQuery(const char *db,
 	return columnlistquery.getString();
 }
 
-
-
 const char *sqliteconnection::getPrimaryKeysListQuery(const char *db,
 					const char *schema,
 					const char *table) {
@@ -965,16 +973,23 @@ const char *sqliteconnection::getPrimaryKeysListQuery(const char *db,
 		"	p.name as column_name, "
 		"	p.pk as key_seq, "
 		"	'' as pk_name, "
-		"	null "
+		"	null ");
+
+	// from clause
+	primarykeyslistquery.append(
 		"from "
 		"	(select "
 		"		* "
 		"	from "
-		"		pragma_table_info('")->append(table)->append("')) p "
+		"		pragma_table_info('")->append(table)->append("')) p ");
+
+	// where clause
+	primarykeyslistquery.append(
 		"where "
 		"	p.pk>0 "
 		"order by "
 		"	p.pk");
+
 	return primarykeyslistquery.getString();
 }
 
@@ -1004,7 +1019,10 @@ const char *sqliteconnection::getKeyAndIndexListQuery(const char *db,
 		"	null as cardinality, "
 		"	null as pages, "
 		"	null as filter_condition, "
-		"	null "
+		"	null ");
+
+	// from clause
+	keyandindexlistquery.append(
 		"from "
 		"	(select "
 		"		* "
@@ -1014,9 +1032,9 @@ const char *sqliteconnection::getKeyAndIndexListQuery(const char *db,
 		"order by "
 		"	il.name, "
 		"	ii.seqno");
+
 	return keyandindexlistquery.getString();
 }
-
 
 const char *sqliteconnection::getProcedureListQuery(const char *db,
 						const char *schema,
@@ -1034,7 +1052,6 @@ const char *sqliteconnection::getProcedureListQuery(const char *db,
 		"where "
 		"	1=0";
 }
-
 
 const char *sqliteconnection::getProcedureParameterListQuery(
 					const char *db,
@@ -1064,7 +1081,6 @@ const char *sqliteconnection::getProcedureParameterListQuery(
 		"where "
 		"	1=0";
 }
-
 
 #ifdef SQLITE_TRANSACTIONAL
 const char *sqliteconnection::setIsolationLevelQuery() {
