@@ -256,17 +256,34 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
-		const char	*getProcedureListQuery(
+		const char	*getTypeInfoListQuery(
 						const char *db,
 						const char *schema,
-						const char *procedure);
+						const char *type);
 		const char	*getColumnListQuery(
 						const char *db,
 						const char *schema,
 						const char *table,
 						const char *column);
+		const char	*getPrimaryKeysListQuery(
+						const char *db,
+						const char *schema,
+						const char *table);
+		const char	*getKeyAndIndexListQuery(
+						const char *db,
+						const char *schema,
+						const char *table);
+		const char	*getProcedureListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure);
+		const char	*getProcedureParameterListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure);
 		const char	*selectDatabaseQuery();
 		const char	*getCurrentDatabaseQuery();
+		const char	*getCurrentSchemaQuery();
 		const char	*getLastInsertIdQuery();
 		const char	*setIsolationLevelQuery();
 		const char	*getIsolationLevelQuery();
@@ -301,6 +318,10 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 		stringbuffer	tablelistquery;
 		stringbuffer	procedurelistquery;
 		stringbuffer	columnlistquery;
+		stringbuffer	typeinfolistquery;
+		stringbuffer	primarykeyslistquery;
+		stringbuffer	keyandindexlistquery;
+		stringbuffer	procedureparameterlistquery;
 
 		stringbuffer	errormsg;
 };
@@ -573,12 +594,12 @@ const char *informixconnection::getDatabaseListQuery(const char *db) {
 
 	databaselistquery.append(
 		"select "
-		"	name as table_cat, "
+		"	trim(name) as table_cat, "
 		"	'' as table_schem, "
 		"	'' as table_name, "
 		"	'' as table_type, "
 		"	'' as remarks, "
-		"	null "
+		"	'' "
 		"from "
 		"	sysmaster:sysdatabases ");
 	if (db) {
@@ -590,7 +611,7 @@ const char *informixconnection::getDatabaseListQuery(const char *db) {
 	}
 	databaselistquery.append(
 		"order by "
-		"	name");
+		"	table_cat");
 
 	return databaselistquery.getString();
 }
@@ -598,38 +619,47 @@ const char *informixconnection::getDatabaseListQuery(const char *db) {
 const char *informixconnection::getSchemaListQuery(const char *db,
 						const char *schema) {
 
+	// See notes in getCurrentSchemaQuery() about "schema" vs "owner".
+
+	// FIXME:  This only returns users that own at least one table.
+	// There doesn't appear to be a way to get a generic list of users.
+
 	schemalistquery.clear();
 
 	schemalistquery.append(
 		"select distinct "
-		"	dbname as table_cat, "
-		"	owner as table_schem, "
+		"	trim(dbsname) as table_cat, "
+		"	trim(owner) as table_schem, "
 		"	'' as table_name, "
 		"	'' as table_type, "
 		"	'' as remarks, "
 		"	'' "
 		"from "
-		"	systables "
-		"where "
-		"	tabid>99 ");
-	if (db) {
-		schemalistquery.append(
-			"	and "
-			"	dbname like '");
-		schemalistquery.append(db);
-		schemalistquery.append("' ");
-	}
-	if (schema) {
-		schemalistquery.append(
-			"	and "
-			"	owner like '");
-		schemalistquery.append(schema);
-		schemalistquery.append("' ");
+		"	sysmaster:systabnames ");
+	if (db || schema) {
+		schemalistquery.append("where ");
+		bool	first=true;
+		if (db) {
+			schemalistquery.append(
+				"	dbsname like '");
+			schemalistquery.append(db);
+			schemalistquery.append("' ");
+			first=false;
+		}
+		if (schema) {
+			if (!first) {
+				schemalistquery.append("	and ");
+			}
+			schemalistquery.append(
+				"	owner like '");
+			schemalistquery.append(schema);
+			schemalistquery.append("' ");
+		}
 	}
 	schemalistquery.append(
 		"order by "
-		"	dbname, "
-		"	owner");
+		"	table_cat, "
+		"	table_schem");
 
 	return schemalistquery.getString();
 }
@@ -638,21 +668,32 @@ const char *informixconnection::getTableTypeListQuery(const char *db,
 						const char *schema,
 						const char *tabletypes) {
 
+	// See notes in getCurrentSchemaQuery() about "schema" vs "owner".
+
 	tabletypelistquery.clear();
 	tabletypelistquery.append(
 		"select "
 		"	'' as table_cat, "
 		"	'' as table_schem, "
 		"	'' as table_name, "
-		"	table_type, "
+		"	trim(table_type), "
 		"	'' as remarks, "
 		"	'' "
 		"from "
-		"(select 'SYNONYM' as table_type from systables where tabid=1 "
-		"union "
-		"select 'TABLE' as table_type from systables where tabid=1 "
-		"union "
-		"select 'VIEW' as table_type from systables where tabid=1) ");
+		"	(select "
+		"		'SYNONYM' as table_type "
+		"	from "
+		"		sysmaster:sysdual "
+		"	union "
+		"	select "
+		"		'TABLE' as table_type "
+		"	from "
+		"		sysmaster:sysdual "
+		"	union "
+		"	select "
+		"		'VIEW' as table_type "
+		"	from "
+		"	sysmaster:sysdual) t ");
 	if (!charstring::isNullOrEmpty(tabletypes)) {
 		tabletypelistquery.append(
 			"where "
@@ -671,124 +712,748 @@ const char *informixconnection::getTableListQuery(const char *db,
 						const char *table,
 						uint16_t objecttypes) {
 
+	// See notes in getCurrentSchemaQuery() about "schema" vs "owner".
+
+	// This is a mess.  The sysmaster:systabnames view doesn't have an
+	// object type column.  sysmaster:systabinfo has a ti_flags bitmap
+	// column, but it doesn't appear to have values for table, view,
+	// synonym, etc.  The systables view has a tabtype column, but its
+	// dbname column is reliably empty, and it only shows tables in the
+	// current db/schema.
+	//
+	// If we want to be able to filter by db, schema, and table then we
+	// have to use sysmaster:systabnames.
+	// If we want to be able to filter by objecttypes then we have to use
+	// systabes, but we can only really do that if db/schema are the
+	// current db/schema.
+	//
+	// For now, we're ignoring objecttypes.
+
 	tablelistquery.clear();
 	tablelistquery.append(
 		"select distinct "
-		"	dbname as table_cat, "
-		"	owner as table_schem, "
-		"	tabname as table_name, "
+		"	trim(dbsname) as table_cat, "
+		"	trim(owner) as table_schem, "
+		"	trim(tabname) as table_name, "
 		"	'TABLE' as table_type, "
 		"	'' as remarks, "
 		"	'' "
 		"from "
-		"	systables "
-		"where "
-		"	tabid>99 ");
-	if (db) {
-		tablelistquery.append(
-			"	and "
-			"	dbname like '");
-		tablelistquery.append(db);
-		tablelistquery.append("' ");
-	}
-	if (schema) {
-		tablelistquery.append(
-			"	and "
-			"	owner like '");
-		tablelistquery.append(schema);
-		tablelistquery.append("' ");
-	}
-	if (table) {
-		tablelistquery.append(
-			"	and "
-			"	tabname like '");
-		tablelistquery.append(table);
-		tablelistquery.append("' ");
-	}
-	tablelistquery.append(
-		"	and ");
-	stringbuffer	otypes;
-	otypes.append("	(");
-	if (objecttypes&DB_OBJECT_TABLE) {
-		otypes.append("	tabtype='T' or tabtype='E' ");
-	}
-	if (objecttypes&DB_OBJECT_VIEW) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
+		"	sysmaster:systabnames ");
+	if (db || schema || table) {
+		tablelistquery.append("where ");
+		bool	first=true;
+		if (db) {
+			tablelistquery.append(
+				"	dbsname like '");
+			tablelistquery.append(db);
+			tablelistquery.append("' ");
+			first=false;
 		}
-		otypes.append("	tabtype='V' ");
-	}
-	if (objecttypes&DB_OBJECT_SYNONYM) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
+		if (schema) {
+			if (!first) {
+				tablelistquery.append("	and ");
+			}
+			tablelistquery.append(
+				"	owner like '");
+			tablelistquery.append(schema);
+			tablelistquery.append("' ");
+			first=false;
 		}
-		otypes.append("	tabtype='S' or tabtype='P'");
+		if (table) {
+			if (!first) {
+				tablelistquery.append("	and ");
+			}
+			tablelistquery.append(
+				"	tabname like '");
+			tablelistquery.append(table);
+			tablelistquery.append("' ");
+		}
 	}
-	otypes.append(") ");
-	tablelistquery.append(otypes.getString());
 	tablelistquery.append(
 		"order by "
-		"	dbname, "
-		"	owner, "
-		"	tabname");
+		"	table_cat, "
+		"	table_schem, "
+		"	table_name");
 
 	return tablelistquery.getString();
 }
 
-const char *informixconnection::getProcedureListQuery(
-						const char *db,
-						const char *schema,
-						const char *procedure) {
 
-	procedurelistquery.clear();
-	procedurelistquery.append(
-		"select "
-		"	'' as procedure_cat, "
-		"	owner as procedure_schem, "
-		"	procname as procedure_name, "
-		"	0 as num_input_params, "
-		"	0 as num_output_params, "
-		"	0 as num_result_sets, "
-		"	'' as remarks, "
-		"	case isproc "
-		"		when 'f' then '2' "
-		"		else '1' "
-		"	end as procedure_type, "
-		"	null "
-		"from "
-		"	sysprocedures ");
-	if (!charstring::isNullOrEmpty(schema) ||
-		!charstring::isNullOrEmpty(procedure)) {
-		procedurelistquery.append("where ");
-		bool	first=true;
-		if (!charstring::isNullOrEmpty(schema)) {
-			procedurelistquery.append(
-				"owner like '");
-			procedurelistquery.append(schema);
-			procedurelistquery.append("' ");
-			first=false;
+
+static const char	*ifx_booltype=
+			"select "
+			"	'BOOLEAN' as type_name, "
+			"	-7 as data_type, "
+			"	1 as column_size, "
+			"	'' as literal_prefix, "
+			"	'' as literal_suffix, "
+			"	'' as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'BOOLEAN' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	'' as sql_data_type, "
+			"	'' as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	'' as interval_precision, "
+			"	'' "
+			"from "
+			"	sysmaster:sysdual ";
+
+static const char	*ifx_smallinttype=
+			"select "
+			"	'SMALLINT' as type_name, "
+			"	5 as data_type, "
+			"	5 as column_size, "
+			"	'' as literal_prefix, "
+			"	'' as literal_suffix, "
+			"	'' as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'SMALLINT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	'' as sql_data_type, "
+			"	'' as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	'' as interval_precision, "
+			"	'' "
+			"from "
+			"	sysmaster:sysdual ";
+
+static const char	*ifx_inttype=
+			"select "
+			"	'INTEGER' as type_name, "
+			"	4 as data_type, "
+			"	10 as column_size, "
+			"	'' as literal_prefix, "
+			"	'' as literal_suffix, "
+			"	'' as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'INTEGER' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	'' as sql_data_type, "
+			"	'' as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	'' as interval_precision, "
+			"	'' "
+			"from "
+			"	sysmaster:sysdual ";
+
+static const char	*ifx_int8type=
+			"select "
+			"	'INT8' as type_name, "
+			"	-5 as data_type, "
+			"	19 as column_size, "
+			"	'' as literal_prefix, "
+			"	'' as literal_suffix, "
+			"	'' as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'INT8' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	'' as sql_data_type, "
+			"	'' as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	'' as interval_precision, "
+			"	'' "
+			"from "
+			"	sysmaster:sysdual ";
+
+static const char	*ifx_serialtype=
+			"select "
+			"	'SERIAL' as type_name, "
+			"	4 as data_type, "
+			"	10 as column_size, "
+			"	'' as literal_prefix, "
+			"	'' as literal_suffix, "
+			"	'' as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	1 as auto_unique_value, "
+			"	'SERIAL' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	'' as sql_data_type, "
+			"	'' as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	'' as interval_precision, "
+			"	'' "
+			"from "
+			"	sysmaster:sysdual ";
+
+static const char	*ifx_serial8type=
+			"select "
+			"	'SERIAL8' as type_name, "
+			"	-5 as data_type, "
+			"	19 as column_size, "
+			"	'' as literal_prefix, "
+			"	'' as literal_suffix, "
+			"	'' as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	1 as auto_unique_value, "
+			"	'SERIAL8' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	'' as sql_data_type, "
+			"	'' as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	'' as interval_precision, "
+			"	'' "
+			"from "
+			"	sysmaster:sysdual ";
+
+static const char	*ifx_decimaltype=
+			"select "
+			"	'DECIMAL' as type_name, "
+			"	2 as data_type, "
+			"	32 as column_size, "
+			"	'' as literal_prefix, "
+			"	'' as literal_suffix, "
+			"	'' as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'DECIMAL' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	'' as sql_data_type, "
+			"	'' as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	'' as interval_precision, "
+			"	'' "
+			"from "
+			"	sysmaster:sysdual ";
+
+static const char	*ifx_moneytype=
+			"select "
+			"	'MONEY' as type_name, "
+			"	2 as data_type, "
+			"	32 as column_size, "
+			"	'' as literal_prefix, "
+			"	'' as literal_suffix, "
+			"	'' as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'MONEY' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	'' as sql_data_type, "
+			"	'' as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	'' as interval_precision, "
+			"	'' "
+			"from "
+			"	sysmaster:sysdual ";
+
+static const char	*ifx_smallfloattype=
+			"select "
+			"	'SMALLFLOAT' as type_name, "
+			"	7 as data_type, "
+			"	7 as column_size, "
+			"	'' as literal_prefix, "
+			"	'' as literal_suffix, "
+			"	'' as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'SMALLFLOAT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	'' as sql_data_type, "
+			"	'' as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	'' as interval_precision, "
+			"	'' "
+			"from "
+			"	sysmaster:sysdual ";
+
+static const char	*ifx_floattype=
+			"select "
+			"	'FLOAT' as type_name, "
+			"	8 as data_type, "
+			"	15 as column_size, "
+			"	'' as literal_prefix, "
+			"	'' as literal_suffix, "
+			"	'' as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'FLOAT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	'' as sql_data_type, "
+			"	'' as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	'' as interval_precision, "
+			"	'' "
+			"from "
+			"	sysmaster:sysdual ";
+
+static const char	*ifx_chartype=
+			"select "
+			"	'CHAR' as type_name, "
+			"	1 as data_type, "
+			"	32767 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	'' as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'CHAR' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	'' as sql_data_type, "
+			"	'' as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	'' as interval_precision, "
+			"	'' "
+			"from "
+			"	sysmaster:sysdual ";
+
+static const char	*ifx_nchartype=
+			"select "
+			"	'NCHAR' as type_name, "
+			"	1 as data_type, "
+			"	32767 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	'' as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'NCHAR' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	'' as sql_data_type, "
+			"	'' as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	'' as interval_precision, "
+			"	'' "
+			"from "
+			"	sysmaster:sysdual ";
+
+static const char	*ifx_varchartype=
+			"select "
+			"	'VARCHAR' as type_name, "
+			"	12 as data_type, "
+			"	255 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	'' as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'VARCHAR' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	'' as sql_data_type, "
+			"	'' as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	'' as interval_precision, "
+			"	'' "
+			"from "
+			"	sysmaster:sysdual ";
+
+static const char	*ifx_nvarchartype=
+			"select "
+			"	'NVARCHAR' as type_name, "
+			"	12 as data_type, "
+			"	255 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	'' as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'NVARCHAR' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	'' as sql_data_type, "
+			"	'' as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	'' as interval_precision, "
+			"	'' "
+			"from "
+			"	sysmaster:sysdual ";
+
+static const char	*ifx_lvarchartype=
+			"select "
+			"	'LVARCHAR' as type_name, "
+			"	12 as data_type, "
+			"	32739 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	'' as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'LVARCHAR' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	'' as sql_data_type, "
+			"	'' as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	'' as interval_precision, "
+			"	'' "
+			"from "
+			"	sysmaster:sysdual ";
+
+static const char	*ifx_texttype=
+			"select "
+			"	'TEXT' as type_name, "
+			"	-1 as data_type, "
+			"	2147483647 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	'' as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	1 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'TEXT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	'' as sql_data_type, "
+			"	'' as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	'' as interval_precision, "
+			"	'' "
+			"from "
+			"	sysmaster:sysdual ";
+
+static const char	*ifx_bytetype=
+			"select "
+			"	'BYTE' as type_name, "
+			"	-4 as data_type, "
+			"	2147483647 as column_size, "
+			"	'' as literal_prefix, "
+			"	'' as literal_suffix, "
+			"	'' as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	0 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'BYTE' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	'' as sql_data_type, "
+			"	'' as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	'' as interval_precision, "
+			"	'' "
+			"from "
+			"	sysmaster:sysdual ";
+
+static const char	*ifx_blobtype=
+			"select "
+			"	'BLOB' as type_name, "
+			"	-4 as data_type, "
+			"	2147483647 as column_size, "
+			"	'' as literal_prefix, "
+			"	'' as literal_suffix, "
+			"	'' as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	0 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'BLOB' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	'' as sql_data_type, "
+			"	'' as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	'' as interval_precision, "
+			"	'' "
+			"from "
+			"	sysmaster:sysdual ";
+
+static const char	*ifx_clobtype=
+			"select "
+			"	'CLOB' as type_name, "
+			"	-1 as data_type, "
+			"	2147483647 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	'' as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	1 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'CLOB' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	'' as sql_data_type, "
+			"	'' as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	'' as interval_precision, "
+			"	'' "
+			"from "
+			"	sysmaster:sysdual ";
+
+static const char	*ifx_datetype=
+			"select "
+			"	'DATE' as type_name, "
+			"	91 as data_type, "
+			"	10 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	'' as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'DATE' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	'' as sql_data_type, "
+			"	'' as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	'' as interval_precision, "
+			"	'' "
+			"from "
+			"	sysmaster:sysdual ";
+
+static const char	*ifx_datetimetype=
+			"select "
+			"	'DATETIME' as type_name, "
+			"	93 as data_type, "
+			"	25 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	'' as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'DATETIME' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	'' as sql_data_type, "
+			"	'' as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	'' as interval_precision, "
+			"	'' "
+			"from "
+			"	sysmaster:sysdual ";
+
+static const char	*ifx_intervaltype=
+			"select "
+			"	'INTERVAL' as type_name, "
+			"	12 as data_type, "
+			"	25 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	'' as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'INTERVAL' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	'' as sql_data_type, "
+			"	'' as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	'' as interval_precision, "
+			"	'' "
+			"from "
+			"	sysmaster:sysdual ";
+
+const char *informixconnection::getTypeInfoListQuery(const char *db,
+						const char *schema,
+						const char *type) {
+
+	if (!charstring::compare(type,"*")) {
+		if (!typeinfolistquery.getSize()) {
+			typeinfolistquery.append(ifx_booltype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ifx_smallinttype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ifx_inttype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ifx_int8type);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ifx_serialtype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ifx_serial8type);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ifx_decimaltype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ifx_moneytype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ifx_smallfloattype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ifx_floattype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ifx_chartype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ifx_nchartype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ifx_varchartype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ifx_nvarchartype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ifx_lvarchartype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ifx_texttype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ifx_bytetype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ifx_blobtype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ifx_clobtype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ifx_datetype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ifx_datetimetype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ifx_intervaltype);
 		}
-		if (!charstring::isNullOrEmpty(procedure)) {
-			if (!first) {
-				procedurelistquery.append("and ");
-			}
-			procedurelistquery.append(
-				"procname like '");
-			procedurelistquery.append(procedure);
-			procedurelistquery.append("' ");
-		}
+		return typeinfolistquery.getString();
+	} else if (!charstring::compareIgnoringCase(type,"boolean")) {
+		return ifx_booltype;
+	} else if (!charstring::compareIgnoringCase(type,"smallint")) {
+		return ifx_smallinttype;
+	} else if (!charstring::compareIgnoringCase(type,"integer")) {
+		return ifx_inttype;
+	} else if (!charstring::compareIgnoringCase(type,"int")) {
+		return ifx_inttype;
+	} else if (!charstring::compareIgnoringCase(type,"int8")) {
+		return ifx_int8type;
+	} else if (!charstring::compareIgnoringCase(type,"bigint")) {
+		return ifx_int8type;
+	} else if (!charstring::compareIgnoringCase(type,"serial")) {
+		return ifx_serialtype;
+	} else if (!charstring::compareIgnoringCase(type,"serial8")) {
+		return ifx_serial8type;
+	} else if (!charstring::compareIgnoringCase(type,"bigserial")) {
+		return ifx_serial8type;
+	} else if (!charstring::compareIgnoringCase(type,"decimal")) {
+		return ifx_decimaltype;
+	} else if (!charstring::compareIgnoringCase(type,"money")) {
+		return ifx_moneytype;
+	} else if (!charstring::compareIgnoringCase(type,"smallfloat")) {
+		return ifx_smallfloattype;
+	} else if (!charstring::compareIgnoringCase(type,"real")) {
+		return ifx_smallfloattype;
+	} else if (!charstring::compareIgnoringCase(type,"float")) {
+		return ifx_floattype;
+	} else if (!charstring::compareIgnoringCase(type,"double precision")) {
+		return ifx_floattype;
+	} else if (!charstring::compareIgnoringCase(type,"char")) {
+		return ifx_chartype;
+	} else if (!charstring::compareIgnoringCase(type,"character")) {
+		return ifx_chartype;
+	} else if (!charstring::compareIgnoringCase(type,"nchar")) {
+		return ifx_nchartype;
+	} else if (!charstring::compareIgnoringCase(type,"varchar")) {
+		return ifx_varchartype;
+	} else if (!charstring::compareIgnoringCase(type,"nvarchar")) {
+		return ifx_nvarchartype;
+	} else if (!charstring::compareIgnoringCase(type,"lvarchar")) {
+		return ifx_lvarchartype;
+	} else if (!charstring::compareIgnoringCase(type,"text")) {
+		return ifx_texttype;
+	} else if (!charstring::compareIgnoringCase(type,"byte")) {
+		return ifx_bytetype;
+	} else if (!charstring::compareIgnoringCase(type,"blob")) {
+		return ifx_blobtype;
+	} else if (!charstring::compareIgnoringCase(type,"clob")) {
+		return ifx_clobtype;
+	} else if (!charstring::compareIgnoringCase(type,"date")) {
+		return ifx_datetype;
+	} else if (!charstring::compareIgnoringCase(type,"datetime")) {
+		return ifx_datetimetype;
+	} else if (!charstring::compareIgnoringCase(type,"interval")) {
+		return ifx_intervaltype;
 	}
-	procedurelistquery.append(
-		"order by "
-		"	owner, "
-		"	procname");
-	return procedurelistquery.getString();
+	return NULL;
 }
 
+
+
 const char *informixconnection::getColumnListQuery(const char *db,
-					const char *schema,
-					const char *table,
-					const char *column) {
+							const char *schema,
+							const char *table,
+							const char *column) {
+
+	// See notes in getCurrentSchemaQuery() about "schema" vs "owner".
+
+	// The sys* tables only return info for tables in the current database,
+	// so we can't use the "db" parameter at all.  There aren't any
+	// sysmaster tables that return column info.
 
 	columnlistquery.clear();
 
@@ -796,9 +1461,9 @@ const char *informixconnection::getColumnListQuery(const char *db,
 	columnlistquery.append(
 		"select "
 		"	'' as table_cat, "
-		"	tb.owner as table_schem, "
-		"	tb.tabname as table_name, "
-		"	cl.colname as column_name, "
+		"	trim(tb.owner) as table_schem, "
+		"	trim(tb.tabname) as table_name, "
+		"	trim(cl.colname) as column_name, "
 		"	cl.coltype as data_type, "
 		"	decode(mod(cl.coltype,256), "
 		"		41, "
@@ -987,21 +1652,344 @@ const char *informixconnection::getColumnListQuery(const char *db,
 	// order by clause
 	columnlistquery.append(
 		"order by "
-		"	cl.colno");
+		"	ordinal_position");
 
 	return columnlistquery.getString();
 }
 
+
+
+const char *informixconnection::getPrimaryKeysListQuery(const char *db,
+							const char *schema,
+							const char *table) {
+
+	// See notes in getCurrentSchemaQuery() about "schema" vs "owner".
+
+	// The sys* tables only return info for tables in the current database,
+	// so we can't use the "db" parameter at all.  There aren't any
+	// sysmaster tables that return column info.
+
+	primarykeyslistquery.clear();
+	primarykeyslistquery.append(
+		"select "
+		"	'' as table_cat, "
+		"	trim(st.owner) as table_schem, "
+		"	trim(st.tabname) as table_name, "
+		"	trim(sc.colname) as column_name, "
+		"	case "
+		"		when sc.colno=si.part1 then 1 "
+		"		when sc.colno=si.part2 then 2 "
+		"		when sc.colno=si.part3 then 3 "
+		"		when sc.colno=si.part4 then 4 "
+		"		when sc.colno=si.part5 then 5 "
+		"		when sc.colno=si.part6 then 6 "
+		"		when sc.colno=si.part7 then 7 "
+		"		when sc.colno=si.part8 then 8 "
+		"		when sc.colno=si.part9 then 9 "
+		"		when sc.colno=si.part10 then 10 "
+		"		when sc.colno=si.part11 then 11 "
+		"		when sc.colno=si.part12 then 12 "
+		"		when sc.colno=si.part13 then 13 "
+		"		when sc.colno=si.part14 then 14 "
+		"		when sc.colno=si.part15 then 15 "
+		"		when sc.colno=si.part16 then 16 "
+		"	end as key_seq, "
+		"	trim(cn.constrname) as pk_name, "
+		"	'' "
+		"from "
+		"	sysconstraints cn, "
+		"	sysindexes si, "
+		"	systables st, "
+		"	syscolumns sc "
+		"where "
+		"	cn.constrtype='P' "
+		"	and "
+		"	cn.idxname=si.idxname "
+		"	and "
+		"	cn.tabid=st.tabid "
+		"	and "
+		"	cn.tabid=sc.tabid "
+		"	and "
+		"	(sc.colno=si.part1 "
+		"	or sc.colno=si.part2 "
+		"	or sc.colno=si.part3 "
+		"	or sc.colno=si.part4 "
+		"	or sc.colno=si.part5 "
+		"	or sc.colno=si.part6 "
+		"	or sc.colno=si.part7 "
+		"	or sc.colno=si.part8 "
+		"	or sc.colno=si.part9 "
+		"	or sc.colno=si.part10 "
+		"	or sc.colno=si.part11 "
+		"	or sc.colno=si.part12 "
+		"	or sc.colno=si.part13 "
+		"	or sc.colno=si.part14 "
+		"	or sc.colno=si.part15 "
+		"	or sc.colno=si.part16) ");
+	if (!charstring::isNullOrEmpty(schema)) {
+		primarykeyslistquery.append(
+			"	and "
+			"	st.owner like '");
+		primarykeyslistquery.append(schema);
+		primarykeyslistquery.append("' ");
+	}
+	if (!charstring::isNullOrEmpty(table)) {
+		primarykeyslistquery.append(
+			"	and "
+			"	st.tabname like '");
+		primarykeyslistquery.append(table);
+		primarykeyslistquery.append("' ");
+	}
+	primarykeyslistquery.append(
+		"order by "
+		"	table_name, "
+		"	sc.colno");
+	return primarykeyslistquery.getString();
+}
+
+const char *informixconnection::getKeyAndIndexListQuery(const char *db,
+							const char *schema,
+							const char *table) {
+
+	// See notes in getCurrentSchemaQuery() about "schema" vs "owner".
+
+	// The sys* tables only return info for tables in the current database,
+	// so we can't use the "db" parameter at all.  There aren't any
+	// sysmaster tables that return column info.
+
+	keyandindexlistquery.clear();
+	keyandindexlistquery.append(
+		"select "
+		"	'' as table_cat, "
+		"	trim(st.owner) as table_schem, "
+		"	trim(st.tabname) as table_name, "
+		"	case "
+		"		when si.idxtype='U' then 0 "
+		"		else 1 "
+		"	end as non_unique, "
+		"	'' as index_qualifier, "
+		"	trim(si.idxname) as index_name, "
+		"	3 as type, "
+		"	sc.colno as ordinal_position, "
+		"	trim(sc.colname) as column_name, "
+		"	case "
+		"		when si.part1<0 then 'D' "
+		"		else 'A' "
+		"	end as asc_or_desc, "
+		"	si.levels as cardinality, "
+		"	si.leaves as pages, "
+		"	'' as filter_condition, "
+		"	'' "
+		"from "
+		"	sysindexes si, "
+		"	systables st, "
+		"	syscolumns sc "
+		"where "
+		"	si.tabid=st.tabid "
+		"	and "
+		"	si.tabid=sc.tabid "
+		"	and "
+		"	(sc.colno=abs(si.part1) "
+		"	or sc.colno=abs(si.part2) "
+		"	or sc.colno=abs(si.part3) "
+		"	or sc.colno=abs(si.part4) "
+		"	or sc.colno=abs(si.part5) "
+		"	or sc.colno=abs(si.part6) "
+		"	or sc.colno=abs(si.part7) "
+		"	or sc.colno=abs(si.part8) "
+		"	or sc.colno=abs(si.part9) "
+		"	or sc.colno=abs(si.part10) "
+		"	or sc.colno=abs(si.part11) "
+		"	or sc.colno=abs(si.part12) "
+		"	or sc.colno=abs(si.part13) "
+		"	or sc.colno=abs(si.part14) "
+		"	or sc.colno=abs(si.part15) "
+		"	or sc.colno=abs(si.part16)) ");
+	if (!charstring::isNullOrEmpty(schema)) {
+		keyandindexlistquery.append(
+			"	and "
+			"	st.owner like '");
+		keyandindexlistquery.append(schema);
+		keyandindexlistquery.append("' ");
+	}
+	if (!charstring::isNullOrEmpty(table)) {
+		keyandindexlistquery.append(
+			"	and "
+			"	st.tabname like '");
+		keyandindexlistquery.append(table);
+		keyandindexlistquery.append("' ");
+	}
+	keyandindexlistquery.append(
+		"order by "
+		"	table_name, "
+		"	index_name, "
+		"	sc.colno");
+	return keyandindexlistquery.getString();
+}
+
+
+const char *informixconnection::getProcedureListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure) {
+
+	// See notes in getCurrentSchemaQuery() about "schema" vs "owner".
+
+	// The sys* tables only return info for procedures in the current
+	// database, so we can't use the "db" parameter at all.  There aren't
+	// any sysmaster tables that return procedure info.
+
+	procedurelistquery.clear();
+	procedurelistquery.append(
+		"select "
+		"	'' as procedure_cat, "
+		"	trim(owner) as procedure_schem, "
+		"	trim(procname) as procedure_name, "
+		"	0 as num_input_params, "
+		"	0 as num_output_params, "
+		"	0 as num_result_sets, "
+		"	'' as remarks, "
+		"	case isproc "
+		"		when 'f' then '2' "
+		"		else '1' "
+		"	end as procedure_type, "
+		"	'' "
+		"from "
+		"	sysprocedures ");
+	if (!charstring::isNullOrEmpty(schema) ||
+		!charstring::isNullOrEmpty(procedure)) {
+		procedurelistquery.append("where ");
+		bool	first=true;
+		if (!charstring::isNullOrEmpty(schema)) {
+			procedurelistquery.append(
+				"owner like '");
+			procedurelistquery.append(schema);
+			procedurelistquery.append("' ");
+			first=false;
+		}
+		if (!charstring::isNullOrEmpty(procedure)) {
+			if (!first) {
+				procedurelistquery.append("and ");
+			}
+			procedurelistquery.append(
+				"procname like '");
+			procedurelistquery.append(procedure);
+			procedurelistquery.append("' ");
+		}
+	}
+	procedurelistquery.append(
+		"order by "
+		"	procedure_schem, "
+		"	procedure_name");
+	return procedurelistquery.getString();
+}
+
+
+const char *informixconnection::getProcedureParameterListQuery(
+							const char *db,
+							const char *schema,
+							const char *procedure) {
+
+	// See notes in getCurrentSchemaQuery() about "schema" vs "owner".
+
+	// The sys* tables only return info for procedures in the current
+	// database, so we can't use the "db" parameter at all.  There aren't
+	// any sysmaster tables that return procedure info.
+
+	procedureparameterlistquery.clear();
+	procedureparameterlistquery.append(
+		"select "
+		"	'' as procedure_cat, "
+		"	trim(sp.owner) as procedure_schem, "
+		"	trim(sp.procname) as procedure_name, "
+		"	trim(spc.paramname) as column_name, "
+		"	spc.paramattr as column_type, "
+		"	'' as data_type, "
+		"	case mod(spc.paramtype,256) "
+		"		when 0 then trim('CHAR') "
+		"		when 1 then trim('SMALLINT') "
+		"		when 2 then trim('INTEGER') "
+		"		when 3 then trim('FLOAT') "
+		"		when 4 then trim('SMALLFLOAT') "
+		"		when 5 then trim('DECIMAL') "
+		"		when 6 then trim('SERIAL') "
+		"		when 7 then trim('DATE') "
+		"		when 8 then trim('MONEY') "
+		"		when 10 then trim('DATETIME') "
+		"		when 11 then trim('BYTE') "
+		"		when 12 then trim('TEXT') "
+		"		when 13 then trim('VARCHAR') "
+		"		when 14 then trim('INTERVAL') "
+		"		when 15 then trim('NCHAR') "
+		"		when 16 then trim('NVARCHAR') "
+		"		when 17 then trim('INT8') "
+		"		when 18 then trim('SERIAL8') "
+		"		when 40 then trim('LVARCHAR') "
+		"		when 41 then trim('BOOLEAN') "
+		"		when 43 then trim('LVARCHAR') "
+		"		when 45 then trim('BOOLEAN') "
+		"		when 52 then trim('BIGINT') "
+		"		when 53 then trim('BIGSERIAL') "
+		"		else trim('UNKNOWN') "
+		"	end as type_name, "
+		"	spc.paramlen as column_size, "
+		"	'' as buffer_length, "
+		"	'' as decimal_digits, "
+		"	10 as num_prec_radix, "
+		"	1 as nullable, "
+		"	'' as remarks, "
+		"	'' as column_def, "
+		"	'' as sql_data_type, "
+		"	'' as sql_datetime_sub, "
+		"	spc.paramlen as char_octet_length, "
+		"	spc.paramid+1 as ordinal_position, "
+		"	'YES' as is_nullable, "
+		"	'' "
+		"from "
+		"	sysproccolumns spc, "
+		"	sysprocedures sp "
+		"where "
+		"	spc.procid=sp.procid ");
+	if (!charstring::isNullOrEmpty(schema)) {
+		procedureparameterlistquery.append(
+			"	and "
+			"	sp.owner like '");
+		procedureparameterlistquery.append(schema);
+		procedureparameterlistquery.append("' ");
+	}
+	if (!charstring::isNullOrEmpty(procedure)) {
+		procedureparameterlistquery.append(
+			"	and "
+			"	sp.procname like '");
+		procedureparameterlistquery.append(procedure);
+		procedureparameterlistquery.append("' ");
+	}
+	procedureparameterlistquery.append(
+		"order by "
+		"	procedure_name, "
+		"	ordinal_position");
+	return procedureparameterlistquery.getString();
+}
+
+
 const char *informixconnection::getBindFormat() {
 	return "?";
 }
-
 const char *informixconnection::selectDatabaseQuery() {
 	return "database %s";
 }
 
 const char *informixconnection::getCurrentDatabaseQuery() {
-	return "select dbinfo('dbname') from sysmaster:sysdual";
+	return "select trim(dbinfo('dbname')) from sysmaster:sysdual";
+}
+
+const char *informixconnection::getCurrentSchemaQuery() {
+	// Informix's object heirarchy is db.owner.object where "owner" means
+	// "owning user".  It does have what it calls "schemas", but those are
+	// basically roles like "informix", "public", and "ifxjson".  When we
+	// say "schema", we really mean "owner" in informix terms.  So, return
+	// the current user here, when we request the current schema.
+	return "select trim(user) from sysmaster:sysdual";
 }
 
 const char *informixconnection::getLastInsertIdQuery() {

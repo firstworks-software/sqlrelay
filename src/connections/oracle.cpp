@@ -141,7 +141,19 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 						const char *schema,
 						const char *table,
 						const char *column);
+		const char	*getPrimaryKeysListQuery(
+						const char *db,
+						const char *schema,
+						const char *table);
+		const char	*getKeyAndIndexListQuery(
+						const char *db,
+						const char *schema,
+						const char *table);
 		const char	*getProcedureListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure);
+		const char	*getProcedureParameterListQuery(
 						const char *db,
 						const char *schema,
 						const char *procedure);
@@ -204,7 +216,10 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		stringbuffer	tablelistquery;
 		stringbuffer	columnlistquery;
 		stringbuffer	typeinfolistquery;
+		stringbuffer	primarykeyslistquery;
+		stringbuffer	keyandindexlistquery;
 		stringbuffer	procedurelistquery;
+		stringbuffer	procedureparameterlistquery;
 		stringbuffer	numbertypequery;
 
 		char		**databasefeatures;
@@ -2517,6 +2532,173 @@ const char *oracleconnection::getColumnListQuery(const char *db,
 	return columnlistquery.getString();
 }
 
+const char *oracleconnection::getPrimaryKeysListQuery(const char *db,
+						const char *schema,
+						const char *table) {
+
+	// determine which tables to use
+	const char	*cct="user_cons_columns";
+	const char	*ct="user_constraints";
+	if (supportssyscontext) {
+		cct="all_cons_columns";
+		ct="all_constraints";
+	}
+
+	primarykeyslistquery.clear();
+
+	// select clause
+	primarykeyslistquery.append(
+		"select "
+		"	'' as table_cat, ");
+	if (supportssyscontext) {
+		primarykeyslistquery.append(
+			"	cc.owner as table_schem, ");
+	} else {
+		primarykeyslistquery.append(
+			"	'' as table_schem, ");
+	}
+	primarykeyslistquery.append(
+		"	cc.table_name, "
+		"	cc.column_name, "
+		"	cc.position as key_seq, "
+		"	cc.constraint_name as pk_name, "
+		"	null "
+		"from ");
+	primarykeyslistquery.append(cct);
+	primarykeyslistquery.append(" cc, ");
+	primarykeyslistquery.append(ct);
+	primarykeyslistquery.append(" c "
+		"where "
+		"	c.constraint_type='P' "
+		"	and "
+		"	c.constraint_name=cc.constraint_name ");
+	if (supportssyscontext) {
+		primarykeyslistquery.append(
+			"	and "
+			"	c.owner=cc.owner ");
+	}
+	if (!charstring::isNullOrEmpty(table)) {
+		primarykeyslistquery.append(
+			"	and "
+			"	cc.table_name like upper('");
+		primarykeyslistquery.append(table);
+		primarykeyslistquery.append("') ");
+	}
+	if (!charstring::isNullOrEmpty(schema)) {
+		primarykeyslistquery.append(
+			"	and "
+			"	cc.owner like upper('");
+		primarykeyslistquery.append(schema);
+		primarykeyslistquery.append("') ");
+	} else if (supportssyscontext) {
+		primarykeyslistquery.append(
+			"	and "
+			"	(cc.owner="
+			"sys_context('userenv',"
+				"'current_schema') "
+			"	or "
+			"	cc.owner='SYS' "
+			"	or "
+			"	cc.owner='SYSTEM') ");
+	}
+	primarykeyslistquery.append(
+		"order by "
+		"	cc.table_name, "
+		"	cc.position");
+
+	return primarykeyslistquery.getString();
+}
+
+const char *oracleconnection::getKeyAndIndexListQuery(const char *db,
+						const char *schema,
+						const char *table) {
+
+	// determine which tables to use
+	const char	*it="user_indexes";
+	const char	*ict="user_ind_columns";
+	if (supportssyscontext) {
+		it="all_indexes";
+		ict="all_ind_columns";
+	}
+
+	keyandindexlistquery.clear();
+
+	// select clause
+	keyandindexlistquery.append(
+		"select "
+		"	'' as table_cat, ");
+	if (supportssyscontext) {
+		keyandindexlistquery.append(
+			"	i.owner as table_schem, ");
+	} else {
+		keyandindexlistquery.append(
+			"	'' as table_schem, ");
+	}
+	keyandindexlistquery.append(
+		"	i.table_name, "
+		"	case "
+		"		when i.uniqueness='UNIQUE' then 0 "
+		"		else 1 "
+		"	end as non_unique, "
+		"	'' as index_qualifier, "
+		"	i.index_name, "
+		"	3 as type, "
+		"	ic.column_position as ordinal_position, "
+		"	ic.column_name, "
+		"	case ic.descend "
+		"		when 'ASC' then 'A' "
+		"		when 'DESC' then 'D' "
+		"		else null "
+		"	end as asc_or_desc, "
+		"	i.distinct_keys as cardinality, "
+		"	i.leaf_blocks as pages, "
+		"	null as filter_condition, "
+		"	null "
+		"from ");
+	keyandindexlistquery.append(it);
+	keyandindexlistquery.append(" i, ");
+	keyandindexlistquery.append(ict);
+	keyandindexlistquery.append(" ic "
+		"where "
+		"	i.index_name=ic.index_name ");
+	if (supportssyscontext) {
+		keyandindexlistquery.append(
+			"	and "
+			"	i.owner=ic.index_owner ");
+	}
+	if (!charstring::isNullOrEmpty(table)) {
+		keyandindexlistquery.append(
+			"	and "
+			"	i.table_name like upper('");
+		keyandindexlistquery.append(table);
+		keyandindexlistquery.append("') ");
+	}
+	if (!charstring::isNullOrEmpty(schema)) {
+		keyandindexlistquery.append(
+			"	and "
+			"	i.owner like upper('");
+		keyandindexlistquery.append(schema);
+		keyandindexlistquery.append("') ");
+	} else if (supportssyscontext) {
+		keyandindexlistquery.append(
+			"	and "
+			"	(i.owner="
+			"sys_context('userenv',"
+				"'current_schema') "
+			"	or "
+			"	i.owner='SYS' "
+			"	or "
+			"	i.owner='SYSTEM') ");
+	}
+	keyandindexlistquery.append(
+		"order by "
+		"	i.table_name, "
+		"	i.index_name, "
+		"	ic.column_position");
+
+	return keyandindexlistquery.getString();
+}
+
 const char *oracleconnection::getProcedureListQuery(const char *db,
 						const char *schema,
 						const char *procedure) {
@@ -2558,6 +2740,96 @@ const char *oracleconnection::getProcedureListQuery(const char *db,
 		"	owner, "
 		"	object_name");
 	return procedurelistquery.getString();
+}
+
+const char *oracleconnection::getProcedureParameterListQuery(const char *db,
+						const char *schema,
+						const char *procedure) {
+
+	procedureparameterlistquery.clear();
+
+	// select clause
+	procedureparameterlistquery.append(
+		"select "
+		"	'' as procedure_cat, ");
+	if (supportssyscontext) {
+		procedureparameterlistquery.append(
+			"	a.owner as procedure_schem, ");
+	} else {
+		procedureparameterlistquery.append(
+			"	'' as procedure_schem, ");
+	}
+	procedureparameterlistquery.append(
+		"	a.object_name as procedure_name, "
+		"	a.argument_name as column_name, "
+		"	case a.in_out "
+		"		when 'IN' then 1 "
+		"		when 'IN/OUT' then 2 "
+		"		when 'OUT' then "
+		"			case a.position "
+		"				when 0 then 5 "
+		"				else 4 "
+		"			end "
+		"		else 0 "
+		"	end as column_type, "
+		"	'' as data_type, "
+		"	a.data_type as type_name, "
+		"	a.data_length as column_size, "
+		"	null as buffer_length, "
+		"	a.data_scale as decimal_digits, "
+		"	a.radix as num_prec_radix, "
+		"	1 as nullable, "
+		"	'' as remarks, "
+		"	a.default_value as column_def, "
+		"	null as sql_data_type, "
+		"	null as sql_datetime_sub, "
+		"	a.char_length as char_octet_length, "
+		"	a.position as ordinal_position, "
+		"	'YES' as is_nullable, "
+		"	null ");
+	if (supportssyscontext) {
+		procedureparameterlistquery.append(
+			"from "
+			"	all_arguments a ");
+	} else {
+		procedureparameterlistquery.append(
+			"from "
+			"	user_arguments a ");
+	}
+	procedureparameterlistquery.append(
+		"where "
+		"	a.data_level=0 ");
+	if (!charstring::isNullOrEmpty(schema)) {
+		procedureparameterlistquery.append(
+			"	and "
+			"	a.owner like upper('");
+		procedureparameterlistquery.append(schema);
+		procedureparameterlistquery.append("') ");
+	} else if (supportssyscontext) {
+		procedureparameterlistquery.append(
+			"	and "
+			"	(a.owner="
+			"sys_context('userenv',"
+				"'current_schema') "
+			"	or "
+			"	a.owner='SYS' "
+			"	or "
+			"	a.owner='SYSTEM') ");
+	}
+	if (!charstring::isNullOrEmpty(procedure)) {
+		procedureparameterlistquery.append(
+			"	and "
+			"	a.object_name like upper('");
+		procedureparameterlistquery.append(procedure);
+		procedureparameterlistquery.append("') ");
+	}
+	procedureparameterlistquery.append(
+		"order by "
+		"	a.object_name, "
+		"	a.overload, "
+		"	a.position");
+
+	return procedureparameterlistquery.getString();
 }
 
 const char *oracleconnection::isSynonymQuery() {

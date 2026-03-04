@@ -267,15 +267,31 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
-		const char	*getProcedureListQuery(
+		const char	*getTypeInfoListQuery(
 						const char *db,
 						const char *schema,
-						const char *procedure);
+						const char *type);
 		const char	*getColumnListQuery(
 						const char *db,
 						const char *schema,
 						const char *table,
 						const char *column);
+		const char	*getPrimaryKeysListQuery(
+						const char *db,
+						const char *schema,
+						const char *table);
+		const char	*getKeyAndIndexListQuery(
+						const char *db,
+						const char *schema,
+						const char *table);
+		const char	*getProcedureListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure);
+		const char	*getProcedureParameterListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure);
 		const char	*selectDatabaseQuery();
 		const char	*getCurrentDatabaseQuery();
 		const char	*getLastInsertIdQuery();
@@ -312,6 +328,10 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 		stringbuffer	tablelistquery;
 		stringbuffer	procedurelistquery;
 		stringbuffer	columnlistquery;
+		stringbuffer	typeinfolistquery;
+		stringbuffer	primarykeyslistquery;
+		stringbuffer	keyandindexlistquery;
+		stringbuffer	procedureparameterlistquery;
 		const char	*dbhostnamequery;
 
 		stringbuffer	errormsg;
@@ -759,49 +779,583 @@ const char *db2connection::getTableListQuery(const char *db,
 	return tablelistquery.getString();
 }
 
-const char *db2connection::getProcedureListQuery(
-						const char *db,
-						const char *schema,
-						const char *procedure) {
 
-	procedurelistquery.clear();
-	procedurelistquery.append(
-		"select "
-		"	'' as procedure_cat, "
-		"	routineschema as procedure_schem, "
-		"	routinename as procedure_name, "
-		"	0 as num_input_params, "
-		"	0 as num_output_params, "
-		"	0 as num_result_sets, "
-		"	remarks, "
-		"	case routinetype "
-		"		when 'P' then '1' "
-		"		when 'F' then '2' "
-		"		else '0' "
-		"	end as procedure_type, "
-		"	null "
-		"from "
-		"	syscat.routines "
-		"where "
-		"	routinetype in ('P','F') ");
-	if (!charstring::isNullOrEmpty(schema)) {
-		procedurelistquery.append(
-			"and routineschema like '");
-		procedurelistquery.append(schema);
-		procedurelistquery.append("' ");
+
+static const char	*db2_booltype=
+			"(select "
+			"	'BOOLEAN' as type_name, "
+			"	-7 as data_type, "
+			"	1 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'BOOLEAN' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	sysibm.sysdummy1) ";
+
+static const char	*db2_smallinttype=
+			"(select "
+			"	'SMALLINT' as type_name, "
+			"	5 as data_type, "
+			"	5 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'SMALLINT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	sysibm.sysdummy1) ";
+
+static const char	*db2_inttype=
+			"(select "
+			"	'INTEGER' as type_name, "
+			"	4 as data_type, "
+			"	10 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'INTEGER' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	sysibm.sysdummy1) ";
+
+static const char	*db2_biginttype=
+			"(select "
+			"	'BIGINT' as type_name, "
+			"	-5 as data_type, "
+			"	19 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'BIGINT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	sysibm.sysdummy1) ";
+
+static const char	*db2_numerictype=
+			"(select "
+			"	'NUMERIC' as type_name, "
+			"	2 as data_type, "
+			"	31 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'NUMERIC' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	sysibm.sysdummy1) ";
+
+static const char	*db2_decimaltype=
+			"(select "
+			"	'DECIMAL' as type_name, "
+			"	3 as data_type, "
+			"	31 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'DECIMAL' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	sysibm.sysdummy1) ";
+
+static const char	*db2_realtype=
+			"(select "
+			"	'REAL' as type_name, "
+			"	7 as data_type, "
+			"	7 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'REAL' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	sysibm.sysdummy1) ";
+
+static const char	*db2_doubletype=
+			"(select "
+			"	'DOUBLE' as type_name, "
+			"	8 as data_type, "
+			"	15 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'DOUBLE' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	sysibm.sysdummy1) ";
+
+static const char	*db2_chartype=
+			"(select "
+			"	'CHAR' as type_name, "
+			"	1 as data_type, "
+			"	254 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'CHAR' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	sysibm.sysdummy1) ";
+
+static const char	*db2_varchartype=
+			"(select "
+			"	'VARCHAR' as type_name, "
+			"	12 as data_type, "
+			"	32672 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'VARCHAR' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	sysibm.sysdummy1) ";
+
+static const char	*db2_clobtype=
+			"(select "
+			"	'CLOB' as type_name, "
+			"	-1 as data_type, "
+			"	2147483647 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	1 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'CLOB' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	sysibm.sysdummy1) ";
+
+static const char	*db2_blobtype=
+			"(select "
+			"	'BLOB' as type_name, "
+			"	-4 as data_type, "
+			"	2147483647 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	0 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'BLOB' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	sysibm.sysdummy1) ";
+
+static const char	*db2_datetype=
+			"(select "
+			"	'DATE' as type_name, "
+			"	91 as data_type, "
+			"	10 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'DATE' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	sysibm.sysdummy1) ";
+
+static const char	*db2_timetype=
+			"(select "
+			"	'TIME' as type_name, "
+			"	92 as data_type, "
+			"	8 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'TIME' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	sysibm.sysdummy1) ";
+
+static const char	*db2_timestamptype=
+			"(select "
+			"	'TIMESTAMP' as type_name, "
+			"	93 as data_type, "
+			"	26 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'TIMESTAMP' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	sysibm.sysdummy1) ";
+
+static const char	*db2_graphictype=
+			"(select "
+			"	'GRAPHIC' as type_name, "
+			"	1 as data_type, "
+			"	127 as column_size, "
+			"	'G''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'GRAPHIC' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	sysibm.sysdummy1) ";
+
+static const char	*db2_vargraphictype=
+			"(select "
+			"	'VARGRAPHIC' as type_name, "
+			"	12 as data_type, "
+			"	16336 as column_size, "
+			"	'G''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'VARGRAPHIC' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	sysibm.sysdummy1) ";
+
+static const char	*db2_xmltype=
+			"(select "
+			"	'XML' as type_name, "
+			"	-1 as data_type, "
+			"	2147483647 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	1 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'XML' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	sysibm.sysdummy1) ";
+
+static const char	*db2_decfloattype=
+			"(select "
+			"	'DECFLOAT' as type_name, "
+			"	8 as data_type, "
+			"	34 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'DECFLOAT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	sysibm.sysdummy1) ";
+
+const char *db2connection::getTypeInfoListQuery(const char *db,
+						const char *schema,
+						const char *type) {
+
+	if (!charstring::compare(type,"*")) {
+		if (!typeinfolistquery.getSize()) {
+			typeinfolistquery.append(db2_booltype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(db2_smallinttype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(db2_inttype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(db2_biginttype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(db2_numerictype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(db2_decimaltype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(db2_realtype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(db2_doubletype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(db2_chartype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(db2_varchartype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(db2_clobtype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(db2_blobtype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(db2_datetype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(db2_timetype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(db2_timestamptype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(db2_graphictype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(db2_vargraphictype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(db2_xmltype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(db2_decfloattype);
+		}
+		return typeinfolistquery.getString();
+	} else if (!charstring::compareIgnoringCase(type,"boolean")) {
+		return db2_booltype;
+	} else if (!charstring::compareIgnoringCase(type,"smallint")) {
+		return db2_smallinttype;
+	} else if (!charstring::compareIgnoringCase(type,"integer")) {
+		return db2_inttype;
+	} else if (!charstring::compareIgnoringCase(type,"int")) {
+		return db2_inttype;
+	} else if (!charstring::compareIgnoringCase(type,"bigint")) {
+		return db2_biginttype;
+	} else if (!charstring::compareIgnoringCase(type,"numeric")) {
+		return db2_numerictype;
+	} else if (!charstring::compareIgnoringCase(type,"decimal")) {
+		return db2_decimaltype;
+	} else if (!charstring::compareIgnoringCase(type,"dec")) {
+		return db2_decimaltype;
+	} else if (!charstring::compareIgnoringCase(type,"real")) {
+		return db2_realtype;
+	} else if (!charstring::compareIgnoringCase(type,"float")) {
+		return db2_realtype;
+	} else if (!charstring::compareIgnoringCase(type,"double")) {
+		return db2_doubletype;
+	} else if (!charstring::compareIgnoringCase(type,"double precision")) {
+		return db2_doubletype;
+	} else if (!charstring::compareIgnoringCase(type,"char")) {
+		return db2_chartype;
+	} else if (!charstring::compareIgnoringCase(type,"character")) {
+		return db2_chartype;
+	} else if (!charstring::compareIgnoringCase(type,"varchar")) {
+		return db2_varchartype;
+	} else if (!charstring::compareIgnoringCase(type,"character varying")) {
+		return db2_varchartype;
+	} else if (!charstring::compareIgnoringCase(type,"clob")) {
+		return db2_clobtype;
+	} else if (!charstring::compareIgnoringCase(type,"blob")) {
+		return db2_blobtype;
+	} else if (!charstring::compareIgnoringCase(type,"date")) {
+		return db2_datetype;
+	} else if (!charstring::compareIgnoringCase(type,"time")) {
+		return db2_timetype;
+	} else if (!charstring::compareIgnoringCase(type,"timestamp")) {
+		return db2_timestamptype;
+	} else if (!charstring::compareIgnoringCase(type,"graphic")) {
+		return db2_graphictype;
+	} else if (!charstring::compareIgnoringCase(type,"vargraphic")) {
+		return db2_vargraphictype;
+	} else if (!charstring::compareIgnoringCase(type,"xml")) {
+		return db2_xmltype;
+	} else if (!charstring::compareIgnoringCase(type,"decfloat")) {
+		return db2_decfloattype;
 	}
-	if (!charstring::isNullOrEmpty(procedure)) {
-		procedurelistquery.append(
-			"and routinename like '");
-		procedurelistquery.append(procedure);
-		procedurelistquery.append("' ");
-	}
-	procedurelistquery.append(
-		"order by "
-		"	routineschema, "
-		"	routinename");
-	return procedurelistquery.getString();
+	return NULL;
 }
+
+
 
 const char *db2connection::getColumnListQuery(const char *db,
 					const char *schema,
@@ -900,6 +1454,221 @@ const char *db2connection::getColumnListQuery(const char *db,
 	return columnlistquery.getString();
 }
 
+
+
+const char *db2connection::getPrimaryKeysListQuery(const char *db,
+					const char *schema,
+					const char *table) {
+
+	primarykeyslistquery.clear();
+	primarykeyslistquery.append(
+		"select "
+		"	'' as table_cat, "
+		"	trim(kcu.tabschema) as table_schem, "
+		"	trim(kcu.tabname) as table_name, "
+		"	trim(kcu.colname) as column_name, "
+		"	kcu.colseq as key_seq, "
+		"	trim(kcu.constname) as pk_name, "
+		"	null "
+		"from "
+		"	syscat.keycoluse kcu, "
+		"	syscat.tabconst tc "
+		"where "
+		"	tc.type='P' "
+		"	and "
+		"	tc.constname=kcu.constname "
+		"	and "
+		"	tc.tabschema=kcu.tabschema "
+		"	and "
+		"	tc.tabname=kcu.tabname ");
+	if (!charstring::isNullOrEmpty(schema)) {
+		primarykeyslistquery.append(
+			"	and "
+			"	trim(kcu.tabschema) like '");
+		primarykeyslistquery.append(schema);
+		primarykeyslistquery.append("' ");
+	}
+	if (!charstring::isNullOrEmpty(table)) {
+		primarykeyslistquery.append(
+			"	and "
+			"	trim(kcu.tabname) like '");
+		primarykeyslistquery.append(table);
+		primarykeyslistquery.append("' ");
+	}
+	primarykeyslistquery.append(
+		"order by "
+		"	kcu.tabname, "
+		"	kcu.colseq");
+	return primarykeyslistquery.getString();
+}
+
+const char *db2connection::getKeyAndIndexListQuery(const char *db,
+					const char *schema,
+					const char *table) {
+
+	keyandindexlistquery.clear();
+	keyandindexlistquery.append(
+		"select "
+		"	'' as table_cat, "
+		"	trim(i.tabschema) as table_schem, "
+		"	trim(i.tabname) as table_name, "
+		"	case i.uniquerule "
+		"		when 'U' then 0 "
+		"		when 'P' then 0 "
+		"		else 1 "
+		"	end as non_unique, "
+		"	trim(i.tabschema) as index_qualifier, "
+		"	trim(i.indname) as index_name, "
+		"	3 as type, "
+		"	ic.colseq as ordinal_position, "
+		"	trim(ic.colname) as column_name, "
+		"	case ic.colorder "
+		"		when 'A' then 'A' "
+		"		when 'D' then 'D' "
+		"		else null "
+		"	end as asc_or_desc, "
+		"	i.fullkeycard as cardinality, "
+		"	i.nleaf as pages, "
+		"	null as filter_condition, "
+		"	null "
+		"from "
+		"	syscat.indexes i, "
+		"	syscat.indexcoluse ic "
+		"where "
+		"	i.indschema=ic.indschema "
+		"	and "
+		"	i.indname=ic.indname ");
+	if (!charstring::isNullOrEmpty(schema)) {
+		keyandindexlistquery.append(
+			"	and "
+			"	trim(i.tabschema) like '");
+		keyandindexlistquery.append(schema);
+		keyandindexlistquery.append("' ");
+	}
+	if (!charstring::isNullOrEmpty(table)) {
+		keyandindexlistquery.append(
+			"	and "
+			"	trim(i.tabname) like '");
+		keyandindexlistquery.append(table);
+		keyandindexlistquery.append("' ");
+	}
+	keyandindexlistquery.append(
+		"order by "
+		"	i.tabname, "
+		"	i.indname, "
+		"	ic.colseq");
+	return keyandindexlistquery.getString();
+}
+
+
+const char *db2connection::getProcedureListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure) {
+
+	procedurelistquery.clear();
+	procedurelistquery.append(
+		"select "
+		"	'' as procedure_cat, "
+		"	routineschema as procedure_schem, "
+		"	routinename as procedure_name, "
+		"	0 as num_input_params, "
+		"	0 as num_output_params, "
+		"	0 as num_result_sets, "
+		"	remarks, "
+		"	case routinetype "
+		"		when 'P' then '1' "
+		"		when 'F' then '2' "
+		"		else '0' "
+		"	end as procedure_type, "
+		"	null "
+		"from "
+		"	syscat.routines "
+		"where "
+		"	routinetype in ('P','F') ");
+	if (!charstring::isNullOrEmpty(schema)) {
+		procedurelistquery.append(
+			"and routineschema like '");
+		procedurelistquery.append(schema);
+		procedurelistquery.append("' ");
+	}
+	if (!charstring::isNullOrEmpty(procedure)) {
+		procedurelistquery.append(
+			"and routinename like '");
+		procedurelistquery.append(procedure);
+		procedurelistquery.append("' ");
+	}
+	procedurelistquery.append(
+		"order by "
+		"	routineschema, "
+		"	routinename");
+	return procedurelistquery.getString();
+}
+
+
+const char *db2connection::getProcedureParameterListQuery(
+					const char *db,
+					const char *schema,
+					const char *procedure) {
+
+	procedureparameterlistquery.clear();
+	procedureparameterlistquery.append(
+		"select "
+		"	'' as procedure_cat, "
+		"	trim(procschema) as procedure_schem, "
+		"	trim(procname) as procedure_name, "
+		"	trim(parmname) as column_name, "
+		"	case parm_mode "
+		"		when 'IN' then 1 "
+		"		when 'INOUT' then 2 "
+		"		when 'OUT' then 4 "
+		"		else 0 "
+		"	end as column_type, "
+		"	'' as data_type, "
+		"	trim(typename) as type_name, "
+		"	length as column_size, "
+		"	null as buffer_length, "
+		"	scale as decimal_digits, "
+		"	10 as num_prec_radix, "
+		"	1 as nullable, "
+		"	'' as remarks, "
+		"	null as column_def, "
+		"	null as sql_data_type, "
+		"	null as sql_datetime_sub, "
+		"	length as char_octet_length, "
+		"	ordinal as ordinal_position, "
+		"	'YES' as is_nullable, "
+		"	null "
+		"from "
+		"	syscat.procparms ");
+	bool	prevclause=false;
+	if (!charstring::isNullOrEmpty(schema)) {
+		procedureparameterlistquery.append(
+			"where "
+			"	trim(procschema) like '");
+		procedureparameterlistquery.append(schema);
+		procedureparameterlistquery.append("' ");
+		prevclause=true;
+	}
+	if (!charstring::isNullOrEmpty(procedure)) {
+		if (prevclause) {
+			procedureparameterlistquery.append("	and ");
+		} else {
+			procedureparameterlistquery.append("where ");
+		}
+		procedureparameterlistquery.append(
+			"	trim(procname) like '");
+		procedureparameterlistquery.append(procedure);
+		procedureparameterlistquery.append("' ");
+	}
+	procedureparameterlistquery.append(
+		"order by "
+		"	procname, "
+		"	ordinal");
+	return procedureparameterlistquery.getString();
+}
+
+
 const char *db2connection::getBindFormat() {
 	return "?";
 }
@@ -907,7 +1676,6 @@ const char *db2connection::getBindFormat() {
 const char *db2connection::getNextvalFormat() {
 	return "(nextval for %s)";
 }
-
 const char *db2connection::selectDatabaseQuery() {
 	return "set schema %s";
 }

@@ -58,15 +58,31 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
-		const char	*getProcedureListQuery(
+		const char	*getTypeInfoListQuery(
 						const char *db,
 						const char *schema,
-						const char *procedure);
+						const char *type);
 		const char	*getColumnListQuery(
 						const char *db,
 						const char *schema,
 						const char *table,
 						const char *column);
+		const char	*getPrimaryKeysListQuery(
+						const char *db,
+						const char *schema,
+						const char *table);
+		const char	*getKeyAndIndexListQuery(
+						const char *db,
+						const char *schema,
+						const char *table);
+		const char	*getProcedureListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure);
+		const char	*getProcedureParameterListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure);
 		#ifdef SQLITE_TRANSACTIONAL
 		const char	*setIsolationLevelQuery();
 		const char	*getIsolationLevelQuery();
@@ -115,6 +131,9 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 		stringbuffer	tablelistquery;
 		stringbuffer	tabletypelistquery;
 		stringbuffer	columnlistquery;
+		stringbuffer	typeinfolistquery;
+		stringbuffer	primarykeyslistquery;
+		stringbuffer	keyandindexlistquery;
 };
 
 class SQLRSERVER_DLLSPEC sqlitecursor : public sqlrservercursor {
@@ -132,22 +151,22 @@ class SQLRSERVER_DLLSPEC sqlitecursor : public sqlrservercursor {
 		int32_t		getBindVariableIndex(
 						const char *variable,
 						uint16_t variablesize);
-		bool		inputBind(const char *variable, 
+		bool		inputBind(const char *variable,
 						uint16_t variablesize,
-						const char *value, 
+						const char *value,
 						uint32_t valuesize,
 						int16_t *isnull);
-		bool		inputBind(const char *variable, 
+		bool		inputBind(const char *variable,
 						uint16_t variablesize,
 						int64_t *value);
-		bool		inputBind(const char *variable, 
+		bool		inputBind(const char *variable,
 						uint16_t variablesize,
 						double *value,
 						uint32_t precision,
 						uint32_t scale);
-		bool		inputBindBlob(const char *variable, 
+		bool		inputBindBlob(const char *variable,
 						uint16_t variablesize,
-						const char *value, 
+						const char *value,
 						uint32_t valuesize,
 						int16_t *isnull);
 		#endif
@@ -402,22 +421,478 @@ const char *sqliteconnection::getTableListQuery(const char *db,
 	return tablelistquery.getString();
 }
 
-const char *sqliteconnection::getProcedureListQuery(const char *db,
+
+
+static const char	*integertype=
+			"select "
+			"	'INTEGER' as type_name, "
+			"	4 as data_type, "
+			"	19 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'INTEGER' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL ";
+
+static const char	*realtype=
+			"select "
+			"	'REAL' as type_name, "
+			"	8 as data_type, "
+			"	15 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'REAL' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL ";
+
+static const char	*texttype=
+			"select "
+			"	'TEXT' as type_name, "
+			"	-1 as data_type, "
+			"	2147483647 as column_size, "
+			"	'''' as literal_prefix, "
+			"	'''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'TEXT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL ";
+
+static const char	*blobtype=
+			"select "
+			"	'BLOB' as type_name, "
+			"	-4 as data_type, "
+			"	2147483647 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	0 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'BLOB' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL ";
+
+static const char	*numerictype=
+			"select "
+			"	'NUMERIC' as type_name, "
+			"	2 as data_type, "
+			"	19 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'NUMERIC' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL ";
+
+static const char	*booleantype=
+			"select "
+			"	'BOOLEAN' as type_name, "
+			"	-7 as data_type, "
+			"	1 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'BOOLEAN' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL ";
+
+static const char	*datetype=
+			"select "
+			"	'DATE' as type_name, "
+			"	91 as data_type, "
+			"	10 as column_size, "
+			"	'''' as literal_prefix, "
+			"	'''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'DATE' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL ";
+
+static const char	*timetype=
+			"select "
+			"	'TIME' as type_name, "
+			"	92 as data_type, "
+			"	8 as column_size, "
+			"	'''' as literal_prefix, "
+			"	'''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'TIME' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL ";
+
+static const char	*datetimetype=
+			"select "
+			"	'DATETIME' as type_name, "
+			"	93 as data_type, "
+			"	23 as column_size, "
+			"	'''' as literal_prefix, "
+			"	'''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'DATETIME' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL ";
+
+static const char	*varchartype=
+			"select "
+			"	'VARCHAR' as type_name, "
+			"	12 as data_type, "
+			"	2147483647 as column_size, "
+			"	'''' as literal_prefix, "
+			"	'''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'VARCHAR' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL ";
+
+static const char	*chartype=
+			"select "
+			"	'CHAR' as type_name, "
+			"	1 as data_type, "
+			"	2147483647 as column_size, "
+			"	'''' as literal_prefix, "
+			"	'''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'CHAR' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL ";
+
+static const char	*floattype=
+			"select "
+			"	'FLOAT' as type_name, "
+			"	6 as data_type, "
+			"	15 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'FLOAT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL ";
+
+static const char	*doubletype=
+			"select "
+			"	'DOUBLE' as type_name, "
+			"	8 as data_type, "
+			"	15 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'DOUBLE' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL ";
+
+static const char	*inttype=
+			"select "
+			"	'INT' as type_name, "
+			"	4 as data_type, "
+			"	10 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'INT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL ";
+
+static const char	*biginttype=
+			"select "
+			"	'BIGINT' as type_name, "
+			"	-5 as data_type, "
+			"	19 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'BIGINT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL ";
+
+static const char	*smallinttype=
+			"select "
+			"	'SMALLINT' as type_name, "
+			"	5 as data_type, "
+			"	5 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'SMALLINT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL ";
+
+static const char	*tinyinttype=
+			"select "
+			"	'TINYINT' as type_name, "
+			"	-6 as data_type, "
+			"	3 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'TINYINT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL ";
+
+const char *sqliteconnection::getTypeInfoListQuery(const char *db,
 						const char *schema,
-						const char *procedure) {
-	return "select "
-		"	'' as procedure_cat, "
-		"	'' as procedure_schem, "
-		"	'' as procedure_name, "
-		"	0 as num_input_params, "
-		"	0 as num_output_params, "
-		"	0 as num_result_sets, "
-		"	'' as remarks, "
-		"	'' as procedure_type, "
-		"	null "
-		"where "
-		"	1=0";
+						const char *type) {
+
+	if (!charstring::compare(type,"*")) {
+		if (!typeinfolistquery.getSize()) {
+			typeinfolistquery.append(integertype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(realtype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(texttype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(blobtype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(numerictype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(booleantype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(datetype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(timetype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(datetimetype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(varchartype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(chartype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(floattype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(doubletype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(inttype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(biginttype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(smallinttype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(tinyinttype);
+		}
+		return typeinfolistquery.getString();
+	} else if (!charstring::compareIgnoringCase(type,"integer")) {
+		return integertype;
+	} else if (!charstring::compareIgnoringCase(type,"real")) {
+		return realtype;
+	} else if (!charstring::compareIgnoringCase(type,"text")) {
+		return texttype;
+	} else if (!charstring::compareIgnoringCase(type,"blob")) {
+		return blobtype;
+	} else if (!charstring::compareIgnoringCase(type,"numeric")) {
+		return numerictype;
+	} else if (!charstring::compareIgnoringCase(type,"boolean")) {
+		return booleantype;
+	} else if (!charstring::compareIgnoringCase(type,"date")) {
+		return datetype;
+	} else if (!charstring::compareIgnoringCase(type,"time")) {
+		return timetype;
+	} else if (!charstring::compareIgnoringCase(type,"datetime")) {
+		return datetimetype;
+	} else if (!charstring::compareIgnoringCase(type,"varchar")) {
+		return varchartype;
+	} else if (!charstring::compareIgnoringCase(type,"char")) {
+		return chartype;
+	} else if (!charstring::compareIgnoringCase(type,"float")) {
+		return floattype;
+	} else if (!charstring::compareIgnoringCase(type,"double")) {
+		return doubletype;
+	} else if (!charstring::compareIgnoringCase(type,"int")) {
+		return inttype;
+	} else if (!charstring::compareIgnoringCase(type,"bigint")) {
+		return biginttype;
+	} else if (!charstring::compareIgnoringCase(type,"smallint")) {
+		return smallinttype;
+	} else if (!charstring::compareIgnoringCase(type,"tinyint")) {
+		return tinyinttype;
+	}
+	return NULL;
 }
+
 
 const char *sqliteconnection::getColumnListQuery(const char *db,
 					const char *schema,
@@ -474,6 +949,122 @@ const char *sqliteconnection::getColumnListQuery(const char *db,
 
 	return columnlistquery.getString();
 }
+
+
+
+const char *sqliteconnection::getPrimaryKeysListQuery(const char *db,
+					const char *schema,
+					const char *table) {
+
+	primarykeyslistquery.clear();
+	primarykeyslistquery.append(
+		"select "
+		"	'' as table_cat, "
+		"	'' as table_schem, "
+		"	'")->append(table)->append("' as table_name, "
+		"	p.name as column_name, "
+		"	p.pk as key_seq, "
+		"	'' as pk_name, "
+		"	null "
+		"from "
+		"	(select "
+		"		* "
+		"	from "
+		"		pragma_table_info('")->append(table)->append("')) p "
+		"where "
+		"	p.pk>0 "
+		"order by "
+		"	p.pk");
+	return primarykeyslistquery.getString();
+}
+
+const char *sqliteconnection::getKeyAndIndexListQuery(const char *db,
+					const char *schema,
+					const char *table) {
+
+	keyandindexlistquery.clear();
+	keyandindexlistquery.append(
+		"select "
+		"	'' as table_cat, "
+		"	'' as table_schem, "
+		"	'")->append(table)->append("' as table_name, "
+		"	case il.'unique' "
+		"		when 1 then 0 "
+		"		else 1 "
+		"	end as non_unique, "
+		"	'' as index_qualifier, "
+		"	il.name as index_name, "
+		"	3 as type, "
+		"	ii.seqno+1 as ordinal_position, "
+		"	ii.name as column_name, "
+		"	case il.'unique' "
+		"		when 1 then 'A' "
+		"		else 'A' "
+		"	end as asc_or_desc, "
+		"	null as cardinality, "
+		"	null as pages, "
+		"	null as filter_condition, "
+		"	null "
+		"from "
+		"	(select "
+		"		* "
+		"	from "
+		"		pragma_index_list('")->append(table)->append("')) il, "
+		"	pragma_index_info(il.name) ii "
+		"order by "
+		"	il.name, "
+		"	ii.seqno");
+	return keyandindexlistquery.getString();
+}
+
+
+const char *sqliteconnection::getProcedureListQuery(const char *db,
+						const char *schema,
+						const char *procedure) {
+	return "select "
+		"	'' as procedure_cat, "
+		"	'' as procedure_schem, "
+		"	'' as procedure_name, "
+		"	0 as num_input_params, "
+		"	0 as num_output_params, "
+		"	0 as num_result_sets, "
+		"	'' as remarks, "
+		"	'' as procedure_type, "
+		"	null "
+		"where "
+		"	1=0";
+}
+
+
+const char *sqliteconnection::getProcedureParameterListQuery(
+					const char *db,
+					const char *schema,
+					const char *procedure) {
+	return "select "
+		"	'' as procedure_cat, "
+		"	'' as procedure_schem, "
+		"	'' as procedure_name, "
+		"	'' as column_name, "
+		"	0 as column_type, "
+		"	'' as data_type, "
+		"	'' as type_name, "
+		"	0 as column_size, "
+		"	null as buffer_length, "
+		"	0 as decimal_digits, "
+		"	10 as num_prec_radix, "
+		"	1 as nullable, "
+		"	'' as remarks, "
+		"	null as column_def, "
+		"	null as sql_data_type, "
+		"	null as sql_datetime_sub, "
+		"	0 as char_octet_length, "
+		"	0 as ordinal_position, "
+		"	'YES' as is_nullable, "
+		"	null "
+		"where "
+		"	1=0";
+}
+
 
 #ifdef SQLITE_TRANSACTIONAL
 const char *sqliteconnection::setIsolationLevelQuery() {
@@ -1171,9 +1762,9 @@ int32_t sqlitecursor::getBindVariableIndex(const char *variable,
 	return sqlite3_bind_parameter_index(stmt,variable);
 }
 
-bool sqlitecursor::inputBind(const char *variable, 
+bool sqlitecursor::inputBind(const char *variable,
 				uint16_t variablesize,
-				const char *value, 
+				const char *value,
 				uint32_t valuesize,
 				int16_t *isnull) {
 	return (sqlite3_bind_text(stmt,
@@ -1181,7 +1772,7 @@ bool sqlitecursor::inputBind(const char *variable,
 				value,valuesize,SQLITE_STATIC)==SQLITE_OK);
 }
 
-bool sqlitecursor::inputBind(const char *variable, 
+bool sqlitecursor::inputBind(const char *variable,
 				uint16_t variablesize,
 				int64_t *value) {
 	return (sqlite3_bind_int64(stmt,
@@ -1189,7 +1780,7 @@ bool sqlitecursor::inputBind(const char *variable,
 				*value)==SQLITE_OK);
 }
 
-bool sqlitecursor::inputBind(const char *variable, 
+bool sqlitecursor::inputBind(const char *variable,
 				uint16_t variablesize,
 				double *value,
 				uint32_t precision,
@@ -1199,9 +1790,9 @@ bool sqlitecursor::inputBind(const char *variable,
 				*value)==SQLITE_OK);
 }
 
-bool sqlitecursor::inputBindBlob(const char *variable, 
+bool sqlitecursor::inputBindBlob(const char *variable,
 				uint16_t variablesize,
-				const char *value, 
+				const char *value,
 				uint32_t valuesize,
 				int16_t *isnull) {
 	return (sqlite3_bind_blob(stmt,
@@ -1223,10 +1814,10 @@ bool sqlitecursor::executeQuery(const char *query, uint32_t size) {
 		// the query, once.
 		//
 		// If we get an SQLITE_ERROR and the error is "no such table:"
-		// then we need to workaround a bug/feature.  If you create a 
-		// table, it's not visible to other sessions until the 
-		// sqlite_master table is queried.  In this case, a query 
-		// against the sqlite_master table should result in an 
+		// then we need to workaround a bug/feature.  If you create a
+		// table, it's not visible to other sessions until the
+		// sqlite_master table is queried.  In this case, a query
+		// against the sqlite_master table should result in an
 		// SQLITE_SCHEMA return value.
 		//
 		// For any other return values, jump out of the loop.
@@ -1235,7 +1826,7 @@ bool sqlitecursor::executeQuery(const char *query, uint32_t size) {
 			// If we're using the statement API then we need to
 			// reprepare the statement.  According to the API
 			// docs this shouldn't happen with sqlite3_prepare_v2.
-			// This appears to be generally true, but with 
+			// This appears to be generally true, but with
 			// version 3.6.20 it does.
 			#if defined(HAVE_SQLITE3_STMT)
 				if (!prepareQuery(query,size)) {
@@ -1244,7 +1835,7 @@ bool sqlitecursor::executeQuery(const char *query, uint32_t size) {
 			#endif
 			continue;
 		} else if (success==SQLITE_ERROR &&
-				sqliteconn->errmesg && 
+				sqliteconn->errmesg &&
 				!charstring::compare(sqliteconn->errmesg,
 							"no such table:",14)) {
 
@@ -1522,7 +2113,7 @@ bool sqlitecursor::fetchRow(bool *error) {
 	}
 	return (result==SQLITE_ROW);
 	#else
-	// have to check for nrow+1 because the 
+	// have to check for nrow+1 because the
 	// first row is actually the column names
 	return (rowindex<(ncolumn*(nrow+1)));
 	#endif

@@ -49,15 +49,31 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
-		const char	*getProcedureListQuery(
+		const char	*getTypeInfoListQuery(
 						const char *db,
 						const char *schema,
-						const char *procedure);
+						const char *type);
 		const char	*getColumnListQuery(
 						const char *db,
 						const char *schema,
 						const char *table,
 						const char *column);
+		const char	*getPrimaryKeysListQuery(
+						const char *db,
+						const char *schema,
+						const char *table);
+		const char	*getKeyAndIndexListQuery(
+						const char *db,
+						const char *schema,
+						const char *table);
+		const char	*getProcedureListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure);
+		const char	*getProcedureParameterListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure);
 		const char	*selectDatabaseQuery();
 		const char	*getCurrentDatabaseQuery();
 		const char	*getLastInsertIdQuery();
@@ -117,6 +133,10 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 		stringbuffer	tablelistquery;
 		stringbuffer	procedurelistquery;
 		stringbuffer	columnlistquery;
+		stringbuffer	typeinfolistquery;
+		stringbuffer	primarykeyslistquery;
+		stringbuffer	keyandindexlistquery;
+		stringbuffer	procedureparameterlistquery;
 };
 
 struct datebind {
@@ -709,49 +729,694 @@ const char *sapconnection::getTableListQuery(const char *db,
 	return tablelistquery.getString();
 }
 
-const char *sapconnection::getProcedureListQuery(
-						const char *db,
-						const char *schema,
-						const char *procedure) {
 
-	procedurelistquery.clear();
-	procedurelistquery.append(
-		"select "
-		"	'' as procedure_cat, "
-		"	loginame as procedure_schem, "
-		"	name as procedure_name, "
-		"	0 as num_input_params, "
-		"	0 as num_output_params, "
-		"	0 as num_result_sets, "
-		"	'' as remarks, "
-		"	case type "
-		"		when 'P' then '1' "
-		"		when 'SF' then '2' "
-		"		else '0' "
-		"	end as procedure_type, "
-		"	null "
-		"from "
-		"	sysobjects "
-		"where "
-		"	type in ('P','SF') ");
-	if (!charstring::isNullOrEmpty(schema)) {
-		procedurelistquery.append(
-			"and loginame like '");
-		procedurelistquery.append(schema);
-		procedurelistquery.append("' ");
+
+static const char	*sap_bittype=
+			"(select "
+			"	'BIT' as type_name, "
+			"	-7 as data_type, "
+			"	1 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'BIT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*sap_tinyinttype=
+			"(select "
+			"	'TINYINT' as type_name, "
+			"	-6 as data_type, "
+			"	3 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	1 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'TINYINT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*sap_biginttype=
+			"(select "
+			"	'BIGINT' as type_name, "
+			"	-5 as data_type, "
+			"	19 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'BIGINT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*sap_imagetype=
+			"(select "
+			"	'IMAGE' as type_name, "
+			"	-4 as data_type, "
+			"	2147483647 as column_size, "
+			"	'0x' as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	0 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'IMAGE' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*sap_varbinarytype=
+			"(select "
+			"	'VARBINARY' as type_name, "
+			"	-3 as data_type, "
+			"	255 as column_size, "
+			"	'0x' as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'VARBINARY' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*sap_binarytype=
+			"(select "
+			"	'BINARY' as type_name, "
+			"	-2 as data_type, "
+			"	255 as column_size, "
+			"	'0x' as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'BINARY' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*sap_texttype=
+			"(select "
+			"	'TEXT' as type_name, "
+			"	-1 as data_type, "
+			"	2147483647 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	1 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'TEXT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*sap_chartype=
+			"(select "
+			"	'CHAR' as type_name, "
+			"	1 as data_type, "
+			"	255 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'CHAR' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*sap_numerictype=
+			"(select "
+			"	'NUMERIC' as type_name, "
+			"	2 as data_type, "
+			"	38 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'NUMERIC' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*sap_decimaltype=
+			"(select "
+			"	'DECIMAL' as type_name, "
+			"	3 as data_type, "
+			"	38 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'DECIMAL' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*sap_inttype=
+			"(select "
+			"	'INT' as type_name, "
+			"	4 as data_type, "
+			"	10 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'INT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*sap_smallinttype=
+			"(select "
+			"	'SMALLINT' as type_name, "
+			"	5 as data_type, "
+			"	5 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'SMALLINT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*sap_floattype=
+			"(select "
+			"	'FLOAT' as type_name, "
+			"	6 as data_type, "
+			"	15 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'FLOAT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*sap_realtype=
+			"(select "
+			"	'REAL' as type_name, "
+			"	7 as data_type, "
+			"	7 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'REAL' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*sap_varchartype=
+			"(select "
+			"	'VARCHAR' as type_name, "
+			"	12 as data_type, "
+			"	255 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'VARCHAR' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*sap_datetype=
+			"(select "
+			"	'DATE' as type_name, "
+			"	91 as data_type, "
+			"	10 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'DATE' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*sap_timetype=
+			"(select "
+			"	'TIME' as type_name, "
+			"	92 as data_type, "
+			"	8 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'TIME' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*sap_datetimetype=
+			"(select "
+			"	'DATETIME' as type_name, "
+			"	93 as data_type, "
+			"	23 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'DATETIME' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*sap_smalldatetimetype=
+			"(select "
+			"	'SMALLDATETIME' as type_name, "
+			"	93 as data_type, "
+			"	16 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'SMALLDATETIME' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*sap_moneytype=
+			"(select "
+			"	'MONEY' as type_name, "
+			"	2 as data_type, "
+			"	19 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'MONEY' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*sap_smallmoneytype=
+			"(select "
+			"	'SMALLMONEY' as type_name, "
+			"	2 as data_type, "
+			"	10 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'SMALLMONEY' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*sap_unichartype=
+			"(select "
+			"	'UNICHAR' as type_name, "
+			"	-15 as data_type, "
+			"	255 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'UNICHAR' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*sap_univarchartype=
+			"(select "
+			"	'UNIVARCHAR' as type_name, "
+			"	-9 as data_type, "
+			"	255 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'UNIVARCHAR' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*sap_unitexttype=
+			"(select "
+			"	'UNITEXT' as type_name, "
+			"	-1 as data_type, "
+			"	2147483647 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	1 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'UNITEXT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+const char *sapconnection::getTypeInfoListQuery(const char *db,
+						const char *schema,
+						const char *type) {
+
+	if (!charstring::compare(type,"*")) {
+		if (!typeinfolistquery.getSize()) {
+			typeinfolistquery.append(sap_bittype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(sap_tinyinttype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(sap_biginttype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(sap_imagetype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(sap_varbinarytype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(sap_binarytype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(sap_texttype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(sap_chartype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(sap_numerictype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(sap_decimaltype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(sap_inttype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(sap_smallinttype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(sap_floattype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(sap_realtype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(sap_varchartype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(sap_datetype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(sap_timetype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(sap_datetimetype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(sap_smalldatetimetype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(sap_moneytype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(sap_smallmoneytype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(sap_unichartype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(sap_univarchartype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(sap_unitexttype);
+		}
+		return typeinfolistquery.getString();
+	} else if (!charstring::compareIgnoringCase(type,"bit")) {
+		return sap_bittype;
+	} else if (!charstring::compareIgnoringCase(type,"tinyint")) {
+		return sap_tinyinttype;
+	} else if (!charstring::compareIgnoringCase(type,"bigint")) {
+		return sap_biginttype;
+	} else if (!charstring::compareIgnoringCase(type,"image")) {
+		return sap_imagetype;
+	} else if (!charstring::compareIgnoringCase(type,"varbinary")) {
+		return sap_varbinarytype;
+	} else if (!charstring::compareIgnoringCase(type,"binary")) {
+		return sap_binarytype;
+	} else if (!charstring::compareIgnoringCase(type,"text")) {
+		return sap_texttype;
+	} else if (!charstring::compareIgnoringCase(type,"char")) {
+		return sap_chartype;
+	} else if (!charstring::compareIgnoringCase(type,"numeric")) {
+		return sap_numerictype;
+	} else if (!charstring::compareIgnoringCase(type,"decimal")) {
+		return sap_decimaltype;
+	} else if (!charstring::compareIgnoringCase(type,"int")) {
+		return sap_inttype;
+	} else if (!charstring::compareIgnoringCase(type,"integer")) {
+		return sap_inttype;
+	} else if (!charstring::compareIgnoringCase(type,"smallint")) {
+		return sap_smallinttype;
+	} else if (!charstring::compareIgnoringCase(type,"float")) {
+		return sap_floattype;
+	} else if (!charstring::compareIgnoringCase(type,"real")) {
+		return sap_realtype;
+	} else if (!charstring::compareIgnoringCase(type,"varchar")) {
+		return sap_varchartype;
+	} else if (!charstring::compareIgnoringCase(type,"date")) {
+		return sap_datetype;
+	} else if (!charstring::compareIgnoringCase(type,"time")) {
+		return sap_timetype;
+	} else if (!charstring::compareIgnoringCase(type,"datetime")) {
+		return sap_datetimetype;
+	} else if (!charstring::compareIgnoringCase(type,"smalldatetime")) {
+		return sap_smalldatetimetype;
+	} else if (!charstring::compareIgnoringCase(type,"money")) {
+		return sap_moneytype;
+	} else if (!charstring::compareIgnoringCase(type,"smallmoney")) {
+		return sap_smallmoneytype;
+	} else if (!charstring::compareIgnoringCase(type,"unichar")) {
+		return sap_unichartype;
+	} else if (!charstring::compareIgnoringCase(type,"univarchar")) {
+		return sap_univarchartype;
+	} else if (!charstring::compareIgnoringCase(type,"unitext")) {
+		return sap_unitexttype;
 	}
-	if (!charstring::isNullOrEmpty(procedure)) {
-		procedurelistquery.append(
-			"and name like '");
-		procedurelistquery.append(procedure);
-		procedurelistquery.append("' ");
-	}
-	procedurelistquery.append(
-		"order by "
-		"	loginame, "
-		"	name");
-	return procedurelistquery.getString();
+	return NULL;
 }
+
+
 
 const char *sapconnection::getColumnListQuery(const char *db,
 					const char *schema,
@@ -878,6 +1543,227 @@ const char *sapconnection::getColumnListQuery(const char *db,
 
 	return columnlistquery.getString();
 }
+
+
+
+const char *sapconnection::getPrimaryKeysListQuery(const char *db,
+					const char *schema,
+					const char *table) {
+
+	primarykeyslistquery.clear();
+	primarykeyslistquery.append(
+		"select "
+		"	'' as table_cat, "
+		"	user_name(o.uid) as table_schem, "
+		"	o.name as table_name, "
+		"	index_col(o.name,i.indid,c.colid) as column_name, "
+		"	c.colid as key_seq, "
+		"	i.name as pk_name, "
+		"	null "
+		"from "
+		"	sysobjects o, "
+		"	sysindexes i, "
+		"	syscolumns c "
+		"where "
+		"	i.status & 2048 = 2048 "
+		"	and "
+		"	o.id=i.id "
+		"	and "
+		"	o.id=c.id "
+		"	and "
+		"	c.colid<=i.keycnt ");
+	if (!charstring::isNullOrEmpty(table)) {
+		primarykeyslistquery.append(
+			"	and "
+			"	o.name like '");
+		primarykeyslistquery.append(table);
+		primarykeyslistquery.append("' ");
+	}
+	if (!charstring::isNullOrEmpty(schema)) {
+		primarykeyslistquery.append(
+			"	and "
+			"	user_name(o.uid) like '");
+		primarykeyslistquery.append(schema);
+		primarykeyslistquery.append("' ");
+	}
+	primarykeyslistquery.append(
+		"order by "
+		"	o.name, "
+		"	c.colid");
+	return primarykeyslistquery.getString();
+}
+
+const char *sapconnection::getKeyAndIndexListQuery(const char *db,
+					const char *schema,
+					const char *table) {
+
+	keyandindexlistquery.clear();
+	keyandindexlistquery.append(
+		"select "
+		"	'' as table_cat, "
+		"	user_name(o.uid) as table_schem, "
+		"	o.name as table_name, "
+		"	case "
+		"		when i.status & 2 = 2 then 0 "
+		"		else 1 "
+		"	end as non_unique, "
+		"	'' as index_qualifier, "
+		"	i.name as index_name, "
+		"	3 as type, "
+		"	c.colid as ordinal_position, "
+		"	index_col(o.name,i.indid,c.colid) as column_name, "
+		"	'A' as asc_or_desc, "
+		"	null as cardinality, "
+		"	null as pages, "
+		"	null as filter_condition, "
+		"	null "
+		"from "
+		"	sysobjects o, "
+		"	sysindexes i, "
+		"	syscolumns c "
+		"where "
+		"	o.type='U' "
+		"	and "
+		"	o.id=i.id "
+		"	and "
+		"	i.indid>0 "
+		"	and "
+		"	i.indid<255 "
+		"	and "
+		"	o.id=c.id "
+		"	and "
+		"	c.colid<=i.keycnt ");
+	if (!charstring::isNullOrEmpty(table)) {
+		keyandindexlistquery.append(
+			"	and "
+			"	o.name like '");
+		keyandindexlistquery.append(table);
+		keyandindexlistquery.append("' ");
+	}
+	if (!charstring::isNullOrEmpty(schema)) {
+		keyandindexlistquery.append(
+			"	and "
+			"	user_name(o.uid) like '");
+		keyandindexlistquery.append(schema);
+		keyandindexlistquery.append("' ");
+	}
+	keyandindexlistquery.append(
+		"order by "
+		"	o.name, "
+		"	i.name, "
+		"	c.colid");
+	return keyandindexlistquery.getString();
+}
+
+
+const char *sapconnection::getProcedureListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure) {
+
+	procedurelistquery.clear();
+	procedurelistquery.append(
+		"select "
+		"	'' as procedure_cat, "
+		"	loginame as procedure_schem, "
+		"	name as procedure_name, "
+		"	0 as num_input_params, "
+		"	0 as num_output_params, "
+		"	0 as num_result_sets, "
+		"	'' as remarks, "
+		"	case type "
+		"		when 'P' then '1' "
+		"		when 'SF' then '2' "
+		"		else '0' "
+		"	end as procedure_type, "
+		"	null "
+		"from "
+		"	sysobjects "
+		"where "
+		"	type in ('P','SF') ");
+	if (!charstring::isNullOrEmpty(schema)) {
+		procedurelistquery.append(
+			"and loginame like '");
+		procedurelistquery.append(schema);
+		procedurelistquery.append("' ");
+	}
+	if (!charstring::isNullOrEmpty(procedure)) {
+		procedurelistquery.append(
+			"and name like '");
+		procedurelistquery.append(procedure);
+		procedurelistquery.append("' ");
+	}
+	procedurelistquery.append(
+		"order by "
+		"	loginame, "
+		"	name");
+	return procedurelistquery.getString();
+}
+
+
+const char *sapconnection::getProcedureParameterListQuery(
+					const char *db,
+					const char *schema,
+					const char *procedure) {
+
+	procedureparameterlistquery.clear();
+	procedureparameterlistquery.append(
+		"select "
+		"	'' as procedure_cat, "
+		"	user_name(o.uid) as procedure_schem, "
+		"	o.name as procedure_name, "
+		"	c.name as column_name, "
+		"	case c.status2 & 3 "
+		"		when 1 then 1 "
+		"		when 2 then 4 "
+		"		else 0 "
+		"	end as column_type, "
+		"	'' as data_type, "
+		"	t.name as type_name, "
+		"	c.prec as column_size, "
+		"	c.length as buffer_length, "
+		"	c.scale as decimal_digits, "
+		"	10 as num_prec_radix, "
+		"	1 as nullable, "
+		"	'' as remarks, "
+		"	null as column_def, "
+		"	null as sql_data_type, "
+		"	null as sql_datetime_sub, "
+		"	c.length as char_octet_length, "
+		"	c.colid as ordinal_position, "
+		"	'YES' as is_nullable, "
+		"	null "
+		"from "
+		"	sysobjects o, "
+		"	syscolumns c, "
+		"	systypes t "
+		"where "
+		"	o.type='P' "
+		"	and "
+		"	o.id=c.id "
+		"	and "
+		"	c.usertype=t.usertype ");
+	if (!charstring::isNullOrEmpty(schema)) {
+		procedureparameterlistquery.append(
+			"	and "
+			"	user_name(o.uid) like '");
+		procedureparameterlistquery.append(schema);
+		procedureparameterlistquery.append("' ");
+	}
+	if (!charstring::isNullOrEmpty(procedure)) {
+		procedureparameterlistquery.append(
+			"	and "
+			"	o.name like '");
+		procedureparameterlistquery.append(procedure);
+		procedureparameterlistquery.append("' ");
+	}
+	procedureparameterlistquery.append(
+		"order by "
+		"	o.name, "
+		"	c.colid");
+	return procedureparameterlistquery.getString();
+}
+
 
 const char *sapconnection::selectDatabaseQuery() {
 	return "use %s";

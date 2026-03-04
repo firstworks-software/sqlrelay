@@ -249,21 +249,37 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		const char	*getTableTypeListQuery(const char *db,
 						const char *schema,
 						const char *tabletypes);
+		const char	*getGlobalTempTableListQuery();
 		const char	*getTableListQuery(
 						const char *db,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
-		const char	*getProcedureListQuery(
+		const char	*getTypeInfoListQuery(
 						const char *db,
 						const char *schema,
-						const char *procedure);
-		const char	*getGlobalTempTableListQuery();
+						const char *type);
 		const char	*getColumnListQuery(
 						const char *db,
 						const char *schema,
 						const char *table,
 						const char *column);
+		const char	*getPrimaryKeysListQuery(
+						const char *db,
+						const char *schema,
+						const char *table);
+		const char	*getKeyAndIndexListQuery(
+						const char *db,
+						const char *schema,
+						const char *table);
+		const char	*getProcedureListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure);
+		const char	*getProcedureParameterListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure);
 		const char	*getBindFormat();
 		const char	*getNextvalFormat();
 		const char	*getLastInsertIdQuery();
@@ -299,6 +315,10 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		stringbuffer	tablelistquery;
 		stringbuffer	procedurelistquery;
 		stringbuffer	columnlistquery;
+		stringbuffer	typeinfolistquery;
+		stringbuffer	primarykeyslistquery;
+		stringbuffer	keyandindexlistquery;
+		stringbuffer	procedureparameterlistquery;
 
 		ISC_STATUS	error[20];
 
@@ -754,6 +774,17 @@ const char *firebirdconnection::getTableTypeListQuery(const char *db,
 	return tabletypelistquery.getString();
 }
 
+const char *firebirdconnection::getGlobalTempTableListQuery() {
+	return "select "
+		"	rdb$relation_name "
+		"from "
+		"	rdb$relations "
+		"where "
+		"	rdb$system_flag=0 "
+		"	and "
+		"	rdb$relation_type=4 ";
+}
+
 const char *firebirdconnection::getTableListQuery(const char *db,
 						const char *schema,
 						const char *table,
@@ -793,63 +824,461 @@ const char *firebirdconnection::getTableListQuery(const char *db,
 	return tablelistquery.getString();
 }
 
-const char *firebirdconnection::getProcedureListQuery(
-						const char *db,
+
+
+static const char	*fb_booltype=
+			"(select "
+			"	'BOOLEAN' as type_name, "
+			"	-7 as data_type, "
+			"	1 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'BOOLEAN' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	rdb$database) ";
+
+static const char	*fb_smallinttype=
+			"(select "
+			"	'SMALLINT' as type_name, "
+			"	5 as data_type, "
+			"	5 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'SMALLINT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	rdb$database) ";
+
+static const char	*fb_inttype=
+			"(select "
+			"	'INTEGER' as type_name, "
+			"	4 as data_type, "
+			"	10 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'INTEGER' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	rdb$database) ";
+
+static const char	*fb_biginttype=
+			"(select "
+			"	'BIGINT' as type_name, "
+			"	-5 as data_type, "
+			"	19 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'BIGINT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	rdb$database) ";
+
+static const char	*fb_numerictype=
+			"(select "
+			"	'NUMERIC' as type_name, "
+			"	2 as data_type, "
+			"	18 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'NUMERIC' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	rdb$database) ";
+
+static const char	*fb_decimaltype=
+			"(select "
+			"	'DECIMAL' as type_name, "
+			"	3 as data_type, "
+			"	18 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'DECIMAL' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	rdb$database) ";
+
+static const char	*fb_floattype=
+			"(select "
+			"	'FLOAT' as type_name, "
+			"	6 as data_type, "
+			"	7 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'FLOAT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	rdb$database) ";
+
+static const char	*fb_doubleprectype=
+			"(select "
+			"	'DOUBLE PRECISION' as type_name, "
+			"	8 as data_type, "
+			"	15 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'DOUBLE PRECISION' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	rdb$database) ";
+
+static const char	*fb_chartype=
+			"(select "
+			"	'CHAR' as type_name, "
+			"	1 as data_type, "
+			"	32767 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'CHAR' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	rdb$database) ";
+
+static const char	*fb_varchartype=
+			"(select "
+			"	'VARCHAR' as type_name, "
+			"	12 as data_type, "
+			"	32765 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'VARCHAR' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	rdb$database) ";
+
+static const char	*fb_datetype=
+			"(select "
+			"	'DATE' as type_name, "
+			"	91 as data_type, "
+			"	10 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'DATE' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	rdb$database) ";
+
+static const char	*fb_timetype=
+			"(select "
+			"	'TIME' as type_name, "
+			"	92 as data_type, "
+			"	8 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'TIME' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	rdb$database) ";
+
+static const char	*fb_timestamptype=
+			"(select "
+			"	'TIMESTAMP' as type_name, "
+			"	93 as data_type, "
+			"	19 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'TIMESTAMP' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	rdb$database) ";
+
+static const char	*fb_blobtype=
+			"(select "
+			"	'BLOB' as type_name, "
+			"	-4 as data_type, "
+			"	2147483647 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	0 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'BLOB' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	rdb$database) ";
+
+static const char	*fb_blobsubtexttype=
+			"(select "
+			"	'BLOB SUB_TYPE TEXT' as type_name, "
+			"	-1 as data_type, "
+			"	2147483647 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	1 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'BLOB SUB_TYPE TEXT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			"from "
+			"	rdb$database) ";
+
+const char *firebirdconnection::getTypeInfoListQuery(const char *db,
 						const char *schema,
-						const char *procedure) {
+						const char *type) {
 
-	procedurelistquery.clear();
-	procedurelistquery.append(
-		"select "
-		"	'' as procedure_cat, "
-		"	rdb$owner_name as procedure_schem, "
-		"	rdb$procedure_name as procedure_name, "
-		"	0 as num_input_params, "
-		"	0 as num_output_params, "
-		"	0 as num_result_sets, "
-		"	rdb$description as remarks, "
-		"	'1' as procedure_type, "
-		"	null "
-		"from "
-		"	rdb$procedures ");
-	if (!charstring::isNullOrEmpty(schema) ||
-		!charstring::isNullOrEmpty(procedure)) {
-		procedurelistquery.append("where ");
-		bool	first=true;
-		if (!charstring::isNullOrEmpty(schema)) {
-			procedurelistquery.append(
-				"rdb$owner_name like '");
-			procedurelistquery.append(schema);
-			procedurelistquery.append("' ");
-			first=false;
+	if (!charstring::compare(type,"*")) {
+		if (!typeinfolistquery.getSize()) {
+			typeinfolistquery.append(fb_booltype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(fb_smallinttype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(fb_inttype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(fb_biginttype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(fb_numerictype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(fb_decimaltype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(fb_floattype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(fb_doubleprectype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(fb_chartype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(fb_varchartype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(fb_datetype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(fb_timetype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(fb_timestamptype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(fb_blobtype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(fb_blobsubtexttype);
 		}
-		if (!charstring::isNullOrEmpty(procedure)) {
-			if (!first) {
-				procedurelistquery.append("and ");
-			}
-			procedurelistquery.append(
-				"rdb$procedure_name like '");
-			procedurelistquery.append(procedure);
-			procedurelistquery.append("' ");
-		}
+		return typeinfolistquery.getString();
+	} else if (!charstring::compareIgnoringCase(type,"boolean")) {
+		return fb_booltype;
+	} else if (!charstring::compareIgnoringCase(type,"smallint")) {
+		return fb_smallinttype;
+	} else if (!charstring::compareIgnoringCase(type,"integer")) {
+		return fb_inttype;
+	} else if (!charstring::compareIgnoringCase(type,"int")) {
+		return fb_inttype;
+	} else if (!charstring::compareIgnoringCase(type,"bigint")) {
+		return fb_biginttype;
+	} else if (!charstring::compareIgnoringCase(type,"numeric")) {
+		return fb_numerictype;
+	} else if (!charstring::compareIgnoringCase(type,"decimal")) {
+		return fb_decimaltype;
+	} else if (!charstring::compareIgnoringCase(type,"float")) {
+		return fb_floattype;
+	} else if (!charstring::compareIgnoringCase(type,"double precision")) {
+		return fb_doubleprectype;
+	} else if (!charstring::compareIgnoringCase(type,"char")) {
+		return fb_chartype;
+	} else if (!charstring::compareIgnoringCase(type,"character")) {
+		return fb_chartype;
+	} else if (!charstring::compareIgnoringCase(type,"varchar")) {
+		return fb_varchartype;
+	} else if (!charstring::compareIgnoringCase(type,"character varying")) {
+		return fb_varchartype;
+	} else if (!charstring::compareIgnoringCase(type,"date")) {
+		return fb_datetype;
+	} else if (!charstring::compareIgnoringCase(type,"time")) {
+		return fb_timetype;
+	} else if (!charstring::compareIgnoringCase(type,"timestamp")) {
+		return fb_timestamptype;
+	} else if (!charstring::compareIgnoringCase(type,"blob")) {
+		return fb_blobtype;
+	} else if (!charstring::compareIgnoringCase(type,"blob sub_type text")) {
+		return fb_blobsubtexttype;
 	}
-	procedurelistquery.append(
-		"order by "
-		"	rdb$owner_name, "
-		"	rdb$procedure_name");
-	return procedurelistquery.getString();
+	return NULL;
 }
 
-const char *firebirdconnection::getGlobalTempTableListQuery() {
-	return "select "
-		"	rdb$relation_name "
-		"from "
-		"	rdb$relations "
-		"where "
-		"	rdb$system_flag=0 "
-		"	and "
-		"	rdb$relation_type=4 ";
-}
+
 
 const char *firebirdconnection::getColumnListQuery(const char *db,
 					const char *schema,
@@ -862,7 +1291,7 @@ const char *firebirdconnection::getColumnListQuery(const char *db,
 	columnlistquery.append(
 		"select "
 		"	'' as table_cat, "
-		"	rf.rdb$owner_name as table_schem, "
+		"	rl.rdb$owner_name as table_schem, "
 		"	rf.rdb$relation_name as table_name, "
 		"	rf.rdb$field_name as column_name, "
 		"	fd.rdb$field_type as data_type,"
@@ -919,6 +1348,10 @@ const char *firebirdconnection::getColumnListQuery(const char *db,
 	columnlistquery.append(
 		"from "
 		"	rdb$relation_fields rf "
+		"join "
+		"	rdb$relations rl "
+		"	on "
+		"	rl.rdb$relation_name=rf.rdb$relation_name "
 		"left join "
 		"	rdb$fields fd "
 		"	on "
@@ -955,7 +1388,7 @@ const char *firebirdconnection::getColumnListQuery(const char *db,
 	if (!charstring::isNullOrEmpty(schema)) {
 		columnlistquery.append(
 			"where "
-			"	rf.rdb$owner_name like upper('");
+			"	rl.rdb$owner_name like upper('");
 		columnlistquery.append(schema);
 		columnlistquery.append("') ");
 		prevclause=true;
@@ -994,6 +1427,206 @@ const char *firebirdconnection::getColumnListQuery(const char *db,
 
 	return columnlistquery.getString();
 }
+
+
+
+const char *firebirdconnection::getPrimaryKeysListQuery(const char *db,
+						const char *schema,
+						const char *table) {
+
+	primarykeyslistquery.clear();
+	primarykeyslistquery.append(
+		"select "
+		"	'' as table_cat, "
+		"	'' as table_schem, "
+		"	trim(rc.rdb$relation_name) as table_name, "
+		"	trim(isg.rdb$field_name) as column_name, "
+		"	isg.rdb$field_position+1 as key_seq, "
+		"	trim(rc.rdb$constraint_name) as pk_name, "
+		"	null "
+		"from "
+		"	rdb$relation_constraints rc, "
+		"	rdb$index_segments isg "
+		"where "
+		"	rc.rdb$constraint_type='PRIMARY KEY' "
+		"	and "
+		"	rc.rdb$index_name=isg.rdb$index_name ");
+	if (!charstring::isNullOrEmpty(table)) {
+		primarykeyslistquery.append(
+			"	and "
+			"	trim(rc.rdb$relation_name) like '");
+		primarykeyslistquery.append(table);
+		primarykeyslistquery.append("' ");
+	}
+	primarykeyslistquery.append(
+		"order by "
+		"	rc.rdb$relation_name, "
+		"	isg.rdb$field_position");
+	return primarykeyslistquery.getString();
+}
+
+const char *firebirdconnection::getKeyAndIndexListQuery(const char *db,
+						const char *schema,
+						const char *table) {
+
+	keyandindexlistquery.clear();
+	keyandindexlistquery.append(
+		"select "
+		"	'' as table_cat, "
+		"	'' as table_schem, "
+		"	trim(i.rdb$relation_name) as table_name, "
+		"	case i.rdb$unique_flag "
+		"		when 1 then 0 "
+		"		else 1 "
+		"	end as non_unique, "
+		"	'' as index_qualifier, "
+		"	trim(i.rdb$index_name) as index_name, "
+		"	3 as type, "
+		"	isg.rdb$field_position+1 as ordinal_position, "
+		"	trim(isg.rdb$field_name) as column_name, "
+		"	case i.rdb$index_type "
+		"		when 1 then 'D' "
+		"		else 'A' "
+		"	end as asc_or_desc, "
+		"	i.rdb$statistics as cardinality, "
+		"	null as pages, "
+		"	null as filter_condition, "
+		"	null "
+		"from "
+		"	rdb$indices i, "
+		"	rdb$index_segments isg "
+		"where "
+		"	i.rdb$index_name=isg.rdb$index_name ");
+	if (!charstring::isNullOrEmpty(table)) {
+		keyandindexlistquery.append(
+			"	and "
+			"	trim(i.rdb$relation_name) like '");
+		keyandindexlistquery.append(table);
+		keyandindexlistquery.append("' ");
+	}
+	keyandindexlistquery.append(
+		"order by "
+		"	i.rdb$relation_name, "
+		"	i.rdb$index_name, "
+		"	isg.rdb$field_position");
+	return keyandindexlistquery.getString();
+}
+
+
+const char *firebirdconnection::getProcedureListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure) {
+
+	procedurelistquery.clear();
+	procedurelistquery.append(
+		"select "
+		"	'' as procedure_cat, "
+		"	rdb$owner_name as procedure_schem, "
+		"	rdb$procedure_name as procedure_name, "
+		"	0 as num_input_params, "
+		"	0 as num_output_params, "
+		"	0 as num_result_sets, "
+		"	rdb$description as remarks, "
+		"	'1' as procedure_type, "
+		"	null "
+		"from "
+		"	rdb$procedures ");
+	if (!charstring::isNullOrEmpty(schema) ||
+		!charstring::isNullOrEmpty(procedure)) {
+		procedurelistquery.append("where ");
+		bool	first=true;
+		if (!charstring::isNullOrEmpty(schema)) {
+			procedurelistquery.append(
+				"rdb$owner_name like '");
+			procedurelistquery.append(schema);
+			procedurelistquery.append("' ");
+			first=false;
+		}
+		if (!charstring::isNullOrEmpty(procedure)) {
+			if (!first) {
+				procedurelistquery.append("and ");
+			}
+			procedurelistquery.append(
+				"rdb$procedure_name like '");
+			procedurelistquery.append(procedure);
+			procedurelistquery.append("' ");
+		}
+	}
+	procedurelistquery.append(
+		"order by "
+		"	rdb$owner_name, "
+		"	rdb$procedure_name");
+	return procedurelistquery.getString();
+}
+
+
+const char *firebirdconnection::getProcedureParameterListQuery(
+					const char *db,
+					const char *schema,
+					const char *procedure) {
+
+	procedureparameterlistquery.clear();
+	procedureparameterlistquery.append(
+		"select "
+		"	'' as procedure_cat, "
+		"	'' as procedure_schem, "
+		"	trim(pp.rdb$procedure_name) as procedure_name, "
+		"	trim(pp.rdb$parameter_name) as column_name, "
+		"	case pp.rdb$parameter_type "
+		"		when 0 then 1 "
+		"		when 1 then 4 "
+		"		else 0 "
+		"	end as column_type, "
+		"	'' as data_type, "
+		"	case f.rdb$field_type "
+		"		when 7 then 'SMALLINT' "
+		"		when 8 then 'INTEGER' "
+		"		when 10 then 'FLOAT' "
+		"		when 12 then 'DATE' "
+		"		when 13 then 'TIME' "
+		"		when 14 then 'CHAR' "
+		"		when 16 then 'BIGINT' "
+		"		when 27 then 'DOUBLE PRECISION' "
+		"		when 35 then 'TIMESTAMP' "
+		"		when 37 then 'VARCHAR' "
+		"		when 261 then 'BLOB' "
+		"		else 'UNKNOWN' "
+		"	end as type_name, "
+		"	f.rdb$field_length as column_size, "
+		"	null as buffer_length, "
+		"	f.rdb$field_scale as decimal_digits, "
+		"	10 as num_prec_radix, "
+		"	1 as nullable, "
+		"	trim(pp.rdb$description) as remarks, "
+		"	pp.rdb$default_source as column_def, "
+		"	null as sql_data_type, "
+		"	null as sql_datetime_sub, "
+		"	f.rdb$character_length as char_octet_length, "
+		"	pp.rdb$parameter_number+1 as ordinal_position, "
+		"	'YES' as is_nullable, "
+		"	null "
+		"from "
+		"	rdb$procedure_parameters pp "
+		"left join "
+		"	rdb$fields f "
+		"on "
+		"	pp.rdb$field_source=f.rdb$field_name ");
+	if (!charstring::isNullOrEmpty(procedure)) {
+		procedureparameterlistquery.append(
+			"where "
+			"	trim(pp.rdb$procedure_name) like '");
+		procedureparameterlistquery.append(procedure);
+		procedureparameterlistquery.append("' ");
+	}
+	procedureparameterlistquery.append(
+		"order by "
+		"	pp.rdb$procedure_name, "
+		"	pp.rdb$parameter_type, "
+		"	pp.rdb$parameter_number");
+	return procedureparameterlistquery.getString();
+}
+
 
 const char *firebirdconnection::getBindFormat() {
 	return "?";

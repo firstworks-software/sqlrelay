@@ -51,15 +51,31 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
-		const char	*getProcedureListQuery(
+		const char	*getTypeInfoListQuery(
 						const char *db,
 						const char *schema,
-						const char *procedure);
+						const char *type);
 		const char	*getColumnListQuery(
 					const char *db,
 					const char *schema,
 					const char *table,
 					const char *column);
+		const char	*getPrimaryKeysListQuery(
+						const char *db,
+						const char *schema,
+						const char *table);
+		const char	*getKeyAndIndexListQuery(
+						const char *db,
+						const char *schema,
+						const char *table);
+		const char	*getProcedureListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure);
+		const char	*getProcedureParameterListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure);
 		bool		selectDatabase(const char *database);
 		const char	*getCurrentDatabaseQuery();
 		const char	*getIsolationLevelQuery();
@@ -113,6 +129,10 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 		stringbuffer	tablelistquery;
 		stringbuffer	procedurelistquery;
 		stringbuffer	columnlistquery;
+		stringbuffer	typeinfolistquery;
+		stringbuffer	primarykeyslistquery;
+		stringbuffer	keyandindexlistquery;
+		stringbuffer	procedureparameterlistquery;
 };
 
 class SQLRSERVER_DLLSPEC postgresqlcursor : public sqlrservercursor {
@@ -766,68 +786,608 @@ const char *postgresqlconnection::getTableListQuery(const char *db,
 	return tablelistquery.getString();
 }
 
-const char *postgresqlconnection::getProcedureListQuery(
-						const char *db,
-						const char *schema,
-						const char *procedure) {
 
-	procedurelistquery.clear();
-	procedurelistquery.append(
-		"select "
-		"	routine_catalog as procedure_cat, "
-		"	routine_schema as procedure_schem, "
-		"	routine_name as procedure_name, "
-		"	0 as num_input_params, "
-		"	0 as num_output_params, "
-		"	0 as num_result_sets, "
-		"	'' as remarks, "
-		"	case routine_type "
-		"		when 'PROCEDURE' then '1' "
-		"		when 'FUNCTION' then '2' "
-		"		else '0' "
-		"	end as procedure_type, "
-		"	null "
-		"from "
-		"	information_schema.routines ");
-	if (!charstring::isNullOrEmpty(db) ||
-		!charstring::isNullOrEmpty(schema) ||
-		!charstring::isNullOrEmpty(procedure)) {
-		procedurelistquery.append("where ");
-		bool	first=true;
-		if (!charstring::isNullOrEmpty(db)) {
-			procedurelistquery.append(
-				"routine_catalog like '");
-			procedurelistquery.append(db);
-			procedurelistquery.append("' ");
-			first=false;
+
+static const char	*pg_booltype=
+			"(select "
+			"	'BOOLEAN' as type_name, "
+			"	-7 as data_type, "
+			"	1 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'BOOLEAN' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*pg_int2type=
+			"(select "
+			"	'SMALLINT' as type_name, "
+			"	5 as data_type, "
+			"	5 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'SMALLINT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*pg_int4type=
+			"(select "
+			"	'INTEGER' as type_name, "
+			"	4 as data_type, "
+			"	10 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'INTEGER' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*pg_int8type=
+			"(select "
+			"	'BIGINT' as type_name, "
+			"	-5 as data_type, "
+			"	19 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'BIGINT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*pg_numerictype=
+			"(select "
+			"	'NUMERIC' as type_name, "
+			"	2 as data_type, "
+			"	1000 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'NUMERIC' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*pg_float4type=
+			"(select "
+			"	'REAL' as type_name, "
+			"	7 as data_type, "
+			"	7 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'REAL' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*pg_float8type=
+			"(select "
+			"	'DOUBLE PRECISION' as type_name, "
+			"	8 as data_type, "
+			"	15 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'DOUBLE PRECISION' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*pg_chartype=
+			"(select "
+			"	'CHAR' as type_name, "
+			"	1 as data_type, "
+			"	255 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'CHAR' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*pg_varchartype=
+			"(select "
+			"	'VARCHAR' as type_name, "
+			"	12 as data_type, "
+			"	255 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'VARCHAR' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*pg_texttype=
+			"(select "
+			"	'TEXT' as type_name, "
+			"	-1 as data_type, "
+			"	2147483647 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	1 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'TEXT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*pg_byteatype=
+			"(select "
+			"	'BYTEA' as type_name, "
+			"	-3 as data_type, "
+			"	255 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'BYTEA' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*pg_datetype=
+			"(select "
+			"	'DATE' as type_name, "
+			"	91 as data_type, "
+			"	10 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'DATE' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*pg_timetype=
+			"(select "
+			"	'TIME' as type_name, "
+			"	92 as data_type, "
+			"	8 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'TIME' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*pg_timestamptype=
+			"(select "
+			"	'TIMESTAMP' as type_name, "
+			"	93 as data_type, "
+			"	29 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'TIMESTAMP' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*pg_timestamptztype=
+			"(select "
+			"	'TIMESTAMP WITH TIME ZONE' as type_name, "
+			"	93 as data_type, "
+			"	35 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'TIMESTAMP WITH TIME ZONE' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*pg_intervaltype=
+			"(select "
+			"	'INTERVAL' as type_name, "
+			"	12 as data_type, "
+			"	49 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'INTERVAL' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*pg_uuidtype=
+			"(select "
+			"	'UUID' as type_name, "
+			"	1 as data_type, "
+			"	36 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'UUID' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*pg_jsontype=
+			"(select "
+			"	'JSON' as type_name, "
+			"	-1 as data_type, "
+			"	2147483647 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	1 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'JSON' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*pg_jsonbtype=
+			"(select "
+			"	'JSONB' as type_name, "
+			"	-1 as data_type, "
+			"	2147483647 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	1 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'JSONB' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*pg_xmltype=
+			"(select "
+			"	'XML' as type_name, "
+			"	-1 as data_type, "
+			"	2147483647 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	1 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'XML' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+const char *postgresqlconnection::getTypeInfoListQuery(const char *db,
+						const char *schema,
+						const char *type) {
+
+	if (!charstring::compare(type,"*")) {
+		if (!typeinfolistquery.getSize()) {
+			typeinfolistquery.append(pg_booltype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(pg_int2type);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(pg_int4type);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(pg_int8type);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(pg_numerictype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(pg_float4type);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(pg_float8type);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(pg_chartype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(pg_varchartype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(pg_texttype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(pg_byteatype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(pg_datetype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(pg_timetype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(pg_timestamptype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(pg_timestamptztype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(pg_intervaltype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(pg_uuidtype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(pg_jsontype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(pg_jsonbtype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(pg_xmltype);
 		}
-		if (!charstring::isNullOrEmpty(schema)) {
-			if (!first) {
-				procedurelistquery.append("and ");
-			}
-			procedurelistquery.append(
-				"routine_schema like '");
-			procedurelistquery.append(schema);
-			procedurelistquery.append("' ");
-			first=false;
-		}
-		if (!charstring::isNullOrEmpty(procedure)) {
-			if (!first) {
-				procedurelistquery.append("and ");
-			}
-			procedurelistquery.append(
-				"routine_name like '");
-			procedurelistquery.append(procedure);
-			procedurelistquery.append("' ");
-		}
+		return typeinfolistquery.getString();
+	} else if (!charstring::compareIgnoringCase(type,"boolean")) {
+		return pg_booltype;
+	} else if (!charstring::compareIgnoringCase(type,"bool")) {
+		return pg_booltype;
+	} else if (!charstring::compareIgnoringCase(type,"smallint")) {
+		return pg_int2type;
+	} else if (!charstring::compareIgnoringCase(type,"int2")) {
+		return pg_int2type;
+	} else if (!charstring::compareIgnoringCase(type,"integer")) {
+		return pg_int4type;
+	} else if (!charstring::compareIgnoringCase(type,"int")) {
+		return pg_int4type;
+	} else if (!charstring::compareIgnoringCase(type,"int4")) {
+		return pg_int4type;
+	} else if (!charstring::compareIgnoringCase(type,"bigint")) {
+		return pg_int8type;
+	} else if (!charstring::compareIgnoringCase(type,"int8")) {
+		return pg_int8type;
+	} else if (!charstring::compareIgnoringCase(type,"numeric")) {
+		return pg_numerictype;
+	} else if (!charstring::compareIgnoringCase(type,"decimal")) {
+		return pg_numerictype;
+	} else if (!charstring::compareIgnoringCase(type,"real")) {
+		return pg_float4type;
+	} else if (!charstring::compareIgnoringCase(type,"float4")) {
+		return pg_float4type;
+	} else if (!charstring::compareIgnoringCase(type,"double precision")) {
+		return pg_float8type;
+	} else if (!charstring::compareIgnoringCase(type,"float8")) {
+		return pg_float8type;
+	} else if (!charstring::compareIgnoringCase(type,"float")) {
+		return pg_float8type;
+	} else if (!charstring::compareIgnoringCase(type,"char")) {
+		return pg_chartype;
+	} else if (!charstring::compareIgnoringCase(type,"bpchar")) {
+		return pg_chartype;
+	} else if (!charstring::compareIgnoringCase(type,"character")) {
+		return pg_chartype;
+	} else if (!charstring::compareIgnoringCase(type,"varchar")) {
+		return pg_varchartype;
+	} else if (!charstring::compareIgnoringCase(type,"character varying")) {
+		return pg_varchartype;
+	} else if (!charstring::compareIgnoringCase(type,"text")) {
+		return pg_texttype;
+	} else if (!charstring::compareIgnoringCase(type,"bytea")) {
+		return pg_byteatype;
+	} else if (!charstring::compareIgnoringCase(type,"date")) {
+		return pg_datetype;
+	} else if (!charstring::compareIgnoringCase(type,"time")) {
+		return pg_timetype;
+	} else if (!charstring::compareIgnoringCase(type,"timestamp")) {
+		return pg_timestamptype;
+	} else if (!charstring::compareIgnoringCase(type,"timestamp without time zone")) {
+		return pg_timestamptype;
+	} else if (!charstring::compareIgnoringCase(type,"timestamp with time zone")) {
+		return pg_timestamptztype;
+	} else if (!charstring::compareIgnoringCase(type,"timestamptz")) {
+		return pg_timestamptztype;
+	} else if (!charstring::compareIgnoringCase(type,"interval")) {
+		return pg_intervaltype;
+	} else if (!charstring::compareIgnoringCase(type,"uuid")) {
+		return pg_uuidtype;
+	} else if (!charstring::compareIgnoringCase(type,"json")) {
+		return pg_jsontype;
+	} else if (!charstring::compareIgnoringCase(type,"jsonb")) {
+		return pg_jsonbtype;
+	} else if (!charstring::compareIgnoringCase(type,"xml")) {
+		return pg_xmltype;
 	}
-	procedurelistquery.append(
-		"order by "
-		"	routine_catalog, "
-		"	routine_schema, "
-		"	routine_name");
-	return procedurelistquery.getString();
+	return NULL;
 }
+
+
 
 const char *postgresqlconnection::getColumnListQuery(const char *db,
 					const char *schema,
@@ -967,6 +1527,273 @@ const char *postgresqlconnection::getColumnListQuery(const char *db,
 
 	return columnlistquery.getString();
 }
+
+
+
+const char *postgresqlconnection::getPrimaryKeysListQuery(const char *db,
+					const char *schema,
+					const char *table) {
+
+	primarykeyslistquery.clear();
+	primarykeyslistquery.append(
+		"select "
+		"	tc.table_catalog as table_cat, "
+		"	tc.table_schema as table_schem, "
+		"	tc.table_name, "
+		"	ku.column_name, "
+		"	ku.ordinal_position as key_seq, "
+		"	tc.constraint_name as pk_name, "
+		"	null "
+		"from "
+		"	information_schema.table_constraints tc, "
+		"	information_schema.key_column_usage ku "
+		"where "
+		"	tc.constraint_type='PRIMARY KEY' "
+		"	and "
+		"	tc.constraint_name=ku.constraint_name "
+		"	and "
+		"	tc.table_schema=ku.table_schema "
+		"	and "
+		"	tc.table_name=ku.table_name ");
+	if (!charstring::isNullOrEmpty(db)) {
+		primarykeyslistquery.append(
+			"	and "
+			"	tc.table_catalog like '");
+		primarykeyslistquery.append(db);
+		primarykeyslistquery.append("' ");
+	}
+	if (!charstring::isNullOrEmpty(schema)) {
+		primarykeyslistquery.append(
+			"	and "
+			"	tc.table_schema like '");
+		primarykeyslistquery.append(schema);
+		primarykeyslistquery.append("' ");
+	}
+	if (!charstring::isNullOrEmpty(table)) {
+		primarykeyslistquery.append(
+			"	and "
+			"	tc.table_name like '");
+		primarykeyslistquery.append(table);
+		primarykeyslistquery.append("' ");
+	}
+	primarykeyslistquery.append(
+		"order by "
+		"	tc.table_name, "
+		"	ku.ordinal_position");
+	return primarykeyslistquery.getString();
+}
+
+const char *postgresqlconnection::getKeyAndIndexListQuery(const char *db,
+					const char *schema,
+					const char *table) {
+
+	keyandindexlistquery.clear();
+	keyandindexlistquery.append(
+		"select "
+		"	current_database() as table_cat, "
+		"	n.nspname as table_schem, "
+		"	t.relname as table_name, "
+		"	case "
+		"		when ix.indisunique then 0 "
+		"		else 1 "
+		"	end as non_unique, "
+		"	n.nspname as index_qualifier, "
+		"	i.relname as index_name, "
+		"	3 as type, "
+		"	u.ord as ordinal_position, "
+		"	att.attname as column_name, "
+		"	case o.option & 1 "
+		"		when 1 then 'D' "
+		"		else 'A' "
+		"	end as asc_or_desc, "
+		"	ix.indnatts as cardinality, "
+		"	null as pages, "
+		"	null as filter_condition, "
+		"	null "
+		"from "
+		"	pg_catalog.pg_class t, "
+		"	pg_catalog.pg_class i, "
+		"	pg_catalog.pg_index ix, "
+		"	pg_catalog.pg_namespace n, "
+		"	pg_catalog.pg_am a, "
+		"	pg_catalog.pg_attribute att, "
+		"	lateral unnest(ix.indkey) "
+		"		with ordinality as u(attnum, ord) "
+		"	left join lateral ("
+		"		select unnest(ix.indoption) as option"
+		"	) o on true "
+		"where "
+		"	t.oid=ix.indrelid "
+		"	and "
+		"	i.oid=ix.indexrelid "
+		"	and "
+		"	t.relnamespace=n.oid "
+		"	and "
+		"	i.relam=a.oid "
+		"	and "
+		"	att.attrelid=t.oid "
+		"	and "
+		"	att.attnum=u.attnum ");
+	if (!charstring::isNullOrEmpty(schema)) {
+		keyandindexlistquery.append(
+			"	and "
+			"	n.nspname like '");
+		keyandindexlistquery.append(schema);
+		keyandindexlistquery.append("' ");
+	} else {
+		keyandindexlistquery.append(
+			"	and "
+			"	n.nspname not in "
+			"('pg_catalog','information_schema') ");
+	}
+	if (!charstring::isNullOrEmpty(table)) {
+		keyandindexlistquery.append(
+			"	and "
+			"	t.relname like '");
+		keyandindexlistquery.append(table);
+		keyandindexlistquery.append("' ");
+	}
+	keyandindexlistquery.append(
+		"order by "
+		"	t.relname, "
+		"	i.relname, "
+		"	u.ord");
+	return keyandindexlistquery.getString();
+}
+
+
+const char *postgresqlconnection::getProcedureListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure) {
+
+	procedurelistquery.clear();
+	procedurelistquery.append(
+		"select "
+		"	routine_catalog as procedure_cat, "
+		"	routine_schema as procedure_schem, "
+		"	routine_name as procedure_name, "
+		"	0 as num_input_params, "
+		"	0 as num_output_params, "
+		"	0 as num_result_sets, "
+		"	'' as remarks, "
+		"	case routine_type "
+		"		when 'PROCEDURE' then '1' "
+		"		when 'FUNCTION' then '2' "
+		"		else '0' "
+		"	end as procedure_type, "
+		"	null "
+		"from "
+		"	information_schema.routines ");
+	if (!charstring::isNullOrEmpty(db) ||
+		!charstring::isNullOrEmpty(schema) ||
+		!charstring::isNullOrEmpty(procedure)) {
+		procedurelistquery.append("where ");
+		bool	first=true;
+		if (!charstring::isNullOrEmpty(db)) {
+			procedurelistquery.append(
+				"routine_catalog like '");
+			procedurelistquery.append(db);
+			procedurelistquery.append("' ");
+			first=false;
+		}
+		if (!charstring::isNullOrEmpty(schema)) {
+			if (!first) {
+				procedurelistquery.append("and ");
+			}
+			procedurelistquery.append(
+				"routine_schema like '");
+			procedurelistquery.append(schema);
+			procedurelistquery.append("' ");
+			first=false;
+		}
+		if (!charstring::isNullOrEmpty(procedure)) {
+			if (!first) {
+				procedurelistquery.append("and ");
+			}
+			procedurelistquery.append(
+				"routine_name like '");
+			procedurelistquery.append(procedure);
+			procedurelistquery.append("' ");
+		}
+	}
+	procedurelistquery.append(
+		"order by "
+		"	routine_catalog, "
+		"	routine_schema, "
+		"	routine_name");
+	return procedurelistquery.getString();
+}
+
+
+const char *postgresqlconnection::getProcedureParameterListQuery(
+					const char *db,
+					const char *schema,
+					const char *procedure) {
+
+	procedureparameterlistquery.clear();
+	procedureparameterlistquery.append(
+		"select "
+		"	p.specific_catalog as procedure_cat, "
+		"	p.specific_schema as procedure_schem, "
+		"	r.routine_name as procedure_name, "
+		"	p.parameter_name as column_name, "
+		"	case p.parameter_mode "
+		"		when 'IN' then 1 "
+		"		when 'INOUT' then 2 "
+		"		when 'OUT' then 4 "
+		"		else 5 "
+		"	end as column_type, "
+		"	'' as data_type, "
+		"	p.data_type as type_name, "
+		"	p.character_maximum_length as column_size, "
+		"	null as buffer_length, "
+		"	p.numeric_scale as decimal_digits, "
+		"	p.numeric_precision_radix as num_prec_radix, "
+		"	1 as nullable, "
+		"	'' as remarks, "
+		"	p.parameter_default as column_def, "
+		"	null as sql_data_type, "
+		"	null as sql_datetime_sub, "
+		"	p.character_octet_length as char_octet_length, "
+		"	p.ordinal_position, "
+		"	'YES' as is_nullable, "
+		"	null "
+		"from "
+		"	information_schema.parameters p, "
+		"	information_schema.routines r "
+		"where "
+		"	p.specific_name=r.specific_name "
+		"	and "
+		"	p.specific_schema=r.specific_schema ");
+	if (!charstring::isNullOrEmpty(db)) {
+		procedureparameterlistquery.append(
+			"	and "
+			"	p.specific_catalog like '");
+		procedureparameterlistquery.append(db);
+		procedureparameterlistquery.append("' ");
+	}
+	if (!charstring::isNullOrEmpty(schema)) {
+		procedureparameterlistquery.append(
+			"	and "
+			"	p.specific_schema like '");
+		procedureparameterlistquery.append(schema);
+		procedureparameterlistquery.append("' ");
+	}
+	if (!charstring::isNullOrEmpty(procedure)) {
+		procedureparameterlistquery.append(
+			"	and "
+			"	r.routine_name like '");
+		procedureparameterlistquery.append(procedure);
+		procedureparameterlistquery.append("' ");
+	}
+	procedureparameterlistquery.append(
+		"order by "
+		"	r.routine_name, "
+		"	p.ordinal_position");
+	return procedureparameterlistquery.getString();
+}
+
 
 bool postgresqlconnection::selectDatabase(const char *database) {
 

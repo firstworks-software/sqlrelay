@@ -1683,8 +1683,11 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnName(10),"index_type");
 	assertEquals(cur->getColumnName(11),"comment");
 	assertEquals(cur->getColumnName(12),"index_comment");
-	// FIXME: the oracle modules doesn't currently support this
-	assertEquals(cur->rowCount(),0);
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,"table"),"TESTTABLE");
+	assertEquals(cur->getField(0,"seq_in_index"),"1");
+	assertEquals(cur->getField(0,"column_name"),"COL1");
+	assertTrue(!charstring::isNullOrEmpty(cur->getField(0,"key_name")));
 	cur->sendQuery("drop table testtable");
 	stdoutput.printf("\n");
 
@@ -1710,8 +1713,14 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnName(10),"index_type");
 	assertEquals(cur->getColumnName(11),"comment");
 	assertEquals(cur->getColumnName(12),"index_comment");
-	// FIXME: the oracle modules doesn't currently support this
-	assertEquals(cur->rowCount(),0);
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,"table"),"TESTTABLE");
+	assertEquals(cur->getField(0,"non_unique"),"0");
+	assertEquals(cur->getField(0,"seq_in_index"),"1");
+	assertEquals(cur->getField(0,"column_name"),"COL1");
+	assertEquals(cur->getField(0,"collation"),"A");
+	assertEquals(cur->getField(0,"index_type"),"3");
+	assertTrue(!charstring::isNullOrEmpty(cur->getField(0,"key_name")));
 	cur->sendQuery("drop table testtable");
 	stdoutput.printf("\n");
 
@@ -1781,8 +1790,23 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnName(2),"data_type");
 	assertEquals(cur->getColumnName(3),"character_maximum_length");
 	assertEquals(cur->getColumnName(4),"ordinal_position");
-	// FIXME: the oracle modules doesn't currently support this
-	assertEquals(cur->rowCount(),0);
+	assertEquals(cur->rowCount(),4);
+	assertEquals(cur->getField(0,"parameter_name"),"IN1");
+	assertEquals(cur->getField(0,"parameter_mode"),"1");
+	assertEquals(cur->getField(0,"data_type"),"NUMBER");
+	assertEquals(cur->getField(0,"ordinal_position"),"1");
+	assertEquals(cur->getField(1,"parameter_name"),"IN2");
+	assertEquals(cur->getField(1,"parameter_mode"),"1");
+	assertEquals(cur->getField(1,"data_type"),"CHAR");
+	assertEquals(cur->getField(1,"ordinal_position"),"2");
+	assertEquals(cur->getField(2,"parameter_name"),"IN3");
+	assertEquals(cur->getField(2,"parameter_mode"),"1");
+	assertEquals(cur->getField(2,"data_type"),"VARCHAR2");
+	assertEquals(cur->getField(2,"ordinal_position"),"3");
+	assertEquals(cur->getField(3,"parameter_name"),"IN4");
+	assertEquals(cur->getField(3,"parameter_mode"),"1");
+	assertEquals(cur->getField(3,"data_type"),"DATE");
+	assertEquals(cur->getField(3,"ordinal_position"),"4");
 	cur->sendQuery("drop procedure testproc1");
 	cur->sendQuery("drop procedure testproc2");
 	cur->sendQuery("drop procedure testproc3");

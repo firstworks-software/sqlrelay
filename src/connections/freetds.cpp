@@ -268,33 +268,22 @@ class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 						const char *db,
 						const char *schema,
 						const char *tabletypes);
-		const char	*getProcedureListQuery(
-						const char *db,
-						const char *schema,
-						const char *procedure);
-		const char	*getProcedureListQuerySybase(
-						const char *db,
-						const char *schema,
-						const char *procedure);
-		const char	*getProcedureListQuerySqlServer(
-						const char *db,
-						const char *schema,
-						const char *procedure);
-		const char	*getTableListQuery(
-						const char *db,
+		const char	*getTableListQuery(const char *db,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
-		const char	*getTableListQuerySybase(
-						const char *db,
+		const char	*getTableListQuerySybase(const char *db,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
-		const char	*getTableListQuerySqlServer(
-						const char *db,
+		const char	*getTableListQuerySqlServer(const char *db,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
+		const char	*getTypeInfoListQuery(
+						const char *db,
+						const char *schema,
+						const char *type);
 		const char	*getColumnListQuery(
 						const char *db,
 						const char *schema,
@@ -310,6 +299,54 @@ class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 						const char *schema,
 						const char *table,
 						const char *column);
+		const char	*getPrimaryKeysListQuery(
+						const char *db,
+						const char *schema,
+						const char *table);
+		const char	*getPrimaryKeysListQuerySybase(
+						const char *db,
+						const char *schema,
+						const char *table);
+		const char	*getPrimaryKeysListQuerySqlServer(
+						const char *db,
+						const char *schema,
+						const char *table);
+		const char	*getKeyAndIndexListQuerySybase(
+						const char *db,
+						const char *schema,
+						const char *table);
+		const char	*getKeyAndIndexListQuerySqlServer(
+						const char *db,
+						const char *schema,
+						const char *table);
+		const char	*getKeyAndIndexListQuery(
+						const char *db,
+						const char *schema,
+						const char *table);
+		const char	*getProcedureListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure);
+		const char	*getProcedureListQuerySybase(
+						const char *db,
+						const char *schema,
+						const char *procedure);
+		const char	*getProcedureListQuerySqlServer(
+						const char *db,
+						const char *schema,
+						const char *procedure);
+		const char	*getProcedureParameterListQuery(
+						const char *db,
+						const char *schema,
+						const char *procedure);
+		const char	*getProcedureParameterListQuerySybase(
+						const char *db,
+						const char *schema,
+						const char *procedure);
+		const char	*getProcedureParameterListQuerySqlServer(
+						const char *db,
+						const char *schema,
+						const char *procedure);
 		const char	*selectDatabaseQuery();
 		const char	*getCurrentDatabaseQuery();
 		const char	*getLastInsertIdQuery();
@@ -373,6 +410,10 @@ class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 		stringbuffer	tablelistquery;
 		stringbuffer	procedurelistquery;
 		stringbuffer	columnlistquery;
+		stringbuffer	typeinfolistquery;
+		stringbuffer	primarykeyslistquery;
+		stringbuffer	keyandindexlistquery;
+		stringbuffer	procedureparameterlistquery;
 };
 
 stringbuffer	freetdsconnection::errorstring;
@@ -1049,121 +1090,774 @@ const char *freetdsconnection::getTableListQuerySqlServer(const char *db,
 	return tablelistquery.getString();
 }
 
-const char *freetdsconnection::getProcedureListQuery(
-					const char *db,
-					const char *schema,
-					const char *procedure) {
-	return (sybasedb)?
-		getProcedureListQuerySybase(db,schema,procedure):
-		getProcedureListQuerySqlServer(db,schema,procedure);
+
+
+static const char	*ftds_bittype=
+			"(select "
+			"	'BIT' as type_name, "
+			"	-7 as data_type, "
+			"	1 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'BIT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*ftds_tinyinttype=
+			"(select "
+			"	'TINYINT' as type_name, "
+			"	-6 as data_type, "
+			"	3 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	1 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'TINYINT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*ftds_biginttype=
+			"(select "
+			"	'BIGINT' as type_name, "
+			"	-5 as data_type, "
+			"	19 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'BIGINT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*ftds_imagetype=
+			"(select "
+			"	'IMAGE' as type_name, "
+			"	-4 as data_type, "
+			"	2147483647 as column_size, "
+			"	'0x' as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	0 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'IMAGE' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*ftds_varbinarytype=
+			"(select "
+			"	'VARBINARY' as type_name, "
+			"	-3 as data_type, "
+			"	8000 as column_size, "
+			"	'0x' as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'VARBINARY' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*ftds_binarytype=
+			"(select "
+			"	'BINARY' as type_name, "
+			"	-2 as data_type, "
+			"	8000 as column_size, "
+			"	'0x' as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'BINARY' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*ftds_ntexttype=
+			"(select "
+			"	'NTEXT' as type_name, "
+			"	-1 as data_type, "
+			"	1073741823 as column_size, "
+			"	'N''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	1 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'NTEXT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*ftds_texttype=
+			"(select "
+			"	'TEXT' as type_name, "
+			"	-1 as data_type, "
+			"	2147483647 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	1 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'TEXT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*ftds_chartype=
+			"(select "
+			"	'CHAR' as type_name, "
+			"	1 as data_type, "
+			"	8000 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'CHAR' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*ftds_numerictype=
+			"(select "
+			"	'NUMERIC' as type_name, "
+			"	2 as data_type, "
+			"	38 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'NUMERIC' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*ftds_decimaltype=
+			"(select "
+			"	'DECIMAL' as type_name, "
+			"	3 as data_type, "
+			"	38 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'DECIMAL' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*ftds_inttype=
+			"(select "
+			"	'INT' as type_name, "
+			"	4 as data_type, "
+			"	10 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'INT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*ftds_smallinttype=
+			"(select "
+			"	'SMALLINT' as type_name, "
+			"	5 as data_type, "
+			"	5 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'SMALLINT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*ftds_floattype=
+			"(select "
+			"	'FLOAT' as type_name, "
+			"	6 as data_type, "
+			"	15 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'FLOAT' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*ftds_realtype=
+			"(select "
+			"	'REAL' as type_name, "
+			"	7 as data_type, "
+			"	7 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'REAL' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*ftds_doubleprecisiontype=
+			"(select "
+			"	'DOUBLE PRECISION' as type_name, "
+			"	8 as data_type, "
+			"	15 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'DOUBLE PRECISION' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*ftds_varchartype=
+			"(select "
+			"	'VARCHAR' as type_name, "
+			"	12 as data_type, "
+			"	8000 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'VARCHAR' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*ftds_nchartype=
+			"(select "
+			"	'NCHAR' as type_name, "
+			"	-15 as data_type, "
+			"	4000 as column_size, "
+			"	'N''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'NCHAR' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*ftds_nvarchartype=
+			"(select "
+			"	'NVARCHAR' as type_name, "
+			"	-9 as data_type, "
+			"	4000 as column_size, "
+			"	'N''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'NVARCHAR' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*ftds_datetype=
+			"(select "
+			"	'DATE' as type_name, "
+			"	91 as data_type, "
+			"	10 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'DATE' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*ftds_timetype=
+			"(select "
+			"	'TIME' as type_name, "
+			"	92 as data_type, "
+			"	16 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'TIME' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*ftds_datetimetype=
+			"(select "
+			"	'DATETIME' as type_name, "
+			"	93 as data_type, "
+			"	23 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'DATETIME' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*ftds_smalldatetimetype=
+			"(select "
+			"	'SMALLDATETIME' as type_name, "
+			"	93 as data_type, "
+			"	16 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'SMALLDATETIME' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*ftds_moneytype=
+			"(select "
+			"	'MONEY' as type_name, "
+			"	2 as data_type, "
+			"	19 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'MONEY' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*ftds_smallmoneytype=
+			"(select "
+			"	'SMALLMONEY' as type_name, "
+			"	2 as data_type, "
+			"	10 as column_size, "
+			"	null as literal_prefix, "
+			"	null as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	1 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'SMALLMONEY' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*ftds_uidtype=
+			"(select "
+			"	'UNIQUEIDENTIFIER' as type_name, "
+			"	1 as data_type, "
+			"	36 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	0 as case_sensitive, "
+			"	3 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'UNIQUEIDENTIFIER' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+static const char	*ftds_xmltype=
+			"(select "
+			"	'XML' as type_name, "
+			"	-1 as data_type, "
+			"	2147483647 as column_size, "
+			"	'''''' as literal_prefix, "
+			"	'''''' as literal_suffix, "
+			"	null as create_params, "
+			"	1 as nullable, "
+			"	1 as case_sensitive, "
+			"	1 as searchable, "
+			"	0 as unsigned_attribute, "
+			"	0 as fixed_prec_scale, "
+			"	0 as auto_unique_value, "
+			"	'XML' as local_type_name, "
+			"	0 as minimum_scale, "
+			"	0 as maximum_scale, "
+			"	null as sql_data_type, "
+			"	null as sql_datetime_sub, "
+			"	10 as num_prec_radix, "
+			"	null as interval_precision, "
+			"	NULL "
+			") ";
+
+const char *freetdsconnection::getTypeInfoListQuery(const char *db,
+						const char *schema,
+						const char *type) {
+
+	if (!charstring::compare(type,"*")) {
+		if (!typeinfolistquery.getSize()) {
+			typeinfolistquery.append(ftds_bittype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ftds_tinyinttype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ftds_biginttype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ftds_imagetype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ftds_varbinarytype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ftds_binarytype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ftds_ntexttype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ftds_texttype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ftds_chartype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ftds_numerictype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ftds_decimaltype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ftds_inttype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ftds_smallinttype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ftds_floattype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ftds_realtype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ftds_varchartype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ftds_nchartype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ftds_nvarchartype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ftds_datetype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ftds_timetype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ftds_datetimetype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ftds_smalldatetimetype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ftds_moneytype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ftds_smallmoneytype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ftds_uidtype);
+			typeinfolistquery.append("union ");
+			typeinfolistquery.append(ftds_xmltype);
+		}
+		return typeinfolistquery.getString();
+	} else if (!charstring::compareIgnoringCase(type,"bit")) {
+		return ftds_bittype;
+	} else if (!charstring::compareIgnoringCase(type,"tinyint")) {
+		return ftds_tinyinttype;
+	} else if (!charstring::compareIgnoringCase(type,"bigint")) {
+		return ftds_biginttype;
+	} else if (!charstring::compareIgnoringCase(type,"image")) {
+		return ftds_imagetype;
+	} else if (!charstring::compareIgnoringCase(type,"varbinary")) {
+		return ftds_varbinarytype;
+	} else if (!charstring::compareIgnoringCase(type,"binary")) {
+		return ftds_binarytype;
+	} else if (!charstring::compareIgnoringCase(type,"ntext")) {
+		return ftds_ntexttype;
+	} else if (!charstring::compareIgnoringCase(type,"text")) {
+		return ftds_texttype;
+	} else if (!charstring::compareIgnoringCase(type,"char")) {
+		return ftds_chartype;
+	} else if (!charstring::compareIgnoringCase(type,"numeric")) {
+		return ftds_numerictype;
+	} else if (!charstring::compareIgnoringCase(type,"decimal")) {
+		return ftds_decimaltype;
+	} else if (!charstring::compareIgnoringCase(type,"int")) {
+		return ftds_inttype;
+	} else if (!charstring::compareIgnoringCase(type,"integer")) {
+		return ftds_inttype;
+	} else if (!charstring::compareIgnoringCase(type,"smallint")) {
+		return ftds_smallinttype;
+	} else if (!charstring::compareIgnoringCase(type,"float")) {
+		return ftds_floattype;
+	} else if (!charstring::compareIgnoringCase(type,"real")) {
+		return ftds_realtype;
+	} else if (!charstring::compareIgnoringCase(type,"varchar")) {
+		return ftds_varchartype;
+	} else if (!charstring::compareIgnoringCase(type,"nchar")) {
+		return ftds_nchartype;
+	} else if (!charstring::compareIgnoringCase(type,"nvarchar")) {
+		return ftds_nvarchartype;
+	} else if (!charstring::compareIgnoringCase(type,"date")) {
+		return ftds_datetype;
+	} else if (!charstring::compareIgnoringCase(type,"time")) {
+		return ftds_timetype;
+	} else if (!charstring::compareIgnoringCase(type,"datetime")) {
+		return ftds_datetimetype;
+	} else if (!charstring::compareIgnoringCase(type,"smalldatetime")) {
+		return ftds_smalldatetimetype;
+	} else if (!charstring::compareIgnoringCase(type,"money")) {
+		return ftds_moneytype;
+	} else if (!charstring::compareIgnoringCase(type,"smallmoney")) {
+		return ftds_smallmoneytype;
+	} else if (!charstring::compareIgnoringCase(type,"uniqueidentifier")) {
+		return ftds_uidtype;
+	} else if (!charstring::compareIgnoringCase(type,"xml")) {
+		return ftds_xmltype;
+	}
+	return NULL;
 }
 
-const char *freetdsconnection::getProcedureListQuerySybase(
-					const char *db,
-					const char *schema,
-					const char *procedure) {
 
-	procedurelistquery.clear();
-	procedurelistquery.append(
-		"select "
-		"	'' as procedure_cat, "
-		"	loginame as procedure_schem, "
-		"	name as procedure_name, "
-		"	0 as num_input_params, "
-		"	0 as num_output_params, "
-		"	0 as num_result_sets, "
-		"	'' as remarks, "
-		"	case type "
-		"		when 'P' then '1' "
-		"		when 'SF' then '2' "
-		"		else '0' "
-		"	end as procedure_type, "
-		"	null "
-		"from "
-		"	sysobjects "
-		"where "
-		"	type in ('P','SF') ");
-	if (!charstring::isNullOrEmpty(schema)) {
-		procedurelistquery.append(
-			"and loginame like '");
-		procedurelistquery.append(schema);
-		procedurelistquery.append("' ");
-	}
-	if (!charstring::isNullOrEmpty(procedure)) {
-		procedurelistquery.append(
-			"and name like '");
-		procedurelistquery.append(procedure);
-		procedurelistquery.append("' ");
-	}
-	procedurelistquery.append(
-		"order by "
-		"	loginame, "
-		"	name");
-	return procedurelistquery.getString();
-}
-
-const char *freetdsconnection::getProcedureListQuerySqlServer(
-					const char *db,
-					const char *schema,
-					const char *procedure) {
-
-	procedurelistquery.clear();
-	procedurelistquery.append(
-		"select "
-		"	routine_catalog as procedure_cat, "
-		"	routine_schema as procedure_schem, "
-		"	routine_name as procedure_name, "
-		"	0 as num_input_params, "
-		"	0 as num_output_params, "
-		"	0 as num_result_sets, "
-		"	'' as remarks, "
-		"	case routine_type "
-		"		when 'PROCEDURE' then '1' "
-		"		when 'FUNCTION' then '2' "
-		"		else '0' "
-		"	end as procedure_type, "
-		"	null "
-		"from "
-		"	information_schema.routines ");
-	if (!charstring::isNullOrEmpty(db) ||
-		!charstring::isNullOrEmpty(schema) ||
-		!charstring::isNullOrEmpty(procedure)) {
-		procedurelistquery.append("where ");
-		bool	first=true;
-		if (!charstring::isNullOrEmpty(db)) {
-			procedurelistquery.append(
-				"routine_catalog like '");
-			procedurelistquery.append(db);
-			procedurelistquery.append("' ");
-			first=false;
-		}
-		if (!charstring::isNullOrEmpty(schema)) {
-			if (!first) {
-				procedurelistquery.append("and ");
-			}
-			procedurelistquery.append(
-				"routine_schema like '");
-			procedurelistquery.append(schema);
-			procedurelistquery.append("' ");
-			first=false;
-		}
-		if (!charstring::isNullOrEmpty(procedure)) {
-			if (!first) {
-				procedurelistquery.append("and ");
-			}
-			procedurelistquery.append(
-				"routine_name like '");
-			procedurelistquery.append(procedure);
-			procedurelistquery.append("' ");
-		}
-	}
-	procedurelistquery.append(
-		"order by "
-		"	routine_catalog, "
-		"	routine_schema, "
-		"	routine_name");
-	return procedurelistquery.getString();
-}
 
 const char *freetdsconnection::getColumnListQuery(const char *db,
 					const char *schema,
@@ -1477,6 +2171,539 @@ const char *freetdsconnection::getColumnListQuerySqlServer(const char *db,
 
 	return columnlistquery.getString();
 }
+
+
+
+const char *freetdsconnection::getPrimaryKeysListQuery(const char *db,
+					const char *schema,
+					const char *table) {
+	return (sybasedb)?
+		getPrimaryKeysListQuerySybase(db,schema,table):
+		getPrimaryKeysListQuerySqlServer(db,schema,table);
+}
+
+const char *freetdsconnection::getPrimaryKeysListQuerySybase(
+					const char *db,
+					const char *schema,
+					const char *table) {
+
+	primarykeyslistquery.clear();
+	primarykeyslistquery.append(
+		"select "
+		"	'' as table_cat, "
+		"	user_name(o.uid) as table_schem, "
+		"	o.name as table_name, "
+		"	index_col(o.name,i.indid,c.colid) as column_name, "
+		"	c.colid as key_seq, "
+		"	i.name as pk_name, "
+		"	null "
+		"from "
+		"	sysobjects o, "
+		"	sysindexes i, "
+		"	syscolumns c "
+		"where "
+		"	i.status & 2048 = 2048 "
+		"	and "
+		"	o.id=i.id "
+		"	and "
+		"	o.id=c.id "
+		"	and "
+		"	c.colid<=i.keycnt ");
+	if (!charstring::isNullOrEmpty(table)) {
+		primarykeyslistquery.append(
+			"	and "
+			"	o.name like '");
+		primarykeyslistquery.append(table);
+		primarykeyslistquery.append("' ");
+	}
+	if (!charstring::isNullOrEmpty(schema)) {
+		primarykeyslistquery.append(
+			"	and "
+			"	user_name(o.uid) like '");
+		primarykeyslistquery.append(schema);
+		primarykeyslistquery.append("' ");
+	}
+	primarykeyslistquery.append(
+		"order by "
+		"	o.name, "
+		"	c.colid");
+	return primarykeyslistquery.getString();
+}
+
+const char *freetdsconnection::getPrimaryKeysListQuerySqlServer(
+					const char *db,
+					const char *schema,
+					const char *table) {
+
+	primarykeyslistquery.clear();
+	primarykeyslistquery.append(
+		"select "
+		"	tc.table_catalog as table_cat, "
+		"	tc.table_schema as table_schem, "
+		"	tc.table_name, "
+		"	ku.column_name, "
+		"	ku.ordinal_position as key_seq, "
+		"	tc.constraint_name as pk_name, "
+		"	null "
+		"from "
+		"	information_schema.table_constraints tc, "
+		"	information_schema.key_column_usage ku "
+		"where "
+		"	tc.constraint_type='PRIMARY KEY' "
+		"	and "
+		"	tc.constraint_name=ku.constraint_name "
+		"	and "
+		"	tc.table_schema=ku.table_schema "
+		"	and "
+		"	tc.table_name=ku.table_name ");
+	if (!charstring::isNullOrEmpty(db)) {
+		primarykeyslistquery.append(
+			"	and "
+			"	tc.table_catalog like '");
+		primarykeyslistquery.append(db);
+		primarykeyslistquery.append("' ");
+	}
+	if (!charstring::isNullOrEmpty(schema)) {
+		primarykeyslistquery.append(
+			"	and "
+			"	tc.table_schema like '");
+		primarykeyslistquery.append(schema);
+		primarykeyslistquery.append("' ");
+	}
+	if (!charstring::isNullOrEmpty(table)) {
+		primarykeyslistquery.append(
+			"	and "
+			"	tc.table_name like '");
+		primarykeyslistquery.append(table);
+		primarykeyslistquery.append("' ");
+	}
+	primarykeyslistquery.append(
+		"order by "
+		"	tc.table_name, "
+		"	ku.ordinal_position");
+	return primarykeyslistquery.getString();
+}
+
+const char *freetdsconnection::getKeyAndIndexListQuery(const char *db,
+					const char *schema,
+					const char *table) {
+	return (sybasedb)?
+		getKeyAndIndexListQuerySybase(db,schema,table):
+		getKeyAndIndexListQuerySqlServer(db,schema,table);
+}
+
+const char *freetdsconnection::getKeyAndIndexListQuerySybase(
+					const char *db,
+					const char *schema,
+					const char *table) {
+
+	keyandindexlistquery.clear();
+	keyandindexlistquery.append(
+		"select "
+		"	'' as table_cat, "
+		"	user_name(o.uid) as table_schem, "
+		"	o.name as table_name, "
+		"	case "
+		"		when i.status & 2 = 2 then 0 "
+		"		else 1 "
+		"	end as non_unique, "
+		"	'' as index_qualifier, "
+		"	i.name as index_name, "
+		"	3 as type, "
+		"	c.colid as ordinal_position, "
+		"	index_col(o.name,i.indid,c.colid) as column_name, "
+		"	'A' as asc_or_desc, "
+		"	null as cardinality, "
+		"	null as pages, "
+		"	null as filter_condition, "
+		"	null "
+		"from "
+		"	sysobjects o, "
+		"	sysindexes i, "
+		"	syscolumns c "
+		"where "
+		"	o.type='U' "
+		"	and "
+		"	o.id=i.id "
+		"	and "
+		"	i.indid>0 "
+		"	and "
+		"	i.indid<255 "
+		"	and "
+		"	o.id=c.id "
+		"	and "
+		"	c.colid<=i.keycnt ");
+	if (!charstring::isNullOrEmpty(table)) {
+		keyandindexlistquery.append(
+			"	and "
+			"	o.name like '");
+		keyandindexlistquery.append(table);
+		keyandindexlistquery.append("' ");
+	}
+	if (!charstring::isNullOrEmpty(schema)) {
+		keyandindexlistquery.append(
+			"	and "
+			"	user_name(o.uid) like '");
+		keyandindexlistquery.append(schema);
+		keyandindexlistquery.append("' ");
+	}
+	keyandindexlistquery.append(
+		"order by "
+		"	o.name, "
+		"	i.name, "
+		"	c.colid");
+	return keyandindexlistquery.getString();
+}
+
+const char *freetdsconnection::getKeyAndIndexListQuerySqlServer(
+					const char *db,
+					const char *schema,
+					const char *table) {
+
+	keyandindexlistquery.clear();
+	keyandindexlistquery.append(
+		"select "
+		"	db_name() as table_cat, "
+		"	s.name as table_schem, "
+		"	t.name as table_name, "
+		"	case "
+		"		when i.is_unique=1 then 0 "
+		"		else 1 "
+		"	end as non_unique, "
+		"	s.name as index_qualifier, "
+		"	i.name as index_name, "
+		"	case i.type "
+		"		when 1 then 1 "
+		"		when 2 then 3 "
+		"		else 0 "
+		"	end as type, "
+		"	ic.key_ordinal as ordinal_position, "
+		"	c.name as column_name, "
+		"	case ic.is_descending_key "
+		"		when 1 then 'D' "
+		"		else 'A' "
+		"	end as asc_or_desc, "
+		"	null as cardinality, "
+		"	null as pages, "
+		"	case "
+		"		when i.has_filter=1 "
+		"			then i.filter_definition "
+		"		else null "
+		"	end as filter_condition, "
+		"	null "
+		"from "
+		"	sys.indexes i, "
+		"	sys.index_columns ic, "
+		"	sys.columns c, "
+		"	sys.tables t, "
+		"	sys.schemas s "
+		"where "
+		"	i.object_id=ic.object_id "
+		"	and "
+		"	i.index_id=ic.index_id "
+		"	and "
+		"	ic.object_id=c.object_id "
+		"	and "
+		"	ic.column_id=c.column_id "
+		"	and "
+		"	i.object_id=t.object_id "
+		"	and "
+		"	t.schema_id=s.schema_id "
+		"	and "
+		"	i.type>0 ");
+	if (!charstring::isNullOrEmpty(db)) {
+		keyandindexlistquery.append(
+			"	and "
+			"	db_name() like '");
+		keyandindexlistquery.append(db);
+		keyandindexlistquery.append("' ");
+	}
+	if (!charstring::isNullOrEmpty(schema)) {
+		keyandindexlistquery.append(
+			"	and "
+			"	s.name like '");
+		keyandindexlistquery.append(schema);
+		keyandindexlistquery.append("' ");
+	}
+	if (!charstring::isNullOrEmpty(table)) {
+		keyandindexlistquery.append(
+			"	and "
+			"	t.name like '");
+		keyandindexlistquery.append(table);
+		keyandindexlistquery.append("' ");
+	}
+	keyandindexlistquery.append(
+		"order by "
+		"	t.name, "
+		"	i.name, "
+		"	ic.key_ordinal");
+	return keyandindexlistquery.getString();
+}
+
+
+const char *freetdsconnection::getProcedureListQuery(
+					const char *db,
+					const char *schema,
+					const char *procedure) {
+	return (sybasedb)?
+		getProcedureListQuerySybase(db,schema,procedure):
+		getProcedureListQuerySqlServer(db,schema,procedure);
+}
+
+const char *freetdsconnection::getProcedureListQuerySybase(
+					const char *db,
+					const char *schema,
+					const char *procedure) {
+
+	procedurelistquery.clear();
+	procedurelistquery.append(
+		"select "
+		"	'' as procedure_cat, "
+		"	loginame as procedure_schem, "
+		"	name as procedure_name, "
+		"	0 as num_input_params, "
+		"	0 as num_output_params, "
+		"	0 as num_result_sets, "
+		"	'' as remarks, "
+		"	case type "
+		"		when 'P' then '1' "
+		"		when 'SF' then '2' "
+		"		else '0' "
+		"	end as procedure_type, "
+		"	null "
+		"from "
+		"	sysobjects "
+		"where "
+		"	type in ('P','SF') ");
+	if (!charstring::isNullOrEmpty(schema)) {
+		procedurelistquery.append(
+			"and loginame like '");
+		procedurelistquery.append(schema);
+		procedurelistquery.append("' ");
+	}
+	if (!charstring::isNullOrEmpty(procedure)) {
+		procedurelistquery.append(
+			"and name like '");
+		procedurelistquery.append(procedure);
+		procedurelistquery.append("' ");
+	}
+	procedurelistquery.append(
+		"order by "
+		"	loginame, "
+		"	name");
+	return procedurelistquery.getString();
+}
+
+const char *freetdsconnection::getProcedureListQuerySqlServer(
+					const char *db,
+					const char *schema,
+					const char *procedure) {
+
+	procedurelistquery.clear();
+	procedurelistquery.append(
+		"select "
+		"	routine_catalog as procedure_cat, "
+		"	routine_schema as procedure_schem, "
+		"	routine_name as procedure_name, "
+		"	0 as num_input_params, "
+		"	0 as num_output_params, "
+		"	0 as num_result_sets, "
+		"	'' as remarks, "
+		"	case routine_type "
+		"		when 'PROCEDURE' then '1' "
+		"		when 'FUNCTION' then '2' "
+		"		else '0' "
+		"	end as procedure_type, "
+		"	null "
+		"from "
+		"	information_schema.routines ");
+	if (!charstring::isNullOrEmpty(db) ||
+		!charstring::isNullOrEmpty(schema) ||
+		!charstring::isNullOrEmpty(procedure)) {
+		procedurelistquery.append("where ");
+		bool	first=true;
+		if (!charstring::isNullOrEmpty(db)) {
+			procedurelistquery.append(
+				"routine_catalog like '");
+			procedurelistquery.append(db);
+			procedurelistquery.append("' ");
+			first=false;
+		}
+		if (!charstring::isNullOrEmpty(schema)) {
+			if (!first) {
+				procedurelistquery.append("and ");
+			}
+			procedurelistquery.append(
+				"routine_schema like '");
+			procedurelistquery.append(schema);
+			procedurelistquery.append("' ");
+			first=false;
+		}
+		if (!charstring::isNullOrEmpty(procedure)) {
+			if (!first) {
+				procedurelistquery.append("and ");
+			}
+			procedurelistquery.append(
+				"routine_name like '");
+			procedurelistquery.append(procedure);
+			procedurelistquery.append("' ");
+		}
+	}
+	procedurelistquery.append(
+		"order by "
+		"	routine_catalog, "
+		"	routine_schema, "
+		"	routine_name");
+	return procedurelistquery.getString();
+}
+
+
+const char *freetdsconnection::getProcedureParameterListQuery(
+					const char *db,
+					const char *schema,
+					const char *procedure) {
+	return (sybasedb)?
+		getProcedureParameterListQuerySybase(db,schema,procedure):
+		getProcedureParameterListQuerySqlServer(db,schema,procedure);
+}
+
+const char *freetdsconnection::getProcedureParameterListQuerySybase(
+					const char *db,
+					const char *schema,
+					const char *procedure) {
+
+	procedureparameterlistquery.clear();
+	procedureparameterlistquery.append(
+		"select "
+		"	'' as procedure_cat, "
+		"	user_name(o.uid) as procedure_schem, "
+		"	o.name as procedure_name, "
+		"	c.name as column_name, "
+		"	case c.status2 & 3 "
+		"		when 1 then 1 "
+		"		when 2 then 4 "
+		"		else 0 "
+		"	end as column_type, "
+		"	'' as data_type, "
+		"	t.name as type_name, "
+		"	c.prec as column_size, "
+		"	c.length as buffer_length, "
+		"	c.scale as decimal_digits, "
+		"	10 as num_prec_radix, "
+		"	1 as nullable, "
+		"	'' as remarks, "
+		"	null as column_def, "
+		"	null as sql_data_type, "
+		"	null as sql_datetime_sub, "
+		"	c.length as char_octet_length, "
+		"	c.colid as ordinal_position, "
+		"	'YES' as is_nullable, "
+		"	null "
+		"from "
+		"	sysobjects o, "
+		"	syscolumns c, "
+		"	systypes t "
+		"where "
+		"	o.type='P' "
+		"	and "
+		"	o.id=c.id "
+		"	and "
+		"	c.usertype=t.usertype ");
+	if (!charstring::isNullOrEmpty(schema)) {
+		procedureparameterlistquery.append(
+			"	and "
+			"	user_name(o.uid) like '");
+		procedureparameterlistquery.append(schema);
+		procedureparameterlistquery.append("' ");
+	}
+	if (!charstring::isNullOrEmpty(procedure)) {
+		procedureparameterlistquery.append(
+			"	and "
+			"	o.name like '");
+		procedureparameterlistquery.append(procedure);
+		procedureparameterlistquery.append("' ");
+	}
+	procedureparameterlistquery.append(
+		"order by "
+		"	o.name, "
+		"	c.colid");
+	return procedureparameterlistquery.getString();
+}
+
+const char *freetdsconnection::getProcedureParameterListQuerySqlServer(
+					const char *db,
+					const char *schema,
+					const char *procedure) {
+
+	procedureparameterlistquery.clear();
+	procedureparameterlistquery.append(
+		"select "
+		"	p.specific_catalog as procedure_cat, "
+		"	p.specific_schema as procedure_schem, "
+		"	p.specific_name as procedure_name, "
+		"	p.parameter_name as column_name, "
+		"	case p.parameter_mode "
+		"		when 'IN' then 1 "
+		"		when 'INOUT' then 2 "
+		"		when 'OUT' then 4 "
+		"		else 5 "
+		"	end as column_type, "
+		"	'' as data_type, "
+		"	p.data_type as type_name, "
+		"	p.character_maximum_length as column_size, "
+		"	null as buffer_length, "
+		"	p.numeric_scale as decimal_digits, "
+		"	p.numeric_precision_radix as num_prec_radix, "
+		"	1 as nullable, "
+		"	'' as remarks, "
+		"	null as column_def, "
+		"	null as sql_data_type, "
+		"	null as sql_datetime_sub, "
+		"	p.character_octet_length as char_octet_length, "
+		"	p.ordinal_position, "
+		"	'YES' as is_nullable, "
+		"	null "
+		"from "
+		"	information_schema.parameters p ");
+	if (!charstring::isNullOrEmpty(db) ||
+		!charstring::isNullOrEmpty(schema) ||
+		!charstring::isNullOrEmpty(procedure)) {
+		procedureparameterlistquery.append("where ");
+		bool	first=true;
+		if (!charstring::isNullOrEmpty(db)) {
+			procedureparameterlistquery.append(
+				"p.specific_catalog like '");
+			procedureparameterlistquery.append(db);
+			procedureparameterlistquery.append("' ");
+			first=false;
+		}
+		if (!charstring::isNullOrEmpty(schema)) {
+			if (!first) {
+				procedureparameterlistquery.append("and ");
+			}
+			procedureparameterlistquery.append(
+				"p.specific_schema like '");
+			procedureparameterlistquery.append(schema);
+			procedureparameterlistquery.append("' ");
+			first=false;
+		}
+		if (!charstring::isNullOrEmpty(procedure)) {
+			if (!first) {
+				procedureparameterlistquery.append("and ");
+			}
+			procedureparameterlistquery.append(
+				"p.specific_name like '");
+			procedureparameterlistquery.append(procedure);
+			procedureparameterlistquery.append("' ");
+		}
+	}
+	procedureparameterlistquery.append(
+		"order by "
+		"	p.specific_name, "
+		"	p.ordinal_position");
+	return procedureparameterlistquery.getString();
+}
+
 
 const char *freetdsconnection::selectDatabaseQuery() {
 	return "use %s";

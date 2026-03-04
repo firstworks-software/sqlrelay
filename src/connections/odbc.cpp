@@ -344,16 +344,19 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		bool		getSchemaList(sqlrservercursor *cursor,
 						const char *db,
 						const char *schema);
+		bool		getTableTypeList(sqlrservercursor *cursor,
+						const char *db,
+						const char *schema,
+						const char *tabletypes);
 		bool		getTableList(sqlrservercursor *cursor,
 						const char *db,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
-		bool		getTableTypeList(sqlrservercursor *cursor,
+		bool		getTypeInfoList(sqlrservercursor *cursor,
 						const char *db,
 						const char *schema,
-						const char *tabletypes);
-		bool		isCurrentCatalog(const char *name);
+						const char *type);
 		bool		getColumnList(sqlrservercursor *cursor,
 						const char *db,
 						const char *schema,
@@ -367,16 +370,12 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 						const char *db,
 						const char *schema,
 						const char *table);
-		bool		getProcedureParameterList(
-						sqlrservercursor *cursor,
+		bool		getProcedureList(sqlrservercursor *cursor,
 						const char *db,
 						const char *schema,
 						const char *procedure);
-		bool		getTypeInfoList(sqlrservercursor *cursor,
-						const char *db,
-						const char *schema,
-						const char *type);
-		bool		getProcedureList(sqlrservercursor *cursor,
+		bool		getProcedureParameterList(
+						sqlrservercursor *cursor,
 						const char *db,
 						const char *schema,
 						const char *procedure);
@@ -2765,6 +2764,44 @@ bool odbcconnection::getSchemaList(sqlrservercursor *cursor,
 	return (retval)?odbccur->handleColumns(true,true):false;
 }
 
+bool odbcconnection::getTableTypeList(sqlrservercursor *cursor,
+					const char *db,
+					const char *schema,
+					const char *tabletypes) {
+
+	odbccursor	*odbccur=(odbccursor *)cursor;
+
+	// allocate the statement handle
+	if (!odbccur->allocateStatementHandle()) {
+		return false;
+	}
+
+	if (getcolumntables) {
+		SQLSetStmtAttr(odbccur->stmt,SQL_ATTR_CURSOR_TYPE,
+				(SQLPOINTER)SQL_CURSOR_STATIC,
+				SQL_IS_INTEGER);
+	}
+
+	// initialize column and row counts
+	odbccur->initializeColCounts();
+	odbccur->initializeRowCounts();
+
+	// get the table types
+	const char	*tt=SQL_ALL_TABLE_TYPES;
+	if (!charstring::isNullOrEmpty(tabletypes)) {
+		tt=tabletypes;
+	}
+	erg=SQLTables(odbccur->stmt,
+			(SQLCHAR *)"",SQL_NTS,
+			(SQLCHAR *)"",SQL_NTS,
+			(SQLCHAR *)"",SQL_NTS,
+			(SQLCHAR *)tt,SQL_NTS);
+	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
+
+	// parse the column information
+	return (retval)?odbccur->handleColumns(true,true):false;
+}
+
 bool odbcconnection::getTableList(sqlrservercursor *cursor,
 					const char *db,
 					const char *schema,
@@ -2827,220 +2864,6 @@ bool odbcconnection::getTableList(sqlrservercursor *cursor,
 			(SQLCHAR *)schema,SQL_NTS,
 			(SQLCHAR *)table,SQL_NTS,
 			(SQLCHAR *)tabletype.getString(),SQL_NTS);
-	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
-
-	// parse the column information
-	return (retval)?odbccur->handleColumns(true,true):false;
-}
-
-bool odbcconnection::getTableTypeList(sqlrservercursor *cursor,
-					const char *db,
-					const char *schema,
-					const char *tabletypes) {
-
-	odbccursor	*odbccur=(odbccursor *)cursor;
-
-	// allocate the statement handle
-	if (!odbccur->allocateStatementHandle()) {
-		return false;
-	}
-
-	if (getcolumntables) {
-		SQLSetStmtAttr(odbccur->stmt,SQL_ATTR_CURSOR_TYPE,
-				(SQLPOINTER)SQL_CURSOR_STATIC,
-				SQL_IS_INTEGER);
-	}
-
-	// initialize column and row counts
-	odbccur->initializeColCounts();
-	odbccur->initializeRowCounts();
-
-	// get the table types
-	const char	*tt=SQL_ALL_TABLE_TYPES;
-	if (!charstring::isNullOrEmpty(tabletypes)) {
-		tt=tabletypes;
-	}
-	erg=SQLTables(odbccur->stmt,
-			(SQLCHAR *)"",SQL_NTS,
-			(SQLCHAR *)"",SQL_NTS,
-			(SQLCHAR *)"",SQL_NTS,
-			(SQLCHAR *)tt,SQL_NTS);
-	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
-
-	// parse the column information
-	return (retval)?odbccur->handleColumns(true,true):false;
-}
-
-bool odbcconnection::getColumnList(sqlrservercursor *cursor,
-					const char *db,
-					const char *schema,
-					const char *table,
-					const char *column) {
-
-	odbccursor	*odbccur=(odbccursor *)cursor;
-
-	// allocate the statement handle
-	if (!odbccur->allocateStatementHandle()) {
-		return false;
-	}
-
-	if (getcolumntables) {
-		SQLSetStmtAttr(odbccur->stmt,SQL_ATTR_CURSOR_TYPE,
-				(SQLPOINTER)SQL_CURSOR_STATIC,
-				SQL_IS_INTEGER);
-	}
-
-	// initialize column and row counts
-	odbccur->initializeColCounts();
-	odbccur->initializeRowCounts();
-
-	// use defaults for NULL parameters
-	const char	*catalog=db;
-	if (!schema) {
-		schema="";
-	}
-	if (!table) {
-		table="";
-	}
-
-	// use % if column was empty
-	column=(!charstring::isNullOrEmpty(column))?column:"%";
-
-	// get the column list
-	erg=SQLColumns(odbccur->stmt,
-			(SQLCHAR *)catalog,SQL_NTS,
-			(SQLCHAR *)schema,SQL_NTS,
-			(SQLCHAR *)table,SQL_NTS,
-			(SQLCHAR *)column,SQL_NTS);
-	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
-
-	// parse the column information
-	return (retval)?odbccur->handleColumns(true,true):false;
-}
-
-bool odbcconnection::getPrimaryKeysList(sqlrservercursor *cursor,
-						const char *db,
-						const char *schema,
-						const char *table) {
-
-	odbccursor	*odbccur=(odbccursor *)cursor;
-
-	// allocate the statement handle
-	if (!odbccur->allocateStatementHandle()) {
-		return false;
-	}
-
-	if (getcolumntables) {
-		SQLSetStmtAttr(odbccur->stmt,SQL_ATTR_CURSOR_TYPE,
-				(SQLPOINTER)SQL_CURSOR_STATIC,
-				SQL_IS_INTEGER);
-	}
-
-	// initialize column and row counts
-	odbccur->initializeColCounts();
-	odbccur->initializeRowCounts();
-
-	// use defaults for NULL parameters
-	const char	*catalog=db;
-	if (!schema) {
-		schema="";
-	}
-	if (!table) {
-		table="";
-	}
-
-	// get the primary key list
-	erg=SQLPrimaryKeys(odbccur->stmt,
-			(SQLCHAR *)catalog,SQL_NTS,
-			(SQLCHAR *)schema,SQL_NTS,
-			(SQLCHAR *)table,SQL_NTS);
-	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
-
-	// parse the column information
-	return (retval)?odbccur->handleColumns(true,true):false;
-}
-
-bool odbcconnection::getKeyAndIndexList(sqlrservercursor *cursor,
-						const char *db,
-						const char *schema,
-						const char *table) {
-
-	odbccursor	*odbccur=(odbccursor *)cursor;
-
-	// allocate the statement handle
-	if (!odbccur->allocateStatementHandle()) {
-		return false;
-	}
-
-	if (getcolumntables) {
-		SQLSetStmtAttr(odbccur->stmt,SQL_ATTR_CURSOR_TYPE,
-				(SQLPOINTER)SQL_CURSOR_STATIC,
-				SQL_IS_INTEGER);
-	}
-
-	// initialize column and row counts
-	odbccur->initializeColCounts();
-	odbccur->initializeRowCounts();
-
-	// use defaults for NULL parameters
-	const char	*catalog=db;
-	if (!schema) {
-		schema="";
-	}
-	if (!table) {
-		table="";
-	}
-
-	// get the key and index list
-	erg=SQLStatistics(odbccur->stmt,
-			(SQLCHAR *)catalog,SQL_NTS,
-			(SQLCHAR *)schema,SQL_NTS,
-			(SQLCHAR *)table,SQL_NTS,
-			SQL_INDEX_UNIQUE,
-			SQL_QUICK);
-	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
-
-	// parse the column information
-	return (retval)?odbccur->handleColumns(true,true):false;
-}
-
-bool odbcconnection::getProcedureParameterList(
-					sqlrservercursor *cursor,
-					const char *db,
-					const char *schema,
-					const char *procedure) {
-
-	odbccursor	*odbccur=(odbccursor *)cursor;
-
-	// allocate the statement handle
-	if (!odbccur->allocateStatementHandle()) {
-		return false;
-	}
-
-	if (getcolumntables) {
-		SQLSetStmtAttr(odbccur->stmt,SQL_ATTR_CURSOR_TYPE,
-				(SQLPOINTER)SQL_CURSOR_STATIC,
-				SQL_IS_INTEGER);
-	}
-
-	// initialize column and row counts
-	odbccur->initializeColCounts();
-	odbccur->initializeRowCounts();
-
-	// Unlike SQLColumns/SQLTables, SQLProcedureColumns wants NULL instead
-	// of "" for catalog/schema, to indicate the current catalog/schema.
-	// It interprets "" as meaning outside of any catalog/schema.
-	const char	*catalog=db;
-
-	// get the column list
-	erg=SQLProcedureColumns(odbccur->stmt,
-			(SQLCHAR *)catalog,
-			charstring::getLength(catalog),
-			(SQLCHAR *)schema,
-			charstring::getLength(schema),
-			(SQLCHAR *)procedure,
-			charstring::getLength(procedure),
-			(SQLCHAR *)NULL,0);
 	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 
 	// parse the column information
@@ -3205,6 +3028,139 @@ bool odbcconnection::getTypeInfoList(sqlrservercursor *cursor,
 	return (retval)?odbccur->handleColumns(true,true):false;
 }
 
+bool odbcconnection::getColumnList(sqlrservercursor *cursor,
+					const char *db,
+					const char *schema,
+					const char *table,
+					const char *column) {
+
+	odbccursor	*odbccur=(odbccursor *)cursor;
+
+	// allocate the statement handle
+	if (!odbccur->allocateStatementHandle()) {
+		return false;
+	}
+
+	if (getcolumntables) {
+		SQLSetStmtAttr(odbccur->stmt,SQL_ATTR_CURSOR_TYPE,
+				(SQLPOINTER)SQL_CURSOR_STATIC,
+				SQL_IS_INTEGER);
+	}
+
+	// initialize column and row counts
+	odbccur->initializeColCounts();
+	odbccur->initializeRowCounts();
+
+	// use defaults for NULL parameters
+	const char	*catalog=db;
+	if (!schema) {
+		schema="";
+	}
+	if (!table) {
+		table="";
+	}
+
+	// use % if column was empty
+	column=(!charstring::isNullOrEmpty(column))?column:"%";
+
+	// get the column list
+	erg=SQLColumns(odbccur->stmt,
+			(SQLCHAR *)catalog,SQL_NTS,
+			(SQLCHAR *)schema,SQL_NTS,
+			(SQLCHAR *)table,SQL_NTS,
+			(SQLCHAR *)column,SQL_NTS);
+	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
+
+	// parse the column information
+	return (retval)?odbccur->handleColumns(true,true):false;
+}
+
+bool odbcconnection::getPrimaryKeysList(sqlrservercursor *cursor,
+						const char *db,
+						const char *schema,
+						const char *table) {
+
+	odbccursor	*odbccur=(odbccursor *)cursor;
+
+	// allocate the statement handle
+	if (!odbccur->allocateStatementHandle()) {
+		return false;
+	}
+
+	if (getcolumntables) {
+		SQLSetStmtAttr(odbccur->stmt,SQL_ATTR_CURSOR_TYPE,
+				(SQLPOINTER)SQL_CURSOR_STATIC,
+				SQL_IS_INTEGER);
+	}
+
+	// initialize column and row counts
+	odbccur->initializeColCounts();
+	odbccur->initializeRowCounts();
+
+	// use defaults for NULL parameters
+	const char	*catalog=db;
+	if (!schema) {
+		schema="";
+	}
+	if (!table) {
+		table="";
+	}
+
+	// get the primary key list
+	erg=SQLPrimaryKeys(odbccur->stmt,
+			(SQLCHAR *)catalog,SQL_NTS,
+			(SQLCHAR *)schema,SQL_NTS,
+			(SQLCHAR *)table,SQL_NTS);
+	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
+
+	// parse the column information
+	return (retval)?odbccur->handleColumns(true,true):false;
+}
+
+bool odbcconnection::getKeyAndIndexList(sqlrservercursor *cursor,
+						const char *db,
+						const char *schema,
+						const char *table) {
+
+	odbccursor	*odbccur=(odbccursor *)cursor;
+
+	// allocate the statement handle
+	if (!odbccur->allocateStatementHandle()) {
+		return false;
+	}
+
+	if (getcolumntables) {
+		SQLSetStmtAttr(odbccur->stmt,SQL_ATTR_CURSOR_TYPE,
+				(SQLPOINTER)SQL_CURSOR_STATIC,
+				SQL_IS_INTEGER);
+	}
+
+	// initialize column and row counts
+	odbccur->initializeColCounts();
+	odbccur->initializeRowCounts();
+
+	// use defaults for NULL parameters
+	const char	*catalog=db;
+	if (!schema) {
+		schema="";
+	}
+	if (!table) {
+		table="";
+	}
+
+	// get the key and index list
+	erg=SQLStatistics(odbccur->stmt,
+			(SQLCHAR *)catalog,SQL_NTS,
+			(SQLCHAR *)schema,SQL_NTS,
+			(SQLCHAR *)table,SQL_NTS,
+			SQL_INDEX_UNIQUE,
+			SQL_QUICK);
+	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
+
+	// parse the column information
+	return (retval)?odbccur->handleColumns(true,true):false;
+}
+
 bool odbcconnection::getProcedureList(sqlrservercursor *cursor,
 						const char *db,
 						const char *schema,
@@ -3242,6 +3198,49 @@ bool odbcconnection::getProcedureList(sqlrservercursor *cursor,
 			(SQLCHAR *)catalog,SQL_NTS,
 			(SQLCHAR *)schema,SQL_NTS,
 			(SQLCHAR *)procname,SQL_NTS);
+	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
+
+	// parse the column information
+	return (retval)?odbccur->handleColumns(true,true):false;
+}
+
+bool odbcconnection::getProcedureParameterList(
+					sqlrservercursor *cursor,
+					const char *db,
+					const char *schema,
+					const char *procedure) {
+
+	odbccursor	*odbccur=(odbccursor *)cursor;
+
+	// allocate the statement handle
+	if (!odbccur->allocateStatementHandle()) {
+		return false;
+	}
+
+	if (getcolumntables) {
+		SQLSetStmtAttr(odbccur->stmt,SQL_ATTR_CURSOR_TYPE,
+				(SQLPOINTER)SQL_CURSOR_STATIC,
+				SQL_IS_INTEGER);
+	}
+
+	// initialize column and row counts
+	odbccur->initializeColCounts();
+	odbccur->initializeRowCounts();
+
+	// Unlike SQLColumns/SQLTables, SQLProcedureColumns wants NULL instead
+	// of "" for catalog/schema, to indicate the current catalog/schema.
+	// It interprets "" as meaning outside of any catalog/schema.
+	const char	*catalog=db;
+
+	// get the column list
+	erg=SQLProcedureColumns(odbccur->stmt,
+			(SQLCHAR *)catalog,
+			charstring::getLength(catalog),
+			(SQLCHAR *)schema,
+			charstring::getLength(schema),
+			(SQLCHAR *)procedure,
+			charstring::getLength(procedure),
+			(SQLCHAR *)NULL,0);
 	bool	retval=(erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 
 	// parse the column information
