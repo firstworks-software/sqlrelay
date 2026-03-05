@@ -238,46 +238,46 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 					uint32_t *errorsize,
 					int64_t	*errorcode,
 					bool *liveconnection);
-		bool		selectDatabase(const char *database);
-		char		*getCurrentDatabase();
+		bool		selectCatalog(const char *catalog);
+		char		*getCurrentCatalog();
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostName();
-		const char	*getDatabaseListQuery(const char *db);
-		const char	*getSchemaListQuery(const char *db,
+		const char	*getDatabaseListQuery(const char *catalog);
+		const char	*getSchemaListQuery(const char *catalog,
 						const char *schema);
-		const char	*getTableTypeListQuery(const char *db,
+		const char	*getTableTypeListQuery(const char *catalog,
 						const char *schema,
 						const char *tabletypes);
 		const char	*getGlobalTempTableListQuery();
 		const char	*getTableListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
 		const char	*getTypeInfoListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *type);
 		const char	*getColumnListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						const char *column);
 		const char	*getPrimaryKeysListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table);
 		const char	*getKeyAndIndexListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table);
 		const char	*getProcedureListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure);
 		const char	*getProcedureParameterListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure);
 		const char	*getBindFormat();
@@ -611,14 +611,14 @@ bool firebirdconnection::ping() {
 	return !(status[0]==1 && status[1]);
 }
 
-bool firebirdconnection::selectDatabase(const char *database) {
+bool firebirdconnection::selectCatalog(const char *catalog) {
 
 	// keep track of the original db and host
 	char	*originaldb=this->database;
 	char	*originalhost=this->host;
 
 	// reset the db/host
-	this->database=charstring::duplicate(database);
+	this->database=charstring::duplicate(catalog);
 	this->host=NULL;
 
 	cont->clearError();
@@ -651,7 +651,7 @@ bool firebirdconnection::selectDatabase(const char *database) {
 	return true;
 }
 
-char *firebirdconnection::getCurrentDatabase() {
+char *firebirdconnection::getCurrentCatalog() {
 	return charstring::duplicate(database);
 }
 
@@ -704,7 +704,7 @@ const char *firebirdconnection::getDbHostName() {
 	return host;
 }
 
-const char *firebirdconnection::getDatabaseListQuery(const char *db) {
+const char *firebirdconnection::getDatabaseListQuery(const char *catalog) {
 	return "select "
 		"	'' as table_cat, "
 		"	'' as table_schem, "
@@ -716,7 +716,7 @@ const char *firebirdconnection::getDatabaseListQuery(const char *db) {
 		"	rdb$database";
 }
 
-const char *firebirdconnection::getSchemaListQuery(const char *db,
+const char *firebirdconnection::getSchemaListQuery(const char *catalog,
 						const char *schema) {
 
 	schemalistquery.clear();
@@ -750,7 +750,7 @@ const char *firebirdconnection::getSchemaListQuery(const char *db,
 	return schemalistquery.getString();
 }
 
-const char *firebirdconnection::getTableTypeListQuery(const char *db,
+const char *firebirdconnection::getTableTypeListQuery(const char *catalog,
 						const char *schema,
 						const char *tabletypes) {
 	tabletypelistquery.clear();
@@ -795,7 +795,7 @@ const char *firebirdconnection::getGlobalTempTableListQuery() {
 		"	rdb$relation_type=4 ";
 }
 
-const char *firebirdconnection::getTableListQuery(const char *db,
+const char *firebirdconnection::getTableListQuery(const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes) {
@@ -1213,7 +1213,7 @@ static const char	*fb_blobsubtexttype=
 			"from "
 			"	rdb$database) ";
 
-const char *firebirdconnection::getTypeInfoListQuery(const char *db,
+const char *firebirdconnection::getTypeInfoListQuery(const char *catalog,
 						const char *schema,
 						const char *type) {
 
@@ -1290,7 +1290,7 @@ const char *firebirdconnection::getTypeInfoListQuery(const char *db,
 	return NULL;
 }
 
-const char *firebirdconnection::getColumnListQuery(const char *db,
+const char *firebirdconnection::getColumnListQuery(const char *catalog,
 					const char *schema,
 					const char *table,
 					const char *column) {
@@ -1437,7 +1437,7 @@ const char *firebirdconnection::getColumnListQuery(const char *db,
 	return columnlistquery.getString();
 }
 
-const char *firebirdconnection::getPrimaryKeysListQuery(const char *db,
+const char *firebirdconnection::getPrimaryKeysListQuery(const char *catalog,
 						const char *schema,
 						const char *table) {
 
@@ -1483,7 +1483,7 @@ const char *firebirdconnection::getPrimaryKeysListQuery(const char *db,
 	return primarykeyslistquery.getString();
 }
 
-const char *firebirdconnection::getKeyAndIndexListQuery(const char *db,
+const char *firebirdconnection::getKeyAndIndexListQuery(const char *catalog,
 						const char *schema,
 						const char *table) {
 
@@ -1542,7 +1542,7 @@ const char *firebirdconnection::getKeyAndIndexListQuery(const char *db,
 }
 
 const char *firebirdconnection::getProcedureListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure) {
 
@@ -1596,7 +1596,7 @@ const char *firebirdconnection::getProcedureListQuery(
 }
 
 const char *firebirdconnection::getProcedureParameterListQuery(
-					const char *db,
+					const char *catalog,
 					const char *schema,
 					const char *procedure) {
 

@@ -107,6 +107,9 @@ class sqlrconnectionprivate {
 		// current database name
 		char		*_currentdbname;
 
+		// current catalog name
+		char		*_currentcatalogname;
+
 		// current schema name
 		char		*_currentschemaname;
 
@@ -239,6 +242,9 @@ void sqlrconnection::init(const char *server, uint16_t port,
 	// current database name
 	pvt->_currentdbname=NULL;
 
+	// current catalog name
+	pvt->_currentcatalogname=NULL;
+
 	// current schema name
 	pvt->_currentschemaname=NULL;
 
@@ -323,6 +329,9 @@ sqlrconnection::~sqlrconnection() {
 
 	// deallocate current database name
 	delete[] pvt->_currentdbname;
+
+	// deallocate current catalog name
+	delete[] pvt->_currentcatalogname;
 
 	// deallocate current schema name
 	delete[] pvt->_currentschemaname;
@@ -1718,6 +1727,94 @@ const char *sqlrconnection::getCurrentDatabase() {
 	return pvt->_currentdbname;
 }
 
+bool sqlrconnection::selectCatalog(const char *catalog) {
+
+	if (!charstring::getLength(catalog)) {
+		return true;
+	}
+
+	clearError();
+
+	if (!openSession()) {
+		return false;
+	}
+
+	if (pvt->_debug) {
+		debugPreStart();
+		debugPrint("Selecting catalog ");
+		debugPrint(catalog);
+		debugPrint("...\n");
+		debugPreEnd();
+	}
+
+	// tell the server we want to select a catalog
+	pvt->_cs->write((uint16_t)SELECT_CATALOG);
+
+	// send the catalog name
+	uint32_t	len=charstring::getLength(catalog);
+	pvt->_cs->write(len);
+	if (len) {
+		pvt->_cs->write(catalog,len);
+	}
+	flushWriteBuffer();
+
+	return !gotError();
+}
+
+const char *sqlrconnection::getCurrentCatalog() {
+
+	if (!openSession()) {
+		return NULL;
+	}
+
+	clearError();
+
+	if (pvt->_debug) {
+		debugPreStart();
+		debugPrint("Getting the current catalog...\n");
+		debugPreEnd();
+	}
+
+	clearError();
+
+	// tell the server we want to get the current catalog
+	pvt->_cs->write((uint16_t)GET_CURRENT_CATALOG);
+	flushWriteBuffer();
+
+	if (gotError()) {
+		return NULL;
+	}
+
+	// get the current catalog name size
+	uint16_t	size;
+	if (pvt->_cs->read(&size,pvt->_responsetimeoutsec,
+				pvt->_responsetimeoutusec)!=sizeof(uint16_t)) {
+		setError("Failed to get the current catalog.\n"
+				"A network error may have occurred.");
+		return NULL;
+	}
+
+	// get the current catalog name
+	delete[] pvt->_currentcatalogname;
+	pvt->_currentcatalogname=new char[size+1];
+	if (pvt->_cs->read(pvt->_currentcatalogname,size)!=size) {
+		setError("Failed to get the current catalog.\n"
+				"A network error may have occurred.");
+		delete[] pvt->_currentcatalogname;
+		pvt->_currentcatalogname=NULL;
+		return NULL;
+	}
+	pvt->_currentcatalogname[size]='\0';
+
+	if (pvt->_debug) {
+		debugPreStart();
+		debugPrint(pvt->_currentcatalogname);
+		debugPrint("\n");
+		debugPreEnd();
+	}
+	return pvt->_currentcatalogname;
+}
+
 bool sqlrconnection::selectSchema(const char *schema) {
 
 	if (!charstring::getLength(schema)) {
@@ -1804,6 +1901,48 @@ const char *sqlrconnection::getCurrentSchema() {
 		debugPreEnd();
 	}
 	return pvt->_currentschemaname;
+}
+
+bool sqlrconnection::getDatabaseIsSchema() {
+
+	if (!openSession()) {
+		return false;
+	}
+
+	clearError();
+
+	if (pvt->_debug) {
+		debugPreStart();
+		debugPrint("Getting database is schema...\n");
+		debugPreEnd();
+	}
+
+	clearError();
+
+	// tell the server we want to get database is schema
+	pvt->_cs->write((uint16_t)GET_DATABASE_IS_SCHEMA);
+	flushWriteBuffer();
+
+	if (gotError()) {
+		return false;
+	}
+
+	// get the result
+	uint16_t	result;
+	if (pvt->_cs->read(&result,pvt->_responsetimeoutsec,
+				pvt->_responsetimeoutusec)!=sizeof(uint16_t)) {
+		setError("Failed to get database is schema.\n"
+				"A network error may have occurred.");
+		return false;
+	}
+
+	if (pvt->_debug) {
+		debugPreStart();
+		debugPrint((int64_t)result);
+		debugPrint("\n");
+		debugPreEnd();
+	}
+	return (result!=0);
 }
 
 uint64_t sqlrconnection::getLastInsertId() {

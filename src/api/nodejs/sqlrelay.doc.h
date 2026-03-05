@@ -283,11 +283,22 @@ class SQLRConnection {
 		/** Returns the database (catalog) that is currently in use. */
 		function getCurrentDatabase();
 
+		/** Sets the current catalog to "catalog" */
+		function selectCatalog(var catalog);
+
+		/** Returns the catalog that is currently in use. */
+		function getCurrentCatalog();
+
 		/** Sets the current schema to "schema" */
 		function selectSchema(var schema);
 
 		/** Returns the schema that is currently in use. */
 		function getCurrentSchema();
+
+		/** Returns true if the backend database equates
+		 *  "database" with "schema", and false if it equates
+		 *  "database" with "catalog". */
+		function getDatabaseIsSchema();
 
 
 

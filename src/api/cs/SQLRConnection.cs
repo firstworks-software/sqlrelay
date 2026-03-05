@@ -389,6 +389,18 @@ public class SQLRConnection : IDisposable
         return sqlrcon_getCurrentDatabase(sqlrconref);
     }
 
+    /** Sets the current catalog to "catalog" */
+    public Boolean selectCatalog(String catalog)
+    {
+        return sqlrcon_selectCatalog(sqlrconref, catalog)!=0;
+    }
+
+    /** Returns the catalog that is currently in use. */
+    public String getCurrentCatalog()
+    {
+        return sqlrcon_getCurrentCatalog(sqlrconref);
+    }
+
     /** Sets the current schema to "schema" */
     public Boolean selectSchema(String schema)
     {
@@ -399,6 +411,13 @@ public class SQLRConnection : IDisposable
     public String getCurrentSchema()
     {
         return sqlrcon_getCurrentSchema(sqlrconref);
+    }
+
+    /** Returns true if the backend database equates "database" with
+     *  "schema", and false if it equates "database" with "catalog". */
+    public Boolean getDatabaseIsSchema()
+    {
+        return sqlrcon_getDatabaseIsSchema(sqlrconref)!=0;
     }
 
 
@@ -932,10 +951,19 @@ public class SQLRConnection : IDisposable
     private static extern String sqlrcon_getCurrentDatabase(IntPtr sqlrconref);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int32 sqlrcon_selectCatalog(IntPtr sqlrconref, String catalog);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern String sqlrcon_getCurrentCatalog(IntPtr sqlrconref);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int32 sqlrcon_selectSchema(IntPtr sqlrconref, String schema);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern String sqlrcon_getCurrentSchema(IntPtr sqlrconref);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int32 sqlrcon_getDatabaseIsSchema(IntPtr sqlrconref);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern UInt64 sqlrcon_getLastInsertId(IntPtr sqlrconref);

@@ -4921,6 +4921,59 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_getcurrentdatabase) {
 	RETURN_FALSE;
 }
 
+DLEXPORT ZEND_FUNCTION(sqlrcon_selectcatalog) {
+	ZVAL sqlrcon;
+	ZVAL catalog;
+	bool r;
+	if (ZEND_NUM_ARGS() != 2 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcon,
+				&catalog) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(catalog);
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->selectCatalog(SVAL(catalog));
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcon_getcurrentcatalog) {
+	ZVAL sqlrcon;
+	const char *r;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->getCurrentCatalog();
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
+	}
+	RETURN_FALSE;
+}
+
 DLEXPORT ZEND_FUNCTION(sqlrcon_selectschema) {
 	ZVAL sqlrcon;
 	ZVAL schema;
@@ -4972,6 +5025,28 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_getcurrentschema) {
 		}
 	}
 	RETURN_FALSE;
+}
+
+DLEXPORT ZEND_FUNCTION(sqlrcon_getdatabaseisschema) {
+	ZVAL sqlrcon;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		RETURN_LONG(connection->getDatabaseIsSchema());
+	}
+	RETURN_LONG(0);
 }
 
 DLEXPORT ZEND_FUNCTION(sqlrcon_getlastinsertid) {
@@ -5871,10 +5946,19 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getcurrentdatabase,0,0,0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_selectcatalog,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getcurrentcatalog,0,0,0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_selectschema,0,0,0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getcurrentschema,0,0,0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getdatabaseisschema,0,0,0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getlastinsertid,0,0,0)
@@ -6222,10 +6306,16 @@ zend_function_entry sql_relay_functions[] = {
 		ARGINFO(arginfo_sqlrcon_selectdatabase))
 	ZEND_FE(sqlrcon_getcurrentdatabase,
 		ARGINFO(arginfo_sqlrcon_getcurrentdatabase))
+	ZEND_FE(sqlrcon_selectcatalog,
+		ARGINFO(arginfo_sqlrcon_selectcatalog))
+	ZEND_FE(sqlrcon_getcurrentcatalog,
+		ARGINFO(arginfo_sqlrcon_getcurrentcatalog))
 	ZEND_FE(sqlrcon_selectschema,
 		ARGINFO(arginfo_sqlrcon_selectschema))
 	ZEND_FE(sqlrcon_getcurrentschema,
 		ARGINFO(arginfo_sqlrcon_getcurrentschema))
+	ZEND_FE(sqlrcon_getdatabaseisschema,
+		ARGINFO(arginfo_sqlrcon_getdatabaseisschema))
 	ZEND_FE(sqlrcon_getlastinsertid,
 		ARGINFO(arginfo_sqlrcon_getlastinsertid))
 	ZEND_FE(sqlrcon_autocommiton,

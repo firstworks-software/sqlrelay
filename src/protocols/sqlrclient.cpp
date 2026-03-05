@@ -63,6 +63,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 		void	serverVersionCommand();
 		void	selectDatabaseCommand();
 		void	getCurrentDatabaseCommand();
+		void	getDatabaseIsSchemaCommand();
+		void	selectCatalogCommand();
+		void	getCurrentCatalogCommand();
 		void	selectSchemaCommand();
 		void	getCurrentSchemaCommand();
 		void	getLastInsertIdCommand();
@@ -469,6 +472,21 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 		} else if (command==GET_CURRENT_DATABASE) {
 			cont->incrementGetCurrentDatabaseCount();
 			getCurrentDatabaseCommand();
+			continue;
+		} else if (command==GET_DATABASE_IS_SCHEMA) {
+			// FIXME: add this
+			//cont->incrementGetDatabaseIsSchemaCount();
+			getDatabaseIsSchemaCommand();
+			continue;
+		} else if (command==SELECT_CATALOG) {
+			// FIXME: add this
+			//cont->incrementSelectCatalogCount();
+			selectCatalogCommand();
+			continue;
+		} else if (command==GET_CURRENT_CATALOG) {
+			// FIXME: add this
+			//cont->incrementGetCurrentCatalogCount();
+			getCurrentCatalogCommand();
 			continue;
 		} else if (command==SELECT_SCHEMA) {
 			// FIXME: add this
@@ -1343,6 +1361,112 @@ void sqlrprotocol_sqlrclient::getCurrentDatabaseCommand() {
 
 	// clean up
 	delete[] currentdb;
+
+	debugEnd();
+}
+
+void sqlrprotocol_sqlrclient::getDatabaseIsSchemaCommand() {
+
+	debugStart("get database is schema");
+
+	// get whether database is schema
+	bool	databaseisschema=cont->getDatabaseIsSchema();
+
+	// send it to the client
+	clientsock->write((uint16_t)NO_ERROR_OCCURRED);
+	clientsock->write((uint16_t)(databaseisschema?1:0));
+	clientsock->flushWriteBuffer(-1,-1);
+
+	debugWrite("database is schema: %d",databaseisschema);
+
+	debugEnd();
+}
+
+void sqlrprotocol_sqlrclient::selectCatalogCommand() {
+
+	debugStart("select catalog");
+
+	// get size of catalog parameter
+	uint32_t	catsize;
+	ssize_t		result=clientsock->read(&catsize,idleclienttimeout,0);
+	if (result!=sizeof(uint32_t)) {
+		clientsock->write(false);
+		cont->raiseClientProtocolErrorEvent(NULL,result,
+						"select catalog failed: "
+						"failed to get catalog size");
+		debugWrite("failed to get catalog size");
+		debugEnd();
+		return;
+	}
+
+	// bounds checking
+	if (catsize>maxquerysize) {
+		clientsock->write(false);
+		cont->raiseClientProtocolErrorEvent(NULL,1,
+					"select catalog failed: "
+					"client sent bad catalog size: %d",
+					catsize);
+		debugWrite("client sent bad catalog size: %d",catsize);
+		debugEnd();
+		return;
+	}
+
+	// read the catalog parameter into the buffer
+	char	*cat=new char[catsize+1];
+	if (catsize) {
+		result=clientsock->read(cat,catsize,idleclienttimeout,0);
+		if ((uint32_t)result!=catsize) {
+			clientsock->write(false);
+			clientsock->flushWriteBuffer(-1,-1);
+			delete[] cat;
+			cont->raiseClientProtocolErrorEvent(NULL,result,
+						"select catalog failed: "
+						"failed to get catalog name");
+			debugWrite("failed to get catalog name");
+			debugEnd();
+			return;
+		}
+	}
+	cat[catsize]='\0';
+
+	debugWrite("catalog: %.*s",catsize,cat);
+
+	// select the catalog and send back the result.
+	if (cont->selectCatalog(cat)) {
+		debugWrite("success");
+		clientsock->write((uint16_t)NO_ERROR_OCCURRED);
+		clientsock->flushWriteBuffer(-1,-1);
+	} else {
+		debugWrite("failed");
+		returnError(false);
+	}
+
+	delete[] cat;
+
+	debugEnd();
+}
+
+void sqlrprotocol_sqlrclient::getCurrentCatalogCommand() {
+
+	debugStart("get current catalog");
+
+	// get the current catalog
+	char	*currentcatalog=cont->getCurrentCatalog();
+
+	// FIXME: this can fail
+
+	// send it to the client
+	clientsock->write((uint16_t)NO_ERROR_OCCURRED);
+	uint16_t	currentcatalogsize=charstring::getLength(
+							currentcatalog);
+	clientsock->write(currentcatalogsize);
+	clientsock->write(currentcatalog,currentcatalogsize);
+	clientsock->flushWriteBuffer(-1,-1);
+
+	debugWrite("current catalog: %.*s",currentcatalogsize,currentcatalog);
+
+	// clean up
+	delete[] currentcatalog;
 
 	debugEnd();
 }
@@ -4352,18 +4476,20 @@ bool sqlrprotocol_sqlrclient::getObjectList(sqlrservercursor *cursor,
 	escapeParameter(&objectbuf,object);
 	object=objectbuf.getString();
 
-	// split the object (db.schema.object) into db, schema, and object
-	char	*currentdb=cont->getCurrentDatabase();
+	// split the object (catalog.schema.object) into
+	// catalog, schema, and object
+	char	*currentcatalog=cont->getCurrentCatalog();
 	char	*currentschema=cont->getCurrentSchema();
-	const char	*db=NULL;
+	const char	*catalog=NULL;
 	const char	*schema=NULL;
 	const char	*obj=NULL;
-	cont->splitObjectName(currentdb,currentschema,object,&db,&schema,&obj);
+	cont->splitObjectName(currentcatalog,currentschema,object,
+						&catalog,&schema,&obj);
 
 	// when fetching lists in mysql format, we only want to fetch for
 	// the current database/schema
 	if (listformat==SQLRSERVERLISTFORMAT_MYSQL) {
-		db=currentdb;
+		catalog=currentcatalog;
 		schema=currentschema;
 	}
 
@@ -4372,25 +4498,27 @@ bool sqlrprotocol_sqlrclient::getObjectList(sqlrservercursor *cursor,
 	// inside the default get*List resets the column map)
 	switch (querytype) {
 		case SQLRCLIENTQUERYTYPE_DATABASE_LIST:
-			success=cont->getDatabaseList(cursor,db);
+			success=cont->getDatabaseList(cursor,catalog);
 			cont->setDatabaseListFormat(listformat);
 			break;
 		case SQLRCLIENTQUERYTYPE_SCHEMA_LIST:
-			success=cont->getSchemaList(cursor,db,schema);
+			success=cont->getSchemaList(cursor,catalog,schema);
 			cont->setSchemaListFormat(listformat);
 			break;
 		case SQLRCLIENTQUERYTYPE_TABLE_LIST:
 		case SQLRCLIENTQUERYTYPE_TABLE_LIST_2:
-			success=cont->getTableList(cursor,db,schema,
+			success=cont->getTableList(cursor,catalog,schema,
 							obj,objecttypes);
 			cont->setTableListFormat(listformat);
 			break;
 		case SQLRCLIENTQUERYTYPE_TABLE_TYPE_LIST:
-			success=cont->getTableTypeList(cursor,db,schema,obj);
+			success=cont->getTableTypeList(cursor,
+							catalog,schema,obj);
 			cont->setTableTypeListFormat(listformat);
 			break;
 		case SQLRCLIENTQUERYTYPE_PROCEDURE_LIST:
-			success=cont->getProcedureList(cursor,db,schema,obj);
+			success=cont->getProcedureList(cursor,
+							catalog,schema,obj);
 			cont->setProcedureListFormat(listformat);
 			break;
 		case SQLRCLIENTQUERYTYPE_LAST_INSERT_ID_LIST:
@@ -4401,7 +4529,7 @@ bool sqlrprotocol_sqlrclient::getObjectList(sqlrservercursor *cursor,
 	}
 
 	// clean up
-	delete[] currentdb;
+	delete[] currentcatalog;
 	delete[] currentschema;
 
 	if (success) {
@@ -4586,18 +4714,20 @@ bool sqlrprotocol_sqlrclient::getComponentList(
 	escapeParameter(&componentbuf,component);
 	component=componentbuf.getString();
 
-	// split the object (db.schema.object) into db, schema, and object
-	char	*currentdb=cont->getCurrentDatabase();
+	// split the object (catalog.schema.object) into
+	// catalog, schema, and object
+	char	*currentcatalog=cont->getCurrentCatalog();
 	char	*currentschema=cont->getCurrentSchema();
-	const char	*db=NULL;
+	const char	*catalog=NULL;
 	const char	*schema=NULL;
 	const char	*obj=NULL;
-	cont->splitObjectName(currentdb,currentschema,object,&db,&schema,&obj);
+	cont->splitObjectName(currentcatalog,currentschema,object,
+						&catalog,&schema,&obj);
 
 	// when fetching lists in mysql format, we only want to fetch for
 	// the current database/schema
 	if (listformat==SQLRSERVERLISTFORMAT_MYSQL) {
-		db=currentdb;
+		catalog=currentcatalog;
 		schema=currentschema;
 	}
 
@@ -4607,27 +4737,27 @@ bool sqlrprotocol_sqlrclient::getComponentList(
 	switch (querytype) {
 		case SQLRCLIENTQUERYTYPE_COLUMN_LIST:
 			success=cont->getColumnList(cursor,
-						db,schema,obj,component);
+						catalog,schema,obj,component);
 			cont->setColumnListFormat(listformat);
 			break;
 		case SQLRCLIENTQUERYTYPE_PRIMARY_KEYS_LIST:
 			success=cont->getPrimaryKeysList(cursor,
-							db,schema,obj);
+							catalog,schema,obj);
 			cont->setPrimaryKeyListFormat(listformat);
 			break;
 		case SQLRCLIENTQUERYTYPE_KEY_AND_INDEX_LIST:
 			success=cont->getKeyAndIndexList(cursor,
-							db,schema,obj);
+							catalog,schema,obj);
 			cont->setKeyAndIndexListFormat(listformat);
 			break;
 		case SQLRCLIENTQUERYTYPE_PROCEDURE_PARAMETER_LIST:
 			success=cont->getProcedureParameterList(cursor,
-							db,schema,obj);
+							catalog,schema,obj);
 			cont->setProcedureParameterListFormat(listformat);
 			break;
 		case SQLRCLIENTQUERYTYPE_TYPE_INFO_LIST:
 			success=cont->getTypeInfoList(cursor,
-							db,schema,obj);
+							catalog,schema,obj);
 			cont->setTypeInfoListFormat(listformat);
 			break;
 		default:
@@ -4635,7 +4765,7 @@ bool sqlrprotocol_sqlrclient::getComponentList(
 	}
 
 	// clean up
-	delete[] currentdb;
+	delete[] currentcatalog;
 	delete[] currentschema;
 
 	if (success) {
@@ -4869,6 +4999,15 @@ void sqlrprotocol_sqlrclient::debugCommand(uint16_t command) {
 			break;
 		case GET_LAST_INSERT_ID_LIST:
 			debugWrite("GET_LAST_INSERT_ID_LIST");
+			break;
+		case SELECT_CATALOG:
+			debugWrite("SELECT_CATALOG");
+			break;
+		case GET_CURRENT_CATALOG:
+			debugWrite("GET_CURRENT_CATALOG");
+			break;
+		case GET_DATABASE_IS_SCHEMA:
+			debugWrite("GET_DATABASE_IS_SCHEMA");
 			break;
 		default:
 			debugWrite("bad command");

@@ -9,7 +9,7 @@
 
 -export([alloc/7, connectionFree/0, cursorFree/0, setConnectTimeout/2, getConnectTimeoutSeconds/0, getConnectTimeoutMicroseconds/0, setResponseTimeout/2, getResponseTimeoutSeconds/0, getResponseTimeoutMicroseconds/0, setBindVariableDelimiters/1, getBindVariableDelimiterQuestionMarkSupported/0, getBindVariableDelimiterColonSupported/0, getBindVariableDelimiterAtSignSupported/0, getBindVariableDelimiterDollarSignSupported/0, enableKerberos/3, enableTls/7, disableEncryption/0, endSession/0, suspendSession/0, resumeSession/2]).
 -export([ping/0, identify/0, dbVersion/0, dbHostName/0, dbIpAddress/0, serverVersion/0, clientVersion/0, bindFormat/0, nextvalFormat/0, connectionErrorMessage/0, connectionErrorNumber/0, errorMessage/0, errorNumber/0]).
--export([selectDatabase/1, getCurrentDatabase/0, selectSchema/1, getCurrentSchema/0, getLastInsertId/0]).
+-export([selectDatabase/1, getCurrentDatabase/0, selectCatalog/1, getCurrentCatalog/0, selectSchema/1, getCurrentSchema/0, getDatabaseIsSchema/0, getLastInsertId/0]).
 -export([getConnectionPort/0, getConnectionSocket/0]).
 -export([autoCommitOn/0, autoCommitOff/0, getAutoCommit/0, beginTransaction/0, commit/0, rollback/0]).
 -export([setIsolationLevel/1, getIsolationLevel/0, getDatabaseFeature/1]).
@@ -213,11 +213,20 @@ selectDatabase(Database) when is_list(Database) -> call_port({selectDatabase, Da
 %% @doc Returns the database (catalog) that is currently in use.
 getCurrentDatabase() -> call_port({getCurrentDatabase}).
 
+%% @doc Sets the current catalog to "catalog".
+selectCatalog(Catalog) when is_list(Catalog) -> call_port({selectCatalog, Catalog}).
+
+%% @doc Returns the catalog that is currently in use.
+getCurrentCatalog() -> call_port({getCurrentCatalog}).
+
 %% @doc Sets the current schema to "schema".
 selectSchema(Schema) when is_list(Schema) -> call_port({selectSchema, Schema}).
 
 %% @doc Returns the schema that is currently in use.
 getCurrentSchema() -> call_port({getCurrentSchema}).
+
+%% @doc Returns true if the backend database equates "database" with "schema".
+getDatabaseIsSchema() -> call_port({getDatabaseIsSchema}).
 
 %% @doc Returns the value of the autoincrement column for the last insert.
 getLastInsertId() -> call_port({getLastInsertId}).

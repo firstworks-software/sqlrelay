@@ -119,47 +119,46 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostNameQuery();
-		const char	*getDatabaseListQuery(const char *db);
-		const char	*getSchemaListQuery(const char *db,
+		const char	*getDatabaseListQuery(const char *catalog);
+		const char	*getSchemaListQuery(const char *catalog,
 						const char *schema);
 		const char	*getTableTypeListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *tabletypes);
 		const char	*getGlobalTempTableListQuery();
 		const char	*getTableListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
 		const char	*getTypeInfoListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *type);
 		const char	*getColumnListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						const char *column);
 		const char	*getPrimaryKeysListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table);
 		const char	*getKeyAndIndexListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table);
 		const char	*getProcedureListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure);
 		const char	*getProcedureParameterListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure);
 		const char	*isSynonymQuery();
-		const char	*selectDatabaseQuery();
-		const char	*getCurrentDatabaseQuery();
+		bool		getDatabaseIsSchema();
 		const char	*selectSchemaQuery();
 		const char	*getCurrentSchemaQuery();
 		const char	*getLastInsertIdQuery();
@@ -1271,7 +1270,7 @@ const char *oracleconnection::getDbHostNameQuery() {
 	return NULL;
 }
 
-const char *oracleconnection::getDatabaseListQuery(const char *db) {
+const char *oracleconnection::getDatabaseListQuery(const char *catalog) {
 	// oracle doesn't really have "databases", just schemas,
 	// so return an empty result set with specific column names
 	return "select "
@@ -1287,7 +1286,7 @@ const char *oracleconnection::getDatabaseListQuery(const char *db) {
 		"	1=0";
 }
 
-const char *oracleconnection::getSchemaListQuery(const char *db,
+const char *oracleconnection::getSchemaListQuery(const char *catalog,
 						const char *schema) {
 
 	schemalistquery.clear();
@@ -1321,7 +1320,7 @@ const char *oracleconnection::getSchemaListQuery(const char *db,
 	return schemalistquery.getString();
 }
 
-const char *oracleconnection::getTableTypeListQuery(const char *db,
+const char *oracleconnection::getTableTypeListQuery(const char *catalog,
 						const char *schema,
 						const char *tabletypes) {
 
@@ -1382,7 +1381,7 @@ const char *oracleconnection::getGlobalTempTableListQuery() {
 	}
 }
 
-const char *oracleconnection::getTableListQuery(const char *db,
+const char *oracleconnection::getTableListQuery(const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes) {
@@ -2210,7 +2209,7 @@ static const char	*nclobtype=
 			"from "
 			"	dual) ";
 
-const char *oracleconnection::getTypeInfoListQuery(const char *db,
+const char *oracleconnection::getTypeInfoListQuery(const char *catalog,
 						const char *schema,
 						const char *type) {
 
@@ -2334,7 +2333,7 @@ const char *oracleconnection::getTypeInfoListQuery(const char *db,
 	return NULL;
 }
 
-const char *oracleconnection::getColumnListQuery(const char *db,
+const char *oracleconnection::getColumnListQuery(const char *catalog,
 						const char *schema,
 						const char *table,
 						const char *column) {
@@ -2542,7 +2541,7 @@ const char *oracleconnection::getColumnListQuery(const char *db,
 	return columnlistquery.getString();
 }
 
-const char *oracleconnection::getPrimaryKeysListQuery(const char *db,
+const char *oracleconnection::getPrimaryKeysListQuery(const char *catalog,
 						const char *schema,
 						const char *table) {
 
@@ -2621,7 +2620,7 @@ const char *oracleconnection::getPrimaryKeysListQuery(const char *db,
 	return primarykeyslistquery.getString();
 }
 
-const char *oracleconnection::getKeyAndIndexListQuery(const char *db,
+const char *oracleconnection::getKeyAndIndexListQuery(const char *catalog,
 						const char *schema,
 						const char *table) {
 
@@ -2713,7 +2712,7 @@ const char *oracleconnection::getKeyAndIndexListQuery(const char *db,
 	return keyandindexlistquery.getString();
 }
 
-const char *oracleconnection::getProcedureListQuery(const char *db,
+const char *oracleconnection::getProcedureListQuery(const char *catalog,
 						const char *schema,
 						const char *procedure) {
 
@@ -2761,7 +2760,7 @@ const char *oracleconnection::getProcedureListQuery(const char *db,
 	return procedurelistquery.getString();
 }
 
-const char *oracleconnection::getProcedureParameterListQuery(const char *db,
+const char *oracleconnection::getProcedureParameterListQuery(const char *catalog,
 						const char *schema,
 						const char *procedure) {
 
@@ -2886,16 +2885,8 @@ const char *oracleconnection::isSynonymQuery() {
 	}
 }
 
-const char *oracleconnection::selectDatabaseQuery() {
-	// FIXME: this really sets the schema,
-	// oracle doesn't really have a "database" per-se
-	return "alter session set current_schema=%s";
-}
-
-const char *oracleconnection::getCurrentDatabaseQuery() {
-	// FIXME: this really gets the schema,
-	// oracle doesn't really have a "database" per-se
-	return "select sys_context('userenv','current_schema') from dual";
+bool oracleconnection::getDatabaseIsSchema() {
+	return true;
 }
 
 const char *oracleconnection::selectSchemaQuery() {

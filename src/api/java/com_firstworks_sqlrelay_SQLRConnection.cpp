@@ -341,6 +341,30 @@ JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getCurrent
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRConnection
+ * Method:    selectCatalog
+ * Signature: (Ljava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_selectCatalog
+  (JNIEnv *env, jobject self, jstring catalog) {
+	char	*catalogstring=conGetStringUTFChars(env,catalog,0);
+	bool	retval=getSqlrConnection(env,self)->
+				selectCatalog(catalogstring);
+	conReleaseStringUTFChars(env,catalog,catalogstring);
+	return (jboolean)retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRConnection
+ * Method:    getCurrentCatalog
+ * Signature: ()Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getCurrentCatalog
+  (JNIEnv *env, jobject self) {
+	return conNewStringUTF(env,getSqlrConnection(env,self)->getCurrentCatalog());
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRConnection
  * Method:    selectSchema
  * Signature: (Ljava/lang/String;)Z
  */
@@ -361,6 +385,16 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_selectSch
 JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getCurrentSchema
   (JNIEnv *env, jobject self) {
 	return conNewStringUTF(env,getSqlrConnection(env,self)->getCurrentSchema());
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRConnection
+ * Method:    getDatabaseIsSchema
+ * Signature: ()Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_getDatabaseIsSchema
+  (JNIEnv *env, jobject self) {
+	return (jboolean)getSqlrConnection(env,self)->getDatabaseIsSchema();
 }
 
 /*

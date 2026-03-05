@@ -216,44 +216,46 @@ class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 		const char	*getBindFormat();
 #endif
 		const char	*getNextvalFormat();
-		const char	*getDatabaseListQuery(const char *db);
-		const char	*getSchemaListQuery(const char *db,
+		const char	*getDatabaseListQuery(const char *catalog);
+		const char	*getSchemaListQuery(const char *catalog,
 						const char *schema);
-		const char	*getTableTypeListQuery(const char *db,
+		const char	*getTableTypeListQuery(const char *catalog,
 						const char *schema,
 						const char *tabletypes);
 		const char	*getTableListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
 		const char	*getTypeInfoListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *type);
 		const char	*getColumnListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						const char *column);
 		const char	*getPrimaryKeysListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table);
 		const char	*getKeyAndIndexListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table);
 		const char	*getProcedureListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure);
 		const char	*getProcedureParameterListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure);
-		const char	*selectDatabaseQuery();
-		const char	*getCurrentDatabaseQuery();
+		bool		getDatabaseIsSchema();
+		char		*getCurrentCatalog();
+		const char	*selectSchemaQuery();
+		const char	*getCurrentSchemaQuery();
 		const char	*setIsolationLevelQuery();
 		const char	*getIsolationLevelQuery();
 		const char	*mapIsolationLevel(
@@ -724,7 +726,7 @@ const char *mysqlconnection::getNextvalFormat() {
 	return "";
 }
 
-const char *mysqlconnection::getDatabaseListQuery(const char *db) {
+const char *mysqlconnection::getDatabaseListQuery(const char *catalog) {
 
 	databaselistquery.clear();
 
@@ -741,11 +743,11 @@ const char *mysqlconnection::getDatabaseListQuery(const char *db) {
 		"	information_schema.schemata ");
 
 	// where clause
-	if (db) {
+	if (catalog) {
 		databaselistquery.append(
 			"where "
 			"	schema_name like '");
-		databaselistquery.append(db);
+		databaselistquery.append(catalog);
 		databaselistquery.append("' ");
 	}
 
@@ -757,7 +759,7 @@ const char *mysqlconnection::getDatabaseListQuery(const char *db) {
 	return databaselistquery.getString();
 }
 
-const char *mysqlconnection::getSchemaListQuery(const char *db,
+const char *mysqlconnection::getSchemaListQuery(const char *catalog,
 						const char *schema) {
 
 	schemalistquery.clear();
@@ -776,11 +778,11 @@ const char *mysqlconnection::getSchemaListQuery(const char *db,
 	bool	prevclause=false;
 
 	// where clause
-	if (db) {
+	if (catalog) {
 		schemalistquery.append(
 			"where "
 			"	catalog_name like '");
-		schemalistquery.append(db);
+		schemalistquery.append(catalog);
 		schemalistquery.append("' ");
 		prevclause=true;
 	}
@@ -805,7 +807,7 @@ const char *mysqlconnection::getSchemaListQuery(const char *db,
 	return schemalistquery.getString();
 }
 
-const char *mysqlconnection::getTableTypeListQuery(const char *db,
+const char *mysqlconnection::getTableTypeListQuery(const char *catalog,
 						const char *schema,
 						const char *tabletypes) {
 	tabletypelistquery.clear();
@@ -845,7 +847,7 @@ const char *mysqlconnection::getTableTypeListQuery(const char *db,
 	return tabletypelistquery.getString();
 }
 
-const char *mysqlconnection::getTableListQuery(const char *db,
+const char *mysqlconnection::getTableListQuery(const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes) {
@@ -893,11 +895,11 @@ const char *mysqlconnection::getTableListQuery(const char *db,
 	}
 	otypes.append(") ");
 	tablelistquery.append(otypes.getString());
-	if (db) {
+	if (catalog) {
 		tablelistquery.append(
 			"	and "
 			"	table_catalog like '");
-		tablelistquery.append(db);
+		tablelistquery.append(catalog);
 		tablelistquery.append("' ");
 	}
 	if (schema) {
@@ -1549,7 +1551,7 @@ static const char	*mysql_settype=
 			"	NULL "
 			") ";
 
-const char *mysqlconnection::getTypeInfoListQuery(const char *db,
+const char *mysqlconnection::getTypeInfoListQuery(const char *catalog,
 						const char *schema,
 						const char *type) {
 
@@ -1670,7 +1672,7 @@ const char *mysqlconnection::getTypeInfoListQuery(const char *db,
 	return NULL;
 }
 
-const char *mysqlconnection::getColumnListQuery(const char *db,
+const char *mysqlconnection::getColumnListQuery(const char *catalog,
 					const char *schema,
 					const char *table,
 					const char *column) {
@@ -1714,11 +1716,11 @@ const char *mysqlconnection::getColumnListQuery(const char *db,
 	bool	prevclause=false;
 
 	// where clause
-	if (!charstring::isNullOrEmpty(db)) {
+	if (!charstring::isNullOrEmpty(catalog)) {
 		columnlistquery.append(
 			"where "
 			"	table_catalog like '");
-		columnlistquery.append(db);
+		columnlistquery.append(catalog);
 		columnlistquery.append("' ");
 		prevclause=true;
 	}
@@ -1765,7 +1767,7 @@ const char *mysqlconnection::getColumnListQuery(const char *db,
 	return columnlistquery.getString();
 }
 
-const char *mysqlconnection::getPrimaryKeysListQuery(const char *db,
+const char *mysqlconnection::getPrimaryKeysListQuery(const char *catalog,
 					const char *schema,
 					const char *table) {
 
@@ -1798,11 +1800,11 @@ const char *mysqlconnection::getPrimaryKeysListQuery(const char *db,
 		"	tc.table_schema=ku.table_schema "
 		"	and "
 		"	tc.table_name=ku.table_name ");
-	if (!charstring::isNullOrEmpty(db)) {
+	if (!charstring::isNullOrEmpty(catalog)) {
 		primarykeyslistquery.append(
 			"	and "
 			"	'def' like '");
-		primarykeyslistquery.append(db);
+		primarykeyslistquery.append(catalog);
 		primarykeyslistquery.append("' ");
 	}
 	if (!charstring::isNullOrEmpty(schema)) {
@@ -1829,7 +1831,7 @@ const char *mysqlconnection::getPrimaryKeysListQuery(const char *db,
 	return primarykeyslistquery.getString();
 }
 
-const char *mysqlconnection::getKeyAndIndexListQuery(const char *db,
+const char *mysqlconnection::getKeyAndIndexListQuery(const char *catalog,
 					const char *schema,
 					const char *table) {
 
@@ -1861,11 +1863,11 @@ const char *mysqlconnection::getKeyAndIndexListQuery(const char *db,
 	bool	prevclause=false;
 
 	// where clause
-	if (!charstring::isNullOrEmpty(db)) {
+	if (!charstring::isNullOrEmpty(catalog)) {
 		keyandindexlistquery.append(
 			"where "
 			"	s.table_catalog like '");
-		keyandindexlistquery.append(db);
+		keyandindexlistquery.append(catalog);
 		keyandindexlistquery.append("' ");
 		prevclause=true;
 	}
@@ -1904,7 +1906,7 @@ const char *mysqlconnection::getKeyAndIndexListQuery(const char *db,
 }
 
 const char *mysqlconnection::getProcedureListQuery(
-					const char *db,
+					const char *catalog,
 					const char *schema,
 					const char *procedure) {
 
@@ -1928,17 +1930,17 @@ const char *mysqlconnection::getProcedureListQuery(
 		"	null "
 		"from "
 		"	information_schema.routines ");
-	if (!charstring::isNullOrEmpty(db) ||
+	if (!charstring::isNullOrEmpty(catalog) ||
 		!charstring::isNullOrEmpty(schema) ||
 		!charstring::isNullOrEmpty(procedure)) {
 
 	// where clause
 		procedurelistquery.append("where ");
 		bool	first=true;
-		if (!charstring::isNullOrEmpty(db)) {
+		if (!charstring::isNullOrEmpty(catalog)) {
 			procedurelistquery.append(
 				"routine_catalog like '");
-			procedurelistquery.append(db);
+			procedurelistquery.append(catalog);
 			procedurelistquery.append("' ");
 			first=false;
 		}
@@ -1974,7 +1976,7 @@ const char *mysqlconnection::getProcedureListQuery(
 }
 
 const char *mysqlconnection::getProcedureParameterListQuery(
-					const char *db,
+					const char *catalog,
 					const char *schema,
 					const char *procedure) {
 
@@ -2013,17 +2015,17 @@ const char *mysqlconnection::getProcedureParameterListQuery(
 	procedureparameterlistquery.append(
 		"from "
 		"	information_schema.parameters p ");
-	if (!charstring::isNullOrEmpty(db) ||
+	if (!charstring::isNullOrEmpty(catalog) ||
 		!charstring::isNullOrEmpty(schema) ||
 		!charstring::isNullOrEmpty(procedure)) {
 
 	// where clause
 		procedureparameterlistquery.append("where ");
 		bool	first=true;
-		if (!charstring::isNullOrEmpty(db)) {
+		if (!charstring::isNullOrEmpty(catalog)) {
 			procedureparameterlistquery.append(
 				"p.specific_catalog like '");
-			procedureparameterlistquery.append(db);
+			procedureparameterlistquery.append(catalog);
 			procedureparameterlistquery.append("' ");
 			first=false;
 		}
@@ -2057,11 +2059,19 @@ const char *mysqlconnection::getProcedureParameterListQuery(
 	return procedureparameterlistquery.getString();
 }
 
-const char *mysqlconnection::selectDatabaseQuery() {
+bool mysqlconnection::getDatabaseIsSchema() {
+	return true;
+}
+
+char *mysqlconnection::getCurrentCatalog() {
+	return charstring::duplicate("def");
+}
+
+const char *mysqlconnection::selectSchemaQuery() {
 	return "use `%s`";
 }
 
-const char *mysqlconnection::getCurrentDatabaseQuery() {
+const char *mysqlconnection::getCurrentSchemaQuery() {
 	return "select database()";
 }
 

@@ -37,45 +37,46 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostNameQuery();
-		const char	*getDatabaseListQuery(const char *db);
-		const char	*getSchemaListQuery(const char *db,
+		const char	*getDatabaseListQuery(const char *catalog);
+		const char	*getSchemaListQuery(const char *catalog,
 						const char *schema);
 		const char	*getTableTypeListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *tabletypes);
 		const char	*getTableListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
 		const char	*getTypeInfoListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *type);
 		const char	*getColumnListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						const char *column);
 		const char	*getPrimaryKeysListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table);
 		const char	*getKeyAndIndexListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table);
 		const char	*getProcedureListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure);
 		const char	*getProcedureParameterListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure);
-		const char	*selectDatabaseQuery();
-		const char	*getCurrentDatabaseQuery();
+		const char	*selectCatalogQuery();
+		const char	*getCurrentCatalogQuery();
+		const char	*getCurrentSchemaQuery();
 		const char	*getLastInsertIdQuery();
 		const char	*getIsolationLevelQuery();
 		const char	*mapIsolationLevel(
@@ -603,7 +604,7 @@ const char *sapconnection::getDbHostNameQuery() {
 	return "select asehostname()";
 }
 
-const char *sapconnection::getDatabaseListQuery(const char *db) {
+const char *sapconnection::getDatabaseListQuery(const char *catalog) {
 	return "select "
 		"	'' as table_cat, "
 		"	'' as table_schem, "
@@ -613,7 +614,7 @@ const char *sapconnection::getDatabaseListQuery(const char *db) {
 		"	null";
 }
 
-const char *sapconnection::getSchemaListQuery(const char *db,
+const char *sapconnection::getSchemaListQuery(const char *catalog,
 						const char *schema) {
 
 	schemalistquery.clear();
@@ -647,7 +648,7 @@ const char *sapconnection::getSchemaListQuery(const char *db,
 	return schemalistquery.getString();
 }
 
-const char *sapconnection::getTableTypeListQuery(const char *db,
+const char *sapconnection::getTableTypeListQuery(const char *catalog,
 						const char *schema,
 						const char *tabletypes) {
 
@@ -684,7 +685,7 @@ const char *sapconnection::getTableTypeListQuery(const char *db,
 	return tabletypelistquery.getString();
 }
 
-const char *sapconnection::getTableListQuery(const char *db,
+const char *sapconnection::getTableListQuery(const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes) {
@@ -1318,7 +1319,7 @@ static const char	*sap_unitexttype=
 			"	NULL "
 			") ";
 
-const char *sapconnection::getTypeInfoListQuery(const char *db,
+const char *sapconnection::getTypeInfoListQuery(const char *catalog,
 						const char *schema,
 						const char *type) {
 
@@ -1427,7 +1428,7 @@ const char *sapconnection::getTypeInfoListQuery(const char *db,
 	return NULL;
 }
 
-const char *sapconnection::getColumnListQuery(const char *db,
+const char *sapconnection::getColumnListQuery(const char *catalog,
 					const char *schema,
 					const char *table,
 					const char *column) {
@@ -1553,7 +1554,7 @@ const char *sapconnection::getColumnListQuery(const char *db,
 	return columnlistquery.getString();
 }
 
-const char *sapconnection::getPrimaryKeysListQuery(const char *db,
+const char *sapconnection::getPrimaryKeysListQuery(const char *catalog,
 					const char *schema,
 					const char *table) {
 
@@ -1611,7 +1612,7 @@ const char *sapconnection::getPrimaryKeysListQuery(const char *db,
 	return primarykeyslistquery.getString();
 }
 
-const char *sapconnection::getKeyAndIndexListQuery(const char *db,
+const char *sapconnection::getKeyAndIndexListQuery(const char *catalog,
 					const char *schema,
 					const char *table) {
 
@@ -1685,7 +1686,7 @@ const char *sapconnection::getKeyAndIndexListQuery(const char *db,
 }
 
 const char *sapconnection::getProcedureListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure) {
 
@@ -1734,7 +1735,7 @@ const char *sapconnection::getProcedureListQuery(
 }
 
 const char *sapconnection::getProcedureParameterListQuery(
-					const char *db,
+					const char *catalog,
 					const char *schema,
 					const char *procedure) {
 
@@ -1807,12 +1808,16 @@ const char *sapconnection::getProcedureParameterListQuery(
 	return procedureparameterlistquery.getString();
 }
 
-const char *sapconnection::selectDatabaseQuery() {
+const char *sapconnection::selectCatalogQuery() {
 	return "use %s";
 }
 
-const char *sapconnection::getCurrentDatabaseQuery() {
+const char *sapconnection::getCurrentCatalogQuery() {
 	return "select db_name()";
+}
+
+const char *sapconnection::getCurrentSchemaQuery() {
+	return "select user_name()";
 }
 
 const char *sapconnection::getLastInsertIdQuery() {

@@ -245,44 +245,44 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostNameQuery();
-		const char	*getDatabaseListQuery(const char *db);
-		const char	*getSchemaListQuery(const char *db,
+		const char	*getDatabaseListQuery(const char *catalog);
+		const char	*getSchemaListQuery(const char *catalog,
 						const char *schema);
-		const char	*getTableTypeListQuery(const char *db,
+		const char	*getTableTypeListQuery(const char *catalog,
 						const char *schema,
 						const char *tabletypes);
 		const char	*getTableListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
 		const char	*getTypeInfoListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *type);
 		const char	*getColumnListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						const char *column);
 		const char	*getPrimaryKeysListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table);
 		const char	*getKeyAndIndexListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table);
 		const char	*getProcedureListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure);
 		const char	*getProcedureParameterListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure);
-		const char	*selectDatabaseQuery();
-		const char	*getCurrentDatabaseQuery();
+		const char	*selectCatalogQuery();
+		const char	*getCurrentCatalogQuery();
 		const char	*getCurrentSchemaQuery();
 		const char	*getLastInsertIdQuery();
 		const char	*setIsolationLevelQuery();
@@ -588,7 +588,7 @@ const char *informixconnection::getDbHostNameQuery() {
 	//return "select os_nodename from sysmaster:sysmachineinfo";
 }
 
-const char *informixconnection::getDatabaseListQuery(const char *db) {
+const char *informixconnection::getDatabaseListQuery(const char *catalog) {
 
 	databaselistquery.clear();
 
@@ -605,11 +605,11 @@ const char *informixconnection::getDatabaseListQuery(const char *db) {
 		"	sysmaster:sysdatabases ");
 
 	// where clause
-	if (db) {
+	if (catalog) {
 		databaselistquery.append(
 			"where "
 			"	name like '");
-		databaselistquery.append(db);
+		databaselistquery.append(catalog);
 		databaselistquery.append("' ");
 	}
 
@@ -621,10 +621,8 @@ const char *informixconnection::getDatabaseListQuery(const char *db) {
 	return databaselistquery.getString();
 }
 
-const char *informixconnection::getSchemaListQuery(const char *db,
-						const char *schema) {
-
-	// See notes in getCurrentSchemaQuery() about "schema" vs "owner".
+const char *informixconnection::getSchemaListQuery(const char *catalog,
+							const char *schema) {
 
 	// FIXME:  This only returns users that own at least one table.
 	// There doesn't appear to be a way to get a generic list of users.
@@ -644,13 +642,13 @@ const char *informixconnection::getSchemaListQuery(const char *db,
 		"	sysmaster:systabnames ");
 
 	// where clause
-	if (db || schema) {
+	if (catalog || schema) {
 		schemalistquery.append("where ");
 		bool	first=true;
-		if (db) {
+		if (catalog) {
 			schemalistquery.append(
 				"	dbsname like '");
-			schemalistquery.append(db);
+			schemalistquery.append(catalog);
 			schemalistquery.append("' ");
 			first=false;
 		}
@@ -674,11 +672,9 @@ const char *informixconnection::getSchemaListQuery(const char *db,
 	return schemalistquery.getString();
 }
 
-const char *informixconnection::getTableTypeListQuery(const char *db,
+const char *informixconnection::getTableTypeListQuery(const char *catalog,
 						const char *schema,
 						const char *tabletypes) {
-
-	// See notes in getCurrentSchemaQuery() about "schema" vs "owner".
 
 	tabletypelistquery.clear();
 
@@ -724,25 +720,23 @@ const char *informixconnection::getTableTypeListQuery(const char *db,
 	return tabletypelistquery.getString();
 }
 
-const char *informixconnection::getTableListQuery(const char *db,
+const char *informixconnection::getTableListQuery(const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes) {
-
-	// See notes in getCurrentSchemaQuery() about "schema" vs "owner".
 
 	// This is a mess.  The sysmaster:systabnames view doesn't have an
 	// object type column.  sysmaster:systabinfo has a ti_flags bitmap
 	// column, but it doesn't appear to have values for table, view,
 	// synonym, etc.  The systables view has a tabtype column, but its
 	// dbname column is reliably empty, and it only shows tables in the
-	// current db/schema.
+	// current catalog/schema.
 	//
-	// If we want to be able to filter by db, schema, and table then we
+	// If we want to be able to filter by catalog, schema, and table then we
 	// have to use sysmaster:systabnames.
 	// If we want to be able to filter by objecttypes then we have to use
-	// systabes, but we can only really do that if db/schema are the
-	// current db/schema.
+	// systabes, but we can only really do that if catalog/schema are the
+	// current catalog/schema.
 	//
 	// For now, we're ignoring objecttypes.
 
@@ -761,13 +755,13 @@ const char *informixconnection::getTableListQuery(const char *db,
 		"	sysmaster:systabnames ");
 
 	// where clause
-	if (db || schema || table) {
+	if (catalog || schema || table) {
 		tablelistquery.append("where ");
 		bool	first=true;
-		if (db) {
+		if (catalog) {
 			tablelistquery.append(
 				"	dbsname like '");
-			tablelistquery.append(db);
+			tablelistquery.append(catalog);
 			tablelistquery.append("' ");
 			first=false;
 		}
@@ -1352,7 +1346,7 @@ static const char	*ifx_intervaltype=
 			"from "
 			"	sysmaster:sysdual ";
 
-const char *informixconnection::getTypeInfoListQuery(const char *db,
+const char *informixconnection::getTypeInfoListQuery(const char *catalog,
 						const char *schema,
 						const char *type) {
 
@@ -1463,15 +1457,13 @@ const char *informixconnection::getTypeInfoListQuery(const char *db,
 	return NULL;
 }
 
-const char *informixconnection::getColumnListQuery(const char *db,
+const char *informixconnection::getColumnListQuery(const char *catalog,
 							const char *schema,
 							const char *table,
 							const char *column) {
 
-	// See notes in getCurrentSchemaQuery() about "schema" vs "owner".
-
 	// The sys* tables only return info for tables in the current database,
-	// so we can't use the "db" parameter at all.  There aren't any
+	// so we can't use the "catalog" parameter at all.  There aren't any
 	// sysmaster tables that return column info.
 
 	columnlistquery.clear();
@@ -1676,14 +1668,12 @@ const char *informixconnection::getColumnListQuery(const char *db,
 	return columnlistquery.getString();
 }
 
-const char *informixconnection::getPrimaryKeysListQuery(const char *db,
+const char *informixconnection::getPrimaryKeysListQuery(const char *catalog,
 							const char *schema,
 							const char *table) {
 
-	// See notes in getCurrentSchemaQuery() about "schema" vs "owner".
-
 	// The sys* tables only return info for tables in the current database,
-	// so we can't use the "db" parameter at all.  There aren't any
+	// so we can't use the "catalog" parameter at all.  There aren't any
 	// sysmaster tables that return column info.
 
 	primarykeyslistquery.clear();
@@ -1775,14 +1765,12 @@ const char *informixconnection::getPrimaryKeysListQuery(const char *db,
 	return primarykeyslistquery.getString();
 }
 
-const char *informixconnection::getKeyAndIndexListQuery(const char *db,
+const char *informixconnection::getKeyAndIndexListQuery(const char *catalog,
 							const char *schema,
 							const char *table) {
 
-	// See notes in getCurrentSchemaQuery() about "schema" vs "owner".
-
 	// The sys* tables only return info for tables in the current database,
-	// so we can't use the "db" parameter at all.  There aren't any
+	// so we can't use the "catalog" parameter at all.  There aren't any
 	// sysmaster tables that return column info.
 
 	keyandindexlistquery.clear();
@@ -1867,15 +1855,14 @@ const char *informixconnection::getKeyAndIndexListQuery(const char *db,
 }
 
 const char *informixconnection::getProcedureListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure) {
 
-	// See notes in getCurrentSchemaQuery() about "schema" vs "owner".
-
 	// The sys* tables only return info for procedures in the current
-	// database, so we can't use the "db" parameter at all.  There aren't
-	// any sysmaster tables that return procedure info.
+	// database, so we can't use the "catalog" parameter at
+	// all.  There aren't any sysmaster tables that return
+	// procedure info.
 
 	procedurelistquery.clear();
 
@@ -1930,15 +1917,14 @@ const char *informixconnection::getProcedureListQuery(
 }
 
 const char *informixconnection::getProcedureParameterListQuery(
-							const char *db,
+							const char *catalog,
 							const char *schema,
 							const char *procedure) {
 
-	// See notes in getCurrentSchemaQuery() about "schema" vs "owner".
-
 	// The sys* tables only return info for procedures in the current
-	// database, so we can't use the "db" parameter at all.  There aren't
-	// any sysmaster tables that return procedure info.
+	// database, so we can't use the "catalog" parameter at
+	// all.  There aren't any sysmaster tables that return
+	// procedure info.
 
 	procedureparameterlistquery.clear();
 
@@ -2029,20 +2015,15 @@ const char *informixconnection::getProcedureParameterListQuery(
 const char *informixconnection::getBindFormat() {
 	return "?";
 }
-const char *informixconnection::selectDatabaseQuery() {
+const char *informixconnection::selectCatalogQuery() {
 	return "database %s";
 }
 
-const char *informixconnection::getCurrentDatabaseQuery() {
+const char *informixconnection::getCurrentCatalogQuery() {
 	return "select trim(dbinfo('dbname')) from sysmaster:sysdual";
 }
 
 const char *informixconnection::getCurrentSchemaQuery() {
-	// Informix's object heirarchy is db.owner.object where "owner" means
-	// "owning user".  It does have what it calls "schemas", but those are
-	// basically roles like "informix", "public", and "ifxjson".  When we
-	// say "schema", we really mean "owner" in informix terms.  So, return
-	// the current user here, when we request the current schema.
 	return "select trim(user) from sysmaster:sysdual";
 }
 

@@ -384,6 +384,18 @@ class sqlrconnection:
         """
         return CSQLRelay.getCurrentDatabase(self.connection)
 
+    def selectCatalog(self,catalog):
+        """
+        Sets the current catalog to "catalog"
+        """
+        return CSQLRelay.selectCatalog(self.connection,catalog)
+
+    def getCurrentCatalog(self):
+        """
+        Returns the catalog that is currently in use.
+        """
+        return CSQLRelay.getCurrentCatalog(self.connection)
+
     def selectSchema(self,schema):
         """
         Sets the current schema to "schema"
@@ -395,6 +407,14 @@ class sqlrconnection:
         Returns the schema that is currently in use.
         """
         return CSQLRelay.getCurrentSchema(self.connection)
+
+    def getDatabaseIsSchema(self):
+        """
+        Returns true if the backend database equates "database"
+        with "schema", and false if it equates "database" with
+        "catalog".
+        """
+        return CSQLRelay.getDatabaseIsSchema(self.connection)
 
     def getLastInsertId(self):
         """

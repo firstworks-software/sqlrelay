@@ -47,40 +47,40 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostName();
-		const char	*getDatabaseListQuery(const char *db);
-		const char	*getSchemaListQuery(const char *db,
+		const char	*getDatabaseListQuery(const char *catalog);
+		const char	*getSchemaListQuery(const char *catalog,
 						const char *schema);
-		const char	*getTableTypeListQuery(const char *db,
+		const char	*getTableTypeListQuery(const char *catalog,
 						const char *schema,
 						const char *tabletypes);
 		const char	*getTableListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
 		const char	*getTypeInfoListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *type);
 		const char	*getColumnListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						const char *column);
 		const char	*getPrimaryKeysListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table);
 		const char	*getKeyAndIndexListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table);
 		const char	*getProcedureListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure);
 		const char	*getProcedureParameterListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure);
 		#ifdef SQLITE_TRANSACTIONAL
@@ -93,8 +93,8 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 		const char * const	*getDatabaseFeatures();
 		const char	*beginTransactionQuery();
 		#endif
-		bool		selectDatabase(const char *database);
-		char		*getCurrentDatabase();
+		bool		selectCatalog(const char *catalog);
+		char		*getCurrentCatalog();
 		bool		getLastInsertId(uint64_t *id);
 		const char	*getNoopQuery();
 		#ifdef SQLITE3
@@ -310,7 +310,7 @@ const char *sqliteconnection::getDbHostName() {
 	return hostname;
 }
 
-const char *sqliteconnection::getDatabaseListQuery(const char *db) {
+const char *sqliteconnection::getDatabaseListQuery(const char *catalog) {
 	//return "pragma database_list";
 	return "select "
 		"	'' as table_cat, "
@@ -321,7 +321,7 @@ const char *sqliteconnection::getDatabaseListQuery(const char *db) {
 		"	null";
 }
 
-const char *sqliteconnection::getSchemaListQuery(const char *db,
+const char *sqliteconnection::getSchemaListQuery(const char *catalog,
 						const char *schema) {
 	return "select "
 		"	'' as table_cat, "
@@ -334,7 +334,7 @@ const char *sqliteconnection::getSchemaListQuery(const char *db,
 		"	1=0";
 }
 
-const char *sqliteconnection::getTableTypeListQuery(const char *db,
+const char *sqliteconnection::getTableTypeListQuery(const char *catalog,
 						const char *schema,
 						const char *tabletypes) {
 	tabletypelistquery.clear();
@@ -370,7 +370,7 @@ const char *sqliteconnection::getTableTypeListQuery(const char *db,
 	return tabletypelistquery.getString();
 }
 
-const char *sqliteconnection::getTableListQuery(const char *db,
+const char *sqliteconnection::getTableListQuery(const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes) {
@@ -825,7 +825,7 @@ static const char	*tinyinttype=
 			"	null as interval_precision, "
 			"	NULL ";
 
-const char *sqliteconnection::getTypeInfoListQuery(const char *db,
+const char *sqliteconnection::getTypeInfoListQuery(const char *catalog,
 						const char *schema,
 						const char *type) {
 
@@ -904,7 +904,7 @@ const char *sqliteconnection::getTypeInfoListQuery(const char *db,
 	return NULL;
 }
 
-const char *sqliteconnection::getColumnListQuery(const char *db,
+const char *sqliteconnection::getColumnListQuery(const char *catalog,
 					const char *schema,
 					const char *table,
 					const char *column) {
@@ -960,7 +960,7 @@ const char *sqliteconnection::getColumnListQuery(const char *db,
 	return columnlistquery.getString();
 }
 
-const char *sqliteconnection::getPrimaryKeysListQuery(const char *db,
+const char *sqliteconnection::getPrimaryKeysListQuery(const char *catalog,
 					const char *schema,
 					const char *table) {
 
@@ -993,7 +993,7 @@ const char *sqliteconnection::getPrimaryKeysListQuery(const char *db,
 	return primarykeyslistquery.getString();
 }
 
-const char *sqliteconnection::getKeyAndIndexListQuery(const char *db,
+const char *sqliteconnection::getKeyAndIndexListQuery(const char *catalog,
 					const char *schema,
 					const char *table) {
 
@@ -1036,7 +1036,7 @@ const char *sqliteconnection::getKeyAndIndexListQuery(const char *db,
 	return keyandindexlistquery.getString();
 }
 
-const char *sqliteconnection::getProcedureListQuery(const char *db,
+const char *sqliteconnection::getProcedureListQuery(const char *catalog,
 						const char *schema,
 						const char *procedure) {
 	return "select "
@@ -1054,7 +1054,7 @@ const char *sqliteconnection::getProcedureListQuery(const char *db,
 }
 
 const char *sqliteconnection::getProcedureParameterListQuery(
-					const char *db,
+					const char *catalog,
 					const char *schema,
 					const char *procedure) {
 	return "select "
@@ -1568,13 +1568,13 @@ const char *sqliteconnection::beginTransactionQuery() {
 }
 #endif
 
-bool sqliteconnection::selectDatabase(const char *database) {
+bool sqliteconnection::selectCatalog(const char *catalog) {
 
 	// keep track of the original db and host
 	char	*originaldb=db;
 
 	// reset the db/host
-	db=charstring::duplicate(database);
+	db=charstring::duplicate(catalog);
 
 	cont->clearError();
 
@@ -1603,7 +1603,7 @@ bool sqliteconnection::selectDatabase(const char *database) {
 	return true;
 }
 
-char *sqliteconnection::getCurrentDatabase() {
+char *sqliteconnection::getCurrentCatalog() {
 	return charstring::duplicate(db);
 }
 

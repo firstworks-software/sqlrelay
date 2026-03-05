@@ -256,44 +256,46 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostNameQuery();
-		const char	*getDatabaseListQuery(const char *db);
-		const char	*getSchemaListQuery(const char *db,
+		const char	*getDatabaseListQuery(const char *catalog);
+		const char	*getSchemaListQuery(const char *catalog,
 						const char *schema);
-		const char	*getTableTypeListQuery(const char *db,
+		const char	*getTableTypeListQuery(const char *catalog,
 						const char *schema,
 						const char *tabletypes);
 		const char	*getTableListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
 		const char	*getTypeInfoListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *type);
 		const char	*getColumnListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						const char *column);
 		const char	*getPrimaryKeysListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table);
 		const char	*getKeyAndIndexListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table);
 		const char	*getProcedureListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure);
 		const char	*getProcedureParameterListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure);
-		const char	*selectDatabaseQuery();
-		const char	*getCurrentDatabaseQuery();
+		bool		getDatabaseIsSchema();
+		const char	*getCurrentCatalogQuery();
+		const char	*selectSchemaQuery();
+		const char	*getCurrentSchemaQuery();
 		const char	*getLastInsertIdQuery();
 		const char	*setIsolationLevelQuery();
 		const char	*getIsolationLevelQuery();
@@ -612,7 +614,7 @@ const char *db2connection::getDbHostNameQuery() {
 	return dbhostnamequery;
 }
 
-const char *db2connection::getDatabaseListQuery(const char *db) {
+const char *db2connection::getDatabaseListQuery(const char *catalog) {
 
 	databaselistquery.clear();
 
@@ -629,11 +631,11 @@ const char *db2connection::getDatabaseListQuery(const char *db) {
 		"	syscat.schemata ");
 
 	// where clause
-	if (db) {
+	if (catalog) {
 		databaselistquery.append(
 			"where "
 			"	schemaname like '");
-		databaselistquery.append(db);
+		databaselistquery.append(catalog);
 		databaselistquery.append("' ");
 	}
 
@@ -645,7 +647,7 @@ const char *db2connection::getDatabaseListQuery(const char *db) {
 	return databaselistquery.getString();
 }
 
-const char *db2connection::getSchemaListQuery(const char *db,
+const char *db2connection::getSchemaListQuery(const char *catalog,
 						const char *schema) {
 
 	schemalistquery.clear();
@@ -679,7 +681,7 @@ const char *db2connection::getSchemaListQuery(const char *db,
 	return schemalistquery.getString();
 }
 
-const char *db2connection::getTableTypeListQuery(const char *db,
+const char *db2connection::getTableTypeListQuery(const char *catalog,
 						const char *schema,
 						const char *tabletypes) {
 
@@ -720,7 +722,7 @@ const char *db2connection::getTableTypeListQuery(const char *db,
 	return tabletypelistquery.getString();
 }
 
-const char *db2connection::getTableListQuery(const char *db,
+const char *db2connection::getTableListQuery(const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes) {
@@ -1275,7 +1277,7 @@ static const char	*db2_decfloattype=
 			"from "
 			"	sysibm.sysdummy1) ";
 
-const char *db2connection::getTypeInfoListQuery(const char *db,
+const char *db2connection::getTypeInfoListQuery(const char *catalog,
 						const char *schema,
 						const char *type) {
 
@@ -1374,7 +1376,7 @@ const char *db2connection::getTypeInfoListQuery(const char *db,
 	return NULL;
 }
 
-const char *db2connection::getColumnListQuery(const char *db,
+const char *db2connection::getColumnListQuery(const char *catalog,
 					const char *schema,
 					const char *table,
 					const char *column) {
@@ -1470,7 +1472,7 @@ const char *db2connection::getColumnListQuery(const char *db,
 	return columnlistquery.getString();
 }
 
-const char *db2connection::getPrimaryKeysListQuery(const char *db,
+const char *db2connection::getPrimaryKeysListQuery(const char *catalog,
 					const char *schema,
 					const char *table) {
 
@@ -1527,7 +1529,7 @@ const char *db2connection::getPrimaryKeysListQuery(const char *db,
 	return primarykeyslistquery.getString();
 }
 
-const char *db2connection::getKeyAndIndexListQuery(const char *db,
+const char *db2connection::getKeyAndIndexListQuery(const char *catalog,
 					const char *schema,
 					const char *table) {
 
@@ -1597,7 +1599,7 @@ const char *db2connection::getKeyAndIndexListQuery(const char *db,
 }
 
 const char *db2connection::getProcedureListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure) {
 
@@ -1646,7 +1648,7 @@ const char *db2connection::getProcedureListQuery(
 }
 
 const char *db2connection::getProcedureParameterListQuery(
-					const char *db,
+					const char *catalog,
 					const char *schema,
 					const char *procedure) {
 
@@ -1724,11 +1726,20 @@ const char *db2connection::getBindFormat() {
 const char *db2connection::getNextvalFormat() {
 	return "(nextval for %s)";
 }
-const char *db2connection::selectDatabaseQuery() {
+
+bool db2connection::getDatabaseIsSchema() {
+	return true;
+}
+
+const char *db2connection::getCurrentCatalogQuery() {
+	return "values current server";
+}
+
+const char *db2connection::selectSchemaQuery() {
 	return "set schema %s";
 }
 
-const char *db2connection::getCurrentDatabaseQuery() {
+const char *db2connection::getCurrentSchemaQuery() {
 	return "values current schema";
 }
 

@@ -73,20 +73,23 @@ class SQLRSERVER_DLLSPEC routerconnection : public sqlrserverconnection {
 		bool		cacheDbHostInfo();
 		bool		getListsByApiCalls();
 		bool		getDatabaseList(sqlrservercursor *cursor,
-						const char *db);
+						const char *catalog);
 		bool		getTableList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
 		bool		getColumnList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						const char *column);
 		bool		ping();
-		const char	*selectDatabaseQuery();
-		char		*getCurrentDatabase();
+		bool		getDatabaseIsSchema();
+		bool		selectCatalog(const char *catalog);
+		char		*getCurrentCatalog();
+		bool		selectSchema(const char *schema);
+		char		*getCurrentSchema();
 		bool		getLastInsertId(uint64_t *id);
 		void		endSession();
 
@@ -1326,7 +1329,7 @@ bool routerconnection::getListsByApiCalls() {
 }
 
 bool routerconnection::getDatabaseList(sqlrservercursor *cursor,
-						const char *db) {
+						const char *catalog) {
 	// FIXME: implement this
 	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
 				SQLR_ERROR_NOTIMPLEMENTED,true);
@@ -1334,7 +1337,7 @@ bool routerconnection::getDatabaseList(sqlrservercursor *cursor,
 }
 
 bool routerconnection::getTableList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes) {
@@ -1345,7 +1348,7 @@ bool routerconnection::getTableList(sqlrservercursor *cursor,
 }
 
 bool routerconnection::getColumnList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						const char *column) {
@@ -1405,13 +1408,26 @@ bool routerconnection::ping() {
 	return result;
 }
 
-const char *routerconnection::selectDatabaseQuery() {
-	return "use %s";
+bool routerconnection::getDatabaseIsSchema() {
+	return (currentcon)?currentcon->getDatabaseIsSchema():false;
 }
 
-char *routerconnection::getCurrentDatabase() {
+bool routerconnection::selectCatalog(const char *catalog) {
+	return (currentcon)?currentcon->selectCatalog(catalog):false;
+}
+
+char *routerconnection::getCurrentCatalog() {
 	return (currentcon)?
-		charstring::duplicate(currentcon->getCurrentDatabase()):NULL;
+		charstring::duplicate(currentcon->getCurrentCatalog()):NULL;
+}
+
+bool routerconnection::selectSchema(const char *schema) {
+	return (currentcon)?currentcon->selectSchema(schema):false;
+}
+
+char *routerconnection::getCurrentSchema() {
+	return (currentcon)?
+		charstring::duplicate(currentcon->getCurrentSchema()):NULL;
 }
 
 bool routerconnection::getLastInsertId(uint64_t *id) {

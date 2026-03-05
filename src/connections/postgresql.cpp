@@ -39,45 +39,47 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 		const char	*getDbHostName();
 		const char	*getDbIpAddressQuery();
 		const char	*getDbIpAddress();
-		const char	*getDatabaseListQuery(const char *db);
-		const char	*getSchemaListQuery(const char *db,
+		const char	*getDatabaseListQuery(const char *catalog);
+		const char	*getSchemaListQuery(const char *catalog,
 						const char *schema);
 		const char	*getTableTypeListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *tabletypes);
 		const char	*getTableListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
 		const char	*getTypeInfoListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *type);
 		const char	*getColumnListQuery(
-					const char *db,
+					const char *catalog,
 					const char *schema,
 					const char *table,
 					const char *column);
 		const char	*getPrimaryKeysListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table);
 		const char	*getKeyAndIndexListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table);
 		const char	*getProcedureListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure);
 		const char	*getProcedureParameterListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure);
-		bool		selectDatabase(const char *database);
-		const char	*getCurrentDatabaseQuery();
+		bool		selectCatalog(const char *catalog);
+		const char	*getCurrentCatalogQuery();
+		const char	*selectSchemaQuery();
+		const char	*getCurrentSchemaQuery();
 		const char	*getIsolationLevelQuery();
 		const char	*mapIsolationLevel(
 				const char *isolevel,
@@ -607,7 +609,7 @@ const char *postgresqlconnection::getDbIpAddress() {
 	return (charstring::getLength(ipaddress))?ipaddress:"127.0.0.1";
 }
 
-const char *postgresqlconnection::getDatabaseListQuery(const char *db) {
+const char *postgresqlconnection::getDatabaseListQuery(const char *catalog) {
 
 	databaselistquery.clear();
 
@@ -624,11 +626,11 @@ const char *postgresqlconnection::getDatabaseListQuery(const char *db) {
 		"	pg_database ");
 
 	// where clause
-	if (db) {
+	if (catalog) {
 		databaselistquery.append(
 			"where "
 			"	datname like '");
-		databaselistquery.append(db);
+		databaselistquery.append(catalog);
 		databaselistquery.append("' ");
 	}
 
@@ -640,7 +642,7 @@ const char *postgresqlconnection::getDatabaseListQuery(const char *db) {
 	return databaselistquery.getString();
 }
 
-const char *postgresqlconnection::getSchemaListQuery(const char *db,
+const char *postgresqlconnection::getSchemaListQuery(const char *catalog,
 						const char *schema) {
 
 	schemalistquery.clear();
@@ -659,11 +661,11 @@ const char *postgresqlconnection::getSchemaListQuery(const char *db,
 	bool	prevclause=false;
 
 	// where clause
-	if (db) {
+	if (catalog) {
 		schemalistquery.append(
 			"where "
 			"	catalog_name like '");
-		schemalistquery.append(db);
+		schemalistquery.append(catalog);
 		schemalistquery.append("' ");
 		prevclause=true;
 	}
@@ -689,7 +691,7 @@ const char *postgresqlconnection::getSchemaListQuery(const char *db,
 }
 
 const char *postgresqlconnection::getTableTypeListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *tabletypes) {
 
@@ -726,7 +728,7 @@ const char *postgresqlconnection::getTableTypeListQuery(
 	return tabletypelistquery.getString();
 }
 
-const char *postgresqlconnection::getTableListQuery(const char *db,
+const char *postgresqlconnection::getTableListQuery(const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes) {
@@ -774,11 +776,11 @@ const char *postgresqlconnection::getTableListQuery(const char *db,
 	}
 	otypes.append(") ");
 	tablelistquery.append(otypes.getString());
-	if (db) {
+	if (catalog) {
 		tablelistquery.append(
 			"	and "
 			"	table_catalog like '");
-		tablelistquery.append(db);
+		tablelistquery.append(catalog);
 		tablelistquery.append("' ");
 	}
 	if (schema) {
@@ -1286,7 +1288,7 @@ static const char	*pg_xmltype=
 			"	NULL "
 			") ";
 
-const char *postgresqlconnection::getTypeInfoListQuery(const char *db,
+const char *postgresqlconnection::getTypeInfoListQuery(const char *catalog,
 						const char *schema,
 						const char *type) {
 
@@ -1405,7 +1407,7 @@ const char *postgresqlconnection::getTypeInfoListQuery(const char *db,
 	return NULL;
 }
 
-const char *postgresqlconnection::getColumnListQuery(const char *db,
+const char *postgresqlconnection::getColumnListQuery(const char *catalog,
 					const char *schema,
 					const char *table,
 					const char *column) {
@@ -1486,11 +1488,11 @@ const char *postgresqlconnection::getColumnListQuery(const char *db,
 		"	and "
 		"	co.column_name=ck.column_name ");
 	bool	prevclause=false;
-	if (!charstring::isNullOrEmpty(db)) {
+	if (!charstring::isNullOrEmpty(catalog)) {
 		columnlistquery.append("where ");
 		columnlistquery.append(
 			"	co.table_catalog like '");
-		columnlistquery.append(db);
+		columnlistquery.append(catalog);
 		columnlistquery.append("' ");
 		prevclause=true;
 	}
@@ -1536,7 +1538,7 @@ const char *postgresqlconnection::getColumnListQuery(const char *db,
 	return columnlistquery.getString();
 }
 
-const char *postgresqlconnection::getPrimaryKeysListQuery(const char *db,
+const char *postgresqlconnection::getPrimaryKeysListQuery(const char *catalog,
 					const char *schema,
 					const char *table) {
 
@@ -1569,11 +1571,11 @@ const char *postgresqlconnection::getPrimaryKeysListQuery(const char *db,
 		"	tc.table_schema=ku.table_schema "
 		"	and "
 		"	tc.table_name=ku.table_name ");
-	if (!charstring::isNullOrEmpty(db)) {
+	if (!charstring::isNullOrEmpty(catalog)) {
 		primarykeyslistquery.append(
 			"	and "
 			"	tc.table_catalog like '");
-		primarykeyslistquery.append(db);
+		primarykeyslistquery.append(catalog);
 		primarykeyslistquery.append("' ");
 	}
 	if (!charstring::isNullOrEmpty(schema)) {
@@ -1600,7 +1602,7 @@ const char *postgresqlconnection::getPrimaryKeysListQuery(const char *db,
 	return primarykeyslistquery.getString();
 }
 
-const char *postgresqlconnection::getKeyAndIndexListQuery(const char *db,
+const char *postgresqlconnection::getKeyAndIndexListQuery(const char *catalog,
 					const char *schema,
 					const char *table) {
 
@@ -1690,7 +1692,7 @@ const char *postgresqlconnection::getKeyAndIndexListQuery(const char *db,
 }
 
 const char *postgresqlconnection::getProcedureListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure) {
 
@@ -1714,17 +1716,17 @@ const char *postgresqlconnection::getProcedureListQuery(
 		"	null "
 		"from "
 		"	information_schema.routines ");
-	if (!charstring::isNullOrEmpty(db) ||
+	if (!charstring::isNullOrEmpty(catalog) ||
 		!charstring::isNullOrEmpty(schema) ||
 		!charstring::isNullOrEmpty(procedure)) {
 
 	// where clause
 		procedurelistquery.append("where ");
 		bool	first=true;
-		if (!charstring::isNullOrEmpty(db)) {
+		if (!charstring::isNullOrEmpty(catalog)) {
 			procedurelistquery.append(
 				"routine_catalog like '");
-			procedurelistquery.append(db);
+			procedurelistquery.append(catalog);
 			procedurelistquery.append("' ");
 			first=false;
 		}
@@ -1760,7 +1762,7 @@ const char *postgresqlconnection::getProcedureListQuery(
 }
 
 const char *postgresqlconnection::getProcedureParameterListQuery(
-					const char *db,
+					const char *catalog,
 					const char *schema,
 					const char *procedure) {
 
@@ -1807,11 +1809,11 @@ const char *postgresqlconnection::getProcedureParameterListQuery(
 		"	p.specific_name=r.specific_name "
 		"	and "
 		"	p.specific_schema=r.specific_schema ");
-	if (!charstring::isNullOrEmpty(db)) {
+	if (!charstring::isNullOrEmpty(catalog)) {
 		procedureparameterlistquery.append(
 			"	and "
 			"	p.specific_catalog like '");
-		procedureparameterlistquery.append(db);
+		procedureparameterlistquery.append(catalog);
 		procedureparameterlistquery.append("' ");
 	}
 	if (!charstring::isNullOrEmpty(schema)) {
@@ -1838,15 +1840,15 @@ const char *postgresqlconnection::getProcedureParameterListQuery(
 	return procedureparameterlistquery.getString();
 }
 
-bool postgresqlconnection::selectDatabase(const char *database) {
+bool postgresqlconnection::selectCatalog(const char *catalog) {
 
 	cont->clearError();
 
-	// log out and log back in to the specified database
+	// log out and log back in to the specified catalog
 	logOut();
 	const char	*error=NULL;
 	const char	*warning=NULL;
-	if (!logIn(&error,&warning,database)) {
+	if (!logIn(&error,&warning,catalog)) {
 
 		// Set the error, but don't use the error that was returned
 		// from logIn() because it will have a message prepended to it.
@@ -1866,8 +1868,16 @@ bool postgresqlconnection::selectDatabase(const char *database) {
 	return true;
 }
 
-const char *postgresqlconnection::getCurrentDatabaseQuery() {
+const char *postgresqlconnection::getCurrentCatalogQuery() {
 	return "select current_database()";
+}
+
+const char *postgresqlconnection::selectSchemaQuery() {
+	return "set search_path to %s";
+}
+
+const char *postgresqlconnection::getCurrentSchemaQuery() {
+	return "select current_schema()";
 }
 
 const char *postgresqlconnection::getIsolationLevelQuery() {

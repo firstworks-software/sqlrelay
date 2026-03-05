@@ -33,6 +33,8 @@
 	added selectSchema()/getCurrentSchema() methods/functions
 	implemented ODBC driver SQLGetInfo() using getDatabaseFeature() calls
 	pushed get-list-by-api/query logic up to sqlrserverconnection
+	added selectCatalog()/getCurrentCatalog() methods/functions
+	added getDatabaseIsSchema() methods/functions
 
 2.1.0 - refactored debugging
 

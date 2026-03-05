@@ -303,11 +303,22 @@ public class SQLRConnection {
 	public native String	getCurrentDatabase();
 
 
+	/** Sets the current catalog to "catalog" */
+	public native boolean	selectCatalog(String catalog);
+
+	/** Returns the catalog that is currently in use */
+	public native String	getCurrentCatalog();
+
 	/** Sets the current schema to "schema" */
 	public native boolean	selectSchema(String schema);
 
 	/** Returns the schema that is currently in use */
 	public native String	getCurrentSchema();
+
+	/** Returns true if the backend database equates "database"
+	 *  with "schema", and false if it equates "database" with
+	 *  "catalog". */
+	public native boolean	getDatabaseIsSchema();
 
 
 	/**  Returns the value of the autoincrement

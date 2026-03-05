@@ -186,12 +186,24 @@ const char *sqlrcon_getCurrentDatabase(sqlrcon sqlrconref) {
 	return sqlrconref->getCurrentDatabase();
 }
 
+int sqlrcon_selectCatalog(sqlrcon sqlrconref, const char *catalog) {
+	return sqlrconref->selectCatalog(catalog);
+}
+
+const char *sqlrcon_getCurrentCatalog(sqlrcon sqlrconref) {
+	return sqlrconref->getCurrentCatalog();
+}
+
 int sqlrcon_selectSchema(sqlrcon sqlrconref, const char *schema) {
 	return sqlrconref->selectSchema(schema);
 }
 
 const char *sqlrcon_getCurrentSchema(sqlrcon sqlrconref) {
 	return sqlrconref->getCurrentSchema();
+}
+
+int sqlrcon_getDatabaseIsSchema(sqlrcon sqlrconref) {
+	return sqlrconref->getDatabaseIsSchema();
 }
 
 uint64_t sqlrcon_getLastInsertId(sqlrcon sqlrconref) {

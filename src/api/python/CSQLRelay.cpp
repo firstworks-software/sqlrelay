@@ -431,6 +431,29 @@ static PyObject *getCurrentDatabase(PyObject *self, PyObject *args) {
   return Py_BuildValue("s", rc);
 }
 
+static PyObject *selectCatalog(PyObject *self, PyObject *args) {
+  char *catalog;
+  long sqlrcon;
+  bool rc;
+  if (!PyArg_ParseTuple(args, "ls", &sqlrcon, &catalog))
+    return NULL;
+  Py_BEGIN_ALLOW_THREADS
+  rc=((sqlrconnection *)sqlrcon)->selectCatalog(catalog);
+  Py_END_ALLOW_THREADS
+  return Py_BuildValue("h", (short)rc);
+}
+
+static PyObject *getCurrentCatalog(PyObject *self, PyObject *args) {
+  long sqlrcon;
+  const char *rc;
+  if (!PyArg_ParseTuple(args, "l", &sqlrcon))
+    return NULL;
+  Py_BEGIN_ALLOW_THREADS
+  rc=((sqlrconnection *)sqlrcon)->getCurrentCatalog();
+  Py_END_ALLOW_THREADS
+  return Py_BuildValue("s", rc);
+}
+
 static PyObject *selectSchema(PyObject *self, PyObject *args) {
   char *schema;
   long sqlrcon;
@@ -452,6 +475,17 @@ static PyObject *getCurrentSchema(PyObject *self, PyObject *args) {
   rc=((sqlrconnection *)sqlrcon)->getCurrentSchema();
   Py_END_ALLOW_THREADS
   return Py_BuildValue("s", rc);
+}
+
+static PyObject *getDatabaseIsSchema(PyObject *self, PyObject *args) {
+  long sqlrcon;
+  bool rc;
+  if (!PyArg_ParseTuple(args, "l", &sqlrcon))
+    return NULL;
+  Py_BEGIN_ALLOW_THREADS
+  rc=((sqlrconnection *)sqlrcon)->getDatabaseIsSchema();
+  Py_END_ALLOW_THREADS
+  return Py_BuildValue("h", (short)rc);
 }
 
 static PyObject *getLastInsertId(PyObject *self, PyObject *args) {
@@ -2797,8 +2831,11 @@ static PyMethodDef SQLRMethods[] = {
   {"nextvalFormat", nextvalFormat, METH_VARARGS},
   {"selectDatabase", selectDatabase, METH_VARARGS},
   {"getCurrentDatabase", getCurrentDatabase, METH_VARARGS},
+  {"selectCatalog", selectCatalog, METH_VARARGS},
+  {"getCurrentCatalog", getCurrentCatalog, METH_VARARGS},
   {"selectSchema", selectSchema, METH_VARARGS},
   {"getCurrentSchema", getCurrentSchema, METH_VARARGS},
+  {"getDatabaseIsSchema", getDatabaseIsSchema, METH_VARARGS},
   {"getLastInsertId", getLastInsertId, METH_VARARGS},
   {"autoCommitOn", autoCommitOn, METH_VARARGS},
   {"autoCommitOff", autoCommitOff, METH_VARARGS},

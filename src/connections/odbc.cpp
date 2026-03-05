@@ -340,16 +340,16 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		const char	*getLastInsertIdQuery();
 		bool		getListsByApiCalls();
 		bool		getDatabaseList(sqlrservercursor *cursor,
-						const char *db);
+						const char *catalog);
 		bool		getSchemaList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema);
 		bool		getTableTypeList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *tabletypes);
 		bool		getTableList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
@@ -358,29 +358,29 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 						const char *schema,
 						const char *type);
 		bool		getColumnList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						const char *column);
 		bool		getPrimaryKeysList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table);
 		bool		getKeyAndIndexList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table);
 		bool		getProcedureList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure);
 		bool		getProcedureParameterList(
 						sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure);
-		const char	*selectDatabaseQuery();
-		char		*getCurrentDatabase();
+		const char	*selectCatalogQuery();
+		char		*getCurrentCatalog();
 		char		*getCurrentSchema();
 		bool		setIsolationLevel(const char *isolevel);
 		const char	*getDbHostNameQuery();
@@ -2700,7 +2700,7 @@ bool odbcconnection::getListsByApiCalls() {
 }
 
 bool odbcconnection::getDatabaseList(sqlrservercursor *cursor,
-						const char *db) {
+						const char *catalog) {
 
 	odbccursor	*odbccur=(odbccursor *)cursor;
 
@@ -2732,7 +2732,7 @@ bool odbcconnection::getDatabaseList(sqlrservercursor *cursor,
 }
 
 bool odbcconnection::getSchemaList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema) {
 
 	odbccursor	*odbccur=(odbccursor *)cursor;
@@ -2765,7 +2765,7 @@ bool odbcconnection::getSchemaList(sqlrservercursor *cursor,
 }
 
 bool odbcconnection::getTableTypeList(sqlrservercursor *cursor,
-					const char *db,
+					const char *catalog,
 					const char *schema,
 					const char *tabletypes) {
 
@@ -2803,7 +2803,7 @@ bool odbcconnection::getTableTypeList(sqlrservercursor *cursor,
 }
 
 bool odbcconnection::getTableList(sqlrservercursor *cursor,
-					const char *db,
+					const char *catalog,
 					const char *schema,
 					const char *table,
 					uint16_t objecttypes) {
@@ -2826,7 +2826,6 @@ bool odbcconnection::getTableList(sqlrservercursor *cursor,
 	odbccur->initializeRowCounts();
 
 	// use defaults for NULL parameters
-	const char	*catalog=db;
 	if (!schema) {
 		schema="";
 	}
@@ -3029,7 +3028,7 @@ bool odbcconnection::getTypeInfoList(sqlrservercursor *cursor,
 }
 
 bool odbcconnection::getColumnList(sqlrservercursor *cursor,
-					const char *db,
+					const char *catalog,
 					const char *schema,
 					const char *table,
 					const char *column) {
@@ -3052,7 +3051,6 @@ bool odbcconnection::getColumnList(sqlrservercursor *cursor,
 	odbccur->initializeRowCounts();
 
 	// use defaults for NULL parameters
-	const char	*catalog=db;
 	if (!schema) {
 		schema="";
 	}
@@ -3076,7 +3074,7 @@ bool odbcconnection::getColumnList(sqlrservercursor *cursor,
 }
 
 bool odbcconnection::getPrimaryKeysList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table) {
 
@@ -3098,7 +3096,6 @@ bool odbcconnection::getPrimaryKeysList(sqlrservercursor *cursor,
 	odbccur->initializeRowCounts();
 
 	// use defaults for NULL parameters
-	const char	*catalog=db;
 	if (!schema) {
 		schema="";
 	}
@@ -3118,7 +3115,7 @@ bool odbcconnection::getPrimaryKeysList(sqlrservercursor *cursor,
 }
 
 bool odbcconnection::getKeyAndIndexList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table) {
 
@@ -3140,7 +3137,6 @@ bool odbcconnection::getKeyAndIndexList(sqlrservercursor *cursor,
 	odbccur->initializeRowCounts();
 
 	// use defaults for NULL parameters
-	const char	*catalog=db;
 	if (!schema) {
 		schema="";
 	}
@@ -3162,7 +3158,7 @@ bool odbcconnection::getKeyAndIndexList(sqlrservercursor *cursor,
 }
 
 bool odbcconnection::getProcedureList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure) {
 
@@ -3184,7 +3180,6 @@ bool odbcconnection::getProcedureList(sqlrservercursor *cursor,
 	odbccur->initializeRowCounts();
 
 	// use defaults for NULL parameters
-	const char	*catalog=db;
 	if (!schema) {
 		schema="";
 	}
@@ -3206,7 +3201,7 @@ bool odbcconnection::getProcedureList(sqlrservercursor *cursor,
 
 bool odbcconnection::getProcedureParameterList(
 					sqlrservercursor *cursor,
-					const char *db,
+					const char *catalog,
 					const char *schema,
 					const char *procedure) {
 
@@ -3230,7 +3225,6 @@ bool odbcconnection::getProcedureParameterList(
 	// Unlike SQLColumns/SQLTables, SQLProcedureColumns wants NULL instead
 	// of "" for catalog/schema, to indicate the current catalog/schema.
 	// It interprets "" as meaning outside of any catalog/schema.
-	const char	*catalog=db;
 
 	// get the column list
 	erg=SQLProcedureColumns(odbccur->stmt,
@@ -3247,12 +3241,12 @@ bool odbcconnection::getProcedureParameterList(
 	return (retval)?odbccur->handleColumns(true,true):false;
 }
 
-const char *odbcconnection::selectDatabaseQuery() {
+const char *odbcconnection::selectCatalogQuery() {
 	// FIXME: this won't work with every database
 	return "use %s";
 }
 
-char *odbcconnection::getCurrentDatabase() {
+char *odbcconnection::getCurrentCatalog() {
 	char	*currentdb=new char[256];
 	SQLSMALLINT	currentdblen;
 	SQLGetInfo(dbc,SQL_DATABASE_NAME,

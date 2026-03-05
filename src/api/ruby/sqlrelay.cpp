@@ -871,6 +871,38 @@ static VALUE sqlrcon_getCurrentDatabase(VALUE self) {
 	}
 }
 
+static void selectCatalog(params *p) {
+	p->result.br=p->sqlrc.sqlrcon->selectCatalog(STR2CSTR(p->one));
+}
+/**
+ *  call-seq:
+ *  selectCatalog(catalog)
+ *
+ *  Sets the current catalog to "catalog" */
+static VALUE sqlrcon_selectCatalog(VALUE self, VALUE catalog) {
+	sqlrconnection	*sqlrcon;
+	bool		result;
+	Data_Get_Struct(self,sqlrconnection,sqlrcon);
+	RCON1(result,br,sqlrcon,selectCatalog,catalog);
+	return INT2NUM(result);
+}
+
+static void getCurrentCatalog(params *p) {
+	p->result.ccpr=p->sqlrc.sqlrcon->getCurrentCatalog();
+}
+/** Returns the catalog that is currently in use. */
+static VALUE sqlrcon_getCurrentCatalog(VALUE self) {
+	sqlrconnection	*sqlrcon;
+	const char	*result;
+	Data_Get_Struct(self,sqlrconnection,sqlrcon);
+	RCON(result,ccpr,sqlrcon,getCurrentCatalog);
+	if (result) {
+		return rb_str_new2(result);
+	} else {
+		return Qnil;
+	}
+}
+
 static void selectSchema(params *p) {
 	p->result.br=p->sqlrc.sqlrcon->selectSchema(STR2CSTR(p->one));
 }
@@ -901,6 +933,19 @@ static VALUE sqlrcon_getCurrentSchema(VALUE self) {
 	} else {
 		return Qnil;
 	}
+}
+
+static void getDatabaseIsSchema(params *p) {
+	p->result.br=p->sqlrc.sqlrcon->getDatabaseIsSchema();
+}
+/** Returns true if the backend database equates "database" with
+ *  "schema", and false if it equates "database" with "catalog". */
+static VALUE sqlrcon_getDatabaseIsSchema(VALUE self) {
+	sqlrconnection	*sqlrcon;
+	bool		result;
+	Data_Get_Struct(self,sqlrconnection,sqlrcon);
+	RCON(result,br,sqlrcon,getDatabaseIsSchema);
+	return INT2NUM(result);
 }
 
 static void getLastInsertId(params *p) {
@@ -1513,10 +1558,16 @@ void Init_SQLRConnection() {
 				(CAST)sqlrcon_selectDatabase,1);
 	rb_define_method(csqlrconnection,"getCurrentDatabase",
 				(CAST)sqlrcon_getCurrentDatabase,0);
+	rb_define_method(csqlrconnection,"selectCatalog",
+				(CAST)sqlrcon_selectCatalog,1);
+	rb_define_method(csqlrconnection,"getCurrentCatalog",
+				(CAST)sqlrcon_getCurrentCatalog,0);
 	rb_define_method(csqlrconnection,"selectSchema",
 				(CAST)sqlrcon_selectSchema,1);
 	rb_define_method(csqlrconnection,"getCurrentSchema",
 				(CAST)sqlrcon_getCurrentSchema,0);
+	rb_define_method(csqlrconnection,"getDatabaseIsSchema",
+				(CAST)sqlrcon_getDatabaseIsSchema,0);
 	rb_define_method(csqlrconnection,"getLastInsertId",
 				(CAST)sqlrcon_getLastInsertId,0);
 	rb_define_method(csqlrconnection,"autoCommitOn",

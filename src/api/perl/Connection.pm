@@ -300,10 +300,20 @@ __END__
         getCurrentDatabase();
             # Returns the database (catalog) that is currently in use.
 
+        selectCatalog(catalog);
+            # Sets the current catalog to "catalog"
+        getCurrentCatalog();
+            # Returns the catalog that is currently in use.
+
         selectSchema(schema);
             # Sets the current schema to "schema"
         getCurrentSchema();
             # Returns the schema that is currently in use.
+
+        getDatabaseIsSchema();
+            # Returns true if the backend database equates
+            # "database" with "schema", and false if it
+            # equates "database" with "catalog".
 
         getLastInsertId();
             # Returns the value of the autoincrement

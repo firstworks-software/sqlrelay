@@ -290,12 +290,25 @@ function sqlrcon_selectDatabase($sqlrconref, $database){}
 function sqlrcon_getCurrentDatabase($sqlrconref){}
 
 /**
+ *  Sets the current catalog to "catalog" */
+function sqlrcon_selectCatalog($sqlrconref, $catalog){}
+
+/**
+ *  Returns the catalog that is currently in use. */
+function sqlrcon_getCurrentCatalog($sqlrconref){}
+
+/**
  *  Sets the current schema to "schema" */
 function sqlrcon_selectSchema($sqlrconref, $schema){}
 
 /**
  *  Returns the schema that is currently in use. */
 function sqlrcon_getCurrentSchema($sqlrconref){}
+
+/**
+ *  Returns true if the backend database equates "database" with
+ *  "schema", and false if it equates "database" with "catalog". */
+function sqlrcon_getDatabaseIsSchema($sqlrconref){}
 
 
 

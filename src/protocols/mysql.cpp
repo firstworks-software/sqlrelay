@@ -3886,28 +3886,29 @@ bool sqlrprotocol_mysql::getObjectList(sqlrservercursor *cursor,
 	escapeParameter(&objectbuf,object);
 	object=objectbuf.getString();
 
-	// split the object (db.schema.object) into db, schema, and object
-	char	*currentdb=cont->getCurrentDatabase();
+	// split the object (catalog.schema.object) into
+	// catalog, schema, and object
+	char	*currentcatalog=cont->getCurrentDatabase();
 	char	*currentschema=cont->getCurrentSchema();
-	const char	*db=NULL;
+	const char	*catalog=NULL;
 	const char	*schema=NULL;
 	const char	*obj=NULL;
-	cont->splitObjectName(currentdb,currentschema,
-					object,&db,&schema,&obj);
+	cont->splitObjectName(currentcatalog,currentschema,
+					object,&catalog,&schema,&obj);
 
 	// we only want to fetch for the current database/schema
-	db=currentdb;
+	catalog=currentcatalog;
 	schema=currentschema;
 
 	bool	retval=false;
 	switch (listtype) {
 		case MYSQLOBJECTLISTTYPE_DATABASE_LIST:
-			retval=cont->getDatabaseList(cursor,db);
+			retval=cont->getDatabaseList(cursor,catalog);
 			cont->setDatabaseListFormat(
 					SQLRSERVERLISTFORMAT_MYSQL);
 			break;
 		case MYSQLOBJECTLISTTYPE_TABLE_LIST:
-			retval=cont->getTableList(cursor,db,schema,obj,
+			retval=cont->getTableList(cursor,catalog,schema,obj,
 							DB_OBJECT_TABLE|
 							DB_OBJECT_VIEW|
 							DB_OBJECT_ALIAS|
@@ -3918,7 +3919,7 @@ bool sqlrprotocol_mysql::getObjectList(sqlrservercursor *cursor,
 	}
 
 	// clean up
-	delete[] currentdb;
+	delete[] currentcatalog;
 	delete[] currentschema;
 
 	return retval;
@@ -3937,31 +3938,32 @@ bool sqlrprotocol_mysql::getComponentList(sqlrservercursor *cursor,
 	escapeParameter(&componentbuf,component);
 	component=componentbuf.getString();
 
-	// split the object (db.schema.object) into db, schema, and object
-	char	*currentdb=cont->getCurrentDatabase();
+	// split the object (catalog.schema.object) into
+	// catalog, schema, and object
+	char	*currentcatalog=cont->getCurrentDatabase();
 	char	*currentschema=cont->getCurrentSchema();
-	const char	*db=NULL;
+	const char	*catalog=NULL;
 	const char	*schema=NULL;
 	const char	*obj=NULL;
-	cont->splitObjectName(currentdb,currentschema,
-					object,&db,&schema,&obj);
+	cont->splitObjectName(currentcatalog,currentschema,
+					object,&catalog,&schema,&obj);
 
 	// we only want to fetch for the current database/schema
-	db=currentdb;
+	catalog=currentcatalog;
 	schema=currentschema;
 
 	bool	retval=false;
 	switch (listtype) {
 		case MYSQLCOMPONENTLISTTYPE_COLUMN_LIST:
 			retval=cont->getColumnList(cursor,
-						db,schema,obj,component);
+						catalog,schema,obj,component);
 			cont->setColumnListFormat(
 					SQLRSERVERLISTFORMAT_MYSQL);
 			break;
 	}
 
 	// clean up
-	delete[] currentdb;
+	delete[] currentcatalog;
 	delete[] currentschema;
 
 	return retval;

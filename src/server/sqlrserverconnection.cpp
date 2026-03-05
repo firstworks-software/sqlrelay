@@ -365,18 +365,22 @@ bool sqlrserverconnection::rollback() {
 	return retval;
 }
 
-bool sqlrserverconnection::selectDatabase(const char *database) {
+bool sqlrserverconnection::getDatabaseIsSchema() {
+	return false;
+}
+
+bool sqlrserverconnection::selectCatalog(const char *catalog) {
 
 	// re-init error data
 	cont->clearError();
 
 	// handle the degenerate case
-	if (!database) {
+	if (!catalog) {
 		return true;
 	}
 
-	// get the select database query base
-	const char	*sdquerybase=selectDatabaseQuery();
+	// get the select catalog query base
+	const char	*sdquerybase=selectCatalogQuery();
 
 	// If there is no query for this then the db we're using doesn't
 	// support switching.  Return true as if it succeeded though.
@@ -386,14 +390,14 @@ bool sqlrserverconnection::selectDatabase(const char *database) {
 
 	// bounds checking
 	size_t	sdquerysize=charstring::getLength(sdquerybase)+
-				charstring::getLength(database)+1;
+				charstring::getLength(catalog)+1;
 	if (sdquerysize>pvt->_maxquerysize) {
 		return false;
 	}
 
-	// create the select database query
+	// create the select catalog query
 	char	*sdquery=new char[sdquerysize];
-	charstring::printf(sdquery,sdquerysize,sdquerybase,database);
+	charstring::printf(sdquery,sdquerysize,sdquerybase,catalog);
 	sdquerysize=charstring::getLength(sdquery);
 
 	// run the query...
@@ -416,14 +420,14 @@ bool sqlrserverconnection::selectDatabase(const char *database) {
 	return retval;
 }
 
-const char *sqlrserverconnection::selectDatabaseQuery() {
+const char *sqlrserverconnection::selectCatalogQuery() {
 	return NULL;
 }
 
-char *sqlrserverconnection::getCurrentDatabase() {
+char *sqlrserverconnection::getCurrentCatalog() {
 
-	// get the get current database query base
-	const char	*gcdquery=getCurrentDatabaseQuery();
+	// get the get current catalog query base
+	const char	*gcdquery=getCurrentCatalogQuery();
 
 	// bail if there is no query for this
 	if (!gcdquery) {
@@ -457,7 +461,7 @@ char *sqlrserverconnection::getCurrentDatabase() {
 	return retval;
 }
 
-const char *sqlrserverconnection::getCurrentDatabaseQuery() {
+const char *sqlrserverconnection::getCurrentCatalogQuery() {
 	return getNoopQuery();
 }
 
@@ -562,7 +566,7 @@ bool sqlrserverconnection::getLastInsertId(uint64_t *id) {
 	// re-init error data
 	cont->clearError();
 
-	// get the get current database query base
+	// get the get current last insert id query base
 	const char	*liiquery=getLastInsertIdQuery();
 
 	// If there is no query for this then the db we're using doesn't
@@ -891,8 +895,8 @@ bool sqlrserverconnection::getListsByApiCalls() {
 }
 
 bool sqlrserverconnection::getDatabaseList(sqlrservercursor *cursor,
-						const char *db) {
-	const char	*query=getDatabaseListQuery(db);
+						const char *catalog) {
+	const char	*query=getDatabaseListQuery(catalog);
 	if (charstring::isNullOrEmpty(query)) {
 		cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
 					SQLR_ERROR_NOTIMPLEMENTED,true);
@@ -910,9 +914,9 @@ bool sqlrserverconnection::getDatabaseList(sqlrservercursor *cursor,
 }
 
 bool sqlrserverconnection::getSchemaList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema) {
-	const char	*query=getSchemaListQuery(db,schema);
+	const char	*query=getSchemaListQuery(catalog,schema);
 	if (charstring::isNullOrEmpty(query)) {
 		cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
 					SQLR_ERROR_NOTIMPLEMENTED,true);
@@ -930,10 +934,10 @@ bool sqlrserverconnection::getSchemaList(sqlrservercursor *cursor,
 }
 
 bool sqlrserverconnection::getTableTypeList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *tabletypes) {
-	const char	*query=getTableTypeListQuery(db,schema,tabletypes);
+	const char	*query=getTableTypeListQuery(catalog,schema,tabletypes);
 	if (charstring::isNullOrEmpty(query)) {
 		cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
 					SQLR_ERROR_NOTIMPLEMENTED,true);
@@ -951,11 +955,11 @@ bool sqlrserverconnection::getTableTypeList(sqlrservercursor *cursor,
 }
 
 bool sqlrserverconnection::getTableList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes) {
-	const char	*query=getTableListQuery(db,schema,table,objecttypes);
+	const char	*query=getTableListQuery(catalog,schema,table,objecttypes);
 	if (charstring::isNullOrEmpty(query)) {
 		cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
 					SQLR_ERROR_NOTIMPLEMENTED,true);
@@ -973,10 +977,10 @@ bool sqlrserverconnection::getTableList(sqlrservercursor *cursor,
 }
 
 bool sqlrserverconnection::getTypeInfoList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *type) {
-	const char	*query=getTypeInfoListQuery(db,schema,type);
+	const char	*query=getTypeInfoListQuery(catalog,schema,type);
 	if (charstring::isNullOrEmpty(query)) {
 		cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
 					SQLR_ERROR_NOTIMPLEMENTED,true);
@@ -994,11 +998,11 @@ bool sqlrserverconnection::getTypeInfoList(sqlrservercursor *cursor,
 }
 
 bool sqlrserverconnection::getColumnList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						const char *column) {
-	const char	*query=getColumnListQuery(db,schema,table,column);
+	const char	*query=getColumnListQuery(catalog,schema,table,column);
 	if (charstring::isNullOrEmpty(query)) {
 		cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
 					SQLR_ERROR_NOTIMPLEMENTED,true);
@@ -1016,10 +1020,10 @@ bool sqlrserverconnection::getColumnList(sqlrservercursor *cursor,
 }
 
 bool sqlrserverconnection::getPrimaryKeysList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table) {
-	const char	*query=getPrimaryKeysListQuery(db,schema,table);
+	const char	*query=getPrimaryKeysListQuery(catalog,schema,table);
 	if (charstring::isNullOrEmpty(query)) {
 		cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
 					SQLR_ERROR_NOTIMPLEMENTED,true);
@@ -1037,10 +1041,10 @@ bool sqlrserverconnection::getPrimaryKeysList(sqlrservercursor *cursor,
 }
 
 bool sqlrserverconnection::getKeyAndIndexList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table) {
-	const char	*query=getKeyAndIndexListQuery(db,schema,table);
+	const char	*query=getKeyAndIndexListQuery(catalog,schema,table);
 	if (charstring::isNullOrEmpty(query)) {
 		cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
 					SQLR_ERROR_NOTIMPLEMENTED,true);
@@ -1058,10 +1062,10 @@ bool sqlrserverconnection::getKeyAndIndexList(sqlrservercursor *cursor,
 }
 
 bool sqlrserverconnection::getProcedureList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure) {
-	const char	*query=getProcedureListQuery(db,schema,procedure);
+	const char	*query=getProcedureListQuery(catalog,schema,procedure);
 	if (charstring::isNullOrEmpty(query)) {
 		cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
 					SQLR_ERROR_NOTIMPLEMENTED,true);
@@ -1080,11 +1084,11 @@ bool sqlrserverconnection::getProcedureList(sqlrservercursor *cursor,
 
 bool sqlrserverconnection::getProcedureParameterList(
 						sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure) {
 	const char	*query=getProcedureParameterListQuery(
-						db,schema,procedure);
+						catalog,schema,procedure);
 	if (charstring::isNullOrEmpty(query)) {
 		cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
 					SQLR_ERROR_NOTIMPLEMENTED,true);
@@ -1102,25 +1106,25 @@ bool sqlrserverconnection::getProcedureParameterList(
 }
 
 const char *sqlrserverconnection::getDatabaseListQuery(
-						const char *db) {
+						const char *catalog) {
 	return getNoopQuery();
 }
 
 const char *sqlrserverconnection::getSchemaListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema) {
 	return getNoopQuery();
 }
 
 const char *sqlrserverconnection::getTableTypeListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *tabletypes) {
 	return getNoopQuery();
 }
 
 const char *sqlrserverconnection::getTableListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes) {
@@ -1132,14 +1136,14 @@ const char *sqlrserverconnection::getGlobalTempTableListQuery() {
 }
 
 const char *sqlrserverconnection::getTypeInfoListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *type) {
 	return getNoopQuery();
 }
 
 const char *sqlrserverconnection::getColumnListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						const char *column) {
@@ -1147,28 +1151,28 @@ const char *sqlrserverconnection::getColumnListQuery(
 }
 
 const char *sqlrserverconnection::getPrimaryKeysListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table) {
 	return getNoopQuery();
 }
 
 const char *sqlrserverconnection::getKeyAndIndexListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table) {
 	return getNoopQuery();
 }
 
 const char *sqlrserverconnection::getProcedureListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure) {
 	return getNoopQuery();
 }
 
 const char *sqlrserverconnection::getProcedureParameterListQuery(
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure) {
 	return getNoopQuery();

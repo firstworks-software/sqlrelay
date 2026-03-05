@@ -656,6 +656,33 @@ int main() {
 			}
 		}
 
+		if (strcmp("selectCatalog", command) == TRUE) {
+			char catalog[2000];
+
+			// check number of arguments
+		    	if (arity != 1) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_string(buf, &index, &catalog[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// call function and encode result
+			sqlrcon_selectCatalog(con, catalog);
+			ENCODE_VOID;
+		}
+
+		if (strcmp("getCurrentCatalog", command) == TRUE) {
+			// check number of arguments
+		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
+
+			// encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_string(&result, sqlrcon_getCurrentCatalog(con))) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
+
 		if (strcmp("selectSchema", command) == TRUE) {
 			char schema[2000];
 
@@ -679,6 +706,17 @@ int main() {
 			// encode result
 			if (ei_x_encode_atom(&result, "ok") ||
 				ei_x_encode_string(&result, sqlrcon_getCurrentSchema(con))) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
+
+		if (strcmp("getDatabaseIsSchema", command) == TRUE) {
+			// check number of arguments
+		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
+
+			// encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_long(&result, sqlrcon_getDatabaseIsSchema(con))) {
 				return ERR_ENCODING_ARGS;
 			}
 		}

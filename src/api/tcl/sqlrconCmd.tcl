@@ -280,11 +280,21 @@ proc selectDatabase {database}
 # Returns the database (catalog) that is currently in use.
 proc getCurrentDatabase {}
 
+# Sets the current catalog to "catalog"
+proc selectCatalog {catalog}
+
+# Returns the catalog that is currently in use.
+proc getCurrentCatalog {}
+
 # Sets the current schema to "schema"
 proc selectSchema {schema}
 
 # Returns the schema that is currently in use.
 proc getCurrentSchema {}
+
+# Returns true if the backend database equates "database" with
+# "schema", and false if it equates "database" with "catalog".
+proc getDatabaseIsSchema {}
 
 
 

@@ -2740,8 +2740,11 @@ void sqlrconDelete(ClientData data) {
  *  $con nextvalFormat
  *  $con selectDatabase db
  *  $con getCurrentDatabase
+ *  $con selectCatalog catalog
+ *  $con getCurrentCatalog
  *  $con selectSchema schema
  *  $con getCurrentSchema
+ *  $con getDatabaseIsSchema
  *  $con getLastInsertId
  *  $con autoCommit bool
  *  $con begin
@@ -2791,8 +2794,11 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     "nextvalFormat",
     "selectDatabase",
     "getCurrentDatabase",
+    "selectCatalog",
+    "getCurrentCatalog",
     "selectSchema",
     "getCurrentSchema",
+    "getDatabaseIsSchema",
     "getLastInsertId",
     "autoCommit",
     "getAutoCommit",
@@ -2842,8 +2848,11 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     SQLR_NEXTVALFORMAT,
     SQLR_SELECTDATABASE,
     SQLR_GETCURRENTDATABASE,
+    SQLR_SELECTCATALOG,
+    SQLR_GETCURRENTCATALOG,
     SQLR_SELECTSCHEMA,
     SQLR_GETCURRENTSCHEMA,
+    SQLR_GETDATABASEISSCHEMA,
     SQLR_GETLASTINSERTID,
     SQLR_AUTOCOMMIT,
     SQLR_GETAUTOCOMMIT,
@@ -3195,6 +3204,23 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
 		     _Tcl_NewStringObj(con->getCurrentDatabase(), -1));
     break;
   }
+  case SQLR_SELECTCATALOG: {
+    if (objc != 3) {
+      Tcl_WrongNumArgs(interp,2, objv, "catalog");
+      return TCL_ERROR;
+    }
+    Tcl_SetObjResult(interp, Tcl_NewIntObj(con->selectCatalog(Tcl_GetString(objv[2]))));
+    break;
+  }
+  case SQLR_GETCURRENTCATALOG: {
+    if (objc > 2) {
+      Tcl_WrongNumArgs(interp, 2, objv, NULL);
+      return TCL_ERROR;
+    }
+    Tcl_SetObjResult(interp,
+		     _Tcl_NewStringObj(con->getCurrentCatalog(), -1));
+    break;
+  }
   case SQLR_SELECTSCHEMA: {
     if (objc != 3) {
       Tcl_WrongNumArgs(interp,2, objv, "schema");
@@ -3210,6 +3236,14 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     }
     Tcl_SetObjResult(interp,
 		     _Tcl_NewStringObj(con->getCurrentSchema(), -1));
+    break;
+  }
+  case SQLR_GETDATABASEISSCHEMA: {
+    if (objc > 2) {
+      Tcl_WrongNumArgs(interp, 2, objv, NULL);
+      return TCL_ERROR;
+    }
+    Tcl_SetObjResult(interp, Tcl_NewIntObj(con->getDatabaseIsSchema()));
     break;
   }
   case SQLR_GETLASTINSERTID: {

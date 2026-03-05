@@ -370,6 +370,16 @@ SQLRCLIENT_DLLSPEC
 const char	*sqlrcon_getCurrentDatabase(sqlrcon sqlrconref);
 
 /** @ingroup sqlrclientwrapper
+ *  Sets the current catalog to "catalog" */
+SQLRCLIENT_DLLSPEC
+int	sqlrcon_selectCatalog(sqlrcon sqlrconref, const char *catalog);
+
+/** @ingroup sqlrclientwrapper
+ *  Returns the catalog that is currently in use. */
+SQLRCLIENT_DLLSPEC
+const char	*sqlrcon_getCurrentCatalog(sqlrcon sqlrconref);
+
+/** @ingroup sqlrclientwrapper
  *  Sets the current schema to "schema" */
 SQLRCLIENT_DLLSPEC
 int	sqlrcon_selectSchema(sqlrcon sqlrconref, const char *schema);
@@ -378,6 +388,12 @@ int	sqlrcon_selectSchema(sqlrcon sqlrconref, const char *schema);
  *  Returns the schema that is currently in use. */
 SQLRCLIENT_DLLSPEC
 const char	*sqlrcon_getCurrentSchema(sqlrcon sqlrconref);
+
+/** @ingroup sqlrclientwrapper
+ *  Returns true if the backend database equates "database" with "schema",
+ *  and false if it equates "database" with "catalog". */
+SQLRCLIENT_DLLSPEC
+int	sqlrcon_getDatabaseIsSchema(sqlrcon sqlrconref);
 
 
 

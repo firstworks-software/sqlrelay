@@ -233,8 +233,8 @@ class sqlrservercontrollerprivate {
 	const char	*_user;
 	const char	*_password;
 
-	bool		_dbchanged;
-	char		*_originaldb;
+	bool		_catalogchanged;
+	char		*_originalcatalog;
 
 	bool		_schemachanged;
 	char		*_originalschema;
@@ -461,7 +461,7 @@ class sqlrservercontrollerprivate {
 	singlylinkedlist<const byte_t *>	_bulkdata;
 	singlylinkedlist<uint64_t>		_bulkdatasize;
 
-	char	*_db;
+	char	*_catalog;
 	char	*_schema;
 	char	*_object;
 
@@ -505,8 +505,8 @@ sqlrservercontroller::sqlrservercontroller() : sqlrserverbase() {
 	pvt->_user=NULL;
 	pvt->_password=NULL;
 
-	pvt->_dbchanged=false;
-	pvt->_originaldb=NULL;
+	pvt->_catalogchanged=false;
+	pvt->_originalcatalog=NULL;
 
 	pvt->_schemachanged=false;
 	pvt->_originalschema=NULL;
@@ -633,7 +633,7 @@ sqlrservercontroller::sqlrservercontroller() : sqlrserverbase() {
 	pvt->_bulkquery=NULL;
 	pvt->_bulkdataformat=NULL;
 
-	pvt->_db=NULL;
+	pvt->_catalog=NULL;
 	pvt->_schema=NULL;
 	pvt->_object=NULL;
 
@@ -654,7 +654,8 @@ sqlrservercontroller::~sqlrservercontroller() {
 
 	delete[] pvt->_updown;
 
-	delete[] pvt->_originaldb;
+	delete[] pvt->_originalcatalog;
+	delete[] pvt->_originalschema;
 
 	delete pvt->_pth;
 
@@ -705,7 +706,7 @@ sqlrservercontroller::~sqlrservercontroller() {
 	delete pvt->_bulkclientshmem;
 	delete pvt->_bulkcursor;
 
-	delete[] pvt->_db;
+	delete[] pvt->_catalog;
 	delete[] pvt->_schema;
 	delete[] pvt->_object;
 
@@ -1039,9 +1040,13 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 	pvt->_isolationlevel=pvt->_cfg->getIsolationLevel();
 	pvt->_conn->setIsolationLevel(pvt->_isolationlevel);
 
-	// get the database/schema we're using so
+	// get the catalog we're using so
 	// we can switch back to it at end of session
-	pvt->_originaldb=pvt->_conn->getCurrentDatabase();
+	pvt->_originalcatalog=pvt->_conn->getCurrentCatalog();
+
+	// get the schema we're using so
+	// we can switch back to it at end of session
+	pvt->_originalschema=pvt->_conn->getCurrentSchema();
 
 	markDatabaseAvailable();
 
@@ -1760,8 +1765,8 @@ void sqlrservercontroller::reLogIn(bool deadconnection) {
 	// run the session end queries
 	sessionEndQueries();
 
-	// get the current db so we can restore it
-	char	*currentdb=pvt->_conn->getCurrentDatabase();
+	// get the current catalog so we can restore it
+	char	*currentcatalog=pvt->_conn->getCurrentCatalog();
 
 	// get the current schema so we can restore it
 	char	*currentschema=pvt->_conn->getCurrentSchema();
@@ -1778,7 +1783,8 @@ void sqlrservercontroller::reLogIn(bool deadconnection) {
 	for (;;) {
 
 		if (process::getShutDownFlag()) {
-			delete[] currentdb;
+			delete[] currentcatalog;
+			delete[] currentschema;
 			return;
 		}
 			
@@ -1804,9 +1810,9 @@ void sqlrservercontroller::reLogIn(bool deadconnection) {
 	// a relogin, not if we couldn't login at startup
 	sessionStartQueries();
 
-	// restore the db
-	pvt->_conn->selectDatabase(currentdb);
-	delete[] currentdb;
+	// restore the catalog
+	pvt->_conn->selectCatalog(currentcatalog);
+	delete[] currentcatalog;
 
 	// restore the schema
 	pvt->_conn->selectSchema(currentschema);
@@ -2695,24 +2701,32 @@ bool sqlrservercontroller::selectDatabase(const char *db) {
 	if (pvt->_cfg->getIgnoreSelectDatabase()) {
 		return true;
 	}
-	if (pvt->_conn->selectDatabase(db)) {
-		// set a flag indicating that the db has been changed
+	return (getDatabaseIsSchema())?selectSchema(db):selectCatalog(db);
+}
+
+char *sqlrservercontroller::getCurrentDatabase() {
+	return (getDatabaseIsSchema())?getCurrentSchema():getCurrentCatalog();
+}
+
+bool sqlrservercontroller::getDatabaseIsSchema() {
+	return pvt->_conn->getDatabaseIsSchema();
+}
+
+bool sqlrservercontroller::selectCatalog(const char *catalog) {
+	if (pvt->_conn->selectCatalog(catalog)) {
+		// set a flag indicating that the catalog has been changed
 		// so it can be reset at the end of the session
-		pvt->_dbchanged=true;
+		pvt->_catalogchanged=true;
 		return true;
 	}
 	return false;
 }
 
-char *sqlrservercontroller::getCurrentDatabase() {
-	return pvt->_conn->getCurrentDatabase();
+char *sqlrservercontroller::getCurrentCatalog() {
+	return pvt->_conn->getCurrentCatalog();
 }
 
 bool sqlrservercontroller::selectSchema(const char *schema) {
-	// FIXME: do we need this?
-	/*if (pvt->_cfg->getIgnoreSelectSchema()) {
-		return true;
-	}*/
 	if (pvt->_conn->selectSchema(schema)) {
 		// set a flag indicating that the schema has been changed
 		// so it can be reset at the end of the session
@@ -2773,97 +2787,97 @@ bool sqlrservercontroller::fakePrepareAndExecuteForApiCall(
 }
 
 bool sqlrservercontroller::getDatabaseList(sqlrservercursor *cursor,
-						const char *db) {
+						const char *catalog) {
 	return fakePrepareAndExecuteForApiCall(cursor) &&
-		pvt->_conn->getDatabaseList(cursor,db) &&
+		pvt->_conn->getDatabaseList(cursor,catalog) &&
 		handleResultSetHeader(cursor);
 }
 
 bool sqlrservercontroller::getSchemaList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema) {
 	return fakePrepareAndExecuteForApiCall(cursor) &&
-		pvt->_conn->getSchemaList(cursor,db,schema) &&
+		pvt->_conn->getSchemaList(cursor,catalog,schema) &&
 		handleResultSetHeader(cursor);
 }
 
 bool sqlrservercontroller::getTableTypeList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *tabletypes) {
 	return fakePrepareAndExecuteForApiCall(cursor) &&
-		pvt->_conn->getTableTypeList(cursor,db,
+		pvt->_conn->getTableTypeList(cursor,catalog,
 						schema,tabletypes) &&
 		handleResultSetHeader(cursor);
 }
 
 bool sqlrservercontroller::getTableList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes) {
 	return fakePrepareAndExecuteForApiCall(cursor) &&
-		pvt->_conn->getTableList(cursor,db,schema,
+		pvt->_conn->getTableList(cursor,catalog,schema,
 						table,objecttypes) &&
 		handleResultSetHeader(cursor);
 }
 
 bool sqlrservercontroller::getTypeInfoList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *type) {
 	return fakePrepareAndExecuteForApiCall(cursor) &&
-		pvt->_conn->getTypeInfoList(cursor,db,schema,type) &&
+		pvt->_conn->getTypeInfoList(cursor,catalog,schema,type) &&
 		handleResultSetHeader(cursor);
 }
 
 bool sqlrservercontroller::getColumnList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						const char *column) {
 	return fakePrepareAndExecuteForApiCall(cursor) &&
-		pvt->_conn->getColumnList(cursor,db,schema,
+		pvt->_conn->getColumnList(cursor,catalog,schema,
 						table,column) &&
 		handleResultSetHeader(cursor);
 }
 
 bool sqlrservercontroller::getPrimaryKeysList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table) {
 	return fakePrepareAndExecuteForApiCall(cursor) &&
-		pvt->_conn->getPrimaryKeysList(cursor,db,schema,table) &&
+		pvt->_conn->getPrimaryKeysList(cursor,catalog,schema,table) &&
 		handleResultSetHeader(cursor);
 }
 
 bool sqlrservercontroller::getKeyAndIndexList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *table) {
 	return fakePrepareAndExecuteForApiCall(cursor) &&
-		pvt->_conn->getKeyAndIndexList(cursor,db,schema,table) &&
+		pvt->_conn->getKeyAndIndexList(cursor,catalog,schema,table) &&
 		handleResultSetHeader(cursor);
 }
 
 bool sqlrservercontroller::getProcedureList(sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure) {
 	return fakePrepareAndExecuteForApiCall(cursor) &&
-		pvt->_conn->getProcedureList(cursor,db,
+		pvt->_conn->getProcedureList(cursor,catalog,
 						schema,procedure) &&
 		handleResultSetHeader(cursor);
 }
 
 bool sqlrservercontroller::getProcedureParameterList(
 						sqlrservercursor *cursor,
-						const char *db,
+						const char *catalog,
 						const char *schema,
 						const char *procedure) {
 	return fakePrepareAndExecuteForApiCall(cursor) &&
 		pvt->_conn->getProcedureParameterList(
-					cursor,db,schema,procedure) &&
+					cursor,catalog,schema,procedure) &&
 		handleResultSetHeader(cursor);
 }
 
@@ -3344,18 +3358,18 @@ uint16_t sqlrservercontroller::countBindVariables(const char *query,
 				pvt->_dollarsignsupported);
 }
 
-void sqlrservercontroller::splitObjectName(const char *currentdb,
+void sqlrservercontroller::splitObjectName(const char *currentcatalog,
 						const char *currentschema,
 						const char *combinedobject,
-						const char **db,
+						const char **catalog,
 						const char **schema,
 						const char **object) {
 
 	// init return values
-	delete[] pvt->_db;
+	delete[] pvt->_catalog;
 	delete[] pvt->_schema;
 	delete[] pvt->_object;
-	pvt->_db=NULL;
+	pvt->_catalog=NULL;
 	pvt->_schema=NULL;
 	pvt->_object=NULL;
 
@@ -3365,36 +3379,38 @@ void sqlrservercontroller::splitObjectName(const char *currentdb,
 	charstring::split(combinedobject,".",true,&parts,&partcount);
 
 	// the combined object might be in one of the following formats:
-	// * db.schema.object
-	// * (currentdb.)schema.object/db.(defaultschema.)object
+	// * catalog.schema.object
+	// * (currentcatalog.)schema.object/catalog.(defaultschema.)object
 	// * object
 	switch (partcount) {
 		case 3:
-			pvt->_db=parts[0];
+			pvt->_catalog=parts[0];
 			pvt->_schema=parts[1];
 			pvt->_object=parts[2];
 			break;
 		case 2:
 			// If there are 2 parts the it could mean:
-			// * db.(defaultschama.)object
+			// * catalog.(defaultschama.)object
 			//   or
-			// * (currentdb.)schema.object...
+			// * (currentcatalog.)schema.object...
 			// If the first part is not the same as the current
-			// db, then we'll guess (currentdb.)schema.object,
-			// but we don't really know for sure. The app may
-			// really mean to target another db.
-			if (!charstring::compare(parts[0],currentdb)) {
-				pvt->_db=parts[0];
+			// catalog, then we'll guess
+			// (currentcatalog.)schema.object, but we don't really
+			// know for sure. The app may really mean to target
+			// another catalog.
+			if (!charstring::compare(parts[0],currentcatalog)) {
+				pvt->_catalog=parts[0];
 				pvt->_schema=
 					charstring::duplicate(currentschema);
 			} else {
-				pvt->_db=charstring::duplicate(currentdb);
+				pvt->_catalog=
+					charstring::duplicate(currentcatalog);
 				pvt->_schema=parts[0];
 			}
 			pvt->_object=parts[1];
 			break;
 		case 1:
-			pvt->_db=charstring::duplicate(currentdb);
+			pvt->_catalog=charstring::duplicate(currentcatalog);
 			pvt->_schema=charstring::duplicate(currentschema);
 			pvt->_object=parts[0];
 			break;
@@ -3404,7 +3420,7 @@ void sqlrservercontroller::splitObjectName(const char *currentdb,
 	delete[] parts;
 
 	// pass values out
-	*db=pvt->_db;
+	*catalog=pvt->_catalog;
 	*schema=pvt->_schema;
 	*object=pvt->_object;
 }
@@ -7377,12 +7393,12 @@ void sqlrservercontroller::endSession() {
 	// run session-end queries
 	sessionEndQueries();
 
-	// reset database
-	if (pvt->_dbchanged) {
+	// reset catalog
+	if (pvt->_catalogchanged) {
 		// FIXME: we're ignoring the result and error,
 		// should we do something if there's an error?
-		pvt->_conn->selectDatabase(pvt->_originaldb);
-		pvt->_dbchanged=false;
+		pvt->_conn->selectCatalog(pvt->_originalcatalog);
+		pvt->_catalogchanged=false;
 	}
 
 	// reset schema
