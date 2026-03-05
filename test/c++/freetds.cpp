@@ -773,6 +773,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->firstRowIndex(),8);
 	assertTrue(cur->endOfResultSet());
 	assertEquals(cur->rowCount(),8);
+	cur->setResultSetBufferSize(0);
 	stdoutput.printf("\n");
 
 
@@ -1078,9 +1079,12 @@ int main(int argc, char **argv) {
 	}
 	stdoutput.printf("\n");
 
-	// drop existing table
-	cur->sendQuery("commit tran");
-	cur->sendQuery("drop table testtable");
+
+	// commit/drop table
+	stdoutput.printf("COMMIT/DROP TABLE: \n");
+	assertTrue(con->commit());
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
 
 
 	// temporary tables

@@ -573,6 +573,7 @@ def main():
 	assertEqual(cur.firstRowIndex(),8)
 	assertTrue(cur.endOfResultSet())
 	assertEqual(cur.rowCount(),8)
+	cur.setResultSetBufferSize(0)
 	print()
 
 

@@ -3888,7 +3888,7 @@ bool sqlrprotocol_mysql::getObjectList(sqlrservercursor *cursor,
 
 	// split the object (catalog.schema.object) into
 	// catalog, schema, and object
-	char	*currentcatalog=cont->getCurrentDatabase();
+	char	*currentcatalog=cont->getCurrentCatalog();
 	char	*currentschema=cont->getCurrentSchema();
 	const char	*catalog=NULL;
 	const char	*schema=NULL;
@@ -3940,7 +3940,7 @@ bool sqlrprotocol_mysql::getComponentList(sqlrservercursor *cursor,
 
 	// split the object (catalog.schema.object) into
 	// catalog, schema, and object
-	char	*currentcatalog=cont->getCurrentDatabase();
+	char	*currentcatalog=cont->getCurrentCatalog();
 	char	*currentschema=cont->getCurrentSchema();
 	const char	*catalog=NULL;
 	const char	*schema=NULL;

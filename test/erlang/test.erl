@@ -172,7 +172,8 @@ startTest() ->
 			{ok, 2} = getResultSetBufferSize(),
 			{ok, 1} = sendQuery("select * from testtable1"),
                         {ok, 2} = rowCount(),
-			cursorFree(),		
+			{ok, _} = setResultSetBufferSize(0),
+			cursorFree(),
 
 			% test column info functions
                         io:format("~n*********** Testing column info functions~n", []),
@@ -195,7 +196,7 @@ startTest() ->
 			{ok, 1} = sendQuery("select * from testtable1"),
 % the following function fails in Oracle because lower case columns are not returned
 %			{ok, "col1"} = getColumnName(0),
-			cursorFree(),		
+			cursorFree(),
 
 
 			% test cache functions

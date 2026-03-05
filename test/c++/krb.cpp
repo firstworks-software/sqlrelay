@@ -554,6 +554,7 @@ int main(int argc, char **argv) {
 	assertFalse(cur->endOfResultSet());
 	assertEquals(cur->rowCount(),8);
 	assertEquals(cur->getField(8,(uint32_t)0),NULL);
+	cur->setResultSetBufferSize(0);
 	stdoutput.printf("\n");
 	assertEquals(cur->firstRowIndex(),8);
 	assertTrue(cur->endOfResultSet());

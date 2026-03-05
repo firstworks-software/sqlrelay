@@ -574,6 +574,7 @@ class oracle extends sqlrtest {
 		assertEquals(cur.firstRowIndex(),8);
 		assertTrue(cur.endOfResultSet());
 		assertEquals(cur.rowCount(),8);
+		cur.setResultSetBufferSize(0);
 		System.out.println();
 
 

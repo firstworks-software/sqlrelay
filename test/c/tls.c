@@ -566,6 +566,7 @@ int main(int argc, char **argv) {
 	assertEqualsInt(sqlrcur_firstRowIndex(cur),8);
 	assertTrue(sqlrcur_endOfResultSet(cur));
 	assertEqualsInt(sqlrcur_rowCount(cur),8);
+	sqlrcur_setResultSetBufferSize(cur,0);
 	printf("\n");
 
 

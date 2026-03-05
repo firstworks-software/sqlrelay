@@ -626,6 +626,7 @@ console.log();
 assertEqual(cur.firstRowIndex(),8);
 assertEqual(cur.endOfResultSet(),1);
 assertEqual(cur.rowCount(),8);
+cur.setResultSetBufferSize(0);
 console.log();
 
 

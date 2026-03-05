@@ -562,6 +562,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->firstRowIndex(),8);
 	assertTrue(cur->endOfResultSet());
 	assertEquals(cur->rowCount(),8);
+	cur->setResultSetBufferSize(0);
 	stdoutput.printf("\n");
 
 

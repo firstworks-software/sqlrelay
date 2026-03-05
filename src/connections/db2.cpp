@@ -641,7 +641,10 @@ const char *db2connection::getSchemaListQuery(const char *catalog,
 		"	'' as table_name, "
 		"	'' as table_type, "
 		"	'' as remarks, "
-		"	null "
+		"	null ");
+
+	// from clause
+	schemalistquery.append(
 		"from "
 		"	syscat.schemata ");
 
@@ -649,9 +652,9 @@ const char *db2connection::getSchemaListQuery(const char *catalog,
 	if (schema) {
 		schemalistquery.append(
 			"where "
-			"	schemaname like '");
+			"	schemaname like upper('");
 		schemalistquery.append(schema);
-		schemalistquery.append("' ");
+		schemalistquery.append("') ");
 	}
 
 	// order by clause
@@ -676,7 +679,11 @@ const char *db2connection::getTableTypeListQuery(const char *catalog,
 		"	'' as table_name, "
 		"	table_type, "
 		"	'' as remarks, "
-		"	null "
+		"	null ");
+
+
+	// from clause
+	tabletypelistquery.append(
 		"from "
 		"(select 'TABLE' as table_type from sysibm.sysdummy1 "
 		"union "
@@ -690,9 +697,9 @@ const char *db2connection::getTableTypeListQuery(const char *catalog,
 	if (!charstring::isNullOrEmpty(tabletypes)) {
 		tabletypelistquery.append(
 			"where "
-			"	table_type like '");
+			"	table_type like upper('");
 		tabletypelistquery.append(tabletypes);
-		tabletypelistquery.append("' ");
+		tabletypelistquery.append("') ");
 	}
 
 	// order by clause
@@ -718,10 +725,15 @@ const char *db2connection::getTableListQuery(const char *catalog,
 		"	tabname as table_name, "
 		"	'TABLE' as table_type, "
 		"	'' as remarks, "
-		"	null "
+		"	null ");
+
+	// from clause
+	tablelistquery.append(
 		"from "
-		"	syscat.tables "
-		"where ");
+		"	syscat.tables ");
+
+	// where clause
+	tablelistquery.append("where ");
 	if (dbmajorversion>7) {
 		tablelistquery.append(
 			"	ownertype='U' ");
@@ -735,16 +747,16 @@ const char *db2connection::getTableListQuery(const char *catalog,
 	if (schema) {
 		tablelistquery.append(
 			"	and "
-			"	tabschema like '");
+			"	tabschema like upper('");
 		tablelistquery.append(schema);
-		tablelistquery.append("' ");
+		tablelistquery.append("') ");
 	}
 	if (table) {
 		tablelistquery.append(
 			"	and "
-			"	tabname like '");
+			"	tabname like upper('");
 		tablelistquery.append(table);
-		tablelistquery.append("' ");
+		tablelistquery.append("') ");
 	}
 	tablelistquery.append(
 			"	and ");
@@ -1415,9 +1427,9 @@ const char *db2connection::getColumnListQuery(const char *catalog,
 	if (!charstring::isNullOrEmpty(schema)) {
 		columnlistquery.append(
 			"where "
-			"	tabschema like '");
+			"	tabschema like upper('");
 		columnlistquery.append(schema);
-		columnlistquery.append("' ");
+		columnlistquery.append("') ");
 		first=false;
 	}
 
@@ -1442,9 +1454,9 @@ const char *db2connection::getColumnListQuery(const char *catalog,
 			columnlistquery.append("	and ");
 		}
 		columnlistquery.append(
-			"	colname like '");
+			"	colname like upper('");
 		columnlistquery.append(column);
-		columnlistquery.append("' ");
+		columnlistquery.append("') ");
 	}
 
 	// order by clause
@@ -1491,16 +1503,16 @@ const char *db2connection::getPrimaryKeysListQuery(const char *catalog,
 	if (!charstring::isNullOrEmpty(schema)) {
 		primarykeyslistquery.append(
 			"	and "
-			"	trim(kcu.tabschema) like '");
+			"	trim(kcu.tabschema) like upper('");
 		primarykeyslistquery.append(schema);
-		primarykeyslistquery.append("' ");
+		primarykeyslistquery.append("') ");
 	}
 	if (!charstring::isNullOrEmpty(table)) {
 		primarykeyslistquery.append(
 			"	and "
-			"	trim(kcu.tabname) like '");
+			"	trim(kcu.tabname) like upper('");
 		primarykeyslistquery.append(table);
-		primarykeyslistquery.append("' ");
+		primarykeyslistquery.append("') ");
 	}
 
 	// order by clause
@@ -1559,16 +1571,16 @@ const char *db2connection::getKeyAndIndexListQuery(const char *catalog,
 	if (!charstring::isNullOrEmpty(schema)) {
 		keyandindexlistquery.append(
 			"	and "
-			"	trim(i.tabschema) like '");
+			"	trim(i.tabschema) like upper('");
 		keyandindexlistquery.append(schema);
-		keyandindexlistquery.append("' ");
+		keyandindexlistquery.append("') ");
 	}
 	if (!charstring::isNullOrEmpty(table)) {
 		keyandindexlistquery.append(
 			"	and "
-			"	trim(i.tabname) like '");
+			"	trim(i.tabname) like upper('");
 		keyandindexlistquery.append(table);
-		keyandindexlistquery.append("' ");
+		keyandindexlistquery.append("') ");
 	}
 
 	// order by clause
@@ -1603,22 +1615,29 @@ const char *db2connection::getProcedureListQuery(
 		"		when 'F' then '2' "
 		"		else '0' "
 		"	end as procedure_type, "
-		"	null "
+		"	null ");
+
+
+	// from clause
+	procedurelistquery.append(
 		"from "
-		"	syscat.routines "
+		"	syscat.routines ");
+
+	// where clause
+	procedurelistquery.append(
 		"where "
 		"	routinetype in ('P','F') ");
 	if (!charstring::isNullOrEmpty(schema)) {
 		procedurelistquery.append(
-			"and routineschema like '");
+			"and routineschema like upper('");
 		procedurelistquery.append(schema);
-		procedurelistquery.append("' ");
+		procedurelistquery.append("') ");
 	}
 	if (!charstring::isNullOrEmpty(procedure)) {
 		procedurelistquery.append(
-			"and routinename like '");
+			"and routinename like upper('");
 		procedurelistquery.append(procedure);
-		procedurelistquery.append("' ");
+		procedurelistquery.append("') ");
 	}
 
 	// order by clause
@@ -1676,9 +1695,9 @@ const char *db2connection::getProcedureParameterListQuery(
 	if (!charstring::isNullOrEmpty(schema)) {
 		procedureparameterlistquery.append(
 			"where "
-			"	trim(procschema) like '");
+			"	trim(procschema) like upper('");
 		procedureparameterlistquery.append(schema);
-		procedureparameterlistquery.append("' ");
+		procedureparameterlistquery.append("') ");
 		first=false;
 	}
 	if (!charstring::isNullOrEmpty(procedure)) {
@@ -1688,9 +1707,9 @@ const char *db2connection::getProcedureParameterListQuery(
 			procedureparameterlistquery.append("	and ");
 		}
 		procedureparameterlistquery.append(
-			"	trim(procname) like '");
+			"	trim(procname) like upper('");
 		procedureparameterlistquery.append(procedure);
-		procedureparameterlistquery.append("' ");
+		procedureparameterlistquery.append("') ");
 	}
 
 	// order by clause

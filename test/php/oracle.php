@@ -553,6 +553,7 @@
 	assertEqual(sqlrcur_firstRowIndex($cur),8);
 	assertTrue(sqlrcur_endOfResultSet($cur));
 	assertEqual(sqlrcur_rowCount($cur),8);
+	sqlrcur_setResultSetBufferSize($cur,0);
 	echo("\n");
 
 

@@ -1032,6 +1032,7 @@ for (uint16_t a=0; a<50; a++) {
 	assertEquals(cur->firstRowIndex(),8);
 	assertTrue(cur->endOfResultSet());
 	assertEquals(cur->rowCount(),8);
+	cur->setResultSetBufferSize(0);
 	stdoutput.printf("\n");
 
 

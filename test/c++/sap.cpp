@@ -780,6 +780,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->firstRowIndex(),8);
 	assertTrue(cur->endOfResultSet());
 	assertEquals(cur->rowCount(),8);
+	cur->setResultSetBufferSize(0);
 	stdoutput.printf("\n");
 
 
@@ -1079,6 +1080,7 @@ int main(int argc, char **argv) {
 		assertTrue(cur2->sendQuery("select * from testtable"));
 		delete cur2;
 	}
+	cur->setResultSetBufferSize(0);
 	stdoutput.printf("\n");
 
 
@@ -1091,7 +1093,7 @@ int main(int argc, char **argv) {
 
 	// temporary tables
 	stdoutput.printf("TEMPORARY TABLES: \n");
-	cur->sendQuery("drop table temptable\n");
+	cur->sendQuery("drop table #temptable\n");
 	cur->sendQuery("create table #temptable (col1 int)");
 	assertTrue(cur->sendQuery("insert into #temptable values (1)"));
 	assertTrue(cur->sendQuery("select count(*) from #temptable"));
@@ -1113,6 +1115,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("CATALOG LIST: \n");
 	assertTrue(cur->getCatalogList(NULL));
 	assertEquals(cur->getColumnName(0),"Database");
+	assertTrue(cur->rowCount()>0);
 	stdoutput.printf("\n");
 
 
@@ -1120,6 +1123,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("SCHEMA LIST: \n");
 	assertTrue(cur->getSchemaList(NULL));
 	assertEquals(cur->getColumnName(0),"Database");
+	assertTrue(cur->rowCount()>0);
 	stdoutput.printf("\n");
 
 
