@@ -771,7 +771,7 @@ function sqlrcur_cacheOff($sqlrcurref){}
 
 
 /**
- *  Sends a query that returns a result set containing
+ *  Generates a result set containing
  *  databases that match the pattern "wild".
  *
  *  The result set will contain the following columns:
@@ -785,8 +785,10 @@ function sqlrcur_cacheOff($sqlrcurref){}
  *  then an empty result set will be returned. */
 function sqlrcur_getDatabaseList($sqlrcurref, $wild){}
 
+function sqlrcur_getCatalogList($sqlrcurref, $wild){}
+
 /**
- *  Sends a query that returns a result set containing the
+ *  Generates a result set containing the
  *  tables in the current database and schema that match the
  *  pattern "wild".
  *
@@ -802,7 +804,7 @@ function sqlrcur_getDatabaseList($sqlrcurref, $wild){}
 function sqlrcur_getTableList($sqlrcurref, $wild){}
 
 /**
- *  Sends a query that returns a result set containing the
+ *  Generates a result set containing the
  *  columns of "table", which match the pattern "wild".
  *
  *  The result set will contain the following columns:

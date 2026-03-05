@@ -256,7 +256,7 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostNameQuery();
-		const char	*getDatabaseListQuery(const char *catalog);
+		const char	*getCatalogListQuery(const char *catalog);
 		const char	*getSchemaListQuery(const char *catalog,
 						const char *schema);
 		const char	*getTableTypeListQuery(const char *catalog,
@@ -614,7 +614,7 @@ const char *db2connection::getDbHostNameQuery() {
 	return dbhostnamequery;
 }
 
-const char *db2connection::getDatabaseListQuery(const char *catalog) {
+const char *db2connection::getCatalogListQuery(const char *catalog) {
 
 	databaselistquery.clear();
 

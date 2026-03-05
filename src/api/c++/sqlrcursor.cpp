@@ -935,7 +935,27 @@ bool sqlrcursor::getDatabaseList(const char *databases,
 		pvt->_sqlrc->debugPrint("\n");
 		pvt->_sqlrc->debugPreEnd();
 	}
-	return getObjectList(GET_DB_LIST,listformat,databases,0);
+	return getObjectList(GET_DATABASE_LIST,listformat,databases,0);
+}
+
+bool sqlrcursor::getCatalogList(const char *catalogs) {
+	return getCatalogList(catalogs,SQLRCLIENTLISTFORMAT_MYSQL);
+}
+
+bool sqlrcursor::getCatalogList(const char *catalogs,
+					sqlrclientlistformat_t listformat) {
+	if (pvt->_sqlrc->debug()) {
+		pvt->_sqlrc->debugPreStart();
+		pvt->_sqlrc->debugPrint("getting catalog list");
+		if (catalogs) {
+			pvt->_sqlrc->debugPrint("\"");
+			pvt->_sqlrc->debugPrint(catalogs);
+			pvt->_sqlrc->debugPrint("\"");
+		}
+		pvt->_sqlrc->debugPrint("\n");
+		pvt->_sqlrc->debugPreEnd();
+	}
+	return getObjectList(GET_CATALOG_LIST,listformat,catalogs,0);
 }
 
 bool sqlrcursor::getSchemaList(const char *schemas) {

@@ -245,7 +245,7 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostNameQuery();
-		const char	*getDatabaseListQuery(const char *catalog);
+		const char	*getCatalogListQuery(const char *catalog);
 		const char	*getSchemaListQuery(const char *catalog,
 						const char *schema);
 		const char	*getTableTypeListQuery(const char *catalog,
@@ -588,7 +588,7 @@ const char *informixconnection::getDbHostNameQuery() {
 	//return "select os_nodename from sysmaster:sysmachineinfo";
 }
 
-const char *informixconnection::getDatabaseListQuery(const char *catalog) {
+const char *informixconnection::getCatalogListQuery(const char *catalog) {
 
 	databaselistquery.clear();
 

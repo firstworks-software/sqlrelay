@@ -1468,9 +1468,15 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// database list
-	stdoutput.printf("DATABASE LIST: \n");
-	assertTrue(cur->getDatabaseList(NULL));
+	// database is schema
+	stdoutput.printf("DATABASE IS SCHEMA: \n");
+	assertTrue(con->getDatabaseIsSchema());
+	stdoutput.printf("\n");
+
+
+	// catalog list
+	stdoutput.printf("CATALOG LIST: \n");
+	assertTrue(cur->getCatalogList(NULL));
 	assertEquals(cur->getColumnName(0),"Database");
 	assertEquals(cur->rowCount(),0);
 	stdoutput.printf("\n");

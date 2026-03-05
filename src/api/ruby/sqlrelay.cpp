@@ -1803,7 +1803,7 @@ static void getDatabaseList(params *p) {
  *  call-seq:
  *  getDatabaseList(databases)
  *
- *  Sends a query that returns a result set containing
+ *  Generates a result set containing
  *  databases that match the pattern "databases".
  *
  *  The result set will contain the following columns:
@@ -1823,6 +1823,33 @@ static VALUE sqlrcur_getDatabaseList(VALUE self, VALUE databases) {
 	return INT2NUM(result);
 }
 
+static void getCatalogList(params *p) {
+	p->result.br=p->sqlrc.sqlrcur->getCatalogList(STR2CSTR(p->one));
+}
+/**
+ *  call-seq:
+ *  getCatalogList(catalogs)
+ *
+ *  Generates a result set containing
+ *  catalogs that match the pattern "catalogs".
+ *
+ *  The result set will contain the following columns:
+ *  * Database
+ *
+ *  If "catalogs" is empty or nil then a result set containing
+ *  all catalogs will be returned.
+ *
+ *  If SQL Relay doesn't support getting a list of catalogs
+ *  for the current database backend (or the database doesn't)
+ *  then an empty result set will be returned. */
+static VALUE sqlrcur_getCatalogList(VALUE self, VALUE catalogs) {
+	sqlrcursordata	*sqlrcurdata;
+	bool		result;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	RCUR1(result,br,sqlrcurdata->cur,getCatalogList,catalogs);
+	return INT2NUM(result);
+}
+
 static void getSchemaList(params *p) {
 	p->result.br=p->sqlrc.sqlrcur->getSchemaList(STR2CSTR(p->one));
 }
@@ -1830,7 +1857,7 @@ static void getSchemaList(params *p) {
  *  call-seq:
  *  getSchemaList(schemas)
  *
- *  Sends a query that returns a result set containing
+ *  Generates a result set containing
  *  schemas that match the pattern "schemas".
  *
  *  The result set will contain the following columns:
@@ -1860,7 +1887,7 @@ static void getTableTypeList(params *p) {
  *  call-seq:
  *  getTableTypeList()
  *
- *  Sends a query that returns a result set containing
+ *  Generates a result set containing
  *  supported table types.
  *
  *  The result set will contain the following columns:
@@ -1884,7 +1911,7 @@ static void getTableList(params *p) {
  *  call-seq:
  *  getTableList(tables)
  *
- *  Sends a query that returns a result set containing the
+ *  Generates a result set containing the
  *  tables in the current database and schema that match the
  *  pattern "tables".
  *
@@ -1912,7 +1939,7 @@ static void getTypeInfoList(params *p) {
  *  call-seq:
  *  getTypeInfoList(type)
  *
- *  Sends a query that returns a result set containing data
+ *  Generates a result set containing data
  *  type information for "type".
  *
  *  The result set will contain the following columns:
@@ -1959,7 +1986,7 @@ static void getColumnList(params *p) {
  *  call-seq:
  *  getColumnList(table,columns)
  *
- *  Sends a query that returns a result set containing the
+ *  Generates a result set containing the
  *  columns of "table", which match the pattern "columns".
  *
  *  The result set will contain the following columns:
@@ -1995,7 +2022,7 @@ static void getPrimaryKeysList(params *p) {
  *  call-seq:
  *  getPrimaryKeysList(table,columns)
  *
- *  Sends a query that returns a result set containing the
+ *  Generates a result set containing the
  *  primary keys of "table", which match the pattern
  *  "columns".
  *
@@ -2037,7 +2064,7 @@ static void getKeyAndIndexList(params *p) {
  *  call-seq:
  *  getKeyAndIndexList(table,qualifier)
  *
- *  Sends a query that returns a result set containing the
+ *  Generates a result set containing the
  *  keys and indexes of "table", which match the pattern
  *  "qualifier".
  *
@@ -2079,7 +2106,7 @@ static void getProcedureList(params *p) {
  *  call-seq:
  *  getProcedureList(procedures)
  *
- *  Sends a query that returns a result set containing
+ *  Generates a result set containing
  *  procedures that match the pattern "procedures".
  *
  *  The result set will contain the following columns:
@@ -2111,7 +2138,7 @@ static void getProcedureParameterList(params *p) {
  *  call-seq:
  *  getProcedureParameterList(procedure,parameters)
  *
- *  Sends a query that returns a result set containing the
+ *  Generates a result set containing the
  *  parameters of "procedure", which match the pattern
  *  "parameters".
  *
@@ -4418,6 +4445,8 @@ void Init_SQLRCursor() {
 				(CAST)sqlrcur_cacheOff,0);
 	rb_define_method(csqlrcursor,"getDatabaseList",
 				(CAST)sqlrcur_getDatabaseList,1);
+	rb_define_method(csqlrcursor,"getCatalogList",
+				(CAST)sqlrcur_getCatalogList,1);
 	rb_define_method(csqlrcursor,"getSchemaList",
 				(CAST)sqlrcur_getSchemaList,1);
 	rb_define_method(csqlrcursor,"getTableTypeList",

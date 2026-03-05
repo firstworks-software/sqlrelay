@@ -47,7 +47,7 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostName();
-		const char	*getDatabaseListQuery(const char *catalog);
+		const char	*getCatalogListQuery(const char *catalog);
 		const char	*getSchemaListQuery(const char *catalog,
 						const char *schema);
 		const char	*getTableTypeListQuery(const char *catalog,
@@ -310,7 +310,7 @@ const char *sqliteconnection::getDbHostName() {
 	return hostname;
 }
 
-const char *sqliteconnection::getDatabaseListQuery(const char *catalog) {
+const char *sqliteconnection::getCatalogListQuery(const char *catalog) {
 	//return "pragma database_list";
 	return "select "
 		"	'' as table_cat, "

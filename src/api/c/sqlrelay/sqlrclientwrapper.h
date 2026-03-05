@@ -898,7 +898,7 @@ void	sqlrcur_cacheOff(sqlrcur sqlrcurref);
 
 
 /** @ingroup sqlrclientwrapper
- *  Sends a query that returns a result set containing
+ *  Generates a result set containing
  *  databases that match the pattern "databases".
  *
  *  The result set will contain the following columns:
@@ -914,7 +914,23 @@ SQLRCLIENT_DLLSPEC
 int	sqlrcur_getDatabaseList(sqlrcur sqlrcurref, const char *databases);
 
 /** @ingroup sqlrclientwrapper
- *  Sends a query that returns a result set containing
+ *  Generates a result set containing
+ *  catalogs that match the pattern "catalogs".
+ *
+ *  The result set will contain the following columns:
+ *  * Database
+ *
+ *  If "catalogs" is empty or NULL then a result set containing
+ *  all catalogs will be returned.
+ *
+ *  If SQL Relay doesn't support getting a list of catalogs
+ *  for the current database backend (or the database doesn't)
+ *  then an empty result set will be returned. */
+SQLRCLIENT_DLLSPEC
+int	sqlrcur_getCatalogList(sqlrcur sqlrcurref, const char *catalogs);
+
+/** @ingroup sqlrclientwrapper
+ *  Generates a result set containing
  *  schemas that match the pattern "schemas".
  *
  *  The result set will contain the following columns:
@@ -933,7 +949,7 @@ SQLRCLIENT_DLLSPEC
 int	sqlrcur_getSchemaList(sqlrcur sqlrcurref, const char *schemas);
 
 /** @ingroup sqlrclientwrapper
- *  Sends a query that returns a result set containing
+ *  Generates a result set containing
  *  supported table types.
  *
  *  The result set will contain the following columns:
@@ -946,7 +962,7 @@ SQLRCLIENT_DLLSPEC
 int	sqlrcur_getTableTypeList(sqlrcur sqlrcurref);
 
 /** @ingroup sqlrclientwrapper
- *  Sends a query that returns a result set containing the
+ *  Generates a result set containing the
  *  tables in the current database and schema that match the
  *  pattern "tables".
  *
@@ -963,7 +979,7 @@ SQLRCLIENT_DLLSPEC
 int	sqlrcur_getTableList(sqlrcur sqlrcurref, const char *tables);
 
 /** @ingroup sqlrclientwrapper
- *  Sends a query that returns a result set containing data
+ *  Generates a result set containing data
  *  type information for "type".
  *
  *  The result set will contain the following columns:
@@ -998,7 +1014,7 @@ SQLRCLIENT_DLLSPEC
 int	sqlrcur_getTypeInfoList(sqlrcur sqlrcurref, const char *type);
 
 /** @ingroup sqlrclientwrapper
- *  Sends a query that returns a result set containing the
+ *  Generates a result set containing the
  *  columns of "table", which match the pattern "columns".
  *
  *  The result set will contain the following columns:
@@ -1023,7 +1039,7 @@ int	sqlrcur_getColumnList(sqlrcur sqlrcurref,
 				const char *table, const char *columns);
 
 /** @ingroup sqlrclientwrapper
- *  Sends a query that returns a result set containing the
+ *  Generates a result set containing the
  *  primary keys of "table", which match the pattern
  *  "columns".
  *
@@ -1053,7 +1069,7 @@ int	sqlrcur_getPrimaryKeysList(sqlrcur sqlrcurref,
 				const char *table, const char *columns);
 
 /** @ingroup sqlrclientwrapper
- *  Sends a query that returns a result set containing the
+ *  Generates a result set containing the
  *  keys and indexes of "table", which match the pattern
  *  "qualifier".
  *
@@ -1084,7 +1100,7 @@ int	sqlrcur_getKeyAndIndexList(sqlrcur sqlrcurref,
 				const char *table, const char *qualifier);
 
 /** @ingroup sqlrclientwrapper
- *  Sends a query that returns a result set containing
+ *  Generates a result set containing
  *  procedures that match the pattern "procedures".
  *
  *  The result set will contain the following columns:
@@ -1104,7 +1120,7 @@ SQLRCLIENT_DLLSPEC
 int	sqlrcur_getProcedureList(sqlrcur sqlrcurref, const char *procedures);
 
 /** @ingroup sqlrclientwrapper
- *  Sends a query that returns a result set containing the
+ *  Generates a result set containing the
  *  parameters of "procedure", which match the pattern
  *  "parameters".
  *

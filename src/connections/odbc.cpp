@@ -339,7 +339,7 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		const char	*getNextvalFormat();
 		const char	*getLastInsertIdQuery();
 		bool		getListsByApiCalls();
-		bool		getDatabaseList(sqlrservercursor *cursor,
+		bool		getCatalogList(sqlrservercursor *cursor,
 						const char *catalog);
 		bool		getSchemaList(sqlrservercursor *cursor,
 						const char *catalog,
@@ -2699,7 +2699,7 @@ bool odbcconnection::getListsByApiCalls() {
 	return true;
 }
 
-bool odbcconnection::getDatabaseList(sqlrservercursor *cursor,
+bool odbcconnection::getCatalogList(sqlrservercursor *cursor,
 						const char *catalog) {
 
 	odbccursor	*odbccur=(odbccursor *)cursor;

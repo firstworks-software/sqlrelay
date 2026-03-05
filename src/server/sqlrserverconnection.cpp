@@ -894,9 +894,9 @@ bool sqlrserverconnection::getListsByApiCalls() {
 	return false;
 }
 
-bool sqlrserverconnection::getDatabaseList(sqlrservercursor *cursor,
+bool sqlrserverconnection::getCatalogList(sqlrservercursor *cursor,
 						const char *catalog) {
-	const char	*query=getDatabaseListQuery(catalog);
+	const char	*query=getCatalogListQuery(catalog);
 	if (charstring::isNullOrEmpty(query)) {
 		cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
 					SQLR_ERROR_NOTIMPLEMENTED,true);
@@ -1105,7 +1105,7 @@ bool sqlrserverconnection::getProcedureParameterList(
 		cont->executeQuery(cursor,false,false,false,false);
 }
 
-const char *sqlrserverconnection::getDatabaseListQuery(
+const char *sqlrserverconnection::getCatalogListQuery(
 						const char *catalog) {
 	return getNoopQuery();
 }

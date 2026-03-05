@@ -69,7 +69,7 @@ public class SQLRCursor {
 	public native void	cacheOff();
 
 
-	/** Sends a query that returns a result set containing
+	/** Generates a result set containing
 	 *  databases that match the pattern "databases".
 	 *
 	 *  The result set will contain the following columns:
@@ -84,7 +84,8 @@ public class SQLRCursor {
 	 *  for the current database backend (or the database doesn't)
 	 *  then an empty result set will be returned. */
 	public native boolean	getDatabaseList(String databases);
-	/** Sends a query that returns a result set containing
+	public native boolean	getCatalogList(String catalogs);
+	/** Generates a result set containing
 	 *  schemas that match the pattern "schemas".
 	 *
 	 *  The result set will contain the following columns:
@@ -102,7 +103,7 @@ public class SQLRCursor {
 	 *  for the current database backend (or the database doesn't)
 	 *  then an empty result set will be returned. */
 	public native boolean	getSchemaList(String schemas);
-	/** Sends a query that returns a result set containing
+	/** Generates a result set containing
 	 *  supported table types.
 	 *
 	 *  The result set will contain the following columns:
@@ -114,7 +115,7 @@ public class SQLRCursor {
 	 *  for the current database backend (or the database doesn't)
 	 *  then an empty result set will be returned. */
 	public native boolean	getTableTypeList();
-	/** Sends a query that returns a result set containing the
+	/** Generates a result set containing the
 	 *  tables in the current database and schema that match the
 	 *  pattern "tables".
 	 *
@@ -130,7 +131,7 @@ public class SQLRCursor {
 	 *  for the current database backend (or the database doesn't)
 	 *  then an empty result set will be returned. */
 	public native boolean	getTableList(String tables);
-	/** Sends a query that returns a result set containing data
+	/** Generates a result set containing data
 	 *  type information for "type".
 	 *
 	 *  The result set will contain the following columns:
@@ -164,7 +165,7 @@ public class SQLRCursor {
 	 *  for the current database backend (or the database doesn't)
 	 *  then an empty result set will be returned. */
 	public native boolean	getTypeInfoList(String type);
-	/** Sends a query that returns a result set containing the
+	/** Generates a result set containing the
 	 *  columns of "table", which match the pattern "columns".
 	 *
 	 *  The result set will contain the following columns:
@@ -187,7 +188,7 @@ public class SQLRCursor {
 	 *  for the current database backend (or the database doesn't)
 	 *  then an empty result set will be returned. */
 	public native boolean	getColumnList(String table, String columns);
-	/** Sends a query that returns a result set containing the
+	/** Generates a result set containing the
 	 *  primary keys of "table", which match the pattern
 	 *  "columns".
 	 *
@@ -215,7 +216,7 @@ public class SQLRCursor {
 	 *  for the current database backend (or the database doesn't)
 	 *  then an empty result set will be returned. */
 	public native boolean	getPrimaryKeysList(String table, String columns);
-	/** Sends a query that returns a result set containing the
+	/** Generates a result set containing the
 	 *  keys and indexes of "table", which match the pattern
 	 *  "qualifier".
 	 *
@@ -244,7 +245,7 @@ public class SQLRCursor {
 	 *  indexes for the current database backend (or the database
 	 *  doesn't) then an empty result set will be returned. */
 	public native boolean	getKeyAndIndexList(String table, String qualifier);
-	/** Sends a query that returns a result set containing
+	/** Generates a result set containing
 	 *  procedures that match the pattern "procedures".
 	 *
 	 *  The result set will contain the following columns:
@@ -263,7 +264,7 @@ public class SQLRCursor {
 	 *  for the current database backend (or the database doesn't)
 	 *  then an empty result set will be returned. */
 	public native boolean	getProcedureList(String procedures);
-	/** Sends a query that returns a result set containing the
+	/** Generates a result set containing the
 	 *  parameters of "procedure", which match the pattern
 	 *  "parameters".
 	 *
@@ -835,6 +836,8 @@ public class SQLRCursor {
 	private native long	getOutputBindCursorInternal(String variable);
 	public native boolean	getDatabaseListWithFormat(
 						String databases, int listformat);
+	public native boolean	getCatalogListWithFormat(
+						String catalogs, int listformat);
 	public native boolean	getSchemaListWithFormat(
 						String schemas, int listformat);
 	public native boolean	getTableListWithFormat(

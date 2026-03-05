@@ -113,6 +113,14 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getDatabaseLi
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getCatalogList
+ * Signature: (Ljava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getCatalogList
+  (JNIEnv *, jobject, jstring);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
  * Method:    getTableList
  * Signature: (Ljava/lang/String;)Z
  */

@@ -1270,6 +1270,33 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getdatabaselist) {
 	RETURN_LONG(0);
 }
 
+DLEXPORT ZEND_FUNCTION(sqlrcur_getcataloglist) {
+	ZVAL sqlrcur;
+	ZVAL catalogs;
+	bool r;
+	if (ZEND_NUM_ARGS() != 2 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcur,
+				&catalogs) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(catalogs);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		r=cursor->getCatalogList(SVAL(catalogs));
+		RETURN_LONG(r);
+	}
+	RETURN_LONG(0);
+}
+
 DLEXPORT ZEND_FUNCTION(sqlrcur_getschemalist) {
 	ZVAL sqlrcur;
 	ZVAL schemas;
@@ -5637,6 +5664,9 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getdatabaselist,0,0,0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getcataloglist,0,0,0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getschemalist,0,0,0)
 ZEND_END_ARG_INFO()
 
@@ -6100,6 +6130,8 @@ zend_function_entry sql_relay_functions[] = {
 		ARGINFO(arginfo_sqlrcur_cacheoff))
 	ZEND_FE(sqlrcur_getdatabaselist,
 		ARGINFO(arginfo_sqlrcur_getdatabaselist))
+	ZEND_FE(sqlrcur_getcataloglist,
+		ARGINFO(arginfo_sqlrcur_getcataloglist))
 	ZEND_FE(sqlrcur_getschemalist,
 		ARGINFO(arginfo_sqlrcur_getschemalist))
 	ZEND_FE(sqlrcur_gettabletypelist,

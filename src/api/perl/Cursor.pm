@@ -180,8 +180,12 @@ __END__
             # Sets query caching off.
 
         getDatabaseList(databases);
-            # Sends a query that returns a result set containing
+            # Generates a result set containing
             # databases that match the pattern "databases".
+
+        getCatalogList(catalogs);
+            # Generates a result set containing
+            # catalogs that match the pattern "catalogs".
             #
             # The result set will contain the following columns:
             # * Database
@@ -194,7 +198,7 @@ __END__
             # database doesn't) then an empty result set will be
             # returned.
         getSchemaList(schemas);
-            # Sends a query that returns a result set containing
+            # Generates a result set containing
             # schemas that match the pattern "schemas".
             #
             # The result set will contain the following columns:
@@ -212,7 +216,7 @@ __END__
             # database doesn't) then an empty result set will be
             # returned.
         getTableTypeList();
-            # Sends a query that returns a result set containing
+            # Generates a result set containing
             # supported table types.
             #
             # The result set will contain the following columns:
@@ -223,7 +227,7 @@ __END__
             # the database doesn't) then an empty result set will
             # be returned.
         getTableList(tables);
-            # Sends a query that returns a result set containing
+            # Generates a result set containing
             # the tables in the current database and schema that
             # match the pattern "tables".
             #
@@ -239,7 +243,7 @@ __END__
             # database doesn't) then an empty result set will be
             # returned.
         getTypeInfoList(type);
-            # Sends a query that returns a result set containing
+            # Generates a result set containing
             # data type information for "type".
             #
             # The result set will contain the following columns:
@@ -271,7 +275,7 @@ __END__
             # for the current database backend (or the database
             # doesn't) then an empty result set will be returned.
         getColumnList(table,columns);
-            # Sends a query that returns a result set containing
+            # Generates a result set containing
             # the columns of "table", which match the pattern
             # "columns".
             #
@@ -294,7 +298,7 @@ __END__
             # database doesn't) then an empty result set will be
             # returned.
         getPrimaryKeysList(table,columns);
-            # Sends a query that returns a result set containing
+            # Generates a result set containing
             # the primary keys of "table", which match the
             # pattern "columns".
             #
@@ -322,7 +326,7 @@ __END__
             # the database doesn't) then an empty result set
             # will be returned.
         getKeyAndIndexList(table,qualifier);
-            # Sends a query that returns a result set containing
+            # Generates a result set containing
             # the keys and indexes of "table", which match the
             # pattern "qualifier".
             #
@@ -350,7 +354,7 @@ __END__
             # the database doesn't) then an empty result set will
             # be returned.
         getProcedureList(procedures);
-            # Sends a query that returns a result set containing
+            # Generates a result set containing
             # procedures that match the pattern "procedures".
             #
             # The result set will contain the following columns:
@@ -368,7 +372,7 @@ __END__
             # database doesn't) then an empty result set will be
             # returned.
         getProcedureParameterList(procedure,parameters);
-            # Sends a query that returns a result set containing
+            # Generates a result set containing
             # the parameters of "procedure", which match the
             # pattern "parameters".
             #

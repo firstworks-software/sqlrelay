@@ -752,7 +752,7 @@ class SQLRCursor {
 
 
 
-		/** Sends a query that returns a result set containing
+		/** Generates a result set containing
 		 *  databases that match the pattern "wild".
 		 *
 		 *  The result set will contain the following columns:
@@ -766,7 +766,9 @@ class SQLRCursor {
 		 *  then an empty result set will be returned. */
 		function getDatabaseList(var wild);
 
-		/** Sends a query that returns a result set containing the
+		function getCatalogList(var wild);
+
+		/** Generates a result set containing the
 		 *  tables in the current database and schema that match the
 		 *  pattern "wild".
 		 *
@@ -781,7 +783,7 @@ class SQLRCursor {
 		 *  then an empty result set will be returned. */
 		function getTableList(var wild);
 
-		/** Sends a query that returns a result set containing the
+		/** Generates a result set containing the
 		 *  columns of "table", which match the pattern "wild".
 		 *
 		 *  The result set will contain the following columns:

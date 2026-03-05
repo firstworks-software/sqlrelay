@@ -2032,30 +2032,41 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  lists via query. */
 		bool	getListsByApiCalls();
 
-		/** Makes the database API call to fetch the list of databases
-		 *  that are visible to the user that SQL Relay is logged in
-		 *  as.  Only returns database names that match "catalog"
-		 *  if "catalog" is non-NULL.
+		/** Fetches the list of databases that are visible to the user
+		 *  that SQL Relay is logged in as.  Only returns database
+		 *  names that match "db" if "db" is non-NULL.
+		 *
+		 *  May fetch a list of catalogs or schemas, depending on
+		 *  whether the backend database equates "database" with
+		 *  catalog or schema.
+		 *
+		 *  See sqlrserverconnection::getDatabaseIsSchema().
 		 *
 		 *  Returns true on success and false on failure. */
 		bool	getDatabaseList(sqlrservercursor *cursor,
+							const char *db);
+
+		/** Fetches the list of catlogs that are visible to the user
+		 *  that SQL Relay is logged in as.  Only returns catalog names
+		 *  that match "catalog" if "catalog" is non-NULL.
+		 *
+		 *  Returns true on success and false on failure. */
+		bool	getCatalogList(sqlrservercursor *cursor,
 							const char *catalog);
 
-		/** Makes the database API call to fetch the list of schemas,
-		 *  in "catalog", that are visible to the user that SQL
-		 *  Relay is logged in as.  Only returns schema names that match
-		 *  "schema" if "schema" is non-NULL.
+		/** Fetches the list of schemas, in "catalog", that are visible
+		 *  to the user that SQL Relay is logged in as.  Only returns
+		 *  schema names that match "schema" if "schema" is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
 		bool	getSchemaList(sqlrservercursor *cursor,
 							const char *catalog,
 							const char *schema);
 
-		/** Makes the database API call to fetch the list of table
-		 *  type names in "catalog"."schema", that are visible to
-		 *  the user that SQL Relay is logged in as.  Only returns
-		 *  table type names that match pattern "tabletypes" if
-		 *  "tabletypes" is non-NULL/non-empty.
+		/** Fetches the list of table type names in "catalog"."schema",
+		 *  that are visible to the user that SQL Relay is logged in
+		 *  as.  Only returns table type names that match pattern
+		 *  "tabletypes" if "tabletypes" is non-NULL/non-empty.
 		 *
 		 *  Returns true on success and false on failure. */
 		bool	getTableTypeList(sqlrservercursor *cursor,
@@ -2063,12 +2074,10 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 						const char *schema,
 						const char *tabletypes);
 
-		/** Makes the database API call to fetch the list of tables
-		 *  (and table-like objects), in "catalog"."schema", that
-		 *  are visible to the user that SQL Relay is logged in
-		 *  as.  "objecttypes"
-		 *  should be an or-ed set of one or more of the following
-		 *  object types:
+		/** Fetches the list of tables (and table-like objects), in
+		 *  "catalog"."schema", that are visible to the user that
+		 *  SQL Relay is logged in as.  "objecttypes" should be an
+		 *  or-ed set of one or more of the following object types:
 		 *
 		 *  DB_OBJECT_TABLE
 		 *  DB_OBJECT_VIEW
@@ -2085,8 +2094,8 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 							const char *table,
 							uint16_t objecttypes);
 
-		/** Makes the database API call to fetch the info about
-		 *  datatype "type", where "type" is in "catalog"."schema".
+		/** Fetches info about datatype "type", where "type" is in
+		 *  "catalog"."schema".
 		 *
 		 *  Returns true on success and false on failure. */
 		bool	getTypeInfoList(sqlrservercursor *cursor,
@@ -2094,10 +2103,9 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 							const char *schema,
 							const char *type);
 
-		/** Makes the database API call to fetch the list of column
-		 *  names in "catalog"."schema"."table".  Only returns
-		 *  column names that match "column" if "column" is
-		 *  non-NULL.
+		/** Fetches the list of column names in
+		 *  "catalog"."schema"."table".  Only returns column names that
+		 *  match "column" if "column" is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
 		bool	getColumnList(sqlrservercursor *cursor,
@@ -2106,8 +2114,8 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 							const char *table,
 							const char *column);
 
-		/** Makes the database API call to fetch the list of columns
-		 *  that compose the primary key of "catalog"."schema"."table".
+		/** Fetches the list of columns that compose the primary key of
+		 *  "catalog"."schema"."table".
 		 *
 		 *  Returns true on success and false on failure. */
 		bool	getPrimaryKeysList(sqlrservercursor *cursor,
@@ -2115,8 +2123,8 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 							const char *schema,
 							const char *table);
 
-		/** Makes the database API call to fetch the indices and
-		 *  indexed columns of "catalog"."schema"."table".
+		/** Fetch the indices and indexed columns of
+		 *  "catalog"."schema"."table".
 		 *
 		 *  Returns true on success and false on failure. */
 		bool	getKeyAndIndexList(sqlrservercursor *cursor,
@@ -2124,9 +2132,8 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 							const char *schema,
 							const char *table);
 
-		/** Makes the database API call to fetch the list of stored
-		 *  procedures in "catalog"."schema", and information about
-		 *  them,
+		/** Fetches the list of stored procedures in
+		 *  "catalog"."schema", and information about them,
 		 *  such as the number of input and output parameters, the
 		 *  numer of result sets that the procdure may retrun, a
 		 *  description of the procedure, and the procedure type
@@ -2139,10 +2146,10 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 							const char *schema,
 							const char *procedure);
 
-		/** Makes the database API call to fetch the parameter names of
-		 *  "procedure", where "procedure" is in "catalog"."schema", and
-		 *  information about them, such as whether they are input,
-		 *  output, or input-output variables.
+		/** Fetches the parameter names of "procedure", where
+		 *  "procedure" is in "catalog"."schema", and information about
+		 *  them, such as whether they are input, output, or
+		 *  input-output variables.
 		 *
 		 *  Returns true on success and false on failure. */
 		bool	getProcedureParameterList(sqlrservercursor *cursor,
@@ -2179,8 +2186,15 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		bool	getSendColumnInfo();
 
 		/** Sets the format to map columns to when fetching the list
-		 *  of database names to "listformat". */
+		 *  of database names to "listformat".  Calls
+		 *  setCatalogListFormat() or setSchemaListFormat()
+		 *  depending on getDatabaseIsSchema(). */
 		void	setDatabaseListFormat(
+					sqlrserverlistformat_t listformat);
+
+		/** Sets the format to map columns to when fetching the list
+		 *  of catalog names to "listformat". */
+		void	setCatalogListFormat(
 					sqlrserverlistformat_t listformat);
 
 		/** Sets the format to map columns to when fetching the list
@@ -3425,7 +3439,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  if "catalog" is non-NULL.
 		 *
 		 *  Returns true on success and false on failure. */
-		virtual bool	getDatabaseList(sqlrservercursor *cursor,
+		virtual bool	getCatalogList(sqlrservercursor *cursor,
 							const char *catalog);
 
 		/** Makes the database API call to fetch the list of schemas,
@@ -3538,7 +3552,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 							const char *procedure);
 
 		/** Returns a query that can be used to fetch the list of
-		 *  database names that match the provided "catalog" pattern.
+		 *  cagalog names that match the provided "catalog" pattern.
 		 *
 		 *  "catalog" can be a pattern that includes SQL wildcards
 		 *  like %.
@@ -3546,7 +3560,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  This implementation just returns getNoopQuery(), but it
 		 *  may be overridden by a child class to return a
 		 *  database-specific query. */
-		virtual const char	*getDatabaseListQuery(
+		virtual const char	*getCatalogListQuery(
 							const char *catalog);
 
 		/** Returns a query that can be used to fetch the list of

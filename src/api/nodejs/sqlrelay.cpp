@@ -233,6 +233,7 @@ class SQLRCursor : public ObjectWrap {
 		static RET	getCacheFileName(const ARGS &args);
 		static RET	cacheOff(const ARGS &args);
 		static RET	getDatabaseList(const ARGS &args);
+		static RET	getCatalogList(const ARGS &args);
 		static RET	getSchemaList(const ARGS &args);
 		static RET	getTableTypeList(const ARGS &args);
 		static RET	getTableList(const ARGS &args);
@@ -1089,6 +1090,7 @@ void SQLRCursor::Init(Handle<Object> exports) {
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getCacheFileName",getCacheFileName);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"cacheOff",cacheOff);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getDatabaseList",getDatabaseList);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getCatalogList",getCatalogList);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getSchemaList",getSchemaList);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getTableTypeList",getTableTypeList);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getTableList",getTableList);
@@ -1395,6 +1397,17 @@ RET SQLRCursor::getDatabaseList(const ARGS &args) {
 	checkArgCount(args,1);
 
 	bool	result=sqlrcur(args)->getDatabaseList(toString(args[0]));
+
+	returnBoolean(result);
+}
+
+RET SQLRCursor::getCatalogList(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,1);
+
+	bool	result=sqlrcur(args)->getCatalogList(toString(args[0]));
 
 	returnBoolean(result);
 }

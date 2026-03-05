@@ -216,7 +216,7 @@ class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 		const char	*getBindFormat();
 #endif
 		const char	*getNextvalFormat();
-		const char	*getDatabaseListQuery(const char *catalog);
+		const char	*getCatalogListQuery(const char *catalog);
 		const char	*getSchemaListQuery(const char *catalog,
 						const char *schema);
 		const char	*getTableTypeListQuery(const char *catalog,
@@ -726,7 +726,7 @@ const char *mysqlconnection::getNextvalFormat() {
 	return "";
 }
 
-const char *mysqlconnection::getDatabaseListQuery(const char *catalog) {
+const char *mysqlconnection::getCatalogListQuery(const char *catalog) {
 
 	databaselistquery.clear();
 

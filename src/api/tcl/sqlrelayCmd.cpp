@@ -83,6 +83,7 @@ void sqlrcurDelete(ClientData data) {
  *   $cur getCacheFileName
  *   $cur cacheOff
  *   $cur getDatabaseList databases
+ *   $cur getCatalogList catalogs
  *   $cur getSchemaList schemas
  *   $cur getTableTypeList
  *   $cur getTableList tables
@@ -241,6 +242,7 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
     "getCacheFileName",
     "cacheOff",
     "getDatabaseList",
+    "getCatalogList",
     "getSchemaList",
     "getTableTypeList",
     "getTableList",
@@ -393,6 +395,7 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
     SQLRCUR_getCacheFileName,
     SQLRCUR_cacheOff,
     SQLRCUR_getDatabaseList,
+    SQLRCUR_getCatalogList,
     SQLRCUR_getSchemaList,
     SQLRCUR_getTableTypeList,
     SQLRCUR_getTableList,
@@ -691,6 +694,20 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	  return TCL_ERROR;
 	}
 	if (!(result = cur->getDatabaseList(Tcl_GetString(objv[2])))) {
+	  Tcl_AppendResult(interp,cur->errorMessage(),(char *)NULL);
+	  return TCL_ERROR;
+	}
+	Tcl_SetObjResult(interp, Tcl_NewBooleanObj(result));
+	break;
+      }
+    case SQLRCUR_getCatalogList:
+      {
+	int result = 0;
+	if (objc != 3) {
+	  Tcl_WrongNumArgs(interp,2, objv, "catalogs");
+	  return TCL_ERROR;
+	}
+	if (!(result = cur->getCatalogList(Tcl_GetString(objv[2])))) {
 	  Tcl_AppendResult(interp,cur->errorMessage(),(char *)NULL);
 	  return TCL_ERROR;
 	}

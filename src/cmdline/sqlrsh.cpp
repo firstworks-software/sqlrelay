@@ -981,6 +981,29 @@ bool sqlrsh::externalCommand(sqlrconnection *sqlrcon,
 			sqlrcur->getDatabaseList(wild);
 			delete[] wild;
 		} else if (!charstring::compareIgnoringCase(command,
+						"show catalogs mysql",20)) {
+			char	*wild=getWild(command);
+			sqlrcur->getCatalogList(wild,
+					SQLRCLIENTLISTFORMAT_MYSQL);
+			delete[] wild;
+		} else if (!charstring::compareIgnoringCase(command,
+						"show catalogs odbc",19)) {
+			char	*wild=getWild(command);
+			sqlrcur->getCatalogList(wild,
+					SQLRCLIENTLISTFORMAT_ODBC);
+			delete[] wild;
+		} else if (!charstring::compareIgnoringCase(command,
+						"show catalogs jdbc",19)) {
+			char	*wild=getWild(command);
+			sqlrcur->getCatalogList(wild,
+					SQLRCLIENTLISTFORMAT_JDBC);
+			delete[] wild;
+		} else if (!charstring::compareIgnoringCase(command,
+						"show catalogs",14)) {
+			char	*wild=getWild(command);
+			sqlrcur->getCatalogList(wild);
+			delete[] wild;
+		} else if (!charstring::compareIgnoringCase(command,
 						"show schemas mysql",18)) {
 			char	*wild=getWild(command);
 			sqlrcur->getSchemaList(wild,

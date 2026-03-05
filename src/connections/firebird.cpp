@@ -243,7 +243,7 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostName();
-		const char	*getDatabaseListQuery(const char *catalog);
+		const char	*getCatalogListQuery(const char *catalog);
 		const char	*getSchemaListQuery(const char *catalog,
 						const char *schema);
 		const char	*getTableTypeListQuery(const char *catalog,
@@ -704,7 +704,7 @@ const char *firebirdconnection::getDbHostName() {
 	return host;
 }
 
-const char *firebirdconnection::getDatabaseListQuery(const char *catalog) {
+const char *firebirdconnection::getCatalogListQuery(const char *catalog) {
 	return "select "
 		"	'' as table_cat, "
 		"	'' as table_schem, "

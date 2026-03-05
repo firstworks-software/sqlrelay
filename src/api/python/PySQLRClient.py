@@ -941,7 +941,7 @@ class sqlrcursor:
 
     def getDatabaseList(self,wild):
         """
-        Sends a query that returns a result set containing
+        Generates a result set containing
         databases that match the pattern "wild".
 
         The result set will contain the following columns:
@@ -954,11 +954,28 @@ class sqlrcursor:
         for the current database backend (or the database doesn't)
         then an empty result set will be returned.
         """
-        return CSQLRelay.setDatabaseList(self.cursor,wild)
+        return CSQLRelay.getDatabaseList(self.cursor,wild)
+
+    def getCatalogList(self,wild):
+        """
+        Generates a result set containing
+        catalogs that match the pattern "wild".
+
+        The result set will contain the following columns:
+        * Database
+
+        If "wild" is empty or None then a result set containing
+        all catalogs will be returned.
+
+        If SQL Relay doesn't support getting a list of catalogs
+        for the current database backend (or the database doesn't)
+        then an empty result set will be returned.
+        """
+        return CSQLRelay.getCatalogList(self.cursor,wild)
 
     def getTableList(self,wild):
         """
-        Sends a query that returns a result set containing the
+        Generates a result set containing the
         tables in the current database and schema that match the
         pattern "wild".
 
@@ -976,7 +993,7 @@ class sqlrcursor:
 
     def getColumnList(sefl,table,wild):
         """
-        Sends a query that returns a result set containing the
+        Generates a result set containing the
         columns of "table", which match the pattern "wild".
 
         The result set will contain the following columns:

@@ -205,7 +205,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 
 		boolean	result=false;
 		synchronized (networklock) {
-			result=sqlrcur.getDatabaseListWithFormat(null,4);
+			result=sqlrcur.getCatalogListWithFormat(null,4);
 		}
 
 		if (result) {

@@ -355,7 +355,7 @@ class sqlrservercontrollerprivate {
 	dictionary< uint32_t, uint32_t >	*_columnmap;
 	dictionary< uint32_t, const char * >	*_columnnamemap;
 
-	dictionary< uint32_t, uint32_t >	_mysqldatabasescolumnmap;
+	dictionary< uint32_t, uint32_t >	_mysqlcatalogscolumnmap;
 	dictionary< uint32_t, uint32_t >	_mysqlschemascolumnmap;
 	dictionary< uint32_t, uint32_t >	_mysqltabletypescolumnmap;
 	dictionary< uint32_t, uint32_t >	_mysqltablescolumnmap;
@@ -365,7 +365,7 @@ class sqlrservercontrollerprivate {
 	dictionary< uint32_t, uint32_t >	_mysqlkeyandindexcolumnmap;
 	dictionary< uint32_t, uint32_t >	_mysqlprocedurescolumnmap;
 	dictionary< uint32_t, uint32_t >	_mysqlprocedureparametercolumnmap;
-	dictionary< uint32_t, const char * >	_mysqldatabasescolumnnamemap;
+	dictionary< uint32_t, const char * >	_mysqlcatalogscolumnnamemap;
 	dictionary< uint32_t, const char * >	_mysqlschemascolumnnamemap;
 	dictionary< uint32_t, const char * >	_mysqltabletypescolumnnamemap;
 	dictionary< uint32_t, const char * >	_mysqltablescolumnnamemap;
@@ -376,7 +376,7 @@ class sqlrservercontrollerprivate {
 	dictionary< uint32_t, const char * >	_mysqlprocedurescolumnnamemap;
 	dictionary< uint32_t, const char * >	_mysqlprocedureparametercolumnnamemap;
 
-	dictionary< uint32_t, uint32_t >	_odbcdatabasescolumnmap;
+	dictionary< uint32_t, uint32_t >	_odbccatalogscolumnmap;
 	dictionary< uint32_t, uint32_t >	_odbcschemascolumnmap;
 	dictionary< uint32_t, uint32_t >	_odbctabletypescolumnmap;
 	dictionary< uint32_t, uint32_t >	_odbctablescolumnmap;
@@ -386,7 +386,7 @@ class sqlrservercontrollerprivate {
 	dictionary< uint32_t, uint32_t >	_odbckeyandindexcolumnmap;
 	dictionary< uint32_t, uint32_t >	_odbcprocedurescolumnmap;
 	dictionary< uint32_t, uint32_t >	_odbcprocedureparametercolumnmap;
-	dictionary< uint32_t, const char * >	_odbcdatabasescolumnnamemap;
+	dictionary< uint32_t, const char * >	_odbccatalogscolumnnamemap;
 	dictionary< uint32_t, const char * >	_odbcschemascolumnnamemap;
 	dictionary< uint32_t, const char * >	_odbctabletypescolumnnamemap;
 	dictionary< uint32_t, const char * >	_odbctablescolumnnamemap;
@@ -397,7 +397,7 @@ class sqlrservercontrollerprivate {
 	dictionary< uint32_t, const char * >	_odbcprocedurescolumnnamemap;
 	dictionary< uint32_t, const char * >	_odbcprocedureparametercolumnnamemap;
 
-	dictionary< uint32_t, uint32_t >	_jdbcdatabasescolumnmap;
+	dictionary< uint32_t, uint32_t >	_jdbccatalogscolumnmap;
 	dictionary< uint32_t, uint32_t >	_jdbcschemascolumnmap;
 	dictionary< uint32_t, uint32_t >	_jdbctabletypescolumnmap;
 	dictionary< uint32_t, uint32_t >	_jdbctablescolumnmap;
@@ -407,7 +407,7 @@ class sqlrservercontrollerprivate {
 	dictionary< uint32_t, uint32_t >	_jdbckeyandindexcolumnmap;
 	dictionary< uint32_t, uint32_t >	_jdbcprocedurescolumnmap;
 	dictionary< uint32_t, uint32_t >	_jdbcprocedureparametercolumnmap;
-	dictionary< uint32_t, const char * >	_jdbcdatabasescolumnnamemap;
+	dictionary< uint32_t, const char * >	_jdbccatalogscolumnnamemap;
 	dictionary< uint32_t, const char * >	_jdbcschemascolumnnamemap;
 	dictionary< uint32_t, const char * >	_jdbctabletypescolumnnamemap;
 	dictionary< uint32_t, const char * >	_jdbctablescolumnnamemap;
@@ -2787,9 +2787,20 @@ bool sqlrservercontroller::fakePrepareAndExecuteForApiCall(
 }
 
 bool sqlrservercontroller::getDatabaseList(sqlrservercursor *cursor,
+							const char *db) {
+	if (getDatabaseIsSchema()) {
+		char	*catalog=getCurrentCatalog();
+		bool	retval=getSchemaList(cursor,catalog,db);
+		delete[] catalog;
+		return retval;
+	}
+	return getCatalogList(cursor,db);
+}
+
+bool sqlrservercontroller::getCatalogList(sqlrservercursor *cursor,
 						const char *catalog) {
 	return fakePrepareAndExecuteForApiCall(cursor) &&
-		pvt->_conn->getDatabaseList(cursor,catalog) &&
+		pvt->_conn->getCatalogList(cursor,catalog) &&
 		handleResultSetHeader(cursor);
 }
 
@@ -5730,6 +5741,14 @@ bool sqlrservercontroller::skipRows(sqlrservercursor *cursor,
 }
 
 void sqlrservercontroller::setDatabaseListFormat(
+				sqlrserverlistformat_t listformat) {
+	if (getDatabaseIsSchema()) {
+		setSchemaListFormat(listformat);
+	}
+	setCatalogListFormat(listformat);
+}
+
+void sqlrservercontroller::setCatalogListFormat(
 					sqlrserverlistformat_t listformat) {
 
 	// FIXME: for now, don't remap columns if api calls are used to get
@@ -5752,21 +5771,21 @@ void sqlrservercontroller::setDatabaseListFormat(
 			break;
 		case SQLRSERVERLISTFORMAT_MYSQL:
 			pvt->_columnmap=
-				&(pvt->_mysqldatabasescolumnmap);
+				&(pvt->_mysqlcatalogscolumnmap);
 			pvt->_columnnamemap=
-				&(pvt->_mysqldatabasescolumnnamemap);
+				&(pvt->_mysqlcatalogscolumnnamemap);
 			break;
 		case SQLRSERVERLISTFORMAT_ODBC:
 			pvt->_columnmap=
-				&(pvt->_odbcdatabasescolumnmap);
+				&(pvt->_odbccatalogscolumnmap);
 			pvt->_columnnamemap=
-				&(pvt->_odbcdatabasescolumnnamemap);
+				&(pvt->_odbccatalogscolumnnamemap);
 			break;
 		case SQLRSERVERLISTFORMAT_JDBC:
 			pvt->_columnmap=
-				&(pvt->_jdbcdatabasescolumnmap);
+				&(pvt->_jdbccatalogscolumnmap);
 			pvt->_columnnamemap=
-				&(pvt->_jdbcdatabasescolumnnamemap);
+				&(pvt->_jdbccatalogscolumnnamemap);
 			break;
 		default:
 			pvt->_columnmap=NULL;
@@ -6202,13 +6221,13 @@ void sqlrservercontroller::buildColumnMaps() {
 
 void sqlrservercontroller::buildToMySQLColumnMaps() {
 
-	// mysql getDatabaseList
+	// mysql getCatalogList
 	// map from ODBC SQLTables() format to mysql "show databases" format
 	// (all backends return ODBC SQLTables() format)
 	//
 	// Database <- TABLE_CAT
-	pvt->_mysqldatabasescolumnmap.setValue(0,0);
-	pvt->_mysqldatabasescolumnnamemap.setValue(0,"Database");
+	pvt->_mysqlcatalogscolumnmap.setValue(0,0);
+	pvt->_mysqlcatalogscolumnnamemap.setValue(0,"Database");
 
 	// mysql getSchemaList
 	// map from ODBC SQLTables() format to mysql "show schemas" format
@@ -6468,24 +6487,24 @@ void sqlrservercontroller::buildToMySQLColumnMaps() {
 
 void sqlrservercontroller::buildToODBCColumnMaps() {
 
-	// ODBC getDatabaseList
+	// ODBC getCatalogList
 	// all backends return ODBC SQLTables() format, so just map 1 to 1
 	//
 	// TABLE_CAT <- TABLE_CAT
-	pvt->_odbcdatabasescolumnmap.setValue(0,0);
+	pvt->_odbccatalogscolumnmap.setValue(0,0);
 	// TABLE_SCHEM <- TABLE_SCHEM
-	pvt->_odbcdatabasescolumnmap.setValue(1,1);
+	pvt->_odbccatalogscolumnmap.setValue(1,1);
 	// TABLE_NAME <- TABLE_NAME
-	pvt->_odbcdatabasescolumnmap.setValue(2,2);
+	pvt->_odbccatalogscolumnmap.setValue(2,2);
 	// TABLE_TYPE <- TABLE_TYPE
-	pvt->_odbcdatabasescolumnmap.setValue(3,3);
+	pvt->_odbccatalogscolumnmap.setValue(3,3);
 	// REMARKS <- REMARKS
-	pvt->_odbcdatabasescolumnmap.setValue(4,4);
-	pvt->_odbcdatabasescolumnnamemap.setValue(0,"TABLE_CAT");
-	pvt->_odbcdatabasescolumnnamemap.setValue(1,"TABLE_SCHEM");
-	pvt->_odbcdatabasescolumnnamemap.setValue(2,"TABLE_NAME");
-	pvt->_odbcdatabasescolumnnamemap.setValue(3,"TABLE_TYPE");
-	pvt->_odbcdatabasescolumnnamemap.setValue(4,"REMARKS");
+	pvt->_odbccatalogscolumnmap.setValue(4,4);
+	pvt->_odbccatalogscolumnnamemap.setValue(0,"TABLE_CAT");
+	pvt->_odbccatalogscolumnnamemap.setValue(1,"TABLE_SCHEM");
+	pvt->_odbccatalogscolumnnamemap.setValue(2,"TABLE_NAME");
+	pvt->_odbccatalogscolumnnamemap.setValue(3,"TABLE_TYPE");
+	pvt->_odbccatalogscolumnnamemap.setValue(4,"REMARKS");
 
 	// ODBC getSchemaList
 	// all backends return ODBC SQLTables() format, so just map 1 to 1
@@ -6841,13 +6860,13 @@ void sqlrservercontroller::buildToODBCColumnMaps() {
 
 void sqlrservercontroller::buildToJDBCColumnMaps() {
 
-	// JDBC getDatabaseList
+	// JDBC getCatalogList
 	// map from ODBC SQLTables() format to JDBC getCatalogs() format
 	// (all backends return ODBC SQLTables() format)
 	//
 	// TABLE_CAT <- TABLE_CAT
-	pvt->_jdbcdatabasescolumnmap.setValue(0,0);
-	pvt->_jdbcdatabasescolumnnamemap.setValue(0,"TABLE_CAT");
+	pvt->_jdbccatalogscolumnmap.setValue(0,0);
+	pvt->_jdbccatalogscolumnnamemap.setValue(0,"TABLE_CAT");
 
 	// JDBC getSchemaList
 	// map from ODBC SQLTables() format to JDBC getSchemas() format

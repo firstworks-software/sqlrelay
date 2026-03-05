@@ -206,6 +206,20 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getDatabaseLi
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getCatalogList
+ * Signature: (Ljava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getCatalogList
+  (JNIEnv *env, jobject self, jstring catalogs) {
+	char	*catalogsstring=curGetStringUTFChars(env,catalogs,0);
+	jboolean	retval=getSqlrCursor(env,self)->
+					getCatalogList(catalogsstring);
+	curReleaseStringUTFChars(env,catalogs,catalogsstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
  * Method:    getSchemaList
  * Signature: (Ljava/lang/String;)Z
  */
@@ -2343,6 +2357,21 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getDatabaseLi
 				getDatabaseList(databasesstring,
 					(sqlrclientlistformat_t)listformat);
 	curReleaseStringUTFChars(env,databases,databasesstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getCatalogListWithFormat
+ * Signature: (Ljava/lang/String;I)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getCatalogListWithFormat
+  (JNIEnv *env, jobject self, jstring catalogs, jint listformat) {
+	char	*catalogsstring=curGetStringUTFChars(env,catalogs,0);
+	jboolean	retval=getSqlrCursor(env,self)->
+				getCatalogList(catalogsstring,
+					(sqlrclientlistformat_t)listformat);
+	curReleaseStringUTFChars(env,catalogs,catalogsstring);
 	return retval;
 }
 

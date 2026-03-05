@@ -119,7 +119,7 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostNameQuery();
-		const char	*getDatabaseListQuery(const char *catalog);
+		const char	*getCatalogListQuery(const char *catalog);
 		const char	*getSchemaListQuery(const char *catalog,
 						const char *schema);
 		const char	*getTableTypeListQuery(
@@ -1270,9 +1270,8 @@ const char *oracleconnection::getDbHostNameQuery() {
 	return NULL;
 }
 
-const char *oracleconnection::getDatabaseListQuery(const char *catalog) {
-	// oracle doesn't really have "databases", just schemas,
-	// so return an empty result set with specific column names
+const char *oracleconnection::getCatalogListQuery(const char *catalog) {
+	// no good way to get a list of catalogs in oracle
 	return "select "
 		"	'' as table_cat, "
 		"	'' as table_schem, "
@@ -1323,6 +1322,9 @@ const char *oracleconnection::getSchemaListQuery(const char *catalog,
 const char *oracleconnection::getTableTypeListQuery(const char *catalog,
 						const char *schema,
 						const char *tabletypes) {
+
+	// oracle table types aren't catalog/schema-specific,
+	// so we'll ignore those parameters
 
 	tabletypelistquery.clear();
 
@@ -2213,6 +2215,9 @@ const char *oracleconnection::getTypeInfoListQuery(const char *catalog,
 						const char *schema,
 						const char *type) {
 
+	// oracle types aren't catalog/schema-specific,
+	// so we'll ignore those parameters
+
 	if (!charstring::compare(type,"*")) {
 		if (!typeinfolistquery.getSize()) {
 			typeinfolistquery.append(intervaldstype);
@@ -2760,7 +2765,8 @@ const char *oracleconnection::getProcedureListQuery(const char *catalog,
 	return procedurelistquery.getString();
 }
 
-const char *oracleconnection::getProcedureParameterListQuery(const char *catalog,
+const char *oracleconnection::getProcedureParameterListQuery(
+						const char *catalog,
 						const char *schema,
 						const char *procedure) {
 

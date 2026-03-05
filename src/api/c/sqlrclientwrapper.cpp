@@ -346,6 +346,10 @@ int sqlrcur_getDatabaseList(sqlrcur sqlrcurref, const char *databases) {
 	return sqlrcurref->getDatabaseList(databases);
 }
 
+int sqlrcur_getCatalogList(sqlrcur sqlrcurref, const char *catalogs) {
+	return sqlrcurref->getCatalogList(catalogs);
+}
+
 int sqlrcur_getSchemaList(sqlrcur sqlrcurref, const char *schemas) {
 	return sqlrcurref->getSchemaList(schemas);
 }

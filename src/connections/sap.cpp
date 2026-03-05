@@ -37,7 +37,7 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostNameQuery();
-		const char	*getDatabaseListQuery(const char *catalog);
+		const char	*getCatalogListQuery(const char *catalog);
 		const char	*getSchemaListQuery(const char *catalog,
 						const char *schema);
 		const char	*getTableTypeListQuery(
@@ -604,7 +604,7 @@ const char *sapconnection::getDbHostNameQuery() {
 	return "select asehostname()";
 }
 
-const char *sapconnection::getDatabaseListQuery(const char *catalog) {
+const char *sapconnection::getCatalogListQuery(const char *catalog) {
 	return "select "
 		"	'' as table_cat, "
 		"	'' as table_schem, "

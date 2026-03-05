@@ -39,7 +39,7 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 		const char	*getDbHostName();
 		const char	*getDbIpAddressQuery();
 		const char	*getDbIpAddress();
-		const char	*getDatabaseListQuery(const char *catalog);
+		const char	*getCatalogListQuery(const char *catalog);
 		const char	*getSchemaListQuery(const char *catalog,
 						const char *schema);
 		const char	*getTableTypeListQuery(
@@ -609,7 +609,7 @@ const char *postgresqlconnection::getDbIpAddress() {
 	return (charstring::getLength(ipaddress))?ipaddress:"127.0.0.1";
 }
 
-const char *postgresqlconnection::getDatabaseListQuery(const char *catalog) {
+const char *postgresqlconnection::getCatalogListQuery(const char *catalog) {
 
 	databaselistquery.clear();
 

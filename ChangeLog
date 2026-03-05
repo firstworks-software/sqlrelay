@@ -34,7 +34,9 @@
 	implemented ODBC driver SQLGetInfo() using getDatabaseFeature() calls
 	pushed get-list-by-api/query logic up to sqlrserverconnection
 	added selectCatalog()/getCurrentCatalog() methods/functions
-	added getDatabaseIsSchema() methods/functions
+	added getDatabaseIsSchema() methods/functions and abstracted
+		"database" to be either catalog or schema, depending on how
+		the database backend interprets it
 
 2.1.0 - refactored debugging
 

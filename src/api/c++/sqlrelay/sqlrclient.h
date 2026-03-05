@@ -796,22 +796,42 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 
 
 
-		/** Sends a query that returns a result set containing
-		 *  databases that match the pattern "databases".
+		/** Generates a result set containing databases that match the
+		 *  pattern "databases".
 		 *
 		 *  The result set will contain the following columns:
 		 *  * Database
 		 *
-		 *  If "databases" is empty or NULL then a result set containing
-		 *  all databases will be returned.
+		 *  If "databases" is empty or NULL then a result set
+		 *  containing all databases will be returned.
+		 *
+		 *  May actually return a result set of catalogs or schemas,
+		 *  depending on whether the backend database equates
+		 *  "database" with catalog or schema.
+		 *
+		 *  See getDatabaseIsSchema().
 		 *
 		 *  If SQL Relay doesn't support getting a list of databases
 		 *  for the current database backend (or the database doesn't)
 		 *  then an empty result set will be returned. */
 		bool	getDatabaseList(const char *databases);
 
-		/** Sends a query that returns a result set containing
-		 *  schemas that match the pattern "schemas".
+		/** Generates a result set containing catalogs that match the
+		 *  pattern "catalog".
+		 *
+		 *  The result set will contain the following columns:
+		 *  * Database
+		 *
+		 *  If "catalog" is empty or NULL then a result set containing
+		 *  all catalogs will be returned.
+		 *
+		 *  If SQL Relay doesn't support getting a list of catalogs
+		 *  for the current database backend (or the database doesn't)
+		 *  then an empty result set will be returned. */
+		bool	getCatalogList(const char *catalog);
+
+		/** Generates a result set containing schemas that match the
+		 *  pattern "schemas".
 		 *
 		 *  The result set will contain the following columns:
 		 *  * Database
@@ -827,8 +847,7 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		 *  then an empty result set will be returned. */
 		bool	getSchemaList(const char *schemas);
 
-		/** Sends a query that returns a result set containing
-		 *  supported table types.
+		/** Generates a result set containing supported table types.
 		 *
 		 *  The result set will contain the following columns:
 		 *  * table_type
@@ -838,9 +857,8 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		 *  then an empty result set will be returned. */
 		bool	getTableTypeList();
 
-		/** Sends a query that returns a result set containing the
-		 *  tables in the current database and schema that match the
-		 *  pattern "tables".
+		/** Generates a result set containing the tables in the current
+		 *  database and schema that match the pattern "tables".
 		 *
 		 *  The result set will contain the following columns:
 		 *  * Tables_in_xxx
@@ -853,8 +871,8 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		 *  then an empty result set will be returned. */
 		bool	getTableList(const char *tables);
 
-		/** Sends a query that returns a result set containing data
-		 *  type information for "type".
+		/** Generates a result set containing data type information for
+		 *  "type".
 		 *
 		 *  The result set will contain the following columns:
 		 *  * type_name
@@ -886,8 +904,8 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		 *  then an empty result set will be returned. */
 		bool	getTypeInfoList(const char *type);
 
-		/** Sends a query that returns a result set containing the
-		 *  columns of "table", which match the pattern "columns".
+		/** Generates a result set containing the columns of "table",
+		 *  which match the pattern "columns".
 		 *
 		 *  The result set will contain the following columns:
 		 *  * column_name
@@ -908,9 +926,8 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		 *  then an empty result set will be returned. */
 		bool	getColumnList(const char *table, const char *columns);
 
-		/** Sends a query that returns a result set containing the
-		 *  primary keys of "table", which match the pattern
-		 *  "columns".
+		/** Generates a result set containing the primary keys of
+		 *  "table", which match the pattern "columns".
 		 *
 		 *  The result set will contain the following columns:
 		 *  * table
@@ -936,9 +953,8 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		bool	getPrimaryKeysList(const char *table,
 						const char *columns);
 
-		/** Sends a query that returns a result set containing the
-		 *  keys and indexes of "table", which match the pattern
-		 *  "qualifier".
+		/** Generates a result set containing the keys and indexes of
+		 *  "table", which match the pattern "qualifier".
 		 *
 		 *  The result set will contain the following columns:
 		 *  * table
@@ -965,8 +981,8 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		bool	getKeyAndIndexList(const char *table,
 						const char *qualifier);
 
-		/** Sends a query that returns a result set containing
-		 *  procedures that match the pattern "procedures".
+		/** Generates a result set containing procedures that match the
+		 *  pattern "procedures".
 		 *
 		 *  The result set will contain the following columns:
 		 *  * routine_catalog
@@ -983,9 +999,8 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		 *  then an empty result set will be returned. */
 		bool	getProcedureList(const char *procedures);
 
-		/** Sends a query that returns a result set containing the
-		 *  parameters of "procedure", which match the pattern
-		 *  "parameters".
+		/** Generates a result set containing the parameters of
+		 *  "procedure", which match the pattern "parameters".
 		 *
 		 *  The result set will contain the following columns:
 		 *  * parameter_name

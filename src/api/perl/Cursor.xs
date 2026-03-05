@@ -158,6 +158,10 @@ sqlrcursor::getDatabaseList(databases)
 		const char *databases
 
 bool
+sqlrcursor::getCatalogList(catalogs)
+		const char *catalogs
+
+bool
 sqlrcursor::getSchemaList(schemas)
 		const char *schemas
 

@@ -1732,9 +1732,17 @@ for (uint16_t a=0; a<50; a++) {
 	stdoutput.printf("\n");
 
 
-	// database list
-	stdoutput.printf("DATABASE LIST: \n");
-	assertTrue(cur->getDatabaseList(NULL));
+	// database is schema
+	stdoutput.printf("DATABASE IS SCHEMA: \n");
+	assertTrue(con->getDatabaseIsSchema());
+	stdoutput.printf("\n");
+
+
+	// catalog list
+	stdoutput.printf("CATALOG LIST: \n");
+con->debugOn();
+	assertTrue(cur->getCatalogList(NULL));
+con->debugOff();
 	assertEquals(cur->getColumnName(0),"Database");
 	assertTrue(cur->rowCount()>0);
 	stdoutput.printf("\n");

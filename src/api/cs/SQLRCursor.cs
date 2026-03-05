@@ -139,7 +139,7 @@ public class SQLRCursor : IDisposable
 
 
 
-    /** Sends a query that returns a result set containing
+    /** Generates a result set containing
      *  databases that match the pattern "databases".
      *
      *  The result set will contain the following columns:
@@ -156,7 +156,12 @@ public class SQLRCursor : IDisposable
         return sqlrcur_getDatabaseList(sqlrcurref, databases) != 0;
     }
 
-    /** Sends a query that returns a result set containing
+    public Boolean getCatalogList(String catalogs)
+    {
+        return sqlrcur_getCatalogList(sqlrcurref, catalogs) != 0;
+    }
+
+    /** Generates a result set containing
      *  schemas that match the pattern "schemas".
      *
      *  The result set will contain the following columns:
@@ -176,7 +181,7 @@ public class SQLRCursor : IDisposable
         return sqlrcur_getSchemaList(sqlrcurref, schemas) != 0;
     }
 
-    /** Sends a query that returns a result set containing
+    /** Generates a result set containing
      *  supported table types.
      *
      *  The result set will contain the following columns:
@@ -190,7 +195,7 @@ public class SQLRCursor : IDisposable
         return sqlrcur_getTableTypeList(sqlrcurref) != 0;
     }
 
-    /** Sends a query that returns a result set containing the
+    /** Generates a result set containing the
      *  tables in the current database and schema that match the
      *  pattern "tables".
      *
@@ -208,7 +213,7 @@ public class SQLRCursor : IDisposable
         return sqlrcur_getTableList(sqlrcurref, tables) != 0;
     }
 
-    /** Sends a query that returns a result set containing data
+    /** Generates a result set containing data
      *  type information for "type".
      *
      *  The result set will contain the following columns:
@@ -244,7 +249,7 @@ public class SQLRCursor : IDisposable
         return sqlrcur_getTypeInfoList(sqlrcurref, type) != 0;
     }
 
-    /** Sends a query that returns a result set containing the
+    /** Generates a result set containing the
      *  columns of "table", which match the pattern "columns".
      *
      *  The result set will contain the following columns:
@@ -269,7 +274,7 @@ public class SQLRCursor : IDisposable
         return sqlrcur_getColumnList(sqlrcurref, table, columns) != 0;
     }
 
-    /** Sends a query that returns a result set containing the
+    /** Generates a result set containing the
      *  primary keys of "table", which match the pattern
      *  "columns".
      *
@@ -299,7 +304,7 @@ public class SQLRCursor : IDisposable
         return sqlrcur_getPrimaryKeysList(sqlrcurref, table, columns) != 0;
     }
 
-    /** Sends a query that returns a result set containing the
+    /** Generates a result set containing the
      *  keys and indexes of "table", which match the pattern
      *  "qualifier".
      *
@@ -330,7 +335,7 @@ public class SQLRCursor : IDisposable
         return sqlrcur_getKeyAndIndexList(sqlrcurref, table, qualifier) != 0;
     }
 
-    /** Sends a query that returns a result set containing
+    /** Generates a result set containing
      *  procedures that match the pattern "procedures".
      *
      *  The result set will contain the following columns:
@@ -351,7 +356,7 @@ public class SQLRCursor : IDisposable
         return sqlrcur_getProcedureList(sqlrcurref, procedures) != 0;
     }
 
-    /** Sends a query that returns a result set containing the
+    /** Generates a result set containing the
      *  parameters of "procedure", which match the pattern
      *  "parameters".
      *
@@ -1492,6 +1497,9 @@ public class SQLRCursor : IDisposable
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int32 sqlrcur_getDatabaseList(IntPtr sqlrcurref, String databases);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Int32 sqlrcur_getCatalogList(IntPtr sqlrcurref, String catalogs);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int32 sqlrcur_getSchemaList(IntPtr sqlrcurref, String schemas);

@@ -154,6 +154,8 @@
 
 		bool		getDatabaseList(const char *databases,
 					sqlrclientlistformat_t listformat);
+		bool		getCatalogList(const char *catalogs,
+					sqlrclientlistformat_t listformat);
 		bool		getSchemaList(const char *schemas,
 					sqlrclientlistformat_t listformat);
 		bool		getTableList(const char *tables,

@@ -247,9 +247,9 @@ class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostNameQuery();
-		const char	*getDatabaseListQuery(const char *catalog);
-		const char	*getDatabaseListQuerySybase(const char *catalog);
-		const char	*getDatabaseListQuerySqlServer(const char *catalog);
+		const char	*getCatalogListQuery(const char *catalog);
+		const char	*getCatalogListQuerySybase(const char *catalog);
+		const char	*getCatalogListQuerySqlServer(const char *catalog);
 		const char	*getSchemaListQuery(const char *catalog,
 						const char *schema);
 		const char	*getSchemaListQuerySybase(const char *catalog,
@@ -738,13 +738,13 @@ const char *freetdsconnection::getDbHostNameQuery() {
 	return "select asehostname()";
 }
 
-const char *freetdsconnection::getDatabaseListQuery(const char *catalog) {
+const char *freetdsconnection::getCatalogListQuery(const char *catalog) {
 	return (sybasedb)?
-		getDatabaseListQuerySybase(catalog):
-		getDatabaseListQuerySqlServer(catalog);
+		getCatalogListQuerySybase(catalog):
+		getCatalogListQuerySqlServer(catalog);
 }
 
-const char *freetdsconnection::getDatabaseListQuerySybase(const char *catalog) {
+const char *freetdsconnection::getCatalogListQuerySybase(const char *catalog) {
 
 	databaselistquery.clear();
 
@@ -760,7 +760,7 @@ const char *freetdsconnection::getDatabaseListQuerySybase(const char *catalog) {
 	return databaselistquery.getString();
 }
 
-const char *freetdsconnection::getDatabaseListQuerySqlServer(const char *catalog) {
+const char *freetdsconnection::getCatalogListQuerySqlServer(const char *catalog) {
 
 	databaselistquery.clear();
 

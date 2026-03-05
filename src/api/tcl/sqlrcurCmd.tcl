@@ -76,22 +76,23 @@ proc cacheOff {}
 
 
 
-# Sends a query that returns a list of
-# databases/schemas matching "wild".  If wild is empty
-# or NULL then a list of all databases/schemas will be
-# returned.
-proc getDatabaseList {wild} 
-
-# Sends a query that returns a list of tables
+# Generates a result set containing databases
 # matching "wild".  If wild is empty or NULL then
-# a list of all tables will be returned.
-proc getTableList {wild} 
+# all databases will be returned.
+proc getDatabaseList {wild}
 
-# Sends a query that returns a list of columns
+proc getCatalogList {wild}
+
+# Generates a result set containing tables
+# matching "wild".  If wild is empty or NULL then
+# all tables will be returned.
+proc getTableList {wild}
+
+# Generates a result set containing columns
 # in the table specified by the "table" parameter
 # matching "wild".  If wild is empty or NULL then
-# a list of all columns will be returned.
-proc getColumnList {table wild} 
+# all columns will be returned.
+proc getColumnList {table wild}
 
 
 

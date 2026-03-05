@@ -19,7 +19,7 @@
 -export([dontGetColumnInfo/0, getColumnInfo/0]).
 -export([mixedCaseColumnNames/0, upperCaseColumnNames/0, lowerCaseColumnNames/0]).
 -export([cacheToFile/1, setCacheTtl/1, getCacheFileName/0, cacheOff/0]).
--export([getDatabaseList/1, getSchemaList/1, getTableTypeList/0, getTableList/1, getTypeInfoList/1, getColumnList/2, getPrimaryKeysList/2, getKeyAndIndexList/2, getProcedureList/1, getProcedureParameterList/2]).
+-export([getDatabaseList/1, getCatalogList/1, getSchemaList/1, getTableTypeList/0, getTableList/1, getTypeInfoList/1, getColumnList/2, getPrimaryKeysList/2, getKeyAndIndexList/2, getProcedureList/1, getProcedureParameterList/2]).
 
 -export([sendQuery/1, sendQueryWithLength/2, sendFileQuery/2]).
 
@@ -310,7 +310,7 @@ getCacheFileName() ->  call_port({getCacheFileName}).
 %% @doc Sets query caching off.
 cacheOff() ->  call_port({cacheOff}).
 
-%% @doc Sends a query that returns a result set containing
+%% @doc Generates a result set containing
 %% databases that match the pattern "Databases".
 %%
 %% The result set will contain the following columns:
@@ -326,7 +326,11 @@ getDatabaseList(Databases) when is_list(Databases) ->
 	put("cursor", "true"),
 	call_port({getDatabaseList, Databases}).
 
-%% @doc Sends a query that returns a result set containing
+getCatalogList(Catalogs) when is_list(Catalogs) ->
+	put("cursor", "true"),
+	call_port({getCatalogList, Catalogs}).
+
+%% @doc Generates a result set containing
 %% schemas that match the pattern "Schemas".
 %%
 %% The result set will contain the following columns:
@@ -345,7 +349,7 @@ getSchemaList(Schemas) when is_list(Schemas) ->
 	put("cursor", "true"),
 	call_port({getSchemaList, Schemas}).
 
-%% @doc Sends a query that returns a result set containing
+%% @doc Generates a result set containing
 %% supported table types.
 %%
 %% The result set will contain the following columns:
@@ -358,7 +362,7 @@ getTableTypeList() ->
 	put("cursor", "true"),
 	call_port({getTableTypeList}).
 
-%% @doc Sends a query that returns a result set containing the
+%% @doc Generates a result set containing the
 %% tables in the current database and schema that match the
 %% pattern "Tables".
 %%
@@ -375,7 +379,7 @@ getTableList(Tables) when is_list(Tables) ->
 	put("cursor", "true"),
 	call_port({getTableList, Tables}).
 
-%% @doc Sends a query that returns a result set containing data
+%% @doc Generates a result set containing data
 %% type information for "Type".
 %%
 %% The result set will contain the following columns:
@@ -397,7 +401,7 @@ getTypeInfoList(Type) when is_list(Type) ->
 	put("cursor", "true"),
 	call_port({getTypeInfoList, Type}).
 
-%% @doc Sends a query that returns a result set containing the
+%% @doc Generates a result set containing the
 %% columns of "Table", which match the pattern "Columns".
 %%
 %% The result set will contain the following columns:
@@ -415,7 +419,7 @@ getColumnList(Table, Columns) when is_list(Table), is_list(Columns) ->
 	put("cursor", "true"),
 	call_port({getColumnList, Table, Columns}).
 
-%% @doc Sends a query that returns a result set containing the
+%% @doc Generates a result set containing the
 %% primary keys of "Table", which match the pattern "Columns".
 %%
 %% The result set will contain the following columns:
@@ -433,7 +437,7 @@ getPrimaryKeysList(Table, Columns) when is_list(Table), is_list(Columns) ->
 	put("cursor", "true"),
 	call_port({getPrimaryKeysList, Table, Columns}).
 
-%% @doc Sends a query that returns a result set containing the
+%% @doc Generates a result set containing the
 %% keys and indexes of "Table", which match the pattern
 %% "Qualifier".
 %%
@@ -453,7 +457,7 @@ getKeyAndIndexList(Table, Qualifier) when is_list(Table), is_list(Qualifier) ->
 	put("cursor", "true"),
 	call_port({getKeyAndIndexList, Table, Qualifier}).
 
-%% @doc Sends a query that returns a result set containing
+%% @doc Generates a result set containing
 %% procedures that match the pattern "Procedures".
 %%
 %% The result set will contain the following columns:
@@ -470,7 +474,7 @@ getProcedureList(Procedures) when is_list(Procedures) ->
 	put("cursor", "true"),
 	call_port({getProcedureList, Procedures}).
 
-%% @doc Sends a query that returns a result set containing the
+%% @doc Generates a result set containing the
 %% parameters of "Procedure", which match the pattern
 %% "Parameters".
 %%

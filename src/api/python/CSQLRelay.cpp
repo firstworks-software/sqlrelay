@@ -818,6 +818,18 @@ static PyObject *getDatabaseList(PyObject *self, PyObject *args) {
   return Py_BuildValue("h", (short)rc);
 }
 
+static PyObject *getCatalogList(PyObject *self, PyObject *args) {
+  char *catalogs;
+  long sqlrcur;
+  bool rc;
+  if (!PyArg_ParseTuple(args, "ls", &sqlrcur, &catalogs))
+    return NULL;
+  Py_BEGIN_ALLOW_THREADS
+  rc=((sqlrcursor *)sqlrcur)->getCatalogList(catalogs);
+  Py_END_ALLOW_THREADS
+  return Py_BuildValue("h", (short)rc);
+}
+
 static PyObject *getSchemaList(PyObject *self, PyObject *args) {
   char *schemas;
   long sqlrcur;
@@ -2870,6 +2882,7 @@ static PyMethodDef SQLRMethods[] = {
   {"getCacheFileName", getCacheFileName, METH_VARARGS},
   {"cacheOff", cacheOff, METH_VARARGS},
   {"getDatabaseList", getDatabaseList, METH_VARARGS},
+  {"getCatalogList", getCatalogList, METH_VARARGS},
   {"getSchemaList", getSchemaList, METH_VARARGS},
   {"getTableTypeList", getTableTypeList, METH_VARARGS},
   {"getTableList", getTableList, METH_VARARGS},

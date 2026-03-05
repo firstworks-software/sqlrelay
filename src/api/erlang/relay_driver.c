@@ -1067,6 +1067,22 @@ int main() {
 			ENCODE_VOID;
 		}
 
+		if (strcmp("getCatalogList", command) == TRUE) {
+			char catalogs[2000];
+
+			// check number of arguments
+		    	if (arity != 1) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_string(buf, &index, &catalogs[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// call function and encode result
+			sqlrcur_getCatalogList(cur, catalogs);
+			ENCODE_VOID;
+		}
+
 		if (strcmp("getSchemaList", command) == TRUE) {
 			char schemas[2000];
 

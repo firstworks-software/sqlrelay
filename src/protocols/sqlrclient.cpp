@@ -19,6 +19,7 @@
 enum sqlrclientquerytype_t {
 	SQLRCLIENTQUERYTYPE_QUERY=0,
 	SQLRCLIENTQUERYTYPE_DATABASE_LIST,
+	SQLRCLIENTQUERYTYPE_CATALOG_LIST,
 	SQLRCLIENTQUERYTYPE_SCHEMA_LIST,
 	SQLRCLIENTQUERYTYPE_TABLE_LIST,
 	SQLRCLIENTQUERYTYPE_TABLE_LIST_2,
@@ -176,6 +177,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 		void	suspendResultSetCommand(sqlrservercursor *cursor);
 		bool	resumeResultSetCommand(sqlrservercursor *cursor);
 		bool	getDatabaseListCommand(sqlrservercursor *cursor);
+		bool	getCatalogListCommand(sqlrservercursor *cursor);
 		bool	getSchemaListCommand(sqlrservercursor *cursor);
 		bool	getTableListCommand(sqlrservercursor *cursor);
 		bool	getTableList2Command(sqlrservercursor *cursor);
@@ -565,9 +567,12 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 		} else if (command==RESUME_RESULT_SET) {
 			cont->incrementResumeResultSetCount();
 			loop=resumeResultSetCommand(cursor);
-		} else if (command==GET_DB_LIST) {
+		} else if (command==GET_DATABASE_LIST) {
 			cont->incrementGetDbListCount();
 			loop=getDatabaseListCommand(cursor);
+		} else if (command==GET_CATALOG_LIST) {
+			//cont->incrementGetCatalogListCount();
+			loop=getCatalogListCommand(cursor);
 		} else if (command==GET_SCHEMA_LIST) {
 			//cont->incrementGetSchemaListCount();
 			loop=getSchemaListCommand(cursor);
@@ -773,7 +778,8 @@ sqlrservercursor *sqlrprotocol_sqlrclient::getCursor(uint16_t command) {
 	// does the client need a cursor or does it already have one
 	uint16_t	neednewcursor=DONT_NEED_NEW_CURSOR;
 	if (command==NEW_QUERY ||
-		command==GET_DB_LIST ||
+		command==GET_DATABASE_LIST ||
+		command==GET_CATALOG_LIST ||
 		command==GET_SCHEMA_LIST ||
 		command==GET_TABLE_LIST ||
 		command==GET_TABLE_LIST_2 ||
@@ -4262,9 +4268,18 @@ bool sqlrprotocol_sqlrclient::resumeResultSetCommand(
 
 bool sqlrprotocol_sqlrclient::getDatabaseListCommand(
 					sqlrservercursor *cursor) {
-	debugStart("get db list");
+	debugStart("get database list");
 	bool	retval=getObjectListCommand(cursor,
 				SQLRCLIENTQUERYTYPE_DATABASE_LIST);
+	debugEnd();
+	return retval;
+}
+
+bool sqlrprotocol_sqlrclient::getCatalogListCommand(
+					sqlrservercursor *cursor) {
+	debugStart("get catalog list");
+	bool	retval=getObjectListCommand(cursor,
+				SQLRCLIENTQUERYTYPE_CATALOG_LIST);
 	debugEnd();
 	return retval;
 }
@@ -4498,8 +4513,12 @@ bool sqlrprotocol_sqlrclient::getObjectList(sqlrservercursor *cursor,
 	// inside the default get*List resets the column map)
 	switch (querytype) {
 		case SQLRCLIENTQUERYTYPE_DATABASE_LIST:
-			success=cont->getDatabaseList(cursor,catalog);
+			success=cont->getDatabaseList(cursor,obj);
 			cont->setDatabaseListFormat(listformat);
+			break;
+		case SQLRCLIENTQUERYTYPE_CATALOG_LIST:
+			success=cont->getCatalogList(cursor,catalog);
+			cont->setCatalogListFormat(listformat);
 			break;
 		case SQLRCLIENTQUERYTYPE_SCHEMA_LIST:
 			success=cont->getSchemaList(cursor,catalog,schema);
@@ -4919,8 +4938,11 @@ void sqlrprotocol_sqlrclient::debugCommand(uint16_t command) {
 		case SERVER_VERSION:
 			debugWrite("SERVER_VERSION");
 			break;
-		case GET_DB_LIST:
-			debugWrite("GET_DB_LIST");
+		case GET_DATABASE_LIST:
+			debugWrite("GET_DATABASE_LIST");
+			break;
+		case GET_CATALOG_LIST:
+			debugWrite("GET_CATALOG_LIST");
 			break;
 		case GET_TABLE_LIST:
 			debugWrite("GET_TABLE_LIST");

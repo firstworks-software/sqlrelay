@@ -12062,7 +12062,7 @@ SQLRETURN SQL_API SQLTables(SQLHSTMT statementhandle,
 		debugPrintf("  getting database list...\n");
 
 		retval=
-		(stmt->cur->getDatabaseList(NULL,SQLRCLIENTLISTFORMAT_ODBC))?
+		(stmt->cur->getCatalogList(NULL,SQLRCLIENTLISTFORMAT_ODBC))?
 							SQL_SUCCESS:SQL_ERROR;
 
 	} else if (!charstring::compare(schname,SQL_ALL_SCHEMAS) &&
