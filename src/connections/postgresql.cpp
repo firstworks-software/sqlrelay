@@ -125,7 +125,7 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 		file	devnull;
 #endif
 
-		stringbuffer	databaselistquery;
+		stringbuffer	cataloglistquery;
 		stringbuffer	schemalistquery;
 		stringbuffer	tabletypelistquery;
 		stringbuffer	tablelistquery;
@@ -611,10 +611,10 @@ const char *postgresqlconnection::getDbIpAddress() {
 
 const char *postgresqlconnection::getCatalogListQuery(const char *catalog) {
 
-	databaselistquery.clear();
+	cataloglistquery.clear();
 
 	// select clause
-	databaselistquery.append(
+	cataloglistquery.append(
 		"select "
 		"	datname as table_cat, "
 		"	'' as table_schem, "
@@ -627,19 +627,19 @@ const char *postgresqlconnection::getCatalogListQuery(const char *catalog) {
 
 	// where clause
 	if (catalog) {
-		databaselistquery.append(
+		cataloglistquery.append(
 			"where "
 			"	datname like '");
-		databaselistquery.append(catalog);
-		databaselistquery.append("' ");
+		cataloglistquery.append(catalog);
+		cataloglistquery.append("' ");
 	}
 
 	// order by clause
-	databaselistquery.append(
+	cataloglistquery.append(
 		"order by "
 		"	datname");
 
-	return databaselistquery.getString();
+	return cataloglistquery.getString();
 }
 
 const char *postgresqlconnection::getSchemaListQuery(const char *catalog,
@@ -658,7 +658,7 @@ const char *postgresqlconnection::getSchemaListQuery(const char *catalog,
 		"	null "
 		"from "
 		"	information_schema.schemata ");
-	bool	prevclause=false;
+	bool	first=true;
 
 	// where clause
 	if (catalog) {
@@ -667,13 +667,13 @@ const char *postgresqlconnection::getSchemaListQuery(const char *catalog,
 			"	catalog_name like '");
 		schemalistquery.append(catalog);
 		schemalistquery.append("' ");
-		prevclause=true;
+		first=false;
 	}
 	if (schema) {
-		if (prevclause) {
-			schemalistquery.append("	and ");
-		} else {
+		if (first) {
 			schemalistquery.append("where ");
+		} else {
+			schemalistquery.append("	and ");
 		}
 		schemalistquery.append(
 			"	schema_name like '");
@@ -808,8 +808,8 @@ const char *postgresqlconnection::getTableListQuery(const char *catalog,
 	return tablelistquery.getString();
 }
 
-static const char	*pg_booltype=
-			"(select "
+static const char	*booltype=
+			"select "
 			"	'BOOLEAN' as type_name, "
 			"	-7 as data_type, "
 			"	1 as column_size, "
@@ -830,10 +830,10 @@ static const char	*pg_booltype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*pg_int2type=
-			"(select "
+static const char	*int2type=
+			"select "
 			"	'SMALLINT' as type_name, "
 			"	5 as data_type, "
 			"	5 as column_size, "
@@ -854,10 +854,10 @@ static const char	*pg_int2type=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*pg_int4type=
-			"(select "
+static const char	*int4type=
+			"select "
 			"	'INTEGER' as type_name, "
 			"	4 as data_type, "
 			"	10 as column_size, "
@@ -878,10 +878,10 @@ static const char	*pg_int4type=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*pg_int8type=
-			"(select "
+static const char	*int8type=
+			"select "
 			"	'BIGINT' as type_name, "
 			"	-5 as data_type, "
 			"	19 as column_size, "
@@ -902,10 +902,10 @@ static const char	*pg_int8type=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*pg_numerictype=
-			"(select "
+static const char	*numerictype=
+			"select "
 			"	'NUMERIC' as type_name, "
 			"	2 as data_type, "
 			"	1000 as column_size, "
@@ -926,10 +926,10 @@ static const char	*pg_numerictype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*pg_float4type=
-			"(select "
+static const char	*float4type=
+			"select "
 			"	'REAL' as type_name, "
 			"	7 as data_type, "
 			"	7 as column_size, "
@@ -950,10 +950,10 @@ static const char	*pg_float4type=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*pg_float8type=
-			"(select "
+static const char	*float8type=
+			"select "
 			"	'DOUBLE PRECISION' as type_name, "
 			"	8 as data_type, "
 			"	15 as column_size, "
@@ -974,10 +974,10 @@ static const char	*pg_float8type=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*pg_chartype=
-			"(select "
+static const char	*chartype=
+			"select "
 			"	'CHAR' as type_name, "
 			"	1 as data_type, "
 			"	255 as column_size, "
@@ -998,10 +998,10 @@ static const char	*pg_chartype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*pg_varchartype=
-			"(select "
+static const char	*varchartype=
+			"select "
 			"	'VARCHAR' as type_name, "
 			"	12 as data_type, "
 			"	255 as column_size, "
@@ -1022,10 +1022,10 @@ static const char	*pg_varchartype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*pg_texttype=
-			"(select "
+static const char	*texttype=
+			"select "
 			"	'TEXT' as type_name, "
 			"	-1 as data_type, "
 			"	2147483647 as column_size, "
@@ -1046,10 +1046,10 @@ static const char	*pg_texttype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*pg_byteatype=
-			"(select "
+static const char	*byteatype=
+			"select "
 			"	'BYTEA' as type_name, "
 			"	-3 as data_type, "
 			"	255 as column_size, "
@@ -1070,10 +1070,10 @@ static const char	*pg_byteatype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*pg_datetype=
-			"(select "
+static const char	*datetype=
+			"select "
 			"	'DATE' as type_name, "
 			"	91 as data_type, "
 			"	10 as column_size, "
@@ -1094,10 +1094,10 @@ static const char	*pg_datetype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*pg_timetype=
-			"(select "
+static const char	*timetype=
+			"select "
 			"	'TIME' as type_name, "
 			"	92 as data_type, "
 			"	8 as column_size, "
@@ -1118,10 +1118,10 @@ static const char	*pg_timetype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*pg_timestamptype=
-			"(select "
+static const char	*timestamptype=
+			"select "
 			"	'TIMESTAMP' as type_name, "
 			"	93 as data_type, "
 			"	29 as column_size, "
@@ -1142,10 +1142,10 @@ static const char	*pg_timestamptype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*pg_timestamptztype=
-			"(select "
+static const char	*timestamptztype=
+			"select "
 			"	'TIMESTAMP WITH TIME ZONE' as type_name, "
 			"	93 as data_type, "
 			"	35 as column_size, "
@@ -1166,10 +1166,10 @@ static const char	*pg_timestamptztype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*pg_intervaltype=
-			"(select "
+static const char	*intervaltype=
+			"select "
 			"	'INTERVAL' as type_name, "
 			"	12 as data_type, "
 			"	49 as column_size, "
@@ -1190,10 +1190,10 @@ static const char	*pg_intervaltype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*pg_uuidtype=
-			"(select "
+static const char	*uuidtype=
+			"select "
 			"	'UUID' as type_name, "
 			"	1 as data_type, "
 			"	36 as column_size, "
@@ -1214,10 +1214,10 @@ static const char	*pg_uuidtype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*pg_jsontype=
-			"(select "
+static const char	*jsontype=
+			"select "
 			"	'JSON' as type_name, "
 			"	-1 as data_type, "
 			"	2147483647 as column_size, "
@@ -1238,10 +1238,10 @@ static const char	*pg_jsontype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*pg_jsonbtype=
-			"(select "
+static const char	*jsonbtype=
+			"select "
 			"	'JSONB' as type_name, "
 			"	-1 as data_type, "
 			"	2147483647 as column_size, "
@@ -1262,10 +1262,10 @@ static const char	*pg_jsonbtype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*pg_xmltype=
-			"(select "
+static const char	*xmltype=
+			"select "
 			"	'XML' as type_name, "
 			"	-1 as data_type, "
 			"	2147483647 as column_size, "
@@ -1286,7 +1286,7 @@ static const char	*pg_xmltype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
 const char *postgresqlconnection::getTypeInfoListQuery(const char *catalog,
 						const char *schema,
@@ -1294,115 +1294,117 @@ const char *postgresqlconnection::getTypeInfoListQuery(const char *catalog,
 
 	if (!charstring::compare(type,"*")) {
 		if (!typeinfolistquery.getSize()) {
-			typeinfolistquery.append(pg_booltype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(pg_int2type);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(pg_int4type);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(pg_int8type);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(pg_numerictype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(pg_float4type);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(pg_float8type);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(pg_chartype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(pg_varchartype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(pg_texttype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(pg_byteatype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(pg_datetype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(pg_timetype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(pg_timestamptype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(pg_timestamptztype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(pg_intervaltype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(pg_uuidtype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(pg_jsontype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(pg_jsonbtype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(pg_xmltype);
+			typeinfolistquery.append("(");
+			typeinfolistquery.append(booltype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(int2type);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(int4type);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(int8type);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(numerictype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(float4type);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(float8type);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(chartype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(varchartype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(texttype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(byteatype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(datetype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(timetype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(timestamptype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(timestamptztype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(intervaltype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(uuidtype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(jsontype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(jsonbtype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(xmltype);
+			typeinfolistquery.append(")");
 		}
 		return typeinfolistquery.getString();
 	} else if (!charstring::compareIgnoringCase(type,"boolean")) {
-		return pg_booltype;
+		return booltype;
 	} else if (!charstring::compareIgnoringCase(type,"bool")) {
-		return pg_booltype;
+		return booltype;
 	} else if (!charstring::compareIgnoringCase(type,"smallint")) {
-		return pg_int2type;
+		return int2type;
 	} else if (!charstring::compareIgnoringCase(type,"int2")) {
-		return pg_int2type;
+		return int2type;
 	} else if (!charstring::compareIgnoringCase(type,"integer")) {
-		return pg_int4type;
+		return int4type;
 	} else if (!charstring::compareIgnoringCase(type,"int")) {
-		return pg_int4type;
+		return int4type;
 	} else if (!charstring::compareIgnoringCase(type,"int4")) {
-		return pg_int4type;
+		return int4type;
 	} else if (!charstring::compareIgnoringCase(type,"bigint")) {
-		return pg_int8type;
+		return int8type;
 	} else if (!charstring::compareIgnoringCase(type,"int8")) {
-		return pg_int8type;
+		return int8type;
 	} else if (!charstring::compareIgnoringCase(type,"numeric")) {
-		return pg_numerictype;
+		return numerictype;
 	} else if (!charstring::compareIgnoringCase(type,"decimal")) {
-		return pg_numerictype;
+		return numerictype;
 	} else if (!charstring::compareIgnoringCase(type,"real")) {
-		return pg_float4type;
+		return float4type;
 	} else if (!charstring::compareIgnoringCase(type,"float4")) {
-		return pg_float4type;
+		return float4type;
 	} else if (!charstring::compareIgnoringCase(type,"double precision")) {
-		return pg_float8type;
+		return float8type;
 	} else if (!charstring::compareIgnoringCase(type,"float8")) {
-		return pg_float8type;
+		return float8type;
 	} else if (!charstring::compareIgnoringCase(type,"float")) {
-		return pg_float8type;
+		return float8type;
 	} else if (!charstring::compareIgnoringCase(type,"char")) {
-		return pg_chartype;
+		return chartype;
 	} else if (!charstring::compareIgnoringCase(type,"bpchar")) {
-		return pg_chartype;
+		return chartype;
 	} else if (!charstring::compareIgnoringCase(type,"character")) {
-		return pg_chartype;
+		return chartype;
 	} else if (!charstring::compareIgnoringCase(type,"varchar")) {
-		return pg_varchartype;
+		return varchartype;
 	} else if (!charstring::compareIgnoringCase(type,"character varying")) {
-		return pg_varchartype;
+		return varchartype;
 	} else if (!charstring::compareIgnoringCase(type,"text")) {
-		return pg_texttype;
+		return texttype;
 	} else if (!charstring::compareIgnoringCase(type,"bytea")) {
-		return pg_byteatype;
+		return byteatype;
 	} else if (!charstring::compareIgnoringCase(type,"date")) {
-		return pg_datetype;
+		return datetype;
 	} else if (!charstring::compareIgnoringCase(type,"time")) {
-		return pg_timetype;
+		return timetype;
 	} else if (!charstring::compareIgnoringCase(type,"timestamp")) {
-		return pg_timestamptype;
+		return timestamptype;
 	} else if (!charstring::compareIgnoringCase(type,"timestamp without time zone")) {
-		return pg_timestamptype;
+		return timestamptype;
 	} else if (!charstring::compareIgnoringCase(type,"timestamp with time zone")) {
-		return pg_timestamptztype;
+		return timestamptztype;
 	} else if (!charstring::compareIgnoringCase(type,"timestamptz")) {
-		return pg_timestamptztype;
+		return timestamptztype;
 	} else if (!charstring::compareIgnoringCase(type,"interval")) {
-		return pg_intervaltype;
+		return intervaltype;
 	} else if (!charstring::compareIgnoringCase(type,"uuid")) {
-		return pg_uuidtype;
+		return uuidtype;
 	} else if (!charstring::compareIgnoringCase(type,"json")) {
-		return pg_jsontype;
+		return jsontype;
 	} else if (!charstring::compareIgnoringCase(type,"jsonb")) {
-		return pg_jsonbtype;
+		return jsonbtype;
 	} else if (!charstring::compareIgnoringCase(type,"xml")) {
-		return pg_xmltype;
+		return xmltype;
 	}
 	return NULL;
 }
@@ -1487,17 +1489,17 @@ const char *postgresqlconnection::getColumnListQuery(const char *catalog,
 		"	co.table_name=ck.table_name "
 		"	and "
 		"	co.column_name=ck.column_name ");
-	bool	prevclause=false;
+	bool	first=true;
 	if (!charstring::isNullOrEmpty(catalog)) {
 		columnlistquery.append("where ");
 		columnlistquery.append(
 			"	co.table_catalog like '");
 		columnlistquery.append(catalog);
 		columnlistquery.append("' ");
-		prevclause=true;
+		first=false;
 	}
 	if (!charstring::isNullOrEmpty(schema)) {
-		if (!prevclause) {
+		if (first) {
 			columnlistquery.append("where ");
 		} else {
 			columnlistquery.append("	and ");
@@ -1506,10 +1508,10 @@ const char *postgresqlconnection::getColumnListQuery(const char *catalog,
 			"	co.table_schema like '");
 		columnlistquery.append(schema);
 		columnlistquery.append("' ");
-		prevclause=true;
+		first=false;
 	}
 	if (!charstring::isNullOrEmpty(table)) {
-		if (!prevclause) {
+		if (first) {
 			columnlistquery.append("where ");
 		} else {
 			columnlistquery.append("	and ");
@@ -1518,10 +1520,10 @@ const char *postgresqlconnection::getColumnListQuery(const char *catalog,
 			"	co.table_name like '");
 		columnlistquery.append(table);
 		columnlistquery.append("' ");
-		prevclause=true;
+		first=false;
 	}
 	if (!charstring::isNullOrEmpty(column)) {
-		if (!prevclause) {
+		if (first) {
 			columnlistquery.append("where ");
 		} else {
 			columnlistquery.append("	and ");
@@ -1716,13 +1718,14 @@ const char *postgresqlconnection::getProcedureListQuery(
 		"	null "
 		"from "
 		"	information_schema.routines ");
+
+	// where clause
 	if (!charstring::isNullOrEmpty(catalog) ||
 		!charstring::isNullOrEmpty(schema) ||
 		!charstring::isNullOrEmpty(procedure)) {
 
-	// where clause
-		procedurelistquery.append("where ");
 		bool	first=true;
+		procedurelistquery.append("where ");
 		if (!charstring::isNullOrEmpty(catalog)) {
 			procedurelistquery.append(
 				"routine_catalog like '");

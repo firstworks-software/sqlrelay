@@ -4483,7 +4483,7 @@ bool sqlrprotocol_sqlrclient::getObjectList(sqlrservercursor *cursor,
 					sqlrserverlistformat_t listformat,
 					uint16_t objecttypes) {
 
-	// initialize flags andbuffers
+	// initialize flags and buffers
 	bool	success=false;
 
 	// clean up object to avoid SQL injection
@@ -4722,7 +4722,7 @@ bool sqlrprotocol_sqlrclient::getComponentList(
 					const char *component,
 					sqlrserverlistformat_t listformat) {
 
-	// initialize flags andbuffers
+	// initialize flags and buffers
 	bool	success=false;
 
 	// clean up object and component to avoid SQL injection

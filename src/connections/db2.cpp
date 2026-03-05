@@ -324,7 +324,6 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 		char		**databasefeatures;
 		uint16_t	dbmajorversion;
 
-		stringbuffer	databaselistquery;
 		stringbuffer	schemalistquery;
 		stringbuffer	tabletypelistquery;
 		stringbuffer	tablelistquery;
@@ -615,36 +614,18 @@ const char *db2connection::getDbHostNameQuery() {
 }
 
 const char *db2connection::getCatalogListQuery(const char *catalog) {
-
-	databaselistquery.clear();
-
-	// select clause
-	databaselistquery.append(
-		"select "
-		"	schemaname as table_cat, "
-		"	'' as table_schem, "
-		"	'' as table_name, "
-		"	'' as table_type, "
-		"	'' as remarks, "
-		"	null "
-		"from "
-		"	syscat.schemata ");
-
-	// where clause
-	if (catalog) {
-		databaselistquery.append(
-			"where "
-			"	schemaname like '");
-		databaselistquery.append(catalog);
-		databaselistquery.append("' ");
-	}
-
-	// order by clause
-	databaselistquery.append(
-		"order by "
-		"	schemaname");
-
-	return databaselistquery.getString();
+        // no good way to get a list of catalogs in db2
+        return "select "
+                "       '' as table_cat, "
+                "       '' as table_schem, "    
+                "       '' as table_name, "
+                "       '' as table_type, "
+                "       '' as remarks, "
+                "       null "  
+                "from "  
+                "       sysibm.sysdummy1 "                  
+                "where "                        
+                "       1=0"; 
 }
 
 const char *db2connection::getSchemaListQuery(const char *catalog,
@@ -802,8 +783,8 @@ const char *db2connection::getTableListQuery(const char *catalog,
 	return tablelistquery.getString();
 }
 
-static const char	*db2_booltype=
-			"(select "
+static const char	*booltype=
+			"select "
 			"	'BOOLEAN' as type_name, "
 			"	-7 as data_type, "
 			"	1 as column_size, "
@@ -825,10 +806,10 @@ static const char	*db2_booltype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	sysibm.sysdummy1) ";
+			"	sysibm.sysdummy1 ";
 
-static const char	*db2_smallinttype=
-			"(select "
+static const char	*smallinttype=
+			"select "
 			"	'SMALLINT' as type_name, "
 			"	5 as data_type, "
 			"	5 as column_size, "
@@ -850,10 +831,10 @@ static const char	*db2_smallinttype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	sysibm.sysdummy1) ";
+			"	sysibm.sysdummy1 ";
 
-static const char	*db2_inttype=
-			"(select "
+static const char	*inttype=
+			"select "
 			"	'INTEGER' as type_name, "
 			"	4 as data_type, "
 			"	10 as column_size, "
@@ -875,10 +856,10 @@ static const char	*db2_inttype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	sysibm.sysdummy1) ";
+			"	sysibm.sysdummy1 ";
 
-static const char	*db2_biginttype=
-			"(select "
+static const char	*biginttype=
+			"select "
 			"	'BIGINT' as type_name, "
 			"	-5 as data_type, "
 			"	19 as column_size, "
@@ -900,10 +881,10 @@ static const char	*db2_biginttype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	sysibm.sysdummy1) ";
+			"	sysibm.sysdummy1 ";
 
-static const char	*db2_numerictype=
-			"(select "
+static const char	*numerictype=
+			"select "
 			"	'NUMERIC' as type_name, "
 			"	2 as data_type, "
 			"	31 as column_size, "
@@ -925,10 +906,10 @@ static const char	*db2_numerictype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	sysibm.sysdummy1) ";
+			"	sysibm.sysdummy1 ";
 
-static const char	*db2_decimaltype=
-			"(select "
+static const char	*decimaltype=
+			"select "
 			"	'DECIMAL' as type_name, "
 			"	3 as data_type, "
 			"	31 as column_size, "
@@ -950,10 +931,10 @@ static const char	*db2_decimaltype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	sysibm.sysdummy1) ";
+			"	sysibm.sysdummy1 ";
 
-static const char	*db2_realtype=
-			"(select "
+static const char	*realtype=
+			"select "
 			"	'REAL' as type_name, "
 			"	7 as data_type, "
 			"	7 as column_size, "
@@ -975,10 +956,10 @@ static const char	*db2_realtype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	sysibm.sysdummy1) ";
+			"	sysibm.sysdummy1 ";
 
-static const char	*db2_doubletype=
-			"(select "
+static const char	*doubletype=
+			"select "
 			"	'DOUBLE' as type_name, "
 			"	8 as data_type, "
 			"	15 as column_size, "
@@ -1000,10 +981,10 @@ static const char	*db2_doubletype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	sysibm.sysdummy1) ";
+			"	sysibm.sysdummy1 ";
 
-static const char	*db2_chartype=
-			"(select "
+static const char	*chartype=
+			"select "
 			"	'CHAR' as type_name, "
 			"	1 as data_type, "
 			"	254 as column_size, "
@@ -1025,10 +1006,10 @@ static const char	*db2_chartype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	sysibm.sysdummy1) ";
+			"	sysibm.sysdummy1 ";
 
-static const char	*db2_varchartype=
-			"(select "
+static const char	*varchartype=
+			"select "
 			"	'VARCHAR' as type_name, "
 			"	12 as data_type, "
 			"	32672 as column_size, "
@@ -1050,10 +1031,10 @@ static const char	*db2_varchartype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	sysibm.sysdummy1) ";
+			"	sysibm.sysdummy1 ";
 
-static const char	*db2_clobtype=
-			"(select "
+static const char	*clobtype=
+			"select "
 			"	'CLOB' as type_name, "
 			"	-1 as data_type, "
 			"	2147483647 as column_size, "
@@ -1075,10 +1056,10 @@ static const char	*db2_clobtype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	sysibm.sysdummy1) ";
+			"	sysibm.sysdummy1 ";
 
-static const char	*db2_blobtype=
-			"(select "
+static const char	*blobtype=
+			"select "
 			"	'BLOB' as type_name, "
 			"	-4 as data_type, "
 			"	2147483647 as column_size, "
@@ -1100,10 +1081,10 @@ static const char	*db2_blobtype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	sysibm.sysdummy1) ";
+			"	sysibm.sysdummy1 ";
 
-static const char	*db2_datetype=
-			"(select "
+static const char	*datetype=
+			"select "
 			"	'DATE' as type_name, "
 			"	91 as data_type, "
 			"	10 as column_size, "
@@ -1125,10 +1106,10 @@ static const char	*db2_datetype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	sysibm.sysdummy1) ";
+			"	sysibm.sysdummy1 ";
 
-static const char	*db2_timetype=
-			"(select "
+static const char	*timetype=
+			"select "
 			"	'TIME' as type_name, "
 			"	92 as data_type, "
 			"	8 as column_size, "
@@ -1150,10 +1131,10 @@ static const char	*db2_timetype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	sysibm.sysdummy1) ";
+			"	sysibm.sysdummy1 ";
 
-static const char	*db2_timestamptype=
-			"(select "
+static const char	*timestamptype=
+			"select "
 			"	'TIMESTAMP' as type_name, "
 			"	93 as data_type, "
 			"	26 as column_size, "
@@ -1175,10 +1156,10 @@ static const char	*db2_timestamptype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	sysibm.sysdummy1) ";
+			"	sysibm.sysdummy1 ";
 
-static const char	*db2_graphictype=
-			"(select "
+static const char	*graphictype=
+			"select "
 			"	'GRAPHIC' as type_name, "
 			"	1 as data_type, "
 			"	127 as column_size, "
@@ -1200,10 +1181,10 @@ static const char	*db2_graphictype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	sysibm.sysdummy1) ";
+			"	sysibm.sysdummy1 ";
 
-static const char	*db2_vargraphictype=
-			"(select "
+static const char	*vargraphictype=
+			"select "
 			"	'VARGRAPHIC' as type_name, "
 			"	12 as data_type, "
 			"	16336 as column_size, "
@@ -1225,10 +1206,10 @@ static const char	*db2_vargraphictype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	sysibm.sysdummy1) ";
+			"	sysibm.sysdummy1 ";
 
-static const char	*db2_xmltype=
-			"(select "
+static const char	*xmltype=
+			"select "
 			"	'XML' as type_name, "
 			"	-1 as data_type, "
 			"	2147483647 as column_size, "
@@ -1250,10 +1231,10 @@ static const char	*db2_xmltype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	sysibm.sysdummy1) ";
+			"	sysibm.sysdummy1 ";
 
-static const char	*db2_decfloattype=
-			"(select "
+static const char	*decfloattype=
+			"select "
 			"	'DECFLOAT' as type_name, "
 			"	8 as data_type, "
 			"	34 as column_size, "
@@ -1275,7 +1256,7 @@ static const char	*db2_decfloattype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	sysibm.sysdummy1) ";
+			"	sysibm.sysdummy1 ";
 
 const char *db2connection::getTypeInfoListQuery(const char *catalog,
 						const char *schema,
@@ -1283,95 +1264,97 @@ const char *db2connection::getTypeInfoListQuery(const char *catalog,
 
 	if (!charstring::compare(type,"*")) {
 		if (!typeinfolistquery.getSize()) {
-			typeinfolistquery.append(db2_booltype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(db2_smallinttype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(db2_inttype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(db2_biginttype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(db2_numerictype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(db2_decimaltype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(db2_realtype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(db2_doubletype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(db2_chartype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(db2_varchartype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(db2_clobtype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(db2_blobtype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(db2_datetype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(db2_timetype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(db2_timestamptype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(db2_graphictype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(db2_vargraphictype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(db2_xmltype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(db2_decfloattype);
+			typeinfolistquery.append("(");
+			typeinfolistquery.append(booltype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(smallinttype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(inttype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(biginttype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(numerictype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(decimaltype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(realtype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(doubletype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(chartype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(varchartype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(clobtype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(blobtype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(datetype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(timetype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(timestamptype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(graphictype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(vargraphictype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(xmltype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(decfloattype);
+			typeinfolistquery.append(")");
 		}
 		return typeinfolistquery.getString();
 	} else if (!charstring::compareIgnoringCase(type,"boolean")) {
-		return db2_booltype;
+		return booltype;
 	} else if (!charstring::compareIgnoringCase(type,"smallint")) {
-		return db2_smallinttype;
+		return smallinttype;
 	} else if (!charstring::compareIgnoringCase(type,"integer")) {
-		return db2_inttype;
+		return inttype;
 	} else if (!charstring::compareIgnoringCase(type,"int")) {
-		return db2_inttype;
+		return inttype;
 	} else if (!charstring::compareIgnoringCase(type,"bigint")) {
-		return db2_biginttype;
+		return biginttype;
 	} else if (!charstring::compareIgnoringCase(type,"numeric")) {
-		return db2_numerictype;
+		return numerictype;
 	} else if (!charstring::compareIgnoringCase(type,"decimal")) {
-		return db2_decimaltype;
+		return decimaltype;
 	} else if (!charstring::compareIgnoringCase(type,"dec")) {
-		return db2_decimaltype;
+		return decimaltype;
 	} else if (!charstring::compareIgnoringCase(type,"real")) {
-		return db2_realtype;
+		return realtype;
 	} else if (!charstring::compareIgnoringCase(type,"float")) {
-		return db2_realtype;
+		return realtype;
 	} else if (!charstring::compareIgnoringCase(type,"double")) {
-		return db2_doubletype;
+		return doubletype;
 	} else if (!charstring::compareIgnoringCase(type,"double precision")) {
-		return db2_doubletype;
+		return doubletype;
 	} else if (!charstring::compareIgnoringCase(type,"char")) {
-		return db2_chartype;
+		return chartype;
 	} else if (!charstring::compareIgnoringCase(type,"character")) {
-		return db2_chartype;
+		return chartype;
 	} else if (!charstring::compareIgnoringCase(type,"varchar")) {
-		return db2_varchartype;
+		return varchartype;
 	} else if (!charstring::compareIgnoringCase(type,"character varying")) {
-		return db2_varchartype;
+		return varchartype;
 	} else if (!charstring::compareIgnoringCase(type,"clob")) {
-		return db2_clobtype;
+		return clobtype;
 	} else if (!charstring::compareIgnoringCase(type,"blob")) {
-		return db2_blobtype;
+		return blobtype;
 	} else if (!charstring::compareIgnoringCase(type,"date")) {
-		return db2_datetype;
+		return datetype;
 	} else if (!charstring::compareIgnoringCase(type,"time")) {
-		return db2_timetype;
+		return timetype;
 	} else if (!charstring::compareIgnoringCase(type,"timestamp")) {
-		return db2_timestamptype;
+		return timestamptype;
 	} else if (!charstring::compareIgnoringCase(type,"graphic")) {
-		return db2_graphictype;
+		return graphictype;
 	} else if (!charstring::compareIgnoringCase(type,"vargraphic")) {
-		return db2_vargraphictype;
+		return vargraphictype;
 	} else if (!charstring::compareIgnoringCase(type,"xml")) {
-		return db2_xmltype;
+		return xmltype;
 	} else if (!charstring::compareIgnoringCase(type,"decfloat")) {
-		return db2_decfloattype;
+		return decfloattype;
 	}
 	return NULL;
 }
@@ -1426,24 +1409,24 @@ const char *db2connection::getColumnListQuery(const char *catalog,
 	columnlistquery.append(
 		"from "
 		"	syscat.columns ");
-	bool	prevclause=false;
 
 	// where clause
+	bool	first=true;
 	if (!charstring::isNullOrEmpty(schema)) {
 		columnlistquery.append(
 			"where "
 			"	tabschema like '");
 		columnlistquery.append(schema);
 		columnlistquery.append("' ");
-		prevclause=true;
+		first=false;
 	}
 
 	if (!charstring::isNullOrEmpty(table)) {
-		if (prevclause) {
-			columnlistquery.append("	and ");
-		} else {
+		if (first) {
 			columnlistquery.append("where ");
-			prevclause=true;
+			first=false;
+		} else {
+			columnlistquery.append("	and ");
 		}
 		columnlistquery.append(
 			"	upper(tabname) like upper('");
@@ -1452,11 +1435,11 @@ const char *db2connection::getColumnListQuery(const char *catalog,
 	}
 
 	if (!charstring::isNullOrEmpty(column)) {
-		if (prevclause) {
-			columnlistquery.append("	and ");
-		} else {
+		if (first) {
 			columnlistquery.append("where ");
-			prevclause=true;
+			first=false;
+		} else {
+			columnlistquery.append("	and ");
 		}
 		columnlistquery.append(
 			"	colname like '");
@@ -1687,22 +1670,22 @@ const char *db2connection::getProcedureParameterListQuery(
 	procedureparameterlistquery.append(
 		"from "
 		"	syscat.procparms ");
-	bool	prevclause=false;
 
 	// where clause
+	bool	first=true;
 	if (!charstring::isNullOrEmpty(schema)) {
 		procedureparameterlistquery.append(
 			"where "
 			"	trim(procschema) like '");
 		procedureparameterlistquery.append(schema);
 		procedureparameterlistquery.append("' ");
-		prevclause=true;
+		first=false;
 	}
 	if (!charstring::isNullOrEmpty(procedure)) {
-		if (prevclause) {
-			procedureparameterlistquery.append("	and ");
-		} else {
+		if (first) {
 			procedureparameterlistquery.append("where ");
+		} else {
+			procedureparameterlistquery.append("	and ");
 		}
 		procedureparameterlistquery.append(
 			"	trim(procname) like '");

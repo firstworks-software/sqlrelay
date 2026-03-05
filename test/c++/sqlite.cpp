@@ -906,10 +906,10 @@ int main(int argc, char **argv) {
 	counter=0;
 	for (uint64_t i=0; i<cur->rowCount(); i++) {
 		const char	*name=cur->getField(i,"Tables_in_xxx");
-		if (!charstring::compareIgnoringCase(name,"TESTTABLE1") ||
-			!charstring::compareIgnoringCase(name,"TESTTABLE2") ||
-			!charstring::compareIgnoringCase(name,"TESTTABLE3") ||
-			!charstring::compareIgnoringCase(name,"TESTTABLE4")) {
+		if (!charstring::compareIgnoringCase(name,"testtable1") ||
+			!charstring::compareIgnoringCase(name,"testtable2") ||
+			!charstring::compareIgnoringCase(name,"testtable3") ||
+			!charstring::compareIgnoringCase(name,"testtable4")) {
 			counter++;
 		}
 	}

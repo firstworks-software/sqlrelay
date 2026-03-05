@@ -1091,7 +1091,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("CATALOG LIST: \n");
 	assertTrue(cur->getCatalogList(NULL));
 	assertEquals(cur->getColumnName(0),"Database");
-	assertTrue(cur->rowCount()>0);
+	assertEquals(cur->rowCount(),0);
 	stdoutput.printf("\n");
 
 
@@ -1099,7 +1099,16 @@ int main(int argc, char **argv) {
 	stdoutput.printf("SCHEMA LIST: \n");
 	assertTrue(cur->getSchemaList(NULL));
 	assertEquals(cur->getColumnName(0),"Database");
-	assertTrue(cur->rowCount()>0);
+	bool	found=false;
+	for (uint64_t i=0; i<cur->rowCount(); i++) {
+		if (!charstring::compareIgnoringCase(
+				cur->getField(i,"Database"),
+				"db2inst1")) {
+			found=true;
+			break;
+		}
+	}
+	assertTrue(found);
 	stdoutput.printf("\n");
 
 
@@ -1107,7 +1116,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("TABLE TYPE LIST: \n");
 	assertTrue(cur->getTableTypeList());
 	assertEquals(cur->getColumnName(0),"table_type");
-	bool	found=false;
+	found=false;
 	for (uint64_t i=0; i<cur->rowCount(); i++) {
 		if (!charstring::compareIgnoringCase(
 				cur->getField(i,"table_type"),
@@ -1146,10 +1155,10 @@ int main(int argc, char **argv) {
 	counter=0;
 	for (uint64_t i=0; i<cur->rowCount(); i++) {
 		const char	*name=cur->getField(i,"Tables_in_xxx");
-		if (!charstring::compareIgnoringCase(name,"TESTTABLE1") ||
-			!charstring::compareIgnoringCase(name,"TESTTABLE2") ||
-			!charstring::compareIgnoringCase(name,"TESTTABLE3") ||
-			!charstring::compareIgnoringCase(name,"TESTTABLE4")) {
+		if (!charstring::compareIgnoringCase(name,"testtable1") ||
+			!charstring::compareIgnoringCase(name,"testtable2") ||
+			!charstring::compareIgnoringCase(name,"testtable3") ||
+			!charstring::compareIgnoringCase(name,"testtable4")) {
 			counter++;
 		}
 	}
@@ -1341,10 +1350,10 @@ int main(int argc, char **argv) {
 	counter=0;
 	for (uint64_t i=0; i<cur->rowCount(); i++) {
 		const char	*name=cur->getField(i,"routine_name");
-		if (!charstring::compareIgnoringCase(name,"TESTPROC1") ||
-			!charstring::compareIgnoringCase(name,"TESTPROC2") ||
-			!charstring::compareIgnoringCase(name,"TESTPROC3") ||
-			!charstring::compareIgnoringCase(name,"TESTPROC4")) {
+		if (!charstring::compareIgnoringCase(name,"testproc1") ||
+			!charstring::compareIgnoringCase(name,"testproc2") ||
+			!charstring::compareIgnoringCase(name,"testproc3") ||
+			!charstring::compareIgnoringCase(name,"testproc4")) {
 			counter++;
 		}
 	}

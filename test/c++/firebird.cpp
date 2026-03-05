@@ -1077,6 +1077,16 @@ int main(int argc, char **argv) {
 	stdoutput.printf("SCHEMA LIST: \n");
 	assertTrue(cur->getSchemaList(NULL));
 	assertEquals(cur->getColumnName(0),"Database");
+        bool    found=false;
+        for (uint64_t i=0; i<cur->rowCount(); i++) {
+                if (!charstring::compareIgnoringCase(
+                                cur->getField(i,"Database"),
+                                "testuser")) {
+                        found=true;
+                        break;
+                }
+        }
+        assertTrue(found);
 	stdoutput.printf("\n");
 
 
@@ -1084,7 +1094,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("TABLE TYPE LIST: \n");
 	assertTrue(cur->getTableTypeList());
 	assertEquals(cur->getColumnName(0),"table_type");
-	bool	found=false;
+	found=false;
 	for (uint64_t i=0; i<cur->rowCount(); i++) {
 		if (!charstring::compareIgnoringCase(
 				cur->getField(i,"table_type"),
@@ -1099,42 +1109,17 @@ int main(int argc, char **argv) {
 
 	// table list
 	stdoutput.printf("TABLE LIST: \n");
-	cur->sendQuery("drop table testtable1");
-	cur->sendQuery("drop table testtable2");
-	cur->sendQuery("drop table testtable3");
-	cur->sendQuery("drop table testtable4");
-	assertTrue(cur->sendQuery(
-		"create table testtable1 ("
-		"	col1 integer, "
-		"	col2 integer)"));
-	assertTrue(cur->sendQuery(
-		"create table testtable2 ("
-		"	col1 integer, "
-		"	col2 integer)"));
-	assertTrue(cur->sendQuery(
-		"create table testtable3 ("
-		"	col1 integer, "
-		"	col2 integer)"));
-	assertTrue(cur->sendQuery(
-		"create table testtable4 ("
-		"	col1 integer, "
-		"	col2 integer)"));
 	assertTrue(cur->getTableList(NULL));
 	counter=0;
 	for (uint64_t i=0; i<cur->rowCount(); i++) {
 		const char	*name=cur->getField(i,"Tables_in_xxx");
-		if (!charstring::compareIgnoringCase(name,"TESTTABLE1") ||
-			!charstring::compareIgnoringCase(name,"TESTTABLE2") ||
-			!charstring::compareIgnoringCase(name,"TESTTABLE3") ||
-			!charstring::compareIgnoringCase(name,"TESTTABLE4")) {
+		if (!charstring::compareIgnoringCase(name,"testtable1") ||
+			!charstring::compareIgnoringCase(name,"testtable2") ||
+			!charstring::compareIgnoringCase(name,"testtable3")) {
 			counter++;
 		}
 	}
 	assertEquals(counter,4);
-	cur->sendQuery("drop table testtable1");
-	cur->sendQuery("drop table testtable2");
-	cur->sendQuery("drop table testtable3");
-	cur->sendQuery("drop table testtable4");
 	stdoutput.printf("\n");
 
 
@@ -1204,7 +1189,6 @@ int main(int argc, char **argv) {
 
 	// primary keys list
 	stdoutput.printf("PRIMARY KEYS LIST: \n");
-	cur->sendQuery("drop table testtable");
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	col1 integer primary key, "
@@ -1230,13 +1214,11 @@ int main(int argc, char **argv) {
 	assertTrue(!charstring::compareIgnoringCase(
 			cur->getField(0,"column_name"),"col1"));
 	assertTrue(!charstring::isNullOrEmpty(cur->getField(0,"key_name")));
-	cur->sendQuery("drop table testtable");
 	stdoutput.printf("\n");
 
 
 	// key and index list
 	stdoutput.printf("KEY AND INDEX LIST: \n");
-	cur->sendQuery("drop table testtable");
 	assertTrue(cur->sendQuery(
 		"create table testtable ("
 		"	col1 integer primary key, "
@@ -1265,52 +1247,17 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,"collation"),"A");
 	assertEquals(cur->getField(0,"index_type"),"3");
 	assertTrue(!charstring::isNullOrEmpty(cur->getField(0,"key_name")));
-	cur->sendQuery("drop table testtable");
 	stdoutput.printf("\n");
 
 
 	// procedure list
 	stdoutput.printf("PROCEDURE LIST: \n");
-	cur->sendQuery("drop procedure testproc1");
-	cur->sendQuery("drop procedure testproc2");
-	cur->sendQuery("drop procedure testproc3");
-	cur->sendQuery("drop procedure testproc4");
-	assertTrue(cur->sendQuery(
-		"create procedure testproc1("
-		"	in1 integer, "
-		"	in2 char(20), "
-		"	in3 varchar(20), "
-		"	in4 date) "
-		"as begin end"));
-	assertTrue(cur->sendQuery(
-		"create procedure testproc2("
-		"	in1 integer, "
-		"	in2 char(20), "
-		"	in3 varchar(20), "
-		"	in4 date) "
-		"as begin end"));
-	assertTrue(cur->sendQuery(
-		"create procedure testproc3("
-		"	in1 integer, "
-		"	in2 char(20), "
-		"	in3 varchar(20), "
-		"	in4 date) "
-		"as begin end"));
-	assertTrue(cur->sendQuery(
-		"create procedure testproc4("
-		"	in1 integer, "
-		"	in2 char(20), "
-		"	in3 varchar(20), "
-		"	in4 date) "
-		"as begin end"));
 	assertTrue(cur->getProcedureList(NULL));
 	counter=0;
 	for (uint64_t i=0; i<cur->rowCount(); i++) {
 		const char	*name=cur->getField(i,"routine_name");
-		if (!charstring::compareIgnoringCase(name,"TESTPROC1") ||
-			!charstring::compareIgnoringCase(name,"TESTPROC2") ||
-			!charstring::compareIgnoringCase(name,"TESTPROC3") ||
-			!charstring::compareIgnoringCase(name,"TESTPROC4")) {
+		if (!charstring::compareIgnoringCase(name,"testproc") ||
+			!charstring::compareIgnoringCase(name,"testproc1")) {
 			counter++;
 		}
 	}
@@ -1320,7 +1267,7 @@ int main(int argc, char **argv) {
 
 	// procedure parameter list
 	stdoutput.printf("PROCEDURE PARAMETER LIST: \n");
-	assertTrue(cur->getProcedureParameterList("testproc1",NULL));
+	assertTrue(cur->getProcedureParameterList("testproc",NULL));
 	assertEquals(cur->getColumnName(0),"parameter_name");
 	assertEquals(cur->getColumnName(1),"parameter_mode");
 	assertEquals(cur->getColumnName(2),"data_type");

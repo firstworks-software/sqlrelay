@@ -743,8 +743,8 @@ const char *sapconnection::getTableListQuery(const char *catalog,
 	return tablelistquery.getString();
 }
 
-static const char	*sap_bittype=
-			"(select "
+static const char	*bittype=
+			"select "
 			"	'BIT' as type_name, "
 			"	-7 as data_type, "
 			"	1 as column_size, "
@@ -765,10 +765,10 @@ static const char	*sap_bittype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*sap_tinyinttype=
-			"(select "
+static const char	*tinyinttype=
+			"select "
 			"	'TINYINT' as type_name, "
 			"	-6 as data_type, "
 			"	3 as column_size, "
@@ -789,10 +789,10 @@ static const char	*sap_tinyinttype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*sap_biginttype=
-			"(select "
+static const char	*biginttype=
+			"select "
 			"	'BIGINT' as type_name, "
 			"	-5 as data_type, "
 			"	19 as column_size, "
@@ -813,10 +813,10 @@ static const char	*sap_biginttype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*sap_imagetype=
-			"(select "
+static const char	*imagetype=
+			"select "
 			"	'IMAGE' as type_name, "
 			"	-4 as data_type, "
 			"	2147483647 as column_size, "
@@ -837,10 +837,10 @@ static const char	*sap_imagetype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*sap_varbinarytype=
-			"(select "
+static const char	*varbinarytype=
+			"select "
 			"	'VARBINARY' as type_name, "
 			"	-3 as data_type, "
 			"	255 as column_size, "
@@ -861,10 +861,10 @@ static const char	*sap_varbinarytype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*sap_binarytype=
-			"(select "
+static const char	*binarytype=
+			"select "
 			"	'BINARY' as type_name, "
 			"	-2 as data_type, "
 			"	255 as column_size, "
@@ -885,10 +885,10 @@ static const char	*sap_binarytype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*sap_texttype=
-			"(select "
+static const char	*texttype=
+			"select "
 			"	'TEXT' as type_name, "
 			"	-1 as data_type, "
 			"	2147483647 as column_size, "
@@ -909,10 +909,10 @@ static const char	*sap_texttype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*sap_chartype=
-			"(select "
+static const char	*chartype=
+			"select "
 			"	'CHAR' as type_name, "
 			"	1 as data_type, "
 			"	255 as column_size, "
@@ -933,10 +933,10 @@ static const char	*sap_chartype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*sap_numerictype=
-			"(select "
+static const char	*numerictype=
+			"select "
 			"	'NUMERIC' as type_name, "
 			"	2 as data_type, "
 			"	38 as column_size, "
@@ -957,10 +957,10 @@ static const char	*sap_numerictype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*sap_decimaltype=
-			"(select "
+static const char	*decimaltype=
+			"select "
 			"	'DECIMAL' as type_name, "
 			"	3 as data_type, "
 			"	38 as column_size, "
@@ -981,10 +981,10 @@ static const char	*sap_decimaltype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*sap_inttype=
-			"(select "
+static const char	*inttype=
+			"select "
 			"	'INT' as type_name, "
 			"	4 as data_type, "
 			"	10 as column_size, "
@@ -1005,10 +1005,10 @@ static const char	*sap_inttype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*sap_smallinttype=
-			"(select "
+static const char	*smallinttype=
+			"select "
 			"	'SMALLINT' as type_name, "
 			"	5 as data_type, "
 			"	5 as column_size, "
@@ -1029,10 +1029,10 @@ static const char	*sap_smallinttype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*sap_floattype=
-			"(select "
+static const char	*floattype=
+			"select "
 			"	'FLOAT' as type_name, "
 			"	6 as data_type, "
 			"	15 as column_size, "
@@ -1053,10 +1053,10 @@ static const char	*sap_floattype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*sap_realtype=
-			"(select "
+static const char	*realtype=
+			"select "
 			"	'REAL' as type_name, "
 			"	7 as data_type, "
 			"	7 as column_size, "
@@ -1077,10 +1077,10 @@ static const char	*sap_realtype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*sap_varchartype=
-			"(select "
+static const char	*varchartype=
+			"select "
 			"	'VARCHAR' as type_name, "
 			"	12 as data_type, "
 			"	255 as column_size, "
@@ -1101,10 +1101,10 @@ static const char	*sap_varchartype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*sap_datetype=
-			"(select "
+static const char	*datetype=
+			"select "
 			"	'DATE' as type_name, "
 			"	91 as data_type, "
 			"	10 as column_size, "
@@ -1125,10 +1125,10 @@ static const char	*sap_datetype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*sap_timetype=
-			"(select "
+static const char	*timetype=
+			"select "
 			"	'TIME' as type_name, "
 			"	92 as data_type, "
 			"	8 as column_size, "
@@ -1149,10 +1149,10 @@ static const char	*sap_timetype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*sap_datetimetype=
-			"(select "
+static const char	*datetimetype=
+			"select "
 			"	'DATETIME' as type_name, "
 			"	93 as data_type, "
 			"	23 as column_size, "
@@ -1173,10 +1173,10 @@ static const char	*sap_datetimetype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*sap_smalldatetimetype=
-			"(select "
+static const char	*smalldatetimetype=
+			"select "
 			"	'SMALLDATETIME' as type_name, "
 			"	93 as data_type, "
 			"	16 as column_size, "
@@ -1197,10 +1197,10 @@ static const char	*sap_smalldatetimetype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*sap_moneytype=
-			"(select "
+static const char	*moneytype=
+			"select "
 			"	'MONEY' as type_name, "
 			"	2 as data_type, "
 			"	19 as column_size, "
@@ -1221,10 +1221,10 @@ static const char	*sap_moneytype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*sap_smallmoneytype=
-			"(select "
+static const char	*smallmoneytype=
+			"select "
 			"	'SMALLMONEY' as type_name, "
 			"	2 as data_type, "
 			"	10 as column_size, "
@@ -1245,10 +1245,10 @@ static const char	*sap_smallmoneytype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*sap_unichartype=
-			"(select "
+static const char	*unichartype=
+			"select "
 			"	'UNICHAR' as type_name, "
 			"	-15 as data_type, "
 			"	255 as column_size, "
@@ -1269,10 +1269,10 @@ static const char	*sap_unichartype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*sap_univarchartype=
-			"(select "
+static const char	*univarchartype=
+			"select "
 			"	'UNIVARCHAR' as type_name, "
 			"	-9 as data_type, "
 			"	255 as column_size, "
@@ -1293,10 +1293,10 @@ static const char	*sap_univarchartype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*sap_unitexttype=
-			"(select "
+static const char	*unitexttype=
+			"select "
 			"	'UNITEXT' as type_name, "
 			"	-1 as data_type, "
 			"	2147483647 as column_size, "
@@ -1317,7 +1317,7 @@ static const char	*sap_unitexttype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
 const char *sapconnection::getTypeInfoListQuery(const char *catalog,
 						const char *schema,
@@ -1325,105 +1325,107 @@ const char *sapconnection::getTypeInfoListQuery(const char *catalog,
 
 	if (!charstring::compare(type,"*")) {
 		if (!typeinfolistquery.getSize()) {
-			typeinfolistquery.append(sap_bittype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(sap_tinyinttype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(sap_biginttype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(sap_imagetype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(sap_varbinarytype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(sap_binarytype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(sap_texttype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(sap_chartype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(sap_numerictype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(sap_decimaltype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(sap_inttype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(sap_smallinttype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(sap_floattype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(sap_realtype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(sap_varchartype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(sap_datetype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(sap_timetype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(sap_datetimetype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(sap_smalldatetimetype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(sap_moneytype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(sap_smallmoneytype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(sap_unichartype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(sap_univarchartype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(sap_unitexttype);
+			typeinfolistquery.append("(");
+			typeinfolistquery.append(bittype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(tinyinttype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(biginttype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(imagetype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(varbinarytype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(binarytype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(texttype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(chartype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(numerictype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(decimaltype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(inttype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(smallinttype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(floattype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(realtype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(varchartype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(datetype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(timetype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(datetimetype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(smalldatetimetype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(moneytype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(smallmoneytype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(unichartype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(univarchartype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(unitexttype);
+			typeinfolistquery.append(")");
 		}
 		return typeinfolistquery.getString();
 	} else if (!charstring::compareIgnoringCase(type,"bit")) {
-		return sap_bittype;
+		return bittype;
 	} else if (!charstring::compareIgnoringCase(type,"tinyint")) {
-		return sap_tinyinttype;
+		return tinyinttype;
 	} else if (!charstring::compareIgnoringCase(type,"bigint")) {
-		return sap_biginttype;
+		return biginttype;
 	} else if (!charstring::compareIgnoringCase(type,"image")) {
-		return sap_imagetype;
+		return imagetype;
 	} else if (!charstring::compareIgnoringCase(type,"varbinary")) {
-		return sap_varbinarytype;
+		return varbinarytype;
 	} else if (!charstring::compareIgnoringCase(type,"binary")) {
-		return sap_binarytype;
+		return binarytype;
 	} else if (!charstring::compareIgnoringCase(type,"text")) {
-		return sap_texttype;
+		return texttype;
 	} else if (!charstring::compareIgnoringCase(type,"char")) {
-		return sap_chartype;
+		return chartype;
 	} else if (!charstring::compareIgnoringCase(type,"numeric")) {
-		return sap_numerictype;
+		return numerictype;
 	} else if (!charstring::compareIgnoringCase(type,"decimal")) {
-		return sap_decimaltype;
+		return decimaltype;
 	} else if (!charstring::compareIgnoringCase(type,"int")) {
-		return sap_inttype;
+		return inttype;
 	} else if (!charstring::compareIgnoringCase(type,"integer")) {
-		return sap_inttype;
+		return inttype;
 	} else if (!charstring::compareIgnoringCase(type,"smallint")) {
-		return sap_smallinttype;
+		return smallinttype;
 	} else if (!charstring::compareIgnoringCase(type,"float")) {
-		return sap_floattype;
+		return floattype;
 	} else if (!charstring::compareIgnoringCase(type,"real")) {
-		return sap_realtype;
+		return realtype;
 	} else if (!charstring::compareIgnoringCase(type,"varchar")) {
-		return sap_varchartype;
+		return varchartype;
 	} else if (!charstring::compareIgnoringCase(type,"date")) {
-		return sap_datetype;
+		return datetype;
 	} else if (!charstring::compareIgnoringCase(type,"time")) {
-		return sap_timetype;
+		return timetype;
 	} else if (!charstring::compareIgnoringCase(type,"datetime")) {
-		return sap_datetimetype;
+		return datetimetype;
 	} else if (!charstring::compareIgnoringCase(type,"smalldatetime")) {
-		return sap_smalldatetimetype;
+		return smalldatetimetype;
 	} else if (!charstring::compareIgnoringCase(type,"money")) {
-		return sap_moneytype;
+		return moneytype;
 	} else if (!charstring::compareIgnoringCase(type,"smallmoney")) {
-		return sap_smallmoneytype;
+		return smallmoneytype;
 	} else if (!charstring::compareIgnoringCase(type,"unichar")) {
-		return sap_unichartype;
+		return unichartype;
 	} else if (!charstring::compareIgnoringCase(type,"univarchar")) {
-		return sap_univarchartype;
+		return univarchartype;
 	} else if (!charstring::compareIgnoringCase(type,"unitext")) {
-		return sap_unitexttype;
+		return unitexttype;
 	}
 	return NULL;
 }

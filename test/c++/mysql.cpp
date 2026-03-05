@@ -1740,9 +1740,7 @@ for (uint16_t a=0; a<50; a++) {
 
 	// catalog list
 	stdoutput.printf("CATALOG LIST: \n");
-con->debugOn();
 	assertTrue(cur->getCatalogList(NULL));
-con->debugOff();
 	assertEquals(cur->getColumnName(0),"Database");
 	assertTrue(cur->rowCount()>0);
 	stdoutput.printf("\n");
@@ -1799,10 +1797,10 @@ con->debugOff();
 	counter=0;
 	for (uint64_t i=0; i<cur->rowCount(); i++) {
 		const char	*name=cur->getField(i,"Tables_in_xxx");
-		if (!charstring::compareIgnoringCase(name,"TESTTABLE1") ||
-			!charstring::compareIgnoringCase(name,"TESTTABLE2") ||
-			!charstring::compareIgnoringCase(name,"TESTTABLE3") ||
-			!charstring::compareIgnoringCase(name,"TESTTABLE4")) {
+		if (!charstring::compareIgnoringCase(name,"testtable1") ||
+			!charstring::compareIgnoringCase(name,"testtable2") ||
+			!charstring::compareIgnoringCase(name,"testtable3") ||
+			!charstring::compareIgnoringCase(name,"testtable4")) {
 			counter++;
 		}
 	}
@@ -1994,10 +1992,10 @@ con->debugOff();
 	counter=0;
 	for (uint64_t i=0; i<cur->rowCount(); i++) {
 		const char	*name=cur->getField(i,"routine_name");
-		if (!charstring::compareIgnoringCase(name,"TESTPROC1") ||
-			!charstring::compareIgnoringCase(name,"TESTPROC2") ||
-			!charstring::compareIgnoringCase(name,"TESTPROC3") ||
-			!charstring::compareIgnoringCase(name,"TESTPROC4")) {
+		if (!charstring::compareIgnoringCase(name,"testproc1") ||
+			!charstring::compareIgnoringCase(name,"testproc2") ||
+			!charstring::compareIgnoringCase(name,"testproc3") ||
+			!charstring::compareIgnoringCase(name,"testproc4")) {
 			counter++;
 		}
 	}

@@ -321,7 +321,7 @@ class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 
 		stringbuffer	tablelistquery;
 		stringbuffer	procedurelistquery;
-		stringbuffer	databaselistquery;
+		stringbuffer	cataloglistquery;
 		stringbuffer	schemalistquery;
 		stringbuffer	tabletypelistquery;
 		stringbuffer	columnlistquery;
@@ -728,12 +728,12 @@ const char *mysqlconnection::getNextvalFormat() {
 
 const char *mysqlconnection::getCatalogListQuery(const char *catalog) {
 
-	databaselistquery.clear();
+	cataloglistquery.clear();
 
 	// select clause
-	databaselistquery.append(
-		"select "
-		"	schema_name as table_cat, "
+	cataloglistquery.append(
+		"select distinct "
+		"	catalog_name as table_cat, "
 		"	'' as table_schem, "
 		"	'' as table_name, "
 		"	'' as table_type, "
@@ -744,19 +744,19 @@ const char *mysqlconnection::getCatalogListQuery(const char *catalog) {
 
 	// where clause
 	if (catalog) {
-		databaselistquery.append(
+		cataloglistquery.append(
 			"where "
-			"	schema_name like '");
-		databaselistquery.append(catalog);
-		databaselistquery.append("' ");
+			"	catalog_name like '");
+		cataloglistquery.append(catalog);
+		cataloglistquery.append("' ");
 	}
 
 	// order by clause
-	databaselistquery.append(
+	cataloglistquery.append(
 		"order by "
-		"	schema_name");
+		"	catalog_name");
 
-	return databaselistquery.getString();
+	return cataloglistquery.getString();
 }
 
 const char *mysqlconnection::getSchemaListQuery(const char *catalog,
@@ -775,22 +775,23 @@ const char *mysqlconnection::getSchemaListQuery(const char *catalog,
 		"	null "
 		"from "
 		"	information_schema.schemata ");
-	bool	prevclause=false;
 
 	// where clause
+	bool	first=true;
 	if (catalog) {
 		schemalistquery.append(
 			"where "
 			"	catalog_name like '");
 		schemalistquery.append(catalog);
 		schemalistquery.append("' ");
-		prevclause=true;
+		first=false;
 	}
 	if (schema) {
-		if (prevclause) {
-			schemalistquery.append("	and ");
-		} else {
+		if (first) {
 			schemalistquery.append("where ");
+			first=false;
+		} else {
+			schemalistquery.append("	and ");
 		}
 		schemalistquery.append(
 			"	schema_name like '");
@@ -927,8 +928,8 @@ const char *mysqlconnection::getTableListQuery(const char *catalog,
 	return tablelistquery.getString();
 }
 
-static const char	*mysql_bittype=
-			"(select "
+static const char	*bittype=
+			"select "
 			"	'BIT' as type_name, "
 			"	-7 as data_type, "
 			"	1 as column_size, "
@@ -949,10 +950,10 @@ static const char	*mysql_bittype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*mysql_tinyinttype=
-			"(select "
+static const char	*tinyinttype=
+			"select "
 			"	'TINYINT' as type_name, "
 			"	-6 as data_type, "
 			"	3 as column_size, "
@@ -973,10 +974,10 @@ static const char	*mysql_tinyinttype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*mysql_biginttype=
-			"(select "
+static const char	*biginttype=
+			"select "
 			"	'BIGINT' as type_name, "
 			"	-5 as data_type, "
 			"	19 as column_size, "
@@ -997,10 +998,10 @@ static const char	*mysql_biginttype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*mysql_longblobtype=
-			"(select "
+static const char	*longblobtype=
+			"select "
 			"	'LONGBLOB' as type_name, "
 			"	-4 as data_type, "
 			"	2147483647 as column_size, "
@@ -1021,10 +1022,10 @@ static const char	*mysql_longblobtype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*mysql_varbinarytype=
-			"(select "
+static const char	*varbinarytype=
+			"select "
 			"	'VARBINARY' as type_name, "
 			"	-3 as data_type, "
 			"	65535 as column_size, "
@@ -1045,10 +1046,10 @@ static const char	*mysql_varbinarytype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*mysql_binarytype=
-			"(select "
+static const char	*binarytype=
+			"select "
 			"	'BINARY' as type_name, "
 			"	-2 as data_type, "
 			"	255 as column_size, "
@@ -1069,10 +1070,10 @@ static const char	*mysql_binarytype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*mysql_longtexttype=
-			"(select "
+static const char	*longtexttype=
+			"select "
 			"	'LONGTEXT' as type_name, "
 			"	-1 as data_type, "
 			"	2147483647 as column_size, "
@@ -1093,10 +1094,10 @@ static const char	*mysql_longtexttype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*mysql_chartype=
-			"(select "
+static const char	*chartype=
+			"select "
 			"	'CHAR' as type_name, "
 			"	1 as data_type, "
 			"	255 as column_size, "
@@ -1117,10 +1118,10 @@ static const char	*mysql_chartype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*mysql_decimaltype=
-			"(select "
+static const char	*decimaltype=
+			"select "
 			"	'DECIMAL' as type_name, "
 			"	2 as data_type, "
 			"	65 as column_size, "
@@ -1141,10 +1142,10 @@ static const char	*mysql_decimaltype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*mysql_inttype=
-			"(select "
+static const char	*inttype=
+			"select "
 			"	'INT' as type_name, "
 			"	4 as data_type, "
 			"	10 as column_size, "
@@ -1165,10 +1166,10 @@ static const char	*mysql_inttype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*mysql_smallinttype=
-			"(select "
+static const char	*smallinttype=
+			"select "
 			"	'SMALLINT' as type_name, "
 			"	5 as data_type, "
 			"	5 as column_size, "
@@ -1189,10 +1190,10 @@ static const char	*mysql_smallinttype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*mysql_floattype=
-			"(select "
+static const char	*floattype=
+			"select "
 			"	'FLOAT' as type_name, "
 			"	6 as data_type, "
 			"	12 as column_size, "
@@ -1213,10 +1214,10 @@ static const char	*mysql_floattype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*mysql_realtype=
-			"(select "
+static const char	*realtype=
+			"select "
 			"	'REAL' as type_name, "
 			"	7 as data_type, "
 			"	7 as column_size, "
@@ -1237,10 +1238,10 @@ static const char	*mysql_realtype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*mysql_doubletype=
-			"(select "
+static const char	*doubletype=
+			"select "
 			"	'DOUBLE' as type_name, "
 			"	8 as data_type, "
 			"	15 as column_size, "
@@ -1261,10 +1262,10 @@ static const char	*mysql_doubletype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*mysql_varchartype=
-			"(select "
+static const char	*varchartype=
+			"select "
 			"	'VARCHAR' as type_name, "
 			"	12 as data_type, "
 			"	65535 as column_size, "
@@ -1285,10 +1286,10 @@ static const char	*mysql_varchartype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*mysql_datetype=
-			"(select "
+static const char	*datetype=
+			"select "
 			"	'DATE' as type_name, "
 			"	91 as data_type, "
 			"	10 as column_size, "
@@ -1309,10 +1310,10 @@ static const char	*mysql_datetype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*mysql_timetype=
-			"(select "
+static const char	*timetype=
+			"select "
 			"	'TIME' as type_name, "
 			"	92 as data_type, "
 			"	8 as column_size, "
@@ -1333,10 +1334,10 @@ static const char	*mysql_timetype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*mysql_datetimetype=
-			"(select "
+static const char	*datetimetype=
+			"select "
 			"	'DATETIME' as type_name, "
 			"	93 as data_type, "
 			"	19 as column_size, "
@@ -1357,10 +1358,10 @@ static const char	*mysql_datetimetype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*mysql_timestamptype=
-			"(select "
+static const char	*timestamptype=
+			"select "
 			"	'TIMESTAMP' as type_name, "
 			"	93 as data_type, "
 			"	19 as column_size, "
@@ -1381,10 +1382,10 @@ static const char	*mysql_timestamptype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*mysql_blobtype=
-			"(select "
+static const char	*blobtype=
+			"select "
 			"	'BLOB' as type_name, "
 			"	-4 as data_type, "
 			"	65535 as column_size, "
@@ -1405,10 +1406,10 @@ static const char	*mysql_blobtype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*mysql_texttype=
-			"(select "
+static const char	*texttype=
+			"select "
 			"	'TEXT' as type_name, "
 			"	-1 as data_type, "
 			"	65535 as column_size, "
@@ -1429,10 +1430,10 @@ static const char	*mysql_texttype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*mysql_mediuminttype=
-			"(select "
+static const char	*mediuminttype=
+			"select "
 			"	'MEDIUMINT' as type_name, "
 			"	4 as data_type, "
 			"	8 as column_size, "
@@ -1453,10 +1454,10 @@ static const char	*mysql_mediuminttype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*mysql_yeartype=
-			"(select "
+static const char	*yeartype=
+			"select "
 			"	'YEAR' as type_name, "
 			"	5 as data_type, "
 			"	4 as column_size, "
@@ -1477,10 +1478,10 @@ static const char	*mysql_yeartype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*mysql_jsontype=
-			"(select "
+static const char	*jsontype=
+			"select "
 			"	'JSON' as type_name, "
 			"	-1 as data_type, "
 			"	2147483647 as column_size, "
@@ -1501,10 +1502,10 @@ static const char	*mysql_jsontype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*mysql_enumtype=
-			"(select "
+static const char	*enumtype=
+			"select "
 			"	'ENUM' as type_name, "
 			"	12 as data_type, "
 			"	65535 as column_size, "
@@ -1525,10 +1526,10 @@ static const char	*mysql_enumtype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
-static const char	*mysql_settype=
-			"(select "
+static const char	*settype=
+			"select "
 			"	'SET' as type_name, "
 			"	12 as data_type, "
 			"	64 as column_size, "
@@ -1549,7 +1550,7 @@ static const char	*mysql_settype=
 			"	10 as num_prec_radix, "
 			"	null as interval_precision, "
 			"	NULL "
-			") ";
+			" ";
 
 const char *mysqlconnection::getTypeInfoListQuery(const char *catalog,
 						const char *schema,
@@ -1557,117 +1558,119 @@ const char *mysqlconnection::getTypeInfoListQuery(const char *catalog,
 
 	if (!charstring::compare(type,"*")) {
 		if (!typeinfolistquery.getSize()) {
-			typeinfolistquery.append(mysql_bittype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(mysql_tinyinttype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(mysql_biginttype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(mysql_longblobtype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(mysql_varbinarytype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(mysql_binarytype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(mysql_longtexttype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(mysql_chartype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(mysql_decimaltype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(mysql_inttype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(mysql_smallinttype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(mysql_floattype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(mysql_realtype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(mysql_doubletype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(mysql_varchartype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(mysql_datetype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(mysql_timetype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(mysql_datetimetype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(mysql_timestamptype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(mysql_blobtype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(mysql_texttype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(mysql_mediuminttype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(mysql_yeartype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(mysql_jsontype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(mysql_enumtype);
-			typeinfolistquery.append("union ");
-			typeinfolistquery.append(mysql_settype);
+			typeinfolistquery.append("(");
+			typeinfolistquery.append(bittype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(tinyinttype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(biginttype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(longblobtype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(varbinarytype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(binarytype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(longtexttype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(chartype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(decimaltype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(inttype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(smallinttype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(floattype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(realtype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(doubletype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(varchartype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(datetype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(timetype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(datetimetype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(timestamptype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(blobtype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(texttype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(mediuminttype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(yeartype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(jsontype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(enumtype);
+			typeinfolistquery.append(") union (");
+			typeinfolistquery.append(settype);
+			typeinfolistquery.append(")");
 		}
 		return typeinfolistquery.getString();
 	} else if (!charstring::compareIgnoringCase(type,"bit")) {
-		return mysql_bittype;
+		return bittype;
 	} else if (!charstring::compareIgnoringCase(type,"tinyint")) {
-		return mysql_tinyinttype;
+		return tinyinttype;
 	} else if (!charstring::compareIgnoringCase(type,"bigint")) {
-		return mysql_biginttype;
+		return biginttype;
 	} else if (!charstring::compareIgnoringCase(type,"longblob")) {
-		return mysql_longblobtype;
+		return longblobtype;
 	} else if (!charstring::compareIgnoringCase(type,"varbinary")) {
-		return mysql_varbinarytype;
+		return varbinarytype;
 	} else if (!charstring::compareIgnoringCase(type,"binary")) {
-		return mysql_binarytype;
+		return binarytype;
 	} else if (!charstring::compareIgnoringCase(type,"longtext")) {
-		return mysql_longtexttype;
+		return longtexttype;
 	} else if (!charstring::compareIgnoringCase(type,"char")) {
-		return mysql_chartype;
+		return chartype;
 	} else if (!charstring::compareIgnoringCase(type,"decimal")) {
-		return mysql_decimaltype;
+		return decimaltype;
 	} else if (!charstring::compareIgnoringCase(type,"numeric")) {
-		return mysql_decimaltype;
+		return decimaltype;
 	} else if (!charstring::compareIgnoringCase(type,"int")) {
-		return mysql_inttype;
+		return inttype;
 	} else if (!charstring::compareIgnoringCase(type,"integer")) {
-		return mysql_inttype;
+		return inttype;
 	} else if (!charstring::compareIgnoringCase(type,"smallint")) {
-		return mysql_smallinttype;
+		return smallinttype;
 	} else if (!charstring::compareIgnoringCase(type,"float")) {
-		return mysql_floattype;
+		return floattype;
 	} else if (!charstring::compareIgnoringCase(type,"real")) {
-		return mysql_realtype;
+		return realtype;
 	} else if (!charstring::compareIgnoringCase(type,"double")) {
-		return mysql_doubletype;
+		return doubletype;
 	} else if (!charstring::compareIgnoringCase(type,"double precision")) {
-		return mysql_doubletype;
+		return doubletype;
 	} else if (!charstring::compareIgnoringCase(type,"varchar")) {
-		return mysql_varchartype;
+		return varchartype;
 	} else if (!charstring::compareIgnoringCase(type,"date")) {
-		return mysql_datetype;
+		return datetype;
 	} else if (!charstring::compareIgnoringCase(type,"time")) {
-		return mysql_timetype;
+		return timetype;
 	} else if (!charstring::compareIgnoringCase(type,"datetime")) {
-		return mysql_datetimetype;
+		return datetimetype;
 	} else if (!charstring::compareIgnoringCase(type,"timestamp")) {
-		return mysql_timestamptype;
+		return timestamptype;
 	} else if (!charstring::compareIgnoringCase(type,"blob")) {
-		return mysql_blobtype;
+		return blobtype;
 	} else if (!charstring::compareIgnoringCase(type,"text")) {
-		return mysql_texttype;
+		return texttype;
 	} else if (!charstring::compareIgnoringCase(type,"mediumint")) {
-		return mysql_mediuminttype;
+		return mediuminttype;
 	} else if (!charstring::compareIgnoringCase(type,"year")) {
-		return mysql_yeartype;
+		return yeartype;
 	} else if (!charstring::compareIgnoringCase(type,"json")) {
-		return mysql_jsontype;
+		return jsontype;
 	} else if (!charstring::compareIgnoringCase(type,"enum")) {
-		return mysql_enumtype;
+		return enumtype;
 	} else if (!charstring::compareIgnoringCase(type,"set")) {
-		return mysql_settype;
+		return settype;
 	}
 	return NULL;
 }
@@ -1713,24 +1716,23 @@ const char *mysqlconnection::getColumnListQuery(const char *catalog,
 		"from "
 		"	information_schema.columns ");
 
-	bool	prevclause=false;
-
 	// where clause
+	bool	first=true;
 	if (!charstring::isNullOrEmpty(catalog)) {
 		columnlistquery.append(
 			"where "
 			"	table_catalog like '");
 		columnlistquery.append(catalog);
 		columnlistquery.append("' ");
-		prevclause=true;
+		first=false;
 	}
 
 	if (!charstring::isNullOrEmpty(schema)) {
-		if (prevclause) {
-			columnlistquery.append("	and ");
-		} else {
+		if (first) {
 			columnlistquery.append("where ");
-			prevclause=true;
+			first=false;
+		} else {
+			columnlistquery.append("	and ");
 		}
 		columnlistquery.append(
 			"	table_schema like '");
@@ -1739,11 +1741,11 @@ const char *mysqlconnection::getColumnListQuery(const char *catalog,
 	}
 
 	if (!charstring::isNullOrEmpty(table)) {
-		if (prevclause) {
-			columnlistquery.append("	and ");
-		} else {
+		if (first) {
 			columnlistquery.append("where ");
-			prevclause=true;
+			first=false;
+		} else {
+			columnlistquery.append("	and ");
 		}
 		columnlistquery.append(
 			"	table_name like '");
@@ -1752,11 +1754,11 @@ const char *mysqlconnection::getColumnListQuery(const char *catalog,
 	}
 
 	if (!charstring::isNullOrEmpty(column)) {
-		if (prevclause) {
-			columnlistquery.append("	and ");
-		} else {
+		if (first) {
 			columnlistquery.append("where ");
-			prevclause=true;
+			first=false;
+		} else {
+			columnlistquery.append("	and ");
 		}
 		columnlistquery.append(
 			"	column_name like '");
@@ -1860,23 +1862,22 @@ const char *mysqlconnection::getKeyAndIndexListQuery(const char *catalog,
 		"from "
 		"	information_schema.statistics s ");
 
-	bool	prevclause=false;
-
 	// where clause
+	bool	first=true;
 	if (!charstring::isNullOrEmpty(catalog)) {
 		keyandindexlistquery.append(
 			"where "
 			"	s.table_catalog like '");
 		keyandindexlistquery.append(catalog);
 		keyandindexlistquery.append("' ");
-		prevclause=true;
+		first=false;
 	}
 	if (!charstring::isNullOrEmpty(schema)) {
-		if (prevclause) {
-			keyandindexlistquery.append("	and ");
-		} else {
+		if (first) {
 			keyandindexlistquery.append("where ");
-			prevclause=true;
+			first=false;
+		} else {
+			keyandindexlistquery.append("	and ");
 		}
 		keyandindexlistquery.append(
 			"	s.table_schema like '");
@@ -1884,10 +1885,10 @@ const char *mysqlconnection::getKeyAndIndexListQuery(const char *catalog,
 		keyandindexlistquery.append("' ");
 	}
 	if (!charstring::isNullOrEmpty(table)) {
-		if (prevclause) {
-			keyandindexlistquery.append("	and ");
-		} else {
+		if (first) {
 			keyandindexlistquery.append("where ");
+		} else {
+			keyandindexlistquery.append("	and ");
 		}
 		keyandindexlistquery.append(
 			"	s.table_name like '");
@@ -1930,13 +1931,14 @@ const char *mysqlconnection::getProcedureListQuery(
 		"	null "
 		"from "
 		"	information_schema.routines ");
+
+	// where clause
 	if (!charstring::isNullOrEmpty(catalog) ||
 		!charstring::isNullOrEmpty(schema) ||
 		!charstring::isNullOrEmpty(procedure)) {
 
-	// where clause
-		procedurelistquery.append("where ");
 		bool	first=true;
+		procedurelistquery.append("where ");
 		if (!charstring::isNullOrEmpty(catalog)) {
 			procedurelistquery.append(
 				"routine_catalog like '");
@@ -2015,13 +2017,14 @@ const char *mysqlconnection::getProcedureParameterListQuery(
 	procedureparameterlistquery.append(
 		"from "
 		"	information_schema.parameters p ");
+
+	// where clause
 	if (!charstring::isNullOrEmpty(catalog) ||
 		!charstring::isNullOrEmpty(schema) ||
 		!charstring::isNullOrEmpty(procedure)) {
 
-	// where clause
-		procedureparameterlistquery.append("where ");
 		bool	first=true;
+		procedureparameterlistquery.append("where ");
 		if (!charstring::isNullOrEmpty(catalog)) {
 			procedureparameterlistquery.append(
 				"p.specific_catalog like '");

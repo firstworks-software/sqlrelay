@@ -1390,11 +1390,19 @@ const char *oracleconnection::getTableListQuery(const char *catalog,
 
 	tablelistquery.clear();
 
-	bool	first=true;
+	bool	firstselect=true;
+
+	if (objecttypes!=DB_OBJECT_TABLE &&
+		objecttypes!=DB_OBJECT_VIEW &&
+		objecttypes!=DB_OBJECT_SYNONYM) {
+		tablelistquery.append("(");
+	}
 
 	if (objecttypes&DB_OBJECT_TABLE) {
+
+		// select clause
 		tablelistquery.append(
-			"(select "
+			"select "
 			"	'' as table_cat, "
 			"	owner as table_schem, "
 			"	table_name as table_name, "
@@ -1403,36 +1411,41 @@ const char *oracleconnection::getTableListQuery(const char *catalog,
 			"	null "
 			"from "
 			"	all_tables ");
-		bool	prevclause=false;
+
+		// where clause
+		bool	first=true;
 		if (schema) {
 			tablelistquery.append("where ");
 			tablelistquery.append(
 				"	owner like upper('");
 			tablelistquery.append(schema);
 			tablelistquery.append("') ");
-			prevclause=true;
+			first=false;
 		}
 		if (table) {
-			if (prevclause) {
-				tablelistquery.append("	and ");
-			} else {
+			if (first) {
 				tablelistquery.append("where ");
+			} else {
+				tablelistquery.append("	and ");
 			}
 			tablelistquery.append(
 				"	table_name like upper('");
 			tablelistquery.append(table);
 			tablelistquery.append("') ");
 		}
-		tablelistquery.append(") ");
-		first=false;
+
+		firstselect=false;
 	}
 
 	if (objecttypes&DB_OBJECT_VIEW) {
-		if (!first) {
-			tablelistquery.append("union ");
+
+		if (!firstselect) {
+			tablelistquery.append(") union (");
 		}
+
+		// select clause
 		tablelistquery.append(
-			"(select "
+			"select "
 			"	'' as table_cat, "
 			"	owner as table_schem, "
 			"	view_name as table_name, "
@@ -1441,36 +1454,41 @@ const char *oracleconnection::getTableListQuery(const char *catalog,
 			"	null "
 			"from "
 			"	all_views ");
-		bool	prevclause=false;
+
+		// where clause
+		bool	first=true;
 		if (schema) {
 			tablelistquery.append("where ");
 			tablelistquery.append(
 				"	owner like upper('");
 			tablelistquery.append(schema);
 			tablelistquery.append("') ");
-			prevclause=true;
+			first=false;
 		}
 		if (table) {
-			if (prevclause) {
-				tablelistquery.append("	and ");
-			} else {
+			if (first) {
 				tablelistquery.append("where ");
+			} else {
+				tablelistquery.append("	and ");
 			}
 			tablelistquery.append(
 				"	view_name like upper('");
 			tablelistquery.append(table);
 			tablelistquery.append("') ");
 		}
-		tablelistquery.append(") ");
-		first=false;
+
+		firstselect=false;
 	}
 
 	if (objecttypes&DB_OBJECT_SYNONYM) {
-		if (!first) {
-			tablelistquery.append("union ");
+
+		if (!firstselect) {
+			tablelistquery.append(") union (");
 		}
+
+		// select clause
 		tablelistquery.append(
-			"(select "
+			"select "
 			"	'' as table_cat, "
 			"	owner as table_schem, "
 			"	synonym_name as table_name, "
@@ -1479,30 +1497,37 @@ const char *oracleconnection::getTableListQuery(const char *catalog,
 			"	null "
 			"from "
 			"	all_synonyms ");
-		bool	prevclause=false;
+
+		// where clause
+		bool	first=true;
 		if (schema) {
 			tablelistquery.append("where ");
 			tablelistquery.append(
 				"	owner like upper('");
 			tablelistquery.append(schema);
 			tablelistquery.append("') ");
-			prevclause=true;
+			first=false;
 		}
 		if (table) {
-			if (prevclause) {
-				tablelistquery.append("	and ");
-			} else {
+			if (first) {
 				tablelistquery.append("where ");
+			} else {
+				tablelistquery.append("	and ");
 			}
 			tablelistquery.append(
 				"	synonym_name like upper('");
 			tablelistquery.append(table);
 			tablelistquery.append("') ");
 		}
-		tablelistquery.append(") ");
-		first=false;
 	}
 
+	if (objecttypes!=DB_OBJECT_TABLE &&
+		objecttypes!=DB_OBJECT_VIEW &&
+		objecttypes!=DB_OBJECT_SYNONYM) {
+		tablelistquery.append(") ");
+	}
+
+	// order by clause
 	tablelistquery.append(
 		"order by "
 		"	table_schem, "
@@ -1512,7 +1537,7 @@ const char *oracleconnection::getTableListQuery(const char *catalog,
 }
 
 static const char	*intervaldstype=
-			"(select "
+			"select "
 			"	'INTERVALDS' as type_name, "
 			"	-104 as data_type, "
 			"	4 as column_size, "
@@ -1534,10 +1559,10 @@ static const char	*intervaldstype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) ";
+			"	dual ";
 
 static const char	*intervalymtype=
-			"(select "
+			"select "
 			"	'INTERVALYM' as type_name, "
 			"	-103 as data_type, "
 			"	5 as column_size, "
@@ -1559,10 +1584,10 @@ static const char	*intervalymtype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) ";
+			"	dual ";
 
 static const char	*timestampltztype=
-			"(select "
+			"select "
 			"	'TIMESTAMP WITH LOCAL TIME ZONE' as type_name, "
 			"	-102 as data_type, "
 			"	11 as column_size, "
@@ -1585,10 +1610,10 @@ static const char	*timestampltztype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) ";
+			"	dual ";
 
 static const char	*timestamptztype=
-			"(select "
+			"select "
 			"	'TIMESTAMP WITH TIME ZONE' as type_name, "
 			"	-101 as data_type, "
 			"	13 as column_size, "
@@ -1610,10 +1635,10 @@ static const char	*timestamptztype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) ";
+			"	dual ";
 
 static const char	*nchartype=
-			"(select "
+			"select "
 			"	'NCHAR' as type_name, "
 			"	-15 as data_type, "
 			"	2000 as column_size, "
@@ -1635,10 +1660,10 @@ static const char	*nchartype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) ";
+			"	dual ";
 
 static const char	*nvarchar2type=
-			"(select "
+			"select "
 			"	'NVARCHAR2' as type_name, "
 			"	-9 as data_type, "
 			"	32766 as column_size, "
@@ -1660,10 +1685,10 @@ static const char	*nvarchar2type=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) ";
+			"	dual ";
 
 static const char	*numberbittype=
-			"(select "
+			"select "
 			"	'NUMBER' as type_name, "
 			"	-7 as data_type, "
 			"	1 as column_size, "
@@ -1685,10 +1710,10 @@ static const char	*numberbittype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) ";
+			"	dual ";
 
 static const char	*numbertinyinttype=
-			"(select "
+			"select "
 			"	'NUMBER' as type_name, "
 			"	-6 as data_type, "
 			"	3 as column_size, "
@@ -1710,10 +1735,10 @@ static const char	*numbertinyinttype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) ";
+			"	dual ";
 
 static const char	*numberbiginttype=
-			"(select "
+			"select "
 			"	'NUMBER' as type_name, "
 			"	-5 as data_type, "
 			"	38 as column_size, "
@@ -1735,10 +1760,10 @@ static const char	*numberbiginttype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) ";
+			"	dual ";
 
 static const char	*longrawtype=
-			"(select "
+			"select "
 			"	'LONG RAW' as type_name, "
 			"	-4 as data_type, "
 			"	2147483647 as column_size, "
@@ -1760,10 +1785,10 @@ static const char	*longrawtype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) ";
+			"	dual ";
 
 static const char	*rawtype=
-			"(select "
+			"select "
 			"	'RAW' as type_name, "
 			"	-3 as data_type, "
 			"	32767 as column_size, "
@@ -1785,10 +1810,10 @@ static const char	*rawtype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) ";
+			"	dual ";
 
 static const char	*longtype=
-			"(select "
+			"select "
 			"	'LONG' as type_name, "
 			"	-1 as data_type, "
 			"	2147483647 as column_size, "
@@ -1810,10 +1835,10 @@ static const char	*longtype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) ";
+			"	dual ";
 
 static const char	*chartype=
-			"(select "
+			"select "
 			"	'CHAR' as type_name, "
 			"	1 as data_type, "
 			"	2000 as column_size, "
@@ -1835,10 +1860,10 @@ static const char	*chartype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) ";
+			"	dual ";
 
 static const char	*numbertype=
-			"(select "
+			"select "
 			"	'NUMBER' as type_name, "
 			"	2 as data_type, "
 			"	38 as column_size, "
@@ -1860,10 +1885,10 @@ static const char	*numbertype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) ";
+			"	dual ";
 
 static const char	*numberinttype=
-			"(select "
+			"select "
 			"	'NUMBER' as type_name, "
 			"	4 as data_type, "
 			"	10 as column_size, "
@@ -1885,10 +1910,10 @@ static const char	*numberinttype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) ";
+			"	dual ";
 
 static const char	*numbersmallinttype=
-			"(select "
+			"select "
 			"	'NUMBER' as type_name, "
 			"	5 as data_type, "
 			"	5 as column_size, "
@@ -1910,10 +1935,10 @@ static const char	*numbersmallinttype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) ";
+			"	dual ";
 
 static const char	*floattype=
-			"(select "
+			"select "
 			"	'FLOAT' as type_name, "
 			"	6 as data_type, "
 			"	63 as column_size, "
@@ -1935,10 +1960,10 @@ static const char	*floattype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) ";
+			"	dual ";
 
 static const char	*realtype=
-			"(select "
+			"select "
 			"	'REAL' as type_name, "
 			"	7 as data_type, "
 			"	63 as column_size, "
@@ -1960,10 +1985,10 @@ static const char	*realtype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) ";
+			"	dual ";
 
 static const char	*varchar2type=
-			"(select "
+			"select "
 			"	'VARCHAR2' as type_name, "
 			"	12 as data_type, "
 			"	32767 as column_size, "
@@ -1985,10 +2010,10 @@ static const char	*varchar2type=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) ";
+			"	dual ";
 
 static const char	*datetypes=
-			"(select "
+			"select "
 			"	'DATE' as type_name, "
 			"	92 as data_type, "
 			"	7 as column_size, "
@@ -2010,9 +2035,9 @@ static const char	*datetypes=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) "
+			"	dual "
 			"union "
-			"(select "
+			"select "
 			"	'DATE' as type_name, "
 			"	93 as data_type, "
 			"	7 as column_size, "
@@ -2034,10 +2059,10 @@ static const char	*datetypes=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) ";
+			"	dual ";
 
 static const char	*timestamptype=
-			"(select "
+			"select "
 			"	'TIMESTAMP' as type_name, "
 			"	93 as data_type, "
 			"	11 as column_size, "
@@ -2059,10 +2084,10 @@ static const char	*timestamptype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) ";
+			"	dual ";
 
 static const char	*structtype=
-			"(select "
+			"select "
 			"	'STRUCT' as type_name, "
 			"	2002 as data_type, "
 			"	0 as column_size, "
@@ -2084,10 +2109,10 @@ static const char	*structtype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) ";
+			"	dual ";
 
 static const char	*arraytype=
-			"(select "
+			"select "
 			"	'ARRAY' as type_name, "
 			"	2003 as data_type, "
 			"	0 as column_size, "
@@ -2109,10 +2134,10 @@ static const char	*arraytype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) ";
+			"	dual ";
 
 static const char	*blobtype=
-			"(select "
+			"select "
 			"	'BLOB' as type_name, "
 			"	2004 as data_type, "
 			"	-1 as column_size, "
@@ -2134,10 +2159,10 @@ static const char	*blobtype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) ";
+			"	dual ";
 
 static const char	*clobtype=
-			"(select "
+			"select "
 			"	'CLOB' as type_name, "
 			"	2005 as data_type, "
 			"	-1 as column_size, "
@@ -2159,10 +2184,10 @@ static const char	*clobtype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) ";
+			"	dual ";
 
 static const char	*reftype=
-			"(select "
+			"select "
 			"	'REF' as type_name, "
 			"	2006 as data_type, "
 			"	0 as column_size, "
@@ -2184,10 +2209,10 @@ static const char	*reftype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) ";
+			"	dual ";
 
 static const char	*nclobtype=
-			"(select "
+			"select "
 			"	'NCLOB' as type_name, "
 			"	2011 as data_type, "
 			"	-1 as column_size, "
@@ -2209,7 +2234,7 @@ static const char	*nclobtype=
 			"	null as interval_precision, "
 			"	NULL "
 			"from "
-			"	dual) ";
+			"	dual ";
 
 const char *oracleconnection::getTypeInfoListQuery(const char *catalog,
 						const char *schema,
@@ -2220,59 +2245,61 @@ const char *oracleconnection::getTypeInfoListQuery(const char *catalog,
 
 	if (!charstring::compare(type,"*")) {
 		if (!typeinfolistquery.getSize()) {
+			typeinfolistquery.append("(");
 			typeinfolistquery.append(intervaldstype);
-			typeinfolistquery.append("union ");
+			typeinfolistquery.append(") union (");
 			typeinfolistquery.append(intervalymtype);
-			typeinfolistquery.append("union ");
+			typeinfolistquery.append(") union (");
 			typeinfolistquery.append(timestampltztype);
-			typeinfolistquery.append("union ");
+			typeinfolistquery.append(") union (");
 			typeinfolistquery.append(timestamptztype);
-			typeinfolistquery.append("union ");
+			typeinfolistquery.append(") union (");
 			typeinfolistquery.append(nchartype);
-			typeinfolistquery.append("union ");
+			typeinfolistquery.append(") union (");
 			typeinfolistquery.append(nvarchar2type);
-			typeinfolistquery.append("union ");
+			typeinfolistquery.append(") union (");
 			typeinfolistquery.append(numberbittype);
-			typeinfolistquery.append("union ");
+			typeinfolistquery.append(") union (");
 			typeinfolistquery.append(numbertinyinttype);
-			typeinfolistquery.append("union ");
+			typeinfolistquery.append(") union (");
 			typeinfolistquery.append(numberbiginttype);
-			typeinfolistquery.append("union ");
+			typeinfolistquery.append(") union (");
 			typeinfolistquery.append(longrawtype);
-			typeinfolistquery.append("union ");
+			typeinfolistquery.append(") union (");
 			typeinfolistquery.append(rawtype);
-			typeinfolistquery.append("union ");
+			typeinfolistquery.append(") union (");
 			typeinfolistquery.append(longtype);
-			typeinfolistquery.append("union ");
+			typeinfolistquery.append(") union (");
 			typeinfolistquery.append(chartype);
-			typeinfolistquery.append("union ");
+			typeinfolistquery.append(") union (");
 			typeinfolistquery.append(numbertype);
-			typeinfolistquery.append("union ");
+			typeinfolistquery.append(") union (");
 			typeinfolistquery.append(numberinttype);
-			typeinfolistquery.append("union ");
+			typeinfolistquery.append(") union (");
 			typeinfolistquery.append(numbersmallinttype);
-			typeinfolistquery.append("union ");
+			typeinfolistquery.append(") union (");
 			typeinfolistquery.append(floattype);
-			typeinfolistquery.append("union ");
+			typeinfolistquery.append(") union (");
 			typeinfolistquery.append(realtype);
-			typeinfolistquery.append("union ");
+			typeinfolistquery.append(") union (");
 			typeinfolistquery.append(varchar2type);
-			typeinfolistquery.append("union ");
+			typeinfolistquery.append(") union (");
 			typeinfolistquery.append(datetypes);
-			typeinfolistquery.append("union ");
+			typeinfolistquery.append(") union (");
 			typeinfolistquery.append(timestamptype);
-			typeinfolistquery.append("union ");
+			typeinfolistquery.append(") union (");
 			typeinfolistquery.append(structtype);
-			typeinfolistquery.append("union ");
+			typeinfolistquery.append(") union (");
 			typeinfolistquery.append(arraytype);
-			typeinfolistquery.append("union ");
+			typeinfolistquery.append(") union (");
 			typeinfolistquery.append(blobtype);
-			typeinfolistquery.append("union ");
+			typeinfolistquery.append(") union (");
 			typeinfolistquery.append(clobtype);
-			typeinfolistquery.append("union ");
+			typeinfolistquery.append(") union (");
 			typeinfolistquery.append(reftype);
-			typeinfolistquery.append("union ");
+			typeinfolistquery.append(") union (");
 			typeinfolistquery.append(nclobtype);
+			typeinfolistquery.append(")");
 		}
 		return typeinfolistquery.getString();
 	} else if (!charstring::compareIgnoringCase(type,"intervalds")) {
@@ -2291,17 +2318,19 @@ const char *oracleconnection::getTypeInfoListQuery(const char *catalog,
 		return nvarchar2type;
 	} else if (!charstring::compareIgnoringCase(type,"number")) {
 		if (!numbertypequery.getSize()) {
+			numbertypequery.append("(");
 			numbertypequery.append(numberbittype);
-			numbertypequery.append("union ");
+			numbertypequery.append(") union (");
 			numbertypequery.append(numbertinyinttype);
-			numbertypequery.append("union ");
+			numbertypequery.append(") union (");
 			numbertypequery.append(numberbiginttype);
-			numbertypequery.append("union ");
+			numbertypequery.append(") union (");
 			numbertypequery.append(numbertype);
-			numbertypequery.append("union ");
+			numbertypequery.append(") union (");
 			numbertypequery.append(numberinttype);
-			numbertypequery.append("union ");
+			numbertypequery.append(") union (");
 			numbertypequery.append(numbersmallinttype);
+			numbertypequery.append(")");
 		}
 		return numbertypequery.getString();
 	} else if (!charstring::compareIgnoringCase(type,"float")) {
@@ -2457,7 +2486,7 @@ const char *oracleconnection::getColumnListQuery(const char *catalog,
 
 	// where clause
 	columnlistquery.append("where ");
-	bool	prevclause=false;
+	bool	first=true;
 	if (issynonym) {
 		if (!charstring::isNullOrEmpty(table)) {
 			columnlistquery.append(
@@ -2495,26 +2524,26 @@ const char *oracleconnection::getColumnListQuery(const char *catalog,
 			"	and "
 			"	tc.owner=s.table_owner ");
 		}
-		prevclause=true;
+		first=false;
 	} else {
 		if (!charstring::isNullOrEmpty(table)) {
 			columnlistquery.append(
 				"	tc.table_name like upper('");
 			columnlistquery.append(table);
 			columnlistquery.append("') ");
-			prevclause=true;
+			first=false;
 		}
 		if (!charstring::isNullOrEmpty(schema)) {
-			if (prevclause) {
+			if (!first) {
 				columnlistquery.append("and ");
 			}
 			columnlistquery.append(
 				"	tc.owner like upper('");
 			columnlistquery.append(schema);
 			columnlistquery.append("') ");
-			prevclause=true;
+			first=false;
 		} else if (supportssyscontext) {
-			if (prevclause) {
+			if (!first) {
 				columnlistquery.append("and ");
 			}
 			columnlistquery.append(
@@ -2525,11 +2554,11 @@ const char *oracleconnection::getColumnListQuery(const char *catalog,
 				"	tc.owner='SYS' "
 				"	or "
 				"	tc.owner='SYSTEM') ");
-			prevclause=true;
+			first=false;
 		}
 	}
 	if (!charstring::isNullOrEmpty(column)) {
-		if (prevclause) {
+		if (!first) {
 			columnlistquery.append("and ");
 		}
 		columnlistquery.append(

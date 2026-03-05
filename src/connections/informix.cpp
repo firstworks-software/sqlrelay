@@ -312,7 +312,7 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 		char		dbversion[512];
 		char		**databasefeatures;
 
-		stringbuffer	databaselistquery;
+		stringbuffer	cataloglistquery;
 		stringbuffer	schemalistquery;
 		stringbuffer	tabletypelistquery;
 		stringbuffer	tablelistquery;
@@ -590,10 +590,10 @@ const char *informixconnection::getDbHostNameQuery() {
 
 const char *informixconnection::getCatalogListQuery(const char *catalog) {
 
-	databaselistquery.clear();
+	cataloglistquery.clear();
 
 	// select clause
-	databaselistquery.append(
+	cataloglistquery.append(
 		"select "
 		"	trim(name) as table_cat, "
 		"	'' as table_schem, "
@@ -606,19 +606,19 @@ const char *informixconnection::getCatalogListQuery(const char *catalog) {
 
 	// where clause
 	if (catalog) {
-		databaselistquery.append(
+		cataloglistquery.append(
 			"where "
 			"	name like '");
-		databaselistquery.append(catalog);
-		databaselistquery.append("' ");
+		cataloglistquery.append(catalog);
+		cataloglistquery.append("' ");
 	}
 
 	// order by clause
-	databaselistquery.append(
+	cataloglistquery.append(
 		"order by "
 		"	table_cat");
 
-	return databaselistquery.getString();
+	return cataloglistquery.getString();
 }
 
 const char *informixconnection::getSchemaListQuery(const char *catalog,
@@ -796,7 +796,7 @@ const char *informixconnection::getTableListQuery(const char *catalog,
 	return tablelistquery.getString();
 }
 
-static const char	*ifx_booltype=
+static const char	*booltype=
 			"select "
 			"	'BOOLEAN' as type_name, "
 			"	-7 as data_type, "
@@ -821,7 +821,7 @@ static const char	*ifx_booltype=
 			"from "
 			"	sysmaster:sysdual ";
 
-static const char	*ifx_smallinttype=
+static const char	*smallinttype=
 			"select "
 			"	'SMALLINT' as type_name, "
 			"	5 as data_type, "
@@ -846,7 +846,7 @@ static const char	*ifx_smallinttype=
 			"from "
 			"	sysmaster:sysdual ";
 
-static const char	*ifx_inttype=
+static const char	*inttype=
 			"select "
 			"	'INTEGER' as type_name, "
 			"	4 as data_type, "
@@ -871,7 +871,7 @@ static const char	*ifx_inttype=
 			"from "
 			"	sysmaster:sysdual ";
 
-static const char	*ifx_int8type=
+static const char	*int8type=
 			"select "
 			"	'INT8' as type_name, "
 			"	-5 as data_type, "
@@ -896,7 +896,7 @@ static const char	*ifx_int8type=
 			"from "
 			"	sysmaster:sysdual ";
 
-static const char	*ifx_serialtype=
+static const char	*serialtype=
 			"select "
 			"	'SERIAL' as type_name, "
 			"	4 as data_type, "
@@ -921,7 +921,7 @@ static const char	*ifx_serialtype=
 			"from "
 			"	sysmaster:sysdual ";
 
-static const char	*ifx_serial8type=
+static const char	*serial8type=
 			"select "
 			"	'SERIAL8' as type_name, "
 			"	-5 as data_type, "
@@ -946,7 +946,7 @@ static const char	*ifx_serial8type=
 			"from "
 			"	sysmaster:sysdual ";
 
-static const char	*ifx_decimaltype=
+static const char	*decimaltype=
 			"select "
 			"	'DECIMAL' as type_name, "
 			"	2 as data_type, "
@@ -971,7 +971,7 @@ static const char	*ifx_decimaltype=
 			"from "
 			"	sysmaster:sysdual ";
 
-static const char	*ifx_moneytype=
+static const char	*moneytype=
 			"select "
 			"	'MONEY' as type_name, "
 			"	2 as data_type, "
@@ -996,7 +996,7 @@ static const char	*ifx_moneytype=
 			"from "
 			"	sysmaster:sysdual ";
 
-static const char	*ifx_smallfloattype=
+static const char	*smallfloattype=
 			"select "
 			"	'SMALLFLOAT' as type_name, "
 			"	7 as data_type, "
@@ -1021,7 +1021,7 @@ static const char	*ifx_smallfloattype=
 			"from "
 			"	sysmaster:sysdual ";
 
-static const char	*ifx_floattype=
+static const char	*floattype=
 			"select "
 			"	'FLOAT' as type_name, "
 			"	8 as data_type, "
@@ -1046,7 +1046,7 @@ static const char	*ifx_floattype=
 			"from "
 			"	sysmaster:sysdual ";
 
-static const char	*ifx_chartype=
+static const char	*chartype=
 			"select "
 			"	'CHAR' as type_name, "
 			"	1 as data_type, "
@@ -1071,7 +1071,7 @@ static const char	*ifx_chartype=
 			"from "
 			"	sysmaster:sysdual ";
 
-static const char	*ifx_nchartype=
+static const char	*nchartype=
 			"select "
 			"	'NCHAR' as type_name, "
 			"	1 as data_type, "
@@ -1096,7 +1096,7 @@ static const char	*ifx_nchartype=
 			"from "
 			"	sysmaster:sysdual ";
 
-static const char	*ifx_varchartype=
+static const char	*varchartype=
 			"select "
 			"	'VARCHAR' as type_name, "
 			"	12 as data_type, "
@@ -1121,7 +1121,7 @@ static const char	*ifx_varchartype=
 			"from "
 			"	sysmaster:sysdual ";
 
-static const char	*ifx_nvarchartype=
+static const char	*nvarchartype=
 			"select "
 			"	'NVARCHAR' as type_name, "
 			"	12 as data_type, "
@@ -1146,7 +1146,7 @@ static const char	*ifx_nvarchartype=
 			"from "
 			"	sysmaster:sysdual ";
 
-static const char	*ifx_lvarchartype=
+static const char	*lvarchartype=
 			"select "
 			"	'LVARCHAR' as type_name, "
 			"	12 as data_type, "
@@ -1171,7 +1171,7 @@ static const char	*ifx_lvarchartype=
 			"from "
 			"	sysmaster:sysdual ";
 
-static const char	*ifx_texttype=
+static const char	*texttype=
 			"select "
 			"	'TEXT' as type_name, "
 			"	-1 as data_type, "
@@ -1196,7 +1196,7 @@ static const char	*ifx_texttype=
 			"from "
 			"	sysmaster:sysdual ";
 
-static const char	*ifx_bytetype=
+static const char	*bytetype=
 			"select "
 			"	'BYTE' as type_name, "
 			"	-4 as data_type, "
@@ -1221,7 +1221,7 @@ static const char	*ifx_bytetype=
 			"from "
 			"	sysmaster:sysdual ";
 
-static const char	*ifx_blobtype=
+static const char	*blobtype=
 			"select "
 			"	'BLOB' as type_name, "
 			"	-4 as data_type, "
@@ -1246,7 +1246,7 @@ static const char	*ifx_blobtype=
 			"from "
 			"	sysmaster:sysdual ";
 
-static const char	*ifx_clobtype=
+static const char	*clobtype=
 			"select "
 			"	'CLOB' as type_name, "
 			"	-1 as data_type, "
@@ -1271,7 +1271,7 @@ static const char	*ifx_clobtype=
 			"from "
 			"	sysmaster:sysdual ";
 
-static const char	*ifx_datetype=
+static const char	*datetype=
 			"select "
 			"	'DATE' as type_name, "
 			"	91 as data_type, "
@@ -1296,7 +1296,7 @@ static const char	*ifx_datetype=
 			"from "
 			"	sysmaster:sysdual ";
 
-static const char	*ifx_datetimetype=
+static const char	*datetimetype=
 			"select "
 			"	'DATETIME' as type_name, "
 			"	93 as data_type, "
@@ -1321,7 +1321,7 @@ static const char	*ifx_datetimetype=
 			"from "
 			"	sysmaster:sysdual ";
 
-static const char	*ifx_intervaltype=
+static const char	*intervaltype=
 			"select "
 			"	'INTERVAL' as type_name, "
 			"	12 as data_type, "
@@ -1352,107 +1352,107 @@ const char *informixconnection::getTypeInfoListQuery(const char *catalog,
 
 	if (!charstring::compare(type,"*")) {
 		if (!typeinfolistquery.getSize()) {
-			typeinfolistquery.append(ifx_booltype);
+			typeinfolistquery.append(booltype);
 			typeinfolistquery.append("union ");
-			typeinfolistquery.append(ifx_smallinttype);
+			typeinfolistquery.append(smallinttype);
 			typeinfolistquery.append("union ");
-			typeinfolistquery.append(ifx_inttype);
+			typeinfolistquery.append(inttype);
 			typeinfolistquery.append("union ");
-			typeinfolistquery.append(ifx_int8type);
+			typeinfolistquery.append(int8type);
 			typeinfolistquery.append("union ");
-			typeinfolistquery.append(ifx_serialtype);
+			typeinfolistquery.append(serialtype);
 			typeinfolistquery.append("union ");
-			typeinfolistquery.append(ifx_serial8type);
+			typeinfolistquery.append(serial8type);
 			typeinfolistquery.append("union ");
-			typeinfolistquery.append(ifx_decimaltype);
+			typeinfolistquery.append(decimaltype);
 			typeinfolistquery.append("union ");
-			typeinfolistquery.append(ifx_moneytype);
+			typeinfolistquery.append(moneytype);
 			typeinfolistquery.append("union ");
-			typeinfolistquery.append(ifx_smallfloattype);
+			typeinfolistquery.append(smallfloattype);
 			typeinfolistquery.append("union ");
-			typeinfolistquery.append(ifx_floattype);
+			typeinfolistquery.append(floattype);
 			typeinfolistquery.append("union ");
-			typeinfolistquery.append(ifx_chartype);
+			typeinfolistquery.append(chartype);
 			typeinfolistquery.append("union ");
-			typeinfolistquery.append(ifx_nchartype);
+			typeinfolistquery.append(nchartype);
 			typeinfolistquery.append("union ");
-			typeinfolistquery.append(ifx_varchartype);
+			typeinfolistquery.append(varchartype);
 			typeinfolistquery.append("union ");
-			typeinfolistquery.append(ifx_nvarchartype);
+			typeinfolistquery.append(nvarchartype);
 			typeinfolistquery.append("union ");
-			typeinfolistquery.append(ifx_lvarchartype);
+			typeinfolistquery.append(lvarchartype);
 			typeinfolistquery.append("union ");
-			typeinfolistquery.append(ifx_texttype);
+			typeinfolistquery.append(texttype);
 			typeinfolistquery.append("union ");
-			typeinfolistquery.append(ifx_bytetype);
+			typeinfolistquery.append(bytetype);
 			typeinfolistquery.append("union ");
-			typeinfolistquery.append(ifx_blobtype);
+			typeinfolistquery.append(blobtype);
 			typeinfolistquery.append("union ");
-			typeinfolistquery.append(ifx_clobtype);
+			typeinfolistquery.append(clobtype);
 			typeinfolistquery.append("union ");
-			typeinfolistquery.append(ifx_datetype);
+			typeinfolistquery.append(datetype);
 			typeinfolistquery.append("union ");
-			typeinfolistquery.append(ifx_datetimetype);
+			typeinfolistquery.append(datetimetype);
 			typeinfolistquery.append("union ");
-			typeinfolistquery.append(ifx_intervaltype);
+			typeinfolistquery.append(intervaltype);
 		}
 		return typeinfolistquery.getString();
 	} else if (!charstring::compareIgnoringCase(type,"boolean")) {
-		return ifx_booltype;
+		return booltype;
 	} else if (!charstring::compareIgnoringCase(type,"smallint")) {
-		return ifx_smallinttype;
+		return smallinttype;
 	} else if (!charstring::compareIgnoringCase(type,"integer")) {
-		return ifx_inttype;
+		return inttype;
 	} else if (!charstring::compareIgnoringCase(type,"int")) {
-		return ifx_inttype;
+		return inttype;
 	} else if (!charstring::compareIgnoringCase(type,"int8")) {
-		return ifx_int8type;
+		return int8type;
 	} else if (!charstring::compareIgnoringCase(type,"bigint")) {
-		return ifx_int8type;
+		return int8type;
 	} else if (!charstring::compareIgnoringCase(type,"serial")) {
-		return ifx_serialtype;
+		return serialtype;
 	} else if (!charstring::compareIgnoringCase(type,"serial8")) {
-		return ifx_serial8type;
+		return serial8type;
 	} else if (!charstring::compareIgnoringCase(type,"bigserial")) {
-		return ifx_serial8type;
+		return serial8type;
 	} else if (!charstring::compareIgnoringCase(type,"decimal")) {
-		return ifx_decimaltype;
+		return decimaltype;
 	} else if (!charstring::compareIgnoringCase(type,"money")) {
-		return ifx_moneytype;
+		return moneytype;
 	} else if (!charstring::compareIgnoringCase(type,"smallfloat")) {
-		return ifx_smallfloattype;
+		return smallfloattype;
 	} else if (!charstring::compareIgnoringCase(type,"real")) {
-		return ifx_smallfloattype;
+		return smallfloattype;
 	} else if (!charstring::compareIgnoringCase(type,"float")) {
-		return ifx_floattype;
+		return floattype;
 	} else if (!charstring::compareIgnoringCase(type,"double precision")) {
-		return ifx_floattype;
+		return floattype;
 	} else if (!charstring::compareIgnoringCase(type,"char")) {
-		return ifx_chartype;
+		return chartype;
 	} else if (!charstring::compareIgnoringCase(type,"character")) {
-		return ifx_chartype;
+		return chartype;
 	} else if (!charstring::compareIgnoringCase(type,"nchar")) {
-		return ifx_nchartype;
+		return nchartype;
 	} else if (!charstring::compareIgnoringCase(type,"varchar")) {
-		return ifx_varchartype;
+		return varchartype;
 	} else if (!charstring::compareIgnoringCase(type,"nvarchar")) {
-		return ifx_nvarchartype;
+		return nvarchartype;
 	} else if (!charstring::compareIgnoringCase(type,"lvarchar")) {
-		return ifx_lvarchartype;
+		return lvarchartype;
 	} else if (!charstring::compareIgnoringCase(type,"text")) {
-		return ifx_texttype;
+		return texttype;
 	} else if (!charstring::compareIgnoringCase(type,"byte")) {
-		return ifx_bytetype;
+		return bytetype;
 	} else if (!charstring::compareIgnoringCase(type,"blob")) {
-		return ifx_blobtype;
+		return blobtype;
 	} else if (!charstring::compareIgnoringCase(type,"clob")) {
-		return ifx_clobtype;
+		return clobtype;
 	} else if (!charstring::compareIgnoringCase(type,"date")) {
-		return ifx_datetype;
+		return datetype;
 	} else if (!charstring::compareIgnoringCase(type,"datetime")) {
-		return ifx_datetimetype;
+		return datetimetype;
 	} else if (!charstring::compareIgnoringCase(type,"interval")) {
-		return ifx_intervaltype;
+		return intervaltype;
 	}
 	return NULL;
 }
@@ -1883,12 +1883,13 @@ const char *informixconnection::getProcedureListQuery(
 		"	'' "
 		"from "
 		"	sysprocedures ");
+
+	// where clause
 	if (!charstring::isNullOrEmpty(schema) ||
 		!charstring::isNullOrEmpty(procedure)) {
 
-	// where clause
-		procedurelistquery.append("where ");
 		bool	first=true;
+		procedurelistquery.append("where ");
 		if (!charstring::isNullOrEmpty(schema)) {
 			procedurelistquery.append(
 				"owner like '");
