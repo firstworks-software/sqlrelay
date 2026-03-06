@@ -1054,12 +1054,6 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(7,(uint32_t)0),NULL);
 	stdoutput.printf("\n");
 
-	// drop existing table
-	con->commit();
-	cur->sendQuery("delete from testtable");
-	con->commit();
-	stdoutput.printf("\n");
-
 
 	// database is schema
 	stdoutput.printf("DATABASE IS SCHEMA: \n");
@@ -1120,7 +1114,7 @@ int main(int argc, char **argv) {
 			counter++;
 		}
 	}
-	assertEquals(counter,4);
+	assertEquals(counter,3);
 	stdoutput.printf("\n");
 
 
@@ -1190,11 +1184,7 @@ int main(int argc, char **argv) {
 
 	// primary keys list
 	stdoutput.printf("PRIMARY KEYS LIST: \n");
-	assertTrue(cur->sendQuery(
-		"create table testtable ("
-		"	col1 integer primary key, "
-		"	col2 integer)"));
-	assertTrue(cur->getPrimaryKeysList("testtable",NULL));
+	assertTrue(cur->getPrimaryKeysList("testtable2",NULL));
 	assertEquals(cur->getColumnName(0),"table");
 	assertEquals(cur->getColumnName(1),"non_unique");
 	assertEquals(cur->getColumnName(2),"key_name");
@@ -1210,7 +1200,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnName(12),"index_comment");
 	assertEquals(cur->rowCount(),1);
 	assertTrue(!charstring::compareIgnoringCase(
-			cur->getField(0,"table"),"testtable"));
+			cur->getField(0,"table"),"testtable2"));
 	assertEquals(cur->getField(0,"seq_in_index"),"1");
 	assertTrue(!charstring::compareIgnoringCase(
 			cur->getField(0,"column_name"),"col1"));
@@ -1220,11 +1210,7 @@ int main(int argc, char **argv) {
 
 	// key and index list
 	stdoutput.printf("KEY AND INDEX LIST: \n");
-	assertTrue(cur->sendQuery(
-		"create table testtable ("
-		"	col1 integer primary key, "
-		"	col2 integer)"));
-	assertTrue(cur->getKeyAndIndexList("testtable",NULL));
+	assertTrue(cur->getKeyAndIndexList("testtable2",NULL));
 	assertEquals(cur->getColumnName(0),"table");
 	assertEquals(cur->getColumnName(1),"non_unique");
 	assertEquals(cur->getColumnName(2),"key_name");
@@ -1240,7 +1226,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnName(12),"index_comment");
 	assertEquals(cur->rowCount(),1);
 	assertTrue(!charstring::compareIgnoringCase(
-			cur->getField(0,"table"),"testtable"));
+			cur->getField(0,"table"),"testtable2"));
 	assertEquals(cur->getField(0,"non_unique"),"0");
 	assertEquals(cur->getField(0,"seq_in_index"),"1");
 	assertTrue(!charstring::compareIgnoringCase(
@@ -1262,7 +1248,7 @@ int main(int argc, char **argv) {
 			counter++;
 		}
 	}
-	assertEquals(counter,4);
+	assertEquals(counter,2);
 	stdoutput.printf("\n");
 
 
@@ -1274,14 +1260,14 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnName(2),"data_type");
 	assertEquals(cur->getColumnName(3),"character_maximum_length");
 	assertEquals(cur->getColumnName(4),"ordinal_position");
-	assertEquals(cur->rowCount(),4);
+	assertEquals(cur->rowCount(),8);
 	assertEquals(cur->getField(0,"parameter_name"),"IN1");
 	assertEquals(cur->getField(0,"parameter_mode"),"1");
 	assertEquals(cur->getField(0,"data_type"),"INTEGER");
 	assertEquals(cur->getField(0,"ordinal_position"),"1");
 	assertEquals(cur->getField(1,"parameter_name"),"IN2");
 	assertEquals(cur->getField(1,"parameter_mode"),"1");
-	assertEquals(cur->getField(1,"data_type"),"CHAR");
+	assertEquals(cur->getField(1,"data_type"),"FLOAT");
 	assertEquals(cur->getField(1,"ordinal_position"),"2");
 	assertEquals(cur->getField(2,"parameter_name"),"IN3");
 	assertEquals(cur->getField(2,"parameter_mode"),"1");
@@ -1289,12 +1275,24 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(2,"ordinal_position"),"3");
 	assertEquals(cur->getField(3,"parameter_name"),"IN4");
 	assertEquals(cur->getField(3,"parameter_mode"),"1");
-	assertEquals(cur->getField(3,"data_type"),"DATE");
+	assertEquals(cur->getField(3,"data_type"),"BLOB");
 	assertEquals(cur->getField(3,"ordinal_position"),"4");
-	cur->sendQuery("drop procedure testproc1");
-	cur->sendQuery("drop procedure testproc2");
-	cur->sendQuery("drop procedure testproc3");
-	cur->sendQuery("drop procedure testproc4");
+	assertEquals(cur->getField(4,"parameter_name"),"OUT1");
+	assertEquals(cur->getField(4,"parameter_mode"),"4");
+	assertEquals(cur->getField(4,"data_type"),"INTEGER");
+	assertEquals(cur->getField(4,"ordinal_position"),"1");
+	assertEquals(cur->getField(5,"parameter_name"),"OUT2");
+	assertEquals(cur->getField(5,"parameter_mode"),"4");
+	assertEquals(cur->getField(5,"data_type"),"FLOAT");
+	assertEquals(cur->getField(5,"ordinal_position"),"2");
+	assertEquals(cur->getField(6,"parameter_name"),"OUT3");
+	assertEquals(cur->getField(6,"parameter_mode"),"4");
+	assertEquals(cur->getField(6,"data_type"),"VARCHAR");
+	assertEquals(cur->getField(6,"ordinal_position"),"3");
+	assertEquals(cur->getField(7,"parameter_name"),"OUT4");
+	assertEquals(cur->getField(7,"parameter_mode"),"4");
+	assertEquals(cur->getField(7,"data_type"),"BLOB");
+	assertEquals(cur->getField(7,"ordinal_position"),"4");
 	stdoutput.printf("\n");
 
 

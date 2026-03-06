@@ -738,9 +738,9 @@ const char *firebirdconnection::getSchemaListQuery(const char *catalog,
 	if (schema) {
 		schemalistquery.append(
 			"	and "
-			"	rdb$owner_name like '");
+			"	trim(rdb$owner_name) like upper('");
 		schemalistquery.append(schema);
-		schemalistquery.append("' ");
+		schemalistquery.append("') ");
 	}
 
 	// order by clause
@@ -772,9 +772,9 @@ const char *firebirdconnection::getTableTypeListQuery(const char *catalog,
 	if (!charstring::isNullOrEmpty(tabletypes)) {
 		tabletypelistquery.append(
 			"where "
-			"	table_type like '");
+			"	trim(table_type) like upper('");
 		tabletypelistquery.append(tabletypes);
-		tabletypelistquery.append("' ");
+		tabletypelistquery.append("') ");
 	}
 
 	// order by clause
@@ -818,16 +818,16 @@ const char *firebirdconnection::getTableListQuery(const char *catalog,
 	if (schema) {
 		tablelistquery.append(
 			"	and "
-			"	rdb$owner_name like '");
+			"	trim(rdb$owner_name) like upper('");
 		tablelistquery.append(schema);
-		tablelistquery.append("' ");
+		tablelistquery.append("') ");
 	}
 	if (table) {
 		tablelistquery.append(
 			"	and "
-			"	rdb$relation_name like '");
+			"	trim(rdb$relation_name) like upper('");
 		tablelistquery.append(table);
-		tablelistquery.append("' ");
+		tablelistquery.append("') ");
 	}
 
 	// order by clause
@@ -1400,7 +1400,7 @@ const char *firebirdconnection::getColumnListQuery(const char *catalog,
 	if (!charstring::isNullOrEmpty(schema)) {
 		columnlistquery.append(
 			"where "
-			"	rl.rdb$owner_name like upper('");
+			"	trim(rl.rdb$owner_name) like upper('");
 		columnlistquery.append(schema);
 		columnlistquery.append("') ");
 		first=false;
@@ -1414,7 +1414,7 @@ const char *firebirdconnection::getColumnListQuery(const char *catalog,
 			columnlistquery.append("	and ");
 		}
 		columnlistquery.append(
-			"	rf.rdb$relation_name like upper('");
+			"	trim(rf.rdb$relation_name) like upper('");
 		columnlistquery.append(table);
 		columnlistquery.append("') ");
 	}
@@ -1427,7 +1427,7 @@ const char *firebirdconnection::getColumnListQuery(const char *catalog,
 			columnlistquery.append("	and ");
 		}
 		columnlistquery.append(
-			"	rf.rdb$field_name like upper('");
+			"	trim(rf.rdb$field_name) like upper('");
 		columnlistquery.append(column);
 		columnlistquery.append("') ");
 	}
@@ -1472,9 +1472,9 @@ const char *firebirdconnection::getPrimaryKeysListQuery(const char *catalog,
 	if (!charstring::isNullOrEmpty(table)) {
 		primarykeyslistquery.append(
 			"	and "
-			"	trim(rc.rdb$relation_name) like '");
+			"	trim(rc.rdb$relation_name) like upper('");
 		primarykeyslistquery.append(table);
-		primarykeyslistquery.append("' ");
+		primarykeyslistquery.append("') ");
 	}
 
 	// order by clause
@@ -1529,9 +1529,9 @@ const char *firebirdconnection::getKeyAndIndexListQuery(const char *catalog,
 	if (!charstring::isNullOrEmpty(table)) {
 		keyandindexlistquery.append(
 			"	and "
-			"	trim(i.rdb$relation_name) like '");
+			"	trim(i.rdb$relation_name) like upper('");
 		keyandindexlistquery.append(table);
-		keyandindexlistquery.append("' ");
+		keyandindexlistquery.append("') ");
 	}
 
 	// order by clause
@@ -1574,9 +1574,9 @@ const char *firebirdconnection::getProcedureListQuery(
 		procedurelistquery.append("where ");
 		if (!charstring::isNullOrEmpty(schema)) {
 			procedurelistquery.append(
-				"rdb$owner_name like '");
+				"trim(rdb$owner_name) like upper('");
 			procedurelistquery.append(schema);
-			procedurelistquery.append("' ");
+			procedurelistquery.append("') ");
 			first=false;
 		}
 		if (!charstring::isNullOrEmpty(procedure)) {
@@ -1584,9 +1584,9 @@ const char *firebirdconnection::getProcedureListQuery(
 				procedurelistquery.append("and ");
 			}
 			procedurelistquery.append(
-				"rdb$procedure_name like '");
+				"trim(rdb$procedure_name) like upper('");
 			procedurelistquery.append(procedure);
-			procedurelistquery.append("' ");
+			procedurelistquery.append("') ");
 		}
 	}
 
@@ -1660,9 +1660,9 @@ const char *firebirdconnection::getProcedureParameterListQuery(
 	if (!charstring::isNullOrEmpty(procedure)) {
 		procedureparameterlistquery.append(
 			"where "
-			"	trim(pp.rdb$procedure_name) like '");
+			"	trim(pp.rdb$procedure_name) like upper('");
 		procedureparameterlistquery.append(procedure);
-		procedureparameterlistquery.append("' ");
+		procedureparameterlistquery.append("') ");
 	}
 
 	// order by clause
