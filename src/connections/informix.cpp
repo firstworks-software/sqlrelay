@@ -695,17 +695,17 @@ const char *informixconnection::getTableTypeListQuery(
 		"	(select "
 		"		'SYNONYM' as table_type "
 		"	from "
-		"		sysmaster:sysdual "
+		"		systables where tabid=1 "
 		"	union "
 		"	select "
 		"		'TABLE' as table_type "
 		"	from "
-		"		sysmaster:sysdual "
+		"		systables where tabid=1 "
 		"	union "
 		"	select "
 		"		'VIEW' as table_type "
 		"	from "
-		"	sysmaster:sysdual) t ");
+		"	systables where tabid=1) t ");
 
 	// where clause
 	if (!charstring::isNullOrEmpty(tabletypes)) {
@@ -824,7 +824,7 @@ static const char	*booltype=
 			"	'' as interval_precision, "
 			"	'' "
 			"from "
-			"	sysmaster:sysdual ";
+			"	systables where tabid=1 ";
 
 static const char	*smallinttype=
 			"select "
@@ -849,7 +849,7 @@ static const char	*smallinttype=
 			"	'' as interval_precision, "
 			"	'' "
 			"from "
-			"	sysmaster:sysdual ";
+			"	systables where tabid=1 ";
 
 static const char	*inttype=
 			"select "
@@ -874,7 +874,7 @@ static const char	*inttype=
 			"	'' as interval_precision, "
 			"	'' "
 			"from "
-			"	sysmaster:sysdual ";
+			"	systables where tabid=1 ";
 
 static const char	*int8type=
 			"select "
@@ -899,7 +899,7 @@ static const char	*int8type=
 			"	'' as interval_precision, "
 			"	'' "
 			"from "
-			"	sysmaster:sysdual ";
+			"	systables where tabid=1 ";
 
 static const char	*serialtype=
 			"select "
@@ -924,7 +924,7 @@ static const char	*serialtype=
 			"	'' as interval_precision, "
 			"	'' "
 			"from "
-			"	sysmaster:sysdual ";
+			"	systables where tabid=1 ";
 
 static const char	*serial8type=
 			"select "
@@ -949,7 +949,7 @@ static const char	*serial8type=
 			"	'' as interval_precision, "
 			"	'' "
 			"from "
-			"	sysmaster:sysdual ";
+			"	systables where tabid=1 ";
 
 static const char	*decimaltype=
 			"select "
@@ -974,7 +974,7 @@ static const char	*decimaltype=
 			"	'' as interval_precision, "
 			"	'' "
 			"from "
-			"	sysmaster:sysdual ";
+			"	systables where tabid=1 ";
 
 static const char	*moneytype=
 			"select "
@@ -999,7 +999,7 @@ static const char	*moneytype=
 			"	'' as interval_precision, "
 			"	'' "
 			"from "
-			"	sysmaster:sysdual ";
+			"	systables where tabid=1 ";
 
 static const char	*smallfloattype=
 			"select "
@@ -1024,7 +1024,7 @@ static const char	*smallfloattype=
 			"	'' as interval_precision, "
 			"	'' "
 			"from "
-			"	sysmaster:sysdual ";
+			"	systables where tabid=1 ";
 
 static const char	*floattype=
 			"select "
@@ -1049,7 +1049,7 @@ static const char	*floattype=
 			"	'' as interval_precision, "
 			"	'' "
 			"from "
-			"	sysmaster:sysdual ";
+			"	systables where tabid=1 ";
 
 static const char	*chartype=
 			"select "
@@ -1074,7 +1074,7 @@ static const char	*chartype=
 			"	'' as interval_precision, "
 			"	'' "
 			"from "
-			"	sysmaster:sysdual ";
+			"	systables where tabid=1 ";
 
 static const char	*nchartype=
 			"select "
@@ -1099,7 +1099,7 @@ static const char	*nchartype=
 			"	'' as interval_precision, "
 			"	'' "
 			"from "
-			"	sysmaster:sysdual ";
+			"	systables where tabid=1 ";
 
 static const char	*varchartype=
 			"select "
@@ -1124,7 +1124,7 @@ static const char	*varchartype=
 			"	'' as interval_precision, "
 			"	'' "
 			"from "
-			"	sysmaster:sysdual ";
+			"	systables where tabid=1 ";
 
 static const char	*nvarchartype=
 			"select "
@@ -1149,7 +1149,7 @@ static const char	*nvarchartype=
 			"	'' as interval_precision, "
 			"	'' "
 			"from "
-			"	sysmaster:sysdual ";
+			"	systables where tabid=1 ";
 
 static const char	*lvarchartype=
 			"select "
@@ -1174,7 +1174,7 @@ static const char	*lvarchartype=
 			"	'' as interval_precision, "
 			"	'' "
 			"from "
-			"	sysmaster:sysdual ";
+			"	systables where tabid=1 ";
 
 static const char	*texttype=
 			"select "
@@ -1199,7 +1199,7 @@ static const char	*texttype=
 			"	'' as interval_precision, "
 			"	'' "
 			"from "
-			"	sysmaster:sysdual ";
+			"	systables where tabid=1 ";
 
 static const char	*bytetype=
 			"select "
@@ -1224,7 +1224,7 @@ static const char	*bytetype=
 			"	'' as interval_precision, "
 			"	'' "
 			"from "
-			"	sysmaster:sysdual ";
+			"	systables where tabid=1 ";
 
 static const char	*blobtype=
 			"select "
@@ -1249,7 +1249,7 @@ static const char	*blobtype=
 			"	'' as interval_precision, "
 			"	'' "
 			"from "
-			"	sysmaster:sysdual ";
+			"	systables where tabid=1 ";
 
 static const char	*clobtype=
 			"select "
@@ -1274,7 +1274,7 @@ static const char	*clobtype=
 			"	'' as interval_precision, "
 			"	'' "
 			"from "
-			"	sysmaster:sysdual ";
+			"	systables where tabid=1 ";
 
 static const char	*datetype=
 			"select "
@@ -1299,7 +1299,7 @@ static const char	*datetype=
 			"	'' as interval_precision, "
 			"	'' "
 			"from "
-			"	sysmaster:sysdual ";
+			"	systables where tabid=1 ";
 
 static const char	*datetimetype=
 			"select "
@@ -1324,7 +1324,7 @@ static const char	*datetimetype=
 			"	'' as interval_precision, "
 			"	'' "
 			"from "
-			"	sysmaster:sysdual ";
+			"	systables where tabid=1 ";
 
 static const char	*intervaltype=
 			"select "
@@ -1349,7 +1349,7 @@ static const char	*intervaltype=
 			"	'' as interval_precision, "
 			"	'' "
 			"from "
-			"	sysmaster:sysdual ";
+			"	systables where tabid=1 ";
 
 const char *informixconnection::getTypeInfoListQuery(
 						const char *catalog,
