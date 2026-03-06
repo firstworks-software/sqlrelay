@@ -1671,800 +1671,6 @@ class oracle extends sqlrtest {
 		assertFalse(boolval);
 		System.out.println();
 
-		// catalogs
-		System.out.println("catalogs");
-		rs=md.getCatalogs();
-		assertTrue((rs!=null));
-		rsmd=rs.getMetaData();
-		assertTrue((rsmd!=null));
-		assertEquals(rsmd.getColumnCount(),1);
-		col=1;
-		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
-		while (rs.next()) {
-			System.out.println(rs.getString("TABLE_CAT"));
-		}
-		//System.out.println();
-		//printColumns(rsmd);
-		//printResultSet(rs);
-		rs.close();
-		System.out.println();
-
-		// schemas
-		System.out.println("schemas");
-		rs=md.getSchemas("%","%");
-		assertTrue((rs!=null));
-		rsmd=rs.getMetaData();
-		assertTrue((rsmd!=null));
-		assertEquals(rsmd.getColumnCount(),2);
-		col=1;
-		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
-		assertEquals(rsmd.getColumnName(col++),"TABLE_CATALOG");
-		//System.out.println();
-		//printColumns(rsmd);
-		//printResultSet(rs);
-		rs.close();
-		System.out.println();
-
-		// table types
-		System.out.println("table types");
-		rs=md.getTableTypes();
-		assertTrue((rs!=null));
-		rsmd=rs.getMetaData();
-		assertTrue((rsmd!=null));
-		assertEquals(rsmd.getColumnCount(),1);
-		col=1;
-		assertEquals(rsmd.getColumnName(col++),"TABLE_TYPE");
-		//System.out.println();
-		//printColumns(rsmd);
-		//printResultSet(rs);
-		rs.close();
-		System.out.println();
-
-		// tables
-		System.out.println("tables");
-// slow, disabled for now
-if (false) {
-		rs=md.getTables("%","%","%",
-			new String[] {"SYNONYM","TABLE","VIEW"});
-		assertTrue((rs!=null));
-		rsmd=rs.getMetaData();
-		assertTrue((rsmd!=null));
-		if (issqlrelay) {
-                	assertEquals(rsmd.getColumnCount(),10);
-		} else {
-			// oracle jdbc returns 5 columns
-                	assertEquals(rsmd.getColumnCount(),5);
-		}
-		col=1;
-		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
-		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
-		assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
-		assertEquals(rsmd.getColumnName(col++),"TABLE_TYPE");
-		assertEquals(rsmd.getColumnName(col++),"REMARKS");
-		if (issqlrelay) {
-			assertEquals(rsmd.getColumnName(col++),"TYPE_CAT");
-			assertEquals(rsmd.getColumnName(col++),"TYPE_SCHEM");
-			assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
-			assertEquals(rsmd.getColumnName(col++),
-						"SELF_REFERENCING_COL_NAME");
-			assertEquals(rsmd.getColumnName(col++),
-						"REF_GENERATION");
-		}
-		//System.out.println();
-		//printColumns(rsmd);
-		//printResultSet(rs);
-		rs.close();
-		System.out.println();
-}
-
-		// type info
-		System.out.println("type info");
-		rs=md.getTypeInfo();
-		assertTrue((rs!=null));
-		rsmd=rs.getMetaData();
-		assertTrue((rsmd!=null));
-		assertEquals(rsmd.getColumnCount(),18);
-		col=1;
-		assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
-		assertEquals(rsmd.getColumnName(col++),"DATA_TYPE");
-		assertEquals(rsmd.getColumnName(col++),"PRECISION");
-		assertEquals(rsmd.getColumnName(col++),"LITERAL_PREFIX");
-		assertEquals(rsmd.getColumnName(col++),"LITERAL_SUFFIX");
-		assertEquals(rsmd.getColumnName(col++),"CREATE_PARAMS");
-		assertEquals(rsmd.getColumnName(col++),"NULLABLE");
-		assertEquals(rsmd.getColumnName(col++),"CASE_SENSITIVE");
-		assertEquals(rsmd.getColumnName(col++),"SEARCHABLE");
-		assertEquals(rsmd.getColumnName(col++),"UNSIGNED_ATTRIBUTE");
-		assertEquals(rsmd.getColumnName(col++),"FIXED_PREC_SCALE");
-		assertEquals(rsmd.getColumnName(col++),"AUTO_INCREMENT");
-		assertEquals(rsmd.getColumnName(col++),"LOCAL_TYPE_NAME");
-		assertEquals(rsmd.getColumnName(col++),"MINIMUM_SCALE");
-		assertEquals(rsmd.getColumnName(col++),"MAXIMUM_SCALE");
-		assertEquals(rsmd.getColumnName(col++),"SQL_DATA_TYPE");
-		assertEquals(rsmd.getColumnName(col++),"SQL_DATETIME_SUB");
-		assertEquals(rsmd.getColumnName(col++),"NUM_PREC_RADIX");
-		//System.out.println();
-		//printColumns(rsmd);
-		//printResultSet(rs);
-		rs.close();
-		System.out.println();
-
-		// procedures
-                System.out.println("procedures");
-// slow, disabled for now
-if (false) {
-                rs=md.getProcedures("%","%","%");
-                assertTrue((rs!=null));
-                rsmd=rs.getMetaData();
-                assertTrue((rsmd!=null));
-		col=1;
-		if (issqlrelay) {
-                	assertEquals(rsmd.getColumnCount(),8);
-		} else {
-			// oracle jdbc returns 9 columns
-                	assertEquals(rsmd.getColumnCount(),9);
-		}
-                assertEquals(rsmd.getColumnName(col++),"PROCEDURE_CAT");
-                assertEquals(rsmd.getColumnName(col++),"PROCEDURE_SCHEM");
-                assertEquals(rsmd.getColumnName(col++),"PROCEDURE_NAME");
-		if (issqlrelay) {
-                	assertEquals(rsmd.getColumnName(col++),
-						"NUM_INPUT_PARAMS");
-                	assertEquals(rsmd.getColumnName(col++),
-						"NUM_OUTPUT_PARAMS");
-                	assertEquals(rsmd.getColumnName(col++),
-						"NUM_RESULT_SETS");
-		} else {
-			// oracle jdbc returns
-			// NULL for these column names
-                	assertEquals(rsmd.getColumnName(col++),"NULL");
-                	assertEquals(rsmd.getColumnName(col++),"NULL");
-                	assertEquals(rsmd.getColumnName(col++),"NULL");
-		}
-                assertEquals(rsmd.getColumnName(col++),"REMARKS");
-                assertEquals(rsmd.getColumnName(col++),"PROCEDURE_TYPE");
-		if (!issqlrelay) {
-			// oracle jdbc returns a 9th column
-                	assertEquals(rsmd.getColumnName(col++),"SPECIFIC_NAME");
-		}
-                //System.out.println();
-		//printColumns(rsmd);
-		//printResultSet(rs);
-                rs.close();
-                System.out.println();
-}
-
-		// functions
-                System.out.println("functions");
-		// sqlrelay doesn't support this yet
-		if (!issqlrelay) {
-                	rs=md.getFunctions("%","%","%");
-                	assertTrue((rs!=null));
-                	rsmd=rs.getMetaData();
-                	assertTrue((rsmd!=null));
-			col=1;
-			if (issqlrelay) {
-				assertEquals(rsmd.getColumnCount(),8);
-			} else {
-				// oracle jdbc returns 6 columns
-				assertEquals(rsmd.getColumnCount(),6);
-			}
-                	assertEquals(rsmd.getColumnName(col++),
-							"FUNCTION_CAT");
-                	assertEquals(rsmd.getColumnName(col++),
-							"FUNCTION_SCHEM");
-                	assertEquals(rsmd.getColumnName(col++),
-							"FUNCTION_NAME");
-			// oracle jdbc doesn't return these columns at all
-			if (issqlrelay) {
-                		assertEquals(rsmd.getColumnName(col++),
-							"NUM_INPUT_PARAMS");
-                		assertEquals(rsmd.getColumnName(col++),
-							"NUM_OUTPUT_PARAMS");
-                		assertEquals(rsmd.getColumnName(col++),
-							"NUM_RESULT_SETS");
-			}
-                	assertEquals(rsmd.getColumnName(col++),"REMARKS");
-                	assertEquals(rsmd.getColumnName(col++),"FUNCTION_TYPE");
-			// oracle jdbc returns this extra column
-			if (!issqlrelay) {
-                		assertEquals(rsmd.getColumnName(col++),
-							"SPECIFIC_NAME");
-			}
-                	//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
-                	rs.close();
-                	System.out.println();
-		}
-
-		// UDTs
-                System.out.println("UDTs");
-		// sqlrelay doesn't support this yet
-		// oracle jdbc throws:
-		// ORA-08177: can't serialize access for this transaction
-		if (false) {
-                	rs=md.getUDTs("%","%","%",null);
-                	assertTrue((rs!=null));
-                	rsmd=rs.getMetaData();
-                	assertTrue((rsmd!=null));
-			col=1;
-			if (issqlrelay) {
-                		assertEquals(rsmd.getColumnCount(),7);
-			} else {
-				// oracle jdbc returns 6 columns
-                		assertEquals(rsmd.getColumnCount(),6);
-			}
-                	assertEquals(rsmd.getColumnName(col++),"TYPE_CAT");
-                	assertEquals(rsmd.getColumnName(col++),"TYPE_SCHEM");
-                	assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
-                	assertEquals(rsmd.getColumnName(col++),"CLASS_NAME");
-                	assertEquals(rsmd.getColumnName(col++),"DATA_TYPE");
-                	assertEquals(rsmd.getColumnName(col++),"REMARKS");
-			// oracle jdbc doesn't return this column at all
-			if (issqlrelay) {
-                		assertEquals(rsmd.getColumnName(col++),
-								"BASE_TYPE");
-			}
-                	//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
-                	rs.close();
-                	System.out.println();
-		}
-
-		// attributes
-		// neither oracle, nor sqlrelay support this
-		System.out.println("attributes");
-		try {
-			rs=md.getAttributes("%","%","%","%");
-			assertFalse(true);
-		} catch (Exception ex) {
-			assertTrue(true);
-		}
-		System.out.println();
-
-		// best row identifier
-		System.out.println("best row identifier");
-		// sqlrelay doesn't support this yet
-		if (!issqlrelay) {
-			rs=md.getBestRowIdentifier("%","%","%",
-					DatabaseMetaData.bestRowTemporary,
-					true);
-			assertTrue((rs!=null));
-			rsmd=rs.getMetaData();
-			assertTrue((rsmd!=null));
-			col=1;
-			assertEquals(rsmd.getColumnCount(),8);
-			assertEquals(rsmd.getColumnName(col++),
-							"SCOPE");
-			assertEquals(rsmd.getColumnName(col++),
-							"COLUMN_NAME");
-			assertEquals(rsmd.getColumnName(col++),
-							"DATA_TYPE");
-			assertEquals(rsmd.getColumnName(col++),
-							"TYPE_NAME");
-			assertEquals(rsmd.getColumnName(col++),
-							"COLUMN_SIZE");
-			assertEquals(rsmd.getColumnName(col++),
-							"BUFFER_LENGTH");
-			assertEquals(rsmd.getColumnName(col++),
-							"DECIMAL_DIGITS");
-			assertEquals(rsmd.getColumnName(col++),
-							"PSEUDO_COLUMN");
-			//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
-			rs.close();
-			System.out.println();
-		}
-
-		// client info properties
-		System.out.println("client info properties");
-		// sqlrelay doesn't support this yet
-		if (!issqlrelay) {
-			rs=md.getClientInfoProperties();
-			assertTrue((rs!=null));
-			rsmd=rs.getMetaData();
-			assertTrue((rsmd!=null));
-			col=1;
-			assertEquals(rsmd.getColumnCount(),4);
-			assertEquals(rsmd.getColumnName(col++),"NAME");
-			assertEquals(rsmd.getColumnName(col++),"MAX_LEN");
-			assertEquals(rsmd.getColumnName(col++),"DEFAULT_VALUE");
-			assertEquals(rsmd.getColumnName(col++),"DESCRIPTION");
-			//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
-			rs.close();
-			System.out.println();
-		}
-
-		// column privileges
-		System.out.println("column privileges");
-		// sqlrelay doesn't support this yet
-		if (!issqlrelay) {
-			rs=md.getColumnPrivileges("%","%","%","%");
-			assertTrue((rs!=null));
-			rsmd=rs.getMetaData();
-			assertTrue((rsmd!=null));
-			col=1;
-			assertEquals(rsmd.getColumnCount(),8);
-			assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
-			assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
-			assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
-			assertEquals(rsmd.getColumnName(col++),"COLUMN_NAME");
-			assertEquals(rsmd.getColumnName(col++),"GRANTOR");
-			assertEquals(rsmd.getColumnName(col++),"GRANTEE");
-			assertEquals(rsmd.getColumnName(col++),"PRIVILEGE");
-			assertEquals(rsmd.getColumnName(col++),"IS_GRANTABLE");
-			//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
-			rs.close();
-			System.out.println();
-		}
-
-		// columns
-		System.out.println("columns");
-// slow, disabled for now
-if (false) {
-		rs=md.getColumns("%","%","%","%");
-		assertTrue((rs!=null));
-		rsmd=rs.getMetaData();
-		assertTrue((rsmd!=null));
-		col=1;
-		assertEquals(rsmd.getColumnCount(),24);
-		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
-		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
-		assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
-		assertEquals(rsmd.getColumnName(col++),"COLUMN_NAME");
-		assertEquals(rsmd.getColumnName(col++),"DATA_TYPE");
-		assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
-		assertEquals(rsmd.getColumnName(col++),"COLUMN_SIZE");
-		assertEquals(rsmd.getColumnName(col++),"BUFFER_LENGTH");
-		assertEquals(rsmd.getColumnName(col++),"DECIMAL_DIGITS");
-		assertEquals(rsmd.getColumnName(col++),"NUM_PREC_RADIX");
-		assertEquals(rsmd.getColumnName(col++),"NULLABLE");
-		assertEquals(rsmd.getColumnName(col++),"REMARKS");
-		assertEquals(rsmd.getColumnName(col++),"COLUMN_DEF");
-		assertEquals(rsmd.getColumnName(col++),"SQL_DATA_TYPE");
-		assertEquals(rsmd.getColumnName(col++),"SQL_DATETIME_SUB");
-		assertEquals(rsmd.getColumnName(col++),"CHAR_OCTET_LENGTH");
-		assertEquals(rsmd.getColumnName(col++),"ORDINAL_POSITION");
-		assertEquals(rsmd.getColumnName(col++),"IS_NULLABLE");
-		assertEquals(rsmd.getColumnName(col++),"SCOPE_CATALOG");
-		assertEquals(rsmd.getColumnName(col++),"SCOPE_SCHEMA");
-		assertEquals(rsmd.getColumnName(col++),"SCOPE_TABLE");
-		assertEquals(rsmd.getColumnName(col++),"SOURCE_DATA_TYPE");
-		assertEquals(rsmd.getColumnName(col++),"IS_AUTOINCREMENT");
-		assertEquals(rsmd.getColumnName(col++),"IS_GENERATEDCOLUMN");
-		//System.out.println();
-		//printColumns(rsmd);
-		//printResultSet(rs);
-		rs.close();
-		System.out.println();
-}
-
-		// cross reference
-		System.out.println("cross reference");
-		// sqlrelay doesn't support this yet
-		if (!issqlrelay) {
-			rs=md.getCrossReference("%","%","%","%","%","%");
-			assertTrue((rs!=null));
-			rsmd=rs.getMetaData();
-			assertTrue((rsmd!=null));
-			col=1;
-			assertEquals(rsmd.getColumnCount(),14);
-			assertEquals(rsmd.getColumnName(col++),"PKTABLE_CAT");
-			assertEquals(rsmd.getColumnName(col++),"PKTABLE_SCHEM");
-			assertEquals(rsmd.getColumnName(col++),"PKTABLE_NAME");
-			assertEquals(rsmd.getColumnName(col++),"PKCOLUMN_NAME");
-			assertEquals(rsmd.getColumnName(col++),"FKTABLE_CAT");
-			assertEquals(rsmd.getColumnName(col++),"FKTABLE_SCHEM");
-			assertEquals(rsmd.getColumnName(col++),"FKTABLE_NAME");
-			assertEquals(rsmd.getColumnName(col++),"FKCOLUMN_NAME");
-			assertEquals(rsmd.getColumnName(col++),"KEY_SEQ");
-			assertEquals(rsmd.getColumnName(col++),"UPDATE_RULE");
-			assertEquals(rsmd.getColumnName(col++),"DELETE_RULE");
-			assertEquals(rsmd.getColumnName(col++),"FK_NAME");
-			assertEquals(rsmd.getColumnName(col++),"PK_NAME");
-			assertEquals(rsmd.getColumnName(col++),"DEFERRABILITY");
-			//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
-			rs.close();
-			System.out.println();
-		}
-
-		// exported keys
-		System.out.println("exported keys");
-		// sqlrelay doesn't support this yet
-		if (!issqlrelay) {
-			rs=md.getExportedKeys("%","%","%");
-			assertTrue((rs!=null));
-			rsmd=rs.getMetaData();
-			assertTrue((rsmd!=null));
-			col=1;
-			assertEquals(rsmd.getColumnCount(),14);
-			assertEquals(rsmd.getColumnName(col++),"PKTABLE_CAT");
-			assertEquals(rsmd.getColumnName(col++),"PKTABLE_SCHEM");
-			assertEquals(rsmd.getColumnName(col++),"PKTABLE_NAME");
-			assertEquals(rsmd.getColumnName(col++),"PKCOLUMN_NAME");
-			assertEquals(rsmd.getColumnName(col++),"FKTABLE_CAT");
-			assertEquals(rsmd.getColumnName(col++),"FKTABLE_SCHEM");
-			assertEquals(rsmd.getColumnName(col++),"FKTABLE_NAME");
-			assertEquals(rsmd.getColumnName(col++),"FKCOLUMN_NAME");
-			assertEquals(rsmd.getColumnName(col++),"KEY_SEQ");
-			assertEquals(rsmd.getColumnName(col++),"UPDATE_RULE");
-			assertEquals(rsmd.getColumnName(col++),"DELETE_RULE");
-			assertEquals(rsmd.getColumnName(col++),"FK_NAME");
-			assertEquals(rsmd.getColumnName(col++),"PK_NAME");
-			assertEquals(rsmd.getColumnName(col++),"DEFERRABILITY");
-			//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
-			rs.close();
-			System.out.println();
-		}
-
-		// function columns
-		System.out.println("function columns");
-// slow, disabled for now
-if (false) {
-		// sqlrelay doesn't support this yet
-		if (!issqlrelay) {
-			rs=md.getFunctionColumns("%","%","%","%");
-			assertTrue((rs!=null));
-			rsmd=rs.getMetaData();
-			assertTrue((rsmd!=null));
-			col=1;
-			if (issqlrelay) {
-				assertEquals(rsmd.getColumnCount(),17);
-			} else {
-				// oracle jdbc returns 23 columns
-				assertEquals(rsmd.getColumnCount(),23);
-			}
-			assertEquals(rsmd.getColumnName(col++),
-							"FUNCTION_CAT");
-			assertEquals(rsmd.getColumnName(col++),
-							"FUNCTION_SCHEM");
-			assertEquals(rsmd.getColumnName(col++),
-							"FUNCTION_NAME");
-			assertEquals(rsmd.getColumnName(col++),
-							"COLUMN_NAME");
-			assertEquals(rsmd.getColumnName(col++),
-							"COLUMN_TYPE");
-			assertEquals(rsmd.getColumnName(col++),
-							"DATA_TYPE");
-			assertEquals(rsmd.getColumnName(col++),
-							"TYPE_NAME");
-			assertEquals(rsmd.getColumnName(col++),
-							"PRECISION");
-			assertEquals(rsmd.getColumnName(col++),
-							"LENGTH");
-			assertEquals(rsmd.getColumnName(col++),
-							"SCALE");
-			assertEquals(rsmd.getColumnName(col++),
-							"RADIX");
-			assertEquals(rsmd.getColumnName(col++),
-							"NULLABLE");
-			assertEquals(rsmd.getColumnName(col++),
-							"REMARKS");
-			if (!issqlrelay) {
-				// oracle jdbc returns these columns too
-				assertEquals(rsmd.getColumnName(col++),
-							"COLUMN_DEF");
-				assertEquals(rsmd.getColumnName(col++),
-							"SQL_DATA_TYPE");
-				assertEquals(rsmd.getColumnName(col++),
-							"SQL_DATETIME_SUB");
-			}
-			assertEquals(rsmd.getColumnName(col++),
-							"CHAR_OCTET_LENGTH");
-			assertEquals(rsmd.getColumnName(col++),
-							"ORDINAL_POSITION");
-			assertEquals(rsmd.getColumnName(col++),
-							"IS_NULLABLE");
-			assertEquals(rsmd.getColumnName(col++),
-							"SPECIFIC_NAME");
-			if (!issqlrelay) {
-				// oracle jdbc returns these columns too
-				assertEquals(rsmd.getColumnName(col++),
-							"SEQUENCE");
-				assertEquals(rsmd.getColumnName(col++),
-							"OVERLOAD");
-				assertEquals(rsmd.getColumnName(col++),
-							"DEFAULT_VALUE");
-			}
-			//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
-			rs.close();
-			System.out.println();
-		}
-}
-
-		// imported keys
-		System.out.println("imported keys");
-		// sqlrelay doesn't support this yet
-		if (!issqlrelay) {
-			rs=md.getImportedKeys("%","%","%");
-			assertTrue((rs!=null));
-			rsmd=rs.getMetaData();
-			assertTrue((rsmd!=null));
-			col=1;
-			assertEquals(rsmd.getColumnCount(),14);
-			assertEquals(rsmd.getColumnName(col++),"PKTABLE_CAT");
-			assertEquals(rsmd.getColumnName(col++),"PKTABLE_SCHEM");
-			assertEquals(rsmd.getColumnName(col++),"PKTABLE_NAME");
-			assertEquals(rsmd.getColumnName(col++),"PKCOLUMN_NAME");
-			assertEquals(rsmd.getColumnName(col++),"FKTABLE_CAT");
-			assertEquals(rsmd.getColumnName(col++),"FKTABLE_SCHEM");
-			assertEquals(rsmd.getColumnName(col++),"FKTABLE_NAME");
-			assertEquals(rsmd.getColumnName(col++),"FKCOLUMN_NAME");
-			assertEquals(rsmd.getColumnName(col++),"KEY_SEQ");
-			assertEquals(rsmd.getColumnName(col++),"UPDATE_RULE");
-			assertEquals(rsmd.getColumnName(col++),"DELETE_RULE");
-			assertEquals(rsmd.getColumnName(col++),"FK_NAME");
-			assertEquals(rsmd.getColumnName(col++),"PK_NAME");
-			assertEquals(rsmd.getColumnName(col++),"DEFERRABILITY");
-			//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
-			rs.close();
-			System.out.println();
-		}
-
-		// index info
-		System.out.println("index info");
-		// oracle jdbc throws:
-		// ORA-17068: Invalid arguments in call
-		//if (false) {
-		if (issqlrelay) {
-			rs=md.getIndexInfo("%","%","%",false,true);
-			assertTrue((rs!=null));
-			rsmd=rs.getMetaData();
-			assertTrue((rsmd!=null));
-			col=1;
-			assertEquals(rsmd.getColumnCount(),13);
-			assertEquals(rsmd.getColumnName(col++),
-							"TABLE_CAT");
-			assertEquals(rsmd.getColumnName(col++),
-							"TABLE_SCHEM");
-			assertEquals(rsmd.getColumnName(col++),
-							"TABLE_NAME");
-			assertEquals(rsmd.getColumnName(col++),
-							"NON_UNIQUE");
-			assertEquals(rsmd.getColumnName(col++),
-							"INDEX_QUALIFIER");
-			assertEquals(rsmd.getColumnName(col++),
-							"INDEX_NAME");
-			assertEquals(rsmd.getColumnName(col++),
-							"TYPE");
-			assertEquals(rsmd.getColumnName(col++),
-							"ORDINAL_POSITION");
-			assertEquals(rsmd.getColumnName(col++),
-							"COLUMN_NAME");
-			assertEquals(rsmd.getColumnName(col++),
-							"ASC_OR_DESC");
-			assertEquals(rsmd.getColumnName(col++),
-							"CARDINALITY");
-			assertEquals(rsmd.getColumnName(col++),
-							"PAGES");
-			assertEquals(rsmd.getColumnName(col++),
-							"FILTER_CONDITION");
-			//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
-			rs.close();
-			System.out.println();
-		}
-
-		// primary keys
-		System.out.println("primary keys");
-		rs=md.getPrimaryKeys("%","%","%");
-		assertTrue((rs!=null));
-		rsmd=rs.getMetaData();
-		assertTrue((rsmd!=null));
-		col=1;
-		assertEquals(rsmd.getColumnCount(),6);
-		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
-		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
-		assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
-		assertEquals(rsmd.getColumnName(col++),"COLUMN_NAME");
-		assertEquals(rsmd.getColumnName(col++),"KEY_SEQ");
-		assertEquals(rsmd.getColumnName(col++),"PK_NAME");
-		//System.out.println();
-		//printColumns(rsmd);
-		//printResultSet(rs);
-		rs.close();
-		System.out.println();
-
-		// procedure columns
-		System.out.println("procedure columns");
-		// oracle jdbc throws:
-		// ORA-00904: "ARG"."TYPE_OBJECT_TYPE": invalid identifier
-		if (issqlrelay) {
-			rs=md.getProcedureColumns("%","%","%","%");
-			assertTrue((rs!=null));
-			rsmd=rs.getMetaData();
-			assertTrue((rsmd!=null));
-			col=1;
-			assertEquals(rsmd.getColumnCount(),20);
-			assertEquals(rsmd.getColumnName(col++),
-							"PROCEDURE_CAT");
-			assertEquals(rsmd.getColumnName(col++),
-							"PROCEDURE_SCHEM");
-			assertEquals(rsmd.getColumnName(col++),
-							"PROCEDURE_NAME");
-			assertEquals(rsmd.getColumnName(col++),
-							"COLUMN_NAME");
-			assertEquals(rsmd.getColumnName(col++),
-							"COLUMN_TYPE");
-			assertEquals(rsmd.getColumnName(col++),
-							"DATA_TYPE");
-			assertEquals(rsmd.getColumnName(col++),
-							"TYPE_NAME");
-			assertEquals(rsmd.getColumnName(col++),
-							"PRECISION");
-			assertEquals(rsmd.getColumnName(col++),
-							"LENGTH");
-			assertEquals(rsmd.getColumnName(col++),
-							"SCALE");
-			assertEquals(rsmd.getColumnName(col++),
-							"RADIX");
-			assertEquals(rsmd.getColumnName(col++),
-							"NULLABLE");
-			assertEquals(rsmd.getColumnName(col++),
-							"REMARKS");
-			assertEquals(rsmd.getColumnName(col++),
-							"COLUMN_DEF");
-			assertEquals(rsmd.getColumnName(col++),
-							"SQL_DATA_TYPE");
-			assertEquals(rsmd.getColumnName(col++),
-							"SQL_DATETIME_SUB");
-			assertEquals(rsmd.getColumnName(col++),
-							"CHAR_OCTET_LENGTH");
-			assertEquals(rsmd.getColumnName(col++),
-							"ORDINAL_POSITION");
-			assertEquals(rsmd.getColumnName(col++),
-							"IS_NULLABLE");
-			assertEquals(rsmd.getColumnName(col++),
-							"SPECIFIC_NAME");
-			//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
-			rs.close();
-			System.out.println();
-		}
-
-		// pseudo columns
-		System.out.println("pseudo columns");
-// slow, disabled for now
-if (false) {
-		// sqlrelay doesn't support this yet
-		if (!issqlrelay) {
-			rs=md.getPseudoColumns("%","%","%","%");
-			assertTrue((rs!=null));
-			rsmd=rs.getMetaData();
-			assertTrue((rsmd!=null));
-			col=1;
-			assertEquals(rsmd.getColumnCount(),12);
-			assertEquals(rsmd.getColumnName(col++),
-							"TABLE_CAT");
-			assertEquals(rsmd.getColumnName(col++),
-							"TABLE_SCHEM");
-			assertEquals(rsmd.getColumnName(col++),
-							"TABLE_NAME");
-			assertEquals(rsmd.getColumnName(col++),
-							"COLUMN_NAME");
-			assertEquals(rsmd.getColumnName(col++),
-							"DATA_TYPE");
-			assertEquals(rsmd.getColumnName(col++),
-							"COLUMN_SIZE");
-			assertEquals(rsmd.getColumnName(col++),
-							"DECIMAL_DIGITS");
-			assertEquals(rsmd.getColumnName(col++),
-							"NUM_PREC_RADIX");
-			assertEquals(rsmd.getColumnName(col++),
-							"COLUMN_USAGE");
-			assertEquals(rsmd.getColumnName(col++),
-							"REMARKS");
-			assertEquals(rsmd.getColumnName(col++),
-							"CHAR_OCTET_LENGTH");
-			assertEquals(rsmd.getColumnName(col++),
-							"IS_NULLABLE");
-			//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
-			rs.close();
-			System.out.println();
-		}
-}
-
-		// super tables
-		// neither oracle, nor sqlrelay support this
-		System.out.println("super tables");
-		try {
-			rs=md.getSuperTables("%","%","%");
-			assertFalse(true);
-		} catch (Exception ex) {
-			assertTrue(true);
-		}
-		System.out.println();
-
-		// super types
-		// neither oracle, nor sqlrelay support this
-		System.out.println("super types");
-		try {
-			rs=md.getSuperTypes("%","%","%");
-			assertFalse(true);
-		} catch (Exception ex) {
-			assertTrue(true);
-		}
-		System.out.println();
-
-		// table privileges
-		System.out.println("table privileges");
-// slow, disabled for now
-if (false) {
-		// sqlrelay doesn't support this yet
-		if (!issqlrelay) {
-			rs=md.getTablePrivileges("%","%","%");
-			assertTrue((rs!=null));
-			rsmd=rs.getMetaData();
-			assertTrue((rsmd!=null));
-			col=1;
-			assertEquals(rsmd.getColumnCount(),7);
-			assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
-			assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
-			assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
-			assertEquals(rsmd.getColumnName(col++),"GRANTOR");
-			assertEquals(rsmd.getColumnName(col++),"GRANTEE");
-			assertEquals(rsmd.getColumnName(col++),"PRIVILEGE");
-			assertEquals(rsmd.getColumnName(col++),"IS_GRANTABLE");
-			//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
-			rs.close();
-			System.out.println();
-		}
-}
-
-		// version columns
-		System.out.println("version columns");
-		// sqlrelay doesn't support this yet
-		if (!issqlrelay) {
-			rs=md.getVersionColumns("%","%","%");
-			assertTrue((rs!=null));
-			rsmd=rs.getMetaData();
-			assertTrue((rsmd!=null));
-			col=1;
-			assertEquals(rsmd.getColumnCount(),8);
-			assertEquals(rsmd.getColumnName(col++),
-							"SCOPE");
-			assertEquals(rsmd.getColumnName(col++),
-							"COLUMN_NAME");
-			assertEquals(rsmd.getColumnName(col++),
-							"DATA_TYPE");
-			assertEquals(rsmd.getColumnName(col++),
-							"TYPE_NAME");
-			assertEquals(rsmd.getColumnName(col++),
-							"COLUMN_SIZE");
-			assertEquals(rsmd.getColumnName(col++),
-							"BUFFER_LENGTH");
-			assertEquals(rsmd.getColumnName(col++),
-							"DECIMAL_DIGITS");
-			assertEquals(rsmd.getColumnName(col++),
-							"PSEUDO_COLUMN");
-			//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
-			rs.close();
-			System.out.println();
-		}
-
 
 		// statement
 		System.out.println("STATEMENT:");
@@ -3845,6 +3051,834 @@ if (false) {
 		}
 		System.out.println();
 
+
+		// catalog list
+		System.out.println("CATALOG LIST: ");
+		con=DriverManager.getConnection(url,user,password);
+		md=con.getMetaData();
+		rs=md.getCatalogs();
+		assertTrue((rs!=null));
+		rsmd=rs.getMetaData();
+		assertTrue((rsmd!=null));
+		assertEquals(rsmd.getColumnCount(),1);
+		col=1;
+		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
+		while (rs.next()) {
+			System.out.println(rs.getString("TABLE_CAT"));
+		}
+		//System.out.println();
+		//printColumns(rsmd);
+		//printResultSet(rs);
+		rs.close();
+		System.out.println();
+
+
+		// schema list
+		System.out.println("SCHEMA LIST: ");
+		rs=md.getSchemas("%","%");
+		assertTrue((rs!=null));
+		rsmd=rs.getMetaData();
+		assertTrue((rsmd!=null));
+		assertEquals(rsmd.getColumnCount(),2);
+		col=1;
+		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_CATALOG");
+		//System.out.println();
+		//printColumns(rsmd);
+		//printResultSet(rs);
+		rs.close();
+		System.out.println();
+
+
+		// table type list
+		System.out.println("TABLE TYPE LIST: ");
+		rs=md.getTableTypes();
+		assertTrue((rs!=null));
+		rsmd=rs.getMetaData();
+		assertTrue((rsmd!=null));
+		assertEquals(rsmd.getColumnCount(),1);
+		col=1;
+		assertEquals(rsmd.getColumnName(col++),"TABLE_TYPE");
+		//System.out.println();
+		//printColumns(rsmd);
+		//printResultSet(rs);
+		rs.close();
+		System.out.println();
+
+
+		// table list
+		System.out.println("TABLE LIST: ");
+// slow, disabled for now
+if (false) {
+		rs=md.getTables("%","%","%",
+			new String[] {"SYNONYM","TABLE","VIEW"});
+		assertTrue((rs!=null));
+		rsmd=rs.getMetaData();
+		assertTrue((rsmd!=null));
+		if (issqlrelay) {
+                	assertEquals(rsmd.getColumnCount(),10);
+		} else {
+			// oracle jdbc returns 5 columns
+                	assertEquals(rsmd.getColumnCount(),5);
+		}
+		col=1;
+		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_TYPE");
+		assertEquals(rsmd.getColumnName(col++),"REMARKS");
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnName(col++),"TYPE_CAT");
+			assertEquals(rsmd.getColumnName(col++),"TYPE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+						"SELF_REFERENCING_COL_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+						"REF_GENERATION");
+		}
+		//System.out.println();
+		//printColumns(rsmd);
+		//printResultSet(rs);
+		rs.close();
+		System.out.println();
+}
+
+
+		// type info list
+		System.out.println("TYPE INFO LIST: ");
+		rs=md.getTypeInfo();
+		assertTrue((rs!=null));
+		rsmd=rs.getMetaData();
+		assertTrue((rsmd!=null));
+		assertEquals(rsmd.getColumnCount(),18);
+		col=1;
+		assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
+		assertEquals(rsmd.getColumnName(col++),"DATA_TYPE");
+		assertEquals(rsmd.getColumnName(col++),"PRECISION");
+		assertEquals(rsmd.getColumnName(col++),"LITERAL_PREFIX");
+		assertEquals(rsmd.getColumnName(col++),"LITERAL_SUFFIX");
+		assertEquals(rsmd.getColumnName(col++),"CREATE_PARAMS");
+		assertEquals(rsmd.getColumnName(col++),"NULLABLE");
+		assertEquals(rsmd.getColumnName(col++),"CASE_SENSITIVE");
+		assertEquals(rsmd.getColumnName(col++),"SEARCHABLE");
+		assertEquals(rsmd.getColumnName(col++),"UNSIGNED_ATTRIBUTE");
+		assertEquals(rsmd.getColumnName(col++),"FIXED_PREC_SCALE");
+		assertEquals(rsmd.getColumnName(col++),"AUTO_INCREMENT");
+		assertEquals(rsmd.getColumnName(col++),"LOCAL_TYPE_NAME");
+		assertEquals(rsmd.getColumnName(col++),"MINIMUM_SCALE");
+		assertEquals(rsmd.getColumnName(col++),"MAXIMUM_SCALE");
+		assertEquals(rsmd.getColumnName(col++),"SQL_DATA_TYPE");
+		assertEquals(rsmd.getColumnName(col++),"SQL_DATETIME_SUB");
+		assertEquals(rsmd.getColumnName(col++),"NUM_PREC_RADIX");
+		//System.out.println();
+		//printColumns(rsmd);
+		//printResultSet(rs);
+		rs.close();
+		System.out.println();
+
+
+		// procedure list
+		System.out.println("PROCEDURE LIST: ");
+// slow, disabled for now
+if (false) {
+                rs=md.getProcedures("%","%","%");
+                assertTrue((rs!=null));
+                rsmd=rs.getMetaData();
+                assertTrue((rsmd!=null));
+		col=1;
+		if (issqlrelay) {
+                	assertEquals(rsmd.getColumnCount(),8);
+		} else {
+			// oracle jdbc returns 9 columns
+                	assertEquals(rsmd.getColumnCount(),9);
+		}
+                assertEquals(rsmd.getColumnName(col++),"PROCEDURE_CAT");
+                assertEquals(rsmd.getColumnName(col++),"PROCEDURE_SCHEM");
+                assertEquals(rsmd.getColumnName(col++),"PROCEDURE_NAME");
+		if (issqlrelay) {
+                	assertEquals(rsmd.getColumnName(col++),
+						"NUM_INPUT_PARAMS");
+                	assertEquals(rsmd.getColumnName(col++),
+						"NUM_OUTPUT_PARAMS");
+                	assertEquals(rsmd.getColumnName(col++),
+						"NUM_RESULT_SETS");
+		} else {
+			// oracle jdbc returns
+			// NULL for these column names
+                	assertEquals(rsmd.getColumnName(col++),"NULL");
+                	assertEquals(rsmd.getColumnName(col++),"NULL");
+                	assertEquals(rsmd.getColumnName(col++),"NULL");
+		}
+                assertEquals(rsmd.getColumnName(col++),"REMARKS");
+                assertEquals(rsmd.getColumnName(col++),"PROCEDURE_TYPE");
+		if (!issqlrelay) {
+			// oracle jdbc returns a 9th column
+                	assertEquals(rsmd.getColumnName(col++),"SPECIFIC_NAME");
+		}
+                //System.out.println();
+		//printColumns(rsmd);
+		//printResultSet(rs);
+                rs.close();
+                System.out.println();
+}
+
+
+		// function list
+		System.out.println("FUNCTION LIST: ");
+		// sqlrelay doesn't support this yet
+		if (!issqlrelay) {
+                	rs=md.getFunctions("%","%","%");
+                	assertTrue((rs!=null));
+                	rsmd=rs.getMetaData();
+                	assertTrue((rsmd!=null));
+			col=1;
+			if (issqlrelay) {
+				assertEquals(rsmd.getColumnCount(),8);
+			} else {
+				// oracle jdbc returns 6 columns
+				assertEquals(rsmd.getColumnCount(),6);
+			}
+                	assertEquals(rsmd.getColumnName(col++),
+							"FUNCTION_CAT");
+                	assertEquals(rsmd.getColumnName(col++),
+							"FUNCTION_SCHEM");
+                	assertEquals(rsmd.getColumnName(col++),
+							"FUNCTION_NAME");
+			// oracle jdbc doesn't return these columns at all
+			if (issqlrelay) {
+                		assertEquals(rsmd.getColumnName(col++),
+							"NUM_INPUT_PARAMS");
+                		assertEquals(rsmd.getColumnName(col++),
+							"NUM_OUTPUT_PARAMS");
+                		assertEquals(rsmd.getColumnName(col++),
+							"NUM_RESULT_SETS");
+			}
+                	assertEquals(rsmd.getColumnName(col++),"REMARKS");
+                	assertEquals(rsmd.getColumnName(col++),"FUNCTION_TYPE");
+			// oracle jdbc returns this extra column
+			if (!issqlrelay) {
+                		assertEquals(rsmd.getColumnName(col++),
+							"SPECIFIC_NAME");
+			}
+                	//System.out.println();
+			//printColumns(rsmd);
+			//printResultSet(rs);
+                	rs.close();
+                	System.out.println();
+		}
+
+
+		// UDT list
+		System.out.println("UDT LIST: ");
+		// sqlrelay doesn't support this yet
+		// oracle jdbc throws:
+		// ORA-08177: can't serialize access for this transaction
+		if (false) {
+                	rs=md.getUDTs("%","%","%",null);
+                	assertTrue((rs!=null));
+                	rsmd=rs.getMetaData();
+                	assertTrue((rsmd!=null));
+			col=1;
+			if (issqlrelay) {
+                		assertEquals(rsmd.getColumnCount(),7);
+			} else {
+				// oracle jdbc returns 6 columns
+                		assertEquals(rsmd.getColumnCount(),6);
+			}
+                	assertEquals(rsmd.getColumnName(col++),"TYPE_CAT");
+                	assertEquals(rsmd.getColumnName(col++),"TYPE_SCHEM");
+                	assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
+                	assertEquals(rsmd.getColumnName(col++),"CLASS_NAME");
+                	assertEquals(rsmd.getColumnName(col++),"DATA_TYPE");
+                	assertEquals(rsmd.getColumnName(col++),"REMARKS");
+			// oracle jdbc doesn't return this column at all
+			if (issqlrelay) {
+                		assertEquals(rsmd.getColumnName(col++),
+								"BASE_TYPE");
+			}
+                	//System.out.println();
+			//printColumns(rsmd);
+			//printResultSet(rs);
+                	rs.close();
+                	System.out.println();
+		}
+
+
+		// attribute list
+		// neither oracle, nor sqlrelay support this
+		System.out.println("ATTRIBUTE LIST: ");
+		try {
+			rs=md.getAttributes("%","%","%","%");
+			assertFalse(true);
+		} catch (Exception ex) {
+			assertTrue(true);
+		}
+		System.out.println();
+
+
+
+		// best row identifier
+		System.out.println("BEST ROW IDENTIFIER: ");
+		// sqlrelay doesn't support this yet
+		if (!issqlrelay) {
+			rs=md.getBestRowIdentifier("%","%","%",
+					DatabaseMetaData.bestRowTemporary,
+					true);
+			assertTrue((rs!=null));
+			rsmd=rs.getMetaData();
+			assertTrue((rsmd!=null));
+			col=1;
+			assertEquals(rsmd.getColumnCount(),8);
+			assertEquals(rsmd.getColumnName(col++),
+							"SCOPE");
+			assertEquals(rsmd.getColumnName(col++),
+							"COLUMN_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+							"DATA_TYPE");
+			assertEquals(rsmd.getColumnName(col++),
+							"TYPE_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+							"COLUMN_SIZE");
+			assertEquals(rsmd.getColumnName(col++),
+							"BUFFER_LENGTH");
+			assertEquals(rsmd.getColumnName(col++),
+							"DECIMAL_DIGITS");
+			assertEquals(rsmd.getColumnName(col++),
+							"PSEUDO_COLUMN");
+			//System.out.println();
+			//printColumns(rsmd);
+			//printResultSet(rs);
+			rs.close();
+			System.out.println();
+		}
+
+
+
+		// client info properties
+		System.out.println("CLIENT INFO PROPERTIES: ");
+		// sqlrelay doesn't support this yet
+		if (!issqlrelay) {
+			rs=md.getClientInfoProperties();
+			assertTrue((rs!=null));
+			rsmd=rs.getMetaData();
+			assertTrue((rsmd!=null));
+			col=1;
+			assertEquals(rsmd.getColumnCount(),4);
+			assertEquals(rsmd.getColumnName(col++),"NAME");
+			assertEquals(rsmd.getColumnName(col++),"MAX_LEN");
+			assertEquals(rsmd.getColumnName(col++),"DEFAULT_VALUE");
+			assertEquals(rsmd.getColumnName(col++),"DESCRIPTION");
+			//System.out.println();
+			//printColumns(rsmd);
+			//printResultSet(rs);
+			rs.close();
+			System.out.println();
+		}
+
+
+
+		// column privileges
+		System.out.println("COLUMN PRIVILEGES: ");
+		// sqlrelay doesn't support this yet
+		if (!issqlrelay) {
+			rs=md.getColumnPrivileges("%","%","%","%");
+			assertTrue((rs!=null));
+			rsmd=rs.getMetaData();
+			assertTrue((rsmd!=null));
+			col=1;
+			assertEquals(rsmd.getColumnCount(),8);
+			assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
+			assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
+			assertEquals(rsmd.getColumnName(col++),"COLUMN_NAME");
+			assertEquals(rsmd.getColumnName(col++),"GRANTOR");
+			assertEquals(rsmd.getColumnName(col++),"GRANTEE");
+			assertEquals(rsmd.getColumnName(col++),"PRIVILEGE");
+			assertEquals(rsmd.getColumnName(col++),"IS_GRANTABLE");
+			//System.out.println();
+			//printColumns(rsmd);
+			//printResultSet(rs);
+			rs.close();
+			System.out.println();
+		}
+
+
+		// column list
+		System.out.println("COLUMN LIST: ");
+// slow, disabled for now
+if (false) {
+		rs=md.getColumns("%","%","%","%");
+		assertTrue((rs!=null));
+		rsmd=rs.getMetaData();
+		assertTrue((rsmd!=null));
+		col=1;
+		assertEquals(rsmd.getColumnCount(),24);
+		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
+		assertEquals(rsmd.getColumnName(col++),"COLUMN_NAME");
+		assertEquals(rsmd.getColumnName(col++),"DATA_TYPE");
+		assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
+		assertEquals(rsmd.getColumnName(col++),"COLUMN_SIZE");
+		assertEquals(rsmd.getColumnName(col++),"BUFFER_LENGTH");
+		assertEquals(rsmd.getColumnName(col++),"DECIMAL_DIGITS");
+		assertEquals(rsmd.getColumnName(col++),"NUM_PREC_RADIX");
+		assertEquals(rsmd.getColumnName(col++),"NULLABLE");
+		assertEquals(rsmd.getColumnName(col++),"REMARKS");
+		assertEquals(rsmd.getColumnName(col++),"COLUMN_DEF");
+		assertEquals(rsmd.getColumnName(col++),"SQL_DATA_TYPE");
+		assertEquals(rsmd.getColumnName(col++),"SQL_DATETIME_SUB");
+		assertEquals(rsmd.getColumnName(col++),"CHAR_OCTET_LENGTH");
+		assertEquals(rsmd.getColumnName(col++),"ORDINAL_POSITION");
+		assertEquals(rsmd.getColumnName(col++),"IS_NULLABLE");
+		assertEquals(rsmd.getColumnName(col++),"SCOPE_CATALOG");
+		assertEquals(rsmd.getColumnName(col++),"SCOPE_SCHEMA");
+		assertEquals(rsmd.getColumnName(col++),"SCOPE_TABLE");
+		assertEquals(rsmd.getColumnName(col++),"SOURCE_DATA_TYPE");
+		assertEquals(rsmd.getColumnName(col++),"IS_AUTOINCREMENT");
+		assertEquals(rsmd.getColumnName(col++),"IS_GENERATEDCOLUMN");
+		//System.out.println();
+		//printColumns(rsmd);
+		//printResultSet(rs);
+		rs.close();
+		System.out.println();
+}
+
+
+
+		// cross reference
+		System.out.println("CROSS REFERENCE: ");
+		// sqlrelay doesn't support this yet
+		if (!issqlrelay) {
+			rs=md.getCrossReference("%","%","%","%","%","%");
+			assertTrue((rs!=null));
+			rsmd=rs.getMetaData();
+			assertTrue((rsmd!=null));
+			col=1;
+			assertEquals(rsmd.getColumnCount(),14);
+			assertEquals(rsmd.getColumnName(col++),"PKTABLE_CAT");
+			assertEquals(rsmd.getColumnName(col++),"PKTABLE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),"PKTABLE_NAME");
+			assertEquals(rsmd.getColumnName(col++),"PKCOLUMN_NAME");
+			assertEquals(rsmd.getColumnName(col++),"FKTABLE_CAT");
+			assertEquals(rsmd.getColumnName(col++),"FKTABLE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),"FKTABLE_NAME");
+			assertEquals(rsmd.getColumnName(col++),"FKCOLUMN_NAME");
+			assertEquals(rsmd.getColumnName(col++),"KEY_SEQ");
+			assertEquals(rsmd.getColumnName(col++),"UPDATE_RULE");
+			assertEquals(rsmd.getColumnName(col++),"DELETE_RULE");
+			assertEquals(rsmd.getColumnName(col++),"FK_NAME");
+			assertEquals(rsmd.getColumnName(col++),"PK_NAME");
+			assertEquals(rsmd.getColumnName(col++),"DEFERRABILITY");
+			//System.out.println();
+			//printColumns(rsmd);
+			//printResultSet(rs);
+			rs.close();
+			System.out.println();
+		}
+
+
+
+		// exported keys
+		System.out.println("EXPORTED KEYS: ");
+		// sqlrelay doesn't support this yet
+		if (!issqlrelay) {
+			rs=md.getExportedKeys("%","%","%");
+			assertTrue((rs!=null));
+			rsmd=rs.getMetaData();
+			assertTrue((rsmd!=null));
+			col=1;
+			assertEquals(rsmd.getColumnCount(),14);
+			assertEquals(rsmd.getColumnName(col++),"PKTABLE_CAT");
+			assertEquals(rsmd.getColumnName(col++),"PKTABLE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),"PKTABLE_NAME");
+			assertEquals(rsmd.getColumnName(col++),"PKCOLUMN_NAME");
+			assertEquals(rsmd.getColumnName(col++),"FKTABLE_CAT");
+			assertEquals(rsmd.getColumnName(col++),"FKTABLE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),"FKTABLE_NAME");
+			assertEquals(rsmd.getColumnName(col++),"FKCOLUMN_NAME");
+			assertEquals(rsmd.getColumnName(col++),"KEY_SEQ");
+			assertEquals(rsmd.getColumnName(col++),"UPDATE_RULE");
+			assertEquals(rsmd.getColumnName(col++),"DELETE_RULE");
+			assertEquals(rsmd.getColumnName(col++),"FK_NAME");
+			assertEquals(rsmd.getColumnName(col++),"PK_NAME");
+			assertEquals(rsmd.getColumnName(col++),"DEFERRABILITY");
+			//System.out.println();
+			//printColumns(rsmd);
+			//printResultSet(rs);
+			rs.close();
+			System.out.println();
+		}
+
+
+		// function column list
+		System.out.println("FUNCTION COLUMN LIST: ");
+// slow, disabled for now
+if (false) {
+		// sqlrelay doesn't support this yet
+		if (!issqlrelay) {
+			rs=md.getFunctionColumns("%","%","%","%");
+			assertTrue((rs!=null));
+			rsmd=rs.getMetaData();
+			assertTrue((rsmd!=null));
+			col=1;
+			if (issqlrelay) {
+				assertEquals(rsmd.getColumnCount(),17);
+			} else {
+				// oracle jdbc returns 23 columns
+				assertEquals(rsmd.getColumnCount(),23);
+			}
+			assertEquals(rsmd.getColumnName(col++),
+							"FUNCTION_CAT");
+			assertEquals(rsmd.getColumnName(col++),
+							"FUNCTION_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),
+							"FUNCTION_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+							"COLUMN_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+							"COLUMN_TYPE");
+			assertEquals(rsmd.getColumnName(col++),
+							"DATA_TYPE");
+			assertEquals(rsmd.getColumnName(col++),
+							"TYPE_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+							"PRECISION");
+			assertEquals(rsmd.getColumnName(col++),
+							"LENGTH");
+			assertEquals(rsmd.getColumnName(col++),
+							"SCALE");
+			assertEquals(rsmd.getColumnName(col++),
+							"RADIX");
+			assertEquals(rsmd.getColumnName(col++),
+							"NULLABLE");
+			assertEquals(rsmd.getColumnName(col++),
+							"REMARKS");
+			if (!issqlrelay) {
+				// oracle jdbc returns these columns too
+				assertEquals(rsmd.getColumnName(col++),
+							"COLUMN_DEF");
+				assertEquals(rsmd.getColumnName(col++),
+							"SQL_DATA_TYPE");
+				assertEquals(rsmd.getColumnName(col++),
+							"SQL_DATETIME_SUB");
+			}
+			assertEquals(rsmd.getColumnName(col++),
+							"CHAR_OCTET_LENGTH");
+			assertEquals(rsmd.getColumnName(col++),
+							"ORDINAL_POSITION");
+			assertEquals(rsmd.getColumnName(col++),
+							"IS_NULLABLE");
+			assertEquals(rsmd.getColumnName(col++),
+							"SPECIFIC_NAME");
+			if (!issqlrelay) {
+				// oracle jdbc returns these columns too
+				assertEquals(rsmd.getColumnName(col++),
+							"SEQUENCE");
+				assertEquals(rsmd.getColumnName(col++),
+							"OVERLOAD");
+				assertEquals(rsmd.getColumnName(col++),
+							"DEFAULT_VALUE");
+			}
+			//System.out.println();
+			//printColumns(rsmd);
+			//printResultSet(rs);
+			rs.close();
+			System.out.println();
+		}
+}
+
+
+
+		// imported keys
+		System.out.println("IMPORTED KEYS: ");
+		// sqlrelay doesn't support this yet
+		if (!issqlrelay) {
+			rs=md.getImportedKeys("%","%","%");
+			assertTrue((rs!=null));
+			rsmd=rs.getMetaData();
+			assertTrue((rsmd!=null));
+			col=1;
+			assertEquals(rsmd.getColumnCount(),14);
+			assertEquals(rsmd.getColumnName(col++),"PKTABLE_CAT");
+			assertEquals(rsmd.getColumnName(col++),"PKTABLE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),"PKTABLE_NAME");
+			assertEquals(rsmd.getColumnName(col++),"PKCOLUMN_NAME");
+			assertEquals(rsmd.getColumnName(col++),"FKTABLE_CAT");
+			assertEquals(rsmd.getColumnName(col++),"FKTABLE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),"FKTABLE_NAME");
+			assertEquals(rsmd.getColumnName(col++),"FKCOLUMN_NAME");
+			assertEquals(rsmd.getColumnName(col++),"KEY_SEQ");
+			assertEquals(rsmd.getColumnName(col++),"UPDATE_RULE");
+			assertEquals(rsmd.getColumnName(col++),"DELETE_RULE");
+			assertEquals(rsmd.getColumnName(col++),"FK_NAME");
+			assertEquals(rsmd.getColumnName(col++),"PK_NAME");
+			assertEquals(rsmd.getColumnName(col++),"DEFERRABILITY");
+			//System.out.println();
+			//printColumns(rsmd);
+			//printResultSet(rs);
+			rs.close();
+			System.out.println();
+		}
+
+
+		// key and index list
+		System.out.println("KEY AND INDEX LIST: ");
+		// oracle jdbc throws:
+		// ORA-17068: Invalid arguments in call
+		//if (false) {
+		if (issqlrelay) {
+			rs=md.getIndexInfo("%","%","%",false,true);
+			assertTrue((rs!=null));
+			rsmd=rs.getMetaData();
+			assertTrue((rsmd!=null));
+			col=1;
+			assertEquals(rsmd.getColumnCount(),13);
+			assertEquals(rsmd.getColumnName(col++),
+							"TABLE_CAT");
+			assertEquals(rsmd.getColumnName(col++),
+							"TABLE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),
+							"TABLE_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+							"NON_UNIQUE");
+			assertEquals(rsmd.getColumnName(col++),
+							"INDEX_QUALIFIER");
+			assertEquals(rsmd.getColumnName(col++),
+							"INDEX_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+							"TYPE");
+			assertEquals(rsmd.getColumnName(col++),
+							"ORDINAL_POSITION");
+			assertEquals(rsmd.getColumnName(col++),
+							"COLUMN_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+							"ASC_OR_DESC");
+			assertEquals(rsmd.getColumnName(col++),
+							"CARDINALITY");
+			assertEquals(rsmd.getColumnName(col++),
+							"PAGES");
+			assertEquals(rsmd.getColumnName(col++),
+							"FILTER_CONDITION");
+			//System.out.println();
+			//printColumns(rsmd);
+			//printResultSet(rs);
+			rs.close();
+			System.out.println();
+		}
+
+
+		// primary keys list
+		System.out.println("PRIMARY KEYS LIST: ");
+		rs=md.getPrimaryKeys("%","%","%");
+		assertTrue((rs!=null));
+		rsmd=rs.getMetaData();
+		assertTrue((rsmd!=null));
+		col=1;
+		assertEquals(rsmd.getColumnCount(),6);
+		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
+		assertEquals(rsmd.getColumnName(col++),"COLUMN_NAME");
+		assertEquals(rsmd.getColumnName(col++),"KEY_SEQ");
+		assertEquals(rsmd.getColumnName(col++),"PK_NAME");
+		//System.out.println();
+		//printColumns(rsmd);
+		//printResultSet(rs);
+		rs.close();
+		System.out.println();
+
+
+		// procedure parameter list
+		System.out.println("PROCEDURE PARAMETER LIST: ");
+		// oracle jdbc throws:
+		// ORA-00904: "ARG"."TYPE_OBJECT_TYPE": invalid identifier
+		if (issqlrelay) {
+			rs=md.getProcedureColumns("%","%","%","%");
+			assertTrue((rs!=null));
+			rsmd=rs.getMetaData();
+			assertTrue((rsmd!=null));
+			col=1;
+			assertEquals(rsmd.getColumnCount(),20);
+			assertEquals(rsmd.getColumnName(col++),
+							"PROCEDURE_CAT");
+			assertEquals(rsmd.getColumnName(col++),
+							"PROCEDURE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),
+							"PROCEDURE_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+							"COLUMN_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+							"COLUMN_TYPE");
+			assertEquals(rsmd.getColumnName(col++),
+							"DATA_TYPE");
+			assertEquals(rsmd.getColumnName(col++),
+							"TYPE_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+							"PRECISION");
+			assertEquals(rsmd.getColumnName(col++),
+							"LENGTH");
+			assertEquals(rsmd.getColumnName(col++),
+							"SCALE");
+			assertEquals(rsmd.getColumnName(col++),
+							"RADIX");
+			assertEquals(rsmd.getColumnName(col++),
+							"NULLABLE");
+			assertEquals(rsmd.getColumnName(col++),
+							"REMARKS");
+			assertEquals(rsmd.getColumnName(col++),
+							"COLUMN_DEF");
+			assertEquals(rsmd.getColumnName(col++),
+							"SQL_DATA_TYPE");
+			assertEquals(rsmd.getColumnName(col++),
+							"SQL_DATETIME_SUB");
+			assertEquals(rsmd.getColumnName(col++),
+							"CHAR_OCTET_LENGTH");
+			assertEquals(rsmd.getColumnName(col++),
+							"ORDINAL_POSITION");
+			assertEquals(rsmd.getColumnName(col++),
+							"IS_NULLABLE");
+			assertEquals(rsmd.getColumnName(col++),
+							"SPECIFIC_NAME");
+			//System.out.println();
+			//printColumns(rsmd);
+			//printResultSet(rs);
+			rs.close();
+			System.out.println();
+		}
+
+
+		// pseudo column list
+		System.out.println("PSEUDO COLUMN LIST: ");
+// slow, disabled for now
+if (false) {
+		// sqlrelay doesn't support this yet
+		if (!issqlrelay) {
+			rs=md.getPseudoColumns("%","%","%","%");
+			assertTrue((rs!=null));
+			rsmd=rs.getMetaData();
+			assertTrue((rsmd!=null));
+			col=1;
+			assertEquals(rsmd.getColumnCount(),12);
+			assertEquals(rsmd.getColumnName(col++),
+							"TABLE_CAT");
+			assertEquals(rsmd.getColumnName(col++),
+							"TABLE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),
+							"TABLE_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+							"COLUMN_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+							"DATA_TYPE");
+			assertEquals(rsmd.getColumnName(col++),
+							"COLUMN_SIZE");
+			assertEquals(rsmd.getColumnName(col++),
+							"DECIMAL_DIGITS");
+			assertEquals(rsmd.getColumnName(col++),
+							"NUM_PREC_RADIX");
+			assertEquals(rsmd.getColumnName(col++),
+							"COLUMN_USAGE");
+			assertEquals(rsmd.getColumnName(col++),
+							"REMARKS");
+			assertEquals(rsmd.getColumnName(col++),
+							"CHAR_OCTET_LENGTH");
+			assertEquals(rsmd.getColumnName(col++),
+							"IS_NULLABLE");
+			//System.out.println();
+			//printColumns(rsmd);
+			//printResultSet(rs);
+			rs.close();
+			System.out.println();
+		}
+}
+
+
+		// super table list
+		// neither oracle, nor sqlrelay support this
+		System.out.println("SUPER TABLE LIST: ");
+		try {
+			rs=md.getSuperTables("%","%","%");
+			assertFalse(true);
+		} catch (Exception ex) {
+			assertTrue(true);
+		}
+		System.out.println();
+
+
+		// super type list
+		// neither oracle, nor sqlrelay support this
+		System.out.println("SUPER TYPE LIST: ");
+		try {
+			rs=md.getSuperTypes("%","%","%");
+			assertFalse(true);
+		} catch (Exception ex) {
+			assertTrue(true);
+		}
+		System.out.println();
+
+
+
+		// table privileges
+		System.out.println("TABLE PRIVILEGES: ");
+// slow, disabled for now
+if (false) {
+		// sqlrelay doesn't support this yet
+		if (!issqlrelay) {
+			rs=md.getTablePrivileges("%","%","%");
+			assertTrue((rs!=null));
+			rsmd=rs.getMetaData();
+			assertTrue((rsmd!=null));
+			col=1;
+			assertEquals(rsmd.getColumnCount(),7);
+			assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
+			assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
+			assertEquals(rsmd.getColumnName(col++),"GRANTOR");
+			assertEquals(rsmd.getColumnName(col++),"GRANTEE");
+			assertEquals(rsmd.getColumnName(col++),"PRIVILEGE");
+			assertEquals(rsmd.getColumnName(col++),"IS_GRANTABLE");
+			//System.out.println();
+			//printColumns(rsmd);
+			//printResultSet(rs);
+			rs.close();
+			System.out.println();
+		}
+}
+
+
+
+		// version columns
+		System.out.println("VERSION COLUMNS: ");
+		// sqlrelay doesn't support this yet
+		if (!issqlrelay) {
+			rs=md.getVersionColumns("%","%","%");
+			assertTrue((rs!=null));
+			rsmd=rs.getMetaData();
+			assertTrue((rsmd!=null));
+			col=1;
+			assertEquals(rsmd.getColumnCount(),8);
+			assertEquals(rsmd.getColumnName(col++),
+							"SCOPE");
+			assertEquals(rsmd.getColumnName(col++),
+							"COLUMN_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+							"DATA_TYPE");
+			assertEquals(rsmd.getColumnName(col++),
+							"TYPE_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+							"COLUMN_SIZE");
+			assertEquals(rsmd.getColumnName(col++),
+							"BUFFER_LENGTH");
+			assertEquals(rsmd.getColumnName(col++),
+							"DECIMAL_DIGITS");
+			assertEquals(rsmd.getColumnName(col++),
+							"PSEUDO_COLUMN");
+			//System.out.println();
+			//printColumns(rsmd);
+			//printResultSet(rs);
+			rs.close();
+			System.out.println();
+		}
 
 		// FIXME: need tests for Connection methods...
 		// nativeSQL
