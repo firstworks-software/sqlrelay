@@ -835,23 +835,42 @@ public class SQLRCursor {
 	private native long	alloc(long con);
 	private native long	getOutputBindCursorInternal(String variable);
 	public native boolean	getDatabaseListWithFormat(
-						String databases, int listformat);
+						String databases,
+						int listformat);
 	public native boolean	getCatalogListWithFormat(
-						String catalogs, int listformat);
+						String catalogs,
+						int listformat);
 	public native boolean	getSchemaListWithFormat(
-						String schemas, int listformat);
+						String schemas,
+						int listformat);
 	public native boolean	getTableListWithFormat(
-						String tables, int listformat,
+						String tables,
+						int listformat,
 						int objecttypes);
 	public native boolean	getTableTypeListWithFormat(
 						int listformat);
 	public native boolean	getColumnListWithFormat(
-						String table, String columns,
+						String table,
+						String columns,
+						int listformat);
+	public native boolean	getPrimaryKeysListWithFormat(
+						String table,
+						String columns,
+						int listformat);
+	public native boolean	getKeyAndIndexListWithFormat(
+						String table,
+						String qualifier,
 						int listformat);
 	public native boolean	getTypeInfoListWithFormat(
-						String type, int listformat);
+						String type,
+						int listformat);
 	public native boolean	getProcedureListWithFormat(
-						String procedures, int listformat);
+						String procedures,
+						int listformat);
+	public native boolean	getProcedureParameterListWithFormat(
+						String procedure,
+						String parameters,
+						int listformat);
 	public native boolean	getLastInsertIdList();
 	public native boolean	isNumberType(String type);
 	public native boolean	isDateTimeType(String type);

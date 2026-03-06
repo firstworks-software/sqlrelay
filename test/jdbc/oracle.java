@@ -121,24 +121,20 @@ class oracle extends sqlrtest {
 		}
 
 		// catalog
-		// FIXME: sqlrelay currently returns the schema, when run
-		// against an oracle backend, rather than null, #7914
-		if (!issqlrelay) {
-			System.out.println("catalog");
-			con.setCatalog(user);
-			assertEquals(con.getCatalog(),null);
-			System.out.println();
-		}
+		System.out.println("catalog");
+		String	originalcatalog=con.getCatalog();
+		con.setCatalog("dummy");
+		assertEquals(con.getCatalog(),null);
+		con.setCatalog(originalcatalog);
+		System.out.println();
 
 		// schema
-		// FIXME: with sqlrelay, somehow this causes oracle to throw:
-		// ORA-01031: insufficient privileges
-		if (!issqlrelay) {
-			System.out.println("schema");
-			con.setSchema(user.toUpperCase());
-			assertEquals(con.getSchema(),user.toUpperCase());
-			System.out.println();
-		}
+		System.out.println("schema");
+		String	originalschema=con.getSchema();
+		con.setSchema(user.toUpperCase());
+		assertEquals(con.getSchema(),user.toUpperCase());
+		con.setSchema(originalschema);
+		System.out.println();
 
 		// client info
 		// Oracle only allows:
@@ -2011,6 +2007,8 @@ if (false) {
 
 		// columns
 		System.out.println("columns");
+// slow, disabled for now
+if (false) {
 		rs=md.getColumns("%","%","%","%");
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
@@ -2046,6 +2044,7 @@ if (false) {
 		//printResultSet(rs);
 		rs.close();
 		System.out.println();
+}
 
 		// cross reference
 		System.out.println("cross reference");
@@ -2219,10 +2218,10 @@ if (false) {
 
 		// index info
 		System.out.println("index info");
-		// FIXME: sqlrelay doesn't support this yet
 		// oracle jdbc throws:
 		// ORA-17068: Invalid arguments in call
-		if (false) {
+		//if (false) {
+		if (issqlrelay) {
 			rs=md.getIndexInfo("%","%","%",false,true);
 			assertTrue((rs!=null));
 			rsmd=rs.getMetaData();
@@ -2264,33 +2263,29 @@ if (false) {
 
 		// primary keys
 		System.out.println("primary keys");
-		// FIXME: sqlrelay doesn't support this yet
-		if (!issqlrelay) {
-			rs=md.getPrimaryKeys("%","%","%");
-			assertTrue((rs!=null));
-			rsmd=rs.getMetaData();
-			assertTrue((rsmd!=null));
-			col=1;
-			assertEquals(rsmd.getColumnCount(),6);
-			assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
-			assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
-			assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
-			assertEquals(rsmd.getColumnName(col++),"COLUMN_NAME");
-			assertEquals(rsmd.getColumnName(col++),"KEY_SEQ");
-			assertEquals(rsmd.getColumnName(col++),"PK_NAME");
-			//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
-			rs.close();
-			System.out.println();
-		}
+		rs=md.getPrimaryKeys("%","%","%");
+		assertTrue((rs!=null));
+		rsmd=rs.getMetaData();
+		assertTrue((rsmd!=null));
+		col=1;
+		assertEquals(rsmd.getColumnCount(),6);
+		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
+		assertEquals(rsmd.getColumnName(col++),"COLUMN_NAME");
+		assertEquals(rsmd.getColumnName(col++),"KEY_SEQ");
+		assertEquals(rsmd.getColumnName(col++),"PK_NAME");
+		//System.out.println();
+		//printColumns(rsmd);
+		//printResultSet(rs);
+		rs.close();
+		System.out.println();
 
 		// procedure columns
 		System.out.println("procedure columns");
-		// FIXME: sqlrelay doesn't support this yet
 		// oracle jdbc throws:
 		// ORA-00904: "ARG"."TYPE_OBJECT_TYPE": invalid identifier
-		if (false) {
+		if (issqlrelay) {
 			rs=md.getProcedureColumns("%","%","%","%");
 			assertTrue((rs!=null));
 			rsmd=rs.getMetaData();

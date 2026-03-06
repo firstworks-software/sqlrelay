@@ -324,7 +324,10 @@ public class SQLRelayConnection implements Connection {
 		throwExceptionIfClosed();
 		String	catalog=null;
 		synchronized (networklock) {
-			catalog=sqlrcon.getCurrentDatabase();
+			catalog=sqlrcon.getCurrentCatalog();
+		}
+		if (catalog.isEmpty()) {
+			catalog=null;
 		}
 		drv.debugPrintln("catalog: "+catalog);
 		drv.debugEnd();
@@ -396,6 +399,9 @@ public class SQLRelayConnection implements Connection {
 		String	schema=null;
 		synchronized (networklock) {
 			schema=sqlrcon.getCurrentSchema();
+		}
+		if (schema.isEmpty()) {
+			schema=null;
 		}
 		drv.debugPrintln("schema: "+schema);
 		drv.debugEnd();
@@ -767,7 +773,7 @@ public class SQLRelayConnection implements Connection {
 		drv.debugPrintln("catalog: "+catalog);
 		boolean	success=false;
 		synchronized (networklock) {
-			success=sqlrcon.selectDatabase(catalog);
+			success=sqlrcon.selectCatalog(catalog);
 		}
 		if (!success) {
 			throwErrorMessageException();

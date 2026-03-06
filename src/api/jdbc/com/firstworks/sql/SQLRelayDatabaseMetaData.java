@@ -581,10 +581,37 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		drv.debugPrintln("unique: "+unique);
 		drv.debugPrintln("approximate: "+approximate);
 
-		// FIXME: implement with sqlrcur.getKeyAndIndexList() ?
-		drv.debugPrintln("FIXME: implement this");
+		String	wild=buildWild(catalog,schema,table);
+		drv.debugPrintln("wild: "+wild);
+
+		SQLRelayResultSet	resultset=null;
+		SQLRelayStatement	stmt=(SQLRelayStatement)
+						conn.createStatement();
+		SQLRCursor		sqlrcur=stmt.getSQLRCursor();
+
+		boolean	result=false;
+		synchronized (networklock) {
+			result=sqlrcur.getKeyAndIndexListWithFormat(
+							wild,null,4);
+		}
+
+		if (result) {
+
+			drv.debugPrintln("colcount: "+sqlrcur.colCount());
+
+			if (sqlrcur.colCount()>0) {
+				resultset=new SQLRelayResultSet(drv);
+				resultset.setNetworkLock(networklock);
+				resultset.setStatement(stmt);
+				resultset.setConnection(conn);
+				resultset.setSQLRCursor(sqlrcur);
+			}
+		} else {
+			conn.throwException(sqlrcur.errorMessage());
+		}
+
 		drv.debugEnd();
-		return null;
+		return resultset;
 	}
 
 	public
@@ -806,10 +833,37 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		drv.debugPrintln("schema: "+schema);
 		drv.debugPrintln("table: "+table);
 
-		// FIXME: implement with sqlrcon.getPrimaryKeysList()
-		drv.debugPrintln("FIXME: implement this");
+		String	wild=buildWild(catalog,schema,table);
+		drv.debugPrintln("wild: "+wild);
+
+		SQLRelayResultSet	resultset=null;
+		SQLRelayStatement	stmt=(SQLRelayStatement)
+						conn.createStatement();
+		SQLRCursor		sqlrcur=stmt.getSQLRCursor();
+
+		boolean	result=false;
+		synchronized (networklock) {
+			result=sqlrcur.getPrimaryKeysListWithFormat(
+							wild,null,4);
+		}
+
+		if (result) {
+
+			drv.debugPrintln("colcount: "+sqlrcur.colCount());
+
+			if (sqlrcur.colCount()>0) {
+				resultset=new SQLRelayResultSet(drv);
+				resultset.setNetworkLock(networklock);
+				resultset.setStatement(stmt);
+				resultset.setConnection(conn);
+				resultset.setSQLRCursor(sqlrcur);
+			}
+		} else {
+			conn.throwException(sqlrcur.errorMessage());
+		}
+
 		drv.debugEnd();
-		return null;
+		return resultset;
 	}
 
 	public
@@ -828,10 +882,41 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 		drv.debugPrintln("column name pattern: "+
 						columnnamepattern);
 
-		// FIXME: implement with sqlrcon.getProcedureBindAndColumnList()
-		drv.debugPrintln("FIXME: implement this");
+		String	wild=buildWild(catalog,schemapattern,
+						procedurenamepattern);
+		drv.debugPrintln("wild: "+wild);
+		drv.debugPrintln("column name pattern: "+
+						columnnamepattern);
+
+		SQLRelayResultSet	resultset=null;
+		SQLRelayStatement	stmt=(SQLRelayStatement)
+						conn.createStatement();
+		SQLRCursor		sqlrcur=stmt.getSQLRCursor();
+
+		boolean	result=false;
+		synchronized (networklock) {
+			result=sqlrcur.
+				getProcedureParameterListWithFormat(
+						wild,columnnamepattern,4);
+		}
+
+		if (result) {
+
+			drv.debugPrintln("colcount: "+sqlrcur.colCount());
+
+			if (sqlrcur.colCount()>0) {
+				resultset=new SQLRelayResultSet(drv);
+				resultset.setNetworkLock(networklock);
+				resultset.setStatement(stmt);
+				resultset.setConnection(conn);
+				resultset.setSQLRCursor(sqlrcur);
+			}
+		} else {
+			conn.throwException(sqlrcur.errorMessage());
+		}
+
 		drv.debugEnd();
-		return null;
+		return resultset;
 	}
 
 	public

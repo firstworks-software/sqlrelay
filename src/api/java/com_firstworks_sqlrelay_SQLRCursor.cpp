@@ -2437,6 +2437,40 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getColumnList
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getPrimaryKeysListWithFormat
+ * Signature: (Ljava/lang/String;Ljava/lang/String;I)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getPrimaryKeysListWithFormat
+  (JNIEnv *env, jobject self, jstring table, jstring columns, jint listformat) {
+	char	*tablestring=curGetStringUTFChars(env,table,0);
+	char	*columnsstring=curGetStringUTFChars(env,columns,0);
+	jboolean	retval=getSqlrCursor(env,self)->
+				getPrimaryKeysList(tablestring,columnsstring,
+					(sqlrclientlistformat_t)listformat);
+	curReleaseStringUTFChars(env,columns,columnsstring);
+	curReleaseStringUTFChars(env,table,tablestring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getKeyAndIndexListWithFormat
+ * Signature: (Ljava/lang/String;Ljava/lang/String;I)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getKeyAndIndexListWithFormat
+  (JNIEnv *env, jobject self, jstring table, jstring qualifier, jint listformat) {
+	char	*tablestring=curGetStringUTFChars(env,table,0);
+	char	*qualifierstring=curGetStringUTFChars(env,qualifier,0);
+	jboolean	retval=getSqlrCursor(env,self)->
+				getKeyAndIndexList(tablestring,qualifierstring,
+					(sqlrclientlistformat_t)listformat);
+	curReleaseStringUTFChars(env,qualifier,qualifierstring);
+	curReleaseStringUTFChars(env,table,tablestring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
  * Method:    getTypeInfoListWithFormat
  * Signature: (Ljava/lang/String;Ljava/lang/String;I)Z
  */
@@ -2462,6 +2496,24 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getProcedureL
 				getProcedureList(proceduresstring,
 					(sqlrclientlistformat_t)listformat);
 	curReleaseStringUTFChars(env,procedures,proceduresstring);
+	return retval;
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getProcedureParameterListWithFormat
+ * Signature: (Ljava/lang/String;Ljava/lang/String;I)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getProcedureParameterListWithFormat
+  (JNIEnv *env, jobject self, jstring procedure, jstring parameters, jint listformat) {
+	char	*procedurestring=curGetStringUTFChars(env,procedure,0);
+	char	*parametersstring=curGetStringUTFChars(env,parameters,0);
+	jboolean	retval=getSqlrCursor(env,self)->
+				getProcedureParameterList(
+					procedurestring,parametersstring,
+					(sqlrclientlistformat_t)listformat);
+	curReleaseStringUTFChars(env,parameters,parametersstring);
+	curReleaseStringUTFChars(env,procedure,procedurestring);
 	return retval;
 }
 
