@@ -72,18 +72,46 @@ class SQLRSERVER_DLLSPEC routerconnection : public sqlrserverconnection {
 		const char	*getDbIpAddress();
 		bool		cacheDbHostInfo();
 		bool		getListsByApiCalls();
-		bool		getDatabaseList(sqlrservercursor *cursor,
+		bool		getCatalogList(sqlrservercursor *cursor,
 						const char *catalog);
+		bool		getSchemaList(sqlrservercursor *cursor,
+						const char *catalog,
+						const char *schema);
+		bool		getTableTypeList(sqlrservercursor *cursor,
+						const char *catalog,
+						const char *schema,
+						const char *tabletypes);
 		bool		getTableList(sqlrservercursor *cursor,
 						const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
+		bool		getTypeInfoList(sqlrservercursor *cursor,
+						const char *catalog,
+						const char *schema,
+						const char *type);
 		bool		getColumnList(sqlrservercursor *cursor,
 						const char *catalog,
 						const char *schema,
 						const char *table,
 						const char *column);
+		bool		getPrimaryKeysList(sqlrservercursor *cursor,
+						const char *catalog,
+						const char *schema,
+						const char *table);
+		bool		getKeyAndIndexList(sqlrservercursor *cursor,
+						const char *catalog,
+						const char *schema,
+						const char *table);
+		bool		getProcedureList(sqlrservercursor *cursor,
+						const char *catalog,
+						const char *schema,
+						const char *procedure);
+		bool		getProcedureParameterList(
+						sqlrservercursor *cursor,
+						const char *catalog,
+						const char *schema,
+						const char *procedure);
 		bool		ping();
 		bool		getDatabaseIsSchema();
 		bool		selectCatalog(const char *catalog);
@@ -1328,8 +1356,27 @@ bool routerconnection::getListsByApiCalls() {
 	return true;
 }
 
-bool routerconnection::getDatabaseList(sqlrservercursor *cursor,
+bool routerconnection::getCatalogList(sqlrservercursor *cursor,
 						const char *catalog) {
+	// FIXME: implement this
+	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
+				SQLR_ERROR_NOTIMPLEMENTED,true);
+	return false;
+}
+
+bool routerconnection::getSchemaList(sqlrservercursor *cursor,
+						const char *catalog,
+						const char *schema) {
+	// FIXME: implement this
+	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
+				SQLR_ERROR_NOTIMPLEMENTED,true);
+	return false;
+}
+
+bool routerconnection::getTableTypeList(sqlrservercursor *cursor,
+						const char *catalog,
+						const char *schema,
+						const char *tabletypes) {
 	// FIXME: implement this
 	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
 				SQLR_ERROR_NOTIMPLEMENTED,true);
@@ -1347,11 +1394,62 @@ bool routerconnection::getTableList(sqlrservercursor *cursor,
 	return false;
 }
 
+bool routerconnection::getTypeInfoList(sqlrservercursor *cursor,
+						const char *catalog,
+						const char *schema,
+						const char *type) {
+	// FIXME: implement this
+	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
+				SQLR_ERROR_NOTIMPLEMENTED,true);
+	return false;
+}
+
 bool routerconnection::getColumnList(sqlrservercursor *cursor,
 						const char *catalog,
 						const char *schema,
 						const char *table,
 						const char *column) {
+	// FIXME: implement this
+	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
+				SQLR_ERROR_NOTIMPLEMENTED,true);
+	return false;
+}
+
+bool routerconnection::getPrimaryKeysList(sqlrservercursor *cursor,
+						const char *catalog,
+						const char *schema,
+						const char *table) {
+	// FIXME: implement this
+	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
+				SQLR_ERROR_NOTIMPLEMENTED,true);
+	return false;
+}
+
+bool routerconnection::getKeyAndIndexList(sqlrservercursor *cursor,
+						const char *catalog,
+						const char *schema,
+						const char *table) {
+	// FIXME: implement this
+	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
+				SQLR_ERROR_NOTIMPLEMENTED,true);
+	return false;
+}
+
+bool routerconnection::getProcedureList(sqlrservercursor *cursor,
+						const char *catalog,
+						const char *schema,
+						const char *procedure) {
+	// FIXME: implement this
+	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
+				SQLR_ERROR_NOTIMPLEMENTED,true);
+	return false;
+}
+
+bool routerconnection::getProcedureParameterList(
+						sqlrservercursor *cursor,
+						const char *catalog,
+						const char *schema,
+						const char *procedure) {
 	// FIXME: implement this
 	cont->setError(cursor,SQLR_ERROR_NOTIMPLEMENTED_STRING,
 				SQLR_ERROR_NOTIMPLEMENTED,true);

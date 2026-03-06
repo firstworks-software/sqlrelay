@@ -247,14 +247,20 @@ class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostNameQuery();
-		const char	*getCatalogListQuery(const char *catalog);
-		const char	*getCatalogListQuerySybase(const char *catalog);
-		const char	*getCatalogListQuerySqlServer(const char *catalog);
-		const char	*getSchemaListQuery(const char *catalog,
+		const char	*getCatalogListQuery(
+						const char *catalog);
+		const char	*getCatalogListQuerySybase(
+						const char *catalog);
+		const char	*getCatalogListQuerySqlServer(
+						const char *catalog);
+		const char	*getSchemaListQuery(
+						const char *catalog,
 						const char *schema);
-		const char	*getSchemaListQuerySybase(const char *catalog,
+		const char	*getSchemaListQuerySybase(
+						const char *catalog,
 						const char *schema);
-		const char	*getSchemaListQuerySqlServer(const char *catalog,
+		const char	*getSchemaListQuerySqlServer(
+						const char *catalog,
 						const char *schema);
 		const char	*getTableTypeListQuery(
 						const char *catalog,
@@ -272,11 +278,13 @@ class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
-		const char	*getTableListQuerySybase(const char *catalog,
+		const char	*getTableListQuerySybase(
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
-		const char	*getTableListQuerySqlServer(const char *catalog,
+		const char	*getTableListQuerySqlServer(
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes);
@@ -744,7 +752,8 @@ const char *freetdsconnection::getCatalogListQuery(const char *catalog) {
 		getCatalogListQuerySqlServer(catalog);
 }
 
-const char *freetdsconnection::getCatalogListQuerySybase(const char *catalog) {
+const char *freetdsconnection::getCatalogListQuerySybase(
+						const char *catalog) {
 
 	cataloglistquery.clear();
 
@@ -760,7 +769,8 @@ const char *freetdsconnection::getCatalogListQuerySybase(const char *catalog) {
 	return cataloglistquery.getString();
 }
 
-const char *freetdsconnection::getCatalogListQuerySqlServer(const char *catalog) {
+const char *freetdsconnection::getCatalogListQuerySqlServer(
+						const char *catalog) {
 
 	cataloglistquery.clear();
 
@@ -794,13 +804,14 @@ const char *freetdsconnection::getCatalogListQuerySqlServer(const char *catalog)
 }
 
 const char *freetdsconnection::getSchemaListQuery(const char *catalog,
-						const char *schema) {
+							const char *schema) {
 	return (sybasedb)?
 		getSchemaListQuerySybase(catalog,schema):
 		getSchemaListQuerySqlServer(catalog,schema);
 }
 
-const char *freetdsconnection::getSchemaListQuerySybase(const char *catalog,
+const char *freetdsconnection::getSchemaListQuerySybase(
+						const char *catalog,
 						const char *schema) {
 
 	schemalistquery.clear();
@@ -834,7 +845,8 @@ const char *freetdsconnection::getSchemaListQuerySybase(const char *catalog,
 	return schemalistquery.getString();
 }
 
-const char *freetdsconnection::getSchemaListQuerySqlServer(const char *catalog,
+const char *freetdsconnection::getSchemaListQuerySqlServer(
+						const char *catalog,
 						const char *schema) {
 
 	schemalistquery.clear();
@@ -883,18 +895,18 @@ const char *freetdsconnection::getSchemaListQuerySqlServer(const char *catalog,
 }
 
 const char *freetdsconnection::getTableTypeListQuery(
-					const char *catalog,
-					const char *schema,
-					const char *tabletypes) {
+						const char *catalog,
+						const char *schema,
+						const char *tabletypes) {
 	return (sybasedb)?
 		getTableTypeListQuerySybase(catalog,schema,tabletypes):
 		getTableTypeListQuerySqlServer(catalog,schema,tabletypes);
 }
 
 const char *freetdsconnection::getTableTypeListQuerySybase(
-					const char *catalog,
-					const char *schema,
-					const char *tabletypes) {
+						const char *catalog,
+						const char *schema,
+						const char *tabletypes) {
 
 	tabletypelistquery.clear();
 
@@ -930,9 +942,9 @@ const char *freetdsconnection::getTableTypeListQuerySybase(
 }
 
 const char *freetdsconnection::getTableTypeListQuerySqlServer(
-					const char *catalog,
-					const char *schema,
-					const char *tabletypes) {
+						const char *catalog,
+						const char *schema,
+						const char *tabletypes) {
 
 	tabletypelistquery.clear();
 
@@ -980,7 +992,8 @@ const char *freetdsconnection::getTableListQuery(const char *catalog,
 		getTableListQuerySqlServer(catalog,schema,table,objecttypes);
 }
 
-const char *freetdsconnection::getTableListQuerySybase(const char *catalog,
+const char *freetdsconnection::getTableListQuerySybase(
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes) {
@@ -1039,7 +1052,8 @@ const char *freetdsconnection::getTableListQuerySybase(const char *catalog,
 	return tablelistquery.getString();
 }
 
-const char *freetdsconnection::getTableListQuerySqlServer(const char *catalog,
+const char *freetdsconnection::getTableListQuerySqlServer(
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes) {
@@ -1770,9 +1784,10 @@ static const char	*xmltype=
 			"	NULL "
 			" ";
 
-const char *freetdsconnection::getTypeInfoListQuery(const char *catalog,
-						const char *schema,
-						const char *type) {
+const char *freetdsconnection::getTypeInfoListQuery(
+					const char *catalog,
+					const char *schema,
+					const char *type) {
 
 	if (!charstring::compare(type,"*")) {
 		if (!typeinfolistquery.getSize()) {
@@ -1889,19 +1904,21 @@ const char *freetdsconnection::getTypeInfoListQuery(const char *catalog,
 	return NULL;
 }
 
-const char *freetdsconnection::getColumnListQuery(const char *catalog,
-					const char *schema,
-					const char *table,
-					const char *column) {
+const char *freetdsconnection::getColumnListQuery(
+						const char *catalog,
+						const char *schema,
+						const char *table,
+						const char *column) {
 	return (sybasedb)?
 		getColumnListQuerySybase(catalog,schema,table,column):
 		getColumnListQuerySqlServer(catalog,schema,table,column);
 }
 
-const char *freetdsconnection::getColumnListQuerySybase(const char *catalog,
-					const char *schema,
-					const char *table,
-					const char *column) {
+const char *freetdsconnection::getColumnListQuerySybase(
+						const char *catalog,
+						const char *schema,
+						const char *table,
+						const char *column) {
 
 	columnlistquery.clear();
 
@@ -2024,10 +2041,11 @@ const char *freetdsconnection::getColumnListQuerySybase(const char *catalog,
 	return columnlistquery.getString();
 }
 
-const char *freetdsconnection::getColumnListQuerySqlServer(const char *catalog,
-					const char *schema,
-					const char *table,
-					const char *column) {
+const char *freetdsconnection::getColumnListQuerySqlServer(
+						const char *catalog,
+						const char *schema,
+						const char *table,
+						const char *column) {
 
 	columnlistquery.clear();
 
@@ -2203,17 +2221,17 @@ const char *freetdsconnection::getColumnListQuerySqlServer(const char *catalog,
 }
 
 const char *freetdsconnection::getPrimaryKeysListQuery(const char *catalog,
-					const char *schema,
-					const char *table) {
+							const char *schema,
+							const char *table) {
 	return (sybasedb)?
 		getPrimaryKeysListQuerySybase(catalog,schema,table):
 		getPrimaryKeysListQuerySqlServer(catalog,schema,table);
 }
 
 const char *freetdsconnection::getPrimaryKeysListQuerySybase(
-					const char *catalog,
-					const char *schema,
-					const char *table) {
+							const char *catalog,
+							const char *schema,
+							const char *table) {
 
 	primarykeyslistquery.clear();
 
@@ -2270,9 +2288,9 @@ const char *freetdsconnection::getPrimaryKeysListQuerySybase(
 }
 
 const char *freetdsconnection::getPrimaryKeysListQuerySqlServer(
-					const char *catalog,
-					const char *schema,
-					const char *table) {
+							const char *catalog,
+							const char *schema,
+							const char *table) {
 
 	primarykeyslistquery.clear();
 
@@ -2334,18 +2352,19 @@ const char *freetdsconnection::getPrimaryKeysListQuerySqlServer(
 	return primarykeyslistquery.getString();
 }
 
-const char *freetdsconnection::getKeyAndIndexListQuery(const char *catalog,
-					const char *schema,
-					const char *table) {
+const char *freetdsconnection::getKeyAndIndexListQuery(
+						const char *catalog,
+						const char *schema,
+						const char *table) {
 	return (sybasedb)?
 		getKeyAndIndexListQuerySybase(catalog,schema,table):
 		getKeyAndIndexListQuerySqlServer(catalog,schema,table);
 }
 
 const char *freetdsconnection::getKeyAndIndexListQuerySybase(
-					const char *catalog,
-					const char *schema,
-					const char *table) {
+						const char *catalog,
+						const char *schema,
+						const char *table) {
 
 	keyandindexlistquery.clear();
 
@@ -2417,9 +2436,9 @@ const char *freetdsconnection::getKeyAndIndexListQuerySybase(
 }
 
 const char *freetdsconnection::getKeyAndIndexListQuerySqlServer(
-					const char *catalog,
-					const char *schema,
-					const char *table) {
+						const char *catalog,
+						const char *schema,
+						const char *table) {
 
 	keyandindexlistquery.clear();
 
@@ -2513,18 +2532,18 @@ const char *freetdsconnection::getKeyAndIndexListQuerySqlServer(
 }
 
 const char *freetdsconnection::getProcedureListQuery(
-					const char *catalog,
-					const char *schema,
-					const char *procedure) {
+						const char *catalog,
+						const char *schema,
+						const char *procedure) {
 	return (sybasedb)?
 		getProcedureListQuerySybase(catalog,schema,procedure):
 		getProcedureListQuerySqlServer(catalog,schema,procedure);
 }
 
 const char *freetdsconnection::getProcedureListQuerySybase(
-					const char *catalog,
-					const char *schema,
-					const char *procedure) {
+						const char *catalog,
+						const char *schema,
+						const char *procedure) {
 
 	procedurelistquery.clear();
 
@@ -2571,9 +2590,9 @@ const char *freetdsconnection::getProcedureListQuerySybase(
 }
 
 const char *freetdsconnection::getProcedureListQuerySqlServer(
-					const char *catalog,
-					const char *schema,
-					const char *procedure) {
+						const char *catalog,
+						const char *schema,
+						const char *procedure) {
 
 	procedurelistquery.clear();
 
@@ -2642,18 +2661,20 @@ const char *freetdsconnection::getProcedureListQuerySqlServer(
 }
 
 const char *freetdsconnection::getProcedureParameterListQuery(
-					const char *catalog,
-					const char *schema,
-					const char *procedure) {
+						const char *catalog,
+						const char *schema,
+						const char *procedure) {
 	return (sybasedb)?
-		getProcedureParameterListQuerySybase(catalog,schema,procedure):
-		getProcedureParameterListQuerySqlServer(catalog,schema,procedure);
+		getProcedureParameterListQuerySybase(
+					catalog,schema,procedure):
+		getProcedureParameterListQuerySqlServer(
+					catalog,schema,procedure);
 }
 
 const char *freetdsconnection::getProcedureParameterListQuerySybase(
-					const char *catalog,
-					const char *schema,
-					const char *procedure) {
+						const char *catalog,
+						const char *schema,
+						const char *procedure) {
 
 	procedureparameterlistquery.clear();
 
@@ -2725,9 +2746,9 @@ const char *freetdsconnection::getProcedureParameterListQuerySybase(
 }
 
 const char *freetdsconnection::getProcedureParameterListQuerySqlServer(
-					const char *catalog,
-					const char *schema,
-					const char *procedure) {
+						const char *catalog,
+						const char *schema,
+						const char *procedure) {
 
 	procedureparameterlistquery.clear();
 

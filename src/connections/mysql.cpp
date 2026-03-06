@@ -216,10 +216,13 @@ class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 		const char	*getBindFormat();
 #endif
 		const char	*getNextvalFormat();
-		const char	*getCatalogListQuery(const char *catalog);
-		const char	*getSchemaListQuery(const char *catalog,
+		const char	*getCatalogListQuery(
+						const char *catalog);
+		const char	*getSchemaListQuery(
+						const char *catalog,
 						const char *schema);
-		const char	*getTableTypeListQuery(const char *catalog,
+		const char	*getTableTypeListQuery(
+						const char *catalog,
 						const char *schema,
 						const char *tabletypes);
 		const char	*getTableListQuery(
@@ -1553,8 +1556,8 @@ static const char	*settype=
 			" ";
 
 const char *mysqlconnection::getTypeInfoListQuery(const char *catalog,
-						const char *schema,
-						const char *type) {
+							const char *schema,
+							const char *type) {
 
 	if (!charstring::compare(type,"*")) {
 		if (!typeinfolistquery.getSize()) {
@@ -1676,9 +1679,9 @@ const char *mysqlconnection::getTypeInfoListQuery(const char *catalog,
 }
 
 const char *mysqlconnection::getColumnListQuery(const char *catalog,
-					const char *schema,
-					const char *table,
-					const char *column) {
+						const char *schema,
+						const char *table,
+						const char *column) {
 
 	columnlistquery.clear();
 
@@ -1770,8 +1773,8 @@ const char *mysqlconnection::getColumnListQuery(const char *catalog,
 }
 
 const char *mysqlconnection::getPrimaryKeysListQuery(const char *catalog,
-					const char *schema,
-					const char *table) {
+							const char *schema,
+							const char *table) {
 
 	primarykeyslistquery.clear();
 
@@ -1834,8 +1837,8 @@ const char *mysqlconnection::getPrimaryKeysListQuery(const char *catalog,
 }
 
 const char *mysqlconnection::getKeyAndIndexListQuery(const char *catalog,
-					const char *schema,
-					const char *table) {
+							const char *schema,
+							const char *table) {
 
 	keyandindexlistquery.clear();
 

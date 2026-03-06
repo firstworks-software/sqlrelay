@@ -245,10 +245,13 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostNameQuery();
-		const char	*getCatalogListQuery(const char *catalog);
-		const char	*getSchemaListQuery(const char *catalog,
+		const char	*getCatalogListQuery(
+						const char *catalog);
+		const char	*getSchemaListQuery(
+						const char *catalog,
 						const char *schema);
-		const char	*getTableTypeListQuery(const char *catalog,
+		const char	*getTableTypeListQuery(
+						const char *catalog,
 						const char *schema,
 						const char *tabletypes);
 		const char	*getTableListQuery(
@@ -672,7 +675,8 @@ const char *informixconnection::getSchemaListQuery(const char *catalog,
 	return schemalistquery.getString();
 }
 
-const char *informixconnection::getTableTypeListQuery(const char *catalog,
+const char *informixconnection::getTableTypeListQuery(
+						const char *catalog,
 						const char *schema,
 						const char *tabletypes) {
 
@@ -720,10 +724,11 @@ const char *informixconnection::getTableTypeListQuery(const char *catalog,
 	return tabletypelistquery.getString();
 }
 
-const char *informixconnection::getTableListQuery(const char *catalog,
-						const char *schema,
-						const char *table,
-						uint16_t objecttypes) {
+const char *informixconnection::getTableListQuery(
+					const char *catalog,
+					const char *schema,
+					const char *table,
+					uint16_t objecttypes) {
 
 	// This is a mess.  The sysmaster:systabnames view doesn't have an
 	// object type column.  sysmaster:systabinfo has a ti_flags bitmap
@@ -1346,7 +1351,8 @@ static const char	*intervaltype=
 			"from "
 			"	sysmaster:sysdual ";
 
-const char *informixconnection::getTypeInfoListQuery(const char *catalog,
+const char *informixconnection::getTypeInfoListQuery(
+						const char *catalog,
 						const char *schema,
 						const char *type) {
 

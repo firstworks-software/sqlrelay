@@ -39,8 +39,10 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 		const char	*getDbHostName();
 		const char	*getDbIpAddressQuery();
 		const char	*getDbIpAddress();
-		const char	*getCatalogListQuery(const char *catalog);
-		const char	*getSchemaListQuery(const char *catalog,
+		const char	*getCatalogListQuery(
+						const char *catalog);
+		const char	*getSchemaListQuery(
+						const char *catalog,
 						const char *schema);
 		const char	*getTableTypeListQuery(
 						const char *catalog,
@@ -56,10 +58,10 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 						const char *schema,
 						const char *type);
 		const char	*getColumnListQuery(
-					const char *catalog,
-					const char *schema,
-					const char *table,
-					const char *column);
+						const char *catalog,
+						const char *schema,
+						const char *table,
+						const char *column);
 		const char	*getPrimaryKeysListQuery(
 						const char *catalog,
 						const char *schema,
@@ -643,7 +645,7 @@ const char *postgresqlconnection::getCatalogListQuery(const char *catalog) {
 }
 
 const char *postgresqlconnection::getSchemaListQuery(const char *catalog,
-						const char *schema) {
+							const char *schema) {
 
 	schemalistquery.clear();
 
@@ -728,7 +730,8 @@ const char *postgresqlconnection::getTableTypeListQuery(
 	return tabletypelistquery.getString();
 }
 
-const char *postgresqlconnection::getTableListQuery(const char *catalog,
+const char *postgresqlconnection::getTableListQuery(
+						const char *catalog,
 						const char *schema,
 						const char *table,
 						uint16_t objecttypes) {
@@ -1289,8 +1292,8 @@ static const char	*xmltype=
 			" ";
 
 const char *postgresqlconnection::getTypeInfoListQuery(const char *catalog,
-						const char *schema,
-						const char *type) {
+							const char *schema,
+							const char *type) {
 
 	if (!charstring::compare(type,"*")) {
 		if (!typeinfolistquery.getSize()) {
@@ -1410,9 +1413,9 @@ const char *postgresqlconnection::getTypeInfoListQuery(const char *catalog,
 }
 
 const char *postgresqlconnection::getColumnListQuery(const char *catalog,
-					const char *schema,
-					const char *table,
-					const char *column) {
+							const char *schema,
+							const char *table,
+							const char *column) {
 
 	columnlistquery.clear();
 	columnlistquery.append(
@@ -1540,9 +1543,10 @@ const char *postgresqlconnection::getColumnListQuery(const char *catalog,
 	return columnlistquery.getString();
 }
 
-const char *postgresqlconnection::getPrimaryKeysListQuery(const char *catalog,
-					const char *schema,
-					const char *table) {
+const char *postgresqlconnection::getPrimaryKeysListQuery(
+						const char *catalog,
+						const char *schema,
+						const char *table) {
 
 	primarykeyslistquery.clear();
 
@@ -1604,9 +1608,10 @@ const char *postgresqlconnection::getPrimaryKeysListQuery(const char *catalog,
 	return primarykeyslistquery.getString();
 }
 
-const char *postgresqlconnection::getKeyAndIndexListQuery(const char *catalog,
-					const char *schema,
-					const char *table) {
+const char *postgresqlconnection::getKeyAndIndexListQuery(
+						const char *catalog,
+						const char *schema,
+						const char *table) {
 
 	keyandindexlistquery.clear();
 
@@ -1765,9 +1770,9 @@ const char *postgresqlconnection::getProcedureListQuery(
 }
 
 const char *postgresqlconnection::getProcedureParameterListQuery(
-					const char *catalog,
-					const char *schema,
-					const char *procedure) {
+						const char *catalog,
+						const char *schema,
+						const char *procedure) {
 
 	procedureparameterlistquery.clear();
 

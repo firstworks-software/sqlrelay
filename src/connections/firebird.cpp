@@ -243,10 +243,13 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostName();
-		const char	*getCatalogListQuery(const char *catalog);
-		const char	*getSchemaListQuery(const char *catalog,
+		const char	*getCatalogListQuery(
+						const char *catalog);
+		const char	*getSchemaListQuery(
+						const char *catalog,
 						const char *schema);
-		const char	*getTableTypeListQuery(const char *catalog,
+		const char	*getTableTypeListQuery(
+						const char *catalog,
 						const char *schema,
 						const char *tabletypes);
 		const char	*getGlobalTempTableListQuery();
@@ -718,7 +721,7 @@ const char *firebirdconnection::getCatalogListQuery(const char *catalog) {
 }
 
 const char *firebirdconnection::getSchemaListQuery(const char *catalog,
-						const char *schema) {
+							const char *schema) {
 
 	schemalistquery.clear();
 
@@ -751,7 +754,8 @@ const char *firebirdconnection::getSchemaListQuery(const char *catalog,
 	return schemalistquery.getString();
 }
 
-const char *firebirdconnection::getTableTypeListQuery(const char *catalog,
+const char *firebirdconnection::getTableTypeListQuery(
+						const char *catalog,
 						const char *schema,
 						const char *tabletypes) {
 	tabletypelistquery.clear();
@@ -797,9 +801,9 @@ const char *firebirdconnection::getGlobalTempTableListQuery() {
 }
 
 const char *firebirdconnection::getTableListQuery(const char *catalog,
-						const char *schema,
-						const char *table,
-						uint16_t objecttypes) {
+							const char *schema,
+							const char *table,
+							uint16_t objecttypes) {
 	tablelistquery.clear();
 
 	// select clause
@@ -1215,8 +1219,8 @@ static const char	*blobsubtexttype=
 			"	rdb$database ";
 
 const char *firebirdconnection::getTypeInfoListQuery(const char *catalog,
-						const char *schema,
-						const char *type) {
+							const char *schema,
+							const char *type) {
 
 	if (!charstring::compare(type,"*")) {
 		if (!typeinfolistquery.getSize()) {
@@ -1294,9 +1298,9 @@ const char *firebirdconnection::getTypeInfoListQuery(const char *catalog,
 }
 
 const char *firebirdconnection::getColumnListQuery(const char *catalog,
-					const char *schema,
-					const char *table,
-					const char *column) {
+							const char *schema,
+							const char *table,
+							const char *column) {
 
 	columnlistquery.clear();
 
@@ -1441,8 +1445,8 @@ const char *firebirdconnection::getColumnListQuery(const char *catalog,
 }
 
 const char *firebirdconnection::getPrimaryKeysListQuery(const char *catalog,
-						const char *schema,
-						const char *table) {
+							const char *schema,
+							const char *table) {
 
 	primarykeyslistquery.clear();
 
@@ -1487,8 +1491,8 @@ const char *firebirdconnection::getPrimaryKeysListQuery(const char *catalog,
 }
 
 const char *firebirdconnection::getKeyAndIndexListQuery(const char *catalog,
-						const char *schema,
-						const char *table) {
+							const char *schema,
+							const char *table) {
 
 	keyandindexlistquery.clear();
 
@@ -1600,9 +1604,9 @@ const char *firebirdconnection::getProcedureListQuery(
 }
 
 const char *firebirdconnection::getProcedureParameterListQuery(
-					const char *catalog,
-					const char *schema,
-					const char *procedure) {
+						const char *catalog,
+						const char *schema,
+						const char *procedure) {
 
 	procedureparameterlistquery.clear();
 

@@ -37,8 +37,10 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostNameQuery();
-		const char	*getCatalogListQuery(const char *catalog);
-		const char	*getSchemaListQuery(const char *catalog,
+		const char	*getCatalogListQuery(
+						const char *catalog);
+		const char	*getSchemaListQuery(
+						const char *catalog,
 						const char *schema);
 		const char	*getTableTypeListQuery(
 						const char *catalog,
@@ -1431,9 +1433,9 @@ const char *sapconnection::getTypeInfoListQuery(const char *catalog,
 }
 
 const char *sapconnection::getColumnListQuery(const char *catalog,
-					const char *schema,
-					const char *table,
-					const char *column) {
+						const char *schema,
+						const char *table,
+						const char *column) {
 
 	columnlistquery.clear();
 
@@ -1557,8 +1559,8 @@ const char *sapconnection::getColumnListQuery(const char *catalog,
 }
 
 const char *sapconnection::getPrimaryKeysListQuery(const char *catalog,
-					const char *schema,
-					const char *table) {
+							const char *schema,
+							const char *table) {
 
 	primarykeyslistquery.clear();
 
@@ -1615,8 +1617,8 @@ const char *sapconnection::getPrimaryKeysListQuery(const char *catalog,
 }
 
 const char *sapconnection::getKeyAndIndexListQuery(const char *catalog,
-					const char *schema,
-					const char *table) {
+							const char *schema,
+							const char *table) {
 
 	keyandindexlistquery.clear();
 
@@ -1688,9 +1690,9 @@ const char *sapconnection::getKeyAndIndexListQuery(const char *catalog,
 }
 
 const char *sapconnection::getProcedureListQuery(
-						const char *catalog,
-						const char *schema,
-						const char *procedure) {
+					const char *catalog,
+					const char *schema,
+					const char *procedure) {
 
 	procedurelistquery.clear();
 

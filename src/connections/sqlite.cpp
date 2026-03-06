@@ -47,10 +47,13 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostName();
-		const char	*getCatalogListQuery(const char *catalog);
-		const char	*getSchemaListQuery(const char *catalog,
+		const char	*getCatalogListQuery(
+						const char *catalog);
+		const char	*getSchemaListQuery(
+						const char *catalog,
 						const char *schema);
-		const char	*getTableTypeListQuery(const char *catalog,
+		const char	*getTableTypeListQuery(
+						const char *catalog,
 						const char *schema,
 						const char *tabletypes);
 		const char	*getTableListQuery(
@@ -334,9 +337,10 @@ const char *sqliteconnection::getSchemaListQuery(const char *catalog,
 		"	1=0";
 }
 
-const char *sqliteconnection::getTableTypeListQuery(const char *catalog,
-						const char *schema,
-						const char *tabletypes) {
+const char *sqliteconnection::getTableTypeListQuery(
+					const char *catalog,
+					const char *schema,
+					const char *tabletypes) {
 	tabletypelistquery.clear();
 
 	// select clause
@@ -826,8 +830,8 @@ static const char	*tinyinttype=
 			"	NULL ";
 
 const char *sqliteconnection::getTypeInfoListQuery(const char *catalog,
-						const char *schema,
-						const char *type) {
+							const char *schema,
+							const char *type) {
 
 	if (!charstring::compare(type,"*")) {
 		if (!typeinfolistquery.getSize()) {
@@ -905,9 +909,9 @@ const char *sqliteconnection::getTypeInfoListQuery(const char *catalog,
 }
 
 const char *sqliteconnection::getColumnListQuery(const char *catalog,
-					const char *schema,
-					const char *table,
-					const char *column) {
+							const char *schema,
+							const char *table,
+							const char *column) {
 
 	columnlistquery.clear();
 
@@ -961,8 +965,8 @@ const char *sqliteconnection::getColumnListQuery(const char *catalog,
 }
 
 const char *sqliteconnection::getPrimaryKeysListQuery(const char *catalog,
-					const char *schema,
-					const char *table) {
+							const char *schema,
+							const char *table) {
 
 	primarykeyslistquery.clear();
 	primarykeyslistquery.append(
@@ -994,8 +998,8 @@ const char *sqliteconnection::getPrimaryKeysListQuery(const char *catalog,
 }
 
 const char *sqliteconnection::getKeyAndIndexListQuery(const char *catalog,
-					const char *schema,
-					const char *table) {
+							const char *schema,
+							const char *table) {
 
 	keyandindexlistquery.clear();
 	keyandindexlistquery.append(
@@ -1036,7 +1040,8 @@ const char *sqliteconnection::getKeyAndIndexListQuery(const char *catalog,
 	return keyandindexlistquery.getString();
 }
 
-const char *sqliteconnection::getProcedureListQuery(const char *catalog,
+const char *sqliteconnection::getProcedureListQuery(
+						const char *catalog,
 						const char *schema,
 						const char *procedure) {
 	return "select "
@@ -1054,9 +1059,9 @@ const char *sqliteconnection::getProcedureListQuery(const char *catalog,
 }
 
 const char *sqliteconnection::getProcedureParameterListQuery(
-					const char *catalog,
-					const char *schema,
-					const char *procedure) {
+						const char *catalog,
+						const char *schema,
+						const char *procedure) {
 	return "select "
 		"	'' as procedure_cat, "
 		"	'' as procedure_schem, "

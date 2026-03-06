@@ -256,10 +256,13 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostNameQuery();
-		const char	*getCatalogListQuery(const char *catalog);
-		const char	*getSchemaListQuery(const char *catalog,
+		const char	*getCatalogListQuery(
+						const char *catalog);
+		const char	*getSchemaListQuery(
+						const char *catalog,
 						const char *schema);
-		const char	*getTableTypeListQuery(const char *catalog,
+		const char	*getTableTypeListQuery(
+						const char *catalog,
 						const char *schema,
 						const char *tabletypes);
 		const char	*getTableListQuery(
@@ -1372,9 +1375,9 @@ const char *db2connection::getTypeInfoListQuery(const char *catalog,
 }
 
 const char *db2connection::getColumnListQuery(const char *catalog,
-					const char *schema,
-					const char *table,
-					const char *column) {
+						const char *schema,
+						const char *table,
+						const char *column) {
 
 	columnlistquery.clear();
 
@@ -1468,8 +1471,8 @@ const char *db2connection::getColumnListQuery(const char *catalog,
 }
 
 const char *db2connection::getPrimaryKeysListQuery(const char *catalog,
-					const char *schema,
-					const char *table) {
+							const char *schema,
+							const char *table) {
 
 	primarykeyslistquery.clear();
 
@@ -1525,8 +1528,8 @@ const char *db2connection::getPrimaryKeysListQuery(const char *catalog,
 }
 
 const char *db2connection::getKeyAndIndexListQuery(const char *catalog,
-					const char *schema,
-					const char *table) {
+							const char *schema,
+							const char *table) {
 
 	keyandindexlistquery.clear();
 
@@ -1593,10 +1596,9 @@ const char *db2connection::getKeyAndIndexListQuery(const char *catalog,
 	return keyandindexlistquery.getString();
 }
 
-const char *db2connection::getProcedureListQuery(
-						const char *catalog,
-						const char *schema,
-						const char *procedure) {
+const char *db2connection::getProcedureListQuery(const char *catalog,
+							const char *schema,
+							const char *procedure) {
 
 	procedurelistquery.clear();
 
@@ -1650,9 +1652,9 @@ const char *db2connection::getProcedureListQuery(
 }
 
 const char *db2connection::getProcedureParameterListQuery(
-					const char *catalog,
-					const char *schema,
-					const char *procedure) {
+						const char *catalog,
+						const char *schema,
+						const char *procedure) {
 
 	procedureparameterlistquery.clear();
 

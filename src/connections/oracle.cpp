@@ -119,8 +119,10 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostNameQuery();
-		const char	*getCatalogListQuery(const char *catalog);
-		const char	*getSchemaListQuery(const char *catalog,
+		const char	*getCatalogListQuery(
+						const char *catalog);
+		const char	*getSchemaListQuery(
+						const char *catalog,
 						const char *schema);
 		const char	*getTableTypeListQuery(
 						const char *catalog,
@@ -1286,7 +1288,7 @@ const char *oracleconnection::getCatalogListQuery(const char *catalog) {
 }
 
 const char *oracleconnection::getSchemaListQuery(const char *catalog,
-						const char *schema) {
+							const char *schema) {
 
 	schemalistquery.clear();
 
@@ -1319,7 +1321,8 @@ const char *oracleconnection::getSchemaListQuery(const char *catalog,
 	return schemalistquery.getString();
 }
 
-const char *oracleconnection::getTableTypeListQuery(const char *catalog,
+const char *oracleconnection::getTableTypeListQuery(
+						const char *catalog,
 						const char *schema,
 						const char *tabletypes) {
 
@@ -2237,8 +2240,8 @@ static const char	*nclobtype=
 			"	dual ";
 
 const char *oracleconnection::getTypeInfoListQuery(const char *catalog,
-						const char *schema,
-						const char *type) {
+							const char *schema,
+							const char *type) {
 
 	// oracle types aren't catalog/schema-specific,
 	// so we'll ignore those parameters
@@ -2368,9 +2371,9 @@ const char *oracleconnection::getTypeInfoListQuery(const char *catalog,
 }
 
 const char *oracleconnection::getColumnListQuery(const char *catalog,
-						const char *schema,
-						const char *table,
-						const char *column) {
+							const char *schema,
+							const char *table,
+							const char *column) {
 
 	// It takes a lot longer to look up synonyms than tables.  It's quick
 	// to see if the object is a synonym though, so we'll do that first
@@ -2576,8 +2579,8 @@ const char *oracleconnection::getColumnListQuery(const char *catalog,
 }
 
 const char *oracleconnection::getPrimaryKeysListQuery(const char *catalog,
-						const char *schema,
-						const char *table) {
+							const char *schema,
+							const char *table) {
 
 	// determine which tables to use
 	const char	*cct="user_cons_columns";
@@ -2655,8 +2658,8 @@ const char *oracleconnection::getPrimaryKeysListQuery(const char *catalog,
 }
 
 const char *oracleconnection::getKeyAndIndexListQuery(const char *catalog,
-						const char *schema,
-						const char *table) {
+							const char *schema,
+							const char *table) {
 
 	// determine which tables to use
 	const char	*it="user_indexes";
@@ -2747,8 +2750,8 @@ const char *oracleconnection::getKeyAndIndexListQuery(const char *catalog,
 }
 
 const char *oracleconnection::getProcedureListQuery(const char *catalog,
-						const char *schema,
-						const char *procedure) {
+							const char *schema,
+							const char *procedure) {
 
 	procedurelistquery.clear();
 
