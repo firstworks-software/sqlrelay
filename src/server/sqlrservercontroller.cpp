@@ -3371,6 +3371,7 @@ uint16_t sqlrservercontroller::countBindVariables(const char *query,
 
 void sqlrservercontroller::splitObjectName(const char *currentcatalog,
 						const char *currentschema,
+						const char *objecttype,
 						const char *combinedobject,
 						const char **catalog,
 						const char **schema,
@@ -3389,45 +3390,100 @@ void sqlrservercontroller::splitObjectName(const char *currentcatalog,
 	uint64_t	partcount=0;
 	charstring::split(combinedobject,".",true,&parts,&partcount);
 
-	// the combined object might be in one of the following formats:
-	// * catalog.schema.object
-	// * (currentcatalog.)schema.object/catalog.(defaultschema.)object
-	// * object
-	switch (partcount) {
-		case 3:
+	if (!charstring::compareIgnoringCase(objecttype,"catalog")) {
+
+		// if the combined object is supposed to be a catalog, then
+		// it can only be in the following format:
+		// * catalog
+
+		// delete all but the first part
+		while (partcount>1) {
+			delete[] parts[partcount-1];
+			partcount--;
+		}
+
+		if (partcount==1) {
 			pvt->_catalog=parts[0];
-			pvt->_schema=parts[1];
-			pvt->_object=parts[2];
-			break;
-		case 2:
-			// If there are 2 parts the it could mean:
-			// * catalog.(defaultschama.)object
-			//   or
-			// * (currentcatalog.)schema.object...
-			// If the first part is not the same as the current
-			// catalog, then we'll guess
-			// (currentcatalog.)schema.object, but we don't really
-			// know for sure. The app may really mean to target
-			// another catalog.
-			if (!charstring::compare(parts[0],currentcatalog)) {
+		}
+
+	} else if (!charstring::compareIgnoringCase(objecttype,"schema")) {
+
+		// if the combined object is supposed to be a schema, then
+		// it might be in one of the following formats:
+		// * catalog.schema
+		// * schema
+
+		// delete all but the first 2 parts
+		while (partcount>2) {
+			delete[] parts[partcount-1];
+			partcount--;
+		}
+
+		switch (partcount) {
+			case 2:
 				pvt->_catalog=parts[0];
-				pvt->_schema=
+				pvt->_schema=parts[1];
+				break;
+			case 1:
+				pvt->_schema=parts[0];
+				break;
+		}
+
+	} else {
+
+		// if the combined object is supposed to be an object, then
+		// it might be in one of the following formats:
+		// * catalog.schema.object
+		// * (currentcatalog.)schema.object
+		// 	or
+		// 	catalog.(defaultschema.)object
+		// * object
+
+		// delete all but the first 3 parts
+		while (partcount>3) {
+			delete[] parts[partcount-1];
+			partcount--;
+		}
+
+		switch (partcount) {
+			case 3:
+				pvt->_catalog=parts[0];
+				pvt->_schema=parts[1];
+				pvt->_object=parts[2];
+				break;
+			case 2:
+				// If there are 2 parts then it could mean:
+				// * catalog.(defaultschema.)object
+				//   or
+				// * (currentcatalog.)schema.object...
+				// If the first part is not the same as the
+				// current catalog, then we'll guess
+				// (currentcatalog.)schema.object, but we don't
+				// really know for sure. The app may really
+				// mean to target another catalog.
+				if (!charstring::compare(
+						parts[0],currentcatalog)) {
+					pvt->_catalog=parts[0];
+					pvt->_schema=
 					charstring::duplicate(currentschema);
-			} else {
+				} else {
+					pvt->_catalog=
+					charstring::duplicate(currentcatalog);
+					pvt->_schema=parts[0];
+				}
+				pvt->_object=parts[1];
+				break;
+			case 1:
 				pvt->_catalog=
 					charstring::duplicate(currentcatalog);
-				pvt->_schema=parts[0];
-			}
-			pvt->_object=parts[1];
-			break;
-		case 1:
-			pvt->_catalog=charstring::duplicate(currentcatalog);
-			pvt->_schema=charstring::duplicate(currentschema);
-			pvt->_object=parts[0];
-			break;
+				pvt->_schema=
+					charstring::duplicate(currentschema);
+				pvt->_object=parts[0];
+				break;
+		}
 	}
 
-	// clean up;
+	// clean up
 	delete[] parts;
 
 	// pass values out

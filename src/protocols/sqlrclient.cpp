@@ -4495,11 +4495,24 @@ bool sqlrprotocol_sqlrclient::getObjectList(sqlrservercursor *cursor,
 	// catalog, schema, and object
 	char	*currentcatalog=cont->getCurrentCatalog();
 	char	*currentschema=cont->getCurrentSchema();
+	const char	*objecttype=NULL;
+	switch (querytype) {
+		case SQLRCLIENTQUERYTYPE_DATABASE_LIST:
+			objecttype="database";
+			break;
+		case SQLRCLIENTQUERYTYPE_CATALOG_LIST:
+			objecttype="schema";
+			break;
+		default:
+			objecttype="object";
+			break;
+	}
 	const char	*catalog=NULL;
 	const char	*schema=NULL;
 	const char	*obj=NULL;
-	cont->splitObjectName(currentcatalog,currentschema,object,
-						&catalog,&schema,&obj);
+	cont->splitObjectName(currentcatalog,currentschema,
+					objecttype,object,
+					&catalog,&schema,&obj);
 
 	// when fetching lists in mysql format, we only want to fetch for
 	// the current database/schema
@@ -4735,13 +4748,13 @@ bool sqlrprotocol_sqlrclient::getComponentList(
 
 	// split the object (catalog.schema.object) into
 	// catalog, schema, and object
-	char	*currentcatalog=cont->getCurrentCatalog();
-	char	*currentschema=cont->getCurrentSchema();
+	char		*currentcatalog=cont->getCurrentCatalog();
+	char		*currentschema=cont->getCurrentSchema();
 	const char	*catalog=NULL;
 	const char	*schema=NULL;
 	const char	*obj=NULL;
-	cont->splitObjectName(currentcatalog,currentschema,object,
-						&catalog,&schema,&obj);
+	cont->splitObjectName(currentcatalog,currentschema,"object",object,
+							&catalog,&schema,&obj);
 
 	// when fetching lists in mysql format, we only want to fetch for
 	// the current database/schema

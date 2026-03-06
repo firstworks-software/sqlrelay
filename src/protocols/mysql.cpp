@@ -3890,11 +3890,14 @@ bool sqlrprotocol_mysql::getObjectList(sqlrservercursor *cursor,
 	// catalog, schema, and object
 	char	*currentcatalog=cont->getCurrentCatalog();
 	char	*currentschema=cont->getCurrentSchema();
+	const char	*objecttype=
+			(listtype==MYSQLOBJECTLISTTYPE_DATABASE_LIST)?
+							"database":"object";
 	const char	*catalog=NULL;
 	const char	*schema=NULL;
 	const char	*obj=NULL;
-	cont->splitObjectName(currentcatalog,currentschema,
-					object,&catalog,&schema,&obj);
+	cont->splitObjectName(currentcatalog,currentschema,objecttype,object,
+							&catalog,&schema,&obj);
 
 	// we only want to fetch for the current database/schema
 	catalog=currentcatalog;
@@ -3945,8 +3948,8 @@ bool sqlrprotocol_mysql::getComponentList(sqlrservercursor *cursor,
 	const char	*catalog=NULL;
 	const char	*schema=NULL;
 	const char	*obj=NULL;
-	cont->splitObjectName(currentcatalog,currentschema,
-					object,&catalog,&schema,&obj);
+	cont->splitObjectName(currentcatalog,currentschema,"object",object,
+							&catalog,&schema,&obj);
 
 	// we only want to fetch for the current database/schema
 	catalog=currentcatalog;

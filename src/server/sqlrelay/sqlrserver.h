@@ -2836,30 +2836,42 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 							uint32_t querysize);
 
 		/** Splits "combinedobject" into "catalog", "schema", and
-		 *  "object".
+		 *  "object", depending on "objecttype".
 		 *
-		 *  If "combinedobject" consisted of 3 parts, then
-		 *  "currentcatalog" and "currentschema" are ignored, "catalog"
-		 *  is set to the first part, "schema" is set to the second
-		 *  part, and "object" is set to the third part.
+		 *  If "objecttype" is "catalog", then "catalog" is set to
+		 *  the first part of "combinedobject".  "schema" and "object"
+		 *  are set to NULL.
 		 *
-		 *  If "combineeobject" consisted of 2 parts, then if the first
-		 *  part is the same as "currentcatalog" then "catalog" is set
-		 *  to "currentcatalog" ,"schema" is set to "currentschema" and
-		 *  "object" is set to the second part.  If the first part is
-		 *  not the same as "currentcatalog" then "catalog" is set to
-		 *  "currentcatalog",  "schema" is set to the first part, and
-		 *  "object" is set to the second part.
+		 *  If "objecttype" is "schema", then "combinedobject" may be
+		 *  in one of the following formats:
+		 *  * catalog.schema - "catalog" is set to the first part and
+		 *    "schema" is set to the second part.
+		 *  * schema - "catalog" is set to NULL and "schema" is set
+		 *    to "combinedobject".
+		 *  "object" is set to NULL in either case.
 		 *
-		 *  If "combinedobject" only consisted of 1 part, then
-		 *  "catalog" is set to "currentcatalog", "schema" is set to
-		 *  "currentschema", and "object" is set to "combinedobject".
+		 *  For any other "objecttype", "combinedobject" may be in
+		 *  one of the following formats:
+		 *  * catalog.schema.object - "catalog" is set to the first
+		 *    part, "schema" is set to the second part, and "object"
+		 *    is set to the third part.
+		 *  * X.object - if the first part is the same as
+		 *    "currentcatalog" then "catalog" is set to
+		 *    "currentcatalog", "schema" is set to "currentschema",
+		 *    and "object" is set to the second part.  If the first
+		 *    part is not the same as "currentcatalog" then "catalog"
+		 *    is set to "currentcatalog", "schema" is set to the
+		 *    first part, and "object" is set to the second part.
+		 *  * object - "catalog" is set to "currentcatalog", "schema"
+		 *    is set to "currentschema", and "object" is set to
+		 *    "combinedobject".
 		 *
 		 *  Note that "catalog", "schema", and "object" point to
 		 *  internal buffers that are overwritten by each call to
 		 *  splitObjectName(). */
 		void	splitObjectName(const char *currentcatalog,
 						const char *currentschema,
+						const char *objecttype,
 						const char *combinedobject,
 						const char **catalog,
 						const char **schema,
