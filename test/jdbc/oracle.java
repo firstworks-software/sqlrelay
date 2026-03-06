@@ -3055,6 +3055,8 @@ class oracle extends sqlrtest {
 
 		// client info properties
 		System.out.println("CLIENT INFO PROPERTIES: ");
+		con=DriverManager.getConnection(url,user,password);
+		md=con.getMetaData();
 		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getClientInfoProperties();
@@ -3077,8 +3079,6 @@ class oracle extends sqlrtest {
 
 		// catalog list
 		System.out.println("CATALOG LIST: ");
-		con=DriverManager.getConnection(url,user,password);
-		md=con.getMetaData();
 		rs=md.getCatalogs();
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
