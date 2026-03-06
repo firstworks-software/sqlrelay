@@ -705,7 +705,7 @@ const char *informixconnection::getTableTypeListQuery(
 		"	select "
 		"		'VIEW' as table_type "
 		"	from "
-		"	systables where tabid=1) t ");
+		"		systables where tabid=1) t ");
 
 	// where clause
 	if (!charstring::isNullOrEmpty(tabletypes)) {
