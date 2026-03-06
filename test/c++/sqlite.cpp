@@ -966,6 +966,43 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// column list
+	stdoutput.printf("COLUMN LIST: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery(
+		"create table testtable ("
+		"	testint int, "
+		"	testfloat float, "
+		"	testchar char(40), "
+		"	testvarchar varchar(40), "
+		"	testclob clob, "
+		"	testblob blob)"));
+	assertTrue(cur->getColumnList("testtable",NULL));
+	assertEquals(cur->getColumnName(0),"column_name");
+	assertEquals(cur->getColumnName(1),"data_type");
+	assertEquals(cur->getColumnName(2),"character_maximum_length");
+	assertEquals(cur->getColumnName(3),"numeric_precision");
+	assertEquals(cur->getColumnName(4),"numeric_scale");
+	assertEquals(cur->getColumnName(5),"is_nullable");
+	assertEquals(cur->getColumnName(6),"column_key");
+	assertEquals(cur->getColumnName(7),"column_default");
+	assertEquals(cur->getColumnName(8),"extra");
+	assertEquals(cur->getField(0,"column_name"),"testint");
+	assertEquals(cur->getField(1,"column_name"),"testfloat");
+	assertEquals(cur->getField(2,"column_name"),"testchar");
+	assertEquals(cur->getField(3,"column_name"),"testvarchar");
+	assertEquals(cur->getField(4,"column_name"),"testclob");
+	assertEquals(cur->getField(5,"column_name"),"testblob");
+	assertEquals(cur->getField(0,"data_type"),"int");
+	assertEquals(cur->getField(1,"data_type"),"float");
+	assertEquals(cur->getField(2,"data_type"),"char(40)");
+	assertEquals(cur->getField(3,"data_type"),"varchar(40)");
+	assertEquals(cur->getField(4,"data_type"),"clob");
+	assertEquals(cur->getField(5,"data_type"),"blob");
+	cur->sendQuery("drop table testtable");
+	stdoutput.printf("\n");
+
+
 	// column list - auto_increment, primary key
 	stdoutput.printf("COLUMN LIST - auto_increment, primary key: \n");
 	cur->sendQuery("drop table testtable");

@@ -1300,7 +1300,10 @@ const char *oracleconnection::getSchemaListQuery(const char *catalog,
 		"	'' as table_name, "
 		"	'' as table_type, "
 		"	'' as remarks, "
-		"	null "
+		"	null ");
+
+	// from clause
+	schemalistquery.append(
 		"from "
 		"	all_users ");
 
@@ -1339,7 +1342,10 @@ const char *oracleconnection::getTableTypeListQuery(
 		"	'' as table_name, "
 		"	table_type, "
 		"	'' as remarks, "
-		"	null "
+		"	null ");
+
+	// from clause
+	tabletypelistquery.append(
 		"from "
 		"(select 'SYNONYM' as table_type from dual "
 		"union "
@@ -1411,7 +1417,10 @@ const char *oracleconnection::getTableListQuery(const char *catalog,
 			"	table_name as table_name, "
 			"	'TABLE' as table_type, "
 			"	'' as remarks, "
-			"	null "
+			"	null ");
+
+		// from clause
+		tablelistquery.append(
 			"from "
 			"	all_tables ");
 
@@ -1454,7 +1463,10 @@ const char *oracleconnection::getTableListQuery(const char *catalog,
 			"	view_name as table_name, "
 			"	'VIEW' as table_type, "
 			"	'' as remarks, "
-			"	null "
+			"	null ");
+
+		// from clause
+		tablelistquery.append(
 			"from "
 			"	all_views ");
 
@@ -1497,7 +1509,10 @@ const char *oracleconnection::getTableListQuery(const char *catalog,
 			"	synonym_name as table_name, "
 			"	'SYNONYM' as table_type, "
 			"	'' as remarks, "
-			"	null "
+			"	null ");
+
+		// from clause
+		tablelistquery.append(
 			"from "
 			"	all_synonyms ");
 
@@ -2608,12 +2623,18 @@ const char *oracleconnection::getPrimaryKeysListQuery(const char *catalog,
 		"	cc.column_name, "
 		"	cc.position as key_seq, "
 		"	cc.constraint_name as pk_name, "
-		"	null "
+		"	null ");
+
+	// from clause
+	primarykeyslistquery.append(
 		"from ");
 	primarykeyslistquery.append(cct);
 	primarykeyslistquery.append(" cc, ");
 	primarykeyslistquery.append(ct);
-	primarykeyslistquery.append(" c "
+	primarykeyslistquery.append(" c ");
+
+	// where clause
+	primarykeyslistquery.append(
 		"where "
 		"	c.constraint_type='P' "
 		"	and "
@@ -2701,12 +2722,18 @@ const char *oracleconnection::getKeyAndIndexListQuery(const char *catalog,
 		"	i.distinct_keys as cardinality, "
 		"	i.leaf_blocks as pages, "
 		"	null as filter_condition, "
-		"	null "
+		"	null ");
+
+	// from clause
+	keyandindexlistquery.append(
 		"from ");
 	keyandindexlistquery.append(it);
 	keyandindexlistquery.append(" i, ");
 	keyandindexlistquery.append(ict);
-	keyandindexlistquery.append(" ic "
+	keyandindexlistquery.append(" ic ");
+
+	// where clause
+	keyandindexlistquery.append(
 		"where "
 		"	i.index_name=ic.index_name ");
 	if (supportssyscontext) {
@@ -2770,9 +2797,15 @@ const char *oracleconnection::getProcedureListQuery(const char *catalog,
 		"		when 'FUNCTION' then '2' "
 		"		else '0' "
 		"	end as procedure_type, "
-		"	null "
+		"	null ");
+
+	// from clause
+	procedurelistquery.append(
 		"from "
-		"	all_procedures "
+		"	all_procedures ");
+
+	// where clause
+	procedurelistquery.append(
 		"where "
 		"	object_type in ('PROCEDURE','FUNCTION') ");
 	if (!charstring::isNullOrEmpty(schema)) {

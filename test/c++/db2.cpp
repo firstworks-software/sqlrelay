@@ -1215,6 +1215,64 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// column list
+	stdoutput.printf("COLUMN LIST: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery(
+		"create table testtable ("
+		"	testsmallint smallint, "
+		"	testint integer, "
+		"	testbigint bigint, "
+		"	testdecimal decimal(10,2), "
+		"	testreal real, "
+		"	testdouble double, "
+		"	testchar char(40), "
+		"	testvarchar varchar(40), "
+		"	testdate date, "
+		"	testtime time, "
+		"	testtimestamp timestamp, "
+		"	testclob clob, "
+		"	testblob blob)"));
+	assertTrue(cur->getColumnList("testtable",NULL));
+	assertEquals(cur->getColumnName(0),"column_name");
+	assertEquals(cur->getColumnName(1),"data_type");
+	assertEquals(cur->getColumnName(2),"character_maximum_length");
+	assertEquals(cur->getColumnName(3),"numeric_precision");
+	assertEquals(cur->getColumnName(4),"numeric_scale");
+	assertEquals(cur->getColumnName(5),"is_nullable");
+	assertEquals(cur->getColumnName(6),"column_key");
+	assertEquals(cur->getColumnName(7),"column_default");
+	assertEquals(cur->getColumnName(8),"extra");
+	assertEquals(cur->getField(0,"column_name"),"TESTSMALLINT");
+	assertEquals(cur->getField(1,"column_name"),"TESTINT");
+	assertEquals(cur->getField(2,"column_name"),"TESTBIGINT");
+	assertEquals(cur->getField(3,"column_name"),"TESTDECIMAL");
+	assertEquals(cur->getField(4,"column_name"),"TESTREAL");
+	assertEquals(cur->getField(5,"column_name"),"TESTDOUBLE");
+	assertEquals(cur->getField(6,"column_name"),"TESTCHAR");
+	assertEquals(cur->getField(7,"column_name"),"TESTVARCHAR");
+	assertEquals(cur->getField(8,"column_name"),"TESTDATE");
+	assertEquals(cur->getField(9,"column_name"),"TESTTIME");
+	assertEquals(cur->getField(10,"column_name"),"TESTTIMESTAMP");
+	assertEquals(cur->getField(11,"column_name"),"TESTCLOB");
+	assertEquals(cur->getField(12,"column_name"),"TESTBLOB");
+	assertEquals(cur->getField(0,"data_type"),"SMALLINT");
+	assertEquals(cur->getField(1,"data_type"),"INTEGER");
+	assertEquals(cur->getField(2,"data_type"),"BIGINT");
+	assertEquals(cur->getField(3,"data_type"),"DECIMAL");
+	assertEquals(cur->getField(4,"data_type"),"REAL");
+	assertEquals(cur->getField(5,"data_type"),"DOUBLE");
+	assertEquals(cur->getField(6,"data_type"),"CHARACTER");
+	assertEquals(cur->getField(7,"data_type"),"VARCHAR");
+	assertEquals(cur->getField(8,"data_type"),"DATE");
+	assertEquals(cur->getField(9,"data_type"),"TIME");
+	assertEquals(cur->getField(10,"data_type"),"TIMESTAMP");
+	assertEquals(cur->getField(11,"data_type"),"CLOB");
+	assertEquals(cur->getField(12,"data_type"),"BLOB");
+	cur->sendQuery("drop table testtable");
+	stdoutput.printf("\n");
+
+
 	// column list - auto_increment, primary key
 	stdoutput.printf("COLUMN LIST - auto_increment, primary key: \n");
 	cur->sendQuery("drop table testtable");

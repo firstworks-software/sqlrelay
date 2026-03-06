@@ -733,9 +733,15 @@ const char *firebirdconnection::getSchemaListQuery(const char *catalog,
 		"	trim('') as table_name, "
 		"	trim('') as table_type, "
 		"	trim('') as remarks, "
-		"	null "
+		"	null ");
+
+	// from clause
+	schemalistquery.append(
 		"from "
-		"	rdb$relations "
+		"	rdb$relations ");
+
+	// where clause
+	schemalistquery.append(
 		"where "
 		"	rdb$system_flag=0 ");
 	if (schema) {
@@ -768,7 +774,10 @@ const char *firebirdconnection::getTableTypeListQuery(
 		"	trim('') as table_name, "
 		"	trim(table_type), "
 		"	trim('') as remarks, "
-		"	null "
+		"	null ");
+
+	// from clause
+	tabletypelistquery.append(
 		"from "
 		"(select trim('TABLE') as table_type from rdb$database) ");
 
@@ -814,9 +823,15 @@ const char *firebirdconnection::getTableListQuery(const char *catalog,
 		"	trim(rdb$relation_name) as table_name, "
 		"	trim('TABLE') as table_type, "
 		"	trim('') as remarks, "
-		"	null "
+		"	null ");
+
+	// from clause
+	tablelistquery.append(
 		"from "
-		"	rdb$relations "
+		"	rdb$relations ");
+
+	// where clause
+	tablelistquery.append(
 		"where "
 		"	rdb$system_flag=0 ");
 	if (schema) {
@@ -1566,7 +1581,10 @@ const char *firebirdconnection::getProcedureListQuery(
 		"	0 as num_result_sets, "
 		"	trim(rdb$description) as remarks, "
 		"	trim('1') as procedure_type, "
-		"	null "
+		"	null ");
+
+	// from clause
+	procedurelistquery.append(
 		"from "
 		"	rdb$procedures ");
 

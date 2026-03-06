@@ -623,7 +623,10 @@ const char *postgresqlconnection::getCatalogListQuery(const char *catalog) {
 		"	'' as table_name, "
 		"	'' as table_type, "
 		"	'' as remarks, "
-		"	null "
+		"	null ");
+
+	// from clause
+	cataloglistquery.append(
 		"from "
 		"	pg_database ");
 
@@ -657,7 +660,10 @@ const char *postgresqlconnection::getSchemaListQuery(const char *catalog,
 		"	'' as table_name, "
 		"	'' as table_type, "
 		"	'' as remarks, "
-		"	null "
+		"	null ");
+
+	// from clause
+	schemalistquery.append(
 		"from "
 		"	information_schema.schemata ");
 	bool	first=true;
@@ -707,7 +713,10 @@ const char *postgresqlconnection::getTableTypeListQuery(
 		"	'' as table_name, "
 		"	table_type, "
 		"	'' as remarks, "
-		"	null "
+		"	null ");
+
+	// from clause
+	tabletypelistquery.append(
 		"from "
 		"(select 'TABLE' as table_type "
 		"union "
@@ -750,35 +759,43 @@ const char *postgresqlconnection::getTableListQuery(
 		"		else table_type "
 		"	end as table_type, "
 		"	'' as remarks, "
-		"	null "
+		"	null ");
+
+	// from clause
+	tablelistquery.append(
 		"from "
-		"	information_schema.tables "
+		"	information_schema.tables ");
+
+	// where clause
+	tablelistquery.append(
 		"where ");
-	stringbuffer	otypes;
-	otypes.append("	(");
+	tablelistquery.append("	(");
+	bool	first=true;
 	if (objecttypes&DB_OBJECT_TABLE) {
-		otypes.append("	table_type='BASE TABLE' ");
+		tablelistquery.append("	table_type='BASE TABLE' ");
+		first=false;
 	}
 	if (objecttypes&DB_OBJECT_VIEW) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
+		if (!first) {
+			tablelistquery.append("	or ");
 		}
-		otypes.append("	table_type='VIEW' ");
+		tablelistquery.append("	table_type='VIEW' ");
+		first=false;
 	}
 	if (objecttypes&DB_OBJECT_ALIAS) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
+		if (!first) {
+			tablelistquery.append("	or ");
 		}
-		otypes.append("	table_type='ALIAS' ");
+		tablelistquery.append("	table_type='ALIAS' ");
+		first=false;
 	}
 	if (objecttypes&DB_OBJECT_SYNONYM) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
+		if (!first) {
+			tablelistquery.append("	or ");
 		}
-		otypes.append("	table_type='SYNONYM' ");
+		tablelistquery.append("	table_type='SYNONYM' ");
 	}
-	otypes.append(") ");
-	tablelistquery.append(otypes.getString());
+	tablelistquery.append(") ");
 	if (catalog) {
 		tablelistquery.append(
 			"	and "
@@ -1720,7 +1737,10 @@ const char *postgresqlconnection::getProcedureListQuery(
 		"		when 'FUNCTION' then '2' "
 		"		else '0' "
 		"	end as procedure_type, "
-		"	null "
+		"	null ");
+
+	// from clause
+	procedurelistquery.append(
 		"from "
 		"	information_schema.routines ");
 

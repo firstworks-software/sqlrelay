@@ -629,9 +629,15 @@ const char *sapconnection::getSchemaListQuery(const char *catalog,
 		"	'' as table_name, "
 		"	'' as table_type, "
 		"	'' as remarks, "
-		"	null "
+		"	null ");
+
+	// from clause
+	schemalistquery.append(
 		"from "
-		"	sysobjects "
+		"	sysobjects ");
+
+	// where clause
+	schemalistquery.append(
 		"where "
 		"	loginame is not null ");
 	if (schema) {
@@ -664,7 +670,10 @@ const char *sapconnection::getTableTypeListQuery(const char *catalog,
 		"	'' as table_name, "
 		"	table_type, "
 		"	'' as remarks, "
-		"	null "
+		"	null ");
+
+	// from clause
+	tabletypelistquery.append(
 		"from "
 		"(select 'TABLE' as table_type "
 		"union "
@@ -702,9 +711,15 @@ const char *sapconnection::getTableListQuery(const char *catalog,
 		"	name as table_name, "
 		"	'TABLE' as table_type, "
 		"	'' as remarks, "
-		"	null "
+		"	null ");
+
+	// from clause
+	tablelistquery.append(
 		"from "
-		"	sysobjects "
+		"	sysobjects ");
+
+	// where clause
+	tablelistquery.append(
 		"where "
 		"	loginame is not null ");
 	if (schema) {
@@ -723,19 +738,19 @@ const char *sapconnection::getTableListQuery(const char *catalog,
 	}
 	tablelistquery.append(
 		"	and ");
-	stringbuffer	otypes;
-	otypes.append("	(");
+	tablelistquery.append("	(");
+	bool	first=true;
 	if (objecttypes&DB_OBJECT_TABLE) {
-		otypes.append("	type='U' ");
+		tablelistquery.append("	type='U' ");
+		first=false;
 	}
 	if (objecttypes&DB_OBJECT_VIEW) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
+		if (!first) {
+			tablelistquery.append("	or ");
 		}
-		otypes.append("	type='V' ");
+		tablelistquery.append("	type='V' ");
 	}
-	otypes.append(") ");
-	tablelistquery.append(otypes.getString());
+	tablelistquery.append(") ");
 
 	// order by clause
 	tablelistquery.append(
@@ -1711,9 +1726,15 @@ const char *sapconnection::getProcedureListQuery(
 		"		when 'SF' then '2' "
 		"		else '0' "
 		"	end as procedure_type, "
-		"	null "
+		"	null ");
+
+	// from clause
+	procedurelistquery.append(
 		"from "
-		"	sysobjects "
+		"	sysobjects ");
+
+	// where clause
+	procedurelistquery.append(
 		"where "
 		"	type in ('P','SF') ");
 	if (!charstring::isNullOrEmpty(schema)) {

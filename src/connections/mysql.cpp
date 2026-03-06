@@ -741,7 +741,10 @@ const char *mysqlconnection::getCatalogListQuery(const char *catalog) {
 		"	'' as table_name, "
 		"	'' as table_type, "
 		"	'' as remarks, "
-		"	null "
+		"	null ");
+
+	// from clause
+	cataloglistquery.append(
 		"from "
 		"	information_schema.schemata ");
 
@@ -775,7 +778,10 @@ const char *mysqlconnection::getSchemaListQuery(const char *catalog,
 		"	'' as table_name, "
 		"	'' as table_type, "
 		"	'' as remarks, "
-		"	null "
+		"	null ");
+
+	// from clause
+	schemalistquery.append(
 		"from "
 		"	information_schema.schemata ");
 
@@ -824,7 +830,10 @@ const char *mysqlconnection::getTableTypeListQuery(const char *catalog,
 		"	'' as table_name, "
 		"	table_type, "
 		"	'' as remarks, "
-		"	null "
+		"	null ");
+
+	// from clause
+	tabletypelistquery.append(
 		"from "
 		"(select 'TABLE' as table_type "
 		"union "
@@ -870,35 +879,43 @@ const char *mysqlconnection::getTableListQuery(const char *catalog,
 		"		else table_type "
 		"	end as table_type, "
 		"	'' as remarks, "
-		"	null "
+		"	null ");
+
+	// from clause
+	tablelistquery.append(
 		"from "
-		"	information_schema.tables "
+		"	information_schema.tables ");
+
+	// where clause
+	tablelistquery.append(
 		"where ");
-	stringbuffer	otypes;
-	otypes.append("	(");
+	tablelistquery.append("	(");
+	bool	first=true;
 	if (objecttypes&DB_OBJECT_TABLE) {
-		otypes.append("	table_type='BASE TABLE' ");
+		tablelistquery.append("	table_type='BASE TABLE' ");
+		first=false;
 	}
 	if (objecttypes&DB_OBJECT_VIEW) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
+		if (!first) {
+			tablelistquery.append("	or ");
 		}
-		otypes.append("	table_type='VIEW' ");
+		tablelistquery.append("	table_type='VIEW' ");
+		first=false;
 	}
 	if (objecttypes&DB_OBJECT_ALIAS) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
+		if (!first) {
+			tablelistquery.append("	or ");
 		}
-		otypes.append("	table_type='ALIAS' ");
+		tablelistquery.append("	table_type='ALIAS' ");
+		first=false;
 	}
 	if (objecttypes&DB_OBJECT_SYNONYM) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
+		if (!first) {
+			tablelistquery.append("	or ");
 		}
-		otypes.append("	table_type='SYNONYM' ");
+		tablelistquery.append("	table_type='SYNONYM' ");
 	}
-	otypes.append(") ");
-	tablelistquery.append(otypes.getString());
+	tablelistquery.append(") ");
 	if (catalog) {
 		tablelistquery.append(
 			"	and "
@@ -1715,7 +1732,10 @@ const char *mysqlconnection::getColumnListQuery(const char *catalog,
 		"	is_nullable, "
 		"	numeric_precision, "
 		"	column_key, "
-		"	null "
+		"	null ");
+
+	// from clause
+	columnlistquery.append(
 		"from "
 		"	information_schema.columns ");
 
@@ -1768,6 +1788,11 @@ const char *mysqlconnection::getColumnListQuery(const char *catalog,
 		columnlistquery.append(column);
 		columnlistquery.append("' ");
 	}
+
+	// order by clause
+	columnlistquery.append(
+		"order by "
+		"	ordinal_position");
 
 	return columnlistquery.getString();
 }
@@ -1931,7 +1956,10 @@ const char *mysqlconnection::getProcedureListQuery(
 		"		when 'FUNCTION' then '2' "
 		"		else '0' "
 		"	end as procedure_type, "
-		"	null "
+		"	null ");
+
+	// from clause
+	procedurelistquery.append(
 		"from "
 		"	information_schema.routines ");
 

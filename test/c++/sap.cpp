@@ -1229,6 +1229,100 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// column list
+	stdoutput.printf("COLUMN LIST: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery(
+		"create table testtable ("
+		"	testint int, "
+		"	testsmallint smallint, "
+		"	testtinyint tinyint, "
+		"	testreal real, "
+		"	testfloat float, "
+		"	testdecimal decimal(4,1), "
+		"	testnumeric numeric(4,1), "
+		"	testmoney money, "
+		"	testsmallmoney smallmoney, "
+		"	testdatetime datetime, "
+		"	testsmalldatetime smalldatetime, "
+		"	testchar char(40), "
+		"	testvarchar varchar(40), "
+		"	testbit bit, "
+		"	testtext text)"));
+	assertTrue(cur->getColumnList("testtable",NULL));
+	assertEquals(cur->getColumnName(0),"column_name");
+	assertEquals(cur->getColumnName(1),"data_type");
+	assertEquals(cur->getColumnName(2),"character_maximum_length");
+	assertEquals(cur->getColumnName(3),"numeric_precision");
+	assertEquals(cur->getColumnName(4),"numeric_scale");
+	assertEquals(cur->getColumnName(5),"is_nullable");
+	assertEquals(cur->getColumnName(6),"column_key");
+	assertEquals(cur->getColumnName(7),"column_default");
+	assertEquals(cur->getColumnName(8),"extra");
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(0,"column_name"),"testint"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(1,"column_name"),"testsmallint"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(2,"column_name"),"testtinyint"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(3,"column_name"),"testreal"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(4,"column_name"),"testfloat"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(5,"column_name"),"testdecimal"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(6,"column_name"),"testnumeric"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(7,"column_name"),"testmoney"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(8,"column_name"),"testsmallmoney"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(9,"column_name"),"testdatetime"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(10,"column_name"),"testsmalldatetime"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(11,"column_name"),"testchar"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(12,"column_name"),"testvarchar"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(13,"column_name"),"testbit"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(14,"column_name"),"testtext"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(0,"data_type"),"int"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(1,"data_type"),"smallint"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(2,"data_type"),"tinyint"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(3,"data_type"),"real"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(4,"data_type"),"float"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(5,"data_type"),"decimal"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(6,"data_type"),"numeric"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(7,"data_type"),"money"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(8,"data_type"),"smallmoney"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(9,"data_type"),"datetime"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(10,"data_type"),"smalldatetime"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(11,"data_type"),"char"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(12,"data_type"),"varchar"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(13,"data_type"),"bit"));
+	assertTrue(!charstring::compareIgnoringCase(
+			cur->getField(14,"data_type"),"text"));
+	cur->sendQuery("drop table testtable");
+	stdoutput.printf("\n");
+
+
 	// column list - auto_increment, primary key
 	stdoutput.printf("COLUMN LIST - auto_increment, primary key: \n");
 	cur->sendQuery("drop table testtable");

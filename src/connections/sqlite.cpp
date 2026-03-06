@@ -351,7 +351,10 @@ const char *sqliteconnection::getTableTypeListQuery(
 		"	'' as table_name, "
 		"	table_type, "
 		"	'' as remarks, "
-		"	null "
+		"	null ");
+
+	// from clause
+	tabletypelistquery.append(
 		"from "
 		"(select 'TABLE' as table_type "
 		"union "
@@ -389,7 +392,10 @@ const char *sqliteconnection::getTableListQuery(const char *catalog,
 		"	tbl_name as table_name, "
 		"	'TABLE' as table_type, "
 		"	'' as remarks, "
-		"	null "
+		"	null ");
+
+	// from clause
+	tablelistquery.append(
 		"from "
 		"( "
 		"select "
@@ -397,27 +403,39 @@ const char *sqliteconnection::getTableListQuery(const char *catalog,
 		"from "
 		"	sqlite_master "
 		"where ");
-	stringbuffer	otypes;
-	otypes.append("	(");
+	tablelistquery.append("	(");
+	bool	first=true;
 	if (objecttypes&DB_OBJECT_TABLE) {
-		otypes.append("	type='table' ");
+		tablelistquery.append("	type='table' ");
+		first=false;
 	}
 	if (objecttypes&DB_OBJECT_VIEW) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
+		if (!first) {
+			tablelistquery.append("	or ");
 		}
-		otypes.append("	type='view' ");
+		tablelistquery.append("	type='view' ");
 	}
-	otypes.append(") ");
-	tablelistquery.append(otypes.getString());
+	tablelistquery.append(") ");
 	tablelistquery.append(
 		"union all "
 		"select "
 		"	tbl_name "
 		"from "
 		"	sqlite_temp_master "
-		"where ");
-	tablelistquery.append(otypes.getString());
+		"where "
+		"	(");
+	first=true;
+	if (objecttypes&DB_OBJECT_TABLE) {
+		tablelistquery.append("	type='table' ");
+		first=false;
+	}
+	if (objecttypes&DB_OBJECT_VIEW) {
+		if (!first) {
+			tablelistquery.append("	or ");
+		}
+		tablelistquery.append("	type='view' ");
+	}
+	tablelistquery.append(") ");
 	tablelistquery.append(
 		") ");
 
@@ -915,6 +933,7 @@ const char *sqliteconnection::getColumnListQuery(const char *catalog,
 
 	columnlistquery.clear();
 
+	// select clause
 	columnlistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -946,17 +965,26 @@ const char *sqliteconnection::getColumnListQuery(const char *catalog,
 		"		when p.pk=1 then 'PRI' "
 		"		else '' "
 		"	end as column_key, "
-		"	null "
+		"	null ");
+
+	// from clause
+	columnlistquery.append(
 		"from "
 		"	(select "
 		"		* "
 		"	from "
-		"		pragma_table_info('")->append(table)->append("')) p ");
+		"		pragma_table_info('")->
+					append(table)->append("')) p ");
+
+	// where clause
 	if (!charstring::isNullOrEmpty(column)) {
 		columnlistquery.append(
 			"where "
-			"	upper(p.name) like upper('")->append(column)->append("') ");
+			"	upper(p.name) like upper('")->
+						append(column)->append("') ");
 	}
+
+	// order by clause
 	columnlistquery.append(
 		"order by "
 		"	p.cid");
@@ -969,6 +997,8 @@ const char *sqliteconnection::getPrimaryKeysListQuery(const char *catalog,
 							const char *table) {
 
 	primarykeyslistquery.clear();
+
+	// select clause
 	primarykeyslistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -985,7 +1015,8 @@ const char *sqliteconnection::getPrimaryKeysListQuery(const char *catalog,
 		"	(select "
 		"		* "
 		"	from "
-		"		pragma_table_info('")->append(table)->append("')) p ");
+		"		pragma_table_info('")->
+					append(table)->append("')) p ");
 
 	// where clause
 	primarykeyslistquery.append(
@@ -1002,6 +1033,8 @@ const char *sqliteconnection::getKeyAndIndexListQuery(const char *catalog,
 							const char *table) {
 
 	keyandindexlistquery.clear();
+
+	// select clause
 	keyandindexlistquery.append(
 		"select "
 		"	'' as table_cat, "
@@ -1031,8 +1064,12 @@ const char *sqliteconnection::getKeyAndIndexListQuery(const char *catalog,
 		"	(select "
 		"		* "
 		"	from "
-		"		pragma_index_list('")->append(table)->append("')) il, "
-		"	pragma_index_info(il.name) ii "
+		"		pragma_index_list('")->
+					append(table)->append("')) il, "
+		"	pragma_index_info(il.name) ii ");
+
+	// order by clause
+	keyandindexlistquery.append(
 		"order by "
 		"	il.name, "
 		"	ii.seqno");

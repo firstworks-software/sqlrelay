@@ -782,7 +782,10 @@ const char *freetdsconnection::getCatalogListQuerySqlServer(
 		"	'' as table_name, "
 		"	'' as table_type, "
 		"	'' as remarks, "
-		"	null "
+		"	null ");
+
+	// from clause
+	cataloglistquery.append(
 		"from "
 		"	information_schema.schemata ");
 
@@ -824,9 +827,15 @@ const char *freetdsconnection::getSchemaListQuerySybase(
 		"	'' as table_name, "
 		"	'' as table_type, "
 		"	'' as remarks, "
-		"	null "
+		"	null ");
+
+	// from clause
+	schemalistquery.append(
 		"from "
-		"	sysobjects "
+		"	sysobjects ");
+
+	// where clause
+	schemalistquery.append(
 		"where "
 		"	loginame is not null ");
 	if (schema) {
@@ -859,7 +868,10 @@ const char *freetdsconnection::getSchemaListQuerySqlServer(
 		"	'' as table_name, "
 		"	'' as table_type, "
 		"	'' as remarks, "
-		"	null "
+		"	null ");
+
+	// from clause
+	schemalistquery.append(
 		"from "
 		"	information_schema.schemata ");
 
@@ -918,7 +930,10 @@ const char *freetdsconnection::getTableTypeListQuerySybase(
 		"	'' as table_name, "
 		"	table_type, "
 		"	'' as remarks, "
-		"	null "
+		"	null ");
+
+	// from clause
+	tabletypelistquery.append(
 		"from "
 		"(select 'TABLE' as table_type "
 		"union "
@@ -956,7 +971,10 @@ const char *freetdsconnection::getTableTypeListQuerySqlServer(
 		"	'' as table_name, "
 		"	table_type, "
 		"	'' as remarks, "
-		"	null "
+		"	null ");
+
+	// from clause
+	tabletypelistquery.append(
 		"from "
 		"(select 'TABLE' as table_type "
 		"union "
@@ -1000,19 +1018,6 @@ const char *freetdsconnection::getTableListQuerySybase(
 
 	tablelistquery.clear();
 
-	stringbuffer	otypes;
-	otypes.append("	(");
-	if (objecttypes&DB_OBJECT_TABLE) {
-		otypes.append("	type='U' ");
-	}
-	if (objecttypes&DB_OBJECT_VIEW) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
-		}
-		otypes.append("	type='V' ");
-	}
-	otypes.append(") ");
-
 	// select clause
 	tablelistquery.append(
 		"select "
@@ -1021,9 +1026,15 @@ const char *freetdsconnection::getTableListQuerySybase(
 		"	name as table_name, "
 		"	'TABLE' as table_type, "
 		"	'' as remarks, "
-		"	null "
+		"	null ");
+
+	// from clause
+	tablelistquery.append(
 		"from "
-		"	sysobjects "
+		"	sysobjects ");
+
+	// where clause
+	tablelistquery.append(
 		"where "
 		"	loginame is not null ");
 	if (schema) {
@@ -1041,8 +1052,20 @@ const char *freetdsconnection::getTableListQuerySybase(
 		tablelistquery.append("' ");
 	}
 	tablelistquery.append(
-		"	and ");
-	tablelistquery.append(otypes.getString());
+		"	and "
+		"	(");
+	bool	first=true;
+	if (objecttypes&DB_OBJECT_TABLE) {
+		tablelistquery.append("	type='U' ");
+		first=false;
+	}
+	if (objecttypes&DB_OBJECT_VIEW) {
+		if (!first) {
+			tablelistquery.append("	or ");
+		}
+		tablelistquery.append("	type='V' ");
+	}
+	tablelistquery.append(") ");
 
 	// order by clause
 	tablelistquery.append(
@@ -1060,31 +1083,6 @@ const char *freetdsconnection::getTableListQuerySqlServer(
 
 	tablelistquery.clear();
 
-	stringbuffer	otypes;
-	otypes.append("	(");
-	if (objecttypes&DB_OBJECT_TABLE) {
-		otypes.append("	table_type='BASE TABLE' ");
-	}
-	if (objecttypes&DB_OBJECT_VIEW) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
-		}
-		otypes.append("	table_type='VIEW' ");
-	}
-	if (objecttypes&DB_OBJECT_ALIAS) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
-		}
-		otypes.append("	table_type='ALIAS' ");
-	}
-	if (objecttypes&DB_OBJECT_SYNONYM) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
-		}
-		otypes.append("	table_type='SYNONYM' ");
-	}
-	otypes.append(") ");
-
 	// select clause
 	tablelistquery.append(
 		"select "
@@ -1097,11 +1095,43 @@ const char *freetdsconnection::getTableListQuerySqlServer(
 		"		else table_type "
 		"	end as table_type, "
 		"	'' as remarks, "
-		"	null "
+		"	null ");
+
+	// from clause
+	tablelistquery.append(
 		"from "
-		"	information_schema.tables "
-		"where ");
-	tablelistquery.append(otypes.getString());
+		"	information_schema.tables ");
+
+	// where clause
+	tablelistquery.append(
+		"where "
+		"	(");
+	bool	first=true;
+	if (objecttypes&DB_OBJECT_TABLE) {
+		tablelistquery.append("	table_type='BASE TABLE' ");
+		first=false;
+	}
+	if (objecttypes&DB_OBJECT_VIEW) {
+		if (!first) {
+			tablelistquery.append("	or ");
+		}
+		tablelistquery.append("	table_type='VIEW' ");
+		first=false;
+	}
+	if (objecttypes&DB_OBJECT_ALIAS) {
+		if (!first) {
+			tablelistquery.append("	or ");
+		}
+		tablelistquery.append("	table_type='ALIAS' ");
+		first=false;
+	}
+	if (objecttypes&DB_OBJECT_SYNONYM) {
+		if (!first) {
+			tablelistquery.append("	or ");
+		}
+		tablelistquery.append("	table_type='SYNONYM' ");
+	}
+	tablelistquery.append(") ");
 	if (catalog) {
 		tablelistquery.append(
 			"	and "
@@ -2562,9 +2592,15 @@ const char *freetdsconnection::getProcedureListQuerySybase(
 		"		when 'SF' then '2' "
 		"		else '0' "
 		"	end as procedure_type, "
-		"	null "
+		"	null ");
+
+	// from clause
+	procedurelistquery.append(
 		"from "
-		"	sysobjects "
+		"	sysobjects ");
+
+	// where clause
+	procedurelistquery.append(
 		"where "
 		"	type in ('P','SF') ");
 	if (!charstring::isNullOrEmpty(schema)) {
@@ -2611,7 +2647,10 @@ const char *freetdsconnection::getProcedureListQuerySqlServer(
 		"		when 'FUNCTION' then '2' "
 		"		else '0' "
 		"	end as procedure_type, "
-		"	null "
+		"	null ");
+
+	// from clause
+	procedurelistquery.append(
 		"from "
 		"	information_schema.routines ");
 

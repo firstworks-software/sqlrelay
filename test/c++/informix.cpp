@@ -1494,6 +1494,79 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// column list
+	stdoutput.printf("COLUMN LIST: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery(
+		"create table testtable ("
+		"	testboolean boolean, "
+		"	testsmallint smallint, "
+		"	testint integer, "
+		"	testbigint bigint, "
+		"	testint8 int8, "
+		"	testdecimal decimal(10,2), "
+		"	testmoney money, "
+		"	testsmallfloat smallfloat, "
+		"	testfloat float, "
+		"	testchar char(40), "
+		"	testnchar nchar(40), "
+		"	testvarchar varchar(40), "
+		"	testnvarchar nvarchar(40), "
+		"	testlvarchar lvarchar(40), "
+		"	testdate date, "
+		"	testdatetime datetime year to second, "
+		"	testtext text, "
+		"	testbyte byte)"));
+	assertTrue(cur->getColumnList("testtable",NULL));
+	assertEquals(cur->getColumnName(0),"column_name");
+	assertEquals(cur->getColumnName(1),"data_type");
+	assertEquals(cur->getColumnName(2),"character_maximum_length");
+	assertEquals(cur->getColumnName(3),"numeric_precision");
+	assertEquals(cur->getColumnName(4),"numeric_scale");
+	assertEquals(cur->getColumnName(5),"is_nullable");
+	assertEquals(cur->getColumnName(6),"column_key");
+	assertEquals(cur->getColumnName(7),"column_default");
+	assertEquals(cur->getColumnName(8),"extra");
+	assertEquals(cur->getField(0,"column_name"),"testboolean");
+	assertEquals(cur->getField(1,"column_name"),"testsmallint");
+	assertEquals(cur->getField(2,"column_name"),"testint");
+	assertEquals(cur->getField(3,"column_name"),"testbigint");
+	assertEquals(cur->getField(4,"column_name"),"testint8");
+	assertEquals(cur->getField(5,"column_name"),"testdecimal");
+	assertEquals(cur->getField(6,"column_name"),"testmoney");
+	assertEquals(cur->getField(7,"column_name"),"testsmallfloat");
+	assertEquals(cur->getField(8,"column_name"),"testfloat");
+	assertEquals(cur->getField(9,"column_name"),"testchar");
+	assertEquals(cur->getField(10,"column_name"),"testnchar");
+	assertEquals(cur->getField(11,"column_name"),"testvarchar");
+	assertEquals(cur->getField(12,"column_name"),"testnvarchar");
+	assertEquals(cur->getField(13,"column_name"),"testlvarchar");
+	assertEquals(cur->getField(14,"column_name"),"testdate");
+	assertEquals(cur->getField(15,"column_name"),"testdatetime");
+	assertEquals(cur->getField(16,"column_name"),"testtext");
+	assertEquals(cur->getField(17,"column_name"),"testbyte");
+	assertEquals(cur->getField(0,"data_type"),"boolean");
+	assertEquals(cur->getField(1,"data_type"),"smallint");
+	assertEquals(cur->getField(2,"data_type"),"int");
+	assertEquals(cur->getField(3,"data_type"),"bigint");
+	assertEquals(cur->getField(4,"data_type"),"int8");
+	assertEquals(cur->getField(5,"data_type"),"decimal");
+	assertEquals(cur->getField(6,"data_type"),"money");
+	assertEquals(cur->getField(7,"data_type"),"smallfloat");
+	assertEquals(cur->getField(8,"data_type"),"float");
+	assertEquals(cur->getField(9,"data_type"),"char");
+	assertEquals(cur->getField(10,"data_type"),"nchar");
+	assertEquals(cur->getField(11,"data_type"),"varchar");
+	assertEquals(cur->getField(12,"data_type"),"nvarchar");
+	assertEquals(cur->getField(13,"data_type"),"lvarchar");
+	assertEquals(cur->getField(14,"data_type"),"date");
+	assertEquals(cur->getField(15,"data_type"),"datetime");
+	assertEquals(cur->getField(16,"data_type"),"text");
+	assertEquals(cur->getField(17,"data_type"),"byte");
+	cur->sendQuery("drop table testtable");
+	stdoutput.printf("\n");
+
+
 	// column list - auto_increment, primary key
 	stdoutput.printf("COLUMN LIST - auto_increment, primary key: \n");
 	cur->sendQuery("drop table testtable");

@@ -762,32 +762,34 @@ const char *db2connection::getTableListQuery(const char *catalog,
 		tablelistquery.append("') ");
 	}
 	tablelistquery.append(
-			"	and ");
-	stringbuffer	otypes;
-	otypes.append("	(");
+			"	and "
+			"	(");
+	bool	first=true;
 	if (objecttypes&DB_OBJECT_TABLE) {
-		otypes.append("	type='T' or type='U' ");
+		tablelistquery.append("	type='T' or type='U' ");
+		first=false;
 	}
 	if (objecttypes&DB_OBJECT_VIEW) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
+		if (!first) {
+			tablelistquery.append("	or ");
 		}
-		otypes.append("	type='V' or type='W' ");
+		tablelistquery.append("	type='V' or type='W' ");
+		first=false;
 	}
 	if (objecttypes&DB_OBJECT_ALIAS) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
+		if (!first) {
+			tablelistquery.append("	or ");
 		}
-		otypes.append("	type='A' ");
+		tablelistquery.append("	type='A' ");
+		first=false;
 	}
 	if (objecttypes&DB_OBJECT_SYNONYM) {
-		if (otypes.getSize()) {
-			otypes.append("	or ");
+		if (!first) {
+			tablelistquery.append("	or ");
 		}
-		otypes.append("	type='N' ");
+		tablelistquery.append("	type='N' ");
 	}
-	otypes.append(") ");
-	tablelistquery.append(otypes.getString());
+	tablelistquery.append(") ");
 
 	// order by clause
 	tablelistquery.append(
