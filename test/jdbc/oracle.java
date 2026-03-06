@@ -1836,7 +1836,7 @@ if (false) {
 
 		// functions
                 System.out.println("functions");
-		// FIXME: sqlrelay doesn't support this yet
+		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
                 	rs=md.getFunctions("%","%","%");
                 	assertTrue((rs!=null));
@@ -1880,7 +1880,7 @@ if (false) {
 
 		// UDTs
                 System.out.println("UDTs");
-		// FIXME: sqlrelay doesn't support this yet
+		// sqlrelay doesn't support this yet
 		// oracle jdbc throws:
 		// ORA-08177: can't serialize access for this transaction
 		if (false) {
@@ -1926,7 +1926,7 @@ if (false) {
 
 		// best row identifier
 		System.out.println("best row identifier");
-		// FIXME: sqlrelay doesn't support this yet
+		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getBestRowIdentifier("%","%","%",
 					DatabaseMetaData.bestRowTemporary,
@@ -1961,7 +1961,7 @@ if (false) {
 
 		// client info properties
 		System.out.println("client info properties");
-		// FIXME: sqlrelay doesn't support this yet
+		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getClientInfoProperties();
 			assertTrue((rs!=null));
@@ -1982,7 +1982,7 @@ if (false) {
 
 		// column privileges
 		System.out.println("column privileges");
-		// FIXME: sqlrelay doesn't support this yet
+		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getColumnPrivileges("%","%","%","%");
 			assertTrue((rs!=null));
@@ -2048,7 +2048,7 @@ if (false) {
 
 		// cross reference
 		System.out.println("cross reference");
-		// FIXME: sqlrelay doesn't support this yet
+		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getCrossReference("%","%","%","%","%","%");
 			assertTrue((rs!=null));
@@ -2079,7 +2079,7 @@ if (false) {
 
 		// exported keys
 		System.out.println("exported keys");
-		// FIXME: sqlrelay doesn't support this yet
+		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getExportedKeys("%","%","%");
 			assertTrue((rs!=null));
@@ -2112,7 +2112,7 @@ if (false) {
 		System.out.println("function columns");
 // slow, disabled for now
 if (false) {
-		// FIXME: sqlrelay doesn't support this yet
+		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getFunctionColumns("%","%","%","%");
 			assertTrue((rs!=null));
@@ -2187,7 +2187,7 @@ if (false) {
 
 		// imported keys
 		System.out.println("imported keys");
-		// FIXME: sqlrelay doesn't support this yet
+		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getImportedKeys("%","%","%");
 			assertTrue((rs!=null));
@@ -2343,7 +2343,7 @@ if (false) {
 		System.out.println("pseudo columns");
 // slow, disabled for now
 if (false) {
-		// FIXME: sqlrelay doesn't support this yet
+		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getPseudoColumns("%","%","%","%");
 			assertTrue((rs!=null));
@@ -2409,7 +2409,7 @@ if (false) {
 		System.out.println("table privileges");
 // slow, disabled for now
 if (false) {
-		// FIXME: sqlrelay doesn't support this yet
+		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getTablePrivileges("%","%","%");
 			assertTrue((rs!=null));
@@ -2434,7 +2434,7 @@ if (false) {
 
 		// version columns
 		System.out.println("version columns");
-		// FIXME: sqlrelay doesn't support this yet
+		// sqlrelay doesn't support this yet
 		if (!issqlrelay) {
 			rs=md.getVersionColumns("%","%","%");
 			assertTrue((rs!=null));
