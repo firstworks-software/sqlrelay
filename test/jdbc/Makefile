@@ -2,11 +2,15 @@ top_builddir = ../..
 
 include ../../config.mk
 
-all: oracle.class \
+all: mysql.class \
+	oracle.class \
 	run.bat
 
 clean:
 	$(RM) *.class cachefile* sqlnet.log run.bat
+
+mysql.class: sqlrtest.java mysql.java
+	$(JAVAC) -classpath $(javadir)/sqlrelay.jar:$(javadir)/sqlrelayjdbc.jar sqlrtest.java mysql.java
 
 oracle.class: sqlrtest.java oracle.java
 	$(JAVAC) -classpath $(javadir)/sqlrelay.jar:$(javadir)/sqlrelayjdbc.jar sqlrtest.java oracle.java
