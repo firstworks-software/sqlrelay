@@ -64,6 +64,7 @@ class oracle extends sqlrtest {
 		Blob			blob;
 		CallableStatement	cstmt;
 		boolean			found;
+		int			counter;
 		java.sql.Date		datevar;
 		Timestamp		tsvar;
 		Calendar		cal=Calendar.getInstance();
@@ -3079,6 +3080,7 @@ class oracle extends sqlrtest {
 
 		// catalog list
 		System.out.println("CATALOG LIST: ");
+		stmt=con.createStatement();
 		rs=md.getCatalogs();
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
@@ -3086,9 +3088,7 @@ class oracle extends sqlrtest {
 		assertEquals(rsmd.getColumnCount(),1);
 		col=1;
 		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
-		//System.out.println();
-		//printColumns(rsmd);
-		//printResultSet(rs);
+		assertFalse(rs.next());
 		rs.close();
 		System.out.println();
 
@@ -3125,15 +3125,72 @@ class oracle extends sqlrtest {
 		assertEquals(rsmd.getColumnCount(),1);
 		col=1;
 		assertEquals(rsmd.getColumnName(col++),"TABLE_TYPE");
-		//System.out.println();
-		//printColumns(rsmd);
-		//printResultSet(rs);
+		if (issqlrelay) {
+			assertTrue(rs.next());
+			assertEquals(rs.getString("TABLE_TYPE"),"SYNONYM");
+			assertTrue(rs.next());
+			assertEquals(rs.getString("TABLE_TYPE"),"TABLE");
+			assertTrue(rs.next());
+			assertEquals(rs.getString("TABLE_TYPE"),"VIEW");
+		}
 		rs.close();
 		System.out.println();
 
 
 		// table list
 		System.out.println("TABLE LIST: ");
+		try {
+			stmt.executeUpdate("drop table testtable1");
+		} catch (Exception ex) {
+		}
+		try {
+			stmt.executeUpdate("drop table testtable2");
+		} catch (Exception ex) {
+		}
+		try {
+			stmt.executeUpdate("drop table testtable3");
+		} catch (Exception ex) {
+		}
+		try {
+			stmt.executeUpdate("drop table testtable4");
+		} catch (Exception ex) {
+		}
+		stmt.executeUpdate(
+			"create table testtable1 ("+
+			"	testnumber number, "+
+			"	testchar char(40), "+
+			"	testvarchar varchar2(40), "+
+			"	testdate date, "+
+			"	testlong long, "+
+			"	testclob clob, "+
+			"	testblob blob)");
+		stmt.executeUpdate(
+			"create table testtable2 ("+
+			"	testnumber number, "+
+			"	testchar char(40), "+
+			"	testvarchar varchar2(40), "+
+			"	testdate date, "+
+			"	testlong long, "+
+			"	testclob clob, "+
+			"	testblob blob)");
+		stmt.executeUpdate(
+			"create table testtable3 ("+
+			"	testnumber number, "+
+			"	testchar char(40), "+
+			"	testvarchar varchar2(40), "+
+			"	testdate date, "+
+			"	testlong long, "+
+			"	testclob clob, "+
+			"	testblob blob)");
+		stmt.executeUpdate(
+			"create table testtable4 ("+
+			"	testnumber number, "+
+			"	testchar char(40), "+
+			"	testvarchar varchar2(40), "+
+			"	testdate date, "+
+			"	testlong long, "+
+			"	testclob clob, "+
+			"	testblob blob)");
 		rs=md.getTables(null,null,"%",
 			new String[] {"SYNONYM","TABLE","VIEW"});
 		assertTrue((rs!=null));
@@ -3160,10 +3217,22 @@ class oracle extends sqlrtest {
 			assertEquals(rsmd.getColumnName(col++),
 						"REF_GENERATION");
 		}
-		//System.out.println();
-		//printColumns(rsmd);
-		//printResultSet(rs);
+		counter=0;
+		while (rs.next()) {
+			String name=rs.getString("TABLE_NAME");
+			if (name.equalsIgnoreCase("TESTTABLE1") ||
+				name.equalsIgnoreCase("TESTTABLE2") ||
+				name.equalsIgnoreCase("TESTTABLE3") ||
+				name.equalsIgnoreCase("TESTTABLE4")) {
+				counter++;
+			}
+		}
+		assertEquals(counter,4);
 		rs.close();
+		stmt.executeUpdate("drop table testtable1");
+		stmt.executeUpdate("drop table testtable2");
+		stmt.executeUpdate("drop table testtable3");
+		stmt.executeUpdate("drop table testtable4");
 		System.out.println();
 
 
@@ -3239,12 +3308,30 @@ class oracle extends sqlrtest {
 
 		// column list
 		System.out.println("COLUMN LIST: ");
-		rs=md.getColumns(null,null,"%","%");
+		try {
+			stmt.executeUpdate("drop table testtable");
+		} catch (Exception ex) {
+		}
+		stmt.executeUpdate(
+			"create table testtable ("+
+			"	testnumber number, "+
+			"	testchar char(40), "+
+			"	testvarchar varchar2(40), "+
+			"	testdate date, "+
+			"	testlong long, "+
+			"	testclob clob, "+
+			"	testblob blob)");
+		rs=md.getColumns(null,null,"TESTTABLE","%");
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
 		col=1;
-		assertEquals(rsmd.getColumnCount(),24);
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnCount(),24);
+		} else {
+			// oracle jdbc returns 23 columns
+			assertEquals(rsmd.getColumnCount(),23);
+		}
 		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
 		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
 		assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
@@ -3263,16 +3350,55 @@ class oracle extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"CHAR_OCTET_LENGTH");
 		assertEquals(rsmd.getColumnName(col++),"ORDINAL_POSITION");
 		assertEquals(rsmd.getColumnName(col++),"IS_NULLABLE");
-		assertEquals(rsmd.getColumnName(col++),"SCOPE_CATALOG");
-		assertEquals(rsmd.getColumnName(col++),"SCOPE_SCHEMA");
-		assertEquals(rsmd.getColumnName(col++),"SCOPE_TABLE");
-		assertEquals(rsmd.getColumnName(col++),"SOURCE_DATA_TYPE");
-		assertEquals(rsmd.getColumnName(col++),"IS_AUTOINCREMENT");
-		assertEquals(rsmd.getColumnName(col++),"IS_GENERATEDCOLUMN");
-		//System.out.println();
-		//printColumns(rsmd);
-		//printResultSet(rs);
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnName(col++),
+						"SCOPE_CATALOG");
+			assertEquals(rsmd.getColumnName(col++),
+						"SCOPE_SCHEMA");
+			assertEquals(rsmd.getColumnName(col++),
+						"SCOPE_TABLE");
+			assertEquals(rsmd.getColumnName(col++),
+						"SOURCE_DATA_TYPE");
+			assertEquals(rsmd.getColumnName(col++),
+						"IS_AUTOINCREMENT");
+			assertEquals(rsmd.getColumnName(col++),
+						"IS_GENERATEDCOLUMN");
+		} else {
+			// oracle jdbc returns these columns
+			assertEquals(rsmd.getColumnName(col++),
+						"SCOPE_CATALOG");
+			assertEquals(rsmd.getColumnName(col++),
+						"SCOPE_SCHEMA");
+			assertEquals(rsmd.getColumnName(col++),
+						"SCOPE_TABLE");
+			assertEquals(rsmd.getColumnName(col++),
+						"SOURCE_DATA_TYPE");
+			assertEquals(rsmd.getColumnName(col++),
+						"IS_AUTOINCREMENT");
+		}
+		assertTrue(rs.next());
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTNUMBER");
+		assertEquals(rs.getString("TYPE_NAME"),"NUMBER");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTCHAR");
+		assertEquals(rs.getString("TYPE_NAME"),"CHAR");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTVARCHAR");
+		assertEquals(rs.getString("TYPE_NAME"),"VARCHAR2");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTDATE");
+		assertEquals(rs.getString("TYPE_NAME"),"DATE");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTLONG");
+		assertEquals(rs.getString("TYPE_NAME"),"LONG");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTCLOB");
+		assertEquals(rs.getString("TYPE_NAME"),"CLOB");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTBLOB");
+		assertEquals(rs.getString("TYPE_NAME"),"BLOB");
 		rs.close();
+		stmt.executeUpdate("drop table testtable");
 		System.out.println();
 
 
@@ -3417,7 +3543,15 @@ class oracle extends sqlrtest {
 
 		// primary key list
 		System.out.println("PRIMARY KEY LIST: ");
-		rs=md.getPrimaryKeys(null,null,"%");
+		try {
+			stmt.executeUpdate("drop table testtable");
+		} catch (Exception ex) {
+		}
+		stmt.executeUpdate(
+			"create table testtable ("+
+			"	col1 number primary key, "+
+			"	col2 number)");
+		rs=md.getPrimaryKeys(null,null,"TESTTABLE");
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
@@ -3429,20 +3563,33 @@ class oracle extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"COLUMN_NAME");
 		assertEquals(rsmd.getColumnName(col++),"KEY_SEQ");
 		assertEquals(rsmd.getColumnName(col++),"PK_NAME");
-		//System.out.println();
-		//printColumns(rsmd);
-		//printResultSet(rs);
+		assertTrue(rs.next());
+		assertEquals(rs.getString("TABLE_NAME"),"TESTTABLE");
+		assertEquals(rs.getString("COLUMN_NAME"),"COL1");
+		assertEquals(rs.getString("KEY_SEQ"),"1");
+		assertTrue(rs.getString("PK_NAME")!=null &&
+				rs.getString("PK_NAME").length()>0);
+		assertFalse(rs.next());
 		rs.close();
+		stmt.executeUpdate("drop table testtable");
 		System.out.println();
 
 
 		// key and index list
 		System.out.println("KEY AND INDEX LIST: ");
+		try {
+			stmt.executeUpdate("drop table testtable");
+		} catch (Exception ex) {
+		}
+		stmt.executeUpdate(
+			"create table testtable ("+
+			"	col1 number primary key, "+
+			"	col2 number)");
 		// oracle jdbc throws:
 		// ORA-17068: Invalid arguments in call
-		//if (false) {
 		if (issqlrelay) {
-			rs=md.getIndexInfo(null,null,"%",false,true);
+			rs=md.getIndexInfo(null,null,
+						"TESTTABLE",false,true);
 			assertTrue((rs!=null));
 			rsmd=rs.getMetaData();
 			assertTrue((rsmd!=null));
@@ -3474,12 +3621,20 @@ class oracle extends sqlrtest {
 							"PAGES");
 			assertEquals(rsmd.getColumnName(col++),
 							"FILTER_CONDITION");
-			//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
+			assertTrue(rs.next());
+			assertEquals(rs.getString("TABLE_NAME"),"TESTTABLE");
+			assertEquals(rs.getString("NON_UNIQUE"),"0");
+			assertEquals(rs.getString("ORDINAL_POSITION"),"1");
+			assertEquals(rs.getString("COLUMN_NAME"),"COL1");
+			assertEquals(rs.getString("ASC_OR_DESC"),"A");
+			assertEquals(rs.getString("TYPE"),"3");
+			assertTrue(rs.getString("INDEX_NAME")!=null &&
+					rs.getString("INDEX_NAME").length()>0);
+			assertFalse(rs.next());
 			rs.close();
-			System.out.println();
 		}
+		stmt.executeUpdate("drop table testtable");
+		System.out.println();
 
 
 		// exported key list
@@ -3580,45 +3735,106 @@ class oracle extends sqlrtest {
 
 		// procedure list
 		System.out.println("PROCEDURE LIST: ");
-                rs=md.getProcedures(null,null,"%");
-                assertTrue((rs!=null));
-                rsmd=rs.getMetaData();
-                assertTrue((rsmd!=null));
+		try {
+			stmt.executeUpdate("drop procedure testproc1");
+		} catch (Exception ex) {
+		}
+		try {
+			stmt.executeUpdate("drop procedure testproc2");
+		} catch (Exception ex) {
+		}
+		try {
+			stmt.executeUpdate("drop procedure testproc3");
+		} catch (Exception ex) {
+		}
+		try {
+			stmt.executeUpdate("drop procedure testproc4");
+		} catch (Exception ex) {
+		}
+		stmt.executeUpdate(
+			"create procedure testproc1("+
+			"	in1 in number, "+
+			"	in2 in char, "+
+			"	in3 in varchar2, "+
+			"	in4 in date) as "+
+			"begin "+
+			"	null; "+
+			"end;");
+		stmt.executeUpdate(
+			"create procedure testproc2("+
+			"	in1 in number, "+
+			"	in2 in char, "+
+			"	in3 in varchar2, "+
+			"	in4 in date) as "+
+			"begin "+
+			"	null; "+
+			"end;");
+		stmt.executeUpdate(
+			"create procedure testproc3("+
+			"	in1 in number, "+
+			"	in2 in char, "+
+			"	in3 in varchar2, "+
+			"	in4 in date) as "+
+			"begin "+
+			"	null; "+
+			"end;");
+		stmt.executeUpdate(
+			"create procedure testproc4("+
+			"	in1 in number, "+
+			"	in2 in char, "+
+			"	in3 in varchar2, "+
+			"	in4 in date) as "+
+			"begin "+
+			"	null; "+
+			"end;");
+		rs=md.getProcedures(null,null,"%");
+		assertTrue((rs!=null));
+		rsmd=rs.getMetaData();
+		assertTrue((rsmd!=null));
 		col=1;
 		if (issqlrelay) {
-                	assertEquals(rsmd.getColumnCount(),8);
+			assertEquals(rsmd.getColumnCount(),8);
 		} else {
 			// oracle jdbc returns 9 columns
-                	assertEquals(rsmd.getColumnCount(),9);
+			assertEquals(rsmd.getColumnCount(),9);
 		}
-                assertEquals(rsmd.getColumnName(col++),"PROCEDURE_CAT");
-                assertEquals(rsmd.getColumnName(col++),"PROCEDURE_SCHEM");
-                assertEquals(rsmd.getColumnName(col++),"PROCEDURE_NAME");
+		assertEquals(rsmd.getColumnName(col++),"PROCEDURE_CAT");
+		assertEquals(rsmd.getColumnName(col++),"PROCEDURE_SCHEM");
+		assertEquals(rsmd.getColumnName(col++),"PROCEDURE_NAME");
 		if (issqlrelay) {
-                	assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"NUM_INPUT_PARAMS");
-                	assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"NUM_OUTPUT_PARAMS");
-                	assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"NUM_RESULT_SETS");
 		} else {
 			// oracle jdbc returns
 			// NULL for these column names
-                	assertEquals(rsmd.getColumnName(col++),"NULL");
-                	assertEquals(rsmd.getColumnName(col++),"NULL");
-                	assertEquals(rsmd.getColumnName(col++),"NULL");
+			assertEquals(rsmd.getColumnName(col++),"NULL");
+			assertEquals(rsmd.getColumnName(col++),"NULL");
+			assertEquals(rsmd.getColumnName(col++),"NULL");
 		}
-                assertEquals(rsmd.getColumnName(col++),"REMARKS");
-                assertEquals(rsmd.getColumnName(col++),"PROCEDURE_TYPE");
+		assertEquals(rsmd.getColumnName(col++),"REMARKS");
+		assertEquals(rsmd.getColumnName(col++),"PROCEDURE_TYPE");
 		if (!issqlrelay) {
 			// oracle jdbc returns a 9th column
-                	assertEquals(rsmd.getColumnName(col++),"SPECIFIC_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+						"SPECIFIC_NAME");
 		}
-                //System.out.println();
-		//printColumns(rsmd);
-		//printResultSet(rs);
-                rs.close();
-                System.out.println();
+		counter=0;
+		while (rs.next()) {
+			String name=rs.getString("PROCEDURE_NAME");
+			if (name.equalsIgnoreCase("TESTPROC1") ||
+				name.equalsIgnoreCase("TESTPROC2") ||
+				name.equalsIgnoreCase("TESTPROC3") ||
+				name.equalsIgnoreCase("TESTPROC4")) {
+				counter++;
+			}
+		}
+		assertEquals(counter,4);
+		rs.close();
+		System.out.println();
 
 
 		// procedure parameter list
@@ -3626,7 +3842,8 @@ class oracle extends sqlrtest {
 		// oracle jdbc throws:
 		// ORA-00904: "ARG"."TYPE_OBJECT_TYPE": invalid identifier
 		if (issqlrelay) {
-			rs=md.getProcedureColumns(null,null,"%","%");
+			rs=md.getProcedureColumns(null,null,
+						"TESTPROC1","%");
 			assertTrue((rs!=null));
 			rsmd=rs.getMetaData();
 			assertTrue((rsmd!=null));
@@ -3672,12 +3889,47 @@ class oracle extends sqlrtest {
 							"IS_NULLABLE");
 			assertEquals(rsmd.getColumnName(col++),
 							"SPECIFIC_NAME");
-			//System.out.println();
-			//printColumns(rsmd);
-			//printResultSet(rs);
+			assertTrue(rs.next());
+			assertEquals(rs.getString("COLUMN_NAME"),"IN1");
+			assertEquals(rs.getString("TYPE_NAME"),
+							"NUMBER");
+			assertEquals(rs.getString("ORDINAL_POSITION"),
+							"1");
+			assertTrue(rs.next());
+			assertEquals(rs.getString("COLUMN_NAME"),"IN2");
+			assertEquals(rs.getString("TYPE_NAME"),"CHAR");
+			assertEquals(rs.getString("ORDINAL_POSITION"),
+							"2");
+			assertTrue(rs.next());
+			assertEquals(rs.getString("COLUMN_NAME"),"IN3");
+			assertEquals(rs.getString("TYPE_NAME"),
+							"VARCHAR2");
+			assertEquals(rs.getString("ORDINAL_POSITION"),
+							"3");
+			assertTrue(rs.next());
+			assertEquals(rs.getString("COLUMN_NAME"),"IN4");
+			assertEquals(rs.getString("TYPE_NAME"),"DATE");
+			assertEquals(rs.getString("ORDINAL_POSITION"),
+							"4");
 			rs.close();
-			System.out.println();
 		}
+		try {
+			stmt.executeUpdate("drop procedure testproc1");
+		} catch (Exception ex) {
+		}
+		try {
+			stmt.executeUpdate("drop procedure testproc2");
+		} catch (Exception ex) {
+		}
+		try {
+			stmt.executeUpdate("drop procedure testproc3");
+		} catch (Exception ex) {
+		}
+		try {
+			stmt.executeUpdate("drop procedure testproc4");
+		} catch (Exception ex) {
+		}
+		System.out.println();
 
 
 		// function list
