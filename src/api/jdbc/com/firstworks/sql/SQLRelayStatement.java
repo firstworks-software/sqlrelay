@@ -584,16 +584,8 @@ public class SQLRelayStatement implements Statement {
 	void setCursorName(String name) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		drv.debugPrintln("cursor name: "+name);
-		cursorname=name;
+		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
-	}
-
-	String getCursorName() {
-		drv.debugFunction(this);
-		drv.debugPrintln("cursor name: "+cursorname);
-		drv.debugEnd();
-		return cursorname;
 	}
 
 	public

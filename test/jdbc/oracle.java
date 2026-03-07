@@ -2231,6 +2231,7 @@ class oracle extends sqlrtest {
 			System.out.println();
 		}
 		rs.close();
+		assertTrue(rs.isClosed());
 
 
 		// fields by name
@@ -2634,9 +2635,6 @@ class oracle extends sqlrtest {
 
 
 		// max rows
-		// FIXME: this doesn't currently work with oracle jdbc
-		// because the result set is forward-only by default.
-		// sort this out
 		System.out.println("MAX ROWS:");
 		assertEquals(stmt.getMaxRows(),0);
 		stmt.setMaxRows(4);
@@ -4351,139 +4349,6 @@ class oracle extends sqlrtest {
 			assertTrue(true);
 		}
 		System.out.println();
-
-
-		// FIXME: need tests for Connection methods...
-		// rollback
-
-
-		// FIXME: need tests for Statement methods...
-		// addBatch
-                // clearBatch
-                // executeBatch
-		//
-                // getWarnings
-                // clearWarning
-		//
-                // closeOnCompletion
-		//
-                // setFetchDirection
-                // getFetchDirection
-		//
-                // getMoreResults
-		//
-                // getResultSetConcurrency
-                // getResultSetHoldability
-                // getResultSetType
-		//
-                // isCloseOnCompletion
-		//
-                // setPoolable
-                // isPoolable
-		//
-                // setCursorName
-
-
-		// FIXME: need tests for PreparedStatement methods...
-                // executeQuery
-		//
-		// addBatch
-                // executeBatch
-		//
-                // getMetaData
-                // getParameterMetaData
-		//
-                // setAsciiStream
-                // setBigDecimal
-                // setBinaryStream
-                // setBoolean
-                // setByte
-                // setCharacterStream
-                // setDouble
-                // setFloat
-                // setLong
-                // setNCharacterStream
-                // setNClob
-                // setNString
-                // setNull
-                // setShort
-                // setTime
-                // setTimestamp
-                // setUnicodeStream
-                // setURL
-
-
-		// FIXME: need tests for CallableStatement methods...
-                // getBigDecimal
-                // getBlob
-                // getBoolean
-                // getByte
-                // getCharacterStream
-		// getClob
-                // getFloat
-                // getLong
-                // getNCharacterStream
-                // getNClob
-                // getNString
-                // getShort
-                // getTime
-                // getTimestamp
-                // getURL
-		//
-		// set*() covered by PreparedStatement
-
-
-		// FIXME: need tests for Parameter class...
-		// FIXME: need tests for ParameterMetaData class...
-
-
-		// FIXME: need tests for ResultSet methods...
-                // getCursorName
-		//
-                // getType
-                // getConcurrency
-                // getHoldability
-		//
-                // getWarnings
-		//
-                // getFetchDirection
-                // setFetchDirection
-		//
-                // setFetchSize
-		//
-                // moveToCurrentRow
-		//
-                // isClosed
-		//
-                // clearWarnings
-		//
-                // findColumn
-		//
-                // getBoolean
-                // getByte
-		//
-                // getBigDecimal
-                // getDouble
-                // getFloat
-		//
-                // getTime
-
-
-		// FIXME: need tests for ResultSetMetaData methods...
-		// getCatalogName
-                // getSchemaName
-                // getTableName
-                // getColumnType
-                // getColumnClassName
-                // getScale
-                // isAutoIncrement
-                // isCaseSensitive
-                // isCurrency
-                // isDefinitelyWritable
-                // isNullable
-                // isSearchable
-                // isSigned
-                // isWritable
 
 
 		// invalid queries

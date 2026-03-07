@@ -849,10 +849,9 @@ public class SQLRelayResultSet implements ResultSet {
 	String getCursorName() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		String	cursorname=(stmt!=null)?stmt.getCursorName():null;
-		drv.debugPrintln("cursor name: "+cursorname);
+		conn.throwFeatureNotSupportedException();
 		drv.debugEnd();
-		return cursorname;
+		return null;
 	}
 
 	public
