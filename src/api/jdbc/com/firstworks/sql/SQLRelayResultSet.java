@@ -34,7 +34,6 @@ public class SQLRelayResultSet implements ResultSet {
 	private SQLRCursor		sqlrcur;
 
 	private int		currentrow;
-	private	boolean		isbeforefirst;
 	private	boolean		isafterlast;
 	private	int		fetchdirection;
 	private boolean		wasnull;
@@ -61,7 +60,6 @@ public class SQLRelayResultSet implements ResultSet {
 		conn=null;
 		sqlrcur=null;
 		currentrow=0;
-		isbeforefirst=true;
 		isafterlast=false;
 		fetchdirection=ResultSet.FETCH_FORWARD;
 		wasnull=false;
@@ -114,15 +112,26 @@ public class SQLRelayResultSet implements ResultSet {
 		// row count, and we only know that if we've already fetched
 		// all rows.
 		if (row<0) {
-			if (sqlrcur.endOfResultSet()) {
-				row=(int)sqlrcur.rowCount()+row+1;
-				if (row<0) {
-					row=0;
-				}
-				drv.debugPrintln("row: "+row);
-			} else {
-				conn.throwException("Row out of range.");
+
+			// Implementing offset-from-after-the-last-row when the
+			// result set buffer size is non-zero is prohibitively
+			// difficult.  If the number of rows in the result set
+			// is an even multiple of the result set buffer size,
+			// then endOfResultSet() doesn't return true until you
+			// fetch past the end of the result set, making
+			// detection of whether we're on the last row or not
+			// unreliable.  We'd have to prefetch and buffer a row
+			// on the server side to implement this correctly.  The
+			// JDBC documentation for isLast() even alludes to this.
+			if (sqlrcur.getResultSetBufferSize()!=0) {
+				conn.throwFeatureNotSupportedException();
 			}
+
+			row=(int)sqlrcur.rowCount()+row+1;
+			if (row<0) {
+				row=0;
+			}
+			drv.debugPrintln("row: "+row);
 		}
 
 		// If row==0 then we're trying to go "before first"
@@ -136,7 +145,6 @@ public class SQLRelayResultSet implements ResultSet {
 			}
 
 			currentrow=row;
-			isbeforefirst=true;
 			isafterlast=false;
 
 			drv.debugPrintln("currentrow: "+currentrow);
@@ -151,31 +159,33 @@ public class SQLRelayResultSet implements ResultSet {
 			sqlrcur.getField(row-1,0);
 		}
 
-		// get the (current) row count
-		long	rowcount=sqlrcur.rowCount();
+		// could we be after the last row?...
+		if (sqlrcur.endOfResultSet()) {
 
-		// handle maxrows
-		if (maxrows!=0 && rowcount>maxrows) {
-			rowcount=maxrows;
-		}
+			// get the row count
+			long	rowcount=sqlrcur.rowCount();
 
-		// are we after the last row?
-		// (row is 1-based and rowcount is 0-based)
-		if (sqlrcur.endOfResultSet() && row>rowcount) {
+			// handle maxrows
+			if (maxrows!=0 && rowcount>maxrows) {
+				rowcount=maxrows;
+			}
 
-			currentrow=row;
-			isbeforefirst=false;
-			isafterlast=true;
+			// are we after the last row?
+			// row is 1-based and rowcount is 0-based
+			if (row>rowcount) {
 
-			drv.debugPrintln("currentrow: "+currentrow);
-			drv.debugPrintln("after last");
-			drv.debugEnd();
-			return false;
+				currentrow=row;
+				isafterlast=true;
+
+				drv.debugPrintln("currentrow: "+currentrow);
+				drv.debugPrintln("after last");
+				drv.debugEnd();
+				return false;
+			}
 		}
 
 		// ok, we're just somewhere in the middle of the result set
 		currentrow=row;
-		isbeforefirst=false;
 		isafterlast=false;
 
 		drv.debugPrintln("currentrow: "+currentrow);
@@ -196,7 +206,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void beforeFirst() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		isbeforefirst=true;
+		currentrow=0;
 		drv.debugEnd();
 	}
 
@@ -2000,6 +2010,8 @@ public class SQLRelayResultSet implements ResultSet {
 	boolean isBeforeFirst() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		// row is 1-based and rowcount is 0-based
+		boolean	isbeforefirst=(currentrow==0);
 		drv.debugPrintln("before first: "+isbeforefirst);
 		drv.debugEnd();
 		return isbeforefirst;
@@ -2018,6 +2030,7 @@ public class SQLRelayResultSet implements ResultSet {
 	boolean isFirst() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		// row is 1-based and rowcount is 0-based
 		boolean	isfirst=(currentrow==1);
 		drv.debugPrintln("is first: "+isfirst);
 		drv.debugEnd();
@@ -2028,6 +2041,7 @@ public class SQLRelayResultSet implements ResultSet {
 	boolean isLast() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+
 		// Implementing isLast() when the result set buffer size is
 		// non-zero is prohibitively difficult.  If the number of rows
 		// in the result set is an even multiple of the result set
@@ -2040,8 +2054,20 @@ public class SQLRelayResultSet implements ResultSet {
 		if (sqlrcur.getResultSetBufferSize()!=0) {
 			conn.throwFeatureNotSupportedException();
 		}
-		boolean	islast=(currentrow==sqlrcur.rowCount());
+
+		// get the row count
+		long	rowcount=sqlrcur.rowCount();
+
+		// handle maxrows
+		if (maxrows!=0 && rowcount>maxrows) {
+			rowcount=maxrows;
+		}
+
+		// are we on the last row?
+		// row is 1-based and rowcount is 0-based
+		boolean	islast=(currentrow==rowcount);
 		drv.debugPrintln("is last: "+islast);
+
 		drv.debugEnd();
 		return islast;
 	}

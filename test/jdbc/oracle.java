@@ -2430,6 +2430,36 @@ class oracle extends sqlrtest {
 				"	testnumber");
 			System.out.println();
 
+			// jump around wildly
+			rs.afterLast();
+			assertTrue(rs.isAfterLast());
+			rs.beforeFirst();
+			assertTrue(rs.isBeforeFirst());
+			assertTrue(rs.last());
+			assertTrue(rs.isLast());
+			assertTrue(rs.first());
+			assertTrue(rs.isFirst());
+			assertTrue(rs.absolute(4));
+			assertEquals(rs.getInt(1),4);
+			assertFalse(rs.isBeforeFirst());
+			assertFalse(rs.isFirst());
+			assertFalse(rs.isLast());
+			assertFalse(rs.isAfterLast());
+			assertTrue(rs.relative(2));
+			assertEquals(rs.getInt(1),6);
+			assertFalse(rs.isBeforeFirst());
+			assertFalse(rs.isFirst());
+			assertFalse(rs.isLast());
+			assertFalse(rs.isAfterLast());
+			assertTrue(rs.relative(-4));
+			assertEquals(rs.getInt(1),2);
+			assertFalse(rs.isBeforeFirst());
+			assertFalse(rs.isFirst());
+			assertFalse(rs.isLast());
+			assertFalse(rs.isAfterLast());
+			rs.beforeFirst();
+			System.out.println();
+
 			// move into the result set
 			assertTrue(rs.isBeforeFirst());
 			assertTrue(rs.next());
@@ -2531,6 +2561,14 @@ class oracle extends sqlrtest {
 				System.out.println();
 
 			} while (row<8);
+
+			// is last isn't supported when fetch size is non-zero
+			try {
+				rs.isLast();
+				assertTrue(false);
+			} catch (Exception ex) {
+				assertTrue(true);
+			}
 
 			// move past the end of the result set
 			assertFalse(rs.next());
@@ -4319,15 +4357,6 @@ class oracle extends sqlrtest {
 		//
                 // getFetchSize
                 // setFetchSize
-		//
-                // first
-                // last
-                // previous
-                // relative
-		// absolute
-		//
-                // afterLast
-                // beforeFirst
 		//
                 // moveToCurrentRow
 		//
