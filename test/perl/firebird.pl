@@ -864,7 +864,7 @@ assertUndef($cur->getField(8,0));
 $cur->setResultSetBufferSize(0);
 print("\n");
 
-#print("COMMIT AND ROLLBACK: \n");
+#print("COMMIT: \n");
 $secondcon=SQLRelay::Connection->new("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
 $secondcur=SQLRelay::Cursor->new($secondcon);

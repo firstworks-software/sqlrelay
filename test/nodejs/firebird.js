@@ -846,7 +846,7 @@ assertEqual(cur.getField(8,0),null);
 cur.setResultSetBufferSize(0);
 console.log();
 
-//console.log("COMMIT AND ROLLBACK: ");
+//console.log("COMMIT: ");
 var	secondcon=new sqlrelay.SQLRConnection("sqlrelay",
 						9000,
 						"/tmp/test.socket",

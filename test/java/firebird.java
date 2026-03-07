@@ -966,7 +966,7 @@ class firebird extends sqlrtest {
 		cur.setResultSetBufferSize(0);
 		System.out.println();
 
-		//System.out.println("COMMIT AND ROLLBACK: ");
+		//System.out.println("COMMIT: ");
 		SQLRConnection secondcon=new SQLRConnection("sqlrelay",
 						(short)9000,
 						"/tmp/test.socket",

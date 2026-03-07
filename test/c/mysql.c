@@ -1202,8 +1202,8 @@ int main(int argc, char **argv) {
 	printf("\n");
 
 
-	// commit and rollback
-	printf("COMMIT AND ROLLBACK: \n");
+	// commit
+	printf("COMMIT: \n");
 	// Note: Mysql's default isolation level is repeatable-read,
 	// not read-committed like most other db's.  Both sessions must
 	// commit to see the changes that each other has made.

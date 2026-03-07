@@ -858,8 +858,8 @@ cur.setResultSetBufferSize(0)
 print "\n"
 
 
-# commit and rollback
-print "COMMIT AND ROLLBACK: \n"
+# commit
+print "COMMIT: \n"
 secondcon=SQLRConnection.new("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1)
 secondcur=SQLRCursor.new(secondcon)

@@ -760,8 +760,8 @@ def main():
 	print()
 
 
-	# commit and rollback
-	print("COMMIT AND ROLLBACK: ")
+	# commit
+	print("COMMIT: ")
 	secondcon=PySQLRClient.sqlrconnection("sqlrelay",9000,
 						"/tmp/test.socket",
 						"","")

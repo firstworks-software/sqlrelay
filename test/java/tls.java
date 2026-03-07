@@ -838,8 +838,8 @@ class tls extends sqlrtest {
 		System.out.println();
 
 
-		// commit and rollback
-		System.out.println("COMMIT AND ROLLBACK: ");
+		// commit
+		System.out.println("COMMIT: ");
 		SQLRConnection secondcon=new SQLRConnection("sqlrelay",
 						(short)9000,
 						"/tmp/test.socket",

@@ -812,8 +812,8 @@
 	echo("\n");
 
 
-	# commit and rollback
-	echo("COMMIT AND ROLLBACK: \n");
+	# commit
+	echo("COMMIT: \n");
 	$secondcon=sqlrcon_alloc($host,$port,$socket,$user,$password,0,1);
 	$secondcur=sqlrcur_alloc($secondcon);
 	sqlrcon_enableKerberos($secondcon,null,null,null);

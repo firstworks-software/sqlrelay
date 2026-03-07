@@ -868,8 +868,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// commit and rollback
-	stdoutput.printf("COMMIT AND ROLLBACK: \n");
+	// commit
+	stdoutput.printf("COMMIT: \n");
 	secondcon=new sqlrconnection("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);

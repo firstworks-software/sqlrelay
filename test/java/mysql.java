@@ -1186,8 +1186,8 @@ class mysql extends sqlrtest {
 		System.out.println();
 
 
-		// commit and rollback
-		System.out.println("COMMIT AND ROLLBACK: ");
+		// commit
+		System.out.println("COMMIT: ");
 		// Note: Mysql's default isolation level is repeatable-read,
 		// not read-committed like most other db's.  Both sessions must
 		// commit to see the changes that each other has made.

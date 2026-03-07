@@ -843,8 +843,8 @@ int main(int argc, char **argv) {
 	printf("\n");
 
 
-	// commit and rollback
-	printf("COMMIT AND ROLLBACK: \n");
+	// commit
+	printf("COMMIT: \n");
 	secondcon=sqlrcon_alloc("sqlrelay",9000,"/tmp/test.socket",
 							NULL,NULL,0,1);
 	secondcur=sqlrcur_alloc(secondcon);

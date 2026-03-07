@@ -695,8 +695,8 @@ $cur setResultSetBufferSize 0
 puts ""
 
 
-# commit and rollback
-puts "COMMIT AND ROLLBACK: "
+# commit
+puts "COMMIT: "
 set secondcon [sqlrcon -server "sqlrelay" -port 9000 -socket "/tmp/test.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
 set secondcur [$secondcon sqlrcur]
 assertTrue [$secondcur sendQuery "select count(*) from testtable"]

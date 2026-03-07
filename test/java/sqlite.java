@@ -770,8 +770,8 @@ class sqlite extends sqlrtest {
 		System.out.println();
 
 
-	    	// commit and rollback
-	    	System.out.println("COMMIT AND ROLLBACK: \n");
+	    	// commit
+	    	System.out.println("COMMIT: \n");
 		SQLRConnection secondcon=new SQLRConnection("sqlrelay",
 						(short)9000,
 						"/tmp/test.socket",

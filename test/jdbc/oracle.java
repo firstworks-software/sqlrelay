@@ -1110,7 +1110,7 @@ class oracle extends sqlrtest {
 		System.out.println();
 
 		// supportsConvert (with types)
-		// FIXME: we need to test all types here
+		// sqlrelay doesn't support this yet
 		System.out.println("supportsConvert (with types)");
 		boolval=md.supportsConvert(Types.INTEGER, Types.VARCHAR);
 		System.out.println("  "+boolval);
@@ -1136,7 +1136,8 @@ class oracle extends sqlrtest {
 		System.out.println();
 
 		// supportsDataDefinitionAndDataManipulationTransactions
-		System.out.println("supportsDataDefinitionAndDataManipulationTransactions");
+		System.out.println(
+		"supportsDataDefinitionAndDataManipulationTransactions");
 		boolval=
 		md.supportsDataDefinitionAndDataManipulationTransactions();
 		System.out.println("  "+boolval);
@@ -2415,12 +2416,11 @@ class oracle extends sqlrtest {
 		System.out.println();
 
 
-		// FIXME: result set buffer size
+		// FIXME: result set buffer size (set/getFetchSize)
 
 
 		// commit
-		// FIXME: ...and rollback, setsavepoint, and releasesavepoint
-		System.out.println("COMMIT AND ROLLBACK:");
+		System.out.println("COMMIT:");
 		Connection	secondcon=DriverManager.getConnection(
 							url,user,password);
 		assertTrue((secondcon!=null));
@@ -3326,12 +3326,7 @@ class oracle extends sqlrtest {
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
 		col=1;
-		if (issqlrelay) {
-			assertEquals(rsmd.getColumnCount(),24);
-		} else {
-			// oracle jdbc returns 23 columns
-			assertEquals(rsmd.getColumnCount(),23);
-		}
+		assertEquals(rsmd.getColumnCount(),24);
 		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
 		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
 		assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
@@ -3350,32 +3345,12 @@ class oracle extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"CHAR_OCTET_LENGTH");
 		assertEquals(rsmd.getColumnName(col++),"ORDINAL_POSITION");
 		assertEquals(rsmd.getColumnName(col++),"IS_NULLABLE");
-		if (issqlrelay) {
-			assertEquals(rsmd.getColumnName(col++),
-						"SCOPE_CATALOG");
-			assertEquals(rsmd.getColumnName(col++),
-						"SCOPE_SCHEMA");
-			assertEquals(rsmd.getColumnName(col++),
-						"SCOPE_TABLE");
-			assertEquals(rsmd.getColumnName(col++),
-						"SOURCE_DATA_TYPE");
-			assertEquals(rsmd.getColumnName(col++),
-						"IS_AUTOINCREMENT");
-			assertEquals(rsmd.getColumnName(col++),
-						"IS_GENERATEDCOLUMN");
-		} else {
-			// oracle jdbc returns these columns
-			assertEquals(rsmd.getColumnName(col++),
-						"SCOPE_CATALOG");
-			assertEquals(rsmd.getColumnName(col++),
-						"SCOPE_SCHEMA");
-			assertEquals(rsmd.getColumnName(col++),
-						"SCOPE_TABLE");
-			assertEquals(rsmd.getColumnName(col++),
-						"SOURCE_DATA_TYPE");
-			assertEquals(rsmd.getColumnName(col++),
-						"IS_AUTOINCREMENT");
-		}
+		assertEquals(rsmd.getColumnName(col++),"SCOPE_CATALOG");
+		assertEquals(rsmd.getColumnName(col++),"SCOPE_SCHEMA");
+		assertEquals(rsmd.getColumnName(col++),"SCOPE_TABLE");
+		assertEquals(rsmd.getColumnName(col++),"SOURCE_DATA_TYPE");
+		assertEquals(rsmd.getColumnName(col++),"IS_AUTOINCREMENT");
+		assertEquals(rsmd.getColumnName(col++),"IS_GENERATEDCOLUMN");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTNUMBER");
 		assertEquals(rs.getString("TYPE_NAME"),"NUMBER");
@@ -3632,9 +3607,9 @@ class oracle extends sqlrtest {
 					rs.getString("INDEX_NAME").length()>0);
 			assertFalse(rs.next());
 			rs.close();
+			System.out.println();
 		}
 		stmt.executeUpdate("drop table testtable");
-		System.out.println();
 
 
 		// exported key list
@@ -3912,6 +3887,7 @@ class oracle extends sqlrtest {
 			assertEquals(rs.getString("ORDINAL_POSITION"),
 							"4");
 			rs.close();
+			System.out.println();
 		}
 		try {
 			stmt.executeUpdate("drop procedure testproc1");
@@ -3929,7 +3905,6 @@ class oracle extends sqlrtest {
 			stmt.executeUpdate("drop procedure testproc4");
 		} catch (Exception ex) {
 		}
-		System.out.println();
 
 
 		// function list
@@ -4110,14 +4085,10 @@ class oracle extends sqlrtest {
 			assertTrue(true);
 		}
 		System.out.println();
+
+
 		// FIXME: need tests for Connection methods...
-		// nativeSQL
-		//
-		// not supported:
-		// createArrayOf
-		// createNClob
-		// createSQLXML
-		// createStruct
+		// rollback
 
 
 		// FIXME: need tests for Statement methods...
@@ -4152,12 +4123,6 @@ class oracle extends sqlrtest {
                 // isPoolable
 		//
                 // setCursorName
-		//
-                // setEscapeProcessing
-		//
-		// not supported:
-		// cancel
-		// getGeneratedKeys
 
 
 		// FIXME: need tests for PreparedStatement methods...
@@ -4187,59 +4152,26 @@ class oracle extends sqlrtest {
                 // setTimestamp
                 // setUnicodeStream
                 // setURL
-		//
-		// not supported:
-		// setArray
-		// setObject
-		// setRef
-		// setRowId
-		// setSQLXML
 
 
 		// FIXME: need tests for CallableStatement methods...
-                // getArray
                 // getBigDecimal
                 // getBlob
                 // getBoolean
                 // getByte
                 // getCharacterStream
+		// getClob
                 // getFloat
                 // getLong
                 // getNCharacterStream
                 // getNClob
                 // getNString
-                // getObject
-                // getRef
-                // getRowId
                 // getShort
-                // getSQLXML
                 // getTime
                 // getTimestamp
                 // getURL
 		//
-                // setAsciiStream
-                // setBigDecimal
-                // setBinaryStream
-                // setBoolean
-                // setByte
-                // setBytes
-                // setCharacterStream
-                // setDouble
-                // setFloat
-                // setLong
-                // setNCharacterStream
-                // setNClob
-                // setNString
-                // setNull
-                // setRowId
-                // setSQLXML
-                // setShort
-                // setTime
-                // setTimestamp
-                // setURL
-		//
-		// not supported:
-		// setObject
+		// set*() covered by PreparedStatement
 
 
 		// FIXME: need tests for Parameter class...
@@ -4291,52 +4223,6 @@ class oracle extends sqlrtest {
                 // getFloat
 		//
                 // getTime
-		//
-                // getSQLXML
-		//
-		// not supported:
-		// moveToInsertRow
-		// cancelRowUpdates
-		// deleteRow
-		// getRef
-		// getRowId
-		// getArray
-		//
-		// insertRow
-		// refreshRow
-		//
-		// rowDeleted
-		// rowInserted
-		// rowUpdated
-		//
-		// updateArray
-		// updateAsciiStream
-		// updateBigDecimal
-		// updateBinaryStream
-		// updateBlob
-		// updateBoolean
-		// updateByte
-		// updateBytes
-		// updateCharacterStream
-		// updateClob
-		// updateDate
-		// updateDouble
-		// updateFloat
-		// updateInt
-		// updateLong
-		// updateNCharacterStream
-		// updateNClob
-		// updateNString
-		// updateNull
-		// updateObject
-		// updateRef
-		// updateRow
-		// updateRowId
-		// updateShort
-		// updateSQLXML
-		// updateString
-		// updateTime
-		// updateTimestamp
 
 
 		// FIXME: need tests for ResultSetMetaData methods...
@@ -4354,12 +4240,6 @@ class oracle extends sqlrtest {
                 // isSearchable
                 // isSigned
                 // isWritable
-
-
-		// FIXME: need tests for...
-		// setTypeMap
-		// getTypeMap
-                // getObject
 
 
 		// invalid queries

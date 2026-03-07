@@ -1342,8 +1342,8 @@ for (uint16_t a=0; a<50; a++) {
 	stdoutput.printf("\n");
 
 
-	// commit and rollback
-	stdoutput.printf("COMMIT AND ROLLBACK: \n");
+	// commit
+	stdoutput.printf("COMMIT: \n");
 	// Note: Mysql's default isolation level is repeatable-read,
 	// not read-committed like most other db's.  Both sessions must
 	// commit to see the changes that each other has made.

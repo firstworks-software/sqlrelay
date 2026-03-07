@@ -970,7 +970,7 @@
 	sqlrcur_setResultSetBufferSize($cur,0);
 	echo("\n");
 
-	#echo("COMMIT AND ROLLBACK: \n");
+	#echo("COMMIT: \n");
 	$secondcon=sqlrcon_alloc($host,
 				$port,
 				$socket,$user,$password,0,1);

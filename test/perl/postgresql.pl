@@ -799,8 +799,8 @@ $cur->setResultSetBufferSize(0);
 print("\n");
 
 
-# commit and rollback
-print("COMMIT AND ROLLBACK: \n");
+# commit
+print("COMMIT: \n");
 $secondcon=SQLRelay::Connection->new("sqlrelay",9000,"/tmp/test.socket",
 						"testuser","testpassword",0,1);
 $secondcur=SQLRelay::Cursor->new($secondcon);

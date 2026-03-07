@@ -941,7 +941,7 @@ def main():
 	cur.setResultSetBufferSize(0)
 	print()
 
-	#print("COMMIT AND ROLLBACK: ")
+	#print("COMMIT: ")
 	secondcon=PySQLRClient.sqlrconnection("sqlrelay",9000,
 							"/tmp/test.socket",
 							"testuser","testpassword")

@@ -769,8 +769,8 @@ cur.setResultSetBufferSize(0);
 console.log();
 
 
-// commit and rollback
-console.log("COMMIT AND ROLLBACK: ");
+// commit
+console.log("COMMIT: ");
 var secondcon=new sqlrelay.SQLRConnection("sqlrelay",
 				9000,
 				"/tmp/test.socket",
