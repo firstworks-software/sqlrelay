@@ -1872,6 +1872,7 @@ class oracle extends sqlrtest {
 			"	:var6, "+
 			"	:var7, "+
 			"	:var8)");
+		assertFalse(pstmt.isClosed());
 		clob=con.createClob();
 		blob=con.createBlob();
 		for (int i=2; i<=4; i++) {
@@ -1902,6 +1903,7 @@ class oracle extends sqlrtest {
 			System.out.println();
 		}
 		pstmt.close();
+		assertTrue(pstmt.isClosed());
 
 
 		// bind by name
@@ -1918,6 +1920,7 @@ class oracle extends sqlrtest {
 			"	:var6, "+
 			"	:var7, "+
 			"	:var8)");
+		assertFalse(cstmt.isClosed());
 		for (int i=5; i<=8; i++) {
 			cstmt.clearParameters();
 			cstmt.setInt("var1",i);
@@ -1946,6 +1949,7 @@ class oracle extends sqlrtest {
 			System.out.println();
 		}
 		cstmt.close();
+		assertTrue(cstmt.isClosed());
 
 
 		// select
@@ -1959,6 +1963,7 @@ class oracle extends sqlrtest {
 			"	testtable "+
 			"order by "+
 			"	testnumber"));
+		assertFalse(stmt.isClosed());
 		rs=stmt.getResultSet();
 		assertTrue((rs!=null));
 		System.out.println();
@@ -2581,53 +2586,56 @@ class oracle extends sqlrtest {
 			assertEquals(stmt.getFetchSize(),0);
 
 			System.out.println();
+
+
+			// max rows
+			// FIXME: this doesn't currently work with oracle jdbc
+			// because the result set is forward-only by default.
+			// sort this out
+			System.out.println("MAX ROWS:");
+			assertEquals(stmt.getMaxRows(),0);
+			stmt.setMaxRows(4);
+			assertEquals(stmt.getMaxRows(),4);
+			rs=stmt.executeQuery(
+				"select "+
+				"	* "+
+				"from "+
+				"	testtable "+
+				"order by "+
+				"	testnumber");
+			assertTrue(rs.isBeforeFirst());
+			assertTrue(rs.next());
+			assertEquals(rs.getInt(1),1);
+			assertTrue(rs.isFirst());
+			assertTrue(rs.next());
+			assertEquals(rs.getInt(1),2);
+			assertTrue(rs.next());
+			assertEquals(rs.getInt(1),3);
+			assertTrue(rs.next());
+			assertEquals(rs.getInt(1),4);
+			assertTrue(rs.isLast());
+			assertFalse(rs.next());
+			assertTrue(rs.isAfterLast());
+			assertTrue(rs.first());
+			assertEquals(rs.getInt(1),1);
+			assertTrue(rs.isFirst());
+			assertTrue(rs.last());
+			assertEquals(rs.getInt(1),4);
+			assertTrue(rs.isLast());
+			rs.beforeFirst();
+			assertTrue(rs.isBeforeFirst());
+			assertTrue(rs.next());
+			assertEquals(rs.getInt(1),1);
+			rs.afterLast();
+			assertTrue(rs.isAfterLast());
+			assertTrue(rs.previous());
+			assertEquals(rs.getInt(1),4);
+			assertTrue(rs.isLast());
+			rs.close();
+			stmt.setMaxRows(0);
+			assertEquals(stmt.getMaxRows(),0);
+			System.out.println();
 		}
-
-
-		// max rows
-		System.out.println("MAX ROWS:");
-		assertEquals(stmt.getMaxRows(),0);
-		stmt.setMaxRows(4);
-		assertEquals(stmt.getMaxRows(),4);
-		rs=stmt.executeQuery(
-			"select "+
-			"	* "+
-			"from "+
-			"	testtable "+
-			"order by "+
-			"	testnumber");
-		assertTrue(rs.isBeforeFirst());
-		assertTrue(rs.next());
-		assertEquals(rs.getInt(1),1);
-		assertTrue(rs.isFirst());
-		assertTrue(rs.next());
-		assertEquals(rs.getInt(1),2);
-		assertTrue(rs.next());
-		assertEquals(rs.getInt(1),3);
-		assertTrue(rs.next());
-		assertEquals(rs.getInt(1),4);
-		assertTrue(rs.isLast());
-		assertFalse(rs.next());
-		assertTrue(rs.isAfterLast());
-		assertTrue(rs.first());
-		assertEquals(rs.getInt(1),1);
-		assertTrue(rs.isFirst());
-		assertTrue(rs.last());
-		assertEquals(rs.getInt(1),4);
-		assertTrue(rs.isLast());
-		rs.beforeFirst();
-		assertTrue(rs.isBeforeFirst());
-		assertTrue(rs.next());
-		assertEquals(rs.getInt(1),1);
-		rs.afterLast();
-		assertTrue(rs.isAfterLast());
-		assertTrue(rs.previous());
-		assertEquals(rs.getInt(1),4);
-		assertTrue(rs.isLast());
-		rs.close();
-		stmt.setMaxRows(0);
-		assertEquals(stmt.getMaxRows(),0);
-		System.out.println();
 
 
 		// commit
@@ -3065,6 +3073,7 @@ class oracle extends sqlrtest {
 		assertEquals(rs.getString(1),"1");
 		rs.close();
 		stmt.close();
+		assertTrue(stmt.isClosed());
 		con.close();
 		System.out.println();
 		con=DriverManager.getConnection(url,user,password);
@@ -4323,7 +4332,6 @@ class oracle extends sqlrtest {
                 // getResultSetHoldability
                 // getResultSetType
 		//
-                // isClosed
                 // isCloseOnCompletion
 		//
                 // setPoolable
