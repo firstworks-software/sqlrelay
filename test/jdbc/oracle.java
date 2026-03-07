@@ -2416,7 +2416,133 @@ class oracle extends sqlrtest {
 		System.out.println();
 
 
-		// FIXME: result set buffer size (set/getFetchSize)
+		if (issqlrelay) {
+
+			// fetch size 0
+			System.out.println("FETCH SIZE 0:");
+			assertEquals(stmt.getFetchSize(),0);
+			rs=stmt.executeQuery(
+				"select "+
+				"	* "+
+				"from "+
+				"	testtable "+
+				"order by "+
+				"	testnumber");
+			System.out.println();
+
+			// move into the result set
+			assertTrue(rs.isBeforeFirst());
+			assertTrue(rs.next());
+			assertTrue(rs.isFirst());
+			System.out.println();
+
+			// move forwards to the last row
+			for (int row=1; row<=7; row++) {
+				assertEquals(rs.getInt(1),row);
+				assertTrue(rs.next());
+			}
+			System.out.println();
+			assertEquals(rs.getInt(1),8);
+			assertTrue(rs.isLast());
+			System.out.println();
+
+			// move backwards to the first row
+			for (int row=8; row>=2; row--) {
+				assertEquals(rs.getInt(1),row);
+				assertTrue(rs.previous());
+			}
+			System.out.println();
+			assertEquals(rs.getInt(1),1);
+			assertTrue(rs.isFirst());
+			System.out.println();
+
+			// move fowards to the last row again
+			for (int row=1; row<=7; row++) {
+				assertEquals(rs.getInt(1),row);
+				assertTrue(rs.next());
+			}
+			System.out.println();
+			assertEquals(rs.getInt(1),8);
+			assertTrue(rs.isLast());
+			System.out.println();
+
+			// move past the end of the result set
+			assertFalse(rs.next());
+			assertTrue(rs.isAfterLast());
+			System.out.println();
+
+
+			// fetch size 2
+			System.out.println("FETCH SIZE 2:");
+			stmt.setFetchSize(2);
+			assertEquals(stmt.getFetchSize(),2);
+			rs=stmt.executeQuery(
+				"select "+
+				"	* "+
+				"from "+
+				"	testtable "+
+				"order by "+
+				"	testnumber");
+			assertEquals(rs.getFetchSize(),2);
+			System.out.println();
+
+			// rows 1-2 (first window)
+			int	row=0;
+			assertTrue(rs.isBeforeFirst());
+			assertTrue(rs.next());
+			row++;
+			assertEquals(rs.getInt(1),1);
+			assertTrue(rs.next());
+			row++;
+			assertEquals(rs.getInt(1),2);
+			System.out.println();
+
+			do {
+				// move forward to trigger fetch of a new window
+				assertTrue(rs.next());
+				row++;
+				assertEquals(rs.getInt(1),row);
+
+				// move forward to end of the window
+				assertTrue(rs.next());
+				row++;
+				assertEquals(rs.getInt(1),row);
+
+				// move backward to beginning of the window
+				assertTrue(rs.previous());
+				row--;
+				assertEquals(rs.getInt(1),row);
+
+				// move backward to before the window
+				assertTrue(rs.previous());
+				row--;
+				assertEquals(rs.getString(1),null);
+
+				// move forward back into the window
+				assertTrue(rs.next());
+				row++;
+				assertEquals(rs.getInt(1),row);
+
+				// move forward to end of the window
+				assertTrue(rs.next());
+				row++;
+				assertEquals(rs.getInt(1),row);
+
+				System.out.println();
+
+			} while (row<8);
+
+			// move past the end of the result set
+			assertFalse(rs.next());
+			assertTrue(rs.isAfterLast());
+			assertFalse(rs.next());
+
+			rs.close();
+			stmt.setFetchSize(0);
+			assertEquals(stmt.getFetchSize(),0);
+
+			System.out.println();
+		}
 
 
 		// commit

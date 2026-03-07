@@ -34,9 +34,8 @@ public class SQLRelayResultSet implements ResultSet {
 	private SQLRCursor		sqlrcur;
 
 	private int		currentrow;
-	private	boolean		beforefirst;
-	private	boolean		islast;
-	private	boolean		afterlast;
+	private	boolean		isbeforefirst;
+	private	boolean		isafterlast;
 	private	int		fetchdirection;
 	private boolean		wasnull;
 
@@ -62,9 +61,8 @@ public class SQLRelayResultSet implements ResultSet {
 		conn=null;
 		sqlrcur=null;
 		currentrow=0;
-		beforefirst=true;
-		islast=false;
-		afterlast=false;
+		isbeforefirst=true;
+		isafterlast=false;
 		fetchdirection=ResultSet.FETCH_FORWARD;
 		wasnull=false;
 		drv.debugEnd();
@@ -138,9 +136,8 @@ public class SQLRelayResultSet implements ResultSet {
 			}
 
 			currentrow=row;
-			beforefirst=true;
-			islast=false;
-			afterlast=false;
+			isbeforefirst=true;
+			isafterlast=false;
 
 			drv.debugPrintln("currentrow: "+currentrow);
 			drv.debugPrintln("before first");
@@ -163,12 +160,12 @@ public class SQLRelayResultSet implements ResultSet {
 		}
 
 		// are we after the last row?
-		if (sqlrcur.endOfResultSet() && row-1>=rowcount) {
+		// (row is 1-based and rowcount is 0-based)
+		if (sqlrcur.endOfResultSet() && row>rowcount) {
 
 			currentrow=row;
-			beforefirst=false;
-			islast=false;
-			afterlast=true;
+			isbeforefirst=false;
+			isafterlast=true;
 
 			drv.debugPrintln("currentrow: "+currentrow);
 			drv.debugPrintln("after last");
@@ -176,25 +173,10 @@ public class SQLRelayResultSet implements ResultSet {
 			return false;
 		}
 
-		// are we on the last row?
-		if (sqlrcur.endOfResultSet() && row-1==rowcount-1) {
-
-			currentrow=row;
-			beforefirst=false;
-			islast=true;
-			afterlast=false;
-
-			drv.debugPrintln("currentrow: "+currentrow);
-			drv.debugPrintln("on last");
-			drv.debugEnd();
-			return true;
-		}
-
 		// ok, we're just somewhere in the middle of the result set
 		currentrow=row;
-		beforefirst=false;
-		islast=false;
-		afterlast=false;
+		isbeforefirst=false;
+		isafterlast=false;
 
 		drv.debugPrintln("currentrow: "+currentrow);
 		drv.debugPrintln("success");
@@ -206,7 +188,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void afterLast() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		afterlast=true;
+		isafterlast=true;
 		drv.debugEnd();
 	}
 
@@ -214,7 +196,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void beforeFirst() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		beforefirst=true;
+		isbeforefirst=true;
 		drv.debugEnd();
 	}
 
@@ -2009,18 +1991,18 @@ public class SQLRelayResultSet implements ResultSet {
 	boolean isAfterLast() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		drv.debugPrintln("after last: "+afterlast);
+		drv.debugPrintln("after last: "+isafterlast);
 		drv.debugEnd();
-		return afterlast;
+		return isafterlast;
 	}
 
 	public
 	boolean isBeforeFirst() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		drv.debugPrintln("before first: "+beforefirst);
+		drv.debugPrintln("before first: "+isbeforefirst);
 		drv.debugEnd();
-		return beforefirst;
+		return isbeforefirst;
 	}
 
 	public
@@ -2036,7 +2018,7 @@ public class SQLRelayResultSet implements ResultSet {
 	boolean isFirst() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		boolean	isfirst=(currentrow==0);
+		boolean	isfirst=(currentrow==1);
 		drv.debugPrintln("is first: "+isfirst);
 		drv.debugEnd();
 		return isfirst;
@@ -2046,6 +2028,19 @@ public class SQLRelayResultSet implements ResultSet {
 	boolean isLast() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+		// Implementing isLast() when the result set buffer size is
+		// non-zero is prohibitively difficult.  If the number of rows
+		// in the result set is an even multiple of the result set
+		// buffer size, then endOfResultSet() doesn't return true until
+		// you fetch past the end of the result set, making detection
+		// of whether we're on the last row or not unreliable.  We'd
+		// have to prefetch and buffer a row on the server side to
+		// implement this correctly.  The JDBC documentation for
+		// isLast() even alludes to this.
+		if (sqlrcur.getResultSetBufferSize()!=0) {
+			conn.throwFeatureNotSupportedException();
+		}
+		boolean	islast=(currentrow==sqlrcur.rowCount());
 		drv.debugPrintln("is last: "+islast);
 		drv.debugEnd();
 		return islast;
