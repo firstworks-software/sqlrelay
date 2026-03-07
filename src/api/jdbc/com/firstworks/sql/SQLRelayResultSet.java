@@ -106,7 +106,7 @@ public class SQLRelayResultSet implements ResultSet {
 		// Negative rows are offsets from one row past the end of the
 		// result set: -1 means go to the last row of the result set.
 		//
-		// Convert this to a positive row number.
+		// Attempt to convert this to a positive row number.
 		//
 		// We can only handle a negative row if we know the total
 		// row count, and we only know that if we've already fetched
@@ -137,14 +137,11 @@ public class SQLRelayResultSet implements ResultSet {
 
 			// set the row
 			row=rowcount+row+1;
-			if (row<0) {
-				row=0;
-			}
-			drv.debugPrintln("row: "+row);
+			drv.debugPrintln("normalized row: "+row);
 		}
 
-		// If row==0 then we're trying to go "before first"
-		if (row==0) {
+		// If row<=0 then we're trying to go "before first"
+		if (row<=0) {
 
 			// we can't do that if the first row in the current
 			// block of rows isn't the first row of the entire
@@ -153,14 +150,16 @@ public class SQLRelayResultSet implements ResultSet {
 				conn.throwException("Row out of range.");
 			}
 
-			currentrow=row;
+			currentrow=0;
 			isafterlast=false;
 
-			drv.debugPrintln("currentrow: "+currentrow);
+			drv.debugPrintln("new currentrow: "+currentrow);
 			drv.debugPrintln("before first");
 			drv.debugEnd();
-			return false;
 
+			// return true if we go exactly to the "before first"
+			// row and false if we tried to go before even that
+			return row==0;
 		}
 
 		// get the field to move the cursor to the requested row
@@ -186,7 +185,7 @@ public class SQLRelayResultSet implements ResultSet {
 				currentrow=row;
 				isafterlast=true;
 
-				drv.debugPrintln("currentrow: "+currentrow);
+				drv.debugPrintln("new currentrow: "+currentrow);
 				drv.debugPrintln("after last");
 				drv.debugEnd();
 				return false;
@@ -197,7 +196,7 @@ public class SQLRelayResultSet implements ResultSet {
 		currentrow=row;
 		isafterlast=false;
 
-		drv.debugPrintln("currentrow: "+currentrow);
+		drv.debugPrintln("new currentrow: "+currentrow);
 		drv.debugPrintln("success");
 		drv.debugEnd();
 		return true;
@@ -2129,6 +2128,13 @@ public class SQLRelayResultSet implements ResultSet {
 	public
 	boolean previous() throws SQLException {
 		drv.debugFunction(this);
+		// Handle before first here...  Calling relative(-1) if we're
+		// on row 0 (the before-first row), will end up calling
+		// absolute(-1), which will put us 1 row prior to the END of
+		// the result set.  Don't let that happen.
+		if (isBeforeFirst()) {
+			return false;
+		}
 		boolean	rel=relative(-1);
 		drv.debugEnd();
 		return rel;

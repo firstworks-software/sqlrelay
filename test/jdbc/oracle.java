@@ -2418,224 +2418,269 @@ class oracle extends sqlrtest {
 		System.out.println("ROW COUNT:");
 		assertEquals(rs.getRow(),8);
 		rs.close();
+		stmt.close();
+		assertTrue(stmt.isClosed());
 		System.out.println();
 
 
+		// fetch size 0
+		stmt=con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
+						ResultSet.CONCUR_READ_ONLY);
+		System.out.println("FETCH SIZE 0:");
 		if (issqlrelay) {
-
-			// fetch size 0
-			System.out.println("FETCH SIZE 0:");
+			// sqlrelay implements
+			// ResultSet.TYPE_SCROLL_INSENSITIVE
+			// by using a fetch size of 0
+			// (meaning fetch all rows immediately)
 			assertEquals(stmt.getFetchSize(),0);
-			rs=stmt.executeQuery(
-				"select "+
-				"	* "+
-				"from "+
-				"	testtable "+
-				"order by "+
-				"	testnumber");
-			assertEquals(rs.getFetchSize(),0);
-			System.out.println();
+		} else {
+			// oracle has a default fetch size of 10,
+			// independent of the result set type
+			assertEquals(stmt.getFetchSize(),10);
+		}
+		rs=stmt.executeQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testnumber");
+		if (issqlrelay) {
+			assertEquals(stmt.getFetchSize(),0);
+		} else {
+			assertEquals(stmt.getFetchSize(),10);
+		}
+		System.out.println();
 
-			// jump around wildly
-			rs.afterLast();
-			assertTrue(rs.isAfterLast());
-			rs.beforeFirst();
-			assertTrue(rs.isBeforeFirst());
-			assertTrue(rs.last());
-			assertTrue(rs.isLast());
-			assertTrue(rs.first());
-			assertTrue(rs.isFirst());
-			assertTrue(rs.absolute(4));
-			assertEquals(rs.getInt(1),4);
-			assertFalse(rs.isBeforeFirst());
-			assertFalse(rs.isFirst());
-			assertFalse(rs.isLast());
-			assertFalse(rs.isAfterLast());
-			assertTrue(rs.relative(2));
-			assertEquals(rs.getInt(1),6);
-			assertFalse(rs.isBeforeFirst());
-			assertFalse(rs.isFirst());
-			assertFalse(rs.isLast());
-			assertFalse(rs.isAfterLast());
-			assertTrue(rs.relative(-4));
-			assertEquals(rs.getInt(1),2);
-			assertFalse(rs.isBeforeFirst());
-			assertFalse(rs.isFirst());
-			assertFalse(rs.isLast());
-			assertFalse(rs.isAfterLast());
-			rs.beforeFirst();
-			System.out.println();
+		// jump around wildly
+		rs.afterLast();
+		assertTrue(rs.isAfterLast());
+		assertFalse(rs.next());
 
-			// move into the result set
-			assertTrue(rs.isBeforeFirst());
+		rs.beforeFirst();
+		assertTrue(rs.isBeforeFirst());
+		assertFalse(rs.previous());
+
+		assertTrue(rs.last());
+		assertTrue(rs.isLast());
+
+		assertTrue(rs.first());
+		assertTrue(rs.isFirst());
+
+		assertTrue(rs.absolute(4));
+		assertEquals(rs.getInt(1),4);
+		assertFalse(rs.isBeforeFirst());
+		assertFalse(rs.isFirst());
+		assertFalse(rs.isLast());
+		assertFalse(rs.isAfterLast());
+
+		assertTrue(rs.relative(2));
+		assertEquals(rs.getInt(1),6);
+		assertFalse(rs.isBeforeFirst());
+		assertFalse(rs.isFirst());
+		assertFalse(rs.isLast());
+		assertFalse(rs.isAfterLast());
+
+		assertTrue(rs.relative(-4));
+		assertEquals(rs.getInt(1),2);
+		assertFalse(rs.isBeforeFirst());
+		assertFalse(rs.isFirst());
+		assertFalse(rs.isLast());
+		assertFalse(rs.isAfterLast());
+
+		rs.beforeFirst();
+		System.out.println();
+
+		// move into the result set
+		assertTrue(rs.isBeforeFirst());
+		assertTrue(rs.next());
+		assertTrue(rs.isFirst());
+		System.out.println();
+
+		// move forwards to the last row
+		for (int row=1; row<=7; row++) {
+			assertEquals(rs.getInt(1),row);
 			assertTrue(rs.next());
-			assertTrue(rs.isFirst());
-			System.out.println();
+		}
+		System.out.println();
+		assertEquals(rs.getInt(1),8);
+		assertTrue(rs.isLast());
+		System.out.println();
 
-			// move forwards to the last row
-			for (int row=1; row<=7; row++) {
-				assertEquals(rs.getInt(1),row);
-				assertTrue(rs.next());
-			}
-			System.out.println();
-			assertEquals(rs.getInt(1),8);
-			assertTrue(rs.isLast());
-			System.out.println();
+		// move backwards to the first row
+		for (int row=8; row>=2; row--) {
+			assertEquals(rs.getInt(1),row);
+			assertTrue(rs.previous());
+		}
+		System.out.println();
+		assertEquals(rs.getInt(1),1);
+		assertTrue(rs.isFirst());
+		System.out.println();
 
-			// move backwards to the first row
-			for (int row=8; row>=2; row--) {
-				assertEquals(rs.getInt(1),row);
-				assertTrue(rs.previous());
-			}
-			System.out.println();
-			assertEquals(rs.getInt(1),1);
-			assertTrue(rs.isFirst());
-			System.out.println();
+		// move fowards to the last row again
+		for (int row=1; row<=7; row++) {
+			assertEquals(rs.getInt(1),row);
+			assertTrue(rs.next());
+		}
+		System.out.println();
+		assertEquals(rs.getInt(1),8);
+		assertTrue(rs.isLast());
+		System.out.println();
 
-			// move fowards to the last row again
-			for (int row=1; row<=7; row++) {
-				assertEquals(rs.getInt(1),row);
-				assertTrue(rs.next());
-			}
-			System.out.println();
-			assertEquals(rs.getInt(1),8);
-			assertTrue(rs.isLast());
-			System.out.println();
-
-			// move past the end of the result set
-			assertFalse(rs.next());
-			assertTrue(rs.isAfterLast());
-			System.out.println();
+		// move past the end of the result set
+		assertFalse(rs.next());
+		assertTrue(rs.isAfterLast());
+		System.out.println();
 
 
-			// fetch size 2
-			System.out.println("FETCH SIZE 2:");
-			stmt.setFetchSize(2);
-			assertEquals(stmt.getFetchSize(),2);
-			rs=stmt.executeQuery(
-				"select "+
-				"	* "+
-				"from "+
-				"	testtable "+
-				"order by "+
-				"	testnumber");
-			assertEquals(rs.getFetchSize(),2);
-			System.out.println();
+		// fetch size 2
+		System.out.println("FETCH SIZE 2:");
+		stmt.setFetchSize(2);
+		assertEquals(stmt.getFetchSize(),2);
+		rs=stmt.executeQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testnumber");
+		assertEquals(rs.getFetchSize(),2);
+		System.out.println();
 
-			// rows 1-2 (first window)
-			int	row=0;
-			assertTrue(rs.isBeforeFirst());
+		// rows 1-2 (first window)
+		int	row=0;
+		assertTrue(rs.isBeforeFirst());
+		assertTrue(rs.next());
+		row++;
+		assertEquals(rs.getInt(1),1);
+		assertTrue(rs.next());
+		row++;
+		assertEquals(rs.getInt(1),2);
+		System.out.println();
+
+		do {
+			// move forward to trigger fetch of a new window
 			assertTrue(rs.next());
 			row++;
-			assertEquals(rs.getInt(1),1);
+			assertEquals(rs.getInt(1),row);
+
+			// move forward to end of the window
 			assertTrue(rs.next());
 			row++;
-			assertEquals(rs.getInt(1),2);
-			System.out.println();
+			assertEquals(rs.getInt(1),row);
 
-			do {
-				// move forward to trigger fetch of a new window
-				assertTrue(rs.next());
-				row++;
-				assertEquals(rs.getInt(1),row);
+			// move backward to beginning of the window
+			assertTrue(rs.previous());
+			row--;
+			assertEquals(rs.getInt(1),row);
 
-				// move forward to end of the window
-				assertTrue(rs.next());
-				row++;
-				assertEquals(rs.getInt(1),row);
-
-				// move backward to beginning of the window
-				assertTrue(rs.previous());
-				row--;
-				assertEquals(rs.getInt(1),row);
-
-				// move backward to before the window
-				assertTrue(rs.previous());
-				row--;
+			// move backward to before the window
+			assertTrue(rs.previous());
+			row--;
+			if (issqlrelay) {
+				// sqlrelay returns null when
+				// outside of the window
 				assertEquals(rs.getString(1),null);
-
-				// move forward back into the window
-				assertTrue(rs.next());
-				row++;
+			} else {
+				// oracle can move the window
 				assertEquals(rs.getInt(1),row);
+			}
 
-				// move forward to end of the window
-				assertTrue(rs.next());
-				row++;
-				assertEquals(rs.getInt(1),row);
+			// move forward back into the window
+			assertTrue(rs.next());
+			row++;
+			assertEquals(rs.getInt(1),row);
 
-				System.out.println();
+			// move forward to end of the window
+			assertTrue(rs.next());
+			row++;
+			assertEquals(rs.getInt(1),row);
 
-			} while (row<8);
+			System.out.println();
 
-			// is last isn't supported when fetch size is non-zero
+		} while (row<8);
+
+		if (issqlrelay) {
+			// sqlrelay jdbc doesn't supported isLast()
+			// when fetch size is non-zero
 			try {
 				rs.isLast();
 				assertTrue(false);
 			} catch (Exception ex) {
 				assertTrue(true);
 			}
-
-			// move past the end of the result set
-			assertFalse(rs.next());
-			assertTrue(rs.isAfterLast());
-			assertFalse(rs.next());
-
-			rs.close();
-			stmt.setFetchSize(0);
-			assertEquals(stmt.getFetchSize(),0);
-
-			System.out.println();
-
-
-			// max rows
-			// FIXME: this doesn't currently work with oracle jdbc
-			// because the result set is forward-only by default.
-			// sort this out
-			System.out.println("MAX ROWS:");
-			assertEquals(stmt.getMaxRows(),0);
-			stmt.setMaxRows(4);
-			assertEquals(stmt.getMaxRows(),4);
-			rs=stmt.executeQuery(
-				"select "+
-				"	* "+
-				"from "+
-				"	testtable "+
-				"order by "+
-				"	testnumber");
-			assertTrue(rs.isBeforeFirst());
-			assertTrue(rs.next());
-			assertEquals(rs.getInt(1),1);
-			assertTrue(rs.isFirst());
-			assertTrue(rs.next());
-			assertEquals(rs.getInt(1),2);
-			assertTrue(rs.next());
-			assertEquals(rs.getInt(1),3);
-			assertTrue(rs.next());
-			assertEquals(rs.getInt(1),4);
+		} else {
+			// oracle jdbc does support isLast()
+			// when fetch size is non-zero
 			assertTrue(rs.isLast());
-			assertFalse(rs.next());
-			assertTrue(rs.isAfterLast());
-			assertTrue(rs.first());
-			assertEquals(rs.getInt(1),1);
-			assertTrue(rs.isFirst());
-			assertTrue(rs.last());
-			assertEquals(rs.getInt(1),4);
-			assertTrue(rs.isLast());
-			rs.beforeFirst();
-			assertTrue(rs.isBeforeFirst());
-			assertTrue(rs.next());
-			assertEquals(rs.getInt(1),1);
-			rs.afterLast();
-			assertTrue(rs.isAfterLast());
-			assertTrue(rs.previous());
-			assertEquals(rs.getInt(1),4);
-			assertTrue(rs.isLast());
-			rs.close();
-			stmt.setMaxRows(0);
-			assertEquals(stmt.getMaxRows(),0);
-			System.out.println();
 		}
+
+		// move past the end of the result set
+		assertFalse(rs.next());
+		assertTrue(rs.isAfterLast());
+		assertFalse(rs.next());
+
+		rs.close();
+		stmt.setFetchSize(0);
+		if (issqlrelay) {
+			assertEquals(stmt.getFetchSize(),0);
+		} else {
+			// with oracle jdbc, setting the fetch size to
+			// 0 just sets it back to the default of 10
+			assertEquals(stmt.getFetchSize(),10);
+		}
+
+		System.out.println();
+
+
+		// max rows
+		// FIXME: this doesn't currently work with oracle jdbc
+		// because the result set is forward-only by default.
+		// sort this out
+		System.out.println("MAX ROWS:");
+		assertEquals(stmt.getMaxRows(),0);
+		stmt.setMaxRows(4);
+		assertEquals(stmt.getMaxRows(),4);
+		rs=stmt.executeQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testnumber");
+		assertTrue(rs.isBeforeFirst());
+		assertTrue(rs.next());
+		assertEquals(rs.getInt(1),1);
+		assertTrue(rs.isFirst());
+		assertTrue(rs.next());
+		assertEquals(rs.getInt(1),2);
+		assertTrue(rs.next());
+		assertEquals(rs.getInt(1),3);
+		assertTrue(rs.next());
+		assertEquals(rs.getInt(1),4);
+		assertTrue(rs.isLast());
+		assertFalse(rs.next());
+		assertTrue(rs.isAfterLast());
+		assertTrue(rs.first());
+		assertEquals(rs.getInt(1),1);
+		assertTrue(rs.isFirst());
+		assertTrue(rs.last());
+		assertEquals(rs.getInt(1),4);
+		assertTrue(rs.isLast());
+		rs.beforeFirst();
+		assertTrue(rs.isBeforeFirst());
+		assertTrue(rs.next());
+		assertEquals(rs.getInt(1),1);
+		rs.afterLast();
+		assertTrue(rs.isAfterLast());
+		assertTrue(rs.previous());
+		assertEquals(rs.getInt(1),4);
+		assertTrue(rs.isLast());
+		rs.close();
+		stmt.setMaxRows(0);
+		assertEquals(stmt.getMaxRows(),0);
+		stmt.close();
+		System.out.println();
 
 
 		// commit
@@ -2666,6 +2711,7 @@ class oracle extends sqlrtest {
 		assertEquals(secondrs.getString(1),"8");
 		con.setAutoCommit(true);
 		secondrs.close();
+		stmt=con.createStatement();
 		assertEquals(stmt.executeUpdate(
 			"insert into "+
 			"	testtable "+
@@ -3072,8 +3118,6 @@ class oracle extends sqlrtest {
 		rs.next();
 		assertEquals(rs.getString(1),"1");
 		rs.close();
-		stmt.close();
-		assertTrue(stmt.isClosed());
 		con.close();
 		System.out.println();
 		con=DriverManager.getConnection(url,user,password);

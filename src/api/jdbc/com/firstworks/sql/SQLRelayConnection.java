@@ -293,6 +293,11 @@ public class SQLRelayConnection implements Connection {
 		sqlrstmt.setSQLRConnection(sqlrcon);
 		sqlrstmt.setSQLRCursor(sqlrcur);
 
+		// set the default fetch size to 10 for forward-only result sets
+		if (resultsettype==ResultSet.TYPE_FORWARD_ONLY) {
+			sqlrstmt.setFetchSize(10);
+		}
+
 		drv.debugEnd();
 		return sqlrstmt;
 	}
@@ -577,6 +582,11 @@ public class SQLRelayConnection implements Connection {
 		sqlrstmt.setSQLRConnection(sqlrcon);
 		sqlrstmt.setSQLRCursor(sqlrcur);
 
+		// set the default fetch size to 10 for forward-only result sets
+		if (resultsettype==ResultSet.TYPE_FORWARD_ONLY) {
+			sqlrstmt.setFetchSize(10);
+		}
+
 		drv.debugEnd();
 		return sqlrstmt;
 	}
@@ -646,6 +656,11 @@ public class SQLRelayConnection implements Connection {
 		sqlrstmt.setNetworkLock(networklock);
 		sqlrstmt.setSQLRConnection(sqlrcon);
 		sqlrstmt.setSQLRCursor(sqlrcur);
+
+		// set the default fetch size to 10 for forward-only result sets
+		if (resultsettype==ResultSet.TYPE_FORWARD_ONLY) {
+			sqlrstmt.setFetchSize(10);
+		}
 
 		drv.debugEnd();
 		return sqlrstmt;
