@@ -2428,6 +2428,7 @@ class oracle extends sqlrtest {
 				"	testtable "+
 				"order by "+
 				"	testnumber");
+			assertEquals(rs.getFetchSize(),0);
 			System.out.println();
 
 			// jump around wildly
@@ -2583,6 +2584,52 @@ class oracle extends sqlrtest {
 		}
 
 
+		// max rows
+		System.out.println("MAX ROWS:");
+		assertEquals(stmt.getMaxRows(),0);
+		stmt.setMaxRows(4);
+		assertEquals(stmt.getMaxRows(),4);
+		rs=stmt.executeQuery(
+			"select "+
+			"	* "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testnumber");
+		assertTrue(rs.isBeforeFirst());
+		assertTrue(rs.next());
+		assertEquals(rs.getInt(1),1);
+		assertTrue(rs.isFirst());
+		assertTrue(rs.next());
+		assertEquals(rs.getInt(1),2);
+		assertTrue(rs.next());
+		assertEquals(rs.getInt(1),3);
+		assertTrue(rs.next());
+		assertEquals(rs.getInt(1),4);
+		assertTrue(rs.isLast());
+		assertFalse(rs.next());
+		assertTrue(rs.isAfterLast());
+		assertTrue(rs.first());
+		assertEquals(rs.getInt(1),1);
+		assertTrue(rs.isFirst());
+		assertTrue(rs.last());
+		assertEquals(rs.getInt(1),4);
+		assertTrue(rs.isLast());
+		rs.beforeFirst();
+		assertTrue(rs.isBeforeFirst());
+		assertTrue(rs.next());
+		assertEquals(rs.getInt(1),1);
+		rs.afterLast();
+		assertTrue(rs.isAfterLast());
+		assertTrue(rs.previous());
+		assertEquals(rs.getInt(1),4);
+		assertTrue(rs.isLast());
+		rs.close();
+		stmt.setMaxRows(0);
+		assertEquals(stmt.getMaxRows(),0);
+		System.out.println();
+
+
 		// commit
 		System.out.println("COMMIT:");
 		Connection	secondcon=DriverManager.getConnection(
@@ -2596,6 +2643,7 @@ class oracle extends sqlrtest {
 			"from "+
 			"	testtable ");
 		assertTrue((secondrs!=null));
+		assertTrue(secondrs.getStatement()==secondstmt);
 		secondrs.next();
 		assertEquals(secondrs.getString(1),"0");
 		secondrs.close();
@@ -3110,6 +3158,7 @@ class oracle extends sqlrtest {
 		pstmt.setString(3,"hello");
 		rs=pstmt.executeQuery();
 		assertTrue((rs!=null));
+		assertTrue(rs.getStatement()==pstmt);
 		rs.next();
 		assertEquals(rs.getString(1),"1");
 		rs.close();
@@ -4268,12 +4317,6 @@ class oracle extends sqlrtest {
                 // setFetchDirection
                 // getFetchDirection
 		//
-                // setFetchSize
-                // getFetchSize
-		//
-                // setMaxRows
-                // getMaxRows
-		//
                 // getMoreResults
 		//
                 // getResultSetConcurrency
@@ -4343,7 +4386,6 @@ class oracle extends sqlrtest {
 
 
 		// FIXME: need tests for ResultSet methods...
-                // getStatement
                 // getCursorName
 		//
                 // getType
@@ -4355,16 +4397,11 @@ class oracle extends sqlrtest {
                 // getFetchDirection
                 // setFetchDirection
 		//
-                // getFetchSize
                 // setFetchSize
 		//
                 // moveToCurrentRow
 		//
-                // isAfterLast
-                // isBeforeFirst
                 // isClosed
-                // isFirst
-                // isLast
 		//
                 // clearWarnings
 		//

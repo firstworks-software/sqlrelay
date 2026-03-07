@@ -127,7 +127,16 @@ public class SQLRelayResultSet implements ResultSet {
 				conn.throwFeatureNotSupportedException();
 			}
 
-			row=(int)sqlrcur.rowCount()+row+1;
+			// get the row count
+			int	rowcount=(int)sqlrcur.rowCount();
+
+			// handle maxrows
+			if (maxrows!=0 && rowcount>maxrows) {
+				rowcount=maxrows;
+			}
+
+			// set the row
+			row=rowcount+row+1;
 			if (row<0) {
 				row=0;
 			}
@@ -163,7 +172,7 @@ public class SQLRelayResultSet implements ResultSet {
 		if (sqlrcur.endOfResultSet()) {
 
 			// get the row count
-			long	rowcount=sqlrcur.rowCount();
+			int	rowcount=(int)sqlrcur.rowCount();
 
 			// handle maxrows
 			if (maxrows!=0 && rowcount>maxrows) {
@@ -198,7 +207,20 @@ public class SQLRelayResultSet implements ResultSet {
 	void afterLast() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
+
+		// get the row count
+		int	rowcount=(int)sqlrcur.rowCount();
+
+		// handle maxrows
+		if (maxrows!=0 && rowcount>maxrows) {
+			rowcount=maxrows;
+		}
+
+		// set the current row and flag
+		// currentrow is 1-based and rowcount is 0-based
+		currentrow=(int)rowcount+1;
 		isafterlast=true;
+
 		drv.debugEnd();
 	}
 
@@ -1001,10 +1023,9 @@ public class SQLRelayResultSet implements ResultSet {
 	int getFetchDirection() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		int	direction=ResultSet.FETCH_FORWARD;
-		drv.debugPrintln("direction: "+direction);
+		drv.debugPrintln("fetch direction: "+fetchdirection);
 		drv.debugEnd();
-		return direction;
+		return fetchdirection;
 	}
 
 	public
@@ -2030,7 +2051,7 @@ public class SQLRelayResultSet implements ResultSet {
 	boolean isFirst() throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		// row is 1-based and rowcount is 0-based
+		// currentrow is 1-based and rowcount is 0-based
 		boolean	isfirst=(currentrow==1);
 		drv.debugPrintln("is first: "+isfirst);
 		drv.debugEnd();
@@ -2064,7 +2085,7 @@ public class SQLRelayResultSet implements ResultSet {
 		}
 
 		// are we on the last row?
-		// row is 1-based and rowcount is 0-based
+		// currentrow is 1-based and rowcount is 0-based
 		boolean	islast=(currentrow==rowcount);
 		drv.debugPrintln("is last: "+islast);
 
@@ -2162,7 +2183,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void setFetchDirection(int direction) throws SQLException {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
-		drv.debugPrintln("direction: "+direction);
+		drv.debugPrintln("fetch direction: "+direction);
 		fetchdirection=direction;
 		drv.debugEnd();
 	}
