@@ -1167,10 +1167,94 @@ class sqlite extends sqlrtest {
 		System.out.println("FIELDS BY INDEX:");
 		for (int i=1; i<=4; i++) {
 			assertTrue(rs.next());
-			// check first column
-			System.out.println("  row "+i);
-			assertTrue(rs.getString(1)!=null);
+
+			// int as short
+			System.out.println("  row "+i+" - int as short");
+			assertEquals(rs.getShort(1),(short)i);
 			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// int as int
+			System.out.println("  row "+i+" - int as int");
+			assertEquals(rs.getInt(1),i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// int as long
+			System.out.println("  row "+i+" - int as long");
+			assertEquals(rs.getLong(1),(long)i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// float
+			System.out.println("  row "+i+" - float");
+			assertTrue(rs.getString(2)!=null);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// char as string
+			System.out.println("  row "+i+" - char as string");
+			assertEquals(rs.getString(3),"char"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// varchar as string
+			System.out.println("  row "+i+" - varchar as string");
+			assertEquals(rs.getString(4),"varchar"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// clob as string
+			System.out.println("  row "+i+" - clob as string");
+			assertEquals(rs.getString(5),"clob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// clob
+			System.out.println("  row "+i+" - clob");
+			clob=rs.getClob(5);
+			assertEquals(clob.getSubString(1,(int)clob.length()),
+								"clob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// clob as ascii stream
+			System.out.println("  row "+i+" - clob as ascii stream");
+			assertEquals(new String(rs.getAsciiStream(5).
+						readAllBytes(),"UTF-8"),
+						"clob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// clob as character stream
+			System.out.println("  row "+i+" - clob as character stream");
+			StringWriter sw=new StringWriter();
+			rs.getCharacterStream(5).transferTo(sw);
+			assertEquals(sw.toString(),"clob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// blob as string
+			System.out.println("  row "+i+" - blob as string");
+			assertEquals(rs.getString(6),"blob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// blob as bytes
+			System.out.println("  row "+i+" - blob as bytes");
+			assertEquals(new String(
+					rs.getBytes(6),"UTF-8"),
+					"blob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// blob as binary stream
+			System.out.println("  row "+i+" - blob as binary stream");
+			assertEquals(new String(rs.getBinaryStream(6).
+						readAllBytes(),"UTF-8"),
+						"blob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
 
 			// url
 			System.out.println("  row "+i+" - url");
@@ -1200,9 +1284,94 @@ class sqlite extends sqlrtest {
 		System.out.println();
 		for (int i=1; i<=4; i++) {
 			assertTrue(rs.next());
-			System.out.println("  row "+i);
-			assertTrue(rs.getString("testint")!=null);
+
+			// int as short
+			System.out.println("  row "+i+" - int as short");
+			assertEquals(rs.getShort("testint"),(short)i);
 			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// int as int
+			System.out.println("  row "+i+" - int as int");
+			assertEquals(rs.getInt("testint"),i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// int as long
+			System.out.println("  row "+i+" - int as long");
+			assertEquals(rs.getLong("testint"),(long)i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// float
+			System.out.println("  row "+i+" - float");
+			assertTrue(rs.getString("testfloat")!=null);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// char as string
+			System.out.println("  row "+i+" - char as string");
+			assertEquals(rs.getString("testchar"),"char"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// varchar as string
+			System.out.println("  row "+i+" - varchar as string");
+			assertEquals(rs.getString("testvarchar"),"varchar"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// clob as string
+			System.out.println("  row "+i+" - clob as string");
+			assertEquals(rs.getString("testclob"),"clob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// clob
+			System.out.println("  row "+i+" - clob");
+			clob=rs.getClob("testclob");
+			assertEquals(clob.getSubString(1,(int)clob.length()),
+								"clob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// clob as ascii stream
+			System.out.println("  row "+i+" - clob as ascii stream");
+			assertEquals(new String(rs.getAsciiStream("testclob").
+						readAllBytes(),"UTF-8"),
+						"clob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// clob as character stream
+			System.out.println("  row "+i+" - clob as character stream");
+			StringWriter sw=new StringWriter();
+			rs.getCharacterStream("testclob").transferTo(sw);
+			assertEquals(sw.toString(),"clob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// blob as string
+			System.out.println("  row "+i+" - blob as string");
+			assertEquals(rs.getString("testblob"),"blob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// blob as bytes
+			System.out.println("  row "+i+" - blob as bytes");
+			assertEquals(new String(
+					rs.getBytes("testblob"),"UTF-8"),
+					"blob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// blob as binary stream
+			System.out.println("  row "+i+" - blob as binary stream");
+			assertEquals(new String(rs.getBinaryStream("testblob").
+						readAllBytes(),"UTF-8"),
+						"blob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
 
 			// url
 			System.out.println("  row "+i+" - url");

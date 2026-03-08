@@ -37,7 +37,8 @@ class informix extends sqlrtest {
 			issqlrelay=true;
 		} else if (classpath.contains("ifxjdbc")) {
 			driver="com.informix.jdbc.IfxDriver";
-			url="jdbc:informix-sqli://informix:9088/"+hostname+":INFORMIXSERVER=informix";
+			url="jdbc:informix-sqli://informix:29756/"+
+				hostname+":INFORMIXSERVER=ol_informix1210";
 			user="testuser";
 			password="testpassword";
 		}
@@ -128,9 +129,12 @@ class informix extends sqlrtest {
 
 		// autoCommitFailureClosesAllResultSets
 		System.out.println("  autoCommitFailureClosesAllResultSets");
-		boolval=md.autoCommitFailureClosesAllResultSets();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
+		if (issqlrelay) {
+			// informix jdbc doesn't support this
+			boolval=md.autoCommitFailureClosesAllResultSets();
+			System.out.println("    "+boolval);
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// dataDefinitionCausesTransactionCommit
@@ -156,9 +160,12 @@ class informix extends sqlrtest {
 
 		// generatedKeyAlwaysReturned
 		System.out.println("  generatedKeyAlwaysReturned");
-		boolval=md.generatedKeyAlwaysReturned();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
+		if (issqlrelay) {
+			// informix jdbc doesn't support this
+			boolval=md.generatedKeyAlwaysReturned();
+			System.out.println("    "+boolval);
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// isCatalogAtStart
@@ -611,9 +618,12 @@ class informix extends sqlrtest {
 
 		// supportsStoredFunctionsUsingCallSyntax
 		System.out.println("  supportsStoredFunctionsUsingCallSyntax");
-		boolval=md.supportsStoredFunctionsUsingCallSyntax();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
+		if (issqlrelay) {
+			// informix jdbc doesn't support this
+			boolval=md.supportsStoredFunctionsUsingCallSyntax();
+			System.out.println("    "+boolval);
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// supportsStoredProcedures
@@ -1079,14 +1089,17 @@ class informix extends sqlrtest {
 			"	'varchar1', "+
 			"	'nvarchar1', "+
 			"	'lvarchar1', "+
-			"	'01/01/2001', "+
+			"	MDY(1,1,2001), "+
 			"	'2001-01-01 01:00:00', "+
-			"	'text1', "+
+			"	NULL, "+
 			"	NULL, "+
 			"	'http://www.firstworks.com:8080/testurl1')"));
 		assertEquals(stmt.getUpdateCount(),1);
 		stmt.close();
-		assertTrue(stmt.isClosed());
+		if (issqlrelay) {
+			// informix jdbc doesn't support isClosed
+			assertTrue(stmt.isClosed());
+		}
 		System.out.println();
 
 		// bind by position
@@ -1114,7 +1127,10 @@ class informix extends sqlrtest {
 			"	?, "+
 			"	?, "+
 			"	?)");
-		assertFalse(pstmt.isClosed());
+		if (issqlrelay) {
+			// informix jdbc doesn't support isClosed
+			assertFalse(pstmt.isClosed());
+		}
 		for (int i=2; i<=4; i++) {
 			pstmt.clearParameters();
 			pstmt.setString(1,"t");
@@ -1150,6 +1166,7 @@ class informix extends sqlrtest {
 			pstmt.setTimestamp(16,new Timestamp(
 						cal.getTimeInMillis()));
 			pstmt.setString(17,"text"+i);
+			pstmt.setNull(18,java.sql.Types.BLOB);
 			// NULL column
 			pstmt.setString(19,
 				"http://www.firstworks.com:8080/"+
@@ -1158,7 +1175,10 @@ class informix extends sqlrtest {
 			System.out.println();
 		}
 		pstmt.close();
-		assertTrue(pstmt.isClosed());
+		if (issqlrelay) {
+			// informix jdbc doesn't support isClosed
+			assertTrue(pstmt.isClosed());
+		}
 		System.out.println();
 
 		// select
@@ -1277,24 +1297,148 @@ class informix extends sqlrtest {
 		// fields by index
 		System.out.println("FIELDS BY INDEX:");
 		for (int i=1; i<=4; i++) {
+
 			assertTrue(rs.next());
-			// check first column
-			System.out.println("  row "+i);
-			assertTrue(rs.getString(1)!=null);
+			System.out.println();
+
+			// boolean as string
+			System.out.println("  row "+i+" - boolean as string");
+			assertEquals(rs.getString(1),"t");
 			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// smallint as short
+			System.out.println("  row "+i+" - smallint as short");
+			assertEquals(rs.getShort(2),(short)i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// smallint as int
+			System.out.println("  row "+i+" - smallint as int");
+			assertEquals(rs.getInt(2),i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// int
+			System.out.println("  row "+i+" - int");
+			assertEquals(rs.getInt(3),i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// bigint
+			System.out.println("  row "+i+" - bigint");
+			assertEquals(rs.getLong(4),(long)i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// int8
+			System.out.println("  row "+i+" - int8");
+			assertEquals(rs.getLong(5),(long)i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// decimal
+			System.out.println("  row "+i+" - decimal");
+			assertEquals(rs.getString(6),i+".10");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// money
+			System.out.println("  row "+i+" - money");
+			if (issqlrelay) {
+				assertEquals(rs.getString(7),"$"+i+".10");
+			} else {
+				assertEquals(rs.getString(7),i+".10");
+			}
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// smallfloat
+			System.out.println("  row "+i+" - smallfloat");
+			assertTrue(rs.getString(8)!=null);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// float
+			System.out.println("  row "+i+" - float");
+			assertTrue(rs.getString(9)!=null);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// char as string
+			System.out.println("  row "+i+" - char as string");
+			assertEquals(rs.getString(10),"char"+i+
+					"                                   ");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// nchar as string
+			System.out.println("  row "+i+" - nchar as string");
+			assertEquals(rs.getString(11),"nchar"+i+
+					"                                  ");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// varchar as string
+			System.out.println("  row "+i+" - varchar as string");
+			assertEquals(rs.getString(12),"varchar"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// nvarchar as string
+			System.out.println("  row "+i+" - nvarchar as string");
+			assertEquals(rs.getString(13),"nvarchar"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// lvarchar as string
+			System.out.println("  row "+i+" - lvarchar as string");
+			assertEquals(rs.getString(14),"lvarchar"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// date
+			System.out.println("  row "+i+" - date");
+			datevar=rs.getDate(15);
+			cal.setTime(datevar);
+			assertEquals(cal.get(Calendar.YEAR),2000+i);
+			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
+			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// datetime as timestamp
+			System.out.println("  row "+i+" - datetime as timestamp");
+			tsvar=rs.getTimestamp(16);
+			cal.setTime(tsvar);
+			assertEquals(cal.get(Calendar.YEAR),2000+i);
+			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
+			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
+			assertEquals(cal.get(Calendar.HOUR_OF_DAY),i);
+			assertEquals(cal.get(Calendar.MINUTE),0);
+			assertEquals(cal.get(Calendar.SECOND),0);
+			assertFalse(rs.wasNull());
+			System.out.println();
 
 			// url
 			System.out.println("  row "+i+" - url");
-			URL	urlvar=rs.getURL(19);
-			assertEquals(urlvar.getProtocol(),"http");
-			assertEquals(urlvar.getHost(),"www.firstworks.com");
-			assertEquals(urlvar.getPort(),8080);
-			assertEquals(urlvar.getPath(),"/testurl"+i);
-			assertFalse(rs.wasNull());
+			if (issqlrelay) {
+				URL	urlvar=rs.getURL(19);
+				assertEquals(urlvar.getProtocol(),"http");
+				assertEquals(urlvar.getHost(),
+					"www.firstworks.com");
+				assertEquals(urlvar.getPort(),8080);
+				assertEquals(urlvar.getPath(),
+					"/testurl"+i);
+				assertFalse(rs.wasNull());
+			}
 			System.out.println();
 		}
 		rs.close();
-		assertTrue(rs.isClosed());
+		if (issqlrelay) {
+			// informix jdbc doesn't support isClosed
+			assertTrue(rs.isClosed());
+		}
 		System.out.println();
 
 		System.out.println();
@@ -1310,19 +1454,141 @@ class informix extends sqlrtest {
 		assertTrue((rs!=null));
 		System.out.println();
 		for (int i=1; i<=4; i++) {
+
 			assertTrue(rs.next());
-			System.out.println("  row "+i);
-			assertTrue(rs.getString("testboolean")!=null);
+			System.out.println();
+
+			// boolean as string
+			System.out.println("  row "+i+" - boolean as string");
+			assertEquals(rs.getString("testboolean"),"t");
 			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// smallint as short
+			System.out.println("  row "+i+" - smallint as short");
+			assertEquals(rs.getShort("testsmallint"),(short)i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// smallint as int
+			System.out.println("  row "+i+" - smallint as int");
+			assertEquals(rs.getInt("testsmallint"),i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// int
+			System.out.println("  row "+i+" - int");
+			assertEquals(rs.getInt("testint"),i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// bigint
+			System.out.println("  row "+i+" - bigint");
+			assertEquals(rs.getLong("testbigint"),(long)i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// int8
+			System.out.println("  row "+i+" - int8");
+			assertEquals(rs.getLong("testint8"),(long)i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// decimal
+			System.out.println("  row "+i+" - decimal");
+			assertEquals(rs.getString("testdecimal"),i+".10");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// money
+			System.out.println("  row "+i+" - money");
+			if (issqlrelay) {
+				assertEquals(rs.getString("testmoney"),"$"+i+".10");
+			} else {
+				assertEquals(rs.getString("testmoney"),i+".10");
+			}
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// smallfloat
+			System.out.println("  row "+i+" - smallfloat");
+			assertTrue(rs.getString("testsmallfloat")!=null);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// float
+			System.out.println("  row "+i+" - float");
+			assertTrue(rs.getString("testfloat")!=null);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// char as string
+			System.out.println("  row "+i+" - char as string");
+			assertEquals(rs.getString("testchar"),"char"+i+
+					"                                   ");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// nchar as string
+			System.out.println("  row "+i+" - nchar as string");
+			assertEquals(rs.getString("testnchar"),"nchar"+i+
+					"                                  ");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// varchar as string
+			System.out.println("  row "+i+" - varchar as string");
+			assertEquals(rs.getString("testvarchar"),"varchar"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// nvarchar as string
+			System.out.println("  row "+i+" - nvarchar as string");
+			assertEquals(rs.getString("testnvarchar"),"nvarchar"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// lvarchar as string
+			System.out.println("  row "+i+" - lvarchar as string");
+			assertEquals(rs.getString("testlvarchar"),"lvarchar"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// date
+			System.out.println("  row "+i+" - date");
+			datevar=rs.getDate("testdate");
+			cal.setTime(datevar);
+			assertEquals(cal.get(Calendar.YEAR),2000+i);
+			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
+			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// datetime as timestamp
+			System.out.println("  row "+i+" - datetime as timestamp");
+			tsvar=rs.getTimestamp("testdatetime");
+			cal.setTime(tsvar);
+			assertEquals(cal.get(Calendar.YEAR),2000+i);
+			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
+			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
+			assertEquals(cal.get(Calendar.HOUR_OF_DAY),i);
+			assertEquals(cal.get(Calendar.MINUTE),0);
+			assertEquals(cal.get(Calendar.SECOND),0);
+			assertFalse(rs.wasNull());
+			System.out.println();
 
 			// url
 			System.out.println("  row "+i+" - url");
-			URL	urlvar=rs.getURL("testurl");
-			assertEquals(urlvar.getProtocol(),"http");
-			assertEquals(urlvar.getHost(),"www.firstworks.com");
-			assertEquals(urlvar.getPort(),8080);
-			assertEquals(urlvar.getPath(),"/testurl"+i);
-			assertFalse(rs.wasNull());
+			if (issqlrelay) {
+				URL	urlvar=rs.getURL("testurl");
+				assertEquals(urlvar.getProtocol(),"http");
+				assertEquals(urlvar.getHost(),
+					"www.firstworks.com");
+				assertEquals(urlvar.getPort(),8080);
+				assertEquals(urlvar.getPath(),
+					"/testurl"+i);
+				assertFalse(rs.wasNull());
+			}
 			System.out.println();
 		}
 
@@ -1331,7 +1597,10 @@ class informix extends sqlrtest {
 		assertEquals(rs.getRow(),4);
 		rs.close();
 		stmt.close();
-		assertTrue(stmt.isClosed());
+		if (issqlrelay) {
+			// informix jdbc doesn't support isClosed
+			assertTrue(stmt.isClosed());
+		}
 		System.out.println();
 
 		// commit
@@ -1341,6 +1610,7 @@ class informix extends sqlrtest {
 
 
 		// output bind by position
+		stmt=con.createStatement();
 		System.out.println("OUTPUT BIND BY POSITION:");
 		try {
 			stmt.executeUpdate("drop procedure testproc2");
@@ -1375,33 +1645,36 @@ class informix extends sqlrtest {
 
 
 		// output bind by name
-		System.out.println("OUTPUT BIND BY NAME:");
-		assertEquals(stmt.executeUpdate(
-			"create procedure testproc2("+
-			"	in1 int, "+
-			"	in2 float, "+
-			"	in3 varchar(20), "+
-			"	out out1 int, "+
-			"	out out2 float, "+
-			"	out out3 varchar(20)) "+
-			"let out1 = in1; "+
-			"let out2 = in2; "+
-			"let out3 = in3; "+
-			"end procedure;"),0);
-		cstmt=con.prepareCall("{call testproc2(?,?,?,?,?,?)}");
-		cstmt.setInt(1,1);
-		cstmt.setDouble(2,1.1);
-		cstmt.setString(3,"hello");
-		cstmt.registerOutParameter("out1",Types.INTEGER);
-		cstmt.registerOutParameter("out2",Types.DOUBLE);
-		cstmt.registerOutParameter("out3",Types.VARCHAR);
-		assertFalse(cstmt.execute());
-		assertEquals(cstmt.getInt("out1"),1);
-		assertEquals(cstmt.getDouble("out2"),1.1);
-		assertEquals(cstmt.getString("out3"),"hello");
-		cstmt.close();
-		stmt.executeUpdate("drop procedure testproc2");
-		System.out.println();
+		if (issqlrelay) {
+			// informix jdbc doesn't support mixing named and indexed parameters
+			System.out.println("OUTPUT BIND BY NAME:");
+			assertEquals(stmt.executeUpdate(
+				"create procedure testproc2("+
+				"	in1 int, "+
+				"	in2 float, "+
+				"	in3 varchar(20), "+
+				"	out out1 int, "+
+				"	out out2 float, "+
+				"	out out3 varchar(20)) "+
+				"let out1 = in1; "+
+				"let out2 = in2; "+
+				"let out3 = in3; "+
+				"end procedure;"),0);
+			cstmt=con.prepareCall("{call testproc2(?,?,?,?,?,?)}");
+			cstmt.setInt(1,1);
+			cstmt.setDouble(2,1.1);
+			cstmt.setString(3,"hello");
+			cstmt.registerOutParameter("out1",Types.INTEGER);
+			cstmt.registerOutParameter("out2",Types.DOUBLE);
+			cstmt.registerOutParameter("out3",Types.VARCHAR);
+			assertFalse(cstmt.execute());
+			assertEquals(cstmt.getInt("out1"),1);
+			assertEquals(cstmt.getDouble("out2"),1.1);
+			assertEquals(cstmt.getString("out3"),"hello");
+			cstmt.close();
+			stmt.executeUpdate("drop procedure testproc2");
+			System.out.println();
+		}
 
 		// stored procedures
 		System.out.println("STORED PROCEDURES:");

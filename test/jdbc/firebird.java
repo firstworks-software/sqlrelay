@@ -1224,10 +1224,113 @@ class firebird extends sqlrtest {
 		System.out.println("FIELDS BY INDEX:");
 		for (int i=1; i<=4; i++) {
 			assertTrue(rs.next());
-			// check first column
-			System.out.println("  row "+i);
-			assertTrue(rs.getString(1)!=null);
+
+			// integer as short
+			System.out.println("  row "+i+" - integer as short");
+			assertEquals(rs.getShort(1),(short)i);
 			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// integer as int
+			System.out.println("  row "+i+" - integer as int");
+			assertEquals(rs.getInt(1),i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// integer as long
+			System.out.println("  row "+i+" - integer as long");
+			assertEquals(rs.getLong(1),(long)i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// smallint
+			System.out.println("  row "+i+" - smallint");
+			assertEquals(rs.getInt(2),i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// decimal
+			System.out.println("  row "+i+" - decimal");
+			assertEquals(rs.getString(3),i+".10");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// numeric
+			System.out.println("  row "+i+" - numeric");
+			assertEquals(rs.getString(4),i+".10");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// float
+			System.out.println("  row "+i+" - float");
+			assertTrue(rs.getString(5)!=null);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// double
+			System.out.println("  row "+i+" - double");
+			assertTrue(rs.getString(6)!=null);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// date
+			System.out.println("  row "+i+" - date");
+			datevar=rs.getDate(7);
+			cal.setTime(datevar);
+			assertEquals(cal.get(Calendar.YEAR),2000+i);
+			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
+			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// time
+			System.out.println("  row "+i+" - time");
+			assertEquals(rs.getString(8),"0"+i+":00:00");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// char as string
+			System.out.println("  row "+i+" - char as string");
+			assertEquals(rs.getString(9),"char"+i+
+					"                                             ");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// varchar as string
+			System.out.println("  row "+i+" - varchar as string");
+			assertEquals(rs.getString(10),"varchar"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// blob as string
+			System.out.println("  row "+i+" - blob as string");
+			assertEquals(rs.getString(12),"blob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// blob as clob
+			System.out.println("  row "+i+" - blob as clob");
+			clob=rs.getClob(12);
+			assertEquals(clob.getSubString(1,(int)clob.length()),
+								"blob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// blob as bytes
+			System.out.println("  row "+i+" - blob as bytes");
+			assertEquals(new String(
+					rs.getBytes(12),"UTF-8"),
+					"blob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// blob as binary stream
+			System.out.println("  row "+i+" - blob as binary stream");
+			assertEquals(new String(rs.getBinaryStream(12).
+						readAllBytes(),"UTF-8"),
+						"blob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
 
 			// url
 			System.out.println("  row "+i+" - url");
@@ -1257,9 +1360,113 @@ class firebird extends sqlrtest {
 		System.out.println();
 		for (int i=1; i<=4; i++) {
 			assertTrue(rs.next());
-			System.out.println("  row "+i);
-			assertTrue(rs.getString("testinteger")!=null);
+
+			// integer as short
+			System.out.println("  row "+i+" - integer as short");
+			assertEquals(rs.getShort("TESTINTEGER"),(short)i);
 			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// integer as int
+			System.out.println("  row "+i+" - integer as int");
+			assertEquals(rs.getInt("TESTINTEGER"),i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// integer as long
+			System.out.println("  row "+i+" - integer as long");
+			assertEquals(rs.getLong("TESTINTEGER"),(long)i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// smallint
+			System.out.println("  row "+i+" - smallint");
+			assertEquals(rs.getInt("TESTSMALLINT"),i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// decimal
+			System.out.println("  row "+i+" - decimal");
+			assertEquals(rs.getString("TESTDECIMAL"),i+".10");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// numeric
+			System.out.println("  row "+i+" - numeric");
+			assertEquals(rs.getString("TESTNUMERIC"),i+".10");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// float
+			System.out.println("  row "+i+" - float");
+			assertTrue(rs.getString("TESTFLOAT")!=null);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// double
+			System.out.println("  row "+i+" - double");
+			assertTrue(rs.getString("TESTDOUBLE")!=null);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// date
+			System.out.println("  row "+i+" - date");
+			datevar=rs.getDate("TESTDATE");
+			cal.setTime(datevar);
+			assertEquals(cal.get(Calendar.YEAR),2000+i);
+			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
+			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// time
+			System.out.println("  row "+i+" - time");
+			assertEquals(rs.getString("TESTTIME"),"0"+i+":00:00");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// char as string
+			System.out.println("  row "+i+" - char as string");
+			assertEquals(rs.getString("TESTCHAR"),"char"+i+
+					"                                             ");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// varchar as string
+			System.out.println("  row "+i+" - varchar as string");
+			assertEquals(rs.getString("TESTVARCHAR"),"varchar"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// blob as string
+			System.out.println("  row "+i+" - blob as string");
+			assertEquals(rs.getString("TESTBLOB"),"blob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// blob as clob
+			System.out.println("  row "+i+" - blob as clob");
+			clob=rs.getClob("TESTBLOB");
+			assertEquals(clob.getSubString(1,(int)clob.length()),
+								"blob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// blob as bytes
+			System.out.println("  row "+i+" - blob as bytes");
+			assertEquals(new String(
+					rs.getBytes("TESTBLOB"),"UTF-8"),
+					"blob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// blob as binary stream
+			System.out.println("  row "+i+" - blob as binary stream");
+			assertEquals(new String(rs.getBinaryStream("TESTBLOB").
+						readAllBytes(),"UTF-8"),
+						"blob"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
 
 			// url
 			System.out.println("  row "+i+" - url");

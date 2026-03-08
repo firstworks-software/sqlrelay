@@ -1246,10 +1246,101 @@ class freetds extends sqlrtest {
 		System.out.println("FIELDS BY INDEX:");
 		for (int i=1; i<=4; i++) {
 			assertTrue(rs.next());
-			// check first column
-			System.out.println("  row "+i);
-			assertTrue(rs.getString(1)!=null);
+
+			// int as short
+			System.out.println("  row "+i+" - int as short");
+			assertEquals(rs.getShort(1),(short)i);
 			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// int as int
+			System.out.println("  row "+i+" - int as int");
+			assertEquals(rs.getInt(1),i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// int as long
+			System.out.println("  row "+i+" - int as long");
+			assertEquals(rs.getLong(1),(long)i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// smallint
+			System.out.println("  row "+i+" - smallint");
+			assertEquals(rs.getInt(2),i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// tinyint
+			System.out.println("  row "+i+" - tinyint");
+			assertEquals(rs.getShort(3),(short)i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// real
+			System.out.println("  row "+i+" - real");
+			assertTrue(rs.getString(4)!=null);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// float
+			System.out.println("  row "+i+" - float");
+			assertTrue(rs.getString(5)!=null);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// decimal
+			System.out.println("  row "+i+" - decimal");
+			assertEquals(rs.getString(6),i+".1");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// numeric
+			System.out.println("  row "+i+" - numeric");
+			assertEquals(rs.getString(7),i+".1");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// money
+			System.out.println("  row "+i+" - money");
+			assertEquals(rs.getString(8),i+".0000");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// smallmoney
+			System.out.println("  row "+i+" - smallmoney");
+			assertEquals(rs.getString(9),i+".0000");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// datetime
+			System.out.println("  row "+i+" - datetime");
+			tsvar=rs.getTimestamp(10);
+			cal.setTime(tsvar);
+			assertEquals(cal.get(Calendar.YEAR),2000+i);
+			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
+			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// char as string
+			System.out.println("  row "+i+" - char as string");
+			assertEquals(rs.getString(12),"char"+i+
+					"                                   ");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// varchar as string
+			System.out.println("  row "+i+" - varchar as string");
+			assertEquals(rs.getString(13),"varchar"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// bit
+			System.out.println("  row "+i+" - bit");
+			assertEquals(rs.getInt(14),1);
+			assertFalse(rs.wasNull());
+			System.out.println();
 
 			// url
 			System.out.println("  row "+i+" - url");
@@ -1279,9 +1370,101 @@ class freetds extends sqlrtest {
 		System.out.println();
 		for (int i=1; i<=4; i++) {
 			assertTrue(rs.next());
-			System.out.println("  row "+i);
-			assertTrue(rs.getString("testint")!=null);
+
+			// int as short
+			System.out.println("  row "+i+" - int as short");
+			assertEquals(rs.getShort("testint"),(short)i);
 			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// int as int
+			System.out.println("  row "+i+" - int as int");
+			assertEquals(rs.getInt("testint"),i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// int as long
+			System.out.println("  row "+i+" - int as long");
+			assertEquals(rs.getLong("testint"),(long)i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// smallint
+			System.out.println("  row "+i+" - smallint");
+			assertEquals(rs.getInt("testsmallint"),i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// tinyint
+			System.out.println("  row "+i+" - tinyint");
+			assertEquals(rs.getShort("testtinyint"),(short)i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// real
+			System.out.println("  row "+i+" - real");
+			assertTrue(rs.getString("testreal")!=null);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// float
+			System.out.println("  row "+i+" - float");
+			assertTrue(rs.getString("testfloat")!=null);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// decimal
+			System.out.println("  row "+i+" - decimal");
+			assertEquals(rs.getString("testdecimal"),i+".1");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// numeric
+			System.out.println("  row "+i+" - numeric");
+			assertEquals(rs.getString("testnumeric"),i+".1");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// money
+			System.out.println("  row "+i+" - money");
+			assertEquals(rs.getString("testmoney"),i+".0000");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// smallmoney
+			System.out.println("  row "+i+" - smallmoney");
+			assertEquals(rs.getString("testsmallmoney"),i+".0000");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// datetime
+			System.out.println("  row "+i+" - datetime");
+			tsvar=rs.getTimestamp("testdatetime");
+			cal.setTime(tsvar);
+			assertEquals(cal.get(Calendar.YEAR),2000+i);
+			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
+			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// char as string
+			System.out.println("  row "+i+" - char as string");
+			assertEquals(rs.getString("testchar"),"char"+i+
+					"                                   ");
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// varchar as string
+			System.out.println("  row "+i+" - varchar as string");
+			assertEquals(rs.getString("testvarchar"),"varchar"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// bit
+			System.out.println("  row "+i+" - bit");
+			assertEquals(rs.getInt("testbit"),1);
+			assertFalse(rs.wasNull());
+			System.out.println();
 
 			// url
 			System.out.println("  row "+i+" - url");
