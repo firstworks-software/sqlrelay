@@ -368,6 +368,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	private
 	int getDatabaseVersion(boolean major) {
 		drv.debugFunction(this);
+		// FIXME: handle versions like 120001 (12.0.1)
 		String	dbversion=null;
 		synchronized (networklock) {
 			dbversion=conn.getSQLRConnection().dbVersion();
