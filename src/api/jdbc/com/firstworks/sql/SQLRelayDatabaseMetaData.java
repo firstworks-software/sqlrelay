@@ -368,18 +368,48 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	private
 	int getDatabaseVersion(boolean major) {
 		drv.debugFunction(this);
-		// FIXME: handle versions like 120001 (12.0.1)
 		String	dbversion=null;
 		synchronized (networklock) {
 			dbversion=conn.getSQLRConnection().dbVersion();
 		}
+		if (dbversion==null) {
+			drv.debugEnd();
+			return -1;
+		}
+		if (dbversion.contains(".")) {
+			return getDotDelimitedDatabaseVersion(dbversion,major);
+		}
+		return getUnDelimitedDatabaseVersion(dbversion,major);
+	}
+
+	private
+	int getDotDelimitedDatabaseVersion(String dbversion, boolean major) {
+		drv.debugFunction(this);
 		Matcher	matcher=Pattern.compile("[0-9]*\\.[0-9]*").
 							matcher(dbversion);
 		if (matcher.find()) {
 			String[]	parts=matcher.group().split("\\.");
-			if (parts!=null && parts.length>((major)?0:1)) {
+			if (parts!=null &&
+				parts.length>((major)?0:1)) {
 				drv.debugEnd();
 				return Integer.parseInt(parts[(major)?0:1]);
+			}
+		}
+		drv.debugEnd();
+		return -1;
+	}
+
+	private
+	int getUnDelimitedDatabaseVersion(String dbversion, boolean major) {
+		drv.debugFunction(this);
+		if (dbversion.matches("^[0-9]+$")) {
+			int	ver=Integer.parseInt(dbversion);
+			if (major) {
+				drv.debugEnd();
+				return ver/10000;
+			} else {
+				drv.debugEnd();
+				return (ver/100)%100;
 			}
 		}
 		drv.debugEnd();

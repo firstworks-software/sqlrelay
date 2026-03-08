@@ -350,7 +350,13 @@ class postgresql extends sqlrtest {
 		System.out.println("  getMaxConnections");
 		intval=md.getMaxConnections();
 		System.out.println("    "+intval);
-		assertEquals(intval,8192);
+		if (issqlrelay) {
+			// varies by sqlrelay config
+			assertTrue(intval>0);
+		} else {
+			// postgresql jdbc returns 8192 for this
+			assertEquals(intval,8192);
+		}
 		System.out.println();
 
 		// getMaxCursorNameLength
@@ -1371,18 +1377,34 @@ class postgresql extends sqlrtest {
 
 			// bytea as bytes
 			System.out.println("  row "+i+" - bytea as bytes");
-			assertEquals(new String(
+			if (issqlrelay) {
+				assertEquals(new String(
+					rs.getBytes(11),"UTF-8"),
+					"\\x6279746561"+
+					Integer.toHexString(48+i));
+			} else {
+				assertEquals(new String(
 					rs.getBytes(11),"UTF-8"),
 					"bytea"+i);
+			}
 			assertFalse(rs.wasNull());
 			System.out.println();
 
 			// bytea as binary stream
 			System.out.println("  row "+i+
 						" - bytea as binary stream");
-			assertEquals(new String(rs.getBinaryStream(11).
-						readAllBytes(),"UTF-8"),
-						"bytea"+i);
+			if (issqlrelay) {
+				assertEquals(new String(
+					rs.getBinaryStream(11).
+					readAllBytes(),"UTF-8"),
+					"\\x6279746561"+
+					Integer.toHexString(48+i));
+			} else {
+				assertEquals(new String(
+					rs.getBinaryStream(11).
+					readAllBytes(),"UTF-8"),
+					"bytea"+i);
+			}
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -1520,18 +1542,34 @@ class postgresql extends sqlrtest {
 
 			// bytea as bytes
 			System.out.println("  row "+i+" - bytea as bytes");
-			assertEquals(new String(
+			if (issqlrelay) {
+				assertEquals(new String(
+					rs.getBytes("testbytea"),"UTF-8"),
+					"\\x6279746561"+
+					Integer.toHexString(48+i));
+			} else {
+				assertEquals(new String(
 					rs.getBytes("testbytea"),"UTF-8"),
 					"bytea"+i);
+			}
 			assertFalse(rs.wasNull());
 			System.out.println();
 
 			// bytea as binary stream
 			System.out.println("  row "+i
 						+" - bytea as binary stream");
-			assertEquals(new String(rs.getBinaryStream("testbytea").
-						readAllBytes(),"UTF-8"),
-						"bytea"+i);
+			if (issqlrelay) {
+				assertEquals(new String(
+					rs.getBinaryStream("testbytea").
+					readAllBytes(),"UTF-8"),
+					"\\x6279746561"+
+					Integer.toHexString(48+i));
+			} else {
+				assertEquals(new String(
+					rs.getBinaryStream("testbytea").
+					readAllBytes(),"UTF-8"),
+					"bytea"+i);
+			}
 			assertFalse(rs.wasNull());
 			System.out.println();
 

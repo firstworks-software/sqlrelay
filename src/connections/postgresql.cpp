@@ -2279,7 +2279,7 @@ const char * const *postgresqlconnection::getDatabaseFeatures() {
 		charstring::duplicate("function");
 
 	databasefeatures[FEATURE_QUOTED_IDENTIFIER_CASE_STORAGE]=
-		charstring::duplicate("MIXED");
+		charstring::duplicate("");
 
 	databasefeatures[FEATURE_RELATIONAL_JOIN_OPERATORS]=
 		charstring::duplicate("");
