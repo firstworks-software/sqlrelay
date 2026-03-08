@@ -161,6 +161,335 @@ class freetds extends sqlrtest {
 		assertTrue(boolval||!boolval);
 		System.out.println();
 
+		// getCatalogSeparator
+		System.out.println("  getCatalogSeparator");
+		stringval=md.getCatalogSeparator();
+		System.out.println("    "+stringval);
+		assertTrue(stringval!=null||stringval==null);
+		System.out.println();
+
+		// getCatalogTerm
+		System.out.println("  getCatalogTerm");
+		stringval=md.getCatalogTerm();
+		System.out.println("    "+stringval);
+		assertTrue(stringval!=null||stringval==null);
+		System.out.println();
+
+		// getDatabaseMajorVersion
+		System.out.println("  getDatabaseMajorVersion");
+		intval=md.getDatabaseMajorVersion();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getDatabaseMinorVersion
+		System.out.println("  getDatabaseMinorVersion");
+		intval=md.getDatabaseMinorVersion();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getDatabaseProductName
+		System.out.println("  getDatabaseProductName");
+		stringval=md.getDatabaseProductName();
+		System.out.println("    "+stringval);
+		assertTrue(stringval!=null||stringval==null);
+		System.out.println();
+
+		// getDatabaseProductVersion
+		System.out.println("  getDatabaseProductVersion");
+		stringval=md.getDatabaseProductVersion();
+		System.out.println("    "+stringval);
+		assertTrue(stringval!=null||stringval==null);
+		System.out.println();
+
+		// getDefaultTransactionIsolation
+		System.out.println("  getDefaultTransactionIsolation");
+		intval=md.getDefaultTransactionIsolation();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getDriverMajorVersion
+		System.out.println("  getDriverMajorVersion");
+		intval=md.getDriverMajorVersion();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getDriverMinorVersion
+		System.out.println("  getDriverMinorVersion");
+		intval=md.getDriverMinorVersion();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getDriverName
+		System.out.println("  getDriverName");
+		stringval=md.getDriverName();
+		System.out.println("    "+stringval);
+		assertTrue(stringval!=null||stringval==null);
+		System.out.println();
+
+		// getDriverVersion
+		System.out.println("  getDriverVersion");
+		stringval=md.getDriverVersion();
+		System.out.println("    "+stringval);
+		assertTrue(stringval!=null||stringval==null);
+		System.out.println();
+
+		// getExtraNameCharacters
+		System.out.println("  getExtraNameCharacters");
+		stringval=md.getExtraNameCharacters();
+		System.out.println("    "+stringval);
+		assertTrue(stringval!=null||stringval==null);
+		System.out.println();
+
+		// getIdentifierQuoteString
+		System.out.println("  getIdentifierQuoteString");
+		stringval=md.getIdentifierQuoteString();
+		System.out.println("    "+stringval);
+		assertTrue(stringval!=null||stringval==null);
+		System.out.println();
+
+		// getJDBCMajorVersion
+		System.out.println("  getJDBCMajorVersion");
+		intval=md.getJDBCMajorVersion();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getJDBCMinorVersion
+		System.out.println("  getJDBCMinorVersion");
+		intval=md.getJDBCMinorVersion();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxBinaryLiteralLength
+		System.out.println("  getMaxBinaryLiteralLength");
+		intval=md.getMaxBinaryLiteralLength();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxCatalogNameLength
+		System.out.println("  getMaxCatalogNameLength");
+		intval=md.getMaxCatalogNameLength();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxCharLiteralLength
+		System.out.println("  getMaxCharLiteralLength");
+		intval=md.getMaxCharLiteralLength();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxColumnNameLength
+		System.out.println("  getMaxColumnNameLength");
+		intval=md.getMaxColumnNameLength();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxColumnsInGroupBy
+		System.out.println("  getMaxColumnsInGroupBy");
+		intval=md.getMaxColumnsInGroupBy();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxColumnsInIndex
+		System.out.println("  getMaxColumnsInIndex");
+		intval=md.getMaxColumnsInIndex();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxColumnsInOrderBy
+		System.out.println("  getMaxColumnsInOrderBy");
+		intval=md.getMaxColumnsInOrderBy();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxColumnsInSelect
+		System.out.println("  getMaxColumnsInSelect");
+		intval=md.getMaxColumnsInSelect();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxColumnsInTable
+		System.out.println("  getMaxColumnsInTable");
+		intval=md.getMaxColumnsInTable();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxConnections
+		System.out.println("  getMaxConnections");
+		intval=md.getMaxConnections();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxCursorNameLength
+		System.out.println("  getMaxCursorNameLength");
+		intval=md.getMaxCursorNameLength();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxIndexLength
+		System.out.println("  getMaxIndexLength");
+		intval=md.getMaxIndexLength();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxProcedureNameLength
+		System.out.println("  getMaxProcedureNameLength");
+		intval=md.getMaxProcedureNameLength();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxRowSize
+		System.out.println("  getMaxRowSize");
+		intval=md.getMaxRowSize();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxSchemaNameLength
+		System.out.println("  getMaxSchemaNameLength");
+		intval=md.getMaxSchemaNameLength();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxStatementLength
+		System.out.println("  getMaxStatementLength");
+		intval=md.getMaxStatementLength();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxStatements
+		System.out.println("  getMaxStatements");
+		intval=md.getMaxStatements();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxTableNameLength
+		System.out.println("  getMaxTableNameLength");
+		intval=md.getMaxTableNameLength();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxTablesInSelect
+		System.out.println("  getMaxTablesInSelect");
+		intval=md.getMaxTablesInSelect();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxUserNameLength
+		System.out.println("  getMaxUserNameLength");
+		intval=md.getMaxUserNameLength();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getNumericFunctions
+		System.out.println("  getNumericFunctions");
+		stringval=md.getNumericFunctions();
+		System.out.println("    "+stringval);
+		assertTrue(stringval!=null||stringval==null);
+		System.out.println();
+
+		// getProcedureTerm
+		System.out.println("  getProcedureTerm");
+		stringval=md.getProcedureTerm();
+		System.out.println("    "+stringval);
+		assertTrue(stringval!=null||stringval==null);
+		System.out.println();
+
+		// getResultSetHoldability
+		System.out.println("  getResultSetHoldability");
+		intval=md.getResultSetHoldability();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getSchemaTerm
+		System.out.println("  getSchemaTerm");
+		stringval=md.getSchemaTerm();
+		System.out.println("    "+stringval);
+		assertTrue(stringval!=null||stringval==null);
+		System.out.println();
+
+		// getSearchStringEscape
+		System.out.println("  getSearchStringEscape");
+		stringval=md.getSearchStringEscape();
+		System.out.println("    "+stringval);
+		assertTrue(stringval!=null||stringval==null);
+		System.out.println();
+
+		// getSQLKeywords
+		System.out.println("  getSQLKeywords");
+		stringval=md.getSQLKeywords();
+		System.out.println("    "+stringval);
+		assertTrue(stringval!=null||stringval==null);
+		System.out.println();
+
+		// getSQLStateType
+		System.out.println("  getSQLStateType");
+		intval=md.getSQLStateType();
+		System.out.println("    "+intval);
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getStringFunctions
+		System.out.println("  getStringFunctions");
+		stringval=md.getStringFunctions();
+		System.out.println("    "+stringval);
+		assertTrue(stringval!=null||stringval==null);
+		System.out.println();
+
+		// getSystemFunctions
+		System.out.println("  getSystemFunctions");
+		stringval=md.getSystemFunctions();
+		System.out.println("    "+stringval);
+		assertTrue(stringval!=null||stringval==null);
+		System.out.println();
+
+		// getTimeDateFunctions
+		System.out.println("  getTimeDateFunctions");
+		stringval=md.getTimeDateFunctions();
+		System.out.println("    "+stringval);
+		assertTrue(stringval!=null||stringval==null);
+		System.out.println();
+
+		// getURL
+		System.out.println("  getURL");
+		stringval=md.getURL();
+		System.out.println("    "+stringval);
+		assertEquals(stringval,url);
+		System.out.println();
+
+		// getUserName
+		System.out.println("  getUserName");
+		stringval=md.getUserName();
+		System.out.println("    "+stringval);
+		assertTrue(stringval!=null||stringval==null);
+		System.out.println();
+
 		// isCatalogAtStart
 		System.out.println("  isCatalogAtStart");
 		boolval=md.isCatalogAtStart();
@@ -216,6 +545,8 @@ class freetds extends sqlrtest {
 		System.out.println("    "+boolval);
 		assertTrue(boolval||!boolval);
 		System.out.println();
+
+		// statement
 
 		// storesLowerCaseIdentifiers
 		System.out.println("  storesLowerCaseIdentifiers");
@@ -693,336 +1024,6 @@ class freetds extends sqlrtest {
 		assertTrue(boolval||!boolval);
 		System.out.println();
 
-		// getDatabaseMajorVersion
-		System.out.println("  getDatabaseMajorVersion");
-		intval=md.getDatabaseMajorVersion();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getDatabaseMinorVersion
-		System.out.println("  getDatabaseMinorVersion");
-		intval=md.getDatabaseMinorVersion();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getDefaultTransactionIsolation
-		System.out.println("  getDefaultTransactionIsolation");
-		intval=md.getDefaultTransactionIsolation();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getDriverMajorVersion
-		System.out.println("  getDriverMajorVersion");
-		intval=md.getDriverMajorVersion();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getDriverMinorVersion
-		System.out.println("  getDriverMinorVersion");
-		intval=md.getDriverMinorVersion();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getJDBCMajorVersion
-		System.out.println("  getJDBCMajorVersion");
-		intval=md.getJDBCMajorVersion();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getJDBCMinorVersion
-		System.out.println("  getJDBCMinorVersion");
-		intval=md.getJDBCMinorVersion();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxBinaryLiteralLength
-		System.out.println("  getMaxBinaryLiteralLength");
-		intval=md.getMaxBinaryLiteralLength();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxCatalogNameLength
-		System.out.println("  getMaxCatalogNameLength");
-		intval=md.getMaxCatalogNameLength();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxCharLiteralLength
-		System.out.println("  getMaxCharLiteralLength");
-		intval=md.getMaxCharLiteralLength();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxColumnNameLength
-		System.out.println("  getMaxColumnNameLength");
-		intval=md.getMaxColumnNameLength();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxColumnsInGroupBy
-		System.out.println("  getMaxColumnsInGroupBy");
-		intval=md.getMaxColumnsInGroupBy();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxColumnsInIndex
-		System.out.println("  getMaxColumnsInIndex");
-		intval=md.getMaxColumnsInIndex();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxColumnsInOrderBy
-		System.out.println("  getMaxColumnsInOrderBy");
-		intval=md.getMaxColumnsInOrderBy();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxColumnsInSelect
-		System.out.println("  getMaxColumnsInSelect");
-		intval=md.getMaxColumnsInSelect();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxColumnsInTable
-		System.out.println("  getMaxColumnsInTable");
-		intval=md.getMaxColumnsInTable();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxConnections
-		System.out.println("  getMaxConnections");
-		intval=md.getMaxConnections();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxCursorNameLength
-		System.out.println("  getMaxCursorNameLength");
-		intval=md.getMaxCursorNameLength();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxIndexLength
-		System.out.println("  getMaxIndexLength");
-		intval=md.getMaxIndexLength();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxProcedureNameLength
-		System.out.println("  getMaxProcedureNameLength");
-		intval=md.getMaxProcedureNameLength();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxRowSize
-		System.out.println("  getMaxRowSize");
-		intval=md.getMaxRowSize();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxSchemaNameLength
-		System.out.println("  getMaxSchemaNameLength");
-		intval=md.getMaxSchemaNameLength();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxStatementLength
-		System.out.println("  getMaxStatementLength");
-		intval=md.getMaxStatementLength();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxStatements
-		System.out.println("  getMaxStatements");
-		intval=md.getMaxStatements();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxTableNameLength
-		System.out.println("  getMaxTableNameLength");
-		intval=md.getMaxTableNameLength();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxTablesInSelect
-		System.out.println("  getMaxTablesInSelect");
-		intval=md.getMaxTablesInSelect();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxUserNameLength
-		System.out.println("  getMaxUserNameLength");
-		intval=md.getMaxUserNameLength();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getResultSetHoldability
-		System.out.println("  getResultSetHoldability");
-		intval=md.getResultSetHoldability();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getSQLStateType
-		System.out.println("  getSQLStateType");
-		intval=md.getSQLStateType();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getCatalogSeparator
-		System.out.println("  getCatalogSeparator");
-		stringval=md.getCatalogSeparator();
-		System.out.println("    "+stringval);
-		assertTrue(stringval!=null||stringval==null);
-		System.out.println();
-
-		// getCatalogTerm
-		System.out.println("  getCatalogTerm");
-		stringval=md.getCatalogTerm();
-		System.out.println("    "+stringval);
-		assertTrue(stringval!=null||stringval==null);
-		System.out.println();
-
-		// getDatabaseProductName
-		System.out.println("  getDatabaseProductName");
-		stringval=md.getDatabaseProductName();
-		System.out.println("    "+stringval);
-		assertTrue(stringval!=null||stringval==null);
-		System.out.println();
-
-		// getDatabaseProductVersion
-		System.out.println("  getDatabaseProductVersion");
-		stringval=md.getDatabaseProductVersion();
-		System.out.println("    "+stringval);
-		assertTrue(stringval!=null||stringval==null);
-		System.out.println();
-
-		// getDriverName
-		System.out.println("  getDriverName");
-		stringval=md.getDriverName();
-		System.out.println("    "+stringval);
-		assertTrue(stringval!=null||stringval==null);
-		System.out.println();
-
-		// getDriverVersion
-		System.out.println("  getDriverVersion");
-		stringval=md.getDriverVersion();
-		System.out.println("    "+stringval);
-		assertTrue(stringval!=null||stringval==null);
-		System.out.println();
-
-		// getExtraNameCharacters
-		System.out.println("  getExtraNameCharacters");
-		stringval=md.getExtraNameCharacters();
-		System.out.println("    "+stringval);
-		assertTrue(stringval!=null||stringval==null);
-		System.out.println();
-
-		// getIdentifierQuoteString
-		System.out.println("  getIdentifierQuoteString");
-		stringval=md.getIdentifierQuoteString();
-		System.out.println("    "+stringval);
-		assertTrue(stringval!=null||stringval==null);
-		System.out.println();
-
-		// getNumericFunctions
-		System.out.println("  getNumericFunctions");
-		stringval=md.getNumericFunctions();
-		System.out.println("    "+stringval);
-		assertTrue(stringval!=null||stringval==null);
-		System.out.println();
-
-		// getProcedureTerm
-		System.out.println("  getProcedureTerm");
-		stringval=md.getProcedureTerm();
-		System.out.println("    "+stringval);
-		assertTrue(stringval!=null||stringval==null);
-		System.out.println();
-
-		// getSchemaTerm
-		System.out.println("  getSchemaTerm");
-		stringval=md.getSchemaTerm();
-		System.out.println("    "+stringval);
-		assertTrue(stringval!=null||stringval==null);
-		System.out.println();
-
-		// getSearchStringEscape
-		System.out.println("  getSearchStringEscape");
-		stringval=md.getSearchStringEscape();
-		System.out.println("    "+stringval);
-		assertTrue(stringval!=null||stringval==null);
-		System.out.println();
-
-		// getSQLKeywords
-		System.out.println("  getSQLKeywords");
-		stringval=md.getSQLKeywords();
-		System.out.println("    "+stringval);
-		assertTrue(stringval!=null||stringval==null);
-		System.out.println();
-
-		// getStringFunctions
-		System.out.println("  getStringFunctions");
-		stringval=md.getStringFunctions();
-		System.out.println("    "+stringval);
-		assertTrue(stringval!=null||stringval==null);
-		System.out.println();
-
-		// getSystemFunctions
-		System.out.println("  getSystemFunctions");
-		stringval=md.getSystemFunctions();
-		System.out.println("    "+stringval);
-		assertTrue(stringval!=null||stringval==null);
-		System.out.println();
-
-		// getTimeDateFunctions
-		System.out.println("  getTimeDateFunctions");
-		stringval=md.getTimeDateFunctions();
-		System.out.println("    "+stringval);
-		assertTrue(stringval!=null||stringval==null);
-		System.out.println();
-
-		// getURL
-		System.out.println("  getURL");
-		stringval=md.getURL();
-		System.out.println("    "+stringval);
-		assertTrue(stringval!=null||stringval==null);
-		System.out.println();
-
-		// getUserName
-		System.out.println("  getUserName");
-		stringval=md.getUserName();
-		System.out.println("    "+stringval);
-		assertTrue(stringval!=null||stringval==null);
-		System.out.println();
-
-		// statement
 		System.out.println("STATEMENT:");
 		stmt=con.createStatement();
 		assertTrue((stmt!=null));

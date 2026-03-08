@@ -161,6 +161,352 @@ class postgresql extends sqlrtest {
 		assertTrue(boolval);
 		System.out.println();
 
+		// getCatalogSeparator
+		System.out.println("  getCatalogSeparator");
+		stringval=md.getCatalogSeparator();
+		System.out.println("    "+stringval);
+		assertEquals(stringval,".");
+		System.out.println();
+
+		// getCatalogTerm
+		System.out.println("  getCatalogTerm");
+		stringval=md.getCatalogTerm();
+		System.out.println("    "+stringval);
+		assertEquals(stringval,"database");
+		System.out.println();
+
+		// getDatabaseMajorVersion
+		System.out.println("  getDatabaseMajorVersion");
+		intval=md.getDatabaseMajorVersion();
+		System.out.println("    "+intval);
+		// varies by server installation
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getDatabaseMinorVersion
+		System.out.println("  getDatabaseMinorVersion");
+		intval=md.getDatabaseMinorVersion();
+		System.out.println("    "+intval);
+		// varies by server installation
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getDatabaseProductName
+		System.out.println("  getDatabaseProductName");
+		stringval=md.getDatabaseProductName();
+		System.out.println("    "+stringval);
+		if (issqlrelay) {
+			assertEquals(stringval,"postgresql");
+		} else {
+			assertEquals(stringval,"PostgreSQL");
+		}
+		System.out.println();
+
+		// getDatabaseProductVersion
+		System.out.println("  getDatabaseProductVersion");
+		stringval=md.getDatabaseProductVersion();
+		System.out.println("    "+stringval);
+		// varies by server installation
+		assertTrue(stringval!=null);
+		System.out.println();
+
+		// getDefaultTransactionIsolation
+		System.out.println("  getDefaultTransactionIsolation");
+		intval=md.getDefaultTransactionIsolation();
+		System.out.println("    "+intval);
+		assertEquals(intval,2);
+		System.out.println();
+
+		// getDriverMajorVersion
+		System.out.println("  getDriverMajorVersion");
+		intval=md.getDriverMajorVersion();
+		System.out.println("    "+intval);
+		// varies by driver jar version
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getDriverMinorVersion
+		System.out.println("  getDriverMinorVersion");
+		intval=md.getDriverMinorVersion();
+		System.out.println("    "+intval);
+		// varies by driver jar version
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getDriverName
+		System.out.println("  getDriverName");
+		stringval=md.getDriverName();
+		System.out.println("    "+stringval);
+		if (issqlrelay) {
+			assertEquals(stringval,"SQL Relay JDBC driver");
+		} else {
+			// varies by driver jar version
+			assertTrue(stringval!=null);
+		}
+		System.out.println();
+
+		// getDriverVersion
+		System.out.println("  getDriverVersion");
+		stringval=md.getDriverVersion();
+		System.out.println("    "+stringval);
+		// not null and only contains numbers and dots
+		assertTrue(stringval!=null && stringval.matches("[0-9.]+$"));
+		System.out.println();
+
+		// getExtraNameCharacters
+		System.out.println("  getExtraNameCharacters");
+		stringval=md.getExtraNameCharacters();
+		System.out.println("    "+stringval);
+		assertEquals(stringval,"");
+		System.out.println();
+
+		// getIdentifierQuoteString
+		System.out.println("  getIdentifierQuoteString");
+		stringval=md.getIdentifierQuoteString();
+		System.out.println("    "+stringval);
+		assertEquals(stringval,"\"");
+		System.out.println();
+
+		// getJDBCMajorVersion
+		System.out.println("  getJDBCMajorVersion");
+		intval=md.getJDBCMajorVersion();
+		System.out.println("    "+intval);
+		// varies by driver version
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getJDBCMinorVersion
+		System.out.println("  getJDBCMinorVersion");
+		intval=md.getJDBCMinorVersion();
+		System.out.println("    "+intval);
+		// varies by driver version
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxBinaryLiteralLength
+		System.out.println("  getMaxBinaryLiteralLength");
+		intval=md.getMaxBinaryLiteralLength();
+		System.out.println("    "+intval);
+		assertEquals(intval,0);
+		System.out.println();
+
+		// getMaxCatalogNameLength
+		System.out.println("  getMaxCatalogNameLength");
+		intval=md.getMaxCatalogNameLength();
+		System.out.println("    "+intval);
+		assertEquals(intval,63);
+		System.out.println();
+
+		// getMaxCharLiteralLength
+		System.out.println("  getMaxCharLiteralLength");
+		intval=md.getMaxCharLiteralLength();
+		System.out.println("    "+intval);
+		assertEquals(intval,0);
+		System.out.println();
+
+		// getMaxColumnNameLength
+		System.out.println("  getMaxColumnNameLength");
+		intval=md.getMaxColumnNameLength();
+		System.out.println("    "+intval);
+		assertEquals(intval,63);
+		System.out.println();
+
+		// getMaxColumnsInGroupBy
+		System.out.println("  getMaxColumnsInGroupBy");
+		intval=md.getMaxColumnsInGroupBy();
+		System.out.println("    "+intval);
+		assertEquals(intval,0);
+		System.out.println();
+
+		// getMaxColumnsInIndex
+		System.out.println("  getMaxColumnsInIndex");
+		intval=md.getMaxColumnsInIndex();
+		System.out.println("    "+intval);
+		assertEquals(intval,32);
+		System.out.println();
+
+		// getMaxColumnsInOrderBy
+		System.out.println("  getMaxColumnsInOrderBy");
+		intval=md.getMaxColumnsInOrderBy();
+		System.out.println("    "+intval);
+		assertEquals(intval,0);
+		System.out.println();
+
+		// getMaxColumnsInSelect
+		System.out.println("  getMaxColumnsInSelect");
+		intval=md.getMaxColumnsInSelect();
+		System.out.println("    "+intval);
+		assertEquals(intval,0);
+		System.out.println();
+
+		// getMaxColumnsInTable
+		System.out.println("  getMaxColumnsInTable");
+		intval=md.getMaxColumnsInTable();
+		System.out.println("    "+intval);
+		assertEquals(intval,1600);
+		System.out.println();
+
+		// getMaxConnections
+		System.out.println("  getMaxConnections");
+		intval=md.getMaxConnections();
+		System.out.println("    "+intval);
+		assertEquals(intval,8192);
+		System.out.println();
+
+		// getMaxCursorNameLength
+		System.out.println("  getMaxCursorNameLength");
+		intval=md.getMaxCursorNameLength();
+		System.out.println("    "+intval);
+		assertEquals(intval,63);
+		System.out.println();
+
+		// getMaxIndexLength
+		System.out.println("  getMaxIndexLength");
+		intval=md.getMaxIndexLength();
+		System.out.println("    "+intval);
+		assertEquals(intval,0);
+		System.out.println();
+
+		// getMaxProcedureNameLength
+		System.out.println("  getMaxProcedureNameLength");
+		intval=md.getMaxProcedureNameLength();
+		System.out.println("    "+intval);
+		assertEquals(intval,63);
+		System.out.println();
+
+		// getMaxRowSize
+		System.out.println("  getMaxRowSize");
+		intval=md.getMaxRowSize();
+		System.out.println("    "+intval);
+		assertEquals(intval,1073741824);
+		System.out.println();
+
+		// getMaxSchemaNameLength
+		System.out.println("  getMaxSchemaNameLength");
+		intval=md.getMaxSchemaNameLength();
+		System.out.println("    "+intval);
+		assertEquals(intval,63);
+		System.out.println();
+
+		// getMaxStatementLength
+		System.out.println("  getMaxStatementLength");
+		intval=md.getMaxStatementLength();
+		System.out.println("    "+intval);
+		assertEquals(intval,0);
+		System.out.println();
+
+		// getMaxStatements
+		System.out.println("  getMaxStatements");
+		intval=md.getMaxStatements();
+		System.out.println("    "+intval);
+		assertEquals(intval,0);
+		System.out.println();
+
+		// getMaxTableNameLength
+		System.out.println("  getMaxTableNameLength");
+		intval=md.getMaxTableNameLength();
+		System.out.println("    "+intval);
+		assertEquals(intval,63);
+		System.out.println();
+
+		// getMaxTablesInSelect
+		System.out.println("  getMaxTablesInSelect");
+		intval=md.getMaxTablesInSelect();
+		System.out.println("    "+intval);
+		assertEquals(intval,0);
+		System.out.println();
+
+		// getMaxUserNameLength
+		System.out.println("  getMaxUserNameLength");
+		intval=md.getMaxUserNameLength();
+		System.out.println("    "+intval);
+		assertEquals(intval,63);
+		System.out.println();
+
+		// getNumericFunctions
+		System.out.println("  getNumericFunctions");
+		stringval=md.getNumericFunctions();
+		System.out.println("    "+stringval);
+		assertEquals(stringval,"abs,acos,asin,atan,atan2,ceiling,cos,cot,degrees,exp,floor,log,log10,mod,pi,power,radians,round,sign,sin,sqrt,tan,truncate");
+		System.out.println();
+
+		// getProcedureTerm
+		System.out.println("  getProcedureTerm");
+		stringval=md.getProcedureTerm();
+		System.out.println("    "+stringval);
+		assertEquals(stringval,"function");
+		System.out.println();
+
+		// getResultSetHoldability
+		System.out.println("  getResultSetHoldability");
+		intval=md.getResultSetHoldability();
+		System.out.println("    "+intval);
+		assertEquals(intval,1);
+		System.out.println();
+
+		// getSchemaTerm
+		System.out.println("  getSchemaTerm");
+		stringval=md.getSchemaTerm();
+		System.out.println("    "+stringval);
+		assertEquals(stringval,"schema");
+		System.out.println();
+
+		// getSearchStringEscape
+		System.out.println("  getSearchStringEscape");
+		stringval=md.getSearchStringEscape();
+		System.out.println("    "+stringval);
+		assertEquals(stringval,"\\");
+		System.out.println();
+
+		// getSQLKeywords
+		System.out.println("  getSQLKeywords");
+		stringval=md.getSQLKeywords();
+		System.out.println("    "+stringval);
+		assertEquals(stringval,"abort,access,aggregate,also,analyse,analyze,attach,backward,bit,cache,checkpoint,class,cluster,columns,comment,comments,concurrently,configuration,conflict,connection,content,conversion,copy,cost,csv,current_catalog,current_schema,database,delimiter,delimiters,depends,detach,dictionary,disable,discard,do,document,enable,encoding,encrypted,enum,event,exclusive,explain,extension,family,force,forward,freeze,functions,generated,greatest,groups,handler,header,if,ilike,immutable,implicit,import,include,index,indexes,inherit,inherits,inline,instead,isnull,label,leakproof,least,limit,listen,load,location,lock,locked,logged,mapping,materialized,mode,move,nothing,notify,notnull,nowait,off,offset,oids,operator,owned,owner,parallel,parser,passing,password,plans,policy,prepared,procedural,procedures,program,publication,quote,reassign,recheck,refresh,reindex,rename,replace,replica,reset,restrict,returning,routines,rule,schemas,sequences,server,setof,share,show,skip,snapshot,stable,standalone,statistics,stdin,stdout,storage,stored,strict,strip,subscription,support,sysid,tables,tablespace,temp,template,text,truncate,trusted,types,unencrypted,unlisten,unlogged,until,vacuum,valid,validate,validator,variadic,verbose,version,views,volatile,whitespace,wrapper,xml,xmlattributes,xmlconcat,xmlelement,xmlexists,xmlforest,xmlnamespaces,xmlparse,xmlpi,xmlroot,xmlserialize,xmltable,yes");
+		System.out.println();
+
+		// getSQLStateType
+		System.out.println("  getSQLStateType");
+		intval=md.getSQLStateType();
+		System.out.println("    "+intval);
+		assertEquals(intval,2);
+		System.out.println();
+
+		// getStringFunctions
+		System.out.println("  getStringFunctions");
+		stringval=md.getStringFunctions();
+		System.out.println("    "+stringval);
+		assertEquals(stringval,"ascii,char,concat,lcase,left,length,ltrim,repeat,rtrim,space,substring,ucase,replace");
+		System.out.println();
+
+		// getSystemFunctions
+		System.out.println("  getSystemFunctions");
+		stringval=md.getSystemFunctions();
+		System.out.println("    "+stringval);
+		assertEquals(stringval,"database,ifnull,user");
+		System.out.println();
+
+		// getTimeDateFunctions
+		System.out.println("  getTimeDateFunctions");
+		stringval=md.getTimeDateFunctions();
+		System.out.println("    "+stringval);
+		assertEquals(stringval,"curdate,curtime,dayname,dayofmonth,dayofweek,dayofyear,hour,minute,month,monthname,now,quarter,second,week,year,timestampadd");
+		System.out.println();
+
+		// getURL
+		System.out.println("  getURL");
+		stringval=md.getURL();
+		System.out.println("    "+stringval);
+		assertEquals(stringval,url);
+		System.out.println();
+
+		// getUserName
+		System.out.println("  getUserName");
+		stringval=md.getUserName();
+		System.out.println("    "+stringval);
+		assertEquals(stringval,user);
+		System.out.println();
+
 		// isCatalogAtStart
 		System.out.println("  isCatalogAtStart");
 		boolval=md.isCatalogAtStart();
@@ -216,6 +562,8 @@ class postgresql extends sqlrtest {
 		System.out.println("    "+boolval);
 		assertFalse(boolval);
 		System.out.println();
+
+		// statement
 
 		// storesLowerCaseIdentifiers
 		System.out.println("  storesLowerCaseIdentifiers");
@@ -698,340 +1046,6 @@ class postgresql extends sqlrtest {
 		assertFalse(boolval);
 		System.out.println();
 
-		// getDatabaseMajorVersion
-		System.out.println("  getDatabaseMajorVersion");
-		intval=md.getDatabaseMajorVersion();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getDatabaseMinorVersion
-		System.out.println("  getDatabaseMinorVersion");
-		intval=md.getDatabaseMinorVersion();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getDefaultTransactionIsolation
-		System.out.println("  getDefaultTransactionIsolation");
-		intval=md.getDefaultTransactionIsolation();
-		System.out.println("    "+intval);
-		assertEquals(intval,2);
-		System.out.println();
-
-		// getDriverMajorVersion
-		System.out.println("  getDriverMajorVersion");
-		intval=md.getDriverMajorVersion();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getDriverMinorVersion
-		System.out.println("  getDriverMinorVersion");
-		intval=md.getDriverMinorVersion();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getJDBCMajorVersion
-		System.out.println("  getJDBCMajorVersion");
-		intval=md.getJDBCMajorVersion();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getJDBCMinorVersion
-		System.out.println("  getJDBCMinorVersion");
-		intval=md.getJDBCMinorVersion();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxBinaryLiteralLength
-		System.out.println("  getMaxBinaryLiteralLength");
-		intval=md.getMaxBinaryLiteralLength();
-		System.out.println("    "+intval);
-		assertEquals(intval,0);
-		System.out.println();
-
-		// getMaxCatalogNameLength
-		System.out.println("  getMaxCatalogNameLength");
-		intval=md.getMaxCatalogNameLength();
-		System.out.println("    "+intval);
-		assertEquals(intval,63);
-		System.out.println();
-
-		// getMaxCharLiteralLength
-		System.out.println("  getMaxCharLiteralLength");
-		intval=md.getMaxCharLiteralLength();
-		System.out.println("    "+intval);
-		assertEquals(intval,0);
-		System.out.println();
-
-		// getMaxColumnNameLength
-		System.out.println("  getMaxColumnNameLength");
-		intval=md.getMaxColumnNameLength();
-		System.out.println("    "+intval);
-		assertEquals(intval,63);
-		System.out.println();
-
-		// getMaxColumnsInGroupBy
-		System.out.println("  getMaxColumnsInGroupBy");
-		intval=md.getMaxColumnsInGroupBy();
-		System.out.println("    "+intval);
-		assertEquals(intval,0);
-		System.out.println();
-
-		// getMaxColumnsInIndex
-		System.out.println("  getMaxColumnsInIndex");
-		intval=md.getMaxColumnsInIndex();
-		System.out.println("    "+intval);
-		assertEquals(intval,32);
-		System.out.println();
-
-		// getMaxColumnsInOrderBy
-		System.out.println("  getMaxColumnsInOrderBy");
-		intval=md.getMaxColumnsInOrderBy();
-		System.out.println("    "+intval);
-		assertEquals(intval,0);
-		System.out.println();
-
-		// getMaxColumnsInSelect
-		System.out.println("  getMaxColumnsInSelect");
-		intval=md.getMaxColumnsInSelect();
-		System.out.println("    "+intval);
-		assertEquals(intval,0);
-		System.out.println();
-
-		// getMaxColumnsInTable
-		System.out.println("  getMaxColumnsInTable");
-		intval=md.getMaxColumnsInTable();
-		System.out.println("    "+intval);
-		assertEquals(intval,1600);
-		System.out.println();
-
-		// getMaxConnections
-		System.out.println("  getMaxConnections");
-		intval=md.getMaxConnections();
-		System.out.println("    "+intval);
-		assertEquals(intval,8192);
-		System.out.println();
-
-		// getMaxCursorNameLength
-		System.out.println("  getMaxCursorNameLength");
-		intval=md.getMaxCursorNameLength();
-		System.out.println("    "+intval);
-		assertEquals(intval,63);
-		System.out.println();
-
-		// getMaxIndexLength
-		System.out.println("  getMaxIndexLength");
-		intval=md.getMaxIndexLength();
-		System.out.println("    "+intval);
-		assertEquals(intval,0);
-		System.out.println();
-
-		// getMaxProcedureNameLength
-		System.out.println("  getMaxProcedureNameLength");
-		intval=md.getMaxProcedureNameLength();
-		System.out.println("    "+intval);
-		assertEquals(intval,63);
-		System.out.println();
-
-		// getMaxRowSize
-		System.out.println("  getMaxRowSize");
-		intval=md.getMaxRowSize();
-		System.out.println("    "+intval);
-		assertEquals(intval,1073741824);
-		System.out.println();
-
-		// getMaxSchemaNameLength
-		System.out.println("  getMaxSchemaNameLength");
-		intval=md.getMaxSchemaNameLength();
-		System.out.println("    "+intval);
-		assertEquals(intval,63);
-		System.out.println();
-
-		// getMaxStatementLength
-		System.out.println("  getMaxStatementLength");
-		intval=md.getMaxStatementLength();
-		System.out.println("    "+intval);
-		assertEquals(intval,0);
-		System.out.println();
-
-		// getMaxStatements
-		System.out.println("  getMaxStatements");
-		intval=md.getMaxStatements();
-		System.out.println("    "+intval);
-		assertEquals(intval,0);
-		System.out.println();
-
-		// getMaxTableNameLength
-		System.out.println("  getMaxTableNameLength");
-		intval=md.getMaxTableNameLength();
-		System.out.println("    "+intval);
-		assertEquals(intval,63);
-		System.out.println();
-
-		// getMaxTablesInSelect
-		System.out.println("  getMaxTablesInSelect");
-		intval=md.getMaxTablesInSelect();
-		System.out.println("    "+intval);
-		assertEquals(intval,0);
-		System.out.println();
-
-		// getMaxUserNameLength
-		System.out.println("  getMaxUserNameLength");
-		intval=md.getMaxUserNameLength();
-		System.out.println("    "+intval);
-		assertEquals(intval,63);
-		System.out.println();
-
-		// getResultSetHoldability
-		System.out.println("  getResultSetHoldability");
-		intval=md.getResultSetHoldability();
-		System.out.println("    "+intval);
-		assertEquals(intval,1);
-		System.out.println();
-
-		// getSQLStateType
-		System.out.println("  getSQLStateType");
-		intval=md.getSQLStateType();
-		System.out.println("    "+intval);
-		assertEquals(intval,2);
-		System.out.println();
-
-		// getCatalogSeparator
-		System.out.println("  getCatalogSeparator");
-		stringval=md.getCatalogSeparator();
-		System.out.println("    "+stringval);
-		assertEquals(stringval,".");
-		System.out.println();
-
-		// getCatalogTerm
-		System.out.println("  getCatalogTerm");
-		stringval=md.getCatalogTerm();
-		System.out.println("    "+stringval);
-		assertEquals(stringval,"database");
-		System.out.println();
-
-		// getDatabaseProductName
-		System.out.println("  getDatabaseProductName");
-		stringval=md.getDatabaseProductName();
-		System.out.println("    "+stringval);
-		if (issqlrelay) {
-			assertEquals(stringval,"postgresql");
-		} else {
-			assertEquals(stringval,"PostgreSQL");
-		}
-		System.out.println();
-
-		// getDatabaseProductVersion
-		System.out.println("  getDatabaseProductVersion");
-		stringval=md.getDatabaseProductVersion();
-		System.out.println("    "+stringval);
-		assertTrue(stringval!=null);
-		System.out.println();
-
-		// getDriverName
-		System.out.println("  getDriverName");
-		stringval=md.getDriverName();
-		System.out.println("    "+stringval);
-		assertTrue(stringval!=null);
-		System.out.println();
-
-		// getDriverVersion
-		System.out.println("  getDriverVersion");
-		stringval=md.getDriverVersion();
-		System.out.println("    "+stringval);
-		assertTrue(stringval!=null);
-		System.out.println();
-
-		// getExtraNameCharacters
-		System.out.println("  getExtraNameCharacters");
-		stringval=md.getExtraNameCharacters();
-		System.out.println("    "+stringval);
-		assertEquals(stringval,"");
-		System.out.println();
-
-		// getIdentifierQuoteString
-		System.out.println("  getIdentifierQuoteString");
-		stringval=md.getIdentifierQuoteString();
-		System.out.println("    "+stringval);
-		assertEquals(stringval,"\"");
-		System.out.println();
-
-		// getNumericFunctions
-		System.out.println("  getNumericFunctions");
-		stringval=md.getNumericFunctions();
-		System.out.println("    "+stringval);
-		assertTrue(stringval!=null);
-		System.out.println();
-
-		// getProcedureTerm
-		System.out.println("  getProcedureTerm");
-		stringval=md.getProcedureTerm();
-		System.out.println("    "+stringval);
-		assertEquals(stringval,"function");
-		System.out.println();
-
-		// getSchemaTerm
-		System.out.println("  getSchemaTerm");
-		stringval=md.getSchemaTerm();
-		System.out.println("    "+stringval);
-		assertEquals(stringval,"schema");
-		System.out.println();
-
-		// getSearchStringEscape
-		System.out.println("  getSearchStringEscape");
-		stringval=md.getSearchStringEscape();
-		System.out.println("    "+stringval);
-		assertEquals(stringval,"\\");
-		System.out.println();
-
-		// getSQLKeywords
-		System.out.println("  getSQLKeywords");
-		stringval=md.getSQLKeywords();
-		System.out.println("    "+stringval);
-		assertTrue(stringval!=null);
-		System.out.println();
-
-		// getStringFunctions
-		System.out.println("  getStringFunctions");
-		stringval=md.getStringFunctions();
-		System.out.println("    "+stringval);
-		assertTrue(stringval!=null);
-		System.out.println();
-
-		// getSystemFunctions
-		System.out.println("  getSystemFunctions");
-		stringval=md.getSystemFunctions();
-		System.out.println("    "+stringval);
-		assertTrue(stringval!=null);
-		System.out.println();
-
-		// getTimeDateFunctions
-		System.out.println("  getTimeDateFunctions");
-		stringval=md.getTimeDateFunctions();
-		System.out.println("    "+stringval);
-		assertTrue(stringval!=null);
-		System.out.println();
-
-		// getURL
-		System.out.println("  getURL");
-		stringval=md.getURL();
-		System.out.println("    "+stringval);
-		assertTrue(stringval!=null && stringval.length()>0);
-		System.out.println();
-
-		// getUserName
-		System.out.println("  getUserName");
-		stringval=md.getUserName();
-		System.out.println("    "+stringval);
-		assertEquals(stringval,user);
-		System.out.println();
-
-		// statement
 		System.out.println("STATEMENT:");
 		stmt=con.createStatement();
 		assertTrue((stmt!=null));
@@ -1039,7 +1053,7 @@ class postgresql extends sqlrtest {
 
 		// drop existing table
 		try {
-			stmt.executeUpdate("drop table testtable");
+			stmt.executeUpdate("drop table if exists testtable");
 		} catch (Exception ex) {
 		}
 
@@ -1086,22 +1100,41 @@ class postgresql extends sqlrtest {
 
 		// bind by position
 		System.out.println("BIND BY POSITION:");
-		pstmt=con.prepareStatement(
-			"insert into "+
-			"	testtable "+
-			"values ("+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?)");
+		if (issqlrelay) {
+			pstmt=con.prepareStatement(
+				"insert into "+
+				"	testtable "+
+				"values ("+
+				"	$1, "+
+				"	$2, "+
+				"	$3, "+
+				"	$4, "+
+				"	$5, "+
+				"	$6, "+
+				"	$7, "+
+				"	$8, "+
+				"	NULL, "+
+				"	$9, "+
+				"	$10, "+
+				"	$11)");
+		} else {
+			pstmt=con.prepareStatement(
+				"insert into "+
+				"	testtable "+
+				"values ("+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	NULL, "+
+				"	?, "+
+				"	?, "+
+				"	?)");
+		}
 		assertFalse(pstmt.isClosed());
 		for (int i=2; i<=4; i++) {
 			pstmt.clearParameters();
@@ -1120,14 +1153,25 @@ class postgresql extends sqlrtest {
 			cal.set(Calendar.SECOND,0);
 			pstmt.setDate(7,new java.sql.Date(
 						cal.getTimeInMillis()));
-			pstmt.setString(8,"0"+i+":00:00");
-			// NULL column
-			pstmt.setString(10,"text"+i);
-			pstmt.setBytes(11,(new String("bytea"+i)).
+			pstmt.setTime(8,java.sql.Time.valueOf(
+						"0"+i+":00:00"));
+			if (issqlrelay) {
+				pstmt.setString(9,"text"+i);
+				pstmt.setBytes(10,
+					(new String("bytea"+i)).
 					getBytes(StandardCharsets.UTF_8));
-			pstmt.setString(12,
-				"http://www.firstworks.com:8080/"+
-				"testurl"+i);
+				pstmt.setString(11,
+					"http://www.firstworks.com"+
+					":8080/testurl"+i);
+			} else {
+				pstmt.setString(9,"text"+i);
+				pstmt.setBytes(10,
+					(new String("bytea"+i)).
+					getBytes(StandardCharsets.UTF_8));
+				pstmt.setString(11,
+					"http://www.firstworks.com"+
+					":8080/testurl"+i);
+			}
 			assertEquals(pstmt.executeUpdate(),1);
 			System.out.println();
 		}
@@ -1298,14 +1342,18 @@ class postgresql extends sqlrtest {
 
 			// text as clob
 			System.out.println("  row "+i+" - text as clob");
-			clob=rs.getClob(10);
-			assertEquals(clob.getSubString(1,(int)clob.length()),
-								"text"+i);
-			assertFalse(rs.wasNull());
+			if (issqlrelay) {
+				clob=rs.getClob(10);
+				assertEquals(clob.getSubString(
+						1,(int)clob.length()),
+						"text"+i);
+				assertFalse(rs.wasNull());
+			}
 			System.out.println();
 
 			// text as ascii stream
-			System.out.println("  row "+i+" - text as ascii stream");
+			System.out.println("  row "+i+
+						" - text as ascii stream");
 			assertEquals(new String(rs.getAsciiStream(10).
 						readAllBytes(),"UTF-8"),
 						"text"+i);
@@ -1313,7 +1361,8 @@ class postgresql extends sqlrtest {
 			System.out.println();
 
 			// text as character stream
-			System.out.println("  row "+i+" - text as character stream");
+			System.out.println("  row "+i
+						+" - text as character stream");
 			StringWriter sw=new StringWriter();
 			rs.getCharacterStream(10).transferTo(sw);
 			assertEquals(sw.toString(),"text"+i);
@@ -1329,7 +1378,8 @@ class postgresql extends sqlrtest {
 			System.out.println();
 
 			// bytea as binary stream
-			System.out.println("  row "+i+" - bytea as binary stream");
+			System.out.println("  row "+i+
+						" - bytea as binary stream");
 			assertEquals(new String(rs.getBinaryStream(11).
 						readAllBytes(),"UTF-8"),
 						"bytea"+i);
@@ -1338,12 +1388,15 @@ class postgresql extends sqlrtest {
 
 			// url
 			System.out.println("  row "+i+" - url");
-			URL	urlvar=rs.getURL(12);
-			assertEquals(urlvar.getProtocol(),"http");
-			assertEquals(urlvar.getHost(),"www.firstworks.com");
-			assertEquals(urlvar.getPort(),8080);
-			assertEquals(urlvar.getPath(),"/testurl"+i);
-			assertFalse(rs.wasNull());
+			if (issqlrelay) {
+				URL	urlvar=rs.getURL(12);
+				assertEquals(urlvar.getProtocol(),"http");
+				assertEquals(urlvar.getHost(),
+						"www.firstworks.com");
+				assertEquals(urlvar.getPort(),8080);
+				assertEquals(urlvar.getPath(),"/testurl"+i);
+				assertFalse(rs.wasNull());
+			}
 			System.out.println();
 		}
 		rs.close();
@@ -1438,14 +1491,18 @@ class postgresql extends sqlrtest {
 
 			// text as clob
 			System.out.println("  row "+i+" - text as clob");
-			clob=rs.getClob("testtext");
-			assertEquals(clob.getSubString(1,(int)clob.length()),
-								"text"+i);
-			assertFalse(rs.wasNull());
+			if (issqlrelay) {
+				clob=rs.getClob("testtext");
+				assertEquals(clob.getSubString(
+						1,(int)clob.length()),
+						"text"+i);
+				assertFalse(rs.wasNull());
+			}
 			System.out.println();
 
 			// text as ascii stream
-			System.out.println("  row "+i+" - text as ascii stream");
+			System.out.println("  row "+i+
+						" - text as ascii stream");
 			assertEquals(new String(rs.getAsciiStream("testtext").
 						readAllBytes(),"UTF-8"),
 						"text"+i);
@@ -1453,7 +1510,8 @@ class postgresql extends sqlrtest {
 			System.out.println();
 
 			// text as character stream
-			System.out.println("  row "+i+" - text as character stream");
+			System.out.println("  row "+i
+						+" - text as character stream");
 			StringWriter sw=new StringWriter();
 			rs.getCharacterStream("testtext").transferTo(sw);
 			assertEquals(sw.toString(),"text"+i);
@@ -1469,7 +1527,8 @@ class postgresql extends sqlrtest {
 			System.out.println();
 
 			// bytea as binary stream
-			System.out.println("  row "+i+" - bytea as binary stream");
+			System.out.println("  row "+i
+						+" - bytea as binary stream");
 			assertEquals(new String(rs.getBinaryStream("testbytea").
 						readAllBytes(),"UTF-8"),
 						"bytea"+i);
@@ -1478,12 +1537,15 @@ class postgresql extends sqlrtest {
 
 			// url
 			System.out.println("  row "+i+" - url");
-			URL	urlvar=rs.getURL("testurl");
-			assertEquals(urlvar.getProtocol(),"http");
-			assertEquals(urlvar.getHost(),"www.firstworks.com");
-			assertEquals(urlvar.getPort(),8080);
-			assertEquals(urlvar.getPath(),"/testurl"+i);
-			assertFalse(rs.wasNull());
+			if (issqlrelay) {
+				URL	urlvar=rs.getURL("testurl");
+				assertEquals(urlvar.getProtocol(),"http");
+				assertEquals(urlvar.getHost(),
+						"www.firstworks.com");
+				assertEquals(urlvar.getPort(),8080);
+				assertEquals(urlvar.getPath(),"/testurl"+i);
+				assertFalse(rs.wasNull());
+			}
 			System.out.println();
 		}
 
@@ -1502,18 +1564,34 @@ class postgresql extends sqlrtest {
 
 		// stored procedures
 		System.out.println("STORED PROCEDURES:");
+		stmt=con.createStatement();
 		// return no value
 		try {
-			stmt.executeUpdate("drop function testfunc(int,float,char)");
+			stmt.executeUpdate("drop function "+
+					"if exists testfunc(int,float,char)");
 		} catch (Exception ex) {
 		}
 		assertEquals(stmt.executeUpdate(
 			"create function testfunc(int,float,char(20)) "+
-			"returns void as '"+
-			"declare in1 int; in2 float; in3 char(20); "+
-			"begin in1:=$1; in2:=$2; in3:=$3; return; end;' "+
+			"	returns void as "+
+			"'declare "+
+			"	in1 int; "+
+			"	in2 float; "+
+			"	in3 char(20); "+
+			"begin "+
+			"	in1:=$1; "+
+			"	in2:=$2; "+
+			"	in3:=$3; "+
+			"	return; "+
+			"end;' "+
 			"language plpgsql"),0);
-		pstmt=con.prepareStatement("select testfunc(?,?,?)");
+		if (issqlrelay) {
+			pstmt=con.prepareStatement(
+				"select testfunc($1,$2,$3)");
+		} else {
+			pstmt=con.prepareStatement(
+				"select testfunc(?,?,?)");
+		}
 		assertTrue((pstmt!=null));
 		pstmt.setInt(1,1);
 		pstmt.setDouble(2,1.1);
@@ -1525,10 +1603,18 @@ class postgresql extends sqlrtest {
 		// return single value (function)
 		assertEquals(stmt.executeUpdate(
 			"create function testfunc(int,float,char(20)) "+
-			"returns int as "+
-			"'begin return $1; end;' "+
+			"	returns int as "+
+			"'begin "+
+			"	return $1; "+
+			"end;' "+
 			"language plpgsql"),0);
-		pstmt=con.prepareStatement("select testfunc(?,?,?)");
+		if (issqlrelay) {
+			pstmt=con.prepareStatement(
+				"select testfunc($1,$2,$3)");
+		} else {
+			pstmt=con.prepareStatement(
+				"select testfunc(?,?,?)");
+		}
 		assertTrue((pstmt!=null));
 		pstmt.setInt(1,1);
 		pstmt.setDouble(2,1.1);
@@ -1583,7 +1669,7 @@ class postgresql extends sqlrtest {
 		System.out.println("COLUMN LIST: ");
 		stmt=con.createStatement();
 		try {
-			stmt.executeUpdate("drop table testtable");
+			stmt.executeUpdate("drop table if exists testtable");
 		} catch (Exception ex) {
 		}
 		stmt.executeUpdate(
@@ -1681,7 +1767,8 @@ class postgresql extends sqlrtest {
 			assertTrue(true);
 		}
 		try {
-			stmt.executeUpdate("insert into nonexistent_table values (1)");
+			stmt.executeUpdate("insert into "+
+					"nonexistent_table values (1)");
 			assertTrue(false);
 		} catch (Exception e) {
 			assertTrue(true);

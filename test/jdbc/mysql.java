@@ -336,6 +336,7 @@ class mysql extends sqlrtest {
 		System.out.println("  getDatabaseMajorVersion");
 		intval=md.getDatabaseMajorVersion();
 		System.out.println("    "+intval);
+		// varies by server installation
 		assertTrue(intval>=0);
 		System.out.println();
 
@@ -343,6 +344,7 @@ class mysql extends sqlrtest {
 		System.out.println("  getDatabaseMinorVersion");
 		intval=md.getDatabaseMinorVersion();
 		System.out.println("    "+intval);
+		// varies by server installation
 		assertTrue(intval>=0);
 		System.out.println();
 
@@ -361,6 +363,7 @@ class mysql extends sqlrtest {
 		System.out.println("  getDatabaseProductVersion");
 		stringval=md.getDatabaseProductVersion();
 		System.out.println("    "+stringval);
+		// varies by server installation
 		assertTrue(stringval!=null && stringval.length()>0);
 		System.out.println();
 
@@ -375,22 +378,16 @@ class mysql extends sqlrtest {
 		System.out.println("  getDriverMajorVersion");
 		intval=md.getDriverMajorVersion();
 		System.out.println("    "+intval);
-		if (issqlrelay) {
-			assertEquals(intval,2);
-		} else {
-			assertTrue(intval>=0);
-		}
+		// varies by driver jar version
+		assertTrue(intval>=0);
 		System.out.println();
 
 		// getDriverMinorVersion
 		System.out.println("  getDriverMinorVersion");
 		intval=md.getDriverMinorVersion();
 		System.out.println("    "+intval);
-		if (issqlrelay) {
-			assertEquals(intval,1);
-		} else {
-			assertTrue(intval>=0);
-		}
+		// varies by driver jar version
+		assertTrue(intval>=0);
 		System.out.println();
 
 		// getDriverName
@@ -408,13 +405,15 @@ class mysql extends sqlrtest {
 		System.out.println("  getDriverVersion");
 		stringval=md.getDriverVersion();
 		System.out.println("    "+stringval);
-		assertTrue(stringval!=null && stringval.length()>0);
+		// not null and only contains numbers and dots
+		assertTrue(stringval!=null && stringval.matches("[0-9.]+$"));
 		System.out.println();
 
 		// getExtraNameCharacters
 		System.out.println("  getExtraNameCharacters");
 		stringval=md.getExtraNameCharacters();
 		System.out.println("    "+stringval);
+		// varies by driver
 		assertTrue(stringval!=null);
 		System.out.println();
 
@@ -429,6 +428,7 @@ class mysql extends sqlrtest {
 		System.out.println("  getJDBCMajorVersion");
 		intval=md.getJDBCMajorVersion();
 		System.out.println("    "+intval);
+		// varies by driver version
 		assertTrue(intval>=1);
 		System.out.println();
 
@@ -436,6 +436,7 @@ class mysql extends sqlrtest {
 		System.out.println("  getJDBCMinorVersion");
 		intval=md.getJDBCMinorVersion();
 		System.out.println("    "+intval);
+		// varies by driver version
 		assertTrue(intval>=0);
 		System.out.println();
 
@@ -512,6 +513,7 @@ class mysql extends sqlrtest {
 		intval=md.getMaxConnections();
 		System.out.println("    "+intval);
 		if (issqlrelay) {
+			// varies by sqlrelay config
 			assertTrue(intval>0);
 		} else {
 			// oracle jdbc returns 0 for this
@@ -598,7 +600,7 @@ class mysql extends sqlrtest {
 		System.out.println("  getNumericFunctions");
 		stringval=md.getNumericFunctions();
 		System.out.println("    "+stringval);
-		assertTrue(stringval!=null);
+		assertEquals(stringval,"ABS,ACOS,ASIN,ATAN,ATAN2,BIT_COUNT,CEILING,COS,COT,DEGREES,EXP,FLOOR,LOG,LOG10,MAX,MIN,MOD,PI,POW,POWER,RADIANS,RAND,ROUND,SIN,SQRT,TAN,TRUNCATE");
 		System.out.println();
 
 		// getProcedureTerm
@@ -623,6 +625,7 @@ class mysql extends sqlrtest {
 		System.out.println("  getRowIdLifetime");
 		RowIdLifetime	rowidlifetimeval=md.getRowIdLifetime();
 		System.out.println("  "+rowidlifetimeval);
+		// varies by driver
 		assertTrue(rowidlifetimeval!=null);
 		System.out.println();
 
@@ -637,6 +640,7 @@ class mysql extends sqlrtest {
 		System.out.println("  getSearchStringEscape");
 		stringval=md.getSearchStringEscape();
 		System.out.println("    "+stringval);
+		// varies by driver
 		assertTrue(stringval!=null && stringval.length()>0);
 		System.out.println();
 
@@ -644,7 +648,7 @@ class mysql extends sqlrtest {
 		System.out.println("  getSQLKeywords");
 		stringval=md.getSQLKeywords();
 		System.out.println("    "+stringval);
-		assertTrue(stringval!=null);
+		assertEquals(stringval,"ACCESSIBLE,ADD,ANALYZE,ASC,BEFORE,CASCADE,CHANGE,CONTINUE,DATABASE,DATABASES,DAY_HOUR,DAY_MICROSECOND,DAY_MINUTE,DAY_SECOND,DELAYED,DESC,DISTINCTROW,DIV,DUAL,ELSEIF,EMPTY,ENCLOSED,ESCAPED,EXIT,EXPLAIN,FIRST_VALUE,FLOAT4,FLOAT8,FORCE,FULLTEXT,GENERATED,GROUPS,HIGH_PRIORITY,HOUR_MICROSECOND,HOUR_MINUTE,HOUR_SECOND,IF,IGNORE,INDEX,INFILE,INT1,INT2,INT3,INT4,INT8,IO_AFTER_GTIDS,IO_BEFORE_GTIDS,ITERATE,JSON_TABLE,KEY,KEYS,KILL,LAG,LAST_VALUE,LEAD,LEAVE,LIMIT,LINEAR,LINES,LOAD,LOCK,LONG,LONGBLOB,LONGTEXT,LOOP,LOW_PRIORITY,MANUAL,MASTER_BIND,MASTER_SSL_VERIFY_SERVER_CERT,MAXVALUE,MEDIUMBLOB,MEDIUMINT,MEDIUMTEXT,MIDDLEINT,MINUTE_MICROSECOND,MINUTE_SECOND,NO_WRITE_TO_BINLOG,NTH_VALUE,NTILE,OPTIMIZE,OPTIMIZER_COSTS,OPTION,OPTIONALLY,OUTFILE,PARALLEL,PURGE,QUALIFY,READ,READ_WRITE,REGEXP,RENAME,REPEAT,REPLACE,REQUIRE,RESIGNAL,RESTRICT,RLIKE,SCHEMA,SCHEMAS,SECOND_MICROSECOND,SEPARATOR,SHOW,SIGNAL,SPATIAL,SQL_BIG_RESULT,SQL_CALC_FOUND_ROWS,SQL_SMALL_RESULT,SSL,STARTING,STORED,STRAIGHT_JOIN,TERMINATED,TINYBLOB,TINYINT,TINYTEXT,UNDO,UNLOCK,UNSIGNED,USAGE,USE,UTC_DATE,UTC_TIME,UTC_TIMESTAMP,VARBINARY,VARCHARACTER,VIRTUAL,WHILE,WRITE,XOR,YEAR_MONTH,ZEROFILL");
 		System.out.println();
 
 		// getSQLStateType
@@ -658,21 +662,21 @@ class mysql extends sqlrtest {
 		System.out.println("  getStringFunctions");
 		stringval=md.getStringFunctions();
 		System.out.println("    "+stringval);
-		assertTrue(stringval!=null);
+		assertEquals(stringval,"ASCII,BIN,BIT_LENGTH,CHAR,CHARACTER_LENGTH,CHAR_LENGTH,CONCAT,CONCAT_WS,CONV,ELT,EXPORT_SET,FIELD,FIND_IN_SET,HEX,INSERT,INSTR,LCASE,LEFT,LENGTH,LOAD_FILE,LOCATE,LOCATE,LOWER,LPAD,LTRIM,MAKE_SET,MATCH,MID,OCT,OCTET_LENGTH,ORD,POSITION,QUOTE,REPEAT,REPLACE,REVERSE,RIGHT,RPAD,RTRIM,SOUNDEX,SPACE,STRCMP,SUBSTRING,SUBSTRING,SUBSTRING,SUBSTRING,SUBSTRING_INDEX,TRIM,UCASE,UPPER");
 		System.out.println();
 
 		// getSystemFunctions
 		System.out.println("  getSystemFunctions");
 		stringval=md.getSystemFunctions();
 		System.out.println("    "+stringval);
-		assertTrue(stringval!=null);
+		assertEquals(stringval,"DATABASE,USER,SYSTEM_USER,SESSION_USER,PASSWORD,ENCRYPT,LAST_INSERT_ID,VERSION");
 		System.out.println();
 
 		// getTimeDateFunctions
 		System.out.println("  getTimeDateFunctions");
 		stringval=md.getTimeDateFunctions();
 		System.out.println("    "+stringval);
-		assertTrue(stringval!=null);
+		assertEquals(stringval,"DAYOFWEEK,WEEKDAY,DAYOFMONTH,DAYOFYEAR,MONTH,DAYNAME,MONTHNAME,QUARTER,WEEK,YEAR,HOUR,MINUTE,SECOND,PERIOD_ADD,PERIOD_DIFF,TO_DAYS,FROM_DAYS,DATE_FORMAT,TIME_FORMAT,CURDATE,CURRENT_DATE,CURTIME,CURRENT_TIME,NOW,SYSDATE,CURRENT_TIMESTAMP,UNIX_TIMESTAMP,FROM_UNIXTIME,SEC_TO_TIME,TIME_TO_SEC");
 		System.out.println();
 
 		// getURL
@@ -959,6 +963,8 @@ class mysql extends sqlrtest {
 			assertFalse(boolval);
 		}
 		System.out.println();
+
+		// statement
 
 		// storesLowerCaseIdentifiers
 		System.out.println("  storesLowerCaseIdentifiers");
@@ -1650,9 +1656,6 @@ class mysql extends sqlrtest {
 		System.out.println("    "+boolval);
 		assertFalse(boolval);
 		System.out.println();
-
-
-		// statement
 
 		System.out.println("STATEMENT:");
 

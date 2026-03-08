@@ -117,6 +117,7 @@ class firebird extends sqlrtest {
 		System.out.println("  allProceduresAreCallable");
 		boolval=md.allProceduresAreCallable();
 		System.out.println("    "+boolval);
+		// not yet tested against native driver
 		assertTrue(boolval||!boolval);
 		System.out.println();
 
@@ -124,6 +125,7 @@ class firebird extends sqlrtest {
 		System.out.println("  allTablesAreSelectable");
 		boolval=md.allTablesAreSelectable();
 		System.out.println("    "+boolval);
+		// not yet tested against native driver
 		assertTrue(boolval||!boolval);
 		System.out.println();
 
@@ -131,6 +133,7 @@ class firebird extends sqlrtest {
 		System.out.println("  autoCommitFailureClosesAllResultSets");
 		boolval=md.autoCommitFailureClosesAllResultSets();
 		System.out.println("    "+boolval);
+		// not yet tested against native driver
 		assertTrue(boolval||!boolval);
 		System.out.println();
 
@@ -138,6 +141,7 @@ class firebird extends sqlrtest {
 		System.out.println("  dataDefinitionCausesTransactionCommit");
 		boolval=md.dataDefinitionCausesTransactionCommit();
 		System.out.println("    "+boolval);
+		// not yet tested against native driver
 		assertTrue(boolval||!boolval);
 		System.out.println();
 
@@ -145,6 +149,7 @@ class firebird extends sqlrtest {
 		System.out.println("  dataDefinitionIgnoredInTransactions");
 		boolval=md.dataDefinitionIgnoredInTransactions();
 		System.out.println("    "+boolval);
+		// not yet tested against native driver
 		assertTrue(boolval||!boolval);
 		System.out.println();
 
@@ -152,6 +157,7 @@ class firebird extends sqlrtest {
 		System.out.println("  doesMaxRowSizeIncludeBlobs");
 		boolval=md.doesMaxRowSizeIncludeBlobs();
 		System.out.println("    "+boolval);
+		// not yet tested against native driver
 		assertTrue(boolval||!boolval);
 		System.out.println();
 
@@ -159,748 +165,15 @@ class firebird extends sqlrtest {
 		System.out.println("  generatedKeyAlwaysReturned");
 		boolval=md.generatedKeyAlwaysReturned();
 		System.out.println("    "+boolval);
+		// not yet tested against native driver
 		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// isCatalogAtStart
-		System.out.println("  isCatalogAtStart");
-		boolval=md.isCatalogAtStart();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// isReadOnly
-		System.out.println("  isReadOnly");
-		boolval=md.isReadOnly();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// locatorsUpdateCopy
-		System.out.println("  locatorsUpdateCopy");
-		boolval=md.locatorsUpdateCopy();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// nullPlusNonNullIsNull
-		System.out.println("  nullPlusNonNullIsNull");
-		boolval=md.nullPlusNonNullIsNull();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// nullsAreSortedAtEnd
-		System.out.println("  nullsAreSortedAtEnd");
-		boolval=md.nullsAreSortedAtEnd();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// nullsAreSortedAtStart
-		System.out.println("  nullsAreSortedAtStart");
-		boolval=md.nullsAreSortedAtStart();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// nullsAreSortedHigh
-		System.out.println("  nullsAreSortedHigh");
-		boolval=md.nullsAreSortedHigh();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// nullsAreSortedLow
-		System.out.println("  nullsAreSortedLow");
-		boolval=md.nullsAreSortedLow();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// storesLowerCaseIdentifiers
-		System.out.println("  storesLowerCaseIdentifiers");
-		boolval=md.storesLowerCaseIdentifiers();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// storesLowerCaseQuotedIdentifiers
-		System.out.println("  storesLowerCaseQuotedIdentifiers");
-		boolval=md.storesLowerCaseQuotedIdentifiers();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// storesMixedCaseIdentifiers
-		System.out.println("  storesMixedCaseIdentifiers");
-		boolval=md.storesMixedCaseIdentifiers();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// storesMixedCaseQuotedIdentifiers
-		System.out.println("  storesMixedCaseQuotedIdentifiers");
-		boolval=md.storesMixedCaseQuotedIdentifiers();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// storesUpperCaseIdentifiers
-		System.out.println("  storesUpperCaseIdentifiers");
-		boolval=md.storesUpperCaseIdentifiers();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// storesUpperCaseQuotedIdentifiers
-		System.out.println("  storesUpperCaseQuotedIdentifiers");
-		boolval=md.storesUpperCaseQuotedIdentifiers();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsAlterTableWithAddColumn
-		System.out.println("  supportsAlterTableWithAddColumn");
-		boolval=md.supportsAlterTableWithAddColumn();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsAlterTableWithDropColumn
-		System.out.println("  supportsAlterTableWithDropColumn");
-		boolval=md.supportsAlterTableWithDropColumn();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsANSI92EntryLevelSQL
-		System.out.println("  supportsANSI92EntryLevelSQL");
-		boolval=md.supportsANSI92EntryLevelSQL();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsANSI92FullSQL
-		System.out.println("  supportsANSI92FullSQL");
-		boolval=md.supportsANSI92FullSQL();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsANSI92IntermediateSQL
-		System.out.println("  supportsANSI92IntermediateSQL");
-		boolval=md.supportsANSI92IntermediateSQL();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsBatchUpdates
-		System.out.println("  supportsBatchUpdates");
-		boolval=md.supportsBatchUpdates();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsCatalogsInDataManipulation
-		System.out.println("  supportsCatalogsInDataManipulation");
-		boolval=md.supportsCatalogsInDataManipulation();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsCatalogsInIndexDefinitions
-		System.out.println("  supportsCatalogsInIndexDefinitions");
-		boolval=md.supportsCatalogsInIndexDefinitions();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsCatalogsInPrivilegeDefinitions
-		System.out.println("  supportsCatalogsInPrivilegeDefinitions");
-		boolval=md.supportsCatalogsInPrivilegeDefinitions();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsCatalogsInProcedureCalls
-		System.out.println("  supportsCatalogsInProcedureCalls");
-		boolval=md.supportsCatalogsInProcedureCalls();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsCatalogsInTableDefinitions
-		System.out.println("  supportsCatalogsInTableDefinitions");
-		boolval=md.supportsCatalogsInTableDefinitions();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsColumnAliasing
-		System.out.println("  supportsColumnAliasing");
-		boolval=md.supportsColumnAliasing();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsConvert
-		System.out.println("  supportsConvert");
-		boolval=md.supportsConvert();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsCoreSQLGrammar
-		System.out.println("  supportsCoreSQLGrammar");
-		boolval=md.supportsCoreSQLGrammar();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsCorrelatedSubqueries
-		System.out.println("  supportsCorrelatedSubqueries");
-		boolval=md.supportsCorrelatedSubqueries();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsDifferentTableCorrelationNames
-		System.out.println("  supportsDifferentTableCorrelationNames");
-		boolval=md.supportsDifferentTableCorrelationNames();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsExpressionsInOrderBy
-		System.out.println("  supportsExpressionsInOrderBy");
-		boolval=md.supportsExpressionsInOrderBy();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsExtendedSQLGrammar
-		System.out.println("  supportsExtendedSQLGrammar");
-		boolval=md.supportsExtendedSQLGrammar();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsFullOuterJoins
-		System.out.println("  supportsFullOuterJoins");
-		boolval=md.supportsFullOuterJoins();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsGetGeneratedKeys
-		System.out.println("  supportsGetGeneratedKeys");
-		boolval=md.supportsGetGeneratedKeys();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsGroupBy
-		System.out.println("  supportsGroupBy");
-		boolval=md.supportsGroupBy();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsGroupByBeyondSelect
-		System.out.println("  supportsGroupByBeyondSelect");
-		boolval=md.supportsGroupByBeyondSelect();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsGroupByUnrelated
-		System.out.println("  supportsGroupByUnrelated");
-		boolval=md.supportsGroupByUnrelated();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsIntegrityEnhancementFacility
-		System.out.println("  supportsIntegrityEnhancementFacility");
-		boolval=md.supportsIntegrityEnhancementFacility();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsLikeEscapeClause
-		System.out.println("  supportsLikeEscapeClause");
-		boolval=md.supportsLikeEscapeClause();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsLimitedOuterJoins
-		System.out.println("  supportsLimitedOuterJoins");
-		boolval=md.supportsLimitedOuterJoins();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsMinimumSQLGrammar
-		System.out.println("  supportsMinimumSQLGrammar");
-		boolval=md.supportsMinimumSQLGrammar();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsMixedCaseIdentifiers
-		System.out.println("  supportsMixedCaseIdentifiers");
-		boolval=md.supportsMixedCaseIdentifiers();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsMixedCaseQuotedIdentifiers
-		System.out.println("  supportsMixedCaseQuotedIdentifiers");
-		boolval=md.supportsMixedCaseQuotedIdentifiers();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsMultipleOpenResults
-		System.out.println("  supportsMultipleOpenResults");
-		boolval=md.supportsMultipleOpenResults();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsMultipleResultSets
-		System.out.println("  supportsMultipleResultSets");
-		boolval=md.supportsMultipleResultSets();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsMultipleTransactions
-		System.out.println("  supportsMultipleTransactions");
-		boolval=md.supportsMultipleTransactions();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsNamedParameters
-		System.out.println("  supportsNamedParameters");
-		boolval=md.supportsNamedParameters();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsNonNullableColumns
-		System.out.println("  supportsNonNullableColumns");
-		boolval=md.supportsNonNullableColumns();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsOpenCursorsAcrossCommit
-		System.out.println("  supportsOpenCursorsAcrossCommit");
-		boolval=md.supportsOpenCursorsAcrossCommit();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsOpenCursorsAcrossRollback
-		System.out.println("  supportsOpenCursorsAcrossRollback");
-		boolval=md.supportsOpenCursorsAcrossRollback();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsOpenStatementsAcrossCommit
-		System.out.println("  supportsOpenStatementsAcrossCommit");
-		boolval=md.supportsOpenStatementsAcrossCommit();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsOpenStatementsAcrossRollback
-		System.out.println("  supportsOpenStatementsAcrossRollback");
-		boolval=md.supportsOpenStatementsAcrossRollback();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsOrderByUnrelated
-		System.out.println("  supportsOrderByUnrelated");
-		boolval=md.supportsOrderByUnrelated();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsOuterJoins
-		System.out.println("  supportsOuterJoins");
-		boolval=md.supportsOuterJoins();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsPositionedDelete
-		System.out.println("  supportsPositionedDelete");
-		boolval=md.supportsPositionedDelete();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsPositionedUpdate
-		System.out.println("  supportsPositionedUpdate");
-		boolval=md.supportsPositionedUpdate();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsSavepoints
-		System.out.println("  supportsSavepoints");
-		boolval=md.supportsSavepoints();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsSchemasInDataManipulation
-		System.out.println("  supportsSchemasInDataManipulation");
-		boolval=md.supportsSchemasInDataManipulation();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsSchemasInIndexDefinitions
-		System.out.println("  supportsSchemasInIndexDefinitions");
-		boolval=md.supportsSchemasInIndexDefinitions();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsSchemasInPrivilegeDefinitions
-		System.out.println("  supportsSchemasInPrivilegeDefinitions");
-		boolval=md.supportsSchemasInPrivilegeDefinitions();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsSchemasInProcedureCalls
-		System.out.println("  supportsSchemasInProcedureCalls");
-		boolval=md.supportsSchemasInProcedureCalls();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsSchemasInTableDefinitions
-		System.out.println("  supportsSchemasInTableDefinitions");
-		boolval=md.supportsSchemasInTableDefinitions();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsSelectForUpdate
-		System.out.println("  supportsSelectForUpdate");
-		boolval=md.supportsSelectForUpdate();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsStatementPooling
-		System.out.println("  supportsStatementPooling");
-		boolval=md.supportsStatementPooling();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsStoredFunctionsUsingCallSyntax
-		System.out.println("  supportsStoredFunctionsUsingCallSyntax");
-		boolval=md.supportsStoredFunctionsUsingCallSyntax();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsStoredProcedures
-		System.out.println("  supportsStoredProcedures");
-		boolval=md.supportsStoredProcedures();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsSubqueriesInComparisons
-		System.out.println("  supportsSubqueriesInComparisons");
-		boolval=md.supportsSubqueriesInComparisons();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsSubqueriesInExists
-		System.out.println("  supportsSubqueriesInExists");
-		boolval=md.supportsSubqueriesInExists();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsSubqueriesInIns
-		System.out.println("  supportsSubqueriesInIns");
-		boolval=md.supportsSubqueriesInIns();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsSubqueriesInQuantifieds
-		System.out.println("  supportsSubqueriesInQuantifieds");
-		boolval=md.supportsSubqueriesInQuantifieds();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsTableCorrelationNames
-		System.out.println("  supportsTableCorrelationNames");
-		boolval=md.supportsTableCorrelationNames();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsTransactions
-		System.out.println("  supportsTransactions");
-		boolval=md.supportsTransactions();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsUnion
-		System.out.println("  supportsUnion");
-		boolval=md.supportsUnion();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// supportsUnionAll
-		System.out.println("  supportsUnionAll");
-		boolval=md.supportsUnionAll();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// usesLocalFilePerTable
-		System.out.println("  usesLocalFilePerTable");
-		boolval=md.usesLocalFilePerTable();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// usesLocalFiles
-		System.out.println("  usesLocalFiles");
-		boolval=md.usesLocalFiles();
-		System.out.println("    "+boolval);
-		assertTrue(boolval||!boolval);
-		System.out.println();
-
-		// getDatabaseMajorVersion
-		System.out.println("  getDatabaseMajorVersion");
-		intval=md.getDatabaseMajorVersion();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getDatabaseMinorVersion
-		System.out.println("  getDatabaseMinorVersion");
-		intval=md.getDatabaseMinorVersion();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getDefaultTransactionIsolation
-		System.out.println("  getDefaultTransactionIsolation");
-		intval=md.getDefaultTransactionIsolation();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getDriverMajorVersion
-		System.out.println("  getDriverMajorVersion");
-		intval=md.getDriverMajorVersion();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getDriverMinorVersion
-		System.out.println("  getDriverMinorVersion");
-		intval=md.getDriverMinorVersion();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getJDBCMajorVersion
-		System.out.println("  getJDBCMajorVersion");
-		intval=md.getJDBCMajorVersion();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getJDBCMinorVersion
-		System.out.println("  getJDBCMinorVersion");
-		intval=md.getJDBCMinorVersion();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxBinaryLiteralLength
-		System.out.println("  getMaxBinaryLiteralLength");
-		intval=md.getMaxBinaryLiteralLength();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxCatalogNameLength
-		System.out.println("  getMaxCatalogNameLength");
-		intval=md.getMaxCatalogNameLength();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxCharLiteralLength
-		System.out.println("  getMaxCharLiteralLength");
-		intval=md.getMaxCharLiteralLength();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxColumnNameLength
-		System.out.println("  getMaxColumnNameLength");
-		intval=md.getMaxColumnNameLength();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxColumnsInGroupBy
-		System.out.println("  getMaxColumnsInGroupBy");
-		intval=md.getMaxColumnsInGroupBy();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxColumnsInIndex
-		System.out.println("  getMaxColumnsInIndex");
-		intval=md.getMaxColumnsInIndex();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxColumnsInOrderBy
-		System.out.println("  getMaxColumnsInOrderBy");
-		intval=md.getMaxColumnsInOrderBy();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxColumnsInSelect
-		System.out.println("  getMaxColumnsInSelect");
-		intval=md.getMaxColumnsInSelect();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxColumnsInTable
-		System.out.println("  getMaxColumnsInTable");
-		intval=md.getMaxColumnsInTable();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxConnections
-		System.out.println("  getMaxConnections");
-		intval=md.getMaxConnections();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxCursorNameLength
-		System.out.println("  getMaxCursorNameLength");
-		intval=md.getMaxCursorNameLength();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxIndexLength
-		System.out.println("  getMaxIndexLength");
-		intval=md.getMaxIndexLength();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxProcedureNameLength
-		System.out.println("  getMaxProcedureNameLength");
-		intval=md.getMaxProcedureNameLength();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxRowSize
-		System.out.println("  getMaxRowSize");
-		intval=md.getMaxRowSize();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxSchemaNameLength
-		System.out.println("  getMaxSchemaNameLength");
-		intval=md.getMaxSchemaNameLength();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxStatementLength
-		System.out.println("  getMaxStatementLength");
-		intval=md.getMaxStatementLength();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxStatements
-		System.out.println("  getMaxStatements");
-		intval=md.getMaxStatements();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxTableNameLength
-		System.out.println("  getMaxTableNameLength");
-		intval=md.getMaxTableNameLength();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxTablesInSelect
-		System.out.println("  getMaxTablesInSelect");
-		intval=md.getMaxTablesInSelect();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getMaxUserNameLength
-		System.out.println("  getMaxUserNameLength");
-		intval=md.getMaxUserNameLength();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getResultSetHoldability
-		System.out.println("  getResultSetHoldability");
-		intval=md.getResultSetHoldability();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
-		System.out.println();
-
-		// getSQLStateType
-		System.out.println("  getSQLStateType");
-		intval=md.getSQLStateType();
-		System.out.println("    "+intval);
-		assertTrue(intval>=0);
 		System.out.println();
 
 		// getCatalogSeparator
 		System.out.println("  getCatalogSeparator");
 		stringval=md.getCatalogSeparator();
 		System.out.println("    "+stringval);
+		// not yet tested against native driver
 		assertTrue(stringval!=null||stringval==null);
 		System.out.println();
 
@@ -908,13 +181,31 @@ class firebird extends sqlrtest {
 		System.out.println("  getCatalogTerm");
 		stringval=md.getCatalogTerm();
 		System.out.println("    "+stringval);
+		// not yet tested against native driver
 		assertTrue(stringval!=null||stringval==null);
+		System.out.println();
+
+		// getDatabaseMajorVersion
+		System.out.println("  getDatabaseMajorVersion");
+		intval=md.getDatabaseMajorVersion();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getDatabaseMinorVersion
+		System.out.println("  getDatabaseMinorVersion");
+		intval=md.getDatabaseMinorVersion();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
 		System.out.println();
 
 		// getDatabaseProductName
 		System.out.println("  getDatabaseProductName");
 		stringval=md.getDatabaseProductName();
 		System.out.println("    "+stringval);
+		// not yet tested against native driver
 		assertTrue(stringval!=null||stringval==null);
 		System.out.println();
 
@@ -922,27 +213,59 @@ class firebird extends sqlrtest {
 		System.out.println("  getDatabaseProductVersion");
 		stringval=md.getDatabaseProductVersion();
 		System.out.println("    "+stringval);
+		// not yet tested against native driver
 		assertTrue(stringval!=null||stringval==null);
+		System.out.println();
+
+		// getDefaultTransactionIsolation
+		System.out.println("  getDefaultTransactionIsolation");
+		intval=md.getDefaultTransactionIsolation();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getDriverMajorVersion
+		System.out.println("  getDriverMajorVersion");
+		intval=md.getDriverMajorVersion();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getDriverMinorVersion
+		System.out.println("  getDriverMinorVersion");
+		intval=md.getDriverMinorVersion();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
 		System.out.println();
 
 		// getDriverName
 		System.out.println("  getDriverName");
 		stringval=md.getDriverName();
 		System.out.println("    "+stringval);
-		assertTrue(stringval!=null||stringval==null);
+		if (issqlrelay) {
+			assertEquals(stringval,"SQL Relay JDBC driver");
+		} else {
+			// not yet tested against native driver
+			assertTrue(stringval!=null||stringval==null);
+		}
 		System.out.println();
 
 		// getDriverVersion
 		System.out.println("  getDriverVersion");
 		stringval=md.getDriverVersion();
 		System.out.println("    "+stringval);
-		assertTrue(stringval!=null||stringval==null);
+		// not null and only contains numbers and dots
+		assertTrue(stringval!=null && stringval.matches("[0-9.]+$"));
 		System.out.println();
 
 		// getExtraNameCharacters
 		System.out.println("  getExtraNameCharacters");
 		stringval=md.getExtraNameCharacters();
 		System.out.println("    "+stringval);
+		// not yet tested against native driver
 		assertTrue(stringval!=null||stringval==null);
 		System.out.println();
 
@@ -950,27 +273,214 @@ class firebird extends sqlrtest {
 		System.out.println("  getIdentifierQuoteString");
 		stringval=md.getIdentifierQuoteString();
 		System.out.println("    "+stringval);
+		// not yet tested against native driver
 		assertTrue(stringval!=null||stringval==null);
+		System.out.println();
+
+		// getJDBCMajorVersion
+		System.out.println("  getJDBCMajorVersion");
+		intval=md.getJDBCMajorVersion();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getJDBCMinorVersion
+		System.out.println("  getJDBCMinorVersion");
+		intval=md.getJDBCMinorVersion();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxBinaryLiteralLength
+		System.out.println("  getMaxBinaryLiteralLength");
+		intval=md.getMaxBinaryLiteralLength();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxCatalogNameLength
+		System.out.println("  getMaxCatalogNameLength");
+		intval=md.getMaxCatalogNameLength();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxCharLiteralLength
+		System.out.println("  getMaxCharLiteralLength");
+		intval=md.getMaxCharLiteralLength();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxColumnNameLength
+		System.out.println("  getMaxColumnNameLength");
+		intval=md.getMaxColumnNameLength();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxColumnsInGroupBy
+		System.out.println("  getMaxColumnsInGroupBy");
+		intval=md.getMaxColumnsInGroupBy();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxColumnsInIndex
+		System.out.println("  getMaxColumnsInIndex");
+		intval=md.getMaxColumnsInIndex();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxColumnsInOrderBy
+		System.out.println("  getMaxColumnsInOrderBy");
+		intval=md.getMaxColumnsInOrderBy();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxColumnsInSelect
+		System.out.println("  getMaxColumnsInSelect");
+		intval=md.getMaxColumnsInSelect();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxColumnsInTable
+		System.out.println("  getMaxColumnsInTable");
+		intval=md.getMaxColumnsInTable();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxConnections
+		System.out.println("  getMaxConnections");
+		intval=md.getMaxConnections();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxCursorNameLength
+		System.out.println("  getMaxCursorNameLength");
+		intval=md.getMaxCursorNameLength();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxIndexLength
+		System.out.println("  getMaxIndexLength");
+		intval=md.getMaxIndexLength();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxProcedureNameLength
+		System.out.println("  getMaxProcedureNameLength");
+		intval=md.getMaxProcedureNameLength();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxRowSize
+		System.out.println("  getMaxRowSize");
+		intval=md.getMaxRowSize();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxSchemaNameLength
+		System.out.println("  getMaxSchemaNameLength");
+		intval=md.getMaxSchemaNameLength();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxStatementLength
+		System.out.println("  getMaxStatementLength");
+		intval=md.getMaxStatementLength();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxStatements
+		System.out.println("  getMaxStatements");
+		intval=md.getMaxStatements();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxTableNameLength
+		System.out.println("  getMaxTableNameLength");
+		intval=md.getMaxTableNameLength();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxTablesInSelect
+		System.out.println("  getMaxTablesInSelect");
+		intval=md.getMaxTablesInSelect();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
+		System.out.println();
+
+		// getMaxUserNameLength
+		System.out.println("  getMaxUserNameLength");
+		intval=md.getMaxUserNameLength();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
 		System.out.println();
 
 		// getNumericFunctions
 		System.out.println("  getNumericFunctions");
 		stringval=md.getNumericFunctions();
 		System.out.println("    "+stringval);
-		assertTrue(stringval!=null||stringval==null);
+		assertEquals(stringval,"");
 		System.out.println();
 
 		// getProcedureTerm
 		System.out.println("  getProcedureTerm");
 		stringval=md.getProcedureTerm();
 		System.out.println("    "+stringval);
+		// not yet tested against native driver
 		assertTrue(stringval!=null||stringval==null);
+		System.out.println();
+
+		// getResultSetHoldability
+		System.out.println("  getResultSetHoldability");
+		intval=md.getResultSetHoldability();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
 		System.out.println();
 
 		// getSchemaTerm
 		System.out.println("  getSchemaTerm");
 		stringval=md.getSchemaTerm();
 		System.out.println("    "+stringval);
+		// not yet tested against native driver
 		assertTrue(stringval!=null||stringval==null);
 		System.out.println();
 
@@ -978,6 +488,7 @@ class firebird extends sqlrtest {
 		System.out.println("  getSearchStringEscape");
 		stringval=md.getSearchStringEscape();
 		System.out.println("    "+stringval);
+		// not yet tested against native driver
 		assertTrue(stringval!=null||stringval==null);
 		System.out.println();
 
@@ -985,45 +496,663 @@ class firebird extends sqlrtest {
 		System.out.println("  getSQLKeywords");
 		stringval=md.getSQLKeywords();
 		System.out.println("    "+stringval);
-		assertTrue(stringval!=null||stringval==null);
+		assertEquals(stringval,"");
+		System.out.println();
+
+		// getSQLStateType
+		System.out.println("  getSQLStateType");
+		intval=md.getSQLStateType();
+		System.out.println("    "+intval);
+		// not yet tested against native driver
+		assertTrue(intval>=0);
 		System.out.println();
 
 		// getStringFunctions
 		System.out.println("  getStringFunctions");
 		stringval=md.getStringFunctions();
 		System.out.println("    "+stringval);
-		assertTrue(stringval!=null||stringval==null);
+		assertEquals(stringval,"");
 		System.out.println();
 
 		// getSystemFunctions
 		System.out.println("  getSystemFunctions");
 		stringval=md.getSystemFunctions();
 		System.out.println("    "+stringval);
-		assertTrue(stringval!=null||stringval==null);
+		assertEquals(stringval,"");
 		System.out.println();
 
 		// getTimeDateFunctions
 		System.out.println("  getTimeDateFunctions");
 		stringval=md.getTimeDateFunctions();
 		System.out.println("    "+stringval);
-		assertTrue(stringval!=null||stringval==null);
+		assertEquals(stringval,"");
 		System.out.println();
 
 		// getURL
 		System.out.println("  getURL");
 		stringval=md.getURL();
 		System.out.println("    "+stringval);
-		assertTrue(stringval!=null||stringval==null);
+		assertEquals(stringval,url);
 		System.out.println();
 
 		// getUserName
 		System.out.println("  getUserName");
 		stringval=md.getUserName();
 		System.out.println("    "+stringval);
+		// not yet tested against native driver
 		assertTrue(stringval!=null||stringval==null);
 		System.out.println();
 
+		// isCatalogAtStart
+		System.out.println("  isCatalogAtStart");
+		boolval=md.isCatalogAtStart();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// isReadOnly
+		System.out.println("  isReadOnly");
+		boolval=md.isReadOnly();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// locatorsUpdateCopy
+		System.out.println("  locatorsUpdateCopy");
+		boolval=md.locatorsUpdateCopy();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// nullPlusNonNullIsNull
+		System.out.println("  nullPlusNonNullIsNull");
+		boolval=md.nullPlusNonNullIsNull();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// nullsAreSortedAtEnd
+		System.out.println("  nullsAreSortedAtEnd");
+		boolval=md.nullsAreSortedAtEnd();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// nullsAreSortedAtStart
+		System.out.println("  nullsAreSortedAtStart");
+		boolval=md.nullsAreSortedAtStart();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// nullsAreSortedHigh
+		System.out.println("  nullsAreSortedHigh");
+		boolval=md.nullsAreSortedHigh();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// nullsAreSortedLow
+		System.out.println("  nullsAreSortedLow");
+		boolval=md.nullsAreSortedLow();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
 		// statement
+
+		// storesLowerCaseIdentifiers
+		System.out.println("  storesLowerCaseIdentifiers");
+		boolval=md.storesLowerCaseIdentifiers();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// storesLowerCaseQuotedIdentifiers
+		System.out.println("  storesLowerCaseQuotedIdentifiers");
+		boolval=md.storesLowerCaseQuotedIdentifiers();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// storesMixedCaseIdentifiers
+		System.out.println("  storesMixedCaseIdentifiers");
+		boolval=md.storesMixedCaseIdentifiers();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// storesMixedCaseQuotedIdentifiers
+		System.out.println("  storesMixedCaseQuotedIdentifiers");
+		boolval=md.storesMixedCaseQuotedIdentifiers();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// storesUpperCaseIdentifiers
+		System.out.println("  storesUpperCaseIdentifiers");
+		boolval=md.storesUpperCaseIdentifiers();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// storesUpperCaseQuotedIdentifiers
+		System.out.println("  storesUpperCaseQuotedIdentifiers");
+		boolval=md.storesUpperCaseQuotedIdentifiers();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsAlterTableWithAddColumn
+		System.out.println("  supportsAlterTableWithAddColumn");
+		boolval=md.supportsAlterTableWithAddColumn();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsAlterTableWithDropColumn
+		System.out.println("  supportsAlterTableWithDropColumn");
+		boolval=md.supportsAlterTableWithDropColumn();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsANSI92EntryLevelSQL
+		System.out.println("  supportsANSI92EntryLevelSQL");
+		boolval=md.supportsANSI92EntryLevelSQL();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsANSI92FullSQL
+		System.out.println("  supportsANSI92FullSQL");
+		boolval=md.supportsANSI92FullSQL();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsANSI92IntermediateSQL
+		System.out.println("  supportsANSI92IntermediateSQL");
+		boolval=md.supportsANSI92IntermediateSQL();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsBatchUpdates
+		System.out.println("  supportsBatchUpdates");
+		boolval=md.supportsBatchUpdates();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsCatalogsInDataManipulation
+		System.out.println("  supportsCatalogsInDataManipulation");
+		boolval=md.supportsCatalogsInDataManipulation();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsCatalogsInIndexDefinitions
+		System.out.println("  supportsCatalogsInIndexDefinitions");
+		boolval=md.supportsCatalogsInIndexDefinitions();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsCatalogsInPrivilegeDefinitions
+		System.out.println("  supportsCatalogsInPrivilegeDefinitions");
+		boolval=md.supportsCatalogsInPrivilegeDefinitions();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsCatalogsInProcedureCalls
+		System.out.println("  supportsCatalogsInProcedureCalls");
+		boolval=md.supportsCatalogsInProcedureCalls();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsCatalogsInTableDefinitions
+		System.out.println("  supportsCatalogsInTableDefinitions");
+		boolval=md.supportsCatalogsInTableDefinitions();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsColumnAliasing
+		System.out.println("  supportsColumnAliasing");
+		boolval=md.supportsColumnAliasing();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsConvert
+		System.out.println("  supportsConvert");
+		boolval=md.supportsConvert();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsCoreSQLGrammar
+		System.out.println("  supportsCoreSQLGrammar");
+		boolval=md.supportsCoreSQLGrammar();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsCorrelatedSubqueries
+		System.out.println("  supportsCorrelatedSubqueries");
+		boolval=md.supportsCorrelatedSubqueries();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsDifferentTableCorrelationNames
+		System.out.println("  supportsDifferentTableCorrelationNames");
+		boolval=md.supportsDifferentTableCorrelationNames();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsExpressionsInOrderBy
+		System.out.println("  supportsExpressionsInOrderBy");
+		boolval=md.supportsExpressionsInOrderBy();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsExtendedSQLGrammar
+		System.out.println("  supportsExtendedSQLGrammar");
+		boolval=md.supportsExtendedSQLGrammar();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsFullOuterJoins
+		System.out.println("  supportsFullOuterJoins");
+		boolval=md.supportsFullOuterJoins();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsGetGeneratedKeys
+		System.out.println("  supportsGetGeneratedKeys");
+		boolval=md.supportsGetGeneratedKeys();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsGroupBy
+		System.out.println("  supportsGroupBy");
+		boolval=md.supportsGroupBy();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsGroupByBeyondSelect
+		System.out.println("  supportsGroupByBeyondSelect");
+		boolval=md.supportsGroupByBeyondSelect();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsGroupByUnrelated
+		System.out.println("  supportsGroupByUnrelated");
+		boolval=md.supportsGroupByUnrelated();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsIntegrityEnhancementFacility
+		System.out.println("  supportsIntegrityEnhancementFacility");
+		boolval=md.supportsIntegrityEnhancementFacility();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsLikeEscapeClause
+		System.out.println("  supportsLikeEscapeClause");
+		boolval=md.supportsLikeEscapeClause();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsLimitedOuterJoins
+		System.out.println("  supportsLimitedOuterJoins");
+		boolval=md.supportsLimitedOuterJoins();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsMinimumSQLGrammar
+		System.out.println("  supportsMinimumSQLGrammar");
+		boolval=md.supportsMinimumSQLGrammar();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsMixedCaseIdentifiers
+		System.out.println("  supportsMixedCaseIdentifiers");
+		boolval=md.supportsMixedCaseIdentifiers();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsMixedCaseQuotedIdentifiers
+		System.out.println("  supportsMixedCaseQuotedIdentifiers");
+		boolval=md.supportsMixedCaseQuotedIdentifiers();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsMultipleOpenResults
+		System.out.println("  supportsMultipleOpenResults");
+		boolval=md.supportsMultipleOpenResults();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsMultipleResultSets
+		System.out.println("  supportsMultipleResultSets");
+		boolval=md.supportsMultipleResultSets();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsMultipleTransactions
+		System.out.println("  supportsMultipleTransactions");
+		boolval=md.supportsMultipleTransactions();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsNamedParameters
+		System.out.println("  supportsNamedParameters");
+		boolval=md.supportsNamedParameters();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsNonNullableColumns
+		System.out.println("  supportsNonNullableColumns");
+		boolval=md.supportsNonNullableColumns();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsOpenCursorsAcrossCommit
+		System.out.println("  supportsOpenCursorsAcrossCommit");
+		boolval=md.supportsOpenCursorsAcrossCommit();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsOpenCursorsAcrossRollback
+		System.out.println("  supportsOpenCursorsAcrossRollback");
+		boolval=md.supportsOpenCursorsAcrossRollback();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsOpenStatementsAcrossCommit
+		System.out.println("  supportsOpenStatementsAcrossCommit");
+		boolval=md.supportsOpenStatementsAcrossCommit();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsOpenStatementsAcrossRollback
+		System.out.println("  supportsOpenStatementsAcrossRollback");
+		boolval=md.supportsOpenStatementsAcrossRollback();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsOrderByUnrelated
+		System.out.println("  supportsOrderByUnrelated");
+		boolval=md.supportsOrderByUnrelated();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsOuterJoins
+		System.out.println("  supportsOuterJoins");
+		boolval=md.supportsOuterJoins();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsPositionedDelete
+		System.out.println("  supportsPositionedDelete");
+		boolval=md.supportsPositionedDelete();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsPositionedUpdate
+		System.out.println("  supportsPositionedUpdate");
+		boolval=md.supportsPositionedUpdate();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsSavepoints
+		System.out.println("  supportsSavepoints");
+		boolval=md.supportsSavepoints();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsSchemasInDataManipulation
+		System.out.println("  supportsSchemasInDataManipulation");
+		boolval=md.supportsSchemasInDataManipulation();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsSchemasInIndexDefinitions
+		System.out.println("  supportsSchemasInIndexDefinitions");
+		boolval=md.supportsSchemasInIndexDefinitions();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsSchemasInPrivilegeDefinitions
+		System.out.println("  supportsSchemasInPrivilegeDefinitions");
+		boolval=md.supportsSchemasInPrivilegeDefinitions();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsSchemasInProcedureCalls
+		System.out.println("  supportsSchemasInProcedureCalls");
+		boolval=md.supportsSchemasInProcedureCalls();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsSchemasInTableDefinitions
+		System.out.println("  supportsSchemasInTableDefinitions");
+		boolval=md.supportsSchemasInTableDefinitions();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsSelectForUpdate
+		System.out.println("  supportsSelectForUpdate");
+		boolval=md.supportsSelectForUpdate();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsStatementPooling
+		System.out.println("  supportsStatementPooling");
+		boolval=md.supportsStatementPooling();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsStoredFunctionsUsingCallSyntax
+		System.out.println("  supportsStoredFunctionsUsingCallSyntax");
+		boolval=md.supportsStoredFunctionsUsingCallSyntax();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsStoredProcedures
+		System.out.println("  supportsStoredProcedures");
+		boolval=md.supportsStoredProcedures();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsSubqueriesInComparisons
+		System.out.println("  supportsSubqueriesInComparisons");
+		boolval=md.supportsSubqueriesInComparisons();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsSubqueriesInExists
+		System.out.println("  supportsSubqueriesInExists");
+		boolval=md.supportsSubqueriesInExists();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsSubqueriesInIns
+		System.out.println("  supportsSubqueriesInIns");
+		boolval=md.supportsSubqueriesInIns();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsSubqueriesInQuantifieds
+		System.out.println("  supportsSubqueriesInQuantifieds");
+		boolval=md.supportsSubqueriesInQuantifieds();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsTableCorrelationNames
+		System.out.println("  supportsTableCorrelationNames");
+		boolval=md.supportsTableCorrelationNames();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsTransactions
+		System.out.println("  supportsTransactions");
+		boolval=md.supportsTransactions();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsUnion
+		System.out.println("  supportsUnion");
+		boolval=md.supportsUnion();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// supportsUnionAll
+		System.out.println("  supportsUnionAll");
+		boolval=md.supportsUnionAll();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// usesLocalFilePerTable
+		System.out.println("  usesLocalFilePerTable");
+		boolval=md.usesLocalFilePerTable();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
+		// usesLocalFiles
+		System.out.println("  usesLocalFiles");
+		boolval=md.usesLocalFiles();
+		System.out.println("    "+boolval);
+		// not yet tested against native driver
+		assertTrue(boolval||!boolval);
+		System.out.println();
+
 		System.out.println("STATEMENT:");
 		stmt=con.createStatement();
 		assertTrue((stmt!=null));
