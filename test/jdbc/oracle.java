@@ -2234,6 +2234,7 @@ class oracle extends sqlrtest {
 		}
 		rs.close();
 		assertTrue(rs.isClosed());
+		System.out.println();
 
 
 		// fields by name
@@ -2888,8 +2889,8 @@ class oracle extends sqlrtest {
 		rs.next();
 		assertEquals(rs.getString(1),null);
 		assertEquals(rs.getString(2),null);
-		assertTrue((rs.getBlob(3)==null));
-		assertTrue((rs.getBlob(4)==null));
+		assertEquals(rs.getBlob(3),null);
+		assertEquals(rs.getBlob(4),null);
 		rs.close();
 		assertEquals(stmt.executeUpdate("drop table testtable1"),0);
 		System.out.println();
