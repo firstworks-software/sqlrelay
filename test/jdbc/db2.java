@@ -1214,34 +1214,20 @@ class db2 extends sqlrtest {
 
 		// column names
 		System.out.println("COLUMN NAMES:");
-		assertTrue(rsmd.getColumnName(1).
-				equalsIgnoreCase("testsmallint"));
-		assertTrue(rsmd.getColumnName(2).
-				equalsIgnoreCase("testint"));
-		assertTrue(rsmd.getColumnName(3).
-				equalsIgnoreCase("testbigint"));
-		assertTrue(rsmd.getColumnName(4).
-				equalsIgnoreCase("testdecimal"));
-		assertTrue(rsmd.getColumnName(5).
-				equalsIgnoreCase("testreal"));
-		assertTrue(rsmd.getColumnName(6).
-				equalsIgnoreCase("testdouble"));
-		assertTrue(rsmd.getColumnName(7).
-				equalsIgnoreCase("testchar"));
-		assertTrue(rsmd.getColumnName(8).
-				equalsIgnoreCase("testvarchar"));
-		assertTrue(rsmd.getColumnName(9).
-				equalsIgnoreCase("testdate"));
-		assertTrue(rsmd.getColumnName(10).
-				equalsIgnoreCase("testtime"));
-		assertTrue(rsmd.getColumnName(11).
-				equalsIgnoreCase("testtimestamp"));
-		assertTrue(rsmd.getColumnName(12).
-				equalsIgnoreCase("testclob"));
-		assertTrue(rsmd.getColumnName(13).
-				equalsIgnoreCase("testblob"));
-		assertTrue(rsmd.getColumnName(14).
-				equalsIgnoreCase("testurl"));
+		assertEquals(rsmd.getColumnName(1),"TESTSMALLINT");
+		assertEquals(rsmd.getColumnName(2),"TESTINT");
+		assertEquals(rsmd.getColumnName(3),"TESTBIGINT");
+		assertEquals(rsmd.getColumnName(4),"TESTDECIMAL");
+		assertEquals(rsmd.getColumnName(5),"TESTREAL");
+		assertEquals(rsmd.getColumnName(6),"TESTDOUBLE");
+		assertEquals(rsmd.getColumnName(7),"TESTCHAR");
+		assertEquals(rsmd.getColumnName(8),"TESTVARCHAR");
+		assertEquals(rsmd.getColumnName(9),"TESTDATE");
+		assertEquals(rsmd.getColumnName(10),"TESTTIME");
+		assertEquals(rsmd.getColumnName(11),"TESTTIMESTAMP");
+		assertEquals(rsmd.getColumnName(12),"TESTCLOB");
+		assertEquals(rsmd.getColumnName(13),"TESTBLOB");
+		assertEquals(rsmd.getColumnName(14),"TESTURL");
 		System.out.println();
 
 		// column types
@@ -1373,7 +1359,8 @@ class db2 extends sqlrtest {
 			System.out.println();
 
 			// clob as ascii stream
-			System.out.println("  row "+i+" - clob as ascii stream");
+			System.out.println("  row "+i+
+						" - clob as ascii stream");
 			assertEquals(new String(rs.getAsciiStream(12).
 						readAllBytes(),"UTF-8"),
 						"clob"+i);
@@ -1381,7 +1368,8 @@ class db2 extends sqlrtest {
 			System.out.println();
 
 			// clob as character stream
-			System.out.println("  row "+i+" - clob as character stream");
+			System.out.println("  row "+i+
+						" - clob as character stream");
 			StringWriter sw=new StringWriter();
 			rs.getCharacterStream(12).transferTo(sw);
 			assertEquals(sw.toString(),"clob"+i);
@@ -1407,7 +1395,8 @@ class db2 extends sqlrtest {
 			System.out.println();
 
 			// blob as binary stream
-			System.out.println("  row "+i+" - blob as binary stream");
+			System.out.println("  row "+i+
+						" - blob as binary stream");
 			assertEquals(new String(rs.getBinaryStream(13).
 						readAllBytes(),"UTF-8"),
 						"blob"+i);
@@ -1534,7 +1523,8 @@ class db2 extends sqlrtest {
 			System.out.println();
 
 			// clob as ascii stream
-			System.out.println("  row "+i+" - clob as ascii stream");
+			System.out.println("  row "+i+
+						" - clob as ascii stream");
 			assertEquals(new String(rs.getAsciiStream("TESTCLOB").
 						readAllBytes(),"UTF-8"),
 						"clob"+i);
@@ -1542,7 +1532,8 @@ class db2 extends sqlrtest {
 			System.out.println();
 
 			// clob as character stream
-			System.out.println("  row "+i+" - clob as character stream");
+			System.out.println("  row "+i+
+						" - clob as character stream");
 			StringWriter sw=new StringWriter();
 			rs.getCharacterStream("TESTCLOB").transferTo(sw);
 			assertEquals(sw.toString(),"clob"+i);
@@ -1568,7 +1559,8 @@ class db2 extends sqlrtest {
 			System.out.println();
 
 			// blob as binary stream
-			System.out.println("  row "+i+" - blob as binary stream");
+			System.out.println("  row "+i+
+						" - blob as binary stream");
 			assertEquals(new String(rs.getBinaryStream("TESTBLOB").
 						readAllBytes(),"UTF-8"),
 						"blob"+i);
@@ -1578,7 +1570,7 @@ class db2 extends sqlrtest {
 			// url
 			System.out.println("  row "+i+" - url");
 			if (issqlrelay) {
-				URL	urlvar=rs.getURL("testurl");
+				URL	urlvar=rs.getURL("TESTURL");
 				assertEquals(urlvar.getProtocol(),"http");
 				assertEquals(urlvar.getHost(),
 						"www.firstworks.com");
@@ -1818,47 +1810,33 @@ class db2 extends sqlrtest {
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testsmallint"));
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTSMALLINT");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testint"));
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTINT");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testbigint"));
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTBIGINT");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testdecimal"));
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTDECIMAL");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testreal"));
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTREAL");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testdouble"));
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTDOUBLE");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testchar"));
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTCHAR");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testvarchar"));
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTVARCHAR");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testdate"));
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTDATE");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testtime"));
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTTIME");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testtimestamp"));
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTTIMESTAMP");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testclob"));
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTCLOB");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testblob"));
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTBLOB");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testurl"));
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTURL");
 		rs.close();
 		stmt.executeUpdate("drop table testtable");
 		System.out.println();

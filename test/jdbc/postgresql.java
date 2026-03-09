@@ -1212,30 +1212,18 @@ class postgresql extends sqlrtest {
 
 		// column names
 		System.out.println("COLUMN NAMES:");
-		assertTrue(rsmd.getColumnName(1).
-				equalsIgnoreCase("testint"));
-		assertTrue(rsmd.getColumnName(2).
-				equalsIgnoreCase("testfloat"));
-		assertTrue(rsmd.getColumnName(3).
-				equalsIgnoreCase("testreal"));
-		assertTrue(rsmd.getColumnName(4).
-				equalsIgnoreCase("testsmallint"));
-		assertTrue(rsmd.getColumnName(5).
-				equalsIgnoreCase("testchar"));
-		assertTrue(rsmd.getColumnName(6).
-				equalsIgnoreCase("testvarchar"));
-		assertTrue(rsmd.getColumnName(7).
-				equalsIgnoreCase("testdate"));
-		assertTrue(rsmd.getColumnName(8).
-				equalsIgnoreCase("testtime"));
-		assertTrue(rsmd.getColumnName(9).
-				equalsIgnoreCase("testtimestamp"));
-		assertTrue(rsmd.getColumnName(10).
-				equalsIgnoreCase("testtext"));
-		assertTrue(rsmd.getColumnName(11).
-				equalsIgnoreCase("testbytea"));
-		assertTrue(rsmd.getColumnName(12).
-				equalsIgnoreCase("testurl"));
+		assertEquals(rsmd.getColumnName(1),"testint");
+		assertEquals(rsmd.getColumnName(2),"testfloat");
+		assertEquals(rsmd.getColumnName(3),"testreal");
+		assertEquals(rsmd.getColumnName(4),"testsmallint");
+		assertEquals(rsmd.getColumnName(5),"testchar");
+		assertEquals(rsmd.getColumnName(6),"testvarchar");
+		assertEquals(rsmd.getColumnName(7),"testdate");
+		assertEquals(rsmd.getColumnName(8),"testtime");
+		assertEquals(rsmd.getColumnName(9),"testtimestamp");
+		assertEquals(rsmd.getColumnName(10),"testtext");
+		assertEquals(rsmd.getColumnName(11),"testbytea");
+		assertEquals(rsmd.getColumnName(12),"testurl");
 		System.out.println();
 
 		// column types
@@ -1729,41 +1717,29 @@ class postgresql extends sqlrtest {
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testint"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testint");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testfloat"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testfloat");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testreal"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testreal");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testsmallint"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testsmallint");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testchar"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testchar");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testvarchar"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testvarchar");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testdate"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testdate");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testtime"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testtime");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testtimestamp"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testtimestamp");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testtext"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testtext");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testbytea"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testbytea");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testurl"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testurl");
 		rs.close();
 		stmt.executeUpdate("drop table testtable");
 		System.out.println();

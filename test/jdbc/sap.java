@@ -1177,38 +1177,22 @@ class sap extends sqlrtest {
 
 		// column names
 		System.out.println("COLUMN NAMES:");
-		assertTrue(rsmd.getColumnName(1).
-				equalsIgnoreCase("testint"));
-		assertTrue(rsmd.getColumnName(2).
-				equalsIgnoreCase("testsmallint"));
-		assertTrue(rsmd.getColumnName(3).
-				equalsIgnoreCase("testtinyint"));
-		assertTrue(rsmd.getColumnName(4).
-				equalsIgnoreCase("testreal"));
-		assertTrue(rsmd.getColumnName(5).
-				equalsIgnoreCase("testfloat"));
-		assertTrue(rsmd.getColumnName(6).
-				equalsIgnoreCase("testdecimal"));
-		assertTrue(rsmd.getColumnName(7).
-				equalsIgnoreCase("testnumeric"));
-		assertTrue(rsmd.getColumnName(8).
-				equalsIgnoreCase("testmoney"));
-		assertTrue(rsmd.getColumnName(9).
-				equalsIgnoreCase("testsmallmoney"));
-		assertTrue(rsmd.getColumnName(10).
-				equalsIgnoreCase("testdatetime"));
-		assertTrue(rsmd.getColumnName(11).
-				equalsIgnoreCase("testsmalldatetime"));
-		assertTrue(rsmd.getColumnName(12).
-				equalsIgnoreCase("testchar"));
-		assertTrue(rsmd.getColumnName(13).
-				equalsIgnoreCase("testvarchar"));
-		assertTrue(rsmd.getColumnName(14).
-				equalsIgnoreCase("testbit"));
-		assertTrue(rsmd.getColumnName(15).
-				equalsIgnoreCase("testtext"));
-		assertTrue(rsmd.getColumnName(16).
-				equalsIgnoreCase("testurl"));
+		assertEquals(rsmd.getColumnName(1),"testint");
+		assertEquals(rsmd.getColumnName(2),"testsmallint");
+		assertEquals(rsmd.getColumnName(3),"testtinyint");
+		assertEquals(rsmd.getColumnName(4),"testreal");
+		assertEquals(rsmd.getColumnName(5),"testfloat");
+		assertEquals(rsmd.getColumnName(6),"testdecimal");
+		assertEquals(rsmd.getColumnName(7),"testnumeric");
+		assertEquals(rsmd.getColumnName(8),"testmoney");
+		assertEquals(rsmd.getColumnName(9),"testsmallmoney");
+		assertEquals(rsmd.getColumnName(10),"testdatetime");
+		assertEquals(rsmd.getColumnName(11),"testsmalldatetime");
+		assertEquals(rsmd.getColumnName(12),"testchar");
+		assertEquals(rsmd.getColumnName(13),"testvarchar");
+		assertEquals(rsmd.getColumnName(14),"testbit");
+		assertEquals(rsmd.getColumnName(15),"testtext");
+		assertEquals(rsmd.getColumnName(16),"testurl");
 		System.out.println();
 
 		// column types
@@ -1722,53 +1706,37 @@ class sap extends sqlrtest {
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testint"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testint");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testsmallint"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testsmallint");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testtinyint"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testtinyint");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testreal"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testreal");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testfloat"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testfloat");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testdecimal"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testdecimal");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testnumeric"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testnumeric");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testmoney"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testmoney");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testsmallmoney"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testsmallmoney");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testdatetime"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testdatetime");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testsmalldatetime"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testsmalldatetime");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testchar"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testchar");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testvarchar"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testvarchar");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testbit"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testbit");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testtext"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testtext");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testurl"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testurl");
 		rs.close();
 		stmt.executeUpdate("drop table testtable");
 		System.out.println();

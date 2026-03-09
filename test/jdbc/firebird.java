@@ -1287,32 +1287,19 @@ class firebird extends sqlrtest {
 
 		// column names
 		System.out.println("COLUMN NAMES:");
-		assertTrue(rsmd.getColumnName(1).
-				equalsIgnoreCase("testinteger"));
-		assertTrue(rsmd.getColumnName(2).
-				equalsIgnoreCase("testsmallint"));
-		assertTrue(rsmd.getColumnName(3).
-				equalsIgnoreCase("testdecimal"));
-		assertTrue(rsmd.getColumnName(4).
-				equalsIgnoreCase("testnumeric"));
-		assertTrue(rsmd.getColumnName(5).
-				equalsIgnoreCase("testfloat"));
-		assertTrue(rsmd.getColumnName(6).
-				equalsIgnoreCase("testdouble"));
-		assertTrue(rsmd.getColumnName(7).
-				equalsIgnoreCase("testdate"));
-		assertTrue(rsmd.getColumnName(8).
-				equalsIgnoreCase("testtime"));
-		assertTrue(rsmd.getColumnName(9).
-				equalsIgnoreCase("testchar"));
-		assertTrue(rsmd.getColumnName(10).
-				equalsIgnoreCase("testvarchar"));
-		assertTrue(rsmd.getColumnName(11).
-				equalsIgnoreCase("testtimestamp"));
-		assertTrue(rsmd.getColumnName(12).
-				equalsIgnoreCase("testblob"));
-		assertTrue(rsmd.getColumnName(13).
-				equalsIgnoreCase("testurl"));
+		assertEquals(rsmd.getColumnName(1),"TESTINTEGER");
+		assertEquals(rsmd.getColumnName(2),"TESTSMALLINT");
+		assertEquals(rsmd.getColumnName(3),"TESTDECIMAL");
+		assertEquals(rsmd.getColumnName(4),"TESTNUMERIC");
+		assertEquals(rsmd.getColumnName(5),"TESTFLOAT");
+		assertEquals(rsmd.getColumnName(6),"TESTDOUBLE");
+		assertEquals(rsmd.getColumnName(7),"TESTDATE");
+		assertEquals(rsmd.getColumnName(8),"TESTTIME");
+		assertEquals(rsmd.getColumnName(9),"TESTCHAR");
+		assertEquals(rsmd.getColumnName(10),"TESTVARCHAR");
+		assertEquals(rsmd.getColumnName(11),"TESTTIMESTAMP");
+		assertEquals(rsmd.getColumnName(12),"TESTBLOB");
+		assertEquals(rsmd.getColumnName(13),"TESTURL");
 		System.out.println();
 
 		// column types
@@ -1599,7 +1586,7 @@ class firebird extends sqlrtest {
 
 			// url
 			System.out.println("  row "+i+" - url");
-			URL	urlvar=rs.getURL("testurl");
+			URL	urlvar=rs.getURL("TESTURL");
 			assertEquals(urlvar.getProtocol(),"http");
 			assertEquals(urlvar.getHost(),"www.firstworks.com");
 			assertEquals(urlvar.getPort(),8080);
@@ -1742,44 +1729,31 @@ class firebird extends sqlrtest {
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testinteger"));
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTINTEGER");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testsmallint"));
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTSMALLINT");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testdecimal"));
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTDECIMAL");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testnumeric"));
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTNUMERIC");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testfloat"));
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTFLOAT");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testdouble"));
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTDOUBLE");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testdate"));
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTDATE");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testtime"));
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTTIME");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testchar"));
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTCHAR");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testvarchar"));
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTVARCHAR");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testtimestamp"));
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTTIMESTAMP");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testblob"));
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTBLOB");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testurl"));
+		assertEquals(rs.getString("COLUMN_NAME"),"TESTURL");
 		rs.close();
 		stmt.executeUpdate("drop table testtable");
 		System.out.println();

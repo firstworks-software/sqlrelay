@@ -272,7 +272,8 @@ public class SQLRelayResultSet implements ResultSet {
 		throwExceptionIfClosed();
 		drv.debugPrintln("column label: "+columnlabel);
 		for (int i=0; i<sqlrcur.colCount(); i++) {
-			if (sqlrcur.getColumnName(i).equals(columnlabel)) {
+			if (sqlrcur.getColumnName(i).
+					equalsIgnoreCase(columnlabel)) {
 				drv.debugPrintln("column: "+(i+1));
 				drv.debugEnd();
 				return i+1;
@@ -292,19 +293,20 @@ public class SQLRelayResultSet implements ResultSet {
 
 	private
 	boolean isCharBinaryCol(int columnindex) {
-		return isCharBinaryType(
-			sqlrcur.getColumnType(columnindex-1).toUpperCase());
+		return isCharBinaryType(sqlrcur.getColumnType(columnindex-1));
 	}
 
 	private
 	boolean isCharBinaryCol(String columnlabel) {
-		return isCharBinaryType(
-			sqlrcur.getColumnType(columnlabel).toUpperCase());
+		return isCharBinaryType(sqlrcur.getColumnType(columnlabel));
 	}
 
 	private
 	boolean isCharBinaryType(String type) {
-		switch (type) {
+		if (type==null) {
+			return false;
+		}
+		switch (type.toUpperCase()) {
 			case "CHAR":
 			case "_CHAR":
 			case "LONGCHAR":
@@ -3008,7 +3010,7 @@ public class SQLRelayResultSet implements ResultSet {
 	void validateColumn(String columnlabel) throws SQLException {
 		String[] cols=sqlrcur.getColumnNames();
 		for (int i=0; i<cols.length; i++) {
-			if (cols[i].equals(columnlabel)) {
+			if (cols[i].equalsIgnoreCase(columnlabel)) {
 				return;
 			}
 		}

@@ -1184,20 +1184,13 @@ class sqlite extends sqlrtest {
 
 		// column names
 		System.out.println("COLUMN NAMES:");
-		assertTrue(rsmd.getColumnName(1).
-				equalsIgnoreCase("testint"));
-		assertTrue(rsmd.getColumnName(2).
-				equalsIgnoreCase("testfloat"));
-		assertTrue(rsmd.getColumnName(3).
-				equalsIgnoreCase("testchar"));
-		assertTrue(rsmd.getColumnName(4).
-				equalsIgnoreCase("testvarchar"));
-		assertTrue(rsmd.getColumnName(5).
-				equalsIgnoreCase("testclob"));
-		assertTrue(rsmd.getColumnName(6).
-				equalsIgnoreCase("testblob"));
-		assertTrue(rsmd.getColumnName(7).
-				equalsIgnoreCase("testurl"));
+		assertEquals(rsmd.getColumnName(1),"testint");
+		assertEquals(rsmd.getColumnName(2),"testfloat");
+		assertEquals(rsmd.getColumnName(3),"testchar");
+		assertEquals(rsmd.getColumnName(4),"testvarchar");
+		assertEquals(rsmd.getColumnName(5),"testclob");
+		assertEquals(rsmd.getColumnName(6),"testblob");
+		assertEquals(rsmd.getColumnName(7),"testurl");
 		System.out.println();
 
 		// column types
@@ -1531,26 +1524,19 @@ class sqlite extends sqlrtest {
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testint"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testint");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testfloat"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testfloat");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testchar"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testchar");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testvarchar"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testvarchar");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testclob"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testclob");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testblob"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testblob");
 		assertTrue(rs.next());
-		assertTrue(rs.getString("COLUMN_NAME").
-					equalsIgnoreCase("testurl"));
+		assertEquals(rs.getString("COLUMN_NAME"),"testurl");
 		rs.close();
 		stmt.executeUpdate("drop table testtable");
 		System.out.println();
