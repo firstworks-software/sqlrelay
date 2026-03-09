@@ -981,7 +981,12 @@ class sqlite extends sqlrtest {
 		System.out.println("  supportsStatementPooling");
 		boolval=md.supportsStatementPooling();
 		System.out.println("    "+boolval);
-		assertFalse(boolval);
+		if (issqlrelay) {
+			// sqlrelay pools statements
+			assertTrue(boolval);
+		} else {
+			assertFalse(boolval);
+		}
 		System.out.println();
 
 		// supportsStoredFunctionsUsingCallSyntax
@@ -1273,7 +1278,8 @@ class sqlite extends sqlrtest {
 			System.out.println();
 
 			// clob as ascii stream
-			System.out.println("  row "+i+" - clob as ascii stream");
+			System.out.println("  row "+i+
+						" - clob as ascii stream");
 			assertEquals(new String(rs.getAsciiStream(5).
 						readAllBytes(),"UTF-8"),
 						"clob"+i);
@@ -1281,7 +1287,8 @@ class sqlite extends sqlrtest {
 			System.out.println();
 
 			// clob as character stream
-			System.out.println("  row "+i+" - clob as character stream");
+			System.out.println("  row "+i
+						+" - clob as character stream");
 			StringWriter sw=new StringWriter();
 			rs.getCharacterStream(5).transferTo(sw);
 			assertEquals(sw.toString(),"clob"+i);
@@ -1303,7 +1310,8 @@ class sqlite extends sqlrtest {
 			System.out.println();
 
 			// blob as binary stream
-			System.out.println("  row "+i+" - blob as binary stream");
+			System.out.println("  row "+i
+						+" - blob as binary stream");
 			assertEquals(new String(rs.getBinaryStream(6).
 						readAllBytes(),"UTF-8"),
 						"blob"+i);
@@ -1312,12 +1320,15 @@ class sqlite extends sqlrtest {
 
 			// url
 			System.out.println("  row "+i+" - url");
-			URL	urlvar=rs.getURL(7);
-			assertEquals(urlvar.getProtocol(),"http");
-			assertEquals(urlvar.getHost(),"www.firstworks.com");
-			assertEquals(urlvar.getPort(),8080);
-			assertEquals(urlvar.getPath(),"/testurl"+i);
-			assertFalse(rs.wasNull());
+			if (issqlrelay) {
+				URL	urlvar=rs.getURL(7);
+				assertEquals(urlvar.getProtocol(),"http");
+				assertEquals(urlvar.getHost(),
+					"www.firstworks.com");
+				assertEquals(urlvar.getPort(),8080);
+				assertEquals(urlvar.getPath(),"/testurl"+i);
+				assertFalse(rs.wasNull());
+			}
 			System.out.println();
 		}
 		rs.close();
@@ -1390,7 +1401,8 @@ class sqlite extends sqlrtest {
 			System.out.println();
 
 			// clob as ascii stream
-			System.out.println("  row "+i+" - clob as ascii stream");
+			System.out.println("  row "+i+
+						" - clob as ascii stream");
 			assertEquals(new String(rs.getAsciiStream("testclob").
 						readAllBytes(),"UTF-8"),
 						"clob"+i);
@@ -1398,7 +1410,8 @@ class sqlite extends sqlrtest {
 			System.out.println();
 
 			// clob as character stream
-			System.out.println("  row "+i+" - clob as character stream");
+			System.out.println("  row "+i+
+						" - clob as character stream");
 			StringWriter sw=new StringWriter();
 			rs.getCharacterStream("testclob").transferTo(sw);
 			assertEquals(sw.toString(),"clob"+i);
@@ -1420,7 +1433,8 @@ class sqlite extends sqlrtest {
 			System.out.println();
 
 			// blob as binary stream
-			System.out.println("  row "+i+" - blob as binary stream");
+			System.out.println("  row "+i+
+						" - blob as binary stream");
 			assertEquals(new String(rs.getBinaryStream("testblob").
 						readAllBytes(),"UTF-8"),
 						"blob"+i);
@@ -1429,12 +1443,15 @@ class sqlite extends sqlrtest {
 
 			// url
 			System.out.println("  row "+i+" - url");
-			URL	urlvar=rs.getURL("testurl");
-			assertEquals(urlvar.getProtocol(),"http");
-			assertEquals(urlvar.getHost(),"www.firstworks.com");
-			assertEquals(urlvar.getPort(),8080);
-			assertEquals(urlvar.getPath(),"/testurl"+i);
-			assertFalse(rs.wasNull());
+			if (issqlrelay) {
+				URL	urlvar=rs.getURL("testurl");
+				assertEquals(urlvar.getProtocol(),"http");
+				assertEquals(urlvar.getHost(),
+					"www.firstworks.com");
+				assertEquals(urlvar.getPort(),8080);
+				assertEquals(urlvar.getPath(),"/testurl"+i);
+				assertFalse(rs.wasNull());
+			}
 			System.out.println();
 		}
 
@@ -1540,6 +1557,14 @@ class sqlite extends sqlrtest {
 
 		// primary key list
 		System.out.println("PRIMARY KEY LIST: ");
+		try {
+			stmt.executeUpdate("drop table testtable");
+		} catch (Exception ex) {
+		}
+		stmt.executeUpdate(
+			"create table testtable ("+
+			"	col1 int primary key, "+
+			"	col2 int)");
 		rs=md.getPrimaryKeys(null,null,"testtable");
 		assertTrue((rs!=null));
 		rs.close();
@@ -1550,6 +1575,7 @@ class sqlite extends sqlrtest {
 		rs=md.getIndexInfo(null,null,"testtable",false,false);
 		assertTrue((rs!=null));
 		rs.close();
+		stmt.executeUpdate("drop table testtable");
 		System.out.println();
 
 		// procedure list
@@ -1575,7 +1601,8 @@ class sqlite extends sqlrtest {
 			assertTrue(true);
 		}
 		try {
-			stmt.executeUpdate("insert into nonexistent_table values (1)");
+			stmt.executeUpdate("insert into "+
+					"nonexistent_table values (1)");
 			assertTrue(false);
 		} catch (Exception e) {
 			assertTrue(true);

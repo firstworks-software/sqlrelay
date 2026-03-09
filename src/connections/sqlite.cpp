@@ -179,7 +179,12 @@ class SQLRSERVER_DLLSPEC sqlitecursor : public sqlrservercursor {
 		void		selectLastInsertRowId();
 		bool		knowsRowCount();
 		uint64_t	rowCount();
+		#if defined(HAVE_SQLITE3_CHANGES) || \
+			defined(HAVE_SQLITE3_CHANGES64)
+		uint64_t	getAffectedRows();
+		#else
 		bool		knowsAffectedRows();
+		#endif
 		uint32_t	colCount();
 		const char	*getColumnName(uint32_t col);
 		#ifdef HAVE_SQLITE3_STMT
@@ -199,6 +204,11 @@ class SQLRSERVER_DLLSPEC sqlitecursor : public sqlrservercursor {
 		char		**columnnames;
 		int		ncolumn;
 		int		nrow;
+		#if defined(HAVE_SQLITE3_CHANGES)
+		int		affectedrows;
+		#elif defined(HAVE_SQLITE3_CHANGES)
+		int64_t		affectedrows;
+		#endif
 		bool		lastinsertrowid;
 
 		#ifdef HAVE_SQLITE3_STMT
@@ -1357,67 +1367,67 @@ const char * const *sqliteconnection::getDatabaseFeatures() {
 		charstring::duplicate("");
 
 	databasefeatures[FEATURE_MAX_BINARY_LITERAL_LENGTH]=
-		charstring::duplicate("");
+		charstring::duplicate("0");
 
 	databasefeatures[FEATURE_MAX_DATABASE_NAME_LENGTH]=
-		charstring::duplicate("");
+		charstring::duplicate("0");
 
 	databasefeatures[FEATURE_MAX_CHAR_LITERAL_LENGTH]=
-		charstring::duplicate("");
+		charstring::duplicate("0");
 
 	databasefeatures[FEATURE_MAX_COLUMN_NAME_LENGTH]=
-		charstring::duplicate("");
+		charstring::duplicate("0");
 
 	databasefeatures[FEATURE_MAX_COLUMNS_IN_GROUP_BY]=
-		charstring::duplicate("");
+		charstring::duplicate("0");
 
 	databasefeatures[FEATURE_MAX_COLUMNS_IN_INDEX]=
-		charstring::duplicate("");
+		charstring::duplicate("0");
 
 	databasefeatures[FEATURE_MAX_COLUMNS_IN_ORDER_BY]=
-		charstring::duplicate("");
+		charstring::duplicate("0");
 
 	databasefeatures[FEATURE_MAX_COLUMNS_IN_SELECT]=
-		charstring::duplicate("");
+		charstring::duplicate("0");
 
 	databasefeatures[FEATURE_MAX_COLUMNS_IN_TABLE]=
-		charstring::duplicate("");
+		charstring::duplicate("0");
 
 	databasefeatures[FEATURE_MAX_CONNECTIONS]=
 		charstring::parseNumber(cont->getConfig()->getMaxConnections());
 
 	databasefeatures[FEATURE_MAX_CURSOR_NAME_LENGTH]=
-		charstring::duplicate("");
+		charstring::duplicate("0");
 
 	databasefeatures[FEATURE_MAX_IDENTIFIER_LENGTH]=
-		charstring::duplicate("");
+		charstring::duplicate("0");
 
 	databasefeatures[FEATURE_MAX_INDEX_LENGTH]=
-		charstring::duplicate("");
+		charstring::duplicate("0");
 
 	databasefeatures[FEATURE_MAX_PROCEDURE_NAME_LENGTH]=
-		charstring::duplicate("");
+		charstring::duplicate("0");
 
 	databasefeatures[FEATURE_MAX_ROW_SIZE]=
-		charstring::duplicate("");
+		charstring::duplicate("0");
 
 	databasefeatures[FEATURE_MAX_SCHEMA_NAME_LENGTH]=
-		charstring::duplicate("");
+		charstring::duplicate("0");
 
 	databasefeatures[FEATURE_MAX_STATEMENT_LENGTH]=
-		charstring::duplicate("");
+		charstring::duplicate("0");
 
 	databasefeatures[FEATURE_MAX_STATEMENTS]=
-		charstring::duplicate("");
+		charstring::duplicate("0");
 
 	databasefeatures[FEATURE_MAX_TABLE_NAME_LENGTH]=
-		charstring::duplicate("");
+		charstring::duplicate("0");
 
 	databasefeatures[FEATURE_MAX_TABLES_IN_SELECT]=
-		charstring::duplicate("");
+		charstring::duplicate("0");
 
 	databasefeatures[FEATURE_MAX_USER_NAME_LENGTH]=
-		charstring::duplicate("");
+		charstring::duplicate("0");
 
 	databasefeatures[FEATURE_MIXED_CASE_IDENTIFIERS]=
 		charstring::duplicate("IDENTIFIERS");
@@ -1721,6 +1731,10 @@ sqlitecursor::sqlitecursor(sqlrserverconnection *conn, uint16_t id) :
 	columnnames=NULL;
 	ncolumn=0;
 	nrow=0;
+	#if defined(HAVE_SQLITE3_CHANGES) || \
+		defined(HAVE_SQLITE3_CHANGES64)
+	affectedrows=0;
+	#endif
 	lastinsertrowid=false;
 	#ifdef HAVE_SQLITE3_STMT
 	columntables=NULL;
@@ -1948,6 +1962,13 @@ bool sqlitecursor::executeQuery(const char *query, uint32_t size) {
 
 	checkForTempTable(query,size);
 
+	// get the affected row count
+	#if defined(HAVE_SQLITE3_CHANGES)
+	affectedrows=sqlite3_changes(sqliteconn->sqliteptr);
+	#elif defined(HAVE_SQLITE3_CHANGES64)
+	affectedrows=sqlite3_changes64(sqliteconn->sqliteptr);
+	#endif
+
 	// cache off the columns so they can be returned later if the result
 	// set is suspended/resumed
 	#ifdef HAVE_SQLITE3_STMT
@@ -2017,6 +2038,10 @@ int sqlitecursor::runQuery(const char *query) {
 
 	// reset counters and flags
 	nrow=0;
+	#if defined(HAVE_SQLITE3_CHANGES) || \
+		defined(HAVE_SQLITE3_CHANGES64)
+	affectedrows=0;
+	#endif
 	#ifndef HAVE_SQLITE3_STMT
 	ncolumn=0;
 	rowindex=0;
@@ -2114,9 +2139,16 @@ uint64_t sqlitecursor::rowCount() {
 	#endif
 }
 
+#if defined(HAVE_SQLITE3_CHANGES) || \
+	defined(HAVE_SQLITE3_CHANGES64)
+uint64_t sqlitecursor::getAffectedRows() {
+	return affectedrows;
+}
+#else
 bool sqlitecursor::knowsAffectedRows() {
 	return false;
 }
+#endif
 
 uint32_t sqlitecursor::colCount() {
 	return ncolumn;

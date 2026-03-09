@@ -216,6 +216,12 @@
 /* Some systems have SQLGetPrivateProfileString */
 #undef HAVE_SQLGETPRIVATEPROFILESTRING
 
+/* SQLite supports sqlite3_changes */
+#undef HAVE_SQLITE3_CHANGES
+
+/* SQLite supports sqlite3_changes64 */
+#undef HAVE_SQLITE3_CHANGES64
+
 /* SQLite supports sqlite3_column_table_name */
 #undef HAVE_SQLITE3_COLUMN_TABLE_NAME
 

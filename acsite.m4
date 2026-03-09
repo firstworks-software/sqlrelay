@@ -1019,6 +1019,14 @@ then
 		FW_TRY_LINK([#include <sqlite3.h>
 #include <stdlib.h>],[sqlite3_column_table_name(0,0);],[$SQLITESTATIC $SQLITEINCLUDES $PTHREADINCLUDES],[$SQLITELIBS $PTHREADLIB],[$LD_LIBRARY_PATH],[AC_MSG_RESULT(yes); AC_DEFINE(HAVE_SQLITE3_COLUMN_TABLE_NAME,1,SQLite supports sqlite3_column_table_name)],[AC_MSG_RESULT(no)])
 
+		AC_MSG_CHECKING(for sqlite3_changes)
+		FW_TRY_LINK([#include <sqlite3.h>
+#include <stdlib.h>],[sqlite3_changes(0);],[$SQLITESTATIC $SQLITEINCLUDES $PTHREADINCLUDES],[$SQLITELIBS $PTHREADLIB],[$LD_LIBRARY_PATH],[AC_MSG_RESULT(yes); AC_DEFINE(HAVE_SQLITE3_CHANGES,1,SQLite supports sqlite3_changes)],[AC_MSG_RESULT(no)])
+
+		AC_MSG_CHECKING(for sqlite3_changes64)
+		FW_TRY_LINK([#include <sqlite3.h>
+#include <stdlib.h>],[sqlite3_changes64(0);],[$SQLITESTATIC $SQLITEINCLUDES $PTHREADINCLUDES],[$SQLITELIBS $PTHREADLIB],[$LD_LIBRARY_PATH],[AC_MSG_RESULT(yes); AC_DEFINE(HAVE_SQLITE3_CHANGES64,1,SQLite supports sqlite3_changes64)],[AC_MSG_RESULT(no)])
+
 	fi
 
 	FW_INCLUDES(sqlite,[$SQLITEINCLUDES])
