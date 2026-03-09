@@ -1888,6 +1888,7 @@ class oracle extends sqlrtest {
 			cal.set(Calendar.HOUR_OF_DAY,0);
 			cal.set(Calendar.MINUTE,0);
 			cal.set(Calendar.SECOND,0);
+			cal.set(Calendar.MILLISECOND,0);
 			pstmt.setDate(4,new java.sql.Date(
 						cal.getTimeInMillis()));
 
@@ -1935,6 +1936,7 @@ class oracle extends sqlrtest {
 			cal.set(Calendar.HOUR_OF_DAY,0);
 			cal.set(Calendar.MINUTE,0);
 			cal.set(Calendar.SECOND,0);
+			cal.set(Calendar.MILLISECOND,0);
 			cstmt.setDate("var4",new java.sql.Date(
 						cal.getTimeInMillis()));
 

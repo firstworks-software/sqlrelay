@@ -1125,6 +1125,7 @@ class sap extends sqlrtest {
 			cal.set(Calendar.HOUR_OF_DAY,i);
 			cal.set(Calendar.MINUTE,0);
 			cal.set(Calendar.SECOND,0);
+			cal.set(Calendar.MILLISECOND,0);
 			pstmt.setTimestamp(10,new Timestamp(
 						cal.getTimeInMillis()));
 
@@ -1134,6 +1135,7 @@ class sap extends sqlrtest {
 			cal.set(Calendar.HOUR_OF_DAY,i);
 			cal.set(Calendar.MINUTE,0);
 			cal.set(Calendar.SECOND,0);
+			cal.set(Calendar.MILLISECOND,0);
 			pstmt.setTimestamp(11,new Timestamp(
 						cal.getTimeInMillis()));
 			pstmt.setString(12,"char"+i);
@@ -1641,40 +1643,211 @@ class sap extends sqlrtest {
 
 		// catalog list
 		System.out.println("CATALOG LIST: ");
+		stmt=con.createStatement();
 		rs=md.getCatalogs();
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
+		assertEquals(rsmd.getColumnCount(),1);
+		col=1;
+		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
 		rs.close();
 		System.out.println();
+
 
 		// schema list
 		System.out.println("SCHEMA LIST: ");
 		rs=md.getSchemas();
 		assertTrue((rs!=null));
+		rsmd=rs.getMetaData();
+		assertTrue((rsmd!=null));
+		assertEquals(rsmd.getColumnCount(),2);
+		col=1;
+		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_CATALOG");
 		rs.close();
 		System.out.println();
+
 
 		// table type list
 		System.out.println("TABLE TYPE LIST: ");
 		rs=md.getTableTypes();
 		assertTrue((rs!=null));
+		rsmd=rs.getMetaData();
+		assertTrue((rsmd!=null));
+		assertEquals(rsmd.getColumnCount(),1);
+		col=1;
+		assertEquals(rsmd.getColumnName(col++),"TABLE_TYPE");
+		found=false;
+		while (rs.next()) {
+			String ttname=rs.getString("TABLE_TYPE");
+			if (ttname!=null &&
+					ttname.equalsIgnoreCase("TABLE")) {
+				found=true;
+				break;
+			}
+		}
+		assertTrue(found);
 		rs.close();
 		System.out.println();
 
+
 		// table list
 		System.out.println("TABLE LIST: ");
-		rs=md.getTables(null,null,"%",null);
+		try {
+			stmt.executeUpdate("drop table testtable1");
+		} catch (Exception ex) {
+		}
+		try {
+			stmt.executeUpdate("drop table testtable2");
+		} catch (Exception ex) {
+		}
+		try {
+			stmt.executeUpdate("drop table testtable3");
+		} catch (Exception ex) {
+		}
+		try {
+			stmt.executeUpdate("drop table testtable4");
+		} catch (Exception ex) {
+		}
+		stmt.executeUpdate(
+			"create table testtable1 ("+
+			"	col1 int, "+
+			"	col2 int)");
+		stmt.executeUpdate(
+			"create table testtable2 ("+
+			"	col1 int, "+
+			"	col2 int)");
+		stmt.executeUpdate(
+			"create table testtable3 ("+
+			"	col1 int, "+
+			"	col2 int)");
+		stmt.executeUpdate(
+			"create table testtable4 ("+
+			"	col1 int, "+
+			"	col2 int)");
+		rs=md.getTables(null,null,"%",
+				new String[] {"TABLE"});
 		assertTrue((rs!=null));
+		rsmd=rs.getMetaData();
+		assertTrue((rsmd!=null));
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnCount(),10);
+		} else {
+			assertTrue(rsmd.getColumnCount()>=5);
+		}
+		col=1;
+		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_TYPE");
+		assertEquals(rsmd.getColumnName(col++),"REMARKS");
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnName(col++),"TYPE_CAT");
+			assertEquals(rsmd.getColumnName(col++),"TYPE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+						"SELF_REFERENCING_COL_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+						"REF_GENERATION");
+		}
+		counter=0;
+		while (rs.next()) {
+			String name=rs.getString("TABLE_NAME");
+			if (name.equalsIgnoreCase("testtable1") ||
+					name.equalsIgnoreCase("testtable2") ||
+					name.equalsIgnoreCase("testtable3") ||
+					name.equalsIgnoreCase("testtable4")) {
+				counter++;
+			}
+		}
+		assertEquals(counter,4);
 		rs.close();
+		try {
+			stmt.executeUpdate("drop table testtable1");
+		} catch (Exception ex) {
+		}
+		try {
+			stmt.executeUpdate("drop table testtable2");
+		} catch (Exception ex) {
+		}
+		try {
+			stmt.executeUpdate("drop table testtable3");
+		} catch (Exception ex) {
+		}
+		try {
+			stmt.executeUpdate("drop table testtable4");
+		} catch (Exception ex) {
+		}
 		System.out.println();
+
+
+		// super table list
+		System.out.println("SUPER TABLE LIST: ");
+		try {
+			rs=md.getSuperTables(null,null,"%");
+			// may or may not throw
+			if (rs!=null) {
+				rs.close();
+			}
+		} catch (Exception ex) {
+			assertTrue(true);
+		}
+		System.out.println();
+
+
+		// table privilege list
+		System.out.println("TABLE PRIVILEGE LIST: ");
+		// sqlrelay doesn't support this yet
+		if (!issqlrelay) {
+			rs=md.getTablePrivileges(null,null,"%");
+			assertTrue((rs!=null));
+			rsmd=rs.getMetaData();
+			assertTrue((rsmd!=null));
+			col=1;
+			assertTrue(rsmd.getColumnCount()>=7);
+			assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
+			assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
+			assertEquals(rsmd.getColumnName(col++),"GRANTOR");
+			assertEquals(rsmd.getColumnName(col++),"GRANTEE");
+			assertEquals(rsmd.getColumnName(col++),"PRIVILEGE");
+			assertEquals(rsmd.getColumnName(col++),"IS_GRANTABLE");
+			rs.close();
+			System.out.println();
+		}
+
 
 		// type info list
 		System.out.println("TYPE INFO LIST: ");
 		rs=md.getTypeInfo();
 		assertTrue((rs!=null));
+		rsmd=rs.getMetaData();
+		assertTrue((rsmd!=null));
+		assertEquals(rsmd.getColumnCount(),18);
+		col=1;
+		assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
+		assertEquals(rsmd.getColumnName(col++),"DATA_TYPE");
+		assertEquals(rsmd.getColumnName(col++),"PRECISION");
+		assertEquals(rsmd.getColumnName(col++),"LITERAL_PREFIX");
+		assertEquals(rsmd.getColumnName(col++),"LITERAL_SUFFIX");
+		assertEquals(rsmd.getColumnName(col++),"CREATE_PARAMS");
+		assertEquals(rsmd.getColumnName(col++),"NULLABLE");
+		assertEquals(rsmd.getColumnName(col++),"CASE_SENSITIVE");
+		assertEquals(rsmd.getColumnName(col++),"SEARCHABLE");
+		assertEquals(rsmd.getColumnName(col++),"UNSIGNED_ATTRIBUTE");
+		assertEquals(rsmd.getColumnName(col++),"FIXED_PREC_SCALE");
+		assertEquals(rsmd.getColumnName(col++),"AUTO_INCREMENT");
+		assertEquals(rsmd.getColumnName(col++),"LOCAL_TYPE_NAME");
+		assertEquals(rsmd.getColumnName(col++),"MINIMUM_SCALE");
+		assertEquals(rsmd.getColumnName(col++),"MAXIMUM_SCALE");
+		assertEquals(rsmd.getColumnName(col++),"SQL_DATA_TYPE");
+		assertEquals(rsmd.getColumnName(col++),"SQL_DATETIME_SUB");
+		assertEquals(rsmd.getColumnName(col++),"NUM_PREC_RADIX");
 		rs.close();
 		System.out.println();
+
+
 
 		// column list
 		System.out.println("COLUMN LIST: ");
@@ -1705,69 +1878,565 @@ class sap extends sqlrtest {
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
+		col=1;
+		assertTrue(rsmd.getColumnCount()>=18);
+		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
+		assertEquals(rsmd.getColumnName(col++),"COLUMN_NAME");
+		assertEquals(rsmd.getColumnName(col++),"DATA_TYPE");
+		assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
+		assertEquals(rsmd.getColumnName(col++),"COLUMN_SIZE");
+		assertEquals(rsmd.getColumnName(col++),"BUFFER_LENGTH");
+		assertEquals(rsmd.getColumnName(col++),"DECIMAL_DIGITS");
+		assertEquals(rsmd.getColumnName(col++),"NUM_PREC_RADIX");
+		assertEquals(rsmd.getColumnName(col++),"NULLABLE");
+		assertEquals(rsmd.getColumnName(col++),"REMARKS");
+		assertEquals(rsmd.getColumnName(col++),"COLUMN_DEF");
+		assertEquals(rsmd.getColumnName(col++),"SQL_DATA_TYPE");
+		assertEquals(rsmd.getColumnName(col++),"SQL_DATETIME_SUB");
+		assertEquals(rsmd.getColumnName(col++),"CHAR_OCTET_LENGTH");
+		assertEquals(rsmd.getColumnName(col++),"ORDINAL_POSITION");
+		assertEquals(rsmd.getColumnName(col++),"IS_NULLABLE");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testint");
+		assertTrue(rs.getString("TYPE_NAME").
+					equalsIgnoreCase("INT"));
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testsmallint");
+		assertTrue(rs.getString("TYPE_NAME").
+					equalsIgnoreCase("SMALLINT"));
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testtinyint");
+		assertTrue(rs.getString("TYPE_NAME").
+					equalsIgnoreCase("TINYINT"));
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testreal");
+		assertTrue(rs.getString("TYPE_NAME").
+					equalsIgnoreCase("REAL"));
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testfloat");
+		assertTrue(rs.getString("TYPE_NAME").
+					equalsIgnoreCase("FLOAT"));
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testdecimal");
+		assertTrue(rs.getString("TYPE_NAME").
+					equalsIgnoreCase("DECIMAL"));
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testnumeric");
+		assertTrue(rs.getString("TYPE_NAME").
+					equalsIgnoreCase("NUMERIC"));
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testmoney");
+		assertTrue(rs.getString("TYPE_NAME").
+					equalsIgnoreCase("MONEY"));
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testsmallmoney");
+		assertTrue(rs.getString("TYPE_NAME").
+					equalsIgnoreCase("SMALLMONEY"));
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testdatetime");
+		assertTrue(rs.getString("TYPE_NAME").
+					equalsIgnoreCase("DATETIME"));
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testsmalldatetime");
+		assertTrue(rs.getString("TYPE_NAME").
+					equalsIgnoreCase("SMALLDATETIME"));
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testchar");
+		assertTrue(rs.getString("TYPE_NAME").
+					equalsIgnoreCase("CHAR"));
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testvarchar");
+		assertTrue(rs.getString("TYPE_NAME").
+					equalsIgnoreCase("VARCHAR"));
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testbit");
+		assertTrue(rs.getString("TYPE_NAME").
+					equalsIgnoreCase("BIT"));
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testtext");
+		assertTrue(rs.getString("TYPE_NAME").
+					equalsIgnoreCase("TEXT"));
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testurl");
+		assertTrue(rs.getString("TYPE_NAME").
+					equalsIgnoreCase("VARCHAR"));
 		rs.close();
 		stmt.executeUpdate("drop table testtable");
 		System.out.println();
 
+
+		// version column list
+		System.out.println("VERSION COLUMN LIST: ");
+		// sqlrelay doesn't support this yet
+		if (!issqlrelay) {
+			rs=md.getVersionColumns(null,null,"%");
+			assertTrue((rs!=null));
+			rsmd=rs.getMetaData();
+			assertTrue((rsmd!=null));
+			col=1;
+			assertTrue(rsmd.getColumnCount()>=8);
+			assertEquals(rsmd.getColumnName(col++),
+						"SCOPE");
+			assertEquals(rsmd.getColumnName(col++),
+						"COLUMN_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+						"DATA_TYPE");
+			assertEquals(rsmd.getColumnName(col++),
+						"TYPE_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+						"COLUMN_SIZE");
+			assertEquals(rsmd.getColumnName(col++),
+						"BUFFER_LENGTH");
+			assertEquals(rsmd.getColumnName(col++),
+						"DECIMAL_DIGITS");
+			assertEquals(rsmd.getColumnName(col++),
+						"PSEUDO_COLUMN");
+			rs.close();
+			System.out.println();
+		}
+
+
+		// best row identifier list
+		System.out.println("BEST ROW IDENTIFIER LIST: ");
+		// sqlrelay doesn't support this yet
+		if (!issqlrelay) {
+			rs=md.getBestRowIdentifier(null,null,"%",
+					DatabaseMetaData.bestRowTemporary,
+					true);
+			assertTrue((rs!=null));
+			rsmd=rs.getMetaData();
+			assertTrue((rsmd!=null));
+			col=1;
+			assertTrue(rsmd.getColumnCount()>=8);
+			assertEquals(rsmd.getColumnName(col++),
+						"SCOPE");
+			assertEquals(rsmd.getColumnName(col++),
+						"COLUMN_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+						"DATA_TYPE");
+			assertEquals(rsmd.getColumnName(col++),
+						"TYPE_NAME");
+			assertEquals(rsmd.getColumnName(col++),
+						"COLUMN_SIZE");
+			assertEquals(rsmd.getColumnName(col++),
+						"BUFFER_LENGTH");
+			assertEquals(rsmd.getColumnName(col++),
+						"DECIMAL_DIGITS");
+			assertEquals(rsmd.getColumnName(col++),
+						"PSEUDO_COLUMN");
+			rs.close();
+			System.out.println();
+		}
+
+
 		// primary key list
 		System.out.println("PRIMARY KEY LIST: ");
+		try {
+			stmt.executeUpdate("drop table testtable");
+		} catch (Exception ex) {
+		}
+		stmt.executeUpdate(
+			"create table testtable ("+
+			"	col1 int primary key, "+
+			"	col2 int)");
 		rs=md.getPrimaryKeys(null,null,"testtable");
 		assertTrue((rs!=null));
+		rsmd=rs.getMetaData();
+		assertTrue((rsmd!=null));
+		col=1;
+		assertEquals(rsmd.getColumnCount(),6);
+		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
+		assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
+		assertEquals(rsmd.getColumnName(col++),"COLUMN_NAME");
+		assertEquals(rsmd.getColumnName(col++),"KEY_SEQ");
+		assertEquals(rsmd.getColumnName(col++),"PK_NAME");
+		assertTrue(rs.next());
+		assertTrue(rs.getString("TABLE_NAME").
+					equalsIgnoreCase("testtable"));
+		assertTrue(rs.getString("COLUMN_NAME").
+					equalsIgnoreCase("col1"));
+		assertEquals(rs.getString("KEY_SEQ"),"1");
+		assertTrue(rs.getString("PK_NAME")!=null &&
+				rs.getString("PK_NAME").length()>0);
+		assertFalse(rs.next());
 		rs.close();
+		try {
+			stmt.executeUpdate("drop table testtable");
+		} catch (Exception ex) {
+		}
 		System.out.println();
+
 
 		// key and index list
 		System.out.println("KEY AND INDEX LIST: ");
-		rs=md.getIndexInfo(null,null,"testtable",false,false);
+		try {
+			stmt.executeUpdate("drop table testtable");
+		} catch (Exception ex) {
+		}
+		stmt.executeUpdate(
+			"create table testtable ("+
+			"	col1 int primary key, "+
+			"	col2 int)");
+		rs=md.getIndexInfo(null,null,
+					"testtable",false,true);
 		assertTrue((rs!=null));
+		rsmd=rs.getMetaData();
+		assertTrue((rsmd!=null));
+		col=1;
+		assertEquals(rsmd.getColumnCount(),13);
+		assertEquals(rsmd.getColumnName(col++),
+						"TABLE_CAT");
+		assertEquals(rsmd.getColumnName(col++),
+						"TABLE_SCHEM");
+		assertEquals(rsmd.getColumnName(col++),
+						"TABLE_NAME");
+		assertEquals(rsmd.getColumnName(col++),
+						"NON_UNIQUE");
+		assertEquals(rsmd.getColumnName(col++),
+						"INDEX_QUALIFIER");
+		assertEquals(rsmd.getColumnName(col++),
+						"INDEX_NAME");
+		assertEquals(rsmd.getColumnName(col++),
+						"TYPE");
+		assertEquals(rsmd.getColumnName(col++),
+						"ORDINAL_POSITION");
+		assertEquals(rsmd.getColumnName(col++),
+						"COLUMN_NAME");
+		assertEquals(rsmd.getColumnName(col++),
+						"ASC_OR_DESC");
+		assertEquals(rsmd.getColumnName(col++),
+						"CARDINALITY");
+		assertEquals(rsmd.getColumnName(col++),
+						"PAGES");
+		assertEquals(rsmd.getColumnName(col++),
+						"FILTER_CONDITION");
+		assertTrue(rs.next());
+		assertTrue(rs.getString("TABLE_NAME").
+					equalsIgnoreCase("testtable"));
+		assertEquals(rs.getString("NON_UNIQUE"),"0");
+		assertEquals(rs.getString("ORDINAL_POSITION"),"1");
+		assertTrue(rs.getString("COLUMN_NAME").
+					equalsIgnoreCase("col1"));
+		assertEquals(rs.getString("ASC_OR_DESC"),"A");
+		assertEquals(rs.getString("TYPE"),"3");
+		assertTrue(rs.getString("INDEX_NAME")!=null &&
+				rs.getString("INDEX_NAME").length()>0);
+		assertFalse(rs.next());
 		rs.close();
+		try {
+			stmt.executeUpdate("drop table testtable");
+		} catch (Exception ex) {
+		}
 		System.out.println();
+
+
+		// exported key list
+		System.out.println("EXPORTED KEY LIST: ");
+		// sqlrelay doesn't support this yet
+		if (!issqlrelay) {
+			rs=md.getExportedKeys(null,null,"%");
+			assertTrue((rs!=null));
+			rsmd=rs.getMetaData();
+			assertTrue((rsmd!=null));
+			col=1;
+			assertEquals(rsmd.getColumnCount(),14);
+			assertEquals(rsmd.getColumnName(col++),"PKTABLE_CAT");
+			assertEquals(rsmd.getColumnName(col++),"PKTABLE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),"PKTABLE_NAME");
+			assertEquals(rsmd.getColumnName(col++),"PKCOLUMN_NAME");
+			assertEquals(rsmd.getColumnName(col++),"FKTABLE_CAT");
+			assertEquals(rsmd.getColumnName(col++),"FKTABLE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),"FKTABLE_NAME");
+			assertEquals(rsmd.getColumnName(col++),"FKCOLUMN_NAME");
+			assertEquals(rsmd.getColumnName(col++),"KEY_SEQ");
+			assertEquals(rsmd.getColumnName(col++),"UPDATE_RULE");
+			assertEquals(rsmd.getColumnName(col++),"DELETE_RULE");
+			assertEquals(rsmd.getColumnName(col++),"FK_NAME");
+			assertEquals(rsmd.getColumnName(col++),"PK_NAME");
+			assertEquals(rsmd.getColumnName(col++),"DEFERRABILITY");
+			rs.close();
+			System.out.println();
+		}
+
+
+		// imported key list
+		System.out.println("IMPORTED KEY LIST: ");
+		// sqlrelay doesn't support this yet
+		if (!issqlrelay) {
+			rs=md.getImportedKeys(null,null,"%");
+			assertTrue((rs!=null));
+			rsmd=rs.getMetaData();
+			assertTrue((rsmd!=null));
+			col=1;
+			assertEquals(rsmd.getColumnCount(),14);
+			assertEquals(rsmd.getColumnName(col++),"PKTABLE_CAT");
+			assertEquals(rsmd.getColumnName(col++),"PKTABLE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),"PKTABLE_NAME");
+			assertEquals(rsmd.getColumnName(col++),"PKCOLUMN_NAME");
+			assertEquals(rsmd.getColumnName(col++),"FKTABLE_CAT");
+			assertEquals(rsmd.getColumnName(col++),"FKTABLE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),"FKTABLE_NAME");
+			assertEquals(rsmd.getColumnName(col++),"FKCOLUMN_NAME");
+			assertEquals(rsmd.getColumnName(col++),"KEY_SEQ");
+			assertEquals(rsmd.getColumnName(col++),"UPDATE_RULE");
+			assertEquals(rsmd.getColumnName(col++),"DELETE_RULE");
+			assertEquals(rsmd.getColumnName(col++),"FK_NAME");
+			assertEquals(rsmd.getColumnName(col++),"PK_NAME");
+			assertEquals(rsmd.getColumnName(col++),"DEFERRABILITY");
+			rs.close();
+			System.out.println();
+		}
+
+
+		// cross reference list
+		System.out.println("CROSS REFERENCE LIST: ");
+		// sqlrelay doesn't support this yet
+		if (!issqlrelay) {
+			rs=md.getCrossReference(null,null,"%",null,null,"%");
+			assertTrue((rs!=null));
+			rsmd=rs.getMetaData();
+			assertTrue((rsmd!=null));
+			col=1;
+			assertEquals(rsmd.getColumnCount(),14);
+			assertEquals(rsmd.getColumnName(col++),"PKTABLE_CAT");
+			assertEquals(rsmd.getColumnName(col++),"PKTABLE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),"PKTABLE_NAME");
+			assertEquals(rsmd.getColumnName(col++),"PKCOLUMN_NAME");
+			assertEquals(rsmd.getColumnName(col++),"FKTABLE_CAT");
+			assertEquals(rsmd.getColumnName(col++),"FKTABLE_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),"FKTABLE_NAME");
+			assertEquals(rsmd.getColumnName(col++),"FKCOLUMN_NAME");
+			assertEquals(rsmd.getColumnName(col++),"KEY_SEQ");
+			assertEquals(rsmd.getColumnName(col++),"UPDATE_RULE");
+			assertEquals(rsmd.getColumnName(col++),"DELETE_RULE");
+			assertEquals(rsmd.getColumnName(col++),"FK_NAME");
+			assertEquals(rsmd.getColumnName(col++),"PK_NAME");
+			assertEquals(rsmd.getColumnName(col++),"DEFERRABILITY");
+			rs.close();
+			System.out.println();
+		}
+
 
 		// procedure list
 		System.out.println("PROCEDURE LIST: ");
+		try {
+			stmt.executeUpdate("drop procedure testproc1");
+		} catch (Exception ex) {
+		}
+		try {
+			stmt.executeUpdate("drop procedure testproc2");
+		} catch (Exception ex) {
+		}
+		try {
+			stmt.executeUpdate("drop procedure testproc3");
+		} catch (Exception ex) {
+		}
+		try {
+			stmt.executeUpdate("drop procedure testproc4");
+		} catch (Exception ex) {
+		}
+		stmt.executeUpdate(
+			"create procedure testproc1 "+
+			"	@in1 int, "+
+			"	@in2 char(20), "+
+			"	@in3 varchar(20), "+
+			"	@in4 datetime "+
+			"as select 1");
+		stmt.executeUpdate(
+			"create procedure testproc2 "+
+			"	@in1 int, "+
+			"	@in2 char(20), "+
+			"	@in3 varchar(20), "+
+			"	@in4 datetime "+
+			"as select 1");
+		stmt.executeUpdate(
+			"create procedure testproc3 "+
+			"	@in1 int, "+
+			"	@in2 char(20), "+
+			"	@in3 varchar(20), "+
+			"	@in4 datetime "+
+			"as select 1");
+		stmt.executeUpdate(
+			"create procedure testproc4 "+
+			"	@in1 int, "+
+			"	@in2 char(20), "+
+			"	@in3 varchar(20), "+
+			"	@in4 datetime "+
+			"as select 1");
 		rs=md.getProcedures(null,null,"%");
 		assertTrue((rs!=null));
+		rsmd=rs.getMetaData();
+		assertTrue((rsmd!=null));
+		col=1;
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnCount(),8);
+		} else {
+			assertTrue(rsmd.getColumnCount()>=8);
+		}
+		assertEquals(rsmd.getColumnName(col++),"PROCEDURE_CAT");
+		assertEquals(rsmd.getColumnName(col++),"PROCEDURE_SCHEM");
+		assertEquals(rsmd.getColumnName(col++),"PROCEDURE_NAME");
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnName(col++),
+						"NUM_INPUT_PARAMS");
+			assertEquals(rsmd.getColumnName(col++),
+						"NUM_OUTPUT_PARAMS");
+			assertEquals(rsmd.getColumnName(col++),
+						"NUM_RESULT_SETS");
+		} else {
+			col+=3;
+		}
+		assertEquals(rsmd.getColumnName(col++),"REMARKS");
+		assertEquals(rsmd.getColumnName(col++),"PROCEDURE_TYPE");
+		counter=0;
+		while (rs.next()) {
+			String name=rs.getString("PROCEDURE_NAME");
+			if (name.equalsIgnoreCase("testproc1") ||
+					name.equalsIgnoreCase("testproc2") ||
+					name.equalsIgnoreCase("testproc3") ||
+					name.equalsIgnoreCase("testproc4")) {
+				counter++;
+			}
+		}
+		assertEquals(counter,4);
 		rs.close();
 		System.out.println();
 
+
 		// procedure parameter list
 		System.out.println("PROCEDURE PARAMETER LIST: ");
-		rs=md.getProcedureColumns(null,null,"%","%");
+		rs=md.getProcedureColumns(null,null,
+					"testproc1","%");
 		assertTrue((rs!=null));
+		rsmd=rs.getMetaData();
+		assertTrue((rsmd!=null));
+		col=1;
+		assertEquals(rsmd.getColumnCount(),20);
+		assertEquals(rsmd.getColumnName(col++),
+						"PROCEDURE_CAT");
+		assertEquals(rsmd.getColumnName(col++),
+						"PROCEDURE_SCHEM");
+		assertEquals(rsmd.getColumnName(col++),
+						"PROCEDURE_NAME");
+		assertEquals(rsmd.getColumnName(col++),
+						"COLUMN_NAME");
+		assertEquals(rsmd.getColumnName(col++),
+						"COLUMN_TYPE");
+		assertEquals(rsmd.getColumnName(col++),
+						"DATA_TYPE");
+		assertEquals(rsmd.getColumnName(col++),
+						"TYPE_NAME");
+		assertEquals(rsmd.getColumnName(col++),
+						"PRECISION");
+		assertEquals(rsmd.getColumnName(col++),
+						"LENGTH");
+		assertEquals(rsmd.getColumnName(col++),
+						"SCALE");
+		assertEquals(rsmd.getColumnName(col++),
+						"RADIX");
+		assertEquals(rsmd.getColumnName(col++),
+						"NULLABLE");
+		assertEquals(rsmd.getColumnName(col++),
+						"REMARKS");
+		assertEquals(rsmd.getColumnName(col++),
+						"COLUMN_DEF");
+		assertEquals(rsmd.getColumnName(col++),
+						"SQL_DATA_TYPE");
+		assertEquals(rsmd.getColumnName(col++),
+						"SQL_DATETIME_SUB");
+		assertEquals(rsmd.getColumnName(col++),
+						"CHAR_OCTET_LENGTH");
+		assertEquals(rsmd.getColumnName(col++),
+						"ORDINAL_POSITION");
+		assertEquals(rsmd.getColumnName(col++),
+						"IS_NULLABLE");
+		assertEquals(rsmd.getColumnName(col++),
+						"SPECIFIC_NAME");
+		assertTrue(rs.next());
+		assertTrue(rs.getString("COLUMN_NAME").
+					equalsIgnoreCase("@in1"));
+		assertTrue(rs.getString("TYPE_NAME").
+					equalsIgnoreCase("int"));
+		assertEquals(rs.getString("ORDINAL_POSITION"),
+						"1");
+		assertTrue(rs.next());
+		assertTrue(rs.getString("COLUMN_NAME").
+					equalsIgnoreCase("@in2"));
+		assertTrue(rs.getString("TYPE_NAME").
+					equalsIgnoreCase("char"));
+		assertEquals(rs.getString("ORDINAL_POSITION"),
+						"2");
+		assertTrue(rs.next());
+		assertTrue(rs.getString("COLUMN_NAME").
+					equalsIgnoreCase("@in3"));
+		assertTrue(rs.getString("TYPE_NAME").
+					equalsIgnoreCase("varchar"));
+		assertEquals(rs.getString("ORDINAL_POSITION"),
+						"3");
+		assertTrue(rs.next());
+		assertTrue(rs.getString("COLUMN_NAME").
+					equalsIgnoreCase("@in4"));
+		assertTrue(rs.getString("TYPE_NAME").
+					equalsIgnoreCase("datetime"));
+		assertEquals(rs.getString("ORDINAL_POSITION"),
+						"4");
 		rs.close();
 		System.out.println();
+		try {
+			stmt.executeUpdate("drop procedure testproc1");
+		} catch (Exception ex) {
+		}
+		try {
+			stmt.executeUpdate("drop procedure testproc2");
+		} catch (Exception ex) {
+		}
+		try {
+			stmt.executeUpdate("drop procedure testproc3");
+		} catch (Exception ex) {
+		}
+		try {
+			stmt.executeUpdate("drop procedure testproc4");
+		} catch (Exception ex) {
+		}
+
+
+		// function list
+		System.out.println("FUNCTION LIST: ");
+		// sqlrelay doesn't support this yet
+		if (!issqlrelay) {
+			rs=md.getFunctions(null,null,"%");
+			assertTrue((rs!=null));
+			rsmd=rs.getMetaData();
+			assertTrue((rsmd!=null));
+			col=1;
+			assertTrue(rsmd.getColumnCount()>=6);
+			assertEquals(rsmd.getColumnName(col++),
+						"FUNCTION_CAT");
+			assertEquals(rsmd.getColumnName(col++),
+						"FUNCTION_SCHEM");
+			assertEquals(rsmd.getColumnName(col++),
+						"FUNCTION_NAME");
+			rs.close();
+			System.out.println();
+		}
+
+
+		// function parameter list
+		System.out.println("FUNCTION PARAMETER LIST: ");
+		// sqlrelay doesn't support this yet
+		if (!issqlrelay) {
+			rs=md.getFunctionColumns(null,null,"%","%");
+			assertTrue((rs!=null));
+			rsmd=rs.getMetaData();
+			assertTrue((rsmd!=null));
+			assertTrue(rsmd.getColumnCount()>=13);
+			rs.close();
+			System.out.println();
+		}
+
 
 		// invalid queries
 		System.out.println("INVALID QUERIES:");
