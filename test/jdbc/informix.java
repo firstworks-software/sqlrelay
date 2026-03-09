@@ -56,8 +56,8 @@ class informix extends sqlrtest {
 		int			col;
 		Statement		stmt;
 		PreparedStatement	pstmt;
-		Clob			clob;
-		Blob			blob;
+		Clob			clob=null;
+		Blob			blob=null;
 		CallableStatement	cstmt;
 		boolean			found;
 		int			counter;
@@ -1160,6 +1160,11 @@ class informix extends sqlrtest {
 			// informix jdbc doesn't support isClosed
 			assertFalse(pstmt.isClosed());
 		}
+		if (issqlrelay) {
+			// informix jdbc doesn't support createClob/createBlob
+			clob=con.createClob();
+			blob=con.createBlob();
+		}
 		for (int i=2; i<=4; i++) {
 			pstmt.clearParameters();
 			pstmt.setString(1,"t");
@@ -1194,9 +1199,19 @@ class informix extends sqlrtest {
 			cal.set(Calendar.SECOND,0);
 			pstmt.setTimestamp(16,new Timestamp(
 						cal.getTimeInMillis()));
-			pstmt.setString(17,"text"+i);
-			pstmt.setNull(18,java.sql.Types.BLOB);
-			// NULL column
+			if (issqlrelay) {
+				clob.setString(1,"text"+i);
+				pstmt.setClob(17,clob);
+				blob.setBytes(1,(new String("byte"+i)).
+						getBytes(
+						StandardCharsets.UTF_8));
+				pstmt.setBlob(18,blob);
+			} else {
+				pstmt.setString(17,"text"+i);
+				pstmt.setBytes(18,(new String("byte"+i)).
+						getBytes(
+						StandardCharsets.UTF_8));
+			}
 			pstmt.setString(19,"http://www.firstworks.com:8080/"+
 								"testurl"+i);
 			assertEquals(pstmt.executeUpdate(),1);
@@ -1437,6 +1452,29 @@ class informix extends sqlrtest {
 			assertFalse(rs.wasNull());
 			System.out.println();
 
+			// text
+			System.out.println("  row "+i+" - text");
+			if (i==1) {
+				assertEquals(rs.getString(17),null);
+				assertTrue(rs.wasNull());
+			} else {
+				assertEquals(rs.getString(17),"text"+i);
+				assertFalse(rs.wasNull());
+			}
+			System.out.println();
+
+			// byte
+			System.out.println("  row "+i+" - byte");
+			if (i==1) {
+				assertEquals(rs.getString(18),null);
+				assertTrue(rs.wasNull());
+			} else {
+				assertEquals(new String(rs.getBytes(18),
+					StandardCharsets.UTF_8),"byte"+i);
+				assertFalse(rs.wasNull());
+			}
+			System.out.println();
+
 			// url
 			System.out.println("  row "+i+" - url");
 			if (issqlrelay) {
@@ -1600,6 +1638,30 @@ class informix extends sqlrtest {
 			assertEquals(cal.get(Calendar.MINUTE),0);
 			assertEquals(cal.get(Calendar.SECOND),0);
 			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// text
+			System.out.println("  row "+i+" - text");
+			if (i==1) {
+				assertEquals(rs.getString("testtext"),null);
+				assertTrue(rs.wasNull());
+			} else {
+				assertEquals(rs.getString("testtext"),"text"+i);
+				assertFalse(rs.wasNull());
+			}
+			System.out.println();
+
+			// byte
+			System.out.println("  row "+i+" - byte");
+			if (i==1) {
+				assertEquals(rs.getString("testbyte"),null);
+				assertTrue(rs.wasNull());
+			} else {
+				assertEquals(new String(
+					rs.getBytes("testbyte"),
+					StandardCharsets.UTF_8),"byte"+i);
+				assertFalse(rs.wasNull());
+			}
 			System.out.println();
 
 			// url

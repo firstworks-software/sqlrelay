@@ -180,8 +180,8 @@ int main(int argc, char **argv) {
 	cur->inputBind("14","testvarlchar2");
 	cur->inputBind("15",2002,1,1,-1,-1,-1,-1,NULL,false);
 	cur->inputBind("16",2002,1,1,2,0,0,0,NULL,false);
-	cur->inputBindClob("17","testtext1",9);
-	cur->inputBindBlob("18","testbyte1",9);
+	cur->inputBindClob("17","testtext2",9);
+	cur->inputBindBlob("18","testbyte2",9);
 	assertTrue(cur->executeQuery());
 	cur->clearBinds();
 	cur->inputBind("1","t");
