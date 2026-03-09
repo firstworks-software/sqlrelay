@@ -462,7 +462,7 @@ public class SQLRelayPreparedStatement
 					(short)cal.get(Calendar.HOUR_OF_DAY),
 					(short)cal.get(Calendar.MINUTE),
 					(short)cal.get(Calendar.SECOND),
-					(short)(((Timestamp)o).getNanos()/1000),
+					(int)(((Timestamp)o).getNanos()/1000),
 					null,false);
 				}
 				break;
@@ -477,7 +477,7 @@ public class SQLRelayPreparedStatement
 					(short)cal.get(Calendar.HOUR_OF_DAY),
 					(short)cal.get(Calendar.MINUTE),
 					(short)cal.get(Calendar.SECOND),
-					(short)(((Timestamp)o).getNanos()/1000),
+					(int)(((Timestamp)o).getNanos()/1000),
 					null,false);
 				}
 				break;

@@ -3156,7 +3156,8 @@ void db2cursor::getError(char *errorbuffer,
 }
 
 uint64_t db2cursor::getAffectedRows() {
-	return affectedrows;
+	// db2 can set affectedrows to -1 when a DDL query is run
+	return (affectedrows>=0)?affectedrows:0;
 }
 
 uint32_t db2cursor::colCount() {

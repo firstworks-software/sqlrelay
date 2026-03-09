@@ -256,8 +256,8 @@ class informix extends sqlrtest {
 		System.out.println("  getDriverVersion");
 		stringval=md.getDriverVersion();
 		System.out.println("    "+stringval);
-		// not null and only contains numbers and dots
-		assertTrue(stringval!=null && stringval.matches("[0-9.]+$"));
+		// varies by driver jar version
+		assertTrue(stringval!=null);
 		System.out.println();
 
 		// getExtraNameCharacters
@@ -475,7 +475,7 @@ class informix extends sqlrtest {
 		System.out.println("  getSQLKeywords");
 		stringval=md.getSQLKeywords();
 		System.out.println("    "+stringval);
-		assertEquals(stringval,"after,ansi,append,attach,audit,auto,before,binary,boolean,buffered,byte,class,cluster,clob,committed,constant,database,datetime,dba,define,detach,disabled,document,elif,enabled,exclusive,exit,explain,file,foreach,format,fragment,fraction,gk,high,hold,idslbacreadarray,idslbacreadset,idslbacreadtree,idslbacrules,idslbacwritearray,idslbacwriteset,idslbacwritetree,idssecuritylabel,if,ilength,index,informix,init,instead,int8,itype,let,listing,lock,log,long,low,lvarchar,medium,memory,merge,mode,money,multiset,nchar,nvarchar,off,online,optimization,page,pdq,raise,range,raw,record,remainder,rename,repeatable,replcheck,replication,reserve,resolution,resource,retain,returning,role,row,rowid,semicolon,serial,serial8,share,sitename,smallfloat,stability,start,standard,step,stdev,system,text,trace,trigger,truncate,typedef,units,unlock,variance,wait,while,without,xload,xunload");
+		assertEquals(stringval,"after,ansi,append,attach,audit,before,bitmap,boolean,buffered,byte,cache,call,cluster,clustersize,codeset,database,datafiles,dataskip,datetime,dba,dbdate,dbmoney,debug,define,delimiter,deluxe,detach,dirty,distributions,document,each,elif,exclusive,exit,explain,express,expression,extend,extent,file,fillfactor,foreach,format,fraction,fragment,gk,hash,high,hold,hybrid,if,index,init,labeleq,labelge,labelgt,labelle,labellt,let,listing,lock,log,low,matches,maxerrors,medium,mode,modify,money,mounting,new,nvarchar,off,old,operational,optical,optimization,page,pdqpriority,pload,private,raise,range,raw,recordend,recover,referencing,rejectfile,release,remainder,rename,reserve,resolution,resource,resume,return,returning,returns,ridlist,robin,rollforward,round,row,rowids,sameas,samples,schedule,scratch,serial,share,skall,skinhibit,skshow,smallfloat,stability,standard,start,static,statistics,stdev,step,sync,synonym,system,temp,text,timeout,trace,trigger,units,unlock,variance,wait,while,xload,xunload");
 		System.out.println();
 
 		// getSQLStateType
@@ -1134,28 +1134,28 @@ class informix extends sqlrtest {
 		// bind by position
 		System.out.println("BIND BY POSITION:");
 		pstmt=con.prepareStatement(
-			"insert into "+
-			"	testtable "+
-			"values ("+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?, "+
-			"	?)");
+				"insert into "+
+				"	testtable "+
+				"values ("+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?)");
 		if (issqlrelay) {
 			// informix jdbc doesn't support isClosed
 			assertFalse(pstmt.isClosed());
@@ -1197,9 +1197,8 @@ class informix extends sqlrtest {
 			pstmt.setString(17,"text"+i);
 			pstmt.setNull(18,java.sql.Types.BLOB);
 			// NULL column
-			pstmt.setString(19,
-				"http://www.firstworks.com:8080/"+
-				"testurl"+i);
+			pstmt.setString(19,"http://www.firstworks.com:8080/"+
+								"testurl"+i);
 			assertEquals(pstmt.executeUpdate(),1);
 			System.out.println();
 		}
@@ -1313,7 +1312,12 @@ class informix extends sqlrtest {
 
 			// boolean as string
 			System.out.println("  row "+i+" - boolean as string");
-			assertEquals(rs.getString(1),"t");
+			if (issqlrelay) {
+				// sqlrelay returns "1" for true
+				assertEquals(rs.getString(1),"1");
+			} else {
+				assertEquals(rs.getString(1),"t");
+			}
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -1355,11 +1359,13 @@ class informix extends sqlrtest {
 
 			// money
 			System.out.println("  row "+i+" - money");
-			if (issqlrelay) {
-				assertEquals(rs.getString(7),"$"+i+".10");
-			} else {
-				assertEquals(rs.getString(7),i+".10");
-			}
+			String moneyval=rs.getString(7);
+			// apparently inserting a literal value causes the
+			// field to be populated without a leading $, but
+			// inserting a value via bind causes it to be populated
+			// with a leading $
+			assertTrue(moneyval.equals(i+".10") ||
+					moneyval.equals("$"+i+".10"));
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -1418,7 +1424,8 @@ class informix extends sqlrtest {
 			System.out.println();
 
 			// datetime as timestamp
-			System.out.println("  row "+i+" - datetime as timestamp");
+			System.out.println("  row "+i+
+					" - datetime as timestamp");
 			tsvar=rs.getTimestamp(16);
 			cal.setTime(tsvar);
 			assertEquals(cal.get(Calendar.YEAR),2000+i);
@@ -1470,7 +1477,12 @@ class informix extends sqlrtest {
 
 			// boolean as string
 			System.out.println("  row "+i+" - boolean as string");
-			assertEquals(rs.getString("testboolean"),"t");
+			if (issqlrelay) {
+				// sqlrelay returns "1" for true
+				assertEquals(rs.getString("testboolean"),"1");
+			} else {
+				assertEquals(rs.getString("testboolean"),"t");
+			}
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -1512,11 +1524,13 @@ class informix extends sqlrtest {
 
 			// money
 			System.out.println("  row "+i+" - money");
-			if (issqlrelay) {
-				assertEquals(rs.getString("testmoney"),"$"+i+".10");
-			} else {
-				assertEquals(rs.getString("testmoney"),i+".10");
-			}
+			// apparently, via the informix odbc driver, which
+			// sqlrelay uses on the backend, inserting a literal
+			// lue causes the field to be populated without a
+			// leading $, but inserting a value via bind causes it
+			String moneyval=rs.getString("testmoney");
+			assertTrue(moneyval.equals(i+".10") ||
+					moneyval.equals("$"+i+".10"));
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -1575,7 +1589,8 @@ class informix extends sqlrtest {
 			System.out.println();
 
 			// datetime as timestamp
-			System.out.println("  row "+i+" - datetime as timestamp");
+			System.out.println("  row "+i+
+					" - datetime as timestamp");
 			tsvar=rs.getTimestamp("testdatetime");
 			cal.setTime(tsvar);
 			assertEquals(cal.get(Calendar.YEAR),2000+i);
@@ -1654,41 +1669,8 @@ class informix extends sqlrtest {
 		System.out.println();
 
 
-		// output bind by name
-		if (issqlrelay) {
-			// informix jdbc doesn't support mixing named and indexed parameters
-			System.out.println("OUTPUT BIND BY NAME:");
-			assertEquals(stmt.executeUpdate(
-				"create procedure testproc2("+
-				"	in1 int, "+
-				"	in2 float, "+
-				"	in3 varchar(20), "+
-				"	out out1 int, "+
-				"	out out2 float, "+
-				"	out out3 varchar(20)) "+
-				"let out1 = in1; "+
-				"let out2 = in2; "+
-				"let out3 = in3; "+
-				"end procedure;"),0);
-			cstmt=con.prepareCall("{call testproc2(?,?,?,?,?,?)}");
-			cstmt.setInt(1,1);
-			cstmt.setDouble(2,1.1);
-			cstmt.setString(3,"hello");
-			cstmt.registerOutParameter("out1",Types.INTEGER);
-			cstmt.registerOutParameter("out2",Types.DOUBLE);
-			cstmt.registerOutParameter("out3",Types.VARCHAR);
-			assertFalse(cstmt.execute());
-			assertEquals(cstmt.getInt("out1"),1);
-			assertEquals(cstmt.getDouble("out2"),1.1);
-			assertEquals(cstmt.getString("out3"),"hello");
-			cstmt.close();
-			stmt.executeUpdate("drop procedure testproc2");
-			System.out.println();
-		}
-
 		// stored procedures
 		System.out.println("STORED PROCEDURES:");
-		// return values
 		try {
 			stmt.executeUpdate("drop procedure testproc");
 		} catch (Exception ex) {

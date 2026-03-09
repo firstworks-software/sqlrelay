@@ -1947,8 +1947,16 @@ class mysql extends sqlrtest {
 						cal.getTimeInMillis()));
 
 			pstmt.setString(10,"0"+i+":00:00");
+
+			cal.set(Calendar.YEAR,2000+i);
+			cal.set(Calendar.MONTH,Calendar.JANUARY);
+			cal.set(Calendar.DAY_OF_MONTH,1);
+			cal.set(Calendar.HOUR_OF_DAY,i);
+			cal.set(Calendar.MINUTE,0);
+			cal.set(Calendar.SECOND,0);
 			pstmt.setTimestamp(11,new Timestamp(
 						cal.getTimeInMillis()));
+
 			pstmt.setString(12,""+(2000+i));
 			pstmt.setString(13,"char"+i);
 			pstmt.setString(14,"varchar"+i);
@@ -2226,6 +2234,9 @@ class mysql extends sqlrtest {
 			assertEquals(cal.get(Calendar.YEAR),2000+i);
 			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
 			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
+                        assertEquals(cal.get(Calendar.HOUR_OF_DAY),i);
+                        assertEquals(cal.get(Calendar.MINUTE),0);
+                        assertEquals(cal.get(Calendar.SECOND),0);
 			assertFalse(rs.wasNull());
 			System.out.println();
 
@@ -2481,6 +2492,9 @@ if (issqlrelay) {
 			assertEquals(cal.get(Calendar.YEAR),2000+i);
 			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
 			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
+                        assertEquals(cal.get(Calendar.HOUR_OF_DAY),i);
+                        assertEquals(cal.get(Calendar.MINUTE),0);
+                        assertEquals(cal.get(Calendar.SECOND),0);
 			assertFalse(rs.wasNull());
 			System.out.println();
 
