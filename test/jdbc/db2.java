@@ -1153,6 +1153,8 @@ class db2 extends sqlrtest {
 			"	?, "+
 			"	?)");
 		assertFalse(pstmt.isClosed());
+		clob=con.createClob();
+		blob=con.createBlob();
 		for (int i=2; i<=4; i++) {
 			pstmt.clearParameters();
 			pstmt.setInt(1,i);
@@ -1174,9 +1176,11 @@ class db2 extends sqlrtest {
 						cal.getTimeInMillis()));
 			pstmt.setString(10,"0"+i+":00:00");
 			pstmt.setNull(11,java.sql.Types.TIMESTAMP);
-			pstmt.setString(12,"clob"+i);
-			pstmt.setBytes(13,(new String("blob"+i)).
+			clob.setString(1,"clob"+i);
+			pstmt.setClob(12,clob);
+			blob.setBytes(1,(new String("blob"+i)).
 					getBytes(StandardCharsets.UTF_8));
+			pstmt.setBlob(13,blob);
 			pstmt.setString(14,
 				"http://www.firstworks.com:8080/"+
 				"testurl"+i);

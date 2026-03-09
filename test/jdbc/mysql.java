@@ -1943,6 +1943,7 @@ class mysql extends sqlrtest {
 			cal.set(Calendar.HOUR_OF_DAY,0);
 			cal.set(Calendar.MINUTE,0);
 			cal.set(Calendar.SECOND,0);
+			cal.set(Calendar.MILLISECOND,0);
 			pstmt.setDate(9,new java.sql.Date(
 						cal.getTimeInMillis()));
 
@@ -1954,24 +1955,41 @@ class mysql extends sqlrtest {
 			cal.set(Calendar.HOUR_OF_DAY,i);
 			cal.set(Calendar.MINUTE,0);
 			cal.set(Calendar.SECOND,0);
+			cal.set(Calendar.MILLISECOND,0);
 			pstmt.setTimestamp(11,new Timestamp(
 						cal.getTimeInMillis()));
 
 			pstmt.setString(12,""+(2000+i));
 			pstmt.setString(13,"char"+i);
 			pstmt.setString(14,"varchar"+i);
-			pstmt.setString(15,"text"+i);
-			pstmt.setString(16,"tinytext"+i);
-			pstmt.setString(17,"mediumtext"+i);
-			pstmt.setString(18,"longtext"+i);
-			pstmt.setBytes(19,(new String("blob"+i)).
+			clob=con.createClob();
+			clob.setString(1,"text"+i);
+			pstmt.setClob(15,clob);
+			clob=con.createClob();
+			clob.setString(1,"tinytext"+i);
+			pstmt.setClob(16,clob);
+			clob=con.createClob();
+			clob.setString(1,"mediumtext"+i);
+			pstmt.setClob(17,clob);
+			clob=con.createClob();
+			clob.setString(1,"longtext"+i);
+			pstmt.setClob(18,clob);
+			blob=con.createBlob();
+			blob.setBytes(1,(new String("blob"+i)).
 					getBytes(StandardCharsets.UTF_8));
-			pstmt.setBytes(20,(new String("tinyblob"+i)).
+			pstmt.setBlob(19,blob);
+			blob=con.createBlob();
+			blob.setBytes(1,(new String("tinyblob"+i)).
 					getBytes(StandardCharsets.UTF_8));
-			pstmt.setBytes(21,(new String("mediumblob"+i)).
+			pstmt.setBlob(20,blob);
+			blob=con.createBlob();
+			blob.setBytes(1,(new String("mediumblob"+i)).
 					getBytes(StandardCharsets.UTF_8));
-			pstmt.setBytes(22,(new String("longblob"+i)).
+			pstmt.setBlob(21,blob);
+			blob=con.createBlob();
+			blob.setBytes(1,(new String("longblob"+i)).
 					getBytes(StandardCharsets.UTF_8));
+			pstmt.setBlob(22,blob);
 			pstmt.setString(23,
 				"http://www.firstworks.com:8080/"+
 				"testurl"+i);
