@@ -1819,10 +1819,7 @@ class oracle extends sqlrtest {
 
 		// drop existing table
 		stmt=con.createStatement();
-		try {
-			stmt.executeUpdate("drop table testtable");
-		} catch (Exception ex) {
-		}
+		stmt.executeUpdate("drop table testtable");
 
 
 		// create temptable
@@ -2858,10 +2855,7 @@ class oracle extends sqlrtest {
 		System.out.println();
 
 
-		try {
-			stmt.executeUpdate("drop table testtable1");
-		} catch (Exception ex) {
-		}
+		stmt.executeUpdate("drop table testtable1");
 
 
 		// null and empty clobs and blobs
@@ -2899,10 +2893,7 @@ class oracle extends sqlrtest {
 		System.out.println();
 
 
-		try {
-			stmt.executeUpdate("drop table testtable2");
-		} catch (Exception ex) {
-		}
+		stmt.executeUpdate("drop table testtable2");
 
 
 		// long varchar
@@ -3375,8 +3366,8 @@ class oracle extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"TABLE_CATALOG");
 		found=false;
 		while (rs.next()) {
-			if (rs.getString("TABLE_SCHEM").
-					equalsIgnoreCase(hostname)) {
+			String	tschem=rs.getString("TABLE_SCHEM");
+			if (tschem!=null && tschem.equalsIgnoreCase(hostname)) {
 				found=true;
 				break;
 			}
@@ -3395,14 +3386,12 @@ class oracle extends sqlrtest {
 		assertEquals(rsmd.getColumnCount(),1);
 		col=1;
 		assertEquals(rsmd.getColumnName(col++),"TABLE_TYPE");
-		if (issqlrelay) {
-			assertTrue(rs.next());
-			assertEquals(rs.getString("TABLE_TYPE"),"SYNONYM");
-			assertTrue(rs.next());
-			assertEquals(rs.getString("TABLE_TYPE"),"TABLE");
-			assertTrue(rs.next());
-			assertEquals(rs.getString("TABLE_TYPE"),"VIEW");
-		}
+		assertTrue(rs.next());
+		assertEquals(rs.getString("TABLE_TYPE"),"SYNONYM");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("TABLE_TYPE"),"TABLE");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("TABLE_TYPE"),"VIEW");
 		rs.close();
 		System.out.println();
 
@@ -3427,40 +3416,20 @@ class oracle extends sqlrtest {
 		}
 		stmt.executeUpdate(
 			"create table testtable1 ("+
-			"	testnumber number, "+
-			"	testchar char(40), "+
-			"	testvarchar varchar2(40), "+
-			"	testdate date, "+
-			"	testlong long, "+
-			"	testclob clob, "+
-			"	testblob blob)");
+			"	col1 integer, "+
+			"	col2 integer)");
 		stmt.executeUpdate(
 			"create table testtable2 ("+
-			"	testnumber number, "+
-			"	testchar char(40), "+
-			"	testvarchar varchar2(40), "+
-			"	testdate date, "+
-			"	testlong long, "+
-			"	testclob clob, "+
-			"	testblob blob)");
+			"	col1 integer, "+
+			"	col2 integer)");
 		stmt.executeUpdate(
 			"create table testtable3 ("+
-			"	testnumber number, "+
-			"	testchar char(40), "+
-			"	testvarchar varchar2(40), "+
-			"	testdate date, "+
-			"	testlong long, "+
-			"	testclob clob, "+
-			"	testblob blob)");
+			"	col1 integer, "+
+			"	col2 integer)");
 		stmt.executeUpdate(
 			"create table testtable4 ("+
-			"	testnumber number, "+
-			"	testchar char(40), "+
-			"	testvarchar varchar2(40), "+
-			"	testdate date, "+
-			"	testlong long, "+
-			"	testclob clob, "+
-			"	testblob blob)");
+			"	col1 integer, "+
+			"	col2 integer)");
 		rs=md.getTables(null,null,"%",
 			new String[] {"SYNONYM","TABLE","VIEW"});
 		assertTrue((rs!=null));
@@ -3478,6 +3447,7 @@ class oracle extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
 		assertEquals(rsmd.getColumnName(col++),"TABLE_TYPE");
 		assertEquals(rsmd.getColumnName(col++),"REMARKS");
+		// oracle jdbc doesn't return these columns
 		if (issqlrelay) {
 			assertEquals(rsmd.getColumnName(col++),"TYPE_CAT");
 			assertEquals(rsmd.getColumnName(col++),"TYPE_SCHEM");

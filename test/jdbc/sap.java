@@ -1030,10 +1030,7 @@ class sap extends sqlrtest {
 		System.out.println();
 
 		// drop existing table
-		try {
-			stmt.executeUpdate("drop table testtable");
-		} catch (Exception ex) {
-		}
+		stmt.executeUpdate("drop table testtable");
 
 		// create table
 		System.out.println("CREATE TABLE:");
@@ -1681,8 +1678,7 @@ class sap extends sqlrtest {
 		found=false;
 		while (rs.next()) {
 			String ttname=rs.getString("TABLE_TYPE");
-			if (ttname!=null &&
-					ttname.equalsIgnoreCase("TABLE")) {
+			if (ttname!=null && ttname.equalsIgnoreCase("TABLE")) {
 				found=true;
 				break;
 			}
@@ -1763,22 +1759,10 @@ class sap extends sqlrtest {
 		}
 		assertEquals(counter,4);
 		rs.close();
-		try {
-			stmt.executeUpdate("drop table testtable1");
-		} catch (Exception ex) {
-		}
-		try {
-			stmt.executeUpdate("drop table testtable2");
-		} catch (Exception ex) {
-		}
-		try {
-			stmt.executeUpdate("drop table testtable3");
-		} catch (Exception ex) {
-		}
-		try {
-			stmt.executeUpdate("drop table testtable4");
-		} catch (Exception ex) {
-		}
+		stmt.executeUpdate("drop table testtable1");
+		stmt.executeUpdate("drop table testtable2");
+		stmt.executeUpdate("drop table testtable3");
+		stmt.executeUpdate("drop table testtable4");
 		System.out.println();
 
 
@@ -2063,10 +2047,7 @@ class sap extends sqlrtest {
 				rs.getString("PK_NAME").length()>0);
 		assertFalse(rs.next());
 		rs.close();
-		try {
-			stmt.executeUpdate("drop table testtable");
-		} catch (Exception ex) {
-		}
+		stmt.executeUpdate("drop table testtable");
 		System.out.println();
 
 
@@ -2126,10 +2107,7 @@ class sap extends sqlrtest {
 				rs.getString("INDEX_NAME").length()>0);
 		assertFalse(rs.next());
 		rs.close();
-		try {
-			stmt.executeUpdate("drop table testtable");
-		} catch (Exception ex) {
-		}
+		stmt.executeUpdate("drop table testtable");
 		System.out.println();
 
 

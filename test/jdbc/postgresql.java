@@ -1058,10 +1058,7 @@ class postgresql extends sqlrtest {
 		System.out.println();
 
 		// drop existing table
-		try {
-			stmt.executeUpdate("drop table if exists testtable");
-		} catch (Exception ex) {
-		}
+		stmt.executeUpdate("drop table if exists testtable");
 
 		// create table
 		System.out.println("CREATE TABLE:");
@@ -1681,9 +1678,8 @@ class postgresql extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"TABLE_CATALOG");
 		found=false;
 		while (rs.next()) {
-			if (rs.getString("TABLE_SCHEM")!=null &&
-					rs.getString("TABLE_SCHEM").
-							equalsIgnoreCase(hostname)) {
+			String	tschem=rs.getString("TABLE_SCHEM");
+			if (tschem!=null && tschem.equalsIgnoreCase(hostname)) {
 				found=true;
 				break;
 			}
@@ -1705,8 +1701,7 @@ class postgresql extends sqlrtest {
 		found=false;
 		while (rs.next()) {
 			String ttname=rs.getString("TABLE_TYPE");
-			if (ttname!=null &&
-					ttname.equalsIgnoreCase("TABLE")) {
+			if (ttname!=null && ttname.equalsIgnoreCase("TABLE")) {
 				found=true;
 				break;
 			}

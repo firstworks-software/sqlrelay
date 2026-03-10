@@ -17,7 +17,7 @@ class db2 extends sqlrtest {
 		String classpath=System.getProperty("java.class.path");
 		String hostname=InetAddress.getLocalHost().
 					getHostName().split("\\.")[0];
-		String db2db=hostname.
+		hostname=hostname.
 			replaceAll("^centos","co").
 			replaceAll("^debian","db").
 			replaceAll("^fedora","fc").
@@ -56,7 +56,7 @@ class db2 extends sqlrtest {
 			issqlrelay=true;
 		} else if (classpath.contains("db2")) {
 			driver="com.ibm.db2.jcc.DB2Driver";
-			url="jdbc:db2://db2:50000/"+db2db+"";
+			url="jdbc:db2://db2:50000/"+hostname+"";
 			user="db2inst1";
 			password="testpassword";
 		}
@@ -1082,10 +1082,7 @@ class db2 extends sqlrtest {
 		System.out.println();
 
 		// drop existing table
-		try {
-			stmt.executeUpdate("drop table testtable");
-		} catch (Exception ex) {
-		}
+		stmt.executeUpdate("drop table testtable");
 
 		// create table
 		System.out.println("CREATE TABLE:");
@@ -1729,6 +1726,20 @@ class db2 extends sqlrtest {
 		assertEquals(rsmd.getColumnCount(),1);
 		col=1;
 		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
+		found=false;
+		while (rs.next()) {
+			String	tcat=rs.getString("TABLE_CAT");
+			if (tcat!=null && tcat.equalsIgnoreCase(hostname)) {
+				found=true;
+				break;
+			}
+		}
+		if (!issqlrelay) {
+			// db jdbc returns the current catalog in this list,
+			// but sqlrelay jdbc doesn't return anything
+			// #7976
+			assertTrue(found);
+		}
 		rs.close();
 		System.out.println();
 
@@ -1745,9 +1756,8 @@ class db2 extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"TABLE_CATALOG");
 		found=false;
 		while (rs.next()) {
-			if (rs.getString("TABLE_SCHEM")!=null &&
-					rs.getString("TABLE_SCHEM").
-							equalsIgnoreCase(hostname)) {
+			String	tschem=rs.getString("TABLE_SCHEM");
+			if (tschem!=null && tschem.equalsIgnoreCase(user)) {
 				found=true;
 				break;
 			}
@@ -1766,16 +1776,21 @@ class db2 extends sqlrtest {
 		assertEquals(rsmd.getColumnCount(),1);
 		col=1;
 		assertEquals(rsmd.getColumnName(col++),"TABLE_TYPE");
-		found=false;
-		while (rs.next()) {
-			String ttname=rs.getString("TABLE_TYPE");
-			if (ttname!=null &&
-					ttname.equalsIgnoreCase("TABLE")) {
-				found=true;
-				break;
-			}
-		}
-		assertTrue(found);
+		assertTrue(rs.next());
+		assertEquals(rs.getString("TABLE_TYPE"),"ALIAS");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("TABLE_TYPE"),"HIERARCHY TABLE");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("TABLE_TYPE"),"INOPERATIVE VIEW");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("TABLE_TYPE"),
+						"MATERIALIZED QUERY TABLE");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("TABLE_TYPE"),"NICKNAME");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("TABLE_TYPE"),"SYSTEM TABLE");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("TABLE_TYPE"),"TABLE");
 		rs.close();
 		System.out.println();
 
@@ -1819,26 +1834,30 @@ class db2 extends sqlrtest {
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
-		if (issqlrelay) {
-			assertEquals(rsmd.getColumnCount(),10);
-		} else {
-			assertTrue(rsmd.getColumnCount()>=5);
-		}
+		assertEquals(rsmd.getColumnCount(),10);
 		col=1;
 		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
 		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
-		assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
+		} else {
+			// db2 jdbc names this column differently
+			assertEquals(rsmd.getColumnName(col++),"NAME");
+		}
 		assertEquals(rsmd.getColumnName(col++),"TABLE_TYPE");
 		assertEquals(rsmd.getColumnName(col++),"REMARKS");
+		assertEquals(rsmd.getColumnName(col++),"TYPE_CAT");
+		assertEquals(rsmd.getColumnName(col++),"TYPE_SCHEM");
+		assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
 		if (issqlrelay) {
-			assertEquals(rsmd.getColumnName(col++),"TYPE_CAT");
-			assertEquals(rsmd.getColumnName(col++),"TYPE_SCHEM");
-			assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
 			assertEquals(rsmd.getColumnName(col++),
 						"SELF_REFERENCING_COL_NAME");
+		} else {
+			// db2 jdbc names this column differently
 			assertEquals(rsmd.getColumnName(col++),
-						"REF_GENERATION");
+						"SELF_REF_COL_NAME");
 		}
+		assertEquals(rsmd.getColumnName(col++),"REF_GENERATION");
 		counter=0;
 		while (rs.next()) {
 			String name=rs.getString("TABLE_NAME");
@@ -1851,22 +1870,10 @@ class db2 extends sqlrtest {
 		}
 		assertEquals(counter,4);
 		rs.close();
-		try {
-			stmt.executeUpdate("drop table testtable1");
-		} catch (Exception ex) {
-		}
-		try {
-			stmt.executeUpdate("drop table testtable2");
-		} catch (Exception ex) {
-		}
-		try {
-			stmt.executeUpdate("drop table testtable3");
-		} catch (Exception ex) {
-		}
-		try {
-			stmt.executeUpdate("drop table testtable4");
-		} catch (Exception ex) {
-		}
+		stmt.executeUpdate("drop table testtable1");
+		stmt.executeUpdate("drop table testtable2");
+		stmt.executeUpdate("drop table testtable3");
+		stmt.executeUpdate("drop table testtable4");
 		System.out.println();
 
 
@@ -1893,7 +1900,7 @@ class db2 extends sqlrtest {
 			rsmd=rs.getMetaData();
 			assertTrue((rsmd!=null));
 			col=1;
-			assertTrue(rsmd.getColumnCount()>=7);
+			assertEquals(rsmd.getColumnCount(),7);
 			assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
 			assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
 			assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
@@ -1912,7 +1919,12 @@ class db2 extends sqlrtest {
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
-		assertEquals(rsmd.getColumnCount(),18);
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnCount(),18);
+		} else {
+			// db2 jdbc returns an extra column
+			assertEquals(rsmd.getColumnCount(),19);
+		}
 		col=1;
 		assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
 		assertEquals(rsmd.getColumnName(col++),"DATA_TYPE");
@@ -1932,6 +1944,10 @@ class db2 extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"SQL_DATA_TYPE");
 		assertEquals(rsmd.getColumnName(col++),"SQL_DATETIME_SUB");
 		assertEquals(rsmd.getColumnName(col++),"NUM_PREC_RADIX");
+		if (!issqlrelay) {
+			assertEquals(rsmd.getColumnName(col++),
+						"INTERVAL_PRECISION");
+		}
 		rs.close();
 		System.out.println();
 
@@ -1965,11 +1981,17 @@ class db2 extends sqlrtest {
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
 		col=1;
-		assertTrue(rsmd.getColumnCount()>=18);
+		assertEquals(rsmd.getColumnCount(),24);
 		assertEquals(rsmd.getColumnName(col++),"TABLE_CAT");
 		assertEquals(rsmd.getColumnName(col++),"TABLE_SCHEM");
-		assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
-		assertEquals(rsmd.getColumnName(col++),"COLUMN_NAME");
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnName(col++),"TABLE_NAME");
+			assertEquals(rsmd.getColumnName(col++),"COLUMN_NAME");
+		} else {
+			// db2 jdbc names these columns differently
+			assertEquals(rsmd.getColumnName(col++),"NAME");
+			assertEquals(rsmd.getColumnName(col++),"NAME");
+		}
 		assertEquals(rsmd.getColumnName(col++),"DATA_TYPE");
 		assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
 		assertEquals(rsmd.getColumnName(col++),"COLUMN_SIZE");
@@ -1984,6 +2006,12 @@ class db2 extends sqlrtest {
 		assertEquals(rsmd.getColumnName(col++),"CHAR_OCTET_LENGTH");
 		assertEquals(rsmd.getColumnName(col++),"ORDINAL_POSITION");
 		assertEquals(rsmd.getColumnName(col++),"IS_NULLABLE");
+		assertEquals(rsmd.getColumnName(col++),"SCOPE_CATALOG");
+		assertEquals(rsmd.getColumnName(col++),"SCOPE_SCHEMA");
+		assertEquals(rsmd.getColumnName(col++),"SCOPE_TABLE");
+		assertEquals(rsmd.getColumnName(col++),"SOURCE_DATA_TYPE");
+		assertEquals(rsmd.getColumnName(col++),"IS_AUTOINCREMENT");
+		assertEquals(rsmd.getColumnName(col++),"IS_GENERATEDCOLUMN");
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTSMALLINT");
 		assertTrue(rs.getString("TYPE_NAME").
@@ -2010,8 +2038,14 @@ class db2 extends sqlrtest {
 					equalsIgnoreCase("DOUBLE"));
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTCHAR");
-		assertTrue(rs.getString("TYPE_NAME").
+		if (issqlrelay) {
+			assertTrue(rs.getString("TYPE_NAME").
 					equalsIgnoreCase("CHARACTER"));
+		} else {
+			// db2 jdbc returns CHAR
+			assertTrue(rs.getString("TYPE_NAME").
+					equalsIgnoreCase("CHAR"));
+		}
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"TESTVARCHAR");
 		assertTrue(rs.getString("TYPE_NAME").
@@ -2054,23 +2088,35 @@ class db2 extends sqlrtest {
 			rsmd=rs.getMetaData();
 			assertTrue((rsmd!=null));
 			col=1;
-			assertTrue(rsmd.getColumnCount()>=8);
+			assertEquals(rsmd.getColumnCount(),8);
 			assertEquals(rsmd.getColumnName(col++),
-						"SCOPE");
+							"SCOPE");
+			if (issqlrelay) {
+				assertEquals(rsmd.getColumnName(col++),
+							"COLUMN_NAME");
+			} else {
+				// db2 jdbc names this column differently
+				assertEquals(rsmd.getColumnName(col++),
+							"NAME");
+			}
 			assertEquals(rsmd.getColumnName(col++),
-						"COLUMN_NAME");
+							"DATA_TYPE");
 			assertEquals(rsmd.getColumnName(col++),
-						"DATA_TYPE");
+							"TYPE_NAME");
 			assertEquals(rsmd.getColumnName(col++),
-						"TYPE_NAME");
+							"COLUMN_SIZE");
 			assertEquals(rsmd.getColumnName(col++),
-						"COLUMN_SIZE");
+							"BUFFER_LENGTH");
+			if (issqlrelay) {
+				assertEquals(rsmd.getColumnName(col++),
+							"DECIMAL_DIGITS");
+			} else {
+				// db2 jdbc names this column differently
+				assertEquals(rsmd.getColumnName(col++),
+							"SCALE");
+			}
 			assertEquals(rsmd.getColumnName(col++),
-						"BUFFER_LENGTH");
-			assertEquals(rsmd.getColumnName(col++),
-						"DECIMAL_DIGITS");
-			assertEquals(rsmd.getColumnName(col++),
-						"PSEUDO_COLUMN");
+							"PSEUDO_COLUMN");
 			rs.close();
 			System.out.println();
 		}
@@ -2087,19 +2133,33 @@ class db2 extends sqlrtest {
 			rsmd=rs.getMetaData();
 			assertTrue((rsmd!=null));
 			col=1;
-			assertTrue(rsmd.getColumnCount()>=8);
+			if (issqlrelay) {
+				assertEquals(rsmd.getColumnCount(),8);
+			} else {
+				// db2 jdbc returns 7 columns
+				assertEquals(rsmd.getColumnCount(),7);
+			}
 			assertEquals(rsmd.getColumnName(col++),
 						"SCOPE");
 			assertEquals(rsmd.getColumnName(col++),
 						"COLUMN_NAME");
-			assertEquals(rsmd.getColumnName(col++),
-						"DATA_TYPE");
+			if (issqlrelay) {
+				assertEquals(rsmd.getColumnName(col++),
+							"DATA_TYPE");
+			} else {
+				// db2 jdbc names this column differently
+				assertEquals(rsmd.getColumnName(col++),
+							"JDBC_DATA_TYPE");
+			}
 			assertEquals(rsmd.getColumnName(col++),
 						"TYPE_NAME");
 			assertEquals(rsmd.getColumnName(col++),
 						"COLUMN_SIZE");
-			assertEquals(rsmd.getColumnName(col++),
-						"BUFFER_LENGTH");
+			if (issqlrelay) {
+				// db2 jdbc doesn't return this column
+				assertEquals(rsmd.getColumnName(col++),
+							"BUFFER_LENGTH");
+			}
 			assertEquals(rsmd.getColumnName(col++),
 						"DECIMAL_DIGITS");
 			assertEquals(rsmd.getColumnName(col++),
@@ -2117,7 +2177,7 @@ class db2 extends sqlrtest {
 		}
 		stmt.executeUpdate(
 			"create table testtable ("+
-			"	col1 integer primary key, "+
+			"	col1 integer not null primary key, "+
 			"	col2 integer)");
 		rs=md.getPrimaryKeys(null,null,"TESTTABLE");
 		assertTrue((rs!=null));
@@ -2141,10 +2201,7 @@ class db2 extends sqlrtest {
 				rs.getString("PK_NAME").length()>0);
 		assertFalse(rs.next());
 		rs.close();
-		try {
-			stmt.executeUpdate("drop table testtable");
-		} catch (Exception ex) {
-		}
+		stmt.executeUpdate("drop table testtable");
 		System.out.println();
 
 
@@ -2156,10 +2213,9 @@ class db2 extends sqlrtest {
 		}
 		stmt.executeUpdate(
 			"create table testtable ("+
-			"	col1 integer primary key, "+
+			"	col1 integer not null primary key, "+
 			"	col2 integer)");
-		rs=md.getIndexInfo(null,null,
-					"TESTTABLE",false,true);
+		rs=md.getIndexInfo(null,null,"TESTTABLE",false,true);
 		assertTrue((rs!=null));
 		rsmd=rs.getMetaData();
 		assertTrue((rsmd!=null));
@@ -2202,12 +2258,12 @@ class db2 extends sqlrtest {
 		assertEquals(rs.getString("TYPE"),"3");
 		assertTrue(rs.getString("INDEX_NAME")!=null &&
 				rs.getString("INDEX_NAME").length()>0);
-		assertFalse(rs.next());
-		rs.close();
-		try {
-			stmt.executeUpdate("drop table testtable");
-		} catch (Exception ex) {
+		if (issqlrelay) {
+			// db2 jdbc actually returns additional rows
+			assertFalse(rs.next());
 		}
+		rs.close();
+		stmt.executeUpdate("drop table testtable");
 		System.out.println();
 
 
@@ -2252,18 +2308,58 @@ class db2 extends sqlrtest {
 			assertEquals(rsmd.getColumnCount(),14);
 			assertEquals(rsmd.getColumnName(col++),"PKTABLE_CAT");
 			assertEquals(rsmd.getColumnName(col++),"PKTABLE_SCHEM");
-			assertEquals(rsmd.getColumnName(col++),"PKTABLE_NAME");
-			assertEquals(rsmd.getColumnName(col++),"PKCOLUMN_NAME");
-			assertEquals(rsmd.getColumnName(col++),"FKTABLE_CAT");
-			assertEquals(rsmd.getColumnName(col++),"FKTABLE_SCHEM");
-			assertEquals(rsmd.getColumnName(col++),"FKTABLE_NAME");
-			assertEquals(rsmd.getColumnName(col++),"FKCOLUMN_NAME");
-			assertEquals(rsmd.getColumnName(col++),"KEY_SEQ");
-			assertEquals(rsmd.getColumnName(col++),"UPDATE_RULE");
-			assertEquals(rsmd.getColumnName(col++),"DELETE_RULE");
-			assertEquals(rsmd.getColumnName(col++),"FK_NAME");
-			assertEquals(rsmd.getColumnName(col++),"PK_NAME");
-			assertEquals(rsmd.getColumnName(col++),"DEFERRABILITY");
+			if (issqlrelay) {
+				assertEquals(rsmd.getColumnName(col++),
+							"PKTABLE_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"PKCOLUMN_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"FKTABLE_CAT");
+				assertEquals(rsmd.getColumnName(col++),
+							"FKTABLE_SCHEM");
+				assertEquals(rsmd.getColumnName(col++),
+							"FKTABLE_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"FKCOLUMN_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"KEY_SEQ");
+				assertEquals(rsmd.getColumnName(col++),
+							"UPDATE_RULE");
+				assertEquals(rsmd.getColumnName(col++),
+							"DELETE_RULE");
+				assertEquals(rsmd.getColumnName(col++),
+							"FK_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"PK_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"DEFERRABILITY");
+			} else {
+				// db2 jdbc names these columns differently
+				assertEquals(rsmd.getColumnName(col++),
+							"NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"COLNAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"FKTABLE_CAT");
+				assertEquals(rsmd.getColumnName(col++),
+							"FKTABLE_SCHEM");
+				assertEquals(rsmd.getColumnName(col++),
+							"NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"COLNAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"COLSEQ");
+				assertEquals(rsmd.getColumnName(col++),
+							"UPDATE_RULE");
+				assertEquals(rsmd.getColumnName(col++),
+							"DELETE_RULE");
+				assertEquals(rsmd.getColumnName(col++),
+							"CONSTNAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"CONSTNAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"DEFERRABILITY");
+			}
 			rs.close();
 			System.out.println();
 		}
@@ -2281,18 +2377,58 @@ class db2 extends sqlrtest {
 			assertEquals(rsmd.getColumnCount(),14);
 			assertEquals(rsmd.getColumnName(col++),"PKTABLE_CAT");
 			assertEquals(rsmd.getColumnName(col++),"PKTABLE_SCHEM");
-			assertEquals(rsmd.getColumnName(col++),"PKTABLE_NAME");
-			assertEquals(rsmd.getColumnName(col++),"PKCOLUMN_NAME");
-			assertEquals(rsmd.getColumnName(col++),"FKTABLE_CAT");
-			assertEquals(rsmd.getColumnName(col++),"FKTABLE_SCHEM");
-			assertEquals(rsmd.getColumnName(col++),"FKTABLE_NAME");
-			assertEquals(rsmd.getColumnName(col++),"FKCOLUMN_NAME");
-			assertEquals(rsmd.getColumnName(col++),"KEY_SEQ");
-			assertEquals(rsmd.getColumnName(col++),"UPDATE_RULE");
-			assertEquals(rsmd.getColumnName(col++),"DELETE_RULE");
-			assertEquals(rsmd.getColumnName(col++),"FK_NAME");
-			assertEquals(rsmd.getColumnName(col++),"PK_NAME");
-			assertEquals(rsmd.getColumnName(col++),"DEFERRABILITY");
+			if (issqlrelay) {
+				assertEquals(rsmd.getColumnName(col++),
+							"PKTABLE_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"PKCOLUMN_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"FKTABLE_CAT");
+				assertEquals(rsmd.getColumnName(col++),
+							"FKTABLE_SCHEM");
+				assertEquals(rsmd.getColumnName(col++),
+							"FKTABLE_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"FKCOLUMN_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"KEY_SEQ");
+				assertEquals(rsmd.getColumnName(col++),
+							"UPDATE_RULE");
+				assertEquals(rsmd.getColumnName(col++),
+							"DELETE_RULE");
+				assertEquals(rsmd.getColumnName(col++),
+							"FK_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"PK_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"DEFERRABILITY");
+			} else {
+				// db2 jdbc names these columns differently
+				assertEquals(rsmd.getColumnName(col++),
+							"NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"COLNAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"FKTABLE_CAT");
+				assertEquals(rsmd.getColumnName(col++),
+							"FKTABLE_SCHEM");
+				assertEquals(rsmd.getColumnName(col++),
+							"NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"COLNAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"COLSEQ");
+				assertEquals(rsmd.getColumnName(col++),
+							"UPDATE_RULE");
+				assertEquals(rsmd.getColumnName(col++),
+							"DELETE_RULE");
+				assertEquals(rsmd.getColumnName(col++),
+							"CONSTNAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"CONSTNAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"DEFERRABILITY");
+			}
 			rs.close();
 			System.out.println();
 		}
@@ -2352,23 +2488,33 @@ class db2 extends sqlrtest {
 		if (issqlrelay) {
 			assertEquals(rsmd.getColumnCount(),8);
 		} else {
-			assertTrue(rsmd.getColumnCount()>=8);
+			// db2 jdbc returns 9 columns
+			assertEquals(rsmd.getColumnCount(),9);
 		}
 		assertEquals(rsmd.getColumnName(col++),"PROCEDURE_CAT");
 		assertEquals(rsmd.getColumnName(col++),"PROCEDURE_SCHEM");
-		assertEquals(rsmd.getColumnName(col++),"PROCEDURE_NAME");
 		if (issqlrelay) {
 			assertEquals(rsmd.getColumnName(col++),
-						"NUM_INPUT_PARAMS");
-			assertEquals(rsmd.getColumnName(col++),
-						"NUM_OUTPUT_PARAMS");
-			assertEquals(rsmd.getColumnName(col++),
-						"NUM_RESULT_SETS");
+							"PROCEDURE_NAME");
 		} else {
-			col+=3;
+			assertEquals(rsmd.getColumnName(col++),
+							"ROUTINENAME");
+		}
+		assertEquals(rsmd.getColumnName(col++),"NUM_INPUT_PARAMS");
+		assertEquals(rsmd.getColumnName(col++),"NUM_OUTPUT_PARAMS");
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnName(col++),
+							"NUM_RESULT_SETS");
+		} else {
+			assertEquals(rsmd.getColumnName(col++),
+							"RESULT_SETS");
 		}
 		assertEquals(rsmd.getColumnName(col++),"REMARKS");
 		assertEquals(rsmd.getColumnName(col++),"PROCEDURE_TYPE");
+		if (!issqlrelay) {
+			// db2 jdbc also returns this column
+			assertEquals(rsmd.getColumnName(col++),"SPECIFICNAME");
+		}
 		counter=0;
 		while (rs.next()) {
 			String name=rs.getString("PROCEDURE_NAME");
@@ -2397,10 +2543,18 @@ class db2 extends sqlrtest {
 						"PROCEDURE_CAT");
 		assertEquals(rsmd.getColumnName(col++),
 						"PROCEDURE_SCHEM");
-		assertEquals(rsmd.getColumnName(col++),
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnName(col++),
 						"PROCEDURE_NAME");
-		assertEquals(rsmd.getColumnName(col++),
+			assertEquals(rsmd.getColumnName(col++),
 						"COLUMN_NAME");
+		} else {
+			// db2 jdbc names these columns differently
+			assertEquals(rsmd.getColumnName(col++),
+						"ROUTINENAME");
+			assertEquals(rsmd.getColumnName(col++),
+						"PARMNAME");
+		}
 		assertEquals(rsmd.getColumnName(col++),
 						"COLUMN_TYPE");
 		assertEquals(rsmd.getColumnName(col++),
@@ -2431,8 +2585,14 @@ class db2 extends sqlrtest {
 						"ORDINAL_POSITION");
 		assertEquals(rsmd.getColumnName(col++),
 						"IS_NULLABLE");
-		assertEquals(rsmd.getColumnName(col++),
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnName(col++),
 						"SPECIFIC_NAME");
+		} else {
+			// db2 jdbc names this column differently
+			assertEquals(rsmd.getColumnName(col++),
+						"SPECIFICNAME");
+		}
 		assertTrue(rs.next());
 		assertTrue(rs.getString("COLUMN_NAME").
 					equalsIgnoreCase("in1"));
@@ -2443,8 +2603,14 @@ class db2 extends sqlrtest {
 		assertTrue(rs.next());
 		assertTrue(rs.getString("COLUMN_NAME").
 					equalsIgnoreCase("in2"));
-		assertTrue(rs.getString("TYPE_NAME").
+		if (issqlrelay) {
+			assertTrue(rs.getString("TYPE_NAME").
 					equalsIgnoreCase("CHARACTER"));
+		} else {
+			// db2 jdbc returns CHAR
+			assertTrue(rs.getString("TYPE_NAME").
+					equalsIgnoreCase("CHAR"));
+		}
 		assertEquals(rs.getString("ORDINAL_POSITION"),
 						"2");
 		assertTrue(rs.next());
@@ -2490,13 +2656,38 @@ class db2 extends sqlrtest {
 			rsmd=rs.getMetaData();
 			assertTrue((rsmd!=null));
 			col=1;
-			assertTrue(rsmd.getColumnCount()>=6);
+			if (issqlrelay) {
+				assertEquals(rsmd.getColumnCount(),8);
+			} else {
+				// db2 jdbc returns 5 columns
+				assertEquals(rsmd.getColumnCount(),5);
+			}
 			assertEquals(rsmd.getColumnName(col++),
 						"FUNCTION_CAT");
 			assertEquals(rsmd.getColumnName(col++),
 						"FUNCTION_SCHEM");
-			assertEquals(rsmd.getColumnName(col++),
-						"FUNCTION_NAME");
+			if (issqlrelay) {
+				assertEquals(rsmd.getColumnName(col++),
+							"FUNCTION_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"NUM_INPUT_PARAMS");
+				assertEquals(rsmd.getColumnName(col++),
+							"NUM_OUTPUT_PARAMS");
+				assertEquals(rsmd.getColumnName(col++),
+							"NUM_RESULT_SETS");
+				assertEquals(rsmd.getColumnName(col++),
+							"REMARKS");
+				assertEquals(rsmd.getColumnName(col++),
+							"FUNCTION_TYPE");
+			} else {
+				// db2 jdbc just has different columns
+				assertEquals(rsmd.getColumnName(col++),
+							"ROUTINENAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"REMARKS");
+				assertEquals(rsmd.getColumnName(col++),
+							"SPECIFICNAME");
+			}
 			rs.close();
 			System.out.println();
 		}
@@ -2510,7 +2701,49 @@ class db2 extends sqlrtest {
 			assertTrue((rs!=null));
 			rsmd=rs.getMetaData();
 			assertTrue((rsmd!=null));
-			assertTrue(rsmd.getColumnCount()>=13);
+			col=1;
+			assertEquals(rsmd.getColumnCount(),17);
+			assertEquals(rsmd.getColumnName(col++),
+							"FUNCTION_CAT");
+			assertEquals(rsmd.getColumnName(col++),
+							"FUNCTION_SCHEM");
+			if (issqlrelay) {
+				assertEquals(rsmd.getColumnName(col++),
+							"FUNCTION_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"COLUMN_NAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"COLUMN_TYPE");
+			} else {
+				// db2 jdbc names these columns differently
+				assertEquals(rsmd.getColumnName(col++),
+							"ROUTINENAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"PARMNAME");
+				assertEquals(rsmd.getColumnName(col++),
+							"PARAMETER_TYPE");
+			}
+			assertEquals(rsmd.getColumnName(col++),"DATA_TYPE");
+			assertEquals(rsmd.getColumnName(col++),"TYPE_NAME");
+			assertEquals(rsmd.getColumnName(col++),"PRECISION");
+			assertEquals(rsmd.getColumnName(col++),"LENGTH");
+			assertEquals(rsmd.getColumnName(col++),"SCALE");
+			assertEquals(rsmd.getColumnName(col++),"RADIX");
+			assertEquals(rsmd.getColumnName(col++),"NULLABLE");
+			assertEquals(rsmd.getColumnName(col++),"REMARKS");
+			assertEquals(rsmd.getColumnName(col++),
+							"CHAR_OCTET_LENGTH");
+			assertEquals(rsmd.getColumnName(col++),
+							"ORDINAL_POSITION");
+			assertEquals(rsmd.getColumnName(col++),"IS_NULLABLE");
+			if (issqlrelay) {
+				assertEquals(rsmd.getColumnName(col++),
+							"SPECIFIC_NAME");
+			} else {
+				// db2 jdbc names this column differently
+				assertEquals(rsmd.getColumnName(col++),
+							"SPECIFICNAME");
+			}
 			rs.close();
 			System.out.println();
 		}

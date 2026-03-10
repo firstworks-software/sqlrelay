@@ -688,13 +688,20 @@ const char *db2connection::getTableTypeListQuery(const char *catalog,
 	// from clause
 	tabletypelistquery.append(
 		"from "
-		"(select 'TABLE' as table_type from sysibm.sysdummy1 "
+		"(select 'ALIAS' as table_type from sysibm.sysdummy1 "
 		"union "
-		"select 'VIEW' as table_type from sysibm.sysdummy1 "
+		"select 'HIERARCHY TABLE' as table_type from sysibm.sysdummy1 "
 		"union "
-		"select 'ALIAS' as table_type from sysibm.sysdummy1 "
+		"select 'INOPERATIVE VIEW' as table_type from sysibm.sysdummy1 "
 		"union "
-		"select 'SYNONYM' as table_type from sysibm.sysdummy1) as t ");
+		"select 'MATERIALIZED QUERY TABLE' as "
+					"table_type from sysibm.sysdummy1 "
+		"union "
+		"select 'NICKNAME' as table_type from sysibm.sysdummy1 "
+		"union "
+		"select 'SYSTEM TABLE' as table_type from sysibm.sysdummy1 "
+		"union "
+		"select 'TABLE' as table_type from sysibm.sysdummy1) as t ");
 
 	// where clause
 	if (!charstring::isNullOrEmpty(tabletypes)) {
